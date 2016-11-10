@@ -1,2 +1,0 @@
-# bgrabitmap
-BGRABitmap library

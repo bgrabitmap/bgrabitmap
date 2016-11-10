@@ -1,0 +1,11 @@
+*.bak
+*.dbg
+*.exe
+*.lps
+backup/*
+lib
+debug
+*.res
+*.lrt
+/bgrabitmap/lib4nogui
+/bgrabitmap/lib4fpgui
