@@ -64,7 +64,11 @@ uses
 			{$IFDEF LCLqt}
 		BGRAQtBitmap,
 			{$ELSE}
+              {$IFDEF DARWIN}
+        BGRAMacBitmap,
+              {$ELSE}
 		BGRALCLBitmap,
+              {$ENDIF}
 			{$ENDIF}
 		  {$ENDIF}
 		{$ENDIF}
@@ -92,7 +96,11 @@ type
             {$IFDEF LCLqt}
         TBGRABitmap = class(TBGRAQtBitmap);
             {$ELSE}
+              {$IFDEF DARWIN}
+        TBGRABitmap = class(TBGRAMacBitmap);
+              {$ELSE}
         TBGRABitmap = class(TBGRALCLBitmap);
+              {$ENDIF}
             {$ENDIF}
           {$ENDIF}
         {$ENDIF}
