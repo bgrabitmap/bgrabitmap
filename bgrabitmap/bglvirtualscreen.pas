@@ -34,6 +34,7 @@ type
     FRedrawOnIdle: boolean;
     FSprites: TBGLCustomSpriteEngine;
     FElapseAccumulator, FElapseCount, FStoredFPS: integer;
+    FSmoothedElapseAccumulator: single;
     FContextPrepared: boolean;
     FOldSprites: TBGLCustomSpriteEngine;
     FShaderList,FOldShaderList: TStringList;
@@ -237,7 +238,7 @@ end;
 procedure TCustomBGLVirtualScreen.DoOnPaint;
 var
   ctx: TBGLContext;
-  knownFPS, smoothedElapsedMs: Integer;
+  knownFPS: Integer;
 begin
   if not FTexturesLoaded then LoadTextures;
 
@@ -279,12 +280,12 @@ begin
 
       if knownFPS > 0 then
       begin
-        smoothedElapsedMs := 1000 div knownFPS;
-        if smoothedElapsedMs = 0 then smoothedElapsedMs := 1;
+        FSmoothedElapseAccumulator += 1000/knownFPS;
       end else
-        smoothedElapsedMs := FrameDiffTimeInMSecs;
+        FSmoothedElapseAccumulator += FrameDiffTimeInMSecs;
 
-      FOnElapse(self, ctx, smoothedElapsedMs);
+      FOnElapse(self, ctx, Trunc(FSmoothedElapseAccumulator));
+      FSmoothedElapseAccumulator -= Trunc(FSmoothedElapseAccumulator);
     end else
       FOnElapse(self, ctx, FrameDiffTimeInMSecs);
   end;
@@ -400,6 +401,7 @@ begin
   FStoredFPS := 0;
   FElapseAccumulator := 0;
   FElapseCount := 0;
+  FSmoothedElapseAccumulator := 0;
 end;
 
 destructor TCustomBGLVirtualScreen.Destroy;
