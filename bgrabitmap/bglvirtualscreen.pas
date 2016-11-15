@@ -26,13 +26,15 @@ type
     FOnUnloadTextures: TBGLLoadTexturesEvent;
     FOnElapse: TBGLElapseEvent;
     FOnFramesPerSecond: TBGLFramesPerSecondEvent;
+    FSmoothedElapse: boolean;
     FTexturesLoaded: boolean;
     FBevelInner, FBevelOuter: TPanelBevel;
     FBevelWidth:  TBevelWidth;
     FBorderWidth: TBorderWidth;
     FRedrawOnIdle: boolean;
     FSprites: TBGLCustomSpriteEngine;
-    FElapseAccumulator, FElapseCount: integer;
+    FElapseAccumulator, FElapseCount, FStoredFPS: integer;
+    FSmoothedElapseAccumulator: single;
     FContextPrepared: boolean;
     FOldSprites: TBGLCustomSpriteEngine;
     FShaderList,FOldShaderList: TStringList;
@@ -42,6 +44,7 @@ type
     procedure SetBevelWidth(const AValue: TBevelWidth);
     procedure SetBorderWidth(const AValue: TBorderWidth);
     procedure SetRedrawOnIdle(AValue: Boolean);
+    procedure SetSmoothedElapse(AValue: boolean);
   protected
     class var FToRedrawOnIdle: array of TCustomBGLVirtualScreen;
     { Protected declarations }
@@ -71,6 +74,7 @@ type
     property BevelInner: TPanelBevel Read FBevelInner Write SetBevelInner default bvNone;
     property BevelOuter: TPanelBevel Read FBevelOuter Write SetBevelOuter default bvNone;
     property BevelWidth: TBevelWidth Read FBevelWidth Write SetBevelWidth default 1;
+    property SmoothedElapse: boolean read FSmoothedElapse write SetSmoothedElapse default False;
   end;
 
   TBGLVirtualScreen = class(TCustomBGLVirtualScreen)
@@ -138,6 +142,7 @@ type
     property OnStartDock;
     property OnStartDrag;
     property OnUnDock;
+    property SmoothedElapse;
   end;
 
 procedure Register;
@@ -224,9 +229,16 @@ begin
   end;
 end;
 
+procedure TCustomBGLVirtualScreen.SetSmoothedElapse(AValue: boolean);
+begin
+  if FSmoothedElapse=AValue then Exit;
+  FSmoothedElapse:=AValue;
+end;
+
 procedure TCustomBGLVirtualScreen.DoOnPaint;
 var
   ctx: TBGLContext;
+  knownFPS: Integer;
 begin
   if not FTexturesLoaded then LoadTextures;
 
@@ -247,14 +259,36 @@ begin
   Inc(FElapseCount);
   if FElapseAccumulator >= 2000 then
   begin
+    FStoredFPS := 1000*FElapseCount div FElapseAccumulator;
     if Assigned(FOnFramesPerSecond) then
-      FOnFramesPerSecond(self, ctx, 1000*FElapseCount div FElapseAccumulator);
+      FOnFramesPerSecond(self, ctx, FStoredFPS);
     FElapseAccumulator := 0;
     FElapseCount := 0;
   end;
 
   If Assigned(FOnElapse) then
-    FOnElapse(self, ctx, FrameDiffTimeInMSecs);
+  begin
+    if SmoothedElapse then
+    begin
+      If FStoredFPS <> 0 then
+        knownFPS:= FStoredFPS
+      else
+      if FElapseAccumulator >= 500 then
+        knownFPS := 1000*FElapseCount div FElapseAccumulator
+      else
+        knownFPS := 0;
+
+      if knownFPS > 0 then
+      begin
+        FSmoothedElapseAccumulator += 1000/knownFPS;
+      end else
+        FSmoothedElapseAccumulator += FrameDiffTimeInMSecs;
+
+      FOnElapse(self, ctx, Trunc(FSmoothedElapseAccumulator));
+      FSmoothedElapseAccumulator -= Trunc(FSmoothedElapseAccumulator);
+    end else
+      FOnElapse(self, ctx, FrameDiffTimeInMSecs);
+  end;
 
   ReleaseBGLContext(ctx);
 end;
@@ -351,7 +385,8 @@ begin
   if length(FToRedrawOnIdle) > 0 then
   begin
     for i := 0 to high(FToRedrawOnIdle) do
-      FToRedrawOnIdle[i].Invalidate;
+      if not (csDesigning in FToRedrawOnIdle[i].ComponentState) then
+        FToRedrawOnIdle[i].Invalidate;
     Done:=false;
   end;
 end;
@@ -363,6 +398,10 @@ begin
   AutoResizeViewport := true;
   FSprites := TBGLDefaultSpriteEngine.Create;
   FShaderList:= TStringList.Create;
+  FStoredFPS := 0;
+  FElapseAccumulator := 0;
+  FElapseCount := 0;
+  FSmoothedElapseAccumulator := 0;
 end;
 
 destructor TCustomBGLVirtualScreen.Destroy;
