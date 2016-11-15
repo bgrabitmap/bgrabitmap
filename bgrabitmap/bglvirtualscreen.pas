@@ -384,7 +384,8 @@ begin
   if length(FToRedrawOnIdle) > 0 then
   begin
     for i := 0 to high(FToRedrawOnIdle) do
-      FToRedrawOnIdle[i].Invalidate;
+      if not (csDesigning in FToRedrawOnIdle[i].ComponentState) then
+        FToRedrawOnIdle[i].Invalidate;
     Done:=false;
   end;
 end;
