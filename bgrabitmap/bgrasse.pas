@@ -20,8 +20,14 @@ const FLAG_ENABLED_SSE = true;
 
 var UseSSE, UseSSE2, UseSSE3 : boolean;
 
-{$ifdef BGRASSE_AVAILABLE}
+{$ifdef CPUI386}
   {$asmmode intel}
+{$ENDIF}
+{$ifdef cpux86_64}
+  {$asmmode intel}
+{$ENDIF}
+
+{$ifdef BGRASSE_AVAILABLE}
   //SSE rotate singles
   const Shift231 = 1 + 8;
         Shift312 = 2 + 16;
