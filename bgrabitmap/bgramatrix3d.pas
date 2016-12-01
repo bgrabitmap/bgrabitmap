@@ -432,6 +432,7 @@ operator*(constref A: TMatrix3D; var M: TPoint3D_128): TPoint3D_128;
 {$IFDEF CPUI386}var oldMt: single; {$ENDIF}
 begin
   {$IFDEF CPUI386}
+  {$IFDEF BGRASSE_AVAILABLE}
   if UseSSE then
   begin
     oldMt := M.t;
@@ -517,6 +518,7 @@ begin
     M.t := oldMt;
     result.t := 0;
   end else
+  {$ENDIF}
   {$ENDIF}
   begin
     result.x := M.x * A[1,1] + M.y * A[1,2] + M.z * A[1,3] + A[1,4];

@@ -211,6 +211,7 @@ begin
   if UsedCapacity = 0 then exit;
   P := PBGRACoordData3D(FPoolData.Data);
   {$IFDEF CPUI386}
+  {$IFDEF BGRASSE_AVAILABLE}
   {$asmmode intel}
   if UseSSE then
   begin
@@ -303,6 +304,7 @@ begin
   end
   else
   {$ENDIF}
+  {$ENDIF}
   begin
     i := UsedCapacity;
     while i > 0 do
@@ -384,6 +386,7 @@ begin
   if UsedCapacity = 0 then exit;
   P := PBGRANormalData3D(FPoolData.Data);
   {$IFDEF CPUI386}
+  {$IFDEF BGRASSE_AVAILABLE}
   {$asmmode intel}
   if UseSSE then
   begin
@@ -412,6 +415,7 @@ begin
     end;
   end
   else
+  {$ENDIF}
   {$ENDIF}
   begin
     i := UsedCapacity;
