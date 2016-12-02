@@ -349,6 +349,7 @@ begin
     raise exception.Create('Directory dimension mismatch');
   setlength(FDirectory, NbIcons);
   ADataStream.ReadBuffer(FDirectory[0], NbIcons*sizeof(TGroupIconDirEntry));
+  ADataStream.Free;
 end;
 
 constructor TGroupIconOrCursorEntry.Create(AContainer: TMultiFileContainer;
@@ -423,13 +424,16 @@ begin
       FillZero(iconEntrySize) else
     begin
       iconData := TMemoryStream.Create;
-      iconEntry.CopyTo(IconData);
-      iconData.Position:= 0;
-      copyCount := Min(IconData.Size, iconEntrySize);
-      if copyCount > 0 then written := ADestination.CopyFrom(IconData, copyCount)
-      else written := 0;
-      FillZero(iconEntrySize-written);
-      IconData.Free;
+      try
+        iconEntry.CopyTo(IconData);
+        iconData.Position:= 0;
+        copyCount := Min(IconData.Size, iconEntrySize);
+        if copyCount > 0 then written := ADestination.CopyFrom(IconData, copyCount)
+        else written := 0;
+        FillZero(iconEntrySize-written);
+      finally
+        IconData.Free;
+      end;
     end;
     result += iconEntrySize;
   end;
@@ -835,21 +839,24 @@ var
 begin
   entryHeader.EntrySize := LEtoN(GetDataSize);
   headerStream := TMemoryStream.Create;
-  WriteNameOrId(headerStream,FTypeNameOrId);
-  WriteNameOrId(headerStream,FEntryNameOrId);
-  if headerStream.Position and 3 = 2 then headerStream.WriteWord(0);
-  FResourceInfo.SwapIfNecessary;
   try
-    headerStream.WriteBuffer(FResourceInfo, sizeof(FResourceInfo));
-  finally
+    WriteNameOrId(headerStream,FTypeNameOrId);
+    WriteNameOrId(headerStream,FEntryNameOrId);
+    if headerStream.Position and 3 = 2 then headerStream.WriteWord(0);
     FResourceInfo.SwapIfNecessary;
+    try
+      headerStream.WriteBuffer(FResourceInfo, sizeof(FResourceInfo));
+    finally
+      FResourceInfo.SwapIfNecessary;
+    end;
+    entryHeader.HeaderSize := LEtoN(integer(headerStream.Size+8));
+    headerStream.Position:= 0;
+    ADestination.WriteBuffer(entryHeader, sizeof(entryHeader));
+    ADestination.CopyFrom(headerStream, headerStream.Size);
+    if headerStream.Size and 3 = 2 then ADestination.WriteWord(0);
+  finally
+    headerStream.Free;
   end;
-  entryHeader.HeaderSize := LEtoN(integer(headerStream.Size+8));
-  headerStream.Position:= 0;
-  ADestination.WriteBuffer(entryHeader, sizeof(entryHeader));
-  ADestination.CopyFrom(headerStream, headerStream.Size);
-  if headerStream.Size and 3 = 2 then ADestination.WriteWord(0);
-  headerStream.Free;
 end;
 
 constructor TCustomResourceEntry.Create(AContainer: TMultiFileContainer;
