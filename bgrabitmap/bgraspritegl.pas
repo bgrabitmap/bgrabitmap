@@ -53,6 +53,7 @@ type
     constructor Create(ATexture: IBGLTexture; ALayer: integer);
     destructor Destroy; override;
     procedure OnDraw; virtual;
+    procedure OnElapse(AElapsedMs: integer); virtual;
     procedure OnTimer; virtual;
     procedure QueryDestroy; virtual; abstract;
     property Layer   : Integer read GetLayer write SetLayer;
@@ -124,6 +125,7 @@ type
     procedure Remove(ASprite: TBGLCustomSprite); virtual; abstract;
     procedure OnDraw; virtual; abstract;
     procedure OnTimer; virtual; abstract;
+    procedure OnElapse(AElapsedMs: integer); virtual; abstract;
     procedure Clear; virtual; abstract;
     procedure Delete(AIndex: integer); virtual; abstract;
     property Count: Integer read GetCount;
@@ -145,6 +147,7 @@ type
     procedure Remove(ASprite: TBGLCustomSprite); override;
     procedure OnDraw; override;
     procedure OnTimer; override;
+    procedure OnElapse(AElapsedMs: integer); override;
     procedure Clear; override;
     procedure Delete(AIndex: integer); override;
   end;
@@ -214,6 +217,29 @@ var i,j,k: integer;
 begin
   for i := 0 to Count-1 do
     FSprites[i].OnTimer;
+  for i := Count-1 downto 0 do
+    if FSprites[i].FQueryDestroy then
+      Delete(i);
+  for i := 1 to Count-1 do
+  begin
+    j := i;
+    while (j > 0) and (FSprites[j-1].Layer > FSprites[i].Layer) do dec(j);
+    if j <> i then
+      begin
+        temp := FSprites[i];
+        for k := i downto j+1 do
+          FSprites[k] := FSprites[k-1];
+        FSprites[j] := temp;
+      end;
+  end;
+end;
+
+procedure TBGLDefaultSpriteEngine.OnElapse(AElapsedMs: integer);
+var i,j,k: integer;
+    temp: TBGLDefaultSprite;
+begin
+  for i := 0 to Count-1 do
+    FSprites[i].OnElapse(AElapsedMs);
   for i := Count-1 downto 0 do
     if FSprites[i].FQueryDestroy then
       Delete(i);
@@ -519,9 +545,14 @@ begin
     end;
 end;
 
+procedure TBGLCustomSprite.OnElapse(AElapsedMs: integer);
+begin
+  //override if you want to handle time as continuous flow. It is recommended to use floating point positions in this case.
+end;
+
 procedure TBGLCustomSprite.OnTimer;
 begin
-  //nothing by default
+  //override if you want to handle time as discrete frames with fixed time interval
 end;
 
 end.
