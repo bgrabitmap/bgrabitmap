@@ -3,9 +3,13 @@ unit BGRAMatrix3D;
 {$mode objfpc}{$H+}
 
 {$i bgrasse.inc}
-{$ifdef BGRASSE_AVAILABLE}
+
+{$ifdef CPUI386}
   {$asmmode intel}
-{$endif}
+{$ENDIF}
+{$ifdef cpux86_64}
+  {$asmmode intel}
+{$ENDIF}
 
 interface
 
@@ -429,9 +433,8 @@ end;
 {$ENDIF}
 
 operator*(constref A: TMatrix3D; var M: TPoint3D_128): TPoint3D_128;
-{$IFDEF CPUI386}var oldMt: single; {$ENDIF}
+{$IFDEF BGRASSE_AVAILABLE}var oldMt: single; {$ENDIF}
 begin
-  {$IFDEF CPUI386}
   {$IFDEF BGRASSE_AVAILABLE}
   if UseSSE then
   begin
@@ -519,7 +522,6 @@ begin
     result.t := 0;
   end else
   {$ENDIF}
-  {$ENDIF}
   begin
     result.x := M.x * A[1,1] + M.y * A[1,2] + M.z * A[1,3] + A[1,4];
     result.y := M.x * A[2,1] + M.y * A[2,2] + M.z * A[2,3] + A[2,4];
@@ -530,7 +532,7 @@ end;
 
 function MultiplyVect3DWithoutTranslation(constref A: TMatrix3D; constref M: TPoint3D_128): TPoint3D_128;
 begin
-  {$IFDEF CPUI386}
+  {$IFDEF BGRASSE_AVAILABLE}
   if UseSSE then
   begin
     if UseSSE3 then
