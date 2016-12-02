@@ -23,7 +23,7 @@ uses
   BGRAGifFormat, BGRAGraphics, BGRASceneTypes, BGRARenderer3D, 
   BGRAWriteBmpMioMap, BGRAOpenGLType, BGRASpriteGL, BGRAOpenGL, BGRACanvasGL, 
   BGRAFontGL, BGRAOpenGL3D, BGRAPhoxo, BGRAFilterScanner, BGRAFilterType, 
-  BGRAFilterBlur;
+  BGRAFilterBlur, BGRAMultiFileType, BGRAWinResource, BGRALazResource;
 
 implementation
 
