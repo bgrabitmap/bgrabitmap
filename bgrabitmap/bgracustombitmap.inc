@@ -174,6 +174,9 @@ type
      {** Offset to apply when the image is scanned using ''IBGRAScanner'' interface }
      ScanOffset: TPoint;
 
+     {** Cursor hotspot }
+     HotSpot: TPoint;
+
      {** Width of the image in pixels }
      property Width: integer Read GetWidth;
      {** Height of the image in pixels }

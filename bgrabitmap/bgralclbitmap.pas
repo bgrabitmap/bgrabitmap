@@ -680,6 +680,11 @@ begin
     AssignRasterImage(TRasterImage(Source));
   end else
     inherited Assign(Source);
+
+  if Source is TCursorImage then
+    HotSpot := TCursorImage(Source).HotSpot
+  else if Source is TIcon then
+    HotSpot := Point(0,0);
 end;
 
 procedure TBGRALCLBitmap.AssignRasterImage(ARaster: TRasterImage);

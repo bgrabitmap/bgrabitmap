@@ -292,7 +292,7 @@ type
     function NewBitmap(AFPImage: TFPCustomImage): TBGRACustomBitmap; override;
 
     {** Load image from a stream. The specified image reader is used }
-    procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); override;
+    procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); override; overload;
 
     {** Assign the content of the specified ''Source''. It can be a ''TBGRACustomBitmap'' or
         a ''TFPCustomImage'' }
@@ -1498,6 +1498,7 @@ begin
     DiscardBitmapChange;
     SetSize(TBGRACustomBitmap(Source).Width, TBGRACustomBitmap(Source).Height);
     PutImage(0, 0, TBGRACustomBitmap(Source), dmSet);
+    HotSpot := TBGRACustomBitmap(Source).HotSpot;
   end else
   if Source is TFPCustomImage then
   begin

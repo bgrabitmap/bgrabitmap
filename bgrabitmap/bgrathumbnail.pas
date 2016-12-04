@@ -21,9 +21,8 @@ function GetPsdThumbnail(AStream: TStream; AWidth,AHeight: integer; ABackColor: 
 function GetPngThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
 function GetPaintDotNetThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
 function GetBmpThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
-{$IFDEF BGRABITMAP_USE_LCL}
-function GetIcoThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
-{$ENDIF}
+{$IFDEF BGRABITMAP_USE_LCL}function GetIcoThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;{$ENDIF}
+{$IFDEF BGRABITMAP_USE_LCL}function GetCurThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;{$ENDIF}
 
 function GetPcxThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
 function GetTargaThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
@@ -104,9 +103,8 @@ begin
     ifPng: result := GetPngThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifGif: result := GetGifThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifBmp: result := GetBmpThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    {$IFDEF BGRABITMAP_USE_LCL}
-    ifIco: result := GetIcoThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    {$ENDIF}
+    {$IFDEF BGRABITMAP_USE_LCL}ifIco: result := GetIcoThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);{$ENDIF}
+    {$IFDEF BGRABITMAP_USE_LCL}ifCur: result := GetCurThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);{$ENDIF}
     ifPcx: result := GetPcxThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifPaintDotNet: result := GetPaintDotNetThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifLazPaint: result := GetLazPaintThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
@@ -349,52 +347,47 @@ begin
   bmpFormat.Free;
 end;
 
-{$IFDEF BGRABITMAP_USE_LCL}
-function GetIcoThumbnail(AStream: TStream; AWidth, AHeight: integer;
+{$IFDEF BGRABITMAP_USE_LCL}function GetIcoThumbnail(AStream: TStream; AWidth, AHeight: integer;
   ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap): TBGRABitmap;
-var ico: TIcon; i,bestIdx: integer;
-    height,width: word; format:TPixelFormat;
-    bestHeight,bestWidth: integer; maxFormat: TPixelFormat;
-    icoBmp: TBGRABitmap;
+var
+  reader: TBGRAReaderIco;
+  icoBmp: TBGRABitmap;
 begin
   result := nil;
-  ico := TIcon.Create;
+  reader := TBGRAReaderIco.Create;
+  reader.WantedWidth:= AWidth;
+  reader.WantedHeight:= AHeight;
+  icoBmp := TBGRABitmap.Create;
   try
-    ico.LoadFromStream(AStream);
-  except
-    ico.free;
-    exit;
-  end;
-  bestIdx := -1;
-  bestHeight := 0;
-  bestWidth := 0;
-  maxFormat := pfDevice;
-  try
-    for i := 0 to ico.Count-1 do
-    begin
-      ico.GetDescription(i,format,height,width);
-      if (bestIdx = -1) or (abs(height-AHeight)+abs(width-AWidth) < abs(bestHeight-AHeight)+abs(bestWidth-AWidth)) or
-      ((height = bestHeight) or (width = bestWidth) and (format > maxFormat)) then
-      begin
-        bestIdx := i;
-        bestHeight := height;
-        bestWidth := width;
-        maxFormat := format;
-      end;
-    end;
-    if (bestIdx = -1) or (bestWidth = 0) or (bestHeight = 0) then result := nil else
-    begin
-      ico.Current := bestIdx;
-      icoBmp := TBGRABitmap.Create(bestWidth,bestHeight);
-      icoBmp.Assign(ico);
-      result := GetBitmapThumbnail(icoBmp, AWidth, AHeight, ABackColor, ACheckers, ADest);
-      icoBmp.Free;
-    end;
+    icoBmp.LoadFromStream(AStream, reader);
+    result := GetBitmapThumbnail(icoBmp, AWidth, AHeight, ABackColor, ACheckers, ADest);
   except
   end;
-  ico.Free;
-end;
-{$ENDIF}
+  icoBmp.Free;
+  reader.Free;
+end;{$ENDIF}
+
+{$IFDEF BGRABITMAP_USE_LCL}function GetCurThumbnail(AStream: TStream; AWidth, AHeight: integer;
+  ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap): TBGRABitmap;
+var
+  reader: TBGRAReaderCur;
+  icoBmp: TBGRABitmap;
+begin
+  result := nil;
+  reader := TBGRAReaderCur.Create;
+  reader.WantedWidth:= AWidth;
+  reader.WantedHeight:= AHeight;
+  icoBmp := TBGRABitmap.Create;
+  try
+    icoBmp.LoadFromStream(AStream, reader);
+    icoBmp.HorizLine(0,icoBmp.HotSpot.Y,icoBmp.Width-1, BGRA(255,0,0,64),dmDrawWithTransparency);
+    icoBmp.VertLine(icoBmp.HotSpot.X,0,icoBmp.Height-1, BGRA(255,0,0,64),dmDrawWithTransparency);
+    result := GetBitmapThumbnail(icoBmp, AWidth, AHeight, ABackColor, ACheckers, ADest);
+  except
+  end;
+  icoBmp.Free;
+  reader.Free;
+end;{$ENDIF}
 
 function GetPcxThumbnail(AStream: TStream; AWidth, AHeight: integer;
   ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap): TBGRABitmap;
