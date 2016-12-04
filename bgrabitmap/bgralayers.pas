@@ -412,7 +412,6 @@ end;
 
 procedure TBGRALayeredBitmap.LoadFromFile(const filenameUTF8: string);
 var bmp: TBGRABitmap;
-    index: integer;
     ext: string;
     temp: TBGRACustomLayeredBitmap;
     i: integer;
@@ -434,13 +433,11 @@ begin
   bmp := TBGRABitmap.Create(filenameUTF8, True);
   Clear;
   SetSize(bmp.Width,bmp.Height);
-  index := AddSharedLayer(bmp);
-  FLayers[index].Owner:= true;
+  AddOwnedLayer(bmp);
 end;
 
 procedure TBGRALayeredBitmap.LoadFromStream(stream: TStream);
 var bmp: TBGRABitmap;
-   index: integer;
    temp: TBGRALayeredBitmap;
 begin
   if Assigned(LayeredBitmapLoadFromStreamProc) then
@@ -453,11 +450,11 @@ begin
       exit;
     end;
   end;
+
   bmp := TBGRABitmap.Create(stream);
   Clear;
   SetSize(bmp.Width,bmp.Height);
-  index := AddSharedLayer(bmp);
-  FLayers[index].Owner:= true;
+  AddOwnedLayer(bmp);
 end;
 
 procedure TBGRALayeredBitmap.SetSize(AWidth, AHeight: integer);

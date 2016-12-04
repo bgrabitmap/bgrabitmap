@@ -174,9 +174,6 @@ type
      {** Offset to apply when the image is scanned using ''IBGRAScanner'' interface }
      ScanOffset: TPoint;
 
-     {** Cursor hotspot }
-     HotSpot: TPoint;
-
      {** Width of the image in pixels }
      property Width: integer Read GetWidth;
      {** Height of the image in pixels }
@@ -731,7 +728,7 @@ type
      procedure BlendImage(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation); virtual; abstract;
      procedure BlendImageOver(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte = 255;
          ALinearBlend: boolean = false); virtual; abstract;
-     function Duplicate(DuplicateProperties: Boolean = False): TBGRACustomBitmap; virtual; abstract;
+     function Duplicate(DuplicateProperties: Boolean = False; DuplicateXorMask: Boolean = False): TBGRACustomBitmap; virtual; abstract;
      function Equals(comp: TBGRACustomBitmap): boolean; virtual; abstract;
      function Equals(comp: TBGRAPixel): boolean; virtual; abstract;
      function Resample(newWidth, newHeight: integer;

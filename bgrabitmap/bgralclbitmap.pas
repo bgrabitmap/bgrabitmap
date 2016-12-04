@@ -20,6 +20,7 @@ type
     function CreatePtrBitmap(AWidth, AHeight: integer; AData: PBGRAPixel
       ): TBGRAPtrBitmap; override;
     procedure AssignRasterImage(ARaster: TRasterImage); virtual;
+    procedure ExtractXorMask;
   public
     procedure Assign(Source: TPersistent); override;
     procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
@@ -64,8 +65,7 @@ begin
   currentBit := 1;
   while count > 0 do
   begin
-    if (psrc^ and currentBit <> 0) and (DWord(pdest^) <> DWord(BGRAWhite)) then
-      pdest^.alpha := 0;
+    if psrc^ and currentBit <> 0 then pdest^.alpha := 0;
     inc(pdest);
     if currentBit = 128 then
     begin
@@ -83,8 +83,7 @@ begin
   currentBit := 128;
   while count > 0 do
   begin
-    if (psrc^ and currentBit <> 0) and (DWord(pdest^) <> DWord(BGRAWhite)) then
-      pdest^.alpha := 0;
+    if psrc^ and currentBit <> 0 then pdest^.alpha := 0;
     inc(pdest);
     if currentBit = 1 then
     begin
@@ -795,9 +794,15 @@ begin
     inherited Assign(Source);
 
   if Source is TCursorImage then
-    HotSpot := TCursorImage(Source).HotSpot
+  begin
+    HotSpot := TCursorImage(Source).HotSpot;
+    ExtractXorMask;
+  end
   else if Source is TIcon then
+  begin
     HotSpot := Point(0,0);
+    ExtractXorMask;
+  end;
 end;
 
 procedure TBGRALCLBitmap.AssignRasterImage(ARaster: TRasterImage);
@@ -828,6 +833,27 @@ begin
     end;
   end else
     raise Exception.Create('Unable to convert image to 24 bit');
+end;
+
+procedure TBGRALCLBitmap.ExtractXorMask;
+var
+  y, x: Integer;
+  p: PBGRAPixel;
+begin
+  DiscardXorMask;
+  for y := 0 to Height-1 do
+  begin
+    p := ScanLine[y];
+    for x := 0 to Width-1 do
+    begin
+      if (p^.alpha = 0) and (PDWord(p)^<>0) then
+      begin
+        if XorMask = nil then XorMask := NewBitmap(Width,Height) as TBGRADefaultBitmap;
+        XorMask.SetPixel(x,y, p^);
+      end;
+      inc(p);
+    end;
+  end;
 end;
 
 procedure TBGRALCLBitmap.DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
