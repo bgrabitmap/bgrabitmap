@@ -64,7 +64,7 @@ begin
   currentBit := 1;
   while count > 0 do
   begin
-    if psrc^ and currentBit <> 0 then
+    if (psrc^ and currentBit <> 0) and (DWord(pdest^) <> DWord(BGRAWhite)) then
       pdest^.alpha := 0;
     inc(pdest);
     if currentBit = 128 then
@@ -83,7 +83,7 @@ begin
   currentBit := 128;
   while count > 0 do
   begin
-    if psrc^ and currentBit <> 0 then
+    if (psrc^ and currentBit <> 0) and (DWord(pdest^) <> DWord(BGRAWhite)) then
       pdest^.alpha := 0;
     inc(pdest);
     if currentBit = 1 then
@@ -336,14 +336,68 @@ begin
   end;
 end;
 
-{ Load raw image data. It must be 32bit or 24 bits per pixel}
-function LoadFromRawImageImplementation(ADestination: TBGRADefaultBitmap; ARawImage: TRawImage;
-  DefaultOpacity: byte; AlwaysReplaceAlpha: boolean; RaiseErrorOnInvalidPixelFormat: boolean): boolean;
+procedure DoCopyProc(ADestination: TBGRACustomBitmap; ACopyProc: TCopyPixelProc; AData: PByte; ABytesPerLine, ABitsPerPixel: integer; ALineOrder: TRawImageLineOrder; ADefaultOpacity: byte);
 var
+  n: integer;
   psource_byte, pdest_byte,
   psource_first, pdest_first: PByte;
   psource_delta, pdest_delta: integer;
+begin
+  if (ALineOrder = ADestination.LineOrder) and
+    (ABytesPerLine = (ABitsPerPixel shr 3) * cardinal(ADestination.Width)) then
+    ACopyProc(AData, ADestination.Data, ADestination.NbPixels, ABitsPerPixel shr 3, ADefaultOpacity)
+  else
+  begin
+    if ALineOrder = riloTopToBottom then
+    begin
+      psource_first := AData;
+      psource_delta := ABytesPerLine;
+    end else
+    begin
+      psource_first := AData + (ADestination.Height-1) * ABytesPerLine;
+      psource_delta := -ABytesPerLine;
+    end;
 
+    if ADestination.LineOrder = riloTopToBottom then
+    begin
+      pdest_first := PByte(ADestination.Data);
+      pdest_delta := ADestination.Width*sizeof(TBGRAPixel);
+    end else
+    begin
+      pdest_first := PByte(ADestination.Data) + (ADestination.Height-1)*ADestination.Width*sizeof(TBGRAPixel);
+      pdest_delta := -ADestination.Width*sizeof(TBGRAPixel);
+    end;
+
+    psource_byte := psource_first;
+    pdest_byte := pdest_first;
+    for n := ADestination.Height-1 downto 0 do
+    begin
+      ACopyProc(psource_byte, PBGRAPixel(pdest_byte), ADestination.Width, ABitsPerPixel shr 3, ADefaultOpacity);
+      inc(psource_byte, psource_delta);
+      inc(pdest_byte, pdest_delta);
+    end;
+  end;
+end;
+
+procedure ApplyRawImageMask(ADestination: TBGRACustomBitmap; const ARawImage: TRawImage);
+var
+  copyProc: TCopyPixelProc;
+begin
+  if ARawImage.Description.MaskBitsPerPixel = 1 then
+  begin
+    if ARawImage.Description.BitOrder = riboBitsInOrder then
+      copyProc := @ApplyMask1bit
+    else
+      copyProc := @ApplyMask1bitRev;
+    DoCopyProc(ADestination, copyProc, ARawImage.Mask, ARawImage.Description.MaskBytesPerLine, ARawImage.Description.MaskBitsPerPixel, ARawImage.Description.LineOrder, 0);
+    ADestination.InvalidateBitmap;
+  end;
+end;
+
+{ Load raw image data. It must be 32bit, 24 bits or 1bit per pixel}
+function LoadFromRawImageImplementation(ADestination: TBGRADefaultBitmap; const ARawImage: TRawImage;
+  DefaultOpacity: byte; AlwaysReplaceAlpha: boolean; RaiseErrorOnInvalidPixelFormat: boolean): boolean;
+var
   mustSwapRedBlue: boolean;
   copyProc: TCopyPixelProc;
   nbColorChannels: integer;
@@ -354,45 +408,6 @@ var
       raise Exception.Create('Invalid raw image format. ' + message)
     else
       result := false;
-  end;
-
-  procedure DoCopyProc(AData: PByte; ABytesPerLine, ABitsPerPixel: integer);
-  var n: integer;
-  begin
-    if (ARawImage.Description.LineOrder = ADestination.LineOrder) and
-      (ABytesPerLine = (ABitsPerPixel shr 3) * cardinal(ADestination.Width)) then
-      copyProc(AData, ADestination.Data, ADestination.NbPixels, ABitsPerPixel shr 3, DefaultOpacity)
-    else
-    begin
-      if ARawImage.Description.LineOrder = riloTopToBottom then
-      begin
-        psource_first := AData;
-        psource_delta := ABytesPerLine;
-      end else
-      begin
-        psource_first := AData + (ARawImage.Description.Height-1) * ABytesPerLine;
-        psource_delta := -ABytesPerLine;
-      end;
-
-      if ADestination.LineOrder = riloTopToBottom then
-      begin
-        pdest_first := PByte(ADestination.Data);
-        pdest_delta := ADestination.Width*sizeof(TBGRAPixel);
-      end else
-      begin
-        pdest_first := PByte(ADestination.Data) + (ADestination.Height-1)*ADestination.Width*sizeof(TBGRAPixel);
-        pdest_delta := -ADestination.Width*sizeof(TBGRAPixel);
-      end;
-
-      psource_byte := psource_first;
-      pdest_byte := pdest_first;
-      for n := ADestination.Height-1 downto 0 do
-      begin
-        copyProc(psource_byte, PBGRAPixel(pdest_byte), ADestination.Width, ABitsPerPixel shr 3, DefaultOpacity);
-        inc(psource_byte, psource_delta);
-        inc(pdest_byte, pdest_delta);
-      end;
-    end;
   end;
 
 begin
@@ -539,17 +554,10 @@ begin
     end;
   end;
 
-  DoCopyProc(ARawImage.Data, ARawImage.Description.BytesPerLine, ARawImage.Description.BitsPerPixel);
-
-  if (ARawImage.Description.AlphaPrec = 0) and (ARawImage.Description.MaskBitsPerPixel = 1) then
-  begin
-    if ARawImage.Description.BitOrder = riboBitsInOrder then
-      copyProc := @ApplyMask1bit
-    else
-      copyProc := @ApplyMask1bitRev;
-    DoCopyProc(ARawImage.Mask, ARawImage.Description.MaskBytesPerLine, ARawImage.Description.MaskBitsPerPixel);
-  end;
+  DoCopyProc(ADestination, copyProc, ARawImage.Data, ARawImage.Description.BytesPerLine, ARawImage.Description.BitsPerPixel, ARawImage.Description.LineOrder, DefaultOpacity);
   ADestination.InvalidateBitmap;
+
+  ApplyRawImageMask(ADestination, ARawImage);
   result := true;
 end;
 
@@ -797,22 +805,29 @@ var TempBmp: TBitmap;
 begin
   DiscardBitmapChange;
   SetSize(ARaster.Width, ARaster.Height);
-  if not LoadFromRawImage(ARaster.RawImage,0,False,False) then
-  if ARaster is TBitmap then
+  if LoadFromRawImage(ARaster.RawImage,0,False,False) then
+  begin
+    If Empty then
+    begin
+      AlphaFill(255); // if bitmap seems to be empty, assume
+                      // it is an opaque bitmap without alpha channel
+      ApplyRawImageMask(self, ARaster.RawImage);
+    end;
+  end else
+  if (ARaster is TBitmap) or (ARaster is TCustomIcon) then
   begin //try to convert
     TempBmp := TBitmap.Create;
     TempBmp.Width := ARaster.Width;
     TempBmp.Height := ARaster.Height;
     TempBmp.Canvas.Draw(0,0,ARaster);
     try
-      LoadFromRawImage(TempBmp.RawImage,0,False,true);
+      LoadFromRawImage(TempBmp.RawImage,255,False,true);
+      ApplyRawImageMask(self, ARaster.RawImage);
     finally
       TempBmp.Free;
     end;
   end else
     raise Exception.Create('Unable to convert image to 24 bit');
-  If Empty then AlphaFill(255); // if bitmap seems to be empty, assume
-                                // it is an opaque bitmap without alpha channel
 end;
 
 procedure TBGRALCLBitmap.DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
