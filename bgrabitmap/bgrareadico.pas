@@ -88,7 +88,7 @@ begin
     begin
       ico.GetDescription(i,format,height,width);
       if (bestIdx = -1) or (abs(height-compHeight)+abs(width-compWidth) < abs(bestHeight-compHeight)+abs(bestWidth-compWidth)) or
-      ((height = bestHeight) or (width = bestWidth) and (format > maxFormat)) then
+      ((height = bestHeight) and (width = bestWidth) and (format > maxFormat)) then
       begin
         bestIdx := i;
         bestHeight := height;
