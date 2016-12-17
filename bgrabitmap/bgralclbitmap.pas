@@ -382,7 +382,7 @@ procedure ApplyRawImageMask(ADestination: TBGRACustomBitmap; const ARawImage: TR
 var
   copyProc: TCopyPixelProc;
 begin
-  if ARawImage.Description.MaskBitsPerPixel = 1 then
+  if (ARawImage.Description.MaskBitsPerPixel = 1) and (ARawImage.Mask <> nil) then
   begin
     if ARawImage.Description.BitOrder = riboBitsInOrder then
       copyProc := @ApplyMask1bit
