@@ -1039,14 +1039,17 @@ begin
   'ico': begin
            result := TGroupIconEntry.Create(self, entryName, resourceInfo);
            TGroupIconEntry(result).CopyFrom(AContent);
+           AContent.Free;
          end;
   'cur': begin
            result := TGroupCursorEntry.Create(self, entryName, resourceInfo);
            TGroupCursorEntry(result).CopyFrom(AContent);
+           AContent.Free;
          end;
   'bmp': begin
            result := TBitmapResourceEntry.Create(self, entryName, resourceInfo, AContent);
            TBitmapResourceEntry(result).CopyFrom(AContent);
+           AContent.Free;
          end;
   'dat': result := TUnformattedResourceEntry.Create(self, NameOrId(RT_RCDATA), entryName, resourceInfo, AContent);
   'html','htm': result := TUnformattedResourceEntry.Create(self, NameOrId(RT_HTML), entryName, resourceInfo, AContent);
