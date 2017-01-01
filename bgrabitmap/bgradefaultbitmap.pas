@@ -206,6 +206,10 @@ type
       AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil); override;
 
   public
+    {** Cursor hotspot and Xor mask }
+    HotSpot: TPoint;
+    XorMask: TBGRADefaultBitmap;
+
     {** Provides a canvas with opacity and antialiasing }
     property CanvasBGRA: TBGRACanvas read GetCanvasBGRA;
     {** Provides a canvas with 2d transformation and similar to HTML5. }
@@ -225,6 +229,7 @@ type
     {** Returns an object with a reference count equal to 1. Duplicate
         this bitmap if necessary }
     function GetUnique: TBGRACustomBitmap;
+    procedure DiscardXorMask;
 
     {==== Constructors ====}
 
@@ -292,7 +297,7 @@ type
     function NewBitmap(AFPImage: TFPCustomImage): TBGRACustomBitmap; override;
 
     {** Load image from a stream. The specified image reader is used }
-    procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); override;
+    procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); override; overload;
 
     {** Assign the content of the specified ''Source''. It can be a ''TBGRACustomBitmap'' or
         a ''TFPCustomImage'' }
@@ -795,7 +800,7 @@ type
 
     function GetPart(ARect: TRect): TBGRACustomBitmap; override;
     function GetPtrBitmap(Top,Bottom: Integer): TBGRACustomBitmap; override;
-    function Duplicate(DuplicateProperties: Boolean = False) : TBGRACustomBitmap; override;
+    function Duplicate(DuplicateProperties: Boolean = False; DuplicateXorMask: Boolean = False) : TBGRACustomBitmap; override;
     procedure CopyPropertiesTo(ABitmap: TBGRADefaultBitmap);
     function Equals(comp: TBGRACustomBitmap): boolean; override;
     function Equals(comp: TBGRAPixel): boolean; override;
@@ -879,7 +884,7 @@ type
       =True): boolean; override; //to override
   public
     constructor Create(AWidth, AHeight: integer; AData: Pointer); overload;
-    function Duplicate(DuplicateProperties: Boolean = False): TBGRACustomBitmap; override;
+    function Duplicate(DuplicateProperties: Boolean = False; DuplicateXorMask: Boolean = False): TBGRACustomBitmap; override;
     procedure SetDataPtr(AData: Pointer);
     property LineOrder: TRawImageLineOrder Read GetLineOrder Write SetLineOrder;
 
@@ -1238,6 +1243,15 @@ begin
     Result := self;
 end;
 
+procedure TBGRADefaultBitmap.DiscardXorMask;
+begin
+  if Assigned(XorMask) then
+  begin
+    XorMask.FreeReference;
+    XorMask := nil;
+  end;
+end;
+
 { Creates a new bitmap with dimensions AWidth and AHeight and filled with
   transparent pixels. Internally, it uses the same type so that if you
   use an optimized version, you get a new bitmap with the same optimizations }
@@ -1308,6 +1322,7 @@ procedure TBGRADefaultBitmap.LoadFromStream(Str: TStream;
 var OldBmpOption: TBMPTransparencyOption;
   OldJpegPerf: TJPEGReadPerformance;
 begin
+  DiscardXorMask;
   if (loBmpAutoOpaque in AOptions) and (Handler is TBGRAReaderBMP) then
   begin
     OldBmpOption := TBGRAReaderBMP(Handler).TransparencyOption;
@@ -1356,6 +1371,7 @@ begin
   FreeBitmap;
   ReallocData;
   NoClip;
+  DiscardXorMask;
 end;
 
 {---------------------- Constructors ---------------------------------}
@@ -1411,6 +1427,7 @@ end;
 { Free the object and all its resources }
 destructor TBGRADefaultBitmap.Destroy;
 begin
+  DiscardXorMask;
   FPenStroker.Free;
   FFontRenderer.Free;
   FCanvasFP.Free;
@@ -1498,6 +1515,15 @@ begin
     DiscardBitmapChange;
     SetSize(TBGRACustomBitmap(Source).Width, TBGRACustomBitmap(Source).Height);
     PutImage(0, 0, TBGRACustomBitmap(Source), dmSet);
+    if Source is TBGRADefaultBitmap then
+    begin
+      HotSpot := TBGRADefaultBitmap(Source).HotSpot;
+      if XorMask <> TBGRADefaultBitmap(Source).XorMask then
+      begin
+        DiscardXorMask;
+        XorMask := TBGRADefaultBitmap(Source).NewReference as TBGRADefaultBitmap;
+      end;
+    end;
   end else
   if Source is TFPCustomImage then
   begin
@@ -4652,6 +4678,8 @@ begin
         Inc(pdest, delta_dest);
       end;
       InvalidateBitmap;
+      if (Source is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(Source).XorMask) then
+        PutImage(x,y,TBGRADefaultBitmap(Source).XorMask,dmXor,AOpacity);
     end;
     dmDrawWithTransparency:
     begin
@@ -4679,6 +4707,8 @@ begin
         Inc(pdest, delta_dest);
       end;
       InvalidateBitmap;
+      if (Source is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(Source).XorMask) then
+        PutImage(x,y,TBGRADefaultBitmap(Source).XorMask,dmXor,AOpacity);
     end;
     dmFastBlend:
     begin
@@ -4705,6 +4735,8 @@ begin
         Inc(pdest, delta_dest);
       end;
       InvalidateBitmap;
+      if (Source is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(Source).XorMask) then
+        PutImage(x,y,TBGRADefaultBitmap(Source).XorMask,dmXor,AOpacity);
     end;
     dmXor:
     begin
@@ -4874,16 +4906,24 @@ end;
 
 procedure TBGRADefaultBitmap.StretchPutImage(ARect: TRect;
   Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte);
+var noTransition: boolean;
 begin
   If (Source = nil) or (AOpacity = 0) then exit;
   if (ARect.Right-ARect.Left = Source.Width) and (ARect.Bottom-ARect.Top = Source.Height) then
      PutImage(ARect.Left,ARect.Top,Source,mode,AOpacity)
   else
-     BGRAResample.StretchPutImage(Source, ARect.Right-ARect.Left, ARect.Bottom-ARect.Top, self, ARect.left,ARect.Top, mode, AOpacity);
+  begin
+     noTransition:= (mode = dmXor) or ((mode in [dmDrawWithTransparency,dmFastBlend,dmSetExceptTransparent]) and
+                                       (Source is TBGRADefaultBitmap) and
+                                       Assigned(TBGRADefaultBitmap(Source).XorMask));
+     BGRAResample.StretchPutImage(Source, ARect.Right-ARect.Left, ARect.Bottom-ARect.Top, self, ARect.left,ARect.Top, mode, AOpacity, noTransition);
+    if (mode in [dmDrawWithTransparency,dmFastBlend,dmSetExceptTransparent]) and Assigned(TBGRADefaultBitmap(Source).XorMask) then
+      BGRAResample.StretchPutImage(TBGRADefaultBitmap(Source).XorMask, ARect.Right-ARect.Left, ARect.Bottom-ARect.Top, self, ARect.left,ARect.Top, dmXor, AOpacity, noTransition);
+  end;
 end;
 
 { Duplicate bitmap content. Optionally, bitmap properties can be also duplicated }
-function TBGRADefaultBitmap.Duplicate(DuplicateProperties: Boolean = False): TBGRACustomBitmap;
+function TBGRADefaultBitmap.Duplicate(DuplicateProperties: Boolean = False; DuplicateXorMask: Boolean = False): TBGRACustomBitmap;
 var Temp: TBGRADefaultBitmap;
 begin
   LoadFromBitmapIfNeeded;
@@ -4892,6 +4932,8 @@ begin
   Temp.Caption := self.Caption;
   if DuplicateProperties then
     CopyPropertiesTo(Temp);
+  if DuplicateXorMask and Assigned(XorMask) then
+    Temp.XorMask := XorMask.Duplicate(True) as TBGRADefaultBitmap;
   Result := Temp;
 end;
 
@@ -5317,6 +5359,8 @@ begin
   end;
   freemem(line);
   InvalidateBitmap;
+
+  if Assigned(XorMask) then XorMask.VerticalFlip(ARect);
 end;
 
 { Flip horizontally. Swap left pixels with right pixels on each line.
@@ -5350,6 +5394,8 @@ begin
     end;
   end;
   InvalidateBitmap;
+
+  if Assigned(XorMask) then XorMask.HorizontalFlip(ARect);
 end;
 
 { Return a new bitmap rotated in a clock wise direction. }
@@ -5376,6 +5422,8 @@ begin
       Inc(pdest, delta);
     end;
   end;
+
+  if Assigned(XorMask) then TBGRADefaultBitmap(result).XorMask := self.XorMask.RotateCW as TBGRADefaultBitmap;
 end;
 
 { Return a new bitmap rotated in a counter clock wise direction. }
@@ -5402,6 +5450,8 @@ begin
       Dec(pdest, delta);
     end;
   end;
+
+  if Assigned(XorMask) then TBGRADefaultBitmap(result).XorMask := self.XorMask.RotateCCW as TBGRADefaultBitmap;
 end;
 
 { Compute negative with gamma correction. A negative contains
@@ -5962,10 +6012,12 @@ begin
   SetDataPtr(AData);
 end;
 
-function TBGRAPtrBitmap.Duplicate(DuplicateProperties: Boolean = False): TBGRACustomBitmap;
+function TBGRAPtrBitmap.Duplicate(DuplicateProperties: Boolean = False; DuplicateXorMask: Boolean = False): TBGRACustomBitmap;
 begin
   Result := NewBitmap(Width, Height);
   if DuplicateProperties then CopyPropertiesTo(TBGRADefaultBitmap(Result));
+  if DuplicateXorMask and Assigned(XorMask) then
+    TBGRADefaultBitmap(Result).XorMask := XorMask.Duplicate(True) as TBGRADefaultBitmap;
 end;
 
 procedure TBGRAPtrBitmap.SetDataPtr(AData: Pointer);
