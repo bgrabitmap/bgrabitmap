@@ -31,7 +31,8 @@ interface
   in BGRAFreeType. }
 
 uses
-  Classes, Types, SysUtils, BGRAGraphics, BGRABitmapTypes, InterfaceBase, BGRAPen, BGRAGrayscaleMask;
+  Classes, Types, SysUtils, BGRAGraphics, BGRABitmapTypes, InterfaceBase, BGRAPen, BGRAGrayscaleMask,
+  LCLVersion;
 
 type
   TWordBreakHandler = BGRABitmapTypes.TWordBreakHandler;
@@ -115,7 +116,8 @@ var
 
 implementation
 
-uses GraphType, Math, BGRABlend, BGRAUTF8;
+uses GraphType, Math, BGRABlend, BGRAUTF8
+     {$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF};
 
 const MaxPixelMetricCount = 100;
 
