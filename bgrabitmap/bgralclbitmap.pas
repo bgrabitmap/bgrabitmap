@@ -848,7 +848,7 @@ begin
     begin
       if (p^.alpha = 0) and (PDWord(p)^<>0) then
       begin
-        if XorMask = nil then XorMask := NewBitmap(Width,Height) as TBGRADefaultBitmap;
+        NeedXorMask;
         XorMask.SetPixel(x,y, p^);
       end;
       inc(p);

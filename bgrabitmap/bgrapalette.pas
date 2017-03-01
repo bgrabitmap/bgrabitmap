@@ -196,8 +196,10 @@ type
     procedure SetReductionColorCount(AValue: Integer); virtual; abstract;
   public
     constructor Create(APalette: TBGRACustomPalette; ASeparateAlphaChannel: boolean); virtual; abstract; overload;
+    constructor Create(AColors: array of TBGRAPixel; ASeparateAlphaChannel: boolean); overload;
     constructor Create(ABitmap: TBGRACustomBitmap; AAlpha: TAlphaChannelPaletteOption); virtual; abstract; overload;
     constructor Create(APalette: TBGRACustomPalette; ASeparateAlphaChannel: boolean; AReductionColorCount: integer); virtual; abstract; overload;
+    constructor Create(AColors: array of TBGRAPixel; ASeparateAlphaChannel: boolean; AReductionColorCount: integer); overload;
     constructor Create(ABitmap: TBGRACustomBitmap; AAlpha: TAlphaChannelPaletteOption; AReductionColorCount: integer); virtual; abstract; overload;
     procedure ApplyDitheringInplace(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect); virtual; abstract; overload;
     procedure ApplyDitheringInplace(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap); overload;
@@ -602,6 +604,30 @@ end;
 function TBGRACustomColorQuantizer.GetDominantColor: TBGRAPixel;
 begin
   result := ReducedPalette.DominantColor;
+end;
+
+constructor TBGRACustomColorQuantizer.Create(AColors: array of TBGRAPixel;
+  ASeparateAlphaChannel: boolean);
+var palette: TBGRAPalette;
+  i: Integer;
+begin
+  palette := TBGRAPalette.Create;
+  for i := 0 to high(AColors) do
+    palette.AddColor(AColors[i]);
+  Create(palette, ASeparateAlphaChannel);
+  palette.Free;
+end;
+
+constructor TBGRACustomColorQuantizer.Create(AColors: array of TBGRAPixel;
+  ASeparateAlphaChannel: boolean; AReductionColorCount: integer);
+var palette: TBGRAPalette;
+  i: Integer;
+begin
+  palette := TBGRAPalette.Create;
+  for i := 0 to high(AColors) do
+    palette.AddColor(AColors[i]);
+  Create(palette, ASeparateAlphaChannel, AReductionColorCount);
+  palette.Free;
 end;
 
 procedure TBGRACustomColorQuantizer.ApplyDitheringInplace(

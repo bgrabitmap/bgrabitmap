@@ -424,6 +424,22 @@ type
     {** X-Pixmap, text encoded image, limited support }
     ifXPixMap);
 
+  {* Image information from superficial analysis }
+  TQuickImageInfo = record
+    {** Width in pixels }
+    Width,
+    {** Height in pixels }
+    Height,
+    {** Bitdepth for colors (1, 2, 4, 8 for images with palette/grayscale, 16, 24 or 48 if each channel is present) }
+    ColorDepth,
+    {** Bitdepth for alpha (0 if no alpha channel, 1 if bit mask, 8 or 16 if alpha channel) }
+    AlphaDepth: integer;
+  end;
+
+  TBGRAImageReader = class(TFPCustomImageReader)
+    function GetQuickInfo(AStream: TStream): TQuickImageInfo; virtual; abstract;
+  end;
+
   {* Options when loading an image }
   TBGRALoadingOption = (
      {** Do not clear RGB channels when alpha is zero (not recommended) }

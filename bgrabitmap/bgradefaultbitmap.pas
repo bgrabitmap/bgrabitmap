@@ -207,8 +207,6 @@ type
 
   public
     {** Cursor hotspot and Xor mask }
-    HotSpot: TPoint;
-    XorMask: TBGRADefaultBitmap;
 
     {** Provides a canvas with opacity and antialiasing }
     property CanvasBGRA: TBGRACanvas read GetCanvasBGRA;
@@ -229,7 +227,12 @@ type
     {** Returns an object with a reference count equal to 1. Duplicate
         this bitmap if necessary }
     function GetUnique: TBGRACustomBitmap;
-    procedure DiscardXorMask;
+
+    { ** Allocate xor mask }
+    procedure NeedXorMask; override;
+
+    { ** Free reference to xor mask }
+    procedure DiscardXorMask; override;
 
     {==== Constructors ====}
 
@@ -1243,12 +1246,22 @@ begin
     Result := self;
 end;
 
+procedure TBGRADefaultBitmap.NeedXorMask;
+begin
+  if FXorMask = nil then
+    FXorMask := BGRABitmapFactory.Create(Width,Height);
+end;
+
 procedure TBGRADefaultBitmap.DiscardXorMask;
 begin
-  if Assigned(XorMask) then
+  if Assigned(FXorMask) then
   begin
-    XorMask.FreeReference;
-    XorMask := nil;
+    if FXorMask is TBGRADefaultBitmap then
+    begin
+      TBGRADefaultBitmap(FXorMask).FreeReference;
+      FXorMask := nil;
+    end else
+      FreeAndNil(FXorMask);
   end;
 end;
 
@@ -1521,7 +1534,10 @@ begin
       if XorMask <> TBGRADefaultBitmap(Source).XorMask then
       begin
         DiscardXorMask;
-        XorMask := TBGRADefaultBitmap(Source).NewReference as TBGRADefaultBitmap;
+        if TBGRADefaultBitmap(Source).XorMask is TBGRADefaultBitmap then
+          FXorMask := TBGRADefaultBitmap(TBGRADefaultBitmap(Source).XorMask).NewReference as TBGRADefaultBitmap
+        else
+          FXorMask := TBGRADefaultBitmap(Source).XorMask.Duplicate;
       end;
     end;
   end else
@@ -4933,7 +4949,7 @@ begin
   if DuplicateProperties then
     CopyPropertiesTo(Temp);
   if DuplicateXorMask and Assigned(XorMask) then
-    Temp.XorMask := XorMask.Duplicate(True) as TBGRADefaultBitmap;
+    Temp.FXorMask := FXorMask.Duplicate(True) as TBGRADefaultBitmap;
   Result := Temp;
 end;
 
@@ -5423,7 +5439,7 @@ begin
     end;
   end;
 
-  if Assigned(XorMask) then TBGRADefaultBitmap(result).XorMask := self.XorMask.RotateCW as TBGRADefaultBitmap;
+  if Assigned(XorMask) then TBGRADefaultBitmap(result).FXorMask := self.XorMask.RotateCW;
 end;
 
 { Return a new bitmap rotated in a counter clock wise direction. }
@@ -5451,7 +5467,7 @@ begin
     end;
   end;
 
-  if Assigned(XorMask) then TBGRADefaultBitmap(result).XorMask := self.XorMask.RotateCCW as TBGRADefaultBitmap;
+  if Assigned(XorMask) then TBGRADefaultBitmap(result).FXorMask := self.XorMask.RotateCCW;
 end;
 
 { Compute negative with gamma correction. A negative contains
@@ -6017,7 +6033,7 @@ begin
   Result := NewBitmap(Width, Height);
   if DuplicateProperties then CopyPropertiesTo(TBGRADefaultBitmap(Result));
   if DuplicateXorMask and Assigned(XorMask) then
-    TBGRADefaultBitmap(Result).XorMask := XorMask.Duplicate(True) as TBGRADefaultBitmap;
+    TBGRADefaultBitmap(Result).FXorMask := FXorMask.Duplicate(True);
 end;
 
 procedure TBGRAPtrBitmap.SetDataPtr(AData: Pointer);

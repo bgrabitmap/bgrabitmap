@@ -5,7 +5,7 @@ unit BGRAWinResource;
 interface
 
 uses
-  Classes, SysUtils, BGRAMultiFileType, BGRABitmapTypes;
+  Classes, SysUtils, BGRAMultiFileType, BGRABitmapTypes, BGRAReadBMP;
 
 const
   RT_CURSOR = 1;
@@ -30,6 +30,9 @@ const
   RT_ANIICON = 22;
   RT_HTML = 23;
   RT_MANIFEST = 24;
+
+  ICON_OR_CURSOR_FILE_ICON_TYPE = 1;
+  ICON_OR_CURSOR_FILE_CURSOR_TYPE = 2;
 
 type
   TNameOrId = record
@@ -205,7 +208,7 @@ type
 
 implementation
 
-uses Math, BMPcomn, BGRAUTF8;
+uses Math, BGRAUTF8;
 
 operator =(const ANameOrId1, ANameOrId2: TNameOrId): boolean;
 begin
@@ -236,7 +239,7 @@ end;
 
 function TGroupCursorEntry.ExpectedResourceType: word;
 begin
-  result := 2;
+  result := ICON_OR_CURSOR_FILE_CURSOR_TYPE;
 end;
 
 constructor TGroupCursorEntry.Create(AContainer: TMultiFileContainer;
@@ -261,7 +264,7 @@ end;
 
 function TGroupIconEntry.ExpectedResourceType: word;
 begin
-  result := 1;
+  result := ICON_OR_CURSOR_FILE_ICON_TYPE;
 end;
 
 constructor TGroupIconEntry.Create(AContainer: TMultiFileContainer;
@@ -515,45 +518,15 @@ begin
 end;
 
 function TBitmapResourceEntry.CopyTo(ADestination: TStream): integer;
-var header: PBitMapInfoHeader;
-  fileHeader: TBitMapFileHeader;
-  headerSize: integer;
-  extraSize: integer;
-
+var fileHeader: TBitMapFileHeader;
 begin
   result := 0;
   FDataStream.Position := 0;
-  headerSize := LEtoN(FDataStream.ReadDWord);
-  if (headerSize < 16) or (headerSize > FDataStream.Size) then
-    raise exception.Create('Invalid header size');
-  getmem(header, headerSize);
-  try
-    fillchar(header^, headerSize,0);
-    header^.Size := NtoLE(headerSize);
-    FDataStream.ReadBuffer((PByte(header)+4)^, headerSize-4);
-    if LEtoN(header^.Compression) = BI_BITFIELDS then
-      extraSize := 4*3
-    else if LEtoN(header^.BitCount) in [1,4,8] then
-    begin
-      if header^.ClrUsed > 0 then
-        extraSize := 4*header^.ClrUsed
-      else
-        extraSize := 4*(1 shl header^.BitCount);
-    end else
-      extraSize := 0;
-    fileHeader.bfType:= Word('BM');
-    fileHeader.bfSize := NtoLE(Integer(sizeof(TBitMapFileHeader) + FDataStream.Size));
-    fileHeader.bfReserved:= 0;
-    fileHeader.bfOffset := NtoLE(Integer(sizeof(TBitMapFileHeader) + headerSize + extraSize));
-    ADestination.WriteBuffer(fileHeader, sizeof(fileHeader));
-    result += sizeof(fileHeader);
-    ADestination.WriteBuffer(header^, headerSize);
-    result += headerSize;
-    if FDataStream.Size - headerSize > 0 then
-      result += ADestination.CopyFrom(FDataStream, FDataStream.Size - headerSize);
-  finally
-    freemem(header);
-  end;
+  fileHeader := MakeBitmapFileHeader(FDataStream);
+  ADestination.WriteBuffer(fileHeader, sizeof(fileHeader));
+  result += sizeof(fileHeader);
+  FDataStream.Position := 0;
+  result += ADestination.CopyFrom(FDataStream, FDataStream.Size);
 end;
 
 procedure TBitmapResourceEntry.CopyFrom(ASource: TStream);

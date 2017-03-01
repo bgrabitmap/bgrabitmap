@@ -39,7 +39,7 @@ Type
 
   { TBGRAReaderPNG }
 
-  TBGRAReaderPNG = class (TFPCustomImageReader)
+  TBGRAReaderPNG = class (TBGRAImageReader)
     private
 
       FHeader : THeaderChunk;
@@ -132,11 +132,12 @@ Type
       property VerticalShrinkFactor: integer read GetVerticalShrinkFactor;
       property OriginalWidth: integer read GetOriginalWidth;
       property OriginalHeight: integer read GetOriginalHeight;
+      function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
   end;
 
 implementation
 
-
+uses math;
 
 const StartPoints : array[0..7, 0..1] of word =
          ((0,0),(0,0),(4,0),(0,4),(2,0),(0,2),(1,0),(0,1));
@@ -160,6 +161,37 @@ begin
     if acapacity > 0 then
       freemem (data);
   inherited;
+end;
+
+function TBGRAReaderPNG.GetQuickInfo(AStream: TStream): TQuickImageInfo;
+const headerChunkSize = 13;
+var
+  {%H-}FileHeader : packed array[0..7] of byte;
+  {%H-}ChunkHeader : TChunkHeader;
+  {%H-}HeaderChunk : THeaderChunk;
+begin
+  fillchar({%H-}result, sizeof(result), 0);
+  if AStream.Read({%H-}FileHeader, sizeof(FileHeader))<> sizeof(FileHeader) then exit;
+  if QWord(FileHeader) <> QWord(PNGComn.Signature) then exit;
+  if AStream.Read({%H-}ChunkHeader, sizeof(ChunkHeader))<> sizeof(ChunkHeader) then exit;
+  if ChunkHeader.CType <> ChunkTypes[ctIHDR] then exit;
+  if BEtoN(ChunkHeader.CLength) < headerChunkSize then exit;
+  if AStream.Read({%H-}HeaderChunk, headerChunkSize) <> headerChunkSize then exit;
+  result.width:= BEtoN(HeaderChunk.Width);
+  result.height:= BEtoN(HeaderChunk.height);
+  case HeaderChunk.ColorType and 3 of
+    0,3: {grayscale, palette}
+      if HeaderChunk.BitDepth > 8 then
+        result.colorDepth := 8
+      else
+        result.colorDepth := HeaderChunk.BitDepth;
+
+    2: {color} result.colorDepth := HeaderChunk.BitDepth*3;
+  end;
+  if (HeaderChunk.ColorType and 4) = 4 then
+    result.alphaDepth := HeaderChunk.BitDepth
+  else
+    result.alphaDepth := 0;
 end;
 
 procedure TBGRAReaderPNG.ReadChunk;
@@ -1306,7 +1338,8 @@ begin
     end;
     // Check IHDR
     ReadChunk;
-    move (chunk.data^, FHeader, sizeof(Header));
+    fillchar(FHeader, sizeof(FHeader), 0);
+    move (chunk.data^, FHeader, min(sizeof(Header), chunk.alength));
     with header do
       begin
       {$IFDEF ENDIAN_LITTLE}

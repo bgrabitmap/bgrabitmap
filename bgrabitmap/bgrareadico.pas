@@ -9,7 +9,7 @@ uses
   Classes, SysUtils, FPimage{$IFDEF BGRABITMAP_USE_LCL}, Graphics{$ENDIF};
 
 type
-  TCustomIconClass = class of TCustomIcon;
+  {$IFDEF BGRABITMAP_USE_LCL}TCustomIconClass = class of TCustomIcon;{$ENDIF}
   TByteSet = set of byte;
 
   { TBGRAReaderIcoOrCur }
@@ -40,7 +40,7 @@ type
 
 implementation
 
-uses BGRABitmapTypes;
+uses BGRABitmapTypes{$IFNDEF BGRABITMAP_USE_LCL}, BGRAIconCursor{$ENDIF};
 
 { TBGRAReaderCur }
 
@@ -100,15 +100,30 @@ begin
       raise exception.Create('No adequate icon found') else
     begin
       ico.Current := bestIdx;
-      (Img as TBGRACustomBitmap).Assign(ico);
+      Img.Assign(ico);
     end;
   finally
     ico.free;
   end;
 end;
 {$ELSE}
+var icoCur: TBGRAIconCursor;
+    compWidth,compHeight: integer;
+    bmp: TBGRACustomBitmap;
 begin
-  raise exception.create('Not implemented');
+  if WantedWidth > 0 then compWidth:= WantedWidth else compWidth:= 65536;
+  if WantedHeight > 0 then compHeight:= WantedHeight else compHeight:= 65536;
+  icoCur := TBGRAIconCursor.Create(Str);
+  try
+    bmp := icoCur.GetBestFitBitmap(compWidth,compHeight);
+    try
+      Img.Assign(bmp);
+    finally
+      bmp.Free;
+    end;
+  finally
+    icoCur.Free;
+  end;
 end;
 {$ENDIF}
 
