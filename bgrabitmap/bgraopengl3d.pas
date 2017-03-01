@@ -526,8 +526,8 @@ constructor TBGLShader3D.Create(ACanvas: TBGLCustomCanvas;
 begin
   FCanvas := ACanvas;
   FLighting := FCanvas.Lighting;
-  FVertexShaderSource:= '#define version ' + AVersion + #10 + AVaryingVariables + #10 + AVertexShaderSource;
-  FFragmentShaderSource:= '#define version ' + AVersion + #10 + AVaryingVariables + #10 + AFragmentShaderSource;
+  FVertexShaderSource:= '#version ' + AVersion + #10 + AVaryingVariables + #10 + AVertexShaderSource;
+  FFragmentShaderSource:= '#version ' + AVersion + #10 + AVaryingVariables + #10 + AFragmentShaderSource;
   FVertexShader := 0;
   FFragmentShader := 0;
   FProgram := 0;
