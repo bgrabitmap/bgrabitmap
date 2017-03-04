@@ -109,6 +109,7 @@ type
 
   TBGLCustomCanvas = class
   private
+    FActiveFrameBuffer: TBGLCustomFrameBuffer;
     FHeight: integer;
     FWidth: integer;
     FNoClip: boolean;
@@ -120,6 +121,8 @@ type
     procedure InternalArc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; ABorderColor,AOuterFillColor,ACenterFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false); overload;
     procedure InternalArcInRect(r: TRect; StartAngleRad,EndAngleRad: Single; ABorderColor,AOuterFillColor,ACenterFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false); overload;
     function ComputeEllipseC(r: TRect; AHasBorder: boolean; out cx,cy,rx,ry: single): boolean;
+    function GetHeight: integer; virtual;
+    function GetWidth: integer; virtual;
     procedure SetWidth(AValue: integer); virtual;
     procedure SetHeight(AValue: integer); virtual;
     function GetClipRect: TRect;
@@ -134,6 +137,7 @@ type
     function GetBlendMode: TOpenGLBlendMode; virtual; abstract;
     function GetFaceCulling: TFaceCulling; virtual; abstract;
     procedure SetFaceCulling(AValue: TFaceCulling); virtual; abstract;
+    procedure SetActiveFrameBuffer(AValue: TBGLCustomFrameBuffer); virtual;
 
     function GetLighting: TBGLCustomLighting; virtual;
 
@@ -281,8 +285,9 @@ type
     procedure WaitForGPU({%H-}AOption: TWaitForGPUOption); virtual;
 
     procedure NoClip;
-    property Width: integer read FWidth write SetWidth;
-    property Height: integer read FHeight write SetHeight;
+    property ActiveFrameBuffer: TBGLCustomFrameBuffer read FActiveFrameBuffer write SetActiveFrameBuffer;
+    property Width: integer read GetWidth write SetWidth;
+    property Height: integer read GetHeight write SetHeight;
     property ClipRect: TRect read GetClipRect write SetClipRect;
     property Matrix: TAffineMatrix read GetMatrix write SetMatrix;
     property ProjectionMatrix: TMatrix4D read GetProjectionMatrix write SetProjectionMatrix;
@@ -458,6 +463,22 @@ begin
     if ry < 0 then ry := 0;
   end;
   result := true;
+end;
+
+function TBGLCustomCanvas.GetHeight: integer;
+begin
+  if FActiveFrameBuffer = nil then
+    result := FHeight
+  else
+    result := FActiveFrameBuffer.Height;
+end;
+
+function TBGLCustomCanvas.GetWidth: integer;
+begin
+  if FActiveFrameBuffer = nil then
+    result := FWidth
+  else
+    result := FActiveFrameBuffer.Width;
 end;
 
 procedure TBGLCustomCanvas.SetWidth(AValue: integer);
@@ -1186,6 +1207,16 @@ end;
 procedure TBGLCustomCanvas.FillPathConvex(APath: TBGLPath; c: TBGRAPixel; APixelCenteredCoordinates: boolean);
 begin
   APath.fillConvex(self, c, 0.1, APixelCenteredCoordinates);
+end;
+
+procedure TBGLCustomCanvas.SetActiveFrameBuffer(AValue: TBGLCustomFrameBuffer);
+begin
+  if FActiveFrameBuffer=AValue then Exit;
+  if FActiveFrameBuffer <> nil then
+    FActiveFrameBuffer.SetCanvas(nil);
+  FActiveFrameBuffer:=AValue;
+  if FActiveFrameBuffer <> nil then
+    FActiveFrameBuffer.SetCanvas(self);
 end;
 
 procedure TBGLCustomCanvas.SwapRect(var r: TRect);

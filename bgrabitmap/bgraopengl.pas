@@ -8,7 +8,7 @@ interface
 uses
   Classes, SysUtils, FPimage, BGRAGraphics,
   BGRAOpenGLType, BGRASpriteGL, BGRACanvasGL, GL, GLext, GLU, BGRABitmapTypes,
-  BGRAFontGL, BGRASSE;
+  BGRAFontGL, BGRASSE, BGRAMatrix3D;
 
 type
   TBGLCustomCanvas = BGRACanvasGL.TBGLCustomCanvas;
@@ -42,6 +42,30 @@ type
     Sprites: TBGLCustomSpriteEngine;
     property Width: integer read GetWidth;
     property Height: integer read GetHeight;
+  end;
+
+  { TBGLFrameBuffer }
+
+  TBGLFrameBuffer = class(TBGLCustomFrameBuffer)
+  protected
+    FHeight: integer;
+    FMatrix: TAffineMatrix;
+    FProjectionMatrix: TMatrix4D;
+    FTexture: IBGLTexture;
+    FFrameBufferId, FRenderBufferId: GLuint;
+    FWidth: integer;
+    FSettingMatrices: boolean;
+    function GetTexture: IBGLTexture; override;
+    function GetHandle: pointer; override;
+    function GetHeight: integer; override;
+    function GetMatrix: TAffineMatrix; override;
+    function GetProjectionMatrix: TMatrix4D; override;
+    function GetWidth: integer; override;
+    procedure SetMatrix(AValue: TAffineMatrix); override;
+    procedure SetProjectionMatrix(AValue: TMatrix4D); override;
+  public
+    constructor Create(AWidth,AHeight: integer);
+    destructor Destroy; override;
   end;
 
 const
@@ -119,8 +143,7 @@ type
 
 implementation
 
-uses BGRATransform{$IFDEF BGRABITMAP_USE_LCL}, BGRAText, BGRATextFX{$ENDIF}
-    ,BGRAMatrix3D;
+uses BGRATransform{$IFDEF BGRABITMAP_USE_LCL}, BGRAText, BGRATextFX{$ENDIF};
 
 type
   TBlendFuncSeparateProc = procedure(sfactorRGB: GLenum; dfactorRGB: GLenum; sfactorAlpha: GLenum; dfactorAlpha: GLenum); {$IFDEF Windows} stdcall; {$ELSE} cdecl; {$ENDIF}
@@ -267,6 +290,8 @@ type
 
     function GetBlendMode: TOpenGLBlendMode; override;
     procedure SetBlendMode(AValue: TOpenGLBlendMode); override;
+
+    procedure SetActiveFrameBuffer(AValue: TBGLCustomFrameBuffer); override;
   public
     destructor Destroy; override;
     procedure Fill(AColor: TBGRAPixel); override;
@@ -311,6 +336,105 @@ type
     procedure BindAttribute(AAttribute: TAttributeVariable); override;
     procedure UnbindAttribute(AAttribute: TAttributeVariable); override;
   end;
+
+{ TBGLFrameBuffer }
+
+procedure TBGLFrameBuffer.SetMatrix(AValue: TAffineMatrix);
+begin
+  if FSettingMatrices then Exit;
+  FSettingMatrices := true;
+  FMatrix:=AValue;
+  if FCanvas <> nil then
+    TBGLCustomCanvas(FCanvas).Matrix := AValue;
+  FSettingMatrices := false;
+end;
+
+function TBGLFrameBuffer.GetMatrix: TAffineMatrix;
+begin
+  result := FMatrix;
+end;
+
+function TBGLFrameBuffer.GetTexture: IBGLTexture;
+begin
+  result := FTexture.FlipY;
+end;
+
+function TBGLFrameBuffer.GetHandle: pointer;
+begin
+  result := @FFrameBufferId;
+end;
+
+function TBGLFrameBuffer.GetHeight: integer;
+begin
+  result := FHeight;
+end;
+
+function TBGLFrameBuffer.GetProjectionMatrix: TMatrix4D;
+begin
+  result := FProjectionMatrix;
+end;
+
+function TBGLFrameBuffer.GetWidth: integer;
+begin
+  result := FWidth;
+end;
+
+procedure TBGLFrameBuffer.SetProjectionMatrix(AValue: TMatrix4D);
+begin
+  if FSettingMatrices then Exit;
+  FSettingMatrices := true;
+  FProjectionMatrix:= AValue;
+  if FCanvas <> nil then
+    TBGLCustomCanvas(FCanvas).ProjectionMatrix := AValue;
+  FSettingMatrices := false;
+end;
+
+constructor TBGLFrameBuffer.Create(AWidth, AHeight: integer);
+var frameBufferStatus: GLenum;
+begin
+  if not Load_GL_version_3_0 then
+      raise exception.Create('Cannot load OpenGL 3.0');
+
+  FWidth := AWidth;
+  FHeight := AHeight;
+
+  FTexture := BGLTextureFactory.Create(nil,AWidth,AHeight,AWidth,AHeight);
+
+  //depth and stencil
+  glGenRenderbuffers(1, @FRenderBufferId);
+  glBindRenderbuffer(GL_RENDERBUFFER, FRenderBufferId);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, AWidth,AHeight);
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+  glGenFramebuffers(1, @FFrameBufferId);
+  glBindFramebuffer(GL_FRAMEBUFFER, FFrameBufferId);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, PGLuint(FTexture.Handle)^, 0);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, FFrameBufferId);
+
+  frameBufferStatus:= glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  if frameBufferStatus <> GL_FRAMEBUFFER_COMPLETE then
+  begin
+    glDeleteFramebuffers(1, @FFrameBufferId);
+    glDeleteRenderbuffers(1, @FRenderBufferId);
+    FTexture := nil;
+    raise exception.Create('Error ' + inttostr(frameBufferStatus) + ' while initializing frame buffer');
+  end;
+
+  UseOrthoProjection;
+  Matrix := AffineMatrixIdentity;
+end;
+
+destructor TBGLFrameBuffer.Destroy;
+begin
+  glDeleteFramebuffers(1, @FFrameBufferId);
+  glDeleteRenderbuffers(1, @FRenderBufferId);
+  FTexture := nil;
+
+  inherited Destroy;
+end;
 
 procedure ApplyBlendMode(ABlendMode: TOpenGLBlendMode);
 var
@@ -848,7 +972,10 @@ end;
 
 function TBGLCanvas.GetMatrix: TAffineMatrix;
 begin
-  result := FMatrix;
+  if ActiveFrameBuffer <> nil then
+    result := ActiveFrameBuffer.Matrix
+  else
+    result := FMatrix;
 end;
 
 procedure TBGLCanvas.SetMatrix(const AValue: TAffineMatrix);
@@ -857,20 +984,31 @@ begin
   glMatrixMode(GL_MODELVIEW);
   m := AffineMatrixToMatrix4D(AValue);
   glLoadMatrixf(@m);
-  FMatrix := AValue;
+
+  if ActiveFrameBuffer <> nil then
+    ActiveFrameBuffer.Matrix := AValue
+  else
+    FMatrix := AValue;
 end;
 
 function TBGLCanvas.GetProjectionMatrix: TMatrix4D;
 begin
-  result := FProjectionMatrix;
+  if ActiveFrameBuffer <> nil then
+    result := ActiveFrameBuffer.ProjectionMatrix
+  else
+    result := FProjectionMatrix;
 end;
 
 procedure TBGLCanvas.SetProjectionMatrix(const AValue: TMatrix4D);
 begin
-  FProjectionMatrix := AValue;
   glMatrixMode(GL_PROJECTION);
   glLoadMatrixf(@AValue);
   glMatrixMode(GL_MODELVIEW);
+
+  if ActiveFrameBuffer <> nil then
+    ActiveFrameBuffer.ProjectionMatrix := AValue
+  else
+    FProjectionMatrix := AValue;
 end;
 
 function TBGLCanvas.GetFaceCulling: TFaceCulling;
@@ -1033,6 +1171,28 @@ end;
 procedure TBGLCanvas.SetBlendMode(AValue: TOpenGLBlendMode);
 begin
   FBlendMode := AValue;
+end;
+
+procedure TBGLCanvas.SetActiveFrameBuffer(AValue: TBGLCustomFrameBuffer);
+var
+  m: TMatrix4D;
+begin
+  if AValue = ActiveFrameBuffer then exit;
+  inherited SetActiveFrameBuffer(AValue);
+  if AValue = nil then
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+  else
+    glBindFramebuffer(GL_FRAMEBUFFER, PGLuint(AValue.Handle)^);
+
+  glViewPort(0,0,Width,Height);
+
+  glMatrixMode(GL_PROJECTION);
+  m := ProjectionMatrix;
+  glLoadMatrixf(@m);
+
+  glMatrixMode(GL_MODELVIEW);
+  m := AffineMatrixToMatrix4D(Matrix);
+  glLoadMatrixf(@m);
 end;
 
 destructor TBGLCanvas.Destroy;
@@ -1376,7 +1536,7 @@ end;
 
 procedure TBGLTexture.ToggleFlipY;
 begin
-  FFlipX := not FFlipY;
+  FFlipY := not FFlipY;
 end;
 
 procedure TBGLTexture.Bind(ATextureNumber: integer);

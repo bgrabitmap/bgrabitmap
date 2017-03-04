@@ -426,6 +426,33 @@ type
     property GradientColors: boolean read GetUseGradientColors write SetUseGradientColors;
   end;
 
+  { TBGLCustomFrameBuffer }
+
+  TBGLCustomFrameBuffer = class
+  protected
+    FCanvas: pointer;
+    function GetTexture: IBGLTexture; virtual; abstract;
+    function GetHandle: pointer; virtual; abstract;
+    function GetMatrix: TAffineMatrix; virtual; abstract;
+    function GetHeight: integer; virtual; abstract;
+    function GetProjectionMatrix: TMatrix4D; virtual; abstract;
+    function GetWidth: integer; virtual; abstract;
+    procedure SetMatrix(AValue: TAffineMatrix); virtual; abstract;
+    procedure SetProjectionMatrix(AValue: TMatrix4D); virtual; abstract;
+
+  public
+    procedure UseOrthoProjection; virtual;
+    procedure UseOrthoProjection(AMinX,AMinY,AMaxX,AMaxY: single); virtual;
+
+    procedure SetCanvas(ACanvas: Pointer); //for internal use
+    property Matrix: TAffineMatrix read GetMatrix write SetMatrix;
+    property ProjectionMatrix: TMatrix4D read GetProjectionMatrix write SetProjectionMatrix;
+    property Width: integer read GetWidth;
+    property Height: integer read GetHeight;
+    property Handle: pointer read GetHandle;
+    property Texture: IBGLTexture read GetTexture;
+  end;
+
 type
   TBGLBitmapAny = class of TBGLCustomBitmap;
   TBGLTextureAny = class of TBGLCustomTexture;
@@ -440,6 +467,21 @@ function GetPowerOfTwo( Value : Integer ) : Integer;
 implementation
 
 uses BGRAFilterScanner;
+
+procedure TBGLCustomFrameBuffer.UseOrthoProjection;
+begin
+  ProjectionMatrix := OrthoProjectionToOpenGL(0,0,Width,Height);
+end;
+
+procedure TBGLCustomFrameBuffer.UseOrthoProjection(AMinX, AMinY, AMaxX, AMaxY: single);
+begin
+  ProjectionMatrix := OrthoProjectionToOpenGL(AMinX,AMinY,AMaxX,AMaxY);
+end;
+
+procedure TBGLCustomFrameBuffer.SetCanvas(ACanvas: Pointer);
+begin
+  FCanvas := ACanvas;
+end;
 
 function OrthoProjectionToOpenGL(AMinX, AMinY, AMaxX, AMaxY: Single): TMatrix4D;
 var sx,sy: single;
