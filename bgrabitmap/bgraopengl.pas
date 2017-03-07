@@ -331,8 +331,8 @@ type
     procedure DeleteShaderProgram(AProgram: DWord); override;
     function GetUniformVariable(AProgram: DWord; AName: string): DWord; override;
     function GetAttribVariable(AProgram: DWord; AName: string): DWord; override;
-    procedure SetUniformSingle(AVariable: DWord; const AValue; ACount: integer); override;
-    procedure SetUniformInteger(AVariable: DWord; const AValue; ACount: integer); override;
+    procedure SetUniformSingle(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); override;
+    procedure SetUniformInteger(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); override;
     procedure BindAttribute(AAttribute: TAttributeVariable); override;
     procedure UnbindAttribute(AAttribute: TAttributeVariable); override;
   end;
@@ -899,17 +899,33 @@ begin
 end;
 
 procedure TBGLLighting.SetUniformSingle(AVariable: DWord;
-  const AValue; ACount: integer);
+  const AValue; AElementCount, AComponentCount: integer);
 begin
   NeedOpenGL2_0;
-  glUniform1fv(AVariable, ACount, @AValue);
+  case AComponentCount of
+    1: glUniform1fv(AVariable, AElementCount, @AValue);
+    2: glUniform2fv(AVariable, AElementCount, @AValue);
+    3: glUniform3fv(AVariable, AElementCount, @AValue);
+    4: glUniform4fv(AVariable, AElementCount, @AValue);
+    9: glUniformMatrix3fv(AVariable, AElementCount, GL_FALSE, @AValue);
+    16: glUniformMatrix4fv(AVariable, AElementCount, GL_FALSE, @AValue);
+  else
+    raise exception.Create('Unexpected number of components');
+  end;
 end;
 
 procedure TBGLLighting.SetUniformInteger(AVariable: DWord;
-  const AValue; ACount: integer);
+  const AValue; AElementCount, AComponentCount: integer);
 begin
   NeedOpenGL2_0;
-  glUniform1iv(AVariable, ACount, @AValue);
+  case AComponentCount of
+    1: glUniform1iv(AVariable, AElementCount, @AValue);
+    2: glUniform2iv(AVariable, AElementCount, @AValue);
+    3: glUniform3iv(AVariable, AElementCount, @AValue);
+    4: glUniform4iv(AVariable, AElementCount, @AValue);
+  else
+    raise exception.Create('Unexpected number of components');
+  end;
 end;
 
 procedure TBGLLighting.BindAttribute(AAttribute: TAttributeVariable);

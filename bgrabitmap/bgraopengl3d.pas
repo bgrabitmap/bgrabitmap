@@ -148,6 +148,17 @@ type
     property Value: TPoint read FValue write SetValue;
   end;
 
+  { TUniformVariableMatrix4D }
+
+  TUniformVariableMatrix4D = object(TUniformVariable)
+  private
+    FValue: TMatrix4D;
+    procedure SetValue(const AValue: TMatrix4D);
+  public
+    procedure Update;
+    property Value: TMatrix4D read FValue write SetValue;
+  end;
+
   { TAttributeVariableSingle }
 
   TAttributeVariableSingle = object(TAttributeVariable)
@@ -200,13 +211,14 @@ type
     function GetUniformVariablePoint3D(AName: string): TUniformVariablePoint3D;
     function GetUniformVariableInteger(AName: string): TUniformVariableInteger;
     function GetUniformVariablePoint(AName: string): TUniformVariablePoint;
+    function GetUniformVariableMatrix4D(AName: string): TUniformVariableMatrix4D;
     function GetAttributeVariableInteger(AName: string): TAttributeVariableInteger;
     function GetAttributeVariablePoint(AName: string): TAttributeVariablePoint;
     function GetAttributeVariableSingle(AName: string): TAttributeVariableSingle;
     function GetAttributeVariablePointF(AName: string): TAttributeVariablePointF;
     function GetAttributeVariablePoint3D(AName: string): TAttributeVariablePoint3D;
-    procedure SetUniformSingle(AVariable: DWord; const AValue; ACount: integer);
-    procedure SetUniformInteger(AVariable: DWord; const AValue; ACount: integer);
+    procedure SetUniformSingle(AVariable: DWord; const AValue; AElementCount: integer; AComponentCount: integer);
+    procedure SetUniformInteger(AVariable: DWord; const AValue; AElementCount: integer; AComponentCount: integer);
     procedure CheckUsage(AUsing: boolean);
     procedure StartUse; override;
     procedure EndUse; override;
@@ -220,6 +232,7 @@ type
     property UniformPoint3D[AName: string]: TUniformVariablePoint3D read GetUniformVariablePoint3D;
     property UniformInteger[AName: string]: TUniformVariableInteger read GetUniformVariableInteger;
     property UniformPoint[AName: string]: TUniformVariablePoint read GetUniformVariablePoint;
+    property UniformMatrix4D[AName: string]: TUniformVariableMatrix4D read GetUniformVariableMatrix4D;
     property AttributeSingle[AName: string]: TAttributeVariableSingle read GetAttributeVariableSingle;
     property AttributePointF[AName: string]: TAttributeVariablePointF read GetAttributeVariablePointF;
     property AttributePoint3D[AName: string]: TAttributeVariablePoint3D read GetAttributeVariablePoint3D;
@@ -257,6 +270,20 @@ begin
   result[1,2] := 0;            result[2,2] := AProj.Zoom.Y; result[3,2] := -(AProj.Center.y + 0.5); result[4,2] := 0;
   result[1,3] := 0;            result[2,3] := 0;            result[3,3] := -2/(AFar-ANear);         result[4,3] := -1 - AFar*result[3,3];
   result[1,4] := 0;            result[2,4] := 0;            result[3,4] := -1;                      result[4,4] := 0;
+end;
+
+{ TUniformVariableMatrix4D }
+
+procedure TUniformVariableMatrix4D.SetValue(const AValue: TMatrix4D);
+begin
+  if CompareMem(@AValue, @FValue, sizeof(FValue)) then Exit;
+  FValue:=AValue;
+  if FProgram.IsUsed then Update;
+end;
+
+procedure TUniformVariableMatrix4D.Update;
+begin
+  FProgram.SetUniformSingle(FVariable, FValue, 1, 16);
 end;
 
 { TShaderWithTexture }
@@ -350,7 +377,7 @@ end;
 
 procedure TUniformVariablePoint.Update;
 begin
-  FProgram.SetUniformInteger(FVariable, FValue, 2);
+  FProgram.SetUniformInteger(FVariable, FValue, 1, 2);
 end;
 
 { TUniformVariableInteger }
@@ -364,7 +391,7 @@ end;
 
 procedure TUniformVariableInteger.Update;
 begin
-  FProgram.SetUniformInteger(FVariable, FValue, 1);
+  FProgram.SetUniformInteger(FVariable, FValue, 1, 1);
 end;
 
 { TUniformVariablePoint3D }
@@ -378,7 +405,7 @@ end;
 
 procedure TUniformVariablePoint3D.Update;
 begin
-  FProgram.SetUniformSingle(FVariable, FValue, 3);
+  FProgram.SetUniformSingle(FVariable, FValue, 1, 3);
 end;
 
 { TUniformVariablePointF }
@@ -392,7 +419,7 @@ end;
 
 procedure TUniformVariablePointF.Update;
 begin
-  FProgram.SetUniformSingle(FVariable, FValue, 2);
+  FProgram.SetUniformSingle(FVariable, FValue, 1, 2);
 end;
 
 { TUniformVariableSingle }
@@ -406,7 +433,7 @@ end;
 
 procedure TUniformVariableSingle.Update;
 begin
-  FProgram.SetUniformSingle(FVariable, FValue, 1);
+  FProgram.SetUniformSingle(FVariable, FValue, 1, 1);
 end;
 
 { TUniformVariable }
@@ -452,6 +479,14 @@ begin
 end;
 
 function TBGLShader3D.GetUniformVariablePoint(AName: string): TUniformVariablePoint;
+begin
+  {$push}{$hints off}
+  fillchar(result,sizeof(result),0);
+  result.Init(self, FCanvas.Lighting.GetUniformVariable(FProgram, AName));
+  {$pop}
+end;
+
+function TBGLShader3D.GetUniformVariableMatrix4D(AName: string): TUniformVariableMatrix4D;
 begin
   {$push}{$hints off}
   fillchar(result,sizeof(result),0);
@@ -508,16 +543,16 @@ begin
   {$pop}
 end;
 
-procedure TBGLShader3D.SetUniformSingle(AVariable: DWord; const AValue; ACount: integer);
+procedure TBGLShader3D.SetUniformSingle(AVariable: DWord; const AValue; AElementCount: integer; AComponentCount: integer);
 begin
   CheckUsage(True);
-  FCanvas.Lighting.SetUniformSingle(AVariable, AValue, ACount);
+  FCanvas.Lighting.SetUniformSingle(AVariable, AValue, AElementCount, AComponentCount);
 end;
 
-procedure TBGLShader3D.SetUniformInteger(AVariable: DWord; const AValue; ACount: integer);
+procedure TBGLShader3D.SetUniformInteger(AVariable: DWord; const AValue; AElementCount: integer; AComponentCount: integer);
 begin
   CheckUsage(True);
-  FCanvas.Lighting.SetUniformInteger(AVariable, AValue, ACount);
+  FCanvas.Lighting.SetUniformInteger(AVariable, AValue, AElementCount, AComponentCount);
 end;
 
 constructor TBGLShader3D.Create(ACanvas: TBGLCustomCanvas;

@@ -93,8 +93,8 @@ type
     procedure UseProgram(AProgram: DWord); virtual; abstract;
     function GetUniformVariable(AProgram: DWord; AName: string): DWord; virtual; abstract;
     function GetAttribVariable(AProgram: DWord; AName: string): DWord; virtual; abstract;
-    procedure SetUniformSingle(AVariable: DWord; const AValue; ACount: integer); virtual; abstract;
-    procedure SetUniformInteger(AVariable: DWord; const AValue; ACount: integer); virtual; abstract;
+    procedure SetUniformSingle(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); virtual; abstract;
+    procedure SetUniformInteger(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); virtual; abstract;
     procedure BindAttribute(AAttribute: TAttributeVariable); virtual; abstract;
     procedure UnbindAttribute(AAttribute: TAttributeVariable); virtual; abstract;
     procedure FreeShaders;
