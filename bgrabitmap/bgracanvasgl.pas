@@ -284,6 +284,8 @@ type
     procedure EndZBuffer; virtual;
     procedure WaitForGPU({%H-}AOption: TWaitForGPUOption); virtual;
 
+    function GetImage(x,y,w,h: integer): TBGRACustomBitmap; virtual;
+
     procedure NoClip;
     property ActiveFrameBuffer: TBGLCustomFrameBuffer read FActiveFrameBuffer write SetActiveFrameBuffer;
     property Width: integer read GetWidth write SetWidth;
@@ -1813,6 +1815,11 @@ end;
 procedure TBGLCustomCanvas.WaitForGPU(AOption: TWaitForGPUOption);
 begin
   raise exception.Create('Not implemented');
+end;
+
+function TBGLCustomCanvas.GetImage(x, y, w, h: integer): TBGRACustomBitmap;
+begin
+  result := nil;
 end;
 
 end.

@@ -298,6 +298,7 @@ type
     procedure StartZBuffer; override;
     procedure EndZBuffer; override;
     procedure WaitForGPU(AOption: TWaitForGPUOption); override;
+    function GetImage(x, y, w, h: integer): TBGRACustomBitmap; override;
   end;
 
   { TBGLLighting }
@@ -1166,6 +1167,16 @@ begin
     wfgQueueAllCommands: glFlush;
     wfgFinishAllCommands: glFinish;
   end;
+end;
+
+function TBGLCanvas.GetImage(x, y, w, h: integer): TBGRACustomBitmap;
+begin
+  NeedOpenGL2_0;
+  result := BGRABitmapFactory.Create(w,h);
+  if TBGRAPixel_RGBAOrder then
+    glReadPixels(x,self.Height-y-h, w,h, GL_RGBA, GL_UNSIGNED_BYTE, result.Data)
+  else
+    glReadPixels(x,self.Height-y-h, w,h, GL_BGRA, GL_UNSIGNED_BYTE, result.Data);
 end;
 
 procedure TBGLCanvas.EnableScissor(AValue: TRect);
