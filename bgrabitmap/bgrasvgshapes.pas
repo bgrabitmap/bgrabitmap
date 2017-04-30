@@ -569,6 +569,7 @@ begin
     result[i].x := parser.ParseFloat;
     result[i].y := parser.ParseFloat;
   end;
+  parser.Free;
 end;
 
 procedure TSVGPolypoints.SetPoints(AValue: string);
