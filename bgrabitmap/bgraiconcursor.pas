@@ -203,7 +203,11 @@ end;
 
 function TBGRAIconCursorEntry.CopyTo(ADestination: TStream): integer;
 begin
-  if FContent.Size = 0 then exit;
+  if FContent.Size = 0 then
+  begin
+    result := 0;
+    exit;
+  end;
 
   FContent.Position := 0;
   result := ADestination.CopyFrom(FContent, FContent.Size);

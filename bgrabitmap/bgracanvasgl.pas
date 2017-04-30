@@ -284,7 +284,8 @@ type
     procedure EndZBuffer; virtual;
     procedure WaitForGPU({%H-}AOption: TWaitForGPUOption); virtual;
 
-    function GetImage(x,y,w,h: integer): TBGRACustomBitmap; virtual;
+    function GetImage({%H-}x,{%H-}y,{%H-}w,{%H-}h: integer): TBGRACustomBitmap; virtual;
+    function CreateFrameBuffer({%H-}AWidth,{%H-}AHeight: integer): TBGLCustomFrameBuffer; virtual;
 
     procedure NoClip;
     property ActiveFrameBuffer: TBGLCustomFrameBuffer read FActiveFrameBuffer write SetActiveFrameBuffer;
@@ -352,6 +353,7 @@ end;
 function TBGLCustomLighting.GetShader(AName: string): TBGLCustomShader;
 var index: integer;
 begin
+  if ShaderList = nil then ShaderList := TStringList.Create;
   index := ShaderList.IndexOf(AName);
   if index = -1 then
     result := nil
@@ -362,6 +364,7 @@ end;
 procedure TBGLCustomLighting.SetShader(AName: string; AValue: TBGLCustomShader);
 var index: integer;
 begin
+  if ShaderList = nil then ShaderList := TStringList.Create;
   index := ShaderList.IndexOf(AName);
   if AValue = nil then
   begin
@@ -1820,6 +1823,12 @@ end;
 function TBGLCustomCanvas.GetImage(x, y, w, h: integer): TBGRACustomBitmap;
 begin
   result := nil;
+end;
+
+function TBGLCustomCanvas.CreateFrameBuffer(AWidth, AHeight: integer): TBGLCustomFrameBuffer;
+begin
+  result := nil;
+  raise exception.Create('Not implemented');
 end;
 
 end.

@@ -79,6 +79,10 @@ type
   TTextLayout = BGRAGraphics.TTextLayout;
 
 const
+  RadialBlurTypeToStr: array[TRadialBlurType] of string =
+  ('Normal','Disk','Corona','Precise','Fast','Box');
+
+
   tlTop = BGRAGraphics.tlTop;
   tlCenter = BGRAGraphics.tlCenter;
   tlBottom = BGRAGraphics.tlBottom;
