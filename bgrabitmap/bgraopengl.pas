@@ -65,6 +65,7 @@ type
     procedure SetProjectionMatrix(AValue: TMatrix4D); override;
   public
     constructor Create(AWidth,AHeight: integer);
+    function MakeTextureAndFree: IBGLTexture; override;
     destructor Destroy; override;
   end;
 
@@ -143,7 +144,7 @@ type
 
 implementation
 
-uses BGRATransform{$IFDEF BGRABITMAP_USE_LCL}, BGRAText, BGRATextFX{$ENDIF};
+uses BGRABlurGL, BGRATransform{$IFDEF BGRABITMAP_USE_LCL}, BGRAText, BGRATextFX{$ENDIF};
 
 type
   TBlendFuncSeparateProc = procedure(sfactorRGB: GLenum; dfactorRGB: GLenum; sfactorAlpha: GLenum; dfactorAlpha: GLenum); {$IFDEF Windows} stdcall; {$ELSE} cdecl; {$ENDIF}
@@ -232,6 +233,8 @@ type
     procedure ToggleFlipX; override;
     procedure ToggleFlipY; override;
     procedure Bind(ATextureNumber: integer); override;
+    function FilterBlurMotion(ARadius: single; ABlurType: TRadialBlurType; ADirection: TPointF): IBGLTexture; override;
+    function FilterBlurRadial(ARadius: single; ABlurType: TRadialBlurType): IBGLTexture; override;
 
   end;
 
@@ -299,6 +302,7 @@ type
     procedure EndZBuffer; override;
     procedure WaitForGPU(AOption: TWaitForGPUOption); override;
     function GetImage(x, y, w, h: integer): TBGRACustomBitmap; override;
+    function CreateFrameBuffer(AWidth, AHeight: integer): TBGLCustomFrameBuffer; override;
   end;
 
   { TBGLLighting }
@@ -426,6 +430,13 @@ begin
 
   UseOrthoProjection;
   Matrix := AffineMatrixIdentity;
+end;
+
+function TBGLFrameBuffer.MakeTextureAndFree: IBGLTexture;
+begin
+  result := FTexture;
+  FTexture := nil;
+  Free;
 end;
 
 destructor TBGLFrameBuffer.Destroy;
@@ -1179,6 +1190,11 @@ begin
     glReadPixels(x,self.Height-y-h, w,h, GL_BGRA, GL_UNSIGNED_BYTE, result.Data);
 end;
 
+function TBGLCanvas.CreateFrameBuffer(AWidth, AHeight: integer): TBGLCustomFrameBuffer;
+begin
+  Result:= TBGLFrameBuffer.Create(AWidth,AHeight);
+end;
+
 procedure TBGLCanvas.EnableScissor(AValue: TRect);
 begin
   glScissor(AValue.left,Height-AValue.bottom,AValue.right-AValue.left,AValue.Bottom-AValue.Top);
@@ -1579,6 +1595,43 @@ begin
   glBindTexture(GL_TEXTURE_2D, POpenGLTexture(FOpenGLTexture)^.ID);
   if ATextureNumber<>0 then
     glActiveTexture(GL_TEXTURE0);
+end;
+
+function TBGLTexture.FilterBlurMotion(ARadius: single; ABlurType: TRadialBlurType; ADirection: TPointF): IBGLTexture;
+var shader: TBGLCustomShader;
+  blurName: string;
+begin
+  blurName := 'TBGLBlurShader(' + RadialBlurTypeToStr[ABlurType] + ')';
+  shader := BGLCanvas.Lighting.Shader[blurName];
+  if shader = nil then
+  begin
+    shader := TBGLBlurShader.Create(BGLCanvas, ABlurType);
+    BGLCanvas.Lighting.Shader[blurName] := shader;
+  end;
+  with (shader as TBGLBlurShader) do
+  begin
+    Radius := ARadius;
+    Direction := ADirection;
+    result := FilterBlurMotion(self);
+  end;
+end;
+
+function TBGLTexture.FilterBlurRadial(ARadius: single; ABlurType: TRadialBlurType): IBGLTexture;
+var shader: TBGLCustomShader;
+  blurName: String;
+begin
+  blurName := 'TBGLBlurShader(' + RadialBlurTypeToStr[ABlurType] + ')';
+  shader := BGLCanvas.Lighting.Shader[blurName];
+  if shader = nil then
+  begin
+    shader := TBGLBlurShader.Create(BGLCanvas, ABlurType);
+    BGLCanvas.Lighting.Shader[blurName] := shader;
+  end;
+  with (shader as TBGLBlurShader) do
+  begin
+    Radius := ARadius;
+    result := FilterBlurRadial(self);
+  end;
 end;
 
 procedure TBGLTexture.Init(ATexture: TBGLTextureHandle; AWidth,

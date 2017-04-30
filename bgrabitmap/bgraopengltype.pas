@@ -183,6 +183,8 @@ type
     procedure ToggleFlipX;
     procedure ToggleFlipY;
     procedure ToggleMask;
+    function FilterBlurMotion(ARadius: single; ABlurType: TRadialBlurType; ADirection: TPointF): IBGLTexture;
+    function FilterBlurRadial(ARadius: single; ABlurType: TRadialBlurType): IBGLTexture;
     procedure SetFrame(AIndex: integer);
     procedure FreeMemory;
     procedure Bind(ATextureNumber: integer);
@@ -362,6 +364,8 @@ type
     procedure ToggleFlipX; virtual; abstract;
     procedure ToggleFlipY; virtual; abstract;
     procedure ToggleMask; virtual;
+    function FilterBlurMotion({%H-}ARadius: single; {%H-}ABlurType: TRadialBlurType; {%H-}ADirection: TPointF): IBGLTexture; virtual;
+    function FilterBlurRadial({%H-}ARadius: single; {%H-}ABlurType: TRadialBlurType): IBGLTexture; virtual;
 
     procedure SetFrameSize(x,y: integer);
     procedure Update(ARGBAData: PDWord; AllocatedWidth, AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean = true);
@@ -443,6 +447,7 @@ type
   public
     procedure UseOrthoProjection; virtual;
     procedure UseOrthoProjection(AMinX,AMinY,AMaxX,AMaxY: single); virtual;
+    function MakeTextureAndFree: IBGLTexture; virtual;
 
     procedure SetCanvas(ACanvas: Pointer); //for internal use
     property Matrix: TAffineMatrix read GetMatrix write SetMatrix;
@@ -476,6 +481,11 @@ end;
 procedure TBGLCustomFrameBuffer.UseOrthoProjection(AMinX, AMinY, AMaxX, AMaxY: single);
 begin
   ProjectionMatrix := OrthoProjectionToOpenGL(AMinX,AMinY,AMaxX,AMaxY);
+end;
+
+function TBGLCustomFrameBuffer.MakeTextureAndFree: IBGLTexture;
+begin
+  raise exception.create('Not implemented');
 end;
 
 procedure TBGLCustomFrameBuffer.SetCanvas(ACanvas: Pointer);
@@ -634,6 +644,17 @@ end;
 procedure TBGLCustomTexture.ToggleMask;
 begin
   FIsMask := not FIsMask;
+end;
+
+function TBGLCustomTexture.FilterBlurMotion(ARadius: single; ABlurType: TRadialBlurType;
+  ADirection: TPointF): IBGLTexture;
+begin
+  raise exception.Create('Not implemented');
+end;
+
+function TBGLCustomTexture.FilterBlurRadial(ARadius: single; ABlurType: TRadialBlurType): IBGLTexture;
+begin
+  raise exception.Create('Not implemented');
 end;
 
 procedure TBGLCustomTexture.Update(ARGBAData: PDWord; AllocatedWidth,
@@ -798,7 +819,9 @@ begin
     with TBGRACustomBitmap(AFPImage) do
     begin
       if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then SwapRedBlue;
+      if LineOrder = riloBottomToTop then VerticalFlip;
       InitFromData(PDWord(Data), Width,Height, Width,Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
+      if LineOrder = riloBottomToTop then VerticalFlip;
       if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then SwapRedBlue;
     end;
   end else

@@ -222,10 +222,11 @@ type
     procedure CheckUsage(AUsing: boolean);
     procedure StartUse; override;
     procedure EndUse; override;
+    property Canvas: TBGLCustomCanvas read FCanvas;
   public
     constructor Create(ACanvas: TBGLCustomCanvas; AVertexShaderSource: string;
         AFragmentShaderSource: string; AVaryingVariables: string = '';
-        AVersion: string = '110');
+        AVersion: string = '120');
     destructor Destroy; override;
     property UniformSingle[AName: string]: TUniformVariableSingle read GetUniformVariableSingle;
     property UniformPointF[AName: string]: TUniformVariablePointF read GetUniformVariablePointF;
