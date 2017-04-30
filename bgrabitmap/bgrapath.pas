@@ -2300,6 +2300,7 @@ end;
 procedure TBGRAPath.NeedSpace(count: integer);
 begin
   OnModify;
+  count += 4; //avoid memory error
   if FDataPos + count > FDataCapacity then
   begin
     FDataCapacity := (FDataCapacity shl 1)+8;

@@ -224,9 +224,9 @@ begin
     begin
       attr := imagenode.Attributes[i];
       if lowercase(attr.NodeName) = 'w' then
-        w := strToInt(attr.NodeValue) else
+        w := strToInt(string(attr.NodeValue)) else
       if lowercase(attr.NodeName) = 'h' then
-        h := strToInt(attr.NodeValue) else
+        h := strToInt(string(attr.NodeValue)) else
       if lowercase(attr.NodeName) = 'gamma-correction' then
         linearBlend := (attr.NodeValue = 'no') or (attr.NodeValue = '0');
     end;
@@ -264,7 +264,7 @@ begin
             end;
           end else
           if lowercase(attr.NodeName) = 'gamma-correction' then
-            gammastr := attr.NodeValue else
+            gammastr := string(attr.NodeValue) else
           if lowercase(attr.NodeName) = 'visibility' then
             LayerVisible[idx] := (attr.NodeValue = 'visible') or (attr.NodeValue = 'yes') or (attr.NodeValue = '1') else
           if (lowercase(attr.NodeName) = 'x') or (lowercase(attr.NodeName) = 'y') then
@@ -282,7 +282,7 @@ begin
             LayerName[idx] := UTF8Encode(attr.NodeValue) else
           if lowercase(attr.NodeName) = 'composite-op' then
           begin
-            opstr := StringReplace(lowercase(attr.NodeValue),'_','-',[rfReplaceAll]);
+            opstr := StringReplace(lowercase(string(attr.NodeValue)),'_','-',[rfReplaceAll]);
             if (pos(':',opstr) = 0) and (opstr <> 'xor') then opstr := 'svg:'+opstr;
             //parse composite op
             if (opstr = 'svg:src-over') or (opstr = 'krita:dissolve') then
@@ -372,8 +372,8 @@ begin
   FStackXML := TXMLDocument.Create;
   imageNode := TDOMElement(StackXML.CreateElement('image'));
   StackXML.AppendChild(imageNode);
-  imageNode.SetAttribute('w',inttostr(Width));
-  imageNode.SetAttribute('h',inttostr(Height));
+  imageNode.SetAttribute('w',widestring(inttostr(Width)));
+  imageNode.SetAttribute('h',widestring(inttostr(Height)));
   if LinearBlend then
     imageNode.SetAttribute('gamma-correction','no')
   else
@@ -394,14 +394,14 @@ begin
       stackNode.AppendChild(layerNode);
       layerNode.SetAttribute('name', UTF8Decode(LayerName[i]));
       str(LayerOpacity[i]/255:0:3,strval);
-      layerNode.SetAttribute('opacity',strval);
-      layerNode.SetAttribute('src',layerFilename);
+      layerNode.SetAttribute('opacity',widestring(strval));
+      layerNode.SetAttribute('src',widestring(layerFilename));
       if LayerVisible[i] then
         layerNode.SetAttribute('visibility','visible')
       else
         layerNode.SetAttribute('visibility','hidden');
-      layerNode.SetAttribute('x',inttostr(LayerOffset[i].x));
-      layerNode.SetAttribute('y',inttostr(LayerOffset[i].y));
+      layerNode.SetAttribute('x',widestring(inttostr(LayerOffset[i].x)));
+      layerNode.SetAttribute('y',widestring(inttostr(LayerOffset[i].y)));
       strval := '';
       case BlendOperation[i] of
         boLighten: strval := 'svg:lighten';
@@ -427,13 +427,13 @@ begin
         boSvgSoftLight: strval := 'svg:soft-light';
         else strval := 'svg:src-over';
       end;
-      layerNode.SetAttribute('composite-op',strval);
+      layerNode.SetAttribute('composite-op',widestring(strval));
       if BlendOperation[i] <> boTransparent then //in 'transparent' case, linear blending depends on general setting
       begin
         if BlendOperation[i] in[boAdditive,boDarkOverlay,boDifference,boSubtractInverse,
              boSubtract,boExclusion,boNegation] then
           strval := 'yes' else strval := 'no';
-        layerNode.SetAttribute('gamma-correction',strval);
+        layerNode.SetAttribute('gamma-correction',widestring(strval));
       end;
     end;
   end;

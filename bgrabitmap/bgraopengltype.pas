@@ -183,6 +183,8 @@ type
     procedure ToggleFlipX;
     procedure ToggleFlipY;
     procedure ToggleMask;
+    function FilterBlurMotion(ARadius: single; ABlurType: TRadialBlurType; ADirection: TPointF): IBGLTexture;
+    function FilterBlurRadial(ARadius: single; ABlurType: TRadialBlurType): IBGLTexture;
     procedure SetFrame(AIndex: integer);
     procedure FreeMemory;
     procedure Bind(ATextureNumber: integer);
@@ -362,6 +364,8 @@ type
     procedure ToggleFlipX; virtual; abstract;
     procedure ToggleFlipY; virtual; abstract;
     procedure ToggleMask; virtual;
+    function FilterBlurMotion({%H-}ARadius: single; {%H-}ABlurType: TRadialBlurType; {%H-}ADirection: TPointF): IBGLTexture; virtual;
+    function FilterBlurRadial({%H-}ARadius: single; {%H-}ABlurType: TRadialBlurType): IBGLTexture; virtual;
 
     procedure SetFrameSize(x,y: integer);
     procedure Update(ARGBAData: PDWord; AllocatedWidth, AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean = true);
@@ -426,6 +430,34 @@ type
     property GradientColors: boolean read GetUseGradientColors write SetUseGradientColors;
   end;
 
+  { TBGLCustomFrameBuffer }
+
+  TBGLCustomFrameBuffer = class
+  protected
+    FCanvas: pointer;
+    function GetTexture: IBGLTexture; virtual; abstract;
+    function GetHandle: pointer; virtual; abstract;
+    function GetMatrix: TAffineMatrix; virtual; abstract;
+    function GetHeight: integer; virtual; abstract;
+    function GetProjectionMatrix: TMatrix4D; virtual; abstract;
+    function GetWidth: integer; virtual; abstract;
+    procedure SetMatrix(AValue: TAffineMatrix); virtual; abstract;
+    procedure SetProjectionMatrix(AValue: TMatrix4D); virtual; abstract;
+
+  public
+    procedure UseOrthoProjection; virtual;
+    procedure UseOrthoProjection(AMinX,AMinY,AMaxX,AMaxY: single); virtual;
+    function MakeTextureAndFree: IBGLTexture; virtual;
+
+    procedure SetCanvas(ACanvas: Pointer); //for internal use
+    property Matrix: TAffineMatrix read GetMatrix write SetMatrix;
+    property ProjectionMatrix: TMatrix4D read GetProjectionMatrix write SetProjectionMatrix;
+    property Width: integer read GetWidth;
+    property Height: integer read GetHeight;
+    property Handle: pointer read GetHandle;
+    property Texture: IBGLTexture read GetTexture;
+  end;
+
 type
   TBGLBitmapAny = class of TBGLCustomBitmap;
   TBGLTextureAny = class of TBGLCustomTexture;
@@ -440,6 +472,26 @@ function GetPowerOfTwo( Value : Integer ) : Integer;
 implementation
 
 uses BGRAFilterScanner;
+
+procedure TBGLCustomFrameBuffer.UseOrthoProjection;
+begin
+  ProjectionMatrix := OrthoProjectionToOpenGL(0,0,Width,Height);
+end;
+
+procedure TBGLCustomFrameBuffer.UseOrthoProjection(AMinX, AMinY, AMaxX, AMaxY: single);
+begin
+  ProjectionMatrix := OrthoProjectionToOpenGL(AMinX,AMinY,AMaxX,AMaxY);
+end;
+
+function TBGLCustomFrameBuffer.MakeTextureAndFree: IBGLTexture;
+begin
+  raise exception.create('Not implemented');
+end;
+
+procedure TBGLCustomFrameBuffer.SetCanvas(ACanvas: Pointer);
+begin
+  FCanvas := ACanvas;
+end;
 
 function OrthoProjectionToOpenGL(AMinX, AMinY, AMaxX, AMaxY: Single): TMatrix4D;
 var sx,sy: single;
@@ -592,6 +644,17 @@ end;
 procedure TBGLCustomTexture.ToggleMask;
 begin
   FIsMask := not FIsMask;
+end;
+
+function TBGLCustomTexture.FilterBlurMotion(ARadius: single; ABlurType: TRadialBlurType;
+  ADirection: TPointF): IBGLTexture;
+begin
+  raise exception.Create('Not implemented');
+end;
+
+function TBGLCustomTexture.FilterBlurRadial(ARadius: single; ABlurType: TRadialBlurType): IBGLTexture;
+begin
+  raise exception.Create('Not implemented');
 end;
 
 procedure TBGLCustomTexture.Update(ARGBAData: PDWord; AllocatedWidth,
@@ -756,7 +819,9 @@ begin
     with TBGRACustomBitmap(AFPImage) do
     begin
       if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then SwapRedBlue;
+      if LineOrder = riloBottomToTop then VerticalFlip;
       InitFromData(PDWord(Data), Width,Height, Width,Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
+      if LineOrder = riloBottomToTop then VerticalFlip;
       if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then SwapRedBlue;
     end;
   end else

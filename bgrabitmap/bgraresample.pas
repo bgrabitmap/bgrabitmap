@@ -25,7 +25,7 @@ uses
 function SimpleStretch(bmp: TBGRACustomBitmap;
   NewWidth, NewHeight: integer): TBGRACustomBitmap;
 procedure StretchPutImage(bmp: TBGRACustomBitmap;
-  NewWidth, NewHeight: integer; dest: TBGRACustomBitmap; OffsetX,OffsetY: Integer; ADrawMode: TDrawMode; AOpacity: byte);
+  NewWidth, NewHeight: integer; dest: TBGRACustomBitmap; OffsetX,OffsetY: Integer; ADrawMode: TDrawMode; AOpacity: byte; ANoTransition: boolean = false);
 procedure DownSamplePutImage(source: TBGRACustomBitmap; factorX,factorY: integer; dest: TBGRACustomBitmap; OffsetX,OffsetY: Integer; ADrawMode: TDrawMode);
 function DownSample(source: TBGRACustomBitmap; factorX,factorY: integer): TBGRACustomBitmap;
 
@@ -111,7 +111,7 @@ begin
 end;
 
 procedure StretchPutImage(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer;
-  dest: TBGRACustomBitmap; OffsetX, OffsetY: Integer; ADrawMode: TDrawMode; AOpacity: byte);
+  dest: TBGRACustomBitmap; OffsetX, OffsetY: Integer; ADrawMode: TDrawMode; AOpacity: byte; ANoTransition: boolean);
 type
   TTransitionState = (tsNone, tsPlain, tsLeft, tsMiddle, tsRight);
 var
@@ -135,7 +135,7 @@ var
     a1,a2: NativeInt;
     newTransition: TTransitionState;
   begin
-    if DeltaSrc=0 then
+    if (DeltaSrc=0) or ANoTransition then
     begin
       PDest^ := PSrc^;
       transition:= tsPlain;
@@ -153,66 +153,93 @@ var
         ((newTransition = tsLeft) and (transition = tsRight)) then
       begin
         transition:= tsMiddle;
-        asum := psrc^.alpha + (psrc+DeltaSrc)^.alpha;
-        if asum = 0 then
-          pdest^ := BGRAPixelTransparent
-        else if asum = 510 then
+        if ADrawMode = dmXor then
         begin
-          pdest^.alpha := 255;
+          pdest^.alpha := (psrc^.alpha + (psrc+DeltaSrc)^.alpha + 1) shr 1;
           pdest^.red := (psrc^.red + (psrc+DeltaSrc)^.red + 1) shr 1;
           pdest^.green := (psrc^.green + (psrc+DeltaSrc)^.green + 1) shr 1;
           pdest^.blue := (psrc^.blue + (psrc+DeltaSrc)^.blue + 1) shr 1;
         end else
         begin
-          pdest^.alpha := asum shr 1;
-          a1 := psrc^.alpha;
-          a2 := (psrc+DeltaSrc)^.alpha;
-          pdest^.red := (psrc^.red*a1 + (psrc+DeltaSrc)^.red*a2 + (asum shr 1)) div asum;
-          pdest^.green := (psrc^.green*a1 + (psrc+DeltaSrc)^.green*a2 + (asum shr 1)) div asum;
-          pdest^.blue := (psrc^.blue*a1 + (psrc+DeltaSrc)^.blue*a2 + (asum shr 1)) div asum;
+          asum := psrc^.alpha + (psrc+DeltaSrc)^.alpha;
+          if asum = 0 then
+            pdest^ := BGRAPixelTransparent
+          else if asum = 510 then
+          begin
+            pdest^.alpha := 255;
+            pdest^.red := (psrc^.red + (psrc+DeltaSrc)^.red + 1) shr 1;
+            pdest^.green := (psrc^.green + (psrc+DeltaSrc)^.green + 1) shr 1;
+            pdest^.blue := (psrc^.blue + (psrc+DeltaSrc)^.blue + 1) shr 1;
+          end else
+          begin
+            pdest^.alpha := asum shr 1;
+            a1 := psrc^.alpha;
+            a2 := (psrc+DeltaSrc)^.alpha;
+            pdest^.red := (psrc^.red*a1 + (psrc+DeltaSrc)^.red*a2 + (asum shr 1)) div asum;
+            pdest^.green := (psrc^.green*a1 + (psrc+DeltaSrc)^.green*a2 + (asum shr 1)) div asum;
+            pdest^.blue := (psrc^.blue*a1 + (psrc+DeltaSrc)^.blue*a2 + (asum shr 1)) div asum;
+          end;
         end;
       end else
       if newTransition = tsRight then
       begin
         transition := tsRight;
-        asum := psrc^.alpha + (psrc+DeltaSrc)^.alpha*3;
-        if asum = 0 then
-          pdest^ := BGRAPixelTransparent
-        else if asum = 1020 then
+        if ADrawMode = dmXor then
         begin
-          pdest^.alpha := 255;
+          pdest^.alpha := (psrc^.alpha + (psrc+DeltaSrc)^.alpha*3 + 2) shr 2;
           pdest^.red := (psrc^.red + (psrc+DeltaSrc)^.red*3 + 2) shr 2;
           pdest^.green := (psrc^.green + (psrc+DeltaSrc)^.green*3 + 2) shr 2;
           pdest^.blue := (psrc^.blue + (psrc+DeltaSrc)^.blue*3 + 2) shr 2;
         end else
         begin
-          pdest^.alpha := asum shr 2;
-          a1 := psrc^.alpha;
-          a2 := (psrc+DeltaSrc)^.alpha;
-          pdest^.red := (psrc^.red*a1 + (psrc+DeltaSrc)^.red*a2*3 + (asum shr 1)) div asum;
-          pdest^.green := (psrc^.green*a1 + (psrc+DeltaSrc)^.green*a2*3 + (asum shr 1)) div asum;
-          pdest^.blue := (psrc^.blue*a1 + (psrc+DeltaSrc)^.blue*a2*3 + (asum shr 1)) div asum;
+          asum := psrc^.alpha + (psrc+DeltaSrc)^.alpha*3;
+          if asum = 0 then
+            pdest^ := BGRAPixelTransparent
+          else if asum = 1020 then
+          begin
+            pdest^.alpha := 255;
+            pdest^.red := (psrc^.red + (psrc+DeltaSrc)^.red*3 + 2) shr 2;
+            pdest^.green := (psrc^.green + (psrc+DeltaSrc)^.green*3 + 2) shr 2;
+            pdest^.blue := (psrc^.blue + (psrc+DeltaSrc)^.blue*3 + 2) shr 2;
+          end else
+          begin
+            pdest^.alpha := asum shr 2;
+            a1 := psrc^.alpha;
+            a2 := (psrc+DeltaSrc)^.alpha;
+            pdest^.red := (psrc^.red*a1 + (psrc+DeltaSrc)^.red*a2*3 + (asum shr 1)) div asum;
+            pdest^.green := (psrc^.green*a1 + (psrc+DeltaSrc)^.green*a2*3 + (asum shr 1)) div asum;
+            pdest^.blue := (psrc^.blue*a1 + (psrc+DeltaSrc)^.blue*a2*3 + (asum shr 1)) div asum;
+          end;
         end;
       end else
       begin
         transition:= tsLeft;
-        asum := psrc^.alpha*3 + (psrc+DeltaSrc)^.alpha;
-        if asum = 0 then
-          pdest^ := BGRAPixelTransparent
-        else if asum = 1020 then
+        if ADrawMode = dmXor then
         begin
-          pdest^.alpha := 255;
+          pdest^.alpha := (psrc^.alpha*3 + (psrc+DeltaSrc)^.alpha + 2) shr 2;
           pdest^.red := (psrc^.red*3 + (psrc+DeltaSrc)^.red + 2) shr 2;
           pdest^.green := (psrc^.green*3 + (psrc+DeltaSrc)^.green + 2) shr 2;
           pdest^.blue := (psrc^.blue*3 + (psrc+DeltaSrc)^.blue + 2) shr 2;
         end else
         begin
-          pdest^.alpha := asum shr 2;
-          a1 := psrc^.alpha;
-          a2 := (psrc+DeltaSrc)^.alpha;
-          pdest^.red := (psrc^.red*a1*3 + (psrc+DeltaSrc)^.red*a2 + (asum shr 1)) div asum;
-          pdest^.green := (psrc^.green*a1*3 + (psrc+DeltaSrc)^.green*a2 + (asum shr 1)) div asum;
-          pdest^.blue := (psrc^.blue*a1*3 + (psrc+DeltaSrc)^.blue*a2 + (asum shr 1)) div asum;
+          asum := psrc^.alpha*3 + (psrc+DeltaSrc)^.alpha;
+          if asum = 0 then
+            pdest^ := BGRAPixelTransparent
+          else if asum = 1020 then
+          begin
+            pdest^.alpha := 255;
+            pdest^.red := (psrc^.red*3 + (psrc+DeltaSrc)^.red + 2) shr 2;
+            pdest^.green := (psrc^.green*3 + (psrc+DeltaSrc)^.green + 2) shr 2;
+            pdest^.blue := (psrc^.blue*3 + (psrc+DeltaSrc)^.blue + 2) shr 2;
+          end else
+          begin
+            pdest^.alpha := asum shr 2;
+            a1 := psrc^.alpha;
+            a2 := (psrc+DeltaSrc)^.alpha;
+            pdest^.red := (psrc^.red*a1*3 + (psrc+DeltaSrc)^.red*a2 + (asum shr 1)) div asum;
+            pdest^.green := (psrc^.green*a1*3 + (psrc+DeltaSrc)^.green*a2 + (asum shr 1)) div asum;
+            pdest^.blue := (psrc^.blue*a1*3 + (psrc+DeltaSrc)^.blue*a2 + (asum shr 1)) div asum;
+          end;
         end;
       end;
     end;

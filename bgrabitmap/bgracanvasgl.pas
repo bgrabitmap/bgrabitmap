@@ -93,8 +93,8 @@ type
     procedure UseProgram(AProgram: DWord); virtual; abstract;
     function GetUniformVariable(AProgram: DWord; AName: string): DWord; virtual; abstract;
     function GetAttribVariable(AProgram: DWord; AName: string): DWord; virtual; abstract;
-    procedure SetUniformSingle(AVariable: DWord; const AValue; ACount: integer); virtual; abstract;
-    procedure SetUniformInteger(AVariable: DWord; const AValue; ACount: integer); virtual; abstract;
+    procedure SetUniformSingle(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); virtual; abstract;
+    procedure SetUniformInteger(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); virtual; abstract;
     procedure BindAttribute(AAttribute: TAttributeVariable); virtual; abstract;
     procedure UnbindAttribute(AAttribute: TAttributeVariable); virtual; abstract;
     procedure FreeShaders;
@@ -109,6 +109,7 @@ type
 
   TBGLCustomCanvas = class
   private
+    FActiveFrameBuffer: TBGLCustomFrameBuffer;
     FHeight: integer;
     FWidth: integer;
     FNoClip: boolean;
@@ -120,6 +121,8 @@ type
     procedure InternalArc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; ABorderColor,AOuterFillColor,ACenterFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false); overload;
     procedure InternalArcInRect(r: TRect; StartAngleRad,EndAngleRad: Single; ABorderColor,AOuterFillColor,ACenterFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false); overload;
     function ComputeEllipseC(r: TRect; AHasBorder: boolean; out cx,cy,rx,ry: single): boolean;
+    function GetHeight: integer; virtual;
+    function GetWidth: integer; virtual;
     procedure SetWidth(AValue: integer); virtual;
     procedure SetHeight(AValue: integer); virtual;
     function GetClipRect: TRect;
@@ -134,6 +137,7 @@ type
     function GetBlendMode: TOpenGLBlendMode; virtual; abstract;
     function GetFaceCulling: TFaceCulling; virtual; abstract;
     procedure SetFaceCulling(AValue: TFaceCulling); virtual; abstract;
+    procedure SetActiveFrameBuffer(AValue: TBGLCustomFrameBuffer); virtual;
 
     function GetLighting: TBGLCustomLighting; virtual;
 
@@ -280,9 +284,13 @@ type
     procedure EndZBuffer; virtual;
     procedure WaitForGPU({%H-}AOption: TWaitForGPUOption); virtual;
 
+    function GetImage({%H-}x,{%H-}y,{%H-}w,{%H-}h: integer): TBGRACustomBitmap; virtual;
+    function CreateFrameBuffer({%H-}AWidth,{%H-}AHeight: integer): TBGLCustomFrameBuffer; virtual;
+
     procedure NoClip;
-    property Width: integer read FWidth write SetWidth;
-    property Height: integer read FHeight write SetHeight;
+    property ActiveFrameBuffer: TBGLCustomFrameBuffer read FActiveFrameBuffer write SetActiveFrameBuffer;
+    property Width: integer read GetWidth write SetWidth;
+    property Height: integer read GetHeight write SetHeight;
     property ClipRect: TRect read GetClipRect write SetClipRect;
     property Matrix: TAffineMatrix read GetMatrix write SetMatrix;
     property ProjectionMatrix: TMatrix4D read GetProjectionMatrix write SetProjectionMatrix;
@@ -345,6 +353,7 @@ end;
 function TBGLCustomLighting.GetShader(AName: string): TBGLCustomShader;
 var index: integer;
 begin
+  if ShaderList = nil then ShaderList := TStringList.Create;
   index := ShaderList.IndexOf(AName);
   if index = -1 then
     result := nil
@@ -355,6 +364,7 @@ end;
 procedure TBGLCustomLighting.SetShader(AName: string; AValue: TBGLCustomShader);
 var index: integer;
 begin
+  if ShaderList = nil then ShaderList := TStringList.Create;
   index := ShaderList.IndexOf(AName);
   if AValue = nil then
   begin
@@ -458,6 +468,22 @@ begin
     if ry < 0 then ry := 0;
   end;
   result := true;
+end;
+
+function TBGLCustomCanvas.GetHeight: integer;
+begin
+  if FActiveFrameBuffer = nil then
+    result := FHeight
+  else
+    result := FActiveFrameBuffer.Height;
+end;
+
+function TBGLCustomCanvas.GetWidth: integer;
+begin
+  if FActiveFrameBuffer = nil then
+    result := FWidth
+  else
+    result := FActiveFrameBuffer.Width;
 end;
 
 procedure TBGLCustomCanvas.SetWidth(AValue: integer);
@@ -1188,6 +1214,16 @@ begin
   APath.fillConvex(self, c, 0.1, APixelCenteredCoordinates);
 end;
 
+procedure TBGLCustomCanvas.SetActiveFrameBuffer(AValue: TBGLCustomFrameBuffer);
+begin
+  if FActiveFrameBuffer=AValue then Exit;
+  if FActiveFrameBuffer <> nil then
+    FActiveFrameBuffer.SetCanvas(nil);
+  FActiveFrameBuffer:=AValue;
+  if FActiveFrameBuffer <> nil then
+    FActiveFrameBuffer.SetCanvas(self);
+end;
+
 procedure TBGLCustomCanvas.SwapRect(var r: TRect);
 var
   temp: LongInt;
@@ -1781,6 +1817,17 @@ end;
 
 procedure TBGLCustomCanvas.WaitForGPU(AOption: TWaitForGPUOption);
 begin
+  raise exception.Create('Not implemented');
+end;
+
+function TBGLCustomCanvas.GetImage(x, y, w, h: integer): TBGRACustomBitmap;
+begin
+  result := nil;
+end;
+
+function TBGLCustomCanvas.CreateFrameBuffer(AWidth, AHeight: integer): TBGLCustomFrameBuffer;
+begin
+  result := nil;
   raise exception.Create('Not implemented');
 end;
 

@@ -132,7 +132,7 @@ procedure BGRABitmapDraw(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
   
   begin
     ...
-    BGRAReplace(temp, someBmp.Filter... );
+    BGRAReplace(someBmp, someBmp.Filter... );
   end;
 }
 procedure BGRAReplace(var Destination: TBGRABitmap; Temp: TObject);

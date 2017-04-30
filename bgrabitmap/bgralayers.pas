@@ -59,15 +59,16 @@ type
     function ToString: ansistring; override;
     function GetLayerBitmapDirectly(layer: integer): TBGRABitmap; virtual;
     function GetLayerBitmapCopy(layer: integer): TBGRABitmap; virtual; abstract;
-    function ComputeFlatImage: TBGRABitmap; overload;
-    function ComputeFlatImage(firstLayer, lastLayer: integer): TBGRABitmap; overload;
-    function ComputeFlatImage(ARect: TRect): TBGRABitmap; overload;
-    function ComputeFlatImage(ARect: TRect; firstLayer, lastLayer: integer): TBGRABitmap; overload;
+    function ComputeFlatImage(ASeparateXorMask: boolean = false): TBGRABitmap; overload;
+    function ComputeFlatImage(firstLayer, lastLayer: integer; ASeparateXorMask: boolean = false): TBGRABitmap; overload;
+    function ComputeFlatImage(ARect: TRect; ASeparateXorMask: boolean = false): TBGRABitmap; overload;
+    function ComputeFlatImage(ARect: TRect; firstLayer, lastLayer: integer; ASeparateXorMask: boolean = false): TBGRABitmap; overload;
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); override; overload;
     procedure Draw(Canvas: TCanvas; x,y: integer); overload;
     procedure Draw(Canvas: TCanvas; x,y: integer; firstLayer, lastLayer: integer); overload;
     procedure Draw(Dest: TBGRABitmap; x,y: integer); overload;
-    procedure Draw(Dest: TBGRABitmap; AX,AY: integer; firstLayer, lastLayer: integer); overload;
+    procedure Draw(Dest: TBGRABitmap; x,y: integer; ASeparateXorMask: boolean = false); overload;
+    procedure Draw(Dest: TBGRABitmap; AX,AY: integer; firstLayer, lastLayer: integer; ASeparateXorMask: boolean = false); overload;
 
     procedure FreezeExceptOneLayer(layer: integer); overload;
     procedure Freeze(firstLayer, lastLayer: integer); overload;
@@ -208,7 +209,7 @@ procedure UnregisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc; AProgr
 
 implementation
 
-uses BGRAUTF8;
+uses BGRAUTF8, BGRABlend;
 
 var
   OnLayeredBitmapLoadStartProc: TOnLayeredBitmapLoadStartProc;
@@ -412,7 +413,6 @@ end;
 
 procedure TBGRALayeredBitmap.LoadFromFile(const filenameUTF8: string);
 var bmp: TBGRABitmap;
-    index: integer;
     ext: string;
     temp: TBGRACustomLayeredBitmap;
     i: integer;
@@ -434,13 +434,11 @@ begin
   bmp := TBGRABitmap.Create(filenameUTF8, True);
   Clear;
   SetSize(bmp.Width,bmp.Height);
-  index := AddSharedLayer(bmp);
-  FLayers[index].Owner:= true;
+  AddOwnedLayer(bmp);
 end;
 
 procedure TBGRALayeredBitmap.LoadFromStream(stream: TStream);
 var bmp: TBGRABitmap;
-   index: integer;
    temp: TBGRALayeredBitmap;
 begin
   if Assigned(LayeredBitmapLoadFromStreamProc) then
@@ -453,11 +451,11 @@ begin
       exit;
     end;
   end;
+
   bmp := TBGRABitmap.Create(stream);
   Clear;
   SetSize(bmp.Width,bmp.Height);
-  index := AddSharedLayer(bmp);
-  FLayers[index].Owner:= true;
+  AddOwnedLayer(bmp);
 end;
 
 procedure TBGRALayeredBitmap.SetSize(AWidth, AHeight: integer);
@@ -1009,20 +1007,21 @@ begin
   end;
 end;
 
-function TBGRACustomLayeredBitmap.ComputeFlatImage: TBGRABitmap;
+function TBGRACustomLayeredBitmap.ComputeFlatImage(ASeparateXorMask: boolean): TBGRABitmap;
 begin
-  result := ComputeFlatImage(rect(0,0,Width,Height), 0, NbLayers - 1);
+  result := ComputeFlatImage(rect(0,0,Width,Height), 0, NbLayers - 1, ASeparateXorMask);
 end;
 
 function TBGRACustomLayeredBitmap.ComputeFlatImage(firstLayer,
-  lastLayer: integer): TBGRABitmap;
+  lastLayer: integer; ASeparateXorMask: boolean): TBGRABitmap;
 begin
-  result := ComputeFlatImage(rect(0,0,Width,Height), firstLayer,LastLayer);
+  result := ComputeFlatImage(rect(0,0,Width,Height), firstLayer,LastLayer,ASeparateXorMask);
 end;
 
-function TBGRACustomLayeredBitmap.ComputeFlatImage(ARect: TRect): TBGRABitmap;
+function TBGRACustomLayeredBitmap.ComputeFlatImage(ARect: TRect;
+  ASeparateXorMask: boolean): TBGRABitmap;
 begin
-  result := ComputeFlatImage(ARect,0, NbLayers - 1);
+  result := ComputeFlatImage(ARect,0, NbLayers - 1, ASeparateXorMask);
 end;
 
 destructor TBGRACustomLayeredBitmap.Destroy;
@@ -1030,13 +1029,15 @@ begin
   Clear;
 end;
 
-function TBGRACustomLayeredBitmap.ComputeFlatImage(ARect: TRect; firstLayer, lastLayer: integer): TBGRABitmap;
+function TBGRACustomLayeredBitmap.ComputeFlatImage(ARect: TRect; firstLayer, lastLayer: integer; ASeparateXorMask: boolean): TBGRABitmap;
 var
   tempLayer: TBGRABitmap;
   i,j: integer;
   mustFreeCopy: boolean;
   op: TBlendOperation;
 begin
+  if (firstLayer < 0) or (lastLayer > NbLayers-1) then
+    raise ERangeError.Create('Layer index out of bounds');
   If (ARect.Right <= ARect.Left) or (ARect.Bottom <= ARect.Top) then
   begin
     result := TBGRABitmap.Create(0,0);
@@ -1075,6 +1076,12 @@ begin
       with LayerOffset[i] do
       begin
         op := BlendOperation[i];
+        //XOR mask
+        if (op = boXor) and ASeparateXorMask then
+        begin
+          result.NeedXorMask;
+          result.XorMask.BlendImageOver(x-ARect.Left,y-ARect.Top, tempLayer, op, LayerOpacity[i], LinearBlend);
+        end else
         //first layer is simply the background
         if i = firstLayer then
           Result.PutImage(x-ARect.Left, y-ARect.Top, tempLayer, dmSet, LayerOpacity[i])
@@ -1092,6 +1099,8 @@ begin
     end;
     inc(i);
   end;
+  if result.XorMask <> nil then
+    AlphaFillInline(result.XorMask.Data, 0, result.XorMask.NbPixels);
 end;
 
 procedure TBGRACustomLayeredBitmap.Draw(ACanvas: TCanvas; const Rect: TRect);
@@ -1126,7 +1135,13 @@ begin
   Draw(Dest,x,y,0,NbLayers-1);
 end;
 
-procedure TBGRACustomLayeredBitmap.Draw(Dest: TBGRABitmap; AX, AY: integer; firstLayer, lastLayer: integer);
+procedure TBGRACustomLayeredBitmap.Draw(Dest: TBGRABitmap; x, y: integer;
+  ASeparateXorMask: boolean);
+begin
+  Draw(Dest,x,y,0,NbLayers-1,ASeparateXorMask);
+end;
+
+procedure TBGRACustomLayeredBitmap.Draw(Dest: TBGRABitmap; AX, AY: integer; firstLayer, lastLayer: integer; ASeparateXorMask: boolean);
 var
   temp: TBGRABitmap;
   i,j: integer;
@@ -1142,7 +1157,7 @@ begin
   for i := firstLayer to lastLayer do
     if LayerVisible[i] and not (BlendOperation[i] in[boTransparent,boLinearBlend]) then
     begin
-      temp := ComputeFlatImage(rect(NewClipRect.Left-AX,NewClipRect.Top-AY,NewClipRect.Right-AX,NewClipRect.Bottom-AY));
+      temp := ComputeFlatImage(rect(NewClipRect.Left-AX,NewClipRect.Top-AY,NewClipRect.Right-AX,NewClipRect.Bottom-AY), ASeparateXorMask);
       if self.LinearBlend then
         Dest.PutImage(NewClipRect.Left,NewClipRect.Top,temp,dmLinearBlend)
       else

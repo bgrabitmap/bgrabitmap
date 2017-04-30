@@ -23,6 +23,9 @@
    - RLE optimisation using a read buffer
    - direct access to pixels with TBGRABitmap
    - vertical shrink option with MinifyHeight,WantedHeight,OutputHeight (useful for thumbnails)
+  01/2017 by circular:
+   - support for OS/2 1.x format
+   - support for headerless files
 }
 
 {$mode objfpc}
@@ -36,19 +39,40 @@ uses FPImage, classes, sysutils, BMPcomn, BGRABitmapTypes;
 
 type
   TBMPTransparencyOption = (toAuto, toTransparent, toOpaque);
+  TBitMapInfoHeader = BMPcomn.TBitMapInfoHeader;
+  TBitMapFileHeader = BMPcomn.TBitMapFileHeader;
+  TOS2BitmapHeader = packed record
+    bcSize: DWORD;
+    bcWidth: Word;
+    bcHeight: Word;
+    bcPlanes: Word;
+    bcBitCount: Word;
+  end;
+  TMinimumBitmapHeader = packed record
+    Size:longint;
+    Width:longint;
+    Height:longint;
+    Planes:word;
+    BitCount:word;
+  end;
+  TBitmapSubFormat = (bsfWithFileHeader, bsfHeaderless, bsfHeaderlessWithMask);
+  TReadScanlineProc = procedure(Row : Integer; Stream : TStream) of object;
+  TWriteScanlineProc = procedure(Row : Integer; Img : TFPCustomImage) of object;
+  TProgressProc = procedure(Percent: integer; var ShouldContinue: boolean) of object;
+
 
   { TBGRAReaderBMP }
 
-  TBGRAReaderBMP = class (TFPCustomImageReader)
+  TBGRAReaderBMP = class (TBGRAImageReader)
     Private
       DeltaX, DeltaY : integer; // Used for the never-used delta option in RLE
       TopDown : boolean;        // If set, bitmap is stored top down instead of bottom up
-      continue : boolean;       // needed for onprogress event
-      Rect : TRect;
       Procedure FreeBufs;       // Free (and nil) buffers.
     protected
       ReadSize : Integer;       // Size (in bytes) of 1 scanline.
-      BFI : TBitMapInfoHeader;  // The header as read from the stream.
+      BFH: TBitMapFileHeader;    // The file header
+      BFI: TBitMapInfoHeader;  // The header as read from the stream.
+      FPaletteEntrySize: integer;  // 4 for Windows, 3 for OS/2 1.x
       FPalette : PFPcolor;      // Buffer with Palette entries. (useless now)
       FBGRAPalette : PBGRAPixel;
       LineBuf : PByte;          // Buffer for 1 scanline. Can be Byte, Word, TColorRGB or TColorRGBA
@@ -61,6 +85,8 @@ type
       FBufferPos, FBufferSize: integer;
       FBufferStream: TStream;
       FHasAlphaValues: boolean;
+      FMaskData: PByte;
+      FMaskDataSize: integer;
       // SetupRead will allocate the needed buffers, and read the colormap if needed.
       procedure SetupRead(nPalette, nRowBits: Integer; Stream : TStream); virtual;
       function CountBits(Value : byte) : shortint;
@@ -73,6 +99,9 @@ type
       procedure SkipScanLine(Row : Integer; Stream : TStream); virtual;
       procedure WriteScanLine(Row : Integer; Img : TFPCustomImage); virtual;
       procedure WriteScanLineBGRA(Row : Integer; Img : TFPCustomImage); virtual;
+      procedure ReadMaskLine({%H-}Row : Integer; Stream : TStream); virtual;
+      procedure SkipMaskLine({%H-}Row : Integer; Stream : TStream); virtual;
+      procedure WriteMaskLine(Row : Integer; Img : TFPCustomImage); virtual;
       // required by TFPCustomImageReader
       procedure InternalRead  (Stream:TStream; Img:TFPCustomImage); override;
       function  InternalCheck (Stream:TStream) : boolean; override;
@@ -80,23 +109,79 @@ type
       procedure CloseReadBuffer;
       function GetNextBufferByte: byte;
       procedure MakeOpaque(Img: TFPCustomImage);
+      procedure LoadMask(Stream:TStream; Img:TFPCustomImage; var ShouldContinue: boolean);
+      procedure MainProgressProc(Percent: integer; var ShouldContinue: boolean);
+      procedure ImageVerticalLoop(Stream:TStream; Img:TFPCustomImage;
+        ReadProc, SkipProc: TReadScanlineProc; WriteProc: TWriteScanlineProc;
+        ProgressProc: TProgressProc; var ShouldContinue: boolean);
     public
       MinifyHeight,WantedHeight: integer;
+      Hotspot: TPoint;
+      Subformat: TBitmapSubFormat;
       constructor Create; override;
       destructor Destroy; override;
       property OriginalHeight: integer read FOriginalHeight;
       property OutputHeight: integer read FOutputHeight;
       property TransparencyOption: TBMPTransparencyOption read FTransparencyOption write FTransparencyOption;
+      function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
   end;
+
+function MakeBitmapFileHeader(AData: TStream): TBitMapFileHeader;
 
 implementation
 
-type
-  TWriteScanlineProc = procedure (Row : Integer; Img : TFPCustomImage) of object;
+uses math;
 
+function MakeBitmapFileHeader(AData: TStream): TBitMapFileHeader;
+var header: PBitMapInfoHeader;
+  headerSize: integer;
+  extraSize: integer;
+  os2header: TOS2BitmapHeader;
+begin
+  AData.Position := 0;
+  headerSize := LEtoN(AData.ReadDWord);
+  if headerSize = sizeof(TOS2BitmapHeader) then //OS2 1.x
+  begin
+    AData.ReadBuffer({%H-}os2header,sizeof(os2header));
+    if LEtoN(os2header.bcBitCount) in [1,2,4,8] then
+    begin
+      extraSize := 3*(1 shl LEtoN(os2header.bcBitCount));
+    end else
+      extraSize := 0;
+    result.bfType:= Word('BM');
+    result.bfSize := NtoLE(Integer(sizeof(TBitMapFileHeader) + AData.Size));
+    result.bfReserved:= 0;
+    result.bfOffset := NtoLE(Integer(sizeof(TBitMapFileHeader) + headerSize + extraSize));
+  end else
+  begin
+    if (headerSize < 16) or (headerSize > AData.Size) or (headerSize > 1024) then
+      raise exception.Create('Invalid header size');
+    getmem(header, headerSize);
+    try
+      fillchar(header^, headerSize,0);
+      header^.Size := NtoLE(headerSize);
+      AData.ReadBuffer((PByte(header)+4)^, headerSize-4);
+      if LEtoN(header^.Compression) = BI_BITFIELDS then
+        extraSize := 4*3
+      else if LEtoN(header^.BitCount) in [1,2,4,8] then
+      begin
+        if header^.ClrUsed > 0 then
+          extraSize := 4*header^.ClrUsed
+        else
+          extraSize := 4*(1 shl header^.BitCount);
+      end else
+        extraSize := 0;
+      result.bfType:= Word('BM');
+      result.bfSize := NtoLE(Integer(sizeof(TBitMapFileHeader) + AData.Size));
+      result.bfReserved:= 0;
+      result.bfOffset := NtoLE(Integer(sizeof(TBitMapFileHeader) + headerSize + extraSize));
+    finally
+      freemem(header);
+    end;
+  end;
+end;
 
 function RGBAToFPColor(Const RGBA: TColorRGBA) : TFPcolor;
-
 begin
   with Result, RGBA do
     begin
@@ -124,6 +209,7 @@ constructor TBGRAReaderBMP.Create;
 begin
   inherited create;
   FTransparencyOption := toTransparent;
+  Subformat:= bsfWithFileHeader;
 end;
 
 destructor TBGRAReaderBMP.Destroy;
@@ -131,6 +217,62 @@ destructor TBGRAReaderBMP.Destroy;
 begin
   FreeBufs;
   inherited destroy;
+end;
+
+function TBGRAReaderBMP.GetQuickInfo(AStream: TStream): TQuickImageInfo;
+var headerSize: dword;
+  os2header: TOS2BitmapHeader;
+  minHeader: TMinimumBitmapHeader;
+  totalDepth: integer;
+  headerPos: int64;
+begin
+  fillchar({%H-}result, sizeof(result), 0);
+  headerPos := AStream.Position;
+  if AStream.Read({%H-}headerSize, sizeof(headerSize)) <> sizeof(headerSize) then exit;
+  headerSize := LEtoN(headerSize);
+
+  //check presence of file header
+  if (headerSize and $ffff) = BMmagic then
+  begin
+    headerPos += sizeof(TBitMapFileHeader);
+    AStream.Position := headerPos;
+    if AStream.Read(headerSize, sizeof(headerSize)) <> sizeof(headerSize) then exit;
+    headerSize := LEtoN(headerSize);
+  end;
+
+  AStream.Position := headerPos;
+
+  if headerSize = sizeof(TOS2BitmapHeader) then //OS2 1.x
+  begin
+    if AStream.Read({%H-}os2header, sizeof(os2header)) <> sizeof(os2header) then exit;
+    result.width := LEtoN(os2header.bcWidth);
+    result.height := LEtoN(os2header.bcHeight);
+    result.colorDepth := LEtoN(os2header.bcBitCount);
+    result.alphaDepth := 0;
+  end
+  else
+  if headerSize >= sizeof(minHeader) then
+  begin
+    if AStream.Read({%H-}minHeader, sizeof(minHeader)) <> sizeof(minHeader) then exit;
+    result.width := LEtoN(minHeader.Width);
+    result.height := LEtoN(minHeader.Height);
+    totalDepth := LEtoN(minHeader.BitCount);
+    if totalDepth > 24 then
+    begin
+      result.colorDepth:= 24;
+      result.alphaDepth:= 8;
+    end else
+    begin
+      result.colorDepth := totalDepth;
+      result.alphaDepth:= 0;
+    end;
+  end else
+  begin
+    result.width := 0;
+    result.height:= 0;
+    result.colorDepth:= 0;
+    result.alphaDepth:= 0;
+  end;
 end;
 
 procedure TBGRAReaderBMP.FreeBufs;
@@ -232,7 +374,8 @@ procedure TBGRAReaderBMP.SetupRead(nPalette, nRowBits: Integer; Stream : TStream
 
 var
   ColInfo: ARRAY OF TColorRGBA;
-  i: Integer;
+  ColInfo3: packed array of TColorRGB;
+  i,colorPresent: Integer;
 
 begin
   if ((BFI.Compression=BI_RGB) and (BFI.BitCount=16)) then { 5 bits per channel, fixed mask }
@@ -261,9 +404,20 @@ begin
     GetMem(FBGRAPalette, nPalette*SizeOf(TBGRAPixel));
     SetLength(ColInfo, nPalette);
     if BFI.ClrUsed>0 then
-      Stream.Read(ColInfo[0],BFI.ClrUsed*SizeOf(TColorRGBA))
-    else // Seems to me that this is dangerous.
-      Stream.Read(ColInfo[0],nPalette*SizeOf(TColorRGBA));
+      colorPresent:= min(BFI.ClrUsed,nPalette)
+    else
+      colorPresent:= nPalette;
+    if FPaletteEntrySize = 3 then
+    begin
+      setlength(ColInfo3, nPalette);
+      Stream.Read(ColInfo3[0],colorPresent*SizeOf(TColorRGB));
+      for i := 0 to colorPresent-1 do
+        ColInfo[i].RGB := ColInfo3[i];
+    end
+    else
+    begin
+      Stream.Read(ColInfo[0],colorPresent*SizeOf(TColorRGBA));
+    end;
     for i := 0 to High(ColInfo) do
     begin
       FPalette[i] := RGBToFPColor(ColInfo[i].RGB);
@@ -281,27 +435,39 @@ end;
 procedure TBGRAReaderBMP.InternalRead(Stream:TStream; Img:TFPCustomImage);
 
 Var
-  PrevSourceRow,SourceRow, i, pallen, SourceRowDelta, SourceLastRow : Integer;
+  i, pallen : Integer;
   BadCompression : boolean;
   WriteScanlineProc: TWriteScanlineProc;
-  SourceRowAdd: integer;
-  SourceRowAcc,SourceRowMod: integer;
-  SourceRowAccAdd: integer;
-  OutputLastRow, OutputRow, OutputRowDelta: integer;
-
-  prevPercent, percent, percentAdd : byte;
-  percentMod : longword;
-  percentAcc, percentAccAdd : longword;
+  headerSize: longword;
+  os2header: TOS2BitmapHeader;
+  shouldContinue: boolean;
 
 begin
-  Rect.Left:=0; Rect.Top:=0; Rect.Right:=0; Rect.Bottom:=0;
-  continue:=true;
-  Progress(psStarting,0,false,Rect,'',continue);
-  if not continue then exit;
-  Stream.Read(BFI,SizeOf(BFI));
-  {$IFDEF ENDIAN_BIG}
-  SwapBMPInfoHeader(BFI);
-  {$ENDIF}
+  shouldContinue:=true;
+  Progress(psStarting,0,false,EmptyRect,'',shouldContinue);
+  if not shouldContinue then exit;
+
+  headerSize := LEtoN(Stream.ReadDWord);
+  fillchar({%H-}BFI,SizeOf(BFI),0);
+  if headerSize = sizeof(TOS2BitmapHeader) then
+  begin
+    fillchar({%H-}os2header,SizeOf(os2header),0);
+    Stream.Read(os2header.bcWidth,min(SizeOf(os2header),headerSize)-sizeof(DWord));
+    BFI.Size := 16;
+    BFI.Width := LEtoN(os2header.bcWidth);
+    BFI.Height := LEtoN(os2header.bcHeight);
+    BFI.Planes := LEtoN(os2header.bcPlanes);
+    BFI.BitCount := LEtoN(os2header.bcBitCount);
+    FPaletteEntrySize:= 3;
+  end else
+  begin
+    Stream.Read(BFI.Width,min(SizeOf(BFI),headerSize)-sizeof(DWord));
+    {$IFDEF ENDIAN_BIG}
+    SwapBMPInfoHeader(BFI);
+    {$ENDIF}
+    BFI.Size := headerSize;
+    FPaletteEntrySize:= 4;
+  end;
   { This will move past any junk after the BFI header }
   Stream.Position:=Stream.Position-SizeOf(BFI)+BFI.Size;
   with BFI do
@@ -338,8 +504,10 @@ begin
         SetupRead(0,Width*8*3,Stream);
       32:
         SetupRead(0,Width*8*4,Stream);
+    else raise exception.Create('Invalid bit depth ('+inttostr(BFI.BitCount)+')');
     end;
   end;
+  if Subformat = bsfHeaderlessWithMask then BFI.Height := BFI.Height div 2;
   Try
     { Note: it would be better to Fill the image palette in setupread instead of creating FPalette.
       FPalette is indeed useless but we cannot remove it since it's not private :\ }
@@ -349,100 +517,39 @@ begin
       else pallen:=(1 shl BFI.BitCount);
     if pallen>0 then
     begin
+      if FPalette = nil then raise exception.Create('Internal error: palette object not initialized');
       Img.Palette.Count:=pallen;
       for i:=0 to pallen-1 do
         Img.Palette.Color[i]:=FPalette[i];
     end;
-    if MinifyHeight < BFI.Height then FOutputHeight:= MinifyHeight else
-    if WantedHeight <> 0 then FOutputHeight:= WantedHeight else
-      FOutputHeight:= 0;
+    if (MinifyHeight > 0) and (MinifyHeight < BFI.Height) then FOutputHeight:= MinifyHeight else
+    if WantedHeight > 0 then FOutputHeight:= WantedHeight else
+      FOutputHeight:= BFI.Height;
 
-    percent:=0;
-    percentAdd := 100 div BFI.Height;
-    percentAcc:=BFI.Height div 2;
-    percentAccAdd := 100 mod BFI.Height;
-    percentMod:=BFI.Height;
+    if (BFI.Compression=BI_RLE8) or(BFI.Compression=BI_RLE4) then InitReadBuffer(Stream,2048);
+    FHasAlphaValues:= false;
 
-    DeltaX:=-1; DeltaY:=-1;
-    if TopDown then
-    begin
-      SourceRowDelta := 1;
-      SourceRow := 0;
-      SourceLastRow := BFI.Height-1;
-    end else
-    begin
-      SourceRowDelta := -1;
-      SourceRow := BFI.Height-1;
-      SourceLastRow := 0;
-    end;
-    OutputRowDelta:= SourceRowDelta;
-    if (OutputHeight <= 0) or (OutputHeight = BFI.Height) then
-    begin
-      SourceRowAdd := SourceRowDelta;
-      SourceRowAcc := 0;
-      SourceRowAccAdd := 0;
-      SourceRowMod := 1;
-      OutputRow := SourceRow;
-      OutputLastRow := SourceLastRow;
-      Img.SetSize(BFI.Width,BFI.Height);
-    end else
-    begin
-      SourceRowAdd := (BFI.Height div OutputHeight)*SourceRowDelta;
-      SourceRowAcc := OutputHeight div 2;
-      SourceRowAccAdd := BFI.Height mod OutputHeight;
-      SourceRowMod := OutputHeight;
-      If TopDown then
-      begin
-        OutputRow := 0;
-        OutputLastRow := OutputHeight-1;
-      end
-      else
-      begin
-        OutputRow := OutputHeight-1;
-        OutputLastRow := 0;
-      end;
-      Img.SetSize(BFI.Width,OutputHeight);
-    end;
+    Img.SetSize(BFI.Width,FOutputHeight);
+
     if Img is TBGRACustomBitmap then
       WriteScanlineProc := @WriteScanLineBGRA else
         WriteScanlineProc := @WriteScanLine;
-    PrevSourceRow := SourceRow-SourceRowDelta;
-    if (BFI.Compression=BI_RLE8) or(BFI.Compression=BI_RLE4) then InitReadBuffer(Stream,2048);
-    FHasAlphaValues:= false;
-    while SourceRow <> SourceLastRow+SourceRowDelta do
+
+    ImageVerticalLoop(Stream, Img, @ReadScanLine, @SkipScanLine, WriteScanlineProc,
+                      @MainProgressProc, shouldContinue);
+
+    if shouldContinue then
     begin
-      while PrevSourceRow <> SourceRow do
-      begin
-        inc(PrevSourceRow, SourceRowDelta);
-        if PrevSourceRow = SourceRow then
-          ReadScanLine(PrevSourceRow,Stream)
-        else
-          SkipScanLine(PrevSourceRow,Stream);
-      end;
-      WriteScanLineProc(OutputRow,Img);
-      if OutputRow = OutputLastRow then break;
-      if not continue then exit;
+      if not FHasAlphaValues and (TransparencyOption = toAuto) and (BFI.BitCount = 32) then
+        MakeOpaque(Img);
+      if (BFI.Compression=BI_RLE8) or(BFI.Compression=BI_RLE4) then CloseReadBuffer;
 
-      inc(OutputRow,OutputRowDelta);
-      inc(SourceRow,SourceRowAdd);
-      inc(SourceRowAcc,SourceRowAccAdd);
-      if SourceRowAcc >= SourceRowMod then
-      begin
-       dec(SourceRowAcc,SourceRowMod);
-       Inc(SourceRow,SourceRowDelta);
-      end;
+      if Subformat = bsfHeaderlessWithMask then LoadMask(Stream,Img, shouldContinue);
 
-      prevPercent := percent;
-      inc(percent,percentAdd);
-      inc(percentAcc,percentAccAdd);
-      if percentAcc>=percentMod then inc(percent);
-      if percent<>prevPercent then Progress(psRunning,percent,false,Rect,'',continue);
+      Progress(psEnding,100,false,EmptyRect,'',shouldContinue);
     end;
-    if not FHasAlphaValues and (TransparencyOption = toAuto) and (BFI.BitCount = 32) then
-      MakeOpaque(Img);
-    Progress(psEnding,100,false,Rect,'',continue);
+
   finally
-    if (BFI.Compression=BI_RLE8) or(BFI.Compression=BI_RLE4) then CloseReadBuffer;
     FreeBufs;
   end;
 end;
@@ -749,17 +856,76 @@ begin
     end;
 end;
 
-function  TBGRAReaderBMP.InternalCheck (Stream:TStream) : boolean;
-
-var
-  {%H-}BFH:TBitMapFileHeader;
+procedure TBGRAReaderBMP.ReadMaskLine(Row: Integer; Stream: TStream);
+var i: integer;
 begin
-  stream.Read({%H-}BFH,SizeOf(BFH));
-  {$IFDEF ENDIAN_BIG}
-  SwapBMPFileHeader(BFH);
-  {$ENDIF}
-  With BFH do
-    Result:=(bfType=BMmagic); // Just check magic number
+  Stream.ReadBuffer(FMaskData^, FMaskDataSize);
+end;
+
+procedure TBGRAReaderBMP.SkipMaskLine(Row: Integer; Stream: TStream);
+begin
+  Stream.Position := Stream.Position+FMaskDataSize;
+end;
+
+procedure TBGRAReaderBMP.WriteMaskLine(Row: Integer; Img: TFPCustomImage);
+var x, maskPos: integer;
+  bit: byte;
+  bmp: TBGRACustomBitmap;
+  pimg: PBGRAPixel;
+begin
+  if Img is TBGRACustomBitmap then
+    bmp := TBGRACustomBitmap(Img)
+  else
+    exit;
+
+  maskPos := 0;
+  bit := $80;
+  pimg := bmp.ScanLine[Row];
+  for x := 0 to bmp.Width-1 do
+  begin
+    if (FMaskData[maskPos] and bit) <> 0 then //if AND mask is non zero, value is kept
+    begin
+      if pimg^.alpha = 255 then
+      begin
+        pimg^.alpha := 0;
+        if dword(pimg^) <> 0 then
+        begin
+         bmp.NeedXorMask;
+         bmp.XorMask.SetPixel(x,Row,pimg^);
+        end;
+      end;
+    end;
+    inc(pimg);
+    bit := bit shr 1;
+    if bit = 0 then
+    begin
+      bit := $80;
+      inc(maskPos);
+    end;
+  end;
+end;
+
+function  TBGRAReaderBMP.InternalCheck (Stream:TStream) : boolean;
+begin
+  fillchar(BFH, sizeof(BFH), 0);
+  if Subformat in [bsfHeaderless,bsfHeaderlessWithMask] then
+  begin
+   result := true;
+   Hotspot := Point(0,0);
+  end else
+  begin
+    if stream.Read(BFH,SizeOf(BFH)) <> sizeof(BFH) then
+    begin
+      result := false;
+      exit;
+    end;
+    Hotspot := Point(LEtoN(PWord(@BFH.bfReserved)^),LEtoN((PWord(@BFH.bfReserved)+1)^));
+    {$IFDEF ENDIAN_BIG}
+    SwapBMPFileHeader(BFH);
+    {$ENDIF}
+    With BFH do
+      Result:=(bfType=BMmagic); // Just check magic number
+  end;
 end;
 
 procedure TBGRAReaderBMP.InitReadBuffer(AStream: TStream; ASize: integer);
@@ -813,6 +979,108 @@ begin
       end;
 end;
 
+procedure TBGRAReaderBMP.LoadMask(Stream: TStream; Img: TFPCustomImage; var ShouldContinue: boolean);
+begin
+  if Img is TBGRACustomBitmap then TBGRACustomBitmap(Img).DiscardXorMask;
+  FMaskDataSize := ((Img.Width+31) div 32)*4; //padded to dword
+  getmem(FMaskData, FMaskDataSize);
+  try
+    ImageVerticalLoop(Stream,Img, @ReadMaskLine, @SkipMaskLine, @WriteMaskLine, nil, ShouldContinue);
+  finally
+    freemem(FMaskData);
+    FMaskData := nil;
+    FMaskDataSize := 0;
+  end;
+end;
+
+procedure TBGRAReaderBMP.MainProgressProc(Percent: integer;
+  var ShouldContinue: boolean);
+begin
+  Progress(psRunning,Percent,false,EmptyRect,'',ShouldContinue);
+end;
+
+procedure TBGRAReaderBMP.ImageVerticalLoop(Stream: TStream;
+  Img: TFPCustomImage; ReadProc, SkipProc: TReadScanlineProc;
+  WriteProc: TWriteScanlineProc; ProgressProc: TProgressProc;
+  var ShouldContinue: boolean);
+var
+  prevPercent, percent, percentAdd : byte;
+  percentMod : longword;
+  percentAcc, percentAccAdd : longword;
+  PrevSourceRow,SourceRow, SourceRowDelta, SourceLastRow: integer;
+  SourceRowAdd: integer;
+  SourceRowAcc,SourceRowMod: integer;
+  SourceRowAccAdd: integer;
+  OutputLastRow, OutputRow, OutputRowDelta: integer;
+begin
+  if OutputHeight <= 0 then exit;
+
+  percent:=0;
+  percentAdd := 100 div BFI.Height;
+  percentAcc:=BFI.Height div 2;
+  percentAccAdd := 100 mod BFI.Height;
+  percentMod:=BFI.Height;
+
+  DeltaX:=-1; DeltaY:=-1;
+  if TopDown then
+  begin
+    SourceRowDelta := 1;
+    SourceRow := 0;
+    SourceLastRow := BFI.Height-1;
+  end else
+  begin
+    SourceRowDelta := -1;
+    SourceRow := BFI.Height-1;
+    SourceLastRow := 0;
+  end;
+  OutputRowDelta:= SourceRowDelta;
+
+  SourceRowAdd := (BFI.Height div OutputHeight)*SourceRowDelta;
+  SourceRowAcc := OutputHeight div 2;
+  SourceRowAccAdd := BFI.Height mod OutputHeight;
+  SourceRowMod := OutputHeight;
+  If TopDown then
+  begin
+    OutputRow := 0;
+    OutputLastRow := OutputHeight-1;
+  end
+  else
+  begin
+    OutputRow := OutputHeight-1;
+    OutputLastRow := 0;
+  end;
+
+  PrevSourceRow := SourceRow-SourceRowDelta;
+
+  while ShouldContinue and (SourceRow <> SourceLastRow+SourceRowDelta) do
+  begin
+    while PrevSourceRow <> SourceRow do
+    begin
+      inc(PrevSourceRow, SourceRowDelta);
+      if PrevSourceRow = SourceRow then
+        ReadProc(PrevSourceRow,Stream)
+      else
+        SkipProc(PrevSourceRow,Stream);
+    end;
+    WriteProc(OutputRow,Img);
+    if OutputRow = OutputLastRow then break;
+
+    inc(OutputRow,OutputRowDelta);
+    inc(SourceRow,SourceRowAdd);
+    inc(SourceRowAcc,SourceRowAccAdd);
+    if SourceRowAcc >= SourceRowMod then
+    begin
+     dec(SourceRowAcc,SourceRowMod);
+     Inc(SourceRow,SourceRowDelta);
+    end;
+
+    prevPercent := percent;
+    inc(percent,percentAdd);
+    inc(percentAcc,percentAccAdd);
+    if percentAcc>=percentMod then inc(percent);
+    if (percent<>prevPercent) and Assigned(ProgressProc) then ProgressProc(percent, ShouldContinue);
+  end;
+end;
 
 initialization
 

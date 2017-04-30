@@ -91,7 +91,9 @@ type
     function GetFontAntialias: Boolean;
     procedure SetFontAntialias(const AValue: Boolean);
   protected
-     { accessors to properies }
+    FXorMask: TBGRACustomBitmap;
+
+    { accessors to properies }
      function GetArrowEndRepeat: integer; virtual; abstract;
      function GetArrowStartRepeat: integer; virtual; abstract;
      procedure SetArrowEndRepeat(AValue: integer); virtual; abstract;
@@ -173,6 +175,18 @@ type
      ScanInterpolationFilter: TResampleFilter;
      {** Offset to apply when the image is scanned using ''IBGRAScanner'' interface }
      ScanOffset: TPoint;
+
+     {** Cursor position for mouse pointer }
+     HotSpot: TPoint;
+
+     { ** Free reference to xor mask }
+     procedure DiscardXorMask; virtual; abstract;
+
+     { ** Allocate xor mask }
+     procedure NeedXorMask; virtual; abstract;
+
+     {** Xor mask to be applied when image is drawn }
+     property XorMask: TBGRACustomBitmap read FXorMask;
 
      {** Width of the image in pixels }
      property Width: integer Read GetWidth;
@@ -728,7 +742,7 @@ type
      procedure BlendImage(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation); virtual; abstract;
      procedure BlendImageOver(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte = 255;
          ALinearBlend: boolean = false); virtual; abstract;
-     function Duplicate(DuplicateProperties: Boolean = False): TBGRACustomBitmap; virtual; abstract;
+     function Duplicate(DuplicateProperties: Boolean = False; DuplicateXorMask: Boolean = False): TBGRACustomBitmap; virtual; abstract;
      function Equals(comp: TBGRACustomBitmap): boolean; virtual; abstract;
      function Equals(comp: TBGRAPixel): boolean; virtual; abstract;
      function Resample(newWidth, newHeight: integer;

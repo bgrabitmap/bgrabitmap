@@ -79,6 +79,10 @@ type
   TTextLayout = BGRAGraphics.TTextLayout;
 
 const
+  RadialBlurTypeToStr: array[TRadialBlurType] of string =
+  ('Normal','Disk','Corona','Precise','Fast','Box');
+
+
   tlTop = BGRAGraphics.tlTop;
   tlCenter = BGRAGraphics.tlCenter;
   tlBottom = BGRAGraphics.tlBottom;
@@ -397,8 +401,12 @@ type
         not supported by all BMP readers so it is not recommended to avoid
         storing images with transparency in this format }
     ifBmp,
+    {** iGO BMP (16-bit, rudimentary lossless compression) }
+    ifBmpMioMap,
     {** ICO format, contains different sizes of the same image }
     ifIco,
+    {** CUR format, has hotspot, contains different sizes of the same image }
+    ifCur,
     {** PCX format, opaque, rudimentary lossless compression }
     ifPcx,
     {** Paint.NET format, layers, lossless compression }
@@ -418,9 +426,23 @@ type
     {** X-Window capture, limited support }
     ifXwd,
     {** X-Pixmap, text encoded image, limited support }
-    ifXPixMap,
-    {** iGO BMP, limited support }
-    ifBmpMioMap);
+    ifXPixMap);
+
+  {* Image information from superficial analysis }
+  TQuickImageInfo = record
+    {** Width in pixels }
+    Width,
+    {** Height in pixels }
+    Height,
+    {** Bitdepth for colors (1, 2, 4, 8 for images with palette/grayscale, 16, 24 or 48 if each channel is present) }
+    ColorDepth,
+    {** Bitdepth for alpha (0 if no alpha channel, 1 if bit mask, 8 or 16 if alpha channel) }
+    AlphaDepth: integer;
+  end;
+
+  TBGRAImageReader = class(TFPCustomImageReader)
+    function GetQuickInfo(AStream: TStream): TQuickImageInfo; virtual; abstract;
+  end;
 
   {* Options when loading an image }
   TBGRALoadingOption = (
@@ -824,8 +846,14 @@ var
       if (magic[2] in[0,1]) and (magic[3] = 0) then inc(scores[ifBmpMioMap]);
     end;
 
-    if (magic[0] = $00) and (magic[1] = $00) and (magic[2] in[$01,$02]) and (magic[3] = $00) and
-      (magic[4] + (magic[5] shl 8) > 0) then inc(scores[ifIco]);
+    if (magic[0] = $00) and (magic[1] = $00) and (magic[3] = $00) and
+      (magic[4] + (magic[5] shl 8) > 0) then
+    begin
+      if magic[2] = $01 then
+        inc(scores[ifIco])
+      else if magic[2] = $02 then
+        inc(scores[ifCur]);
+    end;
 
     if (copy(magicAsText,1,4) = 'PDN3') then
     begin
@@ -914,7 +942,8 @@ begin
   if (ext = '.gif') then result := ifGif else
   if (ext = '.pcx') then result := ifPcx else
   if (ext = '.bmp') then result := ifBmp else
-  if (ext = '.ico') or (ext = '.cur') then result := ifIco else
+  if (ext = '.ico') then result := ifIco else
+  if (ext = '.cur') then result := ifCur else
   if (ext = '.pdn') then result := ifPaintDotNet else
   if (ext = '.lzp') then result := ifLazPaint else
   if (ext = '.ora') then result := ifOpenRaster else
@@ -934,6 +963,7 @@ begin
     ifGif: result := 'gif';
     ifBmp: result := 'bmp';
     ifIco: result := 'ico';
+    ifCur: result := 'ico';
     ifPcx: result := 'pcx';
     ifPaintDotNet: result := 'pdn';
     ifLazPaint: result := 'lzp';
