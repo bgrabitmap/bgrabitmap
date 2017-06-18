@@ -2092,6 +2092,7 @@ begin
            begin
              moveTo(p1);
              lastCoord := p1;
+             startCoord := p1;
            end;
            if relative then implicitCommand:= 'l' else
              implicitCommand:= 'L';
