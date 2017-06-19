@@ -63,6 +63,7 @@ type
     function GetHeightAsCm: single;
     function GetHeightAsInch: single;
     function GetPreserveAspectRatio: string;
+    function GetUTF8String: utf8string;
     function GetViewBox: TSVGViewBox;
     function GetViewBox(AUnit: TCSSUnit): TSVGViewBox;
     procedure GetViewBoxIndirect(AUnit: TCSSUnit; out AViewBox: TSVGViewBox);
@@ -77,6 +78,7 @@ type
     procedure SetHeightAsCm(AValue: single);
     procedure SetHeightAsInch(AValue: single);
     procedure SetPreserveAspectRatio(AValue: string);
+    procedure SetUTF8String(AValue: utf8string);
     procedure SetViewBox(AValue: TSVGViewBox);
     procedure SetWidth(AValue: TFloatWithCSSUnit);
     procedure SetWidthAsCm(AValue: single);
@@ -96,6 +98,7 @@ type
     constructor Create(AWidth,AHeight: single; AUnit: TCSSUnit; ACustomDPI: single); overload;
     constructor Create(AFilenameUTF8: string); overload;
     constructor Create(AStream: TStream); overload;
+    constructor CreateFromString(AUTF8String: string);
     destructor Destroy; override;
     procedure LoadFromFile(AFilenameUTF8: string);
     procedure LoadFromStream(AStream: TStream);
@@ -109,6 +112,7 @@ type
     procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; destDpi: TPointF); overload;
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; x,y,w,h: single); overload;
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y,w,h: single); overload;
+    property AsUTF8String: utf8string read GetUTF8String write SetUTF8String;
     property Units: TSVGUnits read FUnits;
     property Width: TFloatWithCSSUnit read GetWidth write SetWidth;
     property Height: TFloatWithCSSUnit read GetHeight write SetHeight;
@@ -337,6 +341,17 @@ begin
   result := Attribute['preserveAspectRatio'];
 end;
 
+function TBGRASVG.GetUTF8String: utf8string;
+var str: TMemoryStream;
+begin
+  str := TMemoryStream.Create;
+  SaveToStream(str);
+  setlength(result, str.Size);
+  str.Position := 0;
+  str.Read(result[1], length(result));
+  str.Free;
+end;
+
 function TBGRASVG.GetViewBox: TSVGViewBox;
 begin
   result := FUnits.ViewBox;
@@ -419,6 +434,16 @@ end;
 procedure TBGRASVG.SetPreserveAspectRatio(AValue: string);
 begin
   Attribute['preserveAspectRatio'] := AValue;
+end;
+
+procedure TBGRASVG.SetUTF8String(AValue: utf8string);
+var str: TMemoryStream;
+begin
+  str:= TMemoryStream.Create;
+  str.Write(AValue[1],length(AValue));
+  str.Position:= 0;
+  LoadFromStream(str);
+  str.Free;
 end;
 
 {$PUSH}{$OPTIMIZATION OFF} //avoids Internal error 2012090607
@@ -520,6 +545,12 @@ constructor TBGRASVG.Create(AStream: TStream);
 begin
   Init(False);
   LoadFromStream(AStream);
+end;
+
+constructor TBGRASVG.CreateFromString(AUTF8String: string);
+begin
+  Init(False);
+  AsUTF8String:= AUTF8String;
 end;
 
 destructor TBGRASVG.Destroy;
