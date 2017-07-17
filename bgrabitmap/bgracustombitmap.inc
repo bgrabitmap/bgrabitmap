@@ -387,9 +387,9 @@ type
      procedure Deserialize(AStream: TStream); virtual; abstract;
 
      {** Gets the content of the specified device context }
-     procedure LoadFromDevice(DC: System.THandle); virtual; abstract; overload;
+     procedure LoadFromDevice(DC: HDC); virtual; abstract; overload;
      {** Gets the content from the specified rectangular area of a device context }
-     procedure LoadFromDevice(DC: System.THandle; ARect: TRect); virtual; abstract; overload;
+     procedure LoadFromDevice(DC: HDC; ARect: TRect); virtual; abstract; overload;
      {** Fills the content with a screenshot of the primary monitor }
      procedure TakeScreenshotOfPrimaryMonitor; virtual; abstract;
      {** Fills the content with a screenshot of the specified rectangular area of the desktop

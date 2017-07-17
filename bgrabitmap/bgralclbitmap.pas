@@ -28,8 +28,8 @@ type
     procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); override;
-    procedure LoadFromDevice({%H-}DC: System.THandle); override;
-    procedure LoadFromDevice({%H-}DC: System.THandle; {%H-}ARect: TRect); override;
+    procedure LoadFromDevice({%H-}DC: HDC); override;
+    procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override;
     procedure TakeScreenshotOfPrimaryMonitor; override;
     procedure TakeScreenshot({%H-}ARect: TRect); override;
   end;
@@ -875,7 +875,7 @@ begin
   GetImageFromCanvasImplementation(self,CanvasSource,x,y);
 end;
 
-procedure TBGRALCLBitmap.LoadFromDevice(DC: System.THandle);
+procedure TBGRALCLBitmap.LoadFromDevice(DC: HDC);
 var
   rawImage: TRawImage;
   sourceSize: TPoint;
@@ -897,7 +897,7 @@ begin
   end;
 end;
 
-procedure TBGRALCLBitmap.LoadFromDevice(DC: System.THandle; ARect: TRect);
+procedure TBGRALCLBitmap.LoadFromDevice(DC: HDC; ARect: TRect);
 var
   rawImage: TRawImage;
 begin

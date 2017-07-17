@@ -32,13 +32,14 @@ interface
 
 uses
   Classes, Types, BGRAGraphics,
-  FPImage, FPImgCanv{$IFDEF BGRABITMAP_USE_LCL}, GraphType{$ENDIF},
+  FPImage, FPImgCanv{$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType{$ENDIF},
   BGRAMultiFileType;
 
 type
   TMultiFileContainer = BGRAMultiFileType.TMultiFileContainer;
   Int32or64 = {$IFDEF CPU64}Int64{$ELSE}LongInt{$ENDIF};
   UInt32or64 = {$IFDEF CPU64}UInt64{$ELSE}LongWord{$ENDIF};
+  HDC = {$IFDEF BGRABITMAP_USE_LCL}LCLType.HDC{$ELSE}PtrUInt{$ENDIF};
 
 {=== Miscellaneous types ===}
 
