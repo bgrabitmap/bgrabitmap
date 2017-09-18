@@ -449,6 +449,7 @@ begin
           break;
         end else
         if (green = 0) then break;
+	bgra.Free;
     lclBmp.Free;
   end;
   fqFineClearTypeValue := result;
