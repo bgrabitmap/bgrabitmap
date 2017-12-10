@@ -6,11 +6,24 @@ interface
 
 uses
   Classes, SysUtils, BGRATransform, BGRABitmapTypes, BGRAUnits,
-  laz2_DOM, BGRACanvas2D;
+  laz2_DOM, BGRACanvas2D, fgl;
 
 type
   TSVGElement = class;
+  TSVGElementList = specialize TFPGList<TSVGElement>;
   TSVGFactory = class of TSVGElement;
+  
+  { TSVGDataLink }
+
+  TSVGDataLink = class
+     Elements: TSVGElementList;
+     Gradients: TSVGElementList;
+
+     constructor Create;
+     destructor Destroy; override;
+
+     function Linking(el: TSVGElement): Integer;
+  end;    
 
   { TSVGElement }
 
@@ -47,6 +60,7 @@ type
       function GetOrthoAttributeWithUnit(AName: string): TFloatWithCSSUnit;
       function GetHorizAttributeWithUnit(AName: string): TFloatWithCSSUnit;
       function GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit;
+      function GetID: string;
       procedure SetAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
       procedure SetFill(AValue: string);
       procedure SetFillColor(AValue: TBGRAPixel);
@@ -65,7 +79,9 @@ type
       procedure SetTransform(AValue: string);
       procedure SetVerticalAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
       procedure SetOrthoAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
+      procedure SetID(AValue: string);
     protected
+      FDataLink: TSVGDataLink;
       FDomElem: TDOMElement;
       FUnits: TCSSUnitConverter;
       function GetDOMElement: TDOMElement; virtual;
@@ -74,14 +90,16 @@ type
       procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
       procedure LocateStyleDeclaration(AText: string; AProperty: string; out AStartPos,AColonPos,AValueLength: integer);
       procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
+      procedure Initialize; virtual;
     public
-      constructor Create({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter); virtual;
-      constructor Create({%H-}ADocument: TXMLDocument; {%H-}AUnits: TCSSUnitConverter); virtual;
+      constructor Create({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); virtual;
+      constructor Create({%H-}ADocument: TXMLDocument; {%H-}AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); virtual;
       procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
       procedure fillNone;
       procedure strokeNone;
       procedure transformNone;
       procedure RemoveStyle(const AName: string);
+      property DataLink: TSVGDataLink read FDataLink write FDataLink;
       property Attribute[AName: string]: string read GetAttribute write SetAttribute;
       property AttributeOrStyle[AName: string]: string read GetAttributeOrStyle;
       property Style[AName: string]: string read GetStyle write SetStyle;
@@ -108,6 +126,7 @@ type
       property fillColor: TBGRAPixel read GetFillColor write SetFillColor;
       property fillOpacity: single read GetFillOpacity write SetFillOpacity;
       property opacity: single read GetOpacity write SetOpacity;
+      property ID: string read GetID write SetID;
   end;
 
   { TSVGParser }
@@ -209,6 +228,30 @@ procedure TSVGParser.ClearError;
 begin
   FNumberError:= false;
 end;
+
+{ TSVGDataLink }
+
+constructor TSVGDataLink.Create;
+begin
+   Elements:= TSVGElementList.Create;
+   Gradients:= TSVGElementList.Create;
+end;
+
+destructor TSVGDataLink.Destroy;
+begin
+   FreeAndNil(Gradients);
+   FreeAndNil(Elements);
+   inherited Destroy;
+end;
+
+function TSVGDataLink.Linking(el: TSVGElement): Integer;
+begin
+  Elements.Add(el);
+  Result:= Elements.Count;
+  if (el is TSVGGradient) or
+     (el is TSVGStopGradient) then
+    Gradients.Add(el);
+end;        
 
 { TSVGElement }
 
@@ -484,6 +527,11 @@ begin
   result := FDomElem;
 end;
 
+function TSVGElement.GetID: string;
+begin
+  result := Attribute['id'];
+end; 
+
 procedure TSVGElement.SetAttribute(AName: string; AValue: string);
 begin
   FDomElem.SetAttribute(AName,AValue);
@@ -668,6 +716,11 @@ begin
     SetHorizAttributeWithUnit(AName,AValue);
 end;
 
+procedure TSVGElement.SetID(AValue: string);
+begin
+  Attribute['id'] := AValue;
+end; 
+
 procedure TSVGElement.Init(ADocument: TXMLDocument; ATag: string;
   AUnits: TCSSUnitConverter);
 begin
@@ -756,16 +809,25 @@ begin
   ACanvas2d.miterLimit := strokeMiterLimit;
 end;
 
-constructor TSVGElement.Create(ADocument: TXMLDocument; AElement: TDOMElement;
-  AUnits: TCSSUnitConverter);
+procedure TSVGElement.Initialize;
 begin
+  //nothing
+end; 
+
+constructor TSVGElement.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  FDataLink:= ADataLink;
+  Initialize;
   Init(ADocument,AElement,AUnits);
 end;
 
 constructor TSVGElement.Create(ADocument: TXMLDocument;
-  AUnits: TCSSUnitConverter);
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  raise exception.Create('Cannot create a generic element');
+  FDataLink:= ADataLink;
+  Initialize;
+  //raise exception.Create('Cannot create a generic element');
 end;
 
 procedure TSVGElement.Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
