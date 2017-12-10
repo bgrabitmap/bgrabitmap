@@ -53,6 +53,7 @@ type
     function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit): TFloatWithCSSUnit;
     function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit): TPointF; virtual;
     class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
+    class function parseValue(AValue: string; ADefault: single): single;
     class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string;
     class function formatValue(AValue: single; APrecision: integer = 7): string;
     property DpiX: single read GetDpiX;
@@ -264,6 +265,16 @@ begin
   if errPos <> 0 then
     result := ADefault;
 end;
+
+class function TCSSUnitConverter.parseValue(AValue: string; ADefault: single): single;
+var
+  errPos: integer;
+begin
+  AValue := trim(AValue);
+  val(AValue,result,errPos);
+  if errPos <> 0 then
+    result := ADefault;
+end; 
 
 class function TCSSUnitConverter.formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string;
 begin
