@@ -203,7 +203,7 @@ type
     protected
       FDomElem: TDOMElement;
       FDoc: TXMLDocument;
-      FElements: TList;
+      FElements: TFPList;
       FUnits: TCSSUnitConverter;
       procedure AppendElement(AElement: TSVGElement);
       procedure InsertElementBefore(AElement: TSVGElement; ASuccessor: TSVGElement);
@@ -953,7 +953,7 @@ var cur: TDOMNode;
 begin
   FDoc := ADocument;
   FDomElem := AElement;
-  FElements := TList.Create;
+  FElements := TFPList.Create;
   FUnits := AUnits;
   cur := FDomElem.FirstChild;
   while cur <> nil do
