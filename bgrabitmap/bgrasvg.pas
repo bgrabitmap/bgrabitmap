@@ -90,6 +90,7 @@ type
     FUnits: TSVGUnits;
     FDefaultDpi: single;
     FContent: TSVGContent;
+    FDataLink: TSVGDataLink;
     procedure Init(ACreateEmpty: boolean);
     function GetViewBoxAlignment(AHorizAlign: TAlignment; AVertAlign: TTextLayout): TPointF;
   public
@@ -605,7 +606,7 @@ begin
   FRoot := root as TDOMElement;
   FUnits := TSVGUnits.Create(FRoot,@FDefaultDpi);
   FDataLink := TSVGDataLink.Create;
-  FContent := TSVGContent.Create(FXml,FRoot,FUnits);
+  FContent := TSVGContent.Create(FXml,FRoot,FUnits,FDataLink);
 end;
 
 procedure TBGRASVG.SaveToFile(AFilenameUTF8: string);
