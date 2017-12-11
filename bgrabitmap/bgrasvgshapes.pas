@@ -9,6 +9,8 @@ uses
   BGRACanvas2D, BGRASVGType;
 
 type
+  TSVGGradient = class;
+  
   { TSVGElementWithGradient }
 
   TSVGElementWithGradient = class(TSVGElement)
@@ -50,7 +52,7 @@ type
 
   { TSVGRectangle }
 
-  TSVGRectangle = class(TSVGElement)
+  TSVGRectangle = class(TSVGElementWithGradient)
     private
       function GetX: TFloatWithCSSUnit;
       function GetY: TFloatWithCSSUnit;
@@ -78,7 +80,7 @@ type
 
   { TSVGCircle }
 
-  TSVGCircle = class(TSVGElement)
+  TSVGCircle = class(TSVGElementWithGradient)
     private
       function GetCX: TFloatWithCSSUnit;
       function GetCY: TFloatWithCSSUnit;
@@ -97,7 +99,7 @@ type
 
   { TSVGEllipse }
 
-  TSVGEllipse = class(TSVGElement)
+  TSVGEllipse = class(TSVGElementWithGradient)
     private
       function GetCX: TFloatWithCSSUnit;
       function GetCY: TFloatWithCSSUnit;
@@ -119,7 +121,7 @@ type
 
   { TSVGPath }
 
-  TSVGPath = class(TSVGElement)
+  TSVGPath = class(TSVGElementWithGradient)
     private
       FPath: TBGRAPath;
       function GetPath: TBGRAPath;
@@ -307,6 +309,7 @@ type
 
   TSVGContent = class
     protected
+      FDataLink: TSVGDataLink;
       FDomElem: TDOMElement;
       FDoc: TXMLDocument;
       FElements: TFPList;
@@ -671,22 +674,23 @@ end;
 
 constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  Init(ADocument,'text',AUnit,ADataLinks);
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'text',AUnits);
 end;
 
 { TSVGGroup }
 
 constructor TSVGGroup.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AUnits, ADataLinks);
-  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLinks);
+  inherited Create(ADocument, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink);
 end;
 
 constructor TSVGGroup.Create(ADocument: TXMLDocument; AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AElement, AUnits, ADataLinks);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLinks);
+  inherited Create(ADocument, AElement, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink);
 end;
 
 destructor TSVGGroup.Destroy;
@@ -1559,7 +1563,7 @@ var
   pts: ArrayOfTPointF;
   i: integer;
 begin
-  result := TSVGPolypoints.Create(FDoc,FUnits,FDataLink,true);
+  result := TSVGPolypoints.Create(FDoc,FUnits,true,FDataLink);
   setlength(pts, length(points) div 2);
   for i := 0 to high(pts) do
     pts[i] := Units.ConvertCoord(PointF(points[i shl 1],points[(i shl 1)+1]),AUnit,cuCustom);
@@ -1573,7 +1577,7 @@ var
   pts: ArrayOfTPointF;
   i: integer;
 begin
-  result := TSVGPolypoints.Create(FDoc,FUnits,FDataLink,true);
+  result := TSVGPolypoints.Create(FDoc,FUnits,true,FDataLink);
   setlength(pts, length(points));
   for i := 0 to high(pts) do
     pts[i] := Units.ConvertCoord(points[i],AUnit,cuCustom);
