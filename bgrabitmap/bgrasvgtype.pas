@@ -154,6 +154,8 @@ type
 
 implementation
 
+uses BGRASVGShapes;
+
 { TSVGParser }
 
 function TSVGParser.GetDone: boolean;
