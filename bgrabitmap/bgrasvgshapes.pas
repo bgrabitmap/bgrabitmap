@@ -887,6 +887,7 @@ begin
     if closed then ACanvas2d.closePath;
     if not isFillNone then
     begin
+      ACanvas2d.fillMode( TFillMode(fillMode) );
       ACanvas2d.fillStyle(fillColor);
       ACanvas2d.fill;
     end;
