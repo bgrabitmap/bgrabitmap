@@ -50,6 +50,7 @@ type
     strokeColor: TBGRAPixel;
     strokeTextureProvider: IBGRACanvasTextureProvider2D;
     fillColor: TBGRAPixel;
+    fillMode: TFillMode;
     fillTextureProvider: IBGRACanvasTextureProvider2D;
     globalAlpha: byte;
 
@@ -191,6 +192,7 @@ type
     procedure strokeStyle(color: string); overload;
     procedure strokeStyle(texture: IBGRAScanner); overload;
     procedure strokeStyle(provider: IBGRACanvasTextureProvider2D); overload;
+    procedure fillMode(mode: TFillMode);
     procedure fillStyle(color: TBGRAPixel); overload;
     procedure fillStyle(color: TColor); overload;
     procedure fillStyle(color: string); overload;
@@ -944,10 +946,12 @@ end;
 
 procedure TBGRACanvas2D.FillPoly(const points: array of TPointF);
 var
+  bfill: boolean;
   tempScan: TBGRACustomScanner;
 begin
   if (length(points) = 0) or (surface = nil) then exit;
   If hasShadow then DrawShadow(points,[]);
+  bfill:= currentState.fillMode = fmWinding;
   if currentState.clipMaskReadOnly <> nil then
   begin
     if currentState.fillTextureProvider <> nil then
@@ -955,9 +959,9 @@ begin
     else
       tempScan := TBGRASolidColorMaskScanner.Create(currentState.clipMaskReadOnly,Point(0,0),ApplyGlobalAlpha(currentState.fillColor));
     if self.antialiasing then
-      BGRAPolygon.FillPolyAntialiasWithTexture(surface, points, tempScan, true, linearBlend)
+      BGRAPolygon.FillPolyAntialiasWithTexture(surface, points, tempScan, bfill, linearBlend)
     else
-      BGRAPolygon.FillPolyAliasedWithTexture(surface, points, tempScan, true, GetDrawMode);
+      BGRAPolygon.FillPolyAliasedWithTexture(surface, points, tempScan, bfill, GetDrawMode);
     tempScan.free;
   end else
   begin
@@ -967,24 +971,24 @@ begin
       begin
         tempScan := TBGRAOpacityScanner.Create(currentState.fillTextureProvider.texture, currentState.globalAlpha);
         if self.antialiasing then
-          BGRAPolygon.FillPolyAntialiasWithTexture(surface, points, tempScan, true, linearBlend)
+          BGRAPolygon.FillPolyAntialiasWithTexture(surface, points, tempScan, bfill, linearBlend)
         else
-          BGRAPolygon.FillPolyAliasedWithTexture(surface, points, tempScan, true, GetDrawMode);
+          BGRAPolygon.FillPolyAliasedWithTexture(surface, points, tempScan, bfill, GetDrawMode);
         tempScan.Free;
       end else
       begin
         if self.antialiasing then
-          BGRAPolygon.FillPolyAntialiasWithTexture(surface, points, currentState.fillTextureProvider.texture, true, linearBlend)
+          BGRAPolygon.FillPolyAntialiasWithTexture(surface, points, currentState.fillTextureProvider.texture, bfill, linearBlend)
         else
-          BGRAPolygon.FillPolyAliasedWithTexture(surface, points, currentState.fillTextureProvider.texture, true, GetDrawMode);
+          BGRAPolygon.FillPolyAliasedWithTexture(surface, points, currentState.fillTextureProvider.texture, bfill, GetDrawMode);
       end
     end
     else
     begin
       if self.antialiasing then
-        BGRAPolygon.FillPolyAntialias(surface, points, ApplyGlobalAlpha(currentState.fillColor), false, true, linearBlend)
+        BGRAPolygon.FillPolyAntialias(surface, points, ApplyGlobalAlpha(currentState.fillColor), false, bfill, linearBlend)
       else
-        BGRAPolygon.FillPolyAliased(surface, points, ApplyGlobalAlpha(currentState.fillColor), false, true, GetDrawMode)
+        BGRAPolygon.FillPolyAliased(surface, points, ApplyGlobalAlpha(currentState.fillColor), false, bfill, GetDrawMode)
     end
   end;
 end;
@@ -1604,6 +1608,11 @@ begin
   currentState.strokeColor := BGRAPixelTransparent;
   currentState.strokeTextureProvider := provider;
 end;
+
+procedure TBGRACanvas2D.fillMode(mode: TFillMode);
+begin
+  currentState.fillMode := mode;
+end; 
 
 procedure TBGRACanvas2D.fillStyle(color: TBGRAPixel);
 begin
