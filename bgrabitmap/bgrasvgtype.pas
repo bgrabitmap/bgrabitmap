@@ -6,12 +6,17 @@ interface
 
 uses
   Classes, SysUtils, BGRATransform, BGRABitmapTypes, BGRAUnits,
-  laz2_DOM, BGRACanvas2D, fgl;
+  laz2_DOM, BGRACanvas2D, fgl, BGRAGraphics;
 
 type
   TSVGElement = class;
   TSVGElementList = specialize TFPGList<TSVGElement>;
   TSVGFactory = class of TSVGElement;
+  
+  TSVGFillMode = (
+     sfmNonZero = Ord(fmWinding),
+     sfmEvenOdd = Ord(fmAlternate)
+   );
   
   { TSVGDataLink }
 
@@ -34,6 +39,7 @@ type
       function GetFill: string;
       function GetFillColor: TBGRAPixel;
       function GetFillOpacity: single;
+      function GetFillRule: string;
       function GetHorizAttributeOrStyleWithUnit(AName: string
         ): TFloatWithCSSUnit;
       function GetIsFillNone: boolean;
@@ -66,6 +72,7 @@ type
       procedure SetFill(AValue: string);
       procedure SetFillColor(AValue: TBGRAPixel);
       procedure SetFillOpacity(AValue: single);
+      procedure SetFillRule(AValue: string);
       procedure SetHorizAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
       procedure SetMatrix(AUnit: TCSSUnit; const AValue: TAffineMatrix);
       procedure SetOpacity(AValue: single);
@@ -101,6 +108,7 @@ type
       procedure transformNone;
       procedure RemoveStyle(const AName: string);
       function HasAttribute(AName: string): boolean;
+      function fillMode: TSVGFillMode;
       property DataLink: TSVGDataLink read FDataLink write FDataLink;
       property Attribute[AName: string]: string read GetAttribute write SetAttribute;
       property AttributeOrStyle[AName: string]: string read GetAttributeOrStyle;
@@ -127,6 +135,7 @@ type
       property fill: string read GetFill write SetFill;
       property fillColor: TBGRAPixel read GetFillColor write SetFillColor;
       property fillOpacity: single read GetFillOpacity write SetFillOpacity;
+      property fillRule: string read GetFillRule write SetFillRule;
       property opacity: single read GetOpacity write SetOpacity;
       property ID: string read GetID write SetID;
       property AttributeDefault: string read FAttributeDefault write FAttributeDefault;
@@ -340,6 +349,11 @@ begin
     if result < 0 then result := 0 else
       if result > 1 then result := 1;
 end;
+
+function TSVGElement.GetFillRule: string;
+begin
+  result := AttributeOrStyle['fill-rule'];
+end; 
 
 function TSVGElement.GetHorizAttributeOrStyleWithUnit(AName: string
   ): TFloatWithCSSUnit;
@@ -572,6 +586,12 @@ begin
   Attribute['fill-opacity'] := Units.formatValue(AValue);
   RemoveStyle('fill-opacity');
 end;
+
+procedure TSVGElement.SetFillRule(AValue: string);
+begin
+  Attribute['fill-rule'] := AValue;
+  RemoveStyle('fill-rule');
+end;  
 
 procedure TSVGElement.SetHorizAttributeWithUnit(AName: string;
   AValue: TFloatWithCSSUnit);
@@ -884,6 +904,14 @@ end;
 function TSVGElement.HasAttribute(AName: string): boolean;
 begin
   result := FDomElem.hasAttribute(AName);
+end; 
+
+function TSVGElement.fillMode: TSVGFillMode;
+begin
+  if fillRule = 'evenodd' then
+    result := sfmEvenOdd
+  else
+    result := sfmNonZero;
 end; 
 
 end.
