@@ -218,10 +218,6 @@ type
 
   { TSVGGradientLinear }
 
-  //TODO 'x2': If the attribute is not specified, the effect is as if a value
-  //           of '100%' were specified
-  //           (see "https://www.w3.org/TR/SVG11/pservers.html#LinearGradients")
-
   TSVGLinearGradient = class(TSVGGradient)
     private
       function GetX1: TFloatWithCSSUnit;
@@ -1236,6 +1232,7 @@ end;
 
 function TSVGLinearGradient.GetX2: TFloatWithCSSUnit;
 begin
+  AttributeDefault:= '100%';
   result := HorizAttributeWithUnit['x2'];
 end;
 
@@ -1280,16 +1277,19 @@ end;
 
 function TSVGRadialGradient.GetCX: TFloatWithCSSUnit;
 begin
+  AttributeDefault:= '50%';
   result := HorizAttributeWithUnit['cx'];
 end;
 
 function TSVGRadialGradient.GetCY: TFloatWithCSSUnit;
 begin
+  AttributeDefault:= '50%';
   result := VerticalAttributeWithUnit['cy'];
 end;
 
 function TSVGRadialGradient.GetR: TFloatWithCSSUnit;
 begin
+  AttributeDefault:= '50%';
   result := OrthoAttributeWithUnit['r'];
 end;
 
