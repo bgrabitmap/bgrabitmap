@@ -29,6 +29,7 @@ type
 
   TSVGElement = class
     private
+      FAttributeDefault: string;
       function GetAttributeOrStyle(AName: string): string;
       function GetFill: string;
       function GetFillColor: TBGRAPixel;
@@ -99,6 +100,7 @@ type
       procedure strokeNone;
       procedure transformNone;
       procedure RemoveStyle(const AName: string);
+      function HasAttribute(AName: string): boolean;
       property DataLink: TSVGDataLink read FDataLink write FDataLink;
       property Attribute[AName: string]: string read GetAttribute write SetAttribute;
       property AttributeOrStyle[AName: string]: string read GetAttributeOrStyle;
@@ -260,6 +262,12 @@ end;
 function TSVGElement.GetAttribute(AName: string): string;
 begin
   result := FDomElem.GetAttribute(AName);
+  if (result = '') and (FAttributeDefault <> '') then
+  begin
+    result:= FAttributeDefault;
+    //Note: to avoid "try finally" for each attribute with default
+    FAttributeDefault:= '';
+  end; 
 end;
 
 function TSVGElement.GetVerticalAttributeOrStyleWithUnit(AName: string
@@ -813,7 +821,7 @@ end;
 
 procedure TSVGElement.Initialize;
 begin
-  //nothing
+  FAttributeDefault:= '';
 end; 
 
 constructor TSVGElement.Create(ADocument: TXMLDocument; AElement: TDOMElement;
@@ -871,6 +879,11 @@ begin
     Attribute['style'] := ruleset;
   end;
 end;
+
+function TSVGElement.HasAttribute(AName: string): boolean;
+begin
+  result := FDomElem.hasAttribute(AName);
+end; 
 
 end.
 
