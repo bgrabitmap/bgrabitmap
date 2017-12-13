@@ -129,6 +129,7 @@ type
       property fillOpacity: single read GetFillOpacity write SetFillOpacity;
       property opacity: single read GetOpacity write SetOpacity;
       property ID: string read GetID write SetID;
+      property AttributeDefault: string read FAttributeDefault write FAttributeDefault;
   end;
 
   { TSVGParser }
