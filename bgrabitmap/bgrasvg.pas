@@ -486,7 +486,7 @@ begin
     FRoot := FXml.CreateElement('svg');
     FUnits := TSVGUnits.Create(FRoot,@FDefaultDpi);
     FDataLink := TSVGDataLink.Create;
-    FContent := TSVGContent.Create(FXml,FRoot,FUnits,FDataLink);
+    FContent := TSVGContent.Create(FXml,FRoot,FUnits,FDataLink,nil);
     FXml.AppendChild(FRoot);
   end;
 end;
@@ -606,7 +606,7 @@ begin
   FRoot := root as TDOMElement;
   FUnits := TSVGUnits.Create(FRoot,@FDefaultDpi);
   FDataLink := TSVGDataLink.Create;
-  FContent := TSVGContent.Create(FXml,FRoot,FUnits,FDataLink);
+  FContent := TSVGContent.Create(FXml,FRoot,FUnits,FDataLink,nil);
 end;
 
 procedure TBGRASVG.SaveToFile(AFilenameUTF8: string);
