@@ -343,6 +343,7 @@ end;
 
 function TSVGElement.GetFill: string;
 begin
+  AttributeDefault:= 'black';
   result := AttributeOrStyle['fill'];
 end;
 
@@ -356,6 +357,7 @@ end;
 function TSVGElement.GetFillOpacity: single;
 var errPos: integer;
 begin
+  AttributeDefault:= '1';
   val(AttributeOrStyle['fill-opacity'], result, errPos);
   if errPos <> 0 then result := 1 else
     if result < 0 then result := 0 else
@@ -364,6 +366,7 @@ end;
 
 function TSVGElement.GetFillRule: string;
 begin
+  AttributeDefault:= 'nonzero';
   result := AttributeOrStyle['fill-rule'];
 end; 
 
@@ -466,6 +469,7 @@ end;
 function TSVGElement.GetOpacity: single;
 var errPos: integer;
 begin
+  AttributeDefault:= '1';
   val(AttributeOrStyle['opacity'], result, errPos);
   if errPos <> 0 then result := 1 else
     if result < 0 then result := 0 else
@@ -481,6 +485,7 @@ end;
 
 function TSVGElement.GetStroke: string;
 begin
+  AttributeDefault:= 'none';
   result := AttributeOrStyle['stroke'];
 end;
 
@@ -493,19 +498,20 @@ end;
 
 function TSVGElement.GetStrokeLineCap: string;
 begin
+  AttributeDefault:= 'butt';
   result := AttributeOrStyle['stroke-linecap'];
-  if result = '' then result := 'butt';
 end;
 
 function TSVGElement.GetStrokeLineJoin: string;
 begin
+  AttributeDefault:= 'miter';
   result := AttributeOrStyle['stroke-linejoin'];
-  if result = '' then result := 'miter';
 end;
 
 function TSVGElement.GetStrokeMiterLimit: single;
 var errPos: integer;
 begin
+  AttributeDefault:= '4';
   val(AttributeOrStyle['stroke-miterlimit'], result, errPos);
   if errPos <> 0 then result := 4 else
     if result < 1 then result := 1;
@@ -514,6 +520,7 @@ end;
 function TSVGElement.GetStrokeOpacity: single;
 var errPos: integer;
 begin
+  AttributeDefault:= '1';
   val(AttributeOrStyle['stroke-opacity'], result, errPos);
   if errPos <> 0 then result := 1 else
     if result < 0 then result := 0 else
@@ -522,6 +529,7 @@ end;
 
 function TSVGElement.GetStrokeWidth: TFloatWithCSSUnit;
 begin
+  AttributeDefault:= '1';
   result := OrthoAttributeOrStyleWithUnit['stroke-width'];
 end;
 
