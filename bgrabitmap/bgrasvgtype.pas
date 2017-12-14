@@ -272,12 +272,11 @@ end;
 function TSVGElement.GetAttribute(AName: string): string;
 begin
   result := FDomElem.GetAttribute(AName);
+
   if (result = '') and (FAttributeDefault <> '') then
-  begin
     result:= FAttributeDefault;
-    //Note: to avoid "try finally" for each attribute with default
-    FAttributeDefault:= '';
-  end; 
+  //Note: "reset protection" (avoid manual reset after set)
+  FAttributeDefault:= ''; 
 end;
 
 function TSVGElement.GetVerticalAttributeOrStyleWithUnit(AName: string
@@ -296,14 +295,20 @@ begin
   result := TCSSUnitConverter.parseValue(Attribute[AName],FloatWithCSSUnit(0,cuCustom));
 end;
 
-function TSVGElement.GetAttributeOrStyleWithUnit(AName: string
-  ): TFloatWithCSSUnit;
-var valueText: string;
+function TSVGElement.GetAttributeOrStyleWithUnit(AName: string): TFloatWithCSSUnit;
+var
+  valueText,
+  default: string;
 begin
+  default := AttributeDefault;//(for "reset protection")
   valueText := Style[AName];
-  if valueText = '' then valueText := Attribute[AName];
+  if valueText = '' then
+  begin
+    AttributeDefault:= default;//(for "reset protection")
+    valueText := Attribute[AName];
+  end;
   result := TCSSUnitConverter.parseValue(valueText,FloatWithCSSUnit(0,cuCustom));
-end;
+end; 
 
 function TSVGElement.GetOrthoAttributeWithUnit(AName: string
   ): TFloatWithCSSUnit;
@@ -324,10 +329,17 @@ begin
 end;
 
 function TSVGElement.GetAttributeOrStyle(AName: string): string;
+var
+  default: string;
 begin
+  default := AttributeDefault;//(for "reset protection")
   result := GetStyle(AName);
-  if result = '' then result := GetAttribute(AName);
-end;
+  if result = '' then
+  begin
+    AttributeDefault:= default;//(for "reset protection")
+    result := GetAttribute(AName);
+  end;
+end; 
 
 function TSVGElement.GetFill: string;
 begin
