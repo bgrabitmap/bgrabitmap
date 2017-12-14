@@ -34,7 +34,10 @@ type
 
   TSVGElement = class
     private
+      FDataParent: TSVGElement;
+      FDataChildList: TSVGElementList;
       FAttributeDefault: string;
+      FGroupList: TSVGElementList;
       function GetAttributeOrStyle(AName: string): string;
       function GetFill: string;
       function GetFillColor: TBGRAPixel;
@@ -102,6 +105,7 @@ type
     public
       constructor Create({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); virtual;
       constructor Create({%H-}ADocument: TXMLDocument; {%H-}AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); virtual;
+      destructor Destroy; override;
       procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
       procedure fillNone;
       procedure strokeNone;
@@ -109,6 +113,8 @@ type
       procedure RemoveStyle(const AName: string);
       function HasAttribute(AName: string): boolean;
       function fillMode: TSVGFillMode;
+      function DataChildList: TSVGElementList;
+      function GroupList: TSVGElementList;
       property DataLink: TSVGDataLink read FDataLink write FDataLink;
       property Attribute[AName: string]: string read GetAttribute write SetAttribute;
       property AttributeOrStyle[AName: string]: string read GetAttributeOrStyle;
@@ -138,6 +144,7 @@ type
       property fillRule: string read GetFillRule write SetFillRule;
       property opacity: single read GetOpacity write SetOpacity;
       property ID: string read GetID write SetID;
+      property DataParent: TSVGElement read FDataParent write FDataParent;
       property AttributeDefault: string read FAttributeDefault write FAttributeDefault;
   end;
 
@@ -270,8 +277,19 @@ end;
 { TSVGElement }
 
 function TSVGElement.GetAttribute(AName: string): string;
+var
+  i: integer;
 begin
   result := FDomElem.GetAttribute(AName);
+  
+  //Find on <g> block
+  if (result = '') and (not (Self is TSVGGroup)) then
+    for i:= FGroupList.Count-1 downto 0 do
+    begin
+      result:= FGroupList[i].GetAttribute(AName);
+      if result <> '' then
+        Break;
+    end;  
 
   if (result = '') and (FAttributeDefault <> '') then
     result:= FAttributeDefault;
@@ -862,7 +880,10 @@ end;
 
 procedure TSVGElement.Initialize;
 begin
+  FDataParent:= nil;
+  FDataChildList:= TSVGElementList.Create;
   FAttributeDefault:= '';
+  FGroupList:= TSVGElementList.Create;
 end; 
 
 constructor TSVGElement.Create(ADocument: TXMLDocument; AElement: TDOMElement;
@@ -880,6 +901,13 @@ begin
   Initialize;
   //raise exception.Create('Cannot create a generic element');
 end;
+
+destructor TSVGElement.Destroy;
+begin
+  FreeAndNil(FGroupList);
+  FreeAndNil(FDataChildList);
+  inherited Destroy;
+end; 
 
 procedure TSVGElement.Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var prevMatrix: TAffineMatrix;
@@ -932,7 +960,17 @@ begin
     result := sfmEvenOdd
   else
     result := sfmNonZero;
-end; 
+end;
+
+function TSVGElement.DataChildList: TSVGElementList;
+begin
+   result:= FDataChildList;
+end;
+
+function TSVGElement.GroupList: TSVGElementList;
+begin
+   result:= FGroupList;
+end;   
 
 end.
 
