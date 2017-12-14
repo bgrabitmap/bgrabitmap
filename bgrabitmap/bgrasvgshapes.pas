@@ -143,7 +143,7 @@ type
 
   { TSVGPolypoints }
 
-  TSVGPolypoints = class(TSVGElement)
+  TSVGPolypoints = class(TSVGElementWithGradient)
     private
       function GetClosed: boolean;
       function GetPoints: string;
@@ -870,6 +870,8 @@ end;
 
 procedure TSVGPolypoints.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
+  i,l: integer;
+  rf: TRectF;
   prevMatrix: TAffineMatrix;
 begin
   if isFillNone and isStrokeNone then exit;
@@ -885,10 +887,39 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.polylineTo(pointsF);
     if closed then ACanvas2d.closePath;
+    
+    if find_grad_el = -2 then
+    begin
+      l:= Length(pointsF);
+      if l > 1 then
+      begin
+        with pointsF[0] do
+          rf:= RectF(x,y,x,y);
+        for i:= 1 to l-1 do
+          with pointsF[i] do
+          begin
+            if x < rf.Left then
+             rf.Left:= x
+            else if x > rf.Right then
+             rf.Right:= x;
+            if y < rf.Top then
+             rf.Top:= y
+            else if y > rf.Bottom then
+             rf.Bottom:= y;
+          end;
+        with rf do
+          InitializeGradient(ACanvas2d,
+            PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
+      end;
+    end;    
+    
     if not isFillNone then
     begin
       ACanvas2d.fillMode( TFillMode(fillMode) );
-      ACanvas2d.fillStyle(fillColor);
+      if canvasg = nil then
+        ACanvas2d.fillStyle(fillColor)
+      else
+        ACanvas2d.fillStyle(canvasg);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
