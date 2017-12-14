@@ -316,7 +316,8 @@ type
       function GetElementCount: integer;
       function GetUnits: TCSSUnitConverter;
     public
-      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; 
+        ADataLink: TSVGDataLink; ADataParent: TSVGElement);
       destructor Destroy; override;
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
@@ -343,7 +344,7 @@ type
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
 function CreateSVGElementFromNode(ADocument: TXMLDocument;
-  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink): TSVGElement;
+  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement): TSVGElement;
 
 implementation
 
@@ -380,14 +381,31 @@ begin
     result := TSVGElement;
 end;
 
+procedure GroupAdd(element,group: TSVGElement);
+var
+  i: Integer;
+begin
+  element.GroupList.Add(group);
+  for i:= 0 to element.DataChildList.Count-1 do
+    GroupAdd(element.DataChildList[i],group);
+end; 
+
 function CreateSVGElementFromNode(ADocument: TXMLDocument;
-  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink): TSVGElement;
+  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement): TSVGElement;
 var
   factory: TSVGFactory;
 begin
   factory := GetSVGFactory(AElement.TagName);
   result := factory.Create(ADocument,AElement,AUnits,ADataLink);
+  
   ADataLink.Linking(result);
+  if ADataParent <> nil then
+  begin
+    result.DataParent:= ADataParent;
+    ADataParent.DataChildList.Add(result);
+    if ADataParent is TSVGGroup then
+      GroupAdd(result,ADataParent);
+  end;   
 end;
 
 { TSVGElementWithGradient }
@@ -679,14 +697,14 @@ end;
 constructor TSVGGroup.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink);
+  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
 end;
 
 constructor TSVGGroup.Create(ADocument: TXMLDocument; AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
 end;
 
 destructor TSVGGroup.Destroy;
@@ -1239,14 +1257,14 @@ constructor TSVGGradient.Create(ADocument: TXMLDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink);
+  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
 end;
 
 constructor TSVGGradient.Create(ADocument: TXMLDocument; AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
 end;
 
 destructor TSVGGradient.Destroy;
@@ -1392,14 +1410,14 @@ constructor TSVGDefine.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter
   ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink);
+  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
 end;
 
 constructor TSVGDefine.Create(ADocument: TXMLDocument; AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
 end;
 
 destructor TSVGDefine.Destroy;
@@ -1449,7 +1467,7 @@ begin
 end;
 
 constructor TSVGContent.Create(ADocument: TXMLDocument; AElement: TDOMElement;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement);
 var cur: TDOMNode;
 begin
   FDoc := ADocument;
@@ -1462,7 +1480,7 @@ begin
   begin
     if cur is TDOMElement then
       FElements.Add(CreateSVGElementFromNode(
-        ADocument,TDOMElement(cur),FUnits,ADataLink));
+        ADocument,TDOMElement(cur),FUnits,ADataLink,ADataParent));
     cur := cur.NextSibling;
   end;
 end;
