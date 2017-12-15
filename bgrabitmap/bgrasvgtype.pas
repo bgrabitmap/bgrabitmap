@@ -9,6 +9,8 @@ uses
   laz2_DOM, BGRACanvas2D, fgl, BGRAGraphics;
 
 type
+  ArrayOfFloat = array of single;
+  
   TSVGElement = class;
   TSVGElementList = specialize TFPGList<TSVGElement>;
   TSVGFactory = class of TSVGElement;
@@ -58,6 +60,9 @@ type
       function GetStrokeMiterLimit: single;
       function GetStrokeOpacity: single;
       function GetStrokeWidth: TFloatWithCSSUnit;
+      function GetStrokeDashArray: string;
+      function GetStrokeDashArrayF: ArrayOfFloat;
+      function GetStrokeDashOffset: TFloatWithCSSUnit;
       function GetStyle(const AName: string): string;
       function GetTransform: string;
       function GetUnits: TCSSUnitConverter;
@@ -86,6 +91,9 @@ type
       procedure SetStrokeMiterLimit(AValue: single);
       procedure SetStrokeOpacity(AValue: single);
       procedure SetStrokeWidth(AValue: TFloatWithCSSUnit);
+      procedure SetStrokeDashArray(AValue: string);
+      procedure SetStrokeDashArrayF(AValue: ArrayOfFloat);
+      procedure SetStrokeDashOffset(AValue: TFloatWithCSSUnit);
       procedure SetStyle(AName: string; AValue: string);
       procedure SetTransform(AValue: string);
       procedure SetVerticalAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
@@ -138,6 +146,9 @@ type
       property strokeMiterLimit: single read GetStrokeMiterLimit write SetStrokeMiterLimit;
       property strokeLineJoin: string read GetStrokeLineJoin write SetStrokeLineJoin;
       property strokeLineCap: string read GetStrokeLineCap write SetStrokeLineCap;
+      property strokeDashArray: string read GetStrokeDashArray write SetStrokeDashArray;
+      property strokeDashArrayF: ArrayOfFloat read GetStrokeDashArrayF write SetStrokeDashArrayF;
+      property strokeDashOffset: TFloatWithCSSUnit read GetStrokeDashOffset write SetStrokeDashOffset;
       property fill: string read GetFill write SetFill;
       property fillColor: TBGRAPixel read GetFillColor write SetFillColor;
       property fillOpacity: single read GetFillOpacity write SetFillOpacity;
@@ -551,6 +562,45 @@ begin
   result := OrthoAttributeOrStyleWithUnit['stroke-width'];
 end;
 
+function TSVGElement.GetStrokeDashArray: string;
+begin
+  AttributeDefault:= 'none';
+  result := Attribute['stroke-dasharray'];
+end;
+
+function TSVGElement.GetStrokeDashArrayF: ArrayOfFloat;
+var 
+  parser: TSVGParser;
+  nvalue,i: integer;
+  s_array: String;
+begin
+  s_array:= strokeDashArray;
+  if s_array = 'none' then
+  begin
+    setlength(Result,0);
+    exit;
+  end;
+  parser:=TSVGParser.Create(s_array);
+  nvalue := 0;
+  repeat
+    parser.ParseFloat;
+    if not parser.NumberError then
+      inc(nvalue);
+  until parser.NumberError or parser.Done;
+  parser.ClearError;
+  setlength(Result,nvalue);
+  parser.Position := 1;
+  for i := 0 to high(result) do
+    result[i] := parser.ParseFloat;
+  parser.Free;
+end;
+
+function TSVGElement.GetStrokeDashOffset: TFloatWithCSSUnit;
+begin
+  AttributeDefault:= '0';
+  result := OrthoAttributeWithUnit['stroke-dashoffset'];
+end;    
+
 function TSVGElement.GetStyle(const AName: string): string;
 var
     startPos, colonPos, valueLength: integer;
@@ -729,6 +779,30 @@ begin
   RemoveStyle('stroke-width');
 end;
 
+procedure TSVGElement.SetStrokeDashArray(AValue: string);
+begin
+  Attribute['stroke-dasharray'] := AValue;
+end;
+
+procedure TSVGElement.SetStrokeDashArrayF(AValue: ArrayOfFloat);
+var 
+  s: string;
+  i: integer;
+begin
+  s:= '';
+  for i := 0 to high(AValue) do
+  begin
+    if s <> '' then s += ' ';
+    s += TCSSUnitConverter.formatValue(AValue[i])+' ';
+  end;
+  strokeDashArray := s;
+end;
+
+procedure TSVGElement.SetStrokeDashOffset(AValue: TFloatWithCSSUnit);
+begin
+  OrthoAttributeWithUnit['stroke-dashoffset'] := AValue;
+end;      
+
 procedure TSVGElement.SetStyle(AName: string; AValue: string);
 var
     startPos, colonPos, valueLength: integer;
@@ -870,12 +944,21 @@ begin
 end;
 
 procedure TSVGElement.ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  a: ArrayOfFloat;
 begin
   ACanvas2d.strokeStyle(strokeColor);
   ACanvas2d.lineWidth := Units.ConvertWidth(strokeWidth,AUnit).value;
   ACanvas2d.lineCap := strokeLineCap;
   ACanvas2d.lineJoin := strokeLineJoin;
   ACanvas2d.miterLimit := strokeMiterLimit;
+  
+  a:= strokeDashArrayF;
+  if Length(a) <> 0 then
+  begin
+    ACanvas2d.lineStyle(a);
+    SetLength(a,0);
+  end; 
 end;
 
 procedure TSVGElement.Initialize;
