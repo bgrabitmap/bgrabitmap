@@ -565,8 +565,7 @@ end;
 
 function TSVGText.GetFontFamily: string;
 begin
-  result := AttributeOrStyle['font-family'];
-  if result = '' then result := 'Arial';
+  result := AttributeOrStyleDef['font-family','Arial'];
 end;
 
 function TSVGText.GetFontItalic: boolean;
@@ -578,22 +577,17 @@ end;
 
 function TSVGText.GetFontSize: TFloatWithCSSUnit;
 begin
-  if AttributeOrStyle['font-size']='' then
-    result := FloatWithCSSUnit(12,cuPoint)
-  else
-    result := VerticalAttributeOrStyleWithUnit['font-size'];
+  result:= VerticalAttributeOrStyleWithUnit['font-size',FloatWithCSSUnit(12,cuPoint)];
 end;
 
 function TSVGText.GetFontStyle: string;
 begin
-  result := AttributeOrStyle['font-style'];
-  if result = '' then result := 'normal';
+  result := AttributeOrStyleDef['font-style','normal'];
 end;
 
 function TSVGText.GetFontWeight: string;
 begin
-  result := AttributeOrStyle['font-weight'];
-  if result = '' then result := 'normal';
+  result := AttributeOrStyleDef['font-weight','normal'];
 end;
 
 function TSVGText.GetSimpleText: string;
@@ -603,8 +597,7 @@ end;
 
 function TSVGText.GetTextDecoration: string;
 begin
-  result := AttributeOrStyle['text-decoration'];
-  if result='' then result := 'none';
+  result := AttributeOrStyleDef['text-decoration','none'];
 end;
 
 function TSVGText.GetX: TFloatWithCSSUnit;
