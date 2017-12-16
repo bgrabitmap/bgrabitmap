@@ -21,7 +21,7 @@ type
       procedure Initialize; override;
       function FindGradientDef: Integer;
       //Validate as percentual or number [0.0..1.0]
-      function ValidateValue(fu: TFloatWithCSSUnit): Single;
+      function EvaluatePercentage(fu: TFloatWithCSSUnit): Single;
       procedure CreateLinearGradient(
         ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
       procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
@@ -442,7 +442,7 @@ begin
     end;
 end;
 
-function TSVGElementWithGradient.ValidateValue(fu: TFloatWithCSSUnit): Single;
+function TSVGElementWithGradient.EvaluatePercentage(fu: TFloatWithCSSUnit): Single;
 begin
   Result:= fu.value;
   if fu.CSSUnit <> cuPercent then
@@ -481,7 +481,7 @@ begin
           col:= StrToBGRA( AttributeOrStyle['stop-color'] );
           if AttributeOrStyle['stop-opacity'] <> '' then
            col.alpha:= Round( Units.parseValue(AttributeOrStyle['stop-opacity'],1) * 255 );
-          canvasg.addColorStop(ValidateValue(offset)/100, col);
+          canvasg.addColorStop(EvaluatePercentage(offset)/100, col);
         end;
       end
       else
@@ -502,10 +502,10 @@ begin
     begin
       with TSVGLinearGradient(grad_el) do
       begin
-        vx1:= ValidateValue(x1);
-        vy1:= ValidateValue(y1);
-        vx2:= ValidateValue(x2);
-        vy2:= ValidateValue(y2);
+        vx1:= EvaluatePercentage(x1);
+        vy1:= EvaluatePercentage(y1);
+        vx2:= EvaluatePercentage(x2);
+        vy2:= EvaluatePercentage(y2);
         //Vertical gradient
         if (vx1 = vx2) and (vy1 <> vy2) then
         begin
