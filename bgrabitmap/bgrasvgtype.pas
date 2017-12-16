@@ -123,6 +123,10 @@ type
       function fillMode: TSVGFillMode;
       function DataChildList: TSVGElementList;
       function GroupList: TSVGElementList;
+      function GetAttributeWithUnitEx(AName: string;
+        ADef: single = 0; AUnitDef: TCSSUnit = cuPercent): TFloatWithCSSUnit;
+      procedure SetAttributeWithUnitEx(AName: string; AVal: single; AUnitVal: TCSSUnit); overload;
+      procedure SetAttributeWithUnitEx(AName: string; AValue: TFloatWithCSSUnit); overload;
       property DataLink: TSVGDataLink read FDataLink write FDataLink;
       property Attribute[AName: string]: string read GetAttribute write SetAttribute;
       property AttributeOrStyle[AName: string]: string read GetAttributeOrStyle;
@@ -1053,7 +1057,24 @@ end;
 function TSVGElement.GroupList: TSVGElementList;
 begin
    result:= FGroupList;
-end;   
+end;  
+
+function TSVGElement.GetAttributeWithUnitEx(AName: string;
+  ADef: single = 0; AUnitDef: TCSSUnit = cuPercent): TFloatWithCSSUnit;
+begin
+  result := TCSSUnitConverter.parseValue(Attribute[AName],
+              FloatWithCSSUnit(ADef,AUnitDef));
+end;
+
+procedure TSVGElement.SetAttributeWithUnitEx(AName: string; AVal: single; AUnitVal: TCSSUnit);
+begin
+  SetAttributeWithUnitEx(AName, FloatWithCSSUnit(AVal,AUnitVal));
+end;
+
+procedure TSVGElement.SetAttributeWithUnitEx(AName: string; AValue: TFloatWithCSSUnit);
+begin
+  Attribute[AName] := TCSSUnitConverter.formatValue(AValue);
+end; 
 
 end.
 
