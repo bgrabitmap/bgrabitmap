@@ -72,13 +72,17 @@ type
       function GetVerticalAttributeOrStyleWithUnit(AName: string;
         ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
       procedure SetAttribute(AName: string; AValue: string);
-      function GetAttributeWithUnit(AName: string): TFloatWithCSSUnit;
+      function GetAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
+      function GetAttributeWithUnit(AName: string): TFloatWithCSSUnit; overload;
       function GetAttributeOrStyleWithUnit(AName: string;
         ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
       function GetAttributeOrStyleWithUnit(AName: string): TFloatWithCSSUnit; overload;
-      function GetOrthoAttributeWithUnit(AName: string): TFloatWithCSSUnit;
-      function GetHorizAttributeWithUnit(AName: string): TFloatWithCSSUnit;
-      function GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit;
+      function GetOrthoAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
+      function GetOrthoAttributeWithUnit(AName: string): TFloatWithCSSUnit; overload;
+      function GetHorizAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
+      function GetHorizAttributeWithUnit(AName: string): TFloatWithCSSUnit; overload;
+      function GetVerticalAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
+      function GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit; overload;
       function GetID: string;
       procedure SetAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
       procedure SetFill(AValue: string);
@@ -127,10 +131,6 @@ type
       function fillMode: TSVGFillMode;
       function DataChildList: TSVGElementList;
       function GroupList: TSVGElementList;
-      function GetAttributeWithUnitEx(AName: string;
-        ADef: single = 0; AUnitDef: TCSSUnit = cuPercent): TFloatWithCSSUnit;
-      procedure SetAttributeWithUnitEx(AName: string; AVal: single; AUnitVal: TCSSUnit); overload;
-      procedure SetAttributeWithUnitEx(AName: string; AValue: TFloatWithCSSUnit); overload;
       property DataLink: TSVGDataLink read FDataLink write FDataLink;
       property AttributeDef[AName,ADefault: string]: string read GetAttribute;
       property Attribute[AName: string]: string read GetAttribute write SetAttribute;
@@ -138,8 +138,13 @@ type
       property AttributeOrStyle[AName: string]: string read GetAttributeOrStyle;
       property StyleDef[AName,ADefault: string]: string read GetStyle;
       property Style[AName: string]: string read GetStyle write SetStyle;
+      property AttributeWithUnitDef[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetAttributeWithUnit;
+      property AttributeWithUnit[AName: string]: TFloatWithCSSUnit read GetAttributeWithUnit write SetAttributeWithUnit;
+      property OrthoAttributeWithUnitDef[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetOrthoAttributeWithUnit;
       property OrthoAttributeWithUnit[AName: string]: TFloatWithCSSUnit read GetOrthoAttributeWithUnit write SetOrthoAttributeWithUnit;
+      property HorizAttributeWithUnitDef[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetHorizAttributeWithUnit;
       property HorizAttributeWithUnit[AName: string]: TFloatWithCSSUnit read GetHorizAttributeWithUnit write SetHorizAttributeWithUnit;
+      property VerticalAttributeWithUnitDef[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetVerticalAttributeWithUnit;
       property VerticalAttributeWithUnit[AName: string]: TFloatWithCSSUnit read GetVerticalAttributeWithUnit write SetVerticalAttributeWithUnit;
       property OrthoAttributeOrStyleWithUnit[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetOrthoAttributeOrStyleWithUnit;
       property HorizAttributeOrStyleWithUnit[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetHorizAttributeOrStyleWithUnit;
@@ -332,10 +337,15 @@ begin
       result.value /= Units.DpiScaleY;
 end;
 
+function TSVGElement.GetAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
+begin
+  result := TCSSUnitConverter.parseValue(Attribute[AName],ADefault);
+end;
+
 function TSVGElement.GetAttributeWithUnit(AName: string): TFloatWithCSSUnit;
 begin
-  result := TCSSUnitConverter.parseValue(Attribute[AName],FloatWithCSSUnit(0,cuCustom));
-end;
+  result := GetAttributeWithUnit(AName,FloatWithCSSUnit(0,cuCustom));
+end; 
 
 function TSVGElement.GetAttributeOrStyleWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 var
@@ -352,23 +362,33 @@ begin
   result := GetAttributeOrStyleWithUnit(AName,FloatWithCSSUnit(0,cuCustom));
 end; 
 
-function TSVGElement.GetOrthoAttributeWithUnit(AName: string
-  ): TFloatWithCSSUnit;
+function TSVGElement.GetOrthoAttributeWithUnit(AName: string;
+  ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
-  result := GetHorizAttributeWithUnit(AName);
+  result := GetHorizAttributeWithUnit(AName,ADefault);
   //value will be inconsistent if scaling is inconsistent
 end;
 
-function TSVGElement.GetHorizAttributeWithUnit(AName: string
-  ): TFloatWithCSSUnit;
+function TSVGElement.GetOrthoAttributeWithUnit(AName: string): TFloatWithCSSUnit;
 begin
-  result := GetAttributeWithUnit(AName);
+  result := GetOrthoAttributeWithUnit(AName,FloatWithCSSUnit(0,cuCustom));
+end;
+
+function TSVGElement.GetHorizAttributeWithUnit(AName: string;
+  ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
+begin
+  result := GetAttributeWithUnit(AName,ADefault);
   if result.CSSUnit <> cuCustom then
     if units.DpiScaleX = 0 then
       result.value := 0
     else
       result.value /= Units.DpiScaleX;
 end;
+
+function TSVGElement.GetHorizAttributeWithUnit(AName: string): TFloatWithCSSUnit;
+begin
+  result := GetHorizAttributeWithUnit(AName,FloatWithCSSUnit(0,cuCustom));
+end; 
 
 function TSVGElement.GetAttributeOrStyle(AName,ADefault: string): string;
 begin
@@ -630,15 +650,20 @@ begin
   result := FUnits;
 end;
 
-function TSVGElement.GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit;
+function TSVGElement.GetVerticalAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
-  result := GetAttributeWithUnit(AName);
+  result := GetAttributeWithUnit(AName,ADefault);
   if result.CSSUnit <> cuCustom then
     if units.DpiScaleY = 0 then
       result.value := 0
     else
       result.value /= Units.DpiScaleY;
 end;
+
+function TSVGElement.GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit;
+begin
+  result := GetVerticalAttributeWithUnit(AName,FloatWithCSSUnit(0,cuCustom));
+end;  
 
 function TSVGElement.GetDOMElement: TDOMElement;
 begin
@@ -1058,23 +1083,6 @@ function TSVGElement.GroupList: TSVGElementList;
 begin
    result:= FGroupList;
 end;  
-
-function TSVGElement.GetAttributeWithUnitEx(AName: string;
-  ADef: single = 0; AUnitDef: TCSSUnit = cuPercent): TFloatWithCSSUnit;
-begin
-  result := TCSSUnitConverter.parseValue(Attribute[AName],
-              FloatWithCSSUnit(ADef,AUnitDef));
-end;
-
-procedure TSVGElement.SetAttributeWithUnitEx(AName: string; AVal: single; AUnitVal: TCSSUnit);
-begin
-  SetAttributeWithUnitEx(AName, FloatWithCSSUnit(AVal,AUnitVal));
-end;
-
-procedure TSVGElement.SetAttributeWithUnitEx(AName: string; AValue: TFloatWithCSSUnit);
-begin
-  Attribute[AName] := TCSSUnitConverter.formatValue(AValue);
-end; 
 
 end.
 
