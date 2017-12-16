@@ -119,6 +119,7 @@ type
     function GetTextAlign: string;
     function GetTextAlignLCL: TAlignment;
     function GetTextBaseline: string;
+    function GetFillMode: TFillMode;
     function GetWidth: Integer;
     procedure SetFontName(AValue: string);
     procedure SetFontRenderer(AValue: TBGRACustomFontRenderer);
@@ -145,6 +146,7 @@ type
     procedure SetTextAlign(AValue: string);
     procedure SetTextAlignLCL(AValue: TAlignment);
     procedure SetTextBaseine(AValue: string);
+    procedure SetFillMode(mode: TFillMode);
     procedure StrokePoly(const points: array of TPointF);
     procedure DrawShadow(const points, points2: array of TPointF);
     procedure ClearPoly(const points: array of TPointF);
@@ -192,7 +194,6 @@ type
     procedure strokeStyle(color: string); overload;
     procedure strokeStyle(texture: IBGRAScanner); overload;
     procedure strokeStyle(provider: IBGRACanvasTextureProvider2D); overload;
-    procedure fillMode(mode: TFillMode);
     procedure fillStyle(color: TBGRAPixel); overload;
     procedure fillStyle(color: TColor); overload;
     procedure fillStyle(color: string); overload;
@@ -298,6 +299,8 @@ type
     property textAlignLCL: TAlignment read GetTextAlignLCL write SetTextAlignLCL;
     property textAlign: string read GetTextAlign write SetTextAlign;
     property textBaseline: string read GetTextBaseline write SetTextBaseine;
+    
+    property fillMode: TFillMode read GetFillMode write SetFillMode;
 
     property currentPath: ArrayOfTPointF read GetCurrentPathAsPoints;
     property fontRenderer: TBGRACustomFontRenderer read GetFontRenderer write SetFontRenderer;
@@ -1609,10 +1612,15 @@ begin
   currentState.strokeTextureProvider := provider;
 end;
 
-procedure TBGRACanvas2D.fillMode(mode: TFillMode);
+function TBGRACanvas2D.GetFillMode: TFillMode;
+begin
+  result := currentState.fillMode;
+end;
+
+procedure TBGRACanvas2D.SetFillMode(mode: TFillMode);
 begin
   currentState.fillMode := mode;
-end; 
+end;     
 
 procedure TBGRACanvas2D.fillStyle(color: TBGRAPixel);
 begin
