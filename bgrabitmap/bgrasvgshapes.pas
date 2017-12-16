@@ -431,7 +431,7 @@ begin
     begin
       s:= System.Copy(s,6,Length(s)-6);
       with FDataLink.Gradients do
-        for i:= Count-1 downto 0 do //(find near)
+        for i:= Count-1 downto 0 do 
           if Items[i] is TSVGGradient then
             if (Items[i] as TSVGGradient).ID = s then
             begin
@@ -447,7 +447,6 @@ begin
   Result:= fu.value;
   if fu.CSSUnit <> cuPercent then
   begin
-    //TODO: control limit: ok for offset ("stop" element). But for coordinate ???
     if Result < 0 then
       Result:= 0
     else if Result > 1 then
@@ -1271,43 +1270,42 @@ end;
 
 function TSVGLinearGradient.GetX1: TFloatWithCSSUnit;
 begin
-  result := HorizAttributeWithUnit['x1'];
+  result := GetAttributeWithUnitEx('x1');
 end;
 
 function TSVGLinearGradient.GetX2: TFloatWithCSSUnit;
 begin
-  AttributeDefault:= '100%';
-  result := HorizAttributeWithUnit['x2'];
+  result := GetAttributeWithUnitEx('x2',100);
 end;
 
 function TSVGLinearGradient.GetY1: TFloatWithCSSUnit;
 begin
-  result := VerticalAttributeWithUnit['y1'];
+  result := GetAttributeWithUnitEx('y1');
 end;
 
 function TSVGLinearGradient.GetY2: TFloatWithCSSUnit;
 begin
-  result := VerticalAttributeWithUnit['y2'];
+  result := GetAttributeWithUnitEx('y2');
 end;
 
 procedure TSVGLinearGradient.SetX1(AValue: TFloatWithCSSUnit);
 begin
-  HorizAttributeWithUnit['x1'] := AValue;
+  SetAttributeWithUnitEx('x1',AValue);
 end;
 
 procedure TSVGLinearGradient.SetX2(AValue: TFloatWithCSSUnit);
 begin
-  HorizAttributeWithUnit['x2'] := AValue;
+  SetAttributeWithUnitEx('x2',AValue);
 end;
 
 procedure TSVGLinearGradient.SetY1(AValue: TFloatWithCSSUnit);
 begin
-  VerticalAttributeWithUnit['y1'] := AValue;
+  SetAttributeWithUnitEx('y1',AValue);
 end;
 
 procedure TSVGLinearGradient.SetY2(AValue: TFloatWithCSSUnit);
 begin
-  VerticalAttributeWithUnit['y2'] := AValue;
+  SetAttributeWithUnitEx('y2',AValue);
 end;
 
 constructor TSVGLinearGradient.Create(ADocument: TXMLDocument;
@@ -1383,12 +1381,12 @@ end;
 
 function TSVGStopGradient.GetOffset: TFloatWithCSSUnit;
 begin
-  result := OrthoAttributeWithUnit['offset'];
+  result := GetAttributeWithUnitEx('offset');
 end;
 
 procedure TSVGStopGradient.SetOffset(AValue: TFloatWithCSSUnit);
 begin
-  OrthoAttributeWithUnit['offset'] := AValue;
+  SetAttributeWithUnitEx('offset',AValue);
 end;
 
 constructor TSVGStopGradient.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
