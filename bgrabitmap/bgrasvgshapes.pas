@@ -163,7 +163,7 @@ type
 
   { TSVGText }
 
-  TSVGText = class(TSVGElement)
+  TSVGText = class(TSVGElementWithGradient)
     private
       function GetFontBold: boolean;
       function GetFontFamily: string;
@@ -665,7 +665,9 @@ begin
 end;
 
 procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
-var fs:TFontStyles;
+var 
+  fs:TFontStyles;
+  vx,vy: single;
 begin
   ACanvas2d.beginPath;
   ACanvas2d.fontEmHeight := Units.ConvertWidth(fontSize,AUnit).value;
@@ -674,10 +676,17 @@ begin
   if fontBold then fs += [fsBold];
   if fontItalic then fs += [fsItalic];
   ACanvas2d.fontStyle := fs;
-  ACanvas2d.text(SimpleText,Units.ConvertWidth(x,AUnit).value,Units.ConvertWidth(y,AUnit).value);
+  vx:= Units.ConvertWidth(x,AUnit).value;
+  vy:= Units.ConvertWidth(y,AUnit).value;
+  ACanvas2d.text(SimpleText,vx,vy);
+
+  if find_grad_el = -2 then
+    with ACanvas2d.measureText(SimpleText) do
+      InitializeGradient(ACanvas2d, PointF(vx,vy),width,height);
+             
   if not isFillNone then
   begin
-    ACanvas2d.fillStyle(fillColor);
+    ApplyFillStyle(ACanvas2D);
     ACanvas2d.fill;
   end;
   if not isStrokeNone then
