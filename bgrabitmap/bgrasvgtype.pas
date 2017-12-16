@@ -988,7 +988,9 @@ begin
   begin
     ACanvas2d.lineStyle(a);
     SetLength(a,0);
-  end; 
+  end
+  else
+    ACanvas2d.lineStyle(psSolid);
 end;
 
 procedure TSVGElement.Initialize;
