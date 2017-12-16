@@ -38,21 +38,21 @@ type
     private
       FDataParent: TSVGElement;
       FDataChildList: TSVGElementList;
-      FAttributeDefault: string;
       FGroupList: TSVGElementList;
-      function GetAttributeOrStyle(AName: string): string;
+      function GetAttributeOrStyle(AName,ADefault: string): string; overload;
+      function GetAttributeOrStyle(AName: string): string; overload;
       function GetFill: string;
       function GetFillColor: TBGRAPixel;
       function GetFillOpacity: single;
       function GetFillRule: string;
-      function GetHorizAttributeOrStyleWithUnit(AName: string
-        ): TFloatWithCSSUnit;
+      function GetHorizAttributeOrStyleWithUnit(AName: string;
+        ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
       function GetIsFillNone: boolean;
       function GetIsStrokeNone: boolean;
       function GetMatrix(AUnit: TCSSUnit): TAffineMatrix;
       function GetOpacity: single;
-      function GetOrthoAttributeOrStyleWithUnit(AName: string
-        ): TFloatWithCSSUnit;
+      function GetOrthoAttributeOrStyleWithUnit(AName: string;
+        ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
       function GetStroke: string;
       function GetStrokeColor: TBGRAPixel;
       function GetStrokeLineCap: string;
@@ -63,15 +63,19 @@ type
       function GetStrokeDashArray: string;
       function GetStrokeDashArrayF: ArrayOfFloat;
       function GetStrokeDashOffset: TFloatWithCSSUnit;
-      function GetStyle(const AName: string): string;
+      function GetStyle(const AName,ADefault: string): string; overload;
+      function GetStyle(const AName: string): string; overload;
       function GetTransform: string;
       function GetUnits: TCSSUnitConverter;
-      function GetAttribute(AName: string): string;
-      function GetVerticalAttributeOrStyleWithUnit(AName: string
-        ): TFloatWithCSSUnit;
+      function GetAttribute(AName,ADefault: string): string; overload;
+      function GetAttribute(AName: string): string; overload;
+      function GetVerticalAttributeOrStyleWithUnit(AName: string;
+        ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
       procedure SetAttribute(AName: string; AValue: string);
       function GetAttributeWithUnit(AName: string): TFloatWithCSSUnit;
-      function GetAttributeOrStyleWithUnit(AName: string): TFloatWithCSSUnit;
+      function GetAttributeOrStyleWithUnit(AName: string;
+        ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
+      function GetAttributeOrStyleWithUnit(AName: string): TFloatWithCSSUnit; overload;
       function GetOrthoAttributeWithUnit(AName: string): TFloatWithCSSUnit;
       function GetHorizAttributeWithUnit(AName: string): TFloatWithCSSUnit;
       function GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit;
@@ -128,15 +132,18 @@ type
       procedure SetAttributeWithUnitEx(AName: string; AVal: single; AUnitVal: TCSSUnit); overload;
       procedure SetAttributeWithUnitEx(AName: string; AValue: TFloatWithCSSUnit); overload;
       property DataLink: TSVGDataLink read FDataLink write FDataLink;
+      property AttributeDef[AName,ADefault: string]: string read GetAttribute;
       property Attribute[AName: string]: string read GetAttribute write SetAttribute;
+      property AttributeOrStyleDef[AName,ADefault: string]: string read GetAttributeOrStyle;
       property AttributeOrStyle[AName: string]: string read GetAttributeOrStyle;
+      property StyleDef[AName,ADefault: string]: string read GetStyle;
       property Style[AName: string]: string read GetStyle write SetStyle;
       property OrthoAttributeWithUnit[AName: string]: TFloatWithCSSUnit read GetOrthoAttributeWithUnit write SetOrthoAttributeWithUnit;
       property HorizAttributeWithUnit[AName: string]: TFloatWithCSSUnit read GetHorizAttributeWithUnit write SetHorizAttributeWithUnit;
       property VerticalAttributeWithUnit[AName: string]: TFloatWithCSSUnit read GetVerticalAttributeWithUnit write SetVerticalAttributeWithUnit;
-      property OrthoAttributeOrStyleWithUnit[AName: string]: TFloatWithCSSUnit read GetOrthoAttributeOrStyleWithUnit;
-      property HorizAttributeOrStyleWithUnit[AName: string]: TFloatWithCSSUnit read GetHorizAttributeOrStyleWithUnit;
-      property VerticalAttributeOrStyleWithUnit[AName: string]: TFloatWithCSSUnit read GetVerticalAttributeOrStyleWithUnit;
+      property OrthoAttributeOrStyleWithUnit[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetOrthoAttributeOrStyleWithUnit;
+      property HorizAttributeOrStyleWithUnit[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetHorizAttributeOrStyleWithUnit;
+      property VerticalAttributeOrStyleWithUnit[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetVerticalAttributeOrStyleWithUnit;
       property DOMElement: TDOMElement read GetDOMElement;
       property Units: TCSSUnitConverter read GetUnits;
       property transform: string read GetTransform write SetTransform;
@@ -160,7 +167,6 @@ type
       property opacity: single read GetOpacity write SetOpacity;
       property ID: string read GetID write SetID;
       property DataParent: TSVGElement read FDataParent write FDataParent;
-      property AttributeDefault: string read FAttributeDefault write FAttributeDefault;
   end;
 
   { TSVGParser }
@@ -291,7 +297,7 @@ end;
 
 { TSVGElement }
 
-function TSVGElement.GetAttribute(AName: string): string;
+function TSVGElement.GetAttribute(AName,ADefault: string): string;
 var
   i: integer;
 begin
@@ -301,21 +307,24 @@ begin
   if (result = '') and (not (Self is TSVGGroup)) then
     for i:= FGroupList.Count-1 downto 0 do
     begin
-      result:= FGroupList[i].GetAttribute(AName);
+      result:= FGroupList[i].GetAttribute(AName,ADefault);
       if result <> '' then
         Break;
     end;  
 
-  if (result = '') and (FAttributeDefault <> '') then
-    result:= FAttributeDefault;
-  //Note: "reset protection" (avoid manual reset after set)
-  FAttributeDefault:= ''; 
+  if result = '' then
+    result:= ADefault;
 end;
 
-function TSVGElement.GetVerticalAttributeOrStyleWithUnit(AName: string
-  ): TFloatWithCSSUnit;
+function TSVGElement.GetAttribute(AName: string): string;
 begin
-  result := GetAttributeOrStyleWithUnit(AName);
+  result:= GetAttribute(AName,'');
+end;  
+
+function TSVGElement.GetVerticalAttributeOrStyleWithUnit(AName: string;
+  ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
+begin
+  result := GetAttributeOrStyleWithUnit(AName,ADefault);
   if result.CSSUnit <> cuCustom then
     if units.DpiScaleY = 0 then
       result.value := 0
@@ -328,19 +337,19 @@ begin
   result := TCSSUnitConverter.parseValue(Attribute[AName],FloatWithCSSUnit(0,cuCustom));
 end;
 
-function TSVGElement.GetAttributeOrStyleWithUnit(AName: string): TFloatWithCSSUnit;
+function TSVGElement.GetAttributeOrStyleWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 var
-  valueText,
-  default: string;
+  valueText: string;
 begin
-  default := AttributeDefault;//(for "reset protection")
   valueText := Style[AName];
   if valueText = '' then
-  begin
-    AttributeDefault:= default;//(for "reset protection")
     valueText := Attribute[AName];
-  end;
-  result := TCSSUnitConverter.parseValue(valueText,FloatWithCSSUnit(0,cuCustom));
+  result := TCSSUnitConverter.parseValue(valueText,ADefault);
+end;
+
+function TSVGElement.GetAttributeOrStyleWithUnit(AName: string): TFloatWithCSSUnit;
+begin
+  result := GetAttributeOrStyleWithUnit(AName,FloatWithCSSUnit(0,cuCustom));
 end; 
 
 function TSVGElement.GetOrthoAttributeWithUnit(AName: string
@@ -361,23 +370,21 @@ begin
       result.value /= Units.DpiScaleX;
 end;
 
-function TSVGElement.GetAttributeOrStyle(AName: string): string;
-var
-  default: string;
+function TSVGElement.GetAttributeOrStyle(AName,ADefault: string): string;
 begin
-  default := AttributeDefault;//(for "reset protection")
-  result := GetStyle(AName);
+  result := GetStyle(AName,ADefault);
   if result = '' then
-  begin
-    AttributeDefault:= default;//(for "reset protection")
-    result := GetAttribute(AName);
-  end;
-end; 
+    result := GetAttribute(AName,ADefault);
+end;
+
+function TSVGElement.GetAttributeOrStyle(AName: string): string;
+begin
+  result:= GetAttributeOrStyle(AName,'');
+end;   
 
 function TSVGElement.GetFill: string;
 begin
-  AttributeDefault:= 'black';
-  result := AttributeOrStyle['fill'];
+  result := AttributeOrStyleDef['fill','black'];
 end;
 
 function TSVGElement.GetFillColor: TBGRAPixel;
@@ -390,8 +397,7 @@ end;
 function TSVGElement.GetFillOpacity: single;
 var errPos: integer;
 begin
-  AttributeDefault:= '1';
-  val(AttributeOrStyle['fill-opacity'], result, errPos);
+  val(AttributeOrStyleDef['fill-opacity','1'], result, errPos);
   if errPos <> 0 then result := 1 else
     if result < 0 then result := 0 else
       if result > 1 then result := 1;
@@ -399,14 +405,13 @@ end;
 
 function TSVGElement.GetFillRule: string;
 begin
-  AttributeDefault:= 'nonzero';
-  result := AttributeOrStyle['fill-rule'];
+  result := AttributeOrStyleDef['fill-rule','nonzero'];
 end; 
 
-function TSVGElement.GetHorizAttributeOrStyleWithUnit(AName: string
-  ): TFloatWithCSSUnit;
+function TSVGElement.GetHorizAttributeOrStyleWithUnit(AName: string;
+  ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
-  result := GetAttributeOrStyleWithUnit(AName);
+  result := GetAttributeOrStyleWithUnit(AName,ADefault);
   if result.CSSUnit <> cuCustom then
     if units.DpiScaleX = 0 then
       result.value := 0
@@ -502,24 +507,22 @@ end;
 function TSVGElement.GetOpacity: single;
 var errPos: integer;
 begin
-  AttributeDefault:= '1';
-  val(AttributeOrStyle['opacity'], result, errPos);
+  val(AttributeOrStyleDef['opacity','1'], result, errPos);
   if errPos <> 0 then result := 1 else
     if result < 0 then result := 0 else
       if result > 1 then result := 1;
 end;
 
-function TSVGElement.GetOrthoAttributeOrStyleWithUnit(AName: string
-  ): TFloatWithCSSUnit;
+function TSVGElement.GetOrthoAttributeOrStyleWithUnit(AName: string;
+  ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
-  result := GetHorizAttributeOrStyleWithUnit(AName);
+  result := GetHorizAttributeOrStyleWithUnit(AName,ADefault);
   //value will be inconsistent if scaling is inconsistent
 end;
 
 function TSVGElement.GetStroke: string;
 begin
-  AttributeDefault:= 'none';
-  result := AttributeOrStyle['stroke'];
+  result := AttributeOrStyleDef['stroke','none'];
 end;
 
 function TSVGElement.GetStrokeColor: TBGRAPixel;
@@ -531,21 +534,18 @@ end;
 
 function TSVGElement.GetStrokeLineCap: string;
 begin
-  AttributeDefault:= 'butt';
-  result := AttributeOrStyle['stroke-linecap'];
+  result := AttributeOrStyleDef['stroke-linecap','butt'];
 end;
 
 function TSVGElement.GetStrokeLineJoin: string;
 begin
-  AttributeDefault:= 'miter';
-  result := AttributeOrStyle['stroke-linejoin'];
+  result := AttributeOrStyleDef['stroke-linejoin','miter'];
 end;
 
 function TSVGElement.GetStrokeMiterLimit: single;
 var errPos: integer;
 begin
-  AttributeDefault:= '4';
-  val(AttributeOrStyle['stroke-miterlimit'], result, errPos);
+  val(AttributeOrStyleDef['stroke-miterlimit','4'], result, errPos);
   if errPos <> 0 then result := 4 else
     if result < 1 then result := 1;
 end;
@@ -553,8 +553,7 @@ end;
 function TSVGElement.GetStrokeOpacity: single;
 var errPos: integer;
 begin
-  AttributeDefault:= '1';
-  val(AttributeOrStyle['stroke-opacity'], result, errPos);
+  val(AttributeOrStyleDef['stroke-opacity','1'], result, errPos);
   if errPos <> 0 then result := 1 else
     if result < 0 then result := 0 else
       if result > 1 then result := 1;
@@ -562,14 +561,12 @@ end;
 
 function TSVGElement.GetStrokeWidth: TFloatWithCSSUnit;
 begin
-  AttributeDefault:= '1';
-  result := OrthoAttributeOrStyleWithUnit['stroke-width'];
+  result := OrthoAttributeOrStyleWithUnit['stroke-width',FloatWithCSSUnit(1,cuCustom)];
 end;
 
 function TSVGElement.GetStrokeDashArray: string;
 begin
-  AttributeDefault:= 'none';
-  result := Attribute['stroke-dasharray'];
+  result := AttributeDef['stroke-dasharray','none']; 
 end;
 
 function TSVGElement.GetStrokeDashArrayF: ArrayOfFloat;
@@ -601,16 +598,15 @@ end;
 
 function TSVGElement.GetStrokeDashOffset: TFloatWithCSSUnit;
 begin
-  AttributeDefault:= '0';
   result := OrthoAttributeWithUnit['stroke-dashoffset'];
 end;    
 
-function TSVGElement.GetStyle(const AName: string): string;
+function TSVGElement.GetStyle(const AName,ADefault: string): string;
 var
     startPos, colonPos, valueLength: integer;
     ruleset: string;
 begin
-  ruleset := Attribute['style'];
+  ruleset := Attribute['style',ADefault];
   LocateStyleDeclaration(ruleset, AName, startPos,colonPos, valueLength);
   if valueLength <> -1 then
   begin
@@ -618,6 +614,11 @@ begin
   end else
     result := '';
 end;
+
+function TSVGElement.GetStyle(const AName: string): string;
+begin
+  result:= GetStyle(AName,'');
+end; 
 
 function TSVGElement.GetTransform: string;
 begin
@@ -969,7 +970,6 @@ procedure TSVGElement.Initialize;
 begin
   FDataParent:= nil;
   FDataChildList:= TSVGElementList.Create;
-  FAttributeDefault:= '';
   FGroupList:= TSVGElementList.Create;
 end; 
 
