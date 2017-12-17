@@ -116,6 +116,7 @@ type
       procedure Init({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter); overload;
       procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
       procedure LocateStyleDeclaration(AText: string; AProperty: string; out AStartPos,AColonPos,AValueLength: integer);
+      procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); virtual;
       procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
       procedure Initialize; virtual;
     public
@@ -972,6 +973,13 @@ begin
     if CheckShouldReturnResult then exit;
   end;
 end;
+
+procedure TSVGElement.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  ACanvas2D.fillStyle(fillColor);
+
+  ACanvas2D.fillMode := TFillMode(fillMode);
+end;    
 
 procedure TSVGElement.ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
 var
