@@ -442,36 +442,22 @@ end;
 procedure TSVGElementWithGradient.CreateLinearGradient(
   ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
 var
-  i,c: Integer;
+  i: integer;
   col: TBGRAPixel;
 begin
   canvasg:= ACanvas2d.createLinearGradient(pf1,pf2);
-  //Count "stop" elements
-  c:= 0;
-  with FDataLink do
-    for i:= find_grad_el-1 downto 0 do
-      if Gradients[i] is TSVGStopGradient then
-        Inc(c)
-      else
-        Break;
-  //Apply "stop" element color data (in order)
-  for i:= find_grad_el-c to find_grad_el-1 do
-    with FDataLink do
-    begin
-      if Gradients[i] is TSVGStopGradient then
-      begin
-        with (Gradients[i] as TSVGStopGradient) do
+
+  with FDataLink.Gradients[find_grad_el].DataChildList do
+    for i:= 0 to Count-1 do
+      if Items[i] is TSVGStopGradient then
+        with (Items[i] as TSVGStopGradient) do
         begin
           col:= StrToBGRA( AttributeOrStyle['stop-color'] );
           if AttributeOrStyle['stop-opacity'] <> '' then
            col.alpha:= Round( Units.parseValue(AttributeOrStyle['stop-opacity'],1) * 255 );
           canvasg.addColorStop(EvaluatePercentage(offset)/100, col);
         end;
-      end
-      else
-        Break;
-    end;
-end;
+end;                     
 
 procedure TSVGElementWithGradient.InitializeGradient(ACanvas2d: TBGRACanvas2D;
   const origin: TPointF; const w,h: single);
