@@ -382,15 +382,6 @@ begin
     result := TSVGElement;
 end;
 
-procedure GroupAdd(element,group: TSVGElement);
-var
-  i: Integer;
-begin
-  element.GroupList.Add(group);
-  for i:= 0 to element.DataChildList.Count-1 do
-    GroupAdd(element.DataChildList[i],group);
-end; 
-
 function CreateSVGElementFromNode(ADocument: TXMLDocument;
   AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement): TSVGElement;
 var
@@ -399,14 +390,7 @@ begin
   factory := GetSVGFactory(AElement.TagName);
   result := factory.Create(ADocument,AElement,AUnits,ADataLink);
   
-  ADataLink.Linking(result);
-  if ADataParent <> nil then
-  begin
-    result.DataParent:= ADataParent;
-    ADataParent.DataChildList.Add(result);
-    if ADataParent is TSVGGroup then
-      GroupAdd(result,ADataParent);
-  end;   
+  ADataLink.Link(result,ADataParent);
 end;
 
 { TSVGElementWithGradient }
