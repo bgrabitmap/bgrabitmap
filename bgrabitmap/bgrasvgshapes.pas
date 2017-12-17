@@ -14,14 +14,16 @@ type
   { TSVGElementWithGradient }
 
   TSVGElementWithGradient = class(TSVGElement)
-    protected
-      find_grad_el: Integer;//(-2 not search; -1 not find; >= 0 id find)
+    private
+      find_grad_el: integer;//(-2 not search; -1 not find; >= 0 id find)
       grad_el: TSVGGradient;
       canvasg: IBGRACanvasGradient2D;
+    protected
       procedure Initialize; override;
-      function FindGradientDef: Integer;
+      function IsGradientNotSearch: boolean;
+      function FindGradientDef: integer;
       //Validate as percentual or number [0.0..1.0]
-      function EvaluatePercentage(fu: TFloatWithCSSUnit): Single;
+      function EvaluatePercentage(fu: TFloatWithCSSUnit): single;
       procedure CreateLinearGradient(
         ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
       procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
@@ -403,10 +405,15 @@ begin
   canvasg       := nil;
 end;
 
-function TSVGElementWithGradient.FindGradientDef: Integer;
+function TSVGElementWithGradient.IsGradientNotSearch: boolean;
+begin
+  result:= find_grad_el = -2;
+end; 
+
+function TSVGElementWithGradient.FindGradientDef: integer;
 var
-  i: Integer;
-  s: String;
+  i: integer;
+  s: string;
 begin
   Result:= -1;
   s:= fill;
@@ -426,7 +433,7 @@ begin
     end;
 end;
 
-function TSVGElementWithGradient.EvaluatePercentage(fu: TFloatWithCSSUnit): Single;
+function TSVGElementWithGradient.EvaluatePercentage(fu: TFloatWithCSSUnit): single;
 begin
   Result:= fu.value;
   if fu.CSSUnit <> cuPercent then
@@ -653,7 +660,7 @@ begin
   vy:= Units.ConvertWidth(y,AUnit).value;
   ACanvas2d.text(SimpleText,vx,vy);
 
-  if find_grad_el = -2 then
+  if IsGradientNotSearch then
     with ACanvas2d.measureText(SimpleText) do
       InitializeGradient(ACanvas2d, PointF(vx,vy),width,height);
              
@@ -783,7 +790,7 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.roundRect(vx,vy, vw,vh,
        Units.ConvertWidth(rx,AUnit).value,Units.ConvertWidth(ry,AUnit).value);
-    if find_grad_el = -2 then
+    if IsGradientNotSearch then
       InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh);
     if not isFillNone then
     begin
@@ -886,7 +893,7 @@ begin
     ACanvas2d.polylineTo(pointsF);
     if closed then ACanvas2d.closePath;
     
-    if find_grad_el = -2 then
+    if IsGradientNotSearch then
     begin
       l:= Length(pointsF);
       if l > 1 then
@@ -1001,7 +1008,7 @@ begin
   end else
   begin
     ACanvas2d.path(path);
-    if find_grad_el = -2 then
+    if IsGradientNotSearch then
       with path.GetBounds do
         InitializeGradient(ACanvas2d,
           PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
@@ -1079,7 +1086,7 @@ begin
     vry:= Units.ConvertWidth(ry,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.ellipse(vcx,vcy,vrx,vry);
-    if find_grad_el = -2 then
+    if IsGradientNotSearch then
       InitializeGradient(ACanvas2d, PointF(vcx-vrx,vcy-vry),vrx*2,vry*2);      
     if not isFillNone then
     begin
@@ -1143,7 +1150,7 @@ begin
     vr:= Units.ConvertWidth(r,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.circle(vcx,vcy,vr);
-    if find_grad_el = -2 then
+    if IsGradientNotSearch then
       InitializeGradient(ACanvas2d, PointF(vcx-vr,vcy-vr),vr*2,vr*2);
     if not isFillNone then
     begin
