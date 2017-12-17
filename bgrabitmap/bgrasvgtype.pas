@@ -23,14 +23,25 @@ type
   { TSVGDataLink }
 
   TSVGDataLink = class
-     Elements: TSVGElementList;
-     Gradients: TSVGElementList;
-
+   private
+     FElements: TSVGElementList;
+     FGradients: TSVGElementList;
+     function IsValidID(const id: Integer; list: TSVGElementList): boolean;
+     function GetElement(id: Integer): TSVGElement;
+     function GetGradient(id: Integer): TSVGElement;
+     function FindElement(el: TSVGElement; list: TSVGElementList): integer;
+   public
      constructor Create;
      destructor Destroy; override;
 
+     function ElementCount: Integer;
+     function GradientCount: Integer;
      function Linking(el: TSVGElement): Integer;
-  end;    
+     function Unlink(el: TSVGElement): boolean;
+
+     property Elements[ID: Integer]: TSVGElement read GetElement;
+     property Gradients[ID: Integer]: TSVGElement read GetGradient;
+  end;           
 
   { TSVGElement }
 
@@ -279,27 +290,94 @@ end;
 
 { TSVGDataLink }
 
+const
+ s_error_invalid_id = 'invalid id';
+
 constructor TSVGDataLink.Create;
 begin
-   Elements:= TSVGElementList.Create;
-   Gradients:= TSVGElementList.Create;
+  FElements:= TSVGElementList.Create;
+  FGradients:= TSVGElementList.Create;
 end;
 
 destructor TSVGDataLink.Destroy;
 begin
-   FreeAndNil(Gradients);
-   FreeAndNil(Elements);
-   inherited Destroy;
+  FreeAndNil(FGradients);
+  FreeAndNil(FElements);
+  inherited Destroy;
+end;
+
+function TSVGDataLink.IsValidID(const id: Integer; list: TSVGElementList): boolean;
+begin
+  result:= (id >= 0) and (id < list.Count);
+end;
+
+function TSVGDataLink.GetElement(id: Integer): TSVGElement;
+begin
+  if not IsValidID(id,FElements) then
+   raise exception.Create(s_error_invalid_id);
+  result:= FElements[id];
+end;
+
+function TSVGDataLink.GetGradient(id: Integer): TSVGElement;
+begin
+  if not IsValidID(id,FGradients) then
+   raise exception.Create(s_error_invalid_id);
+  result:= FGradients[id];
+end;
+
+function TSVGDataLink.FindElement(el: TSVGElement; list: TSVGElementList): integer;
+var
+  i: Integer;
+begin
+  for i:= 0 to list.Count-1 do
+    if list[i] = el then
+    begin
+      result:= i;
+      Exit;
+    end;
+  result:= -1;
+end;
+
+function TSVGDataLink.ElementCount: Integer;
+begin
+  result:= FElements.Count;
+end;
+
+function TSVGDataLink.GradientCount: Integer;
+begin
+  result:= FGradients.Count;
 end;
 
 function TSVGDataLink.Linking(el: TSVGElement): Integer;
 begin
-  Elements.Add(el);
-  Result:= Elements.Count;
+  FElements.Add(el);
+  result:= FElements.Count;
   if (el is TSVGGradient) or
      (el is TSVGStopGradient) then
-    Gradients.Add(el);
-end;        
+    FGradients.Add(el);
+end;
+
+function TSVGDataLink.Unlink(el: TSVGElement): boolean;
+var
+  id: integer;
+begin
+  result:= false;
+  id:= FindElement(el,FElements);
+  if id <> -1 then
+  begin
+    result:= true;
+    FElements.Delete(id);
+    if (el is TSVGGradient) or
+       (el is TSVGStopGradient) then
+    begin
+      id:= FindElement(el,FGradients);
+      if id = -1 then
+        result:= false
+      else
+        FGradients.Delete(id);
+    end;
+  end;
+end;
 
 { TSVGElement }
 
