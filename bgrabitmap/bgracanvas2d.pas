@@ -597,6 +597,7 @@ begin
   result.strokeColor := strokeColor;
   result.strokeTextureProvider := strokeTextureProvider;
   result.fillColor := fillColor;
+  result.fillMode := fillMode;
   result.fillTextureProvider := fillTextureProvider;
   result.globalAlpha := globalAlpha;
 
