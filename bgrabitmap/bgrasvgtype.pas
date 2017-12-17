@@ -24,11 +24,11 @@ type
 
   TSVGDataLink = class
    private
-     FElements: TSVGElementList;
+     FElements,
      FGradients: TSVGElementList;
-     function IsValidID(const id: Integer; list: TSVGElementList): boolean;
-     function GetElement(id: Integer): TSVGElement;
-     function GetGradient(id: Integer): TSVGElement;
+     function IsValidID(const id: integer; list: TSVGElementList): boolean;
+     function GetElement(id: integer): TSVGElement;
+     function GetGradient(id: integer): TSVGElement;
      function FindElement(el: TSVGElement; list: TSVGElementList): integer;
      procedure InternalLink(const id: integer; parent: TSVGElement);
      procedure InternalUnLink(const id: integer);
@@ -37,15 +37,15 @@ type
      constructor Create;
      destructor Destroy; override;
 
-     function ElementCount: Integer;
-     function GradientCount: Integer;
-     function Link(el: TSVGElement; parent: TSVGElement = nil): Integer;
+     function ElementCount: integer;
+     function GradientCount: integer;
+     function Link(el: TSVGElement; parent: TSVGElement = nil): integer;
      function Unlink(el: TSVGElement): boolean;
      procedure UnlinkAll;
      function ReLink(el: TSVGElement; parent: TSVGElement): boolean;
 
-     property Elements[ID: Integer]: TSVGElement read GetElement;
-     property Gradients[ID: Integer]: TSVGElement read GetGradient;
+     property Elements[ID: integer]: TSVGElement read GetElement;
+     property Gradients[ID: integer]: TSVGElement read GetGradient;
   end;
 
   { TSVGElement }
@@ -311,19 +311,19 @@ begin
   inherited Destroy;
 end;
 
-function TSVGDataLink.IsValidID(const id: Integer; list: TSVGElementList): boolean;
+function TSVGDataLink.IsValidID(const id: integer; list: TSVGElementList): boolean;
 begin
   result:= (id >= 0) and (id < list.Count);
 end;
 
-function TSVGDataLink.GetElement(id: Integer): TSVGElement;
+function TSVGDataLink.GetElement(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FElements) then
    raise exception.Create(s_error_invalid_id);
   result:= FElements[id];
 end;
 
-function TSVGDataLink.GetGradient(id: Integer): TSVGElement;
+function TSVGDataLink.GetGradient(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FGradients) then
    raise exception.Create(s_error_invalid_id);
@@ -332,7 +332,7 @@ end;
 
 function TSVGDataLink.FindElement(el: TSVGElement; list: TSVGElementList): integer;
 var
-  i: Integer;
+  i: integer;
 begin
   for i:= 0 to list.Count-1 do
     if list[i] = el then
@@ -347,7 +347,7 @@ procedure TSVGDataLink.InternalLink(const id: integer; parent: TSVGElement);
 
   procedure GroupAdd(element,group: TSVGElement);
   var
-    i: Integer;
+    i: integer;
   begin
     element.GroupList.Add(group);
     for i:= 0 to element.DataChildList.Count-1 do
@@ -374,7 +374,7 @@ procedure TSVGDataLink.InternalUnLink(const id: integer);
 
   procedure GroupRemove(element,group: TSVGElement);
   var
-    i: Integer;
+    i: integer;
   begin
     element.GroupList.Remove(group);
     for i:= 0 to element.DataChildList.Count-1 do
@@ -404,23 +404,22 @@ begin
   InternalLink(id,parent);
 end;
 
-function TSVGDataLink.ElementCount: Integer;
+function TSVGDataLink.ElementCount: integer;
 begin
   result:= FElements.Count;
 end;
 
-function TSVGDataLink.GradientCount: Integer;
+function TSVGDataLink.GradientCount: integer;
 begin
   result:= FGradients.Count;
 end;
 
-function TSVGDataLink.Link(el: TSVGElement; parent: TSVGElement = nil): Integer;
+function TSVGDataLink.Link(el: TSVGElement; parent: TSVGElement = nil): integer;
 begin
   FElements.Add(el);
   result:= FElements.Count-1;
   InternalLink(result,parent);
-  if (el is TSVGGradient) or
-     (el is TSVGStopGradient) then
+  if el is TSVGGradient then
     FGradients.Add(el);
 end;
 
@@ -435,8 +434,7 @@ begin
     result:= true;
     InternalUnLink(id);
     FElements.Delete(id);
-    if (el is TSVGGradient) or
-       (el is TSVGStopGradient) then
+    if el is TSVGGradient then
     begin
       id:= FindElement(el,FGradients);
       if id = -1 then
@@ -449,7 +447,7 @@ end;
 
 procedure TSVGDataLink.UnlinkAll;
 var
-  i: Integer;
+  i: integer;
 begin
   FGradients.Clear;
 
