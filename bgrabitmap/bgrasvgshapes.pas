@@ -430,12 +430,12 @@ begin
     if Pos('url(#',s) = 1 then
     begin
       s:= System.Copy(s,6,Length(s)-6);
-      with FDataLink.Gradients do
-        for i:= Count-1 downto 0 do 
-          if Items[i] is TSVGGradient then
-            if (Items[i] as TSVGGradient).ID = s then
+      with FDataLink do
+        for i:= GradientCount-1 downto 0 do 
+          if Gradients[i] is TSVGGradient then
+            if (Gradients[i] as TSVGGradient).ID = s then
             begin
-              grad_el:= TSVGGradient(Items[i]);
+              grad_el:= TSVGGradient(Gradients[i]);
               Result:= i;
               Exit;
             end;
@@ -464,19 +464,19 @@ begin
   canvasg:= ACanvas2d.createLinearGradient(pf1,pf2);
   //Count "stop" elements
   c:= 0;
-  with FDataLink.Gradients do
+  with FDataLink do
     for i:= find_grad_el-1 downto 0 do
-      if Items[i] is TSVGStopGradient then
+      if Gradients[i] is TSVGStopGradient then
         Inc(c)
       else
         Break;
   //Apply "stop" element color data (in order)
   for i:= find_grad_el-c to find_grad_el-1 do
-    with FDataLink.Gradients do
+    with FDataLink do
     begin
-      if Items[i] is TSVGStopGradient then
+      if Gradients[i] is TSVGStopGradient then
       begin
-        with (Items[i] as TSVGStopGradient) do
+        with (Gradients[i] as TSVGStopGradient) do
         begin
           col:= StrToBGRA( AttributeOrStyle['stop-color'] );
           if AttributeOrStyle['stop-opacity'] <> '' then
