@@ -26,7 +26,7 @@ type
         ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
       procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
         const origin: TPointF; const w,h: single);
-      procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D);
+      procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); override;
   end;       
   
   { TSVGLine }
@@ -544,13 +544,16 @@ begin
   end;
 end; 
 
-procedure TSVGElementWithGradient.ApplyFillStyle(ACanvas2D: TBGRACanvas2D);
+procedure TSVGElementWithGradient.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
   if canvasg = nil then
-    ACanvas2D.fillStyle(fillColor)
+    inherited ApplyFillStyle(ACanvas2D,AUnit)
   else
+  begin
     ACanvas2D.fillStyle(canvasg);
-end;
+    ACanvas2D.fillMode:= TFillMode(fillMode);
+  end;
+end;  
 
 { TSVGText }
 
@@ -686,7 +689,7 @@ begin
              
   if not isFillNone then
   begin
-    ApplyFillStyle(ACanvas2D);
+    ApplyFillStyle(ACanvas2D,AUnit);
     ACanvas2d.fill;
   end;
   if not isStrokeNone then
@@ -814,7 +817,7 @@ begin
       InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh);
     if not isFillNone then
     begin
-      ApplyFillStyle(ACanvas2D);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
@@ -940,8 +943,7 @@ begin
     
     if not isFillNone then
     begin
-      ACanvas2d.fillMode( TFillMode(fillMode) );
-      ApplyFillStyle(ACanvas2D);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
@@ -1035,7 +1037,7 @@ begin
           PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
     if not isFillNone then
     begin
-      ApplyFillStyle(ACanvas2D);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
@@ -1111,7 +1113,7 @@ begin
       InitializeGradient(ACanvas2d, PointF(vcx-vrx,vcy-vry),vrx*2,vry*2);      
     if not isFillNone then
     begin
-      ApplyFillStyle(ACanvas2D);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
@@ -1175,7 +1177,7 @@ begin
       InitializeGradient(ACanvas2d, PointF(vcx-vr,vcy-vr),vr*2,vr*2);
     if not isFillNone then
     begin
-      ApplyFillStyle(ACanvas2D);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
