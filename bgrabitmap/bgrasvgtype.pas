@@ -30,18 +30,23 @@ type
      function GetElement(id: Integer): TSVGElement;
      function GetGradient(id: Integer): TSVGElement;
      function FindElement(el: TSVGElement; list: TSVGElementList): integer;
+     procedure InternalLink(const id: integer; parent: TSVGElement);
+     procedure InternalUnLink(const id: integer);
+     procedure InternalReLink(const id: integer; parent: TSVGElement);
    public
      constructor Create;
      destructor Destroy; override;
 
      function ElementCount: Integer;
      function GradientCount: Integer;
-     function Linking(el: TSVGElement): Integer;
+     function Link(el: TSVGElement; parent: TSVGElement = nil): Integer;
      function Unlink(el: TSVGElement): boolean;
+     procedure UnlinkAll;
+     function ReLink(el: TSVGElement; parent: TSVGElement): boolean;
 
      property Elements[ID: Integer]: TSVGElement read GetElement;
      property Gradients[ID: Integer]: TSVGElement read GetGradient;
-  end;           
+  end;
 
   { TSVGElement }
 
@@ -338,6 +343,67 @@ begin
   result:= -1;
 end;
 
+procedure TSVGDataLink.InternalLink(const id: integer; parent: TSVGElement);
+
+  procedure GroupAdd(element,group: TSVGElement);
+  var
+    i: Integer;
+  begin
+    element.GroupList.Add(group);
+    for i:= 0 to element.DataChildList.Count-1 do
+      GroupAdd(element.DataChildList[i],group);
+  end;
+
+var
+  el: TSVGElement;
+begin
+ if parent <> nil then
+ begin
+   el:= FElements.Items[id];
+   with el do
+   begin
+     DataParent:= parent;
+     parent.DataChildList.Add(el);
+     if parent is TSVGGroup then
+       GroupAdd(el,parent);
+   end;
+ end;
+end;
+
+procedure TSVGDataLink.InternalUnLink(const id: integer);
+
+  procedure GroupRemove(element,group: TSVGElement);
+  var
+    i: Integer;
+  begin
+    element.GroupList.Remove(group);
+    for i:= 0 to element.DataChildList.Count-1 do
+      GroupRemove(element.DataChildList[i],group);
+  end;
+
+var
+  el: TSVGElement;
+begin
+  el:= FElements.Items[id];
+  with el do
+  begin
+    if DataParent <> nil then
+    begin
+      DataParent.DataChildList.Remove(el);
+      if DataParent is TSVGGroup then
+        GroupRemove(el,DataParent);
+      DataParent:= nil;
+    end;
+    DataChildList.Clear;
+  end;
+end;
+
+procedure TSVGDataLink.InternalReLink(const id: integer; parent: TSVGElement);
+begin
+  InternalUnLink(id);
+  InternalLink(id,parent);
+end;
+
 function TSVGDataLink.ElementCount: Integer;
 begin
   result:= FElements.Count;
@@ -348,10 +414,11 @@ begin
   result:= FGradients.Count;
 end;
 
-function TSVGDataLink.Linking(el: TSVGElement): Integer;
+function TSVGDataLink.Link(el: TSVGElement; parent: TSVGElement = nil): Integer;
 begin
   FElements.Add(el);
-  result:= FElements.Count;
+  result:= FElements.Count-1;
+  InternalLink(result,parent);
   if (el is TSVGGradient) or
      (el is TSVGStopGradient) then
     FGradients.Add(el);
@@ -366,6 +433,7 @@ begin
   if id <> -1 then
   begin
     result:= true;
+    InternalUnLink(id);
     FElements.Delete(id);
     if (el is TSVGGradient) or
        (el is TSVGStopGradient) then
@@ -377,6 +445,31 @@ begin
         FGradients.Delete(id);
     end;
   end;
+end;
+
+procedure TSVGDataLink.UnlinkAll;
+var
+  i: Integer;
+begin
+  FGradients.Clear;
+
+  for i:= 0 to FElements.Count-1 do
+    Unlink( FElements[i] );
+  FElements.Clear;
+end;
+
+function TSVGDataLink.ReLink(el: TSVGElement; parent: TSVGElement): boolean;
+var
+  id: integer;
+begin
+  id:= FindElement(el,FElements);
+  if id <> -1 then
+  begin
+    result:= true;
+    InternalReLink(id,parent);
+  end
+  else
+    result:= false;
 end;
 
 { TSVGElement }
