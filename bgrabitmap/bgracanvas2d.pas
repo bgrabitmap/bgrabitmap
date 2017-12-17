@@ -148,7 +148,7 @@ type
     procedure SetTextBaseine(AValue: string);
     procedure SetFillMode(mode: TFillMode);
     procedure StrokePoly(const points: array of TPointF);
-    procedure DrawShadow(const points, points2: array of TPointF);
+    procedure DrawShadow(const points, points2: array of TPointF; AFillMode: TFillMode = fmWinding);
     procedure ClearPoly(const points: array of TPointF);
     function ApplyTransform(const points: array of TPointF; matrix: TAffineMatrix): ArrayOfTPointF; overload;
     function ApplyTransform(const points: array of TPointF): ArrayOfTPointF; overload;
@@ -954,7 +954,7 @@ var
   tempScan: TBGRACustomScanner;
 begin
   if (length(points) = 0) or (surface = nil) then exit;
-  If hasShadow then DrawShadow(points,[]);
+  If hasShadow then DrawShadow(points,[],fillMode);
   bfill:= currentState.fillMode = fmWinding;
   if currentState.clipMaskReadOnly <> nil then
   begin
@@ -1225,7 +1225,8 @@ begin
   end;
 end;
 
-procedure TBGRACanvas2D.DrawShadow(const points, points2: array of TPointF);
+procedure TBGRACanvas2D.DrawShadow(const points, points2: array of TPointF;
+  AFillMode: TFillMode = fmWinding);
 const invSqrt2 = 1/sqrt(2);
 var ofsPts,ofsPts2: array of TPointF;
     offset: TPointF;
@@ -1286,7 +1287,7 @@ begin
   end;
 
   tempBmp := surface.NewBitmap(foundRect.Right-foundRect.Left,foundRect.Bottom-foundRect.Top,BGRAPixelTransparent);
-  tempBmp.FillMode := fmWinding;
+  tempBmp.FillMode := AFillMode;
   tempBmp.FillPolyAntialias(ofsPts, getShadowColor);
   tempBmp.FillPolyAntialias(ofsPts2, getShadowColor);
   if shadowBlur > 0 then
