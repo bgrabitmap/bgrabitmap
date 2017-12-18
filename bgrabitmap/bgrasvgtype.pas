@@ -25,10 +25,12 @@ type
   TSVGDataLink = class
    private
      FElements,
-     FGradients: TSVGElementList;
+     FGradients,
+     FTopElements: TSVGElementList;
      function IsValidID(const id: integer; list: TSVGElementList): boolean;
      function GetElement(id: integer): TSVGElement;
      function GetGradient(id: integer): TSVGElement;
+     function GetTopElement(id: integer): TSVGElement;
      function FindElement(el: TSVGElement; list: TSVGElementList): integer;
      procedure InternalLink(const id: integer; parent: TSVGElement);
      procedure InternalUnLink(const id: integer);
@@ -39,14 +41,22 @@ type
 
      function ElementCount: integer;
      function GradientCount: integer;
+     //contains the elements at the top of the link tree (having parent = nil)
+     function TopElementCount: integer;
      function Link(el: TSVGElement; parent: TSVGElement = nil): integer;
-     function Unlink(el: TSVGElement): boolean;
+     procedure Unlink(el: TSVGElement);
+     //(faster method than a "for.. Unlink()")
      procedure UnlinkAll;
+     //Method needed to change the parent of an item without removing it
      function ReLink(el: TSVGElement; parent: TSVGElement): boolean;
+
+     //(useful for testing support)
+     function GetInternalState: TStringList;
 
      property Elements[ID: integer]: TSVGElement read GetElement;
      property Gradients[ID: integer]: TSVGElement read GetGradient;
-  end;
+     property TopElements[ID: integer]: TSVGElement read GetTopElement;
+  end;           
 
   { TSVGElement }
 
@@ -302,10 +312,12 @@ constructor TSVGDataLink.Create;
 begin
   FElements:= TSVGElementList.Create;
   FGradients:= TSVGElementList.Create;
+  FTopElements:= TSVGElementList.Create;
 end;
 
 destructor TSVGDataLink.Destroy;
 begin
+  FreeAndNil(FTopElements);
   FreeAndNil(FGradients);
   FreeAndNil(FElements);
   inherited Destroy;
@@ -328,6 +340,13 @@ begin
   if not IsValidID(id,FGradients) then
    raise exception.Create(s_error_invalid_id);
   result:= FGradients[id];
+end;
+
+function TSVGDataLink.GetTopElement(id: integer): TSVGElement;
+begin
+  if not IsValidID(id,FTopElements) then
+   raise exception.Create(s_error_invalid_id);
+  result:= FTopElements[id];
 end;
 
 function TSVGDataLink.FindElement(el: TSVGElement; list: TSVGElementList): integer;
@@ -355,19 +374,38 @@ procedure TSVGDataLink.InternalLink(const id: integer; parent: TSVGElement);
   end;
 
 var
+  i: integer;
   el: TSVGElement;
 begin
- if parent <> nil then
- begin
-   el:= FElements.Items[id];
-   with el do
-   begin
-     DataParent:= parent;
-     parent.DataChildList.Add(el);
-     if parent is TSVGGroup then
-       GroupAdd(el,parent);
-   end;
- end;
+  el:= FElements.Items[id];
+  with el do
+  begin
+    DataParent:= parent;
+
+    (*
+    TODO:
+    the order of the groups is not respected if parent.GroupList.Count <> 0
+    (is a problem?)
+    Normally for TSVGGroup the item [0] is self and continues adding always
+    the most external one in the queue.
+    *)
+
+    //if it's a group element I have to add all reference (using it as root)
+    if el is TSVGGroup then
+      GroupAdd(el,el);//Note: ok even to himself
+    //Note: assume that the parent is added
+    //Update DataChildList of "parent" before add it
+    //(not use el.DataChildList.Clear here!!)
+    if parent <> nil then
+    begin
+      parent.DataChildList.Add(el);
+      //if the parent already contains a group list, it must be used as a base
+      GroupList.Clear;//(only for safety)
+      with parent.GroupList do
+        for i:= 0 to Count-1 do
+          el.GroupList.Add( Items[i] );
+    end;
+  end;
 end;
 
 procedure TSVGDataLink.InternalUnLink(const id: integer);
@@ -382,19 +420,29 @@ procedure TSVGDataLink.InternalUnLink(const id: integer);
   end;
 
 var
+  i: integer;
   el: TSVGElement;
 begin
   el:= FElements.Items[id];
   with el do
   begin
+    //if it's a group element I have to remove every reference (using it as root)
+    if el is TSVGGroup then
+      GroupRemove(el,el);//Note: ok even to himself
+    GroupList.Clear;
+    //i have to assign a parent of a upper level to the children
+    with DataChildList do
+    begin
+      for i:= 0 to Count-1 do
+       Items[i].DataParent:= el.DataParent;
+      Clear;
+    end;
+    //if he has a parent, I have to remove his reference as a child
     if DataParent <> nil then
     begin
       DataParent.DataChildList.Remove(el);
-      if DataParent is TSVGGroup then
-        GroupRemove(el,DataParent);
       DataParent:= nil;
     end;
-    DataChildList.Clear;
   end;
 end;
 
@@ -414,6 +462,11 @@ begin
   result:= FGradients.Count;
 end;
 
+function TSVGDataLink.TopElementCount: integer;
+begin
+  result:= FTopElements.Count;
+end;
+
 function TSVGDataLink.Link(el: TSVGElement; parent: TSVGElement = nil): integer;
 begin
   FElements.Add(el);
@@ -421,38 +474,37 @@ begin
   InternalLink(result,parent);
   if el is TSVGGradient then
     FGradients.Add(el);
+  if parent = nil then
+   FTopElements.Add(el);
 end;
 
-function TSVGDataLink.Unlink(el: TSVGElement): boolean;
+procedure TSVGDataLink.Unlink(el: TSVGElement);
 var
   id: integer;
 begin
-  result:= false;
   id:= FindElement(el,FElements);
   if id <> -1 then
   begin
-    result:= true;
+    if el.DataParent = nil then
+      FTopElements.Remove(el);
+    if el is TSVGGradient then
+      FGradients.Remove(el);
     InternalUnLink(id);
     FElements.Delete(id);
-    if el is TSVGGradient then
-    begin
-      id:= FindElement(el,FGradients);
-      if id = -1 then
-        result:= false
-      else
-        FGradients.Delete(id);
-    end;
-  end;
+  end
+  else
+   raise exception.Create('element not find');
 end;
 
 procedure TSVGDataLink.UnlinkAll;
 var
   i: integer;
 begin
+  FTopElements.Clear;
   FGradients.Clear;
 
   for i:= 0 to FElements.Count-1 do
-    Unlink( FElements[i] );
+    InternalUnLink(i);
   FElements.Clear;
 end;
 
@@ -469,6 +521,74 @@ begin
   else
     result:= false;
 end;
+
+function TSVGDataLink.GetInternalState: TStringList;
+var
+  sl: TStringList;
+
+  function SpaceStr(const level: integer): string;
+  var
+    i: integer;
+  begin
+    result:= '';
+    for i:= 1 to level do
+      result:= result + ' ';
+  end;
+
+  procedure AddStr(s: string; const level: integer);
+  begin
+    sl.Add( SpaceStr(level) + s );
+  end;
+
+  function ElementIdentity(el: TSVGElement): string;
+  begin
+   if el = nil then
+     result:= 'nil'
+   else
+   begin
+     result:= el.ID;
+     if Trim(Result) = '' then
+       result:= 'unknow';
+     result:= result + ' - ' + el.ClassName;
+   end;
+  end;
+
+  procedure ElementToInfo(el: TSVGElement; const level: integer);
+  Var
+   i: integer;
+   sep: string;
+  begin
+   if el.DataParent = nil then
+    sep:= '###'
+   else
+    sep:= '***';
+   AddStr('{'+sep+' '+ElementIdentity(el)+' '+sep+'}', level);
+   AddStr('[Parent: ' + ElementIdentity(el.DataParent) + ']', level);
+   for i:= 0 to el.DataChildList.Count-1 do
+     AddStr('[Child: ' + ElementIdentity(el.DataChildList[i]) + ']', level);
+   for i:= 0 to el.GroupList.Count-1 do
+     AddStr('[Group: ' + ElementIdentity(el.GroupList[i]) + ']', level);
+  end;
+
+  procedure BuildInfo(el: TSVGElement; const level: integer = 1);
+  const
+    kspace = 5;
+  var
+    i: Integer;
+  begin
+   ElementToInfo(el,level);
+   for i:= 0 to el.DataChildList.Count-1 do
+     BuildInfo(el.DataChildList[i],level+kspace);
+  end;
+
+var
+ i: integer;
+begin
+  sl:= TStringList.Create;
+  for i:= 0 to FTopElements.Count-1 do
+    BuildInfo( FTopElements[i] );
+  result:= sl;
+end; 
 
 { TSVGElement }
 
