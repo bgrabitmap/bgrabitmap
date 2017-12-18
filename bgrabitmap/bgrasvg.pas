@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, BGRABitmapTypes, laz2_DOM, BGRAUnits, BGRASVGShapes,
-  BGRACanvas2D;
+  BGRACanvas2D, BGRASVGType;
 
 type
   TSVGViewBox = record
@@ -90,6 +90,7 @@ type
     FUnits: TSVGUnits;
     FDefaultDpi: single;
     FContent: TSVGContent;
+    FDataLink: TSVGDataLink;
     procedure Init(ACreateEmpty: boolean);
     function GetViewBoxAlignment(AHorizAlign: TAlignment; AVertAlign: TTextLayout): TPointF;
   public
@@ -484,7 +485,8 @@ begin
     FXml := TXMLDocument.Create;
     FRoot := FXml.CreateElement('svg');
     FUnits := TSVGUnits.Create(FRoot,@FDefaultDpi);
-    FContent := TSVGContent.Create(FXml,FRoot,FUnits);
+    FDataLink := TSVGDataLink.Create;
+    FContent := TSVGContent.Create(FXml,FRoot,FUnits,FDataLink,nil);
     FXml.AppendChild(FRoot);
   end;
 end;
@@ -555,6 +557,7 @@ end;
 
 destructor TBGRASVG.Destroy;
 begin
+  FreeAndNil(FDataLink);
   FreeAndNil(FContent);
   FreeAndNil(FUnits);
   FRoot:= nil;
@@ -595,13 +598,15 @@ begin
     xml.Free;
     raise exception.Create('Root node not found');
   end;
+  FreeAndNil(FDataLink);
   FreeAndNil(FContent);
   FreeAndNil(FUnits);
   FreeAndNil(FXml);
   FXml := xml;
   FRoot := root as TDOMElement;
   FUnits := TSVGUnits.Create(FRoot,@FDefaultDpi);
-  FContent := TSVGContent.Create(FXml,FRoot,FUnits);
+  FDataLink := TSVGDataLink.Create;
+  FContent := TSVGContent.Create(FXml,FRoot,FUnits,FDataLink,nil);
 end;
 
 procedure TBGRASVG.SaveToFile(AFilenameUTF8: string);

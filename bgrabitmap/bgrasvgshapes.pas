@@ -9,6 +9,28 @@ uses
   BGRACanvas2D, BGRASVGType;
 
 type
+  TSVGGradient = class;
+  
+  { TSVGElementWithGradient }
+
+  TSVGElementWithGradient = class(TSVGElement)
+    private
+      find_grad_el: integer;//(-2 not search; -1 not find; >= 0 id find)
+      grad_el: TSVGGradient;
+      canvasg: IBGRACanvasGradient2D;
+    protected
+      procedure Initialize; override;
+      function IsGradientNotSearch: boolean;
+      function FindGradientDef: integer;
+      //Validate as percentual or number [0.0..1.0]
+      function EvaluatePercentage(fu: TFloatWithCSSUnit): single;
+      procedure CreateLinearGradient(
+        ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
+      procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
+        const origin: TPointF; const w,h: single);
+      procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); override;
+  end;       
+  
   { TSVGLine }
 
   TSVGLine = class(TSVGElement)
@@ -24,7 +46,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter); override;
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property x1: TFloatWithCSSUnit read GetX1 write SetX1;
       property y1: TFloatWithCSSUnit read GetY1 write SetY1;
       property x2: TFloatWithCSSUnit read GetX2 write SetX2;
@@ -33,7 +55,7 @@ type
 
   { TSVGRectangle }
 
-  TSVGRectangle = class(TSVGElement)
+  TSVGRectangle = class(TSVGElementWithGradient)
     private
       function GetX: TFloatWithCSSUnit;
       function GetY: TFloatWithCSSUnit;
@@ -50,7 +72,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter); override;
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property x: TFloatWithCSSUnit read GetX write SetX;
       property y: TFloatWithCSSUnit read GetY write SetY;
       property width: TFloatWithCSSUnit read GetWidth write SetWidth;
@@ -61,7 +83,7 @@ type
 
   { TSVGCircle }
 
-  TSVGCircle = class(TSVGElement)
+  TSVGCircle = class(TSVGElementWithGradient)
     private
       function GetCX: TFloatWithCSSUnit;
       function GetCY: TFloatWithCSSUnit;
@@ -72,7 +94,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter); override;
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property r: TFloatWithCSSUnit read GetR write SetR;
@@ -80,7 +102,7 @@ type
 
   { TSVGEllipse }
 
-  TSVGEllipse = class(TSVGElement)
+  TSVGEllipse = class(TSVGElementWithGradient)
     private
       function GetCX: TFloatWithCSSUnit;
       function GetCY: TFloatWithCSSUnit;
@@ -93,7 +115,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter); override;
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property rx: TFloatWithCSSUnit read GetRX write SetRX;
@@ -102,7 +124,7 @@ type
 
   { TSVGPath }
 
-  TSVGPath = class(TSVGElement)
+  TSVGPath = class(TSVGElementWithGradient)
     private
       FPath: TBGRAPath;
       function GetPath: TBGRAPath;
@@ -114,8 +136,8 @@ type
       function GetDOMElement: TDOMElement; override;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter); override;
-      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter); override;
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
       property d: string read GetData write SetData;
       property path: TBGRAPath read GetPath;
@@ -124,7 +146,7 @@ type
 
   { TSVGPolypoints }
 
-  TSVGPolypoints = class(TSVGElement)
+  TSVGPolypoints = class(TSVGElementWithGradient)
     private
       function GetClosed: boolean;
       function GetPoints: string;
@@ -134,7 +156,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; AClosed: boolean); overload;
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink); overload;
       destructor Destroy; override;
       property points: string read GetPoints write SetPoints;
       property pointsF: ArrayOfTPointF read GetPointsF write SetPointsF;
@@ -143,7 +165,7 @@ type
 
   { TSVGText }
 
-  TSVGText = class(TSVGElement)
+  TSVGText = class(TSVGElementWithGradient)
     private
       function GetFontBold: boolean;
       function GetFontFamily: string;
@@ -168,7 +190,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter); override;
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property x: TFloatWithCSSUnit read GetX write SetX;
       property y: TFloatWithCSSUnit read GetY write SetY;
       property SimpleText: string read GetSimpleText write SetSimpleText;
@@ -182,6 +204,91 @@ type
   end;
 
   TSVGContent = class;
+  
+  { TSVGGradient }
+
+  TSVGGradient = class(TSVGElement)
+    private
+      FContent: TSVGContent;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+        ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
+        AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      destructor Destroy; override;
+      property Content: TSVGContent read FContent;
+  end;
+
+  { TSVGGradientLinear }
+
+  TSVGLinearGradient = class(TSVGGradient)
+    private
+      function GetX1: TFloatWithCSSUnit;
+      function GetX2: TFloatWithCSSUnit;
+      function GetY1: TFloatWithCSSUnit;
+      function GetY2: TFloatWithCSSUnit;
+      procedure SetX1(AValue: TFloatWithCSSUnit);
+      procedure SetX2(AValue: TFloatWithCSSUnit);
+      procedure SetY1(AValue: TFloatWithCSSUnit);
+      procedure SetY2(AValue: TFloatWithCSSUnit);
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+        ADataLink: TSVGDataLink); override;
+      property x1: TFloatWithCSSUnit read GetX1 write SetX1;
+      property y1: TFloatWithCSSUnit read GetY1 write SetY1;
+      property x2: TFloatWithCSSUnit read GetX2 write SetX2;
+      property y2: TFloatWithCSSUnit read GetY2 write SetY2;
+  end;
+
+  { TSVGRadialGradient }
+
+  TSVGRadialGradient = class(TSVGGradient)
+    private
+      function GetCX: TFloatWithCSSUnit;
+      function GetCY: TFloatWithCSSUnit;
+      function GetR: TFloatWithCSSUnit;
+      function GetFX: TFloatWithCSSUnit;
+      function GetFY: TFloatWithCSSUnit;
+      procedure SetCX(AValue: TFloatWithCSSUnit);
+      procedure SetCY(AValue: TFloatWithCSSUnit);
+      procedure SetR(AValue: TFloatWithCSSUnit);
+      procedure SetFX(AValue: TFloatWithCSSUnit);
+      procedure SetFY(AValue: TFloatWithCSSUnit);
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+        ADataLink: TSVGDataLink); override;
+      property CX: TFloatWithCSSUnit read GetCX write SetCX;
+      property CY: TFloatWithCSSUnit read GetCY write SetCY;
+      property R: TFloatWithCSSUnit read GetR write SetR;
+      property FX: TFloatWithCSSUnit read GetFX write SetFX;
+      property FY: TFloatWithCSSUnit read GetFY write SetFY;
+  end;
+
+  { TSVGStopGradient }
+
+  TSVGStopGradient = class(TSVGElement)
+    private
+      function GetOffset: TFloatWithCSSUnit;
+      procedure SetOffset(AValue: TFloatWithCSSUnit);
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+        ADataLink: TSVGDataLink); override;
+      property Offset: TFloatWithCSSUnit read GetOffset write SetOffset;
+  end;
+
+  { TSVGDefine }
+
+  TSVGDefine = class(TSVGElement)
+  protected
+    FContent: TSVGContent;
+  public
+    constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+      ADataLink: TSVGDataLink); override;
+    constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
+      AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+    destructor Destroy; override;
+    property Content: TSVGContent read FContent;
+  end; 
 
   { TSVGGroup }
 
@@ -190,9 +297,9 @@ type
     FContent: TSVGContent;
     procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
   public
-    constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter); override;
+    constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
     constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
-      AUnits: TCSSUnitConverter); override;
+      AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
     destructor Destroy; override;
     property Content: TSVGContent read FContent;
   end;
@@ -201,9 +308,10 @@ type
 
   TSVGContent = class
     protected
+      FDataLink: TSVGDataLink;
       FDomElem: TDOMElement;
       FDoc: TXMLDocument;
-      FElements: TList;
+      FElements: TFPList;
       FUnits: TCSSUnitConverter;
       procedure AppendElement(AElement: TSVGElement);
       procedure InsertElementBefore(AElement: TSVGElement; ASuccessor: TSVGElement);
@@ -211,7 +319,8 @@ type
       function GetElementCount: integer;
       function GetUnits: TCSSUnitConverter;
     public
-      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter);
+      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; 
+        ADataLink: TSVGDataLink; ADataParent: TSVGElement);
       destructor Destroy; override;
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
@@ -238,7 +347,7 @@ type
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
 function CreateSVGElementFromNode(ADocument: TXMLDocument;
-  AElement: TDOMElement; AUnits: TCSSUnitConverter): TSVGElement;
+  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement): TSVGElement;
 
 implementation
 
@@ -262,19 +371,166 @@ begin
     result := TSVGPolypoints else
   if tag='text' then
     result := TSVGText else
+  if tag='lineargradient' then
+    result := TSVGLinearGradient else
+  if tag='radialgradient' then
+    result := TSVGRadialGradient else
+  if tag='stop' then
+    result := TSVGStopGradient else
+  if tag='defs' then
+    result := TSVGDefine else 
   if tag='g' then
     result := TSVGGroup else
     result := TSVGElement;
 end;
 
 function CreateSVGElementFromNode(ADocument: TXMLDocument;
-  AElement: TDOMElement; AUnits: TCSSUnitConverter): TSVGElement;
+  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement): TSVGElement;
 var
   factory: TSVGFactory;
 begin
   factory := GetSVGFactory(AElement.TagName);
-  result := factory.Create(ADocument,AElement,AUnits);
+  result := factory.Create(ADocument,AElement,AUnits,ADataLink);
+  
+  ADataLink.Link(result,ADataParent);
 end;
+
+{ TSVGElementWithGradient }
+
+procedure TSVGElementWithGradient.Initialize;
+begin
+  inherited Initialize;
+  find_grad_el  := -2;
+  grad_el       := nil;
+  canvasg       := nil;
+end;
+
+function TSVGElementWithGradient.IsGradientNotSearch: boolean;
+begin
+  result:= find_grad_el = -2;
+end; 
+
+function TSVGElementWithGradient.FindGradientDef: integer;
+var
+  i: integer;
+  s: string;
+begin
+  Result:= -1;
+  s:= fill;
+  if s <> '' then
+    if Pos('url(#',s) = 1 then
+    begin
+      s:= System.Copy(s,6,Length(s)-6);
+      with FDataLink do
+        for i:= GradientCount-1 downto 0 do 
+          if Gradients[i] is TSVGGradient then
+            if (Gradients[i] as TSVGGradient).ID = s then
+            begin
+              grad_el:= TSVGGradient(Gradients[i]);
+              Result:= i;
+              Exit;
+            end;
+    end;
+end;
+
+function TSVGElementWithGradient.EvaluatePercentage(fu: TFloatWithCSSUnit): single;
+begin
+  Result:= fu.value;
+  if fu.CSSUnit <> cuPercent then
+  begin
+    if Result < 0 then
+      Result:= 0
+    else if Result > 1 then
+      Result:= 1;
+    Result:= Result * 100;
+  end;
+end;
+
+procedure TSVGElementWithGradient.CreateLinearGradient(
+  ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
+var
+  i: integer;
+  col: TBGRAPixel;
+begin
+  canvasg:= ACanvas2d.createLinearGradient(pf1,pf2);
+
+  with FDataLink.Gradients[find_grad_el].DataChildList do
+    for i:= 0 to Count-1 do
+      if Items[i] is TSVGStopGradient then
+        with (Items[i] as TSVGStopGradient) do
+        begin
+          col:= StrToBGRA( AttributeOrStyle['stop-color'] );
+          if AttributeOrStyle['stop-opacity'] <> '' then
+           col.alpha:= Round( Units.parseValue(AttributeOrStyle['stop-opacity'],1) * 255 );
+          canvasg.addColorStop(EvaluatePercentage(offset)/100, col);
+        end;
+end;                     
+
+procedure TSVGElementWithGradient.InitializeGradient(ACanvas2d: TBGRACanvas2D;
+  const origin: TPointF; const w,h: single);
+var
+  vx1,vy1,vx2,vy2: single;
+  pf1,pf2: TPointF;
+begin
+  find_grad_el:= FindGradientDef;
+  if grad_el <> nil then
+  begin
+    if grad_el is TSVGLinearGradient then
+    begin
+      with TSVGLinearGradient(grad_el) do
+      begin
+        vx1:= EvaluatePercentage(x1);
+        vy1:= EvaluatePercentage(y1);
+        vx2:= EvaluatePercentage(x2);
+        vy2:= EvaluatePercentage(y2);
+        //Vertical gradient
+        if (vx1 = vx2) and (vy1 <> vy2) then
+        begin
+          pf1:= PointF(0,origin.y+(h*vy1/100));
+          pf2:= PointF(0,origin.y+(h*vy2/100));
+        end
+        //Horizontal gradient
+        else if (vx1 <> vx2) and (vy1 = vy2) then
+        begin
+          pf1:= PointF(origin.x+(w*vx1/100),0);
+          pf2:= PointF(origin.x+(w*vx2/100),0);
+        end
+        //Angular gradient
+        else if (vx1 <> vx2) and (vy1 <> vy2) then
+        begin
+          pf1:= PointF(origin.x+(w*vx1/100),origin.y+(h*vy1/100));
+          pf2:= PointF(origin.x+(w*vx2/100),origin.y+(h*vy2/100));
+        end
+        else
+        begin
+          pf1:= PointF(0,0);
+          pf2:= PointF(0,0);
+        end;
+        CreateLinearGradient(ACanvas2d, pf1,pf2);
+      end;
+    end
+    else if grad_el is TSVGRadialGradient then
+    begin
+      with TSVGRadialGradient(grad_el) do
+      begin
+
+        //TODO: radial gradient support
+
+      end;
+    end;
+  end;
+end; 
+
+procedure TSVGElementWithGradient.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  if canvasg = nil then
+    inherited ApplyFillStyle(ACanvas2D,AUnit)
+  else
+  begin
+    ACanvas2D.fillStyle(canvasg);
+    ACanvas2D.fillMode:= TFillMode(fillMode);
+  end;
+end;  
 
 { TSVGText }
 
@@ -289,8 +545,7 @@ end;
 
 function TSVGText.GetFontFamily: string;
 begin
-  result := AttributeOrStyle['font-family'];
-  if result = '' then result := 'Arial';
+  result := AttributeOrStyleDef['font-family','Arial'];
 end;
 
 function TSVGText.GetFontItalic: boolean;
@@ -302,22 +557,17 @@ end;
 
 function TSVGText.GetFontSize: TFloatWithCSSUnit;
 begin
-  if AttributeOrStyle['font-size']='' then
-    result := FloatWithCSSUnit(12,cuPoint)
-  else
-    result := VerticalAttributeOrStyleWithUnit['font-size'];
+  result:= VerticalAttributeOrStyleWithUnit['font-size',FloatWithCSSUnit(12,cuPoint)];
 end;
 
 function TSVGText.GetFontStyle: string;
 begin
-  result := AttributeOrStyle['font-style'];
-  if result = '' then result := 'normal';
+  result := AttributeOrStyleDef['font-style','normal'];
 end;
 
 function TSVGText.GetFontWeight: string;
 begin
-  result := AttributeOrStyle['font-weight'];
-  if result = '' then result := 'normal';
+  result := AttributeOrStyleDef['font-weight','normal'];
 end;
 
 function TSVGText.GetSimpleText: string;
@@ -327,8 +577,7 @@ end;
 
 function TSVGText.GetTextDecoration: string;
 begin
-  result := AttributeOrStyle['text-decoration'];
-  if result='' then result := 'none';
+  result := AttributeOrStyleDef['text-decoration','none'];
 end;
 
 function TSVGText.GetX: TFloatWithCSSUnit;
@@ -396,7 +645,9 @@ begin
 end;
 
 procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
-var fs:TFontStyles;
+var 
+  fs:TFontStyles;
+  vx,vy: single;
 begin
   ACanvas2d.beginPath;
   ACanvas2d.fontEmHeight := Units.ConvertWidth(fontSize,AUnit).value;
@@ -405,10 +656,17 @@ begin
   if fontBold then fs += [fsBold];
   if fontItalic then fs += [fsItalic];
   ACanvas2d.fontStyle := fs;
-  ACanvas2d.text(SimpleText,Units.ConvertWidth(x,AUnit).value,Units.ConvertWidth(y,AUnit).value);
+  vx:= Units.ConvertWidth(x,AUnit).value;
+  vy:= Units.ConvertWidth(y,AUnit).value;
+  ACanvas2d.text(SimpleText,vx,vy);
+
+  if IsGradientNotSearch then
+    with ACanvas2d.measureText(SimpleText) do
+      InitializeGradient(ACanvas2d, PointF(vx,vy),width,height);
+             
   if not isFillNone then
   begin
-    ACanvas2d.fillStyle(fillColor);
+    ApplyFillStyle(ACanvas2D,AUnit);
     ACanvas2d.fill;
   end;
   if not isStrokeNone then
@@ -418,24 +676,25 @@ begin
   end;
 end;
 
-constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter);
+constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
+  inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'text',AUnits);
 end;
 
 { TSVGGroup }
 
-constructor TSVGGroup.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter);
+constructor TSVGGroup.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AUnits);
-  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits);
+  inherited Create(ADocument, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
 end;
 
 constructor TSVGGroup.Create(ADocument: TXMLDocument; AElement: TDOMElement;
-  AUnits: TCSSUnitConverter);
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AElement, AUnits);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits);
+  inherited Create(ADocument, AElement, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
 end;
 
 destructor TSVGGroup.Destroy;
@@ -512,22 +771,30 @@ begin
 end;
 
 constructor TSVGRectangle.Create(ADocument: TXMLDocument;
-  AUnits: TCSSUnitConverter);
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
+  inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'rect',AUnits);
 end;
 
 procedure TSVGRectangle.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  vx,vy,vw,vh: Single;
 begin
   if not isStrokeNone or not isFillNone then
   begin
+    vx:= Units.ConvertWidth(x,AUnit).value;
+    vy:= Units.ConvertWidth(y,AUnit).value;
+    vw:= Units.ConvertWidth(width,AUnit).value;
+    vh:= Units.ConvertWidth(height,AUnit).value;
     ACanvas2d.beginPath;
-    ACanvas2d.roundRect(Units.ConvertWidth(x,AUnit).value,Units.ConvertWidth(y,AUnit).value,
-       Units.ConvertWidth(width,AUnit).value,Units.ConvertWidth(height,AUnit).value,
+    ACanvas2d.roundRect(vx,vy, vw,vh,
        Units.ConvertWidth(rx,AUnit).value,Units.ConvertWidth(ry,AUnit).value);
+    if IsGradientNotSearch then
+      InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh);
     if not isFillNone then
     begin
-      ACanvas2d.fillStyle(fillColor);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
@@ -592,8 +859,9 @@ begin
 end;
 
 constructor TSVGPolypoints.Create(ADocument: TXMLDocument;
-  AUnits: TCSSUnitConverter; AClosed: boolean);
+  AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink);
 begin
+  inherited Create(ADocument, AUnits, ADataLink);
   if AClosed then
     Init(ADocument, 'polygon', AUnits)
   else
@@ -607,6 +875,8 @@ end;
 
 procedure TSVGPolypoints.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
+  i,l: integer;
+  rf: TRectF;
   prevMatrix: TAffineMatrix;
 begin
   if isFillNone and isStrokeNone then exit;
@@ -622,9 +892,35 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.polylineTo(pointsF);
     if closed then ACanvas2d.closePath;
+    
+    if IsGradientNotSearch then
+    begin
+      l:= Length(pointsF);
+      if l > 1 then
+      begin
+        with pointsF[0] do
+          rf:= RectF(x,y,x,y);
+        for i:= 1 to l-1 do
+          with pointsF[i] do
+          begin
+            if x < rf.Left then
+             rf.Left:= x
+            else if x > rf.Right then
+             rf.Right:= x;
+            if y < rf.Top then
+             rf.Top:= y
+            else if y > rf.Bottom then
+             rf.Bottom:= y;
+          end;
+        with rf do
+          InitializeGradient(ACanvas2d,
+            PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
+      end;
+    end;    
+    
     if not isFillNone then
     begin
-      ACanvas2d.fillStyle(fillColor);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
@@ -676,15 +972,17 @@ begin
   Result:=inherited GetDOMElement;
 end;
 
-constructor TSVGPath.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter);
+constructor TSVGPath.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
+  inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'path',AUnits);
   FPath := nil;
 end;
 
 constructor TSVGPath.Create(ADocument: TXMLDocument; AElement: TDOMElement;
-  AUnits: TCSSUnitConverter);
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
+  inherited Create(ADocument, AElement, AUnits, ADataLink);
   Init(ADocument, AElement, AUnits);
   FPath := nil;
 end;
@@ -710,9 +1008,13 @@ begin
   end else
   begin
     ACanvas2d.path(path);
+    if IsGradientNotSearch then
+      with path.GetBounds do
+        InitializeGradient(ACanvas2d,
+          PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
     if not isFillNone then
     begin
-      ACanvas2d.fillStyle(fillColor);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
@@ -766,21 +1068,29 @@ begin
 end;
 
 constructor TSVGEllipse.Create(ADocument: TXMLDocument;
-  AUnits: TCSSUnitConverter);
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
+  inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'ellipse',AUnits);
 end;
 
 procedure TSVGEllipse.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  vcx,vcy,vrx,vry: Single;
 begin
   if not isFillNone or not isStrokeNone then
   begin
+    vcx:= Units.ConvertWidth(cx,AUnit).value;
+    vcy:= Units.ConvertWidth(cy,AUnit).value;
+    vrx:= Units.ConvertWidth(rx,AUnit).value;
+    vry:= Units.ConvertWidth(ry,AUnit).value;
     ACanvas2d.beginPath;
-    ACanvas2d.ellipse(Units.ConvertWidth(cx,AUnit).value,Units.ConvertWidth(cy,AUnit).value,
-         Units.ConvertWidth(rx,AUnit).value,Units.ConvertWidth(ry,AUnit).value);
+    ACanvas2d.ellipse(vcx,vcy,vrx,vry);
+    if IsGradientNotSearch then
+      InitializeGradient(ACanvas2d, PointF(vcx-vrx,vcy-vry),vrx*2,vry*2);      
     if not isFillNone then
     begin
-      ACanvas2d.fillStyle(fillColor);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
@@ -823,21 +1133,28 @@ begin
   OrthoAttributeWithUnit['r'] := AValue;
 end;
 
-constructor TSVGCircle.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter);
+constructor TSVGCircle.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
+  inherited Create(ADocument, AUnits, ADataLink); 
   Init(ADocument,'circle',AUnits);
 end;
 
 procedure TSVGCircle.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  vcx,vcy,vr: Single;
 begin
   if not isFillNone or not isStrokeNone then
   begin
+    vcx:= Units.ConvertWidth(cx,AUnit).value;
+    vcy:= Units.ConvertWidth(cy,AUnit).value;
+    vr:= Units.ConvertWidth(r,AUnit).value;
     ACanvas2d.beginPath;
-    ACanvas2d.circle(Units.ConvertWidth(cx,AUnit).value,Units.ConvertWidth(cy,AUnit).value,
-         Units.ConvertWidth(r,AUnit).value);
+    ACanvas2d.circle(vcx,vcy,vr);
+    if IsGradientNotSearch then
+      InitializeGradient(ACanvas2d, PointF(vcx-vr,vcy-vr),vr*2,vr*2);
     if not isFillNone then
     begin
-      ACanvas2d.fillStyle(fillColor);
+      ApplyFillStyle(ACanvas2D,AUnit);
       ACanvas2d.fill;
     end;
     if not isStrokeNone then
@@ -890,8 +1207,9 @@ begin
   VerticalAttributeWithUnit['y2'] := AValue;
 end;
 
-constructor TSVGLine.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter);
+constructor TSVGLine.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
+  inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'line',AUnits);
 end;
 
@@ -906,6 +1224,177 @@ begin
     ACanvas2d.stroke;
   end;
 end;
+
+{ TSVGGradient }
+
+constructor TSVGGradient.Create(ADocument: TXMLDocument;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
+end;
+
+constructor TSVGGradient.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AElement, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
+end;
+
+destructor TSVGGradient.Destroy;
+begin
+  FreeAndNil(FContent);
+  inherited Destroy;
+end;
+
+{ TSVGLinearGradient }
+
+function TSVGLinearGradient.GetX1: TFloatWithCSSUnit;
+begin
+  result := AttributeWithUnit['x1'];
+end;
+
+function TSVGLinearGradient.GetX2: TFloatWithCSSUnit;
+begin
+  result := AttributeWithUnit['x2',FloatWithCSSUnit(100,cuPercent)];
+end;
+
+function TSVGLinearGradient.GetY1: TFloatWithCSSUnit;
+begin
+  result := AttributeWithUnit['y1'];
+end;
+
+function TSVGLinearGradient.GetY2: TFloatWithCSSUnit;
+begin
+  result := AttributeWithUnit['y2'];
+end;
+
+procedure TSVGLinearGradient.SetX1(AValue: TFloatWithCSSUnit);
+begin
+  AttributeWithUnit['x1']:= AValue;
+end;
+
+procedure TSVGLinearGradient.SetX2(AValue: TFloatWithCSSUnit);
+begin
+  AttributeWithUnit['x2']:= AValue;
+end;
+
+procedure TSVGLinearGradient.SetY1(AValue: TFloatWithCSSUnit);
+begin
+  AttributeWithUnit['y1']:= AValue;
+end;
+
+procedure TSVGLinearGradient.SetY2(AValue: TFloatWithCSSUnit);
+begin
+  AttributeWithUnit['y2']:= AValue;
+end;
+
+constructor TSVGLinearGradient.Create(ADocument: TXMLDocument;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'linearGradient',AUnits);
+end;
+
+{ TSVGRadialGradient }
+
+function TSVGRadialGradient.GetCX: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnitDef['cx',FloatWithCSSUnit(50,cuPercent)];
+end;
+
+function TSVGRadialGradient.GetCY: TFloatWithCSSUnit;
+begin
+  result := VerticalAttributeWithUnitDef['cy',FloatWithCSSUnit(50,cuPercent)];
+end;
+
+function TSVGRadialGradient.GetR: TFloatWithCSSUnit;
+begin
+  result := OrthoAttributeWithUnitDef['r',FloatWithCSSUnit(50,cuPercent)];
+end;   
+
+function TSVGRadialGradient.GetFX: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnit['fx'];
+end;
+
+function TSVGRadialGradient.GetFY: TFloatWithCSSUnit;
+begin
+  result := VerticalAttributeWithUnit['fy'];
+end;
+
+procedure TSVGRadialGradient.SetCX(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['cx'] := AValue;
+end;
+
+procedure TSVGRadialGradient.SetCY(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['cy'] := AValue;
+end;
+
+procedure TSVGRadialGradient.SetR(AValue: TFloatWithCSSUnit);
+begin
+  OrthoAttributeWithUnit['r'] := AValue;
+end;
+
+procedure TSVGRadialGradient.SetFX(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['fx'] := AValue;
+end;
+
+procedure TSVGRadialGradient.SetFY(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['fy'] := AValue;
+end;
+
+constructor TSVGRadialGradient.Create(ADocument: TXMLDocument;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'radialGradient',AUnits);
+end;
+
+{ TSVGStopGradient }
+
+function TSVGStopGradient.GetOffset: TFloatWithCSSUnit;
+begin
+  result := AttributeWithUnit['offset'];
+end;
+
+procedure TSVGStopGradient.SetOffset(AValue: TFloatWithCSSUnit);
+begin
+  AttributeWithUnit['offset'] := AValue;
+end; 
+
+constructor TSVGStopGradient.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+  ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'stop',AUnits);
+end;
+
+{ TSVGDefine }
+
+constructor TSVGDefine.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+  ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
+end;
+
+constructor TSVGDefine.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AElement, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
+end;
+
+destructor TSVGDefine.Destroy;
+begin
+  FreeAndNil(FContent);
+  inherited Destroy;
+end;  
 
 { TSVGContent }
 
@@ -948,18 +1437,20 @@ begin
 end;
 
 constructor TSVGContent.Create(ADocument: TXMLDocument; AElement: TDOMElement;
-  AUnits: TCSSUnitConverter);
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement);
 var cur: TDOMNode;
 begin
   FDoc := ADocument;
   FDomElem := AElement;
-  FElements := TList.Create;
+  FDataLink := ADataLink;
+  FElements := TFPList.Create;
   FUnits := AUnits;
   cur := FDomElem.FirstChild;
   while cur <> nil do
   begin
     if cur is TDOMElement then
-      FElements.Add(CreateSVGElementFromNode(ADocument,TDOMElement(cur),FUnits));
+      FElements.Add(CreateSVGElementFromNode(
+        ADocument,TDOMElement(cur),FUnits,ADataLink,ADataParent));
     cur := cur.NextSibling;
   end;
 end;
@@ -996,7 +1487,7 @@ end;
 function TSVGContent.AppendLine(x1, y1, x2, y2: single; AUnit: TCSSUnit
   ): TSVGLine;
 begin
-  result := TSVGLine.Create(FDoc,Units);
+  result := TSVGLine.Create(FDoc,Units,FDataLink);
   result.x1 := FloatWithCSSUnit(x1,AUnit);
   result.y1 := FloatWithCSSUnit(y1,AUnit);
   result.x2 := FloatWithCSSUnit(x2,AUnit);
@@ -1014,7 +1505,7 @@ function TSVGContent.AppendCircle(cx, cy, r: single; AUnit: TCSSUnit
 begin
   if (AUnit <> cuCustom) and (Units.DpiScaleX <> Units.DpiScaleY) then
   begin
-    result := TSVGCircle.Create(FDoc,Units);
+    result := TSVGCircle.Create(FDoc,Units,FDataLink);
     result.cx := FloatWithCSSUnit(Units.Convert(cx,AUnit,cuCustom,Units.DpiX),cuCustom);
     result.cy := FloatWithCSSUnit(Units.Convert(cy,AUnit,cuCustom,Units.DpiY),cuCustom);
     result.r := FloatWithCSSUnit(Units.Convert(r,AUnit,cuCustom,Units.DpiX),cuCustom);
@@ -1022,7 +1513,7 @@ begin
     AppendElement(result);
   end else
   begin
-    result := TSVGCircle.Create(FDoc,Units);
+    result := TSVGCircle.Create(FDoc,Units,FDataLink);
     result.cx := FloatWithCSSUnit(cx,AUnit);
     result.cy := FloatWithCSSUnit(cy,AUnit);
     result.r := FloatWithCSSUnit(r,AUnit);
@@ -1039,7 +1530,7 @@ end;
 function TSVGContent.AppendEllipse(cx, cy, rx, ry: single; AUnit: TCSSUnit
   ): TSVGEllipse;
 begin
-  result := TSVGEllipse.Create(FDoc,Units);
+  result := TSVGEllipse.Create(FDoc,Units,FDataLink);
   result.cx := FloatWithCSSUnit(cx,AUnit);
   result.cy := FloatWithCSSUnit(cy,AUnit);
   result.rx := FloatWithCSSUnit(rx,AUnit);
@@ -1062,7 +1553,7 @@ begin
     tempPath.Free;
   end else
   begin
-    result := TSVGPath.Create(FDoc,Units);
+    result := TSVGPath.Create(FDoc,Units,FDataLink);
     result.d := data;
     AppendElement(result);
   end;
@@ -1072,14 +1563,14 @@ function TSVGContent.AppendPath(path: TBGRAPath; AUnit: TCSSUnit): TSVGPath;
 begin
   if (AUnit <> cuCustom) and (Units.DpiScaleX <> Units.DpiScaleY) then
   begin
-    result := TSVGPath.Create(FDoc,Units);
+    result := TSVGPath.Create(FDoc,Units,FDataLink);
     result.path.scale(Units.Convert(1,AUnit,cuCustom,Units.DpiX));
     path.copyTo(result.path);
     result.transform := Units.DpiScaleTransform;
     AppendElement(result);
   end else
   begin
-    result := TSVGPath.Create(FDoc,Units);
+    result := TSVGPath.Create(FDoc,Units,FDataLink);
     result.path.scale(Units.ConvertWidth(1,AUnit,cuCustom));
     path.copyTo(result.path);
     AppendElement(result);
@@ -1092,7 +1583,7 @@ var
   pts: ArrayOfTPointF;
   i: integer;
 begin
-  result := TSVGPolypoints.Create(FDoc,FUnits,true);
+  result := TSVGPolypoints.Create(FDoc,FUnits,true,FDataLink);
   setlength(pts, length(points) div 2);
   for i := 0 to high(pts) do
     pts[i] := Units.ConvertCoord(PointF(points[i shl 1],points[(i shl 1)+1]),AUnit,cuCustom);
@@ -1106,7 +1597,7 @@ var
   pts: ArrayOfTPointF;
   i: integer;
 begin
-  result := TSVGPolypoints.Create(FDoc,FUnits,true);
+  result := TSVGPolypoints.Create(FDoc,FUnits,true,FDataLink);
   setlength(pts, length(points));
   for i := 0 to high(pts) do
     pts[i] := Units.ConvertCoord(points[i],AUnit,cuCustom);
@@ -1117,7 +1608,7 @@ end;
 function TSVGContent.AppendRect(x, y, width, height: single; AUnit: TCSSUnit
   ): TSVGRectangle;
 begin
-  result := TSVGRectangle.Create(FDoc,Units);
+  result := TSVGRectangle.Create(FDoc,Units,FDataLink);
   result.x := FloatWithCSSUnit(x,AUnit);
   result.y := FloatWithCSSUnit(y,AUnit);
   result.width := FloatWithCSSUnit(width,AUnit);
@@ -1134,7 +1625,7 @@ end;
 function TSVGContent.AppendText(x, y: single; AText: string; AUnit: TCSSUnit
   ): TSVGText;
 begin
-  result := TSVGText.Create(FDoc,Units);
+  result := TSVGText.Create(FDoc,Units,FDataLink);
   result.x := FloatWithCSSUnit(x,AUnit);
   result.y := FloatWithCSSUnit(y,AUnit);
   result.SimpleText:= AText;
@@ -1150,7 +1641,7 @@ end;
 function TSVGContent.AppendRoundRect(x, y, width, height, rx, ry: single;
   AUnit: TCSSUnit): TSVGRectangle;
 begin
-  result := TSVGRectangle.Create(FDoc,Units);
+  result := TSVGRectangle.Create(FDoc,Units,FDataLink);
   result.x := FloatWithCSSUnit(x,AUnit);
   result.y := FloatWithCSSUnit(y,AUnit);
   result.width := FloatWithCSSUnit(width,AUnit);

@@ -2032,16 +2032,31 @@ var p: integer;
   function parseFloat: single;
   var numberStart: integer;
       errPos: integer;
+      decimal_find: boolean;
+
+    procedure parseFloatInternal;
+    begin
+      if (p <= length(AValue)) and (AValue[p] in['+','-']) then inc(p);
+        decimal_find:= false;
+      while (p <= length(AValue)) and (AValue[p] in['0'..'9','.']) do
+      begin
+        if AValue[p] = '.' then
+          if decimal_find then
+            Break
+          else
+            decimal_find:= true;
+        inc(p);
+      end;
+    end;
+
   begin
     while (p <= length(AValue)) and (AValue[p] in[#0..#32,',']) do inc(p);
     numberStart:= p;
-    if (p <= length(AValue)) and (AValue[p] in['+','-']) then inc(p);
-    while (p <= length(AValue)) and (AValue[p] in['0'..'9','.']) do inc(p);
+    parseFloatInternal;
     if (p <= length(AValue)) and (AValue[p] in['e','E']) then
     begin
       inc(p);
-      if (p <= length(AValue)) and (AValue[p] in['+','-']) then inc(p);
-      while (p <= length(AValue)) and (AValue[p] in['0'..'9','.']) do inc(p);
+      parseFloatInternal;
     end;
     val(copy(AValue,numberStart,p-numberStart),result,errPos);
     if errPos <> 0 then numberError := true;
