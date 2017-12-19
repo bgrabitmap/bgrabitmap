@@ -128,6 +128,7 @@ type
     property DefaultDpi: single read FDefaultDpi write SetDefaultDpi; //this is not saved in the SVG file
     property CustomDpi: TPointF read GetCustomDpi write SetCustomDpi;
     property Content: TSVGContent read FContent;
+    property DataLink: TSVGDataLink read FDataLink;//(for test or internal info)
     property preserveAspectRatio: string read GetPreserveAspectRatio write SetPreserveAspectRatio;
   end;
 
