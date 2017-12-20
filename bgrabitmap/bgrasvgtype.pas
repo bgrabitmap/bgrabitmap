@@ -497,6 +497,11 @@ begin
   result:= FGradients.Count;
 end;
 
+function TSVGDataLink.StyleCount: integer;
+begin
+  result:= FStyles.Count;
+end;
+
 function TSVGDataLink.RootElementCount: integer;
 begin
   result:= FRootElements.Count;
@@ -1248,6 +1253,11 @@ end;
 procedure TSVGElement.SetID(AValue: string);
 begin
   Attribute['id'] := AValue;
+end; 
+
+procedure TSVGElement.SetClassAt(AValue: string);
+begin
+  Attribute['class'] := AValue;
 end; 
 
 procedure TSVGElement.Init(ADocument: TXMLDocument; ATag: string;
