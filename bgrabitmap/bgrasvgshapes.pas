@@ -18,12 +18,12 @@ type
       find_grad_el: integer;//(-2 not search; -1 not find; >= 0 id find)
       grad_el: TSVGGradient;
       canvasg: IBGRACanvasGradient2D;
+      //Validate as percentual or number [0.0..1.0]
+      function EvaluatePercentage(fu: TFloatWithCSSUnit): single;
     protected
       procedure Initialize; override;
       function IsGradientNotSearch: boolean;
       function FindGradientDef: integer;
-      //Validate as percentual or number [0.0..1.0]
-      function EvaluatePercentage(fu: TFloatWithCSSUnit): single;
       procedure CreateLinearGradient(
         ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
       procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
@@ -423,13 +423,12 @@ begin
       s:= System.Copy(s,6,Length(s)-6);
       with FDataLink do
         for i:= GradientCount-1 downto 0 do 
-          if Gradients[i] is TSVGGradient then
-            if (Gradients[i] as TSVGGradient).ID = s then
-            begin
-              grad_el:= TSVGGradient(Gradients[i]);
-              Result:= i;
-              Exit;
-            end;
+          if (Gradients[i] as TSVGGradient).ID = s then
+          begin
+            grad_el:= TSVGGradient(Gradients[i]);
+            Result:= i;
+            Exit;
+          end;
     end;
 end;
 
