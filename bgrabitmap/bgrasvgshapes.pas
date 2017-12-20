@@ -303,6 +303,38 @@ type
     destructor Destroy; override;
     property Content: TSVGContent read FContent;
   end;
+  
+  { TSVGStyle }
+
+  TSVGStyleItem = record
+    name,
+    attribute: string;
+  end;
+  TSVGStyleItemA = array of TSVGStyleItem;
+
+  TSVGStyle = class(TSVGElement)
+   private
+     style_a: TSVGStyleItemA;
+     procedure Parse(const s: String);
+     function IsValidID(const sid: integer): boolean;
+     function GetStyle(const sid: integer): TSVGStyleItem;
+     procedure SetStyle(const sid: integer; sr: TSVGStyleItem);
+     function Find(sr: TSVGStyleItem): integer; overload;
+   protected
+     procedure Initialize; override;
+   public
+     constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+     constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
+       AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+     destructor Destroy; override;
+     function Count: Integer;
+     function Find(const AName: string): integer; overload;
+     function Add(sr: TSVGStyleItem): integer;
+     procedure Remove(sr: TSVGStyleItem);
+     procedure Clear;
+     procedure ReParse;
+     property Styles[sid: integer]: TSVGStyleItem read GetStyle write SetStyle;
+  end;                  
 
   { TSVGContent }
 
@@ -381,6 +413,8 @@ begin
     result := TSVGDefine else 
   if tag='g' then
     result := TSVGGroup else
+  if tag='style' then 
+    result := TSVGStyle else
     result := TSVGElement;
 end;
 
@@ -706,6 +740,173 @@ procedure TSVGGroup.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
   FContent.Draw(ACanvas2d, AUnit);
 end;
+
+{ TSVGStyle }  
+
+const
+  s_invalid_id = 'invalid list id';
+
+constructor TSVGStyle.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'style',AUnits);
+end;
+
+constructor TSVGStyle.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AElement, AUnits, ADataLink);
+  Parse(AElement.TextContent);
+end;
+
+procedure TSVGStyle.Initialize;
+begin
+  inherited Initialize;
+  Clear;
+end;
+
+destructor TSVGStyle.Destroy;
+begin
+  Clear;
+  inherited Destroy;
+end;
+
+procedure TSVGStyle.Parse(const s: String);
+const
+  empty_rec: TSVGStyleItem = (name: ''; attribute: '');
+var
+  i,l,pg: integer;
+  st: String;
+  rec: TSVGStyleItem;
+begin
+  (*
+    Example of internal style block
+    circle {..}         
+    circle.type1 {..}   
+    .pic1 {..}          
+  *)
+  Clear;
+  l:= 0;
+  pg:= 0;
+  st:= '';
+  rec:= empty_rec;
+  for i:= 1 to Length(s) do
+  begin
+   if s[i] = '{' then
+   begin
+    Inc(pg);
+    if (pg = 1) and (Length(st) <> 0) then
+    begin
+     rec.name:= Trim(st);
+     st:= '';
+    end;
+   end
+   else if s[i] = '}' then
+   begin
+    Dec(pg);
+    if (pg = 0) and (Length(st) <> 0) then
+    begin
+     rec.attribute:= Trim(st);
+     st:= '';
+     Inc(l);
+     SetLength(style_a,l);
+     style_a[l-1]:= rec;
+     rec:= empty_rec;
+    end;
+   end
+   else
+    st:= st + s[i];
+  end;
+end;
+
+function TSVGStyle.IsValidID(const sid: integer): boolean;
+begin
+  result:= (sid >= 0) and (sid < Length(style_a));
+end;
+
+function TSVGStyle.GetStyle(const sid: integer): TSVGStyleItem;
+begin
+  if IsValidID(sid) then
+    result:= style_a[sid]
+  else
+    raise exception.Create(s_invalid_id);
+end;
+
+procedure TSVGStyle.SetStyle(const sid: integer; sr: TSVGStyleItem);
+begin
+  if IsValidID(sid) then
+    style_a[sid]:= sr
+  else
+    raise exception.Create(s_invalid_id);
+end;
+
+function TSVGStyle.Count: Integer;
+begin
+  result:= Length(style_a);
+end;
+
+function TSVGStyle.Find(sr: TSVGStyleItem): integer;
+var
+  i: integer;
+begin
+  for i:= 0 to Length(style_a)-1 do
+    with style_a[i] do
+      if (name = sr.name) and
+         (attribute = sr.attribute) then
+      begin
+        result:= i;
+        Exit;
+      end;
+  result:= -1;
+end;
+
+function TSVGStyle.Find(const AName: string): integer;
+var
+  i: integer;
+begin
+  for i:= 0 to Length(style_a)-1 do
+    with style_a[i] do
+      if name = AName then
+      begin
+        result:= i;
+        Exit;
+      end;
+  result:= -1;
+end;
+
+function TSVGStyle.Add(sr: TSVGStyleItem): integer;
+var
+  l: integer;
+begin
+  l:= Length(style_a);
+  SetLength(style_a,l+1);
+  style_a[l]:= sr;
+  result:= l;
+end;
+
+procedure TSVGStyle.Remove(sr: TSVGStyleItem);
+var
+  i,l,p: integer;
+begin
+  p:= Find(sr);
+  l:= Length(style_a);
+  if p <> -1 then
+  begin
+    Finalize(style_a[p]);
+    System.Move(style_a[p+1], style_a[p], (l-p)*SizeOf(TSVGStyleItem));
+    SetLength(style_a,l-1);
+  end;
+end;
+
+procedure TSVGStyle.Clear;
+begin
+  SetLength(style_a,0);
+end;
+
+procedure TSVGStyle.ReParse;
+begin
+ Parse(FDomElem.TextContent);
+end;           
 
 { TSVGRectangle }
 
