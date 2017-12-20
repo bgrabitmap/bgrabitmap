@@ -26,10 +26,12 @@ type
    private
      FElements,
      FGradients,
+     FStyles,
      FRootElements: TSVGElementList;
      function IsValidID(const id: integer; list: TSVGElementList): boolean;
      function GetElement(id: integer): TSVGElement;
      function GetGradient(id: integer): TSVGElement;
+     function GetStyle(id: integer): TSVGElement;
      function GetRootElement(id: integer): TSVGElement;
      function FindElement(el: TSVGElement; list: TSVGElementList): integer;
      function Find(el: TSVGElement): integer;//(find on FElements)
@@ -42,6 +44,7 @@ type
 
      function ElementCount: integer;
      function GradientCount: integer;
+     function StyleCount: integer;
      //contains the elements at the root of the link tree (having parent = nil)
      function RootElementCount: integer;
      function IsLink(el: TSVGElement): boolean;
@@ -59,6 +62,7 @@ type
 
      property Elements[ID: integer]: TSVGElement read GetElement;
      property Gradients[ID: integer]: TSVGElement read GetGradient;
+     property Styles[ID: integer]: TSVGElement read GetStyle;
      property RootElements[ID: integer]: TSVGElement read GetRootElement;
   end;
 
@@ -66,6 +70,8 @@ type
 
   TSVGElement = class
     private
+      find_style_id: integer;//(-2 not search; -1 not find; >= 0 id find)
+      style_attributes: string;
       FDataParent: TSVGElement;
       FDataChildList: TSVGElementList;
       FGroupList: TSVGElementList;
@@ -114,6 +120,7 @@ type
       function GetVerticalAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
       function GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit; overload;
       function GetID: string;
+      function GetClassAt: string;
       procedure SetAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
       procedure SetFill(AValue: string);
       procedure SetFillColor(AValue: TBGRAPixel);
@@ -137,6 +144,10 @@ type
       procedure SetVerticalAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
       procedure SetOrthoAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
       procedure SetID(AValue: string);
+      procedure SetClassAt(AValue: string);
+      function FindStyleElementInternal(const class_str: string;
+        var attributes_str: string): integer;
+      procedure FindStyleElement;
     protected
       FDataLink: TSVGDataLink;
       FDomElem: TDOMElement;
@@ -202,6 +213,7 @@ type
       property fillRule: string read GetFillRule write SetFillRule;
       property opacity: single read GetOpacity write SetOpacity;
       property ID: string read GetID write SetID;
+      property classAt: string read GetClassAt write SetClassAt;//Attribute "class"
       property DataParent: TSVGElement read FDataParent write FDataParent;
   end;
 
@@ -316,6 +328,7 @@ constructor TSVGDataLink.Create;
 begin
   FElements:= TSVGElementList.Create;
   FGradients:= TSVGElementList.Create;
+  FStyles:= TSVGElementList.Create;
   FRootElements:= TSVGElementList.Create;
 end;
 
@@ -324,6 +337,7 @@ begin
   FreeAndNil(FRootElements);
   FreeAndNil(FGradients);
   FreeAndNil(FElements);
+  FreeAndNil(FStyles);
   inherited Destroy;
 end;
 
@@ -345,6 +359,13 @@ begin
    raise exception.Create(s_error_invalid_id);
   result:= FGradients[id];
 end;
+
+function TSVGDataLink.GetStyle(id: integer): TSVGElement;
+begin
+  if not IsValidID(id,FStyles) then
+   raise exception.Create(s_error_invalid_id);
+  result:= FStyles[id];
+end;  
 
 function TSVGDataLink.GetRootElement(id: integer): TSVGElement;
 begin
@@ -492,7 +513,9 @@ begin
   result:= FElements.Count-1;
   InternalLink(result,parent);
   if el is TSVGGradient then
-    FGradients.Add(el);
+    FGradients.Add(el)
+  else if el is TSVGStyle then
+    FStyles.Add(el);
 end;
 
 procedure TSVGDataLink.Unlink(el: TSVGElement);
@@ -503,7 +526,9 @@ begin
   if id <> -1 then
   begin
     if el is TSVGGradient then
-      FGradients.Remove(el);
+      FGradients.Remove(el)
+    else if el is TSVGStyle then
+      FStyles.Remove(el);
     InternalUnLink(id);
     FElements.Delete(id);
   end
@@ -516,6 +541,7 @@ var
   i: integer;
 begin
   FGradients.Clear;
+  FStyles.Clear;
 
   for i:= 0 to FElements.Count-1 do
     InternalUnLink(i);
@@ -933,18 +959,32 @@ begin
 end;    
 
 function TSVGElement.GetStyle(const AName,ADefault: string): string;
-var
+
+  function GetInternal(const ruleset: string): string;
+  var
     startPos, colonPos, valueLength: integer;
-    ruleset: string;
-begin
-  ruleset := Attribute['style',ADefault];
-  LocateStyleDeclaration(ruleset, AName, startPos,colonPos, valueLength);
-  if valueLength <> -1 then
   begin
-    result := trim(copy(ruleset, colonPos+1, valueLength));
-  end else
-    result := '';
-end;
+    LocateStyleDeclaration(ruleset, AName, startPos,colonPos, valueLength);
+    if valueLength <> -1 then
+      result := trim(copy(ruleset, colonPos+1, valueLength))
+    else
+      result := '';
+  end;
+
+begin
+  result:= GetInternal( Attribute['style',ADefault] );
+
+  //Find on <style> block
+  if result = '' then
+  begin
+    //if "not search"..search
+    if find_style_id = -2 then
+      FindStyleElement;
+    //if "find"..use
+    if find_style_id <> -1 then
+      result:= GetInternal(style_attributes);
+  end;
+end;          
 
 function TSVGElement.GetStyle(const AName: string): string;
 begin
@@ -985,6 +1025,11 @@ function TSVGElement.GetID: string;
 begin
   result := Attribute['id'];
 end; 
+
+function TSVGElement.GetClassAt: string; 
+begin
+  result := Attribute['class'];
+end;  
 
 procedure TSVGElement.SetAttribute(AName: string; AValue: string);
 begin
@@ -1313,10 +1358,12 @@ end;
 
 procedure TSVGElement.Initialize;
 begin
-  FDataParent:= nil;
-  FDataChildList:= TSVGElementList.Create;
-  FGroupList:= TSVGElementList.Create;
-end; 
+  find_style_id     := -2;
+  style_attributes  := '';
+  FDataParent       := nil;
+  FDataChildList    := TSVGElementList.Create;
+  FGroupList        := TSVGElementList.Create;
+end;  
 
 constructor TSVGElement.Create(ADocument: TXMLDocument; AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
@@ -1402,7 +1449,47 @@ end;
 function TSVGElement.GroupList: TSVGElementList;
 begin
    result:= FGroupList;
-end;  
+end; 
+
+function TSVGElement.FindStyleElementInternal(const class_str: String;
+  var attributes_str: string): integer;
+var
+  i: integer;
+begin
+  with FDataLink do
+    for i:= 0 to StyleCount-1 do
+    begin
+      result:= (Styles[i] as TSVGStyle).Find(class_str);
+      if result <> -1 then
+      begin
+        attributes_str:= (Styles[i] as TSVGStyle).Styles[result].attribute;
+        Exit;
+      end;
+    end;
+  result:= -1;
+end;
+
+procedure TSVGElement.FindStyleElement;
+var
+  i: integer;
+  tag,sca: string;
+begin
+  find_style_id:= -1;
+  style_attributes:= '';
+  tag:= FDomElem.TagName;
+  sca:= classAt;
+  //Find as: "[class]"
+  if sca = '' then
+    find_style_id:= FindStyleElementInternal(tag,style_attributes)
+  else
+  begin
+    //Find as: ".[class]"
+    find_style_id:= FindStyleElementInternal('.'+sca,style_attributes);
+    //Find as: "[tag].[class]"
+    if find_style_id = -1 then
+     find_style_id:= FindStyleElementInternal(tag+'.'+sca,style_attributes);
+  end;
+end;
 
 end.
 
