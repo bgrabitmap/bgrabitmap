@@ -239,6 +239,9 @@ type
     property Text: string read FText;
     property Done: boolean read GetDone;
   end;
+  
+  resourcestring
+    rsInvalidId = 'invalid id';
 
 implementation
 
@@ -1494,7 +1497,7 @@ begin
     findStyleId:= FindStyleElementInternal('.'+sca,styleAttributes);
     //Find as: "[tag].[class]"
     if findStyleId = -1 then
-     find_style_id:= FindStyleElementInternal(tag+'.'+sca,styleAttributes);
+     findStyleId:= FindStyleElementInternal(tag+'.'+sca,styleAttributes);
   end;
 end;
 
