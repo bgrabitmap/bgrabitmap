@@ -2032,19 +2032,19 @@ var p: integer;
   function parseFloat: single;
   var numberStart: integer;
       errPos: integer;
-      decimal_find: boolean;
+      decimalFind: boolean;
 
     procedure parseFloatInternal;
     begin
       if (p <= length(AValue)) and (AValue[p] in['+','-']) then inc(p);
-      decimal_find:= false;
+      decimalFind:= false;
       while (p <= length(AValue)) and (AValue[p] in['0'..'9','.']) do
       begin
         if AValue[p] = '.' then
-          if decimal_find then
+          if decimalFind then
             Break
           else
-            decimal_find:= true;
+            decimalFind:= true;
         inc(p);
       end;
     end;
