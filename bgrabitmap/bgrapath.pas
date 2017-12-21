@@ -2037,7 +2037,7 @@ var p: integer;
     procedure parseFloatInternal;
     begin
       if (p <= length(AValue)) and (AValue[p] in['+','-']) then inc(p);
-        decimal_find:= false;
+      decimal_find:= false;
       while (p <= length(AValue)) and (AValue[p] in['0'..'9','.']) do
       begin
         if AValue[p] = '.' then
