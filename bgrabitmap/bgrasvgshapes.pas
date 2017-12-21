@@ -247,11 +247,15 @@ type
       function GetCX: TFloatWithCSSUnit;
       function GetCY: TFloatWithCSSUnit;
       function GetR: TFloatWithCSSUnit;
+      function GetRX: TFloatWithCSSUnit;
+      function GetRY: TFloatWithCSSUnit;
       function GetFX: TFloatWithCSSUnit;
       function GetFY: TFloatWithCSSUnit;
       procedure SetCX(AValue: TFloatWithCSSUnit);
       procedure SetCY(AValue: TFloatWithCSSUnit);
       procedure SetR(AValue: TFloatWithCSSUnit);
+      procedure SetRX(AValue: TFloatWithCSSUnit);
+      procedure SetRY(AValue: TFloatWithCSSUnit);
       procedure SetFX(AValue: TFloatWithCSSUnit);
       procedure SetFY(AValue: TFloatWithCSSUnit);
     public
@@ -260,6 +264,8 @@ type
       property CX: TFloatWithCSSUnit read GetCX write SetCX;
       property CY: TFloatWithCSSUnit read GetCY write SetCY;
       property R: TFloatWithCSSUnit read GetR write SetR;
+      property RX: TFloatWithCSSUnit read GetRX write SetRX;
+      property RY: TFloatWithCSSUnit read GetRY write SetRY;
       property FX: TFloatWithCSSUnit read GetFX write SetFX;
       property FY: TFloatWithCSSUnit read GetFY write SetFY;
   end;
@@ -1508,7 +1514,17 @@ end;
 function TSVGRadialGradient.GetR: TFloatWithCSSUnit;
 begin
   result := OrthoAttributeWithUnitDef['r',FloatWithCSSUnit(50,cuPercent)];
-end;   
+end;
+
+function TSVGRadialGradient.GetRX: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnit['rx'];
+end;
+
+function TSVGRadialGradient.GetRY: TFloatWithCSSUnit;
+begin
+  result := VerticalAttributeWithUnit['ry'];
+end;                                           
 
 function TSVGRadialGradient.GetFX: TFloatWithCSSUnit;
 begin
@@ -1534,6 +1550,16 @@ procedure TSVGRadialGradient.SetR(AValue: TFloatWithCSSUnit);
 begin
   OrthoAttributeWithUnit['r'] := AValue;
 end;
+
+procedure TSVGRadialGradient.SetRX(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['rx'] := AValue;
+end;
+
+procedure TSVGRadialGradient.SetRY(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['ry'] := AValue;
+end;    
 
 procedure TSVGRadialGradient.SetFX(AValue: TFloatWithCSSUnit);
 begin
