@@ -70,8 +70,8 @@ type
 
   TSVGElement = class
     private
-      find_style_id: integer;//(-2 not search; -1 not find; >= 0 id find)
-      style_attributes: string;
+      findStyleId: integer;//(-2 not search; -1 not find; >= 0 id find)
+      styleAttributes: string;
       FDataParent: TSVGElement;
       FDataChildList: TSVGElementList;
       FGroupList: TSVGElementList;
@@ -321,9 +321,6 @@ end;
 
 { TSVGDataLink }
 
-const
- s_error_invalid_id = 'invalid id';
-
 constructor TSVGDataLink.Create;
 begin
   FElements:= TSVGElementList.Create;
@@ -349,28 +346,28 @@ end;
 function TSVGDataLink.GetElement(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FElements) then
-   raise exception.Create(s_error_invalid_id);
+   raise exception.Create(rsInvalidId);
   result:= FElements[id];
 end;
 
 function TSVGDataLink.GetGradient(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FGradients) then
-   raise exception.Create(s_error_invalid_id);
+   raise exception.Create(rsInvalidId);
   result:= FGradients[id];
 end;
 
 function TSVGDataLink.GetStyle(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FStyles) then
-   raise exception.Create(s_error_invalid_id);
+   raise exception.Create(rsInvalidId);
   result:= FStyles[id];
 end;  
 
 function TSVGDataLink.GetRootElement(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FRootElements) then
-   raise exception.Create(s_error_invalid_id);
+   raise exception.Create(rsInvalidId);
   result:= FRootElements[id];
 end;
 
@@ -983,11 +980,11 @@ begin
   if result = '' then
   begin
     //if "not search"..search
-    if find_style_id = -2 then
+    if findStyleId = -2 then
       FindStyleElement;
     //if "find"..use
-    if find_style_id <> -1 then
-      result:= GetInternal(style_attributes);
+    if findStyleId <> -1 then
+      result:= GetInternal(styleAttributes);
   end;
 end;          
 
@@ -1368,11 +1365,11 @@ end;
 
 procedure TSVGElement.Initialize;
 begin
-  find_style_id     := -2;
-  style_attributes  := '';
-  FDataParent       := nil;
-  FDataChildList    := TSVGElementList.Create;
-  FGroupList        := TSVGElementList.Create;
+  findStyleId      := -2;
+  styleAttributes  := '';
+  FDataParent      := nil;
+  FDataChildList   := TSVGElementList.Create;
+  FGroupList       := TSVGElementList.Create;
 end;  
 
 constructor TSVGElement.Create(ADocument: TXMLDocument; AElement: TDOMElement;
@@ -1484,20 +1481,20 @@ var
   i: integer;
   tag,sca: string;
 begin
-  find_style_id:= -1;
-  style_attributes:= '';
+  findStyleId:= -1;
+  styleAttributes:= '';
   tag:= FDomElem.TagName;
   sca:= classAt;
   //Find as: "[class]"
   if sca = '' then
-    find_style_id:= FindStyleElementInternal(tag,style_attributes)
+    findStyleId:= FindStyleElementInternal(tag,styleAttributes)
   else
   begin
     //Find as: ".[class]"
-    find_style_id:= FindStyleElementInternal('.'+sca,style_attributes);
+    findStyleId:= FindStyleElementInternal('.'+sca,styleAttributes);
     //Find as: "[tag].[class]"
-    if find_style_id = -1 then
-     find_style_id:= FindStyleElementInternal(tag+'.'+sca,style_attributes);
+    if findStyleId = -1 then
+     find_style_id:= FindStyleElementInternal(tag+'.'+sca,styleAttributes);
   end;
 end;
 
