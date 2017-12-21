@@ -310,11 +310,11 @@ type
     name,
     attribute: string;
   end;
-  TSVGStyleItemA = array of TSVGStyleItem;
+  ArrayOfTSVGStyleItem = array of TSVGStyleItem;
 
   TSVGStyle = class(TSVGElement)
    private
-     style_a: TSVGStyleItemA;
+     FStyles: ArrayOfTSVGStyleItem;
      procedure Parse(const s: String);
      function IsValidID(const sid: integer): boolean;
      function GetStyle(const sid: integer): TSVGStyleItem;
@@ -743,9 +743,6 @@ end;
 
 { TSVGStyle }  
 
-const
-  s_invalid_id = 'invalid list id';
-
 constructor TSVGStyle.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
@@ -773,7 +770,7 @@ end;
 
 procedure TSVGStyle.Parse(const s: String);
 const
-  empty_rec: TSVGStyleItem = (name: ''; attribute: '');
+  EmptyRec: TSVGStyleItem = (name: ''; attribute: '');
 var
   i,l,pg: integer;
   st: String;
@@ -789,7 +786,7 @@ begin
   l:= 0;
   pg:= 0;
   st:= '';
-  rec:= empty_rec;
+  rec:= EmptyRec;
   for i:= 1 to Length(s) do
   begin
    if s[i] = '{' then
@@ -809,9 +806,9 @@ begin
      rec.attribute:= Trim(st);
      st:= '';
      Inc(l);
-     SetLength(style_a,l);
-     style_a[l-1]:= rec;
-     rec:= empty_rec;
+     SetLength(FStyles,l);
+     FStyles[l-1]:= rec;
+     rec:= EmptyRec;
     end;
    end
    else
@@ -821,36 +818,36 @@ end;
 
 function TSVGStyle.IsValidID(const sid: integer): boolean;
 begin
-  result:= (sid >= 0) and (sid < Length(style_a));
+  result:= (sid >= 0) and (sid < Length(FStyles));
 end;
 
 function TSVGStyle.GetStyle(const sid: integer): TSVGStyleItem;
 begin
   if IsValidID(sid) then
-    result:= style_a[sid]
+    result:= FStyles[sid]
   else
-    raise exception.Create(s_invalid_id);
+    raise exception.Create(rsInvalidId);
 end;
 
 procedure TSVGStyle.SetStyle(const sid: integer; sr: TSVGStyleItem);
 begin
   if IsValidID(sid) then
-    style_a[sid]:= sr
+    FStyles[sid]:= sr
   else
-    raise exception.Create(s_invalid_id);
+    raise exception.Create(rsInvalidId);
 end;
 
 function TSVGStyle.Count: Integer;
 begin
-  result:= Length(style_a);
+  result:= Length(FStyles);
 end;
 
 function TSVGStyle.Find(sr: TSVGStyleItem): integer;
 var
   i: integer;
 begin
-  for i:= 0 to Length(style_a)-1 do
-    with style_a[i] do
+  for i:= 0 to Length(FStyles)-1 do
+    with FStyles[i] do
       if (name = sr.name) and
          (attribute = sr.attribute) then
       begin
@@ -864,8 +861,8 @@ function TSVGStyle.Find(const AName: string): integer;
 var
   i: integer;
 begin
-  for i:= 0 to Length(style_a)-1 do
-    with style_a[i] do
+  for i:= 0 to Length(FStyles)-1 do
+    with FStyles[i] do
       if name = AName then
       begin
         result:= i;
@@ -878,9 +875,9 @@ function TSVGStyle.Add(sr: TSVGStyleItem): integer;
 var
   l: integer;
 begin
-  l:= Length(style_a);
-  SetLength(style_a,l+1);
-  style_a[l]:= sr;
+  l:= Length(FStyles);
+  SetLength(FStyles,l+1);
+  FStyles[l]:= sr;
   result:= l;
 end;
 
@@ -889,18 +886,18 @@ var
   i,l,p: integer;
 begin
   p:= Find(sr);
-  l:= Length(style_a);
+  l:= Length(FStyles);
   if p <> -1 then
   begin
-    Finalize(style_a[p]);
-    System.Move(style_a[p+1], style_a[p], (l-p)*SizeOf(TSVGStyleItem));
-    SetLength(style_a,l-1);
+    Finalize(FStyles[p]);
+    System.Move(FStyles[p+1], style_a[p], (l-p)*SizeOf(TSVGStyleItem));
+    SetLength(FStyles,l-1);
   end;
 end;
 
 procedure TSVGStyle.Clear;
 begin
-  SetLength(style_a,0);
+  SetLength(FStyles,0);
 end;
 
 procedure TSVGStyle.ReParse;
