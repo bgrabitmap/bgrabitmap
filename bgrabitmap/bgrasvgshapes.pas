@@ -775,6 +775,18 @@ begin
 end;
 
 procedure TSVGStyle.Parse(const s: String);
+
+  function IsValidAttribute(const sa: string): boolean;
+  var
+    i: integer;
+  begin
+    //(for case example "{ ; ;}")
+    for i:= 1 to Length(sa) do
+     if not (sa[i] in [' ',';']) then
+      exit(true);
+    result:= false;
+  end;
+
 const
   EmptyRec: TSVGStyleItem = (name: ''; attribute: '');
 var
@@ -795,30 +807,33 @@ begin
   rec:= EmptyRec;
   for i:= 1 to Length(s) do
   begin
-   if s[i] = '{' then
-   begin
-    Inc(pg);
-    if (pg = 1) and (Length(st) <> 0) then
+    if s[i] = '{' then
     begin
-     rec.name:= Trim(st);
-     st:= '';
-    end;
-   end
-   else if s[i] = '}' then
-   begin
-    Dec(pg);
-    if (pg = 0) and (Length(st) <> 0) then
+      Inc(pg);
+      if (pg = 1) and (Length(st) <> 0) then
+      begin
+       rec.name:= Trim(st);
+       st:= '';
+      end;
+    end
+    else if s[i] = '}' then
     begin
-     rec.attribute:= Trim(st);
-     st:= '';
-     Inc(l);
-     SetLength(FStyles,l);
-     FStyles[l-1]:= rec;
-     rec:= EmptyRec;
-    end;
-   end
-   else
-    st:= st + s[i];
+      Dec(pg);
+      if (pg = 0) and (Length(st) <> 0) then
+      begin
+        if IsValidAttribute(st) then
+        begin
+          rec.attribute:= Trim(st);
+          Inc(l);
+          SetLength(FStyles,l);
+          FStyles[l-1]:= rec;
+          rec:= EmptyRec;
+        end;
+        st:= '';
+      end;
+    end
+    else
+      st:= st + s[i];
   end;
 end;
 
