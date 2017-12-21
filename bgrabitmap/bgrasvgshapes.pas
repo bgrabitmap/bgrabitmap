@@ -15,8 +15,8 @@ type
 
   TSVGElementWithGradient = class(TSVGElement)
     private
-      find_grad_el: integer;//(-2 not search; -1 not find; >= 0 id find)
-      grad_el: TSVGGradient;
+      findGradEl: integer;//(-2 not search; -1 not find; >= 0 id find)
+      gradEl: TSVGGradient;
       canvasg: IBGRACanvasGradient2D;
       //Validate as percentual or number [0.0..1.0]
       function EvaluatePercentage(fu: TFloatWithCSSUnit): single;
@@ -434,14 +434,14 @@ end;
 procedure TSVGElementWithGradient.Initialize;
 begin
   inherited Initialize;
-  find_grad_el  := -2;
-  grad_el       := nil;
-  canvasg       := nil;
+  findGradEl  := -2;
+  gradEl      := nil;
+  canvasg     := nil;
 end;
 
 function TSVGElementWithGradient.IsGradientNotSearch: boolean;
 begin
-  result:= find_grad_el = -2;
+  result:= findGradEl = -2;
 end; 
 
 function TSVGElementWithGradient.FindGradientDef: integer;
@@ -459,7 +459,7 @@ begin
         for i:= GradientCount-1 downto 0 do 
           if (Gradients[i] as TSVGGradient).ID = s then
           begin
-            grad_el:= TSVGGradient(Gradients[i]);
+            gradEl:= TSVGGradient(Gradients[i]);
             Result:= i;
             Exit;
           end;
@@ -487,7 +487,7 @@ var
 begin
   canvasg:= ACanvas2d.createLinearGradient(pf1,pf2);
 
-  with FDataLink.Gradients[find_grad_el].DataChildList do
+  with FDataLink.Gradients[findGradEl].DataChildList do
     for i:= 0 to Count-1 do
       if Items[i] is TSVGStopGradient then
         with (Items[i] as TSVGStopGradient) do
@@ -505,12 +505,12 @@ var
   vx1,vy1,vx2,vy2: single;
   pf1,pf2: TPointF;
 begin
-  find_grad_el:= FindGradientDef;
-  if grad_el <> nil then
+  findGradEl:= FindGradientDef;
+  if gradEl <> nil then
   begin
-    if grad_el is TSVGLinearGradient then
+    if gradEl is TSVGLinearGradient then
     begin
-      with TSVGLinearGradient(grad_el) do
+      with TSVGLinearGradient(gradEl) do
       begin
         vx1:= EvaluatePercentage(x1);
         vy1:= EvaluatePercentage(y1);
@@ -542,9 +542,9 @@ begin
         CreateLinearGradient(ACanvas2d, pf1,pf2);
       end;
     end
-    else if grad_el is TSVGRadialGradient then
+    else if gradEl is TSVGRadialGradient then
     begin
-      with TSVGRadialGradient(grad_el) do
+      with TSVGRadialGradient(gradEl) do
       begin
 
         //TODO: radial gradient support
