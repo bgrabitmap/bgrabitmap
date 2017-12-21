@@ -154,8 +154,8 @@ type
       procedure SetOrthoAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
       procedure SetID(AValue: string);
       procedure SetClassAt(AValue: string);
-      function FindStyleElementInternal(const class_str: string;
-        var attributes_str: string): integer;
+      function FindStyleElementInternal(const classStr: string;
+        var attributesStr: string): integer;
       procedure FindStyleElement;
     protected
       FDataLink: TSVGDataLink;
