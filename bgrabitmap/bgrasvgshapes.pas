@@ -890,7 +890,7 @@ begin
   if p <> -1 then
   begin
     Finalize(FStyles[p]);
-    System.Move(FStyles[p+1], style_a[p], (l-p)*SizeOf(TSVGStyleItem));
+    System.Move(FStyles[p+1], FStyles[p], (l-p)*SizeOf(TSVGStyleItem));
     SetLength(FStyles,l-1);
   end;
 end;
