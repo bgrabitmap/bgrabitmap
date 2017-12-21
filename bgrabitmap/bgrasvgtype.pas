@@ -652,9 +652,9 @@ begin
   
   //Find on <g> block
   if (result = '') and (not (Self is TSVGGroup)) then
-    for i:= FGroupList.Count-1 downto 0 do
+    for i:= 0 to FGroupList.Count-1 do
     begin
-      result:= FGroupList[i].GetAttribute(AName,ADefault);
+      result:= FGroupList[i].GetAttribute(AName);//no! ,ADefault);
       if result <> '' then
         Break;
     end;  
