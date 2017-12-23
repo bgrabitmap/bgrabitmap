@@ -689,14 +689,14 @@ var
   vx,vy: single;
 begin
   ACanvas2d.beginPath;
-  ACanvas2d.fontEmHeight := Units.ConvertWidth(fontSize,AUnit).value;
+  ACanvas2d.fontEmHeight := Units.ConvertHeight(fontSize,AUnit).value;
   ACanvas2d.fontName := fontFamily;
   fs := [];
   if fontBold then fs += [fsBold];
   if fontItalic then fs += [fsItalic];
   ACanvas2d.fontStyle := fs;
   vx:= Units.ConvertWidth(x,AUnit).value;
-  vy:= Units.ConvertWidth(y,AUnit).value;
+  vy:= Units.ConvertHeight(y,AUnit).value;
   ACanvas2d.text(SimpleText,vx,vy);
 
   if IsGradientNotSearch then
@@ -1002,12 +1002,12 @@ begin
   if not isStrokeNone or not isFillNone then
   begin
     vx:= Units.ConvertWidth(x,AUnit).value;
-    vy:= Units.ConvertWidth(y,AUnit).value;
+    vy:= Units.ConvertHeight(y,AUnit).value;
     vw:= Units.ConvertWidth(width,AUnit).value;
-    vh:= Units.ConvertWidth(height,AUnit).value;
+    vh:= Units.ConvertHeight(height,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.roundRect(vx,vy, vw,vh,
-       Units.ConvertWidth(rx,AUnit).value,Units.ConvertWidth(ry,AUnit).value);
+       Units.ConvertWidth(rx,AUnit).value,Units.ConvertHeight(ry,AUnit).value);
     if IsGradientNotSearch then
       InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh);
     if not isFillNone then
@@ -1299,9 +1299,9 @@ begin
   if not isFillNone or not isStrokeNone then
   begin
     vcx:= Units.ConvertWidth(cx,AUnit).value;
-    vcy:= Units.ConvertWidth(cy,AUnit).value;
+    vcy:= Units.ConvertHeight(cy,AUnit).value;
     vrx:= Units.ConvertWidth(rx,AUnit).value;
-    vry:= Units.ConvertWidth(ry,AUnit).value;
+    vry:= Units.ConvertHeight(ry,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.ellipse(vcx,vcy,vrx,vry);
     if IsGradientNotSearch then
@@ -1364,7 +1364,7 @@ begin
   if not isFillNone or not isStrokeNone then
   begin
     vcx:= Units.ConvertWidth(cx,AUnit).value;
-    vcy:= Units.ConvertWidth(cy,AUnit).value;
+    vcy:= Units.ConvertHeight(cy,AUnit).value;
     vr:= Units.ConvertWidth(r,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.circle(vcx,vcy,vr);
@@ -1437,8 +1437,8 @@ begin
   begin
     ApplyStrokeStyle(ACanvas2D,AUnit);
     ACanvas2d.beginPath;
-    ACanvas2d.moveTo(Units.ConvertWidth(x1,AUnit).value,Units.ConvertWidth(y1,AUnit).value);
-    ACanvas2d.lineTo(Units.ConvertWidth(x2,AUnit).value,Units.ConvertWidth(y2,AUnit).value);
+    ACanvas2d.moveTo(Units.ConvertWidth(x1,AUnit).value,Units.ConvertHeight(y1,AUnit).value);
+    ACanvas2d.lineTo(Units.ConvertWidth(x2,AUnit).value,Units.ConvertHeight(y2,AUnit).value);
     ACanvas2d.stroke;
   end;
 end;
