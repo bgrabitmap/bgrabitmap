@@ -24,6 +24,7 @@ type
       procedure Initialize; override;
       function IsGradientNotSearch: boolean;
       function FindGradientDef: integer;
+      procedure AddStopElements(canvas: IBGRACanvasGradient2D);
       procedure CreateLinearGradient(
         ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
       procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
@@ -205,19 +206,32 @@ type
 
   TSVGContent = class;
   
-  { TSVGGradient }
+  TConvMethod = (cmNone,cmHoriz,cmVertical,cmOrtho);
+  
+  { TSVGGradient } 
 
   TSVGGradient = class(TSVGElement)
     private
       FContent: TSVGContent;
+      function GetHRef: string;
+      procedure SetHRef(AValue: string);
+      function HRefToGradientID(const AValue: string): string;
+      function FindGradientRef(const AGradientID: string): integer;
+    protected
+      InheritedGradients: TSVGElementList;//(for HRef)
+      procedure Initialize; override;
+      function GetInheritedAttribute(AValue: string;
+        AConvMethod: TConvMethod; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
         ADataLink: TSVGDataLink); override;
       constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
         AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
+      procedure ScanInheritedGradients(const forceScan: boolean = false);
       property Content: TSVGContent read FContent;
-  end;
+      property hRef: string read GetHRef write SetHRef;
+  end;        
 
   { TSVGGradientLinear }
 
@@ -485,25 +499,43 @@ begin
   end;
 end;
 
-procedure TSVGElementWithGradient.CreateLinearGradient(
-  ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
+procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D);
+
+  function AddStopElementFrom(el: TSVGElement): integer;
+  var
+    i: integer;
+    col: TBGRAPixel;
+  begin
+    result:= 0;
+    with el.DataChildList do
+      for i:= 0 to Count-1 do
+        if Items[i] is TSVGStopGradient then
+          with (Items[i] as TSVGStopGradient) do
+          begin
+            col:= StrToBGRA( AttributeOrStyle['stop-color'] );
+            if AttributeOrStyle['stop-opacity'] <> '' then
+             col.alpha:= Round( Units.parseValue(AttributeOrStyle['stop-opacity'],1) * 255 );
+            canvas.addColorStop(EvaluatePercentage(offset)/100, col);
+            Inc(result);
+          end;
+  end;
+
 var
   i: integer;
-  col: TBGRAPixel;
+begin
+  with TSVGGradient(FDataLink.Gradients[findGradEl]).InheritedGradients do
+    for i:= 0 to Count-1 do
+      //if AddStopElementFrom(Items[i]) <> 0 then
+      //  Exit;
+      AddStopElementFrom(Items[i]);
+end;
+
+procedure TSVGElementWithGradient.CreateLinearGradient(
+  ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
 begin
   canvasg:= ACanvas2d.createLinearGradient(pf1,pf2);
-
-  with FDataLink.Gradients[findGradEl].DataChildList do
-    for i:= 0 to Count-1 do
-      if Items[i] is TSVGStopGradient then
-        with (Items[i] as TSVGStopGradient) do
-        begin
-          col:= StrToBGRA( AttributeOrStyle['stop-color'] );
-          if AttributeOrStyle['stop-opacity'] <> '' then
-           col.alpha:= Round( Units.parseValue(AttributeOrStyle['stop-opacity'],1) * 255 );
-          canvasg.addColorStop(EvaluatePercentage(offset)/100, col);
-        end;
-end;                     
+  AddStopElements(canvasg);
+end;                          
 
 procedure TSVGElementWithGradient.InitializeGradient(ACanvas2d: TBGRACanvas2D;
   const origin: TPointF; const w,h: single);
@@ -514,6 +546,7 @@ begin
   findGradEl:= FindGradientDef;
   if gradEl <> nil then
   begin
+    gradEl.ScanInheritedGradients;
     if gradEl is TSVGLinearGradient then
     begin
       with TSVGLinearGradient(gradEl) do
@@ -1443,13 +1476,88 @@ begin
   end;
 end;
 
-{ TSVGGradient }
+{ TSVGGradient } //##
+
+function TSVGGradient.GetHRef: string;
+begin
+  result := Attribute['xlink:href'];
+  if result = '' then
+    result := Attribute['href'];//(Note: specific for svg 2)
+end;
+
+procedure TSVGGradient.SetHRef(AValue: string);
+begin
+  Attribute['xlink:href'] := AValue;
+end;
 
 constructor TSVGGradient.Create(ADocument: TXMLDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
+end;
+
+function TSVGGradient.HRefToGradientID(const AValue: string): string;
+var
+  l: integer;
+begin
+  //(example input: "#gradient1")
+  l:= Length(AValue);
+  if l < 2 then
+    result:= ''
+  else
+    result:= System.Copy(AValue,2,l-1);
+end;
+
+function TSVGGradient.FindGradientRef(const AGradientID: string): integer;
+var
+  i: integer;
+begin
+  with FDataLink do
+    for i:= 0 to GradientCount-1 do
+      if (Gradients[i] as TSVGGradient).ID = AGradientID then
+      begin
+        result:= i;
+        exit;
+      end;
+  result:= -1;
+end;
+
+procedure TSVGGradient.Initialize;
+begin
+  inherited;
+  InheritedGradients:= TSVGElementList.Create;
+end;
+
+function TSVGGradient.GetInheritedAttribute(AValue: string;
+  AConvMethod: TConvMethod; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
+var
+  i: integer;
+  el: TSVGGradient;
+  invalidDef: TFloatWithCSSUnit;
+begin
+  invalidDef:= FloatWithCSSUnit(-255,cuPercent);
+  //find valid inherited attribute (start from "self": item[0])
+  for i:= 0 to InheritedGradients.Count-1 do
+  begin
+    el:= TSVGGradient( InheritedGradients[i] );
+    with el do
+    begin
+      if AConvMethod = cmHoriz then
+        result:= HorizAttributeWithUnitDef[AValue,invalidDef]
+      else if AConvMethod = cmVertical then
+        result:= VerticalAttributeWithUnitDef[AValue,invalidDef]
+      else if AConvMethod = cmOrtho then
+        result:= OrthoAttributeWithUnitDef[AValue,invalidDef]
+      else
+        result:= AttributeWithUnitDef[AValue,invalidDef];
+
+      if (result.value <> invalidDef.value) or
+         (result.CSSUnit <> invalidDef.CSSUnit) then
+        exit;
+    end;
+  end;
+  result:= ADefault;
 end;
 
 constructor TSVGGradient.Create(ADocument: TXMLDocument; AElement: TDOMElement;
@@ -1462,30 +1570,58 @@ end;
 destructor TSVGGradient.Destroy;
 begin
   FreeAndNil(FContent);
+  FreeAndNil(InheritedGradients);
   inherited Destroy;
 end;
+
+procedure TSVGGradient.ScanInheritedGradients(const forceScan: boolean = false);
+var
+  el: TSVGGradient;
+  pos: integer;
+  gradientID: string;
+begin
+  //(if list empty = not scan)
+  if (InheritedGradients.Count <> 0) and (not forceScan) then
+    exit;
+
+  InheritedGradients.Clear;
+  InheritedGradients.Add(Self);//(important)
+  el:= Self;
+  while el.hRef <> '' do
+  begin
+    gradientID:= HRefToGradientID(el.hRef);
+    pos:= FindGradientRef(gradientID);
+    if pos = -1 then
+      exit
+    else
+    begin
+      el:= TSVGGradient(FDataLink.Gradients[pos]);
+      InheritedGradients.Add(el);
+    end;
+  end;
+end;        
 
 { TSVGLinearGradient }
 
 function TSVGLinearGradient.GetX1: TFloatWithCSSUnit;
 begin
-  result := AttributeWithUnit['x1'];
+  result := GetInheritedAttribute('x1',cmNone,FloatWithCSSUnit(0,cuPercent));
 end;
 
 function TSVGLinearGradient.GetX2: TFloatWithCSSUnit;
 begin
-  result := AttributeWithUnit['x2',FloatWithCSSUnit(100,cuPercent)];
+  result := GetInheritedAttribute('x2',cmNone,FloatWithCSSUnit(100,cuPercent));
 end;
 
 function TSVGLinearGradient.GetY1: TFloatWithCSSUnit;
 begin
-  result := AttributeWithUnit['y1'];
+  result := GetInheritedAttribute('y1',cmNone,FloatWithCSSUnit(0,cuPercent));
 end;
 
 function TSVGLinearGradient.GetY2: TFloatWithCSSUnit;
 begin
-  result := AttributeWithUnit['y2'];
-end;
+  result := GetInheritedAttribute('y2',cmNone,FloatWithCSSUnit(0,cuPercent));
+end; 
 
 procedure TSVGLinearGradient.SetX1(AValue: TFloatWithCSSUnit);
 begin
@@ -1518,38 +1654,38 @@ end;
 
 function TSVGRadialGradient.GetCX: TFloatWithCSSUnit;
 begin
-  result := HorizAttributeWithUnitDef['cx',FloatWithCSSUnit(50,cuPercent)];
+  result := GetInheritedAttribute('cx',cmHoriz,FloatWithCSSUnit(50,cuPercent));
 end;
 
 function TSVGRadialGradient.GetCY: TFloatWithCSSUnit;
 begin
-  result := VerticalAttributeWithUnitDef['cy',FloatWithCSSUnit(50,cuPercent)];
+  result := GetInheritedAttribute('cy',cmVertical,FloatWithCSSUnit(50,cuPercent));
 end;
 
 function TSVGRadialGradient.GetR: TFloatWithCSSUnit;
 begin
-  result := OrthoAttributeWithUnitDef['r',FloatWithCSSUnit(50,cuPercent)];
+  result := GetInheritedAttribute('r',cmOrtho,FloatWithCSSUnit(50,cuPercent));
 end;
 
 function TSVGRadialGradient.GetRX: TFloatWithCSSUnit;
 begin
-  result := HorizAttributeWithUnit['rx'];
+  result := GetInheritedAttribute('rx',cmHoriz,FloatWithCSSUnit(50,cuPercent));
 end;
 
 function TSVGRadialGradient.GetRY: TFloatWithCSSUnit;
 begin
-  result := VerticalAttributeWithUnit['ry'];
+  result := GetInheritedAttribute('ry',cmVertical,FloatWithCSSUnit(50,cuPercent));
 end;                                           
 
 function TSVGRadialGradient.GetFX: TFloatWithCSSUnit;
 begin
-  result := HorizAttributeWithUnit['fx'];
+  result := GetInheritedAttribute('fx',cmHoriz,FloatWithCSSUnit(0,cuPercent));
 end;
 
 function TSVGRadialGradient.GetFY: TFloatWithCSSUnit;
 begin
-  result := VerticalAttributeWithUnit['fy'];
-end;
+  result := GetInheritedAttribute('fy',cmVertical,FloatWithCSSUnit(0,cuPercent));
+end;         
 
 procedure TSVGRadialGradient.SetCX(AValue: TFloatWithCSSUnit);
 begin
