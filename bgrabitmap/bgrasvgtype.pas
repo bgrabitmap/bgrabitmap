@@ -19,6 +19,15 @@ type
      sfmNonZero = Ord(fmWinding),
      sfmEvenOdd = Ord(fmAlternate)
    );
+   
+  TFindStyleState = (fssNotSearch,
+                     fssNotFind,
+                     fssFind);
+  TStyleAttribute = record
+     attr  : string;
+     pos   : integer;
+  end;
+  ArrayOfTStyleAttribute = array of TStyleAttribute;
   
   { TSVGDataLink }
 
@@ -70,8 +79,8 @@ type
 
   TSVGElement = class
     private
-      find_style_id: integer;//(-2 not search; -1 not find; >= 0 id find)
-      style_attributes: string;
+      findStyleState: TFindStyleState;
+      styleAttributes: ArrayOfTStyleAttribute;
       FDataParent: TSVGElement;
       FDataChildList: TSVGElementList;
       FGroupList: TSVGElementList;
@@ -145,8 +154,8 @@ type
       procedure SetOrthoAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
       procedure SetID(AValue: string);
       procedure SetClassAt(AValue: string);
-      function FindStyleElementInternal(const class_str: string;
-        var attributes_str: string): integer;
+      function FindStyleElementInternal(const classStr: string;
+        var attributesStr: string): integer;
       procedure FindStyleElement;
     protected
       FDataLink: TSVGDataLink;
@@ -239,6 +248,9 @@ type
     property Text: string read FText;
     property Done: boolean read GetDone;
   end;
+  
+  resourcestring
+    rsInvalidId = 'invalid id';
 
 implementation
 
@@ -321,9 +333,6 @@ end;
 
 { TSVGDataLink }
 
-const
- s_error_invalid_id = 'invalid id';
-
 constructor TSVGDataLink.Create;
 begin
   FElements:= TSVGElementList.Create;
@@ -349,28 +358,28 @@ end;
 function TSVGDataLink.GetElement(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FElements) then
-   raise exception.Create(s_error_invalid_id);
+   raise exception.Create(rsInvalidId);
   result:= FElements[id];
 end;
 
 function TSVGDataLink.GetGradient(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FGradients) then
-   raise exception.Create(s_error_invalid_id);
+   raise exception.Create(rsInvalidId);
   result:= FGradients[id];
 end;
 
 function TSVGDataLink.GetStyle(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FStyles) then
-   raise exception.Create(s_error_invalid_id);
+   raise exception.Create(rsInvalidId);
   result:= FStyles[id];
 end;  
 
 function TSVGDataLink.GetRootElement(id: integer): TSVGElement;
 begin
   if not IsValidID(id,FRootElements) then
-   raise exception.Create(s_error_invalid_id);
+   raise exception.Create(rsInvalidId);
   result:= FRootElements[id];
 end;
 
@@ -652,9 +661,9 @@ begin
   
   //Find on <g> block
   if (result = '') and (not (Self is TSVGGroup)) then
-    for i:= FGroupList.Count-1 downto 0 do
+    for i:= 0 to FGroupList.Count-1 do
     begin
-      result:= FGroupList[i].GetAttribute(AName,ADefault);
+      result:= FGroupList[i].GetAttribute(AName);//no! ,ADefault);
       if result <> '' then
         Break;
     end;  
@@ -976,20 +985,27 @@ function TSVGElement.GetStyle(const AName,ADefault: string): string;
       result := '';
   end;
 
+var
+  i: integer;
 begin
-  result:= GetInternal( Attribute['style',ADefault] );
+  result:= '';
 
-  //Find on <style> block
+  //Find on <style> block (priority!)
+  //if "not search"..search
+  if findStyleState = fssNotSearch then
+    FindStyleElement;
+  //if "find"..use
+  if findStyleState <> fssNotFind then
+    for i:= Length(styleAttributes)-1 downto 0 do
+    begin
+      result:= GetInternal(styleAttributes[i].attr);
+      if result <> '' then
+        Break;
+    end;
+
   if result = '' then
-  begin
-    //if "not search"..search
-    if find_style_id = -2 then
-      FindStyleElement;
-    //if "find"..use
-    if find_style_id <> -1 then
-      result:= GetInternal(style_attributes);
-  end;
-end;          
+    result:= GetInternal( Attribute['style',ADefault] );
+end;      
 
 function TSVGElement.GetStyle(const AName: string): string;
 begin
@@ -1368,12 +1384,12 @@ end;
 
 procedure TSVGElement.Initialize;
 begin
-  find_style_id     := -2;
-  style_attributes  := '';
-  FDataParent       := nil;
-  FDataChildList    := TSVGElementList.Create;
-  FGroupList        := TSVGElementList.Create;
-end;  
+  SetLength(styleAttributes,0);
+  findStyleState   := fssNotSearch;
+  FDataParent      := nil;
+  FDataChildList   := TSVGElementList.Create;
+  FGroupList       := TSVGElementList.Create;
+end;
 
 constructor TSVGElement.Create(ADocument: TXMLDocument; AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
@@ -1393,6 +1409,7 @@ end;
 
 destructor TSVGElement.Destroy;
 begin
+  SetLength(styleAttributes,0);
   FreeAndNil(FGroupList);
   FreeAndNil(FDataChildList);
   inherited Destroy;
@@ -1461,18 +1478,19 @@ begin
    result:= FGroupList;
 end; 
 
-function TSVGElement.FindStyleElementInternal(const class_str: String;
-  var attributes_str: string): integer;
+function TSVGElement.FindStyleElementInternal(const classStr: String;
+  var attributesStr: string): integer;
 var
   i: integer;
 begin
+  attributesStr:= '';
   with FDataLink do
     for i:= 0 to StyleCount-1 do
     begin
-      result:= (Styles[i] as TSVGStyle).Find(class_str);
+      result:= (Styles[i] as TSVGStyle).Find(classStr);
       if result <> -1 then
       begin
-        attributes_str:= (Styles[i] as TSVGStyle).Styles[result].attribute;
+        attributesStr:= (Styles[i] as TSVGStyle).Styles[result].attribute;
         Exit;
       end;
     end;
@@ -1480,26 +1498,64 @@ begin
 end;
 
 procedure TSVGElement.FindStyleElement;
-var
-  i: integer;
-  tag,sca: string;
-begin
-  find_style_id:= -1;
-  style_attributes:= '';
-  tag:= FDomElem.TagName;
-  sca:= classAt;
-  //Find as: "[class]"
-  if sca = '' then
-    find_style_id:= FindStyleElementInternal(tag,style_attributes)
-  else
+
+  procedure AddStyle(const s: string; const id: integer);
+  var
+    l: integer;
   begin
-    //Find as: ".[class]"
-    find_style_id:= FindStyleElementInternal('.'+sca,style_attributes);
-    //Find as: "[tag].[class]"
-    if find_style_id = -1 then
-     find_style_id:= FindStyleElementInternal(tag+'.'+sca,style_attributes);
+    findStyleState:= fssFind;
+    l:= Length(styleAttributes);
+    SetLength(styleAttributes,l+1);
+    with styleAttributes[l] do
+    begin
+     attr:= s;
+     pos:= id;
+    end;
   end;
-end;
+
+var
+  i,fid: integer;
+  tag,styleC,s: string;
+begin
+  findStyleState:= fssNotFind;
+  SetLength(styleAttributes,0);
+  tag:= FDomElem.TagName;
+  styleC:= classAt;
+  (*
+    if style element is:
+    <style>
+     circle.test{fill:red; fill-opacity: 0.8;}
+     circle{fill:blue; fill-opacity: 0.4;}
+     circle.style1{fill:yellow;}
+    </style>
+    and circle declare:
+    <circle class = "style1" cx="160" cy="160" r="35" stroke="black" />
+
+    styleAttributes[0] = 'fill:blue; fill-opacity: 0.4;'
+    styleAttributes[1] = 'fill:yellow;'
+
+    fill-opacity for "style1" = 0.4 not default 1!
+  *)
+
+  //Find as: "[tag]" example "circle"
+  fid:= FindStyleElementInternal(tag,s);
+  if fid <> -1 then
+    AddStyle(s,fid);
+  if styleC <> '' then
+  begin
+    //Find as: "[tag].[class]" example "circle.style1"
+    fid:= FindStyleElementInternal(tag+'.'+styleC,s);
+    if fid <> -1 then
+      AddStyle(s,fid)
+    else
+    begin
+      //Find as: ".[class]" example ".style1"
+      fid:= FindStyleElementInternal('.'+styleC,s);
+      if fid <> -1 then
+        AddStyle(s,fid);
+    end;
+  end;
+end;     
 
 end.
 
