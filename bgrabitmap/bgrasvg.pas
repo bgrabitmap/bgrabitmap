@@ -112,7 +112,9 @@ type
     procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; destDpi: single); overload;
     procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; destDpi: TPointF); overload;
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; x,y,w,h: single); overload;
+    procedure StretchDraw(ACanvas2d: TBGRACanvas2D; r: TRectF); overload;
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y,w,h: single); overload;
+    function GetStretchRectF(AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y,w,h: single): TRectF;
     property AsUTF8String: utf8string read GetUTF8String write SetUTF8String;
     property Units: TSVGUnits read FUnits;
     property Width: TFloatWithCSSUnit read GetWidth write SetWidth;
@@ -710,8 +712,21 @@ begin
   ACanvas2d.restore;
 end;
 
+procedure TBGRASVG.StretchDraw(ACanvas2d: TBGRACanvas2D; r: TRectF);
+begin
+  StretchDraw(ACanvas2d, r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
+end;
+
 procedure TBGRASVG.StretchDraw(ACanvas2d: TBGRACanvas2D;
   AHorizAlign: TAlignment; AVertAlign: TTextLayout; x, y, w, h: single);
+var r: TRectF;
+begin
+  r := GetStretchRectF(AHorizAlign,AVertAlign, x, y, w, h);
+  StretchDraw(ACanvas2d, r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
+end;
+
+function TBGRASVG.GetStretchRectF(AHorizAlign: TAlignment;
+  AVertAlign: TTextLayout; x, y, w, h: single): TRectF;
 var ratio,stretchRatio,zoom: single;
   vb: TSVGViewBox;
   sx,sy,sw,sh: single;
@@ -738,7 +753,8 @@ begin
     tlCenter: sy += (h - sh)/2;
     tlBottom: sy += h - sh;
   end;
-  StretchDraw(ACanvas2d, sx,sy,sw,sh);
+
+  result := RectF(sx,sy,sx+sw,sy+sh);
 end;
 
 end.
