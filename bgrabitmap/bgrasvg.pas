@@ -30,6 +30,10 @@ type
     FDefaultDpi: PSingle;
     FUseDefaultDPI: boolean;
     FDpiScaleX,FDpiScaleY: single;
+    FContainerHeight: TFloatWithCSSUnit;
+    FContainerWidth: TFloatWithCSSUnit;
+    procedure SetContainerHeight(AValue: TFloatWithCSSUnit);
+    procedure SetContainerWidth(AValue: TFloatWithCSSUnit);
     function GetDefaultUnitHeight: TFloatWithCSSUnit; override;
     function GetDefaultUnitWidth: TFloatWithCSSUnit; override;
     function GetDpiX: single; override;
@@ -51,6 +55,8 @@ type
     property CustomDpiX: single read GetCustomDpiX;
     property CustomDpiY: single read GetCustomDpiY;
     property CustomDpi: TPointF read GetCustomDpi write SetCustomDpi;
+    property ContainerWidth: TFloatWithCSSUnit read FContainerWidth write SetContainerWidth;
+    property ContainerHeight: TFloatWithCSSUnit read FContainerHeight write SetContainerHeight;
   end;
 
   { TBGRASVG }
@@ -143,7 +149,8 @@ const SvgNamespace = 'http://www.w3.org/2000/svg';
 function TSVGUnits.GetCustomDpiX: single;
 var pixSize: single;
 begin
-  pixSize := Convert(FDefaultUnitWidth.value,FDefaultUnitWidth.CSSUnit,cuInch,FDefaultDpi^);
+  with GetDefaultUnitWidth do
+    pixSize := Convert(value,CSSUnit,cuInch,FDefaultDpi^);
   if pixSize = 0 then
     result := 0
   else
@@ -153,7 +160,8 @@ end;
 function TSVGUnits.GetCustomDpiY: single;
 var pixSize: single;
 begin
-  pixSize := Convert(FDefaultUnitHeight.value,FDefaultUnitHeight.CSSUnit,cuInch,FDefaultDpi^);
+  with GetDefaultUnitHeight do
+    pixSize := Convert(value,CSSUnit,cuInch,FDefaultDpi^);
   if pixSize = 0 then
     result := 0
   else
@@ -203,8 +211,18 @@ begin
 
   FViewSize.width := parseValue(FSvg.GetAttribute('width'), FloatWithCSSUnit(FViewBox.size.x, cuPixel));
   if FViewSize.width.CSSUnit = cuCustom then FViewSize.width.CSSUnit := cuPixel;
+  if FViewSize.width.CSSUnit = cuPercent then
+  begin
+    FViewSize.width.value := FViewSize.width.value/100*FContainerWidth.value;
+    FViewSize.width.CSSUnit := FContainerWidth.CSSUnit;
+  end;
   FViewSize.height := parseValue(FSvg.GetAttribute('height'), FloatWithCSSUnit(FViewBox.size.y, cuPixel));
   if FViewSize.height.CSSUnit = cuCustom then FViewSize.height.CSSUnit := cuPixel;
+  if FViewSize.height.CSSUnit = cuPercent then
+  begin
+    FViewSize.height.value := FViewSize.height.value/100*FContainerHeight.value;
+    FViewSize.height.CSSUnit := FContainerHeight.CSSUnit;
+  end;
 
   if (FViewBox.size.x <= 0) and (FViewBox.size.y <= 0) then
     begin
@@ -238,6 +256,20 @@ begin
       FDpiScaleX := CustomDpiX/DpiX;
       FDpiScaleY := CustomDpiY/DpiY;
     end;
+end;
+
+procedure TSVGUnits.SetContainerHeight(AValue: TFloatWithCSSUnit);
+begin
+  if CompareMem(@FContainerHeight,@AValue,sizeof(TFloatWithCSSUnit)) then Exit;
+  FContainerHeight:=AValue;
+  Recompute;
+end;
+
+procedure TSVGUnits.SetContainerWidth(AValue: TFloatWithCSSUnit);
+begin
+  if CompareMem(@FContainerWidth,@AValue,sizeof(TFloatWithCSSUnit)) then Exit;
+  FContainerWidth:=AValue;
+  Recompute;
 end;
 
 procedure TSVGUnits.SetCustomDpi(ADpi: TPointF);
@@ -310,6 +342,8 @@ constructor TSVGUnits.Create(ASvg: TDOMElement; ADefaultDpi: PSingle);
 begin
   FSvg := ASvg;
   FDefaultDpi := ADefaultDpi;
+  FContainerWidth := FloatWithCSSUnit(640,cuPixel);
+  FContainerHeight := FloatWithCSSUnit(480,cuPixel);
   Recompute;
 end;
 

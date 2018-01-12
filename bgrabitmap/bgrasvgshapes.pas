@@ -937,7 +937,7 @@ end;
 
 procedure TSVGStyle.Remove(sr: TSVGStyleItem);
 var
-  i,l,p: integer;
+  l,p: integer;
 begin
   p:= Find(sr);
   l:= Length(FStyles);

@@ -16,8 +16,8 @@ type
   TSVGFactory = class of TSVGElement;
   
   TSVGFillMode = (
-     sfmNonZero = Ord(fmWinding),
-     sfmEvenOdd = Ord(fmAlternate)
+     sfmEvenOdd = Ord(fmAlternate),
+     sfmNonZero = Ord(fmWinding)
    );
    
   TFindStyleState = (fssNotSearch,
@@ -83,7 +83,6 @@ type
       styleAttributes: ArrayOfTStyleAttribute;
       FDataParent: TSVGElement;
       FDataChildList: TSVGElementList;
-      FGroupList: TSVGElementList;
       function GetAttributeOrStyle(AName,ADefault: string): string; overload;
       function GetAttributeOrStyle(AName: string): string; overload;
       function GetFill: string;
@@ -112,6 +111,7 @@ type
       function GetStyle(const AName: string): string; overload;
       function GetTransform: string;
       function GetUnits: TCSSUnitConverter;
+      function GetAttribute(AName,ADefault: string; ACanInherit: boolean): string; overload;
       function GetAttribute(AName,ADefault: string): string; overload;
       function GetAttribute(AName: string): string; overload;
       function GetVerticalAttributeOrStyleWithUnit(AName: string;
@@ -166,7 +166,7 @@ type
       procedure Init({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter); overload;
       procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
       procedure LocateStyleDeclaration(AText: string; AProperty: string; out AStartPos,AColonPos,AValueLength: integer);
-      procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); virtual;
+      procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
       procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
       procedure Initialize; virtual;
     public
@@ -181,7 +181,6 @@ type
       function HasAttribute(AName: string): boolean;
       function fillMode: TSVGFillMode;
       function DataChildList: TSVGElementList;
-      function GroupList: TSVGElementList;
       property DataLink: TSVGDataLink read FDataLink write FDataLink;
       property AttributeDef[AName,ADefault: string]: string read GetAttribute;
       property Attribute[AName: string]: string read GetAttribute write SetAttribute;
@@ -402,18 +401,7 @@ begin
 end;
 
 procedure TSVGDataLink.InternalLink(const id: integer; parent: TSVGElement);
-
-  procedure GroupAdd(element,group: TSVGElement);
-  var
-    i: integer;
-  begin
-    element.GroupList.Add(group);
-    for i:= 0 to element.DataChildList.Count-1 do
-      GroupAdd(element.DataChildList[i],group);
-  end;
-
 var
-  i: integer;
   el: TSVGElement;
 begin
   el:= FElements.Items[id];
@@ -422,34 +410,14 @@ begin
     DataParent:= parent;
     if parent = nil then
      FRootElements.Add(el);
-    GroupList.Clear;//(for safety)
-    //if it's a group element I have to add all reference (using it as root)
-    if el is TSVGGroup then
-      GroupAdd(el,el);//Note: ok even to himself
     //Update DataChildList of "parent" before add it
     //(not use el.DataChildList.Clear here!!)
     if parent <> nil then
-    begin
       parent.DataChildList.Add(el);
-      //if the parent already contains a group list, it must be used as a base
-      with parent.GroupList do
-        for i:= 0 to Count-1 do
-          el.GroupList.Add( Items[i] );
-    end;
   end;
 end;
 
 procedure TSVGDataLink.InternalUnLink(const id: integer);
-
-  procedure GroupRemove(element,group: TSVGElement);
-  var
-    i: integer;
-  begin
-    element.GroupList.Remove(group);
-    for i:= 0 to element.DataChildList.Count-1 do
-      GroupRemove(element.DataChildList[i],group);
-  end;
-
 var
   i,pos_root: integer;
   el: TSVGElement;
@@ -462,10 +430,6 @@ begin
      pos_root:= FRootElements.Remove(el)
     else
      pos_root:= FRootElements.Count;
-    //if it's a group element I have to remove every reference (using it as root)
-    if el is TSVGGroup then
-      GroupRemove(el,el);//Note: ok even to himself
-    GroupList.Clear;
     //i have to assign a parent of a upper level
     //and update child list of new parent (if not nil)
     with DataChildList do
@@ -625,8 +589,6 @@ var
    AddStr('[Parent: ' + ElementIdentity(el.DataParent) + ']', level);
    for i:= 0 to el.DataChildList.Count-1 do
      AddStr('[Child: ' + ElementIdentity(el.DataChildList[i]) + ']', level);
-   for i:= 0 to el.GroupList.Count-1 do
-     AddStr('[Group: ' + ElementIdentity(el.GroupList[i]) + ']', level);
   end;
 
   procedure BuildInfo(el: TSVGElement; const level: integer = 1);
@@ -653,23 +615,34 @@ end;
 
 { TSVGElement }
 
-function TSVGElement.GetAttribute(AName,ADefault: string): string;
+function TSVGElement.GetAttribute(AName,ADefault: string; ACanInherit: boolean): string;
 var
-  i: integer;
+  curNode: TDOMElement;
 begin
-  result := FDomElem.GetAttribute(AName);
-  
-  //Find on <g> block
-  if (result = '') and (not (Self is TSVGGroup)) then
-    for i:= 0 to FGroupList.Count-1 do
+  curNode := FDomElem;
+  repeat
+    result := Trim(curNode.GetAttribute(AName));
+    if (result = 'currentColor') and (AName <> 'color') then
     begin
-      result:= FGroupList[i].GetAttribute(AName);//no! ,ADefault);
-      if result <> '' then
-        Break;
-    end;  
+      AName := 'color';
+      curNode := FDomElem; //get from the current element
+      ACanInherit:= true;
+      result := Trim(curNode.GetAttribute(AName));
+    end;
+    if ((result = '') or (result = 'inherit')) and ACanInherit and
+      (curNode.ParentNode is TDOMElement) then
+      curNode := curNode.ParentNode as TDOMElement
+    else
+      curNode := nil;
+  until curNode = nil;
 
-  if result = '' then
+  if (result = '') or (result = 'inherit') then
     result:= ADefault;
+end;
+
+function TSVGElement.GetAttribute(AName, ADefault: string): string;
+begin
+  result := GetAttribute(AName, ADefault, False);
 end;
 
 function TSVGElement.GetAttribute(AName: string): string;
@@ -704,7 +677,7 @@ var
 begin
   valueText := Style[AName];
   if valueText = '' then
-    valueText := Attribute[AName];
+    valueText := GetAttribute(AName,'',True);
   result := TCSSUnitConverter.parseValue(valueText,ADefault);
 end;
 
@@ -745,7 +718,7 @@ function TSVGElement.GetAttributeOrStyle(AName,ADefault: string): string;
 begin
   result := GetStyle(AName,ADefault);
   if result = '' then
-    result := GetAttribute(AName,ADefault);
+    result := GetAttribute(AName,ADefault,True);
 end;
 
 function TSVGElement.GetAttributeOrStyle(AName: string): string;
@@ -1388,7 +1361,6 @@ begin
   findStyleState   := fssNotSearch;
   FDataParent      := nil;
   FDataChildList   := TSVGElementList.Create;
-  FGroupList       := TSVGElementList.Create;
 end;
 
 constructor TSVGElement.Create(ADocument: TXMLDocument; AElement: TDOMElement;
@@ -1410,7 +1382,6 @@ end;
 destructor TSVGElement.Destroy;
 begin
   SetLength(styleAttributes,0);
-  FreeAndNil(FGroupList);
   FreeAndNil(FDataChildList);
   inherited Destroy;
 end; 
@@ -1473,12 +1444,7 @@ begin
    result:= FDataChildList;
 end;
 
-function TSVGElement.GroupList: TSVGElementList;
-begin
-   result:= FGroupList;
-end; 
-
-function TSVGElement.FindStyleElementInternal(const classStr: String;
+function TSVGElement.FindStyleElementInternal(const classStr: string;
   var attributesStr: string): integer;
 var
   i: integer;
@@ -1514,7 +1480,7 @@ procedure TSVGElement.FindStyleElement;
   end;
 
 var
-  i,fid: integer;
+  fid: integer;
   tag,styleC,s: string;
 begin
   findStyleState:= fssNotFind;
