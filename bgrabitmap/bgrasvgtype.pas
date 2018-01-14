@@ -1418,18 +1418,22 @@ end;
 procedure TSVGElement.ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
 var
   a: ArrayOfFloat;
+  lw: single;
+  i: Integer;
 begin
   ACanvas2d.strokeStyle(strokeColor);
-  ACanvas2d.lineWidth := Units.ConvertWidth(strokeWidth,AUnit).value;
+  lw := Units.ConvertWidth(strokeWidth,AUnit).value;
+  ACanvas2d.lineWidth := lw;
   ACanvas2d.lineCap := strokeLineCap;
   ACanvas2d.lineJoin := strokeLineJoin;
   ACanvas2d.miterLimit := strokeMiterLimit;
   
   a:= strokeDashArrayF;
-  if Length(a) <> 0 then
+  if (Length(a) <> 0) and (lw > 0) then
   begin
+    for i := 0 to high(a) do
+      a[i] /= lw;
     ACanvas2d.lineStyle(a);
-    SetLength(a,0);
   end
   else
     ACanvas2d.lineStyle(psSolid);
