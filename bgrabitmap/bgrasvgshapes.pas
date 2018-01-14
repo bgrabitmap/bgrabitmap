@@ -15,24 +15,22 @@ type
 
   TSVGElementWithGradient = class(TSVGElement)
     private
-      findGradEl: integer;//(-2 not search; -1 not find; >= 0 id find)
-      gradEl: TSVGGradient;
-      canvasg: IBGRACanvasGradient2D;
-      //Validate as percentual or number [0.0..1.0]
-      function EvaluatePercentage(fu: TFloatWithCSSUnit): single;
+      FGradientElement: TSVGGradient;
+      FGradientElementDefined: boolean;
+      FCanvasGradient: IBGRACanvasGradient2D;
+      function EvaluatePercentage(fu: TFloatWithCSSUnit): single; { fu is a percentage of a number [0.0..1.0] }
+      function GetGradientElement: TSVGGradient;
       procedure ResetGradient;
+      function FindGradientElement: boolean;
     protected
       procedure Initialize; override;
-      function IsGradientNotSearch: boolean;
-      function FindGradientDef: integer;
       procedure AddStopElements(canvas: IBGRACanvasGradient2D);
-      procedure CreateLinearGradient(
-        ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
-      procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
-        const origin: TPointF; const w,h: single);
+      procedure CreateLinearGradient(ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
       procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      procedure Recompute; override;
+      procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
+                const origin: TPointF; const w,h: single);
+      property GradientElement: TSVGGradient read GetGradientElement;
   end;       
   
   { TSVGLine }
@@ -131,6 +129,9 @@ type
   TSVGPath = class(TSVGElementWithGradient)
     private
       FPath: TBGRAPath;
+      FBoundingBox: TRectF;
+      FBoundingBoxComputed: boolean;
+      function GetBoundingBoxF: TRectF;
       function GetPath: TBGRAPath;
       function GetPathLength: TFloatWithCSSUnit;
       function GetData: string;
@@ -146,17 +147,22 @@ type
       property d: string read GetData write SetData;
       property path: TBGRAPath read GetPath;
       property pathLength: TFloatWithCSSUnit read GetPathLength write SetPathLength;
+      property boundingBoxF: TRectF read GetBoundingBoxF;
   end;
 
   { TSVGPolypoints }
 
   TSVGPolypoints = class(TSVGElementWithGradient)
     private
+      FBoundingBox: TRectF;
+      FBoundingBoxComputed: boolean;
+      function GetBoundingBoxF: TRectF;
       function GetClosed: boolean;
       function GetPoints: string;
       function GetPointsF: ArrayOfTPointF;
       procedure SetPoints(AValue: string);
       procedure SetPointsF(AValue: ArrayOfTPointF);
+      procedure ComputeBoundingBox(APoints: ArrayOfTPointF);
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
@@ -165,6 +171,7 @@ type
       property points: string read GetPoints write SetPoints;
       property pointsF: ArrayOfTPointF read GetPointsF write SetPointsF;
       property closed: boolean read GetClosed;
+      property boundingBoxF: TRectF read GetBoundingBoxF;
   end;
 
   { TSVGText }
@@ -464,30 +471,19 @@ begin
   ResetGradient;
 end;
 
-procedure TSVGElementWithGradient.Recompute;
-begin
-  inherited Recompute;
-  ResetGradient;
-end;
-
 procedure TSVGElementWithGradient.ResetGradient;
 begin
-  findGradEl  := -2;
-  gradEl      := nil;
-  canvasg     := nil;
+  FGradientElementDefined := false;
+  FGradientElement        := nil;
+  FCanvasGradient         := nil;
 end;
 
-function TSVGElementWithGradient.IsGradientNotSearch: boolean;
-begin
-  result:= findGradEl = -2;
-end; 
-
-function TSVGElementWithGradient.FindGradientDef: integer;
+function TSVGElementWithGradient.FindGradientElement: boolean;
 var
   i: integer;
   s: string;
 begin
-  Result:= -1;
+  Result:= false;
   s:= fill;
   if s <> '' then
     if Pos('url(#',s) = 1 then
@@ -497,8 +493,8 @@ begin
         for i:= GradientCount-1 downto 0 do 
           if (Gradients[i] as TSVGGradient).ID = s then
           begin
-            gradEl:= TSVGGradient(Gradients[i]);
-            Result:= i;
+            FGradientElement:= TSVGGradient(Gradients[i]);
+            Result:= true;
             Exit;
           end;
     end;
@@ -515,6 +511,18 @@ begin
       Result:= 1;
     Result:= Result * 100;
   end;
+end;
+
+function TSVGElementWithGradient.GetGradientElement: TSVGGradient;
+begin
+  if not FGradientElementDefined then
+  begin
+    FindGradientElement;
+    FGradientElementDefined:= true;
+    if FGradientElement <> nil then
+      FGradientElement.ScanInheritedGradients;
+  end;
+  result := FGradientElement;
 end;
 
 procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D);
@@ -541,18 +549,17 @@ procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D)
 var
   i: integer;
 begin
-  with TSVGGradient(FDataLink.Gradients[findGradEl]).InheritedGradients do
+  if not Assigned(GradientElement) then exit;
+  with GradientElement.InheritedGradients do
     for i:= 0 to Count-1 do
-      //if AddStopElementFrom(Items[i]) <> 0 then
-      //  Exit;
       AddStopElementFrom(Items[i]);
 end;
 
 procedure TSVGElementWithGradient.CreateLinearGradient(
   ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
 begin
-  canvasg:= ACanvas2d.createLinearGradient(pf1,pf2);
-  AddStopElements(canvasg);
+  FCanvasGradient:= ACanvas2d.createLinearGradient(pf1,pf2);
+  AddStopElements(FCanvasGradient);
 end;                          
 
 procedure TSVGElementWithGradient.InitializeGradient(ACanvas2d: TBGRACanvas2D;
@@ -561,13 +568,11 @@ var
   vx1,vy1,vx2,vy2: single;
   pf1,pf2: TPointF;
 begin
-  findGradEl:= FindGradientDef;
-  if gradEl <> nil then
+  if GradientElement <> nil then
   begin
-    gradEl.ScanInheritedGradients;
-    if gradEl is TSVGLinearGradient then
+    if GradientElement is TSVGLinearGradient then
     begin
-      with TSVGLinearGradient(gradEl) do
+      with TSVGLinearGradient(GradientElement) do
       begin
         vx1:= EvaluatePercentage(x1);
         vy1:= EvaluatePercentage(y1);
@@ -599,9 +604,9 @@ begin
         CreateLinearGradient(ACanvas2d, pf1,pf2);
       end;
     end
-    else if gradEl is TSVGRadialGradient then
+    else if GradientElement is TSVGRadialGradient then
     begin
-      with TSVGRadialGradient(gradEl) do
+      with TSVGRadialGradient(GradientElement) do
       begin
 
         //TODO: radial gradient support
@@ -613,11 +618,11 @@ end;
 
 procedure TSVGElementWithGradient.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
-  if canvasg = nil then
+  if FCanvasGradient = nil then
     inherited ApplyFillStyle(ACanvas2D,AUnit)
   else
   begin
-    ACanvas2D.fillStyle(canvasg);
+    ACanvas2D.fillStyle(FCanvasGradient);
     ACanvas2D.fillMode:= TFillMode(fillMode);
   end;
 end;  
@@ -750,7 +755,7 @@ begin
   vy:= Units.ConvertHeight(y,AUnit).value;
   ACanvas2d.text(SimpleText,vx,vy);
 
-  if IsGradientNotSearch then
+  if Assigned(GradientElement) then
     with ACanvas2d.measureText(SimpleText) do
       InitializeGradient(ACanvas2d, PointF(vx,vy),width,height);
              
@@ -1065,7 +1070,7 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.roundRect(vx,vy, vw,vh,
        Units.ConvertWidth(rx,AUnit).value,Units.ConvertHeight(ry,AUnit).value);
-    if IsGradientNotSearch then
+    if Assigned(GradientElement) then
       InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh);
     if not isFillNone then
     begin
@@ -1085,6 +1090,13 @@ end;
 function TSVGPolypoints.GetClosed: boolean;
 begin
   result := FDomElem.TagName = 'polygon';
+end;
+
+function TSVGPolypoints.GetBoundingBoxF: TRectF;
+begin
+  if not FBoundingBoxComputed then
+    ComputeBoundingBox(pointsF);
+  result := FBoundingBox;
 end;
 
 function TSVGPolypoints.GetPoints: string;
@@ -1131,6 +1143,35 @@ begin
       s += TCSSUnitConverter.formatValue(x)+' '+TCSSUnitConverter.formatValue(y);
   end;
   points := s;
+  ComputeBoundingBox(AValue);
+end;
+
+procedure TSVGPolypoints.ComputeBoundingBox(APoints: ArrayOfTPointF);
+var
+  i: Integer;
+begin
+  if length(APoints) > 1 then
+  begin
+    with APoints[0] do
+      FBoundingBox:= RectF(x,y,x,y);
+    for i:= 1 to high(APoints) do
+      with APoints[i] do
+      begin
+        if x < FBoundingBox.Left then
+         FBoundingBox.Left:= x
+        else if x > FBoundingBox.Right then
+         FBoundingBox.Right:= x;
+        if y < FBoundingBox.Top then
+         FBoundingBox.Top:= y
+        else if y > FBoundingBox.Bottom then
+         FBoundingBox.Bottom:= y;
+      end;
+    FBoundingBoxComputed := true;
+  end else
+  begin
+    FBoundingBox := RectF(0,0,0,0);
+    FBoundingBoxComputed := true;
+  end;
 end;
 
 constructor TSVGPolypoints.Create(ADocument: TXMLDocument;
@@ -1150,9 +1191,8 @@ end;
 
 procedure TSVGPolypoints.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
-  i,l: integer;
-  rf: TRectF;
   prevMatrix: TAffineMatrix;
+  pts: ArrayOfTPointF;
 begin
   if isFillNone and isStrokeNone then exit;
   if AUnit <> cuCustom then
@@ -1165,33 +1205,13 @@ begin
   end else
   begin
     ACanvas2d.beginPath;
-    ACanvas2d.polylineTo(pointsF);
+    pts := pointsF;
+    ACanvas2d.polylineTo(pts);
     if closed then ACanvas2d.closePath;
     
-    if IsGradientNotSearch then
-    begin
-      l:= Length(pointsF);
-      if l > 1 then
-      begin
-        with pointsF[0] do
-          rf:= RectF(x,y,x,y);
-        for i:= 1 to l-1 do
-          with pointsF[i] do
-          begin
-            if x < rf.Left then
-             rf.Left:= x
-            else if x > rf.Right then
-             rf.Right:= x;
-            if y < rf.Top then
-             rf.Top:= y
-            else if y > rf.Bottom then
-             rf.Bottom:= y;
-          end;
-        with rf do
-          InitializeGradient(ACanvas2d,
-            PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
-      end;
-    end;    
+    with boundingBoxF do
+      InitializeGradient(ACanvas2d,
+        PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
     
     if not isFillNone then
     begin
@@ -1220,6 +1240,16 @@ begin
   result := FPath;
 end;
 
+function TSVGPath.GetBoundingBoxF: TRectF;
+begin
+  if not FBoundingBoxComputed then
+  begin
+    FBoundingBox := path.GetBounds;
+    FBoundingBoxComputed := true;
+  end;
+  result := FBoundingBox;
+end;
+
 function TSVGPath.GetData: string;
 begin
   if FPath = nil then
@@ -1239,6 +1269,7 @@ begin
     Attribute['d'] := AValue
   else
     FPath.SvgString := AValue;
+  FBoundingBoxComputed := false;
 end;
 
 function TSVGPath.GetDOMElement: TDOMElement;
@@ -1252,6 +1283,8 @@ begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'path',AUnits);
   FPath := nil;
+  FBoundingBoxComputed := false;
+  FBoundingBox := rectF(0,0,0,0);
 end;
 
 constructor TSVGPath.Create(ADocument: TXMLDocument; AElement: TDOMElement;
@@ -1260,6 +1293,8 @@ begin
   inherited Create(ADocument, AElement, AUnits, ADataLink);
   Init(ADocument, AElement, AUnits);
   FPath := nil;
+  FBoundingBoxComputed := false;
+  FBoundingBox := rectF(0,0,0,0);
 end;
 
 destructor TSVGPath.Destroy;
@@ -1283,8 +1318,8 @@ begin
   end else
   begin
     ACanvas2d.path(path);
-    if IsGradientNotSearch then
-      with path.GetBounds do
+    if Assigned(GradientElement) then
+      with boundingBoxF do
         InitializeGradient(ACanvas2d,
           PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
     if not isFillNone then
@@ -1361,7 +1396,7 @@ begin
     vry:= Units.ConvertHeight(ry,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.ellipse(vcx,vcy,vrx,vry);
-    if IsGradientNotSearch then
+    if Assigned(GradientElement) then
       InitializeGradient(ACanvas2d, PointF(vcx-vrx,vcy-vry),vrx*2,vry*2);      
     if not isFillNone then
     begin
@@ -1425,7 +1460,7 @@ begin
     vr:= Units.ConvertWidth(r,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.circle(vcx,vcy,vr);
-    if IsGradientNotSearch then
+    if Assigned(GradientElement) then
       InitializeGradient(ACanvas2d, PointF(vcx-vr,vcy-vr),vr*2,vr*2);
     if not isFillNone then
     begin
