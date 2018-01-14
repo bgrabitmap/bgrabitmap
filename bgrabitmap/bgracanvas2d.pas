@@ -1681,13 +1681,13 @@ end;
 function TBGRACanvas2D.createLinearGradient(x0, y0, x1, y1: single
   ): IBGRACanvasGradient2D;
 begin
-  result := createLinearGradient(ApplyTransform(PointF(x0,y0)), ApplyTransform(PointF(x1,y1)));
+  result := createLinearGradient(PointF(x0,y0), PointF(x1,y1));
 end;
 
 function TBGRACanvas2D.createLinearGradient(p0, p1: TPointF
   ): IBGRACanvasGradient2D;
 begin
-  result := TBGRACanvasLinearGradient2D.Create(p0,p1);
+  result := TBGRACanvasLinearGradient2D.Create(ApplyTransform(p0),ApplyTransform(p1));
 end;
 
 function TBGRACanvas2D.createLinearGradient(x0, y0, x1, y1: single;
