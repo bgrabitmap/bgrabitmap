@@ -1,6 +1,7 @@
 unit BGRASVGType;
 
 {$mode objfpc}{$H+}
+{$MODESWITCH ADVANCEDRECORDS}
 
 interface
 
@@ -28,6 +29,19 @@ type
      pos   : integer;
   end;
   ArrayOfTStyleAttribute = array of TStyleAttribute;
+
+  { TSVGPreserveAspectRatio }
+
+  TSVGPreserveAspectRatio = record
+     Preserve, Slice: boolean;
+     HorizAlign: TAlignment;
+     VertAlign: TTextLayout;
+     function ToString: string;
+     class function Parse(AValue: string): TSVGPreserveAspectRatio; static;
+     class function DefaultValue: TSVGPreserveAspectRatio; static;
+  end;
+
+  TSVGRecomputeEvent = procedure(Sender: TObject) of object;
   
   { TSVGDataLink }
 
@@ -173,6 +187,7 @@ type
       constructor Create({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); virtual;
       constructor Create({%H-}ADocument: TXMLDocument; {%H-}AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); virtual;
       destructor Destroy; override;
+      procedure Recompute; virtual;
       procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
       procedure fillNone;
       procedure strokeNone;
@@ -254,6 +269,71 @@ type
 implementation
 
 uses BGRASVGShapes;
+
+{ TSVGPreserveAspectRatio }
+
+function TSVGPreserveAspectRatio.ToString: string;
+begin
+  if not Preserve then result := 'none' else
+  begin
+    result := '';
+    case HorizAlign of
+    taCenter: result += 'xMid';
+    taRightJustify: result += 'xMax';
+    else result += 'xMin';
+    end;
+    case VertAlign of
+    tlCenter: result += 'YMid';
+    tlBottom: result += 'YMax';
+    else result += 'YMin';
+    end;
+    if Slice then result += ' slice' else result += ' meet';
+  end;
+end;
+
+class function TSVGPreserveAspectRatio.Parse(AValue: string
+  ): TSVGPreserveAspectRatio;
+var p: TSVGParser;
+  id: string;
+begin
+  p := TSVGParser.Create(AValue);
+  result := DefaultValue;
+  repeat
+    id := p.ParseId;
+    if id = 'none' then
+    begin
+      result.Preserve := false;
+      //set other parameters for intermediate value of ViewSize (before stretching non-proportionaly)
+      result.Slice := false;
+      result.HorizAlign := taCenter;
+      result.VertAlign := tlCenter;
+      exit;
+    end else
+    if id = 'slice' then result.Slice := true
+    else if (length(id)=8) and (id[1] = 'x') and (id[5] = 'Y') then
+    begin
+      case copy(id,2,3) of
+      'Min': result.HorizAlign := taLeftJustify;
+      'Mid': result.HorizAlign := taCenter;
+      'Max': result.HorizAlign := taRightJustify;
+      end;
+      case copy(id,6,3) of
+      'Min': result.VertAlign := tlTop;
+      'Mid': result.VertAlign := tlCenter;
+      'Max': result.VertAlign := tlBottom;
+      end;
+    end;
+  until id = '';
+  p.Free;
+end;
+
+class function TSVGPreserveAspectRatio.DefaultValue: TSVGPreserveAspectRatio;
+begin
+  result.Preserve := true;
+  result.Slice := false;
+  result.HorizAlign := taCenter;
+  result.VertAlign := tlCenter;
+end;
 
 { TSVGParser }
 
@@ -1384,7 +1464,12 @@ begin
   SetLength(styleAttributes,0);
   FreeAndNil(FDataChildList);
   inherited Destroy;
-end; 
+end;
+
+procedure TSVGElement.Recompute;
+begin
+
+end;
 
 procedure TSVGElement.Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var prevMatrix: TAffineMatrix;

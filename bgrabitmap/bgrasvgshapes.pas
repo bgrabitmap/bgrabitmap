@@ -20,6 +20,7 @@ type
       canvasg: IBGRACanvasGradient2D;
       //Validate as percentual or number [0.0..1.0]
       function EvaluatePercentage(fu: TFloatWithCSSUnit): single;
+      procedure ResetGradient;
     protected
       procedure Initialize; override;
       function IsGradientNotSearch: boolean;
@@ -30,6 +31,8 @@ type
       procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
         const origin: TPointF; const w,h: single);
       procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      procedure Recompute; override;
   end;       
   
   { TSVGLine }
@@ -228,6 +231,7 @@ type
       constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
         AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
+      procedure Recompute; override;
       procedure ScanInheritedGradients(const forceScan: boolean = false);
       property Content: TSVGContent read FContent;
       property hRef: string read GetHRef write SetHRef;
@@ -307,6 +311,7 @@ type
     constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
       AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
     destructor Destroy; override;
+    procedure Recompute; override;
     property Content: TSVGContent read FContent;
   end; 
 
@@ -321,6 +326,7 @@ type
     constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
       AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
     destructor Destroy; override;
+    procedure Recompute; override;
     property Content: TSVGContent read FContent;
   end;
   
@@ -374,6 +380,7 @@ type
       constructor Create(ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; 
         ADataLink: TSVGDataLink; ADataParent: TSVGElement);
       destructor Destroy; override;
+      procedure Recompute;
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
       function AppendLine(x1,y1,x2,y2: single; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
@@ -454,6 +461,17 @@ end;
 procedure TSVGElementWithGradient.Initialize;
 begin
   inherited Initialize;
+  ResetGradient;
+end;
+
+procedure TSVGElementWithGradient.Recompute;
+begin
+  inherited Recompute;
+  ResetGradient;
+end;
+
+procedure TSVGElementWithGradient.ResetGradient;
+begin
   findGradEl  := -2;
   gradEl      := nil;
   canvasg     := nil;
@@ -778,6 +796,12 @@ end;
 procedure TSVGGroup.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
   FContent.Draw(ACanvas2d, AUnit);
+end;
+
+procedure TSVGGroup.Recompute;
+begin
+  inherited Recompute;
+  FContent.Recompute;
 end;
 
 { TSVGStyle }  
@@ -1574,6 +1598,12 @@ begin
   inherited Destroy;
 end;
 
+procedure TSVGGradient.Recompute;
+begin
+  inherited Recompute;
+  FContent.Recompute;
+end;
+
 procedure TSVGGradient.ScanInheritedGradients(const forceScan: boolean = false);
 var
   el: TSVGGradient;
@@ -1768,7 +1798,13 @@ destructor TSVGDefine.Destroy;
 begin
   FreeAndNil(FContent);
   inherited Destroy;
-end;  
+end;
+
+procedure TSVGDefine.Recompute;
+begin
+  inherited Recompute;
+  FContent.Recompute;
+end;
 
 { TSVGContent }
 
@@ -1836,6 +1872,14 @@ begin
     Element[i].free;
   FreeAndNil(FElements);
   inherited Destroy;
+end;
+
+procedure TSVGContent.Recompute;
+var
+  i: Integer;
+begin
+  for i := 0 to ElementCount-1 do
+    Element[i].Recompute;
 end;
 
 procedure TSVGContent.Draw(ACanvas2d: TBGRACanvas2D; x, y: single; AUnit: TCSSUnit);
