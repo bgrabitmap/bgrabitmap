@@ -368,10 +368,11 @@ type
   TBGRACanvasLinearGradient2D = class(TBGRACanvasGradient2D)
   protected
     o1,o2: TPointF;
+    FTransform: TAffineMatrix;
     procedure CreateScanner; override;
   public
-    constructor Create(x0,y0,x1,y1: single);
-    constructor Create(p0,p1: TPointF);
+    constructor Create(x0,y0,x1,y1: single; transform: TAffineMatrix);
+    constructor Create(p0,p1: TPointF; transform: TAffineMatrix);
   end;
 
   { TBGRACanvasRadialGradient2D }
@@ -488,18 +489,21 @@ var GradientOwner: boolean;
 begin
   GetBGRAGradient(GradientColors,GradientOwner);
   scanner := TBGRAGradientScanner.Create(GradientColors,gtLinear,o1,o2,False,GradientOwner);
+  scanner.Transform := FTransform;
 end;
 
-constructor TBGRACanvasLinearGradient2D.Create(x0, y0, x1, y1: single);
+constructor TBGRACanvasLinearGradient2D.Create(x0, y0, x1, y1: single; transform: TAffineMatrix);
 begin
   o1 := PointF(x0,y0);
   o2 := PointF(x1,y1);
+  FTransform := transform;
 end;
 
-constructor TBGRACanvasLinearGradient2D.Create(p0, p1: TPointF);
+constructor TBGRACanvasLinearGradient2D.Create(p0, p1: TPointF; transform: TAffineMatrix);
 begin
   o1 := p0;
   o2 := p1;
+  FTransform := transform;
 end;
 
 { TBGRACanvasRadialGradient2D }
@@ -1782,7 +1786,8 @@ end;
 
 function TBGRACanvas2D.createLinearGradient(p0, p1: TPointF): IBGRACanvasGradient2D;
 begin
-  result := TBGRACanvasLinearGradient2D.Create(ApplyTransform(p0),ApplyTransform(p1));
+  result := TBGRACanvasLinearGradient2D.Create(p0,p1,
+            AffineMatrixTranslation(FCanvasOffset.x,FCanvasOffset.y)*currentState.matrix);
   result.gammaCorrection := gradientGammaCorrection;
 end;
 

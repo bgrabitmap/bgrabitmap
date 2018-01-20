@@ -571,23 +571,29 @@ procedure TSVGElementWithGradient.CreateCanvasLinearGradient(
   const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
 var p1,p2: TPointF;
   g: TSVGLinearGradient;
+  m: TAffineMatrix;
 begin
   g := ASVGGradient as TSVGLinearGradient;
   if g.useObjectBoundingBox then
   begin
-    p1.x:= EvaluateBoxCoordinate(g.x1,origin.x,w);
-    p1.y:= EvaluateBoxCoordinate(g.y1,origin.y,h);
-    p2.x:= EvaluateBoxCoordinate(g.x2,origin.x,w);
-    p2.y:= EvaluateBoxCoordinate(g.y2,origin.y,h);
+    p1.x:= EvaluatePercentage(g.x1)/100;
+    p1.y:= EvaluatePercentage(g.y1)/100;
+    p2.x:= EvaluatePercentage(g.x2)/100;
+    p2.y:= EvaluatePercentage(g.y2)/100;
+    m := ACanvas2d.matrix;
+    ACanvas2d.translate(origin.x,origin.y);
+    ACanvas2d.scale(w,h);
+    FCanvasGradient:= ACanvas2d.createLinearGradient(p1,p2);
+    ACanvas2d.matrix := m
   end else
   begin
     p1.x:= Units.ConvertWidth(g.x1,AUnit,w).value;
     p1.y:= Units.ConvertHeight(g.y1,AUnit,h).value;
     p2.x:= Units.ConvertWidth(g.x1,AUnit,w).value;
     p2.y:= Units.ConvertHeight(g.y1,AUnit,h).value;
+    FCanvasGradient:= ACanvas2d.createLinearGradient(p1,p2);
   end;
 
-  FCanvasGradient:= ACanvas2d.createLinearGradient(p1,p2);
   AddStopElements(FCanvasGradient);
 end;
 
