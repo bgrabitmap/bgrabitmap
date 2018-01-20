@@ -282,7 +282,27 @@ end;
 
 function GetLCLFontPixelMetric(AFont: TFont): TFontPixelMetric;
 var i,startPos,endPos: integer;
+  prevHeight,fixHeight: integer;
 begin
+  if (AFont.Height < -200) or (AFont.Height > 150) then
+  begin
+    prevHeight := AFont.Height;
+    if AFont.Height < 0 then
+      fixHeight := -200
+    else
+      fixHeight := 150;
+    AFont.Height := fixHeight;
+    result := GetLCLFontPixelMetric(AFont);
+    AFont.Height := prevHeight;
+
+    result.Baseline := round(result.Baseline/fixHeight*prevHeight);
+    result.CapLine := round(result.CapLine/fixHeight*prevHeight);
+    result.DescentLine := round(result.DescentLine/fixHeight*prevHeight);
+    result.Lineheight := round(result.Lineheight/fixHeight*prevHeight);
+    result.xLine := round(result.xLine/fixHeight*prevHeight);
+    exit;
+  end;
+
   FindPixelMetricPos(AFont,startPos,endPos);
   for i := startPos to endPos-1 do
     if (FontPixelMetricArray[i].bold = AFont.bold) and
@@ -429,6 +449,7 @@ begin
           break;
         end else
         if (green = 0) then break;
+	bgra.Free;
     lclBmp.Free;
   end;
   fqFineClearTypeValue := result;

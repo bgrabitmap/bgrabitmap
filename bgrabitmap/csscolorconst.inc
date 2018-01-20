@@ -310,16 +310,35 @@ end;
 
 function ParseColorValue(str: string; var flagError: boolean): byte;
 var pourcent,unclipped,{%H-}errPos: integer;
+  pourcentF: single;
+  pourcentStr: string;
 begin
   if str = '' then result := 0 else
   begin
     if str[length(str)]='%' then
     begin
-      val(copy(str,1,length(str)-1),pourcent,errPos);
-      if errPos <> 0 then flagError := true;
-      if pourcent < 0 then result := 0 else
-      if pourcent > 100 then result := 255 else
-        result := pourcent*255 div 100;
+      pourcentStr := copy(str,1,length(str)-1);
+      val(pourcentStr,pourcent,errPos);
+      if errPos <> 0 then
+      begin
+        val(pourcentStr,pourcentF,errPos);
+        if errPos <> 0 then
+        begin
+          flagError := true;
+          result := 0;
+        end
+        else
+        begin
+          if pourcentF < 0 then result := 0 else
+          if pourcentF > 100 then result := 255 else
+           result := round(pourcentF*255 / 100);
+        end;
+      end else
+      begin
+         if pourcent < 0 then result := 0 else
+         if pourcent > 100 then result := 255 else
+           result := pourcent*255 div 100;
+      end;
     end else
     begin
       val(str,unclipped,errPos);

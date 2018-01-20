@@ -900,8 +900,8 @@ type
     procedure Assign({%H-}Source: TPersistent); override;
     procedure TakeScreenshot({%H-}ARect: TRect); override;
     procedure TakeScreenshotOfPrimaryMonitor; override;
-    procedure LoadFromDevice({%H-}DC: System.THandle); override;
-    procedure LoadFromDevice({%H-}DC: System.THandle; {%H-}ARect: TRect); override;
+    procedure LoadFromDevice({%H-}DC: HDC); override;
+    procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override;
   end;
 
 var
@@ -6074,14 +6074,14 @@ begin
   CannotResize;
 end;
 
-procedure TBGRAPtrBitmap.LoadFromDevice(DC: System.THandle);
+procedure TBGRAPtrBitmap.LoadFromDevice(DC: HDC);
 begin
-  CannotResize;
+  NotImplemented;
 end;
 
-procedure TBGRAPtrBitmap.LoadFromDevice(DC: System.THandle; ARect: TRect);
+procedure TBGRAPtrBitmap.LoadFromDevice(DC: HDC; ARect: TRect);
 begin
-  CannotResize;
+  NotImplemented;
 end;
 
 procedure BGRAGradientFill(bmp: TBGRACustomBitmap; x, y, x2, y2: integer;

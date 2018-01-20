@@ -67,7 +67,7 @@ type
     procedure Draw(Canvas: TCanvas; x,y: integer); overload;
     procedure Draw(Canvas: TCanvas; x,y: integer; firstLayer, lastLayer: integer); overload;
     procedure Draw(Dest: TBGRABitmap; x,y: integer); overload;
-    procedure Draw(Dest: TBGRABitmap; x,y: integer; ASeparateXorMask: boolean = false); overload;
+    procedure Draw(Dest: TBGRABitmap; x,y: integer; ASeparateXorMask: boolean); overload;
     procedure Draw(Dest: TBGRABitmap; AX,AY: integer; firstLayer, lastLayer: integer; ASeparateXorMask: boolean = false); overload;
 
     procedure FreezeExceptOneLayer(layer: integer); overload;

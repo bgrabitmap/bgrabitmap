@@ -46,13 +46,14 @@ type
     property DefaultUnitWidth: TFloatWithCSSUnit read GetDefaultUnitWidth;
     property DefaultUnitHeight: TFloatWithCSSUnit read GetDefaultUnitHeight;
   public
-    function Convert(xy: single; sourceUnit, destUnit: TCSSUnit; dpi: single): single;
-    function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit): single;
-    function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit): single;
-    function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit): TFloatWithCSSUnit;
-    function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit): TFloatWithCSSUnit;
-    function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit): TPointF; virtual;
+    function Convert(xy: single; sourceUnit, destUnit: TCSSUnit; dpi: single; containerSize: single = 0): single;
+    function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0): single;
+    function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit; containerHeight: single = 0): single;
+    function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): TFloatWithCSSUnit;
+    function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): TFloatWithCSSUnit;
+    function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TPointF; virtual;
     class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
+    class function parseValue(AValue: string; ADefault: single): single;
     class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string;
     class function formatValue(AValue: single; APrecision: integer = 7): string;
     property DpiX: single read GetDpiX;
@@ -134,7 +135,7 @@ begin
 end;
 
 function TCSSUnitConverter.Convert(xy: single; sourceUnit, destUnit: TCSSUnit;
-  dpi: single): single;
+  dpi: single; containerSize: single): single;
 var sourceFactor, destFactor: integer;
 begin
   //fallback values for cuCustom as pixels
@@ -143,6 +144,10 @@ begin
   if (sourceUnit = destUnit) then
     result := xy
   else
+  if sourceUnit = cuPercent then
+  begin
+    result := xy/100*containerSize;
+  end else
   if sourceUnit = cuFontEmHeight then
   begin
     with FontEmHeight do result := Convert(xy*value,CSSUnit, destUnit, dpi);
@@ -184,14 +189,14 @@ begin
 end;
 
 function TCSSUnitConverter.ConvertWidth(x: single; sourceUnit,
-  destUnit: TCSSUnit): single;
+  destUnit: TCSSUnit; containerWidth: single): single;
 begin
   if sourceUnit = destUnit then
     result := x
   else if sourceUnit = cuCustom then
   with DefaultUnitWidth do
   begin
-    result := x*ConvertWidth(value,CSSUnit, destUnit)
+    result := x*ConvertWidth(value,CSSUnit, destUnit, containerWidth)
   end
   else if destUnit = cuCustom then
   with ConvertWidth(DefaultUnitWidth,sourceUnit) do
@@ -201,16 +206,16 @@ begin
     else
       result := x/value;
   end else
-    result := Convert(x, sourceUnit, destUnit, DpiX);
+    result := Convert(x, sourceUnit, destUnit, DpiX, containerWidth);
 end;
 
 function TCSSUnitConverter.ConvertHeight(y: single; sourceUnit,
-  destUnit: TCSSUnit): single;
+  destUnit: TCSSUnit; containerHeight: single): single;
 begin
   if sourceUnit = cuCustom then
   with DefaultUnitHeight do
   begin
-    result := y*ConvertHeight(value,CSSUnit, destUnit)
+    result := y*ConvertHeight(value,CSSUnit, destUnit, containerHeight)
   end
   else if destUnit = cuCustom then
   with ConvertHeight(DefaultUnitHeight,sourceUnit) do
@@ -220,28 +225,28 @@ begin
     else
       result := y/value;
   end else
-    result := Convert(y, sourceUnit, destUnit, DpiY);
+    result := Convert(y, sourceUnit, destUnit, DpiY, containerHeight);
 end;
 
 function TCSSUnitConverter.ConvertWidth(AValue: TFloatWithCSSUnit;
-  destUnit: TCSSUnit): TFloatWithCSSUnit;
+  destUnit: TCSSUnit; containerWidth: single): TFloatWithCSSUnit;
 begin
   result.CSSUnit := destUnit;
-  result.value:= ConvertWidth(AValue.value,AValue.CSSUnit,destUnit);
+  result.value:= ConvertWidth(AValue.value,AValue.CSSUnit,destUnit,containerWidth);
 end;
 
 function TCSSUnitConverter.ConvertHeight(AValue: TFloatWithCSSUnit;
-  destUnit: TCSSUnit): TFloatWithCSSUnit;
+  destUnit: TCSSUnit; containerHeight: single): TFloatWithCSSUnit;
 begin
   result.CSSUnit := destUnit;
-  result.value:= ConvertHeight(AValue.value,AValue.CSSUnit,destUnit);
+  result.value:= ConvertHeight(AValue.value,AValue.CSSUnit,destUnit,containerHeight);
 end;
 
 function TCSSUnitConverter.ConvertCoord(pt: TPointF; sourceUnit,
-  destUnit: TCSSUnit): TPointF;
+  destUnit: TCSSUnit; containerWidth: single; containerHeight: single): TPointF;
 begin
-  result.x := ConvertWidth(pt.x, sourceUnit, destUnit);
-  result.y := ConvertHeight(pt.y, sourceUnit, destUnit);
+  result.x := ConvertWidth(pt.x, sourceUnit, destUnit, containerWidth);
+  result.y := ConvertHeight(pt.y, sourceUnit, destUnit, containerHeight);
 end;
 
 class function TCSSUnitConverter.parseValue(AValue: string;
@@ -264,6 +269,16 @@ begin
   if errPos <> 0 then
     result := ADefault;
 end;
+
+class function TCSSUnitConverter.parseValue(AValue: string; ADefault: single): single;
+var
+  errPos: integer;
+begin
+  AValue := trim(AValue);
+  val(AValue,result,errPos);
+  if errPos <> 0 then
+    result := ADefault;
+end; 
 
 class function TCSSUnitConverter.formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string;
 begin
