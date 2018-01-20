@@ -31,6 +31,9 @@ type
     procedure addColorStop(APosition: single; AColor: TColor);
     procedure addColorStop(APosition: single; AColor: string);
     procedure setColors(ACustomGradient: TBGRACustomGradient);
+    function GetGammaCorrection: boolean;
+    procedure SetGammaCorrection(AValue: boolean);
+    property gammaCorrection: boolean read GetGammaCorrection write SetGammaCorrection;
   end;
 
   { TBGRACanvasTextureProvider2D }
@@ -165,7 +168,7 @@ type
     function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; //IBGRAPath
     function getCursor: TBGRACustomPathCursor; //IBGRAPath
   public
-    antialiasing, linearBlend: boolean;
+    antialiasing, linearBlend, gradientGammaCorrection: boolean;
     constructor Create(ASurface: TBGRACustomBitmap);
     destructor Destroy; override;
 
@@ -338,12 +341,17 @@ type
     colorStops: array of TColorStop;
     nbColorStops: integer;
     FCustomGradient: TBGRACustomGradient;
+    FGammaCorrection: boolean;
   protected
     scanner: TBGRAGradientScanner;
     procedure CreateScanner; virtual; abstract;
     function getColorArray: TGradientArrayOfColors;
     function getPositionArray: TGradientArrayOfPositions;
+    procedure GetBGRAGradient(out ABGRAGradient: TBGRACustomGradient; out AOwned: boolean);
+    function GetGammaCorrection: boolean;
+    procedure SetGammaCorrection(AValue: boolean);
   public
+    constructor Create;
     function getTexture: IBGRAScanner; override;
     destructor Destroy; override;
     procedure addColorStop(APosition: single; AColor: TBGRAPixel);
@@ -352,6 +360,7 @@ type
     procedure setColors(ACustomGradient: TBGRACustomGradient);
     property texture: IBGRAScanner read GetTexture;
     property colorStopCount: integer read nbColorStops;
+    property gammaCorrection: boolean read GetGammaCorrection write SetGammaCorrection;
   end;
 
   { TBGRACanvasLinearGradient2D }
@@ -477,18 +486,7 @@ procedure TBGRACanvasLinearGradient2D.CreateScanner;
 var GradientOwner: boolean;
     GradientColors: TBGRACustomGradient;
 begin
-  if FCustomGradient = nil then
-  begin
-    if (colorStopCount = 2) and (colorStops[0].position = 0) and (colorStops[1].position = 1) then
-      GradientColors := TBGRASimpleGradientWithoutGammaCorrection.Create(colorStops[0].color, colorStops[1].color)
-    else
-      GradientColors := TBGRAMultiGradient.Create(getColorArray,getPositionArray,False,False);
-    GradientOwner := true;
-  end else
-  begin
-    GradientColors := FCustomGradient;
-    GradientOwner := false;
-  end;
+  GetBGRAGradient(GradientColors,GradientOwner);
   scanner := TBGRAGradientScanner.Create(GradientColors,gtLinear,o1,o2,False,GradientOwner);
 end;
 
@@ -510,18 +508,7 @@ procedure TBGRACanvasRadialGradient2D.CreateScanner;
 var GradientOwner: boolean;
     GradientColors: TBGRACustomGradient;
 begin
-  if FCustomGradient = nil then
-  begin
-    if (colorStopCount = 2) and (colorStops[0].position = 0) and (colorStops[1].position = 1) then
-      GradientColors := TBGRASimpleGradientWithoutGammaCorrection.Create(colorStops[0].color, colorStops[1].color)
-    else
-      GradientColors := TBGRAMultiGradient.Create(getColorArray,getPositionArray,False,False);
-    GradientOwner := true;
-  end else
-  begin
-    GradientColors := FCustomGradient;
-    GradientOwner := false;
-  end;
+  GetBGRAGradient(GradientColors,GradientOwner);
   scanner := TBGRAGradientScanner.Create(GradientColors,c0,cr0,c1,cr1,GradientOwner);
   scanner.FlipGradient := not FFlipGradient;
   scanner.Transform := FTransform;
@@ -551,10 +538,28 @@ end;
 
 { TBGRACanvasGradient2D }
 
-function TBGRACanvasGradient2D.GetTexture: IBGRAScanner;
+function TBGRACanvasGradient2D.getTexture: IBGRAScanner;
 begin
   if scanner = nil then CreateScanner;
   result := scanner;
+end;
+
+function TBGRACanvasGradient2D.GetGammaCorrection: boolean;
+begin
+  result := FGammaCorrection;
+end;
+
+procedure TBGRACanvasGradient2D.SetGammaCorrection(AValue: boolean);
+begin
+  FGammaCorrection:= AValue;
+  FreeAndNil(scanner);
+end;
+
+constructor TBGRACanvasGradient2D.Create;
+begin
+  inherited Create;
+  scanner := nil;
+  FGammaCorrection:= false;
 end;
 
 function TBGRACanvasGradient2D.getColorArray: TGradientArrayOfColors;
@@ -573,6 +578,28 @@ begin
   setlength(result, nbColorStops);
   for i := 0 to nbColorStops-1 do
     result[i] := colorStops[i].position;
+end;
+
+procedure TBGRACanvasGradient2D.GetBGRAGradient(out
+  ABGRAGradient: TBGRACustomGradient; out AOwned: boolean);
+begin
+  if FCustomGradient = nil then
+  begin
+    if (colorStopCount = 2) and (colorStops[0].position = 0) and (colorStops[1].position = 1) then
+    begin
+      if FGammaCorrection then
+        ABGRAGradient := TBGRASimpleGradientWithGammaCorrection.Create(colorStops[0].color, colorStops[1].color)
+      else
+        ABGRAGradient := TBGRASimpleGradientWithoutGammaCorrection.Create(colorStops[0].color, colorStops[1].color);
+    end
+    else
+      ABGRAGradient := TBGRAMultiGradient.Create(getColorArray,getPositionArray,FGammaCorrection,False);
+    AOwned := true;
+  end else
+  begin
+    ABGRAGradient := FCustomGradient;
+    AOwned := false;
+  end;
 end;
 
 destructor TBGRACanvasGradient2D.Destroy;
@@ -1513,6 +1540,7 @@ begin
   currentState := TBGRACanvasState2D.Create(AffineMatrixIdentity,nil,true);
   pixelCenteredCoordinates := false;
   antialiasing := true;
+  gradientGammaCorrection := false;
 end;
 
 destructor TBGRACanvas2D.Destroy;
@@ -1755,6 +1783,7 @@ end;
 function TBGRACanvas2D.createLinearGradient(p0, p1: TPointF): IBGRACanvasGradient2D;
 begin
   result := TBGRACanvasLinearGradient2D.Create(ApplyTransform(p0),ApplyTransform(p1));
+  result.gammaCorrection := gradientGammaCorrection;
 end;
 
 function TBGRACanvas2D.createLinearGradient(x0, y0, x1, y1: single;
@@ -1783,6 +1812,7 @@ begin
   result := TBGRACanvasRadialGradient2D.Create(p0,r0,p1,r1,
             AffineMatrixTranslation(FCanvasOffset.x,FCanvasOffset.y)*currentState.matrix,
             flipGradient);
+  result.gammaCorrection := gradientGammaCorrection;
 end;
 
 function TBGRACanvas2D.createRadialGradient(x0, y0, r0, x1, y1, r1: single;
