@@ -598,6 +598,22 @@ var c,r,f,fr: TPointF;
   g: TSVGRadialGradient;
   m: TAffineMatrix;
   ratio: single;
+
+  procedure CheckFocalAndCreate(c: TPointF; r: single; f: TPointF; fr: single);
+  var u: TPointF;
+    d: single;
+  begin
+    u := f-c;
+    d := VectLen(u);
+    if d >= r then
+    begin
+      u *= (r/d)*0.9999;
+      f := c+u;
+    end;
+    FCanvasGradient:= ACanvas2d.createRadialGradient(c,r,f,fr,true);
+    AddStopElements(FCanvasGradient);
+  end;
+
 begin
   g := ASVGGradient as TSVGRadialGradient;
   if g.useObjectBoundingBox then
@@ -623,26 +639,26 @@ begin
   end;
 
   if (r.x = r.y) and (f.x = f.y) then //orthonormal
-    FCanvasGradient:= ACanvas2d.createRadialGradient(c,r.x,f,fr.x,true) else
+    CheckFocalAndCreate(c,r.x,f,fr.x) else
   begin
     if (r.x+f.x > r.y+f.y) then //wider than high
     begin
       m := ACanvas2d.matrix;
       ratio := (r.y+fr.y)/(r.x+fr.x);
       ACanvas2d.scale(1, ratio);
-      FCanvasGradient:= ACanvas2d.createRadialGradient(c.x,c.y/ratio,r.x,f.x,f.y/ratio,fr.x,true);
+      CheckFocalAndCreate(PointF(c.x,c.y/ratio),r.x,PointF(f.x,f.y/ratio),fr.x);
       ACanvas2d.matrix := m;
     end else
     begin //higher than wide
       m := ACanvas2d.matrix;
       ratio := (r.x+fr.x)/(r.y+fr.y);
       ACanvas2d.scale(ratio, 1);
-      FCanvasGradient:= ACanvas2d.createRadialGradient(c.x/ratio,c.y,r.y,f.x/ratio,f.y,fr.y,true);
+      CheckFocalAndCreate(PointF(c.x/ratio,c.y),r.y,PointF(f.x/ratio,f.y),fr.y);
       ACanvas2d.matrix := m;
     end;
   end;
 
-  AddStopElements(FCanvasGradient);
+
 end;
 
 procedure TSVGElementWithGradient.InitializeGradient(ACanvas2d: TBGRACanvas2D;
