@@ -254,6 +254,7 @@ type
     function ParseFloat: single;
     function ParseId: string;
     function ParseSymbol: char;
+    function ParseTransform: TAffineMatrix;
     procedure SkipSymbol(ASymbol: char);
     procedure SkipUpToSymbol(ASymbol:char);
     procedure ClearError;
@@ -391,6 +392,73 @@ begin
     inc(FPos);
   end else
     result := #0;
+end;
+
+function TSVGParser.ParseTransform: TAffineMatrix;
+var
+  kind: String;
+  m : TAffineMatrix;
+  angle,tx,ty: single;
+begin
+  result := AffineMatrixIdentity;
+  while not Done do
+  begin
+    kind := ParseId;
+    if kind = '' then break;
+    if ParseSymbol <> '(' then break;
+    if compareText(kind,'matrix')=0 then
+    begin
+      m[1,1] := ParseFloat;
+      SkipSymbol(',');
+      m[2,1] := ParseFloat;
+      SkipSymbol(',');
+      m[1,2] := ParseFloat;
+      SkipSymbol(',');
+      m[2,2] := ParseFloat;
+      SkipSymbol(',');
+      m[1,3] := ParseFloat;
+      SkipSymbol(',');
+      m[2,3] := ParseFloat;
+      result *= m;
+    end else
+    if compareText(kind,'translate')=0 then
+    begin
+      tx := ParseFloat;
+      SkipSymbol(',');
+      ty := ParseFloat;
+      result *= AffineMatrixTranslation(tx,ty);
+    end else
+    if compareText(kind,'scale')=0 then
+    begin
+      tx := ParseFloat;
+      SkipSymbol(',');
+      ClearError;
+      ty := ParseFloat;
+      if NumberError then ty := tx;
+      result *= AffineMatrixScale(tx,ty);
+    end else
+    if compareText(kind,'rotate')=0 then
+    begin
+      angle := ParseFloat;
+      SkipSymbol(',');
+      tx := ParseFloat;
+      SkipSymbol(',');
+      ty := ParseFloat;
+      result *= AffineMatrixTranslation(tx,ty)*AffineMatrixRotationDeg(angle)*
+                AffineMatrixTranslation(-tx,-ty);
+    end else
+    if compareText(kind,'skewx')=0 then
+    begin
+      angle := ParseFloat;
+      result *= AffineMatrixSkewXDeg(angle);
+    end else
+    if compareText(kind,'skewy')=0 then
+    begin
+      angle := ParseFloat;
+      result *= AffineMatrixSkewYDeg(angle);
+    end;
+    SkipUpToSymbol(')');
+  end;
 end;
 
 procedure TSVGParser.SkipSymbol(ASymbol: char);
@@ -860,73 +928,16 @@ end;
 
 function TSVGElement.GetMatrix(AUnit: TCSSUnit): TAffineMatrix;
 var parser: TSVGParser;
-    s,kind: string;
-    m : TAffineMatrix;
-    angle,tx,ty: single;
+    s: string;
 begin
-  result := AffineMatrixIdentity;
   s := transform;
-  if s='' then exit;
-  parser := TSVGParser.Create(s);
-  while not parser.Done do
+  if s='' then
   begin
-    kind := parser.ParseId;
-    if kind = '' then break;
-    if parser.ParseSymbol <> '(' then break;
-    if compareText(kind,'matrix')=0 then
-    begin
-      m[1,1] := parser.ParseFloat;
-      parser.SkipSymbol(',');
-      m[2,1] := parser.ParseFloat;
-      parser.SkipSymbol(',');
-      m[1,2] := parser.ParseFloat;
-      parser.SkipSymbol(',');
-      m[2,2] := parser.ParseFloat;
-      parser.SkipSymbol(',');
-      m[1,3] := parser.ParseFloat;
-      parser.SkipSymbol(',');
-      m[2,3] := parser.ParseFloat;
-      result *= m;
-    end else
-    if compareText(kind,'translate')=0 then
-    begin
-      tx := parser.ParseFloat;
-      parser.SkipSymbol(',');
-      ty := parser.ParseFloat;
-      result *= AffineMatrixTranslation(tx,ty);
-    end else
-    if compareText(kind,'scale')=0 then
-    begin
-      tx := parser.ParseFloat;
-      parser.SkipSymbol(',');
-      parser.ClearError;
-      ty := parser.ParseFloat;
-      if parser.NumberError then ty := tx;
-      result *= AffineMatrixScale(tx,ty);
-    end else
-    if compareText(kind,'rotate')=0 then
-    begin
-      angle := parser.ParseFloat;
-      parser.SkipSymbol(',');
-      tx := parser.ParseFloat;
-      parser.SkipSymbol(',');
-      ty := parser.ParseFloat;
-      result *= AffineMatrixTranslation(tx,ty)*AffineMatrixRotationDeg(angle)*
-                AffineMatrixTranslation(-tx,-ty);
-    end else
-    if compareText(kind,'skewx')=0 then
-    begin
-      angle := parser.ParseFloat;
-      result *= AffineMatrixSkewXDeg(angle);
-    end else
-    if compareText(kind,'skewy')=0 then
-    begin
-      angle := parser.ParseFloat;
-      result *= AffineMatrixSkewYDeg(angle);
-    end;
-    parser.SkipUpToSymbol(')');
+    result := AffineMatrixIdentity;
+    exit;
   end;
-  parser.free;
+  parser := TSVGParser.Create(s);
+  result := parser.ParseTransform;
   result[1,3] := Units.ConvertWidth(result[1,3],cuCustom,AUnit);
   result[2,3] := Units.ConvertHeight(result[2,3],cuCustom,AUnit);
 end;

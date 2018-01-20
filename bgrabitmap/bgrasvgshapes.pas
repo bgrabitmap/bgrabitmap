@@ -19,7 +19,6 @@ type
       FGradientElementDefined: boolean;
       FCanvasGradient: IBGRACanvasGradient2D;
       function EvaluatePercentage(fu: TFloatWithCSSUnit): single; { fu is a percentage of a number [0.0..1.0] }
-      function EvaluateBoxCoordinate(fu: TFloatWithCSSUnit; min,size: single): single;
       function GetGradientElement: TSVGGradient;
       procedure ResetGradient;
       function FindGradientElement: boolean;
@@ -227,9 +226,12 @@ type
   TSVGGradient = class(TSVGElement)
     private
       FContent: TSVGContent;
+      function GetGradientMatrix(AUnit: TCSSUnit): TAffineMatrix;
+      function GetGradientTransform: string;
       function GetGradientUnits: string;
       function GetHRef: string;
       function GetUseObjectBoundingBox: boolean;
+      procedure SetGradientTransform(AValue: string);
       procedure SetGradientUnits(AValue: string);
       procedure SetHRef(AValue: string);
       function HRefToGradientID(const AValue: string): string;
@@ -250,7 +252,9 @@ type
       property Content: TSVGContent read FContent;
       property hRef: string read GetHRef write SetHRef;
       property gradientUnits: string read GetGradientUnits write SetGradientUnits;
+      property gradientTransform: string read GetGradientTransform write SetGradientTransform;
       property useObjectBoundingBox: boolean read GetUseObjectBoundingBox;
+      property gradientMatrix[AUnit: TCSSUnit]: TAffineMatrix read GetGradientMatrix;
   end;        
 
   { TSVGGradientLinear }
@@ -519,12 +523,6 @@ begin
   end;
 end;
 
-function TSVGElementWithGradient.EvaluateBoxCoordinate(fu: TFloatWithCSSUnit;
-  min, size: single): single;
-begin
-  result := min + (EvaluatePercentage(fu)/100)*size;
-end;
-
 function TSVGElementWithGradient.GetGradientElement: TSVGGradient;
 begin
   if not FGradientElementDefined then
@@ -583,15 +581,19 @@ begin
     m := ACanvas2d.matrix;
     ACanvas2d.translate(origin.x,origin.y);
     ACanvas2d.scale(w,h);
+    ACanvas2d.transform(g.gradientMatrix[cuCustom]);
     FCanvasGradient:= ACanvas2d.createLinearGradient(p1,p2);
-    ACanvas2d.matrix := m
+    ACanvas2d.matrix := m;
   end else
   begin
     p1.x:= Units.ConvertWidth(g.x1,AUnit,w).value;
     p1.y:= Units.ConvertHeight(g.y1,AUnit,h).value;
     p2.x:= Units.ConvertWidth(g.x1,AUnit,w).value;
     p2.y:= Units.ConvertHeight(g.y1,AUnit,h).value;
+    m := ACanvas2d.matrix;
+    ACanvas2d.transform(g.gradientMatrix[AUnit]);
     FCanvasGradient:= ACanvas2d.createLinearGradient(p1,p2);
+    ACanvas2d.matrix := m;
   end;
 
   AddStopElements(FCanvasGradient);
@@ -600,10 +602,10 @@ end;
 procedure TSVGElementWithGradient.CreateCanvasRadialGradient(
   ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient; const origin: TPointF;
   const w, h: single; AUnit: TCSSUnit);
-var c,r,f,fr: TPointF;
+var c,f: TPointF;
+  r,fr: single;
   g: TSVGRadialGradient;
   m: TAffineMatrix;
-  ratio: single;
 
   procedure CheckFocalAndCreate(c: TPointF; r: single; f: TPointF; fr: single);
   var u: TPointF;
@@ -613,7 +615,7 @@ var c,r,f,fr: TPointF;
     d := VectLen(u);
     if d >= r then
     begin
-      u *= (r/d)*0.9999;
+      u *= (r/d)*0.99999;
       f := c+u;
     end;
     FCanvasGradient:= ACanvas2d.createRadialGradient(c,r,f,fr,true);
@@ -624,47 +626,33 @@ begin
   g := ASVGGradient as TSVGRadialGradient;
   if g.useObjectBoundingBox then
   begin
-    c.x:= EvaluateBoxCoordinate(g.cx,origin.x,w);
-    c.y:= EvaluateBoxCoordinate(g.cy,origin.y,h);
-    r.x:= abs(EvaluateBoxCoordinate(g.r,0,w));
-    r.y:= abs(EvaluateBoxCoordinate(g.r,0,h));
-    f.x:= EvaluateBoxCoordinate(g.fx,origin.x,w);
-    f.y:= EvaluateBoxCoordinate(g.fy,origin.y,h);
-    fr.x:= abs(EvaluateBoxCoordinate(g.fr,0,w));
-    fr.y:= abs(EvaluateBoxCoordinate(g.fr,0,h));
+    c.x:= EvaluatePercentage(g.cx)/100;
+    c.y:= EvaluatePercentage(g.cy)/100;
+    r:= abs(EvaluatePercentage(g.r))/100;
+    f.x:= EvaluatePercentage(g.fx)/100;
+    f.y:= EvaluatePercentage(g.fy)/100;
+    fr:= abs(EvaluatePercentage(g.fr))/100;
+
+    m := ACanvas2d.matrix;
+    ACanvas2d.translate(origin.x,origin.y);
+    ACanvas2d.scale(w,h);
+    ACanvas2d.transform(g.gradientMatrix[cuCustom]);
+    CheckFocalAndCreate(c,r,f,fr);
+    ACanvas2d.matrix := m;
   end else
   begin
     c.x:= Units.ConvertWidth(g.cx,AUnit,w).value;
     c.y:= Units.ConvertHeight(g.cy,AUnit,h).value;
-    r.x:= abs(Units.ConvertWidth(g.r,AUnit,w).value);
-    r.y:= abs(Units.ConvertHeight(g.r,AUnit,h).value);
+    r:= abs(Units.ConvertWidth(g.r,AUnit,w).value);
     f.x:= Units.ConvertWidth(g.fx,AUnit,w).value;
     f.y:= Units.ConvertHeight(g.fy,AUnit,h).value;
-    fr.x:= abs(Units.ConvertWidth(g.fr,AUnit,w).value);
-    fr.y:= abs(Units.ConvertHeight(g.fr,AUnit,h).value);
+    fr:= abs(Units.ConvertWidth(g.fr,AUnit,w).value);
+
+    m := ACanvas2d.matrix;
+    ACanvas2d.transform(g.gradientMatrix[AUnit]);
+    CheckFocalAndCreate(c,r,f,fr);
+    ACanvas2d.matrix := m;
   end;
-
-  if (r.x = r.y) and (f.x = f.y) then //orthonormal
-    CheckFocalAndCreate(c,r.x,f,fr.x) else
-  begin
-    if (r.x+f.x > r.y+f.y) then //wider than high
-    begin
-      m := ACanvas2d.matrix;
-      ratio := (r.y+fr.y)/(r.x+fr.x);
-      ACanvas2d.scale(1, ratio);
-      CheckFocalAndCreate(PointF(c.x,c.y/ratio),r.x,PointF(f.x,f.y/ratio),fr.x);
-      ACanvas2d.matrix := m;
-    end else
-    begin //higher than wide
-      m := ACanvas2d.matrix;
-      ratio := (r.x+fr.x)/(r.y+fr.y);
-      ACanvas2d.scale(ratio, 1);
-      CheckFocalAndCreate(PointF(c.x/ratio,c.y),r.y,PointF(f.x/ratio,f.y),fr.y);
-      ACanvas2d.matrix := m;
-    end;
-  end;
-
-
 end;
 
 procedure TSVGElementWithGradient.InitializeGradient(ACanvas2d: TBGRACanvas2D;
@@ -1613,9 +1601,36 @@ begin
   result := (gradientUnits = 'objectBoundingBox');
 end;
 
+procedure TSVGGradient.SetGradientTransform(AValue: string);
+begin
+  Attribute['gradientTransform'] := AValue;
+end;
+
 function TSVGGradient.GetGradientUnits: string;
 begin
   result := AttributeDef['gradientUnits','objectBoundingBox'];
+end;
+
+function TSVGGradient.GetGradientTransform: string;
+begin
+  result := Attribute['gradientTransform'];
+end;
+
+function TSVGGradient.GetGradientMatrix(AUnit: TCSSUnit): TAffineMatrix;
+var parser: TSVGParser;
+  s: string;
+begin
+  s := gradientTransform;
+  if s = '' then
+  begin
+    result := AffineMatrixIdentity;
+    exit;
+  end;
+  parser := TSVGParser.Create(s);
+  result := parser.ParseTransform;
+  parser.Free;
+  result[1,3] := Units.ConvertWidth(result[1,3],cuCustom,AUnit);
+  result[2,3] := Units.ConvertHeight(result[2,3],cuCustom,AUnit);
 end;
 
 procedure TSVGGradient.SetGradientUnits(AValue: string);
