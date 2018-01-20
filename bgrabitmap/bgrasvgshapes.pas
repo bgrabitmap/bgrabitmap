@@ -550,9 +550,8 @@ procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D)
         if Items[i] is TSVGStopGradient then
           with (Items[i] as TSVGStopGradient) do
           begin
-            col:= StrToBGRA( AttributeOrStyle['stop-color'] );
-            if AttributeOrStyle['stop-opacity'] <> '' then
-             col.alpha:= Round( Units.parseValue(AttributeOrStyle['stop-opacity'],1) * 255 );
+            col:= StrToBGRA( AttributeOrStyleDef['stop-color','black'] );
+            col.alpha:= Round( Units.parseValue(AttributeOrStyleDef['stop-opacity','1'],1) * col.alpha );
             canvas.addColorStop(EvaluatePercentage(offset)/100, col);
             Inc(result);
           end;
