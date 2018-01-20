@@ -782,11 +782,14 @@ function TSVGElement.GetHorizAttributeWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeWithUnit(AName,ADefault);
-  if result.CSSUnit <> cuCustom then
-    if units.DpiScaleX = 0 then
-      result.value := 0
-    else
-      result.value /= Units.DpiScaleX;
+  if result.value <> EmptySingle then
+  begin
+    if result.CSSUnit <> cuCustom then
+      if units.DpiScaleX = 0 then
+        result.value := 0
+      else
+        result.value /= Units.DpiScaleX;
+  end;
 end;
 
 function TSVGElement.GetHorizAttributeWithUnit(AName: string): TFloatWithCSSUnit;
@@ -1078,11 +1081,14 @@ end;
 function TSVGElement.GetVerticalAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeWithUnit(AName,ADefault);
-  if result.CSSUnit <> cuCustom then
-    if units.DpiScaleY = 0 then
-      result.value := 0
-    else
-      result.value /= Units.DpiScaleY;
+  if result.value <> EmptySingle then
+  begin
+    if result.CSSUnit <> cuCustom then
+      if units.DpiScaleY = 0 then
+        result.value := 0
+      else
+        result.value /= Units.DpiScaleY;
+  end;
 end;
 
 function TSVGElement.GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit;

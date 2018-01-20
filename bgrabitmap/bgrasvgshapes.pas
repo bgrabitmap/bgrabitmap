@@ -19,17 +19,21 @@ type
       FGradientElementDefined: boolean;
       FCanvasGradient: IBGRACanvasGradient2D;
       function EvaluatePercentage(fu: TFloatWithCSSUnit): single; { fu is a percentage of a number [0.0..1.0] }
+      function EvaluateBoxCoordinate(fu: TFloatWithCSSUnit; min,size: single): single;
       function GetGradientElement: TSVGGradient;
       procedure ResetGradient;
       function FindGradientElement: boolean;
     protected
       procedure Initialize; override;
       procedure AddStopElements(canvas: IBGRACanvasGradient2D);
-      procedure CreateLinearGradient(ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
+      procedure CreateCanvasLinearGradient(ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient;
+        const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
+      procedure CreateCanvasRadialGradient(ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient;
+        const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
       procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
       procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
-                const origin: TPointF; const w,h: single);
+                const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
       property GradientElement: TSVGGradient read GetGradientElement;
   end;       
   
@@ -223,7 +227,10 @@ type
   TSVGGradient = class(TSVGElement)
     private
       FContent: TSVGContent;
+      function GetGradientUnits: string;
       function GetHRef: string;
+      function GetUseObjectBoundingBox: boolean;
+      procedure SetGradientUnits(AValue: string);
       procedure SetHRef(AValue: string);
       function HRefToGradientID(const AValue: string): string;
       function FindGradientRef(const AGradientID: string): integer;
@@ -242,6 +249,8 @@ type
       procedure ScanInheritedGradients(const forceScan: boolean = false);
       property Content: TSVGContent read FContent;
       property hRef: string read GetHRef write SetHRef;
+      property gradientUnits: string read GetGradientUnits write SetGradientUnits;
+      property useObjectBoundingBox: boolean read GetUseObjectBoundingBox;
   end;        
 
   { TSVGGradientLinear }
@@ -272,27 +281,24 @@ type
       function GetCX: TFloatWithCSSUnit;
       function GetCY: TFloatWithCSSUnit;
       function GetR: TFloatWithCSSUnit;
-      function GetRX: TFloatWithCSSUnit;
-      function GetRY: TFloatWithCSSUnit;
       function GetFX: TFloatWithCSSUnit;
       function GetFY: TFloatWithCSSUnit;
+      function GetFR: TFloatWithCSSUnit;
       procedure SetCX(AValue: TFloatWithCSSUnit);
       procedure SetCY(AValue: TFloatWithCSSUnit);
       procedure SetR(AValue: TFloatWithCSSUnit);
-      procedure SetRX(AValue: TFloatWithCSSUnit);
-      procedure SetRY(AValue: TFloatWithCSSUnit);
       procedure SetFX(AValue: TFloatWithCSSUnit);
       procedure SetFY(AValue: TFloatWithCSSUnit);
+      procedure SetFR(AValue: TFloatWithCSSUnit);
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
         ADataLink: TSVGDataLink); override;
-      property CX: TFloatWithCSSUnit read GetCX write SetCX;
-      property CY: TFloatWithCSSUnit read GetCY write SetCY;
-      property R: TFloatWithCSSUnit read GetR write SetR;
-      property RX: TFloatWithCSSUnit read GetRX write SetRX;
-      property RY: TFloatWithCSSUnit read GetRY write SetRY;
-      property FX: TFloatWithCSSUnit read GetFX write SetFX;
-      property FY: TFloatWithCSSUnit read GetFY write SetFY;
+      property cx: TFloatWithCSSUnit read GetCX write SetCX;
+      property cy: TFloatWithCSSUnit read GetCY write SetCY;
+      property r: TFloatWithCSSUnit read GetR write SetR;
+      property fx: TFloatWithCSSUnit read GetFX write SetFX;
+      property fy: TFloatWithCSSUnit read GetFY write SetFY;
+      property fr: TFloatWithCSSUnit read GetFR write SetFR;
   end;
 
   { TSVGStopGradient }
@@ -513,6 +519,12 @@ begin
   end;
 end;
 
+function TSVGElementWithGradient.EvaluateBoxCoordinate(fu: TFloatWithCSSUnit;
+  min, size: single): single;
+begin
+  result := min + (EvaluatePercentage(fu)/100)*size;
+end;
+
 function TSVGElementWithGradient.GetGradientElement: TSVGGradient;
 begin
   if not FGradientElementDefined then
@@ -555,64 +567,95 @@ begin
       AddStopElementFrom(Items[i]);
 end;
 
-procedure TSVGElementWithGradient.CreateLinearGradient(
-  ACanvas2d: TBGRACanvas2D; const pf1,pf2: TPointF);
+procedure TSVGElementWithGradient.CreateCanvasLinearGradient(
+  ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient;
+  const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
+var p1,p2: TPointF;
+  g: TSVGLinearGradient;
 begin
-  FCanvasGradient:= ACanvas2d.createLinearGradient(pf1,pf2);
+  g := ASVGGradient as TSVGLinearGradient;
+  if g.useObjectBoundingBox then
+  begin
+    p1.x:= EvaluateBoxCoordinate(g.x1,origin.x,w);
+    p1.y:= EvaluateBoxCoordinate(g.y1,origin.y,h);
+    p2.x:= EvaluateBoxCoordinate(g.x2,origin.x,w);
+    p2.y:= EvaluateBoxCoordinate(g.y2,origin.y,h);
+  end else
+  begin
+    p1.x:= Units.ConvertWidth(g.x1,AUnit,w).value;
+    p1.y:= Units.ConvertHeight(g.y1,AUnit,h).value;
+    p2.x:= Units.ConvertWidth(g.x1,AUnit,w).value;
+    p2.y:= Units.ConvertHeight(g.y1,AUnit,h).value;
+  end;
+
+  FCanvasGradient:= ACanvas2d.createLinearGradient(p1,p2);
   AddStopElements(FCanvasGradient);
-end;                          
+end;
+
+procedure TSVGElementWithGradient.CreateCanvasRadialGradient(
+  ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient; const origin: TPointF;
+  const w, h: single; AUnit: TCSSUnit);
+var c,r,f,fr: TPointF;
+  g: TSVGRadialGradient;
+  m: TAffineMatrix;
+  ratio: single;
+begin
+  g := ASVGGradient as TSVGRadialGradient;
+  if g.useObjectBoundingBox then
+  begin
+    c.x:= EvaluateBoxCoordinate(g.cx,origin.x,w);
+    c.y:= EvaluateBoxCoordinate(g.cy,origin.y,h);
+    r.x:= abs(EvaluateBoxCoordinate(g.r,0,w));
+    r.y:= abs(EvaluateBoxCoordinate(g.r,0,h));
+    f.x:= EvaluateBoxCoordinate(g.fx,origin.x,w);
+    f.y:= EvaluateBoxCoordinate(g.fy,origin.y,h);
+    fr.x:= abs(EvaluateBoxCoordinate(g.fr,0,w));
+    fr.y:= abs(EvaluateBoxCoordinate(g.fr,0,h));
+  end else
+  begin
+    c.x:= Units.ConvertWidth(g.cx,AUnit,w).value;
+    c.y:= Units.ConvertHeight(g.cy,AUnit,h).value;
+    r.x:= abs(Units.ConvertWidth(g.r,AUnit,w).value);
+    r.y:= abs(Units.ConvertHeight(g.r,AUnit,h).value);
+    f.x:= Units.ConvertWidth(g.fx,AUnit,w).value;
+    f.y:= Units.ConvertHeight(g.fy,AUnit,h).value;
+    fr.x:= abs(Units.ConvertWidth(g.fr,AUnit,w).value);
+    fr.y:= abs(Units.ConvertHeight(g.fr,AUnit,h).value);
+  end;
+
+  if (r.x = r.y) and (f.x = f.y) then //orthonormal
+    FCanvasGradient:= ACanvas2d.createRadialGradient(c,r.x,f,fr.x,true) else
+  begin
+    if (r.x+f.x > r.y+f.y) then //wider than high
+    begin
+      m := ACanvas2d.matrix;
+      ratio := (r.y+fr.y)/(r.x+fr.x);
+      ACanvas2d.scale(1, ratio);
+      FCanvasGradient:= ACanvas2d.createRadialGradient(c.x,c.y/ratio,r.x,f.x,f.y/ratio,fr.x,true);
+      ACanvas2d.matrix := m;
+    end else
+    begin //higher than wide
+      m := ACanvas2d.matrix;
+      ratio := (r.x+fr.x)/(r.y+fr.y);
+      ACanvas2d.scale(ratio, 1);
+      FCanvasGradient:= ACanvas2d.createRadialGradient(c.x/ratio,c.y,r.y,f.x/ratio,f.y,fr.y,true);
+      ACanvas2d.matrix := m;
+    end;
+  end;
+
+  AddStopElements(FCanvasGradient);
+end;
 
 procedure TSVGElementWithGradient.InitializeGradient(ACanvas2d: TBGRACanvas2D;
-  const origin: TPointF; const w,h: single);
-var
-  vx1,vy1,vx2,vy2: single;
-  pf1,pf2: TPointF;
+  const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
 begin
   if GradientElement <> nil then
   begin
     if GradientElement is TSVGLinearGradient then
-    begin
-      with TSVGLinearGradient(GradientElement) do
-      begin
-        vx1:= EvaluatePercentage(x1);
-        vy1:= EvaluatePercentage(y1);
-        vx2:= EvaluatePercentage(x2);
-        vy2:= EvaluatePercentage(y2);
-        //Vertical gradient
-        if (vx1 = vx2) and (vy1 <> vy2) then
-        begin
-          pf1:= PointF(0,origin.y+(h*vy1/100));
-          pf2:= PointF(0,origin.y+(h*vy2/100));
-        end
-        //Horizontal gradient
-        else if (vx1 <> vx2) and (vy1 = vy2) then
-        begin
-          pf1:= PointF(origin.x+(w*vx1/100),0);
-          pf2:= PointF(origin.x+(w*vx2/100),0);
-        end
-        //Angular gradient
-        else if (vx1 <> vx2) and (vy1 <> vy2) then
-        begin
-          pf1:= PointF(origin.x+(w*vx1/100),origin.y+(h*vy1/100));
-          pf2:= PointF(origin.x+(w*vx2/100),origin.y+(h*vy2/100));
-        end
-        else
-        begin
-          pf1:= PointF(0,0);
-          pf2:= PointF(0,0);
-        end;
-        CreateLinearGradient(ACanvas2d, pf1,pf2);
-      end;
-    end
-    else if GradientElement is TSVGRadialGradient then
-    begin
-      with TSVGRadialGradient(GradientElement) do
-      begin
-
-        //TODO: radial gradient support
-
-      end;
-    end;
+      CreateCanvasLinearGradient(ACanvas2d, GradientElement, origin, w,h, AUnit)
+    else
+    if GradientElement is TSVGRadialGradient then
+      CreateCanvasRadialGradient(ACanvas2d, GradientElement, origin, w,h, AUnit);
   end;
 end; 
 
@@ -757,7 +800,7 @@ begin
 
   if Assigned(GradientElement) then
     with ACanvas2d.measureText(SimpleText) do
-      InitializeGradient(ACanvas2d, PointF(vx,vy),width,height);
+      InitializeGradient(ACanvas2d, PointF(vx,vy),width,height,AUnit);
              
   if not isFillNone then
   begin
@@ -1071,7 +1114,7 @@ begin
     ACanvas2d.roundRect(vx,vy, vw,vh,
        Units.ConvertWidth(rx,AUnit).value,Units.ConvertHeight(ry,AUnit).value);
     if Assigned(GradientElement) then
-      InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh);
+      InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh,AUnit);
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
@@ -1211,7 +1254,7 @@ begin
     
     with boundingBoxF do
       InitializeGradient(ACanvas2d,
-        PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
+        PointF(Left,Top),abs(Right-Left),abs(Bottom-Top),AUnit);
     
     if not isFillNone then
     begin
@@ -1321,7 +1364,7 @@ begin
     if Assigned(GradientElement) then
       with boundingBoxF do
         InitializeGradient(ACanvas2d,
-          PointF(Left,Top),abs(Right-Left),abs(Bottom-Top));
+          PointF(Left,Top),abs(Right-Left),abs(Bottom-Top),AUnit);
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
@@ -1397,7 +1440,7 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.ellipse(vcx,vcy,vrx,vry);
     if Assigned(GradientElement) then
-      InitializeGradient(ACanvas2d, PointF(vcx-vrx,vcy-vry),vrx*2,vry*2);      
+      InitializeGradient(ACanvas2d, PointF(vcx-vrx,vcy-vry),vrx*2,vry*2,AUnit);      
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
@@ -1461,7 +1504,7 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.circle(vcx,vcy,vr);
     if Assigned(GradientElement) then
-      InitializeGradient(ACanvas2d, PointF(vcx-vr,vcy-vr),vr*2,vr*2);
+      InitializeGradient(ACanvas2d, PointF(vcx-vr,vcy-vr),vr*2,vr*2,AUnit);
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
@@ -1544,6 +1587,21 @@ begin
     result := Attribute['href'];//(Note: specific for svg 2)
 end;
 
+function TSVGGradient.GetUseObjectBoundingBox: boolean;
+begin
+  result := (gradientUnits = 'objectBoundingBox');
+end;
+
+function TSVGGradient.GetGradientUnits: string;
+begin
+  result := AttributeDef['gradientUnits','objectBoundingBox'];
+end;
+
+procedure TSVGGradient.SetGradientUnits(AValue: string);
+begin
+  Attribute['gradientUnits'] := AValue;
+end;
+
 procedure TSVGGradient.SetHRef(AValue: string);
 begin
   Attribute['xlink:href'] := AValue;
@@ -1595,7 +1653,7 @@ var
   el: TSVGGradient;
   invalidDef: TFloatWithCSSUnit;
 begin
-  invalidDef:= FloatWithCSSUnit(-255,cuPercent);
+  invalidDef:= FloatWithCSSUnit(EmptySingle,cuPercent);
   //find valid inherited attribute (start from "self": item[0])
   for i:= 0 to InheritedGradients.Count-1 do
   begin
@@ -1732,25 +1790,20 @@ begin
   result := GetInheritedAttribute('r',cmOrtho,FloatWithCSSUnit(50,cuPercent));
 end;
 
-function TSVGRadialGradient.GetRX: TFloatWithCSSUnit;
-begin
-  result := GetInheritedAttribute('rx',cmHoriz,FloatWithCSSUnit(50,cuPercent));
-end;
-
-function TSVGRadialGradient.GetRY: TFloatWithCSSUnit;
-begin
-  result := GetInheritedAttribute('ry',cmVertical,FloatWithCSSUnit(50,cuPercent));
-end;                                           
-
 function TSVGRadialGradient.GetFX: TFloatWithCSSUnit;
 begin
-  result := GetInheritedAttribute('fx',cmHoriz,FloatWithCSSUnit(0,cuPercent));
+  result := GetInheritedAttribute('fx',cmHoriz,cx);
 end;
 
 function TSVGRadialGradient.GetFY: TFloatWithCSSUnit;
 begin
-  result := GetInheritedAttribute('fy',cmVertical,FloatWithCSSUnit(0,cuPercent));
+  result := GetInheritedAttribute('fy',cmVertical,cy);
 end;         
+
+function TSVGRadialGradient.GetFR: TFloatWithCSSUnit;
+begin
+  result := GetInheritedAttribute('fr',cmHoriz,FloatWithCSSUnit(0,cuPercent));
+end;
 
 procedure TSVGRadialGradient.SetCX(AValue: TFloatWithCSSUnit);
 begin
@@ -1767,16 +1820,6 @@ begin
   OrthoAttributeWithUnit['r'] := AValue;
 end;
 
-procedure TSVGRadialGradient.SetRX(AValue: TFloatWithCSSUnit);
-begin
-  HorizAttributeWithUnit['rx'] := AValue;
-end;
-
-procedure TSVGRadialGradient.SetRY(AValue: TFloatWithCSSUnit);
-begin
-  VerticalAttributeWithUnit['ry'] := AValue;
-end;    
-
 procedure TSVGRadialGradient.SetFX(AValue: TFloatWithCSSUnit);
 begin
   HorizAttributeWithUnit['fx'] := AValue;
@@ -1785,6 +1828,11 @@ end;
 procedure TSVGRadialGradient.SetFY(AValue: TFloatWithCSSUnit);
 begin
   VerticalAttributeWithUnit['fy'] := AValue;
+end;
+
+procedure TSVGRadialGradient.SetFR(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['fr'] := AValue;
 end;
 
 constructor TSVGRadialGradient.Create(ADocument: TXMLDocument;

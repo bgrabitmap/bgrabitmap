@@ -204,10 +204,17 @@ type
     procedure shadowColor(color: string); overload;
     procedure shadowNone;
     function getShadowColor: TBGRAPixel;
+
     function createLinearGradient(x0,y0,x1,y1: single): IBGRACanvasGradient2D; overload;
     function createLinearGradient(p0,p1: TPointF): IBGRACanvasGradient2D; overload;
     function createLinearGradient(x0,y0,x1,y1: single; Colors: TBGRACustomGradient): IBGRACanvasGradient2D; overload;
     function createLinearGradient(p0,p1: TPointF; Colors: TBGRACustomGradient): IBGRACanvasGradient2D; overload;
+
+    function createRadialGradient(x0,y0,r0,x1,y1,r1: single; flipGradient: boolean=false): IBGRACanvasGradient2D; overload;
+    function createRadialGradient(p0: TPointF; r0: single; p1: TPointF; r1: single; flipGradient: boolean=false): IBGRACanvasGradient2D; overload;
+    function createRadialGradient(x0,y0,r0,x1,y1,r1: single; Colors: TBGRACustomGradient; flipGradient: boolean=false): IBGRACanvasGradient2D; overload;
+    function createRadialGradient(p0: TPointF; r0: single; p1: TPointF; r1: single; Colors: TBGRACustomGradient; flipGradient: boolean=false): IBGRACanvasGradient2D; overload;
+
     function createPattern(image: TBGRACustomBitmap; repetition: string): IBGRACanvasTextureProvider2D; overload;
     function createPattern(texture: IBGRAScanner): IBGRACanvasTextureProvider2D; overload;
 
@@ -358,6 +365,20 @@ type
     constructor Create(p0,p1: TPointF);
   end;
 
+  { TBGRACanvasRadialGradient2D }
+
+  TBGRACanvasRadialGradient2D = class(TBGRACanvasGradient2D)
+  protected
+    c0,c1: TPointF;
+    cr0,cr1: single;
+    FFlipGradient: boolean;
+    FTransform: TAffineMatrix;
+    procedure CreateScanner; override;
+  public
+    constructor Create(x0,y0,r0,x1,y1,r1: single; transform: TAffineMatrix; flipGradient: boolean=false);
+    constructor Create(p0: TPointF; r0: single; p1: TPointF; r1: single; transform: TAffineMatrix; flipGradient: boolean=false);
+  end;
+
   { TBGRACanvasPattern2D }
 
   TBGRACanvasPattern2D = class(TBGRACanvasTextureProvider2D)
@@ -458,7 +479,10 @@ var GradientOwner: boolean;
 begin
   if FCustomGradient = nil then
   begin
-    GradientColors := TBGRAMultiGradient.Create(getColorArray,getPositionArray,False,False);
+    if (colorStopCount = 2) and (colorStops[0].position = 0) and (colorStops[1].position = 1) then
+      GradientColors := TBGRASimpleGradientWithoutGammaCorrection.Create(colorStops[0].color, colorStops[1].color)
+    else
+      GradientColors := TBGRAMultiGradient.Create(getColorArray,getPositionArray,False,False);
     GradientOwner := true;
   end else
   begin
@@ -478,6 +502,51 @@ constructor TBGRACanvasLinearGradient2D.Create(p0, p1: TPointF);
 begin
   o1 := p0;
   o2 := p1;
+end;
+
+{ TBGRACanvasRadialGradient2D }
+
+procedure TBGRACanvasRadialGradient2D.CreateScanner;
+var GradientOwner: boolean;
+    GradientColors: TBGRACustomGradient;
+begin
+  if FCustomGradient = nil then
+  begin
+    if (colorStopCount = 2) and (colorStops[0].position = 0) and (colorStops[1].position = 1) then
+      GradientColors := TBGRASimpleGradientWithoutGammaCorrection.Create(colorStops[0].color, colorStops[1].color)
+    else
+      GradientColors := TBGRAMultiGradient.Create(getColorArray,getPositionArray,False,False);
+    GradientOwner := true;
+  end else
+  begin
+    GradientColors := FCustomGradient;
+    GradientOwner := false;
+  end;
+  scanner := TBGRAGradientScanner.Create(GradientColors,c0,cr0,c1,cr1,GradientOwner);
+  scanner.FlipGradient := not FFlipGradient;
+  scanner.Transform := FTransform;
+end;
+
+constructor TBGRACanvasRadialGradient2D.Create(x0, y0, r0, x1, y1, r1: single;
+  transform: TAffineMatrix; flipGradient: boolean);
+begin
+  self.c0 := PointF(x0,y0);
+  self.cr0 := r0;
+  self.c1 := PointF(x1,y1);
+  self.cr1 := r1;
+  FTransform := transform;
+  FFlipGradient := flipGradient;
+end;
+
+constructor TBGRACanvasRadialGradient2D.Create(p0: TPointF; r0: single;
+  p1: TPointF; r1: single; transform: TAffineMatrix; flipGradient: boolean);
+begin
+  self.c0 := p0;
+  self.cr0 := r0;
+  self.c1 := p1;
+  self.cr1 := r1;
+  FTransform := transform;
+  FFlipGradient := flipGradient;
 end;
 
 { TBGRACanvasGradient2D }
@@ -1678,14 +1747,12 @@ begin
   result := currentState.shadowColor;
 end;
 
-function TBGRACanvas2D.createLinearGradient(x0, y0, x1, y1: single
-  ): IBGRACanvasGradient2D;
+function TBGRACanvas2D.createLinearGradient(x0, y0, x1, y1: single): IBGRACanvasGradient2D;
 begin
   result := createLinearGradient(PointF(x0,y0), PointF(x1,y1));
 end;
 
-function TBGRACanvas2D.createLinearGradient(p0, p1: TPointF
-  ): IBGRACanvasGradient2D;
+function TBGRACanvas2D.createLinearGradient(p0, p1: TPointF): IBGRACanvasGradient2D;
 begin
   result := TBGRACanvasLinearGradient2D.Create(ApplyTransform(p0),ApplyTransform(p1));
 end;
@@ -1701,6 +1768,34 @@ function TBGRACanvas2D.createLinearGradient(p0, p1: TPointF;
   Colors: TBGRACustomGradient): IBGRACanvasGradient2D;
 begin
   result := createLinearGradient(p0,p1);
+  result.setColors(Colors);
+end;
+
+function TBGRACanvas2D.createRadialGradient(x0, y0, r0, x1, y1, r1: single;
+  flipGradient: boolean): IBGRACanvasGradient2D;
+begin
+  result := createRadialGradient(PointF(x0,y0), r0, PointF(x1,y1), r1, flipGradient);
+end;
+
+function TBGRACanvas2D.createRadialGradient(p0: TPointF; r0: single;
+  p1: TPointF; r1: single; flipGradient: boolean): IBGRACanvasGradient2D;
+begin
+  result := TBGRACanvasRadialGradient2D.Create(p0,r0,p1,r1,
+            AffineMatrixTranslation(FCanvasOffset.x,FCanvasOffset.y)*currentState.matrix,
+            flipGradient);
+end;
+
+function TBGRACanvas2D.createRadialGradient(x0, y0, r0, x1, y1, r1: single;
+  Colors: TBGRACustomGradient; flipGradient: boolean): IBGRACanvasGradient2D;
+begin
+  result := createRadialGradient(x0,y0,r0,x1,y1,r1,flipGradient);
+  result.setColors(Colors);
+end;
+
+function TBGRACanvas2D.createRadialGradient(p0: TPointF; r0: single;
+  p1: TPointF; r1: single; Colors: TBGRACustomGradient; flipGradient: boolean): IBGRACanvasGradient2D;
+begin
+  result := createRadialGradient(p0,r0,p1,r1,flipGradient);
   result.setColors(Colors);
 end;
 
