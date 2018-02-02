@@ -628,6 +628,7 @@ end;
 { TCustomFillPolyInfo }
 
 constructor TCustomFillPolyInfo.Create(const points: array of TPointF);
+const minDist = 0;
 var
   i, j: integer;
   First, cur, nbP: integer;
@@ -655,7 +656,7 @@ begin
       first := -1;
     end;
   end else
-  if (first=-1) or (points[i]<>points[i-1]) then
+  if (first=-1) or (abs(points[i-1].x-points[i].x) >= minDist) or (abs(points[i-1].y-points[i].y) >= minDist) then
   begin
     if first = -1 then first := nbP;
     FPoints[nbP] := points[i];

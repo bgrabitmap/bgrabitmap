@@ -880,9 +880,21 @@ begin
     gw := (FColor1.green * b2 + FColor2.green * b + 511) shr 2;
     bw := (FColor1.blue * b2 + FColor2.blue * b + 511) shr 2;
 
-    result.red := (GammaExpansionTab[rw shr 8]*NativeUInt(255 - (rw and 255)) + GammaExpansionTab[(rw shr 8)+1]*NativeUInt(rw and 255)) shr 8;
-    result.green := (GammaExpansionTab[gw shr 8]*NativeUInt(255 - (gw and 255)) + GammaExpansionTab[(gw shr 8)+1]*NativeUInt(gw and 255)) shr 8;
-    result.blue := (GammaExpansionTab[bw shr 8]*NativeUInt(255 - (bw and 255)) + GammaExpansionTab[(bw shr 8)+1]*NativeUInt(bw and 255)) shr 8;
+    if rw >= $ff00 then
+      result.red := 65535
+    else
+      result.red := (GammaExpansionTab[rw shr 8]*NativeUInt(255 - (rw and 255)) + GammaExpansionTab[(rw shr 8)+1]*NativeUInt(rw and 255)) shr 8;
+
+    if gw >= $ff00 then
+      result.green := 65535
+    else
+      result.green := (GammaExpansionTab[gw shr 8]*NativeUInt(255 - (gw and 255)) + GammaExpansionTab[(gw shr 8)+1]*NativeUInt(gw and 255)) shr 8;
+
+    if bw >= $ff00 then
+      result.blue := 65535
+    else
+      result.blue := (GammaExpansionTab[bw shr 8]*NativeUInt(255 - (bw and 255)) + GammaExpansionTab[(bw shr 8)+1]*NativeUInt(bw and 255)) shr 8;
+
     result.alpha := (FColor1.alpha * b2 + FColor2.alpha * b + 511) shr 2;
   end;
 end;
