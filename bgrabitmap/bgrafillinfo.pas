@@ -804,7 +804,7 @@ begin
   end;
   EndOfSubPolygon;
   //if last point was a subpolygon delimiter (EmptyPointF) then removes it
-  if (nbP > 0) and isEmptyPointF(points[nbP-1]) then dec(nbP);
+  if (nbP > 0) and isEmptyPointF(FPoints[nbP-1]) then dec(nbP);
 
   setlength(FPoints, nbP);
 end;
