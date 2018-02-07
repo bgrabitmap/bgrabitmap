@@ -940,6 +940,7 @@ begin
   result := parser.ParseTransform;
   result[1,3] := Units.ConvertWidth(result[1,3],cuCustom,AUnit);
   result[2,3] := Units.ConvertHeight(result[2,3],cuCustom,AUnit);
+  parser.Free;
 end;
 
 function TSVGElement.GetOpacity: single;

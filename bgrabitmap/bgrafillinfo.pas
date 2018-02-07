@@ -160,6 +160,7 @@ type
     FNext, FPrev: array of integer;
     function NbMaxIntersection: integer; override;
     procedure SetIntersectionValues(AInter: TIntersectionInfo; AInterX: Single; AWinding, ANumSegment: integer; {%H-}dy: single; {%H-}AData: pointer); virtual;
+    procedure InitPoints(const points: array of TPointF);
   public
     constructor Create(const points: array of TPointF);
     function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; virtual;
@@ -629,46 +630,17 @@ end;
 
 constructor TCustomFillPolyInfo.Create(const points: array of TPointF);
 var
-  i, j: integer;
-  First, cur, nbP: integer;
+  cur, first, i, j: integer;
+
 begin
-  setlength(FPoints, length(points));
-  nbP := 0;
-  first := -1;
-  for i := 0 to high(points) do
-  if isEmptyPointF(points[i]) then
-  begin
-    if first<>-1 then
-    begin
-      if nbP = first+1 then //is there only one point?
-      begin
-        dec(nbP);
-        first := -1; //remove subpolygon
-      end else
-      if (FPoints[nbP-1] = FPoints[first]) then
-        dec(nbP); //remove just last looping point
-    end;
-    if first<>-1 then
-    begin
-      FPoints[nbP] := points[i];
-      inc(nbP);
-      first := -1;
-    end;
-  end else
-  if (first=-1) or (points[i]<>points[i-1]) then
-  begin
-    if first = -1 then first := nbP;
-    FPoints[nbP] := points[i];
-    inc(nbP);
-  end;
-  setlength(FPoints, nbP);
+  InitPoints(points);
 
   //look for empty points, correct coordinate and successors
   setlength(FEmptyPt, length(FPoints));
   setlength(FNext, length(FPoints));
 
   cur   := -1;
-  First := -1;
+  first := -1;
   for i := 0 to high(FPoints) do
     if not isEmptyPointF(FPoints[i]) then
     begin
@@ -677,22 +649,22 @@ begin
       FPoints[i].y += 0.5;
       if cur <> -1 then
         FNext[cur] := i;
-      if First = -1 then
-        First := i;
+      if first = -1 then
+        first := i;
       cur     := i;
     end
     else
     begin
-      if (First <> -1) and (cur <> First) then
-        FNext[cur] := First;
+      if (first <> -1) and (cur <> first) then
+        FNext[cur] := first;
 
       FEmptyPt[i] := True;
       FNext[i] := -1;
       cur   := -1;
-      First := -1;
+      first := -1;
     end;
-  if (First <> -1) and (cur <> First) then
-    FNext[cur] := First;
+  if (first <> -1) and (cur <> first) then
+    FNext[cur] := first;
 
   setlength(FPrev, length(FPoints));
   for i := 0 to high(FPrev) do
@@ -776,6 +748,65 @@ procedure TCustomFillPolyInfo.SetIntersectionValues(AInter: TIntersectionInfo;
   AInterX: Single; AWinding, ANumSegment: integer; dy: single; AData: pointer);
 begin
   AInter.SetValues( AInterX, AWinding, ANumSegment );
+end;
+
+procedure TCustomFillPolyInfo.InitPoints(const points: array of TPointF);
+const
+  minDist = 0.00390625; //1 over 256
+
+var
+  i, first, nbP: integer;
+
+  function PointAlmostEqual(const p1,p2: TPointF): boolean;
+  begin
+    result := (abs(p1.x-p2.x) < minDist) and (abs(p1.y-p2.y) < minDist);
+  end;
+
+  procedure EndOfSubPolygon;
+  begin
+    //if there is a subpolygon
+    if first<>-1 then
+    begin
+      //last point is the same as first point?
+      if (nbP >= first+2) and PointAlmostEqual(FPoints[nbP-1],FPoints[first]) then
+        dec(nbP); //remove superfluous looping point
+
+      if (nbP <= first+2) then //are there only one or two points?
+      begin
+        //remove subpolygon because we need at least a triangle
+        nbP := first;
+        first := -1;
+      end;
+
+    end;
+  end;
+
+begin
+  setlength(FPoints, length(points));
+  nbP := 0;
+  first := -1;
+  for i := 0 to high(points) do
+  if isEmptyPointF(points[i]) then
+  begin
+    EndOfSubPolygon;
+    if first<>-1 then
+    begin
+      FPoints[nbP] := EmptyPointF;
+      inc(nbP);
+      first := -1;
+    end;
+  end else
+  if (first=-1) or not PointAlmostEqual(FPoints[nbP-1],points[i]) then
+  begin
+    if first = -1 then first := nbP;
+    FPoints[nbP] := points[i];
+    inc(nbP);
+  end;
+  EndOfSubPolygon;
+  //if last point was a subpolygon delimiter (EmptyPointF) then removes it
+  if (nbP > 0) and isEmptyPointF(FPoints[nbP-1]) then dec(nbP);
+
+  setlength(FPoints, nbP);
 end;
 
 { TFillPolyInfo }
