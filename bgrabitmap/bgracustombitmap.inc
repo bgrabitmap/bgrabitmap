@@ -725,6 +725,7 @@ type
      procedure PutImageAffine(Origin,HAxis,VAxis: TPointF; Source: TBGRACustomBitmap; AOutputBounds: TRect; AOpacity: Byte=255; ACorrectBlur: Boolean = false); overload;
      procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOpacity: Byte=255; ACorrectBlur: Boolean = false); overload;
      procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AOpacity: Byte=255); overload;
+     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); overload;
      procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); virtual; abstract; overload;
      procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AOpacity: Byte=255; ACorrectBlur: Boolean = false); overload;
      function GetImageAffineBounds(Origin,HAxis,VAxis: TPointF; Source: TBGRACustomBitmap): TRect; overload;
@@ -1945,8 +1946,16 @@ end;
 procedure TBGRACustomBitmap.PutImageAffine(AMatrix: TAffineMatrix;
   Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AOpacity: Byte);
 begin
+  PutImageAffine(AMatrix, Source, AResampleFilter, dmDrawWithTransparency, AOpacity);
+end;
+
+procedure TBGRACustomBitmap.PutImageAffine(AMatrix: TAffineMatrix;
+  Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter;
+  AMode: TDrawMode; AOpacity: Byte);
+begin
   if (Source = nil) or (Source.Width = 0) or (Source.Height = 0) or (AOpacity = 0) then exit;
-  PutImageAffine(AMatrix, Source, GetImageAffineBounds(AMatrix,Source),AResampleFilter,dmDrawWithTransparency,AOpacity);
+  PutImageAffine(AMatrix, Source, GetImageAffineBounds(AMatrix,Source),
+                 AResampleFilter,AMode,AOpacity);
 end;
 
 procedure TBGRACustomBitmap.PutImageAffine(AMatrix: TAffineMatrix;
