@@ -567,8 +567,14 @@ begin
   setlength(dir, Count);
   for i := 0 to Count-1 do
   begin
-    dir[i].Width := Width[i];
-    dir[i].Height := Height[i];
+    if Width[i] >= 256
+    then dir[i].Width := 0
+    else dir[i].Width := Width[i];
+
+    if Height[i] >= 256
+    then dir[i].Height := 0
+    else dir[i].Height := Height[i];
+
     if BitDepth[i] < 8 then
       dir[i].Colors := 1 shl BitDepth[i]
     else

@@ -206,8 +206,6 @@ type
       AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil); override;
 
   public
-    {** Cursor hotspot and Xor mask }
-
     {** Provides a canvas with opacity and antialiasing }
     property CanvasBGRA: TBGRACanvas read GetCanvasBGRA;
     {** Provides a canvas with 2d transformation and similar to HTML5. }
