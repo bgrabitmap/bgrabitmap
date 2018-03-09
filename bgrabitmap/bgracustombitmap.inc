@@ -1916,11 +1916,13 @@ end;
 procedure TBGRACustomBitmap.PutImageAffine(Origin, HAxis, VAxis: TPointF;
   Source: TBGRACustomBitmap; AOutputBounds: TRect;
   AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte);
-var m: TAffineMatrix;
+var m: TAffineMatrix; w,h: integer;
 begin
   if (Source = nil) or (Source.Width = 0) or (Source.Height = 0) or (AOpacity = 0) then exit;
-  m[1,1] := (HAxis.x-Origin.x)/(Source.Width-1); m[1,2] := (VAxis.x-Origin.x)/(Source.Height-1); m[1,3] := Origin.x;
-  m[2,1] := (HAxis.y-Origin.y)/(Source.Width-1); m[2,2] := (VAxis.y-Origin.y)/(Source.Height-1); m[2,3] := Origin.y;
+  if Source.Width < 2 then w := 2 else w := Source.Width; //avoid actual size of zero
+  if Source.Height < 2 then h := 2 else h := Source.Height;
+  m[1,1] := (HAxis.x-Origin.x)/(w-1); m[1,2] := (VAxis.x-Origin.x)/(h-1); m[1,3] := Origin.x;
+  m[2,1] := (HAxis.y-Origin.y)/(w-1); m[2,2] := (VAxis.y-Origin.y)/(h-1); m[2,3] := Origin.y;
   PutImageAffine(m,Source,AOutputBounds,AResampleFilter,AMode,AOpacity);
 end;
 
@@ -1986,6 +1988,8 @@ begin
     result := EmptyRect
   else
   begin
+    if ASourceWidth < 2 then ASourceWidth := 2;   //avoid division by zero by supposing a pixel size of 2
+    if ASourceHeight < 2 then ASourceHeight := 2; //i.e. an actual size of 1 (cf pixel centered coordinates)
     m[1,1] := (HAxis.x-Origin.x)/(ASourceWidth-1); m[1,2] := (VAxis.x-Origin.x)/(ASourceHeight-1); m[1,3] := Origin.x;
     m[2,1] := (HAxis.y-Origin.y)/(ASourceWidth-1); m[2,2] := (VAxis.y-Origin.y)/(ASourceHeight-1); m[2,3] := Origin.y;
     result := GetImageAffineBounds(m, ASourceBounds, AClipOutput);
@@ -2069,8 +2073,10 @@ begin
   cosa := cos(-angle*Pi/180);
   sina := -sin(-angle*Pi/180);
   Origin := Coord(0,0);
-  HAxis := Coord(w,0);
-  VAxis := Coord(0,h);
+  if w < 2 then w := 2; //when pixel size is 1, actual size is zero, so avoid that
+  if h < 2 then h := 2;
+  HAxis := Coord(w-1,0);
+  VAxis := Coord(0,h-1);
 end;
 
 function TBGRACustomBitmap.GetImageAngleBounds(x, y: single;
