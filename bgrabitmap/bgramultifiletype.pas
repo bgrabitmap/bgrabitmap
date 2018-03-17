@@ -37,7 +37,7 @@ type
     FEntries: TMultiFileEntryList;
   protected
     procedure Init; virtual;
-    function AddEntry(AEntry: TMultiFileEntry): integer;
+    function AddEntry(AEntry: TMultiFileEntry; AIndex: integer = -1): integer;
     function GetCount: integer;
     function GetEntry(AIndex: integer): TMultiFileEntry;
     function CreateEntry(AName: utf8string; AExtension: utf8string; AContent: TStream): TMultiFileEntry; virtual; abstract;
@@ -106,9 +106,12 @@ begin
   FEntries := TMultiFileEntryList.Create;
 end;
 
-function TMultiFileContainer.AddEntry(AEntry: TMultiFileEntry): integer;
+function TMultiFileContainer.AddEntry(AEntry: TMultiFileEntry; AIndex: integer): integer;
 begin
-  result := FEntries.Add(AEntry);
+  if (AIndex >= 0) and (AIndex < FEntries.Count) then
+    FEntries.Insert(AIndex, AEntry)
+  else
+    result := FEntries.Add(AEntry);
 end;
 
 constructor TMultiFileContainer.Create;
@@ -159,7 +162,7 @@ begin
   end else
     newEntry := CreateEntry(AName, AExtension, AContent);
   if Assigned(newEntry) then
-    result := AddEntry(newEntry)
+    result := AddEntry(newEntry, index)
   else
     raise exception.Create('Unable to create entry');
 end;

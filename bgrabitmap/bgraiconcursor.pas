@@ -65,7 +65,7 @@ type
 
 implementation
 
-uses BGRAWinResource, BGRAUTF8, BGRAReadPng, BGRAReadBMP, FPWriteBMP, BGRAPalette;
+uses BGRAWinResource, BGRAUTF8, BGRAReadPng, BGRAReadBMP, FPWriteBMP, BGRAPalette, BGRAWritePNG;
 
 { TBGRAIconCursorEntry }
 
@@ -102,7 +102,7 @@ var
   psrc: PBGRAPixel;
   maskBit: byte;
   maskPos,x,y: integer;
-  headerSize: integer;
+  headerSize, dataSize: integer;
 begin
   AContent.Position:= 0;
   format := DetectFileFormat(AContent);
@@ -138,16 +138,28 @@ begin
         begin
           tempStream.Position := 8;
           tempStream.WriteDWord(NtoLE(dword(bmp.Height*2))); //include mask size
+          if headerSize >= 20+4 then
+          begin
+            tempStream.Position:= 20;
+            dataSize := LEtoN(tempStream.ReadDWord);
+            if dataSize <> 0 then
+            begin //if data size is supplied, include mask size
+              dataSize += ((bmp.Width+7) div 8)*bmp.Height;
+              tempStream.Position:= 20;
+              tempStream.WriteDWord(NtoLE(dataSize));
+            end;
+          end;
         end;
 
         //build mask
         tempStream.Position := tempStream.Size;
         setlength(maskLine, (bmp.Width+7) div 8);
-        for y := 0 to bmp.Height-1 do
+        for y := bmp.Height-1 downto 0 do
         begin
           maskBit := $80;
           maskPos := 0;
           psrc := bmp.ScanLine[y];
+          fillchar(maskLine[0], length(maskLine), 0);
           for x := 0 to bmp.Width-1 do
           begin
             if psrc^.alpha = 0 then
@@ -357,6 +369,7 @@ var stream, temp: TStream;
   bitAndMaskBit: byte;
   bitAndMaskRowSize, x: integer;
   palette: TBGRAPalette;
+  writerPng: TBGRAWriterPNG;
 
 begin
   stream := TMemoryStream.Create;
@@ -365,7 +378,22 @@ begin
     if ((ABitmap.Width >= 256) or (ABitmap.Height >= 256)) and (ABitDepth >= 8) and
         ((ABitmap.XorMask = nil) or ABitmap.XorMask.Empty) then
     begin
-      ABitmap.SaveToStreamAsPng(stream);
+      writerPng := TBGRAWriterPNG.Create;
+      try
+        writerPng.WordSized := false;
+        if ABitDepth = 8 then
+        begin
+          writerPng.Indexed := true;
+          writerpng.UseAlpha := ABitmap.HasTransparentPixels;
+        end else
+        begin
+          writerPng.Indexed := false;
+          writerpng.UseAlpha := (ABitDepth = 32);
+        end;
+        ABitmap.SaveToStream(stream, writerPng);
+      finally
+        writerPng.Free;
+      end;
       result := Add(stream, AOverwrite, true);
       stream := nil;
     end else
@@ -505,7 +533,7 @@ begin
       raise Exception.Create('Duplicate entry');
     end;
   end;
-  result := AddEntry(newEntry);
+  result := AddEntry(newEntry, index);
 end;
 
 procedure TBGRAIconCursor.LoadFromStream(AStream: TStream);

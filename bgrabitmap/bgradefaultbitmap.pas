@@ -4967,6 +4967,7 @@ begin
   ABitmap.JoinStyle := JoinStyle;
   ABitmap.FillMode := FillMode;
   ABitmap.ClipRect := ClipRect;
+  ABitmap.HotSpot := HotSpot;
 end;
 
 { Check if two bitmaps have the same content }
