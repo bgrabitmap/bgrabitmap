@@ -2237,6 +2237,7 @@ begin
   if renderer.FontEmHeight <= 0 then exit;
   previousMatrix := currentState.matrix;
 
+  translate(x,y);
   scale(currentState.fontEmHeight/renderer.FontEmHeight);
   if (currentState.textBaseline <> 'top') and
     (currentState.textBaseline <> 'hanging') then
@@ -2251,7 +2252,7 @@ begin
   end;
 
   if renderer <> nil then
-    renderer.CopyTextPathTo(self, x,y, AText, taLeftJustify);
+    renderer.CopyTextPathTo(self, 0,0, AText, taLeftJustify);
 
   currentState.matrix := previousMatrix;
   FLastCoord := EmptyPointF;
