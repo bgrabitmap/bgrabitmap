@@ -168,7 +168,9 @@ begin
   h := LEtoN(str.ReadDWord);
   nameLen := LEtoN(str.ReadDWord);
   setlength(ACaption, nameLen);
+  {$PUSH}{$RANGECHECKS OFF}
   str.ReadBuffer(ACaption[1], nameLen);
+  {$POP}
   channelFlags := str.ReadByte;
   NbPixels := w*h;
 
