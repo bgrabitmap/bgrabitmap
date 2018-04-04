@@ -44,6 +44,7 @@ type
     procedure SetHotSpotAt(AIndex: integer; AValue: TPoint);
   protected
     FFileType : TBGRAImageFormat;
+    FLoading : boolean;
     function CreateEntry(AName: utf8string; AExtension: utf8string;
       AContent: TStream): TMultiFileEntry; override;
     function ExpectedMagic: Word;
@@ -56,6 +57,7 @@ type
     procedure SaveToStream(ADestination: TStream); override;
     function GetBitmap(AIndex: integer): TBGRACustomBitmap;
     function GetBestFitBitmap(AWidth,AHeight: integer): TBGRACustomBitmap;
+    function IndexOf(AWidth,AHeight,ABitDepth: integer): integer; overload;
     property FileType: TBGRAImageFormat read FFileType write SetFileType;
     property Width[AIndex: integer]: integer read GetWidthAt;
     property Height[AIndex: integer]: integer read GetHeightAt;
@@ -509,8 +511,8 @@ end;
 function TBGRAIconCursor.Add(AContent: TStream; AOverwrite: boolean;
   AOwnStream: boolean): integer;
 var
-  index: Integer;
-  newEntry: TMultiFileEntry;
+  index,i: Integer;
+  newEntry: TBGRAIconCursorEntry;
   contentCopy: TMemoryStream;
 begin
   if not AOwnStream then
@@ -532,6 +534,15 @@ begin
       newEntry.Free;
       raise Exception.Create('Duplicate entry');
     end;
+  end else if not FLoading then
+  begin
+    for i := 0 to Count-1 do
+      if ((Width[i] < newEntry.Width) and (Height[i] < newEntry.Height)) or
+         ((Width[i] = newEntry.Width) and (Height[i] = newEntry.Height) and (BitDepth[i] < newEntry.BitDepth)) then
+      begin
+        index := i;
+        break;
+      end;
   end;
   result := AddEntry(newEntry, index);
 end;
@@ -543,36 +554,41 @@ var header: TGroupIconHeader;
   entryContent: TMemoryStream;
   entryIndex, i: integer;
 begin
-  startPos := AStream.Position;
-  AStream.ReadBuffer({%H-}header, sizeof(header));
-  header.SwapIfNecessary;
-  if header.Reserved <> 0 then
-    raise exception.Create('Invalid file format');
-  if FileType = ifUnknown then
-  begin
-    case header.ResourceType of
-    ICON_OR_CURSOR_FILE_ICON_TYPE: FFileType := ifIco;
-    ICON_OR_CURSOR_FILE_CURSOR_TYPE: FFileType := ifCur;
+  FLoading:= true;
+  try
+    startPos := AStream.Position;
+    AStream.ReadBuffer({%H-}header, sizeof(header));
+    header.SwapIfNecessary;
+    if header.Reserved <> 0 then
+      raise exception.Create('Invalid file format');
+    if FileType = ifUnknown then
+    begin
+      case header.ResourceType of
+      ICON_OR_CURSOR_FILE_ICON_TYPE: FFileType := ifIco;
+      ICON_OR_CURSOR_FILE_CURSOR_TYPE: FFileType := ifCur;
+      end;
     end;
-  end;
-  if header.ResourceType <> ExpectedMagic then
-    raise exception.Create('Invalid resource type');
-  Clear;
-  setlength(dir, header.ImageCount);
-  AStream.ReadBuffer(dir[0], sizeof(TIconFileDirEntry)*length(dir));
-  for i := 0 to high(dir) do
-  begin
-    AStream.Position:= LEtoN(dir[i].ImageOffset) + startPos;
-    entryContent := TMemoryStream.Create;
-    entryContent.CopyFrom(AStream, LEtoN(dir[i].ImageSize));
-    entryIndex := Add(entryContent, false, true);
-    if ((dir[i].Width = 0) and (Width[entryIndex] < 256)) or
-       ((dir[i].Width > 0) and (Width[entryIndex] <> dir[i].Width)) or
-       ((dir[i].Height = 0) and (Height[entryIndex] < 256)) or
-       ((dir[i].Height > 0) and (Height[entryIndex] <> dir[i].Height)) then
-        raise Exception.Create('Inconsistent image size');
-    if FFileType = ifCur then
-      TBGRAIconCursorEntry(Entry[entryIndex]).HotSpot := Point(LEtoN(dir[i].HotSpotX),LEtoN(dir[i].HotSpotY));
+    if header.ResourceType <> ExpectedMagic then
+      raise exception.Create('Invalid resource type');
+    Clear;
+    setlength(dir, header.ImageCount);
+    AStream.ReadBuffer(dir[0], sizeof(TIconFileDirEntry)*length(dir));
+    for i := 0 to high(dir) do
+    begin
+      AStream.Position:= LEtoN(dir[i].ImageOffset) + startPos;
+      entryContent := TMemoryStream.Create;
+      entryContent.CopyFrom(AStream, LEtoN(dir[i].ImageSize));
+      entryIndex := Add(entryContent, false, true);
+      if ((dir[i].Width = 0) and (Width[entryIndex] < 256)) or
+         ((dir[i].Width > 0) and (Width[entryIndex] <> dir[i].Width)) or
+         ((dir[i].Height = 0) and (Height[entryIndex] < 256)) or
+         ((dir[i].Height > 0) and (Height[entryIndex] <> dir[i].Height)) then
+          raise Exception.Create('Inconsistent image size');
+      if FFileType = ifCur then
+        TBGRAIconCursorEntry(Entry[entryIndex]).HotSpot := Point(LEtoN(dir[i].HotSpotX),LEtoN(dir[i].HotSpotY));
+    end;
+  finally
+    FLoading:= false;
   end;
 end;
 
@@ -656,6 +672,19 @@ begin
     raise Exception.Create('No bitmap found')
   else
     result := GetBitmap(bestIndex);
+end;
+
+function TBGRAIconCursor.IndexOf(AWidth, AHeight, ABitDepth: integer): integer;
+var
+  i: Integer;
+begin
+  for i := 0 to Count-1 do
+    if (Width[i] = AWidth) and (Height[i] = AHeight) and (BitDepth[i] = ABitDepth) then
+    begin
+      result := i;
+      exit;
+    end;
+  result := -1;
 end;
 
 end.
