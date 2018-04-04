@@ -109,7 +109,10 @@ end;
 function TMultiFileContainer.AddEntry(AEntry: TMultiFileEntry; AIndex: integer): integer;
 begin
   if (AIndex >= 0) and (AIndex < FEntries.Count) then
-    FEntries.Insert(AIndex, AEntry)
+  begin
+    FEntries.Insert(AIndex, AEntry);
+    result := AIndex;
+  end
   else
     result := FEntries.Add(AEntry);
 end;
