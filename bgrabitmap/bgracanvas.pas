@@ -1120,15 +1120,12 @@ begin
   begin
     multi := TBGRAMultishapeFiller.Create;
     multi.Antialiasing := AntialiasingMode <> amOff;
-    with bounds do
-    begin
-      multi.AddPolygon([PointF(Left-0.5,Top-0.5),PointF(Right-0.5,Top-0.5),
-                        PointF(Right-0.5-width,Top-0.5+width),PointF(Left-0.5+width,Top-0.5+width),
-                        PointF(Left-0.5+width,Bottom-0.5-width),PointF(Left-0.5,Bottom-0.5)],color1);
-      multi.AddPolygon([PointF(Right-0.5,Bottom-0.5),PointF(Left-0.5,Bottom-0.5),
-                        PointF(Left-0.5+width,Bottom-0.5-width),PointF(Right-0.5-width,Bottom-0.5-width),
-                        PointF(Right-0.5-width,Top-0.5+width),PointF(Right-0.5,Top-0.5)],color2);
-    end;
+    multi.AddPolygon([PointF(bounds.Left-0.5,bounds.Top-0.5),PointF(bounds.Right-0.5,bounds.Top-0.5),
+                      PointF(bounds.Right-0.5-width,bounds.Top-0.5+width),PointF(bounds.Left-0.5+width,bounds.Top-0.5+width),
+                      PointF(bounds.Left-0.5+width,bounds.Bottom-0.5-width),PointF(bounds.Left-0.5,bounds.Bottom-0.5)],color1);
+    multi.AddPolygon([PointF(bounds.Right-0.5,bounds.Bottom-0.5),PointF(bounds.Left-0.5,bounds.Bottom-0.5),
+                      PointF(bounds.Left-0.5+width,bounds.Bottom-0.5-width),PointF(bounds.Right-0.5-width,bounds.Bottom-0.5-width),
+                      PointF(bounds.Right-0.5-width,bounds.Top-0.5+width),PointF(bounds.Right-0.5,bounds.Top-0.5)],color2);
     multi.Draw(FBitmap);
     multi.Free;
   end;
