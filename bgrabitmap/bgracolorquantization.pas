@@ -55,9 +55,9 @@ type
     constructor Create(ABitmap: TBGRACustomBitmap; AAlpha: TAlphaChannelPaletteOption; AReductionColorCount: integer); override;
     destructor Destroy; override;
     procedure ApplyDitheringInplace(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect); override;
-    function GetDitheredBitmap(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect): TBGRACustomBitmap; override;
+    function GetDitheredBitmap(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect): TBGRACustomBitmap; override; overload;
     function GetDitheredBitmapIndexedData(ABitDepth: integer; AByteOrder: TRawImageByteOrder; AAlgorithm: TDitheringAlgorithm;
-      ABitmap: TBGRACustomBitmap; out AScanlineSize: PtrInt): Pointer; override;
+      ABitmap: TBGRACustomBitmap; out AScanlineSize: PtrInt): Pointer; override; overload;
     procedure SaveBitmapToStream(AAlgorithm: TDitheringAlgorithm;
       ABitmap: TBGRACustomBitmap; AStream: TStream; AFormat: TBGRAImageFormat); override;
   end;
