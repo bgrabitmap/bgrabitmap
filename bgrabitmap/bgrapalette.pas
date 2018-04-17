@@ -734,28 +734,29 @@ end;
 
 { TBGRACustomApproxPalette }
 
-function TBGRACustomApproxPalette.FindNearestColorIgnoreAlpha(AValue: TBGRAPixel
-  ): TBGRAPixel;
-const AlphaMask : DWord = {$IFDEF ENDIAN_LITTLE}$ff000000{$ELSE}$000000ff{$endif};
+function TBGRACustomApproxPalette.FindNearestColorIgnoreAlpha(AValue: TBGRAPixel): TBGRAPixel;
+var saveAlpha: byte;
 begin
   if AValue.alpha = 0 then
     result := BGRAPixelTransparent
   else
   begin
-    result := FindNearestColor(TBGRAPixel(DWord(AValue) or AlphaMask));
-    result.alpha := AValue.alpha;
+    saveAlpha := AValue.alpha;
+    AValue.alpha := 255;
+    result := FindNearestColor(AValue);
+    result.alpha := saveAlpha;
   end;
 end;
 
 function TBGRACustomApproxPalette.FindNearestColorIndexIgnoreAlpha(
   AValue: TBGRAPixel): integer;
-const AlphaMask : DWord = {$IFDEF ENDIAN_LITTLE}$ff000000{$ELSE}$000000ff{$endif};
 begin
   if AValue.alpha = 0 then
     result := -1
   else
   begin
-    result := FindNearestColorIndex(TBGRAPixel(DWord(AValue) or AlphaMask));
+    AValue.alpha := 255;
+    result := FindNearestColorIndex(AValue);
   end;
 end;
 

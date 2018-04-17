@@ -227,7 +227,7 @@ const AllColorDimensions = [cdRed,cdGreen,cdBlue,cdAlpha,cdRGB,cdRG,cdGB,cdRB,cd
 
 implementation
 
-uses BGRADithering, FPimage, FPWriteBMP, BGRAWritePNG;
+uses BGRADithering, FPimage, FPWriteBMP, BGRAWritePNG, math;
 
 const MedianMinPercentage = 0.2;
 
@@ -1130,10 +1130,10 @@ begin
       if not FLeafColorComputed then
       begin
         FLeafColorComputed := true;
-        FCenterColor.alpha:= FLeaf.FBounds[cdAlpha].GetCenter shr AlphaShift;
-        FCenterColor.red:= GammaCompressionTab[FLeaf.FBounds[cdRed].GetCenter shr RedShift];
-        FCenterColor.green:= GammaCompressionTab[FLeaf.FBounds[cdGreen].GetCenter shr GreenShift];
-        FCenterColor.blue:= GammaCompressionTab[FLeaf.FBounds[cdBlue].GetCenter];
+        FCenterColor.alpha:= min(FLeaf.FBounds[cdAlpha].GetCenter shr AlphaShift, 255);
+        FCenterColor.red:= GammaCompressionTab[min(FLeaf.FBounds[cdRed].GetCenter shr RedShift, 65535)];
+        FCenterColor.green:= GammaCompressionTab[min(FLeaf.FBounds[cdGreen].GetCenter shr GreenShift, 65535)];
+        FCenterColor.blue:= GammaCompressionTab[min(FLeaf.FBounds[cdBlue].GetCenter, 65535)];
         FAverageColor := FLeaf.AverageColorOrMainColor;
         extremumColor := FAverageColor;
 
