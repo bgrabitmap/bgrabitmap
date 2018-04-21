@@ -65,9 +65,79 @@ type
     property HotSpot[AIndex: integer]: TPoint read GetHotSpotAtAt write SetHotSpotAt;
   end;
 
+function BGRADitherIconCursor(ABitmap: TBGRACustomBitmap; ABitDepth: integer; ADithering: TDitheringAlgorithm): TBGRACustomBitmap;
+
 implementation
 
-uses BGRAWinResource, BGRAUTF8, BGRAReadPng, BGRAReadBMP, FPWriteBMP, BGRAPalette, BGRAWritePNG;
+uses BGRAWinResource, BGRAUTF8, BGRAReadPng, BGRAReadBMP, FPWriteBMP, BGRAPalette, BGRAWritePNG,
+  BGRAColorQuantization;
+
+function BGRADitherIconCursor(ABitmap: TBGRACustomBitmap; ABitDepth: integer;
+  ADithering: TDitheringAlgorithm): TBGRACustomBitmap;
+var
+  frameMask, temp: TBGRACustomBitmap;
+  quantizer: TBGRAColorQuantizer;
+  maskQuantizer: TBGRAColorQuantizer;
+
+  x,y: integer;
+  psrc,pdest: PBGRAPixel;
+begin
+  if ABitDepth <= 0 then
+    raise exception.Create('Invalid bit depth');
+
+  if ABitDepth <= 24 then
+  begin
+    if ABitDepth = 1 then
+    begin
+      quantizer := TBGRAColorQuantizer.Create([BGRABlack,BGRAWhite,BGRAPixelTransparent],false,3);
+      result := quantizer.GetDitheredBitmap(ADithering, ABitmap);
+      quantizer.Free;
+    end
+    else
+    begin
+      frameMask := ABitmap.GetMaskFromAlpha;
+      maskQuantizer := TBGRAColorQuantizer.Create([BGRABlack,BGRAWhite],false,2);
+      temp := maskQuantizer.GetDitheredBitmap(ADithering, frameMask);
+      frameMask.Free;
+      frameMask := temp;
+      maskQuantizer.Free;
+
+      result := ABitmap.Duplicate;
+      result.ReplaceTransparent(BGRABlack);
+      result.AlphaFill(255);
+
+      if ABitDepth <= 8 then
+      begin
+        quantizer := TBGRAColorQuantizer.Create(result,acFullChannelInPalette, 1 shl ABitDepth);
+        temp := quantizer.GetDitheredBitmap(daFloydSteinberg, result);
+        result.free;
+        result := temp;
+        quantizer.Free;
+      end;
+
+      result.ApplyMask(frameMask);
+      frameMask.Free;
+    end;
+  end else
+    result := ABitmap.Duplicate;
+
+  if Assigned(ABitmap.XorMask) then
+  begin
+    result.NeedXorMask;
+    for y := 0 to ABitmap.XorMask.Height-1 do
+    begin
+      psrc := ABitmap.XorMask.ScanLine[y];
+      pdest := result.XorMask.ScanLine[y];
+      for x := 0 to ABitmap.XorMask.Width-1 do
+      begin
+        if ((psrc^.red shl 1)+(psrc^.green shl 2)+psrc^.blue >= 128*(1+2+4)) then
+          pdest^ := BGRA(255,255,255,0);
+        inc(psrc);
+        inc(pdest);
+      end;
+    end;
+  end;
+end;
 
 { TBGRAIconCursorEntry }
 
@@ -365,7 +435,7 @@ var stream, temp: TStream;
   writer: TFPWriterBMP;
   bmpXOR: TBGRACustomBitmap;
   y: Integer;
-  psrc, pdest: PBGRAPixel;
+  psrcMask, pdest: PBGRAPixel;
   bitAndMask: array of byte;
   bitAndMaskPos: integer;
   bitAndMaskBit: byte;
@@ -432,18 +502,18 @@ begin
         for y := 0 to bmpXOR.Height-1 do
         begin
           if assigned(ABitmap.XorMask) then
-            psrc := ABitmap.XorMask.ScanLine[y]
+            psrcMask := ABitmap.XorMask.ScanLine[y]
           else
-            psrc := nil;
+            psrcMask := nil;
           pdest := bmpXOR.ScanLine[y];
           bitAndMaskPos := (bmpXOR.Height-1-y)*bitAndMaskRowSize;
           bitAndMaskBit:= $80;
           for x := bmpXOR.Width-1 downto 0 do
           begin
             //xor mask is either 100% or 0%
-            if assigned(psrc) and (psrc^.alpha > 128) then
+            if assigned(psrcMask) and ((psrcMask^.red <> 0) or (psrcMask^.green <> 0) or (psrcMask^.blue <> 0)) then
             begin
-              pdest^ := psrc^;
+              pdest^ := psrcMask^;
               pdest^.alpha := 255;
               bitAndMask[bitAndMaskPos] := bitAndMask[bitAndMaskPos] or bitAndMaskBit;
             end else
@@ -462,7 +532,7 @@ begin
               bitAndMaskBit := $80;
               bitAndMaskPos += 1;
             end;
-            if assigned(psrc) then inc(psrc);
+            if assigned(psrcMask) then inc(psrcMask);
             inc(pdest);
           end;
         end;

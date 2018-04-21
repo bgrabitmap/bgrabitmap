@@ -152,6 +152,7 @@ type
     function SimpleStretch(NewWidth, NewHeight: integer): TBGRACustomBitmap;
     function CheckEmpty: boolean; override;
     function GetHasTransparentPixels: boolean; override;
+    function GetHasSemiTransparentPixels: boolean; override;
     function GetAverageColor: TColor; override;
     function GetAveragePixel: TBGRAPixel; override;
 
@@ -827,6 +828,7 @@ type
     procedure GrayscaleToAlpha; override;
     procedure AlphaToGrayscale; override;
     procedure ApplyMask(mask: TBGRACustomBitmap; ARect: TRect; AMaskRectTopLeft: TPoint); override; overload;
+    function GetMaskFromAlpha: TBGRACustomBitmap; override;
     procedure ApplyGlobalOpacity(alpha: byte); override;
     procedure ApplyGlobalOpacity(ABounds: TRect; alpha: byte); override;
     procedure ConvertToLinearRGB; override;
@@ -5241,6 +5243,24 @@ begin
   Result := False;
 end;
 
+function TBGRADefaultBitmap.GetHasSemiTransparentPixels: boolean;
+var
+  n: integer;
+  p: PBGRAPixel;
+begin
+  p := Data;
+  for n := NbPixels - 1 downto 0 do
+  begin
+    if (p^.alpha > 0) and (p^.alpha < 255) then
+    begin
+      result := true;
+      exit;
+    end;
+    inc(p);
+  end;
+  result := false;
+end;
+
 function TBGRADefaultBitmap.GetAverageColor: TColor;
 var
   pix: TBGRAPixel;
@@ -5613,6 +5633,24 @@ begin
     end;
   end;
   InvalidateBitmap;
+end;
+
+function TBGRADefaultBitmap.GetMaskFromAlpha: TBGRACustomBitmap;
+var y,x: integer;
+  psrc, pdest: PBGRAPixel;
+begin
+  result := BGRABitmapFactory.Create(Width,Height);
+  for y := 0 to self.Height-1 do
+  begin
+    psrc := self.ScanLine[y];
+    pdest := result.ScanLine[y];
+    for x := 0 to self.Width-1 do
+    begin
+      pdest^ := BGRA(psrc^.alpha,psrc^.alpha,psrc^.alpha);
+      inc(psrc);
+      inc(pdest);
+    end;
+  end;
 end;
 
 procedure TBGRADefaultBitmap.ApplyGlobalOpacity(alpha: byte);

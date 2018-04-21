@@ -116,6 +116,7 @@ type
      function GetNbPixels: integer; virtual; abstract;
      function CheckEmpty: boolean; virtual; abstract;
      function GetHasTransparentPixels: boolean; virtual; abstract;
+     function GetHasSemiTransparentPixels: boolean; virtual; abstract;
      function GetAverageColor: TColor; virtual; abstract;
      function GetAveragePixel: TBGRAPixel; virtual; abstract;
      procedure SetCanvasOpacity(AValue: byte); virtual; abstract;
@@ -225,6 +226,7 @@ type
      {** Returns True if there are transparent or semitransparent pixels,
          and so if the image would be stored with an alpha channel }
      property HasTransparentPixels: boolean Read GetHasTransparentPixels;
+     property HasSemiTransparentPixels: boolean Read GetHasSemiTransparentPixels;
 
      {** Average color of the image }
      property AverageColor: TColor Read GetAverageColor;
@@ -771,6 +773,7 @@ type
      procedure ApplyMask(mask: TBGRACustomBitmap); overload;
      procedure ApplyMask(mask: TBGRACustomBitmap; ARect: TRect); overload;
      procedure ApplyMask(mask: TBGRACustomBitmap; ARect: TRect; AMaskRectTopLeft: TPoint); virtual; abstract; overload;
+     function GetMaskFromAlpha: TBGRACustomBitmap; virtual; abstract;
      function GetImageBounds(Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; virtual;
      function GetImageBounds(Channels: TChannels; ANothingValue: Byte = 0): TRect; virtual;
      function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; virtual;
