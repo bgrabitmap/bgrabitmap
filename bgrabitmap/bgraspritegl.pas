@@ -46,7 +46,7 @@ type
     procedure SetLayer(AValue: Integer); virtual; abstract;
     procedure SetLocation(AValue: TPointF); virtual;
     procedure SetW(AValue: Single); virtual; abstract;
-    procedure SetVisible(AValue: boolean); virtual;
+    procedure SetVisible({%H-}AValue: boolean); virtual;
     procedure SetX(AValue: Single); virtual; abstract;
     procedure SetY(AValue: Single); virtual; abstract;
     procedure CreateHandle({%H-}ATexture: IBGLTexture; {%H-}ALayer: Integer); virtual;
@@ -55,7 +55,7 @@ type
     constructor Create(ATexture: IBGLTexture; ALayer: integer);
     destructor Destroy; override;
     procedure OnDraw; virtual;
-    procedure OnElapse(AElapsedMs: integer); virtual;
+    procedure OnElapse({%H-}AElapsedMs: integer); virtual;
     procedure OnTimer; virtual;
     procedure QueryDestroy; virtual; abstract;
     property Layer   : Integer read GetLayer write SetLayer;
