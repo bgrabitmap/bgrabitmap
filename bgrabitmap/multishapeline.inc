@@ -3,6 +3,9 @@
         with shapeRow[shapeRowsList[k]],shapes[shapeRowsList[k]] do
         if densMinx <= densMaxx then
         begin
+          if densMinx < minx then densMinx := minx;
+          if densMaxx > maxx then densMaxx := maxx;
+
           if texture <> nil then
           begin
             texture.ScanMoveTo(densMinx,yb);

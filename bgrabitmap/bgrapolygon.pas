@@ -1266,12 +1266,6 @@ begin
       AddOneLineDensity( yb + 0.5 - AliasingOfs.Y );
     end;
 
-    for k := 0 to NbShapeRows-1 do
-    begin
-      if shapeRow[k].densMinx < minx then shapeRow[k].densMinx := minx;
-      if shapeRow[k].densMaxx > maxx then shapeRow[k].densMaxx := maxx;
-    end;
-
     if rowminx < minx then rowminx := minx;
     if rowmaxx > maxx then rowmaxx := maxx;
 
