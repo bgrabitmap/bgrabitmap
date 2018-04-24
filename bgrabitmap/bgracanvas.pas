@@ -810,8 +810,8 @@ var
   cx,cy,rx,ry: single;
 begin
   if not ComputeEllipseC(x1,y1,x2,y2,cx,cy,rx,ry) then exit;
-  angle1 := round(arctan2(-(sy-cy)/ry,(sx-cx)/rx)*65536/(2*Pi));
-  angle2 := round(arctan2(-(ey-cy)/ry,(ex-cx)/rx)*65536/(2*Pi));
+  angle1 := round(arctan2(-(sy-cy)/ry,(sx-cx)/rx)*65536/(2*Pi)) and 65535;
+  angle2 := round(arctan2(-(ey-cy)/ry,(ex-cx)/rx)*65536/(2*Pi)) and 65535;
   Arc65536(x1,y1,x2,y2,angle1, angle2, [aoClosePath,aoFillPath]);
 end;
 
