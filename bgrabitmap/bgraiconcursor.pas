@@ -171,6 +171,7 @@ var
   reader: TBGRAImageReader;
   bmp: TBGRACustomBitmap;
   maskLine: packed array of byte;
+  maskStride: integer;
   psrc: PBGRAPixel;
   maskBit: byte;
   maskPos,x,y: integer;
@@ -192,6 +193,7 @@ begin
         AContent.Position := 0;
         //load bitmap to build mask
         bmp.LoadFromStream(AContent);
+        maskStride := ((bmp.Width+31) div 32)*4;
 
         tempStream := TMemoryStream.Create;
         //BMP header is not stored in icon/cursor
@@ -216,7 +218,7 @@ begin
             dataSize := LEtoN(tempStream.ReadDWord);
             if dataSize <> 0 then
             begin //if data size is supplied, include mask size
-              dataSize += ((bmp.Width+7) div 8)*bmp.Height;
+              dataSize += maskStride*bmp.Height;
               tempStream.Position:= 20;
               tempStream.WriteDWord(NtoLE(dataSize));
             end;
@@ -225,7 +227,7 @@ begin
 
         //build mask
         tempStream.Position := tempStream.Size;
-        setlength(maskLine, (bmp.Width+7) div 8);
+        setlength(maskLine, maskStride);
         for y := bmp.Height-1 downto 0 do
         begin
           maskBit := $80;
@@ -448,7 +450,7 @@ begin
   try
     //PNG format is advised from 256 on but does not handle XOR
     if ((ABitmap.Width >= 256) or (ABitmap.Height >= 256)) and (ABitDepth >= 8) and
-        ((ABitmap.XorMask = nil) or ABitmap.XorMask.Empty) then
+        ((ABitmap.XorMask = nil) or ABitmap.XorMask.IsZero) then
     begin
       writerPng := TBGRAWriterPNG.Create;
       try
@@ -469,7 +471,7 @@ begin
       result := Add(stream, AOverwrite, true);
       stream := nil;
     end else
-    if ((ABitmap.XorMask = nil) or ABitmap.XorMask.Empty) and
+    if ((ABitmap.XorMask = nil) or ABitmap.XorMask.IsZero) and
       (not ABitmap.HasTransparentPixels or (ABitDepth = 32)) then
     begin
       writer := TFPWriterBMP.Create;
@@ -499,7 +501,7 @@ begin
       try
         bitAndMaskRowSize := ((bmpXOR.Width+31) div 32)*4;
         setlength(bitAndMask, bitAndMaskRowSize*bmpXOR.Height);
-        for y := 0 to bmpXOR.Height-1 do
+        for y := bmpXOR.Height-1 downto 0 do
         begin
           if assigned(ABitmap.XorMask) then
             psrcMask := ABitmap.XorMask.ScanLine[y]

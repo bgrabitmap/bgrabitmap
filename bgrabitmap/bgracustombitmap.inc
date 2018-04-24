@@ -115,6 +115,7 @@ type
      function GetDataPtr: PBGRAPixel; virtual; abstract;
      function GetNbPixels: integer; virtual; abstract;
      function CheckEmpty: boolean; virtual; abstract;
+     function CheckIsZero: boolean; virtual; abstract;
      function GetHasTransparentPixels: boolean; virtual; abstract;
      function GetHasSemiTransparentPixels: boolean; virtual; abstract;
      function GetAverageColor: TColor; virtual; abstract;
@@ -222,6 +223,7 @@ type
 
      {** Returns True if the bitmap only contains transparent pixels or has a size of zero }
      property Empty: boolean Read CheckEmpty;
+     property IsZero: boolean Read CheckIsZero;
 
      {** Returns True if there are transparent or semitransparent pixels,
          and so if the image would be stored with an alpha channel }

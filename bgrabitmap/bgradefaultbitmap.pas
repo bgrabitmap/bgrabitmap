@@ -151,6 +151,7 @@ type
     function FineResample(NewWidth, NewHeight: integer): TBGRACustomBitmap;
     function SimpleStretch(NewWidth, NewHeight: integer): TBGRACustomBitmap;
     function CheckEmpty: boolean; override;
+    function CheckIsZero: boolean; override;
     function GetHasTransparentPixels: boolean; override;
     function GetHasSemiTransparentPixels: boolean; override;
     function GetAverageColor: TColor; override;
@@ -966,6 +967,31 @@ begin
     Inc(p,2);
   end;
   if Odd(NbPixels) and (p^.alpha <> 0) then
+  begin
+    Result := false;
+    exit;
+  end;
+  Result := True;
+end;
+
+function TBGRADefaultBitmap.CheckIsZero: boolean;
+const
+  alphaMask = $ff shl TBGRAPixel_AlphaShift;
+var
+  i: integer;
+  p: PBGRAPixel;
+begin
+  p := Data;
+  for i := (NbPixels shr 1) - 1 downto 0 do
+  begin
+    if PInt64(p)^ <> 0 then
+    begin
+      Result := False;
+      exit;
+    end;
+    Inc(p,2);
+  end;
+  if Odd(NbPixels) and (PDWord(p)^ <> 0) then
   begin
     Result := false;
     exit;
