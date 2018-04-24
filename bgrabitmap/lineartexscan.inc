@@ -20,12 +20,12 @@
 
     procedure NextLight; inline;
     begin
-      inc(light,lightStep);
+      light := (light+lightStep) and 65535;
       inc(lightAcc,lightDiff);
       if lightAcc >= lightMod then
       begin
         dec(lightAcc,lightMod);
-        inc(light);
+        light := (light + 1) and 65535;
       end;
     end;
   {$ENDIF}
@@ -52,9 +52,18 @@
     begin
       light := info1.lightness;
       lightLen := info2.lightness-info1.lightness;
-      lightStep := lightLen div (ix2-ix1);
-      lightMod := ix2-ix1;
-      lightDiff := lightLen - lightStep*(ix2-ix1);
+      if lightLen >= 0 then
+      begin
+        lightStep := lightLen div (ix2-ix1);
+        lightMod := ix2-ix1;
+        lightDiff := lightLen - lightStep*(ix2-ix1);
+      end else
+      begin
+        lightStep := (-lightLen+(ix2-ix1-1)) div (ix2-ix1);
+        lightMod := ix2-ix1;
+        lightDiff := lightLen + lightStep*(ix2-ix1);
+        lightStep := 65536 - lightStep;
+      end;
     end;
     lightAcc := lightDiff div 2;
   {$ENDIF}
