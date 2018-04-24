@@ -1173,14 +1173,14 @@ var
   MultiEmpty: boolean;
   bounds: TRect;
 
-  xb, yb, yc, j,k: integer;
+  xb, yb, yc, k: integer;
   pdest:    PBGRAPixel;
 
   curSum,nextSum: ^TCardinalSum;
   sums: array of TCardinalSum;
 
   pdens: PDensity;
-  w: cardinal;
+  w: UInt32or64;
   ec: TExpandedPixel;
   count: integer;
   ScanNextFunc: function: TBGRAPixel of object;
@@ -1234,7 +1234,7 @@ begin
     AliasingOfs := PointF(0,0) else
     AliasingOfs := PointF(-0.0001,-0.0001);
 
-  setlength(sums,maxx-minx+2); //more for safety
+  setlength(sums,maxx-minx+1);
   setlength(shapeRowsList, nbShapes);
 
   //vertical scan
@@ -1266,13 +1266,11 @@ begin
       AddOneLineDensity( yb + 0.5 - AliasingOfs.Y );
     end;
 
-    rowminx := minx;
-    rowmaxx := maxx;
+    if rowminx < minx then rowminx := minx;
+    if rowmaxx > maxx then rowmaxx := maxx;
+
     if rowminx <= rowmaxx then
     begin
-      if rowminx < minx then rowminx := minx;
-      if rowmaxx > maxx then rowmaxx := maxx;
-
       FillChar(sums[rowminx-minx],(rowmaxx-rowminx+1)*sizeof(sums[0]),0);
 
       if useAA then

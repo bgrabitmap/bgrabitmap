@@ -44,6 +44,7 @@ type
     procedure SetHotSpotAt(AIndex: integer; AValue: TPoint);
   protected
     FFileType : TBGRAImageFormat;
+    FLoading : boolean;
     function CreateEntry(AName: utf8string; AExtension: utf8string;
       AContent: TStream): TMultiFileEntry; override;
     function ExpectedMagic: Word;
@@ -56,6 +57,7 @@ type
     procedure SaveToStream(ADestination: TStream); override;
     function GetBitmap(AIndex: integer): TBGRACustomBitmap;
     function GetBestFitBitmap(AWidth,AHeight: integer): TBGRACustomBitmap;
+    function IndexOf(AWidth,AHeight,ABitDepth: integer): integer; overload;
     property FileType: TBGRAImageFormat read FFileType write SetFileType;
     property Width[AIndex: integer]: integer read GetWidthAt;
     property Height[AIndex: integer]: integer read GetHeightAt;
@@ -63,9 +65,79 @@ type
     property HotSpot[AIndex: integer]: TPoint read GetHotSpotAtAt write SetHotSpotAt;
   end;
 
+function BGRADitherIconCursor(ABitmap: TBGRACustomBitmap; ABitDepth: integer; ADithering: TDitheringAlgorithm): TBGRACustomBitmap;
+
 implementation
 
-uses BGRAWinResource, BGRAUTF8, BGRAReadPng, BGRAReadBMP, FPWriteBMP, BGRAPalette;
+uses BGRAWinResource, BGRAUTF8, BGRAReadPng, BGRAReadBMP, FPWriteBMP, BGRAPalette, BGRAWritePNG,
+  BGRAColorQuantization;
+
+function BGRADitherIconCursor(ABitmap: TBGRACustomBitmap; ABitDepth: integer;
+  ADithering: TDitheringAlgorithm): TBGRACustomBitmap;
+var
+  frameMask, temp: TBGRACustomBitmap;
+  quantizer: TBGRAColorQuantizer;
+  maskQuantizer: TBGRAColorQuantizer;
+
+  x,y: integer;
+  psrc,pdest: PBGRAPixel;
+begin
+  if ABitDepth <= 0 then
+    raise exception.Create('Invalid bit depth');
+
+  if ABitDepth <= 24 then
+  begin
+    if ABitDepth = 1 then
+    begin
+      quantizer := TBGRAColorQuantizer.Create([BGRABlack,BGRAWhite,BGRAPixelTransparent],false,3);
+      result := quantizer.GetDitheredBitmap(ADithering, ABitmap);
+      quantizer.Free;
+    end
+    else
+    begin
+      frameMask := ABitmap.GetMaskFromAlpha;
+      maskQuantizer := TBGRAColorQuantizer.Create([BGRABlack,BGRAWhite],false,2);
+      temp := maskQuantizer.GetDitheredBitmap(ADithering, frameMask);
+      frameMask.Free;
+      frameMask := temp;
+      maskQuantizer.Free;
+
+      result := ABitmap.Duplicate;
+      result.ReplaceTransparent(BGRABlack);
+      result.AlphaFill(255);
+
+      if ABitDepth <= 8 then
+      begin
+        quantizer := TBGRAColorQuantizer.Create(result,acFullChannelInPalette, 1 shl ABitDepth);
+        temp := quantizer.GetDitheredBitmap(daFloydSteinberg, result);
+        result.free;
+        result := temp;
+        quantizer.Free;
+      end;
+
+      result.ApplyMask(frameMask);
+      frameMask.Free;
+    end;
+  end else
+    result := ABitmap.Duplicate;
+
+  if Assigned(ABitmap.XorMask) then
+  begin
+    result.NeedXorMask;
+    for y := 0 to ABitmap.XorMask.Height-1 do
+    begin
+      psrc := ABitmap.XorMask.ScanLine[y];
+      pdest := result.XorMask.ScanLine[y];
+      for x := 0 to ABitmap.XorMask.Width-1 do
+      begin
+        if ((psrc^.red shl 1)+(psrc^.green shl 2)+psrc^.blue >= 128*(1+2+4)) then
+          pdest^ := BGRA(255,255,255,0);
+        inc(psrc);
+        inc(pdest);
+      end;
+    end;
+  end;
+end;
 
 { TBGRAIconCursorEntry }
 
@@ -99,10 +171,11 @@ var
   reader: TBGRAImageReader;
   bmp: TBGRACustomBitmap;
   maskLine: packed array of byte;
+  maskStride: integer;
   psrc: PBGRAPixel;
   maskBit: byte;
   maskPos,x,y: integer;
-  headerSize: integer;
+  headerSize, dataSize: integer;
 begin
   AContent.Position:= 0;
   format := DetectFileFormat(AContent);
@@ -120,6 +193,7 @@ begin
         AContent.Position := 0;
         //load bitmap to build mask
         bmp.LoadFromStream(AContent);
+        maskStride := ((bmp.Width+31) div 32)*4;
 
         tempStream := TMemoryStream.Create;
         //BMP header is not stored in icon/cursor
@@ -138,16 +212,28 @@ begin
         begin
           tempStream.Position := 8;
           tempStream.WriteDWord(NtoLE(dword(bmp.Height*2))); //include mask size
+          if headerSize >= 20+4 then
+          begin
+            tempStream.Position:= 20;
+            dataSize := LEtoN(tempStream.ReadDWord);
+            if dataSize <> 0 then
+            begin //if data size is supplied, include mask size
+              dataSize += maskStride*bmp.Height;
+              tempStream.Position:= 20;
+              tempStream.WriteDWord(NtoLE(dataSize));
+            end;
+          end;
         end;
 
         //build mask
         tempStream.Position := tempStream.Size;
-        setlength(maskLine, (bmp.Width+7) div 8);
-        for y := 0 to bmp.Height-1 do
+        setlength(maskLine, maskStride);
+        for y := bmp.Height-1 downto 0 do
         begin
           maskBit := $80;
           maskPos := 0;
           psrc := bmp.ScanLine[y];
+          fillchar(maskLine[0], length(maskLine), 0);
           for x := 0 to bmp.Width-1 do
           begin
             if psrc^.alpha = 0 then
@@ -351,25 +437,41 @@ var stream, temp: TStream;
   writer: TFPWriterBMP;
   bmpXOR: TBGRACustomBitmap;
   y: Integer;
-  psrc, pdest: PBGRAPixel;
+  psrcMask, pdest: PBGRAPixel;
   bitAndMask: array of byte;
   bitAndMaskPos: integer;
   bitAndMaskBit: byte;
   bitAndMaskRowSize, x: integer;
   palette: TBGRAPalette;
+  writerPng: TBGRAWriterPNG;
 
 begin
   stream := TMemoryStream.Create;
   try
     //PNG format is advised from 256 on but does not handle XOR
     if ((ABitmap.Width >= 256) or (ABitmap.Height >= 256)) and (ABitDepth >= 8) and
-        ((ABitmap.XorMask = nil) or ABitmap.XorMask.Empty) then
+        ((ABitmap.XorMask = nil) or ABitmap.XorMask.IsZero) then
     begin
-      ABitmap.SaveToStreamAsPng(stream);
+      writerPng := TBGRAWriterPNG.Create;
+      try
+        writerPng.WordSized := false;
+        if ABitDepth = 8 then
+        begin
+          writerPng.Indexed := true;
+          writerpng.UseAlpha := ABitmap.HasTransparentPixels;
+        end else
+        begin
+          writerPng.Indexed := false;
+          writerpng.UseAlpha := (ABitDepth = 32);
+        end;
+        ABitmap.SaveToStream(stream, writerPng);
+      finally
+        writerPng.Free;
+      end;
       result := Add(stream, AOverwrite, true);
       stream := nil;
     end else
-    if ((ABitmap.XorMask = nil) or ABitmap.XorMask.Empty) and
+    if ((ABitmap.XorMask = nil) or ABitmap.XorMask.IsZero) and
       (not ABitmap.HasTransparentPixels or (ABitDepth = 32)) then
     begin
       writer := TFPWriterBMP.Create;
@@ -399,21 +501,21 @@ begin
       try
         bitAndMaskRowSize := ((bmpXOR.Width+31) div 32)*4;
         setlength(bitAndMask, bitAndMaskRowSize*bmpXOR.Height);
-        for y := 0 to bmpXOR.Height-1 do
+        for y := bmpXOR.Height-1 downto 0 do
         begin
           if assigned(ABitmap.XorMask) then
-            psrc := ABitmap.XorMask.ScanLine[y]
+            psrcMask := ABitmap.XorMask.ScanLine[y]
           else
-            psrc := nil;
+            psrcMask := nil;
           pdest := bmpXOR.ScanLine[y];
           bitAndMaskPos := (bmpXOR.Height-1-y)*bitAndMaskRowSize;
           bitAndMaskBit:= $80;
           for x := bmpXOR.Width-1 downto 0 do
           begin
             //xor mask is either 100% or 0%
-            if assigned(psrc) and (psrc^.alpha > 128) then
+            if assigned(psrcMask) and ((psrcMask^.red <> 0) or (psrcMask^.green <> 0) or (psrcMask^.blue <> 0)) then
             begin
-              pdest^ := psrc^;
+              pdest^ := psrcMask^;
               pdest^.alpha := 255;
               bitAndMask[bitAndMaskPos] := bitAndMask[bitAndMaskPos] or bitAndMaskBit;
             end else
@@ -432,7 +534,7 @@ begin
               bitAndMaskBit := $80;
               bitAndMaskPos += 1;
             end;
-            if assigned(psrc) then inc(psrc);
+            if assigned(psrcMask) then inc(psrcMask);
             inc(pdest);
           end;
         end;
@@ -481,8 +583,8 @@ end;
 function TBGRAIconCursor.Add(AContent: TStream; AOverwrite: boolean;
   AOwnStream: boolean): integer;
 var
-  index: Integer;
-  newEntry: TMultiFileEntry;
+  index,i: Integer;
+  newEntry: TBGRAIconCursorEntry;
   contentCopy: TMemoryStream;
 begin
   if not AOwnStream then
@@ -504,8 +606,17 @@ begin
       newEntry.Free;
       raise Exception.Create('Duplicate entry');
     end;
+  end else if not FLoading then
+  begin
+    for i := 0 to Count-1 do
+      if ((Width[i] < newEntry.Width) and (Height[i] < newEntry.Height)) or
+         ((Width[i] = newEntry.Width) and (Height[i] = newEntry.Height) and (BitDepth[i] < newEntry.BitDepth)) then
+      begin
+        index := i;
+        break;
+      end;
   end;
-  result := AddEntry(newEntry);
+  result := AddEntry(newEntry, index);
 end;
 
 procedure TBGRAIconCursor.LoadFromStream(AStream: TStream);
@@ -515,36 +626,41 @@ var header: TGroupIconHeader;
   entryContent: TMemoryStream;
   entryIndex, i: integer;
 begin
-  startPos := AStream.Position;
-  AStream.ReadBuffer({%H-}header, sizeof(header));
-  header.SwapIfNecessary;
-  if header.Reserved <> 0 then
-    raise exception.Create('Invalid file format');
-  if FileType = ifUnknown then
-  begin
-    case header.ResourceType of
-    ICON_OR_CURSOR_FILE_ICON_TYPE: FFileType := ifIco;
-    ICON_OR_CURSOR_FILE_CURSOR_TYPE: FFileType := ifCur;
+  FLoading:= true;
+  try
+    startPos := AStream.Position;
+    AStream.ReadBuffer({%H-}header, sizeof(header));
+    header.SwapIfNecessary;
+    if header.Reserved <> 0 then
+      raise exception.Create('Invalid file format');
+    if FileType = ifUnknown then
+    begin
+      case header.ResourceType of
+      ICON_OR_CURSOR_FILE_ICON_TYPE: FFileType := ifIco;
+      ICON_OR_CURSOR_FILE_CURSOR_TYPE: FFileType := ifCur;
+      end;
     end;
-  end;
-  if header.ResourceType <> ExpectedMagic then
-    raise exception.Create('Invalid resource type');
-  Clear;
-  setlength(dir, header.ImageCount);
-  AStream.ReadBuffer(dir[0], sizeof(TIconFileDirEntry)*length(dir));
-  for i := 0 to high(dir) do
-  begin
-    AStream.Position:= LEtoN(dir[i].ImageOffset) + startPos;
-    entryContent := TMemoryStream.Create;
-    entryContent.CopyFrom(AStream, LEtoN(dir[i].ImageSize));
-    entryIndex := Add(entryContent, false, true);
-    if ((dir[i].Width = 0) and (Width[entryIndex] < 256)) or
-       ((dir[i].Width > 0) and (Width[entryIndex] <> dir[i].Width)) or
-       ((dir[i].Height = 0) and (Height[entryIndex] < 256)) or
-       ((dir[i].Height > 0) and (Height[entryIndex] <> dir[i].Height)) then
-        raise Exception.Create('Inconsistent image size');
-    if FFileType = ifCur then
-      TBGRAIconCursorEntry(Entry[entryIndex]).HotSpot := Point(LEtoN(dir[i].HotSpotX),LEtoN(dir[i].HotSpotY));
+    if header.ResourceType <> ExpectedMagic then
+      raise exception.Create('Invalid resource type');
+    Clear;
+    setlength(dir, header.ImageCount);
+    AStream.ReadBuffer(dir[0], sizeof(TIconFileDirEntry)*length(dir));
+    for i := 0 to high(dir) do
+    begin
+      AStream.Position:= LEtoN(dir[i].ImageOffset) + startPos;
+      entryContent := TMemoryStream.Create;
+      entryContent.CopyFrom(AStream, LEtoN(dir[i].ImageSize));
+      entryIndex := Add(entryContent, false, true);
+      if ((dir[i].Width = 0) and (Width[entryIndex] < 256)) or
+         ((dir[i].Width > 0) and (Width[entryIndex] <> dir[i].Width)) or
+         ((dir[i].Height = 0) and (Height[entryIndex] < 256)) or
+         ((dir[i].Height > 0) and (Height[entryIndex] <> dir[i].Height)) then
+          raise Exception.Create('Inconsistent image size');
+      if FFileType = ifCur then
+        TBGRAIconCursorEntry(Entry[entryIndex]).HotSpot := Point(LEtoN(dir[i].HotSpotX),LEtoN(dir[i].HotSpotY));
+    end;
+  finally
+    FLoading:= false;
   end;
 end;
 
@@ -567,8 +683,14 @@ begin
   setlength(dir, Count);
   for i := 0 to Count-1 do
   begin
-    dir[i].Width := Width[i];
-    dir[i].Height := Height[i];
+    if Width[i] >= 256
+    then dir[i].Width := 0
+    else dir[i].Width := Width[i];
+
+    if Height[i] >= 256
+    then dir[i].Height := 0
+    else dir[i].Height := Height[i];
+
     if BitDepth[i] < 8 then
       dir[i].Colors := 1 shl BitDepth[i]
     else
@@ -622,6 +744,19 @@ begin
     raise Exception.Create('No bitmap found')
   else
     result := GetBitmap(bestIndex);
+end;
+
+function TBGRAIconCursor.IndexOf(AWidth, AHeight, ABitDepth: integer): integer;
+var
+  i: Integer;
+begin
+  for i := 0 to Count-1 do
+    if (Width[i] = AWidth) and (Height[i] = AHeight) and (BitDepth[i] = ABitDepth) then
+    begin
+      result := i;
+      exit;
+    end;
+  result := -1;
 end;
 
 end.

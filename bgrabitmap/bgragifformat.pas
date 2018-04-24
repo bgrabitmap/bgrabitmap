@@ -223,9 +223,15 @@ var
     begin
       if (bytinbuf = 0) then
       begin
-        AStream.Read(bytinbuf, 1);
+        if AStream.Read(bytinbuf, 1) <> 1 then
+          raise exception.Create('Unexpected end of stream');
+
         if (bytinbuf = 0) then
+        begin
           endofsrc := True;
+          result := endcode;
+          exit;
+        end;
         AStream.Read(bytbuf, bytinbuf);
         bytbufidx := 0;
       end;
@@ -381,7 +387,7 @@ begin
   if not endofsrc then
   begin
     bytinbuf:= 0;
-    AStream.Read(bytinbuf, 1);
+    AStream.ReadBuffer(bytinbuf, 1);
     if bytinbuf <> 0 then
       raise exception.Create('Invalid GIF format: expecting block terminator');
   end;

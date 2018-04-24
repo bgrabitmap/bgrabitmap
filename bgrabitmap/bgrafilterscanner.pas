@@ -137,9 +137,12 @@ var
   slope,h: byte;
   highlight: TBGRAPixel;
 begin
-  sum := (PByte(PTop)+FChannelOffset)^ + (PByte(PTop+1)+FChannelOffset)^+
-         (PByte(PMiddle)+FChannelOffset)^ - (PByte(PMiddle+2)+FChannelOffset)^ -
-         (PByte(PBottom+1)+FChannelOffset)^ - (PByte(PBottom+2)+FChannelOffset)^;
+  sum := NativeInt((PByte(PTop)+FChannelOffset)^) +
+         NativeInt((PByte(PTop+1)+FChannelOffset)^) +
+         NativeInt((PByte(PMiddle)+FChannelOffset)^) -
+         NativeInt((PByte(PMiddle+2)+FChannelOffset)^) -
+         NativeInt((PByte(PBottom+1)+FChannelOffset)^) -
+         NativeInt((PByte(PBottom+2)+FChannelOffset)^);
   sum := 128 - sum div 3;
   if sum > 255 then
     slope := 255
@@ -710,7 +713,7 @@ begin
       while ACount > 0 do
       begin
         if ADest^.alpha <> 0 then
-          DWord(ADest^) := DWord(ADest^) xor (not ($ff shl TBGRAPixel_AlphaShift));
+          DWord(ADest^) := DWord(ADest^) xor ($ffffffff and not ($ff shl TBGRAPixel_AlphaShift));
         Inc(ADest);
         dec(ACount);
       end;
@@ -737,7 +740,7 @@ begin
         if ASource^.alpha = 0 then
           ADest^ := BGRAPixelTransparent
         else
-          DWord(ADest^) := DWord(ASource^) xor (not ($ff shl TBGRAPixel_AlphaShift));
+          DWord(ADest^) := DWord(ASource^) xor ($ffffffff and not ($ff shl TBGRAPixel_AlphaShift));
         inc(ASource);
         Inc(ADest);
         dec(ACount);

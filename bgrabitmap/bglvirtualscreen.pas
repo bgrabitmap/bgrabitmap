@@ -15,6 +15,7 @@ type
   TBGLLoadTexturesEvent = procedure (Sender: TObject; BGLContext: TBGLContext) of object;
   TBGLElapseEvent = procedure (Sender: TObject; BGLContext: TBGLContext; ElapsedMs: integer) of object;
   TBGLFramesPerSecondEvent = procedure (Sender: TObject; BGLContext: TBGLContext; FramesPerSecond: integer) of object;
+  TBGLUseContextCallback = procedure (Sender: TObject; BGLContext: TBGLContext; Data: Pointer) of object;
 
   { TCustomBGLVirtualScreen }
 
@@ -59,6 +60,7 @@ type
     procedure DoOnPaint; override;
     procedure QueryLoadTextures; virtual;
     procedure UnloadTextures; virtual;
+    procedure UseContext(ACallback: TBGLUseContextCallback; AData: Pointer = nil);
     constructor Create(TheOwner: TComponent); override;
     destructor Destroy; override;
   public
@@ -346,6 +348,20 @@ begin
     ctx.Canvas.Lighting.FreeShaders;
     ReleaseBGLContext(ctx);
     FTexturesLoaded := false;
+  end;
+end;
+
+procedure TCustomBGLVirtualScreen.UseContext(ACallback: TBGLUseContextCallback; AData: Pointer);
+var
+  ctx: TBGLContext;
+begin
+  if not MakeCurrent then
+    raise exception.Create('Unable to switch to the OpenGL context');
+  ctx := PrepareBGLContext;
+  try
+    ACallback(self, ctx, AData);
+  finally
+    ReleaseBGLContext(ctx);
   end;
 end;
 

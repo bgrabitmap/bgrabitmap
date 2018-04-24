@@ -948,18 +948,18 @@ var
   end;
 
   function GetSingle: single;
-  var code: integer;
+  var {%H-}code: integer;
   begin
-    val(GetNextToken,result,code);
+    val(GetNextToken,result,{%H-}code);
   end;
 
   function GetColorF: TColorF;
   var r,g,b: single;
-    code: integer;
+    {%H-}code: integer;
   begin
-    val(GetNextToken,r,code);
-    val(GetNextToken,g,code);
-    val(GetNextToken,b,code);
+    val(GetNextToken,r,{%H-}code);
+    val(GetNextToken,g,{%H-}code);
+    val(GetNextToken,b,{%H-}code);
     result := ColorF(r,g,b,1);
   end;
 

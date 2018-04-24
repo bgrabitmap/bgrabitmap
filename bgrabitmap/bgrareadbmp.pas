@@ -857,9 +857,9 @@ begin
 end;
 
 procedure TBGRAReaderBMP.ReadMaskLine(Row: Integer; Stream: TStream);
-var i: integer;
 begin
-  Stream.ReadBuffer(FMaskData^, FMaskDataSize);
+  FillChar(FMaskData^, FMaskDataSize, 0);
+  Stream.Read(FMaskData^, FMaskDataSize);
 end;
 
 procedure TBGRAReaderBMP.SkipMaskLine(Row: Integer; Stream: TStream);

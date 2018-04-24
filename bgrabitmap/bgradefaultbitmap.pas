@@ -151,7 +151,9 @@ type
     function FineResample(NewWidth, NewHeight: integer): TBGRACustomBitmap;
     function SimpleStretch(NewWidth, NewHeight: integer): TBGRACustomBitmap;
     function CheckEmpty: boolean; override;
+    function CheckIsZero: boolean; override;
     function GetHasTransparentPixels: boolean; override;
+    function GetHasSemiTransparentPixels: boolean; override;
     function GetAverageColor: TColor; override;
     function GetAveragePixel: TBGRAPixel; override;
 
@@ -206,8 +208,6 @@ type
       AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil); override;
 
   public
-    {** Cursor hotspot and Xor mask }
-
     {** Provides a canvas with opacity and antialiasing }
     property CanvasBGRA: TBGRACanvas read GetCanvasBGRA;
     {** Provides a canvas with 2d transformation and similar to HTML5. }
@@ -829,6 +829,7 @@ type
     procedure GrayscaleToAlpha; override;
     procedure AlphaToGrayscale; override;
     procedure ApplyMask(mask: TBGRACustomBitmap; ARect: TRect; AMaskRectTopLeft: TPoint); override; overload;
+    function GetMaskFromAlpha: TBGRACustomBitmap; override;
     procedure ApplyGlobalOpacity(alpha: byte); override;
     procedure ApplyGlobalOpacity(ABounds: TRect; alpha: byte); override;
     procedure ConvertToLinearRGB; override;
@@ -966,6 +967,31 @@ begin
     Inc(p,2);
   end;
   if Odd(NbPixels) and (p^.alpha <> 0) then
+  begin
+    Result := false;
+    exit;
+  end;
+  Result := True;
+end;
+
+function TBGRADefaultBitmap.CheckIsZero: boolean;
+const
+  alphaMask = $ff shl TBGRAPixel_AlphaShift;
+var
+  i: integer;
+  p: PBGRAPixel;
+begin
+  p := Data;
+  for i := (NbPixels shr 1) - 1 downto 0 do
+  begin
+    if PInt64(p)^ <> 0 then
+    begin
+      Result := False;
+      exit;
+    end;
+    Inc(p,2);
+  end;
+  if Odd(NbPixels) and (PDWord(p)^ <> 0) then
   begin
     Result := false;
     exit;
@@ -4969,6 +4995,7 @@ begin
   ABitmap.JoinStyle := JoinStyle;
   ABitmap.FillMode := FillMode;
   ABitmap.ClipRect := ClipRect;
+  ABitmap.HotSpot := HotSpot;
 end;
 
 { Check if two bitmaps have the same content }
@@ -5240,6 +5267,24 @@ begin
     Inc(p);
   end;
   Result := False;
+end;
+
+function TBGRADefaultBitmap.GetHasSemiTransparentPixels: boolean;
+var
+  n: integer;
+  p: PBGRAPixel;
+begin
+  p := Data;
+  for n := NbPixels - 1 downto 0 do
+  begin
+    if (p^.alpha > 0) and (p^.alpha < 255) then
+    begin
+      result := true;
+      exit;
+    end;
+    inc(p);
+  end;
+  result := false;
 end;
 
 function TBGRADefaultBitmap.GetAverageColor: TColor;
@@ -5614,6 +5659,24 @@ begin
     end;
   end;
   InvalidateBitmap;
+end;
+
+function TBGRADefaultBitmap.GetMaskFromAlpha: TBGRACustomBitmap;
+var y,x: integer;
+  psrc, pdest: PBGRAPixel;
+begin
+  result := BGRABitmapFactory.Create(Width,Height);
+  for y := 0 to self.Height-1 do
+  begin
+    psrc := self.ScanLine[y];
+    pdest := result.ScanLine[y];
+    for x := 0 to self.Width-1 do
+    begin
+      pdest^ := BGRA(psrc^.alpha,psrc^.alpha,psrc^.alpha);
+      inc(psrc);
+      inc(pdest);
+    end;
+  end;
 end;
 
 procedure TBGRADefaultBitmap.ApplyGlobalOpacity(alpha: byte);

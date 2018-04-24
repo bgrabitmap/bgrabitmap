@@ -418,7 +418,10 @@ function CombineLightness(lightness1,lightness2: Int32or64): Int32or64;
   end;
 {$ELSE}
 begin
-  result := int64(lightness1)*lightness2 shr 15;
+  if (lightness1 < 0) xor (lightness2 < 0) then
+    result := -(int64(-lightness1)*lightness2 shr 15)
+  else
+    result := int64(lightness1)*lightness2 shr 15;
 end;
 {$ENDIF}
 

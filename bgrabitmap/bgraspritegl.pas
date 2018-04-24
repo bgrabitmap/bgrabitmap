@@ -31,6 +31,7 @@ type
     function GetH: Single; virtual; abstract;
     function GetLayer: Integer; virtual; abstract;
     function GetLocation: TPointF; virtual;
+    function GetVisible: Boolean; virtual;
     function GetW: Single; virtual; abstract;
     function GetX: Single; virtual; abstract;
     function GetY: Single; virtual; abstract;
@@ -45,6 +46,7 @@ type
     procedure SetLayer(AValue: Integer); virtual; abstract;
     procedure SetLocation(AValue: TPointF); virtual;
     procedure SetW(AValue: Single); virtual; abstract;
+    procedure SetVisible({%H-}AValue: boolean); virtual;
     procedure SetX(AValue: Single); virtual; abstract;
     procedure SetY(AValue: Single); virtual; abstract;
     procedure CreateHandle({%H-}ATexture: IBGLTexture; {%H-}ALayer: Integer); virtual;
@@ -53,7 +55,7 @@ type
     constructor Create(ATexture: IBGLTexture; ALayer: integer);
     destructor Destroy; override;
     procedure OnDraw; virtual;
-    procedure OnElapse(AElapsedMs: integer); virtual;
+    procedure OnElapse({%H-}AElapsedMs: integer); virtual;
     procedure OnTimer; virtual;
     procedure QueryDestroy; virtual; abstract;
     property Layer   : Integer read GetLayer write SetLayer;
@@ -70,6 +72,7 @@ type
     property Color   : TBGRAPixel read GetColor write SetColor;
     property HorizontalAlign: TAlignment read GetHorizontalAlign write SetHorizontalAlign;
     property VerticalAlign: TTextLayout read GetVerticalAlign write SetVerticalAlign;
+    property Visible : Boolean read GetVisible write SetVisible;
     property Texture : IBGLTexture read GetTexture;
     property Handle  : Pointer read GetHandle;
   end;
@@ -85,6 +88,7 @@ type
     FVerticalAlign: TTextLayout;
     FQueryDestroy: boolean;
     FLayer: integer;
+    FHidden: boolean;
     function GetHorizontalAlign: TAlignment; override;
     function GetVerticalAlign: TTextLayout; override;
     procedure SetHorizontalAlign(AValue: TAlignment); override;
@@ -96,6 +100,7 @@ type
     function GetActualFrame: Single; override;
     function GetH: Single; override;
     function GetLayer: Integer; override;
+    function GetVisible: Boolean; override;
     function GetW: Single; override;
     function GetX: Single; override;
     function GetY: Single; override;
@@ -106,6 +111,7 @@ type
     procedure SetActualFrame(AValue: Single); override;
     procedure SetH(AValue: Single); override;
     procedure SetLayer(AValue: Integer); override;
+    procedure SetVisible(AValue: boolean); override;
     procedure SetW(AValue: Single); override;
     procedure SetX(AValue: Single); override;
     procedure SetY(AValue: Single); override;
@@ -341,6 +347,11 @@ begin
   result := FLayer;
 end;
 
+function TBGLDefaultSprite.GetVisible: Boolean;
+begin
+  Result:= not FHidden;
+end;
+
 function TBGLDefaultSprite.GetW: Single;
 begin
   result := FSize.X;
@@ -389,6 +400,11 @@ end;
 procedure TBGLDefaultSprite.SetLayer(AValue: Integer);
 begin
   FLayer:= AValue;
+end;
+
+procedure TBGLDefaultSprite.SetVisible(AValue: boolean);
+begin
+  FHidden := not AValue;
 end;
 
 procedure TBGLDefaultSprite.SetW(AValue: Single);
@@ -486,10 +502,20 @@ begin
   result := PointF(X,Y);
 end;
 
+function TBGLCustomSprite.GetVisible: Boolean;
+begin
+  result := true;
+end;
+
 procedure TBGLCustomSprite.SetLocation(AValue: TPointF);
 begin
   X := AValue.X;
   Y := AValue.Y;
+end;
+
+procedure TBGLCustomSprite.SetVisible(AValue: boolean);
+begin
+  raise ENotImplemented.Create('Not implemented in base class');
 end;
 
 procedure TBGLCustomSprite.CreateHandle(ATexture: IBGLTexture; ALayer: Integer);
@@ -535,7 +561,7 @@ end;
 procedure TBGLCustomSprite.OnDraw;
 var NumFrame: integer;
 begin
-  if Texture <> nil then
+  if Visible and (Texture <> nil) then
     begin
       NumFrame := Trunc(Frame+0.5);
       if Angle <> 0 then

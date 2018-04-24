@@ -551,6 +551,7 @@ var x, rx : integer;
 begin
   UsingBitGroup := 0;
   DataIndex := 0;
+  {$PUSH}{$RANGECHECKS OFF} //because PByteArray is limited to 32767
   if (UsingBitGroup = 0) and (Header.BitDepth <> 16) then
     case ByteWidth of
       1: if BitsUsed[0] = $ff then
@@ -614,6 +615,7 @@ begin
            exit;
          end;
     end;
+  {$POP}
 
   X := StartX;
   for rx := 0 to ScanlineLength[CurrentPass]-1 do

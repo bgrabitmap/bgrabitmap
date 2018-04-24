@@ -1064,7 +1064,7 @@ begin
       if (a <= low(int64)) or (a >= high(int64)) then
         result := FAverageColor
       else
-        result := FGradient.GetColorAt(Sin65536(round(a)));
+        result := FGradient.GetColorAt(Sin65536(round(a) and 65535));
     end else
       result := FGradient.GetColorAtF(a);
   end;
@@ -1083,7 +1083,7 @@ begin
       if (a <= low(int64)) or (a >= high(int64)) then
         result := FAverageExpandedColor
       else
-        result := FGradient.GetExpandedColorAt(Sin65536(round(a)));
+        result := FGradient.GetExpandedColorAt(Sin65536(round(a) and 65535));
     end else
       result := FGradient.GetExpandedColorAtF(a);
   end;
