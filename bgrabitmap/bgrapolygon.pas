@@ -324,10 +324,18 @@ begin
           begin
             x1 := (x1+x1b)*0.5;
             x2 := (x2+x2b)*0.5;
+
+            if x1 < minx then x1 := minx;
             ix1 := floor(x1);
-            ix2 := floor(x2);
-            if ix1 < minx then ix1 := minx;
+
+            if x2 >= maxx+1 then
+            begin
+              x2 := maxx+1;
+              ix2 := maxx;
+            end else
+              ix2 := floor(x2);
             if ix2 > maxx then ix2 := maxx;
+
             if ix1>ix2 then continue;
             if ix1=ix2 then
             begin
