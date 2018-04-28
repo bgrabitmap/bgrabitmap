@@ -1210,8 +1210,8 @@ begin
 
   //transparent pixels have no color so
   //take it from other color
-  if c1.alpha = 0 then c1 := BGRA(c2.red,c2.green,c2.blue,c1.alpha);
-  if c2.alpha = 0 then c1 := BGRA(c1.red,c1.green,c1.blue,c2.alpha);
+  if c1.alpha = 0 then c1 := BGRA(c2.red,c2.green,c2.blue,0);
+  if c2.alpha = 0 then c2 := BGRA(c1.red,c1.green,c1.blue,0);
 
   if AGammaCorrection then
     FGradient := TBGRASimpleGradientWithGammaCorrection.Create(c1,c2)
