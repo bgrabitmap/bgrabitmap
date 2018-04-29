@@ -963,18 +963,19 @@ begin
     ifPng: result := 'png';
     ifGif: result := 'gif';
     ifBmp: result := 'bmp';
+    ifBmpMioMap: result := 'bmp';
     ifIco: result := 'ico';
     ifCur: result := 'ico';
     ifPcx: result := 'pcx';
     ifPaintDotNet: result := 'pdn';
     ifLazPaint: result := 'lzp';
     ifOpenRaster: result := 'ora';
+    ifPhoxo: result := 'oXo';
     ifPsd: result := 'psd';
     ifTarga: result := 'tga';
     ifTiff: result := 'tif';
     ifXwd: result := 'xwd';
     ifXPixMap: result := 'xpm';
-    ifBmpMioMap: result := 'bmp';
     else result := '?';
   end;
 end;
@@ -1001,6 +1002,7 @@ begin
     case AFormat of
       ifUnknown: raise exception.Create('The image format is unknown');
       ifOpenRaster: raise exception.Create('You need to call BGRAOpenRaster.RegisterOpenRasterFormat to write with this image format.');
+      ifPhoxo: raise exception.Create('You need to call BGRAPhoxo.RegisterPhoxoFormat to write with this image format.');
     else
       raise exception.Create('The image writer is not registered for this image format.');
     end;

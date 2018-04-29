@@ -54,6 +54,7 @@ type
   public
     procedure SaveToFile(const filenameUTF8: string); override;
     procedure SaveToStream(Stream: TStream); override;
+    procedure SaveToStreamAs(Stream: TStream; AExtension: string);
     constructor Create; override;
     destructor Destroy; override;
     function ToString: ansistring; override;
@@ -986,6 +987,39 @@ begin
     LayeredBitmapSaveToStreamProc(Stream, self)
   else
     raise exception.Create('Call BGRAStreamLayers.RegisterStreamLayers first');
+end;
+
+procedure TBGRACustomLayeredBitmap.SaveToStreamAs(Stream: TStream;
+  AExtension: string);
+var bmp: TBGRABitmap;
+    ext: string;
+    format: TBGRAImageFormat;
+    temp: TBGRALayeredBitmap;
+    i: integer;
+begin
+  ext := UTF8LowerCase(AExtension);
+  if ext[1] <> '.' then ext := '.'+ext;
+
+  for i := 0 to high(LayeredBitmapWriters) do
+    if '.'+LayeredBitmapWriters[i].extension = ext then
+    begin
+      temp := LayeredBitmapWriters[i].theClass.Create;
+      try
+        temp.Assign(self);
+        temp.SaveToStream(Stream);
+      finally
+        temp.Free;
+      end;
+      exit;
+    end;
+
+  format := SuggestImageFormat(ext);
+  bmp := ComputeFlatImage;
+  try
+    bmp.SaveToStreamAs(Stream, format);
+  finally
+    bmp.Free;
+  end;
 end;
 
 constructor TBGRACustomLayeredBitmap.Create;
