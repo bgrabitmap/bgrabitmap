@@ -483,7 +483,7 @@ var
 implementation
 
 uses Math, SysUtils, BGRAUTF8,
-  FPReadTiff, FPReadXwd, FPReadXPM,
+  BGRAReadTiff, FPReadXwd, FPReadXPM,
   FPWriteTiff, FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM;
 
@@ -1045,7 +1045,6 @@ initialization
   DefaultBGRAImageWriter[ifTiff] := TFPWriterTiff;
   //writing XWD not implemented
 
-  DefaultBGRAImageReader[ifTiff] := TFPReaderTiff;
   DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;
   //the other readers are registered by their unit
 
