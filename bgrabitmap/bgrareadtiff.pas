@@ -1820,7 +1820,11 @@ begin
 
     // create FPimage
     DoCreateImage(IFD);
-    if IFD.Img=nil then IFD.Img := BGRABitmapFactory.Create;
+    if IFD.Img=nil then
+    begin
+      IFD.Img := BGRABitmapFactory.Create;
+      IFD.FreeImg := true;
+    end;
     CurFPImg:=IFD.Img;
     if CurFPImg=nil then exit;
 
@@ -2167,16 +2171,20 @@ type
   PLZWString = ^TLZWString;
 const
   ClearCode = 256; // clear table, start with 9bit codes
-  EoiCode = 257; // end of input
+  EoiCode = 257;   // end of input
+  NoCode = $7fff;
 var
   NewCapacity: PtrInt;
   SrcPos: PtrInt;
-  SrcPosBit: integer;
-  CurBitLength: integer;
+  CodeBuffer: DWord;
+  CodeBufferLength: byte;
+  CurBitLength: byte;
   Code: Word;
-  Table: array[0..4096-259-1] of TLZWString;
+  Table: array[0..4096-258-1] of TLZWString;
   TableCount: integer;
   OldCode: Word;
+  BigEndian: boolean;
+  TableMargin: byte;
 
   procedure Error(const Msg: string);
   begin
@@ -2184,43 +2192,33 @@ var
   end;
 
   function GetNextCode: Word;
-  var
-    v: Integer;
   begin
-    Result:=0;
-    // CurBitLength can be 9 to 12
-    //writeln('GetNextCode CurBitLength=',CurBitLength,' SrcPos=',SrcPos,' SrcPosBit=',SrcPosBit,' ',hexstr(PByte(Buffer)[SrcPos],2),' ',hexstr(PByte(Buffer)[SrcPos+1],2),' ',hexstr(PByte(Buffer)[SrcPos+2],2));
-    // read two or three bytes
-    if CurBitLength+SrcPosBit>16 then begin
-      // read from three bytes
-      if SrcPos+3>Count then
+    while CurBitLength > CodeBufferLength do
+    begin
+      if SrcPos >= Count then
       begin
         result := EoiCode;
         exit;
       end;
-      v:=PByte(Buffer)[SrcPos];
-      inc(SrcPos);
-      v:=(v shl 8)+PByte(Buffer)[SrcPos];
-      inc(SrcPos);
-      v:=(v shl 8)+PByte(Buffer)[SrcPos];
-      v:=v shr (24-CurBitLength-SrcPosBit);
-    end else begin
-      // read from two bytes
-      if SrcPos+2>Count then
-      begin
-        result := EoiCode;
-        exit;
-      end;
-      v:=PByte(Buffer)[SrcPos];
-      inc(SrcPos);
-      v:=(v shl 8)+PByte(Buffer)[SrcPos];
-      if CurBitLength+SrcPosBit=16 then
-        inc(SrcPos);
-      v:=v shr (16-CurBitLength-SrcPosBit);
+      If BigEndian then
+        CodeBuffer := (CodeBuffer shl 8) or PByte(Buffer)[SrcPos]
+      else
+        CodeBuffer := CodeBuffer or (DWord(PByte(Buffer)[SrcPos]) shl CodeBufferLength);
+      Inc(SrcPos);
+      Inc(CodeBufferLength, 8);
     end;
-    Result:=v and ((1 shl CurBitLength)-1);
-    SrcPosBit:=(SrcPosBit+CurBitLength) and 7;
-    //writeln('GetNextCode END SrcPos=',SrcPos,' SrcPosBit=',SrcPosBit,' Result=',Result,' Result=',hexstr(Result,4));
+
+    if BigEndian then
+    begin
+      result := CodeBuffer shr (CodeBufferLength-CurBitLength);
+      Dec(CodeBufferLength, CurBitLength);
+      CodeBuffer := CodeBuffer and ((1 shl CodeBufferLength) - 1);
+    end else
+    begin
+      result := CodeBuffer and ((1 shl CurBitLength)-1);
+      Dec(CodeBufferLength, CurBitLength);
+      CodeBuffer := CodeBuffer shr CurBitLength;
+    end;
   end;
 
   procedure ClearTable;
@@ -2284,8 +2282,8 @@ var
     NewCount: integer;
   begin
     //WriteLn('AddStringToTable Code=',Code,' FCFCode=',AddFirstCharFromCode,' TableCount=',TableCount);
-    if TableCount=4096-259 then
-      Error('LZW too many codes');
+    //check whether can store more codes or not
+    if TableCount=high(Table)+1 then exit;
     // find string 1
     if Code<256 then begin
       // string is byte
@@ -2326,10 +2324,12 @@ var
     p[s1.Count]:=s2.Data^;
     // increase TableCount
     inc(TableCount);
-    if ((SrcPos+3=Count) and (CurBitLength+SrcPosBit>16)) or
-       ((SrcPos+2=Count) and (CurBitLength+SrcPosBit<=16)) then exit;
-    case TableCount+259 of
-    512,1024,2048: inc(CurBitLength);
+    case TableCount+258+TableMargin of
+    512,1024,2048: begin
+        //check if there is room for a greater code
+        if (Count-SrcPos) shl 3 + integer(CodeBufferLength) > integer(CurBitLength) then
+          inc(CurBitLength);
+      end;
     end;
   end;
 
@@ -2345,10 +2345,21 @@ begin
   NewCapacity:=Count*2;
   ReAllocMem(NewBuffer,NewCapacity);
 
+  if PByte(Buffer)[0] = $80 then
+  begin
+    BigEndian := true; //endian-ness of LZW is not necessarily consistent with the rest of the file
+    TableMargin := 1; //keep one free code to be able to write EOI code
+  end else
+  begin
+    BigEndian := false;
+    TableMargin := 0;
+  end;
   SrcPos:=0;
-  SrcPosBit:=0;
   CurBitLength:=9;
+  CodeBufferLength := 0;
+  CodeBuffer := 0;
   TableCount:=0;
+  OldCode := NoCode;
   try
     repeat
       Code:=GetNextCode;
@@ -2366,9 +2377,10 @@ begin
       end else begin
         if Code<TableCount+258 then begin
           WriteStringFromCode(Code);
-          AddStringToTable(OldCode,Code);
+          if OldCode <> NoCode then
+            AddStringToTable(OldCode,Code);
           OldCode:=Code;
-        end else if Code=TableCount+258 then begin
+        end else if (Code=TableCount+258) and (OldCode <> NoCode) then begin
           WriteStringFromCode(OldCode,true);
           AddStringToTable(OldCode,OldCode);
           OldCode:=Code;
