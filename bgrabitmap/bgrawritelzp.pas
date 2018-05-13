@@ -147,15 +147,16 @@ begin
     if not WriteThumbnail(Str, Img) then
     begin
       IncludeThumbnail := false;
-      header.compressionMode:= CompressionMode;
+      header.compressionMode:= CompressionMode; //update field for thumbnail
     end;
 
   header.previewOffset:= Str.Position - startPos;
   if Compression = lzpRLE then
-    WriteRLEImage(Str, Img)
+    WriteRLEImage(Str, Img, Caption)
   else
   begin
     compBmp := TBGRACompressableBitmap.Create(Img as TBGRABitmap);
+    compBmp.Caption := Caption;
     compBmp.WriteToStream(Str);
     compBmp.Free;
   end;

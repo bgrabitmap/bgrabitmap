@@ -15,7 +15,8 @@ type
   TBGRALayeredBitmapClass = class of TBGRALayeredBitmap;
 
   TBGRALayeredBitmapSaveToStreamProc = procedure(AStream: TStream; ALayers: TBGRACustomLayeredBitmap);
-  TBGRALayeredBitmapLoadFromStreamProc = function(AStream: TStream): TBGRALayeredBitmap;
+  TBGRALayeredBitmapLoadFromStreamProc = procedure(AStream: TStream; ALayers: TBGRACustomLayeredBitmap);
+  TBGRALayeredBitmapCheckStreamProc = function(AStream: TStream): boolean;
 
   { TBGRACustomLayeredBitmap }
 
@@ -189,10 +190,13 @@ type
 
 procedure RegisterLayeredBitmapWriter(AExtensionUTF8: string; AWriter: TBGRALayeredBitmapClass);
 procedure RegisterLayeredBitmapReader(AExtensionUTF8: string; AReader: TBGRACustomLayeredBitmapClass);
+function TryCreateLayeredBitmapWriter(AExtensionUTF8: string): TBGRALayeredBitmap;
+function TryCreateLayeredBitmapReader(AExtensionUTF8: string): TBGRACustomLayeredBitmap;
 
 var
   LayeredBitmapSaveToStreamProc : TBGRALayeredBitmapSaveToStreamProc;
   LayeredBitmapLoadFromStreamProc : TBGRALayeredBitmapLoadFromStreamProc;
+  LayeredBitmapCheckStreamProc: TBGRALayeredBitmapCheckStreamProc;
 
 type
   TOnLayeredBitmapLoadStartProc = procedure(AFilenameUTF8: string) of object;
@@ -444,11 +448,10 @@ var bmp: TBGRABitmap;
 begin
   if Assigned(LayeredBitmapLoadFromStreamProc) then
   begin
-    temp := LayeredBitmapLoadFromStreamProc(Stream);
-    if temp <> nil then
+    if not Assigned(LayeredBitmapCheckStreamProc) or
+      LayeredBitmapCheckStreamProc(stream) then
     begin
-      Assign(temp);
-      temp.Free;
+      LayeredBitmapLoadFromStreamProc(Stream, self);
       exit;
     end;
   end;
@@ -1350,6 +1353,38 @@ begin
     extension:= UTF8LowerCase(AExtensionUTF8);
     theClass := AReader;
   end;
+end;
+
+function TryCreateLayeredBitmapWriter(AExtensionUTF8: string): TBGRALayeredBitmap;
+var
+  i: Integer;
+begin
+  AExtensionUTF8:= UTF8LowerCase(AExtensionUTF8);
+  if (AExtensionUTF8 = '') or (AExtensionUTF8[1] <> '.') then
+    AExtensionUTF8:= '.'+AExtensionUTF8;
+  for i := 0 to high(LayeredBitmapWriters) do
+    if '.'+LayeredBitmapWriters[i].extension = AExtensionUTF8 then
+    begin
+      result := LayeredBitmapWriters[i].theClass.Create;
+      exit;
+    end;
+  result := nil;
+end;
+
+function TryCreateLayeredBitmapReader(AExtensionUTF8: string): TBGRACustomLayeredBitmap;
+var
+  i: Integer;
+begin
+  AExtensionUTF8:= UTF8LowerCase(AExtensionUTF8);
+  if (AExtensionUTF8 = '') or (AExtensionUTF8[1] <> '.') then
+    AExtensionUTF8:= '.'+AExtensionUTF8;
+  for i := 0 to high(LayeredBitmapReaders) do
+    if '.'+LayeredBitmapReaders[i].extension = AExtensionUTF8 then
+    begin
+      result := LayeredBitmapReaders[i].theClass.Create;
+      exit;
+    end;
+  result := nil;
 end;
 
 procedure OnLayeredBitmapLoadFromStreamStart;

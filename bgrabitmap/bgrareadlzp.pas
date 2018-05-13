@@ -95,7 +95,7 @@ begin
   begin
     str.Position:= oldPos;
     InternalReadCompressableBitmap(str,Img);
-    if Str.Position < Str.Size then InternalReadLayers(Str,Img);
+    if (Str.Position < Str.Size) and (FCaption = 'Preview') then InternalReadLayers(Str,Img);
   end;
 end;
 
