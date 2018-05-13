@@ -880,6 +880,7 @@ var
       if DefaultBGRAImageReader[ifOpenRaster] = nil then inc(scores[ifOpenRaster]) else
       with CreateBGRAImageReader(ifOpenRaster) do
         try
+          AStream.Position := streamStartPos;
           if CheckContents(AStream) then inc(scores[ifOpenRaster],2);
         finally
           Free;

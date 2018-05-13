@@ -36,13 +36,13 @@ type
     function CopyBitmapToMemoryStream(ABitmap: TBGRABitmap; AFilename: string): boolean;
     procedure SetMemoryStreamAsString(AFilename: string; AContent: string);
     function GetMemoryStreamAsString(AFilename: string): string;
-    procedure UnzipFromStream(AStream: TStream);
+    procedure UnzipFromStream(AStream: TStream; AFileList: TStrings = nil);
     procedure UnzipFromFile(AFilenameUTF8: string);
     procedure ZipToFile(AFilenameUTF8: string);
     procedure ZipToStream(AStream: TStream);
     procedure CopyThumbnailToMemoryStream(AMaxWidth, AMaxHeight: integer);
-    procedure AnalyzeZip;
-    procedure PrepareZipToSave;
+    procedure AnalyzeZip; virtual;
+    procedure PrepareZipToSave; virtual;
     function GetMimeType: string; override;
 
   public
@@ -50,6 +50,9 @@ type
     constructor Create(AWidth, AHeight: integer); override; overload;
     procedure Clear; override;
     function CheckMimeType(AStream: TStream): boolean;
+    procedure LoadFlatImageFromStream(AStream: TStream;
+              out ANbLayers: integer;
+              out ABitmap: TBGRABitmap);
     procedure LoadFromStream(AStream: TStream); override;
     procedure LoadFromFile(const filenameUTF8: string); override;
     procedure SaveToFile(const filenameUTF8: string); override;
@@ -85,6 +88,10 @@ implementation
 
 uses XMLRead, XMLWrite, FPReadPNG, BGRABitmapTypes, zstream, BGRAUTF8,
   UnzipperExt;
+
+const
+  MergedImageFilename = 'mergedimage.png';
+  LayerStackFilename = 'stack.xml';
 
 function IsZipStream(stream: TStream): boolean;
 var
@@ -139,7 +146,7 @@ begin
   if Stream=nil then exit;
   oldPos := stream.Position;
   {$PUSH}{$HINTS OFF}
-  BytesRead := Stream.Read(magic,sizeof(magic));
+  BytesRead := Stream.Read({%H-}magic,sizeof(magic));
   {$POP}
   stream.Position:= OldPos;
   if BytesRead<>sizeof(magic) then exit;
@@ -162,12 +169,20 @@ begin
   FNbLayers:= 0;
   layeredImage := TBGRAOpenRasterDocument.Create;
   try
-    layeredImage.LoadFromStream(Stream);
-    flat := layeredImage.ComputeFlatImage;
-    try
+    layeredImage.LoadFlatImageFromStream(Stream, FNbLayers, flat);
+    if Assigned(flat) then
+    begin
+      FWidth := flat.Width;
+      FHeight := flat.Height;
+    end else
+    begin
+      layeredImage.LoadFromStream(Stream);
+      flat := layeredImage.ComputeFlatImage;
       FWidth:= layeredImage.Width;
       FHeight:= layeredImage.Height;
       FNbLayers:= layeredImage.NbLayers;
+    end;
+    try
       if Img is TBGRACustomBitmap then
         TBGRACustomBitmap(img).Assign(flat)
       else
@@ -180,7 +195,7 @@ begin
     finally
       flat.free;
     end;
-    layeredImage.Free;
+    FreeAndNil(layeredImage);
   except
     on ex: Exception do
     begin
@@ -202,10 +217,12 @@ var StackStream: TMemoryStream;
   opstr : string;
   gammastr: string;
 begin
+  inherited Clear;
+
   if MimeType <> OpenRasterMimeType then
     raise Exception.Create('Invalid mime type');
 
-  StackStream := GetMemoryStream('stack.xml');
+  StackStream := GetMemoryStream(LayerStackFilename);
   if StackStream = nil then
     raise Exception.Create('Layer stack not found');
 
@@ -457,12 +474,14 @@ procedure TBGRAOpenRasterDocument.SaveToFile(const filenameUTF8: string);
 begin
   PrepareZipToSave;
   ZipToFile(filenameUTF8);
+  ClearFiles;
 end;
 
 procedure TBGRAOpenRasterDocument.SaveToStream(AStream: TStream);
 begin
   PrepareZipToSave;
   ZipToStream(AStream);
+  ClearFiles;
 end;
 
 function TBGRAOpenRasterDocument.GetMimeType: string;
@@ -592,10 +611,11 @@ begin
   str.Free;
 end;
 
-procedure TBGRAOpenRasterDocument.UnzipFromStream(AStream: TStream);
+procedure TBGRAOpenRasterDocument.UnzipFromStream(AStream: TStream;
+          AFileList: TStrings = nil);
 var unzip: TUnZipper;
 begin
-  Clear;
+  ClearFiles;
   unzip := TUnZipper.Create;
   try
     unzip.OnCreateStream := @ZipOnCreateStream;
@@ -603,7 +623,12 @@ begin
     unzip.OnOpenInputStream := @ZipOnOpenInputStream;
     unzip.OnCloseInputStream := @ZipOnCloseInputStream;
     FZipInputStream := AStream;
-    unzip.UnZipAllFiles;
+    if Assigned(AFileList) then
+    begin
+      if AFileList.Count > 0 then
+        unzip.UnZipFiles(AFileList);
+    end else
+      unzip.UnZipAllFiles;
   finally
     FZipInputStream := nil;
     unzip.Free;
@@ -613,7 +638,7 @@ end;
 procedure TBGRAOpenRasterDocument.UnzipFromFile(AFilenameUTF8: string);
 var unzip: TUnZipper;
 begin
-  Clear;
+  ClearFiles;
   unzip := TUnZipper.Create;
   try
     unzip.FileName := Utf8ToAnsi(AFilenameUTF8);
@@ -660,7 +685,7 @@ var thumbnail: TBGRABitmap;
 begin
   if (Width = 0) or (Height = 0) then exit;
   thumbnail := ComputeFlatImage;
-  CopyBitmapToMemoryStream(thumbnail,'mergedimage.png');
+  CopyBitmapToMemoryStream(thumbnail,MergedImageFilename);
   if (thumbnail.Width > AMaxWidth) or
    (thumbnail.Height > AMaxHeight) then
   begin
@@ -708,6 +733,49 @@ begin
   astream.Position:= OldPos;
 end;
 
+procedure TBGRAOpenRasterDocument.LoadFlatImageFromStream(AStream: TStream; out
+  ANbLayers: integer; out ABitmap: TBGRABitmap);
+var fileList: TStringList;
+  imgStream, stackStream: TMemoryStream;
+  imageNode, stackNode: TDOMNode;
+  i: integer;
+begin
+  fileList := TStringList.Create;
+  fileList.Add(MergedImageFilename);
+  fileList.Add(LayerStackFilename);
+  imgStream := nil;
+  try
+    UnzipFromStream(AStream, fileList);
+    imgStream := GetMemoryStream(MergedImageFilename);
+    if imgStream = nil then
+      ABitmap := nil
+    else
+      ABitmap := TBGRABitmap.Create(imgStream);
+    ANbLayers := 1;
+
+    stackStream := GetMemoryStream(LayerStackFilename);
+    ReadXMLFile(FStackXML, StackStream);
+    imageNode := StackXML.FindNode('image');
+    if Assigned(imagenode) then
+    begin
+      stackNode := imageNode.FindNode('stack');
+      if Assigned(stackNode) then
+      begin
+        ANbLayers:= 0;
+        for i := stackNode.ChildNodes.Length-1 downto 0 do
+        begin
+          if stackNode.ChildNodes[i].NodeName = 'layer' then
+            inc(ANbLayers);
+        end;
+      end;
+    end;
+
+  finally
+    fileList.Free;
+    ClearFiles;
+  end;
+end;
+
 procedure TBGRAOpenRasterDocument.LoadFromStream(AStream: TStream);
 begin
   OnLayeredBitmapLoadFromStreamStart;
@@ -716,6 +784,7 @@ begin
     AnalyzeZip;
   finally
     OnLayeredBitmapLoaded;
+    ClearFiles;
   end;
 end;
 
