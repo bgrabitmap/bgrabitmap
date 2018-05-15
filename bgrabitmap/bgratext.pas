@@ -45,7 +45,7 @@ type
     FFont: TFont;             //font parameters
     FWordBreakHandler: TWordBreakHandler;
     procedure UpdateFont; virtual;
-    function InternalTextSize(sUTF8: string): TSize;
+    function InternalTextSize(sUTF8: string; AShowPrefix: boolean): TSize;
     procedure InternalTextWordBreak(ADest: TBGRACustomBitmap; ATextUTF8: string;
                                     x, y, AMaxWidth: integer; AColor: TBGRAPixel; ATexture: IBGRAScanner;
                                     AHorizAlign: TAlignment; AVertAlign: TTextLayout);
@@ -60,6 +60,8 @@ type
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment); override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment); override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); override;
     procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; AColor: TBGRAPixel; AHorizAlign: TAlignment; AVertAlign: TTextLayout);
@@ -74,7 +76,7 @@ type
 
   TLCLFontRenderer = class(TCustomLCLFontRenderer)
   protected
-    function TextSurfaceSmaller(sUTF8: string; ARect: TRect): boolean;
+    function TextSurfaceSmaller(sUTF8: string; ARect: TRect; AShowPrefix: boolean): boolean;
   public
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); override;
@@ -546,6 +548,34 @@ begin
   end;
 end;
 
+function RemovePrefix(sUTF8: string): string;
+var i,resLen: integer;
+begin
+  setlength(result, length(sUTF8));
+  resLen := 0;
+  i := 1;
+  while i <= length(sUTF8) do
+  begin
+    if sUTF8[i] = '&' then
+    begin // double ('&&') indicate single char '&'
+      if (i < length(sUTF8)) and (sUTF8[i+1] = '&') then
+      begin
+        inc(resLen);
+        result[resLen] := '&';
+        inc(i,2);
+      end else
+        // single indicate underline
+        inc(i);
+    end else
+    begin
+      inc(resLen);
+      result[resLen] := sUTF8[i];
+      inc(i);
+    end;
+  end;
+  setlength(result,resLen);
+end;
+
 procedure FilterOriginalText(Quality: TBGRAFontQuality; CustomAntialiasingLevel: Integer; var temp: TBGRACustomBitmap;
   out grayscaleMask: TGrayscaleMask);
 var
@@ -647,6 +677,7 @@ var
   sizeFactor: integer;
   xMarginF: single;
   style: TTextStyle;
+  noPrefix: string;
 begin
   if not LCLFontAvailable then exit;
 
@@ -670,14 +701,19 @@ begin
   end;
   {$ENDIF}
 
-  size := BGRAOriginalTextSizeEx(Font,Quality,sUTF8,CustomAntialiasingLevel,sizeFactor);
+  if ShowPrefix then
+    noPrefix := RemovePrefix(sUTF8)
+  else
+    noPrefix := sUTF8;
+
+  size := BGRAOriginalTextSizeEx(Font,Quality,noPrefix,CustomAntialiasingLevel,sizeFactor);
   if (size.cx = 0) or (size.cy = 0) then
     exit;
 
   if (size.cy >= 144) and (Quality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB]) and (CustomAntialiasingLevel > 4) then
   begin
     CustomAntialiasingLevel:= 4;
-    size := BGRAOriginalTextSizeEx(Font,Quality,sUTF8,CustomAntialiasingLevel,sizeFactor);
+    size := BGRAOriginalTextSizeEx(Font,Quality,noPrefix,CustomAntialiasingLevel,sizeFactor);
   end;
 
   case align of
@@ -903,9 +939,9 @@ end;
 
 { TLCLFontRenderer }
 
-function TLCLFontRenderer.TextSurfaceSmaller(sUTF8: string; ARect: TRect): boolean;
+function TLCLFontRenderer.TextSurfaceSmaller(sUTF8: string; ARect: TRect; AShowPrefix: boolean): boolean;
 begin
-  with InternalTextSize(sUTF8) do
+  with InternalTextSize(sUTF8, AShowPrefix) do
     result := cx*cy < (ARect.Right-ARect.Left)*(ARect.Bottom-ARect.Top);
 end;
 
@@ -913,7 +949,7 @@ procedure TLCLFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x,
   y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel);
 begin
   UpdateFont;
-  if not style.Clipping or TextSurfaceSmaller(sUTF8,ARect) then
+  if not style.Clipping or TextSurfaceSmaller(sUTF8,ARect,style.ShowPrefix) then
   begin
     InternalTextRect(ADest,ARect,x,y,sUTF8,style,c,nil);
     exit;
@@ -925,7 +961,7 @@ procedure TLCLFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x,
   y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner);
 begin
   UpdateFont;
-  if not style.Clipping or TextSurfaceSmaller(sUTF8,ARect) then
+  if not style.Clipping or TextSurfaceSmaller(sUTF8,ARect,style.ShowPrefix) then
   begin
     InternalTextRect(ADest,ARect,x,y,sUTF8,style,BGRAPixelTransparent,texture);
     exit;
@@ -952,8 +988,9 @@ begin
     FFont.Quality := FontDefaultQuality;
 end;
 
-function TCustomLCLFontRenderer.InternalTextSize(sUTF8: string): TSize;
+function TCustomLCLFontRenderer.InternalTextSize(sUTF8: string; AShowPrefix: boolean): TSize;
 begin
+  if AShowPrefix then sUTF8 := RemovePrefix(sUTF8);
   result := BGRAText.BGRATextSize(FFont,FontQuality,sUTF8,FontAntialiasingLevel);
   if (result.cy >= 24) and (FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB]) then
     result := BGRAText.BGRATextSize(FFont,FontQuality,sUTF8,4);
@@ -1013,6 +1050,23 @@ procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single;
 begin
   UpdateFont;
   InternalTextOut(ADest, x,y, sUTF8, c,nil, align);
+end;
+
+procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  UpdateFont;
+  InternalTextOut(ADest, x,y, sUTF8, BGRAPixelTransparent,texture, align,
+                False, ARightToLeft);
+end;
+
+procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  UpdateFont;
+  InternalTextOut(ADest, x,y, sUTF8, c,nil, align, false, ARightToLeft);
 end;
 
 procedure TCustomLCLFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string;
@@ -1120,15 +1174,18 @@ begin
   if style.Alignment = taRightJustify then X := ARect.Right else
     X := ARect.Left;
   if style.Wordbreak then
+  begin
+    if style.ShowPrefix then sUTF8 := RemovePrefix(sUTF8); //prefix not handled
     InternalTextWordBreak(ADest,sUTF8,X,Y,ARect.Right-ARect.Left,c,ATexture,
-        style.Alignment,style.Layout)
+        style.Alignment,style.Layout);
+  end
   else
   begin
     lines := nil;
+    iStart := 1;
 
     if not style.SingleLine then
     begin
-      iStart := 1;
       i := iStart;
       while i <= length(sUTF8) do
       begin
@@ -1145,14 +1202,14 @@ begin
 
     if lines = nil then //only one line
     begin
-      if style.Layout = tlCenter then Y -= InternalTextSize(sUTF8).cy div 2;
-      if style.Layout = tlBottom then Y -= InternalTextSize(sUTF8).cy;
+      if style.Layout = tlCenter then Y -= InternalTextSize(sUTF8,style.ShowPrefix).cy div 2;
+      if style.Layout = tlBottom then Y -= InternalTextSize(sUTF8,style.ShowPrefix).cy;
       InternalTextOut(ADest,X,Y,sUTF8,c,ATexture,style.Alignment,
                       style.ShowPrefix,style.RightToLeft);
     end else
     begin    //multiple lines
       lines.add(copy(sUTF8, iStart, length(sUTF8)-iStart+1));
-      h := InternalTextSize('Hg').cy;
+      h := InternalTextSize('Hg',False).cy;
       if style.Layout = tlCenter then Y -= h*lines.Count div 2;
       if style.Layout = tlBottom then Y -= h*lines.Count;
       for i := 0 to lines.Count-1 do
@@ -1183,6 +1240,7 @@ begin
     else
       mode := irNormal;
     end;
+    if AShowPrefix then sUTF8 := RemovePrefix(sUTF8); //prefix not handled
     BGRATextOutImproveReadabilityProc(ADest,FFont,x,y,sUTF8,c,texture,align,mode);
   end else
     BGRAText.BGRATextOut(ADest,FFont,FontQuality,x,y,sUTF8,c,texture,align,
@@ -1215,7 +1273,7 @@ begin
       ATextUTF8 := copy(ATextUTF8,1,p-1);
       exit;
     end;
-    totalWidth := InternalTextSize(copy(ATextUTF8,1,p+UTF8CharacterLength(@ATextUTF8[p])-1)).cx; //copy whole last UTF8 char
+    totalWidth := InternalTextSize(copy(ATextUTF8,1,p+UTF8CharacterLength(@ATextUTF8[p])-1),False).cx; //copy whole last UTF8 char
     if totalWidth > AMaxWidth then
     begin
       ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
@@ -1236,7 +1294,7 @@ begin
   oldOrientation:= FontOrientation;
   FontOrientation:= 0;
   UpdateFont;
-  result := InternalTextSize(sUTF8);
+  result := InternalTextSize(sUTF8,False);
   FontOrientation:= oldOrientation;
 end;
 

@@ -297,10 +297,12 @@ type
         If align is taRightJustify, (''x'',''y'') is the top-right corner.
         The value of ''FontOrientation'' is taken into account, so that the text may be rotated }
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment); virtual; abstract;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); virtual;
 
     {** Same as above functions, except that the text is filled using texture.
         The value of ''FontOrientation'' is taken into account, so that the text may be rotated }
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment); virtual; abstract;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); virtual;
 
     {** Same as above, except that the orientation is specified, overriding the value of the property ''FontOrientation'' }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); virtual; abstract;
@@ -588,6 +590,22 @@ begin
 end;
 
 { TBGRACustomFontRenderer }
+
+procedure TBGRACustomFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  //if RightToLeft is not handled
+  TextOut(ADest,x,y,sUTF8,c,align);
+end;
+
+procedure TBGRACustomFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  //if RightToLeft is not handled
+  TextOut(ADest,x,y,sUTF8,texture,align);
+end;
 
 procedure TBGRACustomFontRenderer.CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment);
 begin {optional implementation} end;

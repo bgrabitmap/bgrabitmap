@@ -615,8 +615,8 @@ type
      procedure EraseRectAntialias(x, y, x2, y2: single; alpha: byte; pixelCenteredCoordinates: boolean = true); virtual; abstract;
      procedure AlphaFillRect(x, y, x2, y2: integer; alpha: byte); virtual; abstract;
 
-     procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment); virtual; abstract; overload;
-     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment); virtual; abstract; overload;
+     procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); virtual; abstract; overload;
+     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); virtual; abstract; overload;
      procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); virtual; abstract; overload;
      procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); virtual; abstract; overload;
      procedure TextOutCurved(APath: IBGRAPath; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); virtual; overload;
@@ -629,9 +629,14 @@ type
 
      { Draw the UTF8 encoded string, (x,y) being the top-left corner. The color c or texture is used to fill the text.
        The value of FontOrientation is taken into account, so that the text may be rotated. }
+     procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment); virtual; overload;
+     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment); virtual; overload;
      procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel); virtual; overload;
+     procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; ARightToLeft: boolean); virtual; overload;
      procedure TextOut(x, y: single; sUTF8: string; c: TColor); virtual; overload;
+     procedure TextOut(x, y: single; sUTF8: string; c: TColor; ARightToLeft: boolean); virtual; overload;
      procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner); virtual; overload;
+     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; ARightToLeft: boolean); virtual; overload;
 
      { Draw the UTF8 encoded string in the rectangle ARect. Text is wrapped if necessary.
        The position depends on the specified horizontal alignment halign and vertical alignement valign.
@@ -1738,11 +1743,29 @@ begin
   cursor.free;
 end;
 
+procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string; c: TBGRAPixel;
+  align: TAlignment);
+begin
+  TextOut(x,y,sUTF8,c,align,False);
+end;
+
+procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string;
+  texture: IBGRAScanner; align: TAlignment);
+begin
+  TextOut(x,y,sUTF8,texture,align,False);
+end;
+
 { Draw the UTF8 encoded string, (x,y) being the top-left corner. The color c is used to fill the text.
   The value of FontOrientation is taken into account, so that the text may be rotated. }
 procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string; c: TBGRAPixel);
 begin
   TextOut(x, y, sUTF8, c, taLeftJustify);
+end;
+
+procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string; c: TBGRAPixel;
+  ARightToLeft: boolean);
+begin
+  TextOut(x, y, sUTF8, c, taLeftJustify, ARightToLeft);
 end;
 
 { Draw the UTF8 encoded string, (x,y) being the top-left corner. The color c is used to fill the text.
@@ -1752,12 +1775,24 @@ begin
   TextOut(x, y, sUTF8, ColorToBGRA(c));
 end;
 
+procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string; c: TColor;
+  ARightToLeft: boolean);
+begin
+  TextOut(x, y, sUTF8, ColorToBGRA(c), ARightToLeft);
+end;
+
 { Draw the UTF8 encoded string, (x,y) being the top-left corner. The texture is used to fill the text.
   The value of FontOrientation is taken into account, so that the text may be rotated. }
 procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string;
   texture: IBGRAScanner);
 begin
   TextOut(x, y, sUTF8, texture, taLeftJustify);
+end;
+
+procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string;
+  texture: IBGRAScanner; ARightToLeft: boolean);
+begin
+  TextOut(x, y, sUTF8, texture, taLeftJustify, ARightToLeft);
 end;
 
 { Draw the UTF8 encoded string in the rectangle ARect. Text is wrapped if necessary.
