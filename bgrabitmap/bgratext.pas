@@ -1175,9 +1175,15 @@ begin
     X := ARect.Left;
   if style.Wordbreak then
   begin
-    if style.ShowPrefix then sUTF8 := RemovePrefix(sUTF8); //prefix not handled
-    InternalTextWordBreak(ADest,sUTF8,X,Y,ARect.Right-ARect.Left,c,ATexture,
-        style.Alignment,style.Layout);
+    if style.RightToLeft then
+    begin //not handled so fallback to LCL
+      BGRAText.BGRATextRect(ADest,FFont,FontQuality,ARect,x,y,sUTF8,style,c,ATexture);
+    end else
+    begin
+      if style.ShowPrefix then sUTF8 := RemovePrefix(sUTF8); //prefix not handled
+      InternalTextWordBreak(ADest,sUTF8,X,Y,ARect.Right-ARect.Left,c,ATexture,
+          style.Alignment,style.Layout);
+    end;
   end
   else
   begin
