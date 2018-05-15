@@ -1166,7 +1166,12 @@ begin
 
   if not (style.Alignment in[taCenter,taRightJustify]) then ARect.Left := x;
   if not (style.Layout in[tlCenter,tlBottom]) then ARect.top := y;
-  if ARect.Right <= ARect.Left then exit;
+  if ARect.Right <= ARect.Left then
+  begin
+    if style.Clipping then
+      ADest.ClipRect := previousClip;
+    exit;
+  end;
   if style.Layout = tlCenter then Y := (ARect.Top+ARect.Bottom) div 2 else
   if style.Layout = tlBottom then Y := ARect.Bottom else
     Y := ARect.Top;
