@@ -632,7 +632,9 @@ type
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); virtual; abstract;
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); virtual; abstract; overload;
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); virtual; abstract; overload;
-     function TextSize(sUTF8: string): TSize; virtual; abstract;
+     function TextSize(sUTF8: string): TSize; virtual; abstract; overload;
+     function TextSize(sUTF8: string; AMaxWidth: integer): TSize; virtual; abstract; overload;
+     function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; virtual; abstract; overload;
 
      { Draw the UTF8 encoded string, (x,y) being the top-left corner. The color c or texture is used to fill the text.
        The value of FontOrientation is taken into account, so that the text may be rotated. }

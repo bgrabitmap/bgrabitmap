@@ -48,7 +48,7 @@ type
     function InternalTextSize(sUTF8: string; AShowPrefix: boolean): TSize;
     procedure InternalTextWordBreak(ADest: TBGRACustomBitmap; ATextUTF8: string;
                                     x, y, AMaxWidth: integer; AColor: TBGRAPixel; ATexture: IBGRAScanner;
-                                    AHorizAlign: TAlignment; AVertAlign: TTextLayout);
+                                    AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
     procedure InternalTextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel; ATexture: IBGRAScanner);
     procedure InternalTextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
@@ -68,9 +68,10 @@ type
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); override;
-    procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; AColor: TBGRAPixel; AHorizAlign: TAlignment; AVertAlign: TTextLayout);
-    procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; ATexture: IBGRAScanner; AHorizAlign: TAlignment; AVertAlign: TTextLayout);
+    procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; AColor: TBGRAPixel; AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean = false);
+    procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; ATexture: IBGRAScanner; AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean = false);
     function TextSize(sUTF8: string): TSize; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; override;
     constructor Create;
     destructor Destroy; override;
     property OnWordBreak: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
@@ -79,11 +80,7 @@ type
   { TLCLFontRenderer }
 
   TLCLFontRenderer = class(TCustomLCLFontRenderer)
-  protected
-    function TextSurfaceSmaller(sUTF8: string; ARect: TRect; AShowPrefix: boolean): boolean;
-  public
-    procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); override;
-    procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); override;
+
   end;
 
 function CleanTextOutString(s: string): string; //this works with UTF8 strings as well
@@ -941,38 +938,6 @@ begin
   grayscale.Free;
 end;
 
-{ TLCLFontRenderer }
-
-function TLCLFontRenderer.TextSurfaceSmaller(sUTF8: string; ARect: TRect; AShowPrefix: boolean): boolean;
-begin
-  with InternalTextSize(sUTF8, AShowPrefix) do
-    result := cx*cy < (ARect.Right-ARect.Left)*(ARect.Bottom-ARect.Top);
-end;
-
-procedure TLCLFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x,
-  y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel);
-begin
-  UpdateFont;
-  if not style.Clipping or TextSurfaceSmaller(sUTF8,ARect,style.ShowPrefix) then
-  begin
-    InternalTextRect(ADest,ARect,x,y,sUTF8,style,c,nil);
-    exit;
-  end;
-  BGRAText.BGRATextRect(ADest,FFont,FontQuality,ARect,x,y,sUTF8,style,c,nil);
-end;
-
-procedure TLCLFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x,
-  y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner);
-begin
-  UpdateFont;
-  if not style.Clipping or TextSurfaceSmaller(sUTF8,ARect,style.ShowPrefix) then
-  begin
-    InternalTextRect(ADest,ARect,x,y,sUTF8,style,BGRAPixelTransparent,texture);
-    exit;
-  end;
-  BGRAText.BGRATextRect(ADest,FFont,FontQuality,ARect,x,y,sUTF8,style,BGRAPixelTransparent,texture);
-end;
-
 { TCustomLCLFontRenderer }
 
 { Update font properties to internal TFont object }
@@ -1096,51 +1061,58 @@ end;
 
 procedure TCustomLCLFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
   AText: string; x, y, AMaxWidth: integer; AColor: TBGRAPixel;
-  AHorizAlign: TAlignment; AVertAlign: TTextLayout);
+  AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
 begin
   UpdateFont;
-  InternalTextWordBreak(ADest,AText,x,y,AMaxWidth,AColor,nil,AHorizAlign,AVertAlign);
+  InternalTextWordBreak(ADest,AText,x,y,AMaxWidth,AColor,nil,AHorizAlign,AVertAlign,ARightToLeft);
 end;
 
 procedure TCustomLCLFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
   AText: string; x, y, AMaxWidth: integer; ATexture: IBGRAScanner;
-  AHorizAlign: TAlignment; AVertAlign: TTextLayout);
+  AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
 begin
   UpdateFont;
-  InternalTextWordBreak(ADest,AText,x,y,AMaxWidth,BGRAPixelTransparent,ATexture,AHorizAlign,AVertAlign);
+  InternalTextWordBreak(ADest,AText,x,y,AMaxWidth,BGRAPixelTransparent,ATexture,AHorizAlign,AVertAlign,ARightToLeft);
 end;
 
 procedure TCustomLCLFontRenderer.InternalTextWordBreak(
   ADest: TBGRACustomBitmap; ATextUTF8: string; x, y, AMaxWidth: integer;
-  AColor: TBGRAPixel; ATexture: IBGRAScanner; AHorizAlign: TAlignment; AVertAlign: TTextLayout);
-var ARemains: string;
+  AColor: TBGRAPixel; ATexture: IBGRAScanner; AHorizAlign: TAlignment;
+  AVertAlign: TTextLayout; ARightToLeft: boolean);
+var remains: string;
   stepX,stepY: integer;
   lines: TStringList;
   i: integer;
   lineShift: single;
+  WordBreakHandler: TWordBreakHandler;
 begin
   if (ATextUTF8 = '') or (AMaxWidth <= 0) then exit;
 
   stepX := 0;
   stepY := TextSize('Hg').cy;
 
+  if Assigned(FWordBreakHandler) then
+    WordBreakHandler := FWordBreakHandler
+  else
+    WordBreakHandler := @DefaultWorkBreakHandler;
+
   if AVertAlign = tlTop then
   begin
     repeat
-      SplitText(ATextUTF8, AMaxWidth, ARemains);
-      InternalTextOut(ADest,x,y,ATextUTF8,AColor,ATexture,AHorizAlign);
-      ATextUTF8 := ARemains;
+      InternalSplitText(ATextUTF8, AMaxWidth, remains, WordBreakHandler);
+      InternalTextOut(ADest,x,y,ATextUTF8,AColor,ATexture,AHorizAlign,false,ARightToLeft);
+      ATextUTF8 := remains;
       X+= stepX;
       Y+= stepY;
-    until ARemains = '';
+    until remains = '';
   end else
   begin
     lines := TStringList.Create;
     repeat
-      SplitText(ATextUTF8, AMaxWidth, ARemains);
+      InternalSplitText(ATextUTF8, AMaxWidth, remains, WordBreakHandler);
       lines.Add(ATextUTF8);
-      ATextUTF8 := ARemains;
-    until ARemains = '';
+      ATextUTF8 := remains;
+    until remains = '';
     if AVertAlign = tlCenter then lineShift := lines.Count/2
     else if AVertAlign = tlBottom then lineShift := lines.Count
     else lineShift := 0;
@@ -1149,7 +1121,7 @@ begin
     Y -= round(stepY*lineShift);
     for i := 0 to lines.Count-1 do
     begin
-      InternalTextOut(ADest,x,y,lines[i],AColor,ATexture,AHorizAlign);
+      InternalTextOut(ADest,x,y,lines[i],AColor,ATexture,AHorizAlign,false,ARightToLeft);
       X+= stepX;
       Y+= stepY;
     end;
@@ -1191,15 +1163,9 @@ begin
     X := ARect.Left;
   if style.Wordbreak then
   begin
-    if style.RightToLeft then
-    begin //not handled so fallback to LCL
-      BGRAText.BGRATextRect(ADest,FFont,FontQuality,ARect,x,y,sUTF8,style,c,ATexture);
-    end else
-    begin
-      if style.ShowPrefix then sUTF8 := RemovePrefix(sUTF8); //prefix not handled
-      InternalTextWordBreak(ADest,sUTF8,X,Y,ARect.Right-ARect.Left,c,ATexture,
-          style.Alignment,style.Layout);
-    end;
+    if style.ShowPrefix then sUTF8 := RemovePrefix(sUTF8); //prefix not handled
+    InternalTextWordBreak(ADest,sUTF8,X,Y,ARect.Right-ARect.Left,c,ATexture,
+        style.Alignment,style.Layout,style.RightToLeft);
   end
   else
   begin
@@ -1268,6 +1234,16 @@ procedure TCustomLCLFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap; x,
   align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
 var mode : TBGRATextOutImproveReadabilityMode;
 begin
+  {$IFDEF LINUX}
+  //help LCL detect the correct direction
+  case GetFirstStrongBidiClass(sUTF8) of
+    ubcRightToLeft, ubcArabicLetter: if not ARightToLeft then sUTF8 := UnicodeCharToUTF8($200E) + sUTF8;
+    else
+      begin //suppose left-to-right
+        if ARightToLeft then sUTF8 := UnicodeCharToUTF8($200F) + sUTF8;
+      end;
+  end;
+  {$ENDIF}
   if Assigned(BGRATextOutImproveReadabilityProc) and (FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB]) and (FFont.Orientation mod 3600 = 0) then
   begin
     case FontQuality of
@@ -1350,6 +1326,32 @@ begin
   UpdateFont;
   result := InternalTextSize(sUTF8,False);
   FontOrientation:= oldOrientation;
+end;
+
+function TCustomLCLFontRenderer.TextSize(sUTF8: string;
+  AMaxWidth: integer; ARightToLeft: boolean): TSize;
+var
+  remains: string;
+  h: integer;
+  WordBreakHandler: TWordBreakHandler;
+begin
+  UpdateFont;
+
+  if Assigned(FWordBreakHandler) then
+    WordBreakHandler := FWordBreakHandler
+  else
+    WordBreakHandler := @DefaultWorkBreakHandler;
+
+  result.cx := 0;
+  result.cy := 0;
+  h := InternalTextSize('Hg',False).cy;
+  repeat
+    InternalSplitText(sUTF8, AMaxWidth, remains, WordBreakHandler);
+    with InternalTextSize(sUTF8, false) do
+      if cx > result.cx then result.cx := cx;
+    result.cy += h;
+    sUTF8 := remains;
+  until remains = '';
 end;
 
 constructor TCustomLCLFontRenderer.Create;

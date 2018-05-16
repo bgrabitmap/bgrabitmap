@@ -724,6 +724,10 @@ type
       Orientation is not taken into account, so that the width is along the text.  }
     function TextSize(sUTF8: string): TSize; override;
 
+    { Returns the total size of a paragraph i.e. with word break }
+    function TextSize(sUTF8: string; AMaxWidth: integer): TSize; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; override;
+
     {Spline}
     function ComputeClosedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; override;
     function ComputeOpenedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; override;
@@ -975,8 +979,6 @@ begin
 end;
 
 function TBGRADefaultBitmap.CheckIsZero: boolean;
-const
-  alphaMask = $ff shl TBGRAPixel_AlphaShift;
 var
   i: integer;
   p: PBGRAPixel;
@@ -3880,6 +3882,17 @@ end;
 function TBGRADefaultBitmap.TextSize(sUTF8: string): TSize;
 begin
   result := FontRenderer.TextSize(sUTF8);
+end;
+
+function TBGRADefaultBitmap.TextSize(sUTF8: string; AMaxWidth: integer): TSize;
+begin
+  result := FontRenderer.TextSize(sUTF8, AMaxWidth, GetFontRightToLeftFor(sUTF8));
+end;
+
+function TBGRADefaultBitmap.TextSize(sUTF8: string; AMaxWidth: integer;
+  ARightToLeft: boolean): TSize;
+begin
+  result := FontRenderer.TextSize(sUTF8, AMaxWidth, ARightToLeft);
 end;
 
 {---------------------------- Curves ----------------------------------------}

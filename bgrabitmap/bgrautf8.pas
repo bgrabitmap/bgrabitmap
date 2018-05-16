@@ -66,6 +66,7 @@ function UnicodeCharToUTF8(u: cardinal): string4;
 type
   TUnicodeBidiClass = (ubcLeftToRight, ubcRightToLeft, ubcArabicLetter, ubcUnknown);
 
+function UTF8ReverseString(const s: string): string;
 function UTF8CodepointToUnicode(p: PChar; ACodePointLen: integer): cardinal;
 function GetUnicodeBidiClass(P: PChar): TUnicodeBidiClass;
 function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
@@ -464,6 +465,30 @@ begin
 end;
 
 {$ENDIF}
+
+function UTF8ReverseString(const s: string): string;
+var
+  pSrc,pDest,pEnd: PChar;
+  charLen: Integer;
+begin
+  if s = '' then
+  begin
+    result := '';
+    exit;
+  end;
+  setlength(result, length(s));
+  pDest := @result[1] + length(result);
+  pSrc := @s[1];
+  pEnd := pSrc+length(s);
+  while pSrc < pEnd do
+  begin
+    charLen := UTF8CharacterLength(pSrc);
+    if (charLen = 0) or (pSrc+charLen > pEnd) then break;
+    dec(pDest, charLen);
+    move(pSrc^, pDest^, charLen);
+    inc(pSrc, charLen);
+  end;
+end;
 
 function UTF8CodepointToUnicode(p: PChar; ACodePointLen: integer): cardinal;
 begin
