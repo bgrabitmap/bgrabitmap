@@ -1746,13 +1746,13 @@ end;
 procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string; c: TBGRAPixel;
   align: TAlignment);
 begin
-  TextOut(x,y,sUTF8,c,align,False);
+  TextOut(x,y,sUTF8,c,align, GetFirstStrongBidiClass(sUTF8) in[ubcArabicLetter,ubcRightToLeft]);
 end;
 
 procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string;
   texture: IBGRAScanner; align: TAlignment);
 begin
-  TextOut(x,y,sUTF8,texture,align,False);
+  TextOut(x,y,sUTF8,texture,align, GetFirstStrongBidiClass(sUTF8) in[ubcArabicLetter,ubcRightToLeft]);
 end;
 
 { Draw the UTF8 encoded string, (x,y) being the top-left corner. The color c is used to fill the text.
