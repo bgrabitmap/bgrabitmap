@@ -156,6 +156,7 @@ type
      procedure InternalFillArcInRect(r: TRect; StartAngleRad,EndAngleRad: Single; AFillColor: TBGRAPixel; AOptions: TArcOptions; ATexture: IBGRAScanner = nil);
 
      function GetTextureGL: IUnknown; virtual;
+     function GetFontRightToLeftFor(AText: string): boolean;
 
   public
      {** User defined caption. It does not appear on the image }
@@ -305,6 +306,12 @@ type
      {** Specifies how the font is vertically aligned relative to the start coordinate.
          See [[BGRABitmap Miscellaneous types|miscellaneous types]]}
      FontVerticalAnchor: TFontVerticalAnchor;
+
+     {** Specifies the base direction of the text (cf Unicode). By default, it is
+         automatically determined by the first strongly oriented character.
+         You can specify another base direction here however it is not taken
+         into account by the LCL on Linux. }
+     FontBidiMode: TFontBidiMode;
 
      {** Specifies the height of the font in pixels without taking into account
          additional line spacing. A negative value means that it is the
@@ -1079,6 +1086,17 @@ begin
   result := nil;
 end;
 
+function TBGRACustomBitmap.GetFontRightToLeftFor(AText: string): boolean;
+begin
+  case FontBidiMode of
+    fbmAuto: result := GetFirstStrongBidiClass(AText) in[ubcRightToLeft,ubcArabicLetter];
+    fbmRightToLeft: result := true;
+  else
+    {fbmLeftToRight}
+    result := false;
+  end;
+end;
+
 procedure TBGRACustomBitmap.InternalArc(cx, cy, rx, ry: single;
   const StartPoint, EndPoint: TPointF; ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel; AOptions: TArcOptions;
   ADrawChord: boolean; ATexture: IBGRAScanner);
@@ -1746,13 +1764,13 @@ end;
 procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string; c: TBGRAPixel;
   align: TAlignment);
 begin
-  TextOut(x,y,sUTF8,c,align, GetFirstStrongBidiClass(sUTF8) in[ubcArabicLetter,ubcRightToLeft]);
+  TextOut(x,y,sUTF8,c,align, GetFontRightToLeftFor(sUTF8));
 end;
 
 procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string;
   texture: IBGRAScanner; align: TAlignment);
 begin
-  TextOut(x,y,sUTF8,texture,align, GetFirstStrongBidiClass(sUTF8) in[ubcArabicLetter,ubcRightToLeft]);
+  TextOut(x,y,sUTF8,texture,align, GetFontRightToLeftFor(sUTF8));
 end;
 
 { Draw the UTF8 encoded string, (x,y) being the top-left corner. The color c is used to fill the text.
@@ -1811,6 +1829,7 @@ begin
   style.Wordbreak := true;
   style.ShowPrefix := false;
   style.Clipping := false;
+  style.RightToLeft := GetFontRightToLeftFor(sUTF8);
   TextRect(ARect,ARect.Left,ARect.Top,sUTF8,style,c);
 end;
 
@@ -1830,6 +1849,7 @@ begin
   style.Wordbreak := true;
   style.ShowPrefix := false;
   style.Clipping := false;
+  style.RightToLeft := GetFontRightToLeftFor(sUTF8);
   TextRect(ARect,ARect.Left,ARect.Top,sUTF8,style,texture);
 end;
 

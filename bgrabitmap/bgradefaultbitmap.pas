@@ -4991,6 +4991,7 @@ begin
   ABitmap.FontStyle := FontStyle;
   ABitmap.FontAntialias := FontAntialias;
   ABitmap.FontOrientation := FontOrientation;
+  ABitmap.FontBidiMode:= FontBidiMode;
   ABitmap.LineCap := LineCap;
   ABitmap.JoinStyle := JoinStyle;
   ABitmap.FillMode := FillMode;

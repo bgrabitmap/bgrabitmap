@@ -78,6 +78,7 @@ type
   TEmbossOptions = set of TEmbossOption;
 
   TTextLayout = BGRAGraphics.TTextLayout;
+  TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
 
 const
   RadialBlurTypeToStr: array[TRadialBlurType] of string =
