@@ -72,6 +72,7 @@ type
     procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; ATexture: IBGRAScanner; AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean = false);
     function TextSize(sUTF8: string): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     constructor Create;
     destructor Destroy; override;
     property OnWordBreak: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
@@ -98,6 +99,7 @@ procedure BGRATextRect(bmp: TBGRACustomBitmap; Font: TFont; Quality: TBGRAFontQu
   sUTF8: string; style: TTextStyle; c: TBGRAPixel; tex: IBGRAScanner; CustomAntialiasingLevel: Integer = 0);
 
 function BGRATextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
+function BGRATextFitInfo(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
 function BGRAOriginalTextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: integer): TSize;
 function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer; out actualAntialiasingLevel: integer): TSize;
 
@@ -526,6 +528,39 @@ begin
       on ex: exception do
       begin
         result := Size(0,0);
+        LCLFontDisabledValue := True;
+      end;
+    end;
+
+  end;
+end;
+
+function BGRATextFitInfo(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string;
+  CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
+var
+  actualAntialiasingLevel: Integer;
+begin
+  actualAntialiasingLevel:= CustomAntialiasingLevel;
+  if not LCLFontAvailable then
+    result := 0
+  else
+  begin
+    try
+      if tempBmp = nil then tempBmp := TBitmap.Create;
+      tempBmp.Canvas.Font := Font;
+      if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
+      begin
+        tempBmp.Canvas.Font.Height := Font.Height*CustomAntialiasingLevel;
+      end else
+      begin
+        tempBmp.Canvas.Font.Height := Font.Height;
+        actualAntialiasingLevel:= 1;
+      end;
+      result := tempBmp.Canvas.TextFitInfo(sUTF8, AMaxWidth*actualAntialiasingLevel);
+    except
+      on ex: exception do
+      begin
+        result := 0;
         LCLFontDisabledValue := True;
       end;
     end;
@@ -1274,7 +1309,7 @@ end;
 
 procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string; AWordBreak: TWordBreakHandler);
-var p,totalWidth: integer;
+var p,skipCount: integer;
 begin
   if ATextUTF8= '' then
   begin
@@ -1288,27 +1323,29 @@ begin
     exit;
   end;
 
+  if AMaxWidth <= 0 then
+    skipCount := 0
+  else
+    skipCount := BGRATextFitInfo(FFont, FontQuality, ATextUTF8, FontAntialiasingLevel, AMaxWidth);
+
+  if skipCount <= 0 then skipCount := 1;
+
   p := 1;
-  inc(p, UTF8CharacterLength(@ATextUTF8[p])); //UTF8 chars may be more than 1 byte long
-  while p < length(ATextUTF8)+1 do
-  begin
+  repeat
+    inc(p, UTF8CharacterLength(@ATextUTF8[p])); //UTF8 chars may be more than 1 byte long
+    dec(skipCount);
+
     if RemoveLineEnding(ATextUTF8,p) then
     begin
       ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
       ATextUTF8 := copy(ATextUTF8,1,p-1);
       exit;
     end;
-    totalWidth := InternalTextSize(copy(ATextUTF8,1,p+UTF8CharacterLength(@ATextUTF8[p])-1),False).cx; //copy whole last UTF8 char
-    if totalWidth > AMaxWidth then
-    begin
-      ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
-      ATextUTF8 := copy(ATextUTF8,1,p-1); //this includes the whole last UTF8 char
-      if Assigned(AWordBreak) then AWordBreak(ATextUTF8,ARemainsUTF8);
-      exit;
-    end;
-    inc(p, UTF8CharacterLength(@ATextUTF8[p]));
-  end;
-  ARemainsUTF8 := '';
+  until skipCount <= 0;
+
+  ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
+  ATextUTF8 := copy(ATextUTF8,1,p-1); //this includes the whole last UTF8 char
+  if Assigned(AWordBreak) then AWordBreak(ATextUTF8,ARemainsUTF8);
 end;
 
 procedure TCustomLCLFontRenderer.DefaultWorkBreakHandler(var ABeforeUTF8,
@@ -1351,6 +1388,13 @@ begin
     result.cy += h;
     sUTF8 := remains;
   until remains = '';
+end;
+
+function TCustomLCLFontRenderer.TextFitInfo(sUTF8: string; AMaxWidth: integer
+  ): integer;
+begin
+  UpdateFont;
+  result := BGRATextFitInfo(FFont, FontQuality, sUTF8, FontAntialiasingLevel, AMaxWidth);
 end;
 
 constructor TCustomLCLFontRenderer.Create;

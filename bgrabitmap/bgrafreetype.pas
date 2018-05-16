@@ -75,7 +75,8 @@ type
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; c: TBGRAPixel); override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; texture: IBGRAScanner); override;
     function TextSize(s: string): TSize; override;
-    function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     destructor Destroy; override;
     property Collection: TCustomFreeTypeFontCollection read GetCollection;
     property ShaderLightPosition: TPoint read GetShaderLightPosition write SetShaderLightPosition;
@@ -389,6 +390,15 @@ begin
     sUTF8 := remains;
   until remains = '';
   result.cy := ceil(totalH);
+end;
+
+function TBGRAFreeTypeFontRenderer.TextFitInfo(sUTF8: string; AMaxWidth: integer): integer;
+var
+  remains: string;
+begin
+  UpdateFont;
+  FFont.SplitText(sUTF8, AMaxWidth, remains);
+  result := length(sUTF8);
 end;
 
 destructor TBGRAFreeTypeFontRenderer.Destroy;
