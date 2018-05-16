@@ -52,7 +52,11 @@ type
     procedure InternalTextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel; ATexture: IBGRAScanner);
     procedure InternalTextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
-    procedure InternalSplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string);
+    procedure InternalTextOutEllipse(ADest: TBGRACustomBitmap; x, y, availableWidth: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
+                              align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
+    procedure InternalSplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string;
+                                AWordBreak: TWordBreakHandler);
+    procedure DefaultWorkBreakHandler(var ABeforeUTF8, AAfterUTF8: string);
   public
     procedure SplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string);
     function GetFontPixelMetric: TFontPixelMetric; override;
@@ -998,9 +1002,16 @@ end;
 
 procedure TCustomLCLFontRenderer.SplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string);
+var WordBreakHandler: TWordBreakHandler;
 begin
   UpdateFont;
-  InternalSplitText(ATextUTF8, AMaxWidth, ARemainsUTF8);
+  if Assigned(FWordBreakHandler) then
+    WordBreakHandler := FWordBreakHandler
+  else
+    WordBreakHandler := @DefaultWorkBreakHandler;
+
+  InternalSplitText(ATextUTF8, AMaxWidth, ARemainsUTF8,
+      WordBreakHandler);
 end;
 
 function TCustomLCLFontRenderer.GetFontPixelMetric: TFontPixelMetric;
@@ -1153,6 +1164,7 @@ var
   previousClip, intersected: TRect;
   lines: TStringList;
   iStart,i,h: integer;
+  availableWidth: integer;
 begin
   previousClip := ADest.ClipRect;
   if style.Clipping then
@@ -1166,10 +1178,9 @@ begin
 
   if not (style.Alignment in[taCenter,taRightJustify]) then ARect.Left := x;
   if not (style.Layout in[tlCenter,tlBottom]) then ARect.top := y;
-  if ARect.Right <= ARect.Left then
+  if (ARect.Right <= ARect.Left) and style.Clipping then
   begin
-    if style.Clipping then
-      ADest.ClipRect := previousClip;
+    ADest.ClipRect := previousClip;
     exit;
   end;
   if style.Layout = tlCenter then Y := (ARect.Top+ARect.Bottom) div 2 else
@@ -1211,12 +1222,22 @@ begin
       end;
     end;
 
+    if style.Alignment = taLeftJustify then
+      availableWidth := ARect.Right-X
+    else
+      availableWidth := ARect.Right-ARect.Left;
+    if availableWidth < 0 then availableWidth:= 0;
+
     if lines = nil then //only one line
     begin
       if style.Layout = tlCenter then Y -= InternalTextSize(sUTF8,style.ShowPrefix).cy div 2;
       if style.Layout = tlBottom then Y -= InternalTextSize(sUTF8,style.ShowPrefix).cy;
-      InternalTextOut(ADest,X,Y,sUTF8,c,ATexture,style.Alignment,
-                      style.ShowPrefix,style.RightToLeft);
+      if style.EndEllipsis then
+        InternalTextOutEllipse(ADest,X,Y,availableWidth,sUTF8,c,ATexture,style.Alignment,
+                        style.ShowPrefix,style.RightToLeft)
+      else
+        InternalTextOut(ADest,X,Y,sUTF8,c,ATexture,style.Alignment,
+                        style.ShowPrefix,style.RightToLeft);
     end else
     begin    //multiple lines
       lines.add(copy(sUTF8, iStart, length(sUTF8)-iStart+1));
@@ -1225,8 +1246,12 @@ begin
       if style.Layout = tlBottom then Y -= h*lines.Count;
       for i := 0 to lines.Count-1 do
       begin
-        InternalTextOut(ADest,X,Y,lines[i],c,ATexture,style.Alignment,
-                        style.ShowPrefix,style.RightToLeft);
+        if style.EndEllipsis then
+          InternalTextOutEllipse(ADest,X,Y,availableWidth,lines[i],c,ATexture,style.Alignment,
+                          style.ShowPrefix,style.RightToLeft)
+        else
+          InternalTextOut(ADest,X,Y,lines[i],c,ATexture,style.Alignment,
+                          style.ShowPrefix,style.RightToLeft);
         inc(Y,h);
       end;
       lines.Free;
@@ -1258,8 +1283,22 @@ begin
         0,AShowPrefix,ARightToLeft);
 end;
 
+procedure TCustomLCLFontRenderer.InternalTextOutEllipse(
+  ADest: TBGRACustomBitmap; x, y, availableWidth: single; sUTF8: string;
+  c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment;
+  AShowPrefix: boolean; ARightToLeft: boolean);
+var remain: string;
+begin
+  if InternalTextSize(sUTF8,AShowPrefix).cx > availableWidth then
+  begin
+    InternalSplitText(sUTF8, round(availableWidth - InternalTextSize('...',AShowPrefix).cx), remain, nil);
+    sUTF8 += '...';
+  end;
+  InternalTextOut(ADest,x,y,sUTF8,c,texture,align,AShowPrefix,ARightToLeft);
+end;
+
 procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
-  AMaxWidth: integer; out ARemainsUTF8: string);
+  AMaxWidth: integer; out ARemainsUTF8: string; AWordBreak: TWordBreakHandler);
 var p,totalWidth: integer;
 begin
   if ATextUTF8= '' then
@@ -1289,14 +1328,18 @@ begin
     begin
       ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
       ATextUTF8 := copy(ATextUTF8,1,p-1); //this includes the whole last UTF8 char
-      if Assigned(FWordBreakHandler) then
-        FWordBreakHandler(ATextUTF8,ARemainsUTF8) else
-          BGRADefaultWordBreakHandler(ATextUTF8,ARemainsUTF8);
+      if Assigned(AWordBreak) then AWordBreak(ATextUTF8,ARemainsUTF8);
       exit;
     end;
     inc(p, UTF8CharacterLength(@ATextUTF8[p]));
   end;
   ARemainsUTF8 := '';
+end;
+
+procedure TCustomLCLFontRenderer.DefaultWorkBreakHandler(var ABeforeUTF8,
+  AAfterUTF8: string);
+begin
+  BGRADefaultWordBreakHandler(ABeforeUTF8,AAfterUTF8);
 end;
 
 function TCustomLCLFontRenderer.TextSize(sUTF8: string): TSize;
