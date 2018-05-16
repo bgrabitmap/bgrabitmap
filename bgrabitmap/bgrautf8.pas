@@ -71,6 +71,7 @@ function UTF8CodepointToUnicode(p: PChar; ACodePointLen: integer): cardinal;
 function GetUnicodeBidiClass(P: PChar): TUnicodeBidiClass;
 function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
 function GetFirstStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
+function GetLastStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
 
 //little endian stream functions
 function LEReadLongint(Stream: TStream): longint;
@@ -668,6 +669,25 @@ begin
     if curBidi in[ubcLeftToRight,ubcRightToLeft,ubcArabicLetter] then
       exit(curBidi);
     inc(p,charLen);
+  end;
+  exit(ubcUnknown);
+end;
+
+function GetLastStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
+var
+  pStart,p : PChar;
+  curBidi: TUnicodeBidiClass;
+begin
+  if sUTF8 = '' then exit(ubcUnknown);
+  pStart := @sUTF8[1];
+  p := pStart + length(sUTF8);
+  while p > pStart do
+  begin
+    dec(p);
+    while (p > pStart) and (ord(p^) and $C0 = $80) do dec(p);
+    curBidi := GetUnicodeBidiClass(p);
+    if curBidi in[ubcLeftToRight,ubcRightToLeft,ubcArabicLetter] then
+      exit(curBidi);
   end;
   exit(ubcUnknown);
 end;

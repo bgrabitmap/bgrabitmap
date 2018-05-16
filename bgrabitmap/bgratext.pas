@@ -71,7 +71,7 @@ type
     procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; AColor: TBGRAPixel; AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean = false);
     procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; ATexture: IBGRAScanner; AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean = false);
     function TextSize(sUTF8: string): TSize; override;
-    function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
     constructor Create;
     destructor Destroy; override;
     property OnWordBreak: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
@@ -1079,7 +1079,7 @@ procedure TCustomLCLFontRenderer.InternalTextWordBreak(
   ADest: TBGRACustomBitmap; ATextUTF8: string; x, y, AMaxWidth: integer;
   AColor: TBGRAPixel; ATexture: IBGRAScanner; AHorizAlign: TAlignment;
   AVertAlign: TTextLayout; ARightToLeft: boolean);
-var remains: string;
+var remains, part: string;
   stepX,stepY: integer;
   lines: TStringList;
   i: integer;
@@ -1096,37 +1096,36 @@ begin
   else
     WordBreakHandler := @DefaultWorkBreakHandler;
 
-  if AVertAlign = tlTop then
-  begin
-    repeat
-      InternalSplitText(ATextUTF8, AMaxWidth, remains, WordBreakHandler);
-      InternalTextOut(ADest,x,y,ATextUTF8,AColor,ATexture,AHorizAlign,false,ARightToLeft);
-      ATextUTF8 := remains;
-      X+= stepX;
-      Y+= stepY;
-    until remains = '';
-  end else
-  begin
-    lines := TStringList.Create;
-    repeat
-      InternalSplitText(ATextUTF8, AMaxWidth, remains, WordBreakHandler);
-      lines.Add(ATextUTF8);
-      ATextUTF8 := remains;
-    until remains = '';
-    if AVertAlign = tlCenter then lineShift := lines.Count/2
-    else if AVertAlign = tlBottom then lineShift := lines.Count
-    else lineShift := 0;
-
-    X -= round(stepX*lineShift);
-    Y -= round(stepY*lineShift);
-    for i := 0 to lines.Count-1 do
-    begin
-      InternalTextOut(ADest,x,y,lines[i],AColor,ATexture,AHorizAlign,false,ARightToLeft);
-      X+= stepX;
-      Y+= stepY;
+  lines := TStringList.Create;
+  repeat
+    InternalSplitText(ATextUTF8, AMaxWidth, remains, WordBreakHandler);
+    part := ATextUTF8;
+    // append following direction to part
+    case GetFirstStrongBidiClass(remains) of
+      ubcLeftToRight: part += UnicodeCharToUTF8($200E);
+      ubcRightToLeft,ubcArabicLetter: part += UnicodeCharToUTF8($200F);
     end;
-    lines.Free;
+    lines.Add(part);
+    // prefix next part with previous direction
+    case GetLastStrongBidiClass(ATextUTF8) of
+      ubcLeftToRight: ATextUTF8 := UnicodeCharToUTF8($200E) + remains;
+      ubcRightToLeft,ubcArabicLetter: ATextUTF8 := UnicodeCharToUTF8($200F) + remains;
+      else ATextUTF8 := remains;
+    end;
+  until remains = '';
+  if AVertAlign = tlCenter then lineShift := lines.Count/2
+  else if AVertAlign = tlBottom then lineShift := lines.Count
+  else lineShift := 0;
+
+  X -= round(stepX*lineShift);
+  Y -= round(stepY*lineShift);
+  for i := 0 to lines.Count-1 do
+  begin
+    InternalTextOut(ADest,x,y,lines[i],AColor,ATexture,AHorizAlign,false,ARightToLeft);
+    X+= stepX;
+    Y+= stepY;
   end;
+  lines.Free;
 end;
 
 procedure TCustomLCLFontRenderer.InternalTextRect(ADest: TBGRACustomBitmap;
