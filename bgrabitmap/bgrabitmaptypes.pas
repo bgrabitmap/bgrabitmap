@@ -488,7 +488,7 @@ var
 implementation
 
 uses Math, SysUtils, BGRAUTF8,
-  BGRAReadTiff, FPReadXwd, FPReadXPM,
+  FPReadXwd, FPReadXPM,
   FPWriteTiff, FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM;
 
