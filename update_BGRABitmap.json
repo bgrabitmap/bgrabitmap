@@ -15,7 +15,7 @@
   ],
   "UpdatePackageData" : {
     "DisableInOPM" : false,
-    "DownloadZipURL" : "",
+    "DownloadZipURL" : "https://github.com/bgrabitmap/bgrabitmap/archive/v9.7.2.zip",
     "Name" : "bgrabitmap-master"
   }
 }
