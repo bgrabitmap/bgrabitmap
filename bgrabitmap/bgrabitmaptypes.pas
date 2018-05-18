@@ -78,6 +78,7 @@ type
   TEmbossOptions = set of TEmbossOption;
 
   TTextLayout = BGRAGraphics.TTextLayout;
+  TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
 
 const
   RadialBlurTypeToStr: array[TRadialBlurType] of string =
@@ -289,7 +290,9 @@ type
 
     {** Returns the total size of the string provided using the current font.
         Orientation is not taken into account, so that the width is along the text }
-    function TextSize(sUTF8: string): TSize; virtual; abstract;
+    function TextSize(sUTF8: string): TSize; virtual; abstract; overload;
+    function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; virtual; abstract; overload;
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
 
     {** Draws the UTF8 encoded string, with color ''c''.
         If align is taLeftJustify, (''x'',''y'') is the top-left corner.
@@ -297,10 +300,12 @@ type
         If align is taRightJustify, (''x'',''y'') is the top-right corner.
         The value of ''FontOrientation'' is taken into account, so that the text may be rotated }
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment); virtual; abstract;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); virtual;
 
     {** Same as above functions, except that the text is filled using texture.
         The value of ''FontOrientation'' is taken into account, so that the text may be rotated }
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment); virtual; abstract;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); virtual;
 
     {** Same as above, except that the orientation is specified, overriding the value of the property ''FontOrientation'' }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); virtual; abstract;
@@ -483,7 +488,7 @@ var
 implementation
 
 uses Math, SysUtils, BGRAUTF8,
-  FPReadTiff, FPReadXwd, FPReadXPM,
+  BGRAReadTiff, FPReadXwd, FPReadXPM,
   FPWriteTiff, FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM;
 
@@ -588,6 +593,22 @@ begin
 end;
 
 { TBGRACustomFontRenderer }
+
+procedure TBGRACustomFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  //if RightToLeft is not handled
+  TextOut(ADest,x,y,sUTF8,c,align);
+end;
+
+procedure TBGRACustomFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  //if RightToLeft is not handled
+  TextOut(ADest,x,y,sUTF8,texture,align);
+end;
 
 procedure TBGRACustomFontRenderer.CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment);
 begin {optional implementation} end;
@@ -880,6 +901,7 @@ var
       if DefaultBGRAImageReader[ifOpenRaster] = nil then inc(scores[ifOpenRaster]) else
       with CreateBGRAImageReader(ifOpenRaster) do
         try
+          AStream.Position := streamStartPos;
           if CheckContents(AStream) then inc(scores[ifOpenRaster],2);
         finally
           Free;
@@ -963,18 +985,19 @@ begin
     ifPng: result := 'png';
     ifGif: result := 'gif';
     ifBmp: result := 'bmp';
+    ifBmpMioMap: result := 'bmp';
     ifIco: result := 'ico';
     ifCur: result := 'ico';
     ifPcx: result := 'pcx';
     ifPaintDotNet: result := 'pdn';
     ifLazPaint: result := 'lzp';
     ifOpenRaster: result := 'ora';
+    ifPhoxo: result := 'oXo';
     ifPsd: result := 'psd';
     ifTarga: result := 'tga';
     ifTiff: result := 'tif';
     ifXwd: result := 'xwd';
     ifXPixMap: result := 'xpm';
-    ifBmpMioMap: result := 'bmp';
     else result := '?';
   end;
 end;
@@ -1001,6 +1024,7 @@ begin
     case AFormat of
       ifUnknown: raise exception.Create('The image format is unknown');
       ifOpenRaster: raise exception.Create('You need to call BGRAOpenRaster.RegisterOpenRasterFormat to write with this image format.');
+      ifPhoxo: raise exception.Create('You need to call BGRAPhoxo.RegisterPhoxoFormat to write with this image format.');
     else
       raise exception.Create('The image writer is not registered for this image format.');
     end;
@@ -1043,7 +1067,6 @@ initialization
   DefaultBGRAImageWriter[ifTiff] := TFPWriterTiff;
   //writing XWD not implemented
 
-  DefaultBGRAImageReader[ifTiff] := TFPReaderTiff;
   DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;
   //the other readers are registered by their unit
 

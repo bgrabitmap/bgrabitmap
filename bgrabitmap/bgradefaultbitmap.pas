@@ -701,11 +701,11 @@ type
       If align is taCenter, (x,y) is at the top and middle of the text.
       If align is taRightJustify, (x,y) is the top-right corner.
       The value of FontOrientation is taken into account, so that the text may be rotated. }
-    procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment); override; overload;
+    procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); override; overload;
 
     { Same as above functions, except that the text is filled using texture.
       The value of FontOrientation is taken into account, so that the text may be rotated. }
-    procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment); override; overload;
+    procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); override; overload;
 
     { Same as above, except that the orientation is specified, overriding the value of the property FontOrientation. }
     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); override; overload;
@@ -723,6 +723,11 @@ type
     { Returns the total size of the string provided using the current font.
       Orientation is not taken into account, so that the width is along the text.  }
     function TextSize(sUTF8: string): TSize; override;
+
+    { Returns the total size of a paragraph i.e. with word break }
+    function TextSize(sUTF8: string; AMaxWidth: integer): TSize; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; override;
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
 
     {Spline}
     function ComputeClosedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; override;
@@ -975,8 +980,6 @@ begin
 end;
 
 function TBGRADefaultBitmap.CheckIsZero: boolean;
-const
-  alphaMask = $ff shl TBGRAPixel_AlphaShift;
 var
   i: integer;
   p: PBGRAPixel;
@@ -3849,16 +3852,16 @@ begin
 end;
 
 procedure TBGRADefaultBitmap.TextOut(x, y: single; sUTF8: string;
-  texture: IBGRAScanner; align: TAlignment);
+  texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean);
 begin
-  FontRenderer.TextOut(self,x,y,CleanTextOutString(sUTF8),texture,align);
+  FontRenderer.TextOut(self,x,y,CleanTextOutString(sUTF8),texture,align, ARightToLeft);
 end;
 
 procedure TBGRADefaultBitmap.TextOut(x, y: single; sUTF8: string;
-  c: TBGRAPixel; align: TAlignment);
+  c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean);
 begin
   with (PointF(x,y)-GetFontAnchorRotatedOffset) do
-    FontRenderer.TextOut(self,x,y,CleanTextOutString(sUTF8),c,align);
+    FontRenderer.TextOut(self,x,y,CleanTextOutString(sUTF8),c,align, ARightToLeft);
 end;
 
 procedure TBGRADefaultBitmap.TextRect(ARect: TRect; x, y: integer;
@@ -3880,6 +3883,23 @@ end;
 function TBGRADefaultBitmap.TextSize(sUTF8: string): TSize;
 begin
   result := FontRenderer.TextSize(sUTF8);
+end;
+
+function TBGRADefaultBitmap.TextSize(sUTF8: string; AMaxWidth: integer): TSize;
+begin
+  result := FontRenderer.TextSize(sUTF8, AMaxWidth, GetFontRightToLeftFor(sUTF8));
+end;
+
+function TBGRADefaultBitmap.TextSize(sUTF8: string; AMaxWidth: integer;
+  ARightToLeft: boolean): TSize;
+begin
+  result := FontRenderer.TextSize(sUTF8, AMaxWidth, ARightToLeft);
+end;
+
+function TBGRADefaultBitmap.TextFitInfo(sUTF8: string; AMaxWidth: integer
+  ): integer;
+begin
+  result := FontRenderer.TextFitInfo(sUTF8, AMaxWidth);
 end;
 
 {---------------------------- Curves ----------------------------------------}
@@ -4991,6 +5011,7 @@ begin
   ABitmap.FontStyle := FontStyle;
   ABitmap.FontAntialias := FontAntialias;
   ABitmap.FontOrientation := FontOrientation;
+  ABitmap.FontBidiMode:= FontBidiMode;
   ABitmap.LineCap := LineCap;
   ABitmap.JoinStyle := JoinStyle;
   ABitmap.FillMode := FillMode;

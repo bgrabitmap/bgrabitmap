@@ -8,7 +8,8 @@ uses
   Classes, SysUtils, BGRALayers, BGRABitmap, BGRALzpCommon;
 
 function CheckStreamForLayers(AStream: TStream): boolean;
-function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false) : TBGRALayeredBitmap;
+function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false;
+         ADestination: TBGRALayeredBitmap = nil): TBGRALayeredBitmap;
 procedure SaveLayersToStream(AStream: TStream; ALayers: TBGRACustomLayeredBitmap; ASelectedLayerIndex: integer; ACompression: TLzpCompression = lzpZStream);
 procedure SaveLayerBitmapToStream(AStream: TStream; ABitmap: TBGRABitmap; ACaption: string; ACompression: TLzpCompression = lzpZStream);
 function LoadLayerBitmapFromStream(AStream: TStream; ACompression: TLzpCompression = lzpZStream) : TBGRABitmap;
@@ -24,19 +25,22 @@ begin
   SaveLayersToStream(AStream,ALayers,-1);
 end;
 
-function LoadLayeredBitmapFromStream(AStream: TStream) : TBGRALayeredBitmap;
+procedure LoadLayeredBitmapFromStream(AStream: TStream; ALayers: TBGRACustomLayeredBitmap);
 var selectedIndex: integer;
 begin
   if not CheckStreamForLayers(AStream) then
-    result := nil
+  begin
+    if Assigned(ALayers) then ALayers.Clear;
+  end
   else
-    result := LoadLayersFromStream(AStream,selectedIndex);
+    LoadLayersFromStream(AStream,selectedIndex,false,ALayers as TBGRALayeredBitmap);
 end;
 
 const
   StreamHeader = 'TBGRALayeredBitmap'#26#0;
   StreamMaxLayerCount = 4096;
   StreamMaxHeaderSize = 256;
+
 
 function CheckStreamForLayers(AStream: TStream): boolean;
 var
@@ -59,7 +63,8 @@ begin
   AStream.Position:= OldPosition;
 end;
 
-function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false): TBGRALayeredBitmap;
+function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false;
+         ADestination: TBGRALayeredBitmap = nil): TBGRALayeredBitmap;
 var
   OldPosition: Int64;
   HeaderFound: string;
@@ -79,7 +84,12 @@ var
   LayerIdFound: boolean;
   LayerBitmapSize: integer;
 begin
-  result := TBGRALayeredBitmap.Create;
+  if Assigned(ADestination) then
+  begin
+    result := ADestination;
+    result.Clear;
+  end else
+    result := TBGRALayeredBitmap.Create;
   OldPosition:= AStream.Position;
   SetLength(HeaderFound, length(StreamHeader));
   try
@@ -167,6 +177,7 @@ begin
     on ex: Exception do
     begin
       AStream.Position := OldPosition;
+      if not Assigned(ADestination) then result.Free;
       raise ex;
     end;
   end;
@@ -270,6 +281,7 @@ procedure RegisterStreamLayers;
 begin
   LayeredBitmapSaveToStreamProc := @SaveLayeredBitmapToStream;
   LayeredBitmapLoadFromStreamProc := @LoadLayeredBitmapFromStream;
+  LayeredBitmapCheckStreamProc := @CheckStreamForLayers;
 end;
 
 end.

@@ -73,6 +73,8 @@ type
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; texture: IBGRAScanner); override;
     procedure CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment); override;
     function TextSize(s: string): TSize; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     destructor Destroy; override;
   end;
 
@@ -189,7 +191,7 @@ type
 
 implementation
 
-uses BGRAUTF8;
+uses BGRAUTF8, math;
 
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; zoom: single; PixelCenteredCoordinates: boolean): ArrayOfTPointF;
 const unitShift = 6;
@@ -1231,6 +1233,37 @@ begin
   sizeF := FVectorizedFont.GetTextSize(s);
   result.cx := round(sizeF.x);
   result.cy := round(sizeF.y);
+end;
+
+function TBGRAVectorizedFontRenderer.TextSize(sUTF8: string;
+  AMaxWidth: integer; ARightToLeft: boolean): TSize;
+var
+  remains: string;
+  w,h,totalH: single;
+begin
+  UpdateFont;
+
+  result.cx := 0;
+  totalH := 0;
+  h := FVectorizedFont.FullHeight;
+  repeat
+    FVectorizedFont.SplitText(sUTF8, AMaxWidth, remains);
+    w := FVectorizedFont.GetTextSize(sUTF8).x;
+    if round(w)>result.cx then result.cx := round(w);
+    totalH += h;
+    sUTF8 := remains;
+  until remains = '';
+  result.cy := ceil(totalH);
+end;
+
+function TBGRAVectorizedFontRenderer.TextFitInfo(sUTF8: string;
+  AMaxWidth: integer): integer;
+var
+  remains: string;
+begin
+  UpdateFont;
+  FVectorizedFont.SplitText(sUTF8, AMaxWidth, remains);
+  result := length(sUTF8);
 end;
 
 destructor TBGRAVectorizedFontRenderer.Destroy;
