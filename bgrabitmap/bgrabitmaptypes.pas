@@ -292,6 +292,7 @@ type
         Orientation is not taken into account, so that the width is along the text }
     function TextSize(sUTF8: string): TSize; virtual; abstract; overload;
     function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; virtual; abstract; overload;
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
 
     {** Draws the UTF8 encoded string, with color ''c''.
         If align is taLeftJustify, (''x'',''y'') is the top-left corner.

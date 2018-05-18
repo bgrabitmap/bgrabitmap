@@ -73,7 +73,8 @@ type
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; texture: IBGRAScanner); override;
     procedure CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment); override;
     function TextSize(s: string): TSize; override;
-    function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     destructor Destroy; override;
   end;
 
@@ -1255,6 +1256,15 @@ begin
   result.cy := ceil(totalH);
 end;
 
+function TBGRAVectorizedFontRenderer.TextFitInfo(sUTF8: string;
+  AMaxWidth: integer): integer;
+var
+  remains: string;
+begin
+  UpdateFont;
+  FVectorizedFont.SplitText(sUTF8, AMaxWidth, remains);
+  result := length(sUTF8);
+end;
 
 destructor TBGRAVectorizedFontRenderer.Destroy;
 var i: integer;

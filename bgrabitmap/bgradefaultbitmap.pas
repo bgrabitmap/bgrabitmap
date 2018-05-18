@@ -727,6 +727,7 @@ type
     { Returns the total size of a paragraph i.e. with word break }
     function TextSize(sUTF8: string; AMaxWidth: integer): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; override;
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
 
     {Spline}
     function ComputeClosedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; override;
@@ -3893,6 +3894,12 @@ function TBGRADefaultBitmap.TextSize(sUTF8: string; AMaxWidth: integer;
   ARightToLeft: boolean): TSize;
 begin
   result := FontRenderer.TextSize(sUTF8, AMaxWidth, ARightToLeft);
+end;
+
+function TBGRADefaultBitmap.TextFitInfo(sUTF8: string; AMaxWidth: integer
+  ): integer;
+begin
+  result := FontRenderer.TextFitInfo(sUTF8, AMaxWidth);
 end;
 
 {---------------------------- Curves ----------------------------------------}
