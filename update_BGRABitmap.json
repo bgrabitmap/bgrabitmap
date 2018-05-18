@@ -1,0 +1,21 @@
+{
+  "UpdateLazPackages" : [
+    {
+      "ForceNotify" : false,
+      "InternalVersion" : 1,
+      "Name" : "bglcontrols.lpk",
+      "Version" : "1.2.0.0"
+    },
+    {
+      "ForceNotify" : false,
+      "InternalVersion" : 1,
+      "Name" : "bgrabitmappack.lpk",
+      "Version" : "9.7.2.0"
+    }
+  ],
+  "UpdatePackageData" : {
+    "DisableInOPM" : false,
+    "DownloadZipURL" : "",
+    "Name" : "bgrabitmap-master"
+  }
+}
