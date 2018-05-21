@@ -1,0 +1,75 @@
+object Form1: TForm1
+  Left = 294
+  Height = 304
+  Top = 176
+  Width = 423
+  Caption = 'Gamma factor'
+  ClientHeight = 304
+  ClientWidth = 423
+  OnCreate = FormCreate
+  Position = poDefault
+  LCLVersion = '1.8.2.0'
+  WindowState = wsMaximized
+  object BGRAVirtualScreen1: TBGRAVirtualScreen
+    Left = 0
+    Height = 160
+    Top = 144
+    Width = 423
+    OnRedraw = BGRAVirtualScreen1Redraw
+    Align = alClient
+    Alignment = taLeftJustify
+    Color = clWhite
+    ParentColor = False
+    TabOrder = 0
+  end
+  object Panel1: TPanel
+    Left = 0
+    Height = 144
+    Top = 0
+    Width = 423
+    Align = alTop
+    ClientHeight = 144
+    ClientWidth = 423
+    TabOrder = 1
+    object TrackBar_Gamma: TTrackBar
+      Left = 16
+      Height = 37
+      Top = 32
+      Width = 392
+      Frequency = 2
+      Max = 60
+      Min = 20
+      OnChange = TrackBar_GammaChange
+      Position = 20
+      Anchors = [akTop, akLeft, akRight]
+      TabOrder = 0
+    end
+    object Label1: TLabel
+      Left = 14
+      Height = 17
+      Top = 8
+      Width = 84
+      Caption = 'Gamma factor:'
+      ParentColor = False
+    end
+    object Label_GammaValue: TLabel
+      Left = 104
+      Height = 17
+      Top = 8
+      Width = 5
+      Caption = '?'
+      ParentColor = False
+    end
+    object Label2: TLabel
+      Left = 16
+      Height = 57
+      Top = 80
+      Width = 392
+      Anchors = [akTop, akLeft, akRight]
+      AutoSize = False
+      Caption = 'With the right gamma value, the lightness should be uniform. For LCD screen this can be impossible. In that case, the lightness should be equal in the middle of the screen.'
+      ParentColor = False
+      WordWrap = True
+    end
+  end
+end
