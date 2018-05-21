@@ -6,10 +6,10 @@ object Form1: TForm1
   Caption = 'Form1'
   ClientHeight = 240
   ClientWidth = 390
-  LCLVersion = '1.0.10.0'
+  LCLVersion = '1.8.2.0'
   object EPath: TEdit
     Left = 8
-    Height = 23
+    Height = 27
     Top = 30
     Width = 374
     Anchors = [akTop, akLeft, akRight]
@@ -18,9 +18,9 @@ object Form1: TForm1
   end
   object Label1: TLabel
     Left = 9
-    Height = 16
+    Height = 17
     Top = 9
-    Width = 78
+    Width = 81
     Caption = 'Path of library:'
     ParentColor = False
   end

@@ -68,11 +68,13 @@ type
       s: string; texture: IBGRAScanner; align: TAlignment); override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer;
       s: string; c: TBGRAPixel; align: TAlignment); override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string;
-      texture: IBGRAScanner; align: TAlignment); override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel;
-      align: TAlignment); override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment); override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment); override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); override;
     function TextSize(sUTF8: string): TSize; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     property Shader: TCustomPhongShading read FShader;
     property ShaderLightPosition: TPoint read GetShaderLightPosition write SetShaderLightPosition;
     property VectorizedFontRenderer: TBGRAVectorizedFontRenderer read GetVectorizedRenderer;
@@ -508,14 +510,50 @@ begin
     InternalTextOut(ADest,x,y,s,c,nil,align);
 end;
 
+procedure TBGRATextEffectFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  if VectorizedFontNeeded then
+    VectorizedFontRenderer.TextOut(ADest,x,y,sUTF8,texture,align,ARightToLeft)
+  else
+    InternalTextOut(ADest,x,y,sUTF8,BGRAPixelTransparent,texture,align);
+end;
+
+procedure TBGRATextEffectFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  if VectorizedFontNeeded then
+    VectorizedFontRenderer.TextOut(ADest,x,y,sUTF8,c,align,ARightToLeft)
+  else
+    InternalTextOut(ADest,x,y,sUTF8,c,nil,align);
+end;
+
 function TBGRATextEffectFontRenderer.TextSize(sUTF8: string): TSize;
 begin
   if VectorizedFontNeeded then
     result := VectorizedFontRenderer.TextSize(sUTF8)
   else
-  begin
     result := inherited TextSize(sUTF8);
-  end;
+end;
+
+function TBGRATextEffectFontRenderer.TextSize(sUTF8: string;
+  AMaxWidth: integer; ARightToLeft: boolean): TSize;
+begin
+  if VectorizedFontNeeded then
+    result := VectorizedFontRenderer.TextSize(sUTF8, AMaxWidth, ARightToLeft)
+  else
+    result := inherited TextSize(sUTF8, AMaxWidth, ARightToLeft);
+end;
+
+function TBGRATextEffectFontRenderer.TextFitInfo(sUTF8: string;
+  AMaxWidth: integer): integer;
+begin
+  if VectorizedFontNeeded then
+    result := VectorizedFontRenderer.TextFitInfo(sUTF8, AMaxWidth)
+  else
+    result := inherited TextFitInfo(sUTF8, AMaxWidth)
 end;
 
 { TBGRATextEffect }

@@ -5,7 +5,7 @@ unit Unit1;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls;
 
 type
 
@@ -33,6 +33,8 @@ implementation
 
 {$R *.lfm}
 
+uses LazUTF8, FileUtil, LazFileUtils;
+
 const
   BoldKeywords : array[1..52] of string = ('var','procedure','function','and',
     'or','xor','not','if','then','case','begin','end','of',
@@ -47,7 +49,7 @@ const
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   if SelectDirectoryDialog1.Execute then
-    EPath.Text := SelectDirectoryDialog1.InitialDir;
+    EPath.Text := SelectDirectoryDialog1.FileName;
 end;
 
 procedure HighlightKeywords(var s: string);
@@ -139,8 +141,8 @@ var
       begin
         closeTable;
         path := ExtractFilePath(AFilename);
-        CreateDirUTF8(path+'\doc');
-        outname := 'doc\'+docName+'.txt';
+        CreateDirUTF8(path+DirectorySeparator+'doc');
+        outname := 'doc'+DirectorySeparator+docName+'.txt';
         fullname := path+outname;
         fileoutput := '=== ' + docName + ' ===' + LineEnding
                     + fileoutput;
@@ -149,7 +151,7 @@ var
             currentContent := ReadFileToString(fullname);
             if currentContent <> fileoutput then
               begin
-                assignfile(u, SysToUTF8(fullname));
+                assignfile(u, UTF8ToSys(fullname));
                 rewrite(u);
                 write(u, fileoutput);
                 closefile(u);
@@ -158,7 +160,7 @@ var
           end else
           begin
             result += outname + ' (created)' + LineEnding;
-            assignfile(u, SysToUTF8(fullname));
+            assignfile(u, UTF8ToSys(fullname));
             rewrite(u);
             write(u, fileoutput);
             closefile(u);
