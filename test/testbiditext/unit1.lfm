@@ -1,0 +1,12 @@
+object Form1: TForm1
+  Left = 617
+  Height = 360
+  Top = 309
+  Width = 535
+  Caption = 'Test RightToLeft, ShowPrefix and line endings'
+  OnCreate = FormCreate
+  OnMouseMove = FormMouseMove
+  OnPaint = FormPaint
+  Position = poDefault
+  LCLVersion = '1.8.2.0'
+end
