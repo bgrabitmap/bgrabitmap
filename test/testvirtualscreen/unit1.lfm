@@ -1,0 +1,67 @@
+object Form1: TForm1
+  Left = 472
+  Height = 339
+  Top = 154
+  Width = 504
+  Caption = 'Test TBGRAVirtualScreen partial redraw'
+  ClientHeight = 339
+  ClientWidth = 504
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  LCLVersion = '1.8.2.0'
+  WindowState = wsMaximized
+  object VirtualScreen: TBGRAVirtualScreen
+    Left = 0
+    Height = 305
+    Top = 34
+    Width = 504
+    OnRedraw = VirtualScreenRedraw
+    Align = alClient
+    Alignment = taLeftJustify
+    Color = clWhite
+    ParentColor = False
+    TabOrder = 0
+  end
+  object Panel1: TPanel
+    Left = 0
+    Height = 34
+    Top = 0
+    Width = 504
+    Align = alTop
+    ClientHeight = 34
+    ClientWidth = 504
+    TabOrder = 1
+    object Label1: TLabel
+      Left = 6
+      Height = 17
+      Top = 8
+      Width = 30
+      Caption = 'Balls:'
+      ParentColor = False
+    end
+    object SpinEdit1: TSpinEdit
+      Left = 48
+      Height = 27
+      Top = 3
+      Width = 66
+      MinValue = 1
+      OnChange = SpinEdit1Change
+      TabOrder = 0
+      Value = 5
+    end
+    object CheckBox1: TCheckBox
+      Left = 128
+      Height = 22
+      Top = 5
+      Width = 86
+      Caption = 'Full redraw'
+      TabOrder = 1
+    end
+  end
+  object Timer1: TTimer
+    Interval = 10
+    OnTimer = Timer1Timer
+    left = 89
+    top = 75
+  end
+end
