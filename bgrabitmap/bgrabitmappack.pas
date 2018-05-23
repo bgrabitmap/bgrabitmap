@@ -25,7 +25,7 @@ uses
   BGRAWriteBmpMioMap, BGRAOpenGLType, BGRASpriteGL, BGRAOpenGL, BGRACanvasGL, 
   BGRAFontGL, BGRAOpenGL3D, BGRAPhoxo, BGRAFilterScanner, BGRAFilterType, 
   BGRAFilterBlur, BGRAMultiFileType, BGRAWinResource, BGRALazResource, 
-  BGRAIconCursor, BGRABlurGL, BGRAReadTiff, BGRALazPaint;
+  BGRAIconCursor, BGRABlurGL, BGRAReadTiff, BGRALazPaint, BGRAMemDirectory;
 
 implementation
 

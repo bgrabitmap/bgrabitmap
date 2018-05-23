@@ -24,7 +24,7 @@ type
   public
     constructor Create(AContainer: TMultiFileContainer; AName: utf8string; AValueType: utf8string; AContent: TStream);
     destructor Destroy; override;
-    function CopyTo(ADestination: TStream): integer; override;
+    function CopyTo(ADestination: TStream): int64; override;
   end;
 
   { TFormDataEntry }
@@ -38,7 +38,7 @@ type
   public
     constructor Create(AContainer: TMultiFileContainer; AName: utf8string; ABinaryContent: TStream);
     destructor Destroy; override;
-    function CopyTo(ADestination: TStream): integer; override;
+    function CopyTo(ADestination: TStream): int64; override;
   end;
 
   { TLazResourceContainer }
@@ -90,7 +90,7 @@ begin
   inherited Destroy;
 end;
 
-function TFormDataEntry.CopyTo(ADestination: TStream): integer;
+function TFormDataEntry.CopyTo(ADestination: TStream): int64;
 begin
   RequireTextContent;
   if FTextContent.Size = 0 then
@@ -148,7 +148,7 @@ begin
   FContent := AContent;
 end;
 
-function TLazResourceEntry.CopyTo(ADestination: TStream): integer;
+function TLazResourceEntry.CopyTo(ADestination: TStream): int64;
 begin
   if FContent.Size = 0 then
     result := 0

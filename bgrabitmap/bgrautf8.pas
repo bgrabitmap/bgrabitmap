@@ -74,6 +74,8 @@ function GetFirstStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
 function GetLastStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
 
 //little endian stream functions
+function LEReadInt64(Stream: TStream): int64;
+procedure LEWriteInt64(Stream: TStream; AValue: int64);
 function LEReadLongint(Stream: TStream): longint;
 procedure LEWriteLongint(Stream: TStream; AValue: LongInt);
 function LEReadByte(Stream: TStream): byte;
@@ -707,6 +709,19 @@ begin
     if (CharIndex<>0) or (Len<0) then
       Result:=nil;
   end;
+end;
+
+function LEReadInt64(Stream: TStream): int64;
+begin
+  Result := 0;
+  stream.Read(Result, sizeof(Result));
+  Result := LEtoN(Result);
+end;
+
+procedure LEWriteInt64(Stream: TStream; AValue: int64);
+begin
+  AValue := NtoLE(AValue);
+  stream.Write(AValue, sizeof(AValue));
 end;
 
 function LEReadLongint(Stream: TStream): longint;
