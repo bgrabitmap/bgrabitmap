@@ -9,6 +9,21 @@ uses
   BGRACanvas2D, BGRASVGType;
 
 type
+  TCSSUnit = BGRAUnits.TCSSUnit;
+
+const
+  cuCustom = BGRAUnits.cuCustom;
+  cuPixel = BGRAUnits.cuPixel;
+  cuCentimeter = BGRAUnits.cuCentimeter;
+  cuMillimeter = BGRAUnits.cuMillimeter;
+  cuInch = BGRAUnits.cuInch;
+  cuPica = BGRAUnits.cuPica;
+  cuPoint = BGRAUnits.cuPoint;
+  cuFontEmHeight = BGRAUnits.cuFontEmHeight;
+  cuFontXHeight = BGRAUnits.cuFontXHeight;
+  cuPercent = BGRAUnits.cuPercent;
+
+type
   TSVGViewBox = record
     min, size: TPointF;
   end;
