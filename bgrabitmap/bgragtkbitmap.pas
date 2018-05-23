@@ -225,14 +225,17 @@ begin
   dest := ACanvas.Handle;
   pos := rect.TopLeft;
   LPtoDP(dest, pos, 1);
-  If ALineOrder = riloBottomToTop then VerticalFlip;
-  If not TBGRAPixel_RGBAOrder then SwapRedBlue;
+  ptr := TBGRAPtrBitmap.Create(AWidth,AHeight,AData);
+  ptr.LineOrder := ALineOrder;
+  If ALineOrder = riloBottomToTop then ptr.VerticalFlip;
+  If not TBGRAPixel_RGBAOrder then ptr.SwapRedBlue;
   gdk_draw_rgb_32_image(TGtkDeviceContext(dest).Drawable,
     TGtkDeviceContext(Dest).GC, pos.x,pos.y,
     AWidth,AHeight, GDK_RGB_DITHER_NORMAL,
     AData, AWidth*sizeof(TBGRAPixel));
-  If not TBGRAPixel_RGBAOrder then SwapRedBlue;
-  If ALineOrder = riloBottomToTop then VerticalFlip;
+  If not TBGRAPixel_RGBAOrder then ptr.SwapRedBlue;
+  If ALineOrder = riloBottomToTop then ptr.VerticalFlip;
+  ptr.Free;
 end;
 
 procedure TBGRAGtkBitmap.GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer);
