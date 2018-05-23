@@ -74,8 +74,10 @@ type
     constructor Create(AFilename: utf8string);
     constructor Create(AStream: TStream);
     constructor Create(AStream: TStream; AStartPos: Int64);
-    function Add(AName: utf8string; AExtension: utf8string; AContent: TStream; AOverwrite: boolean = false; AOwnStream: boolean = true): integer;
-    function Add(AName: utf8string; AExtension: utf8string; AContent: RawByteString; AOverwrite: boolean = false): integer;
+    function Add(AName: utf8string; AExtension: utf8string; AContent: TStream; AOverwrite: boolean = false; AOwnStream: boolean = true): integer; overload;
+    function Add(AName: utf8string; AExtension: utf8string; AContent: RawByteString; AOverwrite: boolean = false): integer; overload;
+    function Add(AFilename: TEntryFilename; AContent: TStream; AOverwrite: boolean = false; AOwnStream: boolean = true): integer; overload;
+    function Add(AFilename: TEntryFilename; AContent: RawByteString; AOverwrite: boolean = false): integer; overload;
     procedure Clear; virtual;
     destructor Destroy; override;
     procedure LoadFromFile(AFilename: utf8string);
@@ -324,6 +326,18 @@ begin
   stream := TMemoryStream.Create;
   stream.Write(AContent[1],length(AContent));
   result := Add(AName,AExtension,stream,AOverwrite);
+end;
+
+function TMultiFileContainer.Add(AFilename: TEntryFilename; AContent: TStream;
+  AOverwrite: boolean; AOwnStream: boolean): integer;
+begin
+  Add(AFilename.Name,AFilename.Extension, AContent, AOverwrite, AOwnStream);
+end;
+
+function TMultiFileContainer.Add(AFilename: TEntryFilename;
+  AContent: RawByteString; AOverwrite: boolean): integer;
+begin
+  Add(AFilename.Name,AFilename.Extension, AContent, AOverwrite);
 end;
 
 destructor TMultiFileContainer.Destroy;

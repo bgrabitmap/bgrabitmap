@@ -5,11 +5,14 @@ unit BGRALayers;
 interface
 
 uses
-  BGRAGraphics, Classes, SysUtils, Types, BGRABitmapTypes, BGRABitmap;
+  BGRAGraphics, Classes, SysUtils, Types, BGRABitmapTypes, BGRABitmap,
+  BGRAMemDirectory, BGRATransform;
 
 type
   TBGRACustomLayeredBitmap = class;
   TBGRACustomLayeredBitmapClass = class of TBGRACustomLayeredBitmap;
+  TBGRALayerCustomOriginal = class;
+  TBGRALayerOriginalAny = class of TBGRALayerCustomOriginal;
 
   TBGRALayeredBitmap = class;
   TBGRALayeredBitmapClass = class of TBGRALayeredBitmap;
@@ -28,12 +31,16 @@ type
       linearBlend: boolean;
     end;
     FLinearBlend: boolean;
+    FMemDirectory: TMemDirectory;
+    FMemDirectoryOwned: boolean;
     function GetDefaultBlendingOperation: TBlendOperation;
+    function GetHasMemFiles: boolean;
     function GetLinearBlend: boolean;
     procedure SetLinearBlend(AValue: boolean);
 
   protected
     function GetNbLayers: integer; virtual; abstract;
+    function GetMemDirectory: TMemDirectory;
     function GetBlendOperation(Layer: integer): TBlendOperation; virtual; abstract;
     function GetLayerVisible(layer: integer): boolean; virtual; abstract;
     function GetLayerOpacity(layer: integer): byte; virtual; abstract;
@@ -42,15 +49,21 @@ type
     function GetLayerFrozenRange(layer: integer): integer;
     function GetLayerFrozen(layer: integer): boolean; virtual;
     function GetLayerUniqueId(layer: integer): integer; virtual;
+    function GetLayerOriginal({%H-}layer: integer): TBGRALayerCustomOriginal; virtual;
+    function GetLayerOriginalMatrix({%H-}layer: integer): TAffineMatrix; virtual;
+    function GetLayerOriginalGuid({%H-}layer: integer): TGuid; virtual;
+    function GetTransparent: Boolean; override;
+    function GetEmpty: boolean; override;
+
+    procedure SetWidth(Value: Integer); override;
+    procedure SetHeight(Value: Integer); override;
+    procedure SetMemDirectory(AValue: TMemDirectory);
+    procedure SetTransparent(Value: Boolean); override;
+
     procedure SetLayerFrozen(layer: integer; AValue: boolean); virtual;
     function RangeIntersect(first1,last1,first2,last2: integer): boolean;
     procedure RemoveFrozenRange(index: integer);
     function ContainsFrozenRange(first,last: integer): boolean;
-    function GetEmpty: boolean; override;
-    procedure SetWidth(Value: Integer); override;
-    procedure SetHeight(Value: Integer); override;
-    function GetTransparent: Boolean; override;
-    procedure SetTransparent(Value: Boolean); override;
 
   public
     procedure SaveToFile(const filenameUTF8: string); override;
@@ -87,8 +100,14 @@ type
     property LayerOffset[layer: integer]: TPoint read GetLayerOffset;
     property LayerFrozen[layer: integer]: boolean read GetLayerFrozen;
     property LayerUniqueId[layer: integer]: integer read GetLayerUniqueId;
+    property LayerOriginal[layer: integer]: TBGRALayerCustomOriginal read GetLayerOriginal;
+    property LayerOriginalMatrix[layer: integer]: TAffineMatrix read GetLayerOriginalMatrix;
+    property LayerOriginalGuid[layer: integer]: TGuid read GetLayerOriginalGuid;
     property LinearBlend: boolean read GetLinearBlend write SetLinearBlend; //use linear blending unless specified
     property DefaultBlendingOperation: TBlendOperation read GetDefaultBlendingOperation;
+    property MemDirectory: TMemDirectory read GetMemDirectory write SetMemDirectory;
+    property MemDirectoryOwned: boolean read FMemDirectoryOwned write FMemDirectoryOwned;
+    property HasMemFiles: boolean read GetHasMemFiles;
   end;
 
   TBGRALayerInfo = record
@@ -101,6 +120,10 @@ type
     Visible: boolean;
     Owner: boolean;
     Frozen: boolean;
+    Original: TBGRALayerCustomOriginal;
+    OriginalMatrix: TAffineMatrix;
+    OriginalChanged: boolean;
+    OriginalGuid: TGuid;
   end;
 
   { TBGRALayeredBitmap }
@@ -121,14 +144,24 @@ type
     function GetLayerOffset(layer: integer): TPoint; override;
     function GetLayerName(layer: integer): string; override;
     function GetLayerFrozen(layer: integer): boolean; override;
+    function GetLayerUniqueId(layer: integer): integer; override;
+    function GetLayerOriginal(layer: integer): TBGRALayerCustomOriginal; override;
+    function GetLayerOriginalMatrix(layer: integer): TAffineMatrix; override;
+    function GetLayerOriginalGuid(layer: integer): TGuid; override;
     procedure SetBlendOperation(Layer: integer; op: TBlendOperation);
     procedure SetLayerVisible(layer: integer; AValue: boolean);
     procedure SetLayerOpacity(layer: integer; AValue: byte);
     procedure SetLayerOffset(layer: integer; AValue: TPoint);
     procedure SetLayerName(layer: integer; AValue: string);
     procedure SetLayerFrozen(layer: integer; AValue: boolean); override;
-    function GetLayerUniqueId(layer: integer): integer; override;
     procedure SetLayerUniqueId(layer: integer; AValue: integer);
+    procedure SetLayerOriginal(layer: integer; AValue: TBGRALayerCustomOriginal);
+    procedure SetLayerOriginalMatrix(layer: integer; AValue: TAffineMatrix);
+    procedure SetLayerOriginalGuid(layer: integer; const AValue: TGuid);
+
+    procedure FindOriginal(AGuid: TGuid;
+                out ADir: TMemDirectory;
+                out AClass: TBGRALayerOriginalAny);
 
   public
     procedure LoadFromFile(const filenameUTF8: string); override;
@@ -140,6 +173,7 @@ type
     procedure Assign(ASource: TBGRACustomLayeredBitmap; ASharedLayerIds: boolean = false); overload;
     function MoveLayerUp(index: integer): integer;
     function MoveLayerDown(index: integer): integer;
+
     function AddLayer(Source: TBGRABitmap; Opacity: byte = 255): integer; overload;
     function AddLayer(Source: TBGRABitmap; Position: TPoint; BlendOp: TBlendOperation; Opacity: byte = 255; Shared: boolean = false): integer; overload;
     function AddLayer(Source: TBGRABitmap; Position: TPoint; Opacity: byte = 255): integer; overload;
@@ -160,6 +194,13 @@ type
     function AddOwnedLayer(ABitmap: TBGRABitmap; Position: TPoint; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
     function AddOwnedLayer(ABitmap: TBGRABitmap; Position: TPoint; Opacity: byte = 255): integer; overload;
     function AddOwnedLayer(ABitmap: TBGRABitmap; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(AGuid: TGuid; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(AGuid: TGuid; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(AGuid: TGuid; Matrix: TAffineMatrix; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(AGuid: TGuid; Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
+
+    function AddOriginal(AOriginal: TBGRALayerCustomOriginal): TGuid;
+
     destructor Destroy; override;
     constructor Create; override; overload;
     constructor Create(AWidth, AHeight: integer); virtual; overload;
@@ -186,7 +227,25 @@ type
     property LayerBitmap[layer: integer]: TBGRABitmap read GetLayerBitmapDirectly;
     property LayerOffset[layer: integer]: TPoint read GetLayerOffset write SetLayerOffset;
     property LayerUniqueId[layer: integer]: integer read GetLayerUniqueId write SetLayerUniqueId;
+    property LayerOriginal[layer: integer]: TBGRALayerCustomOriginal read GetLayerOriginal write SetLayerOriginal;
+    property LayerOriginalGuid[layer: integer]: TGuid read GetLayerOriginalGuid write SetLayerOriginalGuid;
+    property LayerOriginalMatrix[layer: integer]: TAffineMatrix read GetLayerOriginalMatrix write SetLayerOriginalMatrix;
   end;
+
+  TAffineMatrix = BGRABitmapTypes.TAffineMatrix;
+
+  { TBGRALayerCustomOriginal }
+
+  TBGRALayerCustomOriginal = class
+  public
+    constructor Create; virtual;
+    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix); virtual; abstract;
+    function GetRenderBounds(ADestRect: TRect; AMatrix: TAffineMatrix): TRect; virtual; abstract;
+    procedure LoadFromDirectory(ADir: TMemDirectory); virtual; abstract;
+    procedure SaveToDirectory(ADir: TMemDirectory); virtual; abstract;
+  end;
+
+procedure RegisterLayerOriginal(AClass: TBGRALayerOriginalAny);
 
 procedure RegisterLayeredBitmapWriter(AExtensionUTF8: string; AWriter: TBGRALayeredBitmapClass);
 procedure RegisterLayeredBitmapReader(AExtensionUTF8: string; AReader: TBGRACustomLayeredBitmapClass);
@@ -216,6 +275,9 @@ implementation
 
 uses BGRAUTF8, BGRABlend;
 
+const
+  OriginalsDirectory = 'originals';
+
 var
   OnLayeredBitmapLoadStartProc: TOnLayeredBitmapLoadStartProc;
   OnLayeredBitmapLoadProgressProc: TOnLayeredBitmapLoadProgressProc;
@@ -231,6 +293,14 @@ var
      extension: string;
      theClass: TBGRALayeredBitmapClass;
   end;
+  LayerOriginalClasses: array of TBGRALayerOriginalAny;
+
+{ TBGRALayerCustomOriginal }
+
+constructor TBGRALayerCustomOriginal.Create;
+begin
+  //nothing
+end;
 
 { TBGRALayeredBitmap }
 
@@ -240,6 +310,31 @@ begin
     raise Exception.Create('Index out of bounds')
   else
     Result:= FLayers[layer].UniqueId;
+end;
+
+function TBGRALayeredBitmap.GetLayerOriginal(layer: integer): TBGRALayerCustomOriginal;
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+    Result:= FLayers[layer].Original;
+end;
+
+function TBGRALayeredBitmap.GetLayerOriginalMatrix(layer: integer
+  ): TAffineMatrix;
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+    result := FLayers[layer].OriginalMatrix;
+end;
+
+function TBGRALayeredBitmap.GetLayerOriginalGuid(layer: integer): TGuid;
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+    result := FLayers[layer].OriginalGuid;
 end;
 
 procedure TBGRALayeredBitmap.SetLayerUniqueId(layer: integer; AValue: integer);
@@ -253,6 +348,84 @@ begin
       if (i <> layer) and (FLayers[layer].UniqueId = AValue) then
         raise Exception.Create('Another layer has the same identifier');
     FLayers[layer].UniqueId := AValue;
+  end;
+end;
+
+procedure TBGRALayeredBitmap.SetLayerOriginal(layer: integer;
+  AValue: TBGRALayerCustomOriginal);
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+  begin
+    if AValue = FLayers[layer].Original then exit;
+    FLayers[layer].Original.Free;
+    FLayers[layer].Original := AValue;
+    FLayers[layer].OriginalChanged := true;
+  end;
+end;
+
+procedure TBGRALayeredBitmap.SetLayerOriginalMatrix(layer: integer;
+  AValue: TAffineMatrix);
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+  begin
+    if FLayers[layer].OriginalMatrix = AValue then exit;
+    FLayers[layer].OriginalMatrix := AValue;
+    if Assigned(FLayers[layer].Original) then
+      FLayers[layer].OriginalChanged := true;
+  end;
+end;
+
+procedure TBGRALayeredBitmap.SetLayerOriginalGuid(layer: integer;
+  const AValue: TGuid);
+var
+  dir: TMemDirectory;
+  c: TBGRALayerOriginalAny;
+  original: TBGRALayerCustomOriginal;
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+  begin
+    if CompareMem(@FLayers[layer].OriginalGuid, @AValue, sizeof(AValue)) then exit;
+
+    FindOriginal(AValue, dir, c);
+    if Assigned(c) and Assigned(dir) then
+    begin
+      original := c.Create;
+      original.LoadFromDirectory(dir);
+      LayerOriginal[layer] := original;
+      FLayers[layer].OriginalGuid := AValue;
+      FLayers[layer].OriginalChanged := true;
+    end;
+  end;
+end;
+
+procedure TBGRALayeredBitmap.FindOriginal(AGuid: TGuid; out
+  ADir: TMemDirectory; out AClass: TBGRALayerOriginalAny);
+var
+  c: String;
+  i: Integer;
+begin
+  ADir := nil;
+  AClass := nil;
+
+  if HasMemFiles then
+  begin
+    ADir := MemDirectory.FindPath(OriginalsDirectory+'/'+GUIDToString(AGuid));
+    if ADir <> nil then
+    begin
+      c := ADir.RawStringByFilename['class'];
+      for i := 0 to high(LayerOriginalClasses) do
+        if LayerOriginalClasses[i].ClassName = c then
+        begin
+          AClass := LayerOriginalClasses[i];
+          break;
+        end;
+    end;
   end;
 end;
 
@@ -407,13 +580,31 @@ begin
     FLayers[layer].Frozen := AValue;
 end;
 
-function TBGRALayeredBitmap.GetLayerBitmapDirectly(layer: integer
-  ): TBGRABitmap;
+function TBGRALayeredBitmap.GetLayerBitmapDirectly(layer: integer): TBGRABitmap;
+var
+  r, rAll, rInter: TRect;
 begin
   if (layer < 0) or (layer >= NbLayers) then
     result := nil
   else
+  begin
+    if Assigned(FLayers[layer].Original) and FLayers[layer].OriginalChanged then
+    begin
+      if FLayers[layer].Owner then
+        FreeAndNil(FLayers[layer].Source)
+      else
+        FLayers[layer].Source := nil;
+      rAll := rect(0,0,Width,Height);
+      r := FLayers[layer].Original.GetRenderBounds(rAll,FLayers[layer].OriginalMatrix);
+      rInter := TRect.Intersect(r, rAll);
+      FLayers[layer].Source := TBGRABitmap.Create(rInter.Width,rInter.Height);
+      FLayers[layer].Original.Render(FLayers[layer].Source, AffineMatrixTranslation(-rInter.Left,-rInter.Top)*FLayers[layer].OriginalMatrix);
+      FLayers[layer].x := rInter.Left;
+      FLayers[layer].y := rInter.Top;
+      FLayers[layer].OriginalChanged := false;
+    end;
     Result:= FLayers[layer].Source;
+  end;
 end;
 
 procedure TBGRALayeredBitmap.LoadFromFile(const filenameUTF8: string);
@@ -421,6 +612,7 @@ var bmp: TBGRABitmap;
     ext: string;
     temp: TBGRACustomLayeredBitmap;
     i: integer;
+    stream: TFileStreamUTF8;
 begin
   ext := UTF8LowerCase(ExtractFileExt(filenameUTF8));
   for i := 0 to high(LayeredBitmapReaders) do
@@ -436,15 +628,30 @@ begin
       exit;
     end;
 
-  bmp := TBGRABitmap.Create(filenameUTF8, True);
-  Clear;
-  SetSize(bmp.Width,bmp.Height);
-  AddOwnedLayer(bmp);
+  //when using "data" extension, simply deserialize
+  if (ext='.dat') or (ext='.data') then
+  begin
+    if Assigned(LayeredBitmapLoadFromStreamProc) then
+    begin
+      stream := TFileStreamUTF8.Create(filenameUTF8, fmOpenRead, fmShareDenyWrite);
+      try
+        LayeredBitmapLoadFromStreamProc(stream, self);
+      finally
+        stream.Free;
+      end;
+    end else
+      raise exception.Create('Enable layer deserialization by calling BGRAStreamLayers.RegisterStreamLayers');
+  end else
+  begin
+    bmp := TBGRABitmap.Create(filenameUTF8, True);
+    Clear;
+    SetSize(bmp.Width,bmp.Height);
+    AddOwnedLayer(bmp);
+  end;
 end;
 
 procedure TBGRALayeredBitmap.LoadFromStream(stream: TStream);
 var bmp: TBGRABitmap;
-   temp: TBGRALayeredBitmap;
 begin
   if Assigned(LayeredBitmapLoadFromStreamProc) then
   begin
@@ -475,6 +682,7 @@ begin
   Unfreeze;
   for i := NbLayers-1 downto 0 do
     RemoveLayer(i);
+  MemDirectory := nil;
 end;
 
 procedure TBGRALayeredBitmap.RemoveLayer(index: integer);
@@ -483,6 +691,7 @@ begin
   if (index < 0) or (index >= NbLayers) then exit;
   Unfreeze;
   if FLayers[index].Owner then FLayers[index].Source.Free;
+  FLayers[index].Original.Free;
   for i := index to FNbLayers-2 do
     FLayers[i] := FLayers[i+1];
   Dec(FNbLayers);
@@ -582,6 +791,10 @@ begin
   FLayers[FNbLayers].Visible := true;
   FLayers[FNbLayers].Frozen := false;
   FLayers[FNbLayers].UniqueId := ProduceLayerUniqueId;
+  FLayers[FNbLayers].Original := nil;
+  FLayers[FNbLayers].OriginalMatrix := AffineMatrixIdentity;
+  FLayers[FNbLayers].OriginalChanged := false;
+  FLayers[FNbLayers].OriginalGuid := GUID_NULL;
   if Shared then
   begin
     FLayers[FNbLayers].Source := Source;
@@ -689,6 +902,46 @@ begin
   FLayers[result].Owner := True;
 end;
 
+function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+  Opacity: byte): integer;
+begin
+  result := AddLayerFromOriginal(AGuid, DefaultBlendingOperation, Opacity);
+end;
+
+function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+  BlendOp: TBlendOperation; Opacity: byte): integer;
+begin
+  result := AddLayerFromOriginal(AGuid, AffineMatrixIdentity, BlendOp, Opacity);
+end;
+
+function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+  Matrix: TAffineMatrix; Opacity: byte): integer;
+begin
+  result := AddLayerFromOriginal(AGuid, Matrix, DefaultBlendingOperation, Opacity);
+end;
+
+function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+  Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte): integer;
+begin
+  result := AddOwnedLayer(TBGRABitmap.Create, BlendOp, Opacity);
+  LayerOriginalGuid[result] := AGuid;
+  LayerOriginalMatrix[result] := Matrix;
+  if not Assigned(LayerOriginal[result]) then
+    raise exception.Create('Original data or class not found');
+end;
+
+function TBGRALayeredBitmap.AddOriginal(AOriginal: TBGRALayerCustomOriginal): TGuid;
+var
+  dir,subdir: TMemDirectory;
+begin
+  if CreateGUID(result)<> 0 then
+    raise exception.Create('Error while creating GUID');
+  dir := MemDirectory.Directory[MemDirectory.AddDirectory(OriginalsDirectory)];
+  subdir := dir.Directory[dir.AddDirectory(GUIDToString(result))];
+  subdir.RawStringByFilename['class'] := AOriginal.ClassName;
+  AOriginal.SaveToDirectory(subdir);
+end;
+
 destructor TBGRALayeredBitmap.Destroy;
 begin
   inherited Destroy;
@@ -749,7 +1002,10 @@ var i: integer;
 begin
   SetSize(Height,Width); //unfreeze
   for i := 0 to NbLayers-1 do
-    SetLayerBitmap(i, LayerBitmap[i].RotateCW as TBGRABitmap, True);
+    if Assigned(LayerOriginal[i]) then
+      LayerOriginalMatrix[i] := AffineMatrixTranslation(Width,0)*AffineMatrixRotationDeg(90)*LayerOriginalMatrix[i]
+    else
+      SetLayerBitmap(i, LayerBitmap[i].RotateCW as TBGRABitmap, True);
 end;
 
 procedure TBGRALayeredBitmap.RotateCCW;
@@ -757,7 +1013,10 @@ var i: integer;
 begin
   SetSize(Height,Width); //unfreeze
   for i := 0 to NbLayers-1 do
-    SetLayerBitmap(i, LayerBitmap[i].RotateCCW as TBGRABitmap, True);
+    if Assigned(LayerOriginal[i]) then
+      LayerOriginalMatrix[i] := AffineMatrixTranslation(0,Height)*AffineMatrixRotationDeg(-90)*LayerOriginalMatrix[i]
+    else
+      SetLayerBitmap(i, LayerBitmap[i].RotateCCW as TBGRABitmap, True);
 end;
 
 procedure TBGRALayeredBitmap.HorizontalFlip;
@@ -774,6 +1033,8 @@ begin
       FLayers[i].Source.HorizontalFlip;
       FLayers[i].Owner := true;
     end;
+    FLayers[i].x := Width-FLayers[i].x-FLayers[i].Source.Width;
+    FLayers[i].OriginalMatrix := AffineMatrixTranslation(+Width/2,0)*AffineMatrixScale(-1,1)*AffineMatrixTranslation(-Width/2,0)*FLayers[i].OriginalMatrix;
   end;
 end;
 
@@ -791,19 +1052,28 @@ begin
       FLayers[i].Source.VerticalFlip;
       FLayers[i].Owner := true;
     end;
+    FLayers[i].y := Height-FLayers[i].y-FLayers[i].Source.Height;
+    FLayers[i].OriginalMatrix := AffineMatrixTranslation(0,+Height/2)*AffineMatrixScale(1,-1)*AffineMatrixTranslation(0,-Height/2)*FLayers[i].OriginalMatrix;
   end;
 end;
 
 procedure TBGRALayeredBitmap.Resample(AWidth, AHeight: integer;
   AResampleMode: TResampleMode; AFineResampleFilter: TResampleFilter);
-var i: integer;
+var i, prevWidth, prevHeight: integer;
     resampled: TBGRABitmap;
     oldFilter : TResampleFilter;
 begin
   if (AWidth < 0) or (AHeight < 0) then
     raise exception.Create('Invalid size');
+  prevWidth := Width;
+  if prevWidth < 1 then prevWidth := AWidth;
+  prevHeight := Height;
+  if prevHeight < 1 then prevHeight := AHeight;
   SetSize(AWidth, AHeight); //unfreeze
   for i := 0 to NbLayers-1 do
+  if Assigned(FLayers[i].Original) then
+    LayerOriginalMatrix[i] := AffineMatrixScale(AWidth/prevWidth,AHeight/prevHeight)*LayerOriginalMatrix[i]
+  else
   begin
     oldFilter := LayerBitmap[i].ResampleFilter;
     LayerBitmap[i].ResampleFilter := AFineResampleFilter;
@@ -825,6 +1095,8 @@ begin
     if FLayers[layer].Owner then FLayers[layer].Source.Free;
     FLayers[layer].Source := ABitmap;
     FLayers[layer].Owner := AOwned;
+    FreeAndNil(FLayers[layer].Original);
+    FLayers[layer].OriginalMatrix := AffineMatrixIdentity;
   end;
 end;
 
@@ -835,15 +1107,53 @@ begin
   result := FLinearBlend;
 end;
 
+function TBGRACustomLayeredBitmap.GetMemDirectory: TMemDirectory;
+begin
+  if FMemDirectory = nil then
+  begin
+    FMemDirectory:= TMemDirectory.Create;
+    FMemDirectoryOwned := true;
+  end;
+  result := FMemDirectory;
+end;
+
 function TBGRACustomLayeredBitmap.GetDefaultBlendingOperation: TBlendOperation;
 begin
   result := boTransparent;
+end;
+
+function TBGRACustomLayeredBitmap.GetHasMemFiles: boolean;
+begin
+  result := assigned(FMemDirectory) and (FMemDirectory.Count > 0);
+end;
+
+function TBGRACustomLayeredBitmap.GetLayerOriginalGuid(layer: integer): TGuid;
+begin
+  result := GUID_NULL;
+end;
+
+function TBGRACustomLayeredBitmap.GetLayerOriginal(layer: integer): TBGRALayerCustomOriginal;
+begin
+  result := nil;
+end;
+
+function TBGRACustomLayeredBitmap.GetLayerOriginalMatrix(layer: integer): TAffineMatrix;
+begin
+  result := AffineMatrixIdentity;
 end;
 
 procedure TBGRACustomLayeredBitmap.SetLinearBlend(AValue: boolean);
 begin
   Unfreeze;
   FLinearBlend := AValue;
+end;
+
+procedure TBGRACustomLayeredBitmap.SetMemDirectory(AValue: TMemDirectory);
+begin
+  if AValue = FMemDirectory then exit;
+  if FMemDirectoryOwned then FMemDirectory.Free;
+  FMemDirectory := AValue;
+  FMemDirectoryOwned := false;
 end;
 
 function TBGRACustomLayeredBitmap.GetLayerName(layer: integer): string;
@@ -961,6 +1271,7 @@ var bmp: TBGRABitmap;
     ext: string;
     temp: TBGRALayeredBitmap;
     i: integer;
+    stream: TFileStreamUTF8;
 begin
   ext := UTF8LowerCase(ExtractFileExt(filenameUTF8));
   for i := 0 to high(LayeredBitmapWriters) do
@@ -976,11 +1287,27 @@ begin
       exit;
     end;
 
-  bmp := ComputeFlatImage;
-  try
-    bmp.SaveToFileUTF8(filenameUTF8);
-  finally
-    bmp.Free;
+  //when using "data" extension, simply serialize
+  if (ext='.dat') or (ext='.data') then
+  begin
+    if Assigned(LayeredBitmapLoadFromStreamProc) then
+    begin
+      stream := TFileStreamUTF8.Create(filenameUTF8, fmCreate);
+      try
+        LayeredBitmapSaveToStreamProc(stream, self);
+      finally
+        stream.Free;
+      end;
+    end else
+      raise exception.Create('Enable layer serialization by calling BGRAStreamLayers.RegisterStreamLayers');
+  end else
+  begin
+    bmp := ComputeFlatImage;
+    try
+      bmp.SaveToFileUTF8(filenameUTF8);
+    finally
+      bmp.Free;
+    end;
   end;
 end;
 
@@ -1029,6 +1356,8 @@ constructor TBGRACustomLayeredBitmap.Create;
 begin
   FFrozenRange := nil;
   FLinearBlend:= True;
+  FMemDirectory := nil;
+  FMemDirectoryOwned:= false;
 end;
 
 {$hints on}
@@ -1425,6 +1754,12 @@ begin
   if OnLayeredBitmapLoadProgressProc = AProgress then OnLayeredBitmapLoadProgressProc := nil;
   if OnLayeredBitmapLoadStartProc = AStart then OnLayeredBitmapLoadStartProc := nil;
   if OnLayeredBitmapLoadedProc = ADone then OnLayeredBitmapLoadedProc := nil;
+end;
+
+procedure RegisterLayerOriginal(AClass: TBGRALayerOriginalAny);
+begin
+  setlength(LayerOriginalClasses, length(LayerOriginalClasses)+1);
+  LayerOriginalClasses[high(LayerOriginalClasses)] := AClass;
 end;
 
 procedure RegisterLayeredBitmapWriter(AExtensionUTF8: string; AWriter: TBGRALayeredBitmapClass);
