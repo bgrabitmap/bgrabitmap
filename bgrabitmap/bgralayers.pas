@@ -248,7 +248,11 @@ type
     function GetRenderBounds(ADestRect: TRect; AMatrix: TAffineMatrix): TRect; virtual; abstract;
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); virtual; abstract;
     procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); virtual; abstract;
-    class function FriendlyClassName: string; virtual; abstract;
+    procedure LoadFromFile(AFilenameUTF8: string); virtual;
+    procedure LoadFromStream(AStream: TStream); virtual;
+    procedure SaveToFile(AFilenameUTF8: string); virtual;
+    procedure SaveToStream(AStream: TStream); virtual;
+    class function FriendlyClassName: RawByteString; virtual; abstract;
   end;
 
   { TBGRACustomOriginalStorage }
@@ -272,6 +276,7 @@ type
   public
     constructor Create;
     procedure RemoveAttribute(AName: utf8string); virtual; abstract;
+    procedure RemoveFile(AName: utf8string); virtual; abstract;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; virtual; abstract;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); virtual; abstract;
     property RawString[AName: utf8string]: RawByteString read GetRawString write SetRawString;
@@ -292,6 +297,7 @@ type
   public
     constructor Create(AMemDir: TMemDirectory);
     procedure RemoveAttribute(AName: utf8string); override;
+    procedure RemoveFile(AName: utf8string); override;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; override;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); override;
   end;
@@ -371,6 +377,11 @@ procedure TBGRAMemOriginalStorage.RemoveAttribute(AName: utf8string);
 begin
   if pos('.',AName)<>0 then exit;
   FMemDir.Delete(AName,'');
+end;
+
+procedure TBGRAMemOriginalStorage.RemoveFile(AName: utf8string);
+begin
+  FMemDir.Delete(TEntryFilename.New(AName));
 end;
 
 function TBGRAMemOriginalStorage.ReadFile(AName: UTF8String; ADest: TStream): boolean;
@@ -472,6 +483,67 @@ end;
 constructor TBGRALayerCustomOriginal.Create;
 begin
   //nothing
+end;
+
+procedure TBGRALayerCustomOriginal.LoadFromFile(AFilenameUTF8: string);
+var
+  s: TFileStreamUTF8;
+begin
+  s := TFileStreamUTF8.Create(AFilenameUTF8, fmOpenRead, fmShareDenyWrite);
+  try
+    LoadFromStream(s);
+  finally
+    s.Free;
+  end;
+end;
+
+procedure TBGRALayerCustomOriginal.LoadFromStream(AStream: TStream);
+var storage: TBGRAMemOriginalStorage;
+  memDir: TMemDirectory;
+begin
+  memDir := TMemDirectory.Create;
+  storage := nil;
+  try
+    memDir.LoadFromStream(AStream);
+    storage := TBGRAMemOriginalStorage.Create(memDir);
+    if storage.RawString['class'] <> FriendlyClassName then
+      raise exception.Create('Invalid class');
+    LoadFromStorage(storage);
+    FreeAndNil(storage);
+  finally
+    storage.Free;
+    memDir.Free;
+  end;
+end;
+
+procedure TBGRALayerCustomOriginal.SaveToFile(AFilenameUTF8: string);
+var
+  s: TFileStreamUTF8;
+begin
+  s := TFileStreamUTF8.Create(AFilenameUTF8, fmCreate);
+  try
+    SaveToStream(s);
+  finally
+    s.Free;
+  end;
+end;
+
+procedure TBGRALayerCustomOriginal.SaveToStream(AStream: TStream);
+var storage: TBGRAMemOriginalStorage;
+  memDir: TMemDirectory;
+begin
+  memDir := TMemDirectory.Create;
+  storage := nil;
+  try
+    storage := TBGRAMemOriginalStorage.Create(memDir);
+    storage.RawString['class'] := FriendlyClassName;
+    SaveToStorage(storage);
+    FreeAndNil(storage);
+    memDir.SaveToStream(AStream);
+  finally
+    storage.Free;
+    memDir.Free;
+  end;
 end;
 
 { TBGRALayeredBitmap }
