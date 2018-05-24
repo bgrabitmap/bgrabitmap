@@ -331,13 +331,13 @@ end;
 function TMultiFileContainer.Add(AFilename: TEntryFilename; AContent: TStream;
   AOverwrite: boolean; AOwnStream: boolean): integer;
 begin
-  Add(AFilename.Name,AFilename.Extension, AContent, AOverwrite, AOwnStream);
+  result := Add(AFilename.Name,AFilename.Extension, AContent, AOverwrite, AOwnStream);
 end;
 
 function TMultiFileContainer.Add(AFilename: TEntryFilename;
   AContent: RawByteString; AOverwrite: boolean): integer;
 begin
-  Add(AFilename.Name,AFilename.Extension, AContent, AOverwrite);
+  result := Add(AFilename.Name,AFilename.Extension, AContent, AOverwrite);
 end;
 
 destructor TMultiFileContainer.Destroy;

@@ -234,6 +234,8 @@ type
 
   TAffineMatrix = BGRABitmapTypes.TAffineMatrix;
 
+  TBGRACustomOriginalStorage = class;
+
   { TBGRALayerCustomOriginal }
 
   TBGRALayerCustomOriginal = class
@@ -241,8 +243,50 @@ type
     constructor Create; virtual;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix); virtual; abstract;
     function GetRenderBounds(ADestRect: TRect; AMatrix: TAffineMatrix): TRect; virtual; abstract;
-    procedure LoadFromDirectory(ADir: TMemDirectory); virtual; abstract;
-    procedure SaveToDirectory(ADir: TMemDirectory); virtual; abstract;
+    procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); virtual; abstract;
+    procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); virtual; abstract;
+    class function FriendlyClassName: string; virtual; abstract;
+  end;
+
+  { TBGRACustomOriginalStorage }
+
+  TBGRACustomOriginalStorage = class
+  protected
+    FFormats: TFormatSettings;
+    function GetInteger(AName: utf8string): integer;
+    function GetPointF(AName: utf8string): TPointF;
+    function GetRawString(AName: utf8string): RawByteString; virtual; abstract;
+    function GetSingle(AName: utf8string): single;
+    function GetColor(AName: UTF8String): TBGRAPixel;
+    procedure SetInteger(AName: utf8string; AValue: integer);
+    procedure SetPointF(AName: utf8string; AValue: TPointF);
+    procedure SetRawString(AName: utf8string; AValue: RawByteString); virtual; abstract;
+    procedure SetSingle(AName: utf8string; AValue: single);
+    procedure SetColor(AName: UTF8String; AValue: TBGRAPixel);
+  public
+    constructor Create;
+    procedure RemoveAttribute(AName: utf8string); virtual; abstract;
+    function ReadFile(AName: UTF8String; ADest: TStream): boolean; virtual; abstract;
+    procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); virtual; abstract;
+    property RawString[AName: utf8string]: RawByteString read GetRawString write SetRawString;
+    property Int[AName: utf8string]: integer read GetInteger write SetInteger;
+    property Float[AName: utf8string]: single read GetSingle write SetSingle;
+    property PointF[AName: utf8string]: TPointF read GetPointF write SetPointF;
+    property Color[AName: UTF8String]: TBGRAPixel read GetColor write SetColor;
+  end;
+
+  { TBGRAMemOriginalStorage }
+
+  TBGRAMemOriginalStorage = class(TBGRACustomOriginalStorage)
+  protected
+    FMemDir: TMemDirectory;
+    function GetRawString(AName: utf8string): RawByteString; override;
+    procedure SetRawString(AName: utf8string; AValue: RawByteString); override;
+  public
+    constructor Create(AMemDir: TMemDirectory);
+    procedure RemoveAttribute(AName: utf8string); override;
+    function ReadFile(AName: UTF8String; ADest: TStream): boolean; override;
+    procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); override;
   end;
 
 procedure RegisterLayerOriginal(AClass: TBGRALayerOriginalAny);
@@ -294,6 +338,116 @@ var
      theClass: TBGRALayeredBitmapClass;
   end;
   LayerOriginalClasses: array of TBGRALayerOriginalAny;
+
+{ TBGRAMemOriginalStorage }
+
+function TBGRAMemOriginalStorage.GetRawString(AName: utf8string): RawByteString;
+begin
+  if pos('.',AName)<>0 then exit('');
+  result := FMemDir.RawStringByFilename[AName];
+end;
+
+procedure TBGRAMemOriginalStorage.SetRawString(AName: utf8string;
+  AValue: RawByteString);
+begin
+  if pos('.',AName)<>0 then exit;
+  FMemDir.RawStringByFilename[AName] := AValue;
+end;
+
+constructor TBGRAMemOriginalStorage.Create(AMemDir: TMemDirectory);
+begin
+  FMemDir := AMemDir;
+end;
+
+procedure TBGRAMemOriginalStorage.RemoveAttribute(AName: utf8string);
+begin
+  if pos('.',AName)<>0 then exit;
+  FMemDir.Delete(AName,'');
+end;
+
+function TBGRAMemOriginalStorage.ReadFile(AName: UTF8String; ADest: TStream): boolean;
+var
+  entryId: Integer;
+begin
+  entryId := FMemDir.IndexOf(TEntryFilename.New(AName));
+  if entryId <> -1 then
+  begin
+    with FMemDir.Entry[entryId] do
+      result := CopyTo(ADest) = FileSize
+  end
+  else
+    result := false;
+end;
+
+procedure TBGRAMemOriginalStorage.WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean);
+var
+  idxEntry: Integer;
+begin
+  idxEntry := FMemDir.Add(TEntryFilename.New(AName), ASource, true, false);
+  if ACompress then FMemDir.IsEntryCompressed[idxEntry] := true;
+end;
+
+{ TBGRACustomOriginalStorage }
+
+function TBGRACustomOriginalStorage.GetColor(AName: UTF8String): TBGRAPixel;
+begin
+  result := StrToBGRA(RawString[AName], BGRAPixelTransparent);
+end;
+
+procedure TBGRACustomOriginalStorage.SetColor(AName: UTF8String;
+  AValue: TBGRAPixel);
+begin
+  RawString[AName] := LowerCase(BGRAToStr(AValue, CSSColors));
+end;
+
+function TBGRACustomOriginalStorage.GetInteger(AName: utf8string): integer;
+begin
+  result := StrToIntDef(RawString[AName],0);
+end;
+
+function TBGRACustomOriginalStorage.GetPointF(AName: utf8string): TPointF;
+var
+  s: String;
+  posComma: integer;
+begin
+  s := RawString[AName];
+  posComma := pos(',',s);
+  if posComma = 0 then
+    exit(EmptyPointF);
+
+  result.x := StrToFloat(copy(s,1,posComma-1));
+  result.y := StrToFloat(copy(s,posComma+1,length(s)-posComma));
+end;
+
+function TBGRACustomOriginalStorage.GetSingle(AName: utf8string): single;
+begin
+  result := StrToFloatDef(RawString[AName], EmptySingle, FFormats);
+end;
+
+procedure TBGRACustomOriginalStorage.SetInteger(AName: utf8string;
+  AValue: integer);
+begin
+  RawString[AName] := IntToStr(AValue);
+end;
+
+procedure TBGRACustomOriginalStorage.SetPointF(AName: utf8string;
+  AValue: TPointF);
+begin
+  if isEmptyPointF(AValue) then RemoveAttribute(AName)
+  else RawString[AName] := FloatToStr(AValue.x, FFormats)+','+FloatToStr(AValue.y, FFormats);
+end;
+
+procedure TBGRACustomOriginalStorage.SetSingle(AName: utf8string; AValue: single);
+begin
+  if AValue = EmptySingle then RemoveAttribute(AName)
+  else RawString[AName] := FloatToStr(AValue, FFormats);
+end;
+
+constructor TBGRACustomOriginalStorage.Create;
+begin
+  FFormats := DefaultFormatSettings;
+  FFormats.DecimalSeparator := '.';
+end;
 
 { TBGRALayerCustomOriginal }
 
@@ -389,6 +543,7 @@ var
   dir: TMemDirectory;
   c: TBGRALayerOriginalAny;
   original: TBGRALayerCustomOriginal;
+  storage: TBGRAMemOriginalStorage;
 begin
   if (layer < 0) or (layer >= NbLayers) then
     raise Exception.Create('Index out of bounds')
@@ -400,7 +555,12 @@ begin
     if Assigned(c) and Assigned(dir) then
     begin
       original := c.Create;
-      original.LoadFromDirectory(dir);
+      storage := TBGRAMemOriginalStorage.Create(dir);
+      try
+        original.LoadFromStorage(storage);
+      finally
+        storage.Free;
+      end;
       LayerOriginal[layer] := original;
       FLayers[layer].OriginalGuid := AValue;
       FLayers[layer].OriginalChanged := true;
@@ -425,7 +585,7 @@ begin
     begin
       c := ADir.RawStringByFilename['class'];
       for i := 0 to high(LayerOriginalClasses) do
-        if LayerOriginalClasses[i].ClassName = c then
+        if LayerOriginalClasses[i].FriendlyClassName = c then
         begin
           AClass := LayerOriginalClasses[i];
           break;
@@ -938,13 +1098,19 @@ end;
 function TBGRALayeredBitmap.AddOriginal(AOriginal: TBGRALayerCustomOriginal): TGuid;
 var
   dir,subdir: TMemDirectory;
+  storage: TBGRAMemOriginalStorage;
 begin
   if CreateGUID(result)<> 0 then
     raise exception.Create('Error while creating GUID');
   dir := MemDirectory.Directory[MemDirectory.AddDirectory(OriginalsDirectory)];
   subdir := dir.Directory[dir.AddDirectory(GUIDToString(result))];
-  subdir.RawStringByFilename['class'] := AOriginal.ClassName;
-  AOriginal.SaveToDirectory(subdir);
+  storage := TBGRAMemOriginalStorage.Create(subdir);
+  try
+    storage.RawString['class'] := AOriginal.FriendlyClassName;
+    AOriginal.SaveToStorage(storage);
+  finally
+    storage.Free;
+  end;
 end;
 
 destructor TBGRALayeredBitmap.Destroy;

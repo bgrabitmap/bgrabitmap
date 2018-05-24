@@ -11,6 +11,7 @@ const
   MemDirectoryFileHeader = 'TMemDirectory'#26#0#0;
   MemDirectoryEntry_FlagDirectory = 1;   //entry is a directory
   MemDirectoryEntry_FlagCompressed = 2;  //the stream is compressed
+  MemDirectoryEntry_FlagSmallEntryPacked = $8000; //name and size <= 255
 
 type
   TMemDirectory = class;
@@ -74,7 +75,7 @@ type
     function AddDirectory(AName: utf8string; AExtension: utf8string= ''; ACaseSensitive: boolean= true): integer;
     function FindPath(APath: utf8String; ACaseSensitive: boolean = true): TMemDirectory;
     function FindEntry(APath: utf8String; ACaseSensitive: boolean = true): TMemDirectoryEntry;
-    property EntryCompressed[AIndex: integer]: boolean read GetEntryCompressed write SetEntryCompressed;
+    property IsEntryCompressed[AIndex: integer]: boolean read GetEntryCompressed write SetEntryCompressed;
     property Directory[AIndex: integer]: TMemDirectory read GetDirectory;
     property IsDirectory[AIndex: integer]: boolean read GetIsDirectory;
     property ParentDirectory: TMemDirectory read FParentDirectory;
@@ -86,11 +87,9 @@ uses zstream, BGRAUTF8, strutils;
 
 type
   TDirEntryRecord = packed record
-    Offset: int64;
-    CompressedSize: int64;
-    UncompressedSize: int64;
     Flags: Word;
     FilenameSize: Word;
+    Offset: int64;
   end;
 
 { TMemDirectory }
@@ -156,6 +155,7 @@ var
   filename: string;
   entryData: TStream;
   newEntry: TMemDirectoryEntry;
+  compressedSize, uncompressedSize: Int64;
 
 begin
   Clear;
@@ -165,10 +165,21 @@ begin
   begin
     ARootStream.ReadBuffer({%H-}entryRec, sizeof(entryRec));
     entryRec.Offset:= LEtoN(entryRec.Offset);
-    entryRec.CompressedSize:= LEtoN(entryRec.CompressedSize);
-    entryRec.UncompressedSize:= LEtoN(entryRec.UncompressedSize);
     entryRec.Flags:= LEtoN(entryRec.Flags);
     entryRec.FilenameSize:= LEtoN(entryRec.FilenameSize);
+
+    if (entryRec.Flags and MemDirectoryEntry_FlagSmallEntryPacked) <> 0 then
+    begin
+      entryRec.Flags := entryRec.Flags xor MemDirectoryEntry_FlagSmallEntryPacked;
+      compressedSize := entryRec.FilenameSize shr 8;
+      uncompressedSize := compressedSize;
+      entryRec.FilenameSize := entryRec.FilenameSize and 255;
+    end else
+    begin
+      compressedSize := LEReadInt64(ARootStream);
+      uncompressedSize := LEReadInt64(ARootStream);
+    end;
+
     setlength(filename, entryRec.FilenameSize);
     if length(filename)> 0 then
       ARootStream.ReadBuffer(filename[1], entryRec.FilenameSize);
@@ -176,9 +187,9 @@ begin
     ADataStream.Position:= entryRec.Offset + AStartPos;
     entryData := TMemoryStream.Create;
     try
-      entryData.CopyFrom(ADataStream, entryRec.CompressedSize);
+      entryData.CopyFrom(ADataStream, compressedSize);
       newEntry := TMemDirectoryEntry.Create(self, TEntryFilename.New(filename), entryData, true,
-                  entryRec.UncompressedSize, entryRec.Flags);
+                  uncompressedSize, entryRec.Flags);
       newEntry.LoadExtraFromEmbeddedStream(ADataStream, AStartPos);
       AddEntry(newEntry);
       entryData := nil;
@@ -241,18 +252,30 @@ begin
 
       entryRec.Offset:= ADataDest.Position - AStartPos;
       entryRec.Offset:= NtoLE(entryRec.Offset);
-      entryRec.CompressedSize:= entryStream.Size;
-      entryRec.CompressedSize:= NtoLE(entryRec.CompressedSize);
-      entryRec.UncompressedSize := uncompressedSize;
-      entryRec.UncompressedSize := NtoLE(uncompressedSize);
-      entryRec.Flags:= NtoLE(curEntry.Flags);
       if curEntry.Extension <> '' then
         filename := curEntry.Name+'.'+curEntry.Extension
       else
         filename := curEntry.Name;
-      entryRec.FilenameSize:= length(filename);
-      entryRec.FilenameSize := NtoLE(entryRec.FilenameSize);
-      ARootDest.WriteBuffer(entryRec, sizeof(entryRec));
+
+      if ((curEntry.Flags and MemDirectoryEntry_FlagCompressed)=0) and
+         (Length(filename)<=255) and (entryStream.Size<=255) then
+      begin
+        entryRec.Flags:= curEntry.Flags or MemDirectoryEntry_FlagSmallEntryPacked;
+        entryRec.Flags:= NtoLE(entryRec.Flags);
+        entryRec.FilenameSize:= length(filename) + (entryStream.Size shl 8);
+        entryRec.FilenameSize := NtoLE(entryRec.FilenameSize);
+        ARootDest.WriteBuffer(entryRec, sizeof(entryRec));
+      end else
+      begin
+        entryRec.Flags:= curEntry.Flags;
+        entryRec.Flags:= NtoLE(entryRec.Flags);
+        entryRec.FilenameSize:= length(filename);
+        entryRec.FilenameSize := NtoLE(entryRec.FilenameSize);
+        ARootDest.WriteBuffer(entryRec, sizeof(entryRec));
+        LEWriteInt64(ARootDest, entryStream.Size);
+        LEWriteInt64(ARootDest, uncompressedSize);
+      end;
+
       if filename <> '' then
         ARootDest.WriteBuffer(filename[1], length(filename));
 
