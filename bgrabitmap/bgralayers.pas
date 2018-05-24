@@ -362,6 +362,7 @@ begin
     FLayers[layer].Original.Free;
     FLayers[layer].Original := AValue;
     FLayers[layer].OriginalChanged := true;
+    Unfreeze(layer);
   end;
 end;
 
@@ -375,7 +376,10 @@ begin
     if FLayers[layer].OriginalMatrix = AValue then exit;
     FLayers[layer].OriginalMatrix := AValue;
     if Assigned(FLayers[layer].Original) then
+    begin
       FLayers[layer].OriginalChanged := true;
+      Unfreeze(layer);
+    end;
   end;
 end;
 
@@ -400,6 +404,7 @@ begin
       LayerOriginal[layer] := original;
       FLayers[layer].OriginalGuid := AValue;
       FLayers[layer].OriginalChanged := true;
+      Unfreeze(layer);
     end;
   end;
 end;
@@ -1550,7 +1555,6 @@ begin
       end;
     end;
     if LayerVisible[i] then
-    with LayerOffset[i] do
     begin
       tempLayer := GetLayerBitmapDirectly(i);
       if tempLayer <> nil then
@@ -1561,11 +1565,12 @@ begin
         tempLayer := GetLayerBitmapCopy(i);
       end;
       if tempLayer <> nil then
+      with LayerOffset[i] do
       begin
         if (BlendOperation[i] = boTransparent) and not self.LinearBlend then //here it is specified not to use linear blending
-          Dest.PutImage(AX+x,AY+y,GetLayerBitmapDirectly(i),dmDrawWithTransparency, LayerOpacity[i])
+          Dest.PutImage(AX+x,AY+y,tempLayer,dmDrawWithTransparency, LayerOpacity[i])
         else
-          Dest.PutImage(AX+x,AY+y,GetLayerBitmapDirectly(i),dmLinearBlend, LayerOpacity[i]);
+          Dest.PutImage(AX+x,AY+y,tempLayer,dmLinearBlend, LayerOpacity[i]);
         if mustFreeCopy then tempLayer.Free;
       end;
     end;
