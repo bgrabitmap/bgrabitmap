@@ -251,6 +251,9 @@ type
   { TBGRACustomOriginalStorage }
 
   TBGRACustomOriginalStorage = class
+  private
+    function GetBool(AName: utf8string): boolean;
+    procedure SetBool(AName: utf8string; AValue: boolean);
   protected
     FFormats: TFormatSettings;
     function GetInteger(AName: utf8string): integer;
@@ -270,6 +273,7 @@ type
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); virtual; abstract;
     property RawString[AName: utf8string]: RawByteString read GetRawString write SetRawString;
     property Int[AName: utf8string]: integer read GetInteger write SetInteger;
+    property Bool[AName: utf8string]: boolean read GetBool write SetBool;
     property Float[AName: utf8string]: single read GetSingle write SetSingle;
     property PointF[AName: utf8string]: TPointF read GetPointF write SetPointF;
     property Color[AName: UTF8String]: TBGRAPixel read GetColor write SetColor;
@@ -356,6 +360,7 @@ end;
 
 constructor TBGRAMemOriginalStorage.Create(AMemDir: TMemDirectory);
 begin
+  inherited Create;
   FMemDir := AMemDir;
 end;
 
@@ -400,6 +405,16 @@ begin
   RawString[AName] := LowerCase(BGRAToStr(AValue, CSSColors));
 end;
 
+function TBGRACustomOriginalStorage.GetBool(AName: utf8string): boolean;
+begin
+  result := StrToBool(RawString[AName]);
+end;
+
+procedure TBGRACustomOriginalStorage.SetBool(AName: utf8string; AValue: boolean);
+begin
+  RawString[AName] := BoolToStr(AValue,'true','false');
+end;
+
 function TBGRACustomOriginalStorage.GetInteger(AName: utf8string): integer;
 begin
   result := StrToIntDef(RawString[AName],0);
@@ -434,13 +449,13 @@ procedure TBGRACustomOriginalStorage.SetPointF(AName: utf8string;
   AValue: TPointF);
 begin
   if isEmptyPointF(AValue) then RemoveAttribute(AName)
-  else RawString[AName] := FloatToStr(AValue.x, FFormats)+','+FloatToStr(AValue.y, FFormats);
+  else RawString[AName] := FloatToStrF(AValue.x, ffGeneral,7,3, FFormats)+','+FloatToStrF(AValue.y, ffGeneral,7,3, FFormats);
 end;
 
 procedure TBGRACustomOriginalStorage.SetSingle(AName: utf8string; AValue: single);
 begin
   if AValue = EmptySingle then RemoveAttribute(AName)
-  else RawString[AName] := FloatToStr(AValue, FFormats);
+  else RawString[AName] := FloatToStrF(AValue, ffGeneral,7,3, FFormats);
 end;
 
 constructor TBGRACustomOriginalStorage.Create;
