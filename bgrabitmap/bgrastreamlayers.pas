@@ -213,6 +213,7 @@ begin
       result.LayerOpacity[LayerIndex] := h.LayerOpacity shr 8;
       result.LayerOriginalGuid[LayerIndex] := h.OriginalGuid;
       result.LayerOriginalMatrix[LayerIndex] := h.OriginalMatrix;
+      result.LayerOriginalChanged[layerIndex] := false;
 
       if LayerEndPosition <> -1 then AStream.Position := LayerEndPosition;
     end;

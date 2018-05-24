@@ -148,6 +148,7 @@ type
     function GetLayerOriginal(layer: integer): TBGRALayerCustomOriginal; override;
     function GetLayerOriginalMatrix(layer: integer): TAffineMatrix; override;
     function GetLayerOriginalGuid(layer: integer): TGuid; override;
+    function GetLayerOriginalChanged(layer: integer): boolean;
     procedure SetBlendOperation(Layer: integer; op: TBlendOperation);
     procedure SetLayerVisible(layer: integer; AValue: boolean);
     procedure SetLayerOpacity(layer: integer; AValue: byte);
@@ -158,6 +159,7 @@ type
     procedure SetLayerOriginal(layer: integer; AValue: TBGRALayerCustomOriginal);
     procedure SetLayerOriginalMatrix(layer: integer; AValue: TAffineMatrix);
     procedure SetLayerOriginalGuid(layer: integer; const AValue: TGuid);
+    procedure SetLayerOriginalChanged(layer: integer; AValue: boolean);
 
     procedure FindOriginal(AGuid: TGuid;
                 out ADir: TMemDirectory;
@@ -230,6 +232,7 @@ type
     property LayerOriginal[layer: integer]: TBGRALayerCustomOriginal read GetLayerOriginal write SetLayerOriginal;
     property LayerOriginalGuid[layer: integer]: TGuid read GetLayerOriginalGuid write SetLayerOriginalGuid;
     property LayerOriginalMatrix[layer: integer]: TAffineMatrix read GetLayerOriginalMatrix write SetLayerOriginalMatrix;
+    property LayerOriginalChanged[layer: integer]: boolean read GetLayerOriginalChanged write SetLayerOriginalChanged;
   end;
 
   TAffineMatrix = BGRABitmapTypes.TAffineMatrix;
@@ -506,6 +509,14 @@ begin
     result := FLayers[layer].OriginalGuid;
 end;
 
+function TBGRALayeredBitmap.GetLayerOriginalChanged(layer: integer): boolean;
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+    result := FLayers[layer].OriginalChanged;
+end;
+
 procedure TBGRALayeredBitmap.SetLayerUniqueId(layer: integer; AValue: integer);
 var i: integer;
 begin
@@ -581,6 +592,19 @@ begin
       FLayers[layer].OriginalChanged := true;
       Unfreeze(layer);
     end;
+  end;
+end;
+
+procedure TBGRALayeredBitmap.SetLayerOriginalChanged(layer: integer;
+  AValue: boolean);
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+  begin
+    FLayers[layer].OriginalChanged := AValue;
+    if AValue then
+      Unfreeze(layer);
   end;
 end;
 
