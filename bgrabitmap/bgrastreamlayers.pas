@@ -167,7 +167,8 @@ begin
     begin
       AStream.Position:= MemDirPos+OldPosition;
       result.MemDirectory.LoadFromStream(AStream);
-    end;
+    end else
+      result.MemDirectory.Clear;
 
     AStream.Position:= LayerStackStartPosition;
     for i := 0 to NbLayers-1 do
@@ -213,10 +214,11 @@ begin
       result.LayerOpacity[LayerIndex] := h.LayerOpacity shr 8;
       result.LayerOriginalGuid[LayerIndex] := h.OriginalGuid;
       result.LayerOriginalMatrix[LayerIndex] := h.OriginalMatrix;
-      result.LayerOriginalChanged[layerIndex] := false;
+      result.LayerOriginalRenderStatus[layerIndex] := orsProof;
 
       if LayerEndPosition <> -1 then AStream.Position := LayerEndPosition;
     end;
+    result.NotifyLoaded;
   except
     on ex: Exception do
     begin
@@ -239,6 +241,9 @@ var
 begin
   if (ASelectedLayerIndex < -1) or (ASelectedLayerIndex >= ALayers.NbLayers) then
     raise exception.Create('Selected layer out of bounds');
+
+  ALayers.NotifySaving;
+
   startPos := AStream.Position;
   AStream.Write(StreamHeader[1], length(StreamHeader));
   LEWriteLongint(AStream, 28); //header size
@@ -259,6 +264,8 @@ begin
     LEWriteLongint(AStream, sizeof(h));
     LayerHeaderPosition := AStream.Position;
 
+    bitmap := ALayers.GetLayerBitmapDirectly(i); //do it before to ensure update from original
+
     h.LayerOption:= 0;
     if ALayers.LayerVisible[i] then h.LayerOption:= h.LayerOption or 1;
     h.BlendOp:= Longint(ALayers.BlendOperation[i]);
@@ -274,7 +281,6 @@ begin
     //end of layer header
 
     LayerBitmapPosition:=AStream.Position;
-    bitmap := ALayers.GetLayerBitmapDirectly(i);
     if bitmap <> nil then
       SaveLayerBitmapToStream(AStream, bitmap, ALayers.LayerName[i], ACompression)
     else
