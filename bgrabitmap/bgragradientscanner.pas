@@ -202,6 +202,7 @@ type
   private
     FOpacity: byte;
     FGrayscale: boolean;
+    FRandomBuffer, FRandomBufferCount: integer;
   public
     constructor Create(AGrayscale: Boolean; AOpacity: byte);
     function ScanAtInteger({%H-}X, {%H-}Y: integer): TBGRAPixel; override;
@@ -303,6 +304,7 @@ constructor TBGRARandomScanner.Create(AGrayscale: Boolean; AOpacity: byte);
 begin
   FGrayscale:= AGrayscale;
   FOpacity:= AOpacity;
+  FRandomBufferCount := 0;
 end;
 
 function TBGRARandomScanner.ScanAtInteger(X, Y: integer): TBGRAPixel;
@@ -311,15 +313,26 @@ begin
 end;
 
 function TBGRARandomScanner.ScanNextPixel: TBGRAPixel;
+var rgb: integer;
 begin
   if FGrayscale then
   begin
-    result.red := random(256);
+    if FRandomBufferCount = 0 then
+    begin
+      FRandomBuffer := random(256*256*256);
+      FRandomBufferCount := 3;
+    end;
+    result.red := FRandomBuffer and 255;
+    FRandomBuffer:= FRandomBuffer shr 8;
+    FRandomBufferCount -= 1;
     result.green := result.red;
     result.blue := result.red;
     result.alpha:= FOpacity;
   end else
-    Result:= BGRA(random(256),random(256),random(256),FOpacity);
+  begin
+    rgb := random(256*256*256);
+    Result:= BGRA(rgb and 255,(rgb shr 8) and 255,(rgb shr 16) and 255,FOpacity);
+  end;
 end;
 
 function TBGRARandomScanner.ScanAt(X, Y: Single): TBGRAPixel;
