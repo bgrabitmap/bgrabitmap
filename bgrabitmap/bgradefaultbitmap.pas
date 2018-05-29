@@ -1091,12 +1091,16 @@ end;
 
 procedure TBGRADefaultBitmap.SetArrowEndSize(AValue: TPointF);
 begin
+  {$PUSH}{$OPTIMIZATION OFF}
   GetArrow.EndSize := AValue;
+  {$POP}
 end;
 
 procedure TBGRADefaultBitmap.SetArrowStartSize(AValue: TPointF);
 begin
+  {$PUSH}{$OPTIMIZATION OFF}
   GetArrow.StartSize := AValue;
+  {$POP}
 end;
 
 function TBGRADefaultBitmap.GetArrowEndOffset: single;

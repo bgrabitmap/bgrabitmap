@@ -1071,13 +1071,17 @@ end;
 procedure TBGLCustomTexture.DrawAffine(const Origin, HAxis, VAxis: TPointF;
   AAlpha: byte);
 begin
+  {$PUSH}{$OPTIMIZATION OFF}
   DoDrawAffine(Origin,HAxis,VAxis, BGRA(255,255,255,AAlpha));
+  {$POP}
 end;
 
 procedure TBGLCustomTexture.DrawAffine(const Origin, HAxis, VAxis: TPointF;
   AColor: TBGRAPixel);
 begin
+  {$PUSH}{$OPTIMIZATION OFF}
   DoDrawAffine(Origin,HAxis,VAxis, AColor);
+  {$POP}
 end;
 
 procedure TBGLCustomTexture.DrawAffine(x, y: single;
