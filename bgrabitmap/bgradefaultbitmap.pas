@@ -378,21 +378,21 @@ type
         is out of bounds, the image is repeated.
       * ''AResampleFilter'' specifies how pixels must be interpolated. Accepted
         values are ''rfBox'', ''rfLinear'', ''rfHalfCosine'' and ''rfCosine'' }
-    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override;
+    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override; overload;
     {** Similar to previous ''GetPixel'' function, but the fractional part of
         the coordinate is supplied with a number from 0 to 255. The actual
         coordinate is (''x'' + ''fracX256''/256, ''y'' + ''fracY256''/256) }
-    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override;
+    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override; overload;
     {** Computes the value of the pixel at a floating point coordiante
         by interpolating the values of the pixels around it. ''repeatX'' and
         ''repeatY'' specifies if the image is to be repeated or not.
       * ''AResampleFilter'' specifies how pixels must be interpolated. Accepted
         values are ''rfBox'', ''rfLinear'', ''rfHalfCosine'' and ''rfCosine'' }
-    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override;
+    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override; overload;
     {** Similar to previous ''GetPixel'' function, but the fractional part of
         the coordinate is supplied with a number from 0 to 255. The actual
         coordinate is (''x'' + ''fracX256''/256, ''y'' + ''fracY256''/256) }
-    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override;
+    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override; overload;
 
     {==== Drawing lines and polylines (integer coordinates) ====}
     {* These functions do not take into account current pen style/cap/join.
