@@ -720,7 +720,7 @@ type
      {Canvas drawing functions}
      procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
        AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); virtual; abstract;
-     procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
+     procedure DataDrawOpaque(ACanvas: TCanvas; ARect: TRect; AData: Pointer;
        ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); virtual; abstract;
      procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); virtual; abstract;
      procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); virtual; abstract;

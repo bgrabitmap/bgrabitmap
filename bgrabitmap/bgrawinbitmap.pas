@@ -54,7 +54,7 @@ type
     procedure LoadFromBitmapIfNeeded; override;
     procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean=True); override;
     procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); override;
-    procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
+    procedure DataDrawOpaque(ACanvas: TCanvas; ARect: TRect; AData: Pointer;
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); override;
   end;
@@ -182,7 +182,7 @@ begin
   if TBGRAPixel_RGBAOrder then SwapRedBlue;
 end;
 
-procedure TBGRAWinBitmap.DataDrawOpaque(ACanvas: TCanvas; Rect: TRect;
+procedure TBGRAWinBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
   AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer);
 var
   info:      TBITMAPINFO;
@@ -205,8 +205,8 @@ begin
   end;
 
   info := DIBitmapInfo(AWidth, AHeight);
-  StretchDIBits(ACanvas.Handle, Rect.Left, Rect.Top, Rect.Right -
-    Rect.Left, Rect.Bottom - Rect.Top,
+  StretchDIBits(ACanvas.Handle, ARect.Left, ARect.Top, ARect.Right -
+    ARect.Left, ARect.Bottom - ARect.Top,
     0, 0, AWidth, AHeight, AData, info, DIB_RGB_COLORS, SRCCOPY);
 
   if Temp <> nil then
