@@ -797,7 +797,12 @@ var
   a1f, a2f, a12, a12m, alphaCorr: NativeUInt;
 begin
   case dest^.alpha of
-    0: dest^ := GammaCompression(ec);
+    0: begin
+         dest^.red := GammaCompressionTab[ec.red];
+         dest^.green := GammaCompressionTab[ec.green];
+         dest^.blue := GammaCompressionTab[ec.blue];
+         dest^.alpha := calpha;
+      end;
     255:
       begin
         alphaCorr := calpha;
