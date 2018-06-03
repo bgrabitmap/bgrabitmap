@@ -707,12 +707,14 @@ begin
     begin
       grayscaleMask := TGrayscaleMask.Create(temp, cGreen);
       FreeAndNil(temp);
+      {$IFNDEF LINUX}
       pb := grayscaleMask.Data;
       for n := grayscaleMask.NbPixels - 1 downto 0 do
       begin
         pb^:= GammaExpansionTab[pb^] shr 8;
         Inc(pb);
       end;
+      {$ENDIF}
     end;
   end;
 end;
