@@ -113,6 +113,7 @@ function FontEmHeightSign: integer;
 function FontFullHeightSign: integer;
 function LCLFontAvailable: boolean;
 function GetFineClearTypeAuto: TBGRAFontQuality;
+function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TGrayscaleMask; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
 procedure BGRAFillClearTypeMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
@@ -467,6 +468,55 @@ begin
   fqFineClearTypeValue := result;
   fqFineClearTypeComputed:= true;
 end;
+
+var LCLFontFullHeightRatio : array of record
+                          FontName: string;
+                          Ratio: single;
+                        end;
+
+function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
+{$IFNDEF WINDOWS}
+const TestHeight = 200;
+var
+  i: Integer;
+  ratio : single;
+  f: TFont;
+  h: LongInt;
+begin
+  if (AFontHeight = 0) or
+    (AFontHeight*FontEmHeightSign > 0) then
+      result := AFontHeight
+  else
+  begin
+    ratio := EmptySingle;
+    for i := 0 to high(LCLFontFullHeightRatio) do
+      if CompareText(AFontName, LCLFontFullHeightRatio[i].FontName)=0 then
+      begin
+        ratio := LCLFontFullHeightRatio[i].Ratio;
+        break;
+      end;
+    if ratio = EmptySingle then
+    begin
+      f := TFont.Create;
+      f.Quality := fqDefault;
+      f.Name := AFontName;
+      f.Height := FontFullHeightSign*TestHeight;
+      h := BGRATextSize(f, fqSystem, 'Hg', 1).cy;
+      if h = 0 then ratio := 1
+      else ratio := TestHeight/h;
+
+      setlength(LCLFontFullHeightRatio, length(LCLFontFullHeightRatio)+1);
+      LCLFontFullHeightRatio[high(LCLFontFullHeightRatio)].FontName:= AFontName;
+      LCLFontFullHeightRatio[high(LCLFontFullHeightRatio)].Ratio:= ratio;
+    end;
+    result := round(AFontHeight*ratio);
+  end;
+end;
+{$ELSE}
+begin
+  result := AFontFullHeight;
+end;
+{$ENDIF}
 
 function FontEmHeightSign: integer;
 begin
@@ -983,7 +1033,12 @@ begin
   if FFont.Style <> FontStyle then
     FFont.Style := FontStyle;
   if FFont.Height <> FontEmHeight * FontEmHeightSign then
-    FFont.Height := FontEmHeight * FontEmHeightSign;
+  begin
+    if FontEmHeight < 0 then
+      FFont.Height := FixLCLFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
+    else
+      FFont.Height := FontEmHeight * FontEmHeightSign;
+  end;
   if FFont.Orientation <> FontOrientation then
     FFont.Orientation := FontOrientation;
   if FontQuality = fqSystemClearType then
