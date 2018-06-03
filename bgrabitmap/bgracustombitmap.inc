@@ -1912,11 +1912,16 @@ procedure TBGRACustomBitmap.DrawPart(ARect: TRect; ACanvas: TCanvas; x,
 var
   partial: TBGRACustomBitmap;
 begin
-  partial := GetPart(ARect);
-  if partial <> nil then
+  if (ARect.Left = 0) and (ARect.Top = 0) and (ARect.Right = Width) and (ARect.Bottom = Height) then
+    Draw(ACanvas, x,y, Opaque)
+  else
   begin
-    partial.Draw(ACanvas, x, y, Opaque);
-    partial.Free;
+    partial := GetPart(ARect);
+    if partial <> nil then
+    begin
+      partial.Draw(ACanvas, x, y, Opaque);
+      partial.Free;
+    end;
   end;
 end;
 
