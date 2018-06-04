@@ -20,11 +20,13 @@ type
     function GetAsPolygon: ArrayOfTPointF;
     function GetBottomRight: TPointF;
     function GetIsEmpty: boolean;
+    function GetRectBounds: TRect;
   public
     TopLeft, TopRight,
     BottomLeft: TPointF;
     class function EmptyBox: TAffineBox;
     class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
+    property RectBounds: TRect read GetRectBounds;
     property BottomRight: TPointF read GetBottomRight;
     property IsEmpty: boolean read GetIsEmpty;
     property AsPolygon: ArrayOfTPointF read GetAsPolygon;
@@ -199,6 +201,7 @@ operator =(M,N: TAffineMatrix): boolean;
 //matrix multiplication by a vector (apply transformation to that vector)
 operator *(M: TAffineMatrix; V: TPointF): TPointF;
 operator *(M: TAffineMatrix; A: array of TPointF): ArrayOfTPointF;
+operator *(M: TAffineMatrix; ab: TAffineBox): TAffineBox;
 
 //check if matrix is inversible
 function IsAffineMatrixInversible(M: TAffineMatrix): boolean;
@@ -428,6 +431,13 @@ begin
       result[i] := M*A[i];
 end;
 
+operator*(M: TAffineMatrix; ab: TAffineBox): TAffineBox;
+begin
+  result.TopLeft := M*ab.TopLeft;
+  result.TopRight := M*ab.TopRight;
+  result.BottomLeft := M*ab.BottomLeft;
+end;
+
 function IsAffineMatrixInversible(M: TAffineMatrix): boolean;
 begin
   result := M[1,1]*M[2,2]-M[1,2]*M[2,1] <> 0;
@@ -627,6 +637,27 @@ end;
 function TAffineBox.GetIsEmpty: boolean;
 begin
   result := isEmptyPointF(TopRight) or isEmptyPointF(BottomLeft) or isEmptyPointF(TopLeft);
+end;
+
+function TAffineBox.GetRectBounds: TRect;
+var
+  x1,y1,x2,y2: single;
+begin
+  x1 := TopLeft.x; x2 := x1;
+  y1 := TopLeft.y; y2 := y1;
+  if TopRight.x > x2 then x2 := TopRight.x;
+  if TopRight.x < x1 then x1 := TopRight.x;
+  if TopRight.y > y2 then y2 := TopRight.y;
+  if TopRight.y < y1 then y1 := TopRight.y;
+  if BottomLeft.x > x2 then x2 := BottomLeft.x;
+  if BottomLeft.x < x1 then x1 := BottomLeft.x;
+  if BottomLeft.y > y2 then y2 := BottomLeft.y;
+  if BottomLeft.y < y1 then y1 := BottomLeft.y;
+  if BottomRight.x > x2 then x2 := BottomRight.x;
+  if BottomRight.x < x1 then x1 := BottomRight.x;
+  if BottomRight.y > y2 then y2 := BottomRight.y;
+  if BottomRight.y < y1 then y1 := BottomRight.y;
+  result := Rect(floor(x1),floor(y1),ceil(x2),ceil(y2));
 end;
 
 class function TAffineBox.EmptyBox: TAffineBox;

@@ -187,7 +187,8 @@ type
     procedure PolyBezier(const Points: array of TPoint;
                          Filled: boolean = False;
                          Continuous: boolean = False);
-    procedure Draw(X,Y: Integer; SrcBitmap: TBGRACustomBitmap);
+    procedure Draw(X,Y: Integer; SrcBitmap: TBGRACustomBitmap); overload;
+    procedure Draw(X,Y: Integer; SrcBitmap: TBitmap); overload;
     procedure CopyRect(X,Y: Integer; SrcBitmap: TBGRACustomBitmap; SrcRect: TRect);
     procedure StretchDraw(DestRect: TRect; SrcBitmap: TBGRACustomBitmap; HorizFlip: Boolean = false; VertFlip: Boolean = false);
     procedure DrawFocusRect(bounds: TRect);
@@ -1426,6 +1427,11 @@ begin
 end;
 
 procedure TBGRACanvas.Draw(X, Y: Integer; SrcBitmap: TBGRACustomBitmap);
+begin
+  FBitmap.PutImage(X,Y,SrcBitmap,dmDrawWithTransparency);
+end;
+
+procedure TBGRACanvas.Draw(X, Y: Integer; SrcBitmap: TBitmap);
 begin
   FBitmap.PutImage(X,Y,SrcBitmap,dmDrawWithTransparency);
 end;

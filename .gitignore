@@ -2,10 +2,12 @@
 *.dbg
 *.exe
 *.lps
-backup/*
+backup
 lib
 debug
 *.res
 *.lrt
 /bgrabitmap/lib4nogui
 /bgrabitmap/lib4fpgui
+*.app/*
+*.dSYM

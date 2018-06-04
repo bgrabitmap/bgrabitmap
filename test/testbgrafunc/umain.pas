@@ -44,7 +44,7 @@ uses utest1, utest2, utest3, utest4, utest5, utest6, utest7,
      utest8, utest9, utest10, utest11, utest14, utest15, utest16, utest17,
      utest18, utest19, utest22, utest23, utest24, utest25, utest26,
      utest27, utest31, utest32, utest33, BGRAScene3D,
-     BGRABitmapTypes, LCLIntf;
+     BGRABitmapTypes, LCLIntf, BGRAText;
 
 const
     TestCount = 33;
@@ -138,7 +138,7 @@ begin
       ptText := Point(3,ClientHeight-25);
       with self.Canvas do
       begin
-        Font.Height := 25;
+        Font.Height := FixLCLFontFullHeight(Font.Name,25);
         Font.Style := [fsBold];
         Brush.Style := bsClear;
         Font.Color := clBlack;

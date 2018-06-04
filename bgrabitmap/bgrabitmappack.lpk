@@ -29,8 +29,8 @@
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="9" Minor="7" Release="4"/>
-    <Files Count="112">
+    <Version Major="9" Minor="8"/>
+    <Files Count="113">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -479,6 +479,10 @@
         <Filename Value="bgralazpaint.pas"/>
         <UnitName Value="BGRALazPaint"/>
       </Item112>
+      <Item113>
+        <Filename Value="bgramemdirectory.pas"/>
+        <UnitName Value="BGRAMemDirectory"/>
+      </Item113>
     </Files>
     <RequiredPkgs Count="2">
       <Item1>

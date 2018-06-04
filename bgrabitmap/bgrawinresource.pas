@@ -97,7 +97,7 @@ type
   public
     constructor Create(AContainer: TMultiFileContainer; ATypeNameOrId: TNameOrId; AEntryNameOrId: TNameOrId; const AResourceInfo: TResourceInfo; ADataStream: TStream);
     destructor Destroy; override;
-    function CopyTo(ADestination: TStream): integer; override;
+    function CopyTo(ADestination: TStream): int64; override;
   end;
 
   { TBitmapResourceEntry }
@@ -108,7 +108,7 @@ type
     function GetExtension: utf8string; override;
   public
     constructor Create(AContainer: TMultiFileContainer; AEntryNameOrId: TNameOrId; const AResourceInfo: TResourceInfo; ADataStream: TStream);
-    function CopyTo(ADestination: TStream): integer; override;
+    function CopyTo(ADestination: TStream): int64; override;
     procedure CopyFrom(ASource: TStream);
   end;
 
@@ -153,7 +153,7 @@ type
     constructor Create(AContainer: TMultiFileContainer; ATypeNameOrId: TNameOrId; AEntryNameOrId: TNameOrId; const AResourceInfo: TResourceInfo; ADataStream: TStream);
     constructor Create(AContainer: TMultiFileContainer; ATypeNameOrId: TNameOrId; AEntryNameOrId: TNameOrId; const AResourceInfo: TResourceInfo);
     procedure Clear;
-    function CopyTo(ADestination: TStream): integer; override;
+    function CopyTo(ADestination: TStream): int64; override;
     procedure CopyFrom(ASource: TStream);
     property NbIcons: integer read GetNbIcons;
   end;
@@ -373,7 +373,7 @@ begin
   FGroupIconHeader.ImageCount := 0;
 end;
 
-function TGroupIconOrCursorEntry.CopyTo(ADestination: TStream): integer;
+function TGroupIconOrCursorEntry.CopyTo(ADestination: TStream): int64;
 var
   fileDir: packed array of TIconFileDirEntry;
   offset, written, i: integer;
@@ -517,7 +517,7 @@ begin
   inherited Create(AContainer, NameOrId(RT_BITMAP), AEntryNameOrId, AResourceInfo, ADataStream);
 end;
 
-function TBitmapResourceEntry.CopyTo(ADestination: TStream): integer;
+function TBitmapResourceEntry.CopyTo(ADestination: TStream): int64;
 var fileHeader: TBitMapFileHeader;
 begin
   result := 0;
@@ -605,7 +605,7 @@ begin
   inherited Destroy;
 end;
 
-function TUnformattedResourceEntry.CopyTo(ADestination: TStream): integer;
+function TUnformattedResourceEntry.CopyTo(ADestination: TStream): int64;
 begin
   if FDataStream.Size > 0 then
   begin

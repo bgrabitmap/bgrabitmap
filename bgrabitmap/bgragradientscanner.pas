@@ -106,7 +106,7 @@ type
     FOrigin,FDir1,FDir2: TPointF;
     FRelativeFocal: TPointF;
     FRadius, FFocalRadius: single;
-    FTransform: TAffineMatrix;
+    FTransform, FHiddenTransform: TAffineMatrix;
     FSinus: Boolean;
     FGradient: TBGRACustomGradient;
     FGradientOwner: boolean;
@@ -128,7 +128,7 @@ type
 
     procedure Init(AGradientType: TGradientType; AOrigin, d1: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False);
     procedure Init(AGradientType: TGradientType; AOrigin, d1, d2: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False);
-    procedure Init(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single; ATransform: TAffineMatrix);
+    procedure Init(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single; ATransform: TAffineMatrix; AHiddenTransform: TAffineMatrix);
 
     procedure InitGradientType;
     procedure InitTransform;
@@ -159,6 +159,7 @@ type
   public
     constructor Create(AGradientType: TGradientType; AOrigin, d1: TPointF);
     constructor Create(AGradientType: TGradientType; AOrigin, d1, d2: TPointF);
+    constructor Create(AOrigin, d1, d2, AFocal: TPointF; ARadiusRatio: single = 1; AFocalRadiusRatio: single = 0);
     constructor Create(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single);
 
     constructor Create(c1, c2: TBGRAPixel; AGradientType: TGradientType; AOrigin, d1: TPointF;
@@ -186,6 +187,7 @@ type
     property Transform: TAffineMatrix read FTransform write SetTransform;
     property Gradient: TBGRACustomGradient read FGradient;
     property FlipGradient: boolean read FFlipGradient write SetFlipGradient;
+    property Sinus: boolean Read FSinus write FSinus;
   end;
 
   { TBGRAConstantScanner }
@@ -200,6 +202,7 @@ type
   private
     FOpacity: byte;
     FGrayscale: boolean;
+    FRandomBuffer, FRandomBufferCount: integer;
   public
     constructor Create(AGrayscale: Boolean; AOpacity: byte);
     function ScanAtInteger({%H-}X, {%H-}Y: integer): TBGRAPixel; override;
@@ -301,6 +304,7 @@ constructor TBGRARandomScanner.Create(AGrayscale: Boolean; AOpacity: byte);
 begin
   FGrayscale:= AGrayscale;
   FOpacity:= AOpacity;
+  FRandomBufferCount := 0;
 end;
 
 function TBGRARandomScanner.ScanAtInteger(X, Y: integer): TBGRAPixel;
@@ -309,15 +313,26 @@ begin
 end;
 
 function TBGRARandomScanner.ScanNextPixel: TBGRAPixel;
+var rgb: integer;
 begin
   if FGrayscale then
   begin
-    result.red := random(256);
+    if FRandomBufferCount = 0 then
+    begin
+      FRandomBuffer := random(256*256*256);
+      FRandomBufferCount := 3;
+    end;
+    result.red := FRandomBuffer and 255;
+    FRandomBuffer:= FRandomBuffer shr 8;
+    FRandomBufferCount -= 1;
     result.green := result.red;
     result.blue := result.red;
     result.alpha:= FOpacity;
   end else
-    Result:= BGRA(random(256),random(256),random(256),FOpacity);
+  begin
+    rgb := random(256*256*256);
+    Result:= BGRA(rgb and 255,(rgb shr 8) and 255,(rgb shr 16) and 255,FOpacity);
+  end;
 end;
 
 function TBGRARandomScanner.ScanAt(X, Y: Single): TBGRAPixel;
@@ -1036,13 +1051,34 @@ begin
   Init(AGradientType,AOrigin,d1,d2,AffineMatrixIdentity,False);
 end;
 
+constructor TBGRAGradientScanner.Create(AOrigin,
+  d1, d2, AFocal: TPointF; ARadiusRatio: single; AFocalRadiusRatio: single);
+var
+  m, mInv: TAffineMatrix;
+  focalInv: TPointF;
+begin
+  FGradient := nil;
+  SetGradient(BGRABlack,BGRAWhite,False);
+
+  m := AffineMatrix((d1-AOrigin).x, (d2-AOrigin).x, AOrigin.x,
+                    (d1-AOrigin).y, (d2-AOrigin).y, AOrigin.y);
+  if IsAffineMatrixInversible(m) then
+  begin
+    mInv := AffineMatrixInverse(m);
+    focalInv := mInv*AFocal;
+  end else
+    focalInv := PointF(0,0);
+
+  Init(PointF(0,0), ARadiusRatio, focalInv, AFocalRadiusRatio, AffineMatrixIdentity, m);
+end;
+
 constructor TBGRAGradientScanner.Create(AOrigin: TPointF; ARadius: single;
   AFocal: TPointF; AFocalRadius: single);
 begin
   FGradient := nil;
   SetGradient(BGRABlack,BGRAWhite,False);
 
-  Init(AOrigin, ARadius, AFocal, AFocalRadius, AffineMatrixIdentity);
+  Init(AOrigin, ARadius, AFocal, AFocalRadius, AffineMatrixIdentity, AffineMatrixIdentity);
 end;
 
 procedure TBGRAGradientScanner.SetFlipGradient(AValue: boolean);
@@ -1108,6 +1144,7 @@ begin
   FDir2 := d2;
   FSinus := Sinus;
   FTransform := ATransform;
+  FHiddenTransform := AffineMatrixIdentity;
 
   FRadius := 1;
   FRelativeFocal := PointF(0,0);
@@ -1118,7 +1155,7 @@ begin
 end;
 
 procedure TBGRAGradientScanner.Init(AOrigin: TPointF; ARadius: single;
-  AFocal: TPointF; AFocalRadius: single; ATransform: TAffineMatrix);
+  AFocal: TPointF; AFocalRadius: single; ATransform: TAffineMatrix; AHiddenTransform: TAffineMatrix);
 var maxRadius: single;
 begin
   FGradientType:= gtRadial;
@@ -1131,6 +1168,7 @@ begin
   FDir2 := AOrigin+PointF(0,maxRadius);
   FSinus := False;
   FTransform := ATransform;
+  FHiddenTransform := AHiddenTransform;
 
   FRadius := ARadius/maxRadius;
   FRelativeFocal := (AFocal - AOrigin)*(1/maxRadius);
@@ -1239,8 +1277,8 @@ begin
   else
     v := FDir2-FOrigin;
 
-  FMatrix := FTransform* AffineMatrix(u.x, v.x, FOrigin.x,
-                                      u.y, v.y, FOrigin.y);
+  FMatrix := FTransform * FHiddenTransform * AffineMatrix(u.x, v.x, FOrigin.x,
+                                                          u.y, v.y, FOrigin.y);
   if IsAffineMatrixInversible(FMatrix) then
   begin
     FMatrix := AffineMatrixInverse(FMatrix);
@@ -1432,7 +1470,7 @@ constructor TBGRAGradientScanner.Create(gradient: TBGRACustomGradient;
 begin
   FGradient := gradient;
   FGradientOwner := AGradientOwner;
-  Init(AOrigin, ARadius, AFocal, AFocalRadius, AffineMatrixIdentity);
+  Init(AOrigin, ARadius, AFocal, AFocalRadius, AffineMatrixIdentity, AffineMatrixIdentity);
 end;
 
 destructor TBGRAGradientScanner.Destroy;

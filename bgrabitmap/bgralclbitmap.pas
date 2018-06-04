@@ -25,7 +25,7 @@ type
     procedure Assign(Source: TPersistent); override;
     procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
       AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
-    procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
+    procedure DataDrawOpaque(ACanvas: TCanvas; ARect: TRect; AData: Pointer;
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); override;
     procedure LoadFromDevice({%H-}DC: HDC); override;
@@ -746,7 +746,10 @@ end;
 procedure TBGRALCLBitmap.DoLoadFromBitmap;
 begin
   if FBitmap <> nil then
+  begin
     LoadFromRawImage(FBitmap.RawImage, FCanvasOpacity);
+    if FAlphaCorrectionNeeded then DoAlphaCorrection;
+  end;
 end;
 
 procedure TBGRALCLBitmap.RebuildBitmap;
@@ -777,6 +780,7 @@ begin
 
   FBitmap.Canvas.AntialiasingMode := amOff;
   FBitmapModified := False;
+  FAlphaCorrectionNeeded:= false;
 end;
 
 function TBGRALCLBitmap.CreatePtrBitmap(AWidth, AHeight: integer;
@@ -862,10 +866,10 @@ begin
   DataDrawTransparentImplementation(ACanvas, Rect, AData, ALineOrder, AWidth, AHeight);
 end;
 
-procedure TBGRALCLBitmap.DataDrawOpaque(ACanvas: TCanvas; Rect: TRect;
+procedure TBGRALCLBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
   AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer);
 begin
-  DataDrawOpaqueImplementation(ACanvas, Rect, AData, ALineOrder, AWidth, AHeight);
+  DataDrawOpaqueImplementation(ACanvas, ARect, AData, ALineOrder, AWidth, AHeight);
 end;
 
 procedure TBGRALCLBitmap.GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer

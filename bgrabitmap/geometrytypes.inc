@@ -18,6 +18,7 @@ type
   end;
   {$endif}
 
+  {* An affine matrix contains three 2D vectors: the image of x, the image of y and the translation }
   TAffineMatrix = array[1..2,1..3] of single;
 
   {$if FPC_FULLVERSION>=030001}

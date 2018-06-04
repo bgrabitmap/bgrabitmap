@@ -9,6 +9,21 @@ uses
   BGRACanvas2D, BGRASVGType;
 
 type
+  TCSSUnit = BGRAUnits.TCSSUnit;
+
+const
+  cuCustom = BGRAUnits.cuCustom;
+  cuPixel = BGRAUnits.cuPixel;
+  cuCentimeter = BGRAUnits.cuCentimeter;
+  cuMillimeter = BGRAUnits.cuMillimeter;
+  cuInch = BGRAUnits.cuInch;
+  cuPica = BGRAUnits.cuPica;
+  cuPoint = BGRAUnits.cuPoint;
+  cuFontEmHeight = BGRAUnits.cuFontEmHeight;
+  cuFontXHeight = BGRAUnits.cuFontXHeight;
+  cuPercent = BGRAUnits.cuPercent;
+
+type
   TSVGViewBox = record
     min, size: TPointF;
   end;
@@ -760,8 +775,6 @@ begin
   ACanvas2d.save;
   ACanvas2d.translate(x,y);
   ACanvas2d.scale(destDpi.x/Units.DpiX,destDpi.y/Units.DpiY);
-  ACanvas2d.strokeResetTransform;
-  ACanvas2d.strokeScale(destDpi.x/Units.DpiX,destDpi.y/Units.DpiY);
   with GetViewBoxAlignment(AHorizAlign,AVertAlign) do ACanvas2d.translate(x,y);
   Draw(ACanvas2d, 0,0, cuPixel);
   ACanvas2d.restore;
@@ -774,6 +787,7 @@ begin
   acanvas2d.linearBlend := true;
   ACanvas2d.save;
   ACanvas2d.translate(x,y);
+  ACanvas2d.strokeMatrix := ACanvas2d.matrix;
   Content.Draw(ACanvas2d,AUnit);
   ACanvas2d.restore;
   ACanvas2d.linearBlend := prevLinearBlend;
@@ -789,8 +803,6 @@ begin
   ACanvas2d.save;
   ACanvas2d.translate(x,y);
   ACanvas2d.scale(destDpi.x/Units.DpiX,destDpi.y/Units.DpiY);
-  ACanvas2d.strokeResetTransform;
-  ACanvas2d.strokeScale(destDpi.x/Units.DpiX,destDpi.y/Units.DpiY);
   Draw(ACanvas2d, 0,0, cuPixel);
   ACanvas2d.restore;
 end;
@@ -812,15 +824,9 @@ begin
   begin
     ACanvas2d.translate(-min.x,-min.y);
     if size.x <> 0 then
-    begin
       ACanvas2d.scale(w/size.x,1);
-      ACanvas2d.strokeScale(w/size.x,1);
-    end;
     if size.y <> 0 then
-    begin
       ACanvas2d.scale(1,h/size.y);
-      ACanvas2d.strokeScale(1,h/size.y);
-    end;
   end;
   Draw(ACanvas2d, 0,0);
   ACanvas2d.restore;

@@ -24,7 +24,7 @@ type
     constructor Create(AContainer: TMultiFileContainer; AExtension: string; AInfo: TQuickImageInfo; AContent: TStream);
     class function TryCreate(AContainer: TMultiFileContainer; AContent: TStream): TBGRAIconCursorEntry;
     destructor Destroy; override;
-    function CopyTo(ADestination: TStream): integer; override;
+    function CopyTo(ADestination: TStream): int64; override;
     function GetBitmap: TBGRACustomBitmap;
     property Width: integer read FWidth;
     property Height: integer read FHeight;
@@ -287,7 +287,7 @@ begin
   inherited Destroy;
 end;
 
-function TBGRAIconCursorEntry.CopyTo(ADestination: TStream): integer;
+function TBGRAIconCursorEntry.CopyTo(ADestination: TStream): int64;
 begin
   if FContent.Size = 0 then
   begin

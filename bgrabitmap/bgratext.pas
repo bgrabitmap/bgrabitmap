@@ -113,6 +113,7 @@ function FontEmHeightSign: integer;
 function FontFullHeightSign: integer;
 function LCLFontAvailable: boolean;
 function GetFineClearTypeAuto: TBGRAFontQuality;
+function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TGrayscaleMask; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
 procedure BGRAFillClearTypeMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
@@ -468,6 +469,55 @@ begin
   fqFineClearTypeComputed:= true;
 end;
 
+var LCLFontFullHeightRatio : array of record
+                          FontName: string;
+                          Ratio: single;
+                        end;
+
+function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
+{$IFNDEF WINDOWS}
+const TestHeight = 200;
+var
+  i: Integer;
+  ratio : single;
+  f: TFont;
+  h: LongInt;
+begin
+  if (AFontHeight = 0) or
+    (AFontHeight*FontEmHeightSign > 0) then
+      result := AFontHeight
+  else
+  begin
+    ratio := EmptySingle;
+    for i := 0 to high(LCLFontFullHeightRatio) do
+      if CompareText(AFontName, LCLFontFullHeightRatio[i].FontName)=0 then
+      begin
+        ratio := LCLFontFullHeightRatio[i].Ratio;
+        break;
+      end;
+    if ratio = EmptySingle then
+    begin
+      f := TFont.Create;
+      f.Quality := fqDefault;
+      f.Name := AFontName;
+      f.Height := FontFullHeightSign*TestHeight;
+      h := BGRATextSize(f, fqSystem, 'Hg', 1).cy;
+      if h = 0 then ratio := 1
+      else ratio := TestHeight/h;
+
+      setlength(LCLFontFullHeightRatio, length(LCLFontFullHeightRatio)+1);
+      LCLFontFullHeightRatio[high(LCLFontFullHeightRatio)].FontName:= AFontName;
+      LCLFontFullHeightRatio[high(LCLFontFullHeightRatio)].Ratio:= ratio;
+    end;
+    result := round(AFontHeight*ratio);
+  end;
+end;
+{$ELSE}
+begin
+  result := AFontHeight;
+end;
+{$ENDIF}
+
 function FontEmHeightSign: integer;
 begin
   result := GetFontHeightSign;
@@ -657,12 +707,14 @@ begin
     begin
       grayscaleMask := TGrayscaleMask.Create(temp, cGreen);
       FreeAndNil(temp);
+      {$IFNDEF LINUX}
       pb := grayscaleMask.Data;
       for n := grayscaleMask.NbPixels - 1 downto 0 do
       begin
         pb^:= GammaExpansionTab[pb^] shr 8;
         Inc(pb);
       end;
+      {$ENDIF}
     end;
   end;
 end;
@@ -983,7 +1035,12 @@ begin
   if FFont.Style <> FontStyle then
     FFont.Style := FontStyle;
   if FFont.Height <> FontEmHeight * FontEmHeightSign then
-    FFont.Height := FontEmHeight * FontEmHeightSign;
+  begin
+    if FontEmHeight < 0 then
+      FFont.Height := FixLCLFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
+    else
+      FFont.Height := FontEmHeight * FontEmHeightSign;
+  end;
   if FFont.Orientation <> FontOrientation then
     FFont.Orientation := FontOrientation;
   if FontQuality = fqSystemClearType then
@@ -1114,7 +1171,7 @@ procedure TCustomLCLFontRenderer.InternalTextWordBreak(
   ADest: TBGRACustomBitmap; ATextUTF8: string; x, y, AMaxWidth: integer;
   AColor: TBGRAPixel; ATexture: IBGRAScanner; AHorizAlign: TAlignment;
   AVertAlign: TTextLayout; ARightToLeft: boolean);
-var remains, part: string;
+var remains, part, curText,nextText: string;
   stepX,stepY: integer;
   lines: TStringList;
   i: integer;
@@ -1132,21 +1189,23 @@ begin
     WordBreakHandler := @DefaultWorkBreakHandler;
 
   lines := TStringList.Create;
+  curText := ATextUTF8;
   repeat
-    InternalSplitText(ATextUTF8, AMaxWidth, remains, WordBreakHandler);
-    part := ATextUTF8;
+    InternalSplitText(curText, AMaxWidth, remains, WordBreakHandler);
+    part := curText;
     // append following direction to part
     case GetFirstStrongBidiClass(remains) of
-      ubcLeftToRight: part += UnicodeCharToUTF8($200E);
-      ubcRightToLeft,ubcArabicLetter: part += UnicodeCharToUTF8($200F);
+      ubcLeftToRight: if ARightToLeft then part += UnicodeCharToUTF8($200E);
+      ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then part += UnicodeCharToUTF8($200F);
     end;
     lines.Add(part);
     // prefix next part with previous direction
-    case GetLastStrongBidiClass(ATextUTF8) of
-      ubcLeftToRight: ATextUTF8 := UnicodeCharToUTF8($200E) + remains;
-      ubcRightToLeft,ubcArabicLetter: ATextUTF8 := UnicodeCharToUTF8($200F) + remains;
-      else ATextUTF8 := remains;
+    nextText := remains;
+    case GetLastStrongBidiClass(curText) of
+      ubcLeftToRight: if ARightToLeft then nextText := UnicodeCharToUTF8($200E) + nextText;
+      ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then nextText := UnicodeCharToUTF8($200F) + nextText;
     end;
+    curText := nextText;
   until remains = '';
   if AVertAlign = tlCenter then lineShift := lines.Count/2
   else if AVertAlign = tlBottom then lineShift := lines.Count
@@ -1309,7 +1368,9 @@ end;
 
 procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string; AWordBreak: TWordBreakHandler);
-var p,skipCount: integer;
+var p,skipCount, charLen: integer;
+  zeroWidth: boolean;
+  u: Cardinal;
 begin
   if ATextUTF8= '' then
   begin
@@ -1331,8 +1392,13 @@ begin
   if skipCount <= 0 then skipCount := 1;
 
   p := 1;
+  zeroWidth := true;
   repeat
-    inc(p, UTF8CharacterLength(@ATextUTF8[p])); //UTF8 chars may be more than 1 byte long
+    charLen := UTF8CharacterLength(@ATextUTF8[p]);
+    u := UTF8CodepointToUnicode(@ATextUTF8[p], charLen);
+    if not IsZeroWidthUnicode(u) then
+      zeroWidth:= false;
+    inc(p, charLen); //UTF8 chars may be more than 1 byte long
     dec(skipCount);
 
     if RemoveLineEnding(ATextUTF8,p) then
@@ -1341,7 +1407,7 @@ begin
       ATextUTF8 := copy(ATextUTF8,1,p-1);
       exit;
     end;
-  until skipCount <= 0;
+  until ((skipCount <= 0) and not zeroWidth) or (p >= length(ATextUTF8)+1);
 
   ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
   ATextUTF8 := copy(ATextUTF8,1,p-1); //this includes the whole last UTF8 char

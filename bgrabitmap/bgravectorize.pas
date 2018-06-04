@@ -1383,7 +1383,7 @@ begin
       OldHeight := FFont.Height;
       FFont.Height := FontEmHeightSign * 100;
       lEmHeight := BGRATextSize(FFont, fqSystem, 'Hg', 1).cy;
-      FFont.Height := FontFullHeightSign * 100;
+      FFont.Height := FixLCLFontFullHeight(FFont.Name, FontFullHeightSign * 100);
       lFullHeight := BGRATextSize(FFont, fqSystem, 'Hg', 1).cy;
       if lEmHeight = 0 then
         FFontEmHeightRatio := 1
@@ -1424,7 +1424,8 @@ begin
     ClearGlyphs;
     FFont.Name := FName;
     FFont.Style := FStyle;
-    FFont.Height := FontFullHeightSign * FResolution;
+    FFont.Height := FixLCLFontFullHeight(FFont.Name, FontFullHeightSign * FResolution);
+    FFont.Quality := fqNonAntialiased;
     FFontEmHeightRatio := 1;
     FFontEmHeightRatioComputed := false;
     fillchar(FFontPixelMetric,sizeof(FFontPixelMetric),0);
@@ -1983,6 +1984,7 @@ end;
 function TBGRAVectorizedFont.GetGlyph(AIdentifier: string): TBGRAGlyph;
 var size: TSize;
   g: TBGRAPolygonalGlyph;
+  i: Integer;
 begin
   Result:=inherited GetGlyph(AIdentifier);
   if (result = nil) and (FResolution > 0) and (FFont <> nil) then
@@ -1992,7 +1994,6 @@ begin
     FBuffer.SetSize(size.cx+size.cy,size.cy);
     FBuffer.Fill(BGRAWhite);
     FBuffer.Canvas.Font := FFont;
-    FBuffer.Canvas.Font.Quality := fqNonAntialiased;
     FBuffer.Canvas.Font.Color := clBlack;
     FBuffer.Canvas.TextOut(size.cy div 2,0,AIdentifier);
     g.SetPoints(VectorizeMonochrome(FBuffer,1/FResolution,False));

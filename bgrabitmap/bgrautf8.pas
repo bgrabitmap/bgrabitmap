@@ -72,8 +72,12 @@ function GetUnicodeBidiClass(P: PChar): TUnicodeBidiClass;
 function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
 function GetFirstStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
 function GetLastStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
+function IsZeroWidthString(const sUTF8: string): boolean;
+function IsZeroWidthUnicode(u: cardinal): boolean;
 
 //little endian stream functions
+function LEReadInt64(Stream: TStream): int64;
+procedure LEWriteInt64(Stream: TStream; AValue: int64);
 function LEReadLongint(Stream: TStream): longint;
 procedure LEWriteLongint(Stream: TStream; AValue: LongInt);
 function LEReadByte(Stream: TStream): byte;
@@ -692,6 +696,35 @@ begin
   exit(ubcUnknown);
 end;
 
+function IsZeroWidthString(const sUTF8: string): boolean;
+var
+  p,pEnd: PChar;
+  charLen: Integer;
+  u: Cardinal;
+begin
+  if sUTF8 = '' then exit(true);
+  p := @sUTF8[1];
+  pEnd := p + length(sUTF8);
+  while p < pEnd do
+  begin
+    charLen := UTF8CharacterLength(p);
+    if (charLen = 0) or (p+charLen > pEnd) then break;
+    u := UTF8CodepointToUnicode(p, charLen);
+    if not IsZeroWidthUnicode(u) then exit(false);
+    inc(p,charLen);
+  end;
+  exit(true);
+end;
+
+function IsZeroWidthUnicode(u: cardinal): boolean;
+begin
+  case u of
+  $200B,$200C,$200D,$FEFF,$200E,$200F: result := true;
+  else result := false;
+  end;
+end;
+
+
 function UTF8CharStart(UTF8Str: PChar; Len, CharIndex: PtrInt): PChar;
 var
   CharLen: LongInt;
@@ -707,6 +740,19 @@ begin
     if (CharIndex<>0) or (Len<0) then
       Result:=nil;
   end;
+end;
+
+function LEReadInt64(Stream: TStream): int64;
+begin
+  Result := 0;
+  stream.Read(Result, sizeof(Result));
+  Result := LEtoN(Result);
+end;
+
+procedure LEWriteInt64(Stream: TStream; AValue: int64);
+begin
+  AValue := NtoLE(AValue);
+  stream.Write(AValue, sizeof(AValue));
 end;
 
 function LEReadLongint(Stream: TStream): longint;

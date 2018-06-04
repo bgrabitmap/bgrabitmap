@@ -697,27 +697,18 @@ end;
 
 procedure DrawPixelInlineWithAlphaCheck(dest: PBGRAPixel; const c: TBGRAPixel);
 begin
-  if c.alpha = 0 then
-    exit;
-  if c.alpha = 255 then
-  begin
-    dest^ := c;
-    exit;
+  case c.alpha of
+  0: ;
+  255: dest^ := c;
+  else
+    DrawPixelInlineNoAlphaCheck(dest,c);
   end;
-  DrawPixelInlineNoAlphaCheck(dest,c);
 end;
 
 procedure DrawPixelInlineWithAlphaCheck(dest: PBGRAPixel; c: TBGRAPixel; appliedOpacity: byte);
 begin
   c.alpha := ApplyOpacity(c.alpha,appliedOpacity);
-  if c.alpha = 0 then
-    exit;
-  if c.alpha = 255 then
-  begin
-    dest^ := c;
-    exit;
-  end;
-  DrawPixelInlineNoAlphaCheck(dest,c);
+  DrawPixelInlineWithAlphaCheck(dest, c);
 end;
 
 procedure CopyPixelsWithOpacity(dest, src: PBGRAPixel; opacity: byte;
@@ -747,95 +738,137 @@ var
   calpha: byte;
 begin
   calpha := ec.alpha shr 8;
-  if calpha = 0 then
-    exit;
-  if calpha = 255 then
-  begin
-    dest^ := GammaCompression(ec);
-    exit;
+  case calpha of
+  0: ;
+  255: dest^ := GammaCompression(ec);
+  else
+    DrawExpandedPixelInlineNoAlphaCheck(dest,ec,calpha);
   end;
-  DrawExpandedPixelInlineNoAlphaCheck(dest,ec,calpha);
 end;
 
 procedure DrawPixelInlineExpandedOrNotWithAlphaCheck(dest: PBGRAPixel; const ec: TExpandedPixel; c: TBGRAPixel);
 begin
-  if c.alpha = 0 then
-    exit;
-  if c.alpha = 255 then
-  begin
-    dest^ := c;
-    exit;
+  case c.alpha of
+  0: ;
+  255: dest^ := c;
+  else
+    DrawExpandedPixelInlineNoAlphaCheck(dest,ec,c.alpha);
   end;
-  DrawExpandedPixelInlineNoAlphaCheck(dest,ec,c.alpha);
 end;
 
 procedure DrawPixelInlineNoAlphaCheck(dest: PBGRAPixel; const c: TBGRAPixel);
 var
-  a1f, a2f, a12, a12m: cardinal;
+  a1f, a2f, a12, a12m, alphaCorr: NativeUInt;
 begin
-  {$HINTS OFF}
-  a12  := 65025 - (not dest^.alpha) * (not c.alpha);
-  {$HINTS ON}
-  a12m := a12 shr 1;
+  case dest^.alpha of
+    0: dest^ := c;
+    255:
+      begin
+        alphaCorr := c.alpha;
+        if alphaCorr >= 128 then alphaCorr += 1;
+        dest^.red := GammaCompressionTab[(GammaExpansionTab[dest^.red] * NativeUInt(256-alphaCorr) + GammaExpansionTab[c.red]*alphaCorr) shr 8];
+        dest^.green := GammaCompressionTab[(GammaExpansionTab[dest^.green] * NativeUInt(256-alphaCorr) + GammaExpansionTab[c.green]*alphaCorr) shr 8];
+        dest^.blue := GammaCompressionTab[(GammaExpansionTab[dest^.blue] * NativeUInt(256-alphaCorr) + GammaExpansionTab[c.blue]*alphaCorr) shr 8];
+      end;
+    else
+    begin
+      {$HINTS OFF}
+      a12  := 65025 - (not dest^.alpha) * (not c.alpha);
+      {$HINTS ON}
+      a12m := a12 shr 1;
 
-  a1f := dest^.alpha * (not c.alpha);
-  a2f := (c.alpha shl 8) - c.alpha;
+      a1f := dest^.alpha * (not c.alpha);
+      a2f := (c.alpha shl 8) - c.alpha;
 
-  PDWord(dest)^ := ((GammaCompressionTab[(GammaExpansionTab[dest^.red] * a1f +
-                     GammaExpansionTab[c.red] * a2f + a12m) div a12]) shl TBGRAPixel_RedShift) or
-                   ((GammaCompressionTab[(GammaExpansionTab[dest^.green] * a1f +
-                     GammaExpansionTab[c.green] * a2f + a12m) div a12]) shl TBGRAPixel_GreenShift) or
-                   ((GammaCompressionTab[(GammaExpansionTab[dest^.blue] * a1f +
-                     GammaExpansionTab[c.blue] * a2f + a12m) div a12]) shl TBGRAPixel_BlueShift) or
-                   (((a12 + a12 shr 7) shr 8) shl TBGRAPixel_AlphaShift);
+      PDWord(dest)^ := ((GammaCompressionTab[(GammaExpansionTab[dest^.red] * a1f +
+                         GammaExpansionTab[c.red] * a2f + a12m) div a12]) shl TBGRAPixel_RedShift) or
+                       ((GammaCompressionTab[(GammaExpansionTab[dest^.green] * a1f +
+                         GammaExpansionTab[c.green] * a2f + a12m) div a12]) shl TBGRAPixel_GreenShift) or
+                       ((GammaCompressionTab[(GammaExpansionTab[dest^.blue] * a1f +
+                         GammaExpansionTab[c.blue] * a2f + a12m) div a12]) shl TBGRAPixel_BlueShift) or
+                       (((a12 + a12 shr 7) shr 8) shl TBGRAPixel_AlphaShift);
+    end;
+  end;
 end;
 
 procedure DrawExpandedPixelInlineNoAlphaCheck(dest: PBGRAPixel;
   const ec: TExpandedPixel; calpha: byte);
 var
-  a1f, a2f, a12, a12m: cardinal;
+  a1f, a2f, a12, a12m, alphaCorr: NativeUInt;
 begin
-  {$HINTS OFF}
-  a12  := 65025 - (not dest^.alpha) * (not calpha);
-  {$HINTS ON}
-  a12m := a12 shr 1;
+  case dest^.alpha of
+    0: begin
+         dest^.red := GammaCompressionTab[ec.red];
+         dest^.green := GammaCompressionTab[ec.green];
+         dest^.blue := GammaCompressionTab[ec.blue];
+         dest^.alpha := calpha;
+      end;
+    255:
+      begin
+        alphaCorr := calpha;
+        if alphaCorr >= 128 then alphaCorr += 1;
+        dest^.red := GammaCompressionTab[(GammaExpansionTab[dest^.red] * NativeUInt(256-alphaCorr) + ec.red*alphaCorr) shr 8];
+        dest^.green := GammaCompressionTab[(GammaExpansionTab[dest^.green] * NativeUInt(256-alphaCorr) + ec.green*alphaCorr) shr 8];
+        dest^.blue := GammaCompressionTab[(GammaExpansionTab[dest^.blue] * NativeUInt(256-alphaCorr) + ec.blue*alphaCorr) shr 8];
+      end;
+    else
+    begin
+      {$HINTS OFF}
+      a12  := 65025 - (not dest^.alpha) * (not calpha);
+      {$HINTS ON}
+      a12m := a12 shr 1;
 
-  a1f := dest^.alpha * (not calpha);
-  a2f := (calpha shl 8) - calpha;
+      a1f := dest^.alpha * (not calpha);
+      a2f := (calpha shl 8) - calpha;
 
-  PDWord(dest)^ := ((GammaCompressionTab[(GammaExpansionTab[dest^.red] * a1f +
-                     ec.red * a2f + a12m) div a12]) shl TBGRAPixel_RedShift) or
-                   ((GammaCompressionTab[(GammaExpansionTab[dest^.green] * a1f +
-                     ec.green * a2f + a12m) div a12]) shl TBGRAPixel_GreenShift) or
-                   ((GammaCompressionTab[(GammaExpansionTab[dest^.blue] * a1f +
-                     ec.blue * a2f + a12m) div a12]) shl TBGRAPixel_BlueShift) or
-                   (((a12 + a12 shr 7) shr 8) shl TBGRAPixel_AlphaShift);
+      PDWord(dest)^ := ((GammaCompressionTab[(GammaExpansionTab[dest^.red] * a1f +
+                         ec.red * a2f + a12m) div a12]) shl TBGRAPixel_RedShift) or
+                       ((GammaCompressionTab[(GammaExpansionTab[dest^.green] * a1f +
+                         ec.green * a2f + a12m) div a12]) shl TBGRAPixel_GreenShift) or
+                       ((GammaCompressionTab[(GammaExpansionTab[dest^.blue] * a1f +
+                         ec.blue * a2f + a12m) div a12]) shl TBGRAPixel_BlueShift) or
+                       (((a12 + a12 shr 7) shr 8) shl TBGRAPixel_AlphaShift);
+    end;
+  end;
 end;
 
 procedure FastBlendPixelInline(dest: PBGRAPixel; const c: TBGRAPixel);
 var
-  a1f, a2f, a12, a12m: cardinal;
+  a1f, a2f, a12, a12m, alphaCorr: NativeUInt;
 begin
-  if c.alpha = 0 then
-    exit;
-  if c.alpha = 255 then
-  begin
-    dest^ := c;
-    exit;
+  case c.alpha of
+    0: ;
+    255: dest^ := c;
+    else
+    begin
+      case dest^.alpha of
+        0: dest^ := c;
+        255:
+        begin
+          alphaCorr := c.alpha;
+          if alphaCorr >= 128 then alphaCorr += 1;
+          dest^.red := (dest^.red * NativeUInt(256-alphaCorr) + c.red*(alphaCorr+1)) shr 8;
+          dest^.green := (dest^.green * NativeUInt(256-alphaCorr) + c.green*(alphaCorr+1)) shr 8;
+          dest^.blue := (dest^.blue * NativeUInt(256-alphaCorr) + c.blue*(alphaCorr+1)) shr 8;
+        end;
+        else
+        begin
+          {$HINTS OFF}
+          a12  := 65025 - (not dest^.alpha) * (not c.alpha);
+          {$HINTS ON}
+          a12m := a12 shr 1;
+
+          a1f := dest^.alpha * (not c.alpha);
+          a2f := (c.alpha shl 8) - c.alpha;
+
+          PDWord(dest)^ := (((dest^.red * a1f + c.red * a2f + a12m) div a12) shl TBGRAPixel_RedShift) or
+                           (((dest^.green * a1f + c.green * a2f + a12m) div a12) shl TBGRAPixel_GreenShift) or
+                           (((dest^.blue * a1f + c.blue * a2f + a12m) div a12) shl TBGRAPixel_BlueShift) or
+                           (((a12 + a12 shr 7) shr 8) shl TBGRAPixel_AlphaShift);
+        end;
+      end;
+    end;
   end;
-
-  {$HINTS OFF}
-  a12  := 65025 - (not dest^.alpha) * (not c.alpha);
-  {$HINTS ON}
-  a12m := a12 shr 1;
-
-  a1f := dest^.alpha * (not c.alpha);
-  a2f := (c.alpha shl 8) - c.alpha;
-
-  PDWord(dest)^ := (((dest^.red * a1f + c.red * a2f + a12m) div a12) shl TBGRAPixel_RedShift) or
-                   (((dest^.green * a1f + c.green * a2f + a12m) div a12) shl TBGRAPixel_GreenShift) or
-                   (((dest^.blue * a1f + c.blue * a2f + a12m) div a12) shl TBGRAPixel_BlueShift) or
-                   (((a12 + a12 shr 7) shr 8) shl TBGRAPixel_AlphaShift);
 end;
 
 procedure FastBlendPixelInline(dest: PBGRAPixel; c: TBGRAPixel;

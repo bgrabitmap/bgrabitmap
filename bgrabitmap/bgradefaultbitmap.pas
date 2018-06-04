@@ -378,21 +378,21 @@ type
         is out of bounds, the image is repeated.
       * ''AResampleFilter'' specifies how pixels must be interpolated. Accepted
         values are ''rfBox'', ''rfLinear'', ''rfHalfCosine'' and ''rfCosine'' }
-    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override;
+    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override; overload;
     {** Similar to previous ''GetPixel'' function, but the fractional part of
         the coordinate is supplied with a number from 0 to 255. The actual
         coordinate is (''x'' + ''fracX256''/256, ''y'' + ''fracY256''/256) }
-    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override;
+    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override; overload;
     {** Computes the value of the pixel at a floating point coordiante
         by interpolating the values of the pixels around it. ''repeatX'' and
         ''repeatY'' specifies if the image is to be repeated or not.
       * ''AResampleFilter'' specifies how pixels must be interpolated. Accepted
         values are ''rfBox'', ''rfLinear'', ''rfHalfCosine'' and ''rfCosine'' }
-    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override;
+    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override; overload;
     {** Similar to previous ''GetPixel'' function, but the fractional part of
         the coordinate is supplied with a number from 0 to 255. The actual
         coordinate is (''x'' + ''fracX256''/256, ''y'' + ''fracY256''/256) }
-    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override;
+    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override; overload;
 
     {==== Drawing lines and polylines (integer coordinates) ====}
     {* These functions do not take into account current pen style/cap/join.
@@ -795,7 +795,7 @@ type
     {BGRA bitmap functions}
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); override;
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); override;
-    procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
+    procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override; overload;
     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); override; overload;
     function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true): TRect; override; overload;
     function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
@@ -948,7 +948,10 @@ end;
 procedure TBitmapTracker.Changed(Sender: TObject);
 begin
   if FUser <> nil then
+  begin
     FUser.FBitmapModified := True;
+    FUser.FAlphaCorrectionNeeded := true;
+  end;
   inherited Changed(Sender);
 end;
 
@@ -1091,12 +1094,16 @@ end;
 
 procedure TBGRADefaultBitmap.SetArrowEndSize(AValue: TPointF);
 begin
+  {$PUSH}{$OPTIMIZATION OFF}
   GetArrow.EndSize := AValue;
+  {$POP}
 end;
 
 procedure TBGRADefaultBitmap.SetArrowStartSize(AValue: TPointF);
 begin
+  {$PUSH}{$OPTIMIZATION OFF}
   GetArrow.StartSize := AValue;
+  {$POP}
 end;
 
 function TBGRADefaultBitmap.GetArrowEndOffset: single;
@@ -2034,7 +2041,12 @@ end;
 
 function TBGRADefaultBitmap.GetCanvas: TCanvas;
 begin
-  Result := Bitmap.Canvas;
+  if FDataModified or (FBitmap = nil) then
+  begin
+    RebuildBitmap;
+    FDataModified := False;
+  end;
+  Result := FBitmap.Canvas;
 end;
 
 function TBGRADefaultBitmap.GetCanvasFP: TFPImageCanvas;

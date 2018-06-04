@@ -720,7 +720,7 @@ type
      {Canvas drawing functions}
      procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
        AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); virtual; abstract;
-     procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
+     procedure DataDrawOpaque(ACanvas: TCanvas; ARect: TRect; AData: Pointer;
        ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); virtual; abstract;
      procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); virtual; abstract;
      procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); virtual; abstract;
@@ -734,7 +734,8 @@ type
      {BGRA bitmap functions}
      procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); virtual; abstract;
      procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); virtual; abstract;
-     procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); virtual; abstract;
+     procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); virtual; abstract; overload;
+     procedure PutImage(x, y: integer; Source: TBitmap; mode: TDrawMode; AOpacity: byte = 255); overload;
      procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); virtual; abstract;
      procedure PutImageSubpixel(x, y: single; Source: TBGRACustomBitmap; AOpacity: byte = 255);
      procedure PutImagePart(x,y: integer; Source: TBGRACustomBitmap; SourceRect: TRect; mode: TDrawMode; AOpacity: byte = 255);
@@ -1912,12 +1913,26 @@ procedure TBGRACustomBitmap.DrawPart(ARect: TRect; ACanvas: TCanvas; x,
 var
   partial: TBGRACustomBitmap;
 begin
-  partial := GetPart(ARect);
-  if partial <> nil then
+  if (ARect.Left = 0) and (ARect.Top = 0) and (ARect.Right = Width) and (ARect.Bottom = Height) then
+    Draw(ACanvas, x,y, Opaque)
+  else
   begin
-    partial.Draw(ACanvas, x, y, Opaque);
-    partial.Free;
+    partial := GetPart(ARect);
+    if partial <> nil then
+    begin
+      partial.Draw(ACanvas, x, y, Opaque);
+      partial.Free;
+    end;
   end;
+end;
+
+procedure TBGRACustomBitmap.PutImage(x, y: integer; Source: TBitmap;
+  mode: TDrawMode; AOpacity: byte);
+var bgra: TBGRACustomBitmap;
+begin
+  bgra := BGRABitmapFactory.create(Source);
+  PutImage(x,y, bgra, mode, AOpacity);
+  bgra.free;
 end;
 
 procedure TBGRACustomBitmap.PutImageSubpixel(x, y: single; Source: TBGRACustomBitmap; AOpacity: byte);
