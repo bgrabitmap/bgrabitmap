@@ -514,7 +514,7 @@ begin
 end;
 {$ELSE}
 begin
-  result := AFontFullHeight;
+  result := AFontHeight;
 end;
 {$ENDIF}
 
