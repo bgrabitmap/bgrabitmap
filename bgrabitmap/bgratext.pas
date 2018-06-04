@@ -1171,7 +1171,7 @@ procedure TCustomLCLFontRenderer.InternalTextWordBreak(
   ADest: TBGRACustomBitmap; ATextUTF8: string; x, y, AMaxWidth: integer;
   AColor: TBGRAPixel; ATexture: IBGRAScanner; AHorizAlign: TAlignment;
   AVertAlign: TTextLayout; ARightToLeft: boolean);
-var remains, part: string;
+var remains, part, curText,nextText: string;
   stepX,stepY: integer;
   lines: TStringList;
   i: integer;
@@ -1189,21 +1189,23 @@ begin
     WordBreakHandler := @DefaultWorkBreakHandler;
 
   lines := TStringList.Create;
+  curText := ATextUTF8;
   repeat
-    InternalSplitText(ATextUTF8, AMaxWidth, remains, WordBreakHandler);
-    part := ATextUTF8;
+    InternalSplitText(curText, AMaxWidth, remains, WordBreakHandler);
+    part := curText;
     // append following direction to part
     case GetFirstStrongBidiClass(remains) of
-      ubcLeftToRight: part += UnicodeCharToUTF8($200E);
-      ubcRightToLeft,ubcArabicLetter: part += UnicodeCharToUTF8($200F);
+      ubcLeftToRight: if ARightToLeft then part += UnicodeCharToUTF8($200E);
+      ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then part += UnicodeCharToUTF8($200F);
     end;
     lines.Add(part);
     // prefix next part with previous direction
-    case GetLastStrongBidiClass(ATextUTF8) of
-      ubcLeftToRight: ATextUTF8 := UnicodeCharToUTF8($200E) + remains;
-      ubcRightToLeft,ubcArabicLetter: ATextUTF8 := UnicodeCharToUTF8($200F) + remains;
-      else ATextUTF8 := remains;
+    nextText := remains;
+    case GetLastStrongBidiClass(curText) of
+      ubcLeftToRight: if ARightToLeft then nextText := UnicodeCharToUTF8($200E) + nextText;
+      ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then nextText := UnicodeCharToUTF8($200F) + nextText;
     end;
+    curText := nextText;
   until remains = '';
   if AVertAlign = tlCenter then lineShift := lines.Count/2
   else if AVertAlign = tlBottom then lineShift := lines.Count
