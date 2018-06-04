@@ -1368,7 +1368,9 @@ end;
 
 procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string; AWordBreak: TWordBreakHandler);
-var p,skipCount: integer;
+var p,skipCount, charLen: integer;
+  zeroWidth: boolean;
+  u: Cardinal;
 begin
   if ATextUTF8= '' then
   begin
@@ -1390,8 +1392,13 @@ begin
   if skipCount <= 0 then skipCount := 1;
 
   p := 1;
+  zeroWidth := true;
   repeat
-    inc(p, UTF8CharacterLength(@ATextUTF8[p])); //UTF8 chars may be more than 1 byte long
+    charLen := UTF8CharacterLength(@ATextUTF8[p]);
+    u := UTF8CodepointToUnicode(@ATextUTF8[p], charLen);
+    if not IsZeroWidthUnicode(u) then
+      zeroWidth:= false;
+    inc(p, charLen); //UTF8 chars may be more than 1 byte long
     dec(skipCount);
 
     if RemoveLineEnding(ATextUTF8,p) then
@@ -1400,7 +1407,7 @@ begin
       ATextUTF8 := copy(ATextUTF8,1,p-1);
       exit;
     end;
-  until skipCount <= 0;
+  until ((skipCount <= 0) and not zeroWidth) or (p >= length(ATextUTF8)+1);
 
   ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
   ATextUTF8 := copy(ATextUTF8,1,p-1); //this includes the whole last UTF8 char
