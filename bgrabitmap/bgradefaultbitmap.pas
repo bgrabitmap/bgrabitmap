@@ -795,7 +795,7 @@ type
     {BGRA bitmap functions}
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); override;
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); override;
-    procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
+    procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override; overload;
     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); override; overload;
     function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true): TRect; override; overload;
     function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;

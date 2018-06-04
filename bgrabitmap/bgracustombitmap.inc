@@ -734,7 +734,8 @@ type
      {BGRA bitmap functions}
      procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); virtual; abstract;
      procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); virtual; abstract;
-     procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); virtual; abstract;
+     procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); virtual; abstract; overload;
+     procedure PutImage(x, y: integer; Source: TBitmap; mode: TDrawMode; AOpacity: byte = 255); overload;
      procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); virtual; abstract;
      procedure PutImageSubpixel(x, y: single; Source: TBGRACustomBitmap; AOpacity: byte = 255);
      procedure PutImagePart(x,y: integer; Source: TBGRACustomBitmap; SourceRect: TRect; mode: TDrawMode; AOpacity: byte = 255);
@@ -1923,6 +1924,15 @@ begin
       partial.Free;
     end;
   end;
+end;
+
+procedure TBGRACustomBitmap.PutImage(x, y: integer; Source: TBitmap;
+  mode: TDrawMode; AOpacity: byte);
+var bgra: TBGRACustomBitmap;
+begin
+  bgra := BGRABitmapFactory.create(Source);
+  PutImage(x,y, bgra, mode, AOpacity);
+  bgra.free;
 end;
 
 procedure TBGRACustomBitmap.PutImageSubpixel(x, y: single; Source: TBGRACustomBitmap; AOpacity: byte);
