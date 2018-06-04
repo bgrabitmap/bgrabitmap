@@ -293,7 +293,7 @@ type
     procedure LoadFromStream(AStream: TStream); virtual;
     procedure SaveToFile(AFilenameUTF8: string); virtual;
     procedure SaveToStream(AStream: TStream); virtual;
-    class function FriendlyClassName: RawByteString; virtual; abstract;
+    class function StorageClassName: RawByteString; virtual; abstract;
     property Guid: TGuid read GetGuid write SetGuid;
   end;
 
@@ -583,7 +583,7 @@ begin
   try
     memDir.LoadFromStream(AStream);
     storage := TBGRAMemOriginalStorage.Create(memDir);
-    if storage.RawString['class'] <> FriendlyClassName then
+    if storage.RawString['class'] <> StorageClassName then
       raise exception.Create('Invalid class');
     LoadFromStorage(storage);
     FreeAndNil(storage);
@@ -613,7 +613,7 @@ begin
   storage := nil;
   try
     storage := TBGRAMemOriginalStorage.Create(memDir);
-    storage.RawString['class'] := FriendlyClassName;
+    storage.RawString['class'] := StorageClassName;
     SaveToStorage(storage);
     FreeAndNil(storage);
     memDir.SaveToStream(AStream);
@@ -752,7 +752,7 @@ begin
     begin
       c := ADir.RawStringByFilename['class'];
       for i := 0 to high(LayerOriginalClasses) do
-        if LayerOriginalClasses[i].FriendlyClassName = c then
+        if LayerOriginalClasses[i].StorageClassName = c then
         begin
           AClass := LayerOriginalClasses[i];
           break;
@@ -771,7 +771,7 @@ begin
   storage := TBGRAMemOriginalStorage.Create(subdir);
   try
     AOriginal.SaveToStorage(storage);
-    storage.RawString['class'] := AOriginal.FriendlyClassName;
+    storage.RawString['class'] := AOriginal.StorageClassName;
   finally
     storage.Free;
   end;

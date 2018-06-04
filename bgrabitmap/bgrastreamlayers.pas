@@ -348,5 +348,9 @@ begin
   LayeredBitmapCheckStreamProc := @CheckStreamForLayers;
 end;
 
+initialization
+
+  RegisterStreamLayers;
+
 end.
 
