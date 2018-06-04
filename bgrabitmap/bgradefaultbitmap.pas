@@ -948,7 +948,10 @@ end;
 procedure TBitmapTracker.Changed(Sender: TObject);
 begin
   if FUser <> nil then
+  begin
     FUser.FBitmapModified := True;
+    FUser.FAlphaCorrectionNeeded := true;
+  end;
   inherited Changed(Sender);
 end;
 
@@ -2038,7 +2041,12 @@ end;
 
 function TBGRADefaultBitmap.GetCanvas: TCanvas;
 begin
-  Result := Bitmap.Canvas;
+  if FDataModified or (FBitmap = nil) then
+  begin
+    RebuildBitmap;
+    FDataModified := False;
+  end;
+  Result := FBitmap.Canvas;
 end;
 
 function TBGRADefaultBitmap.GetCanvasFP: TFPImageCanvas;

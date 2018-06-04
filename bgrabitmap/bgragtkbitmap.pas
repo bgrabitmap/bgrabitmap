@@ -119,6 +119,8 @@ begin
     exit;
   end;
 
+  LoadFromBitmapIfNeeded;
+
   If not TBGRAPixel_RGBAOrder then SwapRedBlue;
   
   P := Rect.TopLeft;

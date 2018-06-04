@@ -746,7 +746,10 @@ end;
 procedure TBGRALCLBitmap.DoLoadFromBitmap;
 begin
   if FBitmap <> nil then
+  begin
     LoadFromRawImage(FBitmap.RawImage, FCanvasOpacity);
+    if FAlphaCorrectionNeeded then DoAlphaCorrection;
+  end;
 end;
 
 procedure TBGRALCLBitmap.RebuildBitmap;
@@ -777,6 +780,7 @@ begin
 
   FBitmap.Canvas.AntialiasingMode := amOff;
   FBitmapModified := False;
+  FAlphaCorrectionNeeded:= false;
 end;
 
 function TBGRALCLBitmap.CreatePtrBitmap(AWidth, AHeight: integer;
