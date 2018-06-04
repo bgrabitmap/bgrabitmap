@@ -117,7 +117,7 @@ end;
 function TMemDirectory.CreateEntry(AName: utf8string; AExtension: utf8string;
   AContent: TStream): TMultiFileEntry;
 begin
-  result := TMemDirectoryEntry.Create(self, TEntryFilename.New(AName, AExtension), AContent, true);
+  result := TMemDirectoryEntry.Create(self, EntryFilename(AName, AExtension), AContent, true);
 end;
 
 procedure TMemDirectory.LoadFromStream(AStream: TStream);
@@ -188,7 +188,7 @@ begin
     entryData := TMemoryStream.Create;
     try
       entryData.CopyFrom(ADataStream, compressedSize);
-      newEntry := TMemDirectoryEntry.Create(self, TEntryFilename.New(filename), entryData, true,
+      newEntry := TMemDirectoryEntry.Create(self, EntryFilename(filename), entryData, true,
                   uncompressedSize, entryRec.Flags);
       newEntry.LoadExtraFromEmbeddedStream(ADataStream, AStartPos);
       AddEntry(newEntry);
@@ -299,7 +299,7 @@ begin
       raise exception.Create('There is already a file with this name and extension');
     exit;
   end;
-  newEntry := TMemDirectoryEntry.CreateDirectory(self, TEntryFilename.New(AName, AExtension));
+  newEntry := TMemDirectoryEntry.CreateDirectory(self, EntryFilename(AName, AExtension));
   result := AddEntry(newEntry);
 end;
 
@@ -386,11 +386,11 @@ begin
     idxSlash := PosEx('/',APath,idx);
     if idxSlash = 0 then
     begin
-      result.Add(TEntryFilename.New(copy(APath, idx, length(APath)-idx+1)));
+      result.Add(EntryFilename(copy(APath, idx, length(APath)-idx+1)));
       break;
     end else
     begin
-      result.Add(TEntryFilename.New(copy(APath, idx, idxSlash-idx)));
+      result.Add(EntryFilename(copy(APath, idx, idxSlash-idx)));
       idx := idxSlash+1;
     end;
   until false;

@@ -372,7 +372,7 @@ procedure UnregisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc; AProgr
 
 implementation
 
-uses BGRAUTF8, BGRABlend;
+uses BGRAUTF8, BGRABlend, BGRAMultiFileType;
 
 const
   OriginalsDirectory = 'originals';
@@ -448,14 +448,14 @@ end;
 
 procedure TBGRAMemOriginalStorage.RemoveFile(AName: utf8string);
 begin
-  FMemDir.Delete(TEntryFilename.New(AName));
+  FMemDir.Delete(EntryFilename(AName));
 end;
 
 function TBGRAMemOriginalStorage.ReadFile(AName: UTF8String; ADest: TStream): boolean;
 var
   entryId: Integer;
 begin
-  entryId := FMemDir.IndexOf(TEntryFilename.New(AName));
+  entryId := FMemDir.IndexOf(EntryFilename(AName));
   if entryId <> -1 then
   begin
     with FMemDir.Entry[entryId] do
@@ -469,7 +469,7 @@ procedure TBGRAMemOriginalStorage.WriteFile(AName: UTF8String; ASource: TStream;
 var
   idxEntry: Integer;
 begin
-  idxEntry := FMemDir.Add(TEntryFilename.New(AName), ASource, true, false);
+  idxEntry := FMemDir.Add(EntryFilename(AName), ASource, true, false);
   if ACompress then FMemDir.IsEntryCompressed[idxEntry] := true;
 end;
 
