@@ -21,10 +21,12 @@ type
      Guid: TGuid;
      Instance: TBGRALayerCustomOriginal;
      class operator = (const AEntry1,AEntry2: TBGRALayerOriginalEntry): boolean;
-     function New(AGuid: TGuid): TBGRALayerOriginalEntry;
-     function New(AInstance: TBGRALayerCustomOriginal): TBGRALayerOriginalEntry;
   end;
 
+function BGRALayerOriginalEntry(AGuid: TGuid): TBGRALayerOriginalEntry;
+function BGRALayerOriginalEntry(AInstance: TBGRALayerCustomOriginal): TBGRALayerOriginalEntry;
+
+type
   TBGRALayerOriginalList = specialize TFPGList<TBGRALayerOriginalEntry>;
 
   TBGRALayeredBitmap = class;
@@ -372,7 +374,7 @@ procedure UnregisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc; AProgr
 
 implementation
 
-uses BGRAUTF8, BGRABlend;
+uses BGRAUTF8, BGRABlend, BGRAMultiFileType;
 
 const
   OriginalsDirectory = 'originals';
@@ -407,13 +409,13 @@ begin
   result := AEntry1.Guid = AEntry2.Guid;
 end;
 
-function TBGRALayerOriginalEntry.New(AGuid: TGuid): TBGRALayerOriginalEntry;
+function BGRALayerOriginalEntry(AGuid: TGuid): TBGRALayerOriginalEntry;
 begin
   result.Guid := AGuid;
   result.Instance := nil;
 end;
 
-function TBGRALayerOriginalEntry.New(AInstance: TBGRALayerCustomOriginal): TBGRALayerOriginalEntry;
+function BGRALayerOriginalEntry(AInstance: TBGRALayerCustomOriginal): TBGRALayerOriginalEntry;
 begin
   result.Guid := AInstance.Guid;
   result.Instance := AInstance;
@@ -448,14 +450,14 @@ end;
 
 procedure TBGRAMemOriginalStorage.RemoveFile(AName: utf8string);
 begin
-  FMemDir.Delete(TEntryFilename.New(AName));
+  FMemDir.Delete(EntryFilename(AName));
 end;
 
 function TBGRAMemOriginalStorage.ReadFile(AName: UTF8String; ADest: TStream): boolean;
 var
   entryId: Integer;
 begin
-  entryId := FMemDir.IndexOf(TEntryFilename.New(AName));
+  entryId := FMemDir.IndexOf(EntryFilename(AName));
   if entryId <> -1 then
   begin
     with FMemDir.Entry[entryId] do
@@ -469,7 +471,7 @@ procedure TBGRAMemOriginalStorage.WriteFile(AName: UTF8String; ASource: TStream;
 var
   idxEntry: Integer;
 begin
-  idxEntry := FMemDir.Add(TEntryFilename.New(AName), ASource, true, false);
+  idxEntry := FMemDir.Add(EntryFilename(AName), ASource, true, false);
   if ACompress then FMemDir.IsEntryCompressed[idxEntry] := true;
 end;
 
@@ -814,7 +816,7 @@ begin
     finally
       storage.Free;
     end;
-    FOriginals[AIndex] := TBGRALayerOriginalEntry.New(result);
+    FOriginals[AIndex] := BGRALayerOriginalEntry(result);
   end;
 end;
 
@@ -1363,9 +1365,9 @@ begin
   StoreOriginal(AOriginal);
   if FOriginals = nil then FOriginals := TBGRALayerOriginalList.Create;
   if AOwned then
-    result := FOriginals.Add(TBGRALayerOriginalEntry.New(AOriginal))
+    result := FOriginals.Add(BGRALayerOriginalEntry(AOriginal))
   else
-    result := FOriginals.Add(TBGRALayerOriginalEntry.New(AOriginal.Guid));
+    result := FOriginals.Add(BGRALayerOriginalEntry(AOriginal.Guid));
 end;
 
 function TBGRALayeredBitmap.RemoveOriginal(AOriginal: TBGRALayerCustomOriginal): boolean;
@@ -1458,7 +1460,7 @@ begin
     if IndexOfOriginal(foundGuid[i]) = -1 then
     begin
       if FOriginals = nil then FOriginals := TBGRALayerOriginalList.Create;
-      FOriginals.Add(TBGRALayerOriginalEntry.New(foundGuid[i]));
+      FOriginals.Add(BGRALayerOriginalEntry(foundGuid[i]));
     end;
   end;
 end;
@@ -1707,7 +1709,7 @@ end;
 function TBGRALayeredBitmap.IndexOfOriginal(AOriginal: TBGRALayerCustomOriginal): integer;
 begin
   if Assigned(FOriginals) then
-    result := FOriginals.IndexOf(TBGRALayerOriginalEntry.New(AOriginal))
+    result := FOriginals.IndexOf(BGRALayerOriginalEntry(AOriginal))
   else
     result := -1;
 end;

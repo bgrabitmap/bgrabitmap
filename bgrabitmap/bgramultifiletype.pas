@@ -22,14 +22,15 @@ type
     procedure SetFilename(AValue: utf8string);
     procedure SetName(AValue: utf8string);
   public
-    function New(AName,AExtension: string): TEntryFilename;
-    function New(AFilename: string): TEntryFilename;
     class operator =(const AValue1,AValue2: TEntryFilename): boolean;
     property Filename: utf8string read GetFilename write SetFilename;
     property Name: utf8string read FName write SetName;
     property Extension: utf8string read FExtension write SetExtension;
     property IsEmpty: boolean read GetIsEmpty;
   end;
+
+function EntryFilename(AName,AExtension: string): TEntryFilename;
+function EntryFilename(AFilename: string): TEntryFilename;
 
 type
   TMultiFileContainer = class;
@@ -155,13 +156,13 @@ begin
   FName:=AValue;
 end;
 
-function TEntryFilename.New(AName, AExtension: string): TEntryFilename;
+function EntryFilename(AName, AExtension: string): TEntryFilename;
 begin
   result.Name := AName;
   result.Extension:= AExtension;
 end;
 
-function TEntryFilename.New(AFilename: string): TEntryFilename;
+function EntryFilename(AFilename: string): TEntryFilename;
 begin
   result.Filename:= AFilename;
 end;
@@ -225,7 +226,7 @@ function TMultiFileContainer.GetRawStringByFilename(AFilename: string
 var
   idx: Integer;
 begin
-  idx := IndexOf(TEntryFilename.New(AFilename));
+  idx := IndexOf(EntryFilename(AFilename));
   if idx = -1 then
     result := ''
   else
@@ -244,7 +245,7 @@ procedure TMultiFileContainer.SetRawStringByFilename(AFilename: string;
 var
   f: TEntryFilename;
 begin
-  f := TEntryFilename.New(AFilename);
+  f := EntryFilename(AFilename);
   Add(f.Name,f.Extension,AValue,true);
 end;
 
