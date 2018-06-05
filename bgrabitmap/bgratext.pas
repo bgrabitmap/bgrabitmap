@@ -54,8 +54,10 @@ type
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
     procedure InternalTextOutEllipse(ADest: TBGRACustomBitmap; x, y, availableWidth: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
-    procedure InternalSplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string;
+    procedure InternalSplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string; out ALineEndingBreak: boolean;
                                 AWordBreak: TWordBreakHandler);
+    procedure InternalSplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string;
+                                AWordBreak: TWordBreakHandler); overload;
     procedure DefaultWorkBreakHandler(var ABeforeUTF8, AAfterUTF8: string);
   public
     procedure SplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string);
@@ -1067,8 +1069,7 @@ begin
   else
     WordBreakHandler := @DefaultWorkBreakHandler;
 
-  InternalSplitText(ATextUTF8, AMaxWidth, ARemainsUTF8,
-      WordBreakHandler);
+  InternalSplitText(ATextUTF8, AMaxWidth, ARemainsUTF8, WordBreakHandler);
 end;
 
 function TCustomLCLFontRenderer.GetFontPixelMetric: TFontPixelMetric;
@@ -1177,6 +1178,7 @@ var remains, part, curText,nextText: string;
   i: integer;
   lineShift: single;
   WordBreakHandler: TWordBreakHandler;
+  lineEndingBreak: boolean;
 begin
   if (ATextUTF8 = '') or (AMaxWidth <= 0) then exit;
 
@@ -1191,20 +1193,22 @@ begin
   lines := TStringList.Create;
   curText := ATextUTF8;
   repeat
-    InternalSplitText(curText, AMaxWidth, remains, WordBreakHandler);
+    InternalSplitText(curText, AMaxWidth, remains, lineEndingBreak, WordBreakHandler);
     part := curText;
-    // append following direction to part
-    case GetFirstStrongBidiClass(remains) of
-      ubcLeftToRight: if ARightToLeft then part += UnicodeCharToUTF8($200E);
-      ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then part += UnicodeCharToUTF8($200F);
-    end;
+    if not lineEndingBreak then
+      // append following direction to part
+      case GetFirstStrongBidiClass(remains) of
+        ubcLeftToRight: if ARightToLeft then part += UnicodeCharToUTF8($200E);
+        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then part += UnicodeCharToUTF8($200F);
+      end;
     lines.Add(part);
     // prefix next part with previous direction
     nextText := remains;
-    case GetLastStrongBidiClass(curText) of
-      ubcLeftToRight: if ARightToLeft then nextText := UnicodeCharToUTF8($200E) + nextText;
-      ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then nextText := UnicodeCharToUTF8($200F) + nextText;
-    end;
+    if not lineEndingBreak then
+      case GetLastStrongBidiClass(curText) of
+        ubcLeftToRight: if ARightToLeft then nextText := UnicodeCharToUTF8($200E) + nextText;
+        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then nextText := UnicodeCharToUTF8($200F) + nextText;
+      end;
     curText := nextText;
   until remains = '';
   if AVertAlign = tlCenter then lineShift := lines.Count/2
@@ -1367,11 +1371,12 @@ begin
 end;
 
 procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
-  AMaxWidth: integer; out ARemainsUTF8: string; AWordBreak: TWordBreakHandler);
+  AMaxWidth: integer; out ARemainsUTF8: string; out ALineEndingBreak: boolean; AWordBreak: TWordBreakHandler);
 var p,skipCount, charLen: integer;
   zeroWidth: boolean;
   u: Cardinal;
 begin
+  ALineEndingBreak:= false;
   if ATextUTF8= '' then
   begin
     ARemainsUTF8 := '';
@@ -1381,6 +1386,7 @@ begin
   begin
     ARemainsUTF8:= ATextUTF8;
     ATextUTF8 := '';
+    ALineEndingBreak:= true;
     exit;
   end;
 
@@ -1405,6 +1411,7 @@ begin
     begin
       ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
       ATextUTF8 := copy(ATextUTF8,1,p-1);
+      ALineEndingBreak:= true;
       exit;
     end;
   until ((skipCount <= 0) and not zeroWidth) or (p >= length(ATextUTF8)+1);
@@ -1412,6 +1419,13 @@ begin
   ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
   ATextUTF8 := copy(ATextUTF8,1,p-1); //this includes the whole last UTF8 char
   if Assigned(AWordBreak) then AWordBreak(ATextUTF8,ARemainsUTF8);
+end;
+
+procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
+  AMaxWidth: integer; out ARemainsUTF8: string; AWordBreak: TWordBreakHandler);
+var lineEndingBreak: boolean;
+begin
+  InternalSplitText(ATextUTF8,AMaxWidth,ARemainsUTF8,lineEndingBreak,AWordBreak);
 end;
 
 procedure TCustomLCLFontRenderer.DefaultWorkBreakHandler(var ABeforeUTF8,

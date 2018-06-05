@@ -74,6 +74,7 @@ function GetFirstStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
 function GetLastStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
 function IsZeroWidthString(const sUTF8: string): boolean;
 function IsZeroWidthUnicode(u: cardinal): boolean;
+function AddParagraphBidi(s: string; ARightToLeft: boolean): string;
 
 //little endian stream functions
 function LEReadInt64(Stream: TStream): int64;
@@ -724,6 +725,51 @@ begin
   end;
 end;
 
+function AddParagraphBidi(s: string; ARightToLeft: boolean): string;
+var
+  i,curParaStart: Integer;
+
+  procedure CheckParagraph;
+  var
+    para,newPara: string;
+    paraRTL: boolean;
+  begin
+    if i > curParaStart then
+    begin
+      para := copy(s,curParaStart,i-curParaStart);
+      paraRTL := GetFirstStrongBidiClass(para) in[ubcRightToLeft,ubcArabicLetter];
+      //detected paragraph does not match overall RTL option
+      if paraRTL <> ARightToLeft then
+      begin
+        if not paraRTL then
+          newPara := UnicodeCharToUTF8($200E)+para+UnicodeCharToUTF8($200E)
+        else
+          newPara := UnicodeCharToUTF8($200F)+para+UnicodeCharToUTF8($200F);
+        inc(i, length(newPara)-length(para));
+        delete(s, curParaStart, length(para));
+        insert(newPara, s, curParaStart);
+      end;
+    end;
+  end;
+
+begin
+  i := 1;
+  curParaStart := 1;
+  while i <= length(s) do
+  begin
+    if s[i] in[#13,#10] then
+    begin
+      CheckParagraph;
+      //skip end of line
+      inc(i);
+      if (i <= length(s)) and (s[i] in[#13,#10]) and (s[i]<>s[i-1]) then inc(i);
+      curParaStart := i;
+    end else
+      inc(i);
+  end;
+  CheckParagraph;
+  result := s;
+end;
 
 function UTF8CharStart(UTF8Str: PChar; Len, CharIndex: PtrInt): PChar;
 var
