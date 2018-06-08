@@ -39,8 +39,8 @@ type
       {%H-}ALineOrder: TRawImageLineOrder; {%H-}AWidth, {%H-}AHeight: integer); override;
     procedure TakeScreenshot({%H-}ARect: TRect); override; //not available
     procedure TakeScreenshotOfPrimaryMonitor; override; //not available
-    procedure LoadFromDevice({%H-}DC: System.THandle); override; //not available
-    procedure LoadFromDevice({%H-}DC: System.THandle; {%H-}ARect: TRect); override; //not available
+    procedure LoadFromDevice({%H-}DC: HDC); override; //not available
+    procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override; //not available
     property Canvas: TBGRACanvas read GetPseudoCanvas;
   end;
 
@@ -148,12 +148,12 @@ begin
   NotAvailable;
 end;
 
-procedure TBGRANoGUIBitmap.LoadFromDevice(DC: System.THandle);
+procedure TBGRANoGUIBitmap.LoadFromDevice(DC: HDC);
 begin
   NotAvailable;
 end;
 
-procedure TBGRANoGUIBitmap.LoadFromDevice(DC: System.THandle; ARect: TRect);
+procedure TBGRANoGUIBitmap.LoadFromDevice(DC: HDC; ARect: TRect);
 begin
   NotAvailable;
 end;
