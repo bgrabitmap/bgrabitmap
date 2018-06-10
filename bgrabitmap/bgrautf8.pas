@@ -64,13 +64,14 @@ function UTF8Length(p: PChar; ByteCount: PtrInt): PtrInt;
 function UnicodeCharToUTF8(u: cardinal): string4;
 
 type
-  TUnicodeBidiClass = (ubcBoundaryNeutral, ubcNeutral, ubcCommonSeparator, ubcNonSpacingMark,
+  TUnicodeBidiClass = (ubcBoundaryNeutral, ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals,
+                      ubcCommonSeparator, ubcNonSpacingMark,
                       ubcLeftToRight, ubcEuropeanNumber, ubcEuropeanNumberSeparator, ubcEuropeanNumberTerminator,
                       ubcRightToLeft, ubcArabicLetter, ubcArabicNumber, ubcUnknown);
   TUnicodeAnalysisElement = record
     u, paragraph, lineNumber: Cardinal;
     bidiClass: TUnicodeBidiClass;
-    bidiLevel: byte;
+    lineBidiLevel, bidiLevel: byte;
     removed: boolean;       //RLE, LRE, RLO, LRO, PDF and BN are supposed to be removed
     prevInIsolate, nextInIsolate: integer; //next index in current isolate
   end;
@@ -78,6 +79,8 @@ type
   TUnicodeAnalysisArray = array of TUnicodeAnalysisElement;
 
 const
+  ubcNeutral = [ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals];
+
   //maximum nesting level of isolates and bidi-formatting blocks
   UNICODE_MAX_BIDI_DEPTH = 125;
 
@@ -102,6 +105,16 @@ const
   UNICODE_LEFT_TO_RIGHT_MARK = $200E;
   UNICODE_RIGHT_TO_LEFT_MARK = $200F;
   UNICODE_ARABIC_LETTER_MARK = $061C;
+
+  //data separators
+  UNICODE_INFORMATION_SEPARATOR_FOUR = $001C;   //end-of-file
+  UNICODE_INFORMATION_SEPARATOR_THREE = $001D;  //section separator
+  UNICODE_INFORMATION_SEPARATOR_TWO = $001E;    //record separator, kind of equivalent to paragraph separator
+  UNICODE_INFORMATION_SEPARATOR_ONE = $001F;    //field separator, kind of equivalent to Tab
+
+  //bracket equivalence
+  UNICODE_RIGHT_POINTING_ANGLE_BRACKET = $232A;
+  UNICODE_RIGHT_ANGLE_BRACKET = $3009;
 
 type
   TUnicodeBracketInfo = record
@@ -563,10 +576,13 @@ begin
 end;
 
 function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
-begin //generated 06/06/2018
+begin //generated 2018-06-06
   case u of
   $00..$08, $0E..$1B, $7F..$84, $86..$9F, $AD, $180E, $200B..$200D, $2060..$2064,
   $206A..$206F, $FEFF, $1BCA0..$1BCA3, $1D173..$1D17A, $E0001, $E0020..$E007F: result := ubcBoundaryNeutral;
+  $09, $0B, $1F: result := ubcSegmentSeparator;
+  $0A, $0D, $1C..$1E, $85, $2029: result := ubcParagraphSeparator;
+  $0C, $20, $1680, $2000..$200A, $2028, $205F, $3000: result := ubcWhiteSpace;
   $41..$5A, $61..$7A, $AA, $B5, $BA, $C0..$D6, $D8..$F6, $F8..$2B8, $2BB..$2C1,
   $2D0, $2D1, $2E0..$2E4, $2EE, $370..$373, $376, $377, $37A..$37D, $37F, $386,
   $388..$38A, $38C, $38E..$3A1, $3A3..$3F5, $3F7..$482, $48A..$52F, $531..$556,
@@ -764,38 +780,39 @@ begin //generated 06/06/2018
   $1DA3B..$1DA6C, $1DA75, $1DA84, $1DA9B..$1DA9F, $1DAA1..$1DAAF, $1E000..$1E006,
   $1E008..$1E018, $1E01B..$1E021, $1E023, $1E024, $1E026..$1E02A, $1E8D0..$1E8D6,
   $1E944..$1E94A, $E0100..$E01EF: result := ubcNonSpacingMark;
-  $09..$0D, $1C..$22, $26..$2A, $3B..$40, $5B..$60, $7B..$7E, $85, $A1, $A6..$A9,
-  $AB, $AC, $AE, $AF, $B4, $B6..$B8, $BB..$BF, $D7, $F7, $2B9, $2BA, $2C2..$2CF,
-  $2D2..$2DF, $2E5..$2ED, $2EF..$2FF, $374, $375, $37E, $384, $385, $387, $3F6,
-  $58A, $58D, $58E, $606, $607, $60E, $60F, $6DE, $6E9, $7F6..$7F9, $BF3..$BF8,
-  $BFA, $C78..$C7E, $F3A..$F3D, $1390..$1399, $1400, $1680, $169B, $169C, $17F0..$17F9,
-  $1800..$180A, $1940, $1944, $1945, $19DE..$19FF, $1FBD, $1FBF..$1FC1, $1FCD..$1FCF,
-  $1FDD..$1FDF, $1FED..$1FEF, $1FFD, $1FFE, $2000..$200A, $2010..$2029, $2035..$2043,
-  $2045..$205F, $207C..$207E, $208C..$208E, $2100, $2101, $2103..$2106, $2108,
-  $2109, $2114, $2116..$2118, $211E..$2123, $2125, $2127, $2129, $213A, $213B,
-  $2140..$2144, $214A..$214D, $2150..$215F, $2189..$218B, $2190..$2211, $2214..$2335,
-  $237B..$2394, $2396..$2426, $2440..$244A, $2460..$2487, $24EA..$26AB, $26AD..$27FF,
-  $2900..$2B73, $2B76..$2B95, $2B98..$2BC8, $2BCA..$2BFE, $2CE5..$2CEA, $2CF9..$2CFF,
-  $2E00..$2E4E, $2E80..$2E99, $2E9B..$2EF3, $2F00..$2FD5, $2FF0..$2FFB, $3000..$3004,
-  $3008..$3020, $3030, $3036, $3037, $303D..$303F, $309B, $309C, $30A0, $30FB,
-  $31C0..$31E3, $321D, $321E, $3250..$325F, $327C..$327E, $32B1..$32BF, $32CC..$32CF,
-  $3377..$337A, $33DE, $33DF, $33FF, $4DC0..$4DFF, $A490..$A4C6, $A60D..$A60F,
-  $A673, $A67E, $A67F, $A700..$A721, $A788, $A828..$A82B, $A874..$A877, $FD3E,
-  $FD3F, $FDFD, $FE10..$FE19, $FE30..$FE4F, $FE51, $FE54, $FE56..$FE5E, $FE60,
-  $FE61, $FE64..$FE66, $FE68, $FE6B, $FF01, $FF02, $FF06..$FF0A, $FF1B..$FF20,
-  $FF3B..$FF40, $FF5B..$FF65, $FFE2..$FFE4, $FFE8..$FFEE, $FFF9..$FFFD, $10101,
-  $10140..$1018C, $10190..$1019B, $101A0, $1091F, $10B39..$10B3F, $11052..$11065,
-  $11660..$1166C, $1D200..$1D241, $1D245, $1D300..$1D356, $1D6DB, $1D715, $1D74F,
-  $1D789, $1D7C3, $1EEF0, $1EEF1, $1F000..$1F02B, $1F030..$1F093, $1F0A0..$1F0AE,
-  $1F0B1..$1F0BF, $1F0C1..$1F0CF, $1F0D1..$1F0F5, $1F10B, $1F10C, $1F12F, $1F16A,
-  $1F16B, $1F260..$1F265, $1F300..$1F6D4, $1F6E0..$1F6EC, $1F6F0..$1F6F9, $1F700..$1F773,
-  $1F780..$1F7D8, $1F800..$1F80B, $1F810..$1F847, $1F850..$1F859, $1F860..$1F887,
-  $1F890..$1F8AD, $1F900..$1F90B, $1F910..$1F93E, $1F940..$1F970, $1F973..$1F976,
-  $1F97A, $1F97C..$1F9A2, $1F9B0..$1F9B9, $1F9C0..$1F9C2, $1F9D0..$1F9FF, $1FA60..$1FA6D: result := ubcNeutral;
+  $21, $22, $26..$2A, $3B..$40, $5B..$60, $7B..$7E, $A1, $A6..$A9, $AB, $AC,
+  $AE, $AF, $B4, $B6..$B8, $BB..$BF, $D7, $F7, $2B9, $2BA, $2C2..$2CF, $2D2..$2DF,
+  $2E5..$2ED, $2EF..$2FF, $374, $375, $37E, $384, $385, $387, $3F6, $58A, $58D,
+  $58E, $606, $607, $60E, $60F, $6DE, $6E9, $7F6..$7F9, $BF3..$BF8, $BFA, $C78..$C7E,
+  $F3A..$F3D, $1390..$1399, $1400, $169B, $169C, $17F0..$17F9, $1800..$180A,
+  $1940, $1944, $1945, $19DE..$19FF, $1FBD, $1FBF..$1FC1, $1FCD..$1FCF, $1FDD..$1FDF,
+  $1FED..$1FEF, $1FFD, $1FFE, $2010..$2027, $2035..$2043, $2045..$205E, $207C..$207E,
+  $208C..$208E, $2100, $2101, $2103..$2106, $2108, $2109, $2114, $2116..$2118,
+  $211E..$2123, $2125, $2127, $2129, $213A, $213B, $2140..$2144, $214A..$214D,
+  $2150..$215F, $2189..$218B, $2190..$2211, $2214..$2335, $237B..$2394, $2396..$2426,
+  $2440..$244A, $2460..$2487, $24EA..$26AB, $26AD..$27FF, $2900..$2B73, $2B76..$2B95,
+  $2B98..$2BC8, $2BCA..$2BFE, $2CE5..$2CEA, $2CF9..$2CFF, $2E00..$2E4E, $2E80..$2E99,
+  $2E9B..$2EF3, $2F00..$2FD5, $2FF0..$2FFB, $3001..$3004, $3008..$3020, $3030,
+  $3036, $3037, $303D..$303F, $309B, $309C, $30A0, $30FB, $31C0..$31E3, $321D,
+  $321E, $3250..$325F, $327C..$327E, $32B1..$32BF, $32CC..$32CF, $3377..$337A,
+  $33DE, $33DF, $33FF, $4DC0..$4DFF, $A490..$A4C6, $A60D..$A60F, $A673, $A67E,
+  $A67F, $A700..$A721, $A788, $A828..$A82B, $A874..$A877, $FD3E, $FD3F, $FDFD,
+  $FE10..$FE19, $FE30..$FE4F, $FE51, $FE54, $FE56..$FE5E, $FE60, $FE61, $FE64..$FE66,
+  $FE68, $FE6B, $FF01, $FF02, $FF06..$FF0A, $FF1B..$FF20, $FF3B..$FF40, $FF5B..$FF65,
+  $FFE2..$FFE4, $FFE8..$FFEE, $FFF9..$FFFD, $10101, $10140..$1018C, $10190..$1019B,
+  $101A0, $1091F, $10B39..$10B3F, $11052..$11065, $11660..$1166C, $1D200..$1D241,
+  $1D245, $1D300..$1D356, $1D6DB, $1D715, $1D74F, $1D789, $1D7C3, $1EEF0, $1EEF1,
+  $1F000..$1F02B, $1F030..$1F093, $1F0A0..$1F0AE, $1F0B1..$1F0BF, $1F0C1..$1F0CF,
+  $1F0D1..$1F0F5, $1F10B, $1F10C, $1F12F, $1F16A, $1F16B, $1F260..$1F265, $1F300..$1F6D4,
+  $1F6E0..$1F6EC, $1F6F0..$1F6F9, $1F700..$1F773, $1F780..$1F7D8, $1F800..$1F80B,
+  $1F810..$1F847, $1F850..$1F859, $1F860..$1F887, $1F890..$1F8AD, $1F900..$1F90B,
+  $1F910..$1F93E, $1F940..$1F970, $1F973..$1F976, $1F97A, $1F97C..$1F9A2, $1F9B0..$1F9B9,
+  $1F9C0..$1F9C2, $1F9D0..$1F9FF, $1FA60..$1FA6D: result := ubcOtherNeutrals;
   else result := ubcUnknown;
   end;
 end;
 
+{$PUSH}{$WARNINGS OFF}
 function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;
   procedure Bracket(AOpening,AClosing: cardinal);
   begin
@@ -873,6 +890,7 @@ begin
     end;
   end;
 end;
+{$POP}
 
 function GetFirstStrongBidiClass(const sUTF8: string): TUnicodeBidiClass;
 var
@@ -994,17 +1012,16 @@ function AnalyzeUnicode(const sUTF8: string; baseDirection: cardinal): TUnicodeA
 var
   a: TUnicodeAnalysisArray;
 
-  procedure ResolveWeakTypes(startIndex, charCount: integer; startOfSequence, {%H-}endOfSequence: TUnicodeBidiClass);
+  procedure ResolveWeakTypes(startIndex, afterEndIndex: integer; startOfSequence, {%H-}endOfSequence: TUnicodeBidiClass);
   var
-    curIndex,backIndex,endIndex: Integer;
+    curIndex,backIndex: Integer;
     latestStrongClass, prevClass: TUnicodeBidiClass;
   begin
-    endIndex := startIndex+charCount;
     //rules W1 and W2
     prevClass := startOfSequence;
     latestStrongClass:= prevClass;
     curIndex := startIndex;
-    while curIndex < endIndex do
+    while curIndex <> afterEndIndex do
     begin
       if not a[curIndex].removed then
       begin
@@ -1016,18 +1033,18 @@ var
         UNICODE_LEFT_TO_RIGHT_ISOLATE,
         UNICODE_RIGHT_TO_LEFT_ISOLATE,
         UNICODE_FIRST_STRONG_ISOLATE,
-        UNICODE_POP_DIRECTIONAL_ISOLATE: prevClass := ubcNeutral;
+        UNICODE_POP_DIRECTIONAL_ISOLATE: prevClass := ubcOtherNeutrals;
         else prevClass := a[curIndex].bidiClass;
         end;
         if prevClass in [ubcLeftToRight,ubcRightToLeft,ubcArabicLetter] then latestStrongClass:= prevClass;
       end;
-      curIndex += 1;
+      curIndex := a[curIndex].nextInIsolate;
     end;
 
     // rule W4 and W5
     prevClass := startOfSequence;
     curIndex := startIndex;
-    while curIndex < endIndex do
+    while curIndex <> afterEndIndex do
     begin
       if not a[curIndex].removed then
       begin
@@ -1046,12 +1063,12 @@ var
               end;
             end;
           ubcEuropeanNumberSeparator:
-            if (prevClass = ubcEuropeanNumber) and (curIndex+1 < endIndex) and
-              (a[curIndex+1].bidiClass = ubcEuropeanNumber) then
+            if (prevClass = ubcEuropeanNumber) and (a[curIndex].nextInIsolate <> afterEndIndex) and
+              (a[a[curIndex].nextInIsolate].bidiClass = ubcEuropeanNumber) then
                 a[curIndex].bidiClass:= ubcEuropeanNumber;
           ubcCommonSeparator:
-            if (prevClass in[ubcEuropeanNumber,ubcArabicNumber]) and (curIndex+1 < endIndex) and
-              (a[curIndex+1].bidiClass = prevClass) then
+            if (prevClass in[ubcEuropeanNumber,ubcArabicNumber]) and (a[curIndex].nextInIsolate <> afterEndIndex) and
+              (a[a[curIndex].nextInIsolate].bidiClass = prevClass) then
                 a[curIndex].bidiClass:= prevClass;
           ubcEuropeanNumberTerminator:
             if prevClass = ubcEuropeanNumber then
@@ -1060,37 +1077,36 @@ var
         prevClass := a[curIndex].bidiClass;
       end;
 
-      curIndex += 1;
+      curIndex := a[curIndex].nextInIsolate;
     end;
 
     // rule W6 and W7
     curIndex := startIndex;
     latestStrongClass := startOfSequence;
-    while curIndex < endIndex do
+    while curIndex <> afterEndIndex do
     begin
       if not a[curIndex].removed then
       begin
         case a[curIndex].bidiClass of
-          ubcEuropeanNumberSeparator,ubcEuropeanNumberTerminator,ubcCommonSeparator: a[curIndex].bidiClass := ubcNeutral;
+          ubcEuropeanNumberSeparator,ubcEuropeanNumberTerminator,ubcCommonSeparator: a[curIndex].bidiClass := ubcOtherNeutrals;
           ubcLeftToRight,ubcRightToLeft,ubcArabicLetter: latestStrongClass:= a[curIndex].bidiClass;
           ubcEuropeanNumber: if latestStrongClass = ubcLeftToRight then a[curIndex].bidiClass := ubcLeftToRight;
         end;
       end;
-      curIndex += 1;
+      curIndex := a[curIndex].nextInIsolate;
     end;
   end;
 
-  procedure ResolveNeutrals(startIndex, charCount: integer; startOfSequence, endOfSequence: TUnicodeBidiClass);
+  procedure ResolveNeutrals(startIndex, afterEndIndex: integer; startOfSequence, endOfSequence: TUnicodeBidiClass);
   var
-    endIndex,curIndex,previewIndex: Integer;
+    curIndex,prevIndex,previewIndex: Integer;
     curRTL, include, rightToLeft: Boolean;
     bidiClass: TUnicodeBidiClass;
   begin
     rightToLeft := startOfSequence in [ubcRightToLeft,ubcArabicLetter];
-    endIndex := startIndex+charCount;
     curIndex := startIndex;
     curRTL := rightToLeft;
-    while curIndex < endIndex do
+    while curIndex <> afterEndIndex do
     begin
       case a[curIndex].bidiClass of
         ubcLeftToRight: curRTL := false;
@@ -1099,11 +1115,12 @@ var
         if curRTL <> rightToLeft then
         begin
           //determine whether following neutral chars are included in reverse direction
-          previewIndex := curIndex+1;
+          prevIndex := curIndex;
+          previewIndex := a[curIndex].nextInIsolate;
           include := false;
-          while previewIndex <= endIndex do //uses endOfSequence for overflow
+          while previewIndex <> afterEndIndex do //uses endOfSequence for overflow
           begin
-            if previewIndex = endIndex then
+            if previewIndex = afterEndIndex then
               bidiClass:= endOfSequence
             else
               bidiClass:= a[previewIndex].bidiClass;
@@ -1119,9 +1136,10 @@ var
                   break;
                 end;
             end;
-            previewIndex += 1;
+            prevIndex := previewIndex;
+            previewIndex := a[previewIndex].nextInIsolate;
           end;
-          if previewIndex = endIndex then previewIndex -= 1;
+          if previewIndex = afterEndIndex then previewIndex := prevIndex;
           if include then
           begin
             while curIndex <> previewIndex do
@@ -1129,13 +1147,13 @@ var
               if a[curIndex].bidiClass = ubcBoundaryNeutral then
                 a[curIndex].removed := true; //supposed to be removed for rendering
 
-              if a[curIndex].bidiClass in [ubcNeutral,ubcBoundaryNeutral,ubcUnknown] then
+              if a[curIndex].bidiClass in (ubcNeutral+[ubcBoundaryNeutral,ubcUnknown]) then
               begin
                 if curRTL then a[curIndex].bidiClass := ubcRightToLeft
                 else a[curIndex].bidiClass := ubcLeftToRight;
               end;
 
-              curIndex += 1;
+              curIndex := a[curIndex].nextInIsolate;
             end;
           end else
             curRTL := rightToLeft;
@@ -1145,31 +1163,242 @@ var
       if a[curIndex].bidiClass = ubcBoundaryNeutral then
         a[curIndex].removed := true; //supposed to be removed for rendering
 
-      if a[curIndex].bidiClass in [ubcNeutral,ubcBoundaryNeutral,ubcUnknown] then
+      if a[curIndex].bidiClass in (ubcNeutral+[ubcBoundaryNeutral,ubcUnknown]) then
       begin
         if curRTL then a[curIndex].bidiClass := ubcRightToLeft
         else a[curIndex].bidiClass := ubcLeftToRight;
       end;
 
-      curIndex += 1;
+      curIndex := a[curIndex].nextInIsolate;
     end;
   end;
 
-  procedure ResolveImplicitLevels(startIndex: integer); // rule I1 and I2
+  procedure ResolveBrackets(startIndex, afterEndIndex: integer; startOfSequence, {%H-}endOfSequence: TUnicodeBidiClass);
+  type TBracketPair = record
+                  openIndex,closeIndex: integer;
+                end;
   var
-    curIndex: Integer;
+    bracketPairs: array of TBracketPair;
+    bracketPairCount: integer;
+    rightToLeft: boolean;
+
+    procedure SortBracketPairs;
+    var
+      i,j,k: Integer;
+      temp: TBracketPair;
+    begin
+      for i := 1 to bracketPairCount-1 do
+      begin
+        for j := 0 to i-1 do
+          if bracketPairs[j].openIndex > bracketPairs[i].openIndex then
+          begin
+            temp := bracketPairs[i];
+            for k := i downto j+1 do
+              bracketPairs[k] := bracketPairs[k-1];
+            bracketPairs[j] := temp;
+          end;
+      end;
+    end;
+
+    procedure FindBrackets; // rule BD16
+    const MAX_BRACKET_STACK = 63;
+    var
+      bracketStack: array[0..MAX_BRACKET_STACK-1] of record
+          bracketCharInfo: TUnicodeBracketInfo;
+          index: integer;
+        end;
+      bracketStackPos,peekPos: integer;
+      curIndex: integer;
+      curBracket: TUnicodeBracketInfo;
+    begin
+      bracketPairCount := 0;
+      bracketStackPos := 0;
+      bracketStack[0].index := -1; //avoid warning
+      curIndex := startIndex;
+      while curIndex <> afterEndIndex do
+      begin
+        if not (a[curIndex].bidiClass in [ubcLeftToRight,ubcRightToLeft]) then
+        begin
+          curBracket := GetUnicodeBracketInfo(a[curIndex].u);
+          if curBracket.IsBracket then
+          begin
+            // found opening bracket
+            if curBracket.OpeningBracket = a[curIndex].u then
+            begin
+              if bracketStackPos <= high(bracketStack) then
+              begin
+                bracketStack[bracketStackPos].bracketCharInfo := curBracket;
+                bracketStack[bracketStackPos].index := curIndex;
+                bracketStackPos += 1;
+              end else
+                break;
+            end else
+            begin
+              for peekPos := bracketStackPos-1 downto 0 do
+                if (bracketStack[peekPos].bracketCharInfo.ClosingBracket = a[curIndex].u) or
+                  ((bracketStack[peekPos].bracketCharInfo.ClosingBracket = UNICODE_RIGHT_ANGLE_BRACKET) and (a[curIndex].u = UNICODE_RIGHT_POINTING_ANGLE_BRACKET)) or
+                  ((bracketStack[peekPos].bracketCharInfo.ClosingBracket = UNICODE_RIGHT_POINTING_ANGLE_BRACKET) and (a[curIndex].u = UNICODE_RIGHT_ANGLE_BRACKET)) then
+                begin
+                  bracketStackPos := peekPos;
+                  if bracketPairCount >= length(bracketPairs) then
+                    setlength(bracketPairs, bracketPairCount*2 + 8);
+                  bracketPairs[bracketPairCount].openIndex := bracketStack[peekPos].index;
+                  bracketPairs[bracketPairCount].closeIndex := curIndex;
+                  inc(bracketPairCount);
+                  break;
+                end;
+            end;
+          end;
+        end;
+        curIndex := a[curIndex].nextInIsolate;
+      end;
+    end;
+
+    procedure SetCharClass(index: integer; newClass: TUnicodeBidiClass);
+    begin
+      a[index].bidiClass:= newClass;
+      index := a[index].nextInIsolate;
+      while (index <> afterEndIndex) and (GetUnicodeBidiClass(a[index].u) = ubcNonSpacingMark) do
+      begin
+        a[index].bidiClass := newClass;
+        index := a[index].nextInIsolate;
+      end;
+    end;
+
+    procedure ResolveBrackets; // rule N0
+    var
+      i, curIndex: Integer;
+      sameDirection, oppositeDirection, oppositeContext: boolean;
+    begin
+      for i := 0 to bracketPairCount-1 do
+      begin
+        curIndex := bracketPairs[i].openIndex+1;
+        sameDirection:= false;
+        oppositeDirection:= false;
+        while curIndex <> bracketPairs[i].closeIndex do
+        begin
+          Assert((curIndex >= startIndex) and (curIndex < length(a)), 'Expecting valid index');
+          case a[curIndex].bidiClass of
+          ubcLeftToRight:
+            if not rightToLeft then
+            begin
+              sameDirection := true;
+              break;
+            end else oppositeDirection:= true;
+          ubcRightToLeft,ubcArabicLetter,ubcEuropeanNumber,ubcArabicNumber:
+            if rightToLeft then
+            begin
+              sameDirection := true;
+              break;
+            end else oppositeDirection:= true;
+          end;
+          curIndex := a[curIndex].nextInIsolate;
+        end;
+        if sameDirection then
+        begin
+          if rightToLeft then
+          begin
+            SetCharClass(bracketPairs[i].openIndex, ubcRightToLeft);
+            SetCharClass(bracketPairs[i].closeIndex, ubcRightToLeft);
+          end else
+          begin
+            SetCharClass(bracketPairs[i].openIndex, ubcLeftToRight);
+            SetCharClass(bracketPairs[i].closeIndex, ubcLeftToRight);
+          end;
+        end else
+        if oppositeDirection then
+        begin
+          curIndex := a[bracketPairs[i].openIndex].prevInIsolate;
+          oppositeContext := false;
+          while curIndex >= startIndex do
+          begin
+            case a[curIndex].bidiClass of
+            ubcRightToLeft,ubcArabicLetter,ubcEuropeanNumber,ubcArabicNumber:
+              begin
+                oppositeContext := not rightToLeft;
+                break;
+              end;
+            ubcLeftToRight:
+              begin
+                oppositeContext := rightToLeft;
+                break;
+              end;
+            end;
+            curIndex := a[curIndex].prevInIsolate;
+          end;
+          if rightToLeft xor oppositeContext then
+          begin
+            SetCharClass(bracketPairs[i].openIndex, ubcRightToLeft);
+            SetCharClass(bracketPairs[i].closeIndex, ubcRightToLeft);
+          end else
+          begin
+            SetCharClass(bracketPairs[i].openIndex, ubcLeftToRight);
+            SetCharClass(bracketPairs[i].closeIndex, ubcLeftToRight);
+          end;
+        end;
+      end;
+    end;
+
+  begin
+    rightToLeft:= startOfSequence in[ubcRightToLeft,ubcArabicLetter];
+    FindBrackets;
+    SortBracketPairs;
+    ResolveBrackets;
+  end;
+
+  procedure AnalyzeSequence(startIndex, afterEndIndex: integer; sos, eos: TUnicodeBidiClass);
+  begin
+    if afterEndIndex = startIndex then exit;
+    ResolveWeakTypes(startIndex, afterEndIndex, sos, eos);
+    ResolveBrackets(startIndex, afterEndIndex, sos, eos);
+    ResolveNeutrals(startIndex, afterEndIndex, sos, eos);
+  end;
+
+  procedure SameLevelRuns(startIndex: integer);
+  var
+    curBidiLevel: byte;
+    latestIndex,curIndex, curStartIndex: Integer;
+    curSos,eos: TUnicodeBidiClass;
   begin
     curIndex := startIndex;
+    while (curIndex<>-1) and a[curIndex].removed do
+      curIndex := a[curIndex].nextInIsolate;
+    if curIndex = -1 then exit;
+
+    curStartIndex:= curIndex;
+    curBidiLevel := a[curIndex].bidiLevel;
+    if odd(curBidiLevel) then curSos := ubcRightToLeft else curSos := ubcLeftToRight;
+    latestIndex := -1;
     while curIndex <> -1 do
     begin
-      case a[curIndex].bidiClass of
-      ubcRightToLeft,ubcArabicLetter:
-        if not Odd(a[curIndex].bidiLevel) then a[curIndex].bidiLevel += 1;
-      ubcEuropeanNumber,ubcArabicNumber:
-        if Odd(a[curIndex].bidiLevel) then a[curIndex].bidiLevel += 1
-        else a[curIndex].bidiLevel += 2;
-      ubcLeftToRight: if Odd(a[curIndex].bidiLevel) then a[curIndex].bidiLevel += 1;
+      if not a[curIndex].removed then
+      begin
+        if (latestIndex <> -1) and (a[curIndex].bidiLevel <> curBidiLevel) then
+        begin
+          if a[curIndex].bidiLevel > curBidiLevel then
+          begin
+            if odd(a[curIndex].bidiLevel) then eos := ubcRightToLeft else eos := ubcLeftToRight;
+          end else
+          begin
+            if odd(curBidiLevel) then eos := ubcRightToLeft else eos := ubcLeftToRight;
+          end;
+
+          AnalyzeSequence(curStartIndex, a[latestIndex].nextInIsolate, curSos, eos);
+
+          curSos := eos;
+          curBidiLevel:= a[curIndex].bidiLevel;
+          curStartIndex:= curIndex;
+        end;
+        latestIndex := curIndex;
       end;
+
+      if (a[curIndex].nextInIsolate = -1) and (latestIndex<>-1) then
+      begin
+        if odd(a[latestIndex].bidiLevel) then eos := ubcRightToLeft else eos := ubcLeftToRight;
+        AnalyzeSequence(curStartIndex, a[latestIndex].nextInIsolate, curSos, eos);
+        break;
+      end;
+
       curIndex := a[curIndex].nextInIsolate;
     end;
   end;
@@ -1209,6 +1438,7 @@ var
             UNICODE_RIGHT_TO_LEFT_OVERRIDE,UNICODE_RIGHT_TO_LEFT_EMBEDDING:
               if odd(minBidiLevel) then levelIncrease := 2
               else levelIncrease := 1;
+          else levelIncrease:= 2;
           end;
           if minBidiLevel <= UNICODE_MAX_BIDI_DEPTH-levelIncrease-1 then
           begin
@@ -1260,242 +1490,66 @@ var
     until curIndex = lastIndex;
   end;
 
-  procedure ResolveBrackets(startIndex, charCount: integer; startOfSequence, {%H-}endOfSequence: TUnicodeBidiClass);
-  type TBracketPair = record
-                  openIndex,closeIndex: integer;
-                end;
+  procedure ResolveImplicitLevels(startIndex: integer); // rule I1 and I2
   var
-    bracketPairs: array of TBracketPair;
-    bracketPairCount: integer;
-    endIndex: integer;
-    rightToLeft: boolean;
-
-    procedure SortBracketPairs;
-    var
-      i,j,k: Integer;
-      temp: TBracketPair;
-    begin
-      for i := 1 to bracketPairCount-1 do
-      begin
-        for j := 0 to i-1 do
-          if bracketPairs[j].openIndex > bracketPairs[i].openIndex then
-          begin
-            temp := bracketPairs[i];
-            for k := i downto j+1 do
-              bracketPairs[k] := bracketPairs[k-1];
-            bracketPairs[j] := temp;
-          end;
-      end;
-    end;
-
-    procedure FindBrackets; // rule BD16
-    const MAX_BRACKET_STACK = 63;
-    var
-      bracketStack: array[0..MAX_BRACKET_STACK-1] of record
-          bracketCharInfo: TUnicodeBracketInfo;
-          index: integer;
-        end;
-      bracketStackPos,peekPos: integer;
-      curIndex: integer;
-      curBracket: TUnicodeBracketInfo;
-      prevLevel: byte;
-    begin
-      bracketPairCount := 0;
-      bracketStackPos := 0;
-      curIndex := startIndex;
-      prevLevel := a[startIndex].bidiLevel;
-      while curIndex < endIndex do
-      begin
-        if a[curIndex].bidiLevel <> prevLevel then bracketStackPos:= 0;
-        curBracket := GetUnicodeBracketInfo(a[curIndex].u);
-        if curBracket.IsBracket then
-        begin
-          // found opening bracket
-          if curBracket.OpeningBracket = a[curIndex].u then
-          begin
-            if bracketStackPos <= high(bracketStack) then
-            begin
-              bracketStack[bracketStackPos].bracketCharInfo := curBracket;
-              bracketStack[bracketStackPos].index := curIndex;
-              bracketStackPos += 1;
-            end else
-              break;
-          end else
-          begin
-            for peekPos := bracketStackPos-1 downto 0 do
-              if bracketStack[peekPos].bracketCharInfo.ClosingBracket = a[curIndex].u then
-              begin
-                bracketStackPos := peekPos;
-                if bracketPairCount >= length(bracketPairs) then
-                  setlength(bracketPairs, bracketPairCount*2 + 8);
-                bracketPairs[bracketPairCount].openIndex := bracketStack[peekPos].index;
-                bracketPairs[bracketPairCount].closeIndex := curIndex;
-                inc(bracketPairCount);
-                break;
-              end;
-          end;
-        end;
-        curIndex += 1;
-      end;
-    end;
-
-    procedure SetCharClass(index: integer; newClass: TUnicodeBidiClass);
-    begin
-      a[index].bidiClass:= newClass;
-      while (index+1 < endIndex) and (GetUnicodeBidiClass(a[index+1].u) = ubcNonSpacingMark) do
-      begin
-        inc(index);
-        a[index].bidiClass := newClass;
-      end;
-    end;
-
-    procedure ResolveBrackets; // rule N0
-    var
-      i, curIndex: Integer;
-      sameDirection, oppositeDirection, oppositeContext: boolean;
-    begin
-      for i := 0 to bracketPairCount-1 do
-      begin
-        curIndex := bracketPairs[i].openIndex+1;
-        sameDirection:= false;
-        oppositeDirection:= false;
-        while curIndex <> bracketPairs[i].closeIndex do
-        begin
-          Assert((curIndex >= startIndex) and (curIndex < endIndex), 'Expecting valid index');
-          case a[curIndex].bidiClass of
-          ubcLeftToRight:
-            if not rightToLeft then
-            begin
-              sameDirection := true;
-              break;
-            end else oppositeDirection:= true;
-          ubcRightToLeft,ubcArabicLetter,ubcEuropeanNumber,ubcArabicNumber:
-            if rightToLeft then
-            begin
-              sameDirection := true;
-              break;
-            end else oppositeDirection:= true;
-          end;
-          curIndex += 1;
-        end;
-        if sameDirection then
-        begin
-          if rightToLeft then
-          begin
-            SetCharClass(bracketPairs[i].openIndex, ubcRightToLeft);
-            SetCharClass(bracketPairs[i].closeIndex, ubcRightToLeft);
-          end else
-          begin
-            SetCharClass(bracketPairs[i].openIndex, ubcLeftToRight);
-            SetCharClass(bracketPairs[i].closeIndex, ubcLeftToRight);
-          end;
-        end else
-        if oppositeDirection then
-        begin
-          curIndex := bracketPairs[i].openIndex-1;
-          oppositeContext := false;
-          while curIndex >= startIndex do
-          begin
-            case a[curIndex].bidiClass of
-            ubcRightToLeft,ubcArabicLetter,ubcEuropeanNumber,ubcArabicNumber:
-              begin
-                oppositeContext := not rightToLeft;
-                break;
-              end;
-            ubcLeftToRight:
-              begin
-                oppositeContext := rightToLeft;
-                break;
-              end;
-            end;
-            curIndex -= 1;
-          end;
-          if rightToLeft xor oppositeContext then
-          begin
-            SetCharClass(bracketPairs[i].openIndex, ubcRightToLeft);
-            SetCharClass(bracketPairs[i].closeIndex, ubcRightToLeft);
-          end else
-          begin
-            SetCharClass(bracketPairs[i].openIndex, ubcLeftToRight);
-            SetCharClass(bracketPairs[i].closeIndex, ubcLeftToRight);
-          end;
-        end;
-      end;
-    end;
-
-  begin
-    rightToLeft:= startOfSequence in[ubcRightToLeft,ubcArabicLetter];
-    endIndex := startIndex+charCount;
-    FindBrackets;
-    SortBracketPairs;
-    ResolveBrackets;
-  end;
-
-  procedure AnalyzeSequence(startIndex, charCount: integer; sos, eos: TUnicodeBidiClass);
-  begin
-    if charCount = 0 then exit;
-    ResolveWeakTypes(startIndex, charCount, sos, eos);
-    ResolveBrackets(startIndex, charCount, sos, eos);
-    ResolveNeutrals(startIndex, charCount, sos, eos);
-  end;
-
-  procedure SameLevelRuns(startIndex: integer);
-  var
-    curBidiLevel: byte;
-    latestIndex,curIndex, curStartIndex: Integer;
-    curSos,eos: TUnicodeBidiClass;
+    curIndex: Integer;
   begin
     curIndex := startIndex;
-    while (curIndex<>-1) and a[curIndex].removed do
-      curIndex := a[curIndex].nextInIsolate;
-    if curIndex = -1 then exit;
-
-    curStartIndex:= curIndex;
-    curBidiLevel := a[curIndex].bidiLevel;
-    if odd(curBidiLevel) then curSos := ubcRightToLeft else curSos := ubcLeftToRight;
-    latestIndex := -1;
     while curIndex <> -1 do
     begin
-      if not a[curIndex].removed then
-      begin
-        if (latestIndex <> -1) and (a[curIndex].bidiLevel <> curBidiLevel) then
-        begin
-          if a[curIndex].bidiLevel > curBidiLevel then
-          begin
-            if odd(a[curIndex].bidiLevel) then eos := ubcRightToLeft else eos := ubcLeftToRight;
-          end else
-          begin
-            if odd(curBidiLevel) then eos := ubcRightToLeft else eos := ubcLeftToRight;
-          end;
-
-          AnalyzeSequence(curStartIndex, latestIndex-curStartIndex+1, curSos, eos);
-
-          curSos := eos;
-          curBidiLevel:= a[curIndex].bidiLevel;
-          curStartIndex:= curIndex;
-        end;
-        latestIndex := curIndex;
+      case a[curIndex].bidiClass of
+      ubcRightToLeft,ubcArabicLetter:
+        if not Odd(a[curIndex].bidiLevel) then a[curIndex].bidiLevel += 1;
+      ubcEuropeanNumber,ubcArabicNumber:
+        if Odd(a[curIndex].bidiLevel) then a[curIndex].bidiLevel += 1
+        else a[curIndex].bidiLevel += 2;
+      ubcLeftToRight: if Odd(a[curIndex].bidiLevel) then a[curIndex].bidiLevel += 1;
       end;
-
-      if (a[curIndex].nextInIsolate <> curIndex+1) and (latestIndex<>-1) then
-      begin
-        if odd(a[latestIndex].bidiLevel) then eos := ubcRightToLeft else eos := ubcLeftToRight;
-        AnalyzeSequence(curStartIndex, curIndex-curStartIndex+1, curSos, eos);
-
-        curIndex := a[curIndex].nextInIsolate;
-        while (curIndex<>-1) and a[curIndex].removed do
-          curIndex := a[curIndex].nextInIsolate;
-        if curIndex = -1 then break;
-
-        curSos := eos;
-        curBidiLevel := a[curIndex].bidiLevel;
-        curStartIndex := curIndex;
-        latestIndex:= -1;
-        continue;
-      end;
-
       curIndex := a[curIndex].nextInIsolate;
     end;
+  end;
+
+  procedure ResetEndOfLineLevels(startIndex: integer);  // rule L1
+  var
+    prevIndex,curIndex: Integer;
+
+    procedure TweakWhiteSpaceBefore(index: integer);
+    var
+      isWhiteSpaceOrIsolate: boolean;
+    begin
+      while index <> -1 do
+      begin
+        case a[index].u of
+        UNICODE_FIRST_STRONG_ISOLATE, UNICODE_POP_DIRECTIONAL_ISOLATE,
+        UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE:
+          isWhiteSpaceOrIsolate:= true;
+        else
+          isWhiteSpaceOrIsolate:= GetUnicodeBidiClass(a[index].u) = ubcWhiteSpace;
+        end;
+        if isWhiteSpaceOrIsolate then
+          a[index].bidiLevel := a[index].lineBidiLevel
+        else
+          break;
+        index := a[index].prevInIsolate;
+      end;
+    end;
+
+  begin
+    prevIndex := -1;
+    curIndex := startIndex;
+    while curIndex <> -1 do
+    begin
+      case GetUnicodeBidiClass(a[curIndex].u) of
+        ubcSegmentSeparator, ubcParagraphSeparator:
+        begin
+          a[curIndex].bidiLevel := a[curIndex].lineBidiLevel;
+          TweakWhiteSpaceBefore(prevIndex);
+        end;
+      end;
+      prevIndex := curIndex;
+      curIndex := a[curIndex].nextInIsolate;
+    end;
+    TweakWhiteSpaceBefore(prevIndex);
   end;
 
   function DetermineIsolateDirectionFromFirstStrongClass(startIndex: integer): cardinal;
@@ -1557,7 +1611,8 @@ var
   end;
 
   //split isolates in order to format them independently
-  procedure AnalyzeIsolates(startIndex: integer; charCount: integer; isolateDirection: cardinal; minBidiLevel: byte = 0);
+  procedure AnalyzeIsolates(startIndex: integer; charCount: integer; isolateDirection: cardinal; minBidiLevel: byte = 0;
+                            isParagraphOrLine: boolean = false);
   var curIndex, endIndex: integer;
     nextIndex: integer;
     subBidiLevel, levelIncrease: byte;
@@ -1575,6 +1630,16 @@ var
     if (isolateDirection = UNICODE_LEFT_TO_RIGHT_ISOLATE) and Odd(minBidiLevel) then minBidiLevel += 1;
     if (isolateDirection = UNICODE_RIGHT_TO_LEFT_ISOLATE) and not Odd(minBidiLevel) then minBidiLevel += 1;
 
+    if isParagraphOrLine then
+    begin
+      curIndex := startIndex;
+      while curIndex <> -1 do
+      begin
+        a[curIndex].lineBidiLevel := minBidiLevel;
+        curIndex := a[curIndex].nextInIsolate;
+      end;
+    end;
+
     case isolateDirection of
     UNICODE_LEFT_TO_RIGHT_ISOLATE: AnalyzeFormattingBlocks(startIndex, endIndex, minBidiLevel, UNICODE_LEFT_TO_RIGHT_EMBEDDING);
     UNICODE_RIGHT_TO_LEFT_ISOLATE: AnalyzeFormattingBlocks(startIndex, endIndex, minBidiLevel, UNICODE_RIGHT_TO_LEFT_EMBEDDING);
@@ -1582,6 +1647,9 @@ var
 
     SameLevelRuns(startIndex);
     ResolveImplicitLevels(startIndex);
+
+    if isParagraphOrLine then
+      ResetEndOfLineLevels(startIndex);
 
     //analyse sub-isolates
     curIndex := startIndex;
@@ -1635,16 +1703,16 @@ var
     charLen: integer;
     paragraph, lineNumber: cardinal;
 
-    lineStartIndex, curIndex, endIndex: integer;
+    lineStartIndex, curIndex, afterEndIndex: integer;
     curChar: PChar;
   begin
     curChar := startChar;
     curIndex := startIndex;
-    endIndex := startIndex+charCount;
+    afterEndIndex := startIndex+charCount;
     paragraph := 0;
     lineNumber := 0;
     lineStartIndex := curIndex;
-    while curIndex < endIndex do
+    while curIndex < afterEndIndex do
     begin
       charLen := UTF8CharacterLength(curChar);
       u := UTF8CodepointToUnicode(curChar, charLen);
@@ -1656,13 +1724,14 @@ var
       case u of
       UNICODE_LINE_SEPARATOR:      //line separator within paragraph
         begin
-          AnalyzeIsolates(lineStartIndex, curIndex+1-lineStartIndex, baseDirection);
+          AnalyzeIsolates(lineStartIndex, curIndex+1-lineStartIndex, baseDirection, 0, true);
           inc(lineNumber);
           lineStartIndex := curIndex+1;
         end;
-      UNICODE_PARAGRAPH_SEPARATOR: //separator between paragraphs
+      UNICODE_PARAGRAPH_SEPARATOR,   //separator between paragraphs
+      UNICODE_INFORMATION_SEPARATOR_TWO, UNICODE_INFORMATION_SEPARATOR_THREE, UNICODE_INFORMATION_SEPARATOR_FOUR:
         begin
-          AnalyzeIsolates(lineStartIndex, curIndex+1-lineStartIndex, baseDirection);
+          AnalyzeIsolates(lineStartIndex, curIndex+1-lineStartIndex, baseDirection, 0, true);
           inc(paragraph);
           lineNumber := 0;
           lineStartIndex := curIndex+1;
@@ -1670,7 +1739,7 @@ var
       13,10,UNICODE_NEXT_LINE:     //system line ending
         begin
           //skip second CRLF char
-          if (u in[13,10]) and (curIndex+1 < endIndex) and ((curChar+1)^ in [#13,#10]) and (curChar^ <> (curChar+1)^) then
+          if (u in[13,10]) and (curIndex+1 < afterEndIndex) and ((curChar+1)^ in [#13,#10]) and (curChar^ <> (curChar+1)^) then
           begin
             curChar += charLen;
             inc(curIndex);
@@ -1682,7 +1751,7 @@ var
             a[curIndex].lineNumber:= lineNumber;
             a[curIndex].paragraph := paragraph;
           end;
-          AnalyzeIsolates(lineStartIndex, curIndex+1-lineStartIndex, baseDirection);
+          AnalyzeIsolates(lineStartIndex, curIndex+1-lineStartIndex, baseDirection, 0, true);
 
           //consider system line ending to be a paragraph separator
           inc(paragraph);
@@ -1695,7 +1764,7 @@ var
       inc(curIndex);
     end;
     if curIndex > lineStartIndex then
-      AnalyzeIsolates(lineStartIndex, curIndex-lineStartIndex, baseDirection);
+      AnalyzeIsolates(lineStartIndex, curIndex-lineStartIndex, baseDirection, 0, true);
   end;
 
   function DetermineUTF8Length: integer;
