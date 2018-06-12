@@ -131,7 +131,7 @@ var
 
 implementation
 
-uses GraphType, Math, BGRABlend, BGRAUTF8
+uses GraphType, Math, BGRABlend, BGRAUTF8, BGRAUnicode
      {$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF};
 
 const MaxPixelMetricCount = 100;
@@ -1197,7 +1197,7 @@ begin
     part := curText;
     if not lineEndingBreak then
       // append following direction to part
-      case GetFirstStrongBidiClass(remains) of
+      case GetFirstStrongBidiClassUTF8(remains) of
         ubcLeftToRight: if ARightToLeft then part += UnicodeCharToUTF8($200E);
         ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then part += UnicodeCharToUTF8($200F);
       end;
@@ -1205,7 +1205,7 @@ begin
     // prefix next part with previous direction
     nextText := remains;
     if not lineEndingBreak then
-      case GetLastStrongBidiClass(curText) of
+      case GetLastStrongBidiClassUTF8(curText) of
         ubcLeftToRight: if ARightToLeft then nextText := UnicodeCharToUTF8($200E) + nextText;
         ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then nextText := UnicodeCharToUTF8($200F) + nextText;
       end;
@@ -1333,7 +1333,7 @@ var mode : TBGRATextOutImproveReadabilityMode;
 begin
   {$IFDEF LINUX}
   //help LCL detect the correct direction
-  case GetFirstStrongBidiClass(sUTF8) of
+  case GetFirstStrongBidiClassUTF8(sUTF8) of
     ubcRightToLeft, ubcArabicLetter: if not ARightToLeft then sUTF8 := UnicodeCharToUTF8($200E) + sUTF8;
     else
       begin //suppose left-to-right

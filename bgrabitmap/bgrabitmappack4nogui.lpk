@@ -17,15 +17,10 @@
       </Parsing>
       <CodeGeneration>
         <Optimizations>
-          <OptimizationLevel Value="3"/>
+          <OptimizationLevel Value="0"/>
           <VariablesInRegisters Value="True"/>
         </Optimizations>
       </CodeGeneration>
-      <Linking>
-        <Debugging>
-          <GenerateDebugInfo Value="False"/>
-        </Debugging>
-      </Linking>
       <Other>
         <CustomOptions Value="-dBGRABITMAP_DONT_USE_LCL"/>
         <OtherDefines Count="1">
@@ -36,7 +31,7 @@
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
     <Version Major="9" Minor="8" Release="1"/>
-    <Files Count="99">
+    <Files Count="100">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -433,6 +428,10 @@
         <Filename Value="bgrawinresource.pas"/>
         <UnitName Value="BGRAWinResource"/>
       </Item99>
+      <Item100>
+        <Filename Value="bgraunicode.pas"/>
+        <UnitName Value="BGRAUnicode"/>
+      </Item100>
     </Files>
     <RequiredPkgs Count="2">
       <Item1>

@@ -1093,7 +1093,7 @@ end;
 function TBGRACustomBitmap.GetFontRightToLeftFor(AText: string): boolean;
 begin
   case FontBidiMode of
-    fbmAuto: result := GetFirstStrongBidiClass(AText) in[ubcRightToLeft,ubcArabicLetter];
+    fbmAuto: result := IsRightToLeftUTF8(AText);
     fbmRightToLeft: result := true;
   else
     {fbmLeftToRight}
@@ -1834,6 +1834,7 @@ begin
   style.ShowPrefix := false;
   style.Clipping := false;
   style.RightToLeft := GetFontRightToLeftFor(sUTF8);
+  if FontBidiMode = fbmAuto then sUTF8 := AddParagraphBidiUTF8(sUTF8, style.RightToLeft);
   TextRect(ARect,ARect.Left,ARect.Top,sUTF8,style,c);
 end;
 
@@ -1854,6 +1855,7 @@ begin
   style.ShowPrefix := false;
   style.Clipping := false;
   style.RightToLeft := GetFontRightToLeftFor(sUTF8);
+  if FontBidiMode = fbmAuto then sUTF8 := AddParagraphBidiUTF8(sUTF8, style.RightToLeft);
   TextRect(ARect,ARect.Left,ARect.Top,sUTF8,style,texture);
 end;
 
