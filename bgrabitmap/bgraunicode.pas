@@ -25,6 +25,7 @@ const
   BIDI_FLAG_END_OF_LINE = 4;               //line break <br> or end of paragraph
 
 type
+  PUnicodeBidiInfo = ^TUnicodeBidiInfo;
 
   { TUnicodeBidiInfo }
 
@@ -45,7 +46,8 @@ type
     property IsEndOfParagraph: boolean read GetEndOfParagraph;
   end;
 
-  TUnicodeBidiArray = array of TUnicodeBidiInfo;
+  TUnicodeBidiArray = packed array of TUnicodeBidiInfo;
+  TUnicodeDisplayOrder = array of integer;
 
 const
   //maximum nesting level of isolates and bidi-formatting blocks (char bidi level can actually be higher due to char properties)
@@ -97,6 +99,11 @@ function IsUnicodeParagraphOrLineSeparator(u: cardinal): boolean;
 { Analyze unicode and return bidi levels for each character.
   baseDirection can be either UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE or UNICODE_FIRST_STRONG_ISOLATE }
 function AnalyzeBidiUnicode(u: PCardinal; ALength: integer; baseDirection: cardinal): TUnicodeBidiArray;
+
+{ Determine diplay order, provided the display surface is horizontally infinite }
+function GetUnicodeDisplayOrder(const AInfo: TUnicodeBidiArray): TUnicodeDisplayOrder;
+function GetUnicodeDisplayOrder(ALevels: PByte; ACount: integer): TUnicodeDisplayOrder;
+function GetUnicodeDisplayOrder(ABidiInfo: PUnicodeBidiInfo; AStride, ACount: integer): TUnicodeDisplayOrder;
 
 implementation
 
@@ -1187,7 +1194,7 @@ var
     end;
     if curIndex > lineStartIndex then
     begin
-      result[curIndex-1].Flags := result[curIndex].Flags or BIDI_FLAG_END_OF_LINE or BIDI_FLAG_END_OF_PARAGRAPH;
+      result[curIndex-1].Flags := result[curIndex-1].Flags or BIDI_FLAG_END_OF_LINE or BIDI_FLAG_END_OF_PARAGRAPH;
       AnalyzeIsolates(lineStartIndex, curIndex-lineStartIndex, baseDirection, 0, true);
     end;
   end;
@@ -1201,6 +1208,108 @@ begin
     for i := 0 to high(a) do
       a[i].bidiClass := GetUnicodeBidiClass(u[i]);
     SplitParagraphs;
+  end;
+end;
+
+function GetUnicodeDisplayOrder(const AInfo: TUnicodeBidiArray): TUnicodeDisplayOrder;
+begin
+  if length(AInfo)=0 then
+    result := nil
+  else
+    result := GetUnicodeDisplayOrder(@AInfo[0], sizeof(TUnicodeBidiInfo), length(AInfo));
+end;
+
+function GetUnicodeDisplayOrder(ALevels: PByte; ACount: integer): TUnicodeDisplayOrder;
+
+  procedure DetermineDisplayOrderRec(AOffset: integer; AStartIndex, ABlockCount: integer; AEmbeddingLevel: byte);
+  var minLevel: byte;
+    blockIndex,subStartIndex,subCount, subOffset: integer;
+  begin
+    //writeln('DetermineDisplayOrderRec('+inttostr(AOffset)+'/'+inttostr(ACount)+',' + inttostr(AStartIndex) +',*' +inttostr(ABlockCount)+','+inttostr(AEmbeddingLevel)+')');
+    blockIndex := 0;
+    subStartIndex := 0; //avoid warning
+    while blockIndex < ABlockCount do
+    begin
+      Assert(AOffset < ACount, 'Offset out of bounds');
+      if ALevels[AOffset] = AEmbeddingLevel then
+      begin
+        if odd(AEmbeddingLevel) then
+          result[AStartIndex+ABlockCount-1-blockIndex] := AOffset
+        else
+          result[AStartIndex+blockIndex] := AOffset;
+        inc(AOffset);
+        inc(blockIndex);
+      end else
+      begin
+        if not odd(AEmbeddingLevel) then
+          subStartIndex := AStartIndex+blockIndex;
+        subOffset := AOffset;
+        minLevel := ALevels[AOffset];
+        inc(AOffset);
+        inc(blockIndex);
+        subCount := 1;
+        while true do
+        begin
+          if (blockIndex < ABlockCount) and (ALevels[AOffset] > AEmbeddingLevel) then
+          begin
+            Assert(AOffset < ACount, 'Offset out of bounds');
+            if ALevels[AOffset] < minLevel then
+              minLevel:= ALevels[AOffset];
+            inc(AOffset);
+            inc(blockIndex);
+            inc(subCount);
+          end else
+          begin
+            if odd(AEmbeddingLevel) then
+              subStartIndex := AStartIndex+ABlockCount-1-(blockIndex-1);
+            DetermineDisplayOrderRec(subOffset, subStartIndex, subCount, minLevel);
+            break;
+          end;
+        end;
+      end;
+    end;
+  end;
+
+begin
+  setlength(result, ACount);
+  DetermineDisplayOrderRec(0, 0, ACount, 0);
+end;
+
+function GetUnicodeDisplayOrder(ABidiInfo: PUnicodeBidiInfo; AStride, ACount: integer): TUnicodeDisplayOrder;
+var
+  levels: packed array of byte;
+  originalIndices: array of integer;
+  index,len, i: integer;
+  p: PByte;
+begin
+  len := 0;
+  p := PByte(ABidiInfo);
+  for i := 0 to ACount-1 do
+  begin
+    if not PUnicodeBidiInfo(p)^.IsRemoved then inc(len);
+    inc(p, AStride);
+  end;
+  if len = 0 then
+    result := nil
+  else
+  begin
+    setlength(levels, len);
+    setlength(originalIndices, len);
+    p := PByte(ABidiInfo);
+    index := 0;
+    for i := 0 to ACount-1 do
+    begin
+      if not PUnicodeBidiInfo(p)^.IsRemoved then
+      begin
+        levels[index] := PUnicodeBidiInfo(p)^.BidiLevel;
+        originalIndices[index] := i;
+        inc(index);
+      end;
+      inc(p, AStride);
+    end;
+    result := GetUnicodeDisplayOrder(@levels[0], len);
+    for i := 0 to len-1 do
+      result[i] := originalIndices[result[i]];
   end;
 end;
 

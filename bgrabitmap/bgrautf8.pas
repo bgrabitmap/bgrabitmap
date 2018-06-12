@@ -70,7 +70,8 @@ type
     Position: Integer;
     BidiInfo: TUnicodeBidiInfo;
   end;
-  TBidiUTF8Array = array of TBidiUTF8Info;
+  TBidiUTF8Array = packed array of TBidiUTF8Info;
+  TUnicodeDisplayOrder = BGRAUnicode.TUnicodeDisplayOrder;
 
 function GetBidiClassUTF8(P: PChar): TUnicodeBidiClass;
 function GetFirstStrongBidiClassUTF8(const sUTF8: string): TUnicodeBidiClass;
@@ -80,6 +81,7 @@ function IsZeroWidthUTF8(const sUTF8: string): boolean;
 function AddParagraphBidiUTF8(s: string; ARightToLeft: boolean): string;
 function AnalyzeBidiUTF8(const sUTF8: string; ARightToLeft: boolean): TBidiUTF8Array; overload;
 function AnalyzeBidiUTF8(const sUTF8: string): TBidiUTF8Array; overload;
+function GetUTF8DisplayOrder(const ABidi: TBidiUTF8Array): TUnicodeDisplayOrder;
 
 //little endian stream functions
 function LEReadInt64(Stream: TStream): int64;
@@ -761,6 +763,14 @@ end;
 function AnalyzeBidiUTF8(const sUTF8: string): TBidiUTF8Array;
 begin
   result := AnalyzeBidiUTF8(sUTF8, UNICODE_FIRST_STRONG_ISOLATE)
+end;
+
+function GetUTF8DisplayOrder(const ABidi: TBidiUTF8Array): TUnicodeDisplayOrder;
+begin
+  if length(ABidi) = 0 then
+    result := nil
+  else
+    result := GetUnicodeDisplayOrder(@ABidi[0].BidiInfo, sizeof(TBidiUTF8Info), length(ABidi));
 end;
 
 //little endian stream functions
