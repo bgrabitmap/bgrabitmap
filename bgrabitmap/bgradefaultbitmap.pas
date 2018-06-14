@@ -3894,7 +3894,7 @@ end;
   Orientation is not taken into account, so that the width is along the text.  }
 function TBGRADefaultBitmap.TextSize(sUTF8: string): TSize;
 begin
-  result := FontRenderer.TextSize(sUTF8);
+  result := FontRenderer.TextSize(CleanTextOutString(sUTF8));
 end;
 
 function TBGRADefaultBitmap.TextSize(sUTF8: string; AMaxWidth: integer): TSize;
