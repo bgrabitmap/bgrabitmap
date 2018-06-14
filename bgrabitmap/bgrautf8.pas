@@ -67,7 +67,7 @@ function UTF8CodepointToUnicode(p: PChar; ACodePointLen: integer): cardinal;
 
 type
   TBidiUTF8Info = packed record
-    Position: Integer;
+    Offset: Integer;
     BidiInfo: TUnicodeBidiInfo;
   end;
   TBidiUTF8Array = packed array of TBidiUTF8Info;
@@ -746,7 +746,7 @@ begin
     setlength(result, length(u));
     for i := 0 to high(result) do
     begin
-      result[i].Position:= ofs[i];
+      result[i].Offset:= ofs[i];
       result[i].BidiInfo := a[i];
     end;
   end;
