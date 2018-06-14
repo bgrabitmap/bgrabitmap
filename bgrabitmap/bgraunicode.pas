@@ -22,7 +22,7 @@ const
 
   BIDI_FLAG_REMOVED = 1;                   //RLE, LRE, RLO, LRO, PDF and BN are supposed to be removed
   BIDI_FLAG_END_OF_PARAGRAPH = 2;          //end of paragraph (paragraph spacing below)
-  BIDI_FLAG_END_OF_LINE = 4;               //line break <br> or end of paragraph
+  BIDI_FLAG_END_OF_LINE = 4;               //line break <br>
 
 type
   PUnicodeBidiInfo = ^TUnicodeBidiInfo;
@@ -35,13 +35,13 @@ type
     function GetEndOfParagraph: boolean;
     function GetRemoved: boolean;
     function GetRightToLeft: boolean;
-    function GetLineRightToLeft: boolean;
+    function GetParagraphRightToLeft: boolean;
   public
-    LineBidiLevel, BidiLevel: byte;
+    ParagraphBidiLevel, BidiLevel: byte;
     Flags, Dummy: Byte;
     property IsRemoved: boolean read GetRemoved;
     property IsRightToLeft: boolean read GetRightToLeft;
-    property IsLineRightToLeft: boolean read GetLineRightToLeft;
+    property IsParagraphRightToLeft: boolean read GetParagraphRightToLeft;
     property IsEndOfLine: boolean read GetEndOfLine;
     property IsEndOfParagraph: boolean read GetEndOfParagraph;
   end;
@@ -757,9 +757,9 @@ begin
   result := Odd(BidiLevel);
 end;
 
-function TUnicodeBidiInfo.GetLineRightToLeft: boolean;
+function TUnicodeBidiInfo.GetParagraphRightToLeft: boolean;
 begin
-  result := Odd(LineBidiLevel);
+  result := Odd(ParagraphBidiLevel);
 end;
 
 function AnalyzeBidiUnicode(u: PCardinal; ALength: integer; baseDirection: cardinal): TUnicodeBidiArray;
@@ -1270,7 +1270,7 @@ var
     end;
   end;
 
-  procedure ResetEndOfLineLevels(startIndex: integer);  // rule L1
+  procedure ResetEndOfParagraphLevels(startIndex: integer);  // rule L1
   var
     prevIndex,curIndex: Integer;
 
@@ -1288,7 +1288,7 @@ var
           isWhiteSpaceOrIsolate:= GetUnicodeBidiClass(u[index]) = ubcWhiteSpace;
         end;
         if isWhiteSpaceOrIsolate then
-          result[index].bidiLevel := result[index].lineBidiLevel
+          result[index].bidiLevel := result[index].ParagraphBidiLevel
         else
           break;
         index := a[index].prevInIsolate;
@@ -1303,7 +1303,7 @@ var
       case GetUnicodeBidiClass(u[curIndex]) of
         ubcSegmentSeparator, ubcParagraphSeparator:
         begin
-          result[curIndex].bidiLevel := result[curIndex].lineBidiLevel;
+          result[curIndex].bidiLevel := result[curIndex].ParagraphBidiLevel;
           TweakWhiteSpaceBefore(prevIndex);
         end;
       end;
@@ -1373,7 +1373,7 @@ var
 
   //split isolates in order to format them independently
   procedure AnalyzeIsolates(startIndex: integer; charCount: integer; isolateDirection: cardinal; minBidiLevel: byte = 0;
-                            isParagraphOrLine: boolean = false);
+                            isParagraph: boolean = false);
   var curIndex, endIndex: integer;
     nextIndex: integer;
     subBidiLevel, levelIncrease: byte;
@@ -1395,12 +1395,12 @@ var
       raise EInvalidOperation.Create('Unknown isolate direction');
     end;
 
-    if isParagraphOrLine then
+    if isParagraph then
     begin
       curIndex := startIndex;
       while curIndex <> -1 do
       begin
-        result[curIndex].lineBidiLevel := minBidiLevel;
+        result[curIndex].ParagraphBidiLevel := minBidiLevel;
         curIndex := a[curIndex].nextInIsolate;
       end;
     end;
@@ -1413,8 +1413,8 @@ var
     SameLevelRuns(startIndex);
     ResolveImplicitLevels(startIndex);
 
-    if isParagraphOrLine then
-      ResetEndOfLineLevels(startIndex);
+    if isParagraph then
+      ResetEndOfParagraphLevels(startIndex);
 
     //analyse sub-isolates
     curIndex := startIndex;
@@ -1461,7 +1461,7 @@ var
     end;
   end;
 
-  //split UTF8 string into paragraphs and lines
+  //split UTF8 string into paragraphs
   procedure SplitParagraphs;
   var
     lineStartIndex, curIndex: integer;
@@ -1477,10 +1477,7 @@ var
            ((u[curIndex+1] = 13) or (u[curIndex+1] = 10)) and (u[curIndex+1] <> u[curIndex]) then
           inc(curIndex);
 
-        if u[curIndex] = UNICODE_LINE_SEPARATOR then  //line separator within paragraph
-          result[curIndex].Flags := result[curIndex].Flags or BIDI_FLAG_END_OF_LINE
-        else
-          result[curIndex].Flags := result[curIndex].Flags or BIDI_FLAG_END_OF_LINE or BIDI_FLAG_END_OF_PARAGRAPH;
+        result[curIndex].Flags := result[curIndex].Flags or BIDI_FLAG_END_OF_PARAGRAPH;
 
         AnalyzeIsolates(lineStartIndex, curIndex+1-lineStartIndex, baseDirection, 0, true);
         lineStartIndex := curIndex+1;
@@ -1489,7 +1486,7 @@ var
     end;
     if curIndex > lineStartIndex then
     begin
-      result[curIndex-1].Flags := result[curIndex-1].Flags or BIDI_FLAG_END_OF_LINE or BIDI_FLAG_END_OF_PARAGRAPH;
+      result[curIndex-1].Flags := result[curIndex-1].Flags or BIDI_FLAG_END_OF_PARAGRAPH;
       AnalyzeIsolates(lineStartIndex, curIndex-lineStartIndex, baseDirection, 0, true);
     end;
   end;
@@ -1501,7 +1498,11 @@ begin
   if ALength > 0 then
   begin
     for i := 0 to high(a) do
+    begin
       a[i].bidiClass := GetUnicodeBidiClass(u[i]);
+      if u[i] = UNICODE_LINE_SEPARATOR then  //line separator within paragraph
+        result[i].Flags := result[i].Flags or BIDI_FLAG_END_OF_LINE
+    end;
     SplitParagraphs;
   end;
 end;
