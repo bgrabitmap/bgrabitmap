@@ -17,6 +17,11 @@ interface
   {$DEFINE LCL_RENDERER_IS_FINE}
   {$DEFINE RENDER_TEXT_ON_TBITMAP}
 {$ENDIF}
+{$IFDEF WINDOWS}
+  {$IFNDEF LEGACY_FONT_VERTICAL_OFFSET}
+    {$DEFINE FIX_FONT_VERTICAL_OFFSET}
+  {$ENDIF}
+{$ENDIF}
 
 {
   Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
@@ -104,7 +109,8 @@ procedure BGRATextRect(bmp: TBGRACustomBitmap; Font: TFont; Quality: TBGRAFontQu
 function BGRATextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
 function BGRATextFitInfo(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
 function BGRAOriginalTextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: integer): TSize;
-function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer; out actualAntialiasingLevel: integer): TSize;
+function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer;
+                                out actualAntialiasingLevel: integer; out extraVerticalMarginDueToRotation: integer): TSize;
 
 function BGRATextUnderline(ATopLeft: TPointF; AWidth: Single; AMetrics: TFontPixelMetric): ArrayOfTPointF; overload;
 function BGRATextUnderline(ATopLeft: TPointF; AWidth: Single; ABaseline, AEmHeight: single): ArrayOfTPointF; overload;
@@ -116,7 +122,7 @@ function FontEmHeightSign: integer;
 function FontFullHeightSign: integer;
 function LCLFontAvailable: boolean;
 function GetFineClearTypeAuto: TBGRAFontQuality;
-function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
+function FixLCLFontFullHeight({%H-}AFontName: string; AFontHeight: integer): integer;
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TGrayscaleMask; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
 procedure BGRAFillClearTypeMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
@@ -472,10 +478,12 @@ begin
   fqFineClearTypeComputed:= true;
 end;
 
+{$IFNDEF WINDOWS}
 var LCLFontFullHeightRatio : array of record
                           FontName: string;
                           Ratio: single;
                         end;
+{$ENDIF}
 
 function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
 {$IFNDEF WINDOWS}
@@ -556,9 +564,11 @@ begin
   BGRABlend.BGRAFillClearTypeRGBMask(dest,x,y,mask,color,texture,KeepRGBOrder);
 end;
 
-function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer; out actualAntialiasingLevel: integer): TSize;
+function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer;
+  out actualAntialiasingLevel: integer; out extraVerticalMarginDueToRotation: integer): TSize;
 begin
   actualAntialiasingLevel:= CustomAntialiasingLevel;
+  extraVerticalMarginDueToRotation := 0;
   if not LCLFontAvailable then
     result := Size(0,0)
   else
@@ -577,6 +587,11 @@ begin
       Result.cx := 0;
       Result.cy := 0;
       tempBmp.Canvas.Font.GetTextSize(sUTF8, Result.cx, Result.cy);
+      if Font.Orientation <> 0 then
+      begin
+        tempBmp.Canvas.Font.Orientation:= 0;
+        extraVerticalMarginDueToRotation := result.cy - tempBmp.Canvas.Font.GetTextHeight(sUTF8);
+      end;
     except
       on ex: exception do
       begin
@@ -622,9 +637,12 @@ begin
 end;
 
 function BGRAOriginalTextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
-var actualAntialiasingLevel: integer;
+var actualAntialiasingLevel, extraMargin: integer;
 begin
-  result := BGRAOriginalTextSizeEx(Font, Quality, sUTF8, CustomAntialiasingLevel, actualAntialiasingLevel);
+  result := BGRAOriginalTextSizeEx(Font, Quality, sUTF8, CustomAntialiasingLevel, actualAntialiasingLevel, extraMargin);
+  {$IFDEF FIX_FONT_VERTICAL_OFFSET}
+  if extraMargin > 0 then result.cy -= extraMargin;
+  {$ENDIF}
 end;
 
 function BGRATextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
@@ -765,7 +783,7 @@ procedure BGRATextOut(bmp: TBGRACustomBitmap; Font: TFont; Quality: TBGRAFontQua
   ShowPrefix: boolean = false; RightToLeft: boolean = false);
 var
   size: TSize;
-  sizeFactor: integer;
+  sizeFactor, extraVerticalMargin: integer;
   xMarginF: single;
   style: TTextStyle;
   noPrefix: string;
@@ -797,14 +815,14 @@ begin
   else
     noPrefix := sUTF8;
 
-  size := BGRAOriginalTextSizeEx(Font,Quality,noPrefix,CustomAntialiasingLevel,sizeFactor);
+  size := BGRAOriginalTextSizeEx(Font,Quality,noPrefix,CustomAntialiasingLevel,sizeFactor,extraVerticalMargin);
   if (size.cx = 0) or (size.cy = 0) then
     exit;
 
   if (size.cy >= 144) and (Quality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB]) and (CustomAntialiasingLevel > 4) then
   begin
     CustomAntialiasingLevel:= 4;
-    size := BGRAOriginalTextSizeEx(Font,Quality,noPrefix,CustomAntialiasingLevel,sizeFactor);
+    size := BGRAOriginalTextSizeEx(Font,Quality,noPrefix,CustomAntialiasingLevel,sizeFactor,extraVerticalMargin);
   end;
 
   case align of
@@ -833,12 +851,12 @@ var
   deltaX,deltaY: integer;
   size: TSize;
   temp: TBGRACustomBitmap;
-  TopRight,BottomRight,BottomLeft: TPointF;
-  Top: Single;
+  TopLeft,TopRight,BottomRight,BottomLeft: TPointF;
+  Top,dy: Single;
   Left: Single;
   cosA,sinA: single;
   rotBounds: TRect;
-  sizeFactor: integer;
+  sizeFactor, extraVerticalMargin: integer;
   TempFont: TFont;
   oldOrientation: integer;
   grayscale:TGrayscaleMask;
@@ -874,19 +892,30 @@ begin
   TempFont.Assign(Font);
   TempFont.Orientation := orientationTenthDegCCW;
   TempFont.Height := Font.Height;
-  size := BGRAOriginalTextSizeEx(TempFont,Quality,sUTF8,CustomAntialiasingLevel,sizeFactor);
+  size := BGRAOriginalTextSizeEx(TempFont,Quality,sUTF8,CustomAntialiasingLevel,sizeFactor, extraVerticalMargin);
   if (size.cx = 0) or (size.cy = 0) then
   begin
     tempFont.Free;
     exit;
   end;
+  {$IFDEF FIX_FONT_VERTICAL_OFFSET}
+  if extraVerticalMargin > 0 then
+    dy := -extraVerticalMargin*0.5 -1
+  else
+    dy := 0;
+  {$ELSE}
+  dy := 0;
+  {$ENDIF}
   tempFont.Free;
 
   cosA := cos(orientationTenthDegCCW*Pi/1800);
   sinA := sin(orientationTenthDegCCW*Pi/1800);
-  TopRight := PointF(cosA*size.cx,-sinA*size.cx);
-  BottomRight := PointF(cosA*size.cx+sinA*size.cy,cosA*size.cy-sinA*size.cx);
-  BottomLeft := PointF(sinA*size.cy,cosA*size.cy);
+  TopLeft := PointF(sinA*dy,cosA*dy);
+  xf += TopLeft.x/sizeFactor;
+  yf += TopLeft.y/sizeFactor;
+  TopRight := TopLeft + PointF(cosA*size.cx,-sinA*size.cx);
+  BottomRight := TopRight + PointF(sinA*size.cy,cosA*size.cy);
+  BottomLeft := TopLeft + PointF(sinA*size.cy,cosA*size.cy);
   rotBounds := rect(0,0,0,0);
   Top := 0;
   Left := 0;
