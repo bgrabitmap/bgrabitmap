@@ -1061,18 +1061,18 @@ end;
 
 { Update font properties to internal TFont object }
 procedure TCustomLCLFontRenderer.UpdateFont;
+var fixedHeight: integer;
 begin
   if FFont.Name <> FontName then
     FFont.Name := FontName;
   if FFont.Style <> FontStyle then
     FFont.Style := FontStyle;
-  if FFont.Height <> FontEmHeight * FontEmHeightSign then
-  begin
-    if FontEmHeight < 0 then
-      FFont.Height := FixLCLFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
-    else
-      FFont.Height := FontEmHeight * FontEmHeightSign;
-  end;
+  if FontEmHeight < 0 then
+    fixedHeight := FixLCLFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
+  else
+    fixedHeight := FontEmHeight * FontEmHeightSign;
+  if FFont.Height <> fixedHeight then
+    FFont.Height := fixedHeight;
   if FFont.Orientation <> FontOrientation then
     FFont.Orientation := FontOrientation;
   if FontQuality = fqSystemClearType then
