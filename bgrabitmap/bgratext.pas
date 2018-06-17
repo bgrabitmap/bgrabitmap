@@ -73,6 +73,7 @@ type
     procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; AColor: TBGRAPixel; AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean = false);
     procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; ATexture: IBGRAScanner; AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean = false);
     function TextSize(sUTF8: string): TSize; override;
+    function TextSizeAngle(sUTF8: string; orientationTenthDegCCW: integer): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     constructor Create;
@@ -1439,6 +1440,17 @@ var oldOrientation: integer;
 begin
   oldOrientation:= FontOrientation;
   FontOrientation:= 0;
+  UpdateFont;
+  result := InternalTextSize(sUTF8,False);
+  FontOrientation:= oldOrientation;
+end;
+
+function TCustomLCLFontRenderer.TextSizeAngle(sUTF8: string;
+  orientationTenthDegCCW: integer): TSize;
+var oldOrientation: integer;
+begin
+  oldOrientation:= FontOrientation;
+  FontOrientation:= orientationTenthDegCCW;
   UpdateFont;
   result := InternalTextSize(sUTF8,False);
   FontOrientation:= oldOrientation;

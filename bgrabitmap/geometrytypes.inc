@@ -18,8 +18,34 @@ type
   end;
   {$endif}
 
+  {* Contains an array of points with single-precision floating point coordinates }
+  ArrayOfTPointF = array of TPointF;
+
   {* An affine matrix contains three 2D vectors: the image of x, the image of y and the translation }
   TAffineMatrix = array[1..2,1..3] of single;
+
+  { TAffineBox }
+
+  TAffineBox = object
+  private
+    function GetAsPolygon: ArrayOfTPointF;
+    function GetBottomRight: TPointF;
+    function GetHeight: single;
+    function GetIsEmpty: boolean;
+    function GetRectBounds: TRect;
+    function GetWidth: single;
+  public
+    TopLeft, TopRight,
+    BottomLeft: TPointF;
+    class function EmptyBox: TAffineBox;
+    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
+    property RectBounds: TRect read GetRectBounds;
+    property BottomRight: TPointF read GetBottomRight;
+    property IsEmpty: boolean read GetIsEmpty;
+    property AsPolygon: ArrayOfTPointF read GetAsPolygon;
+    property Width: single read GetWidth;
+    property Height: single read GetHeight;
+  end;
 
   {$if FPC_FULLVERSION>=030001}
   TRectF = Types.TRectF;
@@ -68,8 +94,6 @@ type
 
 type
   TFaceCulling = (fcNone, fcKeepCW, fcKeepCCW);
-  {* Contains an array of points with single-precision floating point coordinates }
-  ArrayOfTPointF = array of TPointF;
 
   {** Creates an array of ''TPointF'' }
   function PointsF(const pts: array of TPointF): ArrayOfTPointF;
@@ -538,6 +562,77 @@ type
 
 {$IFDEF INCLUDE_IMPLEMENTATION}
 {$UNDEF INCLUDE_IMPLEMENTATION}
+
+{ TAffineBox }
+
+function TAffineBox.GetAsPolygon: ArrayOfTPointF;
+begin
+  result := PointsF([TopLeft,TopRight,BottomRight,BottomLeft]);
+end;
+
+function TAffineBox.GetBottomRight: TPointF;
+begin
+  if IsEmpty then
+    result := EmptyPointF
+  else
+    result := TopRight + (BottomLeft-TopLeft);
+end;
+
+function TAffineBox.GetHeight: single;
+begin
+  if isEmptyPointF(TopLeft) or isEmptyPointF(BottomLeft) then
+    result := 0
+  else
+    result := VectLen(BottomLeft-TopLeft);
+end;
+
+function TAffineBox.GetIsEmpty: boolean;
+begin
+  result := isEmptyPointF(TopRight) or isEmptyPointF(BottomLeft) or isEmptyPointF(TopLeft);
+end;
+
+function TAffineBox.GetRectBounds: TRect;
+var
+  x1,y1,x2,y2: single;
+begin
+  x1 := TopLeft.x; x2 := x1;
+  y1 := TopLeft.y; y2 := y1;
+  if TopRight.x > x2 then x2 := TopRight.x;
+  if TopRight.x < x1 then x1 := TopRight.x;
+  if TopRight.y > y2 then y2 := TopRight.y;
+  if TopRight.y < y1 then y1 := TopRight.y;
+  if BottomLeft.x > x2 then x2 := BottomLeft.x;
+  if BottomLeft.x < x1 then x1 := BottomLeft.x;
+  if BottomLeft.y > y2 then y2 := BottomLeft.y;
+  if BottomLeft.y < y1 then y1 := BottomLeft.y;
+  if BottomRight.x > x2 then x2 := BottomRight.x;
+  if BottomRight.x < x1 then x1 := BottomRight.x;
+  if BottomRight.y > y2 then y2 := BottomRight.y;
+  if BottomRight.y < y1 then y1 := BottomRight.y;
+  result := Rect(floor(x1),floor(y1),ceil(x2),ceil(y2));
+end;
+
+function TAffineBox.GetWidth: single;
+begin
+  if isEmptyPointF(TopLeft) or isEmptyPointF(TopRight) then
+    result := 0
+  else
+    result := VectLen(TopRight-TopLeft);
+end;
+
+class function TAffineBox.EmptyBox: TAffineBox;
+begin
+  result.TopLeft := EmptyPointF;
+  result.TopRight := EmptyPointF;
+  result.BottomLeft := EmptyPointF;
+end;
+
+class function TAffineBox.AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
+begin
+  result.TopLeft := ATopLeft;
+  result.TopRight := ATopRight;
+  result.BottomLeft := ABottomLeft;
+end;
 
 function StrToGradientType(str: string): TGradientType;
 var gt: TGradientType;

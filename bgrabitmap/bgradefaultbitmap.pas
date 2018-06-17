@@ -721,8 +721,12 @@ type
     procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); override; overload;
 
     { Returns the total size of the string provided using the current font.
-      Orientation is not taken into account, so that the width is along the text.  }
+      Orientation is not taken into account, so that the width is along the text. End of lines are stripped from the string. }
     function TextSize(sUTF8: string): TSize; override;
+
+    { Returns the affine box of the string provided using the current font.
+      Orientation is taken into account. End of lines are stripped from the string. }
+    function TextAffineBox(sUTF8: string): TAffineBox; override;
 
     { Returns the total size of a paragraph i.e. with word break }
     function TextSize(sUTF8: string; AMaxWidth: integer): TSize; override;
@@ -3895,6 +3899,17 @@ end;
 function TBGRADefaultBitmap.TextSize(sUTF8: string): TSize;
 begin
   result := FontRenderer.TextSize(CleanTextOutString(sUTF8));
+end;
+
+function TBGRADefaultBitmap.TextAffineBox(sUTF8: string): TAffineBox;
+var size: TSize;
+  m: TAffineMatrix;
+  dy: single;
+begin
+  dy := GetFontAnchorVerticalOffset;
+  size := FontRenderer.TextSizeAngle(sUTF8, FontOrientation);
+  m := AffineMatrixRotationDeg(-FontOrientation*0.1);
+  result := TAffineBox.AffineBox(PointF(0,-dy), m*PointF(size.cx,-dy), m*PointF(0,size.cy-dy));
 end;
 
 function TBGRADefaultBitmap.TextSize(sUTF8: string; AMaxWidth: integer): TSize;

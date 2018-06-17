@@ -633,6 +633,7 @@ type
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); virtual; abstract; overload;
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); virtual; abstract; overload;
      function TextSize(sUTF8: string): TSize; virtual; abstract; overload;
+     function TextAffineBox(sUTF8: string): TAffineBox; virtual; abstract;
      function TextSize(sUTF8: string; AMaxWidth: integer): TSize; virtual; abstract; overload;
      function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; virtual; abstract; overload;
      function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
