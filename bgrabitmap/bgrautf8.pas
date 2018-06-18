@@ -673,7 +673,7 @@ begin
   begin
     charLen := UTF8CharacterLength(@s[i]);
     u := UTF8CodepointToUnicode(@s[i], charLen);
-    if IsUnicodeParagraphOrLineSeparator(u) then
+    if IsUnicodeParagraphSeparator(u) then
     begin
       CheckParagraph;
       //skip end of line

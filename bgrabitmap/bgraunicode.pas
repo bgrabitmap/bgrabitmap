@@ -81,6 +81,21 @@ const
   UNICODE_INFORMATION_SEPARATOR_TWO = $001E;    //record separator, kind of equivalent to paragraph separator
   UNICODE_INFORMATION_SEPARATOR_ONE = $001F;    //field separator, kind of equivalent to Tab
 
+  //zero-width
+  UNICODE_ZERO_WIDTH_SPACE = $200B;
+  UNICODE_ZERO_WIDTH_NON_JOINER = $200C;
+  UNICODE_ZERO_WIDTH_NO_BREAK_SPACE = $FEFF;   //byte order mark
+  UNICODE_ZERO_WIDTH_JOINER = $200D;
+
+  //arabic letters
+  UNICODE_ARABIC_TATWEEL = $0640;    //horizontal line that makes a ligature with most letters
+
+  //ideographic punctuation
+  UNICODE_IDEOGRAPHIC_COMMA = $3001;
+  UNICODE_IDEOGRAPHIC_FULL_STOP = $3002;
+  UNICODE_FULLWIDTH_COMMA = $FF0C;
+  UNICODE_HORIZONTAL_ELLIPSIS = $2026;
+
   //bracket equivalence
   UNICODE_RIGHT_POINTING_ANGLE_BRACKET = $232A;
   UNICODE_RIGHT_ANGLE_BRACKET = $3009;
@@ -94,7 +109,7 @@ type //bracket matching
 function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
 function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;
 function IsZeroWidthUnicode(u: cardinal): boolean;
-function IsUnicodeParagraphOrLineSeparator(u: cardinal): boolean;
+function IsUnicodeParagraphSeparator(u: cardinal): boolean;
 
 { Analyze unicode and return bidi levels for each character.
   baseDirection can be either UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE or UNICODE_FIRST_STRONG_ISOLATE }
@@ -722,15 +737,19 @@ end;
 function IsZeroWidthUnicode(u: cardinal): boolean;
 begin
   case u of
-  $200B,$200C,$200D,$FEFF,UNICODE_LEFT_TO_RIGHT_MARK,UNICODE_RIGHT_TO_LEFT_MARK,$061C: result := true;
+  UNICODE_ZERO_WIDTH_SPACE, UNICODE_ZERO_WIDTH_NON_JOINER,
+  UNICODE_ZERO_WIDTH_JOINER, UNICODE_ZERO_WIDTH_NO_BREAK_SPACE,
+  UNICODE_LEFT_TO_RIGHT_MARK,UNICODE_RIGHT_TO_LEFT_MARK,
+  UNICODE_ARABIC_LETTER_MARK: result := true;
   else result := false;
   end;
 end;
 
-function IsUnicodeParagraphOrLineSeparator(u: cardinal): boolean;
+function IsUnicodeParagraphSeparator(u: cardinal): boolean;
 begin
   case u of
-  $0A, $0D, $1C..$1E, $85, $2029: result := true;
+  $0A, $0D, UNICODE_NEXT_LINE, UNICODE_PARAGRAPH_SEPARATOR,
+  UNICODE_INFORMATION_SEPARATOR_FOUR, UNICODE_INFORMATION_SEPARATOR_THREE, UNICODE_INFORMATION_SEPARATOR_TWO: result := true;
   else result := false;
   end;
 end;
