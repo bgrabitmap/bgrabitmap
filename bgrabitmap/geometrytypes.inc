@@ -39,6 +39,7 @@ type
     BottomLeft: TPointF;
     class function EmptyBox: TAffineBox;
     class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
+    function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
     property BottomRight: TPointF read GetBottomRight;
     property IsEmpty: boolean read GetIsEmpty;
@@ -632,6 +633,34 @@ begin
   result.TopLeft := ATopLeft;
   result.TopRight := ATopRight;
   result.BottomLeft := ABottomLeft;
+end;
+
+function TAffineBox.Contains(APoint: TPointF): boolean;
+var
+  u,v: TPointF;
+  lenU2, lenV2, posV, posU: single;
+begin
+  if IsEmpty then exit(false);
+
+  u := TopRight-TopLeft;
+  lenU2 := u*u;
+  v := BottomLeft-TopLeft;
+  lenV2 := v*v;
+
+  if lenU2 = 0 then
+  begin
+    if lenV2 = 0 then
+      exit(false)
+    else
+    begin
+      u := PointF(v.y,-v.x);
+      lenU2 := lenV2;
+    end;
+  end;
+
+  posU := (APoint-TopLeft)*u;
+  posV := (APoint-TopLeft)*v;
+  result := (posU >= 0) and (posU < lenU2) and (posV >= 0) and (posV < lenV2);
 end;
 
 function StrToGradientType(str: string): TGradientType;
