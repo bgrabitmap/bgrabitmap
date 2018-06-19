@@ -9,11 +9,13 @@ uses
 
 type
   TBidiCaretPos = record
-    CharIndex, PartIndex: integer;
+    PartIndex: integer;
+
     Top, Bottom: TPointF;
-    BidiLevel: byte;
+    RightToLeft: boolean;
+
     PreviousTop, PreviousBottom: TPointF;
-    PreviousBidiLevel: byte;
+    PreviousRightToLeft: boolean;
   end;
 
   { TBidiTextLayout }
@@ -84,6 +86,7 @@ type
     procedure DrawText(ADest: TBGRACustomBitmap);
     function GetCaret(ACharIndex: integer): TBidiCaretPos;
     function GetCharIndexAt(APosition: TPointF): integer;
+    function GetTextEnveloppe(AStartIndex, AEndIndex: integer): ArrayOfTPointF;
 
     property CharCount: integer read FCharCount;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
@@ -127,12 +130,11 @@ begin
     else
       result.Top := TopRight;
     result.Bottom := result.Top + (BottomLeft-TopLeft);
-    result.BidiLevel:= FBrokenLine[AIndex].bidiLevel;
-    result.CharIndex:= BrokenLineEndIndex[AIndex];
-    result.PartIndex:= -1;
+    result.RightToLeft := odd(FBrokenLine[AIndex].bidiLevel);
+    result.PartIndex := -1;
     result.PreviousTop := EmptyPointF;
     result.PreviousBottom := EmptyPointF;
-    result.PreviousBidiLevel := 0;
+    result.PreviousRightToLeft := result.RightToLeft;
   end;
 end;
 
@@ -159,12 +161,11 @@ begin
     else
       result.Top := TopLeft;
     result.Bottom := result.Top + (BottomLeft-TopLeft);
-    result.BidiLevel:= FBrokenLine[AIndex].bidiLevel;
-    result.CharIndex:= BrokenLineStartIndex[AIndex];
+    result.RightToLeft := odd(FBrokenLine[AIndex].bidiLevel);
     result.PartIndex:= -1;
     result.PreviousTop := EmptyPointF;
     result.PreviousBottom := EmptyPointF;
-    result.PreviousBidiLevel := 0;
+    result.PreviousRightToLeft := result.RightToLeft;
   end;
 end;
 
@@ -513,11 +514,12 @@ begin
   FPartCount := 0;
   m := AffineMatrixTranslation(ATopLeft.x, ATopLeft.y)*AffineMatrixRotationDeg(-GetFontOrientation);
   FAffineBox := TAffineBox.AffineBox(ATopLeft, m*PointF(AAvailableWidth,0), m*PointF(0,AAvailableHeight));
-  FStartCaret.CharIndex := 0;
   FStartCaret.Top := ATopLeft;
   FStartCaret.Bottom := m*PointF(0,fullHeight);
+  FStartCaret.RightToLeft := false;
   FStartCaret.PreviousTop := EmptyPointF;
   FStartCaret.PreviousBottom := EmptyPointF;
+  FStartCaret.PreviousRightToLeft := false;
   FStartCaret.PartIndex := 0;
   FBrokenLineCount := 0;
 
@@ -596,19 +598,18 @@ var
 begin
   if (ACharIndex < 0) or (ACharIndex > CharCount) then
     raise ERangeError.Create('Invalid index');
-  result.CharIndex:= ACharIndex;
+  result.PartIndex := -1;
   result.Top := EmptyPointF;
   result.Bottom := EmptyPointF;
-  result.BidiLevel := 0;
+  result.RightToLeft := false;
   result.PreviousTop := EmptyPointF;
   result.PreviousBottom := EmptyPointF;
-  result.PreviousBidiLevel := 0;
-  result.PartIndex := -1;
+  result.PreviousRightToLeft := false;
+
   for i := 0 to FPartCount-1 do
     if ACharIndex <= FPart[i].startIndex then
     begin
       result := GetPartStartCaret(i);
-      result.CharIndex:= ACharIndex;
       exit;
     end else
     if (ACharIndex > FPart[i].startIndex) and (ACharIndex <= FPart[i].endIndex) then
@@ -634,7 +635,8 @@ begin
           else
             result.Top := FPart[i].affineBox.TopLeft + w*u;
           result.Bottom := result.Top+(FPart[i].affineBox.BottomLeft-FPart[i].affineBox.TopLeft);
-          result.BidiLevel := FPart[i].bidiLevel;
+          result.RightToLeft := odd(FPart[i].bidiLevel);
+          result.PreviousRightToLeft := result.RightToLeft;
           result.PartIndex := i;
         end;
         exit;
@@ -718,34 +720,97 @@ begin
   exit(CharCount);
 end;
 
+function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer): ArrayOfTPointF;
+var
+  temp, i: Integer;
+  caret, caretEnd, caretStartPart, caretEndPart: TBidiCaretPos;
+  brokenLineIndex: integer;
+begin
+  result := nil;
+
+  if AStartIndex > AEndIndex then
+  begin
+    temp := AStartIndex;
+    AStartIndex:= AEndIndex;
+    AEndIndex:= temp;
+  end;
+  caret := GetCaret(AStartIndex);
+  caretEnd := GetCaret(AEndIndex);
+  if not isEmptyPointF(caretEnd.PreviousTop) then
+  begin
+    caretEnd.Top := caretEnd.PreviousTop;        caretEnd.PreviousTop := EmptyPointF;
+    caretEnd.Bottom := caretEnd.PreviousBottom;  caretEnd.PreviousBottom := EmptyPointF;
+    caretEnd.RightToLeft := caretEnd.PreviousRightToLeft;
+    if caretEnd.PartIndex <> -1 then caretEnd.PartIndex -= 1;
+  end;
+
+  if caret.PartIndex = caretEnd.PartIndex then
+  begin
+    if not isEmptyPointF(caret.Top) and not isEmptyPointF(caretEnd.Top) then
+      result := PointsF([caret.Top-PointF(0.5,0.5),caret.Bottom-PointF(0.5,0.5),caretEnd.Bottom-PointF(0.5,0.5),caretEnd.Top-PointF(0.5,0.5)]);
+  end else
+  begin
+    result := nil;
+    for i := caret.PartIndex to caretEnd.PartIndex do
+    begin
+      if i > caret.PartIndex then caretStartPart := PartStartCaret[i]
+      else caretStartPart := caret;
+
+      if i < caretEnd.PartIndex then caretEndPart := PartEndCaret[i]
+      else caretEndPart := caretEnd;
+
+      brokenLineIndex := PartBrokenLineIndex[i];
+      if (i > caret.PartIndex) and (PartBrokenLineIndex[i-1] <> brokenLineIndex) then
+      begin
+        if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
+          caretStartPart := BrokenLineStartCaret[brokenLineIndex]
+        else
+          caretEndPart := BrokenLineStartCaret[brokenLineIndex];
+      end;
+
+      if (i < caretEnd.PartIndex) and (PartBrokenLineIndex[i+1] <> PartBrokenLineIndex[i]) then
+      begin
+        if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
+          caretEndPart := BrokenLineEndCaret[brokenLineIndex]
+        else
+          caretStartPart := BrokenLineEndCaret[brokenLineIndex];
+      end;
+
+      result := ConcatPointsF([result,
+                            PointsF([caretStartPart.Top-PointF(0.5,0.5),caretStartPart.Bottom-PointF(0.5,0.5),caretEndPart.Bottom-PointF(0.5,0.5),caretEndPart.Top-PointF(0.5,0.5), EmptyPointF])
+                           ]);
+    end;
+    if result <> nil then setlength(result, length(result)-1);
+  end;
+end;
+
 function TBidiTextLayout.GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
 begin
   if (APartIndex < 0) or (APartIndex > PartCount) then
     raise ERangeError.Create('Invalid index');
 
   result.PartIndex := APartIndex;
-  result.CharIndex:= FPart[APartIndex].startIndex;
 
   if Odd(FPart[APartIndex].bidiLevel) then
     result.Top := FPart[APartIndex].affineBox.TopRight
   else
     result.Top := FPart[APartIndex].affineBox.TopLeft;
   result.Bottom := result.Top+(FPart[APartIndex].affineBox.BottomLeft-FPart[APartIndex].affineBox.TopLeft);
-  result.BidiLevel := FPart[APartIndex].bidiLevel;
+  result.RightToLeft := odd(FPart[APartIndex].bidiLevel);
 
-  if (APartIndex > 0) and (FPart[APartIndex-1].startIndex = FPart[APartIndex].endIndex) then
+  if (APartIndex > 0) and (FPart[APartIndex-1].endIndex = FPart[APartIndex].startIndex) then
   begin
     if Odd(FPart[APartIndex-1].bidiLevel) then
       result.PreviousTop := FPart[APartIndex-1].affineBox.TopLeft
     else
       result.PreviousTop := FPart[APartIndex-1].affineBox.TopRight;
     result.PreviousBottom := result.PreviousTop+(FPart[APartIndex-1].affineBox.BottomLeft-FPart[APartIndex-1].affineBox.TopLeft);
-    result.PreviousBidiLevel := FPart[APartIndex-1].bidiLevel;
+    result.PreviousRightToLeft := odd(FPart[APartIndex-1].bidiLevel);
   end else
   begin
     result.PreviousTop := EmptyPointF;
     result.PreviousBottom := EmptyPointF;
-    result.PreviousBidiLevel := 0;
+    result.PreviousRightToLeft := result.RightToLeft;
   end;
 end;
 
@@ -755,18 +820,17 @@ begin
     raise ERangeError.Create('Invalid index');
 
   result.PartIndex := APartIndex;
-  result.CharIndex:= FPart[APartIndex].endIndex;
 
   if Odd(FPart[APartIndex].bidiLevel) then
     result.Top := FPart[APartIndex].affineBox.TopLeft
   else
     result.Top := FPart[APartIndex].affineBox.TopRight;
   result.Bottom := result.Top+(FPart[APartIndex].affineBox.BottomLeft-FPart[APartIndex].affineBox.TopLeft);
-  result.BidiLevel := FPart[APartIndex].bidiLevel;
+  result.RightToLeft := odd(FPart[APartIndex].bidiLevel);
 
   result.PreviousTop := EmptyPointF;
   result.PreviousBottom := EmptyPointF;
-  result.PreviousBidiLevel := 0;
+  result.PreviousRightToLeft := result.RightToLeft;
 end;
 
 procedure TBidiTextLayout.ComputeLevelLayout(AMatrix: TAffineMatrix; APos: TPointF; startIndex,
