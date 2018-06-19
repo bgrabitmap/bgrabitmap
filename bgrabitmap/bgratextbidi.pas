@@ -84,6 +84,9 @@ type
     procedure ComputeLayout(ARect: TRectF);
     procedure ComputeLayout(ATopLeft: TPointF; AAvailableWidth, AAvailableHeight: single);
     procedure DrawText(ADest: TBGRACustomBitmap);
+    procedure DrawCaret(ADest: TBGRACustomBitmap; ACharIndex: integer; AMainColor, ASecondaryColor: TBGRAPixel);
+    procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer; AColor: TBGRAPixel);
+
     function GetCaret(ACharIndex: integer): TBidiCaretPos;
     function GetCharIndexAt(APosition: TPointF): integer;
     function GetTextEnveloppe(AStartIndex, AEndIndex: integer): ArrayOfTPointF;
@@ -588,6 +591,69 @@ begin
   for i := 0 to FPartCount-1 do
     with (FPart[i].affineBox.TopLeft + FPart[i].posCorrection) do
       TextOutBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
+end;
+
+procedure TBidiTextLayout.DrawCaret(ADest: TBGRACustomBitmap;
+  ACharIndex: integer; AMainColor, ASecondaryColor: TBGRAPixel);
+
+  procedure DrawSingleCaret(ATop,ABottom: TPointF; ARightToLeft, AShowDir: boolean; AColor: TBGRAPixel);
+  var u,v: TPointF;
+    triSize,len: single;
+  begin
+    //hinting depending on orientation
+    if abs(ATop.x - ABottom.x) < abs(ATop.y - ABottom.y) then
+    begin
+      ATop.x := round(ATop.x);
+      ABottom.x := round(ABottom.x);
+    end
+    else
+    begin
+      ATop.y := round(ATop.y);
+      ABottom.y := round(ABottom.y);
+    end;
+    u := ABottom-ATop;
+    len := VectLen(u);
+    if len > 0 then
+    begin
+      u := (1/len)*u;
+      v := PointF(u.y,-u.x);
+      if AShowDir then
+      begin
+        triSize := len*0.2;
+        if ARightToLeft then
+          ADest.FillPolyAntialias(PointsF([ABottom + 0.5*v, ATop + 0.5*v - 0.5*u, ATop - (triSize+0.5)*v - 0.5*u, ATop - 0.5*v + triSize*u, ABottom - 0.5*v]), AColor)
+        else
+          ADest.FillPolyAntialias(PointsF([ABottom - 0.5*v, ATop - 0.5*v - 0.5*u, ATop + (triSize+0.5)*v - 0.5*u, ATop + triSize*u + 0.5*v, ABottom + 0.5*v]), AColor)
+      end
+      else
+      begin
+        if len > 10 then
+          ADest.FillPolyAntialias(PointsF([ABottom - 0.5*v, ATop - 0.5*v, ATop + 1.5*v, ABottom + 1.5*v]), AColor)
+        else
+          ADest.FillPolyAntialias(PointsF([ABottom - 0.5*v, ATop - 0.5*v, ATop + 0.5*v, ABottom + 0.5*v]), AColor)
+      end;
+    end else
+      ADest.DrawPixel(round(ATop.x),round(ATop.y), AColor);
+  end;
+
+var
+  caret: TBidiCaretPos;
+  showDir: Boolean;
+begin
+  caret := GetCaret(ACharIndex);
+  showDir := not isEmptyPointF(caret.PreviousTop) and (caret.RightToLeft <> caret.PreviousRightToLeft);
+  if not isEmptyPointF(caret.Top) then DrawSingleCaret(caret.Top, caret.Bottom, caret.RightToLeft, showDir, AMainColor);
+  if not isEmptyPointF(caret.PreviousTop) then DrawSingleCaret(caret.PreviousTop, caret.PreviousBottom, caret.PreviousRightToLeft, showDir, ASecondaryColor);
+end;
+
+procedure TBidiTextLayout.DrawSelection(ADest: TBGRACustomBitmap; AStartIndex,
+  AEndIndex: integer; AColor: TBGRAPixel);
+var
+  env: ArrayOfTPointF;
+begin
+  if AStartIndex = AEndIndex then exit;
+  env := GetTextEnveloppe(AStartIndex,AEndIndex);
+  ADest.FillPolyAntialias(env, AColor);
 end;
 
 function TBidiTextLayout.GetCaret(ACharIndex: integer): TBidiCaretPos;
