@@ -757,9 +757,9 @@ type
 
     {Filling}
     procedure NoClip; override;
-    procedure Fill(texture: IBGRAScanner; mode: TDrawMode); override;
-    procedure Fill(texture: IBGRAScanner); override;
-    procedure Fill(c: TBGRAPixel; start, Count: integer); override;
+    procedure Fill(texture: IBGRAScanner; mode: TDrawMode); override; overload;
+    procedure Fill(texture: IBGRAScanner); override; overload;
+    procedure Fill(c: TBGRAPixel; start, Count: integer); override; overload;
     procedure DrawPixels(c: TBGRAPixel; start, Count: integer); override;
     procedure AlphaFill(alpha: byte; start, Count: integer); override;
     procedure FillMask(x,y: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); override;
