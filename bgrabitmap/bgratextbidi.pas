@@ -22,7 +22,11 @@ type
 
   TBidiTextLayout = class
   private
+    FAvailableHeight: single;
+    FAvailableWidth: single;
+    FTopLeft: TPointF;
     function GetBrokenLineAffineBox(AIndex: integer): TAffineBox;
+    function GetBrokenLineCount: integer;
     function GetBrokenLineEndCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineEndIndex(AIndex: integer): integer;
     function GetBrokenLineRightToLeft(AIndex: integer): boolean;
@@ -30,11 +34,15 @@ type
     function GetBrokenLineStartIndex(AIndex: integer): integer;
     function GetPartAffineBox(AIndex: integer): TAffineBox;
     function GetPartBrokenLineIndex(AIndex: integer): integer;
+    function GetPartCount: integer;
     function GetPartEndIndex(AIndex: integer): integer;
     function GetPartRightToLeft(AIndex: integer): boolean;
     function GetPartStartIndex(AIndex: integer): integer;
     function GetUnicodeChar(APosition0: integer): cardinal;
     function GetUTF8Char(APosition0: integer): string4;
+    procedure SetAvailableHeight(AValue: single);
+    procedure SetAvailableWidth(AValue: single);
+    procedure SetTopLeft(AValue: TPointF);
   protected
     FText: string;
     FBidi: TBidiUTF8Array;
@@ -57,8 +65,8 @@ type
                    affineBox: TAffineBox;
                  end;
     FBrokenLineCount: integer;
-    FAffineBox: TAffineBox;
     FStartCaret: TBidiCaretPos;
+    FLayoutComputed: boolean;
 
     function TextSizeBidiOverride(sUTF8: string; ARightToLeft: boolean): TPointF;
     function TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer; ARightToLeft: boolean; ASplitIndex: integer): TPointF;
@@ -78,11 +86,15 @@ type
     procedure ComputeLevelLayout(AMatrix: TAffineMatrix; APos: TPointF; startIndex,
       endIndex: integer; bidiLevel: byte; fullHeight, baseLine: single; brokenLineIndex: integer;
       out AWidth: single);
+    procedure Init;
+    procedure ComputeLayout;
+    procedure NeedLayout;
   public
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string);
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean);
-    procedure ComputeLayout(ARect: TRectF);
-    procedure ComputeLayout(ATopLeft: TPointF; AAvailableWidth, AAvailableHeight: single);
+    procedure SetLayout(ARect: TRectF);
+    procedure InvalidateLayout;
+
     procedure DrawText(ADest: TBGRACustomBitmap);
     procedure DrawCaret(ADest: TBGRACustomBitmap; ACharIndex: integer; AMainColor, ASecondaryColor: TBGRAPixel);
     procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer; AColor: TBGRAPixel);
@@ -95,7 +107,7 @@ type
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
     property UnicodeChar[APosition0: integer]: cardinal read GetUnicodeChar;
 
-    property BrokenLineCount: integer read FBrokenLineCount;
+    property BrokenLineCount: integer read GetBrokenLineCount;
     property BrokenLineStartIndex[AIndex: integer]: integer read GetBrokenLineStartIndex;
     property BrokenLineEndIndex[AIndex: integer]: integer read GetBrokenLineEndIndex;
     property BrokenLineAffineBox[AIndex: integer]: TAffineBox read GetBrokenLineAffineBox;
@@ -103,7 +115,7 @@ type
     property BrokenLineStartCaret[AIndex: integer]: TBidiCaretPos read GetBrokenLineStartCaret;
     property BrokenLineEndCaret[AIndex: integer]: TBidiCaretPos read GetBrokenLineEndCaret;
 
-    property PartCount: integer read FPartCount;
+    property PartCount: integer read GetPartCount;
     property PartStartIndex[AIndex: integer]: integer read GetPartStartIndex;
     property PartEndIndex[AIndex: integer]: integer read GetPartEndIndex;
     property PartBrokenLineIndex[AIndex: integer]: integer read GetPartBrokenLineIndex;
@@ -111,6 +123,10 @@ type
     property PartEndCaret[AIndex: integer]: TBidiCaretPos read GetPartEndCaret;
     property PartAffineBox[AIndex: integer]: TAffineBox read GetPartAffineBox;
     property PartRightToLeft[AIndex: integer]: boolean read GetPartRightToLeft;
+
+    property TopLeft: TPointF read FTopLeft write SetTopLeft;
+    property AvailableWidth: single read FAvailableWidth write SetAvailableWidth;
+    property AvailableHeight: single read FAvailableHeight write SetAvailableHeight;
   end;
 
 implementation
@@ -119,13 +135,21 @@ implementation
 
 function TBidiTextLayout.GetBrokenLineAffineBox(AIndex: integer): TAffineBox;
 begin
+  NeedLayout;
   if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
     raise ERangeError.Create('Invalid index');
   result := FBrokenLine[AIndex].affineBox;
 end;
 
+function TBidiTextLayout.GetBrokenLineCount: integer;
+begin
+  NeedLayout;
+  result := FBrokenLineCount;
+end;
+
 function TBidiTextLayout.GetBrokenLineEndCaret(AIndex: integer): TBidiCaretPos;
 begin
+  NeedLayout;
   with BrokenLineAffineBox[AIndex] do
   begin
     if BrokenLineRightToLeft[AIndex] then
@@ -143,6 +167,7 @@ end;
 
 function TBidiTextLayout.GetBrokenLineEndIndex(AIndex: integer): integer;
 begin
+  NeedLayout;
   if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
     raise ERangeError.Create('Invalid index');
   result := FBrokenLine[AIndex].endIndex;
@@ -150,6 +175,7 @@ end;
 
 function TBidiTextLayout.GetBrokenLineRightToLeft(AIndex: integer): boolean;
 begin
+  NeedLayout;
   if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
     raise ERangeError.Create('Invalid index');
   result := odd(FBrokenLine[AIndex].bidiLevel);
@@ -157,6 +183,7 @@ end;
 
 function TBidiTextLayout.GetBrokenLineStartCaret(AIndex: integer): TBidiCaretPos;
 begin
+  NeedLayout;
   with BrokenLineAffineBox[AIndex] do
   begin
     if BrokenLineRightToLeft[AIndex] then
@@ -174,6 +201,7 @@ end;
 
 function TBidiTextLayout.GetBrokenLineStartIndex(AIndex: integer): integer;
 begin
+  NeedLayout;
   if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
     raise ERangeError.Create('Invalid index');
   result := FBrokenLine[AIndex].startIndex;
@@ -181,6 +209,7 @@ end;
 
 function TBidiTextLayout.GetPartAffineBox(AIndex: integer): TAffineBox;
 begin
+  NeedLayout;
   if (AIndex < 0) or (AIndex >= FPartCount) then
     raise ERangeError.Create('Invalid index');
   result := FPart[AIndex].affineBox;
@@ -188,13 +217,21 @@ end;
 
 function TBidiTextLayout.GetPartBrokenLineIndex(AIndex: integer): integer;
 begin
+  NeedLayout;
   if (AIndex < 0) or (AIndex >= FPartCount) then
     raise ERangeError.Create('Invalid index');
   result := FPart[AIndex].brokenLineIndex;
 end;
 
+function TBidiTextLayout.GetPartCount: integer;
+begin
+  NeedLayout;
+  result := FPartCount;
+end;
+
 function TBidiTextLayout.GetPartEndIndex(AIndex: integer): integer;
 begin
+  NeedLayout;
   if (AIndex < 0) or (AIndex >= FPartCount) then
     raise ERangeError.Create('Invalid index');
   result := FPart[AIndex].endIndex;
@@ -202,6 +239,7 @@ end;
 
 function TBidiTextLayout.GetPartRightToLeft(AIndex: integer): boolean;
 begin
+  NeedLayout;
   if (AIndex < 0) or (AIndex >= FPartCount) then
     raise ERangeError.Create('Invalid index');
   result := odd(FPart[AIndex].bidiLevel);
@@ -209,6 +247,7 @@ end;
 
 function TBidiTextLayout.GetPartStartIndex(AIndex: integer): integer;
 begin
+  NeedLayout;
   if (AIndex < 0) or (AIndex >= FPartCount) then
     raise ERangeError.Create('Invalid index');
   result := FPart[AIndex].startIndex;
@@ -233,16 +272,49 @@ begin
   result := copy(FText, FBidi[APosition0].Offset+1, FBidi[APosition0+1].Offset-FBidi[APosition0].Offset);
 end;
 
+procedure TBidiTextLayout.SetAvailableHeight(AValue: single);
+begin
+  if FAvailableHeight=AValue then Exit;
+  FAvailableHeight:=AValue;
+  FLayoutComputed:= false;
+end;
+
+procedure TBidiTextLayout.SetAvailableWidth(AValue: single);
+begin
+  if FAvailableWidth=AValue then Exit;
+  FAvailableWidth:=AValue;
+  FLayoutComputed:= false;
+end;
+
+procedure TBidiTextLayout.SetTopLeft(AValue: TPointF);
+begin
+  if FTopLeft=AValue then Exit;
+  FTopLeft:=AValue;
+  FLayoutComputed:= false;
+end;
+
 function TBidiTextLayout.TextSizeBidiOverride(sUTF8: string;
   ARightToLeft: boolean): TPointF;
+var
+  tabPos: integer;
+  beforeTab, afterTab: string;
 begin
-  if ARightToLeft then
-    sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
-  else
-    sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
+  tabPos := pos(#9, sUTF8);
+  if tabPos <> 0 then
+  begin
+    beforeTab := copy(sUTF8, 1, tabPos-1);
+    afterTab := copy(sUTF8, tabPos+1, length(sUTF8)-tabPos);
 
-  with FRenderer.TextSizeAngle(CleanTextOutString(sUTF8), FRenderer.FontOrientation) do
-    result := PointF(Width, Height);
+  end else
+  begin
+    if ARightToLeft then
+      sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
+    else
+      sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
+
+    with FRenderer.TextSizeAngle(CleanTextOutString(sUTF8), FRenderer.FontOrientation) do
+      result := PointF(Width, Height);
+  end;
 end;
 
 function TBidiTextLayout.TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer;
@@ -427,7 +499,10 @@ begin
           inc(i);
         end;
 
-        LevelSize(AMaxWidth - AWidth, subStart, i, subLevel, subSplit, w, h);
+        if AMaxWidth <> EmptySingle then
+          LevelSize(AMaxWidth - AWidth, subStart, i, subLevel, subSplit, w, h)
+        else
+          LevelSize(AMaxWidth, subStart, i, subLevel, subSplit, w, h);
         AWidth += w;
         if h > AHeight then AHeight := h;
 
@@ -473,35 +548,37 @@ end;
 
 constructor TBidiTextLayout.Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string);
 begin
+  Init;
   FRenderer := AFontRenderer;
   FText:= sUTF8;
   FBidi:= AnalyzeBidiUTF8(sUTF8);
   FCharCount := length(FBidi);
-  FPartCount:= 0;
-  FBrokenLineCount:= 0;
-  FAffineBox := TAffineBox.EmptyBox;
   AnalyzeLineStart;
 end;
 
 constructor TBidiTextLayout.Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean);
 begin
+  Init;
   FRenderer := AFontRenderer;
   FText:= sUTF8;
   FBidi:= AnalyzeBidiUTF8(sUTF8, ARightToLeft);
   FCharCount := length(FBidi);
-  FPartCount:= 0;
-  FBrokenLineCount:= 0;
-  FAffineBox := TAffineBox.EmptyBox;
   AnalyzeLineStart;
 end;
 
-procedure TBidiTextLayout.ComputeLayout(ARect: TRectF);
+procedure TBidiTextLayout.SetLayout(ARect: TRectF);
 begin
-  ComputeLayout(ARect.TopLeft, ARect.Width, ARect.Height);
+  TopLeft := ARect.TopLeft;
+  AvailableWidth:= ARect.Width;
+  AvailableHeight:= ARect.Height;
 end;
 
-procedure TBidiTextLayout.ComputeLayout(ATopLeft: TPointF; AAvailableWidth,
-  AAvailableHeight: single);
+procedure TBidiTextLayout.InvalidateLayout;
+begin
+  FLayoutComputed:= false;
+end;
+
+procedure TBidiTextLayout.ComputeLayout;
 var w,h, lineHeight, fullHeight, baseLine: single;
   i, splitIndex, nextStart: Integer;
   lineStart, subStart, lineEnd: integer;
@@ -513,11 +590,9 @@ var w,h, lineHeight, fullHeight, baseLine: single;
 begin
   fullHeight:= GetFontFullHeight;
   baseLine := GetFontBaseline;
-  FAffineBox := TAffineBox.EmptyBox;
   FPartCount := 0;
-  m := AffineMatrixTranslation(ATopLeft.x, ATopLeft.y)*AffineMatrixRotationDeg(-GetFontOrientation);
-  FAffineBox := TAffineBox.AffineBox(ATopLeft, m*PointF(AAvailableWidth,0), m*PointF(0,AAvailableHeight));
-  FStartCaret.Top := ATopLeft;
+  m := AffineMatrixTranslation(FTopLeft.x, FTopLeft.y)*AffineMatrixRotationDeg(-GetFontOrientation);
+  FStartCaret.Top := FTopLeft;
   FStartCaret.Bottom := m*PointF(0,fullHeight);
   FStartCaret.RightToLeft := false;
   FStartCaret.PreviousTop := EmptyPointF;
@@ -525,6 +600,8 @@ begin
   FStartCaret.PreviousRightToLeft := false;
   FStartCaret.PartIndex := 0;
   FBrokenLineCount := 0;
+
+  FLayoutComputed:= true;
 
   paraSpacing := 0;
   pos := PointF(0,0);
@@ -536,9 +613,13 @@ begin
     isEndOfPara:= (lineEnd>lineStart) and FBidi[lineEnd-1].BidiInfo.IsEndOfParagraph;
 
     subStart := lineStart;
+    //avoid warnings
+    splitIndex := subStart;
+    h := 0;
+
     while subStart < lineEnd do
     begin
-      LevelSize(AAvailableWidth, subStart, lineEnd, FBidi[lineStart].BidiInfo.ParagraphBidiLevel, splitIndex, w,h);
+      LevelSize(FAvailableWidth, subStart, lineEnd, FBidi[lineStart].BidiInfo.ParagraphBidiLevel, splitIndex, w,h);
 
       if splitIndex < lineEnd then
       begin
@@ -562,8 +643,8 @@ begin
       else
         correctedBaseLine:= 0;
 
-      if Odd(FBidi[lineStart].BidiInfo.ParagraphBidiLevel) then
-        ComputeLevelLayout(m, pos + PointF(AAvailableWidth,0), subStart, splitIndex, FBidi[lineStart].BidiInfo.ParagraphBidiLevel, lineHeight, correctedBaseLine, FBrokenLineCount, w)
+      if Odd(FBidi[lineStart].BidiInfo.ParagraphBidiLevel) and (FAvailableWidth <> EmptySingle) then
+        ComputeLevelLayout(m, pos + PointF(FAvailableWidth,0), subStart, splitIndex, FBidi[lineStart].BidiInfo.ParagraphBidiLevel, lineHeight, correctedBaseLine, FBrokenLineCount, w)
       else
         ComputeLevelLayout(m, pos, subStart, splitIndex, FBidi[lineStart].BidiInfo.ParagraphBidiLevel, lineHeight, correctedBaseLine, FBrokenLineCount, w);
 
@@ -572,22 +653,36 @@ begin
       FBrokenLine[FBrokenLineCount].startIndex:= subStart;
       FBrokenLine[FBrokenLineCount].endIndex:= splitIndex;
       FBrokenLine[FBrokenLineCount].bidiLevel := FBidi[lineStart].BidiInfo.ParagraphBidiLevel;
-      FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*pos, m*(pos+PointF(AAvailableWidth,0)), m*(pos+PointF(0,lineHeight)));
+      if FAvailableWidth <> EmptySingle then
+        FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*pos, m*(pos+PointF(FAvailableWidth,0)), m*(pos+PointF(0,lineHeight)))
+      else
+      begin
+        if Odd(FBidi[lineStart].BidiInfo.ParagraphBidiLevel) then
+          FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*(pos+PointF(-w,0)), m*pos, m*(pos+PointF(-w,lineHeight)))
+        else
+          FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*pos, m*(pos+PointF(w,0)), m*(pos+PointF(0,lineHeight)))
+      end;
 
       FBrokenLineCount += 1;
       subStart := nextStart;
       pos.y += lineHeight;
-      if pos.y >= AAvailableHeight then exit;
+      if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then exit;
     end;
 
     if isEndOfPara then pos.y += paraSpacing;
   end;
 end;
 
+procedure TBidiTextLayout.NeedLayout;
+begin
+  if not FLayoutComputed then ComputeLayout;
+end;
+
 procedure TBidiTextLayout.DrawText(ADest: TBGRACustomBitmap);
 var
   i: Integer;
 begin
+  NeedLayout;
   for i := 0 to FPartCount-1 do
     with (FPart[i].affineBox.TopLeft + FPart[i].posCorrection) do
       TextOutBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
@@ -640,6 +735,8 @@ var
   caret: TBidiCaretPos;
   showDir: Boolean;
 begin
+  NeedLayout;
+
   caret := GetCaret(ACharIndex);
   showDir := not isEmptyPointF(caret.PreviousTop) and (caret.RightToLeft <> caret.PreviousRightToLeft);
   if not isEmptyPointF(caret.Top) then DrawSingleCaret(caret.Top, caret.Bottom, caret.RightToLeft, showDir, AMainColor);
@@ -651,6 +748,8 @@ procedure TBidiTextLayout.DrawSelection(ADest: TBGRACustomBitmap; AStartIndex,
 var
   env: ArrayOfTPointF;
 begin
+  NeedLayout;
+
   if AStartIndex = AEndIndex then exit;
   env := GetTextEnveloppe(AStartIndex,AEndIndex);
   ADest.FillPolyAntialias(env, AColor);
@@ -662,6 +761,8 @@ var
   w: Single;
   u: TPointF;
 begin
+  NeedLayout;
+
   if (ACharIndex < 0) or (ACharIndex > CharCount) then
     raise ERangeError.Create('Invalid index');
   result.PartIndex := -1;
@@ -725,6 +826,8 @@ var
   str: String;
   curIndex, newIndex: integer;
 begin
+  NeedLayout;
+
   for i := 0 to BrokenLineCount-1 do
     if BrokenLineAffineBox[i].Contains(APosition) then
     begin
@@ -792,6 +895,8 @@ var
   caret, caretEnd, caretStartPart, caretEndPart: TBidiCaretPos;
   brokenLineIndex: integer;
 begin
+  NeedLayout;
+
   result := nil;
 
   if AStartIndex > AEndIndex then
@@ -993,6 +1098,16 @@ begin
     end else
       inc(i);
   end;
+end;
+
+procedure TBidiTextLayout.Init;
+begin
+  FPartCount:= 0;
+  FBrokenLineCount:= 0;
+  FTopLeft := PointF(0,0);
+  FAvailableWidth:= EmptySingle;
+  FAvailableHeight:= EmptySingle;
+  FLayoutComputed:= false;
 end;
 
 end.
