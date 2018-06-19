@@ -295,17 +295,6 @@ end;
 
 function TBidiTextLayout.TextSizeBidiOverride(sUTF8: string;
   ARightToLeft: boolean): TPointF;
-var
-  tabPos: integer;
-  beforeTab, afterTab: string;
-begin
-  tabPos := pos(#9, sUTF8);
-  if tabPos <> 0 then
-  begin
-    beforeTab := copy(sUTF8, 1, tabPos-1);
-    afterTab := copy(sUTF8, tabPos+1, length(sUTF8)-tabPos);
-
-  end else
   begin
     if ARightToLeft then
       sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
@@ -315,7 +304,6 @@ begin
     with FRenderer.TextSizeAngle(CleanTextOutString(sUTF8), FRenderer.FontOrientation) do
       result := PointF(Width, Height);
   end;
-end;
 
 function TBidiTextLayout.TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer;
   ARightToLeft: boolean; ASplitIndex: integer): TPointF;
