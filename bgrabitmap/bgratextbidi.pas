@@ -21,7 +21,10 @@ type
   TBidiTextLayout = class
   private
     function GetBrokenLineAffineBox(AIndex: integer): TAffineBox;
+    function GetBrokenLineEndCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineEndIndex(AIndex: integer): integer;
+    function GetBrokenLineRightToLeft(AIndex: integer): boolean;
+    function GetBrokenLineStartCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineStartIndex(AIndex: integer): integer;
     function GetPartAffineBox(AIndex: integer): TAffineBox;
     function GetPartBrokenLineIndex(AIndex: integer): integer;
@@ -56,6 +59,7 @@ type
     FStartCaret: TBidiCaretPos;
 
     function TextSizeBidiOverride(sUTF8: string; ARightToLeft: boolean): TPointF;
+    function TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer; ARightToLeft: boolean; ASplitIndex: integer): TPointF;
     function TextFitInfoBidiOverride(sUTF8: string; AWidth: single; ARightToLeft: boolean): integer;
     function GetFontFullHeight: single;
     function GetFontBaseline: single;
@@ -89,6 +93,9 @@ type
     property BrokenLineStartIndex[AIndex: integer]: integer read GetBrokenLineStartIndex;
     property BrokenLineEndIndex[AIndex: integer]: integer read GetBrokenLineEndIndex;
     property BrokenLineAffineBox[AIndex: integer]: TAffineBox read GetBrokenLineAffineBox;
+    property BrokenLineRightToLeft[AIndex: integer]: boolean read GetBrokenLineRightToLeft;
+    property BrokenLineStartCaret[AIndex: integer]: TBidiCaretPos read GetBrokenLineStartCaret;
+    property BrokenLineEndCaret[AIndex: integer]: TBidiCaretPos read GetBrokenLineEndCaret;
 
     property PartCount: integer read FPartCount;
     property PartStartIndex[AIndex: integer]: integer read GetPartStartIndex;
@@ -111,11 +118,54 @@ begin
   result := FBrokenLine[AIndex].affineBox;
 end;
 
+function TBidiTextLayout.GetBrokenLineEndCaret(AIndex: integer): TBidiCaretPos;
+begin
+  with BrokenLineAffineBox[AIndex] do
+  begin
+    if BrokenLineRightToLeft[AIndex] then
+      result.Top := TopLeft
+    else
+      result.Top := TopRight;
+    result.Bottom := result.Top + (BottomLeft-TopLeft);
+    result.BidiLevel:= FBrokenLine[AIndex].bidiLevel;
+    result.CharIndex:= BrokenLineEndIndex[AIndex];
+    result.PartIndex:= -1;
+    result.PreviousTop := EmptyPointF;
+    result.PreviousBottom := EmptyPointF;
+    result.PreviousBidiLevel := 0;
+  end;
+end;
+
 function TBidiTextLayout.GetBrokenLineEndIndex(AIndex: integer): integer;
 begin
   if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
     raise ERangeError.Create('Invalid index');
   result := FBrokenLine[AIndex].endIndex;
+end;
+
+function TBidiTextLayout.GetBrokenLineRightToLeft(AIndex: integer): boolean;
+begin
+  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
+    raise ERangeError.Create('Invalid index');
+  result := odd(FBrokenLine[AIndex].bidiLevel);
+end;
+
+function TBidiTextLayout.GetBrokenLineStartCaret(AIndex: integer): TBidiCaretPos;
+begin
+  with BrokenLineAffineBox[AIndex] do
+  begin
+    if BrokenLineRightToLeft[AIndex] then
+      result.Top := TopRight
+    else
+      result.Top := TopLeft;
+    result.Bottom := result.Top + (BottomLeft-TopLeft);
+    result.BidiLevel:= FBrokenLine[AIndex].bidiLevel;
+    result.CharIndex:= BrokenLineStartIndex[AIndex];
+    result.PartIndex:= -1;
+    result.PreviousTop := EmptyPointF;
+    result.PreviousBottom := EmptyPointF;
+    result.PreviousBidiLevel := 0;
+  end;
 end;
 
 function TBidiTextLayout.GetBrokenLineStartIndex(AIndex: integer): integer;
@@ -189,6 +239,49 @@ begin
 
   with FRenderer.TextSizeAngle(CleanTextOutString(sUTF8), FRenderer.FontOrientation) do
     result := PointF(Width, Height);
+end;
+
+function TBidiTextLayout.TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer;
+  ARightToLeft: boolean; ASplitIndex: integer): TPointF;
+var nextIndex, prevIndex: integer;
+  s: String;
+  extraS: string4;
+  extraW, combW: Single;
+  charClass: TUnicodeBidiClass;
+begin
+  s := copy(FText, FBidi[AStartIndex].Offset+1, FBidi[ASplitIndex].Offset-FBidi[AStartIndex].Offset);
+  result := TextSizeBidiOverride(s, ARightToLeft);
+
+  nextIndex := ASplitIndex;
+  //check if there might be a ligature
+  if (nextIndex < AEndIndex) and (GetUnicodeBidiClass(GetUnicodeChar(nextIndex)) in [ubcRightToLeft,ubcArabicLetter,ubcLeftToRight,ubcArabicNumber,ubcEuropeanNumber]) then
+  begin
+    inc(nextIndex);
+    //find previous letter
+    prevIndex := ASplitIndex-1;
+    while (prevIndex > AStartIndex) and (GetUnicodeBidiClass(GetUnicodeChar(prevIndex)) = ubcNonSpacingMark) do dec(prevIndex);
+    charClass := GetUnicodeBidiClass(GetUnicodeChar(prevIndex));
+    //arabic ligatures are asymmetric in size so use the tatweel to measure the actual size
+    if charClass = ubcArabicLetter then
+    begin
+      //measure tatweel size
+      extraS := UnicodeCharToUTF8(UNICODE_ARABIC_TATWEEL);
+      extraW := TextSizeBidiOverride(extraS, ARightToLeft).x;
+      combW := TextSizeBidiOverride(s+extraS, ARightToLeft).x;
+      result.x := combW - extraW;  //subtract the size of the tatweel (which itself is not included in the ligature)
+    end else
+    // otherwise, assume that the ligature is symmetric so subtract half of the ligature size
+    begin
+      //measure the next char on its own
+      while (nextIndex < AEndIndex) and (GetUnicodeBidiClass(GetUnicodeChar(nextIndex)) = ubcNonSpacingMark) do inc(nextIndex);
+      extraS := copy(FText, FBidi[ASplitIndex].Offset+1, FBidi[nextIndex].Offset-FBidi[ASplitIndex].Offset);
+      extraW := TextSizeBidiOverride(extraS, ARightToLeft).x;
+
+      combW := TextSizeBidiOverride(s+extraS, ARightToLeft).x;
+      if combW < result.x then result.x := combW
+      else result.x -= (result.x+extraW - combW) * 0.5;
+    end;
+  end;
 end;
 
 function TBidiTextLayout.TextFitInfoBidiOverride(sUTF8: string; AWidth: single;
@@ -498,11 +591,8 @@ end;
 function TBidiTextLayout.GetCaret(ACharIndex: integer): TBidiCaretPos;
 var
   i: Integer;
-  s, ligS: string;
-  w, ligW, combW: Single;
+  w: Single;
   u: TPointF;
-  prevIndex,nextIndex: integer;
-  charClass: TUnicodeBidiClass;
 begin
   if (ACharIndex < 0) or (ACharIndex > CharCount) then
     raise ERangeError.Create('Invalid index');
@@ -535,33 +625,7 @@ begin
           exit;
         end else
         begin
-          s := copy(FText, FBidi[FPart[i].startIndex].Offset+1, FBidi[ACharIndex].Offset-FBidi[FPart[i].startIndex].Offset);
-          w := TextSizeBidiOverride(s, odd(FPart[i].bidiLevel)).x;
-
-          nextIndex := ACharIndex;
-          if (nextIndex < FPart[i].endIndex) and (GetUnicodeBidiClass(GetUnicodeChar(nextIndex)) in [ubcRightToLeft,ubcArabicLetter,ubcLeftToRight,ubcArabicNumber,ubcEuropeanNumber]) then
-          begin
-            inc(nextIndex);
-            //find previous letter
-            prevIndex := ACharIndex-1;
-            while (prevIndex > FPart[i].startIndex) and (GetUnicodeBidiClass(GetUnicodeChar(prevIndex)) = ubcNonSpacingMark) do dec(prevIndex);
-            charClass := GetUnicodeBidiClass(GetUnicodeChar(prevIndex));
-            if charClass = ubcArabicLetter then
-            begin //arabic ligatures are asymmetric in size so use the tatweel to measure the ligature size
-              ligS := UnicodeCharToUTF8(UNICODE_ARABIC_TATWEEL);
-              ligW := TextSizeBidiOverride(ligS, odd(FPart[i].bidiLevel)).x;
-              combW := TextSizeBidiOverride(s+ligS, odd(FPart[i].bidiLevel)).x;
-              w -= w+ligW - combW;
-            end else
-            begin // otherwise, assume that the ligature is symmetric so subtract half of the ligature size
-              while (nextIndex < FPart[i].endIndex) and (GetUnicodeBidiClass(GetUnicodeChar(nextIndex)) = ubcNonSpacingMark) do inc(nextIndex);
-              ligS := copy(FText, FBidi[ACharIndex].Offset+1, FBidi[nextIndex].Offset-FBidi[ACharIndex].Offset);
-              ligW := TextSizeBidiOverride(ligS, odd(FPart[i].bidiLevel)).x;
-              combW := TextSizeBidiOverride(s+ligS, odd(FPart[i].bidiLevel)).x;
-              if combW < w then w := combW
-              else w -= (w+ligW-combW) * 0.5;
-            end;
-          end;
+          w := TextSizeBidiOverrideSplit(FPart[i].startIndex, FPart[i].endIndex, odd(FPart[i].bidiLevel), ACharIndex).x;
 
           u := FPart[i].affineBox.TopRight - FPart[i].affineBox.TopLeft;
           if VectLen(u) > 0 then u := (1/VectLen(u))*u;
@@ -589,8 +653,9 @@ var
   i,j, fit: Integer;
   u,u2: cardinal;
   axis, origin: TPointF;
-  len, w: Single;
+  len, w, curW, newW: Single;
   str: String;
+  curIndex, newIndex: integer;
 begin
   for i := 0 to BrokenLineCount-1 do
     if BrokenLineAffineBox[i].Contains(APosition) then
@@ -615,7 +680,21 @@ begin
               w := ((APosition-origin)*axis)/len;
               str := copy(FText, FBidi[PartStartIndex[j]].Offset+1, FBidi[PartEndIndex[j]].Offset - FBidi[PartStartIndex[j]].Offset);
               fit := TextFitInfoBidiOverride(str, w, PartRightToLeft[j]);
-              exit(PartStartIndex[j]+fit);
+              curIndex := PartStartIndex[j]+fit;
+              curW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], curIndex).x;
+              while (curW < w) and (curIndex < PartEndIndex[j]) do
+              begin
+                newIndex := curIndex+1;
+                while (newIndex < PartEndIndex[j]) and (GetUnicodeBidiClass(GetUnicodeChar(newIndex)) = ubcNonSpacingMark) do inc(newIndex);
+                newW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], newIndex).x;
+                if newW >= w then
+                begin
+                  if (curW+newW)*0.5 + 1 < w then curIndex := newIndex;
+                  break;
+                end;
+                curIndex := newIndex;
+              end;
+              exit(curIndex);
             end;
           end;
           exit(PartStartIndex[j]);
