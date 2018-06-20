@@ -12,7 +12,8 @@ var
   GammaExpansionTab:   packed array[0..255] of word;
 
   // TExpandedPixel -> TBGRAPixel
-  GammaCompressionTab: packed array[0..65535] of byte;
+  GammaCompressionTab : packed array[0..65535] of byte;          //rounded value
+  GammaCompressionTabFrac : packed array[0..65535] of shortint;  //fractional part of value from -0.5 to +0.5
 
 procedure BGRASetGamma(AGamma: single = 1.7);
 function BGRAGetGamma: single;
@@ -316,8 +317,16 @@ begin
     else
       nextpos := round(power(i+0.5, GammaExpFactor) * GammaLinearFactor);
     GammaExpansionTab[i] := midpos;
-    for j := prevpos to nextpos-1 do
+    for j := prevpos to midpos-1 do
+    begin
       GammaCompressionTab[j] := i;
+      GammaCompressionTabFrac[j] := -128 + (j-prevpos)*128 div (midpos-prevpos);
+    end;
+    for j := midpos to nextpos-1 do
+    begin
+      GammaCompressionTab[j] := i;
+      GammaCompressionTabFrac[j] := (j-midpos)*128 div (nextpos-midpos);
+    end;
   end;
   GammaCompressionTab[0] := 0;
 end;
