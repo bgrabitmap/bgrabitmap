@@ -144,6 +144,7 @@ type
   {** Converts a pixel from correct HSL to usual HSL }
   function GSBAToHSLA(const c: TGSBAPixel): THSLAPixel;
   function GSBAToHSLA(const c: THSLAPixel): THSLAPixel;
+  function HSLAToGSBA(const c: THSLAPixel): TGSBAPixel;
 
 type
   { TBGRAPixelHelper }
