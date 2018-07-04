@@ -147,9 +147,9 @@ type
   function HSLAToGSBA(const c: THSLAPixel): TGSBAPixel;
 
 type
-  { TBGRAPixelHelper }
+  { TBGRAPixelBasicHelper }
 
-  TBGRAPixelHelper = record helper for TBGRAPixel
+  TBGRAPixelBasicHelper = record helper for TBGRAPixel
     function ToExpanded: TExpandedPixel;
     procedure FromExpanded(const AValue: TExpandedPixel);
     function ToHSLAPixel: THSLAPixel;
@@ -161,9 +161,11 @@ type
     procedure FromColorF(const AValue: TColorF; AGammaCompression: boolean);
   end;
 
-  { TExpandedPixelHelper }
+  { TExpandedPixelBasicHelper }
 
-  TExpandedPixelHelper = record helper for TExpandedPixel
+  TExpandedPixelBasicHelper = record helper for TExpandedPixel
+    function ToColor: TColor;
+    procedure FromColor(const AValue: TColor);
     function ToBGRAPixel: TBGRAPixel;
     procedure FromBGRAPixel(AValue: TBGRAPixel);
     function ToHSLAPixel: THSLAPixel;
@@ -173,9 +175,15 @@ type
     procedure FromGSBAPixel(const AValue: THSLAPixel); overload;
   end;
 
-  { THSLAPixelHelper }
+Operator := (const Source: TExpandedPixel): TBGRAPixel;
+Operator := (const Source: TBGRAPixel): TExpandedPixel;
 
-  THSLAPixelHelper = record helper for THSLAPixel
+type
+  { THSLAPixelBasicHelper }
+
+  THSLAPixelBasicHelper = record helper for THSLAPixel
+    function ToColor: TColor;
+    procedure FromColor(const AValue: TColor);
     function ToBGRAPixel: TBGRAPixel;
     procedure FromBGRAPixel(AValue: TBGRAPixel);
     function ToGSBAPixel: TGSBAPixel;
@@ -184,9 +192,17 @@ type
     procedure FromExpanded(AValue: TExpandedPixel);
   end;
 
-  { TGSBAPixelHelper }
+Operator := (const Source: THSLAPixel): TBGRAPixel;
+Operator := (const Source: TBGRAPixel): THSLAPixel;
+Operator := (const Source: THSLAPixel): TExpandedPixel;
+Operator := (const Source: TExpandedPixel): THSLAPixel;
 
-  TGSBAPixelHelper = record helper for TGSBAPixel
+type
+  { TGSBAPixelBasicHelper }
+
+  TGSBAPixelBasicHelper = record helper for TGSBAPixel
+    function ToColor: TColor;
+    procedure FromColor(const AValue: TColor);
     function ToBGRAPixel: TBGRAPixel;
     procedure FromBGRAPixel(AValue: TBGRAPixel);
     function ToHSLAPixel: THSLAPixel;
@@ -195,8 +211,12 @@ type
     procedure FromExpanded(AValue: TExpandedPixel);
   end;
 
-Operator := (const Source: TExpandedPixel): TBGRAPixel;
-Operator := (const Source: TGSBAPixel): THSLAPixel; //no conversion, just copying for backward compatibility
+Operator := (const Source: TGSBAPixel): TBGRAPixel;
+Operator := (const Source: TBGRAPixel): TGSBAPixel;
+Operator := (const Source: TGSBAPixel): TExpandedPixel;
+Operator := (const Source: TExpandedPixel): TGSBAPixel;
+Operator := (const Source: TGSBAPixel): THSLAPixel; //no conversion, just copying for backward compatibility (use ToHSLAPixel instead for conversion)
+Operator := (const Source: THSLAPixel): TGSBAPixel; //no conversion, just copying for backward compatibility (use ToGSBAPixel instead for conversion)
 {$ENDIF}
 
 
@@ -1085,87 +1105,97 @@ begin
   result := ExpandedToGSBA(HSLAToExpanded(c));
 end;
 
-{ TBGRAPixelHelper }
+{ TBGRAPixelBasicHelper }
 
-function TBGRAPixelHelper.ToExpanded: TExpandedPixel;
+function TBGRAPixelBasicHelper.ToExpanded: TExpandedPixel;
 begin
   result := GammaExpansion(self);
 end;
 
-procedure TBGRAPixelHelper.FromExpanded(const AValue: TExpandedPixel);
+procedure TBGRAPixelBasicHelper.FromExpanded(const AValue: TExpandedPixel);
 begin
   Self := GammaCompression(AValue);
 end;
 
-function TBGRAPixelHelper.ToHSLAPixel: THSLAPixel;
+function TBGRAPixelBasicHelper.ToHSLAPixel: THSLAPixel;
 begin
   result := BGRAToHSLA(Self);
 end;
 
-procedure TBGRAPixelHelper.FromHSLAPixel(const AValue: THSLAPixel);
+procedure TBGRAPixelBasicHelper.FromHSLAPixel(const AValue: THSLAPixel);
 begin
   Self := HSLAToBGRA(AValue);
 end;
 
-function TBGRAPixelHelper.ToGSBAPixel: TGSBAPixel;
+function TBGRAPixelBasicHelper.ToGSBAPixel: TGSBAPixel;
 begin
   result := BGRAToGSBA(Self);
 end;
 
-procedure TBGRAPixelHelper.FromGSBAPixel(const AValue: TGSBAPixel);
+procedure TBGRAPixelBasicHelper.FromGSBAPixel(const AValue: TGSBAPixel);
 begin
   Self := GSBAToBGRA(AValue);
 end;
 
-procedure TBGRAPixelHelper.FromGSBAPixel(const AValue: THSLAPixel);
+procedure TBGRAPixelBasicHelper.FromGSBAPixel(const AValue: THSLAPixel);
 begin
   Self := GSBAToBGRA(AValue);
 end;
 
-function TBGRAPixelHelper.ToColorF(AGammaExpansion: boolean): TColorF;
+function TBGRAPixelBasicHelper.ToColorF(AGammaExpansion: boolean): TColorF;
 begin
   result := BGRAToColorF(Self,AGammaExpansion);
 end;
 
-procedure TBGRAPixelHelper.FromColorF(const AValue: TColorF;
+procedure TBGRAPixelBasicHelper.FromColorF(const AValue: TColorF;
     AGammaCompression: boolean);
 begin
   Self := ColorFToBGRA(AValue,AGammaCompression);
 end;
 
-{ TExpandedPixelHelper }
+{ TExpandedPixelBasicHelper }
 
-function TExpandedPixelHelper.ToBGRAPixel: TBGRAPixel;
+function TExpandedPixelBasicHelper.ToColor: TColor;
+begin
+  result := BGRAToColor(GammaCompression(self));
+end;
+
+procedure TExpandedPixelBasicHelper.FromColor(const AValue: TColor);
+begin
+  self := GammaExpansion(ColorToBGRA(AValue));
+end;
+
+function TExpandedPixelBasicHelper.ToBGRAPixel: TBGRAPixel;
 begin
   result := GammaCompression(Self);
 end;
 
-procedure TExpandedPixelHelper.FromBGRAPixel(AValue: TBGRAPixel);
+procedure TExpandedPixelBasicHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin
   Self := GammaExpansion(AValue);
 end;
 
-function TExpandedPixelHelper.ToHSLAPixel: THSLAPixel;
+function TExpandedPixelBasicHelper.ToHSLAPixel: THSLAPixel;
 begin
   result := ExpandedToHSLA(Self);
 end;
 
-procedure TExpandedPixelHelper.FromHSLAPixel(const AValue: THSLAPixel);
+procedure TExpandedPixelBasicHelper.FromHSLAPixel(const AValue: THSLAPixel);
 begin
   Self := HSLAToExpanded(AValue);
 end;
 
-function TExpandedPixelHelper.ToGSBAPixel: TGSBAPixel;
+function TExpandedPixelBasicHelper.ToGSBAPixel: TGSBAPixel;
 begin
   result := ExpandedToGSBA(Self);
 end;
 
-procedure TExpandedPixelHelper.FromGSBAPixel(const AValue: TGSBAPixel);
+procedure TExpandedPixelBasicHelper.FromGSBAPixel(const AValue: TGSBAPixel);
 begin
   Self := GSBAToExpanded(AValue);
 end;
 
-procedure TExpandedPixelHelper.FromGSBAPixel(const AValue: THSLAPixel);
+procedure TExpandedPixelBasicHelper.FromGSBAPixel(const AValue: THSLAPixel);
 begin
   Self := GSBAToExpanded(AValue);
 end;
@@ -1175,36 +1205,133 @@ begin
   result := GammaCompression(Source);
 end;
 
-{ THSLAPixelHelper }
+operator :=(const Source: TBGRAPixel): TExpandedPixel;
+begin
+  result := GammaExpansion(Source);
+end;
 
-function THSLAPixelHelper.ToBGRAPixel: TBGRAPixel;
+{ THSLAPixelBasicHelper }
+
+function THSLAPixelBasicHelper.ToColor: TColor;
+begin
+  result := BGRAToColor(HSLAToBGRA(self));
+end;
+
+procedure THSLAPixelBasicHelper.FromColor(const AValue: TColor);
+begin
+  self := BGRAToHSLA(ColorToBGRA(AValue));
+end;
+
+function THSLAPixelBasicHelper.ToBGRAPixel: TBGRAPixel;
 begin
   result := HSLAToBGRA(self);
 end;
 
-procedure THSLAPixelHelper.FromBGRAPixel(AValue: TBGRAPixel);
+procedure THSLAPixelBasicHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin
   self := BGRAToHSLA(AValue);
 end;
 
-function THSLAPixelHelper.ToGSBAPixel: TGSBAPixel;
+function THSLAPixelBasicHelper.ToGSBAPixel: TGSBAPixel;
 begin
   result := HSLAToGSBA(self);
 end;
 
-procedure THSLAPixelHelper.FromGSBAPixel(AValue: TGSBAPixel);
+procedure THSLAPixelBasicHelper.FromGSBAPixel(AValue: TGSBAPixel);
 begin
   self := GSBAToHSLA(AValue);
 end;
 
-function THSLAPixelHelper.ToExpanded: TExpandedPixel;
+function THSLAPixelBasicHelper.ToExpanded: TExpandedPixel;
 begin
   result := HSLAToExpanded(Self);
 end;
 
-procedure THSLAPixelHelper.FromExpanded(AValue: TExpandedPixel);
+procedure THSLAPixelBasicHelper.FromExpanded(AValue: TExpandedPixel);
 begin
   Self := ExpandedToHSLA(AValue);
+end;
+
+operator :=(const Source: THSLAPixel): TBGRAPixel;
+begin
+  result := HSLAToBGRA(Source);
+end;
+
+operator :=(const Source: TBGRAPixel): THSLAPixel;
+begin
+  result := BGRAToHSLA(Source);
+end;
+
+operator :=(const Source: THSLAPixel): TExpandedPixel;
+begin
+  result := HSLAToExpanded(Source);
+end;
+
+operator:=(const Source: TExpandedPixel): THSLAPixel;
+begin
+  result := ExpandedToHSLA(Source);
+end;
+
+{ TGSBAPixelBasicHelper }
+
+function TGSBAPixelBasicHelper.ToColor: TColor;
+begin
+  result := BGRAToColor(GSBAToBGRA(self));
+end;
+
+procedure TGSBAPixelBasicHelper.FromColor(const AValue: TColor);
+begin
+  self := BGRAToGSBA(ColorToBGRA(AValue));
+end;
+
+function TGSBAPixelBasicHelper.ToBGRAPixel: TBGRAPixel;
+begin
+  result := GSBAToBGRA(self);
+end;
+
+procedure TGSBAPixelBasicHelper.FromBGRAPixel(AValue: TBGRAPixel);
+begin
+  self := BGRAToGSBA(AValue);
+end;
+
+function TGSBAPixelBasicHelper.ToHSLAPixel: THSLAPixel;
+begin
+  result := GSBAToHSLA(self);
+end;
+
+procedure TGSBAPixelBasicHelper.FromHSLAPixel(AValue: THSLAPixel);
+begin
+  self := HSLAToGSBA(AValue);
+end;
+
+function TGSBAPixelBasicHelper.ToExpanded: TExpandedPixel;
+begin
+  result := GSBAToExpanded(self);
+end;
+
+procedure TGSBAPixelBasicHelper.FromExpanded(AValue: TExpandedPixel);
+begin
+  self := ExpandedToGSBA(AValue);
+end;
+
+operator :=(const Source: TGSBAPixel): TBGRAPixel;
+begin
+  result := GSBAToBGRA(Source);
+end;
+
+operator :=(const Source: TBGRAPixel): TGSBAPixel;
+begin
+  result := BGRAToGSBA(Source);
+end;
+
+operator :=(const Source: TGSBAPixel): TExpandedPixel;
+begin
+  result := GSBAToExpanded(Source);
+end;
+
+operator:=(const Source: TExpandedPixel): TGSBAPixel;
+begin
+  result := ExpandedToGSBA(Source);
 end;
 
 operator :=(const Source: TGSBAPixel): THSLAPixel;
@@ -1212,36 +1339,8 @@ begin
   result := THSLAPixel(QWord(Source));
 end;
 
-{ TGSBAPixelHelper }
-
-function TGSBAPixelHelper.ToBGRAPixel: TBGRAPixel;
+operator:=(const Source: THSLAPixel): TGSBAPixel;
 begin
-  result := GSBAToBGRA(self);
+  result := TGSBAPixel(QWord(Source));
 end;
-
-procedure TGSBAPixelHelper.FromBGRAPixel(AValue: TBGRAPixel);
-begin
-  self := BGRAToGSBA(AValue);
-end;
-
-function TGSBAPixelHelper.ToHSLAPixel: THSLAPixel;
-begin
-  result := GSBAToHSLA(self);
-end;
-
-procedure TGSBAPixelHelper.FromHSLAPixel(AValue: THSLAPixel);
-begin
-  self := HSLAToGSBA(AValue);
-end;
-
-function TGSBAPixelHelper.ToExpanded: TExpandedPixel;
-begin
-  result := GSBAToExpanded(self);
-end;
-
-procedure TGSBAPixelHelper.FromExpanded(AValue: TExpandedPixel);
-begin
-  self := ExpandedToGSBA(AValue);
-end;
-
 {$ENDIF}
