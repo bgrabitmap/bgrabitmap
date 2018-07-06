@@ -164,6 +164,8 @@ type
   { TExpandedPixelBasicHelper }
 
   TExpandedPixelBasicHelper = record helper for TExpandedPixel
+    function ToFPColor(AGammaCompression: boolean = true): TFPColor;
+    procedure FromFPColor(const AValue: TFPColor; AGammaExpansion: boolean = true);
     function ToColor: TColor;
     procedure FromColor(const AValue: TColor);
     function ToBGRAPixel: TBGRAPixel;
@@ -173,6 +175,17 @@ type
     function ToGSBAPixel: TGSBAPixel;
     procedure FromGSBAPixel(const AValue: TGSBAPixel); overload;
     procedure FromGSBAPixel(const AValue: THSLAPixel); overload;
+  end;
+
+  { TFPColorBasicHelper }
+
+  TFPColorBasicHelper = record helper for TFPColor
+    function ToColor: TColor;
+    procedure FromColor(const AValue: TColor);
+    function ToBGRAPixel: TBGRAPixel;
+    procedure FromBGRAPixel(AValue: TBGRAPixel);
+    function ToExpanded(AGammaExpansion: boolean = true): TExpandedPixel;
+    procedure FromExpanded(const AValue: TExpandedPixel; AGammaCompression: boolean = true);
   end;
 
 Operator := (const Source: TExpandedPixel): TBGRAPixel;
@@ -417,6 +430,41 @@ begin
   Result.green := GammaCompressionTab[green];
   Result.blue  := GammaCompressionTab[blue];
   Result.alpha := alpha shr 8;
+end;
+
+function GammaExpansionW(ACompressed: word): word;
+var
+  intPart: Integer;
+  f,fracPart: Single;
+begin
+  if ACompressed = 0 then
+    result := 0
+  else if ACompressed = $ffff then
+    result := $ffff
+  else
+  begin
+    f := ACompressed/$101;
+    intPart := trunc(f);
+    fracPart := f - intPart;
+    if fracPart = 0 then
+      result := GammaExpansionTab[intPart]
+    else
+      result := round(GammaExpansionTab[intPart]*(1-fracPart)+GammaExpansionTab[intPart+1]*fracPart);
+  end;
+end;
+
+function GammaCompressionW(AExpanded: word): word;
+begin
+  if AExpanded = 0 then
+    result := 0
+  else if AExpanded = $ffff then
+    result := $ffff
+  else
+  begin
+    result := GammaCompressionTab[AExpanded];
+    result := (result shl 8) + result;
+    result += GammaCompressionTabFrac[AExpanded];
+  end;
 end;
 
 { The intensity is defined here as the maximum value of any color component }
@@ -1155,6 +1203,39 @@ end;
 
 { TExpandedPixelBasicHelper }
 
+function TExpandedPixelBasicHelper.ToFPColor(AGammaCompression: boolean): TFPColor;
+begin
+  if AGammaCompression then
+  begin
+    result.red := GammaCompressionW(self.red);
+    result.green := GammaCompressionW(self.green);
+    result.blue := GammaCompressionW(self.blue);
+  end else
+  begin
+    result.red := self.red;
+    result.green := self.green;
+    result.blue := self.blue;
+  end;
+  result.alpha := self.alpha;
+end;
+
+procedure TExpandedPixelBasicHelper.FromFPColor(const AValue: TFPColor;
+  AGammaExpansion: boolean);
+begin
+  if AGammaExpansion then
+  begin
+    self.red := GammaExpansionW(AValue.red);
+    self.green := GammaExpansionW(AValue.green);
+    self.blue := GammaExpansionW(AValue.blue);
+  end else
+  begin
+    self.red := AValue.red;
+    self.green := AValue.green;
+    self.blue := AValue.blue;
+  end;
+  self.alpha := AValue.alpha;
+end;
+
 function TExpandedPixelBasicHelper.ToColor: TColor;
 begin
   result := BGRAToColor(GammaCompression(self));
@@ -1208,6 +1289,39 @@ end;
 operator :=(const Source: TBGRAPixel): TExpandedPixel;
 begin
   result := GammaExpansion(Source);
+end;
+
+{ TFPColorBasicHelper }
+
+function TFPColorBasicHelper.ToColor: TColor;
+begin
+  result := FPColorToTColor(self);
+end;
+
+procedure TFPColorBasicHelper.FromColor(const AValue: TColor);
+begin
+  self := TColorToFPColor(AValue);
+end;
+
+function TFPColorBasicHelper.ToBGRAPixel: TBGRAPixel;
+begin
+  result := FPColorToBGRA(self);
+end;
+
+procedure TFPColorBasicHelper.FromBGRAPixel(AValue: TBGRAPixel);
+begin
+  self := BGRAToFPColor(AValue);
+end;
+
+function TFPColorBasicHelper.ToExpanded(AGammaExpansion: boolean): TExpandedPixel;
+begin
+  result.FromFPColor(self, AGammaExpansion);
+end;
+
+procedure TFPColorBasicHelper.FromExpanded(const AValue: TExpandedPixel;
+  AGammaCompression: boolean);
+begin
+  self := AValue.ToFPColor(AGammaCompression);
 end;
 
 { THSLAPixelBasicHelper }
