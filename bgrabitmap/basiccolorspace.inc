@@ -177,6 +177,12 @@ type
     procedure FromGSBAPixel(const AValue: THSLAPixel); overload;
   end;
 
+operator := (const AValue: TExpandedPixel): TColor;
+operator := (const AValue: TColor): TExpandedPixel;
+Operator := (const Source: TExpandedPixel): TBGRAPixel;
+Operator := (const Source: TBGRAPixel): TExpandedPixel;
+
+type
   { TFPColorBasicHelper }
 
   TFPColorBasicHelper = record helper for TFPColor
@@ -188,10 +194,6 @@ type
     procedure FromExpanded(const AValue: TExpandedPixel; AGammaCompression: boolean = true);
   end;
 
-Operator := (const Source: TExpandedPixel): TBGRAPixel;
-Operator := (const Source: TBGRAPixel): TExpandedPixel;
-
-type
   { THSLAPixelBasicHelper }
 
   THSLAPixelBasicHelper = record helper for THSLAPixel
@@ -209,6 +211,8 @@ Operator := (const Source: THSLAPixel): TBGRAPixel;
 Operator := (const Source: TBGRAPixel): THSLAPixel;
 Operator := (const Source: THSLAPixel): TExpandedPixel;
 Operator := (const Source: TExpandedPixel): THSLAPixel;
+operator := (const AValue: TColor): THSLAPixel;
+operator := (const AValue: THSLAPixel): TColor;
 
 type
   { TGSBAPixelBasicHelper }
@@ -228,6 +232,8 @@ Operator := (const Source: TGSBAPixel): TBGRAPixel;
 Operator := (const Source: TBGRAPixel): TGSBAPixel;
 Operator := (const Source: TGSBAPixel): TExpandedPixel;
 Operator := (const Source: TExpandedPixel): TGSBAPixel;
+operator := (const AValue: TColor): TGSBAPixel;
+operator := (const AValue: TGSBAPixel): TColor;
 Operator := (const Source: TGSBAPixel): THSLAPixel; //no conversion, just copying for backward compatibility (use ToHSLAPixel instead for conversion)
 Operator := (const Source: THSLAPixel): TGSBAPixel; //no conversion, just copying for backward compatibility (use ToGSBAPixel instead for conversion)
 {$ENDIF}
@@ -1281,6 +1287,12 @@ begin
   Self := GSBAToExpanded(AValue);
 end;
 
+operator := (const AValue: TExpandedPixel): TColor;
+begin Result := BGRAToColor(GammaCompression(AValue)); end;
+
+operator := (const AValue: TColor): TExpandedPixel;
+begin Result := GammaExpansion(ColorToBGRA(ColorToRGB(AValue))) end;
+
 operator :=(const Source: TExpandedPixel): TBGRAPixel;
 begin
   result := GammaCompression(Source);
@@ -1386,6 +1398,12 @@ begin
   result := ExpandedToHSLA(Source);
 end;
 
+operator := (const AValue: TColor): THSLAPixel;
+begin Result := BGRAToHSLA(ColorToBGRA(ColorToRGB(AValue))) end;
+
+operator := (const AValue: THSLAPixel): TColor;
+begin Result := BGRAToColor(HSLAToBGRA(AValue)) end;
+
 { TGSBAPixelBasicHelper }
 
 function TGSBAPixelBasicHelper.ToColor: TColor;
@@ -1448,13 +1466,19 @@ begin
   result := ExpandedToGSBA(Source);
 end;
 
+operator := (const AValue: TColor): TGSBAPixel;
+begin Result := BGRAToGSBA(ColorToBGRA(ColorToRGB(AValue))) end;
+
+operator := (const AValue: TGSBAPixel): TColor;
+begin Result := BGRAToColor(GSBAToBGRA(AValue)) end;
+
 operator :=(const Source: TGSBAPixel): THSLAPixel;
 begin
-  result := THSLAPixel(QWord(Source));
+  result := THSLAPixel(Pointer(@Source)^);
 end;
 
 operator:=(const Source: THSLAPixel): TGSBAPixel;
 begin
-  result := TGSBAPixel(QWord(Source));
+  result := TGSBAPixel(Pointer(@Source)^);
 end;
 {$ENDIF}
