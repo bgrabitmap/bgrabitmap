@@ -2168,7 +2168,6 @@ type
     Data: PByte;
     ShortData: array[0..3] of byte;
   end;
-  PLZWString = ^TLZWString;
 const
   ClearCode = 256; // clear table, start with 9bit codes
   EoiCode = 257;   // end of input
