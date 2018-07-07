@@ -42,6 +42,7 @@ type
     function GetUTF8Char(APosition0: integer): string4;
     procedure SetAvailableHeight(AValue: single);
     procedure SetAvailableWidth(AValue: single);
+    procedure SetTabSize(AValue: single);
     procedure SetTopLeft(AValue: TPointF);
   protected
     FText: string;
@@ -67,6 +68,7 @@ type
     FBrokenLineCount: integer;
     FStartCaret: TBidiCaretPos;
     FLayoutComputed: boolean;
+    FTabSize: Single;
 
     function TextSizeBidiOverride(sUTF8: string; ARightToLeft: boolean): TPointF;
     function TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer; ARightToLeft: boolean; ASplitIndex: integer): TPointF;
@@ -127,9 +129,14 @@ type
     property TopLeft: TPointF read FTopLeft write SetTopLeft;
     property AvailableWidth: single read FAvailableWidth write SetAvailableWidth;
     property AvailableHeight: single read FAvailableHeight write SetAvailableHeight;
+    property TabSize: single read FTabSize write SetTabSize;
+
+    property TextUTF8: string read FText;
   end;
 
 implementation
+
+uses math;
 
 { TBidiTextLayout }
 
@@ -286,6 +293,13 @@ begin
   FLayoutComputed:= false;
 end;
 
+procedure TBidiTextLayout.SetTabSize(AValue: single);
+begin
+  if FTabSize=AValue then Exit;
+  FTabSize:=AValue;
+  FLayoutComputed:= false;
+end;
+
 procedure TBidiTextLayout.SetTopLeft(AValue: TPointF);
 begin
   if FTopLeft=AValue then Exit;
@@ -295,15 +309,15 @@ end;
 
 function TBidiTextLayout.TextSizeBidiOverride(sUTF8: string;
   ARightToLeft: boolean): TPointF;
-  begin
-    if ARightToLeft then
-      sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
-    else
-      sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
+begin
+  if ARightToLeft then
+    sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
+  else
+    sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
 
-    with FRenderer.TextSizeAngle(CleanTextOutString(sUTF8), FRenderer.FontOrientation) do
-      result := PointF(Width, Height);
-  end;
+  with FRenderer.TextSizeAngle(CleanTextOutString(sUTF8), FRenderer.FontOrientation) do
+    result := PointF(Width, Height);
+end;
 
 function TBidiTextLayout.TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer;
   ARightToLeft: boolean; ASplitIndex: integer): TPointF;
@@ -567,14 +581,33 @@ begin
 end;
 
 procedure TBidiTextLayout.ComputeLayout;
-var w,h, lineHeight, fullHeight, baseLine: single;
-  i, splitIndex, nextStart: Integer;
+var w,h, lineHeight, fullHeight, baseLine, tabPixelSize: single;
+  i, j, nextTabIndex, splitIndex: Integer;
   lineStart, subStart, lineEnd: integer;
   paraSpacing, correctedBaseLine: single;
-  isEndOfPara: boolean;
+  isEndOfPara, paraRTL, needNewLine: boolean;
   partStr, remainStr: string;
   pos: TPointF;
+  curBidiPos,endBidiPos,nextTabBidiPos, availWidth0: single;
   m: TAffineMatrix;
+  tabSectionStart, tabSectionCount: integer;
+  tabSection: array of record
+                startIndex, endIndex: integer;
+                bidiPos: single;
+              end;
+  alignment: TAlignment;
+  paraBidiLevel: Byte;
+  box: TAffineBox;
+
+  procedure AddTabSection(startIndex,endIndex: integer);
+  begin
+    if tabSectionCount >= length(tabSection) then setlength(tabSection, length(tabSection)*2+4);
+    tabSection[tabSectionCount].startIndex:= startIndex;
+    tabSection[tabSectionCount].endIndex:= endIndex;
+    tabSection[tabSectionCount].bidiPos:= curBidiPos;
+    inc(tabSectionCount);
+  end;
+
 begin
   fullHeight:= GetFontFullHeight;
   baseLine := GetFontBaseline;
@@ -593,6 +626,8 @@ begin
 
   paraSpacing := 0;
   pos := PointF(0,0);
+  tabPixelSize := TabSize*TextSizeBidiOverride(' ',False).x;
+  tabSection := nil;
 
   for i := 0 to FUnbrokenLineCount-1 do
   begin
@@ -605,54 +640,187 @@ begin
     splitIndex := subStart;
     h := 0;
 
+    //break lines
     while subStart < lineEnd do
     begin
-      LevelSize(FAvailableWidth, subStart, lineEnd, FBidi[lineStart].BidiInfo.ParagraphBidiLevel, splitIndex, w,h);
+      //split into sections according to tabs
+      paraBidiLevel := FBidi[lineStart].BidiInfo.ParagraphBidiLevel;
+      tabSectionCount := 0;
+      curBidiPos := 0;
+      tabSectionStart := subStart;
+      tabSectionCount := 0;
+      lineHeight := fullHeight;
 
-      if splitIndex < lineEnd then
+      while tabSectionStart < lineEnd do
       begin
-        partStr := copy(FText, FBidi[subStart].Offset+1, FBidi[splitIndex].Offset - FBidi[subStart].Offset);
-        remainStr := copy(FText, FBidi[splitIndex].Offset+1, FBidi[lineEnd].Offset - FBidi[splitIndex].Offset);
-        BGRADefaultWordBreakHandler(partStr, remainStr);
+        needNewLine := false;
+        while (tabSectionStart < lineEnd) and (FText[FBidi[tabSectionStart].Offset+1] = #9) do
+        begin
+          if tabPixelSize = 0 then inc(tabSectionStart)
+          else
+          begin
+            nextTabBidiPos := tabPixelSize* (floor(curBidiPos / tabPixelSize + 1e-6)+1);
+            if (FAvailableWidth = EmptySingle) or (nextTabBidiPos <= FAvailableWidth) then
+            begin
+              AddTabSection(tabSectionStart, tabSectionStart+1);
+              inc(tabSectionStart);
+              curBidiPos := nextTabBidiPos;
+            end else
+            begin
+              //if tab is last char then go to the end of the line
+              if tabSectionStart = lineEnd-1 then
+              begin
+                AddTabSection(tabSectionStart, splitIndex);
+                inc(tabSectionStart);
+                curBidiPos := FAvailableWidth;
+                needNewLine := true;
+                break;
+              end
+              else //otherwise a new line is needed before the tab
+              begin
+                needNewLine := true;
+                break;
+              end;
+            end;
+          end;
+        end;
+        if needNewLine then
+        begin
+          splitIndex:= tabSectionStart;
+          break;
+        end;
 
-        splitIndex:= subStart + UTF8Length(partStr);
-        nextStart := splitIndex;
-        while (nextStart < lineEnd) and (FText[FBidi[nextStart].Offset+1] in [' ',#9]) do inc(nextStart);
-      end else
-        nextStart := splitIndex;
+        nextTabIndex := tabSectionStart;
+        while (nextTabIndex < lineEnd) and (FText[FBidi[nextTabIndex].Offset+1] <> #9) do inc(nextTabIndex);
+        LevelSize(FAvailableWidth - curBidiPos, tabSectionStart, nextTabIndex, paraBidiLevel, splitIndex, w,h);
 
-      if h > fullHeight then
-        lineHeight := h
+        AddTabSection(tabSectionStart, splitIndex);
+
+        if splitIndex < nextTabIndex then
+        begin
+          partStr := copy(FText, FBidi[tabSectionStart].Offset+1, FBidi[splitIndex].Offset - FBidi[tabSectionStart].Offset);
+          remainStr := copy(FText, FBidi[splitIndex].Offset+1, FBidi[nextTabIndex].Offset - FBidi[splitIndex].Offset);
+          if tabSectionCount > 1 then partStr := ' '+partStr;
+          BGRADefaultWordBreakHandler(partStr, remainStr);
+          if tabSectionCount > 1 then delete(partStr,1,1);
+
+          splitIndex:= tabSectionStart + UTF8Length(partStr);
+          LevelSize(FAvailableWidth - curBidiPos, tabSectionStart, splitIndex, paraBidiLevel, splitIndex, w,h);
+
+          if splitIndex = tabSectionStart then
+          begin
+            dec(tabSectionCount);
+
+            //tabSectionStart stay the same
+          end
+          else
+          begin
+            //otherwise the section is split
+            tabSection[tabSectionCount-1].endIndex:= splitIndex;
+
+            curBidiPos += w;
+            if h > lineHeight then lineHeight := h;
+            tabSectionStart := splitIndex;
+            while (tabSectionStart < nextTabIndex) and (FText[FBidi[tabSectionStart].Offset+1] = ' ') do inc(tabSectionStart);
+          end;
+
+          break;
+        end else
+        begin
+          curBidiPos += w;
+          if h > lineHeight then lineHeight := h;
+          tabSectionStart := splitIndex;
+        end;
+      end;
+
+      // add broken line info
+      paraRTL := Odd(paraBidiLevel);
+      pos.x := 0;
+
+      if paraRTL and (FAvailableWidth <> EmptySingle) then
+        alignment := taRightJustify
       else
-        lineHeight := fullHeight;
+        alignment := taLeftJustify;
+
+      if FBrokenLineCount >= length(FBrokenLine) then
+        setlength(FBrokenLine, length(FBrokenLine)*2+4);
+      FBrokenLine[FBrokenLineCount].startIndex:= subStart;
+      FBrokenLine[FBrokenLineCount].endIndex:= splitIndex;
+      FBrokenLine[FBrokenLineCount].bidiLevel := paraBidiLevel;
+      if FAvailableWidth <> EmptySingle then
+        FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*pos, m*(pos+PointF(FAvailableWidth,0)), m*(pos+PointF(0,lineHeight)))
+      else
+      begin
+        case alignment of
+        taRightJustify: FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*(pos+PointF(-w,0)), m*pos, m*(pos+PointF(-w,lineHeight)));
+        taCenter: FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*(pos+PointF(-w*0.5,0)), m*(pos+PointF(w*0.5,0)), m*(pos+PointF(-w*0.5,lineHeight)));
+        else {taLeftJustify}
+          FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*pos, m*(pos+PointF(w,0)), m*(pos+PointF(0,lineHeight)));
+        end;
+      end;
+      FBrokenLineCount += 1;
+
+      subStart := tabSectionStart;
+
+      if FAvailableWidth <> EmptySingle then
+        availWidth0 := FAvailableWidth
+      else
+        availWidth0:= 0;
+
+      case alignment of
+      taRightJustify:
+        if paraRTL then
+          pos.x := availWidth0
+        else
+          pos.x := availWidth0 - curBidiPos;
+      taCenter:
+        if paraRTL then
+          pos.x := (availWidth0 + curBidiPos)*0.5
+        else
+          pos.x := (availWidth0 - curBidiPos)*0.5;
+      else {taLeftJustify}
+        if paraRTL then
+          pos.x := curBidiPos
+        else
+          pos.x := 0;
+      end;
 
       if fullHeight <> 0 then
         correctedBaseLine := baseLine*lineHeight/fullHeight
       else
         correctedBaseLine:= 0;
 
-      if Odd(FBidi[lineStart].BidiInfo.ParagraphBidiLevel) and (FAvailableWidth <> EmptySingle) then
-        ComputeLevelLayout(m, pos + PointF(FAvailableWidth,0), subStart, splitIndex, FBidi[lineStart].BidiInfo.ParagraphBidiLevel, lineHeight, correctedBaseLine, FBrokenLineCount, w)
-      else
-        ComputeLevelLayout(m, pos, subStart, splitIndex, FBidi[lineStart].BidiInfo.ParagraphBidiLevel, lineHeight, correctedBaseLine, FBrokenLineCount, w);
-
-      if FBrokenLineCount >= length(FBrokenLine) then
-        setlength(FBrokenLine, length(FBrokenLine)*2+4);
-      FBrokenLine[FBrokenLineCount].startIndex:= subStart;
-      FBrokenLine[FBrokenLineCount].endIndex:= splitIndex;
-      FBrokenLine[FBrokenLineCount].bidiLevel := FBidi[lineStart].BidiInfo.ParagraphBidiLevel;
-      if FAvailableWidth <> EmptySingle then
-        FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*pos, m*(pos+PointF(FAvailableWidth,0)), m*(pos+PointF(0,lineHeight)))
-      else
+      for j := 0 to tabSectionCount-1 do
       begin
-        if Odd(FBidi[lineStart].BidiInfo.ParagraphBidiLevel) then
-          FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*(pos+PointF(-w,0)), m*pos, m*(pos+PointF(-w,lineHeight)))
+        if (tabSection[j].endIndex = tabSection[j].startIndex+1) and
+          (FText[FBidi[tabSection[j].startIndex].Offset+1] = #9) then
+        begin
+          if j = tabSectionCount-1 then
+            endBidiPos:= curBidiPos
+          else
+            endBidiPos:= tabSection[j+1].bidiPos;
+
+          if paraRTL then
+            box := TAffineBox.AffineBox(m*(pos + PointF(-endBidiPos,0)), m*(pos + PointF(-tabSection[j].bidiPos,0)),
+                                        m*(pos + PointF(-endBidiPos,lineHeight)) )
+          else
+            box := TAffineBox.AffineBox(m*(pos + PointF(tabSection[j].bidiPos,0)), m*(pos + PointF(endBidiPos,0)),
+                                        m*(pos + PointF(tabSection[j].bidiPos,lineHeight)) );
+
+          AddPart(tabSection[j].startIndex, tabSection[j].endIndex, paraBidiLevel, box, PointF(0,0), #9, FBrokenLineCount-1);
+
+        end
         else
-          FBrokenLine[FBrokenLineCount].affineBox := TAffineBox.AffineBox(m*pos, m*(pos+PointF(w,0)), m*(pos+PointF(0,lineHeight)))
+        begin
+          if paraRTL then
+            ComputeLevelLayout(m, pos - PointF(tabSection[j].bidiPos,0), tabSection[j].startIndex, tabSection[j].endIndex,
+                              paraBidiLevel, lineHeight, correctedBaseLine, FBrokenLineCount-1, w)
+          else
+            ComputeLevelLayout(m, pos + PointF(tabSection[j].bidiPos,0), tabSection[j].startIndex, tabSection[j].endIndex,
+                              paraBidiLevel, lineHeight, correctedBaseLine, FBrokenLineCount-1, w)
+        end;
       end;
 
-      FBrokenLineCount += 1;
-      subStart := nextStart;
       pos.y += lineHeight;
       if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then exit;
     end;
@@ -837,6 +1005,15 @@ begin
             if len > 0 then
             begin
               w := ((APosition-origin)*axis)/len;
+              //if there is just one char, it is the whole part
+              if PartEndIndex[j] = PartStartIndex[j]+1 then
+              begin
+                if w > 0.5*len then
+                  exit(PartEndIndex[j])
+                else
+                  exit(PartStartIndex[j]);
+              end;
+
               str := copy(FText, FBidi[PartStartIndex[j]].Offset+1, FBidi[PartEndIndex[j]].Offset - FBidi[PartStartIndex[j]].Offset);
               fit := TextFitInfoBidiOverride(str, w, PartRightToLeft[j]);
               curIndex := PartStartIndex[j]+fit;
@@ -1096,6 +1273,7 @@ begin
   FAvailableWidth:= EmptySingle;
   FAvailableHeight:= EmptySingle;
   FLayoutComputed:= false;
+  FTabSize := 8;
 end;
 
 end.

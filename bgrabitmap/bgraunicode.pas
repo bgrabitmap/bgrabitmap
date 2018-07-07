@@ -204,6 +204,7 @@ var
     cells := TStringList.Create;
     codeCount := 0;
     curBidi := '?';
+    codes := nil;
     while not eof(tIn) do
     begin
       ReadLn(tIn,line);

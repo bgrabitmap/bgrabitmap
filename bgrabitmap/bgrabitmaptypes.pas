@@ -561,7 +561,7 @@ begin
 end;
 
 procedure BGRADefaultWordBreakHandler(var ABefore, AAfter: string);
-const spacingChars = [' ',#9];
+const spacingChars = [' '];
   wordBreakChars = [' ',#9,'-','?','!'];
 var p, charLen: integer;
   u: Cardinal;
