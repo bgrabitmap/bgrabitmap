@@ -39,6 +39,7 @@ type
     BottomLeft: TPointF;
     class function EmptyBox: TAffineBox;
     class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
+    class function AffineBox(ARectF: TRectF): TAffineBox;
     function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
     property BottomRight: TPointF read GetBottomRight;
@@ -633,6 +634,13 @@ begin
   result.TopLeft := ATopLeft;
   result.TopRight := ATopRight;
   result.BottomLeft := ABottomLeft;
+end;
+
+class function TAffineBox.AffineBox(ARectF: TRectF): TAffineBox;
+begin
+  result.TopLeft := ARectF.TopLeft;
+  result.TopRight := PointF(ARectF.Right, ARectF.Top);
+  result.BottomLeft := PointF(ARectF.Left, ARectF.Bottom);
 end;
 
 function TAffineBox.Contains(APoint: TPointF): boolean;
