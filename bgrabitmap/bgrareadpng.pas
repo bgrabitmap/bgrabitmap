@@ -1098,7 +1098,7 @@ procedure TBGRAReaderPNG.DoDecompress;
     dec(Count, Count4 shl 2);
     while Count4 > 0 do
     begin
-      {$push}{$r-}
+      {$push}{$r-}{$q-}
       PDWord(p)^ := (((PDWord(pPrev)^ and $00FF00FF) + (PDWord(p)^ and $00FF00FF)) and $00FF00FF)
         or (((PDWord(pPrev)^ and $FF00FF00) + (PDWord(p)^ and $FF00FF00)) and $FF00FF00);
       {$pop}
