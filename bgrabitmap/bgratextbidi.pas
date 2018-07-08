@@ -61,6 +61,7 @@ type
   protected
     FBidi: TBidiUTF8Array;
     FRenderer: TBGRACustomFontRenderer;
+    FLineHeight: single;
 
     FParagraph: array of record
       firstUnbrokenLineIndex: integer;
@@ -701,7 +702,7 @@ begin
 end;
 
 procedure TBidiTextLayout.ComputeLayout;
-var w,h, lineHeight, fullHeight, baseLine, tabPixelSize: single;
+var w,h, lineHeight, baseLine, tabPixelSize: single;
   paraIndex, i, j, nextTabIndex, splitIndex: Integer;
   lineStart, subStart, lineEnd: integer;
   paraSpacingAbove, paraSpacingBelow, correctedBaseLine: single;
@@ -728,13 +729,13 @@ var w,h, lineHeight, fullHeight, baseLine, tabPixelSize: single;
   end;
 
 begin
-  fullHeight:= GetFontFullHeight;
+  FLineHeight:= GetFontFullHeight;
   baseLine := GetFontBaseline;
   FPartCount := 0;
   FMatrix := AffineMatrixTranslation(FTopLeft.x, FTopLeft.y)*AffineMatrixRotationDeg(-GetFontOrientation);
   FMatrixInverse := AffineMatrixInverse(FMatrix);
   FStartCaret.Top := FTopLeft;
-  FStartCaret.Bottom := FMatrix*PointF(0,fullHeight);
+  FStartCaret.Bottom := FMatrix*PointF(0,FLineHeight);
   FStartCaret.RightToLeft := false;
   FStartCaret.PreviousTop := EmptyPointF;
   FStartCaret.PreviousBottom := EmptyPointF;
@@ -744,8 +745,8 @@ begin
 
   FLayoutComputed:= true;
 
-  paraSpacingAbove := ParagraphSpacingAbove*fullHeight;
-  paraSpacingBelow := ParagraphSpacingBelow*fullHeight;
+  paraSpacingAbove := ParagraphSpacingAbove*FLineHeight;
+  paraSpacingBelow := ParagraphSpacingBelow*FLineHeight;
   pos := PointF(0,0);
 
   tabPixelSize := TabSize*TextSizeBidiOverride(' ',False).x;
@@ -755,7 +756,7 @@ begin
   begin
     FParagraph[paraIndex].rectF.Top := pos.y;
     FParagraph[paraIndex].rectF.Bottom := pos.y;
-    if FAvailableWidth = EmptySingle then
+    if FAvailableWidth <> EmptySingle then
     begin
       FParagraph[paraIndex].rectF.Left := 0;
       FParagraph[paraIndex].rectF.Right := FAvailableWidth;
@@ -786,7 +787,7 @@ begin
         curBidiPos := 0;
         tabSectionStart := subStart;
         tabSectionCount := 0;
-        lineHeight := fullHeight;
+        lineHeight := FLineHeight;
 
         while tabSectionStart < lineEnd do
         begin
@@ -939,8 +940,8 @@ begin
             pos.x := 0;
         end;
 
-        if fullHeight <> 0 then
-          correctedBaseLine := baseLine*lineHeight/fullHeight
+        if FLineHeight <> 0 then
+          correctedBaseLine := baseLine*lineHeight/FLineHeight
         else
           correctedBaseLine:= 0;
 
@@ -1240,7 +1241,8 @@ function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer): Arra
 var
   temp, i: Integer;
   caret, caretEnd, caretStartPart, caretEndPart: TBidiCaretPos;
-  brokenLineIndex: integer;
+  brokenLineIndex, paraIndex: integer;
+  r: TRectF;
 begin
   NeedLayout;
 
@@ -1292,6 +1294,21 @@ begin
           caretEndPart := BrokenLineEndCaret[brokenLineIndex]
         else
           caretStartPart := BrokenLineEndCaret[brokenLineIndex];
+      end;
+
+      if (i > caret.PartIndex) and (ParagraphSpacingAbove+ParagraphSpacingBelow <> 0) then
+      begin
+        paraIndex := BrokenLineParagraphIndex[PartBrokenLineIndex[i]];
+        if (paraIndex > 0) and (BrokenLineParagraphIndex[PartBrokenLineIndex[i-1]] = paraIndex-1) then
+        begin
+          r := RectF(ParagraphRectF[paraIndex-1].Left, ParagraphRectF[paraIndex-1].Bottom - ParagraphSpacingBelow*FLineHeight,
+                       ParagraphRectF[paraIndex-1].Right, ParagraphRectF[paraIndex-1].Bottom);
+          result := ConcatPointsF([result, Matrix*TAffineBox.AffineBox(r).AsPolygon, PointsF([EmptyPointF])]);
+
+          r := RectF(ParagraphRectF[paraIndex].Left, ParagraphRectF[paraIndex].Top,
+                       ParagraphRectF[paraIndex].Right, ParagraphRectF[paraIndex].Top + ParagraphSpacingAbove*FLineHeight);
+          result := ConcatPointsF([result, Matrix*TAffineBox.AffineBox(r).AsPolygon, PointsF([EmptyPointF])]);
+        end;
       end;
 
       result := ConcatPointsF([result,
