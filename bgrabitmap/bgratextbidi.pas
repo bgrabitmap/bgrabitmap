@@ -327,6 +327,14 @@ var nextIndex, prevIndex: integer;
   extraW, combW: Single;
   charClass: TUnicodeBidiClass;
 begin
+  if ASplitIndex = 0 then
+  begin
+    s := copy(FText, FBidi[AStartIndex].Offset+1, FBidi[AEndIndex].Offset-FBidi[AStartIndex].Offset);
+    result := TextSizeBidiOverride(s, ARightToLeft);
+    result.x := 0;
+    exit;
+  end;
+
   s := copy(FText, FBidi[AStartIndex].Offset+1, FBidi[ASplitIndex].Offset-FBidi[AStartIndex].Offset);
   result := TextSizeBidiOverride(s, ARightToLeft);
 
@@ -1017,7 +1025,8 @@ begin
               str := copy(FText, FBidi[PartStartIndex[j]].Offset+1, FBidi[PartEndIndex[j]].Offset - FBidi[PartStartIndex[j]].Offset);
               fit := TextFitInfoBidiOverride(str, w, PartRightToLeft[j]);
               curIndex := PartStartIndex[j]+fit;
-              curW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], curIndex).x;
+              if curIndex = 0 then curW := 0
+              else curW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], curIndex).x;
               while (curW < w) and (curIndex < PartEndIndex[j]) do
               begin
                 newIndex := curIndex+1;
