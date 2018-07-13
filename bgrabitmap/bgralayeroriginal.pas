@@ -79,6 +79,31 @@ type
     property OnChange: TOriginalChangeEvent read FOnChange write SetOnChange;
   end;
 
+  { TBGRALayerImageOriginal }
+
+  TBGRALayerImageOriginal = class(TBGRALayerCustomOriginal)
+  private
+    function GetImageHeight: integer;
+    function GetImageWidth: integer;
+  protected
+    FImage: TBGRABitmap;
+    FJpegStream: TMemoryStream;
+    FContentVersion: integer;
+    procedure ContentChanged;
+  public
+    constructor Create; override;
+    destructor Destroy; override;
+    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); override;
+    function GetRenderBounds({%H-}ADestRect: TRect; AMatrix: TAffineMatrix): TRect; override;
+    procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
+    procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); override;
+    procedure LoadFromStream(AStream: TStream); override;
+    procedure SaveToStream(AStream: TStream); override;
+    class function StorageClassName: RawByteString; override;
+    property Width: integer read GetImageWidth;
+    property Height: integer read GetImageHeight;
+  end;
+
   { TBGRACustomOriginalStorage }
 
   TBGRACustomOriginalStorage = class
@@ -589,6 +614,162 @@ begin
   result := TBGRAOriginalEditor.Create;
 end;
 
+{ TBGRALayerImageOriginal }
+
+function TBGRALayerImageOriginal.GetImageHeight: integer;
+begin
+  result := FImage.Height;
+end;
+
+function TBGRALayerImageOriginal.GetImageWidth: integer;
+begin
+  result := FImage.Width;
+end;
+
+procedure TBGRALayerImageOriginal.ContentChanged;
+begin
+  FContentVersion += 1;
+  NotifyChange;
+end;
+
+constructor TBGRALayerImageOriginal.Create;
+begin
+  inherited Create;
+  FImage := TBGRABitmap.Create;
+  FContentVersion := 0;
+  FJpegStream := nil;
+end;
+
+destructor TBGRALayerImageOriginal.Destroy;
+begin
+  FImage.Free;
+  FJpegStream.Free;
+  inherited Destroy;
+end;
+
+procedure TBGRALayerImageOriginal.Render(ADest: TBGRABitmap;
+  AMatrix: TAffineMatrix; ADraft: boolean);
+var resampleFilter: TResampleFilter;
+begin
+  if ADraft then resampleFilter := rfBox else resampleFilter:= rfCosine;
+  if Assigned(FImage) then
+    ADest.PutImageAffine(AMatrix, FImage, resampleFilter, dmSet);
+end;
+
+function TBGRALayerImageOriginal.GetRenderBounds(ADestRect: TRect;
+  AMatrix: TAffineMatrix): TRect;
+var
+  aff: TAffineBox;
+begin
+  if Assigned(FImage) then
+  begin
+    aff := AMatrix*TAffineBox.AffineBox(PointF(0,0),PointF(FImage.Width,0),PointF(0,FImage.Height));
+    result := aff.RectBounds;
+  end else
+    result := EmptyRect;
+end;
+
+procedure TBGRALayerImageOriginal.LoadFromStorage(
+  AStorage: TBGRACustomOriginalStorage);
+var imgStream: TMemoryStream;
+begin
+  if not Assigned(FImage) then FImage := TBGRABitmap.Create;
+  imgStream := TMemoryStream.Create;
+  try
+    if AStorage.ReadFile('content.png', imgStream) then
+    begin
+      imgStream.Position:= 0;
+      FImage.LoadFromStream(imgStream);
+      FreeAndNil(FJpegStream);
+    end else
+    if AStorage.ReadFile('content.jpg', imgStream) then
+    begin
+      FreeAndNil(FJpegStream);
+      FJpegStream := imgStream;
+      imgStream:= nil;
+
+      FJpegStream.Position:= 0;
+      FImage.LoadFromStream(FJpegStream);
+    end else
+    begin
+      FImage.SetSize(0,0);
+      FreeAndNil(FJpegStream);
+    end;
+    FContentVersion := AStorage.Int['content-version'];
+  finally
+    imgStream.Free;
+  end;
+end;
+
+procedure TBGRALayerImageOriginal.SaveToStorage(
+  AStorage: TBGRACustomOriginalStorage);
+var imgStream: TMemoryStream;
+begin
+  if Assigned(FImage) then
+  begin
+    if FContentVersion > AStorage.Int['content-version'] then
+    begin
+      if Assigned(FJpegStream) then
+      begin
+        AStorage.WriteFile('content.jpg', FJpegStream, false);
+        AStorage.RemoveFile('content.png');
+        AStorage.Int['content-version'] := FContentVersion;
+      end else
+      begin
+        imgStream := TMemoryStream.Create;
+        try
+          FImage.SaveToStreamAsPng(imgStream);
+          AStorage.RemoveFile('content.jpg');
+          AStorage.WriteFile('content.png', imgStream, false);
+          AStorage.Int['content-version'] := FContentVersion;
+        finally
+          imgStream.Free;
+        end;
+      end;
+    end;
+  end;
+end;
+
+procedure TBGRALayerImageOriginal.LoadFromStream(AStream: TStream);
+var
+  newJpegStream: TMemoryStream;
+begin
+  if DetectFileFormat(AStream) = ifJpeg then
+  begin
+    newJpegStream := TMemoryStream.Create;
+    try
+      newJpegStream.CopyFrom(AStream, AStream.Size);
+      newJpegStream.Position := 0;
+      FImage.LoadFromStream(newJpegStream);
+      FJpegStream.Free;
+      FJpegStream := newJpegStream;
+      newJpegStream := nil;
+    finally
+      newJpegStream.Free;
+    end;
+  end else
+  begin
+    FreeAndNil(FJpegStream);
+    FImage.LoadFromStream(AStream);
+  end;
+  ContentChanged;
+end;
+
+procedure TBGRALayerImageOriginal.SaveToStream(AStream: TStream);
+begin
+  if Assigned(FJpegStream) then
+  begin
+    FJpegStream.Position := 0;
+    if AStream.CopyFrom(FJpegStream, FJpegStream.Size)<>FJpegStream.Size then
+      raise exception.Create('Error while saving');
+  end else
+    FImage.SaveToStreamAsPng(AStream);
+end;
+
+class function TBGRALayerImageOriginal.StorageClassName: RawByteString;
+begin
+  result := 'image';
+end;
 
 end.
 
