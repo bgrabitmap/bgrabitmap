@@ -114,11 +114,13 @@ type
     procedure SetBool(AName: utf8string; AValue: boolean);
   protected
     FFormats: TFormatSettings;
+    function GetColorArray(AName: UTF8String): ArrayOfTBGRAPixel;
     function GetInteger(AName: utf8string): integer;
     function GetPointF(AName: utf8string): TPointF;
     function GetRawString(AName: utf8string): RawByteString; virtual; abstract;
     function GetSingle(AName: utf8string): single;
     function GetColor(AName: UTF8String): TBGRAPixel;
+    procedure SetColorArray(AName: UTF8String; AValue: ArrayOfTBGRAPixel);
     procedure SetInteger(AName: utf8string; AValue: integer);
     procedure SetPointF(AName: utf8string; AValue: TPointF);
     procedure SetRawString(AName: utf8string; AValue: RawByteString); virtual; abstract;
@@ -138,6 +140,7 @@ type
     property FloatDef[AName: utf8string; ADefault: single]: single read GetSingleDef;
     property PointF[AName: utf8string]: TPointF read GetPointF write SetPointF;
     property Color[AName: UTF8String]: TBGRAPixel read GetColor write SetColor;
+    property ColorArray[AName: UTF8String]: ArrayOfTBGRAPixel read GetColorArray write SetColorArray;
   end;
 
   { TBGRAMemOriginalStorage }
@@ -443,6 +446,21 @@ begin
   result := StrToBool(RawString[AName]);
 end;
 
+function TBGRACustomOriginalStorage.GetColorArray(AName: UTF8String
+  ): ArrayOfTBGRAPixel;
+var colorNames: TStringList;
+  i: Integer;
+begin
+  colorNames := TStringList.Create;
+  colorNames.StrictDelimiter := true;
+  colorNames.Delimiter:= ',';
+  colorNames.DelimitedText:= RawString[AName];
+  setlength(result, colorNames.Count);
+  for i := 0 to high(result) do
+    result[i] := StrToBGRA(colorNames[i],BGRAPixelTransparent);
+  colorNames.Free;
+end;
+
 function TBGRACustomOriginalStorage.GetIntegerDef(AName: utf8string;
   ADefault: integer): integer;
 begin
@@ -458,6 +476,20 @@ end;
 procedure TBGRACustomOriginalStorage.SetBool(AName: utf8string; AValue: boolean);
 begin
   RawString[AName] := BoolToStr(AValue,'true','false');
+end;
+
+procedure TBGRACustomOriginalStorage.SetColorArray(AName: UTF8String;
+  AValue: ArrayOfTBGRAPixel);
+var colorNames: TStringList;
+  i: Integer;
+begin
+  colorNames := TStringList.Create;
+  colorNames.StrictDelimiter := true;
+  colorNames.Delimiter:= ',';
+  for i := 0 to high(AValue) do
+    colorNames.Add(LowerCase(BGRAToStr(AValue[i], CSSColors)));
+  RawString[AName] := colorNames.DelimitedText;
+  colorNames.Free;
 end;
 
 function TBGRACustomOriginalStorage.GetInteger(AName: utf8string): integer;
