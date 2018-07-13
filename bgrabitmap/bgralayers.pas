@@ -256,6 +256,7 @@ type
     procedure Resample(AWidth, AHeight: integer; AResampleMode: TResampleMode; AFineResampleFilter: TResampleFilter = rfLinear);
     procedure SetLayerBitmap(layer: integer; ABitmap: TBGRABitmap; AOwned: boolean);
 
+    function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect;
     function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect;
     procedure MouseMove(Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
@@ -1436,6 +1437,12 @@ begin
     FLayers[layer].OriginalGuid := GUID_NULL;
     FLayers[layer].OriginalMatrix := AffineMatrixIdentity;
   end;
+end;
+
+function TBGRALayeredBitmap.DrawEditor(ADest: TBGRABitmap;
+  ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect;
+begin
+  result := DrawEditor(ADest, ALayerIndex, AffineMatrixTranslation(X,Y), APointSize);
 end;
 
 function TBGRALayeredBitmap.DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer;
