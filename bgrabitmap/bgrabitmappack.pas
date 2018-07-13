@@ -26,7 +26,7 @@ uses
   BGRAFontGL, BGRAOpenGL3D, BGRAPhoxo, BGRAFilterScanner, BGRAFilterType, 
   BGRAFilterBlur, BGRAMultiFileType, BGRAWinResource, BGRALazResource, 
   BGRAIconCursor, BGRABlurGL, BGRAReadTiff, BGRALazPaint, BGRAMemDirectory, 
-  BGRAUnicode, BGRATextBidi, BGRALayerOriginal;
+  BGRAUnicode, BGRATextBidi, BGRALayerOriginal, BGRASVGOriginal;
 
 implementation
 

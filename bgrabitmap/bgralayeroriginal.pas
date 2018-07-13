@@ -66,7 +66,7 @@ type
     destructor Destroy; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); virtual; abstract;
     function GetRenderBounds(ADestRect: TRect; AMatrix: TAffineMatrix): TRect; virtual; abstract;
-    procedure ConfigureEditor(AEditor: TBGRAOriginalEditor); virtual;
+    procedure ConfigureEditor({%H-}AEditor: TBGRAOriginalEditor); virtual;
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); virtual; abstract;
     procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); virtual; abstract;
     procedure LoadFromFile(AFilenameUTF8: string); virtual;
@@ -770,6 +770,10 @@ class function TBGRALayerImageOriginal.StorageClassName: RawByteString;
 begin
   result := 'image';
 end;
+
+initialization
+
+  RegisterLayerOriginal(TBGRALayerImageOriginal);
 
 end.
 
