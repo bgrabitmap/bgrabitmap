@@ -184,15 +184,15 @@ begin
   grad.GradientType:= gtLinear;
   grad.Origin := PointF(FLayers.Width/2,100);
   grad.XAxis := grad.origin+PointF(0,250);
-  grad.SaveToFile('grad.data');    //save original definition
+  grad.SaveToFile(Application.Location + 'grad.data');    //save original definition
   grad.Free;
 
   grad := TBGRALayerGradientOriginal.Create;
-  grad.LoadFromFile('grad.data'); // load original definition
+  grad.LoadFromFile(Application.Location + 'grad.data'); // load original definition
   FLayers.AddLayerFromOwnedOriginal(grad);
 
   svg := TBGRALayerSVGOriginal.Create;
-  svg.LoadFromFile('bicycling.svg');
+  svg.LoadFromFile(Application.Location + 'bicycling.svg');
   idxBike := FLayers.AddLayerFromOwnedOriginal(svg);
   FLayers.LayerOpacity[idxBike] := 192;
   FLayers.LayerOriginalMatrix[idxBike] := AffineMatrixTranslation((FLayers.Width-svg.Width*0.5)/2,(FLayers.Height-svg.Height*0.5)/2)*
@@ -203,7 +203,7 @@ begin
   FLayers.RenderLayerFromOriginal(idxBike);
 
   img := TBGRALayerImageOriginal.Create;
-  img.LoadFromFile('lazarus.jpg');
+  img.LoadFromFile(Application.Location + 'lazarus.jpg');
   idxImg := FLayers.AddLayerFromOwnedOriginal(img);
   FLayers.LayerOriginalMatrix[idxImg] := AffineMatrixTranslation(0, FLayers.Height - img.Height);
 end;

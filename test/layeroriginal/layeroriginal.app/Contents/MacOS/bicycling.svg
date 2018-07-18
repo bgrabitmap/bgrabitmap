@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://web.resource.org/cc/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" version="1.1" height="600px" width="1000px" id="svg2249" sodipodi:version="0.32" inkscape:version="0.45.1" sodipodi:docname="bicycling.svg" inkscape:output_extension="org.inkscape.output.svg.inkscape" sodipodi:docbase="M:\Documents\map-icons\svg\recreation">
+  <metadata id="metadata2260">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+        <cc:license rdf:resource="http://web.resource.org/cc/PublicDomain"/>
+      </cc:Work>
+      <cc:License rdf:about="http://web.resource.org/cc/PublicDomain">
+        <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>
+        <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>
+        <cc:permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+  <defs id="defs2258"/>
+  <sodipodi:namedview inkscape:window-height="573" inkscape:window-width="797" inkscape:pageshadow="2" inkscape:pageopacity="0.0" guidetolerance="10.0" gridtolerance="10.0" objecttolerance="10.0" borderopacity="1.0" bordercolor="#666666" pagecolor="#ffffff" id="base" inkscape:zoom="0.62833333" inkscape:cx="500" inkscape:cy="300" inkscape:window-x="174" inkscape:window-y="181" inkscape:current-layer="svg2249"/>
+  <circle cx="215" cy="409" r="161" style="fill:none;stroke:#000000;stroke-width:40px" id="circle2251" sodipodi:cx="215" sodipodi:cy="409" sodipodi:rx="161" sodipodi:ry="161" transform="matrix(-1,0,0,1,1005,0)"/>
+  <circle cx="790" cy="406" r="161" style="fill:none;stroke:#000000;stroke-width:40px" id="circle2253" sodipodi:cx="790" sodipodi:cy="406" sodipodi:rx="161" sodipodi:ry="161" transform="matrix(-1,0,0,1,1005,0)"/>
+  <path style="fill:#000000;fill-rule:evenodd;stroke:none" d="M 575.51563,15.467118 C 708.0821,16.75919 685.60007,1.7711686 756.92238,230.98455 C 815.02489,414.12586 808.69613,394.15363 809,407 C 809.21296,416.98022 801.15667,424.89312 791.03306,425.57043 C 769.97946,423.44166 778.83508,427.84741 705.84252,201.18078 C 439.13037,482.5364 539.19408,436.91194 395.65936,442.62576 C 207.01701,440.81686 191.68443,452.4455 189.44484,424.79518 C 189.70326,415.40613 194.09629,409.80716 323.5618,121.67535 L 311.15792,87.564675 L 268.51958,86.789433 L 270.07006,51.128275 L 428.99479,51.128275 C 443.03529,70.337063 423.30967,70.250925 352.24577,86.01419 L 364.64965,120.9001 L 681.72386,121.67535 C 660.36162,47.079788 672.42095,51.731243 576.29087,51.903518 L 575.51563,15.467118 z M 690.88585,159.91012 L 380.62248,159.36001 L 470.29079,400.30922 L 690.88585,159.91012 z M 343.21484,174.21304 L 431.23282,405.26023 L 238.6935,405.81034 L 343.21484,174.21304 z " id="path2255"/>
+</svg>
