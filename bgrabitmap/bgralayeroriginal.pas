@@ -5,7 +5,8 @@ unit BGRALayerOriginal;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory;
+  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory{,
+  Dialogs};
 
 type
   TAffineMatrix = BGRATransform.TAffineMatrix;
@@ -228,12 +229,18 @@ begin
     ADest.DrawPolygonAntialias(pts, BGRA(0,0,0,alpha),2);
     ADest.FillPolyAntialias(pts, BGRA(255,255,255,alpha));
     ADest.Pen.Arrow.EndAsNone;
-    for i := 0 to high(pts) do
-    begin
-      if floor(pts[i].x - 1) < result.Left then result.Left := floor(pts[i].x - 1);
-      if ceil(pts[i].x + 1) > result.Right then result.Right := ceil(pts[i].x - 1);
-      if floor(pts[i].y - 1) < result.Top then result.Top := floor(pts[i].y - 1);
-      if ceil(pts[i].y + 1) > result.Bottom then result.Bottom := ceil(pts[i].y - 1);
+    try
+      for i := 0 to high(pts) do
+      begin
+        if floor(pts[i].x - 1) < result.Left then result.Left := floor(pts[i].x - 1);
+        if ceil(pts[i].x + 1) > result.Right then result.Right := ceil(pts[i].x - 1);
+        if floor(pts[i].y - 1) < result.Top then result.Top := floor(pts[i].y - 1);
+        if ceil(pts[i].y + 1) > result.Bottom then result.Bottom := ceil(pts[i].y - 1);
+      end;
+    except
+      // Invalid floating point operation ; -3,402823061E38 ; -3,402823061E38
+      on e: exception do ;
+        //ShowMessage(e.message + ' ; ' + pts[i].x.ToString + ' ; ' + pts[i].y.ToString);
     end;
   end;
 end;
