@@ -1476,19 +1476,22 @@ end;
 procedure TBGRALayeredBitmap.MouseMove(Shift: TShiftState; X, Y: Single;
   out ACursor: TOriginalEditorCursor);
 begin
-  FOriginalEditor.MouseMove(Shift, X, Y, ACursor);
+  if Assigned(FOriginalEditor) then
+    FOriginalEditor.MouseMove(Shift, X, Y, ACursor);
 end;
 
 procedure TBGRALayeredBitmap.MouseDown(RightButton: boolean;
   Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
 begin
-  FOriginalEditor.MouseDown(RightButton, Shift, X, Y, ACursor);
+  if Assigned(FOriginalEditor) then
+    FOriginalEditor.MouseDown(RightButton, Shift, X, Y, ACursor);
 end;
 
 procedure TBGRALayeredBitmap.MouseUp(RightButton: boolean; Shift: TShiftState;X, Y: Single; out
   ACursor: TOriginalEditorCursor);
 begin
-  FOriginalEditor.MouseUp(RightButton, Shift, X,Y, ACursor);
+  if Assigned(FOriginalEditor) then
+    FOriginalEditor.MouseUp(RightButton, Shift, X,Y, ACursor);
 end;
 
 function TBGRALayeredBitmap.IndexOfOriginal(AGuid: TGuid): integer;
