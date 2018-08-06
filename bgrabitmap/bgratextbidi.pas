@@ -141,7 +141,7 @@ type
 
     function GetCaret(ACharIndex: integer): TBidiCaretPos;
     function GetCharIndexAt(APosition: TPointF): integer;
-    function GetTextEnveloppe(AStartIndex, AEndIndex: integer): ArrayOfTPointF;
+    function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true): ArrayOfTPointF;
 
     property CharCount: integer read FCharCount;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
@@ -1115,16 +1115,26 @@ procedure TBidiTextLayout.DrawCaret(ADest: TBGRACustomBitmap;
       begin
         triSize := len*0.2;
         if ARightToLeft then
-          ADest.FillPolyAntialias(PointsF([ABottom + 0.5*v, ATop + 0.5*v - 0.5*u, ATop - (triSize+0.5)*v - 0.5*u, ATop - 0.5*v + triSize*u, ABottom - 0.5*v]), AColor)
+          ADest.FillPolyAntialias(PointsF([ABottom, ATop, ATop - triSize*v, ATop - v + triSize*u, ABottom - v]), AColor, false)
         else
-          ADest.FillPolyAntialias(PointsF([ABottom - 0.5*v, ATop - 0.5*v - 0.5*u, ATop + (triSize+0.5)*v - 0.5*u, ATop + triSize*u + 0.5*v, ABottom + 0.5*v]), AColor)
+          ADest.FillPolyAntialias(PointsF([ABottom, ATop, ATop + triSize*v, ATop + triSize*u + v, ABottom + v]), AColor, False)
       end
       else
       begin
         if len > 10 then
-          ADest.FillPolyAntialias(PointsF([ABottom - 0.5*v, ATop - 0.5*v, ATop + 1.5*v, ABottom + 1.5*v]), AColor)
+        begin
+          if ARightToLeft then
+            ADest.FillPolyAntialias(PointsF([ABottom, ATop, ATop - 2*v, ABottom - 2*v]), AColor, False)
+          else
+            ADest.FillPolyAntialias(PointsF([ABottom, ATop, ATop + 2*v, ABottom + 2*v]), AColor, False)
+        end
         else
-          ADest.FillPolyAntialias(PointsF([ABottom - 0.5*v, ATop - 0.5*v, ATop + 0.5*v, ABottom + 0.5*v]), AColor)
+        begin
+          if ARightToLeft then
+            ADest.FillPolyAntialias(PointsF([ABottom, ATop, ATop - v, ABottom - v]), AColor, False)
+          else
+            ADest.FillPolyAntialias(PointsF([ABottom, ATop, ATop + v, ABottom + v]), AColor, False)
+        end;
       end;
     end else
       ADest.DrawPixel(round(ATop.x),round(ATop.y), AColor);
@@ -1150,8 +1160,8 @@ begin
   NeedLayout;
 
   if AStartIndex = AEndIndex then exit;
-  env := GetTextEnveloppe(AStartIndex,AEndIndex);
-  ADest.FillPolyAntialias(env, AColor);
+  env := GetTextEnveloppe(AStartIndex,AEndIndex, False);
+  ADest.FillPolyAntialias(env, AColor, False);
 end;
 
 function TBidiTextLayout.GetCaret(ACharIndex: integer): TBidiCaretPos;
@@ -1332,7 +1342,7 @@ begin
   exit(CharCount);
 end;
 
-function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer): ArrayOfTPointF;
+function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean): ArrayOfTPointF;
 var
   temp, i: Integer;
   caret, caretEnd, caretStartPart, caretEndPart: TBidiCaretPos;
@@ -1362,7 +1372,7 @@ begin
   if caret.PartIndex = caretEnd.PartIndex then
   begin
     if not isEmptyPointF(caret.Top) and not isEmptyPointF(caretEnd.Top) then
-      result := PointsF([caret.Top-PointF(0.5,0.5),caret.Bottom-PointF(0.5,0.5),caretEnd.Bottom-PointF(0.5,0.5),caretEnd.Top-PointF(0.5,0.5)]);
+      result := PointsF([caret.Top,caret.Bottom,caretEnd.Bottom,caretEnd.Top]);
   end else
   begin
     result := nil;
@@ -1407,11 +1417,15 @@ begin
       end;
 
       result := ConcatPointsF([result,
-                            PointsF([caretStartPart.Top-PointF(0.5,0.5),caretStartPart.Bottom-PointF(0.5,0.5),caretEndPart.Bottom-PointF(0.5,0.5),caretEndPart.Top-PointF(0.5,0.5), EmptyPointF])
+                            PointsF([caretStartPart.Top,caretStartPart.Bottom,caretEndPart.Bottom,caretEndPart.Top, EmptyPointF])
                            ]);
     end;
     if result <> nil then setlength(result, length(result)-1);
   end;
+
+  if APixelCenteredCoordinates then
+    for i := 0 to high(result) do
+      if not isEmptyPointF(result[i]) then result[i] += PointF(0.5,0.5);
 end;
 
 function TBidiTextLayout.GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
