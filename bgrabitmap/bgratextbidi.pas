@@ -31,6 +31,7 @@ type
     FText: string;
     FCharCount: integer;
     FTabSize: Single;
+    FWordBreakHandler: TWordBreakHandler;
     function GetBrokenLineAffineBox(AIndex: integer): TAffineBox;
     function GetBrokenLineCount: integer;
     function GetBrokenLineEndCaret(AIndex: integer): TBidiCaretPos;
@@ -42,6 +43,8 @@ type
     function GetBrokenLineStartIndex(AIndex: integer): integer;
     function GetMatrix: TAffineMatrix;
     function GetMatrixInverse: TAffineMatrix;
+    function GetParagraphAffineBox(AIndex: integer): TAffineBox;
+    function GetParagraphAlignment(AIndex: integer): TBidiTextAlignment;
     function GetParagraphRectF(AIndex: integer): TRectF;
     function GetPartAffineBox(AIndex: integer): TAffineBox;
     function GetPartBrokenLineIndex(AIndex: integer): integer;
@@ -50,14 +53,17 @@ type
     function GetPartRectF(AIndex: integer): TRectF;
     function GetPartRightToLeft(AIndex: integer): boolean;
     function GetPartStartIndex(AIndex: integer): integer;
+    function GetTotalTextHeight: single;
     function GetUnicodeChar(APosition0: integer): cardinal;
     function GetUTF8Char(APosition0: integer): string4;
     procedure SetAvailableHeight(AValue: single);
     procedure SetAvailableWidth(AValue: single);
+    procedure SetParagraphAlignment(AIndex: integer; AValue: TBidiTextAlignment);
     procedure SetParagraphSpacingAbove(AValue: single);
     procedure SetParagraphSpacingBelow(AValue: single);
     procedure SetTabSize(AValue: single);
     procedure SetTopLeft(AValue: TPointF);
+    procedure ComputeMatrix;
   protected
     FBidi: TBidiUTF8Array;
     FRenderer: TBGRACustomFontRenderer;
@@ -66,6 +72,7 @@ type
     FParagraph: array of record
       firstUnbrokenLineIndex: integer;
       rectF: TRectF;
+      alignment: TBidiTextAlignment;
     end;
     FParagraphCount: integer;
 
@@ -94,8 +101,9 @@ type
              brokenLineIndex: integer;
            end;
     FPartCount: integer;
-    FStartCaret: TBidiCaretPos;
     FLayoutComputed: boolean;
+    FColor: TBGRAPixel;
+    FTexture: IBGRAScanner;
 
     function TextSizeBidiOverride(sUTF8: string; ARightToLeft: boolean): TPointF;
     function TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer; ARightToLeft: boolean; ASplitIndex: integer): TPointF;
@@ -118,6 +126,7 @@ type
     procedure Init; virtual;
     procedure ComputeLayout; virtual;
     procedure NeedLayout;
+    procedure InternalDrawText(ADest: TBGRACustomBitmap);
   public
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string);
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean);
@@ -125,6 +134,8 @@ type
     procedure InvalidateLayout;
 
     procedure DrawText(ADest: TBGRACustomBitmap);
+    procedure DrawText(ADest: TBGRACustomBitmap; AColor: TBGRAPixel);
+    procedure DrawText(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner);
     procedure DrawCaret(ADest: TBGRACustomBitmap; ACharIndex: integer; AMainColor, ASecondaryColor: TBGRAPixel);
     procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer; AColor: TBGRAPixel);
 
@@ -163,11 +174,16 @@ type
     property ParagraphSpacingAbove: single read FParagraphSpacingAbove write SetParagraphSpacingAbove;
     property ParagraphSpacingBelow: single read FParagraphSpacingBelow write SetParagraphSpacingBelow;
     property ParagraphRectF[AIndex: integer]: TRectF read GetParagraphRectF;
+    property ParagraphAffineBox[AIndex: integer]: TAffineBox read GetParagraphAffineBox;
+    property ParagraphAlignment[AIndex: integer]: TBidiTextAlignment read GetParagraphAlignment write SetParagraphAlignment;
     property ParagraphCount: integer read FParagraphCount;
+
+    property TotalTextHeight: single read GetTotalTextHeight;
 
     property Matrix: TAffineMatrix read GetMatrix;
     property MatrixInverse: TAffineMatrix read GetMatrixInverse;
     property TextUTF8: string read FText;
+    property WordBreakHandler: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
   end;
 
 implementation
@@ -278,9 +294,26 @@ begin
   result := FMatrixInverse;
 end;
 
+function TBidiTextLayout.GetParagraphAffineBox(AIndex: integer): TAffineBox;
+begin
+  NeedLayout;
+  if (AIndex < 0) or (AIndex >= FParagraphCount) then
+    raise ERangeError.Create('Invalid index');
+  result := Matrix*TAffineBox.AffineBox(FParagraph[AIndex].rectF);
+end;
+
+function TBidiTextLayout.GetParagraphAlignment(AIndex: integer): TBidiTextAlignment;
+begin
+  if (AIndex < 0) or (AIndex >= FParagraphCount) then
+    raise ERangeError.Create('Invalid index');
+  result := FParagraph[AIndex].alignment;
+end;
+
 function TBidiTextLayout.GetParagraphRectF(AIndex: integer): TRectF;
 begin
   NeedLayout;
+  if (AIndex < 0) or (AIndex >= FParagraphCount) then
+    raise ERangeError.Create('Invalid index');
   result := FParagraph[AIndex].rectF;
 end;
 
@@ -338,6 +371,12 @@ begin
   result := FPart[AIndex].startIndex;
 end;
 
+function TBidiTextLayout.GetTotalTextHeight: single;
+begin
+  NeedLayout;
+  result := FParagraph[FParagraphCount-1].rectF.Bottom - FParagraph[0].rectF.Top;
+end;
+
 function TBidiTextLayout.GetUnicodeChar(APosition0: integer): cardinal;
 var p : PChar;
   charLen: Integer;
@@ -371,6 +410,14 @@ begin
   FLayoutComputed:= false;
 end;
 
+procedure TBidiTextLayout.SetParagraphAlignment(AIndex: integer;
+  AValue: TBidiTextAlignment);
+begin
+  if (AIndex < 0) or (AIndex >= FParagraphCount) then
+    raise ERangeError.Create('Invalid index');
+  FParagraph[AIndex].alignment := AValue;
+end;
+
 procedure TBidiTextLayout.SetParagraphSpacingAbove(AValue: single);
 begin
   if FParagraphSpacingAbove=AValue then Exit;
@@ -396,7 +443,13 @@ procedure TBidiTextLayout.SetTopLeft(AValue: TPointF);
 begin
   if FTopLeft=AValue then Exit;
   FTopLeft:=AValue;
-  FLayoutComputed:= false;
+  if FLayoutComputed then ComputeMatrix;
+end;
+
+procedure TBidiTextLayout.ComputeMatrix;
+begin
+  FMatrix := AffineMatrixTranslation(FTopLeft.x, FTopLeft.y)*AffineMatrixRotationDeg(-GetFontOrientation);
+  FMatrixInverse := AffineMatrixInverse(FMatrix);
 end;
 
 function TBidiTextLayout.TextSizeBidiOverride(sUTF8: string;
@@ -495,7 +548,10 @@ begin
   else
     sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ CleanTextOutString(sUTF8);
 
-  FRenderer.TextOut(ADest, x,y, sUTF8, BGRABlack, taLeftJustify, ARightToLeft);
+  if FTexture <> nil then
+    FRenderer.TextOut(ADest, x,y, sUTF8, FTexture, taLeftJustify, ARightToLeft)
+  else
+    FRenderer.TextOut(ADest, x,y, sUTF8, FColor, taLeftJustify, ARightToLeft);
 end;
 
 procedure TBidiTextLayout.AddPart(AStartIndex, AEndIndex: integer;
@@ -561,6 +617,9 @@ begin
   FParagraph[curParaIndex+1].rectF:= rectF(0,0,0,0);
   FUnbrokenLine[lineIndex].startIndex := length(FBidi);
   FUnbrokenLine[lineIndex].paragraphIndex:= curParaIndex+1;
+
+  for i := 0 to high(FParagraph) do
+    FParagraph[i].alignment:= btaNatural;
 
   setlength(FBidi, length(FBidi)+1);
   FBidi[High(FBidi)].Offset := length(FText);
@@ -701,6 +760,26 @@ begin
   FLayoutComputed:= false;
 end;
 
+procedure TBidiTextLayout.DrawText(ADest: TBGRACustomBitmap);
+begin
+  DrawText(ADest, BGRABlack);
+end;
+
+procedure TBidiTextLayout.DrawText(ADest: TBGRACustomBitmap; AColor: TBGRAPixel);
+begin
+  FColor := AColor;
+  InternalDrawText(ADest);
+end;
+
+procedure TBidiTextLayout.DrawText(ADest: TBGRACustomBitmap;
+  ATexture: IBGRAScanner);
+begin
+  FColor := BGRAWhite;
+  FTexture := ATexture;
+  InternalDrawText(ADest);
+  FTexture := nil;
+end;
+
 procedure TBidiTextLayout.ComputeLayout;
 var w,h, lineHeight, baseLine, tabPixelSize: single;
   paraIndex, i, j, nextTabIndex, splitIndex: Integer;
@@ -731,16 +810,8 @@ var w,h, lineHeight, baseLine, tabPixelSize: single;
 begin
   FLineHeight:= GetFontFullHeight;
   baseLine := GetFontBaseline;
+  ComputeMatrix;
   FPartCount := 0;
-  FMatrix := AffineMatrixTranslation(FTopLeft.x, FTopLeft.y)*AffineMatrixRotationDeg(-GetFontOrientation);
-  FMatrixInverse := AffineMatrixInverse(FMatrix);
-  FStartCaret.Top := FTopLeft;
-  FStartCaret.Bottom := FMatrix*PointF(0,FLineHeight);
-  FStartCaret.RightToLeft := false;
-  FStartCaret.PreviousTop := EmptyPointF;
-  FStartCaret.PreviousBottom := EmptyPointF;
-  FStartCaret.PreviousRightToLeft := false;
-  FStartCaret.PartIndex := 0;
   FBrokenLineCount := 0;
 
   FLayoutComputed:= true;
@@ -777,6 +848,7 @@ begin
       //avoid warnings
       splitIndex := subStart;
       h := 0;
+      w := 0;
 
       //break lines
       while subStart < lineEnd do
@@ -798,7 +870,7 @@ begin
             else
             begin
               nextTabBidiPos := tabPixelSize* (floor(curBidiPos / tabPixelSize + 1e-6)+1);
-              if (FAvailableWidth = EmptySingle) or (nextTabBidiPos <= FAvailableWidth) then
+              if (FAvailableWidth = EmptySingle) or (nextTabBidiPos <= FAvailableWidth) or (tabSectionStart = subStart) then
               begin
                 AddTabSection(tabSectionStart, tabSectionStart+1);
                 inc(tabSectionStart);
@@ -836,14 +908,22 @@ begin
 
           if splitIndex < nextTabIndex then
           begin
+            if (tabSectionCount = 1) and (splitIndex = tabSectionStart) then
+            begin
+              inc(splitIndex);
+              while (splitIndex < nextTabIndex) and (GetUnicodeBidiClass(UnicodeChar[splitIndex]) = ubcNonSpacingMark) do inc(splitIndex);
+            end;
             partStr := copy(FText, FBidi[tabSectionStart].Offset+1, FBidi[splitIndex].Offset - FBidi[tabSectionStart].Offset);
             remainStr := copy(FText, FBidi[splitIndex].Offset+1, FBidi[nextTabIndex].Offset - FBidi[splitIndex].Offset);
             if tabSectionCount > 1 then partStr := ' '+partStr;
-            BGRADefaultWordBreakHandler(partStr, remainStr);
+            if Assigned(FWordBreakHandler) then
+              FWordBreakHandler(partStr, remainStr)
+            else
+              BGRADefaultWordBreakHandler(partStr, remainStr);
             if tabSectionCount > 1 then delete(partStr,1,1);
 
             splitIndex:= tabSectionStart + UTF8Length(partStr);
-            LevelSize(FAvailableWidth - curBidiPos, tabSectionStart, splitIndex, paraBidiLevel, splitIndex, w,h);
+            LevelSize(EmptySingle, tabSectionStart, splitIndex, paraBidiLevel, splitIndex, w,h);
 
             if splitIndex = tabSectionStart then
             begin
@@ -875,9 +955,16 @@ begin
         paraRTL := Odd(paraBidiLevel);
         pos.x := 0;
 
-        if paraRTL and (FAvailableWidth <> EmptySingle) then
-          alignment := taRightJustify
-        else
+        if FAvailableWidth <> EmptySingle then
+        begin
+          case FParagraph[paraIndex].alignment of
+          btaNatural: if paraRTL then alignment := taRightJustify else alignment:= taLeftJustify;
+          btaOpposite: if paraRTL then alignment := taLeftJustify else alignment:= taRightJustify;
+          btaLeftJustify: alignment:= taLeftJustify;
+          btaRightJustify: alignment:= taRightJustify;
+          else {btaCenter:} alignment:= taCenter;
+          end;
+        end else
           alignment := taLeftJustify;
 
         if FBrokenLineCount >= length(FBrokenLine) then
@@ -990,13 +1077,13 @@ begin
   if not FLayoutComputed then ComputeLayout;
 end;
 
-procedure TBidiTextLayout.DrawText(ADest: TBGRACustomBitmap);
+procedure TBidiTextLayout.InternalDrawText(ADest: TBGRACustomBitmap);
 var
   i: Integer;
 begin
   NeedLayout;
   for i := 0 to FPartCount-1 do
-    with Matrix*(FPart[i].rectF.TopLeft + FPart[i].posCorrection) do
+    with (Matrix*(FPart[i].rectF.TopLeft + FPart[i].posCorrection)) do
       TextOutBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
 end;
 
@@ -1125,7 +1212,15 @@ begin
     result := GetPartEndCaret(PartCount-1)
   else
   if ACharIndex = 0 then
-    result := FStartCaret;
+  begin
+    result.Top := FTopLeft;
+    result.Bottom := FMatrix*PointF(0,FLineHeight);
+    result.RightToLeft := false;
+    result.PreviousTop := EmptyPointF;
+    result.PreviousBottom := EmptyPointF;
+    result.PreviousRightToLeft := false;
+    result.PartIndex := 0;
+  end;
 end;
 
 function TBidiTextLayout.GetCharIndexAt(APosition: TPointF): integer;
@@ -1485,6 +1580,9 @@ begin
   FParagraphSpacingBelow:= 0;
   FMatrix := AffineMatrixIdentity;
   FLayoutComputed:= false;
+  FColor := BGRABlack;
+  FTexture := nil;
+  FWordBreakHandler:= nil;
 end;
 
 end.

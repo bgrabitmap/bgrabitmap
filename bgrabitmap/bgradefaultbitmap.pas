@@ -33,7 +33,7 @@ interface
 
 uses
   SysUtils, Classes, Types, FPImage, BGRAGraphics, BGRABitmapTypes, FPImgCanv,
-  BGRACanvas, BGRACanvas2D, BGRAArrow, BGRAPen, BGRATransform;
+  BGRACanvas, BGRACanvas2D, BGRAArrow, BGRAPen, BGRATransform, BGRATextBidi;
 
 type
   TBGRAPtrBitmap = class;
@@ -713,6 +713,9 @@ type
 
     procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); override; overload;
     procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); override; overload;
+
+    procedure TextMultiline(ALeft,ATop,AWidth: single; sUTF8: string; c: TBGRAPixel; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); override; overload;
+    procedure TextMultiline(ALeft,ATop,AWidth: single; sUTF8: string; ATexture: IBGRAScanner; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); override; overload;
 
     { Draw the UTF8 encoded string at the coordinate (x,y), clipped inside the rectangle ARect.
       Additional style information is provided by the style parameter.
@@ -3865,6 +3868,51 @@ end;
 procedure TBGRADefaultBitmap.TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single);
 begin
   InternalTextOutCurved(ACursor, sUTF8, BGRAPixelTransparent, ATexture, AAlign, ALetterSpacing);
+end;
+
+procedure TBGRADefaultBitmap.TextMultiline(ALeft, ATop, AWidth: single; sUTF8: string;
+  c: TBGRAPixel; AAlign: TBidiTextAlignment; AVertAlign: TTextLayout; AParagraphSpacing: single);
+var
+  layout: TBidiTextLayout;
+  i: Integer;
+begin
+  if FontBidiMode = fbmAuto then
+    layout := TBidiTextLayout.Create(FontRenderer, sUTF8)
+  else
+    layout := TBidiTextLayout.Create(FontRenderer, sUTF8, GetFontRightToLeftFor(sUTF8));
+  for i := 0 to layout.ParagraphCount-1 do
+    layout.ParagraphAlignment[i] := AAlign;
+  layout.ParagraphSpacingBelow:= AParagraphSpacing;
+  layout.AvailableWidth := AWidth;
+  case AVertAlign of
+    tlBottom: layout.TopLeft := PointF(ALeft,ATop-layout.TotalTextHeight);
+    tlCenter: layout.TopLeft := PointF(ALeft,ATop-layout.TotalTextHeight/2);
+    else layout.TopLeft := PointF(ALeft,ATop);
+  end;
+  layout.DrawText(self, c);
+end;
+
+procedure TBGRADefaultBitmap.TextMultiline(ALeft, ATop, AWidth: single;
+  sUTF8: string; ATexture: IBGRAScanner; AAlign: TBidiTextAlignment;
+  AVertAlign: TTextLayout; AParagraphSpacing: single);
+var
+  layout: TBidiTextLayout;
+  i: Integer;
+begin
+  if FontBidiMode = fbmAuto then
+    layout := TBidiTextLayout.Create(FontRenderer, sUTF8)
+  else
+    layout := TBidiTextLayout.Create(FontRenderer, sUTF8, GetFontRightToLeftFor(sUTF8));
+  for i := 0 to layout.ParagraphCount-1 do
+    layout.ParagraphAlignment[i] := AAlign;
+  layout.ParagraphSpacingBelow:= AParagraphSpacing;
+  layout.AvailableWidth := AWidth;
+  case AVertAlign of
+    tlBottom: layout.TopLeft := PointF(ALeft,ATop-layout.TotalTextHeight);
+    tlCenter: layout.TopLeft := PointF(ALeft,ATop-layout.TotalTextHeight/2);
+    else layout.TopLeft := PointF(ALeft,ATop);
+  end;
+  layout.DrawText(self, ATexture);
 end;
 
 procedure TBGRADefaultBitmap.TextOut(x, y: single; sUTF8: string;

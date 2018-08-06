@@ -138,7 +138,7 @@ var
 
 implementation
 
-uses GraphType, Math, BGRABlend, BGRAUTF8, BGRAUnicode
+uses GraphType, Math, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
      {$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF};
 
 const MaxPixelMetricCount = 100;
@@ -1209,16 +1209,47 @@ var remains, part, curText,nextText: string;
   lineShift: single;
   WordBreakHandler: TWordBreakHandler;
   lineEndingBreak: boolean;
+  bidiLayout: TBidiTextLayout;
+  bidiAlign: TBidiTextAlignment;
 begin
   if (ATextUTF8 = '') or (AMaxWidth <= 0) then exit;
-
-  stepX := 0;
-  stepY := TextSize('Hg').cy;
 
   if Assigned(FWordBreakHandler) then
     WordBreakHandler := FWordBreakHandler
   else
     WordBreakHandler := @DefaultWorkBreakHandler;
+
+  if ContainsBidiIsolateOrFormattingUTF8(ATextUTF8) then
+  begin
+    bidiLayout := TBidiTextLayout.Create(self, ATextUTF8, ARightToLeft);
+    bidiLayout.WordBreakHandler:= WordBreakHandler;
+    bidiLayout.AvailableWidth := AMaxWidth;
+    case AHorizAlign of
+      taLeftJustify: bidiAlign:= btaLeftJustify;
+      taRightJustify: begin
+        bidiAlign:= btaRightJustify;
+        x -= AMaxWidth;
+      end
+      else
+      begin
+        bidiAlign:= btaCenter;
+        x -= AMaxWidth div 2;
+      end;
+    end;
+    for i := 0 to bidiLayout.ParagraphCount-1 do
+      bidiLayout.ParagraphAlignment[i] := bidiAlign;
+    case AVertAlign of
+      tlBottom: bidiLayout.TopLeft := PointF(x, y - bidiLayout.TotalTextHeight);
+      tlCenter: bidiLayout.TopLeft := PointF(x, y - bidiLayout.TotalTextHeight/2);
+    end;
+    if ATexture <> nil then bidiLayout.DrawText(ADest, ATexture)
+    else bidiLayout.DrawText(ADest, AColor);
+    bidiLayout.Free;
+    exit;
+  end;
+
+  stepX := 0;
+  stepY := TextSize('Hg').cy;
 
   lines := TStringList.Create;
   curText := ATextUTF8;
@@ -1489,8 +1520,9 @@ function TCustomLCLFontRenderer.TextSize(sUTF8: string;
   AMaxWidth: integer; ARightToLeft: boolean): TSize;
 var
   remains: string;
-  h: integer;
+  h, i, w: integer;
   WordBreakHandler: TWordBreakHandler;
+  layout: TBidiTextLayout;
 begin
   UpdateFont;
 
@@ -1499,16 +1531,34 @@ begin
   else
     WordBreakHandler := @DefaultWorkBreakHandler;
 
-  result.cx := 0;
-  result.cy := 0;
-  h := InternalTextSize('Hg',False).cy;
-  repeat
-    InternalSplitText(sUTF8, AMaxWidth, remains, WordBreakHandler);
-    with InternalTextSize(sUTF8, false) do
-      if cx > result.cx then result.cx := cx;
-    result.cy += h;
-    sUTF8 := remains;
-  until remains = '';
+  if ContainsBidiIsolateOrFormattingUTF8(sUTF8) then
+  begin
+    layout := TBidiTextLayout.Create(self, sUTF8, ARightToLeft);
+    layout.WordBreakHandler:= WordBreakHandler;
+    layout.AvailableWidth := AMaxWidth;
+    for i := 0 to layout.ParagraphCount-1 do
+      layout.ParagraphAlignment[i] := btaLeftJustify;
+    result.cx := 0;
+    for i := 0 to layout.PartCount-1 do
+    begin
+      w := ceil(layout.PartRectF[i].Right);
+      if w > result.cx then result.cx := w;
+    end;
+    result.cy := ceil(layout.TotalTextHeight);
+    layout.Free;
+  end else
+  begin
+    result.cx := 0;
+    result.cy := 0;
+    h := InternalTextSize('Hg',False).cy;
+    repeat
+      InternalSplitText(sUTF8, AMaxWidth, remains, WordBreakHandler);
+      with InternalTextSize(sUTF8, false) do
+        if cx > result.cx then result.cx := cx;
+      result.cy += h;
+      sUTF8 := remains;
+    until remains = '';
+  end;
 end;
 
 function TCustomLCLFontRenderer.TextFitInfo(sUTF8: string; AMaxWidth: integer

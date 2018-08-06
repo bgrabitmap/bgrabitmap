@@ -82,6 +82,7 @@ function AddParagraphBidiUTF8(s: string; ARightToLeft: boolean): string;
 function AnalyzeBidiUTF8(const sUTF8: string; ARightToLeft: boolean): TBidiUTF8Array; overload;
 function AnalyzeBidiUTF8(const sUTF8: string): TBidiUTF8Array; overload;
 function GetUTF8DisplayOrder(const ABidi: TBidiUTF8Array): TUnicodeDisplayOrder;
+function ContainsBidiIsolateOrFormattingUTF8(const sUTF8: string): boolean;
 
 //little endian stream functions
 function LEReadInt64(Stream: TStream): int64;
@@ -771,6 +772,31 @@ begin
     result := nil
   else
     result := GetUnicodeDisplayOrder(@ABidi[0].BidiInfo, sizeof(TBidiUTF8Info), length(ABidi));
+end;
+
+function ContainsBidiIsolateOrFormattingUTF8(const sUTF8: string): boolean;
+var
+  p,pEnd: PChar;
+  charLen: Integer;
+  u: Cardinal;
+  curBidi: TUnicodeBidiClass;
+begin
+  if sUTF8 = '' then exit(false);
+  p := @sUTF8[1];
+  pEnd := p + length(sUTF8);
+  while p < pEnd do
+  begin
+    charLen := UTF8CharacterLength(p);
+    if (charLen = 0) or (p+charLen > pEnd) then break;
+    u := UTF8CodepointToUnicode(p, charLen);
+    case u of
+      UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE, UNICODE_FIRST_STRONG_ISOLATE,
+      UNICODE_LEFT_TO_RIGHT_EMBEDDING, UNICODE_RIGHT_TO_LEFT_EMBEDDING,
+      UNICODE_LEFT_TO_RIGHT_OVERRIDE, UNICODE_RIGHT_TO_LEFT_OVERRIDE: exit(true);
+    end;
+    inc(p,charLen);
+  end;
+  exit(false);
 end;
 
 //little endian stream functions

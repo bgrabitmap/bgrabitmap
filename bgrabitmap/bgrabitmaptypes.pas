@@ -79,6 +79,7 @@ type
 
   TTextLayout = BGRAGraphics.TTextLayout;
   TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
+  TBidiTextAlignment = (btaNatural, btaOpposite, btaLeftJustify, btaRightJustify, btaCenter);
 
 const
   RadialBlurTypeToStr: array[TRadialBlurType] of string =
