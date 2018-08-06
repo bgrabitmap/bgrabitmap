@@ -45,7 +45,10 @@ type
     function GetMatrixInverse: TAffineMatrix;
     function GetParagraphAffineBox(AIndex: integer): TAffineBox;
     function GetParagraphAlignment(AIndex: integer): TBidiTextAlignment;
+    function GetParagraphEndIndex(AIndex: integer): integer;
     function GetParagraphRectF(AIndex: integer): TRectF;
+    function GetParagraphRightToLeft(AIndex: integer): boolean;
+    function GetParagraphStartIndex(AIndex: integer): integer;
     function GetPartAffineBox(AIndex: integer): TAffineBox;
     function GetPartBrokenLineIndex(AIndex: integer): integer;
     function GetPartCount: integer;
@@ -73,6 +76,7 @@ type
       firstUnbrokenLineIndex: integer;
       rectF: TRectF;
       alignment: TBidiTextAlignment;
+      rtl: boolean;
     end;
     FParagraphCount: integer;
 
@@ -117,7 +121,7 @@ type
     function GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
     function GetPartEndCaret(APartIndex: integer): TBidiCaretPos;
 
-    procedure AnalyzeLineStart;
+    procedure AnalyzeLineStart(ADefaultRTL: boolean);
     function GetSameLevelString(startIndex,endIndex: integer): string;
     procedure LevelSize(AMaxWidth: single; startIndex, endIndex: integer; bidiLevel: byte; out ASplitIndex: integer; out AWidth, AHeight: single);
     procedure ComputeLevelLayout(APos: TPointF; startIndex,
@@ -142,6 +146,7 @@ type
     function GetCaret(ACharIndex: integer): TBidiCaretPos;
     function GetCharIndexAt(APosition: TPointF): integer;
     function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true): ArrayOfTPointF;
+    function GetParagraphAt(ACharIndex: Integer): integer;
 
     property CharCount: integer read FCharCount;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
@@ -176,6 +181,9 @@ type
     property ParagraphRectF[AIndex: integer]: TRectF read GetParagraphRectF;
     property ParagraphAffineBox[AIndex: integer]: TAffineBox read GetParagraphAffineBox;
     property ParagraphAlignment[AIndex: integer]: TBidiTextAlignment read GetParagraphAlignment write SetParagraphAlignment;
+    property ParagraphStartIndex[AIndex: integer]: integer read GetParagraphStartIndex;
+    property ParagraphEndIndex[AIndex: integer]: integer read GetParagraphEndIndex;
+    property ParagraphRightToLeft[AIndex: integer]: boolean read GetParagraphRightToLeft;
     property ParagraphCount: integer read FParagraphCount;
 
     property TotalTextHeight: single read GetTotalTextHeight;
@@ -309,12 +317,33 @@ begin
   result := FParagraph[AIndex].alignment;
 end;
 
+function TBidiTextLayout.GetParagraphEndIndex(AIndex: integer): integer;
+begin
+  if (AIndex < 0) or (AIndex >= FParagraphCount) then
+    raise ERangeError.Create('Invalid index');
+  result := FUnbrokenLine[FParagraph[AIndex].firstUnbrokenLineIndex+1].startIndex;
+end;
+
 function TBidiTextLayout.GetParagraphRectF(AIndex: integer): TRectF;
 begin
   NeedLayout;
   if (AIndex < 0) or (AIndex >= FParagraphCount) then
     raise ERangeError.Create('Invalid index');
   result := FParagraph[AIndex].rectF;
+end;
+
+function TBidiTextLayout.GetParagraphRightToLeft(AIndex: integer): boolean;
+begin
+  if (AIndex < 0) or (AIndex >= FParagraphCount) then
+    raise ERangeError.Create('Invalid index');
+  result := FParagraph[AIndex].rtl;
+end;
+
+function TBidiTextLayout.GetParagraphStartIndex(AIndex: integer): integer;
+begin
+  if (AIndex < 0) or (AIndex >= FParagraphCount) then
+    raise ERangeError.Create('Invalid index');
+  result := FUnbrokenLine[FParagraph[AIndex].firstUnbrokenLineIndex].startIndex;
 end;
 
 function TBidiTextLayout.GetPartAffineBox(AIndex: integer): TAffineBox;
@@ -574,7 +603,7 @@ begin
   inc(FPartCount)
 end;
 
-procedure TBidiTextLayout.AnalyzeLineStart;
+procedure TBidiTextLayout.AnalyzeLineStart(ADefaultRTL: boolean);
 var
   lineIndex, i: Integer;
   curParaIndex: integer;
@@ -595,18 +624,22 @@ begin
   setlength(FParagraph, FParagraphCount+1);
   FParagraph[curParaIndex].firstUnbrokenLineIndex:= lineIndex;
   FParagraph[curParaIndex].rectF:= rectF(0,0,0,0);
+  FParagraph[curParaIndex].rtl := ADefaultRTL;
   setlength(FUnbrokenLine, FUnbrokenLineCount+1);
   FUnbrokenLine[lineIndex].startIndex := 0;
   FUnbrokenLine[lineIndex].paragraphIndex := curParaIndex;
   inc(lineIndex);
   for i := 0 to high(FBidi)-1 do
   begin
+    FParagraph[curParaIndex].rtl := odd(FBidi[i].BidiInfo.ParagraphBidiLevel);
     if FBidi[i].BidiInfo.IsEndOfLine or FBidi[i].BidiInfo.IsEndOfParagraph then
     begin
       if FBidi[i].BidiInfo.IsEndOfParagraph then
       begin
         curParaIndex += 1;
         FParagraph[curParaIndex].firstUnbrokenLineIndex:= lineIndex;
+        FParagraph[curParaIndex].rectF := rectF(0,0,0,0);
+        FParagraph[curParaIndex].rtl := ADefaultRTL;
       end;
       FUnbrokenLine[lineIndex].startIndex := i+1;
       FUnbrokenLine[lineIndex].paragraphIndex := curParaIndex;
@@ -615,6 +648,7 @@ begin
   end;
   FParagraph[curParaIndex+1].firstUnbrokenLineIndex:= lineIndex;
   FParagraph[curParaIndex+1].rectF:= rectF(0,0,0,0);
+  FParagraph[curParaIndex+1].rtl := ADefaultRTL;
   FUnbrokenLine[lineIndex].startIndex := length(FBidi);
   FUnbrokenLine[lineIndex].paragraphIndex:= curParaIndex+1;
 
@@ -735,7 +769,7 @@ begin
   FText:= sUTF8;
   FBidi:= AnalyzeBidiUTF8(sUTF8);
   FCharCount := length(FBidi);
-  AnalyzeLineStart;
+  AnalyzeLineStart(False);
 end;
 
 constructor TBidiTextLayout.Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean);
@@ -745,7 +779,7 @@ begin
   FText:= sUTF8;
   FBidi:= AnalyzeBidiUTF8(sUTF8, ARightToLeft);
   FCharCount := length(FBidi);
-  AnalyzeLineStart;
+  AnalyzeLineStart(ARightToLeft);
 end;
 
 procedure TBidiTextLayout.SetLayout(ARect: TRectF);
@@ -952,7 +986,7 @@ begin
         end;
 
         // add broken line info
-        paraRTL := Odd(paraBidiLevel);
+        paraRTL := FParagraph[paraIndex].rtl;
         pos.x := 0;
 
         if FAvailableWidth <> EmptySingle then
@@ -1426,6 +1460,17 @@ begin
   if APixelCenteredCoordinates then
     for i := 0 to high(result) do
       if not isEmptyPointF(result[i]) then result[i] += PointF(0.5,0.5);
+end;
+
+function TBidiTextLayout.GetParagraphAt(ACharIndex: Integer): integer;
+var
+  i: Integer;
+begin
+  if ACharIndex < 0 then exit(0);
+  for i := 1 to FParagraphCount-1 do
+    if ACharIndex < ParagraphStartIndex[i] then
+      exit(i-1);
+  exit(FParagraphCount-1);
 end;
 
 function TBidiTextLayout.GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
