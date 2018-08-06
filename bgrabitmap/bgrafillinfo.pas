@@ -110,7 +110,7 @@ type
       var inter: ArrayOfTIntersectionInfo; var nbInter: integer); override;
   public
     WindingFactor: integer;
-    constructor Create(x1, y1, x2, y2, rx, ry: single; options: TRoundRectangleOptions);
+    constructor Create(x1, y1, x2, y2, rx, ry: single; options: TRoundRectangleOptions; APixelCenteredCoordinates: boolean = true);
     function SegmentsCurved: boolean; override;
     function GetBounds: TRect; override;
     property TopLeft: TPointF read GetTopLeft;
@@ -128,7 +128,7 @@ type
     procedure ComputeIntersection(cury: single;
       var inter: ArrayOfTIntersectionInfo; var nbInter: integer); override;
   public
-    constructor Create(x1, y1, x2, y2, rx, ry, w: single; options: TRoundRectangleOptions);
+    constructor Create(x1, y1, x2, y2, rx, ry, w: single; options: TRoundRectangleOptions; APixelCenteredCoordinates: boolean = true);
     function GetBounds: TRect; override;
     function SegmentsCurved: boolean; override;
     destructor Destroy; override;
@@ -162,7 +162,7 @@ type
     procedure SetIntersectionValues(AInter: TIntersectionInfo; AInterX: Single; AWinding, ANumSegment: integer; {%H-}dy: single; {%H-}AData: pointer); virtual;
     procedure InitPoints(const points: array of TPointF);
   public
-    constructor Create(const points: array of TPointF);
+    constructor Create(const points: array of TPointF; APixelCenteredCoordinates: boolean = true);
     function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; virtual;
     procedure FreeSegmentData(data: pointer); virtual;
     function GetBounds: TRect; override;
@@ -180,7 +180,7 @@ type
     procedure ComputeIntersection(cury: single;
       var inter: ArrayOfTIntersectionInfo; var nbInter: integer); override;
   public
-    constructor Create(const points: array of TPointF);
+    constructor Create(const points: array of TPointF; APixelCenteredCoordinates: boolean = true);
     destructor Destroy; override;
     function GetSliceIndex: integer; override;
   end;
@@ -216,7 +216,7 @@ type
     procedure ComputeIntersection(cury: single;
       var inter: ArrayOfTIntersectionInfo; var nbInter: integer); override;
   public
-    constructor Create(const points: array of TPointF);
+    constructor Create(const points: array of TPointF; APixelCenteredCoordinates: boolean = true);
     function CreateIntersectionArray: ArrayOfTIntersectionInfo; override;
     function GetSliceIndex: integer; override;
     destructor Destroy; override;
@@ -628,7 +628,7 @@ end;
 
 { TCustomFillPolyInfo }
 
-constructor TCustomFillPolyInfo.Create(const points: array of TPointF);
+constructor TCustomFillPolyInfo.Create(const points: array of TPointF; APixelCenteredCoordinates: boolean);
 var
   cur, first, i, j: integer;
 
@@ -645,8 +645,11 @@ begin
     if not isEmptyPointF(FPoints[i]) then
     begin
       FEmptyPt[i]  := False;
-      FPoints[i].x += 0.5;
-      FPoints[i].y += 0.5;
+      if APixelCenteredCoordinates then
+      begin
+        FPoints[i].x += 0.5;
+        FPoints[i].y += 0.5;
+      end;
       if cur <> -1 then
         FNext[cur] := i;
       if first = -1 then
@@ -837,7 +840,7 @@ begin
   end;
 end;
 
-constructor TFillPolyInfo.Create(const points: array of TPointF);
+constructor TFillPolyInfo.Create(const points: array of TPointF; APixelCenteredCoordinates: boolean);
   function AddSeg(numSlice: integer): integer;
   begin
     result := FSlices[numSlice].nbSegments;
@@ -854,7 +857,7 @@ var
   i,j,k,idSeg: integer;
 
 begin
-  inherited Create(points);
+  inherited Create(points, APixelCenteredCoordinates);
 
   //slice
   nbYList:= length(FPoints);
@@ -1072,12 +1075,12 @@ begin
   end;
 end;
 
-constructor TOnePassFillPolyInfo.Create(const points: array of TPointF);
+constructor TOnePassFillPolyInfo.Create(const points: array of TPointF; APixelCenteredCoordinates: boolean);
 var i,j: integer;
   p: POnePassRecord;
   temp: single;
 begin
-  inherited create(points);
+  inherited create(points, APixelCenteredCoordinates);
 
   FShouldInitializeDrawing := true;
   setlength(FOnePass, length(FPoints));
@@ -1323,7 +1326,7 @@ end;
 
 { TFillRoundRectangleInfo }
 
-constructor TFillRoundRectangleInfo.Create(x1, y1, x2, y2, rx, ry: single; options: TRoundRectangleOptions);
+constructor TFillRoundRectangleInfo.Create(x1, y1, x2, y2, rx, ry: single; options: TRoundRectangleOptions; APixelCenteredCoordinates: boolean);
 var
   temp: Single;
 begin
@@ -1339,10 +1342,13 @@ begin
     x1 := x2;
     x2 := temp;
   end;
-  FX1  := x1 + 0.5;
-  FY1  := y1 + 0.5;
-  FX2  := x2 + 0.5;
-  FY2  := y2 + 0.5;
+  if APixelCenteredCoordinates then
+  begin
+    FX1  := x1 + 0.5;
+    FY1  := y1 + 0.5;
+    FX2  := x2 + 0.5;
+    FY2  := y2 + 0.5;
+  end;
   FRX := abs(rx);
   FRY := abs(ry);
   if 2*FRX > x2-x1 then FRX := (x2-x1)/2;
@@ -1452,7 +1458,7 @@ end;
 
 { TFillBorderRoundRectInfo }
 
-constructor TFillBorderRoundRectInfo.Create(x1, y1, x2, y2, rx, ry, w: single; options: TRoundRectangleOptions);
+constructor TFillBorderRoundRectInfo.Create(x1, y1, x2, y2, rx, ry, w: single; options: TRoundRectangleOptions; APixelCenteredCoordinates: boolean);
 var rdiff: single;
   temp: Single;
 begin
@@ -1476,13 +1482,13 @@ begin
   if 2*rx > x2-x1 then rx := (x2-x1)/2;
   if 2*ry > y2-y1 then ry := (y2-y1)/2;
   rdiff := w*(sqrt(2)-1);
-  FOuterBorder := TFillRoundRectangleInfo.Create(x1-w/2,y1-w/2,x2+w/2,y2+w/2, rx+rdiff, ry+rdiff, options);
+  FOuterBorder := TFillRoundRectangleInfo.Create(x1-w/2,y1-w/2,x2+w/2,y2+w/2, rx+rdiff, ry+rdiff, options, APixelCenteredCoordinates);
   if (abs(x2-x1) > w) and (abs(y2-y1) > w) then
   begin
     if (rx-rdiff <= 0) or (ry-rdiff <= 0) then
-      FInnerBorder := TFillRoundRectangleInfo.Create(x1+w/2, y1+w/2, x2-w/2, y2-w/2, 0,0, options)
+      FInnerBorder := TFillRoundRectangleInfo.Create(x1+w/2, y1+w/2, x2-w/2, y2-w/2, 0,0, options, APixelCenteredCoordinates)
     else
-      FInnerBorder := TFillRoundRectangleInfo.Create(x1+w/2, y1+w/2, x2-w/2, y2-w/2, rx-rdiff, ry-rdiff, options);
+      FInnerBorder := TFillRoundRectangleInfo.Create(x1+w/2, y1+w/2, x2-w/2, y2-w/2, rx-rdiff, ry-rdiff, options, APixelCenteredCoordinates);
     FInnerBorder.WindingFactor := -1;
   end
   else

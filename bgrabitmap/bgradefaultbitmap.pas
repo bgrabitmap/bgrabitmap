@@ -628,12 +628,12 @@ type
     procedure EraseEllipseAntialias(x, y, rx, ry: single; alpha: byte); override;
 
     {==== Polygons and path ====}
-    procedure FillPoly(const points: array of TPointF; c: TBGRAPixel; drawmode: TDrawMode); override;
-    procedure FillPoly(const points: array of TPointF; texture: IBGRAScanner; drawmode: TDrawMode); override;
-    procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel); override;
-    procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner); override;
-    procedure ErasePoly(const points: array of TPointF; alpha: byte); override;
-    procedure ErasePolyAntialias(const points: array of TPointF; alpha: byte); override;
+    procedure FillPoly(const points: array of TPointF; c: TBGRAPixel; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); override;
+    procedure FillPoly(const points: array of TPointF; texture: IBGRAScanner; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); override;
+    procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel; APixelCenteredCoordinates: boolean = true); override;
+    procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); override;
+    procedure ErasePoly(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); override;
+    procedure ErasePolyAntialias(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); override;
 
     procedure FillTriangleLinearColor(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); override;
     procedure FillTriangleLinearColorAntialias(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); override;
@@ -3127,15 +3127,15 @@ begin
 end;
 
 procedure TBGRADefaultBitmap.FillPoly(const points: array of TPointF;
-  c: TBGRAPixel; drawmode: TDrawMode);
+  c: TBGRAPixel; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
 begin
-  BGRAPolygon.FillPolyAliased(self, points, c, FEraseMode, FillMode = fmWinding, drawmode);
+  BGRAPolygon.FillPolyAliased(self, points, c, FEraseMode, FillMode = fmWinding, drawmode, APixelCenteredCoordinates);
 end;
 
 procedure TBGRADefaultBitmap.FillPoly(const points: array of TPointF;
-  texture: IBGRAScanner; drawmode: TDrawMode);
+  texture: IBGRAScanner; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
 begin
-  BGRAPolygon.FillPolyAliasedWithTexture(self, points, texture, FillMode = fmWinding, drawmode);
+  BGRAPolygon.FillPolyAliasedWithTexture(self, points, texture, FillMode = fmWinding, drawmode, APixelCenteredCoordinates);
 end;
 
 procedure TBGRADefaultBitmap.EraseLineAntialias(x1, y1, x2, y2: single;
@@ -3146,27 +3146,27 @@ begin
   FEraseMode := False;
 end;
 
-procedure TBGRADefaultBitmap.FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel);
+procedure TBGRADefaultBitmap.FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel; APixelCenteredCoordinates: boolean);
 begin
-  BGRAPolygon.FillPolyAntialias(self, points, c, FEraseMode, FillMode = fmWinding, LinearAntialiasing);
+  BGRAPolygon.FillPolyAntialias(self, points, c, FEraseMode, FillMode = fmWinding, LinearAntialiasing, APixelCenteredCoordinates);
 end;
 
 procedure TBGRADefaultBitmap.FillPolyAntialias(const points: array of TPointF;
-  texture: IBGRAScanner);
+  texture: IBGRAScanner; APixelCenteredCoordinates: boolean);
 begin
-  BGRAPolygon.FillPolyAntialiasWithTexture(self, points, texture, FillMode = fmWinding, LinearAntialiasing);
+  BGRAPolygon.FillPolyAntialiasWithTexture(self, points, texture, FillMode = fmWinding, LinearAntialiasing, APixelCenteredCoordinates);
 end;
 
 procedure TBGRADefaultBitmap.ErasePoly(const points: array of TPointF;
-  alpha: byte);
+  alpha: byte; APixelCenteredCoordinates: boolean);
 begin
-  BGRAPolygon.FillPolyAliased(self, points, BGRA(0, 0, 0, alpha), True, FillMode = fmWinding, dmDrawWithTransparency);
+  BGRAPolygon.FillPolyAliased(self, points, BGRA(0, 0, 0, alpha), True, FillMode = fmWinding, dmDrawWithTransparency, APixelCenteredCoordinates);
 end;
 
-procedure TBGRADefaultBitmap.ErasePolyAntialias(const points: array of TPointF; alpha: byte);
+procedure TBGRADefaultBitmap.ErasePolyAntialias(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean);
 begin
   FEraseMode := True;
-  FillPolyAntialias(points, BGRA(0, 0, 0, alpha));
+  FillPolyAntialias(points, BGRA(0, 0, 0, alpha), APixelCenteredCoordinates);
   FEraseMode := False;
 end;
 
@@ -3796,40 +3796,19 @@ end;
 procedure TBGRADefaultBitmap.FillRoundRectAntialias(x, y, x2, y2, rx,ry: single;
   c: TBGRAPixel; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
 begin
-  if not pixelCenteredCoordinates then
-  begin
-    x -= 0.5;
-    y -= 0.5;
-    x2 -= 0.5;
-    y2 -= 0.5;
-  end;
-  BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,c,False, LinearAntialiasing);
+  BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,c,False, LinearAntialiasing, pixelCenteredCoordinates);
 end;
 
 procedure TBGRADefaultBitmap.FillRoundRectAntialias(x, y, x2, y2, rx,
   ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
 begin
-  if not pixelCenteredCoordinates then
-  begin
-    x -= 0.5;
-    y -= 0.5;
-    x2 -= 0.5;
-    y2 -= 0.5;
-  end;
-  BGRAPolygon.FillRoundRectangleAntialiasWithTexture(self,x,y,x2,y2,rx,ry,options,texture, LinearAntialiasing);
+  BGRAPolygon.FillRoundRectangleAntialiasWithTexture(self,x,y,x2,y2,rx,ry,options,texture, LinearAntialiasing, pixelCenteredCoordinates);
 end;
 
 procedure TBGRADefaultBitmap.EraseRoundRectAntialias(x, y, x2, y2, rx,
   ry: single; alpha: byte; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
 begin
-  if not pixelCenteredCoordinates then
-  begin
-    x -= 0.5;
-    y -= 0.5;
-    x2 -= 0.5;
-    y2 -= 0.5;
-  end;
-  BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,BGRA(0,0,0,alpha),True, LinearAntialiasing);
+  BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,BGRA(0,0,0,alpha),True, LinearAntialiasing, pixelCenteredCoordinates);
 end;
 
 procedure TBGRADefaultBitmap.RoundRect(X1, Y1, X2, Y2: integer;

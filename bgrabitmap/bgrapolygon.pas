@@ -104,13 +104,13 @@ type
   end;
 
 procedure FillPolyAliased(bmp: TBGRACustomBitmap; points: array of TPointF;
-  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; drawmode: TDrawMode);
+  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true);
 procedure FillPolyAliasedWithTexture(bmp: TBGRACustomBitmap; points: array of TPointF;
-  scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode);
+  scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true);
 procedure FillPolyAntialias(bmp: TBGRACustomBitmap; points: array of TPointF;
-  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; LinearBlend: boolean = false);
+  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
 procedure FillPolyAntialiasWithTexture(bmp: TBGRACustomBitmap; points: array of TPointF;
-  scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
+  scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
 
 procedure FillEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry: single;
   c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false);
@@ -123,17 +123,17 @@ procedure BorderEllipseAntialiasWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry
   scan: IBGRAScanner; LinearBlend: boolean = false);
 
 procedure FillRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2, y2, rx, ry: single;
-  options: TRoundRectangleOptions; c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false);
+  options: TRoundRectangleOptions; c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
 procedure FillRoundRectangleAntialiasWithTexture(bmp: TBGRACustomBitmap; x1, y1, x2, y2, rx, ry: single;
-  options: TRoundRectangleOptions; scan: IBGRAScanner; LinearBlend: boolean = false);
+  options: TRoundRectangleOptions; scan: IBGRAScanner; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
 
 procedure BorderRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2, y2, rx, ry, w: single;
-  options: TRoundRectangleOptions; c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false);
+  options: TRoundRectangleOptions; c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
 procedure BorderRoundRectangleAntialiasWithTexture(bmp: TBGRACustomBitmap; x1, y1, x2, y2, rx, ry, w: single;
-  options: TRoundRectangleOptions; scan: IBGRAScanner; LinearBlend: boolean = false);
+  options: TRoundRectangleOptions; scan: IBGRAScanner; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
 
 procedure BorderAndFillRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2, y2, rx, ry, w: single;
-  options: TRoundRectangleOptions; bordercolor,fillcolor: TBGRAPixel; bordertexture,filltexture: IBGRAScanner; EraseMode: boolean);
+  options: TRoundRectangleOptions; bordercolor,fillcolor: TBGRAPixel; bordertexture,filltexture: IBGRAScanner; EraseMode: boolean; APixelCenteredCoordinates: boolean = true);
 
 implementation
 
@@ -607,53 +607,53 @@ begin
 end;
 
 procedure FillPolyAliased(bmp: TBGRACustomBitmap; points: array of TPointF;
-  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; drawmode: TDrawMode);
+  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
 var
   info: TCustomFillPolyInfo;
 begin
   if length(points) < 3 then
     exit;
 
-  info := TOnePassFillPolyInfo.Create(points);
+  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
   FillShapeAliased(bmp, info, c, EraseMode, nil, NonZeroWinding, drawmode);
   info.Free;
 end;
 
 procedure FillPolyAliasedWithTexture(bmp: TBGRACustomBitmap;
-  points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode);
+  points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
 var
   info: TCustomFillPolyInfo;
 begin
   if length(points) < 3 then
     exit;
 
-  info := TOnePassFillPolyInfo.Create(points);
+  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
   FillShapeAliased(bmp, info, BGRAPixelTransparent,False,scan, NonZeroWinding, drawmode);
   info.Free;
 end;
 
 procedure FillPolyAntialias(bmp: TBGRACustomBitmap; points: array of TPointF;
-  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; LinearBlend: boolean);
+  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TCustomFillPolyInfo;
 begin
   if length(points) < 3 then
     exit;
 
-  info := TOnePassFillPolyInfo.Create(points);
+  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
   FillShapeAntialias(bmp, info, c, EraseMode, nil, NonZeroWinding, LinearBlend);
   info.Free;
 end;
 
 procedure FillPolyAntialiasWithTexture(bmp: TBGRACustomBitmap;
-  points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean);
+  points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TCustomFillPolyInfo;
 begin
   if length(points) < 3 then
     exit;
 
-  info := TOnePassFillPolyInfo.Create(points);
+  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
   FillShapeAntialiasWithTexture(bmp, info, scan, NonZeroWinding, LinearBlend);
   info.Free;
 end;
@@ -1460,31 +1460,31 @@ begin
 end;
 
 procedure FillRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2, y2,
-  rx, ry: single; options: TRoundRectangleOptions; c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean);
+  rx, ry: single; options: TRoundRectangleOptions; c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TFillRoundRectangleInfo;
 begin
   if (x1 = x2) or (y1 = y2) then exit;
-  info := TFillRoundRectangleInfo.Create(x1, y1, x2, y2, rx, ry, options);
+  info := TFillRoundRectangleInfo.Create(x1, y1, x2, y2, rx, ry, options, APixelCenteredCoordinates);
   FillShapeAntialias(bmp, info, c, EraseMode,nil, False, LinearBlend);
   info.Free;
 end;
 
 procedure FillRoundRectangleAntialiasWithTexture(bmp: TBGRACustomBitmap; x1,
   y1, x2, y2, rx, ry: single; options: TRoundRectangleOptions;
-  scan: IBGRAScanner; LinearBlend: boolean);
+  scan: IBGRAScanner; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TFillRoundRectangleInfo;
 begin
   if (x1 = x2) or (y1 = y2) then exit;
-  info := TFillRoundRectangleInfo.Create(x1, y1, x2, y2, rx, ry, options);
+  info := TFillRoundRectangleInfo.Create(x1, y1, x2, y2, rx, ry, options, APixelCenteredCoordinates);
   FillShapeAntialiasWithTexture(bmp, info, scan, False, LinearBlend);
   info.Free;
 end;
 
 procedure BorderRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2,
   y2, rx, ry, w: single; options: TRoundRectangleOptions; c: TBGRAPixel;
-  EraseMode: boolean; LinearBlend: boolean);
+  EraseMode: boolean; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TFillShapeInfo;
   oldLinear: boolean;
@@ -1498,14 +1498,14 @@ begin
     bmp.LinearAntialiasing := oldLinear;
     exit;
   end;
-  info := TFillBorderRoundRectInfo.Create(x1, y1, x2,y2, rx, ry, w, options);
+  info := TFillBorderRoundRectInfo.Create(x1, y1, x2,y2, rx, ry, w, options, APixelCenteredCoordinates);
   FillShapeAntialias(bmp, info, c, EraseMode, nil, False, LinearBlend);
   info.Free;
 end;
 
 procedure BorderRoundRectangleAntialiasWithTexture(bmp: TBGRACustomBitmap; x1,
   y1, x2, y2, rx, ry, w: single; options: TRoundRectangleOptions;
-  scan: IBGRAScanner; LinearBlend: boolean);
+  scan: IBGRAScanner; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TFillBorderRoundRectInfo;
   oldLinear: Boolean;
@@ -1519,20 +1519,20 @@ begin
     bmp.LinearAntialiasing := oldLinear;
     exit;
   end;
-  info := TFillBorderRoundRectInfo.Create(x1, y1, x2,y2, rx, ry, w, options);
+  info := TFillBorderRoundRectInfo.Create(x1, y1, x2,y2, rx, ry, w, options, APixelCenteredCoordinates);
   FillShapeAntialiasWithTexture(bmp, info, scan, False, LinearBlend);
   info.Free;
 end;
 
 procedure BorderAndFillRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1,
   x2, y2, rx, ry, w: single; options: TRoundRectangleOptions; bordercolor,
-  fillcolor: TBGRAPixel; bordertexture,filltexture: IBGRAScanner; EraseMode: boolean);
+  fillcolor: TBGRAPixel; bordertexture,filltexture: IBGRAScanner; EraseMode: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TFillBorderRoundRectInfo;
   multi: TBGRAMultishapeFiller;
 begin
   if (rx = 0) or (ry = 0) then exit;
-  info := TFillBorderRoundRectInfo.Create(x1, y1, x2,y2, rx, ry, w, options);
+  info := TFillBorderRoundRectInfo.Create(x1, y1, x2,y2, rx, ry, w, options, APixelCenteredCoordinates);
   if not EraseMode then
   begin
     multi := TBGRAMultishapeFiller.Create;
