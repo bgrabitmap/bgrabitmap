@@ -252,6 +252,9 @@ type
 {$DEFINE INCLUDE_INTERFACE}
 {$i basiccolorspace.inc}
 
+{$DEFINE INCLUDE_INTERFACE}
+{$i extendedcolorspace.inc}
+
 {$ENDIF}
 
 {$IFDEF INCLUDE_IMPLEMENTATION}
@@ -259,6 +262,9 @@ type
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$i basiccolorspace.inc}
+
+{$DEFINE INCLUDE_IMPLEMENTATION}
+{$i extendedcolorspace.inc}
 
 function StrToBlendOperation(str: string): TBlendOperation;
 var op: TBlendOperation;
@@ -713,4 +719,7 @@ end;
 {$IFDEF INCLUDE_INIT}
 {$UNDEF INCLUDE_INIT}
   BGRASetGamma();
+
+  {$DEFINE INCLUDE_INITIALIZATION}
+  {$i extendedcolorspace.inc}
 {$ENDIF}
