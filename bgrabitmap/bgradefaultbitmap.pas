@@ -2742,6 +2742,7 @@ var tempPath: TBGRAPath;
 begin
   tempPath := TBGRAPath.Create(APath);
   multi := TBGRAMultishapeFiller.Create;
+  multi.FillMode := FillMode;
   multi.PolygonOrder := poLastOnTop;
   multi.AddPathFill(tempPath,AMatrix,AFillColor);
   multi.AddPathStroke(tempPath,AMatrix,AStrokeColor,AWidth,FPenStroker);
@@ -2757,6 +2758,7 @@ var tempPath: TBGRAPath;
 begin
   tempPath := TBGRAPath.Create(APath);
   multi := TBGRAMultishapeFiller.Create;
+  multi.FillMode := FillMode;
   multi.PolygonOrder := poLastOnTop;
   multi.AddPathFill(tempPath,AMatrix,AFillColor);
   multi.AddPathStroke(tempPath,AMatrix,AStrokeTexture,AWidth,FPenStroker);
@@ -2772,6 +2774,7 @@ var tempPath: TBGRAPath;
 begin
   tempPath := TBGRAPath.Create(APath);
   multi := TBGRAMultishapeFiller.Create;
+  multi.FillMode := FillMode;
   multi.PolygonOrder := poLastOnTop;
   multi.AddPathFill(tempPath,AMatrix,AFillTexture);
   multi.AddPathStroke(tempPath,AMatrix,AStrokeColor,AWidth,FPenStroker);
@@ -2788,6 +2791,7 @@ var
 begin
   tempPath := TBGRAPath.Create(APath);
   multi := TBGRAMultishapeFiller.Create;
+  multi.FillMode := FillMode;
   multi.PolygonOrder := poLastOnTop;
   multi.AddPathFill(tempPath,AMatrix,AFillTexture);
   multi.AddPathStroke(tempPath,AMatrix,AStrokeTexture,AWidth,FPenStroker);
