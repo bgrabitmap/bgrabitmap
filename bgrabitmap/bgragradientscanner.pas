@@ -73,6 +73,7 @@ type
     FOptions: THueGradientOptions;
     procedure Init(c1,c2: THSLAPixel; AOptions: THueGradientOptions);
     function InterpolateToHSLA(position: word): THSLAPixel;
+  protected
     function InterpolateToBGRA(position: word): TBGRAPixel; override;
     function InterpolateToExpanded(position: word): TExpandedPixel; override;
   public

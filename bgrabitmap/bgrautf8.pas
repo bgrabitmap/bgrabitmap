@@ -779,7 +779,6 @@ var
   p,pEnd: PChar;
   charLen: Integer;
   u: Cardinal;
-  curBidi: TUnicodeBidiClass;
 begin
   if sUTF8 = '' then exit(false);
   p := @sUTF8[1];
