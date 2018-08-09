@@ -1221,9 +1221,13 @@ function TCubicBezierCurve.SimpleComputePoints(AAcceptedDeviation: single;
 var
   t,step: single;
   i,nb: Integer;
+  a,b,c: TpointF;
 begin
   nb := ComputeBezierCurvePrecision(p1,c1,c2,p2, AAcceptedDeviation/2);
   if nb <= 1 then nb := 2;
+  a:=p2-p1+3*(c1-c2);
+  b:=3*(p1+c2)-6*c1;
+  c:=3*(c1-p1);
   if AIncludeFirstPoint then
   begin
     setlength(result,nb);
@@ -1234,7 +1238,7 @@ begin
     for i := 1 to nb-2 do
     begin
       t += step;
-      result[i] := ComputePointAt(t);
+      result[i] := p1+t*(c+t*(b+t*a))
     end;
   end else
   begin
@@ -1245,7 +1249,7 @@ begin
     for i := 0 to nb-3 do
     begin
       t += step;
-      result[i] := ComputePointAt(t);
+      result[i] := p1+t*(c+t*(b+t*a))
     end;
   end;
 end;
