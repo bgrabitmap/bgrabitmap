@@ -155,6 +155,7 @@ type
     function GetParagraphAt(ACharIndex: Integer): integer;
 
     function InsertText(ATextUTF8: string; APosition: integer): integer;
+    function InsertLineSeparator(APosition: integer): integer;
     function DeleteText(APosition, ACount: integer): integer;
     function DeleteTextBefore(APosition, ACount: integer): integer;
     function IncludeNonSpacingChars(APosition, ACount: integer): integer;
@@ -881,6 +882,7 @@ var w,h, lineHeight, baseLine, tabPixelSize: single;
   alignment: TAlignment;
   paraBidiLevel: Byte;
   r: TRectF;
+  u: LongWord;
 
   procedure AddTabSection(startIndex,endIndex: integer);
   begin
@@ -926,6 +928,23 @@ begin
     begin
       lineStart := FUnbrokenLine[i].startIndex;
       lineEnd := FUnbrokenLine[i+1].startIndex;
+
+      if lineEnd > lineStart then
+      begin
+        u := UnicodeChar[lineEnd-1];
+        case u of
+        UNICODE_LINE_SEPARATOR, UNICODE_PARAGRAPH_SEPARATOR, UNICODE_NEXT_LINE: dec(lineEnd);
+        13,10:
+          begin
+            dec(lineEnd);
+            if lineEnd > lineStart then
+            begin
+              u := UnicodeChar[lineEnd-1];
+              if (u = 13) or (u = 10) then dec(lineEnd);
+            end;
+          end;
+        end;
+      end;
       FUnbrokenLine[i].firstBrokenLineIndex:= FBrokenLineCount;
 
       subStart := lineStart;
@@ -1564,6 +1583,11 @@ begin
 
   AnalyzeText;
   result := CharCount-prevCharCount;
+end;
+
+function TBidiTextLayout.InsertLineSeparator(APosition: integer): integer;
+begin
+  result := InsertText(UnicodeCharToUTF8(UNICODE_LINE_SEPARATOR), APosition);
 end;
 
 function TBidiTextLayout.DeleteText(APosition, ACount: integer): integer;
