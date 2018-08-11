@@ -127,6 +127,7 @@ type
 
     procedure AnalyzeLineStart(ADefaultRTL: boolean);
     function GetSameLevelString(startIndex,endIndex: integer): string;
+    function GetSameLevelString(startIndex,endIndex: integer; out nonRemovedCount: integer): string;
     procedure LevelSize(AMaxWidth: single; startIndex, endIndex: integer; bidiLevel: byte; out ASplitIndex: integer; out AWidth, AHeight: single);
     procedure ComputeLevelLayout(APos: TPointF; startIndex,
       endIndex: integer; bidiLevel: byte; fullHeight, baseLine: single; brokenLineIndex: integer;
@@ -158,6 +159,8 @@ type
     function InsertLineSeparator(APosition: integer): integer;
     function DeleteText(APosition, ACount: integer): integer;
     function DeleteTextBefore(APosition, ACount: integer): integer;
+    function CopyText(APosition, ACount: integer): string;
+    function CopyTextBefore(APosition, ACount: integer): string;
     function IncludeNonSpacingChars(APosition, ACount: integer): integer;
     function IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
 
@@ -529,7 +532,7 @@ begin
   else
     sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
 
-  with FRenderer.TextSizeAngle(CleanTextOutString(sUTF8), FRenderer.FontOrientation) do
+  with FRenderer.TextSizeAngle(sUTF8, FRenderer.FontOrientation) do
     result := PointF(Width, Height);
 end;
 
@@ -613,9 +616,9 @@ end;
 procedure TBidiTextLayout.TextOutBidiOverride(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string;  ARightToLeft: boolean);
 begin
   if ARightToLeft then
-    sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ CleanTextOutString(sUTF8)
+    sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
   else
-    sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ CleanTextOutString(sUTF8);
+    sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
 
   if FTexture <> nil then
     FRenderer.TextOut(ADest, x,y, sUTF8, FTexture, taLeftJustify, ARightToLeft)
@@ -700,12 +703,23 @@ begin
 end;
 
 function TBidiTextLayout.GetSameLevelString(startIndex, endIndex: integer): string;
+var
+  nonRemovedCount: integer;
+begin
+  result := GetSameLevelString(startIndex,endIndex,nonRemovedCount);
+end;
+
+function TBidiTextLayout.GetSameLevelString(startIndex, endIndex: integer; out nonRemovedCount: integer): string;
 var i, len, charLen: integer;
 begin
+  nonRemovedCount:= 0;
   len := 0;
   for i := startIndex to endIndex-1 do
     if not FBidi[i].BidiInfo.IsRemoved then
+    begin
       inc(len, FBidi[i+1].Offset - FBidi[i].Offset);
+      inc(nonRemovedCount);
+    end;
 
   setlength(result, len);
   len := 0;
@@ -724,7 +738,7 @@ procedure TBidiTextLayout.LevelSize(AMaxWidth: single; startIndex,
 var
   i: Integer;
   subLevel: byte;
-  subStart, subSplit, fitInfo: integer;
+  subStart, subSplit, fitInfo, nonRemovedCount: integer;
   subStr: string;
   w,h: single;
   splitting: boolean;
@@ -773,13 +787,20 @@ begin
         inc(i);
         while (i < endIndex) and (FBidi[i].BidiInfo.BidiLevel = bidiLevel) do inc(i);
 
-        subStr := GetSameLevelString(subStart,i);
+        subStr := GetSameLevelString(subStart,i, nonRemovedCount);
         if AMaxWidth <> EmptySingle then
         begin
           fitInfo := TextFitInfoBidiOverride(subStr, AMaxWidth - AWidth, odd(bidiLevel));
-          if fitInfo < i-subStart then
+          if fitInfo < nonRemovedCount then
           begin
-            ASplitIndex:= subStart+fitInfo;
+            ASplitIndex:= subStart;
+            while fitInfo > 0 do
+            begin
+              while (ASplitIndex < CharCount) and FBidi[ASplitIndex].BidiInfo.IsRemoved do
+                Inc(ASplitIndex);
+              if ASplitIndex < CharCount then inc(ASplitIndex);
+              dec(fitInfo);
+            end;
             subStr := GetSameLevelString(subStart,ASplitIndex);
             splitting := true;
           end else
@@ -1624,6 +1645,38 @@ begin
   Delete(FText, utf8Start, utf8Count);
   AnalyzeText;
   result := ACount;
+end;
+
+function TBidiTextLayout.CopyText(APosition, ACount: integer): string;
+var
+  utf8Start, utf8Count: Integer;
+begin
+  ACount := IncludeNonSpacingChars(APosition, ACount);
+  if ACount = 0 then exit('');
+
+  utf8Start := FBidi[APosition].Offset+1;
+  if APosition+ACount = CharCount then
+    utf8Count := length(FText) - FBidi[APosition].Offset
+  else
+    utf8Count := FBidi[APosition+ACount].Offset - FBidi[APosition].Offset;
+
+  result := copy(FText, utf8Start, utf8Count);
+end;
+
+function TBidiTextLayout.CopyTextBefore(APosition, ACount: integer): string;
+var
+  utf8Start, utf8Count: Integer;
+begin
+  ACount := IncludeNonSpacingCharsBefore(APosition, ACount);
+  if ACount = 0 then exit('');
+
+  utf8Start := FBidi[APosition-ACount].Offset+1;
+  if APosition = CharCount then
+    utf8Count := length(FText) - FBidi[APosition-ACount].Offset
+  else
+    utf8Count := FBidi[APosition].Offset - FBidi[APosition-ACount].Offset;
+
+  result := copy(FText, utf8Start, utf8Count);
 end;
 
 function TBidiTextLayout.IncludeNonSpacingChars(APosition, ACount: integer): integer;

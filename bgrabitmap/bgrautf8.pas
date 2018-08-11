@@ -84,6 +84,9 @@ function AnalyzeBidiUTF8(const sUTF8: string): TBidiUTF8Array; overload;
 function GetUTF8DisplayOrder(const ABidi: TBidiUTF8Array): TUnicodeDisplayOrder;
 function ContainsBidiIsolateOrFormattingUTF8(const sUTF8: string): boolean;
 
+function UTF8OverrideDirection(const sUTF8: string; ARightToLeft: boolean): string;
+function UTF8EmbedDirection(const sUTF8: string; ARightToLeft: boolean): string;
+
 //little endian stream functions
 function LEReadInt64(Stream: TStream): int64;
 procedure LEWriteInt64(Stream: TStream; AValue: int64);
@@ -796,6 +799,22 @@ begin
     inc(p,charLen);
   end;
   exit(false);
+end;
+
+function UTF8OverrideDirection(const sUTF8: string; ARightToLeft: boolean): string;
+begin
+  if ARightToLeft then
+    result := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE) + sUTF8 + UnicodeCharToUTF8(UNICODE_POP_DIRECTIONAL_FORMATTING)
+  else
+    result := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE) + sUTF8 + UnicodeCharToUTF8(UNICODE_POP_DIRECTIONAL_FORMATTING);
+end;
+
+function UTF8EmbedDirection(const sUTF8: string; ARightToLeft: boolean): string;
+begin
+  if ARightToLeft then
+    result := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_EMBEDDING) + sUTF8 + UnicodeCharToUTF8(UNICODE_POP_DIRECTIONAL_FORMATTING)
+  else
+    result := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_EMBEDDING) + sUTF8 + UnicodeCharToUTF8(UNICODE_POP_DIRECTIONAL_FORMATTING);
 end;
 
 //little endian stream functions
