@@ -61,6 +61,7 @@ type
     function GetUTF8Char(APosition0: integer): string4;
     procedure SetAvailableHeight(AValue: single);
     procedure SetAvailableWidth(AValue: single);
+    procedure SetFontRenderer(AValue: TBGRACustomFontRenderer);
     procedure SetParagraphAlignment(AIndex: integer; AValue: TBidiTextAlignment);
     procedure SetParagraphSpacingAbove(AValue: single);
     procedure SetParagraphSpacingBelow(AValue: single);
@@ -108,6 +109,7 @@ type
     FLayoutComputed: boolean;
     FColor: TBGRAPixel;
     FTexture: IBGRAScanner;
+    FFontBidiMode: TFontBidiMode;
 
     function TextSizeBidiOverride(sUTF8: string; ARightToLeft: boolean): TPointF;
     function TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer; ARightToLeft: boolean; ASplitIndex: integer): TPointF;
@@ -131,9 +133,11 @@ type
     procedure ComputeLayout; virtual;
     procedure NeedLayout;
     procedure InternalDrawText(ADest: TBGRACustomBitmap);
+    procedure AnalyzeText;
   public
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string);
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean);
+    constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; AFontBidiMode: TFontBidiMode);
     procedure SetLayout(ARect: TRectF);
     procedure InvalidateLayout;
 
@@ -147,6 +151,10 @@ type
     function GetCharIndexAt(APosition: TPointF): integer;
     function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true): ArrayOfTPointF;
     function GetParagraphAt(ACharIndex: Integer): integer;
+
+    function InsertText(ATextUTF8: string; APosition: integer): integer;
+    function DeleteText(APosition, ACount: integer): integer;
+    function DeleteTextBefore(APosition, ACount: integer): integer;
 
     property CharCount: integer read FCharCount;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
@@ -192,6 +200,8 @@ type
     property MatrixInverse: TAffineMatrix read GetMatrixInverse;
     property TextUTF8: string read FText;
     property WordBreakHandler: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
+
+    property FontRenderer: TBGRACustomFontRenderer read FRenderer write SetFontRenderer;
   end;
 
 implementation
@@ -436,6 +446,13 @@ procedure TBidiTextLayout.SetAvailableWidth(AValue: single);
 begin
   if FAvailableWidth=AValue then Exit;
   FAvailableWidth:=AValue;
+  FLayoutComputed:= false;
+end;
+
+procedure TBidiTextLayout.SetFontRenderer(AValue: TBGRACustomFontRenderer);
+begin
+  if FRenderer=AValue then Exit;
+  FRenderer:=AValue;
   FLayoutComputed:= false;
 end;
 
@@ -768,9 +785,8 @@ begin
   Init;
   FRenderer := AFontRenderer;
   FText:= sUTF8;
-  FBidi:= AnalyzeBidiUTF8(sUTF8);
-  FCharCount := length(FBidi);
-  AnalyzeLineStart(False);
+  FFontBidiMode:= fbmAuto;
+  AnalyzeText;
 end;
 
 constructor TBidiTextLayout.Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean);
@@ -778,9 +794,21 @@ begin
   Init;
   FRenderer := AFontRenderer;
   FText:= sUTF8;
-  FBidi:= AnalyzeBidiUTF8(sUTF8, ARightToLeft);
-  FCharCount := length(FBidi);
-  AnalyzeLineStart(ARightToLeft);
+  if ARightToLeft then
+    FFontBidiMode:= fbmRightToLeft
+  else
+    FFontBidiMode:= fbmLeftToRight;
+  AnalyzeText;
+end;
+
+constructor TBidiTextLayout.Create(AFontRenderer: TBGRACustomFontRenderer;
+  sUTF8: string; AFontBidiMode: TFontBidiMode);
+begin
+  Init;
+  FRenderer := AFontRenderer;
+  FText:= sUTF8;
+  FFontBidiMode:= AFontBidiMode;
+  AnalyzeText;
 end;
 
 procedure TBidiTextLayout.SetLayout(ARect: TRectF);
@@ -1120,6 +1148,18 @@ begin
   for i := 0 to FPartCount-1 do
     with (Matrix*(FPart[i].rectF.TopLeft + FPart[i].posCorrection)) do
       TextOutBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
+end;
+
+procedure TBidiTextLayout.AnalyzeText;
+begin
+  if FFontBidiMode <> fbmAuto then
+    FBidi:= AnalyzeBidiUTF8(FText, FFontBidiMode = fbmRightToLeft)
+  else
+    FBidi:= AnalyzeBidiUTF8(FText);
+
+  FCharCount := length(FBidi);
+  AnalyzeLineStart(FFontBidiMode = fbmRightToLeft);
+  FLayoutComputed:= false;
 end;
 
 procedure TBidiTextLayout.DrawCaret(ADest: TBGRACustomBitmap;
@@ -1488,6 +1528,103 @@ begin
     if ACharIndex < ParagraphStartIndex[i] then
       exit(i-1);
   exit(FParagraphCount-1);
+end;
+
+function TBidiTextLayout.InsertText(ATextUTF8: string; APosition: integer): integer;
+var prevCharCount : integer;
+begin
+  if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
+  prevCharCount:= CharCount;
+
+  if APosition = CharCount then
+    FText += ATextUTF8
+  else
+    Insert(ATextUTF8, FText, FBidi[APosition].Offset+1);
+
+  AnalyzeText;
+  result := CharCount-prevCharCount;
+end;
+
+function IsCrLf(u: cardinal): boolean;
+begin
+  result := (u=10) or (u=13);
+end;
+
+function TBidiTextLayout.DeleteText(APosition, ACount: integer): integer;
+var
+  utf8Start, utf8Count, idxPara: Integer;
+begin
+  if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
+  if APosition+ACount > CharCount then raise exception.Create('Exceed end of text');
+  if ACount = 0 then exit(0);
+
+  //delete Cr/Lf pair
+  if IsCrLf(UnicodeChar[APosition+ACount-1]) then
+  begin
+    idxPara := GetParagraphAt(APosition+ACount-1);
+    if (ParagraphEndIndex[idxPara] = APosition+ACount+1) and
+       IsCrLf(UnicodeChar[APosition+ACount]) then Inc(ACount);
+  end;
+
+  //delete non spacing marks after last char
+  while (APosition+ACount < CharCount) and
+    (GetUnicodeBidiClass(UnicodeChar[APosition+ACount])=ubcNonSpacingMark)
+  do inc(ACount);
+
+  utf8Start := FBidi[APosition].Offset+1;
+  if APosition+ACount = CharCount then
+    utf8Count := length(FText) - FBidi[APosition].Offset
+  else
+    utf8Count := FBidi[APosition+ACount].Offset - FBidi[APosition].Offset;
+
+  Delete(FText, utf8Start, utf8Count);
+  AnalyzeText;
+  result := ACount;
+end;
+
+function IsIsolateOrFormatting(u: cardinal): boolean;
+begin
+  case u of
+  UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE, UNICODE_FIRST_STRONG_ISOLATE,
+  UNICODE_LEFT_TO_RIGHT_EMBEDDING, UNICODE_RIGHT_TO_LEFT_EMBEDDING,
+  UNICODE_LEFT_TO_RIGHT_OVERRIDE, UNICODE_RIGHT_TO_LEFT_OVERRIDE: exit(true)
+  else exit(false);
+  end;
+end;
+
+function TBidiTextLayout.DeleteTextBefore(APosition, ACount: integer): integer;
+var
+  idxPara, utf8Start, utf8Count: Integer;
+begin
+  if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
+  if APosition-ACount < 0 then raise exception.Create('Exceed start of text');
+  if ACount = 0 then exit(0);
+
+  //delete Cr/Lf pair
+  if IsCrLf(UnicodeChar[APosition-1]) then
+   begin
+     idxPara := GetParagraphAt(APosition-1);
+     if (ParagraphStartIndex[idxPara] < APosition-1) and
+        IsCrLf(UnicodeChar[APosition-2]) then
+       Inc(ACount);
+   end;
+
+  //delete before non spacing marks until real char
+  idxPara := GetParagraphAt(APosition-ACount);
+  while (APosition-ACount > ParagraphStartIndex[idxPara]) and
+    (GetUnicodeBidiClass(UnicodeChar[APosition-ACount])=ubcNonSpacingMark) and
+    not IsIsolateOrFormatting(UnicodeChar[APosition-ACount-1])
+  do inc(ACount);
+
+  utf8Start := FBidi[APosition-ACount].Offset+1;
+  if APosition = CharCount then
+    utf8Count := length(FText) - FBidi[APosition-ACount].Offset
+  else
+    utf8Count := FBidi[APosition].Offset - FBidi[APosition-ACount].Offset;
+
+  Delete(FText, utf8Start, utf8Count);
+  AnalyzeText;
+  result := ACount;
 end;
 
 function TBidiTextLayout.GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
