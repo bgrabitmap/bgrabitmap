@@ -445,6 +445,7 @@ begin
   if (AIndex < 0) or (AIndex >= FParagraphCount) then
     raise ERangeError.Create('Invalid index');
   FParagraph[AIndex].alignment := AValue;
+  FLayoutComputed:= false;
 end;
 
 procedure TBidiTextLayout.SetParagraphSpacingAbove(AValue: single);
@@ -1379,7 +1380,8 @@ end;
 function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean): ArrayOfTPointF;
 var
   temp, i: Integer;
-  caret, caretEnd, caretStartPart, caretEndPart: TBidiCaretPos;
+  startCaret, endCaret, curPartStartCaret, curPartEndCaret,
+  lineStartCaret, lineEndCaret: TBidiCaretPos;
   brokenLineIndex, paraIndex: integer;
   r: TRectF;
 begin
@@ -1393,49 +1395,33 @@ begin
     AStartIndex:= AEndIndex;
     AEndIndex:= temp;
   end;
-  caret := GetCaret(AStartIndex);
-  caretEnd := GetCaret(AEndIndex);
-  if not isEmptyPointF(caretEnd.PreviousTop) then
+  startCaret := GetCaret(AStartIndex);
+  endCaret := GetCaret(AEndIndex);
+  if not isEmptyPointF(endCaret.PreviousTop) then
   begin
-    caretEnd.Top := caretEnd.PreviousTop;        caretEnd.PreviousTop := EmptyPointF;
-    caretEnd.Bottom := caretEnd.PreviousBottom;  caretEnd.PreviousBottom := EmptyPointF;
-    caretEnd.RightToLeft := caretEnd.PreviousRightToLeft;
-    if caretEnd.PartIndex <> -1 then caretEnd.PartIndex -= 1;
+    endCaret.Top := endCaret.PreviousTop;        endCaret.PreviousTop := EmptyPointF;
+    endCaret.Bottom := endCaret.PreviousBottom;  endCaret.PreviousBottom := EmptyPointF;
+    endCaret.RightToLeft := endCaret.PreviousRightToLeft;
+    if endCaret.PartIndex <> -1 then endCaret.PartIndex -= 1;
   end;
 
-  if caret.PartIndex = caretEnd.PartIndex then
+  if startCaret.PartIndex = endCaret.PartIndex then
   begin
-    if not isEmptyPointF(caret.Top) and not isEmptyPointF(caretEnd.Top) then
-      result := PointsF([caret.Top,caret.Bottom,caretEnd.Bottom,caretEnd.Top]);
+    if not isEmptyPointF(startCaret.Top) and not isEmptyPointF(endCaret.Top) then
+      result := PointsF([startCaret.Top,startCaret.Bottom,endCaret.Bottom,endCaret.Top]);
   end else
   begin
     result := nil;
-    for i := caret.PartIndex to caretEnd.PartIndex do
+    for i := startCaret.PartIndex to endCaret.PartIndex do
     begin
-      if i > caret.PartIndex then caretStartPart := PartStartCaret[i]
-      else caretStartPart := caret;
+      if i > startCaret.PartIndex then curPartStartCaret := PartStartCaret[i]
+      else curPartStartCaret := startCaret;
 
-      if i < caretEnd.PartIndex then caretEndPart := PartEndCaret[i]
-      else caretEndPart := caretEnd;
+      if i < endCaret.PartIndex then curPartEndCaret := PartEndCaret[i]
+      else curPartEndCaret := endCaret;
 
-      brokenLineIndex := PartBrokenLineIndex[i];
-      if (i > caret.PartIndex) and (PartBrokenLineIndex[i-1] <> brokenLineIndex) then
-      begin
-        if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
-          caretStartPart := BrokenLineStartCaret[brokenLineIndex]
-        else
-          caretEndPart := BrokenLineStartCaret[brokenLineIndex];
-      end;
-
-      if (i < caretEnd.PartIndex) and (PartBrokenLineIndex[i+1] <> PartBrokenLineIndex[i]) then
-      begin
-        if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
-          caretEndPart := BrokenLineEndCaret[brokenLineIndex]
-        else
-          caretStartPart := BrokenLineEndCaret[brokenLineIndex];
-      end;
-
-      if (i > caret.PartIndex) and (ParagraphSpacingAbove+ParagraphSpacingBelow <> 0) then
+      //space between paragraph
+      if (i > startCaret.PartIndex) and (ParagraphSpacingAbove+ParagraphSpacingBelow <> 0) then
       begin
         paraIndex := BrokenLineParagraphIndex[PartBrokenLineIndex[i]];
         if (paraIndex > 0) and (BrokenLineParagraphIndex[PartBrokenLineIndex[i-1]] = paraIndex-1) then
@@ -1450,9 +1436,40 @@ begin
         end;
       end;
 
+      //start of lines
+      brokenLineIndex := PartBrokenLineIndex[i];
+      lineStartCaret := BrokenLineStartCaret[brokenLineIndex];
+      if (i > startCaret.PartIndex) and (PartBrokenLineIndex[i-1] <> brokenLineIndex) then
+      begin
+        if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
+          result := ConcatPointsF([result,
+                            PointsF([lineStartCaret.Top,lineStartCaret.Bottom,PartStartCaret[i].Bottom,PartStartCaret[i].Top, EmptyPointF])
+                           ])
+        else
+        result := ConcatPointsF([result,
+                          PointsF([lineStartCaret.Top,lineStartCaret.Bottom,PartEndCaret[i].Bottom,PartEndCaret[i].Top, EmptyPointF])
+                         ])
+      end;
+
+      //text parts
       result := ConcatPointsF([result,
-                            PointsF([caretStartPart.Top,caretStartPart.Bottom,caretEndPart.Bottom,caretEndPart.Top, EmptyPointF])
+                            PointsF([curPartStartCaret.Top,curPartStartCaret.Bottom,curPartEndCaret.Bottom,curPartEndCaret.Top, EmptyPointF])
                            ]);
+
+
+      //end of lines
+      lineEndCaret := BrokenLineEndCaret[brokenLineIndex];
+      if (i < endCaret.PartIndex) and (PartBrokenLineIndex[i+1] <> PartBrokenLineIndex[i]) then
+      begin
+        if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
+          result := ConcatPointsF([result,
+                            PointsF([PartEndCaret[i].Top,PartEndCaret[i].Bottom,lineEndCaret.Bottom,lineEndCaret.Top, EmptyPointF])
+                           ])
+        else
+          result := ConcatPointsF([result,
+                            PointsF([PartStartCaret[i].Top,PartStartCaret[i].Bottom,lineEndCaret.Bottom,lineEndCaret.Top, EmptyPointF])
+                           ])
+      end;
     end;
     if result <> nil then setlength(result, length(result)-1);
   end;
