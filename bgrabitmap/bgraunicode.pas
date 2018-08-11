@@ -110,6 +110,9 @@ function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
 function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;
 function IsZeroWidthUnicode(u: cardinal): boolean;
 function IsUnicodeParagraphSeparator(u: cardinal): boolean;
+function IsUnicodeCrLf(u: cardinal): boolean;
+function IsUnicodeIsolateOrFormatting(u: cardinal): boolean;
+
 
 { Analyze unicode and return bidi levels for each character.
   baseDirection can be either UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE or UNICODE_FIRST_STRONG_ISOLATE }
@@ -752,6 +755,21 @@ begin
   $0A, $0D, UNICODE_NEXT_LINE, UNICODE_PARAGRAPH_SEPARATOR,
   UNICODE_INFORMATION_SEPARATOR_FOUR, UNICODE_INFORMATION_SEPARATOR_THREE, UNICODE_INFORMATION_SEPARATOR_TWO: result := true;
   else result := false;
+  end;
+end;
+
+function IsUnicodeCrLf(u: cardinal): boolean;
+begin
+  result := (u=10) or (u=13);
+end;
+
+function IsUnicodeIsolateOrFormatting(u: cardinal): boolean;
+begin
+  case u of
+  UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE, UNICODE_FIRST_STRONG_ISOLATE,
+  UNICODE_LEFT_TO_RIGHT_EMBEDDING, UNICODE_RIGHT_TO_LEFT_EMBEDDING,
+  UNICODE_LEFT_TO_RIGHT_OVERRIDE, UNICODE_RIGHT_TO_LEFT_OVERRIDE: exit(true)
+  else exit(false);
   end;
 end;
 

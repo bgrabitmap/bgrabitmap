@@ -46,6 +46,7 @@ type
     function GetParagraphAffineBox(AIndex: integer): TAffineBox;
     function GetParagraphAlignment(AIndex: integer): TBidiTextAlignment;
     function GetParagraphEndIndex(AIndex: integer): integer;
+    function GetParagraphEndIndexBeforeCrLf(AIndex: integer): integer;
     function GetParagraphRectF(AIndex: integer): TRectF;
     function GetParagraphRightToLeft(AIndex: integer): boolean;
     function GetParagraphStartIndex(AIndex: integer): integer;
@@ -61,6 +62,7 @@ type
     function GetUTF8Char(APosition0: integer): string4;
     procedure SetAvailableHeight(AValue: single);
     procedure SetAvailableWidth(AValue: single);
+    procedure SetFontBidiMode(AValue: TFontBidiMode);
     procedure SetFontRenderer(AValue: TBGRACustomFontRenderer);
     procedure SetParagraphAlignment(AIndex: integer; AValue: TBidiTextAlignment);
     procedure SetParagraphSpacingAbove(AValue: single);
@@ -155,6 +157,8 @@ type
     function InsertText(ATextUTF8: string; APosition: integer): integer;
     function DeleteText(APosition, ACount: integer): integer;
     function DeleteTextBefore(APosition, ACount: integer): integer;
+    function IncludeNonSpacingChars(APosition, ACount: integer): integer;
+    function IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
 
     property CharCount: integer read FCharCount;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
@@ -191,6 +195,7 @@ type
     property ParagraphAlignment[AIndex: integer]: TBidiTextAlignment read GetParagraphAlignment write SetParagraphAlignment;
     property ParagraphStartIndex[AIndex: integer]: integer read GetParagraphStartIndex;
     property ParagraphEndIndex[AIndex: integer]: integer read GetParagraphEndIndex;
+    property ParagraphEndIndexBeforeCrLf[AIndex: integer]: integer read GetParagraphEndIndexBeforeCrLf;
     property ParagraphRightToLeft[AIndex: integer]: boolean read GetParagraphRightToLeft;
     property ParagraphCount: integer read FParagraphCount;
 
@@ -202,6 +207,7 @@ type
     property WordBreakHandler: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
 
     property FontRenderer: TBGRACustomFontRenderer read FRenderer write SetFontRenderer;
+    property FontBidiMode: TFontBidiMode read FFontBidiMode write SetFontBidiMode;
   end;
 
 implementation
@@ -334,6 +340,14 @@ begin
   result := FUnbrokenLine[FParagraph[AIndex].firstUnbrokenLineIndex+1].startIndex;
 end;
 
+function TBidiTextLayout.GetParagraphEndIndexBeforeCrLf(AIndex: integer): integer;
+begin
+  result := GetParagraphEndIndex(AIndex);
+  if (result>0) and IsUnicodeCrLf(UnicodeChar[result-1]) then dec(result);
+  if (result>0) and IsUnicodeCrLf(UnicodeChar[result-1]) and
+    (UnicodeChar[result-1] <> UnicodeChar[result]) then dec(result);
+end;
+
 function TBidiTextLayout.GetParagraphRectF(AIndex: integer): TRectF;
 begin
   NeedLayout;
@@ -447,6 +461,13 @@ begin
   if FAvailableWidth=AValue then Exit;
   FAvailableWidth:=AValue;
   FLayoutComputed:= false;
+end;
+
+procedure TBidiTextLayout.SetFontBidiMode(AValue: TFontBidiMode);
+begin
+  if FFontBidiMode=AValue then Exit;
+  FFontBidiMode:=AValue;
+  AnalyzeText;
 end;
 
 procedure TBidiTextLayout.SetFontRenderer(AValue: TBGRACustomFontRenderer);
@@ -1545,31 +1566,12 @@ begin
   result := CharCount-prevCharCount;
 end;
 
-function IsCrLf(u: cardinal): boolean;
-begin
-  result := (u=10) or (u=13);
-end;
-
 function TBidiTextLayout.DeleteText(APosition, ACount: integer): integer;
 var
-  utf8Start, utf8Count, idxPara: Integer;
+  utf8Start, utf8Count: Integer;
 begin
-  if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
-  if APosition+ACount > CharCount then raise exception.Create('Exceed end of text');
+  ACount := IncludeNonSpacingChars(APosition, ACount);
   if ACount = 0 then exit(0);
-
-  //delete Cr/Lf pair
-  if IsCrLf(UnicodeChar[APosition+ACount-1]) then
-  begin
-    idxPara := GetParagraphAt(APosition+ACount-1);
-    if (ParagraphEndIndex[idxPara] = APosition+ACount+1) and
-       IsCrLf(UnicodeChar[APosition+ACount]) then Inc(ACount);
-  end;
-
-  //delete non spacing marks after last char
-  while (APosition+ACount < CharCount) and
-    (GetUnicodeBidiClass(UnicodeChar[APosition+ACount])=ubcNonSpacingMark)
-  do inc(ACount);
 
   utf8Start := FBidi[APosition].Offset+1;
   if APosition+ACount = CharCount then
@@ -1582,39 +1584,12 @@ begin
   result := ACount;
 end;
 
-function IsIsolateOrFormatting(u: cardinal): boolean;
-begin
-  case u of
-  UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE, UNICODE_FIRST_STRONG_ISOLATE,
-  UNICODE_LEFT_TO_RIGHT_EMBEDDING, UNICODE_RIGHT_TO_LEFT_EMBEDDING,
-  UNICODE_LEFT_TO_RIGHT_OVERRIDE, UNICODE_RIGHT_TO_LEFT_OVERRIDE: exit(true)
-  else exit(false);
-  end;
-end;
-
 function TBidiTextLayout.DeleteTextBefore(APosition, ACount: integer): integer;
 var
-  idxPara, utf8Start, utf8Count: Integer;
+  utf8Start, utf8Count: Integer;
 begin
-  if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
-  if APosition-ACount < 0 then raise exception.Create('Exceed start of text');
+  ACount := IncludeNonSpacingCharsBefore(APosition, ACount);
   if ACount = 0 then exit(0);
-
-  //delete Cr/Lf pair
-  if IsCrLf(UnicodeChar[APosition-1]) then
-   begin
-     idxPara := GetParagraphAt(APosition-1);
-     if (ParagraphStartIndex[idxPara] < APosition-1) and
-        IsCrLf(UnicodeChar[APosition-2]) then
-       Inc(ACount);
-   end;
-
-  //delete before non spacing marks until real char
-  idxPara := GetParagraphAt(APosition-ACount);
-  while (APosition-ACount > ParagraphStartIndex[idxPara]) and
-    (GetUnicodeBidiClass(UnicodeChar[APosition-ACount])=ubcNonSpacingMark) and
-    not IsIsolateOrFormatting(UnicodeChar[APosition-ACount-1])
-  do inc(ACount);
 
   utf8Start := FBidi[APosition-ACount].Offset+1;
   if APosition = CharCount then
@@ -1624,6 +1599,57 @@ begin
 
   Delete(FText, utf8Start, utf8Count);
   AnalyzeText;
+  result := ACount;
+end;
+
+function TBidiTextLayout.IncludeNonSpacingChars(APosition, ACount: integer): integer;
+var
+  idxPara: Integer;
+begin
+  if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
+  if APosition+ACount > CharCount then raise exception.Create('Exceed end of text');
+  if ACount = 0 then exit(0);
+
+  //delete Cr/Lf pair
+  if IsUnicodeCrLf(UnicodeChar[APosition+ACount-1]) then
+  begin
+    idxPara := GetParagraphAt(APosition+ACount-1);
+    if (ParagraphEndIndex[idxPara] = APosition+ACount+1) and
+       IsUnicodeCrLf(UnicodeChar[APosition+ACount]) then Inc(ACount);
+  end;
+
+  //delete non spacing marks after last char
+  while (APosition+ACount < CharCount) and
+    (GetUnicodeBidiClass(UnicodeChar[APosition+ACount])=ubcNonSpacingMark)
+  do inc(ACount);
+
+  result := ACount;
+end;
+
+function TBidiTextLayout.IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
+var
+  idxPara: Integer;
+begin
+  if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
+  if APosition-ACount < 0 then raise exception.Create('Exceed start of text');
+  if ACount = 0 then exit(0);
+
+  //delete Cr/Lf pair
+  if IsUnicodeCrLf(UnicodeChar[APosition-1]) then
+   begin
+     idxPara := GetParagraphAt(APosition-1);
+     if (ParagraphStartIndex[idxPara] < APosition-1) and
+        IsUnicodeCrLf(UnicodeChar[APosition-2]) then
+       Inc(ACount);
+   end;
+
+  //delete before non spacing marks until real char
+  idxPara := GetParagraphAt(APosition-ACount);
+  while (APosition-ACount > ParagraphStartIndex[idxPara]) and
+    (GetUnicodeBidiClass(UnicodeChar[APosition-ACount])=ubcNonSpacingMark) and
+    not IsUnicodeIsolateOrFormatting(UnicodeChar[APosition-ACount-1])
+  do inc(ACount);
+
   result := ACount;
 end;
 
