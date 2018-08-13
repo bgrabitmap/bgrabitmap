@@ -24,6 +24,31 @@ type
   {* An affine matrix contains three 2D vectors: the image of x, the image of y and the translation }
   TAffineMatrix = array[1..2,1..3] of single;
 
+  {$if FPC_FULLVERSION>=030001}
+  TRectF = Types.TRectF;
+  {$else}
+  {$define BGRA_DEFINE_TRECTF}
+  { TRectF }
+
+  TRectF =
+  {$ifndef FPC_REQUIRES_PROPER_ALIGNMENT}
+  packed
+  {$endif FPC_REQUIRES_PROPER_ALIGNMENT}
+  record
+  private
+    function GetHeight: single;
+    function GetWidth: Single;
+  public
+    property Width: Single read GetWidth;
+    property Height: single read GetHeight;
+    case Integer of
+     0: (Left, Top, Right, Bottom: Single);
+     1: (TopLeft, BottomRight: TPointF);
+  end;
+  {$endif}
+  function RectF(Left, Top, Right, Bottom: Single): TRectF;
+
+type
   { TAffineBox }
 
   TAffineBox = object
@@ -48,21 +73,6 @@ type
     property Width: single read GetWidth;
     property Height: single read GetHeight;
   end;
-
-  {$if FPC_FULLVERSION>=030001}
-  TRectF = Types.TRectF;
-  {$else}
-  TRectF =
-  {$ifndef FPC_REQUIRES_PROPER_ALIGNMENT}
-  packed
-  {$endif FPC_REQUIRES_PROPER_ALIGNMENT}
-  record
-    case Integer of
-     0: (Left, Top, Right, Bottom: Single);
-     1: (TopLeft, BottomRight: TPointF);
-  end;
-  {$endif}
-  function RectF(Left, Top, Right, Bottom: Single): TRectF;
 
   const
     {** Value indicating that there is an empty ''TPointF'' structure.
@@ -564,6 +574,20 @@ type
 
 {$IFDEF INCLUDE_IMPLEMENTATION}
 {$UNDEF INCLUDE_IMPLEMENTATION}
+
+{$IFDEF BGRA_DEFINE_TRECTF}
+{ TRectF }
+
+function TRectF.GetHeight: single;
+begin
+  result := Bottom-Top;
+end;
+
+function TRectF.GetWidth: Single;
+begin
+  result := Right-Left;
+end;
+{$ENDIF}
 
 { TAffineBox }
 

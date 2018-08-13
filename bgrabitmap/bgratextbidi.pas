@@ -531,7 +531,7 @@ begin
   AddOverrideIfNecessary(sUTF8, ARightToLeft);
 
   with FRenderer.TextSizeAngle(sUTF8, FRenderer.FontOrientation) do
-    result := PointF(Width, Height);
+    result := PointF(cx, cy);
 end;
 
 function TBidiTextLayout.TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer;
@@ -597,7 +597,7 @@ end;
 
 function TBidiTextLayout.GetFontFullHeight: single;
 begin
-  result := FRenderer.TextSizeAngle('Hg', FRenderer.FontOrientation).Height;
+  result := FRenderer.TextSizeAngle('Hg', FRenderer.FontOrientation).cy;
 end;
 
 function TBidiTextLayout.GetFontBaseline: single;

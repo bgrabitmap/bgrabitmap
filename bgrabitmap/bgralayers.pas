@@ -544,7 +544,7 @@ begin
   begin
     FindOriginal(guid, dir, c);
     if not Assigned(dir) then
-      raise EDirectoryNotFoundException.Create('Original directory not found');
+      raise exception.Create('Original directory not found');
     if not Assigned(c) then
       raise exception.Create('Original class not found (it can be registered with the RegisterLayerOriginal function)');
 
@@ -1241,8 +1241,8 @@ begin
       FLayers[layer].Source := nil;
     rAll := rect(0,0,Width,Height);
     r := orig.GetRenderBounds(rAll,FLayers[layer].OriginalMatrix);
-    rInter := TRect.Intersect(r, rAll);
-    FLayers[layer].Source := TBGRABitmap.Create(rInter.Width,rInter.Height);
+    IntersectRect(rInter, r, rAll);
+    FLayers[layer].Source := TBGRABitmap.Create(rInter.Right-rInter.Left,rInter.Bottom-rInter.Top);
     orig.Render(FLayers[layer].Source, AffineMatrixTranslation(-rInter.Left,-rInter.Top)*FLayers[layer].OriginalMatrix, ADraft);
     FLayers[layer].x := rInter.Left;
     FLayers[layer].y := rInter.Top;

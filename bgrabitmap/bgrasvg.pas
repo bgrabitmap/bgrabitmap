@@ -442,7 +442,7 @@ end;
 
 function TBGRASVG.GetHeight: TFloatWithCSSUnit;
 begin
-  result := TCSSUnitConverter.parseValue(Attribute['height'],FloatWithCSSUnit(ViewBox.size.y,cuCustom));
+  result := TCSSUnitConverter.parseValue(Attribute['height'],FloatWithCSSUnit(FUnits.ViewBox.size.y,cuCustom));
 end;
 
 function TBGRASVG.GetHeightAsCm: single;
@@ -492,7 +492,7 @@ end;
 
 function TBGRASVG.GetWidth: TFloatWithCSSUnit;
 begin
-  result := TCSSUnitConverter.parseValue(Attribute['width'],FloatWithCSSUnit(ViewBox.size.x,cuCustom));
+  result := TCSSUnitConverter.parseValue(Attribute['width'],FloatWithCSSUnit(FUnits.ViewBox.size.x,cuCustom));
 end;
 
 function TBGRASVG.GetWidthAsCm: single;

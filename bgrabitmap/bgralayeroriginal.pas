@@ -163,7 +163,7 @@ function FindLayerOriginalClass(AStorageClassName: string): TBGRALayerOriginalAn
 
 implementation
 
-uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, BGRAGraphics;
+uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, BGRAGraphics, Types;
 
 var
   LayerOriginalClasses: array of TBGRALayerOriginalAny;
@@ -369,9 +369,9 @@ begin
   for i := 0 to high(FPoints) do
   begin
     if isEmptyPointF(FPoints[i].Origin) then
-      result.Union(result, RenderPoint(ADest, FMatrix*FPoints[i].Coord))
+      UnionRect(result, result, RenderPoint(ADest, FMatrix*FPoints[i].Coord))
     else
-      result.Union(result, RenderArrow(ADest, FMatrix*FPoints[i].Origin, FMatrix*FPoints[i].Coord));
+      UnionRect(result, result, RenderArrow(ADest, FMatrix*FPoints[i].Origin, FMatrix*FPoints[i].Coord));
   end;
 end;
 
