@@ -120,6 +120,7 @@ type
     function GetFontBaseline: single;
     function GetFontOrientation: single;
     procedure TextOutBidiOverride(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; ARightToLeft: boolean);
+    function AddOverrideIfNecessary(var sUTF8: string; ARightToLeft: boolean): boolean;
 
     procedure AddPart(AStartIndex, AEndIndex: integer; ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ASUTF8: string; ABrokenLineIndex: integer);
     function GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
@@ -527,10 +528,7 @@ end;
 function TBidiTextLayout.TextSizeBidiOverride(sUTF8: string;
   ARightToLeft: boolean): TPointF;
 begin
-  if ARightToLeft then
-    sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
-  else
-    sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
+  AddOverrideIfNecessary(sUTF8, ARightToLeft);
 
   with FRenderer.TextSizeAngle(sUTF8, FRenderer.FontOrientation) do
     result := PointF(Width, Height);
@@ -589,13 +587,12 @@ end;
 
 function TBidiTextLayout.TextFitInfoBidiOverride(sUTF8: string; AWidth: single;
   ARightToLeft: boolean): integer;
+var
+  over: Boolean;
 begin
-  if ARightToLeft then
-    sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
-  else
-    sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
+  over := AddOverrideIfNecessary(sUTF8, ARightToLeft);
 
-  result := FRenderer.TextFitInfo(sUTF8, round(AWidth))-1;
+  result := FRenderer.TextFitInfo(sUTF8, round(AWidth))- integer(over);
 end;
 
 function TBidiTextLayout.GetFontFullHeight: single;
@@ -615,15 +612,63 @@ end;
 
 procedure TBidiTextLayout.TextOutBidiOverride(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string;  ARightToLeft: boolean);
 begin
-  if ARightToLeft then
-    sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
-  else
-    sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
+  if sUTF8 = #9 then exit;
+  AddOverrideIfNecessary(sUTF8, ARightToLeft);
 
   if FTexture <> nil then
     FRenderer.TextOut(ADest, x,y, sUTF8, FTexture, taLeftJustify, ARightToLeft)
   else
     FRenderer.TextOut(ADest, x,y, sUTF8, FColor, taLeftJustify, ARightToLeft);
+end;
+
+function TBidiTextLayout.AddOverrideIfNecessary(var sUTF8: string;
+  ARightToLeft: boolean): boolean;
+var
+  p: PChar;
+  pEnd: Pointer;
+  add, hasStrong: boolean;
+  charLen: Integer;
+  u: Cardinal;
+  curBidi: TUnicodeBidiClass;
+  isSpacing: boolean;
+begin
+  if sUTF8 = '' then exit(false);
+  isSpacing:= true;
+  p := @sUTF8[1];
+  pEnd := p + length(sUTF8);
+  add := false;
+  hasStrong := false;
+  while p < pEnd do
+  begin
+    charLen := UTF8CharacterLength(p);
+    if (charLen = 0) or (p+charLen > pEnd) then break;
+    u := UTF8CodepointToUnicode(p, charLen);
+    curBidi := GetUnicodeBidiClass(u);
+    if curBidi <> ubcWhiteSpace then isSpacing:= false;
+    if curBidi in[ubcLeftToRight,ubcRightToLeft,ubcArabicLetter] then
+      hasStrong := true;
+    if (curBidi = ubcLeftToRight) and ARightToLeft then
+    begin
+      add := true;
+      break;
+    end else
+    if (curBidi in[ubcRightToLeft,ubcArabicLetter]) and not ARightToLeft then
+    begin
+      add := true;
+      break;
+    end;
+    inc(p,charLen);
+  end;
+  if not hasStrong and ARightToLeft and not isSpacing then add := true;
+  if add then
+  begin
+    if ARightToLeft then
+      sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_OVERRIDE)+ sUTF8
+    else
+      sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_OVERRIDE)+ sUTF8;
+    exit(true);
+  end
+  else exit(false);
 end;
 
 procedure TBidiTextLayout.AddPart(AStartIndex, AEndIndex: integer;
