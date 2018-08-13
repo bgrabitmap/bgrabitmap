@@ -592,7 +592,8 @@ var
 begin
   over := AddOverrideIfNecessary(sUTF8, ARightToLeft);
 
-  result := FRenderer.TextFitInfo(sUTF8, round(AWidth))- integer(over);
+  result := FRenderer.TextFitInfo(sUTF8, round(AWidth));
+  if over then dec(result);
 end;
 
 function TBidiTextLayout.GetFontFullHeight: single;
@@ -1476,6 +1477,7 @@ begin
                   str := copy(FText, FBidi[PartStartIndex[j]].Offset+1, FBidi[PartEndIndex[j]].Offset - FBidi[PartStartIndex[j]].Offset);
                   fit := TextFitInfoBidiOverride(str, w, PartRightToLeft[j]);
                   curIndex := PartStartIndex[j]+fit;
+                  if curIndex > PartEndIndex[j] then curIndex:= PartEndIndex[j];
                   if curIndex = 0 then curW := 0
                   else curW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], curIndex).x;
                   while (curW < w) and (curIndex < PartEndIndex[j]) do

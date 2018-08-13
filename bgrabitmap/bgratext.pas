@@ -608,6 +608,7 @@ function BGRATextFitInfo(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string;
 var
   actualAntialiasingLevel: Integer;
 begin
+  if AMaxWidth = 0 then exit(0);
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   if not LCLFontAvailable then
     result := 0
