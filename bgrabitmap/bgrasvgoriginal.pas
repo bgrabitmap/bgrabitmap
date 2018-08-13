@@ -48,12 +48,12 @@ end;
 
 function TBGRALayerSVGOriginal.GetSvgHeight: single;
 begin
-  result := FSVG.ViewBoxInUnit[cuPixel].size.y;
+  result := FSVG.ViewSizeInUnit[cuPixel].y;
 end;
 
 function TBGRALayerSVGOriginal.GetSvgWidth: single;
 begin
-  result := FSVG.ViewBoxInUnit[cuPixel].size.x;
+  result := FSVG.ViewSizeInUnit[cuPixel].x;
 end;
 
 procedure TBGRALayerSVGOriginal.SetDPI(AValue: single);
@@ -100,11 +100,13 @@ function TBGRALayerSVGOriginal.GetRenderBounds(ADestRect: TRect;
   AMatrix: TAffineMatrix): TRect;
 var
   aff: TAffineBox;
+  min, size: TPointF;
 begin
   if Assigned(FSVG) then
   begin
-    with FSVG.ViewBoxInUnit[cuPixel] do
-      aff := AMatrix*TAffineBox.AffineBox(min,PointF(min.x+size.x,min.y),PointF(min.x,min.y+size.y));
+    min := FSVG.ViewMinInUnit[cuPixel];
+    size := FSVG.ViewSizeInUnit[cuPixel];
+    aff := AMatrix*TAffineBox.AffineBox(min,PointF(min.x+size.x,min.y),PointF(min.x,min.y+size.y));
     result := aff.RectBounds;
   end else
     result := EmptyRect;

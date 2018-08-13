@@ -98,6 +98,8 @@ type
     function GetViewBox: TSVGViewBox;
     function GetViewBox(AUnit: TCSSUnit): TSVGViewBox;
     procedure GetViewBoxIndirect(AUnit: TCSSUnit; out AViewBox: TSVGViewBox);
+    function GetViewMin(AUnit: TCSSUnit): TPointF;
+    function GetViewSize(AUnit: TCSSUnit): TPointF;
     function GetWidth: TFloatWithCSSUnit;
     function GetWidthAsCm: single;
     function GetWidthAsInch: single;
@@ -158,6 +160,8 @@ type
     property Zoomable: boolean read GetZoomable write SetZoomable;
     property ViewBox: TSVGViewBox read GetViewBox write SetViewBox;
     property ViewBoxInUnit[AUnit: TCSSUnit]: TSVGViewBox read GetViewBox;
+    property ViewMinInUnit[AUnit: TCSSUnit]: TPointF read GetViewMin;
+    property ViewSizeInUnit[AUnit: TCSSUnit]: TPointF read GetViewSize;
     property Attribute[AName: string]: string read GetAttribute write SetAttribute;
     property AttributeDef[AName: string; ADefault: string]: string read GetAttribute;
     property DefaultDpi: single read FDefaultDpi write SetDefaultDpi; //this is not saved in the SVG file
@@ -488,6 +492,22 @@ begin
     AViewBox.min := FUnits.ConvertCoord(min,cuCustom,AUnit);
     AViewBox.size := FUnits.ConvertCoord(size,cuCustom,AUnit);
   end;
+end;
+
+function TBGRASVG.GetViewMin(AUnit: TCSSUnit): TPointF;
+var
+  vb: TSVGViewBox;
+begin
+  GetViewBoxIndirect(AUnit,vb);
+  result:= vb.min;
+end;
+
+function TBGRASVG.GetViewSize(AUnit: TCSSUnit): TPointF;
+var
+  vb: TSVGViewBox;
+begin
+  GetViewBoxIndirect(AUnit,vb);
+  result:= vb.size;
 end;
 
 function TBGRASVG.GetWidth: TFloatWithCSSUnit;
