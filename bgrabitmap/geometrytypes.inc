@@ -45,6 +45,34 @@ type
      0: (Left, Top, Right, Bottom: Single);
      1: (TopLeft, BottomRight: TPointF);
   end;
+
+  { TRectHelper }
+
+  TRectHelper = record helper for TRect
+  private
+    function GetHeight: integer;
+    function GetIsEmpty: boolean;
+    function GetWidth: integer;
+  public
+    procedure Intersect(const ARect: TRect);
+    function Contains(const APoint: TPoint): boolean; overload;
+    function Contains(const ARect: TRect): boolean; overload;
+    property Width: integer read GetWidth;
+    property Height: integer read GetHeight;
+    property IsEmpty: boolean read GetIsEmpty;
+  end;
+
+  { TSizeHelper }
+
+  TSizeHelper = record helper for TSize
+  private
+    function GetHeight: integer;
+    function GetWidth: integer;
+  public
+    property Width: integer read GetWidth;
+    property Height: integer read GetHeight;
+  end;
+
   {$endif}
   function RectF(Left, Top, Right, Bottom: Single): TRectF;
 
@@ -587,6 +615,52 @@ function TRectF.GetWidth: Single;
 begin
   result := Right-Left;
 end;
+
+{ TRectHelper }
+
+function TRectHelper.GetHeight: integer;
+begin
+  result := Bottom-Top;
+end;
+
+function TRectHelper.GetIsEmpty: boolean;
+begin
+  result := (Width = 0) and (Height = 0)
+end;
+
+function TRectHelper.GetWidth: integer;
+begin
+  result := Right-Left;
+end;
+
+procedure TRectHelper.Intersect(const ARect: TRect);
+begin
+  IntersectRect(self, self, ARect);
+end;
+
+function TRectHelper.Contains(const APoint: TPoint): boolean;
+begin
+  result := (APoint.X >= Left) and (APoint.X <= Right) and
+    (APoint.Y >= Top) and (APoint.Y <= Bottom);
+end;
+
+function TRectHelper.Contains(const ARect: TRect): boolean;
+begin
+  Result := (Left <= ARect.Left) and (ARect.Right <= Right) and (Top <= ARect.Top) and (ARect.Bottom <= Bottom);
+end;
+
+{ TSizeHelper }
+
+function TSizeHelper.GetHeight: integer;
+begin
+  result := cy;
+end;
+
+function TSizeHelper.GetWidth: integer;
+begin
+  result := cx;
+end;
+
 {$ENDIF}
 
 { TAffineBox }
