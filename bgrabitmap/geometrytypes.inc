@@ -53,12 +53,18 @@ type
     function GetHeight: integer;
     function GetIsEmpty: boolean;
     function GetWidth: integer;
+    procedure SetHeight(AValue: integer);
+    procedure SetWidth(AValue: integer);
   public
+    constructor Create(Origin: TPoint; AWidth, AHeight: Longint);
+    constructor Create(ALeft, ATop, ARight, ABottom: Longint);
     procedure Intersect(const ARect: TRect);
+    procedure Offset(DX, DY: Longint);
+    procedure Inflate(DX, DY: Longint);
     function Contains(const APoint: TPoint): boolean; overload;
     function Contains(const ARect: TRect): boolean; overload;
-    property Width: integer read GetWidth;
-    property Height: integer read GetHeight;
+    property Width: integer read GetWidth write SetWidth;
+    property Height: integer read GetHeight write SetHeight;
     property IsEmpty: boolean read GetIsEmpty;
   end;
 
@@ -633,9 +639,45 @@ begin
   result := Right-Left;
 end;
 
+procedure TRectHelper.SetHeight(AValue: integer);
+begin
+  Bottom := Top+AValue;
+end;
+
+procedure TRectHelper.SetWidth(AValue: integer);
+begin
+  Right := Left+AValue;
+end;
+
+constructor TRectHelper.Create(Origin: TPoint; AWidth, AHeight: Longint);
+begin
+  self.Left := Origin.X;
+  self.Top := Origin.Y;
+  self.Right := Origin.X+AWidth;
+  self.Bottom := Origin.Y+AHeight;
+end;
+
+constructor TRectHelper.Create(ALeft, ATop, ARight, ABottom: Longint);
+begin
+  self.Left := ALeft;
+  self.Top := ATop;
+  self.Right := ARight;
+  self.Bottom := ABottom;
+end;
+
 procedure TRectHelper.Intersect(const ARect: TRect);
 begin
   IntersectRect(self, self, ARect);
+end;
+
+procedure TRectHelper.Offset(DX, DY: Longint);
+begin
+  OffsetRect(self, DX,DY);
+end;
+
+procedure TRectHelper.Inflate(DX, DY: Longint);
+begin
+  InflateRect(self, DX,DY);
 end;
 
 function TRectHelper.Contains(const APoint: TPoint): boolean;
