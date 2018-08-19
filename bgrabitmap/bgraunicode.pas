@@ -899,19 +899,19 @@ var
   procedure ResolveNeutrals(startIndex, afterEndIndex: integer; startOfSequence, endOfSequence: TUnicodeBidiClass);
   var
     curIndex,prevIndex,previewIndex: Integer;
-    curRTL, include, rightToLeft: Boolean;
+    curRTL, include, rightToLeftEmbedding: Boolean;
     bidiClass: TUnicodeBidiClass;
   begin
-    rightToLeft := startOfSequence in [ubcRightToLeft,ubcArabicLetter];
+    rightToLeftEmbedding := odd(result[startIndex].BidiLevel);
     curIndex := startIndex;
-    curRTL := rightToLeft;
+    curRTL := startOfSequence in [ubcRightToLeft,ubcArabicLetter];
     while curIndex <> afterEndIndex do
     begin
       case a[curIndex].bidiClass of
         ubcLeftToRight: curRTL := false;
         ubcRightToLeft,ubcArabicLetter,ubcArabicNumber,ubcEuropeanNumber: curRTL := true;
       else
-        if curRTL <> rightToLeft then
+        if curRTL <> rightToLeftEmbedding then
         begin
           //determine whether following neutral chars are included in reverse direction
           prevIndex := curIndex;
@@ -955,7 +955,7 @@ var
               curIndex := a[curIndex].nextInIsolate;
             end;
           end else
-            curRTL := rightToLeft;
+            curRTL := rightToLeftEmbedding;
         end;
       end;
 
