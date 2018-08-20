@@ -46,7 +46,7 @@ type
     function GetParagraphAffineBox(AIndex: integer): TAffineBox;
     function GetParagraphAlignment(AIndex: integer): TBidiTextAlignment;
     function GetParagraphEndIndex(AIndex: integer): integer;
-    function GetParagraphEndIndexBeforeCrLf(AIndex: integer): integer;
+    function GetParagraphEndIndexBeforeParagraphSeparator(AIndex: integer): integer;
     function GetParagraphRectF(AIndex: integer): TRectF;
     function GetParagraphRightToLeft(AIndex: integer): boolean;
     function GetParagraphStartIndex(AIndex: integer): integer;
