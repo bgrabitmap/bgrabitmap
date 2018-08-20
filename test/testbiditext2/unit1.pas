@@ -102,7 +102,7 @@ begin
 
   FTestText := 'تحتوي العربية على 28 حرفاً مكتوباً. ويرى بعض اللغويين أنه يجب إضافة حرف الهمزة إلى حروف العربية، ليصبح عدد الحروف 29. تُكتب العربية من اليمين إلى اليسار - ومثلها اللغة الفارسية والعبرية على عكس كثير من اللغات العالمية - ومن أعلى الصفحة إلى أسفلها.'+LineEnding+
              #9'The French language (French: français, pronounced "Fronce-eh") is a Romance language that was first spoken in France.'+LineEnding+
-             'Glorious is reversed as '+ UTF8OverrideDirection('"glorious"',True) + ' indeed. ' +
+             'Glorious is reversed as '+ UTF8OverrideDirection('"glorious"',True) + '. ' +
                '"Hello!" is '+ UTF8EmbedDirection('"مرحبا!"',True) + ' in arabic.' + LineEnding +
              '对于汉语的分支语言，学界主要有两种观点，一种观点将汉语定义为语言，并将官话、贛語、闽语、粤语、客家语、吴语、湘语七大语言定义为一级方言.'+LineEnding+
              'עִבְרִית היא שפה שמית, ממשפחת השפות האפרו-אסיאתיות, הידועה כשפתם של היהודים ושל השומרונים, אשר ניב מודרני שלה (עברית ישראלית) משמש כשפה הרשמית והעיקרית של מדינת ישראל.';
