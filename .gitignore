@@ -9,5 +9,3 @@ debug
 *.lrt
 /bgrabitmap/lib4nogui
 /bgrabitmap/lib4fpgui
-*.app/*
-*.dSYM

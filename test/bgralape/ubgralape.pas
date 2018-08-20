@@ -133,7 +133,7 @@ begin
   RegisterExtendedGeometryFunctions(Compiler);
   RegisterTextFunctions(Compiler);
   RegisterColorFunctions(Compiler);
-  Compiler.addDelayedCode(GetScriptSystemInlineFunctions, false,true);
+  Compiler.addDelayedCode(GetScriptSystemInlineFunctions, '',false,true);
 end;
 
 procedure FreeBitmaps;

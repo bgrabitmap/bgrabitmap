@@ -180,7 +180,7 @@ end;
 procedure TBGRAGtkBitmap.DrawPart(ARect: TRect; ACanvas: TCanvas; x,
   y: integer; Opaque: boolean);
 var
-  rowStride: Integer;
+  rowStride,w,h: Integer;
 begin
   if Opaque then
   begin
@@ -188,7 +188,9 @@ begin
       rowStride := Width*sizeof(TBGRAPixel)
     else
       rowStride := -Width*sizeof(TBGRAPixel);
-    DataDrawOpaque(ACanvas, rect(x,y,x+ARect.Width,y+ARect.Height), Scanline[ARect.Top]+ARect.Left, rowStride, ARect.Width,ARect.Height);
+    w:= ARect.Right-ARect.Left;
+    h:= ARect.Bottom-ARect.Top;
+    DataDrawOpaque(ACanvas, rect(x,y,x+w,y+h), Scanline[ARect.Top]+ARect.Left, rowStride, w,h);
   end
   else
     inherited DrawPart(ARect, ACanvas, x, y, Opaque);

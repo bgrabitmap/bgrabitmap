@@ -19,3 +19,5 @@
 {$DEFINE BGRABITMAP_USE_LCL15} { Use functions of Lazarus 1.5 }
 
 {$MODESWITCH ADVANCEDRECORDS}
+{$MODESWITCH TypeHelpers}
+

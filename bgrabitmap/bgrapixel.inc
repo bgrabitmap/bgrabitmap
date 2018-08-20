@@ -252,6 +252,9 @@ type
 {$DEFINE INCLUDE_INTERFACE}
 {$i basiccolorspace.inc}
 
+{$DEFINE INCLUDE_INTERFACE}
+{$i extendedcolorspace.inc}
+
 {$ENDIF}
 
 {$IFDEF INCLUDE_IMPLEMENTATION}
@@ -259,6 +262,9 @@ type
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$i basiccolorspace.inc}
+
+{$DEFINE INCLUDE_IMPLEMENTATION}
+{$i extendedcolorspace.inc}
 
 function StrToBlendOperation(str: string): TBlendOperation;
 var op: TBlendOperation;
@@ -576,18 +582,18 @@ begin
   end;
 end;
 
-{ Convert a TColor value to a TBGRAPixel value. Note that
-  you need to call ColorToRGB first if you use a system
-  color identifier like clWindow. }
+{ Convert a TColor value to a TBGRAPixel value }
 {$PUSH}{$R-}
 function ColorToBGRA(color: TColor): TBGRAPixel; overload;
 begin
+  if (color < 0) or (color > $ffffff) then color := ColorToRGB(color);
   RedGreenBlue(color, Result.red,Result.green,Result.blue);
   Result.alpha := 255;
 end;
 
 function ColorToBGRA(color: TColor; opacity: byte): TBGRAPixel; overload;
 begin
+  if (color < 0) or (color > $ffffff) then color := ColorToRGB(color);
   RedGreenBlue(color, Result.red,Result.green,Result.blue);
   Result.alpha := opacity;
 end;
@@ -713,4 +719,7 @@ end;
 {$IFDEF INCLUDE_INIT}
 {$UNDEF INCLUDE_INIT}
   BGRASetGamma();
+
+  {$DEFINE INCLUDE_INITIALIZATION}
+  {$i extendedcolorspace.inc}
 {$ENDIF}

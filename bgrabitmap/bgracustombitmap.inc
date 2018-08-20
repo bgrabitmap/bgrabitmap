@@ -538,12 +538,12 @@ type
      procedure FillPolyPerspectiveMapping(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean; zbuffer: psingle = nil); virtual; abstract; overload;
      procedure FillPolyPerspectiveMappingLightness(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean; zbuffer: psingle = nil); virtual; abstract; overload;
 
-     procedure FillPoly(const points: array of TPointF; c: TBGRAPixel; drawmode: TDrawMode); virtual; abstract;
-     procedure FillPoly(const points: array of TPointF; texture: IBGRAScanner; drawmode: TDrawMode); virtual; abstract;
-     procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel); virtual; abstract;
-     procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner); virtual; abstract;
-     procedure ErasePoly(const points: array of TPointF; alpha: byte); virtual; abstract;
-     procedure ErasePolyAntialias(const points: array of TPointF; alpha: byte); virtual; abstract;
+     procedure FillPoly(const points: array of TPointF; c: TBGRAPixel; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); virtual; abstract;
+     procedure FillPoly(const points: array of TPointF; texture: IBGRAScanner; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); virtual; abstract;
+     procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel; APixelCenteredCoordinates: boolean = true); virtual; abstract;
+     procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); virtual; abstract;
+     procedure ErasePoly(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); virtual; abstract;
+     procedure ErasePolyAntialias(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); virtual; abstract;
 
      procedure FillShape(shape: TBGRACustomFillInfo; c: TBGRAPixel; drawmode: TDrawMode); virtual; abstract;
      procedure FillShape(shape: TBGRACustomFillInfo; texture: IBGRAScanner; drawmode: TDrawMode); virtual; abstract;
@@ -632,7 +632,12 @@ type
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); virtual; abstract;
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); virtual; abstract; overload;
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); virtual; abstract; overload;
+     procedure TextMultiline(x,y: single; sUTF8: string; c: TBGRAPixel; AAlign: TBidiTextAlignment = btaLeftJustify; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); overload;
+     procedure TextMultiline(x,y: single; sUTF8: string; ATexture: IBGRAScanner; AAlign: TBidiTextAlignment = btaLeftJustify; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); overload;
+     procedure TextMultiline(ALeft,ATop,AWidth: single; sUTF8: string; c: TBGRAPixel; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); virtual; abstract; overload;
+     procedure TextMultiline(ALeft,ATop,AWidth: single; sUTF8: string; ATexture: IBGRAScanner; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); virtual; abstract; overload;
      function TextSize(sUTF8: string): TSize; virtual; abstract; overload;
+     function TextAffineBox(sUTF8: string): TAffineBox; virtual; abstract;
      function TextSize(sUTF8: string; AMaxWidth: integer): TSize; virtual; abstract; overload;
      function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; virtual; abstract; overload;
      function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
@@ -1093,7 +1098,7 @@ end;
 function TBGRACustomBitmap.GetFontRightToLeftFor(AText: string): boolean;
 begin
   case FontBidiMode of
-    fbmAuto: result := GetFirstStrongBidiClass(AText) in[ubcRightToLeft,ubcArabicLetter];
+    fbmAuto: result := IsRightToLeftUTF8(AText);
     fbmRightToLeft: result := true;
   else
     {fbmLeftToRight}
@@ -1765,6 +1770,18 @@ begin
   cursor.free;
 end;
 
+procedure TBGRACustomBitmap.TextMultiline(x, y: single; sUTF8: string;
+  c: TBGRAPixel; AAlign: TBidiTextAlignment; AVertAlign: TTextLayout; AParagraphSpacing: single);
+begin
+  TextMultiline(x, y, EmptySingle, sUTF8, c, AAlign, AVertAlign, AParagraphSpacing);
+end;
+
+procedure TBGRACustomBitmap.TextMultiline(x, y: single; sUTF8: string;
+  ATexture: IBGRAScanner; AAlign: TBidiTextAlignment; AVertAlign: TTextLayout; AParagraphSpacing: single);
+begin
+  TextMultiline(x, y, EmptySingle, sUTF8, ATexture, AAlign, AVertAlign, AParagraphSpacing);
+end;
+
 procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string; c: TBGRAPixel;
   align: TAlignment);
 begin
@@ -1834,6 +1851,7 @@ begin
   style.ShowPrefix := false;
   style.Clipping := false;
   style.RightToLeft := GetFontRightToLeftFor(sUTF8);
+  if FontBidiMode = fbmAuto then sUTF8 := AddParagraphBidiUTF8(sUTF8, style.RightToLeft);
   TextRect(ARect,ARect.Left,ARect.Top,sUTF8,style,c);
 end;
 
@@ -1854,6 +1872,7 @@ begin
   style.ShowPrefix := false;
   style.Clipping := false;
   style.RightToLeft := GetFontRightToLeftFor(sUTF8);
+  if FontBidiMode = fbmAuto then sUTF8 := AddParagraphBidiUTF8(sUTF8, style.RightToLeft);
   TextRect(ARect,ARect.Left,ARect.Top,sUTF8,style,texture);
 end;
 

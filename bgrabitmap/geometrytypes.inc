@@ -18,23 +18,95 @@ type
   end;
   {$endif}
 
+  {* Contains an array of points with single-precision floating point coordinates }
+  ArrayOfTPointF = array of TPointF;
+
   {* An affine matrix contains three 2D vectors: the image of x, the image of y and the translation }
   TAffineMatrix = array[1..2,1..3] of single;
 
   {$if FPC_FULLVERSION>=030001}
   TRectF = Types.TRectF;
   {$else}
+  {$define BGRA_DEFINE_TRECTF}
+  { TRectF }
+
   TRectF =
   {$ifndef FPC_REQUIRES_PROPER_ALIGNMENT}
   packed
   {$endif FPC_REQUIRES_PROPER_ALIGNMENT}
   record
+  private
+    function GetHeight: single;
+    function GetWidth: Single;
+  public
+    property Width: Single read GetWidth;
+    property Height: single read GetHeight;
     case Integer of
      0: (Left, Top, Right, Bottom: Single);
      1: (TopLeft, BottomRight: TPointF);
   end;
+
+  { TRectHelper }
+
+  TRectHelper = record helper for TRect
+  private
+    function GetHeight: integer;
+    function GetIsEmpty: boolean;
+    function GetWidth: integer;
+    procedure SetHeight(AValue: integer);
+    procedure SetWidth(AValue: integer);
+  public
+    constructor Create(Origin: TPoint; AWidth, AHeight: Longint);
+    constructor Create(ALeft, ATop, ARight, ABottom: Longint);
+    procedure Intersect(const ARect: TRect);
+    procedure Offset(DX, DY: Longint);
+    procedure Inflate(DX, DY: Longint);
+    function Contains(const APoint: TPoint): boolean; overload;
+    function Contains(const ARect: TRect): boolean; overload;
+    property Width: integer read GetWidth write SetWidth;
+    property Height: integer read GetHeight write SetHeight;
+    property IsEmpty: boolean read GetIsEmpty;
+  end;
+
+  { TSizeHelper }
+
+  TSizeHelper = record helper for TSize
+  private
+    function GetHeight: integer;
+    function GetWidth: integer;
+  public
+    property Width: integer read GetWidth;
+    property Height: integer read GetHeight;
+  end;
+
   {$endif}
   function RectF(Left, Top, Right, Bottom: Single): TRectF;
+
+type
+  { TAffineBox }
+
+  TAffineBox = object
+  private
+    function GetAsPolygon: ArrayOfTPointF;
+    function GetBottomRight: TPointF;
+    function GetHeight: single;
+    function GetIsEmpty: boolean;
+    function GetRectBounds: TRect;
+    function GetWidth: single;
+  public
+    TopLeft, TopRight,
+    BottomLeft: TPointF;
+    class function EmptyBox: TAffineBox;
+    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
+    class function AffineBox(ARectF: TRectF): TAffineBox;
+    function Contains(APoint: TPointF): boolean;
+    property RectBounds: TRect read GetRectBounds;
+    property BottomRight: TPointF read GetBottomRight;
+    property IsEmpty: boolean read GetIsEmpty;
+    property AsPolygon: ArrayOfTPointF read GetAsPolygon;
+    property Width: single read GetWidth;
+    property Height: single read GetHeight;
+  end;
 
   const
     {** Value indicating that there is an empty ''TPointF'' structure.
@@ -68,8 +140,6 @@ type
 
 type
   TFaceCulling = (fcNone, fcKeepCW, fcKeepCCW);
-  {* Contains an array of points with single-precision floating point coordinates }
-  ArrayOfTPointF = array of TPointF;
 
   {** Creates an array of ''TPointF'' }
   function PointsF(const pts: array of TPointF): ArrayOfTPointF;
@@ -538,6 +608,208 @@ type
 
 {$IFDEF INCLUDE_IMPLEMENTATION}
 {$UNDEF INCLUDE_IMPLEMENTATION}
+
+{$IFDEF BGRA_DEFINE_TRECTF}
+{ TRectF }
+
+function TRectF.GetHeight: single;
+begin
+  result := Bottom-Top;
+end;
+
+function TRectF.GetWidth: Single;
+begin
+  result := Right-Left;
+end;
+
+{ TRectHelper }
+
+function TRectHelper.GetHeight: integer;
+begin
+  result := Bottom-Top;
+end;
+
+function TRectHelper.GetIsEmpty: boolean;
+begin
+  result := (Width = 0) and (Height = 0)
+end;
+
+function TRectHelper.GetWidth: integer;
+begin
+  result := Right-Left;
+end;
+
+procedure TRectHelper.SetHeight(AValue: integer);
+begin
+  Bottom := Top+AValue;
+end;
+
+procedure TRectHelper.SetWidth(AValue: integer);
+begin
+  Right := Left+AValue;
+end;
+
+constructor TRectHelper.Create(Origin: TPoint; AWidth, AHeight: Longint);
+begin
+  self.Left := Origin.X;
+  self.Top := Origin.Y;
+  self.Right := Origin.X+AWidth;
+  self.Bottom := Origin.Y+AHeight;
+end;
+
+constructor TRectHelper.Create(ALeft, ATop, ARight, ABottom: Longint);
+begin
+  self.Left := ALeft;
+  self.Top := ATop;
+  self.Right := ARight;
+  self.Bottom := ABottom;
+end;
+
+procedure TRectHelper.Intersect(const ARect: TRect);
+begin
+  IntersectRect(self, self, ARect);
+end;
+
+procedure TRectHelper.Offset(DX, DY: Longint);
+begin
+  OffsetRect(self, DX,DY);
+end;
+
+procedure TRectHelper.Inflate(DX, DY: Longint);
+begin
+  InflateRect(self, DX,DY);
+end;
+
+function TRectHelper.Contains(const APoint: TPoint): boolean;
+begin
+  result := (APoint.X >= Left) and (APoint.X <= Right) and
+    (APoint.Y >= Top) and (APoint.Y <= Bottom);
+end;
+
+function TRectHelper.Contains(const ARect: TRect): boolean;
+begin
+  Result := (Left <= ARect.Left) and (ARect.Right <= Right) and (Top <= ARect.Top) and (ARect.Bottom <= Bottom);
+end;
+
+{ TSizeHelper }
+
+function TSizeHelper.GetHeight: integer;
+begin
+  result := cy;
+end;
+
+function TSizeHelper.GetWidth: integer;
+begin
+  result := cx;
+end;
+
+{$ENDIF}
+
+{ TAffineBox }
+
+function TAffineBox.GetAsPolygon: ArrayOfTPointF;
+begin
+  result := PointsF([TopLeft,TopRight,BottomRight,BottomLeft]);
+end;
+
+function TAffineBox.GetBottomRight: TPointF;
+begin
+  if IsEmpty then
+    result := EmptyPointF
+  else
+    result := TopRight + (BottomLeft-TopLeft);
+end;
+
+function TAffineBox.GetHeight: single;
+begin
+  if isEmptyPointF(TopLeft) or isEmptyPointF(BottomLeft) then
+    result := 0
+  else
+    result := VectLen(BottomLeft-TopLeft);
+end;
+
+function TAffineBox.GetIsEmpty: boolean;
+begin
+  result := isEmptyPointF(TopRight) or isEmptyPointF(BottomLeft) or isEmptyPointF(TopLeft);
+end;
+
+function TAffineBox.GetRectBounds: TRect;
+var
+  x1,y1,x2,y2: single;
+begin
+  x1 := TopLeft.x; x2 := x1;
+  y1 := TopLeft.y; y2 := y1;
+  if TopRight.x > x2 then x2 := TopRight.x;
+  if TopRight.x < x1 then x1 := TopRight.x;
+  if TopRight.y > y2 then y2 := TopRight.y;
+  if TopRight.y < y1 then y1 := TopRight.y;
+  if BottomLeft.x > x2 then x2 := BottomLeft.x;
+  if BottomLeft.x < x1 then x1 := BottomLeft.x;
+  if BottomLeft.y > y2 then y2 := BottomLeft.y;
+  if BottomLeft.y < y1 then y1 := BottomLeft.y;
+  if BottomRight.x > x2 then x2 := BottomRight.x;
+  if BottomRight.x < x1 then x1 := BottomRight.x;
+  if BottomRight.y > y2 then y2 := BottomRight.y;
+  if BottomRight.y < y1 then y1 := BottomRight.y;
+  result := Rect(floor(x1),floor(y1),ceil(x2),ceil(y2));
+end;
+
+function TAffineBox.GetWidth: single;
+begin
+  if isEmptyPointF(TopLeft) or isEmptyPointF(TopRight) then
+    result := 0
+  else
+    result := VectLen(TopRight-TopLeft);
+end;
+
+class function TAffineBox.EmptyBox: TAffineBox;
+begin
+  result.TopLeft := EmptyPointF;
+  result.TopRight := EmptyPointF;
+  result.BottomLeft := EmptyPointF;
+end;
+
+class function TAffineBox.AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
+begin
+  result.TopLeft := ATopLeft;
+  result.TopRight := ATopRight;
+  result.BottomLeft := ABottomLeft;
+end;
+
+class function TAffineBox.AffineBox(ARectF: TRectF): TAffineBox;
+begin
+  result.TopLeft := ARectF.TopLeft;
+  result.TopRight := PointF(ARectF.Right, ARectF.Top);
+  result.BottomLeft := PointF(ARectF.Left, ARectF.Bottom);
+end;
+
+function TAffineBox.Contains(APoint: TPointF): boolean;
+var
+  u,v: TPointF;
+  lenU2, lenV2, posV, posU: single;
+begin
+  if IsEmpty then exit(false);
+
+  u := TopRight-TopLeft;
+  lenU2 := u*u;
+  v := BottomLeft-TopLeft;
+  lenV2 := v*v;
+
+  if lenU2 = 0 then
+  begin
+    if lenV2 = 0 then
+      exit(false)
+    else
+    begin
+      u := PointF(v.y,-v.x);
+      lenU2 := lenV2;
+    end;
+  end;
+
+  posU := (APoint-TopLeft)*u;
+  posV := (APoint-TopLeft)*v;
+  result := (posU >= 0) and (posU < lenU2) and (posV >= 0) and (posV < lenV2);
+end;
 
 function StrToGradientType(str: string): TGradientType;
 var gt: TGradientType;
@@ -1089,9 +1361,13 @@ function TCubicBezierCurve.SimpleComputePoints(AAcceptedDeviation: single;
 var
   t,step: single;
   i,nb: Integer;
+  a,b,c: TpointF;
 begin
   nb := ComputeBezierCurvePrecision(p1,c1,c2,p2, AAcceptedDeviation/2);
   if nb <= 1 then nb := 2;
+  a:=p2-p1+3*(c1-c2);
+  b:=3*(p1+c2)-6*c1;
+  c:=3*(c1-p1);
   if AIncludeFirstPoint then
   begin
     setlength(result,nb);
@@ -1102,7 +1378,7 @@ begin
     for i := 1 to nb-2 do
     begin
       t += step;
-      result[i] := ComputePointAt(t);
+      result[i] := p1+t*(c+t*(b+t*a))
     end;
   end else
   begin
@@ -1113,7 +1389,7 @@ begin
     for i := 0 to nb-3 do
     begin
       t += step;
-      result[i] := ComputePointAt(t);
+      result[i] := p1+t*(c+t*(b+t*a))
     end;
   end;
 end;

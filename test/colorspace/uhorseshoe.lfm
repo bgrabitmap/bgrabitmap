@@ -1,0 +1,196 @@
+object Form1: TForm1
+  Left = 425
+  Height = 415
+  Top = 166
+  Width = 846
+  Caption = 'XYZ horseshoe'
+  ClientHeight = 415
+  ClientWidth = 846
+  OnCreate = FormCreate
+  LCLVersion = '1.8.0.6'
+  object Panel1: TPanel
+    Left = 0
+    Height = 415
+    Top = 0
+    Width = 400
+    Align = alLeft
+    ClientHeight = 415
+    ClientWidth = 400
+    TabOrder = 0
+    object cbYAxis: TComboBox
+      Left = 4
+      Height = 29
+      Top = 4
+      Width = 100
+      ItemHeight = 0
+      OnChange = cbYAxisChange
+      TabOrder = 1
+      Text = 'cbYAxis'
+    end
+    object vsGradient: TBGRAVirtualScreen
+      Left = 4
+      Height = 272
+      Top = 32
+      Width = 388
+      OnRedraw = vsGradientRedraw
+      Alignment = taLeftJustify
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      Color = clWhite
+      ParentColor = False
+      TabOrder = 2
+    end
+    object cbXAxis: TComboBox
+      Left = 292
+      Height = 29
+      Top = 304
+      Width = 100
+      Anchors = [akRight, akBottom]
+      ItemHeight = 0
+      OnChange = cbXAxisChange
+      TabOrder = 0
+      Text = 'cbXAxis'
+    end
+    object cbColorspace: TComboBox
+      Left = 292
+      Height = 29
+      Top = 4
+      Width = 100
+      Anchors = [akTop, akRight]
+      ItemHeight = 0
+      OnChange = cbColorspaceChange
+      TabOrder = 3
+      Text = 'cbColorspace'
+    end
+    object Label1: TLabel
+      Left = 222
+      Height = 17
+      Top = 10
+      Width = 63
+      Anchors = [akTop, akRight]
+      Caption = 'Colorspace'
+      ParentColor = False
+    end
+    object lblMaxY: TLabel
+      Left = 109
+      Height = 17
+      Top = 10
+      Width = 31
+      Caption = 'MaxY'
+      ParentColor = False
+    end
+    object lblMaxX: TLabel
+      Left = 252
+      Height = 17
+      Top = 310
+      Width = 31
+      Alignment = taRightJustify
+      Anchors = [akRight, akBottom]
+      Caption = 'MaxX'
+      ParentColor = False
+    end
+    object lblMin: TLabel
+      Left = 4
+      Height = 17
+      Top = 310
+      Width = 66
+      Anchors = [akLeft, akBottom]
+      Caption = 'MinY / MinX'
+      ParentColor = False
+    end
+    object tbZ: TTrackBar
+      Left = 72
+      Height = 37
+      Top = 336
+      Width = 320
+      OnChange = tbZChange
+      Position = 0
+      Anchors = [akLeft, akBottom]
+      TabOrder = 4
+    end
+    object lblZ: TLabel
+      Left = 8
+      Height = 17
+      Top = 344
+      Width = 53
+      Anchors = [akLeft, akBottom]
+      Caption = 'ChannelZ'
+      ParentColor = False
+    end
+    object lblZ2: TLabel
+      Left = 8
+      Height = 17
+      Top = 384
+      Width = 60
+      Anchors = [akLeft, akBottom]
+      Caption = 'ChannelZ2'
+      ParentColor = False
+    end
+    object tbZ2: TTrackBar
+      Left = 72
+      Height = 37
+      Top = 376
+      Width = 320
+      OnChange = tbZChange
+      Position = 0
+      Anchors = [akLeft, akBottom]
+      TabOrder = 5
+    end
+  end
+  object Splitter1: TSplitter
+    Left = 400
+    Height = 415
+    Top = 0
+    Width = 5
+  end
+  object Panel2: TPanel
+    Left = 405
+    Height = 415
+    Top = 0
+    Width = 441
+    Align = alClient
+    ClientHeight = 415
+    ClientWidth = 441
+    TabOrder = 2
+    object vsHorseshoe: TBGRAVirtualScreen
+      Left = 1
+      Height = 381
+      Top = 33
+      Width = 439
+      OnRedraw = vsHorseshoeRedraw
+      Align = alClient
+      Alignment = taLeftJustify
+      Color = clWhite
+      ParentColor = False
+      TabOrder = 0
+    end
+    object Panel3: TPanel
+      Left = 1
+      Height = 32
+      Top = 1
+      Width = 439
+      Align = alTop
+      BevelOuter = bvNone
+      ClientHeight = 32
+      ClientWidth = 439
+      TabOrder = 1
+      object Label2: TLabel
+        Left = 8
+        Height = 17
+        Top = 9
+        Width = 90
+        Caption = 'Reference white'
+        ParentColor = False
+      end
+      object cbReferenceWhite: TComboBox
+        Left = 112
+        Height = 29
+        Top = 3
+        Width = 144
+        ItemHeight = 0
+        OnChange = cbReferenceWhiteChange
+        TabOrder = 0
+        Text = 'cbReferenceWhite'
+      end
+    end
+  end
+end

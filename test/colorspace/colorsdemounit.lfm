@@ -1,0 +1,1254 @@
+object Form1: TForm1
+  Left = 443
+  Height = 633
+  Top = 109
+  Width = 957
+  Caption = 'Colors'
+  ClientHeight = 633
+  ClientWidth = 957
+  OnCreate = FormCreate
+  Position = poDesktopCenter
+  LCLVersion = '1.8.0.6'
+  object lR_tb: TTrackBar
+    Tag = 1
+    Left = 339
+    Height = 37
+    Top = 83
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 0
+  end
+  object Label1: TLabel
+    Left = 323
+    Height = 17
+    Top = 85
+    Width = 7
+    Caption = 'R'
+    ParentColor = False
+  end
+  object lG_tb: TTrackBar
+    Tag = 2
+    Left = 339
+    Height = 37
+    Top = 120
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 2
+  end
+  object Label2: TLabel
+    Left = 323
+    Height = 17
+    Top = 123
+    Width = 9
+    Caption = 'G'
+    ParentColor = False
+  end
+  object lB_tb: TTrackBar
+    Tag = 3
+    Left = 339
+    Height = 37
+    Top = 158
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 4
+  end
+  object Label3: TLabel
+    Left = 323
+    Height = 17
+    Top = 161
+    Width = 8
+    Caption = 'B'
+    ParentColor = False
+  end
+  object H_tb: TTrackBar
+    Tag = 4
+    Left = 24
+    Height = 37
+    Top = 234
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 12
+  end
+  object Label4: TLabel
+    Left = 8
+    Height = 17
+    Top = 237
+    Width = 9
+    Caption = 'H'
+    ParentColor = False
+  end
+  object S_tb: TTrackBar
+    Tag = 5
+    Left = 24
+    Height = 37
+    Top = 265
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 14
+  end
+  object Label5: TLabel
+    Left = 8
+    Height = 17
+    Top = 267
+    Width = 7
+    Caption = 'S'
+    ParentColor = False
+  end
+  object L_tb: TTrackBar
+    Tag = 6
+    Left = 24
+    Height = 37
+    Top = 295
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 16
+  end
+  object Label6: TLabel
+    Left = 8
+    Height = 17
+    Top = 297
+    Width = 6
+    Caption = 'L'
+    ParentColor = False
+  end
+  object H2_tb: TTrackBar
+    Tag = 7
+    Left = 24
+    Height = 37
+    Top = 358
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 18
+  end
+  object Label7: TLabel
+    Left = 8
+    Height = 17
+    Top = 361
+    Width = 9
+    Caption = 'H'
+    ParentColor = False
+  end
+  object S2_tb: TTrackBar
+    Tag = 8
+    Left = 24
+    Height = 37
+    Top = 389
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 20
+  end
+  object Label8: TLabel
+    Left = 8
+    Height = 17
+    Top = 391
+    Width = 7
+    Caption = 'S'
+    ParentColor = False
+  end
+  object V_tb: TTrackBar
+    Tag = 9
+    Left = 24
+    Height = 37
+    Top = 419
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 22
+  end
+  object Label9: TLabel
+    Left = 8
+    Height = 17
+    Top = 421
+    Width = 7
+    Caption = 'V'
+    ParentColor = False
+  end
+  object L2_tb: TTrackBar
+    Tag = 10
+    Left = 656
+    Height = 37
+    Top = 338
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 30
+  end
+  object Label10: TLabel
+    Left = 640
+    Height = 17
+    Top = 334
+    Width = 6
+    Caption = 'L'
+    ParentColor = False
+  end
+  object A_tb: TTrackBar
+    Tag = 11
+    Left = 656
+    Height = 37
+    Top = 373
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 32
+  end
+  object Label11: TLabel
+    Left = 640
+    Height = 17
+    Top = 369
+    Width = 7
+    Caption = 'a'
+    ParentColor = False
+  end
+  object B2_tb: TTrackBar
+    Tag = 12
+    Left = 656
+    Height = 37
+    Top = 408
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 34
+  end
+  object Label12: TLabel
+    Left = 640
+    Height = 17
+    Top = 411
+    Width = 7
+    Caption = 'b'
+    ParentColor = False
+  end
+  object C_tb: TTrackBar
+    Tag = 13
+    Left = 24
+    Height = 37
+    Top = 488
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 42
+  end
+  object Label13: TLabel
+    Left = 8
+    Height = 17
+    Top = 490
+    Width = 8
+    Caption = 'C'
+    ParentColor = False
+  end
+  object M_tb: TTrackBar
+    Tag = 14
+    Left = 24
+    Height = 37
+    Top = 516
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 44
+  end
+  object Label14: TLabel
+    Left = 8
+    Height = 17
+    Top = 518
+    Width = 11
+    Caption = 'M'
+    ParentColor = False
+  end
+  object Y_tb: TTrackBar
+    Tag = 15
+    Left = 24
+    Height = 37
+    Top = 544
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 46
+  end
+  object Label15: TLabel
+    Left = 8
+    Height = 17
+    Top = 546
+    Width = 7
+    Caption = 'Y'
+    ParentColor = False
+  end
+  object K_tb: TTrackBar
+    Tag = 16
+    Left = 24
+    Height = 37
+    Top = 572
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 48
+  end
+  object Label16: TLabel
+    Left = 8
+    Height = 17
+    Top = 574
+    Width = 7
+    Caption = 'K'
+    ParentColor = False
+  end
+  object lR_se: TFloatSpinEdit
+    Tag = 1
+    Left = 547
+    Height = 27
+    Top = 87
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 1
+    Value = 0
+  end
+  object lG_se: TFloatSpinEdit
+    Tag = 2
+    Left = 547
+    Height = 27
+    Top = 124
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 3
+    Value = 0
+  end
+  object lB_se: TFloatSpinEdit
+    Tag = 3
+    Left = 547
+    Height = 27
+    Top = 162
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 5
+    Value = 0
+  end
+  object H_se: TFloatSpinEdit
+    Tag = 4
+    Left = 232
+    Height = 27
+    Top = 243
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 13
+    Value = 0
+  end
+  object S_se: TFloatSpinEdit
+    Tag = 5
+    Left = 232
+    Height = 27
+    Top = 273
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 15
+    Value = 0
+  end
+  object L_se: TFloatSpinEdit
+    Tag = 6
+    Left = 232
+    Height = 27
+    Top = 303
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 17
+    Value = 0
+  end
+  object H2_se: TFloatSpinEdit
+    Tag = 7
+    Left = 232
+    Height = 27
+    Top = 364
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 19
+    Value = 0
+  end
+  object S2_se: TFloatSpinEdit
+    Tag = 8
+    Left = 232
+    Height = 27
+    Top = 395
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 21
+    Value = 0
+  end
+  object V_se: TFloatSpinEdit
+    Tag = 9
+    Left = 232
+    Height = 27
+    Top = 425
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 23
+    Value = 0
+  end
+  object L2_se: TFloatSpinEdit
+    Tag = 10
+    Left = 864
+    Height = 27
+    Top = 344
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 31
+    Value = 0
+  end
+  object A_se: TFloatSpinEdit
+    Tag = 11
+    Left = 864
+    Height = 27
+    Top = 379
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 33
+    Value = 0
+  end
+  object B2_se: TFloatSpinEdit
+    Tag = 12
+    Left = 864
+    Height = 27
+    Top = 414
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 35
+    Value = 0
+  end
+  object C_se: TFloatSpinEdit
+    Tag = 13
+    Left = 232
+    Height = 27
+    Top = 488
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 43
+    Value = 0
+  end
+  object M_se: TFloatSpinEdit
+    Tag = 14
+    Left = 232
+    Height = 27
+    Top = 516
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 45
+    Value = 0
+  end
+  object Y_se: TFloatSpinEdit
+    Tag = 15
+    Left = 232
+    Height = 27
+    Top = 544
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 47
+    Value = 0
+  end
+  object K_se: TFloatSpinEdit
+    Tag = 16
+    Left = 232
+    Height = 27
+    Top = 572
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 49
+    Value = 0
+  end
+  object Label17: TLabel
+    Left = 644
+    Height = 17
+    Top = 532
+    Width = 73
+    Caption = 'Hexadecimal'
+    ParentColor = False
+  end
+  object Hex_edt: TEdit
+    Tag = 23
+    Left = 724
+    Height = 27
+    Top = 528
+    Width = 96
+    TabOrder = 50
+  end
+  object Name_edt: TEdit
+    Tag = 28
+    Left = 724
+    Height = 27
+    Top = 585
+    Width = 96
+    TabOrder = 51
+  end
+  object Label18: TLabel
+    Left = 644
+    Height = 17
+    Top = 589
+    Width = 34
+    Caption = 'Name'
+    ParentColor = False
+  end
+  object X_tb: TTrackBar
+    Tag = 17
+    Left = 339
+    Height = 37
+    Top = 488
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 24
+  end
+  object Label19: TLabel
+    Left = 323
+    Height = 17
+    Top = 490
+    Width = 7
+    Caption = 'X'
+    ParentColor = False
+  end
+  object Y2_tb: TTrackBar
+    Tag = 18
+    Left = 339
+    Height = 37
+    Top = 523
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 26
+  end
+  object Label20: TLabel
+    Left = 323
+    Height = 17
+    Top = 525
+    Width = 7
+    Caption = 'Y'
+    ParentColor = False
+  end
+  object Z_tb: TTrackBar
+    Tag = 19
+    Left = 339
+    Height = 37
+    Top = 558
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 28
+  end
+  object Label21: TLabel
+    Left = 323
+    Height = 17
+    Top = 560
+    Width = 7
+    Caption = 'Z'
+    ParentColor = False
+  end
+  object X_se: TFloatSpinEdit
+    Tag = 17
+    Left = 547
+    Height = 27
+    Top = 494
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 25
+    Value = 0
+  end
+  object Y2_se: TFloatSpinEdit
+    Tag = 18
+    Left = 547
+    Height = 27
+    Top = 529
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 27
+    Value = 0
+  end
+  object Z_se: TFloatSpinEdit
+    Tag = 19
+    Left = 547
+    Height = 27
+    Top = 564
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 29
+    Value = 0
+  end
+  object L3_tb: TTrackBar
+    Tag = 20
+    Left = 656
+    Height = 37
+    Top = 189
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 36
+  end
+  object Label22: TLabel
+    Left = 639
+    Height = 17
+    Top = 193
+    Width = 6
+    Caption = 'L'
+    ParentColor = False
+  end
+  object C2_tb: TTrackBar
+    Tag = 21
+    Left = 656
+    Height = 37
+    Top = 225
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 38
+  end
+  object Label23: TLabel
+    Left = 639
+    Height = 17
+    Top = 229
+    Width = 8
+    Caption = 'C'
+    ParentColor = False
+  end
+  object H3_tb: TTrackBar
+    Tag = 22
+    Left = 656
+    Height = 37
+    Top = 262
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 40
+  end
+  object Label24: TLabel
+    Left = 639
+    Height = 17
+    Top = 266
+    Width = 9
+    Caption = 'H'
+    ParentColor = False
+  end
+  object L3_se: TFloatSpinEdit
+    Tag = 20
+    Left = 864
+    Height = 27
+    Top = 201
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 37
+    Value = 0
+  end
+  object C2_se: TFloatSpinEdit
+    Tag = 21
+    Left = 864
+    Height = 27
+    Top = 237
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 39
+    Value = 0
+  end
+  object H3_se: TFloatSpinEdit
+    Tag = 22
+    Left = 864
+    Height = 27
+    Top = 274
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 41
+    Value = 0
+  end
+  object Color_pnl: TPanel
+    Left = 827
+    Height = 80
+    Top = 528
+    Width = 56
+    TabOrder = 54
+  end
+  object gamma_tb: TTrackBar
+    Left = 96
+    Height = 37
+    Top = 0
+    Width = 443
+    Frequency = 10
+    Max = 300
+    Min = 100
+    OnChange = gamma_tbChange
+    Position = 100
+    TabOrder = 52
+  end
+  object Label25: TLabel
+    Left = 5
+    Height = 17
+    Top = 8
+    Width = 81
+    Caption = 'Gamma factor'
+    ParentColor = False
+  end
+  object gamma_se: TFloatSpinEdit
+    Left = 547
+    Height = 27
+    Top = 6
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    OnChange = gamma_seChange
+    TabOrder = 53
+    Value = 0
+  end
+  object sR_tb: TTrackBar
+    Tag = 25
+    Left = 24
+    Height = 37
+    Top = 82
+    Width = 200
+    Frequency = 16
+    Max = 255
+    Position = 0
+    TabOrder = 6
+  end
+  object Label26: TLabel
+    Left = 8
+    Height = 17
+    Top = 84
+    Width = 7
+    Caption = 'R'
+    ParentColor = False
+  end
+  object sG_tb: TTrackBar
+    Tag = 26
+    Left = 24
+    Height = 37
+    Top = 120
+    Width = 200
+    Frequency = 16
+    Max = 255
+    Position = 0
+    TabOrder = 8
+  end
+  object Label27: TLabel
+    Left = 8
+    Height = 17
+    Top = 122
+    Width = 9
+    Caption = 'G'
+    ParentColor = False
+  end
+  object sB_tb: TTrackBar
+    Tag = 27
+    Left = 24
+    Height = 37
+    Top = 159
+    Width = 200
+    Frequency = 16
+    Max = 255
+    Position = 0
+    TabOrder = 10
+  end
+  object Label28: TLabel
+    Left = 8
+    Height = 17
+    Top = 161
+    Width = 8
+    Caption = 'B'
+    ParentColor = False
+  end
+  object sR_se: TFloatSpinEdit
+    Tag = 25
+    Left = 232
+    Height = 27
+    Top = 88
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 7
+    Value = 0
+  end
+  object sG_se: TFloatSpinEdit
+    Tag = 26
+    Left = 232
+    Height = 27
+    Top = 126
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 9
+    Value = 0
+  end
+  object sB_se: TFloatSpinEdit
+    Tag = 27
+    Left = 232
+    Height = 27
+    Top = 165
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 11
+    Value = 0
+  end
+  object Label29: TLabel
+    Left = 8
+    Height = 17
+    Top = 56
+    Width = 156
+    Caption = 'sRGB (gamma compressed)'
+    ParentColor = False
+  end
+  object Label30: TLabel
+    Left = 323
+    Height = 17
+    Top = 56
+    Width = 174
+    Caption = 'Linear RGB (gamma expanded)'
+    ParentColor = False
+  end
+  object Label31: TLabel
+    Left = 8
+    Height = 17
+    Top = 208
+    Width = 28
+    Caption = 'sHSL'
+    ParentColor = False
+  end
+  object Label32: TLabel
+    Left = 8
+    Height = 17
+    Top = 338
+    Width = 63
+    Caption = 'sHSV/sHSB'
+    ParentColor = False
+  end
+  object Label33: TLabel
+    Left = 323
+    Height = 17
+    Top = 464
+    Width = 21
+    Caption = 'XYZ'
+    ParentColor = False
+  end
+  object Label34: TLabel
+    Left = 640
+    Height = 17
+    Top = 311
+    Width = 20
+    Caption = 'Lab'
+    ParentColor = False
+  end
+  object Label35: TLabel
+    Left = 8
+    Height = 17
+    Top = 464
+    Width = 33
+    Caption = 'CMYK'
+    ParentColor = False
+  end
+  object Label36: TLabel
+    Left = 639
+    Height = 17
+    Top = 165
+    Width = 21
+    Caption = 'LCh'
+    ParentColor = False
+  end
+  object Dec_edt: TEdit
+    Tag = 24
+    Left = 724
+    Height = 27
+    Top = 557
+    Width = 96
+    TabOrder = 55
+  end
+  object Label37: TLabel
+    Left = 644
+    Height = 17
+    Top = 561
+    Width = 46
+    Caption = 'Decimal'
+    ParentColor = False
+  end
+  object Alpha_se: TFloatSpinEdit
+    Tag = 29
+    Left = 867
+    Height = 27
+    Top = 482
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 56
+    Value = 0
+  end
+  object Alpha_tb: TTrackBar
+    Tag = 29
+    Left = 660
+    Height = 37
+    Top = 480
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 57
+  end
+  object Label38: TLabel
+    Left = 644
+    Height = 17
+    Top = 482
+    Width = 8
+    Caption = 'A'
+    ParentColor = False
+  end
+  object Grayscale_pnl: TPanel
+    Left = 883
+    Height = 40
+    Top = 528
+    Width = 56
+    TabOrder = 58
+  end
+  object Invert_pnl: TPanel
+    Left = 883
+    Height = 40
+    Top = 568
+    Width = 56
+    TabOrder = 59
+  end
+  object lH_tb: TTrackBar
+    Tag = 50
+    Left = 336
+    Height = 37
+    Top = 234
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 60
+  end
+  object Label39: TLabel
+    Left = 320
+    Height = 17
+    Top = 237
+    Width = 9
+    Caption = 'H'
+    ParentColor = False
+  end
+  object lS_tb: TTrackBar
+    Tag = 51
+    Left = 336
+    Height = 37
+    Top = 265
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 61
+  end
+  object Label40: TLabel
+    Left = 320
+    Height = 17
+    Top = 267
+    Width = 7
+    Caption = 'S'
+    ParentColor = False
+  end
+  object lL_tb: TTrackBar
+    Tag = 52
+    Left = 336
+    Height = 37
+    Top = 295
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 62
+  end
+  object Label41: TLabel
+    Left = 320
+    Height = 17
+    Top = 297
+    Width = 6
+    Caption = 'L'
+    ParentColor = False
+  end
+  object lH_se: TFloatSpinEdit
+    Tag = 50
+    Left = 544
+    Height = 27
+    Top = 243
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 63
+    Value = 0
+  end
+  object lS_se: TFloatSpinEdit
+    Tag = 51
+    Left = 544
+    Height = 27
+    Top = 273
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 64
+    Value = 0
+  end
+  object lL_se: TFloatSpinEdit
+    Tag = 52
+    Left = 544
+    Height = 27
+    Top = 303
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 65
+    Value = 0
+  end
+  object Label42: TLabel
+    Left = 320
+    Height = 17
+    Top = 208
+    Width = 60
+    Caption = 'Linear HSL'
+    ParentColor = False
+  end
+  object lH2_tb: TTrackBar
+    Tag = 53
+    Left = 336
+    Height = 37
+    Top = 358
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 66
+  end
+  object Label43: TLabel
+    Left = 320
+    Height = 17
+    Top = 361
+    Width = 9
+    Caption = 'G'
+    ParentColor = False
+  end
+  object lS2_tb: TTrackBar
+    Tag = 54
+    Left = 336
+    Height = 37
+    Top = 389
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 67
+  end
+  object Label44: TLabel
+    Left = 320
+    Height = 17
+    Top = 391
+    Width = 7
+    Caption = 'S'
+    ParentColor = False
+  end
+  object lL2_tb: TTrackBar
+    Tag = 55
+    Left = 336
+    Height = 37
+    Top = 419
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 68
+  end
+  object Label45: TLabel
+    Left = 320
+    Height = 17
+    Top = 421
+    Width = 8
+    Caption = 'B'
+    ParentColor = False
+  end
+  object lH2_se: TFloatSpinEdit
+    Tag = 53
+    Left = 544
+    Height = 27
+    Top = 364
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 69
+    Value = 0
+  end
+  object lS2_se: TFloatSpinEdit
+    Tag = 54
+    Left = 544
+    Height = 27
+    Top = 395
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 70
+    Value = 0
+  end
+  object lL2_se: TFloatSpinEdit
+    Tag = 55
+    Left = 544
+    Height = 27
+    Top = 425
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 71
+    Value = 0
+  end
+  object Label46: TLabel
+    Left = 320
+    Height = 17
+    Top = 338
+    Width = 114
+    Caption = 'GSB (corrected HSL)'
+    ParentColor = False
+  end
+  object lR_tb1: TTrackBar
+    Tag = 60
+    Left = 655
+    Height = 37
+    Top = 35
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 72
+  end
+  object Label47: TLabel
+    Left = 639
+    Height = 17
+    Top = 37
+    Width = 7
+    Caption = 'R'
+    ParentColor = False
+  end
+  object lG_tb1: TTrackBar
+    Tag = 61
+    Left = 655
+    Height = 37
+    Top = 72
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 73
+  end
+  object Label48: TLabel
+    Left = 639
+    Height = 17
+    Top = 75
+    Width = 9
+    Caption = 'G'
+    ParentColor = False
+  end
+  object lB_tb1: TTrackBar
+    Tag = 62
+    Left = 655
+    Height = 37
+    Top = 110
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 74
+  end
+  object Label49: TLabel
+    Left = 639
+    Height = 17
+    Top = 113
+    Width = 8
+    Caption = 'B'
+    ParentColor = False
+  end
+  object lR_se1: TFloatSpinEdit
+    Tag = 60
+    Left = 863
+    Height = 27
+    Top = 39
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 75
+    Value = 0
+  end
+  object lG_se1: TFloatSpinEdit
+    Tag = 61
+    Left = 863
+    Height = 27
+    Top = 76
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 76
+    Value = 0
+  end
+  object lB_se1: TFloatSpinEdit
+    Tag = 62
+    Left = 863
+    Height = 27
+    Top = 114
+    Width = 75
+    Increment = 1
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 77
+    Value = 0
+  end
+  object Label50: TLabel
+    Left = 639
+    Height = 17
+    Top = 8
+    Width = 63
+    Caption = 'Adobe RGB'
+    ParentColor = False
+  end
+end

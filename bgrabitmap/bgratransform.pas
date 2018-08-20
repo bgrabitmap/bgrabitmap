@@ -12,25 +12,8 @@ uses
 type
   { Contains an affine matrix, i.e. a matrix to transform linearly and translate TPointF coordinates }
   TAffineMatrix = BGRABitmapTypes.TAffineMatrix;
-
-  { TAffineBox }
-
-  TAffineBox = object
-  private
-    function GetAsPolygon: ArrayOfTPointF;
-    function GetBottomRight: TPointF;
-    function GetIsEmpty: boolean;
-    function GetRectBounds: TRect;
-  public
-    TopLeft, TopRight,
-    BottomLeft: TPointF;
-    class function EmptyBox: TAffineBox;
-    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
-    property RectBounds: TRect read GetRectBounds;
-    property BottomRight: TPointF read GetBottomRight;
-    property IsEmpty: boolean read GetIsEmpty;
-    property AsPolygon: ArrayOfTPointF read GetAsPolygon;
-  end;
+  { Contains an affine base and information on the resulting box }
+  TAffineBox = BGRABitmapTypes.TAffineBox;
 
   { TBGRAAffineScannerTransform allow to transform any scanner. To use it,
     create this object with a scanner as parameter, call transformation
@@ -617,61 +600,6 @@ begin
   if x > FBounds.Right-1 then x := FBounds.Right-1;
   if y > FBounds.Bottom-1 then y := FBounds.Bottom-1;
   result := FSource.ScanAt(X,Y);
-end;
-
-{ TAffineBox }
-
-function TAffineBox.GetAsPolygon: ArrayOfTPointF;
-begin
-  result := PointsF([TopLeft,TopRight,BottomRight,BottomLeft]);
-end;
-
-function TAffineBox.GetBottomRight: TPointF;
-begin
-  if IsEmpty then
-    result := EmptyPointF
-  else
-    result := TopRight + (BottomLeft-TopLeft);
-end;
-
-function TAffineBox.GetIsEmpty: boolean;
-begin
-  result := isEmptyPointF(TopRight) or isEmptyPointF(BottomLeft) or isEmptyPointF(TopLeft);
-end;
-
-function TAffineBox.GetRectBounds: TRect;
-var
-  x1,y1,x2,y2: single;
-begin
-  x1 := TopLeft.x; x2 := x1;
-  y1 := TopLeft.y; y2 := y1;
-  if TopRight.x > x2 then x2 := TopRight.x;
-  if TopRight.x < x1 then x1 := TopRight.x;
-  if TopRight.y > y2 then y2 := TopRight.y;
-  if TopRight.y < y1 then y1 := TopRight.y;
-  if BottomLeft.x > x2 then x2 := BottomLeft.x;
-  if BottomLeft.x < x1 then x1 := BottomLeft.x;
-  if BottomLeft.y > y2 then y2 := BottomLeft.y;
-  if BottomLeft.y < y1 then y1 := BottomLeft.y;
-  if BottomRight.x > x2 then x2 := BottomRight.x;
-  if BottomRight.x < x1 then x1 := BottomRight.x;
-  if BottomRight.y > y2 then y2 := BottomRight.y;
-  if BottomRight.y < y1 then y1 := BottomRight.y;
-  result := Rect(floor(x1),floor(y1),ceil(x2),ceil(y2));
-end;
-
-class function TAffineBox.EmptyBox: TAffineBox;
-begin
-  result.TopLeft := EmptyPointF;
-  result.TopRight := EmptyPointF;
-  result.BottomLeft := EmptyPointF;
-end;
-
-class function TAffineBox.AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
-begin
-  result.TopLeft := ATopLeft;
-  result.TopRight := ATopRight;
-  result.BottomLeft := ABottomLeft;
 end;
 
 { TBGRAScannerOffset }

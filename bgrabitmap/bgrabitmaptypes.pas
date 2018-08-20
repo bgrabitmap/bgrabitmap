@@ -79,6 +79,7 @@ type
 
   TTextLayout = BGRAGraphics.TTextLayout;
   TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
+  TBidiTextAlignment = (btaNatural, btaOpposite, btaLeftJustify, btaRightJustify, btaCenter);
 
 const
   RadialBlurTypeToStr: array[TRadialBlurType] of string =
@@ -292,7 +293,9 @@ type
         Orientation is not taken into account, so that the width is along the text }
     function TextSize(sUTF8: string): TSize; virtual; abstract; overload;
     function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; virtual; abstract; overload;
+
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
+    function TextSizeAngle(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TSize; virtual;
 
     {** Draws the UTF8 encoded string, with color ''c''.
         If align is taLeftJustify, (''x'',''y'') is the top-left corner.
@@ -341,7 +344,7 @@ function RemoveLineEnding(var s: string; indexByte: integer): boolean;
     The index is the character index, that may be different from the
     byte index }
 function RemoveLineEndingUTF8(var sUTF8: string; indexUTF8: integer): boolean;
-{** Default word break handler, that simply divide when there is a space }
+{** Default word break handler }
 procedure BGRADefaultWordBreakHandler(var ABefore, AAfter: string);
 
 {==== Images and resampling ====}
@@ -487,7 +490,7 @@ var
 
 implementation
 
-uses Math, SysUtils, BGRAUTF8,
+uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
   FPReadXwd, FPReadXPM,
   FPWriteTiff, FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM;
@@ -559,12 +562,69 @@ begin
 end;
 
 procedure BGRADefaultWordBreakHandler(var ABefore, AAfter: string);
-var p: integer;
+const spacingChars = [' '];
+  wordBreakChars = [' ',#9,'-','?','!'];
+var p, charLen: integer;
+  u: Cardinal;
 begin
-  if (AAfter <> '') and (ABefore <> '') and (AAfter[1]<> ' ') and (ABefore[length(ABefore)] <> ' ') then
+  if (AAfter <> '') and (ABefore <> '') and not (AAfter[1] in spacingChars) and not (ABefore[length(ABefore)] in wordBreakChars) then
   begin
     p := length(ABefore);
-    while (p > 1) and (ABefore[p-1] <> ' ') do dec(p);
+    while (p > 1) and not (ABefore[p-1] in wordBreakChars) do dec(p);
+    while (p < length(ABefore)+1) and (ABefore[p] in [#$80..#$BF]) do inc(p); //do not split UTF8 char
+    //keep non-spacing mark together
+    while p <= length(ABefore) do
+    begin
+      charLen := UTF8CharacterLength(@ABefore[p]);
+      if p+charLen > length(ABefore)+1 then charLen := length(ABefore)+1-p;
+      u := UTF8CodepointToUnicode(@ABefore[p],charLen);
+      if GetUnicodeBidiClass(u) = ubcNonSpacingMark then
+        inc(p,charLen)
+      else
+        break;
+    end;
+
+    if p = 1 then
+    begin
+      //keep ideographic punctuation together
+      charLen := UTF8CharacterLength(@AAfter[p]);
+      if charLen > length(AAfter) then charLen := length(AAfter);
+      u := UTF8CodepointToUnicode(@AAfter[p],charLen);
+      case u of
+      UNICODE_IDEOGRAPHIC_COMMA,
+      UNICODE_IDEOGRAPHIC_FULL_STOP,
+      UNICODE_FULLWIDTH_COMMA,
+      UNICODE_HORIZONTAL_ELLIPSIS:
+        begin
+          p := length(ABefore)+1;
+          while p > 1 do
+          begin
+            charLen := 1;
+            dec(p);
+            while (p > 0) and (ABefore[p] in [#$80..#$BF]) do
+            begin
+              dec(p); //do not split UTF8 char
+              inc(charLen);
+            end;
+            if charLen <= 4 then
+              u := UTF8CodepointToUnicode(@ABefore[p],charLen)
+            else
+              u := ord('A');
+            case GetUnicodeBidiClass(u) of
+              ubcNonSpacingMark: ;   // include NSM
+              ubcOtherNeutrals, ubcWhiteSpace, ubcCommonSeparator, ubcEuropeanNumberSeparator:
+                begin
+                  p := 1;
+                  break;
+                end
+            else
+              break;
+            end;
+          end;
+        end;
+      end;
+    end;
+
     if p > 1 then //can put the word after
     begin
       AAfter := copy(ABefore,p,length(ABefore)-p+1)+AAfter;
@@ -574,8 +634,8 @@ begin
 
     end;
   end;
-  while (ABefore <> '') and (ABefore[length(ABefore)] =' ') do delete(ABefore,length(ABefore),1);
-  while (AAfter <> '') and (AAfter[1] =' ') do delete(AAfter,1,1);
+  while (ABefore <> '') and (ABefore[length(ABefore)] in spacingChars) do delete(ABefore,length(ABefore),1);
+  while (AAfter <> '') and (AAfter[1] in spacingChars) do delete(AAfter,1,1);
 end;
 
 
@@ -593,6 +653,12 @@ begin
 end;
 
 { TBGRACustomFontRenderer }
+
+function TBGRACustomFontRenderer.TextSizeAngle(sUTF8: string;
+  orientationTenthDegCCW: integer): TSize;
+begin
+  result := TextSize(sUTF8); //ignore orientation by default
+end;
 
 procedure TBGRACustomFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
   y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment;

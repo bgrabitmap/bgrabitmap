@@ -1104,12 +1104,13 @@ var
   multi: TBGRAMultishapeFiller;
   contour : array of TPointF;
   texture: IBGRAScanner;
+  idxContour: Integer;
 begin
   if (length(points) = 0) or (surface = nil) then exit;
   tempScan := nil;
   tempScan2 := nil;
   multi := TBGRAMultishapeFiller.Create;
-  multi.FillMode := fmWinding;
+  multi.FillMode := self.fillMode;
   if currentState.clipMaskReadOnly <> nil then
   begin
     if currentState.fillTextureProvider <> nil then
@@ -1142,17 +1143,18 @@ begin
         tempScan2 := TBGRATextureMaskScanner.Create(currentState.clipMaskReadOnly,Point(0,0),currentState.strokeTextureProvider.texture,currentState.globalAlpha)
       else
         tempScan2 := TBGRASolidColorMaskScanner.Create(currentState.clipMaskReadOnly,Point(0,0),ApplyGlobalAlpha(currentState.strokeColor));
-      multi.AddPolygon(contour,tempScan);
+      idxContour := multi.AddPolygon(contour,tempScan);
     end else
     begin
       if currentState.strokeTextureProvider <> nil then
         texture := currentState.strokeTextureProvider.texture else
         texture := nil;
       if texture = nil then
-        multi.AddPolygon(contour,ApplyGlobalAlpha(currentState.strokeColor))
+        idxContour := multi.AddPolygon(contour,ApplyGlobalAlpha(currentState.strokeColor))
       else
-        multi.AddPolygon(contour,texture);
+        idxContour := multi.AddPolygon(contour,texture);
     end;
+    multi.OverrideFillMode(idxContour, fmWinding);
     If hasShadow then DrawShadow(points,contour);
   end else
     If hasShadow then DrawShadow(points,[]);

@@ -169,7 +169,7 @@ type
       procedure SetID(AValue: string);
       procedure SetClassAt(AValue: string);
       function FindStyleElementInternal(const classStr: string;
-        var attributesStr: string): integer;
+        out attributesStr: string): integer;
       procedure FindStyleElement;
     protected
       FDataLink: TSVGDataLink;
@@ -1552,7 +1552,7 @@ begin
 end;
 
 function TSVGElement.FindStyleElementInternal(const classStr: string;
-  var attributesStr: string): integer;
+  out attributesStr: string): integer;
 var
   i: integer;
 begin

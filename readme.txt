@@ -1,4 +1,4 @@
 List of directories:
 - bgrabitmap: contains BGRABitmap library
-- makedoc: contains a program to make documentation from source code
+- dev: tools used to make BGRABitmap
 - test: contains a series of test programs and examples on how to use BGRABitmap library
