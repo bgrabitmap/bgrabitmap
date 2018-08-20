@@ -200,7 +200,7 @@ type
     property ParagraphAlignment[AIndex: integer]: TBidiTextAlignment read GetParagraphAlignment write SetParagraphAlignment;
     property ParagraphStartIndex[AIndex: integer]: integer read GetParagraphStartIndex;
     property ParagraphEndIndex[AIndex: integer]: integer read GetParagraphEndIndex;
-    property ParagraphEndIndexBeforeCrLf[AIndex: integer]: integer read GetParagraphEndIndexBeforeCrLf;
+    property ParagraphEndIndexBeforeParagraphSeparator[AIndex: integer]: integer read GetParagraphEndIndexBeforeParagraphSeparator;
     property ParagraphRightToLeft[AIndex: integer]: boolean read GetParagraphRightToLeft;
     property ParagraphCount: integer read FParagraphCount;
 
@@ -345,12 +345,18 @@ begin
   result := FUnbrokenLine[FParagraph[AIndex].firstUnbrokenLineIndex+1].startIndex;
 end;
 
-function TBidiTextLayout.GetParagraphEndIndexBeforeCrLf(AIndex: integer): integer;
+function TBidiTextLayout.GetParagraphEndIndexBeforeParagraphSeparator(AIndex: integer): integer;
+var
+  u: LongWord;
 begin
   result := GetParagraphEndIndex(AIndex);
-  if (result>0) and IsUnicodeCrLf(UnicodeChar[result-1]) then dec(result);
-  if (result>0) and IsUnicodeCrLf(UnicodeChar[result-1]) and
-    (UnicodeChar[result-1] <> UnicodeChar[result]) then dec(result);
+  u := UnicodeChar[result-1];
+  if (result>0) and IsUnicodeParagraphSeparator(u) then
+  begin
+    dec(result);
+    if IsUnicodeCrLf(u) and (result>0) and IsUnicodeCrLf(UnicodeChar[result-1]) and
+      (UnicodeChar[result-1] <> u) then dec(result);
+  end;
 end;
 
 function TBidiTextLayout.GetParagraphRectF(AIndex: integer): TRectF;

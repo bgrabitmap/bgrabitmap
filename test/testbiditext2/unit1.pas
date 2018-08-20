@@ -180,10 +180,10 @@ begin
 
     if ssShift in Shift then
     begin
-      SelLastClick := FTextLayout.ParagraphEndIndexBeforeCrLf[idxPara];
+      SelLastClick := FTextLayout.ParagraphEndIndexBeforeParagraphSeparator[idxPara];
     end else
     begin
-      SelStart := FTextLayout.ParagraphEndIndexBeforeCrLf[idxPara];
+      SelStart := FTextLayout.ParagraphEndIndexBeforeParagraphSeparator[idxPara];
       SelLength:= 0;
     end;
     Key := 0;
