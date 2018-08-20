@@ -34,7 +34,11 @@ begin
   else
     bmp.FontHeight := bmp.Height div 10;
   with bmp.FontPixelMetric do
+  begin
     bmp.TextOut(bmp.Width/2,bmp.Height/2 - (CapLine+Baseline)/2,'Hello world', BGRABlack, taCenter);
+    bmp.TextOutAngle(bmp.Width/6,bmp.Height/2 - (CapLine+Baseline)/2, -300, 'Going down!', BGRABlack, taLeftJustify);
+    bmp.TextOutAngle(bmp.Width*5/6,bmp.Height/2 - (CapLine+Baseline)/2, 300, 'Going up!', BGRABlack, taRightJustify);
+  end;
   bmp.Canvas.Pen.Color := clBlue;
   bmp.Canvas.MoveTo(0,0);
   bmp.Canvas.LineTo(bmp.Width,bmp.Height);
