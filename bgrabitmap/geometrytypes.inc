@@ -1597,9 +1597,11 @@ function TQuadraticBezierCurve.SimpleComputePoints(AAcceptedDeviation: single;
 var
   t,step: single;
   i,nb: Integer;
+  pA,pB : TpointF;
 begin
   nb := ComputeBezierCurvePrecision(p1,c,c,p2, AAcceptedDeviation);
   if nb <= 1 then nb := 2;
+  pA := p2+p1-2*c; pB := 2*(c-p1);
   if AIncludeFirstPoint then
   begin
     setlength(result,nb);
@@ -1610,7 +1612,7 @@ begin
     for i := 1 to nb-2 do
     begin
       t += step;
-      result[i] := ComputePointAt(t);
+      result[i] := p1+t*(pB+t*pA);
     end;
   end else
   begin
@@ -1621,7 +1623,7 @@ begin
     for i := 0 to nb-3 do
     begin
       t += step;
-      result[i] := ComputePointAt(t);
+      result[i] := p1+t*(pB+t*pA);
     end;
   end;
 end;
