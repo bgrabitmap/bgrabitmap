@@ -68,6 +68,9 @@ type
     property IsEmpty: boolean read GetIsEmpty;
   end;
 
+operator=(const ARect1,ARect2: TRect): boolean;
+
+type
   { TSizeHelper }
 
   TSizeHelper = record helper for TSize
@@ -689,6 +692,12 @@ end;
 function TRectHelper.Contains(const ARect: TRect): boolean;
 begin
   Result := (Left <= ARect.Left) and (ARect.Right <= Right) and (Top <= ARect.Top) and (ARect.Bottom <= Bottom);
+end;
+
+operator =(const ARect1, ARect2: TRect): boolean;
+begin
+  result:= (ARect1.Left = ARect2.Left) and (ARect1.Top = ARect2.Top) and
+           (ARect1.Right = ARect2.Right) and (ARect1.Bottom = ARect2.Bottom);
 end;
 
 { TSizeHelper }
