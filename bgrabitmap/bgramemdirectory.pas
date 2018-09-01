@@ -69,6 +69,7 @@ type
   public
     constructor Create(AParentDirectory: TMemDirectory = nil);
     procedure LoadFromStream(AStream: TStream); override;
+    class function CheckHeader(AStream: TStream): boolean;
     procedure LoadFromEmbeddedStream(ARootStream, ADataStream: TStream; AStartPos: int64);
     procedure SaveToStream(ADestination: TStream); override;
     procedure SaveToEmbeddedStream(ARootDest, ADataDest: TStream; AStartPos: int64);
@@ -145,6 +146,18 @@ begin
   finally
     rootStream.Free;
   end;
+end;
+
+class function TMemDirectory.CheckHeader(AStream: TStream): boolean;
+var
+  startPos: Int64;
+  header: string;
+begin
+  startPos := AStream.Position;
+  setlength(header, length(MemDirectoryFileHeader));
+  AStream.Read(header[1], length(header));
+  result := (header=MemDirectoryFileHeader);
+  AStream.Position:= startPos;
 end;
 
 procedure TMemDirectory.LoadFromEmbeddedStream(ARootStream, ADataStream: TStream;

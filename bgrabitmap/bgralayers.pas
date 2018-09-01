@@ -232,6 +232,8 @@ type
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
 
     function AddOriginal(AOriginal: TBGRALayerCustomOriginal; AOwned: boolean = true): integer;
+    function AddOriginalFromStream(AStream: TStream): integer;
+    function AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage): integer;
     function RemoveOriginal(AOriginal: TBGRALayerCustomOriginal): boolean;
     procedure DeleteOriginal(AIndex: integer);
     procedure NotifyLoaded; override;
@@ -1097,14 +1099,23 @@ begin
   if AOriginal.Guid = GUID_NULL then
   begin
     if CreateGUID(newGuid)<> 0 then
+    begin
+      if AOwned then AOriginal.Free;
       raise exception.Create('Error while creating GUID');
+    end;
     AOriginal.Guid := newGuid;
   end else
   begin
     if IndexOfOriginal(AOriginal) <> -1 then
+    begin
+      if AOwned then AOriginal.Free;
       raise exception.Create('Original already added');
+    end;
     if IndexOfOriginal(AOriginal.Guid) <> -1 then
+    begin
+      if AOwned then AOriginal.Free;
       raise exception.Create('GUID is already in use');
+    end;
   end;
   StoreOriginal(AOriginal);
   if FOriginals = nil then FOriginals := TBGRALayerOriginalList.Create;
@@ -1113,6 +1124,42 @@ begin
   else
     result := FOriginals.Add(BGRALayerOriginalEntry(AOriginal.Guid));
   AOriginal.OnChange:= @OriginalChange;
+end;
+
+function TBGRALayeredBitmap.AddOriginalFromStream(AStream: TStream): integer;
+var
+  storage: TBGRAMemOriginalStorage;
+begin
+  storage:= TBGRAMemOriginalStorage.Create;
+  storage.LoadFromStream(AStream);
+  try
+    result := AddOriginalFromStorage(storage);
+  finally
+    storage.Free;
+  end;
+end;
+
+function TBGRALayeredBitmap.AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage): integer;
+var
+  origClassName: String;
+  origClass: TBGRALayerOriginalAny;
+  orig: TBGRALayerCustomOriginal;
+begin
+  result := -1;
+  origClassName := AStorage.RawString['class'];
+  if origClassName = '' then raise Exception.Create('Original class name not defined');
+  origClass := FindLayerOriginalClass(origClassName);
+  if origClass = nil then raise exception.Create('Original class not found (it can be registered with the RegisterLayerOriginal function)');
+  orig := origClass.Create;
+  try
+    orig.LoadFromStorage(AStorage);
+    AddOriginal(orig, true);
+  except on ex:exception do
+    begin
+      orig.Free;
+      raise exception.Create('Error loading original. '+ ex.Message);
+    end;
+  end;
 end;
 
 function TBGRALayeredBitmap.RemoveOriginal(AOriginal: TBGRALayerCustomOriginal): boolean;
@@ -1144,7 +1191,7 @@ begin
   dir := MemDirectory.Directory[MemDirectory.AddDirectory(OriginalsDirectory)];
   dir.Delete(GUIDToString(guid),'');
 
-  FOriginals[i].Instance.Free;
+  FOriginals[AIndex].Instance.Free;
   FOriginals.Delete(AIndex); //AOriginals freed
 end;
 

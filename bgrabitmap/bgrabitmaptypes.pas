@@ -407,7 +407,7 @@ type
     {** GIF format, single transparent color, lossless in theory but only low number of colors allowed }
     ifGif,
     {** BMP format, transparency, no compression. Note that transparency is
-        not supported by all BMP readers so it is not recommended to avoid
+        not supported by all BMP readers so it is recommended to avoid
         storing images with transparency in this format }
     ifBmp,
     {** iGO BMP (16-bit, rudimentary lossless compression) }

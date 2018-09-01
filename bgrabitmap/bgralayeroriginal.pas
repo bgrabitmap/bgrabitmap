@@ -98,7 +98,8 @@ type
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
     procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); override;
     procedure LoadFromStream(AStream: TStream); override;
-    procedure SaveToStream(AStream: TStream); override;
+    procedure LoadImageFromStream(AStream: TStream);
+    procedure SaveImageToStream(AStream: TStream);
     class function StorageClassName: RawByteString; override;
     property Width: integer read GetImageWidth;
     property Height: integer read GetImageHeight;
@@ -148,14 +149,19 @@ type
   TBGRAMemOriginalStorage = class(TBGRACustomOriginalStorage)
   protected
     FMemDir: TMemDirectory;
+    FMemDirOwned: boolean;
     function GetRawString(AName: utf8string): RawByteString; override;
     procedure SetRawString(AName: utf8string; AValue: RawByteString); override;
   public
-    constructor Create(AMemDir: TMemDirectory);
+    destructor Destroy; override;
+    constructor Create;
+    constructor Create(AMemDir: TMemDirectory; AMemDirOwned: boolean = false);
     procedure RemoveAttribute(AName: utf8string); override;
     procedure RemoveFile(AName: utf8string); override;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; override;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); override;
+    procedure SaveToStream(AStream: TStream);
+    procedure LoadFromStream(AStream: TStream);
   end;
 
 procedure RegisterLayerOriginal(AClass: TBGRALayerOriginalAny);
@@ -390,10 +396,24 @@ begin
   FMemDir.RawStringByFilename[AName] := AValue;
 end;
 
-constructor TBGRAMemOriginalStorage.Create(AMemDir: TMemDirectory);
+destructor TBGRAMemOriginalStorage.Destroy;
+begin
+  if FMemDirOwned then FreeAndNil(FMemDir);
+  inherited Destroy;
+end;
+
+constructor TBGRAMemOriginalStorage.Create;
+begin
+  inherited Create;
+  FMemDir := TMemDirectory.Create;
+  FMemDirOwned:= true;
+end;
+
+constructor TBGRAMemOriginalStorage.Create(AMemDir: TMemDirectory; AMemDirOwned: boolean = false);
 begin
   inherited Create;
   FMemDir := AMemDir;
+  FMemDirOwned:= AMemDirOwned;
 end;
 
 procedure TBGRAMemOriginalStorage.RemoveAttribute(AName: utf8string);
@@ -427,6 +447,16 @@ var
 begin
   idxEntry := FMemDir.Add(EntryFilename(AName), ASource, true, false);
   if ACompress then FMemDir.IsEntryCompressed[idxEntry] := true;
+end;
+
+procedure TBGRAMemOriginalStorage.SaveToStream(AStream: TStream);
+begin
+  FMemDir.SaveToStream(AStream);
+end;
+
+procedure TBGRAMemOriginalStorage.LoadFromStream(AStream: TStream);
+begin
+  FMemDir.LoadFromStream(AStream);
 end;
 
 { TBGRACustomOriginalStorage }
@@ -764,6 +794,14 @@ begin
 end;
 
 procedure TBGRALayerImageOriginal.LoadFromStream(AStream: TStream);
+begin
+  if TMemDirectory.CheckHeader(AStream) then
+    inherited LoadFromStream(AStream)
+  else
+    LoadImageFromStream(AStream);
+end;
+
+procedure TBGRALayerImageOriginal.LoadImageFromStream(AStream: TStream);
 var
   newJpegStream: TMemoryStream;
 begin
@@ -788,7 +826,7 @@ begin
   ContentChanged;
 end;
 
-procedure TBGRALayerImageOriginal.SaveToStream(AStream: TStream);
+procedure TBGRALayerImageOriginal.SaveImageToStream(AStream: TStream);
 begin
   if Assigned(FJpegStream) then
   begin
