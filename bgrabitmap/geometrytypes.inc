@@ -41,6 +41,8 @@ type
   public
     property Width: Single read GetWidth;
     property Height: single read GetHeight;
+    function  Union  (const r: TRectF):TRectF;
+    procedure Offset (const dx,dy : Single);
     case Integer of
      0: (Left, Top, Right, Bottom: Single);
      1: (TopLeft, BottomRight: TPointF);
@@ -83,7 +85,13 @@ type
   end;
 
   {$endif}
+
+const
+  {* A value for an empty rectangle }
+  EmptyRectF : TRectF = (left:0; top:0; right:0; bottom: 0);
+
   function RectF(Left, Top, Right, Bottom: Single): TRectF;
+  function IsEmptyRectF(const ARect:TRectF): boolean;
 
 type
   { TAffineBox }
@@ -625,6 +633,20 @@ begin
   result := Right-Left;
 end;
 
+function TRectF.Union(const r: TRectF): TRectF;
+begin
+  result.left:=min(r.left,left);
+  result.top:=min(r.top,top);
+  result.right:=min(r.right,right);
+  result.bottom:=min(r.bottom,bottom);
+end;
+
+procedure TRectF.Offset(const dx, dy: Single);
+begin
+  left:=left+dx; right:=right+dx;
+  bottom:=bottom+dy; top:=top+dy;
+end;
+
 { TRectHelper }
 
 function TRectHelper.GetHeight: integer;
@@ -1111,6 +1133,11 @@ begin
   result.Top:= Top;
   result.Right:= Right;
   result.Bottom:= Bottom;
+end;
+
+function IsEmptyRectF(const ARect: TRectF): boolean;
+begin
+  result:= (ARect.Width = 0) and (ARect.Height = 0);
 end;
 
 function PointF(x, y: single): TPointF;
