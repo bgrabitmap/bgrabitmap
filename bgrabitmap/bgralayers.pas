@@ -1153,7 +1153,7 @@ begin
   orig := origClass.Create;
   try
     orig.LoadFromStorage(AStorage);
-    AddOriginal(orig, true);
+    result := AddOriginal(orig, true);
   except on ex:exception do
     begin
       orig.Free;
