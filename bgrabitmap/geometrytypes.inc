@@ -91,6 +91,8 @@ const
   EmptyRectF : TRectF = (left:0; top:0; right:0; bottom: 0);
 
   function RectF(Left, Top, Right, Bottom: Single): TRectF;
+  function RectF(const ATopLeft,ABottomRight: TPointF): TRectF;
+  function RectWithSizeF(left,top,width,height: Single): TRectF;
   function IsEmptyRectF(const ARect:TRectF): boolean;
 
 type
@@ -1133,6 +1135,20 @@ begin
   result.Top:= Top;
   result.Right:= Right;
   result.Bottom:= Bottom;
+end;
+
+function RectF(const ATopLeft, ABottomRight: TPointF): TRectF;
+begin
+  result.TopLeft:= ATopLeft;
+  result.BottomRight:= ABottomRight;
+end;
+
+function RectWithSizeF(left, top, width, height: Single): TRectF;
+begin
+  result.Left:= Left;
+  result.Top:= Top;
+  result.Right:= left+width;
+  result.Bottom:= top+height;
 end;
 
 function IsEmptyRectF(const ARect: TRectF): boolean;
