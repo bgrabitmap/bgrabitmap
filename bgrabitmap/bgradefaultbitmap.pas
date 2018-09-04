@@ -4320,10 +4320,12 @@ var
     if X2 < X1 then
       exit;
     StartMask := $FFFFFFFF shl (X1 and 31);
-    if X2 and 31 = 31 then
-      EndMask := $FFFFFFFF
+    case X2 and 31 of
+    31: EndMask := $FFFFFFFF;
+    30: EndMask := $7FFFFFFF;
     else
       EndMask := 1 shl ((X2 and 31) + 1) - 1;
+    end;
     StartPos := X1 shr 5 + AY * VisitedLineSize;
     EndPos := X2 shr 5 + AY * VisitedLineSize;
     if StartPos = EndPos then
