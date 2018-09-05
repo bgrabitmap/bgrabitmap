@@ -41,7 +41,6 @@ type
   public
     property Width: Single read GetWidth;
     property Height: single read GetHeight;
-    function  Union  (const r: TRectF):TRectF;
     procedure Offset (const dx,dy : Single);
     case Integer of
      0: (Left, Top, Right, Bottom: Single);
@@ -85,6 +84,14 @@ type
   end;
 
   {$endif}
+
+type
+
+  { TRectFHelper }
+
+  TRectFHelper = record helper for TRectF
+    function Union(const r: TRectF):TRectF;
+  end;
 
 const
   {* A value for an empty rectangle }
@@ -635,14 +642,6 @@ begin
   result := Right-Left;
 end;
 
-function TRectF.Union(const r: TRectF): TRectF;
-begin
-  result.left:=min(r.left,left);
-  result.top:=min(r.top,top);
-  result.right:=min(r.right,right);
-  result.bottom:=min(r.bottom,bottom);
-end;
-
 procedure TRectF.Offset(const dx, dy: Single);
 begin
   left:=left+dx; right:=right+dx;
@@ -737,6 +736,21 @@ begin
 end;
 
 {$ENDIF}
+
+function TRectFHelper.Union(const r: TRectF): TRectF;
+begin
+  if IsEmptyRectF(r) then
+    result:= self
+  else if IsEmptyRectF(self) then
+    result:= r
+  else
+  begin
+    result.left:=min(r.left,left);
+    result.top:=min(r.top,top);
+    result.right:=max(r.right,right);
+    result.bottom:=max(r.bottom,bottom);
+  end;
+end;
 
 { TAffineBox }
 
