@@ -2370,7 +2370,7 @@ begin
   else
   begin
     setlength(FPathPoints,FPathPointCount);
-    result := IsPointInPolygon(FPathPoints,pt+FCanvasOffset,True);
+    result := IsPointInPolygon(FPathPoints,pt+FCanvasOffset, fillMode = fmWinding);
   end;
 end;
 
