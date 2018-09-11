@@ -112,6 +112,7 @@ type
     function GetHeight: single;
     function GetIsEmpty: boolean;
     function GetRectBounds: TRect;
+    function GetRectBoundsF: TRectF;
     function GetWidth: single;
   public
     TopLeft, TopRight,
@@ -121,6 +122,7 @@ type
     class function AffineBox(ARectF: TRectF): TAffineBox;
     function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
+    property RectBoundsF: TRectF read GetRectBoundsF;
     property BottomRight: TPointF read GetBottomRight;
     property IsEmpty: boolean read GetIsEmpty;
     property AsPolygon: ArrayOfTPointF read GetAsPolygon;
@@ -781,6 +783,12 @@ begin
 end;
 
 function TAffineBox.GetRectBounds: TRect;
+begin
+  with GetRectBoundsF do
+    result := Rect(floor(Left),floor(Top),ceil(Right),ceil(Bottom));
+end;
+
+function TAffineBox.GetRectBoundsF: TRectF;
 var
   x1,y1,x2,y2: single;
 begin
@@ -798,7 +806,7 @@ begin
   if BottomRight.x < x1 then x1 := BottomRight.x;
   if BottomRight.y > y2 then y2 := BottomRight.y;
   if BottomRight.y < y1 then y1 := BottomRight.y;
-  result := Rect(floor(x1),floor(y1),ceil(x2),ceil(y2));
+  result := RectF(x1,y1,x2,y2);
 end;
 
 function TAffineBox.GetWidth: single;
