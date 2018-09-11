@@ -37,11 +37,11 @@ type
     function GetComputedYAxis: TPointF;
     function GetComputedFocalPoint: TPointF;
     function GetComputedFocalRadius: single;
-    procedure OnMoveOrigin({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF);
-    procedure OnMoveXAxis({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF);
-    procedure OnMoveYAxis({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF);
-    procedure OnMoveFocalPoint({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF);
-    procedure OnMoveFocalRadius({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF);
+    procedure OnMoveOrigin({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
+    procedure OnMoveXAxis({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
+    procedure OnMoveYAxis({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
+    procedure OnMoveFocalPoint({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
+    procedure OnMoveFocalRadius({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
   public
     constructor Create; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); override;
@@ -184,7 +184,7 @@ begin
 end;
 
 procedure TBGRALayerGradientOriginal.OnMoveOrigin(ASender: TObject; APrevCoord,
-  ANewCoord: TPointF);
+  ANewCoord: TPointF; AShift: TShiftState);
 var
   delta: TPointF;
 begin
@@ -197,25 +197,25 @@ begin
 end;
 
 procedure TBGRALayerGradientOriginal.OnMoveXAxis(ASender: TObject; APrevCoord,
-  ANewCoord: TPointF);
+  ANewCoord: TPointF; AShift: TShiftState);
 begin
   XAxis := ANewCoord;
 end;
 
 procedure TBGRALayerGradientOriginal.OnMoveYAxis(ASender: TObject; APrevCoord,
-  ANewCoord: TPointF);
+  ANewCoord: TPointF; AShift: TShiftState);
 begin
   YAxis := ANewCoord;
 end;
 
 procedure TBGRALayerGradientOriginal.OnMoveFocalPoint(ASender: TObject;
-  APrevCoord, ANewCoord: TPointF);
+  APrevCoord, ANewCoord: TPointF; AShift: TShiftState);
 begin
   FocalPoint := ANewCoord;
 end;
 
 procedure TBGRALayerGradientOriginal.OnMoveFocalRadius(ASender: TObject;
-  APrevCoord, ANewCoord: TPointF);
+  APrevCoord, ANewCoord: TPointF; AShift: TShiftState);
 var refLen: single;
   u, focalOrig: TPointF;
 begin

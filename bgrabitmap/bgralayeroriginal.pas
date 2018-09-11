@@ -5,21 +5,26 @@ unit BGRALayerOriginal;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory;
+  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl;
 
 type
+  PRectF = ^TRectF;
   TAffineMatrix = BGRATransform.TAffineMatrix;
   TBGRALayerCustomOriginal = class;
   TBGRALayerOriginalAny = class of TBGRALayerCustomOriginal;
-  TOriginalMovePointEvent = procedure(ASender: TObject; APrevCoord, ANewCoord: TPointF) of object;
-  TOriginalChangeEvent = procedure(ASender: TObject) of object;
+  TOriginalMovePointEvent = procedure(ASender: TObject; APrevCoord, ANewCoord: TPointF; AShift: TShiftState) of object;
+  TOriginalStartMovePointEvent = procedure(ASender: TObject; AIndex: integer; AShift: TShiftState) of object;
+  TOriginalChangeEvent = procedure(ASender: TObject; ABounds: PRectF = nil) of object;
+  TOriginalEditingChangeEvent = procedure(ASender: TObject) of object;
   TOriginalEditorCursor = (oecDefault, oecMove);
+
+  TStartMoveHandlers = specialize TFPGList<TOriginalStartMovePointEvent>;
 
   { TBGRAOriginalEditor }
 
   TBGRAOriginalEditor = class
   protected
-    FMatrix: TAffineMatrix;
+    FMatrix,FMatrixInverse: TAffineMatrix;
     FPoints: array of record
       Origin, Coord: TPointF;
       OnMove: TOriginalMovePointEvent;
@@ -31,17 +36,20 @@ type
     FPointCoordDelta: TPointF;
     FMovingRightButton: boolean;
     FPrevMousePos: TPointF;
+    FStartMoveHandlers: TStartMoveHandlers;
     function RenderPoint(ADest: TBGRABitmap; ACoord: TPointF): TRect; virtual;
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
     procedure SetMatrix(AValue: TAffineMatrix);
   public
     constructor Create;
+    destructor Destroy; override;
     procedure Clear;
+    procedure AddStartMoveHandler(AOnStartMove: TOriginalStartMovePointEvent);
     function AddPoint(ACoord: TPointF; AOnMove: TOriginalMovePointEvent; ARightButton: boolean = false; ASnapToPoint: integer = -1): integer;
-    procedure AddArrow(AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false);
-    procedure MouseMove(Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor); virtual;
-    procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor); virtual;
-    procedure MouseUp(RightButton: boolean; Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor); virtual;
+    function AddArrow(AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
+    procedure MouseMove(Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
+    procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
+    procedure MouseUp(RightButton: boolean; Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     function GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;
     function Render(ADest: TBGRABitmap): TRect; virtual;
     property Matrix: TAffineMatrix read FMatrix write SetMatrix;
@@ -55,12 +63,15 @@ type
   TBGRALayerCustomOriginal = class
   private
     FOnChange: TOriginalChangeEvent;
+    FOnEditingChange: TOriginalEditingChangeEvent;
     procedure SetOnChange(AValue: TOriginalChangeEvent);
   protected
     FGuid: TGuid;
     function GetGuid: TGuid;
     procedure SetGuid(AValue: TGuid);
-    procedure NotifyChange;
+    procedure NotifyChange; overload;
+    procedure NotifyChange(ABounds: TRectF); overload;
+    procedure NotifyEditorChange;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -77,6 +88,7 @@ type
     class function StorageClassName: RawByteString; virtual; abstract;
     property Guid: TGuid read GetGuid write SetGuid;
     property OnChange: TOriginalChangeEvent read FOnChange write SetOnChange;
+    property OnEditingChange: TOriginalEditingChangeEvent read FOnEditingChange write FOnEditingChange;
   end;
 
   { TBGRALayerImageOriginal }
@@ -130,6 +142,10 @@ type
   public
     constructor Create;
     procedure RemoveAttribute(AName: utf8string); virtual; abstract;
+    procedure RemoveObject(AName: utf8string); virtual; abstract;
+    function CreateObject(AName: utf8string): TBGRACustomOriginalStorage; virtual; abstract;
+    function OpenObject(AName: utf8string): TBGRACustomOriginalStorage; virtual; abstract;
+    function ObjectExists(AName: utf8string): boolean; virtual; abstract;
     procedure RemoveFile(AName: utf8string); virtual; abstract;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; virtual; abstract;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); virtual; abstract;
@@ -157,6 +173,10 @@ type
     constructor Create;
     constructor Create(AMemDir: TMemDirectory; AMemDirOwned: boolean = false);
     procedure RemoveAttribute(AName: utf8string); override;
+    procedure RemoveObject(AName: utf8string); override;
+    function CreateObject(AName: utf8string): TBGRACustomOriginalStorage; override;
+    function OpenObject(AName: utf8string): TBGRACustomOriginalStorage; override;
+    function ObjectExists(AName: utf8string): boolean; override;
     procedure RemoveFile(AName: utf8string); override;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; override;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); override;
@@ -196,6 +216,7 @@ procedure TBGRAOriginalEditor.SetMatrix(AValue: TAffineMatrix);
 begin
   if FMatrix=AValue then Exit;
   FMatrix:=AValue;
+  FMatrixInverse := AffineMatrixInverse(FMatrix);
 end;
 
 function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF): TRect;
@@ -249,12 +270,27 @@ constructor TBGRAOriginalEditor.Create;
 begin
   FPointSize:= 6;
   FMatrix := AffineMatrixIdentity;
+  FMatrixInverse := AffineMatrixIdentity;
   FPointMoving:= -1;
+  FStartMoveHandlers := TStartMoveHandlers.Create;
+end;
+
+destructor TBGRAOriginalEditor.Destroy;
+begin
+  FreeAndNil(FStartMoveHandlers);
+  inherited Destroy;
 end;
 
 procedure TBGRAOriginalEditor.Clear;
 begin
   FPoints := nil;
+  FStartMoveHandlers.Clear;
+end;
+
+procedure TBGRAOriginalEditor.AddStartMoveHandler(
+  AOnStartMove: TOriginalStartMovePointEvent);
+begin
+  FStartMoveHandlers.Add(AOnStartMove);
 end;
 
 function TBGRAOriginalEditor.AddPoint(ACoord: TPointF;
@@ -272,11 +308,12 @@ begin
   end;
 end;
 
-procedure TBGRAOriginalEditor.AddArrow(AOrigin, AEndCoord: TPointF;
-  AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean);
+function TBGRAOriginalEditor.AddArrow(AOrigin, AEndCoord: TPointF;
+  AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean): integer;
 begin
   setlength(FPoints, length(FPoints)+1);
-  with FPoints[High(FPoints)] do
+  result := High(FPoints);
+  with FPoints[result] do
   begin
     Origin := AOrigin;
     Coord := AEndCoord;
@@ -287,10 +324,12 @@ begin
 end;
 
 procedure TBGRAOriginalEditor.MouseMove(Shift: TShiftState; X, Y: single; out
-  ACursor: TOriginalEditorCursor);
+  ACursor: TOriginalEditorCursor; out AHandled: boolean);
 var newMousePos, newCoord, snapCoord: TPointF;
+  hoverPoint: Integer;
 begin
-  newMousePos := Matrix*PointF(X,Y);
+  AHandled := false;
+  newMousePos := FMatrixInverse*PointF(X,Y);
   if (FPointMoving <> -1) and (FPointMoving < length(FPoints)) then
   begin
     newCoord := newMousePos + FPointCoordDelta;
@@ -300,36 +339,59 @@ begin
       if VectLen(snapCoord - newMousePos) < FPointSize then
         newCoord := snapCoord;
     end;
-    FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord);
+    FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
     FPoints[FPointMoving].Coord := newCoord;
+    ACursor := oecMove;
+    AHandled:= true;
+  end else
+  begin
+    hoverPoint := GetPointAt(newMousePos, false);
+    if hoverPoint <> -1 then
+      ACursor := oecMove
+    else
+      ACursor:= oecDefault;
   end;
   FPrevMousePos:= newMousePos;
 end;
 
 procedure TBGRAOriginalEditor.MouseDown(RightButton: boolean;
-  Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor);
+  Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out
+  AHandled: boolean);
+var
+  i: Integer;
 begin
-  FPrevMousePos:= Matrix*PointF(X,Y);
+  AHandled:= false;
+  FPrevMousePos:= FMatrixInverse*PointF(X,Y);
   if FPointMoving = -1 then
   begin
-    FPointMoving:= GetPointAt(Matrix*PointF(X,Y), RightButton);
+    FPointMoving:= GetPointAt(FPrevMousePos, RightButton);
     if FPointMoving <> -1 then
     begin
       FMovingRightButton:= RightButton;
       FPointCoordDelta := FPoints[FPointMoving].Coord - FPrevMousePos;
+      for i := 0 to FStartMoveHandlers.Count-1 do
+        FStartMoveHandlers[i](self, FPointMoving, Shift);
+      AHandled:= true;
     end;
   end;
   if FPointMoving <> -1 then
-    ACursor := oecMove
+  begin
+    ACursor := oecMove;
+    AHandled:= true;
+  end
   else
     ACursor := oecDefault;
 end;
 
 procedure TBGRAOriginalEditor.MouseUp(RightButton: boolean; Shift: TShiftState;
-  X, Y: single; out ACursor: TOriginalEditorCursor);
+  X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
 begin
-  if RightButton = FMovingRightButton then
+  AHandled:= false;
+  if (RightButton = FMovingRightButton) and (FPointMoving <> -1) then
+  begin
     FPointMoving:= -1;
+    AHandled:= true;
+  end;
   ACursor := oecDefault;
 end;
 
@@ -340,11 +402,12 @@ var v: TPointF;
 begin
   curDist := 4*FPointSize*FPointSize;
   result := -1;
+  ACoord:= Matrix*ACoord;
 
   for i := 0 to high(FPoints) do
   if FPoints[i].RightButton = ARightButton then
   begin
-    v := FPoints[i].Coord - ACoord;
+    v := Matrix*FPoints[i].Coord - ACoord;
     newDist := v*v;
     if newDist <= curDist then
     begin
@@ -357,7 +420,7 @@ begin
   for i := 0 to high(FPoints) do
   if FPoints[i].RightButton <> ARightButton then
   begin
-    v := FPoints[i].Coord - ACoord;
+    v := Matrix*FPoints[i].Coord - ACoord;
     newDist := v*v;
     if newDist <= curDist then
     begin
@@ -384,16 +447,33 @@ end;
 { TBGRAMemOriginalStorage }
 
 function TBGRAMemOriginalStorage.GetRawString(AName: utf8string): RawByteString;
+var
+  idx: Integer;
 begin
   if pos('.',AName)<>0 then exit('');
-  result := FMemDir.RawStringByFilename[AName];
+  idx := FMemDir.IndexOf(AName,'',true);
+  if idx = -1 then
+    result := ''
+  else if FMemDir.IsDirectory[idx] then
+    raise exception.Create('This name refers to an object and not an attribute')
+  else
+    result := FMemDir.RawString[idx];
 end;
 
 procedure TBGRAMemOriginalStorage.SetRawString(AName: utf8string;
   AValue: RawByteString);
+var
+  idx: Integer;
 begin
-  if pos('.',AName)<>0 then exit;
-  FMemDir.RawStringByFilename[AName] := AValue;
+  if pos('.',AName)<>0 then
+    raise exception.Create('Attribute name cannot contain "."');
+  idx := FMemDir.IndexOf(AName,'',true);
+  if idx = -1 then
+    FMemDir.Add(AName,'',AValue)
+  else if FMemDir.IsDirectory[idx] then
+    raise exception.Create('This name refers to an existing object and so cannot be an attribute')
+  else
+    FMemDir.RawString[idx] := AValue;
 end;
 
 destructor TBGRAMemOriginalStorage.Destroy;
@@ -417,14 +497,73 @@ begin
 end;
 
 procedure TBGRAMemOriginalStorage.RemoveAttribute(AName: utf8string);
+var
+  idx: Integer;
 begin
   if pos('.',AName)<>0 then exit;
-  FMemDir.Delete(AName,'');
+  idx := FMemDir.IndexOf(AName,'',true);
+  if idx = -1 then exit
+  else if FMemDir.IsDirectory[idx] then
+    raise exception.Create('This name refers to an object and not an attribute')
+  else
+    FMemDir.Delete(idx);
+end;
+
+procedure TBGRAMemOriginalStorage.RemoveObject(AName: utf8string);
+var
+  idx: Integer;
+begin
+  idx := FMemDir.IndexOf(EntryFilename(AName));
+  if idx = -1 then exit
+  else if not FMemDir.IsDirectory[idx] then
+    raise exception.Create('This name refers to an attribute and not an object')
+  else
+    FMemDir.Delete(idx);
+end;
+
+function TBGRAMemOriginalStorage.CreateObject(AName: utf8string): TBGRACustomOriginalStorage;
+var
+  dirIdx: Integer;
+begin
+  if pos('.',AName)<>0 then
+    raise exception.Create('An object cannot contain "."');
+  RemoveObject(AName);
+  dirIdx := FMemDir.AddDirectory(AName,'');
+  result := TBGRAMemOriginalStorage.Create(FMemDir.Directory[dirIdx]);
+end;
+
+function TBGRAMemOriginalStorage.OpenObject(AName: utf8string): TBGRACustomOriginalStorage;
+var
+  dir: TMemDirectory;
+begin
+  if pos('.',AName)<>0 then
+    raise exception.Create('An object cannot contain "."');
+  dir := FMemDir.FindPath(AName);
+  if dir = nil then
+    result := nil
+  else
+    result := TBGRAMemOriginalStorage.Create(dir);
+end;
+
+function TBGRAMemOriginalStorage.ObjectExists(AName: utf8string): boolean;
+var
+  dir: TMemDirectory;
+begin
+  if pos('.',AName)<>0 then exit(false);
+  dir := FMemDir.FindPath(AName);
+  result:= Assigned(dir);
 end;
 
 procedure TBGRAMemOriginalStorage.RemoveFile(AName: utf8string);
+var
+  idx: Integer;
 begin
-  FMemDir.Delete(EntryFilename(AName));
+  idx := FMemDir.IndexOf(EntryFilename(AName));
+  if idx = -1 then exit
+  else if FMemDir.IsDirectory[idx] then
+    raise exception.Create('This name refers to an object and not a file')
+  else
+    FMemDir.Delete(idx);
 end;
 
 function TBGRAMemOriginalStorage.ReadFile(AName: UTF8String; ADest: TStream): boolean;
@@ -594,6 +733,18 @@ procedure TBGRALayerCustomOriginal.NotifyChange;
 begin
   if Assigned(FOnChange) then
     FOnChange(self);
+end;
+
+procedure TBGRALayerCustomOriginal.NotifyChange(ABounds: TRectF);
+begin
+  if Assigned(FOnChange) then
+    FOnChange(self, @ABounds);
+end;
+
+procedure TBGRALayerCustomOriginal.NotifyEditorChange;
+begin
+  if Assigned(FOnEditingChange) then
+    FOnEditingChange(self);
 end;
 
 constructor TBGRALayerCustomOriginal.Create;
