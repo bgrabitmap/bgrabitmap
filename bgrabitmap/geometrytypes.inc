@@ -91,6 +91,7 @@ type
 
   TRectFHelper = record helper for TRectF
     function Union(const r: TRectF):TRectF;
+    function Union(const r: TRectF; ADiscardEmpty: boolean):TRectF;
   end;
 
 const
@@ -741,17 +742,24 @@ end;
 
 function TRectFHelper.Union(const r: TRectF): TRectF;
 begin
-  if IsEmptyRectF(r) then
-    result:= self
-  else if IsEmptyRectF(self) then
-    result:= r
-  else
+  result.left:=min(r.left,left);
+  result.top:=min(r.top,top);
+  result.right:=max(r.right,right);
+  result.bottom:=max(r.bottom,bottom);
+end;
+
+function TRectFHelper.Union(const r: TRectF; ADiscardEmpty: boolean): TRectF;
+begin
+  if ADiscardEmpty then
   begin
-    result.left:=min(r.left,left);
-    result.top:=min(r.top,top);
-    result.right:=max(r.right,right);
-    result.bottom:=max(r.bottom,bottom);
-  end;
+    if IsEmptyRectF(r) then
+      result:= self
+    else if IsEmptyRectF(self) then
+      result:= r
+    else
+      result := self.Union(r);
+  end else
+    result := self.Union(r);
 end;
 
 { TAffineBox }

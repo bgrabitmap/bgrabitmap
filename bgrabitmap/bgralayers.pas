@@ -544,9 +544,9 @@ begin
                     FLayers[i].OriginalInvalidatedBounds := transfBounds;
                   end;
         orsPartialDraft: FLayers[i].OriginalInvalidatedBounds :=
-                           FLayers[i].OriginalInvalidatedBounds.Union(transfBounds);
+                           FLayers[i].OriginalInvalidatedBounds.Union(transfBounds, true);
         orsPartialProof: FLayers[i].OriginalInvalidatedBounds :=
-                           FLayers[i].OriginalInvalidatedBounds.Union(transfBounds);
+                           FLayers[i].OriginalInvalidatedBounds.Union(transfBounds, true);
         end;
       end;
     end;
