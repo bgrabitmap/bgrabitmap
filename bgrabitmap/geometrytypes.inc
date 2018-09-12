@@ -848,30 +848,30 @@ end;
 
 function TAffineBox.Contains(APoint: TPointF): boolean;
 var
-  u,v: TPointF;
-  lenU2, lenV2, posV, posU: single;
+  u,v,perpU,perpV: TPointF;
+  posV1, posV2, posU1, posU2: single;
 begin
   if IsEmpty then exit(false);
 
   u := TopRight-TopLeft;
-  lenU2 := u*u;
+  perpU := PointF(-u.y,u.x);
   v := BottomLeft-TopLeft;
-  lenV2 := v*v;
+  perpV := PointF(v.y,-v.x);
 
-  if lenU2 = 0 then
+  //reverse normal if not in the same direction as other side
+  if perpU*v < 0 then
   begin
-    if lenV2 = 0 then
-      exit(false)
-    else
-    begin
-      u := PointF(v.y,-v.x);
-      lenU2 := lenV2;
-    end;
+    perpU := -perpU;
+    perpV := -perpV;
   end;
 
-  posU := (APoint-TopLeft)*u;
-  posV := (APoint-TopLeft)*v;
-  result := (posU >= 0) and (posU < lenU2) and (posV >= 0) and (posV < lenV2);
+  //determine position along normals
+  posU1 := (APoint-TopLeft)*perpU;
+  posU2 := (APoint-BottomLeft)*perpU;
+  posV1 := (APoint-TopLeft)*perpV;
+  posV2 := (APoint-TopRight)*perpV;
+
+  result := (posU1 >= 0) and (posU2 < 0) and (posV1 >= 0) and (posV2 < 0);
 end;
 
 function StrToGradientType(str: string): TGradientType;
