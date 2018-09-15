@@ -243,9 +243,9 @@ type
     procedure DeleteOriginal(AIndex: integer);
     procedure NotifyLoaded; override;
     procedure NotifySaving; override;
-    procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean = false); overload;
-    procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean; ARenderBounds: TRect); overload;
-    procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean; ARenderBoundsF: TRectF); overload;
+    procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean = false; AFullSizeLayer: boolean = false); overload;
+    procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean; ARenderBounds: TRect; AFullSizeLayer: boolean = false); overload;
+    procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean; ARenderBoundsF: TRectF; AFullSizeLayer: boolean = false); overload;
     function RenderOriginalsIfNecessary(ADraft: boolean = false): TRect;
     procedure RemoveUnusedOriginals;
 
@@ -265,8 +265,10 @@ type
     procedure Resample(AWidth, AHeight: integer; AResampleMode: TResampleMode; AFineResampleFilter: TResampleFilter = rfLinear);
     procedure SetLayerBitmap(layer: integer; ABitmap: TBGRABitmap; AOwned: boolean);
 
-    function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect;
-    function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect;
+    function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect; overload;
+    function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
+    function GetEditorBounds(ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect; overload;
+    function GetEditorBounds(ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
     procedure MouseMove(Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
     procedure MouseUp(RightButton: boolean; Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
@@ -1317,16 +1319,16 @@ begin
 end;
 
 procedure TBGRALayeredBitmap.RenderLayerFromOriginal(layer: integer;
-  ADraft: boolean);
+  ADraft: boolean; AFullSizeLayer: boolean = false);
 begin
-  RenderLayerFromOriginal(layer, ADraft, rectF(0,0,Width,Height));
+  RenderLayerFromOriginal(layer, ADraft, rectF(0,0,Width,Height), AFullSizeLayer);
 end;
 
 procedure TBGRALayeredBitmap.RenderLayerFromOriginal(layer: integer;
-  ADraft: boolean; ARenderBounds: TRect);
+  ADraft: boolean; ARenderBounds: TRect; AFullSizeLayer: boolean = false);
 var
   orig: TBGRALayerCustomOriginal;
-  rAll, r, rInter, rInterRender: TRect;
+  rAll, rNewBounds, rInterRender: TRect;
   newSource: TBGRABitmap;
 
   procedure FreeSource;
@@ -1345,31 +1347,49 @@ begin
   if Assigned(orig) then
   begin
     rAll := rect(0,0,Width,Height);
-    r := orig.GetRenderBounds(rAll,FLayers[layer].OriginalMatrix);
-    IntersectRect({%H-}rInter, r, rAll);
-    IntersectRect({%H-}rInterRender, ARenderBounds, rInter);
-    if rInterRender = rInter then
+    if AFullSizeLayer then
+      rNewBounds := rAll
+    else
     begin
-      FreeSource;
-      newSource := TBGRABitmap.Create(rInter.Right-rInter.Left,rInter.Bottom-rInter.Top);
-      orig.Render(newSource, AffineMatrixTranslation(-rInter.Left,-rInter.Top)*FLayers[layer].OriginalMatrix, ADraft);
+      rNewBounds := orig.GetRenderBounds(rAll,FLayers[layer].OriginalMatrix);
+      IntersectRect({%H-}rNewBounds, rNewBounds, rAll);
+    end;
+    IntersectRect({%H-}rInterRender, ARenderBounds, rNewBounds);
+    if (FLayers[layer].x = rNewBounds.Left) and
+      (FLayers[layer].y = rNewBounds.Top) and
+      (FLayers[layer].Source.Width = rNewBounds.Width) and
+      (FLayers[layer].Source.Height = rNewBounds.Height) then
+    begin
+      OffsetRect(rInterRender, -rNewBounds.Left, -rNewBounds.Top);
+      FLayers[layer].Source.FillRect(rInterRender, BGRAPixelTransparent, dmSet);
+      FLayers[layer].Source.ClipRect := rInterRender;
+      orig.Render(FLayers[layer].Source, AffineMatrixTranslation(-rNewBounds.Left,-rNewBounds.Top)*FLayers[layer].OriginalMatrix, ADraft);
+      FLayers[layer].Source.NoClip;
     end else
     begin
-      newSource := TBGRABitmap.Create(rInter.Right-rInter.Left,rInter.Bottom-rInter.Top);
-      newSource.PutImage(FLayers[layer].x - rInter.Left, FLayers[layer].y - rInter.Top, FLayers[layer].Source, dmSet);
-      FreeSource;
-      OffsetRect(rInterRender, -rInter.Left, -rInter.Top);
-      if not IsRectEmpty(rInterRender) then
+      if rInterRender = rNewBounds then
       begin
-        newSource.FillRect(rInterRender, BGRAPixelTransparent, dmSet);
-        newSource.ClipRect := rInterRender;
-        orig.Render(newSource, AffineMatrixTranslation(-rInter.Left,-rInter.Top)*FLayers[layer].OriginalMatrix, ADraft);
-        newSource.NoClip;
+        FreeSource;
+        newSource := TBGRABitmap.Create(rNewBounds.Width,rNewBounds.Height);
+        orig.Render(newSource, AffineMatrixTranslation(-rNewBounds.Left,-rNewBounds.Top)*FLayers[layer].OriginalMatrix, ADraft);
+      end else
+      begin
+        newSource := TBGRABitmap.Create(rNewBounds.Width,rNewBounds.Height);
+        newSource.PutImage(FLayers[layer].x - rNewBounds.Left, FLayers[layer].y - rNewBounds.Top, FLayers[layer].Source, dmSet);
+        FreeSource;
+        OffsetRect(rInterRender, -rNewBounds.Left, -rNewBounds.Top);
+        if not IsRectEmpty(rInterRender) then
+        begin
+          newSource.FillRect(rInterRender, BGRAPixelTransparent, dmSet);
+          newSource.ClipRect := rInterRender;
+          orig.Render(newSource, AffineMatrixTranslation(-rNewBounds.Left,-rNewBounds.Top)*FLayers[layer].OriginalMatrix, ADraft);
+          newSource.NoClip;
+        end;
       end;
+      FLayers[layer].Source := newSource;
+      FLayers[layer].x := rNewBounds.Left;
+      FLayers[layer].y := rNewBounds.Top;
     end;
-    FLayers[layer].Source := newSource;
-    FLayers[layer].x := rInter.Left;
-    FLayers[layer].y := rInter.Top;
   end;
   if ADraft then
     FLayers[layer].OriginalRenderStatus := orsDraft
@@ -1379,13 +1399,13 @@ begin
 end;
 
 procedure TBGRALayeredBitmap.RenderLayerFromOriginal(layer: integer;
-  ADraft: boolean; ARenderBoundsF: TRectF);
+  ADraft: boolean; ARenderBoundsF: TRectF; AFullSizeLayer: boolean = false);
 var
   r: TRect;
 begin
   with ARenderBoundsF do
     r := Rect(floor(Left),floor(Top),ceil(Right),ceil(Bottom));
-  RenderLayerFromOriginal(layer, ADraft, r);
+  RenderLayerFromOriginal(layer, ADraft, r, AFullSizeLayer);
 end;
 
 function TBGRALayeredBitmap.RenderOriginalsIfNecessary(ADraft: boolean): TRect;
@@ -1427,14 +1447,14 @@ begin
          if not ADraft and (LayerOriginalRenderStatus[i] = orsPartialDraft) then
          begin
            UnionLayerArea(i);
-           RenderLayerFromOriginal(i, ADraft);
+           RenderLayerFromOriginal(i, ADraft, rect(0,0,Width,Height), true);
            UnionLayerArea(i);
          end
          else
          begin
            with FLayers[i].OriginalInvalidatedBounds do
              r := Rect(floor(Left),floor(Top),ceil(Right),ceil(Bottom));
-           RenderLayerFromOriginal(i, ADraft, r);
+           RenderLayerFromOriginal(i, ADraft, r, true);
            if not IsRectEmpty(r) then
            begin
              if IsRectEmpty(result) then
@@ -1652,6 +1672,41 @@ begin
     FOriginalEditor.Matrix := AMatrix*LayerOriginalMatrix[ALayerIndex];
     FOriginalEditor.PointSize := APointSize;
     result := FOriginalEditor.Render(ADest);
+  end else
+    result := EmptyRect;
+end;
+
+function TBGRALayeredBitmap.GetEditorBounds(ALayerIndex: integer; X,
+  Y: Integer; APointSize: single): TRect;
+begin
+  result := GetEditorBounds(ALayerIndex, AffineMatrixTranslation(X,Y), APointSize);
+end;
+
+function TBGRALayeredBitmap.GetEditorBounds(ALayerIndex: integer;
+  AMatrix: TAffineMatrix; APointSize: single): TRect;
+var
+  orig: TBGRALayerCustomOriginal;
+begin
+  orig := LayerOriginal[ALayerIndex];
+
+  if orig <> FOriginalEditorOriginal then
+  begin
+    FreeAndNil(FOriginalEditor);
+    FOriginalEditorOriginal := orig;
+  end;
+
+  if Assigned(orig) then
+  begin
+    if FOriginalEditor = nil then
+    begin
+      FOriginalEditor := orig.CreateEditor;
+    end;
+    FOriginalEditor.Clear;
+    orig.ConfigureEditor(FOriginalEditor);
+    FOriginalEditorViewMatrix := AMatrix;
+    FOriginalEditor.Matrix := AMatrix*LayerOriginalMatrix[ALayerIndex];
+    FOriginalEditor.PointSize := APointSize;
+    result := FOriginalEditor.GetRenderBounds;
   end else
     result := EmptyRect;
 end;

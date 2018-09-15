@@ -38,7 +38,9 @@ type
     FPrevMousePos: TPointF;
     FStartMoveHandlers: TStartMoveHandlers;
     function RenderPoint(ADest: TBGRABitmap; ACoord: TPointF): TRect; virtual;
+    function GetRenderPointBounds(ACoord: TPointF): TRect; virtual;
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
+    function GetRenderArrowBounds(AOrigin, AEndCoord: TPointF): TRect; virtual;
     procedure SetMatrix(AValue: TAffineMatrix);
   public
     constructor Create;
@@ -49,9 +51,10 @@ type
     function AddArrow(AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
     procedure MouseMove(Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
-    procedure MouseUp(RightButton: boolean; Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
+    procedure MouseUp(RightButton: boolean; {%H-}Shift: TShiftState; {%H-}X, {%H-}Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     function GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;
     function Render(ADest: TBGRABitmap): TRect; virtual;
+    function GetRenderBounds: TRect; virtual;
     property Matrix: TAffineMatrix read FMatrix write SetMatrix;
     property PointSize: single read FPointSize write FPointSize;
   end;
@@ -189,7 +192,7 @@ function FindLayerOriginalClass(AStorageClassName: string): TBGRALayerOriginalAn
 
 implementation
 
-uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, BGRAGraphics, Types;
+uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, Types;
 
 var
   LayerOriginalClasses: array of TBGRALayerOriginalAny;
@@ -223,11 +226,9 @@ function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF): T
 const alpha = 192;
 var filler: TBGRAMultishapeFiller;
 begin
-  if isEmptyPointF(ACoord) then
-    result := EmptyRect
-  else
+  result := GetRenderPointBounds(ACoord);
+  if not isEmptyPointF(ACoord) then
   begin
-    result := rect(floor(ACoord.x - FPointSize - 2), floor(ACoord.y - FPointSize - 2), ceil(ACoord.x + FPointSize + 3), ceil(ACoord.y + FPointSize + 3));
     filler := TBGRAMultishapeFiller.Create;
     filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-1.5,FPointSize-1.5, 4, BGRA(0,0,0,alpha));
     filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-1.5,FPointSize-1.5, 1, BGRA(255,255,255,alpha));
@@ -235,6 +236,14 @@ begin
     filler.Draw(ADest);
     filler.Free;
   end;
+end;
+
+function TBGRAOriginalEditor.GetRenderPointBounds(ACoord: TPointF): TRect;
+begin
+  if isEmptyPointF(ACoord) then
+    result := EmptyRect
+  else
+    result := rect(floor(ACoord.x - FPointSize - 2), floor(ACoord.y - FPointSize - 2), ceil(ACoord.x + FPointSize + 3), ceil(ACoord.y + FPointSize + 3));
 end;
 
 function TBGRAOriginalEditor.RenderArrow(ADest: TBGRABitmap; AOrigin,
@@ -259,10 +268,21 @@ begin
     if not isEmptyPointF(pts[i]) then
     begin
       if floor(pts[i].x - 1) < result.Left then result.Left := floor(pts[i].x - 1);
-      if ceil(pts[i].x + 1) > result.Right then result.Right := ceil(pts[i].x - 1);
+      if ceil(pts[i].x + 1) > result.Right then result.Right := ceil(pts[i].x + 1);
       if floor(pts[i].y - 1) < result.Top then result.Top := floor(pts[i].y - 1);
-      if ceil(pts[i].y + 1) > result.Bottom then result.Bottom := ceil(pts[i].y - 1);
+      if ceil(pts[i].y + 1) > result.Bottom then result.Bottom := ceil(pts[i].y + 1);
     end;
+  end;
+end;
+
+function TBGRAOriginalEditor.GetRenderArrowBounds(AOrigin, AEndCoord: TPointF): TRect;
+begin
+  if isEmptyPointF(AOrigin) or isEmptyPointF(AEndCoord) then
+    result := EmptyRect
+  else
+  begin
+    result := Rect(floor(AOrigin.x-1),floor(AOrigin.y-1),ceil(AOrigin.x+1),ceil(AOrigin.y+1));
+    UnionRect(result, result, rect(floor(AEndCoord.x - FPointSize - 2), floor(AEndCoord.y - FPointSize - 2), ceil(AEndCoord.x + FPointSize + 3), ceil(AEndCoord.y + FPointSize + 3)) );
   end;
 end;
 
@@ -433,14 +453,44 @@ end;
 function TBGRAOriginalEditor.Render(ADest: TBGRABitmap): TRect;
 var
   i: Integer;
+  elemRect: TRect;
 begin
   result := EmptyRect;
   for i := 0 to high(FPoints) do
   begin
     if isEmptyPointF(FPoints[i].Origin) then
-      UnionRect(result, result, RenderPoint(ADest, FMatrix*FPoints[i].Coord))
+      elemRect := RenderPoint(ADest, FMatrix*FPoints[i].Coord)
     else
-      UnionRect(result, result, RenderArrow(ADest, FMatrix*FPoints[i].Origin, FMatrix*FPoints[i].Coord));
+      elemRect := RenderArrow(ADest, FMatrix*FPoints[i].Origin, FMatrix*FPoints[i].Coord);
+    if not IsRectEmpty(elemRect) then
+    begin
+      if IsRectEmpty(result) then
+        result := elemRect
+      else
+        UnionRect(result, result, elemRect);
+    end;
+  end;
+end;
+
+function TBGRAOriginalEditor.GetRenderBounds: TRect;
+var
+  i: Integer;
+  elemRect: TRect;
+begin
+  result := EmptyRect;
+  for i := 0 to high(FPoints) do
+  begin
+    if isEmptyPointF(FPoints[i].Origin) then
+      elemRect := GetRenderPointBounds(FMatrix*FPoints[i].Coord)
+    else
+      elemRect := GetRenderArrowBounds(FMatrix*FPoints[i].Origin, FMatrix*FPoints[i].Coord);
+    if not IsRectEmpty(elemRect) then
+    begin
+      if IsRectEmpty(result) then
+        result := elemRect
+      else
+        UnionRect(result, result, elemRect);
+    end;
   end;
 end;
 

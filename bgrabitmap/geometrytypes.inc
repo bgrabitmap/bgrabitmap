@@ -114,6 +114,7 @@ type
     function GetIsEmpty: boolean;
     function GetRectBounds: TRect;
     function GetRectBoundsF: TRectF;
+    function GetSurface: single;
     function GetWidth: single;
   public
     TopLeft, TopRight,
@@ -129,6 +130,7 @@ type
     property AsPolygon: ArrayOfTPointF read GetAsPolygon;
     property Width: single read GetWidth;
     property Height: single read GetHeight;
+    property Surface: single read GetSurface;
   end;
 
   const
@@ -815,6 +817,20 @@ begin
   if BottomRight.y > y2 then y2 := BottomRight.y;
   if BottomRight.y < y1 then y1 := BottomRight.y;
   result := RectF(x1,y1,x2,y2);
+end;
+
+function TAffineBox.GetSurface: single;
+var
+  u, v: TPointF;
+  lenU, lenH: Single;
+begin
+  u := TopRight-TopLeft;
+  lenU := VectLen(u);
+  if lenU = 0 then exit(0);
+  u *= 1/lenU;
+  v := BottomLeft-TopLeft;
+  lenH := PointF(-u.y,u.x)*v;
+  result := abs(lenU*lenH);
 end;
 
 function TAffineBox.GetWidth: single;
