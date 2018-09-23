@@ -1175,10 +1175,11 @@ var
             if ix1 < densMinx then densMinx := ix1;
             if ix2 > densMaxx then densMaxx := ix2;
 
-            FillWord(density[ix1-minx],ix2-ix1+1,256);
+            if ix2 >= ix1 then
+              FillWord(density[ix1-minx],ix2-ix1+1,256);
           end;
         end else
-		  {$DEFINE INCLUDE_FILLDENSITY}
+          {$DEFINE INCLUDE_FILLDENSITY}
           {$i density256.inc}
       end;
 
@@ -1204,6 +1205,7 @@ var
 
   curSum,nextSum: ^TCardinalSum;
   sums: array of TCardinalSum;
+  curAlpha: byte;
 
   pdens: PDensity;
   w: UInt32or64;
@@ -1324,8 +1326,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
@@ -1335,7 +1337,7 @@ begin
                   inc(count);
                 end;
                 if count = 1 then
-                  DrawExpandedPixelInlineNoAlphaCheck(pdest,ec,sumA) else
+                  DrawExpandedPixelInlineNoAlphaCheck(pdest,ec,curAlpha) else
                    DrawExpandedPixelsInline(pdest, ec, count );
                 inc(pdest,count-1);
               end;
@@ -1356,8 +1358,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
@@ -1368,8 +1370,10 @@ begin
                 end;
                 if count = 1 then
                   DrawPixelInlineNoAlphaCheck(pdest,GammaCompression(ec)) else
+                begin
                    DrawPixelsInline(pdest, GammaCompression(ec), count );
-                inc(pdest,count-1);
+                   inc(pdest,count-1);
+                end;
               end;
             end;
             inc(xb);
@@ -1388,8 +1392,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
@@ -1418,8 +1422,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
@@ -1448,8 +1452,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
