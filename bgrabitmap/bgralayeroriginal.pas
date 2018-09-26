@@ -60,6 +60,7 @@ type
   end;
 
   TBGRACustomOriginalStorage = class;
+  ArrayOfSingle = array of single;
 
   { TBGRALayerCustomOriginal }
 
@@ -123,25 +124,27 @@ type
   { TBGRACustomOriginalStorage }
 
   TBGRACustomOriginalStorage = class
-  private
-    function GetBool(AName: utf8string): boolean;
-    function GetIntegerDef(AName: utf8string; ADefault: integer): integer;
-    function GetSingleDef(AName: utf8string; ADefault: single): single;
-    procedure SetBool(AName: utf8string; AValue: boolean);
   protected
     FFormats: TFormatSettings;
+    function GetBool(AName: utf8string): boolean;
     function GetColorArray(AName: UTF8String): ArrayOfTBGRAPixel;
     function GetInteger(AName: utf8string): integer;
+    function GetIntegerDef(AName: utf8string; ADefault: integer): integer;
     function GetPointF(AName: utf8string): TPointF;
     function GetRawString(AName: utf8string): RawByteString; virtual; abstract;
     function GetSingle(AName: utf8string): single;
+    function GetSingleArray(AName: utf8string): ArrayOfSingle;
+    function GetSingleDef(AName: utf8string; ADefault: single): single;
     function GetColor(AName: UTF8String): TBGRAPixel;
+    procedure SetBool(AName: utf8string; AValue: boolean);
     procedure SetColorArray(AName: UTF8String; AValue: ArrayOfTBGRAPixel);
     procedure SetInteger(AName: utf8string; AValue: integer);
     procedure SetPointF(AName: utf8string; AValue: TPointF);
     procedure SetRawString(AName: utf8string; AValue: RawByteString); virtual; abstract;
     procedure SetSingle(AName: utf8string; AValue: single);
+    procedure SetSingleArray(AName: utf8string; AValue: ArrayOfSingle);
     procedure SetColor(AName: UTF8String; AValue: TBGRAPixel);
+    function GetDelimiter: char;
   public
     constructor Create;
     procedure RemoveAttribute(AName: utf8string); virtual; abstract;
@@ -157,6 +160,7 @@ type
     property IntDef[AName: utf8string; ADefault: integer]: integer read GetIntegerDef;
     property Bool[AName: utf8string]: boolean read GetBool write SetBool;
     property Float[AName: utf8string]: single read GetSingle write SetSingle;
+    property FloatArray[AName: utf8string]: ArrayOfSingle read GetSingleArray write SetSingleArray;
     property FloatDef[AName: utf8string; ADefault: single]: single read GetSingleDef;
     property PointF[AName: utf8string]: TPointF read GetPointF write SetPointF;
     property Color[AName: UTF8String]: TBGRAPixel read GetColor write SetColor;
@@ -661,9 +665,33 @@ begin
   RawString[AName] := LowerCase(BGRAToStr(AValue, CSSColors));
 end;
 
+function TBGRACustomOriginalStorage.GetDelimiter: char;
+begin
+  if FFormats.DecimalSeparator = ',' then
+    result := ';' else result := ',';
+end;
+
 function TBGRACustomOriginalStorage.GetBool(AName: utf8string): boolean;
 begin
   result := StrToBool(RawString[AName]);
+end;
+
+function TBGRACustomOriginalStorage.GetSingleArray(AName: utf8string): ArrayOfSingle;
+var
+  textVal: String;
+  values: TStringList;
+  i: Integer;
+begin
+  textVal := Trim(RawString[AName]);
+  if textVal = '' then exit(nil);
+  values := TStringList.Create;
+  values.StrictDelimiter := true;
+  values.Delimiter:= GetDelimiter;
+  values.DelimitedText:= textVal;
+  setlength(result, values.Count);
+  for i := 0 to high(result) do
+    result[i] := StrToFloatDef(values[i], 0, FFormats);
+  values.Free;
 end;
 
 function TBGRACustomOriginalStorage.GetColorArray(AName: UTF8String
@@ -673,7 +701,7 @@ var colorNames: TStringList;
 begin
   colorNames := TStringList.Create;
   colorNames.StrictDelimiter := true;
-  colorNames.Delimiter:= ',';
+  colorNames.Delimiter:= GetDelimiter;
   colorNames.DelimitedText:= RawString[AName];
   setlength(result, colorNames.Count);
   for i := 0 to high(result) do
@@ -698,6 +726,21 @@ begin
   RawString[AName] := BoolToStr(AValue,'true','false');
 end;
 
+procedure TBGRACustomOriginalStorage.SetSingleArray(AName: utf8string;
+  AValue: ArrayOfSingle);
+var
+  values: TStringList;
+  i: Integer;
+begin
+  values:= TStringList.Create;
+  values.StrictDelimiter:= true;
+  values.Delimiter:= GetDelimiter;
+  for i := 0 to high(AValue) do
+    values.Add(FloatToStr(AValue[i], FFormats));
+  RawString[AName] := values.DelimitedText;
+  values.Free;
+end;
+
 procedure TBGRACustomOriginalStorage.SetColorArray(AName: UTF8String;
   AValue: ArrayOfTBGRAPixel);
 var colorNames: TStringList;
@@ -705,7 +748,7 @@ var colorNames: TStringList;
 begin
   colorNames := TStringList.Create;
   colorNames.StrictDelimiter := true;
-  colorNames.Delimiter:= ',';
+  colorNames.Delimiter:= GetDelimiter;
   for i := 0 to high(AValue) do
     colorNames.Add(LowerCase(BGRAToStr(AValue[i], CSSColors)));
   RawString[AName] := colorNames.DelimitedText;
@@ -723,12 +766,12 @@ var
   posComma: integer;
 begin
   s := RawString[AName];
-  posComma := pos(',',s);
+  posComma := pos(GetDelimiter,s);
   if posComma = 0 then
     exit(EmptyPointF);
 
-  result.x := StrToFloat(copy(s,1,posComma-1));
-  result.y := StrToFloat(copy(s,posComma+1,length(s)-posComma));
+  result.x := StrToFloat(copy(s,1,posComma-1), FFormats);
+  result.y := StrToFloat(copy(s,posComma+1,length(s)-posComma), FFormats);
 end;
 
 function TBGRACustomOriginalStorage.GetSingle(AName: utf8string): single;
@@ -746,7 +789,7 @@ procedure TBGRACustomOriginalStorage.SetPointF(AName: utf8string;
   AValue: TPointF);
 begin
   if isEmptyPointF(AValue) then RemoveAttribute(AName)
-  else RawString[AName] := FloatToStrF(AValue.x, ffGeneral,7,3, FFormats)+','+FloatToStrF(AValue.y, ffGeneral,7,3, FFormats);
+  else RawString[AName] := FloatToStrF(AValue.x, ffGeneral,7,3, FFormats)+GetDelimiter+FloatToStrF(AValue.y, ffGeneral,7,3, FFormats);
 end;
 
 procedure TBGRACustomOriginalStorage.SetSingle(AName: utf8string; AValue: single);
