@@ -259,9 +259,12 @@ function ComputeOpenedSpline(const points: array of TPointF; Style: TSplineStyle
 function ClosedSplineStartPoint(const points: array of TPointF; Style: TSplineStyle): TPointF;
 
 { Compute points to draw an antialiased ellipse }
-function ComputeEllipse(x,y,rx,ry: single; quality: single = 1): ArrayOfTPointF;
-function ComputeArc65536(x, y, rx, ry: single; start65536,end65536: word; quality: single = 1): ArrayOfTPointF;
-function ComputeArcRad(x, y, rx, ry: single; startRadCCW,endRadCCW: single; quality: single = 1): ArrayOfTPointF;
+function ComputeEllipse(x,y,rx,ry: single; quality: single = 1): ArrayOfTPointF; overload;
+function ComputeEllipse(AOrigin, AXAxis, AYAxis: TPointF; quality: single = 1): ArrayOfTPointF; overload;
+function ComputeArc65536(x, y, rx, ry: single; start65536,end65536: word; quality: single = 1): ArrayOfTPointF; overload;
+function ComputeArc65536(AOrigin, AXAxis, AYAxis: TPointF; start65536,end65536: word; quality: single = 1): ArrayOfTPointF; overload;
+function ComputeArcRad(x, y, rx, ry: single; startRadCCW,endRadCCW: single; quality: single = 1): ArrayOfTPointF; overload;
+function ComputeArcRad(AOrigin, AXAxis, AYAxis: TPointF; startRadCCW,endRadCCW: single; quality: single = 1): ArrayOfTPointF; overload;
 function ComputeArc(const arc: TArcDef; quality: single = 1): ArrayOfTPointF;
 function ComputeRoundRect(x1,y1,x2,y2,rx,ry: single; quality: single = 1): ArrayOfTPointF; overload;
 function ComputeRoundRect(x1,y1,x2,y2,rx,ry: single; options: TRoundRectangleOptions; quality: single = 1): ArrayOfTPointF; overload;
@@ -653,12 +656,46 @@ begin
   result := ComputeArc65536(x,y,rx,ry,0,0,quality);
 end;
 
+function ComputeEllipse(AOrigin, AXAxis, AYAxis: TPointF; quality: single): ArrayOfTPointF;
+begin
+  result := ComputeArcRad(AOrigin, AXAxis, AYAxis, 0,0, quality);
+end;
+
+function ComputeArc65536(AOrigin, AXAxis, AYAxis: TPointF; start65536,
+  end65536: word; quality: single): ArrayOfTPointF;
+begin
+  //go back temporarily to radians
+  result := ComputeArcRad(AOrigin,AXAxis,AYAxis, start65536*Pi/326768, end65536*Pi/326768, quality);
+end;
+
 function ComputeArcRad(x, y, rx, ry: single; startRadCCW, endRadCCW: single;
   quality: single): ArrayOfTPointF;
 begin
   result := ComputeArc65536(x,y,rx,ry,round(startRadCCW*32768/Pi) and $ffff,round(endRadCCW*32768/Pi) and $ffff,quality);
   result[0] := PointF(x+cos(startRadCCW)*rx,y-sin(startRadCCW)*ry);
   result[high(result)] := PointF(x+cos(endRadCCW)*rx,y-sin(endRadCCW)*ry);
+end;
+
+function ComputeArcRad(AOrigin, AXAxis, AYAxis: TPointF; startRadCCW,endRadCCW: single; quality: single): ArrayOfTPointF;
+var
+  u, v: TPointF;
+  lenU, lenV: Single;
+  m: TAffineMatrix;
+  i: Integer;
+begin
+  u := AXAxis-AOrigin;
+  lenU := VectLen(u);
+  v := AYAxis-AOrigin;
+  lenV := VectLen(v);
+  if (lenU = 0) and (lenV = 0) then exit(PointsF([AOrigin]));
+
+  result := ComputeArcRad(0, 0, lenU, lenV, startRadCCW, endRadCCW, quality);
+
+  if lenU <> 0 then u *= 1/lenU;
+  if lenV <> 0 then v *= 1/lenV;
+  m := AffineMatrix(u, v, AOrigin);
+  for i := 0 to high(result) do
+    result[i] := m*result[i];
 end;
 
 function ComputeArc(const arc: TArcDef; quality: single): ArrayOfTPointF;

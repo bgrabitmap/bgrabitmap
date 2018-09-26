@@ -552,13 +552,20 @@ type
      procedure EraseShape(shape: TBGRACustomFillInfo; alpha: byte); virtual; abstract;
      procedure EraseShapeAntialias(shape: TBGRACustomFillInfo; alpha: byte); virtual; abstract;
 
-     procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single); virtual; abstract;
-     procedure EllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner; w: single); virtual; abstract;
-     procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single; back: TBGRAPixel); virtual; abstract;
-     procedure FillEllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel); virtual; abstract;
-     procedure FillEllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner); virtual; abstract;
-     procedure FillEllipseLinearColorAntialias(x, y, rx, ry: single; outercolor, innercolor: TBGRAPixel); virtual; abstract;
-     procedure EraseEllipseAntialias(x, y, rx, ry: single; alpha: byte); virtual; abstract;
+     procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single); virtual; abstract; overload;
+     procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single); virtual; abstract; overload;
+     procedure EllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner; w: single); virtual; abstract; overload;
+     procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner; w: single); virtual; abstract; overload;
+     procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single; back: TBGRAPixel); virtual; abstract; overload;
+     procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; back: TBGRAPixel); virtual; abstract; overload;
+     procedure FillEllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel); virtual; abstract; overload;
+     procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel); virtual; abstract; overload;
+     procedure FillEllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner); virtual; abstract; overload;
+     procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner); virtual; abstract; overload;
+     procedure FillEllipseLinearColorAntialias(x, y, rx, ry: single; outercolor, innercolor: TBGRAPixel); virtual; abstract; overload;
+     procedure FillEllipseLinearColorAntialias(AOrigin, AXAxis, AYAxis: TPointF; outercolor, innercolor: TBGRAPixel); virtual; abstract; overload;
+     procedure EraseEllipseAntialias(x, y, rx, ry: single; alpha: byte); virtual; abstract; overload;
+     procedure EraseEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; alpha: byte); virtual; abstract; overload;
 
      procedure Arc(cx,cy,rx,ry: single; const StartPoint,EndPoint: TPointF; AColor: TBGRAPixel; w: single; ADrawChord: boolean; AFillColor: TBGRAPixel); overload;
      procedure Arc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; AColor: TBGRAPixel; w: single; ADrawChord: boolean; AFillColor: TBGRAPixel); overload;
@@ -673,8 +680,10 @@ type
 
      function ComputeEllipse(x,y,rx,ry: single): ArrayOfTPointF; deprecated;
      function ComputeEllipse(x,y,rx,ry,w: single): ArrayOfTPointF; deprecated;
-     function ComputeEllipseContour(x,y,rx,ry: single; quality: single = 1): ArrayOfTPointF; virtual; abstract;
-     function ComputeEllipseBorder(x,y,rx,ry,w: single; quality: single = 1): ArrayOfTPointF; virtual; abstract;
+     function ComputeEllipseContour(x,y,rx,ry: single; quality: single = 1): ArrayOfTPointF; virtual; abstract; overload;
+     function ComputeEllipseContour(AOrigin, AXAxis, AYAxis: TPointF; quality: single = 1): ArrayOfTPointF; virtual; abstract; overload;
+     function ComputeEllipseBorder(x,y,rx,ry,w: single; quality: single = 1): ArrayOfTPointF; virtual; abstract; overload;
+     function ComputeEllipseBorder(AOrigin, AXAxis, AYAxis: TPointF; w: single; quality: single = 1): ArrayOfTPointF; virtual; abstract; overload;
      function ComputeArc65536(x,y,rx,ry: single; start65536,end65536: word; quality: single = 1): ArrayOfTPointF; virtual; abstract;
      function ComputeArcRad(x,y,rx,ry: single; startRad,endRad: single; quality: single = 1): ArrayOfTPointF; virtual; abstract;
      function ComputeRoundRect(x1,y1,x2,y2,rx,ry: single; quality: single = 1): ArrayOfTPointF; virtual; abstract;

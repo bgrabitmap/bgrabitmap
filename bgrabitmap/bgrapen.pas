@@ -17,6 +17,8 @@ var   //predefined pen styles
   SolidPenStyle, DashPenStyle, DotPenStyle, DashDotPenStyle, DashDotDotPenStyle, ClearPenStyle: TBGRAPenStyle;
 
 type
+  TPenJoinStyle = BGRAGraphics.TPenJoinStyle;
+  TPenEndCap = BGRAGraphics.TPenEndCap;
 
   { TBGRAPenStroker }
 

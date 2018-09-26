@@ -176,6 +176,7 @@ type
 {---------------------- Affine matrix functions -------------------}
 //fill a matrix
 function AffineMatrix(m11,m12,m13,m21,m22,m23: single): TAffineMatrix;
+function AffineMatrix(AU,AV: TPointF; ATranslation: TPointF): TAffineMatrix;
 
 //matrix multiplication
 operator *(M,N: TAffineMatrix): TAffineMatrix;
@@ -369,6 +370,12 @@ begin
   result[2,1] := m21;
   result[2,2] := m22;
   result[2,3] := m23;
+end;
+
+function AffineMatrix(AU, AV: TPointF; ATranslation: TPointF): TAffineMatrix;
+begin
+  result:= AffineMatrix(AU.x, AV.x, ATranslation.x,
+                        AU.y, AV.y, ATranslation.y);
 end;
 
 operator *(M, N: TAffineMatrix): TAffineMatrix;
