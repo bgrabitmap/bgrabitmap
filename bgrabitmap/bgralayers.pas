@@ -528,30 +528,33 @@ var
   transfBounds: TRectF;
 begin
   orig := TBGRALayerCustomOriginal(ASender);
-  for i := 0 to NbLayers-1 do
-    if LayerOriginalGuid[i] = orig.Guid then
-    begin
-      if ABounds = nil then
-        LayerOriginalRenderStatus[i] := orsNone
-      else
+  if not (Assigned(ABounds) and IsEmptyRectF(ABounds^)) then
+  begin
+    for i := 0 to NbLayers-1 do
+      if LayerOriginalGuid[i] = orig.Guid then
       begin
-        transfBounds := (LayerOriginalMatrix[i]*TAffineBox.AffineBox(ABounds^)).RectBoundsF;
-        case LayerOriginalRenderStatus[i] of
-        orsDraft: begin
-                    LayerOriginalRenderStatus[i] := orsPartialDraft;
-                    FLayers[i].OriginalInvalidatedBounds := transfBounds;
-                  end;
-        orsProof: begin
-                    LayerOriginalRenderStatus[i] := orsPartialProof;
-                    FLayers[i].OriginalInvalidatedBounds := transfBounds;
-                  end;
-        orsPartialDraft: FLayers[i].OriginalInvalidatedBounds :=
-                           FLayers[i].OriginalInvalidatedBounds.Union(transfBounds, true);
-        orsPartialProof: FLayers[i].OriginalInvalidatedBounds :=
-                           FLayers[i].OriginalInvalidatedBounds.Union(transfBounds, true);
+        if ABounds = nil then
+          LayerOriginalRenderStatus[i] := orsNone
+        else
+        begin
+          transfBounds := (LayerOriginalMatrix[i]*TAffineBox.AffineBox(ABounds^)).RectBoundsF;
+          case LayerOriginalRenderStatus[i] of
+          orsDraft: begin
+                      LayerOriginalRenderStatus[i] := orsPartialDraft;
+                      FLayers[i].OriginalInvalidatedBounds := transfBounds;
+                    end;
+          orsProof: begin
+                      LayerOriginalRenderStatus[i] := orsPartialProof;
+                      FLayers[i].OriginalInvalidatedBounds := transfBounds;
+                    end;
+          orsPartialDraft: FLayers[i].OriginalInvalidatedBounds :=
+                             FLayers[i].OriginalInvalidatedBounds.Union(transfBounds, true);
+          orsPartialProof: FLayers[i].OriginalInvalidatedBounds :=
+                             FLayers[i].OriginalInvalidatedBounds.Union(transfBounds, true);
+          end;
         end;
       end;
-    end;
+  end;
   if Assigned(FOriginalChange) then
     FOriginalChange(self, orig);
 end;
@@ -1700,6 +1703,8 @@ begin
     if FOriginalEditor = nil then
     begin
       FOriginalEditor := orig.CreateEditor;
+      if FOriginalEditor = nil then
+        raise exception.Create('Unexpected nil value');
     end;
     FOriginalEditor.Clear;
     orig.ConfigureEditor(FOriginalEditor);

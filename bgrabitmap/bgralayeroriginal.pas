@@ -690,7 +690,10 @@ begin
   values.DelimitedText:= textVal;
   setlength(result, values.Count);
   for i := 0 to high(result) do
-    result[i] := StrToFloatDef(values[i], 0, FFormats);
+    if CompareText(values[i],'none')=0 then
+      result[i] := EmptySingle
+    else
+      result[i] := StrToFloatDef(values[i], 0, FFormats);
   values.Free;
 end;
 
@@ -736,7 +739,10 @@ begin
   values.StrictDelimiter:= true;
   values.Delimiter:= GetDelimiter;
   for i := 0 to high(AValue) do
-    values.Add(FloatToStr(AValue[i], FFormats));
+    if AValue[i] = EmptySingle then
+      values.Add('none')
+    else
+      values.Add(FloatToStr(AValue[i], FFormats));
   RawString[AName] := values.DelimitedText;
   values.Free;
 end;
