@@ -37,7 +37,7 @@ type
     FMovingRightButton: boolean;
     FPrevMousePos: TPointF;
     FStartMoveHandlers: TStartMoveHandlers;
-    function RenderPoint(ADest: TBGRABitmap; ACoord: TPointF): TRect; virtual;
+    function RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean): TRect; virtual;
     function GetRenderPointBounds(ACoord: TPointF): TRect; virtual;
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
     function GetRenderArrowBounds(AOrigin, AEndCoord: TPointF): TRect; virtual;
@@ -226,16 +226,19 @@ begin
   FMatrixInverse := AffineMatrixInverse(FMatrix);
 end;
 
-function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF): TRect;
+function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean): TRect;
 const alpha = 192;
 var filler: TBGRAMultishapeFiller;
+  c: TBGRAPixel;
 begin
   result := GetRenderPointBounds(ACoord);
   if not isEmptyPointF(ACoord) then
   begin
     filler := TBGRAMultishapeFiller.Create;
     filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-1.5,FPointSize-1.5, 4, BGRA(0,0,0,alpha));
-    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-1.5,FPointSize-1.5, 1, BGRA(255,255,255,alpha));
+    if AAlternateColor then c := BGRA(255,128,128,alpha)
+      else c := BGRA(255,255,255,alpha);
+    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-1.5,FPointSize-1.5, 1, c);
     filler.PolygonOrder:= poLastOnTop;
     filler.Draw(ADest);
     filler.Free;
@@ -463,7 +466,7 @@ begin
   for i := 0 to high(FPoints) do
   begin
     if isEmptyPointF(FPoints[i].Origin) then
-      elemRect := RenderPoint(ADest, FMatrix*FPoints[i].Coord)
+      elemRect := RenderPoint(ADest, FMatrix*FPoints[i].Coord, FPoints[i].RightButton)
     else
       elemRect := RenderArrow(ADest, FMatrix*FPoints[i].Origin, FMatrix*FPoints[i].Coord);
     if not IsRectEmpty(elemRect) then
