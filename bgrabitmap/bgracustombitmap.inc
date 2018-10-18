@@ -552,6 +552,8 @@ type
      procedure EraseShape(shape: TBGRACustomFillInfo; alpha: byte); virtual; abstract;
      procedure EraseShapeAntialias(shape: TBGRACustomFillInfo; alpha: byte); virtual; abstract;
 
+     procedure Ellipse(x, y, rx, ry: single; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); virtual; abstract; overload;
+     procedure Ellipse(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); virtual; abstract; overload;
      procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single); virtual; abstract; overload;
      procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single); virtual; abstract; overload;
      procedure EllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner; w: single); virtual; abstract; overload;
@@ -624,8 +626,10 @@ type
      procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint); virtual; abstract; overload;
      procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; ditheringAlgorithm: TDitheringAlgorithm); virtual; overload;
      procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); virtual; abstract; overload;
-     procedure FillRectAntialias(x, y, x2, y2: single; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); virtual; abstract;
-     procedure FillRectAntialias(x, y, x2, y2: single; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); virtual; abstract;
+     procedure FillRectAntialias(x, y, x2, y2: single; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); virtual; abstract; overload;
+     procedure FillRectAntialias(x, y, x2, y2: single; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); virtual; abstract; overload;
+     procedure FillRectAntialias(ARect: TRectF; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); overload;
+     procedure FillRectAntialias(ARect: TRectF; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); overload;
      procedure EraseRectAntialias(x, y, x2, y2: single; alpha: byte; pixelCenteredCoordinates: boolean = true); virtual; abstract;
      procedure AlphaFillRect(x, y, x2, y2: integer; alpha: byte); virtual; abstract;
 
@@ -1749,6 +1753,18 @@ procedure TBGRACustomBitmap.FillRect(x, y, x2, y2: integer;
   ditheringAlgorithm: TDitheringAlgorithm);
 begin
   FillRect(x,y,x2,y2,texture,mode,Point(0,0),ditheringAlgorithm);
+end;
+
+procedure TBGRACustomBitmap.FillRectAntialias(ARect: TRectF; c: TBGRAPixel;
+  pixelCenteredCoordinates: boolean);
+begin
+  FillRectAntialias(ARect.Left,ARect.Top,ARect.Right,ARect.Bottom, c, pixelCenteredCoordinates);
+end;
+
+procedure TBGRACustomBitmap.FillRectAntialias(ARect: TRectF;
+  texture: IBGRAScanner; pixelCenteredCoordinates: boolean);
+begin
+  FillRectAntialias(ARect.Left,ARect.Top,ARect.Right,ARect.Bottom, texture, pixelCenteredCoordinates);
 end;
 
 procedure TBGRACustomBitmap.TextOutCurved(APath: IBGRAPath; sUTF8: string;

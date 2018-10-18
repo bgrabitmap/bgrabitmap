@@ -228,6 +228,7 @@ function AffineMatrixRotationDeg(AngleCW: Single): TAffineMatrix;
 function AffineMatrixIdentity: TAffineMatrix;
 
 function IsAffineMatrixOrthogonal(M: TAffineMatrix): boolean;
+function IsAffineMatrixScaledRotation(M: TAffineMatrix): boolean;
 
 type
   { TBGRATriangleLinearMapping is a scanner that provides
@@ -526,6 +527,12 @@ end;
 function IsAffineMatrixOrthogonal(M: TAffineMatrix): boolean;
 begin
   result := PointF(M[1,1],M[2,1])*PointF(M[1,2],M[2,2]) = 0;
+end;
+
+function IsAffineMatrixScaledRotation(M: TAffineMatrix): boolean;
+begin
+  result := IsAffineMatrixOrthogonal(M) and
+           (VectLen(PointF(M[1,1],M[2,1]))=VectLen(PointF(M[1,2],M[2,2])));
 end;
 
 { TBGRAVerticalCylinderDeformationScanner }

@@ -126,6 +126,11 @@ procedure BorderEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single
 procedure BorderEllipseAntialiasWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
   scan: IBGRAScanner; LinearBlend: boolean = false);
 
+procedure BorderEllipse(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
+  c: TBGRAPixel; EraseMode: boolean; drawmode: TDrawMode);
+procedure BorderEllipseWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
+  scan: IBGRAScanner; drawmode: TDrawMode);
+
 procedure FillRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2, y2, rx, ry: single;
   options: TRoundRectangleOptions; c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
 procedure FillRoundRectangleAntialiasWithTexture(bmp: TBGRACustomBitmap; x1, y1, x2, y2, rx, ry: single;
@@ -1482,6 +1487,30 @@ begin
   end;
 
   dest.InvalidateBitmap;
+end;
+
+procedure BorderEllipse(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
+  c: TBGRAPixel; EraseMode: boolean; drawmode: TDrawMode);
+var
+  info: TFillBorderEllipseInfo;
+begin
+  if ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then
+    exit;
+  info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
+  FillShapeAliased(bmp, info, c, EraseMode, nil, False, drawmode);
+  info.Free;
+end;
+
+procedure BorderEllipseWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry,
+  w: single; scan: IBGRAScanner; drawmode: TDrawMode);
+var
+  info: TFillBorderEllipseInfo;
+begin
+  if ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then
+    exit;
+  info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
+  FillShapeAliased(bmp, info, BGRAPixelTransparent, False, scan, false, drawmode);
+  info.Free;
 end;
 
 procedure FillRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2, y2,
