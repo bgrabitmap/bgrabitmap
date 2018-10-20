@@ -200,6 +200,7 @@ type
     procedure bezierCurve(p1,cp1,cp2,p2: TPointF); overload;
     procedure smoothBezierCurveTo(cp2x,cp2y,x,y: single); overload;
     procedure smoothBezierCurveTo(const cp2,pt: TPointF); overload;
+    procedure easyBezierCurve(const curve: TEasyBezierCurve);
     procedure rect(x,y,w,h: single);
     procedure roundRect(x,y,w,h,radius: single);
     procedure arc(cx, cy, radius, startAngleRadCW, endAngleRadCW: single; anticlockwise: boolean); overload;
@@ -257,6 +258,7 @@ function ComputeBezierSpline(const spline: array of TQuadraticBezierCurve; AAcce
 function ComputeClosedSpline(const points: array of TPointF; Style: TSplineStyle; AAcceptedDeviation: single = 0.1): ArrayOfTPointF;
 function ComputeOpenedSpline(const points: array of TPointF; Style: TSplineStyle; EndCoeff: single = 0.25; AAcceptedDeviation: single = 0.1): ArrayOfTPointF;
 function ClosedSplineStartPoint(const points: array of TPointF; Style: TSplineStyle): TPointF;
+function ComputeEasyBezier(const curve: TEasyBezierCurve; AAcceptedDeviation: single = 0.1): ArrayOfTPointF;
 
 { Compute points to draw an antialiased ellipse }
 function ComputeEllipse(x,y,rx,ry: single; quality: single = 1): ArrayOfTPointF; overload;
@@ -465,6 +467,12 @@ var
   kernel: TWideKernelFilter;
 
 begin
+  if Style = ssEasyBezier then
+  begin
+    result := ComputeEasyBezier(EasyBezierCurve(points, true, cmCurve));
+    exit;
+  end;
+
   if length(points) <= 2 then
   begin
     setlength(result,length(points));
@@ -516,6 +524,12 @@ var
   t: single;
   kernel: TWideKernelFilter;
 begin
+  if Style = ssEasyBezier then
+  begin
+    result := ComputeEasyBezier(EasyBezierCurve(points, false, cmCurve));
+    exit;
+  end;
+
   if length(points) <= 2 then
   begin
     setlength(result,length(points));
@@ -594,22 +608,39 @@ var
   ptNext: TPointF;
   ptNext2: TPointF;
 begin
-  if length(points) = 0 then
-    result := EmptyPointF
-  else
-  if length(points)<=2 then
-    result := points[0]
-  else
+  if Style = ssEasyBezier then
   begin
-    kernel := CreateInterpolator(style);
-    ptPrev2 := points[high(points)];
-    ptPrev  := points[0];
-    ptNext  := points[1];
-    ptNext2 := points[2];
-    result := ptPrev2*kernel.Interpolation(1) + ptPrev*kernel.Interpolation(0) +
-              ptNext*kernel.Interpolation(-1)  + ptNext2*kernel.Interpolation(-2);
-    kernel.free;
+    result := EasyBezierCurve(points, true, cmCurve).CurveStartPoint;
+  end else
+  begin
+    if length(points) = 0 then
+      result := EmptyPointF
+    else
+    if length(points)<=2 then
+      result := points[0]
+    else
+    begin
+      kernel := CreateInterpolator(style);
+      ptPrev2 := points[high(points)];
+      ptPrev  := points[0];
+      ptNext  := points[1];
+      ptNext2 := points[2];
+      result := ptPrev2*kernel.Interpolation(1) + ptPrev*kernel.Interpolation(0) +
+                ptNext*kernel.Interpolation(-1)  + ptNext2*kernel.Interpolation(-2);
+      kernel.free;
+    end;
   end;
+end;
+
+function ComputeEasyBezier(const curve: TEasyBezierCurve;
+  AAcceptedDeviation: single): ArrayOfTPointF;
+var
+  path: TBGRAPath;
+begin
+  path := TBGRAPath.Create;
+  curve.CopyToPath(path);
+  result := path.ToPoints(AAcceptedDeviation);
+  path.Free;
 end;
 
 function ComputeArc65536(x, y, rx, ry: single; start65536,end65536: word; quality: single): ArrayOfTPointF;
@@ -2783,6 +2814,11 @@ begin
     BezierCurveFromTransformed(FLastTransformedCoord,cp2,pt)
   else
     bezierCurveTo(cp2,cp2,pt);
+end;
+
+procedure TBGRAPath.easyBezierCurve(const curve: TEasyBezierCurve);
+begin
+  curve.CopyToPath(self);
 end;
 
 procedure TBGRAPath.quadraticCurve(const curve: TQuadraticBezierCurve);

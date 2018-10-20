@@ -34,38 +34,48 @@ type
     class function LoadFromStream(AStream: TStream): TBGRAGlyph;
   end;
 
-  TGlyphPointCurveMode= (cmAuto, cmCurve, cmAngle);
+  TGlyphPointCurveMode= TEasyBezierCurveMode;
 
+const
+  cmAuto = TEasyBezierCurveMode.cmAuto;
+  cmCurve = TEasyBezierCurveMode.cmCurve;
+  cmAngle = TEasyBezierCurveMode.cmAngle;
+
+type
   { TBGRAPolygonalGlyph }
 
   TBGRAPolygonalGlyph = class(TBGRAGlyph)
   private
+    function GetClosed: boolean;
+    function GetMinimumDotProduct: single;
+    function GetPoint(AIndex: integer): TPointF;
+    function GetPointCount: integer;
+    procedure SetClosed(AValue: boolean);
+    procedure SetMinimumDotProduct(AValue: single);
+    procedure SetPoint(AIndex: integer; AValue: TPointF);
     procedure SetQuadraticCurves(AValue: boolean);
   protected
     FQuadraticCurves: boolean;
-    Points: array of TPointF;
-    CurveMode: array of TGlyphPointCurveMode;
-    Curves: array of record
-      isCurvedToNext,isCurvedToPrevious: boolean;
-      Center,ControlPoint,NextCenter: TPointF;
-    end;
-    function MaybeCurve(start1,end1,start2,end2: integer): boolean;
-    procedure ComputeQuadraticCurves;
+    FEasyBezier: TEasyBezierCurve;
     function ContentSize: integer; override;
     function HeaderName: string; override;
     procedure WriteContent(AStream: TStream); override;
     procedure ReadContent(AStream: TStream); override;
+    function PointTransformMatrix(APoint: PPointF; AData: pointer): TPointF;
     procedure Init;
   public
     Offset: TPointF;
-    Closed: boolean;
-    MinimumDotProduct: single;
     constructor Create(AIdentifier: string); override;
     constructor Create(AStream: TStream); override;
+    constructor Create(AStream: TStream; AQuadratic: boolean);
     procedure SetPoints(const APoints: array of TPointF); overload;
     procedure SetPoints(const APoints: array of TPointF; const ACurveMode: array of TGlyphPointCurveMode); overload;
     procedure Path(ADest: IBGRAPath; AMatrix: TAffineMatrix); override;
     property QuadraticCurves: boolean read FQuadraticCurves write SetQuadraticCurves;
+    property Closed: boolean read GetClosed write SetClosed;
+    property MinimumDotProduct: single read GetMinimumDotProduct write SetMinimumDotProduct;
+    property Point[AIndex: integer]: TPointF read GetPoint write SetPoint;
+    property PointCount: integer read GetPointCount;
   end;
 
   TBGRACustomTypeWriterHeader = record
@@ -192,83 +202,58 @@ end;
 
 { TBGRAPolygonalGlyph }
 
+function TBGRAPolygonalGlyph.GetClosed: boolean;
+begin
+  result := FEasyBezier.Closed;
+end;
+
+function TBGRAPolygonalGlyph.GetMinimumDotProduct: single;
+begin
+  result := FEasyBezier.MinimumDotProduct;
+end;
+
+function TBGRAPolygonalGlyph.GetPoint(AIndex: integer): TPointF;
+begin
+  result := FEasyBezier.Point[AIndex];
+end;
+
+function TBGRAPolygonalGlyph.GetPointCount: integer;
+begin
+  result := FEasyBezier.PointCount;
+end;
+
+procedure TBGRAPolygonalGlyph.SetClosed(AValue: boolean);
+begin
+  FEasyBezier.Closed := AValue;
+end;
+
+procedure TBGRAPolygonalGlyph.SetMinimumDotProduct(AValue: single);
+begin
+  FEasyBezier.MinimumDotProduct := AValue;
+end;
+
+procedure TBGRAPolygonalGlyph.SetPoint(AIndex: integer; AValue: TPointF);
+begin
+  FEasyBezier.Point[AIndex] := AValue;
+end;
+
 procedure TBGRAPolygonalGlyph.SetQuadraticCurves(AValue: boolean);
 begin
   if FQuadraticCurves=AValue then Exit;
   FQuadraticCurves:=AValue;
-  Curves := nil;
-end;
-
-function TBGRAPolygonalGlyph.MaybeCurve(start1,end1,start2,end2: integer): boolean;
-var
-  u,v: TPointF;
-  lu,lv: single;
-begin
-  if (start1=-1) or (end1=-1) or (start2=-1) or (end2=-1) then
-  begin
-    result := false;
-    exit;
-  end;
-  u := pointF(points[end1].x - points[start1].x, points[end1].y - points[start1].y);
-  lu := sqrt(u*u);
-  if lu <> 0 then u *= 1/lu;
-  v := pointF(points[end2].x - points[start2].x, points[end2].y - points[start2].y);
-  lv := sqrt(v*v);
-  if lv <> 0 then v *= 1/lv;
-
-  result := u*v > MinimumDotProduct;
-end;
-
-procedure TBGRAPolygonalGlyph.ComputeQuadraticCurves;
-var
-  i,FirstPointIndex,NextPt,NextPt2: integer;
-begin
-  setlength(Curves, length(points));
-  FirstPointIndex := 0;
-  for i := 0 to high(points) do
-    Curves[i].isCurvedToPrevious := false;
-  for i := 0 to high(points) do
-  begin
-    Curves[i].isCurvedToNext := false;
-    Curves[i].Center := EmptyPointF;
-    Curves[i].ControlPoint := EmptyPointF;
-    Curves[i].NextCenter := EmptyPointF;
-
-    if IsEmptyPointF(Points[i]) then
-    begin
-      FirstPointIndex := i+1;
-    end else
-    begin
-      NextPt := i+1;
-      if (NextPt = length(points)) or isEmptyPointF(points[NextPt]) then NextPt := FirstPointIndex;
-      NextPt2 := NextPt+1;
-      if (NextPt2 = length(points)) or isEmptyPointF(points[NextPt2]) then NextPt2 := FirstPointIndex;
-
-      Curves[i].Center := (points[i]+points[NextPt])*0.5;
-      Curves[i].NextCenter := (points[NextPt]+points[NextPt2])*0.5;
-      Curves[i].ControlPoint := points[NextPt];
-
-      if (i < high(points)-1) or Closed then
-      begin
-        case CurveMode[nextPt] of
-          cmAuto: Curves[i].isCurvedToNext:= MaybeCurve(i,NextPt,NextPt,NextPt2);
-          cmCurve: Curves[i].isCurvedToNext:= true;
-          else Curves[i].isCurvedToNext:= false;
-        end;
-        Curves[NextPt].isCurvedToPrevious := Curves[i].isCurvedToNext;
-      end;
-    end;
-  end;
 end;
 
 function TBGRAPolygonalGlyph.ContentSize: integer;
 begin
-  Result:= (inherited ContentSize) + sizeof(single)*2 + 4 + sizeof(single)*2*length(Points);
+  Result:= (inherited ContentSize) + sizeof(single)*2 + 4 + sizeof(single)*2*PointCount;
 end;
 
 function TBGRAPolygonalGlyph.HeaderName: string;
 begin
-  Result:='TBGRAPolygonalGlyph';
+  if FQuadraticCurves then
+    Result:='TBGRAEasyBezierGlyph'
+  else
+    Result:='TBGRAPolygonalGlyph'
 end;
 
 procedure TBGRAPolygonalGlyph.WriteContent(AStream: TStream);
@@ -276,14 +261,18 @@ var i: integer;
 begin
   inherited WriteContent(AStream);
   LEWritePointF(AStream, Offset);
-  LEWriteLongint(AStream,length(Points));
-  for i := 0 to high(Points) do
-    LEWritePointF(AStream, Points[i]);
+  LEWriteLongint(AStream,PointCount);
+  for i := 0 to PointCount-1 do
+    LEWritePointF(AStream, FEasyBezier.Point[i]);
+  if FQuadraticCurves then
+    for i := 0 to PointCount-1 do
+      LEWriteLongint(AStream, ord(FEasyBezier.CurveMode[i]));
 end;
 
 procedure TBGRAPolygonalGlyph.ReadContent(AStream: TStream);
 var i: integer;
   tempPts: array of TPointF;
+  flags: LongInt;
 begin
   inherited ReadContent(AStream);
   Offset := LEReadPointF(AStream);
@@ -291,107 +280,87 @@ begin
   for i := 0 to high(tempPts) do
     tempPts[i] := LEReadPointF(AStream);
   SetPoints(tempPts);
+  if FQuadraticCurves then
+  begin
+    for i := 0 to high(tempPts) do
+    begin
+      flags := LEReadLongint(AStream);
+      FEasyBezier.CurveMode[i] := TEasyBezierCurveMode(flags and 255);
+    end;
+  end;
+end;
+
+function TBGRAPolygonalGlyph.PointTransformMatrix(APoint: PPointF;
+  AData: pointer): TPointF;
+begin
+  result := TAffineMatrix(AData^) * APoint^;
 end;
 
 procedure TBGRAPolygonalGlyph.Init;
 begin
+  FEasyBezier.Init;
   Closed := True;
-  MinimumDotProduct := 0.707;
+  Offset := PointF(0,0);
+  FQuadraticCurves:= False;
 end;
 
 constructor TBGRAPolygonalGlyph.Create(AIdentifier: string);
 begin
-  inherited Create(AIdentifier);
-  Offset := PointF(0,0);
   Init;
+  inherited Create(AIdentifier);
 end;
 
 constructor TBGRAPolygonalGlyph.Create(AStream: TStream);
 begin
-  inherited Create(AStream);
   Init;
+  inherited Create(AStream);
+end;
+
+constructor TBGRAPolygonalGlyph.Create(AStream: TStream; AQuadratic: boolean);
+begin
+  Init;
+  FQuadraticCurves:= AQuadratic;
+  inherited Create(AStream);
 end;
 
 procedure TBGRAPolygonalGlyph.SetPoints(const APoints: array of TPointF);
-var i: integer;
 begin
-  SetLength(Points,length(APoints));
-  for i := 0 to high(points) do
-    points[i] := APoints[i];
-  setlength(CurveMode, length(APoints));
-  for i := 0 to high(CurveMode) do
-    CurveMode[i] := cmAuto;
-  Curves := nil;
+  FEasyBezier.SetPoints(APoints, cmAuto);
 end;
 
 procedure TBGRAPolygonalGlyph.SetPoints(const APoints: array of TPointF;
   const ACurveMode: array of TGlyphPointCurveMode);
-var i: integer;
 begin
   if length(APoints) <> length(ACurveMode) then
     raise exception.Create('Dimension mismatch');
-  SetLength(Points,length(APoints));
-  for i := 0 to high(points) do
-    points[i] := APoints[i];
-  setlength(CurveMode, length(ACurveMode));
-  for i := 0 to high(CurveMode) do
-    CurveMode[i] := ACurveMode[i];
-  Curves := nil;
+  FEasyBezier.SetPoints(APoints, ACurveMode);
 end;
 
 procedure TBGRAPolygonalGlyph.Path(ADest: IBGRAPath; AMatrix: TAffineMatrix);
 var i: integer;
   nextMove: boolean;
-  startCoord: TPointF;
-
 begin
-  if Points = nil then exit;
-
-  if (Curves = nil) and FQuadraticCurves then ComputeQuadraticCurves;
-  nextMove := true;
   AMatrix := AMatrix*AffineMatrixTranslation(Offset.X,Offset.Y);
-
-  for i := 0 to high(Points) do
-    if isEmptyPointF(Points[i]) then
-    begin
-      if not nextMove then ADest.closePath;
-      nextMove := true;
-    end else
-    if FQuadraticCurves then
-    begin
-      with Curves[i] do
+  if not FQuadraticCurves then
+  begin
+    nextMove := true;
+    for i := 0 to PointCount-1 do
+      if isEmptyPointF(Point[i]) then
+      begin
+        if not nextMove and Closed then ADest.closePath;
+        nextMove := true;
+      end else
       begin
         if nextMove then
         begin
-          if not isCurvedToPrevious then
-            startCoord := Points[i]
-          else
-            startCoord := Center;
-          ADest.moveTo(AMatrix*startCoord);
+          ADest.moveTo(AMatrix*Point[i]);
           nextMove := false;
         end else
-          if not isCurvedToPrevious then
-            ADest.lineTo(AMatrix*Points[i]);
-
-        if isCurvedToNext then
-        begin
-          if not isCurvedToPrevious then ADest.lineTo(AMatrix*Center);
-          ADest.quadraticCurveTo(AMatrix*ControlPoint,AMatrix*NextCenter);
-        end;
+          ADest.lineTo(AMatrix*Point[i]);
       end;
-    end else
-    begin
-      if nextMove then
-      begin
-        ADest.moveTo(AMatrix*Points[i]);
-        nextMove := false;
-      end else
-      begin
-        ADest.lineTo(AMatrix*Points[i]);
-      end;
-    end;
-  if not nextmove then
-    ADest.closePath;
+    if not nextmove and Closed then ADest.closePath;
+  end else
+    FEasyBezier.CopyToPath(ADest, @PointTransformMatrix, @AMatrix);
 end;
 
 { TBGRAGlyph }
@@ -472,6 +441,8 @@ begin
   EndPosition := AStream.Position + lContentSize;
   if lName = 'TBGRAPolygonalGlyph' then
     result := TBGRAPolygonalGlyph.Create(AStream)
+  else if lName = 'TBGRAEasyBezierGlyph' then
+    result := TBGRAPolygonalGlyph.Create(AStream, true)
   else if lName = 'TBGRAGlyph' then
     result := TBGRAGlyph.Create(AStream)
   else

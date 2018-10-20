@@ -204,7 +204,9 @@ type
     {** The curve expands outside the polygonal envelope (starting and ending points are reached) }
     ssRoundOutside,
     {** The curve is outside the polygonal envelope and there is a tangeant at vertices (starting and ending points are reached) }
-    ssVertexToSide);
+    ssVertexToSide,
+    {** The curve is rounded using Bezier curves when the angle is less than or equal to 45° }
+    ssEasyBezier);
 
   { TCubicBezierCurve }
   {* Definition of a Bézier curve of order 3. It has two control points ''c1'' and ''c2''. Those are not reached by the curve }
@@ -523,6 +525,63 @@ const
 function PtInRect(const pt: TPoint; r: TRect): boolean; overload;
 {* Creates a rectangle with the specified ''width'' and ''height'' }
 function RectWithSize(left,top,width,height: integer): TRect;
+
+type
+  TEasyBezierCurveMode= (cmAuto, cmCurve, cmAngle);
+  TEasyBezierPointTransformFunc = function(APoint: PPointF; AData: Pointer): TPointF of object;
+
+  { TEasyBezierCurve }
+
+  TEasyBezierCurve = object
+  private
+    function GetCurveMode(AIndex: integer): TEasyBezierCurveMode;
+    function GetCurveStartPoint: TPointF;
+    function GetPoint(AIndex: integer): TPointF;
+    function GetPointCount: integer;
+    procedure SetClosed(AValue: boolean);
+    procedure SetCurveMode(AIndex: integer; AValue: TEasyBezierCurveMode);
+    procedure SetMinimumDotProduct(AValue: single);
+    procedure SetPoint(AIndex: integer; AValue: TPointF);
+  protected
+    FCurves: array of record
+      isCurvedToNext,isCurvedToPrevious: boolean;
+      Center,ControlPoint,NextCenter: TPointF;
+    end;
+    FInvalidated: boolean;
+    FPoints: array of record
+               Coord: TPointF;
+               CurveMode: TEasyBezierCurveMode;
+             end;
+    FMinimumDotProduct: single;
+    FClosed: boolean;
+    function MaybeCurve(start1, end1, start2, end2: integer): boolean;
+    procedure ComputeQuadraticCurves;
+    function PointTransformNone(APoint: PPointF; {%H-}AData: Pointer): TPointF;
+    function PointTransformOffset(APoint: PPointF; AData: Pointer): TPointF;
+  public
+    procedure Init;
+    procedure Clear;
+    procedure SetPoints(APoints: array of TPointF; ACurveMode: TEasyBezierCurveMode); overload;
+    procedure SetPoints(APoints: array of TPointF; ACurveMode: array of TEasyBezierCurveMode); overload;
+    procedure CopyToPath(ADest: IBGRAPath); overload;
+    procedure CopyToPath(ADest: IBGRAPath; AOffset: TPointF); overload;
+    procedure CopyToPath(ADest: IBGRAPath; ATransformFunc: TEasyBezierPointTransformFunc; ATransformData: Pointer); overload;
+    property Point[AIndex: integer]: TPointF read GetPoint write SetPoint;
+    property CurveMode[AIndex: integer]: TEasyBezierCurveMode read GetCurveMode write SetCurveMode;
+    property PointCount: integer read GetPointCount;
+    property MinimumDotProduct: single read FMinimumDotProduct write SetMinimumDotProduct;
+    property Closed: boolean read FClosed write SetClosed;
+    property CurveStartPoint: TPointF read GetCurveStartPoint;
+  end;
+
+const
+  EasyBezierDefaultMinimumDotProduct = 0.707;
+
+  function EasyBezierCurve(APoints: array of TPointF; AClosed: boolean; ACurveMode: TEasyBezierCurveMode;
+    AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve; overload;
+
+  function EasyBezierCurve(APoints: array of TPointF; AClosed: boolean; ACurveMode: array of TEasyBezierCurveMode;
+    AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve; overload;
 
 type
   {* Possible options for a round rectangle }
@@ -1045,6 +1104,260 @@ begin
   result.p1 := origin;
   result.c := (origin+destination)*0.5;
   result.p2 := destination;
+end;
+
+function EasyBezierCurve(APoints: array of TPointF; AClosed: boolean;
+  ACurveMode: TEasyBezierCurveMode; AMinimumDotProduct: single): TEasyBezierCurve;
+begin
+  result.Init;
+  result.SetPoints(APoints, ACurveMode);
+  result.Closed:= AClosed;
+  result.MinimumDotProduct:= AMinimumDotProduct;
+end;
+
+function EasyBezierCurve(APoints: array of TPointF; AClosed: boolean;
+  ACurveMode: array of TEasyBezierCurveMode;
+  AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve;
+begin
+  result.Init;
+  result.SetPoints(APoints, ACurveMode);
+  result.Closed:= AClosed;
+  result.MinimumDotProduct:= AMinimumDotProduct;
+end;
+
+{ TEasyBezierCurve }
+
+procedure TEasyBezierCurve.CopyToPath(ADest: IBGRAPath; ATransformFunc: TEasyBezierPointTransformFunc; ATransformData: Pointer);
+var i: integer;
+  nextMove: boolean;
+  pt,startCoord: TPointF;
+begin
+  if PointCount = 0 then exit;
+  if (FCurves = nil) or FInvalidated then ComputeQuadraticCurves;
+  nextMove := true;
+
+  for i := 0 to PointCount-1 do
+  begin
+    pt := Point[i];
+    if isEmptyPointF(pt) then
+    begin
+      if not nextMove and FClosed then ADest.closePath;
+      nextMove := true;
+    end else
+    begin
+      with FCurves[i] do
+      begin
+        if nextMove then
+        begin
+          if not isCurvedToPrevious then
+            startCoord := pt
+          else
+            startCoord := Center;
+          ADest.moveTo(ATransformFunc(@startCoord,ATransformData));
+          nextMove := false;
+        end else
+          if not isCurvedToPrevious then
+            ADest.lineTo(ATransformFunc(@pt,ATransformData));
+
+        if isCurvedToNext then
+        begin
+          if not isCurvedToPrevious then ADest.lineTo(ATransformFunc(@Center,ATransformData));
+          ADest.quadraticCurveTo(ATransformFunc(@ControlPoint,ATransformData),ATransformFunc(@NextCenter,ATransformData));
+        end;
+      end;
+    end;
+  end;
+  if not nextmove and FClosed then ADest.closePath;
+end;
+
+procedure TEasyBezierCurve.CopyToPath(ADest: IBGRAPath);
+begin
+  CopyToPath(ADest, @PointTransformNone, nil);
+end;
+
+procedure TEasyBezierCurve.CopyToPath(ADest: IBGRAPath; AOffset: TPointF);
+begin
+  CopyToPath(ADest, @PointTransformOffset, @AOffset);
+end;
+
+procedure TEasyBezierCurve.ComputeQuadraticCurves;
+var
+  i,FirstPointIndex,NextPt,NextPt2: integer;
+begin
+  setlength(FCurves, PointCount);
+  FirstPointIndex := 0;
+  for i := 0 to PointCount-1 do
+    FCurves[i].isCurvedToPrevious := false;
+  for i := 0 to PointCount-1 do
+  begin
+    FCurves[i].isCurvedToNext := false;
+    FCurves[i].Center := EmptyPointF;
+    FCurves[i].ControlPoint := EmptyPointF;
+    FCurves[i].NextCenter := EmptyPointF;
+
+    if IsEmptyPointF(Point[i]) then
+    begin
+      FirstPointIndex := i+1;
+    end else
+    begin
+      NextPt := i+1;
+      if (NextPt = PointCount) or isEmptyPointF(Point[NextPt]) then NextPt := FirstPointIndex;
+      NextPt2 := NextPt+1;
+      if (NextPt2 = PointCount) or isEmptyPointF(Point[NextPt2]) then NextPt2 := FirstPointIndex;
+
+      FCurves[i].Center := (Point[i]+Point[NextPt])*0.5;
+      FCurves[i].NextCenter := (Point[NextPt]+Point[NextPt2])*0.5;
+      FCurves[i].ControlPoint := Point[NextPt];
+
+      if (i < PointCount-2) or FClosed then
+      begin
+        case CurveMode[nextPt] of
+          cmAuto: FCurves[i].isCurvedToNext:= MaybeCurve(i,NextPt,NextPt,NextPt2);
+          cmCurve: FCurves[i].isCurvedToNext:= true;
+          else FCurves[i].isCurvedToNext:= false;
+        end;
+        FCurves[NextPt].isCurvedToPrevious := FCurves[i].isCurvedToNext;
+      end;
+    end;
+  end;
+  FInvalidated:= false;
+end;
+
+function TEasyBezierCurve.PointTransformNone(APoint: PPointF; AData: Pointer): TPointF;
+begin
+  result := APoint^;
+end;
+
+function TEasyBezierCurve.PointTransformOffset(APoint: PPointF; AData: Pointer): TPointF;
+begin
+  result := APoint^ + PPointF(AData)^;
+end;
+
+procedure TEasyBezierCurve.Init;
+begin
+  FClosed := false;
+  FMinimumDotProduct:= EasyBezierDefaultMinimumDotProduct;
+  FPoints := nil;
+  FInvalidated := true;
+end;
+
+procedure TEasyBezierCurve.Clear;
+begin
+  FPoints := nil;
+end;
+
+procedure TEasyBezierCurve.SetPoints(APoints: array of TPointF;
+  ACurveMode: TEasyBezierCurveMode);
+var
+  i: Integer;
+begin
+  setlength(FPoints, length(APoints));
+  for i := 0 to high(APoints) do
+  begin
+    FPoints[i].Coord := APoints[i];
+    FPoints[i].CurveMode:= ACurveMode;
+  end;
+  FInvalidated:= true;
+end;
+
+procedure TEasyBezierCurve.SetPoints(APoints: array of TPointF;
+  ACurveMode: array of TEasyBezierCurveMode);
+var
+  i,j: Integer;
+begin
+  setlength(FPoints, length(APoints));
+  j := 0;
+  for i := 0 to high(APoints) do
+  begin
+    FPoints[i].Coord := APoints[i];
+    if length(ACurveMode) = 0 then
+      FPoints[i].CurveMode:= cmAuto
+    else
+    begin
+      FPoints[i].CurveMode:= ACurveMode[j];
+      inc(j);
+      if j = length(ACurveMode) then j := 0;
+    end;
+  end;
+  FInvalidated:= true;
+end;
+
+function TEasyBezierCurve.GetCurveMode(AIndex: integer): TEasyBezierCurveMode;
+begin
+  if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
+  result:= FPoints[AIndex].CurveMode;
+end;
+
+function TEasyBezierCurve.GetCurveStartPoint: TPointF;
+begin
+  if (PointCount=0) or isEmptyPointF(Point[0]) then exit(EmptyPointF);
+  if FInvalidated or (FCurves = nil) then ComputeQuadraticCurves;
+  if not FCurves[0].isCurvedToPrevious then
+    result := Point[0]
+  else
+    result := FCurves[0].Center;
+end;
+
+function TEasyBezierCurve.GetPoint(AIndex: integer): TPointF;
+begin
+  if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
+  result:= FPoints[AIndex].Coord;
+end;
+
+function TEasyBezierCurve.GetPointCount: integer;
+begin
+  result:= length(FPoints);
+end;
+
+procedure TEasyBezierCurve.SetClosed(AValue: boolean);
+begin
+  if FClosed=AValue then Exit;
+  FClosed:=AValue;
+  FInvalidated:= true;
+end;
+
+procedure TEasyBezierCurve.SetCurveMode(AIndex: integer;
+  AValue: TEasyBezierCurveMode);
+begin
+  if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
+  if FPoints[AIndex].CurveMode = AValue then exit;
+  FPoints[AIndex].CurveMode := AValue;
+  FInvalidated:= true;
+end;
+
+procedure TEasyBezierCurve.SetMinimumDotProduct(AValue: single);
+begin
+  if FMinimumDotProduct=AValue then Exit;
+  FMinimumDotProduct:=AValue;
+  FInvalidated:= true;
+end;
+
+procedure TEasyBezierCurve.SetPoint(AIndex: integer; AValue: TPointF);
+begin
+  if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
+  if FPoints[AIndex].Coord = AValue then exit;
+  FPoints[AIndex].Coord := AValue;
+  FInvalidated:= true;
+end;
+
+function TEasyBezierCurve.MaybeCurve(start1,end1,start2,end2: integer): boolean;
+var
+  u,v: TPointF;
+  lu,lv: single;
+begin
+  if (start1=-1) or (end1=-1) or (start2=-1) or (end2=-1) then
+  begin
+    result := false;
+    exit;
+  end;
+  u := pointF(Point[end1].x - Point[start1].x, Point[end1].y - Point[start1].y);
+  lu := sqrt(u*u);
+  if lu <> 0 then u *= 1/lu;
+  v := pointF(Point[end2].x - Point[start2].x, Point[end2].y - Point[start2].y);
+  lv := sqrt(v*v);
+  if lv <> 0 then v *= 1/lv;
+
+  result := u*v > FMinimumDotProduct;
 end;
 
 function ArcDef(cx, cy, rx, ry, xAngleRadCW, startAngleRadCW, endAngleRadCW: single;
