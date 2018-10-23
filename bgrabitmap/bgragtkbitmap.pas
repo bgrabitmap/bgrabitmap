@@ -68,10 +68,6 @@ uses BGRABitmapTypes, BGRADefaultBitmap, BGRAFilterScanner, LCLType,
   {$ENDIF}
   FPImage, Dialogs;
 
-{$IFDEF LCLgtk2}
-type TGtkDeviceContext = TGtk2DeviceContext;
-{$ENDIF}
-
 procedure TBGRAGtkBitmap.ReallocData;
 begin
   {$IFDEF LCLgtk2}
