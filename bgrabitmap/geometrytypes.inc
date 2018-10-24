@@ -422,6 +422,7 @@ type
     procedure openedSpline(const pts: array of TPointF; style: TSplineStyle); virtual; abstract;
     procedure closedSpline(const pts: array of TPointF; style: TSplineStyle); virtual; abstract;
     procedure copyTo(dest: IBGRAPath); virtual; abstract;
+  protected
     function getPoints: ArrayOfTPointF; virtual; abstract;
     function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; virtual; abstract;
     function getLength: single; virtual; abstract;
