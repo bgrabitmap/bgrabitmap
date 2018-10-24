@@ -445,17 +445,17 @@ type
     {** Closes the current path with a line to the starting point }
     procedure closePath;
     {** Moves to a location, disconnected from previous points }
-    procedure moveTo(const pt: TPointF);
+    procedure moveTo(constref pt: TPointF);
     {** Adds a line from the current point }
-    procedure lineTo(const pt: TPointF);
+    procedure lineTo(constref pt: TPointF);
     {** Adds a polyline from the current point }
     procedure polylineTo(const pts: array of TPointF);
     {** Adds a quadratic Bézier curve from the current point }
-    procedure quadraticCurveTo(const cp,pt: TPointF);
+    procedure quadraticCurveTo(constref cp,pt: TPointF);
     {** Adds a cubic Bézier curve from the current point }
-    procedure bezierCurveTo(const cp1,cp2,pt: TPointF);
+    procedure bezierCurveTo(constref cp1,cp2,pt: TPointF);
     {** Adds an arc. If there is a current point, it is connected to the beginning of the arc }
-    procedure arc(const arcDef: TArcDef);
+    procedure arc(constref arcDef: TArcDef);
     {** Adds an opened spline. If there is a current point, it is connected to the beginning of the spline }
     procedure openedSpline(const pts: array of TPointF; style: TSplineStyle);
     {** Adds an closed spline. If there is a current point, it is connected to the beginning of the spline }
@@ -469,6 +469,33 @@ type
     {** Returns a cursor to go through the path. The cursor must be freed by calling ''Free''. }
     function getCursor: TBGRACustomPathCursor;
   end;
+
+  { TBGRACustomPath }
+
+  TBGRACustomPath = class(IBGRAPath)
+    constructor Create; virtual; abstract;
+    procedure beginPath; virtual; abstract;
+    procedure closePath; virtual; abstract;
+    procedure moveTo(constref pt: TPointF); virtual; abstract;
+    procedure lineTo(constref pt: TPointF); virtual; abstract;
+    procedure polylineTo(const pts: array of TPointF); virtual; abstract;
+    procedure quadraticCurveTo(constref cp,pt: TPointF); virtual; abstract;
+    procedure bezierCurveTo(constref cp1,cp2,pt: TPointF); virtual; abstract;
+    procedure arc(constref arcDef: TArcDef); virtual; abstract;
+    procedure openedSpline(const pts: array of TPointF; style: TSplineStyle); virtual; abstract;
+    procedure closedSpline(const pts: array of TPointF; style: TSplineStyle); virtual; abstract;
+    procedure copyTo(dest: IBGRAPath); virtual; abstract;
+    function getPoints: ArrayOfTPointF; virtual; abstract;
+    function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; virtual; abstract;
+    function getLength: single; virtual; abstract;
+    function getCursor: TBGRACustomPathCursor; virtual; abstract;
+  protected
+    function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+    function _AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+    function _Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+  end;
+
+  TBGRAPathAny = class of TBGRACustomPath;
 
   { TBGRACustomPathCursor }
   {* Class that contains a cursor to browse an existing path }
@@ -516,6 +543,9 @@ type
         when moving along the path }
     property LoopPath: boolean read GetLoopPath write SetLoopPath;
   end;
+
+var
+  BGRAPathFactory: TBGRAPathAny;
 
 const
   {* A value for an empty rectangle }
@@ -572,6 +602,8 @@ type
     property MinimumDotProduct: single read FMinimumDotProduct write SetMinimumDotProduct;
     property Closed: boolean read FClosed write SetClosed;
     property CurveStartPoint: TPointF read GetCurveStartPoint;
+    function ToPoints: ArrayOfTPointF;
+    function ComputeLength: single;
   end;
 
 const
@@ -1077,6 +1109,27 @@ begin
       raise exception.Create('Zero is not a valid value');
 end;
 
+{ TBGRACustomPath }
+
+function TBGRACustomPath.QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+begin
+  if GetInterface(iid, obj) then
+    Result := S_OK
+  else
+    Result := longint(E_NOINTERFACE);
+end;
+
+{ There is no automatic reference counting, but it is compulsory to define these functions }
+function TBGRACustomPath._AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+begin
+  result := 0;
+end;
+
+function TBGRACustomPath._Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+begin
+  result := 0;
+end;
+
 //-------------- Bézier curves definitions ----------------
 // See : http://en.wikipedia.org/wiki/B%C3%A9zier_curve
 
@@ -1168,6 +1221,26 @@ begin
     end;
   end;
   if not nextmove and FClosed then ADest.closePath;
+end;
+
+function TEasyBezierCurve.ToPoints: ArrayOfTPointF;
+var p: TBGRACustomPath;
+begin
+  if not Assigned(BGRAPathFactory) then raise exception.Create('BGRAPath unit needed');
+  p := BGRAPathFactory.Create;
+  CopyToPath(p);
+  result := p.getPoints;
+  p.Free;
+end;
+
+function TEasyBezierCurve.ComputeLength: single;
+var p: TBGRACustomPath;
+begin
+  if not Assigned(BGRAPathFactory) then raise exception.Create('BGRAPath unit needed');
+  p := BGRAPathFactory.Create;
+  CopyToPath(p);
+  result := p.getLength;
+  p.Free;
 end;
 
 procedure TEasyBezierCurve.CopyToPath(ADest: IBGRAPath);

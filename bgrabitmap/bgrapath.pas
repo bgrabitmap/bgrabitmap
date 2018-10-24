@@ -117,7 +117,7 @@ type
 
   { TBGRAPath }
 
-  TBGRAPath = class(IBGRAPath)
+  TBGRAPath = class(TBGRACustomPath)
   protected
     FData: PByte;
     FDataCapacity: PtrInt;
@@ -159,21 +159,22 @@ type
     procedure QuadraticCurveFromTransformed(tcp, pt: TPointF);
     function LastCoordDefined: boolean; inline;
     function GetPolygonalApprox(APos: IntPtr; AAcceptedDeviation: single; AIncludeFirstPoint: boolean): ArrayOfTPointF;
-    function getPoints: ArrayOfTPointF;
-    function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF;
-    function getCursor: TBGRACustomPathCursor;
+    function getPoints: ArrayOfTPointF; override;
+    function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; override;
+    function getLength: single; override;
+    function getCursor: TBGRACustomPathCursor; override;
     procedure InternalDraw(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AAcceptedDeviation: single; AData: pointer);
     procedure BitmapDrawSubPathProc(const APoints: array of TPointF; AClosed: boolean; AData: pointer);
     function CorrectAcceptedDeviation(AAcceptedDeviation: single; const AMatrix: TAffineMatrix): single;
   public
-    constructor Create; overload;
+    constructor Create; override; overload;
     constructor Create(ASvgString: string); overload;
     constructor Create(const APoints: ArrayOfTPointF); overload;
     constructor Create(APath: IBGRAPath); overload;
     destructor Destroy; override;
-    procedure beginPath;
+    procedure beginPath; override;
     procedure beginSubPath;
-    procedure closePath;
+    procedure closePath; override;
     procedure translate(x,y: single);
     procedure resetTransform;
     procedure rotate(angleRadCW: single); overload;
@@ -183,19 +184,19 @@ type
     procedure scale(factor: single);
     procedure moveTo(x,y: single); overload;
     procedure lineTo(x,y: single); overload;
-    procedure moveTo(const pt: TPointF); overload;
-    procedure lineTo(const pt: TPointF); overload;
+    procedure moveTo(constref pt: TPointF); override; overload;
+    procedure lineTo(constref pt: TPointF); override; overload;
     procedure polyline(const pts: array of TPointF);
-    procedure polylineTo(const pts: array of TPointF);
+    procedure polylineTo(const pts: array of TPointF); override;
     procedure polygon(const pts: array of TPointF);
     procedure quadraticCurveTo(cpx,cpy,x,y: single); overload;
-    procedure quadraticCurveTo(const cp,pt: TPointF); overload;
+    procedure quadraticCurveTo(constref cp,pt: TPointF); override; overload;
     procedure quadraticCurve(const curve: TQuadraticBezierCurve); overload;
     procedure quadraticCurve(p1,cp,p2: TPointF); overload;
     procedure smoothQuadraticCurveTo(x,y: single); overload;
     procedure smoothQuadraticCurveTo(const pt: TPointF); overload;
     procedure bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x,y: single); overload;
-    procedure bezierCurveTo(const cp1,cp2,pt: TPointF); overload;
+    procedure bezierCurveTo(constref cp1,cp2,pt: TPointF); override; overload;
     procedure bezierCurve(const curve: TCubicBezierCurve); overload;
     procedure bezierCurve(p1,cp1,cp2,p2: TPointF); overload;
     procedure smoothBezierCurveTo(cp2x,cp2y,x,y: single); overload;
@@ -209,15 +210,15 @@ type
     procedure arcDeg(cx, cy, radius, startAngleDeg, endAngleDeg: single); overload;
     procedure arcTo(x1, y1, x2, y2, radius: single); overload;
     procedure arcTo(const p1,p2: TPointF; radius: single); overload;
-    procedure arc(const arcDef: TArcDef); overload;
+    procedure arc(constref arcDef: TArcDef); override; overload;
     procedure arc(cx, cy, rx,ry: single; xAngleRadCW, startAngleRadCW, endAngleRadCW: single); overload;
     procedure arc(cx, cy, rx,ry, xAngleRadCW, startAngleRadCW, endAngleRadCW: single; anticlockwise: boolean); overload;
     procedure arcTo(rx,ry, xAngleRadCW: single; largeArc, anticlockwise: boolean; x,y:single);
-    procedure copyTo(dest: IBGRAPath);
+    procedure copyTo(dest: IBGRAPath); override;
     procedure addPath(const AValue: string); overload;
     procedure addPath(source: IBGRAPath); overload;
-    procedure openedSpline(const pts: array of TPointF; style: TSplineStyle);
-    procedure closedSpline(const pts: array of TPointF; style: TSplineStyle);
+    procedure openedSpline(const pts: array of TPointF; style: TSplineStyle); override;
+    procedure closedSpline(const pts: array of TPointF; style: TSplineStyle); override;
     property SvgString: string read GetSvgString write SetSvgString;
     function ComputeLength(AAcceptedDeviation: single = 0.1): single;
     function ToPoints(AAcceptedDeviation: single = 0.1): ArrayOfTPointF; overload;
@@ -242,10 +243,6 @@ type
     function CreateCursor(AAcceptedDeviation: single = 0.1): TBGRAPathCursor;
     procedure Fit(ARect: TRectF; AAcceptedDeviation: single = 0.1);
     procedure FitInto(ADest: TBGRAPath; ARect: TRectF; AAcceptedDeviation: single = 0.1);
-  protected
-    function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-    function _AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-    function _Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
   end;
 
 {----------------------- Spline ------------------}
@@ -1978,6 +1975,11 @@ begin
   result := ToPoints(AMatrix);
 end;
 
+function TBGRAPath.getLength: single;
+begin
+  result := ComputeLength;
+end;
+
 function TBGRAPath.getCursor: TBGRACustomPathCursor;
 begin
   result := CreateCursor;
@@ -2705,7 +2707,7 @@ begin
   lineTo(PointF(x,y));
 end;
 
-procedure TBGRAPath.moveTo(const pt: TPointF);
+procedure TBGRAPath.moveTo(constref pt: TPointF);
 begin
   if FLastSubPathElementType <> peMoveTo then
   begin
@@ -2721,7 +2723,7 @@ begin
   FSubPathTransformedStartCoord := FLastTransformedCoord;
 end;
 
-procedure TBGRAPath.lineTo(const pt: TPointF);
+procedure TBGRAPath.lineTo(constref pt: TPointF);
 var lastTransfCoord, newTransfCoord: TPointF;
 begin
   if LastCoordDefined then
@@ -2768,7 +2770,7 @@ begin
   quadraticCurveTo(PointF(cpx,cpy),PointF(x,y));
 end;
 
-procedure TBGRAPath.quadraticCurveTo(const cp, pt: TPointF);
+procedure TBGRAPath.quadraticCurveTo(constref cp, pt: TPointF);
 begin
   if LastCoordDefined then
     QuadraticCurveFromTransformed(FMatrix*cp, pt) else
@@ -2783,7 +2785,7 @@ begin
   bezierCurveTo(PointF(cp1x,cp1y),PointF(cp2x,cp2y),PointF(x,y));
 end;
 
-procedure TBGRAPath.bezierCurveTo(const cp1, cp2, pt: TPointF);
+procedure TBGRAPath.bezierCurveTo(constref cp1, cp2, pt: TPointF);
 begin
   if not LastCoordDefined then moveTo(cp1);
   BezierCurveFromTransformed(FMatrix*cp1, cp2, pt);
@@ -2912,7 +2914,7 @@ begin
   arc(Html5ArcTo(p0,p1,p2,radius));
 end;
 
-procedure TBGRAPath.arc(const arcDef: TArcDef);
+procedure TBGRAPath.arc(constref arcDef: TArcDef);
 var transformedArc: TArcElement;
 begin
   if (arcDef.radius.x = 0) and (arcDef.radius.y = 0) then
@@ -2993,24 +2995,9 @@ begin
   until not GoToNextElement(pos);
 end;
 
-function TBGRAPath.QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-begin
-  if GetInterface(iid, obj) then
-    Result := S_OK
-  else
-    Result := longint(E_NOINTERFACE);
-end;
+initialization
 
-{ There is no automatic reference counting, but it is compulsory to define these functions }
-function TBGRAPath._AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-begin
-  result := 0;
-end;
-
-function TBGRAPath._Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-begin
-  result := 0;
-end;
+  BGRAPathFactory := TBGRAPath;
 
 end.
 

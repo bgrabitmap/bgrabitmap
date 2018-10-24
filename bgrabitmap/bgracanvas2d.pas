@@ -234,13 +234,13 @@ type
     procedure toSpline(closed: boolean; style: TSplineStyle= ssOutside);
     procedure moveTo(x,y: single); overload;
     procedure lineTo(x,y: single); overload;
-    procedure moveTo(const pt: TPointF); overload;
-    procedure lineTo(const pt: TPointF); overload;
+    procedure moveTo(constref pt: TPointF); overload;
+    procedure lineTo(constref pt: TPointF); overload;
     procedure polylineTo(const pts: array of TPointF);
     procedure quadraticCurveTo(cpx,cpy,x,y: single); overload;
-    procedure quadraticCurveTo(const cp,pt: TPointF); overload;
+    procedure quadraticCurveTo(constref cp,pt: TPointF); overload;
     procedure bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x,y: single); overload;
-    procedure bezierCurveTo(const cp1,cp2,pt: TPointF); overload;
+    procedure bezierCurveTo(constref cp1,cp2,pt: TPointF); overload;
     procedure rect(x,y,w,h: single);
     procedure roundRect(x,y,w,h,radius: single); overload;
     procedure roundRect(x,y,w,h,rx,ry: single); overload;
@@ -252,7 +252,7 @@ type
     procedure arc(x, y, radius, startAngleRadCW, endAngleRadCW: single); overload;
     procedure arc(cx, cy, rx,ry, xAngleRadCW, startAngleRadCW, endAngleRadCW: single; anticlockwise: boolean); overload;
     procedure arc(cx, cy, rx,ry, xAngleRadCW, startAngleRadCW, endAngleRadCW: single); overload;
-    procedure arc(const arcDef: TArcDef); overload;
+    procedure arc(constref arcDef: TArcDef); overload;
     procedure arcTo(x1, y1, x2, y2, radius: single); overload;
     procedure arcTo(p1,p2: TPointF; radius: single); overload;
     procedure arcTo(rx, ry, xAngleRadCW: single; largeArc,anticlockwise: boolean; x, y: single);
@@ -1967,7 +1967,7 @@ begin
   lineTo(PointF(x,y));
 end;
 
-procedure TBGRACanvas2D.moveTo(const pt: TPointF);
+procedure TBGRACanvas2D.moveTo(constref pt: TPointF);
 begin
   if (FPathPointCount <> 0) and not isEmptyPointF(FPathPoints[FPathPointCount-1]) then
     AddPoint(EmptyPointF);
@@ -1976,7 +1976,7 @@ begin
   FLastCoord := pt;
 end;
 
-procedure TBGRACanvas2D.lineTo(const pt: TPointF);
+procedure TBGRACanvas2D.lineTo(constref pt: TPointF);
 begin
   AddPoint(ApplyTransform(pt));
   FLastCoord := pt;
@@ -2002,7 +2002,7 @@ begin
   FLastCoord := PointF(x,y);
 end;
 
-procedure TBGRACanvas2D.quadraticCurveTo(const cp, pt: TPointF);
+procedure TBGRACanvas2D.quadraticCurveTo(constref cp, pt: TPointF);
 begin
   quadraticCurveTo(cp.x,cp.y,pt.x,pt.y);
 end;
@@ -2019,7 +2019,7 @@ begin
   FLastCoord := PointF(x,y);
 end;
 
-procedure TBGRACanvas2D.bezierCurveTo(const cp1, cp2, pt: TPointF);
+procedure TBGRACanvas2D.bezierCurveTo(constref cp1, cp2, pt: TPointF);
 begin
   bezierCurveTo(cp1.x,cp1.y,cp2.x,cp2.y,pt.x,pt.y);
 end;
@@ -2186,7 +2186,7 @@ begin
   arc(ArcDef(cx,cy,rx,ry,xAngleRadCW,startAngleRadCW,endAngleRadCW,false))
 end;
 
-procedure TBGRACanvas2D.arc(const arcDef: TArcDef);
+procedure TBGRACanvas2D.arc(constref arcDef: TArcDef);
 var previousMatrix: TAffineMatrix;
 begin
   if (arcDef.radius.x = 0) and (arcDef.radius.y = 0) then
