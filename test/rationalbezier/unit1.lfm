@@ -1,0 +1,92 @@
+object Form1: TForm1
+  Left = 533
+  Height = 365
+  Top = 210
+  Width = 533
+  Caption = 'Rational Bezier Curve'
+  ClientHeight = 365
+  ClientWidth = 533
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnMouseDown = FormMouseDown
+  OnMouseMove = FormMouseMove
+  OnMouseUp = FormMouseUp
+  OnPaint = FormPaint
+  LCLVersion = '1.6.0.4'
+  object Panel1: TPanel
+    Left = 0
+    Height = 37
+    Top = 0
+    Width = 533
+    Align = alTop
+    BevelOuter = bvNone
+    ClientHeight = 37
+    ClientWidth = 533
+    TabOrder = 0
+    object Label1: TLabel
+      AnchorSideLeft.Control = Owner
+      AnchorSideTop.Control = Owner
+      AnchorSideRight.Control = Owner
+      AnchorSideRight.Side = asrBottom
+      Left = 248
+      Height = 17
+      Top = 0
+      Width = 37
+      Caption = 'Label1'
+      ParentColor = False
+    end
+    object Label2: TLabel
+      AnchorSideLeft.Control = Owner
+      AnchorSideTop.Control = Label1
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = Owner
+      AnchorSideRight.Side = asrBottom
+      Left = 248
+      Height = 17
+      Top = 17
+      Width = 37
+      Caption = 'Label2'
+      ParentColor = False
+    end
+    object FloatSpinEdit1: TFloatSpinEdit
+      Left = 52
+      Height = 27
+      Top = 0
+      Width = 50
+      Increment = 0.05
+      MaxValue = 5
+      MinValue = 0
+      OnChange = FloatSpinEdit1Change
+      TabOrder = 0
+      Value = 2
+    end
+    object Label3: TLabel
+      Left = 8
+      Height = 17
+      Top = 5
+      Width = 39
+      Caption = 'Weight'
+      ParentColor = False
+    end
+    object Label4: TLabel
+      Left = 116
+      Height = 17
+      Top = 5
+      Width = 51
+      Caption = 'Precision'
+      ParentColor = False
+    end
+    object FloatSpinEdit2: TFloatSpinEdit
+      Left = 180
+      Height = 27
+      Top = 0
+      Width = 50
+      Increment = 0.05
+      MaxValue = 5
+      MinValue = 0.1
+      OnChange = FloatSpinEdit2Change
+      TabOrder = 1
+      Value = 0.4
+    end
+  end
+end

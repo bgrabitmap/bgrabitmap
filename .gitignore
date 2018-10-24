@@ -10,3 +10,5 @@ debug
 /bgrabitmap/lib4nogui
 /bgrabitmap/lib4fpgui
 test/testglyph/testglyph
+
+test/rationalbezier/rationalbezier
