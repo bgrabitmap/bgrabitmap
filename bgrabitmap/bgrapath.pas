@@ -201,7 +201,6 @@ type
     procedure bezierCurve(p1,cp1,cp2,p2: TPointF); overload;
     procedure smoothBezierCurveTo(cp2x,cp2y,x,y: single); overload;
     procedure smoothBezierCurveTo(const cp2,pt: TPointF); overload;
-    procedure easyBezierCurve(const curve: TEasyBezierCurve);
     procedure rect(x,y,w,h: single);
     procedure roundRect(x,y,w,h,radius: single);
     procedure arc(cx, cy, radius, startAngleRadCW, endAngleRadCW: single; anticlockwise: boolean); overload;
@@ -2816,11 +2815,6 @@ begin
     BezierCurveFromTransformed(FLastTransformedCoord,cp2,pt)
   else
     bezierCurveTo(cp2,cp2,pt);
-end;
-
-procedure TBGRAPath.easyBezierCurve(const curve: TEasyBezierCurve);
-begin
-  curve.CopyToPath(self);
 end;
 
 procedure TBGRAPath.quadraticCurve(const curve: TQuadraticBezierCurve);
