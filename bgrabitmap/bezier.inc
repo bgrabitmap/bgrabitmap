@@ -27,6 +27,7 @@ type
        maximum orthogonal distance that is ignored and approximated by a straight line.
        ''AIncludeFirstPoint'' indicates if the first point must be included in the array }
     function ToPoints(AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF;
+    procedure CopyToPath(ADest: IBGRAPath);
     function GetBounds: TRectF;
   end;
 
@@ -57,6 +58,7 @@ type
        maximum orthogonal distance that is ignored and approximated by a straight line.
        ''AIncludeFirstPoint'' indicates if the first point must be included in the array }
     function ToPoints(AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF;
+    procedure CopyToPath(ADest: IBGRAPath);
     function GetBounds: TRectF;
   end;
 
@@ -325,6 +327,12 @@ begin
   result := SimpleComputePoints(AAcceptedDeviation, AIncludeFirstPoint);
 end;
 
+procedure TCubicBezierCurve.CopyToPath(ADest: IBGRAPath);
+begin
+  ADest.lineTo(p1);
+  ADest.bezierCurveTo(c1,c2,p2);
+end;
+
 {//The following function computes by splitting the curve. It is slower than the simple function.
 function TCubicBezierCurve.ToPoints(AAcceptedDeviation: single;
   ARelativeDeviation: boolean): ArrayOfTPointF;
@@ -583,6 +591,12 @@ function TQuadraticBezierCurve.ToPoints(AAcceptedDeviation: single;
   AIncludeFirstPoint: boolean = true): ArrayOfTPointF;
 begin
   result := SimpleComputePoints(AAcceptedDeviation, AIncludeFirstPoint);
+end;
+
+procedure TQuadraticBezierCurve.CopyToPath(ADest: IBGRAPath);
+begin
+  ADest.lineTo(p1);
+  ADest.quadraticCurveTo(c,p2);
 end;
 
 function TQuadraticBezierCurve.GetBounds: TRectF;
