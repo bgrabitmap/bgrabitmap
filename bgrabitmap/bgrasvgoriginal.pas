@@ -28,7 +28,8 @@ type
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
     procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); override;
     procedure LoadFromStream(AStream: TStream); override;
-    procedure SaveToStream(AStream: TStream); override;
+    procedure SaveSVGToStream(AStream: TStream);
+    procedure LoadSVGFromStream(AStream: TStream);
     class function StorageClassName: RawByteString; override;
     property Width: single read GetSvgWidth;
     property Height: single read GetSvgHeight;
@@ -37,7 +38,7 @@ type
 
 implementation
 
-uses BGRACanvas2D;
+uses BGRACanvas2D, BGRAMemDirectory;
 
 { TBGRALayerSVGOriginal }
 
@@ -162,13 +163,21 @@ end;
 
 procedure TBGRALayerSVGOriginal.LoadFromStream(AStream: TStream);
 begin
-  FSVG.LoadFromStream(AStream);
-  ContentChanged;
+  if TMemDirectory.CheckHeader(AStream) then
+    inherited LoadFromStream(AStream)
+  else
+    LoadSVGFromStream(AStream);
 end;
 
-procedure TBGRALayerSVGOriginal.SaveToStream(AStream: TStream);
+procedure TBGRALayerSVGOriginal.SaveSVGToStream(AStream: TStream);
 begin
   FSVG.SaveToStream(AStream);
+end;
+
+procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream);
+begin
+  FSVG.LoadFromStream(AStream);
+  ContentChanged;
 end;
 
 class function TBGRALayerSVGOriginal.StorageClassName: RawByteString;

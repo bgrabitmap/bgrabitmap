@@ -293,7 +293,7 @@ begin
     BitmapSize := AStream.Position - LayerBitmapPosition;
 
     //store back the bitmap size
-    AStream.Position:= LayerHeaderPosition + integer(PtrUInt(@PLayerHeader(nil)^.LayerBitmapSize));
+    AStream.Position:= LayerHeaderPosition + (PByte(@PLayerHeader(nil)^.LayerBitmapSize)-PByte(nil));
     LEWriteInt64(AStream, BitmapSize);
 
     AStream.Position:= LayerBitmapPosition+BitmapSize;

@@ -1,0 +1,10 @@
+object FMain: TFMain
+  Left = 313
+  Height = 240
+  Top = 35
+  Width = 320
+  Caption = 'Test glyph'
+  OnPaint = FormPaint
+  Position = poDefault
+  LCLVersion = '1.6.0.4'
+end

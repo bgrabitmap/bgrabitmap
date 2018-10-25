@@ -33,7 +33,7 @@
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="9" Minor="9"/>
+    <Version Major="9" Minor="9" Release="1"/>
     <Files Count="97">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
@@ -416,12 +416,12 @@
         <UnitName Value="BGRAWinResource"/>
       </Item95>
       <Item96>
-        <Filename Value="bgralazresource.pas"/>
-        <UnitName Value="BGRALazResource"/>
-      </Item96>
-      <Item97>
         <Filename Value="bgraunicode.pas"/>
         <UnitName Value="BGRAUnicode"/>
+      </Item96>
+      <Item97>
+        <Filename Value="bezier.inc"/>
+        <Type Value="Include"/>
       </Item97>
     </Files>
     <RequiredPkgs Count="3">

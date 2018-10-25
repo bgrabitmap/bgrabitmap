@@ -126,6 +126,11 @@ procedure BorderEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single
 procedure BorderEllipseAntialiasWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
   scan: IBGRAScanner; LinearBlend: boolean = false);
 
+procedure BorderEllipse(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
+  c: TBGRAPixel; EraseMode: boolean; drawmode: TDrawMode);
+procedure BorderEllipseWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
+  scan: IBGRAScanner; drawmode: TDrawMode);
+
 procedure FillRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2, y2, rx, ry: single;
   options: TRoundRectangleOptions; c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
 procedure FillRoundRectangleAntialiasWithTexture(bmp: TBGRACustomBitmap; x1, y1, x2, y2, rx, ry: single;
@@ -1175,10 +1180,11 @@ var
             if ix1 < densMinx then densMinx := ix1;
             if ix2 > densMaxx then densMaxx := ix2;
 
-            FillWord(density[ix1-minx],ix2-ix1+1,256);
+            if ix2 >= ix1 then
+              FillWord(density[ix1-minx],ix2-ix1+1,256);
           end;
         end else
-		  {$DEFINE INCLUDE_FILLDENSITY}
+          {$DEFINE INCLUDE_FILLDENSITY}
           {$i density256.inc}
       end;
 
@@ -1204,6 +1210,7 @@ var
 
   curSum,nextSum: ^TCardinalSum;
   sums: array of TCardinalSum;
+  curAlpha: byte;
 
   pdens: PDensity;
   w: UInt32or64;
@@ -1324,8 +1331,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
@@ -1335,7 +1342,7 @@ begin
                   inc(count);
                 end;
                 if count = 1 then
-                  DrawExpandedPixelInlineNoAlphaCheck(pdest,ec,sumA) else
+                  DrawExpandedPixelInlineNoAlphaCheck(pdest,ec,curAlpha) else
                    DrawExpandedPixelsInline(pdest, ec, count );
                 inc(pdest,count-1);
               end;
@@ -1356,8 +1363,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
@@ -1368,8 +1375,10 @@ begin
                 end;
                 if count = 1 then
                   DrawPixelInlineNoAlphaCheck(pdest,GammaCompression(ec)) else
+                begin
                    DrawPixelsInline(pdest, GammaCompression(ec), count );
-                inc(pdest,count-1);
+                   inc(pdest,count-1);
+                end;
               end;
             end;
             inc(xb);
@@ -1388,8 +1397,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
@@ -1418,8 +1427,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
@@ -1448,8 +1457,8 @@ begin
                 ec.red := (sumR+sumA shr 1) div sumA;
                 ec.green := (sumG+sumA shr 1) div sumA;
                 ec.blue := (sumB+sumA shr 1) div sumA;
-                if sumA > 255 then sumA := 255;
-                ec.alpha := sumA shl 8 + sumA;
+                if sumA > 255 then curAlpha := 255 else curAlpha := sumA;
+                ec.alpha := curAlpha shl 8 + curAlpha;
                 count := 1;
                 while (xb < rowmaxx) and (nextSum^.sumA = sumA) and (nextSum^.sumB = sumB)
                   and (nextSum^.sumG = sumG) and (nextSum^.sumR = sumR) do
@@ -1478,6 +1487,30 @@ begin
   end;
 
   dest.InvalidateBitmap;
+end;
+
+procedure BorderEllipse(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
+  c: TBGRAPixel; EraseMode: boolean; drawmode: TDrawMode);
+var
+  info: TFillBorderEllipseInfo;
+begin
+  if ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then
+    exit;
+  info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
+  FillShapeAliased(bmp, info, c, EraseMode, nil, False, drawmode);
+  info.Free;
+end;
+
+procedure BorderEllipseWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry,
+  w: single; scan: IBGRAScanner; drawmode: TDrawMode);
+var
+  info: TFillBorderEllipseInfo;
+begin
+  if ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then
+    exit;
+  info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
+  FillShapeAliased(bmp, info, BGRAPixelTransparent, False, scan, false, drawmode);
+  info.Free;
 end;
 
 procedure FillRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2, y2,

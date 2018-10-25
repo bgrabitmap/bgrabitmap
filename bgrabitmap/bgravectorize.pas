@@ -1984,7 +1984,6 @@ end;
 function TBGRAVectorizedFont.GetGlyph(AIdentifier: string): TBGRAGlyph;
 var size: TSize;
   g: TBGRAPolygonalGlyph;
-  i: Integer;
 begin
   Result:=inherited GetGlyph(AIdentifier);
   if (result = nil) and (FResolution > 0) and (FFont <> nil) then

@@ -579,9 +579,9 @@ type
     procedure RectangleAntialias(x, y, x2, y2: single; texture: IBGRAScanner; w: single); override;
     {** Fills a rectangle with antialiasing. For example (-0.5,-0.5,0.5,0.5)
         fills one pixel }
-    procedure FillRectAntialias(x, y, x2, y2: single; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); override;
+    procedure FillRectAntialias(x, y, x2, y2: single; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); override; overload;
     {** Fills a rectangle with a texture }
-    procedure FillRectAntialias(x, y, x2, y2: single; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); override;
+    procedure FillRectAntialias(x, y, x2, y2: single; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); override; overload;
     {** Erases the content of a rectangle with antialiasing }
     procedure EraseRectAntialias(x, y, x2, y2: single; alpha: byte; pixelCenteredCoordinates: boolean = true); override;
 
@@ -608,24 +608,35 @@ type
     {** Erases the content of a rounded rectangle with a texture }
     procedure EraseRoundRectAntialias(x,y,x2,y2,rx,ry: single; alpha: byte; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); override;
 
+    {** Draws an ellipse without antialising. ''rx'' is the horizontal radius and
+        ''ry'' the vertical radius }
+    procedure Ellipse(x, y, rx, ry: single; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); override;
+    procedure Ellipse(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); override;
     {** Draws an ellipse with antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
     procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single); override;
+    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single); override;
     {** Draws an ellipse border with a ''texture'' }
     procedure EllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner; w: single); override;
+    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner; w: single); override;
     {** Draws and fills an ellipse }
     procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single; back: TBGRAPixel); override;
+    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; back: TBGRAPixel); override;
     {** Fills an ellipse }
     procedure FillEllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel); override;
+    procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel); override;
     {** Fills an ellipse with a ''texture'' }
     procedure FillEllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner); override;
+    procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner); override;
     {** Fills an ellipse with a gradient of color. ''outercolor'' specifies
         the end color of the gradient on the border of the ellipse and
         ''innercolor'' the end color of the gradient at the center of the
         ellipse }
     procedure FillEllipseLinearColorAntialias(x, y, rx, ry: single; outercolor, innercolor: TBGRAPixel); override;
+    procedure FillEllipseLinearColorAntialias(AOrigin, AXAxis, AYAxis: TPointF; outercolor, innercolor: TBGRAPixel); override;
     {** Erases the content of an ellipse }
     procedure EraseEllipseAntialias(x, y, rx, ry: single; alpha: byte); override;
+    procedure EraseEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; alpha: byte); override;
 
     {==== Polygons and path ====}
     procedure FillPoly(const points: array of TPointF; c: TBGRAPixel; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); override;
@@ -749,8 +760,10 @@ type
     function ComputeWidePolyline(const points: array of TPointF; w: single; ClosedCap: boolean): ArrayOfTPointF; override;
     function ComputeWidePolygon(const points: array of TPointF; w: single): ArrayOfTPointF; override;
 
-    function ComputeEllipseContour(x,y,rx,ry: single; quality: single = 1): ArrayOfTPointF; override;
-    function ComputeEllipseBorder(x,y,rx,ry,w: single; quality: single = 1): ArrayOfTPointF; override;
+    function ComputeEllipseContour(x,y,rx,ry: single; quality: single = 1): ArrayOfTPointF; override; overload;
+    function ComputeEllipseContour(AOrigin, AXAxis, AYAxis: TPointF; quality: single = 1): ArrayOfTPointF; override; overload;
+    function ComputeEllipseBorder(x,y,rx,ry,w: single; quality: single = 1): ArrayOfTPointF; override; overload;
+    function ComputeEllipseBorder(AOrigin, AXAxis, AYAxis: TPointF; w: single; quality: single = 1): ArrayOfTPointF; override; overload;
     function ComputeArc65536(x,y,rx,ry: single; start65536,end65536: word; quality: single = 1): ArrayOfTPointF; override;
     function ComputeArcRad(x,y,rx,ry: single; startRad,endRad: single; quality: single = 1): ArrayOfTPointF; override;
     function ComputeRoundRect(x1,y1,x2,y2,rx,ry: single; quality: single = 1): ArrayOfTPointF; override;
@@ -3248,21 +3261,35 @@ end;
 procedure TBGRADefaultBitmap.EllipseAntialias(x, y, rx, ry: single;
   c: TBGRAPixel; w: single);
 begin
-  if (PenStyle = psClear) or (c.alpha = 0) then exit;
+  if (PenStyle = psClear) or (c.alpha = 0) or (w = 0) then exit;
   if (PenStyle = psSolid) then
     BGRAPolygon.BorderEllipseAntialias(self, x, y, rx, ry, w, c, FEraseMode, LinearAntialiasing)
   else
     DrawPolygonAntialias(ComputeEllipseContour(x,y,rx,ry),c,w);
 end;
 
+procedure TBGRADefaultBitmap.EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF;
+  c: TBGRAPixel; w: single);
+begin
+  if (PenStyle = psClear) or (c.alpha = 0) or (w = 0) then exit;
+  DrawPolygonAntialias(ComputeEllipseContour(AOrigin, AXAxis, AYAxis),c,w);
+end;
+
 procedure TBGRADefaultBitmap.EllipseAntialias(x, y, rx, ry: single;
   texture: IBGRAScanner; w: single);
 begin
-  if (PenStyle = psClear) then exit;
+  if (PenStyle = psClear) or (w = 0) then exit;
   if (PenStyle = psSolid) then
     BGRAPolygon.BorderEllipseAntialiasWithTexture(self, x, y, rx, ry, w, texture, LinearAntialiasing)
   else
     DrawPolygonAntialias(ComputeEllipseContour(x,y,rx,ry),texture,w);
+end;
+
+procedure TBGRADefaultBitmap.EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF;
+  texture: IBGRAScanner; w: single);
+begin
+  if (PenStyle = psClear) or (w = 0) then exit;
+  DrawPolygonAntialias(ComputeEllipseContour(AOrigin, AXAxis, AYAxis),texture,w);
 end;
 
 procedure TBGRADefaultBitmap.EllipseAntialias(x, y, rx, ry: single;
@@ -3270,7 +3297,11 @@ procedure TBGRADefaultBitmap.EllipseAntialias(x, y, rx, ry: single;
 var multi: TBGRAMultishapeFiller;
     hw: single;
 begin
-  if w=0 then exit;
+  if (w=0) or (PenStyle = psClear) or (c.alpha = 0) then
+  begin
+    FillEllipseAntialias(x, y, rx, ry, back);
+    exit;
+  end;
   rx := abs(rx);
   ry := abs(ry);
   hw := w/2;
@@ -3281,20 +3312,38 @@ begin
   end;
   { use multishape filler for fine junction between polygons }
   multi := TBGRAMultishapeFiller.Create;
-  if not (PenStyle = psClear) and (c.alpha <> 0) then
+  if (PenStyle = psSolid) then
   begin
-    if (PenStyle = psSolid) then
-    begin
-      multi.AddEllipse(x,y,rx-hw,ry-hw,back);
-      multi.AddEllipseBorder(x,y,rx,ry,w,c)
-    end
-    else
-    begin
-      multi.AddEllipse(x,y,rx,ry,back);
-      multi.AddPolygon(ComputeWidePolygon(ComputeEllipseContour(x,y,rx,ry),w),c);
-      multi.PolygonOrder := poLastOnTop;
-    end;
+    if back.alpha <> 0 then multi.AddEllipse(x,y,rx-hw,ry-hw,back);
+    multi.AddEllipseBorder(x,y,rx,ry,w,c)
+  end
+  else
+  begin
+    if back.alpha <> 0 then multi.AddEllipse(x,y,rx,ry,back);
+    multi.AddPolygon(ComputeWidePolygon(ComputeEllipseContour(x,y,rx,ry),w),c);
   end;
+  multi.PolygonOrder := poLastOnTop;
+  multi.Draw(self);
+  multi.Free;
+end;
+
+procedure TBGRADefaultBitmap.EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF;
+  c: TBGRAPixel; w: single; back: TBGRAPixel);
+var multi: TBGRAMultishapeFiller;
+    pts: ArrayOfTPointF;
+begin
+  if (w=0) or (PenStyle = psClear) or (c.alpha = 0) then
+  begin
+    FillEllipseAntialias(AOrigin, AXAxis, AYAxis, back);
+    exit;
+  end;
+  { use multishape filler for fine junction between polygons }
+  multi := TBGRAMultishapeFiller.Create;
+  pts := ComputeEllipseContour(AOrigin, AXAxis, AYAxis);
+  if back.alpha <> 0 then multi.AddPolygon(pts, back);
+  pts := ComputeWidePolygon(pts,w);
+  multi.AddPolygon(pts,c);
+  multi.PolygonOrder := poLastOnTop;
   multi.Draw(self);
   multi.Free;
 end;
@@ -3304,10 +3353,29 @@ begin
   BGRAPolygon.FillEllipseAntialias(self, x, y, rx, ry, c, FEraseMode, LinearAntialiasing);
 end;
 
+procedure TBGRADefaultBitmap.FillEllipseAntialias(AOrigin, AXAxis,
+  AYAxis: TPointF; c: TBGRAPixel);
+var
+  pts: array of TPointF;
+begin
+  if c.alpha = 0 then exit;
+  pts := ComputeEllipseContour(AOrigin,AXAxis,AYAxis);
+  FillPolyAntialias(pts, c);
+end;
+
 procedure TBGRADefaultBitmap.FillEllipseAntialias(x, y, rx, ry: single;
   texture: IBGRAScanner);
 begin
   BGRAPolygon.FillEllipseAntialiasWithTexture(self, x, y, rx, ry, texture, LinearAntialiasing);
+end;
+
+procedure TBGRADefaultBitmap.FillEllipseAntialias(AOrigin, AXAxis,
+  AYAxis: TPointF; texture: IBGRAScanner);
+var
+  pts: array of TPointF;
+begin
+  pts := ComputeEllipseContour(AOrigin,AXAxis,AYAxis);
+  FillPolyAntialias(pts, texture);
 end;
 
 procedure TBGRADefaultBitmap.FillEllipseLinearColorAntialias(x, y, rx,
@@ -3334,10 +3402,32 @@ begin
   end;
 end;
 
+procedure TBGRADefaultBitmap.FillEllipseLinearColorAntialias(AOrigin, AXAxis,
+  AYAxis: TPointF; outercolor, innercolor: TBGRAPixel);
+var
+  grad: TBGRAGradientScanner;
+  affine: TBGRAAffineScannerTransform;
+begin
+  grad := TBGRAGradientScanner.Create(innercolor,outercolor,gtRadial,PointF(0,0),PointF(1,0),True);
+  affine := TBGRAAffineScannerTransform.Create(grad);
+  affine.Fit(AOrigin,AXAxis,AYAxis);
+  FillEllipseAntialias(AOrigin,AXAxis,AYAxis,affine);
+  affine.Free;
+  grad.Free;
+end;
+
 procedure TBGRADefaultBitmap.EraseEllipseAntialias(x, y, rx, ry: single; alpha: byte);
 begin
   FEraseMode := True;
   FillEllipseAntialias(x, y, rx, ry, BGRA(0, 0, 0, alpha));
+  FEraseMode := False;
+end;
+
+procedure TBGRADefaultBitmap.EraseEllipseAntialias(AOrigin, AXAxis,
+  AYAxis: TPointF; alpha: byte);
+begin
+  FEraseMode := True;
+  FillEllipseAntialias(AOrigin, AXAxis, AYAxis, BGRA(0, 0, 0, alpha));
   FEraseMode := False;
 end;
 
@@ -3815,6 +3905,23 @@ begin
   BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,BGRA(0,0,0,alpha),True, LinearAntialiasing, pixelCenteredCoordinates);
 end;
 
+procedure TBGRADefaultBitmap.Ellipse(x, y, rx, ry: single; c: TBGRAPixel;
+  w: single; ADrawMode: TDrawMode);
+begin
+  if (PenStyle = psClear) or (c.alpha = 0) or (w = 0) then exit;
+  if (PenStyle = psSolid) then
+    BGRAPolygon.BorderEllipse(self, x, y, rx, ry, w, c, FEraseMode, ADrawMode)
+  else
+    FillPoly(ComputeWidePolygon(ComputeEllipseContour(x,y,rx,ry),w),c, ADrawMode);
+end;
+
+procedure TBGRADefaultBitmap.Ellipse(AOrigin, AXAxis, AYAxis: TPointF;
+  c: TBGRAPixel; w: single; ADrawMode: TDrawMode);
+begin
+  if (PenStyle = psClear) or (c.alpha = 0) or (w = 0) then exit;
+  FillPoly(ComputeWidePolygon(ComputeEllipseContour(AOrigin, AXAxis, AYAxis),w),c,ADrawMode);
+end;
+
 procedure TBGRADefaultBitmap.RoundRect(X1, Y1, X2, Y2: integer;
   DX, DY: integer; BorderColor, FillColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency);
 begin
@@ -4019,9 +4126,21 @@ begin
   result := BGRAPath.ComputeEllipse(x,y,rx,ry, quality);
 end;
 
+function TBGRADefaultBitmap.ComputeEllipseContour(AOrigin, AXAxis,
+  AYAxis: TPointF; quality: single): ArrayOfTPointF;
+begin
+  result := BGRAPath.ComputeEllipse(AOrigin,AXAxis,AYAxis, quality);
+end;
+
 function TBGRADefaultBitmap.ComputeEllipseBorder(x, y, rx, ry, w: single; quality: single): ArrayOfTPointF;
 begin
   result := ComputeWidePolygon(ComputeEllipseContour(x,y,rx,ry, quality),w);
+end;
+
+function TBGRADefaultBitmap.ComputeEllipseBorder(AOrigin, AXAxis,
+  AYAxis: TPointF; w: single; quality: single): ArrayOfTPointF;
+begin
+  result := ComputeWidePolygon(ComputeEllipseContour(AOrigin,AXAxis,AYAxis, quality),w);
 end;
 
 function TBGRADefaultBitmap.ComputeArc65536(x, y, rx, ry: single; start65536,
@@ -4320,10 +4439,12 @@ var
     if X2 < X1 then
       exit;
     StartMask := $FFFFFFFF shl (X1 and 31);
-    if X2 and 31 = 31 then
-      EndMask := $FFFFFFFF
+    case X2 and 31 of
+    31: EndMask := $FFFFFFFF;
+    30: EndMask := $7FFFFFFF;
     else
       EndMask := 1 shl ((X2 and 31) + 1) - 1;
+    end;
     StartPos := X1 shr 5 + AY * VisitedLineSize;
     EndPos := X2 shr 5 + AY * VisitedLineSize;
     if StartPos = EndPos then

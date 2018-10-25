@@ -22,6 +22,7 @@ type
     Radio_Inside: TRadioButton;
     Radio_Outside: TRadioButton;
     Radio_Rounded: TRadioButton;
+    Radio_EasyBezier: TRadioButton;
     Radio_VertexToSide: TRadioButton;
     Timer1: TTimer;
     procedure CheckBox_Change(Sender: TObject);
@@ -136,6 +137,7 @@ begin
       if Radio_Crossing.Checked then style := ssCrossingWithEnds else
       if Radio_Outside.checked then style := ssOutside else
       if Radio_Rounded.Checked then style := ssRoundOutside else
+      if Radio_EasyBezier.Checked then style := ssEasyBezier else
         style := ssVertexToSide;
 
       if closed then
