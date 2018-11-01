@@ -195,10 +195,12 @@ procedure PolygonPerspectiveMappingShaderAliased(bmp: TBGRACustomBitmap; const p
 procedure BGRARoundRectAliased(dest: TBGRACustomBitmap; X1, Y1, X2, Y2: integer;
   DX, DY: integer; BorderColor, FillColor: TBGRAPixel; FillTexture: IBGRAScanner = nil; ADrawMode: TDrawMode = dmDrawWithTransparency;
   skipFill: boolean = false);
+procedure BGRAFillRoundRectAliased(dest: TBGRACustomBitmap; X1, Y1, X2, Y2: integer;
+  DX, DY: integer; FillColor: TBGRAPixel; FillTexture: IBGRAScanner = nil; ADrawMode: TDrawMode = dmDrawWithTransparency);
 
 implementation
 
-uses Math, BGRABlend;
+uses Math, BGRABlend, BGRAPolygon;
 
 { TPolygonPerspectiveColorGradientInfo }
 
@@ -1015,6 +1017,17 @@ begin
     end;
     Inc(J);
   end;
+end;
+
+procedure BGRAFillRoundRectAliased(dest: TBGRACustomBitmap; X1, Y1, X2,
+  Y2: integer; DX, DY: integer; FillColor: TBGRAPixel;
+  FillTexture: IBGRAScanner; ADrawMode: TDrawMode);
+var
+  fi: TFillRoundRectangleInfo;
+begin
+  fi := TFillRoundRectangleInfo.Create(x1,y1,x2,y2,dx/2,dy/2,[rrDefault],false);
+  FillShapeAliased(dest, fi, CSSGreen, false, FillTexture, true, ADrawMode);
+  fi.Free;
 end;
 
 end.

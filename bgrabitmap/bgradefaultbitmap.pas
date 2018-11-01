@@ -561,6 +561,7 @@ type
     procedure RoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; BorderColor, FillColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     {** Draws a round rectangle, with corners having an elliptical diameter of ''DX'' and ''DY'' }
     procedure RoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; BorderColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
+    procedure FillRoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; FillTexture: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency); override; overload;
 
     {==== Rectangles and ellipses (floating point coordinates) ====}
     {* These functions use the current pen style/cap/join. The parameter ''w''
@@ -3932,6 +3933,12 @@ procedure TBGRADefaultBitmap.RoundRect(X1, Y1, X2, Y2: integer; DX,
   DY: integer; BorderColor: TBGRAPixel; ADrawMode: TDrawMode);
 begin
   BGRARoundRectAliased(self,X1,Y1,X2,Y2,DX,DY,BorderColor,BGRAPixelTransparent,nil,ADrawMode,true);
+end;
+
+procedure TBGRADefaultBitmap.FillRoundRect(X1, Y1, X2, Y2: integer; DX,
+  DY: integer; FillTexture: IBGRAScanner; ADrawMode: TDrawMode);
+begin
+  BGRAFillRoundRectAliased(self,X1,Y1,X2,Y2,DX,DY,BGRAPixelTransparent,FillTexture,ADrawMode);
 end;
 
 {------------------------- Text functions ---------------------------------------}
