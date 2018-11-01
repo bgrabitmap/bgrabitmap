@@ -16,13 +16,16 @@ type
   TOriginalStartMovePointEvent = procedure(ASender: TObject; AIndex: integer; AShift: TShiftState) of object;
   TOriginalChangeEvent = procedure(ASender: TObject; ABounds: PRectF = nil) of object;
   TOriginalEditingChangeEvent = procedure(ASender: TObject) of object;
-  TOriginalEditorCursor = (oecDefault, oecMove);
+  TOriginalEditorCursor = (oecDefault, oecMove, oecMoveW, oecMoveE, oecMoveN, oecMoveS,
+                           oecMoveNE, oecMoveSW, oecMoveNW, oecMoveSE);
 
   TStartMoveHandlers = specialize TFPGList<TOriginalStartMovePointEvent>;
 
   { TBGRAOriginalEditor }
 
   TBGRAOriginalEditor = class
+  private
+    function GetPointCount: integer;
   protected
     FMatrix,FMatrixInverse: TAffineMatrix;
     FPoints: array of record
@@ -42,6 +45,7 @@ type
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
     function GetRenderArrowBounds(AOrigin, AEndCoord: TPointF): TRect; virtual;
     procedure SetMatrix(AValue: TAffineMatrix);
+    function GetMoveCursor(APointIndex: integer): TOriginalEditorCursor; virtual;
   public
     constructor Create;
     destructor Destroy; override;
@@ -57,6 +61,7 @@ type
     function GetRenderBounds: TRect; virtual;
     property Matrix: TAffineMatrix read FMatrix write SetMatrix;
     property PointSize: single read FPointSize write FPointSize;
+    property PointCount: integer read GetPointCount;
   end;
 
   TBGRACustomOriginalStorage = class;
@@ -226,6 +231,37 @@ begin
   FMatrixInverse := AffineMatrixInverse(FMatrix);
 end;
 
+function TBGRAOriginalEditor.GetMoveCursor(APointIndex: integer): TOriginalEditorCursor;
+var
+  d: TPointF;
+  ratio: single;
+begin
+  if (APointIndex < 0) or (APointIndex >= PointCount) then result := oecDefault else
+  if isEmptyPointF(FPoints[APointIndex].Origin) then result := oecMove else
+  begin
+    d := FMatrix*(FPoints[APointIndex].Coord - FPoints[APointIndex].Origin);
+    ratio := sin(Pi/8);
+    if (d.x = 0) and (d.y = 0) then result := oecMove else
+    if abs(d.x)*ratio >= abs(d.y) then
+    begin
+      if d.x >= 0 then result := oecMoveE else result := oecMoveW
+    end else
+    if abs(d.y)*ratio >= abs(d.x) then
+    begin
+      if d.y >= 0 then result := oecMoveS else result := oecMoveN
+    end else
+    if (d.x > 0) and (d.y > 0) then result := oecMoveSE else
+    if (d.x < 0) and (d.y < 0) then result := oecMoveNW else
+    if (d.x > 0) and (d.y < 0) then result := oecMoveNE
+    else result := oecMoveSW;
+  end;
+end;
+
+function TBGRAOriginalEditor.GetPointCount: integer;
+begin
+  result := length(FPoints);
+end;
+
 function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean): TRect;
 const alpha = 192;
 var filler: TBGRAMultishapeFiller;
@@ -368,13 +404,13 @@ begin
     end;
     FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
     FPoints[FPointMoving].Coord := newCoord;
-    ACursor := oecMove;
+    ACursor := GetMoveCursor(FPointMoving);
     AHandled:= true;
   end else
   begin
     hoverPoint := GetPointAt(newMousePos, false);
     if hoverPoint <> -1 then
-      ACursor := oecMove
+      ACursor := GetMoveCursor(hoverPoint)
     else
       ACursor:= oecDefault;
   end;
@@ -403,7 +439,7 @@ begin
   end;
   if FPointMoving <> -1 then
   begin
-    ACursor := oecMove;
+    ACursor := GetMoveCursor(FPointMoving);
     AHandled:= true;
   end
   else
