@@ -111,6 +111,8 @@ function CreateBrushTexture(prototype: TBGRACustomBitmap; brushstyle: TBrushStyl
 function IsSolidPenStyle(ACustomPenStyle: TBGRAPenStyle): boolean;
 function IsClearPenStyle(ACustomPenStyle: TBGRAPenStyle): boolean;
 function DuplicatePenStyle(ACustomPenStyle: array of single): TBGRAPenStyle;
+function PenStyleEqual(AStyle1, AStyle2: TBGRAPenStyle): boolean;
+function BGRAToPenStyle(ACustomPenStyle: TBGRAPenStyle): TPenStyle;
 
 implementation
 
@@ -635,6 +637,27 @@ begin
   setlength(result,length(ACustomPenStyle));
   for i := 0 to high(result) do
     result[i]:= ACustomPenStyle[i];
+end;
+
+function BGRAToPenStyle(ACustomPenStyle: TBGRAPenStyle): TPenStyle;
+begin
+  if IsSolidPenStyle(ACustomPenStyle) then exit(psSolid);
+  if IsClearPenStyle(ACustomPenStyle) then exit(psClear);
+  if PenStyleEqual(ACustomPenStyle, DashPenStyle) then exit(psDash);
+  if PenStyleEqual(ACustomPenStyle, DotPenStyle) then exit(psDot);
+  if PenStyleEqual(ACustomPenStyle, DashDotPenStyle) then exit(psDashDot);
+  if PenStyleEqual(ACustomPenStyle, DashDotDotPenStyle) then exit(psDashDotDot);
+  exit(psPattern);
+end;
+
+function PenStyleEqual(AStyle1, AStyle2: TBGRAPenStyle): boolean;
+var
+  i: Integer;
+begin
+  if length(AStyle1)<>length(AStyle2) then exit(false);
+  for i := 0 to high(AStyle1) do
+    if AStyle1[i] <> AStyle2[i] then exit(false);
+  exit(true);
 end;
 
 procedure ApplyPenStyle(const leftPts, rightPts: array of TPointF; const penstyle: TBGRAPenStyle;
