@@ -200,7 +200,8 @@ begin
     ADataStream.Position:= entryRec.Offset + AStartPos;
     entryData := TMemoryStream.Create;
     try
-      entryData.CopyFrom(ADataStream, compressedSize);
+      if compressedSize <> 0 then
+        entryData.CopyFrom(ADataStream, compressedSize);
       newEntry := TMemDirectoryEntry.Create(self, EntryFilename(filename), entryData, true,
                   uncompressedSize, entryRec.Flags);
       newEntry.LoadExtraFromEmbeddedStream(ADataStream, AStartPos);
