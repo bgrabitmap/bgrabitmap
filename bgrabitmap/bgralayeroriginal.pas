@@ -271,10 +271,10 @@ begin
   if not isEmptyPointF(ACoord) then
   begin
     filler := TBGRAMultishapeFiller.Create;
-    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-1.5,FPointSize-1.5, 4, BGRA(0,0,0,alpha));
+    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 4, BGRA(0,0,0,alpha));
     if AAlternateColor then c := BGRA(255,128,128,alpha)
       else c := BGRA(255,255,255,alpha);
-    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-1.5,FPointSize-1.5, 1, c);
+    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 1, c);
     filler.PolygonOrder:= poLastOnTop;
     filler.Draw(ADest);
     filler.Free;
@@ -286,35 +286,38 @@ begin
   if isEmptyPointF(ACoord) then
     result := EmptyRect
   else
-    result := rect(floor(ACoord.x - FPointSize - 2), floor(ACoord.y - FPointSize - 2), ceil(ACoord.x + FPointSize + 3), ceil(ACoord.y + FPointSize + 3));
+    result := rect(floor(ACoord.x - FPointSize + 0.5), floor(ACoord.y - FPointSize + 0.5), ceil(ACoord.x + FPointSize + 0.5), ceil(ACoord.y + FPointSize + 0.5));
 end;
 
 function TBGRAOriginalEditor.RenderArrow(ADest: TBGRABitmap; AOrigin,
   AEndCoord: TPointF): TRect;
 const alpha = 192;
 var
-  pts: ArrayOfTPointF;
+  pts, ptsContour: ArrayOfTPointF;
   i: Integer;
+  rF: TRectF;
 begin
   if isEmptyPointF(AOrigin) or isEmptyPointF(AEndCoord) then
     result := EmptyRect
   else
   begin
-    result := Rect(floor(AOrigin.x-1),floor(AOrigin.y-1),ceil(AOrigin.x+1),ceil(AOrigin.y+1));
     ADest.Pen.Arrow.EndAsClassic;
     ADest.Pen.Arrow.EndSize := PointF(FPointSize,FPointSize);
     pts := ADest.ComputeWidePolyline([AOrigin,AEndCoord],1);
-    ADest.DrawPolygonAntialias(pts, BGRA(0,0,0,alpha),2);
-    ADest.FillPolyAntialias(pts, BGRA(255,255,255,alpha));
     ADest.Pen.Arrow.EndAsNone;
-    for i := 0 to high(pts) do
-    if not isEmptyPointF(pts[i]) then
+    ptsContour := ADest.ComputeWidePolygon(pts, 2);
+    ADest.FillPolyAntialias(ptsContour, BGRA(0,0,0,alpha));
+    ADest.FillPolyAntialias(pts, BGRA(255,255,255,alpha));
+    rF := RectF(AOrigin,AEndCoord);
+    for i := 0 to high(ptsContour) do
+    if not isEmptyPointF(ptsContour[i]) then
     begin
-      if floor(pts[i].x - 1) < result.Left then result.Left := floor(pts[i].x - 1);
-      if ceil(pts[i].x + 1) > result.Right then result.Right := ceil(pts[i].x + 1);
-      if floor(pts[i].y - 1) < result.Top then result.Top := floor(pts[i].y - 1);
-      if ceil(pts[i].y + 1) > result.Bottom then result.Bottom := ceil(pts[i].y + 1);
+      if pts[i].x < rF.Left then rF.Left := pts[i].x;
+      if pts[i].x > rF.Right then rF.Right := pts[i].x;
+      if pts[i].y < rF.Top then rF.Top := pts[i].y;
+      if pts[i].y > rF.Bottom then rF.Bottom := pts[i].y;
     end;
+    result := rect(floor(rF.Left+0.5),floor(rF.Top+0.5),ceil(rF.Right+0.5),ceil(rF.Bottom+0.5));
   end;
 end;
 
@@ -324,8 +327,9 @@ begin
     result := EmptyRect
   else
   begin
-    result := Rect(floor(AOrigin.x-1),floor(AOrigin.y-1),ceil(AOrigin.x+1),ceil(AOrigin.y+1));
-    UnionRect(result, result, rect(floor(AEndCoord.x - FPointSize - 2), floor(AEndCoord.y - FPointSize - 2), ceil(AEndCoord.x + FPointSize + 3), ceil(AEndCoord.y + FPointSize + 3)) );
+    result := Rect(floor(AOrigin.x+0.5-1.5),floor(AOrigin.y+0.5-1.5),ceil(AOrigin.x+0.5+1.5),ceil(AOrigin.y+0.5+1.5));
+    UnionRect(result, result, rect(floor(AEndCoord.x+0.5-FPointSize-1.5), floor(AEndCoord.y+0.5-FPointSize-1.5),
+                      ceil(AEndCoord.x+0.5+FPointSize+1.5), ceil(AEndCoord.y+0.5+FPointSize+1.5)) );
   end;
 end;
 
