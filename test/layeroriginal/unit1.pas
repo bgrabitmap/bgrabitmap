@@ -45,6 +45,7 @@ type
     procedure FormDestroy(Sender: TObject);
   private
     procedure OriginalChange(Sender: TObject; {%H-}AOriginal: TBGRALayerCustomOriginal);
+    procedure SetVSCursor(ACursor: TOriginalEditorCursor);
   public
     FLayers: TBGRALayeredBitmap;
   end;
@@ -104,10 +105,7 @@ var
   newCursor: TOriginalEditorCursor;
 begin
   FLayers.MouseDown(Button=mbRight,Shift,X,Y,newCursor);
-  case newCursor of
-  oecDefault: BGRAVirtualScreen1.Cursor := crDefault;
-  oecMove: BGRAVirtualScreen1.Cursor := crSize;
-  end;
+  SetVSCursor(newCursor);
 end;
 
 procedure TForm1.BGRAVirtualScreen1MouseMove(Sender: TObject;
@@ -116,10 +114,7 @@ var
   newCursor: TOriginalEditorCursor;
 begin
   FLayers.MouseMove(Shift,X,Y,newCursor);
-  case newCursor of
-  oecDefault: BGRAVirtualScreen1.Cursor := crDefault;
-  oecMove: BGRAVirtualScreen1.Cursor := crSize;
-  end;
+  SetVSCursor(newCursor);
 end;
 
 procedure TForm1.BGRAVirtualScreen1MouseUp(Sender: TObject;
@@ -128,10 +123,7 @@ var
   newCursor: TOriginalEditorCursor;
 begin
   FLayers.MouseUp(Button=mbRight,Shift,X,Y,newCursor);
-  case newCursor of
-  oecDefault: BGRAVirtualScreen1.Cursor := crDefault;
-  oecMove: BGRAVirtualScreen1.Cursor := crSize;
-  end;
+  SetVSCursor(newCursor);
 end;
 
 procedure TForm1.BGRAVirtualScreen1Redraw(Sender: TObject; Bitmap: TBGRABitmap);
@@ -217,6 +209,22 @@ procedure TForm1.OriginalChange(Sender: TObject;
   AOriginal: TBGRALayerCustomOriginal);
 begin
   BGRAVirtualScreen1.DiscardBitmap;
+end;
+
+procedure TForm1.SetVSCursor(ACursor: TOriginalEditorCursor);
+begin
+  case ACursor of
+  oecDefault: BGRAVirtualScreen1.Cursor := crDefault;
+  oecMove: BGRAVirtualScreen1.Cursor := crSize;
+  oecMoveE: BGRAVirtualScreen1.Cursor := crSizeE;
+  oecMoveW: BGRAVirtualScreen1.Cursor := crSizeW;
+  oecMoveN: BGRAVirtualScreen1.Cursor := crSizeN;
+  oecMoveS: BGRAVirtualScreen1.Cursor := crSizeS;
+  oecMoveNE: BGRAVirtualScreen1.Cursor := crSizeNE;
+  oecMoveNW: BGRAVirtualScreen1.Cursor := crSizeNW;
+  oecMoveSW: BGRAVirtualScreen1.Cursor := crSizeSW;
+  oecMoveSE: BGRAVirtualScreen1.Cursor := crSizeSE;
+  end;
 end;
 
 end.
