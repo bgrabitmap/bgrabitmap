@@ -45,6 +45,7 @@ type
   public
     constructor Create; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); override;
+    function CreateScanner(AMatrix: TAffineMatrix): TBGRACustomScanner;
     procedure ConfigureEditor(AEditor: TBGRAOriginalEditor); override;
     function GetRenderBounds(ADestRect: TRect; {%H-}AMatrix: TAffineMatrix): TRect; override;
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
@@ -249,11 +250,21 @@ end;
 procedure TBGRALayerGradientOriginal.Render(ADest: TBGRABitmap;
   AMatrix: TAffineMatrix; ADraft: boolean);
 var
-  colors: TBGRACustomGradient;
-  grad: TBGRAGradientScanner;
+  grad: TBGRACustomScanner;
   dither: TDitheringAlgorithm;
 begin
-  if isEmptyPointF(FOrigin) or isEmptyPointF(FXAxis) then exit;
+  grad := CreateScanner(AMatrix);
+  if ADraft then dither := daNearestNeighbor else dither := daFloydSteinberg;
+  ADest.FillRect(ADest.ClipRect, grad,dmSet, dither);
+  grad.Free;
+end;
+
+function TBGRALayerGradientOriginal.CreateScanner(AMatrix: TAffineMatrix): TBGRACustomScanner;
+var
+  colors: TBGRACustomGradient;
+  grad: TBGRAGradientScanner;
+begin
+  if isEmptyPointF(FOrigin) or isEmptyPointF(FXAxis) then exit(nil);
 
   colors := TBGRASimpleGradient.CreateAny(FColorInterpolation, FStartColor,FEndColor, FRepetition);
 
@@ -263,13 +274,10 @@ begin
   end else
     grad := TBGRAGradientScanner.Create(FGradientType, FOrigin,FXAxis,ComputedYAxis);
 
-  grad.SetGradient(colors, false);
+  grad.SetGradient(colors, true);
   grad.Transform := AMatrix;
 
-  if ADraft then dither := daNearestNeighbor else dither := daFloydSteinberg;
-  ADest.FillRect(ADest.ClipRect, grad,dmSet, dither);
-  grad.Free;
-  colors.Free;
+  exit(grad);
 end;
 
 procedure TBGRALayerGradientOriginal.ConfigureEditor(
