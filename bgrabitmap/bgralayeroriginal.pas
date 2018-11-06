@@ -95,6 +95,7 @@ type
     procedure SaveToStream(AStream: TStream); virtual;
     function CreateEditor: TBGRAOriginalEditor; virtual;
     class function StorageClassName: RawByteString; virtual; abstract;
+    function Duplicate: TBGRALayerCustomOriginal; virtual;
     property Guid: TGuid read GetGuid write SetGuid;
     property OnChange: TOriginalChangeEvent read FOnChange write SetOnChange;
     property OnEditingChange: TOriginalEditingChangeEvent read FOnEditingChange write FOnEditingChange;
@@ -968,6 +969,23 @@ end;
 function TBGRALayerCustomOriginal.CreateEditor: TBGRAOriginalEditor;
 begin
   result := TBGRAOriginalEditor.Create;
+end;
+
+function TBGRALayerCustomOriginal.Duplicate: TBGRALayerCustomOriginal;
+var
+  storage: TBGRAMemOriginalStorage;
+  c: TBGRALayerOriginalAny;
+begin
+  c := FindLayerOriginalClass(StorageClassName);
+  if c = nil then raise exception.Create('Original class is not registered');
+  storage := TBGRAMemOriginalStorage.Create;
+  try
+    SaveToStorage(storage);
+    result := c.Create;
+    result.LoadFromStorage(storage);
+  finally
+    storage.Free;
+  end;
 end;
 
 { TBGRALayerImageOriginal }
