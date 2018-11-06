@@ -819,7 +819,7 @@ type
     procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override; overload;
     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); override; overload;
     function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true): TRect; override; overload;
-    function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
+    class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
 
     procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
 
@@ -1269,7 +1269,7 @@ end;
 { Add a new reference and gives a pointer to it }
 function TBGRADefaultBitmap.NewReference: TBGRACustomBitmap;
 begin
-  Inc(FRefCount);
+  if self <> nil then Inc(FRefCount);
   Result := self;
 end;
 
@@ -2544,7 +2544,7 @@ begin
   multi.Free;
 end;
 
-function TBGRADefaultBitmap.IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean;
+class function TBGRADefaultBitmap.IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean;
 const oneOver512 = 1/512;
 var Orig,HAxis,VAxis: TPointF;
 begin
