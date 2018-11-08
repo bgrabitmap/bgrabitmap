@@ -55,6 +55,7 @@ type
     property ComputedRadius: single read GetComputedRadius;
     property ComputedFocalPoint: TPointF read GetComputedFocalPoint;
     property ComputedFocalRadius: single read GetComputedFocalRadius;
+    procedure Transform(AMatrix: TAffineMatrix);
 
     property StartColor: TBGRAPixel read FStartColor write SetStartColor;
     property EndColor: TBGRAPixel read FEndColor write SetEndColor;
@@ -409,6 +410,15 @@ end;
 class function TBGRALayerGradientOriginal.StorageClassName: RawByteString;
 begin
   result := 'gradient';
+end;
+
+procedure TBGRALayerGradientOriginal.Transform(AMatrix: TAffineMatrix);
+begin
+  if not isEmptyPointF(FOrigin) then FOrigin := AMatrix*FOrigin;
+  if not isEmptyPointF(FXAxis) then FXAxis := AMatrix*FXAxis;
+  if not isEmptyPointF(FYAxis) then FYAxis := AMatrix*FYAxis;
+  if not isEmptyPointF(FFocalPoint) then FFocalPoint := AMatrix*FFocalPoint;
+  NotifyChange;
 end;
 
 initialization
