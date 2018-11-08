@@ -425,6 +425,7 @@ end;
 
 procedure TBGRAPen.SetPenStyle(const AValue: TPenStyle);
 begin
+  if AValue = psPattern then exit;
   Case AValue of
   psSolid: FCustomPenStyle := SolidPenStyle;
   psDash: FCustomPenStyle := DashPenStyle;
