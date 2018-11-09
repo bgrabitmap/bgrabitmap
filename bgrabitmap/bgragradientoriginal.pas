@@ -475,10 +475,10 @@ begin
   AStorage.RawString['color-interpolation'] := ciStr;
 
   case FRepetition of
-  grRepeat: AStorage.RawString['repeat'] := 'repeat';
-  grReflect: AStorage.RawString['repeat'] := 'reflect';
-  grSine: AStorage.RawString['repeat'] := 'sine';
-  else {grPad} AStorage.RawString['repeat'] := 'pad';
+  grRepeat: AStorage.RawString['repetition'] := 'repeat';
+  grReflect: AStorage.RawString['repetition'] := 'reflect';
+  grSine: AStorage.RawString['repetition'] := 'sine';
+  else {grPad} AStorage.RawString['repetition'] := 'pad';
   end;
 end;
 
