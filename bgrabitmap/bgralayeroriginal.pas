@@ -313,10 +313,10 @@ begin
     for i := 0 to high(ptsContour) do
     if not isEmptyPointF(ptsContour[i]) then
     begin
-      if pts[i].x < rF.Left then rF.Left := pts[i].x;
-      if pts[i].x > rF.Right then rF.Right := pts[i].x;
-      if pts[i].y < rF.Top then rF.Top := pts[i].y;
-      if pts[i].y > rF.Bottom then rF.Bottom := pts[i].y;
+      if ptsContour[i].x < rF.Left then rF.Left := ptsContour[i].x;
+      if ptsContour[i].x > rF.Right then rF.Right := ptsContour[i].x;
+      if ptsContour[i].y < rF.Top then rF.Top := ptsContour[i].y;
+      if ptsContour[i].y > rF.Bottom then rF.Bottom := ptsContour[i].y;
     end;
     result := rect(floor(rF.Left+0.5),floor(rF.Top+0.5),ceil(rF.Right+0.5),ceil(rF.Bottom+0.5));
   end;
