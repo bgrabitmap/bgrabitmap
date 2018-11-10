@@ -468,7 +468,7 @@ var v: TPointF;
   curDist,newDist: single;
   i: Integer;
 begin
-  curDist := 4*FPointSize*FPointSize;
+  curDist := sqr(1.5*FPointSize);
   result := -1;
   ACoord:= Matrix*ACoord;
 
