@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl;
 
 type
-  PRectF = ^TRectF;
+  PRectF = BGRABitmapTypes.PRectF;
   TAffineMatrix = BGRATransform.TAffineMatrix;
   TBGRALayerCustomOriginal = class;
   TBGRALayerOriginalAny = class of TBGRALayerCustomOriginal;

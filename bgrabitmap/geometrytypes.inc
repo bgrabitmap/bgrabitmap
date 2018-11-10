@@ -86,6 +86,7 @@ type
   {$endif}
 
 type
+  PRectF = ^TRectF;
 
   { TRectFHelper }
 
