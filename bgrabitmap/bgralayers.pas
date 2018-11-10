@@ -571,7 +571,9 @@ end;
 function TBGRALayeredBitmap.GetOriginalCount: integer;
 begin
   if Assigned(FOriginals) then
-    result := FOriginals.Count;
+    result := FOriginals.Count
+  else
+    result := 0;
 end;
 
 function TBGRALayeredBitmap.GetOriginalByIndex(AIndex: integer
