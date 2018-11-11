@@ -39,8 +39,9 @@ type
       ACanvas: TCanvas; ARect: TRect);
   public
     procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
-      AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer);
-      override;
+      AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
+    procedure DataDrawOpaque(ACanvas: TCanvas; ARect: TRect; AData: Pointer;
+      ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); override;
     procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); override;
     procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); override;
@@ -68,6 +69,37 @@ begin
   Temp.LineOrder := ALineOrder;
   SlowDrawTransparent(Temp, ACanvas, Rect);
   Temp.Free;
+end;
+
+procedure TBGRAQtBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
+  AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer);
+var psrc,pdest: PBGRAPixel;
+  bmp: TBGRAQtBitmap;
+begin
+  {$IFDEF DARWIN}
+  bmp := TBGRAQtBitmap.Create(AWidth,AHeight);
+  try
+    if ALineOrder = riloTopToBottom then psrc := AData
+    else psrc := PBGRAPixel(AData) + (AWidth*AHeight);
+    for y := 0 to AHeight-1 do
+    begin
+      pdest := bmp.ScanLine[y];
+      for x := 0 to AWidth-1 do
+      begin
+        pdest^.red := psrc^.red;
+        pdest^.green:= psrc^.green;
+        pdest^.blue := psrc^.blue;
+        pdest^.alpha := 255;
+      end;
+      if ALineOrder = riloBottomToTop then psrc -= 2*AWidth;
+    end;
+    bmp.Draw(ACanvas, ARect, false);
+  finally
+    bmp.Free;
+  end;
+  {$ELSE}
+  inherited DataDrawOpaque(ACanvas, ARect, AData, ALineOrder, AWidth, AHeight);
+  {$ENDIF}
 end;
 
 procedure TBGRAQtBitmap.Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean);
