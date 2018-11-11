@@ -1,7 +1,7 @@
 object FMain: TFMain
-  Left = 455
+  Left = 454
   Height = 289
-  Top = 251
+  Top = 226
   Width = 430
   Caption = 'Test CreateBitmap'
   OnPaint = FormPaint

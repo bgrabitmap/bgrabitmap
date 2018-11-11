@@ -43,7 +43,7 @@ procedure TFMain.FormPaint(Sender: TObject);
     RedOfs,GreenOfs,BlueOfs,AlphaOfs: integer;
   begin
     ty := (Bottom-Top) div 8;
-    Canvas.Font.Height := -ty;
+    Canvas.Font.Height := ty*7 div 10;
     Canvas.Brush.Style := bsClear;
     Canvas.TextOut(Left,Top,AName);
 
@@ -60,7 +60,14 @@ procedure TFMain.FormPaint(Sender: TObject);
     RawImage.Description.RedShift := RedOfs*8;
     RawImage.Description.GreenShift := GreenOfs*8;
     RawImage.Description.BlueShift := BlueOfs*8;
-    RawImage.Description.AlphaShift := AlphaOfs*8;
+    if AlphaOfs >= 0 then
+      RawImage.Description.AlphaShift := AlphaOfs*8
+    else
+    begin
+      RawImage.Description.Depth := 24;
+      RawImage.Description.AlphaShift := 0;
+      RawImage.Description.AlphaPrec := 0;
+    end;
     RawImage.CreateData(true);
     for y := 0 to imgHeight-1 do
     begin
@@ -72,7 +79,7 @@ procedure TFMain.FormPaint(Sender: TObject);
         (p+RedOfs)^ := (cx mod 3)*255 div 2;
         (p+GreenOfs)^ := (cx div 3)*255 div 2;
         (p+BlueOfs)^ := (cy mod 3)*255 div 2;
-        (p+AlphaOfs)^ := (cy div 3)*255 div 2;
+        if AlphaOfs >= 0 then (p+AlphaOfs)^ := (cy div 3)*255 div 2;
         inc(p,4);
       end;
     end;
@@ -89,10 +96,14 @@ procedure TFMain.FormPaint(Sender: TObject);
   end;
 
 begin
-  DrawTestBitmap(0,0,ClientWidth div 2,ClientHeight div 2,'RGBA');
-  DrawTestBitmap(ClientWidth div 2,0,ClientWidth,ClientHeight div 2,'BGRA');
-  DrawTestBitmap(0,ClientHeight div 2,ClientWidth div 2,ClientHeight,'ARGB');
-  DrawTestBitmap(ClientWidth div 2,ClientHeight div 2,ClientWidth,ClientHeight,'ABGR');
+  DrawTestBitmap(0,0,ClientWidth div 4,ClientHeight div 2,'RGBA');
+  DrawTestBitmap(ClientWidth div 4,0,ClientWidth div 2,ClientHeight div 2,'BGRA');
+  DrawTestBitmap(0,ClientHeight div 2,ClientWidth div 4,ClientHeight,'ARGB');
+  DrawTestBitmap(ClientWidth div 4,ClientHeight div 2,ClientWidth div 2,ClientHeight,'ABGR');
+  DrawTestBitmap(ClientWidth div 2,0,3*ClientWidth div 4,ClientHeight div 2,'RGB.');
+  DrawTestBitmap(3*ClientWidth div 4,0,ClientWidth,ClientHeight div 2,'BGR.');
+  DrawTestBitmap(ClientWidth div 2,ClientHeight div 2,3*ClientWidth div 4,ClientHeight,'.RGB');
+  DrawTestBitmap(3*ClientWidth div 4,ClientHeight div 2,ClientWidth,ClientHeight,'.BGR');
 end;
 
 end.
