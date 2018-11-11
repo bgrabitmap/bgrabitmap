@@ -1,0 +1,99 @@
+unit umain;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, LCLType;
+
+type
+
+  { TFMain }
+
+  TFMain = class(TForm)
+    procedure FormPaint(Sender: TObject);
+  private
+    { private declarations }
+  public
+    { public declarations }
+  end;
+
+var
+  FMain: TFMain;
+
+implementation
+
+uses GraphType, LCLIntf;
+
+{$R *.lfm}
+
+{ TFMain }
+
+procedure TFMain.FormPaint(Sender: TObject);
+
+  procedure DrawTestBitmap(Left,Top,Right,Bottom: integer; AName: string);
+  var
+    bmp: TBitmap;
+    imgWidth,imgHeight, ty: integer;
+    RawImage: TRawImage;
+    BitmapHandle, MaskHandle: HBitmap;
+    p: pbyte;
+    cx,cy,x,y: integer;
+    RedOfs,GreenOfs,BlueOfs,AlphaOfs: integer;
+  begin
+    ty := (Bottom-Top) div 8;
+    Canvas.Font.Height := -ty;
+    Canvas.Brush.Style := bsClear;
+    Canvas.TextOut(Left,Top,AName);
+
+    RedOfs := pos('R',AName)-1;
+    GreenOfs := pos('G',AName)-1;
+    BlueOfs := pos('B',AName)-1;
+    AlphaOfs := pos('A',AName)-1;
+
+    imgWidth := Right-Left;
+    imgHeight := Bottom-(Top+ty);
+    bmp := TBitmap.Create;
+    RawImage.Init;
+    RawImage.Description.Init_BPP32_B8G8R8A8_BIO_TTB(imgWidth, imgHeight);
+    RawImage.Description.RedShift := RedOfs*8;
+    RawImage.Description.GreenShift := GreenOfs*8;
+    RawImage.Description.BlueShift := BlueOfs*8;
+    RawImage.Description.AlphaShift := AlphaOfs*8;
+    RawImage.CreateData(true);
+    for y := 0 to imgHeight-1 do
+    begin
+      cy := y*9 div imgHeight;
+      p := RawImage.GetLineStart(y);
+      for x := 0 to imgWidth-1 do
+      begin
+        cx := x*9 div imgWidth;
+        (p+RedOfs)^ := (cx mod 3)*255 div 2;
+        (p+GreenOfs)^ := (cx div 3)*255 div 2;
+        (p+BlueOfs)^ := (cy mod 3)*255 div 2;
+        (p+AlphaOfs)^ := (cy div 3)*255 div 2;
+        inc(p,4);
+      end;
+    end;
+    if RawImage_CreateBitmaps(RawImage, BitmapHandle, MaskHandle, False) then
+    begin
+      bmp := TBitmap.Create;
+      bmp.Handle := BitmapHandle;
+      bmp.MaskHandle := MaskHandle;
+      Canvas.Draw(Left,Top+ty,bmp);
+      bmp.Free;
+    end else
+      Canvas.TextOut(Left,Top+ty,'Unable to create');
+    RawImage.FreeData;
+  end;
+
+begin
+  DrawTestBitmap(0,0,ClientWidth div 2,ClientHeight div 2,'RGBA');
+  DrawTestBitmap(ClientWidth div 2,0,ClientWidth,ClientHeight div 2,'BGRA');
+  DrawTestBitmap(0,ClientHeight div 2,ClientWidth div 2,ClientHeight,'ARGB');
+  DrawTestBitmap(ClientWidth div 2,ClientHeight div 2,ClientWidth,ClientHeight,'ABGR');
+end;
+
+end.
+
