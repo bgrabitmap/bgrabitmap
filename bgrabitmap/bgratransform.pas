@@ -207,6 +207,7 @@ function AffineMatrixTranslation(OfsX,OfsY: Single): TAffineMatrix;
 
 //define a scaling matrix
 function AffineMatrixScale(sx,sy: single): TAffineMatrix;
+function AffineMatrixScaledRotation(ASourceVector, ATargetVector: TPointF): TAffineMatrix;
 
 function AffineMatrixSkewXDeg(AngleCW: single): TAffineMatrix;
 function AffineMatrixSkewYDeg(AngleCW: single): TAffineMatrix;
@@ -215,6 +216,7 @@ function AffineMatrixSkewYRad(AngleCCW: single): TAffineMatrix;
 
 //define a linear matrix
 function AffineMatrixLinear(v1,v2: TPointF): TAffineMatrix;
+function AffineMatrixLinear(const AMatrix: TAffineMatrix): TAffineMatrix;
 
 //define a rotation matrix (positive radians are counter-clockwise)
 //(assuming the y-axis is pointing down)
@@ -475,6 +477,27 @@ begin
                          0,  sy,  0);
 end;
 
+function AffineMatrixScaledRotation(ASourceVector, ATargetVector: TPointF): TAffineMatrix;
+var
+  prevScale, newScale, scale: Single;
+  u1,v1,u2,v2,w: TPointF;
+begin
+  prevScale := VectLen(ASourceVector);
+  newScale := VectLen(ATargetVector);
+  if (prevScale = 0) or (newScale = 0) then
+    result := AffineMatrixIdentity
+  else
+  begin
+    scale := newScale/prevScale;
+    u1 := ASourceVector*(1/prevScale);
+    v1 := PointF(-u1.y,u1.x);
+    w := ATargetVector*(1/newScale);
+    u2 := PointF(w*u1, w*v1);
+    v2 := PointF(-u2.y,u2.x);
+    result := AffineMatrix(scale*u2,scale*v2,PointF(0,0));
+  end;
+end;
+
 function AffineMatrixSkewXDeg(AngleCW: single): TAffineMatrix;
 begin
   result := AffineMatrix(1,tan(AngleCW*Pi/180),0,
@@ -504,6 +527,12 @@ function AffineMatrixLinear(v1,v2: TPointF): TAffineMatrix;
 begin
   result := AffineMatrix(v1.x, v2.x, 0,
                          v1.y, v2.y, 0);
+end;
+
+function AffineMatrixLinear(const AMatrix: TAffineMatrix): TAffineMatrix;
+begin
+  result := AffineMatrix(AMatrix[1,1],AMatrix[1,2],0,
+                         AMatrix[2,1],AMatrix[2,2],0);
 end;
 
 function AffineMatrixRotationRad(AngleCCW: Single): TAffineMatrix;
