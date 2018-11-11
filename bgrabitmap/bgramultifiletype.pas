@@ -325,7 +325,7 @@ function TMultiFileContainer.Add(AName: utf8string; AExtension: utf8string;
 var stream: TMemoryStream;
 begin
   stream := TMemoryStream.Create;
-  stream.Write(AContent[1],length(AContent));
+  if length(AContent) > 0 then stream.Write(AContent[1],length(AContent));
   result := Add(AName,AExtension,stream,AOverwrite);
 end;
 

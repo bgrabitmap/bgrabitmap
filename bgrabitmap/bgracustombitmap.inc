@@ -605,14 +605,16 @@ type
      procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; pencolor: TBGRAPixel; w: single; fillcolor: TBGRAPixel; options: TRoundRectangleOptions = []); virtual; abstract;
      procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; penTexture: IBGRAScanner; w: single; fillTexture: IBGRAScanner; options: TRoundRectangleOptions = []); virtual; abstract;
      procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; w: single; options: TRoundRectangleOptions = []); virtual; abstract;
-     procedure FillRoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; FillColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
+     procedure FillRoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; FillColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual; overload;
+     procedure FillRoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; FillTexture: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual; abstract; overload;
      procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; c: TBGRAPixel; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); virtual; abstract;
      procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); virtual; abstract;
      procedure EraseRoundRectAntialias(x,y,x2,y2,rx,ry: single; alpha: byte; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); virtual; abstract;
 
      procedure EllipseInRect(r: TRect; BorderColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual; overload;
      procedure EllipseInRect(r: TRect; BorderColor,FillColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual; overload;
-     procedure FillEllipseInRect(r: TRect; FillColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
+     procedure FillEllipseInRect(r: TRect; FillColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual; overload;
+     procedure FillEllipseInRect(r: TRect; FillTexture: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual; overload;
 
      procedure FillRect(r: TRect; c: TColor); virtual; overload;
      procedure FillRect(r: TRect; c: TBGRAPixel; mode: TDrawMode); virtual; overload;
@@ -770,7 +772,7 @@ type
      function GetImageAffineBounds(Origin,HAxis,VAxis: TPointF; ASourceWidth, ASourceHeight: integer; const ASourceBounds: TRect; AClipOutput: boolean = true): TRect; overload;
      function GetImageAffineBounds(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap): TRect; overload;
      function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true): TRect; virtual; abstract; overload;
-     function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; virtual; abstract;
+     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; virtual; abstract;
      procedure PutImageAngle(x,y: single; Source: TBGRACustomBitmap; angle: single; AOutputBounds: TRect; imageCenterX: single = 0; imageCenterY: single = 0; AOpacity: Byte=255; ARestoreOffsetAfterRotation: boolean = false; ACorrectBlur: Boolean = false); overload;
      procedure PutImageAngle(x,y: single; Source: TBGRACustomBitmap; angle: single; imageCenterX: single = 0; imageCenterY: single = 0; AOpacity: Byte=255; ARestoreOffsetAfterRotation: boolean = false; ACorrectBlur: Boolean = false); overload;
      procedure PutImageAngle(x,y: single; Source: TBGRACustomBitmap; angle: single; AOutputBounds: TRect; AResampleFilter: TResampleFilter; imageCenterX: single = 0; imageCenterY: single = 0; AOpacity: Byte=255; ARestoreOffsetAfterRotation: boolean = false); overload;
@@ -1701,6 +1703,12 @@ procedure TBGRACustomBitmap.FillEllipseInRect(r: TRect; FillColor: TBGRAPixel;
   ADrawMode: TDrawMode);
 begin
   FillRoundRect(r.left,r.top,r.right,r.bottom,abs(r.right-r.left),abs(r.bottom-r.top),FillColor,ADrawMode);
+end;
+
+procedure TBGRACustomBitmap.FillEllipseInRect(r: TRect;
+  FillTexture: IBGRAScanner; ADrawMode: TDrawMode);
+begin
+  FillRoundRect(r.left,r.top,r.right,r.bottom,abs(r.right-r.left),abs(r.bottom-r.top),FillTexture,ADrawMode);
 end;
 
 procedure TBGRACustomBitmap.FillRect(r: TRect; c: TColor);

@@ -149,7 +149,8 @@ begin
   writer := nil;
   flat := nil;
   try
-    if (NbLayers > 1) or (LayerOpacity[0] <> 255) or not LayerVisible[0] or (BlendOperation[0]<>boTransparent) then
+    if (NbLayers > 1) or (LayerOpacity[0] <> 255) or not LayerVisible[0] or (BlendOperation[0]<>boTransparent)
+       or (OriginalCount <> 0) then
     begin
       writer := TBGRAWriterLazPaintWithLayers.Create(self);
       writer.Caption := 'Preview';

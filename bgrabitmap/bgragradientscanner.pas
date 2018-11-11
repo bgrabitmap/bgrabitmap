@@ -286,12 +286,14 @@ type
   TBGRAOpacityScanner = class(TBGRACustomScanner)
   private
       FTexture: IBGRAScanner;
+      FOwnedScanner: TBGRACustomScanner;
       FGlobalOpacity: Byte;
       FScanNext : TScanNextPixelFunction;
       FScanAt : TScanAtFunction;
       FMemTex: packed array of TBGRAPixel;
   public
     constructor Create(ATexture: IBGRAScanner; AGlobalOpacity: Byte = 255);
+    constructor Create(ATexture: TBGRACustomScanner; AGlobalOpacity: Byte; AOwned: boolean);
     destructor Destroy; override;
     function IsScanPutPixelsDefined: boolean; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
@@ -1838,11 +1840,26 @@ begin
   FScanNext := @FTexture.ScanNextPixel;
   FScanAt := @FTexture.ScanAt;
   FGlobalOpacity:= AGlobalOpacity;
+  FOwnedScanner := nil;
+end;
+
+constructor TBGRAOpacityScanner.Create(ATexture: TBGRACustomScanner;
+  AGlobalOpacity: Byte; AOwned: boolean);
+begin
+  FTexture := ATexture;
+  FScanNext := @FTexture.ScanNextPixel;
+  FScanAt := @FTexture.ScanAt;
+  FGlobalOpacity:= AGlobalOpacity;
+  if AOwned then
+    FOwnedScanner := ATexture
+  else
+    FOwnedScanner := nil;
 end;
 
 destructor TBGRAOpacityScanner.Destroy;
 begin
   fillchar(FTexture,sizeof(FTexture),0);
+  FOwnedScanner.Free;
   inherited Destroy;
 end;
 

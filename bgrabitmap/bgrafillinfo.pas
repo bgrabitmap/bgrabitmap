@@ -1348,6 +1348,12 @@ begin
     FY1  := y1 + 0.5;
     FX2  := x2 + 0.5;
     FY2  := y2 + 0.5;
+  end else
+  begin
+    FX1 := x1;
+    FY1 := y1;
+    FX2 := x2;
+    FY2 := y2;
   end;
   FRX := abs(rx);
   FRY := abs(ry);

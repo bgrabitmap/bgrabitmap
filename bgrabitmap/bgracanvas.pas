@@ -420,14 +420,12 @@ end;
 procedure TBGRAPen.SetCustomPenStyle(const AValue: TBGRAPenStyle);
 begin
   FCustomPenStyle := DuplicatePenStyle(AValue);
-
-  if IsSolidPenStyle(AValue) then FPenStyle := psSolid else
-  if IsClearPenStyle(AValue) then FPenStyle := psClear else
-    FPenStyle := psPattern;
+  FPenStyle:= BGRAToPenStyle(AValue);
 end;
 
 procedure TBGRAPen.SetPenStyle(const AValue: TPenStyle);
 begin
+  if AValue = psPattern then exit;
   Case AValue of
   psSolid: FCustomPenStyle := SolidPenStyle;
   psDash: FCustomPenStyle := DashPenStyle;

@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl;
 
 type
-  PRectF = ^TRectF;
+  PRectF = BGRABitmapTypes.PRectF;
   TAffineMatrix = BGRATransform.TAffineMatrix;
   TBGRALayerCustomOriginal = class;
   TBGRALayerOriginalAny = class of TBGRALayerCustomOriginal;
@@ -16,13 +16,16 @@ type
   TOriginalStartMovePointEvent = procedure(ASender: TObject; AIndex: integer; AShift: TShiftState) of object;
   TOriginalChangeEvent = procedure(ASender: TObject; ABounds: PRectF = nil) of object;
   TOriginalEditingChangeEvent = procedure(ASender: TObject) of object;
-  TOriginalEditorCursor = (oecDefault, oecMove);
+  TOriginalEditorCursor = (oecDefault, oecMove, oecMoveW, oecMoveE, oecMoveN, oecMoveS,
+                           oecMoveNE, oecMoveSW, oecMoveNW, oecMoveSE);
 
   TStartMoveHandlers = specialize TFPGList<TOriginalStartMovePointEvent>;
 
   { TBGRAOriginalEditor }
 
   TBGRAOriginalEditor = class
+  private
+    function GetPointCount: integer;
   protected
     FMatrix,FMatrixInverse: TAffineMatrix;
     FPoints: array of record
@@ -42,6 +45,7 @@ type
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
     function GetRenderArrowBounds(AOrigin, AEndCoord: TPointF): TRect; virtual;
     procedure SetMatrix(AValue: TAffineMatrix);
+    function GetMoveCursor(APointIndex: integer): TOriginalEditorCursor; virtual;
   public
     constructor Create;
     destructor Destroy; override;
@@ -57,6 +61,7 @@ type
     function GetRenderBounds: TRect; virtual;
     property Matrix: TAffineMatrix read FMatrix write SetMatrix;
     property PointSize: single read FPointSize write FPointSize;
+    property PointCount: integer read GetPointCount;
   end;
 
   TBGRACustomOriginalStorage = class;
@@ -90,6 +95,7 @@ type
     procedure SaveToStream(AStream: TStream); virtual;
     function CreateEditor: TBGRAOriginalEditor; virtual;
     class function StorageClassName: RawByteString; virtual; abstract;
+    function Duplicate: TBGRALayerCustomOriginal; virtual;
     property Guid: TGuid read GetGuid write SetGuid;
     property OnChange: TOriginalChangeEvent read FOnChange write SetOnChange;
     property OnEditingChange: TOriginalEditingChangeEvent read FOnEditingChange write FOnEditingChange;
@@ -226,6 +232,37 @@ begin
   FMatrixInverse := AffineMatrixInverse(FMatrix);
 end;
 
+function TBGRAOriginalEditor.GetMoveCursor(APointIndex: integer): TOriginalEditorCursor;
+var
+  d: TPointF;
+  ratio: single;
+begin
+  if (APointIndex < 0) or (APointIndex >= PointCount) then result := oecDefault else
+  if isEmptyPointF(FPoints[APointIndex].Origin) then result := oecMove else
+  begin
+    d := FMatrix*(FPoints[APointIndex].Coord - FPoints[APointIndex].Origin);
+    ratio := sin(Pi/8);
+    if (d.x = 0) and (d.y = 0) then result := oecMove else
+    if abs(d.x)*ratio >= abs(d.y) then
+    begin
+      if d.x >= 0 then result := oecMoveE else result := oecMoveW
+    end else
+    if abs(d.y)*ratio >= abs(d.x) then
+    begin
+      if d.y >= 0 then result := oecMoveS else result := oecMoveN
+    end else
+    if (d.x > 0) and (d.y > 0) then result := oecMoveSE else
+    if (d.x < 0) and (d.y < 0) then result := oecMoveNW else
+    if (d.x > 0) and (d.y < 0) then result := oecMoveNE
+    else result := oecMoveSW;
+  end;
+end;
+
+function TBGRAOriginalEditor.GetPointCount: integer;
+begin
+  result := length(FPoints);
+end;
+
 function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean): TRect;
 const alpha = 192;
 var filler: TBGRAMultishapeFiller;
@@ -235,10 +272,10 @@ begin
   if not isEmptyPointF(ACoord) then
   begin
     filler := TBGRAMultishapeFiller.Create;
-    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-1.5,FPointSize-1.5, 4, BGRA(0,0,0,alpha));
+    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 4, BGRA(0,0,0,alpha));
     if AAlternateColor then c := BGRA(255,128,128,alpha)
       else c := BGRA(255,255,255,alpha);
-    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-1.5,FPointSize-1.5, 1, c);
+    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 1, c);
     filler.PolygonOrder:= poLastOnTop;
     filler.Draw(ADest);
     filler.Free;
@@ -250,35 +287,38 @@ begin
   if isEmptyPointF(ACoord) then
     result := EmptyRect
   else
-    result := rect(floor(ACoord.x - FPointSize - 2), floor(ACoord.y - FPointSize - 2), ceil(ACoord.x + FPointSize + 3), ceil(ACoord.y + FPointSize + 3));
+    result := rect(floor(ACoord.x - FPointSize + 0.5), floor(ACoord.y - FPointSize + 0.5), ceil(ACoord.x + FPointSize + 0.5), ceil(ACoord.y + FPointSize + 0.5));
 end;
 
 function TBGRAOriginalEditor.RenderArrow(ADest: TBGRABitmap; AOrigin,
   AEndCoord: TPointF): TRect;
 const alpha = 192;
 var
-  pts: ArrayOfTPointF;
+  pts, ptsContour: ArrayOfTPointF;
   i: Integer;
+  rF: TRectF;
 begin
   if isEmptyPointF(AOrigin) or isEmptyPointF(AEndCoord) then
     result := EmptyRect
   else
   begin
-    result := Rect(floor(AOrigin.x-1),floor(AOrigin.y-1),ceil(AOrigin.x+1),ceil(AOrigin.y+1));
     ADest.Pen.Arrow.EndAsClassic;
     ADest.Pen.Arrow.EndSize := PointF(FPointSize,FPointSize);
     pts := ADest.ComputeWidePolyline([AOrigin,AEndCoord],1);
-    ADest.DrawPolygonAntialias(pts, BGRA(0,0,0,alpha),2);
-    ADest.FillPolyAntialias(pts, BGRA(255,255,255,alpha));
     ADest.Pen.Arrow.EndAsNone;
-    for i := 0 to high(pts) do
-    if not isEmptyPointF(pts[i]) then
+    ptsContour := ADest.ComputeWidePolygon(pts, 2);
+    ADest.FillPolyAntialias(ptsContour, BGRA(0,0,0,alpha));
+    ADest.FillPolyAntialias(pts, BGRA(255,255,255,alpha));
+    rF := RectF(AOrigin,AEndCoord);
+    for i := 0 to high(ptsContour) do
+    if not isEmptyPointF(ptsContour[i]) then
     begin
-      if floor(pts[i].x - 1) < result.Left then result.Left := floor(pts[i].x - 1);
-      if ceil(pts[i].x + 1) > result.Right then result.Right := ceil(pts[i].x + 1);
-      if floor(pts[i].y - 1) < result.Top then result.Top := floor(pts[i].y - 1);
-      if ceil(pts[i].y + 1) > result.Bottom then result.Bottom := ceil(pts[i].y + 1);
+      if ptsContour[i].x < rF.Left then rF.Left := ptsContour[i].x;
+      if ptsContour[i].x > rF.Right then rF.Right := ptsContour[i].x;
+      if ptsContour[i].y < rF.Top then rF.Top := ptsContour[i].y;
+      if ptsContour[i].y > rF.Bottom then rF.Bottom := ptsContour[i].y;
     end;
+    result := rect(floor(rF.Left+0.5),floor(rF.Top+0.5),ceil(rF.Right+0.5),ceil(rF.Bottom+0.5));
   end;
 end;
 
@@ -288,8 +328,9 @@ begin
     result := EmptyRect
   else
   begin
-    result := Rect(floor(AOrigin.x-1),floor(AOrigin.y-1),ceil(AOrigin.x+1),ceil(AOrigin.y+1));
-    UnionRect(result, result, rect(floor(AEndCoord.x - FPointSize - 2), floor(AEndCoord.y - FPointSize - 2), ceil(AEndCoord.x + FPointSize + 3), ceil(AEndCoord.y + FPointSize + 3)) );
+    result := Rect(floor(AOrigin.x+0.5-1.5),floor(AOrigin.y+0.5-1.5),ceil(AOrigin.x+0.5+1.5),ceil(AOrigin.y+0.5+1.5));
+    UnionRect(result, result, rect(floor(AEndCoord.x+0.5-FPointSize-1.5), floor(AEndCoord.y+0.5-FPointSize-1.5),
+                      ceil(AEndCoord.x+0.5+FPointSize+1.5), ceil(AEndCoord.y+0.5+FPointSize+1.5)) );
   end;
 end;
 
@@ -368,13 +409,13 @@ begin
     end;
     FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
     FPoints[FPointMoving].Coord := newCoord;
-    ACursor := oecMove;
+    ACursor := GetMoveCursor(FPointMoving);
     AHandled:= true;
   end else
   begin
     hoverPoint := GetPointAt(newMousePos, false);
     if hoverPoint <> -1 then
-      ACursor := oecMove
+      ACursor := GetMoveCursor(hoverPoint)
     else
       ACursor:= oecDefault;
   end;
@@ -403,7 +444,7 @@ begin
   end;
   if FPointMoving <> -1 then
   begin
-    ACursor := oecMove;
+    ACursor := GetMoveCursor(FPointMoving);
     AHandled:= true;
   end
   else
@@ -427,7 +468,7 @@ var v: TPointF;
   curDist,newDist: single;
   i: Integer;
 begin
-  curDist := 4*FPointSize*FPointSize;
+  curDist := sqr(1.5*FPointSize);
   result := -1;
   ACoord:= Matrix*ACoord;
 
@@ -928,6 +969,23 @@ end;
 function TBGRALayerCustomOriginal.CreateEditor: TBGRAOriginalEditor;
 begin
   result := TBGRAOriginalEditor.Create;
+end;
+
+function TBGRALayerCustomOriginal.Duplicate: TBGRALayerCustomOriginal;
+var
+  storage: TBGRAMemOriginalStorage;
+  c: TBGRALayerOriginalAny;
+begin
+  c := FindLayerOriginalClass(StorageClassName);
+  if c = nil then raise exception.Create('Original class is not registered');
+  storage := TBGRAMemOriginalStorage.Create;
+  try
+    SaveToStorage(storage);
+    result := c.Create;
+    result.LoadFromStorage(storage);
+  finally
+    storage.Free;
+  end;
 end;
 
 { TBGRALayerImageOriginal }

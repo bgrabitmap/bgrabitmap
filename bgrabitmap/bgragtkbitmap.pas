@@ -269,7 +269,7 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
       ptr.LineOrder := riloTopToBottom;
     stretched := ptr.Resample(ARect.Right-ARect.Left,ARect.Bottom-ARect.Top);
     ptr.free;
-    DataDrawOpaque(ACanvas,ARect,dataStart,stretched.LineOrder,stretched.Width,stretched.Height);
+    DataDrawOpaque(ACanvas,ARect,stretched.Data,stretched.LineOrder,stretched.Width,stretched.Height);
     stretched.Free;
   end;
 
@@ -309,6 +309,7 @@ begin
       AWidth,AHeight, GDK_RGB_DITHER_NORMAL,
       ADataFirstRow, ARowStride);
     if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;
+    ACanvas.Changed;
   end;
 end;
 
