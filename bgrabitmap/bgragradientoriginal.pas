@@ -30,7 +30,7 @@ type
     FStartColor,FEndColor: TBGRAPixel;
     FGradientType: TGradientType;
     FOrigin,FXAxis,FYAxis,FFocalPoint: TPointF;
-    FXAxisBackup, FYAxisBackup: TPointF;
+    FOriginBackup,FXAxisBackup, FYAxisBackup: TPointF;
     FRadius,FFocalRadius: single;
     FColorInterpolation: TBGRAColorInterpolation;
     FRepetition: TBGRAGradientRepetition;
@@ -205,18 +205,27 @@ procedure TBGRALayerGradientOriginal.OnMoveXAxis(ASender: TObject; APrevCoord,
   ANewCoord: TPointF; AShift: TShiftState);
 var
   m: TAffineMatrix;
+  c: TPointF;
 begin
   if not (ssAlt in AShift) or (GradientType in [gtLinear,gtReflected]) then
   begin
     if not isEmptyPointF(FYAxis) and not isEmptyPointF(FYAxisBackup) then
     begin
-      m := AffineMatrixTranslation(FOrigin.x,FOrigin.y)*
-           AffineMatrixScaledRotation(FXAxisBackup-FOrigin, ANewCoord-FOrigin)*
-           AffineMatrixTranslation(-FOrigin.x,-FOrigin.y);
+      m := AffineMatrixScaledRotation(FXAxisBackup, ANewCoord, FOrigin);
       FYAxis := m*FYAxisBackup;
     end;
   end else
     if isEmptyPointF(FYAxis) then FYAxis := ComputedYAxis;
+
+  if (GradientType = gtLinear) and (ssShift in AShift) then
+  begin
+    c := (FOriginBackup+FXAxisBackup)*0.5;
+    m := AffineMatrixScaledRotation(FXAxisBackup, ANewCoord, c);
+    FOrigin := m*FOriginBackup;
+  end
+  else
+    FOrigin := FOriginBackup;
+
   FXAxis := ANewCoord;
 
   NotifyChange;
@@ -225,9 +234,20 @@ end;
 procedure TBGRALayerGradientOriginal.OnMoveXAxisNeg(ASender: TObject;
   APrevCoord, ANewCoord: TPointF; AShift: TShiftState);
 var
-  delta: TPointF;
+  delta, c: TPointF;
+  m: TAffineMatrix;
 begin
   delta := ANewCoord-APrevCoord;
+
+  if (GradientType = gtLinear) and (ssShift in AShift) then
+  begin
+    c := (FOriginBackup+FXAxisBackup)*0.5;
+    m := AffineMatrixScaledRotation(FOriginBackup, (FOrigin+delta), c);
+    FXAxis := m*FXAxisBackup;
+  end
+  else
+    FXAxis := FXAxisBackup;
+
   FOrigin += delta;
   NotifyChange;
 end;
@@ -241,9 +261,7 @@ begin
   begin
     if not isEmptyPointF(FXAxis) then
     begin
-      m := AffineMatrixTranslation(FOrigin.x,FOrigin.y)*
-           AffineMatrixScaledRotation(FYAxisBackup-FOrigin, ANewCoord-FOrigin)*
-           AffineMatrixTranslation(-FOrigin.x,-FOrigin.y);
+      m := AffineMatrixScaledRotation(FYAxisBackup, ANewCoord, FOrigin);
       FXAxis := m*FXAxisBackup;
     end;
   end;
@@ -276,6 +294,7 @@ end;
 procedure TBGRALayerGradientOriginal.OnStartMove(ASender: TObject;
   AIndex: integer; AShift: TShiftState);
 begin
+  FOriginBackup := FOrigin;
   FXAxisBackup := FXAxis;
   FYAxisBackup := ComputedYAxis;
 end;

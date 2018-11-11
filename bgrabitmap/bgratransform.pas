@@ -208,6 +208,7 @@ function AffineMatrixTranslation(OfsX,OfsY: Single): TAffineMatrix;
 //define a scaling matrix
 function AffineMatrixScale(sx,sy: single): TAffineMatrix;
 function AffineMatrixScaledRotation(ASourceVector, ATargetVector: TPointF): TAffineMatrix;
+function AffineMatrixScaledRotation(ASourcePoint, ATargetPoint, AOrigin: TPointF): TAffineMatrix;
 
 function AffineMatrixSkewXDeg(AngleCW: single): TAffineMatrix;
 function AffineMatrixSkewYDeg(AngleCW: single): TAffineMatrix;
@@ -496,6 +497,13 @@ begin
     v2 := PointF(-u2.y,u2.x);
     result := AffineMatrix(scale*u2,scale*v2,PointF(0,0));
   end;
+end;
+
+function AffineMatrixScaledRotation(ASourcePoint, ATargetPoint, AOrigin: TPointF): TAffineMatrix;
+begin
+  result := AffineMatrixTranslation(AOrigin.x,AOrigin.y)*
+         AffineMatrixScaledRotation(ASourcePoint-AOrigin, ATargetPoint-AOrigin)*
+         AffineMatrixTranslation(-AOrigin.x,-AOrigin.y);
 end;
 
 function AffineMatrixSkewXDeg(AngleCW: single): TAffineMatrix;
