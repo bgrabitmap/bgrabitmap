@@ -1026,7 +1026,7 @@ var
   fi: TFillRoundRectangleInfo;
 begin
   fi := TFillRoundRectangleInfo.Create(x1,y1,x2,y2,dx/2,dy/2,[rrDefault],false);
-  FillShapeAliased(dest, fi, CSSGreen, false, FillTexture, true, ADrawMode);
+  FillShapeAliased(dest, fi, FillColor, false, FillTexture, true, ADrawMode);
   fi.Free;
 end;
 
