@@ -1,11 +1,13 @@
 unit BGRALayerOriginal;
 
 {$mode objfpc}{$H+}
+{$i bgrabitmap.inc}
 
 interface
 
 uses
-  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl;
+  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl
+  {$IFDEF BGRABITMAP_USE_LCL},LCLType{$ENDIF};
 
 type
   PRectF = BGRABitmapTypes.PRectF;
@@ -18,7 +20,25 @@ type
   TOriginalEditingChangeEvent = procedure(ASender: TObject) of object;
   TOriginalEditorCursor = (oecDefault, oecMove, oecMoveW, oecMoveE, oecMoveN, oecMoveS,
                            oecMoveNE, oecMoveSW, oecMoveNW, oecMoveSE);
+  TSpecialKey = (skUnknown, skBackspace, skTab, skReturn, skEscape,
+                 skPageUp, skPageDown, skHome, skEnd,
+                 skLeft, skUp, skRight, skDown,
+                 skInsert, skDelete,
+                 skNum0, skNum1, skNum2, skNum3, skNum4, skNum5, skNum6, skNum7, skNum8, skNum9,
+                 skF1, skF2, skF3, skF4, skF5, skF6, skF7, skF8, skF9, skF10, skF11, skF12);
 
+{$IFDEF BGRABITMAP_USE_LCL}
+const
+  SpecialKeyToLCL: array[TSpecialKey] of Word =
+    (VK_UNKNOWN, VK_BACK,VK_TAB,VK_RETURN,VK_ESCAPE,
+     VK_PRIOR,VK_NEXT,VK_HOME,VK_END,
+     VK_LEFT,VK_UP,VK_RIGHT,VK_DOWN,
+     VK_INSERT,VK_DELETE,
+     VK_NUMPAD0,VK_NUMPAD1,VK_NUMPAD2,VK_NUMPAD3,VK_NUMPAD4,VK_NUMPAD5,VK_NUMPAD6,VK_NUMPAD7,VK_NUMPAD8,VK_NUMPAD9,
+     VK_F1,VK_F2,VK_F3,VK_F4,VK_F5,VK_F6,VK_F7,VK_F8,VK_F9,VK_F10,VK_F11,VK_F12);
+{$ENDIF}
+
+type
   TStartMoveHandlers = specialize TFPGList<TOriginalStartMovePointEvent>;
 
   { TBGRAOriginalEditor }
@@ -56,6 +76,9 @@ type
     procedure MouseMove(Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure MouseUp(RightButton: boolean; {%H-}Shift: TShiftState; {%H-}X, {%H-}Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
+    procedure KeyDown(Shift: TShiftState; Key: TSpecialKey; out AHandled: boolean); virtual;
+    procedure KeyUp(Shift: TShiftState; Key: TSpecialKey; out AHandled: boolean); virtual;
+    procedure KeyPress(UTF8Key: string; out AHandled: boolean); virtual;
     function GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;
     function Render(ADest: TBGRABitmap): TRect; virtual;
     function GetRenderBounds: TRect; virtual;
@@ -461,6 +484,23 @@ begin
     AHandled:= true;
   end;
   ACursor := oecDefault;
+end;
+
+procedure TBGRAOriginalEditor.KeyDown(Shift: TShiftState; Key: TSpecialKey; out
+  AHandled: boolean);
+begin
+  AHandled := false;
+end;
+
+procedure TBGRAOriginalEditor.KeyUp(Shift: TShiftState; Key: TSpecialKey; out
+  AHandled: boolean);
+begin
+  AHandled := false;
+end;
+
+procedure TBGRAOriginalEditor.KeyPress(UTF8Key: string; out AHandled: boolean);
+begin
+  AHandled := false;
 end;
 
 function TBGRAOriginalEditor.GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;

@@ -275,6 +275,9 @@ type
     procedure MouseMove(Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
     procedure MouseUp(RightButton: boolean; Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
+    procedure KeyDown(Shift: TShiftState; Key: TSpecialKey; out AHandled: boolean);
+    procedure KeyUp(Shift: TShiftState; Key: TSpecialKey; out AHandled: boolean);
+    procedure KeyPress(UTF8Key: string; out AHandled: boolean);
 
     property Width : integer read GetWidth;
     property Height: integer read GetHeight;
@@ -1792,6 +1795,32 @@ begin
     ACursor:= oecDefault;
     AHandled:= false;
   end;
+end;
+
+procedure TBGRALayeredBitmap.KeyDown(Shift: TShiftState; Key: TSpecialKey; out
+  AHandled: boolean);
+begin
+  if Assigned(FOriginalEditor) then
+    FOriginalEditor.KeyDown(Shift, Key, AHandled)
+  else
+    AHandled := false;
+end;
+
+procedure TBGRALayeredBitmap.KeyUp(Shift: TShiftState; Key: TSpecialKey; out
+  AHandled: boolean);
+begin
+  if Assigned(FOriginalEditor) then
+    FOriginalEditor.KeyUp(Shift, Key, AHandled)
+  else
+    AHandled := false;
+end;
+
+procedure TBGRALayeredBitmap.KeyPress(UTF8Key: string; out AHandled: boolean);
+begin
+  if Assigned(FOriginalEditor) then
+    FOriginalEditor.KeyPress(UTF8Key, AHandled)
+  else
+    AHandled := false;
 end;
 
 function TBGRALayeredBitmap.IndexOfOriginal(AGuid: TGuid): integer;
