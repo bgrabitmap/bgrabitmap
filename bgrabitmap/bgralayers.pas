@@ -1225,6 +1225,7 @@ begin
   idx := IndexOfOriginal(AOriginal);
   if idx = -1 then exit(false);
   DeleteOriginal(idx);
+  result := true;
 end;
 
 procedure TBGRALayeredBitmap.DeleteOriginal(AIndex: integer);
