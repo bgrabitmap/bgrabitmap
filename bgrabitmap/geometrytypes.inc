@@ -727,7 +727,7 @@ begin
   result.top:=max(R1.top,R2.top);
   result.right:=min(R1.right,R2.right);
   result.bottom:=min(R1.bottom,R2.bottom);
-  if (result.left > result.right) or (result.top > result.bottom) then
+  if (result.left >= result.right) or (result.top >= result.bottom) then
     result := EmptyRectF;
 end;
 
