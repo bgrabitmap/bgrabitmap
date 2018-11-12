@@ -16,11 +16,12 @@ type
   TBGRALayerOriginalAny = class of TBGRALayerCustomOriginal;
   TOriginalMovePointEvent = procedure(ASender: TObject; APrevCoord, ANewCoord: TPointF; AShift: TShiftState) of object;
   TOriginalStartMovePointEvent = procedure(ASender: TObject; AIndex: integer; AShift: TShiftState) of object;
+  TOriginalClickPointEvent = procedure(ASender: TObject; AIndex: integer; AShift: TShiftState) of object;
   TOriginalHoverPointEvent = procedure(ASender: TObject; AIndex: integer) of object;
   TOriginalChangeEvent = procedure(ASender: TObject; ABounds: PRectF = nil) of object;
   TOriginalEditingChangeEvent = procedure(ASender: TObject) of object;
   TOriginalEditorCursor = (oecDefault, oecMove, oecMoveW, oecMoveE, oecMoveN, oecMoveS,
-                           oecMoveNE, oecMoveSW, oecMoveNW, oecMoveSE);
+                           oecMoveNE, oecMoveSW, oecMoveNW, oecMoveSE, oecHandPoint);
   TSpecialKey = (skUnknown, skBackspace, skTab, skReturn, skEscape,
                  skPageUp, skPageDown, skHome, skEnd,
                  skLeft, skUp, skRight, skDown,
@@ -41,6 +42,7 @@ const
 
 type
   TStartMoveHandlers = specialize TFPGList<TOriginalStartMovePointEvent>;
+  TClickPointHandlers = specialize TFPGList<TOriginalClickPointEvent>;
   THoverPointHandlers = specialize TFPGList<TOriginalHoverPointEvent>;
 
   { TBGRAOriginalEditor }
@@ -64,6 +66,7 @@ type
     FStartMoveHandlers: TStartMoveHandlers;
     FCurHoverPoint: integer;
     FHoverPointHandlers: THoverPointHandlers;
+    FClickPointHandlers: TClickPointHandlers;
     function RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean): TRect; virtual;
     function GetRenderPointBounds(ACoord: TPointF): TRect; virtual;
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
@@ -75,15 +78,17 @@ type
     destructor Destroy; override;
     procedure Clear;
     procedure AddStartMoveHandler(AOnStartMove: TOriginalStartMovePointEvent);
+    procedure AddClickPointHandler(AOnClickPoint: TOriginalClickPointEvent);
     procedure AddHoverPointHandler(AOnHoverPoint: TOriginalHoverPointEvent);
     function AddPoint(ACoord: TPointF; AOnMove: TOriginalMovePointEvent; ARightButton: boolean = false; ASnapToPoint: integer = -1): integer;
+    function AddFixedPoint(ACoord: TPointF; ARightButton: boolean = false): integer;
     function AddArrow(AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
     procedure MouseMove(Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure MouseUp(RightButton: boolean; {%H-}Shift: TShiftState; {%H-}X, {%H-}Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
-    procedure KeyDown(Shift: TShiftState; Key: TSpecialKey; out AHandled: boolean); virtual;
-    procedure KeyUp(Shift: TShiftState; Key: TSpecialKey; out AHandled: boolean); virtual;
-    procedure KeyPress(UTF8Key: string; out AHandled: boolean); virtual;
+    procedure KeyDown({%H-}Shift: TShiftState; {%H-}Key: TSpecialKey; out AHandled: boolean); virtual;
+    procedure KeyUp({%H-}Shift: TShiftState; {%H-}Key: TSpecialKey; out AHandled: boolean); virtual;
+    procedure KeyPress({%H-}UTF8Key: string; out AHandled: boolean); virtual;
     function GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;
     function Render(ADest: TBGRABitmap): TRect; virtual;
     function GetRenderBounds: TRect; virtual;
@@ -266,7 +271,13 @@ var
   ratio: single;
 begin
   if (APointIndex < 0) or (APointIndex >= PointCount) then result := oecDefault else
-  if isEmptyPointF(FPoints[APointIndex].Origin) then result := oecMove else
+  if isEmptyPointF(FPoints[APointIndex].Origin) then
+  begin
+    if Assigned(FPoints[APointIndex].OnMove) then
+      result := oecMove
+    else
+      result := oecHandPoint;
+  end else
   begin
     d := FMatrix*(FPoints[APointIndex].Coord - FPoints[APointIndex].Origin);
     ratio := sin(Pi/8);
@@ -371,12 +382,14 @@ begin
   FStartMoveHandlers := TStartMoveHandlers.Create;
   FCurHoverPoint:= -1;
   FHoverPointHandlers := THoverPointHandlers.Create;
+  FClickPointHandlers := TClickPointHandlers.Create;
 end;
 
 destructor TBGRAOriginalEditor.Destroy;
 begin
   FreeAndNil(FStartMoveHandlers);
   FreeAndNil(FHoverPointHandlers);
+  FreeAndNil(FClickPointHandlers);
   inherited Destroy;
 end;
 
@@ -391,6 +404,12 @@ procedure TBGRAOriginalEditor.AddStartMoveHandler(
   AOnStartMove: TOriginalStartMovePointEvent);
 begin
   FStartMoveHandlers.Add(AOnStartMove);
+end;
+
+procedure TBGRAOriginalEditor.AddClickPointHandler(
+  AOnClickPoint: TOriginalClickPointEvent);
+begin
+  FClickPointHandlers.Add(AOnClickPoint);
 end;
 
 procedure TBGRAOriginalEditor.AddHoverPointHandler(
@@ -411,6 +430,21 @@ begin
     OnMove := AOnMove;
     RightButton:= ARightButton;
     SnapToPoint:= ASnapToPoint;
+  end;
+end;
+
+function TBGRAOriginalEditor.AddFixedPoint(ACoord: TPointF;
+  ARightButton: boolean): integer;
+begin
+  setlength(FPoints, length(FPoints)+1);
+  result := High(FPoints);
+  with FPoints[result] do
+  begin
+    Origin := EmptyPointF;
+    Coord := ACoord;
+    OnMove := nil;
+    RightButton:= ARightButton;
+    SnapToPoint:= -1;
   end;
 end;
 
@@ -470,19 +504,27 @@ procedure TBGRAOriginalEditor.MouseDown(RightButton: boolean;
   Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out
   AHandled: boolean);
 var
-  i: Integer;
+  i, clickedPoint: Integer;
 begin
   AHandled:= false;
   FPrevMousePos:= FMatrixInverse*PointF(X,Y);
   if FPointMoving = -1 then
   begin
-    FPointMoving:= GetPointAt(FPrevMousePos, RightButton);
-    if FPointMoving <> -1 then
+    clickedPoint := GetPointAt(FPrevMousePos, RightButton);;
+    if clickedPoint <> -1 then
     begin
-      FMovingRightButton:= RightButton;
-      FPointCoordDelta := FPoints[FPointMoving].Coord - FPrevMousePos;
-      for i := 0 to FStartMoveHandlers.Count-1 do
-        FStartMoveHandlers[i](self, FPointMoving, Shift);
+      if Assigned(FPoints[clickedPoint].OnMove) then
+      begin
+        FPointMoving:= clickedPoint;
+        FMovingRightButton:= RightButton;
+        FPointCoordDelta := FPoints[FPointMoving].Coord - FPrevMousePos;
+        for i := 0 to FStartMoveHandlers.Count-1 do
+          FStartMoveHandlers[i](self, FPointMoving, Shift);
+      end else
+      begin
+        for i := 0 to FClickPointHandlers.Count-1 do
+          FClickPointHandlers[i](self, clickedPoint, Shift);
+      end;
       AHandled:= true;
     end;
   end;
