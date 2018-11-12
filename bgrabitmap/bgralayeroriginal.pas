@@ -16,6 +16,7 @@ type
   TBGRALayerOriginalAny = class of TBGRALayerCustomOriginal;
   TOriginalMovePointEvent = procedure(ASender: TObject; APrevCoord, ANewCoord: TPointF; AShift: TShiftState) of object;
   TOriginalStartMovePointEvent = procedure(ASender: TObject; AIndex: integer; AShift: TShiftState) of object;
+  TOriginalHoverPointEvent = procedure(ASender: TObject; AIndex: integer) of object;
   TOriginalChangeEvent = procedure(ASender: TObject; ABounds: PRectF = nil) of object;
   TOriginalEditingChangeEvent = procedure(ASender: TObject) of object;
   TOriginalEditorCursor = (oecDefault, oecMove, oecMoveW, oecMoveE, oecMoveN, oecMoveS,
@@ -40,6 +41,7 @@ const
 
 type
   TStartMoveHandlers = specialize TFPGList<TOriginalStartMovePointEvent>;
+  THoverPointHandlers = specialize TFPGList<TOriginalHoverPointEvent>;
 
   { TBGRAOriginalEditor }
 
@@ -60,6 +62,8 @@ type
     FMovingRightButton: boolean;
     FPrevMousePos: TPointF;
     FStartMoveHandlers: TStartMoveHandlers;
+    FCurHoverPoint: integer;
+    FHoverPointHandlers: THoverPointHandlers;
     function RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean): TRect; virtual;
     function GetRenderPointBounds(ACoord: TPointF): TRect; virtual;
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
@@ -71,6 +75,7 @@ type
     destructor Destroy; override;
     procedure Clear;
     procedure AddStartMoveHandler(AOnStartMove: TOriginalStartMovePointEvent);
+    procedure AddHoverPointHandler(AOnHoverPoint: TOriginalHoverPointEvent);
     function AddPoint(ACoord: TPointF; AOnMove: TOriginalMovePointEvent; ARightButton: boolean = false; ASnapToPoint: integer = -1): integer;
     function AddArrow(AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
     procedure MouseMove(Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
@@ -364,11 +369,14 @@ begin
   FMatrixInverse := AffineMatrixIdentity;
   FPointMoving:= -1;
   FStartMoveHandlers := TStartMoveHandlers.Create;
+  FCurHoverPoint:= -1;
+  FHoverPointHandlers := THoverPointHandlers.Create;
 end;
 
 destructor TBGRAOriginalEditor.Destroy;
 begin
   FreeAndNil(FStartMoveHandlers);
+  FreeAndNil(FHoverPointHandlers);
   inherited Destroy;
 end;
 
@@ -376,12 +384,19 @@ procedure TBGRAOriginalEditor.Clear;
 begin
   FPoints := nil;
   FStartMoveHandlers.Clear;
+  FHoverPointHandlers.Clear;
 end;
 
 procedure TBGRAOriginalEditor.AddStartMoveHandler(
   AOnStartMove: TOriginalStartMovePointEvent);
 begin
   FStartMoveHandlers.Add(AOnStartMove);
+end;
+
+procedure TBGRAOriginalEditor.AddHoverPointHandler(
+  AOnHoverPoint: TOriginalHoverPointEvent);
+begin
+  FHoverPointHandlers.Add(AOnHoverPoint);
 end;
 
 function TBGRAOriginalEditor.AddPoint(ACoord: TPointF;
@@ -417,7 +432,7 @@ end;
 procedure TBGRAOriginalEditor.MouseMove(Shift: TShiftState; X, Y: single; out
   ACursor: TOriginalEditorCursor; out AHandled: boolean);
 var newMousePos, newCoord, snapCoord: TPointF;
-  hoverPoint: Integer;
+  hoverPoint, i: Integer;
 begin
   AHandled := false;
   newMousePos := FMatrixInverse*PointF(X,Y);
@@ -441,6 +456,12 @@ begin
       ACursor := GetMoveCursor(hoverPoint)
     else
       ACursor:= oecDefault;
+    if hoverPoint <> FCurHoverPoint then
+    begin
+      FCurHoverPoint:= hoverPoint;
+      for i := 0 to FHoverPointHandlers.Count-1 do
+        FHoverPointHandlers[i](self, FCurHoverPoint);
+    end;
   end;
   FPrevMousePos:= newMousePos;
 end;
