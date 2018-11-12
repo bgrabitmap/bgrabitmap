@@ -91,8 +91,13 @@ type
   { TRectFHelper }
 
   TRectFHelper = record helper for TRectF
+    class function Intersect(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
+    class function Union(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
+    class function Union(const R1: TRectF; const R2: TRectF; ADiscardEmpty: boolean): TRectF; overload; static;
     function Union(const r: TRectF):TRectF;
     function Union(const r: TRectF; ADiscardEmpty: boolean):TRectF;
+    function IntersectsWith(const r: TRectF): boolean;
+    function IsEmpty: boolean;
   end;
 
 const
@@ -716,26 +721,49 @@ end;
 
 {$ENDIF}
 
+class function TRectFHelper.Intersect(const R1: TRectF; const R2: TRectF): TRectF;
+begin
+  result.left:=max(R1.left,R2.left);
+  result.top:=max(R1.top,R2.top);
+  result.right:=min(R1.right,R2.right);
+  result.bottom:=min(R1.bottom,R2.bottom);
+  if (result.left > result.right) or (result.top > result.bottom) then
+    result := EmptyRectF;
+end;
+
+class function TRectFHelper.Union(const R1: TRectF; const R2: TRectF): TRectF;
+begin
+  result.left:=min(R1.left,R2.left);
+  result.top:=min(R1.top,R2.top);
+  result.right:=max(R1.right,R2.right);
+  result.bottom:=max(R1.bottom,R2.bottom);
+end;
+
+class function TRectFHelper.Union(const R1: TRectF; const R2: TRectF; ADiscardEmpty: boolean): TRectF;
+begin
+  if ADiscardEmpty and IsEmptyRectF(R1) then result:= R2 else
+  if ADiscardEmpty and IsEmptyRectF(R2) then result:= R1 else
+    result := Union(R1,R2);
+end;
+
 function TRectFHelper.Union(const r: TRectF): TRectF;
 begin
-  result.left:=min(r.left,left);
-  result.top:=min(r.top,top);
-  result.right:=max(r.right,right);
-  result.bottom:=max(r.bottom,bottom);
+  result := TRectF.Union(self, r);
 end;
 
 function TRectFHelper.Union(const r: TRectF; ADiscardEmpty: boolean): TRectF;
 begin
-  if ADiscardEmpty then
-  begin
-    if IsEmptyRectF(r) then
-      result:= self
-    else if IsEmptyRectF(self) then
-      result:= r
-    else
-      result := self.Union(r);
-  end else
-    result := self.Union(r);
+  result := TRectF.Union(self, r, ADiscardEmpty);
+end;
+
+function TRectFHelper.IntersectsWith(const r: TRectF): boolean;
+begin
+  result:= not TRectF.Intersect(self, r).IsEmpty;
+end;
+
+function TRectFHelper.IsEmpty: boolean;
+begin
+  result:= IsEmptyRectF(self);
 end;
 
 { TAffineBox }
