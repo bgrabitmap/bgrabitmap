@@ -253,12 +253,12 @@ begin
   NotAvailable;
 end;
 
-procedure TBGRAfpGUIBitmap.LoadFromDevice(DC: System.THandle);
+procedure TBGRAfpGUIBitmap.LoadFromDevice(DC: HDC);
 begin
   NotAvailable;
 end;
 
-procedure TBGRAfpGUIBitmap.LoadFromDevice(DC: System.THandle; ARect: TRect);
+procedure TBGRAfpGUIBitmap.LoadFromDevice(DC: HDC; ARect: TRect);
 begin
   NotAvailable;
 end;
