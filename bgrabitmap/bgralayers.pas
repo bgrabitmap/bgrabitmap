@@ -1678,7 +1678,7 @@ begin
     FOriginalEditor.Clear;
     orig.ConfigureEditor(FOriginalEditor);
     FOriginalEditorViewMatrix := AMatrix;
-    FOriginalEditor.Matrix := AMatrix*LayerOriginalMatrix[ALayerIndex];
+    FOriginalEditor.Matrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
     FOriginalEditor.PointSize := APointSize;
     result := FOriginalEditor.Render(ADest);
   end else
@@ -1715,7 +1715,7 @@ begin
     FOriginalEditor.Clear;
     orig.ConfigureEditor(FOriginalEditor);
     FOriginalEditorViewMatrix := AMatrix;
-    FOriginalEditor.Matrix := AMatrix*LayerOriginalMatrix[ALayerIndex];
+    FOriginalEditor.Matrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
     FOriginalEditor.PointSize := APointSize;
     result := FOriginalEditor.GetRenderBounds;
   end else
