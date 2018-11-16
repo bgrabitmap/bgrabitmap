@@ -22,7 +22,7 @@ uses
   BGRAColorQuantization, BGRADithering, BGRAFreeType, BGRACustomTextFX, 
   BGRAWritePNG, BGRAGifFormat, BGRASceneTypes, BGRARenderer3D, 
   BGRAWriteBmpMioMap, BGRAPhoxo, BGRAFilterScanner, BGRAFilterType, 
-  BGRAFilterBlur, BGRAUnicode;
+  BGRAFilterBlur, BGRAMultiFileType, BGRAWinResource, BGRAUnicode;
 
 implementation
 
