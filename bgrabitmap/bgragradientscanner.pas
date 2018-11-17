@@ -1268,14 +1268,14 @@ begin
   end;
 
   case FGradientType of
-    gtReflected: FRepeatHoriz := (u.x=0);
+    gtReflected: FRepeatHoriz := (FMatrix[1,1]=0);
     gtDiamond: FRepeatHoriz:= FIsAverage;
     gtRadial: begin
       if FFocalRadius = FRadius then FIsAverage:= true;
       FRepeatHoriz:= FIsAverage;
     end
   else
-    {gtLinear:} FRepeatHoriz := (u.x=0);
+    {gtLinear:} FRepeatHoriz := (FMatrix[1,1]=0);
   end;
 
   if FGradient.Monochrome then
