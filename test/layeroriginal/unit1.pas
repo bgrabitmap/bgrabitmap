@@ -64,21 +64,25 @@ uses BGRATransform, BGRASVGOriginal, BGRAGradientOriginal;
 procedure TForm1.BCFlipXClick(Sender: TObject);
 begin
   FLayers.HorizontalFlip;
+  BGRAVirtualScreen1.DiscardBitmap;
 end;
 
 procedure TForm1.BCFlipYClick(Sender: TObject);
 begin
   FLayers.VerticalFlip;
+  BGRAVirtualScreen1.DiscardBitmap;
 end;
 
 procedure TForm1.BCRotCWClick(Sender: TObject);
 begin
   FLayers.RotateCW;
+  BGRAVirtualScreen1.DiscardBitmap;
 end;
 
 procedure TForm1.BCRotCCWClick(Sender: TObject);
 begin
   FLayers.RotateCCW;
+  BGRAVirtualScreen1.DiscardBitmap;
 end;
 
 procedure TForm1.BCColor1Click(Sender: TObject);
