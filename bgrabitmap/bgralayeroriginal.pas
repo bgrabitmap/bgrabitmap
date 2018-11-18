@@ -52,6 +52,8 @@ type
     function GetPointCount: integer;
   protected
     FMatrix,FMatrixInverse: TAffineMatrix;
+    FGridMatrix,FGridMatrixInverse: TAffineMatrix;
+    FGridActive: boolean;
     FPoints: array of record
       Origin, Coord: TPointF;
       OnMove: TOriginalMovePointEvent;
@@ -72,6 +74,8 @@ type
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
     function GetRenderArrowBounds(AOrigin, AEndCoord: TPointF): TRect; virtual;
     procedure SetMatrix(AValue: TAffineMatrix);
+    procedure SetGridMatrix(AValue: TAffineMatrix);
+    procedure SetGridActive(AValue: boolean);
     function GetMoveCursor(APointIndex: integer): TOriginalEditorCursor; virtual;
   public
     constructor Create;
@@ -93,6 +97,8 @@ type
     function Render(ADest: TBGRABitmap): TRect; virtual;
     function GetRenderBounds: TRect; virtual;
     property Matrix: TAffineMatrix read FMatrix write SetMatrix;
+    property GridMatrix: TAffineMatrix read FGridMatrix write SetGridMatrix;
+    property GridActive: boolean read FGridActive write SetGridActive;
     property PointSize: single read FPointSize write FPointSize;
     property PointCount: integer read GetPointCount;
   end;
@@ -302,6 +308,19 @@ begin
   result := length(FPoints);
 end;
 
+procedure TBGRAOriginalEditor.SetGridActive(AValue: boolean);
+begin
+  if FGridActive=AValue then Exit;
+  FGridActive:=AValue;
+end;
+
+procedure TBGRAOriginalEditor.SetGridMatrix(AValue: TAffineMatrix);
+begin
+  if FGridMatrix=AValue then Exit;
+  FGridMatrix:=AValue;
+  FGridMatrixInverse := AffineMatrixInverse(FGridMatrix);
+end;
+
 function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean): TRect;
 const alpha = 192;
 var filler: TBGRAMultishapeFiller;
@@ -378,6 +397,9 @@ begin
   FPointSize:= 6;
   FMatrix := AffineMatrixIdentity;
   FMatrixInverse := AffineMatrixIdentity;
+  FGridMatrix := AffineMatrixIdentity;
+  FGridMatrixInverse := AffineMatrixIdentity;
+  FGridActive:= false;
   FPointMoving:= -1;
   FStartMoveHandlers := TStartMoveHandlers.Create;
   FCurHoverPoint:= -1;
@@ -467,20 +489,31 @@ procedure TBGRAOriginalEditor.MouseMove(Shift: TShiftState; X, Y: single; out
   ACursor: TOriginalEditorCursor; out AHandled: boolean);
 var newMousePos, newCoord, snapCoord: TPointF;
   hoverPoint, i: Integer;
+  gridCoord: TPointF;
 begin
   AHandled := false;
   newMousePos := FMatrixInverse*PointF(X,Y);
   if (FPointMoving <> -1) and (FPointMoving < length(FPoints)) then
   begin
     newCoord := newMousePos + FPointCoordDelta;
+    if GridActive then
+    begin
+      gridCoord := FGridMatrixInverse*newCoord;
+      gridCoord.x := round(gridCoord.x);
+      gridCoord.y := round(gridCoord.y);
+      newCoord := FGridMatrix*gridCoord;
+    end;
     if FPoints[FPointMoving].SnapToPoint <> -1 then
     begin
       snapCoord := FPoints[FPoints[FPointMoving].SnapToPoint].Coord;
       if VectLen(snapCoord - newMousePos) < FPointSize then
         newCoord := snapCoord;
     end;
-    FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
-    FPoints[FPointMoving].Coord := newCoord;
+    if newCoord <> FPoints[FPointMoving].Coord then
+    begin
+      FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
+      FPoints[FPointMoving].Coord := newCoord;
+    end;
     ACursor := GetMoveCursor(FPointMoving);
     AHandled:= true;
   end else

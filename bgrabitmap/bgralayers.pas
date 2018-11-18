@@ -300,6 +300,7 @@ type
     property Original[AIndex: integer]: TBGRALayerCustomOriginal read GetOriginalByIndex;
     property OnOriginalChange: TEmbeddedOriginalChangeEvent read FOriginalChange write FOriginalChange;
     property OnOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent read FOriginalEditingChange write FOriginalEditingChange;
+    property OriginalEditor: TBGRAOriginalEditor read FOriginalEditor;
   end;
 
   TAffineMatrix = BGRABitmapTypes.TAffineMatrix;
