@@ -420,6 +420,7 @@ begin
   FPoints := nil;
   FStartMoveHandlers.Clear;
   FHoverPointHandlers.Clear;
+  FClickPointHandlers.Clear;
 end;
 
 procedure TBGRAOriginalEditor.AddStartMoveHandler(
