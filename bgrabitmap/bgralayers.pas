@@ -1550,24 +1550,44 @@ end;
 
 procedure TBGRALayeredBitmap.RotateCW;
 var i: integer;
+  newBmp: TBGRABitmap;
+  newOfs: TPointF;
+  m: TAffineMatrix;
 begin
   SetSize(Height,Width); //unfreeze
+  m := AffineMatrixTranslation(Width,0)*AffineMatrixRotationDeg(90);
   for i := 0 to NbLayers-1 do
-    if LayerOriginalGuid[i] <> GUID_NULL then
-      LayerOriginalMatrix[i] := AffineMatrixTranslation(Width,0)*AffineMatrixRotationDeg(90)*LayerOriginalMatrix[i]
-    else
-      SetLayerBitmap(i, LayerBitmap[i].RotateCW as TBGRABitmap, True);
+  begin
+    newOfs:= m*PointF(FLayers[i].x,FLayers[i].y+FLayers[i].Source.Height);
+    newBmp := FLayers[i].Source.RotateCW as TBGRABitmap;
+    if FLayers[i].Owner then FreeAndNil(FLayers[i].Source);
+    FLayers[i].Source := newBmp;
+    FLayers[i].Owner := true;
+    FLayers[i].x := round(newOfs.x);
+    FLayers[i].y := round(newOfs.y);
+    FLayers[i].OriginalMatrix := m*FLayers[i].OriginalMatrix;
+  end;
 end;
 
 procedure TBGRALayeredBitmap.RotateCCW;
 var i: integer;
+  newBmp: TBGRABitmap;
+  newOfs: TPointF;
+  m: TAffineMatrix;
 begin
   SetSize(Height,Width); //unfreeze
+  m := AffineMatrixTranslation(0,Height)*AffineMatrixRotationDeg(-90);
   for i := 0 to NbLayers-1 do
-    if LayerOriginalGuid[i] <> GUID_NULL then
-      LayerOriginalMatrix[i] := AffineMatrixTranslation(0,Height)*AffineMatrixRotationDeg(-90)*LayerOriginalMatrix[i]
-    else
-      SetLayerBitmap(i, LayerBitmap[i].RotateCCW as TBGRABitmap, True);
+  begin
+    newOfs:= m*PointF(FLayers[i].x+FLayers[i].Source.Width,FLayers[i].y);
+    newBmp := FLayers[i].Source.RotateCCW as TBGRABitmap;
+    if FLayers[i].Owner then FreeAndNil(FLayers[i].Source);
+    FLayers[i].Source := newBmp;
+    FLayers[i].Owner := true;
+    FLayers[i].x := round(newOfs.x);
+    FLayers[i].y := round(newOfs.y);
+    FLayers[i].OriginalMatrix := m*FLayers[i].OriginalMatrix;
+  end;
 end;
 
 procedure TBGRALayeredBitmap.HorizontalFlip;
@@ -1632,6 +1652,7 @@ begin
     LayerBitmap[i].ResampleFilter := oldFilter;
     SetLayerBitmap(i, resampled, True);
   end;
+  if AResampleMode = rmFineResample then RenderOriginalsIfNecessary;
 end;
 
 procedure TBGRALayeredBitmap.SetLayerBitmap(layer: integer;
