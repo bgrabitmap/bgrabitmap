@@ -359,7 +359,7 @@ begin
 
     if not isEmptyPointF(FXAxis) and (FGradientType = gtLinear) then
       originPoint := AEditor.AddPoint((FOrigin + FXAxis)*0.5, @OnMoveOrigin, true)
-    else originPoint := AEditor.AddPoint(FOrigin, @OnMoveOrigin, FGradientType <> gtRadial);
+    else originPoint := AEditor.AddPoint(FOrigin, @OnMoveOrigin, true);
 
     if not isEmptyPointF(FXAxis) then
     begin
@@ -375,8 +375,8 @@ begin
     end;
     if FGradientType = gtRadial then
     begin
-      AEditor.AddPoint(ComputedFocalPoint, @OnMoveFocalPoint, true, originPoint);
-      AEditor.AddArrow(ComputedFocalPoint, ComputedFocalPoint - (FXAxis - FOrigin) * (ComputedFocalRadius + 0.1), @OnMoveFocalRadius, true);
+      AEditor.AddPoint(ComputedFocalPoint, @OnMoveFocalPoint, false, originPoint);
+      AEditor.AddArrow(ComputedFocalPoint, ComputedFocalPoint - (FXAxis - FOrigin) * (ComputedFocalRadius + 0.1), @OnMoveFocalRadius, false);
     end;
   end;
 end;
