@@ -563,6 +563,7 @@ procedure TBGRATextEffect.InitImproveReadability(AText: string; Font: TFont;
 var size: TSize;
   overhang: integer;
 begin
+  FShadowQuality:= rbFast;
   if SubOffsetX < 0 then SubOffsetX := 0;
   if SubOffsetY < 0 then SubOffsetY := 0;
   size := BGRATextSize(Font, fqFineAntialiasing, AText, FontAntialiasingLevel);

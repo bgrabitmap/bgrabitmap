@@ -416,6 +416,7 @@ begin
     FTextMask := AMask.Duplicate()
   else
     FTextMask := AMask;
+  FShadowQuality:= rbFast;
 end;
 
 procedure TBGRACustomTextEffect.ApplySphere;
