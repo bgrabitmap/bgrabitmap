@@ -49,6 +49,7 @@ type
 
   TBGRAOriginalEditor = class
   private
+    function GetPointCoord(AIndex: integer): TPointF;
     function GetPointCount: integer;
   protected
     FMatrix,FMatrixInverse: TAffineMatrix;          //view matrix from original coord
@@ -80,7 +81,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    procedure Clear;
+    procedure Clear; virtual;
     procedure AddStartMoveHandler(AOnStartMove: TOriginalStartMovePointEvent);
     procedure AddClickPointHandler(AOnClickPoint: TOriginalClickPointEvent);
     procedure AddHoverPointHandler(AOnHoverPoint: TOriginalHoverPointEvent);
@@ -94,8 +95,8 @@ type
     procedure KeyUp({%H-}Shift: TShiftState; {%H-}Key: TSpecialKey; out AHandled: boolean); virtual;
     procedure KeyPress({%H-}UTF8Key: string; out AHandled: boolean); virtual;
     function GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;
-    function Render(ADest: TBGRABitmap): TRect; virtual;
-    function GetRenderBounds: TRect; virtual;
+    function Render(ADest: TBGRABitmap; const ALayoutRect: TRect): TRect; virtual;
+    function GetRenderBounds(const ALayoutRect: TRect): TRect; virtual;
     function SnapToGrid(const ACoord: TPointF; AIsViewCoord: boolean): TPointF;
     function OriginalCoordToView(const AImageCoord: TPointF): TPointF;
     function ViewCoordToOriginal(const AViewCoord: TPointF): TPointF;
@@ -104,6 +105,7 @@ type
     property GridActive: boolean read FGridActive write SetGridActive;
     property PointSize: single read FPointSize write FPointSize;
     property PointCount: integer read GetPointCount;
+    property PointCoord[AIndex: integer]: TPointF read GetPointCoord;
   end;
 
   TBGRACustomOriginalStorage = class;
@@ -306,6 +308,12 @@ begin
   end;
 end;
 
+function TBGRAOriginalEditor.GetPointCoord(AIndex: integer): TPointF;
+begin
+  if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
+  result := FPoints[AIndex].Coord;
+end;
+
 function TBGRAOriginalEditor.GetPointCount: integer;
 begin
   result := length(FPoints);
@@ -503,7 +511,7 @@ begin
     if FPoints[FPointMoving].SnapToPoint <> -1 then
     begin
       snapCoord := FPoints[FPoints[FPointMoving].SnapToPoint].Coord;
-      if VectLen(snapCoord - newMousePos) < FPointSize then
+      if VectLen(AffineMatrixLinear(FMatrix)*(snapCoord - newCoord)) < FPointSize then
         newCoord := snapCoord;
     end;
     if newCoord <> FPoints[FPointMoving].Coord then
@@ -601,7 +609,10 @@ var v: TPointF;
   curDist,newDist: single;
   i: Integer;
 begin
-  curDist := sqr(1.5*FPointSize);
+  if ARightButton then
+    curDist := sqr(2.5*FPointSize)
+  else
+    curDist := sqr(1.5*FPointSize);
   result := -1;
   ACoord:= Matrix*ACoord;
 
@@ -618,6 +629,10 @@ begin
   end;
   if result <> -1 then exit;
 
+  if not ARightButton then
+    curDist := sqr(2.5*FPointSize)
+  else
+    curDist := sqr(1.5*FPointSize);
   for i := 0 to high(FPoints) do
   if FPoints[i].RightButton <> ARightButton then
   begin
@@ -631,7 +646,7 @@ begin
   end;
 end;
 
-function TBGRAOriginalEditor.Render(ADest: TBGRABitmap): TRect;
+function TBGRAOriginalEditor.Render(ADest: TBGRABitmap; const ALayoutRect: TRect): TRect;
 var
   i: Integer;
   elemRect: TRect;
@@ -653,7 +668,7 @@ begin
   end;
 end;
 
-function TBGRAOriginalEditor.GetRenderBounds: TRect;
+function TBGRAOriginalEditor.GetRenderBounds(const ALayoutRect: TRect): TRect;
 var
   i: Integer;
   elemRect: TRect;

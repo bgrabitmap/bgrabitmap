@@ -268,7 +268,9 @@ type
     function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect; overload;
     function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
     function GetEditorBounds(ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect; overload;
+    function GetEditorBounds(ADestRect: TRect; ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect; overload;
     function GetEditorBounds(ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
+    function GetEditorBounds(ADestRect: TRect; ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
     procedure MouseMove(Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
     procedure MouseUp(RightButton: boolean; Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
@@ -1702,7 +1704,7 @@ begin
     FOriginalEditorViewMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
     FOriginalEditor.Matrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
     FOriginalEditor.PointSize := APointSize;
-    result := FOriginalEditor.Render(ADest);
+    result := FOriginalEditor.Render(ADest, rect(0,0,ADest.Width,ADest.Height));
   end else
     result := EmptyRect;
 end;
@@ -1713,7 +1715,19 @@ begin
   result := GetEditorBounds(ALayerIndex, AffineMatrixTranslation(X,Y), APointSize);
 end;
 
+function TBGRALayeredBitmap.GetEditorBounds(ADestRect: TRect;
+  ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect;
+begin
+  result := GetEditorBounds(ADestRect, ALayerIndex, AffineMatrixTranslation(X,Y), APointSize);
+end;
+
 function TBGRALayeredBitmap.GetEditorBounds(ALayerIndex: integer;
+  AMatrix: TAffineMatrix; APointSize: single): TRect;
+begin
+  result := GetEditorBounds(rect(-maxLongint,-maxLongint,maxLongint,maxLongint), ALayerIndex, AMatrix, APointSize);
+end;
+
+function TBGRALayeredBitmap.GetEditorBounds(ADestRect: TRect; ALayerIndex: integer;
   AMatrix: TAffineMatrix; APointSize: single): TRect;
 var
   orig: TBGRALayerCustomOriginal;
@@ -1739,7 +1753,7 @@ begin
     FOriginalEditorViewMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
     FOriginalEditor.Matrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
     FOriginalEditor.PointSize := APointSize;
-    result := FOriginalEditor.GetRenderBounds;
+    result := FOriginalEditor.GetRenderBounds(ADestRect);
   end else
     result := EmptyRect;
 end;
