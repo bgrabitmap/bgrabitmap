@@ -269,12 +269,12 @@ type
     function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
     function GetEditorBounds(ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect; overload;
     function GetEditorBounds(ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
-    procedure MouseMove(Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
-    procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
-    procedure MouseUp(RightButton: boolean; Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
-    procedure MouseMove(Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
-    procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
-    procedure MouseUp(RightButton: boolean; Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
+    procedure MouseMove(Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
+    procedure MouseDown(RightButton: boolean; Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
+    procedure MouseUp(RightButton: boolean; Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
+    procedure MouseMove(Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
+    procedure MouseDown(RightButton: boolean; Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
+    procedure MouseUp(RightButton: boolean; Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
     procedure KeyDown(Shift: TShiftState; Key: TSpecialKey; out AHandled: boolean);
     procedure KeyUp(Shift: TShiftState; Key: TSpecialKey; out AHandled: boolean);
     procedure KeyPress(UTF8Key: string; out AHandled: boolean);
@@ -1744,38 +1744,38 @@ begin
     result := EmptyRect;
 end;
 
-procedure TBGRALayeredBitmap.MouseMove(Shift: TShiftState; X, Y: Single; out
+procedure TBGRALayeredBitmap.MouseMove(Shift: TShiftState; ImageX, ImageY: Single; out
   ACursor: TOriginalEditorCursor);
 var
   handled: boolean;
 begin
-  MouseMove(Shift, X,Y, ACursor, handled);
+  MouseMove(Shift, ImageX,ImageY, ACursor, handled);
 end;
 
 procedure TBGRALayeredBitmap.MouseDown(RightButton: boolean;
-  Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor);
+  Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
 var
   handled: boolean;
 begin
-  MouseDown(RightButton, Shift, X,Y, ACursor, handled);
+  MouseDown(RightButton, Shift, ImageX,ImageY, ACursor, handled);
 end;
 
 procedure TBGRALayeredBitmap.MouseUp(RightButton: boolean; Shift: TShiftState;
-  X, Y: Single; out ACursor: TOriginalEditorCursor);
+  ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
 var
   handled: boolean;
 begin
-  MouseUp(RightButton, Shift, X,Y, ACursor, handled);
+  MouseUp(RightButton, Shift, ImageX,ImageY, ACursor, handled);
 end;
 
-procedure TBGRALayeredBitmap.MouseMove(Shift: TShiftState; X, Y: Single; out
+procedure TBGRALayeredBitmap.MouseMove(Shift: TShiftState; ImageX, ImageY: Single; out
   ACursor: TOriginalEditorCursor; out AHandled: boolean);
 var
   viewPt: TPointF;
 begin
   if Assigned(FOriginalEditor) then
   begin
-    viewPt := FOriginalEditorViewMatrix*PointF(X,Y);
+    viewPt := FOriginalEditorViewMatrix*PointF(ImageX,ImageY);
     FOriginalEditor.MouseMove(Shift, viewPt.X, viewPt.Y, ACursor, AHandled);
   end
   else
@@ -1786,14 +1786,14 @@ begin
 end;
 
 procedure TBGRALayeredBitmap.MouseDown(RightButton: boolean;
-  Shift: TShiftState; X, Y: Single; out ACursor: TOriginalEditorCursor; out
+  Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor; out
   AHandled: boolean);
 var
   viewPt: TPointF;
 begin
   if Assigned(FOriginalEditor) then
   begin
-    viewPt := FOriginalEditorViewMatrix*PointF(X,Y);
+    viewPt := FOriginalEditorViewMatrix*PointF(ImageX,ImageY);
     FOriginalEditor.MouseDown(RightButton, Shift, viewPt.X, viewPt.Y, ACursor, AHandled);
   end
   else
@@ -1804,13 +1804,13 @@ begin
 end;
 
 procedure TBGRALayeredBitmap.MouseUp(RightButton: boolean; Shift: TShiftState;
-  X, Y: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
+  ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
 var
   viewPt: TPointF;
 begin
   if Assigned(FOriginalEditor) then
   begin
-    viewPt := FOriginalEditorViewMatrix*PointF(X,Y);
+    viewPt := FOriginalEditorViewMatrix*PointF(ImageX,ImageY);
     FOriginalEditor.MouseUp(RightButton, Shift, viewPt.X,viewPt.Y, ACursor, AHandled);
   end
   else

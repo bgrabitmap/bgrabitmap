@@ -51,8 +51,8 @@ type
   private
     function GetPointCount: integer;
   protected
-    FMatrix,FMatrixInverse: TAffineMatrix;
-    FGridMatrix,FGridMatrixInverse: TAffineMatrix;
+    FMatrix,FMatrixInverse: TAffineMatrix;          //view matrix from original coord
+    FGridMatrix,FGridMatrixInverse: TAffineMatrix;  //grid matrix in original coord
     FGridActive: boolean;
     FPoints: array of record
       Origin, Coord: TPointF;
@@ -84,18 +84,21 @@ type
     procedure AddStartMoveHandler(AOnStartMove: TOriginalStartMovePointEvent);
     procedure AddClickPointHandler(AOnClickPoint: TOriginalClickPointEvent);
     procedure AddHoverPointHandler(AOnHoverPoint: TOriginalHoverPointEvent);
-    function AddPoint(ACoord: TPointF; AOnMove: TOriginalMovePointEvent; ARightButton: boolean = false; ASnapToPoint: integer = -1): integer;
-    function AddFixedPoint(ACoord: TPointF; ARightButton: boolean = false): integer;
-    function AddArrow(AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
-    procedure MouseMove(Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
-    procedure MouseDown(RightButton: boolean; Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
-    procedure MouseUp(RightButton: boolean; {%H-}Shift: TShiftState; {%H-}X, {%H-}Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
+    function AddPoint(const ACoord: TPointF; AOnMove: TOriginalMovePointEvent; ARightButton: boolean = false; ASnapToPoint: integer = -1): integer;
+    function AddFixedPoint(const ACoord: TPointF; ARightButton: boolean = false): integer;
+    function AddArrow(const AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
+    procedure MouseMove(Shift: TShiftState; ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
+    procedure MouseDown(RightButton: boolean; Shift: TShiftState; ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
+    procedure MouseUp(RightButton: boolean; {%H-}Shift: TShiftState; {%H-}ViewX, {%H-}ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure KeyDown({%H-}Shift: TShiftState; {%H-}Key: TSpecialKey; out AHandled: boolean); virtual;
     procedure KeyUp({%H-}Shift: TShiftState; {%H-}Key: TSpecialKey; out AHandled: boolean); virtual;
     procedure KeyPress({%H-}UTF8Key: string; out AHandled: boolean); virtual;
     function GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;
     function Render(ADest: TBGRABitmap): TRect; virtual;
     function GetRenderBounds: TRect; virtual;
+    function SnapToGrid(const ACoord: TPointF; AIsViewCoord: boolean): TPointF;
+    function OriginalCoordToView(const AImageCoord: TPointF): TPointF;
+    function ViewCoordToOriginal(const AViewCoord: TPointF): TPointF;
     property Matrix: TAffineMatrix read FMatrix write SetMatrix;
     property GridMatrix: TAffineMatrix read FGridMatrix write SetGridMatrix;
     property GridActive: boolean read FGridActive write SetGridActive;
@@ -285,7 +288,7 @@ begin
       result := oecHandPoint;
   end else
   begin
-    d := FMatrix*(FPoints[APointIndex].Coord - FPoints[APointIndex].Origin);
+    d := AffineMatrixLinear(FMatrix)*(FPoints[APointIndex].Coord - FPoints[APointIndex].Origin);
     ratio := sin(Pi/8);
     if (d.x = 0) and (d.y = 0) then result := oecMove else
     if abs(d.x)*ratio >= abs(d.y) then
@@ -441,7 +444,7 @@ begin
   FHoverPointHandlers.Add(AOnHoverPoint);
 end;
 
-function TBGRAOriginalEditor.AddPoint(ACoord: TPointF;
+function TBGRAOriginalEditor.AddPoint(const ACoord: TPointF;
   AOnMove: TOriginalMovePointEvent; ARightButton: boolean; ASnapToPoint: integer): integer;
 begin
   setlength(FPoints, length(FPoints)+1);
@@ -456,7 +459,7 @@ begin
   end;
 end;
 
-function TBGRAOriginalEditor.AddFixedPoint(ACoord: TPointF;
+function TBGRAOriginalEditor.AddFixedPoint(const ACoord: TPointF;
   ARightButton: boolean): integer;
 begin
   setlength(FPoints, length(FPoints)+1);
@@ -471,7 +474,7 @@ begin
   end;
 end;
 
-function TBGRAOriginalEditor.AddArrow(AOrigin, AEndCoord: TPointF;
+function TBGRAOriginalEditor.AddArrow(const AOrigin, AEndCoord: TPointF;
   AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean): integer;
 begin
   setlength(FPoints, length(FPoints)+1);
@@ -486,24 +489,17 @@ begin
   end;
 end;
 
-procedure TBGRAOriginalEditor.MouseMove(Shift: TShiftState; X, Y: single; out
+procedure TBGRAOriginalEditor.MouseMove(Shift: TShiftState; ViewX, ViewY: single; out
   ACursor: TOriginalEditorCursor; out AHandled: boolean);
 var newMousePos, newCoord, snapCoord: TPointF;
   hoverPoint, i: Integer;
-  gridCoord: TPointF;
 begin
   AHandled := false;
-  newMousePos := FMatrixInverse*PointF(X,Y);
+  newMousePos := ViewCoordToOriginal(PointF(ViewX,ViewY));
   if (FPointMoving <> -1) and (FPointMoving < length(FPoints)) then
   begin
     newCoord := newMousePos + FPointCoordDelta;
-    if GridActive then
-    begin
-      gridCoord := FGridMatrixInverse*newCoord;
-      gridCoord.x := round(gridCoord.x);
-      gridCoord.y := round(gridCoord.y);
-      newCoord := FGridMatrix*gridCoord;
-    end;
+    if GridActive then newCoord := SnapToGrid(newCoord, false);
     if FPoints[FPointMoving].SnapToPoint <> -1 then
     begin
       snapCoord := FPoints[FPoints[FPointMoving].SnapToPoint].Coord;
@@ -535,13 +531,13 @@ begin
 end;
 
 procedure TBGRAOriginalEditor.MouseDown(RightButton: boolean;
-  Shift: TShiftState; X, Y: single; out ACursor: TOriginalEditorCursor; out
+  Shift: TShiftState; ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out
   AHandled: boolean);
 var
   i, clickedPoint: Integer;
 begin
   AHandled:= false;
-  FPrevMousePos:= FMatrixInverse*PointF(X,Y);
+  FPrevMousePos:= ViewCoordToOriginal(PointF(ViewX,ViewY));
   if FPointMoving = -1 then
   begin
     clickedPoint := GetPointAt(FPrevMousePos, RightButton);;
@@ -572,7 +568,7 @@ begin
 end;
 
 procedure TBGRAOriginalEditor.MouseUp(RightButton: boolean; Shift: TShiftState;
-  X, Y: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
+  ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
 begin
   AHandled:= false;
   if (RightButton = FMovingRightButton) and (FPointMoving <> -1) then
@@ -644,9 +640,9 @@ begin
   for i := 0 to high(FPoints) do
   begin
     if isEmptyPointF(FPoints[i].Origin) then
-      elemRect := RenderPoint(ADest, FMatrix*FPoints[i].Coord, FPoints[i].RightButton)
+      elemRect := RenderPoint(ADest, OriginalCoordToView(FPoints[i].Coord), FPoints[i].RightButton)
     else
-      elemRect := RenderArrow(ADest, FMatrix*FPoints[i].Origin, FMatrix*FPoints[i].Coord);
+      elemRect := RenderArrow(ADest, OriginalCoordToView(FPoints[i].Origin), OriginalCoordToView(FPoints[i].Coord));
     if not IsRectEmpty(elemRect) then
     begin
       if IsRectEmpty(result) then
@@ -666,9 +662,9 @@ begin
   for i := 0 to high(FPoints) do
   begin
     if isEmptyPointF(FPoints[i].Origin) then
-      elemRect := GetRenderPointBounds(FMatrix*FPoints[i].Coord)
+      elemRect := GetRenderPointBounds(OriginalCoordToView(FPoints[i].Coord))
     else
-      elemRect := GetRenderArrowBounds(FMatrix*FPoints[i].Origin, FMatrix*FPoints[i].Coord);
+      elemRect := GetRenderArrowBounds(OriginalCoordToView(FPoints[i].Origin), OriginalCoordToView(FPoints[i].Coord));
     if not IsRectEmpty(elemRect) then
     begin
       if IsRectEmpty(result) then
@@ -677,6 +673,32 @@ begin
         UnionRect(result, result, elemRect);
     end;
   end;
+end;
+
+function TBGRAOriginalEditor.SnapToGrid(const ACoord: TPointF;
+  AIsViewCoord: boolean): TPointF;
+var
+  gridCoord: TPointF;
+begin
+  if AIsViewCoord then
+    gridCoord := FGridMatrixInverse*ViewCoordToOriginal(ACoord)
+  else
+    gridCoord := FGridMatrixInverse*ACoord;
+  gridCoord.x := round(gridCoord.x);
+  gridCoord.y := round(gridCoord.y);
+  result := FGridMatrix*gridCoord;
+  if AIsViewCoord then
+    result := OriginalCoordToView(result);
+end;
+
+function TBGRAOriginalEditor.OriginalCoordToView(const AImageCoord: TPointF): TPointF;
+begin
+  result := FMatrix*AImageCoord;
+end;
+
+function TBGRAOriginalEditor.ViewCoordToOriginal(const AViewCoord: TPointF): TPointF;
+begin
+  result := FMatrixInverse*AViewCoord;
 end;
 
 { TBGRAMemOriginalStorage }
