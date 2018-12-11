@@ -81,6 +81,7 @@ type
     constructor Create(Color1,Color2: TExpandedPixel; options: THueGradientOptions); overload;
     constructor Create(Color1,Color2: THSLAPixel; options: THueGradientOptions); overload;
     constructor Create(AHue1,AHue2: Word; Saturation,Lightness: Word; options: THueGradientOptions); overload;
+    function GetMonochrome: boolean; override;
   end;
 
   TGradientInterpolationFunction = function(t: single): single of object;
@@ -629,6 +630,11 @@ constructor TBGRAHueGradient.Create(AHue1, AHue2: Word; Saturation,
   Lightness: Word; options: THueGradientOptions);
 begin
   Create(HSLA(AHue1,saturation,lightness), HSLA(AHue2,saturation,lightness), options);
+end;
+
+function TBGRAHueGradient.GetMonochrome: boolean;
+begin
+  Result:= false;
 end;
 
 { TBGRAMultiGradient }
