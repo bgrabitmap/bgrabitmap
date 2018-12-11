@@ -575,11 +575,13 @@ type
     {** The color changes along a diamond shape }
     gtDiamond,
     {** The color changes in a radial way from a given center }
-    gtRadial);
+    gtRadial,
+    {** The color changes according to the angle relative to a given center }
+    gtAngular);
 const
   {** List of string to represent gradient types }
   GradientTypeStr : array[TGradientType] of string
-  = ('Linear','Reflected','Diamond','Radial');
+  = ('Linear','Reflected','Diamond','Radial','Angular');
   {** Returns the gradient type represented by the given string }
   function StrToGradientType(str: string): TGradientType;
 

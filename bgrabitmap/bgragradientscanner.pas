@@ -155,6 +155,7 @@ type
     function ScanNextRadial: single;
     function ScanNextRadial2: single;
     function ScanNextRadialFocal: single;
+    function ScanNextAngular: single;
 
     function ScanAtLinear(const p: TPointF): single;
     function ScanAtReflected(const p: TPointF): single;
@@ -162,6 +163,7 @@ type
     function ScanAtRadial(const p: TPointF): single;
     function ScanAtRadial2(const p: TPointF): single;
     function ScanAtRadialFocal(const p: TPointF): single;
+    function ScanAtAngular(const p: TPointF): single;
 
     function ScanNextInline: TBGRAPixel; inline;
     function ScanNextExpandedInline: TExpandedPixel; inline;
@@ -1211,6 +1213,10 @@ begin
         maxW2 := MaxSingle;
       end;
     end;
+    gtAngular: begin
+      FScanNextFunc:= @ScanNextAngular;
+      FScanAtFunc:= @ScanAtAngular;
+    end;
   else
     {gtLinear:} begin
       FScanNextFunc:= @ScanNextLinear;
@@ -1269,7 +1275,7 @@ begin
 
   case FGradientType of
     gtReflected: FRepeatHoriz := (FMatrix[1,1]=0);
-    gtDiamond: FRepeatHoriz:= FIsAverage;
+    gtDiamond,gtAngular: FRepeatHoriz:= FIsAverage;
     gtRadial: begin
       if FFocalRadius = FRadius then FIsAverage:= true;
       FRepeatHoriz:= FIsAverage;
@@ -1348,6 +1354,14 @@ begin
   result := ComputeRadialFocal(FPosition);
 end;
 
+function TBGRAGradientScanner.ScanNextAngular: single;
+begin
+  if FPosition.y >= 0 then
+    result := arctan2(FPosition.y,FPosition.x)/(2*Pi)
+  else
+    result := 1-arctan2(-FPosition.y,FPosition.x)/(2*Pi)
+end;
+
 function TBGRAGradientScanner.ScanAtLinear(const p: TPointF): single;
 begin
   with (FMatrix*p) do
@@ -1381,6 +1395,17 @@ end;
 function TBGRAGradientScanner.ScanAtRadialFocal(const p: TPointF): single;
 begin
   result := ComputeRadialFocal(FMatrix*p);
+end;
+
+function TBGRAGradientScanner.ScanAtAngular(const p: TPointF): single;
+begin
+  with (FMatrix*p) do
+  begin
+    if y >= 0 then
+      result := arctan2(y,x)/(2*Pi)
+    else
+      result := 1-arctan2(-y,x)/(2*Pi)
+  end;
 end;
 
 function TBGRAGradientScanner.ScanNextInline: TBGRAPixel;

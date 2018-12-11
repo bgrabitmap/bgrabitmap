@@ -1,14 +1,14 @@
 object Form1: TForm1
-  Left = 369
+  Left = 368
   Height = 577
-  Top = 171
+  Top = 146
   Width = 745
   Caption = 'Test layer original'
   ClientHeight = 577
   ClientWidth = 745
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  LCLVersion = '1.8.0.6'
+  LCLVersion = '1.6.0.4'
   object BCFlipX: TBCButton
     Left = 8
     Height = 33
@@ -1083,6 +1083,7 @@ object Form1: TForm1
       'Reflected'
       'Diamond'
       'Radial'
+      'Angular'
     )
     OnChange = cbGradientTypeChange
     Style = csDropDownList

@@ -370,7 +370,7 @@ begin
       end
       else AEditor.AddArrow(FOrigin, FXAxis, @OnMoveXAxis);
 
-      if FGradientType in[gtDiamond, gtRadial] then
+      if FGradientType in[gtDiamond, gtRadial, gtAngular] then
         AEditor.AddArrow(FOrigin, ComputedYAxis, @OnMoveYAxis);
     end;
     if FGradientType = gtRadial then
@@ -401,6 +401,7 @@ begin
   'reflected': FGradientType := gtReflected;
   'radial': FGradientType := gtRadial;
   'diamond': FGradientType := gtDiamond;
+  'angular': FGradientType := gtAngular;
   else {'linear'} FGradientType := gtLinear;
   end;
 
@@ -444,6 +445,7 @@ begin
   gtReflected: gtStr := 'reflected';
   gtRadial: gtStr := 'radial';
   gtDiamond: gtStr := 'diamond';
+  gtAngular: gtStr := 'angular';
   else {gtLinear} gtStr := 'linear';
   end;
   AStorage.RawString['gradient-type'] := gtStr;
@@ -451,7 +453,7 @@ begin
   AStorage.PointF['origin'] := FOrigin;
   AStorage.PointF['x-axis'] := FXAxis;
 
-  if FGradientType in[gtRadial,gtDiamond] then
+  if FGradientType in[gtRadial,gtDiamond,gtAngular] then
     AStorage.PointF['y-axis'] := FYAxis
   else
     AStorage.RemoveAttribute('y-axis');
