@@ -42,12 +42,12 @@ type
   function SetIntensity(const c: TExpandedPixel; intensity: word): TExpandedPixel;
   {** Returns the lightness of an gamma-expanded pixel. The lightness is the
      perceived brightness, 0 being black and 65535 being white }
-  function GetLightness(const c: TExpandedPixel): word; inline;
+  function GetLightness(const c: TExpandedPixel): word; inline; overload;
   {** Sets the lightness of a gamma-expanded pixel }
-  function SetLightness(const c: TExpandedPixel; lightness: word): TExpandedPixel;
+  function SetLightness(const c: TExpandedPixel; lightness: word): TExpandedPixel; overload;
   {** Sets the lightness of a gamma expanded pixel, provided you already know the current
      value of lightness ''curLightness''. It is a bit faster than the previous function }
-  function SetLightness(const c: TExpandedPixel; lightness: word; curLightness: word): TExpandedPixel;
+  function SetLightness(const c: TExpandedPixel; lightness: word; curLightness: word): TExpandedPixel; overload;
   {** Returns the importance of the color. It is similar to saturation
       in HSL colorspace, except it is gamma corrected. A value of zero indicates
       a black/gray/white, and a value of 65535 indicates a bright color }
@@ -136,14 +136,14 @@ type
   {** Converts a H hue (HSLA) to a G hue (GSBA) }
   function HtoG(hue: word): word;
   {** Converts a pixel from corrected HSL to sRGB }
-  function GSBAToBGRA(c: TGSBAPixel): TBGRAPixel;
-  function GSBAToBGRA(const c: THSLAPixel): TBGRAPixel;
+  function GSBAToBGRA(c: TGSBAPixel): TBGRAPixel; overload;
+  function GSBAToBGRA(const c: THSLAPixel): TBGRAPixel; overload;
   {** Converts a pixel from correct HSL to gamma expanded RGB }
-  function GSBAToExpanded(c: TGSBAPixel): TExpandedPixel;
-  function GSBAToExpanded(const c: THSLAPixel): TExpandedPixel;
+  function GSBAToExpanded(c: TGSBAPixel): TExpandedPixel; overload;
+  function GSBAToExpanded(const c: THSLAPixel): TExpandedPixel; overload;
   {** Converts a pixel from correct HSL to usual HSL }
-  function GSBAToHSLA(const c: TGSBAPixel): THSLAPixel;
-  function GSBAToHSLA(const c: THSLAPixel): THSLAPixel;
+  function GSBAToHSLA(const c: TGSBAPixel): THSLAPixel; overload;
+  function GSBAToHSLA(const c: THSLAPixel): THSLAPixel; overload;
   function HSLAToGSBA(const c: THSLAPixel): TGSBAPixel;
 
 type

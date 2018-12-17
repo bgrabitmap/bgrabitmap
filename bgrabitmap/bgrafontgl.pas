@@ -106,8 +106,8 @@ type
     procedure FreeMemoryOnDestroy; override;
     function CreateGlyph(AIdentifier: string): TRenderedGlyph; virtual;
     procedure CopyFontToRenderer; virtual;
-    procedure DoTextOut(X, Y: Single; const Text : UTF8String; AColor: TBGRAPixel; AHorizontalAlign: TAlignment; AVerticalAlign: TTextLayout); virtual;
-    procedure DoTextOut(X, Y: Single; const Text : UTF8String; AColor: TBGRAPixel); override;
+    procedure DoTextOut(X, Y: Single; const Text : UTF8String; AColor: TBGRAPixel; AHorizontalAlign: TAlignment; AVerticalAlign: TTextLayout); overload; virtual;
+    procedure DoTextOut(X, Y: Single; const Text : UTF8String; AColor: TBGRAPixel); overload; override;
     procedure DoTextRect(X, Y, Width, Height: Single; const Text : UTF8String; AColor: TBGRAPixel); override;
     function GetClipped: boolean; override;
     function GetUseGradientColors: boolean; override;

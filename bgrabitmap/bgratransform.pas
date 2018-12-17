@@ -71,8 +71,8 @@ type
     FIncludeEdges: boolean;
     procedure Init(ABitmap: TBGRACustomBitmap; ARepeatImageX: Boolean= false; ARepeatImageY: Boolean= false; AResampleFilter: TResampleFilter = rfLinear; AIncludeEdges: boolean = false);
   public
-    constructor Create(ABitmap: TBGRACustomBitmap; ARepeatImage: Boolean= false; AResampleFilter: TResampleFilter = rfLinear; AIncludeEdges: boolean = false);
-    constructor Create(ABitmap: TBGRACustomBitmap; ARepeatImageX: Boolean; ARepeatImageY: Boolean; AResampleFilter: TResampleFilter = rfLinear; AIncludeEdges: boolean = false);
+    constructor Create(ABitmap: TBGRACustomBitmap; ARepeatImage: Boolean= false; AResampleFilter: TResampleFilter = rfLinear; AIncludeEdges: boolean = false); overload;
+    constructor Create(ABitmap: TBGRACustomBitmap; ARepeatImageX: Boolean; ARepeatImageY: Boolean; AResampleFilter: TResampleFilter = rfLinear; AIncludeEdges: boolean = false); overload;
     destructor Destroy; override;
     function InternalScanCurrentPixel: TBGRAPixel; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
@@ -121,10 +121,10 @@ type
     function ScanNextPixel: TBGRAPixel; override;
     constructor Create(ASource: IBGRAScanner;
       ASourceMatrix: TAffineMatrix; const APoints: array of TPointF;
-      ATextureInterpolation: boolean = true);
+      ATextureInterpolation: boolean = true); overload;
     constructor Create(ASource: IBGRAScanner;
       const ATexCoords: array of TPointF; const APoints: array of TPointF;
-      ATextureInterpolation: boolean = true);
+      ATextureInterpolation: boolean = true); overload;
     destructor Destroy; override;
     property Culling: TFaceCulling read GetCulling write SetCulling;
   end;
@@ -175,8 +175,8 @@ type
 
 {---------------------- Affine matrix functions -------------------}
 //fill a matrix
-function AffineMatrix(m11,m12,m13,m21,m22,m23: single): TAffineMatrix;
-function AffineMatrix(AU,AV: TPointF; ATranslation: TPointF): TAffineMatrix;
+function AffineMatrix(m11,m12,m13,m21,m22,m23: single): TAffineMatrix; overload;
+function AffineMatrix(AU,AV: TPointF; ATranslation: TPointF): TAffineMatrix; overload;
 
 //matrix multiplication
 operator *(M,N: TAffineMatrix): TAffineMatrix;
@@ -216,8 +216,8 @@ function AffineMatrixSkewXRad(AngleCCW: single): TAffineMatrix;
 function AffineMatrixSkewYRad(AngleCCW: single): TAffineMatrix;
 
 //define a linear matrix
-function AffineMatrixLinear(v1,v2: TPointF): TAffineMatrix;
-function AffineMatrixLinear(const AMatrix: TAffineMatrix): TAffineMatrix;
+function AffineMatrixLinear(v1,v2: TPointF): TAffineMatrix; overload;
+function AffineMatrixLinear(const AMatrix: TAffineMatrix): TAffineMatrix; overload;
 
 //define a rotation matrix (positive radians are counter-clockwise)
 //(assuming the y-axis is pointing down)
@@ -268,8 +268,8 @@ type
     function GetIncludeOppositePlane: boolean;
     procedure SetIncludeOppositePlane(AValue: boolean);
   public
-    constructor Create(texture: IBGRAScanner; texCoord1,texCoord2: TPointF; const quad: array of TPointF);
-    constructor Create(texture: IBGRAScanner; const texCoordsQuad: array of TPointF; const quad: array of TPointF);
+    constructor Create(texture: IBGRAScanner; texCoord1,texCoord2: TPointF; const quad: array of TPointF); overload;
+    constructor Create(texture: IBGRAScanner; const texCoordsQuad: array of TPointF; const quad: array of TPointF); overload;
     destructor Destroy; override;
     procedure ScanMoveTo(X, Y: Integer); override;
     function ScanAt(X, Y: Single): TBGRAPixel; override;
@@ -288,9 +288,9 @@ type
     procedure Init;
   public
     constructor Create; overload;
-    constructor Create(x1,y1,x2,y2: single; const quad: array of TPointF);
-    constructor Create(const quad: array of TPointF; x1,y1,x2,y2: single);
-    constructor Create(const srcQuad,destQuad: array of TPointF);
+    constructor Create(x1,y1,x2,y2: single; const quad: array of TPointF); overload;
+    constructor Create(const quad: array of TPointF; x1,y1,x2,y2: single); overload;
+    constructor Create(const srcQuad,destQuad: array of TPointF); overload;
     function MapQuadToQuad(const srcQuad,destQuad: array of TPointF): boolean;
     function MapRectToQuad(x1,y1,x2,y2: single; const quad: array of TPointF): boolean;
     function MapQuadToRect(const quad: array of TPointF; x1,y1,x2,y2: single): boolean;

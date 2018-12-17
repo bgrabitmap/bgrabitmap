@@ -58,11 +58,11 @@ type
     procedure GradientFillDithered(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
       gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
       gammaColorCorrection: boolean = True; Sinus: Boolean=False;
-      ditherAlgo: TDitheringAlgorithm = daFloydSteinberg);
+      ditherAlgo: TDitheringAlgorithm = daFloydSteinberg); overload;
     procedure GradientFillDithered(x, y, x2, y2: integer; gradient: TBGRACustomGradient;
       gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
       Sinus: Boolean=False;
-      ditherAlgo: TDitheringAlgorithm = daFloydSteinberg);
+      ditherAlgo: TDitheringAlgorithm = daFloydSteinberg); overload;
   protected
     FRefCount: integer; //reference counter (not related to interface reference counter)
 
@@ -192,8 +192,8 @@ type
     procedure SetFontRenderer(AValue: TBGRACustomFontRenderer); override;
     function CreateDefaultFontRenderer: TBGRACustomFontRenderer; virtual; abstract;
     function GetFontAnchorVerticalOffset: single;
-    function GetFontAnchorRotatedOffset: TPointF;
-    function GetFontAnchorRotatedOffset(ACustomOrientation: integer): TPointF;
+    function GetFontAnchorRotatedOffset: TPointF; overload;
+    function GetFontAnchorRotatedOffset(ACustomOrientation: integer): TPointF; overload;
 
     function GetClipRect: TRect; override;
     procedure SetClipRect(const AValue: TRect); override;
@@ -238,7 +238,7 @@ type
 
     {------------------------- Constructors from TFPCustomImage----------------}
     {** Creates a new bitmap, initialize properties and bitmap data }
-    constructor Create(AWidth, AHeight: integer); override;
+    constructor Create(AWidth, AHeight: integer); overload; override;
     {** Can only be called with an existing instance of ''TBGRABitmap''.
         Sets the dimensions of an existing ''TBGRABitmap'' instance. }
     procedure SetSize(AWidth, AHeight: integer); override;
@@ -246,29 +246,29 @@ type
     {------------------------- Constructors from TBGRACustomBitmap-------------}
     {** Creates an image of width and height equal to zero. In this case,
         ''Data'' = '''nil''' }
-    constructor Create; override;
+    constructor Create; overload; override;
     {** Creates an image by copying the content of a ''TFPCustomImage'' }
-    constructor Create(AFPImage: TFPCustomImage); override;
+    constructor Create(AFPImage: TFPCustomImage); overload; override;
     {** Creates an image by copying the content of a ''TBitmap'' }
-    constructor Create(ABitmap: TBitmap; AUseTransparent: boolean = true); override;
+    constructor Create(ABitmap: TBitmap; AUseTransparent: boolean = true); overload; override;
     {** Creates an image of dimensions ''AWidth'' and ''AHeight'' and fills it with the opaque color ''Color'' }
-    constructor Create(AWidth, AHeight: integer; Color: TColor); override;
+    constructor Create(AWidth, AHeight: integer; Color: TColor); overload; override;
     {** Creates an image of dimensions ''AWidth'' and ''AHeight'' and fills it with ''Color'' }
-    constructor Create(AWidth, AHeight: integer; Color: TBGRAPixel); override;
+    constructor Create(AWidth, AHeight: integer; Color: TBGRAPixel); overload; override;
 
     {** Creates an image by loading its content from the file ''AFilename''.
         The encoding of the string is the default one for the operating system.
         It is recommended to use the next constructor and UTF8 encoding }
-    constructor Create(AFilename: string); override;
+    constructor Create(AFilename: string); overload; override;
 
     {** Creates an image by loading its content from the file ''AFilename''.
         The boolean ''AIsUtf8Filename'' specifies if UTF8 encoding is assumed
         for the filename }
-    constructor Create(AFilename: string; AIsUtf8: boolean); override;
-    constructor Create(AFilename: string; AIsUtf8: boolean; AOptions: TBGRALoadingOptions); override;
+    constructor Create(AFilename: string; AIsUtf8: boolean); overload; override;
+    constructor Create(AFilename: string; AIsUtf8: boolean; AOptions: TBGRALoadingOptions); overload; override;
 
     {** Creates an image by loading its content from the stream ''AStream'' }
-    constructor Create(AStream: TStream); override;
+    constructor Create(AStream: TStream); overload; override;
     {** Free the object and all its resources }
     destructor Destroy; override;
 
@@ -276,35 +276,35 @@ type
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with dimensions ''AWidth'' and ''AHeight'',
         containing transparent pixels. }
-    function NewBitmap(AWidth, AHeight: integer): TBGRACustomBitmap; override;
+    function NewBitmap(AWidth, AHeight: integer): TBGRACustomBitmap; overload; override;
 
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with dimensions ''AWidth'' and ''AHeight'',
         and fills it with Color }
-    function NewBitmap(AWidth, AHeight: integer; Color: TBGRAPixel): TBGRACustomBitmap; override;
+    function NewBitmap(AWidth, AHeight: integer; Color: TBGRAPixel): TBGRACustomBitmap; overload; override;
 
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with by loading its content
         from the file ''Filename''. The encoding of the string
         is the default one for the operating system }
-    function NewBitmap(Filename: string): TBGRACustomBitmap; override;
+    function NewBitmap(Filename: string): TBGRACustomBitmap; overload; override;
 
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with by loading its content
         from the file ''Filename'' }
-    function NewBitmap(Filename: string; AIsUtf8: boolean): TBGRACustomBitmap; override;
-    function NewBitmap(Filename: string; AIsUtf8: boolean; AOptions: TBGRALoadingOptions): TBGRACustomBitmap; override;
+    function NewBitmap(Filename: string; AIsUtf8: boolean): TBGRACustomBitmap; overload; override;
+    function NewBitmap(Filename: string; AIsUtf8: boolean; AOptions: TBGRALoadingOptions): TBGRACustomBitmap; overload; override;
 
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates an image by copying the content of a ''TFPCustomImage'' }
-    function NewBitmap(AFPImage: TFPCustomImage): TBGRACustomBitmap; override;
+    function NewBitmap(AFPImage: TFPCustomImage): TBGRACustomBitmap; overload; override;
 
     {** Load image from a stream. The specified image reader is used }
-    procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); override; overload;
+    procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); overload; override;
 
     {** Assign the content of the specified ''Source''. It can be a ''TBGRACustomBitmap'' or
         a ''TFPCustomImage'' }
-    procedure Assign(Source: TPersistent); override;
+    procedure Assign(Source: TPersistent); overload; override;
     procedure Assign(Source: TBitmap; AUseTransparent: boolean); overload;
     {** Stores the image in the stream without compression nor header }
     procedure Serialize(AStream: TStream); override;
@@ -329,9 +329,9 @@ type
     function PtInClipRect(x, y: int32or64): boolean; inline;
     {** Sets the pixel by replacing the content at (''x'',''y'') with the specified color.
         Alpha value is set to 255 (opaque) }
-    procedure SetPixel(x, y: int32or64; c: TColor); override;
+    procedure SetPixel(x, y: int32or64; c: TColor); overload; override;
     {** Sets the pixel at (''x'',''y'') with the specified content }
-    procedure SetPixel(x, y: int32or64; c: TBGRAPixel); override;
+    procedure SetPixel(x, y: int32or64; c: TBGRAPixel); overload; override;
     {** Applies a logical '''xor''' to the content of the pixel with the specified value.
         This includes the alpha channel, so if you want to preserve the opacity, provide
         a color ''c'' with alpha channel equal to zero }
@@ -378,21 +378,21 @@ type
         is out of bounds, the image is repeated.
       * ''AResampleFilter'' specifies how pixels must be interpolated. Accepted
         values are ''rfBox'', ''rfLinear'', ''rfHalfCosine'' and ''rfCosine'' }
-    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override; overload;
+    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; overload; override;
     {** Similar to previous ''GetPixel'' function, but the fractional part of
         the coordinate is supplied with a number from 0 to 255. The actual
         coordinate is (''x'' + ''fracX256''/256, ''y'' + ''fracY256''/256) }
-    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; override; overload;
+    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter = rfLinear): TBGRAPixel; overload; override;
     {** Computes the value of the pixel at a floating point coordiante
         by interpolating the values of the pixels around it. ''repeatX'' and
         ''repeatY'' specifies if the image is to be repeated or not.
       * ''AResampleFilter'' specifies how pixels must be interpolated. Accepted
         values are ''rfBox'', ''rfLinear'', ''rfHalfCosine'' and ''rfCosine'' }
-    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override; overload;
+    function GetPixelCycle(x, y: single; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; overload; override;
     {** Similar to previous ''GetPixel'' function, but the fractional part of
         the coordinate is supplied with a number from 0 to 255. The actual
         coordinate is (''x'' + ''fracX256''/256, ''y'' + ''fracY256''/256) }
-    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; override; overload;
+    function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; overload; override;
 
     {==== Drawing lines and polylines (integer coordinates) ====}
     {* These functions do not take into account current pen style/cap/join.
@@ -550,11 +550,11 @@ type
         using the specified ''mode'' }
     procedure Rectangle(x, y, x2, y2: integer; BorderColor, FillColor: TBGRAPixel; mode: TDrawMode); override;
     {** Fills completely a rectangle, without any border, with the specified ''mode'' }
-    procedure FillRect(x, y, x2, y2: integer; c: TBGRAPixel; mode: TDrawMode); override; overload;
+    procedure FillRect(x, y, x2, y2: integer; c: TBGRAPixel; mode: TDrawMode); overload; override;
     {** Fills completely a rectangle, without any border, with the specified ''texture'' and
         with the specified ''mode'' }
-    procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint); override; overload;
-    procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); override; overload;
+    procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint); overload; override;
+    procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); overload; override;
     {** Sets the alpha value within the specified rectangle }
     procedure AlphaFillRect(x, y, x2, y2: integer; alpha: byte); override;
     {** Draws a filled round rectangle, with corners having an elliptical diameter of ''DX'' and ''DY'' }
@@ -580,70 +580,70 @@ type
     procedure RectangleAntialias(x, y, x2, y2: single; texture: IBGRAScanner; w: single); override;
     {** Fills a rectangle with antialiasing. For example (-0.5,-0.5,0.5,0.5)
         fills one pixel }
-    procedure FillRectAntialias(x, y, x2, y2: single; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); override; overload;
+    procedure FillRectAntialias(x, y, x2, y2: single; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); overload; override;
     {** Fills a rectangle with a texture }
-    procedure FillRectAntialias(x, y, x2, y2: single; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); override; overload;
+    procedure FillRectAntialias(x, y, x2, y2: single; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); overload; override;
     {** Erases the content of a rectangle with antialiasing }
     procedure EraseRectAntialias(x, y, x2, y2: single; alpha: byte; pixelCenteredCoordinates: boolean = true); override;
 
     {** Draws a rounded rectangle border with antialiasing. The corners have an
         elliptical radius of ''rx'' and ''ry''. ''options'' specifies how to
         draw the corners. See [[BGRABitmap Geometry types|geometry types]] }
-    procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; c: TBGRAPixel; w: single; options: TRoundRectangleOptions = []); override;
+    procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; c: TBGRAPixel; w: single; options: TRoundRectangleOptions = []); overload; override;
     {** Draws a rounded rectangle border with the specified texture.
         The corners have an elliptical radius of ''rx'' and ''ry''.
         ''options'' specifies how to draw the corners.
         See [[BGRABitmap Geometry types|geometry types]] }
-    procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; w: single; options: TRoundRectangleOptions = []); override;
+    procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; w: single; options: TRoundRectangleOptions = []); overload; override;
     {** Draws and fills a round rectangle }
-    procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; pencolor: TBGRAPixel; w: single; fillcolor: TBGRAPixel; options: TRoundRectangleOptions = []); override;
+    procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; pencolor: TBGRAPixel; w: single; fillcolor: TBGRAPixel; options: TRoundRectangleOptions = []); overload; override;
     {** Draws and fills a round rectangle with textures }
-    procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; penTexture: IBGRAScanner; w: single; fillTexture: IBGRAScanner; options: TRoundRectangleOptions = []); override;
+    procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; penTexture: IBGRAScanner; w: single; fillTexture: IBGRAScanner; options: TRoundRectangleOptions = []); overload; override;
 
     {** Fills a rounded rectangle with antialiasing. The corners have an
         elliptical radius of ''rx'' and ''ry''. ''options'' specifies how to
         draw the corners. See [[BGRABitmap Geometry types|geometry types]] }
-    procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; c: TBGRAPixel; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); override;
+    procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; c: TBGRAPixel; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
     {** Fills a rounded rectangle with a texture }
-    procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); override;
+    procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
     {** Erases the content of a rounded rectangle with a texture }
-    procedure EraseRoundRectAntialias(x,y,x2,y2,rx,ry: single; alpha: byte; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); override;
+    procedure EraseRoundRectAntialias(x,y,x2,y2,rx,ry: single; alpha: byte; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
 
     {** Draws an ellipse without antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
-    procedure Ellipse(x, y, rx, ry: single; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); override;
-    procedure Ellipse(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); override;
+    procedure Ellipse(x, y, rx, ry: single; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); overload; override;
+    procedure Ellipse(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); overload; override;
     {** Draws an ellipse with antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
-    procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single); override;
-    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single); override;
+    procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single); overload; override;
+    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single); overload; override;
     {** Draws an ellipse border with a ''texture'' }
-    procedure EllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner; w: single); override;
-    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner; w: single); override;
+    procedure EllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner; w: single); overload; override;
+    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner; w: single); overload; override;
     {** Draws and fills an ellipse }
-    procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single; back: TBGRAPixel); override;
-    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; back: TBGRAPixel); override;
+    procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; override;
+    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; override;
     {** Fills an ellipse }
-    procedure FillEllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel); override;
-    procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel); override;
+    procedure FillEllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel); overload; override;
+    procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel); overload; override;
     {** Fills an ellipse with a ''texture'' }
-    procedure FillEllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner); override;
-    procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner); override;
+    procedure FillEllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner); overload; override;
+    procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner); overload; override;
     {** Fills an ellipse with a gradient of color. ''outercolor'' specifies
         the end color of the gradient on the border of the ellipse and
         ''innercolor'' the end color of the gradient at the center of the
         ellipse }
-    procedure FillEllipseLinearColorAntialias(x, y, rx, ry: single; outercolor, innercolor: TBGRAPixel); override;
-    procedure FillEllipseLinearColorAntialias(AOrigin, AXAxis, AYAxis: TPointF; outercolor, innercolor: TBGRAPixel); override;
+    procedure FillEllipseLinearColorAntialias(x, y, rx, ry: single; outercolor, innercolor: TBGRAPixel); overload; override;
+    procedure FillEllipseLinearColorAntialias(AOrigin, AXAxis, AYAxis: TPointF; outercolor, innercolor: TBGRAPixel); overload; override;
     {** Erases the content of an ellipse }
-    procedure EraseEllipseAntialias(x, y, rx, ry: single; alpha: byte); override;
-    procedure EraseEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; alpha: byte); override;
+    procedure EraseEllipseAntialias(x, y, rx, ry: single; alpha: byte); overload; override;
+    procedure EraseEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; alpha: byte); overload; override;
 
     {==== Polygons and path ====}
-    procedure FillPoly(const points: array of TPointF; c: TBGRAPixel; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); override;
-    procedure FillPoly(const points: array of TPointF; texture: IBGRAScanner; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); override;
-    procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel; APixelCenteredCoordinates: boolean = true); override;
-    procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); override;
+    procedure FillPoly(const points: array of TPointF; c: TBGRAPixel; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); overload; override;
+    procedure FillPoly(const points: array of TPointF; texture: IBGRAScanner; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); overload; override;
+    procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel; APixelCenteredCoordinates: boolean = true); overload; override;
+    procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; override;
     procedure ErasePoly(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); override;
     procedure ErasePolyAntialias(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); override;
 
@@ -671,32 +671,32 @@ type
     procedure FillPolyPerspectiveMapping(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean; zbuffer: psingle = nil); override;
     procedure FillPolyPerspectiveMappingLightness(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean; zbuffer: psingle = nil); override;
 
-    procedure FillShape(shape: TBGRACustomFillInfo; c: TBGRAPixel; drawmode: TDrawMode); override;
-    procedure FillShape(shape: TBGRACustomFillInfo; texture: IBGRAScanner; drawmode: TDrawMode); override;
-    procedure FillShapeAntialias(shape: TBGRACustomFillInfo; c: TBGRAPixel); override;
-    procedure FillShapeAntialias(shape: TBGRACustomFillInfo; texture: IBGRAScanner); override;
+    procedure FillShape(shape: TBGRACustomFillInfo; c: TBGRAPixel; drawmode: TDrawMode); overload; override;
+    procedure FillShape(shape: TBGRACustomFillInfo; texture: IBGRAScanner; drawmode: TDrawMode); overload; override;
+    procedure FillShapeAntialias(shape: TBGRACustomFillInfo; c: TBGRAPixel); overload; override;
+    procedure FillShapeAntialias(shape: TBGRACustomFillInfo; texture: IBGRAScanner); overload; override;
     procedure EraseShape(shape: TBGRACustomFillInfo; alpha: byte); override;
     procedure EraseShapeAntialias(shape: TBGRACustomFillInfo; alpha: byte); override;
 
-    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single); override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single); override;
-    procedure FillPath(APath: IBGRAPath; AFillColor: TBGRAPixel); override;
-    procedure FillPath(APath: IBGRAPath; AFillTexture: IBGRAScanner); override;
-    procedure ErasePath(APath: IBGRAPath; alpha: byte); override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single); overload; override;
+    procedure FillPath(APath: IBGRAPath; AFillColor: TBGRAPixel); overload; override;
+    procedure FillPath(APath: IBGRAPath; AFillTexture: IBGRAScanner); overload; override;
+    procedure ErasePath(APath: IBGRAPath; alpha: byte); overload; override;
 
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single); override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single); override;
-    procedure FillPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AFillColor: TBGRAPixel); override;
-    procedure FillPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AFillTexture: IBGRAScanner); override;
-    procedure ErasePath(APath: IBGRAPath; AMatrix: TAffineMatrix; alpha: byte); override;
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single); overload; override;
+    procedure FillPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AFillColor: TBGRAPixel); overload; override;
+    procedure FillPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AFillTexture: IBGRAScanner); overload; override;
+    procedure ErasePath(APath: IBGRAPath; AMatrix: TAffineMatrix; alpha: byte); overload; override;
 
     procedure ArrowStartAsNone; override;
     procedure ArrowStartAsClassic(AFlipped: boolean = false; ACut: boolean = false; ARelativePenWidth: single = 1); override;
@@ -713,27 +713,27 @@ type
       If align is taCenter, (x,y) is at the top and middle of the text.
       If align is taRightJustify, (x,y) is the top-right corner.
       The value of FontOrientation is taken into account, so that the text may be rotated. }
-    procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); override; overload;
+    procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
 
     { Same as above functions, except that the text is filled using texture.
       The value of FontOrientation is taken into account, so that the text may be rotated. }
-    procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); override; overload;
+    procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
 
     { Same as above, except that the orientation is specified, overriding the value of the property FontOrientation. }
-    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); override; overload;
-    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); override; overload;
+    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; override;
 
-    procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); override; overload;
-    procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); override; overload;
+    procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; override;
+    procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; override;
 
-    procedure TextMultiline(ALeft,ATop,AWidth: single; sUTF8: string; c: TBGRAPixel; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); override; overload;
-    procedure TextMultiline(ALeft,ATop,AWidth: single; sUTF8: string; ATexture: IBGRAScanner; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); override; overload;
+    procedure TextMultiline(ALeft,ATop,AWidth: single; sUTF8: string; c: TBGRAPixel; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); overload; override;
+    procedure TextMultiline(ALeft,ATop,AWidth: single; sUTF8: string; ATexture: IBGRAScanner; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); overload; override;
 
     { Draw the UTF8 encoded string at the coordinate (x,y), clipped inside the rectangle ARect.
       Additional style information is provided by the style parameter.
       The color c or texture is used to fill the text. No rotation is applied. }
-    procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); override; overload;
-    procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); override; overload;
+    procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); overload; override;
+    procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); overload; override;
 
     { Returns the total size of the string provided using the current font.
       Orientation is not taken into account, so that the width is along the text. End of lines are stripped from the string. }
@@ -752,31 +752,31 @@ type
     function ComputeClosedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; override;
     function ComputeOpenedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; override;
 
-    function ComputeBezierCurve(const ACurve: TCubicBezierCurve): ArrayOfTPointF; override;
-    function ComputeBezierCurve(const ACurve: TQuadraticBezierCurve): ArrayOfTPointF; override;
-    function ComputeBezierSpline(const ASpline: array of TCubicBezierCurve): ArrayOfTPointF; override;
-    function ComputeBezierSpline(const ASpline: array of TQuadraticBezierCurve): ArrayOfTPointF; override;
+    function ComputeBezierCurve(const ACurve: TCubicBezierCurve): ArrayOfTPointF; overload; override;
+    function ComputeBezierCurve(const ACurve: TQuadraticBezierCurve): ArrayOfTPointF; overload; override;
+    function ComputeBezierSpline(const ASpline: array of TCubicBezierCurve): ArrayOfTPointF; overload; override;
+    function ComputeBezierSpline(const ASpline: array of TQuadraticBezierCurve): ArrayOfTPointF; overload; override;
 
-    function ComputeWidePolyline(const points: array of TPointF; w: single): ArrayOfTPointF; override;
-    function ComputeWidePolyline(const points: array of TPointF; w: single; ClosedCap: boolean): ArrayOfTPointF; override;
-    function ComputeWidePolygon(const points: array of TPointF; w: single): ArrayOfTPointF; override;
+    function ComputeWidePolyline(const points: array of TPointF; w: single): ArrayOfTPointF; overload; override;
+    function ComputeWidePolyline(const points: array of TPointF; w: single; ClosedCap: boolean): ArrayOfTPointF; overload; override;
+    function ComputeWidePolygon(const points: array of TPointF; w: single): ArrayOfTPointF; overload; override;
 
-    function ComputeEllipseContour(x,y,rx,ry: single; quality: single = 1): ArrayOfTPointF; override; overload;
-    function ComputeEllipseContour(AOrigin, AXAxis, AYAxis: TPointF; quality: single = 1): ArrayOfTPointF; override; overload;
-    function ComputeEllipseBorder(x,y,rx,ry,w: single; quality: single = 1): ArrayOfTPointF; override; overload;
+    function ComputeEllipseContour(x,y,rx,ry: single; quality: single = 1): ArrayOfTPointF;  overload; override;
+    function ComputeEllipseContour(AOrigin, AXAxis, AYAxis: TPointF; quality: single = 1): ArrayOfTPointF;  overload; override;
+    function ComputeEllipseBorder(x,y,rx,ry,w: single; quality: single = 1): ArrayOfTPointF; overload; override;
     function ComputeEllipseBorder(AOrigin, AXAxis, AYAxis: TPointF; w: single; quality: single = 1): ArrayOfTPointF; override; overload;
     function ComputeArc65536(x,y,rx,ry: single; start65536,end65536: word; quality: single = 1): ArrayOfTPointF; override;
     function ComputeArcRad(x,y,rx,ry: single; startRad,endRad: single; quality: single = 1): ArrayOfTPointF; override;
-    function ComputeRoundRect(x1,y1,x2,y2,rx,ry: single; quality: single = 1): ArrayOfTPointF; override;
-    function ComputeRoundRect(x1,y1,x2,y2,rx,ry: single; options: TRoundRectangleOptions; quality: single = 1): ArrayOfTPointF; override;
+    function ComputeRoundRect(x1,y1,x2,y2,rx,ry: single; quality: single = 1): ArrayOfTPointF; overload; override;
+    function ComputeRoundRect(x1,y1,x2,y2,rx,ry: single; options: TRoundRectangleOptions; quality: single = 1): ArrayOfTPointF; overload; override;
     function ComputePie65536(x,y,rx,ry: single; start65536,end65536: word; quality: single = 1): ArrayOfTPointF; override;
     function ComputePieRad(x,y,rx,ry: single; startRad,endRad: single; quality: single = 1): ArrayOfTPointF; override;
 
     {Filling}
     procedure NoClip; override;
-    procedure Fill(texture: IBGRAScanner; mode: TDrawMode); override; overload;
-    procedure Fill(texture: IBGRAScanner); override; overload;
-    procedure Fill(c: TBGRAPixel; start, Count: integer); override; overload;
+    procedure Fill(texture: IBGRAScanner; mode: TDrawMode); overload; override;
+    procedure Fill(texture: IBGRAScanner); overload; override;
+    procedure Fill(c: TBGRAPixel; start, Count: integer); overload; override;
     procedure DrawPixels(c: TBGRAPixel; start, Count: integer); override;
     procedure AlphaFill(alpha: byte; start, Count: integer); override;
     procedure FillMask(x,y: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); override;
@@ -808,17 +808,17 @@ type
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
 
     {Canvas drawing functions}
-    procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); override;
-    procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); override;
+    procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); overload; override;
+    procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); overload; override;
     procedure InvalidateBitmap; override;         //call if you modify with Scanline
     procedure LoadFromBitmapIfNeeded; override;   //call to ensure that bitmap data is up to date
 
     {BGRA bitmap functions}
-    procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); override;
-    procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); override;
-    procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override; overload;
-    procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); override; overload;
-    function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true): TRect; override; overload;
+    procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); overload; override;
+    procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); overload; override;
+    procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); overload; override;
+    procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); overload; override;
+    function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true): TRect; overload; override;
     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
 
     procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
@@ -831,30 +831,30 @@ type
     function GetPtrBitmap(Top,Bottom: Integer): TBGRACustomBitmap; override;
     function Duplicate(DuplicateProperties: Boolean = False; DuplicateXorMask: Boolean = False) : TBGRACustomBitmap; override;
     procedure CopyPropertiesTo(ABitmap: TBGRADefaultBitmap);
-    function Equals(comp: TBGRACustomBitmap): boolean; override;
-    function Equals(comp: TBGRAPixel): boolean; override;
+    function Equals(comp: TBGRACustomBitmap): boolean; overload; override;
+    function Equals(comp: TBGRAPixel): boolean; overload; override;
     function GetDifferenceBounds(ABitmap: TBGRACustomBitmap): TRect; override;
     function MakeBitmapCopy(BackgroundColor: TColor): TBitmap; override;
 
     function Resample(newWidth, newHeight: integer;
       mode: TResampleMode = rmFineResample): TBGRACustomBitmap; override;
-    procedure VerticalFlip(ARect: TRect); override; overload;
-    procedure HorizontalFlip(ARect: TRect); override; overload;
+    procedure VerticalFlip(ARect: TRect); overload; override;
+    procedure HorizontalFlip(ARect: TRect); overload; override;
     function RotateCW: TBGRACustomBitmap; override;
     function RotateCCW: TBGRACustomBitmap; override;
     procedure Negative; override;
     procedure NegativeRect(ABounds: TRect); override;
     procedure LinearNegative; override;
     procedure LinearNegativeRect(ABounds: TRect); override;
-    procedure InplaceGrayscale(AGammaCorrection: boolean = true); override;
-    procedure InplaceGrayscale(ABounds: TRect; AGammaCorrection: boolean = true); override;
-    procedure InplaceNormalize(AEachChannel: boolean = True); override;
-    procedure InplaceNormalize(ABounds: TRect; AEachChannel: boolean = True); override;
+    procedure InplaceGrayscale(AGammaCorrection: boolean = true); overload; override;
+    procedure InplaceGrayscale(ABounds: TRect; AGammaCorrection: boolean = true); overload; override;
+    procedure InplaceNormalize(AEachChannel: boolean = True); overload; override;
+    procedure InplaceNormalize(ABounds: TRect; AEachChannel: boolean = True); overload; override;
     procedure SwapRedBlue; override;
     procedure SwapRedBlue(ARect: TRect); override;
     procedure GrayscaleToAlpha; override;
     procedure AlphaToGrayscale; override;
-    procedure ApplyMask(mask: TBGRACustomBitmap; ARect: TRect; AMaskRectTopLeft: TPoint); override; overload;
+    procedure ApplyMask(mask: TBGRACustomBitmap; ARect: TRect; AMaskRectTopLeft: TPoint); overload; override;
     function GetMaskFromAlpha: TBGRACustomBitmap; override;
     procedure ApplyGlobalOpacity(alpha: byte); override;
     procedure ApplyGlobalOpacity(ABounds: TRect; alpha: byte); override;
@@ -866,32 +866,32 @@ type
     function FilterSmartZoom3(Option: TMedianOption): TBGRACustomBitmap; override;
     function FilterMedian(Option: TMedianOption): TBGRACustomBitmap; override;
     function FilterSmooth: TBGRACustomBitmap; override;
-    function FilterSharpen(Amount: single = 1): TBGRACustomBitmap; override;
-    function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRACustomBitmap; override;
+    function FilterSharpen(Amount: single = 1): TBGRACustomBitmap; overload; override;
+    function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRACustomBitmap; overload; override;
     function FilterContour: TBGRACustomBitmap; override;
     function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRACustomBitmap; override;
-    function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; override;
-    function FilterBlurRadial(ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; override;
-    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; override;
-    function FilterBlurRadial(ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; override;
-    function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; override;
-    function FilterBlurMotion(ABounds: TRect; distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; override;
-    function FilterCustomBlur(mask: TBGRACustomBitmap): TBGRACustomBitmap; override;
-    function FilterCustomBlur(ABounds: TRect; mask: TBGRACustomBitmap): TBGRACustomBitmap; override;
-    function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; override;
-    function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; override;
-    function FilterEmbossHighlight(FillSelection: boolean): TBGRACustomBitmap; override;
-    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel): TBGRACustomBitmap; override;
-    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; var Offset: TPoint): TBGRACustomBitmap; override;
-    function FilterGrayscale: TBGRACustomBitmap; override;
-    function FilterGrayscale(ABounds: TRect): TBGRACustomBitmap; override;
-    function FilterNormalize(eachChannel: boolean = True): TBGRACustomBitmap; override;
-    function FilterNormalize(ABounds: TRect; eachChannel: boolean = True): TBGRACustomBitmap; override;
+    function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
+    function FilterBlurRadial(ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
+    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
+    function FilterBlurRadial(ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
+    function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; override;
+    function FilterBlurMotion(ABounds: TRect; distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; override;
+    function FilterCustomBlur(mask: TBGRACustomBitmap): TBGRACustomBitmap; overload; override;
+    function FilterCustomBlur(ABounds: TRect; mask: TBGRACustomBitmap): TBGRACustomBitmap; overload; override;
+    function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; override;
+    function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean): TBGRACustomBitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel): TBGRACustomBitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; var Offset: TPoint): TBGRACustomBitmap; overload; override;
+    function FilterGrayscale: TBGRACustomBitmap; overload; override;
+    function FilterGrayscale(ABounds: TRect): TBGRACustomBitmap; overload; override;
+    function FilterNormalize(eachChannel: boolean = True): TBGRACustomBitmap; overload; override;
+    function FilterNormalize(ABounds: TRect; eachChannel: boolean = True): TBGRACustomBitmap; overload; override;
     function FilterRotate(origin: TPointF; angle: single; correctBlur: boolean = false): TBGRACustomBitmap; override;
     function FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean = false): TBGRACustomBitmap; override;
     function FilterSphere: TBGRACustomBitmap; override;
-    function FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRACustomBitmap; override;
-    function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRACustomBitmap; override;
+    function FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRACustomBitmap; overload; override;
+    function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRACustomBitmap; overload; override;
     function FilterCylinder: TBGRACustomBitmap; override;
     function FilterPlane: TBGRACustomBitmap; override;
   end;

@@ -119,9 +119,9 @@ function IsUnicodeIsolateOrFormatting(u: cardinal): boolean;
 function AnalyzeBidiUnicode(u: PCardinal; ALength: integer; baseDirection: cardinal): TUnicodeBidiArray;
 
 { Determine diplay order, provided the display surface is horizontally infinite }
-function GetUnicodeDisplayOrder(const AInfo: TUnicodeBidiArray): TUnicodeDisplayOrder;
-function GetUnicodeDisplayOrder(ALevels: PByte; ACount: integer): TUnicodeDisplayOrder;
-function GetUnicodeDisplayOrder(ABidiInfo: PUnicodeBidiInfo; AStride, ACount: integer): TUnicodeDisplayOrder;
+function GetUnicodeDisplayOrder(const AInfo: TUnicodeBidiArray): TUnicodeDisplayOrder; overload;
+function GetUnicodeDisplayOrder(ALevels: PByte; ACount: integer): TUnicodeDisplayOrder; overload;
+function GetUnicodeDisplayOrder(ABidiInfo: PUnicodeBidiInfo; AStride, ACount: integer): TUnicodeDisplayOrder; overload;
 procedure GenerateUnicodeFunctions; //to regenerate the code of GetUnicodeBidiClass and GetUnicodeBracketInfo
 
 implementation

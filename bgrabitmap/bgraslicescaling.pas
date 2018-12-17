@@ -65,31 +65,31 @@ type
     // Create an instance and stores the bitmap, either as a reference to a TBGRABitmap from the caller,
     // or as a local owned copy in other cases
     constructor Create(ABitmap: TBGRABitmap;
-      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer; ABitmapOwner: boolean = false);
+      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer; ABitmapOwner: boolean = false); overload;
     constructor Create(ABitmap: TBitmap;
-      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer);
+      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer); overload;
     constructor Create(AFilename: string;
-      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer);
+      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer); overload;
     constructor Create(AFilename: string; AIsUtf8: boolean;
-      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer);
+      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer); overload;
     constructor Create(AStream: TStream;
-      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer);
-    constructor Create(ABitmap: TBGRABitmap; ABitmapOwner: boolean = false);
-    constructor Create(ABitmap: TBitmap);
-    constructor Create(AFilename: string);
-    constructor Create(AFilename: string; AIsUtf8: boolean);
-    constructor Create(AStream: TStream);
-    constructor Create;
-    procedure SetMargins(AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer);
-    procedure SetMargins(AMargins: TMargins);
+      AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer); overload;
+    constructor Create(ABitmap: TBGRABitmap; ABitmapOwner: boolean = false); overload;
+    constructor Create(ABitmap: TBitmap); overload;
+    constructor Create(AFilename: string); overload;
+    constructor Create(AFilename: string; AIsUtf8: boolean); overload;
+    constructor Create(AStream: TStream); overload;
+    constructor Create; overload;
+    procedure SetMargins(AMarginTop, AMarginRight, AMarginBottom, AMarginLeft: integer); overload;
+    procedure SetMargins(AMargins: TMargins); overload;
     destructor Destroy; override;
   public
     procedure NotifyBitmapChanged; //to notify the source bitmap has changed
     //so new bitmaps should be used
     // Draw
-    procedure Draw(ABitmap: TBGRABitmap; ARect: TRect; DrawGrid: boolean = False);
+    procedure Draw(ABitmap: TBGRABitmap; ARect: TRect; DrawGrid: boolean = False); overload;
     procedure Draw(ABitmap: TBGRABitmap; ALeft, ATop, AWidth, AHeight: integer;
-      DrawGrid: boolean = False);
+      DrawGrid: boolean = False); overload;
     procedure AutodetectRepeat;
   public
     // Property
@@ -123,26 +123,26 @@ type
   public
     constructor Create(ABitmap: TBGRABitmap;
       AMarginTop, AMarginRight, AMarginBottom, AMarginLeft, NumberOfItems: integer;
-      Direction: TSliceScalingDirection; ABitmapOwner: boolean = false);
+      Direction: TSliceScalingDirection; ABitmapOwner: boolean = false); overload;
     constructor Create(ABitmap: TBitmap;
       AMarginTop, AMarginRight, AMarginBottom, AMarginLeft, NumberOfItems: integer;
-      Direction: TSliceScalingDirection);
+      Direction: TSliceScalingDirection); overload;
     constructor Create(ABitmapFilename: string;
       AMarginTop, AMarginRight, AMarginBottom, AMarginLeft, NumberOfItems: integer;
-      Direction: TSliceScalingDirection);
+      Direction: TSliceScalingDirection); overload;
     constructor Create(ABitmapFilename: string; AIsUtf8: boolean;
       AMarginTop, AMarginRight, AMarginBottom, AMarginLeft, NumberOfItems: integer;
-      Direction: TSliceScalingDirection);
+      Direction: TSliceScalingDirection); overload;
     constructor Create(AStream: TStream;
       AMarginTop, AMarginRight, AMarginBottom, AMarginLeft, NumberOfItems: integer;
-      Direction: TSliceScalingDirection);
+      Direction: TSliceScalingDirection); overload;
     destructor Destroy; override;
-    constructor Create(AIniFilename, ASection: string; AIsUtf8Filename: boolean= false);
+    constructor Create(AIniFilename, ASection: string; AIsUtf8Filename: boolean= false); overload;
   public
     procedure Draw(ItemNumber: integer; ABitmap: TBGRABitmap;
-      ARect: TRect; DrawGrid: boolean = False);
+      ARect: TRect; DrawGrid: boolean = False); overload;
     procedure Draw(ItemNumber: integer; ABitmap: TBGRABitmap;
-      ALeft, ATop, AWidth, AHeight: integer; DrawGrid: boolean = False);
+      ALeft, ATop, AWidth, AHeight: integer; DrawGrid: boolean = False); overload;
   public
     property SliceScalingArray: TSliceScalingArray
       read FSliceScalingArray write SetFSliceScalingArray;

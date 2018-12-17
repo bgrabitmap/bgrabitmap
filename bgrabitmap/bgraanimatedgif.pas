@@ -84,10 +84,10 @@ type
     LoopCount:      Word;
     LoopDone:       Integer;
 
-    constructor Create(filenameUTF8: string);
-    constructor Create(stream: TStream);
-    constructor Create(stream: TStream; AMaxImageCount: integer);
-    constructor Create; override;
+    constructor Create(filenameUTF8: string); overload;
+    constructor Create(stream: TStream); overload;
+    constructor Create(stream: TStream; AMaxImageCount: integer); overload;
+    constructor Create; overload; override;
     function Duplicate: TBGRAAnimatedGif;
     function AddFrame(AImage: TFPCustomImage; X,Y: integer; ADelayMs: integer;
       ADisposeMode: TDisposeMode = dmErase; AHasLocalPalette: boolean = false) : integer;
@@ -106,16 +106,16 @@ type
                               AHasLocalPalette: boolean = true);
 
     {TGraphic}
-    procedure LoadFromStream(Stream: TStream); override;
+    procedure LoadFromStream(Stream: TStream); overload; override;
     procedure LoadFromStream(Stream: TStream; AMaxImageCount: integer); overload;
-    procedure SaveToStream(Stream: TStream); override;
+    procedure SaveToStream(Stream: TStream); overload; override;
     procedure LoadFromFile(const AFilenameUTF8: string); override;
     procedure SaveToFile(const AFilenameUTF8: string); override;
     class function GetFileExtensions: string; override;
 
     procedure SetSize(AWidth,AHeight: integer); virtual;
     procedure SaveToStream(Stream: TStream; AQuantizer: TBGRAColorQuantizerAny;
-      ADitheringAlgorithm: TDitheringAlgorithm); virtual; overload;
+      ADitheringAlgorithm: TDitheringAlgorithm); overload; virtual;
     procedure Clear; override;
     destructor Destroy; override;
     procedure Pause;

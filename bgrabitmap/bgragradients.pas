@@ -28,19 +28,19 @@ type
 
 function nGradientInfo(StartColor, StopColor: TBGRAPixel; Direction: TGradientDirection; EndPercent: Single): TnGradientInfo;
 
-function nGradientAlphaFill(ARect: TRect; ADir: TGradientDirection; const AGradient: array of TnGradientInfo): TBGRABitmap;
-function nGradientAlphaFill(AWidth, AHeight: Integer; ADir: TGradientDirection; const AGradient: array of TnGradientInfo): TBGRABitmap;
-procedure nGradientAlphaFill(ACanvas: TCanvas; ARect: TRect; ADir: TGradientDirection; const AGradient: array of TnGradientInfo);
-procedure nGradientAlphaFill(ABitmap: TBGRABitmap; ARect: TRect; ADir: TGradientDirection; const AGradient: array of TnGradientInfo);
+function nGradientAlphaFill(ARect: TRect; ADir: TGradientDirection; const AGradient: array of TnGradientInfo): TBGRABitmap; overload;
+function nGradientAlphaFill(AWidth, AHeight: Integer; ADir: TGradientDirection; const AGradient: array of TnGradientInfo): TBGRABitmap; overload;
+procedure nGradientAlphaFill(ACanvas: TCanvas; ARect: TRect; ADir: TGradientDirection; const AGradient: array of TnGradientInfo); overload;
+procedure nGradientAlphaFill(ABitmap: TBGRABitmap; ARect: TRect; ADir: TGradientDirection; const AGradient: array of TnGradientInfo); overload;
 
 function DoubleGradientAlphaFill(ARect: TRect; AStart1,AStop1,AStart2,AStop2: TBGRAPixel;
-                                 ADirection1,ADirection2,ADir: TGradientDirection; AValue: Single): TBGRABitmap;
+                                 ADirection1,ADirection2,ADir: TGradientDirection; AValue: Single): TBGRABitmap; overload;
 function DoubleGradientAlphaFill(AWidth,AHeight: Integer; AStart1,AStop1,AStart2,AStop2: TBGRAPixel;
-                                 ADirection1,ADirection2,ADir: TGradientDirection; AValue: Single): TBGRABitmap;
+                                 ADirection1,ADirection2,ADir: TGradientDirection; AValue: Single): TBGRABitmap; overload;
 procedure DoubleGradientAlphaFill(ACanvas: TCanvas; ARect: TRect; AStart1,AStop1,AStart2,AStop2: TBGRAPixel;
-                                 ADirection1,ADirection2,ADir: TGradientDirection; AValue: Single);
+                                 ADirection1,ADirection2,ADir: TGradientDirection; AValue: Single); overload;
 procedure DoubleGradientAlphaFill(ABitmap: TBGRABitmap; ARect: TRect; AStart1,AStop1,AStart2,AStop2: TBGRAPixel;
-                                 ADirection1,ADirection2,ADir: TGradientDirection; AValue: Single);
+                                 ADirection1,ADirection2,ADir: TGradientDirection; AValue: Single); overload;
 
 {----------------------------------------------------------------------}
 { Phong shading functions. Use a height map (grayscale image or a precise map filled with MapHeightToBGRA)

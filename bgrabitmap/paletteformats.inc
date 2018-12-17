@@ -95,13 +95,13 @@ procedure SaveToStreamAsAdobeSwatchExchange(APalette: TBGRAPalette; AStream: TSt
     DWord(AValue) := BEtoN(DWord(AValue));
     AStream.WriteBuffer(AValue,sizeof(AValue));
   end;
-  procedure WriteBlock(ABlockType: Int16; AContentLength: Int32);
+  procedure WriteBlock(ABlockType: Int16; AContentLength: Int32); overload;
   begin
     WriteInt16(ABlockType);
     WriteInt32(AContentLength);
   end;
 
-  procedure WriteBlock(ABlockType: Int16; AName: string; AExtraContentLength: Int32);
+  procedure WriteBlock(ABlockType: Int16; AName: string; AExtraContentLength: Int32); overload;
   var contentLength: Int32;
     wideName: UnicodeString;
     nameBuf: array of byte;

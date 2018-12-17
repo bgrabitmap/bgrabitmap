@@ -46,8 +46,8 @@ type
     function GetMimeType: string; override;
 
   public
-    constructor Create; override; overload;
-    constructor Create(AWidth, AHeight: integer); override; overload;
+    constructor Create; overload; override;
+    constructor Create(AWidth, AHeight: integer); overload; override;
     procedure Clear; override;
     function CheckMimeType(AStream: TStream): boolean;
     procedure LoadFlatImageFromStream(AStream: TStream;

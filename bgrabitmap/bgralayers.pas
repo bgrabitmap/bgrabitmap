@@ -250,8 +250,8 @@ type
     procedure RemoveUnusedOriginals;
 
     destructor Destroy; override;
-    constructor Create; override; overload;
-    constructor Create(AWidth, AHeight: integer); virtual; overload;
+    constructor Create; overload; override;
+    constructor Create(AWidth, AHeight: integer); overload; virtual;
     function GetLayerBitmapDirectly(layer: integer): TBGRABitmap; override;
     function GetLayerBitmapCopy(layer: integer): TBGRABitmap; override;
     function GetLayerIndexFromId(AIdentifier: integer): integer;

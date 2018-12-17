@@ -45,7 +45,7 @@ type
     function InternalCopyTo({%H-}ADestination: TStream): int64;
   public
     function CopyTo({%H-}ADestination: TStream): int64; override;
-    constructor Create(AContainer: TMultiFileContainer; AFilename: TEntryFilename; AUncompressedStream: TStream; AOwnStream: boolean);
+    constructor Create(AContainer: TMultiFileContainer; AFilename: TEntryFilename; AUncompressedStream: TStream; AOwnStream: boolean); overload;
     constructor CreateDirectory(AContainer: TMultiFileContainer; AFilename: TEntryFilename);
     destructor Destroy; override;
     property EmbeddedStreamPos: int64 read FEmbeddedStreamPos write FEmbeddedStreamPos;

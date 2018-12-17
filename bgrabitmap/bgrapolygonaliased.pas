@@ -104,8 +104,8 @@ type
     procedure SetIntersectionValues(AInter: TIntersectionInfo; AInterX: Single; AWinding,
       ANumSegment: integer; dy: single; AData: pointer); override;
   public
-    constructor Create(const points: array of TPointF; const texCoords: array of TPointF);
-    constructor Create(const points: array of TPointF; const texCoords: array of TPointF; const lightnesses: array of word);
+    constructor Create(const points: array of TPointF; const texCoords: array of TPointF); overload;
+    constructor Create(const points: array of TPointF; const texCoords: array of TPointF; const lightnesses: array of word); overload;
     function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; override;
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;
@@ -149,8 +149,8 @@ type
     procedure SetIntersectionValues(AInter: TIntersectionInfo; AInterX: Single; AWinding,
       ANumSegment: integer; dy: single; AData: pointer); override;
   public
-    constructor Create(const points: array of TPointF; const pointsZ: array of single; const texCoords: array of TPointF);
-    constructor Create(const points: array of TPointF; const pointsZ: array of single; const texCoords: array of TPointF; const lightnesses: array of word);
+    constructor Create(const points: array of TPointF; const pointsZ: array of single; const texCoords: array of TPointF); overload;
+    constructor Create(const points: array of TPointF; const pointsZ: array of single; const texCoords: array of TPointF; const lightnesses: array of word); overload;
     function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; override;
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;
@@ -164,8 +164,8 @@ type
     procedure SetIntersectionValues(AInter: TIntersectionInfo; AInterX: Single; AWinding,
       ANumSegment: integer; dy: single; AData: pointer); override;
   public
-    constructor Create(const points: array of TPointF; const points3D: array of TPoint3D; const normals: array of TPoint3D; const texCoords: array of TPointF);
-    constructor Create(const points: array of TPointF; const points3D: array of TPoint3D_128; const normals: array of TPoint3D_128; const texCoords: array of TPointF);
+    constructor Create(const points: array of TPointF; const points3D: array of TPoint3D; const normals: array of TPoint3D; const texCoords: array of TPointF); overload;
+    constructor Create(const points: array of TPointF; const points3D: array of TPoint3D_128; const normals: array of TPoint3D_128; const texCoords: array of TPointF); overload;
     function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; override;
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;

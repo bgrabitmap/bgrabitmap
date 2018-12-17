@@ -141,8 +141,8 @@ type
     procedure TextRect(ARect: TRectF; const Text : UTF8String; AHorizAlign: TAlignment; AVertAlign: TTextLayout = tlTop); overload;
     procedure TextRect(ARect: TRectF; const Text : UTF8String; AHorizAlign: TAlignment; AVertAlign: TTextLayout; AColor: TBGRAPixel); overload;
     function TextWidth(const Text: UTF8String): single; virtual; abstract;
-    function TextHeight(const Text: UTF8String): single; virtual; abstract; overload;
-    function TextHeight(const Text: UTF8String; AWidth: single): single; virtual; abstract; overload;
+    function TextHeight(const Text: UTF8String): single; overload; virtual; abstract;
+    function TextHeight(const Text: UTF8String; AWidth: single): single; overload; virtual; abstract;
     procedure SetGradientColors(ATopLeft, ATopRight, ABottomRight, ABottomLeft: TBGRAPixel); virtual; abstract;
 
     property Scale: single read GetScale write SetScale;
@@ -213,22 +213,22 @@ type
     procedure DrawAffine(const Origin, HAxis, VAxis: TPointF; AColor: TBGRAPixel); overload;
     procedure DrawAffine(x,y: single; const AMatrix: TAffineMatrix; AAlpha: byte = 255); overload;
     procedure DrawAffine(x,y: single; const AMatrix: TAffineMatrix; AColor: TBGRAPixel); overload;
-    procedure DrawTriangle(const APoints: array of TPointF; const ATexCoords: array of TPointF);
-    procedure DrawTriangle(const APoints: array of TPointF; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawTriangle(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF);
-    procedure DrawTriangle(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF);
-    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF);
-    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawQuad(const APoints: array of TPointF; const ATexCoords: array of TPointF);
-    procedure DrawQuad(const APoints: array of TPointF; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawQuad(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF);
-    procedure DrawQuad(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF);
-    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF);
-    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF);
+    procedure DrawTriangle(const APoints: array of TPointF; const ATexCoords: array of TPointF); overload;
+    procedure DrawTriangle(const APoints: array of TPointF; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawTriangle(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF); overload;
+    procedure DrawTriangle(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF); overload;
+    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF); overload;
+    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawQuad(const APoints: array of TPointF; const ATexCoords: array of TPointF); overload;
+    procedure DrawQuad(const APoints: array of TPointF; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawQuad(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF); overload;
+    procedure DrawQuad(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF); overload;
+    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF); overload;
+    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
 
     property Width: integer read GetWidth;
     property Height: integer read GetHeight;
@@ -267,12 +267,12 @@ type
     procedure Fill(c: TBGRAPixel); override;
     procedure NoClip; override;
     destructor Destroy; override;
-    procedure SwapRedBlue; override; overload;
+    procedure SwapRedBlue; overload; override;
     function Resample(newWidth, newHeight: integer; mode: TResampleMode=rmFineResample): TBGRACustomBitmap; override;
-    procedure ApplyGlobalOpacity(alpha: byte); override; overload;
-    procedure ReplaceColor(before, after: TColor); override; overload;
-    procedure ReplaceColor(before, after: TBGRAPixel); override; overload;
-    procedure ReplaceTransparent(after: TBGRAPixel); override; overload;
+    procedure ApplyGlobalOpacity(alpha: byte); overload; override;
+    procedure ReplaceColor(before, after: TColor); overload; override;
+    procedure ReplaceColor(before, after: TBGRAPixel); overload; override;
+    procedure ReplaceTransparent(after: TBGRAPixel); overload; override;
     procedure SetClipRect(const AValue: TRect); override;
     procedure SetSize(AWidth, AHeight: integer); override;
     property Width: integer read FActualWidth;
@@ -398,22 +398,22 @@ type
     procedure DrawAffine(const Origin, HAxis, VAxis: TPointF; AColor: TBGRAPixel); overload;
     procedure DrawAffine(x,y: single; const AMatrix: TAffineMatrix; AAlpha: byte = 255); overload;
     procedure DrawAffine(x,y: single; const AMatrix: TAffineMatrix; AColor: TBGRAPixel); overload;
-    procedure DrawTriangle(const APoints: array of TPointF; const ATexCoords: array of TPointF);
-    procedure DrawTriangle(const APoints: array of TPointF; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawTriangle(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF);
-    procedure DrawTriangle(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF);
-    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF);
-    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawQuad(const APoints: array of TPointF; const ATexCoords: array of TPointF);
-    procedure DrawQuad(const APoints: array of TPointF; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawQuad(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF);
-    procedure DrawQuad(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF);
-    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF);
-    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF);
-    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF);
+    procedure DrawTriangle(const APoints: array of TPointF; const ATexCoords: array of TPointF); overload;
+    procedure DrawTriangle(const APoints: array of TPointF; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawTriangle(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF); overload;
+    procedure DrawTriangle(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF); overload;
+    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF); overload;
+    procedure DrawTriangle(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawQuad(const APoints: array of TPointF; const ATexCoords: array of TPointF); overload;
+    procedure DrawQuad(const APoints: array of TPointF; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawQuad(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF); overload;
+    procedure DrawQuad(const APoints: array of TPointF; const APointsZ: array of Single; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF); overload;
+    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
+    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF); overload;
+    procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
 
     property Width: integer read GetWidth;
     property Height: integer read GetHeight;
@@ -445,8 +445,8 @@ type
     procedure SetProjectionMatrix(AValue: TMatrix4D); virtual; abstract;
 
   public
-    procedure UseOrthoProjection; virtual;
-    procedure UseOrthoProjection(AMinX,AMinY,AMaxX,AMaxY: single); virtual;
+    procedure UseOrthoProjection; overload; virtual;
+    procedure UseOrthoProjection(AMinX,AMinY,AMaxX,AMaxY: single); overload; virtual;
     function MakeTextureAndFree: IBGLTexture; virtual;
 
     procedure SetCanvas(ACanvas: Pointer); //for internal use

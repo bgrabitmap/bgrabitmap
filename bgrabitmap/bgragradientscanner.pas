@@ -20,8 +20,8 @@ type
     FColor1,FColor2: TBGRAPixel;
     ec1,ec2: TExpandedPixel;
     FRepetition: TBGRAGradientRepetition;
-    constructor Create(AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition);
-    constructor Create(AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition);
+    constructor Create(AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition); overload;
+    constructor Create(AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition); overload;
     function InterpolateToBGRA(position: word): TBGRAPixel; virtual; abstract;
     function InterpolateToExpanded(position: word): TExpandedPixel; virtual; abstract;
   public
@@ -44,8 +44,8 @@ type
     function InterpolateToBGRA(position: word): TBGRAPixel; override;
     function InterpolateToExpanded(position: word): TExpandedPixel; override;
   public
-    constructor Create(Color1,Color2: TBGRAPixel; ARepetition: TBGRAGradientRepetition = grPad);
-    constructor Create(Color1,Color2: TExpandedPixel; ARepetition: TBGRAGradientRepetition = grPad);
+    constructor Create(Color1,Color2: TBGRAPixel; ARepetition: TBGRAGradientRepetition = grPad); overload;
+    constructor Create(Color1,Color2: TExpandedPixel; ARepetition: TBGRAGradientRepetition = grPad); overload;
   end;
 
   { TBGRASimpleGradientWithGammaCorrection }
@@ -55,8 +55,8 @@ type
     function InterpolateToBGRA(position: word): TBGRAPixel; override;
     function InterpolateToExpanded(position: word): TExpandedPixel; override;
   public
-    constructor Create(Color1,Color2: TBGRAPixel; ARepetition: TBGRAGradientRepetition = grPad);
-    constructor Create(Color1,Color2: TExpandedPixel; ARepetition: TBGRAGradientRepetition = grPad);
+    constructor Create(Color1,Color2: TBGRAPixel; ARepetition: TBGRAGradientRepetition = grPad); overload;
+    constructor Create(Color1,Color2: TExpandedPixel; ARepetition: TBGRAGradientRepetition = grPad); overload;
   end;
 
   THueGradientOption = (hgoRepeat, hgoReflect,                       //repetition
@@ -140,9 +140,9 @@ type
     FHorizColor: TBGRAPixel;
     FHorizExpandedColor: TExpandedPixel;
 
-    procedure Init(AGradientType: TGradientType; AOrigin, d1: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False);
-    procedure Init(AGradientType: TGradientType; AOrigin, d1, d2: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False);
-    procedure Init(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single; ATransform: TAffineMatrix; AHiddenTransform: TAffineMatrix);
+    procedure Init(AGradientType: TGradientType; AOrigin, d1: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False); overload;
+    procedure Init(AGradientType: TGradientType; AOrigin, d1, d2: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False); overload;
+    procedure Init(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single; ATransform: TAffineMatrix; AHiddenTransform: TAffineMatrix); overload;
 
     procedure InitGradientType;
     procedure InitTransform;
@@ -173,22 +173,22 @@ type
     function GetGradientColor(a: single): TBGRAPixel;
     function GetGradientExpandedColor(a: single): TExpandedPixel;
   public
-    constructor Create(AGradientType: TGradientType; AOrigin, d1: TPointF);
-    constructor Create(AGradientType: TGradientType; AOrigin, d1, d2: TPointF);
-    constructor Create(AOrigin, d1, d2, AFocal: TPointF; ARadiusRatio: single = 1; AFocalRadiusRatio: single = 0);
-    constructor Create(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single);
+    constructor Create(AGradientType: TGradientType; AOrigin, d1: TPointF); overload;
+    constructor Create(AGradientType: TGradientType; AOrigin, d1, d2: TPointF); overload;
+    constructor Create(AOrigin, d1, d2, AFocal: TPointF; ARadiusRatio: single = 1; AFocalRadiusRatio: single = 0); overload;
+    constructor Create(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single); overload;
 
     constructor Create(c1, c2: TBGRAPixel; AGradientType: TGradientType; AOrigin, d1: TPointF;
-                       gammaColorCorrection: boolean = True; Sinus: Boolean=False);
+                       gammaColorCorrection: boolean = True; Sinus: Boolean=False); overload;
     constructor Create(c1, c2: TBGRAPixel; AGradientType: TGradientType; AOrigin, d1, d2: TPointF;
-                       gammaColorCorrection: boolean = True; Sinus: Boolean=False);
+                       gammaColorCorrection: boolean = True; Sinus: Boolean=False); overload;
 
     constructor Create(gradient: TBGRACustomGradient; AGradientType: TGradientType; AOrigin, d1: TPointF;
-                       Sinus: Boolean=False; AGradientOwner: Boolean=False);
+                       Sinus: Boolean=False; AGradientOwner: Boolean=False); overload;
     constructor Create(gradient: TBGRACustomGradient; AGradientType: TGradientType; AOrigin, d1, d2: TPointF;
-                       Sinus: Boolean=False; AGradientOwner: Boolean=False);
+                       Sinus: Boolean=False; AGradientOwner: Boolean=False); overload;
     constructor Create(gradient: TBGRACustomGradient; AOrigin: TPointF; ARadius: single; AFocal: TPointF;
-                       AFocalRadius: single; AGradientOwner: Boolean=False);
+                       AFocalRadius: single; AGradientOwner: Boolean=False); overload;
 
     procedure SetGradient(c1,c2: TBGRAPixel; AGammaCorrection: boolean = true); overload;
     procedure SetGradient(AGradient: TBGRACustomGradient; AOwner: boolean); overload;

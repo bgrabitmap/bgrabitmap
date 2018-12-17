@@ -87,16 +87,16 @@ type
 
   TBGRASVG = class
   private
-    function GetAttribute(AName: string): string;
-    function GetAttribute(AName: string; ADefault: string): string;
+    function GetAttribute(AName: string): string; overload;
+    function GetAttribute(AName: string; ADefault: string): string; overload;
     function GetCustomDpi: TPointF;
     function GetHeight: TFloatWithCSSUnit;
     function GetHeightAsCm: single;
     function GetHeightAsInch: single;
     function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
     function GetUTF8String: utf8string;
-    function GetViewBox: TSVGViewBox;
-    function GetViewBox(AUnit: TCSSUnit): TSVGViewBox;
+    function GetViewBox: TSVGViewBox; overload;
+    function GetViewBox(AUnit: TCSSUnit): TSVGViewBox; overload;
     procedure GetViewBoxIndirect(AUnit: TCSSUnit; out AViewBox: TSVGViewBox);
     function GetViewMin(AUnit: TCSSUnit): TPointF;
     function GetViewSize(AUnit: TCSSUnit): TPointF;

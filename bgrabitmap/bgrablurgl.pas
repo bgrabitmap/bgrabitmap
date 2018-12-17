@@ -30,8 +30,8 @@ type
     procedure StartUse; override;
   public
     constructor Create(ACanvas: TBGLCustomCanvas; ABlurType: TRadialBlurType);
-    function FilterBlurMotion(ATexture: IBGLTexture): IBGLTexture;
-    function FilterBlurMotion(ATexture: IBGLTexture; ADirection: TPointF): IBGLTexture;
+    function FilterBlurMotion(ATexture: IBGLTexture): IBGLTexture; overload;
+    function FilterBlurMotion(ATexture: IBGLTexture; ADirection: TPointF): IBGLTexture; overload;
     function FilterBlurRadial(ATexture: IBGLTexture): IBGLTexture;
     property ImageIndex: integer read GetImageIndex write SetImageIndex;
     property TextureSize: TPoint read GetTextureSize write SetTextureSize;

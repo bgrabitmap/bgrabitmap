@@ -218,13 +218,13 @@ begin
     result := ANameOrId2.Id = ANameOrId1.Id;
 end;
 
-function NameOrId(AName: string): TNameOrId;
+function NameOrId(AName: string): TNameOrId; overload;
 begin
   result.Id := -1;
   result.Name := AName;
 end;
 
-function NameOrId(AId: integer): TNameOrId;
+function NameOrId(AId: integer): TNameOrId; overload;
 begin
   result.Id := AId;
   result.Name := IntToStr(AId);

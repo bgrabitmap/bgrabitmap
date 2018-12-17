@@ -57,8 +57,8 @@ type
     procedure SetHeight(AValue: integer);
     procedure SetWidth(AValue: integer);
   public
-    constructor Create(Origin: TPoint; AWidth, AHeight: Longint);
-    constructor Create(ALeft, ATop, ARight, ABottom: Longint);
+    constructor Create(Origin: TPoint; AWidth, AHeight: Longint); overload;
+    constructor Create(ALeft, ATop, ARight, ABottom: Longint); overload;
     procedure Intersect(const ARect: TRect);
     procedure Offset(DX, DY: Longint);
     procedure Inflate(DX, DY: Longint);
@@ -126,8 +126,8 @@ type
     TopLeft, TopRight,
     BottomLeft: TPointF;
     class function EmptyBox: TAffineBox;
-    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
-    class function AffineBox(ARectF: TRectF): TAffineBox;
+    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox; overload;
+    class function AffineBox(ARectF: TRectF): TAffineBox; overload;
     function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
     property RectBoundsF: TRectF read GetRectBoundsF;
@@ -311,8 +311,8 @@ type
       procedure SetPenStyle(AValue: TPenStyle); virtual; abstract;
       procedure SetStrokeMatrix(const AValue: TAffineMatrix); virtual; abstract;
   public
-      function ComputePolyline(const APoints: array of TPointF; AWidth: single; AClosedCap: boolean = true): ArrayOfTPointF; virtual; abstract;
-      function ComputePolyline(const APoints: array of TPointF; AWidth: single; APenColor: TBGRAPixel; AClosedCap: boolean = true): ArrayOfTPointF; virtual; abstract;
+      function ComputePolyline(const APoints: array of TPointF; AWidth: single; AClosedCap: boolean = true): ArrayOfTPointF; overload; virtual; abstract;
+      function ComputePolyline(const APoints: array of TPointF; AWidth: single; APenColor: TBGRAPixel; AClosedCap: boolean = true): ArrayOfTPointF; overload; virtual; abstract;
       function ComputePolylineAutoCycle(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; virtual; abstract;
       function ComputePolygon(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; virtual; abstract;
       property Style: TPenStyle read GetPenStyle write SetPenStyle;
@@ -365,11 +365,11 @@ type
   {----------- Line and polygon functions -----------}
   {** Computes the intersection of two lines. If they are parallel, returns
       the middle of the segment between the two origins }
-  function IntersectLine(line1, line2: TLineDef): TPointF;
+  function IntersectLine(line1, line2: TLineDef): TPointF; overload;
   {** Computes the intersection of two lines. If they are parallel, returns
       the middle of the segment between the two origins. The value ''parallel''
       is set to indicate if the lines were parallel }
-  function IntersectLine(line1, line2: TLineDef; out parallel: boolean): TPointF;
+  function IntersectLine(line1, line2: TLineDef; out parallel: boolean): TPointF; overload;
   {** Checks if the polygon formed by the given points is convex. ''IgnoreAlign''
       specifies that if the points are aligned, it should still be considered as convex }
   function IsConvex(const pts: array of TPointF; IgnoreAlign: boolean = true): boolean;
@@ -406,9 +406,9 @@ type
     {** Copy the content of this path to the specified destination }
     procedure copyTo(dest: IBGRAPath);
     {** Returns the content of the path as an array of points }
-    function getPoints: ArrayOfTPointF;
+    function getPoints: ArrayOfTPointF; overload;
     {** Returns the content of the path as an array of points with the transformation specified by ''AMatrix'' }
-    function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF;
+    function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; overload;
     {** Returns a cursor to go through the path. The cursor must be freed by calling ''Free''. }
     function getCursor: TBGRACustomPathCursor;
   end;

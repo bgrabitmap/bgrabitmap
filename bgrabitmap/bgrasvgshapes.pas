@@ -366,9 +366,9 @@ type
    protected
      procedure Initialize; override;
    public
-     constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+     constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
-       AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+       AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
      destructor Destroy; override;
      function Count: Integer;
      function Find(const AName: string): integer; overload;
