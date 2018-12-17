@@ -171,6 +171,7 @@ var
 
   miny, maxy, minx, maxx,
   densMinX, densMaxX: integer;
+  joinDensity, nextJoinDensity: boolean;
 
   density: PDensity;
 
@@ -320,16 +321,19 @@ begin
 
       if optimised then
       begin
+        nextJoinDensity := false;
         for i := 0 to firstScan.nbinter div 2 - 1 do
         begin
+          joinDensity := nextJoinDensity;
           x1 := firstScan.inter[i+i].interX;
           x1b := lastScan.inter[i+i].interX;
           x2 := firstScan.inter[i+i+1].interX;
           x2b := lastScan.inter[i+i+1].interX;
-          if (abs(x1-x1b)<oneOver512) and (abs(x2-x2b)<oneOver512) and
-             ((i+i+2 >= firstScan.nbInter) or
+          nextJoinDensity := not ((i+i+2 >= firstScan.nbInter) or
               ((firstScan.inter[i+i+2].interX >= x2+1) and
-               (lastScan.inter[i+i+2].interX >= x2b+1))) then
+               (lastScan.inter[i+i+2].interX >= x2b+1)));
+          if (abs(x1-x1b)<oneOver512) and (abs(x2-x2b)<oneOver512) and
+              not joinDensity and not nextJoinDensity then
           begin
             x1 := (x1+x1b)*0.5;
             x2 := (x2+x2b)*0.5;
