@@ -781,6 +781,7 @@ type
     procedure AlphaFill(alpha: byte; start, Count: integer); override;
     procedure FillMask(x,y: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); override;
     procedure FillMask(x,y: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte = 255); override;
+    procedure EraseMask(x,y: integer; AMask: TBGRACustomBitmap; alpha: byte=255); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); override;
     procedure ReplaceColor(before, after: TColor); override;
@@ -860,7 +861,7 @@ type
     procedure ApplyGlobalOpacity(ABounds: TRect; alpha: byte); override;
     procedure ConvertToLinearRGB; override;
     procedure ConvertFromLinearRGB; override;
-    procedure DrawCheckers(ARect: TRect; AColorEven,AColorOdd: TBGRAPixel);
+    procedure DrawCheckers(ARect: TRect; AColorEven,AColorOdd: TBGRAPixel); override;
 
     {Filters}
     function FilterSmartZoom3(Option: TMedianOption): TBGRACustomBitmap; override;
@@ -4251,6 +4252,55 @@ begin
   scan := TBGRATextureMaskScanner.Create(AMask,Point(-X,-Y),texture, AOpacity);
   self.FillRect(X,Y,X+AMask.Width,Y+AMask.Height,scan,ADrawMode);
   scan.Free;
+end;
+
+procedure TBGRADefaultBitmap.EraseMask(x, y: integer; AMask: TBGRACustomBitmap;
+  alpha: byte);
+var
+  x0,y0,x2, y2, yb,xb, tx, delta: integer;
+  p, psrc: PBGRAPixel;
+begin
+  if (AMask = nil) or (alpha = 0) then exit;
+  x0 := x;
+  y0 := y;
+  x2 := x+AMask.Width;
+  y2 := y+AMask.Height;
+  if not CheckClippedRectBounds(x,y,x2,y2) then exit;
+  tx := x2 - x;
+  Dec(x2);
+  Dec(y2);
+
+  p := Scanline[y] + x;
+  if FLineOrder = riloBottomToTop then
+    delta := -Width
+  else
+    delta := Width;
+
+  for yb := y to y2 do
+  begin
+    psrc := AMask.ScanLine[yb-y0]+(x-x0);
+    if alpha = 255 then
+    begin
+      for xb := tx-1 downto 0 do
+      begin
+        ErasePixelInline(p, psrc^.green);
+        inc(p);
+        inc(psrc);
+      end;
+    end else
+    begin
+      for xb := tx-1 downto 0 do
+      begin
+        ErasePixelInline(p, ApplyOpacity(psrc^.green,alpha));
+        inc(p);
+        inc(psrc);
+      end;
+    end;
+    dec(p, tx);
+    Inc(p, delta);
+  end;
+
+  InvalidateBitmap;
 end;
 
 procedure TBGRADefaultBitmap.FillClearTypeMask(x, y: integer; xThird: integer;

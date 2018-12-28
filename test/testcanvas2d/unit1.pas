@@ -63,6 +63,7 @@ type
     procedure Test18(ctx: TBGRACanvas2D);
     procedure Test19(ctx: TBGRACanvas2D);
     procedure Test20(ctx: TBGRACanvas2D; AVectorizedFont: boolean);
+    procedure Test22(ctx: TBGRACanvas2D);
   end;
 
 var
@@ -183,6 +184,7 @@ begin
    19: Test19(ctx);
    20: Test20(ctx,false);
    21: Test20(ctx,true);
+   22: Test22(ctx);
   end;
   ctx.restore;
 end;
@@ -220,6 +222,9 @@ begin
   layer := TBGRABitmap.Create(ctx.width,ctx.height);
   with layer.Canvas2D do
   begin
+    pixelCenteredCoordinates:= ctx.pixelCenteredCoordinates;
+    antialiasing:= ctx.antialiasing;
+
     fillStyle('rgb(1000,0,0)'); // fond de couleur rouge
     beginPath;
     roundRect(25,25,Width-50,Height-50,25); // remplissage d un carré 250x250
@@ -924,6 +929,29 @@ begin
   end;
   ctx.restore;
   ctx.fontRenderer := nil;
+end;
+
+procedure TForm1.Test22(ctx: TBGRACanvas2D);
+var layer: TBGRABitmap;
+begin
+  layer := TBGRABitmap.Create(ctx.width,ctx.height, CSSRed);
+  with layer.Canvas2D do
+  begin
+    pixelCenteredCoordinates:= ctx.pixelCenteredCoordinates;
+    antialiasing:= ctx.antialiasing;
+    fontName:= 'default';
+    fontStyle := [fsBold];
+    fontEmHeight:= min(ctx.height/2, ctx.width/4);
+    textBaseline:= 'middle';
+    textAlign := 'center';
+
+    beginPath;
+    text('hole', width/2,height/2);
+    fillStyle(clWhite);
+    clearPath;
+  end;
+  ctx.surface.DrawCheckers(rect(0,0,ctx.width,ctx.height), CSSWhite,CSSSilver);
+  ctx.surface.PutImage(0,0,layer,dmDrawWithTransparency);
 end;
 
 end.

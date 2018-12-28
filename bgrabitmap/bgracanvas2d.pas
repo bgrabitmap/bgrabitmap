@@ -98,6 +98,7 @@ type
         Text: string;
         FontName: string;
         FontMatrix: TAffineMatrix;
+        FontAlign: TAlignment;
         FontAnchor: TFontVerticalAnchor;
         FontStyle: TFontStyles;
       end;
@@ -1178,7 +1179,7 @@ end;
 
 procedure TBGRACanvas2D.FillTexts(AErase: boolean);
 var
-  i: Integer;
+  i,j: Integer;
   hy,hx,h: single;
   bmp,bmpTransf,shadowBmp: TBGRACustomBitmap;
   tempScan: TBGRACustomScanner;
@@ -1187,6 +1188,7 @@ var
   surfaceBounds, shadowBounds: TRect;
   rf: TResampleFilter;
   pad: TSize;
+  p: PBGRAPixel;
 begin
   for i := 0 to High(FTextPaths) do
   with FTextPaths[i] do
@@ -1213,6 +1215,11 @@ begin
       bmp.FontVerticalAnchor:= fvaTop;
 
       s := bmp.TextSize(Text);
+      case FontAlign of
+        taCenter: m := m*AffineMatrixTranslation(-s.cx/2,0);
+        taRightJustify: m := m*AffineMatrixTranslation(-s.cx,0);
+      end;
+
       pad := Size(round(h/3), round(h/3));
       m := m*AffineMatrixTranslation(-pad.cx,-pad.cy);
       surfaceBounds := surface.GetImageAffineBounds(m, Types.Rect(0,0,s.cx+pad.cx*2,s.cy+pad.cy*2));
@@ -1233,7 +1240,15 @@ begin
         bmp.SetSize(s.cx+pad.cx*2,s.cy+pad.cy*2);
         bmp.Fill(BGRABlack);
         bmp.TextOut(pad.cx,pad.cy,Text,BGRAWhite);
-        if self.antialiasing then bmp.ConvertToLinearRGB;
+        if self.antialiasing then bmp.ConvertToLinearRGB else
+        begin
+          p := bmp.Data;
+          for j := bmp.NbPixels-1 downto 0 do
+          begin
+            if p^.green<128 then p^ := BGRABlack else p^ := BGRAWhite;
+            inc(p);
+          end;
+        end;
 
         bmpTransf := BGRABitmapFactory.Create(surfaceBounds.Width,surfaceBounds.Height,BGRABlack);
         try
@@ -1242,35 +1257,39 @@ begin
           bmpTransf.PutImageAffine(m, bmp, rf, GetDrawMode);
           FreeAndNil(bmp);
 
-          if hasShadow then
+          if AErase then
+            surface.EraseMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf) else
           begin
-            shadowBmp := BGRABitmapFactory.Create(bmpTransf.Width,bmpTransf.Height);
-            shadowBmp.FillMask(0,0, bmpTransf, getShadowColor, GetDrawMode);
-            DrawShadowMask(surfaceBounds.Left+round(shadowOffsetX),surfaceBounds.Top+round(shadowOffsetY), shadowBmp, true);
-          end;
-
-          if currentState.clipMaskReadOnly <> nil then
-          begin
-            if currentState.fillTextureProvider <> nil then
-              tempScan := TBGRATextureMaskScanner.Create(currentState.clipMaskReadOnly,Point(0,0),currentState.fillTextureProvider.texture,currentState.globalAlpha)
-            else
-              tempScan := TBGRASolidColorMaskScanner.Create(currentState.clipMaskReadOnly,Point(0,0),ApplyGlobalAlpha(currentState.fillColor));
-            surface.FillMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf, tempScan, GetDrawMode);
-            tempScan.free;
-          end else
-          begin
-            if currentState.fillTextureProvider <> nil then
+            if hasShadow then
             begin
-              if currentState.globalAlpha <> 255 then
+              shadowBmp := BGRABitmapFactory.Create(bmpTransf.Width,bmpTransf.Height);
+              shadowBmp.FillMask(0,0, bmpTransf, getShadowColor, GetDrawMode);
+              DrawShadowMask(surfaceBounds.Left+round(shadowOffsetX),surfaceBounds.Top+round(shadowOffsetY), shadowBmp, true);
+            end;
+
+            if currentState.clipMaskReadOnly <> nil then
+            begin
+              if currentState.fillTextureProvider <> nil then
+                tempScan := TBGRATextureMaskScanner.Create(currentState.clipMaskReadOnly,Point(0,0),currentState.fillTextureProvider.texture,currentState.globalAlpha)
+              else
+                tempScan := TBGRASolidColorMaskScanner.Create(currentState.clipMaskReadOnly,Point(0,0),ApplyGlobalAlpha(currentState.fillColor));
+              surface.FillMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf, tempScan, GetDrawMode);
+              tempScan.free;
+            end else
+            begin
+              if currentState.fillTextureProvider <> nil then
               begin
-                tempScan := TBGRAOpacityScanner.Create(currentState.fillTextureProvider.texture, currentState.globalAlpha);
-                surface.FillMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf, tempScan, GetDrawMode);
-                tempScan.Free;
-              end else
-                surface.FillMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf, currentState.fillTextureProvider.texture, GetDrawMode);
-            end
-            else
-              surface.FillMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf, ApplyGlobalAlpha(currentState.fillColor), GetDrawMode);
+                if currentState.globalAlpha <> 255 then
+                begin
+                  tempScan := TBGRAOpacityScanner.Create(currentState.fillTextureProvider.texture, currentState.globalAlpha);
+                  surface.FillMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf, tempScan, GetDrawMode);
+                  tempScan.Free;
+                end else
+                  surface.FillMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf, currentState.fillTextureProvider.texture, GetDrawMode);
+              end
+              else
+                surface.FillMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf, ApplyGlobalAlpha(currentState.fillColor), GetDrawMode);
+            end;
           end;
         finally
           bmpTransf.Free;
@@ -2382,7 +2401,7 @@ begin
       fvaCenter: translate(0,-Lineheight/2);
       fvaBaseline: translate(0,-baseline);
     end;
-    renderer.CopyTextPathTo(self, 0,0, AText, taLeftJustify);
+    renderer.CopyTextPathTo(self, 0,0, AText, textAlignLCL);
     currentState.matrix := previousMatrix;
   end else
   begin
@@ -2391,6 +2410,7 @@ begin
     FTextPaths[high(FTextPaths)].FontName := fontName;
     FTextPaths[high(FTextPaths)].FontMatrix := currentState.matrix*AffineMatrixTranslation(x,y)*AffineMatrixScale(fontEmHeight,fontEmHeight);
     FTextPaths[high(FTextPaths)].FontStyle := fontStyle;
+    FTextPaths[high(FTextPaths)].FontAlign := textAlignLCL;
     FTextPaths[high(FTextPaths)].FontAnchor := fva;
   end;
 
