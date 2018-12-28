@@ -27,12 +27,12 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormMouseLeave(Sender: TObject);
-    procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseMove(Sender: TObject; {%H-}Shift: TShiftState; {%H-}X, {%H-}Y: Integer);
     procedure FormPaint(Sender: TObject);
     procedure SpinEdit1Change(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
     procedure VirtualScreenMouseLeave(Sender: TObject);
-    procedure VirtualScreenMouseMove(Sender: TObject; Shift: TShiftState; X,
+    procedure VirtualScreenMouseMove(Sender: TObject; {%H-}Shift: TShiftState; X,
       Y: Integer);
     procedure VirtualScreenRedraw(Sender: TObject; Bitmap: TBGRABitmap);
   private
@@ -62,6 +62,7 @@ type
     procedure Test17(ctx: TBGRACanvas2D);
     procedure Test18(ctx: TBGRACanvas2D);
     procedure Test19(ctx: TBGRACanvas2D);
+    procedure Test20(ctx: TBGRACanvas2D; AVectorizedFont: boolean);
   end;
 
 var
@@ -69,7 +70,7 @@ var
 
 implementation
 
-uses BGRAGradientScanner, Math, BGRASVG;
+uses BGRAGradientScanner, Math, BGRASVG, BGRAVectorize;
 
 {$R *.lfm}
 
@@ -180,6 +181,8 @@ begin
    17: Test17(ctx);
    18: Test18(ctx);
    19: Test19(ctx);
+   20: Test20(ctx,false);
+   21: Test20(ctx,true);
   end;
   ctx.restore;
 end;
@@ -874,6 +877,53 @@ begin
   ctx.fillRect(tx, ty, tx, ty);
 
   test18(ctx);
+end;
+
+procedure TForm1.Test20(ctx: TBGRACanvas2D; AVectorizedFont: boolean);
+var
+  i: Integer;
+  grad: IBGRACanvasGradient2D;
+begin
+  if AVectorizedFont then ctx.fontRenderer := TBGRAVectorizedFontRenderer.Create;
+  ctx.save;
+
+  ctx.fontName:= 'default';
+  ctx.fontEmHeight:= ctx.height/10;
+  ctx.textBaseline:= 'alphabetic';
+
+  ctx.beginPath;
+  if AVectorizedFont then
+    ctx.text('Vectorized font',ctx.fontEmHeight*0.2,ctx.fontEmHeight)
+  else
+    ctx.text('Raster font',ctx.fontEmHeight*0.2,ctx.fontEmHeight);
+  ctx.lineWidth := 2;
+  ctx.strokeStyle(clLime);
+  ctx.fillStyle(clBlack);
+  ctx.fillOverStroke;
+
+  grad := ctx.createLinearGradient(0,0,ctx.width,ctx.height);
+  grad.addColorStop(0.3, '#000080');
+  grad.addColorStop(0.7, '#00a0a0');
+  ctx.fillStyle(grad);
+
+  ctx.translate(ctx.width/2, ctx.height/2);
+
+  for i := 0 to 11 do
+  begin
+    ctx.beginPath;
+    ctx.moveTo(0,0);
+    ctx.lineTo(ctx.width+ctx.height,0);
+    ctx.strokeStyle(clRed);
+    ctx.lineWidth := 1;
+    ctx.stroke;
+
+    ctx.beginPath;
+    ctx.text('hello',ctx.width/10,0);
+    ctx.fill;
+    ctx.rotate(Pi/6);
+  end;
+  ctx.restore;
+  ctx.fontRenderer := nil;
 end;
 
 end.

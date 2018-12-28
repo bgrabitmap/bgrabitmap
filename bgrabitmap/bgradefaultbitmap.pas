@@ -191,7 +191,7 @@ type
     function GetFontRenderer: TBGRACustomFontRenderer; override;
     procedure SetFontRenderer(AValue: TBGRACustomFontRenderer); override;
     function CreateDefaultFontRenderer: TBGRACustomFontRenderer; virtual; abstract;
-    function GetFontAnchorVerticalOffset: single;
+    function GetFontVerticalAnchorOffset: single; override;
     function GetFontAnchorRotatedOffset: TPointF; overload;
     function GetFontAnchorRotatedOffset(ACustomOrientation: integer): TPointF; overload;
 
@@ -1212,7 +1212,7 @@ begin
   FFontRenderer := AValue
 end;
 
-function TBGRADefaultBitmap.GetFontAnchorVerticalOffset: single;
+function TBGRADefaultBitmap.GetFontVerticalAnchorOffset: single;
 begin
   case FontVerticalAnchor of
   fvaTop: result := 0;
@@ -1237,7 +1237,7 @@ end;
 function TBGRADefaultBitmap.GetFontAnchorRotatedOffset(
   ACustomOrientation: integer): TPointF;
 begin
-  result := PointF(0, GetFontAnchorVerticalOffset);
+  result := PointF(0, GetFontVerticalAnchorOffset);
   if ACustomOrientation <> 0 then
     result := AffineMatrixRotationDeg(-ACustomOrientation*0.1)*result;
 end;
@@ -4051,7 +4051,7 @@ var size: TSize;
   m: TAffineMatrix;
   dy: single;
 begin
-  dy := GetFontAnchorVerticalOffset;
+  dy := GetFontVerticalAnchorOffset;
   size := FontRenderer.TextSizeAngle(sUTF8, FontOrientation);
   m := AffineMatrixRotationDeg(-FontOrientation*0.1);
   result := TAffineBox.AffineBox(PointF(0,-dy), m*PointF(size.cx,-dy), m*PointF(0,size.cy-dy));

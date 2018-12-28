@@ -328,6 +328,7 @@ type
         If ''align'' is ''taCenter'', (''x'',''y'') is at the top and middle of the text.
         If ''align'' is ''taRightJustify'', (''x'',''y'') is the top-right corner. }
     procedure CopyTextPathTo({%H-}ADest: IBGRAPath; {%H-}x, {%H-}y: single; {%H-}s: string; {%H-}align: TAlignment); virtual; //optional
+    function HandlesTextPath: boolean; virtual;
   end;
 
   {* Output mode for the improved renderer for readability. This is used by the font renderer based on LCL in ''BGRAText'' }
@@ -678,6 +679,11 @@ end;
 
 procedure TBGRACustomFontRenderer.CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment);
 begin {optional implementation} end;
+
+function TBGRACustomFontRenderer.HandlesTextPath: boolean;
+begin
+  result := false;
+end;
 
 
 function CheckPutImageBounds(x, y, tx, ty: integer; out minxb, minyb, maxxb,

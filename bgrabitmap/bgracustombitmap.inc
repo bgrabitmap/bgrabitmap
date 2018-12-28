@@ -136,6 +136,7 @@ type
      procedure SetFontHeight(AHeight: integer); virtual; abstract;
      function GetFontFullHeight: integer; virtual; abstract;
      procedure SetFontFullHeight(AHeight: integer); virtual; abstract;
+     function GetFontVerticalAnchorOffset: single; virtual; abstract;
      function GetPenJoinStyle: TPenJoinStyle; virtual; abstract;
      procedure SetPenJoinStyle(const AValue: TPenJoinStyle); virtual; abstract;
      function GetPenMiterLimit: single; virtual; abstract;
@@ -324,6 +325,9 @@ type
 
      {** Simplified property to specify the quality (see ''FontQuality'') }
      property FontAntialias: Boolean read GetFontAntialias write SetFontAntialias;
+
+     property FontVerticalAnchorOffset: single read GetFontVerticalAnchorOffset;
+
      {** Returns measurement for the current font in pixels }
      property FontPixelMetric: TFontPixelMetric read GetFontPixelMetric;
 
