@@ -9,6 +9,9 @@ uses
   ExtCtrls, StdCtrls, BGRAVirtualScreen, BGRABitmap, BGRABitmapTypes,
   BGRACanvas2D;
 
+const
+  timeGrain = 15/1000/60/60/24;
+
 type
 
   { TForm1 }
@@ -38,16 +41,19 @@ type
   private
     { private declarations }
     mx,my: integer;
-    test4pos, test5pos, Test13pos, test16pos, test17pos, test18pos, test19pos: integer;
+    lastTime: TDateTime;
+    timeGrainAcc: double;
+    test4pos, test5pos, Test13pos, test16pos, test17pos, test18pos, test19pos, test23pos: integer;
     img,abelias: TBGRABitmap;
     procedure UpdateIn(ms: integer);
+    procedure UseVectorizedFont(ctx: TBGRACanvas2D; AUse: boolean);
   public
     { public declarations }
     procedure Test1(ctx: TBGRACanvas2D);
     procedure Test2(ctx: TBGRACanvas2D);
     procedure Test3(ctx: TBGRACanvas2D);
-    procedure Test4(ctx: TBGRACanvas2D);
-    procedure Test5(ctx: TBGRACanvas2D);
+    procedure Test4(ctx: TBGRACanvas2D; grainElapse: integer);
+    procedure Test5(ctx: TBGRACanvas2D; grainElapse: integer);
     procedure Test6(ctx: TBGRACanvas2D);
     procedure Test7(ctx: TBGRACanvas2D);
     procedure Test8(ctx: TBGRACanvas2D);
@@ -58,12 +64,13 @@ type
     procedure Test13(ctx: TBGRACanvas2D);
     procedure Test14(ctx: TBGRACanvas2D);
     procedure Test15(ctx: TBGRACanvas2D);
-    procedure Test16(ctx: TBGRACanvas2D);
-    procedure Test17(ctx: TBGRACanvas2D);
-    procedure Test18(ctx: TBGRACanvas2D);
-    procedure Test19(ctx: TBGRACanvas2D);
+    procedure Test16(ctx: TBGRACanvas2D; grainElapse: integer);
+    procedure Test17(ctx: TBGRACanvas2D; grainElapse: integer);
+    procedure Test18(ctx: TBGRACanvas2D; grainElapse: integer);
+    procedure Test19(ctx: TBGRACanvas2D; grainElapse: integer);
     procedure Test20(ctx: TBGRACanvas2D; AVectorizedFont: boolean);
     procedure Test22(ctx: TBGRACanvas2D);
+    procedure Test23(ctx: TBGRACanvas2D; grainElapse: integer);
   end;
 
 var
@@ -87,6 +94,7 @@ begin
   abelias := TBGRABitmap.Create('abelias.png');
   mx := -1000;
   my := -1000;
+  lastTime := Now;
 end;
 
 procedure TForm1.CheckBox_PixelCenteredChange(Sender: TObject);
@@ -138,7 +146,7 @@ end;
 procedure TForm1.Timer1Timer(Sender: TObject);
 begin
   Timer1.Enabled := false;
-  VirtualScreen.RedrawBitmap;
+  VirtualScreen.DiscardBitmap;
 end;
 
 procedure TForm1.VirtualScreenMouseLeave(Sender: TObject);
@@ -157,7 +165,17 @@ end;
 
 procedure TForm1.VirtualScreenRedraw(Sender: TObject; Bitmap: TBGRABitmap);
 var ctx: TBGRACanvas2D;
+  grainElapse: integer;
+  newTime: TDateTime;
 begin
+  newTime := Now;
+  timeGrainAcc += (newTime - lastTime)/timeGrain;
+  lastTime := newTime;
+  if timeGrainAcc < 1 then timeGrainAcc := 1;
+  if timeGrainAcc > 50 then timeGrainAcc := 50;
+  grainElapse := trunc(timeGrainAcc);
+  timeGrainAcc -= grainElapse;
+
   ctx := Bitmap.Canvas2D;
   ctx.antialiasing := CheckBox_Antialiasing.Checked;
   ctx.pixelCenteredCoordinates := CheckBox_PixelCentered.Checked;
@@ -166,8 +184,8 @@ begin
     1: Test1(ctx);
     2: Test2(ctx);
     3: Test3(ctx);
-    4: Test4(ctx);
-    5: Test5(ctx);
+    4: Test4(ctx, grainElapse);
+    5: Test5(ctx, grainElapse);
     6: Test6(ctx);
     7: Test7(ctx);
     8: Test8(ctx);
@@ -178,13 +196,14 @@ begin
    13: Test13(ctx);
    14: Test14(ctx);
    15: Test15(ctx);
-   16: Test16(ctx);
-   17: Test17(ctx);
-   18: Test18(ctx);
-   19: Test19(ctx);
+   16: Test16(ctx, grainElapse);
+   17: Test17(ctx, grainElapse);
+   18: Test18(ctx, grainElapse);
+   19: Test19(ctx, grainElapse);
    20: Test20(ctx,false);
    21: Test20(ctx,true);
    22: Test22(ctx);
+   23: Test23(ctx,grainElapse);
   end;
   ctx.restore;
 end;
@@ -194,6 +213,14 @@ begin
   Timer1.Interval := ms;
   Timer1.Enabled := false;
   Timer1.Enabled := true;
+end;
+
+procedure TForm1.UseVectorizedFont(ctx: TBGRACanvas2D; AUse: boolean);
+begin
+  if AUse and not (ctx.fontRenderer is TBGRAVectorizedFontRenderer) then
+    ctx.fontRenderer := TBGRAVectorizedFontRenderer.Create;
+  if not AUse and (ctx.fontRenderer is TBGRAVectorizedFontRenderer) then
+    ctx.fontRenderer := nil;
 end;
 
 procedure TForm1.Test1(ctx: TBGRACanvas2D);
@@ -296,11 +323,11 @@ begin
   UpdateIn(50);
 end;
 
-procedure TForm1.Test4(ctx: TBGRACanvas2D);
+procedure TForm1.Test4(ctx: TBGRACanvas2D; grainElapse: integer);
 var angle: single;
     p0,p1,p2: TPointF;
 begin
-  inc(test4pos);
+  inc(test4pos, grainElapse);
   angle := test4pos*2*Pi/400;
   ctx.translate((ctx.Width-300)/2,(ctx.height-300)/2);
   ctx.skewx( sin(angle) );
@@ -348,10 +375,10 @@ begin
   UpdateIn(10);
 end;
 
-procedure TForm1.Test5(ctx: TBGRACanvas2D);
+procedure TForm1.Test5(ctx: TBGRACanvas2D; grainElapse: integer);
 var svg: TBGRASVG;
 begin
-  inc(test5pos);
+  inc(test5pos, grainElapse);
 
   svg := TBGRASVG.Create;
   svg.LoadFromFile('Amsterdammertje-icoon.svg');
@@ -724,11 +751,11 @@ begin
   draw();
 end;
 
-procedure TForm1.Test16(ctx: TBGRACanvas2D);
+procedure TForm1.Test16(ctx: TBGRACanvas2D; grainElapse: integer);
 var center: TPointF;
     angle,zoom: single;
 begin
-  inc(test16pos);
+  inc(test16pos, grainElapse);
   center := pointf(ctx.width/2,ctx.height/2);
   angle := test16pos*2*Pi/300;
   zoom := (sin(test16pos*2*Pi/400)+1.1)*min(ctx.width,ctx.height)/300;
@@ -791,12 +818,12 @@ begin
   UpdateIn(10);
 end;
 
-procedure TForm1.Test17(ctx: TBGRACanvas2D);
+procedure TForm1.Test17(ctx: TBGRACanvas2D; grainElapse: integer);
 var
   grad: IBGRACanvasGradient2D;
   angle: single;
 begin
-  inc(test17pos);
+  inc(test17pos, grainElapse);
   angle := test17pos*2*Pi/1000;
 
   ctx.translate(ctx.Width/2,ctx.Height/2);
@@ -823,10 +850,10 @@ begin
   UpdateIn(10);
 end;
 
-procedure TForm1.Test18(ctx: TBGRACanvas2D);
+procedure TForm1.Test18(ctx: TBGRACanvas2D; grainElapse: integer);
 var pat: TBGRABitmap;
 begin
-  inc(test18pos);
+  inc(test18pos, grainElapse);
   ctx.translate(ctx.width div 2, ctx.height div 2);
   ctx.rotate(test18pos*2*Pi/360);
   ctx.scale(3,3);
@@ -849,11 +876,11 @@ begin
   UpdateIn(10);
 end;
 
-procedure TForm1.Test19(ctx: TBGRACanvas2D);
+procedure TForm1.Test19(ctx: TBGRACanvas2D; grainElapse: integer);
 var i: integer;
     tx,ty: single;
 begin
-  inc(test19pos);
+  inc(test19pos, grainElapse);
   ctx.save;
   ctx.translate(ctx.width div 2, ctx.height div 2);
   ctx.rotate(test19pos*2*Pi/500);
@@ -881,7 +908,7 @@ begin
   ctx.fillStyle ('green');
   ctx.fillRect(tx, ty, tx, ty);
 
-  test18(ctx);
+  test18(ctx, grainElapse);
 end;
 
 procedure TForm1.Test20(ctx: TBGRACanvas2D; AVectorizedFont: boolean);
@@ -889,7 +916,7 @@ var
   i: Integer;
   grad: IBGRACanvasGradient2D;
 begin
-  if AVectorizedFont then ctx.fontRenderer := TBGRAVectorizedFontRenderer.Create;
+  UseVectorizedFont(ctx,AVectorizedFont);
   ctx.save;
 
   ctx.fontName:= 'default';
@@ -947,11 +974,34 @@ begin
 
     beginPath;
     text('hole', width/2,height/2);
-    fillStyle(clWhite);
     clearPath;
   end;
   ctx.surface.DrawCheckers(rect(0,0,ctx.width,ctx.height), CSSWhite,CSSSilver);
   ctx.surface.PutImage(0,0,layer,dmDrawWithTransparency);
+end;
+
+procedure TForm1.Test23(ctx: TBGRACanvas2D; grainElapse: integer);
+begin
+  UseVectorizedFont(ctx,true);
+  with ctx do
+  begin
+    save;
+    fontName:= 'default';
+    fontStyle := [fsBold];
+    fontEmHeight:= min(height/2, width/6);
+    textBaseline:= 'middle';
+    textAlign := 'center';
+
+    translate(width/2,height/2);
+    transform(cos(test23pos*Pi/60),sin(test23pos*Pi/60),0,1,0,0);
+    beginPath;
+    text('distort', 0,0);
+    fillStyle(clBlack);
+    fill;
+    restore;
+  end;
+  inc(test23pos, grainElapse);
+  UpdateIn(10);
 end;
 
 end.
