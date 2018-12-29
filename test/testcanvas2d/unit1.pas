@@ -160,7 +160,7 @@ procedure TForm1.VirtualScreenMouseMove(Sender: TObject; Shift: TShiftState; X,
 begin
   mx := X;
   my := Y;
-  if SpinEdit1.Value = 1 then UpdateIn(10);
+  if (SpinEdit1.Value = 1) and not Timer1.Enabled then UpdateIn(10);
 end;
 
 procedure TForm1.VirtualScreenRedraw(Sender: TObject; Bitmap: TBGRABitmap);
