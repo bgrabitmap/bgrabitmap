@@ -85,4 +85,11 @@ object Form1: TForm1
     left = 62
     top = 92
   end
+  object SaveDialog1: TSaveDialog
+    Title = 'Save as HTML file...'
+    DefaultExt = '.html'
+    Filter = 'HTML file (*.html);*.html'
+    left = 151
+    top = 95
+  end
 end

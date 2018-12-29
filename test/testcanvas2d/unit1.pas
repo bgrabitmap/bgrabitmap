@@ -21,6 +21,7 @@ type
     CheckBox_Antialiasing: TCheckBox;
     CheckBox_PixelCentered: TCheckBox;
     Panel1: TPanel;
+    SaveDialog1: TSaveDialog;
     SpinEdit1: TSpinEdit;
     VirtualScreen: TBGRAVirtualScreen;
     Timer1: TTimer;
@@ -106,14 +107,17 @@ procedure TForm1.Button_toDataURLClick(Sender: TObject);
 var html: string;
     t: textfile;
 begin
-  html := '<html><body><img src="';
-  html += VirtualScreen.Bitmap.Canvas2D.toDataURL;
-  html += '"/></body></html>';
-  assignfile(t,'dataUrlTest.html');
-  rewrite(t);
-  write(t,html);
-  closefile(t);
-  MessageDlg('toDataURL','Output: dataUrlTest.html',mtInformation,[mbOK],0);
+  if SaveDialog1.Execute then
+  begin
+    html := '<html><body><img src="';
+    html += VirtualScreen.Bitmap.Canvas2D.toDataURL;
+    html += '"/></body></html>';
+    assignfile(t,SaveDialog1.FileName);
+    rewrite(t);
+    write(t,html);
+    closefile(t);
+    MessageDlg('toDataURL','Output: '+ SaveDialog1.FileName,mtInformation,[mbOK],0);
+  end;
 end;
 
 procedure TForm1.CheckBox_AntialiasingChange(Sender: TObject);
