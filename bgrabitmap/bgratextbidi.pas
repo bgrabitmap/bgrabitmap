@@ -1239,7 +1239,11 @@ begin
         FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
 
         pos.y += lineHeight;
-        if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then exit;
+        if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then
+        begin
+          FParagraph[paraIndex].rectF.Bottom := pos.y;
+          exit;
+        end;
       end;
     end;
     pos.y += paraSpacingBelow;
