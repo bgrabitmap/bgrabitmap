@@ -44,6 +44,7 @@ type
   TStartMoveHandlers = specialize TFPGList<TOriginalStartMovePointEvent>;
   TClickPointHandlers = specialize TFPGList<TOriginalClickPointEvent>;
   THoverPointHandlers = specialize TFPGList<TOriginalHoverPointEvent>;
+  TBGRAOriginalPolylineStyle = (opsNone, opsSolid, opsDash, opsDashWithShadow);
 
   { TBGRAOriginalEditor }
 
@@ -61,6 +62,12 @@ type
       RightButton: boolean;
       SnapToPoint: integer;
     end;
+    FPolylines: array of record
+      Coords: array of TPointF;
+      Closed: boolean;
+      Style: TBGRAOriginalPolylineStyle;
+      BackColor: TBGRAPixel;
+    end;
     FPointSize: single;
     FPointMoving: integer;
     FPointCoordDelta: TPointF;
@@ -74,6 +81,8 @@ type
     function GetRenderPointBounds(ACoord: TPointF): TRect; virtual;
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
     function GetRenderArrowBounds(AOrigin, AEndCoord: TPointF): TRect; virtual;
+    function RenderPolygon(ADest: TBGRABitmap; ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle; ABackColor: TBGRAPixel): TRect; virtual;
+    function GetRenderPolygonBounds(ACoords: array of TPointF): TRect;
     procedure SetMatrix(AValue: TAffineMatrix);
     procedure SetGridMatrix(AValue: TAffineMatrix);
     procedure SetGridActive(AValue: boolean);
@@ -88,6 +97,8 @@ type
     function AddPoint(const ACoord: TPointF; AOnMove: TOriginalMovePointEvent; ARightButton: boolean = false; ASnapToPoint: integer = -1): integer;
     function AddFixedPoint(const ACoord: TPointF; ARightButton: boolean = false): integer;
     function AddArrow(const AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
+    function AddPolyline(const ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle): integer; overload;
+    function AddPolyline(const ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle; ABackColor: TBGRAPixel): integer; overload;
     procedure MouseMove(Shift: TShiftState; ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure MouseUp(RightButton: boolean; {%H-}Shift: TShiftState; {%H-}ViewX, {%H-}ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
@@ -246,7 +257,7 @@ function FindLayerOriginalClass(AStorageClassName: string): TBGRALayerOriginalAn
 
 implementation
 
-uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, Types;
+uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, Types, BGRAGraphics;
 
 var
   LayerOriginalClasses: array of TBGRALayerOriginalAny;
@@ -403,6 +414,102 @@ begin
   end;
 end;
 
+function TBGRAOriginalEditor.RenderPolygon(ADest: TBGRABitmap;
+  ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle; ABackColor: TBGRAPixel): TRect;
+var
+  dashPos,dashLen: integer;
+  i,j: integer;
+  ptsF: array of TPointF;
+  pts1,pts2: array of TPoint;
+begin
+  dashPos := 0;
+  dashLen := round(PointSize/2);
+  if dashLen < 1 then dashLen := 1;
+
+  setlength(pts1, length(ACoords));
+  for i := 0 to high(ACoords) do
+    pts1[i] := ACoords[i].Round;
+
+  setlength(ptsF, length(pts1));
+  for i := 0 to high(pts1) do
+    ptsF[i] := PointF(pts1[i]);
+
+  if ABackColor.alpha <> 0 then
+    ADest.FillPolyAntialias(ptsF, ABackColor);
+
+  case AStyle of
+  opsDash, opsDashWithShadow:
+    begin
+      if AStyle = opsDashWithShadow then
+      begin
+        //shadow
+        setlength(pts2,length(pts1));
+        for i := 0 to high(pts1) do
+          if not isEmptyPoint(pts1[i]) then
+            pts2[i] := Point(pts1[i].x+1,pts1[i].y+1)
+          else pts2[i] := EmptyPoint;
+        if AClosed then
+          ADest.DrawPolygonAntialias(pts2, BGRA(0,0,0,96))
+        else
+          ADest.DrawPolyLineAntialias(pts2, BGRA(0,0,0,96), true);
+        pts2:= nil;
+      end;
+
+      //dotted line
+      if AClosed then
+        ADest.DrawPolygonAntialias(pts1, CSSIvory,BGRA(70,70,50),dashLen)
+      else
+        ADest.DrawPolyLineAntialias(pts1, CSSIvory,BGRA(70,70,50),dashLen, true);
+    end;
+  opsSolid:
+    begin
+      ADest.JoinStyle:= pjsRound;
+      ADest.LineCap:= pecRound;
+      //black outline
+      if AClosed then
+        ADest.DrawPolygonAntialias(ptsF, BGRA(0,0,0,192), 3)
+      else
+        ADest.DrawPolyLineAntialias(ptsF, BGRA(0,0,0,192), 3);
+
+      if AClosed then
+        ADest.DrawPolygonAntialias(pts1, CSSIvory)
+      else
+        ADest.DrawPolyLineAntialias(pts1, CSSIvory, true);
+    end;
+  end;
+
+  result := GetRenderPolygonBounds(ACoords);
+end;
+
+function TBGRAOriginalEditor.GetRenderPolygonBounds(ACoords: array of TPointF): TRect;
+var
+  first: Boolean;
+  rF: TRectF;
+  i: Integer;
+begin
+  first:= true;
+  rF:= EmptyRectF;
+  for i := 0 to high(ACoords) do
+    if not isEmptyPointF(ACoords[i]) then
+    begin
+      if first then
+      begin
+        rF := RectF(Acoords[i],ACoords[i]);
+        first:= false;
+      end else
+      begin
+        if ACoords[i].x < rF.Left then rF.Left := ACoords[i].x;
+        if ACoords[i].x > rF.Right then rF.Right := ACoords[i].x;
+        if ACoords[i].y < rF.Top then rF.Top := ACoords[i].y;
+        if ACoords[i].y > rF.Bottom then rF.Bottom := ACoords[i].y;
+      end;
+    end;
+  if not first then
+    result := rect(floor(rF.Left-0.5),floor(rF.Top-0.5),ceil(rF.Right+1.5),ceil(rF.Bottom+1.5))
+  else
+    result := EmptyRect;
+end;
+
 constructor TBGRAOriginalEditor.Create;
 begin
   FPointSize:= 6;
@@ -429,6 +536,7 @@ end;
 procedure TBGRAOriginalEditor.Clear;
 begin
   FPoints := nil;
+  FPolylines := nil;
   FStartMoveHandlers.Clear;
   FHoverPointHandlers.Clear;
   FClickPointHandlers.Clear;
@@ -495,6 +603,27 @@ begin
     RightButton:= ARightButton;
     SnapToPoint:= -1;
   end;
+end;
+
+function TBGRAOriginalEditor.AddPolyline(const ACoords: array of TPointF;
+  AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle): integer;
+begin
+  result := AddPolyline(ACoords, AClosed, AStyle, BGRAPixelTransparent);
+end;
+
+function TBGRAOriginalEditor.AddPolyline(const ACoords: array of TPointF;
+  AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle; ABackColor: TBGRAPixel): integer;
+var
+  i: Integer;
+begin
+  setlength(FPolylines, length(FPolylines)+1);
+  result := high(FPolylines);
+  setlength(FPolylines[result].Coords, length(ACoords));
+  for i := 0 to high(ACoords) do
+    FPolylines[result].Coords[i] := ACoords[i];
+  FPolylines[result].Closed:= AClosed;
+  FPolylines[result].Style := AStyle;
+  FPolylines[result].BackColor := ABackColor;
 end;
 
 procedure TBGRAOriginalEditor.MouseMove(Shift: TShiftState; ViewX, ViewY: single; out
@@ -648,8 +777,9 @@ end;
 
 function TBGRAOriginalEditor.Render(ADest: TBGRABitmap; const ALayoutRect: TRect): TRect;
 var
-  i: Integer;
+  i,j: Integer;
   elemRect: TRect;
+  ptsF: array of TPointF;
 begin
   result := EmptyRect;
   for i := 0 to high(FPoints) do
@@ -666,12 +796,33 @@ begin
         UnionRect(result, result, elemRect);
     end;
   end;
+  for i := 0 to high(FPolylines) do
+  begin
+    with FPolylines[i] do
+    begin
+      setlength(ptsF, length(Coords));
+      for j := 0 to high(Coords) do
+        if IsEmptyPointF(Coords[j]) then
+          ptsF[j] := EmptyPointF
+        else
+          ptsF[j] := OriginalCoordToView(Coords[j]);
+      elemRect := RenderPolygon(ADest, ptsF, Closed, Style, BackColor);
+    end;
+    if not IsRectEmpty(elemRect) then
+    begin
+      if IsRectEmpty(result) then
+        result := elemRect
+      else
+        UnionRect(result, result, elemRect);
+    end;
+  end;
 end;
 
 function TBGRAOriginalEditor.GetRenderBounds(const ALayoutRect: TRect): TRect;
 var
-  i: Integer;
+  i,j: Integer;
   elemRect: TRect;
+  ptsF: array of TPointF;
 begin
   result := EmptyRect;
   for i := 0 to high(FPoints) do
@@ -680,6 +831,26 @@ begin
       elemRect := GetRenderPointBounds(OriginalCoordToView(FPoints[i].Coord))
     else
       elemRect := GetRenderArrowBounds(OriginalCoordToView(FPoints[i].Origin), OriginalCoordToView(FPoints[i].Coord));
+    if not IsRectEmpty(elemRect) then
+    begin
+      if IsRectEmpty(result) then
+        result := elemRect
+      else
+        UnionRect(result, result, elemRect);
+    end;
+  end;
+  for i := 0 to high(FPolylines) do
+  begin
+    with FPolylines[i] do
+    begin
+      setlength(ptsF, length(Coords));
+      for j := 0 to high(Coords) do
+        if IsEmptyPointF(Coords[j]) then
+          ptsF[j] := EmptyPointF
+        else
+          ptsF[j] := OriginalCoordToView(Coords[j]);
+      elemRect := GetRenderPolygonBounds(ptsF);
+    end;
     if not IsRectEmpty(elemRect) then
     begin
       if IsRectEmpty(result) then
