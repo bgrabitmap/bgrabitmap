@@ -459,9 +459,9 @@ type
     procedure DrawLine(x1, y1, x2, y2: integer; c: TBGRAPixel; DrawLastPixel: boolean; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     {** Draws an antialiased line from (x1,y1) to (x2,y2) using an improved version of Bresenham's algorithm
         ''c'' specifies the color. ''DrawLastPixel'' specifies if (x2,y2) must be drawn }
-    procedure DrawLineAntialias(x1, y1, x2, y2: integer; c: TBGRAPixel; DrawLastPixel: boolean); override;
+    procedure DrawLineAntialias(x1, y1, x2, y2: integer; c: TBGRAPixel; DrawLastPixel: boolean); overload; override;
     {** Draws an antialiased line with two colors ''c1'' and ''c2'' as dashes of lenght ''dashLen'' }
-    procedure DrawLineAntialias(x1, y1, x2, y2: integer; c1, c2: TBGRAPixel; dashLen: integer; DrawLastPixel: boolean); override;
+    procedure DrawLineAntialias(x1, y1, x2, y2: integer; c1, c2: TBGRAPixel; dashLen: integer; DrawLastPixel: boolean); overload; override;
     {** Draws an antialiased line with two colors ''c1'' and ''c2'' as dashes of lenght ''dashLen''.
         ''DashPos'' can be used to specify the start dash position and to retrieve the dash position at the end
         of the line, in order to draw a polyline with consistent dashes }
@@ -484,30 +484,30 @@ type
        See [[BGRABitmap tutorial 13|coordinate system]]. }
 
     {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join }
-    procedure DrawLineAntialias(x1, y1, x2, y2: single; c: TBGRAPixel; w: single); override;
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; c: TBGRAPixel; w: single); overload; override;
     {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join.
         ''texture'' specifies the source color to use when filling the line }
-    procedure DrawLineAntialias(x1, y1, x2, y2: single; texture: IBGRAScanner; w: single); override;
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; texture: IBGRAScanner; w: single); overload; override;
     {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join.
         ''Closed'' specifies if the end of the line is closed. If it is not closed,
         a space is left so that the next line can fit }
-    procedure DrawLineAntialias(x1, y1, x2, y2: single; c: TBGRAPixel; w: single; ClosedCap: boolean); override;
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; c: TBGRAPixel; w: single; ClosedCap: boolean); overload; override;
     {** Same as above with ''texture'' specifying the source color to use when filling the line }
-    procedure DrawLineAntialias(x1, y1, x2, y2: single; texture: IBGRAScanner; w: single; ClosedCap: boolean); override;
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; texture: IBGRAScanner; w: single; ClosedCap: boolean); overload; override;
 
     {** Draws a polyline using current pen style/cap/join }
-    procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single); override;
+    procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single); overload; override;
     {** Draws a polyline using current pen style/cap/join.
         ''texture'' specifies the source color to use when filling the line }
-    procedure DrawPolyLineAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single); override;
+    procedure DrawPolyLineAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single); overload; override;
     {** Draws a polyline using current pen style/cap/join.
         ''Closed'' specifies if the end of the line is closed. If it is not closed,
         a space is left so that the next line can fit }
-    procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; ClosedCap: boolean); override;
-    procedure DrawPolyLineAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single; ClosedCap: boolean); override;
+    procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; ClosedCap: boolean); overload; override;
+    procedure DrawPolyLineAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single; ClosedCap: boolean); overload; override;
     {** Draws a polyline using current pen style/cap/join.
         ''fillcolor'' specifies a color to fill the polygon formed by the points }
-    procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); override;
+    procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; override;
     {** Draws a polyline using current pen style/cap/join.
         The last point considered as a join with the first point if it has
         the same coordinate }
@@ -516,15 +516,15 @@ type
     {** Draws a polygon using current pen style/cap/join.
         The polygon is always closed. You don't need to set the last point
         to be the same as the first point }
-    procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single); override;
+    procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single); overload; override;
     {** Draws a polygon using current pen style/cap/join.
         The polygon is always closed. You don't need to set the last point
         to be the same as the first point }
-    procedure DrawPolygonAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single); override;
+    procedure DrawPolygonAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single); overload; override;
     {** Draws a filled polygon using current pen style/cap/join.
         The polygon is always closed. You don't need to set the last point
         to be the same as the first point. }
-    procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); override;
+    procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; override;
 
     {** Erases a line from (x1,y1) to (x2,y2) using current pen style/cap/join }
     procedure EraseLineAntialias(x1, y1, x2, y2: single; alpha: byte; w: single); override;

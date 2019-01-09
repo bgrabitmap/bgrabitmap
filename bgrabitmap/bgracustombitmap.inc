@@ -496,6 +496,7 @@ type
      procedure DrawPolyLineAntialiasAutocycle(const points: array of TPointF; texture: IBGRAScanner; w: single); overload; virtual; abstract;
      procedure DrawPolygon(const points: array of TPoint; c: TBGRAPixel; ADrawMode: TDrawMode=dmDrawWithTransparency);
      procedure DrawPolygonAntialias(const points: array of TPoint; c: TBGRAPixel); overload;
+     procedure DrawPolygonAntialias(const points: array of TPoint; c1, c2: TBGRAPixel; dashLen: integer); overload;
      procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single); overload; virtual; abstract;
      procedure DrawPolygonAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single); overload; virtual; abstract;
      procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; virtual; abstract;
@@ -1410,134 +1411,188 @@ end;
 
 procedure TBGRACustomBitmap.DrawPolyLine(const points: array of TPoint;
   c: TBGRAPixel; DrawLastPixel: boolean; ADrawMode: TDrawMode);
-var i: integer;
+var i,start: integer;
 begin
-   if length(points) = 1 then
-   begin
-     if DrawLastPixel then DrawPixel(points[0].x,points[0].y,c,ADrawMode);
-   end
-   else
-     for i := 0 to high(points)-1 do
-       DrawLine(points[i].x,points[i].Y,points[i+1].x,points[i+1].y,c,DrawLastPixel and (i=high(points)-1),ADrawMode);
+  start := 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then start := i+1 else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if (i = start) and DrawLastPixel then DrawPixel(points[i].x,points[i].y,c,ADrawMode);
+    end else
+      DrawLine(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, c,
+        DrawLastPixel and ((i=high(points)-1) or IsEmptyPoint(points[i+2])), ADrawMode);
+  end;
 end;
 
 { Pixel polylines are constructed by concatenation }
 procedure TBGRACustomBitmap.DrawPolyLineAntialias(const points: array of TPoint;
   c: TBGRAPixel; DrawLastPixel: boolean);
-var i: integer;
+var i,start: integer;
 begin
-   if length(points) = 1 then
-   begin
-     if DrawLastPixel then DrawLineAntialias(points[0].x,points[0].y,points[0].x,points[0].y,c,true);
-   end
-   else
-     for i := 0 to high(points)-1 do
-       DrawLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y,c,DrawLastPixel and (i=high(points)-1));
+  start := 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then start := i+1 else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if (i = start) and DrawLastPixel then DrawLineAntialias(points[i].x,points[i].y,points[i].x,points[i].y,c,true);
+    end else
+      DrawLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, c,
+        DrawLastPixel and ((i=high(points)-1) or IsEmptyPoint(points[i+2])));
+  end;
 end;
 
 procedure TBGRACustomBitmap.DrawPolyLineAntialias(const points: array of TPoint; c1,
   c2: TBGRAPixel; dashLen: integer; DrawLastPixel: boolean);
-var i: integer;
-  DashPos: integer;
+var i,start,dashPos: integer;
 begin
-   DashPos := 0;
-   if length(points) = 1 then
-   begin
-     if DrawLastPixel then DrawPixel(points[0].x,points[0].y,c1);
-   end
-   else
-     for i := 0 to high(points)-1 do
-       DrawLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y,c1,c2,dashLen,DrawLastPixel and (i=high(points)-1),DashPos);
+  start := 0;
+  dashPos := 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then
+  begin
+    start := i+1;
+    dashPos := 0;
+  end else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if (i = start) and DrawLastPixel then DrawPixel(points[i].x,points[i].y, c1);
+    end else
+      DrawLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, c1,c2, dashLen,
+        DrawLastPixel and ((i=high(points)-1) or IsEmptyPoint(points[i+2])), dashPos);
+  end;
 end;
 
 procedure TBGRACustomBitmap.DrawPolygon(const points: array of TPoint;
   c: TBGRAPixel; ADrawMode: TDrawMode);
-var i: integer;
+var i,start: integer;
 begin
-   if length(points) = 1 then
-   begin
-     DrawPixel(points[0].x,points[0].y,c,ADrawMode);
-   end
-   else
-   begin
-     for i := 0 to high(points)-1 do
-       DrawLine(points[i].x,points[i].Y,points[i+1].x,points[i+1].y,c,false,ADrawMode);
-     DrawLine(points[high(points)].x,points[high(points)].Y,points[0].x,points[0].y,c,false,ADrawMode);
-   end;
+  start := 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then start := i+1 else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if i = start then DrawPixel(points[i].x,points[i].y,c,ADrawMode)
+      else if (i > start) then
+        DrawLine(points[i].x,points[i].Y,points[start].x,points[start].y, c, false, ADrawMode);
+    end else
+      DrawLine(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, c, false, ADrawMode);
+  end;
 end;
 
 procedure TBGRACustomBitmap.DrawPolygonAntialias(const points: array of TPoint;
   c: TBGRAPixel);
-var i: integer;
+var i,start: integer;
 begin
-   if length(points) = 1 then
-   begin
-     DrawLineAntialias(points[0].x,points[0].y,points[0].x,points[0].y,c,true);
-   end
-   else
-   begin
-     for i := 0 to high(points)-1 do
-       DrawLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y,c,false);
-     DrawLineAntialias(points[high(points)].x,points[high(points)].Y,points[0].x,points[0].y,c,false);
-   end;
+  start := 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then start := i+1 else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if i = start then DrawLineAntialias(points[i].x,points[i].y,points[i].x,points[i].y, c, true)
+      else if (i > start) then
+        DrawLineAntialias(points[i].x,points[i].Y,points[start].x,points[start].y, c, false);
+    end else
+      DrawLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, c, false);
+  end;
+end;
+
+procedure TBGRACustomBitmap.DrawPolygonAntialias(const points: array of TPoint;
+  c1, c2: TBGRAPixel; dashLen: integer);
+var i,start,dashPos: integer;
+begin
+  start := 0;
+  dashPos:= 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then
+  begin
+    start := i+1;
+    dashPos:= 0;
+  end else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if i = start then DrawLineAntialias(points[i].x,points[i].y,points[i].x,points[i].y, c1, true)
+      else if (i > start) then
+        DrawLineAntialias(points[i].x,points[i].Y,points[start].x,points[start].y, c1,c2,dashLen, false, dashPos);
+    end else
+      DrawLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, c1,c2,dashLen, false, dashPos);
+  end;
 end;
 
 procedure TBGRACustomBitmap.ErasePolyLine(const points: array of TPoint; alpha: byte;
   DrawLastPixel: boolean);
-var i: integer;
+var i,start: integer;
 begin
-   if length(points) = 1 then
-   begin
-     if DrawLastPixel then ErasePixel(points[0].x,points[0].y,alpha);
-   end
-   else
-     for i := 0 to high(points)-1 do
-       EraseLine(points[i].x,points[i].Y,points[i+1].x,points[i+1].y,alpha,DrawLastPixel and (i=high(points)-1));
+  start := 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then start := i+1 else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if (i = start) and DrawLastPixel then ErasePixel(points[i].x,points[i].y,alpha);
+    end else
+      EraseLine(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, alpha,
+        DrawLastPixel and ((i=high(points)-1) or IsEmptyPoint(points[i+2])));
+  end;
 end;
 
 procedure TBGRACustomBitmap.ErasePolyLineAntialias(
   const points: array of TPoint; alpha: byte; DrawLastPixel: boolean);
-var i: integer;
+var i,start: integer;
 begin
-   if length(points) = 1 then
-   begin
-     if DrawLastPixel then ErasePixel(points[0].x,points[0].y,alpha);
-   end
-   else
-     for i := 0 to high(points)-1 do
-       EraseLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y,alpha,DrawLastPixel and (i=high(points)-1));
+  start := 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then start := i+1 else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if (i = start) and DrawLastPixel then ErasePixel(points[i].x,points[i].y, alpha);
+    end else
+      EraseLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, alpha,
+        DrawLastPixel and ((i=high(points)-1) or IsEmptyPoint(points[i+2])));
+  end;
 end;
 
 procedure TBGRACustomBitmap.ErasePolygonOutline(const points: array of TPoint;
   alpha: byte);
-var i: integer;
+var i,start: integer;
 begin
-   if length(points) = 1 then
-   begin
-     ErasePixel(points[0].x,points[0].y,alpha);
-   end
-   else
-   begin
-     for i := 0 to high(points)-1 do
-       EraseLine(points[i].x,points[i].Y,points[i+1].x,points[i+1].y,alpha,false);
-     EraseLine(points[high(points)].x,points[high(points)].Y,points[0].x,points[0].y,alpha,false);
-   end;
+  start := 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then start := i+1 else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if i = start then ErasePixel(points[i].x,points[i].y, alpha)
+      else if (i > start) then
+        EraseLine(points[i].x,points[i].Y,points[start].x,points[start].y, alpha, false);
+    end else
+      EraseLine(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, alpha, false);
+  end;
 end;
 
 procedure TBGRACustomBitmap.ErasePolygonOutlineAntialias(
   const points: array of TPoint; alpha: byte);
-var i: integer;
+var i,start: integer;
 begin
-   if length(points) = 1 then
-   begin
-     ErasePixel(points[0].x,points[0].y,alpha);
-   end
-   else
-   begin
-     for i := 0 to high(points)-1 do
-       EraseLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y,alpha,false);
-     EraseLineAntialias(points[high(points)].x,points[high(points)].Y,points[0].x,points[0].y,alpha,false);
-   end;
+  start := 0;
+  for i := 0 to high(points) do
+  if IsEmptyPoint(points[i]) then start := i+1 else
+  begin
+    if (i = high(points)) or IsEmptyPoint(points[i+1]) then
+    begin
+      if i = start then ErasePixel(points[i].x,points[i].y, alpha)
+      else if (i > start) then
+        EraseLineAntialias(points[i].x,points[i].Y,points[start].x,points[start].y, alpha, false);
+    end else
+      EraseLineAntialias(points[i].x,points[i].Y,points[i+1].x,points[i+1].y, alpha, false);
+  end;
 end;
 
 procedure TBGRACustomBitmap.Arc(cx, cy, rx, ry: single; const StartPoint,

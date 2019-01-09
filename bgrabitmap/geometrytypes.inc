@@ -85,6 +85,20 @@ type
 
   {$endif}
 
+const
+  EmptyPoint : TPoint = (X: -2147483648; Y: -2147483648);
+
+function IsEmptyPoint(const APoint: TPoint): boolean;
+
+type
+  TPointFHelper = record helper for TPointF
+    function Ceiling: TPoint;
+    function Truncate: TPoint;
+    function Floor: TPoint;
+    function Round: TPoint;
+    function Length: Single;
+  end;
+
 type
   PRectF = ^TRectF;
 
@@ -146,7 +160,8 @@ type
 
   {----------------- Operators for TPointF --------------------}
   {** Creates a new structure with values ''x'' and ''y'' }
-  function PointF(x, y: single): TPointF;
+  function PointF(x, y: single): TPointF; overload;
+  function PointF(pt: TPoint): TPointF; overload;
   {** Checks if the structure is empty (equal to ''EmptyPointF'') }
   function isEmptyPointF(const pt: TPointF): boolean;
   {** Checks if both ''x'' and ''y'' are equal }
@@ -723,6 +738,60 @@ end;
 
 {$ENDIF}
 
+function IsEmptyPoint(const APoint: TPoint): boolean;
+begin
+  result := (APoint.x = -2147483648) or (APoint.y = -2147483648);
+end;
+
+function TPointFHelper.Ceiling: TPoint;
+begin
+  if isEmptyPointF(self) then
+    result := EmptyPoint
+  else
+  begin
+    result.x:=ceil(x);
+    result.y:=ceil(y);
+  end;
+end;
+
+function TPointFHelper.Truncate: TPoint;
+begin
+  if isEmptyPointF(self) then
+    result := EmptyPoint
+  else
+  begin
+    result.x:=trunc(x);
+    result.y:=trunc(y);
+  end;
+end;
+
+function TPointFHelper.Floor: TPoint;
+begin
+  if isEmptyPointF(self) then
+    result := EmptyPoint
+  else
+  begin
+    result.x:=Math.floor(x);
+    result.y:=Math.floor(y);
+  end;
+end;
+
+function TPointFHelper.Round: TPoint;
+begin
+  if isEmptyPointF(self) then
+    result := EmptyPoint
+  else
+  begin
+    result.x:=System.round(x);
+    result.y:=System.round(y);
+  end;
+end;
+
+function TPointFHelper.Length: Single;
+begin
+  result:= VectLen(self);
+end;
+
 class function TRectFHelper.Intersect(const R1: TRectF; const R2: TRectF): TRectF;
 begin
   result.left:=max(R1.left,R2.left);
@@ -1204,6 +1273,17 @@ begin
   Result.y := y;
 end;
 
+function PointF(pt: TPoint): TPointF;
+begin
+  if IsEmptyPoint(pt) then
+    result:= EmptyPointF
+  else
+  begin
+    Result.x := pt.x;
+    Result.y := pt.y;
+  end;
+end;
+
 function PointsF(const pts: array of TPointF): ArrayOfTPointF;
 var
   i: Integer;
@@ -1233,7 +1313,10 @@ end;
 
 function VectLen(v: TPointF): single;
 begin
-  result := sqrt(v*v);
+  if isEmptyPointF(v) then
+    result := EmptySingle
+  else
+    result := sqrt(v*v);
 end;
 
 function VectDet(v1, v2: TPointF): double;
