@@ -172,11 +172,13 @@ type
     function GetLayerFrozen(layer: integer): boolean; override;
     function GetLayerUniqueId(layer: integer): integer; override;
     function GetLayerOriginal(layer: integer): TBGRALayerCustomOriginal; override;
+    function GetLayerOriginalKnown(layer: integer): boolean;
     function GetLayerOriginalMatrix(layer: integer): TAffineMatrix; override;
     function GetLayerOriginalGuid(layer: integer): TGuid; override;
     function GetLayerOriginalRenderStatus(layer: integer): TOriginalRenderStatus;
     function GetOriginalCount: integer;
     function GetOriginalByIndex(AIndex: integer): TBGRALayerCustomOriginal;
+    function GetOriginalByIndexKnown(AIndex: integer): boolean;
     procedure SetBlendOperation(Layer: integer; op: TBlendOperation);
     procedure SetLayerVisible(layer: integer; AValue: boolean);
     procedure SetLayerOpacity(layer: integer; AValue: byte);
@@ -292,6 +294,7 @@ type
     property LayerOffset[layer: integer]: TPoint read GetLayerOffset write SetLayerOffset;
     property LayerUniqueId[layer: integer]: integer read GetLayerUniqueId write SetLayerUniqueId;
     property LayerOriginal[layer: integer]: TBGRALayerCustomOriginal read GetLayerOriginal;
+    property LayerOriginalKnown[layer: integer]: boolean read GetLayerOriginalKnown;
     property LayerOriginalGuid[layer: integer]: TGuid read GetLayerOriginalGuid write SetLayerOriginalGuid;
     property LayerOriginalMatrix[layer: integer]: TAffineMatrix read GetLayerOriginalMatrix write SetLayerOriginalMatrix;
     property LayerOriginalRenderStatus[layer: integer]: TOriginalRenderStatus read GetLayerOriginalRenderStatus write SetLayerOriginalRenderStatus;
@@ -300,6 +303,7 @@ type
     function IndexOfOriginal(AOriginal: TBGRALayerCustomOriginal): integer; overload;
     property OriginalCount: integer read GetOriginalCount;
     property Original[AIndex: integer]: TBGRALayerCustomOriginal read GetOriginalByIndex;
+    property OriginalKnown[AIndex: integer]: boolean read GetOriginalByIndexKnown;
     property OnOriginalChange: TEmbeddedOriginalChangeEvent read FOriginalChange write FOriginalChange;
     property OnOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent read FOriginalEditingChange write FOriginalEditingChange;
     property OriginalEditor: TBGRAOriginalEditor read FOriginalEditor;
@@ -617,6 +621,39 @@ begin
     result.OnChange:= @OriginalChange;
     result.OnEditingChange:= @OriginalEditingChange;
   end;
+end;
+
+function TBGRALayeredBitmap.GetLayerOriginalKnown(layer: integer): boolean;
+var
+  idxOrig: Integer;
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+  begin
+    if FLayers[layer].OriginalGuid = GUID_NULL then exit(true);
+    idxOrig := IndexOfOriginal(FLayers[layer].OriginalGuid);
+    if idxOrig = -1 then exit(false);
+    result := OriginalKnown[idxOrig];
+  end;
+end;
+
+function TBGRALayeredBitmap.GetOriginalByIndexKnown(AIndex: integer): boolean;
+var
+  dir: TMemDirectory;
+  c: TBGRALayerOriginalAny;
+  guid: TGuid;
+  storage: TBGRAMemOriginalStorage;
+begin
+  if (AIndex < 0) or (AIndex >= OriginalCount) then
+    raise ERangeError.Create('Index out of bounds');
+
+  if Assigned(FOriginals[AIndex].Instance) then exit(true);
+  guid := FOriginals[AIndex].Guid;
+  if guid = GUID_NULL then exit(true);
+
+  FindOriginal(guid, dir, c);
+  result:= Assigned(dir) and Assigned(c);
 end;
 
 function TBGRALayeredBitmap.GetWidth: integer;
@@ -1644,7 +1681,7 @@ begin
   if prevHeight < 1 then prevHeight := AHeight;
   SetSize(AWidth, AHeight); //unfreeze
   for i := 0 to NbLayers-1 do
-  if FLayers[i].OriginalGuid <> GUID_NULL then
+  if (FLayers[i].OriginalGuid <> GUID_NULL) and LayerOriginalKnown[i] then
     LayerOriginalMatrix[i] := AffineMatrixScale(AWidth/prevWidth,AHeight/prevHeight)*LayerOriginalMatrix[i]
   else
   begin
