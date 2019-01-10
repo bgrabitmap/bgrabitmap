@@ -450,8 +450,12 @@ type
     AlphaDepth: integer;
   end;
 
+  {* Bitmap reader with additional features }
   TBGRAImageReader = class(TFPCustomImageReader)
+    {** Return bitmap information (size, bit depth) }
     function GetQuickInfo(AStream: TStream): TQuickImageInfo; virtual; abstract;
+    {** Return a draft of the bitmap, the ratio may change compared to the original width and height (useful to make thumbnails) }
+    function GetBitmapDraft(AStream: TStream; AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual; abstract;
   end;
 
   {* Options when loading an image }
