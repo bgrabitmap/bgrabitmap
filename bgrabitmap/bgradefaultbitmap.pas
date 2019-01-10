@@ -3988,6 +3988,7 @@ begin
     else layout.TopLeft := PointF(ALeft,ATop);
   end;
   layout.DrawText(self, c);
+  layout.Free;
 end;
 
 procedure TBGRADefaultBitmap.TextMultiline(ALeft, ATop, AWidth: single;
@@ -4011,6 +4012,7 @@ begin
     else layout.TopLeft := PointF(ALeft,ATop);
   end;
   layout.DrawText(self, ATexture);
+  layout.Free;
 end;
 
 procedure TBGRADefaultBitmap.TextOut(x, y: single; sUTF8: string;
