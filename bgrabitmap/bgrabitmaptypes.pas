@@ -436,7 +436,9 @@ type
     {** X-Window capture, limited support }
     ifXwd,
     {** X-Pixmap, text encoded image, limited support }
-    ifXPixMap);
+    ifXPixMap,
+    {** Scalable Vector Graphic, vectorial, read-only as raster }
+    ifSvg);
 
   {* Image information from superficial analysis }
   TQuickImageInfo = record
@@ -993,6 +995,8 @@ var
 
     if (copy(magicAsText,1,8) = '/* XPM *') or (copy(magicAsText,1,6) = '! XPM2') then inc(scores[ifXPixMap]);
 
+    if (copy(magicAsText,1,6) = '<?xml ') then inc(scores[ifSvg]);
+
     AStream.Position := streamStartPos;
   end;
 
@@ -1051,7 +1055,8 @@ begin
   if (ext = '.tif') or (ext = '.tiff') then result := ifTiff else
   if (ext = '.xwd') then result := ifXwd else
   if (ext = '.xpm') then result := ifXPixMap else
-  if (ext = '.oxo') then result := ifPhoxo;
+  if (ext = '.oxo') then result := ifPhoxo else
+  if (ext = '.svg') then result := ifSvg;
 end;
 
 function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
@@ -1074,6 +1079,7 @@ begin
     ifTiff: result := 'tif';
     ifXwd: result := 'xwd';
     ifXPixMap: result := 'xpm';
+    ifSvg: result := 'svg';
     else result := '?';
   end;
 end;
@@ -1086,6 +1092,7 @@ begin
       ifUnknown: raise exception.Create('The image format is unknown.');
       ifOpenRaster: raise exception.Create('You need to call BGRAOpenRaster.RegisterOpenRasterFormat to read this image.');
       ifPaintDotNet: raise exception.Create('You need to call BGRAPaintNet.RegisterPaintNetFormat to read this image.');
+      ifSvg: raise exception.Create('You need to call BGRA.RegisterSvgFormat to read this image.');
     else
       raise exception.Create('The image reader is not registered for this image format.');
     end;
