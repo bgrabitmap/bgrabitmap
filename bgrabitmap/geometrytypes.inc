@@ -139,9 +139,9 @@ type
   public
     TopLeft, TopRight,
     BottomLeft: TPointF;
-    class function EmptyBox: TAffineBox;
-    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox; overload;
-    class function AffineBox(ARectF: TRectF): TAffineBox; overload;
+    class function EmptyBox: TAffineBox; static;
+    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox; static; overload;
+    class function AffineBox(ARectF: TRectF): TAffineBox; static; overload;
     function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
     property RectBoundsF: TRectF read GetRectBoundsF;
