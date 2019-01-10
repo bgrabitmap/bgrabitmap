@@ -177,6 +177,7 @@ type
     private
       FRenderDpi: single;
       FWidth,FHeight: integer;
+      FScale: single;
     protected
       function InternalCheck(Stream: TStream): boolean; override;
       procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
@@ -187,6 +188,7 @@ type
       property RenderDpi: single read FRenderDpi write FRenderDpi;
       property Width: integer read FWidth;
       property Height: integer read FHeight;
+      property Scale: single read FScale write FScale;
   end;
 
 procedure RegisterSvgFormat;
@@ -229,11 +231,13 @@ begin
     else
       bgra := BGRABitmapFactory.Create;
     vsize := svg.GetViewSize(cuPixel);
-    bgra.SetSize(ceil(vsize.x),ceil(vsize.y));
+    bgra.SetSize(ceil(vsize.x*scale),ceil(vsize.y*scale));
     bgra.FillTransparent;
     vmin := svg.GetViewMin(cuPixel);
     c2d := TBGRACanvas2D.Create(bgra);
-    svg.Draw(c2d,-vmin.x,-vmin.y);
+    c2d.scale(Scale);
+    c2d.translate(-vmin.x,-vmin.y);
+    svg.Draw(c2d,0,0);
     c2d.Free;
     if bgra<>Img then
     begin
@@ -260,6 +264,7 @@ constructor TFPReaderSVG.Create;
 begin
   inherited Create;
   FRenderDpi:= 96;
+  FScale := 1;
 end;
 
 function TFPReaderSVG.GetQuickInfo(AStream: TStream): TQuickImageInfo;
