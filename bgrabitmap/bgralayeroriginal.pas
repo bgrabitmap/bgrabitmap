@@ -106,8 +106,8 @@ type
     procedure KeyUp({%H-}Shift: TShiftState; {%H-}Key: TSpecialKey; out AHandled: boolean); virtual;
     procedure KeyPress({%H-}UTF8Key: string; out AHandled: boolean); virtual;
     function GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;
-    function Render(ADest: TBGRABitmap; const ALayoutRect: TRect): TRect; virtual;
-    function GetRenderBounds(const ALayoutRect: TRect): TRect; virtual;
+    function Render(ADest: TBGRABitmap; const {%H-}ALayoutRect: TRect): TRect; virtual;
+    function GetRenderBounds(const {%H-}ALayoutRect: TRect): TRect; virtual;
     function SnapToGrid(const ACoord: TPointF; AIsViewCoord: boolean): TPointF;
     function OriginalCoordToView(const AImageCoord: TPointF): TPointF;
     function ViewCoordToOriginal(const AViewCoord: TPointF): TPointF;
@@ -417,12 +417,11 @@ end;
 function TBGRAOriginalEditor.RenderPolygon(ADest: TBGRABitmap;
   ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle; ABackColor: TBGRAPixel): TRect;
 var
-  dashPos,dashLen: integer;
-  i,j: integer;
+  dashLen: integer;
+  i: integer;
   ptsF: array of TPointF;
   pts1,pts2: array of TPoint;
 begin
-  dashPos := 0;
   dashLen := round(PointSize/2);
   if dashLen < 1 then dashLen := 1;
 
