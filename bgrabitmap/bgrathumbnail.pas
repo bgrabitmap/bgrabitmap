@@ -123,10 +123,10 @@ end;
 function GetFileThumbnail(AFilenameUTF8: string; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap): TBGRABitmap;
 var stream: TFileStreamUTF8;
 begin
+  result := nil;
   try
     stream := TFileStreamUTF8.Create(AFilenameUTF8,fmOpenRead or fmShareDenyWrite);
   except
-    result := nil;
     exit;
   end;
   try
