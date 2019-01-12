@@ -182,6 +182,7 @@ var
   grad: TBGRALayerGradientOriginal;
   svg: TBGRALayerSVGOriginal;
   img: TBGRALayerImageOriginal;
+  gradStream: TMemoryStream;
   idxBike, idxImg: Integer;
 begin
   FLayers := TBGRALayeredBitmap.Create(640,480);
@@ -191,18 +192,21 @@ begin
   cbInterp.ItemIndex := 0;
   cbRepeat.ItemIndex := 0;
 
+  gradStream := TMemoryStream.Create;
   grad := TBGRALayerGradientOriginal.Create;
   grad.StartColor := CSSSkyBlue;
   grad.EndColor := CSSOrange;
   grad.GradientType:= gtLinear;
   grad.Origin := PointF(FLayers.Width/2,100);
   grad.XAxis := grad.origin+PointF(0,250);
-  grad.SaveToFile(Application.Location + 'grad.data');    //save original definition
+  grad.SaveToStream(gradStream);    //save original definition
   grad.Free;
 
   grad := TBGRALayerGradientOriginal.Create;
-  grad.LoadFromFile(Application.Location + 'grad.data'); // load original definition
+  gradStream.Position:= 0;
+  grad.LoadFromStream(gradStream); // load original definition
   FLayers.AddLayerFromOwnedOriginal(grad);
+  gradStream.free;
 
   svg := TBGRALayerSVGOriginal.Create;
   svg.LoadFromFile(Application.Location + 'bicycling.svg');
