@@ -763,6 +763,7 @@ type
      procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); overload; virtual; abstract;
      procedure PutImage(x, y: integer; Source: TBitmap; mode: TDrawMode; AOpacity: byte = 255); overload;
      procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); virtual; abstract;
+     procedure StretchPutImageProportionally(ARect: TRect; AHorizAlign: TAlignment; AVertAlign: TTextLayout; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255);
      procedure PutImageSubpixel(x, y: single; Source: TBGRACustomBitmap; AOpacity: byte = 255);
      procedure PutImagePart(x,y: integer; Source: TBGRACustomBitmap; SourceRect: TRect; mode: TDrawMode; AOpacity: byte = 255);
      procedure PutImageAffine(Origin,HAxis,VAxis: TPointF; Source: TBGRACustomBitmap; AOpacity: Byte=255; ACorrectBlur: Boolean = false); overload;
@@ -2046,6 +2047,29 @@ begin
   bgra := BGRABitmapFactory.create(Source);
   PutImage(x,y, bgra, mode, AOpacity);
   bgra.free;
+end;
+
+procedure TBGRACustomBitmap.StretchPutImageProportionally(ARect: TRect;
+  AHorizAlign: TAlignment; AVertAlign: TTextLayout; Source: TBGRACustomBitmap;
+  mode: TDrawMode; AOpacity: byte);
+var
+  ratio: single;
+  imgRect: TRect;
+begin
+  if (Source.Width = 0) or (Source.Height = 0) then exit;
+  if (ARect.Width <= 0) or (ARect.Height <= 0) then exit;
+
+  ratio := min(ARect.Width/Source.Width, ARect.Height/Source.Height);
+  imgRect := RectWithSize(ARect.Left,ARect.Top, round(Source.Width*ratio), round(Source.Height*ratio));
+  case AHorizAlign of
+    taCenter: OffsetRect(imgRect, (ARect.Width-imgRect.Width) div 2, 0);
+    taRightJustify: OffsetRect(imgRect, ARect.Width-imgRect.Width, 0);
+  end;
+  case AVertAlign of
+    tlCenter: OffsetRect(imgRect, 0,(ARect.Height-imgRect.Height) div 2);
+    tlBottom: OffsetRect(imgRect, 0,ARect.Height-imgRect.Height);
+  end;
+  StretchPutImage(imgRect, Source, mode, AOpacity);
 end;
 
 procedure TBGRACustomBitmap.PutImageSubpixel(x, y: single; Source: TBGRACustomBitmap; AOpacity: byte);
