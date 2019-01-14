@@ -495,6 +495,8 @@ var
 {$DEFINE INCLUDE_INTERFACE}
 {$I bgracustombitmap.inc}
 
+operator =(const AGuid1, AGuid2: TGuid): boolean;
+
 implementation
 
 uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
@@ -1131,6 +1133,11 @@ begin
     TFPWriterXPM(result).ColorCharSize := 2;
   end else
     result := DefaultBGRAImageWriter[AFormat].Create;
+end;
+
+operator =(const AGuid1, AGuid2: TGuid): boolean;
+begin
+  result := CompareMem(@AGuid1, @AGuid2, sizeof(TGuid));
 end;
 
 initialization

@@ -368,11 +368,6 @@ var
      theClass: TBGRALayeredBitmapClass;
   end;
 
-operator =(const AGuid1, AGuid2: TGuid): boolean;
-begin
-  result := CompareMem(@AGuid1, @AGuid2, sizeof(TGuid));
-end;
-
 { TBGRALayerOriginalEntry }
 
 class operator TBGRALayerOriginalEntry.=(const AEntry1,
