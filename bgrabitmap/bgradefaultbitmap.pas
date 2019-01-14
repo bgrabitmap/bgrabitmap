@@ -202,6 +202,7 @@ type
     function InternalGetPixel256(ix,iy: int32or64; iFactX,iFactY: int32or64; smoothBorder: boolean): TBGRAPixel;
     function GetArrow: TBGRAArrow;
     procedure InternalTextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single);
+    procedure InternalCrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePos: byte; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency);
 
     function CheckClippedRectBounds(var x,y,x2,y2: integer): boolean;
     procedure InternalArc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; ABorderColor: TBGRAPixel; w: single;
@@ -2094,46 +2095,17 @@ begin
 end;
 
 procedure TBGRADefaultBitmap.CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency);
-var constScanner: TBGRAConstantScanner;
 begin
   if AFadePosition = 0 then
     FillRect(ARect, Source1, mode) else
   if AFadePosition = 255 then
     FillRect(ARect, Source2, mode) else
-  begin
-    constScanner := TBGRAConstantScanner.Create(BGRA(AFadePosition,AFadePosition,AFadePosition,255));
-    CrossFade(ARect, Source1,Source2, constScanner, mode);
-    constScanner.Free;
-  end;
+    InternalCrossFade(ARect, Source1,Source2, AFadePosition,nil, mode);
 end;
 
 procedure TBGRADefaultBitmap.CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency);
-var xb,yb: NativeInt;
-  pdest: PBGRAPixel;
-  c: TBGRAPixel;
-  fadePos: byte;
 begin
-  if not IntersectRect(ARect,ARect,ClipRect) then exit;
-  for yb := ARect.top to ARect.Bottom-1 do
-  begin
-    pdest := GetScanlineFast(yb)+ARect.Left;
-    Source1.ScanMoveTo(ARect.left, yb);
-    Source2.ScanMoveTo(ARect.left, yb);
-    AFadeMask.ScanMoveTo(ARect.left, yb);
-    for xb := ARect.left to ARect.Right-1 do
-    begin
-      fadePos := AFadeMask.ScanNextPixel.green;
-      c := MergeBGRAWithGammaCorrection(Source1.ScanNextPixel,not fadePos,Source2.ScanNextPixel,fadePos);
-      case mode of
-      dmSet: pdest^ := c;
-      dmDrawWithTransparency: DrawPixelInlineWithAlphaCheck(pdest, c);
-      dmLinearBlend: FastBlendPixelInline(pdest,c);
-      dmSetExceptTransparent: if c.alpha = 255 then pdest^ := c;
-      end;
-      inc(pdest);
-    end;
-  end;
-  InvalidateBitmap;
+  InternalCrossFade(ARect, Source1,Source2, 0,AFadeMask, mode);
 end;
 
 procedure TBGRADefaultBitmap.DiscardBitmapChange; inline;
@@ -2486,6 +2458,40 @@ begin
     end;
     ACursor.MoveForward(charwidth*0.5 + ALetterSpacing);
   end;
+end;
+
+procedure TBGRADefaultBitmap.InternalCrossFade(ARect: TRect; Source1,
+  Source2: IBGRAScanner; AFadePos: byte; AFadeMask: IBGRAScanner; mode: TDrawMode);
+var xb,yb: NativeInt;
+  pdest: PBGRAPixel;
+  c: TBGRAPixel;
+  buf1,buf2: ArrayOfTBGRAPixel;
+begin
+  if not IntersectRect(ARect,ARect,ClipRect) then exit;
+  setlength(buf1, ARect.Width);
+  setlength(buf2, ARect.Width);
+  for yb := ARect.top to ARect.Bottom-1 do
+  begin
+    pdest := GetScanlineFast(yb)+ARect.Left;
+    Source1.ScanMoveTo(ARect.left, yb);
+    Source1.ScanPutPixels(@buf1[0], length(buf1), dmSet);
+    Source2.ScanMoveTo(ARect.left, yb);
+    Source2.ScanPutPixels(@buf2[0], length(buf2), dmSet);
+    if AFadeMask<>nil then AFadeMask.ScanMoveTo(ARect.left, yb);
+    for xb := 0 to ARect.Right-ARect.left-1 do
+    begin
+      if AFadeMask<>nil then AFadePos := AFadeMask.ScanNextPixel.green;
+      c := MergeBGRAWithGammaCorrection(buf1[xb],not AFadePos,buf2[xb],AFadePos);
+      case mode of
+      dmSet: pdest^ := c;
+      dmDrawWithTransparency: DrawPixelInlineWithAlphaCheck(pdest, c);
+      dmLinearBlend: FastBlendPixelInline(pdest,c);
+      dmSetExceptTransparent: if c.alpha = 255 then pdest^ := c;
+      end;
+      inc(pdest);
+    end;
+  end;
+  InvalidateBitmap;
 end;
 
 procedure TBGRADefaultBitmap.InternalArc(cx, cy, rx, ry: single; StartAngleRad,
