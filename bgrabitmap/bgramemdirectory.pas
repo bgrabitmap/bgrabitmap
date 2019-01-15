@@ -29,7 +29,6 @@ type
     function GetCompressedSize: int64;
     function GetIsDirectory: boolean;
     procedure SetIsCompressed(AValue: boolean);
-    constructor Create(AContainer: TMultiFileContainer; AFilename: TEntryFilename; AStream: TStream; AOwnStream: boolean; AUncompressedSize: int64; AFlags: Word);
     procedure LoadExtraFromEmbeddedStream(ADataStream: TStream; AStartPos: int64);
     procedure SaveToEmbeddedStream(AEntryStream, ADataStream: TStream; AStartPos: int64; out uncompressedSize: int64);
   protected
@@ -47,6 +46,7 @@ type
     function CopyTo({%H-}ADestination: TStream): int64; override;
     constructor Create(AContainer: TMultiFileContainer; AFilename: TEntryFilename; AUncompressedStream: TStream; AOwnStream: boolean); overload;
     constructor CreateDirectory(AContainer: TMultiFileContainer; AFilename: TEntryFilename);
+    constructor CreateFromData(AContainer: TMultiFileContainer; AFilename: TEntryFilename; AStream: TStream; AOwnStream: boolean; AUncompressedSize: int64; AFlags: Word);
     destructor Destroy; override;
     property EmbeddedStreamPos: int64 read FEmbeddedStreamPos write FEmbeddedStreamPos;
     property IsCompressed: boolean read GetIsCompressed write SetIsCompressed;
@@ -202,7 +202,7 @@ begin
     try
       if compressedSize <> 0 then
         entryData.CopyFrom(ADataStream, compressedSize);
-      newEntry := TMemDirectoryEntry.Create(self, EntryFilename(filename), entryData, true,
+      newEntry := TMemDirectoryEntry.CreateFromData(self, EntryFilename(filename), entryData, true,
                   uncompressedSize, entryRec.Flags);
       newEntry.LoadExtraFromEmbeddedStream(ADataStream, AStartPos);
       AddEntry(newEntry);
@@ -531,11 +531,10 @@ end;
 constructor TMemDirectoryEntry.Create(AContainer: TMultiFileContainer; AFilename: TEntryFilename;
   AUncompressedStream: TStream; AOwnStream: boolean);
 begin
-  inherited Create(AContainer);
-  Create(AContainer, AFilename, AUncompressedStream, AOwnStream, AUncompressedStream.Size, 0);
+  CreateFromData(AContainer, AFilename, AUncompressedStream, AOwnStream, AUncompressedStream.Size, 0);
 end;
 
-constructor TMemDirectoryEntry.Create(AContainer: TMultiFileContainer; AFilename: TEntryFilename;
+constructor TMemDirectoryEntry.CreateFromData(AContainer: TMultiFileContainer; AFilename: TEntryFilename;
   AStream: TStream; AOwnStream: boolean;
   AUncompressedSize: int64; AFlags: Word);
 begin

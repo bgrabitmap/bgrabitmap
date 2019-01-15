@@ -288,8 +288,6 @@ var
   svg: TBGRASVG;
   vmin,vsize: TPointF;
   c2d: TBGRACanvas2D;
-  y, x: Integer;
-  p: PBGRAPixel;
   ratio: Single;
 begin
   svg := TBGRASVG.Create(AStream);
