@@ -598,6 +598,7 @@ begin
   FStream := nil;
   FUncompressedSize:= 0;
   FFlags := MemDirectoryEntry_FlagDirectory;
+  FContainer := AContainer;
   FMemDirectory := TMemDirectory.Create(Container as TMemDirectory);
 end;
 
