@@ -447,7 +447,7 @@ begin
   else
   begin
     for i := 0 to NbLayers-1 do
-      if (i <> layer) and (FLayers[layer].UniqueId = AValue) then
+      if (i <> layer) and (FLayers[i].UniqueId = AValue) then
         raise Exception.Create('Another layer has the same identifier');
     FLayers[layer].UniqueId := AValue;
   end;
