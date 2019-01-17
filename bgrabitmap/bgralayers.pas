@@ -272,10 +272,13 @@ type
 
     procedure RotateCW;
     procedure RotateCCW;
-    procedure HorizontalFlip;
-    procedure VerticalFlip;
+    procedure HorizontalFlip; overload;
+    procedure HorizontalFlip(ALayerIndex: integer); overload;
+    procedure VerticalFlip; overload;
+    procedure VerticalFlip(ALayerIndex: integer); overload;
     procedure Resample(AWidth, AHeight: integer; AResampleMode: TResampleMode; AFineResampleFilter: TResampleFilter = rfLinear);
     procedure SetLayerBitmap(layer: integer; ABitmap: TBGRABitmap; AOwned: boolean);
+    procedure ApplyLayerOffset(ALayerIndex: integer; APadWithTranparentPixels: boolean);
 
     function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect; overload;
     function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
@@ -1671,18 +1674,24 @@ var i: integer;
 begin
   Unfreeze;
   for i := 0 to NbLayers-1 do
+    HorizontalFlip(i);
+end;
+
+procedure TBGRALayeredBitmap.HorizontalFlip(ALayerIndex: integer);
+begin
+  if (ALayerIndex < 0) or (ALayerIndex >= NbLayers) then
+    raise ERangeError.Create('Index out of bounds');
+  Unfreeze(ALayerIndex);
+  if FLayers[ALayerIndex].Owner then
+    FLayers[ALayerIndex].Source.HorizontalFlip
+  else
   begin
-    if FLayers[i].Owner then
-      FLayers[i].Source.HorizontalFlip
-    else
-    begin
-      FLayers[i].Source := FLayers[i].Source.Duplicate(True) as TBGRABitmap;
-      FLayers[i].Source.HorizontalFlip;
-      FLayers[i].Owner := true;
-    end;
-    FLayers[i].x := Width-FLayers[i].x-FLayers[i].Source.Width;
-    FLayers[i].OriginalMatrix := AffineMatrixTranslation(+Width/2,0)*AffineMatrixScale(-1,1)*AffineMatrixTranslation(-Width/2,0)*FLayers[i].OriginalMatrix;
+    FLayers[ALayerIndex].Source := FLayers[ALayerIndex].Source.Duplicate(True) as TBGRABitmap;
+    FLayers[ALayerIndex].Source.HorizontalFlip;
+    FLayers[ALayerIndex].Owner := true;
   end;
+  FLayers[ALayerIndex].x := Width-FLayers[ALayerIndex].x-FLayers[ALayerIndex].Source.Width;
+  FLayers[ALayerIndex].OriginalMatrix := AffineMatrixTranslation(+Width/2,0)*AffineMatrixScale(-1,1)*AffineMatrixTranslation(-Width/2,0)*FLayers[ALayerIndex].OriginalMatrix;
 end;
 
 procedure TBGRALayeredBitmap.VerticalFlip;
@@ -1690,18 +1699,24 @@ var i: integer;
 begin
   Unfreeze;
   for i := 0 to NbLayers-1 do
+    VerticalFlip(i);
+end;
+
+procedure TBGRALayeredBitmap.VerticalFlip(ALayerIndex: integer);
+begin
+  if (ALayerIndex < 0) or (ALayerIndex >= NbLayers) then
+    raise ERangeError.Create('Index out of bounds');
+  Unfreeze(ALayerIndex);
+  if FLayers[ALayerIndex].Owner then
+    FLayers[ALayerIndex].Source.VerticalFlip
+  else
   begin
-    if FLayers[i].Owner then
-      FLayers[i].Source.VerticalFlip
-    else
-    begin
-      FLayers[i].Source := FLayers[i].Source.Duplicate(True) as TBGRABitmap;
-      FLayers[i].Source.VerticalFlip;
-      FLayers[i].Owner := true;
-    end;
-    FLayers[i].y := Height-FLayers[i].y-FLayers[i].Source.Height;
-    FLayers[i].OriginalMatrix := AffineMatrixTranslation(0,+Height/2)*AffineMatrixScale(1,-1)*AffineMatrixTranslation(0,-Height/2)*FLayers[i].OriginalMatrix;
+    FLayers[ALayerIndex].Source := FLayers[ALayerIndex].Source.Duplicate(True) as TBGRABitmap;
+    FLayers[ALayerIndex].Source.VerticalFlip;
+    FLayers[ALayerIndex].Owner := true;
   end;
+  FLayers[ALayerIndex].y := Height-FLayers[ALayerIndex].y-FLayers[ALayerIndex].Source.Height;
+  FLayers[ALayerIndex].OriginalMatrix := AffineMatrixTranslation(0,+Height/2)*AffineMatrixScale(1,-1)*AffineMatrixTranslation(0,-Height/2)*FLayers[ALayerIndex].OriginalMatrix;
 end;
 
 procedure TBGRALayeredBitmap.Resample(AWidth, AHeight: integer;
@@ -1745,6 +1760,41 @@ begin
     FLayers[layer].Owner := AOwned;
     FLayers[layer].OriginalGuid := GUID_NULL;
     FLayers[layer].OriginalMatrix := AffineMatrixIdentity;
+  end;
+end;
+
+procedure TBGRALayeredBitmap.ApplyLayerOffset(ALayerIndex: integer;
+  APadWithTranparentPixels: boolean);
+var
+  r: TRect;
+  newBmp: TBGRABitmap;
+begin
+  if APadWithTranparentPixels then
+  begin
+    if (LayerOffset[ALayerIndex].X=0) and (LayerOffset[ALayerIndex].Y=0) and
+       (LayerBitmap[ALayerIndex].Width=Width) and (LayerBitmap[ALayerIndex].Height=Height) then exit;
+    newBmp := TBGRABitmap.Create(Width,Height);
+    newBmp.PutImage(LayerOffset[ALayerIndex].X, LayerOffset[ALayerIndex].Y, LayerBitmap[ALayerIndex], dmSet);
+    if FLayers[ALayerIndex].Owner then FLayers[ALayerIndex].Source.Free;
+    FLayers[ALayerIndex].Source := newBmp;
+    FLayers[ALayerIndex].Owner := true;
+    FLayers[ALayerIndex].x := 0;
+    FLayers[ALayerIndex].y := 0;
+  end else
+  begin
+    if (LayerOffset[ALayerIndex].X>=0) and (LayerOffset[ALayerIndex].Y>=0) and
+       (LayerOffset[ALayerIndex].X+LayerBitmap[ALayerIndex].Width <= Width) and
+       (LayerOffset[ALayerIndex].Y+LayerBitmap[ALayerIndex].Height <= Height) then exit;
+    r := RectWithSize(LayerOffset[ALayerIndex].X, LayerOffset[ALayerIndex].Y,
+                      LayerBitmap[ALayerIndex].Width, LayerBitmap[ALayerIndex].Height);
+    IntersectRect(r, r, rect(0,0,Width,Height));
+    newBmp := TBGRABitmap.Create(r.Width,r.Height);
+    newBmp.PutImage(LayerOffset[ALayerIndex].X - r.Left, LayerOffset[ALayerIndex].Y - r.Top, LayerBitmap[ALayerIndex], dmSet);
+    if FLayers[ALayerIndex].Owner then FLayers[ALayerIndex].Source.Free;
+    FLayers[ALayerIndex].Source := newBmp;
+    FLayers[ALayerIndex].Owner := true;
+    FLayers[ALayerIndex].x := r.Left;
+    FLayers[ALayerIndex].y := r.Top;
   end;
 end;
 
