@@ -968,6 +968,7 @@ var i,idx,idxOrig,idxNewOrig: integer;
        sourceGuid,newGuid: TGuid;
     end;
     orig: TBGRALayerCustomOriginal;
+    stream: TMemoryStream;
 
 begin
   if ASource = nil then
@@ -983,15 +984,27 @@ begin
     newGuid := GUID_NULL;
   end;
   for i := 0 to ASource.NbLayers-1 do
-  if (ASource.LayerOriginalGuid[i]<>GUID_NULL) and ASource.LayerOriginalKnown[i] then
+  if (ASource.LayerOriginalGuid[i]<>GUID_NULL) and
+     (ASource.LayerOriginalKnown[i] or (ASource is TBGRALayeredBitmap)) then
   begin
     idxOrig := ASource.IndexOfOriginal(ASource.LayerOriginalGuid[i]);
     if not usedOriginals[idxOrig].used then
     begin
-      orig := ASource.GetOriginalByIndex(idxOrig);
-      idxNewOrig := AddOriginal(orig, false);
-      usedOriginals[idxOrig].newGuid := Original[idxNewOrig].Guid;
-      usedOriginals[idxOrig].sourceGuid := orig.Guid;
+      if ASource.LayerOriginalKnown[i] then
+      begin
+        orig := ASource.GetOriginalByIndex(idxOrig);
+        idxNewOrig := AddOriginal(orig, false);
+        usedOriginals[idxOrig].sourceGuid := orig.Guid;
+      end else
+      begin
+        stream := TMemoryStream.Create;
+        (ASource as TBGRALayeredBitmap).SaveOriginalToStream(idxOrig, stream);
+        stream.Position:= 0;
+        idxNewOrig := AddOriginalFromStream(stream,true);
+        stream.Free;
+        usedOriginals[idxOrig].sourceGuid := (ASource as TBGRALayeredBitmap).OriginalGuid[idxOrig];
+      end;
+      usedOriginals[idxOrig].newGuid := OriginalGuid[idxNewOrig];
       usedOriginals[idxOrig].used := true;
     end;
   end;
