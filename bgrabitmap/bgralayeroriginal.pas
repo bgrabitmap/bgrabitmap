@@ -250,6 +250,7 @@ type
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); override;
     procedure SaveToStream(AStream: TStream);
     procedure LoadFromStream(AStream: TStream);
+    procedure CopyTo(AMemDir: TMemDirectory);
   end;
 
 procedure RegisterLayerOriginal(AClass: TBGRALayerOriginalAny);
@@ -1038,6 +1039,11 @@ end;
 procedure TBGRAMemOriginalStorage.LoadFromStream(AStream: TStream);
 begin
   FMemDir.LoadFromStream(AStream);
+end;
+
+procedure TBGRAMemOriginalStorage.CopyTo(AMemDir: TMemDirectory);
+begin
+  FMemDir.CopyTo(AMemDir, true);
 end;
 
 { TBGRACustomOriginalStorage }

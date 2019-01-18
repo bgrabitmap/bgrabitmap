@@ -76,6 +76,7 @@ type
     function AddDirectory(AName: utf8string; AExtension: utf8string= ''; ACaseSensitive: boolean= true): integer;
     function FindPath(APath: utf8String; ACaseSensitive: boolean = true): TMemDirectory;
     function FindEntry(APath: utf8String; ACaseSensitive: boolean = true): TMemDirectoryEntry;
+    procedure CopyTo(ADest: TMemDirectory; ARecursive: boolean);
     property IsEntryCompressed[AIndex: integer]: boolean read GetEntryCompressed write SetEntryCompressed;
     property Directory[AIndex: integer]: TMemDirectory read GetDirectory;
     property IsDirectory[AIndex: integer]: boolean read GetIsDirectory;
@@ -389,6 +390,24 @@ begin
     result := nil;
 
   path.Free;
+end;
+
+procedure TMemDirectory.CopyTo(ADest: TMemDirectory; ARecursive: boolean);
+var
+  i, idxDir: Integer;
+  entryContent: TMemoryStream;
+begin
+  for i := 0 to Count-1 do
+    if IsDirectory[i] and ARecursive then
+    begin
+      idxDir := ADest.AddDirectory(Entry[i].Name,Entry[i].Extension);
+      Directory[i].CopyTo(ADest.Directory[idxDir], true);
+    end else
+    begin
+      entryContent := TMemoryStream.Create;
+      Entry[i].CopyTo(entryContent);
+      ADest.Add(Entry[i].Name,Entry[i].Extension,entryContent,false,true);
+    end;
 end;
 
 function TMemDirectory.SplitPath(APath: utf8string): TMemDirectoryPath;
