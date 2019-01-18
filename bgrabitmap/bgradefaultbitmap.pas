@@ -546,10 +546,10 @@ type
 
     {** Draw a size border of a rectangle,
         using the specified ''mode'' }
-    procedure Rectangle(x, y, x2, y2: integer; c: TBGRAPixel; mode: TDrawMode); override;
+    procedure Rectangle(x, y, x2, y2: integer; c: TBGRAPixel; mode: TDrawMode); overload; override;
     {** Draw a filled rectangle with a border of color ''BorderColor'',
         using the specified ''mode'' }
-    procedure Rectangle(x, y, x2, y2: integer; BorderColor, FillColor: TBGRAPixel; mode: TDrawMode); override;
+    procedure Rectangle(x, y, x2, y2: integer; BorderColor, FillColor: TBGRAPixel; mode: TDrawMode); overload; override;
     {** Fills completely a rectangle, without any border, with the specified ''mode'' }
     procedure FillRect(x, y, x2, y2: integer; c: TBGRAPixel; mode: TDrawMode); overload; override;
     {** Fills completely a rectangle, without any border, with the specified ''texture'' and
