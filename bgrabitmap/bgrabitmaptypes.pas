@@ -1161,7 +1161,7 @@ type
   end;
 
 const
-  ResourceTypes: array[1..11] of TResourceType =
+  ResourceTypes: array[1..7] of TResourceType =
    ((ext: 'CUR'; code: RT_GROUP_CURSOR),
     (ext: 'BMP'; code: RT_BITMAP),
     (ext: 'ICO'; code: RT_GROUP_ICON),
@@ -1187,7 +1187,6 @@ end;
 function TBGRAResourceManager.GetResourceStream(AFilename: string): TStream;
 var
   name,ext: RawByteString;
-  i: Integer;
   rt: PChar;
 begin
   ext := UpperCase(ExtractFileExt(AFilename));
@@ -1203,7 +1202,6 @@ end;
 function TBGRAResourceManager.IsWinResource(AFilename: string): boolean;
 var
   name,ext: RawByteString;
-  i: Integer;
   rt: PChar;
 begin
   ext := UpperCase(ExtractFileExt(AFilename));
