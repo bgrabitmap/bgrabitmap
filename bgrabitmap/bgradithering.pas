@@ -77,8 +77,8 @@ type
     function GetTransparentColorIndex: integer;
     procedure SetTransparentColorIndex(AValue: integer);
   public
-    constructor Create(APalette: TBGRACustomApproxPalette; AIgnoreAlpha: boolean; ABitsPerPixelForIndices: integer); //use platform byte order
-    constructor Create(APalette: TBGRACustomApproxPalette; AIgnoreAlpha: boolean; ABitsPerPixelForIndices: integer; AByteOrder: TRawImageByteOrder); //maybe necessary if larger than 8 bits per pixel
+    constructor Create(APalette: TBGRACustomApproxPalette; AIgnoreAlpha: boolean; ABitsPerPixelForIndices: integer); overload; //use platform byte order
+    constructor Create(APalette: TBGRACustomApproxPalette; AIgnoreAlpha: boolean; ABitsPerPixelForIndices: integer; AByteOrder: TRawImageByteOrder); overload; //maybe necessary if larger than 8 bits per pixel
 
     function DitherImage(AAlgorithm: TDitheringAlgorithm; AImage: TBGRACustomBitmap): Pointer; overload; //use minimum scanline size
     function DitherImage(AAlgorithm: TDitheringAlgorithm; AImage: TBGRACustomBitmap; AScanlineSize: PtrInt): Pointer; overload;

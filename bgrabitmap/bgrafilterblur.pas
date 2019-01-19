@@ -31,9 +31,9 @@ type
     FBlurType: TRadialBlurType;
   public
     constructor Create(bmp: TBGRACustomBitmap; ABounds: TRect; radius: single;
-                       blurType: TRadialBlurType);
+                       blurType: TRadialBlurType); overload;
     constructor Create(bmp: TBGRACustomBitmap; ABounds: TRect; radiusX,radiusY: single;
-                       blurType: TRadialBlurType);
+                       blurType: TRadialBlurType); overload;
   protected
     procedure DoExecute; override;
   end;
@@ -56,11 +56,11 @@ implementation
 uses Types, Math, SysUtils;
 
 procedure FilterBlur(bmp: TBGRACustomBitmap; ABounds: TRect;
-   blurMask: TBGRACustomBitmap; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
+   blurMask: TBGRACustomBitmap; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward; overload;
 procedure FilterBlurMotion(bmp: TBGRACustomBitmap; ABounds: TRect; distance: single;
-  angle: single; oriented: boolean; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
+  angle: single; oriented: boolean; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward; overload;
 procedure FilterBlurRadial(bmp: TBGRACustomBitmap; ABounds: TRect; radiusX,radiusY: single;
-  blurType: TRadialBlurType; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
+  blurType: TRadialBlurType; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward; overload;
 
 type
   { TBoxBlurTask }
@@ -70,8 +70,8 @@ type
     FBounds: TRect;
     FRadiusX,FRadiusY: single;
   public
-    constructor Create(bmp: TBGRACustomBitmap; ABounds: TRect; radius: single);
-    constructor Create(bmp: TBGRACustomBitmap; ABounds: TRect; radiusX,radiusY: single);
+    constructor Create(bmp: TBGRACustomBitmap; ABounds: TRect; radius: single); overload;
+    constructor Create(bmp: TBGRACustomBitmap; ABounds: TRect; radiusX,radiusY: single); overload;
   protected
     {$IFNDEF CPU64}
     procedure DoExecuteNormal;
@@ -309,7 +309,7 @@ begin
 end;
 
 procedure FilterBlurRadial(bmp: TBGRACustomBitmap; ABounds: TRect; radius: single;
-  blurType: TRadialBlurType; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+  blurType: TRadialBlurType; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); overload;
 begin
   if radius = 0 then
   begin
@@ -346,8 +346,7 @@ begin
   end;
 end;
 
-function FilterBlurRadial(bmp: TBGRACustomBitmap; radius: single;
-  blurType: TRadialBlurType): TBGRACustomBitmap;
+function FilterBlurRadial(bmp: TBGRACustomBitmap; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap;  overload;
 begin
   if blurType = rbBox then
   begin
@@ -360,7 +359,7 @@ begin
 end;
 
 function FilterBlurRadial(bmp: TBGRACustomBitmap; radiusX: single;
-  radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap;
+  radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload;
 begin
   if blurType = rbBox then
   begin
@@ -373,7 +372,7 @@ begin
 end;
 
 function CreateRadialBlurTask(ABmp: TBGRACustomBitmap; ABounds: TRect; ARadius: single;
-  ABlurType: TRadialBlurType): TFilterTask;
+  ABlurType: TRadialBlurType): TFilterTask; overload;
 begin
   if ABlurType = rbBox then
     result := TBoxBlurTask.Create(ABmp,ABounds,ARadius)
@@ -382,7 +381,7 @@ begin
 end;
 
 function CreateRadialBlurTask(ABmp: TBGRACustomBitmap; ABounds: TRect;
-  ARadiusX, ARadiusY: single; ABlurType: TRadialBlurType): TFilterTask;
+  ARadiusX, ARadiusY: single; ABlurType: TRadialBlurType): TFilterTask; overload;
 begin
   if ABlurType = rbBox then
     result := TBoxBlurTask.Create(ABmp,ABounds,ARadiusX,ARadiusY)
@@ -431,7 +430,7 @@ begin
 end;
 
 function FilterBlurMotion(bmp: TBGRACustomBitmap; distance: single;
-  angle: single; oriented: boolean): TBGRACustomBitmap;
+  angle: single; oriented: boolean): TBGRACustomBitmap;  overload;
 begin
   result := bmp.NewBitmap(bmp.Width,bmp.Height);
   FilterBlurMotion(bmp,rect(0,0,bmp.Width,bmp.Height),distance,angle,oriented,result,nil);
@@ -462,7 +461,7 @@ begin
     result := value;
 end;
 
-function FilterBlur(bmp: TBGRACustomBitmap; blurMask: TBGRACustomBitmap): TBGRACustomBitmap;
+function FilterBlur(bmp: TBGRACustomBitmap; blurMask: TBGRACustomBitmap): TBGRACustomBitmap; overload;
 begin
   result := bmp.NewBitmap(bmp.Width,bmp.Height);
   FilterBlur(bmp,rect(0,0,bmp.Width,bmp.Height),blurMask,result,nil);

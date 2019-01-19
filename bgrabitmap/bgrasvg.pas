@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, BGRABitmapTypes, laz2_DOM, BGRAUnits, BGRASVGShapes,
-  BGRACanvas2D, BGRASVGType;
+  BGRACanvas2D, BGRASVGType, FPimage;
 
 type
   TCSSUnit = BGRAUnits.TCSSUnit;
@@ -87,16 +87,16 @@ type
 
   TBGRASVG = class
   private
-    function GetAttribute(AName: string): string;
-    function GetAttribute(AName: string; ADefault: string): string;
+    function GetAttribute(AName: string): string; overload;
+    function GetAttribute(AName: string; ADefault: string): string; overload;
     function GetCustomDpi: TPointF;
     function GetHeight: TFloatWithCSSUnit;
     function GetHeightAsCm: single;
     function GetHeightAsInch: single;
     function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
     function GetUTF8String: utf8string;
-    function GetViewBox: TSVGViewBox;
-    function GetViewBox(AUnit: TCSSUnit): TSVGViewBox;
+    function GetViewBox: TSVGViewBox; overload;
+    function GetViewBox(AUnit: TCSSUnit): TSVGViewBox; overload;
     procedure GetViewBoxIndirect(AUnit: TCSSUnit; out AViewBox: TSVGViewBox);
     function GetViewMin(AUnit: TCSSUnit): TPointF;
     function GetViewSize(AUnit: TCSSUnit): TPointF;
@@ -137,6 +137,7 @@ type
     destructor Destroy; override;
     procedure LoadFromFile(AFilenameUTF8: string);
     procedure LoadFromStream(AStream: TStream);
+    procedure LoadFromResource(AFilename: string);
     procedure SaveToFile(AFilenameUTF8: string);
     procedure SaveToStream(AStream: TStream);
     procedure Draw(ACanvas2d: TBGRACanvas2D; AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y: single; AUnit: TCSSUnit = cuPixel); overload;
@@ -171,11 +172,157 @@ type
     property preserveAspectRatio: TSVGPreserveAspectRatio read GetPreserveAspectRatio write SetPreserveAspectRatio;
   end;
 
+  { TFPReaderSVG }
+
+  TFPReaderSVG = class(TBGRAImageReader)
+    private
+      FRenderDpi: single;
+      FWidth,FHeight: integer;
+      FScale: single;
+    protected
+      function InternalCheck(Stream: TStream): boolean; override;
+      procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
+    public
+      constructor Create; override;
+      function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
+      function GetBitmapDraft(AStream: TStream; AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; override;
+      property RenderDpi: single read FRenderDpi write FRenderDpi;
+      property Width: integer read FWidth;
+      property Height: integer read FHeight;
+      property Scale: single read FScale write FScale;
+  end;
+
+procedure RegisterSvgFormat;
+
 implementation
 
-uses laz2_XMLRead, laz2_XMLWrite, BGRAUTF8;
+uses laz2_XMLRead, laz2_XMLWrite, BGRAUTF8, math;
 
 const SvgNamespace = 'http://www.w3.org/2000/svg';
+
+{ TFPReaderSVG }
+
+function TFPReaderSVG.InternalCheck(Stream: TStream): boolean;
+var
+  magic: array[1..6] of char;
+  prevPos: int64;
+  count: LongInt;
+begin
+  prevPos := Stream.Position;
+  count := Stream.Read({%H-}magic, sizeof(magic));
+  Stream.Position:= prevPos;
+  result:= (count = sizeof(magic)) and (magic = '<?xml ');
+end;
+
+procedure TFPReaderSVG.InternalRead(Stream: TStream; Img: TFPCustomImage);
+var
+  svg: TBGRASVG;
+  vmin,vsize: TPointF;
+  bgra: TBGRACustomBitmap;
+  c2d: TBGRACanvas2D;
+  y, x: Integer;
+  p: PBGRAPixel;
+begin
+  svg := TBGRASVG.Create(Stream);
+  bgra := nil;
+  try
+    svg.DefaultDpi:= RenderDpi;
+    if Img is TBGRACustomBitmap then
+      bgra := TBGRACustomBitmap(Img)
+    else
+      bgra := BGRABitmapFactory.Create;
+    vsize := svg.GetViewSize(cuPixel);
+    bgra.SetSize(ceil(vsize.x*scale),ceil(vsize.y*scale));
+    bgra.FillTransparent;
+    vmin := svg.GetViewMin(cuPixel);
+    c2d := TBGRACanvas2D.Create(bgra);
+    c2d.scale(Scale);
+    c2d.translate(-vmin.x,-vmin.y);
+    svg.Draw(c2d,0,0);
+    c2d.Free;
+    if bgra<>Img then
+    begin
+      Img.SetSize(bgra.Width,bgra.Height);
+      for y := 0 to bgra.Height-1 do
+      begin
+        p := bgra.ScanLine[y];
+        for x := 0 to bgra.Width-1 do
+        begin
+          Img.Colors[x,y] := BGRAToFPColor(p^);
+          inc(p);
+        end;
+      end;
+    end;
+    FWidth:= bgra.Width;
+    FHeight:= bgra.Height;
+  finally
+    if bgra<>Img then bgra.Free;
+    svg.Free;
+  end;
+end;
+
+constructor TFPReaderSVG.Create;
+begin
+  inherited Create;
+  FRenderDpi:= 96;
+  FScale := 1;
+end;
+
+function TFPReaderSVG.GetQuickInfo(AStream: TStream): TQuickImageInfo;
+var
+  svg: TBGRASVG;
+  vsize: TPointF;
+begin
+  svg := TBGRASVG.Create(AStream);
+  svg.DefaultDpi:= RenderDpi;
+  vsize := svg.GetViewSize(cuPixel);
+  svg.Free;
+  result.Width:= ceil(vsize.x);
+  result.Height:= ceil(vsize.y);
+  result.AlphaDepth:= 8;
+  result.ColorDepth:= 24;
+end;
+
+function TFPReaderSVG.GetBitmapDraft(AStream: TStream; AMaxWidth,
+  AMaxHeight: integer; out AOriginalWidth, AOriginalHeight: integer): TBGRACustomBitmap;
+var
+  svg: TBGRASVG;
+  vmin,vsize: TPointF;
+  c2d: TBGRACanvas2D;
+  ratio: Single;
+begin
+  svg := TBGRASVG.Create(AStream);
+  result := nil;
+  try
+    svg.DefaultDpi:= RenderDpi;
+    vsize := svg.GetViewSize(cuPixel);
+    AOriginalWidth:= ceil(vsize.x);
+    AOriginalHeight:= ceil(vsize.y);
+    if (vsize.x = 0) or (vsize.y = 0) then exit;
+    ratio := min(AMaxWidth/vsize.x, AMaxHeight/vsize.y);
+    result := BGRABitmapFactory.Create(ceil(vsize.x*ratio),ceil(vsize.y*ratio));
+    if ratio <> 0 then
+    begin
+      vmin := svg.GetViewMin(cuPixel);
+      c2d := TBGRACanvas2D.Create(result);
+      c2d.scale(ratio);
+      c2d.translate(-vmin.x,-vmin.y);
+      svg.Draw(c2d,0,0);
+      c2d.Free;
+    end;
+  finally
+    svg.Free;
+  end;
+end;
+
+var AlreadyRegistered: boolean;
+
+procedure RegisterSvgFormat;
+begin
+  if AlreadyRegistered then exit;
+  ImageHandlers.RegisterImageReader ('Scalable Vector Graphic', 'svg', TFPReaderSVG);
+  AlreadyRegistered:= True;
+end;
 
 function TSVGUnits.GetCustomDpiX: single;
 var pixSize: single;
@@ -755,6 +902,18 @@ begin
   FContent := TSVGContent.Create(FXml,FRoot,FUnits,FDataLink,nil);
 end;
 
+procedure TBGRASVG.LoadFromResource(AFilename: string);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(stream);
+  finally
+    stream.Free;
+  end;
+end;
+
 procedure TBGRASVG.SaveToFile(AFilenameUTF8: string);
 var stream: TFileStreamUTF8;
 begin
@@ -903,6 +1062,10 @@ begin
 
   result := Units.GetStretchRectF(RectF(sx,sy,sx+sw,sy+sh), preserveAspectRatio);
 end;
+
+initialization
+
+  DefaultBGRAImageReader[ifSvg] := TFPReaderSVG;
 
 end.
 

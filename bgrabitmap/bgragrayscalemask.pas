@@ -35,8 +35,8 @@ type
      property NbPixels: Integer read FNbPixels;
   end;
 
-procedure DownSamplePutImageGrayscale(sourceData: PByte; sourcePixelSize: NativeInt; sourceRowDelta: NativeInt; sourceWidth, sourceHeight: NativeInt; dest: TGrayscaleMask; ADestRect: TRect);
-procedure DownSamplePutImageGrayscale(source: TBGRACustomBitmap; dest: TGrayscaleMask; ADestRect: TRect);
+procedure DownSamplePutImageGrayscale(sourceData: PByte; sourcePixelSize: NativeInt; sourceRowDelta: NativeInt; sourceWidth, sourceHeight: NativeInt; dest: TGrayscaleMask; ADestRect: TRect); overload;
+procedure DownSamplePutImageGrayscale(source: TBGRACustomBitmap; dest: TGrayscaleMask; ADestRect: TRect); overload;
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,
   y: integer; xThird: integer; mask: TGrayscaleMask; color: TBGRAPixel;

@@ -79,8 +79,8 @@ type
       function PrevLinePrevSample (x:longword): byte;
       function  DoFilter (LineFilter:byte;index:longword; b:byte) : byte; virtual;
       procedure SetChunkLength (aValue : longword);
-      procedure SetChunkType (ct : TChunkTypes);
-      procedure SetChunkType (ct : TChunkCode);
+      procedure SetChunkType (ct : TChunkTypes); overload;
+      procedure SetChunkType (ct : TChunkCode); overload;
       function DecideGetPixel : TGetPixelFunc; virtual;
       procedure DetermineHeader (var AHeader : THeaderChunk); virtual;
       function DetermineFilter ({%H-}Current, {%H-}Previous:PByteArray; {%H-}linelength:longword):byte; virtual;

@@ -62,16 +62,17 @@ type
     ShadowRadius: integer;
     ShadowOffset: TPoint;
 
-    constructor Create;
-    constructor Create(ADirectoryUTF8: string);
+    constructor Create; overload;
+    constructor Create(ADirectoryUTF8: string); overload;
     function GetFontPixelMetric: TFontPixelMetric; override;
-    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); override;
-    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment); override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment); override; overload;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment); override; overload;
-    procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; c: TBGRAPixel); override;
-    procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; texture: IBGRAScanner); override;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; c: TBGRAPixel); overload; override;
+    procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; texture: IBGRAScanner); overload; override;
     procedure CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment); override;
+    function HandlesTextPath: boolean; override;
     function TextSize(s: string): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
@@ -152,8 +153,8 @@ type
     procedure SetDirectory(const AValue: string);
   public
     UnderlineDecoration,StrikeOutDecoration: boolean;
-    constructor Create;
-    constructor Create(AVectorizeLCL: boolean);
+    constructor Create; overload;
+    constructor Create(AVectorizeLCL: boolean); overload;
     destructor Destroy; override;
     function GetGlyphSize(AIdentifier:string): TPointF;
     function GetTextGlyphSizes(AText:string): TGlyphSizes;
@@ -163,11 +164,11 @@ type
     procedure CopyTextPathTo(ADest: IBGRAPath; ATextUTF8: string; X, Y: Single;
       AAlign: TBGRATypeWriterAlignment=twaTopLeft); override;
     procedure DrawTextWordBreak(ADest: TBGRACanvas2D; ATextUTF8: string; X, Y, MaxWidth: Single; AAlign: TBGRATypeWriterAlignment=twaTopLeft);
-    procedure DrawTextRect(ADest: TBGRACanvas2D; ATextUTF8: string; X1,Y1,X2,Y2: Single; AAlign: TBGRATypeWriterAlignment=twaTopLeft);
-    procedure DrawTextRect(ADest: TBGRACanvas2D; ATextUTF8: string; ATopLeft,ABottomRight: TPointF; AAlign: TBGRATypeWriterAlignment=twaTopLeft);
+    procedure DrawTextRect(ADest: TBGRACanvas2D; ATextUTF8: string; X1,Y1,X2,Y2: Single; AAlign: TBGRATypeWriterAlignment=twaTopLeft); overload;
+    procedure DrawTextRect(ADest: TBGRACanvas2D; ATextUTF8: string; ATopLeft,ABottomRight: TPointF; AAlign: TBGRATypeWriterAlignment=twaTopLeft); overload;
     function GetTextWordBreakGlyphBoxes(ATextUTF8: string; X,Y, MaxWidth: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft): TGlyphBoxes;
-    function GetTextRectGlyphBoxes(ATextUTF8: string; X1,Y1,X2,Y2: Single; AAlign: TBGRATypeWriterAlignment=twaTopLeft): TGlyphBoxes;
-    function GetTextRectGlyphBoxes(ATextUTF8: string; ATopLeft,ABottomRight: TPointF; AAlign: TBGRATypeWriterAlignment=twaTopLeft): TGlyphBoxes;
+    function GetTextRectGlyphBoxes(ATextUTF8: string; X1,Y1,X2,Y2: Single; AAlign: TBGRATypeWriterAlignment=twaTopLeft): TGlyphBoxes; overload;
+    function GetTextRectGlyphBoxes(ATextUTF8: string; ATopLeft,ABottomRight: TPointF; AAlign: TBGRATypeWriterAlignment=twaTopLeft): TGlyphBoxes; overload;
     procedure UpdateDirectory;
     function LoadGlyphsInfo(AFilenameUTF8: string): TBGRAGlyphsInfo;
 
@@ -235,7 +236,7 @@ var
     end;
     inc(nbpoints);
   end;
-  procedure AddLine(x1,y1,x2,y2: integer);
+  procedure AddLine(x1,y1,x2,y2: integer); overload;
   var i,j,k: integer;
   begin
     for i := PointsPreviousLineStart to nbpoints-1 do
@@ -268,18 +269,18 @@ var
     k := addpoint(x1,y1,-1,-1);
     points[k].next := addpoint(x2,y2,k,-1);
   end;
-  procedure AddLine(x1,y1,x2,y2,x3,y3: integer);
+  procedure AddLine(x1,y1,x2,y2,x3,y3: integer); overload;
   begin
     AddLine(x1,y1,x2,y2);
     AddLine(x2,y2,x3,y3);
   end;
-  procedure AddLine(x1,y1,x2,y2,x3,y3,x4,y4: integer);
+  procedure AddLine(x1,y1,x2,y2,x3,y3,x4,y4: integer); overload;
   begin
     AddLine(x1,y1,x2,y2);
     AddLine(x2,y2,x3,y3);
     AddLine(x3,y3,x4,y4);
   end;
-  procedure AddLine(x1,y1,x2,y2,x3,y3,x4,y4,x5,y5: integer);
+  procedure AddLine(x1,y1,x2,y2,x3,y3,x4,y4,x5,y5: integer); overload;
   begin
     AddLine(x1,y1,x2,y2);
     AddLine(x2,y2,x3,y3);
@@ -1224,6 +1225,11 @@ begin
   ofs := PointF(x,y);
   ofs += PointF(0,FVectorizedFont.FullHeight*0.5);
   FVectorizedFont.CopyTextPathTo(ADest, s, ofs.x,ofs.y, twAlign);
+end;
+
+function TBGRAVectorizedFontRenderer.HandlesTextPath: boolean;
+begin
+  Result:= true;
 end;
 
 function TBGRAVectorizedFontRenderer.TextSize(s: string): TSize;

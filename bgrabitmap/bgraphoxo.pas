@@ -45,8 +45,8 @@ type
     function GetMimeType: string; override;
     procedure AddLayerFromPhoxoData(const ABlockHeader: TPhoxoBlockHeader; ABlockData: PByte);
   public
-    constructor Create; override; overload;
-    constructor Create(AWidth, AHeight: integer); override; overload;
+    constructor Create; overload; override;
+    constructor Create(AWidth, AHeight: integer); overload; override;
     procedure LoadFromStream(AStream: TStream); override;
     procedure LoadFromFile(const filenameUTF8: string); override;
     procedure SaveToFile(const filenameUTF8: string); override;

@@ -47,15 +47,15 @@ type
     property DefaultUnitHeight: TFloatWithCSSUnit read GetDefaultUnitHeight;
   public
     function Convert(xy: single; sourceUnit, destUnit: TCSSUnit; dpi: single; containerSize: single = 0): single;
-    function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0): single;
-    function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit; containerHeight: single = 0): single;
-    function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): TFloatWithCSSUnit;
-    function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): TFloatWithCSSUnit;
+    function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0): single; overload;
+    function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit; containerHeight: single = 0): single; overload;
+    function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): TFloatWithCSSUnit; overload;
+    function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): TFloatWithCSSUnit; overload;
     function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TPointF; virtual;
-    class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
-    class function parseValue(AValue: string; ADefault: single): single;
-    class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string;
-    class function formatValue(AValue: single; APrecision: integer = 7): string;
+    class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
+    class function parseValue(AValue: string; ADefault: single): single; overload;
+    class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string; overload;
+    class function formatValue(AValue: single; APrecision: integer = 7): string; overload;
     property DpiX: single read GetDpiX;
     property DpiY: single read GetDpiY;
     property DpiScaled: boolean read GetDPIScaled;

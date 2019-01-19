@@ -52,8 +52,8 @@ type
   TSplineKernel = class(TWideKernelFilter)
   public
     Coeff: single;
-    constructor Create;
-    constructor Create(ACoeff: single);
+    constructor Create; overload;
+    constructor Create(ACoeff: single); overload;
     function Interpolation(t: single): single; override;
     function ShouldCheckRange: boolean; override;
     function KernelWidth: single; override;

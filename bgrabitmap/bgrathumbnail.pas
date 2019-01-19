@@ -8,8 +8,8 @@ interface
 uses
   Classes, SysUtils, BGRABitmap, BGRABitmapTypes, FPimage;
 
-function GetBitmapThumbnail(ABitmap: TBGRABitmap; AWidth,AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil; AVerticalShrink: single = 1): TBGRABitmap;
-function GetBitmapThumbnail(ABitmap: TBGRABitmap; AFormat: TBGRAImageFormat; AWidth,AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil; AVerticalShrink: single = 1): TBGRABitmap;
+function GetBitmapThumbnail(ABitmap: TBGRACustomBitmap; AWidth,AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil; AVerticalShrink: single = 1; AHorizShrink: single = 1): TBGRABitmap; overload;
+function GetBitmapThumbnail(ABitmap: TBGRACustomBitmap; AFormat: TBGRAImageFormat; AWidth,AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil; AVerticalShrink: single = 1; AHorizShrink: single = 1): TBGRABitmap; overload;
 function GetFileThumbnail(AFilenameUTF8: string; AWidth,AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
 function GetStreamThumbnail(AStream: TStream; AWidth,AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ASuggestedExtensionUTF8: string = ''; ADest: TBGRABitmap= nil): TBGRABitmap; overload;
 function GetStreamThumbnail(AStream: TStream; AReader: TFPCustomImageReader; AWidth,AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap; overload;
@@ -53,8 +53,8 @@ begin
     bmp.DrawCheckers(ARect, ImageCheckersColor1, ImageCheckersColor2);
 end;
 
-function InternalGetBitmapThumbnail(ABitmap: TBGRABitmap; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean;
-  ADest: TBGRABitmap; AVerticalShrink: single = 1; AShowHotSpot: boolean = false; ADarkCheckers: boolean = false): TBGRABitmap;
+function InternalGetBitmapThumbnail(ABitmap: TBGRACustomBitmap; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean;
+  ADest: TBGRABitmap; AVerticalShrink: single = 1; AHorizShrink: single = 1; AShowHotSpot: boolean = false; ADarkCheckers: boolean = false): TBGRABitmap;
 var
   factorX, factorY, factor: single;
   xIcon,yIcon,wIcon,hIcon: Integer;
@@ -71,11 +71,13 @@ begin
         result.Fill(ABackColor);
       end else
         result := TBGRABitmap.Create(AWidth,AHeight,ABackColor);
-      factorX := result.Width/ABitmap.Width;
+      factorX := result.Width/(ABitmap.Width*AHorizShrink);
       factorY := result.Height/(ABitmap.Height*AVerticalShrink);
       if factorX < factorY then factor := factorX else factor := factorY;
-      wIcon := round(ABitmap.Width*factor);
+      wIcon := round(ABitmap.Width*AHorizShrink*factor);
+      if wIcon = 0 then wIcon := 1;
       hIcon := round(ABitmap.Height*AVerticalShrink*factor);
+      if hIcon = 0 then hIcon := 1;
       xIcon:= (result.Width-wIcon) div 2;
       yIcon:= (result.Height-hIcon) div 2;
       if ACheckers then DrawThumbnailCheckers(result,Rect(xIcon,yIcon,xIcon+wIcon,yIcon+hIcon),ADarkCheckers);
@@ -102,18 +104,18 @@ begin
   end;
 end;
 
-function GetBitmapThumbnail(ABitmap: TBGRABitmap; AWidth, AHeight: integer;
-  ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap;
-  AVerticalShrink: single): TBGRABitmap;
+function GetBitmapThumbnail(ABitmap: TBGRACustomBitmap; AWidth, AHeight: integer;
+  ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap = nil;
+  AVerticalShrink: single = 1; AHorizShrink: single = 1): TBGRABitmap;
 begin
-  result := InternalGetBitmapThumbnail(ABitmap,AWidth,AHeight,ABackColor,ACheckers,ADest,AVerticalShrink,
+  result := InternalGetBitmapThumbnail(ABitmap,AWidth,AHeight,ABackColor,ACheckers,ADest,AVerticalShrink,AHorizShrink,
                                        false,false);
 end;
 
-function GetBitmapThumbnail(ABitmap: TBGRABitmap; AFormat: TBGRAImageFormat; AWidth, AHeight: integer;
-  ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap; AVerticalShrink: single): TBGRABitmap;
+function GetBitmapThumbnail(ABitmap: TBGRACustomBitmap; AFormat: TBGRAImageFormat; AWidth, AHeight: integer;
+  ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap = nil; AVerticalShrink: single = 1; AHorizShrink: single = 1): TBGRABitmap;
 begin
-  result := InternalGetBitmapThumbnail(ABitmap,AWidth,AHeight,ABackColor,ACheckers,ADest,AVerticalShrink,
+  result := InternalGetBitmapThumbnail(ABitmap,AWidth,AHeight,ABackColor,ACheckers,ADest,AVerticalShrink,AHorizShrink,
                                        AFormat = ifCur, AFormat in[ifCur,ifIco]);
 
 end;
@@ -121,10 +123,10 @@ end;
 function GetFileThumbnail(AFilenameUTF8: string; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap): TBGRABitmap;
 var stream: TFileStreamUTF8;
 begin
+  result := nil;
   try
     stream := TFileStreamUTF8.Create(AFilenameUTF8,fmOpenRead or fmShareDenyWrite);
   except
-    result := nil;
     exit;
   end;
   try
@@ -137,35 +139,61 @@ end;
 function GetStreamThumbnail(AStream: TStream; AWidth, AHeight: integer;
   ABackColor: TBGRAPixel; ACheckers: boolean; ASuggestedExtensionUTF8: string;
   ADest: TBGRABitmap): TBGRABitmap;
+var
+  ff: TBGRAImageFormat;
+  reader: TFPCustomImageReader;
 begin
-  case DetectFileFormat(AStream,ASuggestedExtensionUTF8) of
+  ff := DetectFileFormat(AStream,ASuggestedExtensionUTF8);
+  case ff of
     ifJpeg: result := GetJpegThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    ifPng: result := GetPngThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    ifGif: result := GetGifThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    ifBmp: result := GetBmpThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifIco: result := GetIcoThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifCur: result := GetCurThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    ifPcx: result := GetPcxThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifPaintDotNet: result := GetPaintDotNetThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifLazPaint: result := GetLazPaintThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifOpenRaster: result := GetOpenRasterThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifPhoxo: result := GetPhoxoThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     ifPsd: result := GetPsdThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    ifTarga: result := GetTargaThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    ifTiff: result := GetTiffThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    ifXwd: result := GetXwdThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    ifXPixMap: result := GetXPixMapThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
-    ifBmpMioMap: result := GetBmpMioMapThumbnail(AStream, AWidth,AHeight, ABackColor, ACheckers, ADest);
     else
-      result := nil;
+    begin
+      if (ff = ifUnknown) or (DefaultBGRAImageReader[ff] = nil) then
+        result := nil
+      else
+      begin
+        result := nil;
+        reader := nil;
+        try
+          reader := CreateBGRAImageReader(ff);
+          result := GetStreamThumbnail(AStream, reader, AWidth, AHeight, ABackColor, ACheckers, ADest);
+        finally
+          reader.Free;
+        end;
+      end;
+    end;
   end;
 end;
 
 function GetStreamThumbnail(AStream: TStream; AReader: TFPCustomImageReader;
   AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean;
   ADest: TBGRABitmap): TBGRABitmap;
-var bmp: TBGRABitmap;
+var
+  bmp: TBGRACustomBitmap;
+  AOriginalWidth, AOriginalHeight: integer;
 begin
+  if AReader is TBGRAImageReader then
+  begin
+    bmp := nil;
+    try
+      bmp := TBGRAImageReader(AReader).GetBitmapDraft(AStream, AWidth,AHeight, AOriginalWidth,AOriginalHeight);
+      if Assigned(bmp) and (bmp.Height <> 0) and (bmp.Width <> 0) then
+        result := GetBitmapThumbnail(bmp, AWidth, AHeight, ABackColor, ACheckers, ADest,
+                    AOriginalHeight/bmp.Height, AOriginalWidth/bmp.Width);
+    except
+      result := nil;
+    end;
+    bmp.free;
+    exit;
+  end;
+
   bmp := TBGRABitmap.Create;
   try
     bmp.LoadFromStream(AStream, AReader);
@@ -180,8 +208,6 @@ begin
     bmp.Free;
   end;
 end;
-
-
 
 function GetOpenRasterThumbnail(AStream: TStream; AWidth, AHeight: integer;
   ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap): TBGRABitmap;
@@ -271,28 +297,14 @@ begin
   psd.Free;
 end;
 
-function GetPngThumbnail(AStream: TStream; AWidth, AHeight: integer
-  ; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
+function GetPngThumbnail(AStream: TStream; AWidth, AHeight: integer;
+    ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
 var
-  png: TBGRAReaderPNG;
-  bmp: TBGRABitmap;
+  pngFormat: TBGRAReaderPNG;
 begin
-  png:= TBGRAReaderPNG.Create;
-  bmp := TBGRABitmap.Create;
-  try
-    png.MinifyHeight := AHeight;
-    bmp.LoadFromStream(AStream, png);
-  except
-    FreeAndNil(bmp);
-  end;
-  if bmp = nil then
-    result := nil
-  else
-  begin
-    result := GetBitmapThumbnail(bmp, AWidth, AHeight, ABackColor, ACheckers, ADest, png.OriginalHeight/bmp.Height);
-    bmp.Free;
-  end;
-  png.Free;
+  pngFormat:= TBGRAReaderPNG.Create;
+  result:= GetStreamThumbnail(AStream, pngFormat, AWidth,AHeight, ABackColor, ACheckers, ADest);
+  pngFormat.Free;
 end;
 
 function GetPaintDotNetThumbnail(AStream: TStream; AWidth, AHeight: integer;
@@ -364,26 +376,9 @@ function GetBmpThumbnail(AStream: TStream; AWidth, AHeight: integer;
   ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap): TBGRABitmap;
 var
   bmpFormat: TBGRAReaderBMP;
-  bmp: TBGRABitmap;
 begin
   bmpFormat:= TBGRAReaderBMP.Create;
-  bmpFormat.MinifyHeight := AHeight*2;
-  bmp := TBGRABitmap.Create;
-  try
-    bmp.LoadFromStream(AStream, bmpFormat);
-  except
-    FreeAndNil(bmp);
-  end;
-  if bmp = nil then
-    result := nil
-  else
-  begin
-    if bmp.Height <= 0 then
-      result := nil
-    else
-      result := GetBitmapThumbnail(bmp, AWidth, AHeight, ABackColor, ACheckers, ADest, bmpFormat.OriginalHeight/bmp.Height);
-    bmp.Free;
-  end;
+  result:= GetStreamThumbnail(AStream, bmpFormat, AWidth,AHeight, ABackColor, ACheckers, ADest);
   bmpFormat.Free;
 end;
 

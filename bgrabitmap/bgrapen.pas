@@ -57,8 +57,8 @@ type
     public
       constructor Create;
       destructor Destroy; override;
-      function ComputePolyline(const APoints: array of TPointF; AWidth: single; AClosedCap: boolean = true): ArrayOfTPointF; override;
-      function ComputePolyline(const APoints: array of TPointF; AWidth: single; APenColor: TBGRAPixel; AClosedCap: boolean = true): ArrayOfTPointF; override;
+      function ComputePolyline(const APoints: array of TPointF; AWidth: single; AClosedCap: boolean = true): ArrayOfTPointF; overload; override;
+      function ComputePolyline(const APoints: array of TPointF; AWidth: single; APenColor: TBGRAPixel; AClosedCap: boolean = true): ArrayOfTPointF; overload; override;
       function ComputePolylineAutocycle(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; override;
       function ComputePolygon(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; override;
 
@@ -92,13 +92,13 @@ procedure BGRAEraseLineAliased(dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
 
 //antialiased version
 procedure BGRADrawLineAntialias({%H-}dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
-  c: TBGRAPixel; DrawLastPixel: boolean; LinearBlend : boolean = false);
+  c: TBGRAPixel; DrawLastPixel: boolean; LinearBlend : boolean = false); overload;
 procedure BGRAEraseLineAntialias(dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
-  calpha: byte; DrawLastPixel: boolean);
+  calpha: byte; DrawLastPixel: boolean); overload;
 
 //antialiased version with bicolor dashes (to draw a frame)
 procedure BGRADrawLineAntialias(dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
-  c1, c2: TBGRAPixel; dashLen: integer; DrawLastPixel: boolean; var DashPos: integer; LinearBlend : boolean = false);
+  c1, c2: TBGRAPixel; dashLen: integer; DrawLastPixel: boolean; var DashPos: integer; LinearBlend : boolean = false); overload;
 
 //length added to ensure accepable alpha join (using TBGRAMultishapeFiller is still better)
 function GetAlphaJoinFactor(alpha: byte): single;

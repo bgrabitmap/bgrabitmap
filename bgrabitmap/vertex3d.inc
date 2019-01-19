@@ -15,18 +15,18 @@ type
     FScene: TBGRAScene3D;
     FFaceColorsInvalidated,
     FMaterialInvalidated: boolean;
-    procedure AddFace(AFace: IBGRAFace3D);
+    procedure AddFace(AFace: IBGRAFace3D); overload;
   public
     constructor Create(AScene: TBGRAScene3D);
     destructor Destroy; override;
     procedure Clear;
     procedure InvalidateColor;
     procedure InvalidateMaterial;
-    function AddFace(const AVertices: array of IBGRAVertex3D): IBGRAFace3D;
-    function AddFace(const AVertices: array of IBGRAVertex3D; ABiface: boolean): IBGRAFace3D;
-    function AddFace(const AVertices: array of IBGRAVertex3D; ATexture: IBGRAScanner): IBGRAFace3D;
-    function AddFace(const AVertices: array of IBGRAVertex3D; AColor: TBGRAPixel): IBGRAFace3D;
-    function AddFace(const AVertices: array of IBGRAVertex3D; AColors: array of TBGRAPixel): IBGRAFace3D;
+    function AddFace(const AVertices: array of IBGRAVertex3D): IBGRAFace3D; overload;
+    function AddFace(const AVertices: array of IBGRAVertex3D; ABiface: boolean): IBGRAFace3D; overload;
+    function AddFace(const AVertices: array of IBGRAVertex3D; ATexture: IBGRAScanner): IBGRAFace3D; overload;
+    function AddFace(const AVertices: array of IBGRAVertex3D; AColor: TBGRAPixel): IBGRAFace3D; overload;
+    function AddFace(const AVertices: array of IBGRAVertex3D; AColors: array of TBGRAPixel): IBGRAFace3D; overload;
     function AddFaceReversed(const AVertices: array of IBGRAVertex3D): IBGRAFace3D;
     procedure ComputeWithMatrix(constref AMatrix: TMatrix3D; constref AProjection: TProjection3D);
     function GetColor: TBGRAPixel;

@@ -61,19 +61,19 @@ type
     OutlineWidth: single;
     OutlineVisible,OuterOutlineOnly: boolean;
     OutlineTexture: IBGRAScanner;
-    constructor Create;
-    constructor Create(AShader: TCustomPhongShading; AShaderOwner: boolean);
+    constructor Create; overload;
+    constructor Create(AShader: TCustomPhongShading; AShaderOwner: boolean); overload;
     destructor Destroy; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer;
-      s: string; texture: IBGRAScanner; align: TAlignment); override;
+      s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer;
-      s: string; c: TBGRAPixel; align: TAlignment); override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment); override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment); override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); override;
-    function TextSize(sUTF8: string): TSize; override;
-    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
+      s: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); overload; override;
+    function TextSize(sUTF8: string): TSize; overload; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; overload; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     property Shader: TCustomPhongShading read FShader;
     property ShaderLightPosition: TPoint read GetShaderLightPosition write SetShaderLightPosition;
@@ -88,13 +88,13 @@ type
     procedure Init(AText: string; Font: TFont; Antialiasing: boolean; SubOffsetX,SubOffsetY: single; GrainX, GrainY: Integer);
     procedure InitWithFontName(AText: string; AFontName: string; AFullHeight: integer; AStyle: TFontStyles; Antialiasing: boolean; SubOffsetX,SubOffsetY: single);
   public
-    constructor Create(AText: string; Font: TFont; Antialiasing: boolean);
-    constructor Create(AText: string; Font: TFont; Antialiasing: boolean; SubOffsetX,SubOffsetY: single);
-    constructor Create(AText: string; Font: TFont; Antialiasing: boolean; SubOffsetX,SubOffsetY: single; GrainX, GrainY: Integer);
-    constructor Create(AText: string; AFontName: string; AFullHeight: integer; Antialiasing: boolean);
-    constructor Create(AText: string; AFontName: string; AFullHeight: integer; Antialiasing: boolean; SubOffsetX,SubOffsetY: single);
-    constructor Create(AText: string; AFontName: string; AFullHeight: integer; AStyle: TFontStyles; Antialiasing: boolean);
-    constructor Create(AText: string; AFontName: string; AFullHeight: integer; AStyle: TFontStyles; Antialiasing: boolean; SubOffsetX,SubOffsetY: single);
+    constructor Create(AText: string; Font: TFont; Antialiasing: boolean); overload;
+    constructor Create(AText: string; Font: TFont; Antialiasing: boolean; SubOffsetX,SubOffsetY: single); overload;
+    constructor Create(AText: string; Font: TFont; Antialiasing: boolean; SubOffsetX,SubOffsetY: single; GrainX, GrainY: Integer); overload;
+    constructor Create(AText: string; AFontName: string; AFullHeight: integer; Antialiasing: boolean); overload;
+    constructor Create(AText: string; AFontName: string; AFullHeight: integer; Antialiasing: boolean; SubOffsetX,SubOffsetY: single); overload;
+    constructor Create(AText: string; AFontName: string; AFullHeight: integer; AStyle: TFontStyles; Antialiasing: boolean); overload;
+    constructor Create(AText: string; AFontName: string; AFullHeight: integer; AStyle: TFontStyles; Antialiasing: boolean; SubOffsetX,SubOffsetY: single); overload;
   end;
 
 function TextShadow(AWidth,AHeight: Integer; AText: String; AFontHeight: Integer; ATextColor,AShadowColor: TBGRAPixel;
@@ -563,6 +563,7 @@ procedure TBGRATextEffect.InitImproveReadability(AText: string; Font: TFont;
 var size: TSize;
   overhang: integer;
 begin
+  FShadowQuality:= rbFast;
   if SubOffsetX < 0 then SubOffsetX := 0;
   if SubOffsetY < 0 then SubOffsetY := 0;
   size := BGRATextSize(Font, fqFineAntialiasing, AText, FontAntialiasingLevel);

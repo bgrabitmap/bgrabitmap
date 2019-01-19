@@ -98,7 +98,7 @@ type
     {** Creates an empty color list }
     constructor Create;
     {** Add a color to the list }
-    procedure Add(Name: string; const Color: TBGRAPixel);
+    procedure Add(Name: string; const Color: TBGRAPixel); overload;
     {** Ends the color list and prevents further modifications }
     procedure Finished;
     {** Returns the index of a color with a given name }
@@ -136,11 +136,11 @@ var
 function BGRAToStr(c: TBGRAPixel; AColorList: TBGRAColorList = nil; AMaxDiff: Word= 0): string;
 {* Converts a fully defined string into a ''TBGRAPixel'' value. Color names from ''VGAColors'' and ''CSSColors''
    are used if there is an exact match }
-function StrToBGRA(str: string): TBGRAPixel;
+function StrToBGRA(str: string): TBGRAPixel; overload;
 {* Converts a string into a ''TBGRAPixel'' value. If the value is not fully defined or that
    there is an error, ''DefaultColor'' is returned.
    Color names from ''VGAColors'' and ''CSSColors'' are used if there is an exact match. }
-function StrToBGRA(str: string; const DefaultColor: TBGRAPixel): TBGRAPixel;
+function StrToBGRA(str: string; const DefaultColor: TBGRAPixel): TBGRAPixel; overload;
 {* Converts a string into a ''TBGRAPixel'' value. If the value is not fully defined, missing channels (expressed with '?')
    are filled with fallbackValues. You can check if there was an error with the provided boolean.
    Color names from ''VGAColors'' and ''CSSColors'' are used if there is an exact match. }

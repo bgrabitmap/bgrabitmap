@@ -62,8 +62,8 @@ type
   protected
     FContainer: TDotNetDeserialization;
     function GetTypeAsString: string; virtual; abstract;
-    function GetFieldAsString(Index: longword): string; virtual; abstract;
-    function GetFieldAsString(Name: string): string;
+    function GetFieldAsString(Index: longword): string; overload; virtual; abstract;
+    function GetFieldAsString(Name: string): string; overload;
     function GetFieldCount: longword; virtual; abstract;
     function GetFieldName(Index: longword): string; virtual; abstract;
     function GetFieldTypeAsString(Index: longword): string; virtual; abstract;
@@ -146,10 +146,10 @@ type
     function FindClass(typeName: string): TSerializedClass;
     function FindObject(typeName: string): TCustomSerializedObject;
     function GetSimpleField(obj: TCustomSerializedObject; Name: string): string;
-    function GetObjectField(obj: TCustomSerializedObject; Name: string): TCustomSerializedObject;
-    function GetObjectField(obj: TCustomSerializedObject; index: integer): TCustomSerializedObject;
-    function GetObject(id: string): TCustomSerializedObject;
-    function GetObject(id: longword): TCustomSerializedObject;
+    function GetObjectField(obj: TCustomSerializedObject; Name: string): TCustomSerializedObject; overload;
+    function GetObjectField(obj: TCustomSerializedObject; index: integer): TCustomSerializedObject; overload;
+    function GetObject(id: string): TCustomSerializedObject; overload;
+    function GetObject(id: longword): TCustomSerializedObject; overload;
     function IsBoxedValue(obj: TCustomSerializedObject; index: integer): boolean;
     function GetBoxedValue(obj: TCustomSerializedObject; index: integer): string;
     procedure LoadFromStream(Stream: TStream);

@@ -184,8 +184,8 @@ type
       procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
       procedure Initialize; virtual;
     public
-      constructor Create({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); virtual;
-      constructor Create({%H-}ADocument: TXMLDocument; {%H-}AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); virtual;
+      constructor Create({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
+      constructor Create({%H-}ADocument: TXMLDocument; {%H-}AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
       destructor Destroy; override;
       procedure Recompute; virtual;
       procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);

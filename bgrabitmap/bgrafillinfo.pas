@@ -454,18 +454,19 @@ end;
 
 procedure TFillShapeInfo.SortIntersection(var inter: ArrayOfTIntersectionInfo; nbInter: integer);
 var
-  i,j: Integer;
+  i,j,k: Integer;
   tempInter: TIntersectionInfo;
 begin
   for i := 1 to nbinter - 1 do
   begin
     j := i;
-    while (j > 0) and (inter[j - 1].interX > inter[j].interX) do
+    while (j > 0) and (inter[i].interX < inter[j-1].interX) do dec(j);
+    if j <> i then
     begin
-      tempInter    := inter[j - 1];
-      inter[j - 1] := inter[j];
-      inter[j]     := tempInter;
-      Dec(j);
+      tempInter := inter[i];
+      for k := i-1 downto j do
+        inter[k+1] := inter[k];
+      inter[j]  := tempInter;
     end;
   end;
 end;
@@ -482,9 +483,12 @@ begin
     windingSum += inter[i].winding;
     if (windingSum = 0) xor (prevSum = 0) then
     begin
-      tempInfo := inter[nbAlternate];
-      inter[nbAlternate] := inter[i];
-      inter[i] := tempInfo;
+      if nbAlternate<>i then
+      begin
+        tempInfo := inter[nbAlternate];
+        inter[nbAlternate] := inter[i];
+        inter[i] := tempInfo;
+      end;
       inc(nbAlternate);
     end;
   end;

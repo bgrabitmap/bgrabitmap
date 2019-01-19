@@ -40,8 +40,8 @@ type
     FReductionKeepContrast: boolean;
     FSeparateAlphaChannel: boolean;
     procedure Init(ABox: TBGRAColorBox);
-    procedure NormalizeArrayOfColors(AColors: ArrayOfTBGRAPixel; ARedBounds, AGreenBounds, ABlueBounds, AAlphaBounds: TDimensionMinMax; AUniform: boolean);
-    procedure NormalizeArrayOfColors(AColors: ArrayOfTBGRAPixel; AColorBounds, AAlphaBounds: TDimensionMinMax);
+    procedure NormalizeArrayOfColors(AColors: ArrayOfTBGRAPixel; ARedBounds, AGreenBounds, ABlueBounds, AAlphaBounds: TDimensionMinMax; AUniform: boolean); overload;
+    procedure NormalizeArrayOfColors(AColors: ArrayOfTBGRAPixel; AColorBounds, AAlphaBounds: TDimensionMinMax); overload;
   protected
     function GetPalette: TBGRACustomApproxPalette; override;
     function GetSourceColor(AIndex: integer): TBGRAPixel; override;
@@ -55,9 +55,9 @@ type
     constructor Create(ABitmap: TBGRACustomBitmap; AAlpha: TAlphaChannelPaletteOption; AReductionColorCount: integer); override;
     destructor Destroy; override;
     procedure ApplyDitheringInplace(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect); override;
-    function GetDitheredBitmap(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect): TBGRACustomBitmap; override; overload;
+    function GetDitheredBitmap(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect): TBGRACustomBitmap; overload; override;
     function GetDitheredBitmapIndexedData(ABitDepth: integer; AByteOrder: TRawImageByteOrder; AAlgorithm: TDitheringAlgorithm;
-      ABitmap: TBGRACustomBitmap; out AScanlineSize: PtrInt): Pointer; override; overload;
+      ABitmap: TBGRACustomBitmap; out AScanlineSize: PtrInt): Pointer; overload; override;
     procedure SaveBitmapToStream(AAlgorithm: TDitheringAlgorithm;
       ABitmap: TBGRACustomBitmap; AStream: TStream; AFormat: TBGRAImageFormat); override;
   end;

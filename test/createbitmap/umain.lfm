@@ -1,0 +1,9 @@
+object FMain: TFMain
+  Left = 454
+  Height = 289
+  Top = 226
+  Width = 430
+  Caption = 'Test CreateBitmap'
+  OnPaint = FormPaint
+  LCLVersion = '1.6.0.4'
+end

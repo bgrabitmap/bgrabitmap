@@ -52,8 +52,8 @@ type
 
   public
     procedure LoadFromBitmapIfNeeded; override;
-    procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean=True); override;
-    procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); override;
+    procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean=True); overload; override;
+    procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); overload; override;
     procedure DataDrawOpaque(ACanvas: TCanvas; ARect: TRect; AData: Pointer;
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); override;

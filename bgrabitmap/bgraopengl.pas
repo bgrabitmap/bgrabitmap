@@ -272,11 +272,11 @@ type
     procedure InternalStartPolyline(const pt: TPointF); override;
     procedure InternalStartPolygon(const pt: TPointF); override;
     procedure InternalStartTriangleFan(const pt: TPointF); override;
-    procedure InternalContinueShape(const pt: TPointF); override;
+    procedure InternalContinueShape(const pt: TPointF); overload; override;
 
-    procedure InternalContinueShape(const pt: TPoint3D); override;
-    procedure InternalContinueShape(const pt: TPoint3D_128); override;
-    procedure InternalContinueShape(const pt, normal: TPoint3D_128); override;
+    procedure InternalContinueShape(const pt: TPoint3D); overload; override;
+    procedure InternalContinueShape(const pt: TPoint3D_128); overload; override;
+    procedure InternalContinueShape(const pt, normal: TPoint3D_128); overload; override;
 
     procedure InternalEndShape; override;
 

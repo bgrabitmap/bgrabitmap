@@ -94,20 +94,21 @@ type
     procedure ExceptionUnknownPaletteFormat;
     procedure ExceptionInvalidPaletteFormat;
   public
-    constructor Create(ABitmap: TBGRACustomBitmap); virtual; overload;
-    constructor Create(APalette: TBGRACustomPalette); virtual; overload;
-    constructor Create(AColors: ArrayOfTBGRAPixel); virtual; overload;
-    constructor Create(AColors: ArrayOfWeightedColor); virtual; overload;
+    constructor Create(ABitmap: TBGRACustomBitmap); overload; virtual;
+    constructor Create(APalette: TBGRACustomPalette); overload; virtual;
+    constructor Create(AColors: ArrayOfTBGRAPixel); overload; virtual;
+    constructor Create(AColors: ArrayOfWeightedColor); overload; virtual;
     function AddColor(AValue: TBGRAPixel): boolean; virtual;
-    procedure AddColors(ABitmap: TBGRACustomBitmap); virtual; overload;
-    procedure AddColors(APalette: TBGRACustomPalette); virtual; overload;
+    procedure AddColors(ABitmap: TBGRACustomBitmap); overload; virtual;
+    procedure AddColors(APalette: TBGRACustomPalette); overload; virtual;
     function RemoveColor(AValue: TBGRAPixel): boolean; virtual;
     procedure LoadFromFile(AFilenameUTF8: string); virtual;
     procedure LoadFromStream(AStream: TStream; AFormat: TBGRAPaletteFormat); virtual;
+    procedure LoadFromResource(AFilename: string; AFormat: TBGRAPaletteFormat);
     procedure SaveToFile(AFilenameUTF8: string); virtual;
     procedure SaveToStream(AStream: TStream; AFormat: TBGRAPaletteFormat); virtual;
-    function DetectPaletteFormat(AStream: TStream): TBGRAPaletteFormat; virtual;
-    function DetectPaletteFormat(AFilenameUTF8: string): TBGRAPaletteFormat;
+    function DetectPaletteFormat(AStream: TStream): TBGRAPaletteFormat; overload; virtual;
+    function DetectPaletteFormat(AFilenameUTF8: string): TBGRAPaletteFormat; overload;
     function SuggestPaletteFormat(AFilenameUTF8: string): TBGRAPaletteFormat; virtual;
   end;
 
@@ -163,9 +164,9 @@ type
     function GetWeightByIndex({%H-}AIndex: Integer): UInt32; virtual;
   public
     function FindNearestColor(AValue: TBGRAPixel; AIgnoreAlpha: boolean): TBGRAPixel; overload;
-    function FindNearestColor(AValue: TBGRAPixel): TBGRAPixel; virtual; abstract; overload;
+    function FindNearestColor(AValue: TBGRAPixel): TBGRAPixel; overload; virtual; abstract;
     function FindNearestColorIndex(AValue: TBGRAPixel; AIgnoreAlpha: boolean): integer; overload;
-    function FindNearestColorIndex(AValue: TBGRAPixel): integer; virtual; abstract; overload;
+    function FindNearestColorIndex(AValue: TBGRAPixel): integer; overload; virtual; abstract;
     property Weight[AIndex: Integer]: UInt32 read GetWeightByIndex;
   end;
 
@@ -195,15 +196,15 @@ type
     function GetReductionColorCount: integer; virtual; abstract;
     procedure SetReductionColorCount(AValue: Integer); virtual; abstract;
   public
-    constructor Create(APalette: TBGRACustomPalette; ASeparateAlphaChannel: boolean); virtual; abstract; overload;
+    constructor Create(APalette: TBGRACustomPalette; ASeparateAlphaChannel: boolean); overload; virtual; abstract;
     constructor Create(AColors: array of TBGRAPixel; ASeparateAlphaChannel: boolean); overload;
-    constructor Create(ABitmap: TBGRACustomBitmap; AAlpha: TAlphaChannelPaletteOption); virtual; abstract; overload;
-    constructor Create(APalette: TBGRACustomPalette; ASeparateAlphaChannel: boolean; AReductionColorCount: integer); virtual; abstract; overload;
+    constructor Create(ABitmap: TBGRACustomBitmap; AAlpha: TAlphaChannelPaletteOption); overload; virtual; abstract;
+    constructor Create(APalette: TBGRACustomPalette; ASeparateAlphaChannel: boolean; AReductionColorCount: integer); overload; virtual; abstract;
     constructor Create(AColors: array of TBGRAPixel; ASeparateAlphaChannel: boolean; AReductionColorCount: integer); overload;
-    constructor Create(ABitmap: TBGRACustomBitmap; AAlpha: TAlphaChannelPaletteOption; AReductionColorCount: integer); virtual; abstract; overload;
-    procedure ApplyDitheringInplace(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect); virtual; abstract; overload;
+    constructor Create(ABitmap: TBGRACustomBitmap; AAlpha: TAlphaChannelPaletteOption; AReductionColorCount: integer); overload; virtual; abstract;
+    procedure ApplyDitheringInplace(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect); overload; virtual; abstract;
     procedure ApplyDitheringInplace(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap); overload;
-    function GetDitheredBitmap(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect): TBGRACustomBitmap; virtual; abstract; overload;
+    function GetDitheredBitmap(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; ABounds: TRect): TBGRACustomBitmap; overload; virtual; abstract;
     function GetDitheredBitmap(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap): TBGRACustomBitmap; overload;
     procedure SaveBitmapToFile(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; AFilenameUTF8: string); overload;
     procedure SaveBitmapToFile(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; AFilenameUTF8: string; AFormat: TBGRAImageFormat); overload;
@@ -211,7 +212,7 @@ type
     function GetDitheredBitmapIndexedData(ABitDepth: integer; AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; out AScanlineSize: PtrInt): Pointer; overload;
     function GetDitheredBitmapIndexedData(ABitDepth: integer; AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap): Pointer; overload;
     function GetDitheredBitmapIndexedData(ABitDepth: integer; AByteOrder: TRawImageByteOrder; AAlgorithm: TDitheringAlgorithm;
-      ABitmap: TBGRACustomBitmap; out AScanlineSize: PtrInt): Pointer; virtual; abstract; overload;
+      ABitmap: TBGRACustomBitmap; out AScanlineSize: PtrInt): Pointer; overload; virtual; abstract;
     property SourceColorCount: Integer read GetSourceColorCount;
     property SourceColor[AIndex: integer]: TBGRAPixel read GetSourceColor;
     property ReductionColorCount: Integer read GetReductionColorCount write SetReductionColorCount;
@@ -1290,6 +1291,18 @@ begin
     if not handled then ExceptionUnknownPaletteFormat;
   finally
     buf.Free;
+  end;
+end;
+
+procedure TBGRAPalette.LoadFromResource(AFilename: string; AFormat: TBGRAPaletteFormat);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(stream, AFormat);
+  finally
+    stream.Free;
   end;
 end;
 

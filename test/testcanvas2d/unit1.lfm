@@ -1,7 +1,7 @@
 object Form1: TForm1
-  Left = 571
+  Left = 567
   Height = 382
-  Top = 183
+  Top = 83
   Width = 640
   Caption = 'Test Canvas2D'
   ClientHeight = 382
@@ -37,11 +37,11 @@ object Form1: TForm1
     TabOrder = 1
     object SpinEdit1: TSpinEdit
       Left = 3
-      Height = 23
+      Height = 27
       Top = 3
       Width = 59
       Font.Height = -12
-      MaxValue = 19
+      MaxValue = 23
       MinValue = 1
       OnChange = SpinEdit1Change
       ParentFont = False
@@ -50,9 +50,9 @@ object Form1: TForm1
     end
     object CheckBox_PixelCentered: TCheckBox
       Left = 70
-      Height = 19
+      Height = 22
       Top = 4
-      Width = 160
+      Width = 173
       Caption = 'Pixel-centered coordinates'
       Font.Height = -12
       OnChange = CheckBox_PixelCenteredChange
@@ -70,9 +70,9 @@ object Form1: TForm1
     end
     object CheckBox_Antialiasing: TCheckBox
       Left = 331
-      Height = 19
+      Height = 22
       Top = 4
-      Width = 82
+      Width = 89
       Caption = 'Antialiasing'
       Checked = True
       OnChange = CheckBox_AntialiasingChange
@@ -84,5 +84,12 @@ object Form1: TForm1
     OnTimer = Timer1Timer
     left = 62
     top = 92
+  end
+  object SaveDialog1: TSaveDialog
+    Title = 'Save as HTML file...'
+    DefaultExt = '.html'
+    Filter = 'HTML file (*.html);*.html'
+    left = 151
+    top = 95
   end
 end

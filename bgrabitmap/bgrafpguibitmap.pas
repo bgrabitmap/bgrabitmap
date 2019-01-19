@@ -45,8 +45,8 @@ type
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure TakeScreenshot({%H-}ARect: TRect); override; //not available
     procedure TakeScreenshotOfPrimaryMonitor; override; //not available
-    procedure LoadFromDevice({%H-}DC: System.THandle); override; //not available
-    procedure LoadFromDevice({%H-}DC: System.THandle; {%H-}ARect: TRect); override; //not available
+    procedure LoadFromDevice({%H-}DC: HDC); override; //not available
+    procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override; //not available
     property BitmapTransparent: boolean read GetBitmapTransparent write SetBitmapTransparent;
     property Canvas: TBGRACanvas read GetPseudoCanvas;
   end;
@@ -253,12 +253,12 @@ begin
   NotAvailable;
 end;
 
-procedure TBGRAfpGUIBitmap.LoadFromDevice(DC: System.THandle);
+procedure TBGRAfpGUIBitmap.LoadFromDevice(DC: HDC);
 begin
   NotAvailable;
 end;
 
-procedure TBGRAfpGUIBitmap.LoadFromDevice(DC: System.THandle; ARect: TRect);
+procedure TBGRAfpGUIBitmap.LoadFromDevice(DC: HDC; ARect: TRect);
 begin
   NotAvailable;
 end;

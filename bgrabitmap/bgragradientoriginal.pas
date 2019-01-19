@@ -30,6 +30,7 @@ type
     FStartColor,FEndColor: TBGRAPixel;
     FGradientType: TGradientType;
     FOrigin,FXAxis,FYAxis,FFocalPoint: TPointF;
+    FOriginBackup,FXAxisBackup, FYAxisBackup: TPointF;
     FRadius,FFocalRadius: single;
     FColorInterpolation: TBGRAColorInterpolation;
     FRepetition: TBGRAGradientRepetition;
@@ -43,6 +44,7 @@ type
     procedure OnMoveYAxis({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
     procedure OnMoveFocalPoint({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
     procedure OnMoveFocalRadius({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
+    procedure OnStartMove({%H-}ASender: TObject; {%H-}AIndex: integer; {%H-}AShift: TShiftState);
   public
     constructor Create; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); override;
@@ -202,32 +204,28 @@ end;
 procedure TBGRALayerGradientOriginal.OnMoveXAxis(ASender: TObject; APrevCoord,
   ANewCoord: TPointF; AShift: TShiftState);
 var
-  prevScale, newScale, scale: Single;
-  u1,v1,u2,v2,w: TPointF;
   m: TAffineMatrix;
+  c: TPointF;
 begin
-  prevScale := VectLen(FXAxis - FOrigin);
-  newScale := VectLen(ANewCoord - FOrigin);
   if not (ssAlt in AShift) or (GradientType in [gtLinear,gtReflected]) then
   begin
-    if (prevScale = 0) or (newScale = 0) or isEmptyPointF(FYAxis) then
-      FYAxis := EmptyPointF
-    else
+    if not isEmptyPointF(FYAxis) and not isEmptyPointF(FYAxisBackup) then
     begin
-      scale := newScale/prevScale;
-      u1 := (FXAxis-FOrigin)*(1/prevScale);
-      v1 := PointF(-u1.y,u1.x);
-      w := (ANewCoord-FOrigin)*(1/newScale);
-      u2 := PointF(w*u1, w*v1);
-      v2 := PointF(-u2.y,u2.x);
-      m := AffineMatrixTranslation(FOrigin.x,FOrigin.y)*
-         AffineMatrixScale(scale,scale)*
-         AffineMatrix(u2,v2,PointF(0,0))*
-         AffineMatrixTranslation(-FOrigin.x,-FOrigin.y);
-      FYAxis := m*FYAxis;
+      m := AffineMatrixScaledRotation(FXAxisBackup, ANewCoord, FOrigin);
+      FYAxis := m*FYAxisBackup;
     end;
   end else
     if isEmptyPointF(FYAxis) then FYAxis := ComputedYAxis;
+
+  if (GradientType = gtLinear) and (ssShift in AShift) then
+  begin
+    c := (FOriginBackup+FXAxisBackup)*0.5;
+    m := AffineMatrixScaledRotation(FXAxisBackup, ANewCoord, c);
+    FOrigin := m*FOriginBackup;
+  end
+  else
+    FOrigin := FOriginBackup;
+
   FXAxis := ANewCoord;
 
   NotifyChange;
@@ -236,9 +234,20 @@ end;
 procedure TBGRALayerGradientOriginal.OnMoveXAxisNeg(ASender: TObject;
   APrevCoord, ANewCoord: TPointF; AShift: TShiftState);
 var
-  delta: TPointF;
+  delta, c: TPointF;
+  m: TAffineMatrix;
 begin
   delta := ANewCoord-APrevCoord;
+
+  if (GradientType = gtLinear) and (ssShift in AShift) then
+  begin
+    c := (FOriginBackup+FXAxisBackup)*0.5;
+    m := AffineMatrixScaledRotation(FOriginBackup, (FOrigin+delta), c);
+    FXAxis := m*FXAxisBackup;
+  end
+  else
+    FXAxis := FXAxisBackup;
+
   FOrigin += delta;
   NotifyChange;
 end;
@@ -246,30 +255,14 @@ end;
 procedure TBGRALayerGradientOriginal.OnMoveYAxis(ASender: TObject; APrevCoord,
   ANewCoord: TPointF; AShift: TShiftState);
 var
-  prevScale, newScale, scale: Single;
-  u1,v1,u2,v2,w, curYAxis: TPointF;
   m: TAffineMatrix;
 begin
-  curYAxis := ComputedYAxis;
-  prevScale := VectLen(curYAxis - FOrigin);
-  newScale := VectLen(ANewCoord - FOrigin);
   if not (ssAlt in AShift) or (GradientType in [gtLinear,gtReflected]) then
   begin
-    if (prevScale = 0) or (newScale = 0) or isEmptyPointF(FXAxis) then
-      FXAxis := EmptyPointF
-    else
+    if not isEmptyPointF(FXAxis) then
     begin
-      scale := newScale/prevScale;
-      u1 := (curYAxis-FOrigin)*(1/prevScale);
-      v1 := PointF(-u1.y,u1.x);
-      w := (ANewCoord-FOrigin)*(1/newScale);
-      u2 := PointF(w*u1, w*v1);
-      v2 := PointF(-u2.y,u2.x);
-      m := AffineMatrixTranslation(FOrigin.x,FOrigin.y)*
-         AffineMatrixScale(scale,scale)*
-         AffineMatrix(u2,v2,PointF(0,0))*
-         AffineMatrixTranslation(-FOrigin.x,-FOrigin.y);
-      FXAxis := m*FXAxis;
+      m := AffineMatrixScaledRotation(FYAxisBackup, ANewCoord, FOrigin);
+      FXAxis := m*FXAxisBackup;
     end;
   end;
   FYAxis := ANewCoord;
@@ -296,6 +289,14 @@ begin
   FFocalRadius := u * (ANewCoord-focalOrig) / refLen - 0.1;
   if FFocalRadius < 0 then FFocalRadius:= 0;
   NotifyChange;
+end;
+
+procedure TBGRALayerGradientOriginal.OnStartMove(ASender: TObject;
+  AIndex: integer; AShift: TShiftState);
+begin
+  FOriginBackup := FOrigin;
+  FXAxisBackup := FXAxis;
+  FYAxisBackup := ComputedYAxis;
 end;
 
 constructor TBGRALayerGradientOriginal.Create;
@@ -354,9 +355,11 @@ var
 begin
   if not isEmptyPointF(FOrigin) then
   begin
+    AEditor.AddStartMoveHandler(@OnStartMove);
+
     if not isEmptyPointF(FXAxis) and (FGradientType = gtLinear) then
       originPoint := AEditor.AddPoint((FOrigin + FXAxis)*0.5, @OnMoveOrigin, true)
-    else originPoint := AEditor.AddPoint(FOrigin, @OnMoveOrigin, FGradientType <> gtRadial);
+    else originPoint := AEditor.AddPoint(FOrigin, @OnMoveOrigin, true);
 
     if not isEmptyPointF(FXAxis) then
     begin
@@ -367,13 +370,13 @@ begin
       end
       else AEditor.AddArrow(FOrigin, FXAxis, @OnMoveXAxis);
 
-      if FGradientType in[gtDiamond, gtRadial] then
+      if FGradientType in[gtDiamond, gtRadial, gtAngular] then
         AEditor.AddArrow(FOrigin, ComputedYAxis, @OnMoveYAxis);
     end;
     if FGradientType = gtRadial then
     begin
-      AEditor.AddPoint(ComputedFocalPoint, @OnMoveFocalPoint, true, originPoint);
-      AEditor.AddArrow(ComputedFocalPoint, ComputedFocalPoint - (FXAxis - FOrigin) * (ComputedFocalRadius + 0.1), @OnMoveFocalRadius, true);
+      AEditor.AddPoint(ComputedFocalPoint, @OnMoveFocalPoint, false, originPoint);
+      AEditor.AddArrow(ComputedFocalPoint, ComputedFocalPoint - (FXAxis - FOrigin) * (ComputedFocalRadius + 0.1), @OnMoveFocalRadius, false);
     end;
   end;
 end;
@@ -398,6 +401,7 @@ begin
   'reflected': FGradientType := gtReflected;
   'radial': FGradientType := gtRadial;
   'diamond': FGradientType := gtDiamond;
+  'angular': FGradientType := gtAngular;
   else {'linear'} FGradientType := gtLinear;
   end;
 
@@ -441,6 +445,7 @@ begin
   gtReflected: gtStr := 'reflected';
   gtRadial: gtStr := 'radial';
   gtDiamond: gtStr := 'diamond';
+  gtAngular: gtStr := 'angular';
   else {gtLinear} gtStr := 'linear';
   end;
   AStorage.RawString['gradient-type'] := gtStr;
@@ -448,7 +453,7 @@ begin
   AStorage.PointF['origin'] := FOrigin;
   AStorage.PointF['x-axis'] := FXAxis;
 
-  if FGradientType in[gtRadial,gtDiamond] then
+  if FGradientType in[gtRadial,gtDiamond,gtAngular] then
     AStorage.PointF['y-axis'] := FYAxis
   else
     AStorage.RemoveAttribute('y-axis');

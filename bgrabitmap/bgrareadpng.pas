@@ -133,6 +133,7 @@ Type
       property OriginalWidth: integer read GetOriginalWidth;
       property OriginalHeight: integer read GetOriginalHeight;
       function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
+      function GetBitmapDraft(AStream: TStream; {%H-}AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; override;
   end;
 
 implementation
@@ -194,8 +195,24 @@ begin
     result.alphaDepth := 0;
 end;
 
-procedure TBGRAReaderPNG.ReadChunk;
+function TBGRAReaderPNG.GetBitmapDraft(AStream: TStream; AMaxWidth,
+  AMaxHeight: integer; out AOriginalWidth, AOriginalHeight: integer): TBGRACustomBitmap;
+var
+  png: TBGRAReaderPNG;
+begin
+  png:= TBGRAReaderPNG.Create;
+  result := BGRABitmapFactory.Create;
+  try
+    png.MinifyHeight := AMaxHeight;
+    result.LoadFromStream(AStream, png);
+    AOriginalWidth:= result.Width;
+    AOriginalHeight:= png.OriginalHeight;
+  finally
+    png.Free;
+  end;
+end;
 
+procedure TBGRAReaderPNG.ReadChunk;
 var {%H-}ChunkHeader : TChunkHeader;
     readCRC : longword;
     l : longword;
@@ -727,7 +744,7 @@ begin
     end
 end;
 
-function TBGRAReaderPNG.ColorGray1 (const CD:TColorDAta) : TFPColor;
+function TBGRAReaderPNG.ColorGray1(const CD: TColorData): TFPColor;
 begin
   if CD = 0 then
     result := colBlack
@@ -735,7 +752,7 @@ begin
     result := colWhite;
 end;
 
-function TBGRAReaderPNG.ColorGray2 (const CD:TColorDAta) : TFPColor;
+function TBGRAReaderPNG.ColorGray2(const CD: TColorData): TFPColor;
 var c : NativeUint;
 begin
   c := CD and 3;
@@ -751,7 +768,7 @@ begin
     end;
 end;
 
-function TBGRAReaderPNG.ColorGray4 (const CD:TColorDAta) : TFPColor;
+function TBGRAReaderPNG.ColorGray4(const CD: TColorData): TFPColor;
 var c : NativeUint;
 begin
   c := CD and $F;
@@ -766,7 +783,7 @@ begin
     end;
 end;
 
-function TBGRAReaderPNG.ColorGray8 (const CD:TColorDAta) : TFPColor;
+function TBGRAReaderPNG.ColorGray8(const CD: TColorData): TFPColor;
 var c : NativeUint;
 begin
   c := CD and $FF;
@@ -780,7 +797,7 @@ begin
     end;
 end;
 
-function TBGRAReaderPNG.ColorGray16 (const CD:TColorDAta) : TFPColor;
+function TBGRAReaderPNG.ColorGray16(const CD: TColorData): TFPColor;
 var c : NativeUint;
 begin
   c := CD and $FFFF;

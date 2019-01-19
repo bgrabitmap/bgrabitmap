@@ -14,12 +14,12 @@ type TCustomPhongShading = class
    { Render the specified map on the destination bitmap with one solid color. Map altitude
      indicate the global height of the map. }
    procedure Draw(dest: TBGRACustomBitmap; map: TBGRACustomBitmap; mapAltitude: integer; ofsX,ofsY: integer;
-                  Color : TBGRAPixel); virtual; abstract;
+                  Color : TBGRAPixel);  overload; virtual; abstract;
 
    { Render with a color map of the same size as the height map. Map altitude
      indicate the global height of the map. }
    procedure Draw(dest: TBGRACustomBitmap; map: TBGRACustomBitmap; mapAltitude: integer; ofsX,ofsY: integer;
-                  ColorMap : TBGRACustomBitmap); virtual; abstract;
+                  ColorMap : TBGRACustomBitmap);  overload; virtual; abstract;
 
    { Render with a scanner. Map altitude
      indicate the global height of the map. }

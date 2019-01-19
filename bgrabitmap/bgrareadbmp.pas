@@ -124,6 +124,7 @@ type
       property OutputHeight: integer read FOutputHeight;
       property TransparencyOption: TBMPTransparencyOption read FTransparencyOption write FTransparencyOption;
       function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
+      function GetBitmapDraft(AStream: TStream; {%H-}AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; override;
   end;
 
 function MakeBitmapFileHeader(AData: TStream): TBitMapFileHeader;
@@ -275,8 +276,28 @@ begin
   end;
 end;
 
-procedure TBGRAReaderBMP.FreeBufs;
+function TBGRAReaderBMP.GetBitmapDraft(AStream: TStream; AMaxWidth,
+  AMaxHeight: integer; out AOriginalWidth, AOriginalHeight: integer): TBGRACustomBitmap;
+var
+  bmpFormat: TBGRAReaderBMP;
+  prevStreamPos: Int64;
+begin
+  bmpFormat:= TBGRAReaderBMP.Create;
+  bmpFormat.Subformat:= Subformat;
+  bmpFormat.MinifyHeight := AMaxHeight*2;
+  result := BGRABitmapFactory.Create;
+  prevStreamPos := AStream.Position;
+  try
+    result.LoadFromStream(AStream, bmpFormat);
+    AOriginalWidth:= result.Width;
+    AOriginalHeight:= bmpFormat.OriginalHeight;
+  finally
+    bmpFormat.Free;
+    AStream.Position := prevStreamPos;
+  end;
+end;
 
+procedure TBGRAReaderBMP.FreeBufs;
 begin
   If (LineBuf<>Nil) then
     begin

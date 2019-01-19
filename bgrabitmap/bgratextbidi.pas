@@ -127,8 +127,8 @@ type
     function GetPartEndCaret(APartIndex: integer): TBidiCaretPos;
 
     procedure AnalyzeLineStart(ADefaultRTL: boolean);
-    function GetSameLevelString(startIndex,endIndex: integer): string;
-    function GetSameLevelString(startIndex,endIndex: integer; out nonRemovedCount: integer): string;
+    function GetSameLevelString(startIndex,endIndex: integer): string; overload;
+    function GetSameLevelString(startIndex,endIndex: integer; out nonRemovedCount: integer): string; overload;
     procedure LevelSize(AMaxWidth: single; startIndex, endIndex: integer; bidiLevel: byte; out ASplitIndex: integer; out AWidth, AHeight: single);
     procedure ComputeLevelLayout(APos: TPointF; startIndex,
       endIndex: integer; bidiLevel: byte; fullHeight, baseLine: single; brokenLineIndex: integer;
@@ -139,15 +139,15 @@ type
     procedure InternalDrawText(ADest: TBGRACustomBitmap);
     procedure AnalyzeText;
   public
-    constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string);
-    constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean);
-    constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; AFontBidiMode: TFontBidiMode);
+    constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string); overload;
+    constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean); overload;
+    constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; AFontBidiMode: TFontBidiMode); overload;
     procedure SetLayout(ARect: TRectF);
     procedure InvalidateLayout;
 
-    procedure DrawText(ADest: TBGRACustomBitmap);
-    procedure DrawText(ADest: TBGRACustomBitmap; AColor: TBGRAPixel);
-    procedure DrawText(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner);
+    procedure DrawText(ADest: TBGRACustomBitmap); overload;
+    procedure DrawText(ADest: TBGRACustomBitmap; AColor: TBGRAPixel); overload;
+    procedure DrawText(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner); overload;
     procedure DrawCaret(ADest: TBGRACustomBitmap; ACharIndex: integer; AMainColor, ASecondaryColor: TBGRAPixel);
     procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer; AColor: TBGRAPixel);
 
@@ -1239,7 +1239,11 @@ begin
         FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
 
         pos.y += lineHeight;
-        if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then exit;
+        if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then
+        begin
+          FParagraph[paraIndex].rectF.Bottom := pos.y;
+          exit;
+        end;
       end;
     end;
     pos.y += paraSpacingBelow;

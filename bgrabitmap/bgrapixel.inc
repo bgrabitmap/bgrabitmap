@@ -100,9 +100,9 @@ const
   function SetIntensity(c: TBGRAPixel; intensity: word): TBGRAPixel;
   {** Returns the lightness of a pixel. The lightness is the
      perceived brightness, 0 being black and 65535 being white }
-  function GetLightness(c: TBGRAPixel): word;
+  function GetLightness(c: TBGRAPixel): word; overload;
   {** Sets the lightness of a pixel }
-  function SetLightness(c: TBGRAPixel; lightness: word): TBGRAPixel;
+  function SetLightness(c: TBGRAPixel; lightness: word): TBGRAPixel; overload;
   {** Sets the lightness quickly, by fading towards black if ''lightness'' is
       less than 32768, and fading towards white if ''lightness'' is more
       than 32768 }

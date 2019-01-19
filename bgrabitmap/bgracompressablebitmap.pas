@@ -46,8 +46,8 @@ type
      procedure Init;
    public
      CompressionLevel: Tcompressionlevel;
-     constructor Create;
-     constructor Create(Source: TBGRABitmap);
+     constructor Create; overload;
+     constructor Create(Source: TBGRABitmap); overload;
      function GetBitmap: TBGRABitmap;
 
      //call Compress as many times as necessary

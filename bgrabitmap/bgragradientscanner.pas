@@ -20,8 +20,8 @@ type
     FColor1,FColor2: TBGRAPixel;
     ec1,ec2: TExpandedPixel;
     FRepetition: TBGRAGradientRepetition;
-    constructor Create(AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition);
-    constructor Create(AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition);
+    constructor Create(AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition); overload;
+    constructor Create(AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition); overload;
     function InterpolateToBGRA(position: word): TBGRAPixel; virtual; abstract;
     function InterpolateToExpanded(position: word): TExpandedPixel; virtual; abstract;
   public
@@ -44,8 +44,8 @@ type
     function InterpolateToBGRA(position: word): TBGRAPixel; override;
     function InterpolateToExpanded(position: word): TExpandedPixel; override;
   public
-    constructor Create(Color1,Color2: TBGRAPixel; ARepetition: TBGRAGradientRepetition = grPad);
-    constructor Create(Color1,Color2: TExpandedPixel; ARepetition: TBGRAGradientRepetition = grPad);
+    constructor Create(Color1,Color2: TBGRAPixel; ARepetition: TBGRAGradientRepetition = grPad); overload;
+    constructor Create(Color1,Color2: TExpandedPixel; ARepetition: TBGRAGradientRepetition = grPad); overload;
   end;
 
   { TBGRASimpleGradientWithGammaCorrection }
@@ -55,8 +55,8 @@ type
     function InterpolateToBGRA(position: word): TBGRAPixel; override;
     function InterpolateToExpanded(position: word): TExpandedPixel; override;
   public
-    constructor Create(Color1,Color2: TBGRAPixel; ARepetition: TBGRAGradientRepetition = grPad);
-    constructor Create(Color1,Color2: TExpandedPixel; ARepetition: TBGRAGradientRepetition = grPad);
+    constructor Create(Color1,Color2: TBGRAPixel; ARepetition: TBGRAGradientRepetition = grPad); overload;
+    constructor Create(Color1,Color2: TExpandedPixel; ARepetition: TBGRAGradientRepetition = grPad); overload;
   end;
 
   THueGradientOption = (hgoRepeat, hgoReflect,                       //repetition
@@ -81,6 +81,7 @@ type
     constructor Create(Color1,Color2: TExpandedPixel; options: THueGradientOptions); overload;
     constructor Create(Color1,Color2: THSLAPixel; options: THueGradientOptions); overload;
     constructor Create(AHue1,AHue2: Word; Saturation,Lightness: Word; options: THueGradientOptions); overload;
+    function GetMonochrome: boolean; override;
   end;
 
   TGradientInterpolationFunction = function(t: single): single of object;
@@ -139,9 +140,9 @@ type
     FHorizColor: TBGRAPixel;
     FHorizExpandedColor: TExpandedPixel;
 
-    procedure Init(AGradientType: TGradientType; AOrigin, d1: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False);
-    procedure Init(AGradientType: TGradientType; AOrigin, d1, d2: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False);
-    procedure Init(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single; ATransform: TAffineMatrix; AHiddenTransform: TAffineMatrix);
+    procedure Init(AGradientType: TGradientType; AOrigin, d1: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False); overload;
+    procedure Init(AGradientType: TGradientType; AOrigin, d1, d2: TPointF; ATransform: TAffineMatrix; Sinus: Boolean=False); overload;
+    procedure Init(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single; ATransform: TAffineMatrix; AHiddenTransform: TAffineMatrix); overload;
 
     procedure InitGradientType;
     procedure InitTransform;
@@ -155,6 +156,7 @@ type
     function ScanNextRadial: single;
     function ScanNextRadial2: single;
     function ScanNextRadialFocal: single;
+    function ScanNextAngular: single;
 
     function ScanAtLinear(const p: TPointF): single;
     function ScanAtReflected(const p: TPointF): single;
@@ -162,6 +164,7 @@ type
     function ScanAtRadial(const p: TPointF): single;
     function ScanAtRadial2(const p: TPointF): single;
     function ScanAtRadialFocal(const p: TPointF): single;
+    function ScanAtAngular(const p: TPointF): single;
 
     function ScanNextInline: TBGRAPixel; inline;
     function ScanNextExpandedInline: TExpandedPixel; inline;
@@ -170,22 +173,22 @@ type
     function GetGradientColor(a: single): TBGRAPixel;
     function GetGradientExpandedColor(a: single): TExpandedPixel;
   public
-    constructor Create(AGradientType: TGradientType; AOrigin, d1: TPointF);
-    constructor Create(AGradientType: TGradientType; AOrigin, d1, d2: TPointF);
-    constructor Create(AOrigin, d1, d2, AFocal: TPointF; ARadiusRatio: single = 1; AFocalRadiusRatio: single = 0);
-    constructor Create(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single);
+    constructor Create(AGradientType: TGradientType; AOrigin, d1: TPointF); overload;
+    constructor Create(AGradientType: TGradientType; AOrigin, d1, d2: TPointF); overload;
+    constructor Create(AOrigin, d1, d2, AFocal: TPointF; ARadiusRatio: single = 1; AFocalRadiusRatio: single = 0); overload;
+    constructor Create(AOrigin: TPointF; ARadius: single; AFocal: TPointF; AFocalRadius: single); overload;
 
     constructor Create(c1, c2: TBGRAPixel; AGradientType: TGradientType; AOrigin, d1: TPointF;
-                       gammaColorCorrection: boolean = True; Sinus: Boolean=False);
+                       gammaColorCorrection: boolean = True; Sinus: Boolean=False); overload;
     constructor Create(c1, c2: TBGRAPixel; AGradientType: TGradientType; AOrigin, d1, d2: TPointF;
-                       gammaColorCorrection: boolean = True; Sinus: Boolean=False);
+                       gammaColorCorrection: boolean = True; Sinus: Boolean=False); overload;
 
     constructor Create(gradient: TBGRACustomGradient; AGradientType: TGradientType; AOrigin, d1: TPointF;
-                       Sinus: Boolean=False; AGradientOwner: Boolean=False);
+                       Sinus: Boolean=False; AGradientOwner: Boolean=False); overload;
     constructor Create(gradient: TBGRACustomGradient; AGradientType: TGradientType; AOrigin, d1, d2: TPointF;
-                       Sinus: Boolean=False; AGradientOwner: Boolean=False);
+                       Sinus: Boolean=False; AGradientOwner: Boolean=False); overload;
     constructor Create(gradient: TBGRACustomGradient; AOrigin: TPointF; ARadius: single; AFocal: TPointF;
-                       AFocalRadius: single; AGradientOwner: Boolean=False);
+                       AFocalRadius: single; AGradientOwner: Boolean=False); overload;
 
     procedure SetGradient(c1,c2: TBGRAPixel; AGammaCorrection: boolean = true); overload;
     procedure SetGradient(AGradient: TBGRACustomGradient; AOwner: boolean); overload;
@@ -627,6 +630,11 @@ constructor TBGRAHueGradient.Create(AHue1, AHue2: Word; Saturation,
   Lightness: Word; options: THueGradientOptions);
 begin
   Create(HSLA(AHue1,saturation,lightness), HSLA(AHue2,saturation,lightness), options);
+end;
+
+function TBGRAHueGradient.GetMonochrome: boolean;
+begin
+  Result:= false;
 end;
 
 { TBGRAMultiGradient }
@@ -1211,6 +1219,10 @@ begin
         maxW2 := MaxSingle;
       end;
     end;
+    gtAngular: begin
+      FScanNextFunc:= @ScanNextAngular;
+      FScanAtFunc:= @ScanAtAngular;
+    end;
   else
     {gtLinear:} begin
       FScanNextFunc:= @ScanNextLinear;
@@ -1268,14 +1280,14 @@ begin
   end;
 
   case FGradientType of
-    gtReflected: FRepeatHoriz := (u.x=0);
-    gtDiamond: FRepeatHoriz:= FIsAverage;
+    gtReflected: FRepeatHoriz := (FMatrix[1,1]=0);
+    gtDiamond,gtAngular: FRepeatHoriz:= FIsAverage;
     gtRadial: begin
       if FFocalRadius = FRadius then FIsAverage:= true;
       FRepeatHoriz:= FIsAverage;
     end
   else
-    {gtLinear:} FRepeatHoriz := (u.x=0);
+    {gtLinear:} FRepeatHoriz := (FMatrix[1,1]=0);
   end;
 
   if FGradient.Monochrome then
@@ -1348,6 +1360,14 @@ begin
   result := ComputeRadialFocal(FPosition);
 end;
 
+function TBGRAGradientScanner.ScanNextAngular: single;
+begin
+  if FPosition.y >= 0 then
+    result := arctan2(FPosition.y,FPosition.x)/(2*Pi)
+  else
+    result := 1-arctan2(-FPosition.y,FPosition.x)/(2*Pi)
+end;
+
 function TBGRAGradientScanner.ScanAtLinear(const p: TPointF): single;
 begin
   with (FMatrix*p) do
@@ -1381,6 +1401,17 @@ end;
 function TBGRAGradientScanner.ScanAtRadialFocal(const p: TPointF): single;
 begin
   result := ComputeRadialFocal(FMatrix*p);
+end;
+
+function TBGRAGradientScanner.ScanAtAngular(const p: TPointF): single;
+begin
+  with (FMatrix*p) do
+  begin
+    if y >= 0 then
+      result := arctan2(y,x)/(2*Pi)
+    else
+      result := 1-arctan2(-y,x)/(2*Pi)
+  end;
 end;
 
 function TBGRAGradientScanner.ScanNextInline: TBGRAPixel;

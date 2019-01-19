@@ -57,8 +57,8 @@ type
     procedure SetHeight(AValue: integer);
     procedure SetWidth(AValue: integer);
   public
-    constructor Create(Origin: TPoint; AWidth, AHeight: Longint);
-    constructor Create(ALeft, ATop, ARight, ABottom: Longint);
+    constructor Create(Origin: TPoint; AWidth, AHeight: Longint); overload;
+    constructor Create(ALeft, ATop, ARight, ABottom: Longint); overload;
     procedure Intersect(const ARect: TRect);
     procedure Offset(DX, DY: Longint);
     procedure Inflate(DX, DY: Longint);
@@ -85,14 +85,33 @@ type
 
   {$endif}
 
+const
+  EmptyPoint : TPoint = (X: -2147483648; Y: -2147483648);
+
+function IsEmptyPoint(const APoint: TPoint): boolean;
+
+type
+  TPointFHelper = record helper for TPointF
+    function Ceiling: TPoint;
+    function Truncate: TPoint;
+    function Floor: TPoint;
+    function Round: TPoint;
+    function Length: Single;
+  end;
+
 type
   PRectF = ^TRectF;
 
   { TRectFHelper }
 
   TRectFHelper = record helper for TRectF
+    class function Intersect(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
+    class function Union(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
+    class function Union(const R1: TRectF; const R2: TRectF; ADiscardEmpty: boolean): TRectF; overload; static;
     function Union(const r: TRectF):TRectF;
     function Union(const r: TRectF; ADiscardEmpty: boolean):TRectF;
+    function IntersectsWith(const r: TRectF): boolean;
+    function IsEmpty: boolean;
   end;
 
 const
@@ -120,9 +139,9 @@ type
   public
     TopLeft, TopRight,
     BottomLeft: TPointF;
-    class function EmptyBox: TAffineBox;
-    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
-    class function AffineBox(ARectF: TRectF): TAffineBox;
+    class function EmptyBox: TAffineBox; static;
+    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox; static; overload;
+    class function AffineBox(ARectF: TRectF): TAffineBox; static; overload;
     function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
     property RectBoundsF: TRectF read GetRectBoundsF;
@@ -141,7 +160,8 @@ type
 
   {----------------- Operators for TPointF --------------------}
   {** Creates a new structure with values ''x'' and ''y'' }
-  function PointF(x, y: single): TPointF;
+  function PointF(x, y: single): TPointF; overload;
+  function PointF(pt: TPoint): TPointF; overload;
   {** Checks if the structure is empty (equal to ''EmptyPointF'') }
   function isEmptyPointF(const pt: TPointF): boolean;
   {** Checks if both ''x'' and ''y'' are equal }
@@ -306,8 +326,8 @@ type
       procedure SetPenStyle(AValue: TPenStyle); virtual; abstract;
       procedure SetStrokeMatrix(const AValue: TAffineMatrix); virtual; abstract;
   public
-      function ComputePolyline(const APoints: array of TPointF; AWidth: single; AClosedCap: boolean = true): ArrayOfTPointF; virtual; abstract;
-      function ComputePolyline(const APoints: array of TPointF; AWidth: single; APenColor: TBGRAPixel; AClosedCap: boolean = true): ArrayOfTPointF; virtual; abstract;
+      function ComputePolyline(const APoints: array of TPointF; AWidth: single; AClosedCap: boolean = true): ArrayOfTPointF; overload; virtual; abstract;
+      function ComputePolyline(const APoints: array of TPointF; AWidth: single; APenColor: TBGRAPixel; AClosedCap: boolean = true): ArrayOfTPointF; overload; virtual; abstract;
       function ComputePolylineAutoCycle(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; virtual; abstract;
       function ComputePolygon(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; virtual; abstract;
       property Style: TPenStyle read GetPenStyle write SetPenStyle;
@@ -360,11 +380,11 @@ type
   {----------- Line and polygon functions -----------}
   {** Computes the intersection of two lines. If they are parallel, returns
       the middle of the segment between the two origins }
-  function IntersectLine(line1, line2: TLineDef): TPointF;
+  function IntersectLine(line1, line2: TLineDef): TPointF; overload;
   {** Computes the intersection of two lines. If they are parallel, returns
       the middle of the segment between the two origins. The value ''parallel''
       is set to indicate if the lines were parallel }
-  function IntersectLine(line1, line2: TLineDef; out parallel: boolean): TPointF;
+  function IntersectLine(line1, line2: TLineDef; out parallel: boolean): TPointF; overload;
   {** Checks if the polygon formed by the given points is convex. ''IgnoreAlign''
       specifies that if the points are aligned, it should still be considered as convex }
   function IsConvex(const pts: array of TPointF; IgnoreAlign: boolean = true): boolean;
@@ -401,9 +421,9 @@ type
     {** Copy the content of this path to the specified destination }
     procedure copyTo(dest: IBGRAPath);
     {** Returns the content of the path as an array of points }
-    function getPoints: ArrayOfTPointF;
+    function getPoints: ArrayOfTPointF; overload;
     {** Returns the content of the path as an array of points with the transformation specified by ''AMatrix'' }
-    function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF;
+    function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; overload;
     {** Returns a cursor to go through the path. The cursor must be freed by calling ''Free''. }
     function getCursor: TBGRACustomPathCursor;
   end;
@@ -570,11 +590,13 @@ type
     {** The color changes along a diamond shape }
     gtDiamond,
     {** The color changes in a radial way from a given center }
-    gtRadial);
+    gtRadial,
+    {** The color changes according to the angle relative to a given center }
+    gtAngular);
 const
   {** List of string to represent gradient types }
   GradientTypeStr : array[TGradientType] of string
-  = ('Linear','Reflected','Diamond','Radial');
+  = ('Linear','Reflected','Diamond','Radial','Angular');
   {** Returns the gradient type represented by the given string }
   function StrToGradientType(str: string): TGradientType;
 
@@ -716,26 +738,103 @@ end;
 
 {$ENDIF}
 
+function IsEmptyPoint(const APoint: TPoint): boolean;
+begin
+  result := (APoint.x = -2147483648) or (APoint.y = -2147483648);
+end;
+
+function TPointFHelper.Ceiling: TPoint;
+begin
+  if isEmptyPointF(self) then
+    result := EmptyPoint
+  else
+  begin
+    result.x:=ceil(x);
+    result.y:=ceil(y);
+  end;
+end;
+
+function TPointFHelper.Truncate: TPoint;
+begin
+  if isEmptyPointF(self) then
+    result := EmptyPoint
+  else
+  begin
+    result.x:=trunc(x);
+    result.y:=trunc(y);
+  end;
+end;
+
+function TPointFHelper.Floor: TPoint;
+begin
+  if isEmptyPointF(self) then
+    result := EmptyPoint
+  else
+  begin
+    result.x:=Math.floor(x);
+    result.y:=Math.floor(y);
+  end;
+end;
+
+function TPointFHelper.Round: TPoint;
+begin
+  if isEmptyPointF(self) then
+    result := EmptyPoint
+  else
+  begin
+    result.x:=System.round(x);
+    result.y:=System.round(y);
+  end;
+end;
+
+function TPointFHelper.Length: Single;
+begin
+  result:= VectLen(self);
+end;
+
+class function TRectFHelper.Intersect(const R1: TRectF; const R2: TRectF): TRectF;
+begin
+  result.left:=max(R1.left,R2.left);
+  result.top:=max(R1.top,R2.top);
+  result.right:=min(R1.right,R2.right);
+  result.bottom:=min(R1.bottom,R2.bottom);
+  if (result.left >= result.right) or (result.top >= result.bottom) then
+    result := EmptyRectF;
+end;
+
+class function TRectFHelper.Union(const R1: TRectF; const R2: TRectF): TRectF;
+begin
+  result.left:=min(R1.left,R2.left);
+  result.top:=min(R1.top,R2.top);
+  result.right:=max(R1.right,R2.right);
+  result.bottom:=max(R1.bottom,R2.bottom);
+end;
+
+class function TRectFHelper.Union(const R1: TRectF; const R2: TRectF; ADiscardEmpty: boolean): TRectF;
+begin
+  if ADiscardEmpty and IsEmptyRectF(R1) then result:= R2 else
+  if ADiscardEmpty and IsEmptyRectF(R2) then result:= R1 else
+    result := Union(R1,R2);
+end;
+
 function TRectFHelper.Union(const r: TRectF): TRectF;
 begin
-  result.left:=min(r.left,left);
-  result.top:=min(r.top,top);
-  result.right:=max(r.right,right);
-  result.bottom:=max(r.bottom,bottom);
+  result := TRectF.Union(self, r);
 end;
 
 function TRectFHelper.Union(const r: TRectF; ADiscardEmpty: boolean): TRectF;
 begin
-  if ADiscardEmpty then
-  begin
-    if IsEmptyRectF(r) then
-      result:= self
-    else if IsEmptyRectF(self) then
-      result:= r
-    else
-      result := self.Union(r);
-  end else
-    result := self.Union(r);
+  result := TRectF.Union(self, r, ADiscardEmpty);
+end;
+
+function TRectFHelper.IntersectsWith(const r: TRectF): boolean;
+begin
+  result:= not TRectF.Intersect(self, r).IsEmpty;
+end;
+
+function TRectFHelper.IsEmpty: boolean;
+begin
+  result:= IsEmptyRectF(self);
 end;
 
 { TAffineBox }
@@ -1174,6 +1273,17 @@ begin
   Result.y := y;
 end;
 
+function PointF(pt: TPoint): TPointF;
+begin
+  if IsEmptyPoint(pt) then
+    result:= EmptyPointF
+  else
+  begin
+    Result.x := pt.x;
+    Result.y := pt.y;
+  end;
+end;
+
 function PointsF(const pts: array of TPointF): ArrayOfTPointF;
 var
   i: Integer;
@@ -1203,7 +1313,10 @@ end;
 
 function VectLen(v: TPointF): single;
 begin
-  result := sqrt(v*v);
+  if isEmptyPointF(v) then
+    result := EmptySingle
+  else
+    result := sqrt(v*v);
 end;
 
 function VectDet(v1, v2: TPointF): double;
