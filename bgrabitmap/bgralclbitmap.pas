@@ -23,6 +23,7 @@ type
     procedure ExtractXorMask;
   public
     procedure Assign(Source: TPersistent); override;
+    procedure LoadFromResource(AFilename: string; AOptions: TBGRALoadingOptions); overload; override;
     procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
       AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure DataDrawOpaque(ACanvas: TCanvas; ARect: TRect; AData: Pointer;
@@ -54,7 +55,7 @@ type
 
 implementation
 
-uses BGRAText, LCLType, LCLIntf, FPimage;
+uses Types, BGRAText, LCLType, LCLIntf, FPimage;
 
 type
   TCopyPixelProc = procedure (psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
@@ -807,6 +808,33 @@ begin
     HotSpot := Point(0,0);
     ExtractXorMask;
   end;
+end;
+
+procedure TBGRALCLBitmap.LoadFromResource(AFilename: string;
+  AOptions: TBGRALoadingOptions);
+var
+  icon: TCustomIcon;
+  ext: String;
+begin
+  if BGRAResource.IsWinResource(AFilename) then
+  begin
+    ext:= Uppercase(ExtractFileExt(AFilename));
+    if (ext = '.ICO') or (ext = '.CUR') then
+    begin
+      if ext= '.ICO' then icon := TIcon.Create
+      else icon := TCursorImage.Create;
+      try
+        icon.LoadFromResourceName(HInstance, ChangeFileExt(AFilename,''));
+        icon.Current:= icon.GetBestIndexForSize(Size(65536,65536));
+        self.AssignRasterImage(icon);
+      finally
+        icon.Free;
+      end;
+      exit;
+    end;
+  end;
+
+  inherited LoadFromResource(AFilename, AOptions);
 end;
 
 procedure TBGRALCLBitmap.AssignRasterImage(ARaster: TRasterImage);

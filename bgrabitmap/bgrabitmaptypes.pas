@@ -32,7 +32,7 @@ interface
 
 uses
   Classes, Types, BGRAGraphics,
-  FPImage, FPImgCanv{$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType{$ENDIF},
+  FPImage, FPImgCanv{$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
   BGRAMultiFileType;
 
 type
@@ -496,6 +496,20 @@ var
 {$I bgracustombitmap.inc}
 
 operator =(const AGuid1, AGuid2: TGuid): boolean;
+
+type
+  { TBGRAResourceManager }
+
+  TBGRAResourceManager = class
+  protected
+    function GetWinResourceType(AExtension: string): pchar;
+  public
+    function GetResourceStream(AFilename: string): TStream; virtual;
+    function IsWinResource(AFilename: string): boolean; virtual;
+  end;
+
+var
+  BGRAResource : TBGRAResourceManager;
 
 implementation
 
@@ -1140,6 +1154,111 @@ begin
   result := CompareMem(@AGuid1, @AGuid2, sizeof(TGuid));
 end;
 
+type
+  TResourceType = record
+    ext: string;
+    code: pchar;
+  end;
+
+const
+  ResourceTypes: array[1..11] of TResourceType =
+   ((ext: 'CUR'; code: RT_GROUP_CURSOR),
+    (ext: 'BMP'; code: RT_BITMAP),
+    (ext: 'ICO'; code: RT_GROUP_ICON),
+    (ext: 'DAT'; code: RT_RCDATA),
+    (ext: 'DATA'; code: RT_RCDATA),
+    (ext: 'HTM'; code: RT_HTML),
+    (ext: 'HTML'; code: RT_HTML));
+
+{ TBGRAResourceManager }
+
+function TBGRAResourceManager.GetWinResourceType(AExtension: string): pchar;
+var
+  i: Integer;
+begin
+  if (AExtension <> '') and (AExtension[1]='.') then delete(AExtension,1,1);
+  for i := low(ResourceTypes) to high(ResourceTypes) do
+    if AExtension = ResourceTypes[i].ext then
+      exit(ResourceTypes[i].code);
+
+  exit(RT_RCDATA);
+end;
+
+function TBGRAResourceManager.GetResourceStream(AFilename: string): TStream;
+var
+  name,ext: RawByteString;
+  i: Integer;
+  rt: PChar;
+begin
+  ext := UpperCase(ExtractFileExt(AFilename));
+  name := ChangeFileExt(AFilename,'');
+  rt := GetWinResourceType(ext);
+
+  if (rt = RT_GROUP_CURSOR) or (rt = RT_GROUP_ICON) then
+    raise exception.Create('Not implemented');
+
+  result := TResourceStream.Create(HINSTANCE, name, rt);
+end;
+
+function TBGRAResourceManager.IsWinResource(AFilename: string): boolean;
+var
+  name,ext: RawByteString;
+  i: Integer;
+  rt: PChar;
+begin
+  ext := UpperCase(ExtractFileExt(AFilename));
+  name := ChangeFileExt(AFilename,'');
+  rt := GetWinResourceType(ext);
+  result := FindResource(HINSTANCE, pchar(name), rt)<>0;
+end;
+
+{$IFDEF BGRABITMAP_USE_LCL}
+type
+
+  { TLCLResourceManager }
+
+  TLCLResourceManager = class(TBGRAResourceManager)
+  protected
+    function FindLazarusResource(AFilename: string): TLResource;
+  public
+    function GetResourceStream(AFilename: string): TStream; override;
+    function IsWinResource(AFilename: string): boolean; override;
+  end;
+
+function TLCLResourceManager.FindLazarusResource(AFilename: string): TLResource;
+var
+  name,ext: RawByteString;
+begin
+  ext := UpperCase(ExtractFileExt(AFilename));
+  if (ext<>'') and (ext[1]='.') then Delete(ext,1,1);
+  name := ChangeFileExt(AFilename,'');
+  if ext<>'' then
+    result := LazarusResources.Find(name,ext)
+  else
+    result := LazarusResources.Find(name);
+end;
+
+function TLCLResourceManager.GetResourceStream(AFilename: string): TStream;
+var
+  res: TLResource;
+begin
+  res := FindLazarusResource(AFilename);
+  if Assigned(res) then
+    result := TLazarusResourceStream.CreateFromHandle(res)
+  else
+    result := inherited GetResourceStream(AFilename);
+end;
+
+function TLCLResourceManager.IsWinResource(AFilename: string): boolean;
+begin
+  if FindLazarusResource(AFilename)<>nil then
+    result := false
+  else
+    Result:=inherited IsWinResource(AFilename);
+end;
+
+{$ENDIF}
+
 initialization
 
   {$DEFINE INCLUDE_INIT}
@@ -1160,6 +1279,12 @@ initialization
   DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;
   //the other readers are registered by their unit
 
+  {$IFDEF BGRABITMAP_USE_LCL}
+  BGRAResource := TLCLResourceManager.Create;
+  {$ELSE}
+  BGRAResource := TBGRAResourceManager.Create;
+  {$ENDIF}
+
 finalization
 
   {$DEFINE INCLUDE_FINAL}
@@ -1167,4 +1292,6 @@ finalization
 
   {$DEFINE INCLUDE_FINAL}
   {$I bgrapixel.inc}
+
+  BGRAResource.Free;
 end.

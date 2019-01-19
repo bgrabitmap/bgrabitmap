@@ -108,6 +108,7 @@ type
     {TGraphic}
     procedure LoadFromStream(Stream: TStream); overload; override;
     procedure LoadFromStream(Stream: TStream; AMaxImageCount: integer); overload;
+    procedure LoadFromResource(AFilename: string);
     procedure SaveToStream(Stream: TStream); overload; override;
     procedure LoadFromFile(const AFilenameUTF8: string); override;
     procedure SaveToFile(const AFilenameUTF8: string); override;
@@ -658,6 +659,18 @@ begin
   begin
     FImages[i] := data.Images[i];
     FTotalAnimationTime += FImages[i].DelayMs;
+  end;
+end;
+
+procedure TBGRAAnimatedGif.LoadFromResource(AFilename: string);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(stream);
+  finally
+    stream.Free;
   end;
 end;
 

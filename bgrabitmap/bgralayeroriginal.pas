@@ -146,6 +146,7 @@ type
     procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); virtual; abstract;
     procedure LoadFromFile(AFilenameUTF8: string); virtual;
     procedure LoadFromStream(AStream: TStream); virtual;
+    procedure LoadFromResource(AFilename: string);
     procedure SaveToFile(AFilenameUTF8: string); virtual;
     procedure SaveToStream(AStream: TStream); virtual;
     function CreateEditor: TBGRAOriginalEditor; virtual;
@@ -250,6 +251,7 @@ type
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); override;
     procedure SaveToStream(AStream: TStream);
     procedure LoadFromStream(AStream: TStream);
+    procedure LoadFromResource(AFilename: string);
     procedure CopyTo(AMemDir: TMemDirectory);
   end;
 
@@ -1041,6 +1043,11 @@ begin
   FMemDir.LoadFromStream(AStream);
 end;
 
+procedure TBGRAMemOriginalStorage.LoadFromResource(AFilename: string);
+begin
+  FMemDir.LoadFromResource(AFilename);
+end;
+
 procedure TBGRAMemOriginalStorage.CopyTo(AMemDir: TMemDirectory);
 begin
   FMemDir.CopyTo(AMemDir, true);
@@ -1283,6 +1290,18 @@ begin
   finally
     storage.Free;
     memDir.Free;
+  end;
+end;
+
+procedure TBGRALayerCustomOriginal.LoadFromResource(AFilename: string);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(stream);
+  finally
+    stream.Free;
   end;
 end;
 

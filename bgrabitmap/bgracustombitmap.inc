@@ -381,6 +381,12 @@ type
      {** Load image from a stream. The specified image reader is used }
      procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader);overload; virtual;
      procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions);overload; virtual;
+     {** Load image from an embedded Lazarus resource. Format is detected automatically }
+     procedure LoadFromResource(AFilename: string); overload; virtual;
+     procedure LoadFromResource(AFilename: string; AOptions: TBGRALoadingOptions); overload; virtual; abstract;
+     {** Load image from an embedded Lazarus resource. The specified image reader is used }
+     procedure LoadFromResource(AFilename: string; Handler: TFPCustomImageReader); overload; virtual;
+     procedure LoadFromResource(AFilename: string; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); overload; virtual;
 
      {** Save image to a file. The format is guessed from the file extension. ''filename'' is an ANSI string }
      procedure SaveToFile(const filename: string);overload; virtual;
@@ -1368,6 +1374,30 @@ begin
       ClearTransparentPixels;
   finally
     CanvasDrawModeFP := OldDrawMode;
+  end;
+end;
+
+procedure TBGRACustomBitmap.LoadFromResource(AFilename: string);
+begin
+  LoadFromResource(AFilename, [loKeepTransparentRGB]);
+end;
+
+procedure TBGRACustomBitmap.LoadFromResource(AFilename: string;
+  Handler: TFPCustomImageReader);
+begin
+  LoadFromResource(AFilename, Handler, [loKeepTransparentRGB]);
+end;
+
+procedure TBGRACustomBitmap.LoadFromResource(AFilename: string;
+  Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(stream,Handler,AOptions);
+  finally
+    stream.Free;
   end;
 end;
 

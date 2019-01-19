@@ -303,6 +303,9 @@ type
     {** Load image from a stream. The specified image reader is used }
     procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); overload; override;
 
+    {** Load image from an embedded Lazarus resource. Format is detected automatically }
+    procedure LoadFromResource(AFilename: string; AOptions: TBGRALoadingOptions); overload; override;
+
     {** Assign the content of the specified ''Source''. It can be a ''TBGRACustomBitmap'' or
         a ''TFPCustomImage'' }
     procedure Assign(Source: TPersistent); overload; override;
@@ -1410,6 +1413,38 @@ begin
     TBGRAReaderJpeg(Handler).Performance := OldJpegPerf;
   end else
     inherited LoadFromStream(Str, Handler, AOptions);
+end;
+
+procedure TBGRADefaultBitmap.LoadFromResource(AFilename: string;
+  AOptions: TBGRALoadingOptions);
+var
+  stream: TStream;
+  format: TBGRAImageFormat;
+  reader: TFPCustomImageReader;
+  magic: array[1..2] of char;
+  startPos: Int64;
+  ext: String;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    ext := Uppercase(ExtractFileExt(AFilename));
+    if (ext = '.BMP') and BGRAResource.IsWinResource(AFilename) then
+    begin
+      reader := TBGRAReaderBMP.Create;
+      TBGRAReaderBMP(reader).Subformat := bsfHeaderless;
+    end else
+    begin
+      format := DetectFileFormat(stream, ext);
+      reader := CreateBGRAImageReader(format);
+    end;
+    try
+      LoadFromStream(stream, reader, AOptions);
+    finally
+      reader.Free;
+    end;
+  finally
+    stream.Free;
+  end;
 end;
 
 {----------------------- TFPCustomImage override ------------------------------}

@@ -104,6 +104,7 @@ type
     function RemoveColor(AValue: TBGRAPixel): boolean; virtual;
     procedure LoadFromFile(AFilenameUTF8: string); virtual;
     procedure LoadFromStream(AStream: TStream; AFormat: TBGRAPaletteFormat); virtual;
+    procedure LoadFromResource(AFilename: string; AFormat: TBGRAPaletteFormat);
     procedure SaveToFile(AFilenameUTF8: string); virtual;
     procedure SaveToStream(AStream: TStream; AFormat: TBGRAPaletteFormat); virtual;
     function DetectPaletteFormat(AStream: TStream): TBGRAPaletteFormat; overload; virtual;
@@ -1290,6 +1291,18 @@ begin
     if not handled then ExceptionUnknownPaletteFormat;
   finally
     buf.Free;
+  end;
+end;
+
+procedure TBGRAPalette.LoadFromResource(AFilename: string; AFormat: TBGRAPaletteFormat);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(stream, AFormat);
+  finally
+    stream.Free;
   end;
 end;
 

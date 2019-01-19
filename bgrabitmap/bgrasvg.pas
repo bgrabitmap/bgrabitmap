@@ -137,6 +137,7 @@ type
     destructor Destroy; override;
     procedure LoadFromFile(AFilenameUTF8: string);
     procedure LoadFromStream(AStream: TStream);
+    procedure LoadFromResource(AFilename: string);
     procedure SaveToFile(AFilenameUTF8: string);
     procedure SaveToStream(AStream: TStream);
     procedure Draw(ACanvas2d: TBGRACanvas2D; AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y: single; AUnit: TCSSUnit = cuPixel); overload;
@@ -900,6 +901,18 @@ begin
   FUnits.OnRecompute:= @UnitsRecompute;
   FDataLink := TSVGDataLink.Create;
   FContent := TSVGContent.Create(FXml,FRoot,FUnits,FDataLink,nil);
+end;
+
+procedure TBGRASVG.LoadFromResource(AFilename: string);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(stream);
+  finally
+    stream.Free;
+  end;
 end;
 
 procedure TBGRASVG.SaveToFile(AFilenameUTF8: string);

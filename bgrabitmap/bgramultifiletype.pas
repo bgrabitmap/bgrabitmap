@@ -83,6 +83,7 @@ type
     destructor Destroy; override;
     procedure LoadFromFile(AFilename: utf8string);
     procedure LoadFromStream(AStream: TStream); virtual; abstract;
+    procedure LoadFromResource(AFilename: string); virtual;
     procedure SaveToFile(AFilename: utf8string);
     procedure SaveToStream(ADestination: TStream); virtual; abstract;
     procedure Remove(AEntry: TMultiFileEntry); virtual;
@@ -100,7 +101,7 @@ type
 
 implementation
 
-uses BGRAUTF8, strutils;
+uses BGRAUTF8, strutils, BGRABitmapTypes;
 
 { TEntryFilename }
 
@@ -354,6 +355,18 @@ begin
   stream := TFileStream.Create(Utf8ToAnsi(AFilename), fmOpenRead);
   LoadFromStream(stream);
   stream.Free;
+end;
+
+procedure TMultiFileContainer.LoadFromResource(AFilename: string);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(stream);
+  finally
+    stream.Free;
+  end;
 end;
 
 procedure TMultiFileContainer.SaveToFile(AFilename: utf8string);

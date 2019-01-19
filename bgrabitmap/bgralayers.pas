@@ -211,6 +211,7 @@ type
   public
     procedure LoadFromFile(const filenameUTF8: string); override;
     procedure LoadFromStream(stream: TStream); override;
+    procedure LoadFromResource(AFilename: string);
     procedure SetSize(AWidth, AHeight: integer); virtual;
     procedure Clear; override;
     procedure ClearOriginals;
@@ -904,6 +905,18 @@ begin
   Clear;
   SetSize(bmp.Width,bmp.Height);
   AddOwnedLayer(bmp);
+end;
+
+procedure TBGRALayeredBitmap.LoadFromResource(AFilename: string);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(stream);
+  finally
+    stream.Free;
+  end;
 end;
 
 procedure TBGRALayeredBitmap.SetSize(AWidth, AHeight: integer);
