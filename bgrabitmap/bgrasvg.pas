@@ -321,7 +321,6 @@ procedure RegisterSvgFormat;
 begin
   if AlreadyRegistered then exit;
   ImageHandlers.RegisterImageReader ('Scalable Vector Graphic', 'svg', TFPReaderSVG);
-  DefaultBGRAImageReader[ifSvg] := TFPReaderSVG;
   AlreadyRegistered:= True;
 end;
 
@@ -1063,6 +1062,10 @@ begin
 
   result := Units.GetStretchRectF(RectF(sx,sy,sx+sw,sy+sh), preserveAspectRatio);
 end;
+
+initialization
+
+  DefaultBGRAImageReader[ifSvg] := TFPReaderSVG;
 
 end.
 
