@@ -22,7 +22,7 @@ type
     function GetFileSize: int64; override;
   public
     constructor Create(AContainer: TMultiFileContainer; AExtension: string; AInfo: TQuickImageInfo; AContent: TStream);
-    class function TryCreate(AContainer: TMultiFileContainer; AContent: TStream): TBGRAIconCursorEntry;
+    class function TryCreate(AContainer: TMultiFileContainer; AContent: TStream): TBGRAIconCursorEntry; static;
     destructor Destroy; override;
     function CopyTo(ADestination: TStream): int64; override;
     function GetBitmap: TBGRACustomBitmap;

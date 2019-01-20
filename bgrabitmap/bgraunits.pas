@@ -52,10 +52,10 @@ type
     function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): TFloatWithCSSUnit; overload;
     function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): TFloatWithCSSUnit; overload;
     function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TPointF; virtual;
-    class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
-    class function parseValue(AValue: string; ADefault: single): single; overload;
-    class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string; overload;
-    class function formatValue(AValue: single; APrecision: integer = 7): string; overload;
+    class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload; static;
+    class function parseValue(AValue: string; ADefault: single): single; overload; static;
+    class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string; overload; static;
+    class function formatValue(AValue: single; APrecision: integer = 7): string; overload; static;
     property DpiX: single read GetDpiX;
     property DpiY: single read GetDpiY;
     property DpiScaled: boolean read GetDPIScaled;

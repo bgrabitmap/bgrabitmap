@@ -16,7 +16,7 @@ type
       procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;
       function InternalCheck(Str: TStream): boolean; override;
     public
-      class procedure ConvertToXPM3(ASource: TStream; ADestination: TStream);
+      class procedure ConvertToXPM3(ASource: TStream; ADestination: TStream); static;
   end;
 
 implementation

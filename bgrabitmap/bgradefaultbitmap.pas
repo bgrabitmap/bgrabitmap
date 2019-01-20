@@ -315,7 +315,7 @@ type
     {** Reads the image in a stream that was previously serialized }
     procedure Deserialize(AStream: TStream); override;
     {** Stores an empty image (of size zero) }
-    class procedure SerializeEmpty(AStream: TStream);
+    class procedure SerializeEmpty(AStream: TStream); static;
 
     {* Example:
        <syntaxhighlight>

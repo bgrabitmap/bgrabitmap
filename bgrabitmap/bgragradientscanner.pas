@@ -25,8 +25,8 @@ type
     function InterpolateToBGRA(position: word): TBGRAPixel; virtual; abstract;
     function InterpolateToExpanded(position: word): TExpandedPixel; virtual; abstract;
   public
-    class function CreateAny(AInterpolation: TBGRAColorInterpolation; AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition): TBGRASimpleGradient; overload;
-    class function CreateAny(AInterpolation: TBGRAColorInterpolation; AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition): TBGRASimpleGradient; overload;
+    class function CreateAny(AInterpolation: TBGRAColorInterpolation; AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition): TBGRASimpleGradient; overload; static;
+    class function CreateAny(AInterpolation: TBGRAColorInterpolation; AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition): TBGRASimpleGradient; overload; static;
     function GetColorAt(position: integer): TBGRAPixel; override;
     function GetColorAtF(position: single): TBGRAPixel; override;
     function GetExpandedColorAt(position: integer): TExpandedPixel; override;

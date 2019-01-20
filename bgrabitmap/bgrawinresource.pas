@@ -57,7 +57,7 @@ type
 
   TCustomResourceEntry = class(TMultiFileEntry)
   private
-    class function GetNextEntry(AContainer: TMultiFileContainer; AStream: TStream): TCustomResourceEntry;
+    class function GetNextEntry(AContainer: TMultiFileContainer; AStream: TStream): TCustomResourceEntry; static;
     procedure Serialize(ADestination: TStream);
   protected
     FTypeNameOrId: TNameOrId;

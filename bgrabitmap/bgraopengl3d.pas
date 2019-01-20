@@ -260,7 +260,7 @@ type
     FTextureUniform: TUniformVariableInteger;
     procedure StartUse; override;
   public
-    class function GetCodeForTextureColor: string;
+    class function GetCodeForTextureColor: string; static;
     constructor Create(ACanvas: TBGLCustomCanvas; AFragmentShader: string; ATexture: integer = 0);
     property Texture: integer read GetTexture write SetTexture;
   end;

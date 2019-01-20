@@ -19,7 +19,7 @@ type
   protected
     FIdentifier: string;
     procedure WriteHeader(AStream: TStream; AName: string; AContentSize: longint);
-    class procedure ReadHeader(AStream: TStream; out AName: string; out AContentSize: longint);
+    class procedure ReadHeader(AStream: TStream; out AName: string; out AContentSize: longint); static;
     function ContentSize: integer; virtual;
     function HeaderName: string; virtual;
     procedure WriteContent(AStream: TStream); virtual;
@@ -31,7 +31,7 @@ type
     procedure Path({%H-}ADest: IBGRAPath; {%H-}AMatrix: TAffineMatrix); virtual;
     property Identifier: string read FIdentifier;
     procedure SaveToStream(AStream: TStream);
-    class function LoadFromStream(AStream: TStream): TBGRAGlyph;
+    class function LoadFromStream(AStream: TStream): TBGRAGlyph; static;
   end;
 
   TGlyphPointCurveMode= TEasyBezierCurveMode;

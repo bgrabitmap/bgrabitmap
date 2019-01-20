@@ -140,8 +140,8 @@ type
     TopLeft, TopRight,
     BottomLeft: TPointF;
     class function EmptyBox: TAffineBox; static;
-    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox; static; overload;
-    class function AffineBox(ARectF: TRectF): TAffineBox; static; overload;
+    class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox; overload; static;
+    class function AffineBox(ARectF: TRectF): TAffineBox; overload; static;
     function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
     property RectBoundsF: TRectF read GetRectBoundsF;

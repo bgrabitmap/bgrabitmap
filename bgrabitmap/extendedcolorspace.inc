@@ -141,12 +141,12 @@ type
     class var FColorspaceCount: integer;
     class var FColorspaceConversions: array of array of TColorspaceConvertArrayProc;
   public
-    class function GetCount: integer;
-    class function GetItem(AIndex: integer): TColorspaceAny;
-    class function IndexOf(AColorspace: TColorspaceAny): integer;
-    class procedure Add(AColorspace: TColorspaceAny);
-    class procedure AddConversion(ASource: TColorspaceAny; ADest: TColorspaceAny; AConversion: TColorspaceConvertArrayProc);
-    class function GetConversion(ASource: TColorspaceAny; ADest: TColorspaceAny): TColorspaceConvertArrayProc;
+    class function GetCount: integer; static;
+    class function GetItem(AIndex: integer): TColorspaceAny; static;
+    class function IndexOf(AColorspace: TColorspaceAny): integer; static;
+    class procedure Add(AColorspace: TColorspaceAny); static;
+    class procedure AddConversion(ASource: TColorspaceAny; ADest: TColorspaceAny; AConversion: TColorspaceConvertArrayProc); static;
+    class function GetConversion(ASource: TColorspaceAny; ADest: TColorspaceAny): TColorspaceConvertArrayProc; static;
   end;
 
 {$DEFINE INCLUDE_INTERFACE}

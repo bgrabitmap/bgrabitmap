@@ -25,7 +25,7 @@ type
     public
       Caption: string;
       constructor Create; override;
-      class procedure WriteRLEImage(Str: TStream; Img: TFPCustomImage; ACaption: string= '');
+      class procedure WriteRLEImage(Str: TStream; Img: TFPCustomImage; ACaption: string= ''); static;
       property Compression: TLzpCompression read GetCompression write SetCompression;
       property IncludeThumbnail: boolean read GetIncludeThumbnail write SetIncludeThumbnail;
   end;
