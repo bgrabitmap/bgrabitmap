@@ -615,7 +615,7 @@ var c,f: TPointF;
     d := VectLen(u);
     if d >= r then
     begin
-      u *= (r/d)*0.99999;
+      u.Scale( (r/d)*0.99999 );
       f := c+u;
     end;
     FCanvasGradient:= ACanvas2d.createRadialGradient(c,r,f,fr,true);

@@ -518,7 +518,7 @@ function TBGRARenderer3D.RenderFace(var ADescription: TFaceRenderingDescription;
       end;
       with FCenter do
       begin
-        pos3D *= (1/NbVertices);
+        pos3D.Scale(1/NbVertices);
         Normalize3D_128(normal3D);
       end;
     end;

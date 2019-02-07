@@ -861,7 +861,7 @@ var
         PtCenter3D.Offset(Positions3D[j]);
         NormalCenter3D.Offset(Normals3D[j]);
       end;
-      PtCenter3D *= (1/NbVertices);
+      PtCenter3D.Scale(1/NbVertices);
       Normalize3D_128(NormalCenter3D);
       ColorCenter := MergeBGRA(slice(Colors,NbVertices));
     end;

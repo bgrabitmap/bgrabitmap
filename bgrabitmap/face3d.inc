@@ -474,7 +474,7 @@ begin
   begin
     for i := 0 to FVertexCount-1 do
       FViewCenter.Offset(FVertices[i].Vertex.ViewCoord_128);
-    FViewCenter *= 1/FVertexCount;
+    FViewCenter.Scale(1/FVertexCount);
   end;
 end;
 

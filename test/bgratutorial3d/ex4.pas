@@ -144,7 +144,7 @@ begin
             rotated.Add(Vertex[i]);
             rotateCenter.Offset(Vertex[i].SceneCoord);
           end;
-      rotateCenter *= 1/rotated.VertexCount;
+      rotateCenter.Scale(1/rotated.VertexCount);
       obj.SeparatePart(rotated);
       obj.MainPart.Scale(2,2,2);
     end;

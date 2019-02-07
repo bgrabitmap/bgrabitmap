@@ -99,6 +99,7 @@ type
     procedure Offset(const apt : TPoint); overload;
     procedure Offset(dx,dy : longint); overload;
     procedure Offset(dx,dy : single); overload;
+    procedure Scale(AScale: single);
 
     function Ceiling: TPoint;
     function Truncate: TPoint;
@@ -356,6 +357,7 @@ type
   TPoint3D = record
     x,y,z: single;
     procedure Offset(const point3D: TPoint3D);
+    procedure Scale(AScale: single);
   end;
 
   {----------------- Operators for TPoint3D ---------------}
@@ -780,6 +782,15 @@ begin
   self.y += dy;
 end;
 
+procedure TPointFHelper.Scale(AScale: single);
+begin
+  if not isEmptyPointF(self) then
+  begin
+    self.x *= AScale;
+    self.y *= AScale;
+  end;
+end;
+
 function TPointFHelper.Ceiling: TPoint;
 begin
   if isEmptyPointF(self) then
@@ -937,7 +948,7 @@ begin
   u := TopRight-TopLeft;
   lenU := VectLen(u);
   if lenU = 0 then exit(0);
-  u *= 1/lenU;
+  u.Scale(1/lenU);
   v := BottomLeft-TopLeft;
   lenH := PointF(-u.y,u.x)*v;
   result := abs(lenU*lenH);
@@ -1213,6 +1224,13 @@ begin
   self.x += point3d.x;
   self.y += point3d.y;
   self.z += point3d.z;
+end;
+
+procedure TPoint3D.Scale(AScale: single);
+begin
+  self.x *= AScale;
+  self.y *= AScale;
+  self.z *= AScale;
 end;
 
 function Point3D(x, y, z: single): TPoint3D;
@@ -1501,23 +1519,23 @@ begin
   { Determine line definitions }
   seg1.origin := pt1;
   seg1.dir := pt2-pt1;
-  seg1len := sqrt(sqr(seg1.dir.X)+sqr(seg1.dir.Y));
+  seg1len := VectLen(seg1.dir);
   if seg1len = 0 then
   begin
     result := false;
     exit;
   end;
-  seg1.dir *= 1/seg1len;
+  seg1.dir.Scale(1/seg1len);
 
   seg2.origin := pt3;
   seg2.dir := pt4-pt3;
-  seg2len := sqrt(sqr(seg2.dir.X)+sqr(seg2.dir.Y));
+  seg2len := VectLen(seg2.dir);
   if seg2len = 0 then
   begin
     result := false;
     exit;
   end;
-  seg2.dir *= 1/seg2len;
+  seg2.dir.Scale(1/seg2len);
 
   //obviously parallel
   if seg1.dir = seg2.dir then

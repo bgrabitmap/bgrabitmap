@@ -1188,8 +1188,8 @@ begin
     for i := high(pts) downto 1 do
     begin
       dir := pts[i-1]-pts[i];
-      len := sqrt(dir*dir);
-      dir *= 1/len;
+      len := VectLen(dir);
+      dir.Scale(1/len);
       if not endArrowDone and (linePos+len >= wantedEndArrowPos) then
       begin
         endArrowPos := pts[i];
@@ -1209,8 +1209,8 @@ begin
   for i := 0 to high(pts)-1 do
   begin
     dir := pts[i+1]-pts[i];
-    len := sqrt(dir*dir);
-    dir *= 1/len;
+    len := VectLen(dir);
+    dir.Scale(1/len);
     if not startArrowDone and (linePos+len >= wantedStartArrowPos) then
     begin
       startArrowPos := pts[i];
@@ -1229,8 +1229,8 @@ begin
 
       //length changed
       dir := pts[i+1]-pts[i];
-      len := sqrt(dir*dir);
-      dir *= 1/len;
+      len := VectLen(dir);
+      dir.Scale(1/len);
     end else
     if not (plNoStartCap in options) and (linecap = pecRound) and (i=0) and not (plCycle in options) then
       AddRoundCap(pts[0], -dir ,true);
@@ -1339,10 +1339,10 @@ begin
       //rightside join
       rightInter := IntersectLine( borders[i].rightSide, borders[i+1].rightSide );
       diff := rightInter-pts[i+1];
-      len := sqrt(diff*diff);
+      len := VectLen(diff);
       if (len > maxMiter) and (turn <= 0) then //if miter too far
       begin
-        diff *= 1/len;
+        diff.Scale(1/len);
 
         if joinstyle <> pjsRound then
         begin

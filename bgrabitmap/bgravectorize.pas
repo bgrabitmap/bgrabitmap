@@ -319,10 +319,10 @@ var
       end;
       u := pointF(points[end1].coord.x - points[start1].coord.x, points[end1].coord.y - points[start1].coord.y);
       lu := sqrt(u*u);
-      if lu <> 0 then u *= 1/lu;
+      if lu <> 0 then u.Scale(1/lu);
       v := pointF(points[end2].coord.x - points[start2].coord.x, points[end2].coord.y - points[start2].coord.y);
       lv := sqrt(v*v);
-      if lv <> 0 then v *= 1/lv;
+      if lv <> 0 then v.Scale(1/lv);
 
       result := u*v > 0.999;
     end;
@@ -339,10 +339,10 @@ var
       end;
       u := pointF(points[next].coord.x - points[cur].coord.x, points[next].coord.y - points[cur].coord.y);
       lu := sqrt(u*u);
-      if lu <> 0 then u *= 1/lu;
+      if lu <> 0 then u.Scale(1/lu);
       v := pointF(points[cur].coord.x - points[prev].coord.x, points[cur].coord.y - points[prev].coord.y);
       lv := sqrt(v*v);
-      if lv <> 0 then v *= 1/lv;
+      if lv <> 0 then v.Scale(1/lv);
 
       dp := u*v;
       result := (dp > 0.70) and (dp < 0.72);

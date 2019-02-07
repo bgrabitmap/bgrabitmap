@@ -718,8 +718,8 @@ begin
 
   result := ComputeArcRad(0, 0, lenU, lenV, startRadCCW, endRadCCW, quality);
 
-  if lenU <> 0 then u *= 1/lenU;
-  if lenV <> 0 then v *= 1/lenV;
+  if lenU <> 0 then u.Scale(1/lenU);
+  if lenV <> 0 then v.Scale(1/lenV);
   m := AffineMatrix(u, v, AOrigin);
   for i := 0 to high(result) do
     result[i] := m*result[i];
