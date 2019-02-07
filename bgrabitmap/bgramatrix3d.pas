@@ -433,14 +433,13 @@ end;
 {$ENDIF}
 
 operator*(constref A: TMatrix3D; var M: TPoint3D_128): TPoint3D_128;
-{$IFDEF BGRASSE_AVAILABLE}var oldMt: single; resultAddr: pointer;{$ENDIF}
+{$IFDEF BGRASSE_AVAILABLE}var oldMt: single;{$ENDIF}
 begin
   {$IFDEF BGRASSE_AVAILABLE}
   if UseSSE then
   begin
     oldMt := M.t;
     M.t := SingleConst1;
-    resultAddr := @result;
     {$IFDEF cpux86_64}
     if UseSSE3 then
     asm
@@ -452,7 +451,7 @@ begin
       mov rax, M
       movups xmm0, [rax]
 
-      mov rax, resultAddr
+      lea rax, result
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -480,7 +479,7 @@ begin
       mov rax, M
       movups xmm0, [rax]
 
-      mov rax, resultAddr
+      lea rax, result
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -531,7 +530,7 @@ begin
       mov eax, M
       movups xmm0, [eax]
 
-      mov eax, resultAddr
+      lea eax, result
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -559,7 +558,7 @@ begin
       mov eax, M
       movups xmm0, [eax]
 
-      mov eax, resultAddr
+      lea eax, result
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -617,6 +616,86 @@ begin
   {$IFDEF BGRASSE_AVAILABLE}
   if UseSSE then
   begin
+    {$IFDEF cpux86_64}
+    if UseSSE3 then
+    asm
+      mov rax, A
+      movups xmm5, [rax]
+      movups xmm6, [rax+16]
+      movups xmm7, [rax+32]
+
+      mov rax, M
+      movups xmm0, [rax]
+
+      lea rax, result
+
+      movaps xmm4,xmm0
+      mulps xmm4,xmm5
+      haddps xmm4,xmm4
+      haddps xmm4,xmm4
+      movss [rax], xmm4
+
+      movaps xmm4,xmm0
+      mulps xmm4,xmm6
+      haddps xmm4,xmm4
+      haddps xmm4,xmm4
+      movss [rax+4], xmm4
+
+      mulps xmm0,xmm7
+      haddps xmm0,xmm0
+      haddps xmm0,xmm0
+      movss [rax+8], xmm0
+    end else
+    asm
+      mov rax, A
+      movups xmm5, [rax]
+      movups xmm6, [rax+16]
+      movups xmm7, [rax+32]
+
+      mov rax, M
+      movups xmm0, [rax]
+
+      lea rax, result
+
+      movaps xmm4,xmm0
+      mulps xmm4,xmm5
+      //mix1
+      movaps xmm3, xmm4
+      shufps xmm3, xmm3, $4e
+      addps xmm4, xmm3
+      //mix2
+      movaps xmm3, xmm4
+      shufps xmm3, xmm3, $11
+      addps xmm4, xmm3
+
+      movss [rax], xmm4
+
+      movaps xmm4,xmm0
+      mulps xmm4,xmm6
+      //mix1
+      movaps xmm3, xmm4
+      shufps xmm3, xmm3, $4e
+      addps xmm4, xmm3
+      //mix2
+      movaps xmm3, xmm4
+      shufps xmm3, xmm3, $11
+      addps xmm4, xmm3
+
+      movss [rax+4], xmm4
+
+      mulps xmm0,xmm7
+      //mix1
+      movaps xmm3, xmm0
+      shufps xmm3, xmm3, $4e
+      addps xmm0, xmm3
+      //mix2
+      movaps xmm3, xmm0
+      shufps xmm3, xmm3, $11
+      addps xmm0, xmm3
+
+      movss [rax+8], xmm0
+    end;
+    {$ELSE}
     if UseSSE3 then
     asm
       mov eax, A
@@ -627,7 +706,7 @@ begin
       mov eax, M
       movups xmm0, [eax]
 
-      mov eax, result
+      lea eax, result
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -655,7 +734,7 @@ begin
       mov eax, M
       movups xmm0, [eax]
 
-      mov eax, result
+      lea eax, result
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -695,6 +774,7 @@ begin
 
       movss [eax+8], xmm0
     end;
+    {$ENDIF}
   end else
   {$ENDIF}
   begin
