@@ -1051,7 +1051,7 @@ begin
     FAmbiantLightColorF,
     FLights);
   DoRender;
-  FRenderer.Free;
+  FreeAndNil(FRenderer);
 end;
 
 procedure TBGRAScene3D.Render(ARenderer: TCustomRenderer3D);
