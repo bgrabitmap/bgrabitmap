@@ -22,19 +22,20 @@ interface
   each scanline is filled with one color. }
 
 uses
-  Classes, SysUtils, BGRAScene3D,
-  BGRAOpenGL, BGRAOpenGL3D,
-  BGRABitmapTypes;
+  Classes, SysUtils, BGRAScene3D, BGRABitmapTypes
+  {$IFNDEF NO_OPENGL_SURFACE}, BGRAOpenGL, BGRAOpenGL3D,{$ENDIF};
 
 type
 
   { TExample1 }
 
-  TExample1 = class(TBGLScene3D)
+  TExample1 = class({$IFNDEF NO_OPENGL_SURFACE}TBGLScene3D{$ELSE}TBGRAScene3D{$ENDIF})
     SandColor: TBGRAPixel;
     constructor Create;
     procedure Render; override;
+    {$IFNDEF NO_OPENGL_SURFACE}
     procedure RenderGL(ACanvas: TBGLCustomCanvas; AMaxZ: single=1000); override;
+    {$ENDIF}
   end;
 
 implementation
@@ -91,6 +92,7 @@ begin
   inherited Render;
 end;
 
+{$IFNDEF NO_OPENGL_SURFACE}
 procedure TExample1.RenderGL(ACanvas: TBGLCustomCanvas; AMaxZ: single);
 begin
   //fill background
@@ -101,6 +103,7 @@ begin
 
   inherited RenderGL(ACanvas, AMaxZ);
 end;
+{$ENDIF}
 
 end.
 

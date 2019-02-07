@@ -13,7 +13,7 @@ object Form1: TForm1
   OnKeyPress = FormKeyPress
   OnResize = FormResize
   OnShow = FormShow
-  LCLVersion = '1.4.0.4'
+  LCLVersion = '1.8.4.0'
   object BGRASurface: TBGRAVirtualScreen
     Left = 0
     Height = 381
@@ -25,10 +25,10 @@ object Form1: TForm1
     Color = clGray
     ParentColor = False
     TabOrder = 1
-    OnMouseDown = BGRASurfaceMouseDown
+    OnMouseDown = SurfaceMouseDown
     OnMouseEnter = BGRASurfaceMouseEnter
-    OnMouseMove = BGRASurfaceMouseMove
-    OnMouseUp = BGRASurfaceMouseUp
+    OnMouseMove = SurfaceMouseMove
+    OnMouseUp = SurfaceMouseUp
   end
   object vsToolbar: TBCPanel
     Left = 0
@@ -1617,7 +1617,7 @@ object Form1: TForm1
     end
     object SpinEdit_AA: TSpinEdit
       Left = 587
-      Height = 23
+      Height = 21
       Top = 5
       Width = 50
       Enabled = False
@@ -1629,9 +1629,9 @@ object Form1: TForm1
     end
     object Label1: TLabel
       Left = 520
-      Height = 15
+      Height = 13
       Top = 10
-      Width = 62
+      Width = 54
       Caption = 'Antialiasing'
       ParentColor = False
     end
@@ -1806,13 +1806,14 @@ object Form1: TForm1
     end
     object ComboBox_Render: TComboBox
       Left = 648
-      Height = 23
+      Height = 21
       Top = 5
       Width = 124
-      ItemHeight = 15
+      ItemHeight = 13
       ItemIndex = 0
       Items.Strings = (
         'OpenGL'
+        'BGRA'
         'BGRA&OpenGL'
       )
       OnChange = ComboBox_RenderChange
@@ -1820,23 +1821,6 @@ object Form1: TForm1
       TabOrder = 1
       Text = 'OpenGL'
     end
-  end
-  object BGLSurface: TBGLVirtualScreen
-    Left = 360
-    Height = 381
-    Top = 0
-    Width = 418
-    OnRedraw = BGLSurfaceRedraw
-    Align = alClient
-    BevelWidth = 0
-    Color = clGray
-    ParentColor = False
-    TabOrder = 2
-    UseDockManager = False
-    OnMouseDown = BGRASurfaceMouseDown
-    OnMouseEnter = BGLSurfaceMouseEnter
-    OnMouseMove = BGRASurfaceMouseMove
-    OnMouseUp = BGRASurfaceMouseUp
   end
   object Timer1: TTimer
     Enabled = False

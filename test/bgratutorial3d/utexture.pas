@@ -19,7 +19,7 @@ function CreateWaterTexture(tx,ty: integer): TBGRABitmap;
 
 implementation
 
-uses BGRAOpenGL, BGRAGradients;
+uses {$IFNDEF NO_OPENGL_SURFACE}BGRAOpenGL, {$ENDIF}BGRAGradients;
 
 function Interp256(value1,value2,position: integer): integer; inline;
 begin
@@ -50,7 +50,9 @@ begin
                     Interp256(BGRA(157,97,60),BGRA(202,145,112),colorOscillation), globalColorVariation);
     inc(p);
   end;
+  {$IFNDEF NO_OPENGL_SURFACE}
   BGRAReplace(result, TBGLBitmap.Create(result));
+  {$ENDIF}
 end;
 
 function CreateVerticalWoodTexture(tx, ty: integer): TBGRABitmap;
@@ -77,7 +79,9 @@ begin
     inc(x);
     if x = tx then x := 0;
   end;
+  {$IFNDEF NO_OPENGL_SURFACE}
   BGRAReplace(result, TBGLBitmap.Create(result));
+  {$ENDIF}
 end;
 
 function CreateGrassTexture(tx,ty: integer): TBGRABitmap;
@@ -92,7 +96,9 @@ begin
     p^ := Interp256( BGRA(0,128,0), BGRA(192,255,0), p^.red );
     inc(p);
   end;
+  {$IFNDEF NO_OPENGL_SURFACE}
   BGRAReplace(result, TBGLBitmap.Create(result));
+  {$ENDIF}
 end;
 
 function CreateWaterTexture(tx,ty: integer): TBGRABitmap;
@@ -101,7 +107,7 @@ var
   map: TBGRABitmap;
   phong: TPhongShading;
 begin
-  result := TBGLBitmap.Create(tx,ty);
+  result := TBGRABitmap.Create(tx,ty);
   map := CreateCyclicPerlinNoiseMap(tx,ty,1,1,1.2,rfBestQuality);
   BGRAReplace(map,map.GetPart(rect(-blurSize,-blurSize,tx+blurSize,ty+blurSize)));
   BGRAReplace(map,map.FilterBlurRadial(blurSize,rbFast));
@@ -117,6 +123,9 @@ begin
   phong.Draw(result,map,20,-blurSize,-blurSize,BGRA(28,139,166));
   phong.Free;
   map.Free;
+  {$IFNDEF NO_OPENGL_SURFACE}
+  BGRAReplace(result, TBGLBitmap.Create(result));
+  {$ENDIF}
 end;
 
 

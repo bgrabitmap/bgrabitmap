@@ -25,14 +25,14 @@ interface
   could see the reflection of some white beam. }
 
 uses
-  Classes, SysUtils, BGRAScene3D, BGRABitmapTypes,
-  BGRAOpenGL3D;
+  Classes, SysUtils, BGRAScene3D, BGRABitmapTypes
+  {$IFNDEF NO_OPENGL_SURFACE}, BGRAOpenGL3D{$ENDIF};
 
 type
 
   { TExample3 }
 
-  TExample3 = class(TBGLScene3D)
+  TExample3 = class({$IFNDEF NO_OPENGL_SURFACE}TBGLScene3D{$ELSE}TBGRAScene3D{$ENDIF})
     constructor Create;
   end;
 

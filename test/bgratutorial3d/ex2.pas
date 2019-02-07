@@ -23,15 +23,15 @@ interface
 }
 
 uses
-  Classes, SysUtils, BGRAScene3D, BGRABitmap, BGRABitmapTypes,
-  BGRAOpenGL3D;
+  Classes, SysUtils, BGRAScene3D, BGRABitmap, BGRABitmapTypes
+  {$IFNDEF NO_OPENGL_SURFACE}, BGRAOpenGL3D{$ENDIF};
 
 type
   TExample2Lighting = (e2lNone,e2lLightness,e2lColored);
 
   { TExample2 }
 
-  TExample2 = class(TBGLScene3D)
+  TExample2 = class({$IFNDEF NO_OPENGL_SURFACE}TBGLScene3D{$ELSE}TBGRAScene3D{$ENDIF})
   private
     water,wood,vWood: TBGRABitmap;
     box,ground,light1,light2: IBGRAObject3D;

@@ -16,7 +16,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   Spin, StdCtrls, BGRAVirtualScreen, BCButton, BCPanel, BGRABitmap, BGRAScene3D,
-  BGLVirtualScreen, EpikTimer, BGRAOpenGL, BGRAOpenGL3D;
+  EpikTimer{$IFNDEF NO_OPENGL_SURFACE}, BGLVirtualScreen, BGRAOpenGL, BGRAOpenGL3D{$ENDIF};
 
 type
 
@@ -33,7 +33,6 @@ type
     BCButton7: TBCButton;
     BCButton8: TBCButton;
     BCButton9: TBCButton;
-    BGLSurface: TBGLVirtualScreen;
     BGRASurface: TBGRAVirtualScreen;
     ComboBox_Render: TComboBox;
     Label1: TLabel;
@@ -50,14 +49,16 @@ type
     procedure BCButton7Click(Sender: TObject);
     procedure BCButton8Click(Sender: TObject);
     procedure BCButton9Click(Sender: TObject);
+    {$IFNDEF NO_OPENGL_SURFACE}
     procedure BGLSurfaceMouseEnter(Sender: TObject);
     procedure BGLSurfaceRedraw(Sender: TObject; BGLContext: TBGLContext);
-    procedure BGRASurfaceMouseDown(Sender: TObject; Button: TMouseButton;
+    {$ENDIF}
+    procedure SurfaceMouseDown(Sender: TObject; Button: TMouseButton;
       {%H-}Shift: TShiftState; X, Y: Integer);
     procedure BGRASurfaceMouseEnter(Sender: TObject);
-    procedure BGRASurfaceMouseMove(Sender: TObject; {%H-}Shift: TShiftState; X,
+    procedure SurfaceMouseMove(Sender: TObject; {%H-}Shift: TShiftState; X,
       Y: Integer);
-    procedure BGRASurfaceMouseUp(Sender: TObject; Button: TMouseButton;
+    procedure SurfaceMouseUp(Sender: TObject; Button: TMouseButton;
       {%H-}Shift: TShiftState; {%H-}X, {%H-}Y: Integer);
     procedure BGRASurfaceRedraw(Sender: TObject; Bitmap: TBGRABitmap);
     procedure ComboBox_RenderChange(Sender: TObject);
@@ -75,11 +76,16 @@ type
     { private declarations }
   public
     { public declarations }
+    {$IFNDEF NO_OPENGL_SURFACE}
+    BGLSurface: TBGLVirtualScreen;
+    glFont: IBGLFont;
     scene: TBGLScene3D;
+    {$ELSE}
+    scene: TBGRAScene3D;
+    {$ENDIF}
     moving: boolean;
     moveOrigin: TPoint;
     timer: TEpikTimer;
-    glFont: IBGLFont;
     procedure AdjustSceneSize;
     procedure RedrawScene;
   end; 
@@ -102,6 +108,18 @@ end;
 
 procedure TForm1.AdjustSceneSize;
 begin
+  {$IFNDEF NO_OPENGL_SURFACE}
+  if ComboBox_Render.Text = 'BGRA' then
+  begin
+    if BGLSurface.Visible then
+    begin
+      BGRASurface.Visible := false;
+      BGLSurface.Visible := false;
+
+      BGRASurface.Visible := true;
+      BGRASurface.Align := alClient;
+    end;
+  end else
   if ComboBox_Render.Text = 'OpenGL' then
   begin
     if BGRASurface.Visible then
@@ -112,9 +130,9 @@ begin
       BGLSurface.Visible := true;
       BGLSurface.Align := alClient;
     end;
-  end else
+  end else //BGRA&OpenGL
   begin
-    if not BGRASurface.Visible then
+    if not BGRASurface.Visible or not BGLSurface.Visible then
     begin
       BGRASurface.Visible := false;
       BGLSurface.Visible := false;
@@ -122,16 +140,19 @@ begin
       BGRASurface.Visible := true;
       BGLSurface.Visible := true;
       BGRASurface.Align := alLeft;
-      BGRASurface.Width := ClientWidth div 2;
       BGLSurface.Align := alClient;
     end;
+    BGRASurface.Width := ClientWidth div 2;
   end;
+  {$ENDIF}
 end;
 
 procedure TForm1.RedrawScene;
 begin
   if BGRASurface.Visible then BGRASurface.RedrawBitmap;
-  if BGLSurface.Visible then BGLSurface.Repaint;
+  {$IFNDEF NO_OPENGL_SURFACE}
+  if Assigned(BGLSurface) and BGLSurface.Visible then BGLSurface.Repaint;
+  {$ENDIF}
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -139,6 +160,23 @@ begin
   scene := nil;
   timer := TEpikTimer.Create(nil);
   timer.TimebaseSource := HardwareTimebase;
+
+  {$IFNDEF NO_OPENGL_SURFACE}
+  BGLSurface := TBGLVirtualScreen.Create(self);
+  BGLSurface.Color := clGray;
+  BGLSurface.OnMouseEnter:= @BGLSurfaceMouseEnter;
+  BGLSurface.OnMouseDown:= @SurfaceMouseDown;
+  BGLSurface.OnMouseMove:= @SurfaceMouseMove;
+  BGLSurface.OnMouseUp:= @SurfaceMouseUp;
+  BGLSurface.OnRedraw:= @BGLSurfaceRedraw;
+  BGLSurface.Align := alClient;
+  BGLSurface.Parent := self;
+  {$ELSE}
+  BGRASurface.Align := alClient;
+  ComboBox_Render.Items.Clear;
+  ComboBox_Render.Items.Add('BGRA');
+  ComboBox_Render.ItemIndex := 0;
+  {$ENDIF}
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -249,7 +287,9 @@ end;
 
 procedure TForm1.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
-  BGLSurface.UnloadTextures;
+  {$IFNDEF NO_OPENGL_SURFACE}
+  if Assigned(BGLSurface) then BGLSurface.UnloadTextures;
+  {$ENDIF}
 end;
 
 procedure TForm1.BCButton1Click(Sender: TObject);
@@ -352,6 +392,7 @@ begin
   RedrawScene;
 end;
 
+{$IFNDEF NO_OPENGL_SURFACE}
 procedure TForm1.BGLSurfaceMouseEnter(Sender: TObject);
 begin
   SpinEdit_AA.Enabled := false;
@@ -398,8 +439,9 @@ begin
     Timer1.Enabled := true;
   end;
 end;
+{$ENDIF}
 
-procedure TForm1.BGRASurfaceMouseDown(Sender: TObject; Button: TMouseButton;
+procedure TForm1.SurfaceMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
   if (button = mbLeft) and (scene <> nil) then
@@ -414,7 +456,7 @@ begin
   SpinEdit_AA.Enabled := false;
 end;
 
-procedure TForm1.BGRASurfaceMouseMove(Sender: TObject; Shift: TShiftState; X,
+procedure TForm1.SurfaceMouseMove(Sender: TObject; Shift: TShiftState; X,
   Y: Integer);
 begin
   if moving then
@@ -434,7 +476,7 @@ begin
   end;
 end;
 
-procedure TForm1.BGRASurfaceMouseUp(Sender: TObject; Button: TMouseButton;
+procedure TForm1.SurfaceMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
   if button = mbLeft then moving := false;
