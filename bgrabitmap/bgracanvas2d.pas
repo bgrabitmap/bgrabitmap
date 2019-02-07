@@ -986,11 +986,11 @@ begin
     end else
     if (attrib = 'italic') or (attrib = 'oblique') then
     begin
-      currentState.fontStyle += [fsItalic];
+      include(currentState.fontStyle, fsItalic);
     end else
     if (attrib = 'bold') or (attrib = 'bolder') then
     begin
-      currentState.fontStyle += [fsBold];
+      include(currentState.fontStyle, fsBold);
     end else
     if (attrib[1] in ['.','0'..'9']) then
     begin
@@ -1005,7 +1005,7 @@ begin
       begin
         if u = '' then //weight
         begin
-          if value >= 600 then currentState.fontStyle += [fsBold];
+          if value >= 600 then include(currentState.fontStyle, fsBold);
         end else
         if u = 'px' then currentState.fontEmHeight := value else
         if u = 'pt' then currentState.fontEmHeight:= value/72*96 else
@@ -1516,9 +1516,9 @@ begin
     if not IntersectRect(foundRect, foundRect,maxRect) then exit;
     offset := PointF(-foundRect.Left,-foundRect.Top);
     for i := 0 to high(ofsPts) do
-      ofsPts[i] += offset;
+      ofsPts[i].Offset(offset);
     for i := 0 to high(ofsPts2) do
-      ofsPts2[i] += offset;
+      ofsPts2[i].Offset(offset);
   end;
 
   tempBmp := surface.NewBitmap(foundRect.Right-foundRect.Left,foundRect.Bottom-foundRect.Top,BGRAPixelTransparent);

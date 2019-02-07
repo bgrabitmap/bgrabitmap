@@ -218,7 +218,7 @@ begin
             dataSize := LEtoN(tempStream.ReadDWord);
             if dataSize <> 0 then
             begin //if data size is supplied, include mask size
-              dataSize += maskStride*bmp.Height;
+              inc(dataSize, maskStride*bmp.Height);
               tempStream.Position:= 20;
               tempStream.WriteDWord(NtoLE(dataSize));
             end;
@@ -242,7 +242,7 @@ begin
             if maskBit = 0 then
             begin
               maskBit := $80;
-              maskPos += 1;
+              inc(maskPos);
             end;
             inc(psrc);
           end;
@@ -532,7 +532,7 @@ begin
             if bitAndMaskBit = 0 then
             begin
               bitAndMaskBit := $80;
-              bitAndMaskPos += 1;
+              inc(bitAndMaskPos);
             end;
             if assigned(psrcMask) then inc(psrcMask);
             inc(pdest);

@@ -519,12 +519,12 @@ begin
           if (option = moMediumSmooth) and ((i = -k) or (i = j)) then
             tempAlpha := tempAlpha div 2;
 
-          sumR    += tempPixel.red * tempAlpha;
-          sumG    += tempPixel.green * tempAlpha;
-          sumB    += tempPixel.blue * tempAlpha;
-          BGRAdiv += tempAlpha;
+          inc(sumR, tempPixel.red * tempAlpha );
+          inc(sumG, tempPixel.green * tempAlpha );
+          inc(sumB, tempPixel.blue * tempAlpha );
+          inc(BGRAdiv, tempAlpha);
 
-          sumA += tempAlpha;
+          inc(sumA, tempAlpha);
           Inc(nbA);
         end;
          {$hints on}

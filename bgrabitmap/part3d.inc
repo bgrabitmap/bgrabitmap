@@ -413,7 +413,7 @@ var i: integer;
 begin
   result := GetVertexCount;
   for i := 0 to GetPartCount-1 do
-    result += GetPart(i).GetTotalVertexCount;
+    inc(result, GetPart(i).GetTotalVertexCount);
 end;
 
 function TBGRAPart3D.GetTotalNormalCount: integer;
@@ -421,7 +421,7 @@ var i: integer;
 begin
   result := GetNormalCount;
   for i := 0 to GetPartCount-1 do
-    result += GetPart(i).GetTotalNormalCount;
+    inc(result, GetPart(i).GetTotalNormalCount);
 end;
 
 procedure TBGRAPart3D.ResetTransform;

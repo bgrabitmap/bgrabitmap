@@ -800,8 +800,8 @@ begin
   ACanvas2d.fontEmHeight := Units.ConvertHeight(fontSize,AUnit).value;
   ACanvas2d.fontName := fontFamily;
   fs := [];
-  if fontBold then fs += [fsBold];
-  if fontItalic then fs += [fsItalic];
+  if fontBold then include(fs, fsBold);
+  if fontItalic then include(fs, fsItalic);
   ACanvas2d.fontStyle := fs;
   vx:= Units.ConvertWidth(x,AUnit).value;
   vy:= Units.ConvertHeight(y,AUnit).value;

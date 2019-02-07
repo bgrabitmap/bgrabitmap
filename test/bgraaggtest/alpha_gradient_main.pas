@@ -199,7 +199,7 @@ begin
   if MovingPointIndex <> -1 then
   begin
     mousePos := PointF(X,Y);
-    pts[MovingPointIndex] += mousePos-MovingOrigin;
+    pts[MovingPointIndex].Offset(mousePos-MovingOrigin);
     Invalidate;
     MovingOrigin := mousePos;
   end;

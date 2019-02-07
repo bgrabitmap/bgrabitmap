@@ -709,8 +709,8 @@ begin
   begin
     if FBidi[i].BidiInfo.IsEndOfLine or FBidi[i].BidiInfo.IsEndOfParagraph then
     begin
-      if FBidi[i].BidiInfo.IsEndOfParagraph then FParagraphCount += 1;
-      FUnbrokenLineCount += 1;
+      if FBidi[i].BidiInfo.IsEndOfParagraph then inc(FParagraphCount);
+      inc(FUnbrokenLineCount);
     end;
   end;
 
@@ -731,7 +731,7 @@ begin
     begin
       if FBidi[i].BidiInfo.IsEndOfParagraph then
       begin
-        curParaIndex += 1;
+        inc(curParaIndex);
         FParagraph[curParaIndex].firstUnbrokenLineIndex:= lineIndex;
         FParagraph[curParaIndex].rectF := rectF(0,0,0,0);
         FParagraph[curParaIndex].rtl := ADefaultRTL;
@@ -1560,7 +1560,7 @@ begin
     endCaret.Top := endCaret.PreviousTop;        endCaret.PreviousTop := EmptyPointF;
     endCaret.Bottom := endCaret.PreviousBottom;  endCaret.PreviousBottom := EmptyPointF;
     endCaret.RightToLeft := endCaret.PreviousRightToLeft;
-    if endCaret.PartIndex <> -1 then endCaret.PartIndex -= 1;
+    if endCaret.PartIndex <> -1 then dec(endCaret.PartIndex);
   end;
 
   if startCaret.PartIndex = endCaret.PartIndex then
@@ -1634,7 +1634,7 @@ begin
 
   if APixelCenteredCoordinates then
     for i := 0 to high(result) do
-      if not isEmptyPointF(result[i]) then result[i] += PointF(0.5,0.5);
+      if not isEmptyPointF(result[i]) then result[i].Offset(0.5, 0.5);
 end;
 
 function TBidiTextLayout.GetParagraphAt(ACharIndex: Integer): integer;

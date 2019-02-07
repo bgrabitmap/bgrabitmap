@@ -235,7 +235,7 @@ begin
   //check presence of file header
   if (headerSize and $ffff) = BMmagic then
   begin
-    headerPos += sizeof(TBitMapFileHeader);
+    inc(headerPos, sizeof(TBitMapFileHeader));
     AStream.Position := headerPos;
     if AStream.Read(headerSize, sizeof(headerSize)) <> sizeof(headerSize) then exit;
     headerSize := LEtoN(headerSize);

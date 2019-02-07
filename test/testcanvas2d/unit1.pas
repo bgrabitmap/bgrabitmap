@@ -628,7 +628,7 @@ begin
   ctx.setTransform(-0.55, 0.85, -1, 0.10, 100, 50+img.width*0.5);
   ctx.rotate(PI*2*(Test13pos/360)*vitesse );
   ctx.drawImage(img, img.width*(-0.5)-200, img.height*(-0.8));
-  Test13pos+=1;
+  inc(Test13pos);
   if (Test13pos=360) then Test13pos := 0;
   UpdateIn(10);
 end;

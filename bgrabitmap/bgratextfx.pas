@@ -162,7 +162,7 @@ begin
     if (metric.xLine-metric.CapLine) mod FontAntialiasingLevel >= FontAntialiasingLevel div 2 then
     begin
       toAdd := FontAntialiasingLevel - (metric.xLine-metric.CapLine) mod FontAntialiasingLevel;
-      metric.CapLine -= toAdd;
+      dec(metric.CapLine, toAdd);
       if metric.CapLine <= 0 then metric.CapLine := -1;
     end;
   end;
@@ -570,8 +570,8 @@ begin
   FTextSize := size;
   if size.cy = 0 then FTextSize.cy := BGRATextSize(Font, fqFineAntialiasing, 'Hg', FontAntialiasingLevel).cy;
   overhang := size.cy div 2;
-  size.cx += 2*overhang + ceil(SubOffsetX);
-  size.cy += 2 + ceil(SubOffsetY);
+  inc(size.cx, 2*overhang + ceil(SubOffsetX) );
+  inc(size.cy, 2 + ceil(SubOffsetY) );
 
   FOffset := Point(-overhang,-1); //include overhang
   FTextMask := BGRABitmapFactory.Create(size.cx,size.cy,BGRABlack);
@@ -660,19 +660,19 @@ begin
   if Antialiasing then
   begin
     sizeX := (sizeX + FXAntialiasingLevel-1);
-    sizeX -= sizeX mod FXAntialiasingLevel;
+    dec(sizeX, sizeX mod FXAntialiasingLevel);
 
     sizeY := (sizeY + FXAntialiasingLevel-1);
-    sizeY -= sizeY mod FXAntialiasingLevel;
+    dec(sizeY, sizeY mod FXAntialiasingLevel);
 
     if SubOffsetX <> 0 then
     begin
-      sizeX += ceil(SubOffsetX*FXAntialiasingLevel);
+      inc(sizeX, ceil(SubOffsetX*FXAntialiasingLevel) );
       iSubX := round(SubOffsetX*FXAntialiasingLevel);
     end;
     if SubOffsetY <> 0 then
     begin
-      sizeY += ceil(SubOffsetY*FXAntialiasingLevel);
+      inc(sizeY, ceil(SubOffsetY*FXAntialiasingLevel) );
       iSubY := round(SubOffsetY*FXAntialiasingLevel);
     end;
 
@@ -684,12 +684,12 @@ begin
     if SubOffsetX <> 0 then
     begin
       iSubX := round(SubOffsetX);
-      sizeX += iSubX;
+      inc(sizeX, iSubX);
     end;
     if SubOffsetY <> 0 then
     begin
       iSubY := round(SubOffsetY);
-      sizeY += iSubY;
+      inc(sizeY, iSubY);
     end;
   end;
   FOffset := Point(-size.cy div 2,-OnePixel); //include overhang
@@ -697,12 +697,12 @@ begin
   if GrainX > 0 then
   begin
     SizeX := SizeX+ (GrainX-1);
-    SizeX -= SizeX mod GrainX;
+    dec(SizeX, SizeX mod GrainX);
   end;
   if GrainY > 0 then
   begin
     SizeY := SizeY+ (GrainY-1);
-    SizeY -= SizeY mod GrainY;
+    dec(SizeY, SizeY mod GrainY);
   end;
   temp := BGRABitmapFactory.Create(sizeX, sizeY+2*OnePixel,clBlack);
   temp.Canvas.Font := Font;

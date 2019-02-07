@@ -25,12 +25,12 @@
 		  if ix2 > densMaxx then densMaxx := ix2;
 
 		  if ix1 = ix2 then
-			(density + (ix1 - minx))^ += round((x2-ix2)*256) - round((x1-ix1)*256)
+			inc( (density + (ix1 - minx))^, round((x2-ix2)*256) - round((x1-ix1)*256) )
 		  else
 		  begin
-			(density + (ix1 - minx))^ += 256 - round((x1 - ix1)*256);
+			inc( (density + (ix1 - minx))^, 256 - round((x1 - ix1)*256) );
 			if (ix2 <= maxx) then
-			  (density + (ix2 - minx))^ += round((x2 - ix2)*256);
+			  inc( (density + (ix2 - minx))^, round((x2 - ix2)*256) );
 		  end;
 		  if ix2 > ix1 + 1 then
 		  begin

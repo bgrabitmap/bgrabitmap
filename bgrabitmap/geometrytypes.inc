@@ -91,7 +91,15 @@ const
 function IsEmptyPoint(const APoint: TPoint): boolean;
 
 type
+
+  { TPointFHelper }
+
   TPointFHelper = record helper for TPointF
+    procedure Offset(const apt : TPointF); overload;
+    procedure Offset(const apt : TPoint); overload;
+    procedure Offset(dx,dy : longint); overload;
+    procedure Offset(dx,dy : single); overload;
+
     function Ceiling: TPoint;
     function Truncate: TPoint;
     function Floor: TPoint;
@@ -342,7 +350,12 @@ type
 
 type
   {* Point in 3D with single-precision floating point coordinates }
-  TPoint3D = record x,y,z: single;
+
+  { TPoint3D }
+
+  TPoint3D = record
+    x,y,z: single;
+    procedure Offset(const point3D: TPoint3D);
   end;
 
   {----------------- Operators for TPoint3D ---------------}
@@ -741,6 +754,30 @@ end;
 function IsEmptyPoint(const APoint: TPoint): boolean;
 begin
   result := (APoint.x = -2147483648) or (APoint.y = -2147483648);
+end;
+
+procedure TPointFHelper.Offset(const apt: TPointF);
+begin
+  self.x += apt.x;
+  self.y += apt.y;
+end;
+
+procedure TPointFHelper.Offset(const apt: TPoint);
+begin
+  self.x += apt.x;
+  self.y += apt.y;
+end;
+
+procedure TPointFHelper.Offset(dx, dy: longint);
+begin
+  self.x += dx;
+  self.y += dy;
+end;
+
+procedure TPointFHelper.Offset(dx, dy: single);
+begin
+  self.x += dx;
+  self.y += dy;
 end;
 
 function TPointFHelper.Ceiling: TPoint;
@@ -1167,6 +1204,15 @@ begin
   result.x := v1.x*factor;
   result.y := v1.y*factor;
   result.z := v1.z*factor;
+end;
+
+{ TPoint3D }
+
+procedure TPoint3D.Offset(const point3D: TPoint3D);
+begin
+  self.x += point3d.x;
+  self.y += point3d.y;
+  self.z += point3d.z;
 end;
 
 function Point3D(x, y, z: single): TPoint3D;

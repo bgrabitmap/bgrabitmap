@@ -75,7 +75,7 @@ begin
   v := p-FCenter;
   d := sqrt(v*v);
   if d <> 0 then v *= 1/d;
-  p += v*sin(d*2*Pi/FRadius+Delta)*FAmplitude;
+  p.Offset( v*sin(d*2*Pi/FRadius+Delta)*FAmplitude );
   result := FSource.ScanAt(p.X,p.Y);
 end;
 

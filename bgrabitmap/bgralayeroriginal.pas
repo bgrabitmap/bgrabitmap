@@ -1371,7 +1371,7 @@ end;
 
 procedure TBGRALayerImageOriginal.ContentChanged;
 begin
-  FContentVersion += 1;
+  inc(FContentVersion);
   NotifyChange;
 end;
 

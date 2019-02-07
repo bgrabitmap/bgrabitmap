@@ -353,7 +353,7 @@ begin
   inc(dest,start);
   if start and 1 = 1 then
   begin
-    dest^ += value;
+    inc(dest^, value);
     inc(dest);
     dec(count);
   end;
@@ -364,13 +364,13 @@ begin
     valueValue := value+(value shl 16);
     while count > 0 do
     begin
-      plongword(dest)^ += valueValue;
+      inc(plongword(dest)^, valueValue);
       inc(dest,2);
       dec(count);
     end;
   end;
   if lastAdd <> 0 then
-    dest^ += value;
+    inc(dest^, value);
 end;
 
 function DivByAntialiasPrecision(value: UInt32or64): UInt32or64;
@@ -480,7 +480,7 @@ begin
   for i := 0 to nbInter-1 do
   begin
     prevSum := windingSum;
-    windingSum += inter[i].winding;
+    inc(windingSum, inter[i].winding);
     if (windingSum = 0) xor (prevSum = 0) then
     begin
       if nbAlternate<>i then
@@ -650,10 +650,7 @@ begin
     begin
       FEmptyPt[i]  := False;
       if APixelCenteredCoordinates then
-      begin
-        FPoints[i].x += 0.5;
-        FPoints[i].y += 0.5;
-      end;
+        FPoints[i].Offset(0.5, 0.5);
       if cur <> -1 then
         FNext[cur] := i;
       if first = -1 then

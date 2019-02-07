@@ -65,7 +65,7 @@ end;
 
 procedure TBGRALayerSVGOriginal.ContentChanged;
 begin
-  FContentVersion += 1;
+  inc(FContentVersion);
   NotifyChange;
 end;
 

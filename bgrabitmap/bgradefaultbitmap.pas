@@ -3118,9 +3118,9 @@ var pts3: TPointF;
 begin
   if not APixelCenteredCoordinates then
   begin
-    Orig -= PointF(0.5,0.5);
-    HAxis -= PointF(0.5,0.5);
-    VAxis -= PointF(0.5,0.5);
+    Orig.Offset(-0.5,-0.5);
+    HAxis.Offset(-0.5,-0.5);
+    VAxis.Offset(-0.5,-0.5);
   end;
   pts3 := HAxis+(VAxis-Orig);
   affine := TBGRAAffineBitmapTransform.Create(AImage,False,AImage.ScanInterpolationFilter,not APixelCenteredCoordinates);
@@ -3137,9 +3137,9 @@ var pts3: TPointF;
 begin
   if not APixelCenteredCoordinates then
   begin
-    Orig -= PointF(0.5,0.5);
-    HAxis -= PointF(0.5,0.5);
-    VAxis -= PointF(0.5,0.5);
+    Orig.Offset(-0.5,-0.5);
+    HAxis.Offset(-0.5,-0.5);
+    VAxis.Offset(-0.5,-0.5);
   end;
   pts3 := HAxis+(VAxis-Orig);
   affine := TBGRAAffineBitmapTransform.Create(AImage,False,AImage.ScanInterpolationFilter,not APixelCenteredCoordinates);
@@ -4245,7 +4245,7 @@ procedure TBGRADefaultBitmap.Fill(c: TBGRAPixel; start, Count: integer);
 begin
   if start < 0 then
   begin
-    Count += start;
+    inc(Count, start);
     start := 0;
   end;
   if start >= nbPixels then
@@ -4263,7 +4263,7 @@ begin
     Fill(BGRAPixelTransparent, start, Count);
   if start < 0 then
   begin
-    Count += start;
+    inc(Count, start);
     start := 0;
   end;
   if start >= nbPixels then
@@ -4849,7 +4849,7 @@ begin
 
   if start < 0 then
   begin
-    Count += start;
+    inc(Count, start);
     start := 0;
   end;
   if start >= nbPixels then

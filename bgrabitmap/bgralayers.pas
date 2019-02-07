@@ -1694,7 +1694,7 @@ begin
   for i := 0 to NbLayers-1 do
   begin
     idxOrig := IndexOfOriginal(LayerOriginalGuid[i]);
-    if idxOrig <> -1 then useCount[idxOrig] += 1;
+    if idxOrig <> -1 then inc(useCount[idxOrig]);
   end;
   for i := high(useCount) downto 0 do
     if useCount[i] = 0 then DeleteOriginal(i);
@@ -2674,7 +2674,7 @@ procedure TBGRACustomLayeredBitmap.Freeze(firstLayer, lastLayer: integer);
     if last <= first then exit; //at least 2 frozen layers
     nbVisible := 0;
     for i := first to last do
-      if LayerVisible[i] and (LayerOpacity[i] > 0) then nbVisible += 1;
+      if LayerVisible[i] and (LayerOpacity[i] > 0) then inc(nbVisible);
     if nbvisible < 2 then exit;  //at least 2 frozen layers
 
     if ContainsFrozenRange(first,last) then exit; //already frozen

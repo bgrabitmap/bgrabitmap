@@ -264,7 +264,7 @@ begin
        v := red;
        if green<v then v := green;
        if blue<v then v := blue;
-       result -= v;
+       dec(result, v);
        result := result shl SaturationShift;
     end
   else raise exception.Create('Unknown dimension');
@@ -1369,8 +1369,8 @@ begin
   else
   begin
     result := 0;
-    if Assigned(FInferiorBranch) then result += FInferiorBranch.LeafCount;
-    if Assigned(FSuperiorBranch) then result += FSuperiorBranch.LeafCount;
+    if Assigned(FInferiorBranch) then inc(result, FInferiorBranch.LeafCount);
+    if Assigned(FSuperiorBranch) then inc(result, FSuperiorBranch.LeafCount);
   end;
 end;
 
@@ -1381,8 +1381,8 @@ begin
   else
   begin
     result := 0;
-    if Assigned(FInferiorBranch) then result += FInferiorBranch.ApproximatedColorCount;
-    if Assigned(FSuperiorBranch) then result += FSuperiorBranch.ApproximatedColorCount;
+    if Assigned(FInferiorBranch) then inc(result, FInferiorBranch.ApproximatedColorCount);
+    if Assigned(FSuperiorBranch) then inc(result, FSuperiorBranch.ApproximatedColorCount);
   end;
   if HasPureTransparentColor then inc(result);
 end;

@@ -302,7 +302,7 @@ var
 begin
   Result:= sizeof(FGroupIconHeader) + sizeof(TIconFileDirEntry)*NbIcons;
   for i := 0 to NbIcons-1 do
-    Result += LEtoN(FDirectory[i].ImageSize);
+    inc(Result, LEtoN(FDirectory[i].ImageSize) );
 end;
 
 function TGroupIconOrCursorEntry.GetDataSize: integer;
@@ -438,7 +438,7 @@ begin
         IconData.Free;
       end;
     end;
-    result += iconEntrySize;
+    inc(result, iconEntrySize);
   end;
 end;
 
@@ -524,9 +524,9 @@ begin
   FDataStream.Position := 0;
   fileHeader := MakeBitmapFileHeader(FDataStream);
   ADestination.WriteBuffer(fileHeader, sizeof(fileHeader));
-  result += sizeof(fileHeader);
+  inc(result, sizeof(fileHeader) );
   FDataStream.Position := 0;
-  result += ADestination.CopyFrom(FDataStream, FDataStream.Size);
+  inc(result, ADestination.CopyFrom(FDataStream, FDataStream.Size) );
 end;
 
 procedure TBitmapResourceEntry.CopyFrom(ASource: TStream);

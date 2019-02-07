@@ -43,7 +43,7 @@
            {$ENDIF}
         end;
         {$ELSE}
-          texPos += texStep;
+          texPos.Offset(texStep);
         {$ENDIF}
 
         {$IFDEF PARAM_USELIGHTING}

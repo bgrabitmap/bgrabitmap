@@ -356,7 +356,7 @@ begin
     if lightness = 65535 then
       result := BGRA(255,255,255,color.alpha) else
     begin
-      lightness -= 32767;
+      dec(lightness, 32767);
       r := GammaExpansionTab[color.red];
       g := GammaExpansionTab[color.green];
       b := GammaExpansionTab[color.blue];
@@ -679,10 +679,10 @@ begin
   for i := 0 to high(colors) do
   with colors[i] do
   begin
-    sumR += red*alpha;
-    sumG += green*alpha;
-    sumB += blue*alpha;
-    sumA += alpha;
+    inc(sumR, red*alpha);
+    inc(sumG, green*alpha);
+    inc(sumB, blue*alpha);
+    inc(sumA, alpha);
   end;
   if sumA > 0 then
   begin

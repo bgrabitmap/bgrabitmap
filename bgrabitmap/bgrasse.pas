@@ -3,6 +3,7 @@ unit BGRASSE;
 {$mode objfpc}{$H+}
 
 {$i bgrasse.inc}
+{$modeswitch advancedrecords}
 
 interface
 
@@ -34,7 +35,13 @@ var UseSSE, UseSSE2, UseSSE3 : boolean;
 {$endif}
 
 type
-  TPoint3D_128 = packed record x,y,z,t: single; end;
+
+  { TPoint3D_128 }
+
+  TPoint3D_128 = packed record
+                   x,y,z,t: single;
+                   procedure Offset(const point3D_128: TPoint3D_128);
+                 end;
   PPoint3D_128 = ^TPoint3D_128;
 
   function Point3D(const point3D_128: TPoint3D_128): TPoint3D; inline; overload;
@@ -92,6 +99,16 @@ type
 const ExtendedLightingContextSize = 128;
 
 implementation
+
+{ TPoint3D_128 }
+
+procedure TPoint3D_128.Offset(const point3D_128: TPoint3D_128);
+begin
+  self.x += point3D_128.x;
+  self.y += point3D_128.y;
+  self.z += point3D_128.z;
+  self.t += point3D_128.t;
+end;
 
 function Point3D(const point3D_128: TPoint3D_128): TPoint3D; inline; overload;
 begin
@@ -519,6 +536,7 @@ asm
   movups [eax],xmm3
   {$endif}
 end;
+
 {$endif}
 
 { TMemoryBlockAlign128 }

@@ -129,8 +129,8 @@ var i: integer;
 begin
   result := 0;
   for i := 0 to high(FCompressedDataArray) do
-    result += FCompressedDataArray[i].Size;
-  if FUncompressedData <> nil then result += FUncompressedData.Size;
+    inc(result, FCompressedDataArray[i].Size);
+  if FUncompressedData <> nil then inc(result, FUncompressedData.Size);
 end;
 
 { Do one compress step or return false }

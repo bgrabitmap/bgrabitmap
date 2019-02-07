@@ -194,10 +194,10 @@ var
   delta: TPointF;
 begin
   delta := ANewCoord-APrevCoord;
-  FOrigin += delta;
-  if not isEmptyPointF(FXAxis) then FXAxis += delta;
-  if not isEmptyPointF(FYAxis) then FYAxis += delta;
-  if not isEmptyPointF(FFocalPoint) then FFocalPoint += delta;
+  FOrigin.Offset(delta);
+  if not isEmptyPointF(FXAxis) then FXAxis.Offset(delta);
+  if not isEmptyPointF(FYAxis) then FYAxis.Offset(delta);
+  if not isEmptyPointF(FFocalPoint) then FFocalPoint.Offset(delta);
   NotifyChange;
 end;
 
@@ -248,7 +248,7 @@ begin
   else
     FXAxis := FXAxisBackup;
 
-  FOrigin += delta;
+  FOrigin.Offset(delta);
   NotifyChange;
 end;
 

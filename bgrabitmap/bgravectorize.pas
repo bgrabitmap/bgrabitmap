@@ -1162,7 +1162,7 @@ begin
   c2D := GetCanvas2D(ADest);
   c2D.fillStyle(c);
   ofs := PointF(x,y);
-  ofs += AffineMatrixRotationDeg(-orientation*0.1)*PointF(0,FVectorizedFont.FullHeight*0.5);
+  ofs.Offset( AffineMatrixRotationDeg(-orientation*0.1)*PointF(0,FVectorizedFont.FullHeight*0.5) );
   FVectorizedFont.DrawText(c2D, s, ofs.x,ofs.y, twAlign);
 end;
 
@@ -1223,7 +1223,7 @@ begin
     else twAlign:= twaLeft;
   end;
   ofs := PointF(x,y);
-  ofs += PointF(0,FVectorizedFont.FullHeight*0.5);
+  ofs.Offset(0, FVectorizedFont.FullHeight*0.5);
   FVectorizedFont.CopyTextPathTo(ADest, s, ofs.x,ofs.y, twAlign);
 end;
 
@@ -1446,10 +1446,10 @@ begin
       if CompareText(FDirectoryContent[i].FontName,FName) = 0 then
       begin
         distance := 0;
-        if (fsBold in FDirectoryContent[i].FontStyle) xor (fsBold in FStyle) then distance += 10;
-        if (fsItalic in FDirectoryContent[i].FontStyle) xor (fsItalic in FStyle) then distance += 5;
-        if (fsStrikeOut in FDirectoryContent[i].FontStyle) xor (fsStrikeOut in FStyle) then distance += 1;
-        if (fsUnderline in FDirectoryContent[i].FontStyle) xor (fsUnderline in FStyle) then distance += 1;
+        if (fsBold in FDirectoryContent[i].FontStyle) xor (fsBold in FStyle) then inc(distance, 10);
+        if (fsItalic in FDirectoryContent[i].FontStyle) xor (fsItalic in FStyle) then inc(distance, 5);
+        if (fsStrikeOut in FDirectoryContent[i].FontStyle) xor (fsStrikeOut in FStyle) then inc(distance, 1);
+        if (fsUnderline in FDirectoryContent[i].FontStyle) xor (fsUnderline in FStyle) then inc(distance, 1);
         if (bestIndex = -1) or (distance < bestDistance) then
         begin
           bestIndex := i;
@@ -1723,7 +1723,7 @@ end;
 procedure TBGRAVectorizedFont.DrawTextWordBreak(ADest: TBGRACanvas2D;
   ATextUTF8: string; X, Y, MaxWidth: Single; AAlign: TBGRATypeWriterAlignment);
 var ARemains: string;
-  step: TPointF;
+  pos,step: TPointF;
   lines: TStringList;
   i: integer;
   lineShift: single;
@@ -1734,6 +1734,7 @@ begin
 
   oldItalicSlope:= ItalicSlope;
   ItalicSlope := 0;
+  pos := PointF(X,Y);
   step := TypeWriterMatrix*PointF(0,1);
   ItalicSlope := oldItalicSlope;
 
@@ -1760,14 +1761,12 @@ begin
     twaBottomLeft,twaBottomRight: lineShift := 1;
     twaTopRight,twaTopLeft : lineShift := 0;
     end;
-    X += step.X*lineShift;
-    Y += step.Y*lineShift;
+    pos.Offset(step*lineShift);
     repeat
       SplitText(ATextUTF8, MaxWidth, ARemains);
-      DrawText(ADest,ATextUTF8,X,Y,lineAlignment);
+      DrawText(ADest,ATextUTF8,pos.X,pos.Y,lineAlignment);
       ATextUTF8 := ARemains;
-      X+= step.X;
-      Y+= step.Y;
+      pos.Offset(step);
     until ARemains = '';
   end else
   begin
@@ -1787,13 +1786,11 @@ begin
     twaTopRight,twaTopLeft : lineShift += 0.5;
     end;
 
-    X -= step.X*lineShift;
-    Y -= step.Y*lineShift;
+    pos.Offset(step*(-lineShift));
     for i := 0 to lines.Count-1 do
     begin
-      DrawText(ADest,lines[i],X,Y,lineAlignment);
-      X+= step.X;
-      Y+= step.Y;
+      DrawText(ADest,lines[i],pos.X,pos.Y,lineAlignment);
+      pos.Offset(step);
     end;
     lines.Free;
   end;
@@ -1826,7 +1823,7 @@ end;
 function TBGRAVectorizedFont.GetTextWordBreakGlyphBoxes(ATextUTF8: string; X, Y,
   MaxWidth: Single; AAlign: TBGRATypeWriterAlignment): TGlyphBoxes;
 var ARemains: string;
-  step: TPointF;
+  pos,step: TPointF;
   lines: TStringList;
   i: integer;
   lineShift: single;
@@ -1840,6 +1837,7 @@ begin
 
   oldItalicSlope:= ItalicSlope;
   ItalicSlope := 0;
+  pos := PointF(X,Y);
   step := TypeWriterMatrix*PointF(0,1);
   ItalicSlope := oldItalicSlope;
 
@@ -1876,16 +1874,14 @@ begin
   twaTopRight,twaTopLeft : lineShift += 0.5;
   end;
 
-  X -= step.X*lineShift;
-  Y -= step.Y*lineShift;
+  pos.Offset(step*(-lineShift));
   setlength(tempArray, lines.Count);
   tempPos := 0;
   for i := 0 to lines.Count-1 do
   begin
-    tempArray[i] := GetTextGlyphBoxes(lines[i],X,Y,lineAlignment);
+    tempArray[i] := GetTextGlyphBoxes(lines[i],pos.X,pos.Y,lineAlignment);
     inc(tempPos, length(tempArray[i]));
-    X+= step.X;
-    Y+= step.Y;
+    pos.Offset(step);
   end;
   lines.Free;
   setlength(result, tempPos);

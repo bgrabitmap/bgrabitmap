@@ -198,8 +198,8 @@ begin
       dirs[i].y := -abs(dirs[i].y);
     end;
   end;
-  hsla1.hue += round(moveFactor*40);
-  hsla2.hue += round(moveFactor*40);
+  inc(hsla1.hue, round(moveFactor*40) );
+  inc(hsla2.hue, round(moveFactor*40) );
 
   time := time+ElapsedSec;
   lightPos1 := pointF((sin(time*0.7+1)+1)/4+0.4,(cos(time*0.5+2)+1)/4+0.3);

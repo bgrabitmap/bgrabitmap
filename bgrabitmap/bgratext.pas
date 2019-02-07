@@ -288,7 +288,7 @@ begin
   if FontPixelMetricCount = 0 then exit;
   sum := 0;
   for i := 0 to FontPixelMetricCount-1 do
-    sum += FontPixelMetricArray[i].usage;
+    inc(sum, FontPixelMetricArray[i].usage);
   sum := sum div FontPixelMetricCount;
   nb := 0;
   for i := 0 to FontPixelMetricCount-1 do
@@ -642,7 +642,7 @@ var actualAntialiasingLevel, extraMargin: integer;
 begin
   result := BGRAOriginalTextSizeEx(Font, Quality, sUTF8, CustomAntialiasingLevel, actualAntialiasingLevel, extraMargin);
   {$IFDEF FIX_FONT_VERTICAL_OFFSET}
-  if extraMargin > 0 then result.cy -= extraMargin;
+  if extraMargin > 0 then dec(result.cy, extraMargin);
   {$ENDIF}
 end;
 
@@ -848,6 +848,7 @@ procedure BGRATextOutAngle(bmp: TBGRACustomBitmap; Font: TFont; Quality: TBGRAFo
   orientationTenthDegCCW: integer;
   sUTF8: string; c: TBGRAPixel; tex: IBGRAScanner; align: TAlignment; CustomAntialiasingLevel: Integer = 0);
 var
+  posF: TPointF;
   x,y: integer;
   deltaX,deltaY: integer;
   size: TSize;
@@ -912,8 +913,8 @@ begin
   cosA := cos(orientationTenthDegCCW*Pi/1800);
   sinA := sin(orientationTenthDegCCW*Pi/1800);
   TopLeft := PointF(sinA*dy,cosA*dy);
-  xf += TopLeft.x/sizeFactor;
-  yf += TopLeft.y/sizeFactor;
+  posF := PointF(xf,yf);
+  posF.Offset( TopLeft * (1/sizeFactor) );
   TopRight := TopLeft + PointF(cosA*size.cx,-sinA*size.cx);
   BottomRight := TopRight + PointF(sinA*size.cy,cosA*size.cy);
   BottomLeft := TopLeft + PointF(sinA*size.cy,cosA*size.cy);
@@ -926,27 +927,20 @@ begin
   inc(rotBounds.Right);
   inc(rotBounds.Bottom);
 
-  xf += Left/sizeFactor;
-  yf += Top/sizeFactor;
+  posF.Offset( Left/sizeFactor, Top/sizeFactor );
   case align of
     taLeftJustify: ;
     taCenter:
-      begin
-        xf -= TopRight.x/2/sizeFactor;
-        yf -= TopRight.y/2/sizeFactor;
-      end;
+      posF.Offset( -TopRight*(1/(2*sizeFactor)) );
     taRightJustify:
-      begin
-        xf -= TopRight.x/sizeFactor;
-        yf -= TopRight.y/sizeFactor;
-      end;
+      posF.Offset( -TopRight*(1/sizeFactor) );
   end;
-  deltaX := round((xf - floor(xf))*sizeFactor);
-  x := floor(xf);
-  deltaY := round((yf - floor(yf))*sizeFactor);
-  y := floor(yf);
-  if deltaX <> 0 then rotBounds.Right += sizeFactor;
-  if deltaY <> 0 then rotBounds.Bottom += sizeFactor;
+  x := floor(posF.x);
+  deltaX := round((posF.x - x)*sizeFactor);
+  y := floor(posF.y);
+  deltaY := round((posF.y - y)*sizeFactor);
+  if deltaX <> 0 then inc(rotBounds.Right, sizeFactor);
+  if deltaY <> 0 then inc(rotBounds.Bottom, sizeFactor);
 
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
@@ -1229,12 +1223,12 @@ begin
       taLeftJustify: bidiAlign:= btaLeftJustify;
       taRightJustify: begin
         bidiAlign:= btaRightJustify;
-        x -= AMaxWidth;
+        dec(x, AMaxWidth);
       end
       else
       begin
         bidiAlign:= btaCenter;
-        x -= AMaxWidth div 2;
+        dec(x, AMaxWidth div 2);
       end;
     end;
     for i := 0 to bidiLayout.ParagraphCount-1 do
@@ -1277,13 +1271,13 @@ begin
   else if AVertAlign = tlBottom then lineShift := lines.Count
   else lineShift := 0;
 
-  X -= round(stepX*lineShift);
-  Y -= round(stepY*lineShift);
+  dec(X, round(stepX*lineShift));
+  dec(Y, round(stepY*lineShift));
   for i := 0 to lines.Count-1 do
   begin
     InternalTextOut(ADest,x,y,lines[i],AColor,ATexture,AHorizAlign,false,ARightToLeft);
-    X+= stepX;
-    Y+= stepY;
+    inc(X, stepX);
+    inc(Y, stepY);
   end;
   lines.Free;
 end;
@@ -1355,8 +1349,8 @@ begin
 
     if lines = nil then //only one line
     begin
-      if style.Layout = tlCenter then Y -= InternalTextSize(sUTF8,style.ShowPrefix).cy div 2;
-      if style.Layout = tlBottom then Y -= InternalTextSize(sUTF8,style.ShowPrefix).cy;
+      if style.Layout = tlCenter then dec(Y, InternalTextSize(sUTF8,style.ShowPrefix).cy div 2);
+      if style.Layout = tlBottom then dec(Y, InternalTextSize(sUTF8,style.ShowPrefix).cy);
       if style.EndEllipsis then
         InternalTextOutEllipse(ADest,X,Y,availableWidth,sUTF8,c,ATexture,style.Alignment,
                         style.ShowPrefix,style.RightToLeft)
@@ -1367,8 +1361,8 @@ begin
     begin    //multiple lines
       lines.add(copy(sUTF8, iStart, length(sUTF8)-iStart+1));
       h := InternalTextSize('Hg',False).cy;
-      if style.Layout = tlCenter then Y -= h*lines.Count div 2;
-      if style.Layout = tlBottom then Y -= h*lines.Count;
+      if style.Layout = tlCenter then dec(Y, h*lines.Count div 2);
+      if style.Layout = tlBottom then dec(Y, h*lines.Count);
       for i := 0 to lines.Count-1 do
       begin
         if style.EndEllipsis then
@@ -1556,7 +1550,7 @@ begin
       InternalSplitText(sUTF8, AMaxWidth, remains, WordBreakHandler);
       with InternalTextSize(sUTF8, false) do
         if cx > result.cx then result.cx := cx;
-      result.cy += h;
+      inc(result.cy, h);
       sUTF8 := remains;
     until remains = '';
   end;

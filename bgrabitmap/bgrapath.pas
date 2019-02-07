@@ -484,7 +484,7 @@ begin
     ptPrev  := points[i];
     ptNext  := points[(i + 1) mod length(points)];
     ptNext2 := points[(i + 2) mod length(points)];
-    nb      += ComputeCurvePartPrecision(ptPrev2, ptPrev, ptNext, ptNext2, AAcceptedDeviation);
+    inc(nb, ComputeCurvePartPrecision(ptPrev2, ptPrev, ptNext, ptNext2, AAcceptedDeviation) );
   end;
 
   kernel := CreateInterpolator(style);
@@ -549,7 +549,7 @@ begin
       ptNext2 := (ptNext+(ptPrev+points[i - 1])*EndCoeff)*(1/(1+2*EndCoeff))
     else
       ptNext2 := points[i + 2];
-    nb      += ComputeCurvePartPrecision(ptPrev2, ptPrev, ptNext, ptNext2, AAcceptedDeviation);
+    inc(nb, ComputeCurvePartPrecision(ptPrev2, ptPrev, ptNext, ptNext2, AAcceptedDeviation) );
   end;
 
   kernel := CreateInterpolator(style);
@@ -2385,7 +2385,7 @@ end;
 procedure TBGRAPath.NeedSpace(count: integer);
 begin
   OnModify;
-  count += 4; //avoid memory error
+  inc(count, 4); //avoid memory error
   if FDataPos + count > FDataCapacity then
   begin
     FDataCapacity := (FDataCapacity shl 1)+8;
@@ -2438,7 +2438,7 @@ begin
     if elemType in[peOpenedSpline,peClosedSpline] then
     begin
       p := PSplineElement(FData+(APos+sizeof(TPathElementHeader)));
-      newPos += p^.NbControlPoints * sizeof(TPointF); //extra
+      inc(newPos, p^.NbControlPoints * sizeof(TPointF) ); //extra
     end;
     if newPos < FDataPos then
     begin

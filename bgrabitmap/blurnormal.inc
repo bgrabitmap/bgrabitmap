@@ -53,8 +53,8 @@ var
       begin
         tempWeight := p^.red;
         inc(p);
-        diffMask[y,x] -= tempWeight;
-        diffMask[y,x+1] += tempWeight;
+        dec(diffMask[y,x], tempWeight);
+        inc(diffMask[y,x+1], tempWeight);
 
         if tempWeight <> 0 then
         begin

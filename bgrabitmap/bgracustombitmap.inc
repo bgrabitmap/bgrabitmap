@@ -2308,10 +2308,7 @@ var
     result.x := relX*cosa-relY*sina+x;
     result.y := relY*cosa+relX*sina+y;
     if ARestoreOffsetAfterRotation then
-    begin
-      result.x += imageCenterX;
-      result.y += imageCenterY;
-    end;
+      result.Offset(imageCenterX,imageCenterY);
   end;
 
 begin
@@ -2338,10 +2335,7 @@ var
     result.x := relX*cosa-relY*sina+x;
     result.y := relY*cosa+relX*sina+y;
     if ARestoreOffsetAfterRotation then
-    begin
-      result.x += imageCenterX;
-      result.y += imageCenterY;
-    end;
+      result.Offset(imageCenterX,imageCenterY);
   end;
 
 begin

@@ -257,7 +257,7 @@ begin
   inherited DoOnPaint;
   SwapBuffers;
 
-  FElapseAccumulator += FrameDiffTimeInMSecs;
+  inc(FElapseAccumulator, FrameDiffTimeInMSecs);
   Inc(FElapseCount);
   if FElapseAccumulator >= 2000 then
   begin

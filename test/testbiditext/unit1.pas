@@ -100,14 +100,14 @@ begin
   image.TextOut(240,y, 'BGRA WordWrap LTR (fit ' + inttostr(image.TextFitInfo(TestText, image.Width-250)) + ')', BGRABlack, taRightJustify);
   image.Rectangle(250, y, 250+s.cx,y+s.cy, BGRA(255,0,0,128), dmDrawWithTransparency);
   image.TextRect(Rect(250, y, 250+s.cx,y+s.cy), 250,y, TestText, ts, BGRABlack);
-  y += s.cy;
+  inc(y, s.cy);
 
   ts.RightToLeft := true;
   s := image.TextSize(TestText, image.Width-250, ts.RightToLeft);
   image.TextOut(240,y, 'BGRA WordWrap RTL', BGRABlack, taRightJustify);
   image.Rectangle(250, y, 250+s.cx,y+s.cy, BGRA(255,0,0,128), dmDrawWithTransparency);
   image.TextRect(Rect(250, y, 250+s.cx,y+s.cy), 250,y, TestText, ts, BGRABlack);
-  y += s.cy;
+  inc(y, s.cy);
   ts.Wordbreak := false;
 
   image.FontFullHeight := 40;

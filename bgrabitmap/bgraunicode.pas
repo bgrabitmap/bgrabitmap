@@ -854,7 +854,7 @@ var
               backIndex := curIndex;
               while backIndex > startIndex do
               begin
-                backIndex -= 1;
+                dec(backIndex);
                 if result[backIndex].IsRemoved then continue;
                 if a[backIndex].bidiClass = ubcEuropeanNumberTerminator then
                   a[backIndex].bidiClass := ubcEuropeanNumber
@@ -1028,7 +1028,7 @@ var
               begin
                 bracketStack[bracketStackPos].bracketCharInfo := curBracket;
                 bracketStack[bracketStackPos].index := curIndex;
-                bracketStackPos += 1;
+                inc(bracketStackPos);
               end else
                 break;
             end else
@@ -1210,9 +1210,9 @@ var
   begin
     case formattingCode of
     UNICODE_LEFT_TO_RIGHT_OVERRIDE,UNICODE_LEFT_TO_RIGHT_EMBEDDING:
-      if odd(minBidiLevel) then minBidiLevel += 1;
+      if odd(minBidiLevel) then inc(minBidiLevel);
     UNICODE_RIGHT_TO_LEFT_OVERRIDE,UNICODE_RIGHT_TO_LEFT_EMBEDDING:
-      if not odd(minBidiLevel) then minBidiLevel += 1;
+      if not odd(minBidiLevel) then inc(minBidiLevel);
     end;
     nextIndex := startIndex;
     repeat
@@ -1298,11 +1298,11 @@ var
     begin
       case a[curIndex].bidiClass of
       ubcRightToLeft,ubcArabicLetter:
-        if not Odd(result[curIndex].bidiLevel) then result[curIndex].bidiLevel += 1;
+        if not Odd(result[curIndex].bidiLevel) then inc(result[curIndex].bidiLevel);
       ubcEuropeanNumber,ubcArabicNumber:
-        if Odd(result[curIndex].bidiLevel) then result[curIndex].bidiLevel += 1
-        else result[curIndex].bidiLevel += 2;
-      ubcLeftToRight: if Odd(result[curIndex].bidiLevel) then result[curIndex].bidiLevel += 1;
+        if Odd(result[curIndex].bidiLevel) then inc(result[curIndex].bidiLevel)
+        else inc(result[curIndex].bidiLevel, 2);
+      ubcLeftToRight: if Odd(result[curIndex].bidiLevel) then inc(result[curIndex].bidiLevel);
       end;
       curIndex := a[curIndex].nextInIsolate;
     end;
@@ -1427,8 +1427,8 @@ var
       isolateDirection := DetermineIsolateDirectionFromFirstStrongClass(startIndex);
 
     case isolateDirection of
-    UNICODE_LEFT_TO_RIGHT_ISOLATE: if Odd(minBidiLevel) then minBidiLevel += 1;
-    UNICODE_RIGHT_TO_LEFT_ISOLATE: if not Odd(minBidiLevel) then minBidiLevel += 1;
+    UNICODE_LEFT_TO_RIGHT_ISOLATE: if Odd(minBidiLevel) then inc(minBidiLevel);
+    UNICODE_RIGHT_TO_LEFT_ISOLATE: if not Odd(minBidiLevel) then inc(minBidiLevel);
     else
       raise EInvalidOperation.Create('Unknown isolate direction');
     end;

@@ -1061,9 +1061,9 @@ var
     if hasStart then
     begin
       delta := length(arrowStartData)+1;
-      finalNb += delta;
+      inc(finalNb, delta);
     end else delta := 0;
-    if hasEnd then finalNb += length(arrowEndData)+1;
+    if hasEnd then inc(finalNb, length(arrowEndData)+1);
     SetLength(Result, finalNb);
     if hasStart then
     begin
@@ -1075,7 +1075,7 @@ var
     end;
     if hasEnd then
     begin
-      delta += NbPolyAcc+1;
+      inc(delta, NbPolyAcc+1);
       result[delta-1] := EmptyPointF;
       for i := 0 to high(arrowEndData) do
         result[i+delta] := arrowEndData[i];
@@ -1144,7 +1144,7 @@ begin
     pts[nbPts] := pts[1];
     inc(nbPts);
   end else
-    options -= [plCycle];
+    exclude(options, plCycle);
 
   setlength(pts,nbPts);
 
@@ -1222,10 +1222,10 @@ begin
       (not (plNoEndCap in options) and (i=high(pts)-1))) then //for square cap, just start and end further
     begin
       if i=0 then
-        pts[0] -= dir*hw;
+        pts[0].Offset(dir*(-hw));
 
       if (i=high(pts)-1) then
-        pts[high(pts)] += dir*hw;
+        pts[high(pts)].Offset(dir*hw);
 
       //length changed
       dir := pts[i+1]-pts[i];
@@ -1696,9 +1696,9 @@ function TBGRAPenStroker.ComputePolyline(const APoints: array of TPointF;
 var options: TBGRAPolyLineOptions;
 begin
   options := [];
-  if Assigned(Arrow) and Arrow.IsStartDefined then options += [plNoStartCap];
-  if Assigned(Arrow) and Arrow.IsEndDefined then options += [plNoEndCap];
-  if not AClosedCap then options += [plRoundCapOpen];
+  if Assigned(Arrow) and Arrow.IsStartDefined then include(options, plNoStartCap);
+  if Assigned(Arrow) and Arrow.IsEndDefined then include(options, plNoEndCap);
+  if not AClosedCap then include(options, plRoundCapOpen);
   if FStrokeMatrixIdentity then
     result := BGRAPen.ComputeWidePolylinePoints(APoints, AWidth*FStrokeZoom, APenColor, LineCap, JoinStyle, CustomPenStyle, options, MiterLimit, Arrow)
   else
@@ -1710,8 +1710,8 @@ function TBGRAPenStroker.ComputePolylineAutocycle(
 var options: TBGRAPolyLineOptions;
 begin
   options := [plAutoCycle];
-  if Assigned(Arrow) and Arrow.IsStartDefined then options += [plNoStartCap];
-  if Assigned(Arrow) and Arrow.IsEndDefined then options += [plNoEndCap];
+  if Assigned(Arrow) and Arrow.IsStartDefined then include(options, plNoStartCap);
+  if Assigned(Arrow) and Arrow.IsEndDefined then include(options, plNoEndCap);
   if FStrokeMatrixIdentity then
     result := BGRAPen.ComputeWidePolylinePoints(APoints, AWidth*FStrokeZoom, BGRAPixelTransparent, LineCap, JoinStyle, CustomPenStyle, options, MiterLimit, Arrow)
   else

@@ -235,10 +235,10 @@ begin
   begin
     mousePos := PointF(X,Y);
     if MovingPointIndex <> -1 then
-      pts[MovingPointIndex] += mousePos-MovingOrigin else
+      pts[MovingPointIndex].Offset(mousePos-MovingOrigin) else
     begin
       for i := 0 to high(pts) do
-        pts[i] += mousePos-MovingOrigin;
+        pts[i].Offset(mousePos-MovingOrigin);
     end;
     PathChange;
     MovingOrigin := mousePos;

@@ -546,31 +546,35 @@ function TSVGUnits.GetStretchRectF(AViewSize: TRectF; par: TSVGPreserveAspectRat
 var w0,h0,w,h: single;
 begin
   result := AViewSize;
-  w0 := AViewSize.Right-AViewSize.Left;
-  h0 := AViewSize.Bottom-AViewSize.Top;
-  w := w0;
-  h := h0;
 
   if par.Preserve and
      (FViewBox.size.x > 0) and (FViewBox.size.y > 0) and
      (w > 0) and (h > 0) then
   begin
+    w0 := AViewSize.Width;
+    h0 := AViewSize.Height;
+    w := w0;
+    h := h0;
+
     //viewBox wider than viewSize
     if (FViewBox.size.x/FViewBox.size.y > w/h) xor par.Slice then
-      h := w * FViewBox.size.y / FViewBox.size.x
-    else
+    begin
+      h := w * FViewBox.size.y / FViewBox.size.x;
+      result.Bottom := result.Top+h;
+    end else
+    begin
       w := h * FViewBox.size.x / FViewBox.size.y;
+      result.Right := result.Left+w;
+    end;
     case par.HorizAlign of
-      taCenter: result.Left += (w0-w)/2;
-      taRightJustify: result.Left += w0-w;
+      taCenter: result.Offset((w0-w)/2, 0);
+      taRightJustify: result.Offset(w0-w, 0);
     end;
     case par.VertAlign of
-      tlCenter: result.Top += (h0-h)/2;
-      tlBottom: result.Top += h0-h;
+      tlCenter: result.Offset(0, (h0-h)/2);
+      tlBottom: result.Offset(0, h0-h);
     end;
   end;
-  result.Right := result.Left+w;
-  result.Bottom := result.Top+h;
 end;
 
 { TBGRASVG }
@@ -879,7 +883,7 @@ begin
   if AStream.Read({%H-}byteOrderMark,sizeof(byteOrderMark)) = 3 then
   begin
     if (byteOrderMark[1] = $ef) and (byteOrderMark[2] = $bb) and (byteOrderMark[3] = $bf) then
-      startPos += 3;
+      inc(startPos, 3);
   end;
   AStream.Position:= startPos;
   ReadXMLFile(xml,AStream);

@@ -551,7 +551,7 @@ begin
       case opCode of
       wordRepetitionOpCode: begin
           lastRepeatWordSize:= GetNextBufferByte shl 8;
-          lastRepeatWordSize+= GetNextBufferByte;
+          inc(lastRepeatWordSize, GetNextBufferByte);
           RepeatValue(GetNextBufferByte, lastRepeatWordSize);
         end;
       previousWordSizeRepetitionOpCode: RepeatValue(GetNextBufferByte, lastRepeatWordSize);
