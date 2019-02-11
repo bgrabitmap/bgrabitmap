@@ -1634,7 +1634,7 @@ begin
 
   if APixelCenteredCoordinates then
     for i := 0 to high(result) do
-      if not isEmptyPointF(result[i]) then result[i].Offset(0.5, 0.5);
+      result[i].Offset(0.5, 0.5);
 end;
 
 function TBidiTextLayout.GetParagraphAt(ACharIndex: Integer): integer;

@@ -772,12 +772,14 @@ end;
 
 procedure TPointFHelper.Offset(dx, dy: longint);
 begin
+  if isEmptyPointF(self) then exit;
   self.x += dx;
   self.y += dy;
 end;
 
 procedure TPointFHelper.Offset(dx, dy: single);
 begin
+  if isEmptyPointF(self) then exit;
   self.x += dx;
   self.y += dy;
 end;

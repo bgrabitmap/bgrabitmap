@@ -195,9 +195,9 @@ var
 begin
   delta := ANewCoord-APrevCoord;
   FOrigin.Offset(delta);
-  if not isEmptyPointF(FXAxis) then FXAxis.Offset(delta);
-  if not isEmptyPointF(FYAxis) then FYAxis.Offset(delta);
-  if not isEmptyPointF(FFocalPoint) then FFocalPoint.Offset(delta);
+  FXAxis.Offset(delta);
+  FYAxis.Offset(delta);
+  FFocalPoint.Offset(delta);
   NotifyChange;
 end;
 
