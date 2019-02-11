@@ -450,7 +450,7 @@ begin
   if FBlinkCaretState and (SelLength = 0) then
     FTextLayout.DrawCaret(Bitmap, SelStart, BGRA(caretColor.red,caretColor.green,caretColor.blue,140), BGRA(caretColor.red,caretColor.green,caretColor.blue,100));
 
-  FTextLayout.DrawSelection(Bitmap, SelStart, SelStart+SelLength, selectionColor);
+  FTextLayout.DrawSelection(Bitmap, SelStart, SelStart+SelLength, selectionColor, BGRA(0,0,192),1);
 
   FTextLayout.DrawText(Bitmap);
 

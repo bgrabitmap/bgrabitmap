@@ -149,11 +149,14 @@ type
     procedure DrawText(ADest: TBGRACustomBitmap; AColor: TBGRAPixel); overload;
     procedure DrawText(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner); overload;
     procedure DrawCaret(ADest: TBGRACustomBitmap; ACharIndex: integer; AMainColor, ASecondaryColor: TBGRAPixel);
-    procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer; AColor: TBGRAPixel);
+    procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer;
+                            AFillColor: TBGRAPixel; ABorderColor: TBGRAPixel; APenWidth: single); overload;
+    procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer;
+                            AFillColor: TBGRAPixel); overload;
 
     function GetCaret(ACharIndex: integer): TBidiCaretPos;
     function GetCharIndexAt(APosition: TPointF): integer;
-    function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true): ArrayOfTPointF;
+    function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = false): ArrayOfTPointF;
     function GetParagraphAt(ACharIndex: Integer): integer;
 
     function InsertText(ATextUTF8: string; APosition: integer): integer;
@@ -1345,15 +1348,23 @@ begin
 end;
 
 procedure TBidiTextLayout.DrawSelection(ADest: TBGRACustomBitmap; AStartIndex,
-  AEndIndex: integer; AColor: TBGRAPixel);
+  AEndIndex: integer; AFillColor: TBGRAPixel; ABorderColor: TBGRAPixel; APenWidth: single);
 var
   env: ArrayOfTPointF;
 begin
   NeedLayout;
 
   if AStartIndex = AEndIndex then exit;
-  env := GetTextEnveloppe(AStartIndex,AEndIndex, False);
-  ADest.FillPolyAntialias(env, AColor, False);
+  env := GetTextEnveloppe(AStartIndex,AEndIndex, False, True);
+  ADest.FillPolyAntialias(env, AFillColor, False);
+  if (ABorderColor.alpha <> 0) and (APenWidth > 0) then
+    ADest.DrawPolygonAntialias(env, ABorderColor, APenWidth);
+end;
+
+procedure TBidiTextLayout.DrawSelection(ADest: TBGRACustomBitmap; AStartIndex,
+  AEndIndex: integer; AFillColor: TBGRAPixel);
+begin
+  DrawSelection(ADest, AStartIndex,AEndIndex, AFillColor, BGRAPixelTransparent, 0);
 end;
 
 function TBidiTextLayout.GetCaret(ACharIndex: integer): TBidiCaretPos;
@@ -1535,17 +1546,179 @@ begin
   exit(CharCount);
 end;
 
-function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean): ArrayOfTPointF;
+function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean; AMergeBoxes: boolean): ArrayOfTPointF;
 var
-  temp, i: Integer;
-  startCaret, endCaret, curPartStartCaret, curPartEndCaret,
-  lineStartCaret, lineEndCaret: TBidiCaretPos;
-  brokenLineIndex, paraIndex: integer;
-  r: TRectF;
+  startCaret, endCaret: TBidiCaretPos;
+  vertResult: array of record
+                box: TAffineBox;
+                joinPrevious: boolean;
+              end;
+
+  procedure AppendVertResult(ABox: TAffineBox; ARightToLeft: boolean);
+  begin
+    if ARightToLeft then
+      ABox := TAffineBox.AffineBox(ABox.TopRight,ABox.TopLeft,ABox.BottomRight);
+
+    if AMergeBoxes and (vertResult <> nil) and (ABox.TopLeft = vertResult[high(vertResult)].box.BottomLeft) and
+       (ABox.TopRight = vertResult[high(vertResult)].box.BottomRight) then
+       vertResult[high(vertResult)].box :=
+         TAffineBox.AffineBox(vertResult[high(vertResult)].box.TopLeft, vertResult[high(vertResult)].box.TopRight, ABox.BottomLeft)
+    else
+    begin
+      setlength(vertResult, length(vertResult)+1);
+      vertResult[high(vertResult)].box := ABox;
+      vertResult[high(vertResult)].joinPrevious:= AMergeBoxes and ((VectLen(ABox.TopLeft-vertResult[high(vertResult)-1].box.BottomLeft)<1e-3) or
+                                                  (VectLen(ABox.TopRight-vertResult[high(vertResult)-1].box.BottomRight)<1e-3));
+    end;
+  end;
+
+  procedure AppendComplexSelection;
+  var
+    horizResult: array of TAffineBox;
+
+    procedure AppendHorizResult(AStartTop, AEndTop, AEndBottom, AStartBottom: TPointF; ARightToLeft: boolean);
+    var
+      temp: TPointF;
+    begin
+      if ARightToLeft then
+      begin
+        temp := AStartTop;
+        AStartTop := AEndTop;
+        AEndTop := temp;
+
+        temp := AStartBottom;
+        AStartBottom := AEndBottom;
+        AEndBottom := temp;
+      end;
+
+      if AMergeBoxes and (horizResult <> nil) and (AStartTop = horizResult[high(horizResult)].TopRight)
+         and (AStartBottom = horizResult[high(horizResult)].BottomRight) then
+        horizResult[high(horizResult)] := TAffineBox.AffineBox(horizResult[high(horizResult)].TopLeft,AEndTop,horizResult[high(horizResult)].BottomLeft)
+      else
+      if AMergeBoxes and (horizResult <> nil) and (AEndTop = horizResult[high(horizResult)].TopLeft)
+         and (AEndBottom = horizResult[high(horizResult)].BottomLeft) then
+        horizResult[high(horizResult)] := TAffineBox.AffineBox(AStartTop,horizResult[high(horizResult)].TopRight,AStartBottom)
+      else
+      begin
+        setlength(horizResult, length(horizResult)+1);
+        horizResult[high(horizResult)] := TAffineBox.AffineBox(AStartTop, AEndTop, AStartBottom);
+      end;
+    end;
+
+    procedure FlushHorizResult;
+    var
+      idx, j: Integer;
+    begin
+      if horizResult <> nil then
+      begin
+        AppendVertResult(horizResult[0], false);
+        if length(horizResult)>1 then //additional boxes are added without vertical join
+        begin
+          idx := length(vertResult);
+          setlength(vertResult, length(vertResult)+length(horizResult)-1);
+          for j := 1 to high(horizResult) do
+          begin
+            vertResult[idx+j-1].box := horizResult[j];
+            vertResult[idx+j-1].joinPrevious := false;
+          end;
+        end;
+        horizResult := nil;
+      end;
+    end;
+
+  var
+    i: Integer;
+    curPartStartCaret, curPartEndCaret,
+    lineStartCaret, lineEndCaret: TBidiCaretPos;
+    brokenLineIndex, paraIndex: integer;
+    r: TRectF;
+
+  begin
+    horizResult := nil;
+
+    i := startCaret.PartIndex;
+    while i <= endCaret.PartIndex do
+    begin
+      //space between paragraph
+      if (i > startCaret.PartIndex) and (ParagraphSpacingAbove+ParagraphSpacingBelow <> 0) then
+      begin
+        paraIndex := BrokenLineParagraphIndex[PartBrokenLineIndex[i]];
+        if (paraIndex > 0) and (BrokenLineParagraphIndex[PartBrokenLineIndex[i-1]] = paraIndex-1) then
+        begin
+          FlushHorizResult;
+
+          r := RectF(ParagraphRectF[paraIndex-1].Left, ParagraphRectF[paraIndex-1].Bottom - ParagraphSpacingBelow*FLineHeight,
+                       ParagraphRectF[paraIndex-1].Right, ParagraphRectF[paraIndex-1].Bottom);
+          AppendVertResult(Matrix*TAffineBox.AffineBox(r), False);
+
+          r := RectF(ParagraphRectF[paraIndex].Left, ParagraphRectF[paraIndex].Top,
+                       ParagraphRectF[paraIndex].Right, ParagraphRectF[paraIndex].Top + ParagraphSpacingAbove*FLineHeight);
+          AppendVertResult(Matrix*TAffineBox.AffineBox(r), False);
+        end;
+      end;
+
+      brokenLineIndex := PartBrokenLineIndex[i];
+      //whole broken line selected
+      if (i = FBrokenLine[brokenLineIndex].firstPartIndex) and
+         ((i > startCaret.PartIndex) or (AStartIndex = PartStartIndex[i])) and
+         (endCaret.PartIndex >= FBrokenLine[brokenLineIndex].lastPartIndexPlusOne) then
+      begin
+        FlushHorizResult;
+
+        lineStartCaret := BrokenLineStartCaret[brokenLineIndex];
+        lineEndCaret := BrokenLineEndCaret[brokenLineIndex];
+        AppendVertResult(TAffineBox.AffineBox(lineStartCaret.Top,lineEndCaret.Top,lineStartCaret.Bottom), BrokenLineRightToLeft[brokenLineIndex]);
+
+        i := FBrokenLine[brokenLineIndex].lastPartIndexPlusOne;
+      end else
+      begin
+        //start of lines
+        if (i > startCaret.PartIndex) and (PartBrokenLineIndex[i-1] <> brokenLineIndex) then
+        begin
+          FlushHorizResult;
+
+          lineStartCaret := BrokenLineStartCaret[brokenLineIndex];
+          if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
+            AppendHorizResult(lineStartCaret.Top,PartStartCaret[i].Top,PartStartCaret[i].Bottom,lineStartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex])
+          else
+            AppendHorizResult(lineStartCaret.Top,PartEndCaret[i].Top,PartEndCaret[i].Bottom,lineStartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex]);
+        end;
+
+        //text parts
+        if i > startCaret.PartIndex then curPartStartCaret := PartStartCaret[i]
+        else curPartStartCaret := startCaret;
+
+        if i < endCaret.PartIndex then curPartEndCaret := PartEndCaret[i]
+        else curPartEndCaret := endCaret;
+
+        AppendHorizResult(curPartStartCaret.Top,curPartEndCaret.Top,curPartEndCaret.Bottom,curPartStartCaret.Bottom, PartRightToLeft[i]);
+
+        //end of lines
+        if (i < endCaret.PartIndex) and (PartBrokenLineIndex[i+1] <> PartBrokenLineIndex[i]) then
+        begin
+          lineEndCaret := BrokenLineEndCaret[brokenLineIndex];
+          if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
+            AppendHorizResult(PartEndCaret[i].Top,lineEndCaret.Top,lineEndCaret.Bottom,PartEndCaret[i].Bottom, BrokenLineRightToLeft[brokenLineIndex])
+          else
+            AppendHorizResult(PartStartCaret[i].Top,lineEndCaret.Top,lineEndCaret.Bottom,PartStartCaret[i].Bottom, BrokenLineRightToLeft[brokenLineIndex]);
+        end;
+
+        inc(i);
+      end;
+
+    end;
+
+    FlushHorizResult;
+  end;
+
+var
+  temp: integer;
+  i,j, idxOut, k: integer;
+
 begin
   NeedLayout;
 
-  result := nil;
+  vertResult := nil;
 
   if AStartIndex > AEndIndex then
   begin
@@ -1566,75 +1739,47 @@ begin
   if startCaret.PartIndex = endCaret.PartIndex then
   begin
     if not isEmptyPointF(startCaret.Top) and not isEmptyPointF(endCaret.Top) then
-      result := PointsF([startCaret.Top,startCaret.Bottom,endCaret.Bottom,endCaret.Top]);
+      AppendVertResult(TAffineBox.AffineBox(startCaret.Top,endCaret.Top,startCaret.Bottom), startCaret.RightToLeft);
   end else
-  begin
-    result := nil;
-    for i := startCaret.PartIndex to endCaret.PartIndex do
-    begin
-      if i > startCaret.PartIndex then curPartStartCaret := PartStartCaret[i]
-      else curPartStartCaret := startCaret;
-
-      if i < endCaret.PartIndex then curPartEndCaret := PartEndCaret[i]
-      else curPartEndCaret := endCaret;
-
-      //space between paragraph
-      if (i > startCaret.PartIndex) and (ParagraphSpacingAbove+ParagraphSpacingBelow <> 0) then
-      begin
-        paraIndex := BrokenLineParagraphIndex[PartBrokenLineIndex[i]];
-        if (paraIndex > 0) and (BrokenLineParagraphIndex[PartBrokenLineIndex[i-1]] = paraIndex-1) then
-        begin
-          r := RectF(ParagraphRectF[paraIndex-1].Left, ParagraphRectF[paraIndex-1].Bottom - ParagraphSpacingBelow*FLineHeight,
-                       ParagraphRectF[paraIndex-1].Right, ParagraphRectF[paraIndex-1].Bottom);
-          result := ConcatPointsF([result, Matrix*TAffineBox.AffineBox(r).AsPolygon, PointsF([EmptyPointF])]);
-
-          r := RectF(ParagraphRectF[paraIndex].Left, ParagraphRectF[paraIndex].Top,
-                       ParagraphRectF[paraIndex].Right, ParagraphRectF[paraIndex].Top + ParagraphSpacingAbove*FLineHeight);
-          result := ConcatPointsF([result, Matrix*TAffineBox.AffineBox(r).AsPolygon, PointsF([EmptyPointF])]);
-        end;
-      end;
-
-      //start of lines
-      brokenLineIndex := PartBrokenLineIndex[i];
-      lineStartCaret := BrokenLineStartCaret[brokenLineIndex];
-      if (i > startCaret.PartIndex) and (PartBrokenLineIndex[i-1] <> brokenLineIndex) then
-      begin
-        if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
-          result := ConcatPointsF([result,
-                            PointsF([lineStartCaret.Top,lineStartCaret.Bottom,PartStartCaret[i].Bottom,PartStartCaret[i].Top, EmptyPointF])
-                           ])
-        else
-        result := ConcatPointsF([result,
-                          PointsF([lineStartCaret.Top,lineStartCaret.Bottom,PartEndCaret[i].Bottom,PartEndCaret[i].Top, EmptyPointF])
-                         ])
-      end;
-
-      //text parts
-      result := ConcatPointsF([result,
-                            PointsF([curPartStartCaret.Top,curPartStartCaret.Bottom,curPartEndCaret.Bottom,curPartEndCaret.Top, EmptyPointF])
-                           ]);
-
-
-      //end of lines
-      lineEndCaret := BrokenLineEndCaret[brokenLineIndex];
-      if (i < endCaret.PartIndex) and (PartBrokenLineIndex[i+1] <> PartBrokenLineIndex[i]) then
-      begin
-        if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
-          result := ConcatPointsF([result,
-                            PointsF([PartEndCaret[i].Top,PartEndCaret[i].Bottom,lineEndCaret.Bottom,lineEndCaret.Top, EmptyPointF])
-                           ])
-        else
-          result := ConcatPointsF([result,
-                            PointsF([PartStartCaret[i].Top,PartStartCaret[i].Bottom,lineEndCaret.Bottom,lineEndCaret.Top, EmptyPointF])
-                           ])
-      end;
-    end;
-    if result <> nil then setlength(result, length(result)-1);
-  end;
+    AppendComplexSelection;
 
   if APixelCenteredCoordinates then
-    for i := 0 to high(result) do
-      result[i].Offset(0.5, 0.5);
+    for i := 0 to high(vertResult) do
+      vertResult[i].box.Offset(0.5, 0.5);
+
+  if vertResult <> nil then
+  begin
+    setlength(result, length(vertResult)*5 - 1); //maximum point count
+    idxOut := 0;
+    i := 0;
+    while i <= high(vertResult) do
+    begin
+      if i > 0 then
+      begin
+        result[idxOut] := EmptyPointF;
+        inc(idxOut);
+      end;
+      result[idxOut] := vertResult[i].box.TopLeft; inc(idxOut);
+      result[idxOut] := vertResult[i].box.TopRight; inc(idxOut);
+      result[idxOut] := vertResult[i].box.BottomRight; inc(idxOut);
+      j := i;
+      while (j<high(vertResult)) and vertResult[j+1].joinPrevious do
+      begin
+        inc(j);
+        result[idxOut] := vertResult[j].box.TopRight; inc(idxOut);
+        result[idxOut] := vertResult[j].box.BottomRight; inc(idxOut);
+      end;
+      for k := j downto i+1 do
+      begin
+        result[idxOut] := vertResult[k].box.BottomLeft; inc(idxOut);
+        result[idxOut] := vertResult[k].box.TopLeft; inc(idxOut);
+      end;
+      result[idxOut] := vertResult[i].box.BottomLeft; inc(idxOut);
+      i := j+1;
+    end;
+    setlength(result, idxOut);
+  end else
+    result := nil;
 end;
 
 function TBidiTextLayout.GetParagraphAt(ACharIndex: Integer): integer;
