@@ -151,6 +151,8 @@ type
     class function EmptyBox: TAffineBox; static;
     class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox; overload; static;
     class function AffineBox(ARectF: TRectF): TAffineBox; overload; static;
+    procedure Offset(AOfsX, AOfsY: single); overload;
+    procedure Offset(AOfs: TPointF); overload;
     function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
     property RectBoundsF: TRectF read GetRectBoundsF;
@@ -983,6 +985,18 @@ begin
   result.TopLeft := ARectF.TopLeft;
   result.TopRight := PointF(ARectF.Right, ARectF.Top);
   result.BottomLeft := PointF(ARectF.Left, ARectF.Bottom);
+end;
+
+procedure TAffineBox.Offset(AOfsX, AOfsY: single);
+begin
+  TopLeft.Offset(AOfsX,AOfsY);
+  TopRight.Offset(AOfsX,AOfsY);
+  BottomLeft.Offset(AOfsX,AOfsY);
+end;
+
+procedure TAffineBox.Offset(AOfs: TPointF);
+begin
+  Offset(AOfs.X,AOfs.Y);
 end;
 
 function TAffineBox.Contains(APoint: TPointF): boolean;
