@@ -156,7 +156,7 @@ type
 
     function GetCaret(ACharIndex: integer): TBidiCaretPos;
     function GetCharIndexAt(APosition: TPointF): integer;
-    function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = false): ArrayOfTPointF;
+    function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = true): ArrayOfTPointF;
     function GetParagraphAt(ACharIndex: Integer): integer;
 
     function InsertText(ATextUTF8: string; APosition: integer): integer;
