@@ -27,7 +27,8 @@ type
                  skLeft, skUp, skRight, skDown,
                  skInsert, skDelete,
                  skNum0, skNum1, skNum2, skNum3, skNum4, skNum5, skNum6, skNum7, skNum8, skNum9,
-                 skF1, skF2, skF3, skF4, skF5, skF6, skF7, skF8, skF9, skF10, skF11, skF12);
+                 skF1, skF2, skF3, skF4, skF5, skF6, skF7, skF8, skF9, skF10, skF11, skF12,
+                 skA, skB, skC, skD, skE, skF, skG, skH, skI, skJ, skK, skL, skM, skN, skO, skP, skQ, skR, skS, skT, skU, skV, skW, skX, skY, skZ);
 
 {$IFDEF BGRABITMAP_USE_LCL}
 const
@@ -37,7 +38,10 @@ const
      VK_LEFT,VK_UP,VK_RIGHT,VK_DOWN,
      VK_INSERT,VK_DELETE,
      VK_NUMPAD0,VK_NUMPAD1,VK_NUMPAD2,VK_NUMPAD3,VK_NUMPAD4,VK_NUMPAD5,VK_NUMPAD6,VK_NUMPAD7,VK_NUMPAD8,VK_NUMPAD9,
-     VK_F1,VK_F2,VK_F3,VK_F4,VK_F5,VK_F6,VK_F7,VK_F8,VK_F9,VK_F10,VK_F11,VK_F12);
+     VK_F1,VK_F2,VK_F3,VK_F4,VK_F5,VK_F6,VK_F7,VK_F8,VK_F9,VK_F10,VK_F11,VK_F12,
+     VK_A, VK_B, VK_C, VK_D, VK_E, VK_F, VK_G, VK_H, VK_I, VK_J, VK_K, VK_L, VK_M, VK_N, VK_O, VK_P, VK_Q, VK_R, VK_S, VK_T, VK_U, VK_V, VK_W, VK_X, VK_Y, VK_Z);
+
+  function LCLKeyToSpecialKey(AKey: Word; AShift: TShiftState): TSpecialKey;
 {$ENDIF}
 
 type
@@ -261,6 +265,18 @@ function FindLayerOriginalClass(AStorageClassName: string): TBGRALayerOriginalAn
 implementation
 
 uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, Types, BGRAGraphics;
+
+{$IFDEF BGRABITMAP_USE_LCL}
+function LCLKeyToSpecialKey(AKey: Word; AShift: TShiftState): TSpecialKey;
+var
+  sk: TSpecialKey;
+begin
+  if (AKey >= VK_A) and (AKey <= VK_Z) and (AShift*[ssCtrl,ssAlt]=[]) then exit(skUnknown);
+  for sk := low(TSpecialKey) to high(TSpecialKey) do
+    if AKey = SpecialKeyToLCL[sk] then exit(sk);
+  exit(skUnknown);
+end;
+{$ENDIF}
 
 var
   LayerOriginalClasses: array of TBGRALayerOriginalAny;
