@@ -729,11 +729,11 @@ var
 begin
   FUnbrokenLineCount := 1;
   FParagraphCount := 1;
-  for i := 0 to high(FBidi)-1 do
+  for i := 0 to high(FBidi) do
   begin
-    if FBidi[i].BidiInfo.IsEndOfLine or FBidi[i].BidiInfo.IsEndOfParagraph then
+    if FBidi[i].BidiInfo.IsEndOfLine or FBidi[i].BidiInfo.IsExplicitEndOfParagraph then
     begin
-      if FBidi[i].BidiInfo.IsEndOfParagraph then inc(FParagraphCount);
+      if FBidi[i].BidiInfo.IsExplicitEndOfParagraph then inc(FParagraphCount);
       inc(FUnbrokenLineCount);
     end;
   end;
@@ -748,12 +748,12 @@ begin
   FUnbrokenLine[lineIndex].startIndex := 0;
   FUnbrokenLine[lineIndex].paragraphIndex := curParaIndex;
   inc(lineIndex);
-  for i := 0 to high(FBidi)-1 do
+  for i := 0 to high(FBidi) do
   begin
     FParagraph[curParaIndex].rtl := odd(FBidi[i].BidiInfo.ParagraphBidiLevel);
-    if FBidi[i].BidiInfo.IsEndOfLine or FBidi[i].BidiInfo.IsEndOfParagraph then
+    if FBidi[i].BidiInfo.IsEndOfLine or FBidi[i].BidiInfo.IsExplicitEndOfParagraph then
     begin
-      if FBidi[i].BidiInfo.IsEndOfParagraph then
+      if FBidi[i].BidiInfo.IsExplicitEndOfParagraph then
       begin
         inc(curParaIndex);
         FParagraph[curParaIndex].firstUnbrokenLineIndex:= lineIndex;
@@ -1583,7 +1583,7 @@ begin
 
       result := FUnbrokenLine[FParagraph[paraIndex+1].firstUnbrokenLineIndex].startIndex;
       while (result > FUnbrokenLine[FParagraph[paraIndex].firstUnbrokenLineIndex].startIndex) and
-        FBidi[result-1].BidiInfo.IsEndOfParagraph do
+        FBidi[result-1].BidiInfo.IsExplicitEndOfParagraph do
         dec(result);
       exit();
     end;

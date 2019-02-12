@@ -21,8 +21,9 @@ const
   ubcNeutral = [ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals];
 
   BIDI_FLAG_REMOVED = 1;                   //RLE, LRE, RLO, LRO, PDF and BN are supposed to be removed
-  BIDI_FLAG_END_OF_PARAGRAPH = 2;          //end of paragraph (paragraph spacing below)
-  BIDI_FLAG_END_OF_LINE = 4;               //line break <br>
+  BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH = 2; //implicit end of paragraph (paragraph spacing below due to end of text)
+  BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH = 4; //explicit end of paragraph (paragraph spacing below due to paragraph split)
+  BIDI_FLAG_END_OF_LINE = 8;               //line break <br>
 
 type
   PUnicodeBidiInfo = ^TUnicodeBidiInfo;
@@ -33,6 +34,8 @@ type
   private
     function GetEndOfLine: boolean;
     function GetEndOfParagraph: boolean;
+    function GetExplicitEndOfParagraph: boolean;
+    function GetImplicitEndOfParagraph: boolean;
     function GetRemoved: boolean;
     function GetRightToLeft: boolean;
     function GetParagraphRightToLeft: boolean;
@@ -44,6 +47,8 @@ type
     property IsParagraphRightToLeft: boolean read GetParagraphRightToLeft;
     property IsEndOfLine: boolean read GetEndOfLine;
     property IsEndOfParagraph: boolean read GetEndOfParagraph;
+    property IsExplicitEndOfParagraph: boolean read GetExplicitEndOfParagraph;
+    property IsImplicitEndOfParagraph: boolean read GetImplicitEndOfParagraph;
   end;
 
   TUnicodeBidiArray = packed array of TUnicodeBidiInfo;
@@ -782,7 +787,17 @@ end;
 
 function TUnicodeBidiInfo.GetEndOfParagraph: boolean;
 begin
-  result := (Flags and BIDI_FLAG_END_OF_PARAGRAPH) <> 0;
+  result := (Flags and (BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH or BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH)) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetExplicitEndOfParagraph: boolean;
+begin
+  result := (Flags and BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetImplicitEndOfParagraph: boolean;
+begin
+  result := (Flags and BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH) <> 0;
 end;
 
 function TUnicodeBidiInfo.GetRemoved: boolean;
@@ -1515,7 +1530,7 @@ var
            ((u[curIndex+1] = 13) or (u[curIndex+1] = 10)) and (u[curIndex+1] <> u[curIndex]) then
           inc(curIndex);
 
-        result[curIndex].Flags := result[curIndex].Flags or BIDI_FLAG_END_OF_PARAGRAPH;
+        result[curIndex].Flags := result[curIndex].Flags or BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH;
 
         AnalyzeIsolates(lineStartIndex, curIndex+1-lineStartIndex, baseDirection, 0, true);
         lineStartIndex := curIndex+1;
@@ -1524,7 +1539,7 @@ var
     end;
     if curIndex > lineStartIndex then
     begin
-      result[curIndex-1].Flags := result[curIndex-1].Flags or BIDI_FLAG_END_OF_PARAGRAPH;
+      result[curIndex-1].Flags := result[curIndex-1].Flags or BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH;
       AnalyzeIsolates(lineStartIndex, curIndex-lineStartIndex, baseDirection, 0, true);
     end;
   end;
