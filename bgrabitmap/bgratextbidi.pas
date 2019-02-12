@@ -374,12 +374,15 @@ var
   u: LongWord;
 begin
   result := GetParagraphEndIndex(AIndex);
-  u := UnicodeChar[result-1];
-  if (result>0) and IsUnicodeParagraphSeparator(u) then
+  if result > 0 then
   begin
-    dec(result);
-    if IsUnicodeCrLf(u) and (result>0) and IsUnicodeCrLf(UnicodeChar[result-1]) and
-      (UnicodeChar[result-1] <> u) then dec(result);
+    u := UnicodeChar[result-1];
+    if (result>0) and IsUnicodeParagraphSeparator(u) then
+    begin
+      dec(result);
+      if IsUnicodeCrLf(u) and (result>0) and IsUnicodeCrLf(UnicodeChar[result-1]) and
+        (UnicodeChar[result-1] <> u) then dec(result);
+    end;
   end;
 end;
 
@@ -1613,8 +1616,11 @@ var
     begin
       setlength(vertResult, length(vertResult)+1);
       vertResult[high(vertResult)].box := ABox;
-      vertResult[high(vertResult)].joinPrevious:= AMergeBoxes and ((VectLen(ABox.TopLeft-vertResult[high(vertResult)-1].box.BottomLeft)<1e-3) or
-                                                  (VectLen(ABox.TopRight-vertResult[high(vertResult)-1].box.BottomRight)<1e-3));
+      if high(vertResult)>0 then
+        vertResult[high(vertResult)].joinPrevious:= AMergeBoxes and ((VectLen(ABox.TopLeft-vertResult[high(vertResult)-1].box.BottomLeft)<1e-3) or
+                                                    (VectLen(ABox.TopRight-vertResult[high(vertResult)-1].box.BottomRight)<1e-3))
+      else
+        vertResult[high(vertResult)].joinPrevious:= false;
     end;
   end;
 
