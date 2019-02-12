@@ -21,7 +21,7 @@ type
   TOriginalChangeEvent = procedure(ASender: TObject; ABounds: PRectF = nil) of object;
   TOriginalEditingChangeEvent = procedure(ASender: TObject) of object;
   TOriginalEditorCursor = (oecDefault, oecMove, oecMoveW, oecMoveE, oecMoveN, oecMoveS,
-                           oecMoveNE, oecMoveSW, oecMoveNW, oecMoveSE, oecHandPoint);
+                           oecMoveNE, oecMoveSW, oecMoveNW, oecMoveSE, oecHandPoint, oecText);
   TSpecialKey = (skUnknown, skBackspace, skTab, skReturn, skEscape,
                  skPageUp, skPageDown, skHome, skEnd,
                  skLeft, skUp, skRight, skDown,
