@@ -943,7 +943,7 @@ end;
 
 procedure TBidiTextLayout.ComputeLayout;
 var w,h, lineHeight, baseLine, tabPixelSize: single;
-  paraIndex, i, j, nextTabIndex, splitIndex: Integer;
+  paraIndex, ubIndex, j, nextTabIndex, splitIndex: Integer;
   lineStart, subStart, lineEnd: integer;
   paraSpacingAbove, paraSpacingBelow, correctedBaseLine: single;
   paraRTL, needNewLine: boolean;
@@ -969,6 +969,44 @@ var w,h, lineHeight, baseLine, tabPixelSize: single;
     inc(tabSectionCount);
   end;
 
+  procedure AddBrokenLine(ACharStart: integer; ACharEnd: integer; ABidiLevel: byte; AWidth, AHeight: single);
+  begin
+    if FBrokenLineCount >= length(FBrokenLine) then
+      setlength(FBrokenLine, length(FBrokenLine)*2+4);
+    FBrokenLine[FBrokenLineCount].unbrokenLineIndex := ubIndex;
+    FBrokenLine[FBrokenLineCount].startIndex:= ACharStart;
+    FBrokenLine[FBrokenLineCount].endIndex:= ACharEnd;
+    FBrokenLine[FBrokenLineCount].bidiLevel := ABidiLevel;
+    FBrokenLine[FBrokenLineCount].firstPartIndex:= FPartCount;
+    if FAvailableWidth <> EmptySingle then
+      FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,FAvailableWidth,pos.y+AHeight)
+    else
+    begin
+      case alignment of
+      taRightJustify: FBrokenLine[FBrokenLineCount].rectF := RectF(-AWidth,pos.y,0,pos.y+AHeight);
+      taCenter: FBrokenLine[FBrokenLineCount].rectF := RectF(-AWidth*0.5,pos.y,AWidth*0.5,pos.y+AHeight);
+      else {taLeftJustify}
+        FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,AWidth,pos.y+AHeight);
+      end;
+    end;
+    FBrokenLineCount += 1;
+
+    if FAvailableWidth = EmptySingle then
+    begin
+      if FParagraph[paraIndex].rectF.Left = EmptySingle then
+      begin
+        FParagraph[paraIndex].rectF.Left := FBrokenLine[FBrokenLineCount-1].rectF.left;
+        FParagraph[paraIndex].rectF.Right := FBrokenLine[FBrokenLineCount-1].rectF.Right;
+      end else
+      begin
+        if FParagraph[paraIndex].rectF.Left < FBrokenLine[FBrokenLineCount-1].rectF.left then
+          FParagraph[paraIndex].rectF.Left := FBrokenLine[FBrokenLineCount-1].rectF.left;
+        if FParagraph[paraIndex].rectF.Right > FBrokenLine[FBrokenLineCount-1].rectF.Right then
+          FParagraph[paraIndex].rectF.Right := FBrokenLine[FBrokenLineCount-1].rectF.Right;
+      end;
+    end;
+  end;
+
 begin
   FLineHeight:= GetFontFullHeight;
   baseLine := GetFontBaseline;
@@ -981,6 +1019,10 @@ begin
   paraSpacingAbove := ParagraphSpacingAbove*FLineHeight;
   paraSpacingBelow := ParagraphSpacingBelow*FLineHeight;
   pos := PointF(0,0);
+  if FAvailableWidth <> EmptySingle then
+    availWidth0 := FAvailableWidth
+  else
+    availWidth0:= 0;
 
   tabPixelSize := TabSize*TextSizeBidiOverride(' ',False).x;
   tabSection := nil;
@@ -999,11 +1041,25 @@ begin
       FParagraph[paraIndex].rectF.Right := EmptySingle;
     end;
     pos.y += paraSpacingAbove;
+    paraRTL := FParagraph[paraIndex].rtl;
 
-    for i := FParagraph[paraIndex].firstUnbrokenLineIndex to FParagraph[paraIndex+1].firstUnbrokenLineIndex-1 do
+    if FAvailableWidth <> EmptySingle then
     begin
-      lineStart := FUnbrokenLine[i].startIndex;
-      lineEnd := FUnbrokenLine[i+1].startIndex;
+      case FParagraph[paraIndex].alignment of
+      btaNatural: if paraRTL then alignment := taRightJustify else alignment:= taLeftJustify;
+      btaOpposite: if paraRTL then alignment := taLeftJustify else alignment:= taRightJustify;
+      btaLeftJustify: alignment:= taLeftJustify;
+      btaRightJustify: alignment:= taRightJustify;
+      else {btaCenter:} alignment:= taCenter;
+      end;
+    end else
+      alignment := taLeftJustify;
+
+    for ubIndex := FParagraph[paraIndex].firstUnbrokenLineIndex to FParagraph[paraIndex+1].firstUnbrokenLineIndex-1 do
+    begin
+      lineStart := FUnbrokenLine[ubIndex].startIndex;
+      lineEnd := FUnbrokenLine[ubIndex+1].startIndex;
+      paraBidiLevel := FBidi[lineStart].BidiInfo.ParagraphBidiLevel;
 
       if lineEnd > lineStart then
       begin
@@ -1021,7 +1077,7 @@ begin
           end;
         end;
       end;
-      FUnbrokenLine[i].firstBrokenLineIndex:= FBrokenLineCount;
+      FUnbrokenLine[ubIndex].firstBrokenLineIndex:= FBrokenLineCount;
 
       subStart := lineStart;
       //avoid warnings
@@ -1029,11 +1085,29 @@ begin
       h := 0;
       w := 0;
 
+      //empty paragraph
+      if subStart = lineEnd then
+      begin
+        AddBrokenLine(subStart, lineEnd, paraBidiLevel, 0, FLineHeight);
+
+        case alignment of
+        taRightJustify: pos.x := availWidth0;
+        taCenter: pos.x := availWidth0*0.5;
+        else {taLeftJustify}
+          pos.x := 0;
+        end;
+        AddPart(subStart, lineEnd, paraBidiLevel,
+                RectF(pos.x,FBrokenLine[FBrokenLineCount-1].rectF.Top,
+                      pos.x,FBrokenLine[FBrokenLineCount-1].rectF.Bottom),
+                PointF(0,0), '', FBrokenLineCount-1);
+
+        FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
+        pos.y += FLineHeight;
+      end else
       //break lines
       while subStart < lineEnd do
       begin
         //split into sections according to tabs
-        paraBidiLevel := FBidi[lineStart].BidiInfo.ParagraphBidiLevel;
         tabSectionCount := 0;
         curBidiPos := 0;
         tabSectionStart := subStart;
@@ -1131,62 +1205,9 @@ begin
         end;
 
         // add broken line info
-        paraRTL := FParagraph[paraIndex].rtl;
-        pos.x := 0;
-
-        if FAvailableWidth <> EmptySingle then
-        begin
-          case FParagraph[paraIndex].alignment of
-          btaNatural: if paraRTL then alignment := taRightJustify else alignment:= taLeftJustify;
-          btaOpposite: if paraRTL then alignment := taLeftJustify else alignment:= taRightJustify;
-          btaLeftJustify: alignment:= taLeftJustify;
-          btaRightJustify: alignment:= taRightJustify;
-          else {btaCenter:} alignment:= taCenter;
-          end;
-        end else
-          alignment := taLeftJustify;
-
-        if FBrokenLineCount >= length(FBrokenLine) then
-          setlength(FBrokenLine, length(FBrokenLine)*2+4);
-        FBrokenLine[FBrokenLineCount].unbrokenLineIndex := i;
-        FBrokenLine[FBrokenLineCount].startIndex:= subStart;
-        FBrokenLine[FBrokenLineCount].endIndex:= splitIndex;
-        FBrokenLine[FBrokenLineCount].bidiLevel := paraBidiLevel;
-        FBrokenLine[FBrokenLineCount].firstPartIndex:= FPartCount;
-        if FAvailableWidth <> EmptySingle then
-          FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,FAvailableWidth,pos.y+lineHeight)
-        else
-        begin
-          case alignment of
-          taRightJustify: FBrokenLine[FBrokenLineCount].rectF := RectF(-w,pos.y,0,pos.y+lineHeight);
-          taCenter: FBrokenLine[FBrokenLineCount].rectF := RectF(-w*0.5,pos.y,w*0.5,pos.y+lineHeight);
-          else {taLeftJustify}
-            FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,w,pos.y+lineHeight);
-          end;
-        end;
-        FBrokenLineCount += 1;
-
-        if FAvailableWidth = EmptySingle then
-        begin
-          if FParagraph[paraIndex].rectF.Left = EmptySingle then
-          begin
-            FParagraph[paraIndex].rectF.Left := FBrokenLine[FBrokenLineCount-1].rectF.left;
-            FParagraph[paraIndex].rectF.Right := FBrokenLine[FBrokenLineCount-1].rectF.Right;
-          end else
-          begin
-            if FParagraph[paraIndex].rectF.Left < FBrokenLine[FBrokenLineCount-1].rectF.left then
-              FParagraph[paraIndex].rectF.Left := FBrokenLine[FBrokenLineCount-1].rectF.left;
-            if FParagraph[paraIndex].rectF.Right > FBrokenLine[FBrokenLineCount-1].rectF.Right then
-              FParagraph[paraIndex].rectF.Right := FBrokenLine[FBrokenLineCount-1].rectF.Right;
-          end;
-        end;
+        AddBrokenLine(subStart, splitIndex, paraBidiLevel, w, lineHeight);
 
         subStart := tabSectionStart;
-
-        if FAvailableWidth <> EmptySingle then
-          availWidth0 := FAvailableWidth
-        else
-          availWidth0:= 0;
 
         case alignment of
         taRightJustify:
