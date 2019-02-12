@@ -1,6 +1,7 @@
 unit BGRATextBidi;
 
 {$mode objfpc}{$H+}
+{$MODESWITCH ADVANCEDRECORDS}
 
 interface
 
@@ -8,6 +9,9 @@ uses
   Classes, SysUtils, BGRABitmapTypes, BGRAUTF8, BGRAUnicode, BGRATransform;
 
 type
+
+  { TBidiCaretPos }
+
   TBidiCaretPos = record
     PartIndex: integer;
 
@@ -16,6 +20,8 @@ type
 
     PreviousTop, PreviousBottom: TPointF;
     PreviousRightToLeft: boolean;
+
+    procedure Transform(AMatrix: TAffineMatrix);
   end;
 
   { TBidiTextLayout }
@@ -125,6 +131,8 @@ type
     procedure AddPart(AStartIndex, AEndIndex: integer; ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ASUTF8: string; ABrokenLineIndex: integer);
     function GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
     function GetPartEndCaret(APartIndex: integer): TBidiCaretPos;
+    function GetUntransformedPartStartCaret(APartIndex: integer): TBidiCaretPos;
+    function GetUntransformedPartEndCaret(APartIndex: integer): TBidiCaretPos;
 
     procedure AnalyzeLineStart(ADefaultRTL: boolean);
     function GetSameLevelString(startIndex,endIndex: integer): string; overload;
@@ -155,6 +163,7 @@ type
                             AFillColor: TBGRAPixel); overload;
 
     function GetCaret(ACharIndex: integer): TBidiCaretPos;
+    function GetUntransformedCaret(ACharIndex: integer): TBidiCaretPos;
     function GetCharIndexAt(APosition: TPointF): integer;
     function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = true): ArrayOfTPointF;
     function GetParagraphAt(ACharIndex: Integer): integer;
@@ -167,6 +176,8 @@ type
     function CopyTextBefore(APosition, ACount: integer): string;
     function IncludeNonSpacingChars(APosition, ACount: integer): integer;
     function IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
+    function FindTextAbove(AFromPosition: integer): integer;
+    function FindTextBelow(AFromPosition: integer): integer;
 
     property CharCount: integer read FCharCount;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
@@ -221,6 +232,16 @@ type
 implementation
 
 uses math;
+
+{ TBidiCaretPos }
+
+procedure TBidiCaretPos.Transform(AMatrix: TAffineMatrix);
+begin
+  Top := AMatrix*Top;
+  Bottom := AMatrix*Bottom;
+  PreviousTop := AMatrix*PreviousTop;
+  PreviousBottom := AMatrix*PreviousBottom;
+end;
 
 { TBidiTextLayout }
 
@@ -1389,6 +1410,12 @@ begin
 end;
 
 function TBidiTextLayout.GetCaret(ACharIndex: integer): TBidiCaretPos;
+begin
+  result := GetUntransformedCaret(ACharIndex);
+  result.Transform(Matrix);
+end;
+
+function TBidiTextLayout.GetUntransformedCaret(ACharIndex: integer): TBidiCaretPos;
 var
   i: Integer;
   w: Single;
@@ -1408,20 +1435,20 @@ begin
   for i := 0 to FPartCount-1 do
     if ACharIndex <= FPart[i].startIndex then
     begin
-      result := GetPartStartCaret(i);
+      result := GetUntransformedPartStartCaret(i);
       exit;
     end else
     if (ACharIndex > FPart[i].startIndex) and (ACharIndex <= FPart[i].endIndex) then
     begin
       if (i < FPartCount-1) and (ACharIndex = FPart[i+1].startIndex) then
       begin
-        result := GetPartStartCaret(i+1);
+        result := GetUntransformedPartStartCaret(i+1);
         exit;
       end else
       begin
         if i = FPart[i].endIndex then
         begin
-          result := GetPartEndCaret(i);
+          result := GetUntransformedPartEndCaret(i);
           exit;
         end else
         begin
@@ -1431,8 +1458,6 @@ begin
             result.Top := PointF(FPart[i].rectF.Right - w, FPart[i].rectF.Top)
           else result.Top := PointF(FPart[i].rectF.Left + w, FPart[i].rectF.Top);
           result.Bottom := result.Top + PointF(0,FPart[i].rectF.Height);
-          result.Top := Matrix*result.Top;
-          result.Bottom := Matrix*result.Bottom;
 
           result.RightToLeft := odd(FPart[i].bidiLevel);
           result.PreviousRightToLeft := result.RightToLeft;
@@ -1447,8 +1472,8 @@ begin
   else
   if ACharIndex = 0 then
   begin
-    result.Top := FTopLeft;
-    result.Bottom := FMatrix*PointF(0,FLineHeight);
+    result.Top := PointF(0,0);
+    result.Bottom := PointF(0,FLineHeight);
     result.RightToLeft := false;
     result.PreviousTop := EmptyPointF;
     result.PreviousBottom := EmptyPointF;
@@ -1953,7 +1978,53 @@ begin
   result := ACount;
 end;
 
+function TBidiTextLayout.FindTextAbove(AFromPosition: integer): integer;
+var
+  curPos: TBidiCaretPos;
+  bIndex: LongInt;
+  pt: TPointF;
+begin
+  curPos := GetUntransformedCaret(AFromPosition);
+  bIndex := PartBrokenLineIndex[curPos.PartIndex];
+  if (bIndex > 0) and not isEmptyPointF(curPos.Top) then
+  begin
+    dec(bIndex);
+    pt := PointF(curPos.Top.x, (BrokenLineRectF[bIndex].Top+BrokenLineRectF[bIndex].Bottom)*0.5);
+    result := GetCharIndexAt(Matrix*pt);
+  end else
+    exit(-1);
+end;
+
+function TBidiTextLayout.FindTextBelow(AFromPosition: integer): integer;
+var
+  curPos: TBidiCaretPos;
+  bIndex: LongInt;
+  pt: TPointF;
+begin
+  curPos := GetUntransformedCaret(AFromPosition);
+  bIndex := PartBrokenLineIndex[curPos.PartIndex];
+  if (bIndex < BrokenLineCount-1) and not isEmptyPointF(curPos.Top) then
+  begin
+    inc(bIndex);
+    pt := PointF(curPos.Top.x, (BrokenLineRectF[bIndex].Top+BrokenLineRectF[bIndex].Bottom)*0.5);
+    result := GetCharIndexAt(Matrix*pt);
+  end else
+    exit(-1);
+end;
+
 function TBidiTextLayout.GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
+begin
+  result := GetUntransformedPartStartCaret(APartIndex);
+  result.Transform(Matrix)
+end;
+
+function TBidiTextLayout.GetPartEndCaret(APartIndex: integer): TBidiCaretPos;
+begin
+  result := GetUntransformedPartEndCaret(APartIndex);
+  result.Transform(Matrix);
+end;
+
+function TBidiTextLayout.GetUntransformedPartStartCaret(APartIndex: integer): TBidiCaretPos;
 begin
   if (APartIndex < 0) or (APartIndex > PartCount) then
     raise ERangeError.Create('Invalid index');
@@ -1965,8 +2036,6 @@ begin
   else
     result.Top := PointF(FPart[APartIndex].rectF.Left, FPart[APartIndex].rectF.Top);
   result.Bottom := result.Top + PointF(0, FPart[APartIndex].rectF.Height);
-  result.Top := Matrix*result.Top;
-  result.Bottom := Matrix*result.Bottom;
 
   result.RightToLeft := odd(FPart[APartIndex].bidiLevel);
 
@@ -1979,8 +2048,6 @@ begin
     else
       result.PreviousTop := PointF(FPart[APartIndex-1].rectF.Right, FPart[APartIndex-1].rectF.Top);
     result.PreviousBottom := result.PreviousTop + PointF(0, FPart[APartIndex-1].rectF.Height);
-    result.PreviousTop := Matrix*result.PreviousTop;
-    result.PreviousBottom := Matrix*result.PreviousBottom;
     result.PreviousRightToLeft := odd(FPart[APartIndex-1].bidiLevel);
   end else
   begin
@@ -1990,7 +2057,7 @@ begin
   end;
 end;
 
-function TBidiTextLayout.GetPartEndCaret(APartIndex: integer): TBidiCaretPos;
+function TBidiTextLayout.GetUntransformedPartEndCaret(APartIndex: integer): TBidiCaretPos;
 begin
   if (APartIndex < 0) or (APartIndex > PartCount) then
     raise ERangeError.Create('Invalid index');
@@ -2002,8 +2069,6 @@ begin
   else
     result.Top := PointF(FPart[APartIndex].rectF.Right, FPart[APartIndex].rectF.Top);
   result.Bottom := result.Top + PointF(0, FPart[APartIndex].rectF.Height);
-  result.Top := Matrix*result.Top;
-  result.Bottom := Matrix*result.Bottom;
   result.RightToLeft := odd(FPart[APartIndex].bidiLevel);
 
   result.PreviousTop := EmptyPointF;
