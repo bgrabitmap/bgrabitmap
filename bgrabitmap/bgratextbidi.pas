@@ -766,7 +766,6 @@ begin
   inc(lineIndex);
   for i := 0 to high(FBidi) do
   begin
-    FParagraph[curParaIndex].rtl := odd(FBidi[i].BidiInfo.ParagraphBidiLevel);
     if FBidi[i].BidiInfo.IsEndOfLine or FBidi[i].BidiInfo.IsExplicitEndOfParagraph then
     begin
       if FBidi[i].BidiInfo.IsExplicitEndOfParagraph then
