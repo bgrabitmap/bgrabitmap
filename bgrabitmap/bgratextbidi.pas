@@ -176,6 +176,7 @@ type
     function GetCharIndexAt(APosition: TPointF): integer;
     function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = true): ArrayOfTPointF;
     function GetParagraphAt(ACharIndex: Integer): integer;
+    function GetBrokenLineAt(ACharIndex: integer): integer;
 
     function InsertText(ATextUTF8: string; APosition: integer): integer;
     function InsertLineSeparator(APosition: integer): integer;
@@ -1785,13 +1786,20 @@ end;
 
 function TBidiTextLayout.GetUntransformedCaret(ACharIndex: integer): TBidiCaretPos;
 var
-  i: Integer;
+  i, blIndex: Integer;
   w: Single;
 begin
   NeedLayout;
 
   if (ACharIndex < 0) or (ACharIndex > CharCount) then
     raise ERangeError.Create('Invalid index');
+
+  if (PartCount > 0) and (ACharIndex >= FPart[PartCount-1].endIndex) then
+  begin
+    result := GetUntransformedPartEndCaret(PartCount-1);
+    exit;
+  end;
+
   result.PartIndex := -1;
   result.Top := EmptyPointF;
   result.Bottom := EmptyPointF;
@@ -1800,7 +1808,9 @@ begin
   result.PreviousBottom := EmptyPointF;
   result.PreviousRightToLeft := false;
 
-  for i := 0 to FPartCount-1 do
+  blIndex := GetBrokenLineAt(ACharIndex);
+  if blIndex <> -1 then
+  for i := FBrokenLine[blIndex].firstPartIndex to FBrokenLine[blIndex].lastPartIndexPlusOne-1 do
     if ACharIndex <= FPart[i].startIndex then
     begin
       result := GetUntransformedPartStartCaret(i);
@@ -1835,9 +1845,6 @@ begin
       end;
     end;
 
-  if (PartCount > 0) and (ACharIndex >= FPart[PartCount-1].endIndex) then
-    result := GetUntransformedPartEndCaret(PartCount-1)
-  else
   if ACharIndex = 0 then
   begin
     result.Top := PointF(0,0);
@@ -2208,6 +2215,36 @@ begin
     if ACharIndex < ParagraphStartIndex[i] then
       exit(i-1);
   exit(FParagraphCount-1);
+end;
+
+function TBidiTextLayout.GetBrokenLineAt(ACharIndex: integer): integer;
+  procedure FindRec(AFirstBrokenLineIndex, ALastBrokenLineIndex: integer);
+  var
+    midIndex: Integer;
+  begin
+    if ALastBrokenLineIndex<AFirstBrokenLineIndex then
+    begin
+      result := -1;
+      exit;
+    end;
+    midIndex := (AFirstBrokenLineIndex+ALastBrokenLineIndex) shr 1;
+    if (ACharIndex < FBrokenLine[midIndex].startIndex) then
+      FindRec(AFirstBrokenLineIndex, midIndex-1)
+    else if (midIndex < FBrokenLineCount-1) and (ACharIndex >= FBrokenLine[midIndex+1].startIndex) then
+      FindRec(midIndex+1, ALastBrokenLineIndex)
+    else
+    begin
+      result := midIndex;
+      exit;
+    end;
+  end;
+
+begin
+  if (ACharIndex < 0) or (ACharIndex > CharCount) then raise exception.Create('Position out of bounds');
+  if ACharIndex = FBrokenLine[BrokenLineCount-1].endIndex then
+    result := BrokenLineCount-1
+  else
+    FindRec(0, BrokenLineCount-1);
 end;
 
 function TBidiTextLayout.InsertText(ATextUTF8: string; APosition: integer): integer;
