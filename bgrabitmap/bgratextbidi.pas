@@ -257,10 +257,7 @@ end;
 
 function TBidiTextLayout.GetBrokenLineAffineBox(AIndex: integer): TAffineBox;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
-    raise ERangeError.Create('Invalid index');
-  result := Matrix*TAffineBox.AffineBox(FBrokenLine[AIndex].rectF);
+  result := Matrix*TAffineBox.AffineBox(BrokenLineRectF[AIndex]);
 end;
 
 function TBidiTextLayout.GetBrokenLineCount: integer;
@@ -359,10 +356,7 @@ end;
 
 function TBidiTextLayout.GetParagraphAffineBox(AIndex: integer): TAffineBox;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FParagraphCount) then
-    raise ERangeError.Create('Invalid index');
-  result := Matrix*TAffineBox.AffineBox(FParagraph[AIndex].rectF);
+  result := Matrix*TAffineBox.AffineBox(ParagraphRectF[AIndex]);
 end;
 
 function TBidiTextLayout.GetParagraphAlignment(AIndex: integer): TBidiTextAlignment;
@@ -420,10 +414,7 @@ end;
 
 function TBidiTextLayout.GetPartAffineBox(AIndex: integer): TAffineBox;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FPartCount) then
-    raise ERangeError.Create('Invalid index');
-  result := Matrix*TAffineBox.AffineBox(FPart[AIndex].rectF);
+  result := Matrix*TAffineBox.AffineBox(PartRectF[AIndex]);
 end;
 
 function TBidiTextLayout.GetPartBrokenLineIndex(AIndex: integer): integer;
@@ -501,14 +492,14 @@ procedure TBidiTextLayout.SetAvailableHeight(AValue: single);
 begin
   if FAvailableHeight=AValue then Exit;
   FAvailableHeight:=AValue;
-  FLayoutComputed:= false;
+  InvalidateLayout;
 end;
 
 procedure TBidiTextLayout.SetAvailableWidth(AValue: single);
 begin
   if FAvailableWidth=AValue then Exit;
   FAvailableWidth:=AValue;
-  FLayoutComputed:= false;
+  InvalidateLayout;
 end;
 
 procedure TBidiTextLayout.SetFontBidiMode(AValue: TFontBidiMode);
@@ -529,7 +520,7 @@ procedure TBidiTextLayout.SetFontRenderer(AValue: TBGRACustomFontRenderer);
 begin
   if FRenderer=AValue then Exit;
   FRenderer:=AValue;
-  FLayoutComputed:= false;
+  InvalidateLayout;
 end;
 
 procedure TBidiTextLayout.SetParagraphAlignment(AIndex: integer;
@@ -545,21 +536,21 @@ procedure TBidiTextLayout.SetParagraphSpacingAbove(AValue: single);
 begin
   if FParagraphSpacingAbove=AValue then Exit;
   FParagraphSpacingAbove:=AValue;
-  FLayoutComputed:= false;
+  InvalidateLayout;
 end;
 
 procedure TBidiTextLayout.SetParagraphSpacingBelow(AValue: single);
 begin
   if FParagraphSpacingBelow=AValue then Exit;
   FParagraphSpacingBelow:=AValue;
-  FLayoutComputed:= false;
+  InvalidateLayout;
 end;
 
 procedure TBidiTextLayout.SetTabSize(AValue: single);
 begin
   if FTabSize=AValue then Exit;
   FTabSize:=AValue;
-  FLayoutComputed:= false;
+  InvalidateLayout;
 end;
 
 procedure TBidiTextLayout.SetTopLeft(AValue: TPointF);
@@ -1572,13 +1563,12 @@ procedure TBidiTextLayout.InternalUpdateUnbrokenLines(AParagraphIndex: integer);
 var
   newUnbrokenCount, unbrokenStart, unbrokenEnd, unbrokenCount,
   unbrokenDelta, curUnbrokenIndex: Integer;
-  bidiStart, bidiEnd, bidiEndBefore, i: LongInt;
+  bidiStart, bidiEndBefore, i: LongInt;
 begin
   if (AParagraphIndex < 0) or (AParagraphIndex >= ParagraphCount) then
     raise exception.Create('Paragraph index out of bounds');
 
   bidiStart := ParagraphStartIndex[AParagraphIndex];
-  bidiEnd := ParagraphEndIndex[AParagraphIndex];
   bidiEndBefore := ParagraphEndIndexBeforeParagraphSeparator[AParagraphIndex];
   unbrokenStart := FParagraph[AParagraphIndex].firstUnbrokenLineIndex;
   unbrokenEnd := FParagraph[AParagraphIndex+1].firstUnbrokenLineIndex;
