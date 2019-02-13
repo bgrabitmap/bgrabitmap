@@ -85,7 +85,6 @@ type
       firstUnbrokenLineIndex: integer;
       rectF: TRectF;
       alignment: TBidiTextAlignment;
-      rtl: boolean;
     end;
     FParagraphCount: integer;
 
@@ -134,7 +133,7 @@ type
     function GetUntransformedPartStartCaret(APartIndex: integer): TBidiCaretPos;
     function GetUntransformedPartEndCaret(APartIndex: integer): TBidiCaretPos;
 
-    procedure AnalyzeLineStart(ADefaultRTL: boolean);
+    procedure AnalyzeLineStart;
     function GetSameLevelString(startIndex,endIndex: integer): string; overload;
     function GetSameLevelString(startIndex,endIndex: integer; out nonRemovedCount: integer): string; overload;
     procedure LevelSize(AMaxWidth: single; startIndex, endIndex: integer; bidiLevel: byte; out ASplitIndex: integer; out AWidth, AHeight: single);
@@ -399,10 +398,17 @@ begin
 end;
 
 function TBidiTextLayout.GetParagraphRightToLeft(AIndex: integer): boolean;
+var
+  unbrokenStart: Integer;
 begin
   if (AIndex < 0) or (AIndex >= FParagraphCount) then
     raise ERangeError.Create('Invalid index');
-  result := FParagraph[AIndex].rtl;
+
+  unbrokenStart := FParagraph[AIndex].firstUnbrokenLineIndex;
+  if FUnbrokenLine[unbrokenStart].startIndex < CharCount then
+    result := odd(FBidi[FUnbrokenLine[unbrokenStart].startIndex].BidiInfo.ParagraphBidiLevel)
+  else
+    result := FFontBidiMode = fbmRightToLeft;
 end;
 
 function TBidiTextLayout.GetParagraphStartIndex(AIndex: integer): integer;
@@ -733,7 +739,7 @@ begin
   inc(FPartCount)
 end;
 
-procedure TBidiTextLayout.AnalyzeLineStart(ADefaultRTL: boolean);
+procedure TBidiTextLayout.AnalyzeLineStart;
 var
   lineIndex, i: Integer;
   curParaIndex: integer;
@@ -754,7 +760,6 @@ begin
   setlength(FParagraph, FParagraphCount+1);
   FParagraph[curParaIndex].firstUnbrokenLineIndex:= lineIndex;
   FParagraph[curParaIndex].rectF:= rectF(0,0,0,0);
-  FParagraph[curParaIndex].rtl := ADefaultRTL;
   setlength(FUnbrokenLine, FUnbrokenLineCount+1);
   FUnbrokenLine[lineIndex].startIndex := 0;
   FUnbrokenLine[lineIndex].paragraphIndex := curParaIndex;
@@ -769,7 +774,6 @@ begin
         inc(curParaIndex);
         FParagraph[curParaIndex].firstUnbrokenLineIndex:= lineIndex;
         FParagraph[curParaIndex].rectF := rectF(0,0,0,0);
-        FParagraph[curParaIndex].rtl := ADefaultRTL;
       end;
       FUnbrokenLine[lineIndex].startIndex := i+1;
       FUnbrokenLine[lineIndex].paragraphIndex := curParaIndex;
@@ -778,7 +782,6 @@ begin
   end;
   FParagraph[curParaIndex+1].firstUnbrokenLineIndex:= lineIndex;
   FParagraph[curParaIndex+1].rectF:= rectF(0,0,0,0);
-  FParagraph[curParaIndex+1].rtl := ADefaultRTL;
   FUnbrokenLine[lineIndex].startIndex := length(FBidi);
   FUnbrokenLine[lineIndex].paragraphIndex:= curParaIndex+1;
 
@@ -1073,7 +1076,7 @@ begin
       FParagraph[paraIndex].rectF.Right := EmptySingle;
     end;
     pos.y += paraSpacingAbove;
-    paraRTL := FParagraph[paraIndex].rtl;
+    paraRTL := ParagraphRightToLeft[paraIndex];
 
     if FAvailableWidth <> EmptySingle then
     begin
@@ -1331,7 +1334,7 @@ begin
     FBidi:= AnalyzeBidiUTF8(FText);
 
   FCharCount := length(FBidi);
-  AnalyzeLineStart(FFontBidiMode = fbmRightToLeft);
+  AnalyzeLineStart;
   InvalidateLayout;
 end;
 
