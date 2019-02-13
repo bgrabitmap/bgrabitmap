@@ -1848,7 +1848,7 @@ begin
     end;
 
   if (PartCount > 0) and (ACharIndex >= FPart[PartCount-1].endIndex) then
-    result := GetPartEndCaret(PartCount-1)
+    result := GetUntransformedPartEndCaret(PartCount-1)
   else
   if ACharIndex = 0 then
   begin
