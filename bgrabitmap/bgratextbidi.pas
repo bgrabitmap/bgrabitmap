@@ -1685,10 +1685,6 @@ begin
         FParagraph[j] := FParagraph[j-1];
       FParagraph[paraIndex+1].firstUnbrokenLineIndex:= i;
       FParagraph[paraIndex+1].alignment:= FParagraph[paraIndex].alignment;
-      if FUnbrokenLine[i].startIndex < CharCount then
-        FParagraph[paraIndex+1].rtl := odd(FBidi[FUnbrokenLine[i].startIndex].BidiInfo.ParagraphBidiLevel)
-      else
-        FParagraph[paraIndex+1].rtl := FFontBidiMode = fbmRightToLeft;
       for j := i to high(FUnbrokenLine) do
         inc(FUnbrokenLine[j].paragraphIndex);
 
