@@ -116,6 +116,7 @@ function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;
 function IsZeroWidthUnicode(u: cardinal): boolean;
 function IsUnicodeParagraphSeparator(u: cardinal): boolean;
 function IsUnicodeCrLf(u: cardinal): boolean;
+function IsUnicodeSpace(u: cardinal): boolean;
 function IsUnicodeIsolateOrFormatting(u: cardinal): boolean;
 
 
@@ -766,6 +767,11 @@ end;
 function IsUnicodeCrLf(u: cardinal): boolean;
 begin
   result := (u=10) or (u=13);
+end;
+
+function IsUnicodeSpace(u: cardinal): boolean;
+begin
+  result := GetUnicodeBidiClass(u) = ubcWhiteSpace;
 end;
 
 function IsUnicodeIsolateOrFormatting(u: cardinal): boolean;
