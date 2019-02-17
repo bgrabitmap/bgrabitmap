@@ -148,7 +148,7 @@ begin
   end else
   if (Key = VK_LEFT) or (Key = VK_RIGHT) then
   begin
-    if (Key = VK_LEFT) xor FTextLayout.ParagraphRightToLeft[FTextLayout.GetParagraphAt(SelStart)] then
+    if (Key = VK_LEFT) xor FTextLayout.ParagraphRightToLeft[FTextLayout.GetParagraphAt(SelLastClick)] then
     begin
       if SelLastClick > 0 then
         newPos := SelLastClick - FTextLayout.IncludeNonSpacingCharsBefore(SelLastClick,1)
@@ -177,7 +177,7 @@ begin
   end else
   if Key = VK_HOME then
   begin
-    idxPara := FTextLayout.GetParagraphAt(SelStart);
+    idxPara := FTextLayout.GetParagraphAt(SelLastClick);
     if ssCtrl in Shift then newPos := 0 else
       newPos := FTextLayout.ParagraphStartIndex[idxPara];
     MoveTo(newPos);
@@ -185,7 +185,7 @@ begin
   end else
   if Key = VK_END then
   begin
-    idxPara := FTextLayout.GetParagraphAt(SelStart+SelLength);
+    idxPara := FTextLayout.GetParagraphAt(SelLastClick);
     if ssCtrl in Shift then newPos := FTextLayout.CharCount else
       newPos := FTextLayout.ParagraphEndIndexBeforeParagraphSeparator[idxPara];
     MoveTo(newPos);
