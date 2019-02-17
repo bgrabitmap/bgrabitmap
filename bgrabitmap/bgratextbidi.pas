@@ -150,6 +150,7 @@ type
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string); overload;
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean); overload;
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; AFontBidiMode: TFontBidiMode); overload;
+    destructor Destroy; override;
     procedure SetLayout(ARect: TRectF);
     procedure InvalidateLayout;
 
@@ -899,6 +900,12 @@ constructor TBidiTextLayout.Create(AFontRenderer: TBGRACustomFontRenderer;
 begin
   Init(sUTF8, AFontBidiMode);
   FRenderer := AFontRenderer;
+end;
+
+destructor TBidiTextLayout.Destroy;
+begin
+  FAnalysis.Free;
+  inherited Destroy;
 end;
 
 procedure TBidiTextLayout.SetLayout(ARect: TRectF);
