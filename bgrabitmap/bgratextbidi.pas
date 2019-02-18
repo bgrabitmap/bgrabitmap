@@ -134,16 +134,16 @@ type
     procedure Init(ATextUTF8: string; ABidiMode: TFontBidiMode); virtual;
     procedure ComputeLayout; virtual;
     procedure NeedLayout;
-    procedure InvalidateParagraphLayout(AParagraphIndex: integer);
+    procedure InvalidateParagraphLayout({%H-}AParagraphIndex: integer);
     procedure InternalDrawText(ADest: TBGRACustomBitmap);
 
     //unicode analysis events
     procedure BidiModeChanged({%H-}ASender: TObject);
-    procedure CharDeleted({%H-}ASender: TObject; AParagraphIndex: integer; ACharStart, ACharCount: integer);
-    procedure CharInserted({%H-}ASender: TObject; AParagraphIndex: integer; ACharStart, ACharCount: integer);
+    procedure CharDeleted({%H-}ASender: TObject; AParagraphIndex: integer; {%H-}ACharStart, {%H-}ACharCount: integer);
+    procedure CharInserted({%H-}ASender: TObject; AParagraphIndex: integer; {%H-}ACharStart, {%H-}ACharCount: integer);
     procedure ParagraphDeleted({%H-}ASender: TObject; AParagraphIndex: integer);
     procedure ParagraphMergedWithNext({%H-}ASender: TObject; AParagraphIndex: integer);
-    procedure ParagraphSplit({%H-}ASender: TObject; AParagraphIndex: integer; ACharIndex: integer);
+    procedure ParagraphSplit({%H-}ASender: TObject; AParagraphIndex: integer; {%H-}ACharIndex: integer);
   public
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string); overload;
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean); overload;
