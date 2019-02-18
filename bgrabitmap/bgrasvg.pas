@@ -546,13 +546,13 @@ function TSVGUnits.GetStretchRectF(AViewSize: TRectF; par: TSVGPreserveAspectRat
 var w0,h0,w,h: single;
 begin
   result := AViewSize;
+  w0 := AViewSize.Width;
+  h0 := AViewSize.Height;
 
   if par.Preserve and
      (FViewBox.size.x > 0) and (FViewBox.size.y > 0) and
-     (w > 0) and (h > 0) then
+     (w0 > 0) and (h0 > 0) then
   begin
-    w0 := AViewSize.Width;
-    h0 := AViewSize.Height;
     w := w0;
     h := h0;
 
