@@ -129,10 +129,8 @@ type
 
     function GetSameLevelString(startIndex,endIndex: integer): string; overload;
     function GetSameLevelString(startIndex,endIndex: integer; out nonRemovedCount: integer): string; overload;
-    procedure LevelSize(AMaxWidth: single; startIndex, endIndex: integer; bidiLevel: byte; out ASplitIndex: integer; out AWidth, AHeight: single);
-    procedure ComputeLevelLayout(APos: TPointF; startIndex,
-      endIndex: integer; bidiLevel: byte; fullHeight, baseLine: single; brokenLineIndex: integer;
-      out AWidth: single);
+    function ComputeBidiTree(AMaxWidth: single; startIndex, endIndex: integer; bidiLevel: byte): TBidiTree;
+    procedure AddPartsFromTree(APos: TPointF; ATree: TBidiTree; fullHeight, baseLine: single; brokenLineIndex: integer);
     procedure Init(ATextUTF8: string; ABidiMode: TFontBidiMode); virtual;
     procedure ComputeLayout; virtual;
     procedure NeedLayout;
@@ -231,9 +229,182 @@ type
     property FontBidiMode: TFontBidiMode read GetFontBidiMode write SetFontBidiMode;
   end;
 
+  { TBidiLayoutTree }
+
+  TBidiLayoutTree = class(TBidiTree)
+  private
+    FBidiPos: single;
+    FSize: TPointF;
+    FTextUTF8: string;
+    FNonRemovedCount: integer;
+    FLayout: TBidiTextLayout;
+    FMaxWidth: single;
+    function GetCumulatedBidiPos: single;
+    function GetHeight: single;
+    function GetLayout: TBidiTextLayout;
+    function GetMaxWidth: single;
+    function GetWidth: single;
+    procedure UpdateBranchSize;
+  public
+    constructor Create(AData: pointer; AStartIndex, AEndIndex: integer; ABidiLevel: byte; AIsLeaf: boolean); override;
+    procedure AddBranch(ABranch: TBidiTree); override;
+    procedure Shorten(AEndIndex: integer); override;
+    procedure AfterFinish; override;
+    function TrySplit: boolean; override;
+    property Layout: TBidiTextLayout read GetLayout;
+    property MaxWidth: single read GetMaxWidth;
+    property BidiPos: single read FBidiPos;
+    property CumulatedBidiPos: single read GetCumulatedBidiPos;
+    property Width: single read GetWidth;
+    property Height: single read GetHeight;
+  end;
+
+  TBidiLayoutTreeData = record
+    Layout: TBidiTextLayout;
+    MaxWidth: single;
+  end;
+
 implementation
 
 uses math;
+
+{ TBidiLayoutTree }
+
+function TBidiLayoutTree.GetLayout: TBidiTextLayout;
+begin
+  result := FLayout;
+end;
+
+function TBidiLayoutTree.GetHeight: single;
+begin
+  result := FSize.y;
+end;
+
+function TBidiLayoutTree.GetCumulatedBidiPos: single;
+begin
+  result := BidiPos;
+  if Assigned(Parent) then result += TBidiLayoutTree(Parent).CumulatedBidiPos;
+end;
+
+function TBidiLayoutTree.GetMaxWidth: single;
+begin
+  result := FMaxWidth;
+end;
+
+function TBidiLayoutTree.GetWidth: single;
+begin
+  result := FSize.x;
+end;
+
+procedure TBidiLayoutTree.UpdateBranchSize;
+var
+  i: Integer;
+  last: TBidiLayoutTree;
+begin
+  if not IsLeaf then
+  begin
+    //write('Update branch size from ', round(FSize.x));
+    if Count = 0 then
+    begin
+      FSize := PointF(0,0)
+    end
+    else
+    begin
+      last := TBidiLayoutTree(Branch[Count-1]);
+      FSize.x := last.BidiPos + last.Width;
+      FSize.y := 0;
+      for i := 0 to Count-1 do
+        FSize.y := max(FSize.y, TBidiLayoutTree(Branch[i]).Height);
+    end;
+    //writeln(' to ', round(FSize.x), ' (',inttostr(Count),')');
+  end;
+end;
+
+constructor TBidiLayoutTree.Create(AData: pointer; AStartIndex,
+  AEndIndex: integer; ABidiLevel: byte; AIsLeaf: boolean);
+begin
+  inherited Create(AData, AStartIndex, AEndIndex, ABidiLevel, AIsLeaf);
+  FLayout := TBidiLayoutTreeData(AData^).Layout;
+  FMaxWidth := TBidiLayoutTreeData(AData^).MaxWidth;
+  if IsLeaf then
+  begin
+    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonRemovedCount);
+    FSize := Layout.TextSizeBidiOverride(FTextUTF8, odd(BidiLevel));
+    //writeln('Created leaf ', round(FSize.x), ' of level ',BidiLevel);
+  end
+  else
+  begin
+    //writeln('Created branch of level ',BidiLevel);
+    FTextUTF8:= '';
+    FNonRemovedCount:= 0;
+    FSize := PointF(0,0);
+  end;
+end;
+
+procedure TBidiLayoutTree.AddBranch(ABranch: TBidiTree);
+var
+  prev: TBidiLayoutTree;
+begin
+  inherited AddBranch(ABranch);
+  if Count > 1 then
+  begin
+    prev := TBidiLayoutTree(Branch[Count-2]);
+    TBidiLayoutTree(ABranch).FBidiPos:= prev.BidiPos + prev.Width;
+  end;
+  if (TBidiLayoutTree(ABranch).Width <> 0) or
+     (TBidiLayoutTree(ABranch).Height <> 0) then
+    UpdateBranchSize;
+end;
+
+procedure TBidiLayoutTree.Shorten(AEndIndex: integer);
+begin
+  inherited Shorten(AEndIndex);
+  if IsLeaf then
+  begin
+    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonRemovedCount);
+    FSize := Layout.TextSizeBidiOverride(FTextUTF8, odd(BidiLevel));
+    //writeln('Shortened leaf ', round(FSize.x));
+  end else
+    UpdateBranchSize;
+end;
+
+procedure TBidiLayoutTree.AfterFinish;
+begin
+  if Assigned(Parent) then
+    TBidiLayoutTree(Parent).UpdateBranchSize;
+end;
+
+function TBidiLayoutTree.TrySplit: boolean;
+var
+  fitInfo, splitIndex: Integer;
+  a: TUnicodeAnalysis;
+  remain: Single;
+begin
+  if not IsLeaf then exit(false);
+  if MaxWidth = EmptySingle then exit(false);
+  remain := MaxWidth - CumulatedBidiPos;
+  if Width > remain then
+  begin
+    fitInfo := Layout.TextFitInfoBidiOverride(FTextUTF8, remain, odd(BidiLevel));
+    if fitInfo < FNonRemovedCount then
+    begin
+      //writeln('Splitting leaf ',round(Width), ' (max ',round(remain),')');
+      splitIndex:= StartIndex;
+      a:= Layout.FAnalysis;
+      while fitInfo > 0 do
+      begin
+        while (splitIndex < EndIndex) and a.BidiInfo[splitIndex].IsRemoved do
+          Inc(splitIndex);
+        if splitIndex < EndIndex then inc(splitIndex);
+        dec(fitInfo);
+      end;
+      Shorten(splitIndex);
+      TBidiLayoutTree(Parent).UpdateBranchSize;
+      exit(true);
+    end;
+  end;
+  exit(false);
+end;
 
 { TBidiCaretPos }
 
@@ -786,99 +957,15 @@ begin
   result := FAnalysis.CopyTextUTF8WithoutRemovedChars(startIndex, endIndex, nonRemovedCount);
 end;
 
-procedure TBidiTextLayout.LevelSize(AMaxWidth: single; startIndex,
-  endIndex: integer; bidiLevel: byte; out ASplitIndex: integer; out AWidth,
-  AHeight: single);
+function TBidiTextLayout.ComputeBidiTree(AMaxWidth: single; startIndex,
+  endIndex: integer; bidiLevel: byte): TBidiTree;
 var
-  i: Integer;
-  subLevel: byte;
-  subStart, subSplit, fitInfo, nonRemovedCount: integer;
-  subStr: string;
-  w,h: single;
-  splitting: boolean;
-  subSize: TPointF;
-  bi: TUnicodeBidiInfo;
+  data: TBidiLayoutTreeData;
 begin
-  AWidth := 0;
-  AHeight := 0;
-  ASplitIndex:= endIndex;
-
-  while (startIndex < endIndex) and FAnalysis.BidiInfo[startIndex].IsRemoved do inc(startIndex);
-  while (startIndex < endIndex) and FAnalysis.BidiInfo[endIndex-1].IsRemoved do dec(endIndex);
-  if endIndex = startIndex then exit;
-
-  i := startIndex;
-  while i < endIndex do
-  begin
-    bi := FAnalysis.BidiInfo[i];
-    if not bi.IsRemoved then
-    begin
-      if bi.BidiLevel > bidiLevel then
-      begin
-        subStart := i;
-        subLevel := bi.BidiLevel;
-        inc(i);
-        bi := FAnalysis.BidiInfo[i];
-        while (i < endIndex) and (bi.BidiLevel > bidiLevel) do
-        begin
-          if bi.BidiLevel < subLevel then subLevel := bi.BidiLevel;
-          inc(i);
-          bi := FAnalysis.BidiInfo[i];
-        end;
-
-        if AMaxWidth <> EmptySingle then
-          LevelSize(AMaxWidth - AWidth, subStart, i, subLevel, subSplit, w, h)
-        else
-          LevelSize(AMaxWidth, subStart, i, subLevel, subSplit, w, h);
-        AWidth += w;
-        if h > AHeight then AHeight := h;
-
-        if subSplit < i then
-        begin
-          ASplitIndex := subSplit;
-          exit;
-        end;
-      end else
-      begin
-        subStart:= i;
-        inc(i);
-        while (i < endIndex) and (FAnalysis.BidiInfo[i].BidiLevel = bidiLevel) do inc(i);
-
-        subStr := GetSameLevelString(subStart,i, nonRemovedCount);
-        if AMaxWidth <> EmptySingle then
-        begin
-          fitInfo := TextFitInfoBidiOverride(subStr, AMaxWidth - AWidth, odd(bidiLevel));
-          if fitInfo < nonRemovedCount then
-          begin
-            ASplitIndex:= subStart;
-            while fitInfo > 0 do
-            begin
-              while (ASplitIndex < CharCount) and FAnalysis.BidiInfo[ASplitIndex].IsRemoved do
-                Inc(ASplitIndex);
-              if ASplitIndex < CharCount then inc(ASplitIndex);
-              dec(fitInfo);
-            end;
-            subStr := GetSameLevelString(subStart,ASplitIndex);
-            splitting := true;
-          end else
-            splitting := false;
-        end else
-          splitting := false;
-
-        subSize := TextSizeBidiOverride(subStr, odd(bidiLevel));
-        w := subSize.x;
-        h := subSize.y;
-        AWidth += w;
-        if h > AHeight then AHeight:= h;
-
-        if splitting then exit;
-      end;
-
-    end else
-      inc(i);
-  end;
+  data.MaxWidth := AMaxWidth;
+  data.Layout := self;
+  result := FAnalysis.CreateBidiTree(TBidiLayoutTree, @data, startIndex, endIndex, bidiLevel);
 end;
-
 
 constructor TBidiTextLayout.Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string);
 begin
@@ -946,30 +1033,33 @@ begin
 end;
 
 procedure TBidiTextLayout.ComputeLayout;
-var w,h, lineHeight, baseLine, tabPixelSize: single;
+var lineHeight, baseLine, tabPixelSize: single;
   paraIndex, ubIndex, j, nextTabIndex, splitIndex: Integer;
   lineStart, subStart, lineEnd: integer;
   paraSpacingAbove, paraSpacingBelow, correctedBaseLine: single;
   paraRTL, needNewLine: boolean;
   partStr, remainStr: string;
   pos: TPointF;
-  curBidiPos,endBidiPos,nextTabBidiPos, availWidth0: single;
+  curBidiPos,endBidiPos,nextTabBidiPos, availWidth0, remainWidth: single;
   tabSectionStart, tabSectionCount: integer;
   tabSection: array of record
                 startIndex, endIndex: integer;
                 bidiPos: single;
+                tree: TBidiLayoutTree;
               end;
   alignment: TAlignment;
   paraBidiLevel: Byte;
   r: TRectF;
   u: LongWord;
+  nextTree: TBidiLayoutTree;
 
-  procedure AddTabSection(startIndex,endIndex: integer);
+  procedure AddTabSection(startIndex,endIndex: integer; tree: TBidiLayoutTree);
   begin
     if tabSectionCount >= length(tabSection) then setlength(tabSection, length(tabSection)*2+4);
     tabSection[tabSectionCount].startIndex:= startIndex;
     tabSection[tabSectionCount].endIndex:= endIndex;
     tabSection[tabSectionCount].bidiPos:= curBidiPos;
+    tabSection[tabSectionCount].tree := tree;
     inc(tabSectionCount);
   end;
 
@@ -1009,6 +1099,15 @@ var w,h, lineHeight, baseLine, tabPixelSize: single;
           FParagraph[paraIndex].rectF.Right := FBrokenLine[FBrokenLineCount-1].rectF.Right;
       end;
     end;
+  end;
+
+  procedure ClearTabSections;
+  var
+    i: Integer;
+  begin
+    tabSectionCount := 0;
+    for i := 0 to high(tabSection) do
+      FreeAndNil(tabSection[i].tree);
   end;
 
 begin
@@ -1085,10 +1184,6 @@ begin
       end;
 
       subStart := lineStart;
-      //avoid warnings
-      splitIndex := subStart;
-      h := 0;
-      w := 0;
 
       //empty paragraph
       if subStart = lineEnd then
@@ -1113,7 +1208,7 @@ begin
       while subStart < lineEnd do
       begin
         //split into sections according to tabs
-        tabSectionCount := 0;
+        ClearTabSections;
         curBidiPos := 0;
         tabSectionStart := subStart;
         tabSectionCount := 0;
@@ -1130,7 +1225,7 @@ begin
               nextTabBidiPos := tabPixelSize* (floor(curBidiPos / tabPixelSize + 1e-6)+1);
               if (FAvailableWidth = EmptySingle) or (nextTabBidiPos <= FAvailableWidth) or (tabSectionStart = subStart) then
               begin
-                AddTabSection(tabSectionStart, tabSectionStart+1);
+                AddTabSection(tabSectionStart, tabSectionStart+1, nil);
                 inc(tabSectionStart);
                 curBidiPos := nextTabBidiPos;
               end else
@@ -1138,7 +1233,7 @@ begin
                 //if tab is last char then go to the end of the line
                 if tabSectionStart = lineEnd-1 then
                 begin
-                  AddTabSection(tabSectionStart, splitIndex);
+                  AddTabSection(tabSectionStart, lineEnd, nil);
                   inc(tabSectionStart);
                   curBidiPos := FAvailableWidth;
                   needNewLine := true;
@@ -1160,9 +1255,14 @@ begin
 
           nextTabIndex := tabSectionStart;
           while (nextTabIndex < lineEnd) and (FAnalysis.UnicodeChar[nextTabIndex] <> 9) do inc(nextTabIndex);
-          LevelSize(FAvailableWidth - curBidiPos, tabSectionStart, nextTabIndex, paraBidiLevel, splitIndex, w,h);
+          if FAvailableWidth = EmptySingle then
+            remainWidth := EmptySingle
+          else
+            remainWidth := FAvailableWidth - curBidiPos;
+          nextTree := TBidiLayoutTree(ComputeBidiTree(remainWidth, tabSectionStart, nextTabIndex, paraBidiLevel));
+          splitIndex := nextTree.EndIndex;
 
-          AddTabSection(tabSectionStart, splitIndex);
+          AddTabSection(tabSectionStart, splitIndex, nextTree);
 
           if splitIndex < nextTabIndex then
           begin
@@ -1181,36 +1281,45 @@ begin
             if tabSectionCount > 1 then delete(partStr,1,1);
 
             splitIndex:= tabSectionStart + UTF8Length(partStr);
-            LevelSize(EmptySingle, tabSectionStart, splitIndex, paraBidiLevel, splitIndex, w,h);
 
+            //section is deleted
             if splitIndex = tabSectionStart then
             begin
               dec(tabSectionCount);
-
               //tabSectionStart stay the same
             end
             else
             begin
-              //otherwise the section is split
-              tabSection[tabSectionCount-1].endIndex:= splitIndex;
+              //section is extended
+              if splitIndex > nextTree.EndIndex then
+              begin
+                nextTree := TBidiLayoutTree(ComputeBidiTree(EmptySingle, tabSectionStart, splitIndex, paraBidiLevel));
+                tabSection[tabSectionCount-1].tree.Free;
+                tabSection[tabSectionCount-1].tree := nextTree;
+              end
+              else
+              begin //otherwise the section is split
+                nextTree.Shorten(splitIndex);
+                tabSection[tabSectionCount-1].endIndex:= splitIndex;
+              end;
 
-              curBidiPos += w;
-              if h > lineHeight then lineHeight := h;
+              curBidiPos += nextTree.Width;
+              if nextTree.Height > lineHeight then lineHeight := nextTree.Height;
+
               tabSectionStart := splitIndex;
               while (tabSectionStart < nextTabIndex) and IsUnicodeSpace(FAnalysis.UnicodeChar[tabSectionStart]) do inc(tabSectionStart);
             end;
-
             break;
           end else
           begin
-            curBidiPos += w;
-            if h > lineHeight then lineHeight := h;
+            curBidiPos += nextTree.Width;
+            if nextTree.Height > lineHeight then lineHeight := nextTree.Height;
             tabSectionStart := splitIndex;
           end;
         end;
 
         // add broken line info
-        AddBrokenLine(subStart, splitIndex, paraBidiLevel, w, lineHeight);
+        AddBrokenLine(subStart, splitIndex, paraBidiLevel, curBidiPos, lineHeight);
 
         subStart := tabSectionStart;
 
@@ -1239,8 +1348,7 @@ begin
 
         for j := 0 to tabSectionCount-1 do
         begin
-          if (tabSection[j].endIndex = tabSection[j].startIndex+1) and
-            (FAnalysis.UnicodeChar[tabSection[j].startIndex] = 9) then
+          if not Assigned(tabSection[j].tree) then
           begin
             if j = tabSectionCount-1 then
               endBidiPos:= curBidiPos
@@ -1258,11 +1366,9 @@ begin
           else
           begin
             if paraRTL then
-              ComputeLevelLayout(pos - PointF(tabSection[j].bidiPos,0), tabSection[j].startIndex, tabSection[j].endIndex,
-                                paraBidiLevel, lineHeight, correctedBaseLine, FBrokenLineCount-1, w)
+              AddPartsFromTree(pos - PointF(tabSection[j].bidiPos,0), tabSection[j].tree, lineHeight, correctedBaseLine, FBrokenLineCount-1)
             else
-              ComputeLevelLayout(pos + PointF(tabSection[j].bidiPos,0), tabSection[j].startIndex, tabSection[j].endIndex,
-                                paraBidiLevel, lineHeight, correctedBaseLine, FBrokenLineCount-1, w)
+              AddPartsFromTree(pos + PointF(tabSection[j].bidiPos,0), tabSection[j].tree, lineHeight, correctedBaseLine, FBrokenLineCount-1)
           end;
         end;
         FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
@@ -1271,6 +1377,7 @@ begin
         if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then
         begin
           FParagraph[paraIndex].rectF.Bottom := pos.y;
+          ClearTabSections;
           exit;
         end;
       end;
@@ -1278,6 +1385,7 @@ begin
     pos.y += paraSpacingBelow;
     FParagraph[paraIndex].rectF.Bottom := pos.y;
   end;
+  ClearTabSections;
 end;
 
 procedure TBidiTextLayout.NeedLayout;
@@ -1984,100 +2092,61 @@ begin
   result.PreviousRightToLeft := result.RightToLeft;
 end;
 
-procedure TBidiTextLayout.ComputeLevelLayout(APos: TPointF; startIndex,
-  endIndex: integer; bidiLevel: byte; fullHeight, baseLine: single; brokenLineIndex: integer;
-  out AWidth: single);
+procedure TBidiTextLayout.AddPartsFromTree(APos: TPointF; ATree: TBidiTree;
+  fullHeight, baseLine: single; brokenLineIndex: integer);
 var
   i: Integer;
-  subLevel: byte;
-  subStart, subSplit: integer;
-  subStr: string;
-  w,w2,h,dy: single;
-  subSize: TPointF;
-  bi: TUnicodeBidiInfo;
+  root, branch: TBidiLayoutTree;
+  dy: Single;
 begin
-  AWidth := 0;
-
-  while (startIndex < endIndex) and FAnalysis.BidiInfo[startIndex].IsRemoved do inc(startIndex);
-  while (startIndex < endIndex) and FAnalysis.BidiInfo[endIndex-1].IsRemoved do dec(endIndex);
-  if endIndex = startIndex then exit;
-
-  i := startIndex;
-  while i < endIndex do
+  root := TBidiLayoutTree(ATree);
+  if root.IsLeaf then
   begin
-    bi := FAnalysis.BidiInfo[i];
-    if not bi.IsRemoved then
+    if (root.Height <> fullHeight) and (fullHeight <> 0) then
     begin
-      if bi.BidiLevel > bidiLevel then
+      dy := baseLine * (1 - root.Height/fullHeight);
+    end else
+      dy := 0;
+    if odd(root.BidiLevel) then
+    begin
+      APos.x -= root.Width;
+      AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
+              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, brokenLineIndex);
+    end else
+    begin
+      AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
+              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, brokenLineIndex);
+      APos.x += root.Width;
+    end;
+  end else
+  begin
+    for i := 0 to root.Count-1 do
+    begin
+      branch := TBidiLayoutTree(root.Branch[i]);
+      if odd(root.BidiLevel) then
       begin
-        subStart := i;
-        subLevel := bi.BidiLevel;
-        inc(i);
-        bi := FAnalysis.BidiInfo[i];
-        while (i < endIndex) and (bi.BidiLevel > bidiLevel) do
+        if odd(branch.BidiLevel) then
         begin
-          if bi.BidiLevel < subLevel then subLevel := bi.BidiLevel;
-          inc(i);
-          bi := FAnalysis.BidiInfo[i];
-        end;
-
-        if odd(bidiLevel) then
-        begin
-          if odd(subLevel) then
-          begin
-            ComputeLevelLayout(APos, subStart, i, subLevel, fullHeight, baseLine, brokenLineIndex, w);
-            APos.x -= w;
-          end else
-          begin
-            LevelSize(EmptySingle, subStart, i, subLevel, subSplit, w,h);
-            APos.x -= w;
-            ComputeLevelLayout(APos, subStart, subSplit, subLevel, fullHeight, baseLine, brokenLineIndex, w2);
-          end;
+          AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
+          APos.x -= branch.Width;
         end else
         begin
-          if odd(subLevel) then
-          begin
-            LevelSize(EmptySingle, subStart, i, subLevel, subSplit, w,h);
-            APos.x += w;
-            ComputeLevelLayout(APos, subStart, subSplit, subLevel, fullHeight, baseLine, brokenLineIndex, w2);
-          end else
-          begin
-            ComputeLevelLayout(APos, subStart, i, subLevel, fullHeight, baseLine, brokenLineIndex, w);
-            APos.x += w;
-          end;
+          APos.x -= branch.Width;
+          AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
         end;
-        AWidth += w;
       end else
       begin
-        subStart:= i;
-        inc(i);
-        while (i < endIndex) and (FAnalysis.BidiInfo[i].BidiLevel = bidiLevel) do inc(i);
-
-        subStr := GetSameLevelString(subStart,i);
-
-        subSize := TextSizeBidiOverride(subStr, odd(bidiLevel));
-        w := subSize.x;
-        if (subSize.y <> fullHeight) and (fullHeight <> 0) then
+        if odd(branch.BidiLevel) then
         begin
-          dy := baseLine * (1 - subSize.y/fullHeight);
-        end else
-          dy := 0;
-        if odd(bidiLevel) then
-        begin
-          APos.x -= w;
-          AddPart(subStart, i, bidiLevel,
-                  RectF(APos.x, APos.y, APos.x+w, APos.y+fullHeight), PointF(0,dy), subStr, brokenLineIndex);
+          APos.x += branch.Width;
+          AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
         end else
         begin
-          AddPart(subStart, i, bidiLevel,
-                  RectF(APos.x, APos.y, APos.x+w, APos.y+fullHeight), PointF(0,dy), subStr, brokenLineIndex);
-          APos.x += w;
+          AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
+          APos.x += branch.Width;
         end;
-        AWidth += w;
       end;
-
-    end else
-      inc(i);
+    end;
   end;
 end;
 

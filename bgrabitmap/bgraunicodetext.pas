@@ -13,6 +13,37 @@ type
   TParagraphEvent = procedure(ASender: TObject; AParagraphIndex: integer) of object;
   TParagraphSplitEvent = procedure(ASender: TObject; AParagraphIndex: integer; ACharIndex: integer) of object;
 
+  { TBidiTree }
+
+  TBidiTree = class
+  private
+    FParent: TBidiTree;
+    FData: pointer;
+    FStartIndex, FEndIndex: integer;
+    FBidiLevel: byte;
+    FBranches: TList;
+    FIsLeaf: boolean;
+    function GetBranch(AIndex: integer): TBidiTree;
+    function GetCount: integer;
+  public
+    constructor Create(AData: pointer; AStartIndex, AEndIndex: integer; ABidiLevel: byte; AIsLeaf: boolean); virtual;
+    destructor Destroy; override;
+    procedure AfterFinish; virtual;
+    procedure AddBranch(ABranch: TBidiTree); virtual;
+    procedure Shorten(AEndIndex: integer); virtual;
+    function TrySplit: boolean; virtual;
+    property StartIndex: integer read FStartIndex;
+    property EndIndex: integer read FEndIndex;
+    property BidiLevel: byte read FBidiLevel;
+    property Parent: TBidiTree read FParent;
+    property IsLeaf: boolean read FIsLeaf;
+    property Count: integer read GetCount;
+    property Branch[AIndex: integer]: TBidiTree read GetBranch;
+    property Data: pointer read FData;
+  end;
+
+  TBidiTreeAny = class of TBidiTree;
+
   { TUnicodeAnalysis }
 
   TUnicodeAnalysis = class
@@ -65,6 +96,8 @@ type
     procedure InternalSplitParagraph(AParagraphIndex: integer);
     procedure InternalUpdateBidiIsolate(ABidiStart, ABidiCount: integer);
     procedure InternalUpdateUnbrokenLines(AParagraphIndex: integer);
+    procedure CreateBidiTreeRec(ABidiTreeFactory: TBidiTreeAny; AData: pointer; ABidiTree: TBidiTree);
+    procedure CheckCharRange(AStartIndex, AEndIndex: integer; AMinIndex, AMaxIndex: integer);
   public
     constructor Create(ATextUTF8: string; ABidiMode: TFontBidiMode);
     function GetParagraphAt(ACharIndex: integer): integer;
@@ -75,6 +108,8 @@ type
     function DeleteTextBefore(APosition, ACount: integer): integer;
     function IncludeNonSpacingChars(APosition, ACount: integer): integer;
     function IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
+    function CreateBidiTree(ABidiTreeFactory: TBidiTreeAny; AData: pointer; AStartIndex, AEndIndex: integer;
+                            AEmbeddingBidiLevel: integer): TBidiTree;
 
     property TextUTF8: string read FText;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
@@ -103,6 +138,83 @@ type
 implementation
 
 uses math;
+
+{ TBidiTree }
+
+function TBidiTree.GetCount: integer;
+begin
+  if Assigned(FBranches) then
+    result:= FBranches.Count
+  else
+    result := 0;
+end;
+
+function TBidiTree.GetBranch(AIndex: integer): TBidiTree;
+begin
+  if (AIndex < 0) or (AIndex >= Count) then raise exception.Create('Branch index out of bounds');
+  result := TBidiTree(FBranches[AIndex]);
+end;
+
+constructor TBidiTree.Create(AData: pointer; AStartIndex, AEndIndex: integer; ABidiLevel: byte; AIsLeaf: boolean);
+begin
+  FData := AData;
+  FParent := nil;
+  FStartIndex:= AStartIndex;
+  FEndIndex:= AEndIndex;
+  FBidiLevel:= ABidiLevel;
+  FBranches:= nil;
+  FIsLeaf:= AIsLeaf;
+end;
+
+destructor TBidiTree.Destroy;
+var
+  i: Integer;
+begin
+  if Assigned(FBranches) then
+  begin
+    for i := 0 to FBranches.Count-1 do
+      TBidiTree(FBranches[i]).Free;
+    FBranches.Free;
+  end;
+  inherited Destroy;
+end;
+
+procedure TBidiTree.AfterFinish;
+begin
+  //
+end;
+
+procedure TBidiTree.AddBranch(ABranch: TBidiTree);
+begin
+  if IsLeaf then raise exception.Create('A leaf cannot have branches');
+  if Assigned(ABranch.Parent) then raise exception.Create('Branch already has a parent');
+  ABranch.FParent := self;
+  if FBranches = nil then FBranches := TList.Create;
+  FBranches.Add(ABranch);
+end;
+
+procedure TBidiTree.Shorten(AEndIndex: integer);
+var
+  i: Integer;
+begin
+  if AEndIndex = EndIndex then exit;
+  if AEndIndex > EndIndex then raise exception.Create('Cannot extend the branch');
+  if AEndIndex < StartIndex then raise exception.Create('End index before start');
+  for i := Count-1 downto 0 do
+    if AEndIndex <= Branch[i].StartIndex then
+    begin
+      Branch[i].Free;
+      FBranches.Delete(i);
+    end else
+    if AEndIndex < Branch[i].EndIndex then
+      Branch[i].Shorten(AEndIndex);
+  FEndIndex:= AEndIndex;
+end;
+
+function TBidiTree.TrySplit: boolean;
+begin
+  result := false;
+end;
 
 { TUnicodeAnalysis }
 
@@ -281,7 +393,7 @@ function TUnicodeAnalysis.CopyTextUTF8WithoutRemovedChars(AStartIndex,
   AEndIndex: integer; out ANonRemovedCount: integer): string;
 var i, len, charLen: integer;
 begin
-  if (AStartIndex < 0) or (AEndIndex > CharCount) then raise exception.Create('Char range out of bounds');
+  CheckCharRange(AStartIndex, AEndIndex, 0, CharCount);
 
   ANonRemovedCount:= 0;
   len := 0;
@@ -384,6 +496,81 @@ begin
   do inc(ACount);
 
   result := ACount;
+end;
+
+function TUnicodeAnalysis.CreateBidiTree(ABidiTreeFactory: TBidiTreeAny;
+  AData: pointer; AStartIndex, AEndIndex: integer; AEmbeddingBidiLevel: integer): TBidiTree;
+begin
+  result := ABidiTreeFactory.Create(AData, AStartIndex, AEndIndex, AEmbeddingBidiLevel, false);
+  CreateBidiTreeRec(ABidiTreeFactory, AData, result);
+end;
+
+procedure TUnicodeAnalysis.CreateBidiTreeRec(ABidiTreeFactory: TBidiTreeAny; AData: pointer; ABidiTree: TBidiTree);
+var
+  startIndex, endIndex, i: integer;
+  subLevel: byte;
+  subStart: integer;
+  subTree: TBidiTree;
+begin
+  startIndex := ABidiTree.StartIndex;
+  endIndex:= ABidiTree.EndIndex;
+
+  while (startIndex < endIndex) and FBidi[startIndex].BidiInfo.IsRemoved do inc(startIndex);
+  while (startIndex < endIndex) and FBidi[endIndex-1].BidiInfo.IsRemoved do dec(endIndex);
+  if endIndex = startIndex then exit;
+
+  i := startIndex;
+  while i < endIndex do
+  begin
+    if not FBidi[i].BidiInfo.IsRemoved then
+    begin
+      if FBidi[i].BidiInfo.BidiLevel > ABidiTree.BidiLevel then
+      begin
+        subStart := i;
+        subLevel := FBidi[i].BidiInfo.BidiLevel;
+        inc(i);
+        while (i < endIndex) and (FBidi[i].BidiInfo.BidiLevel > ABidiTree.BidiLevel) do
+        begin
+          if FBidi[i].BidiInfo.BidiLevel < subLevel then
+            subLevel := FBidi[i].BidiInfo.BidiLevel;
+          inc(i);
+        end;
+
+        subTree := ABidiTreeFactory.Create(AData, subStart, i, subLevel, false);
+        ABidiTree.AddBranch(subTree);
+        CreateBidiTreeRec(ABidiTreeFactory, AData, subTree);
+        subTree.AfterFinish;
+        if subTree.EndIndex < i then
+        begin
+          ABidiTree.Shorten(subTree.EndIndex);
+          exit;
+        end;
+      end else
+      begin
+        subStart:= i;
+        inc(i);
+        while (i < endIndex) and (FBidi[i].BidiInfo.BidiLevel = ABidiTree.BidiLevel) do inc(i);
+
+        subTree := ABidiTreeFactory.Create(AData, subStart, i, ABidiTree.BidiLevel, true);
+        ABidiTree.AddBranch(subTree);
+        if subTree.TrySplit then
+        begin
+          ABidiTree.Shorten(subTree.EndIndex);
+          exit;
+        end;
+      end;
+
+    end else
+      inc(i);
+  end;
+end;
+
+procedure TUnicodeAnalysis.CheckCharRange(AStartIndex, AEndIndex: integer;
+  AMinIndex, AMaxIndex: integer);
+begin
+  if AEndIndex<AStartIndex then raise exception.Create('Invalid char range');
+  if (AStartIndex < AMinIndex) or (AEndIndex > AMaxIndex) then
+    raise exception.Create('Char range out of bounds ['+inttostr(AStartIndex)+','+IntToStr(AEndIndex)+'] > ['+inttostr(AMinIndex)+','+IntToStr(AMaxIndex)+']');
 end;
 
 procedure TUnicodeAnalysis.CheckTextAnalysis;
@@ -579,8 +766,7 @@ begin
   if ABidiCount = 0 then exit;
   if ABidiCount < 0 then raise exception.Create('Bidi count must be positive');
   bidiEnd := ABidiStart+ABidiCount;
-  if (ABidiStart < 0) or (bidiEnd > CharCount) then
-    raise exception.Create('Char range out of bounds');
+  CheckCharRange(ABidiStart, bidiEnd, 0, CharCount);
 
   utf8Start := FBidi[ABidiStart].Offset+1;
   if bidiEnd >= CharCount then
@@ -606,8 +792,7 @@ begin
   if ABidiCount = 0 then exit;
   if ABidiCount < 0 then raise exception.Create('Bidi count must be positive');
   bidiEnd := ABidiStart+ABidiCount;
-  if (ABidiStart < 0) or (bidiEnd > CharCount) then
-    raise exception.Create('Char range out of bounds');
+  CheckCharRange(ABidiStart, bidiEnd, 0, CharCount);
 
   utf8Start := FBidi[ABidiStart].Offset+1;
   if bidiEnd >= CharCount then
