@@ -1421,8 +1421,6 @@ var
   stream: TStream;
   format: TBGRAImageFormat;
   reader: TFPCustomImageReader;
-  magic: array[1..2] of char;
-  startPos: Int64;
   ext: String;
 begin
   stream := BGRAResource.GetResourceStream(AFilename);
