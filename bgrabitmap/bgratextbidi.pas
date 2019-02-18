@@ -795,7 +795,7 @@ var nextIndex, prevIndex: integer;
   extraW, combW: Single;
   charClass: TUnicodeBidiClass;
 begin
-  if ASplitIndex = 0 then
+  if ASplitIndex <= AStartIndex then
   begin
     s := FAnalysis.CopyTextUTF8(AStartIndex, AEndIndex-AStartIndex);
     result := TextSizeBidiOverride(s, ARightToLeft);
@@ -1534,7 +1534,7 @@ begin
         exit;
       end else
       begin
-        if i = FPart[i].endIndex then
+        if ACharIndex = FPart[i].endIndex then
         begin
           result := GetUntransformedPartEndCaret(i);
           exit;
