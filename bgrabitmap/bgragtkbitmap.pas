@@ -37,7 +37,6 @@ type
   private
     FPixBuf: Pointer;
     procedure DrawTransparent(ACanvas: TCanvas; Rect: TRect);
-    procedure DrawOpaque(ACanvas: TCanvas; ARect: TRect; ASourceRect: TRect);
     procedure DrawOpaque(ACanvas: TCanvas; ARect: TRect);
   protected
     procedure ReallocData; override;
@@ -131,15 +130,9 @@ begin
   If not TBGRAPixel_RGBAOrder then SwapRedBlue;
 end;
 
-procedure TBGRAGtkBitmap.DrawOpaque(ACanvas: TCanvas; ARect: TRect;
-  ASourceRect: TRect);
-begin
-  DataDrawOpaque(ACanvas,ARect,Data,LineOrder,Width,Height);
-end;
-
 procedure TBGRAGtkBitmap.DrawOpaque(ACanvas: TCanvas; ARect: TRect);
 begin
-  DrawOpaque(ACanvas, ARect, rect(0,0,Width,Height));
+  DataDrawOpaque(ACanvas,ARect,Data,LineOrder,Width,Height);
 end;
 
 procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
