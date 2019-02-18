@@ -1714,6 +1714,31 @@ var
     procedure AppendHorizResult(AStartTop, AEndTop, AEndBottom, AStartBottom: TPointF; ARightToLeft: boolean);
     var
       temp: TPointF;
+
+      procedure TryMergeBefore;
+      begin
+        while length(horizResult)>=2 do
+        begin
+          if (horizResult[high(horizResult)].TopRight = horizResult[high(horizResult)-1].TopLeft) and
+             (horizResult[high(horizResult)].BottomRight = horizResult[high(horizResult)-1].BottomLeft) then
+          begin
+            horizResult[high(horizResult)-1] := TAffineBox.AffineBox(horizResult[high(horizResult)].TopLeft,
+                                                                     horizResult[high(horizResult)-1].TopRight,
+                                                                     horizResult[high(horizResult)].BottomLeft);
+            setlength(horizResult, length(horizResult)-1);
+          end else
+          if (horizResult[high(horizResult)].TopLeft = horizResult[high(horizResult)-1].TopRight) and
+             (horizResult[high(horizResult)].BottomLeft = horizResult[high(horizResult)-1].BottomRight) then
+          begin
+            horizResult[high(horizResult)-1] := TAffineBox.AffineBox(horizResult[high(horizResult)-1].TopLeft,
+                                                                     horizResult[high(horizResult)].TopRight,
+                                                                     horizResult[high(horizResult)-1].BottomLeft);
+            setlength(horizResult, length(horizResult)-1);
+          end else
+            break;
+        end;
+      end;
+
     begin
       if ARightToLeft then
       begin
@@ -1728,11 +1753,17 @@ var
 
       if AMergeBoxes and (horizResult <> nil) and (AStartTop = horizResult[high(horizResult)].TopRight)
          and (AStartBottom = horizResult[high(horizResult)].BottomRight) then
-        horizResult[high(horizResult)] := TAffineBox.AffineBox(horizResult[high(horizResult)].TopLeft,AEndTop,horizResult[high(horizResult)].BottomLeft)
+      begin
+        horizResult[high(horizResult)] := TAffineBox.AffineBox(horizResult[high(horizResult)].TopLeft,AEndTop,horizResult[high(horizResult)].BottomLeft);
+        TryMergeBefore;
+      end
       else
       if AMergeBoxes and (horizResult <> nil) and (AEndTop = horizResult[high(horizResult)].TopLeft)
          and (AEndBottom = horizResult[high(horizResult)].BottomLeft) then
-        horizResult[high(horizResult)] := TAffineBox.AffineBox(AStartTop,horizResult[high(horizResult)].TopRight,AStartBottom)
+      begin
+        horizResult[high(horizResult)] := TAffineBox.AffineBox(AStartTop,horizResult[high(horizResult)].TopRight,AStartBottom);
+        TryMergeBefore;
+      end
       else
       begin
         setlength(horizResult, length(horizResult)+1);
