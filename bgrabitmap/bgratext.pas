@@ -606,9 +606,9 @@ end;
 function BGRATextFitInfo(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string;
   CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
 var
-  actualAntialiasingLevel: Integer;
+  actualAntialiasingLevel, len1: Integer;
 begin
-  if AMaxWidth = 0 then exit(0);
+  if (AMaxWidth = 0) or (length(sUTF8)=0) then exit(0);
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   if not LCLFontAvailable then
     result := 0
@@ -625,6 +625,10 @@ begin
         tempBmp.Canvas.Font.Height := Font.Height;
         actualAntialiasingLevel:= 1;
       end;
+      {$IF lcl_fullversion < 1070000}
+      len1 := tempBmp.Canvas.TextWidth(copy(sUTF8,1,UTF8CharacterLength(@sUTF8[1])));
+      if len1 > AMaxWidth*actualAntialiasingLevel then exit(0);
+      {$ENDIF}
       result := tempBmp.Canvas.TextFitInfo(sUTF8, AMaxWidth*actualAntialiasingLevel);
     except
       on ex: exception do
