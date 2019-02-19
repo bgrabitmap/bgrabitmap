@@ -1149,15 +1149,8 @@ begin
     paraRTL := ParagraphRightToLeft[paraIndex];
 
     if FAvailableWidth <> EmptySingle then
-    begin
-      case FParagraph[paraIndex].alignment of
-      btaNatural: if paraRTL then alignment := taRightJustify else alignment:= taLeftJustify;
-      btaOpposite: if paraRTL then alignment := taLeftJustify else alignment:= taRightJustify;
-      btaLeftJustify: alignment:= taLeftJustify;
-      btaRightJustify: alignment:= taRightJustify;
-      else {btaCenter:} alignment:= taCenter;
-      end;
-    end else
+      alignment := BidiTextAlignmentToAlignment(FParagraph[paraIndex].alignment, paraRTL)
+    else
       alignment := taLeftJustify;
 
     FParagraph[paraIndex].firstBrokenLineIndex:= FBrokenLineCount;

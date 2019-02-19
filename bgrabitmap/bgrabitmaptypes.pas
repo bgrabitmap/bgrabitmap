@@ -81,6 +81,10 @@ type
   TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
   TBidiTextAlignment = (btaNatural, btaOpposite, btaLeftJustify, btaRightJustify, btaCenter);
 
+  function AlignmentToBidiTextAlignment(AAlign: TAlignment; ARightToLeft: boolean): TBidiTextAlignment; overload;
+  function AlignmentToBidiTextAlignment(AAlign: TAlignment): TBidiTextAlignment; overload;
+  function BidiTextAlignmentToAlignment(ABidiAlign: TBidiTextAlignment; ARightToLeft: boolean): TAlignment;
+
 const
   RadialBlurTypeToStr: array[TRadialBlurType] of string =
   ('Normal','Disk','Corona','Precise','Fast','Box');
@@ -529,6 +533,39 @@ uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I bgrapixel.inc}
+
+function AlignmentToBidiTextAlignment(AAlign: TAlignment; ARightToLeft: boolean): TBidiTextAlignment;
+begin
+  case AAlign of
+    taCenter: result := btaCenter;
+    taRightJustify: if ARightToLeft then result := btaNatural else result := btaOpposite;
+    else {taLeftJustify}
+      if ARightToLeft then result := btaOpposite else result := btaNatural;
+  end;
+end;
+
+function AlignmentToBidiTextAlignment(AAlign: TAlignment): TBidiTextAlignment;
+begin
+  case AAlign of
+    taCenter: result := btaCenter;
+    taRightJustify: result := btaRightJustify;
+    else {taLeftJustify}
+      result := btaLeftJustify;
+  end;
+end;
+
+function BidiTextAlignmentToAlignment(ABidiAlign: TBidiTextAlignment;
+  ARightToLeft: boolean): TAlignment;
+begin
+  case ABidiAlign of
+    btaCenter: result := taCenter;
+    btaLeftJustify: result := taLeftJustify;
+    btaRightJustify: result := taRightJustify;
+    btaOpposite: if ARightToLeft then result := taLeftJustify else result := taRightJustify;
+  else {btaNatural}
+    if ARightToLeft then result := taRightJustify else result := taLeftJustify;
+  end;
+end;
 
 function CleanTextOutString(s: string): string;
 var idxIn, idxOut: integer;
