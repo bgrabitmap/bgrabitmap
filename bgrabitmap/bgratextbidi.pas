@@ -1164,7 +1164,10 @@ begin
     begin
       lineStart := FAnalysis.UnbrokenLineStartIndex[ubIndex];
       lineEnd := FAnalysis.UnbrokenLineEndIndex[ubIndex];
-      paraBidiLevel := FAnalysis.BidiInfo[lineStart].ParagraphBidiLevel;
+      if lineStart < lineEnd then
+        paraBidiLevel := FAnalysis.BidiInfo[lineStart].ParagraphBidiLevel
+      else
+        paraBidiLevel := 0;
 
       if lineEnd > lineStart then
       begin
