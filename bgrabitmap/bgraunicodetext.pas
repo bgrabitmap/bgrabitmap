@@ -584,8 +584,8 @@ begin
     raise exception.Create('Unexpected UTF8 offset');
   for i := 0 to high(FUnbrokenLine) do
   begin
-    if (i > 0) and (FUnbrokenLine[i].startIndex <= FUnbrokenLine[i-1].startIndex) then
-      raise exception.Create('Unbroken line position must be strictly increasing');
+    if (i > 0) and (FUnbrokenLine[i].startIndex < FUnbrokenLine[i-1].startIndex) then
+      raise exception.Create('Unbroken line position must be increasing');
     if (i > 0) and (FUnbrokenLine[i].paragraphIndex < FUnbrokenLine[i-1].paragraphIndex) then
       raise exception.Create('Unbroken line paragraph must be increasing');
     if (i > 0) and (FUnbrokenLine[i].paragraphIndex > FUnbrokenLine[i-1].paragraphIndex+1) then
@@ -816,19 +816,22 @@ procedure TUnicodeAnalysis.InternalUpdateUnbrokenLines(AParagraphIndex: integer)
 var
   newUnbrokenCount, unbrokenStart, unbrokenEnd, unbrokenCount,
   unbrokenDelta, curUnbrokenIndex: Integer;
-  bidiStart, bidiEndBefore, i: LongInt;
+  bidiStart, bidiEnd, i: LongInt;
 begin
   if (AParagraphIndex < 0) or (AParagraphIndex >= ParagraphCount) then
     raise exception.Create('Paragraph index out of bounds');
 
   bidiStart := ParagraphStartIndex[AParagraphIndex];
-  bidiEndBefore := ParagraphEndIndexBeforeParagraphSeparator[AParagraphIndex];
+  if AParagraphIndex = ParagraphCount-1 then
+    bidiEnd := ParagraphEndIndex[AParagraphIndex]
+  else
+    bidiEnd := ParagraphEndIndexBeforeParagraphSeparator[AParagraphIndex];
   unbrokenStart := FParagraph[AParagraphIndex].firstUnbrokenLineIndex;
   unbrokenEnd := FParagraph[AParagraphIndex+1].firstUnbrokenLineIndex;
   unbrokenCount := unbrokenEnd-unbrokenStart;
 
   newUnbrokenCount := 1;
-  for i := bidiStart to bidiEndBefore-1 do
+  for i := bidiStart to bidiEnd-1 do
     if FBidi[i].BidiInfo.IsEndOfLine or
        FBidi[i].BidiInfo.IsExplicitEndOfParagraph then inc(newUnbrokenCount);
 
@@ -854,7 +857,7 @@ begin
   curUnbrokenIndex := unbrokenStart;
   FUnbrokenLine[curUnbrokenIndex].startIndex:= bidiStart;
   FUnbrokenLine[curUnbrokenIndex].paragraphIndex:= AParagraphIndex;
-  for i := bidiStart to bidiEndBefore-1 do
+  for i := bidiStart to bidiEnd-1 do
   begin
     if FBidi[i].BidiInfo.IsEndOfLine or
        FBidi[i].BidiInfo.IsExplicitEndOfParagraph then // paragraph separator before split
@@ -920,8 +923,7 @@ var
   i, unbrokenStart, unbrokenEndIncl, j, paraIndex: integer;
 begin
   unbrokenStart := FParagraph[AParagraphIndex].firstUnbrokenLineIndex;
-  unbrokenEndIncl := FParagraph[AParagraphIndex+1].firstUnbrokenLineIndex;
-  if AParagraphIndex < ParagraphCount then dec(unbrokenEndIncl);
+  unbrokenEndIncl := FParagraph[AParagraphIndex+1].firstUnbrokenLineIndex-1;
   for i := unbrokenStart+1 to unbrokenEndIncl do
   begin
     if (FUnbrokenLine[i].startIndex > 0) and

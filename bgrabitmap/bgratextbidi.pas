@@ -748,6 +748,8 @@ procedure TBidiTextLayout.ParagraphSplit(ASender: TObject;
 var
   i: Integer;
 begin
+  if (AParagraphIndex < 0) or (AParagraphIndex > high(FParagraph)) then
+    raise exception.Create('Paragrah index out of bounds (0 <= '+inttostr(AParagraphIndex)+' <= '+inttostr(high(FParagraph))+')');
   setlength(FParagraph, length(FParagraph)+1);
   for i := high(FParagraph) downto AParagraphIndex+1 do
     FParagraph[i] := FParagraph[i-1];
