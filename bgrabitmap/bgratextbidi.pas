@@ -126,6 +126,7 @@ type
     function GetPartEndCaret(APartIndex: integer): TBidiCaretPos;
     function GetUntransformedPartStartCaret(APartIndex: integer): TBidiCaretPos;
     function GetUntransformedPartEndCaret(APartIndex: integer): TBidiCaretPos;
+    function GetUntransformedParagraphAt(APosition: TPointF): integer; overload;
 
     function GetSameLevelString(startIndex,endIndex: integer): string; overload;
     function GetSameLevelString(startIndex,endIndex: integer; out nonRemovedCount: integer): string; overload;
@@ -165,7 +166,8 @@ type
     function GetUntransformedCaret(ACharIndex: integer): TBidiCaretPos;
     function GetCharIndexAt(APosition: TPointF): integer;
     function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = true): ArrayOfTPointF;
-    function GetParagraphAt(ACharIndex: Integer): integer;
+    function GetParagraphAt(ACharIndex: Integer): integer; overload;
+    function GetParagraphAt(APosition: TPointF): integer; overload;
     function GetBrokenLineAt(ACharIndex: integer): integer;
 
     function InsertText(ATextUTF8: string; APosition: integer): integer;
@@ -1577,103 +1579,102 @@ var
 begin
   NeedLayout;
   untransformedPos := FMatrixInverse*APosition;
+  paraIndex := GetUntransformedParagraphAt(untransformedPos);
 
-  for paraIndex := 0 to ParagraphCount-1 do
-  begin
-    if (untransformedPos.Y >= FParagraph[paraIndex].rectF.Top) and (untransformedPos.Y < FParagraph[paraIndex].rectF.Bottom) then
+  if untransformedPos.Y < FParagraph[paraIndex].rectF.Top then
+    exit(ParagraphStartIndex[paraIndex]);
+
+  if untransformedPos.Y >= FParagraph[paraIndex].rectF.Bottom then
+    exit(ParagraphEndIndex[paraIndex]);
+
+  brokenStart := FParagraph[paraIndex].firstBrokenLineIndex;
+  if paraIndex = ParagraphCount-1 then
+    brokenEnd := BrokenLineCount
+  else
+    brokenEnd := FParagraph[paraIndex+1].firstBrokenLineIndex;
+
+  for brokenLineIndex := brokenStart to brokenEnd-1 do
+    if untransformedPos.Y < FBrokenLine[brokenLineIndex].rectF.Bottom then
     begin
-      brokenStart := FParagraph[paraIndex].firstBrokenLineIndex;
-      if paraIndex = ParagraphCount-1 then
-        brokenEnd := BrokenLineCount
-      else
-        brokenEnd := FParagraph[paraIndex+1].firstBrokenLineIndex;
+      if untransformedPos.Y < FBrokenLine[brokenLineIndex].rectF.Top then
+        exit(FBrokenLine[brokenLineIndex].startIndex);
 
-      for brokenLineIndex := brokenStart to brokenEnd-1 do
-        if untransformedPos.Y < FBrokenLine[brokenLineIndex].rectF.Bottom then
+      j := FBrokenLine[brokenLineIndex].firstPartIndex;
+      if j < FBrokenLine[brokenLineIndex].lastPartIndexPlusOne then
+      begin
+        if (BrokenLineRightToLeft[brokenLineIndex] and (untransformedPos.x >= PartRectF[j].Right)) or
+           (not BrokenLineRightToLeft[brokenLineIndex] and (untransformedPos.x < PartRectF[j].Left)) then
+          exit(FBrokenLine[brokenLineIndex].startIndex)
+      end;
+
+      for j := FBrokenLine[brokenLineIndex].firstPartIndex to FBrokenLine[brokenLineIndex].lastPartIndexPlusOne-1 do
+        if (PartBrokenLineIndex[j] = brokenLineIndex) and PartAffineBox[j].Contains(APosition) then
         begin
-          if untransformedPos.Y < FBrokenLine[brokenLineIndex].rectF.Top then
-            exit(FBrokenLine[brokenLineIndex].startIndex);
-
-          j := FBrokenLine[brokenLineIndex].firstPartIndex;
-          if j < FBrokenLine[brokenLineIndex].lastPartIndexPlusOne then
+          with PartAffineBox[j] do
           begin
-            if (BrokenLineRightToLeft[brokenLineIndex] and (untransformedPos.x >= PartRectF[j].Right)) or
-               (not BrokenLineRightToLeft[brokenLineIndex] and (untransformedPos.x < PartRectF[j].Left)) then
-              exit(FBrokenLine[brokenLineIndex].startIndex)
-          end;
-
-          for j := FBrokenLine[brokenLineIndex].firstPartIndex to FBrokenLine[brokenLineIndex].lastPartIndexPlusOne-1 do
-            if (PartBrokenLineIndex[j] = brokenLineIndex) and PartAffineBox[j].Contains(APosition) then
+            if PartRightToLeft[j] then
             begin
-              with PartAffineBox[j] do
-              begin
-                if PartRightToLeft[j] then
-                begin
-                  axis := TopLeft-TopRight;
-                  origin := TopRight;
-                end else
-                begin
-                  axis := TopRight-TopLeft;
-                  origin := TopLeft;
-                end;
-                len := VectLen(axis);
-                if len > 0 then
-                begin
-                  w := ((APosition-origin)*axis)/len;
-                  //if there is just one char, it is the whole part
-                  if PartEndIndex[j] = PartStartIndex[j]+1 then
-                  begin
-                    if w > 0.5*len then
-                      exit(PartEndIndex[j])
-                    else
-                      exit(PartStartIndex[j]);
-                  end;
-
-                  str := FAnalysis.CopyTextUTF8(PartStartIndex[j], PartEndIndex[j]-PartStartIndex[j]);
-                  fit := TextFitInfoBidiOverride(str, w, PartRightToLeft[j]);
-                  curIndex := PartStartIndex[j]+fit;
-                  if curIndex > PartEndIndex[j] then curIndex:= PartEndIndex[j];
-                  if curIndex = 0 then curW := 0
-                  else curW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], curIndex).x;
-                  while (curW < w) and (curIndex < PartEndIndex[j]) do
-                  begin
-                    newIndex := curIndex+1;
-                    while (newIndex < PartEndIndex[j]) and (GetUnicodeBidiClass(GetUnicodeChar(newIndex)) = ubcNonSpacingMark) do inc(newIndex);
-                    newW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], newIndex).x;
-                    if newW >= w then
-                    begin
-                      if (curW+newW)*0.5 + 1 < w then curIndex := newIndex;
-                      break;
-                    end;
-                    curIndex := newIndex;
-                  end;
-                  exit(curIndex);
-                end;
-              end;
-              exit(PartStartIndex[j]);
+              axis := TopLeft-TopRight;
+              origin := TopRight;
+            end else
+            begin
+              axis := TopRight-TopLeft;
+              origin := TopLeft;
             end;
-          result := BrokenLineEndIndex[brokenLineIndex];
-          if result > BrokenLineStartIndex[brokenLineIndex] then
-          begin
-            u := GetUnicodeChar(result-1);
-            if IsUnicodeParagraphSeparator(u) or (u = UNICODE_LINE_SEPARATOR) then
+            len := VectLen(axis);
+            if len > 0 then
             begin
-              dec(result);
-              if (result > BrokenLineStartIndex[brokenLineIndex]) and (u = 13) or (u = 10) then
+              w := ((APosition-origin)*axis)/len;
+              //if there is just one char, it is the whole part
+              if PartEndIndex[j] = PartStartIndex[j]+1 then
               begin
-                u2 := GetUnicodeChar(result-1);
-                if (u2 <> u) and ((u2 = 13) or (u2 = 10)) then dec(result);
+                if w > 0.5*len then
+                  exit(PartEndIndex[j])
+                else
+                  exit(PartStartIndex[j]);
               end;
+
+              str := FAnalysis.CopyTextUTF8(PartStartIndex[j], PartEndIndex[j]-PartStartIndex[j]);
+              fit := TextFitInfoBidiOverride(str, w, PartRightToLeft[j]);
+              curIndex := PartStartIndex[j]+fit;
+              if curIndex > PartEndIndex[j] then curIndex:= PartEndIndex[j];
+              if curIndex = 0 then curW := 0
+              else curW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], curIndex).x;
+              while (curW < w) and (curIndex < PartEndIndex[j]) do
+              begin
+                newIndex := curIndex+1;
+                while (newIndex < PartEndIndex[j]) and (GetUnicodeBidiClass(GetUnicodeChar(newIndex)) = ubcNonSpacingMark) do inc(newIndex);
+                newW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], newIndex).x;
+                if newW >= w then
+                begin
+                  if (curW+newW)*0.5 + 1 < w then curIndex := newIndex;
+                  break;
+                end;
+                curIndex := newIndex;
+              end;
+              exit(curIndex);
             end;
           end;
-          exit;
+          exit(PartStartIndex[j]);
         end;
-
-      exit(ParagraphEndIndexBeforeParagraphSeparator[paraIndex]);
+      result := BrokenLineEndIndex[brokenLineIndex];
+      if result > BrokenLineStartIndex[brokenLineIndex] then
+      begin
+        u := GetUnicodeChar(result-1);
+        if IsUnicodeParagraphSeparator(u) or (u = UNICODE_LINE_SEPARATOR) then
+        begin
+          dec(result);
+          if (result > BrokenLineStartIndex[brokenLineIndex]) and (u = 13) or (u = 10) then
+          begin
+            u2 := GetUnicodeChar(result-1);
+            if (u2 <> u) and ((u2 = 13) or (u2 = 10)) then dec(result);
+          end;
+        end;
+      end;
+      exit;
     end;
-  end;
 
-  exit(CharCount);
+  exit(ParagraphEndIndexBeforeParagraphSeparator[paraIndex]);
 end;
 
 function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean; AMergeBoxes: boolean): ArrayOfTPointF;
@@ -1951,6 +1952,11 @@ begin
   result := FAnalysis.GetParagraphAt(ACharIndex);
 end;
 
+function TBidiTextLayout.GetParagraphAt(APosition: TPointF): integer;
+begin
+  result := GetParagraphAt(FMatrixInverse*APosition);
+end;
+
 function TBidiTextLayout.GetBrokenLineAt(ACharIndex: integer): integer;
   procedure FindRec(AFirstBrokenLineIndex, ALastBrokenLineIndex: integer);
   var
@@ -2119,6 +2125,43 @@ begin
   result.PreviousTop := EmptyPointF;
   result.PreviousBottom := EmptyPointF;
   result.PreviousRightToLeft := result.RightToLeft;
+end;
+
+function TBidiTextLayout.GetUntransformedParagraphAt(APosition: TPointF): integer;
+
+  procedure FindRec(AFirstParaIndex, ALastParaIndex: integer);
+  var
+    midIndex: Integer;
+  begin
+    midIndex := (AFirstParaIndex+ALastParaIndex) shr 1;
+    if (APosition.y < FParagraph[midIndex].rectF.Top) then
+    begin
+      if midIndex <= 0 then
+      begin
+        result := midIndex;
+        exit;
+      end;
+      FindRec(AFirstParaIndex, midIndex-1);
+    end
+    else if (midIndex < ParagraphCount-1) and (APosition.y >= FParagraph[midIndex+1].rectF.Bottom) then
+    begin
+      if midIndex >= ParagraphCount-1 then
+      begin
+        result := midIndex;
+        exit;
+      end;
+      FindRec(midIndex+1, ALastParaIndex);
+    end
+    else
+    begin
+      result := midIndex;
+      exit;
+    end;
+  end;
+
+begin
+  NeedLayout;
+  FindRec(0, ParagraphCount-1);
 end;
 
 procedure TBidiTextLayout.AddPartsFromTree(APos: TPointF; ATree: TBidiTree;
