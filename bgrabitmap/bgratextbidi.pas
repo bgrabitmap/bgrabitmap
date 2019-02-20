@@ -1038,7 +1038,7 @@ end;
 
 procedure TBidiTextLayout.ComputeLayout;
 var lineHeight, baseLine, tabPixelSize: single;
-  paraIndex, ubIndex, j, nextTabIndex, splitIndex: Integer;
+  paraIndex, ubIndex, i,j, nextTabIndex, splitIndex: Integer;
   lineStart, subStart, lineEnd: integer;
   paraSpacingAbove, paraSpacingBelow, correctedBaseLine: single;
   paraRTL, needNewLine: boolean;
@@ -1159,6 +1159,28 @@ begin
 
     for ubIndex := FAnalysis.ParagraphFirstUnbrokenLine[paraIndex] to FAnalysis.ParagraphLastUnbrokenLinePlusOne[paraIndex]-1 do
     begin
+      if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then
+      begin
+        FParagraph[paraIndex].rectF.Bottom := pos.y;
+        ClearTabSections;
+        for i := paraIndex+1 to high(FParagraph) do
+        begin
+          FParagraph[i].rectF.Top := pos.y;
+          FParagraph[i].rectF.Bottom := pos.y;
+          if FAvailableWidth <> EmptySingle then
+          begin
+            FParagraph[i].rectF.Left := 0;
+            FParagraph[i].rectF.Right := FAvailableWidth;
+          end else
+          begin
+            FParagraph[i].rectF.Left := EmptySingle;
+            FParagraph[i].rectF.Right := EmptySingle;
+          end;
+          FParagraph[i].firstBrokenLineIndex:= FBrokenLineCount;
+        end;
+        exit;
+      end;
+
       lineStart := FAnalysis.UnbrokenLineStartIndex[ubIndex];
       lineEnd := FAnalysis.UnbrokenLineEndIndex[ubIndex];
       if lineStart < lineEnd then
@@ -1374,12 +1396,6 @@ begin
         FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
 
         pos.y += lineHeight;
-        if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then
-        begin
-          FParagraph[paraIndex].rectF.Bottom := pos.y;
-          ClearTabSections;
-          exit;
-        end;
       end;
     end;
     pos.y += paraSpacingBelow;
