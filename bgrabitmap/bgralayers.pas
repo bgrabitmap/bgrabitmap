@@ -163,6 +163,8 @@ type
   private
     FNbLayers: integer;
     FLayers: array of TBGRALayerInfo;
+    FOnEditorFocusChanged: TNotifyEvent;
+    FEditorFocused: boolean;
     FOriginalChange: TEmbeddedOriginalChangeEvent;
     FOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent;
     FWidth,FHeight: integer;
@@ -170,8 +172,10 @@ type
     FOriginalEditor: TBGRAOriginalEditor;
     FOriginalEditorOriginal: TBGRALayerCustomOriginal;
     FOriginalEditorViewMatrix: TAffineMatrix;
+    procedure EditorFocusedChanged(Sender: TObject);
     function GetLayerOriginalClass(layer: integer): TBGRALayerOriginalAny;
     function GetOriginalGuid(AIndex: integer): TGUID;
+    procedure SetEditorFocused(AValue: boolean);
 
   protected
     function GetWidth: integer; override;
@@ -329,6 +333,8 @@ type
     property OriginalClass[AIndex: integer]: TBGRALayerOriginalAny read GetOriginalByIndexClass;
     property OnOriginalChange: TEmbeddedOriginalChangeEvent read FOriginalChange write FOriginalChange;
     property OnOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent read FOriginalEditingChange write FOriginalEditingChange;
+    property EditorFocused: boolean read FEditorFocused write SetEditorFocused;
+    property OnEditorFocusChanged: TNotifyEvent read FOnEditorFocusChanged write FOnEditorFocusChanged;
     property OriginalEditor: TBGRAOriginalEditor read FOriginalEditor;
   end;
 
@@ -682,6 +688,17 @@ begin
   result := FOriginals[AIndex].Guid;
 end;
 
+procedure TBGRALayeredBitmap.SetEditorFocused(AValue: boolean);
+begin
+  if Assigned(FOriginalEditor) then FOriginalEditor.Focused := AValue
+  else
+  begin
+    if FEditorFocused=AValue then Exit;
+    FEditorFocused:=AValue;
+    if Assigned(FOnEditorFocusChanged) then FOnEditorFocusChanged(self);
+  end;
+end;
+
 function TBGRALayeredBitmap.GetLayerOriginalClass(layer: integer): TBGRALayerOriginalAny;
 var
   idxOrig: Integer;
@@ -694,6 +711,15 @@ begin
     idxOrig := IndexOfOriginal(FLayers[layer].OriginalGuid);
     if idxOrig = -1 then exit(nil);
     result := OriginalClass[idxOrig];
+  end;
+end;
+
+procedure TBGRALayeredBitmap.EditorFocusedChanged(Sender: TObject);
+begin
+  if Assigned(FOriginalEditor) then
+  begin
+    FEditorFocused := FOriginalEditor.Focused;
+    if Assigned(FOnEditorFocusChanged) then FOnEditorFocusChanged(self);
   end;
 end;
 
@@ -1952,6 +1978,8 @@ begin
     if FOriginalEditor = nil then
     begin
       FOriginalEditor := orig.CreateEditor;
+      FOriginalEditor.Focused := FEditorFocused;
+      FOriginalEditor.OnFocusChanged:=@EditorFocusedChanged;
     end;
     FOriginalEditor.Clear;
     orig.ConfigureEditor(FOriginalEditor);

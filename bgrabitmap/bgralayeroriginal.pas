@@ -54,8 +54,11 @@ type
 
   TBGRAOriginalEditor = class
   private
+    FFocused: boolean;
+    FOnFocusChanged: TNotifyEvent;
     function GetPointCoord(AIndex: integer): TPointF;
     function GetPointCount: integer;
+    procedure SetFocused(AValue: boolean);
   protected
     FMatrix,FMatrixInverse: TAffineMatrix;          //view matrix from original coord
     FGridMatrix,FGridMatrixInverse: TAffineMatrix;  //grid matrix in original coord
@@ -118,9 +121,11 @@ type
     property Matrix: TAffineMatrix read FMatrix write SetMatrix;
     property GridMatrix: TAffineMatrix read FGridMatrix write SetGridMatrix;
     property GridActive: boolean read FGridActive write SetGridActive;
+    property Focused: boolean read FFocused write SetFocused;
     property PointSize: single read FPointSize write FPointSize;
     property PointCount: integer read GetPointCount;
     property PointCoord[AIndex: integer]: TPointF read GetPointCoord;
+    property OnFocusChanged: TNotifyEvent read FOnFocusChanged write FOnFocusChanged;
   end;
 
   TBGRACustomOriginalStorage = class;
@@ -347,6 +352,13 @@ end;
 function TBGRAOriginalEditor.GetPointCount: integer;
 begin
   result := length(FPoints);
+end;
+
+procedure TBGRAOriginalEditor.SetFocused(AValue: boolean);
+begin
+  if FFocused=AValue then Exit;
+  FFocused:=AValue;
+  if Assigned(FOnFocusChanged) then FOnFocusChanged(self);
 end;
 
 procedure TBGRAOriginalEditor.SetGridActive(AValue: boolean);
