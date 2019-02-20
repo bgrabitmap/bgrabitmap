@@ -2143,7 +2143,7 @@ function TBidiTextLayout.GetUntransformedParagraphAt(APosition: TPointF): intege
       end;
       FindRec(AFirstParaIndex, midIndex-1);
     end
-    else if (midIndex < ParagraphCount-1) and (APosition.y >= FParagraph[midIndex+1].rectF.Bottom) then
+    else if (midIndex < ParagraphCount-1) and (APosition.y >= FParagraph[midIndex].rectF.Bottom) then
     begin
       if midIndex >= ParagraphCount-1 then
       begin
