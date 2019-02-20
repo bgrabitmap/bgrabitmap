@@ -726,8 +726,8 @@ end;
 
 function TRectHelper.Contains(const APoint: TPoint): boolean;
 begin
-  result := (APoint.X >= Left) and (APoint.X <= Right) and
-    (APoint.Y >= Top) and (APoint.Y <= Bottom);
+  result := (APoint.X >= Left) and (APoint.X < Right) and
+    (APoint.Y >= Top) and (APoint.Y < Bottom);
 end;
 
 function TRectHelper.Contains(const ARect: TRect): boolean;
