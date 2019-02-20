@@ -2134,20 +2134,20 @@ function TBidiTextLayout.GetUntransformedParagraphAt(APosition: TPointF): intege
     midIndex: Integer;
   begin
     midIndex := (AFirstParaIndex+ALastParaIndex) shr 1;
-    if (APosition.y < FParagraph[midIndex].rectF.Top) then
+    if APosition.y < FParagraph[midIndex].rectF.Top then
     begin
-      if midIndex <= 0 then
+      if midIndex <= AFirstParaIndex then
       begin
-        result := midIndex;
+        result := AFirstParaIndex;
         exit;
       end;
       FindRec(AFirstParaIndex, midIndex-1);
     end
-    else if (midIndex < ParagraphCount-1) and (APosition.y >= FParagraph[midIndex].rectF.Bottom) then
+    else if APosition.y >= FParagraph[midIndex].rectF.Bottom then
     begin
-      if midIndex >= ParagraphCount-1 then
+      if midIndex >= ALastParaIndex then
       begin
-        result := midIndex;
+        result := ALastParaIndex;
         exit;
       end;
       FindRec(midIndex+1, ALastParaIndex);
