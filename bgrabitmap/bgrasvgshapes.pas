@@ -576,7 +576,7 @@ begin
   if tag='tspan' then
     result := TSVGTSpan else
   if tag='tref' then
-    result := TSVGTSpan else
+    result := TSVGTRef else
   if tag='textpath' then
     result := TSVGTextPath else
   if tag='altglyph' then
@@ -863,7 +863,7 @@ end;
 
 procedure TSVGTextPositioning.SetDy(AValue: ArrayOfTFloatWithCSSUnit);
 begin
-  ArrayOfHorizAttributeWithUnit['dy'] := AValue;
+  ArrayOfVerticalAttributeWithUnit['dy'] := AValue;
 end;
 
 procedure TSVGTextPositioning.SetRotate(AValue: ArrayOfTSVGNumber);
