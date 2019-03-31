@@ -8,6 +8,9 @@ uses
   Classes, SysUtils, BGRABitmapTypes;
 
 type
+  TSVGNumber = single;//double
+  ArrayOfTSVGNumber = array of TSVGNumber;
+
   TCSSUnit = (cuCustom, cuPixel,
               cuCentimeter, cuMillimeter,
               cuInch, cuPica, cuPoint,
@@ -16,6 +19,9 @@ type
     value: single;
     CSSUnit: TCSSUnit;
   end;
+
+  ArrayOfTFloatWithCSSUnit = array of TFloatWithCSSUnit;
+
 
 function FloatWithCSSUnit(AValue: single; AUnit: TCSSUnit): TFloatWithCSSUnit;
 
@@ -51,11 +57,17 @@ type
     function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit; containerHeight: single = 0): single; overload;
     function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): TFloatWithCSSUnit; overload;
     function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): TFloatWithCSSUnit; overload;
+    function ConvertWidth(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): ArrayOfTFloatWithCSSUnit; overload;
+    function ConvertHeight(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): ArrayOfTFloatWithCSSUnit; overload;
     function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TPointF; virtual;
     class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload; static;
     class function parseValue(AValue: string; ADefault: single): single; overload; static;
+    class function parseValue(AValue: string; ADefault: ArrayOfTSVGNumber): ArrayOfTSVGNumber; overload; static;
+    class function parseValue(AValue: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit; overload; static;
     class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string; overload; static;
     class function formatValue(AValue: single; APrecision: integer = 7): string; overload; static;
+    class function formatValue(AValue: ArrayOfTSVGNumber; APrecision: integer = 7): string; overload; static;
+    class function formatValue(AValue: ArrayOfTFloatWithCSSUnit; APrecision: integer = 7): string; overload; static;
     property DpiX: single read GetDpiX;
     property DpiY: single read GetDpiY;
     property DpiScaled: boolean read GetDPIScaled;
@@ -242,6 +254,26 @@ begin
   result.value:= ConvertHeight(AValue.value,AValue.CSSUnit,destUnit,containerHeight);
 end;
 
+function TCSSUnitConverter.ConvertWidth(AValue: ArrayOfTFloatWithCSSUnit;
+  destUnit: TCSSUnit; containerWidth: single): ArrayOfTFloatWithCSSUnit;
+var
+  i: integer;
+begin
+  for i := low(AValue) to high(AValue) do
+   AValue[i]:= ConvertWidth(AValue[i],destUnit,containerWidth);
+  result := AValue;
+end;
+
+function TCSSUnitConverter.ConvertHeight(AValue: ArrayOfTFloatWithCSSUnit;
+  destUnit: TCSSUnit; containerHeight: single): ArrayOfTFloatWithCSSUnit;
+var
+  i: integer;
+begin
+  for i := low(AValue) to high(AValue) do
+   AValue[i]:= ConvertHeight(AValue[i],destUnit,containerHeight);
+  result := AValue;
+end;
+
 function TCSSUnitConverter.ConvertCoord(pt: TPointF; sourceUnit,
   destUnit: TCSSUnit; containerWidth: single; containerHeight: single): TPointF;
 begin
@@ -278,7 +310,99 @@ begin
   val(AValue,result,errPos);
   if errPos <> 0 then
     result := ADefault;
-end; 
+end;
+
+class function TCSSUnitConverter.parseValue(AValue: string;
+  ADefault: ArrayOfTSVGNumber): ArrayOfTSVGNumber;
+var
+  i, l,p, lDef: integer;
+  def: TSVGNumber;
+
+  procedure CanAddToArray;
+  var
+    len: integer;
+  begin
+    if l <> 0 then
+    begin
+      len:= length(result)+1;
+      setlength(result,len);
+      if lDef >= len-1 then
+       def:= ADefault[len-1];
+      result[len-1] :=
+        parseValue( copy(AValue,p,l), def);
+    end;
+  end;
+
+begin
+  lDef:= length(ADefault);
+  if lDef = 0 then
+   def:= 0;
+
+  //AValue := trim(AValue);
+  setlength(result,0);
+  //if length(AValue) = 0 then
+  // Exit;
+  p:= 1;
+  l:= 0;
+  for i := 1 to length(AValue) do
+  begin
+    if AValue[i] in [#9,#10,#13,#32,#44] then
+    begin
+      CanAddToArray;
+      p:= i+1;
+      l:= 0;
+    end
+    else
+      Inc(l);
+  end;
+  CanAddToArray;
+end;
+
+class function TCSSUnitConverter.parseValue(AValue: string;
+  ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+var
+  i, l,p, lDef: integer;
+  def: TFloatWithCSSUnit;
+
+  procedure CanAddToArray;
+  var
+    len: integer;
+  begin
+    if l <> 0 then
+    begin
+      len:= length(result)+1;
+      setlength(result,len);
+      if lDef >= len-1 then
+       def:= ADefault[len-1];
+      result[len-1] :=
+        parseValue( copy(AValue,p,l), def);
+    end;
+  end;
+
+begin
+  lDef:= length(ADefault);
+  if lDef = 0 then
+   def:= FloatWithCSSUnit(0,cuCustom);
+
+  //AValue := trim(AValue);
+  setlength(result,0);
+  //if length(AValue) = 0 then
+  // Exit;
+  p:= 1;
+  l:= 0;
+  for i := 1 to length(AValue) do
+  begin
+    if AValue[i] in [#9,#10,#13,#32,#44] then
+    begin
+      CanAddToArray;
+      p:= i+1;
+      l:= 0;
+    end
+    else
+      Inc(l);
+  end;
+  CanAddToArray;
+end;
 
 class function TCSSUnitConverter.formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string;
 begin
@@ -289,6 +413,48 @@ class function TCSSUnitConverter.formatValue(AValue: single; APrecision: integer
   ): string;
 begin
   result := FloatToStrF(AValue,ffGeneral,APrecision,0,formats);
+end;
+
+class function TCSSUnitConverter.formatValue(AValue: ArrayOfTSVGNumber; APrecision: integer = 7): string;
+var
+  i, len: integer;
+begin
+  len:= length(AValue);
+  if len = 0 then
+    result:= ''
+  else if len = 1 then
+    result:= formatValue(AValue[0], APrecision)
+  else
+  begin
+    result:= '';
+    for i := 0 to len-1 do
+    begin
+      result:= result + formatValue(AValue[i], APrecision);
+      if i <> (len-1) then
+       result:= result + ', ';
+    end;
+  end;
+end;
+
+class function TCSSUnitConverter.formatValue(AValue: ArrayOfTFloatWithCSSUnit; APrecision: integer = 7): string;
+var
+  i, len: integer;
+begin
+  len:= length(AValue);
+  if len = 0 then
+    result:= ''
+  else if len = 1 then
+    result:= formatValue(AValue[0], APrecision)
+  else
+  begin
+    result:= '';
+    for i := 0 to len-1 do
+    begin
+      result:= result + formatValue(AValue[i], APrecision);
+      if i <> (len-1) then
+       result:= result + ', ';
+    end;
+  end;
 end;
 
 initialization
