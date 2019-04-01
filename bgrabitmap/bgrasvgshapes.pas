@@ -9,6 +9,8 @@ uses
   BGRACanvas2D, BGRASVGType;
 
 type
+  TSVGContent = class;
+
   TSVGGradient = class;
   
   { TSVGElementWithGradient }
@@ -177,9 +179,24 @@ type
       property boundingBoxF: TRectF read GetBoundingBoxF;
   end;
 
+  { TSVGTextElement }
+
+  TSVGTextElement = class(TSVGElementWithGradient);
+
+  { TSVGTextElementWithContent }
+
+  TSVGTextElementWithContent = class(TSVGTextElement)
+    private
+      FContent: TSVGContent;
+    public
+      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
+        AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      destructor Destroy; override;
+  end;
+
   { TSVGTextPositioning }
 
-  TSVGTextPositioning = class(TSVGElementWithGradient)
+  TSVGTextPositioning = class(TSVGTextElementWithContent)
     private
       function GetX: ArrayOfTFloatWithCSSUnit;
       function GetY: ArrayOfTFloatWithCSSUnit;
@@ -248,7 +265,7 @@ type
 
   { TSVGTRef }
 
-  TSVGTRef = class(TSVGElement)
+  TSVGTRef = class(TSVGTextElement)
     private
       function GetXlinkHref: string;
       procedure SetXlinkHref(AValue: string);
@@ -259,7 +276,7 @@ type
 
   { TSVGTextPath }
 
-  TSVGTextPath = class(TSVGElementWithGradient)
+  TSVGTextPath = class(TSVGTextElementWithContent)
     private
       function GetStartOffset: TFloatWithCSSUnit;
       function GetMethod: TSVGTextPathMethod;
@@ -281,7 +298,7 @@ type
 
   { TSVGAltGlyph }
 
-  TSVGAltGlyph = class(TSVGTextPositioning)
+  TSVGAltGlyph = class(TSVGTextElementWithContent)
     private
       function GetGlyphRef: string;
       function GetFormat: string;
@@ -300,21 +317,21 @@ type
 
   { TSVGAltGlyphDef }
 
-  TSVGAltGlyphDef = class(TSVGElement)
+  TSVGAltGlyphDef = class(TSVGTextElementWithContent)
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
   end;
 
   { TSVGAltGlyphItem }
 
-  TSVGAltGlyphItem = class(TSVGElement)
+  TSVGAltGlyphItem = class(TSVGTextElementWithContent)
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
   end;
 
   { TSVGGlyphRef }
 
-  TSVGGlyphRef = class(TSVGElementWithGradient)
+  TSVGGlyphRef = class(TSVGTextElement)
     private
       function GetX: TSVGNumber;
       function GetY: TSVGNumber;
@@ -342,8 +359,6 @@ type
       property format: string read GetFormat write SetFormat;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
   end;
-
-  TSVGContent = class;
   
   TConvMethod = (cmNone,cmHoriz,cmVertical,cmOrtho);
   
@@ -819,6 +834,21 @@ begin
   end;
 end;
 
+{ TSVGTextElementWithContent }
+
+constructor TSVGTextElementWithContent.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AElement, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
+end;
+
+destructor TSVGTextElementWithContent.Destroy;
+begin
+  FreeAndNil(FContent);
+  inherited Destroy;
+end;
+
 { TSVGTextPositioning }
 
 function TSVGTextPositioning.GetX: ArrayOfTFloatWithCSSUnit;
@@ -1046,7 +1076,7 @@ begin
     if Assigned(GradientElement) then
       with ACanvas2d.measureText(SimpleText) do
         InitializeGradient(ACanvas2d, PointF(vx,vy),width,height,AUnit);
-             
+
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
@@ -1063,6 +1093,11 @@ begin
   setlength(adx,0);
   setlength(ady,0);
   setlength(ar,0);
+
+  with DataChildList do
+    for i:= 0 to Count-1 do
+      if Items[i] is TSVGTextElement then
+        (Items[i] as TSVGTextElement).InternalDraw(ACanvas2d,AUnit);
 end;
 
 constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
