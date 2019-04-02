@@ -628,6 +628,7 @@ var temp: TBGRACustomBitmap;
     quality: TBGRAFontQuality;
     iSubX,iSubY: integer;
 begin
+  if IsLclFontRendererFine then Antialiasing := false;
   FShadowQuality := rbFast;
   if Antialiasing and Assigned(BGRATextOutImproveReadabilityProc) then
   begin

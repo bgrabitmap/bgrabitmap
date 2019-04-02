@@ -130,6 +130,7 @@ procedure BGRAFillClearTypeRGBMask(dest: TBGRACustomBitmap; x,y: integer; mask: 
 
 const FontAntialiasingLevel = {$IFDEF LCL_RENDERER_IS_FINE}3{$ELSE}6{$ENDIF};
 const FontDefaultQuality = fqAntialiased;
+const IsLclFontRendererFine = {$IFDEF LCL_RENDERER_IS_FINE}true{$ELSE}false{$ENDIF};
 
 function GetLCLFontPixelMetric(AFont: TFont): TFontPixelMetric;
 
