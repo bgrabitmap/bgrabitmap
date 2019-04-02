@@ -47,7 +47,8 @@ type
     function OutlineActuallyVisible: boolean;
     procedure Init;
     function VectorizedFontNeeded: boolean;
-    procedure InternalTextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment);
+    procedure InternalTextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
+                              align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false); override;
   public
     ShaderActive: boolean;
 
@@ -68,10 +69,6 @@ type
       s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer;
       s: string; c: TBGRAPixel; align: TAlignment); overload; override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); overload; override;
-    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); overload; override;
     function TextSize(sUTF8: string): TSize; overload; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; overload; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
@@ -408,8 +405,8 @@ begin
 end;
 
 procedure TBGRATextEffectFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap;
-  x, y: single; s: string; c: TBGRAPixel; texture: IBGRAScanner;
-  align: TAlignment);
+  x, y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
+  align: TAlignment;  AShowPrefix: boolean = false; ARightToLeft: boolean = false);
 var fx: TBGRATextEffect;
   procedure DoOutline;
   begin
@@ -422,37 +419,41 @@ var fx: TBGRATextEffect;
     end;
   end;
 begin
-  UpdateFont;
   if (FFont.Orientation <> 0) or (not ShaderActuallyActive and not ShadowActuallyVisible and not OutlineActuallyVisible) then
   begin
-    if texture <> nil then
-      inherited TextOut(ADest,x,y,s,texture,align)
-    else
-      inherited TextOut(ADest,x,y,s,c,align);
-    exit;
-  end;
-  fx := TBGRATextEffect.Create(s, FFont, FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB], x-floor(x),y-floor(y));
-  if ShadowActuallyVisible then
+    inherited InternalTextOut(ADest,x,y,sUTF8,c,texture,align,AShowPrefix,ARightToLeft);
+  end else
+  if VectorizedFontNeeded then
   begin
-    fx.ShadowQuality := ShadowQuality;
-    fx.DrawShadow(ADest,round(x)+ShadowOffset.X,round(y)+ShadowOffset.Y,ShadowRadius,ShadowColor, align);
-  end;
-  if OuterOutlineOnly then DoOutline;
-  if texture <> nil then
-  begin
-    if ShaderActuallyActive then
-      fx.DrawShaded(ADest,floor(x),floor(y), Shader, round(fx.TextSize.cy*0.05), texture, align)
+    if texture<>nil then
+      VectorizedFontRenderer.TextOut(ADest,x,y,sUTF8,texture,align,ARightToLeft)
     else
-      fx.Draw(ADest,round(x),round(y), texture, align);
+      VectorizedFontRenderer.TextOut(ADest,x,y,sUTF8,c,align,ARightToLeft);
   end else
   begin
-    if ShaderActuallyActive then
-      fx.DrawShaded(ADest,floor(x),floor(y), Shader, round(fx.TextSize.cy*0.05), c, align)
-    else
-      fx.Draw(ADest,round(x),round(y), c, align);
+    fx := TBGRATextEffect.Create(sUTF8, FFont, FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB], x-floor(x),y-floor(y));
+    if ShadowActuallyVisible then
+    begin
+      fx.ShadowQuality := ShadowQuality;
+      fx.DrawShadow(ADest,round(x)+ShadowOffset.X,round(y)+ShadowOffset.Y,ShadowRadius,ShadowColor, align);
+    end;
+    if OuterOutlineOnly then DoOutline;
+    if texture <> nil then
+    begin
+      if ShaderActuallyActive then
+        fx.DrawShaded(ADest,floor(x),floor(y), Shader, round(fx.TextSize.cy*0.05), texture, align)
+      else
+        fx.Draw(ADest,round(x),round(y), texture, align);
+    end else
+    begin
+      if ShaderActuallyActive then
+        fx.DrawShaded(ADest,floor(x),floor(y), Shader, round(fx.TextSize.cy*0.05), c, align)
+      else
+        fx.Draw(ADest,round(x),round(y), c, align);
+    end;
+    if not OuterOutlineOnly then DoOutline;
+    fx.Free;
   end;
-  if not OuterOutlineOnly then DoOutline;
-  fx.Free;
 end;
 
 constructor TBGRATextEffectFontRenderer.Create;
@@ -490,44 +491,6 @@ procedure TBGRATextEffectFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment);
 begin
   VectorizedFontRenderer.TextOutAngle(ADest, x, y, orientation, s, c, align);
-end;
-
-procedure TBGRATextEffectFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
-  y: single; s: string; texture: IBGRAScanner; align: TAlignment);
-begin
-  if VectorizedFontNeeded then
-    VectorizedFontRenderer.TextOut(ADest,x,y,s,texture,align)
-  else
-    InternalTextOut(ADest,x,y,s,BGRAPixelTransparent,texture,align);
-end;
-
-procedure TBGRATextEffectFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
-  y: single; s: string; c: TBGRAPixel; align: TAlignment);
-begin
-  if VectorizedFontNeeded then
-    VectorizedFontRenderer.TextOut(ADest,x,y,s,c,align)
-  else
-    InternalTextOut(ADest,x,y,s,c,nil,align);
-end;
-
-procedure TBGRATextEffectFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
-  y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment;
-  ARightToLeft: boolean);
-begin
-  if VectorizedFontNeeded then
-    VectorizedFontRenderer.TextOut(ADest,x,y,sUTF8,texture,align,ARightToLeft)
-  else
-    InternalTextOut(ADest,x,y,sUTF8,BGRAPixelTransparent,texture,align);
-end;
-
-procedure TBGRATextEffectFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
-  y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment;
-  ARightToLeft: boolean);
-begin
-  if VectorizedFontNeeded then
-    VectorizedFontRenderer.TextOut(ADest,x,y,sUTF8,c,align,ARightToLeft)
-  else
-    InternalTextOut(ADest,x,y,sUTF8,c,nil,align);
 end;
 
 function TBGRATextEffectFontRenderer.TextSize(sUTF8: string): TSize;

@@ -56,7 +56,7 @@ type
                                     AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
     procedure InternalTextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel; ATexture: IBGRAScanner);
     procedure InternalTextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
-                              align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
+                              align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false); virtual;
     procedure InternalTextOutEllipse(ADest: TBGRACustomBitmap; x, y, availableWidth: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
     procedure InternalSplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string; out ALineEndingBreak: boolean;
