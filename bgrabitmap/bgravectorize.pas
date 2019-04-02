@@ -1030,7 +1030,10 @@ begin
     FCanvas2D.strokeStyle(OutlineTexture)
   else
     FCanvas2D.strokeStyle(OutlineColor);
-  FCanvas2D.lineWidth := abs(OutlineWidth);
+  if abs(OutlineWidth) < 3 then
+    FCanvas2D.lineWidth := abs(OutlineWidth)*2/3
+  else
+    FCanvas2D.lineWidth := abs(OutlineWidth)-1;
   if not ShadowVisible then
     FCanvas2D.shadowColor(BGRAPixelTransparent)
   else
