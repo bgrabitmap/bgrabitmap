@@ -1283,7 +1283,7 @@ begin
     end;
 
   if result = '' then
-    result:= GetInternal( Attribute['style',ADefault] );
+    result:= GetInternal( Attribute['style',ADefault,True] );
 end;      
 
 function TSVGElement.GetStyle(const AName: string): string;
