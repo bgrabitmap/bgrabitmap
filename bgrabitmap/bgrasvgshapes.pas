@@ -9,6 +9,8 @@ uses
   BGRACanvas2D, BGRASVGType;
 
 type
+  TSVGContent = class;
+
   TSVGGradient = class;
   
   { TSVGElementWithGradient }
@@ -177,9 +179,46 @@ type
       property boundingBoxF: TRectF read GetBoundingBoxF;
   end;
 
+  { TSVGTextElement }
+
+  TSVGTextElement = class(TSVGElementWithGradient);
+
+  { TSVGTextElementWithContent }
+
+  TSVGTextElementWithContent = class(TSVGTextElement)
+    private
+      FContent: TSVGContent;
+    public
+      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
+        AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      destructor Destroy; override;
+  end;
+
+  { TSVGTextPositioning }
+
+  TSVGTextPositioning = class(TSVGTextElementWithContent)
+    private
+      function GetX: ArrayOfTFloatWithCSSUnit;
+      function GetY: ArrayOfTFloatWithCSSUnit;
+      function GetDx: ArrayOfTFloatWithCSSUnit;
+      function GetDy: ArrayOfTFloatWithCSSUnit;
+      function GetRotate: ArrayOfTSVGNumber;
+      procedure SetX(AValue: ArrayOfTFloatWithCSSUnit);
+      procedure SetY(AValue: ArrayOfTFloatWithCSSUnit);
+      procedure SetDx(AValue: ArrayOfTFloatWithCSSUnit);
+      procedure SetDy(AValue: ArrayOfTFloatWithCSSUnit);
+      procedure SetRotate(AValue: ArrayOfTSVGNumber);
+    public
+      property x: ArrayOfTFloatWithCSSUnit read GetX write SetX;
+      property y: ArrayOfTFloatWithCSSUnit read GetY write SetY;
+      property dX: ArrayOfTFloatWithCSSUnit read GetDx write SetDx;
+      property dY: ArrayOfTFloatWithCSSUnit read GetDy write SetDy;
+      property rotate: ArrayOfTSVGNumber read GetRotate write SetRotate;
+  end;
+
   { TSVGText }
 
-  TSVGText = class(TSVGElementWithGradient)
+  TSVGText = class(TSVGTextPositioning)
     private
       function GetFontBold: boolean;
       function GetFontFamily: string;
@@ -188,26 +227,29 @@ type
       function GetFontStyle: string;
       function GetFontWeight: string;
       function GetSimpleText: string;
+      function GetElementText: string;
       function GetTextDecoration: string;
-      function GetX: TFloatWithCSSUnit;
-      function GetY: TFloatWithCSSUnit;
+      function GetTextLength: TFloatWithCSSUnit;
+      function GetLengthAdjust: TSVGLengthAdjust;
       procedure SetFontBold(AValue: boolean);
       procedure SetFontFamily(AValue: string);
       procedure SetFontItalic(AValue: boolean);
       procedure SetFontSize(AValue: TFloatWithCSSUnit);
       procedure SetFontStyle(AValue: string);
       procedure SetFontWeight(AValue: string);
+      procedure SetElementText(AValue: string);
       procedure SetSimpleText(AValue: string);
       procedure SetTextDecoration(AValue: string);
-      procedure SetX(AValue: TFloatWithCSSUnit);
-      procedure SetY(AValue: TFloatWithCSSUnit);
+      procedure SetTextLength(AValue: TFloatWithCSSUnit);
+      procedure SetLengthAdjust(AValue: TSVGLengthAdjust);
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
-      property x: TFloatWithCSSUnit read GetX write SetX;
-      property y: TFloatWithCSSUnit read GetY write SetY;
+      property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
+      property lengthAdjust: TSVGLengthAdjust read GetLengthAdjust write SetLengthAdjust;
       property SimpleText: string read GetSimpleText write SetSimpleText;
+      property ElementText: string read GetElementText write SetElementText;
       property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
       property fontFamily: string read GetFontFamily write SetFontFamily;
       property fontWeight: string read GetFontWeight write SetFontWeight;
@@ -217,7 +259,109 @@ type
       property fontItalic: boolean read GetFontItalic write SetFontItalic;
   end;
 
-  TSVGContent = class;
+  { TSVGTSpan }
+
+  TSVGTSpan = class(TSVGText)
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+  end;
+
+  { TSVGTRef }
+
+  TSVGTRef = class(TSVGTextElement)
+    private
+      function GetXlinkHref: string;
+      procedure SetXlinkHref(AValue: string);
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property xlinkHref: string read GetXlinkHref write SetXlinkHref;
+  end;
+
+  { TSVGTextPath }
+
+  TSVGTextPath = class(TSVGTextElementWithContent)
+    private
+      function GetStartOffset: TFloatWithCSSUnit;
+      function GetMethod: TSVGTextPathMethod;
+      function GetSpacing: TSVGTextPathSpacing;
+      function GetXlinkHref: string;
+      procedure SetStartOffset(AValue: TFloatWithCSSUnit);
+      procedure SetMethod(AValue: TSVGTextPathMethod);
+      procedure SetSpacing(AValue: TSVGTextPathSpacing);
+      procedure SetXlinkHref(AValue: string);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property startOffset: TFloatWithCSSUnit read GetStartOffset write SetStartOffset;
+      property method: TSVGTextPathMethod read GetMethod write SetMethod;
+      property spacing: TSVGTextPathSpacing read GetSpacing write SetSpacing;
+      property xlinkHref: string read GetXlinkHref write SetXlinkHref;
+  end;
+
+  { TSVGAltGlyph }
+
+  TSVGAltGlyph = class(TSVGTextElementWithContent)
+    private
+      function GetGlyphRef: string;
+      function GetFormat: string;
+      function GetXlinkHref: string;
+      procedure SetGlyphRef(AValue: string);
+      procedure SetFormat(AValue: string);
+      procedure SetXlinkHref(AValue: string);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property glyphRef: string read GetGlyphRef write SetGlyphRef;
+      property format: string read GetFormat write SetFormat;
+      property xlinkHref: string read GetXlinkHref write SetXlinkHref;
+  end;
+
+  { TSVGAltGlyphDef }
+
+  TSVGAltGlyphDef = class(TSVGTextElementWithContent)
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+  end;
+
+  { TSVGAltGlyphItem }
+
+  TSVGAltGlyphItem = class(TSVGTextElementWithContent)
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+  end;
+
+  { TSVGGlyphRef }
+
+  TSVGGlyphRef = class(TSVGTextElement)
+    private
+      function GetX: TSVGNumber;
+      function GetY: TSVGNumber;
+      function GetDx: TSVGNumber;
+      function GetDy: TSVGNumber;
+      function GetGlyphRef: string;
+      function GetFormat: string;
+      function GetXlinkHref: string;
+      procedure SetX(AValue: TSVGNumber);
+      procedure SetY(AValue: TSVGNumber);
+      procedure SetDx(AValue: TSVGNumber);
+      procedure SetDy(AValue: TSVGNumber);
+      procedure SetGlyphRef(AValue: string);
+      procedure SetFormat(AValue: string);
+      procedure SetXlinkHref(AValue: string);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property x: TSVGNumber read GetX write SetX;
+      property y: TSVGNumber read GetY write SetY;
+      property dX: TSVGNumber read GetDx write SetDx;
+      property dY: TSVGNumber read GetDy write SetDy;
+      property glyphRef: string read GetGlyphRef write SetGlyphRef;
+      property format: string read GetFormat write SetFormat;
+      property xlinkHref: string read GetXlinkHref write SetXlinkHref;
+  end;
   
   TConvMethod = (cmNone,cmHoriz,cmVertical,cmOrtho);
   
@@ -447,6 +591,20 @@ begin
     result := TSVGPolypoints else
   if tag='text' then
     result := TSVGText else
+  if tag='tspan' then
+    result := TSVGTSpan else
+  if tag='tref' then
+    result := TSVGTRef else
+  if tag='textpath' then
+    result := TSVGTextPath else
+  if tag='altglyph' then
+    result := TSVGAltGlyph else
+  if tag='altglyphdef' then
+    result := TSVGAltGlyphDef else
+  if tag='altglyphitem' then
+    result := TSVGAltGlyphItem else
+  if tag='glyphref' then
+    result := TSVGGlyphRef else
   if tag='lineargradient' then
     result := TSVGLinearGradient else
   if tag='radialgradient' then
@@ -677,7 +835,74 @@ begin
     ACanvas2D.fillStyle(FCanvasGradient);
     ACanvas2D.fillMode:= TFillMode(fillMode);
   end;
-end;  
+end;
+
+{ TSVGTextElementWithContent }
+
+constructor TSVGTextElementWithContent.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AElement, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
+end;
+
+destructor TSVGTextElementWithContent.Destroy;
+begin
+  FreeAndNil(FContent);
+  inherited Destroy;
+end;
+
+{ TSVGTextPositioning }
+
+function TSVGTextPositioning.GetX: ArrayOfTFloatWithCSSUnit;
+begin
+  result := ArrayOfHorizAttributeWithUnit['x'];
+end;
+
+function TSVGTextPositioning.GetY: ArrayOfTFloatWithCSSUnit;
+begin
+  result := ArrayOfVerticalAttributeWithUnit['y'];
+end;
+
+function TSVGTextPositioning.GetDx: ArrayOfTFloatWithCSSUnit;
+begin
+  result := ArrayOfHorizAttributeWithUnit['dx'];
+end;
+
+function TSVGTextPositioning.GetDy: ArrayOfTFloatWithCSSUnit;
+begin
+  result := ArrayOfVerticalAttributeWithUnit['dy'];
+end;
+
+function TSVGTextPositioning.GetRotate: ArrayOfTSVGNumber;
+begin
+  result := ArrayOfAttributeNumber['rotate'];
+end;
+
+procedure TSVGTextPositioning.SetX(AValue: ArrayOfTFloatWithCSSUnit);
+begin
+  ArrayOfHorizAttributeWithUnit['x'] := AValue;
+end;
+
+procedure TSVGTextPositioning.SetY(AValue: ArrayOfTFloatWithCSSUnit);
+begin
+  ArrayOfVerticalAttributeWithUnit['y'] := AValue;
+end;
+
+procedure TSVGTextPositioning.SetDx(AValue: ArrayOfTFloatWithCSSUnit);
+begin
+  ArrayOfHorizAttributeWithUnit['dx'] := AValue;
+end;
+
+procedure TSVGTextPositioning.SetDy(AValue: ArrayOfTFloatWithCSSUnit);
+begin
+  ArrayOfVerticalAttributeWithUnit['dy'] := AValue;
+end;
+
+procedure TSVGTextPositioning.SetRotate(AValue: ArrayOfTSVGNumber);
+begin
+  ArrayOfAttributeNumber['rotate'] := AValue;
+end;
 
 { TSVGText }
 
@@ -722,19 +947,36 @@ begin
   result := FDomElem.TextContent;
 end;
 
+function TSVGText.GetElementText: string;
+var
+  child: TDOMNode;
+begin
+  child := FDomElem.FirstChild;
+  if assigned(child) then
+    result := child.TextContent
+  else
+    result := GetSimpleText;
+end;
+
 function TSVGText.GetTextDecoration: string;
 begin
   result := AttributeOrStyleDef['text-decoration','none'];
 end;
 
-function TSVGText.GetX: TFloatWithCSSUnit;
+function TSVGText.GetTextLength: TFloatWithCSSUnit;
 begin
-  result := HorizAttributeWithUnit['x'];
+  result := HorizAttributeWithUnitDef['textLength'];
 end;
 
-function TSVGText.GetY: TFloatWithCSSUnit;
+function TSVGText.GetLengthAdjust: TSVGLengthAdjust;
+var
+  valueText: string;
 begin
-  result := VerticalAttributeWithUnit['y'];
+  valueText := trim(Attribute['lengthAdjust','spacing']);
+  if valueText = 'spacing' then
+    result := slaSpacing
+  else
+    result := slaSpacingAndGlyphs;
 end;
 
 procedure TSVGText.SetFontBold(AValue: boolean);
@@ -775,58 +1017,360 @@ begin
   FDomElem.TextContent := AValue;
 end;
 
+procedure TSVGText.SetElementText(AValue: string);
+var
+  child: TDOMNode;
+begin
+  child := FDomElem.FirstChild;
+  if Assigned(child) then
+    child.TextContent := AValue
+  else
+    SetSimpleText(AValue);
+end;
+
 procedure TSVGText.SetTextDecoration(AValue: string);
 begin
   Attribute['text-decoration'] := AValue;
   RemoveStyle('text-decoration');
 end;
 
-procedure TSVGText.SetX(AValue: TFloatWithCSSUnit);
+procedure TSVGText.SetTextLength(AValue: TFloatWithCSSUnit);
 begin
-  HorizAttributeWithUnit['x'] := AValue;
+  HorizAttributeWithUnit['textLength'] := AValue;
+  RemoveStyle('textLength');
 end;
 
-procedure TSVGText.SetY(AValue: TFloatWithCSSUnit);
+procedure TSVGText.SetLengthAdjust(AValue: TSVGLengthAdjust);
 begin
-  VerticalAttributeWithUnit['y'] := AValue;
+ if AValue = slaSpacing then
+   Attribute['lengthAdjust'] := 'spacing'
+ else
+   Attribute['lengthAdjust'] := 'spacingAndGlyphs';
+ RemoveStyle('lengthAdjust');
 end;
 
 procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
-var 
+var
+  i: integer;
   fs:TFontStyles;
-  vx,vy: single;
+  vx,vy,
+  vdx,vdy: single;
+  ax,ay,
+  adx,ady: ArrayOfTFloatWithCSSUnit;
+  ar: ArrayOfTSVGNumber;
 begin
-  ACanvas2d.beginPath;
-  ACanvas2d.fontEmHeight := Units.ConvertHeight(fontSize,AUnit).value;
-  ACanvas2d.fontName := fontFamily;
-  fs := [];
-  if fontBold then include(fs, fsBold);
-  if fontItalic then include(fs, fsItalic);
-  ACanvas2d.fontStyle := fs;
-  vx:= Units.ConvertWidth(x,AUnit).value;
-  vy:= Units.ConvertHeight(y,AUnit).value;
-  ACanvas2d.text(SimpleText,vx,vy);
+  //todo
+  //(note: solution that does not yet support all the parameters)
 
-  if Assigned(GradientElement) then
-    with ACanvas2d.measureText(SimpleText) do
-      InitializeGradient(ACanvas2d, PointF(vx,vy),width,height,AUnit);
-             
-  if not isFillNone then
-  begin
-    ApplyFillStyle(ACanvas2D,AUnit);
-    ACanvas2d.fill;
-  end;
-  if not isStrokeNone then
-  begin
-    ApplyStrokeStyle(ACanvas2D,AUnit);
-    ACanvas2d.stroke;
-  end;
+  ax := x;
+  ay := y;
+  adx := dx;
+  ady := dy;
+  ar := rotate;
+
+  //(temporary solution to allow drawing)
+  if length(ax) = 0 then
+   vx:= 0
+  else
+   vx:= Units.ConvertWidth(ax[0],AUnit).value;
+  if length(ay) = 0 then
+   vy:= 0
+  else
+   vy:= Units.ConvertHeight(ay[0],AUnit).value;
+  if length(adx) = 0 then
+   vdx:= 0
+  else
+   vdx:= Units.ConvertWidth(adx[0],AUnit).value;
+  if length(ady) = 0 then
+   vdy:= 0
+  else
+   vdy:= Units.ConvertHeight(ady[0],AUnit).value;
+
+  vx+= vdx;
+  vy+= vdy;
+
+    ACanvas2d.beginPath;
+    ACanvas2d.fontEmHeight := Units.ConvertHeight(fontSize,AUnit).value;
+    ACanvas2d.fontName := fontFamily;
+    fs := [];
+    if fontBold then include(fs, fsBold);
+    if fontItalic then include(fs, fsItalic);
+    ACanvas2d.fontStyle := fs;
+    ACanvas2d.text(ElementText,vx,vy);
+
+    if Assigned(GradientElement) then
+      with ACanvas2d.measureText(ElementText) do
+        InitializeGradient(ACanvas2d, PointF(vx,vy),width,height,AUnit);
+
+    if not isFillNone then
+    begin
+      ApplyFillStyle(ACanvas2D,AUnit);
+      ACanvas2d.fill;
+    end;
+    if not isStrokeNone then
+    begin
+      ApplyStrokeStyle(ACanvas2D,AUnit);
+      ACanvas2d.stroke;
+    end;
+
+  setlength(ax,0);
+  setlength(ay,0);
+  setlength(adx,0);
+  setlength(ady,0);
+  setlength(ar,0);
+
+  with DataChildList do
+    for i:= 0 to Count-1 do
+      if Items[i] is TSVGTextElement then
+        (Items[i] as TSVGTextElement).InternalDraw(ACanvas2d,AUnit);
 end;
 
 constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'text',AUnits);
+end;
+
+{ TSVGTSpan }
+
+constructor TSVGTSpan.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'tspan',AUnits);
+end;
+
+{ TSVGTRef }
+
+function TSVGTRef.GetXlinkHref: string;
+begin
+  result := Attribute['xlink:href',''];
+end;
+
+procedure TSVGTRef.SetXlinkHref(AValue: string);
+begin
+  Attribute['xlink:href'] := AValue;
+end;
+
+constructor TSVGTRef.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'tref',AUnits);
+end;
+
+{ TSVGTextPath }
+
+function TSVGTextPath.GetStartOffset: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnitDef['startOffset'];
+end;
+
+function TSVGTextPath.GetMethod: TSVGTextPathMethod;
+var
+  valueText: string;
+begin
+  valueText := trim(Attribute['method','align']);
+  if valueText = 'align' then
+    result := stpmAlign
+  else
+    result := stpmStretch;
+end;
+
+function TSVGTextPath.GetSpacing: TSVGTextPathSpacing;
+var
+  valueText: string;
+begin
+  valueText := trim(Attribute['spacing','exact']);
+  if valueText = 'exact' then
+    result := stpsExact
+  else
+    result := stpsAuto;
+end;
+
+function TSVGTextPath.GetXlinkHref: string;
+begin
+  result := Attribute['xlink:href',''];
+end;
+
+procedure TSVGTextPath.SetStartOffset(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['startOffset'] := AValue;
+  RemoveStyle('startOffset');
+end;
+
+procedure TSVGTextPath.SetMethod(AValue: TSVGTextPathMethod);
+begin
+ if AValue = stpmAlign then
+   Attribute['method'] := 'align'
+ else
+   Attribute['method'] := 'stretch';
+ RemoveStyle('method');
+end;
+
+procedure TSVGTextPath.SetSpacing(AValue: TSVGTextPathSpacing);
+begin
+ if AValue = stpsExact then
+   Attribute['spacing'] := 'exact'
+ else
+   Attribute['spacing'] := 'auto';
+ RemoveStyle('spacing');
+end;
+
+procedure TSVGTextPath.SetXlinkHref(AValue: string);
+begin
+  Attribute['xlink:href'] := AValue;
+end;
+
+procedure TSVGTextPath.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  //todo
+end;
+
+constructor TSVGTextPath.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'textpath',AUnits);
+end;
+
+{ TSVGAltGlyph }
+
+function TSVGAltGlyph.GetGlyphRef: string;
+begin
+  result := Attribute['glyphRef',''];
+end;
+
+function TSVGAltGlyph.GetFormat: string;
+begin
+  result := Attribute['format',''];
+end;
+
+function TSVGAltGlyph.GetXlinkHref: string;
+begin
+  result := Attribute['xlink:href',''];
+end;
+
+procedure TSVGAltGlyph.SetGlyphRef(AValue: string);
+begin
+  Attribute['glyphRef'] := AValue;
+end;
+
+procedure TSVGAltGlyph.SetFormat(AValue: string);
+begin
+  Attribute['format'] := AValue;
+end;
+
+procedure TSVGAltGlyph.SetXlinkHref(AValue: string);
+begin
+  Attribute['xlink:href'] := AValue;
+end;
+
+procedure TSVGAltGlyph.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  //todo
+end;
+
+constructor TSVGAltGlyph.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'altglyph',AUnits);
+end;
+
+{ TSVGAltGlyphDef }
+
+constructor TSVGAltGlyphDef.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'altglyphdef',AUnits);
+end;
+
+{ TSVGAltGlyphItem }
+
+constructor TSVGAltGlyphItem.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'altglyphitem',AUnits);
+end;
+
+{ TSVGGlyphRef }
+
+function TSVGGlyphRef.GetX: TSVGNumber;
+begin
+  result := HorizAttribute['x'];
+end;
+
+function TSVGGlyphRef.GetY: TSVGNumber;
+begin
+  result := VerticalAttribute['y'];
+end;
+
+function TSVGGlyphRef.GetDx: TSVGNumber;
+begin
+  result := HorizAttribute['dx'];
+end;
+
+function TSVGGlyphRef.GetDy: TSVGNumber;
+begin
+  result := VerticalAttribute['dy'];
+end;
+
+function TSVGGlyphRef.GetGlyphRef: string;
+begin
+  result := Attribute['glyphRef',''];
+end;
+
+function TSVGGlyphRef.GetFormat: string;
+begin
+  result := Attribute['format',''];
+end;
+
+function TSVGGlyphRef.GetXlinkHref: string;
+begin
+  result := Attribute['xlink:href',''];
+end;
+
+procedure TSVGGlyphRef.SetX(AValue: TSVGNumber);
+begin
+  HorizAttribute['x'] := AValue;
+end;
+
+procedure TSVGGlyphRef.SetY(AValue: TSVGNumber);
+begin
+  VerticalAttribute['y'] := AValue;
+end;
+
+procedure TSVGGlyphRef.SetDx(AValue: TSVGNumber);
+begin
+  HorizAttribute['dx'] := AValue;
+end;
+
+procedure TSVGGlyphRef.SetDy(AValue: TSVGNumber);
+begin
+  HorizAttribute['dy'] := AValue;
+end;
+
+procedure TSVGGlyphRef.SetGlyphRef(AValue: string);
+begin
+  Attribute['glyphRef'] := AValue;
+end;
+
+procedure TSVGGlyphRef.SetFormat(AValue: string);
+begin
+  Attribute['format'] := AValue;
+end;
+
+procedure TSVGGlyphRef.SetXlinkHref(AValue: string);
+begin
+  Attribute['xlink:href'] := AValue;
+end;
+
+procedure TSVGGlyphRef.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  //todo
+end;
+
+constructor TSVGGlyphRef.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'glyphref',AUnits);
 end;
 
 { TSVGGroup }
@@ -2161,10 +2705,19 @@ end;
 
 function TSVGContent.AppendText(x, y: single; AText: string; AUnit: TCSSUnit
   ): TSVGText;
+var
+  a: ArrayOfTFloatWithCSSUnit;
 begin
   result := TSVGText.Create(FDoc,Units,FDataLink);
-  result.x := FloatWithCSSUnit(x,AUnit);
-  result.y := FloatWithCSSUnit(y,AUnit);
+  setlength(a,1);
+  try
+    a[0] := FloatWithCSSUnit(x,AUnit);
+    result.x := a;
+    a[0] := FloatWithCSSUnit(y,AUnit);
+    result.y := a;
+  finally
+    setlength(a,0);
+  end;
   result.SimpleText:= AText;
   AppendElement(result);
 end;
