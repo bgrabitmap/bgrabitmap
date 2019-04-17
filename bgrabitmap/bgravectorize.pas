@@ -2009,7 +2009,7 @@ begin
     FBuffer.Canvas.Font := FFont;
     FBuffer.Canvas.Font.Color := clBlack;
     FBuffer.Canvas.TextOut(size.cy div 2,0,AIdentifier);
-    g.SetPoints(VectorizeMonochrome(FBuffer,1/FResolution,False));
+    g.SetPoints(VectorizeMonochrome(FBuffer,1/FResolution,False,true,50));
     g.QuadraticCurves := FQuadraticCurves and (OutlineMode in[twoPath, twoFill]);
     g.Width := size.cx/size.cy;
     g.Height := 1;
