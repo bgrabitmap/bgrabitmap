@@ -1252,7 +1252,7 @@ begin
 
         bmpTransf := BGRABitmapFactory.Create(surfaceBounds.Width,surfaceBounds.Height,BGRABlack);
         try
-          m := AffineMatrixTranslation(-surfaceBounds.Left,-surfaceBounds.Top)*m;
+          m := AffineMatrixTranslation(-surfaceBounds.Left-0.5,-surfaceBounds.Top-0.5)*m;
           if self.antialiasing then rf:= rfCosine else rf := rfBox;
           bmpTransf.PutImageAffine(m, bmp, rf, GetDrawMode);
           FreeAndNil(bmp);
