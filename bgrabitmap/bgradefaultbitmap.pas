@@ -412,10 +412,10 @@ type
     procedure XorHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override;
     {** Draws an horizontal line with gamma correction at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color }
-    procedure DrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override;
+    procedure DrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override; overload;
     {** Draws an horizontal line with gamma correction at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color }
-    procedure DrawHorizLine(x, y, x2: int32or64; ec: TExpandedPixel); override;
+    procedure DrawHorizLine(x, y, x2: int32or64; ec: TExpandedPixel); override; overload;
     {** Draws an horizontal line with gamma correction at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified scanner
         to get the source colors }{inherited
@@ -426,7 +426,7 @@ type
     {** Draws an horizontal line at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified scanner
         and the specified ''ADrawMode'' }
-    procedure HorizLine(x, y, x2: int32or64; texture: IBGRAScanner; ADrawMode : TDrawMode); override;
+    procedure HorizLine(x, y, x2: int32or64; texture: IBGRAScanner; ADrawMode : TDrawMode); override; overload;
     {** Draws an horizontal line at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color
         and the specified ''ADrawMode'' }{inherited
