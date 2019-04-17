@@ -514,6 +514,7 @@ begin
       f.Name := AFontName;
       f.Height := FontFullHeightSign*TestHeight;
       h := BGRATextSize(f, fqSystem, 'Hg', 1).cy;
+      f.Free;
       if h = 0 then ratio := 1
       else ratio := TestHeight/h;
 
