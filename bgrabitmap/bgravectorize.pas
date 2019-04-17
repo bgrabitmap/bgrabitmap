@@ -705,8 +705,15 @@ begin
       begin
         if not cur[1] and not cur[2] and not cur[3] and not cur[4] and not cur[6] and not cur[7] and not cur[8] and not cur[9] then
         begin
-          AddLine(ix-iHalf,iy-iDiag,ix-iDiag,iy-iHalf,ix+iDiag,iy-iHalf,ix+iHalf,iy-iDiag,ix+iHalf,iy+iDiag);
-          AddLine(ix+iHalf,iy+iDiag,ix+iDiag,iy+iHalf,ix-iDiag,iy+iHalf,ix-iHalf,iy+iDiag,ix-iHalf,iy-iDiag);
+          if iDiag > 0 then
+          begin
+            AddLine(ix-iHalf,iy-iDiag,ix-iDiag,iy-iHalf,ix+iDiag,iy-iHalf,ix+iHalf,iy-iDiag,ix+iHalf,iy+iDiag);
+            AddLine(ix+iHalf,iy+iDiag,ix+iDiag,iy+iHalf,ix-iDiag,iy+iHalf,ix-iHalf,iy+iDiag,ix-iHalf,iy-iDiag);
+          end else
+          begin
+            AddLine(ix-iHalf,iy,ix,iy-iHalf,ix+iHalf,iy);
+            AddLine(ix+iHalf,iy,ix,iy+iHalf,ix-iHalf,iy);
+          end;
         end else
         if cur[6] and not cur[9] and not cur[8] then
         begin
