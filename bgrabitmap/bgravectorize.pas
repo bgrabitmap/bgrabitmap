@@ -25,7 +25,8 @@ uses
   Types, Classes, SysUtils, Graphics, BGRABitmapTypes, BGRATypewriter, BGRATransform, BGRACanvas2D, BGRAText;
 
 //vectorize a monochrome bitmap
-function VectorizeMonochrome(ASource: TBGRACustomBitmap; zoom: single; PixelCenteredCoordinates: boolean): ArrayOfTPointF;
+function VectorizeMonochrome(ASource: TBGRACustomBitmap; zoom: single; PixelCenteredCoordinates: boolean;
+  WhiteBackground: boolean = true; DiagonalFillPercent: single = 66): ArrayOfTPointF;
 
 type
   TBGRAVectorizedFont = class;
@@ -194,15 +195,15 @@ implementation
 
 uses BGRAUTF8, math;
 
-function VectorizeMonochrome(ASource: TBGRACustomBitmap; zoom: single; PixelCenteredCoordinates: boolean): ArrayOfTPointF;
+function VectorizeMonochrome(ASource: TBGRACustomBitmap; zoom: single; PixelCenteredCoordinates: boolean;
+  WhiteBackground: boolean; DiagonalFillPercent: single): ArrayOfTPointF;
 const unitShift = 6;
       iHalf = 1 shl (unitShift-1);
-      iOut = 10;  //0.15
       iUnit = 1 shl unitShift;
-      iDiag = 13; //0.20
       useNiceLines = true;
 
 var
+  iDiag,iOut: integer;
   n: integer;
   factor: single;
   offset: single;
@@ -219,6 +220,11 @@ var
   ortho: array of array of boolean;
 
   polygonF: array of TPointF;
+
+  function CheckPixel(const APixel: TBGRAPixel): boolean;
+  begin
+    result := (APixel.green <= 128) xor not WhiteBackground;
+  end;
 
   function AddPoint(x,y,APrev,ANext: integer): integer;
   begin
@@ -587,6 +593,9 @@ var
   end;
 
 begin
+  iDiag := round((DiagonalFillPercent-50)/100 * iHalf)*2; //even rounding to keep alignment with iOut
+  iOut := (iHalf-iDiag) div 2;
+
   nbpoints := 0;
   points := nil;
   polygonF := nil;
@@ -607,9 +616,9 @@ begin
     {$hints off}
     fillchar(cur,sizeof(cur),0);
     {$hints on}
-    cur[6] := (p^.green <= 128); inc(p);
-    if pprev <> nil then begin cur[9] := (pprev^.green <= 128); inc(pprev); end;
-    if pnext <> nil then begin cur[3] := (pnext^.green <= 128); inc(pnext); end;
+    cur[6] := CheckPixel(p^); inc(p);
+    if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
+    if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
     for x := 0 to ASource.Width-1 do
     begin
       cur[1] := cur[2];
@@ -626,19 +635,19 @@ begin
         cur[3]:= false;
       end else
       begin
-        cur[6] := (p^.green <= 128); inc(p);
-        if pprev <> nil then begin cur[9] := (pprev^.green <= 128); inc(pprev); end;
-        if pnext <> nil then begin cur[3] := (pnext^.green <= 128); inc(pnext); end;
+        cur[6] := CheckPixel(p^); inc(p);
+        if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
+        if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
       end;
 
       ortho[y,x] := (cur[5] and not cur[7] and not cur[9] and not cur[3] and not cur[1]);
       if (not cur[5] and (cur[4] xor cur[6]) and (cur[8] xor cur[2]) and
           (ord(cur[1])+ord(cur[3])+ord(cur[7])+ord(cur[9]) = 3)) then
       begin
-        if (not cur[6] and not cur[9] and not cur[8] and ((ASource.getPixel(x-1,y-2).green <= 128) or (ASource.getPixel(x+2,y+1).green <= 128)) ) or
-          (not cur[8] and not cur[7] and not cur[4] and ((ASource.getPixel(x-2,y+1).green <= 128) or (ASource.getPixel(x+1,y-2).green <= 128)) ) or
-          (not cur[4] and not cur[1] and not cur[2] and ((ASource.getPixel(x+1,y+2).green <= 128) or (ASource.getPixel(x-2,y-1).green <= 128)) ) or
-          (not cur[2] and not cur[3] and not cur[6] and ((ASource.getPixel(x-1,y+2).green <= 128) or (ASource.getPixel(x+2,y-1).green <= 128)) ) then
+        if (not cur[6] and not cur[9] and not cur[8] and (CheckPixel(ASource.getPixel(x-1,y-2)) or CheckPixel(ASource.getPixel(x+2,y+1).green)) ) or
+          (not cur[8] and not cur[7] and not cur[4] and (CheckPixel(ASource.getPixel(x-2,y+1)) or CheckPixel(ASource.getPixel(x+1,y-2).green)) ) or
+          (not cur[4] and not cur[1] and not cur[2] and (CheckPixel(ASource.getPixel(x+1,y+2)) or CheckPixel(ASource.getPixel(x-2,y-1).green)) ) or
+          (not cur[2] and not cur[3] and not cur[6] and (CheckPixel(ASource.getPixel(x-1,y+2)) or CheckPixel(ASource.getPixel(x+2,y-1).green)) ) then
             ortho[y,x] := true;
       end;
       { or
@@ -667,9 +676,9 @@ begin
     {$hints off}
     fillchar(cur,sizeof(cur),0);
     {$hints on}
-    cur[6] := (p^.green <= 128); inc(p);
-    if pprev <> nil then begin cur[9] := (pprev^.green <= 128); inc(pprev); end;
-    if pnext <> nil then begin cur[3] := (pnext^.green <= 128); inc(pnext); end;
+    cur[6] := CheckPixel(p^); inc(p);
+    if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
+    if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
     ix := 0;
     for x := 0 to ASource.Width-1 do
     begin
@@ -687,9 +696,9 @@ begin
         cur[3]:= false;
       end else
       begin
-        cur[6] := (p^.green <= 128); inc(p);
-        if pprev <> nil then begin cur[9] := (pprev^.green <= 128); inc(pprev); end;
-        if pnext <> nil then begin cur[3] := (pnext^.green <= 128); inc(pnext); end;
+        cur[6] := CheckPixel(p^); inc(p);
+        if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
+        if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
       end;
 
       if cur[5] then
