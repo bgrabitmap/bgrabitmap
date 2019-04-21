@@ -932,8 +932,9 @@ begin
     ctx.text('Vectorized font',ctx.fontEmHeight*0.2,ctx.fontEmHeight)
   else
     ctx.text('Raster font',ctx.fontEmHeight*0.2,ctx.fontEmHeight);
-  ctx.lineWidth := 2;
-  ctx.strokeStyle(clLime);
+  ctx.lineWidth := 6;
+  ctx.lineJoin:= 'round';
+  ctx.strokeStyle(clGreen);
   ctx.fillStyle(clBlack);
   ctx.fillOverStroke;
 
@@ -966,6 +967,7 @@ procedure TForm1.Test22(ctx: TBGRACanvas2D);
 var layer: TBGRABitmap;
 begin
   layer := TBGRABitmap.Create(ctx.width,ctx.height, CSSRed);
+  UseVectorizedFont(layer.Canvas2D,true);
   with layer.Canvas2D do
   begin
     pixelCenteredCoordinates:= ctx.pixelCenteredCoordinates;

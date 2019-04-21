@@ -25,8 +25,8 @@ uses
   Types, Classes, SysUtils, Graphics, BGRABitmapTypes, BGRATypewriter, BGRATransform, BGRACanvas2D, BGRAText;
 
 //vectorize a monochrome bitmap
-function VectorizeMonochrome(ASource: TBGRACustomBitmap; zoom: single; PixelCenteredCoordinates: boolean;
-  WhiteBackground: boolean = true; DiagonalFillPercent: single = 66): ArrayOfTPointF;
+function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
+  AWhiteBackground: boolean = true; ADiagonalFillPercent: single = 66; AIntermediateDiagonals: boolean = true): ArrayOfTPointF;
 
 type
   TBGRAVectorizedFont = class;
@@ -195,13 +195,11 @@ implementation
 
 uses BGRAUTF8, math;
 
-function VectorizeMonochrome(ASource: TBGRACustomBitmap; zoom: single; PixelCenteredCoordinates: boolean;
-  WhiteBackground: boolean; DiagonalFillPercent: single): ArrayOfTPointF;
+function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
+  AWhiteBackground: boolean; ADiagonalFillPercent: single; AIntermediateDiagonals: boolean): ArrayOfTPointF;
 const unitShift = 6;
       iHalf = 1 shl (unitShift-1);
       iUnit = 1 shl unitShift;
-      useNiceLines = true;
-
 var
   iDiag,iOut: integer;
   n: integer;
@@ -212,7 +210,7 @@ var
   points: array of record
             coord: tpoint;
             prev,next: integer;
-            drawn,{shouldRemove,}removed: boolean;
+            drawn,{shouldRemove,}removed,done: boolean;
           end;
   nbPoints:integer;
   PointsPreviousLineStart,PointsCurrentLineStart: integer;
@@ -223,7 +221,7 @@ var
 
   function CheckPixel(const APixel: TBGRAPixel): boolean;
   begin
-    result := (APixel.green <= 128) xor not WhiteBackground;
+    result := (APixel.green <= 128) xor not AWhiteBackground;
   end;
 
   function AddPoint(x,y,APrev,ANext: integer): integer;
@@ -242,6 +240,33 @@ var
     end;
     inc(nbpoints);
   end;
+
+  function InsertPoint(x,y,APrev,ANext: integer): integer;
+  begin
+    if nbpoints = length(points) then
+      setlength(points, nbpoints*2+1);
+    result := nbpoints;
+    with points[result] do
+    begin
+      coord := point(x,y);
+      prev := APrev;
+      next := ANext;
+      drawn := false;
+      removed := false;
+//      shouldRemove := false;
+    end;
+    if APrev<>-1 then points[APrev].next := result;
+    if ANext<>-1 then points[ANext].prev := result;
+    inc(nbpoints);
+  end;
+
+  procedure RemovePoint(idx: integer);
+  begin
+    points[idx].removed:= true;
+    if points[idx].prev <> -1 then points[points[idx].prev].next := points[idx].next;
+    if points[idx].next <> -1 then points[points[idx].next].prev := points[idx].prev;
+  end;
+
   procedure AddLine(x1,y1,x2,y2: integer); overload;
   var i,j,k: integer;
   begin
@@ -294,23 +319,23 @@ var
     AddLine(x4,y4,x5,y5);
   end;
 
-  procedure AddPolygon(n: integer);
+  procedure AddPolygon(nStart: integer);
 
     procedure Rewind(out cycle: boolean);
     var cur: integer;
     begin
-      cur := n;
+      cur := nStart;
       cycle := false;
       while (points[cur].prev <> -1) do
       begin
         cur := points[cur].prev;
-        if cur = n then
+        if cur = nStart then
         begin
           cycle := true; //identify cycle
           break;
         end;
       end;
-      n := cur;
+      nStart := cur;
     end;
 
     function aligned(start1,end1,start2,end2: integer): boolean;
@@ -357,23 +382,27 @@ var
     procedure RemoveAligned;
     var cur,prev,next: integer;
     begin
-      cur := n;
+      cur := nStart;
       prev := -1;
-      while points[cur].next <> -1 do
+      while not points[cur].removed do
       begin
         next := points[cur].next;
         //remove aligned points
-        if prev <> -1 then
-          if aligned(prev,cur,cur,next) then points[cur].removed := true;
-
-        if not points[cur].removed then prev := cur;
+        if (prev <> -1) and aligned(prev,cur,cur,next) then
+          RemovePoint(cur)
+        else
+          prev := cur;
         cur := next;
 
-        if next = n then
+        if next = nStart then
         begin
           next := points[cur].next;
           if (prev <> -1) and (next <> prev) then
-            if aligned(prev,cur,cur,next) then points[cur].removed := true;
+            if aligned(prev,cur,cur,next) then
+            begin
+              RemovePoint(cur);
+              nStart := next;
+            end;
           break; //cycle
         end;
       end;
@@ -384,18 +413,18 @@ var
         nbPtsF: integer;
         nb,nb2,cur,i: integer;
     begin
-      cur := n;
+      cur := nStart;
       nb := 0;
       nb2 := 0;
       repeat
         if not points[cur].removed then inc(nb);
         inc(nb2);
         cur := points[cur].next;
-      until (cur = -1) or (cur = n) or (nb2 > nbPoints);
+      until (cur = -1) or (cur = nStart) or (nb2 > nbPoints);
       if (nb2 > nbPoints) or (nb <= 2) then exit;
 
       setlength(ptsF,nb);
-      cur := n;
+      cur := nStart;
       nbPtsF := 0;
       repeat
         with points[cur] do
@@ -406,7 +435,7 @@ var
             inc(nbPtsF);
           end;
         cur := points[cur].next;
-      until (cur = -1) or (cur = n);
+      until (cur = -1) or (cur = nStart);
 
       if cycle then
       begin
@@ -465,135 +494,161 @@ var
     end;
 
     procedure NiceLines;
-    var next,next2,prev,cur,len,prevlen,nextlen,expectedlen,nb,
-        rcur,rprev,rprev2,rnext,rnext2,temp: integer;
-    begin
-      cur := n;
-      nb := 0;
-      repeat
-        if not points[cur].removed then
+    var cur2, prev, next,next2, startIdx, endIdx: integer;
+      shouldRemove: Boolean;
+      slope: single;
+      delta, nb: integer;
+      u: TPoint;
+
+      function SameDirection(p1,p2: integer): boolean;
+      var
+        v: TPoint;
+      begin
+        v := Point(points[p2].coord.x-points[p1].coord.x,
+             points[p2].coord.y-points[p1].coord.y);
+        result := (v.x*u.y - v.y*u.x = 0) and (v.x*u.x + v.y*u.y > 0);
+      end;
+
+      function GetSide(p1,p2: integer): integer;
+      var
+        v: TPoint;
+      begin
+        v := Point(points[p2].coord.x-points[p1].coord.x,
+             points[p2].coord.y-points[p1].coord.y);
+        result := v.x*u.y - v.y*u.x;
+        if result < 0 then result := -1 else if result > 0 then result := 1;
+      end;
+
+      procedure DoNiceLines(DoDiag: boolean);
+      var cur, nbSegs, i: integer;
+        isDiag: Boolean;
+        segs: array of record
+          p1,p2: TPoint;
+          abslen: integer;
+        end;
+
+      begin
+        for cur := 0 to nb-1 do
+        if not points[cur].removed and not points[cur].done then
         begin
           next := getnext(cur);
-          len := segabslength(cur,next);
-          if (len > iUnit - (iHalf shr 1)) and (len < iUnit + (iHalf shr 1)) then
+          isDiag := (points[next].coord.x <> points[cur].coord.x) and
+                    (points[next].coord.y <> points[cur].coord.y);
+          if (segabslength(cur,next) > iUnit) and (DoDiag xor (not isDiag)) then
           begin
-            prev := getprev(cur);
-            next2 := getnext(next);
-            prevlen := segabslength(prev,cur);
-            nextlen := segabslength(next,next2);
-            if (prevlen > iUnit - (iHalf shr 1)) and (nextlen > iUnit - (iHalf shr 1)) and angle45(prev,cur,next) and angle45(cur,next,next2) and
-              aligned(prev,cur,next,next2) then
+            startIdx := cur;
+            endIdx := next;
+            u := Point(points[next].coord.x-points[cur].coord.x,
+                       points[next].coord.y-points[cur].coord.y);
+            nbsegs := 1;
+
+            if (u.x <> 0) or (u.y <> 0) then
             begin
-              if prevlen > nextlen then
-              begin
-                rprev := AddPoint(points[cur].coord.x - (points[next2].coord.x-points[next].coord.x),
-                  points[cur].coord.y - (points[next2].coord.y-points[next].coord.y), prev,cur);
-                points[prev].next := rprev;
-                points[cur].prev := rprev;
-                prev := rprev;
-                expectedlen := nextlen;
-              end else
-              if nextlen > prevlen then
-              begin
-                rnext := AddPoint(points[next].coord.x - (points[prev].coord.x-points[cur].coord.x),
-                  points[next].coord.y - (points[prev].coord.y-points[cur].coord.y),
-                    next,next2);
-                points[next].next := rnext;
-                points[next2].prev := rnext;
-                next2 := rnext;
-                expectedlen := prevlen;
-              end else
-                expectedlen := (nextlen+prevlen) div 2;
-
-{              points[cur].shouldRemove := true;
-              points[next].shouldRemove:= true;}
-              points[cur].removed := true;
-              rcur := prev;
-              rnext := cur;
-              temp := prev;
               repeat
-                rprev := getprev(rcur);
-                if not angle45(rprev,rcur,rnext) or not aligned(rprev,rcur,cur,next) then break;
-                prevlen := segabslength(rprev,rcur);
-                if (prevlen < iUnit - (iHalf shr 1)) or (prevlen > iUnit + (iHalf shr 1)) then break;
-                points[rcur].removed := true;
-                temp := rprev;
+                next := getnext(endIdx);
+                next2 := getnext(next);
+                if (next<>startIdx) and (next2<>startIdx) and angle45(getprev(endIdx),endIdx,next) and
+                  (segabslength(endIdx,next) < 2*iUnit) and SameDirection(next,next2) then
+                begin
+                  endIdx := next2;
+                  inc(nbsegs);
+                end
+                else
+                  break;
+              until false;
 
-                rprev2 := getprev(rprev);
-                if not angle45(rprev2,rprev,rcur) or not aligned(rprev2,rprev,prev,cur) then break;
-                prevlen := segabslength(rprev2,rprev);
-                if abs(prevlen-expectedlen) > 0 then break;
-                points[rprev].removed := true;
-                temp := rprev2;
-
-                rcur := rprev2;
-                rnext := rprev;
-              until (rcur=-1);
-              prev := temp;
-
-              points[next].removed:= true;
-              rcur := next2;
-              rprev := next;
-              temp := next2;
               repeat
-                rnext := getnext(rcur);
-                if not angle45(rnext,rcur,rprev) or not aligned(rcur,rnext,cur,next) then break;
-                nextlen := segabslength(rnext,rcur);
-                if (nextlen < iUnit - (iHalf shr 1)) or (nextlen > iUnit + (iHalf shr 1)) then break;
-                points[rcur].removed := true;
-                temp := rnext;
+                next := getprev(startIdx);
+                next2 := getprev(next);
+                if (next<>endIdx) and (next2<>endIdx) and angle45(getnext(startIdx),startIdx,next) and
+                  (segabslength(startIdx,next) < 2*iUnit) and SameDirection(next2,next) then
+                begin
+                  startIdx := next2;
+                  inc(nbsegs);
+                end
+                else
+                  break;
+              until false;
 
-                rnext2 := getnext(rnext);
-                if not angle45(rnext2,rnext,rcur) or not aligned(rnext,rnext2,next,next2) then break;
-                nextlen := segabslength(rnext2,rnext);
-                if abs(nextlen-expectedlen) > 0 then break;
-                points[rnext].removed := true;
-                temp := rnext2;
+              setlength(segs, nbSegs);
+              cur2 := startIdx;
+              for i := 0 to nbSegs-1 do
+              begin
+                next := getnext(cur2);
+                segs[i].p1 := points[cur2].coord;
+                segs[i].p2 := points[next].coord;
+                segs[i].abslen := segabslength(cur2,next);
+                points[cur2].done := true;
+                points[next].done := true;
+                if cur2 <> startIdx then RemovePoint(cur2);
 
-                rcur := rnext2;
-                rprev := rnext;
-              until (rcur=-1);
-              next2 := temp;
+                if next = endIdx then break
+                else
+                begin
+                  cur2 := getnext(next);
+                  RemovePoint(next);
+                end;
+              end;
 
-              points[prev].next := next2;
-              points[next2].prev := prev;
+              cur2 := startIdx;
+              for i := 0 to nbSegs-2 do
+              begin
+                if i <> 0 then
+                  cur2 := InsertPoint( (segs[i].p1.x+segs[i].p2.x) div 2,
+                               (segs[i].p1.y+segs[i].p2.y) div 2,
+                               cur2, endIdx);
+                if abs(segs[i].abslen-segs[i+1].abslen) > iHalf then
+                  cur2 := InsertPoint( (segs[i].p2.x+segs[i+1].p1.x) div 2,
+                               (segs[i].p2.y+segs[i+1].p1.y) div 2,
+                               cur2, endIdx);
+              end;
 
-              next := next2;
+              {next := getnext(startIdx);
+              slope := (points[next].coord.y-points[startIdx].coord.y)/(points[next].coord.x-points[startIdx].coord.x);
+              if slope < 0 then
+              begin
+                delta := iHalf+round(abs(slope)*iDiag);
+                InsertPoint(points[startIdx].coord.x + dx * delta, points[startIdx].coord.y, startIdx, next);
+              end;
+
+              next := getprev(endIdx);
+              slope := (points[next].coord.y-points[endIdx].coord.y)/(points[next].coord.x-points[endIdx].coord.x);
+              if slope > 0 then
+              begin
+                delta := iHalf+round(abs(slope)*iDiag);
+                InsertPoint(points[endIdx].coord.x - dx * delta, points[endIdx].coord.y, next, endIdx);
+              end;}
             end;
           end;
-          cur := next;
-        end else
-          cur := points[cur].next;
-        inc(nb);
-      until (cur=-1) or (cur = n) or (nb>nbPoints);
-{      cur := n;
-      nb := 0;
-      repeat
-        if not points[cur].removed and points[cur].shouldRemove then
-        begin
-          prev := getprev(cur);
-          next := getnext(cur);
-          points[prev].next := next;
-          points[next].prev := prev;
-          points[cur].removed := true;
         end;
-        cur := points[cur].next;
-        inc(nb);
-      until (cur=-1) or (cur = n) or (nb>nbPoints);}
-    end;
+      end;
 
+      procedure Init;
+      var cur: integer;
+      begin
+        u := Point(0,0);
+        nb := nbPoints;
+        for cur := 0 to nb-1 do
+          points[cur].done := false;
+      end;
+
+    begin
+      Init;
+      DoNiceLines(false);
+      DoNiceLines(true);
+    end;
 
   var cycle: boolean;
   begin
     //rewind
     Rewind(cycle);
     RemoveAligned;
-    if useNiceLines then NiceLines;
+    if AIntermediateDiagonals then NiceLines;
     MakePolygon(cycle);
   end;
 
 begin
-  iDiag := round((DiagonalFillPercent-50)/100 * iHalf)*2; //even rounding to keep alignment with iOut
+  iDiag := round((ADiagonalFillPercent-50)/100 * iHalf)*2; //even rounding to keep alignment with iOut
   iOut := (iHalf-iDiag) div 2;
 
   nbpoints := 0;
@@ -963,9 +1018,9 @@ begin
     end;
   end;
 
-  factor := zoom/iUnit;
-  offset := zoom*0.5;
-  if PixelCenteredCoordinates then Offset -= 0.5;
+  factor := AZoom/iUnit;
+  offset := AZoom*0.5;
+  if APixelCenteredCoordinates then Offset -= 0.5;
   for n := 0 to nbPoints-1 do
     with points[n] do
     if not drawn and not removed then
