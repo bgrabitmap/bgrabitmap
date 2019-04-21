@@ -228,6 +228,7 @@ type
       function GetFontWeight: string;
       function GetSimpleText: string;
       function GetElementText: string;
+      function GetTextAnchor: string;
       function GetTextDecoration: string;
       function GetTextLength: TFloatWithCSSUnit;
       function GetLengthAdjust: TSVGLengthAdjust;
@@ -239,6 +240,7 @@ type
       procedure SetFontWeight(AValue: string);
       procedure SetElementText(AValue: string);
       procedure SetSimpleText(AValue: string);
+      procedure SetTextAnchor(AValue: string);
       procedure SetTextDecoration(AValue: string);
       procedure SetTextLength(AValue: TFloatWithCSSUnit);
       procedure SetLengthAdjust(AValue: TSVGLengthAdjust);
@@ -257,6 +259,7 @@ type
       property textDecoration: string read GetTextDecoration write SetTextDecoration;
       property fontBold: boolean read GetFontBold write SetFontBold;
       property fontItalic: boolean read GetFontItalic write SetFontItalic;
+      property textAnchor: string read GetTextAnchor write SetTextAnchor;
   end;
 
   { TSVGTSpan }
@@ -958,6 +961,11 @@ begin
     result := GetSimpleText;
 end;
 
+function TSVGText.GetTextAnchor: string;
+begin
+  result := AttributeOrStyleDef['text-anchor','start'];
+end;
+
 function TSVGText.GetTextDecoration: string;
 begin
   result := AttributeOrStyleDef['text-decoration','none'];
@@ -1017,6 +1025,11 @@ begin
   FDomElem.TextContent := AValue;
 end;
 
+procedure TSVGText.SetTextAnchor(AValue: string);
+begin
+  Attribute['text-anchor'] := AValue;
+end;
+
 procedure TSVGText.SetElementText(AValue: string);
 var
   child: TDOMNode;
@@ -1058,6 +1071,7 @@ var
   ax,ay,
   adx,ady: ArrayOfTFloatWithCSSUnit;
   ar: ArrayOfTSVGNumber;
+  ts: TCanvas2dTextSize;
 begin
   //todo
   //(note: solution that does not yet support all the parameters)
@@ -1096,6 +1110,12 @@ begin
     if fontBold then include(fs, fsBold);
     if fontItalic then include(fs, fsItalic);
     ACanvas2d.fontStyle := fs;
+    case textAnchor of
+    'middle': ACanvas2d.textAlignLCL:= taCenter;
+    'end': ACanvas2d.textAlignLCL:= taRightJustify;
+    else {'start'} ACanvas2d.textAlignLCL:= taLeftJustify;
+    end;
+
     ACanvas2d.text(ElementText,vx,vy);
 
     if Assigned(GradientElement) then
