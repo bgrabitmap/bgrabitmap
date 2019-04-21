@@ -324,11 +324,11 @@ var
   begin
     if l <> 0 then
     begin
-      len:= length(result)+1;
-      setlength(result,len);
-      if lDef >= len-1 then
-       def:= ADefault[len-1];
-      result[len-1] :=
+      len := length(result);
+      if len < lDef then
+        def := ADefault[len];
+      setlength(result,len+1);
+      result[len] :=
         parseValue( copy(AValue,p,l), def);
     end;
   end;
@@ -370,11 +370,11 @@ var
   begin
     if l <> 0 then
     begin
-      len:= length(result)+1;
-      setlength(result,len);
-      if lDef >= len-1 then
-       def:= ADefault[len-1];
-      result[len-1] :=
+      len := length(result);
+      if len < lDef then
+        def := ADefault[len];
+      setlength(result,len+1);
+      result[len] :=
         parseValue( copy(AValue,p,l), def);
     end;
   end;
