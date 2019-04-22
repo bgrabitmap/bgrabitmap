@@ -1055,7 +1055,7 @@ end;
 
 function TSVGElement.GetAttributeOrStyle(AName,ADefault: string): string;
 begin
-  result := GetStyle(AName,ADefault);
+  result := GetStyle(AName);
   if result = '' then
     result := GetAttribute(AName,ADefault,True);
 end;
@@ -1283,8 +1283,11 @@ begin
     end;
 
   if result = '' then
-    result:= GetInternal( Attribute['style',ADefault,True] );
-end;      
+  begin
+    result:= GetInternal(GetAttribute('style','',True));
+    if result = '' then result := ADefault;
+  end;
+end;
 
 function TSVGElement.GetStyle(const AName: string): string;
 begin
