@@ -93,6 +93,7 @@ type
     function GetHeight: TFloatWithCSSUnit;
     function GetHeightAsCm: single;
     function GetHeightAsInch: single;
+    function GetHeightAsPixel: single;
     function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
     function GetUTF8String: utf8string;
     function GetViewBox: TSVGViewBox; overload;
@@ -103,6 +104,7 @@ type
     function GetWidth: TFloatWithCSSUnit;
     function GetWidthAsCm: single;
     function GetWidthAsInch: single;
+    function GetWidthAsPixel: single;
     function GetZoomable: boolean;
     procedure SetAttribute(AName: string; AValue: string);
     procedure SetCustomDpi(AValue: TPointF);
@@ -110,12 +112,14 @@ type
     procedure SetHeight(AValue: TFloatWithCSSUnit);
     procedure SetHeightAsCm(AValue: single);
     procedure SetHeightAsInch(AValue: single);
+    procedure SetHeightAsPixel(AValue: single);
     procedure SetPreserveAspectRatio(AValue: TSVGPreserveAspectRatio);
     procedure SetUTF8String(AValue: utf8string);
     procedure SetViewBox(AValue: TSVGViewBox);
     procedure SetWidth(AValue: TFloatWithCSSUnit);
     procedure SetWidthAsCm(AValue: single);
     procedure SetWidthAsInch(AValue: single);
+    procedure SetWidthAsPixel(AValue: single);
     procedure SetZoomable(AValue: boolean);
   protected
     FXml: TXMLDocument;
@@ -154,6 +158,8 @@ type
     property Units: TSVGUnits read FUnits;
     property Width: TFloatWithCSSUnit read GetWidth write SetWidth;
     property Height: TFloatWithCSSUnit read GetHeight write SetHeight;
+    property WidthAsPixel: single read GetWidthAsPixel write SetWidthAsPixel;
+    property HeightAsPixel: single read GetHeightAsPixel write SetHeightAsPixel;
     property WidthAsCm: single read GetWidthAsCm write SetWidthAsCm;
     property HeightAsCm: single read GetHeightAsCm write SetHeightAsCm;
     property WidthAsInch: single read GetWidthAsInch write SetWidthAsInch;
@@ -610,6 +616,11 @@ begin
   result := FUnits.ConvertHeight(Height,cuInch).value;
 end;
 
+function TBGRASVG.GetHeightAsPixel: single;
+begin
+  result := FUnits.ConvertHeight(Height,cuCustom).value;
+end;
+
 function TBGRASVG.GetPreserveAspectRatio: TSVGPreserveAspectRatio;
 begin
   result := TSVGPreserveAspectRatio.Parse(Attribute['preserveAspectRatio','xMidYMid']);
@@ -676,6 +687,11 @@ begin
   result := FUnits.ConvertWidth(Width,cuInch).value;
 end;
 
+function TBGRASVG.GetWidthAsPixel: single;
+begin
+  result := FUnits.ConvertWidth(Width,cuCustom).value;
+end;
+
 function TBGRASVG.GetZoomable: boolean;
 begin
   result := AttributeDef['zoomAndPan','magnify']<>'disable';
@@ -721,6 +737,11 @@ begin
   Height := FloatWithCSSUnit(AValue,cuInch);
 end;
 
+procedure TBGRASVG.SetHeightAsPixel(AValue: single);
+begin
+  Height := FloatWithCSSUnit(AValue,cuCustom);
+end;
+
 procedure TBGRASVG.SetPreserveAspectRatio(AValue: TSVGPreserveAspectRatio);
 begin
   Attribute['preserveAspectRatio'] := AValue.ToString;
@@ -757,6 +778,11 @@ end;
 procedure TBGRASVG.SetWidthAsInch(AValue: single);
 begin
   Width := FloatWithCSSUnit(AValue,cuInch);
+end;
+
+procedure TBGRASVG.SetWidthAsPixel(AValue: single);
+begin
+  Width := FloatWithCSSUnit(AValue,cuCustom);
 end;
 
 procedure TBGRASVG.SetZoomable(AValue: boolean);

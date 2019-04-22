@@ -119,7 +119,7 @@ begin
    svg.Free;
   svg:= TBGRASVG.Create(ms);
 
-  bmp.SetSize(Round(svg.Width.value*kzoom),Round(svg.Height.value*kzoom));
+  bmp.SetSize(Round(svg.WidthAsPixel*kzoom),Round(svg.HeightAsPixel*kzoom));
   bmp.Fill(BGRAWhite);
   svg.StretchDraw(bmp.Canvas2D, 0,0,bmp.Width,bmp.Height);
   //svg.Draw(bmp.Canvas2D, 0,0, cuPixel);
