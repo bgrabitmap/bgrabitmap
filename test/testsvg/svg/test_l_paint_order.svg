@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<svg id="outer" width="300" height="300" viewBox="0 0 300 300"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <title>Simple SVG</title>
+
+  <style>
+    path {
+      fill: red;
+      stroke: blue;
+      stroke-width: 5px;
+      opacity: 0.5;
+    }
+    text {
+      text-anchor: middle;
+      font-size: 12px;
+    }
+  </style>
+
+  <defs>
+    <marker id="marker" markerWidth="2" markerHeight="2" orient="auto"
+      viewBox="0 0 2 2" refX="1" refY="1">
+      <rect id="marker_rect" width="2" height="2" style="fill:purple" />
+    </marker>
+  </defs>
+
+  <path id="path_none"
+	d="m  25, 25 0,50 50,0 0,-50 z"
+	marker-start="url(#marker)" marker-mid="url(#marker)"
+	style=""/>
+  <text x="50" y="95">None</text>
+
+  <path id="path_normal"
+	d="m 125, 25 0,50 50,0 0,-50 z"
+	marker-start="url(#marker)" marker-mid="url(#marker)"
+	style="paint-order:normal"/>
+  <text x="150" y="95">Normal</text>
+
+  <path id="path_explicit"
+	d="m 225, 25 0,50 50,0 0,-50 z"
+	marker-start="url(#marker)" marker-mid="url(#marker)"
+	style="paint-order:fill stroke markers"/>
+  <text x="250" y="95">Fill Stroke Marker</text>
+
+  <path id="path_fill"
+	d="m  25,125 0,50 50,0 0,-50 z"
+	marker-start="url(#marker)" marker-mid="url(#marker)"
+	style="paint-order:fill"/>
+  <text x="50" y="195">Fill</text>
+
+  <path id="path_stroke"
+	d="m 125,125 0,50 50,0 0,-50 z"
+	marker-start="url(#marker)" marker-mid="url(#marker)"
+	style="paint-order:stroke"/>
+  <text x="150" y="195">Stroke</text>
+
+  <path id="path_marker"
+	d="m 225,125 0,50 50,0 0,-50 z"
+	marker-start="url(#marker)" marker-mid="url(#marker)"
+	style="paint-order:markers"/>
+  <text x="250" y="195">Marker</text>
+
+  <path id="path_fill_stroke"
+	d="m  25,225 0,50 50,0 0,-50 z"
+	marker-start="url(#marker)" marker-mid="url(#marker)"
+	style="paint-order:fill stroke"/>
+  <text x="50" y="295">Fill Stroke</text>
+
+  <path id="path_stroke_marker"
+	d="m 125,225 0,50 50,0 0,-50 z"
+	marker-start="url(#marker)" marker-mid="url(#marker)"
+	style="paint-order:stroke markers"/>
+  <text x="150" y="295">Stroke Marker</text>
+
+  <path id="path_marker_fill"
+	d="m 225,225 0,50 50,0 0,-50 z"
+	marker-start="url(#marker)" marker-mid="url(#marker)"
+	style="paint-order:markers fill"/>
+  <text x="250" y="295">Marker Fill</text>
+
+</svg>

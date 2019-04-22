@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" height="200" width="200">
+  <style>
+    circle.test{fill:red; fill-opacity: 0.8;}
+    circle{fill:blue; fill-opacity: 0.4;}
+    .style1{fill:green; fill-opacity: 0.6;}
+    circle.none{}
+  </style>
+  <circle cx="40" cy="40" r="35" stroke="black" stroke-width="4" fill="yellow" />
+  <circle class = "style1" cx="80" cy="80" r="35" stroke="black" stroke-width="3" fill="yellow" />
+  <circle class = "test" cx="120" cy="120" r="35" stroke="black" stroke-width="2" fill="yellow" />
+  <circle class = "none" cx="160" cy="160" r="35" stroke="black" fill="yellow" />
+</svg> 

@@ -1,0 +1,6 @@
+<svg width="660" height="220" style="outline: 1px solid red; font-size: 2em; overflow: visible;" xmlns="http://www.w3.org/2000/svg">  	
+  <text x="240" y="120">  	
+    <tspan>SVG 1</tspan>  	
+    <tspan dx="50,10,10,0,5" dy="50,10,10,10">SVG 2</tspan>  
+  </text>  	
+</svg>

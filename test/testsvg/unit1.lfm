@@ -1,0 +1,330 @@
+object Form1: TForm1
+  Left = 348
+  Height = 744
+  Top = 18
+  Width = 1012
+  Caption = 'SVG Test'
+  ClientHeight = 744
+  ClientWidth = 1012
+  OnClose = FormClose
+  OnCreate = FormCreate
+  OnShow = FormShow
+  Position = poDesktopCenter
+  LCLVersion = '2.0.0.4'
+  object PageControl1: TPageControl
+    Left = 0
+    Height = 744
+    Top = 0
+    Width = 1012
+    ActivePage = TabSheet1
+    Align = alClient
+    ParentFont = False
+    TabIndex = 0
+    TabOrder = 0
+    object TabSheet1: TTabSheet
+      Caption = 'Main'
+      ClientHeight = 709
+      ClientWidth = 1006
+      ParentFont = False
+      object Panel1: TPanel
+        Left = 0
+        Height = 426
+        Top = 0
+        Width = 1006
+        Align = alTop
+        BevelInner = bvLowered
+        BevelOuter = bvLowered
+        BorderStyle = bsSingle
+        ClientHeight = 424
+        ClientWidth = 1004
+        Color = clSilver
+        ParentColor = False
+        ParentFont = False
+        TabOrder = 0
+        object Image1: TImage
+          Left = 2
+          Height = 420
+          Hint = '(svg rendering)'
+          Top = 2
+          Width = 506
+          Align = alLeft
+          Center = True
+          OnMouseUp = Image1MouseUp
+          ParentShowHint = False
+          Proportional = True
+          ShowHint = True
+          Stretch = True
+        end
+        object Image2: TImage
+          Left = 512
+          Height = 420
+          Top = 2
+          Width = 490
+          Align = alClient
+          Center = True
+          OnMouseUp = Image1MouseUp
+          ParentShowHint = False
+          Proportional = True
+          ShowHint = True
+          Stretch = True
+        end
+        object Splitter4: TSplitter
+          Left = 508
+          Height = 420
+          Top = 2
+          Width = 4
+        end
+      end
+      object Panel3: TPanel
+        Left = 0
+        Height = 279
+        Top = 430
+        Width = 1006
+        Align = alClient
+        ClientHeight = 279
+        ClientWidth = 1006
+        ParentFont = False
+        TabOrder = 1
+        object FileListBox1: TFileListBox
+          Left = 1
+          Height = 277
+          Top = 1
+          Width = 507
+          Align = alLeft
+          Directory = 'C:\Users\Fenix\Desktop\TEST SVG 4'
+          Font.CharSet = ANSI_CHARSET
+          Font.Height = -16
+          Font.Name = 'Times New Roman'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          ItemHeight = 0
+          OnChange = FileListBox1Change
+          ParentFont = False
+          TabOrder = 0
+          TopIndex = -1
+        end
+        object Memo1: TMemo
+          Left = 512
+          Height = 277
+          Hint = '(Double click for on/off "change mode")'
+          Top = 1
+          Width = 493
+          Align = alClient
+          Font.CharSet = ANSI_CHARSET
+          Font.Color = clMaroon
+          Font.Height = -16
+          Font.Name = 'Times New Roman'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          OnDblClick = Memo1DblClick
+          OnMouseDown = Memo1MouseDown
+          ParentFont = False
+          ParentShowHint = False
+          ReadOnly = True
+          ScrollBars = ssVertical
+          ShowHint = True
+          TabOrder = 1
+        end
+        object Splitter3: TSplitter
+          Left = 508
+          Height = 277
+          Top = 1
+          Width = 4
+        end
+      end
+      object Splitter2: TSplitter
+        Cursor = crVSplit
+        Left = 0
+        Height = 4
+        Top = 426
+        Width = 1006
+        Align = alTop
+        Beveled = True
+        ResizeAnchor = akTop
+      end
+    end
+    object TabSheet2: TTabSheet
+      Caption = 'State'
+      ClientHeight = 709
+      ClientWidth = 1006
+      ParentFont = False
+      object Panel2: TPanel
+        Left = 0
+        Height = 53
+        Top = 597
+        Width = 1049
+        Align = alBottom
+        ClientHeight = 53
+        ClientWidth = 1049
+        ParentFont = False
+        TabOrder = 0
+        object Button1: TButton
+          Left = 6
+          Height = 26
+          Top = 13
+          Width = 77
+          Caption = 'Link..'
+          Font.CharSet = ANSI_CHARSET
+          Font.Height = -14
+          Font.Name = 'Arial'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          Font.Style = [fsBold]
+          OnClick = Button1Click
+          ParentFont = False
+          TabOrder = 0
+        end
+        object Button2: TButton
+          Left = 96
+          Height = 26
+          Top = 13
+          Width = 77
+          Caption = 'UnLink..'
+          Font.CharSet = ANSI_CHARSET
+          Font.Height = -14
+          Font.Name = 'Arial'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          Font.Style = [fsBold]
+          OnClick = Button2Click
+          ParentFont = False
+          TabOrder = 1
+        end
+        object Button3: TButton
+          Left = 186
+          Height = 26
+          Top = 13
+          Width = 77
+          Caption = 'ReLink..'
+          Font.CharSet = ANSI_CHARSET
+          Font.Height = -14
+          Font.Name = 'Arial'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          Font.Style = [fsBold]
+          OnClick = Button3Click
+          ParentFont = False
+          TabOrder = 2
+        end
+        object Button4: TButton
+          Left = 288
+          Height = 26
+          Top = 13
+          Width = 77
+          Caption = 'UPDATE'
+          Font.CharSet = ANSI_CHARSET
+          Font.Height = -14
+          Font.Name = 'Arial'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          Font.Style = [fsBold]
+          OnClick = Button4Click
+          ParentFont = False
+          TabOrder = 3
+        end
+      end
+      object Panel4: TPanel
+        Left = 0
+        Height = 584
+        Top = 0
+        Width = 1049
+        Align = alClient
+        ClientHeight = 584
+        ClientWidth = 1049
+        ParentFont = False
+        TabOrder = 1
+        object Memo3: TMemo
+          Left = 1
+          Height = 582
+          Top = 1
+          Width = 371
+          Align = alLeft
+          Font.CharSet = ANSI_CHARSET
+          Font.Color = clMaroon
+          Font.Height = -16
+          Font.Name = 'Times New Roman'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          ParentFont = False
+          ScrollBars = ssBoth
+          TabOrder = 0
+        end
+        object Splitter1: TSplitter
+          Left = 465
+          Height = 582
+          Top = 1
+          Width = 4
+        end
+        object Memo2: TMemo
+          Left = 470
+          Height = 582
+          Top = 1
+          Width = 578
+          Align = alClient
+          Font.CharSet = ANSI_CHARSET
+          Font.Color = clMaroon
+          Font.Height = -16
+          Font.Name = 'Times New Roman'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          ParentFont = False
+          ScrollBars = ssBoth
+          TabOrder = 2
+        end
+      end
+    end
+  end
+  object PopupMenu1: TPopupMenu
+    OnPopup = PopupMenu1Popup
+    left = 70
+    top = 45
+    object MenuItem1: TMenuItem
+      Tag = 100
+      Caption = 'Execute Mod Test'
+      OnClick = MenuItem1Click
+    end
+    object MenuItem5: TMenuItem
+      Tag = 50
+      Caption = 'Execute Mod Test (scale 0.5)'
+      OnClick = MenuItem1Click
+    end
+    object MenuItem6: TMenuItem
+      Caption = '-'
+    end
+    object MCut1: TMenuItem
+      Caption = 'Cut'
+      OnClick = MCut1Click
+    end
+    object MCopy1: TMenuItem
+      Caption = 'Copy'
+      OnClick = MCopy1Click
+    end
+    object MPaste1: TMenuItem
+      Caption = 'Paste'
+      OnClick = MPaste1Click
+    end
+    object MSelectAll: TMenuItem
+      Caption = 'Select All'
+      OnClick = MSelectAllClick
+    end
+    object MenuItem3: TMenuItem
+      Caption = '-'
+    end
+    object MenuItem4: TMenuItem
+      Caption = 'Save as SVG...'
+      OnClick = MenuItem4Click
+    end
+  end
+  object PopupMenu2: TPopupMenu
+    left = 147
+    top = 45
+    object MenuItem2: TMenuItem
+      Caption = 'Save To...'
+      OnClick = MenuItem2Click
+    end
+  end
+  object SaveDialog1: TSaveDialog
+    left = 224
+    top = 45
+  end
+end
