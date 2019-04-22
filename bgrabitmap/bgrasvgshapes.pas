@@ -229,6 +229,8 @@ type
       function GetSimpleText: string;
       function GetElementText: string;
       function GetTextAnchor: string;
+      function GetTextDirection: string;
+      function GetTextDirectionTyp: TSVGTextDirection;
       function GetTextDecoration: string;
       function GetTextLength: TFloatWithCSSUnit;
       function GetLengthAdjust: TSVGLengthAdjust;
@@ -241,6 +243,8 @@ type
       procedure SetElementText(AValue: string);
       procedure SetSimpleText(AValue: string);
       procedure SetTextAnchor(AValue: string);
+      procedure SetTextDirection(AValue: string);
+      procedure SetTextDirectionTyp(AValue: TSVGTextDirection);
       procedure SetTextDecoration(AValue: string);
       procedure SetTextLength(AValue: TFloatWithCSSUnit);
       procedure SetLengthAdjust(AValue: TSVGLengthAdjust);
@@ -260,6 +264,8 @@ type
       property fontBold: boolean read GetFontBold write SetFontBold;
       property fontItalic: boolean read GetFontItalic write SetFontItalic;
       property textAnchor: string read GetTextAnchor write SetTextAnchor;
+      property textDirection: string read GetTextDirection write SetTextDirection;
+      property textDirectionTyp: TSVGTextDirection read GetTextDirectionTyp write SetTextDirectionTyp;
   end;
 
   { TSVGTSpan }
@@ -966,6 +972,19 @@ begin
   result := AttributeOrStyleDef['text-anchor','start'];
 end;
 
+function TSVGText.GetTextDirection: string;
+begin
+  result := AttributeOrStyleDef['direction','ltr'];
+end;
+
+function TSVGText.GetTextDirectionTyp: TSVGTextDirection;
+begin
+  if GetTextDirection = 'ltr' then
+    result := stdLtr
+  else
+    result := stdRtl;
+end;  
+
 function TSVGText.GetTextDecoration: string;
 begin
   result := AttributeOrStyleDef['text-decoration','none'];
@@ -1029,6 +1048,19 @@ procedure TSVGText.SetTextAnchor(AValue: string);
 begin
   Attribute['text-anchor'] := AValue;
 end;
+
+procedure TSVGText.SetTextDirection(AValue: string);
+begin
+  Attribute['direction'] := AValue;
+end;
+
+procedure TSVGText.SetTextDirectionTyp(AValue: TSVGTextDirection);
+begin
+  if AValue = stdLtr then
+    SetTextDirection('ltr')
+  else
+    SetTextDirection('rtl');
+end;  
 
 procedure TSVGText.SetElementText(AValue: string);
 var
