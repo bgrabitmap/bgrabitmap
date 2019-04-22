@@ -37,6 +37,11 @@ type
      stpsExact
    );
    
+  TSVGTextDirection = (  
+     stdLtr,
+     stdRtl
+   );
+   
   TFindStyleState = (fssNotSearched,
                      fssNotFound,
                      fssFind);
@@ -983,7 +988,7 @@ end;
 
 function TSVGElement.GetArrayOfAttributeWithUnit(AName: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
 begin
-  result := TCSSUnitConverter.parseValue(Attribute[AName],ADefault);
+  result := TCSSUnitConverter.parseValue(Attribute[AName,'',True],ADefault);
 end;
 
 function TSVGElement.GetArrayOfAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
