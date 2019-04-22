@@ -220,6 +220,7 @@ type
 
   TSVGText = class(TSVGTextPositioning)
     private
+      FInGetElementText: boolean;
       function GetFontBold: boolean;
       function GetFontFamily: string;
       function GetFontItalic: boolean;
@@ -381,8 +382,6 @@ type
       procedure SetGradientTransform(AValue: string);
       procedure SetGradientUnits(AValue: string);
       procedure SetHRef(AValue: string);
-      function HRefToGradientID(const AValue: string): string;
-      function FindGradientRef(const AGradientID: string): integer;
     protected
       InheritedGradients: TSVGElementList;//(for HRef)
       procedure Initialize; override;
@@ -650,25 +649,9 @@ begin
 end;
 
 function TSVGElementWithGradient.FindGradientElement: boolean;
-var
-  i: integer;
-  s: string;
 begin
-  Result:= false;
-  s:= fill;
-  if s <> '' then
-    if Pos('url(#',s) = 1 then
-    begin
-      s:= System.Copy(s,6,Length(s)-6);
-      with FDataLink do
-        for i:= GradientCount-1 downto 0 do 
-          if (Gradients[i] as TSVGGradient).ID = s then
-          begin
-            FGradientElement:= TSVGGradient(Gradients[i]);
-            Result:= true;
-            Exit;
-          end;
-    end;
+  FGradientElement := TSVGGradient(FDataLink.FindElementByRef(fill, TSVGGradient));
+  Result := Assigned(FGradientElement);
 end;
 
 function TSVGElementWithGradient.EvaluatePercentage(fu: TFloatWithCSSUnit): single;
@@ -704,10 +687,10 @@ procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D)
     col: TBGRAPixel;
   begin
     result:= 0;
-    with el.DataChildList do
-      for i:= 0 to Count-1 do
-        if Items[i] is TSVGStopGradient then
-          with (Items[i] as TSVGStopGradient) do
+    with (el as TSVGGradient).Content do
+      for i:= 0 to ElementCount-1 do
+        if Element[i] is TSVGStopGradient then
+          with TSVGStopGradient(Element[i]) do
           begin
             col:= StrToBGRA( AttributeOrStyleDef['stop-color','black'] );
             col.alpha:= Round( Units.parseValue(AttributeOrStyleDef['stop-opacity','1'],1) * col.alpha );
@@ -952,13 +935,24 @@ end;
 
 function TSVGText.GetElementText: string;
 var
-  child: TDOMNode;
+  i: Integer;
+  refText: TSVGText;
 begin
-  child := FDomElem.FirstChild;
-  if assigned(child) then
-    result := child.TextContent
-  else
-    result := GetSimpleText;
+  if FInGetElementText then exit; //avoid reentrance
+  FInGetElementText := true;
+  for i := 0 to FContent.ElementCount-1 do
+    if FContent.Element[i] is TSVGTRef then
+    begin
+      refText := TSVGText(FDataLink.FindElementByRef(TSVGTRef(FContent.Element[i]).xlinkHref, TSVGText));
+      if Assigned(refText) then
+        result := refText.ElementText
+      else
+        result := '';
+      FInGetElementText := false;
+      exit;
+    end;
+  FInGetElementText := false;
+  result := GetSimpleText;
 end;
 
 function TSVGText.GetTextAnchor: string;
@@ -1139,10 +1133,10 @@ begin
   setlength(ady,0);
   setlength(ar,0);
 
-  with DataChildList do
-    for i:= 0 to Count-1 do
-      if Items[i] is TSVGTextElement then
-        (Items[i] as TSVGTextElement).InternalDraw(ACanvas2d,AUnit);
+  with FContent do
+    for i:= 0 to ElementCount-1 do
+      if Element[i] is TSVGTextElement then
+        (Element[i] as TSVGTextElement).InternalDraw(ACanvas2d,AUnit);
 end;
 
 constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
@@ -1525,7 +1519,7 @@ begin
   if IsValidID(sid) then
     result:= FStyles[sid]
   else
-    raise exception.Create(rsInvalidId);
+    raise exception.Create(rsInvalidIndex);
 end;
 
 procedure TSVGStyle.SetStyle(const sid: integer; sr: TSVGStyleItem);
@@ -1533,7 +1527,7 @@ begin
   if IsValidID(sid) then
     FStyles[sid]:= sr
   else
-    raise exception.Create(rsInvalidId);
+    raise exception.Create(rsInvalidIndex);
 end;
 
 function TSVGStyle.Count: Integer;
@@ -2214,32 +2208,6 @@ begin
   FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
 end;
 
-function TSVGGradient.HRefToGradientID(const AValue: string): string;
-var
-  l: integer;
-begin
-  //(example input: "#gradient1")
-  l:= Length(AValue);
-  if l < 2 then
-    result:= ''
-  else
-    result:= System.Copy(AValue,2,l-1);
-end;
-
-function TSVGGradient.FindGradientRef(const AGradientID: string): integer;
-var
-  i: integer;
-begin
-  with FDataLink do
-    for i:= 0 to GradientCount-1 do
-      if (Gradients[i] as TSVGGradient).ID = AGradientID then
-      begin
-        result:= i;
-        exit;
-      end;
-  result:= -1;
-end;
-
 procedure TSVGGradient.Initialize;
 begin
   inherited;
@@ -2300,8 +2268,6 @@ end;
 procedure TSVGGradient.ScanInheritedGradients(const forceScan: boolean = false);
 var
   el: TSVGGradient;
-  pos: integer;
-  gradientID: string;
 begin
   //(if list empty = not scan)
   if (InheritedGradients.Count <> 0) and (not forceScan) then
@@ -2312,15 +2278,8 @@ begin
   el:= Self;
   while el.hRef <> '' do
   begin
-    gradientID:= HRefToGradientID(el.hRef);
-    pos:= FindGradientRef(gradientID);
-    if pos = -1 then
-      exit
-    else
-    begin
-      el:= TSVGGradient(FDataLink.Gradients[pos]);
-      InheritedGradients.Add(el);
-    end;
+    el := TSVGGradient(FDataLink.FindElementByRef(el.hRef, TSVGGradient));
+    if Assigned(el) then InheritedGradients.Add(el);
   end;
 end;        
 
