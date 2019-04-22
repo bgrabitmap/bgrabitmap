@@ -334,6 +334,12 @@ var
   end;
 
 begin
+  if AValue = '' then
+  begin
+    result := ADefault;
+    exit;
+  end; 
+  
   lDef:= length(ADefault);
   if lDef = 0 then
    def:= 0;
@@ -380,6 +386,12 @@ var
   end;
 
 begin
+  if AValue = '' then
+  begin
+    result := ADefault;
+    exit;
+  end; 
+  
   lDef:= length(ADefault);
   if lDef = 0 then
    def:= FloatWithCSSUnit(0,cuCustom);
