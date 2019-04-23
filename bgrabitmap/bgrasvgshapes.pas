@@ -250,7 +250,9 @@ type
       procedure SetTextLength(AValue: TFloatWithCSSUnit);
       procedure SetLengthAdjust(AValue: TSVGLengthAdjust);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
+       var computeBaseX,computeBaseY: single); overload;
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override; overload;
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
@@ -1088,12 +1090,31 @@ begin
  RemoveStyle('lengthAdjust');
 end;
 
-procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
+  var computeBaseX,computeBaseY: single);
+
+  (*procedure InitTo(var a: ArrayOfTFloatWithCSSUnit; const AValue: single);
+  begin
+   setlength(a,1);
+   with a[0] do
+   begin
+     CSSUnit := cuPixel;
+     value := AValue;
+   end;
+  end;
+
+  procedure InitTo(var a: ArrayOfTSVGNumber; const AValue: single);
+  begin
+    setlength(a,1);
+    a[0] := AValue;
+  end;*)
+
 var
-  i: integer;
-  fs:TFontStyles;
+  fs: TFontStyles;
   vx,vy,
-  vdx,vdy: single;
+  vdx,vdy,
+  vr: single;
+  text: string;
   ax,ay,
   adx,ady: ArrayOfTFloatWithCSSUnit;
   ar: ArrayOfTSVGNumber;
@@ -1102,32 +1123,46 @@ begin
   //todo
   //(note: solution that does not yet support all the parameters)
 
-  ax := x;
-  ay := y;
-  adx := dx;
-  ady := dy;
+  ax := Units.ConvertWidth(x,AUnit);
+  ay := Units.ConvertHeight(y,AUnit);
+  adx := Units.ConvertWidth(dx,AUnit);
+  ady := Units.ConvertHeight(dy,AUnit);
   ar := rotate;
 
-  //(temporary solution to allow drawing)
+  (* for the moment it seems unnecessary
   if length(ax) = 0 then
-   vx:= 0
-  else
-   vx:= Units.ConvertWidth(ax[0],AUnit).value;
+    InitTo(ax,0);
   if length(ay) = 0 then
-   vy:= 0
-  else
-   vy:= Units.ConvertHeight(ay[0],AUnit).value;
+    InitTo(ay,0);
   if length(adx) = 0 then
-   vdx:= 0
-  else
-   vdx:= Units.ConvertWidth(adx[0],AUnit).value;
+    InitTo(adx,0);
   if length(ady) = 0 then
-   vdy:= 0
+    InitTo(ady,0);
+  if length(ar) = 0 then
+    InitTo(ar,0);*)
+
+  //(temporary solution to allow drawing)
+  vx:= ax[0].value;
+  vy:= ay[0].value;
+  vdx:= adx[0].value;
+  vdy:= ady[0].value;
+  vr:= ar[0];
+
+  if HasAttribute('x') then
+    computeBaseX := vx
   else
-   vdy:= Units.ConvertHeight(ady[0],AUnit).value;
+    vx := computeBaseX;
+  if HasAttribute('y') then
+    computeBaseY := vy
+  else
+    vy := computeBaseY;
 
   vx+= vdx;
   vy+= vdy;
+
+  text:= ElementText;
+  if text <> '' then
+  begin
 
     ACanvas2d.beginPath;
     ACanvas2d.fontEmHeight := Units.ConvertHeight(fontSize,AUnit).value;
@@ -1135,18 +1170,24 @@ begin
     fs := [];
     if fontBold then include(fs, fsBold);
     if fontItalic then include(fs, fsItalic);
+
     ACanvas2d.fontStyle := fs;
     case textAnchor of
-    'middle': ACanvas2d.textAlignLCL:= taCenter;
-    'end': ACanvas2d.textAlignLCL:= taRightJustify;
-    else {'start'} ACanvas2d.textAlignLCL:= taLeftJustify;
+     'middle': ACanvas2d.textAlignLCL:= taCenter;
+     'end': ACanvas2d.textAlignLCL:= taRightJustify;
+     else {'start'} ACanvas2d.textAlignLCL:= taLeftJustify;
     end;
 
-    ACanvas2d.text(ElementText,vx,vy);
+    ACanvas2d.text(text,vx,vy);
 
-    if Assigned(GradientElement) then
-      with ACanvas2d.measureText(ElementText) do
+    with ACanvas2d.measureText(text) do
+    begin
+      computeBaseX += width;
+      //computeBaseY += height;
+
+      if Assigned(GradientElement) then
         InitializeGradient(ACanvas2d, PointF(vx,vy),width,height,AUnit);
+    end;
 
     if not isFillNone then
     begin
@@ -1159,17 +1200,31 @@ begin
       ACanvas2d.stroke;
     end;
 
+  end;
+
   setlength(ax,0);
   setlength(ay,0);
   setlength(adx,0);
   setlength(ady,0);
   setlength(ar,0);
-
-  with FContent do
-    for i:= 0 to ElementCount-1 do
-      if Element[i] is TSVGTextElement then
-        (Element[i] as TSVGTextElement).InternalDraw(ACanvas2d,AUnit);
 end;
+
+procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  i: integer;
+  computeBaseX,computeBaseY: single;
+begin
+  computeBaseX:= 0;
+  computeBaseY:= 0;
+
+  InternalDraw(ACanvas2d,AUnit, computeBaseX,computeBaseY);
+
+  with DataChildList do
+    for i:= 0 to Count-1 do
+      if Items[i] is TSVGText then
+        (Items[i] as TSVGText).InternalDraw(
+           ACanvas2d,AUnit, computeBaseX,computeBaseY);
+end;      
 
 constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
