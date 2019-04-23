@@ -654,6 +654,9 @@ end;
 
 function BGRATextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
 begin
+  {$IFDEF LCL_RENDERER_IS_FINE}
+  if Quality = fqFineAntialiasing then Quality:= fqSystem;
+  {$ENDIF}
   result := BGRAOriginalTextSize(Font, Quality, sUTF8, CustomAntialiasingLevel);
   if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
   begin
@@ -846,7 +849,7 @@ begin
   style.RightToLeft := RightToLeft;
   style.ShowPrefix := ShowPrefix;
   BGRATextRect(bmp, Font, Quality,
-        rect(floor(xf-xMarginF), floor(yf), ceil(xf+size.cx/sizeFactor+xMarginF), ceil(yf+size.cy/sizeFactor)),
+        rect(floor(xf-xMarginF), floor(yf)-1, ceil(xf+size.cx/sizeFactor+xMarginF), ceil(yf+size.cy/sizeFactor)+1),
         xf,yf, sUTF8, style, c, tex, sizeFactor);
 end;
 

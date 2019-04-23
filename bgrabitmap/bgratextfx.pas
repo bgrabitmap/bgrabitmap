@@ -598,7 +598,7 @@ begin
     InitImproveReadability(AText, Font, SubOffsetX,SubOffsetY);
     exit;
   end;
-  if Antialiasing then
+  if Antialiasing and not IsLclFontRendererFine then
     quality := fqFineAntialiasing
   else
     quality := fqSystem;
