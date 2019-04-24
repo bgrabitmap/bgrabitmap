@@ -40,11 +40,13 @@ type
     function GetBrokenLineAffineBox(AIndex: integer): TAffineBox;
     function GetBrokenLineCount: integer;
     function GetBrokenLineEndCaret(AIndex: integer): TBidiCaretPos;
+    function GetBrokenLineUntransformedEndCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineEndIndex(AIndex: integer): integer;
     function GetBrokenLineParagraphIndex(AIndex: integer): integer;
     function GetBrokenLineRectF(AIndex: integer): TRectF;
     function GetBrokenLineRightToLeft(AIndex: integer): boolean;
     function GetBrokenLineStartCaret(AIndex: integer): TBidiCaretPos;
+    function GetBrokenLineUntransformedStartCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineStartIndex(AIndex: integer): integer;
     function GetCharCount: integer;
     function GetFontBidiMode: TFontBidiMode;
@@ -165,7 +167,8 @@ type
     function GetCaret(ACharIndex: integer): TBidiCaretPos;
     function GetUntransformedCaret(ACharIndex: integer): TBidiCaretPos;
     function GetCharIndexAt(APosition: TPointF): integer;
-    function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = true): ArrayOfTPointF;
+    function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = true; AVerticalClip: boolean = false): ArrayOfTPointF;
+    function GetUntransformedTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = true; AVerticalClip: boolean = false): ArrayOfTPointF;
     function GetParagraphAt(ACharIndex: Integer): integer; overload;
     function GetParagraphAt(APosition: TPointF): integer; overload;
     function GetBrokenLineAt(ACharIndex: integer): integer;
@@ -433,16 +436,24 @@ end;
 
 function TBidiTextLayout.GetBrokenLineEndCaret(AIndex: integer): TBidiCaretPos;
 begin
+  result := GetBrokenLineUntransformedEndCaret(AIndex);
+  result.Transform(Matrix);
+end;
+
+function TBidiTextLayout.GetBrokenLineUntransformedEndCaret(AIndex: integer): TBidiCaretPos;
+begin
   NeedLayout;
-  with BrokenLineAffineBox[AIndex] do
+  with BrokenLineRectF[AIndex] do
   begin
+    result.Top.y := Top;
     if BrokenLineRightToLeft[AIndex] then
-      result.Top := TopLeft
+      result.Top.x := Left
     else
-      result.Top := TopRight;
-    result.Bottom := result.Top + (BottomLeft-TopLeft);
+      result.Top.x := Right;
+    result.Bottom.y := Bottom;
+    result.Bottom.x := result.Top.x;
     result.RightToLeft := odd(FBrokenLine[AIndex].bidiLevel);
-    result.PartIndex := -1;
+    result.PartIndex:= -1;
     result.PreviousTop := EmptyPointF;
     result.PreviousBottom := EmptyPointF;
     result.PreviousRightToLeft := result.RightToLeft;
@@ -483,14 +494,22 @@ end;
 
 function TBidiTextLayout.GetBrokenLineStartCaret(AIndex: integer): TBidiCaretPos;
 begin
+  result := GetBrokenLineUntransformedStartCaret(AIndex);
+  result.Transform(Matrix);
+end;
+
+function TBidiTextLayout.GetBrokenLineUntransformedStartCaret(AIndex: integer): TBidiCaretPos;
+begin
   NeedLayout;
-  with BrokenLineAffineBox[AIndex] do
+  with BrokenLineRectF[AIndex] do
   begin
+    result.Top.y := Top;
     if BrokenLineRightToLeft[AIndex] then
-      result.Top := TopRight
+      result.Top.x := Right
     else
-      result.Top := TopLeft;
-    result.Bottom := result.Top + (BottomLeft-TopLeft);
+      result.Top.x := Left;
+    result.Bottom.y := Bottom;
+    result.Bottom.x := result.Top.x;
     result.RightToLeft := odd(FBrokenLine[AIndex].bidiLevel);
     result.PartIndex:= -1;
     result.PreviousTop := EmptyPointF;
@@ -1415,8 +1434,11 @@ var
 begin
   NeedLayout;
   for i := 0 to FPartCount-1 do
+  begin
+    if (AvailableHeight<>EmptySingle) and (FPart[i].rectF.Top >= AvailableHeight) then continue;
     with (Matrix*(FPart[i].rectF.TopLeft + FPart[i].posCorrection)) do
       TextOutBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
+  end;
 end;
 
 procedure TBidiTextLayout.DrawCaret(ADest: TBGRACustomBitmap;
@@ -1693,7 +1715,17 @@ begin
   exit(ParagraphEndIndexBeforeParagraphSeparator[paraIndex]);
 end;
 
-function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean; AMergeBoxes: boolean): ArrayOfTPointF;
+function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean; AMergeBoxes: boolean; AVerticalClip: boolean): ArrayOfTPointF;
+var
+  i: Integer;
+begin
+  result := GetUntransformedTextEnveloppe(AStartIndex,AEndIndex,APixelCenteredCoordinates,AMergeBoxes,AVerticalClip);
+  for i := 0 to high(result) do
+    result[i] := Matrix*result[i];
+end;
+
+function TBidiTextLayout.GetUntransformedTextEnveloppe(AStartIndex,
+  AEndIndex: integer; APixelCenteredCoordinates: boolean; AMergeBoxes: boolean; AVerticalClip: boolean): ArrayOfTPointF;
 var
   startCaret, endCaret: TBidiCaretPos;
   vertResult: array of record
@@ -1703,6 +1735,12 @@ var
 
   procedure AppendVertResult(ABox: TAffineBox; ARightToLeft: boolean);
   begin
+    if AVerticalClip and (AvailableHeight <> EmptySingle) then
+    begin
+      if (ABox.TopLeft.y >= AvailableHeight) or (ABox.TopRight.y >= AvailableHeight) then exit;
+      if ABox.BottomLeft.y > AvailableHeight then ABox.BottomLeft.y := AvailableHeight;
+    end;
+
     if ARightToLeft then
       ABox := TAffineBox.AffineBox(ABox.TopRight,ABox.TopLeft,ABox.BottomRight);
 
@@ -1810,7 +1848,7 @@ var
   var
     i: Integer;
     curPartStartCaret, curPartEndCaret,
-    lineStartCaret, lineEndCaret: TBidiCaretPos;
+    lineStartCaret, lineEndCaret, curPartCaret: TBidiCaretPos;
     brokenLineIndex, paraIndex: integer;
     r: TRectF;
 
@@ -1830,11 +1868,11 @@ var
 
           r := RectF(ParagraphRectF[paraIndex-1].Left, ParagraphRectF[paraIndex-1].Bottom - ParagraphSpacingBelow*FLineHeight,
                        ParagraphRectF[paraIndex-1].Right, ParagraphRectF[paraIndex-1].Bottom);
-          AppendVertResult(Matrix*TAffineBox.AffineBox(r), False);
+          AppendVertResult(TAffineBox.AffineBox(r), False);
 
           r := RectF(ParagraphRectF[paraIndex].Left, ParagraphRectF[paraIndex].Top,
                        ParagraphRectF[paraIndex].Right, ParagraphRectF[paraIndex].Top + ParagraphSpacingAbove*FLineHeight);
-          AppendVertResult(Matrix*TAffineBox.AffineBox(r), False);
+          AppendVertResult(TAffineBox.AffineBox(r), False);
         end;
       end;
 
@@ -1846,8 +1884,8 @@ var
       begin
         FlushHorizResult;
 
-        lineStartCaret := BrokenLineStartCaret[brokenLineIndex];
-        lineEndCaret := BrokenLineEndCaret[brokenLineIndex];
+        lineStartCaret := GetBrokenLineUntransformedStartCaret(brokenLineIndex);
+        lineEndCaret := GetBrokenLineUntransformedEndCaret(brokenLineIndex);
         AppendVertResult(TAffineBox.AffineBox(lineStartCaret.Top,lineEndCaret.Top,lineStartCaret.Bottom), BrokenLineRightToLeft[brokenLineIndex]);
 
         i := FBrokenLine[brokenLineIndex].lastPartIndexPlusOne;
@@ -1858,7 +1896,7 @@ var
         begin
           FlushHorizResult;
 
-          lineStartCaret := BrokenLineStartCaret[brokenLineIndex];
+          lineStartCaret := GetBrokenLineUntransformedStartCaret(brokenLineIndex);
           if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
             AppendHorizResult(lineStartCaret.Top,PartStartCaret[i].Top,PartStartCaret[i].Bottom,lineStartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex])
           else
@@ -1866,10 +1904,10 @@ var
         end;
 
         //text parts
-        if i > startCaret.PartIndex then curPartStartCaret := PartStartCaret[i]
+        if i > startCaret.PartIndex then curPartStartCaret := GetUntransformedPartStartCaret(i)
         else curPartStartCaret := startCaret;
 
-        if i < endCaret.PartIndex then curPartEndCaret := PartEndCaret[i]
+        if i < endCaret.PartIndex then curPartEndCaret := GetUntransformedPartEndCaret(i)
         else curPartEndCaret := endCaret;
 
         AppendHorizResult(curPartStartCaret.Top,curPartEndCaret.Top,curPartEndCaret.Bottom,curPartStartCaret.Bottom, PartRightToLeft[i]);
@@ -1877,11 +1915,12 @@ var
         //end of lines
         if (i < endCaret.PartIndex) and (PartBrokenLineIndex[i+1] <> PartBrokenLineIndex[i]) then
         begin
-          lineEndCaret := BrokenLineEndCaret[brokenLineIndex];
+          lineEndCaret := GetBrokenLineUntransformedEndCaret(brokenLineIndex);
           if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
-            AppendHorizResult(PartEndCaret[i].Top,lineEndCaret.Top,lineEndCaret.Bottom,PartEndCaret[i].Bottom, BrokenLineRightToLeft[brokenLineIndex])
+            curPartCaret := GetUntransformedPartEndCaret(i)
           else
-            AppendHorizResult(PartStartCaret[i].Top,lineEndCaret.Top,lineEndCaret.Bottom,PartStartCaret[i].Bottom, BrokenLineRightToLeft[brokenLineIndex]);
+            curPartCaret := GetUntransformedPartStartCaret(i);
+          AppendHorizResult(curPartCaret.Top,lineEndCaret.Top,lineEndCaret.Bottom,curPartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex])
         end;
 
         inc(i);
@@ -1907,8 +1946,8 @@ begin
     AStartIndex:= AEndIndex;
     AEndIndex:= temp;
   end;
-  startCaret := GetCaret(AStartIndex);
-  endCaret := GetCaret(AEndIndex);
+  startCaret := GetUntransformedCaret(AStartIndex);
+  endCaret := GetUntransformedCaret(AEndIndex);
   if not isEmptyPointF(endCaret.PreviousTop) then
   begin
     endCaret.Top := endCaret.PreviousTop;        endCaret.PreviousTop := EmptyPointF;
