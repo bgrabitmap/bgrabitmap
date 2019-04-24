@@ -914,9 +914,12 @@ function TSVGElement.GetAttributeOrStyleWithUnit(AName: string; ADefault: TFloat
 var
   valueText: string;
 begin
-  valueText := Style[AName];
+  (*valueText := Style[AName];
   if valueText = '' then
-    valueText := GetAttribute(AName,'',True);
+    valueText := GetAttribute(AName,'',True);*)
+  valueText := GetAttribute(AName,'',True);
+  if valueText = '' then
+   valueText := Style[AName];
   result := TCSSUnitConverter.parseValue(valueText,ADefault);
 end;
 
