@@ -2029,6 +2029,7 @@ begin
       FOriginalEditor := orig.CreateEditor;
       if FOriginalEditor = nil then
         raise exception.Create('Unexpected nil value');
+      FOriginalEditor.Focused := FEditorFocused;
       FOriginalEditor.OnFocusChanged:=@EditorFocusedChanged;
     end;
     FOriginalEditor.Clear;
