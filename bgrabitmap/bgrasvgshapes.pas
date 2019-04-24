@@ -1122,6 +1122,9 @@ var
 begin
   //todo
   //(note: solution that does not yet support all the parameters)
+  
+  if initRequired then
+    Units.currFontSize:= Units.ConvertHeight(fontSize,AUnit).value;
 
   ax := Units.ConvertWidth(x,AUnit);
   ay := Units.ConvertHeight(y,AUnit);
