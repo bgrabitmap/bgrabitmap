@@ -49,6 +49,7 @@ type
   protected
     FFont: TFont;             //font parameters
     FWordBreakHandler: TWordBreakHandler;
+    FOwnUnderline: boolean;
     procedure UpdateFont; virtual;
     function InternalTextSize(sUTF8: string; AShowPrefix: boolean): TSize;
     procedure InternalTextWordBreak(ADest: TBGRACustomBitmap; ATextUTF8: string;
@@ -363,8 +364,8 @@ function BGRATextUnderline(ATopLeft: TPointF;
   AWidth: Single; ABaseline, AEmHeight: single): ArrayOfTPointF;
 var height,y: single;
 begin
-  height := AEmHeight*0.1;
-  y := ATopLeft.y+ABaseline+1.5*height;
+  height := AEmHeight*0.080;
+  y := ATopLeft.y+ABaseline+1.6*height;
   result := ComputeWidePolylinePoints([PointF(ATopLeft.x,y),
                    PointF(ATopLeft.x+AWidth,y)],height,BGRABlack,pecFlat,pjsMiter,
                    SolidPenStyle, []);
@@ -1064,11 +1065,20 @@ end;
 { Update font properties to internal TFont object }
 procedure TCustomLCLFontRenderer.UpdateFont;
 var fixedHeight: integer;
+  fs: TFontStyles;
 begin
   if FFont.Name <> FontName then
     FFont.Name := FontName;
-  if FFont.Style <> FontStyle then
-    FFont.Style := FontStyle;
+  fs := FontStyle;
+  if ((CompareText(Trim(FontName),'FreeSans')=0) or (CompareText(Trim(FontName),'FreeMono')=0) or
+     (CompareText(Trim(FontName),'FreeSerif')=0)) and (fsUnderline in fs) then
+  begin
+    Exclude(fs, fsUnderline);
+    FOwnUnderline := true;
+  end else
+    FOwnUnderline := false;
+  if FFont.Style <> fs then
+    FFont.Style := fs;
   if FontEmHeight < 0 then
     fixedHeight := FixLCLFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
   else
@@ -1393,6 +1403,8 @@ procedure TCustomLCLFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap; x,
   y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
   align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
 var mode : TBGRATextOutImproveReadabilityMode;
+  s: TSize;
+  pts: ArrayOfTPointF;
 begin
   {$IFDEF LINUX}
   //help LCL detect the correct direction
@@ -1417,6 +1429,15 @@ begin
   end else
     BGRAText.BGRATextOut(ADest,FFont,FontQuality,x,y,sUTF8,c,texture,align,
         0,AShowPrefix,ARightToLeft);
+  if FOwnUnderline then
+  begin
+    s := InternalTextSize(sUTF8, AShowPrefix);
+    pts := BGRATextUnderline(PointF(x,y),s.cx,GetFontPixelMetric);
+    if texture<>nil then
+      ADest.FillPolyAntialias(pts, texture, false)
+    else
+      ADest.FillPolyAntialias(pts, c, false);
+  end;
 end;
 
 procedure TCustomLCLFontRenderer.InternalTextOutEllipse(
