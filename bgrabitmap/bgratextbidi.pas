@@ -1997,7 +1997,7 @@ function TBidiTextLayout.GetBrokenLineAt(ACharIndex: integer): integer;
 
 begin
   if (ACharIndex < 0) or (ACharIndex > CharCount) then raise exception.Create('Position out of bounds');
-  if ACharIndex = FBrokenLine[BrokenLineCount-1].endIndex then
+  if (BrokenLineCount > 0) and (ACharIndex = FBrokenLine[BrokenLineCount-1].endIndex) then
     result := BrokenLineCount-1
   else
     FindRec(0, BrokenLineCount-1);
