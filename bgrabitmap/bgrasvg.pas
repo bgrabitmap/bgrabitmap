@@ -912,7 +912,7 @@ begin
       inc(startPos, 3);
   end;
   AStream.Position:= startPos;
-  ReadXMLFile(xml,AStream);
+  ReadXMLFile(xml,AStream,[xrfPreserveWhiteSpace]);
   root := xml.FirstChild;
   while (root <> nil) and not (root is TDOMElement) do root := root.NextSibling;
   if root = nil then
