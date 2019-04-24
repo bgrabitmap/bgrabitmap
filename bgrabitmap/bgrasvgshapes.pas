@@ -251,7 +251,7 @@ type
       procedure SetLengthAdjust(AValue: TSVGLengthAdjust);
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
-       var computeBaseX,computeBaseY: single); overload;
+        const initRequired: Boolean; var computeBaseX,computeBaseY, computeDx,computeDy: single); overload;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override; overload;
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
@@ -1091,7 +1091,7 @@ begin
 end;
 
 procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
-  var computeBaseX,computeBaseY: single);
+  const initRequired: Boolean; var computeBaseX,computeBaseY, computeDx,computeDy: single);
 
   (*procedure InitTo(var a: ArrayOfTFloatWithCSSUnit; const AValue: single);
   begin
@@ -1148,21 +1148,26 @@ begin
   vdy:= ady[0].value;
   vr:= ar[0];
 
-  if HasAttribute('x') then
-    computeBaseX := vx
-  else
-    vx := computeBaseX;
-  if HasAttribute('y') then
-    computeBaseY := vy
-  else
-    vy := computeBaseY;
-
-  vx+= vdx;
-  vy+= vdy;
-
   text:= ElementText;
   if text <> '' then
   begin
+
+    if HasAttribute('x') then
+      computeBaseX := vx
+    else
+      vx := computeBaseX;
+    if HasAttribute('y') then
+      computeBaseY := vy
+    else
+      vy := computeBaseY;
+
+    if HasAttribute('dx') then
+      computeDx += vdx;
+    if HasAttribute('dy') then
+      computeDy += vdy;
+
+    vx+= computeDx;
+    vy+= computeDy;
 
     ACanvas2d.beginPath;
     ACanvas2d.fontEmHeight := Units.ConvertHeight(fontSize,AUnit).value;
@@ -1200,6 +1205,12 @@ begin
       ACanvas2d.stroke;
     end;
 
+  end
+  //(for case: base text element without text)
+  else if initRequired then
+  begin
+    computeBaseX:= vx + vdx;
+    computeBaseY:= vy + vdy;
   end;
 
   setlength(ax,0);
@@ -1207,24 +1218,28 @@ begin
   setlength(adx,0);
   setlength(ady,0);
   setlength(ar,0);
-end;
+end;       
 
 procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
   i: integer;
-  computeBaseX,computeBaseY: single;
+  computeBaseX,computeBaseY,
+  computeDx,computeDy: single;
 begin
   computeBaseX:= 0;
   computeBaseY:= 0;
+  computeDx:= 0;
+  computeDy:= 0;
 
-  InternalDraw(ACanvas2d,AUnit, computeBaseX,computeBaseY);
+  InternalDraw(ACanvas2d,AUnit, True,
+    computeBaseX,computeBaseY, computeDx,computeDy);
 
   with DataChildList do
     for i:= 0 to Count-1 do
       if Items[i] is TSVGText then
-        (Items[i] as TSVGText).InternalDraw(
-           ACanvas2d,AUnit, computeBaseX,computeBaseY);
-end;      
+        (Items[i] as TSVGText).InternalDraw(ACanvas2d,AUnit, False,
+          computeBaseX,computeBaseY, computeDx,computeDy);
+end;        
 
 constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
