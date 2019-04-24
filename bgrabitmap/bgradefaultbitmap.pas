@@ -822,8 +822,8 @@ type
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); overload; override;
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); overload; override;
     procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); overload; override;
-    procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); overload; override;
-    function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true): TRect; overload; override;
+    procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255; APixelCenteredCoords: boolean = true); overload; override;
+    function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true; APixelCenteredCoords: boolean = true): TRect; overload; override;
     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
 
     procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
@@ -5181,7 +5181,7 @@ end;
   The output bounds correspond to the pixels that will be affected in the destination. }
 procedure TBGRADefaultBitmap.PutImageAffine(AMatrix: TAffineMatrix;
   Source: TBGRACustomBitmap; AOutputBounds: TRect;
-  AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte);
+  AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte; APixelCenteredCoords: boolean);
 var affine: TBGRAAffineBitmapTransform;
     sourceBounds: TRect;
 begin
@@ -5189,6 +5189,7 @@ begin
   IntersectRect(AOutputBounds,AOutputBounds,ClipRect);
   if IsRectEmpty(AOutputBounds) then exit;
 
+  if not APixelCenteredCoords then AMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
   if IsAffineRoughlyTranslation(AMatrix, rect(0,0,Source.Width,Source.Height)) then
   begin
     sourceBounds := AOutputBounds;
@@ -5206,7 +5207,7 @@ begin
 end;
 
 function TBGRADefaultBitmap.GetImageAffineBounds(AMatrix: TAffineMatrix;
-  ASourceBounds: TRect; AClipOutput: boolean): TRect;
+  ASourceBounds: TRect; AClipOutput: boolean; APixelCenteredCoords: boolean): TRect;
 const pointMargin = 0.5 - 1/512;
 
   procedure FirstPoint(pt: TPointF);
@@ -5229,6 +5230,8 @@ const pointMargin = 0.5 - 1/512;
 begin
   result := EmptyRect;
   if IsRectEmpty(ASourceBounds) then exit;
+
+  if not APixelCenteredCoords then AMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
   if IsAffineRoughlyTranslation(AMatrix,ASourceBounds) then
   begin
     result := ASourceBounds;
