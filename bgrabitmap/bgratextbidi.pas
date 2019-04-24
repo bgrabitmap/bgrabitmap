@@ -1718,10 +1718,12 @@ end;
 function TBidiTextLayout.GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean; AMergeBoxes: boolean; AVerticalClip: boolean): ArrayOfTPointF;
 var
   i: Integer;
+  m: TAffineMatrix;
 begin
-  result := GetUntransformedTextEnveloppe(AStartIndex,AEndIndex,APixelCenteredCoordinates,AMergeBoxes,AVerticalClip);
+  result := GetUntransformedTextEnveloppe(AStartIndex,AEndIndex,false,AMergeBoxes,AVerticalClip);
+  if APixelCenteredCoordinates then m := AffineMatrixTranslation(-0.5,0.5)*Matrix else m := Matrix;
   for i := 0 to high(result) do
-    result[i] := Matrix*result[i];
+    result[i] := m*result[i];
 end;
 
 function TBidiTextLayout.GetUntransformedTextEnveloppe(AStartIndex,
@@ -1965,7 +1967,7 @@ begin
 
   if APixelCenteredCoordinates then
     for i := 0 to high(vertResult) do
-      vertResult[i].box.Offset(0.5, 0.5);
+      vertResult[i].box.Offset(-0.5, -0.5);
 
   if vertResult <> nil then
   begin
