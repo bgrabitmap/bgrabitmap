@@ -835,7 +835,7 @@ begin
         if IsEmptyPointF(Coords[j]) then
           ptsF[j] := EmptyPointF
         else
-          ptsF[j] := OriginalCoordToView(Coords[j]+PointF(0.5,0.5))-PointF(0.5,0.5);
+          ptsF[j] := OriginalCoordToView(Coords[j]);
       elemRect := RenderPolygon(ADest, ptsF, Closed, Style, BackColor);
     end;
     if not IsRectEmpty(elemRect) then
