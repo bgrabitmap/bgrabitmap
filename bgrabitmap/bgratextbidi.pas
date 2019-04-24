@@ -1902,9 +1902,9 @@ var
 
           lineStartCaret := GetBrokenLineUntransformedStartCaret(brokenLineIndex);
           if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
-            AppendHorizResult(lineStartCaret.Top,PartStartCaret[i].Top,PartStartCaret[i].Bottom,lineStartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex])
+            AppendHorizResult(lineStartCaret.Top,GetUntransformedPartStartCaret(i).Top,GetUntransformedPartStartCaret(i).Bottom,lineStartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex])
           else
-            AppendHorizResult(lineStartCaret.Top,PartEndCaret[i].Top,PartEndCaret[i].Bottom,lineStartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex]);
+            AppendHorizResult(lineStartCaret.Top,GetUntransformedPartEndCaret(i).Top,GetUntransformedPartEndCaret(i).Bottom,lineStartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex]);
         end;
 
         //text parts
