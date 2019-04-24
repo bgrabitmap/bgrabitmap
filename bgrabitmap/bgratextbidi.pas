@@ -1431,11 +1431,13 @@ end;
 procedure TBidiTextLayout.InternalDrawText(ADest: TBGRACustomBitmap);
 var
   i: Integer;
+  b: TRect;
 begin
   NeedLayout;
   for i := 0 to FPartCount-1 do
   begin
-    if (AvailableHeight<>EmptySingle) and (FPart[i].rectF.Top >= AvailableHeight) then continue;
+    b := PartAffineBox[i].RectBounds;
+    if not b.IntersectsWith(ADest.ClipRect) then continue;
     with (Matrix*(FPart[i].rectF.TopLeft + FPart[i].posCorrection)) do
       TextOutBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
   end;
