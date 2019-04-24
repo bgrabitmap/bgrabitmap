@@ -586,13 +586,11 @@ begin
         tempBmp.Canvas.Font.Height := Font.Height;
         actualAntialiasingLevel:= 1;
       end;
-      Result.cx := 0;
-      Result.cy := 0;
-      tempBmp.Canvas.Font.GetTextSize(sUTF8, Result.cx, Result.cy);
+      result := tempBmp.Canvas.TextExtent(sUTF8);
       if Font.Orientation <> 0 then
       begin
         tempBmp.Canvas.Font.Orientation:= 0;
-        extraVerticalMarginDueToRotation := result.cy - tempBmp.Canvas.Font.GetTextHeight(sUTF8);
+        extraVerticalMarginDueToRotation := result.cy - tempBmp.Canvas.TextHeight(sUTF8);
       end;
     except
       on ex: exception do
