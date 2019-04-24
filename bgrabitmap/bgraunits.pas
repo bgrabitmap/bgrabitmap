@@ -37,6 +37,8 @@ type
 
   TCSSUnitConverter = class
   protected
+    fCurrFontSize: single;//(pixel)
+    function GetRootFontSize: single;
     function GetDefaultUnitHeight: TFloatWithCSSUnit; virtual;
     function GetDefaultUnitWidth: TFloatWithCSSUnit; virtual;
     function GetDpiScaleTransform: string;
@@ -52,6 +54,7 @@ type
     property DefaultUnitWidth: TFloatWithCSSUnit read GetDefaultUnitWidth;
     property DefaultUnitHeight: TFloatWithCSSUnit read GetDefaultUnitHeight;
   public
+    constructor Create;
     function Convert(xy: single; sourceUnit, destUnit: TCSSUnit; dpi: single; containerSize: single = 0): single;
     function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0): single; overload;
     function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit; containerHeight: single = 0): single; overload;
@@ -74,6 +77,7 @@ type
     property DpiScaleX: single read GetDpiScaleX;
     property DpiScaleY: single read GetDpiScaleY;
     property DpiScaleTransform: string read GetDpiScaleTransform;
+    property currFontSize: single read fCurrFontSize write fCurrFontSize;
   end;
 
 implementation
@@ -95,6 +99,11 @@ end;
 
 { TCSSUnitConverter }
 
+function TCSSUnitConverter.GetRootFontSize: single;
+begin
+  result := 16;
+end; 
+
 function TCSSUnitConverter.GetDpiScaleX: single;
 begin
   result := 1;
@@ -107,7 +116,7 @@ end;
 
 function TCSSUnitConverter.GetFontEmHeight: TFloatWithCSSUnit;
 begin
-  result := FloatWithCSSUnit(0,cuCustom);
+  result := FloatWithCSSUnit(fCurrFontSize,cuPixel);
 end;
 
 function TCSSUnitConverter.GetFontXHeight: TFloatWithCSSUnit;
@@ -468,6 +477,13 @@ begin
     end;
   end;
 end;
+
+constructor TCSSUnitConverter.Create;
+begin
+  inherited;
+
+  fCurrFontSize:= GetRootFontSize;
+end;  
 
 initialization
 
