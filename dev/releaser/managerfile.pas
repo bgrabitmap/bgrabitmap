@@ -46,16 +46,18 @@ begin
 end;
 
 function TManagerFile.GetPackageUpdateList: TJSONArray;
-const packagePath = 'UpdateLazPackages';
+const packagePath1 = 'UpdateLazPackages';
+      packagePath2 = 'UpdatePackageFiles';
 var
   node: TJSONData;
 begin
-  node := FRoot.FindPath(packagePath);
+  node := FRoot.FindPath(packagePath1);
+  if node = nil then node := FRoot.FindPath(packagePath2);
   if node <> nil then result := node as TJSONArray
   else
   begin
     result := TJSONArray.Create;
-    FRoot.Add(packagePath, result);
+    FRoot.Add(packagePath1, result);
   end;
 end;
 
