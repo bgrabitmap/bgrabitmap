@@ -177,6 +177,11 @@ begin
     begin
       for i := 0 to objs.Count-1 do
         objs[i].UpdateVersion(newVer);
+    end else
+    begin
+      for i := 0 to objs.Count-1 do
+        if objs[i] is TConstFile then  //constants are loosely checked
+          objs[i].UpdateVersion(newVer);
     end;
 
     for i := 0 to objs.Count-1 do
