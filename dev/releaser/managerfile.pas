@@ -150,6 +150,8 @@ begin
       packageEntry.Integers['InternalVersion'] := 1;
       packageEntry.Strings['Name'] := name;
       packageEntry.Strings['Version'] := VersionToStr(package.GetVersion, true);
+      updateList.Add(packageEntry);
+      FPackages.Add(package);
     end else
       for i := 0 to updateList.Count-1 do
       begin
