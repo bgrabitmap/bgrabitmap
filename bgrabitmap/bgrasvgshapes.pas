@@ -468,7 +468,46 @@ type
        read GetPatternContentUnits write SetPatternContentUnits;
       property patternTransform: string read GetPatternTransform write SetPatternTransform;
       property viewBox: TSVGViewBox read GetViewBox write SetViewBox;
-  end;                 
+  end;
+  
+  { TSVGMarker }
+
+  TSVGMarker = class(TSVGElement)
+    private
+      function GetExternalResourcesRequired: boolean;
+      function GetViewBox: TSVGViewBox;
+      function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
+      function GetRefX: TFloatWithCSSUnit;
+      function GetRefY: TFloatWithCSSUnit;
+      function GetWidth: TFloatWithCSSUnit;
+      function GetHeight: TFloatWithCSSUnit;
+      function GetMarkerUnits: TSVGMarkerUnits;
+      function GetOrient: TSVGOrient;
+      procedure SetExternalResourcesRequired(AValue: boolean);
+      procedure SetViewBox(AValue: TSVGViewBox);
+      procedure SetPreserveAspectRatio(AValue: TSVGPreserveAspectRatio);
+      procedure SetRefX(AValue: TFloatWithCSSUnit);
+      procedure SetRefY(AValue: TFloatWithCSSUnit);
+      procedure SetWidth(AValue: TFloatWithCSSUnit);
+      procedure SetHeight(AValue: TFloatWithCSSUnit);
+      procedure SetMarkerUnits(AValue: TSVGMarkerUnits);
+      procedure SetOrient(AValue: TSVGOrient);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property externalResourcesRequired: boolean
+       read GetExternalResourcesRequired write SetExternalResourcesRequired;
+      property viewBox: TSVGViewBox read GetViewBox write SetViewBox;
+      property preserveAspectRatio: TSVGPreserveAspectRatio
+       read GetPreserveAspectRatio write SetPreserveAspectRatio;
+      property refX: TFloatWithCSSUnit read GetRefX write SetRefX;
+      property refY: TFloatWithCSSUnit read GetRefY write SetRefY;
+      property width: TFloatWithCSSUnit read GetWidth write SetWidth;
+      property height: TFloatWithCSSUnit read GetHeight write SetHeight;
+      property markerUnits: TSVGMarkerUnits read GetMarkerUnits write SetMarkerUnits;
+      property orient: TSVGOrient read GetOrient write SetOrient;
+  end;    
   
   TConvMethod = (cmNone,cmHoriz,cmVertical,cmOrtho);
   
@@ -1859,6 +1898,144 @@ constructor TSVGPattern.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverte
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'pattern',AUnits);
+end;
+
+{ TSVGMarker }
+
+function TSVGMarker.GetExternalResourcesRequired: boolean;
+begin
+  if Attribute['externalResourcesRequired'] = 'true' then
+    result := true
+  else
+    result := false;
+end;
+
+function TSVGMarker.GetViewBox: TSVGViewBox;
+begin
+  result := TSVGViewBox.Parse(Attribute['viewBox']);
+end;
+
+function TSVGMarker.GetPreserveAspectRatio: TSVGPreserveAspectRatio;
+begin
+  result := TSVGPreserveAspectRatio.Parse(Attribute['preserveAspectRatio','xMidYMid']);
+end;
+
+function TSVGMarker.GetRefX: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnit['refX'];
+end;
+
+function TSVGMarker.GetRefY: TFloatWithCSSUnit;
+begin
+  result := VerticalAttributeWithUnit['refY'];
+end;
+
+function TSVGMarker.GetWidth: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnit['width'];
+end;
+
+function TSVGMarker.GetHeight: TFloatWithCSSUnit;
+begin
+  result := VerticalAttributeWithUnit['height'];
+end;
+
+function TSVGMarker.GetMarkerUnits: TSVGMarkerUnits;
+begin
+  if Attribute['markerUnits','strokeWidth'] = 'strokeWidth' then
+    result := smuStrokeWidth
+  else
+    result := smuUserSpaceOnUse;
+end;
+
+function TSVGMarker.GetOrient: TSVGOrient;
+var
+  err: integer;
+  s: string;
+begin
+  s := Attribute['orient','0'];
+  result.angle := 0;
+  if s = 'auto' then
+    result.auto := soaAuto
+  else if s = 'auto-start-reverse' then
+    result.auto := soaAutoReverse
+  else
+  begin
+    result.auto := soaNone;
+    Val(s, result.angle, err);
+    if err <> 0 then
+      raise Exception('conversion error: '+IntToStr(err)+#13+'"'+s+'"');
+  end;
+end;
+
+procedure TSVGMarker.SetExternalResourcesRequired(AValue: boolean);
+begin
+  if AValue then
+    Attribute['ExternalResourcesRequired'] := 'true'
+  else
+    Attribute['ExternalResourcesRequired'] := 'false';
+end;
+
+procedure TSVGMarker.SetViewBox(AValue: TSVGViewBox);
+begin
+  Attribute['viewBox'] := AValue.ToString;
+end;
+
+procedure TSVGMarker.SetPreserveAspectRatio(AValue: TSVGPreserveAspectRatio);
+begin
+  Attribute['preserveAspectRatio'] := AValue.ToString;
+end;
+
+procedure TSVGMarker.SetRefX(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['refX'] := AValue;
+end;
+
+procedure TSVGMarker.SetRefY(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['refY'] := AValue;
+end;
+
+procedure TSVGMarker.SetWidth(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['width'] := AValue;
+end;
+
+procedure TSVGMarker.SetHeight(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['height'] := AValue;
+end;
+
+procedure TSVGMarker.SetMarkerUnits(AValue: TSVGMarkerUnits);
+begin
+  if AValue = smuStrokeWidth then
+    Attribute['markerUnits'] := 'strokeWidth'
+  else
+    Attribute['markerUnits'] := 'useSpaceOnUse';
+end;
+
+procedure TSVGMarker.SetOrient(AValue: TSVGOrient);
+var
+  s: string;
+begin
+  if AValue.auto = soaAuto then
+    s := 'auto'
+  else if AValue.auto = soaAutoReverse then
+    s := 'auto-start-reverse'
+  else
+    s := FloatToStr(AValue.angle);
+  Attribute['orient'] := s;
+end;
+
+procedure TSVGMarker.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  //todo
+end;
+
+constructor TSVGMarker.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'marker',AUnits);
 end;
 
 { TSVGGroup }
