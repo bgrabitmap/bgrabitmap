@@ -445,7 +445,30 @@ type
       property preserveAspectRatio: TSVGPreserveAspectRatio
        read GetPreserveAspectRatio write SetPreserveAspectRatio;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
-  end;          
+  end;   
+  
+  { TSVGPattern }
+
+  TSVGPattern = class(TSVGImage)
+    private
+      function GetPatternUnits: TSVGPatternUnits;
+      function GetPatternContentUnits: TSVGPatternContentUnits;
+      function GetPatternTransform: string;
+      function GetViewBox: TSVGViewBox;
+      procedure SetPatternUnits(AValue: TSVGPatternUnits);
+      procedure SetPatternContentUnits(AValue: TSVGPatternContentUnits);
+      procedure SetPatternTransform(AValue: string);
+      procedure SetViewBox(AValue: TSVGViewBox);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property patternUnits: TSVGPatternUnits read GetPatternUnits write SetPatternUnits;
+      property patternContentUnits: TSVGPatternContentUnits
+       read GetPatternContentUnits write SetPatternContentUnits;
+      property patternTransform: string read GetPatternTransform write SetPatternTransform;
+      property viewBox: TSVGViewBox read GetViewBox write SetViewBox;
+  end;                 
   
   TConvMethod = (cmNone,cmHoriz,cmVertical,cmOrtho);
   
@@ -1771,7 +1794,72 @@ constructor TSVGImage.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'image',AUnits);
-end;      
+end; 
+
+{ TSVGPattern }
+
+function TSVGPattern.GetPatternUnits: TSVGPatternUnits;
+begin
+  if Attribute['patternUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
+    result := spuUserSpaceOnUse
+  else
+    result := spuObjectBoundingBox;
+end;
+
+function TSVGPattern.GetPatternContentUnits: TSVGPatternContentUnits;
+begin
+  if Attribute['patternContentUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
+    result := spcuUserSpaceOnUse
+  else
+    result := spcuObjectBoundingBox;
+end;
+
+function TSVGPattern.GetPatternTransform: string;
+begin
+  result := Attribute['patternTransform'];
+end;
+
+function TSVGPattern.GetViewBox: TSVGViewBox;
+begin
+  result := TSVGViewBox.Parse(Attribute['viewBox']);
+end;
+
+procedure TSVGPattern.SetPatternUnits(AValue: TSVGPatternUnits);
+begin
+  if AValue = spuUserSpaceOnUse then
+    Attribute['patternUnits'] := 'userSpaceOnUse'
+  else
+    Attribute['patternUnits'] := 'objectBoundingBox';
+end;
+
+procedure TSVGPattern.SetPatternContentUnits(AValue: TSVGPatternContentUnits);
+begin
+  if AValue = spcuUserSpaceOnUse then
+    Attribute['patternContentUnits'] := 'userSpaceOnUse'
+  else
+    Attribute['patternContentUnits'] := 'objectBoundingBox';
+end;
+
+procedure TSVGPattern.SetPatternTransform(AValue: string);
+begin
+  Attribute['patternTransform'] := AValue;
+end;
+
+procedure TSVGPattern.SetViewBox(AValue: TSVGViewBox);
+begin
+  Attribute['viewBox'] := AValue.ToString;
+end;
+
+procedure TSVGPattern.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  //todo
+end;
+
+constructor TSVGPattern.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'pattern',AUnits);
+end;
 
 { TSVGGroup }
 
