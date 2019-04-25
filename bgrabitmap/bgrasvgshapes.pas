@@ -250,8 +250,8 @@ type
       procedure SetTextLength(AValue: TFloatWithCSSUnit);
       procedure SetLengthAdjust(AValue: TSVGLengthAdjust);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
-        const initRequired: Boolean; var computeBaseX,computeBaseY, computeDx,computeDy: single); overload;
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit; const initRequired: Boolean;
+        var computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize: single); overload;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override; overload;
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
@@ -1123,8 +1123,8 @@ begin
   //todo
   //(note: solution that does not yet support all the parameters)
   
-  if initRequired then
-    Units.currFontSize:= Units.ConvertHeight(fontSize,AUnit).value;
+  computeTextSize:= Units.ConvertHeight(fontSize,AUnit).value;
+  Units.currFontSize:= computeTextSize;
 
   ax := Units.ConvertWidth(x,AUnit);
   ay := Units.ConvertHeight(y,AUnit);
@@ -1191,7 +1191,6 @@ begin
     with ACanvas2d.measureText(text) do
     begin
       computeBaseX += width;
-      //computeBaseY += height;
 
       if Assigned(GradientElement) then
         InitializeGradient(ACanvas2d, PointF(vx,vy),width,height,AUnit);
@@ -1227,22 +1226,24 @@ procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
   i: integer;
   computeBaseX,computeBaseY,
-  computeDx,computeDy: single;
+  computeDx,computeDy,
+  computeTextSize: single;
 begin
   computeBaseX:= 0;
   computeBaseY:= 0;
   computeDx:= 0;
   computeDy:= 0;
+  computeTextSize:= 0;
 
   InternalDraw(ACanvas2d,AUnit, True,
-    computeBaseX,computeBaseY, computeDx,computeDy);
+    computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
 
   with DataChildList do
     for i:= 0 to Count-1 do
       if Items[i] is TSVGText then
         (Items[i] as TSVGText).InternalDraw(ACanvas2d,AUnit, False,
-          computeBaseX,computeBaseY, computeDx,computeDy);
-end;        
+          computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
+end;      
 
 constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
