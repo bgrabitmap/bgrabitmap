@@ -479,8 +479,8 @@ type
       function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
       function GetRefX: TFloatWithCSSUnit;
       function GetRefY: TFloatWithCSSUnit;
-      function GetWidth: TFloatWithCSSUnit;
-      function GetHeight: TFloatWithCSSUnit;
+      function GetMarkerWidth: TFloatWithCSSUnit;
+      function GetMarkerHeight: TFloatWithCSSUnit;
       function GetMarkerUnits: TSVGMarkerUnits;
       function GetOrient: TSVGOrient;
       procedure SetExternalResourcesRequired(AValue: boolean);
@@ -488,8 +488,8 @@ type
       procedure SetPreserveAspectRatio(AValue: TSVGPreserveAspectRatio);
       procedure SetRefX(AValue: TFloatWithCSSUnit);
       procedure SetRefY(AValue: TFloatWithCSSUnit);
-      procedure SetWidth(AValue: TFloatWithCSSUnit);
-      procedure SetHeight(AValue: TFloatWithCSSUnit);
+      procedure SetMarkerWidth(AValue: TFloatWithCSSUnit);
+      procedure SetMarkerHeight(AValue: TFloatWithCSSUnit);
       procedure SetMarkerUnits(AValue: TSVGMarkerUnits);
       procedure SetOrient(AValue: TSVGOrient);
     protected
@@ -503,8 +503,8 @@ type
        read GetPreserveAspectRatio write SetPreserveAspectRatio;
       property refX: TFloatWithCSSUnit read GetRefX write SetRefX;
       property refY: TFloatWithCSSUnit read GetRefY write SetRefY;
-      property width: TFloatWithCSSUnit read GetWidth write SetWidth;
-      property height: TFloatWithCSSUnit read GetHeight write SetHeight;
+      property markerWidth: TFloatWithCSSUnit read GetMarkerWidth write SetMarkerWidth;
+      property markerHeight: TFloatWithCSSUnit read GetMarkerHeight write SetMarkerHeight;
       property markerUnits: TSVGMarkerUnits read GetMarkerUnits write SetMarkerUnits;
       property orient: TSVGOrient read GetOrient write SetOrient;
   end;
@@ -1975,15 +1975,15 @@ begin
   result := VerticalAttributeWithUnit['refY'];
 end;
 
-function TSVGMarker.GetWidth: TFloatWithCSSUnit;
+function TSVGMarker.GetMarkerWidth: TFloatWithCSSUnit;
 begin
-  result := HorizAttributeWithUnit['width'];
+  result := HorizAttributeWithUnit['markerWidth'];
 end;
 
-function TSVGMarker.GetHeight: TFloatWithCSSUnit;
+function TSVGMarker.GetMarkerHeight: TFloatWithCSSUnit;
 begin
-  result := VerticalAttributeWithUnit['height'];
-end;
+  result := VerticalAttributeWithUnit['markerHeight'];
+end;  
 
 function TSVGMarker.GetMarkerUnits: TSVGMarkerUnits;
 begin
@@ -2041,15 +2041,15 @@ begin
   VerticalAttributeWithUnit['refY'] := AValue;
 end;
 
-procedure TSVGMarker.SetWidth(AValue: TFloatWithCSSUnit);
+procedure TSVGMarker.SetMarkerWidth(AValue: TFloatWithCSSUnit);
 begin
-  HorizAttributeWithUnit['width'] := AValue;
+  HorizAttributeWithUnit['markerWidth'] := AValue;
 end;
 
-procedure TSVGMarker.SetHeight(AValue: TFloatWithCSSUnit);
+procedure TSVGMarker.SetMarkerHeight(AValue: TFloatWithCSSUnit);
 begin
-  VerticalAttributeWithUnit['height'] := AValue;
-end;
+  VerticalAttributeWithUnit['markerHeight'] := AValue;
+end;      
 
 procedure TSVGMarker.SetMarkerUnits(AValue: TSVGMarkerUnits);
 begin
