@@ -94,6 +94,18 @@ type
      pos   : integer;
   end;
   ArrayOfTStyleAttribute = array of TStyleAttribute;
+  
+  { TSVGViewBox }
+
+  TSVGViewBox = record
+    min, size: TPointF;
+    function ToString: string;
+    class function Parse(AValue: string): TSVGViewBox; static;
+    class function DefaultValue: TSVGViewBox; static;
+  end;
+  TSVGSize = record
+    width, height: TFloatWithCSSUnit;
+  end;
 
   { TSVGPreserveAspectRatio }
 
@@ -382,6 +394,54 @@ type
 implementation
 
 uses BGRASVGShapes;
+
+{ TSVGViewBox }
+
+function TSVGViewBox.ToString: string;
+begin
+  result :=
+    TCSSUnitConverter.formatValue(min.x)+' '+
+    TCSSUnitConverter.formatValue(min.y)+' '+
+    TCSSUnitConverter.formatValue(size.x)+' '+
+    TCSSUnitConverter.formatValue(size.y);
+end;
+
+class function TSVGViewBox.Parse(AValue: string): TSVGViewBox;
+
+  function parseNextFloat: single;
+  var
+    idxSpace,{%H-}errPos: integer;
+  begin
+    idxSpace:= pos(' ',AValue);
+    if idxSpace <> 0 then
+      val(copy(AValue,1,idxSpace-1),result,errPos)
+    else
+      result := 0;
+    delete(AValue,1,idxSpace);
+    while (AValue <> '') and (AValue[1] = ' ') do delete(AValue,1,1);
+  end;
+
+begin
+  AValue := trim(AValue)+' ';
+  with result do
+  begin
+    min.x := parseNextFloat;
+    min.y := parseNextFloat;
+    size.x := parseNextFloat;
+    size.y := parseNextFloat;
+  end;
+end;
+
+class function TSVGViewBox.DefaultValue: TSVGViewBox;
+begin
+ with result do
+ begin
+   min.x := 0;
+   min.y := 0;
+   size.x := 0;
+   size.y := 0;
+ end;
+end;     
 
 { TSVGPreserveAspectRatio }
 
