@@ -42,6 +42,50 @@ type
      stdRtl
    );
    
+  TSVGClipPathUnits = (
+     scpuUserSpaceOnUse,
+     scpuObjectBoundingBox
+   );
+
+  TSVGRenderingIntent = (
+     sriAuto,
+     sriPerceptual,
+     sriRelativeColorimetric,
+     sriSaturation,
+     sriAbsoluteColorimetric
+   );
+
+  TSVGPatternUnits = (
+     spuUserSpaceOnUse,
+     spuObjectBoundingBox
+   );
+
+  TSVGPatternContentUnits = (
+     spcuUserSpaceOnUse,
+     spcuObjectBoundingBox
+   );
+
+  TSVGMarkerUnits = (
+     smuStrokeWidth,
+     smuUserSpaceOnUse
+   );
+
+  TSVGOrientAuto = (soaNone,soaAuto,soaAutoReverse);
+  TSVGOrient = record
+    auto: TSVGOrientAuto;
+    angle: TSVGNumber;
+  end;
+
+  TSVGMaskUnits = (
+     smkuUserSpaceOnUse,
+     smkuObjectBoundingBox
+   );
+
+  TSVGMaskContentUnits = (
+     smcuUserSpaceOnUse,
+     smcuObjectBoundingBox
+   );                 
+   
   TFindStyleState = (fssNotSearched,
                      fssNotFound,
                      fssFind);
