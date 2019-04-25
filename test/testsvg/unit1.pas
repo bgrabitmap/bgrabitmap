@@ -370,6 +370,7 @@ begin
  SaveDialog1.Filter:= 'svg|*.svg';
  if SaveDialog1.Execute then
   try
+   path:= SaveDialog1.FileName;
    if FileExists(path) then
     if MessageDlg('', s_file_overwrite, mtConfirmation,
        [mbYes, mbNo, mbIgnore],0) <> mrYes then
