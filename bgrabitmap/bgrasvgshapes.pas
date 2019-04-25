@@ -375,6 +375,23 @@ type
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
   end;
   
+  { TSVGClipPath }
+
+  TSVGClipPath = class(TSVGElement)
+    private
+      function GetExternalResourcesRequired: boolean;
+      function GetClipPathUnits: TSVGClipPathUnits;
+      procedure SetExternalResourcesRequired(AValue: boolean);
+      procedure SetClipPathUnits(AValue: TSVGClipPathUnits);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property externalResourcesRequired: boolean
+       read GetExternalResourcesRequired write SetExternalResourcesRequired;
+      property clipPathUnits: TSVGClipPathUnits read GetClipPathUnits write SetClipPathUnits;
+  end;            
+  
   TConvMethod = (cmNone,cmHoriz,cmVertical,cmOrtho);
   
   { TSVGGradient } 
@@ -1492,6 +1509,51 @@ begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'glyphref',AUnits);
 end;
+
+{ TSVGClipPath }
+
+function TSVGClipPath.GetExternalResourcesRequired: boolean;
+begin
+  if Attribute['externalResourcesRequired'] = 'true' then
+    result := true
+  else
+    result := false;
+end;
+
+function TSVGClipPath.GetClipPathUnits: TSVGClipPathUnits;
+begin
+  if Attribute['clipPathUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
+    result := scpuUserSpaceOnUse
+  else
+    result := scpuObjectBoundingBox;
+end;
+
+procedure TSVGClipPath.SetExternalResourcesRequired(AValue: boolean);
+begin
+  if AValue then
+    Attribute['ExternalResourcesRequired'] := 'true'
+  else
+    Attribute['ExternalResourcesRequired'] := 'false';
+end;
+
+procedure TSVGClipPath.SetClipPathUnits(AValue: TSVGClipPathUnits);
+begin
+  if AValue = scpuUserSpaceOnUse then
+    Attribute['clipPathUnits'] := 'userSpaceOnUse'
+  else
+    Attribute['clipPathUnits'] := 'objectBoundingBox';
+end;
+
+procedure TSVGClipPath.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  //todo
+end;
+
+constructor TSVGClipPath.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'clippath',AUnits);
+end;           
 
 { TSVGGroup }
 
