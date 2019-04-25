@@ -69,7 +69,7 @@ begin
       inc(p);
       while (p <= length(s)) and (s[p] in[#0..#32]) do inc(p);
       AValueStart := p;
-      while (p <= length(s)) and not (s[p] in[#0..#32,';']) do inc(p);
+      while (p <= length(s)) and (s[p] in['0'..'9']) do inc(p);
       AValueLength:= p-AValueStart;
       exit;
     end;
