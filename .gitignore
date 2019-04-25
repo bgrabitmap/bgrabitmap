@@ -14,3 +14,5 @@ test/testglyph/testglyph
 test/rationalbezier/rationalbezier
 
 test/testbiditext2/project1
+
+dev/releaser/releaser

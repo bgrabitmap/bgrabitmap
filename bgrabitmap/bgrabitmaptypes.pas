@@ -35,6 +35,12 @@ uses
   FPImage, FPImgCanv{$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
   BGRAMultiFileType;
 
+
+const
+  BGRABitmapVersion = 9090300;
+
+  function BGRABitmapVersionStr: string;
+
 type
   TMultiFileContainer = BGRAMultiFileType.TMultiFileContainer;
   Int32or64 = {$IFDEF CPU64}Int64{$ELSE}LongInt{$ENDIF};
@@ -521,6 +527,24 @@ uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
   FPReadXwd, FPReadXPM,
   FPWriteTiff, FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM;
+
+function BGRABitmapVersionStr: string;
+var numbers: TStringList;
+  i,remaining: cardinal;
+begin
+  numbers := TStringList.Create;
+  remaining := BGRABitmapVersion;
+  for i := 1 to 4 do
+  begin
+    numbers.Insert(0, IntToStr(remaining mod 100));
+    remaining := remaining div 100;
+  end;
+  while (numbers.Count > 1) and (numbers[numbers.Count-1]='0') do
+    numbers.Delete(numbers.Count-1);
+  numbers.Delimiter:= '.';
+  result := numbers.DelimitedText;
+  numbers.Free;
+end;
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I geometrytypes.inc}
