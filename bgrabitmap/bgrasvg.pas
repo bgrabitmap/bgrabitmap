@@ -24,12 +24,6 @@ const
   cuPercent = BGRAUnits.cuPercent;
 
 type
-  TSVGViewBox = record
-    min, size: TPointF;
-  end;
-  TSVGSize = record
-    width, height: TFloatWithCSSUnit;
-  end;
 
   { TSVGUnits }
 
@@ -371,27 +365,8 @@ begin
 end;
 
 procedure TSVGUnits.Recompute;
-var viewBoxStr: string;
-
-  function parseNextFloat: single;
-  var
-    idxSpace,{%H-}errPos: integer;
-  begin
-    idxSpace:= pos(' ',viewBoxStr);
-    if idxSpace <> 0 then
-      val(copy(viewBoxStr,1,idxSpace-1),result,errPos)
-    else
-      result := 0;
-    delete(viewBoxStr,1,idxSpace);
-    while (viewBoxStr <> '') and (viewBoxStr[1] = ' ') do delete(viewBoxStr,1,1);
-  end;
-
 begin
-  viewBoxStr := trim(FSvg.GetAttribute('viewBox'))+' ';
-  FViewBox.min.x := parseNextFloat;
-  FViewBox.min.y := parseNextFloat;
-  FViewBox.size.x := parseNextFloat;
-  FViewBox.size.y := parseNextFloat;
+  FViewBox:= TSVGViewBox.Parse( FSvg.GetAttribute('viewBox') );
 
   FOriginalViewSize.width := parseValue(FSvg.GetAttribute('width'), FloatWithCSSUnit(FViewBox.size.x, cuPixel));
   if FOriginalViewSize.width.CSSUnit = cuCustom then FOriginalViewSize.width.CSSUnit := cuPixel;
