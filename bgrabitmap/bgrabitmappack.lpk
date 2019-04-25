@@ -513,7 +513,7 @@
       </Item120>
       <Item121>
         <Filename Value="bgraunicodetext.pas"/>
-        <UnitName Value="bgraunicodetext"/>
+        <UnitName Value="BGRAUnicodeText"/>
       </Item121>
     </Files>
     <RequiredPkgs Count="2">
