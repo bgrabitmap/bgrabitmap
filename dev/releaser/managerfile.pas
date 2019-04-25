@@ -240,7 +240,10 @@ begin
 
   if FNew or FChanged then
   begin
-    writeln('Updating manager file...');
+    if FNew then
+      writeln('Creating manager file...')
+    else
+      writeln('Updating manager file...');
     assignfile(t, FFilename);
     rewrite(t);
     write(t, FRoot.FormatJSON);
