@@ -390,6 +390,28 @@ type
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property clipPathUnits: TSVGClipPathUnits read GetClipPathUnits write SetClipPathUnits;
+  end;   
+  
+  { TSVGColorProfile }
+
+  TSVGColorProfile = class(TSVGElement)
+    private
+      function GetLocal: string;
+      function GetName: string;
+      function GetRenderingIntent: TSVGRenderingIntent;
+      function GetXlinkHref: string;
+      procedure SetLocal(AValue: string);
+      procedure SetName(AValue: string);
+      procedure SetRenderingIntent(AValue: TSVGRenderingIntent);
+      procedure SetXlinkHref(AValue: string);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property local: string read GetLocal write SetLocal;
+      property name: string read GetName write SetName;
+      property renderingIntent: TSVGRenderingIntent read GetRenderingIntent write SetRenderingIntent;
+      property xlinkHref: string read GetXlinkHref write SetXlinkHref;
   end;            
   
   TConvMethod = (cmNone,cmHoriz,cmVertical,cmOrtho);
@@ -1553,7 +1575,81 @@ constructor TSVGClipPath.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConvert
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'clippath',AUnits);
-end;           
+end; 
+
+{ TSVGColorProfile }
+
+function TSVGColorProfile.GetLocal: string;
+begin
+  result := Attribute['local'];
+end;
+
+function TSVGColorProfile.GetName: string;
+begin
+  result := Attribute['name'];
+end;
+
+function TSVGColorProfile.GetRenderingIntent: TSVGRenderingIntent;
+var
+  s: string;
+begin
+  s := Attribute['rendering-intent','auto'];
+  if s = 'auto' then
+    result := sriAuto
+  else if s = 'perceptual' then
+    result :=  sriPerceptual
+  else if s = 'relative-colorimetric' then
+    result := sriRelativeColorimetric
+  else if s = 'saturation' then
+    result := sriSaturation
+  else { 'absolute-colorimetric' }
+    result := sriAbsoluteColorimetric;
+end;
+
+function TSVGColorProfile.GetXlinkHref: string;
+begin
+  result := Attribute['xlink:href',''];
+end;
+
+procedure TSVGColorProfile.SetLocal(AValue: string);
+begin
+  Attribute['local'] := AValue;
+end;
+
+procedure TSVGColorProfile.SetName(AValue: string);
+begin
+  Attribute['name'] := AValue;
+end;
+
+procedure TSVGColorProfile.SetRenderingIntent(AValue: TSVGRenderingIntent);
+begin
+  if AValue = sriAuto then
+    Attribute['rendering-intent'] := 'auto'
+  else if AValue = sriPerceptual then
+    Attribute['rendering-intent'] := 'perceptual'
+  else if AValue = sriRelativeColorimetric then
+    Attribute['rendering-intent'] := 'relative-colorimetric'
+  else if AValue = sriSaturation then
+    Attribute['rendering-intent'] := 'saturation'
+  else { sriAbsoluteColorimetric }
+    Attribute['rendering-intent'] := 'absolute-colorimetric'
+end;
+
+procedure TSVGColorProfile.SetXlinkHref(AValue: string);
+begin
+  Attribute['xlink:href'] := AValue;
+end;
+
+procedure TSVGColorProfile.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  //todo
+end;
+
+constructor TSVGColorProfile.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'colorprofile',AUnits);
+end;          
 
 { TSVGGroup }
 
