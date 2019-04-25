@@ -507,7 +507,40 @@ type
       property height: TFloatWithCSSUnit read GetHeight write SetHeight;
       property markerUnits: TSVGMarkerUnits read GetMarkerUnits write SetMarkerUnits;
       property orient: TSVGOrient read GetOrient write SetOrient;
-  end;    
+  end;
+  
+  { TSVGMask }
+
+  TSVGMask = class(TSVGElement)
+    private
+      function GetExternalResourcesRequired: boolean;
+      function GetX: TFloatWithCSSUnit;
+      function GetY: TFloatWithCSSUnit;
+      function GetWidth: TFloatWithCSSUnit;
+      function GetHeight: TFloatWithCSSUnit;
+      function GetMaskUnits: TSVGMaskUnits;
+      function GetMaskContentUnits: TSVGMaskContentUnits;
+      procedure SetExternalResourcesRequired(AValue: boolean);
+      procedure SetX(AValue: TFloatWithCSSUnit);
+      procedure SetY(AValue: TFloatWithCSSUnit);
+      procedure SetWidth(AValue: TFloatWithCSSUnit);
+      procedure SetHeight(AValue: TFloatWithCSSUnit);
+      procedure SetMaskUnits(AValue: TSVGMaskUnits);
+      procedure SetMaskContentUnits(AValue: TSVGMaskContentUnits);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property externalResourcesRequired: boolean
+       read GetExternalResourcesRequired write SetExternalResourcesRequired;
+      property x: TFloatWithCSSUnit read GetX write SetX;
+      property y: TFloatWithCSSUnit read GetY write SetY;
+      property width: TFloatWithCSSUnit read GetWidth write SetWidth;
+      property height: TFloatWithCSSUnit read GetHeight write SetHeight;
+      property maskUnits: TSVGMaskUnits read GetMaskUnits write SetMaskUnits;
+      property maskContentUnits: TSVGMaskContentUnits
+       read GetMaskContentUnits write SetMaskContentUnits;
+  end;      
   
   TConvMethod = (cmNone,cmHoriz,cmVertical,cmOrtho);
   
@@ -2036,6 +2069,107 @@ constructor TSVGMarker.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'marker',AUnits);
+end;
+
+{ TSVGMask }
+
+function TSVGMask.GetExternalResourcesRequired: boolean;
+begin
+  if Attribute['externalResourcesRequired'] = 'true' then
+    result := true
+  else
+    result := false;
+end;
+
+function TSVGMask.GetX: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnit['x'];
+end;
+
+function TSVGMask.GetY: TFloatWithCSSUnit;
+begin
+  result := VerticalAttributeWithUnit['y'];
+end;
+
+function TSVGMask.GetWidth: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnit['width'];
+end;
+
+function TSVGMask.GetHeight: TFloatWithCSSUnit;
+begin
+  result := VerticalAttributeWithUnit['height'];
+end;
+
+function TSVGMask.GetMaskUnits: TSVGMaskUnits;
+begin
+  if Attribute['maskUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
+    result := smkuUserSpaceOnUse
+  else
+    result := smkuObjectBoundingBox;
+end;
+
+function TSVGMask.GetMaskContentUnits: TSVGMaskContentUnits;
+begin
+  if Attribute['maskContentUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
+    result := smcuUserSpaceOnUse
+  else
+    result := smcuObjectBoundingBox;
+end;
+
+procedure TSVGMask.SetExternalResourcesRequired(AValue: boolean);
+begin
+  if AValue then
+    Attribute['ExternalResourcesRequired'] := 'true'
+  else
+    Attribute['ExternalResourcesRequired'] := 'false';
+end;
+
+procedure TSVGMask.SetX(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['x'] := AValue;
+end;
+
+procedure TSVGMask.SetY(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['y'] := AValue;
+end;
+
+procedure TSVGMask.SetWidth(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['width'] := AValue;
+end;
+
+procedure TSVGMask.SetHeight(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['height'] := AValue;
+end;
+
+procedure TSVGMask.SetMaskUnits(AValue: TSVGMaskUnits);
+begin
+  if AValue = smkuUserSpaceOnUse then
+    Attribute['maskUnits'] := 'userSpaceOnUse'
+  else
+    Attribute['maskUnits'] := 'objectBoundingBox';
+end;
+
+procedure TSVGMask.SetMaskContentUnits(AValue: TSVGMaskContentUnits);
+begin
+  if AValue = smcuUserSpaceOnUse then
+    Attribute['maskContentUnits'] := 'userSpaceOnUse'
+  else
+    Attribute['maskContentUnits'] := 'objectBoundingBox';
+end;
+
+procedure TSVGMask.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  //todo
+end;
+
+constructor TSVGMask.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'mask',AUnits);
 end;
 
 { TSVGGroup }
