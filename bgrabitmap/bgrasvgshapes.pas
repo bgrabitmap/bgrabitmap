@@ -412,7 +412,40 @@ type
       property name: string read GetName write SetName;
       property renderingIntent: TSVGRenderingIntent read GetRenderingIntent write SetRenderingIntent;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
-  end;            
+  end;  
+  
+  { TSVGImage }
+
+  TSVGImage = class(TSVGElement)
+    private
+      function GetExternalResourcesRequired: boolean;
+      function GetX: TFloatWithCSSUnit;
+      function GetY: TFloatWithCSSUnit;
+      function GetWidth: TFloatWithCSSUnit;
+      function GetHeight: TFloatWithCSSUnit;
+      function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
+      function GetXlinkHref: string;
+      procedure SetExternalResourcesRequired(AValue: boolean);
+      procedure SetX(AValue: TFloatWithCSSUnit);
+      procedure SetY(AValue: TFloatWithCSSUnit);
+      procedure SetWidth(AValue: TFloatWithCSSUnit);
+      procedure SetHeight(AValue: TFloatWithCSSUnit);
+      procedure SetPreserveAspectRatio(AValue: TSVGPreserveAspectRatio);
+      procedure SetXlinkHref(AValue: string);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      property externalResourcesRequired: boolean
+       read GetExternalResourcesRequired write SetExternalResourcesRequired;
+      property x: TFloatWithCSSUnit read GetX write SetX;
+      property y: TFloatWithCSSUnit read GetY write SetY;
+      property width: TFloatWithCSSUnit read GetWidth write SetWidth;
+      property height: TFloatWithCSSUnit read GetHeight write SetHeight;
+      property preserveAspectRatio: TSVGPreserveAspectRatio
+       read GetPreserveAspectRatio write SetPreserveAspectRatio;
+      property xlinkHref: string read GetXlinkHref write SetXlinkHref;
+  end;          
   
   TConvMethod = (cmNone,cmHoriz,cmVertical,cmOrtho);
   
@@ -1649,7 +1682,96 @@ constructor TSVGColorProfile.Create(ADocument: TXMLDocument; AUnits: TCSSUnitCon
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'colorprofile',AUnits);
-end;          
+end;
+
+{ TSVGImage }
+
+function TSVGImage.GetExternalResourcesRequired: boolean;
+begin
+  if Attribute['externalResourcesRequired'] = 'true' then
+    result := true
+  else
+    result := false;
+end;
+
+function TSVGImage.GetX: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnit['x'];
+end;
+
+function TSVGImage.GetY: TFloatWithCSSUnit;
+begin
+  result := VerticalAttributeWithUnit['y'];
+end;
+
+function TSVGImage.GetWidth: TFloatWithCSSUnit;
+begin
+  result := HorizAttributeWithUnit['width'];
+end;
+
+function TSVGImage.GetHeight: TFloatWithCSSUnit;
+begin
+  result := VerticalAttributeWithUnit['height'];
+end;
+
+function TSVGImage.GetPreserveAspectRatio: TSVGPreserveAspectRatio;
+begin
+  result := TSVGPreserveAspectRatio.Parse(Attribute['preserveAspectRatio','xMidYMid']);
+end;
+
+function TSVGImage.GetXlinkHref: string;
+begin
+  result := Attribute['xlink:href',''];
+end;
+
+procedure TSVGImage.SetExternalResourcesRequired(AValue: boolean);
+begin
+  if AValue then
+    Attribute['ExternalResourcesRequired'] := 'true'
+  else
+    Attribute['ExternalResourcesRequired'] := 'false';
+end;
+
+procedure TSVGImage.SetX(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['x'] := AValue;
+end;
+
+procedure TSVGImage.SetY(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['y'] := AValue;
+end;
+
+procedure TSVGImage.SetWidth(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['width'] := AValue;
+end;
+
+procedure TSVGImage.SetHeight(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['height'] := AValue;
+end;
+
+procedure TSVGImage.SetPreserveAspectRatio(AValue: TSVGPreserveAspectRatio);
+begin
+  Attribute['preserveAspectRatio'] := AValue.ToString;
+end;
+
+procedure TSVGImage.SetXlinkHref(AValue: string);
+begin
+  Attribute['xlink:href'] := AValue;
+end;
+
+procedure TSVGImage.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  //todo
+end;
+
+constructor TSVGImage.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  Init(ADocument,'image',AUnits);
+end;      
 
 { TSVGGroup }
 
