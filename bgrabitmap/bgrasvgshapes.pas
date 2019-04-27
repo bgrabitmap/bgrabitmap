@@ -1415,11 +1415,10 @@ begin
   InternalDraw(ACanvas2d,AUnit, True,
     computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
 
-  with DataChildList do
-    for i:= 0 to Count-1 do
-      if Items[i] is TSVGText then
-        (Items[i] as TSVGText).InternalDraw(ACanvas2d,AUnit, False,
-          computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
+  for i:= 0 to FContent.ElementCount-1 do
+    if FContent.Element[i] is TSVGText then
+      (FContent.Element[i] as TSVGText).InternalDraw(ACanvas2d,AUnit, False,
+        computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
 end;      
 
 constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
