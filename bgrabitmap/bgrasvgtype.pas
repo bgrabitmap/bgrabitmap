@@ -42,9 +42,9 @@ type
      stdRtl
    );
    
-  TSVGClipPathUnits = (
-     scpuUserSpaceOnUse,
-     scpuObjectBoundingBox
+  TSVGObjectUnits = (
+     souUserSpaceOnUse,
+     souObjectBoundingBox
    );
 
   TSVGRenderingIntent = (
@@ -53,16 +53,6 @@ type
      sriRelativeColorimetric,
      sriSaturation,
      sriAbsoluteColorimetric
-   );
-
-  TSVGPatternUnits = (
-     spuUserSpaceOnUse,
-     spuObjectBoundingBox
-   );
-
-  TSVGPatternContentUnits = (
-     spcuUserSpaceOnUse,
-     spcuObjectBoundingBox
    );
 
   TSVGMarkerUnits = (
@@ -76,16 +66,6 @@ type
     angle: TSVGNumber;
   end;
 
-  TSVGMaskUnits = (
-     smkuUserSpaceOnUse,
-     smkuObjectBoundingBox
-   );
-
-  TSVGMaskContentUnits = (
-     smcuUserSpaceOnUse,
-     smcuObjectBoundingBox
-   );                 
-   
   TFindStyleState = (fssNotSearched,
                      fssNotFound,
                      fssFind);

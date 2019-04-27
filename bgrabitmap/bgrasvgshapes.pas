@@ -380,16 +380,16 @@ type
   TSVGClipPath = class(TSVGElement)
     private
       function GetExternalResourcesRequired: boolean;
-      function GetClipPathUnits: TSVGClipPathUnits;
+      function GetClipPathUnits: TSVGObjectUnits;
       procedure SetExternalResourcesRequired(AValue: boolean);
-      procedure SetClipPathUnits(AValue: TSVGClipPathUnits);
+      procedure SetClipPathUnits(AValue: TSVGObjectUnits);
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
-      property clipPathUnits: TSVGClipPathUnits read GetClipPathUnits write SetClipPathUnits;
+      property clipPathUnits: TSVGObjectUnits read GetClipPathUnits write SetClipPathUnits;
   end;   
   
   { TSVGColorProfile }
@@ -451,20 +451,20 @@ type
 
   TSVGPattern = class(TSVGImage)
     private
-      function GetPatternUnits: TSVGPatternUnits;
-      function GetPatternContentUnits: TSVGPatternContentUnits;
+      function GetPatternUnits: TSVGObjectUnits;
+      function GetPatternContentUnits: TSVGObjectUnits;
       function GetPatternTransform: string;
       function GetViewBox: TSVGViewBox;
-      procedure SetPatternUnits(AValue: TSVGPatternUnits);
-      procedure SetPatternContentUnits(AValue: TSVGPatternContentUnits);
+      procedure SetPatternUnits(AValue: TSVGObjectUnits);
+      procedure SetPatternContentUnits(AValue: TSVGObjectUnits);
       procedure SetPatternTransform(AValue: string);
       procedure SetViewBox(AValue: TSVGViewBox);
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
       constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
-      property patternUnits: TSVGPatternUnits read GetPatternUnits write SetPatternUnits;
-      property patternContentUnits: TSVGPatternContentUnits
+      property patternUnits: TSVGObjectUnits read GetPatternUnits write SetPatternUnits;
+      property patternContentUnits: TSVGObjectUnits
        read GetPatternContentUnits write SetPatternContentUnits;
       property patternTransform: string read GetPatternTransform write SetPatternTransform;
       property viewBox: TSVGViewBox read GetViewBox write SetViewBox;
@@ -518,15 +518,15 @@ type
       function GetY: TFloatWithCSSUnit;
       function GetWidth: TFloatWithCSSUnit;
       function GetHeight: TFloatWithCSSUnit;
-      function GetMaskUnits: TSVGMaskUnits;
-      function GetMaskContentUnits: TSVGMaskContentUnits;
+      function GetMaskUnits: TSVGObjectUnits;
+      function GetMaskContentUnits: TSVGObjectUnits;
       procedure SetExternalResourcesRequired(AValue: boolean);
       procedure SetX(AValue: TFloatWithCSSUnit);
       procedure SetY(AValue: TFloatWithCSSUnit);
       procedure SetWidth(AValue: TFloatWithCSSUnit);
       procedure SetHeight(AValue: TFloatWithCSSUnit);
-      procedure SetMaskUnits(AValue: TSVGMaskUnits);
-      procedure SetMaskContentUnits(AValue: TSVGMaskContentUnits);
+      procedure SetMaskUnits(AValue: TSVGObjectUnits);
+      procedure SetMaskContentUnits(AValue: TSVGObjectUnits);
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
@@ -537,8 +537,8 @@ type
       property y: TFloatWithCSSUnit read GetY write SetY;
       property width: TFloatWithCSSUnit read GetWidth write SetWidth;
       property height: TFloatWithCSSUnit read GetHeight write SetHeight;
-      property maskUnits: TSVGMaskUnits read GetMaskUnits write SetMaskUnits;
-      property maskContentUnits: TSVGMaskContentUnits
+      property maskUnits: TSVGObjectUnits read GetMaskUnits write SetMaskUnits;
+      property maskContentUnits: TSVGObjectUnits
        read GetMaskContentUnits write SetMaskContentUnits;
   end;      
   
@@ -1682,12 +1682,12 @@ begin
     result := false;
 end;
 
-function TSVGClipPath.GetClipPathUnits: TSVGClipPathUnits;
+function TSVGClipPath.GetClipPathUnits: TSVGObjectUnits;
 begin
   if Attribute['clipPathUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
-    result := scpuUserSpaceOnUse
+    result := souUserSpaceOnUse
   else
-    result := scpuObjectBoundingBox;
+    result := souObjectBoundingBox;
 end;
 
 procedure TSVGClipPath.SetExternalResourcesRequired(AValue: boolean);
@@ -1698,9 +1698,9 @@ begin
     Attribute['ExternalResourcesRequired'] := 'false';
 end;
 
-procedure TSVGClipPath.SetClipPathUnits(AValue: TSVGClipPathUnits);
+procedure TSVGClipPath.SetClipPathUnits(AValue: TSVGObjectUnits);
 begin
-  if AValue = scpuUserSpaceOnUse then
+  if AValue = souUserSpaceOnUse then
     Attribute['clipPathUnits'] := 'userSpaceOnUse'
   else
     Attribute['clipPathUnits'] := 'objectBoundingBox';
@@ -1882,20 +1882,20 @@ end;
 
 { TSVGPattern }
 
-function TSVGPattern.GetPatternUnits: TSVGPatternUnits;
+function TSVGPattern.GetPatternUnits: TSVGObjectUnits;
 begin
   if Attribute['patternUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
-    result := spuUserSpaceOnUse
+    result := souUserSpaceOnUse
   else
-    result := spuObjectBoundingBox;
+    result := souObjectBoundingBox;
 end;
 
-function TSVGPattern.GetPatternContentUnits: TSVGPatternContentUnits;
+function TSVGPattern.GetPatternContentUnits: TSVGObjectUnits;
 begin
   if Attribute['patternContentUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
-    result := spcuUserSpaceOnUse
+    result := souUserSpaceOnUse
   else
-    result := spcuObjectBoundingBox;
+    result := souObjectBoundingBox;
 end;
 
 function TSVGPattern.GetPatternTransform: string;
@@ -1908,17 +1908,17 @@ begin
   result := TSVGViewBox.Parse(Attribute['viewBox']);
 end;
 
-procedure TSVGPattern.SetPatternUnits(AValue: TSVGPatternUnits);
+procedure TSVGPattern.SetPatternUnits(AValue: TSVGObjectUnits);
 begin
-  if AValue = spuUserSpaceOnUse then
+  if AValue = souUserSpaceOnUse then
     Attribute['patternUnits'] := 'userSpaceOnUse'
   else
     Attribute['patternUnits'] := 'objectBoundingBox';
 end;
 
-procedure TSVGPattern.SetPatternContentUnits(AValue: TSVGPatternContentUnits);
+procedure TSVGPattern.SetPatternContentUnits(AValue: TSVGObjectUnits);
 begin
-  if AValue = spcuUserSpaceOnUse then
+  if AValue = souUserSpaceOnUse then
     Attribute['patternContentUnits'] := 'userSpaceOnUse'
   else
     Attribute['patternContentUnits'] := 'objectBoundingBox';
@@ -2113,20 +2113,20 @@ begin
   result := VerticalAttributeWithUnit['height'];
 end;
 
-function TSVGMask.GetMaskUnits: TSVGMaskUnits;
+function TSVGMask.GetMaskUnits: TSVGObjectUnits;
 begin
   if Attribute['maskUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
-    result := smkuUserSpaceOnUse
+    result := souUserSpaceOnUse
   else
-    result := smkuObjectBoundingBox;
+    result := souObjectBoundingBox;
 end;
 
-function TSVGMask.GetMaskContentUnits: TSVGMaskContentUnits;
+function TSVGMask.GetMaskContentUnits: TSVGObjectUnits;
 begin
   if Attribute['maskContentUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
-    result := smcuUserSpaceOnUse
+    result := souUserSpaceOnUse
   else
-    result := smcuObjectBoundingBox;
+    result := souObjectBoundingBox;
 end;
 
 procedure TSVGMask.SetExternalResourcesRequired(AValue: boolean);
@@ -2157,17 +2157,17 @@ begin
   VerticalAttributeWithUnit['height'] := AValue;
 end;
 
-procedure TSVGMask.SetMaskUnits(AValue: TSVGMaskUnits);
+procedure TSVGMask.SetMaskUnits(AValue: TSVGObjectUnits);
 begin
-  if AValue = smkuUserSpaceOnUse then
+  if AValue = souUserSpaceOnUse then
     Attribute['maskUnits'] := 'userSpaceOnUse'
   else
     Attribute['maskUnits'] := 'objectBoundingBox';
 end;
 
-procedure TSVGMask.SetMaskContentUnits(AValue: TSVGMaskContentUnits);
+procedure TSVGMask.SetMaskContentUnits(AValue: TSVGObjectUnits);
 begin
-  if AValue = smcuUserSpaceOnUse then
+  if AValue = souUserSpaceOnUse then
     Attribute['maskContentUnits'] := 'userSpaceOnUse'
   else
     Attribute['maskContentUnits'] := 'objectBoundingBox';
