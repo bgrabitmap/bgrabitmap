@@ -1270,7 +1270,7 @@ begin
 end;
 
 procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
-  const initRequired: Boolean; var computeBaseX,computeBaseY, computeDx,computeDy: single);
+  const initRequired: Boolean; var computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize: single);
 
   (*procedure InitTo(var a: ArrayOfTFloatWithCSSUnit; const AValue: single);
   begin
