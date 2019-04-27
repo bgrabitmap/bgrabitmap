@@ -1684,10 +1684,10 @@ end;
 
 function TSVGClipPath.GetClipPathUnits: TSVGObjectUnits;
 begin
-  if Attribute['clipPathUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
-    result := souUserSpaceOnUse
+  if Attribute['clipPathUnits'] = 'objectBoundingBox' then
+    result := souObjectBoundingBox
   else
-    result := souObjectBoundingBox;
+    result := souUserSpaceOnUse;
 end;
 
 procedure TSVGClipPath.SetExternalResourcesRequired(AValue: boolean);
@@ -1884,7 +1884,7 @@ end;
 
 function TSVGPattern.GetPatternUnits: TSVGObjectUnits;
 begin
-  if Attribute['patternUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
+  if Attribute['patternUnits'] = 'userSpaceOnUse' then
     result := souUserSpaceOnUse
   else
     result := souObjectBoundingBox;
@@ -1892,10 +1892,10 @@ end;
 
 function TSVGPattern.GetPatternContentUnits: TSVGObjectUnits;
 begin
-  if Attribute['patternContentUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
-    result := souUserSpaceOnUse
+  if Attribute['patternContentUnits'] = 'objectBoundingBox' then
+    result := souObjectBoundingBox
   else
-    result := souObjectBoundingBox;
+    result := souUserSpaceOnUse;
 end;
 
 function TSVGPattern.GetPatternTransform: string;
@@ -2115,18 +2115,18 @@ end;
 
 function TSVGMask.GetMaskUnits: TSVGObjectUnits;
 begin
-  if Attribute['maskUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
-    result := souUserSpaceOnUse
+  if Attribute['maskUnits'] = 'objectBoundingBox' then
+    result := souObjectBoundingBox
   else
-    result := souObjectBoundingBox;
+    result := souUserSpaceOnUse;
 end;
 
 function TSVGMask.GetMaskContentUnits: TSVGObjectUnits;
 begin
-  if Attribute['maskContentUnits','userSpaceOnUse'] = 'userSpaceOnUse' then
-    result := souUserSpaceOnUse
+  if Attribute['maskContentUnits'] = 'objectBoundingBox' then
+    result := souObjectBoundingBox
   else
-    result := souObjectBoundingBox;
+    result := souUserSpaceOnUse;
 end;
 
 procedure TSVGMask.SetExternalResourcesRequired(AValue: boolean);
