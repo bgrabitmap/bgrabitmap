@@ -1125,7 +1125,7 @@ var
   i: Integer;
   refText: TSVGText;
 begin
-  if FInGetElementText then exit; //avoid reentrance
+  if FInGetElementText then exit(''); //avoid reentrance
   FInGetElementText := true;
   for i := 0 to FContent.ElementCount-1 do
     if FContent.Element[i] is TSVGTRef then
