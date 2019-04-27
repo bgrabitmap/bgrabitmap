@@ -551,11 +551,10 @@ type
       FContent: TSVGContent;
       function GetGradientMatrix(AUnit: TCSSUnit): TAffineMatrix;
       function GetGradientTransform: string;
-      function GetGradientUnits: string;
+      function GetGradientUnits: TSVGObjectUnits;
       function GetHRef: string;
-      function GetUseObjectBoundingBox: boolean;
       procedure SetGradientTransform(AValue: string);
-      procedure SetGradientUnits(AValue: string);
+      procedure SetGradientUnits(AValue: TSVGObjectUnits);
       procedure SetHRef(AValue: string);
     protected
       InheritedGradients: TSVGElementList;//(for HRef)
@@ -572,9 +571,8 @@ type
       procedure ScanInheritedGradients(const forceScan: boolean = false);
       property Content: TSVGContent read FContent;
       property hRef: string read GetHRef write SetHRef;
-      property gradientUnits: string read GetGradientUnits write SetGradientUnits;
+      property gradientUnits: TSVGObjectUnits read GetGradientUnits write SetGradientUnits;
       property gradientTransform: string read GetGradientTransform write SetGradientTransform;
-      property useObjectBoundingBox: boolean read GetUseObjectBoundingBox;
       property gradientMatrix[AUnit: TCSSUnit]: TAffineMatrix read GetGradientMatrix;
   end;        
 
@@ -903,7 +901,7 @@ var p1,p2: TPointF;
   m: TAffineMatrix;
 begin
   g := ASVGGradient as TSVGLinearGradient;
-  if g.useObjectBoundingBox then
+  if g.gradientUnits = souObjectBoundingBox then
   begin
     p1.x:= EvaluatePercentage(g.x1)/100;
     p1.y:= EvaluatePercentage(g.y1)/100;
@@ -955,7 +953,7 @@ var c,f: TPointF;
 
 begin
   g := ASVGGradient as TSVGRadialGradient;
-  if g.useObjectBoundingBox then
+  if g.gradientUnits = souObjectBoundingBox then
   begin
     c.x:= EvaluatePercentage(g.cx)/100;
     c.y:= EvaluatePercentage(g.cy)/100;
@@ -2951,19 +2949,17 @@ begin
     result := Attribute['href'];//(Note: specific for svg 2)
 end;
 
-function TSVGGradient.GetUseObjectBoundingBox: boolean;
-begin
-  result := (gradientUnits = 'objectBoundingBox');
-end;
-
 procedure TSVGGradient.SetGradientTransform(AValue: string);
 begin
   Attribute['gradientTransform'] := AValue;
 end;
 
-function TSVGGradient.GetGradientUnits: string;
+function TSVGGradient.GetGradientUnits: TSVGObjectUnits;
 begin
-  result := AttributeDef['gradientUnits','objectBoundingBox'];
+  if Attribute['gradientUnits','objectBoundingBox'] = 'userSpaceOnUse' then
+    result := souUserSpaceOnUse
+  else
+    result := souObjectBoundingBox;
 end;
 
 function TSVGGradient.GetGradientTransform: string;
@@ -2988,9 +2984,12 @@ begin
   result[2,3] := Units.ConvertHeight(result[2,3],cuCustom,AUnit);
 end;
 
-procedure TSVGGradient.SetGradientUnits(AValue: string);
+procedure TSVGGradient.SetGradientUnits(AValue: TSVGObjectUnits);
 begin
-  Attribute['gradientUnits'] := AValue;
+  if AValue = souUserSpaceOnUse then
+    Attribute['gradientUnits'] := 'userSpaceOnUse'
+  else
+    Attribute['gradientUnits'] := 'objectBoundingBox';
 end;
 
 procedure TSVGGradient.SetHRef(AValue: string);
