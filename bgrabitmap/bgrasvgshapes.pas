@@ -253,7 +253,6 @@ type
       function GetFontSize: TFloatWithCSSUnit;
       function GetFontStyle: string;
       function GetFontWeight: string;
-      function GetSimpleText: string;
       function GetElementText: string;
       function GetTextAnchor: string;
       function GetTextDirection: string;
@@ -268,7 +267,6 @@ type
       procedure SetFontStyle(AValue: string);
       procedure SetFontWeight(AValue: string);
       procedure SetElementText(AValue: string);
-      procedure SetSimpleText(AValue: string);
       procedure SetTextAnchor(AValue: string);
       procedure SetTextDirection(AValue: string);
       procedure SetTextDirectionTyp(AValue: TSVGTextDirection);
@@ -691,8 +689,6 @@ type
   { TSVGContent }
 
   TSVGContent = class
-  private
-    function GetElementDOMNode(AIndex: integer): TDOMNode;
     protected
       FDataLink: TSVGDataLink;
       FDataParent: TSVGElement;
@@ -701,6 +697,7 @@ type
       FElements: TFPList;
       FUnits: TCSSUnitConverter;
       function GetDOMNode(AElement: TObject): TDOMNode;
+      function GetElementDOMNode(AIndex: integer): TDOMNode;
       procedure AppendElement(AElement: TObject); overload;
       procedure InsertElementBefore(AElement: TSVGElement; ASuccessor: TSVGElement);
       function GetElement(AIndex: integer): TSVGElement;
@@ -712,10 +709,12 @@ type
       constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
         ADataLink: TSVGDataLink; ADataParent: TSVGElement);
       destructor Destroy; override;
+      procedure Clear;
       procedure Recompute;
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
       function AppendElement(ASVGType: TSVGFactory): TSVGElement; overload;
+      function AppendDOMText(AText: string): TDOMText;
       function AppendLine(x1,y1,x2,y2: single; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
       function AppendLine(p1,p2: TPointF; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
       function AppendCircle(cx,cy,r: single; AUnit: TCSSUnit = cuCustom): TSVGCircle; overload;
@@ -1146,11 +1145,6 @@ begin
   result := AttributeOrStyleDef['font-weight','normal'];
 end;
 
-function TSVGText.GetSimpleText: string;
-begin
-  result := FDomElem.TextContent;
-end;
-
 function TSVGText.GetElementText: string;
 var
   i: Integer;
@@ -1247,11 +1241,6 @@ begin
   RemoveStyle('font-weight');
 end;
 
-procedure TSVGText.SetSimpleText(AValue: string);
-begin
-  FDomElem.TextContent := AValue;
-end;
-
 procedure TSVGText.SetTextAnchor(AValue: string);
 begin
   Attribute['text-anchor'] := AValue;
@@ -1271,14 +1260,9 @@ begin
 end;  
 
 procedure TSVGText.SetElementText(AValue: string);
-var
-  child: TDOMNode;
 begin
-  child := FDomElem.FirstChild;
-  if Assigned(child) then
-    child.TextContent := AValue
-  else
-    SetSimpleText(AValue);
+  Content.Clear;
+  Content.appendDOMText(AValue);
 end;
 
 procedure TSVGText.SetTextDecoration(AValue: string);
@@ -3307,6 +3291,16 @@ begin
   inherited Destroy;
 end;
 
+procedure TSVGContent.Clear;
+var
+  i: Integer;
+begin
+  for i := 0 to ElementCount-1 do
+    if IsSVGElement[i] then Element[i].Free;
+  while Assigned(FDomElem.FirstChild) do
+    FDomElem.RemoveChild(FDomElem.FirstChild);
+end;
+
 procedure TSVGContent.Recompute;
 var
   i: Integer;
@@ -3340,6 +3334,13 @@ end;
 function TSVGContent.AppendElement(ASVGType: TSVGFactory): TSVGElement;
 begin
   result := ASVGType.Create(FDoc,Units,FDataLink);
+  AppendElement(result);
+end;
+
+function TSVGContent.AppendDOMText(AText: string): TDOMText;
+begin
+  result := TDOMText.Create(FDomElem.OwnerDocument);
+  result.Data:= AText;
   AppendElement(result);
 end;
 
@@ -3496,7 +3497,7 @@ begin
   finally
     setlength(a,0);
   end;
-  result.SimpleText:= AText;
+  result.ElementText:= AText;
   AppendElement(result);
 end;
 
