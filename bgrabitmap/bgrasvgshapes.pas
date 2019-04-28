@@ -246,14 +246,14 @@ type
 
   TSVGText = class(TSVGTextPositioning)
     private
-      FInGetElementText: boolean;
+      FInGetSimpleText: boolean;
       function GetFontBold: boolean;
       function GetFontFamily: string;
       function GetFontItalic: boolean;
       function GetFontSize: TFloatWithCSSUnit;
       function GetFontStyle: string;
       function GetFontWeight: string;
-      function GetElementText: string;
+      function GetSimpleText: string;
       function GetTextAnchor: string;
       function GetTextDirection: string;
       function GetTextDirectionTyp: TSVGTextDirection;
@@ -266,7 +266,7 @@ type
       procedure SetFontSize(AValue: TFloatWithCSSUnit);
       procedure SetFontStyle(AValue: string);
       procedure SetFontWeight(AValue: string);
-      procedure SetElementText(AValue: string);
+      procedure SetSimpleText(AValue: string);
       procedure SetTextAnchor(AValue: string);
       procedure SetTextDirection(AValue: string);
       procedure SetTextDirectionTyp(AValue: TSVGTextDirection);
@@ -287,7 +287,7 @@ type
       class function GetDOMTag: string; override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
       property lengthAdjust: TSVGLengthAdjust read GetLengthAdjust write SetLengthAdjust;
-      property ElementText: string read GetElementText write SetElementText;
+      property SimpleText: string read GetSimpleText write SetSimpleText;
       property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
       property fontFamily: string read GetFontFamily write SetFontFamily;
       property fontWeight: string read GetFontWeight write SetFontWeight;
@@ -1148,12 +1148,12 @@ begin
   result := AttributeOrStyleDef['font-weight','normal'];
 end;
 
-function TSVGText.GetElementText: string;
+function TSVGText.GetSimpleText: string;
 var
   i: Integer;
 begin
-  if FInGetElementText then exit(''); //avoid reentrance
-  FInGetElementText := true;
+  if FInGetSimpleText then exit(''); //avoid reentrance
+  FInGetSimpleText := true;
   result := '';
   for i := 0 to FContent.ElementCount-1 do
     if FContent.IsSVGElement[i] then
@@ -1162,14 +1162,14 @@ begin
         result += GetTRefContent(TSVGTRef(FContent.Element[i]))
       else
       if FContent.Element[i] is TSVGText then
-        result += TSVGText(FContent.Element[i]).ElementText;
+        result += TSVGText(FContent.Element[i]).SimpleText;
     end else
     begin
       if FContent.ElementDOMNode[i] is TDOMText then
         result += TDOMText(FContent.ElementDOMNode[i]).Data;
     end;
   result := CleanText(result);
-  FInGetElementText := false;
+  FInGetSimpleText := false;
 end;
 
 function TSVGText.GetTextAnchor: string;
@@ -1262,7 +1262,7 @@ begin
     SetTextDirection('rtl');
 end;  
 
-procedure TSVGText.SetElementText(AValue: string);
+procedure TSVGText.SetSimpleText(AValue: string);
 begin
   Content.Clear;
   Content.appendDOMText(AValue);
@@ -1428,7 +1428,7 @@ var
   refText: TSVGText;
 begin
   refText := TSVGText(FDataLink.FindElementByRef(AElement.xlinkHref, TSVGText));
-  if Assigned(refText) then result := refText.ElementText else result := '';
+  if Assigned(refText) then result := refText.SimpleText else result := '';
 end;
 
 class function TSVGText.GetDOMTag: string;
@@ -3456,7 +3456,7 @@ begin
   finally
     setlength(a,0);
   end;
-  result.ElementText:= AText;
+  result.SimpleText:= AText;
   AppendElement(result);
 end;
 
