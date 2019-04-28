@@ -11,6 +11,20 @@ uses
 type
   TSVGContent = class;
 
+  { TSVGElementWithContent }
+
+  TSVGElementWithContent = class(TSVGElement)
+  protected
+    FContent: TSVGContent;
+  public
+    constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+    constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
+      AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+    destructor Destroy; override;
+    procedure Recompute; override;
+    property Content: TSVGContent read FContent;
+  end;
+
   TSVGGradient = class;
   
   { TSVGElementWithGradient }
@@ -546,9 +560,8 @@ type
   
   { TSVGGradient } 
 
-  TSVGGradient = class(TSVGElement)
+  TSVGGradient = class(TSVGElementWithContent)
     private
-      FContent: TSVGContent;
       function GetGradientMatrix(AUnit: TCSSUnit): TAffineMatrix;
       function GetGradientTransform: string;
       function GetGradientUnits: TSVGObjectUnits;
@@ -562,14 +575,8 @@ type
       function GetInheritedAttribute(AValue: string;
         AConvMethod: TConvMethod; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
-        ADataLink: TSVGDataLink); override;
-      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
-        AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
-      procedure Recompute; override;
       procedure ScanInheritedGradients(const forceScan: boolean = false);
-      property Content: TSVGContent read FContent;
       property hRef: string read GetHRef write SetHRef;
       property gradientUnits: TSVGObjectUnits read GetGradientUnits write SetGradientUnits;
       property gradientTransform: string read GetGradientTransform write SetGradientTransform;
@@ -638,32 +645,14 @@ type
 
   { TSVGDefine }
 
-  TSVGDefine = class(TSVGElement)
-  protected
-    FContent: TSVGContent;
-  public
-    constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
-      ADataLink: TSVGDataLink); override;
-    constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
-      AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
-    destructor Destroy; override;
-    procedure Recompute; override;
-    property Content: TSVGContent read FContent;
+  TSVGDefine = class(TSVGElementWithContent)
   end; 
 
   { TSVGGroup }
 
-  TSVGGroup = class(TSVGElement)
+  TSVGGroup = class(TSVGElementWithContent)
   protected
-    FContent: TSVGContent;
     procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
-  public
-    constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
-    constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
-      AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
-    destructor Destroy; override;
-    procedure Recompute; override;
-    property Content: TSVGContent read FContent;
   end;
   
   { TSVGStyle }
@@ -719,6 +708,7 @@ type
       procedure Recompute;
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
+      function AppendElement(ASVGType: TSVGFactory): TSVGElement;
       function AppendLine(x1,y1,x2,y2: single; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
       function AppendLine(p1,p2: TPointF; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
       function AppendCircle(cx,cy,r: single; AUnit: TCSSUnit = cuCustom): TSVGCircle; overload;
@@ -816,6 +806,34 @@ begin
   result := factory.Create(ADocument,AElement,AUnits,ADataLink);
   
   ADataLink.Link(result,ADataParent);
+end;
+
+{ TSVGElementWithContent }
+
+constructor TSVGElementWithContent.Create(ADocument: TXMLDocument;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
+end;
+
+constructor TSVGElementWithContent.Create(ADocument: TXMLDocument;
+  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AElement, AUnits, ADataLink);
+  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
+end;
+
+destructor TSVGElementWithContent.Destroy;
+begin
+  FreeAndNil(FContent);
+  inherited Destroy;
+end;
+
+procedure TSVGElementWithContent.Recompute;
+begin
+  FContent.Recompute;
+  inherited Recompute;
 end;
 
 { TSVGElementWithGradient }
@@ -2183,34 +2201,9 @@ end;
 
 { TSVGGroup }
 
-constructor TSVGGroup.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
-end;
-
-constructor TSVGGroup.Create(ADocument: TXMLDocument; AElement: TDOMElement;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
-end;
-
-destructor TSVGGroup.Destroy;
-begin
-  FreeAndNil(FContent);
-  inherited Destroy;
-end;
-
 procedure TSVGGroup.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
   FContent.Draw(ACanvas2d, AUnit);
-end;
-
-procedure TSVGGroup.Recompute;
-begin
-  inherited Recompute;
-  FContent.Recompute;
 end;
 
 { TSVGStyle }  
@@ -2996,13 +2989,6 @@ begin
   Attribute['xlink:href'] := AValue;
 end;
 
-constructor TSVGGradient.Create(ADocument: TXMLDocument;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
-end;
-
 procedure TSVGGradient.Initialize;
 begin
   inherited;
@@ -3040,24 +3026,10 @@ begin
   result:= ADefault;
 end;
 
-constructor TSVGGradient.Create(ADocument: TXMLDocument; AElement: TDOMElement;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
-end;
-
 destructor TSVGGradient.Destroy;
 begin
-  FreeAndNil(FContent);
   FreeAndNil(InheritedGradients);
   inherited Destroy;
-end;
-
-procedure TSVGGradient.Recompute;
-begin
-  inherited Recompute;
-  FContent.Recompute;
 end;
 
 procedure TSVGGradient.ScanInheritedGradients(const forceScan: boolean = false);
@@ -3215,34 +3187,6 @@ begin
   Init(ADocument,'stop',AUnits);
 end;
 
-{ TSVGDefine }
-
-constructor TSVGDefine.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
-  ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
-end;
-
-constructor TSVGDefine.Create(ADocument: TXMLDocument; AElement: TDOMElement;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
-end;
-
-destructor TSVGDefine.Destroy;
-begin
-  FreeAndNil(FContent);
-  inherited Destroy;
-end;
-
-procedure TSVGDefine.Recompute;
-begin
-  inherited Recompute;
-  FContent.Recompute;
-end;
-
 { TSVGContent }
 
 function TSVGContent.GetElement(AIndex: integer): TSVGElement;
@@ -3337,6 +3281,12 @@ var i: integer;
 begin
   for i := 0 to ElementCount-1 do
     Element[i].Draw(ACanvas2d, AUnit);
+end;
+
+function TSVGContent.AppendElement(ASVGType: TSVGFactory): TSVGElement;
+begin
+  result := ASVGType.Create(FDoc,Units,FDataLink);
+  AppendElement(result);
 end;
 
 function TSVGContent.AppendLine(x1, y1, x2, y2: single; AUnit: TCSSUnit
