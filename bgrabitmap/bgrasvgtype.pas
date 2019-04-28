@@ -193,7 +193,6 @@ type
       procedure SetAttribute(AName: string; AValue: TSVGNumber); overload;
       procedure SetAttribute(AName: string; AValue: string); overload;
       function GetAttribute(AName: string; ADefault: TSVGNumber): TSVGNumber; overload;
-      function GetAttribute(AName: string): TSVGNumber; overload;
       function GetAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
       function GetAttributeWithUnit(AName: string): TFloatWithCSSUnit; overload;
       function GetAttributeOrStyleWithUnit(AName: string;
@@ -982,11 +981,6 @@ end;
 function TSVGElement.GetAttribute(AName: string; ADefault: TSVGNumber): TSVGNumber;
 begin
   result := TCSSUnitConverter.parseValue(Attribute[AName],ADefault);
-end;
-
-function TSVGElement.GetAttribute(AName: string): TSVGNumber;
-begin
-  result := GetAttribute(AName,0);
 end;
 
 function TSVGElement.GetAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
