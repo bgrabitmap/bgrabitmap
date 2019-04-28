@@ -92,7 +92,7 @@ var
 implementation
 
 uses
- Clipbrd;
+ Clipbrd, BGRAVectorize;
 
  {$R *.lfm}
 
@@ -119,6 +119,7 @@ begin
    svg.Free;
   svg:= TBGRASVG.Create(ms);
 
+  bmp.FontRenderer := TBGRAVectorizedFontRenderer.Create;
   bmp.SetSize(Round(svg.WidthAsPixel*kzoom),Round(svg.HeightAsPixel*kzoom));
   bmp.Fill(BGRAWhite);
   svg.StretchDraw(bmp.Canvas2D, 0,0,bmp.Width,bmp.Height);
