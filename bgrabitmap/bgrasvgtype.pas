@@ -265,8 +265,8 @@ type
       FDomElem: TDOMElement;
       FUnits: TCSSUnitConverter;
       function GetDOMElement: TDOMElement; virtual;
-      procedure Init(ADocument: TXMLDocument; ATag: string; AUnits: TCSSUnitConverter); overload;
-      procedure Init({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter); overload;
+      procedure Init(ADocument: TDOMDocument; ATag: string; AUnits: TCSSUnitConverter); overload;
+      procedure Init(AElement: TDOMElement; AUnits: TCSSUnitConverter); overload;
       procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
       procedure LocateStyleDeclaration(AText: string; AProperty: string; out AStartPos,AColonPos,AValueLength: integer);
       function GetPropertyFromStyleDeclaration(AText: string; AProperty: string; ADefault: string): string;
@@ -274,8 +274,8 @@ type
       procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
       procedure Initialize; virtual;
     public
-      constructor Create({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
-      constructor Create({%H-}ADocument: TXMLDocument; {%H-}AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
+      constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
+      constructor Create({%H-}ADocument: TDOMDocument; {%H-}AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
       destructor Destroy; override;
       procedure Recompute; virtual;
       procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
@@ -1828,14 +1828,14 @@ begin
   Attribute['class'] := AValue;
 end; 
 
-procedure TSVGElement.Init(ADocument: TXMLDocument; ATag: string;
+procedure TSVGElement.Init(ADocument: TDOMDocument; ATag: string;
   AUnits: TCSSUnitConverter);
 begin
   FDomElem := ADocument.CreateElement(ATag);
   FUnits := AUnits;
 end;
 
-procedure TSVGElement.Init(ADocument: TXMLDocument; AElement: TDOMElement;
+procedure TSVGElement.Init(AElement: TDOMElement;
   AUnits: TCSSUnitConverter);
 begin
   FDomElem := AElement;
@@ -1958,15 +1958,15 @@ begin
   FDataChildList   := TSVGElementList.Create;
 end;
 
-constructor TSVGElement.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+constructor TSVGElement.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   FDataLink:= ADataLink;
   Initialize;
-  Init(ADocument,AElement,AUnits);
+  Init(AElement,AUnits);
 end;
 
-constructor TSVGElement.Create(ADocument: TXMLDocument;
+constructor TSVGElement.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   FDataLink:= ADataLink;

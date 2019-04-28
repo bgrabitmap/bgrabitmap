@@ -17,9 +17,8 @@ type
   protected
     FContent: TSVGContent;
   public
-    constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
-    constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
-      AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+    constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+    constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
     destructor Destroy; override;
     procedure Recompute; override;
     property Content: TSVGContent read FContent;
@@ -67,7 +66,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property x1: TFloatWithCSSUnit read GetX1 write SetX1;
       property y1: TFloatWithCSSUnit read GetY1 write SetY1;
       property x2: TFloatWithCSSUnit read GetX2 write SetX2;
@@ -93,7 +92,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property x: TFloatWithCSSUnit read GetX write SetX;
       property y: TFloatWithCSSUnit read GetY write SetY;
       property width: TFloatWithCSSUnit read GetWidth write SetWidth;
@@ -115,7 +114,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property r: TFloatWithCSSUnit read GetR write SetR;
@@ -136,7 +135,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property rx: TFloatWithCSSUnit read GetRX write SetRX;
@@ -160,8 +159,8 @@ type
       function GetDOMElement: TDOMElement; override;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
-      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
       property d: string read GetData write SetData;
       property path: TBGRAPath read GetPath;
@@ -185,7 +184,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink); overload;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink); overload;
       destructor Destroy; override;
       property points: string read GetPoints write SetPoints;
       property pointsF: ArrayOfTPointF read GetPointsF write SetPointsF;
@@ -203,7 +202,7 @@ type
     private
       FContent: TSVGContent;
     public
-      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
+      constructor Create(AElement: TDOMElement;
         AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
   end;
@@ -268,7 +267,7 @@ type
         var computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize: single); overload;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override; overload;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
       property lengthAdjust: TSVGLengthAdjust read GetLengthAdjust write SetLengthAdjust;
       property SimpleText: string read GetSimpleText write SetSimpleText;
@@ -289,7 +288,7 @@ type
 
   TSVGTSpan = class(TSVGText)
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
   end;
 
   { TSVGTRef }
@@ -299,7 +298,7 @@ type
       function GetXlinkHref: string;
       procedure SetXlinkHref(AValue: string);
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
   end;
 
@@ -318,7 +317,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property startOffset: TFloatWithCSSUnit read GetStartOffset write SetStartOffset;
       property method: TSVGTextPathMethod read GetMethod write SetMethod;
       property spacing: TSVGTextPathSpacing read GetSpacing write SetSpacing;
@@ -338,7 +337,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property glyphRef: string read GetGlyphRef write SetGlyphRef;
       property format: string read GetFormat write SetFormat;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
@@ -348,14 +347,14 @@ type
 
   TSVGAltGlyphDef = class(TSVGTextElementWithContent)
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
   end;
 
   { TSVGAltGlyphItem }
 
   TSVGAltGlyphItem = class(TSVGTextElementWithContent)
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
   end;
 
   { TSVGGlyphRef }
@@ -379,7 +378,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property x: TSVGNumber read GetX write SetX;
       property y: TSVGNumber read GetY write SetY;
       property dX: TSVGNumber read GetDx write SetDx;
@@ -400,7 +399,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property clipPathUnits: TSVGObjectUnits read GetClipPathUnits write SetClipPathUnits;
@@ -421,7 +420,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property local: string read GetLocal write SetLocal;
       property name: string read GetName write SetName;
       property renderingIntent: TSVGRenderingIntent read GetRenderingIntent write SetRenderingIntent;
@@ -449,7 +448,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property x: TFloatWithCSSUnit read GetX write SetX;
@@ -476,7 +475,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property patternUnits: TSVGObjectUnits read GetPatternUnits write SetPatternUnits;
       property patternContentUnits: TSVGObjectUnits
        read GetPatternContentUnits write SetPatternContentUnits;
@@ -509,7 +508,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property viewBox: TSVGViewBox read GetViewBox write SetViewBox;
@@ -544,7 +543,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property x: TFloatWithCSSUnit read GetX write SetX;
@@ -596,7 +595,7 @@ type
       procedure SetY1(AValue: TFloatWithCSSUnit);
       procedure SetY2(AValue: TFloatWithCSSUnit);
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter;
         ADataLink: TSVGDataLink); override;
       property x1: TFloatWithCSSUnit read GetX1 write SetX1;
       property y1: TFloatWithCSSUnit read GetY1 write SetY1;
@@ -621,7 +620,7 @@ type
       procedure SetFY(AValue: TFloatWithCSSUnit);
       procedure SetFR(AValue: TFloatWithCSSUnit);
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter;
         ADataLink: TSVGDataLink); override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
@@ -638,7 +637,7 @@ type
       function GetOffset: TFloatWithCSSUnit;
       procedure SetOffset(AValue: TFloatWithCSSUnit);
     public
-      constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter;
         ADataLink: TSVGDataLink); override;
       property Offset: TFloatWithCSSUnit read GetOffset write SetOffset;
   end;
@@ -674,9 +673,8 @@ type
    protected
      procedure Initialize; override;
    public
-     constructor Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
-     constructor Create(ADocument: TXMLDocument; AElement: TDOMElement;
-       AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
+     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
+     constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
      destructor Destroy; override;
      function Count: Integer;
      function Find(const AName: string): integer; overload;
@@ -693,7 +691,7 @@ type
     protected
       FDataLink: TSVGDataLink;
       FDomElem: TDOMElement;
-      FDoc: TXMLDocument;
+      FDoc: TDOMDocument;
       FElements: TFPList;
       FUnits: TCSSUnitConverter;
       procedure AppendElement(AElement: TSVGElement);
@@ -702,7 +700,7 @@ type
       function GetElementCount: integer;
       function GetUnits: TCSSUnitConverter;
     public
-      constructor Create(ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter; 
+      constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
         ADataLink: TSVGDataLink; ADataParent: TSVGElement);
       destructor Destroy; override;
       procedure Recompute;
@@ -731,8 +729,8 @@ type
   end;
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
-function CreateSVGElementFromNode(ADocument: TXMLDocument;
-  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement): TSVGElement;
+function CreateSVGElementFromNode(AElement: TDOMElement; AUnits: TCSSUnitConverter;
+  ADataLink: TSVGDataLink; ADataParent: TSVGElement): TSVGElement;
 
 implementation
 
@@ -797,31 +795,30 @@ begin
     result := TSVGElement;
 end;
 
-function CreateSVGElementFromNode(ADocument: TXMLDocument;
-  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement): TSVGElement;
+function CreateSVGElementFromNode(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement): TSVGElement;
 var
   factory: TSVGFactory;
 begin
   factory := GetSVGFactory(AElement.TagName);
-  result := factory.Create(ADocument,AElement,AUnits,ADataLink);
+  result := factory.Create(AElement,AUnits,ADataLink);
   
   ADataLink.Link(result,ADataParent);
 end;
 
 { TSVGElementWithContent }
 
-constructor TSVGElementWithContent.Create(ADocument: TXMLDocument;
+constructor TSVGElementWithContent.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,FDomElem,AUnits,ADataLink,Self);
+  FContent := TSVGContent.Create(FDomElem,AUnits,ADataLink,Self);
 end;
 
-constructor TSVGElementWithContent.Create(ADocument: TXMLDocument;
-  AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGElementWithContent.Create(AElement: TDOMElement;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
+  inherited Create(AElement, AUnits, ADataLink);
+  FContent := TSVGContent.Create(AElement,AUnits,ADataLink,Self);
 end;
 
 destructor TSVGElementWithContent.Destroy;
@@ -1028,11 +1025,11 @@ end;
 
 { TSVGTextElementWithContent }
 
-constructor TSVGTextElementWithContent.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+constructor TSVGTextElementWithContent.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(ADocument,AElement,AUnits,ADataLink,Self);
+  inherited Create(AElement, AUnits, ADataLink);
+  FContent := TSVGContent.Create(AElement,AUnits,ADataLink,Self);
 end;
 
 destructor TSVGTextElementWithContent.Destroy;
@@ -1439,7 +1436,7 @@ begin
         computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
 end;      
 
-constructor TSVGText.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGText.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'text',AUnits);
@@ -1447,7 +1444,7 @@ end;
 
 { TSVGTSpan }
 
-constructor TSVGTSpan.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGTSpan.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'tspan',AUnits);
@@ -1465,7 +1462,7 @@ begin
   Attribute['xlink:href'] := AValue;
 end;
 
-constructor TSVGTRef.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGTRef.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'tref',AUnits);
@@ -1539,7 +1536,7 @@ begin
   //todo
 end;
 
-constructor TSVGTextPath.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGTextPath.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'textpath',AUnits);
@@ -1582,7 +1579,7 @@ begin
   //todo
 end;
 
-constructor TSVGAltGlyph.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGAltGlyph.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'altglyph',AUnits);
@@ -1590,7 +1587,7 @@ end;
 
 { TSVGAltGlyphDef }
 
-constructor TSVGAltGlyphDef.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGAltGlyphDef.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'altglyphdef',AUnits);
@@ -1598,7 +1595,7 @@ end;
 
 { TSVGAltGlyphItem }
 
-constructor TSVGAltGlyphItem.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGAltGlyphItem.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'altglyphitem',AUnits);
@@ -1681,7 +1678,7 @@ begin
   //todo
 end;
 
-constructor TSVGGlyphRef.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGGlyphRef.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'glyphref',AUnits);
@@ -1726,7 +1723,7 @@ begin
   //todo
 end;
 
-constructor TSVGClipPath.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGClipPath.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'clippath',AUnits);
@@ -1800,7 +1797,7 @@ begin
   //todo
 end;
 
-constructor TSVGColorProfile.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGColorProfile.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'colorprofile',AUnits);
@@ -1889,7 +1886,7 @@ begin
   //todo
 end;
 
-constructor TSVGImage.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGImage.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'image',AUnits);
@@ -1954,7 +1951,7 @@ begin
   //todo
 end;
 
-constructor TSVGPattern.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGPattern.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'pattern',AUnits);
@@ -2092,7 +2089,7 @@ begin
   //todo
 end;
 
-constructor TSVGMarker.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGMarker.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'marker',AUnits);
@@ -2193,7 +2190,7 @@ begin
   //todo
 end;
 
-constructor TSVGMask.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGMask.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'mask',AUnits);
@@ -2208,16 +2205,16 @@ end;
 
 { TSVGStyle }  
 
-constructor TSVGStyle.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGStyle.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'style',AUnits);
 end;
 
-constructor TSVGStyle.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+constructor TSVGStyle.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AElement, AUnits, ADataLink);
+  inherited Create(AElement, AUnits, ADataLink);
   Parse(AElement.TextContent);
 end;
 
@@ -2447,7 +2444,7 @@ begin
   VerticalAttributeWithUnit['ry'] := AValue;
 end;
 
-constructor TSVGRectangle.Create(ADocument: TXMLDocument;
+constructor TSVGRectangle.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
@@ -2571,7 +2568,7 @@ begin
   end;
 end;
 
-constructor TSVGPolypoints.Create(ADocument: TXMLDocument;
+constructor TSVGPolypoints.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
@@ -2675,7 +2672,7 @@ begin
   Result:=inherited GetDOMElement;
 end;
 
-constructor TSVGPath.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGPath.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'path',AUnits);
@@ -2684,11 +2681,11 @@ begin
   FBoundingBox := rectF(0,0,0,0);
 end;
 
-constructor TSVGPath.Create(ADocument: TXMLDocument; AElement: TDOMElement;
+constructor TSVGPath.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AElement, AUnits, ADataLink);
-  Init(ADocument, AElement, AUnits);
+  inherited Create(AElement, AUnits, ADataLink);
+  Init(AElement, AUnits);
   FPath := nil;
   FBoundingBoxComputed := false;
   FBoundingBox := rectF(0,0,0,0);
@@ -2774,7 +2771,7 @@ begin
   VerticalAttributeWithUnit['ry'] := AValue;
 end;
 
-constructor TSVGEllipse.Create(ADocument: TXMLDocument;
+constructor TSVGEllipse.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
@@ -2840,7 +2837,7 @@ begin
   OrthoAttributeWithUnit['r'] := AValue;
 end;
 
-constructor TSVGCircle.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGCircle.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink); 
   Init(ADocument,'circle',AUnits);
@@ -2914,7 +2911,7 @@ begin
   VerticalAttributeWithUnit['y2'] := AValue;
 end;
 
-constructor TSVGLine.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+constructor TSVGLine.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
   Init(ADocument,'line',AUnits);
@@ -3092,7 +3089,7 @@ begin
   AttributeWithUnit['y2']:= AValue;
 end;
 
-constructor TSVGLinearGradient.Create(ADocument: TXMLDocument;
+constructor TSVGLinearGradient.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
@@ -3161,7 +3158,7 @@ begin
   HorizAttributeWithUnit['fr'] := AValue;
 end;
 
-constructor TSVGRadialGradient.Create(ADocument: TXMLDocument;
+constructor TSVGRadialGradient.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
@@ -3180,7 +3177,7 @@ begin
   AttributeWithUnit['offset'] := AValue;
 end; 
 
-constructor TSVGStopGradient.Create(ADocument: TXMLDocument; AUnits: TCSSUnitConverter;
+constructor TSVGStopGradient.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter;
   ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
@@ -3227,11 +3224,11 @@ begin
   end;
 end;
 
-constructor TSVGContent.Create(ADocument: TXMLDocument; AElement: TDOMElement;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink; ADataParent: TSVGElement);
+constructor TSVGContent.Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
+  ADataLink: TSVGDataLink; ADataParent: TSVGElement);
 var cur: TDOMNode;
 begin
-  FDoc := ADocument;
+  FDoc := AElement.OwnerDocument;
   FDomElem := AElement;
   FDataLink := ADataLink;
   FElements := TFPList.Create;
@@ -3240,8 +3237,8 @@ begin
   while cur <> nil do
   begin
     if cur is TDOMElement then
-      FElements.Add(CreateSVGElementFromNode(
-        ADocument,TDOMElement(cur),FUnits,ADataLink,ADataParent));
+      FElements.Add(CreateSVGElementFromNode(TDOMElement(cur),
+                    FUnits,ADataLink,ADataParent));
     cur := cur.NextSibling;
   end;
 end;
