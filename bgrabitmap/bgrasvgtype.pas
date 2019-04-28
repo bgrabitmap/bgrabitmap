@@ -179,6 +179,8 @@ type
       function GetStrokeDashArray: string;
       function GetStrokeDashArrayF: ArrayOfFloat;
       function GetStrokeDashOffset: TFloatWithCSSUnit;
+      function GetInlineStyle(const AName,ADefault: string): string;
+      function GetStyleFromStyleSheet(const AName,ADefault: string): string;
       function GetStyle(const AName,ADefault: string): string; overload;
       function GetStyle(const AName: string): string; overload;
       function GetTransform: string;
@@ -266,6 +268,7 @@ type
       procedure Init({%H-}ADocument: TXMLDocument; AElement: TDOMElement; AUnits: TCSSUnitConverter); overload;
       procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
       procedure LocateStyleDeclaration(AText: string; AProperty: string; out AStartPos,AColonPos,AValueLength: integer);
+      function GetPropertyFromStyleDeclaration(AText: string; AProperty: string; ADefault: string): string;
       procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
       procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
       procedure Initialize; virtual;
@@ -997,12 +1000,7 @@ function TSVGElement.GetAttributeOrStyleWithUnit(AName: string; ADefault: TFloat
 var
   valueText: string;
 begin
-  (*valueText := Style[AName];
-  if valueText = '' then
-    valueText := GetAttribute(AName,'',True);*)
-  valueText := GetAttribute(AName,'',True);
-  if valueText = '' then
-   valueText := Style[AName];
+  valueText := GetAttributeOrStyle(AName);
   result := TCSSUnitConverter.parseValue(valueText,ADefault);
 end;
 
@@ -1088,9 +1086,7 @@ function TSVGElement.GetArrayOfAttributeOrStyleWithUnit(AName: string; ADefault:
 var
   valueText: string;
 begin
-  valueText := Style[AName];
-  if valueText = '' then
-    valueText := GetAttribute(AName,'',True);
+  valueText := GetAttributeOrStyle(AName);
   result := TCSSUnitConverter.parseValue(valueText,ADefault);
 end;
 
@@ -1140,10 +1136,37 @@ begin
 end;
 
 function TSVGElement.GetAttributeOrStyle(AName,ADefault: string): string;
+var
+  curNode: TDOMElement;
+  styleDecl: DOMString;
 begin
-  result := GetStyle(AName);
+  result := GetInlineStyle(AName,'');
   if result = '' then
-    result := GetAttribute(AName,ADefault,True);
+  begin
+    result := GetAttribute(AName,'', false);
+    if result = '' then
+    begin
+      result := GetStyleFromStyleSheet(AName,'');
+
+      if result = '' then
+      begin
+        curNode := FDomElem;
+        while true do
+        begin
+          if curNode.ParentNode is TDOMElement then
+            curNode := TDOMElement(curNode.ParentNode)
+          else break;
+
+          styleDecl := curNode.GetAttribute('style');
+          result := GetPropertyFromStyleDeclaration(styleDecl, AName, '');
+          if result <> '' then exit;
+          result := curNode.GetAttribute(AName);
+          if result <> '' then exit;
+        end;
+        result := ADefault;
+      end;
+    end;
+  end;
 end;
 
 function TSVGElement.GetAttributeOrStyle(AName: string): string;
@@ -1335,27 +1358,21 @@ end;
 function TSVGElement.GetStrokeDashOffset: TFloatWithCSSUnit;
 begin
   result := OrthoAttributeWithUnit['stroke-dashoffset'];
-end;    
+end;
 
-function TSVGElement.GetStyle(const AName,ADefault: string): string;
-
-  function GetInternal(const ruleset: string): string;
-  var
-    startPos, colonPos, valueLength: integer;
-  begin
-    LocateStyleDeclaration(ruleset, AName, startPos,colonPos, valueLength);
-    if valueLength <> -1 then
-      result := trim(copy(ruleset, colonPos+1, valueLength))
-    else
-      result := '';
-  end;
-
+function TSVGElement.GetInlineStyle(const AName, ADefault: string): string;
 var
-  i: integer;
+  styleDecl: String;
 begin
-  result:= '';
+  styleDecl := GetAttribute('style','',False);
+  result := GetPropertyFromStyleDeclaration(styleDecl, AName, ADefault);
+end;
 
-  //Find on <style> block (priority!)
+function TSVGElement.GetStyleFromStyleSheet(const AName, ADefault: string
+  ): string;
+var
+  i: Integer;
+begin
   //if "not search"..search
   if findStyleState = fssNotSearched then
     FindStyleElement;
@@ -1363,16 +1380,36 @@ begin
   if findStyleState <> fssNotFound then
     for i:= Length(styleAttributes)-1 downto 0 do
     begin
-      result:= GetInternal(styleAttributes[i].attr);
-      if result <> '' then
-        Break;
+      result:= GetPropertyFromStyleDeclaration(styleAttributes[i].attr, AName, '');
+      if result <> '' then exit;
     end;
+  result := ADefault;
+end;
 
-  if result = '' then
+function TSVGElement.GetStyle(const AName,ADefault: string): string;
+var
+  curNode: TDOMElement;
+  styleDecl: DOMString;
+begin
+  result:= GetInlineStyle(AName,'');
+  if result <> '' then exit;
+
+  result := GetStyleFromStyleSheet(AName,'');
+  if result <> '' then exit;
+
+  curNode := FDomElem;
+  while true do
   begin
-    result:= GetInternal(GetAttribute('style','',True));
-    if result = '' then result := ADefault;
+    if curNode.ParentNode is TDOMElement then
+      curNode := TDOMElement(curNode.ParentNode)
+    else break;
+
+    styleDecl := curNode.GetAttribute('style');
+    result := GetPropertyFromStyleDeclaration(styleDecl, AName, '');
+    if result <> '' then exit;
   end;
+
+  result := ADefault;
 end;
 
 function TSVGElement.GetStyle(const AName: string): string;
@@ -1680,7 +1717,7 @@ begin
     raise exception.Create('Invalid character in value');
   if pos(':',AName)<>0 then
     raise exception.Create('Invalid character in name');
-  ruleset := Attribute['style'];
+  ruleset := GetAttribute('style','',false);
   LocateStyleDeclaration(ruleset, AName, startPos,colonPos, valueLength);
   if valueLength <> -1 then
   begin
@@ -1867,6 +1904,18 @@ begin
   end;
 end;
 
+function TSVGElement.GetPropertyFromStyleDeclaration(AText: string;
+  AProperty: string; ADefault: string): string;
+var
+  startPos, colonPos, valueLength: integer;
+begin
+  LocateStyleDeclaration(AText, AProperty, startPos,colonPos, valueLength);
+  if valueLength <> -1 then
+    result := trim(copy(AText, colonPos+1, valueLength))
+  else
+    result := ADefault;
+end;
+
 procedure TSVGElement.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
   ACanvas2D.fillStyle(fillColor);
@@ -1963,7 +2012,7 @@ var
     startPos, colonPos, valueLength: integer;
     ruleset: string;
 begin
-  ruleset := Attribute['style'];
+  ruleset := GetAttribute('style','',false);
   LocateStyleDeclaration(ruleset, AName, startPos,colonPos, valueLength);
   if valueLength <> -1 then
   begin
