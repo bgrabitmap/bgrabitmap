@@ -185,6 +185,7 @@ type
       function GetStyle(const AName: string): string; overload;
       function GetTransform: string;
       function GetUnits: TCSSUnitConverter;
+      function GetAttributeFromElement(ANode: TDOMElement; AName: string; ACanInherit: boolean): string;
       function GetAttribute(AName,ADefault: string; ACanInherit: boolean): string; overload;
       function GetAttribute(AName,ADefault: string): string; overload;
       function GetAttribute(AName: string): string; overload;
@@ -920,28 +921,9 @@ end;
 { TSVGElement }
 
 function TSVGElement.GetAttribute(AName,ADefault: string; ACanInherit: boolean): string;
-var
-  curNode: TDOMElement;
 begin
-  curNode := FDomElem;
-  repeat
-    result := Trim(curNode.GetAttribute(AName));
-    if (result = 'currentColor') and (AName <> 'color') then
-    begin
-      AName := 'color';
-      curNode := FDomElem; //get from the current element
-      ACanInherit:= true;
-      result := Trim(curNode.GetAttribute(AName));
-    end;
-    if ((result = '') or (result = 'inherit')) and ACanInherit and
-      (curNode.ParentNode is TDOMElement) then
-      curNode := curNode.ParentNode as TDOMElement
-    else
-      curNode := nil;
-  until curNode = nil;
-
-  if (result = '') or (result = 'inherit') then
-    result:= ADefault;
+  result := GetAttributeFromElement(FDomElem, AName, ACanInherit);
+  if result = '' then result := ADefault;
 end;
 
 function TSVGElement.GetAttribute(AName, ADefault: string): string;
@@ -1160,7 +1142,7 @@ begin
           styleDecl := curNode.GetAttribute('style');
           result := GetPropertyFromStyleDeclaration(styleDecl, AName, '');
           if result <> '' then exit;
-          result := curNode.GetAttribute(AName);
+          result := GetAttributeFromElement(curNode, AName, false);
           if result <> '' then exit;
         end;
         result := ADefault;
@@ -1425,6 +1407,27 @@ end;
 function TSVGElement.GetUnits: TCSSUnitConverter;
 begin
   result := FUnits;
+end;
+
+function TSVGElement.GetAttributeFromElement(ANode: TDOMElement; AName: string;
+  ACanInherit: boolean): string;
+begin
+  repeat
+    result := Trim(ANode.GetAttribute(AName));
+    if (result = 'currentColor') and (AName <> 'color') then
+    begin
+      AName := 'color';
+      ANode := FDomElem; //get from the current element
+      ACanInherit:= true;
+      result := Trim(ANode.GetAttribute(AName));
+    end;
+    if result = 'inherit' then result := '';
+    if (result = '') and ACanInherit and
+      (ANode.ParentNode is TDOMElement) then
+      ANode := ANode.ParentNode as TDOMElement
+    else
+      ANode := nil;
+  until ANode = nil;
 end;
 
 function TSVGElement.GetVerticalAttribute(AName: string; ADefault: TSVGNumber): TSVGNumber;
