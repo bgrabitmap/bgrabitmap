@@ -274,16 +274,19 @@ type
       procedure SetTextLength(AValue: TFloatWithCSSUnit);
       procedure SetLengthAdjust(AValue: TSVGLengthAdjust);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit; const initRequired: Boolean;
-        var computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize: single); overload;
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override; overload;
+      procedure InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
+                                      ADraw: boolean; AAllTextBounds: TRectF;
+                                      var APosition: TPointF; out ABounds: TRectF);
+      procedure InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
+                                      AText: string; ADraw: boolean; AAllTextBounds: TRectF;
+                                      var APosition: TPointF; out ABounds: TRectF);
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       function CleanText(AText: string): string;
       function GetTRefContent(AElement: TSVGTRef): string;
     public
       class function GetDOMTag: string; override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
       property lengthAdjust: TSVGLengthAdjust read GetLengthAdjust write SetLengthAdjust;
-      property SimpleText: string read GetSimpleText write SetSimpleText;
       property ElementText: string read GetElementText write SetElementText;
       property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
       property fontFamily: string read GetFontFamily write SetFontFamily;
@@ -1059,27 +1062,27 @@ end;
 
 function TSVGTextPositioning.GetX: ArrayOfTFloatWithCSSUnit;
 begin
-  result := ArrayOfHorizAttributeWithUnit['x'];
+  result := ArrayOfHorizAttributeWithUnitInherit['x',False];
 end;
 
 function TSVGTextPositioning.GetY: ArrayOfTFloatWithCSSUnit;
 begin
-  result := ArrayOfVerticalAttributeWithUnit['y'];
+  result := ArrayOfVerticalAttributeWithUnitInherit['y',False];
 end;
 
 function TSVGTextPositioning.GetDx: ArrayOfTFloatWithCSSUnit;
 begin
-  result := ArrayOfHorizAttributeWithUnit['dx'];
+  result := ArrayOfHorizAttributeWithUnitInherit['dx',False];
 end;
 
 function TSVGTextPositioning.GetDy: ArrayOfTFloatWithCSSUnit;
 begin
-  result := ArrayOfVerticalAttributeWithUnit['dy'];
+  result := ArrayOfVerticalAttributeWithUnitInherit['dy',False];
 end;
 
 function TSVGTextPositioning.GetRotate: ArrayOfTSVGNumber;
 begin
-  result := ArrayOfAttributeNumber['rotate'];
+  result := ArrayOfAttributeNumberInherit['rotate',False];
 end;
 
 procedure TSVGTextPositioning.SetX(AValue: ArrayOfTFloatWithCSSUnit);
@@ -1279,119 +1282,98 @@ end;
 
 procedure TSVGText.SetLengthAdjust(AValue: TSVGLengthAdjust);
 begin
- if AValue = slaSpacing then
-   Attribute['lengthAdjust'] := 'spacing'
- else
-   Attribute['lengthAdjust'] := 'spacingAndGlyphs';
- RemoveStyle('lengthAdjust');
+  if AValue = slaSpacing then
+    Attribute['lengthAdjust'] := 'spacing'
+  else
+    Attribute['lengthAdjust'] := 'spacingAndGlyphs';
+  RemoveStyle('lengthAdjust');
 end;
 
-procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
-  const initRequired: Boolean; var computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize: single);
-
-  (*procedure InitTo(var a: ArrayOfTFloatWithCSSUnit; const AValue: single);
-  begin
-   setlength(a,1);
-   with a[0] do
-   begin
-     CSSUnit := cuPixel;
-     value := AValue;
-   end;
-  end;
-
-  procedure InitTo(var a: ArrayOfTSVGNumber; const AValue: single);
-  begin
-    setlength(a,1);
-    a[0] := AValue;
-  end;*)
-
+procedure TSVGText.InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D;
+  AUnit: TCSSUnit; ADraw: boolean; AAllTextBounds: TRectF;
+  var APosition: TPointF; out ABounds: TRectF);
 var
-  fs: TFontStyles;
-  vx,vy,
-  vdx,vdy,
-  vr: single;
-  text: string;
-  ax,ay,
-  adx,ady: ArrayOfTFloatWithCSSUnit;
-  ar: ArrayOfTSVGNumber;
-  ts: TCanvas2dTextSize;
+  prevFontEmHeight: TFloatWithCSSUnit;
+  ax, ay, adx, ady: ArrayOfTFloatWithCSSUnit;
+  i: Integer;
+  svgElem: TSVGElement;
+  subElem: TSVGText;
+  part: string;
+  partBounds: TRectF;
+  node: TDOMNode;
 begin
-  //todo
-  //(note: solution that does not yet support all the parameters)
-  
-  computeTextSize:= Units.ConvertHeight(fontSize,AUnit).value;
-  Units.currFontSize:= computeTextSize;
-
+  ABounds := EmptyRectF;
+  prevFontEmHeight := Units.CurrentFontEmHeight;
+  Units.CurrentFontEmHeight:= FloatWithCSSUnit(Units.ConvertHeight(fontSize,AUnit).value, AUnit);
   ax := Units.ConvertWidth(x,AUnit);
   ay := Units.ConvertHeight(y,AUnit);
   adx := Units.ConvertWidth(dx,AUnit);
   ady := Units.ConvertHeight(dy,AUnit);
-  ar := rotate;
+  if length(ax)>0 then APosition.x := ax[0].value;
+  if length(ay)>0 then APosition.y := ay[0].value;
+  if length(adx)>0 then APosition.x += adx[0].value;
+  if length(ady)>0 then APosition.y += ady[0].value;
 
-  (* for the moment it seems unnecessary
-  if length(ax) = 0 then
-    InitTo(ax,0);
-  if length(ay) = 0 then
-    InitTo(ay,0);
-  if length(adx) = 0 then
-    InitTo(adx,0);
-  if length(ady) = 0 then
-    InitTo(ady,0);
-  if length(ar) = 0 then
-    InitTo(ar,0);*)
-
-  //(temporary solution to allow drawing)
-  vx:= ax[0].value;
-  vy:= ay[0].value;
-  vdx:= adx[0].value;
-  vdy:= ady[0].value;
-  vr:= ar[0];
-
-  text:= ElementText;
-  if text <> '' then
+  for i := 0 to Content.ElementCount-1 do
   begin
+    part := '';
+    subElem := nil;
 
-    if HasAttribute('x') then
-      computeBaseX := vx
-    else
-      vx := computeBaseX;
-    if HasAttribute('y') then
-      computeBaseY := vy
-    else
-      vy := computeBaseY;
-
-    if HasAttribute('dx') then
-      computeDx += vdx;
-    if HasAttribute('dy') then
-      computeDy += vdy;
-
-    vx+= computeDx;
-    vy+= computeDy;
-
-    ACanvas2d.beginPath;
-    ACanvas2d.fontEmHeight := Units.ConvertHeight(fontSize,AUnit).value;
-    ACanvas2d.fontName := fontFamily;
-    fs := [];
-    if fontBold then include(fs, fsBold);
-    if fontItalic then include(fs, fsItalic);
-
-    ACanvas2d.fontStyle := fs;
-    case textAnchor of
-     'middle': ACanvas2d.textAlignLCL:= taCenter;
-     'end': ACanvas2d.textAlignLCL:= taRightJustify;
-     else {'start'} ACanvas2d.textAlignLCL:= taLeftJustify;
-    end;
-
-    ACanvas2d.text(text,vx,vy);
-
-    with ACanvas2d.measureText(text) do
+    if Content.IsSVGElement[i] then
     begin
-      computeBaseX += width;
-
-      if Assigned(GradientElement) then
-        InitializeGradient(ACanvas2d, PointF(vx,vy),width,height,AUnit);
+      svgElem := Content.Element[i];
+      if svgElem is TSVGTRef then
+        part := CleanText(GetTRefContent(TSVGTRef(svgElem)))
+      else
+      if svgElem is TSVGText then
+        subElem := TSVGText(svgElem);
+    end else
+    begin
+      node := Content.ElementDOMNode[i];
+      if node is TDOMText then
+        part := CleanText(TDOMText(node).Data);
     end;
 
+    partBounds := EmptyRectF;
+    if Assigned(subElem) then
+      subElem.InternalDrawOrCompute(ACanvas2d, AUnit, ADraw, AAllTextBounds, APosition, partBounds)
+    else if part<>'' then
+      InternalDrawOrComputePart(ACanvas2d, AUnit, part, ADraw, AAllTextBounds, APosition, partBounds);
+
+    ABounds := TRectF.Union(ABounds, partBounds, true);
+  end;
+
+  Units.CurrentFontEmHeight := prevFontEmHeight;
+end;
+
+procedure TSVGText.InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D;
+  AUnit: TCSSUnit; AText: string; ADraw: boolean; AAllTextBounds: TRectF;
+  var APosition: TPointF; out ABounds: TRectF);
+var
+  ts: TCanvas2dTextSize;
+  fs: TFontStyles;
+begin
+  ACanvas2d.fontEmHeight := Units.ConvertHeight(Units.CurrentFontEmHeight, AUnit).value;
+  ACanvas2d.fontName := fontFamily;
+  fs := [];
+  if fontBold then include(fs, fsBold);
+  if fontItalic then include(fs, fsItalic);
+  ACanvas2d.fontStyle := fs;
+
+  ts := ACanvas2d.measureText(AText);
+
+  case textAnchor of
+   'middle': APosition.x -= ts.width/2;
+   'end': APosition.x -= ts.width;
+  end;
+
+  ABounds := RectF(APosition.x,APosition.y,APosition.x+ts.width,APosition.y+ts.height);
+  if ADraw then
+  begin
+    ACanvas2d.beginPath;
+    if Assigned(GradientElement) then
+      InitializeGradient(ACanvas2d, AAllTextBounds.TopLeft, AAllTextBounds.Width,AAllTextBounds.Height,AUnit);
+    ACanvas2d.text(AText,APosition.x,APosition.y);
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
@@ -1402,42 +1384,19 @@ begin
       ApplyStrokeStyle(ACanvas2D,AUnit);
       ACanvas2d.stroke;
     end;
-
-  end
-  //(for case: base text element without text)
-  else if initRequired then
-  begin
-    computeBaseX:= vx + vdx;
-    computeBaseY:= vy + vdy;
   end;
-
-  setlength(ax,0);
-  setlength(ay,0);
-  setlength(adx,0);
-  setlength(ady,0);
-  setlength(ar,0);
-end;       
+  APosition.x += ts.width;
+end;
 
 procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
-  i: integer;
-  computeBaseX,computeBaseY,
-  computeDx,computeDy,
-  computeTextSize: single;
+  pos: TPointF;
+  allTextBounds, dummyBounds: TRectF;
 begin
-  computeBaseX:= 0;
-  computeBaseY:= 0;
-  computeDx:= 0;
-  computeDy:= 0;
-  computeTextSize:= 0;
-
-  InternalDraw(ACanvas2d,AUnit, True,
-    computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
-
-  for i:= 0 to FContent.ElementCount-1 do
-    if FContent.Element[i] is TSVGText then
-      (FContent.Element[i] as TSVGText).InternalDraw(ACanvas2d,AUnit, False,
-        computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
+  pos := PointF(0,0);
+  InternalDrawOrCompute(ACanvas2d, AUnit, False, EmptyRectF, pos, allTextBounds);
+  pos := PointF(0,0);
+  InternalDrawOrCompute(ACanvas2d, AUnit, True, allTextBounds, pos, dummyBounds);
 end;
 
 function TSVGText.CleanText(AText: string): string;

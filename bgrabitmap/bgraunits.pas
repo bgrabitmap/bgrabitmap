@@ -37,8 +37,8 @@ type
 
   TCSSUnitConverter = class
   protected
-    fCurrFontSize: single;//(pixel)
-    function GetRootFontSize: single;
+    FCurrentFontEmHeight: TFloatWithCSSUnit;
+    function GetRootFontEmHeight: TFloatWithCSSUnit;
     function GetDefaultUnitHeight: TFloatWithCSSUnit; virtual;
     function GetDefaultUnitWidth: TFloatWithCSSUnit; virtual;
     function GetDpiScaleTransform: string;
@@ -77,7 +77,7 @@ type
     property DpiScaleX: single read GetDpiScaleX;
     property DpiScaleY: single read GetDpiScaleY;
     property DpiScaleTransform: string read GetDpiScaleTransform;
-    property currFontSize: single read fCurrFontSize write fCurrFontSize;
+    property CurrentFontEmHeight: TFloatWithCSSUnit read FCurrentFontEmHeight write FCurrentFontEmHeight;
   end;
 
 implementation
@@ -99,9 +99,9 @@ end;
 
 { TCSSUnitConverter }
 
-function TCSSUnitConverter.GetRootFontSize: single;
+function TCSSUnitConverter.GetRootFontEmHeight: TFloatWithCSSUnit;
 begin
-  result := 16;
+  result := FloatWithCSSUnit(12, cuPoint);
 end; 
 
 function TCSSUnitConverter.GetDpiScaleX: single;
@@ -116,12 +116,13 @@ end;
 
 function TCSSUnitConverter.GetFontEmHeight: TFloatWithCSSUnit;
 begin
-  result := FloatWithCSSUnit(fCurrFontSize,cuPixel);
+  result := FCurrentFontEmHeight;
 end;
 
 function TCSSUnitConverter.GetFontXHeight: TFloatWithCSSUnit;
 begin
-  result := FloatWithCSSUnit(0,cuCustom);
+  result := FCurrentFontEmHeight;
+  result.value *= 0.5; //approximation
 end;
 
 function TCSSUnitConverter.GetDPIScaled: boolean;
@@ -179,15 +180,13 @@ begin
   end else
   if destUnit = cuFontEmHeight then
   begin
-    with FontEmHeight do
-      if value = 0 then result := 0
-      else result := Convert(xy/value,sourceUnit, CSSUnit, dpi);
+    with ConvertHeight(FontEmHeight, sourceUnit) do
+      if value = 0 then result := 0 else result := xy/value;
   end else
-  if destUnit = cuFontEmHeight then
+  if destUnit = cuFontXHeight then
   begin
-    with FontXHeight do
-      if value = 0 then result := 0
-      else result := Convert(xy/value,sourceUnit, CSSUnit, dpi);
+    with ConvertHeight(FontXHeight, sourceUnit) do
+      if value = 0 then result := 0 else result := xy/value;
   end else
   if sourceUnit = cuPixel then
   begin
@@ -453,8 +452,7 @@ end;
 constructor TCSSUnitConverter.Create;
 begin
   inherited;
-
-  fCurrFontSize:= GetRootFontSize;
+  FCurrentFontEmHeight:= GetRootFontEmHeight;
 end;  
 
 initialization
