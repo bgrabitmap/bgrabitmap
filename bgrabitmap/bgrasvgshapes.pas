@@ -200,12 +200,13 @@ type
   { TSVGTextElementWithContent }
 
   TSVGTextElementWithContent = class(TSVGTextElement)
-    private
+    protected
       FContent: TSVGContent;
     public
-      constructor Create(AElement: TDOMElement;
-        AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
+      property Content: TSVGContent read FContent;
   end;
 
   { TSVGTextPositioning }
@@ -267,6 +268,7 @@ type
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit; const initRequired: Boolean;
         var computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize: single); overload;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override; overload;
+      function CleanText(AText: string): string;
     public
       class function GetDOMTag: string; override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
@@ -688,17 +690,23 @@ type
   { TSVGContent }
 
   TSVGContent = class
+  private
+    function GetElementDOMNode(AIndex: integer): TDOMNode;
     protected
       FDataLink: TSVGDataLink;
+      FDataParent: TSVGElement;
       FDomElem: TDOMElement;
       FDoc: TDOMDocument;
       FElements: TFPList;
       FUnits: TCSSUnitConverter;
-      procedure AppendElement(AElement: TSVGElement);
+      function GetDOMNode(AElement: TObject): TDOMNode;
+      procedure AppendElement(AElement: TObject); overload;
       procedure InsertElementBefore(AElement: TSVGElement; ASuccessor: TSVGElement);
       function GetElement(AIndex: integer): TSVGElement;
+      function GetIsSVGElement(AIndex: integer): boolean;
       function GetElementCount: integer;
       function GetUnits: TCSSUnitConverter;
+      function TryCreateElementFromNode(ANode: TDOMNode): TObject; virtual;
     public
       constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
         ADataLink: TSVGDataLink; ADataParent: TSVGElement);
@@ -706,7 +714,7 @@ type
       procedure Recompute;
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
-      function AppendElement(ASVGType: TSVGFactory): TSVGElement;
+      function AppendElement(ASVGType: TSVGFactory): TSVGElement; overload;
       function AppendLine(x1,y1,x2,y2: single; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
       function AppendLine(p1,p2: TPointF; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
       function AppendCircle(cx,cy,r: single; AUnit: TCSSUnit = cuCustom): TSVGCircle; overload;
@@ -725,6 +733,8 @@ type
       function AppendRoundRect(origin,size,radius: TPointF; AUnit: TCSSUnit = cuCustom): TSVGRectangle; overload;
       property ElementCount: integer read GetElementCount;
       property Element[AIndex: integer]: TSVGElement read GetElement;
+      property ElementDOMNode[AIndex: integer]: TDOMNode read GetElementDOMNode;
+      property IsSVGElement[AIndex: integer]: boolean read GetIsSVGElement;
       property Units: TCSSUnitConverter read GetUnits;
   end;
 
@@ -889,7 +899,7 @@ procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D)
     result:= 0;
     with (el as TSVGGradient).Content do
       for i:= 0 to ElementCount-1 do
-        if Element[i] is TSVGStopGradient then
+        if IsSVGElement[i] and (Element[i] is TSVGStopGradient) then
           with TSVGStopGradient(Element[i]) do
           begin
             col:= StrToBGRA( AttributeOrStyleDef['stop-color','black'] );
@@ -1025,6 +1035,13 @@ end;
 
 { TSVGTextElementWithContent }
 
+constructor TSVGTextElementWithContent.Create(ADocument: TDOMDocument;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  FContent := TSVGContent.Create(FDomElem,AUnits,ADataLink,Self);
+end;
+
 constructor TSVGTextElementWithContent.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
@@ -1140,19 +1157,24 @@ var
 begin
   if FInGetElementText then exit(''); //avoid reentrance
   FInGetElementText := true;
+  result := '';
   for i := 0 to FContent.ElementCount-1 do
-    if FContent.Element[i] is TSVGTRef then
+    if FContent.IsSVGElement[i] then
     begin
-      refText := TSVGText(FDataLink.FindElementByRef(TSVGTRef(FContent.Element[i]).xlinkHref, TSVGText));
-      if Assigned(refText) then
-        result := refText.ElementText
-      else
-        result := '';
-      FInGetElementText := false;
-      exit;
+      if FContent.Element[i] is TSVGTRef then
+      begin
+        refText := TSVGText(FDataLink.FindElementByRef(TSVGTRef(FContent.Element[i]).xlinkHref, TSVGText));
+        if Assigned(refText) then result += refText.ElementText;
+      end else
+      if FContent.Element[i] is TSVGText then
+        result += TSVGText(FContent.Element[i]).ElementText;
+    end else
+    begin
+      if FContent.ElementDOMNode[i] is TDOMText then
+        result += TDOMText(FContent.ElementDOMNode[i]).Data;
     end;
+  result := CleanText(result);
   FInGetElementText := false;
-  result := GetSimpleText;
 end;
 
 function TSVGText.GetTextAnchor: string;
@@ -1434,6 +1456,30 @@ begin
     if FContent.Element[i] is TSVGText then
       (FContent.Element[i] as TSVGText).InternalDraw(ACanvas2d,AUnit, False,
         computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
+end;
+
+function TSVGText.CleanText(AText: string): string;
+var wasSpace: boolean;
+  i,j: integer;
+begin
+  wasSpace := true;
+  setlength(result, length(AText));
+  j := 0;
+  for i := 1 to length(AText) do
+    if AText[i] in[#0..#32] then
+      wasSpace := true
+    else
+    begin
+      if wasSpace and (j>0) then
+      begin
+        inc(j);
+        result[j] := ' ';
+      end;
+      inc(j);
+      result[j] := AText[i];
+      wasSpace:= false;
+    end;
+  setlength(result, j);
 end;
 
 class function TSVGText.GetDOMTag: string;
@@ -3164,7 +3210,7 @@ end;
 
 function TSVGContent.GetElement(AIndex: integer): TSVGElement;
 begin
-  result := TSVGElement(FElements.Items[AIndex]);
+  result := TObject(FElements.Items[AIndex]) as TSVGElement;
 end;
 
 function TSVGContent.GetElementCount: integer;
@@ -3177,9 +3223,38 @@ begin
   result := FUnits;
 end;
 
-procedure TSVGContent.AppendElement(AElement: TSVGElement);
+function TSVGContent.TryCreateElementFromNode(ANode: TDOMNode): TObject;
 begin
-  FDomElem.AppendChild(AElement.DOMElement);
+  if ANode is TDOMElement then
+    result := CreateSVGElementFromNode(TDOMElement(ANode),
+                    FUnits,FDataLink,FDataParent)
+  else
+    result := ANode;
+end;
+
+function TSVGContent.GetIsSVGElement(AIndex: integer): boolean;
+begin
+  result := TObject(FElements[AIndex]) is TSVGElement;
+end;
+
+function TSVGContent.GetElementDOMNode(AIndex: integer): TDOMNode;
+begin
+  result := GetDOMNode(TObject(FElements[AIndex]));
+end;
+
+function TSVGContent.GetDOMNode(AElement: TObject): TDOMNode;
+begin
+  if AElement is TDOMNode then
+    result := TDOMNode(AElement)
+  else if AElement is TSVGElement then
+    result := TSVGElement(AElement).DOMElement
+  else
+    raise exception.Create('Unexpected element type');
+end;
+
+procedure TSVGContent.AppendElement(AElement: TObject);
+begin
+  FDomElem.AppendChild(GetDOMNode(AElement));
   FElements.Add(AElement);
 end;
 
@@ -3191,30 +3266,28 @@ begin
   if idx <> -1 then
   begin
     FElements.Insert(idx,AElement);
-    FDomElem.InsertBefore(AElement.DOMElement, ASuccessor.DOMElement);
+    FDomElem.InsertBefore(GetDOMNode(AElement), GetDOMNode(ASuccessor));
   end
   else
-  begin
-    FElements.Add(AElement);
-    FDomElem.AppendChild(ASuccessor.DOMElement);
-  end;
+    AppendElement(AElement);
 end;
 
 constructor TSVGContent.Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
   ADataLink: TSVGDataLink; ADataParent: TSVGElement);
 var cur: TDOMNode;
+  elem: TObject;
 begin
   FDoc := AElement.OwnerDocument;
   FDomElem := AElement;
   FDataLink := ADataLink;
+  FDataParent := ADataParent;
   FElements := TFPList.Create;
   FUnits := AUnits;
   cur := FDomElem.FirstChild;
   while cur <> nil do
   begin
-    if cur is TDOMElement then
-      FElements.Add(CreateSVGElementFromNode(TDOMElement(cur),
-                    FUnits,ADataLink,ADataParent));
+    elem := TryCreateElementFromNode(cur);
+    if Assigned(elem) then FElements.Add(elem);
     cur := cur.NextSibling;
   end;
 end;
@@ -3223,7 +3296,7 @@ destructor TSVGContent.Destroy;
 var i:integer;
 begin
   for i := 0 to ElementCount-1 do
-    Element[i].free;
+    if not (TObject(FElements[i]) is TDOMNode) then TObject(FElements[i]).Free;
   FreeAndNil(FElements);
   inherited Destroy;
 end;
@@ -3233,7 +3306,8 @@ var
   i: Integer;
 begin
   for i := 0 to ElementCount-1 do
-    Element[i].Recompute;
+    if IsSVGElement[i] then
+      Element[i].Recompute;
 end;
 
 procedure TSVGContent.Draw(ACanvas2d: TBGRACanvas2D; x, y: single; AUnit: TCSSUnit);
@@ -3253,7 +3327,8 @@ procedure TSVGContent.Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var i: integer;
 begin
   for i := 0 to ElementCount-1 do
-    Element[i].Draw(ACanvas2d, AUnit);
+    if IsSVGElement[i] then
+      Element[i].Draw(ACanvas2d, AUnit);
 end;
 
 function TSVGContent.AppendElement(ASVGType: TSVGFactory): TSVGElement;
