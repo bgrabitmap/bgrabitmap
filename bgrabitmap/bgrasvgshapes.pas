@@ -231,6 +231,17 @@ type
       property rotate: ArrayOfTSVGNumber read GetRotate write SetRotate;
   end;
 
+  { TSVGTRef }
+
+  TSVGTRef = class(TSVGTextElement)
+    private
+      function GetXlinkHref: string;
+      procedure SetXlinkHref(AValue: string);
+    public
+      class function GetDOMTag: string; override;
+      property xlinkHref: string read GetXlinkHref write SetXlinkHref;
+  end;
+
   { TSVGText }
 
   TSVGText = class(TSVGTextPositioning)
@@ -269,6 +280,7 @@ type
         var computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize: single); overload;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override; overload;
       function CleanText(AText: string): string;
+      function GetTRefContent(AElement: TSVGTRef): string;
     public
       class function GetDOMTag: string; override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
@@ -292,17 +304,6 @@ type
   TSVGTSpan = class(TSVGText)
     public
       class function GetDOMTag: string; override;
-  end;
-
-  { TSVGTRef }
-
-  TSVGTRef = class(TSVGTextElement)
-    private
-      function GetXlinkHref: string;
-      procedure SetXlinkHref(AValue: string);
-    public
-      class function GetDOMTag: string; override;
-      property xlinkHref: string read GetXlinkHref write SetXlinkHref;
   end;
 
   { TSVGTextPath }
@@ -1153,7 +1154,6 @@ end;
 function TSVGText.GetElementText: string;
 var
   i: Integer;
-  refText: TSVGText;
 begin
   if FInGetElementText then exit(''); //avoid reentrance
   FInGetElementText := true;
@@ -1162,10 +1162,8 @@ begin
     if FContent.IsSVGElement[i] then
     begin
       if FContent.Element[i] is TSVGTRef then
-      begin
-        refText := TSVGText(FDataLink.FindElementByRef(TSVGTRef(FContent.Element[i]).xlinkHref, TSVGText));
-        if Assigned(refText) then result += refText.ElementText;
-      end else
+        result += GetTRefContent(TSVGTRef(FContent.Element[i]))
+      else
       if FContent.Element[i] is TSVGText then
         result += TSVGText(FContent.Element[i]).ElementText;
     end else
@@ -1480,6 +1478,14 @@ begin
       wasSpace:= false;
     end;
   setlength(result, j);
+end;
+
+function TSVGText.GetTRefContent(AElement: TSVGTRef): string;
+var
+  refText: TSVGText;
+begin
+  refText := TSVGText(FDataLink.FindElementByRef(AElement.xlinkHref, TSVGText));
+  if Assigned(refText) then result := refText.ElementText else result := '';
 end;
 
 class function TSVGText.GetDOMTag: string;
