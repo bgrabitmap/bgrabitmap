@@ -159,16 +159,14 @@ type
       function GetFillRule: string;
       function GetHorizAttributeOrStyleWithUnit(AName: string;
         ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
-      function GetArrayOfHorizAttributeOrStyleWithUnit(AName: string;
-        ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+      function GetArrayOfHorizAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
       function GetIsFillNone: boolean;
       function GetIsStrokeNone: boolean;
       function GetMatrix(AUnit: TCSSUnit): TAffineMatrix;
       function GetOpacity: single;
       function GetOrthoAttributeOrStyleWithUnit(AName: string;
         ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
-      function GetArrayOfOrthoAttributeOrStyleWithUnit(AName: string;
-        ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+      function GetArrayOfOrthoAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
       function GetStroke: string;
       function GetStrokeColor: TBGRAPixel;
       function GetStrokeLineCap: string;
@@ -191,8 +189,7 @@ type
       function GetAttribute(AName: string): string; overload;
       function GetVerticalAttributeOrStyleWithUnit(AName: string;
         ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
-      function GetArrayOfVerticalAttributeOrStyleWithUnit(AName: string;
-        ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+      function GetArrayOfVerticalAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
       procedure SetAttribute(AName: string; AValue: TSVGNumber); overload;
       procedure SetAttribute(AName: string; AValue: string); overload;
       function GetAttribute(AName: string; ADefault: TSVGNumber): TSVGNumber; overload;
@@ -211,18 +208,16 @@ type
       function GetHorizAttributeWithUnit(AName: string): TFloatWithCSSUnit; overload;
       function GetVerticalAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
       function GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit; overload;
-      function GetArrayOfAttributeNumber(AName: string; ADefault: ArrayOfTSVGNumber): ArrayOfTSVGNumber; overload;
+      function GetArrayOfAttributeNumber(AName: string; ACanInherit: boolean): ArrayOfTSVGNumber;
       function GetArrayOfAttributeNumber(AName: string): ArrayOfTSVGNumber; overload;
-      function GetArrayOfAttributeWithUnit(AName: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit; overload;
+      function GetArrayOfAttributeWithUnit(AName: string; ACanInherit: boolean): ArrayOfTFloatWithCSSUnit; overload;
       function GetArrayOfAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit; overload;
-      function GetArrayOfAttributeOrStyleWithUnit(AName: string;
-        ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit; overload;
       function GetArrayOfAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit; overload;
-      function GetArrayOfOrthoAttributeWithUnit(AName: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit; overload;
+      function GetArrayOfOrthoAttributeWithUnit(AName: string; ACanInherit: boolean): ArrayOfTFloatWithCSSUnit; overload;
       function GetArrayOfOrthoAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit; overload;
-      function GetArrayOfHorizAttributeWithUnit(AName: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit; overload;
+      function GetArrayOfHorizAttributeWithUnit(AName: string; ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
       function GetArrayOfHorizAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit; overload;
-      function GetArrayOfVerticalAttributeWithUnit(AName: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit; overload;
+      function GetArrayOfVerticalAttributeWithUnit(AName: string; ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
       function GetArrayOfVerticalAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit; overload;
       function GetID: string;
       function GetClassAt: string;
@@ -309,19 +304,18 @@ type
       property OrthoAttributeOrStyleWithUnit[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetOrthoAttributeOrStyleWithUnit;
       property HorizAttributeOrStyleWithUnit[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetHorizAttributeOrStyleWithUnit;
       property VerticalAttributeOrStyleWithUnit[AName: string; ADefault: TFloatWithCSSUnit]: TFloatWithCSSUnit read GetVerticalAttributeOrStyleWithUnit;
-      property ArrayOfAttributeNumberDef[AName: string; ADefault: ArrayOfTSVGNumber]: ArrayOfTSVGNumber read GetArrayOfAttributeNumber;
+      property ArrayOfAttributeNumberInherit[AName: string; ACanInherit: boolean]: ArrayOfTSVGNumber read GetArrayOfAttributeNumber;
       property ArrayOfAttributeNumber[AName: string]: ArrayOfTSVGNumber read GetArrayOfAttributeNumber write SetArrayOfAttributeNumber;
-      property ArrayOfAttributeWithUnitDef[AName: string; ADefault: ArrayOfTFloatWithCSSUnit]: ArrayOfTFloatWithCSSUnit read GetArrayOfAttributeWithUnit;
+      property ArrayOfAttributeWithUnitInherit[AName: string; ACanInherit: boolean]: ArrayOfTFloatWithCSSUnit read GetArrayOfAttributeWithUnit;
       property ArrayOfAttributeWithUnit[AName: string]: ArrayOfTFloatWithCSSUnit read GetArrayOfAttributeWithUnit write SetArrayOfAttributeWithUnit;
-      property ArrayOfOrthoAttributeWithUnitDef[AName: string; ADefault: ArrayOfTFloatWithCSSUnit]: ArrayOfTFloatWithCSSUnit read GetArrayOfOrthoAttributeWithUnit;
       property ArrayOfOrthoAttributeWithUnit[AName: string]: ArrayOfTFloatWithCSSUnit read GetArrayOfOrthoAttributeWithUnit write SetArrayOfOrthoAttributeWithUnit;
-      property ArrayOfHorizAttributeWithUnitDef[AName: string; ADefault: ArrayOfTFloatWithCSSUnit]: ArrayOfTFloatWithCSSUnit read GetArrayOfHorizAttributeWithUnit;
+      property ArrayOfHorizAttributeWithUnitInherit[AName: string; ACanInherit: boolean]: ArrayOfTFloatWithCSSUnit read GetArrayOfHorizAttributeWithUnit;
       property ArrayOfHorizAttributeWithUnit[AName: string]: ArrayOfTFloatWithCSSUnit read GetArrayOfHorizAttributeWithUnit write SetArrayOfHorizAttributeWithUnit;
-      property ArrayOfVerticalAttributeWithUnitDef[AName: string; ADefault: ArrayOfTFloatWithCSSUnit]: ArrayOfTFloatWithCSSUnit read GetArrayOfVerticalAttributeWithUnit;
+      property ArrayOfVerticalAttributeWithUnitInherit[AName: string; ACanInherit: boolean]: ArrayOfTFloatWithCSSUnit read GetArrayOfVerticalAttributeWithUnit;
       property ArrayOfVerticalAttributeWithUnit[AName: string]: ArrayOfTFloatWithCSSUnit read GetArrayOfVerticalAttributeWithUnit write SetArrayOfVerticalAttributeWithUnit;
-      property ArrayOfOrthoAttributeOrStyleWithUnit[AName: string; ADefault: ArrayOfTFloatWithCSSUnit]: ArrayOfTFloatWithCSSUnit read GetArrayOfOrthoAttributeOrStyleWithUnit;
-      property ArrayOfHorizAttributeOrStyleWithUnit[AName: string; ADefault: ArrayOfTFloatWithCSSUnit]: ArrayOfTFloatWithCSSUnit read GetArrayOfHorizAttributeOrStyleWithUnit;
-      property ArrayOfVerticalAttributeOrStyleWithUnit[AName: string; ADefault: ArrayOfTFloatWithCSSUnit]: ArrayOfTFloatWithCSSUnit read GetArrayOfVerticalAttributeOrStyleWithUnit;
+      property ArrayOfOrthoAttributeOrStyleWithUnit[AName: string]: ArrayOfTFloatWithCSSUnit read GetArrayOfOrthoAttributeOrStyleWithUnit;
+      property ArrayOfHorizAttributeOrStyleWithUnit[AName: string]: ArrayOfTFloatWithCSSUnit read GetArrayOfHorizAttributeOrStyleWithUnit;
+      property ArrayOfVerticalAttributeOrStyleWithUnit[AName: string]: ArrayOfTFloatWithCSSUnit read GetArrayOfVerticalAttributeOrStyleWithUnit;
       property DOMElement: TDOMElement read GetDOMElement;
       property Units: TCSSUnitConverter read GetUnits;
       property transform: string read GetTransform write SetTransform;
@@ -948,12 +942,11 @@ begin
       result.value /= Units.DpiScaleY;
 end;
 
-function TSVGElement.GetArrayOfVerticalAttributeOrStyleWithUnit(AName: string;
-  ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+function TSVGElement.GetArrayOfVerticalAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 var
   i: integer;
 begin
-  result := GetArrayOfAttributeOrStyleWithUnit(AName,ADefault);
+  result := GetArrayOfAttributeOrStyleWithUnit(AName);
   for i := low(result) to high(result) do
   begin
     if result[i].CSSUnit <> cuCustom then
@@ -1041,65 +1034,47 @@ begin
   result := GetHorizAttributeWithUnit(AName,FloatWithCSSUnit(0,cuCustom));
 end;
 
-function TSVGElement.GetArrayOfAttributeNumber(AName: string; ADefault: ArrayOfTSVGNumber): ArrayOfTSVGNumber;
-begin
-  result := TCSSUnitConverter.parseValue(Attribute[AName],ADefault);
-end;
-
 function TSVGElement.GetArrayOfAttributeNumber(AName: string): ArrayOfTSVGNumber;
 begin
-  setlength(result,1);
-  result[0]:= 0;
-  result := GetArrayOfAttributeNumber(AName,result);
+  result := GetArrayOfAttributeNumber(AName,true);
 end;
 
-function TSVGElement.GetArrayOfAttributeWithUnit(AName: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+function TSVGElement.GetArrayOfAttributeWithUnit(AName: string; ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
 begin
-  result := TCSSUnitConverter.parseValue(Attribute[AName,'',True],ADefault);
+  result := TCSSUnitConverter.parseArrayOfValuesWithUnit(GetAttribute(AName,'',ACanInherit));
 end;
 
 function TSVGElement.GetArrayOfAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 begin
-  setlength(result,1);
-  result[0]:= FloatWithCSSUnit(0,cuCustom);
-  result := GetArrayOfAttributeWithUnit(AName,result);
+  result := GetArrayOfAttributeWithUnit(AName,true);
 end;
 
-function TSVGElement.GetArrayOfAttributeOrStyleWithUnit(AName: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+function TSVGElement.GetArrayOfAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 var
   valueText: string;
 begin
   valueText := GetAttributeOrStyle(AName);
-  result := TCSSUnitConverter.parseValue(valueText,ADefault);
-end;
-
-function TSVGElement.GetArrayOfAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
-begin
-  setlength(result,1);
-  result[0] := FloatWithCSSUnit(0,cuCustom);
-  result := GetArrayOfAttributeOrStyleWithUnit(AName,result);
+  result := TCSSUnitConverter.parseArrayOfValuesWithUnit(valueText);
 end;
 
 function TSVGElement.GetArrayOfOrthoAttributeWithUnit(AName: string;
-  ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+  ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
 begin
-  result := GetArrayOfHorizAttributeWithUnit(AName,ADefault);
+  result := GetArrayOfHorizAttributeWithUnit(AName, ACanInherit);
   //value will be inconsistent if scaling is inconsistent
 end;
 
 function TSVGElement.GetArrayOfOrthoAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 begin
-  setlength(result,1);
-  result[0] := FloatWithCSSUnit(0,cuCustom);
-  result := GetArrayOfOrthoAttributeWithUnit(AName,result);
+  result := GetArrayOfHorizAttributeWithUnit(AName);
+  //value will be inconsistent if scaling is inconsistent
 end;
 
-function TSVGElement.GetArrayOfHorizAttributeWithUnit(AName: string;
-  ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+function TSVGElement.GetArrayOfHorizAttributeWithUnit(AName: string; ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
 var
   i: integer;
 begin
-  result := GetArrayOfAttributeWithUnit(AName,ADefault);
+  result := GetArrayOfAttributeWithUnit(AName,ACanInherit);
   for i := low(result) to high(result) do
     if result[i].value <> EmptySingle then
     begin
@@ -1113,9 +1088,23 @@ end;
 
 function TSVGElement.GetArrayOfHorizAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 begin
-  setlength(result,1);
-  result[0] := FloatWithCSSUnit(0,cuCustom);
-  result := GetArrayOfHorizAttributeWithUnit(AName,result);
+  result := GetArrayOfHorizAttributeWithUnit(AName,true);
+end;
+
+function TSVGElement.GetArrayOfVerticalAttributeWithUnit(AName: string;
+  ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
+var
+  i: integer;
+begin
+  result := GetArrayOfAttributeWithUnit(AName,ACanInherit);
+  for i := low(result) to high(result) do
+  begin
+    if result[i].CSSUnit <> cuCustom then
+      if units.DpiScaleY = 0 then
+        result[i].value := 0
+      else
+        result[i].value /= Units.DpiScaleY;
+  end;
 end;
 
 function TSVGElement.GetAttributeOrStyle(AName,ADefault: string): string;
@@ -1150,6 +1139,12 @@ begin
       end;
     end;
   end;
+end;
+
+function TSVGElement.GetArrayOfAttributeNumber(AName: string;
+  ACanInherit: boolean): ArrayOfTSVGNumber;
+begin
+  result := TCSSUnitConverter.parseArrayOfNumbers(GetAttribute(AName,'',ACanInherit));
 end;
 
 function TSVGElement.GetAttributeOrStyle(AName: string): string;
@@ -1194,12 +1189,11 @@ begin
       result.value /= Units.DpiScaleX;
 end;
 
-function TSVGElement.GetArrayOfHorizAttributeOrStyleWithUnit(AName: string;
-  ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+function TSVGElement.GetArrayOfHorizAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 var
   i: integer;
 begin
-  result := GetArrayOfAttributeOrStyleWithUnit(AName,ADefault);
+  result := GetArrayOfAttributeOrStyleWithUnit(AName);
   for i := low(result) to high(result) do
   begin
     if result[i].CSSUnit <> cuCustom then
@@ -1255,10 +1249,9 @@ begin
   //value will be inconsistent if scaling is inconsistent
 end;
 
-function TSVGElement.GetArrayOfOrthoAttributeOrStyleWithUnit(AName: string;
-  ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+function TSVGElement.GetArrayOfOrthoAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 begin
-  result := GetArrayOfHorizAttributeOrStyleWithUnit(AName,ADefault);
+  result := GetArrayOfHorizAttributeOrStyleWithUnit(AName);
   //value will be inconsistent if scaling is inconsistent
 end;
 
@@ -1466,26 +1459,9 @@ begin
   result := GetVerticalAttributeWithUnit(AName,FloatWithCSSUnit(0,cuCustom));
 end;
 
-function TSVGElement.GetArrayOfVerticalAttributeWithUnit(AName: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
-var
-  i: integer;
-begin
-  result := GetArrayOfAttributeWithUnit(AName,ADefault);
-  for i := low(result) to high(result) do
-  begin
-    if result[i].CSSUnit <> cuCustom then
-      if units.DpiScaleY = 0 then
-        result[i].value := 0
-      else
-        result[i].value /= Units.DpiScaleY;
-  end;
-end;
-
 function TSVGElement.GetArrayOfVerticalAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 begin
-  setlength(result,1);
-  result[0] := FloatWithCSSUnit(0,cuCustom);
-  result := GetArrayOfVerticalAttributeWithUnit(AName,result);
+  result := GetArrayOfVerticalAttributeWithUnit(AName, True);
 end;
 
 function TSVGElement.GetDOMElement: TDOMElement;

@@ -65,8 +65,8 @@ type
     function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TPointF; virtual;
     class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload; static;
     class function parseValue(AValue: string; ADefault: single): single; overload; static;
-    class function parseValue(AValue: string; ADefault: ArrayOfTSVGNumber): ArrayOfTSVGNumber; overload; static;
-    class function parseValue(AValue: string; ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit; overload; static;
+    class function parseArrayOfNumbers(AValue: string): ArrayOfTSVGNumber; overload; static;
+    class function parseArrayOfValuesWithUnit(AValue: string): ArrayOfTFloatWithCSSUnit; overload; static;
     class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string; overload; static;
     class function formatValue(AValue: single; APrecision: integer = 7): string; overload; static;
     class function formatValue(AValue: ArrayOfTSVGNumber; APrecision: integer = 7): string; overload; static;
@@ -321,11 +321,9 @@ begin
     result := ADefault;
 end;
 
-class function TCSSUnitConverter.parseValue(AValue: string;
-  ADefault: ArrayOfTSVGNumber): ArrayOfTSVGNumber;
+class function TCSSUnitConverter.parseArrayOfNumbers(AValue: string): ArrayOfTSVGNumber;
 var
-  i, l,p, lDef: integer;
-  def: TSVGNumber;
+  i, l,p: integer;
 
   procedure CanAddToArray;
   var
@@ -334,29 +332,16 @@ var
     if l <> 0 then
     begin
       len := length(result);
-      if len < lDef then
-        def := ADefault[len];
       setlength(result,len+1);
-      result[len] :=
-        parseValue( copy(AValue,p,l), def);
+      result[len] := parseValue( copy(AValue,p,l), 0);
     end;
   end;
 
 begin
-  if AValue = '' then
-  begin
-    result := ADefault;
-    exit;
-  end; 
-  
-  lDef:= length(ADefault);
-  if lDef = 0 then
-   def:= 0;
+  AValue := trim(AValue);
+  if AValue = '' then exit(nil);
 
-  //AValue := trim(AValue);
   setlength(result,0);
-  //if length(AValue) = 0 then
-  // Exit;
   p:= 1;
   l:= 0;
   for i := 1 to length(AValue) do
@@ -373,10 +358,9 @@ begin
   CanAddToArray;
 end;
 
-class function TCSSUnitConverter.parseValue(AValue: string;
-  ADefault: ArrayOfTFloatWithCSSUnit): ArrayOfTFloatWithCSSUnit;
+class function TCSSUnitConverter.parseArrayOfValuesWithUnit(AValue: string): ArrayOfTFloatWithCSSUnit;
 var
-  i, l,p, lDef: integer;
+  i, l,p: integer;
   def: TFloatWithCSSUnit;
 
   procedure CanAddToArray;
@@ -386,29 +370,17 @@ var
     if l <> 0 then
     begin
       len := length(result);
-      if len < lDef then
-        def := ADefault[len];
       setlength(result,len+1);
-      result[len] :=
-        parseValue( copy(AValue,p,l), def);
+      result[len] := parseValue( copy(AValue,p,l), def);
     end;
   end;
 
 begin
-  if AValue = '' then
-  begin
-    result := ADefault;
-    exit;
-  end; 
-  
-  lDef:= length(ADefault);
-  if lDef = 0 then
-   def:= FloatWithCSSUnit(0,cuCustom);
+  AValue := trim(AValue);
+  if AValue = '' then exit(nil);
 
-  //AValue := trim(AValue);
+  def := FloatWithCSSUnit(0, cuCustom);
   setlength(result,0);
-  //if length(AValue) = 0 then
-  // Exit;
   p:= 1;
   l:= 0;
   for i := 1 to length(AValue) do
