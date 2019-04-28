@@ -275,7 +275,8 @@ type
       procedure Initialize; virtual;
     public
       constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
-      constructor Create({%H-}ADocument: TDOMDocument; {%H-}AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
+      class function GetDOMTag: string; virtual;
       destructor Destroy; override;
       procedure Recompute; virtual;
       procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
@@ -1831,6 +1832,9 @@ end;
 procedure TSVGElement.Init(ADocument: TDOMDocument; ATag: string;
   AUnits: TCSSUnitConverter);
 begin
+  if ATag='' then
+    raise exception.Create('Cannot create a generic element');
+
   FDomElem := ADocument.CreateElement(ATag);
   FUnits := AUnits;
 end;
@@ -1971,7 +1975,12 @@ constructor TSVGElement.Create(ADocument: TDOMDocument;
 begin
   FDataLink:= ADataLink;
   Initialize;
-  //raise exception.Create('Cannot create a generic element');
+  Init(ADocument, GetDOMTag, AUnits);
+end;
+
+class function TSVGElement.GetDOMTag: string;
+begin
+  result := '';
 end;
 
 destructor TSVGElement.Destroy;

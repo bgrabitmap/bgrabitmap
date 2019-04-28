@@ -66,7 +66,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property x1: TFloatWithCSSUnit read GetX1 write SetX1;
       property y1: TFloatWithCSSUnit read GetY1 write SetY1;
       property x2: TFloatWithCSSUnit read GetX2 write SetX2;
@@ -92,7 +92,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property x: TFloatWithCSSUnit read GetX write SetX;
       property y: TFloatWithCSSUnit read GetY write SetY;
       property width: TFloatWithCSSUnit read GetWidth write SetWidth;
@@ -114,7 +114,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property r: TFloatWithCSSUnit read GetR write SetR;
@@ -135,7 +135,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property rx: TFloatWithCSSUnit read GetRX write SetRX;
@@ -159,6 +159,7 @@ type
       function GetDOMElement: TDOMElement; override;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
+      class function GetDOMTag: string; override;
       constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
@@ -267,7 +268,7 @@ type
         var computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize: single); overload;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override; overload;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
       property lengthAdjust: TSVGLengthAdjust read GetLengthAdjust write SetLengthAdjust;
       property SimpleText: string read GetSimpleText write SetSimpleText;
@@ -288,7 +289,7 @@ type
 
   TSVGTSpan = class(TSVGText)
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
   end;
 
   { TSVGTRef }
@@ -298,7 +299,7 @@ type
       function GetXlinkHref: string;
       procedure SetXlinkHref(AValue: string);
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
   end;
 
@@ -317,7 +318,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property startOffset: TFloatWithCSSUnit read GetStartOffset write SetStartOffset;
       property method: TSVGTextPathMethod read GetMethod write SetMethod;
       property spacing: TSVGTextPathSpacing read GetSpacing write SetSpacing;
@@ -337,7 +338,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property glyphRef: string read GetGlyphRef write SetGlyphRef;
       property format: string read GetFormat write SetFormat;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
@@ -347,14 +348,14 @@ type
 
   TSVGAltGlyphDef = class(TSVGTextElementWithContent)
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
   end;
 
   { TSVGAltGlyphItem }
 
   TSVGAltGlyphItem = class(TSVGTextElementWithContent)
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
   end;
 
   { TSVGGlyphRef }
@@ -378,7 +379,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property x: TSVGNumber read GetX write SetX;
       property y: TSVGNumber read GetY write SetY;
       property dX: TSVGNumber read GetDx write SetDx;
@@ -399,7 +400,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property clipPathUnits: TSVGObjectUnits read GetClipPathUnits write SetClipPathUnits;
@@ -420,7 +421,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property local: string read GetLocal write SetLocal;
       property name: string read GetName write SetName;
       property renderingIntent: TSVGRenderingIntent read GetRenderingIntent write SetRenderingIntent;
@@ -448,7 +449,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property x: TFloatWithCSSUnit read GetX write SetX;
@@ -475,7 +476,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property patternUnits: TSVGObjectUnits read GetPatternUnits write SetPatternUnits;
       property patternContentUnits: TSVGObjectUnits
        read GetPatternContentUnits write SetPatternContentUnits;
@@ -508,7 +509,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property viewBox: TSVGViewBox read GetViewBox write SetViewBox;
@@ -543,7 +544,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property x: TFloatWithCSSUnit read GetX write SetX;
@@ -584,6 +585,8 @@ type
 
   { TSVGGradientLinear }
 
+  { TSVGLinearGradient }
+
   TSVGLinearGradient = class(TSVGGradient)
     private
       function GetX1: TFloatWithCSSUnit;
@@ -595,8 +598,7 @@ type
       procedure SetY1(AValue: TFloatWithCSSUnit);
       procedure SetY2(AValue: TFloatWithCSSUnit);
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter;
-        ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property x1: TFloatWithCSSUnit read GetX1 write SetX1;
       property y1: TFloatWithCSSUnit read GetY1 write SetY1;
       property x2: TFloatWithCSSUnit read GetX2 write SetX2;
@@ -620,8 +622,7 @@ type
       procedure SetFY(AValue: TFloatWithCSSUnit);
       procedure SetFR(AValue: TFloatWithCSSUnit);
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter;
-        ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property r: TFloatWithCSSUnit read GetR write SetR;
@@ -637,8 +638,7 @@ type
       function GetOffset: TFloatWithCSSUnit;
       procedure SetOffset(AValue: TFloatWithCSSUnit);
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter;
-        ADataLink: TSVGDataLink); override;
+      class function GetDOMTag: string; override;
       property Offset: TFloatWithCSSUnit read GetOffset write SetOffset;
   end;
 
@@ -673,7 +673,7 @@ type
    protected
      procedure Initialize; override;
    public
-     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
+     class function GetDOMTag: string; override;
      constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
      destructor Destroy; override;
      function Count: Integer;
@@ -1434,20 +1434,18 @@ begin
     if FContent.Element[i] is TSVGText then
       (FContent.Element[i] as TSVGText).InternalDraw(ACanvas2d,AUnit, False,
         computeBaseX,computeBaseY, computeDx,computeDy, computeTextSize);
-end;      
+end;
 
-constructor TSVGText.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGText.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'text',AUnits);
+  Result:= 'text';
 end;
 
 { TSVGTSpan }
 
-constructor TSVGTSpan.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGTSpan.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'tspan',AUnits);
+  Result:= 'tspan';
 end;
 
 { TSVGTRef }
@@ -1462,10 +1460,9 @@ begin
   Attribute['xlink:href'] := AValue;
 end;
 
-constructor TSVGTRef.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGTRef.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'tref',AUnits);
+  Result:= 'tref';
 end;
 
 { TSVGTextPath }
@@ -1536,10 +1533,9 @@ begin
   //todo
 end;
 
-constructor TSVGTextPath.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGTextPath.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'textpath',AUnits);
+  Result:= 'textpath';
 end;
 
 { TSVGAltGlyph }
@@ -1579,26 +1575,23 @@ begin
   //todo
 end;
 
-constructor TSVGAltGlyph.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGAltGlyph.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'altglyph',AUnits);
+  Result:= 'altglyph';
 end;
 
 { TSVGAltGlyphDef }
 
-constructor TSVGAltGlyphDef.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGAltGlyphDef.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'altglyphdef',AUnits);
+  Result:= 'altglyphdef';
 end;
 
 { TSVGAltGlyphItem }
 
-constructor TSVGAltGlyphItem.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGAltGlyphItem.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'altglyphitem',AUnits);
+  Result:= 'altglyphitem';
 end;
 
 { TSVGGlyphRef }
@@ -1678,10 +1671,9 @@ begin
   //todo
 end;
 
-constructor TSVGGlyphRef.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGGlyphRef.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'glyphref',AUnits);
+  Result:= 'glyphref';
 end;
 
 { TSVGClipPath }
@@ -1723,11 +1715,10 @@ begin
   //todo
 end;
 
-constructor TSVGClipPath.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGClipPath.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'clippath',AUnits);
-end; 
+  Result:= 'clippath';
+end;
 
 { TSVGColorProfile }
 
@@ -1797,10 +1788,9 @@ begin
   //todo
 end;
 
-constructor TSVGColorProfile.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGColorProfile.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'colorprofile',AUnits);
+  Result:= 'colorprofile';
 end;
 
 { TSVGImage }
@@ -1886,11 +1876,10 @@ begin
   //todo
 end;
 
-constructor TSVGImage.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGImage.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'image',AUnits);
-end; 
+  Result:= 'image';
+end;
 
 { TSVGPattern }
 
@@ -1951,10 +1940,9 @@ begin
   //todo
 end;
 
-constructor TSVGPattern.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGPattern.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'pattern',AUnits);
+  Result:= 'pattern';
 end;
 
 { TSVGMarker }
@@ -2089,10 +2077,9 @@ begin
   //todo
 end;
 
-constructor TSVGMarker.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGMarker.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'marker',AUnits);
+  Result:= 'marker';
 end;
 
 { TSVGMask }
@@ -2190,10 +2177,9 @@ begin
   //todo
 end;
 
-constructor TSVGMask.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGMask.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'mask',AUnits);
+  Result:= 'mask';
 end;
 
 { TSVGGroup }
@@ -2204,12 +2190,6 @@ begin
 end;
 
 { TSVGStyle }  
-
-constructor TSVGStyle.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'style',AUnits);
-end;
 
 constructor TSVGStyle.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
@@ -2222,6 +2202,11 @@ procedure TSVGStyle.Initialize;
 begin
   inherited Initialize;
   Clear;
+end;
+
+class function TSVGStyle.GetDOMTag: string;
+begin
+  Result:= 'style';
 end;
 
 destructor TSVGStyle.Destroy;
@@ -2444,11 +2429,9 @@ begin
   VerticalAttributeWithUnit['ry'] := AValue;
 end;
 
-constructor TSVGRectangle.Create(ADocument: TDOMDocument;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGRectangle.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'rect',AUnits);
+  Result:= 'rect';
 end;
 
 procedure TSVGRectangle.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
@@ -2675,7 +2658,6 @@ end;
 constructor TSVGPath.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'path',AUnits);
   FPath := nil;
   FBoundingBoxComputed := false;
   FBoundingBox := rectF(0,0,0,0);
@@ -2685,7 +2667,6 @@ constructor TSVGPath.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(AElement, AUnits, ADataLink);
-  Init(AElement, AUnits);
   FPath := nil;
   FBoundingBoxComputed := false;
   FBoundingBox := rectF(0,0,0,0);
@@ -2727,6 +2708,11 @@ begin
       ACanvas2d.stroke;
     end;
   end;
+end;
+
+class function TSVGPath.GetDOMTag: string;
+begin
+  Result:= 'path';
 end;
 
 { TSVGEllipse }
@@ -2771,13 +2757,6 @@ begin
   VerticalAttributeWithUnit['ry'] := AValue;
 end;
 
-constructor TSVGEllipse.Create(ADocument: TDOMDocument;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'ellipse',AUnits);
-end;
-
 procedure TSVGEllipse.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
   vcx,vcy,vrx,vry: Single;
@@ -2803,6 +2782,11 @@ begin
       ACanvas2d.stroke;
     end;
   end;
+end;
+
+class function TSVGEllipse.GetDOMTag: string;
+begin
+  Result:= 'ellipse';
 end;
 
 { TSVGCircle }
@@ -2837,12 +2821,6 @@ begin
   OrthoAttributeWithUnit['r'] := AValue;
 end;
 
-constructor TSVGCircle.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AUnits, ADataLink); 
-  Init(ADocument,'circle',AUnits);
-end;
-
 procedure TSVGCircle.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
   vcx,vcy,vr: Single;
@@ -2867,6 +2845,11 @@ begin
       ACanvas2d.stroke;
     end;
   end;
+end;
+
+class function TSVGCircle.GetDOMTag: string;
+begin
+  Result:= 'circle';
 end;
 
 { TSVGLine }
@@ -2911,12 +2894,6 @@ begin
   VerticalAttributeWithUnit['y2'] := AValue;
 end;
 
-constructor TSVGLine.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'line',AUnits);
-end;
-
 procedure TSVGLine.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
   if not isStrokeNone then
@@ -2927,6 +2904,11 @@ begin
     ACanvas2d.lineTo(Units.ConvertWidth(x2,AUnit).value,Units.ConvertHeight(y2,AUnit).value);
     ACanvas2d.stroke;
   end;
+end;
+
+class function TSVGLine.GetDOMTag: string;
+begin
+  Result:= 'line';
 end;
 
 { TSVGGradient } //##
@@ -3089,11 +3071,9 @@ begin
   AttributeWithUnit['y2']:= AValue;
 end;
 
-constructor TSVGLinearGradient.Create(ADocument: TDOMDocument;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGLinearGradient.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'linearGradient',AUnits);
+  Result:= 'linearGradient';
 end;
 
 { TSVGRadialGradient }
@@ -3158,11 +3138,9 @@ begin
   HorizAttributeWithUnit['fr'] := AValue;
 end;
 
-constructor TSVGRadialGradient.Create(ADocument: TDOMDocument;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+class function TSVGRadialGradient.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'radialGradient',AUnits);
+  Result:= 'radialGradient';
 end;
 
 { TSVGStopGradient }
@@ -3175,13 +3153,11 @@ end;
 procedure TSVGStopGradient.SetOffset(AValue: TFloatWithCSSUnit);
 begin
   AttributeWithUnit['offset'] := AValue;
-end; 
+end;
 
-constructor TSVGStopGradient.Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter;
-  ADataLink: TSVGDataLink);
+class function TSVGStopGradient.GetDOMTag: string;
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
-  Init(ADocument,'stop',AUnits);
+  Result:= 'stop';
 end;
 
 { TSVGContent }
