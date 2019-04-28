@@ -896,8 +896,13 @@ var
   index: Integer;
 begin
  index := FElements.IndexOf(AId);
- if index = -1 then exit(nil)
- else exit(FElements.Data[index]);
+ if index = -1 then
+   result := nil
+ else
+ begin
+   result := FElements.Data[index];
+   if not (result is AClass) then result := nil;
+ end;
 end;
 
 function TSVGDataLink.FindElementByRef(ARef: string; AClass: TSVGFactory): TSVGElement;
