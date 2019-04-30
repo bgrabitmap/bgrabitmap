@@ -106,19 +106,22 @@ type
    private
      FElements: TSVGElementDictionary;
      FStyles: TSVGElementList;
-     function IsValidIndex(const AIndex: integer; list: TSVGElementList): boolean;
      function GetElement(AIndex: integer): TSVGElement;
      function GetStyle(AIndex: integer): TSVGElement;
-     function FindElement(el: TSVGElement; list: TSVGElementList): integer;
-     function Find(el: TSVGElement): integer;//(find on FElements)
+     function IsValidIndex(const AIndex: integer; list: TSVGElementList): boolean;
+     function FindTo(el: TSVGElement; list: TSVGElementList): integer;
    public
      constructor Create;
      destructor Destroy; override;
 
      function ElementCount: integer;
      function StyleCount: integer;
+     function FindElement(el: TSVGElement): integer;
+     function FindStyle(el: TSVGElement): integer;
+     function IsLinkElement(el: TSVGElement): boolean;
+     function IsLinkStyle(el: TSVGElement): boolean;
      function IsLink(el: TSVGElement): boolean;
-     function Link(el: TSVGElement; parent: TSVGElement = nil): integer;
+     function Link(el: TSVGElement): integer;
      procedure Unlink(el: TSVGElement);
      procedure UnlinkAll;
 
@@ -625,11 +628,6 @@ begin
   inherited Destroy;
 end;
 
-function TSVGDataLink.IsValidIndex(const AIndex: integer; list: TSVGElementList): boolean;
-begin
-  result:= (AIndex >= 0) and (AIndex < list.Count);
-end;
-
 function TSVGDataLink.GetElement(AIndex: integer): TSVGElement;
 begin
   if (AIndex < 0) or (AIndex > FElements.Count) then
@@ -644,14 +642,24 @@ begin
   result:= FStyles[AIndex];
 end;
 
-function TSVGDataLink.FindElement(el: TSVGElement; list: TSVGElementList): integer;
+function TSVGDataLink.IsValidIndex(const AIndex: integer; list: TSVGElementList): boolean;
+begin
+  result:= (AIndex >= 0) and (AIndex < list.Count);
+end;
+
+function TSVGDataLink.FindTo(el: TSVGElement; list: TSVGElementList): integer;
 begin
   result := list.IndexOf(el);
 end;
 
-function TSVGDataLink.Find(el: TSVGElement): integer;
+function TSVGDataLink.FindElement(el: TSVGElement): integer;
 begin
   result:= FElements.IndexOfData(el);
+end;
+
+function TSVGDataLink.FindStyle(el: TSVGElement): integer;
+begin
+  result:= FindTo(el,FStyles);
 end;
 
 function TSVGDataLink.ElementCount: integer;
@@ -664,12 +672,22 @@ begin
   result:= FStyles.Count;
 end;
 
-function TSVGDataLink.IsLink(el: TSVGElement): boolean;
+function TSVGDataLink.IsLinkElement(el: TSVGElement): boolean;
 begin
-  result:= Find(el) <> -1;
+  result:= FindElement(el) <> -1;
 end;
 
-function TSVGDataLink.Link(el: TSVGElement; parent: TSVGElement = nil): integer;
+function TSVGDataLink.IsLinkStyle(el: TSVGElement): boolean;
+begin
+  result:= FindStyle(el) <> -1;
+end;
+
+function TSVGDataLink.IsLink(el: TSVGElement): boolean;
+begin
+  result:= IsLinkStyle(el) or IsLinkElement(el);
+end;
+
+function TSVGDataLink.Link(el: TSVGElement): integer;
 begin
   if el.ID <> '' then
   begin
@@ -689,7 +707,7 @@ begin
   if el is TSVGStyle then
    FStyles.Remove(el);
 
-  index:= Find(el);
+  index:= FindElement(el);
   if index <> -1 then
     FElements.Delete(index);
 end;
