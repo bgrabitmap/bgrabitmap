@@ -134,7 +134,6 @@ type
     private
       findStyleState: TFindStyleState;
       styleAttributes: ArrayOfTStyleAttribute;
-      FDataParent: TSVGElement;
       function GetAttributeOrStyle(AName,ADefault: string): string; overload;
       function GetAttributeOrStyle(AName: string): string; overload;
       function GetFill: string;
@@ -322,7 +321,6 @@ type
       property opacity: single read GetOpacity write SetOpacity;
       property ID: string read GetID write SetID;
       property classAt: string read GetClassAt write SetClassAt;//Attribute "class"
-      property DataParent: TSVGElement read FDataParent write FDataParent;
   end;
 
   { TSVGParser }
@@ -1747,7 +1745,6 @@ procedure TSVGElement.Initialize;
 begin
   SetLength(styleAttributes,0);
   findStyleState   := fssNotSearched;
-  FDataParent      := nil;
 end;
 
 constructor TSVGElement.Create(AElement: TDOMElement;
