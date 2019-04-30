@@ -1,12 +1,13 @@
 object Form1: TForm1
-  Left = 348
+  Left = 487
   Height = 930
-  Top = 18
+  Top = 32
   Width = 1265
   Caption = 'SVG Test'
-  ClientHeight = 930
+  ClientHeight = 905
   ClientWidth = 1265
   DesignTimePPI = 120
+  Menu = MainMenu1
   OnClose = FormClose
   OnCreate = FormCreate
   OnShow = FormShow
@@ -14,7 +15,7 @@ object Form1: TForm1
   LCLVersion = '2.0.0.4'
   object PageControl1: TPageControl
     Left = 0
-    Height = 930
+    Height = 866
     Top = 0
     Width = 1265
     ActivePage = TabSheet1
@@ -24,7 +25,7 @@ object Form1: TForm1
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Main'
-      ClientHeight = 897
+      ClientHeight = 833
       ClientWidth = 1257
       ParentFont = False
       object Panel1: TPanel
@@ -78,17 +79,17 @@ object Form1: TForm1
       end
       object Panel3: TPanel
         Left = 0
-        Height = 360
+        Height = 296
         Top = 537
         Width = 1257
         Align = alClient
-        ClientHeight = 360
+        ClientHeight = 296
         ClientWidth = 1257
         ParentFont = False
         TabOrder = 1
         object FileListBox1: TFileListBox
           Left = 1
-          Height = 358
+          Height = 294
           Top = 1
           Width = 634
           Align = alLeft
@@ -105,7 +106,7 @@ object Form1: TForm1
         end
         object Memo1: TMemo
           Left = 640
-          Height = 358
+          Height = 294
           Hint = '(Double click for on/off "change mode")'
           Top = 1
           Width = 616
@@ -127,7 +128,7 @@ object Form1: TForm1
         end
         object Splitter3: TSplitter
           Left = 635
-          Height = 358
+          Height = 294
           Top = 1
           Width = 5
         end
@@ -142,6 +143,35 @@ object Form1: TForm1
         Beveled = True
         ResizeAnchor = akTop
       end
+    end
+  end
+  object Panel2: TPanel
+    Left = 0
+    Height = 39
+    Top = 866
+    Width = 1265
+    Align = alBottom
+    BevelInner = bvLowered
+    BevelOuter = bvLowered
+    ClientHeight = 39
+    ClientWidth = 1265
+    TabOrder = 1
+    object PanProf: TPanel
+      Left = 2
+      Height = 35
+      Top = 2
+      Width = 1261
+      Align = alClient
+      Caption = '0.0s'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clBlack
+      Font.Height = -20
+      Font.Name = 'Segoe UI'
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      Font.Style = [fsBold]
+      ParentFont = False
+      TabOrder = 0
     end
   end
   object PopupMenu1: TPopupMenu
@@ -196,5 +226,24 @@ object Form1: TForm1
   object SaveDialog1: TSaveDialog
     left = 280
     top = 56
+  end
+  object MainMenu1: TMainMenu
+    left = 88
+    top = 144
+    object MenuItem7: TMenuItem
+      Caption = 'File'
+      object MenuItem8: TMenuItem
+        Caption = 'ReDraw'
+        ShortCut = 16496
+        OnClick = MenuItem8Click
+      end
+      object N1: TMenuItem
+        Caption = '-'
+      end
+      object MenuItem9: TMenuItem
+        Caption = 'Exit'
+        OnClick = MenuItem9Click
+      end
+    end
   end
 end

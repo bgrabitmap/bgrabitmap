@@ -6,9 +6,11 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  StdCtrls, FileCtrl, Menus, ComCtrls,
+  StdCtrls, FileCtrl, Menus, ComCtrls, Types,
 
-  BGRABitmapTypes, BGRABitmap, BGRASVG, BGRAUnits, Types;
+  BGRABitmapTypes, BGRABitmap, BGRASVG, BGRAUnits,
+
+  Unit2;
 
 type
 
@@ -18,6 +20,7 @@ type
     FileListBox1: TFileListBox;
     Image1: TImage;
     Image2: TImage;
+    MainMenu1: TMainMenu;
     MCopy1: TMenuItem;
     MCut1: TMenuItem;
     Memo1: TMemo;
@@ -27,11 +30,17 @@ type
     MenuItem4: TMenuItem;
     MenuItem5: TMenuItem;
     MenuItem6: TMenuItem;
+    MenuItem7: TMenuItem;
+    MenuItem8: TMenuItem;
+    MenuItem9: TMenuItem;
+    N1: TMenuItem;
     MPaste1: TMenuItem;
     MSelectAll: TMenuItem;
     PageControl1: TPageControl;
     Panel1: TPanel;
+    Panel2: TPanel;
     Panel3: TPanel;
+    PanProf: TPanel;
     PopupMenu1: TPopupMenu;
     PopupMenu2: TPopupMenu;
     SaveDialog1: TSaveDialog;
@@ -53,6 +62,8 @@ type
     procedure MenuItem1Click(Sender: TObject);
     procedure MenuItem2Click(Sender: TObject);
     procedure MenuItem4Click(Sender: TObject);
+    procedure MenuItem8Click(Sender: TObject);
+    procedure MenuItem9Click(Sender: TObject);
     procedure MPaste1Click(Sender: TObject);
     procedure MSelectAllClick(Sender: TObject);
     procedure PopupMenu1Popup(Sender: TObject);
@@ -61,6 +72,7 @@ type
     svg_sample: TBGRASVG;
     sample_id: Integer;
     last_image: TImage;
+    prof: TProfiler;
 
     procedure Test(var ms: TMemoryStream; kzoom: Single = 1);
     procedure Test(path: String);
@@ -96,20 +108,34 @@ const
 
 procedure TForm1.Test(var ms: TMemoryStream; kzoom: Single = 1);
 Var
+ v: Double;
+ s: String;
  bmp: TBGRABitmap;
 begin
  bmp:= TBGRABitmap.Create;
  try
   if Assigned(svg) then
    svg.Free;
-  svg:= TBGRASVG.Create(ms);
+  prof.BeginMeasure;
+   svg:= TBGRASVG.Create(ms);
+  v:= prof.EndMeasure;
+  s:= prof.FormatTime('create: ',v);
 
-  bmp.FontRenderer := TBGRAVectorizedFontRenderer.Create;
-  bmp.SetSize(Round(svg.WidthAsPixel*kzoom),Round(svg.HeightAsPixel*kzoom));
-  bmp.Fill(BGRAWhite);
-  svg.StretchDraw(bmp.Canvas2D, 0,0,bmp.Width,bmp.Height);
-  //svg.Draw(bmp.Canvas2D, 0,0, cuPixel);
+  prof.BeginMeasure;
+   bmp.FontRenderer := TBGRAVectorizedFontRenderer.Create;
+   bmp.SetSize(Round(svg.WidthAsPixel*kzoom),Round(svg.HeightAsPixel*kzoom));
+   bmp.Fill(BGRAWhite);
+  v:= prof.EndMeasure;
+  s:= s + prof.FormatTime(' | bmp: ',v);
+
+  prof.BeginMeasure;
+   svg.StretchDraw(bmp.Canvas2D, 0,0,bmp.Width,bmp.Height);
+   //svg.Draw(bmp.Canvas2D, 0,0, cuPixel);
+  v:= prof.EndMeasure;
+  s:= s + prof.FormatTime(' | draw: ',v);
+
   Image1.Picture.Bitmap.Assign(bmp);
+  PanProf.Caption:= s;
  finally
   bmp.Free;
  end;
@@ -193,6 +219,8 @@ begin
  svg:= nil;
  last_image:= nil;
 
+ prof:= TProfiler.Create;
+
  sl:= TStringList.Create;
  ms:= TMemoryStream.Create;
  try
@@ -218,6 +246,8 @@ begin
   Directory:= 'svg'+PathDelim;
   Mask:= '*.svg';
  end;
+
+ PanProf.DoubleBuffered:= True;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);
@@ -235,6 +265,7 @@ begin
  if Assigned(svg) then
   svg.Free;
  svg_sample.Free;
+ prof.Free;
 end;
 
 procedure TForm1.Image1MouseUp(Sender: TObject; Button: TMouseButton;
@@ -348,6 +379,16 @@ begin
    Memo1.Lines.SaveToFile(path);
   except
   end;
+end;
+
+procedure TForm1.MenuItem8Click(Sender: TObject);
+begin
+ MenuItem1.Click;
+end;
+
+procedure TForm1.MenuItem9Click(Sender: TObject);
+begin
+ Close;
 end;
 
 procedure TForm1.FileListBox1Change(Sender: TObject);
