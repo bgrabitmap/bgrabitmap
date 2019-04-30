@@ -15,18 +15,12 @@ type
   { TForm1 }
 
   TForm1 = class(TForm)
-    Button1: TButton;
-    Button2: TButton;
-    Button3: TButton;
-    Button4: TButton;
     FileListBox1: TFileListBox;
     Image1: TImage;
     Image2: TImage;
     MCopy1: TMenuItem;
     MCut1: TMenuItem;
     Memo1: TMemo;
-    Memo2: TMemo;
-    Memo3: TMemo;
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
@@ -37,22 +31,14 @@ type
     MSelectAll: TMenuItem;
     PageControl1: TPageControl;
     Panel1: TPanel;
-    Panel2: TPanel;
     Panel3: TPanel;
-    Panel4: TPanel;
     PopupMenu1: TPopupMenu;
     PopupMenu2: TPopupMenu;
     SaveDialog1: TSaveDialog;
-    Splitter1: TSplitter;
     Splitter2: TSplitter;
     Splitter3: TSplitter;
     Splitter4: TSplitter;
     TabSheet1: TTabSheet;
-    TabSheet2: TTabSheet;
-    procedure Button1Click(Sender: TObject);
-    procedure Button2Click(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
-    procedure Button4Click(Sender: TObject);
     procedure FileListBox1Change(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -79,7 +65,6 @@ type
     procedure Test(var ms: TMemoryStream; kzoom: Single = 1);
     procedure Test(path: String);
 
-    procedure UpdateInternalState;
     function DialogGetID(title: String; const can_nil: Boolean = False): Integer;
 
   public
@@ -125,8 +110,6 @@ begin
   svg.StretchDraw(bmp.Canvas2D, 0,0,bmp.Width,bmp.Height);
   //svg.Draw(bmp.Canvas2D, 0,0, cuPixel);
   Image1.Picture.Bitmap.Assign(bmp);
-
-  UpdateInternalState;
  finally
   bmp.Free;
  end;
@@ -163,20 +146,6 @@ begin
  finally
   ms.Free;
  end;
-end;
-
-procedure TForm1.UpdateInternalState;
-begin
- if Assigned(svg) then
-  with svg.DataLink.GetInternalState do
-  begin
-   Memo3.Clear;
-   Memo3.Lines.Add( 'Element: '+IntToStr(svg.DataLink.ElementCount) );
-   Memo3.Lines.Add( 'RootElement: '+IntToStr(svg.DataLink.RootElementCount) );
-   Memo3.Lines.Add( '--------------------' );
-   Memo3.Lines.Add( Text );
-   Free;
-  end;
 end;
 
 function TForm1.DialogGetID(title: String; const can_nil: Boolean = False): Integer;
@@ -393,7 +362,6 @@ begin
   //(svg source)
   try
    Memo1.Lines.LoadFromFile(path);
-   Memo2.Text:= Memo1.Text;
   except
    Memo1.Clear;
   end;
@@ -417,75 +385,6 @@ begin
    Image2.Picture:= nil;
   end;
  end;
-end;
-
-procedure TForm1.Button4Click(Sender: TObject);
-begin
- UpdateInternalState;
-end;
-
-procedure TForm1.Button1Click(Sender: TObject);
-Var
- ide,idp: Integer;
-begin
- ide:= DialogGetID(s_element+' (sample = -1)',True);
- if ide = -2 then
-  Exit;
- idp:= DialogGetID(s_parent+' (nil = -1)',True);
-
- if ide = -1 then
-  //"clear" link to svg_sample for test with a indipendent element
-  with svg_sample.DataLink.Elements[sample_id] do
-  begin
-   DataParent:= nil;
-   DataChildList.Clear;
-  end;
-
- if (ide <> -2) and (idp <> -2) then
-  with svg.DataLink do
-  begin
-   if (ide = -1) and (idp = -1) then
-    Link(svg_sample.DataLink.Elements[sample_id],nil)
-   else if ide = -1 then
-    Link(svg_sample.DataLink.Elements[sample_id],Elements[idp])
-   else if idp = -1 then
-    Link(Elements[ide],nil)
-   else
-    Link(Elements[ide],Elements[idp]);
-   ShowMessage(s_operation_ok);
-  end;
-end;
-
-procedure TForm1.Button2Click(Sender: TObject);
-Var
- id: Integer;
-begin
- id:= DialogGetID(s_element);
- if id <> -2 then
-  with svg.DataLink do
-  begin
-   UnLink(Elements[id]);
-   ShowMessage(s_operation_ok);
-  end;
-end;
-
-procedure TForm1.Button3Click(Sender: TObject);
-Var
- ide,idp: Integer;
-begin
- ide:= DialogGetID(s_element);
- if ide = -2 then
-  Exit;
- idp:= DialogGetID(s_parent+' (nil = -1)',True);
- if (ide <> -2) and (idp <> -2) then
-  with svg.DataLink do
-  begin
-   if idp = -1 then
-    ReLink(Elements[ide],nil)
-   else
-    ReLink(Elements[ide],Elements[idp]);
-   ShowMessage(s_operation_ok);
-  end;
 end;
 
 end.
