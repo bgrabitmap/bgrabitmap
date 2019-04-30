@@ -105,43 +105,28 @@ type
   TSVGDataLink = class
    private
      FElements: TSVGElementDictionary;
-     FStyles,
-     FRootElements: TSVGElementList;
+     FStyles: TSVGElementList;
      function IsValidIndex(const AIndex: integer; list: TSVGElementList): boolean;
      function GetElement(AIndex: integer): TSVGElement;
      function GetStyle(AIndex: integer): TSVGElement;
-     function GetRootElement(AIndex: integer): TSVGElement;
      function FindElement(el: TSVGElement; list: TSVGElementList): integer;
      function Find(el: TSVGElement): integer;//(find on FElements)
-     procedure InternalLink(const AIndex: integer; parent: TSVGElement);
-     procedure InternalUnLink(const AIndex: integer);
-     procedure InternalReLink(const AIndex: integer; parent: TSVGElement);
    public
      constructor Create;
      destructor Destroy; override;
 
      function ElementCount: integer;
      function StyleCount: integer;
-     //contains the elements at the root of the link tree (having parent = nil)
-     function RootElementCount: integer;
      function IsLink(el: TSVGElement): boolean;
-     //(Note: assumes that the valid parent is present in the list or added later)
      function Link(el: TSVGElement; parent: TSVGElement = nil): integer;
-     //excludes el from the list (+ restores validity of links)
      procedure Unlink(el: TSVGElement);
-     //(faster method than a "for.. Unlink()")
      procedure UnlinkAll;
-     //Method needed to change the parent of an item without removing it
-     function ReLink(el: TSVGElement; parent: TSVGElement): boolean;
 
-     //(useful for testing support)
-     function GetInternalState: TStringList;
      property Styles[ID: integer]: TSVGElement read GetStyle;
      function FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
      function FindElementByRef(ARef: string; AClass: TSVGFactory): TSVGElement;
      property Elements[AIndex: integer]: TSVGElement read GetElement;
-     property RootElements[AIndex: integer]: TSVGElement read GetRootElement;
-  end;
+   end;
 
   { TSVGElement }
 
@@ -633,12 +618,10 @@ begin
   FElements:= TSVGElementDictionary.Create;
   FElements.Sorted := true;
   FStyles:= TSVGElementList.Create;
-  FRootElements:= TSVGElementList.Create;
 end;
 
 destructor TSVGDataLink.Destroy;
 begin
-  FreeAndNil(FRootElements);
   FreeAndNil(FElements);
   FreeAndNil(FStyles);
   inherited Destroy;
@@ -663,13 +646,6 @@ begin
   result:= FStyles[AIndex];
 end;
 
-function TSVGDataLink.GetRootElement(AIndex: integer): TSVGElement;
-begin
-  if not IsValidIndex(AIndex,FRootElements) then
-   raise exception.Create(rsInvalidIndex);
-  result:= FRootElements[AIndex];
-end;
-
 function TSVGDataLink.FindElement(el: TSVGElement; list: TSVGElementList): integer;
 begin
   result := list.IndexOf(el);
@@ -680,41 +656,6 @@ begin
   result:= FElements.IndexOfData(el);
 end;
 
-procedure TSVGDataLink.InternalLink(const AIndex: integer; parent: TSVGElement);
-var
-  el: TSVGElement;
-begin
-  el:= FElements.Data[AIndex];
-  with el do
-  begin
-    DataParent:= parent;
-    if parent = nil then
-     FRootElements.Add(el);
-  end;
-end;
-
-procedure TSVGDataLink.InternalUnLink(const AIndex: integer);
-var
-  i,pos_root: integer;
-  el: TSVGElement;
-begin
-  el:= FElements.Data[AIndex];
-  with el do
-  begin
-    //se root need remove (use pos for add child as new root)
-    if DataParent = nil then
-     pos_root:= FRootElements.Remove(el)
-    else
-     pos_root:= FRootElements.Count;
-  end;
-end;
-
-procedure TSVGDataLink.InternalReLink(const AIndex: integer; parent: TSVGElement);
-begin
-  InternalUnLink(AIndex);
-  InternalLink(AIndex,parent);
-end;
-
 function TSVGDataLink.ElementCount: integer;
 begin
   result:= FElements.Count;
@@ -723,11 +664,6 @@ end;
 function TSVGDataLink.StyleCount: integer;
 begin
   result:= FStyles.Count;
-end;
-
-function TSVGDataLink.RootElementCount: integer;
-begin
-  result:= FRootElements.Count;
 end;
 
 function TSVGDataLink.IsLink(el: TSVGElement): boolean;
@@ -741,7 +677,6 @@ begin
   begin
     if FElements.IndexOf(el.ID)<>-1 then exit(-1);
     result := FElements.Add(el.ID, el);
-    InternalLink(result,parent);
   end else
     result := -1;
 
@@ -753,107 +688,18 @@ procedure TSVGDataLink.Unlink(el: TSVGElement);
 var
   index: integer;
 begin
+  if el is TSVGStyle then
+   FStyles.Remove(el);
+
   index:= Find(el);
   if index <> -1 then
-  begin
-    if el is TSVGStyle then
-      FStyles.Remove(el);
-    InternalUnLink(index);
     FElements.Delete(index);
-  end
-  else
-   raise exception.Create('element not find');
 end;
 
 procedure TSVGDataLink.UnlinkAll;
-var
-  i: integer;
 begin
   FStyles.Clear;
-  for i:= 0 to FElements.Count-1 do
-    InternalUnLink(i);
-  FRootElements.Clear;
   FElements.Clear;
-end;
-
-function TSVGDataLink.ReLink(el: TSVGElement; parent: TSVGElement): boolean;
-var
-  id: integer;
-begin
-  id:= Find(el);
-  if id <> -1 then
-  begin
-    result:= true;
-    if el.DataParent <> parent then
-      InternalReLink(id,parent);
-  end
-  else
-    result:= false;
-end;
-
-function TSVGDataLink.GetInternalState: TStringList;
-var
-  nid: integer;
-  sl: TStringList;
-
-  function SpaceStr(const level: integer): string;
-  var
-    i: integer;
-  begin
-    result:= '';
-    for i:= 1 to level do
-      result:= result + ' ';
-  end;
-
-  procedure AddStr(s: string; const level: integer);
-  begin
-    sl.Add( SpaceStr(level) + s );
-  end;
-
-  function ElementIdentity(el: TSVGElement): string;
-  begin
-   if el = nil then
-     result:= 'nil'
-   else
-   begin
-     result:= el.ID;
-     if Trim(Result) = '' then
-       result:= 'unknow';
-     result:= result + ' - ' + el.ClassName;
-   end;
-  end;
-
-  procedure ElementToInfo(el: TSVGElement; const level: integer);
-  Var
-   i: integer;
-   sep: string;
-  begin
-   if el.DataParent = nil then
-    sep:= '###'
-   else
-    sep:= '***';
-   AddStr('{'+sep+' '+ElementIdentity(el)+' '+sep+'}', level);
-   AddStr('[Parent: ' + ElementIdentity(el.DataParent) + ']', level);
-  end;
-
-  procedure BuildInfo(el: TSVGElement; const level: integer = 1);
-  const
-    kspace = 5;
-  var
-    i: Integer;
-  begin
-   ElementToInfo(el,level);
-   Inc(nid);
-  end;
-
-var
- i: integer;
-begin
-  nid:= 0;
-  sl:= TStringList.Create;
-  for i:= 0 to FRootElements.Count-1 do
-    BuildInfo( FRootElements[i] );
-  result:= sl;
 end;
 
 function TSVGDataLink.FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
