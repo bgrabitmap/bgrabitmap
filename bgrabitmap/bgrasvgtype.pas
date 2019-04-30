@@ -150,7 +150,6 @@ type
       findStyleState: TFindStyleState;
       styleAttributes: ArrayOfTStyleAttribute;
       FDataParent: TSVGElement;
-      FDataChildList: TSVGElementList;
       function GetAttributeOrStyle(AName,ADefault: string): string; overload;
       function GetAttributeOrStyle(AName: string): string; overload;
       function GetFill: string;
@@ -281,7 +280,6 @@ type
       procedure RemoveStyle(const AName: string);
       function HasAttribute(AName: string): boolean;
       function fillMode: TSVGFillMode;
-      function DataChildList: TSVGElementList;
       property DataLink: TSVGDataLink read FDataLink write FDataLink;
       property AttributeDef[AName,ADefault: string]: string read GetAttribute;
       property Attribute[AName: string]: string read GetAttribute write SetAttribute;
@@ -692,10 +690,6 @@ begin
     DataParent:= parent;
     if parent = nil then
      FRootElements.Add(el);
-    //Update DataChildList of "parent" before add it
-    //(not use el.DataChildList.Clear here!!)
-    if parent <> nil then
-      parent.DataChildList.Add(el);
   end;
 end;
 
@@ -712,27 +706,6 @@ begin
      pos_root:= FRootElements.Remove(el)
     else
      pos_root:= FRootElements.Count;
-    //i have to assign a parent of a upper level
-    //and update child list of new parent (if not nil)
-    with DataChildList do
-    begin
-      for i:= 0 to Count-1 do
-      begin
-       Items[i].DataParent:= el.DataParent;
-       if el.DataParent = nil then
-        //with parent nil = new root
-        FRootElements.Insert(pos_root+i, Items[i])
-       else
-        el.DataParent.DataChildList.Add( Items[i] );
-      end;
-      Clear;
-    end;
-    //if he has a parent, I have to remove his reference as a child
-    if DataParent <> nil then
-    begin
-      DataParent.DataChildList.Remove(el);
-      DataParent:= nil;
-    end;
   end;
 end;
 
@@ -846,9 +819,7 @@ var
      result:= el.ID;
      if Trim(Result) = '' then
        result:= 'unknow';
-     result:= result + ' - ' + el.ClassName +
-       //(slow: for test ok)
-       ' | (pos: ' + IntToStr( Find(el) ) + ')';
+     result:= result + ' - ' + el.ClassName;
    end;
   end;
 
@@ -863,8 +834,6 @@ var
     sep:= '***';
    AddStr('{'+sep+' '+ElementIdentity(el)+' '+sep+'}', level);
    AddStr('[Parent: ' + ElementIdentity(el.DataParent) + ']', level);
-   for i:= 0 to el.DataChildList.Count-1 do
-     AddStr('[Child: ' + ElementIdentity(el.DataChildList[i]) + ']', level);
   end;
 
   procedure BuildInfo(el: TSVGElement; const level: integer = 1);
@@ -875,8 +844,6 @@ var
   begin
    ElementToInfo(el,level);
    Inc(nid);
-   for i:= 0 to el.DataChildList.Count-1 do
-     BuildInfo(el.DataChildList[i],level+kspace);
   end;
 
 var
@@ -1935,7 +1902,6 @@ begin
   SetLength(styleAttributes,0);
   findStyleState   := fssNotSearched;
   FDataParent      := nil;
-  FDataChildList   := TSVGElementList.Create;
 end;
 
 constructor TSVGElement.Create(AElement: TDOMElement;
@@ -1962,7 +1928,6 @@ end;
 destructor TSVGElement.Destroy;
 begin
   SetLength(styleAttributes,0);
-  FreeAndNil(FDataChildList);
   inherited Destroy;
 end;
 
@@ -2022,11 +1987,6 @@ begin
     result := sfmEvenOdd
   else
     result := sfmNonZero;
-end;
-
-function TSVGElement.DataChildList: TSVGElementList;
-begin
-   result:= FDataChildList;
 end;
 
 function TSVGElement.FindStyleElementInternal(const classStr: string;
