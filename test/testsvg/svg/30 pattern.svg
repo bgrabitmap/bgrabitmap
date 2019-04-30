@@ -1,0 +1,8 @@
+ <svg width="800" height="400" style="outline: 1px solid red" xmlns="http://www.w3.org/2000/svg" version="1.1">  
+  <defs>
+   <pattern id="TrianglePattern" patternUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" >
+    <path d="M 0 0 L 7 0 L 3.5 7 z" fill="red" stroke="blue" />
+   </pattern>
+  </defs>
+  <ellipse fill="url(#TrianglePattern)" stroke="black" stroke-width="5" cx="400" cy="200" rx="350" ry="150" />
+ </svg>
