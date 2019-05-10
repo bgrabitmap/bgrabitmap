@@ -242,6 +242,13 @@ type
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
   end;
 
+  ArrayOfTextParts = array of record
+    Level: integer;
+    BaseElement: TSVGElement;
+    Text: string;
+    SplitPos: integer;
+  end;
+
   { TSVGText }
 
   TSVGText = class(TSVGTextPositioning)
@@ -276,13 +283,19 @@ type
     protected
       procedure InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
                                       ADraw: boolean; AAllTextBounds: TRectF;
-                                      var APosition: TPointF; out ABounds: TRectF);
+                                      var APosition: TPointF; out ABounds: TRectF); overload;
+      procedure InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
+                                      ADraw: boolean; AAllTextBounds: TRectF;
+                                      var APosition: TPointF; out ABounds: TRectF;
+                                      ATextParts: ArrayOfTextParts; ALevel: integer;
+                                      AStartPart, AEndPart: integer); overload;
       procedure InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
                                       AText: string; ADraw: boolean; AAllTextBounds: TRectF;
                                       var APosition: TPointF; out ABounds: TRectF);
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
-      function CleanText(AText: string): string;
+      procedure CleanText(var ATextParts: ArrayOfTextParts);
       function GetTRefContent(AElement: TSVGTRef): string;
+      function GetAllText: ArrayOfTextParts;
     public
       class function GetDOMTag: string; override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
@@ -1167,7 +1180,6 @@ begin
       if FContent.ElementDOMNode[i] is TDOMText then
         result += TDOMText(FContent.ElementDOMNode[i]).Data;
     end;
-  result := CleanText(result);
   FInGetSimpleText := false;
 end;
 
@@ -1292,14 +1304,25 @@ procedure TSVGText.InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D;
   AUnit: TCSSUnit; ADraw: boolean; AAllTextBounds: TRectF;
   var APosition: TPointF; out ABounds: TRectF);
 var
+  textParts: ArrayOfTextParts;
+  i: Integer;
+begin
+  textParts := GetAllText;
+  CleanText(textParts);
+  if length(textParts)>0 then
+    InternalDrawOrCompute(ACanvas2d, AUnit, ADraw, AAllTextBounds, APosition, ABounds, textParts, 0,0,high(textParts));
+end;
+
+procedure TSVGText.InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D;
+  AUnit: TCSSUnit; ADraw: boolean; AAllTextBounds: TRectF;
+  var APosition: TPointF; out ABounds: TRectF; ATextParts: ArrayOfTextParts;
+  ALevel: integer; AStartPart, AEndPart: integer);
+var
   prevFontEmHeight: TFloatWithCSSUnit;
   ax, ay, adx, ady: ArrayOfTFloatWithCSSUnit;
-  i: Integer;
-  svgElem: TSVGElement;
-  subElem: TSVGText;
-  part: string;
+  i, subStartPart, subEndPart, subLevel: integer;
   partBounds: TRectF;
-  node: TDOMNode;
+  subElem: TSVGText;
 begin
   ABounds := EmptyRectF;
   prevFontEmHeight := Units.CurrentFontEmHeight;
@@ -1313,32 +1336,31 @@ begin
   if length(adx)>0 then APosition.x += adx[0].value;
   if length(ady)>0 then APosition.y += ady[0].value;
 
-  for i := 0 to Content.ElementCount-1 do
+  i := AStartPart;
+  while i <= AEndPart do
   begin
-    part := '';
-    subElem := nil;
-
-    if Content.IsSVGElement[i] then
-    begin
-      svgElem := Content.Element[i];
-      if svgElem is TSVGTRef then
-        part := CleanText(GetTRefContent(TSVGTRef(svgElem)))
-      else
-      if svgElem is TSVGText then
-        subElem := TSVGText(svgElem);
-    end else
-    begin
-      node := Content.ElementDOMNode[i];
-      if node is TDOMText then
-        part := CleanText(TDOMText(node).Data);
-    end;
-
     partBounds := EmptyRectF;
-    if Assigned(subElem) then
-      subElem.InternalDrawOrCompute(ACanvas2d, AUnit, ADraw, AAllTextBounds, APosition, partBounds)
-    else if part<>'' then
-      InternalDrawOrComputePart(ACanvas2d, AUnit, part, ADraw, AAllTextBounds, APosition, partBounds);
-
+    if ATextParts[i].Level > ALevel then
+    begin
+      subStartPart := i;
+      subEndPart := i;
+      subElem := TSVGText(ATextParts[subStartPart].BaseElement);
+      subLevel := ATextParts[subStartPart].Level;
+      while (subEndPart < AEndPart) and
+            ( ((ATextParts[subEndPart+1].Level = subLevel) and (ATextParts[subEndPart+1].BaseElement = subElem)) or
+              (ATextParts[subEndPart+1].Level > subLevel) ) do
+        inc(subEndPart);
+      subElem.InternalDrawOrCompute(
+        ACanvas2d, AUnit, ADraw, AAllTextBounds, APosition, partBounds,
+        ATextParts, subLevel, subStartPart, subEndPart);
+      i := subEndPart+1;
+    end
+    else
+    begin
+      if ATextParts[i].Text <>'' then
+        InternalDrawOrComputePart(ACanvas2d, AUnit, ATextParts[i].Text, ADraw, AAllTextBounds, APosition, partBounds);
+      inc(i);
+    end;
     ABounds := TRectF.Union(ABounds, partBounds, true);
   end;
 
@@ -1398,28 +1420,64 @@ begin
   InternalDrawOrCompute(ACanvas2d, AUnit, True, allTextBounds, pos, dummyBounds);
 end;
 
-function TSVGText.CleanText(AText: string): string;
+procedure TSVGText.CleanText(var ATextParts: ArrayOfTextParts);
 var wasSpace: boolean;
+  wasSpaceBeforePartIdx: integer;
   i,j: integer;
+  k,l, startPos, endPosP1: integer;
+  fullText, cleanedText: string;
 begin
-  wasSpace := true;
-  setlength(result, length(AText));
+  wasSpace := false;
+  wasSpaceBeforePartIdx:= -1;
+  fullText := '';
+  for k := 0 to high(ATextParts) do
+    fullText += ATextParts[k].Text;
+
+  setlength(cleanedText, length(fullText));
   j := 0;
-  for i := 1 to length(AText) do
-    if AText[i] in[#0..#32] then
+  k := 0;
+  for i := 1 to length(fullText) do
+  begin
+    if not (fullText[i] in[#0..#32]) and wasSpace and (j>0) then
+    begin
+      inc(j);
+      cleanedText[j] := ' ';
+      if wasSpaceBeforePartIdx <> -1 then
+        for l := wasSpaceBeforePartIdx to k-1 do
+          inc(ATextParts[l].SplitPos);
+      wasSpace:= false;
+    end;
+    while (k < length(ATextParts)) and (i = ATextParts[k].SplitPos) do
+    begin
+      if wasSpace and (wasSpaceBeforePartIdx = -1) then
+        wasSpaceBeforePartIdx:= k;
+      ATextParts[k].SplitPos := j+1;
+      inc(k);
+    end;
+    if fullText[i] in[#0..#32] then
       wasSpace := true
     else
     begin
-      if wasSpace and (j>0) then
-      begin
-        inc(j);
-        result[j] := ' ';
-      end;
       inc(j);
-      result[j] := AText[i];
-      wasSpace:= false;
+      cleanedText[j] := fullText[i];
+      wasSpace := false;
+      wasSpaceBeforePartIdx := -1;
     end;
-  setlength(result, j);
+  end;
+  while k < length(ATextParts) do
+  begin
+    ATextParts[k].SplitPos := j+1;
+    inc(k);
+  end;
+  setlength(cleanedText, j);
+
+  for k := 0 to high(ATextParts) do
+  begin
+    startPos := ATextParts[k].SplitPos;
+    if k = high(ATextParts) then endPosP1 := j+1 else
+      endPosP1 := ATextParts[k+1].SplitPos;
+    ATextParts[k].Text:= copy(cleanedText, startPos, endPosP1 - startPos);
+  end;
 end;
 
 function TSVGText.GetTRefContent(AElement: TSVGTRef): string;
@@ -1428,6 +1486,65 @@ var
 begin
   refText := TSVGText(FDataLink.FindElementByRef(AElement.xlinkHref, TSVGText));
   if Assigned(refText) then result := refText.SimpleText else result := '';
+end;
+
+function TSVGText.GetAllText: ArrayOfTextParts;
+var
+  i,j,idxOut,curLen: Integer;
+  svgElem: TSVGElement;
+  subParts: ArrayOfTextParts;
+  node: TDOMNode;
+
+  procedure AppendPart(AText: string);
+  begin
+    if (idxOut > 0) and (result[idxOut-1].Text = '')
+      and (result[idxOut-1].BaseElement = self) then dec(idxOut);
+    result[idxOut].Level := 0;
+    result[idxOut].BaseElement:= self;
+    result[idxOut].Text := AText;
+    result[idxOut].SplitPos:= curLen+1;
+    inc(curLen, length(AText));
+    inc(idxOut);
+  end;
+
+begin
+  setlength(result, Content.ElementCount+1);
+  idxOut := 0;
+  curLen := 0;
+  AppendPart(''); //needed when there is a sub part to know the base element
+  for i := 0 to Content.ElementCount-1 do
+  begin
+    if Content.IsSVGElement[i] then
+    begin
+      svgElem := Content.Element[i];
+      if svgElem is TSVGTRef then
+        AppendPart(GetTRefContent(TSVGTRef(svgElem)))
+      else
+      if svgElem is TSVGText then
+      begin
+        subParts := TSVGText(svgElem).GetAllText;
+        if length(subParts) > 0 then
+        begin
+          setlength(result, length(result)+length(subParts)-1);
+          for j := 0 to high(subParts) do
+          begin
+            result[idxOut] := subParts[j];
+            inc(result[idxOut].Level);
+            result[idxOut].SplitPos:= curLen+1;
+            inc(curLen, length(result[idxOut].Text));
+            inc(idxOut);
+          end;
+        end else
+          AppendPart('');
+      end;
+    end else
+    begin
+      node := Content.ElementDOMNode[i];
+      if node is TDOMText then
+        AppendPart(TDOMText(node).Data);
+    end;
+  end;
+  setlength(result, idxOut);
 end;
 
 class function TSVGText.GetDOMTag: string;
