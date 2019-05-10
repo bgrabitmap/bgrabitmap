@@ -10,7 +10,7 @@ uses
 
   BGRABitmapTypes, BGRABitmap, BGRASVG, BGRAUnits,
 
-  Unit2;
+  UProfiler;
 
 type
 
