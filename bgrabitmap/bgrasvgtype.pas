@@ -403,10 +403,10 @@ begin
   result := GetInlineStyle(AName,'');
   if result = '' then
   begin
-    result := GetAttribute(AName,'', false);
+    result := GetStyleFromStyleSheet(AName,'');
     if result = '' then
     begin
-      result := GetStyleFromStyleSheet(AName,'');
+      result := GetAttribute(AName,'', false);
 
       if result = '' then
       begin
