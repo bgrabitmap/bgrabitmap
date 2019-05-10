@@ -2458,14 +2458,21 @@ end;
 
 function TBGRACanvas2D.measureText(AText: string): TCanvas2dTextSize;
 var renderer: TBGRACustomFontRenderer;
+  ratio: Single;
 begin
   renderer := fontRenderer;
   if renderer <> nil then
   begin
+    if renderer.FontEmHeight = 0 then
+    begin
+      result.width := 0;
+      result.height:= 0;
+    end else
     with renderer.TextSize(AText) do
     begin
-      result.width := cx;
-      result.height:= cy;
+      ratio := currentState.fontEmHeight/renderer.FontEmHeight;
+      result.width := cx*ratio;
+      result.height:= cy*ratio;
     end;
   end
   else
