@@ -68,16 +68,12 @@ type
     procedure MSelectAllClick(Sender: TObject);
     procedure PopupMenu1Popup(Sender: TObject);
   private
-    svg,
-    svg_sample: TBGRASVG;
-    sample_id: Integer;
+    svg: TBGRASVG;
     last_image: TImage;
     prof: TProfiler;
 
     procedure Test(var ms: TMemoryStream; kzoom: Single = 1);
     procedure Test(path: String);
-
-    function DialogGetID(title: String; const can_nil: Boolean = False): Integer;
 
   public
 
@@ -91,20 +87,10 @@ implementation
 uses
  Clipbrd, BGRAVectorize;
 
- {$R *.lfm}
-
-(*
-var
- c: TBGRAPixel;
-begin
- c:= ColorToBGRA(clBtnFace);
-*)
+{$R *.lfm}
 
 const
  s_file_overwrite = 'Existing file: do you want to overwrite it?';
- s_operation_ok = 'Operation completed!';
- s_element = 'Element';
- s_parent = 'Parent';
 
 procedure TForm1.Test(var ms: TMemoryStream; kzoom: Single = 1);
 Var
@@ -116,21 +102,22 @@ begin
  try
   if Assigned(svg) then
    svg.Free;
+
   prof.BeginMeasure;
-   svg:= TBGRASVG.Create(ms);
+  svg:= TBGRASVG.Create(ms);
   v:= prof.EndMeasure;
   s:= prof.FormatTime('create: ',v);
 
   prof.BeginMeasure;
-   bmp.FontRenderer := TBGRAVectorizedFontRenderer.Create;
-   bmp.SetSize(Round(svg.WidthAsPixel*kzoom),Round(svg.HeightAsPixel*kzoom));
-   bmp.Fill(BGRAWhite);
+  bmp.FontRenderer := TBGRAVectorizedFontRenderer.Create;
+  bmp.SetSize(Round(svg.WidthAsPixel*kzoom),Round(svg.HeightAsPixel*kzoom));
+  bmp.Fill(BGRAWhite);
   v:= prof.EndMeasure;
   s:= s + prof.FormatTime(' | bmp: ',v);
 
   prof.BeginMeasure;
-   svg.StretchDraw(bmp.Canvas2D, 0,0,bmp.Width,bmp.Height);
-   //svg.Draw(bmp.Canvas2D, 0,0, cuPixel);
+  svg.StretchDraw(bmp.Canvas2D, 0,0,bmp.Width,bmp.Height);
+  //svg.Draw(bmp.Canvas2D, 0,0, cuPixel);
   v:= prof.EndMeasure;
   s:= s + prof.FormatTime(' | draw: ',v);
 
@@ -151,95 +138,18 @@ begin
   ms.Position:= 0;
 
   path:= ExtractFileName(path);
-  {if (path = 'test_4.svg') or
-     (path = 'test_pow.svg') or
-     (path = 'test_wand.svg') or
-     (path = 'test_scarecrow.svg') or
-     (path = 'test_shadow.svg') or
-     (path = 'test_spartan.svg') then
-   Test(ms, 0.5)
-  else if (path = 'test_.svg') or
-          (path = 'v1.svg') or
-          (path = 'v2.svg') or
-          (path = 'v3.svg') or
-          (path = 'v4.svg') or
-          (path = 'v5.svg') or
-          (path = 'v6.svg') or
-          (path = 'v7.svg') then
-   Test(ms, 10)
-  else    }
-   Test(ms);
+  Test(ms);
  finally
   ms.Free;
  end;
 end;
 
-function TForm1.DialogGetID(title: String; const can_nil: Boolean = False): Integer;
-Var
- nc,id: Integer;
- s,s_min: String;
-begin
- Result:= -2;
- if Assigned(svg) then
- begin
-  nc:= svg.DataLink.ElementCount;
-  if (nc = 0) and (not can_nil) then
-  begin
-   ShowMessage('Elements list is empty!');
-   Exit;
-  end;
-  s:= Trim( InputBox('ID Request',title,'') );
-  if s = '' then
-   Exit;
-  try
-   id:= StrToInt(s);
-  except
-   ShowMessage('Input invalid!');
-   Exit;
-  end;
-  if ((id >= 0) and (id < nc)) or
-     ((id = -1) and can_nil) then
-   Result:= id
-  else
-  begin
-   if can_nil then
-    s_min:= '[-1(nil)..'
-   else
-    s_min:= '[0..';
-   ShowMessage('Range invalid! '+s_min+IntToStr(nc-1)+']');
-  end;
- end;
-end;
-
 procedure TForm1.FormCreate(Sender: TObject);
-Var
- sl: TStringList;
- ms: TMemoryStream;
 begin
  svg:= nil;
  last_image:= nil;
 
  prof:= TProfiler.Create;
-
- sl:= TStringList.Create;
- ms:= TMemoryStream.Create;
- try
-  with sl do
-  begin
-   Add('<svg height="100" width="100">');
-   Add('<g id="sample" gstroke="black" stroke-width="3">');
-   Add(' <circle id = "sample" cx="50" cy="50" r="40" fill="red" />');
-   Add('</g>');
-   Add('</svg>');
-  end;
-  sl.SaveToStream(ms);
-  ms.Position:= 0;
-  svg_sample:= TBGRASVG.Create(ms);
-  sample_id:= 1;//(for this example: 0 circle; 1 group)
- finally
-  ms.Free;
-  sl.Free;
- end;
 
  with FileListBox1 do
  begin
@@ -262,9 +172,7 @@ end;
 
 procedure TForm1.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
- if Assigned(svg) then
-  svg.Free;
- svg_sample.Free;
+ svg.Free;
  prof.Free;
 end;
 
