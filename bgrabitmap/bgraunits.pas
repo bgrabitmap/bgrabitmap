@@ -78,6 +78,7 @@ type
     property DpiScaleY: single read GetDpiScaleY;
     property DpiScaleTransform: string read GetDpiScaleTransform;
     property CurrentFontEmHeight: TFloatWithCSSUnit read FCurrentFontEmHeight write FCurrentFontEmHeight;
+    property RootFontEmHeight: TFloatWithCSSUnit read GetRootFontEmHeight;
   end;
 
 implementation

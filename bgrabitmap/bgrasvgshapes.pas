@@ -667,8 +667,12 @@ type
   { TSVGGroup }
 
   TSVGGroup = class(TSVGElementWithContent)
+  private
+    function GetFontSize: TFloatWithCSSUnit;
+    procedure SetFontSize(AValue: TFloatWithCSSUnit);
   protected
     procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
   end;
   
   { TSVGStyle }
@@ -1147,7 +1151,7 @@ end;
 
 function TSVGText.GetFontSize: TFloatWithCSSUnit;
 begin
-  result:= VerticalAttributeOrStyleWithUnit['font-size',FloatWithCSSUnit(12,cuPoint)];
+  result:= GetVerticalAttributeOrStyleWithUnit('font-size',Units.CurrentFontEmHeight,false);
 end;
 
 function TSVGText.GetFontStyle: string;
@@ -1305,7 +1309,6 @@ procedure TSVGText.InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D;
   var APosition: TPointF; out ABounds: TRectF);
 var
   textParts: ArrayOfTextParts;
-  i: Integer;
 begin
   textParts := GetAllText;
   CleanText(textParts);
@@ -1318,7 +1321,7 @@ procedure TSVGText.InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D;
   var APosition: TPointF; out ABounds: TRectF; ATextParts: ArrayOfTextParts;
   ALevel: integer; AStartPart, AEndPart: integer);
 var
-  prevFontEmHeight: TFloatWithCSSUnit;
+  prevFontEmHeight, fs: TFloatWithCSSUnit;
   ax, ay, adx, ady: ArrayOfTFloatWithCSSUnit;
   i, subStartPart, subEndPart, subLevel: integer;
   partBounds: TRectF;
@@ -1326,7 +1329,10 @@ var
 begin
   ABounds := EmptyRectF;
   prevFontEmHeight := Units.CurrentFontEmHeight;
-  Units.CurrentFontEmHeight:= FloatWithCSSUnit(Units.ConvertHeight(fontSize,AUnit).value, AUnit);
+  fs := fontSize;
+  if fs.CSSUnit in [cuFontEmHeight,cuFontXHeight] then
+    fs := Units.ConvertHeight(fontSize,AUnit);
+  Units.CurrentFontEmHeight:= fs;
   ax := Units.ConvertWidth(x,AUnit);
   ay := Units.ConvertHeight(y,AUnit);
   adx := Units.ConvertWidth(dx,AUnit);
@@ -2295,9 +2301,27 @@ end;
 
 { TSVGGroup }
 
-procedure TSVGGroup.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+function TSVGGroup.GetFontSize: TFloatWithCSSUnit;
 begin
+  result:= GetVerticalAttributeOrStyleWithUnit('font-size',Units.CurrentFontEmHeight,false);
+end;
+
+procedure TSVGGroup.SetFontSize(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['font-size'] := AValue;
+end;
+
+procedure TSVGGroup.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  prevFontEmHeight, fs: TFloatWithCSSUnit;
+begin
+  prevFontEmHeight := Units.CurrentFontEmHeight;
+  fs := fontSize;
+  if fs.CSSUnit in [cuFontEmHeight,cuFontXHeight] then
+    fs := Units.ConvertHeight(fontSize,AUnit);
+  Units.CurrentFontEmHeight:= fs;
   FContent.Draw(ACanvas2d, AUnit);
+  Units.CurrentFontEmHeight:= prevFontEmHeight;
 end;
 
 { TSVGStyle }  
