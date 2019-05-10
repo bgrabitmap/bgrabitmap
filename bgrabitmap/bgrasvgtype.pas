@@ -36,6 +36,12 @@ type
      stpsAuto,
      stpsExact
    );
+
+  TSVGTextAnchor = (
+     staStart,
+     staMiddle,
+     staEnd
+   );
    
   TSVGTextDirection = (  
      stdLtr,

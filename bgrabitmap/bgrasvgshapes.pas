@@ -247,6 +247,8 @@ type
     BaseElement: TSVGElement;
     Text: string;
     SplitPos: integer;
+    AbsoluteCoord: TPointF;
+    PartStartCoord, PartEndCoord: TPointF;
   end;
 
   { TSVGText }
@@ -261,7 +263,7 @@ type
       function GetFontStyle: string;
       function GetFontWeight: string;
       function GetSimpleText: string;
-      function GetTextAnchor: string;
+      function GetTextAnchor: TSVGTextAnchor;
       function GetTextDirection: TSVGTextDirection;
       function GetTextDecoration: string;
       function GetTextLength: TFloatWithCSSUnit;
@@ -273,7 +275,7 @@ type
       procedure SetFontStyle(AValue: string);
       procedure SetFontWeight(AValue: string);
       procedure SetSimpleText(AValue: string);
-      procedure SetTextAnchor(AValue: string);
+      procedure SetTextAnchor(AValue: TSVGTextAnchor);
       procedure SetTextDirection(AValue: TSVGTextDirection);
       procedure SetTextDecoration(AValue: string);
       procedure SetTextLength(AValue: TFloatWithCSSUnit);
@@ -281,11 +283,12 @@ type
     protected
       procedure InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
                                       ADraw: boolean; AAllTextBounds: TRectF;
-                                      var APosition: TPointF; out ABounds: TRectF); overload;
+                                      var APosition: TPointF; out ABounds: TRectF;
+                                      var ATextParts: ArrayOfTextParts); overload;
       procedure InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
                                       ADraw: boolean; AAllTextBounds: TRectF;
                                       var APosition: TPointF; out ABounds: TRectF;
-                                      ATextParts: ArrayOfTextParts; ALevel: integer;
+                                      var ATextParts: ArrayOfTextParts; ALevel: integer;
                                       AStartPart, AEndPart: integer); overload;
       procedure InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
                                       AText: string; ADraw: boolean; AAllTextBounds: TRectF;
@@ -306,7 +309,7 @@ type
       property textDecoration: string read GetTextDecoration write SetTextDecoration;
       property fontBold: boolean read GetFontBold write SetFontBold;
       property fontItalic: boolean read GetFontItalic write SetFontItalic;
-      property textAnchor: string read GetTextAnchor write SetTextAnchor;
+      property textAnchor: TSVGTextAnchor read GetTextAnchor write SetTextAnchor;
       property textDirection: TSVGTextDirection read GetTextDirection write SetTextDirection;
   end;
 
@@ -1184,9 +1187,13 @@ begin
   FInGetSimpleText := false;
 end;
 
-function TSVGText.GetTextAnchor: string;
+function TSVGText.GetTextAnchor: TSVGTextAnchor;
 begin
-  result := AttributeOrStyleDef['text-anchor','start'];
+  case AttributeOrStyleDef['text-anchor','start'] of
+   'middle': result := staMiddle;
+   'end': result := staEnd;
+   else result := staStart;
+  end;
 end;
 
 function TSVGText.GetTextDirection: TSVGTextDirection;
@@ -1251,9 +1258,13 @@ begin
   RemoveStyle('font-weight');
 end;
 
-procedure TSVGText.SetTextAnchor(AValue: string);
+procedure TSVGText.SetTextAnchor(AValue: TSVGTextAnchor);
 begin
-  Attribute['text-anchor'] := AValue;
+  case AValue of
+   staMiddle: Attribute['text-anchor'] := 'middle';
+   staEnd: Attribute['text-anchor'] := 'end';
+  else {staStart} Attribute['text-anchor'] := 'start';
+  end;
 end;
 
 procedure TSVGText.SetTextDirection(AValue: TSVGTextDirection);
@@ -1293,19 +1304,16 @@ end;
 
 procedure TSVGText.InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D;
   AUnit: TCSSUnit; ADraw: boolean; AAllTextBounds: TRectF;
-  var APosition: TPointF; out ABounds: TRectF);
-var
-  textParts: ArrayOfTextParts;
+  var APosition: TPointF; out ABounds: TRectF;
+  var ATextParts: ArrayOfTextParts);
 begin
-  textParts := GetAllText;
-  CleanText(textParts);
-  if length(textParts)>0 then
-    InternalDrawOrCompute(ACanvas2d, AUnit, ADraw, AAllTextBounds, APosition, ABounds, textParts, 0,0,high(textParts));
+  if not ADraw then ATextParts[0].AbsoluteCoord := APosition;
+  InternalDrawOrCompute(ACanvas2d, AUnit, ADraw, AAllTextBounds, APosition, ABounds, ATextParts, 0,0,high(ATextParts));
 end;
 
 procedure TSVGText.InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D;
   AUnit: TCSSUnit; ADraw: boolean; AAllTextBounds: TRectF;
-  var APosition: TPointF; out ABounds: TRectF; ATextParts: ArrayOfTextParts;
+  var APosition: TPointF; out ABounds: TRectF; var ATextParts: ArrayOfTextParts;
   ALevel: integer; AStartPart, AEndPart: integer);
 var
   prevFontEmHeight, fs: TFloatWithCSSUnit;
@@ -1314,18 +1322,28 @@ var
   partBounds: TRectF;
   subElem: TSVGText;
 begin
+  if AStartPart > AEndPart then exit;
+
   ABounds := EmptyRectF;
   prevFontEmHeight := Units.CurrentFontEmHeight;
   fs := fontSize;
   if fs.CSSUnit in [cuFontEmHeight,cuFontXHeight] then
     fs := Units.ConvertHeight(fontSize,AUnit);
   Units.CurrentFontEmHeight:= fs;
-  ax := Units.ConvertWidth(x,AUnit);
-  ay := Units.ConvertHeight(y,AUnit);
+
+  if not ADraw then
+  begin
+    ax := Units.ConvertWidth(x,AUnit);
+    ay := Units.ConvertHeight(y,AUnit);
+    if length(ax)>0 then APosition.x := ax[0].value;
+    if length(ay)>0 then APosition.y := ay[0].value;
+    if (length(ax)>0) or (length(ay)>0) then
+      ATextParts[AStartPart].AbsoluteCoord := APosition;
+  end else
+    APosition := ATextParts[AStartPart].AbsoluteCoord;
+
   adx := Units.ConvertWidth(dx,AUnit);
   ady := Units.ConvertHeight(dy,AUnit);
-  if length(ax)>0 then APosition.x := ax[0].value;
-  if length(ay)>0 then APosition.y := ay[0].value;
   if length(adx)>0 then APosition.x += adx[0].value;
   if length(ady)>0 then APosition.y += ady[0].value;
 
@@ -1350,8 +1368,19 @@ begin
     end
     else
     begin
+      if not ADraw then
+        ATextParts[i].PartStartCoord := APosition
+      else
+        APosition := ATextParts[i].PartStartCoord;
+
       if ATextParts[i].Text <>'' then
         InternalDrawOrComputePart(ACanvas2d, AUnit, ATextParts[i].Text, ADraw, AAllTextBounds, APosition, partBounds);
+
+      if not ADraw then
+        ATextParts[i].PartEndCoord := APosition
+      else
+        APosition := ATextParts[i].PartEndCoord;
+
       inc(i);
     end;
     ABounds := TRectF.Union(ABounds, partBounds, true);
@@ -1366,6 +1395,7 @@ procedure TSVGText.InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D;
 var
   ts: TCanvas2dTextSize;
   fs: TFontStyles;
+  dir: TSVGTextDirection;
 begin
   ACanvas2d.fontEmHeight := Units.ConvertHeight(Units.CurrentFontEmHeight, AUnit).value;
   ACanvas2d.fontName := fontFamily;
@@ -1373,13 +1403,14 @@ begin
   if fontBold then include(fs, fsBold);
   if fontItalic then include(fs, fsItalic);
   ACanvas2d.fontStyle := fs;
+  dir := textDirection;
+  case dir of
+   stdRtl: ACanvas2d.direction:= fbmRightToLeft;
+   else {stdRtl} ACanvas2d.direction:= fbmLeftToRight;
+  end;
 
   ts := ACanvas2d.measureText(AText);
-
-  case textAnchor of
-   'middle': APosition.x -= ts.width/2;
-   'end': APosition.x -= ts.width;
-  end;
+  if dir = stdRtl then APosition.x -= ts.width;
 
   ABounds := RectF(APosition.x,APosition.y,APosition.x+ts.width,APosition.y+ts.height);
   if ADraw then
@@ -1399,18 +1430,67 @@ begin
       ACanvas2d.stroke;
     end;
   end;
-  APosition.x += ts.width;
+
+  if dir = stdLtr then APosition.x += ts.width;
 end;
 
 procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
-  pos: TPointF;
   allTextBounds, dummyBounds: TRectF;
+  textParts: ArrayOfTextParts;
+  dir: TSVGTextDirection;
+  anchor: TSVGTextAnchor;
+
+  procedure DoAlignText(AStartPart,AEndPart: integer);
+  var
+    advance,ofs: single;
+    j: Integer;
+  begin
+    advance := textParts[AEndPart].PartEndCoord.x - textParts[AStartPart].AbsoluteCoord.x;
+    ofs := 0;
+
+    case anchor of
+    staMiddle: ofs := (-1/2)*advance;
+    staEnd: ofs := -advance;
+    else ofs := 0;
+    end;
+
+    for j := AStartPart to AEndPart do
+    begin
+      if not isEmptyPointF(textParts[j].AbsoluteCoord) then textParts[j].AbsoluteCoord.x += ofs;
+      if not isEmptyPointF(textParts[j].PartStartCoord) then textParts[j].PartStartCoord.x += ofs;
+      if not isEmptyPointF(textParts[j].PartEndCoord) then textParts[j].PartEndCoord.x += ofs;
+    end;
+  end;
+
+var
+  i, absStartIndex: Integer;
+  pos: TPointF;
 begin
-  pos := PointF(0,0);
-  InternalDrawOrCompute(ACanvas2d, AUnit, False, EmptyRectF, pos, allTextBounds);
-  pos := PointF(0,0);
-  InternalDrawOrCompute(ACanvas2d, AUnit, True, allTextBounds, pos, dummyBounds);
+  textParts := GetAllText;
+  CleanText(textParts);
+  if length(textParts)>0 then
+  begin
+    pos := PointF(0,0);
+    InternalDrawOrCompute(ACanvas2d, AUnit, False, EmptyRectF, pos, allTextBounds, textParts);
+
+    dir := textDirection;
+    anchor := textAnchor;
+
+    absStartIndex := -1;
+    for i := 0 to high(textParts) do
+    begin
+      if not IsEmptyPointF(textParts[i].AbsoluteCoord) then
+      begin
+        if absStartIndex <> -1 then DoAlignText(absStartIndex,i-1);
+        absStartIndex := i;
+      end;
+    end;
+    if absStartIndex <> -1 then DoAlignText(absStartIndex,high(textParts));
+
+    pos := PointF(0,0);
+    InternalDrawOrCompute(ACanvas2d, AUnit, True, allTextBounds, pos, dummyBounds, textParts);
+  end;
 end;
 
 procedure TSVGText.CleanText(var ATextParts: ArrayOfTextParts);
@@ -1496,6 +1576,8 @@ var
     result[idxOut].BaseElement:= self;
     result[idxOut].Text := AText;
     result[idxOut].SplitPos:= curLen+1;
+    result[idxOut].AbsoluteCoord := EmptyPointF;
+    result[idxOut].PartStartCoord := EmptyPointF;
     inc(curLen, length(AText));
     inc(idxOut);
   end;

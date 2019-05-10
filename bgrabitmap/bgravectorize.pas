@@ -47,6 +47,8 @@ type
     procedure UpdateFont;
     function GetCanvas2D(ASurface: TBGRACustomBitmap): TBGRACanvas2D;
     procedure InternalTextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel; texture: IBGRAScanner);
+    procedure InternalCopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment; ABidiMode: TFontBidiMode);
+    procedure InternalTextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment; ABidiMode: TFontBidiMode);
     procedure Init;
   public
     MaxFontResolution: integer;
@@ -66,12 +68,17 @@ type
     constructor Create(ADirectoryUTF8: string); overload;
     function GetFontPixelMetric: TFontPixelMetric; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; c: TBGRAPixel); overload; override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; texture: IBGRAScanner); overload; override;
     procedure CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment); override;
+    procedure CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment; ARightToLeft: boolean); override;
     function HandlesTextPath: boolean; override;
     function TextSize(s: string): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
@@ -1057,6 +1064,10 @@ begin
     ADest.ClipRect := intersectedClip;
   end;
   UpdateFont;
+  if style.RightToLeft then
+    FVectorizedFont.BidiMode := fbmRightToLeft
+  else
+    FVectorizedFont.BidiMode := fbmLeftToRight;
   FVectorizedFont.Orientation := 0;
   case style.Alignment of
     taCenter: case style.Layout of
@@ -1099,6 +1110,52 @@ begin
   end;
   if style.Clipping then
     ADest.ClipRect := previousClip;
+end;
+
+procedure TBGRAVectorizedFontRenderer.InternalCopyTextPathTo(ADest: IBGRAPath;
+  x, y: single; s: string; align: TAlignment; ABidiMode: TFontBidiMode);
+var
+  twAlign : TBGRATypeWriterAlignment;
+  ofs: TPointF;
+begin
+  UpdateFont;
+  FVectorizedFont.BidiMode := ABidiMode;
+  FVectorizedFont.Orientation := 0;
+  case align of
+    taCenter: twAlign:= twaMiddle;
+    taRightJustify: twAlign := twaRight;
+    else twAlign:= twaLeft;
+  end;
+  ofs := PointF(x,y);
+  ofs.Offset(0, FVectorizedFont.FullHeight*0.5);
+  FVectorizedFont.CopyTextPathTo(ADest, s, ofs.x,ofs.y, twAlign);
+end;
+
+procedure TBGRAVectorizedFontRenderer.InternalTextOutAngle(
+  ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string;
+  c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment;
+  ABidiMode: TFontBidiMode);
+var
+  twAlign : TBGRATypeWriterAlignment;
+  c2D: TBGRACanvas2D;
+  ofs: TPointF;
+begin
+  UpdateFont;
+  FVectorizedFont.Orientation := orientation;
+  FVectorizedFont.BidiMode := ABidiMode;
+  case align of
+    taCenter: twAlign:= twaMiddle;
+    taRightJustify: twAlign := twaRight;
+    else twAlign:= twaLeft;
+  end;
+  c2D := GetCanvas2D(ADest);
+  if Assigned(texture) then
+    c2D.fillStyle(texture)
+  else
+    c2D.fillStyle(c);
+  ofs := PointF(x,y);
+  ofs.Offset( AffineMatrixRotationDeg(-orientation*0.1)*PointF(0,FVectorizedFont.FullHeight*0.5) );
+  FVectorizedFont.DrawText(c2D, s, ofs.x,ofs.y, twAlign);
 end;
 
 procedure TBGRAVectorizedFontRenderer.Init;
@@ -1147,42 +1204,35 @@ end;
 
 procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment);
-var
-  twAlign : TBGRATypeWriterAlignment;
-  c2D: TBGRACanvas2D;
-  ofs: TPointF;
 begin
-  UpdateFont;
-  FVectorizedFont.Orientation := orientation;
-  case align of
-    taCenter: twAlign:= twaMiddle;
-    taRightJustify: twAlign := twaRight;
-    else twAlign:= twaLeft;
-  end;
-  c2D := GetCanvas2D(ADest);
-  c2D.fillStyle(c);
-  ofs := PointF(x,y);
-  ofs.Offset( AffineMatrixRotationDeg(-orientation*0.1)*PointF(0,FVectorizedFont.FullHeight*0.5) );
-  FVectorizedFont.DrawText(c2D, s, ofs.x,ofs.y, twAlign);
+  InternalTextOutAngle(ADest,x,y,orientation,s,c,nil,align,fbmAuto);
+end;
+
+procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+  y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  if ARightToLeft then
+    InternalTextOutAngle(ADest,x,y,orientation,s,c,nil,align,fbmRightToLeft)
+  else
+    InternalTextOutAngle(ADest,x,y,orientation,s,c,nil,align,fbmLeftToRight);
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientation: integer; s: string; texture: IBGRAScanner;
   align: TAlignment);
-var
-  twAlign : TBGRATypeWriterAlignment;
-  c2D: TBGRACanvas2D;
 begin
-  UpdateFont;
-  FVectorizedFont.Orientation := orientation;
-  case align of
-    taCenter: twAlign:= twaTop;
-    taRightJustify: twAlign := twaTopRight;
-    else twAlign:= twaTopLeft;
-  end;
-  c2D := GetCanvas2D(ADest);
-  c2D.fillStyle(texture);
-  FVectorizedFont.DrawText(c2D, s, x,y, twAlign);
+  InternalTextOutAngle(ADest,x,y,orientation,s,BGRAPixelTransparent,texture,align,fbmAuto);
+end;
+
+procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+  y: single; orientation: integer; s: string; texture: IBGRAScanner;
+  align: TAlignment; ARightToLeft: boolean);
+begin
+  if ARightToLeft then
+    InternalTextOutAngle(ADest,x,y,orientation,s,BGRAPixelTransparent,texture,align,fbmRightToLeft)
+  else
+    InternalTextOutAngle(ADest,x,y,orientation,s,BGRAPixelTransparent,texture,align,fbmLeftToRight);
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
@@ -1192,9 +1242,22 @@ begin
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; s: string; texture: IBGRAScanner; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  TextOutAngle(ADest,x,y,FontOrientation,s,texture,align,ARightToLeft);
+end;
+
+procedure TBGRAVectorizedFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
   y: single; s: string; c: TBGRAPixel; align: TAlignment);
 begin
   TextOutAngle(ADest,x,y,FontOrientation,s,c,align);
+end;
+
+procedure TBGRAVectorizedFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean);
+begin
+  TextOutAngle(ADest,x,y,FontOrientation,s,c,align,ARightToLeft);
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextRect(ADest: TBGRACustomBitmap;
@@ -1211,20 +1274,17 @@ begin
 end;
 
 procedure TBGRAVectorizedFontRenderer.CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment);
-var
-  twAlign : TBGRATypeWriterAlignment;
-  ofs: TPointF;
 begin
-  UpdateFont;
-  FVectorizedFont.Orientation := 0;
-  case align of
-    taCenter: twAlign:= twaMiddle;
-    taRightJustify: twAlign := twaRight;
-    else twAlign:= twaLeft;
-  end;
-  ofs := PointF(x,y);
-  ofs.Offset(0, FVectorizedFont.FullHeight*0.5);
-  FVectorizedFont.CopyTextPathTo(ADest, s, ofs.x,ofs.y, twAlign);
+  InternalCopyTextPathTo(ADest, x,y, s, align, fbmAuto);
+end;
+
+procedure TBGRAVectorizedFontRenderer.CopyTextPathTo(ADest: IBGRAPath; x,
+  y: single; s: string; align: TAlignment; ARightToLeft: boolean);
+begin
+  if ARightToLeft then
+    InternalCopyTextPathTo(ADest, x,y, s, align, fbmRightToLeft)
+  else
+    InternalCopyTextPathTo(ADest, x,y, s, align, fbmLeftToRight);
 end;
 
 function TBGRAVectorizedFontRenderer.HandlesTextPath: boolean;

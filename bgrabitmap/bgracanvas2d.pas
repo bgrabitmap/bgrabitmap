@@ -62,6 +62,7 @@ type
     fontEmHeight: single;
     textAlign: TAlignment;
     textBaseline: string;
+    textDirection: TFontBidiMode;
 
     lineWidth: single;
     penStroker: TBGRAPenStroker;
@@ -101,10 +102,12 @@ type
         FontAlign: TAlignment;
         FontAnchor: TFontVerticalAnchor;
         FontStyle: TFontStyles;
+        TextDirection: TFontBidiMode;
       end;
     FFontRenderer: TBGRACustomFontRenderer;
     FLastCoord, FStartCoord: TPointF;
     function GetCurrentPathAsPoints: ArrayOfTPointF;
+    function GetTextDirection: TFontBidiMode;
     function GetFontName: string;
     function GetFontRenderer: TBGRACustomFontRenderer;
     function GetFontEmHeight: single;
@@ -132,6 +135,7 @@ type
     function GetTextBaseline: string;
     function GetFillMode: TFillMode;
     function GetWidth: Integer;
+    procedure SetTextDirection(AValue: TFontBidiMode);
     procedure SetFontName(AValue: string);
     procedure SetFontRenderer(AValue: TBGRACustomFontRenderer);
     procedure SetFontEmHeight(AValue: single);
@@ -157,7 +161,7 @@ type
     procedure SetStrokeMatrix(AValue: TAffineMatrix);
     procedure SetTextAlign(AValue: string);
     procedure SetTextAlignLCL(AValue: TAlignment);
-    procedure SetTextBaseine(AValue: string);
+    procedure SetTextBaseline(AValue: string);
     procedure SetFillMode(mode: TFillMode);
     procedure StrokePoly(const points: array of TPointF);
     procedure DrawShadow(const points, points2: array of TPointF; AFillMode: TFillMode = fmWinding);
@@ -318,7 +322,8 @@ type
     property font: string read GetFontString write SetFontString;
     property textAlignLCL: TAlignment read GetTextAlignLCL write SetTextAlignLCL;
     property textAlign: string read GetTextAlign write SetTextAlign;
-    property textBaseline: string read GetTextBaseline write SetTextBaseine;
+    property textBaseline: string read GetTextBaseline write SetTextBaseline;
+    property direction: TFontBidiMode read GetTextDirection write SetTextDirection;
     
     property fillMode: TFillMode read GetFillMode write SetFillMode;
 
@@ -678,6 +683,7 @@ begin
   fontName := 'Arial';
   fontEmHeight := 10;
   fontStyle := [];
+  textDirection := fbmAuto;
   textAlign:= taLeftJustify;
   textBaseline := 'alphabetic';
 
@@ -714,6 +720,7 @@ begin
   result.fontName:= fontName;
   result.fontEmHeight := fontEmHeight;
   result.fontStyle := fontStyle;
+  result.textDirection:= textDirection;
 
   result.lineWidth := lineWidth;
   result.penStroker.LineCap := penStroker.LineCap;
@@ -871,6 +878,11 @@ begin
     result[i] := FPathPoints[i];
 end;
 
+function TBGRACanvas2D.GetTextDirection: TFontBidiMode;
+begin
+  result := currentState.textDirection;
+end;
+
 function TBGRACanvas2D.GetFontName: string;
 begin
   result := currentState.fontName;
@@ -942,6 +954,11 @@ begin
     result := Surface.Width
   else
     result := 0;
+end;
+
+procedure TBGRACanvas2D.SetTextDirection(AValue: TFontBidiMode);
+begin
+  currentState.textDirection := AValue;
 end;
 
 procedure TBGRACanvas2D.SetFontName(AValue: string);
@@ -1205,6 +1222,7 @@ begin
       bmp.FontName := FontName;
       bmp.FontStyle:= FontStyle;
       bmp.FontHeight:= round(h);
+      bmp.FontBidiMode:= TextDirection;
       if self.antialiasing then
         bmp.FontQuality := fqFineAntialiasing
       else
@@ -1413,7 +1431,7 @@ begin
   currentState.textAlign := AValue;
 end;
 
-procedure TBGRACanvas2D.SetTextBaseine(AValue: string);
+procedure TBGRACanvas2D.SetTextBaseline(AValue: string);
 begin
   currentState.textBaseline := trim(lowercase(AValue));
 end;
@@ -2401,7 +2419,10 @@ begin
       fvaCenter: translate(0,-Lineheight/2);
       fvaBaseline: translate(0,-baseline);
     end;
-    renderer.CopyTextPathTo(self, 0,0, AText, textAlignLCL);
+    if direction=fbmAuto then
+      renderer.CopyTextPathTo(self, 0,0, AText, textAlignLCL)
+    else
+      renderer.CopyTextPathTo(self, 0,0, AText, textAlignLCL, direction=fbmRightToLeft);
     currentState.matrix := previousMatrix;
   end else
   begin
@@ -2412,6 +2433,7 @@ begin
     FTextPaths[high(FTextPaths)].FontStyle := fontStyle;
     FTextPaths[high(FTextPaths)].FontAlign := textAlignLCL;
     FTextPaths[high(FTextPaths)].FontAnchor := fva;
+    FTextPaths[high(FTextPaths)].TextDirection := direction;
   end;
 
   FLastCoord := EmptyPointF;
