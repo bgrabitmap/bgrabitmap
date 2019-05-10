@@ -1398,12 +1398,16 @@ var
   ts: TCanvas2dTextSize;
   fs: TFontStyles;
   dir: TSVGTextDirection;
+  deco: String;
 begin
   ACanvas2d.fontEmHeight := Units.ConvertHeight(Units.CurrentFontEmHeight, AUnit).value;
   ACanvas2d.fontName := fontFamily;
   fs := [];
   if fontBold then include(fs, fsBold);
   if fontItalic then include(fs, fsItalic);
+  deco := ' '+textDecoration+' ';
+  if pos(' line-through ',deco)<>0 then include(fs, fsStrikeOut);
+  if pos(' underline ',deco)<>0 then include(fs, fsUnderline);
   ACanvas2d.fontStyle := fs;
   dir := textDirection;
   case dir of
