@@ -646,14 +646,10 @@ type
      procedure EraseRectAntialias(x, y, x2, y2: single; alpha: byte; pixelCenteredCoordinates: boolean = true); virtual; abstract;
      procedure AlphaFillRect(x, y, x2, y2: integer; alpha: byte); virtual; abstract;
 
-     procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
-     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
      procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
      procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
      procedure TextOutCurved(APath: IBGRAPath; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; virtual;
      procedure TextOutCurved(APath: IBGRAPath; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; virtual;
-     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual; abstract;
-     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual; abstract;
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); overload; virtual; abstract;
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); overload; virtual; abstract;
      procedure TextMultiline(x,y: single; sUTF8: string; c: TBGRAPixel; AAlign: TBidiTextAlignment = btaLeftJustify; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); overload;
@@ -676,6 +672,14 @@ type
      procedure TextOut(x, y: single; sUTF8: string; c: TColor; ARightToLeft: boolean); overload; virtual;
      procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner); overload; virtual;
      procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; ARightToLeft: boolean); overload; virtual;
+     procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
+     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
+
+     { Overrides the font orientation with the parameter orientationTenthDegCCW }
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual;
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual;
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
 
      { Draw the UTF8 encoded string in the rectangle ARect. Text is wrapped if necessary.
        The position depends on the specified horizontal alignment halign and vertical alignement valign.
@@ -1957,6 +1961,20 @@ procedure TBGRACustomBitmap.TextOut(x, y: single; sUTF8: string;
   texture: IBGRAScanner; ARightToLeft: boolean);
 begin
   TextOut(x, y, sUTF8, texture, taLeftJustify, ARightToLeft);
+end;
+
+procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
+  orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel;
+  align: TAlignment);
+begin
+  TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,c,align, GetFontRightToLeftFor(sUTF8));
+end;
+
+procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
+  orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner;
+  align: TAlignment);
+begin
+  TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,texture,align, GetFontRightToLeftFor(sUTF8));
 end;
 
 { Draw the UTF8 encoded string in the rectangle ARect. Text is wrapped if necessary.

@@ -69,7 +69,9 @@ type
     procedure SplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string);
     function GetFontPixelMetric: TFontPixelMetric; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
@@ -1139,14 +1141,34 @@ procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: si
   sUTF8: string; c: TBGRAPixel; align: TAlignment);
 begin
   UpdateFont;
-  BGRAText.BGRATextOutAngle(ADest,FFont,FontQuality,x,y,orientationTenthDegCCW,sUTF8,c,nil,align);
+  FFont.Orientation:= orientationTenthDegCCW;
+  InternalTextOut(ADest,x,y,sUTF8,c,nil,align);
+end;
+
+procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+  y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel;
+  align: TAlignment; ARightToLeft: boolean);
+begin
+  UpdateFont;
+  FFont.Orientation:= orientationTenthDegCCW;
+  InternalTextOut(ADest,x,y,sUTF8,c,nil,align,false,ARightToLeft);
 end;
 
 procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
   sUTF8: string; texture: IBGRAScanner; align: TAlignment);
 begin
   UpdateFont;
-  BGRAText.BGRATextOutAngle(ADest,FFont,FontQuality,x,y,orientationTenthDegCCW,sUTF8,BGRAPixelTransparent,texture,align);
+  FFont.Orientation:= orientationTenthDegCCW;
+  InternalTextOut(ADest,x,y,sUTF8,BGRAPixelTransparent,texture,align,false);
+end;
+
+procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+  y: single; orientationTenthDegCCW: integer; sUTF8: string;
+  texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean);
+begin
+  UpdateFont;
+  FFont.Orientation:= orientationTenthDegCCW;
+  InternalTextOut(ADest,x,y,sUTF8,BGRAPixelTransparent,texture,align,false,ARightToLeft);
 end;
 
 procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string;

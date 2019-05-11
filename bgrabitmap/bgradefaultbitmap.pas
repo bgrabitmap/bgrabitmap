@@ -724,8 +724,8 @@ type
     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
 
     { Same as above, except that the orientation is specified, overriding the value of the property FontOrientation. }
-    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; override;
-    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
+    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
 
     procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; override;
     procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; override;
@@ -3984,17 +3984,17 @@ end;
 {------------------------- Text functions ---------------------------------------}
 
 procedure TBGRADefaultBitmap.TextOutAngle(x, y: single; orientationTenthDegCCW: integer;
-  sUTF8: string; c: TBGRAPixel; align: TAlignment);
+  sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean);
 begin
   with (PointF(x,y)-GetFontAnchorRotatedOffset(orientationTenthDegCCW)) do
-    FontRenderer.TextOutAngle(self,x,y,orientationTenthDegCCW,CleanTextOutString(sUTF8),c,align);
+    FontRenderer.TextOutAngle(self,x,y,orientationTenthDegCCW,CleanTextOutString(sUTF8),c,align,ARightToLeft);
 end;
 
 procedure TBGRADefaultBitmap.TextOutAngle(x, y: single; orientationTenthDegCCW: integer;
-  sUTF8: string; texture: IBGRAScanner; align: TAlignment);
+  sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean);
 begin
   with (PointF(x,y)-GetFontAnchorRotatedOffset(orientationTenthDegCCW)) do
-    FontRenderer.TextOutAngle(self,x,y,orientationTenthDegCCW,CleanTextOutString(sUTF8),texture,align);
+    FontRenderer.TextOutAngle(self,x,y,orientationTenthDegCCW,CleanTextOutString(sUTF8),texture,align,ARightToLeft);
 end;
 
 procedure TBGRADefaultBitmap.TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single);
