@@ -53,15 +53,14 @@ const zoom = 1;
 var
   image: TBGRABitmap;
   TS, tempTS: TTextStyle;
-  y: Integer;
+  y, prevHeight: Integer;
   s: TSize;
 begin
   image := TBGRABitmap.Create(ClientWidth div zoom, ClientHeight div zoom, BGRAWhite);
   image.FontName := Font.Name;
-  image.FontFullHeight := 15;
+  image.FontHeight := Font.Height;
   image.FontQuality := fqSystemClearType;
 
-  Canvas.Font.Height := image.FontFullHeight*FontFullHeightSign;
   Canvas.Brush.Style := bsClear;
 
   fillchar(TS, sizeof(TS), 0);
@@ -71,14 +70,14 @@ begin
   TS.RightToLeft := False;
   TS.ShowPrefix := false;
   ts.Alignment:= taRightJustify;
-  image.TextRect(Rect(5, 25, 240, 45), 5, 25, 'BGRA With RightToLeft=False', TS, BGRA(0,0,0));
+  image.TextRect(Rect(5, 25, 240, 45), 5, 25, 'BGRA With RTL=False', TS, BGRA(0,0,0));
   ts.Alignment:= taLeftJustify;
   image.TextRect(Rect(250, 25, image.Width, 45), 250, 25, TestText, TS, BGRA(0,0,0));
 
   TS.RightToLeft := True;
   TS.ShowPrefix := true;
   ts.Alignment:= taRightJustify;
-  image.TextRect(Rect(5, 95, 240, 135), 5, 95, 'BGRA' + LineEnding + 'With RightToLeft=True',
+  image.TextRect(Rect(5, 95, 240, 135), 5, 95, 'BGRA' + LineEnding + 'With RTL=True',
                  TS, BGRA(0,0,0));
   ts.Alignment:= taLeftJustify;
   image.TextRect(Rect(250, 95, image.Width, 135), 250, 95, TestText, TS, BGRA(0,0,0));
@@ -110,6 +109,24 @@ begin
   inc(y, s.cy);
   ts.Wordbreak := false;
 
+  image.TextOut(240,y, 'BGRA TextOutAngle LTR', BGRABlack, taRightJustify);
+  image.FontStyle := [fsUnderline];
+  image.TextOutAngle(250,y, -150, TestText2, BGRABlack, taLeftJustify, False);
+  image.FontStyle := [];
+  inc(y,20);
+
+  image.TextOut(240,y, 'BGRA TextOutAngle RTL', BGRABlack, taRightJustify);
+  image.FontStyle := [fsUnderline];
+  image.TextOutAngle(250,y, -150, TestText2, BGRABlack, taLeftJustify, True);
+  image.FontStyle := [];
+  inc(y,20);
+
+  image.TextOut(240,y, 'BGRA TextOutAngle auto', BGRABlack, taRightJustify);
+  image.FontStyle := [fsUnderline];
+  image.TextOutAngle(250,y, -150, TestText2, BGRABlack, taLeftJustify);
+  image.FontStyle := [];
+  inc(y,20);
+
   image.FontFullHeight := 40;
   ts.Alignment := taLeftJustify;
   TS.EndEllipsis := true;
@@ -126,14 +143,14 @@ begin
   TS.RightToLeft := False;
   TS.ShowPrefix := false;
   ts.Alignment:= taRightJustify;
-  Canvas.TextRect(Rect(5, 5, 240, 25), 5, 5, 'TCanvas With RightToLeft=False', TS);
+  Canvas.TextRect(Rect(5, 5, 240, 25), 5, 5, 'TCanvas With RTL=False', TS);
   ts.Alignment:= taLeftJustify;
   Canvas.TextRect(Rect(250, 5, Canvas.Width, 25), 250, 5, TestText, TS);
 
   TS.RightToLeft := True;
   TS.ShowPrefix := true;
   ts.Alignment:= taRightJustify;
-  Canvas.TextRect(Rect(5, 55, 240, 95), 5, 55, 'TCanvas' + LineEnding + 'With &RightToLeft=True', TS);
+  Canvas.TextRect(Rect(5, 55, 240, 95), 5, 55, 'TCanvas'+LineEnding+'With &RTL=True', TS);
   ts.Alignment:= taLeftJustify;
   Canvas.TextRect(Rect(250, 55, Canvas.Width, 95), 250, 55, TestText, TS);
 
@@ -149,6 +166,7 @@ begin
   tempTS.RightToLeft := false;
   Canvas.TextStyle := tempTS;
 
+  prevHeight := Canvas.Font.Height;
   Canvas.Font.Color := clGray;
   Canvas.Font.Height := FontFullHeightSign * 40;
   ts.Alignment := taLeftJustify;
@@ -157,7 +175,7 @@ begin
   TS.Wordbreak := false;
   Canvas.TextRect(rect(0,0,ClientWidth,ClientHeight), mx,my, 'TCanvas test ellipsis', ts);
   TS.EndEllipsis:= false;
-
+  Canvas.Font.Height := prevHeight;
 end;
 
 end.
