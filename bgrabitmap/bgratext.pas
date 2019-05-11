@@ -64,6 +64,7 @@ type
                                 AWordBreak: TWordBreakHandler); overload;
     procedure InternalSplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string;
                                 AWordBreak: TWordBreakHandler); overload;
+    function InternalGetFontPixelMetric: TFontPixelMetric;
     procedure DefaultWorkBreakHandler(var ABeforeUTF8, AAfterUTF8: string);
   public
     procedure SplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string);
@@ -142,7 +143,7 @@ var
 
 implementation
 
-uses GraphType, Math, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
+uses GraphType, Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
      {$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF};
 
 const MaxPixelMetricCount = 100;
@@ -1117,24 +1118,9 @@ begin
 end;
 
 function TCustomLCLFontRenderer.GetFontPixelMetric: TFontPixelMetric;
-var fxFont: TFont;
 begin
   UpdateFont;
-  if FontQuality in[fqSystem,fqSystemClearType] then
-    result := GetLCLFontPixelMetric(FFont)
-  else
-  begin
-    FxFont := TFont.Create;
-    FxFont.Assign(FFont);
-    FxFont.Height := fxFont.Height*FontAntialiasingLevel;
-    Result:= GetLCLFontPixelMetric(FxFont);
-    if Result.Baseline <> -1 then Result.Baseline:= round((Result.Baseline-1)/FontAntialiasingLevel);
-    if Result.CapLine <> -1 then Result.CapLine:= round(Result.CapLine/FontAntialiasingLevel);
-    if Result.DescentLine <> -1 then Result.DescentLine:= round((Result.DescentLine-1)/FontAntialiasingLevel);
-    if Result.Lineheight <> -1 then Result.Lineheight:= round(Result.Lineheight/FontAntialiasingLevel);
-    if Result.xLine <> -1 then Result.xLine:= round(Result.xLine/FontAntialiasingLevel);
-    FxFont.Free;
-  end;
+  result := InternalGetFontPixelMetric;
 end;
 
 procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
@@ -1427,6 +1413,8 @@ procedure TCustomLCLFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap; x,
 var mode : TBGRATextOutImproveReadabilityMode;
   s: TSize;
   pts: ArrayOfTPointF;
+  m: TAffineMatrix;
+  i: Integer;
 begin
   {$IFDEF LINUX}
   //help LCL detect the correct direction
@@ -1454,7 +1442,13 @@ begin
   if FOwnUnderline then
   begin
     s := InternalTextSize(sUTF8, AShowPrefix);
-    pts := BGRATextUnderline(PointF(x,y),s.cx,GetFontPixelMetric);
+    pts := BGRATextUnderline(PointF(x,y),s.cx,InternalGetFontPixelMetric);
+    if FFont.Orientation mod 3600 <> 0 then
+    begin
+      m := AffineMatrixTranslation(x,y)*AffineMatrixRotationDeg(-FFont.Orientation/10)*AffineMatrixTranslation(-x,-y);
+      for i := 0 to high(pts) do
+        pts[i] := m*pts[i];
+    end;
     if texture<>nil then
       ADest.FillPolyAntialias(pts, texture, false)
     else
@@ -1532,6 +1526,26 @@ procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
 var lineEndingBreak: boolean;
 begin
   InternalSplitText(ATextUTF8,AMaxWidth,ARemainsUTF8,lineEndingBreak,AWordBreak);
+end;
+
+function TCustomLCLFontRenderer.InternalGetFontPixelMetric: TFontPixelMetric;
+var fxFont: TFont;
+begin
+  if FontQuality in[fqSystem,fqSystemClearType] then
+    result := GetLCLFontPixelMetric(FFont)
+  else
+  begin
+    FxFont := TFont.Create;
+    FxFont.Assign(FFont);
+    FxFont.Height := fxFont.Height*FontAntialiasingLevel;
+    Result:= GetLCLFontPixelMetric(FxFont);
+    if Result.Baseline <> -1 then Result.Baseline:= round((Result.Baseline-1)/FontAntialiasingLevel);
+    if Result.CapLine <> -1 then Result.CapLine:= round(Result.CapLine/FontAntialiasingLevel);
+    if Result.DescentLine <> -1 then Result.DescentLine:= round((Result.DescentLine-1)/FontAntialiasingLevel);
+    if Result.Lineheight <> -1 then Result.Lineheight:= round(Result.Lineheight/FontAntialiasingLevel);
+    if Result.xLine <> -1 then Result.xLine:= round(Result.xLine/FontAntialiasingLevel);
+    FxFont.Free;
+  end;
 end;
 
 procedure TCustomLCLFontRenderer.DefaultWorkBreakHandler(var ABeforeUTF8,
