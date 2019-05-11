@@ -1,0 +1,6 @@
+<svg width="200" height="100" xmlns="http://www.w3.org/2000/svg" >
+    <text x="20" y="15">
+        <tspan>tspan line 1</tspan>
+        <tspan dx="30" dy="10">tspan line 2</tspan>
+    </text>
+</svg>

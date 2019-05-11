@@ -83,18 +83,28 @@ type
     NbGlyphs: integer;
   end;
 
+  TBGRAGlyphDisplayInfo = record
+    Glyph: TBGRAGlyph;
+    Matrix: TAffineMatrix;
+  end;
+
+  TBGRATextDisplayInfo = array of TBGRAGlyphDisplayInfo;
+
   { TBGRACustomTypeWriter }
 
   TBGRACustomTypeWriter = class
   private
+    FBidiMode: TFontBidiMode;
     FGlyphs: TAvgLvlTree;
+    procedure SetBidiMode(AValue: TFontBidiMode);
   protected
     TypeWriterMatrix: TAffineMatrix;
     function CompareGlyph({%H-}Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
     function FindGlyph(AIdentifier: string): TAvgLvlTreeNode;
     function GetGlyph(AIdentifier: string): TBGRAGlyph; virtual;
     procedure SetGlyph(AIdentifier: string; AValue: TBGRAGlyph);
-    procedure TextPath(ADest: TBGRACanvas2D; ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment; ADrawEachChar: boolean);
+    function GetDisplayInfo(ATextUTF8: string; X,Y: Single;
+                  AAlign: TBGRATypeWriterAlignment): TBGRATextDisplayInfo;
     procedure GlyphPath(ADest: TBGRACanvas2D; AIdentifier: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft);
     procedure DrawLastPath(ADest: TBGRACanvas2D);
     procedure ClearGlyphs;
@@ -125,6 +135,7 @@ type
     procedure NeedGlyphRange(AUnicodeFrom, AUnicodeTo: Cardinal);
     procedure NeedGlyphAnsiRange;
     destructor Destroy; override;
+    property BidiMode: TFontBidiMode read FBidiMode write SetBidiMode;
   end;
 
 function ComputeEasyBezier(APoints: array of TPointF; AClosed: boolean; AMinimumDotProduct: single = 0.707): ArrayOfTPointF; overload;
@@ -477,6 +488,12 @@ begin
     FGlyphs.Add(pointer(AValue));
 end;
 
+procedure TBGRACustomTypeWriter.SetBidiMode(AValue: TFontBidiMode);
+begin
+  if FBidiMode=AValue then Exit;
+  FBidiMode:=AValue;
+end;
+
 function TBGRACustomTypeWriter.CompareGlyph(Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
 begin
   result := CompareStr(TBGRAGlyph(Data1).Identifier,TBGRAGlyph(Data2).Identifier);
@@ -516,45 +533,38 @@ end;
 
 procedure TBGRACustomTypeWriter.DrawText(ADest: TBGRACanvas2D; ATextUTF8: string;
   X, Y: Single; AAlign: TBGRATypeWriterAlignment);
+var
+  di: TBGRATextDisplayInfo;
+  i: Integer;
 begin
-  TextPath(ADest, ATextUTF8, X,Y, AAlign, (OutlineMode <> twoPath) and not DrawGlyphsSimultaneously);
+  di := GetDisplayInfo(ATextUTF8,x,y,AAlign);
+
+  if (OutlineMode <> twoPath) and not DrawGlyphsSimultaneously then
+  begin
+    //draw each glyph
+    for i := 0 to high(di) do
+    begin
+      ADest.beginPath;
+      di[i].Glyph.Path(ADest, di[i].Matrix);
+      DrawLastPath(ADest);
+    end;
+  end else
+  begin
+    ADest.beginPath;
+    for i := 0 to high(di) do
+      di[i].Glyph.Path(ADest, di[i].Matrix);
+    DrawLastPath(ADest);
+  end;
 end;
 
 procedure TBGRACustomTypeWriter.CopyTextPathTo(ADest: IBGRAPath; ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft);
 var
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  g: TBGRAGlyph;
-  m,m2: TAffineMatrix;
+  i: integer;
+  di: TBGRATextDisplayInfo;
 begin
-  if ATextUTF8 = '' then exit;
-  m := GetTextMatrix(ATextUTF8, X,Y,AAlign);
-  m2 := m;
-
-  pstr := @ATextUTF8[1];
-  left := length(ATextUTF8);
-  while left > 0 do
-  begin
-    charlen := UTF8CharacterLength(pstr);
-    setlength(nextchar, charlen);
-    move(pstr^, nextchar[1], charlen);
-    inc(pstr,charlen);
-    dec(left,charlen);
-
-    g := GetGlyph(nextchar);
-    if g <> nil then
-    begin
-      if AAlign in [twaLeft,twaMiddle,twaRight] then
-        m2 := m*AffineMatrixTranslation(0,-g.Height/2) else
-      if AAlign in [twaBottomLeft,twaBottom,twaBottomRight] then
-        m2 := m*AffineMatrixTranslation(0,-g.Height)
-      else
-        m2 := m;
-      g.Path(ADest, m2);
-      m := m*AffineMatrixTranslation(g.Width,0);
-    end;
-  end;
+  di := GetDisplayInfo(ATextUTF8,x,y,AAlign);
+  for i := 0 to high(di) do
+    di[i].Glyph.Path(ADest, di[i].Matrix);
 end;
 
 function TBGRACustomTypeWriter.GetGlyphBox(AIdentifier: string; X, Y: Single;
@@ -701,29 +711,39 @@ begin
     GetGlyph(AnsiToUtf8(chr(i)));
 end;
 
-procedure TBGRACustomTypeWriter.TextPath(ADest: TBGRACanvas2D; ATextUTF8: string; X,
-  Y: Single; AAlign: TBGRATypeWriterAlignment; ADrawEachChar: boolean);
+function TBGRACustomTypeWriter.GetDisplayInfo(ATextUTF8: string; X,
+  Y: Single; AAlign: TBGRATypeWriterAlignment): TBGRATextDisplayInfo;
 var
-  pstr: pchar;
-  left,charlen: integer;
+  charlen, i, o: integer;
   nextchar: string;
   g: TBGRAGlyph;
   m,m2: TAffineMatrix;
+  bidiArray: TBidiUTF8Array;
+  displayOrder: TUnicodeDisplayOrder;
 begin
-  if not ADrawEachChar then ADest.beginPath;
-  if ATextUTF8 = '' then exit;
+  if ATextUTF8 = '' then
+  begin
+    result := nil;
+    exit;
+  end;
   m := GetTextMatrix(ATextUTF8, X,Y,AAlign);
   m2 := m;
 
-  pstr := @ATextUTF8[1];
-  left := length(ATextUTF8);
-  while left > 0 do
+  if BidiMode = fbmAuto then bidiArray := AnalyzeBidiUTF8(ATextUTF8)
+  else bidiArray := AnalyzeBidiUTF8(ATextUTF8, BidiMode = fbmRightToLeft);
+  displayOrder := GetUTF8DisplayOrder(bidiArray);
+
+  setlength(result, length(displayOrder));
+  for o := 0 to high(displayOrder) do
   begin
-    charlen := UTF8CharacterLength(pstr);
+    i := displayOrder[o];
+    if i < high(bidiArray) then
+      charlen := bidiArray[i+1].Offset-bidiArray[i].Offset
+    else
+      charlen := length(ATextUTF8)-bidiArray[i].Offset;
+    if charlen = 0 then continue;
     setlength(nextchar, charlen);
-    move(pstr^, nextchar[1], charlen);
-    inc(pstr,charlen);
-    dec(left,charlen);
+    move(ATextUTF8[bidiArray[i].Offset+1], nextchar[1], charlen);
 
     g := GetGlyph(nextchar);
     if g <> nil then
@@ -734,9 +754,10 @@ begin
         m2 := m*AffineMatrixTranslation(0,-g.Height)
       else
         m2 := m;
-      if ADrawEachChar then ADest.beginPath;
-      g.Path(ADest, m2);
-      if ADrawEachChar then DrawLastPath(ADest);
+
+      result[o].Glyph := g;
+      result[o].Matrix := m2;
+
       m := m*AffineMatrixTranslation(g.Width,0);
     end;
   end;

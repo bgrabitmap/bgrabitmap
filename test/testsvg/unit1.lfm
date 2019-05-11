@@ -1,0 +1,249 @@
+object Form1: TForm1
+  Left = 487
+  Height = 930
+  Top = 32
+  Width = 1265
+  Caption = 'SVG Test'
+  ClientHeight = 905
+  ClientWidth = 1265
+  DesignTimePPI = 120
+  Menu = MainMenu1
+  OnClose = FormClose
+  OnCreate = FormCreate
+  OnShow = FormShow
+  Position = poDesktopCenter
+  LCLVersion = '2.0.0.4'
+  object PageControl1: TPageControl
+    Left = 0
+    Height = 866
+    Top = 0
+    Width = 1265
+    ActivePage = TabSheet1
+    Align = alClient
+    ParentFont = False
+    TabIndex = 0
+    TabOrder = 0
+    object TabSheet1: TTabSheet
+      Caption = 'Main'
+      ClientHeight = 833
+      ClientWidth = 1257
+      ParentFont = False
+      object Panel1: TPanel
+        Left = 0
+        Height = 532
+        Top = 0
+        Width = 1257
+        Align = alTop
+        BevelInner = bvLowered
+        BevelOuter = bvLowered
+        BorderStyle = bsSingle
+        ClientHeight = 528
+        ClientWidth = 1253
+        Color = clSilver
+        ParentColor = False
+        ParentFont = False
+        TabOrder = 0
+        object Image1: TImage
+          Left = 2
+          Height = 524
+          Hint = '(svg rendering)'
+          Top = 2
+          Width = 632
+          Align = alLeft
+          Center = True
+          OnMouseUp = Image1MouseUp
+          ParentShowHint = False
+          Proportional = True
+          ShowHint = True
+          Stretch = True
+        end
+        object Image2: TImage
+          Left = 639
+          Height = 524
+          Top = 2
+          Width = 612
+          Align = alClient
+          Center = True
+          OnMouseUp = Image1MouseUp
+          ParentShowHint = False
+          Proportional = True
+          ShowHint = True
+          Stretch = True
+        end
+        object Splitter4: TSplitter
+          Left = 634
+          Height = 524
+          Top = 2
+          Width = 5
+        end
+      end
+      object Panel3: TPanel
+        Left = 0
+        Height = 296
+        Top = 537
+        Width = 1257
+        Align = alClient
+        ClientHeight = 296
+        ClientWidth = 1257
+        ParentFont = False
+        TabOrder = 1
+        object FileListBox1: TFileListBox
+          Left = 1
+          Height = 294
+          Top = 1
+          Width = 634
+          Align = alLeft
+          Directory = 'C:\Users\Fenix\Desktop\TEST SVG 4'
+          Font.CharSet = ANSI_CHARSET
+          Font.Height = -20
+          Font.Name = 'Times New Roman'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          ItemHeight = 0
+          OnChange = FileListBox1Change
+          ParentFont = False
+          TabOrder = 0
+        end
+        object Memo1: TMemo
+          Left = 640
+          Height = 294
+          Hint = '(Double click for on/off "change mode")'
+          Top = 1
+          Width = 616
+          Align = alClient
+          Font.CharSet = ANSI_CHARSET
+          Font.Color = clMaroon
+          Font.Height = -20
+          Font.Name = 'Times New Roman'
+          Font.Pitch = fpVariable
+          Font.Quality = fqDraft
+          OnDblClick = Memo1DblClick
+          OnMouseDown = Memo1MouseDown
+          ParentFont = False
+          ParentShowHint = False
+          ReadOnly = True
+          ScrollBars = ssVertical
+          ShowHint = True
+          TabOrder = 1
+        end
+        object Splitter3: TSplitter
+          Left = 635
+          Height = 294
+          Top = 1
+          Width = 5
+        end
+      end
+      object Splitter2: TSplitter
+        Cursor = crVSplit
+        Left = 0
+        Height = 5
+        Top = 532
+        Width = 1257
+        Align = alTop
+        Beveled = True
+        ResizeAnchor = akTop
+      end
+    end
+  end
+  object Panel2: TPanel
+    Left = 0
+    Height = 39
+    Top = 866
+    Width = 1265
+    Align = alBottom
+    BevelInner = bvLowered
+    BevelOuter = bvLowered
+    ClientHeight = 39
+    ClientWidth = 1265
+    TabOrder = 1
+    object PanProf: TPanel
+      Left = 2
+      Height = 35
+      Top = 2
+      Width = 1261
+      Align = alClient
+      Caption = '0.0s'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clBlack
+      Font.Height = -20
+      Font.Name = 'Segoe UI'
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      Font.Style = [fsBold]
+      ParentFont = False
+      TabOrder = 0
+    end
+  end
+  object PopupMenu1: TPopupMenu
+    OnPopup = PopupMenu1Popup
+    left = 88
+    top = 56
+    object MenuItem1: TMenuItem
+      Tag = 100
+      Caption = 'Execute Mod Test'
+      OnClick = MenuItem1Click
+    end
+    object MenuItem5: TMenuItem
+      Tag = 50
+      Caption = 'Execute Mod Test (scale 0.5)'
+      OnClick = MenuItem1Click
+    end
+    object MenuItem6: TMenuItem
+      Caption = '-'
+    end
+    object MCut1: TMenuItem
+      Caption = 'Cut'
+      OnClick = MCut1Click
+    end
+    object MCopy1: TMenuItem
+      Caption = 'Copy'
+      OnClick = MCopy1Click
+    end
+    object MPaste1: TMenuItem
+      Caption = 'Paste'
+      OnClick = MPaste1Click
+    end
+    object MSelectAll: TMenuItem
+      Caption = 'Select All'
+      OnClick = MSelectAllClick
+    end
+    object MenuItem3: TMenuItem
+      Caption = '-'
+    end
+    object MenuItem4: TMenuItem
+      Caption = 'Save as SVG...'
+      OnClick = MenuItem4Click
+    end
+  end
+  object PopupMenu2: TPopupMenu
+    left = 184
+    top = 56
+    object MenuItem2: TMenuItem
+      Caption = 'Save To...'
+      OnClick = MenuItem2Click
+    end
+  end
+  object SaveDialog1: TSaveDialog
+    left = 280
+    top = 56
+  end
+  object MainMenu1: TMainMenu
+    left = 88
+    top = 144
+    object MenuItem7: TMenuItem
+      Caption = 'File'
+      object MenuItem8: TMenuItem
+        Caption = 'ReDraw'
+        ShortCut = 16496
+        OnClick = MenuItem8Click
+      end
+      object N1: TMenuItem
+        Caption = '-'
+      end
+      object MenuItem9: TMenuItem
+        Caption = 'Exit'
+        OnClick = MenuItem9Click
+      end
+    end
+  end
+end

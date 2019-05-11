@@ -1,0 +1,6 @@
+<svg width="660" height="220" style="outline: 1px solid red; font-size: 2em; overflow: visible;" xmlns="http://www.w3.org/2000/svg">  
+  <text x="280" y="80" rotate="10">  
+    <tspan>SVG 1</tspan>  
+    <tspan x="280" dy="36" fill="red">SVG 2</tspan>  
+  </text>  
+</svg>
