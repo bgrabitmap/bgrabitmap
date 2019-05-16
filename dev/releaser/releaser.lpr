@@ -223,6 +223,8 @@ begin
   writeln;
   writeln('  Parameter  Description');
   writeln('  ---------  ----------------------------------------------------------------');
+  writeln('  versionNb  New version number to assign to manager and packages');
+  writeln;
   writeln('  logicfile  File containing the location of the version number. If it is not');
   writeln('             specified, all logic files in current directory are processed.');
   writeln;
@@ -235,7 +237,11 @@ begin
   writeln('             package mylib/mylibpack2.lpk');
   writeln('             const mylib/mylibtypes.pas MyLibVersion');
   writeln;
-  writeln('  versionNb  New version number to assign to manager and packages');
+  writeln('             Sample file: myprog.logic');
+  writeln('             ----------------------------------------------------------------');
+  writeln('             cd ($LogicDir)');
+  writeln('             project myproject.lpi');
+  writeln('             const myconsts.pas MyProjectVersion');
   writeln;
 end;
 
