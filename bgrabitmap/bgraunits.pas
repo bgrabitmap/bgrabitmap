@@ -8,6 +8,9 @@ uses
   Classes, SysUtils, BGRABitmapTypes;
 
 type
+  TSVGNumber = single;//double
+  ArrayOfTSVGNumber = array of TSVGNumber;
+
   TCSSUnit = (cuCustom, cuPixel,
               cuCentimeter, cuMillimeter,
               cuInch, cuPica, cuPoint,
@@ -16,6 +19,9 @@ type
     value: single;
     CSSUnit: TCSSUnit;
   end;
+
+  ArrayOfTFloatWithCSSUnit = array of TFloatWithCSSUnit;
+
 
 function FloatWithCSSUnit(AValue: single; AUnit: TCSSUnit): TFloatWithCSSUnit;
 
@@ -31,6 +37,8 @@ type
 
   TCSSUnitConverter = class
   protected
+    FCurrentFontEmHeight: TFloatWithCSSUnit;
+    function GetRootFontEmHeight: TFloatWithCSSUnit;
     function GetDefaultUnitHeight: TFloatWithCSSUnit; virtual;
     function GetDefaultUnitWidth: TFloatWithCSSUnit; virtual;
     function GetDpiScaleTransform: string;
@@ -46,22 +54,31 @@ type
     property DefaultUnitWidth: TFloatWithCSSUnit read GetDefaultUnitWidth;
     property DefaultUnitHeight: TFloatWithCSSUnit read GetDefaultUnitHeight;
   public
+    constructor Create;
     function Convert(xy: single; sourceUnit, destUnit: TCSSUnit; dpi: single; containerSize: single = 0): single;
     function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0): single; overload;
     function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit; containerHeight: single = 0): single; overload;
     function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): TFloatWithCSSUnit; overload;
     function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): TFloatWithCSSUnit; overload;
+    function ConvertWidth(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): ArrayOfTFloatWithCSSUnit; overload;
+    function ConvertHeight(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): ArrayOfTFloatWithCSSUnit; overload;
     function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TPointF; virtual;
-    class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
-    class function parseValue(AValue: string; ADefault: single): single; overload;
-    class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string; overload;
-    class function formatValue(AValue: single; APrecision: integer = 7): string; overload;
+    class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload; static;
+    class function parseValue(AValue: string; ADefault: single): single; overload; static;
+    class function parseArrayOfNumbers(AValue: string): ArrayOfTSVGNumber; overload; static;
+    class function parseArrayOfValuesWithUnit(AValue: string): ArrayOfTFloatWithCSSUnit; overload; static;
+    class function formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string; overload; static;
+    class function formatValue(AValue: single; APrecision: integer = 7): string; overload; static;
+    class function formatValue(AValue: ArrayOfTSVGNumber; APrecision: integer = 7): string; overload; static;
+    class function formatValue(AValue: ArrayOfTFloatWithCSSUnit; APrecision: integer = 7): string; overload; static;
     property DpiX: single read GetDpiX;
     property DpiY: single read GetDpiY;
     property DpiScaled: boolean read GetDPIScaled;
     property DpiScaleX: single read GetDpiScaleX;
     property DpiScaleY: single read GetDpiScaleY;
     property DpiScaleTransform: string read GetDpiScaleTransform;
+    property CurrentFontEmHeight: TFloatWithCSSUnit read FCurrentFontEmHeight write FCurrentFontEmHeight;
+    property RootFontEmHeight: TFloatWithCSSUnit read GetRootFontEmHeight;
   end;
 
 implementation
@@ -83,6 +100,11 @@ end;
 
 { TCSSUnitConverter }
 
+function TCSSUnitConverter.GetRootFontEmHeight: TFloatWithCSSUnit;
+begin
+  result := FloatWithCSSUnit(12, cuPoint);
+end; 
+
 function TCSSUnitConverter.GetDpiScaleX: single;
 begin
   result := 1;
@@ -95,12 +117,13 @@ end;
 
 function TCSSUnitConverter.GetFontEmHeight: TFloatWithCSSUnit;
 begin
-  result := FloatWithCSSUnit(0,cuCustom);
+  result := FCurrentFontEmHeight;
 end;
 
 function TCSSUnitConverter.GetFontXHeight: TFloatWithCSSUnit;
 begin
-  result := FloatWithCSSUnit(0,cuCustom);
+  result := FCurrentFontEmHeight;
+  result.value *= 0.5; //approximation
 end;
 
 function TCSSUnitConverter.GetDPIScaled: boolean;
@@ -158,15 +181,13 @@ begin
   end else
   if destUnit = cuFontEmHeight then
   begin
-    with FontEmHeight do
-      if value = 0 then result := 0
-      else result := Convert(xy/value,sourceUnit, CSSUnit, dpi);
+    with ConvertHeight(FontEmHeight, sourceUnit) do
+      if value = 0 then result := 0 else result := xy/value;
   end else
-  if destUnit = cuFontEmHeight then
+  if destUnit = cuFontXHeight then
   begin
-    with FontXHeight do
-      if value = 0 then result := 0
-      else result := Convert(xy/value,sourceUnit, CSSUnit, dpi);
+    with ConvertHeight(FontXHeight, sourceUnit) do
+      if value = 0 then result := 0 else result := xy/value;
   end else
   if sourceUnit = cuPixel then
   begin
@@ -242,6 +263,26 @@ begin
   result.value:= ConvertHeight(AValue.value,AValue.CSSUnit,destUnit,containerHeight);
 end;
 
+function TCSSUnitConverter.ConvertWidth(AValue: ArrayOfTFloatWithCSSUnit;
+  destUnit: TCSSUnit; containerWidth: single): ArrayOfTFloatWithCSSUnit;
+var
+  i: integer;
+begin
+  for i := low(AValue) to high(AValue) do
+   AValue[i]:= ConvertWidth(AValue[i],destUnit,containerWidth);
+  result := AValue;
+end;
+
+function TCSSUnitConverter.ConvertHeight(AValue: ArrayOfTFloatWithCSSUnit;
+  destUnit: TCSSUnit; containerHeight: single): ArrayOfTFloatWithCSSUnit;
+var
+  i: integer;
+begin
+  for i := low(AValue) to high(AValue) do
+   AValue[i]:= ConvertHeight(AValue[i],destUnit,containerHeight);
+  result := AValue;
+end;
+
 function TCSSUnitConverter.ConvertCoord(pt: TPointF; sourceUnit,
   destUnit: TCSSUnit; containerWidth: single; containerHeight: single): TPointF;
 begin
@@ -278,7 +319,83 @@ begin
   val(AValue,result,errPos);
   if errPos <> 0 then
     result := ADefault;
-end; 
+end;
+
+class function TCSSUnitConverter.parseArrayOfNumbers(AValue: string): ArrayOfTSVGNumber;
+var
+  i, l,p: integer;
+
+  procedure CanAddToArray;
+  var
+    len: integer;
+  begin
+    if l <> 0 then
+    begin
+      len := length(result);
+      setlength(result,len+1);
+      result[len] := parseValue( copy(AValue,p,l), 0);
+    end;
+  end;
+
+begin
+  AValue := trim(AValue);
+  if AValue = '' then exit(nil);
+
+  setlength(result,0);
+  p:= 1;
+  l:= 0;
+  for i := 1 to length(AValue) do
+  begin
+    if AValue[i] in [#9,#10,#13,#32,#44] then
+    begin
+      CanAddToArray;
+      p:= i+1;
+      l:= 0;
+    end
+    else
+      Inc(l);
+  end;
+  CanAddToArray;
+end;
+
+class function TCSSUnitConverter.parseArrayOfValuesWithUnit(AValue: string): ArrayOfTFloatWithCSSUnit;
+var
+  i, l,p: integer;
+  def: TFloatWithCSSUnit;
+
+  procedure CanAddToArray;
+  var
+    len: integer;
+  begin
+    if l <> 0 then
+    begin
+      len := length(result);
+      setlength(result,len+1);
+      result[len] := parseValue( copy(AValue,p,l), def);
+    end;
+  end;
+
+begin
+  AValue := trim(AValue);
+  if AValue = '' then exit(nil);
+
+  def := FloatWithCSSUnit(0, cuCustom);
+  setlength(result,0);
+  p:= 1;
+  l:= 0;
+  for i := 1 to length(AValue) do
+  begin
+    if AValue[i] in [#9,#10,#13,#32,#44] then
+    begin
+      CanAddToArray;
+      p:= i+1;
+      l:= 0;
+    end
+    else
+      Inc(l);
+  end;
+  CanAddToArray;
+end;
 
 class function TCSSUnitConverter.formatValue(AValue: TFloatWithCSSUnit; APrecision: integer = 7): string;
 begin
@@ -290,6 +407,54 @@ class function TCSSUnitConverter.formatValue(AValue: single; APrecision: integer
 begin
   result := FloatToStrF(AValue,ffGeneral,APrecision,0,formats);
 end;
+
+class function TCSSUnitConverter.formatValue(AValue: ArrayOfTSVGNumber; APrecision: integer = 7): string;
+var
+  i, len: integer;
+begin
+  len:= length(AValue);
+  if len = 0 then
+    result:= ''
+  else if len = 1 then
+    result:= formatValue(AValue[0], APrecision)
+  else
+  begin
+    result:= '';
+    for i := 0 to len-1 do
+    begin
+      result:= result + formatValue(AValue[i], APrecision);
+      if i <> (len-1) then
+       result:= result + ', ';
+    end;
+  end;
+end;
+
+class function TCSSUnitConverter.formatValue(AValue: ArrayOfTFloatWithCSSUnit; APrecision: integer = 7): string;
+var
+  i, len: integer;
+begin
+  len:= length(AValue);
+  if len = 0 then
+    result:= ''
+  else if len = 1 then
+    result:= formatValue(AValue[0], APrecision)
+  else
+  begin
+    result:= '';
+    for i := 0 to len-1 do
+    begin
+      result:= result + formatValue(AValue[i], APrecision);
+      if i <> (len-1) then
+       result:= result + ', ';
+    end;
+  end;
+end;
+
+constructor TCSSUnitConverter.Create;
+begin
+  inherited;
+  FCurrentFontEmHeight:= GetRootFontEmHeight;
+end;  
 
 initialization
 

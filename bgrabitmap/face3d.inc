@@ -473,8 +473,8 @@ begin
   if FVertexCount > 0 then
   begin
     for i := 0 to FVertexCount-1 do
-      FViewCenter += FVertices[i].Vertex.ViewCoord_128;
-    FViewCenter *= 1/FVertexCount;
+      FViewCenter.Offset(FVertices[i].Vertex.ViewCoord_128);
+    FViewCenter.Scale(1/FVertexCount);
   end;
 end;
 

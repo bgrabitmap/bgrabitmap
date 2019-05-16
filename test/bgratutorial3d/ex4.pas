@@ -142,9 +142,9 @@ begin
           if (Vertex[i].SceneCoord.y >= 22.2) then
           begin
             rotated.Add(Vertex[i]);
-            rotateCenter += Vertex[i].SceneCoord;
+            rotateCenter.Offset(Vertex[i].SceneCoord);
           end;
-      rotateCenter *= 1/rotated.VertexCount;
+      rotateCenter.Scale(1/rotated.VertexCount);
       obj.SeparatePart(rotated);
       obj.MainPart.Scale(2,2,2);
     end;

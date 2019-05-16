@@ -260,7 +260,7 @@ type
     FTextureUniform: TUniformVariableInteger;
     procedure StartUse; override;
   public
-    class function GetCodeForTextureColor: string;
+    class function GetCodeForTextureColor: string; static;
     constructor Create(ACanvas: TBGLCustomCanvas; AFragmentShader: string; ATexture: integer = 0);
     property Texture: integer read GetTexture write SetTexture;
   end;
@@ -858,10 +858,10 @@ var
       NormalCenter3D := Point3D_128_Zero;
       for j := 0 to NbVertices-1 do
       begin
-        PtCenter3D += Positions3D[j];
-        NormalCenter3D += Normals3D[j];
+        PtCenter3D.Offset(Positions3D[j]);
+        NormalCenter3D.Offset(Normals3D[j]);
       end;
-      PtCenter3D *= (1/NbVertices);
+      PtCenter3D.Scale(1/NbVertices);
       Normalize3D_128(NormalCenter3D);
       ColorCenter := MergeBGRA(slice(Colors,NbVertices));
     end;

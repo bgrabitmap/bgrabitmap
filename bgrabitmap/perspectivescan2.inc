@@ -191,8 +191,8 @@
         {$ELSE}
           with ShaderContext^ do
           begin
-            PositionInvZ += PositionStepInvZ;
-            NormalInvZ += NormalStepInvZ;
+            PositionInvZ.Offset(PositionStepInvZ);
+            NormalInvZ.Offset(NormalStepInvZ);
           end;
         {$ENDIF}
       {$ENDIF}

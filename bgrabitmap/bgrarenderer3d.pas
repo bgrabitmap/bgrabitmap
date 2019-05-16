@@ -399,9 +399,9 @@ begin
       begin
         result := MaterialColor * ColorInt65536(Lightness shl 1,Lightness shl 1,Lightness shl 1,65536);
         Extra := (Lightness - SaturationLow)*65536 div (SaturationHigh-SaturationLow);
-        result.r += Extra;
-        result.g += Extra;
-        result.b += Extra;
+        inc(result.r, Extra);
+        inc(result.g, Extra);
+        inc(result.b, Extra);
       end;
     end;
 end;
@@ -513,12 +513,12 @@ function TBGRARenderer3D.RenderFace(var ADescription: TFaceRenderingDescription;
       end;
       for j := 0 to NbVertices-1 do
       begin
-        FCenter.pos3D += Positions3D[j];
-        FCenter.normal3D += Normals3D[j];
+        FCenter.pos3D.Offset(Positions3D[j]);
+        FCenter.normal3D.Offset(Normals3D[j]);
       end;
       with FCenter do
       begin
-        pos3D *= (1/NbVertices);
+        pos3D.Scale(1/NbVertices);
         Normalize3D_128(normal3D);
       end;
     end;

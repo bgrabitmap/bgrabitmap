@@ -62,6 +62,7 @@ type
     fontEmHeight: single;
     textAlign: TAlignment;
     textBaseline: string;
+    textDirection: TFontBidiMode;
 
     lineWidth: single;
     penStroker: TBGRAPenStroker;
@@ -101,10 +102,12 @@ type
         FontAlign: TAlignment;
         FontAnchor: TFontVerticalAnchor;
         FontStyle: TFontStyles;
+        TextDirection: TFontBidiMode;
       end;
     FFontRenderer: TBGRACustomFontRenderer;
     FLastCoord, FStartCoord: TPointF;
     function GetCurrentPathAsPoints: ArrayOfTPointF;
+    function GetTextDirection: TFontBidiMode;
     function GetFontName: string;
     function GetFontRenderer: TBGRACustomFontRenderer;
     function GetFontEmHeight: single;
@@ -132,6 +135,7 @@ type
     function GetTextBaseline: string;
     function GetFillMode: TFillMode;
     function GetWidth: Integer;
+    procedure SetTextDirection(AValue: TFontBidiMode);
     procedure SetFontName(AValue: string);
     procedure SetFontRenderer(AValue: TBGRACustomFontRenderer);
     procedure SetFontEmHeight(AValue: single);
@@ -157,7 +161,7 @@ type
     procedure SetStrokeMatrix(AValue: TAffineMatrix);
     procedure SetTextAlign(AValue: string);
     procedure SetTextAlignLCL(AValue: TAlignment);
-    procedure SetTextBaseine(AValue: string);
+    procedure SetTextBaseline(AValue: string);
     procedure SetFillMode(mode: TFillMode);
     procedure StrokePoly(const points: array of TPointF);
     procedure DrawShadow(const points, points2: array of TPointF; AFillMode: TFillMode = fmWinding);
@@ -318,7 +322,8 @@ type
     property font: string read GetFontString write SetFontString;
     property textAlignLCL: TAlignment read GetTextAlignLCL write SetTextAlignLCL;
     property textAlign: string read GetTextAlign write SetTextAlign;
-    property textBaseline: string read GetTextBaseline write SetTextBaseine;
+    property textBaseline: string read GetTextBaseline write SetTextBaseline;
+    property direction: TFontBidiMode read GetTextDirection write SetTextDirection;
     
     property fillMode: TFillMode read GetFillMode write SetFillMode;
 
@@ -678,6 +683,7 @@ begin
   fontName := 'Arial';
   fontEmHeight := 10;
   fontStyle := [];
+  textDirection := fbmAuto;
   textAlign:= taLeftJustify;
   textBaseline := 'alphabetic';
 
@@ -714,6 +720,7 @@ begin
   result.fontName:= fontName;
   result.fontEmHeight := fontEmHeight;
   result.fontStyle := fontStyle;
+  result.textDirection:= textDirection;
 
   result.lineWidth := lineWidth;
   result.penStroker.LineCap := penStroker.LineCap;
@@ -871,6 +878,11 @@ begin
     result[i] := FPathPoints[i];
 end;
 
+function TBGRACanvas2D.GetTextDirection: TFontBidiMode;
+begin
+  result := currentState.textDirection;
+end;
+
 function TBGRACanvas2D.GetFontName: string;
 begin
   result := currentState.fontName;
@@ -944,6 +956,11 @@ begin
     result := 0;
 end;
 
+procedure TBGRACanvas2D.SetTextDirection(AValue: TFontBidiMode);
+begin
+  currentState.textDirection := AValue;
+end;
+
 procedure TBGRACanvas2D.SetFontName(AValue: string);
 begin
   currentState.fontName := AValue;
@@ -986,11 +1003,11 @@ begin
     end else
     if (attrib = 'italic') or (attrib = 'oblique') then
     begin
-      currentState.fontStyle += [fsItalic];
+      include(currentState.fontStyle, fsItalic);
     end else
     if (attrib = 'bold') or (attrib = 'bolder') then
     begin
-      currentState.fontStyle += [fsBold];
+      include(currentState.fontStyle, fsBold);
     end else
     if (attrib[1] in ['.','0'..'9']) then
     begin
@@ -1005,7 +1022,7 @@ begin
       begin
         if u = '' then //weight
         begin
-          if value >= 600 then currentState.fontStyle += [fsBold];
+          if value >= 600 then include(currentState.fontStyle, fsBold);
         end else
         if u = 'px' then currentState.fontEmHeight := value else
         if u = 'pt' then currentState.fontEmHeight:= value/72*96 else
@@ -1205,6 +1222,7 @@ begin
       bmp.FontName := FontName;
       bmp.FontStyle:= FontStyle;
       bmp.FontHeight:= round(h);
+      bmp.FontBidiMode:= TextDirection;
       if self.antialiasing then
         bmp.FontQuality := fqFineAntialiasing
       else
@@ -1252,7 +1270,7 @@ begin
 
         bmpTransf := BGRABitmapFactory.Create(surfaceBounds.Width,surfaceBounds.Height,BGRABlack);
         try
-          m := AffineMatrixTranslation(-surfaceBounds.Left,-surfaceBounds.Top)*m;
+          m := AffineMatrixTranslation(-surfaceBounds.Left-0.5,-surfaceBounds.Top-0.5)*m;
           if self.antialiasing then rf:= rfCosine else rf := rfBox;
           bmpTransf.PutImageAffine(m, bmp, rf, GetDrawMode);
           FreeAndNil(bmp);
@@ -1413,7 +1431,7 @@ begin
   currentState.textAlign := AValue;
 end;
 
-procedure TBGRACanvas2D.SetTextBaseine(AValue: string);
+procedure TBGRACanvas2D.SetTextBaseline(AValue: string);
 begin
   currentState.textBaseline := trim(lowercase(AValue));
 end;
@@ -1516,9 +1534,9 @@ begin
     if not IntersectRect(foundRect, foundRect,maxRect) then exit;
     offset := PointF(-foundRect.Left,-foundRect.Top);
     for i := 0 to high(ofsPts) do
-      ofsPts[i] += offset;
+      ofsPts[i].Offset(offset);
     for i := 0 to high(ofsPts2) do
-      ofsPts2[i] += offset;
+      ofsPts2[i].Offset(offset);
   end;
 
   tempBmp := surface.NewBitmap(foundRect.Right-foundRect.Left,foundRect.Bottom-foundRect.Top,BGRAPixelTransparent);
@@ -2401,7 +2419,10 @@ begin
       fvaCenter: translate(0,-Lineheight/2);
       fvaBaseline: translate(0,-baseline);
     end;
-    renderer.CopyTextPathTo(self, 0,0, AText, textAlignLCL);
+    if direction=fbmAuto then
+      renderer.CopyTextPathTo(self, 0,0, AText, textAlignLCL)
+    else
+      renderer.CopyTextPathTo(self, 0,0, AText, textAlignLCL, direction=fbmRightToLeft);
     currentState.matrix := previousMatrix;
   end else
   begin
@@ -2412,6 +2433,7 @@ begin
     FTextPaths[high(FTextPaths)].FontStyle := fontStyle;
     FTextPaths[high(FTextPaths)].FontAlign := textAlignLCL;
     FTextPaths[high(FTextPaths)].FontAnchor := fva;
+    FTextPaths[high(FTextPaths)].TextDirection := direction;
   end;
 
   FLastCoord := EmptyPointF;
@@ -2436,14 +2458,21 @@ end;
 
 function TBGRACanvas2D.measureText(AText: string): TCanvas2dTextSize;
 var renderer: TBGRACustomFontRenderer;
+  ratio: Single;
 begin
   renderer := fontRenderer;
   if renderer <> nil then
   begin
+    if renderer.FontEmHeight = 0 then
+    begin
+      result.width := 0;
+      result.height:= 0;
+    end else
     with renderer.TextSize(AText) do
     begin
-      result.width := cx;
-      result.height:= cy;
+      ratio := currentState.fontEmHeight/renderer.FontEmHeight;
+      result.width := cx*ratio;
+      result.height:= cy*ratio;
     end;
   end
   else

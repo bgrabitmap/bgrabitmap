@@ -315,7 +315,7 @@ type
     {** Reads the image in a stream that was previously serialized }
     procedure Deserialize(AStream: TStream); override;
     {** Stores an empty image (of size zero) }
-    class procedure SerializeEmpty(AStream: TStream);
+    class procedure SerializeEmpty(AStream: TStream); static;
 
     {* Example:
        <syntaxhighlight>
@@ -412,10 +412,10 @@ type
     procedure XorHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override;
     {** Draws an horizontal line with gamma correction at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color }
-    procedure DrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override;
+    procedure DrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override; overload;
     {** Draws an horizontal line with gamma correction at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color }
-    procedure DrawHorizLine(x, y, x2: int32or64; ec: TExpandedPixel); override;
+    procedure DrawHorizLine(x, y, x2: int32or64; ec: TExpandedPixel); override; overload;
     {** Draws an horizontal line with gamma correction at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified scanner
         to get the source colors }{inherited
@@ -426,7 +426,7 @@ type
     {** Draws an horizontal line at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified scanner
         and the specified ''ADrawMode'' }
-    procedure HorizLine(x, y, x2: int32or64; texture: IBGRAScanner; ADrawMode : TDrawMode); override;
+    procedure HorizLine(x, y, x2: int32or64; texture: IBGRAScanner; ADrawMode : TDrawMode); override; overload;
     {** Draws an horizontal line at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color
         and the specified ''ADrawMode'' }{inherited
@@ -724,8 +724,8 @@ type
     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
 
     { Same as above, except that the orientation is specified, overriding the value of the property FontOrientation. }
-    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; override;
-    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
+    procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
 
     procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; override;
     procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; override;
@@ -822,8 +822,8 @@ type
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); overload; override;
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); overload; override;
     procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); overload; override;
-    procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); overload; override;
-    function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true): TRect; overload; override;
+    procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255; APixelCenteredCoords: boolean = true); overload; override;
+    function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true; APixelCenteredCoords: boolean = true): TRect; overload; override;
     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
 
     procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
@@ -1421,8 +1421,6 @@ var
   stream: TStream;
   format: TBGRAImageFormat;
   reader: TFPCustomImageReader;
-  magic: array[1..2] of char;
-  startPos: Int64;
   ext: String;
 begin
   stream := BGRAResource.GetResourceStream(AFilename);
@@ -3118,9 +3116,9 @@ var pts3: TPointF;
 begin
   if not APixelCenteredCoordinates then
   begin
-    Orig -= PointF(0.5,0.5);
-    HAxis -= PointF(0.5,0.5);
-    VAxis -= PointF(0.5,0.5);
+    Orig.Offset(-0.5,-0.5);
+    HAxis.Offset(-0.5,-0.5);
+    VAxis.Offset(-0.5,-0.5);
   end;
   pts3 := HAxis+(VAxis-Orig);
   affine := TBGRAAffineBitmapTransform.Create(AImage,False,AImage.ScanInterpolationFilter,not APixelCenteredCoordinates);
@@ -3137,9 +3135,9 @@ var pts3: TPointF;
 begin
   if not APixelCenteredCoordinates then
   begin
-    Orig -= PointF(0.5,0.5);
-    HAxis -= PointF(0.5,0.5);
-    VAxis -= PointF(0.5,0.5);
+    Orig.Offset(-0.5,-0.5);
+    HAxis.Offset(-0.5,-0.5);
+    VAxis.Offset(-0.5,-0.5);
   end;
   pts3 := HAxis+(VAxis-Orig);
   affine := TBGRAAffineBitmapTransform.Create(AImage,False,AImage.ScanInterpolationFilter,not APixelCenteredCoordinates);
@@ -3986,17 +3984,17 @@ end;
 {------------------------- Text functions ---------------------------------------}
 
 procedure TBGRADefaultBitmap.TextOutAngle(x, y: single; orientationTenthDegCCW: integer;
-  sUTF8: string; c: TBGRAPixel; align: TAlignment);
+  sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean);
 begin
   with (PointF(x,y)-GetFontAnchorRotatedOffset(orientationTenthDegCCW)) do
-    FontRenderer.TextOutAngle(self,x,y,orientationTenthDegCCW,CleanTextOutString(sUTF8),c,align);
+    FontRenderer.TextOutAngle(self,x,y,orientationTenthDegCCW,CleanTextOutString(sUTF8),c,align,ARightToLeft);
 end;
 
 procedure TBGRADefaultBitmap.TextOutAngle(x, y: single; orientationTenthDegCCW: integer;
-  sUTF8: string; texture: IBGRAScanner; align: TAlignment);
+  sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean);
 begin
   with (PointF(x,y)-GetFontAnchorRotatedOffset(orientationTenthDegCCW)) do
-    FontRenderer.TextOutAngle(self,x,y,orientationTenthDegCCW,CleanTextOutString(sUTF8),texture,align);
+    FontRenderer.TextOutAngle(self,x,y,orientationTenthDegCCW,CleanTextOutString(sUTF8),texture,align,ARightToLeft);
 end;
 
 procedure TBGRADefaultBitmap.TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single);
@@ -4245,7 +4243,7 @@ procedure TBGRADefaultBitmap.Fill(c: TBGRAPixel; start, Count: integer);
 begin
   if start < 0 then
   begin
-    Count += start;
+    inc(Count, start);
     start := 0;
   end;
   if start >= nbPixels then
@@ -4263,7 +4261,7 @@ begin
     Fill(BGRAPixelTransparent, start, Count);
   if start < 0 then
   begin
-    Count += start;
+    inc(Count, start);
     start := 0;
   end;
   if start >= nbPixels then
@@ -4849,7 +4847,7 @@ begin
 
   if start < 0 then
   begin
-    Count += start;
+    inc(Count, start);
     start := 0;
   end;
   if start >= nbPixels then
@@ -5183,7 +5181,7 @@ end;
   The output bounds correspond to the pixels that will be affected in the destination. }
 procedure TBGRADefaultBitmap.PutImageAffine(AMatrix: TAffineMatrix;
   Source: TBGRACustomBitmap; AOutputBounds: TRect;
-  AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte);
+  AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte; APixelCenteredCoords: boolean);
 var affine: TBGRAAffineBitmapTransform;
     sourceBounds: TRect;
 begin
@@ -5191,6 +5189,7 @@ begin
   IntersectRect(AOutputBounds,AOutputBounds,ClipRect);
   if IsRectEmpty(AOutputBounds) then exit;
 
+  if not APixelCenteredCoords then AMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
   if IsAffineRoughlyTranslation(AMatrix, rect(0,0,Source.Width,Source.Height)) then
   begin
     sourceBounds := AOutputBounds;
@@ -5208,7 +5207,7 @@ begin
 end;
 
 function TBGRADefaultBitmap.GetImageAffineBounds(AMatrix: TAffineMatrix;
-  ASourceBounds: TRect; AClipOutput: boolean): TRect;
+  ASourceBounds: TRect; AClipOutput: boolean; APixelCenteredCoords: boolean): TRect;
 const pointMargin = 0.5 - 1/512;
 
   procedure FirstPoint(pt: TPointF);
@@ -5231,6 +5230,8 @@ const pointMargin = 0.5 - 1/512;
 begin
   result := EmptyRect;
   if IsRectEmpty(ASourceBounds) then exit;
+
+  if not APixelCenteredCoords then AMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
   if IsAffineRoughlyTranslation(AMatrix,ASourceBounds) then
   begin
     result := ASourceBounds;

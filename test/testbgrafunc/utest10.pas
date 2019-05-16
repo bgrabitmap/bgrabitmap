@@ -68,11 +68,11 @@ begin
       value := Sin65536(
                         (xb shl 8 + (height-yb)*(Sin65536(intTime2 shr 2) shr 8 - 128) + intTime1 shr 5 + Sin65536(yb shl 16 div height + intTime3) shr 4)*
                         ( Sin65536(intTime1 shr 3) shr 9 - 64 + 256 )*2 div Width);
-      value += Sin65536(yb * ( Sin65536(intTime1 shr 2) shr 9 - 64 + 256 )*256 div Height + intTime1 shr 1 +
-                        xb*(Sin65536(intTime2 shr 4) shr 8 - 128) );
+      inc(value, Sin65536(yb * ( Sin65536(intTime1 shr 2) shr 9 - 64 + 256 )*256 div Height + intTime1 shr 1 +
+                        xb*(Sin65536(intTime2 shr 4) shr 8 - 128) ) );
 
-      value += Sin65536( round( sqrt(sqr(xb/width-center.x)+sqr(yb/height-center.y))
-                          * ( (Sin65536(intTime3 shr 3)+ 2*65536)  ) ) + intTime2 shr 2);
+      inc(value, Sin65536( round( sqrt(sqr(xb/width-center.x)+sqr(yb/height-center.y))
+                          * ( (Sin65536(intTime3 shr 3)+ 2*65536)  ) ) + intTime2 shr 2) );
       {$pop}
 
       value := value div (3*128);

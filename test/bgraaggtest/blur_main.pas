@@ -181,8 +181,8 @@ procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
 begin
   if movingShadow then
   begin
-    shadowOfs.x += movingOrigin.X-X;
-    shadowOfs.y += movingOrigin.Y-Y;
+    inc(shadowOfs.x, movingOrigin.X-X);
+    inc(shadowOfs.y, movingOrigin.Y-Y);
     movingOrigin := Point(X,Y);
     Invalidate;
   end;

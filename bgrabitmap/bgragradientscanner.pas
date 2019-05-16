@@ -20,13 +20,13 @@ type
     FColor1,FColor2: TBGRAPixel;
     ec1,ec2: TExpandedPixel;
     FRepetition: TBGRAGradientRepetition;
-    constructor Create(AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition); overload;
-    constructor Create(AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition); overload;
     function InterpolateToBGRA(position: word): TBGRAPixel; virtual; abstract;
     function InterpolateToExpanded(position: word): TExpandedPixel; virtual; abstract;
   public
-    class function CreateAny(AInterpolation: TBGRAColorInterpolation; AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition): TBGRASimpleGradient; overload;
-    class function CreateAny(AInterpolation: TBGRAColorInterpolation; AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition): TBGRASimpleGradient; overload;
+    class function CreateAny(AInterpolation: TBGRAColorInterpolation; AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition): TBGRASimpleGradient; overload; static;
+    class function CreateAny(AInterpolation: TBGRAColorInterpolation; AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition): TBGRASimpleGradient; overload; static;
+    constructor Create(AColor1,AColor2: TBGRAPixel; ARepetition: TBGRAGradientRepetition); overload; //do not call directly
+    constructor Create(AColor1,AColor2: TExpandedPixel; ARepetition: TBGRAGradientRepetition); overload; //do not call directly
     function GetColorAt(position: integer): TBGRAPixel; override;
     function GetColorAtF(position: single): TBGRAPixel; override;
     function GetExpandedColorAt(position: integer): TExpandedPixel; override;
@@ -504,7 +504,7 @@ begin
     end;
     result.red := FRandomBuffer and 255;
     FRandomBuffer:= FRandomBuffer shr 8;
-    FRandomBufferCount -= 1;
+    dec(FRandomBufferCount);
     result.green := result.red;
     result.blue := result.red;
     result.alpha:= FOpacity;
@@ -545,11 +545,11 @@ begin
   end;
   if (hgoPositiveDirection in AOptions) and not (hgoNegativeDirection in AOptions) then
   begin
-    if c2.hue <= c1.hue then hue2 += 65536;
+    if c2.hue <= c1.hue then inc(hue2, 65536);
   end else
   if not (hgoPositiveDirection in AOptions) and (hgoNegativeDirection in AOptions) then
   begin
-    if c2.hue >= c1.hue then hue1 += 65536;
+    if c2.hue >= c1.hue then inc(hue1, 65536);
   end;
 end;
 
@@ -804,10 +804,10 @@ begin
   sumA := 0;
   for i := 0 to high(FColors) do
   begin
-    sumR += FColors[i].red;
-    sumG += FColors[i].green;
-    sumB += FColors[i].blue;
-    sumA += FColors[i].alpha;
+    inc(sumR, FColors[i].red);
+    inc(sumG, FColors[i].green);
+    inc(sumB, FColors[i].blue);
+    inc(sumA, FColors[i].alpha);
   end;
   result := BGRA(sumR div length(FColors),sumG div length(FColors),
     sumB div length(FColors),sumA div length(FColors));
@@ -1421,7 +1421,7 @@ begin
   else
   begin
     result := GetGradientColor(FScanNextFunc());
-    FPosition += PointF(FMatrix[1,1],FMatrix[2,1]);
+    FPosition.Offset(FMatrix[1,1],FMatrix[2,1]);
   end;
 end;
 
@@ -1432,7 +1432,7 @@ begin
   else
   begin
     result := GetGradientExpandedColor(FScanNextFunc());
-    FPosition += PointF(FMatrix[1,1],FMatrix[2,1]);
+    FPosition.Offset(FMatrix[1,1],FMatrix[2,1]);
   end;
 end;
 

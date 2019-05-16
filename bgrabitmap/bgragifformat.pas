@@ -463,7 +463,7 @@ var
     begin
       OutputByte(BitBuffer and $ff);
       BitBuffer := BitBuffer shr 8;
-      BitBufferLen -= 8;
+      dec(BitBufferLen, 8);
     end;
   end;
 
@@ -476,7 +476,7 @@ var
       OutputByte(BitBuffer and $ff);
       BitBuffer := BitBuffer shr 8;
       if BitBufferLen >= 8 then
-        BitBufferLen -= 8
+        dec(BitBufferLen, 8)
       else
         BitBufferLen := 0;
     end;

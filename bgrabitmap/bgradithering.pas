@@ -118,9 +118,9 @@ uses BGRABlend;
 function AbsRGBADiff(const c1, c2: TExpandedPixel): NativeInt;
 begin
   result := abs(c1.alpha-c2.alpha);
-  result += abs(c1.red-c2.red);
-  result += abs(c1.green-c2.green);
-  result += abs(c1.blue-c2.blue);
+  inc(result, abs(c1.red-c2.red) );
+  inc(result, abs(c1.green-c2.green) );
+  inc(result, abs(c1.blue-c2.blue) );
 end;
 
 function CreateDitheringTask(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap; APalette: TBGRACustomApproxPalette;
@@ -457,16 +457,16 @@ type
   const maxError = 65536 shl ErrorPrecisionShift;
     minError = -(65536 shl ErrorPrecisionShift);
   begin
-    dest.alpha += src.alpha * factor;
+    inc(dest.alpha, src.alpha * factor);
     if dest.alpha > maxError then dest.alpha := maxError;
     if dest.alpha < minError then dest.alpha := minError;
-    dest.red += src.red * factor;
+    inc(dest.red, src.red * factor);
     if dest.red > maxError then dest.red := maxError;
     if dest.red < minError then dest.red := minError;
-    dest.green += src.green * factor;
+    inc(dest.green, src.green * factor);
     if dest.green > maxError then dest.green := maxError;
     if dest.green < minError then dest.green := minError;
-    dest.blue += src.blue * factor;
+    inc(dest.blue, src.blue * factor);
     if dest.blue > maxError then dest.blue := maxError;
     if dest.blue < minError then dest.blue := minError;
   end;

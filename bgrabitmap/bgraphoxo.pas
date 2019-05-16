@@ -51,8 +51,8 @@ type
     procedure LoadFromFile(const filenameUTF8: string); override;
     procedure SaveToFile(const filenameUTF8: string); override;
     procedure SaveToStream(AStream: TStream); override;
-    class function CheckFormat(Stream: TStream; ARestorePosition: boolean): boolean;
-    class function ReadBlock(Stream: TStream; out AHeader: TPhoxoBlockHeader; out ABlockData: PByte): boolean;
+    class function CheckFormat(Stream: TStream; ARestorePosition: boolean): boolean; static;
+    class function ReadBlock(Stream: TStream; out AHeader: TPhoxoBlockHeader; out ABlockData: PByte): boolean; static;
     property DPIX: integer read FDPIX;
     property DPIY: integer read FDPIY;
   end;

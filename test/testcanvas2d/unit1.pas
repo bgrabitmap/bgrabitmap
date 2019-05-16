@@ -628,7 +628,7 @@ begin
   ctx.setTransform(-0.55, 0.85, -1, 0.10, 100, 50+img.width*0.5);
   ctx.rotate(PI*2*(Test13pos/360)*vitesse );
   ctx.drawImage(img, img.width*(-0.5)-200, img.height*(-0.8));
-  Test13pos+=1;
+  inc(Test13pos);
   if (Test13pos=360) then Test13pos := 0;
   UpdateIn(10);
 end;
@@ -932,8 +932,9 @@ begin
     ctx.text('Vectorized font',ctx.fontEmHeight*0.2,ctx.fontEmHeight)
   else
     ctx.text('Raster font',ctx.fontEmHeight*0.2,ctx.fontEmHeight);
-  ctx.lineWidth := 2;
-  ctx.strokeStyle(clLime);
+  ctx.lineWidth := 6;
+  ctx.lineJoin:= 'round';
+  ctx.strokeStyle(clGreen);
   ctx.fillStyle(clBlack);
   ctx.fillOverStroke;
 
@@ -966,6 +967,7 @@ procedure TForm1.Test22(ctx: TBGRACanvas2D);
 var layer: TBGRABitmap;
 begin
   layer := TBGRABitmap.Create(ctx.width,ctx.height, CSSRed);
+  UseVectorizedFont(layer.Canvas2D,true);
   with layer.Canvas2D do
   begin
     pixelCenteredCoordinates:= ctx.pixelCenteredCoordinates;

@@ -140,7 +140,7 @@ begin
     setlength(FChunks, length(FChunks)+1);
     FChunks[high(FChunks)] := FCurrentChunk;
     FCurrentChunk := nil;
-    FHeader.nbChunks += 1;
+    inc(FHeader.nbChunks);
   end;
 end;
 

@@ -3,6 +3,7 @@ unit BGRASSE;
 {$mode objfpc}{$H+}
 
 {$i bgrasse.inc}
+{$modeswitch advancedrecords}
 
 interface
 
@@ -34,7 +35,14 @@ var UseSSE, UseSSE2, UseSSE3 : boolean;
 {$endif}
 
 type
-  TPoint3D_128 = packed record x,y,z,t: single; end;
+
+  { TPoint3D_128 }
+
+  TPoint3D_128 = packed record
+                   x,y,z,t: single;
+                   procedure Offset(const point3D_128: TPoint3D_128);
+                   procedure Scale(AScale: single);
+                 end;
   PPoint3D_128 = ^TPoint3D_128;
 
   function Point3D(const point3D_128: TPoint3D_128): TPoint3D; inline; overload;
@@ -92,6 +100,22 @@ type
 const ExtendedLightingContextSize = 128;
 
 implementation
+
+{ TPoint3D_128 }
+
+procedure TPoint3D_128.Offset(const point3D_128: TPoint3D_128);
+begin
+  self.x += point3D_128.x;
+  self.y += point3D_128.y;
+  self.z += point3D_128.z;
+end;
+
+procedure TPoint3D_128.Scale(AScale: single);
+begin
+  self.x *= AScale;
+  self.y *= AScale;
+  self.z *= AScale;
+end;
 
 function Point3D(const point3D_128: TPoint3D_128): TPoint3D; inline; overload;
 begin
@@ -341,19 +365,16 @@ begin
 end;
 
 procedure Normalize3D_128_NoSSE(var v: TPoint3D_128);
-var len: single;
+var len2: single;
 begin
-  len := DotProduct3D_128_NoSSE(v,v);
-  if len = 0 then exit;
-  len := 1/sqrt(len);
-  v.x *= len;
-  v.y *= len;
-  v.z *= len;
+  len2 := DotProduct3D_128_NoSSE(v,v);
+  if len2 = 0 then exit;
+  v.Scale( 1/sqrt(len2) );
 end;
 
 {$ifdef BGRASSE_AVAILABLE}
 procedure Normalize3D_128_SSE1(var v: TPoint3D_128);
-var len: single;
+var len2: single;
 begin
   asm
     {$DEFINE SSE_LOADV}{$i bgrasse.inc}
@@ -369,15 +390,12 @@ begin
     shufps xmm7, xmm7, $11
     addps xmm2, xmm7
 
-    movss len, xmm2
+    movss len2, xmm2
   end;
-  if (len = 0) then exit;
-  if len < 1e-6 then //out of bounds for SSE instruction
+  if (len2 = 0) then exit;
+  if len2 < 1e-6 then //out of bounds for SSE instruction
   begin
-     len := 1/sqrt(len);
-     v.x *= len;
-     v.y *= len;
-     v.z *= len;
+     v.Scale( 1/sqrt(len2) );
   end else
   asm
     rsqrtps xmm2, xmm2
@@ -389,7 +407,7 @@ end;
 
 {$ifdef BGRASSE_AVAILABLE}
 procedure Normalize3D_128_SSE3(var v: TPoint3D_128);
-var len: single;
+var len2: single;
 begin
   asm
     {$DEFINE SSE_LOADV}{$i bgrasse.inc}
@@ -399,15 +417,12 @@ begin
     haddps xmm2,xmm2
     haddps xmm2,xmm2
 
-    movss len, xmm2
+    movss len2, xmm2
   end;
-  if (len = 0) then exit;
-  if len < 1e-6 then //out of bounds for SSE instruction
+  if (len2 = 0) then exit;
+  if len2 < 1e-6 then //out of bounds for SSE instruction
   begin
-     len := 1/sqrt(len);
-     v.x *= len;
-     v.y *= len;
-     v.z *= len;
+     v.Scale( 1/sqrt(len2) );
   end else
   asm
     rsqrtps xmm2, xmm2
@@ -418,7 +433,6 @@ end;
 {$endif}
 
 procedure Normalize3D_128_SqLen(var v: TPoint3D_128; out SqLen: single);
-var InvLen: single;
 begin
   {$ifdef BGRASSE_AVAILABLE}
     if UseSSE then
@@ -448,10 +462,7 @@ begin
       if SqLen = 0 then exit;
       if SqLen < 1e-6 then //out of bounds for SSE instruction
       begin
-         InvLen := 1/sqrt(SqLen);
-         v.x *= InvLen;
-         v.y *= InvLen;
-         v.z *= InvLen;
+         v.Scale( 1/sqrt(SqLen) );
       end else
       asm
         rsqrtps xmm2, xmm2
@@ -464,10 +475,7 @@ begin
     begin
       SqLen := DotProduct3D_128_NoSSE(v,v);
       if SqLen = 0 then exit;
-      InvLen := 1/sqrt(SqLen);
-      v.x *= InvLen;
-      v.y *= InvLen;
-      v.z *= InvLen;
+      v.Scale( 1/sqrt(SqLen) );
     end;
 end;
 
@@ -519,6 +527,7 @@ asm
   movups [eax],xmm3
   {$endif}
 end;
+
 {$endif}
 
 { TMemoryBlockAlign128 }

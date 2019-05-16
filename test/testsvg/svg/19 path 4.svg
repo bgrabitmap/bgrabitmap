@@ -1,0 +1,8 @@
+<svg height="80" width="300">
+  <g fill="none" stroke="black" stroke-width="6">
+    <path stroke-linecap="butt" d="M5 20 l215 0" />
+    <path stroke-linecap="round" d="M5 40 l215 0" />
+    <path stroke-linecap="square" d="M5 60 l215 0" />
+  </g>
+</svg>
+ 

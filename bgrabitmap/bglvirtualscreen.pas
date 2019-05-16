@@ -51,7 +51,7 @@ type
     { Protected declarations }
     procedure RedrawContent(ctx: TBGLContext); virtual;
     procedure SetEnabled(Value: boolean); override;
-    class procedure OnAppIdle(Sender: TObject; var Done: Boolean);
+    procedure OnAppIdle(Sender: TObject; var Done: Boolean);
     procedure LoadTextures; virtual;
     function PrepareBGLContext: TBGLContext;
     procedure ReleaseBGLContext(ctx: TBGLContext);
@@ -257,7 +257,7 @@ begin
   inherited DoOnPaint;
   SwapBuffers;
 
-  FElapseAccumulator += FrameDiffTimeInMSecs;
+  inc(FElapseAccumulator, FrameDiffTimeInMSecs);
   Inc(FElapseCount);
   if FElapseAccumulator >= 2000 then
   begin
@@ -394,7 +394,7 @@ begin
   inherited SetEnabled(Value);
 end;
 
-class procedure TCustomBGLVirtualScreen.OnAppIdle(Sender: TObject; var Done: Boolean);
+procedure TCustomBGLVirtualScreen.OnAppIdle(Sender: TObject; var Done: Boolean);
 var
   i: Integer;
 begin

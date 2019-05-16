@@ -1101,7 +1101,7 @@ procedure TBGRAReaderPNG.DoDecompress;
     while Count > 0 do
     begin
       {$push}{$r-}
-      p^ += (p-bw)^;
+      inc(p^, (p-bw)^);
       {$pop}
       inc(p);
       dec(Count);
@@ -1126,7 +1126,7 @@ procedure TBGRAReaderPNG.DoDecompress;
     while Count > 0 do
     begin
       {$push}{$r-}
-      p^ += pPrev^;
+      inc(p^, pPrev^);
       {$pop}
 
       inc(p);
@@ -1143,7 +1143,7 @@ procedure TBGRAReaderPNG.DoDecompress;
     while CountBW > 0 do
     begin
       {$push}{$r-}
-      p^ += pPrev^ shr 1;
+      inc(p^, pPrev^ shr 1);
       {$pop}
       inc(p);
       inc(pPrev);
@@ -1153,7 +1153,7 @@ procedure TBGRAReaderPNG.DoDecompress;
     while Count > 0 do
     begin
       {$push}{$r-}
-      p^ += (pPrev^+(p-bw)^) shr 1;
+      inc(p^, (pPrev^+(p-bw)^) shr 1);
       {$pop}
       inc(p);
       inc(pPrev);
@@ -1169,7 +1169,7 @@ procedure TBGRAReaderPNG.DoDecompress;
     for rx := 0 to bw-1 do
     begin
       {$push}{$r-}
-      p^ += pPrev^;
+      inc(p^, pPrev^);
       {$pop}
       inc(p);
       inc(pPrev);
@@ -1188,15 +1188,15 @@ procedure TBGRAReaderPNG.DoDecompress;
       if dp <= dlp then
       begin
         if dl <= dp then
-          p^ += left
+          inc(p^, left)
         else
-          p^ += pPrev^
+          inc(p^, pPrev^)
       end
       else
       if dl <= dlp then
-        p^ += left
+        inc(p^, left)
       else
-        p^ += diag;
+        inc(p^, diag);
       {$pop}
       inc(p);
       inc(pPrev);

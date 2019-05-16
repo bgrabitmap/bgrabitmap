@@ -64,21 +64,21 @@ type
     procedure SetMagenta(AValue: single);
     procedure SetMagentaPercent(AValue: single);
   public
-    class function New: TColorEx;
-    class function New(const AValue: TColorEx): TColorEx;
-    class function New(const AValue: string): TColorEx;
-    class function New(const AValue: TColor): TColorEx;
-    class function New(const AValue: TBGRAPixel): TColorEx;
-    class function New(const AValue: TExpandedPixel): TColorEx;
-    class function New(const AValue: TStdRGBA): TColorEx;
-    class function New(const AValue: TLinearRGBA): TColorEx;
-    class function New(const AValue: TXYZA): TColorEx;
-    class function New(const AValue: TLabA): TColorEx;
-    class function New(const AValue: TStdHSLA): TColorEx;
-    class function New(const AValue: TStdHSVA): TColorEx;
-    class function New(const AValue: TStdCMYK): TColorEx;
-    class function New(const AValue: TLChA): TColorEx;
-    class function New(const ARed, AGreen, ABlue: byte; const AAlpha: byte = 255): TColorEx;
+    class function New: TColorEx; overload; static;
+    class function New(const AValue: TColorEx): TColorEx; overload; static;
+    class function New(const AValue: string): TColorEx; overload; static;
+    class function New(const AValue: TColor): TColorEx; overload; static;
+    class function New(const AValue: TBGRAPixel): TColorEx; overload; static;
+    class function New(const AValue: TExpandedPixel): TColorEx; overload; static;
+    class function New(const AValue: TStdRGBA): TColorEx; overload; static;
+    class function New(const AValue: TLinearRGBA): TColorEx; overload; static;
+    class function New(const AValue: TXYZA): TColorEx; overload; static;
+    class function New(const AValue: TLabA): TColorEx; overload; static;
+    class function New(const AValue: TStdHSLA): TColorEx; overload; static;
+    class function New(const AValue: TStdHSVA): TColorEx; overload; static;
+    class function New(const AValue: TStdCMYK): TColorEx; overload; static;
+    class function New(const AValue: TLChA): TColorEx; overload; static;
+    class function New(const ARed, AGreen, ABlue: byte; const AAlpha: byte = 255): TColorEx; overload; static;
     procedure SetValue(const AValue; AColorspace: TColorspaceAny);
     procedure GetValue(out AValue; AColorspace: TColorspaceAny);
   public

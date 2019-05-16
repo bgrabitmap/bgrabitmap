@@ -120,9 +120,9 @@ begin
   begin
     d := PointF(X-PrevMouse.x,Y-PrevMouse.y);
     case CurPoint of
-    0: begin B.p1 += d; B2.p1 += d; end;
-    1: begin B.c += d; B2.c += d; end;
-    2: begin B.p2 += d; B2.p2 += d; end;
+    0: begin B.p1.Offset(d); B2.p1.Offset(d); end;
+    1: begin B.c.Offset(d); B2.c.Offset(d); end;
+    2: begin B.p2.Offset(d); B2.p2.Offset(d); end;
     end;
     PrevMouse := Point(X,Y);
     UpdateLength;

@@ -182,8 +182,8 @@ var fts: TFreeTypeStyles;
   filename: string;
 begin
   fts := [];
-  if fsBold in FontStyle then fts += [ftsBold];
-  if fsItalic in FontStyle then fts += [ftsItalic];
+  if fsBold in FontStyle then include(fts, ftsBold);
+  if fsItalic in FontStyle then include(fts, ftsItalic);
   try
     filename := FontName;
     {$IFDEF BGRABITMAP_USE_LCL12}
@@ -274,13 +274,13 @@ begin
     TextOut(temp,0,0, s, c, taLeftJustify);
 
   orientation:= orientation mod 3600;
-  if orientation < 0 then orientation += 3600;
+  if orientation < 0 then inc(orientation, 3600);
 
   angleDeg := orientation * orientationToDeg;
   coord := PointF(x,y);
   case align of
-  taRightJustify: coord -= AffineMatrixRotationDeg(angleDeg)*PointF(temp.Width,0);
-  taCenter: coord -= AffineMatrixRotationDeg(angleDeg)*PointF(temp.Width,0)*0.5;
+  taRightJustify: coord.Offset( AffineMatrixRotationDeg(angleDeg)*PointF(-temp.Width,0) );
+  taCenter: coord.Offset( AffineMatrixRotationDeg(angleDeg)*PointF(-0.5*temp.Width,0) );
   end;
   case orientation of
   0,900,1800,2700: filter := rfBox;
@@ -342,8 +342,8 @@ begin
   angleDeg := orientationTenthDegCCW * orientationToDeg;
   coord := PointF(x,y);
   case AAlign of
-  taRightJustify: coord -= AffineMatrixRotationDeg(angleDeg)*PointF(temp.Width,0);
-  taCenter: coord -= AffineMatrixRotationDeg(angleDeg)*PointF(temp.Width,0)*0.5;
+  taRightJustify: coord.Offset( AffineMatrixRotationDeg(angleDeg)*PointF(-temp.Width,0) );
+  taCenter: coord.Offset( AffineMatrixRotationDeg(angleDeg)*PointF(-0.5*temp.Width,0) );
   end;
 
   ADest.PutImageAngle(coord.x,coord.y, temp, angleDeg, rfBox);
@@ -375,9 +375,9 @@ begin
   UpdateFont;
   ftaAlign:= [ftaTop];
   case align of
-  taLeftJustify: ftaAlign += [ftaLeft];
-  taCenter: ftaAlign += [ftaCenter];
-  taRightJustify: ftaAlign += [ftaRight];
+  taLeftJustify: include(ftaAlign, ftaLeft);
+  taCenter: include(ftaAlign, ftaCenter);
+  taRightJustify: include(ftaAlign, ftaRight);
   end;
   GetDrawer(ADest).DrawText(s,FFont,x,y,BGRAToFPColor(c),ftaAlign);
 end;
@@ -397,17 +397,17 @@ begin
   UpdateFont;
   align := [];
   case style.Alignment of
-  taCenter: begin ARect.Left := x; align += [ftaCenter]; end;
-  taRightJustify: begin ARect.Left := x; align += [ftaRight]; end;
+  taCenter: begin ARect.Left := x; include(align, ftaCenter); end;
+  taRightJustify: begin ARect.Left := x; include(align, ftaRight); end;
   else
-    align += [ftaLeft];
+    include(align, ftaLeft);
   end;
   case style.Layout of
   {$IFDEF BGRABITMAP_USE_LCL12}
-    tlCenter: begin ARect.Top := y; align += [ftaVerticalCenter]; end;
+    tlCenter: begin ARect.Top := y; include(align, ftaVerticalCenter); end;
   {$ENDIF}
-  tlBottom: begin ARect.top := y; align += [ftaBottom]; end;
-  else align += [ftaTop];
+  tlBottom: begin ARect.top := y; include(align, ftaBottom); end;
+  else include(align, ftaTop);
   end;
   try
     {$IFDEF BGRABITMAP_USE_LCL12}

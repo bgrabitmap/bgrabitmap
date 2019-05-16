@@ -85,7 +85,7 @@ type
     class procedure ComputeFilterAt(ASource: PBGRAPixel; ADest: PBGRAPixel;
       ACount: integer; AGammaCorrection: boolean); virtual; abstract;
     class procedure ComputeFilterInplace(ABitmap: TBGRACustomBitmap; ABounds: TRect;
-      AGammaCorrection: boolean);
+      AGammaCorrection: boolean); virtual;
     property GammaCorrection: boolean read FGammaCorrection write FGammaCorrection;
   end;
 

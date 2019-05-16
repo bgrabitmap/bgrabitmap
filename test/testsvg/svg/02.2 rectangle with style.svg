@@ -1,0 +1,6 @@
+<svg width="400" height="310">
+  <g fill="green" style="fill:rgb(0,0,255);stroke-width:3;stroke:rgb(0,0,0)" >
+      <rect width="300" height="100" fill="red"  />
+      <rect y="150" width="300" height="100" stroke="yellow" style="stroke:green" />
+  </g>
+</svg>

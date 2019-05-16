@@ -116,8 +116,23 @@ begin
 end;
 
 procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+
+  procedure MoveTo(ANewPos: integer);
+  begin
+    if ssShift in Shift then
+    begin
+      if ANewPos <> -1 then
+        SelLastClick := ANewPos;
+    end else
+    begin
+      if ANewPos <> -1 then
+        SelStart := ANewPos;
+      SelLength:= 0;
+    end;
+  end;
+
 var
-  idxPara: Integer;
+  idxPara, newPos: Integer;
 begin
   if FTextLayout = nil then exit;
 
@@ -133,59 +148,47 @@ begin
   end else
   if (Key = VK_LEFT) or (Key = VK_RIGHT) then
   begin
-    if (Key = VK_LEFT) xor FTextLayout.ParagraphRightToLeft[FTextLayout.GetParagraphAt(SelStart)] then
+    if (Key = VK_LEFT) xor FTextLayout.ParagraphRightToLeft[FTextLayout.GetParagraphAt(SelLastClick)] then
     begin
-      if ssShift in Shift then
-      begin
-        if SelLastClick > 0 then
-          SelLastClick := SelLastClick - FTextLayout.IncludeNonSpacingCharsBefore(SelStart,1);
-      end else
-      begin
-        if SelLastClick > 0 then
-          SelStart := SelLastClick - FTextLayout.IncludeNonSpacingCharsBefore(SelStart,1);
-        SelLength:= 0;
-      end;
+      if SelLastClick > 0 then
+        newPos := SelLastClick - FTextLayout.IncludeNonSpacingCharsBefore(SelLastClick,1)
+      else newPos := -1;
+
+      MoveTo(newPos);
     end else
     begin
-      if ssShift in Shift then
-      begin
-        if SelLastClick < FTextLayout.CharCount then
-          SelLastClick := SelLastClick + FTextLayout.IncludeNonSpacingChars(SelStart,1);
-      end else
-      begin
-        if SelLastClick < FTextLayout.CharCount then
-          SelStart := SelLastClick + FTextLayout.IncludeNonSpacingChars(SelStart,1);
-        SelLength:= 0;
-      end;
+      if SelLastClick < FTextLayout.CharCount then
+        newPos := SelLastClick + FTextLayout.IncludeNonSpacingChars(SelLastClick,1)
+      else newPos := -1;
+
+      MoveTo(newPos);
     end;
+    Key := 0;
+  end else
+  if (Key = VK_UP) or (Key = VK_DOWN) then
+  begin
+    if Key = VK_UP then
+      newPos := FTextLayout.FindTextAbove(SelLastClick)
+    else
+      newPos := FTextLayout.FindTextBelow(SelLastClick);
+
+    MoveTo(newPos);
     Key := 0;
   end else
   if Key = VK_HOME then
   begin
-    idxPara := FTextLayout.GetParagraphAt(SelStart);
-
-    if ssShift in Shift then
-    begin
-      SelLastClick := FTextLayout.ParagraphStartIndex[idxPara];
-    end else
-    begin
-      SelStart := FTextLayout.ParagraphStartIndex[idxPara];
-      SelLength:= 0;
-    end;
+    idxPara := FTextLayout.GetParagraphAt(SelLastClick);
+    if ssCtrl in Shift then newPos := 0 else
+      newPos := FTextLayout.ParagraphStartIndex[idxPara];
+    MoveTo(newPos);
     Key := 0;
   end else
   if Key = VK_END then
   begin
-    idxPara := FTextLayout.GetParagraphAt(SelStart+SelLength);
-
-    if ssShift in Shift then
-    begin
-      SelLastClick := FTextLayout.ParagraphEndIndexBeforeParagraphSeparator[idxPara];
-    end else
-    begin
-      SelStart := FTextLayout.ParagraphEndIndexBeforeParagraphSeparator[idxPara];
-      SelLength:= 0;
-    end;
+    idxPara := FTextLayout.GetParagraphAt(SelLastClick);
+    if ssCtrl in Shift then newPos := FTextLayout.CharCount else
+      newPos := FTextLayout.ParagraphEndIndexBeforeParagraphSeparator[idxPara];
+    MoveTo(newPos);
     Key := 0;
   end else
   if Key = VK_RETURN then
@@ -450,7 +453,7 @@ begin
   if FBlinkCaretState and (SelLength = 0) then
     FTextLayout.DrawCaret(Bitmap, SelStart, BGRA(caretColor.red,caretColor.green,caretColor.blue,140), BGRA(caretColor.red,caretColor.green,caretColor.blue,100));
 
-  FTextLayout.DrawSelection(Bitmap, SelStart, SelStart+SelLength, selectionColor);
+  FTextLayout.DrawSelection(Bitmap, SelStart, SelStart+SelLength, selectionColor, BGRA(0,0,192),1);
 
   FTextLayout.DrawText(Bitmap);
 

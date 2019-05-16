@@ -28,7 +28,7 @@ type
   protected
     FScanner: IBGRAScanner;
     FScanAtFunc: TScanAtFunction;
-    FCurX,FCurY: Single;
+    FCur: TPointF;
     FEmptyMatrix: Boolean;
     FMatrix: TAffineMatrix;
     procedure SetMatrix(AMatrix: TAffineMatrix);
@@ -716,7 +716,7 @@ begin
   if FRepeatY then
   begin
     Y := Y mod FSource.Height;
-    if Y < 0 then Y += FSource.Height;
+    if Y < 0 then inc(Y, FSource.Height);
   end;
   if (Y < 0) or (Y >= FSource.Height) then
   begin
@@ -728,7 +728,7 @@ begin
   if FRepeatX then
   begin
     FCurX := FCurX mod FSource.Width;
-    if FCurX < 0 then FCurX += FSource.Width;
+    if FCurX < 0 then inc(FCurX, FSource.Width);
   end;
 end;
 
@@ -807,7 +807,7 @@ end;
 function TBGRATriangleLinearMapping.ScanNextPixel: TBGRAPixel;
 begin
   result := FScanAtFunc(FCurTexCoord.X,FCurTexCoord.Y);
-  FCurTexCoord += FStep;
+  FCurTexCoord.Offset(FStep);
 end;
 
 { TBGRAAffineScannerTransform }
@@ -906,11 +906,8 @@ begin
 end;
 
 procedure TBGRAAffineScannerTransform.ScanMoveToF(X, Y: single);
-Var Cur: TPointF;
 begin
-  Cur := FMatrix * PointF(X,Y);
-  FCurX := Cur.X;
-  FCurY := Cur.Y;
+  FCur := FMatrix * PointF(X,Y);
 end;
 
 function TBGRAAffineScannerTransform.InternalScanCurrentPixel: TBGRAPixel;
@@ -920,14 +917,13 @@ begin
     result := BGRAPixelTransparent;
     exit;
   end;
-  result := FScanAtFunc(FCurX,FCurY);
+  result := FScanAtFunc(FCur.X,FCur.Y);
 end;
 
 function TBGRAAffineScannerTransform.ScanNextPixel: TBGRAPixel;
 begin
   result := InternalScanCurrentPixel;
-  FCurX += FMatrix[1,1];
-  FCurY += FMatrix[2,1];
+  FCur.Offset(FMatrix[1,1], FMatrix[2,1]);
   if GlobalOpacity <> 255 then result.alpha := ApplyOpacity(result.alpha,GlobalOpacity);
 end;
 
@@ -1417,7 +1413,7 @@ end;
 
 function TBGRAAffineBitmapTransform.InternalScanCurrentPixel: TBGRAPixel;
 begin
-  result := FBitmap.GetPixelCycle(FCurX,FCurY,FResampleFilter,FRepeatImageX,FRepeatImageY);
+  result := FBitmap.GetPixelCycle(FCur.X,FCur.Y,FResampleFilter,FRepeatImageX,FRepeatImageY);
 end;
 
 procedure TBGRAAffineBitmapTransform.ScanPutPixels(pdest: PBGRAPixel;
@@ -1443,9 +1439,9 @@ begin
     exit;
   end;
 
-  posXPrecision := round(FCurX*Precision);
+  posXPrecision := round(FCur.X*Precision);
   deltaXPrecision:= round(FMatrix[1,1]*Precision);
-  posYPrecision := round(FCurY*Precision);
+  posYPrecision := round(FCur.Y*Precision);
   deltaYPrecision:= round(FMatrix[2,1]*Precision);
   shrMask := -1;
   shrMask := shrMask shr PrecisionShift;
@@ -1465,8 +1461,8 @@ begin
 
   if FResampleFilter = rfBox then
   begin
-    posXPrecision += Precision shr 1;
-    posYPrecision += Precision shr 1;
+    inc(posXPrecision, Precision shr 1);
+    inc(posYPrecision, Precision shr 1);
     py0 := PByte(FBitmap.ScanLine[0]);
     if FBitmap.LineOrder = riloTopToBottom then
       deltaRow := FBitmap.Width*sizeof(TBGRAPixel) else
@@ -1484,8 +1480,8 @@ begin
         else
           p^ := (PBGRAPixel(py0 + iy*deltaRow)+ix)^;
         inc(p);
-        posXPrecision += deltaXPrecision;
-        posYPrecision += deltaYPrecision;
+        inc(posXPrecision, deltaXPrecision);
+        inc(posYPrecision, deltaYPrecision);
       end;
     end else
     begin
@@ -1498,8 +1494,8 @@ begin
        else
          p^ := (PBGRAPixel(py0 + iy*deltaRow)+ix)^;
        inc(p);
-       posXPrecision += deltaXPrecision;
-       posYPrecision += deltaYPrecision;
+       inc(posXPrecision, deltaXPrecision);
+       inc(posYPrecision, deltaYPrecision);
      end;
     end;
   end else
@@ -1512,8 +1508,8 @@ begin
        if posYPrecision < 0 then iy := (posYPrecision shr PrecisionShift) or shrMask else iy := posYPrecision shr PrecisionShift;
        p^ := FBitmap.GetPixelCycle256(ix,iy, (posXPrecision shr (PrecisionShift-8)) and 255, (posYPrecision shr (PrecisionShift-8)) and 255,FResampleFilter);
        inc(p);
-       posXPrecision += deltaXPrecision;
-       posYPrecision += deltaYPrecision;
+       inc(posXPrecision, deltaXPrecision);
+       inc(posYPrecision, deltaYPrecision);
      end;
    end else
    if FRepeatImageX or FRepeatImageY then
@@ -1524,8 +1520,8 @@ begin
        if posYPrecision < 0 then iy := (posYPrecision shr PrecisionShift) or shrMask else iy := posYPrecision shr PrecisionShift;
        p^ := FBitmap.GetPixelCycle256(ix,iy, (posXPrecision shr (PrecisionShift-8)) and 255, (posYPrecision shr (PrecisionShift-8)) and 255,FResampleFilter, FRepeatImageX,FRepeatImageY);
        inc(p);
-       posXPrecision += deltaXPrecision;
-       posYPrecision += deltaYPrecision;
+       inc(posXPrecision, deltaXPrecision);
+       inc(posYPrecision, deltaYPrecision);
      end;
    end else
    begin
@@ -1535,8 +1531,8 @@ begin
       if posYPrecision < 0 then iy := (posYPrecision shr PrecisionShift) or shrMask else iy := posYPrecision shr PrecisionShift;
       p^ := FBitmap.GetPixel256(ix,iy, (posXPrecision shr (PrecisionShift-8)) and 255, (posYPrecision shr (PrecisionShift-8)) and 255,FResampleFilter);
       inc(p);
-      posXPrecision += deltaXPrecision;
-      posYPrecision += deltaYPrecision;
+      inc(posXPrecision, deltaXPrecision);
+      inc(posYPrecision, deltaYPrecision);
     end;
    end;
   end;

@@ -646,14 +646,10 @@ type
      procedure EraseRectAntialias(x, y, x2, y2: single; alpha: byte; pixelCenteredCoordinates: boolean = true); virtual; abstract;
      procedure AlphaFillRect(x, y, x2, y2: integer; alpha: byte); virtual; abstract;
 
-     procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
-     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
      procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
      procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
      procedure TextOutCurved(APath: IBGRAPath; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; virtual;
      procedure TextOutCurved(APath: IBGRAPath; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; virtual;
-     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual; abstract;
-     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual; abstract;
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); overload; virtual; abstract;
      procedure TextRect(ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); overload; virtual; abstract;
      procedure TextMultiline(x,y: single; sUTF8: string; c: TBGRAPixel; AAlign: TBidiTextAlignment = btaLeftJustify; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); overload;
@@ -676,6 +672,14 @@ type
      procedure TextOut(x, y: single; sUTF8: string; c: TColor; ARightToLeft: boolean); overload; virtual;
      procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner); overload; virtual;
      procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; ARightToLeft: boolean); overload; virtual;
+     procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
+     procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
+
+     { Overrides the font orientation with the parameter orientationTenthDegCCW }
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual;
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual;
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
 
      { Draw the UTF8 encoded string in the rectangle ARect. Text is wrapped if necessary.
        The position depends on the specified horizontal alignment halign and vertical alignement valign.
@@ -776,15 +780,15 @@ type
      procedure PutImageAffine(Origin,HAxis,VAxis: TPointF; Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AOpacity: Byte=255); overload;
      procedure PutImageAffine(Origin,HAxis,VAxis: TPointF; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); overload;
      procedure PutImageAffine(Origin,HAxis,VAxis: TPointF; Source: TBGRACustomBitmap; AOutputBounds: TRect; AOpacity: Byte=255; ACorrectBlur: Boolean = false); overload;
-     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOpacity: Byte=255; ACorrectBlur: Boolean = false); overload;
-     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AOpacity: Byte=255); overload;
-     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); overload;
-     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255); overload; virtual; abstract;
-     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AOpacity: Byte=255; ACorrectBlur: Boolean = false); overload;
+     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOpacity: Byte=255; ACorrectBlur: Boolean = false; APixelCenteredCoords: boolean = true); overload;
+     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AOpacity: Byte=255; APixelCenteredCoords: boolean = true); overload;
+     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255; APixelCenteredCoords: boolean = true); overload;
+     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255; APixelCenteredCoords: boolean = true); overload; virtual; abstract;
+     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AOpacity: Byte=255; ACorrectBlur: Boolean = false; APixelCenteredCoords: boolean = true); overload;
      function GetImageAffineBounds(Origin,HAxis,VAxis: TPointF; Source: TBGRACustomBitmap): TRect; overload;
      function GetImageAffineBounds(Origin,HAxis,VAxis: TPointF; ASourceWidth, ASourceHeight: integer; const ASourceBounds: TRect; AClipOutput: boolean = true): TRect; overload;
-     function GetImageAffineBounds(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap): TRect; overload;
-     function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true): TRect; overload; virtual; abstract;
+     function GetImageAffineBounds(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; APixelCenteredCoords: boolean = true): TRect; overload;
+     function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true; APixelCenteredCoords: boolean = true): TRect; overload; virtual; abstract;
      class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; virtual; abstract;
      procedure PutImageAngle(x,y: single; Source: TBGRACustomBitmap; angle: single; AOutputBounds: TRect; imageCenterX: single = 0; imageCenterY: single = 0; AOpacity: Byte=255; ARestoreOffsetAfterRotation: boolean = false; ACorrectBlur: Boolean = false); overload;
      procedure PutImageAngle(x,y: single; Source: TBGRACustomBitmap; angle: single; imageCenterX: single = 0; imageCenterY: single = 0; AOpacity: Byte=255; ARestoreOffsetAfterRotation: boolean = false; ACorrectBlur: Boolean = false); overload;
@@ -1959,6 +1963,20 @@ begin
   TextOut(x, y, sUTF8, texture, taLeftJustify, ARightToLeft);
 end;
 
+procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
+  orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel;
+  align: TAlignment);
+begin
+  TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,c,align, GetFontRightToLeftFor(sUTF8));
+end;
+
+procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
+  orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner;
+  align: TAlignment);
+begin
+  TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,texture,align, GetFontRightToLeftFor(sUTF8));
+end;
+
 { Draw the UTF8 encoded string in the rectangle ARect. Text is wrapped if necessary.
   The position depends on the specified horizontal alignment halign and vertical alignement valign.
   The color c is used to fill the text. No rotation is applied. }
@@ -2182,37 +2200,37 @@ begin
 end;
 
 procedure TBGRACustomBitmap.PutImageAffine(AMatrix: TAffineMatrix;
-  Source: TBGRACustomBitmap; AOpacity: Byte; ACorrectBlur: Boolean);
+  Source: TBGRACustomBitmap; AOpacity: Byte; ACorrectBlur: Boolean; APixelCenteredCoords: boolean);
 begin
   if ACorrectBlur then
-    PutImageAffine(AMatrix,Source,rfCosine,AOpacity)
+    PutImageAffine(AMatrix,Source,rfCosine,AOpacity,APixelCenteredCoords)
   else
-    PutImageAffine(AMatrix,Source,rfLinear,AOpacity);
+    PutImageAffine(AMatrix,Source,rfLinear,AOpacity,APixelCenteredCoords);
 end;
 
 procedure TBGRACustomBitmap.PutImageAffine(AMatrix: TAffineMatrix;
-  Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AOpacity: Byte);
+  Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter; AOpacity: Byte; APixelCenteredCoords: boolean);
 begin
-  PutImageAffine(AMatrix, Source, AResampleFilter, dmDrawWithTransparency, AOpacity);
+  PutImageAffine(AMatrix, Source, AResampleFilter, dmDrawWithTransparency, AOpacity, APixelCenteredCoords);
 end;
 
 procedure TBGRACustomBitmap.PutImageAffine(AMatrix: TAffineMatrix;
   Source: TBGRACustomBitmap; AResampleFilter: TResampleFilter;
-  AMode: TDrawMode; AOpacity: Byte);
+  AMode: TDrawMode; AOpacity: Byte; APixelCenteredCoords: boolean);
 begin
   if (Source = nil) or (Source.Width = 0) or (Source.Height = 0) or (AOpacity = 0) then exit;
   PutImageAffine(AMatrix, Source, GetImageAffineBounds(AMatrix,Source),
-                 AResampleFilter,AMode,AOpacity);
+                 AResampleFilter,AMode,AOpacity,APixelCenteredCoords);
 end;
 
 procedure TBGRACustomBitmap.PutImageAffine(AMatrix: TAffineMatrix;
   Source: TBGRACustomBitmap; AOutputBounds: TRect; AOpacity: Byte;
-  ACorrectBlur: Boolean);
+  ACorrectBlur: Boolean; APixelCenteredCoords: boolean);
 begin
   if ACorrectBlur then
-    PutImageAffine(AMatrix,Source,AOutputBounds,rfCosine,dmDrawWithTransparency,AOpacity)
+    PutImageAffine(AMatrix,Source,AOutputBounds,rfCosine,dmDrawWithTransparency,AOpacity,APixelCenteredCoords)
   else
-    PutImageAffine(AMatrix,Source,AOutputBounds,rfLinear,dmDrawWithTransparency,AOpacity);
+    PutImageAffine(AMatrix,Source,AOutputBounds,rfLinear,dmDrawWithTransparency,AOpacity,APixelCenteredCoords);
 end;
 
 { Returns the area that contains the affine transformed image }
@@ -2242,9 +2260,9 @@ begin
 end;
 
 function TBGRACustomBitmap.GetImageAffineBounds(AMatrix: TAffineMatrix;
-  Source: TBGRACustomBitmap): TRect;
+  Source: TBGRACustomBitmap; APixelCenteredCoords: boolean): TRect;
 begin
-  result := GetImageAffineBounds(AMatrix, Source.GetImageBounds);
+  result := GetImageAffineBounds(AMatrix, Source.GetImageBounds, APixelCenteredCoords);
 end;
 
 procedure TBGRACustomBitmap.PutImageAngle(x, y: single;
@@ -2308,10 +2326,7 @@ var
     result.x := relX*cosa-relY*sina+x;
     result.y := relY*cosa+relX*sina+y;
     if ARestoreOffsetAfterRotation then
-    begin
-      result.x += imageCenterX;
-      result.y += imageCenterY;
-    end;
+      result.Offset(imageCenterX,imageCenterY);
   end;
 
 begin
@@ -2338,10 +2353,7 @@ var
     result.x := relX*cosa-relY*sina+x;
     result.y := relY*cosa+relX*sina+y;
     if ARestoreOffsetAfterRotation then
-    begin
-      result.x += imageCenterX;
-      result.y += imageCenterY;
-    end;
+      result.Offset(imageCenterX,imageCenterY);
   end;
 
 begin

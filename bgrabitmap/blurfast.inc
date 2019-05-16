@@ -45,15 +45,15 @@ var
       inc(pw);
       c := PDWord(psrc)^;
       inc(PByte(psrc),srcDelta);
-      aDiv += w;
+      Inc(aDiv, w);
       w *= ((c shr TBGRAPixel_AlphaShift) and $ff);
-      sumA += w;
+      inc(sumA, w);
       w := w shr verticalWeightShift;
-      rgbDiv += w;
+      inc(rgbDiv, w);
       {$hints off}
-      sumR += ((c shr TBGRAPixel_RedShift) and $ff)*w;
-      sumG += ((c shr TBGRAPixel_GreenShift) and $ff)*w;
-      sumB += ((c shr TBGRAPixel_BlueShift) and $ff)*w;
+      inc(sumR, ((c shr TBGRAPixel_RedShift) and $ff)*w );
+      inc(sumG, ((c shr TBGRAPixel_GreenShift) and $ff)*w );
+      inc(sumB, ((c shr TBGRAPixel_BlueShift) and $ff)*w );
       {$hints on}
     end;
   end;
@@ -214,12 +214,12 @@ begin
         begin
           w := pw^;
           inc(pw);
-          total.sumA += sumA*w shr horizontalWeightShift;
-          total.aDiv += aDiv*w shr horizontalWeightShift;
-          total.sumR += sumR*w shr horizontalWeightShift;
-          total.sumG += sumG*w shr horizontalWeightShift;
-          total.sumB += sumB*w shr horizontalWeightShift;
-          total.rgbDiv += rgbDiv*w shr horizontalWeightShift;
+          inc(total.sumA, sumA*w shr horizontalWeightShift );
+          inc(total.aDiv, aDiv*w shr horizontalWeightShift );
+          inc(total.sumR, sumR*w shr horizontalWeightShift );
+          inc(total.sumG, sumG*w shr horizontalWeightShift );
+          inc(total.sumB, sumB*w shr horizontalWeightShift );
+          inc(total.rgbDiv, rgbDiv*w shr horizontalWeightShift );
           inc(psum);
           if psum >= psumEnd then pSum := @sums[0];
         end;
@@ -237,12 +237,12 @@ begin
         begin
           w := pw^;
           inc(pw);
-          total.sumA += sumA*w;
-          total.aDiv += aDiv*w;
-          total.sumR += sumR*w;
-          total.sumG += sumG*w;
-          total.sumB += sumB*w;
-          total.rgbDiv += rgbDiv*w;
+          inc(total.sumA, sumA*w );
+          inc(total.aDiv, aDiv*w );
+          inc(total.sumR, sumR*w );
+          inc(total.sumG, sumG*w );
+          inc(total.sumB, sumB*w );
+          inc(total.rgbDiv, rgbDiv*w );
           inc(psum);
           if psum >= psumEnd then pSum := @sums[0];
         end;

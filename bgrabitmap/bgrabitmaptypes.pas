@@ -35,6 +35,12 @@ uses
   FPImage, FPImgCanv{$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
   BGRAMultiFileType;
 
+
+const
+  BGRABitmapVersion = 9090400;
+
+  function BGRABitmapVersionStr: string;
+
 type
   TMultiFileContainer = BGRAMultiFileType.TMultiFileContainer;
   Int32or64 = {$IFDEF CPU64}Int64{$ELSE}LongInt{$ENDIF};
@@ -80,6 +86,10 @@ type
   TTextLayout = BGRAGraphics.TTextLayout;
   TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
   TBidiTextAlignment = (btaNatural, btaOpposite, btaLeftJustify, btaRightJustify, btaCenter);
+
+  function AlignmentToBidiTextAlignment(AAlign: TAlignment; ARightToLeft: boolean): TBidiTextAlignment; overload;
+  function AlignmentToBidiTextAlignment(AAlign: TAlignment): TBidiTextAlignment; overload;
+  function BidiTextAlignmentToAlignment(ABidiAlign: TBidiTextAlignment; ARightToLeft: boolean): TAlignment;
 
 const
   RadialBlurTypeToStr: array[TRadialBlurType] of string =
@@ -312,8 +322,10 @@ type
 
     {** Same as above, except that the orientation is specified, overriding the value of the property ''FontOrientation'' }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual; abstract;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); overload; virtual;
     {** Same as above, except that the orientation is specified, overriding the value of the property ''FontOrientation'' }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual; abstract;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); overload; virtual;
 
     {** Draw the UTF8 encoded string at the coordinate (''x'',''y''), clipped inside the rectangle ''ARect''.
         Additional style information is provided by the style parameter.
@@ -328,6 +340,7 @@ type
         If ''align'' is ''taCenter'', (''x'',''y'') is at the top and middle of the text.
         If ''align'' is ''taRightJustify'', (''x'',''y'') is the top-right corner. }
     procedure CopyTextPathTo({%H-}ADest: IBGRAPath; {%H-}x, {%H-}y: single; {%H-}s: string; {%H-}align: TAlignment); virtual; //optional
+    procedure CopyTextPathTo({%H-}ADest: IBGRAPath; {%H-}x, {%H-}y: single; {%H-}s: string; {%H-}align: TAlignment; {%H-}ARightToLeft: boolean); virtual; //optional
     function HandlesTextPath: boolean; virtual;
   end;
 
@@ -518,6 +531,24 @@ uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
   FPWriteTiff, FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM;
 
+function BGRABitmapVersionStr: string;
+var numbers: TStringList;
+  i,remaining: cardinal;
+begin
+  numbers := TStringList.Create;
+  remaining := BGRABitmapVersion;
+  for i := 1 to 4 do
+  begin
+    numbers.Insert(0, IntToStr(remaining mod 100));
+    remaining := remaining div 100;
+  end;
+  while (numbers.Count > 1) and (numbers[numbers.Count-1]='0') do
+    numbers.Delete(numbers.Count-1);
+  numbers.Delimiter:= '.';
+  result := numbers.DelimitedText;
+  numbers.Free;
+end;
+
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I geometrytypes.inc}
 
@@ -529,6 +560,39 @@ uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I bgrapixel.inc}
+
+function AlignmentToBidiTextAlignment(AAlign: TAlignment; ARightToLeft: boolean): TBidiTextAlignment;
+begin
+  case AAlign of
+    taCenter: result := btaCenter;
+    taRightJustify: if ARightToLeft then result := btaNatural else result := btaOpposite;
+    else {taLeftJustify}
+      if ARightToLeft then result := btaOpposite else result := btaNatural;
+  end;
+end;
+
+function AlignmentToBidiTextAlignment(AAlign: TAlignment): TBidiTextAlignment;
+begin
+  case AAlign of
+    taCenter: result := btaCenter;
+    taRightJustify: result := btaRightJustify;
+    else {taLeftJustify}
+      result := btaLeftJustify;
+  end;
+end;
+
+function BidiTextAlignmentToAlignment(ABidiAlign: TBidiTextAlignment;
+  ARightToLeft: boolean): TAlignment;
+begin
+  case ABidiAlign of
+    btaCenter: result := taCenter;
+    btaLeftJustify: result := taLeftJustify;
+    btaRightJustify: result := taRightJustify;
+    btaOpposite: if ARightToLeft then result := taLeftJustify else result := taRightJustify;
+  else {btaNatural}
+    if ARightToLeft then result := taRightJustify else result := taLeftJustify;
+  end;
+end;
 
 function CleanTextOutString(s: string): string;
 var idxIn, idxOut: integer;
@@ -699,8 +763,31 @@ begin
   TextOut(ADest,x,y,sUTF8,texture,align);
 end;
 
+procedure TBGRACustomFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+  y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel;
+  align: TAlignment; ARightToLeft: boolean);
+begin
+  //if RightToLeft is not handled
+  TextOutAngle(ADest,x,y,orientationTenthDegCCW,sUTF8,c,align);
+end;
+
+procedure TBGRACustomFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+  y: single; orientationTenthDegCCW: integer; sUTF8: string;
+  texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean);
+begin
+  //if RightToLeft is not handled
+  TextOutAngle(ADest,x,y,orientationTenthDegCCW,sUTF8,texture,align);
+end;
+
 procedure TBGRACustomFontRenderer.CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment);
 begin {optional implementation} end;
+
+procedure TBGRACustomFontRenderer.CopyTextPathTo(ADest: IBGRAPath; x,
+  y: single; s: string; align: TAlignment; ARightToLeft: boolean);
+begin
+  //if RightToLeft is not handled
+  CopyTextPathTo(ADest, x,y, s, align);
+end;
 
 function TBGRACustomFontRenderer.HandlesTextPath: boolean;
 begin

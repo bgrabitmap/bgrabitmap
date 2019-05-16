@@ -171,12 +171,12 @@ var
 begin
   alphaLineLen := maskWidth+2;
 
-  xThird -= 1; //for first subpixel
+  dec(xThird); //for first subpixel
 
   if xThird >= 0 then dx := xThird div 3
    else dx := -((-xThird+2) div 3);
-  x += dx;
-  xThird -= dx*3;
+  inc(x, dx);
+  dec(xThird, dx*3);
 
   if y >= dest.ClipRect.Top then miny := 0
     else miny := dest.ClipRect.Top-y;
@@ -237,9 +237,9 @@ begin
       for n := countBetween-1 downto 0 do
       begin
         a := pmask^ div 3;
-        v1 += a;
-        v2 += a;
-        v3 += a;
+        inc(v1, a);
+        inc(v2, a);
+        inc(v3, a);
         inc(pmask, maskPixelSize);
 
         NextAlpha(v1);
@@ -251,8 +251,8 @@ begin
       if rightOnSide then
       begin
         a := pmask^ div 3;
-        v1 += a;
-        v2 += a+a;
+        inc(v1, a);
+        inc(v2, a+a);
       end;
 
       NextAlpha(v1);
@@ -388,41 +388,41 @@ begin
   with pUpLeft^ do
   begin
     alphaW := alpha * w1;
-    aDiv   += w1;
-    aSum   += alphaW;
-    rSum   += red * alphaW;
-    gSum   += green * alphaW;
-    bSum   += blue * alphaW;
+    inc(aDiv, w1);
+    inc(aSum, alphaW);
+    inc(rSum, red * alphaW);
+    inc(gSum, green * alphaW);
+    inc(bSum, blue * alphaW);
   end;
   if pUpRight <> nil then
   with pUpRight^ do
   begin
     alphaW := alpha * w2;
-    aDiv   += w2;
-    aSum   += alphaW;
-    rSum   += red * alphaW;
-    gSum   += green * alphaW;
-    bSum   += blue * alphaW;
+    inc(aDiv, w2);
+    inc(aSum, alphaW);
+    inc(rSum, red * alphaW);
+    inc(gSum, green * alphaW);
+    inc(bSum, blue * alphaW);
   end;
   if pDownLeft <> nil then
   with pDownLeft^ do
   begin
     alphaW := alpha * w3;
-    aDiv   += w3;
-    aSum   += alphaW;
-    rSum   += red * alphaW;
-    gSum   += green * alphaW;
-    bSum   += blue * alphaW;
+    inc(aDiv, w3);
+    inc(aSum, alphaW);
+    inc(rSum, red * alphaW);
+    inc(gSum, green * alphaW);
+    inc(bSum, blue * alphaW);
   end;
   if pDownRight <> nil then
   with pDownRight^ do
   begin
     alphaW := alpha * w4;
-    aDiv   += w4;
-    aSum   += alphaW;
-    rSum   += red * alphaW;
-    gSum   += green * alphaW;
-    bSum   += blue * alphaW;
+    inc(aDiv, w4);
+    inc(aSum, alphaW);
+    inc(rSum, red * alphaW);
+    inc(gSum, green * alphaW);
+    inc(bSum, blue * alphaW);
   end;
 
   if aSum < 128 then //if there is no alpha
@@ -765,7 +765,7 @@ begin
     255:
       begin
         alphaCorr := c.alpha;
-        if alphaCorr >= 128 then alphaCorr += 1;
+        if alphaCorr >= 128 then inc(alphaCorr);
         dest^.red := GammaCompressionTab[(GammaExpansionTab[dest^.red] * NativeUInt(256-alphaCorr) + GammaExpansionTab[c.red]*alphaCorr) shr 8];
         dest^.green := GammaCompressionTab[(GammaExpansionTab[dest^.green] * NativeUInt(256-alphaCorr) + GammaExpansionTab[c.green]*alphaCorr) shr 8];
         dest^.blue := GammaCompressionTab[(GammaExpansionTab[dest^.blue] * NativeUInt(256-alphaCorr) + GammaExpansionTab[c.blue]*alphaCorr) shr 8];
@@ -806,7 +806,7 @@ begin
     255:
       begin
         alphaCorr := calpha;
-        if alphaCorr >= 128 then alphaCorr += 1;
+        if alphaCorr >= 128 then inc(alphaCorr);
         dest^.red := GammaCompressionTab[(GammaExpansionTab[dest^.red] * NativeUInt(256-alphaCorr) + ec.red*alphaCorr) shr 8];
         dest^.green := GammaCompressionTab[(GammaExpansionTab[dest^.green] * NativeUInt(256-alphaCorr) + ec.green*alphaCorr) shr 8];
         dest^.blue := GammaCompressionTab[(GammaExpansionTab[dest^.blue] * NativeUInt(256-alphaCorr) + ec.blue*alphaCorr) shr 8];
@@ -846,7 +846,7 @@ begin
         255:
         begin
           alphaCorr := c.alpha;
-          if alphaCorr >= 128 then alphaCorr += 1;
+          if alphaCorr >= 128 then inc(alphaCorr);
           dest^.red := (dest^.red * NativeUInt(256-alphaCorr) + c.red*(alphaCorr+1)) shr 8;
           dest^.green := (dest^.green * NativeUInt(256-alphaCorr) + c.green*(alphaCorr+1)) shr 8;
           dest^.blue := (dest^.blue * NativeUInt(256-alphaCorr) + c.blue*(alphaCorr+1)) shr 8;

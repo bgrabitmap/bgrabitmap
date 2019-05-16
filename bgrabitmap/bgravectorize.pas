@@ -25,7 +25,8 @@ uses
   Types, Classes, SysUtils, Graphics, BGRABitmapTypes, BGRATypewriter, BGRATransform, BGRACanvas2D, BGRAText;
 
 //vectorize a monochrome bitmap
-function VectorizeMonochrome(ASource: TBGRACustomBitmap; zoom: single; PixelCenteredCoordinates: boolean): ArrayOfTPointF;
+function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
+  AWhiteBackground: boolean = true; ADiagonalFillPercent: single = 66; AIntermediateDiagonals: boolean = true): ArrayOfTPointF;
 
 type
   TBGRAVectorizedFont = class;
@@ -47,6 +48,8 @@ type
     procedure UpdateFont;
     function GetCanvas2D(ASurface: TBGRACustomBitmap): TBGRACanvas2D;
     procedure InternalTextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel; texture: IBGRAScanner);
+    procedure InternalCopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment; ABidiMode: TFontBidiMode);
+    procedure InternalTextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment; ABidiMode: TFontBidiMode);
     procedure Init;
   public
     MaxFontResolution: integer;
@@ -66,12 +69,17 @@ type
     constructor Create(ADirectoryUTF8: string); overload;
     function GetFontPixelMetric: TFontPixelMetric; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
+    procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; c: TBGRAPixel); overload; override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; texture: IBGRAScanner); overload; override;
     procedure CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment); override;
+    procedure CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment; ARightToLeft: boolean); override;
     function HandlesTextPath: boolean; override;
     function TextSize(s: string): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
@@ -194,15 +202,13 @@ implementation
 
 uses BGRAUTF8, math;
 
-function VectorizeMonochrome(ASource: TBGRACustomBitmap; zoom: single; PixelCenteredCoordinates: boolean): ArrayOfTPointF;
+function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
+  AWhiteBackground: boolean; ADiagonalFillPercent: single; AIntermediateDiagonals: boolean): ArrayOfTPointF;
 const unitShift = 6;
       iHalf = 1 shl (unitShift-1);
-      iOut = 10;  //0.15
       iUnit = 1 shl unitShift;
-      iDiag = 13; //0.20
-      useNiceLines = true;
-
 var
+  iDiag,iOut: integer;
   n: integer;
   factor: single;
   offset: single;
@@ -211,7 +217,7 @@ var
   points: array of record
             coord: tpoint;
             prev,next: integer;
-            drawn,{shouldRemove,}removed: boolean;
+            drawn,{shouldRemove,}removed,done: boolean;
           end;
   nbPoints:integer;
   PointsPreviousLineStart,PointsCurrentLineStart: integer;
@@ -219,6 +225,11 @@ var
   ortho: array of array of boolean;
 
   polygonF: array of TPointF;
+
+  function CheckPixel(const APixel: TBGRAPixel): boolean;
+  begin
+    result := (APixel.green <= 128) xor not AWhiteBackground;
+  end;
 
   function AddPoint(x,y,APrev,ANext: integer): integer;
   begin
@@ -236,6 +247,33 @@ var
     end;
     inc(nbpoints);
   end;
+
+  function InsertPoint(x,y,APrev,ANext: integer): integer;
+  begin
+    if nbpoints = length(points) then
+      setlength(points, nbpoints*2+1);
+    result := nbpoints;
+    with points[result] do
+    begin
+      coord := point(x,y);
+      prev := APrev;
+      next := ANext;
+      drawn := false;
+      removed := false;
+//      shouldRemove := false;
+    end;
+    if APrev<>-1 then points[APrev].next := result;
+    if ANext<>-1 then points[ANext].prev := result;
+    inc(nbpoints);
+  end;
+
+  procedure RemovePoint(idx: integer);
+  begin
+    points[idx].removed:= true;
+    if points[idx].prev <> -1 then points[points[idx].prev].next := points[idx].next;
+    if points[idx].next <> -1 then points[points[idx].next].prev := points[idx].prev;
+  end;
+
   procedure AddLine(x1,y1,x2,y2: integer); overload;
   var i,j,k: integer;
   begin
@@ -288,23 +326,23 @@ var
     AddLine(x4,y4,x5,y5);
   end;
 
-  procedure AddPolygon(n: integer);
+  procedure AddPolygon(nStart: integer);
 
     procedure Rewind(out cycle: boolean);
     var cur: integer;
     begin
-      cur := n;
+      cur := nStart;
       cycle := false;
       while (points[cur].prev <> -1) do
       begin
         cur := points[cur].prev;
-        if cur = n then
+        if cur = nStart then
         begin
           cycle := true; //identify cycle
           break;
         end;
       end;
-      n := cur;
+      nStart := cur;
     end;
 
     function aligned(start1,end1,start2,end2: integer): boolean;
@@ -319,10 +357,10 @@ var
       end;
       u := pointF(points[end1].coord.x - points[start1].coord.x, points[end1].coord.y - points[start1].coord.y);
       lu := sqrt(u*u);
-      if lu <> 0 then u *= 1/lu;
+      if lu <> 0 then u.Scale(1/lu);
       v := pointF(points[end2].coord.x - points[start2].coord.x, points[end2].coord.y - points[start2].coord.y);
       lv := sqrt(v*v);
-      if lv <> 0 then v *= 1/lv;
+      if lv <> 0 then v.Scale(1/lv);
 
       result := u*v > 0.999;
     end;
@@ -339,10 +377,10 @@ var
       end;
       u := pointF(points[next].coord.x - points[cur].coord.x, points[next].coord.y - points[cur].coord.y);
       lu := sqrt(u*u);
-      if lu <> 0 then u *= 1/lu;
+      if lu <> 0 then u.Scale(1/lu);
       v := pointF(points[cur].coord.x - points[prev].coord.x, points[cur].coord.y - points[prev].coord.y);
       lv := sqrt(v*v);
-      if lv <> 0 then v *= 1/lv;
+      if lv <> 0 then v.Scale(1/lv);
 
       dp := u*v;
       result := (dp > 0.70) and (dp < 0.72);
@@ -351,23 +389,27 @@ var
     procedure RemoveAligned;
     var cur,prev,next: integer;
     begin
-      cur := n;
+      cur := nStart;
       prev := -1;
-      while points[cur].next <> -1 do
+      while not points[cur].removed do
       begin
         next := points[cur].next;
         //remove aligned points
-        if prev <> -1 then
-          if aligned(prev,cur,cur,next) then points[cur].removed := true;
-
-        if not points[cur].removed then prev := cur;
+        if (prev <> -1) and aligned(prev,cur,cur,next) then
+          RemovePoint(cur)
+        else
+          prev := cur;
         cur := next;
 
-        if next = n then
+        if next = nStart then
         begin
           next := points[cur].next;
           if (prev <> -1) and (next <> prev) then
-            if aligned(prev,cur,cur,next) then points[cur].removed := true;
+            if aligned(prev,cur,cur,next) then
+            begin
+              RemovePoint(cur);
+              nStart := next;
+            end;
           break; //cycle
         end;
       end;
@@ -378,18 +420,18 @@ var
         nbPtsF: integer;
         nb,nb2,cur,i: integer;
     begin
-      cur := n;
+      cur := nStart;
       nb := 0;
       nb2 := 0;
       repeat
         if not points[cur].removed then inc(nb);
         inc(nb2);
         cur := points[cur].next;
-      until (cur = -1) or (cur = n) or (nb2 > nbPoints);
+      until (cur = -1) or (cur = nStart) or (nb2 > nbPoints);
       if (nb2 > nbPoints) or (nb <= 2) then exit;
 
       setlength(ptsF,nb);
-      cur := n;
+      cur := nStart;
       nbPtsF := 0;
       repeat
         with points[cur] do
@@ -400,7 +442,7 @@ var
             inc(nbPtsF);
           end;
         cur := points[cur].next;
-      until (cur = -1) or (cur = n);
+      until (cur = -1) or (cur = nStart);
 
       if cycle then
       begin
@@ -459,134 +501,163 @@ var
     end;
 
     procedure NiceLines;
-    var next,next2,prev,cur,len,prevlen,nextlen,expectedlen,nb,
-        rcur,rprev,rprev2,rnext,rnext2,temp: integer;
-    begin
-      cur := n;
-      nb := 0;
-      repeat
-        if not points[cur].removed then
+    var cur2, prev, next,next2, startIdx, endIdx: integer;
+      shouldRemove: Boolean;
+      slope: single;
+      delta, nb: integer;
+      u: TPoint;
+
+      function SameDirection(p1,p2: integer): boolean;
+      var
+        v: TPoint;
+      begin
+        v := Point(points[p2].coord.x-points[p1].coord.x,
+             points[p2].coord.y-points[p1].coord.y);
+        result := (v.x*u.y - v.y*u.x = 0) and (v.x*u.x + v.y*u.y > 0);
+      end;
+
+      function GetSide(p1,p2: integer): integer;
+      var
+        v: TPoint;
+      begin
+        v := Point(points[p2].coord.x-points[p1].coord.x,
+             points[p2].coord.y-points[p1].coord.y);
+        result := v.x*u.y - v.y*u.x;
+        if result < 0 then result := -1 else if result > 0 then result := 1;
+      end;
+
+      procedure DoNiceLines(DoDiag: boolean);
+      var cur, nbSegs, i: integer;
+        isDiag: Boolean;
+        segs: array of record
+          p1,p2: TPoint;
+          abslen: integer;
+        end;
+
+      begin
+        for cur := 0 to nb-1 do
+        if not points[cur].removed and not points[cur].done then
         begin
           next := getnext(cur);
-          len := segabslength(cur,next);
-          if (len > iUnit - (iHalf shr 1)) and (len < iUnit + (iHalf shr 1)) then
+          isDiag := (points[next].coord.x <> points[cur].coord.x) and
+                    (points[next].coord.y <> points[cur].coord.y);
+          if (segabslength(cur,next) > iUnit) and (DoDiag xor (not isDiag)) then
           begin
-            prev := getprev(cur);
-            next2 := getnext(next);
-            prevlen := segabslength(prev,cur);
-            nextlen := segabslength(next,next2);
-            if (prevlen > iUnit - (iHalf shr 1)) and (nextlen > iUnit - (iHalf shr 1)) and angle45(prev,cur,next) and angle45(cur,next,next2) and
-              aligned(prev,cur,next,next2) then
+            startIdx := cur;
+            endIdx := next;
+            u := Point(points[next].coord.x-points[cur].coord.x,
+                       points[next].coord.y-points[cur].coord.y);
+            nbsegs := 1;
+
+            if (u.x <> 0) or (u.y <> 0) then
             begin
-              if prevlen > nextlen then
-              begin
-                rprev := AddPoint(points[cur].coord.x - (points[next2].coord.x-points[next].coord.x),
-                  points[cur].coord.y - (points[next2].coord.y-points[next].coord.y), prev,cur);
-                points[prev].next := rprev;
-                points[cur].prev := rprev;
-                prev := rprev;
-                expectedlen := nextlen;
-              end else
-              if nextlen > prevlen then
-              begin
-                rnext := AddPoint(points[next].coord.x - (points[prev].coord.x-points[cur].coord.x),
-                  points[next].coord.y - (points[prev].coord.y-points[cur].coord.y),
-                    next,next2);
-                points[next].next := rnext;
-                points[next2].prev := rnext;
-                next2 := rnext;
-                expectedlen := prevlen;
-              end else
-                expectedlen := (nextlen+prevlen) div 2;
-
-{              points[cur].shouldRemove := true;
-              points[next].shouldRemove:= true;}
-              points[cur].removed := true;
-              rcur := prev;
-              rnext := cur;
-              temp := prev;
               repeat
-                rprev := getprev(rcur);
-                if not angle45(rprev,rcur,rnext) or not aligned(rprev,rcur,cur,next) then break;
-                prevlen := segabslength(rprev,rcur);
-                if (prevlen < iUnit - (iHalf shr 1)) or (prevlen > iUnit + (iHalf shr 1)) then break;
-                points[rcur].removed := true;
-                temp := rprev;
+                next := getnext(endIdx);
+                next2 := getnext(next);
+                if (next<>startIdx) and (next2<>startIdx) and angle45(getprev(endIdx),endIdx,next) and
+                  (segabslength(endIdx,next) < 2*iUnit) and SameDirection(next,next2) then
+                begin
+                  endIdx := next2;
+                  inc(nbsegs);
+                end
+                else
+                  break;
+              until false;
 
-                rprev2 := getprev(rprev);
-                if not angle45(rprev2,rprev,rcur) or not aligned(rprev2,rprev,prev,cur) then break;
-                prevlen := segabslength(rprev2,rprev);
-                if abs(prevlen-expectedlen) > 0 then break;
-                points[rprev].removed := true;
-                temp := rprev2;
-
-                rcur := rprev2;
-                rnext := rprev;
-              until (rcur=-1);
-              prev := temp;
-
-              points[next].removed:= true;
-              rcur := next2;
-              rprev := next;
-              temp := next2;
               repeat
-                rnext := getnext(rcur);
-                if not angle45(rnext,rcur,rprev) or not aligned(rcur,rnext,cur,next) then break;
-                nextlen := segabslength(rnext,rcur);
-                if (nextlen < iUnit - (iHalf shr 1)) or (nextlen > iUnit + (iHalf shr 1)) then break;
-                points[rcur].removed := true;
-                temp := rnext;
+                next := getprev(startIdx);
+                next2 := getprev(next);
+                if (next<>endIdx) and (next2<>endIdx) and angle45(getnext(startIdx),startIdx,next) and
+                  (segabslength(startIdx,next) < 2*iUnit) and SameDirection(next2,next) then
+                begin
+                  startIdx := next2;
+                  inc(nbsegs);
+                end
+                else
+                  break;
+              until false;
 
-                rnext2 := getnext(rnext);
-                if not angle45(rnext2,rnext,rcur) or not aligned(rnext,rnext2,next,next2) then break;
-                nextlen := segabslength(rnext2,rnext);
-                if abs(nextlen-expectedlen) > 0 then break;
-                points[rnext].removed := true;
-                temp := rnext2;
+              setlength(segs, nbSegs);
+              cur2 := startIdx;
+              for i := 0 to nbSegs-1 do
+              begin
+                next := getnext(cur2);
+                segs[i].p1 := points[cur2].coord;
+                segs[i].p2 := points[next].coord;
+                segs[i].abslen := segabslength(cur2,next);
+                points[cur2].done := true;
+                points[next].done := true;
+                if cur2 <> startIdx then RemovePoint(cur2);
 
-                rcur := rnext2;
-                rprev := rnext;
-              until (rcur=-1);
-              next2 := temp;
+                if next = endIdx then break
+                else
+                begin
+                  cur2 := getnext(next);
+                  RemovePoint(next);
+                end;
+              end;
 
-              points[prev].next := next2;
-              points[next2].prev := prev;
+              cur2 := startIdx;
+              for i := 0 to nbSegs-2 do
+              begin
+                if i <> 0 then
+                  cur2 := InsertPoint( (segs[i].p1.x+segs[i].p2.x) div 2,
+                               (segs[i].p1.y+segs[i].p2.y) div 2,
+                               cur2, endIdx);
+                if abs(segs[i].abslen-segs[i+1].abslen) > iHalf then
+                  cur2 := InsertPoint( (segs[i].p2.x+segs[i+1].p1.x) div 2,
+                               (segs[i].p2.y+segs[i+1].p1.y) div 2,
+                               cur2, endIdx);
+              end;
 
-              next := next2;
+              {next := getnext(startIdx);
+              slope := (points[next].coord.y-points[startIdx].coord.y)/(points[next].coord.x-points[startIdx].coord.x);
+              if slope < 0 then
+              begin
+                delta := iHalf+round(abs(slope)*iDiag);
+                InsertPoint(points[startIdx].coord.x + dx * delta, points[startIdx].coord.y, startIdx, next);
+              end;
+
+              next := getprev(endIdx);
+              slope := (points[next].coord.y-points[endIdx].coord.y)/(points[next].coord.x-points[endIdx].coord.x);
+              if slope > 0 then
+              begin
+                delta := iHalf+round(abs(slope)*iDiag);
+                InsertPoint(points[endIdx].coord.x - dx * delta, points[endIdx].coord.y, next, endIdx);
+              end;}
             end;
           end;
-          cur := next;
-        end else
-          cur := points[cur].next;
-        inc(nb);
-      until (cur=-1) or (cur = n) or (nb>nbPoints);
-{      cur := n;
-      nb := 0;
-      repeat
-        if not points[cur].removed and points[cur].shouldRemove then
-        begin
-          prev := getprev(cur);
-          next := getnext(cur);
-          points[prev].next := next;
-          points[next].prev := prev;
-          points[cur].removed := true;
         end;
-        cur := points[cur].next;
-        inc(nb);
-      until (cur=-1) or (cur = n) or (nb>nbPoints);}
-    end;
+      end;
 
+      procedure Init;
+      var cur: integer;
+      begin
+        u := Point(0,0);
+        nb := nbPoints;
+        for cur := 0 to nb-1 do
+          points[cur].done := false;
+      end;
+
+    begin
+      Init;
+      DoNiceLines(false);
+      DoNiceLines(true);
+    end;
 
   var cycle: boolean;
   begin
     //rewind
     Rewind(cycle);
     RemoveAligned;
-    if useNiceLines then NiceLines;
+    if AIntermediateDiagonals then NiceLines;
     MakePolygon(cycle);
   end;
 
 begin
+  iDiag := round((ADiagonalFillPercent-50)/100 * iHalf)*2; //even rounding to keep alignment with iOut
+  iOut := (iHalf-iDiag) div 2;
+
   nbpoints := 0;
   points := nil;
   polygonF := nil;
@@ -607,9 +678,9 @@ begin
     {$hints off}
     fillchar(cur,sizeof(cur),0);
     {$hints on}
-    cur[6] := (p^.green <= 128); inc(p);
-    if pprev <> nil then begin cur[9] := (pprev^.green <= 128); inc(pprev); end;
-    if pnext <> nil then begin cur[3] := (pnext^.green <= 128); inc(pnext); end;
+    cur[6] := CheckPixel(p^); inc(p);
+    if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
+    if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
     for x := 0 to ASource.Width-1 do
     begin
       cur[1] := cur[2];
@@ -626,19 +697,19 @@ begin
         cur[3]:= false;
       end else
       begin
-        cur[6] := (p^.green <= 128); inc(p);
-        if pprev <> nil then begin cur[9] := (pprev^.green <= 128); inc(pprev); end;
-        if pnext <> nil then begin cur[3] := (pnext^.green <= 128); inc(pnext); end;
+        cur[6] := CheckPixel(p^); inc(p);
+        if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
+        if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
       end;
 
       ortho[y,x] := (cur[5] and not cur[7] and not cur[9] and not cur[3] and not cur[1]);
       if (not cur[5] and (cur[4] xor cur[6]) and (cur[8] xor cur[2]) and
           (ord(cur[1])+ord(cur[3])+ord(cur[7])+ord(cur[9]) = 3)) then
       begin
-        if (not cur[6] and not cur[9] and not cur[8] and ((ASource.getPixel(x-1,y-2).green <= 128) or (ASource.getPixel(x+2,y+1).green <= 128)) ) or
-          (not cur[8] and not cur[7] and not cur[4] and ((ASource.getPixel(x-2,y+1).green <= 128) or (ASource.getPixel(x+1,y-2).green <= 128)) ) or
-          (not cur[4] and not cur[1] and not cur[2] and ((ASource.getPixel(x+1,y+2).green <= 128) or (ASource.getPixel(x-2,y-1).green <= 128)) ) or
-          (not cur[2] and not cur[3] and not cur[6] and ((ASource.getPixel(x-1,y+2).green <= 128) or (ASource.getPixel(x+2,y-1).green <= 128)) ) then
+        if (not cur[6] and not cur[9] and not cur[8] and (CheckPixel(ASource.getPixel(x-1,y-2)) or CheckPixel(ASource.getPixel(x+2,y+1).green)) ) or
+          (not cur[8] and not cur[7] and not cur[4] and (CheckPixel(ASource.getPixel(x-2,y+1)) or CheckPixel(ASource.getPixel(x+1,y-2).green)) ) or
+          (not cur[4] and not cur[1] and not cur[2] and (CheckPixel(ASource.getPixel(x+1,y+2)) or CheckPixel(ASource.getPixel(x-2,y-1).green)) ) or
+          (not cur[2] and not cur[3] and not cur[6] and (CheckPixel(ASource.getPixel(x-1,y+2)) or CheckPixel(ASource.getPixel(x+2,y-1).green)) ) then
             ortho[y,x] := true;
       end;
       { or
@@ -667,9 +738,9 @@ begin
     {$hints off}
     fillchar(cur,sizeof(cur),0);
     {$hints on}
-    cur[6] := (p^.green <= 128); inc(p);
-    if pprev <> nil then begin cur[9] := (pprev^.green <= 128); inc(pprev); end;
-    if pnext <> nil then begin cur[3] := (pnext^.green <= 128); inc(pnext); end;
+    cur[6] := CheckPixel(p^); inc(p);
+    if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
+    if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
     ix := 0;
     for x := 0 to ASource.Width-1 do
     begin
@@ -687,17 +758,24 @@ begin
         cur[3]:= false;
       end else
       begin
-        cur[6] := (p^.green <= 128); inc(p);
-        if pprev <> nil then begin cur[9] := (pprev^.green <= 128); inc(pprev); end;
-        if pnext <> nil then begin cur[3] := (pnext^.green <= 128); inc(pnext); end;
+        cur[6] := CheckPixel(p^); inc(p);
+        if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
+        if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
       end;
 
       if cur[5] then
       begin
         if not cur[1] and not cur[2] and not cur[3] and not cur[4] and not cur[6] and not cur[7] and not cur[8] and not cur[9] then
         begin
-          AddLine(ix-iHalf,iy-iDiag,ix-iDiag,iy-iHalf,ix+iDiag,iy-iHalf,ix+iHalf,iy-iDiag,ix+iHalf,iy+iDiag);
-          AddLine(ix+iHalf,iy+iDiag,ix+iDiag,iy+iHalf,ix-iDiag,iy+iHalf,ix-iHalf,iy+iDiag,ix-iHalf,iy-iDiag);
+          if iDiag > 0 then
+          begin
+            AddLine(ix-iHalf,iy-iDiag,ix-iDiag,iy-iHalf,ix+iDiag,iy-iHalf,ix+iHalf,iy-iDiag,ix+iHalf,iy+iDiag);
+            AddLine(ix+iHalf,iy+iDiag,ix+iDiag,iy+iHalf,ix-iDiag,iy+iHalf,ix-iHalf,iy+iDiag,ix-iHalf,iy-iDiag);
+          end else
+          begin
+            AddLine(ix-iHalf,iy,ix,iy-iHalf,ix+iHalf,iy);
+            AddLine(ix+iHalf,iy,ix,iy+iHalf,ix-iHalf,iy);
+          end;
         end else
         if cur[6] and not cur[9] and not cur[8] then
         begin
@@ -947,9 +1025,9 @@ begin
     end;
   end;
 
-  factor := zoom/iUnit;
-  offset := zoom*0.5;
-  if PixelCenteredCoordinates then Offset -= 0.5;
+  factor := AZoom/iUnit;
+  offset := AZoom*0.5;
+  if APixelCenteredCoordinates then Offset -= 0.5;
   for n := 0 to nbPoints-1 do
     with points[n] do
     if not drawn and not removed then
@@ -1030,7 +1108,10 @@ begin
     FCanvas2D.strokeStyle(OutlineTexture)
   else
     FCanvas2D.strokeStyle(OutlineColor);
-  FCanvas2D.lineWidth := abs(OutlineWidth);
+  if abs(OutlineWidth) < 3 then
+    FCanvas2D.lineWidth := abs(OutlineWidth)*2/3
+  else
+    FCanvas2D.lineWidth := abs(OutlineWidth)-1;
   if not ShadowVisible then
     FCanvas2D.shadowColor(BGRAPixelTransparent)
   else
@@ -1057,6 +1138,10 @@ begin
     ADest.ClipRect := intersectedClip;
   end;
   UpdateFont;
+  if style.RightToLeft then
+    FVectorizedFont.BidiMode := fbmRightToLeft
+  else
+    FVectorizedFont.BidiMode := fbmLeftToRight;
   FVectorizedFont.Orientation := 0;
   case style.Alignment of
     taCenter: case style.Layout of
@@ -1099,6 +1184,52 @@ begin
   end;
   if style.Clipping then
     ADest.ClipRect := previousClip;
+end;
+
+procedure TBGRAVectorizedFontRenderer.InternalCopyTextPathTo(ADest: IBGRAPath;
+  x, y: single; s: string; align: TAlignment; ABidiMode: TFontBidiMode);
+var
+  twAlign : TBGRATypeWriterAlignment;
+  ofs: TPointF;
+begin
+  UpdateFont;
+  FVectorizedFont.BidiMode := ABidiMode;
+  FVectorizedFont.Orientation := 0;
+  case align of
+    taCenter: twAlign:= twaMiddle;
+    taRightJustify: twAlign := twaRight;
+    else twAlign:= twaLeft;
+  end;
+  ofs := PointF(x,y);
+  ofs.Offset(0, FVectorizedFont.FullHeight*0.5);
+  FVectorizedFont.CopyTextPathTo(ADest, s, ofs.x,ofs.y, twAlign);
+end;
+
+procedure TBGRAVectorizedFontRenderer.InternalTextOutAngle(
+  ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string;
+  c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment;
+  ABidiMode: TFontBidiMode);
+var
+  twAlign : TBGRATypeWriterAlignment;
+  c2D: TBGRACanvas2D;
+  ofs: TPointF;
+begin
+  UpdateFont;
+  FVectorizedFont.Orientation := orientation;
+  FVectorizedFont.BidiMode := ABidiMode;
+  case align of
+    taCenter: twAlign:= twaMiddle;
+    taRightJustify: twAlign := twaRight;
+    else twAlign:= twaLeft;
+  end;
+  c2D := GetCanvas2D(ADest);
+  if Assigned(texture) then
+    c2D.fillStyle(texture)
+  else
+    c2D.fillStyle(c);
+  ofs := PointF(x,y);
+  ofs.Offset( AffineMatrixRotationDeg(-orientation*0.1)*PointF(0,FVectorizedFont.FullHeight*0.5) );
+  FVectorizedFont.DrawText(c2D, s, ofs.x,ofs.y, twAlign);
 end;
 
 procedure TBGRAVectorizedFontRenderer.Init;
@@ -1147,42 +1278,35 @@ end;
 
 procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment);
-var
-  twAlign : TBGRATypeWriterAlignment;
-  c2D: TBGRACanvas2D;
-  ofs: TPointF;
 begin
-  UpdateFont;
-  FVectorizedFont.Orientation := orientation;
-  case align of
-    taCenter: twAlign:= twaMiddle;
-    taRightJustify: twAlign := twaRight;
-    else twAlign:= twaLeft;
-  end;
-  c2D := GetCanvas2D(ADest);
-  c2D.fillStyle(c);
-  ofs := PointF(x,y);
-  ofs += AffineMatrixRotationDeg(-orientation*0.1)*PointF(0,FVectorizedFont.FullHeight*0.5);
-  FVectorizedFont.DrawText(c2D, s, ofs.x,ofs.y, twAlign);
+  InternalTextOutAngle(ADest,x,y,orientation,s,c,nil,align,fbmAuto);
+end;
+
+procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+  y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  if ARightToLeft then
+    InternalTextOutAngle(ADest,x,y,orientation,s,c,nil,align,fbmRightToLeft)
+  else
+    InternalTextOutAngle(ADest,x,y,orientation,s,c,nil,align,fbmLeftToRight);
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientation: integer; s: string; texture: IBGRAScanner;
   align: TAlignment);
-var
-  twAlign : TBGRATypeWriterAlignment;
-  c2D: TBGRACanvas2D;
 begin
-  UpdateFont;
-  FVectorizedFont.Orientation := orientation;
-  case align of
-    taCenter: twAlign:= twaTop;
-    taRightJustify: twAlign := twaTopRight;
-    else twAlign:= twaTopLeft;
-  end;
-  c2D := GetCanvas2D(ADest);
-  c2D.fillStyle(texture);
-  FVectorizedFont.DrawText(c2D, s, x,y, twAlign);
+  InternalTextOutAngle(ADest,x,y,orientation,s,BGRAPixelTransparent,texture,align,fbmAuto);
+end;
+
+procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+  y: single; orientation: integer; s: string; texture: IBGRAScanner;
+  align: TAlignment; ARightToLeft: boolean);
+begin
+  if ARightToLeft then
+    InternalTextOutAngle(ADest,x,y,orientation,s,BGRAPixelTransparent,texture,align,fbmRightToLeft)
+  else
+    InternalTextOutAngle(ADest,x,y,orientation,s,BGRAPixelTransparent,texture,align,fbmLeftToRight);
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
@@ -1192,9 +1316,22 @@ begin
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; s: string; texture: IBGRAScanner; align: TAlignment;
+  ARightToLeft: boolean);
+begin
+  TextOutAngle(ADest,x,y,FontOrientation,s,texture,align,ARightToLeft);
+end;
+
+procedure TBGRAVectorizedFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
   y: single; s: string; c: TBGRAPixel; align: TAlignment);
 begin
   TextOutAngle(ADest,x,y,FontOrientation,s,c,align);
+end;
+
+procedure TBGRAVectorizedFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+  y: single; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean);
+begin
+  TextOutAngle(ADest,x,y,FontOrientation,s,c,align,ARightToLeft);
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextRect(ADest: TBGRACustomBitmap;
@@ -1211,20 +1348,17 @@ begin
 end;
 
 procedure TBGRAVectorizedFontRenderer.CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment);
-var
-  twAlign : TBGRATypeWriterAlignment;
-  ofs: TPointF;
 begin
-  UpdateFont;
-  FVectorizedFont.Orientation := 0;
-  case align of
-    taCenter: twAlign:= twaMiddle;
-    taRightJustify: twAlign := twaRight;
-    else twAlign:= twaLeft;
-  end;
-  ofs := PointF(x,y);
-  ofs += PointF(0,FVectorizedFont.FullHeight*0.5);
-  FVectorizedFont.CopyTextPathTo(ADest, s, ofs.x,ofs.y, twAlign);
+  InternalCopyTextPathTo(ADest, x,y, s, align, fbmAuto);
+end;
+
+procedure TBGRAVectorizedFontRenderer.CopyTextPathTo(ADest: IBGRAPath; x,
+  y: single; s: string; align: TAlignment; ARightToLeft: boolean);
+begin
+  if ARightToLeft then
+    InternalCopyTextPathTo(ADest, x,y, s, align, fbmRightToLeft)
+  else
+    InternalCopyTextPathTo(ADest, x,y, s, align, fbmLeftToRight);
 end;
 
 function TBGRAVectorizedFontRenderer.HandlesTextPath: boolean;
@@ -1446,10 +1580,10 @@ begin
       if CompareText(FDirectoryContent[i].FontName,FName) = 0 then
       begin
         distance := 0;
-        if (fsBold in FDirectoryContent[i].FontStyle) xor (fsBold in FStyle) then distance += 10;
-        if (fsItalic in FDirectoryContent[i].FontStyle) xor (fsItalic in FStyle) then distance += 5;
-        if (fsStrikeOut in FDirectoryContent[i].FontStyle) xor (fsStrikeOut in FStyle) then distance += 1;
-        if (fsUnderline in FDirectoryContent[i].FontStyle) xor (fsUnderline in FStyle) then distance += 1;
+        if (fsBold in FDirectoryContent[i].FontStyle) xor (fsBold in FStyle) then inc(distance, 10);
+        if (fsItalic in FDirectoryContent[i].FontStyle) xor (fsItalic in FStyle) then inc(distance, 5);
+        if (fsStrikeOut in FDirectoryContent[i].FontStyle) xor (fsStrikeOut in FStyle) then inc(distance, 1);
+        if (fsUnderline in FDirectoryContent[i].FontStyle) xor (fsUnderline in FStyle) then inc(distance, 1);
         if (bestIndex = -1) or (distance < bestDistance) then
         begin
           bestIndex := i;
@@ -1723,7 +1857,7 @@ end;
 procedure TBGRAVectorizedFont.DrawTextWordBreak(ADest: TBGRACanvas2D;
   ATextUTF8: string; X, Y, MaxWidth: Single; AAlign: TBGRATypeWriterAlignment);
 var ARemains: string;
-  step: TPointF;
+  pos,step: TPointF;
   lines: TStringList;
   i: integer;
   lineShift: single;
@@ -1734,6 +1868,7 @@ begin
 
   oldItalicSlope:= ItalicSlope;
   ItalicSlope := 0;
+  pos := PointF(X,Y);
   step := TypeWriterMatrix*PointF(0,1);
   ItalicSlope := oldItalicSlope;
 
@@ -1760,14 +1895,12 @@ begin
     twaBottomLeft,twaBottomRight: lineShift := 1;
     twaTopRight,twaTopLeft : lineShift := 0;
     end;
-    X += step.X*lineShift;
-    Y += step.Y*lineShift;
+    pos.Offset(step*lineShift);
     repeat
       SplitText(ATextUTF8, MaxWidth, ARemains);
-      DrawText(ADest,ATextUTF8,X,Y,lineAlignment);
+      DrawText(ADest,ATextUTF8,pos.X,pos.Y,lineAlignment);
       ATextUTF8 := ARemains;
-      X+= step.X;
-      Y+= step.Y;
+      pos.Offset(step);
     until ARemains = '';
   end else
   begin
@@ -1787,13 +1920,11 @@ begin
     twaTopRight,twaTopLeft : lineShift += 0.5;
     end;
 
-    X -= step.X*lineShift;
-    Y -= step.Y*lineShift;
+    pos.Offset(step*(-lineShift));
     for i := 0 to lines.Count-1 do
     begin
-      DrawText(ADest,lines[i],X,Y,lineAlignment);
-      X+= step.X;
-      Y+= step.Y;
+      DrawText(ADest,lines[i],pos.X,pos.Y,lineAlignment);
+      pos.Offset(step);
     end;
     lines.Free;
   end;
@@ -1826,7 +1957,7 @@ end;
 function TBGRAVectorizedFont.GetTextWordBreakGlyphBoxes(ATextUTF8: string; X, Y,
   MaxWidth: Single; AAlign: TBGRATypeWriterAlignment): TGlyphBoxes;
 var ARemains: string;
-  step: TPointF;
+  pos,step: TPointF;
   lines: TStringList;
   i: integer;
   lineShift: single;
@@ -1840,6 +1971,7 @@ begin
 
   oldItalicSlope:= ItalicSlope;
   ItalicSlope := 0;
+  pos := PointF(X,Y);
   step := TypeWriterMatrix*PointF(0,1);
   ItalicSlope := oldItalicSlope;
 
@@ -1876,16 +2008,14 @@ begin
   twaTopRight,twaTopLeft : lineShift += 0.5;
   end;
 
-  X -= step.X*lineShift;
-  Y -= step.Y*lineShift;
+  pos.Offset(step*(-lineShift));
   setlength(tempArray, lines.Count);
   tempPos := 0;
   for i := 0 to lines.Count-1 do
   begin
-    tempArray[i] := GetTextGlyphBoxes(lines[i],X,Y,lineAlignment);
+    tempArray[i] := GetTextGlyphBoxes(lines[i],pos.X,pos.Y,lineAlignment);
     inc(tempPos, length(tempArray[i]));
-    X+= step.X;
-    Y+= step.Y;
+    pos.Offset(step);
   end;
   lines.Free;
   setlength(result, tempPos);
@@ -2001,7 +2131,7 @@ begin
     FBuffer.Canvas.Font := FFont;
     FBuffer.Canvas.Font.Color := clBlack;
     FBuffer.Canvas.TextOut(size.cy div 2,0,AIdentifier);
-    g.SetPoints(VectorizeMonochrome(FBuffer,1/FResolution,False));
+    g.SetPoints(VectorizeMonochrome(FBuffer,1/FResolution,False,true,50));
     g.QuadraticCurves := FQuadraticCurves and (OutlineMode in[twoPath, twoFill]);
     g.Width := size.cx/size.cy;
     g.Height := 1;

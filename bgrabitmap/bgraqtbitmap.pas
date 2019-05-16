@@ -91,7 +91,7 @@ begin
         pdest^.blue := psrc^.blue;
         pdest^.alpha := 255;
       end;
-      if ALineOrder = riloBottomToTop then psrc -= 2*AWidth;
+      if ALineOrder = riloBottomToTop then dec(psrc, 2*AWidth);
     end;
     bmp.Draw(ACanvas, ARect, false);
   finally

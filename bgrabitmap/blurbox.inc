@@ -37,7 +37,7 @@ var
             {$HINTS ON}
           end;
           inc(pvert^.count);
-          PByte(p) += delta;
+          inc(PByte(p), delta);
         end;
         inc(pvert);
       end;
@@ -60,7 +60,7 @@ var
             {$HINTS ON}
           end;
           inc(pvert^.count, factMainY);
-          PByte(p) += delta;
+          inc(PByte(p), delta);
         end;
         if iRadiusY < height then
         begin

@@ -658,7 +658,7 @@ begin
   for i := 0 to high(FImages) do
   begin
     FImages[i] := data.Images[i];
-    FTotalAnimationTime += FImages[i].DelayMs;
+    inc(FTotalAnimationTime, FImages[i].DelayMs);
   end;
 end;
 

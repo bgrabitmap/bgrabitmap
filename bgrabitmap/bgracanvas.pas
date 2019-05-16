@@ -279,13 +279,13 @@ begin
     cf := Source as TFPCustomFont;
     Color := FPColorToTColor(cf.FPColor);
     Style := [];
-    if cf.Bold then Style += [fsBold];
-    if cf.Italic then Style += [fsItalic];
-    if cf.Underline then Style += [fsUnderline];
+    if cf.Bold then include(Style, fsBold);
+    if cf.Italic then include(Style, fsItalic);
+    if cf.Underline then include(Style, fsUnderline);
 {$IF FPC_FULLVERSION>=20602} //changed in 2.6.2 and 2.7    
-    if cf.StrikeThrough then Style += [fsStrikeOut];
+    if cf.StrikeThrough then include(Style, fsStrikeOut);
 {$ELSE}
-    if cf.StrikeTrough then Style += [fsStrikeOut];
+    if cf.StrikeTrough then include(Style, fsStrikeOut);
 {$ENDIF}
     Name := cf.Name;
     //Orientation := cf.Orientation;

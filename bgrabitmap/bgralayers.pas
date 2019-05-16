@@ -71,6 +71,7 @@ type
     function GetOriginalCount: integer; virtual;
     function GetOriginalByIndex({%H-}AIndex: integer): TBGRALayerCustomOriginal; virtual;
     function GetOriginalByIndexKnown({%H-}AIndex: integer): boolean; virtual;
+    function GetOriginalByIndexClass({%H-}AIndex: integer): TBGRALayerOriginalAny; virtual;
     function GetTransparent: Boolean; override;
     function GetEmpty: boolean; override;
 
@@ -162,6 +163,8 @@ type
   private
     FNbLayers: integer;
     FLayers: array of TBGRALayerInfo;
+    FOnEditorFocusChanged: TNotifyEvent;
+    FEditorFocused: boolean;
     FOriginalChange: TEmbeddedOriginalChangeEvent;
     FOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent;
     FWidth,FHeight: integer;
@@ -169,7 +172,10 @@ type
     FOriginalEditor: TBGRAOriginalEditor;
     FOriginalEditorOriginal: TBGRALayerCustomOriginal;
     FOriginalEditorViewMatrix: TAffineMatrix;
+    procedure EditorFocusedChanged(Sender: TObject);
+    function GetLayerOriginalClass(layer: integer): TBGRALayerOriginalAny;
     function GetOriginalGuid(AIndex: integer): TGUID;
+    procedure SetEditorFocused(AValue: boolean);
 
   protected
     function GetWidth: integer; override;
@@ -190,6 +196,7 @@ type
     function GetOriginalCount: integer; override;
     function GetOriginalByIndex(AIndex: integer): TBGRALayerCustomOriginal; override;
     function GetOriginalByIndexKnown(AIndex: integer): boolean; override;
+    function GetOriginalByIndexClass(AIndex: integer): TBGRALayerOriginalAny; override;
     procedure SetBlendOperation(Layer: integer; op: TBlendOperation);
     procedure SetLayerVisible(layer: integer; AValue: boolean);
     procedure SetLayerOpacity(layer: integer; AValue: byte);
@@ -312,6 +319,7 @@ type
     property LayerUniqueId[layer: integer]: integer read GetLayerUniqueId write SetLayerUniqueId;
     property LayerOriginal[layer: integer]: TBGRALayerCustomOriginal read GetLayerOriginal;
     property LayerOriginalKnown[layer: integer]: boolean read GetLayerOriginalKnown;
+    property LayerOriginalClass[layer: integer]: TBGRALayerOriginalAny read GetLayerOriginalClass;
     property LayerOriginalGuid[layer: integer]: TGuid read GetLayerOriginalGuid write SetLayerOriginalGuid;
     property LayerOriginalMatrix[layer: integer]: TAffineMatrix read GetLayerOriginalMatrix write SetLayerOriginalMatrix;
     property LayerOriginalRenderStatus[layer: integer]: TOriginalRenderStatus read GetLayerOriginalRenderStatus write SetLayerOriginalRenderStatus;
@@ -322,8 +330,11 @@ type
     property Original[AIndex: integer]: TBGRALayerCustomOriginal read GetOriginalByIndex;
     property OriginalGuid[AIndex: integer]: TGUID read GetOriginalGuid;
     property OriginalKnown[AIndex: integer]: boolean read GetOriginalByIndexKnown;
+    property OriginalClass[AIndex: integer]: TBGRALayerOriginalAny read GetOriginalByIndexClass;
     property OnOriginalChange: TEmbeddedOriginalChangeEvent read FOriginalChange write FOriginalChange;
     property OnOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent read FOriginalEditingChange write FOriginalEditingChange;
+    property EditorFocused: boolean read FEditorFocused write SetEditorFocused;
+    property OnEditorFocusChanged: TNotifyEvent read FOnEditorFocusChanged write FOnEditorFocusChanged;
     property OriginalEditor: TBGRAOriginalEditor read FOriginalEditor;
   end;
 
@@ -675,6 +686,58 @@ begin
     raise ERangeError.Create('Index out of bounds');
 
   result := FOriginals[AIndex].Guid;
+end;
+
+procedure TBGRALayeredBitmap.SetEditorFocused(AValue: boolean);
+begin
+  if Assigned(FOriginalEditor) then FOriginalEditor.Focused := AValue
+  else
+  begin
+    if FEditorFocused=AValue then Exit;
+    FEditorFocused:=AValue;
+    if Assigned(FOnEditorFocusChanged) then FOnEditorFocusChanged(self);
+  end;
+end;
+
+function TBGRALayeredBitmap.GetLayerOriginalClass(layer: integer): TBGRALayerOriginalAny;
+var
+  idxOrig: Integer;
+begin
+  if (layer < 0) or (layer >= NbLayers) then
+    raise Exception.Create('Index out of bounds')
+  else
+  begin
+    if FLayers[layer].OriginalGuid = GUID_NULL then exit(nil);
+    idxOrig := IndexOfOriginal(FLayers[layer].OriginalGuid);
+    if idxOrig = -1 then exit(nil);
+    result := OriginalClass[idxOrig];
+  end;
+end;
+
+procedure TBGRALayeredBitmap.EditorFocusedChanged(Sender: TObject);
+begin
+  if Assigned(FOriginalEditor) then
+  begin
+    FEditorFocused := FOriginalEditor.Focused;
+    if Assigned(FOnEditorFocusChanged) then FOnEditorFocusChanged(self);
+  end;
+end;
+
+function TBGRALayeredBitmap.GetOriginalByIndexClass(AIndex: integer): TBGRALayerOriginalAny;
+var
+  dir: TMemDirectory;
+  c: TBGRALayerOriginalAny;
+  guid: TGuid;
+begin
+  if (AIndex < 0) or (AIndex >= OriginalCount) then
+    raise ERangeError.Create('Index out of bounds');
+
+  if Assigned(FOriginals[AIndex].Instance) then exit(TBGRALayerOriginalAny(FOriginals[AIndex].Instance.ClassType));
+  guid := FOriginals[AIndex].Guid;
+  if guid = GUID_NULL then exit(nil);
+
+  FindOriginal(guid, dir, c);
+  result:= c;
 end;
 
 function TBGRALayeredBitmap.GetWidth: integer;
@@ -1657,7 +1720,7 @@ begin
   for i := 0 to NbLayers-1 do
   begin
     idxOrig := IndexOfOriginal(LayerOriginalGuid[i]);
-    if idxOrig <> -1 then useCount[idxOrig] += 1;
+    if idxOrig <> -1 then inc(useCount[idxOrig]);
   end;
   for i := high(useCount) downto 0 do
     if useCount[i] = 0 then DeleteOriginal(i);
@@ -1915,6 +1978,8 @@ begin
     if FOriginalEditor = nil then
     begin
       FOriginalEditor := orig.CreateEditor;
+      FOriginalEditor.Focused := FEditorFocused;
+      FOriginalEditor.OnFocusChanged:=@EditorFocusedChanged;
     end;
     FOriginalEditor.Clear;
     orig.ConfigureEditor(FOriginalEditor);
@@ -1964,6 +2029,8 @@ begin
       FOriginalEditor := orig.CreateEditor;
       if FOriginalEditor = nil then
         raise exception.Create('Unexpected nil value');
+      FOriginalEditor.Focused := FEditorFocused;
+      FOriginalEditor.OnFocusChanged:=@EditorFocusedChanged;
     end;
     FOriginalEditor.Clear;
     orig.ConfigureEditor(FOriginalEditor);
@@ -2149,6 +2216,11 @@ end;
 function TBGRACustomLayeredBitmap.GetOriginalByIndexKnown(AIndex: integer): boolean;
 begin
   result := true;
+end;
+
+function TBGRACustomLayeredBitmap.GetOriginalByIndexClass(AIndex: integer): TBGRALayerOriginalAny;
+begin
+  result := nil;
 end;
 
 function TBGRACustomLayeredBitmap.GetLayerOriginal(layer: integer): TBGRALayerCustomOriginal;
@@ -2632,7 +2704,7 @@ procedure TBGRACustomLayeredBitmap.Freeze(firstLayer, lastLayer: integer);
     if last <= first then exit; //at least 2 frozen layers
     nbVisible := 0;
     for i := first to last do
-      if LayerVisible[i] and (LayerOpacity[i] > 0) then nbVisible += 1;
+      if LayerVisible[i] and (LayerOpacity[i] > 0) then inc(nbVisible);
     if nbvisible < 2 then exit;  //at least 2 frozen layers
 
     if ContainsFrozenRange(first,last) then exit; //already frozen

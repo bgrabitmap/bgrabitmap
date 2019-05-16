@@ -469,7 +469,7 @@ begin
   begin
     result := GammaCompressionTab[AExpanded];
     result := (result shl 8) + result;
-    result += GammaCompressionTabFrac[AExpanded];
+    inc(result, GammaCompressionTabFrac[AExpanded]);
   end;
 end;
 
@@ -1036,27 +1036,27 @@ begin
     result := g * 10923 div segment[0]
   else
   begin
-    g -= segment[0];
+    dec(g, segment[0]);
     if g < segment[1] then
       result := g * (21845-10923) div segment[1] + 10923
     else
     begin
-      g -= segment[1];
+      dec(g, segment[1]);
       if g < segment[2] then
         result := g * (32768-21845) div segment[2] + 21845
       else
       begin
-        g -= segment[2];
+        dec(g, segment[2]);
         if g < segment[3] then
           result := g * (43691-32768) div segment[3] + 32768
         else
         begin
-          g -= segment[3];
+          dec(g, segment[3]);
           if g < segment[4] then
             result := g * (54613-43691) div segment[4] + 43691
           else
           begin
-            g -= segment[4];
+            dec(g, segment[4]);
             result := g * (65536-54613) div segment[5] + 54613;
           end;
         end;
@@ -1080,32 +1080,32 @@ begin
   else
   begin
     g := segmentDest[0];
-    h -= segmentSrc[0];
+    dec(h, segmentSrc[0]);
     if h < segmentSrc[1] then
-      g += h * segmentDest[1] div segmentSrc[1]
+      inc(g, h * segmentDest[1] div segmentSrc[1])
     else
     begin
-      g += segmentDest[1];
-      h -= segmentSrc[1];
+      inc(g, segmentDest[1]);
+      dec(h, segmentSrc[1]);
       if h < segmentSrc[2] then
-        g += h * segmentDest[2] div segmentSrc[2]
+        inc(g, h * segmentDest[2] div segmentSrc[2])
       else
       begin
-        g += segmentDest[2];
-        h -= segmentSrc[2];
+        inc(g, segmentDest[2]);
+        dec(h, segmentSrc[2]);
         if h < segmentSrc[3] then
-          g += h * segmentDest[3] div segmentSrc[3]
+          inc(g, h * segmentDest[3] div segmentSrc[3])
         else
         begin
-          g += segmentDest[3];
-          h -= segmentSrc[3];
+          inc(g, segmentDest[3]);
+          dec(h, segmentSrc[3]);
           if h < segmentSrc[4] then
-            g += h * segmentDest[4] div segmentSrc[4]
+            inc(g, h * segmentDest[4] div segmentSrc[4])
           else
           begin
-            g += segmentDest[4];
-            h -= segmentSrc[4];
-            g += h * segmentDest[5] div segmentSrc[5];
+            inc(g, segmentDest[4]);
+            dec(h, segmentSrc[4]);
+            inc(g, h * segmentDest[5] div segmentSrc[5]);
           end;
         end;
       end;

@@ -1061,9 +1061,9 @@ var
     if hasStart then
     begin
       delta := length(arrowStartData)+1;
-      finalNb += delta;
+      inc(finalNb, delta);
     end else delta := 0;
-    if hasEnd then finalNb += length(arrowEndData)+1;
+    if hasEnd then inc(finalNb, length(arrowEndData)+1);
     SetLength(Result, finalNb);
     if hasStart then
     begin
@@ -1075,7 +1075,7 @@ var
     end;
     if hasEnd then
     begin
-      delta += NbPolyAcc+1;
+      inc(delta, NbPolyAcc+1);
       result[delta-1] := EmptyPointF;
       for i := 0 to high(arrowEndData) do
         result[i+delta] := arrowEndData[i];
@@ -1144,7 +1144,7 @@ begin
     pts[nbPts] := pts[1];
     inc(nbPts);
   end else
-    options -= [plCycle];
+    exclude(options, plCycle);
 
   setlength(pts,nbPts);
 
@@ -1188,8 +1188,8 @@ begin
     for i := high(pts) downto 1 do
     begin
       dir := pts[i-1]-pts[i];
-      len := sqrt(dir*dir);
-      dir *= 1/len;
+      len := VectLen(dir);
+      dir.Scale(1/len);
       if not endArrowDone and (linePos+len >= wantedEndArrowPos) then
       begin
         endArrowPos := pts[i];
@@ -1209,8 +1209,8 @@ begin
   for i := 0 to high(pts)-1 do
   begin
     dir := pts[i+1]-pts[i];
-    len := sqrt(dir*dir);
-    dir *= 1/len;
+    len := VectLen(dir);
+    dir.Scale(1/len);
     if not startArrowDone and (linePos+len >= wantedStartArrowPos) then
     begin
       startArrowPos := pts[i];
@@ -1222,15 +1222,15 @@ begin
       (not (plNoEndCap in options) and (i=high(pts)-1))) then //for square cap, just start and end further
     begin
       if i=0 then
-        pts[0] -= dir*hw;
+        pts[0].Offset(dir*(-hw));
 
       if (i=high(pts)-1) then
-        pts[high(pts)] += dir*hw;
+        pts[high(pts)].Offset(dir*hw);
 
       //length changed
       dir := pts[i+1]-pts[i];
-      len := sqrt(dir*dir);
-      dir *= 1/len;
+      len := VectLen(dir);
+      dir.Scale(1/len);
     end else
     if not (plNoStartCap in options) and (linecap = pecRound) and (i=0) and not (plCycle in options) then
       AddRoundCap(pts[0], -dir ,true);
@@ -1339,10 +1339,10 @@ begin
       //rightside join
       rightInter := IntersectLine( borders[i].rightSide, borders[i+1].rightSide );
       diff := rightInter-pts[i+1];
-      len := sqrt(diff*diff);
+      len := VectLen(diff);
       if (len > maxMiter) and (turn <= 0) then //if miter too far
       begin
-        diff *= 1/len;
+        diff.Scale(1/len);
 
         if joinstyle <> pjsRound then
         begin
@@ -1696,9 +1696,9 @@ function TBGRAPenStroker.ComputePolyline(const APoints: array of TPointF;
 var options: TBGRAPolyLineOptions;
 begin
   options := [];
-  if Assigned(Arrow) and Arrow.IsStartDefined then options += [plNoStartCap];
-  if Assigned(Arrow) and Arrow.IsEndDefined then options += [plNoEndCap];
-  if not AClosedCap then options += [plRoundCapOpen];
+  if Assigned(Arrow) and Arrow.IsStartDefined then include(options, plNoStartCap);
+  if Assigned(Arrow) and Arrow.IsEndDefined then include(options, plNoEndCap);
+  if not AClosedCap then include(options, plRoundCapOpen);
   if FStrokeMatrixIdentity then
     result := BGRAPen.ComputeWidePolylinePoints(APoints, AWidth*FStrokeZoom, APenColor, LineCap, JoinStyle, CustomPenStyle, options, MiterLimit, Arrow)
   else
@@ -1710,8 +1710,8 @@ function TBGRAPenStroker.ComputePolylineAutocycle(
 var options: TBGRAPolyLineOptions;
 begin
   options := [plAutoCycle];
-  if Assigned(Arrow) and Arrow.IsStartDefined then options += [plNoStartCap];
-  if Assigned(Arrow) and Arrow.IsEndDefined then options += [plNoEndCap];
+  if Assigned(Arrow) and Arrow.IsStartDefined then include(options, plNoStartCap);
+  if Assigned(Arrow) and Arrow.IsEndDefined then include(options, plNoEndCap);
   if FStrokeMatrixIdentity then
     result := BGRAPen.ComputeWidePolylinePoints(APoints, AWidth*FStrokeZoom, BGRAPixelTransparent, LineCap, JoinStyle, CustomPenStyle, options, MiterLimit, Arrow)
   else

@@ -69,7 +69,7 @@ type
   public
     constructor Create(AParentDirectory: TMemDirectory = nil);
     procedure LoadFromStream(AStream: TStream); override;
-    class function CheckHeader(AStream: TStream): boolean;
+    class function CheckHeader(AStream: TStream): boolean; static;
     procedure LoadFromEmbeddedStream(ARootStream, ADataStream: TStream; AStartPos: int64);
     procedure SaveToStream(ADestination: TStream); override;
     procedure SaveToEmbeddedStream(ARootDest, ADataDest: TStream; AStartPos: int64);

@@ -93,9 +93,9 @@ begin
     rects[nbRects] := GetBallRect(i);
     inc(nbRects);
 
-    ballSpeed.Y += 1;
-    ballPos.X += ballSpeed.x;
-    ballPos.Y += ballSpeed.y;
+    inc(ballSpeed.Y);
+    inc(ballPos.X, ballSpeed.x);
+    inc(ballPos.Y, ballSpeed.y);
     if BallPos.Y >= VirtualScreen.Height-ballRadius then
     begin
       ballPos.Y := VirtualScreen.Height-ballRadius;

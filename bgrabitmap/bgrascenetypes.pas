@@ -1093,15 +1093,15 @@ begin
   if FAutoDiffuseColor then
   begin
     if ALightLightness <> 32768 then
-      Context^.lightness += CombineLightness(DiffuseLightnessTerm32768,ALightLightness)
+      inc(Context^.lightness, CombineLightness(DiffuseLightnessTerm32768,ALightLightness) )
     else
-      Context^.lightness += DiffuseLightnessTerm32768;
+      inc(Context^.lightness, DiffuseLightnessTerm32768 );
   end else
   begin
     if FDiffuseLightness <> 32768 then
-      Context^.lightness += CombineLightness(DiffuseLightnessTerm32768,CombineLightness(FDiffuseLightness,ALightLightness))
+      inc(Context^.lightness, CombineLightness(DiffuseLightnessTerm32768,CombineLightness(FDiffuseLightness,ALightLightness)) )
     else
-      Context^.lightness += CombineLightness(DiffuseLightnessTerm32768,ALightLightness);
+      inc(Context^.lightness, CombineLightness(DiffuseLightnessTerm32768,ALightLightness) );
   end;
 end;
 

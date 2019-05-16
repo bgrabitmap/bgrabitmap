@@ -1,0 +1,818 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <General>
+      <MainUnit Value="0"/>
+      <Title Value="bgratutorial3dsoftware"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
+      <Icon Value="0"/>
+    </General>
+    <i18n>
+      <EnableI18N LFM="False"/>
+    </i18n>
+    <BuildModes Count="1" Active="Default">
+      <Item1 Name="Default" Default="True"/>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <IncludeFileFilter Value="*.(pas|pp|inc|lfm|lpr|lrs|lpi|lpk|sh|xml)"/>
+      <ExcludeFileFilter Value="*.(bak|ppu|o|so);*~;backup"/>
+    </PublishOptions>
+    <RunParams>
+      <local>
+        <FormatVersion Value="1"/>
+      </local>
+    </RunParams>
+    <RequiredPackages Count="4">
+      <Item1>
+        <PackageName Value="BGRABitmapPack"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="etpackage"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="bgracontrols"/>
+        <MinVersion Major="1" Release="9" Build="7" Valid="True"/>
+      </Item3>
+      <Item4>
+        <PackageName Value="LCL"/>
+      </Item4>
+    </RequiredPackages>
+    <Units Count="92">
+      <Unit0>
+        <Filename Value="bgratutorial3dsoftware.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="21" Y="9"/>
+        <UsageCount Value="207"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="umain.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <TopLine Value="181"/>
+        <CursorPos Y="194"/>
+        <UsageCount Value="207"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="ubgrasamples.pas"/>
+        <IsPartOfProject Value="True"/>
+        <CursorPos X="20" Y="9"/>
+        <UsageCount Value="207"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="ex1.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="8"/>
+        <TopLine Value="81"/>
+        <CursorPos X="47" Y="81"/>
+        <UsageCount Value="207"/>
+        <Loaded Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="utexture.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="79"/>
+        <CursorPos X="37" Y="99"/>
+        <UsageCount Value="207"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="ex2.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="7"/>
+        <TopLine Value="19"/>
+        <CursorPos X="86" Y="34"/>
+        <UsageCount Value="207"/>
+        <Loaded Value="True"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="ex3.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="6"/>
+        <TopLine Value="22"/>
+        <CursorPos X="36" Y="38"/>
+        <UsageCount Value="207"/>
+        <Loaded Value="True"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="..\bgrabitmap\bgrascene3d.pas"/>
+        <UnitName Value="BGRAScene3D"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="1149"/>
+        <CursorPos X="53" Y="1175"/>
+        <UsageCount Value="101"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="ex4.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="26"/>
+        <CursorPos X="12" Y="239"/>
+        <UsageCount Value="207"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="..\bgrabitmap\bgrabitmaptypes.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="86"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="..\bgrabitmap\bgrapolygonaliased.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="154"/>
+        <CursorPos X="40" Y="182"/>
+        <UsageCount Value="77"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="..\bgrabitmap\perspectivescan.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="103"/>
+        <UsageCount Value="72"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="..\bgrabitmap\bgradefaultbitmap.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="38" Y="146"/>
+        <UsageCount Value="50"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="D:\lazarus\fpc\2.4.2\source\rtl\inc\objpash.inc"/>
+        <TopLine Value="256"/>
+        <CursorPos X="8" Y="274"/>
+        <UsageCount Value="13"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="D:\lazarus\fpc\2.4.2\source\rtl\objpas\math.pp"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="937"/>
+        <CursorPos X="6" Y="940"/>
+        <UsageCount Value="8"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="..\bgrabitmap\bgragradients.pas"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="80" Y="12"/>
+        <UsageCount Value="26"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="..\bgrabitmap\bgrasse.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="54"/>
+        <CursorPos X="24" Y="76"/>
+        <UsageCount Value="102"/>
+      </Unit16>
+      <Unit17>
+        <Filename Value="..\bgrabitmap\bgraphongtypes.pas"/>
+        <CursorPos X="18" Y="8"/>
+        <UsageCount Value="6"/>
+      </Unit17>
+      <Unit18>
+        <Filename Value="D:\lazarus\fpc\2.4.2\source\rtl\i386\mmx.pp"/>
+        <TopLine Value="45"/>
+        <CursorPos X="52" Y="55"/>
+        <UsageCount Value="9"/>
+      </Unit18>
+      <Unit19>
+        <Filename Value="..\bgrabitmap\phongdraw.inc"/>
+        <TopLine Value="202"/>
+        <CursorPos X="49" Y="229"/>
+        <UsageCount Value="36"/>
+      </Unit19>
+      <Unit20>
+        <Filename Value="..\bgrabitmap\perspectivescan2.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="91"/>
+        <CursorPos X="45" Y="115"/>
+        <UsageCount Value="85"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="..\bgrabitmap\bgrafillinfo.pas"/>
+        <TopLine Value="1095"/>
+        <CursorPos X="58" Y="1097"/>
+        <UsageCount Value="9"/>
+      </Unit21>
+      <Unit22>
+        <Filename Value="..\bgrabitmap\shape3D.inc"/>
+        <CursorPos X="7" Y="7"/>
+        <UsageCount Value="37"/>
+      </Unit22>
+      <Unit23>
+        <Filename Value="..\bgrabitmap\bgrascene3dinterface.inc"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="88"/>
+      </Unit23>
+      <Unit24>
+        <Filename Value="..\bgrabitmap\bgramatrix3d.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="25"/>
+        <UsageCount Value="68"/>
+      </Unit24>
+      <Unit25>
+        <Filename Value="bgracolorint.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="107"/>
+        <CursorPos Y="143"/>
+        <UsageCount Value="4"/>
+      </Unit25>
+      <Unit26>
+        <Filename Value="..\bgrabitmap\bgracolorint.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="267"/>
+        <CursorPos X="3" Y="268"/>
+        <UsageCount Value="9"/>
+      </Unit26>
+      <Unit27>
+        <Filename Value="..\bgrabitmap\bgrapolygon.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="27"/>
+        <CursorPos X="58" Y="34"/>
+        <UsageCount Value="11"/>
+      </Unit27>
+      <Unit28>
+        <Filename Value="..\bgrabitmap\csscolorconst.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="110"/>
+        <CursorPos X="3" Y="128"/>
+        <UsageCount Value="11"/>
+      </Unit28>
+      <Unit29>
+        <Filename Value="..\bgrabitmap\bgratransform.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="73"/>
+        <UsageCount Value="8"/>
+      </Unit29>
+      <Unit30>
+        <Filename Value="..\bgrabitmap\bgracanvas.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="67"/>
+        <CursorPos X="22" Y="8"/>
+        <UsageCount Value="3"/>
+      </Unit30>
+      <Unit31>
+        <Filename Value="..\bgrabitmap\lightingclasses3d.inc"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="15" Y="12"/>
+        <UsageCount Value="90"/>
+      </Unit31>
+      <Unit32>
+        <Filename Value="..\bgrabitmap\phonglight.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="26"/>
+        <CursorPos X="95" Y="67"/>
+        <UsageCount Value="67"/>
+      </Unit32>
+      <Unit33>
+        <Filename Value="..\bgrabitmap\polyaliaspersp.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="126"/>
+        <CursorPos X="29" Y="160"/>
+        <UsageCount Value="30"/>
+      </Unit33>
+      <Unit34>
+        <Filename Value="..\bgrabitmap\lineartexscan.inc"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="40" Y="11"/>
+        <UsageCount Value="8"/>
+      </Unit34>
+      <Unit35>
+        <Filename Value="..\bgrabitmap\lineartexscan2.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="11"/>
+        <CursorPos X="36" Y="34"/>
+        <UsageCount Value="8"/>
+      </Unit35>
+      <Unit36>
+        <Filename Value="D:\lazarus\fpc\2.4.2\source\rtl\inc\varianth.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="485"/>
+        <CursorPos X="10" Y="503"/>
+        <UsageCount Value="10"/>
+      </Unit36>
+      <Unit37>
+        <Filename Value="..\bgrabitmap\perspectivecolorscan.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="14"/>
+        <CursorPos Y="21"/>
+        <UsageCount Value="8"/>
+      </Unit37>
+      <Unit38>
+        <Filename Value="..\bgrabitmap\phongdrawsse.inc"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="8"/>
+      </Unit38>
+      <Unit39>
+        <Filename Value="..\bgrabitmap\phonglightsse.inc"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="9"/>
+      </Unit39>
+      <Unit40>
+        <Filename Value="..\bgrabitmap\bgracoordpool3d.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="284"/>
+        <CursorPos X="36" Y="295"/>
+        <UsageCount Value="21"/>
+      </Unit40>
+      <Unit41>
+        <Filename Value="ex5.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="87"/>
+        <CursorPos X="31" Y="110"/>
+        <UsageCount Value="159"/>
+      </Unit41>
+      <Unit42>
+        <Filename Value="..\bgrabitmap\bgraresample.pas"/>
+        <TopLine Value="14"/>
+        <CursorPos X="10" Y="32"/>
+        <UsageCount Value="25"/>
+      </Unit42>
+      <Unit43>
+        <Filename Value="C:\lazarussrc\components\lazutils\lazfreetype.pas"/>
+        <TopLine Value="1282"/>
+        <CursorPos X="76" Y="1290"/>
+        <UsageCount Value="11"/>
+      </Unit43>
+      <Unit44>
+        <Filename Value="C:\lazarussrc\components\lazutils\tterror.pas"/>
+        <CursorPos X="14" Y="22"/>
+        <UsageCount Value="11"/>
+      </Unit44>
+      <Unit45>
+        <Filename Value="C:\lazarussrc\components\lazutils\ttraster.pas"/>
+        <TopLine Value="42"/>
+        <CursorPos Y="50"/>
+        <UsageCount Value="11"/>
+      </Unit45>
+      <Unit46>
+        <Filename Value="C:\lazarussrc\components\lazutils\easylazfreetype.pas"/>
+        <TopLine Value="150"/>
+        <CursorPos X="35" Y="159"/>
+        <UsageCount Value="11"/>
+      </Unit46>
+      <Unit47>
+        <Filename Value="C:\lazarussrc\lcl\forms.pp"/>
+        <TopLine Value="770"/>
+        <CursorPos X="14" Y="788"/>
+        <UsageCount Value="3"/>
+      </Unit47>
+      <Unit48>
+        <Filename Value="C:\lazarussrc\lcl\controls.pp"/>
+        <TopLine Value="1383"/>
+        <CursorPos X="14" Y="1401"/>
+        <UsageCount Value="3"/>
+      </Unit48>
+      <Unit49>
+        <Filename Value="..\bgrabitmap\bgrapixel.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="199"/>
+        <CursorPos X="58" Y="228"/>
+        <UsageCount Value="31"/>
+      </Unit49>
+      <Unit50>
+        <Filename Value="..\bgrabitmap\geometrytypes.inc"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="27" Y="17"/>
+        <UsageCount Value="33"/>
+      </Unit50>
+      <Unit51>
+        <Filename Value="..\bgrabitmap\bgracustombitmap.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="23"/>
+        <CursorPos X="5" Y="37"/>
+        <UsageCount Value="18"/>
+      </Unit51>
+      <Unit52>
+        <Filename Value="..\bgrabitmap\bgrasse.inc"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="14"/>
+      </Unit52>
+      <Unit53>
+        <Filename Value="..\bgrabitmap\shapes3d.inc"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="117" Y="6"/>
+        <UsageCount Value="23"/>
+      </Unit53>
+      <Unit54>
+        <Filename Value="..\bgrabitmap\face3d.inc"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="15" Y="75"/>
+        <UsageCount Value="29"/>
+      </Unit54>
+      <Unit55>
+        <Filename Value="..\bgrabitmap\object3d.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="80"/>
+        <CursorPos X="22" Y="83"/>
+        <UsageCount Value="24"/>
+      </Unit55>
+      <Unit56>
+        <Filename Value="..\bgrabitmap\vertex3d.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="182"/>
+        <CursorPos X="65" Y="193"/>
+        <UsageCount Value="30"/>
+      </Unit56>
+      <Unit57>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\objpas.inc"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="17"/>
+      </Unit57>
+      <Unit58>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\sysutils\sysutilh.inc"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="17"/>
+      </Unit58>
+      <Unit59>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\inc\objpash.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="264"/>
+        <CursorPos X="8" Y="282"/>
+        <UsageCount Value="17"/>
+      </Unit59>
+      <Unit60>
+        <Filename Value="..\bgrabitmap\bgraopengltype.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="393"/>
+        <CursorPos X="60" Y="441"/>
+        <UsageCount Value="36"/>
+      </Unit60>
+      <Unit61>
+        <Filename Value="..\bgrabitmap\bgraopengl.pas"/>
+        <UnitName Value="BGRAOpenGL"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="563"/>
+        <CursorPos X="57" Y="584"/>
+        <UsageCount Value="43"/>
+      </Unit61>
+      <Unit62>
+        <Filename Value="..\bgrabitmap\part3d.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="148"/>
+        <CursorPos X="3" Y="152"/>
+        <UsageCount Value="31"/>
+      </Unit62>
+      <Unit63>
+        <Filename Value="..\bgrabitmap\bgrarenderer3d.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="99"/>
+        <CursorPos X="31" Y="136"/>
+        <UsageCount Value="34"/>
+      </Unit63>
+      <Unit64>
+        <Filename Value="..\bgrabitmap\bgrascenetypes.pas"/>
+        <UnitName Value="BGRASceneTypes"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="1033"/>
+        <CursorPos X="6" Y="1034"/>
+        <UsageCount Value="38"/>
+      </Unit64>
+      <Unit65>
+        <Filename Value="..\bgrabitmap\bgrareadbmp.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="678"/>
+        <CursorPos X="10" Y="696"/>
+        <UsageCount Value="8"/>
+      </Unit65>
+      <Unit66>
+        <Filename Value="..\bgrabitmap\bgraopengl3d.pas"/>
+        <UnitName Value="BGRAOpenGL3D"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="727"/>
+        <CursorPos X="44" Y="801"/>
+        <UsageCount Value="39"/>
+      </Unit66>
+      <Unit67>
+        <Filename Value="..\bgrabitmap\bgracanvasgl.pas"/>
+        <UnitName Value="BGRACanvasGL"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="56"/>
+        <CursorPos X="14" Y="78"/>
+        <UsageCount Value="37"/>
+      </Unit67>
+      <Unit68>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\packages\opengl\src\gl.pp"/>
+        <UnitName Value="GL"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="426"/>
+        <CursorPos X="3" Y="448"/>
+        <UsageCount Value="22"/>
+      </Unit68>
+      <Unit69>
+        <Filename Value="..\..\bgracontrols_svn\bcrtti.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="239"/>
+        <CursorPos X="36" Y="264"/>
+        <UsageCount Value="17"/>
+      </Unit69>
+      <Unit70>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\packages\opengl\src\glext.pp"/>
+        <UnitName Value="GLext"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="377"/>
+        <CursorPos X="10" Y="399"/>
+        <UsageCount Value="16"/>
+      </Unit70>
+      <Unit71>
+        <Filename Value="..\bgrabitmap\bgraspritegl.pas"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="8"/>
+      </Unit71>
+      <Unit72>
+        <Filename Value="..\..\epiktimer\epiktimer.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="449"/>
+        <CursorPos Y="461"/>
+        <UsageCount Value="9"/>
+      </Unit72>
+      <Unit73>
+        <Filename Value="..\bgrabitmap\bgrawinbitmap.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="217"/>
+        <CursorPos X="42" Y="229"/>
+        <UsageCount Value="14"/>
+      </Unit73>
+      <Unit74>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\win\wininc\func.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="818"/>
+        <CursorPos X="10" Y="832"/>
+        <UsageCount Value="14"/>
+      </Unit74>
+      <Unit75>
+        <Filename Value="..\bgrabitmap\bgraanimatedgif.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="175"/>
+        <CursorPos X="3" Y="181"/>
+        <UsageCount Value="14"/>
+      </Unit75>
+      <Unit76>
+        <Filename Value="..\bgrabitmap\bgragifformat.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="67"/>
+        <CursorPos X="45" Y="69"/>
+        <UsageCount Value="14"/>
+      </Unit76>
+      <Unit77>
+        <Filename Value="..\..\bgracontrols_svn\bcbasectrls.pas"/>
+        <UnitName Value="BCBaseCtrls"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="22"/>
+        <CursorPos X="32" Y="38"/>
+        <UsageCount Value="16"/>
+      </Unit77>
+      <Unit78>
+        <Filename Value="..\bgrabitmap\bglvirtualscreen.pas"/>
+        <UnitName Value="BGLVirtualScreen"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="58" Y="344"/>
+        <UsageCount Value="15"/>
+      </Unit78>
+      <Unit79>
+        <Filename Value="C:\lazarus\components\opengl\openglcontext.pas"/>
+        <UnitName Value="OpenGLContext"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="132"/>
+        <CursorPos X="14" Y="153"/>
+        <UsageCount Value="15"/>
+      </Unit79>
+      <Unit80>
+        <Filename Value="C:\lazarus\components\opengl\glwin32wglcontext.pas"/>
+        <UnitName Value="GLWin32WGLContext"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="221"/>
+        <CursorPos X="23" Y="250"/>
+        <UsageCount Value="15"/>
+      </Unit80>
+      <Unit81>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\win\wininc\base.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="100"/>
+        <CursorPos X="6" Y="122"/>
+        <UsageCount Value="15"/>
+      </Unit81>
+      <Unit82>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\win\sysosh.inc"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="3" Y="22"/>
+        <UsageCount Value="15"/>
+      </Unit82>
+      <Unit83>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\classes\classesh.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="723"/>
+        <CursorPos X="20" Y="755"/>
+        <UsageCount Value="15"/>
+      </Unit83>
+      <Unit84>
+        <Filename Value="C:\lazarus\fpc\2.6.4\source\rtl\objpas\classes\stringl.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="616"/>
+        <CursorPos X="3" Y="619"/>
+        <UsageCount Value="15"/>
+      </Unit84>
+      <Unit85>
+        <Filename Value="C:\lazarus\lcl\include\control.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="4833"/>
+        <CursorPos Y="4848"/>
+        <UsageCount Value="14"/>
+      </Unit85>
+      <Unit86>
+        <Filename Value="..\..\bgrabitmap\bgraopengl.pas"/>
+        <UnitName Value="BGRAOpenGL"/>
+        <EditorIndex Value="5"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit86>
+      <Unit87>
+        <Filename Value="..\..\bgrabitmap\bgrascene3d.pas"/>
+        <UnitName Value="BGRAScene3D"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="691"/>
+        <CursorPos Y="693"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit87>
+      <Unit88>
+        <Filename Value="C:\lazarus\lcl\include\wincontrol.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="5669"/>
+        <CursorPos Y="5683"/>
+        <UsageCount Value="10"/>
+      </Unit88>
+      <Unit89>
+        <Filename Value="..\..\bgrabitmap\bgracoordpool3d.pas"/>
+        <UnitName Value="BGRACoordPool3D"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="361"/>
+        <CursorPos X="38" Y="368"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit89>
+      <Unit90>
+        <Filename Value="..\..\bgrabitmap\bgramatrix3d.pas"/>
+        <UnitName Value="BGRAMatrix3D"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="606"/>
+        <CursorPos X="55" Y="622"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit90>
+      <Unit91>
+        <Filename Value="..\..\bgrabitmap\bgrascenetypes.pas"/>
+        <UnitName Value="BGRASceneTypes"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="556"/>
+        <CursorPos X="14" Y="569"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit91>
+    </Units>
+    <JumpHistory Count="20" HistoryIndex="19">
+      <Position1>
+        <Filename Value="umain.pas"/>
+        <Caret Line="19" Column="11"/>
+      </Position1>
+      <Position2>
+        <Filename Value="ex1.pas"/>
+        <Caret Line="22" Column="40"/>
+      </Position2>
+      <Position3>
+        <Filename Value="ex3.pas"/>
+        <Caret Line="29" Column="52" TopLine="13"/>
+      </Position3>
+      <Position4>
+        <Filename Value="umain.pas"/>
+        <Caret Line="84" Column="24" TopLine="68"/>
+      </Position4>
+      <Position5>
+        <Filename Value="ex3.pas"/>
+        <Caret Line="38" Column="36" TopLine="22"/>
+      </Position5>
+      <Position6>
+        <Filename Value="umain.pas"/>
+        <Caret Line="68" Column="42" TopLine="50"/>
+      </Position6>
+      <Position7>
+        <Filename Value="umain.pas"/>
+        <Caret Line="190" Column="3" TopLine="188"/>
+      </Position7>
+      <Position8>
+        <Filename Value="umain.pas"/>
+        <Caret Line="194" TopLine="188"/>
+      </Position8>
+      <Position9>
+        <Filename Value="..\..\bgrabitmap\bgrascene3d.pas"/>
+        <Caret Line="347" Column="45" TopLine="328"/>
+      </Position9>
+      <Position10>
+        <Filename Value="..\..\bgrabitmap\bgrascene3d.pas"/>
+        <Caret Line="691" TopLine="677"/>
+      </Position10>
+      <Position11>
+        <Filename Value="umain.pas"/>
+        <Caret Line="186" Column="45" TopLine="180"/>
+      </Position11>
+      <Position12>
+        <Filename Value="..\..\bgrabitmap\bgracoordpool3d.pas"/>
+        <Caret Line="381" TopLine="409"/>
+      </Position12>
+      <Position13>
+        <Filename Value="umain.pas"/>
+        <Caret Line="157" Column="49" TopLine="144"/>
+      </Position13>
+      <Position14>
+        <Filename Value="umain.pas"/>
+        <Caret Line="229" Column="47" TopLine="223"/>
+      </Position14>
+      <Position15>
+        <Filename Value="umain.pas"/>
+        <Caret Line="194" TopLine="181"/>
+      </Position15>
+      <Position16>
+        <Filename Value="..\..\bgrabitmap\bgrascene3d.pas"/>
+        <Caret Line="342" TopLine="329"/>
+      </Position16>
+      <Position17>
+        <Filename Value="..\..\bgrabitmap\bgrascene3d.pas"/>
+        <Caret Line="691" TopLine="684"/>
+      </Position17>
+      <Position18>
+        <Filename Value="..\..\bgrabitmap\bgrascene3d.pas"/>
+        <Caret Line="342" TopLine="341"/>
+      </Position18>
+      <Position19>
+        <Filename Value="..\..\bgrabitmap\bgrascene3d.pas"/>
+        <Caret Line="698" Column="98" TopLine="691"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\..\bgrabitmap\bgrascenetypes.pas"/>
+        <Caret Line="577" Column="14" TopLine="565"/>
+      </Position20>
+    </JumpHistory>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <PathDelim Value="\"/>
+    <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <CodeGeneration>
+      <Optimizations>
+        <VariablesInRegisters Value="True"/>
+      </Optimizations>
+    </CodeGeneration>
+    <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsStabs"/>
+        <UseHeaptrc Value="True"/>
+      </Debugging>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
+    </Linking>
+    <Other>
+      <CustomOptions Value="-dNO_OPENGL_SURFACE"/>
+    </Other>
+  </CompilerOptions>
+  <Debugging>
+    <BreakPoints Count="2">
+      <Item1>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\..\bgrabitmap\bgrascene3d.pas"/>
+        <Line Value="704"/>
+      </Item1>
+      <Item2>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="..\..\bgrabitmap\bgrascene3d.pas"/>
+        <Line Value="693"/>
+      </Item2>
+    </BreakPoints>
+    <Exceptions Count="3">
+      <Item1>
+        <Name Value="EAbort"/>
+      </Item1>
+      <Item2>
+        <Name Value="ECodetoolError"/>
+      </Item2>
+      <Item3>
+        <Name Value="EFOpenError"/>
+      </Item3>
+    </Exceptions>
+  </Debugging>
+</CONFIG>
