@@ -28,7 +28,7 @@ type
 
 procedure TReleaserApp.DoRun;
 var
-  ErrorMsg: String;
+  ErrorMsg, dir: String;
   opts, logicFiles: TStringList;
   i: Integer;
   findRec: TRawByteSearchRec;
@@ -54,13 +54,17 @@ begin
   begin
     if FindFirst('*.logic', faAnyFile, findRec)=0 then
       repeat
-        if (findRec.Attr and faDirectory)=0 then logicFiles.Add(findRec.Name);
+        if (findRec.Attr and faDirectory)=0 then logicFiles.Add(ExpandFileName(findRec.Name));
       until FindNext(findRec)<>0;
     FindClose(findRec);
   end;
 
+  dir := GetCurrentDir;
   for i := 0 to logicFiles.Count-1 do
+  begin
+    SetCurrentDir(dir);
     ProcessFile(logicFiles[i], opts);
+  end;
 
   opts.Free;
   logicFiles.Free;
