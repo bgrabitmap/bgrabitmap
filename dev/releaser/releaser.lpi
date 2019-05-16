@@ -29,7 +29,7 @@
         <PackageName Value="LazUtils"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="7">
+    <Units Count="8">
       <Unit0>
         <Filename Value="releaser.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -64,6 +64,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="ConstFile"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="projectfile.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ProjectFile"/>
+      </Unit7>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

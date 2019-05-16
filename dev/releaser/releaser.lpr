@@ -7,7 +7,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Classes, SysUtils, CustApp,
-  ReleaserTypes, ManagerFile, ArchiveUrl, PackageFile, ConstFile
+  ReleaserTypes, ManagerFile, ArchiveUrl, PackageFile, ProjectFile, ConstFile
   { you can add units after this };
 
 type
@@ -107,9 +107,10 @@ var
   line: TStringList;
   factory: TReleaserObjectFactory;
   i, lineNumber, j: Integer;
-  newVerStr: string;
+  newVerStr, logicDir, newDir: string;
 
 begin
+  AFilename := ExpandFileName(AFilename);
   writeln('Logic file "', AFilename,'"');
   assignfile(t, AFilename);
   reset(t);
@@ -130,11 +131,15 @@ begin
         case LowerCase(cmd) of
         'cd': begin
             if line.Count <> 1 then raise exception.Create('Expecting directory');
-            SetCurrentDir(AdaptPathDelim(line[0]));
+            logicDir := ExtractFilePath(AFilename);
+            delete(logicDir, length(logicDir), 1);
+            newDir := StringReplace(AdaptPathDelim(line[0]),'($LogicDir)',logicDir,[rfReplaceAll]);
+            SetCurrentDir(newDir);
           end;
         'manager': factory := TManagerFile;
         'archive': factory := TArchiveUrl;
         'package': factory := TPackageFile;
+        'project': factory := TProjectFile;
         'const': factory := TConstFile;
         else
           raise exception.Create('Unknown command "'+cmd+'"');
