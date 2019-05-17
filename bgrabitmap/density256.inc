@@ -69,13 +69,24 @@
             tempDensity := pdens^;
             Inc(pdens);
             if tempDensity >= 256 {$ifdef PARAM_ANTIALIASINGFACTOR}shl AntialiasPrecisionShift{$endif} then
-              {$ifdef PARAM_LINEARANTIALIASING}
+            {$ifdef PARAM_CUSTOMDRAW}
+            CurrentCustomDrawMode.ColorProc(pscan^,pdest)
+            {$else}
+            {$ifdef PARAM_LINEARANTIALIASING}
               FastBlendPixelInline
               {$else}
-              DrawPixelInlineWithAlphaCheck{$endif}(pdest, pscan^) else
+              DrawPixelInlineWithAlphaCheck{$endif}(pdest, pscan^)
+            {$endif}
+            else
             if tempDensity <> 0 then
             begin
               c := pscan^;
+            {$ifdef PARAM_CUSTOMDRAW}
+            cTemp := BGRA(c.red, c.green, c.blue,
+            {$ifdef PARAM_ANTIALIASINGFACTOR}DivByAntialiasPrecision256{$endif}
+            (c.alpha * tempDensity{$ifdef PARAM_ANTIALIASINGFACTOR} ) {$else} +128) shr 8 {$endif});
+                         CurrentCustomDrawMode.ColorProc(cTemp,pdest);
+            {$else}
               {$ifdef PARAM_LINEARANTIALIASING}
               FastBlendPixelInline
               {$else}
@@ -84,6 +95,7 @@
               (c.alpha * tempDensity
               {$ifdef PARAM_ANTIALIASINGFACTOR} ) {$else} +128) shr 8 {$endif}
               ));
+            {$endif}
             end;
             inc(pscan);
             Inc(pdest);
@@ -96,6 +108,15 @@
             Inc(pdens);
             c := ScanNextPixelProc();
             if tempDensity <> 0 then
+            {$ifdef PARAM_CUSTOMDRAW}
+            cTemp := BGRA(c.red, c.green, c.blue,
+            {$ifdef PARAM_ANTIALIASINGFACTOR}
+            DivByAntialiasPrecision256
+            {$endif}
+            (c.alpha * tempDensity
+            {$ifdef PARAM_ANTIALIASINGFACTOR} ) {$else} +128) shr 8 {$endif});
+               CurrentCustomDrawMode.ColorProc(cTemp,pdest);
+            {$else}
               {$ifdef PARAM_LINEARANTIALIASING}
               FastBlendPixelInline
               {$else}
@@ -104,6 +125,7 @@
               (c.alpha * tempDensity
               {$ifdef PARAM_ANTIALIASINGFACTOR} ) {$else} +128) shr 8 {$endif}
               ));
+            {$endif}
             Inc(pdest);
           end;
         end;
@@ -137,10 +159,14 @@
               (c.alpha * tempDensity
               {$ifdef PARAM_ANTIALIASINGFACTOR} ) {$else} +128) shr 8 {$endif}
               ;
+            {$ifdef PARAM_CUSTOMDRAW}
+            CurrentCustomDrawMode.ColorProc(c2,pdest);
+            {$else}
             {$ifdef PARAM_LINEARANTIALIASING}
             FastBlendPixelInline(pdest, c2);
             {$else}
             DrawPixelInlineExpandedOrNotWithAlphaCheck(pdest, ec, c2);
+            {$endif}
             {$endif}
           end;
           Inc(pdest);
@@ -151,4 +177,5 @@
   
 {$undef PARAM_ANTIALIASINGFACTOR}
 {$undef PARAM_LINEARANTIALIASING}
+{$undef PARAM_CUSTOMDRAW}
 {$ENDIF}

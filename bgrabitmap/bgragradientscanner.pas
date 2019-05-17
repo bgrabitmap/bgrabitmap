@@ -307,7 +307,7 @@ type
 
 implementation
 
-uses BGRABlend, Math;
+uses BGRABlend, Math, bgracustomdrawmode;
 
 { TBGRASimpleGradient }
 
@@ -1533,7 +1533,7 @@ end;
 
 procedure TBGRAGradientScanner.ScanPutPixels(pdest: PBGRAPixel; count: integer;
   mode: TDrawMode);
-var c: TBGRAPixel;
+var c,c2: TBGRAPixel;
 begin
   if FRepeatHoriz then
   begin
@@ -1544,6 +1544,7 @@ begin
       dmSet: FillDWord(pdest^,count,Longword(c));
       dmXor: XorInline(pdest,c,count);
       dmSetExceptTransparent: if c.alpha = 255 then FillDWord(pdest^,count,Longword(c));
+      dmCustomDraw: CustomDrawInline(pdest,c,count);
     end;
     exit;
   end;
@@ -1582,6 +1583,14 @@ begin
       begin
         c := ScanNextInline;
         if c.alpha = 255 then pdest^ := c;
+        inc(pdest);
+        dec(count);
+      end;
+    dmCustomDraw:
+      while count > 0 do
+      begin
+        c2 := ScanNextInline;
+        CurrentCustomDrawMode.ColorProc(c2,pdest);
         inc(pdest);
         dec(count);
       end;
@@ -1692,6 +1701,13 @@ begin
           inc(pdest);
           dec(count);
         end;
+      dmCustomDraw:
+        while count > 0 do
+        begin
+          CurrentCustomDrawMode.ColorProc(GetNextWithGlobal,pdest);
+          inc(pdest);
+          dec(count);
+        end;
     end;
   end else
   begin
@@ -1729,6 +1745,13 @@ begin
         begin
           c := GetNext;
           if c.alpha = 255 then pdest^ := c;
+          inc(pdest);
+          dec(count);
+        end;
+      dmCustomDraw:
+        while count > 0 do
+        begin
+          CurrentCustomDrawMode.ColorProc(GetNextWithGlobal,pdest);
           inc(pdest);
           dec(count);
         end;
@@ -1835,6 +1858,13 @@ begin
       begin
         c := GetNext;
         if c.alpha = 255 then pdest^ := c;
+        inc(pdest);
+        dec(count);
+      end;
+    dmCustomDraw:
+      while count > 0 do
+      begin
+        CurrentCustomDrawMode.ColorProc(GetNext,pdest);
         inc(pdest);
         dec(count);
       end;
@@ -1951,6 +1981,13 @@ begin
       begin
         c := GetNext;
         if c.alpha = 255 then pdest^ := c;
+        inc(pdest);
+        dec(count);
+      end;
+    dmCustomDraw:
+      while count > 0 do
+      begin
+        CurrentCustomDrawMode.ColorProc(GetNext,pdest);
         inc(pdest);
         dec(count);
       end;

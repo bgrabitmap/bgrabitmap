@@ -33,7 +33,7 @@ interface
 
 uses
   SysUtils, Classes, Types, FPImage, BGRAGraphics, BGRABitmapTypes, FPImgCanv,
-  BGRACanvas, BGRACanvas2D, BGRAArrow, BGRAPen, BGRATransform, BGRATextBidi;
+  BGRACanvas, BGRACanvas2D, BGRAArrow, BGRAPen, BGRATransform, BGRATextBidi,bgracustomdrawmode;
 
 type
   TBGRAPtrBitmap = class;
@@ -207,6 +207,11 @@ type
     function CheckClippedRectBounds(var x,y,x2,y2: integer): boolean;
     procedure InternalArc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; ABorderColor: TBGRAPixel; w: single;
       AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil); override;
+    {custom draw }
+     procedure CustomDrawPixelOp(x, y: int32or64; c: TBGRAPixel);override;
+     procedure CustomDrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override;
+     procedure CustomDrawVertLine(x, y, y2: int32or64; c: TBGRAPixel); override;
+     procedure CustomDrawProcessPixels(pdest:PBGRAPixel;c:TBGRAPixel;count:int32or64);override;
 
   public
     {** Provides a canvas with opacity and antialiasing }
@@ -512,6 +517,8 @@ type
     {** Draws a polyline using current pen style/cap/join.
         ''fillcolor'' specifies a color to fill the polygon formed by the points }
     procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; override;
+    procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel;ClosedCap:boolean; ADrawMode:TDrawMode=dmDrawWithTransparency);override;
+
     {** Draws a polyline using current pen style/cap/join.
         The last point considered as a join with the first point if it has
         the same coordinate }
@@ -529,6 +536,7 @@ type
         The polygon is always closed. You don't need to set the last point
         to be the same as the first point. }
     procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; override;
+    procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel; ADrawMode:TDrawMode);override;
 
     {** Erases a line from (x1,y1) to (x2,y2) using current pen style/cap/join }
     procedure EraseLineAntialias(x1, y1, x2, y2: single; alpha: byte; w: single); override;
@@ -587,6 +595,8 @@ type
     procedure FillRectAntialias(x, y, x2, y2: single; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); overload; override;
     {** Fills a rectangle with a texture }
     procedure FillRectAntialias(x, y, x2, y2: single; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); overload; override;
+    procedure FillRectAntialias(x, y, x2, y2: single;texture: IBGRAScanner; pixelCenteredCoordinates: boolean;drawmode:TDrawMode);overload; override;
+
     {** Erases the content of a rectangle with antialiasing }
     procedure EraseRectAntialias(x, y, x2, y2: single; alpha: byte; pixelCenteredCoordinates: boolean = true); override;
 
@@ -648,6 +658,8 @@ type
     procedure FillPoly(const points: array of TPointF; texture: IBGRAScanner; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); overload; override;
     procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel; APixelCenteredCoordinates: boolean = true); overload; override;
     procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; override;
+    procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel;drawmode:TDrawMode; APixelCenteredCoordinates: boolean=true); overload; override;
+    procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner;drawmode:TDrawMode; APixelCenteredCoordinates: boolean=true); overload; override;
     procedure ErasePoly(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); override;
     procedure ErasePolyAntialias(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); override;
 
@@ -1064,6 +1076,7 @@ begin
   dmLinearBlend: FCanvasPixelProcFP := @FastBlendPixel;
   dmDrawWithTransparency: FCanvasPixelProcFP := @DrawPixel;
   dmXor: FCanvasPixelProcFP:= @XorPixel;
+  dmCustomDraw: FCanvasPixelProcFP:= @CustomDrawPixelOp;
   else FCanvasPixelProcFP := @SetPixel;
   end;
 end;
@@ -1794,6 +1807,62 @@ begin
   result := FPenStroker.Arrow as TBGRAArrow;
 end;
 
+{Custom Draw functions. }
+procedure TBGRADefaultBitmap.CustomDrawPixelOp(x, y: int32or64; c: TBGRAPixel);
+var
+  p : PBGRAPixel;
+begin
+  if not PtInClipRect(x,y) then exit;
+  LoadFromBitmapIfNeeded;
+  p := GetScanlineFast(y) +x;
+  CurrentCustomDrawMode.ColorProc(c,p);
+  InvalidateBitmap;
+end;
+
+
+procedure TBGRADefaultBitmap.CustomDrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel);
+var
+  n: int32or64;
+  p: PBGRAPixel;
+begin
+  if not CheckHorizLineBounds(x,y,x2) then exit;
+  p:=scanline[y] + x;
+  for n := x2 - x downto 0 do
+  begin
+    CurrentCustomDrawMode.ColorProc(c,p);
+    Inc(p);
+  end;
+  InvalidateBitmap;
+end;
+
+
+procedure TBGRADefaultBitmap.CustomDrawVertLine(x, y, y2: int32or64; c: TBGRAPixel);
+var
+  n, delta: int32or64;
+  p: PBGRAPixel;
+begin
+  if not CheckVertLineBounds(x,y,y2,delta) then exit;
+  p:= scanline[y] + x;
+  for n := y2 - y downto 0 do
+  begin
+    CurrentCustomDrawMode.ColorProc(c,p);
+    Inc(p, delta);
+  end;
+  InvalidateBitmap;
+end;
+
+procedure TBGRADefaultBitmap.CustomDrawProcessPixels(pdest:PBGRAPixel;c:TBGRAPixel;count:int32or64);
+begin
+  while Count > 0 do
+  begin
+    CurrentCustomDrawMode.ColorProc(c,pdest);
+    Inc(pdest);
+    Dec(Count);
+  end;
+end;
+
+
+
 {-------------------------- Pixel functions -----------------------------------}
 
 procedure TBGRADefaultBitmap.SetPixel(x, y: int32or64; c: TBGRAPixel);
@@ -2520,6 +2589,7 @@ begin
       dmDrawWithTransparency: DrawPixelInlineWithAlphaCheck(pdest, c);
       dmLinearBlend: FastBlendPixelInline(pdest,c);
       dmSetExceptTransparent: if c.alpha = 255 then pdest^ := c;
+      dmCustomDraw: CurrentCustomDrawMode.ColorProc(c,pdest);
       end;
       inc(pdest);
     end;
@@ -2706,6 +2776,19 @@ begin
   multi.Free;
 end;
 
+procedure TBGRADefaultBitmap.DrawPolyLineAntialias(
+  const points: array of TPointF; c: TBGRAPixel; w: single;
+  fillcolor: TBGRAPixel;ClosedCap:boolean;ADrawMode:TDrawMode=dmDrawWithTransparency);
+var multi: TBGRAMultishapeFiller;
+begin
+  multi := TBGRAMultishapeFiller.Create;
+  multi.PolygonOrder := poLastOnTop;
+  multi.AddPolygon(points,fillcolor);
+  multi.AddPolygon(ComputeWidePolyline(points,w,ClosedCap),c);
+  multi.Draw(Self,ADrawMode);
+  multi.Free;
+end;
+
 procedure TBGRADefaultBitmap.DrawPolyLineAntialiasAutocycle(
   const points: array of TPointF; c: TBGRAPixel; w: single);
 begin
@@ -2743,6 +2826,17 @@ begin
     multi.Draw(self,dmLinearBlend)
   else
     multi.Draw(self,dmDrawWithTransparency);
+  multi.Free;
+end;
+
+procedure TBGRADefaultBitmap.DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single;fillcolor: TBGRAPixel;ADrawMode:TDrawMode);
+var multi: TBGRAMultishapeFiller;
+begin
+  multi := TBGRAMultishapeFiller.Create;
+  multi.PolygonOrder := poLastOnTop;
+  multi.AddPolygon(points,fillcolor);
+  multi.AddPolygon(ComputeWidePolygon(points,w),c);
+  multi.Draw(self,ADrawMode);
   multi.Free;
 end;
 
@@ -3214,6 +3308,18 @@ procedure TBGRADefaultBitmap.FillPolyAntialias(const points: array of TPointF;
 begin
   BGRAPolygon.FillPolyAntialiasWithTexture(self, points, texture, FillMode = fmWinding, LinearAntialiasing, APixelCenteredCoordinates);
 end;
+
+procedure TBGRADefaultBitmap.FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel;drawmode:TDrawMode; APixelCenteredCoordinates: boolean);
+begin
+  BGRAPolygon.FillPolyAntialias(self, points, c, FEraseMode, FillMode = fmWinding, drawmode, APixelCenteredCoordinates);
+end;
+
+procedure TBGRADefaultBitmap.FillPolyAntialias(const points: array of TPointF;
+  texture: IBGRAScanner;drawmode:TDrawMode; APixelCenteredCoordinates: boolean);
+begin
+  BGRAPolygon.FillPolyAntialiasWithTexture(self, points, texture, FillMode = fmWinding, drawmode, APixelCenteredCoordinates);
+end;
+
 
 procedure TBGRADefaultBitmap.ErasePoly(const points: array of TPointF;
   alpha: byte; APixelCenteredCoordinates: boolean);
@@ -3691,6 +3797,16 @@ begin
     end;
     dmSetExceptTransparent: if (c.alpha = 255) then
         Rectangle(x, y, x2, y2, c, dmSet);
+    dmCustomDraw:
+    begin
+      CustomDrawHorizLine(x, y, x2 - 1, c);
+      CustomDrawHorizLine(x, y2 - 1, x2 - 1, c);
+      if y2 - y > 2 then
+      begin
+        CustomDrawVertLine(x, y + 1, y2 - 2, c);
+        CustomDrawVertLine(x2 - 1, y + 1, y2 - 2, c);
+      end;
+    end;
   end;
 end;
 
@@ -3789,6 +3905,12 @@ begin
         for yb := y2 - y downto 0 do
         begin
           XorInline(p, c, tx);
+          Inc(p, delta);
+        end;
+      dmCustomDraw:
+        for yb := y2 - y downto 0 do
+        begin
+          CustomDrawProcessPixels(p,c,tx);
           Inc(p, delta);
         end;
     end;
@@ -3901,6 +4023,20 @@ begin
   end else
     FillPolyAntialias([pointf(x, y), pointf(x2, y), pointf(x2, y2), pointf(x, y2)], c);
 end;
+
+procedure TBGRADefaultBitmap.FillRectAntialias(x, y, x2, y2: single;
+  texture: IBGRAScanner; pixelCenteredCoordinates: boolean;drawmode:TDrawMode);
+begin
+  if not pixelCenteredCoordinates then
+  begin
+    x  := x  -0.5;
+    y  := y  -0.5;
+    x2 := x2 -0.5;
+    y2 := y2 -0.5;
+  end;
+  FillPolyAntialias([pointf(x, y), pointf(x2, y), pointf(x2, y2), pointf(x, y2)], texture,drawmode);
+end;
+
 
 procedure TBGRADefaultBitmap.EraseRectAntialias(x, y, x2, y2: single;
   alpha: byte; pixelCenteredCoordinates: boolean);
@@ -4829,6 +4965,12 @@ begin
         PDWord(pdest)^ := PDWord(pdest)^ xor DWord(ScanNextPixel);
         inc(pdest);
       end;
+    dmCustomDraw:
+      for i := 0 to count-1 do
+      begin
+        CurrentCustomDrawMode.ColorProc(ScanNextPixel,pdest);
+        inc(pdest);
+      end;
   end;
 end;
 
@@ -5105,6 +5247,22 @@ begin
       end;
       InvalidateBitmap;
     end;
+    dmCustomDraw:
+      begin
+        Dec(delta_source, copycount);
+        Dec(delta_dest, copycount);
+        for yb := minyb to maxyb do
+        begin
+          for i := copycount - 1 downto 0 do
+          begin
+            CurrentCustomDrawMode.ColorProcWithOpacity(psource^,pdest,AOpacity);
+            Inc(pdest);
+            Inc(psource);
+          end;
+          Inc(psource, delta_source);
+          Inc(pdest, delta_dest);
+        end;
+      end;
   end;
 end;
 
@@ -5255,7 +5413,7 @@ begin
      PutImage(ARect.Left,ARect.Top,Source,mode,AOpacity)
   else
   begin
-     noTransition:= (mode = dmXor) or ((mode in [dmDrawWithTransparency,dmFastBlend,dmSetExceptTransparent]) and
+     noTransition:= (mode = dmXor) or ((mode in [dmDrawWithTransparency,dmFastBlend,dmSetExceptTransparent,dmCustomDraw]) and
                                        (Source is TBGRADefaultBitmap) and
                                        Assigned(TBGRADefaultBitmap(Source).XorMask));
      BGRAResample.StretchPutImage(Source, ARect.Right-ARect.Left, ARect.Bottom-ARect.Top, self, ARect.left,ARect.Top, mode, AOpacity, noTransition);

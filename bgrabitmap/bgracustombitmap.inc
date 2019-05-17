@@ -418,6 +418,12 @@ type
      procedure TakeScreenshot(ARect: TRect); virtual; abstract;
      {** For more methods, see derived class [[TBGRABitmap class|TBGRABitmap]] }
 
+     {custom draw }
+     procedure CustomDrawPixelOp(x, y: int32or64; c: TBGRAPixel); virtual; abstract;
+     procedure CustomDrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel); virtual; abstract;
+     procedure CustomDrawVertLine(x, y, y2: int32or64; c: TBGRAPixel); virtual; abstract;
+     procedure CustomDrawProcessPixels(pdest:PBGRAPixel;c:TBGRAPixel;count:int32or64);virtual;abstract;
+
      {Pixel functions}
      procedure SetPixel(x, y: int32or64; c: TColor); overload; virtual; abstract;
      procedure XorPixel(x, y: int32or64; c: TBGRAPixel); overload; virtual; abstract;
@@ -498,6 +504,7 @@ type
      procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; ClosedCap: boolean); overload; virtual; abstract;
      procedure DrawPolyLineAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single; ClosedCap: boolean); overload; virtual; abstract;
      procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; virtual; abstract;
+     procedure DrawPolyLineAntialias(  const points: array of TPointF; c: TBGRAPixel; w: single;fillcolor: TBGRAPixel;ClosedCap:boolean;ADrawMode:TDrawMode=dmDrawWithTransparency); overload; virtual; abstract;
      procedure DrawPolyLineAntialiasAutocycle(const points: array of TPointF; c: TBGRAPixel; w: single); overload; virtual; abstract;
      procedure DrawPolyLineAntialiasAutocycle(const points: array of TPointF; texture: IBGRAScanner; w: single); overload; virtual; abstract;
      procedure DrawPolygon(const points: array of TPoint; c: TBGRAPixel; ADrawMode: TDrawMode=dmDrawWithTransparency);
@@ -506,6 +513,7 @@ type
      procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single); overload; virtual; abstract;
      procedure DrawPolygonAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single); overload; virtual; abstract;
      procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; virtual; abstract;
+     procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single;fillcolor: TBGRAPixel;ADrawMode:TDrawMode);overload; virtual; abstract;
 
      procedure EraseLine(x1, y1, x2, y2: integer; alpha: byte; DrawLastPixel: boolean); virtual; abstract;
      procedure EraseLineAntialias(x1, y1, x2, y2: integer; alpha: byte; DrawLastPixel: boolean); overload; virtual; abstract;
@@ -553,6 +561,8 @@ type
      procedure FillPoly(const points: array of TPointF; texture: IBGRAScanner; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true); overload; virtual; abstract;
      procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel; APixelCenteredCoordinates: boolean = true); overload; virtual; abstract;
      procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual; abstract;
+     procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel;drawmode:TDrawMode; APixelCenteredCoordinates: boolean=true); overload; virtual; abstract;
+     procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner;drawmode:TDrawMode; APixelCenteredCoordinates: boolean=true); overload; virtual; abstract;
      procedure ErasePoly(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); virtual; abstract;
      procedure ErasePolyAntialias(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); virtual; abstract;
 
@@ -643,6 +653,7 @@ type
      procedure FillRectAntialias(x, y, x2, y2: single; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); overload; virtual; abstract;
      procedure FillRectAntialias(ARect: TRectF; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); overload;
      procedure FillRectAntialias(ARect: TRectF; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); overload;
+     procedure FillRectAntialias(x, y, x2, y2: single;texture: IBGRAScanner; pixelCenteredCoordinates: boolean;drawmode:TDrawMode);overload; virtual;abstract;
      procedure EraseRectAntialias(x, y, x2, y2: single; alpha: byte; pixelCenteredCoordinates: boolean = true); virtual; abstract;
      procedure AlphaFillRect(x, y, x2, y2: integer; alpha: byte); virtual; abstract;
 
@@ -1332,6 +1343,7 @@ begin
   dmLinearBlend: FastBlendPixel(x,y,c);
   dmDrawWithTransparency: DrawPixel(x,y,c);
   dmXor: XorPixel(x,y,c);
+  dmCustomDraw: CustomDrawPixelOp(x,y,c);
   end;
 end;
 
@@ -1429,6 +1441,7 @@ begin
     dmXor: XorHorizLine(x,y,x2,c);
     dmLinearBlend: FastBlendHorizLine(x,y,x2,c);
     dmDrawWithTransparency: DrawHorizLine(x,y,x2,c);
+    dmCustomDraw: CustomDrawHorizLine(x,y,x2,c);
   end;
 end;
 
@@ -1441,6 +1454,7 @@ begin
     dmXor: XorVertLine(x,y,y2,c);
     dmLinearBlend: FastBlendVertLine(x,y,y2,c);
     dmDrawWithTransparency: DrawVertLine(x,y,y2,c);
+    dmCustomDraw: CustomDrawVertLine(x,y,y2,c);
   end;
 end;
 

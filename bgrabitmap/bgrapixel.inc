@@ -182,7 +182,16 @@ type
     {** Values of all channels are combined with Xor. This is useful to
         compute the binary difference, however it is not something that makes
         much sense to display on the screen }
-    dmXor);
+    dmXor,
+        {** Uses function in the record CustomDrawFunctions to draw the pixel.
+          Is very flexible but not as fast than others drawmodes.
+          Uses the funcions contained in the global variable CurrentCustomDrawMode of type TCustomDrawMode
+          in unit bgracustomdrawmode for drawing. These procedures sets the color BGRAPixel to the pixel.
+          This mode is not as faster as native modes, but is easy to write a custom draw mode only writing 2 functions and
+          assignig to the var CurrentCustomDrawMode.
+        }
+    dmCustomDraw );
+
 
 const
   {** An alias for the linear blend, because it is faster than blending

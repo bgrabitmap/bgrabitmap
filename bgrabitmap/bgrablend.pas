@@ -46,6 +46,9 @@ procedure FillInline(dest: PBGRAPixel; c: TBGRAPixel; Count: integer); inline;
 procedure XorInline(dest: PBGRAPixel; c: TBGRAPixel; Count: integer); inline;
 procedure XorPixels(pdest, psrc: PBGRAPixel; count: integer);
 
+{ customDraw a series of pixels}
+procedure CustomDrawInline(dest: PBGRAPixel; c: TBGRAPixel; Count: integer);inline;
+
 { Set alpha value for a series of pixels }
 procedure AlphaFillInline(dest: PBGRAPixel; alpha: byte; Count: integer); inline;
 
@@ -111,6 +114,9 @@ procedure BGRAFillClearTypeRGBMask(dest: TBGRACustomBitmap; x, y: integer;
 procedure BGRAFillClearTypeMaskPtr(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; maskData: PByte; maskPixelSize: NativeInt; maskRowSize: NativeInt; maskWidth,maskHeight: integer; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
 
 implementation
+
+uses
+  SysUtils,bgracustomdrawmode;
 
 procedure BGRAFillClearTypeMaskPtr(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; maskData: PByte; maskPixelSize: NativeInt; maskRowSize: NativeInt; maskWidth,maskHeight: integer; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
 var
@@ -481,7 +487,23 @@ begin
           if c.alpha = 255 then pdest^ := c;
           inc(pdest);
         end;
+      dmCustomDraw:
+        for i := 0 to count-1 do
+        begin
+          CurrentCustomDrawMode.ColorProc(scanNextFunc(),pdest);
+          inc(pdest);
+        end;
     end;
+  end;
+end;
+
+procedure CustomDrawInline(dest: PBGRAPixel; c: TBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+  begin
+    CurrentCustomDrawMode.ColorProc(c,dest);
+    Inc(dest);
+    Dec(Count);
   end;
 end;
 
@@ -624,6 +646,13 @@ begin
       end else
           XorPixels(pdest, psource, copycount);
     end;
+    dmCustomDraw:
+      for i := copycount - 1 downto 0 do
+      begin
+        CurrentCustomDrawMode.ColorProcWithOpacity(psource^,pdest,AOpacity);
+        Inc(pdest);
+        Inc(psource);
+      end;
   end;
 end;
 

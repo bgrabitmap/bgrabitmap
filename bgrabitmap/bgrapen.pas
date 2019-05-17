@@ -93,6 +93,8 @@ procedure BGRAEraseLineAliased(dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
 //antialiased version
 procedure BGRADrawLineAntialias({%H-}dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
   c: TBGRAPixel; DrawLastPixel: boolean; LinearBlend : boolean = false); overload;
+procedure BGRADrawLineAntialias(dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
+  c: TBGRAPixel; DrawLastPixel: boolean; ADrawMode:TDrawMode);overload;
 procedure BGRAEraseLineAntialias(dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
   calpha: byte; DrawLastPixel: boolean); overload;
 
@@ -164,6 +166,8 @@ begin
   dmDrawWithTransparency: PixelProc := @dest.DrawPixel;
   dmXor: PixelProc := @dest.XorPixel;
   dmLinearBlend: PixelProc := @dest.FastBlendPixel;
+  dmCustomDraw: PixelProc := @dest.CustomDrawPixelOp;
+
   else
     PixelProc := @dest.SetPixel;
   end;
@@ -313,6 +317,99 @@ begin
     pixelproc := @dest.FastBlendPixel
   else
     pixelproc := @dest.DrawPixel;
+
+  if (Y1 = Y2) and (X1 = X2) then
+  begin
+    if DrawLastPixel then
+      pixelproc(X1, Y1, c);
+    Exit;
+  end;
+
+  DX := X2 - X1;
+  DY := Y2 - Y1;
+
+  if DX < 0 then
+  begin
+    SX := -1;
+    DX := -DX;
+  end
+  else
+    SX := 1;
+
+  if DY < 0 then
+  begin
+    SY := -1;
+    DY := -DY;
+  end
+  else
+    SY := 1;
+
+  DX := DX shl 1;
+  DY := DY shl 1;
+
+  X := X1;
+  Y := Y1;
+
+  if DX > DY then
+  begin
+    E := 0;
+
+    while X <> X2 do
+    begin
+      alpha := c.alpha * E div DX;
+      pixelproc(X, Y, BGRA(c.red, c.green, c.blue, c.alpha - alpha));
+      pixelproc(X, Y + SY, BGRA(c.red, c.green, c.blue, alpha));
+      Inc(E, DY);
+      if E >= DX then
+      begin
+        Inc(Y, SY);
+        Dec(E, DX);
+      end;
+      Inc(X, SX);
+    end;
+  end
+  else
+  begin
+    E := 0;
+
+    while Y <> Y2 do
+    begin
+      alpha := c.alpha * E div DY;
+      pixelproc(X, Y, BGRA(c.red, c.green, c.blue, c.alpha - alpha));
+      pixelproc(X + SX, Y, BGRA(c.red, c.green, c.blue, alpha));
+      Inc(E, DX);
+      if E >= DY then
+      begin
+        Inc(X, SX);
+        Dec(E, DY);
+      end;
+      Inc(Y, SY);
+    end;
+  end;
+  if DrawLastPixel then
+    pixelproc(X2, Y2, c);
+end;
+
+
+{custom draw mode}
+procedure BGRADrawLineAntialias(dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
+  c: TBGRAPixel; DrawLastPixel: boolean; ADrawMode:TDrawMode);
+var
+  Y, X:  integer;
+  DX, DY, SX, SY, E: integer;
+  alpha: NativeUInt;
+  pixelproc: procedure(x,y: int32or64; c: TBGRAPixel) of object;
+begin
+  case ADrawMode of
+    dmSet: pixelproc := @dest.SetPixel;
+    //dmSetExceptTransparent: ;
+    dmLinearBlend:pixelproc := @dest.FastBlendPixel ;
+    dmDrawWithTransparency: pixelproc := @dest.DrawPixel;
+    dmXor: pixelproc := @dest.XorPixel;
+    dmCustomDraw: pixelproc := @dest.CustomDrawPixelOp;
+    else
+      pixelproc := @dest.SetPixel;
+  end;
 
   if (Y1 = Y2) and (X1 = X2) then
   begin
