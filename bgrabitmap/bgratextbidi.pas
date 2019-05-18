@@ -121,6 +121,7 @@ type
     function GetFontBaseline: single;
     function GetFontOrientation: single;
     procedure TextOutBidiOverride(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; ARightToLeft: boolean);
+    procedure TextPathBidiOverride(ADest: IBGRAPath; x, y: single; sUTF8: string; ARightToLeft: boolean);
     function AddOverrideIfNecessary(var sUTF8: string; ARightToLeft: boolean): boolean;
 
     procedure AddPart(AStartIndex, AEndIndex: integer; ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ASUTF8: string; ABrokenLineIndex: integer);
@@ -139,6 +140,7 @@ type
     procedure NeedLayout;
     procedure InvalidateParagraphLayout({%H-}AParagraphIndex: integer);
     procedure InternalDrawText(ADest: TBGRACustomBitmap);
+    procedure InternalPathText(ADest: IBGRAPath);
 
     //unicode analysis events
     procedure BidiModeChanged({%H-}ASender: TObject);
@@ -158,6 +160,7 @@ type
     procedure DrawText(ADest: TBGRACustomBitmap); overload;
     procedure DrawText(ADest: TBGRACustomBitmap; AColor: TBGRAPixel); overload;
     procedure DrawText(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner); overload;
+    procedure PathText(ADest: IBGRAPath);
     procedure DrawCaret(ADest: TBGRACustomBitmap; ACharIndex: integer; AMainColor, ASecondaryColor: TBGRAPixel);
     procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer;
                             AFillColor: TBGRAPixel; ABorderColor: TBGRAPixel; APenWidth: single); overload;
@@ -898,6 +901,15 @@ begin
     FRenderer.TextOut(ADest, x,y, sUTF8, FColor, taLeftJustify, ARightToLeft);
 end;
 
+procedure TBidiTextLayout.TextPathBidiOverride(ADest: IBGRAPath; x,
+  y: single; sUTF8: string; ARightToLeft: boolean);
+begin
+  if sUTF8 = #9 then exit;
+  AddOverrideIfNecessary(sUTF8, ARightToLeft);
+
+  FRenderer.CopyTextPathTo(ADest, x,y, sUTF8, taLeftJustify, ARightToLeft)
+end;
+
 function TBidiTextLayout.AddOverrideIfNecessary(var sUTF8: string;
   ARightToLeft: boolean): boolean;
 var
@@ -1053,6 +1065,11 @@ begin
   FTexture := ATexture;
   InternalDrawText(ADest);
   FTexture := nil;
+end;
+
+procedure TBidiTextLayout.PathText(ADest: IBGRAPath);
+begin
+  InternalPathText(ADest);
 end;
 
 procedure TBidiTextLayout.ComputeLayout;
@@ -1440,6 +1457,18 @@ begin
     if not b.IntersectsWith(ADest.ClipRect) then continue;
     with (Matrix*(FPart[i].rectF.TopLeft + FPart[i].posCorrection)) do
       TextOutBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
+  end;
+end;
+
+procedure TBidiTextLayout.InternalPathText(ADest: IBGRAPath);
+var
+  i: Integer;
+begin
+  NeedLayout;
+  for i := 0 to FPartCount-1 do
+  begin
+    with (Matrix*(FPart[i].rectF.TopLeft + FPart[i].posCorrection)) do
+      TextPathBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
   end;
 end;
 
