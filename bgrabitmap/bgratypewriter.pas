@@ -143,7 +143,7 @@ function ComputeEasyBezier(APoints: array of TPointF; ACurveMode: array of TGlyp
 
 implementation
 
-uses BGRAUTF8;
+uses BGRAUTF8, BGRAUnicode;
 
 procedure LEWritePointF(Stream: TStream; AValue: TPointF);
 begin
@@ -720,6 +720,7 @@ var
   m,m2: TAffineMatrix;
   bidiArray: TBidiUTF8Array;
   displayOrder: TUnicodeDisplayOrder;
+  u: Cardinal;
 begin
   if ATextUTF8 = '' then
   begin
@@ -754,6 +755,12 @@ begin
         m2 := m*AffineMatrixTranslation(0,-g.Height)
       else
         m2 := m;
+
+      if bidiArray[i].BidiInfo.IsRightToLeft then
+      begin
+        u := UTF8CodepointToUnicode(pchar(nextchar), length(nextchar));
+        if IsUnicodeMirrored(u) then m2 := m2*AffineMatrixTranslation(g.Width,0)*AffineMatrixScale(-1,1);
+      end;
 
       result[o].Glyph := g;
       result[o].Matrix := m2;
