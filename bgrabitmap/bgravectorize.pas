@@ -2120,22 +2120,25 @@ end;
 function TBGRAVectorizedFont.GetGlyph(AIdentifier: string): TBGRAGlyph;
 var size: TSize;
   g: TBGRAPolygonalGlyph;
+  pts: array of TPointF;
+  dx,dy: Integer;
 begin
   Result:=inherited GetGlyph(AIdentifier);
   if (result = nil) and (FResolution > 0) and (FFont <> nil) then
   begin
     g := TBGRAPolygonalGlyph.Create(AIdentifier);
     size := BGRATextSize(FFont, fqSystem, AIdentifier, 1);
-    FBuffer.SetSize(size.cx+size.cy,size.cy);
+    dx := FResolution div 2;
+    dy := FResolution div 2;
+    FBuffer.SetSize(size.cx+2*dx,FResolution+2*dy);
     FBuffer.Fill(BGRAWhite);
-    FBuffer.Canvas.Font := FFont;
-    FBuffer.Canvas.Font.Color := clBlack;
-    FBuffer.Canvas.TextOut(size.cy div 2,0,AIdentifier);
-    g.SetPoints(VectorizeMonochrome(FBuffer,1/FResolution,False,true,50));
+    BGRATextOut(FBuffer, FFont, fqSystem, dx,dy, AIdentifier, BGRABlack, nil, taLeftJustify);
+    pts := VectorizeMonochrome(FBuffer,1/FResolution,False,true,50);
+    g.SetPoints(pts);
     g.QuadraticCurves := FQuadraticCurves and (OutlineMode in[twoPath, twoFill]);
-    g.Width := size.cx/size.cy;
+    g.Width := size.cx/FResolution;
     g.Height := 1;
-    g.Offset := PointF(-0.5,0);
+    g.Offset := PointF(-dx/FResolution,-dy/FResolution);
     SetGlyph(AIdentifier,g);
     result := g;
   end else
