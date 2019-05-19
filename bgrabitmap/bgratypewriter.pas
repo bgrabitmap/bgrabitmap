@@ -28,7 +28,7 @@ type
     Width,Height: single;
     constructor Create(AIdentifier: string); virtual;
     constructor Create(AStream: TStream); virtual;
-    procedure Path({%H-}ADest: IBGRAPath; {%H-}AMatrix: TAffineMatrix); virtual;
+    procedure Path({%H-}ADest: IBGRAPath; {%H-}AMatrix: TAffineMatrix; {%H-}AReverse: boolean= false); virtual;
     property Identifier: string read FIdentifier;
     procedure SaveToStream(AStream: TStream);
     class function LoadFromStream(AStream: TStream): TBGRAGlyph; static;
@@ -70,7 +70,7 @@ type
     constructor Create(AStream: TStream; AQuadratic: boolean);
     procedure SetPoints(const APoints: array of TPointF); overload;
     procedure SetPoints(const APoints: array of TPointF; const ACurveMode: array of TGlyphPointCurveMode); overload;
-    procedure Path(ADest: IBGRAPath; AMatrix: TAffineMatrix); override;
+    procedure Path(ADest: IBGRAPath; AMatrix: TAffineMatrix; AReverse: boolean = false); override;
     property QuadraticCurves: boolean read FQuadraticCurves write SetQuadraticCurves;
     property Closed: boolean read GetClosed write SetClosed;
     property MinimumDotProduct: single read GetMinimumDotProduct write SetMinimumDotProduct;
@@ -86,6 +86,7 @@ type
   TBGRAGlyphDisplayInfo = record
     Glyph: TBGRAGlyph;
     Matrix: TAffineMatrix;
+    Mirrored: boolean;
   end;
 
   TBGRATextDisplayInfo = array of TBGRAGlyphDisplayInfo;
@@ -105,7 +106,7 @@ type
     procedure SetGlyph(AIdentifier: string; AValue: TBGRAGlyph);
     function GetDisplayInfo(ATextUTF8: string; X,Y: Single;
                   AAlign: TBGRATypeWriterAlignment): TBGRATextDisplayInfo;
-    procedure GlyphPath(ADest: TBGRACanvas2D; AIdentifier: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft);
+    procedure GlyphPath(ADest: TBGRACanvas2D; AIdentifier: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft; AMirrored: boolean = false);
     procedure DrawLastPath(ADest: TBGRACanvas2D);
     procedure ClearGlyphs;
     procedure RemoveGlyph(AIdentifier: string);
@@ -126,7 +127,7 @@ type
     procedure SaveGlyphsToStream(AStream: TStream);
     procedure LoadGlyphsFromFile(AFilenameUTF8: string);
     procedure LoadGlyphsFromStream(AStream: TStream);
-    procedure DrawGlyph(ADest: TBGRACanvas2D; AIdentifier: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft);
+    procedure DrawGlyph(ADest: TBGRACanvas2D; AIdentifier: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft; AMirrored: boolean = false);
     procedure DrawText(ADest: TBGRACanvas2D; ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft); virtual;
     procedure CopyTextPathTo(ADest: IBGRAPath; ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft); virtual;
     function GetGlyphBox(AIdentifier: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft): TAffineBox;
@@ -347,31 +348,45 @@ begin
   FEasyBezier.SetPoints(APoints, ACurveMode);
 end;
 
-procedure TBGRAPolygonalGlyph.Path(ADest: IBGRAPath; AMatrix: TAffineMatrix);
-var i: integer;
+procedure TBGRAPolygonalGlyph.Path(ADest: IBGRAPath; AMatrix: TAffineMatrix;
+  AReverse: boolean);
+var
   nextMove: boolean;
+
+  procedure DoPoint(AIndex: integer);
+  begin
+    if isEmptyPointF(Point[AIndex]) then
+    begin
+      if not nextMove and Closed then ADest.closePath;
+      nextMove := true;
+    end else
+    begin
+      if nextMove then
+      begin
+        ADest.moveTo(AMatrix*Point[AIndex]);
+        nextMove := false;
+      end else
+        ADest.lineTo(AMatrix*Point[AIndex]);
+    end;
+  end;
+
+var
+  i: integer;
 begin
   AMatrix := AMatrix*AffineMatrixTranslation(Offset.X,Offset.Y);
   if not FQuadraticCurves then
   begin
     nextMove := true;
-    for i := 0 to PointCount-1 do
-      if isEmptyPointF(Point[i]) then
-      begin
-        if not nextMove and Closed then ADest.closePath;
-        nextMove := true;
-      end else
-      begin
-        if nextMove then
-        begin
-          ADest.moveTo(AMatrix*Point[i]);
-          nextMove := false;
-        end else
-          ADest.lineTo(AMatrix*Point[i]);
-      end;
+    if AReverse then
+    begin
+      for i := PointCount-1 downto 0 do
+        DoPoint(i);
+    end else
+      for i := 0 to PointCount-1 do
+        DoPoint(i);
     if not nextmove and Closed then ADest.closePath;
   end else
-    FEasyBezier.CopyToPath(ADest, @PointTransformMatrix, @AMatrix);
+    FEasyBezier.CopyToPath(ADest, @PointTransformMatrix, @AMatrix, AReverse);
 end;
 
 { TBGRAGlyph }
@@ -432,7 +447,8 @@ begin
   ReadContent(AStream);
 end;
 
-procedure TBGRAGlyph.Path(ADest: IBGRAPath; AMatrix: TAffineMatrix);
+procedure TBGRAGlyph.Path(ADest: IBGRAPath; AMatrix: TAffineMatrix;
+  AReverse: boolean);
 begin
   //nothing
 end;
@@ -525,9 +541,9 @@ begin
 end;
 
 procedure TBGRACustomTypeWriter.DrawGlyph(ADest: TBGRACanvas2D;
-  AIdentifier: string; X, Y: Single; AAlign: TBGRATypeWriterAlignment);
+  AIdentifier: string; X, Y: Single; AAlign: TBGRATypeWriterAlignment; AMirrored: boolean);
 begin
-  GlyphPath(ADest, AIdentifier, X,Y, AAlign);
+  GlyphPath(ADest, AIdentifier, X,Y, AAlign, AMirrored);
   DrawLastPath(ADest);
 end;
 
@@ -545,14 +561,14 @@ begin
     for i := 0 to high(di) do
     begin
       ADest.beginPath;
-      di[i].Glyph.Path(ADest, di[i].Matrix);
+      di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
       DrawLastPath(ADest);
     end;
   end else
   begin
     ADest.beginPath;
     for i := 0 to high(di) do
-      di[i].Glyph.Path(ADest, di[i].Matrix);
+      di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
     DrawLastPath(ADest);
   end;
 end;
@@ -564,7 +580,7 @@ var
 begin
   di := GetDisplayInfo(ATextUTF8,x,y,AAlign);
   for i := 0 to high(di) do
-    di[i].Glyph.Path(ADest, di[i].Matrix);
+    di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
 end;
 
 function TBGRACustomTypeWriter.GetGlyphBox(AIdentifier: string; X, Y: Single;
@@ -756,10 +772,16 @@ begin
       else
         m2 := m;
 
+      result[o].Mirrored := false;
+
       if bidiArray[i].BidiInfo.IsRightToLeft then
       begin
         u := UTF8CodepointToUnicode(pchar(nextchar), length(nextchar));
-        if IsUnicodeMirrored(u) then m2 := m2*AffineMatrixTranslation(g.Width,0)*AffineMatrixScale(-1,1);
+        if IsUnicodeMirrored(u) then
+        begin
+          m2 := m2*AffineMatrixTranslation(g.Width,0)*AffineMatrixScale(-1,1);
+          result[o].Mirrored := true;
+        end;
       end;
 
       result[o].Glyph := g;
@@ -771,13 +793,16 @@ begin
 end;
 
 procedure TBGRACustomTypeWriter.GlyphPath(ADest: TBGRACanvas2D; AIdentifier: string;
-  X, Y: Single; AAlign: TBGRATypeWriterAlignment);
+  X, Y: Single; AAlign: TBGRATypeWriterAlignment; AMirrored: boolean);
 var g: TBGRAGlyph;
 begin
   ADest.beginPath;
   g := GetGlyph(AIdentifier);
   if g = nil then exit;
-  g.Path(ADest, GetGlyphMatrix(g,X,Y,AAlign));
+  if AMirrored then
+    g.Path(ADest, GetGlyphMatrix(g,X,Y,AAlign), AMirrored)
+  else
+    g.Path(ADest, GetGlyphMatrix(g,X,Y,AAlign)*AffineMatrixTranslation(g.Width,0)*AffineMatrixScale(-1,1), AMirrored);
 end;
 
 procedure TBGRACustomTypeWriter.DrawLastPath(ADest: TBGRACanvas2D);

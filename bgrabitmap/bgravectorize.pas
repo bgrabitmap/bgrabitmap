@@ -1042,7 +1042,8 @@ begin
   begin
     FVectorizedFont:= TBGRAVectorizedFont.Create(False);
     FVectorizedFont.Name := FontName;
-    FVectorizedFont.Style := FontStyle;
+    FVectorizedFont.Style := FontStyle - [fsUnderline];
+    FVectorizedFont.UnderlineDecoration := fsUnderline in FontStyle;
     FVectorizedFont.Directory := FDirectoryUTF8;
     if not FVectorizedFont.FontFound and LCLFontAvailable then
       FVectorizedFont.VectorizeLCL := True;
@@ -1780,7 +1781,9 @@ begin
       for i := 0 to high(underlinePoly) do
         underlinePoly[i] := m*underlinePoly[i];
       if OutlineMode <> twoPath then ADest.beginPath;
-      ADest.polylineTo(underlinePoly);
+      ADest.moveTo(m*underlinePoly[high(underlinePoly)]);
+      for i := high(underlinePoly)-1 downto 0 do
+        ADest.lineTo(m*underlinePoly[i]);
       DrawLastPath(ADest);
     end;
   end;
@@ -1794,7 +1797,9 @@ begin
       for i := 0 to high(underlinePoly) do
         underlinePoly[i] := m*underlinePoly[i];
       if OutlineMode <> twoPath then ADest.beginPath;
-      ADest.polylineTo(underlinePoly);
+      ADest.moveTo(m*underlinePoly[high(underlinePoly)]);
+      for i := high(underlinePoly)-1 downto 0 do
+        ADest.lineTo(m*underlinePoly[i]);
       DrawLastPath(ADest);
     end;
   end;
@@ -1818,8 +1823,8 @@ begin
     if underlinePoly <> nil then
     begin
       m := GetTextMatrix(ATextUTF8, X,Y,AAlign);
-      ADest.moveTo(m*underlinePoly[0]);
-      for i := 1 to high(underlinePoly) do
+      ADest.moveTo(m*underlinePoly[high(underlinePoly)]);
+      for i := high(underlinePoly)-1 downto 0 do
         ADest.lineTo(m*underlinePoly[i]);
       ADest.closePath;
     end;
@@ -1831,8 +1836,8 @@ begin
     if underlinePoly <> nil then
     begin
       m := GetTextMatrix(ATextUTF8, X,Y,AAlign);
-      ADest.moveTo(m*underlinePoly[0]);
-      for i := 1 to high(underlinePoly) do
+      ADest.moveTo(m*underlinePoly[high(underlinePoly)]);
+      for i := high(underlinePoly)-1 downto 0 do
         ADest.lineTo(m*underlinePoly[i]);
       ADest.closePath;
     end;

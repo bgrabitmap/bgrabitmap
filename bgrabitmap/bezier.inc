@@ -153,8 +153,8 @@ type
     procedure SetPoints(APoints: array of TPointF; ACurveMode: TEasyBezierCurveMode); overload;
     procedure SetPoints(APoints: array of TPointF; ACurveMode: array of TEasyBezierCurveMode); overload;
     procedure CopyToPath(ADest: IBGRAPath); overload;
-    procedure CopyToPath(ADest: IBGRAPath; AOffset: TPointF); overload;
-    procedure CopyToPath(ADest: IBGRAPath; ATransformFunc: TEasyBezierPointTransformFunc; ATransformData: Pointer); overload;
+    procedure CopyToPath(ADest: IBGRAPath; AOffset: TPointF; AReverse: boolean = false); overload;
+    procedure CopyToPath(ADest: IBGRAPath; ATransformFunc: TEasyBezierPointTransformFunc; ATransformData: Pointer; AReverse: boolean = false); overload;
     property Point[AIndex: integer]: TPointF read GetPoint write SetPoint;
     property CurveMode[AIndex: integer]: TEasyBezierCurveMode read GetCurveMode write SetCurveMode;
     property PointCount: integer read GetPointCount;
@@ -1130,7 +1130,8 @@ begin
   result.MinimumDotProduct:= AMinimumDotProduct;
 end;
 
-procedure TEasyBezierCurve.CopyToPath(ADest: IBGRAPath; ATransformFunc: TEasyBezierPointTransformFunc; ATransformData: Pointer);
+procedure TEasyBezierCurve.CopyToPath(ADest: IBGRAPath; ATransformFunc: TEasyBezierPointTransformFunc;
+  ATransformData: Pointer; AReverse: boolean);
 var i: integer;
   nextMove: boolean;
   pt,startCoord: TPointF;
@@ -1139,38 +1140,76 @@ begin
   if (FCurves = nil) or FInvalidated then ComputeQuadraticCurves;
   nextMove := true;
 
-  for i := 0 to PointCount-1 do
+  if AReverse then
   begin
-    pt := Point[i];
-    if isEmptyPointF(pt) then
+    for i := PointCount-1 downto 0 do
     begin
-      if not nextMove and FClosed then ADest.closePath;
-      nextMove := true;
-    end else
-    begin
-      with FCurves[i] do
+      pt := Point[i];
+      if isEmptyPointF(pt) then
       begin
-        if nextMove then
+        if not nextMove and FClosed then ADest.closePath;
+        nextMove := true;
+      end else
+      begin
+        pt := Point[i];
+        with FCurves[i] do
         begin
+          if isCurvedToNext then
+          begin
+            if nextMove then
+            begin
+              ADest.moveTo(ATransformFunc(@NextCenter,ATransformData));
+              nextMove := false;
+            end;
+            ADest.quadraticCurveTo(ATransformFunc(@ControlPoint,ATransformData),ATransformFunc(@Center,ATransformData));
+          end;
           if not isCurvedToPrevious then
-            startCoord := pt
-          else
-            startCoord := Center;
-          ADest.moveTo(ATransformFunc(@startCoord,ATransformData));
-          nextMove := false;
-        end else
-          if not isCurvedToPrevious then
-            ADest.lineTo(ATransformFunc(@pt,ATransformData));
+          begin
+            if nextMove then
+            begin
+              ADest.moveTo(ATransformFunc(@pt,ATransformData));
+              nextMove := false;
+            end else
+              ADest.lineTo(ATransformFunc(@pt,ATransformData));
+          end;
+        end;
+      end;
+    end;
+  end else
+  begin
+    for i := 0 to PointCount-1 do
+    begin
+      pt := Point[i];
+      if isEmptyPointF(pt) then
+      begin
+        if not nextMove and FClosed then ADest.closePath;
+        nextMove := true;
+      end else
+      begin
+        with FCurves[i] do
+        begin
+          if nextMove then
+          begin
+            if not isCurvedToPrevious then
+              startCoord := pt
+            else
+              startCoord := Center;
+            ADest.moveTo(ATransformFunc(@startCoord,ATransformData));
+            nextMove := false;
+          end else
+            if not isCurvedToPrevious then
+              ADest.lineTo(ATransformFunc(@pt,ATransformData));
 
-        if isCurvedToNext then
-        begin
-          if not isCurvedToPrevious then ADest.lineTo(ATransformFunc(@Center,ATransformData));
-          ADest.quadraticCurveTo(ATransformFunc(@ControlPoint,ATransformData),ATransformFunc(@NextCenter,ATransformData));
+          if isCurvedToNext then
+          begin
+            if not isCurvedToPrevious then ADest.lineTo(ATransformFunc(@Center,ATransformData));
+            ADest.quadraticCurveTo(ATransformFunc(@ControlPoint,ATransformData),ATransformFunc(@NextCenter,ATransformData));
+          end;
         end;
       end;
     end;
   end;
-  if not nextmove and FClosed then ADest.closePath;
+  if not nextMove and FClosed then ADest.closePath;
 end;
 
 function TEasyBezierCurve.ToPoints: ArrayOfTPointF;
@@ -1198,9 +1237,9 @@ begin
   CopyToPath(ADest, @PointTransformNone, nil);
 end;
 
-procedure TEasyBezierCurve.CopyToPath(ADest: IBGRAPath; AOffset: TPointF);
+procedure TEasyBezierCurve.CopyToPath(ADest: IBGRAPath; AOffset: TPointF; AReverse: boolean);
 begin
-  CopyToPath(ADest, @PointTransformOffset, @AOffset);
+  CopyToPath(ADest, @PointTransformOffset, @AOffset, AReverse);
 end;
 
 procedure TEasyBezierCurve.ComputeQuadraticCurves;
