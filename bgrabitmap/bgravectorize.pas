@@ -501,10 +501,8 @@ var
     end;
 
     procedure NiceLines;
-    var cur2, prev, next,next2, startIdx, endIdx: integer;
-      shouldRemove: Boolean;
-      slope: single;
-      delta, nb: integer;
+    var cur2, next,next2, startIdx, endIdx: integer;
+      nb: integer;
       u: TPoint;
 
       function SameDirection(p1,p2: integer): boolean;
@@ -609,22 +607,6 @@ var
                                (segs[i].p2.y+segs[i+1].p1.y) div 2,
                                cur2, endIdx);
               end;
-
-              {next := getnext(startIdx);
-              slope := (points[next].coord.y-points[startIdx].coord.y)/(points[next].coord.x-points[startIdx].coord.x);
-              if slope < 0 then
-              begin
-                delta := iHalf+round(abs(slope)*iDiag);
-                InsertPoint(points[startIdx].coord.x + dx * delta, points[startIdx].coord.y, startIdx, next);
-              end;
-
-              next := getprev(endIdx);
-              slope := (points[next].coord.y-points[endIdx].coord.y)/(points[next].coord.x-points[endIdx].coord.x);
-              if slope > 0 then
-              begin
-                delta := iHalf+round(abs(slope)*iDiag);
-                InsertPoint(points[endIdx].coord.x - dx * delta, points[endIdx].coord.y, next, endIdx);
-              end;}
             end;
           end;
         end;
