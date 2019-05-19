@@ -167,7 +167,7 @@ type
     function GetGlyphSize(AIdentifier:string): TPointF;
     function GetTextGlyphSizes(AText:string): TGlyphSizes;
     function GetTextSize(AText:string): TPointF;
-    procedure SplitText(var ATextUTF8: string; AMaxWidth: single; out ARemainsUTF8: string);
+    procedure SplitText(var ATextUTF8: string; AMaxWidth: single; out ARemainsUTF8: string; AIgnoreWordBreak: boolean = false);
     procedure DrawText(ADest: TBGRACanvas2D; ATextUTF8: string; X, Y: Single; AAlign: TBGRATypeWriterAlignment=twaTopLeft); override;
     procedure CopyTextPathTo(ADest: IBGRAPath; ATextUTF8: string; X, Y: Single;
       AAlign: TBGRATypeWriterAlignment=twaTopLeft); override;
@@ -1384,8 +1384,8 @@ var
   remains: string;
 begin
   UpdateFont;
-  FVectorizedFont.SplitText(sUTF8, AMaxWidth, remains);
-  result := length(sUTF8);
+  FVectorizedFont.SplitText(sUTF8, AMaxWidth, remains, true);
+  result := UTF8Length(sUTF8);
 end;
 
 destructor TBGRAVectorizedFontRenderer.Destroy;
@@ -1699,7 +1699,7 @@ begin
 end;
 
 procedure TBGRAVectorizedFont.SplitText(var ATextUTF8: string; AMaxWidth: single;
-  out ARemainsUTF8: string);
+  out ARemainsUTF8: string; AIgnoreWordBreak: boolean);
 var
   pstr: pchar;
   p,left,charlen: integer;
@@ -1737,13 +1737,16 @@ begin
       if g <> nil then
       begin
         totalWidth += g.Width*FullHeight;
-        if not firstChar and (totalWidth > AMaxWidth) then
+        if (not firstChar or AIgnoreWordBreak) and (totalWidth > AMaxWidth) then
         begin
           ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
           ATextUTF8 := copy(ATextUTF8,1,p-1);
-          if Assigned(FWordBreakHandler) then
-            FWordBreakHandler(ATextUTF8,ARemainsUTF8) else
-              DefaultWordBreakHandler(ATextUTF8,ARemainsUTF8);
+          if not AIgnoreWordBreak then
+          begin
+            if Assigned(FWordBreakHandler) then
+              FWordBreakHandler(ATextUTF8,ARemainsUTF8) else
+                DefaultWordBreakHandler(ATextUTF8,ARemainsUTF8);
+          end;
           exit;
         end;
       end;
