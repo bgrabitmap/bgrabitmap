@@ -88,8 +88,12 @@ type
   end;
 
   TGlyphSizes = array of record
-            Glyph: String;
-            Width,Height: single;
+    Text, Glyph: String;
+    Width,Height: single;
+  end;
+  TGlyphSizesCallbackData = record
+    Sizes: TGlyphSizes;
+    Count: integer;
   end;
 
   TBGRAVectorizedFontHeader = record
@@ -147,6 +151,7 @@ type
     procedure SetStyle(AValue: TFontStyles);
     function GetFontEmHeightRatio: single;
     procedure SetVectorizeLCL(AValue: boolean);
+    procedure GlyphCallbackForGlyphSizes(ATextUTF8: string; AGlyph: TBGRAGlyph; AData: Pointer; out AContinue: boolean);
   protected
     procedure UpdateFont;
     procedure UpdateMatrix;
@@ -165,9 +170,10 @@ type
     constructor Create(AVectorizeLCL: boolean); overload;
     destructor Destroy; override;
     function GetGlyphSize(AIdentifier:string): TPointF;
-    function GetTextGlyphSizes(AText:string): TGlyphSizes;
-    function GetTextSize(AText:string): TPointF;
-    procedure SplitText(var ATextUTF8: string; AMaxWidth: single; out ARemainsUTF8: string; AIgnoreWordBreak: boolean = false);
+    function GetTextGlyphSizes(ATextUTF8:string): TGlyphSizes;
+    function GetTextSize(ATextUTF8:string): TPointF;
+    function TextFitInfo(ATextUTF8: string; AMaxWidth: single): integer;
+    procedure SplitText(var ATextUTF8: string; AMaxWidth: single; out ARemainsUTF8: string);
     procedure DrawText(ADest: TBGRACanvas2D; ATextUTF8: string; X, Y: Single; AAlign: TBGRATypeWriterAlignment=twaTopLeft); override;
     procedure CopyTextPathTo(ADest: IBGRAPath; ATextUTF8: string; X, Y: Single;
       AAlign: TBGRATypeWriterAlignment=twaTopLeft); override;
@@ -1381,12 +1387,9 @@ end;
 
 function TBGRAVectorizedFontRenderer.TextFitInfo(sUTF8: string;
   AMaxWidth: integer): integer;
-var
-  remains: string;
 begin
   UpdateFont;
-  FVectorizedFont.SplitText(sUTF8, AMaxWidth, remains, true);
-  result := UTF8Length(sUTF8);
+  result := FVectorizedFont.TextFitInfo(sUTF8, AMaxWidth);
 end;
 
 destructor TBGRAVectorizedFontRenderer.Destroy;
@@ -1453,6 +1456,30 @@ end;
 function TBGRAVectorizedFont.GetVectorizeLCL: boolean;
 begin
   result := FFont <> nil;
+end;
+
+procedure TBGRAVectorizedFont.GlyphCallbackForGlyphSizes(ATextUTF8: string; AGlyph: TBGRAGlyph;
+  AData: Pointer; out AContinue: boolean);
+begin
+  with TGlyphSizesCallbackData(AData^) do
+  begin
+    if Count = length(Sizes) then
+      setlength(Sizes, 2*Count+1);
+    Sizes[Count].Text := ATextUTF8;
+    if AGlyph<>nil then
+    begin
+      Sizes[Count].Glyph:= AGlyph.Identifier;
+      Sizes[Count].Width:= AGlyph.Width*FullHeight;
+      Sizes[Count].Height:= AGlyph.Height*FullHeight;
+    end else
+    begin
+      Sizes[Count].Glyph:= '';
+      Sizes[Count].Width:= 0;
+      Sizes[Count].Height:= 0;
+    end;
+    inc(Count);
+  end;
+  AContinue:= true;
 end;
 
 procedure TBGRAVectorizedFont.SetEmHeight(AValue: single);
@@ -1627,80 +1654,36 @@ begin
     result := PointF(g.Width*FullHeight,g.Height*FullHeight);
 end;
 
-function TBGRAVectorizedFont.GetTextGlyphSizes(AText: string): TGlyphSizes;
+function TBGRAVectorizedFont.GetTextGlyphSizes(ATextUTF8: string): TGlyphSizes;
 var
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  g: TBGRAGlyph;
-  numChar: integer;
+  data: TGlyphSizesCallbackData;
 begin
-  if AText = '' then
-  begin
-    result := nil;
-    exit;
-  end;
-  setlength(result, UTF8Length(AText));
-  pstr := @AText[1];
-  left := length(AText);
-  numChar := 0;
-  while left > 0 do
-  begin
-    charlen := UTF8CharacterLength(pstr);
-    setlength(nextchar, charlen);
-    move(pstr^, nextchar[1], charlen);
-    inc(pstr,charlen);
-    dec(left,charlen);
-
-    result[numChar].Glyph := nextchar;
-    g := GetGlyph(nextchar);
-    if g <> nil then
-    begin
-      result[numChar].Width := g.Width*FullHeight;
-      result[numChar].Height := g.Height*FullHeight;
-    end else
-    begin
-      result[numChar].Width := 0;
-      result[numChar].Height := 0;
-    end;
-    inc(numChar);
-  end;
+  data.Count:= 0;
+  setlength(data.Sizes, UTF8Length(ATextUTF8));
+  BrowseGlyphs(ATextUTF8, @GlyphCallbackForGlyphSizes, @data);
+  setlength(data.Sizes, data.Count);
+  result := data.Sizes;
 end;
 
-function TBGRAVectorizedFont.GetTextSize(AText: string): TPointF;
-var
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  g: TBGRAGlyph;
-  gSizeY: single;
+function TBGRAVectorizedFont.GetTextSize(ATextUTF8: string): TPointF;
 begin
-  result := PointF(0,0);
-  if AText = '' then exit else
-  begin
-    pstr := @AText[1];
-    left := length(AText);
-    while left > 0 do
-    begin
-      charlen := UTF8CharacterLength(pstr);
-      setlength(nextchar, charlen);
-      move(pstr^, nextchar[1], charlen);
-      inc(pstr,charlen);
-      dec(left,charlen);
+  result := GetTextSizeBeforeTransform(ATextUTF8)*FullHeight;
+end;
 
-      g := GetGlyph(nextchar);
-      if g <> nil then
-      begin
-        result.x += g.Width*FullHeight;
-        gSizeY := g.Height*FullHeight;
-        if gSizeY > result.y then result.Y := gSizeY;
-      end;
-    end;
+function TBGRAVectorizedFont.TextFitInfo(ATextUTF8: string; AMaxWidth: single): integer;
+var
+  charCount, byteCount: integer;
+  usedWidth: single;
+begin
+  if FullHeight=0 then result := UTF8Length(ATextUTF8) else
+  begin
+    TextFitInfoBeforeTransform(ATextUTF8, AMaxWidth/FullHeight, charCount, byteCount, usedWidth);
+    result := charCount;
   end;
 end;
 
 procedure TBGRAVectorizedFont.SplitText(var ATextUTF8: string; AMaxWidth: single;
-  out ARemainsUTF8: string; AIgnoreWordBreak: boolean);
+  out ARemainsUTF8: string);
 var
   pstr: pchar;
   p,left,charlen: integer;
@@ -1738,16 +1721,13 @@ begin
       if g <> nil then
       begin
         totalWidth += g.Width*FullHeight;
-        if (not firstChar or AIgnoreWordBreak) and (totalWidth > AMaxWidth) then
+        if not firstChar and (totalWidth > AMaxWidth) then
         begin
           ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
           ATextUTF8 := copy(ATextUTF8,1,p-1);
-          if not AIgnoreWordBreak then
-          begin
-            if Assigned(FWordBreakHandler) then
-              FWordBreakHandler(ATextUTF8,ARemainsUTF8) else
-                DefaultWordBreakHandler(ATextUTF8,ARemainsUTF8);
-          end;
+          if Assigned(FWordBreakHandler) then
+            FWordBreakHandler(ATextUTF8,ARemainsUTF8) else
+              DefaultWordBreakHandler(ATextUTF8,ARemainsUTF8);
           exit;
         end;
       end;
@@ -2157,6 +2137,7 @@ begin
   FBuffer := BGRABitmapFactory.Create;
   FFullHeight := 20;
   FItalicSlope := 0;
+  LigatureWithF := true;
   UpdateFont;
   UpdateMatrix;
   FWordBreakHandler:= nil;

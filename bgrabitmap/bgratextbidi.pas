@@ -1718,8 +1718,11 @@ begin
                 begin
                   if (curW+newW)*0.5 + 1 < w then curIndex := newIndex;
                   break;
+                end else
+                begin
+                  curW := newW;
+                  curIndex := newIndex;
                 end;
-                curIndex := newIndex;
               end;
               exit(curIndex);
             end;
