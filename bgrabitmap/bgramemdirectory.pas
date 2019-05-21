@@ -74,6 +74,7 @@ type
     procedure SaveToStream(ADestination: TStream); override;
     procedure SaveToEmbeddedStream(ARootDest, ADataDest: TStream; AStartPos: int64);
     function AddDirectory(AName: utf8string; AExtension: utf8string= ''; ACaseSensitive: boolean= true): integer;
+    function Rename(AName: utf8string; AExtension: utf8string; ANewName: utf8string; ACaseSensitive: boolean= true): boolean;
     function FindPath(APath: utf8String; ACaseSensitive: boolean = true): TMemDirectory;
     function FindEntry(APath: utf8String; ACaseSensitive: boolean = true): TMemDirectoryEntry;
     procedure CopyTo(ADest: TMemDirectory; ARecursive: boolean);
@@ -316,6 +317,23 @@ begin
   end;
   newEntry := TMemDirectoryEntry.CreateDirectory(self, EntryFilename(AName, AExtension));
   result := AddEntry(newEntry);
+end;
+
+function TMemDirectory.Rename(AName: utf8string; AExtension: utf8string;
+  ANewName: utf8string; ACaseSensitive: boolean): boolean;
+var
+  idx, i: Integer;
+begin
+  idx := IndexOf(AName, AExtension, ACaseSensitive);
+  if idx = -1 then exit(false);
+  for i := 0 to Count-1 do
+  if i <> idx then
+  begin
+    if Entry[i].CompareNameAndExtension(ANewName,AExtension,ACaseSensitive) <> 0 then
+      raise exception.Create('Name with extension already in use');
+  end;
+  Entry[i].Name := ANewName;
+  exit(true);
 end;
 
 function TMemDirectory.FindPath(APath: utf8String; ACaseSensitive: boolean): TMemDirectory;

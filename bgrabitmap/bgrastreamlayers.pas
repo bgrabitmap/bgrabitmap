@@ -6,7 +6,7 @@ unit BGRAStreamLayers;
 interface
 
 uses
-  Classes, SysUtils, BGRALayers, BGRABitmap, BGRALzpCommon;
+  Classes, SysUtils, BGRALayers, BGRABitmap, BGRALzpCommon, BGRAMemDirectory;
 
 function CheckStreamForLayers(AStream: TStream): boolean;
 function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false;
@@ -98,6 +98,32 @@ begin
     end;
   end;
   AStream.Position:= OldPosition;
+end;
+
+procedure RenameLayersToUniqueId(ALayers: TBGRACustomLayeredBitmap);
+var
+  layerDir: TMemDirectory;
+  i: Integer;
+begin
+  layerDir := ALayers.MemDirectory.FindPath('layers');
+  if Assigned(layerDir) then
+  begin
+    for i := 0 to ALayers.NbLayers-1 do
+      layerDir.Rename('layer'+inttostr(i+1), '', inttostr(ALayers.LayerUniqueId[i]));
+  end;
+end;
+
+procedure RenameLayersToIndex(ALayers: TBGRACustomLayeredBitmap);
+var
+  layerDir: TMemDirectory;
+  i: Integer;
+begin
+  layerDir := ALayers.MemDirectory.FindPath('layers');
+  if Assigned(layerDir) then
+  begin
+    for i := 0 to ALayers.NbLayers-1 do
+      layerDir.Rename(inttostr(ALayers.LayerUniqueId[i]), '', 'layer'+inttostr(i+1));
+  end;
 end;
 
 function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false;
@@ -218,6 +244,8 @@ begin
 
       if LayerEndPosition <> -1 then AStream.Position := LayerEndPosition;
     end;
+
+    RenameLayersToUniqueId(result);
     result.NotifyLoaded;
   except
     on ex: Exception do
@@ -305,7 +333,9 @@ begin
     AStream.Position := DirectoryOffsetPos;
     LEWriteInt64(AStream,EndPos-startPos);
     AStream.Position:= EndPos;
+    RenameLayersToIndex(ALayers);
     ALayers.MemDirectory.SaveToStream(AStream);
+    RenameLayersToUniqueId(ALayers);
   end;
 end;
 

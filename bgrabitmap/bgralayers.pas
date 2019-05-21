@@ -214,6 +214,7 @@ type
     procedure StoreOriginal(AOriginal: TBGRALayerCustomOriginal);
     procedure OriginalChange(ASender: TObject; ABounds: PRectF = nil);
     procedure OriginalEditingChange(ASender: TObject);
+    function GetLayerDirectory(layer: integer): TMemDirectory;
 
   public
     procedure LoadFromFile(const filenameUTF8: string); override;
@@ -370,6 +371,8 @@ uses BGRAUTF8, BGRABlend, BGRAMultiFileType, math;
 
 const
   OriginalsDirectory = 'originals';
+  LayersDirectory = 'layers';
+  RenderSubDirectory = 'render';
 
 var
   OnLayeredBitmapLoadStartProc: TOnLayeredBitmapLoadStartProc;
@@ -601,6 +604,16 @@ begin
   orig := TBGRALayerCustomOriginal(ASender);
   if Assigned(FOriginalEditingChange) then
     FOriginalEditingChange(self, orig);
+end;
+
+function TBGRALayeredBitmap.GetLayerDirectory(layer: integer): TMemDirectory;
+var
+  layersDir: TMemDirectory;
+  id: LongInt;
+begin
+  layersDir := MemDirectory.Directory[MemDirectory.AddDirectory(LayersDirectory)];
+  id := LayerUniqueId[layer];
+  result := layersDir.Directory[layersDir.AddDirectory(IntToStr(id))];
 end;
 
 function TBGRALayeredBitmap.GetOriginalCount: integer;
@@ -1013,9 +1026,17 @@ end;
 
 procedure TBGRALayeredBitmap.RemoveLayer(index: integer);
 var i: integer;
+  id: LongInt;
+  layersDir: TMemDirectory;
 begin
   if (index < 0) or (index >= NbLayers) then exit;
   Unfreeze;
+  if Assigned(FMemDirectory) then
+  begin
+    id := LayerUniqueId[index];
+    layersDir := FMemDirectory.Directory[FMemDirectory.AddDirectory(LayersDirectory)];
+    layersDir.Delete(IntToStr(id),'');
+  end;
   if FLayers[index].Owner then FLayers[index].Source.Free;
   for i := index to FNbLayers-2 do
     FLayers[i] := FLayers[i+1];
@@ -1575,6 +1596,7 @@ var
   orig: TBGRALayerCustomOriginal;
   rAll, rNewBounds, rInterRender: TRect;
   newSource: TBGRABitmap;
+  layerDir, renderDir: TMemDirectory;
 
   procedure FreeSource;
   begin
@@ -1591,6 +1613,10 @@ begin
   orig := LayerOriginal[layer];
   if Assigned(orig) then
   begin
+    layerDir := GetLayerDirectory(layer);
+    renderDir := layerDir.Directory[layerDir.AddDirectory(RenderSubDirectory)];
+    orig.RenderStorage := TBGRAMemOriginalStorage.Create(renderDir);
+
     rAll := rect(0,0,Width,Height);
     if AFullSizeLayer then
       rNewBounds := rAll
@@ -1608,7 +1634,7 @@ begin
       OffsetRect(rInterRender, -rNewBounds.Left, -rNewBounds.Top);
       FLayers[layer].Source.FillRect(rInterRender, BGRAPixelTransparent, dmSet);
       FLayers[layer].Source.ClipRect := rInterRender;
-      orig.Render(FLayers[layer].Source, AffineMatrixTranslation(-rNewBounds.Left,-rNewBounds.Top)*FLayers[layer].OriginalMatrix, ADraft);
+      orig.Render(FLayers[layer].Source, Point(-rNewBounds.Left,-rNewBounds.Top), FLayers[layer].OriginalMatrix, ADraft);
       FLayers[layer].Source.NoClip;
     end else
     begin
@@ -1616,7 +1642,7 @@ begin
       begin
         FreeSource;
         newSource := TBGRABitmap.Create(rNewBounds.Width,rNewBounds.Height);
-        orig.Render(newSource, AffineMatrixTranslation(-rNewBounds.Left,-rNewBounds.Top)*FLayers[layer].OriginalMatrix, ADraft);
+        orig.Render(newSource, Point(-rNewBounds.Left,-rNewBounds.Top), FLayers[layer].OriginalMatrix, ADraft);
       end else
       begin
         newSource := TBGRABitmap.Create(rNewBounds.Width,rNewBounds.Height);
@@ -1627,7 +1653,7 @@ begin
         begin
           newSource.FillRect(rInterRender, BGRAPixelTransparent, dmSet);
           newSource.ClipRect := rInterRender;
-          orig.Render(newSource, AffineMatrixTranslation(-rNewBounds.Left,-rNewBounds.Top)*FLayers[layer].OriginalMatrix, ADraft);
+          orig.Render(newSource, Point(-rNewBounds.Left,-rNewBounds.Top), FLayers[layer].OriginalMatrix, ADraft);
           newSource.NoClip;
         end;
       end;
@@ -1635,6 +1661,12 @@ begin
       FLayers[layer].x := rNewBounds.Left;
       FLayers[layer].y := rNewBounds.Top;
     end;
+
+    orig.RenderStorage.AffineMatrix['last-matrix'] := FLayers[layer].OriginalMatrix;
+    orig.RenderStorage.Free;
+    orig.renderStorage := nil;
+    if renderDir.Count = 1 then //only matrix
+      layerDir.Delete(RenderSubDirectory,'');
   end;
   if ADraft then
     FLayers[layer].OriginalRenderStatus := orsDraft

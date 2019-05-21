@@ -47,6 +47,7 @@ type
   public
     constructor Create(AContainer: TMultiFileContainer);
     function CopyTo({%H-}ADestination: TStream): int64; virtual;
+    function CompareNameAndExtension(AName: utf8string; AExtension: utf8string; ACaseSensitive: boolean = true): integer;
     property Name: utf8string read GetName write SetName;
     property Extension: utf8string read GetExtension;
     property FileSize: int64 read GetFileSize;
@@ -193,6 +194,18 @@ end;
 function TMultiFileEntry.CopyTo(ADestination: TStream): int64;
 begin
   result := 0;
+end;
+
+function TMultiFileEntry.CompareNameAndExtension(AName: utf8string;
+  AExtension: utf8string; ACaseSensitive: boolean): integer;
+begin
+  if ACaseSensitive then
+    result := CompareStr(AName, Name)
+  else
+    result := UTF8CompareText(AName, Name);
+
+  if result = 0 then
+    result := UTF8CompareText(AExtension, Extension);
 end;
 
 { TMultiFileContainer }
@@ -427,21 +440,9 @@ function TMultiFileContainer.IndexOf(AName: utf8string; AExtenstion: utf8string;
 var
   i: Integer;
 begin
-  if ACaseSensitive then
-  begin
-    for i := 0 to Count-1 do
-      if (Entry[i].Name = AName) and (UTF8CompareText(Entry[i].Extension,AExtenstion) = 0) then
-      begin
-        result := i;
-        exit;
-      end;
-  end else
-    for i := 0 to Count-1 do
-      if (UTF8CompareText(Entry[i].Name,AName) = 0) and (UTF8CompareText(Entry[i].Extension,AExtenstion) = 0) then
-      begin
-        result := i;
-        exit;
-      end;
+  for i := 0 to Count-1 do
+    if Entry[i].CompareNameAndExtension(AName, AExtenstion, ACaseSensitive) = 0 then
+      exit(i);
   result := -1;
 end;
 
