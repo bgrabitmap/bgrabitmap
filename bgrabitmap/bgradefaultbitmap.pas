@@ -847,6 +847,8 @@ type
     procedure HorizontalFlip(ARect: TRect); overload; override;
     function RotateCW: TBGRACustomBitmap; override;
     function RotateCCW: TBGRACustomBitmap; override;
+    function RotateUD: TBGRACustomBitmap; override;
+    procedure RotateUDInplace(ARect: TRect); overload; override;
     procedure Negative; override;
     procedure NegativeRect(ABounds: TRect); override;
     procedure LinearNegative; override;
@@ -5814,6 +5816,77 @@ begin
   end;
 
   if Assigned(XorMask) then TBGRADefaultBitmap(result).FXorMask := self.XorMask.RotateCCW;
+end;
+
+function TBGRADefaultBitmap.RotateUD: TBGRACustomBitmap;
+var
+  i: Integer;
+  psrc, pdest: PBGRAPixel;
+begin
+  LoadFromBitmapIfNeeded;
+  Result := NewBitmap(Width, Height);
+  psrc  := Data + NbPixels;
+  pdest := Result.Data;
+  for i := 0 to NbPixels - 1 do
+  begin
+    Dec(psrc);
+    pdest^ := psrc^;
+    Inc(pdest);
+  end;
+
+  if Assigned(XorMask) then TBGRADefaultBitmap(result).FXorMask := self.XorMask.RotateUD;
+end;
+
+{ Rotate the bitmap by 180°. Use a temporary line to store top line,
+  assign bottom line to top line, then assign temporary line to bottom line.
+
+  It is an involution, i.e it does nothing when applied twice }
+procedure TBGRADefaultBitmap.RotateUDInplace(ARect: TRect);
+var
+  yb,h2:     integer;
+  line:   PBGRAPixel;
+  linesize, delta: integer;
+  PStart: PBGRAPixel;
+  PEnd:   PBGRAPixel;
+
+  Procedure MoveRev(psrc, pdest: PBGRAPixel; count:SizeInt);
+  begin
+    inc(pdest, count);
+    while count > 0 do
+    begin
+      dec(pdest);
+      pdest^ := psrc^;
+      inc(psrc);
+      dec(count);
+    end;
+  end;
+
+begin
+  if FData = nil then
+    exit;
+
+  if (ARect.Right <= ARect.Left) or (ARect.Bottom <= ARect.Top) then exit;
+  if not IntersectRect(ARect, ARect, rect(0,0,Width,Height)) then exit;
+  LoadFromBitmapIfNeeded;
+  linesize := (ARect.Right-ARect.Left) * sizeof(TBGRAPixel);
+  line     := nil;
+  getmem(line, linesize);
+  PStart := GetScanlineFast(ARect.Top)+ARect.Left;
+  PEnd   := GetScanlineFast(ARect.Bottom-1)+ARect.Left;
+  h2 := (ARect.Bottom-ARect.Top) div 2;
+  if LineOrder = riloTopToBottom then delta := +Width else delta := -Width;
+  for yb := h2-1 downto 0 do
+  begin
+    move(PStart^, line^, linesize);
+    moveRev(PEnd, PStart, linesize shr 2);
+    moveRev(line, PEnd, linesize shr 2);
+    Inc(PStart, delta);
+    Dec(PEnd, delta);
+  end;
+  freemem(line);
+  InvalidateBitmap;
+
+  if Assigned(XorMask) then XorMask.VerticalFlip(ARect);
 end;
 
 { Compute negative with gamma correction. A negative contains

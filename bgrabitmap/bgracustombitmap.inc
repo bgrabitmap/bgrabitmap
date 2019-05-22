@@ -809,8 +809,11 @@ type
      procedure VerticalFlip(ARect: TRect); overload; virtual; abstract;
      procedure HorizontalFlip; overload; virtual;
      procedure HorizontalFlip(ARect: TRect); overload; virtual; abstract;
+     procedure RotateUDInplace; overload; virtual;
+     procedure RotateUDInplace(ARect: TRect); overload; virtual; abstract;
      function RotateCW: TBGRACustomBitmap; virtual; abstract;
      function RotateCCW: TBGRACustomBitmap; virtual; abstract;
+     function RotateUD: TBGRACustomBitmap; virtual; abstract;
      procedure Negative; virtual; abstract;
      procedure NegativeRect(ABounds: TRect); virtual; abstract;
      procedure LinearNegative; virtual; abstract;
@@ -2375,6 +2378,11 @@ end;
 procedure TBGRACustomBitmap.HorizontalFlip;
 begin
   HorizontalFlip(rect(0,0,Width,Height));
+end;
+
+procedure TBGRACustomBitmap.RotateUDInplace;
+begin
+  RotateUDInplace(rect(0,0,Width,Height));
 end;
 
 procedure TBGRACustomBitmap.ApplyMask(mask: TBGRACustomBitmap);

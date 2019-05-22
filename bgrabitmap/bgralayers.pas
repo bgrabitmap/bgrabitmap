@@ -284,6 +284,8 @@ type
 
     procedure RotateCW;
     procedure RotateCCW;
+    procedure RotateUD; overload;
+    procedure RotateUD(ALayerIndex: integer); overload;
     procedure HorizontalFlip; overload;
     procedure HorizontalFlip(ALayerIndex: integer); overload;
     procedure VerticalFlip; overload;
@@ -1855,6 +1857,31 @@ begin
     FLayers[i].y := round(newOfs.y);
     FLayers[i].OriginalMatrix := m*FLayers[i].OriginalMatrix;
   end;
+end;
+
+procedure TBGRALayeredBitmap.RotateUD;
+var i: integer;
+begin
+  Unfreeze;
+  for i := 0 to NbLayers-1 do
+    RotateUD(i);
+end;
+
+procedure TBGRALayeredBitmap.RotateUD(ALayerIndex: integer);
+begin
+  if (ALayerIndex < 0) or (ALayerIndex >= NbLayers) then
+    raise ERangeError.Create('Index out of bounds');
+  Unfreeze(ALayerIndex);
+  if FLayers[ALayerIndex].Owner then
+    FLayers[ALayerIndex].Source.RotateUDInplace
+  else
+  begin
+    FLayers[ALayerIndex].Source := FLayers[ALayerIndex].Source.RotateUD as TBGRABitmap;
+    FLayers[ALayerIndex].Owner := true;
+  end;
+  FLayers[ALayerIndex].x := Width-FLayers[ALayerIndex].x-FLayers[ALayerIndex].Source.Width;
+  FLayers[ALayerIndex].y := Height-FLayers[ALayerIndex].y-FLayers[ALayerIndex].Source.Height;
+  FLayers[ALayerIndex].OriginalMatrix := AffineMatrixTranslation(+Width/2,+Height/2)*AffineMatrixScale(-1,-1)*AffineMatrixTranslation(-Width/2,-Height/2)*FLayers[ALayerIndex].OriginalMatrix;
 end;
 
 procedure TBGRALayeredBitmap.HorizontalFlip;
