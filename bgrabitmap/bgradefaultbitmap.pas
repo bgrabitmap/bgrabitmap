@@ -5886,7 +5886,7 @@ begin
   freemem(line);
   InvalidateBitmap;
 
-  if Assigned(XorMask) then XorMask.VerticalFlip(ARect);
+  if Assigned(XorMask) then XorMask.RotateUDInplace(ARect);
 end;
 
 { Compute negative with gamma correction. A negative contains
