@@ -230,6 +230,7 @@ type
   public
     constructor Create;
     procedure RemoveAttribute(AName: utf8string); virtual; abstract;
+    function HasAttribute(AName: utf8string): boolean; virtual; abstract;
     procedure RemoveObject(AName: utf8string); virtual; abstract;
     function CreateObject(AName: utf8string): TBGRACustomOriginalStorage; virtual; abstract;
     function OpenObject(AName: utf8string): TBGRACustomOriginalStorage; virtual; abstract;
@@ -266,6 +267,7 @@ type
     constructor Create;
     constructor Create(AMemDir: TMemDirectory; AMemDirOwned: boolean = false);
     procedure RemoveAttribute(AName: utf8string); override;
+    function HasAttribute(AName: utf8string): boolean; override;
     procedure RemoveObject(AName: utf8string); override;
     function CreateObject(AName: utf8string): TBGRACustomOriginalStorage; override;
     function OpenObject(AName: utf8string): TBGRACustomOriginalStorage; override;
@@ -996,6 +998,16 @@ begin
     raise exception.Create('This name refers to an object and not an attribute')
   else
     FMemDir.Delete(idx);
+end;
+
+function TBGRAMemOriginalStorage.HasAttribute(AName: utf8string): boolean;
+var
+  idx: Integer;
+begin
+  if pos('.',AName)<>0 then exit(false);
+  idx := FMemDir.IndexOf(AName,'',true);
+  if idx = -1 then exit(false)
+  else exit(not FMemDir.IsDirectory[idx]);
 end;
 
 procedure TBGRAMemOriginalStorage.RemoveObject(AName: utf8string);
