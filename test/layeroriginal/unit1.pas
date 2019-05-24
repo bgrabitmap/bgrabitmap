@@ -15,6 +15,7 @@ type
 
   TForm1 = class(TForm)
     BCFlipX: TBCButton;
+    BCRotUD: TBCButton;
     BCSave: TBCButton;
     BCFlipY: TBCButton;
     BCRotCW: TBCButton;
@@ -27,6 +28,7 @@ type
     cbRepeat: TComboBox;
     cbGradientType: TComboBox;
     SaveDialog1: TSaveDialog;
+    procedure BCRotUDClick(Sender: TObject);
     procedure BCSaveClick(Sender: TObject);
     procedure BCFlipXClick(Sender: TObject);
     procedure BCFlipYClick(Sender: TObject);
@@ -82,6 +84,12 @@ begin
         ShowMessage(ex.Message);
     end;
   end;
+end;
+
+procedure TForm1.BCRotUDClick(Sender: TObject);
+begin
+  FLayers.RotateUD;
+  BGRAVirtualScreen1.DiscardBitmap;
 end;
 
 procedure TForm1.BCFlipYClick(Sender: TObject);
