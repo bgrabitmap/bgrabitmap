@@ -747,13 +747,13 @@ var
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
 
         h := GetProcedure(HelperName+'.SetRed', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := (self and $ffff00) or AValue;');
+        AddProcedureImp(h, 'self := Cardinal(self and $ffff00) or AValue;');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetProcedure(HelperName+'.SetGreen', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := (self and $ff00ff) or (AValue shl 8);');
+        AddProcedureImp(h, 'self := Cardinal(self and $ff00ff) or (AValue shl 8);');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetProcedure(HelperName+'.SetBlue', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := (self and $00ffff) or (AValue shl 16);');
+        AddProcedureImp(h, 'self := Cardinal(self and $00ffff) or (AValue shl 16);');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         add('public');
       end;
