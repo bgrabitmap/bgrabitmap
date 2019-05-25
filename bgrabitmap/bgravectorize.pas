@@ -2039,7 +2039,9 @@ begin
     FDirectory += DirectorySeparator;
   if FindFirstUTF8(FDirectory +'*.glyphs', faAnyFile, SearchRec) = 0 then
   repeat
+    {$PUSH}{$WARNINGS OFF}
     if (faDirectory or faVolumeId or faSysFile) and SearchRec.Attr = 0 then
+    {$POP}
     begin
       Fullname := FDirectory+SearchRec.Name;
       Info := LoadGlyphsInfo(Fullname);

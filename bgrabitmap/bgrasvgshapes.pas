@@ -334,7 +334,7 @@ type
       procedure SetSpacing(AValue: TSVGTextPathSpacing);
       procedure SetXlinkHref(AValue: string);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
       property startOffset: TFloatWithCSSUnit read GetStartOffset write SetStartOffset;
@@ -354,7 +354,7 @@ type
       procedure SetFormat(AValue: string);
       procedure SetXlinkHref(AValue: string);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
       property glyphRef: string read GetGlyphRef write SetGlyphRef;
@@ -395,7 +395,7 @@ type
       procedure SetFormat(AValue: string);
       procedure SetXlinkHref(AValue: string);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
       property x: TSVGNumber read GetX write SetX;
@@ -416,7 +416,7 @@ type
       procedure SetExternalResourcesRequired(AValue: boolean);
       procedure SetClipPathUnits(AValue: TSVGObjectUnits);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean
@@ -437,7 +437,7 @@ type
       procedure SetRenderingIntent(AValue: TSVGRenderingIntent);
       procedure SetXlinkHref(AValue: string);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
       property local: string read GetLocal write SetLocal;
@@ -465,7 +465,7 @@ type
       procedure SetPreserveAspectRatio(AValue: TSVGPreserveAspectRatio);
       procedure SetXlinkHref(AValue: string);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean
@@ -492,7 +492,7 @@ type
       procedure SetPatternTransform(AValue: string);
       procedure SetViewBox(AValue: TSVGViewBox);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
       property patternUnits: TSVGObjectUnits read GetPatternUnits write SetPatternUnits;
@@ -525,7 +525,7 @@ type
       procedure SetMarkerUnits(AValue: TSVGMarkerUnits);
       procedure SetOrient(AValue: TSVGOrient);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean
@@ -560,7 +560,7 @@ type
       procedure SetMaskUnits(AValue: TSVGObjectUnits);
       procedure SetMaskContentUnits(AValue: TSVGObjectUnits);
     protected
-      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean

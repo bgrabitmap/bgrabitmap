@@ -171,7 +171,7 @@ var
   {%H-}ChunkHeader : TChunkHeader;
   {%H-}HeaderChunk : THeaderChunk;
 begin
-  fillchar({%H-}result, sizeof(result), 0);
+  {$PUSH}{$HINTS OFF}fillchar({%H-}result, sizeof({%H-}result), 0);{$POP}
   if AStream.Read({%H-}FileHeader, sizeof(FileHeader))<> sizeof(FileHeader) then exit;
   if QWord(FileHeader) <> QWord(PNGComn.Signature) then exit;
   if AStream.Read({%H-}ChunkHeader, sizeof(ChunkHeader))<> sizeof(ChunkHeader) then exit;

@@ -116,7 +116,7 @@ begin
 
   LoadFromBitmapIfNeeded;
 
-  If not TBGRAPixel_RGBAOrder then SwapRedBlue;
+  {$PUSH}{$WARNINGS OFF}If not TBGRAPixel_RGBAOrder then SwapRedBlue;{$POP}
   
   P := Rect.TopLeft;
   LPToDP(ACanvas.Handle, P, 1);
@@ -127,7 +127,7 @@ begin
     Width,Height,
     GDK_RGB_DITHER_NORMAL,0,0);   
 
-  If not TBGRAPixel_RGBAOrder then SwapRedBlue;
+  {$PUSH}{$WARNINGS OFF}If not TBGRAPixel_RGBAOrder then SwapRedBlue;{$POP}
 end;
 
 procedure TBGRAGtkBitmap.DrawOpaque(ACanvas: TCanvas; ARect: TRect);
@@ -296,12 +296,12 @@ begin
     dest := ACanvas.Handle;
     pos := ARect.TopLeft;
     LPtoDP(dest, pos, 1);
-    if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;
+    {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
     gdk_draw_rgb_32_image(TGtkDeviceContext(dest).Drawable,
       TGtkDeviceContext(Dest).GC, pos.x,pos.y,
       AWidth,AHeight, GDK_RGB_DITHER_NORMAL,
       ADataFirstRow, ARowStride);
-    if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;
+    {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
     ACanvas.Changed;
   end;
 end;
@@ -342,7 +342,7 @@ begin
   gdk_pixbuf_get_from_drawable(FPixBuf,
     TGtkDeviceContext(CanvasSource.Handle).Drawable,
     nil, P.X,P.Y,0,0,Width,Height);
-  If not TBGRAPixel_RGBAOrder then SwapRedBlue;
+  {$PUSH}{$WARNINGS OFF}If not TBGRAPixel_RGBAOrder then SwapRedBlue;{$POP}
   InvalidateBitmap;
 end;
 

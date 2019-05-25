@@ -446,7 +446,13 @@ begin
       asm
         haddps xmm2,xmm2
         haddps xmm2,xmm2
-        movss SqLen, xmm2
+        {$ifdef cpux86_64}
+        mov rax, SqLen
+        movss [rax], xmm2
+        {$else}
+        mov eax, SqLen
+        movss [eax], xmm2
+        {$endif}
       end else
       asm
         //mix1
@@ -457,7 +463,13 @@ begin
         movaps xmm7, xmm2
         shufps xmm7, xmm7, $11
         addps xmm2, xmm7
-        movss SqLen, xmm2
+        {$ifdef cpux86_64}
+        mov rax, SqLen
+        movss [rax], xmm2
+        {$else}
+        mov eax, SqLen
+        movss [eax], xmm2
+        {$endif}
       end;
       if SqLen = 0 then exit;
       if SqLen < 1e-6 then //out of bounds for SSE instruction

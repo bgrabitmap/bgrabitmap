@@ -227,7 +227,7 @@ var headerSize: dword;
   totalDepth: integer;
   headerPos: int64;
 begin
-  fillchar({%H-}result, sizeof(result), 0);
+  {$PUSH}{$HINTS OFF}fillchar({%H-}result, sizeof({%H-}result), 0);{$POP}
   headerPos := AStream.Position;
   if AStream.Read({%H-}headerSize, sizeof(headerSize)) <> sizeof(headerSize) then exit;
   headerSize := LEtoN(headerSize);
@@ -829,6 +829,7 @@ begin
      end else
      if FTransparencyOption = toOpaque then
      begin
+       {$PUSH}{$WARNINGS OFF}
        if TBGRAPixel_RGBAOrder then
        begin
         PSrc := LineBuf;
@@ -849,8 +850,10 @@ begin
           Inc(PSrc,4);
         end;
        end;
+       {$POP}
      end else
      begin
+       {$PUSH}{$WARNINGS OFF}
        if TBGRAPixel_RGBAOrder then
        begin
         PSrc := LineBuf;
@@ -873,6 +876,7 @@ begin
            Inc(PSrc,4);
          end;
        end;
+       {$POP}
      end;
     end;
 end;

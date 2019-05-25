@@ -1173,7 +1173,7 @@ begin
   if ReadFile(AName, stream) and (stream.Size >= sizeof(result)) then
   begin
     stream.Position:= 0;
-    stream.ReadBuffer({%H-}result, sizeof({%H-}result));
+    {$PUSH}{$HINTS OFF}stream.ReadBuffer({%H-}result, sizeof({%H-}result));{$POP}
     DWord(result[1,1]) := NtoLE(DWord(result[1,1]));
     DWord(result[2,1]) := NtoLE(DWord(result[2,1]));
     DWord(result[1,2]) := NtoLE(DWord(result[1,2]));

@@ -200,7 +200,7 @@ type
     class procedure LocateStyleDeclaration(AText: string; AProperty: string;
       out AStartPos, AColonPos, AValueLength: integer);
     function GetInlineStyle(const AName,ADefault: string): string;
-    function GetStyleFromStyleSheet(const AName,ADefault: string): string; virtual;
+    function GetStyleFromStyleSheet(const {%H-}AName,ADefault: string): string; virtual;
     function GetStyle(const AName,ADefault: string): string; overload;
     function GetStyle(const AName: string): string; overload;
 
