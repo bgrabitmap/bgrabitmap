@@ -180,7 +180,7 @@ end;
 
 function UTF8CharacterLength(p: PChar): integer;
 begin
-  result := {$IF FPC_FULLVERSION >= 30004}LazUtf8.UTF8CodepointSize{$ELSE}LazUtf8.UTF8CharacterLength{$ENDIF}(p);
+  result := LazUtf8.UTF8CharacterLength(p);
 end;
 
 function UTF8Length(const s: string): PtrInt;
