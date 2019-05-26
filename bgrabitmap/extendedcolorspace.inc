@@ -124,6 +124,7 @@ type
     class function GetChannelName(AIndex: integer): string; virtual; abstract;
     class function GetChannelCount: integer; virtual; abstract;
     class function IndexOfChannel(AName: string): integer;
+    class function IndexOfAlphaChannel: integer; virtual; abstract;
     class function GetMaxValue(AIndex: integer): single; virtual; abstract;
     class function GetMinValue(AIndex: integer): single; virtual; abstract;
     class function GetName: string; virtual; abstract;
