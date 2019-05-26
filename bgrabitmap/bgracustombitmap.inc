@@ -225,11 +225,16 @@ type
 
      {** Returns True if the bitmap only contains transparent pixels or has a size of zero }
      property Empty: boolean Read CheckEmpty;
+
+     {** Returns True if the bitmap is filled with zero values or has a size of zero }
      property IsZero: boolean Read CheckIsZero;
 
-     {** Returns True if there are transparent or semitransparent pixels,
-         and so if the image would be stored with an alpha channel }
+     {** Returns True if there are transparent and so if the image would
+         be stored at least with an alpha channel of 1 bit }
      property HasTransparentPixels: boolean Read GetHasTransparentPixels;
+
+     {** Returns True if there are semitransparent pixels
+         and so if the image would be stored with an alpha channel of at least 8 bit }
      property HasSemiTransparentPixels: boolean Read GetHasSemiTransparentPixels;
 
      {** Average color of the image }
