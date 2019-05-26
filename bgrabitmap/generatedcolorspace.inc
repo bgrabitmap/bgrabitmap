@@ -6,6 +6,7 @@ type
 
   { TStdRGBA }
   
+  PStdRGBA = ^TStdRGBA;
   TStdRGBA = packed record
     red,green,blue,alpha: single;
     class function New(const ARed,AGreen,ABlue,AAlpha:single): TStdRGBA;overload;static;
@@ -14,6 +15,7 @@ type
   
   { TAdobeRGBA }
   
+  PAdobeRGBA = ^TAdobeRGBA;
   TAdobeRGBA = packed record
     red,green,blue,alpha: byte;
     class function New(const ARed,AGreen,ABlue,AAlpha:byte): TAdobeRGBA;overload;static;
@@ -22,6 +24,7 @@ type
   
   { TStdHSLA }
   
+  PStdHSLA = ^TStdHSLA;
   TStdHSLA = packed record
     hue,saturation,lightness,alpha: single;
     class function New(const AHue,ASaturation,ALightness,AAlpha:single): TStdHSLA;overload;static;
@@ -30,6 +33,7 @@ type
   
   { TStdHSVA }
   
+  PStdHSVA = ^TStdHSVA;
   TStdHSVA = packed record
     hue,saturation,value,alpha: single;
     class function New(const AHue,ASaturation,AValue,AAlpha:single): TStdHSVA;overload;static;
@@ -38,6 +42,7 @@ type
   
   { TStdCMYK }
   
+  PStdCMYK = ^TStdCMYK;
   TStdCMYK = packed record
     C,M,Y,K: single;
     class function New(const ACyan,AMagenta,AYellow,ABlack:single): TStdCMYK;static;
@@ -45,6 +50,7 @@ type
   
   { TLinearRGBA }
   
+  PLinearRGBA = ^TLinearRGBA;
   TLinearRGBA = packed record
     red,green,blue,alpha: single;
     class function New(const ARed,AGreen,ABlue,AAlpha:single): TLinearRGBA;overload;static;
@@ -53,6 +59,7 @@ type
   
   { TXYZA }
   
+  PXYZA = ^TXYZA;
   TXYZA = packed record
     X,Y,Z,alpha: single;
     class function New(const AX,AY,AZ,AAlpha:single): TXYZA;overload;static;
@@ -61,6 +68,7 @@ type
   
   { TLabA }
   
+  PLabA = ^TLabA;
   TLabA = packed record
     L,a,b,alpha: single;
     class function New(const ALightness,Aa,Ab,AAlpha:single): TLabA;overload;static;
@@ -69,6 +77,7 @@ type
   
   { TLChA }
   
+  PLChA = ^TLChA;
   TLChA = packed record
     L,C,h,alpha: single;
     class function New(const ALightness,AChroma,AHue,AAlpha:single): TLChA;overload;static;

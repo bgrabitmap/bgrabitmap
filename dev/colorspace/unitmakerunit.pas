@@ -699,6 +699,8 @@ var
 
     Add('{ ' + HelperName + ' }');
     Add('');
+    if not IsHelperOnly(Colorspace) and not AHelperOnly then
+      Add('P'+ColorspaceName+' = ^'+ColorTypeName+';');
     Add(HelperName + ' = ' + typeDeclaration);
 
     AddImp('{ ' + HelperName + ' }');
