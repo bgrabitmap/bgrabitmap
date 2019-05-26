@@ -598,6 +598,7 @@ var
       Add(ColorTypeName+'Colorspace = class(TCustomColorspace)');
       Add('  class function GetChannelName(AIndex: integer): string; override;');
       Add('  class function GetChannelCount: integer; override;');
+      Add('  class function IndexOfAlphaChannel: integer; override;');
       Add('  class function GetMaxValue(AIndex: integer): single; override;');
       Add('  class function GetMinValue(AIndex: integer): single; override;');
       Add('  class function GetName: string; override;');
@@ -620,6 +621,13 @@ var
 
       AddProcedureImp('class function '+ColorTypeName+'Colorspace.GetChannelCount: integer;',
                       'result := ' + inttostr(length(vsfm)));
+
+      if ColorspaceInfo[Colorspace].HasAlpha then
+        AddProcedureImp('class function '+ColorTypeName+'Colorspace.IndexOfAlphaChannel: integer;',
+                        'result := ' + inttostr(length(vsfm)-1))
+      else
+        AddProcedureImp('class function '+ColorTypeName+'Colorspace.IndexOfAlphaChannel: integer;',
+                        'result := -1');
 
       setlength(body, cn + 3);
       body[0] := 'case AIndex of';
@@ -689,11 +697,11 @@ var
       ColorTypeDefined[Colorspace] := true;
     end;
 
-    Add('{' + HelperName + '}');
+    Add('{ ' + HelperName + ' }');
     Add('');
     Add(HelperName + ' = ' + typeDeclaration);
 
-    AddImp('{' + HelperName + '}');
+    AddImp('{ ' + HelperName + ' }');
     AddImp('');
 
     if not IsHelperOnly(Colorspace) and not AHelperOnly then

@@ -4,7 +4,7 @@
 {$UNDEF INCLUDE_INTERFACE}
 type
 
-  {TStdRGBA}
+  { TStdRGBA }
   
   TStdRGBA = packed record
     red,green,blue,alpha: single;
@@ -12,7 +12,7 @@ type
     class function New(const ARed,AGreen,ABlue:single): TStdRGBA;overload;static;
   end;
   
-  {TAdobeRGBA}
+  { TAdobeRGBA }
   
   TAdobeRGBA = packed record
     red,green,blue,alpha: byte;
@@ -20,7 +20,7 @@ type
     class function New(const ARed,AGreen,ABlue:byte): TAdobeRGBA;overload;static;
   end;
   
-  {TStdHSLA}
+  { TStdHSLA }
   
   TStdHSLA = packed record
     hue,saturation,lightness,alpha: single;
@@ -28,7 +28,7 @@ type
     class function New(const AHue,ASaturation,ALightness:single): TStdHSLA;overload;static;
   end;
   
-  {TStdHSVA}
+  { TStdHSVA }
   
   TStdHSVA = packed record
     hue,saturation,value,alpha: single;
@@ -36,14 +36,14 @@ type
     class function New(const AHue,ASaturation,AValue:single): TStdHSVA;overload;static;
   end;
   
-  {TStdCMYK}
+  { TStdCMYK }
   
   TStdCMYK = packed record
     C,M,Y,K: single;
     class function New(const ACyan,AMagenta,AYellow,ABlack:single): TStdCMYK;static;
   end;
   
-  {TLinearRGBA}
+  { TLinearRGBA }
   
   TLinearRGBA = packed record
     red,green,blue,alpha: single;
@@ -51,7 +51,7 @@ type
     class function New(const ARed,AGreen,ABlue:single): TLinearRGBA;overload;static;
   end;
   
-  {TXYZA}
+  { TXYZA }
   
   TXYZA = packed record
     X,Y,Z,alpha: single;
@@ -59,7 +59,7 @@ type
     class function New(const AX,AY,AZ:single): TXYZA;overload;static;
   end;
   
-  {TLabA}
+  { TLabA }
   
   TLabA = packed record
     L,a,b,alpha: single;
@@ -67,7 +67,7 @@ type
     class function New(const ALightness,Aa,Ab:single): TLabA;overload;static;
   end;
   
-  {TLChA}
+  { TLChA }
   
   TLChA = packed record
     L,C,h,alpha: single;
@@ -80,6 +80,7 @@ type
   TColorColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -94,6 +95,7 @@ type
   TBGRAPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -108,6 +110,7 @@ type
   TStdRGBAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -122,6 +125,7 @@ type
   TAdobeRGBAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -136,6 +140,7 @@ type
   TStdHSLAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -150,6 +155,7 @@ type
   TStdHSVAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -164,6 +170,7 @@ type
   TStdCMYKColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -178,6 +185,7 @@ type
   TExpandedPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -192,6 +200,7 @@ type
   TLinearRGBAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -206,6 +215,7 @@ type
   THSLAPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -220,6 +230,7 @@ type
   TGSBAPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -234,6 +245,7 @@ type
   TXYZAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -248,6 +260,7 @@ type
   TLabAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -262,6 +275,7 @@ type
   TLChAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -271,7 +285,7 @@ type
     class function HasReferenceWhite: boolean; override;
   end;
   
-  {TColorHelper}
+  { TColorHelper }
   
   TColorHelper = type helper for TColor
     class function New(const ARed,AGreen,ABlue:byte): TColor;static;
@@ -331,7 +345,7 @@ type
     property blue: byte read GetBlue write SetBlue;
   end;
   
-  {TBGRAPixelHelper}
+  { TBGRAPixelHelper }
   
   TBGRAPixelHelper = record helper(TBGRAPixelBasicHelper) for TBGRAPixel
     class function New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;static;
@@ -361,7 +375,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TStdRGBAHelper}
+  { TStdRGBAHelper }
   
   TStdRGBAHelper = record helper for TStdRGBA
     class function Colorspace: TColorspaceAny; static;
@@ -397,7 +411,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TAdobeRGBAHelper}
+  { TAdobeRGBAHelper }
   
   TAdobeRGBAHelper = record helper for TAdobeRGBA
     class function Colorspace: TColorspaceAny; static;
@@ -433,7 +447,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TStdHSLAHelper}
+  { TStdHSLAHelper }
   
   TStdHSLAHelper = record helper for TStdHSLA
     class function Colorspace: TColorspaceAny; static;
@@ -469,7 +483,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TStdHSVAHelper}
+  { TStdHSVAHelper }
   
   TStdHSVAHelper = record helper for TStdHSVA
     class function Colorspace: TColorspaceAny; static;
@@ -505,7 +519,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TStdCMYKHelper}
+  { TStdCMYKHelper }
   
   TStdCMYKHelper = record helper for TStdCMYK
     class function Colorspace: TColorspaceAny; static;
@@ -553,7 +567,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TExpandedPixelHelper}
+  { TExpandedPixelHelper }
   
   TExpandedPixelHelper = record helper(TExpandedPixelBasicHelper) for TExpandedPixel
     class function New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;static;
@@ -583,7 +597,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TLinearRGBAHelper}
+  { TLinearRGBAHelper }
   
   TLinearRGBAHelper = record helper for TLinearRGBA
     class function Colorspace: TColorspaceAny; static;
@@ -619,7 +633,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {THSLAPixelHelper}
+  { THSLAPixelHelper }
   
   THSLAPixelHelper = record helper(THSLAPixelBasicHelper) for THSLAPixel
     class function New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;static;
@@ -649,7 +663,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TGSBAPixelHelper}
+  { TGSBAPixelHelper }
   
   TGSBAPixelHelper = record helper(TGSBAPixelBasicHelper) for TGSBAPixel
     class function New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;static;
@@ -679,7 +693,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TXYZAHelper}
+  { TXYZAHelper }
   
   TXYZAHelper = record helper for TXYZA
     class function Colorspace: TColorspaceAny; static;
@@ -715,7 +729,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
-  {TLabAHelper}
+  { TLabAHelper }
   
   TLabAHelper = record helper for TLabA
     class function Colorspace: TColorspaceAny; static;
@@ -771,7 +785,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
   
-  {TLChAHelper}
+  { TLChAHelper }
   
   TLChAHelper = record helper for TLChA
     class function Colorspace: TColorspaceAny; static;
@@ -2919,7 +2933,7 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-{TStdRGBA}
+{ TStdRGBA }
 
 class function TStdRGBA.New(const ARed,AGreen,ABlue,AAlpha:single): TStdRGBA;overload;
 begin
@@ -2937,7 +2951,7 @@ begin
   Result.alpha := 1;
 end;
 
-{TAdobeRGBA}
+{ TAdobeRGBA }
 
 class function TAdobeRGBA.New(const ARed,AGreen,ABlue,AAlpha:byte): TAdobeRGBA;overload;
 begin
@@ -2955,7 +2969,7 @@ begin
   Result.alpha := 255;
 end;
 
-{TStdHSLA}
+{ TStdHSLA }
 
 class function TStdHSLA.New(const AHue,ASaturation,ALightness,AAlpha:single): TStdHSLA;overload;
 begin
@@ -2973,7 +2987,7 @@ begin
   Result.alpha := 1;
 end;
 
-{TStdHSVA}
+{ TStdHSVA }
 
 class function TStdHSVA.New(const AHue,ASaturation,AValue,AAlpha:single): TStdHSVA;overload;
 begin
@@ -2991,7 +3005,7 @@ begin
   Result.alpha := 1;
 end;
 
-{TStdCMYK}
+{ TStdCMYK }
 
 class function TStdCMYK.New(const ACyan,AMagenta,AYellow,ABlack:single): TStdCMYK;
 begin
@@ -3001,7 +3015,7 @@ begin
   Result.K := ABlack;
 end;
 
-{TLinearRGBA}
+{ TLinearRGBA }
 
 class function TLinearRGBA.New(const ARed,AGreen,ABlue,AAlpha:single): TLinearRGBA;overload;
 begin
@@ -3019,7 +3033,7 @@ begin
   Result.alpha := 1;
 end;
 
-{TXYZA}
+{ TXYZA }
 
 class function TXYZA.New(const AX,AY,AZ,AAlpha:single): TXYZA;overload;
 begin
@@ -3037,7 +3051,7 @@ begin
   Result.alpha := 1;
 end;
 
-{TLabA}
+{ TLabA }
 
 class function TLabA.New(const ALightness,Aa,Ab,AAlpha:single): TLabA;overload;
 begin
@@ -3055,7 +3069,7 @@ begin
   Result.alpha := 1;
 end;
 
-{TLChA}
+{ TLChA }
 
 class function TLChA.New(const ALightness,AChroma,AHue,AAlpha:single): TLChA;overload;
 begin
@@ -3087,6 +3101,9 @@ end;
 
 class function TColorColorspace.GetChannelCount: integer;
 begin result := 3 end;
+
+class function TColorColorspace.IndexOfAlphaChannel: integer;
+begin result := -1 end;
 
 class function TColorColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3153,6 +3170,9 @@ end;
 
 class function TBGRAPixelColorspace.GetChannelCount: integer;
 begin result := 4 end;
+
+class function TBGRAPixelColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
 
 class function TBGRAPixelColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3224,6 +3244,9 @@ end;
 class function TStdRGBAColorspace.GetChannelCount: integer;
 begin result := 4 end;
 
+class function TStdRGBAColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
+
 class function TStdRGBAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3293,6 +3316,9 @@ end;
 
 class function TAdobeRGBAColorspace.GetChannelCount: integer;
 begin result := 4 end;
+
+class function TAdobeRGBAColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
 
 class function TAdobeRGBAColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3364,6 +3390,9 @@ end;
 class function TStdHSLAColorspace.GetChannelCount: integer;
 begin result := 4 end;
 
+class function TStdHSLAColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
+
 class function TStdHSLAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3433,6 +3462,9 @@ end;
 
 class function TStdHSVAColorspace.GetChannelCount: integer;
 begin result := 4 end;
+
+class function TStdHSVAColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
 
 class function TStdHSVAColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3504,6 +3536,9 @@ end;
 class function TStdCMYKColorspace.GetChannelCount: integer;
 begin result := 4 end;
 
+class function TStdCMYKColorspace.IndexOfAlphaChannel: integer;
+begin result := -1 end;
+
 class function TStdCMYKColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3573,6 +3608,9 @@ end;
 
 class function TExpandedPixelColorspace.GetChannelCount: integer;
 begin result := 4 end;
+
+class function TExpandedPixelColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
 
 class function TExpandedPixelColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3644,6 +3682,9 @@ end;
 class function TLinearRGBAColorspace.GetChannelCount: integer;
 begin result := 4 end;
 
+class function TLinearRGBAColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
+
 class function TLinearRGBAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3713,6 +3754,9 @@ end;
 
 class function THSLAPixelColorspace.GetChannelCount: integer;
 begin result := 4 end;
+
+class function THSLAPixelColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
 
 class function THSLAPixelColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3784,6 +3828,9 @@ end;
 class function TGSBAPixelColorspace.GetChannelCount: integer;
 begin result := 4 end;
 
+class function TGSBAPixelColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
+
 class function TGSBAPixelColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3853,6 +3900,9 @@ end;
 
 class function TXYZAColorspace.GetChannelCount: integer;
 begin result := 4 end;
+
+class function TXYZAColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
 
 class function TXYZAColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3924,6 +3974,9 @@ end;
 class function TLabAColorspace.GetChannelCount: integer;
 begin result := 4 end;
 
+class function TLabAColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
+
 class function TLabAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3994,6 +4047,9 @@ end;
 class function TLChAColorspace.GetChannelCount: integer;
 begin result := 4 end;
 
+class function TLChAColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
+
 class function TLChAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -4048,7 +4104,7 @@ class function TLChAColorspace.HasReferenceWhite: boolean;
 begin result := True end;
 
 
-{TColorHelper}
+{ TColorHelper }
 
 class function TColorHelper.New(const ARed,AGreen,ABlue:byte): TColor;
 begin Result := BGRAGraphics.RGBToColor(ARed,AGreen,ABlue) end;
@@ -4200,7 +4256,7 @@ begin Self := LChAToColor(AValue) end;
 procedure TColorHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToColor(AValue,AReferenceWhite) end;
 
-{TBGRAPixelHelper}
+{ TBGRAPixelHelper }
 
 class function TBGRAPixelHelper.New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;
 begin
@@ -4287,7 +4343,7 @@ begin Self := LChAToBGRAPixel(AValue) end;
 procedure TBGRAPixelHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToBGRAPixel(AValue,AReferenceWhite) end;
 
-{TStdRGBAHelper}
+{ TStdRGBAHelper }
 
 class function TStdRGBAHelper.Colorspace: TColorspaceAny; static;
 begin result := TStdRGBAColorspace end;
@@ -4382,7 +4438,7 @@ begin Self := LChAToStdRGBA(AValue) end;
 procedure TStdRGBAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToStdRGBA(AValue,AReferenceWhite) end;
 
-{TAdobeRGBAHelper}
+{ TAdobeRGBAHelper }
 
 class function TAdobeRGBAHelper.Colorspace: TColorspaceAny; static;
 begin result := TAdobeRGBAColorspace end;
@@ -4477,7 +4533,7 @@ begin Self := LChAToAdobeRGBA(AValue) end;
 procedure TAdobeRGBAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToAdobeRGBA(AValue,AReferenceWhite) end;
 
-{TStdHSLAHelper}
+{ TStdHSLAHelper }
 
 class function TStdHSLAHelper.Colorspace: TColorspaceAny; static;
 begin result := TStdHSLAColorspace end;
@@ -4572,7 +4628,7 @@ begin Self := LChAToStdHSLA(AValue) end;
 procedure TStdHSLAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToStdHSLA(AValue,AReferenceWhite) end;
 
-{TStdHSVAHelper}
+{ TStdHSVAHelper }
 
 class function TStdHSVAHelper.Colorspace: TColorspaceAny; static;
 begin result := TStdHSVAColorspace end;
@@ -4667,7 +4723,7 @@ begin Self := LChAToStdHSVA(AValue) end;
 procedure TStdHSVAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToStdHSVA(AValue,AReferenceWhite) end;
 
-{TStdCMYKHelper}
+{ TStdCMYKHelper }
 
 class function TStdCMYKHelper.Colorspace: TColorspaceAny; static;
 begin result := TStdCMYKColorspace end;
@@ -4798,7 +4854,7 @@ begin Self := LChAToStdCMYK(AValue) end;
 procedure TStdCMYKHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToStdCMYK(AValue,AReferenceWhite) end;
 
-{TExpandedPixelHelper}
+{ TExpandedPixelHelper }
 
 class function TExpandedPixelHelper.New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;
 begin
@@ -4885,7 +4941,7 @@ begin Self := LChAToExpandedPixel(AValue) end;
 procedure TExpandedPixelHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToExpandedPixel(AValue,AReferenceWhite) end;
 
-{TLinearRGBAHelper}
+{ TLinearRGBAHelper }
 
 class function TLinearRGBAHelper.Colorspace: TColorspaceAny; static;
 begin result := TLinearRGBAColorspace end;
@@ -4980,7 +5036,7 @@ begin Self := LChAToLinearRGBA(AValue) end;
 procedure TLinearRGBAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToLinearRGBA(AValue,AReferenceWhite) end;
 
-{THSLAPixelHelper}
+{ THSLAPixelHelper }
 
 class function THSLAPixelHelper.New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;
 begin
@@ -5067,7 +5123,7 @@ begin Self := LChAToHSLAPixel(AValue) end;
 procedure THSLAPixelHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToHSLAPixel(AValue,AReferenceWhite) end;
 
-{TGSBAPixelHelper}
+{ TGSBAPixelHelper }
 
 class function TGSBAPixelHelper.New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;
 begin
@@ -5154,7 +5210,7 @@ begin Self := LChAToGSBAPixel(AValue) end;
 procedure TGSBAPixelHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToGSBAPixel(AValue,AReferenceWhite) end;
 
-{TXYZAHelper}
+{ TXYZAHelper }
 
 class function TXYZAHelper.Colorspace: TColorspaceAny; static;
 begin result := TXYZAColorspace end;
@@ -5249,7 +5305,7 @@ begin Self := LChAToXYZA(AValue) end;
 procedure TXYZAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToXYZA(AValue,AReferenceWhite) end;
 
-{TLabAHelper}
+{ TLabAHelper }
 
 class function TLabAHelper.Colorspace: TColorspaceAny; static;
 begin result := TLabAColorspace end;
@@ -5404,7 +5460,7 @@ begin Self := XYZAToLabA(AValue,AReferenceWhite) end;
 procedure TLabAHelper.FromLChA(AValue: TLChA);
 begin Self := LChAToLabA(AValue) end;
 
-{TLChAHelper}
+{ TLChAHelper }
 
 class function TLChAHelper.Colorspace: TColorspaceAny; static;
 begin result := TLChAColorspace end;
