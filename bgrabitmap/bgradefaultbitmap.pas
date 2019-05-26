@@ -3748,9 +3748,6 @@ var
   p: PBGRAPixel;
 begin
   if not CheckClippedRectBounds(x,y,x2,y2) then exit;
-  tx := x2 - x;
-  Dec(x2);
-  Dec(y2);
 
   if mode = dmSetExceptTransparent then
   begin
@@ -3765,22 +3762,23 @@ begin
       delta := -Width
     else
       delta := Width;
+    tx := x2 - x;
 
     case mode of
       dmFastBlend:
-        for yb := y2 - y downto 0 do
+        for yb := y2 - y - 1 downto 0 do
         begin
           FastBlendPixelsInline(p, c, tx);
           Inc(p, delta);
         end;
       dmDrawWithTransparency:
-        for yb := y2 - y downto 0 do
+        for yb := y2 - y - 1 downto 0 do
         begin
           DrawPixelsInline(p, c, tx);
           Inc(p, delta);
         end;
       dmSet:
-        for yb := y2 - y downto 0 do
+        for yb := y2 - y - 1 downto 0 do
         begin
           FillInline(p, c, tx);
           Inc(p, delta);
@@ -3788,7 +3786,7 @@ begin
       dmXor:
         if DWord(c) = 0 then exit
         else
-        for yb := y2 - y downto 0 do
+        for yb := y2 - y - 1 downto 0 do
         begin
           XorInline(p, c, tx);
           Inc(p, delta);
