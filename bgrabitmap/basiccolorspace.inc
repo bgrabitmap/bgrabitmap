@@ -454,16 +454,28 @@ begin
 end;
 
 function GammaCompressionW(AExpanded: word): word;
+var
+  compByte: Byte;
+  reExp, reExp2: Word;
 begin
-  if AExpanded = 0 then
-    result := 0
-  else if AExpanded = $ffff then
-    result := $ffff
-  else
+  if AExpanded=0 then exit(0) else
+  if AExpanded=65535 then exit(65535) else
   begin
-    result := GammaCompressionTab[AExpanded];
-    result := (result shl 8) + result;
-    inc(result, GammaCompressionTabFrac[AExpanded]);
+    compByte := GammaCompressionTab[AExpanded];
+    reExp := GammaExpansionTab[compByte];
+    result := compByte + (compByte shl 8);
+    if reExp < AExpanded then
+    begin
+      reExp2 := GammaExpansionTabHalf[compByte];
+      if reExp2 <> reExp then
+        inc(result, ((AExpanded-reExp)*$101) div (reExp2-reExp));
+    end else
+    if reExp > AExpanded then
+    begin
+      reExp2 := GammaExpansionTabHalf[compByte-1];
+      if reExp2 <> reExp then
+        dec(result, ((reExp-AExpanded)*$101) div (reExp-reExp2));
+    end;
   end;
 end;
 
