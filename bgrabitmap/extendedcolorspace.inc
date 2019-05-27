@@ -157,6 +157,10 @@ function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 function BGRAPixelToStdRGBA(const ABGRAPixel: TBGRAPixel): TStdRGBA;
 function LinearRGBAToExpandedPixel(const ALinearRGBA: TLinearRGBA): TExpandedPixel;
 function ExpandedPixelToLinearRGBA(const AExpandedPixel: TExpandedPixel): TLinearRGBA;
+function ExpandedPixelToStdRGBA(const AExpandedPixel: TExpandedPixel): TStdRGBA;
+function GammaCompressionWF(AValue: Word): single;
+function StdRGBAToExpandedPixel(const AStdRGBA: TStdRGBA): TExpandedPixel;
+function GammaExpansionFW(AValue: single): word;
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA): TXYZA;
 function XYZAToLinearRGBA(const AXYZA: TXYZA): TLinearRGBA;
 function XYZAToLabA(const AXYZA: TXYZA): TLabA; overload;
@@ -442,6 +446,80 @@ begin
     result.blue := blue / 65535;
     result.alpha := alpha / 65535;
   end;
+end;
+
+function GammaCompressionWF(AValue: Word): single;
+const
+  oneOver255 = 1/255;
+var
+  compByte: Byte;
+  reExp, reExp2: Word;
+begin
+  if AValue=0 then exit(0) else
+  if AValue=65535 then exit(1) else
+  begin
+    compByte := GammaCompressionTab[AValue];
+    reExp := GammaExpansionTab[compByte];
+    if reExp = AValue then
+      result := compByte * oneOver255
+    else
+    if reExp < AValue then
+    begin
+      reExp2 := GammaExpansionTabHalf[compByte];
+      result := (compByte + (AValue-reExp)/(reExp2-reExp)*0.5)*oneOver255;
+    end else
+    begin
+      reExp2 := GammaExpansionTabHalf[compByte-1];
+      result := (compByte - (reExp-AValue)/(reExp-reExp2)*0.5)*oneOver255;
+    end;
+  end;
+end;
+
+function ExpandedPixelToStdRGBA(const AExpandedPixel: TExpandedPixel): TStdRGBA;
+begin
+  result.red := GammaCompressionWF(AExpandedPixel.red);
+  result.green := GammaCompressionWF(AExpandedPixel.green);
+  result.blue := GammaCompressionWF(AExpandedPixel.blue);
+  result.alpha := AExpandedPixel.alpha/65535;
+end;
+
+function GammaExpansionFW(AValue: single): word;
+const
+  fracShift = 10;
+  intRange = 255 shl fracShift;
+  fracAnd = (1 shl fracShift)-1;
+  fracHalf = 1 shl (fracShift-1);
+var
+  valInt, byteVal, fracPart: integer;
+  half: Word;
+begin
+  if AValue <= 0 then exit(0)
+  else if AValue >= 1 then exit(65535);
+
+  valInt := round(AValue*intRange);
+  byteVal := valInt shr fracShift;
+  fracPart := valInt and fracAnd;
+  if fracPart >= fracHalf then
+  begin
+    result := GammaExpansionTab[byteVal+1];
+    half := GammaExpansionTabHalf[byteVal];
+    dec(result, ((result-half)*(1024-fracPart)+256) shr 9);
+  end
+  else
+  begin
+    result := GammaExpansionTab[byteVal];
+    half := GammaExpansionTabHalf[byteVal];
+    if fracPart > 0 then
+      inc(result, ((half-result)*fracPart+256) shr 9);
+  end;
+end;
+
+function StdRGBAToExpandedPixel(const AStdRGBA: TStdRGBA): TExpandedPixel;
+begin
+  result.red := GammaExpansionFW(AStdRGBA.red);
+  result.green := GammaExpansionFW(AStdRGBA.green);
+  result.blue := GammaExpansionFW(AStdRGBA.blue);
+  result.alpha:= round(AStdRGBA.alpha*65535);
 end;
 
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA): TXYZA;
@@ -737,24 +815,8 @@ function StdRGBAToLinearRGBA(const AStdRGBA: TStdRGBA): TLinearRGBA;
 
   function GammaExpansionF(ACompressed: single): single;
   const oneOver65535 : single = 1/65535;
-  var
-    intPart: Integer;
-    fracPart: Single;
   begin
-    if ACompressed <= 0 then
-      result := 0
-    else if ACompressed >= 1 then
-      result := 1
-    else
-    begin
-      ACompressed *= 255;
-      intPart := trunc(ACompressed);
-      fracPart := ACompressed - intPart;
-      if fracPart = 0 then
-        result := GammaExpansionTab[intPart]*oneOver65535
-      else
-        result := (GammaExpansionTab[intPart]*(1-fracPart)+GammaExpansionTab[intPart+1]*fracPart)*oneOver65535;
-    end;
+    result := GammaExpansionFW(ACompressed)*oneOver65535;
   end;
 
 begin
@@ -767,27 +829,8 @@ end;
 function LinearRGBAToStdRGBA(const ALinearRGBA: TLinearRGBA): TStdRGBA;
 
   function GammaCompressionF(AExpanded: single): single;
-  const oneOver255 : single = 1/255;
-    oneOver256: single = 1/256;
-  var
-    intPart: Integer;
-    fracPart: Single;
   begin
-    if AExpanded <= 0 then
-      result := 0
-    else if AExpanded >= 1 then
-      result := 1
-    else
-    begin
-      AExpanded *= 65535;
-      intPart := trunc(AExpanded);
-      fracPart := AExpanded - intPart;
-      if fracPart = 0 then
-        result := (GammaCompressionTab[intPart] + GammaCompressionTabFrac[intPart]*oneOver256)*oneOver255
-      else
-        result := ( (GammaCompressionTab[intPart]+GammaCompressionTabFrac[intPart]*oneOver256)     *(1-fracPart)+
-                    (GammaCompressionTab[intPart+1]+GammaCompressionTabFrac[intPart+1]*oneOver256) * fracPart     )*oneOver255;
-    end;
+    result := GammaCompressionWF(round(AExpanded*65535));
   end;
 
 begin

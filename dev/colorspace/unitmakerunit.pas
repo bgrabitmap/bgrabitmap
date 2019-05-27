@@ -19,6 +19,7 @@ type
 
 const
   ChannelValueTypeName : array[TChannelValueType] of string = ('byte', 'word', 'longword', 'single', 'double');
+  ChannelValueTypePrecision : array[TChannelValueType] of integer = (1, 2, 4, 4, 8);
   MAXWORD = $ffff;
 
 type
@@ -72,35 +73,52 @@ type
     First, Last: TColorspaceEnum;
     ToFirstFunc, ToLastFunc: string;
     HandlesExtraAlpha: boolean;
+    Weight: integer;
   end;
 
 type
   TColorspaceArray = array of TColorspaceEnum;
+
+  TPath = array of record
+            PairIndex: integer;
+            Reverse: boolean;
+          end;
+  TPathArray = array of TPath;
 
 var
   PairsList: array of TColorPair;
   PathMatrix: packed array[TColorspaceEnum, TColorspaceEnum] of Word;
 
 function FindPath(AFrom, ATo: TColorspaceEnum): TColorspaceArray;
-function NewColorPair(AFirst, ALast: TColorspaceEnum; AToFirstFunc, AToLastFunc: string; AHandlesExtraAlpha: boolean): TColorPair;
-procedure AddColorPair(AFirst, ALast: TColorspaceEnum; AToFirstFunc : string = ''; AToLastFunc: string = ''; AHandlesExtraAlpha: boolean = true);
+function NewColorPair(AFirst, ALast: TColorspaceEnum;
+                      AToFirstFunc, AToLastFunc: string;
+                      AHandlesExtraAlpha: boolean; AWeight: integer): TColorPair;
+procedure AddColorPair(AFirst, ALast: TColorspaceEnum;
+                       AToFirstFunc : string = ''; AToLastFunc: string = '';
+                       AHandlesExtraAlpha: boolean = true;
+                       AWeight: integer = 1);
 function GetConversionFunction(AFrom, ATo: TColorspaceEnum): string;
 procedure AddAlphaPairs;
 procedure GenerateCode;
 
 implementation
 
+uses math;
+
 function IsHelperOnly(cs: TColorspaceEnum): boolean;
 begin
   result := ColorspaceInfo[cs].Declaration.EndsWith(' helper');
 end;
 
-procedure AddColorPair(AFirst, ALast: TColorspaceEnum; AToFirstFunc, AToLastFunc: string; AHandlesExtraAlpha: boolean);
+procedure AddColorPair(AFirst, ALast: TColorspaceEnum;
+                       AToFirstFunc : string = ''; AToLastFunc: string = '';
+                       AHandlesExtraAlpha: boolean = true;
+                       AWeight: integer = 1);
 begin
   SetLength(PairsList, Length(PairsList) + 1);
   if AToFirstFunc = '' then AToFirstFunc:= ColorspaceInfo[ALast].Name + 'To' + ColorspaceInfo[AFirst].Name;
   if AToLastFunc = '' then AToLastFunc:= ColorspaceInfo[AFirst].Name + 'To' + ColorspaceInfo[ALast].Name;
-  PairsList[Length(PairsList) - 1] := NewColorPair(AFirst, ALast, AToFirstFunc, AToLastFunc, AHandlesExtraAlpha);
+  PairsList[Length(PairsList) - 1] := NewColorPair(AFirst, ALast, AToFirstFunc, AToLastFunc, AHandlesExtraAlpha, AWeight);
 end;
 
 function GetConversionFunction(AFrom, ATo: TColorspaceEnum; out AHandlesExtraAlpha: boolean): string;
@@ -143,39 +161,94 @@ begin
       end;
 end;
 
-function FindPath(AFrom, ATo: TColorspaceEnum): TColorspaceArray;
+function FindPathRec(AFrom, ATo: TColorspaceEnum; AEnd: TPath;
+  ARemainLen: Word; AWantedPrecision: integer): TPathArray;
 var
-  curLen: Word;
+  i, j: Integer;
   cs: TColorspaceEnum;
-  i: Integer;
-  found: boolean;
+  subEnd: TPath;
+  found: Boolean;
+  subResult: TPathArray;
 begin
   result := nil;
-  curLen := PathMatrix[AFrom,ATo];
-  if curLen = MAXWORD then
+  for cs := low(TColorspaceEnum) to high(TColorspaceEnum) do
+    if (PathMatrix[AFrom,cs] = ARemainLen-1) and
+      (ChannelValueTypePrecision[ColorspaceInfo[cs].ValueType] >= AWantedPrecision) then
+    begin
+      for i := 0 to high(PairsList) do
+      if ((PairsList[i].First = cs) and (PairsList[i].Last = ATo)) or
+        ((PairsList[i].Last = cs) and (PairsList[i].First = ATo))  then
+      begin
+        subEnd := nil;
+        setLength(subEnd, length(AEnd)+1);
+        for j := 0 to high(AEnd) do
+          subEnd[j+1] := AEnd[j];
+        subEnd[0].PairIndex := i;
+        subEnd[0].Reverse:= PairsList[i].Last = cs;
+
+        if ARemainLen <= 1 then
+        begin
+          setlength(result, length(result)+1);
+          result[high(result)] := subEnd;
+        end else
+        begin
+          subResult := FindPathRec(AFrom,cs, subEnd, ARemainLen-1, AWantedPrecision);
+          for j := 0 to high(subResult) do
+          begin
+            setlength(result, length(result)+1);
+            result[high(result)] := subResult[j];
+          end;
+        end;
+        break;
+      end;
+    end;
+end;
+
+function FindPath(AFrom, ATo: TColorspaceEnum): TColorspaceArray;
+var
+  pathLen: Word;
+  i: Integer;
+  subResult: TPathArray;
+  bestIndex, bestWeight, weight, j, wantedPrecision: integer;
+  path: TPath;
+begin
+  result := nil;
+  pathLen := PathMatrix[AFrom,ATo];
+  wantedPrecision := min(ChannelValueTypePrecision[ColorspaceInfo[AFrom].ValueType],
+                         ChannelValueTypePrecision[ColorspaceInfo[ATo].ValueType]);
+  if pathLen = MAXWORD then
     raise exception.Create('No path found');
 
-  setlength(result, curLen+1);
-  result[curLen] := ATo;
-  while curLen > 0 do
+  subResult := FindPathRec(AFrom,ATo, nil, pathLen, wantedPrecision);
+  bestIndex := -1;
+  bestWeight := maxLongint;
+  for i := 0 to high(subResult) do
   begin
-    found := false;
-    for cs := low(TColorspaceEnum) to high(TColorspaceEnum) do
-      if PathMatrix[AFrom,cs] = curLen-1 then
-      begin
-        for i := 0 to high(PairsList) do
-        if ((PairsList[i].First = cs) and (PairsList[i].Last = result[curLen])) or
-          ((PairsList[i].Last = cs) and (PairsList[i].First = result[curLen]))  then
-        begin
-          dec(curLen);
-          result[curLen] := cs;
-          found := true;
-          break;
-        end;
-      end;
-    if not found then
-      raise exception.Create('Cannot find link');
+    weight := 0;
+    path := subResult[i];
+    for j := 0 to high(path) do
+      inc(weight, PairsList[path[j].PairIndex].Weight);
+    if weight < bestWeight then
+    begin
+      bestWeight := weight;
+      bestIndex := i;
+    end;
   end;
+
+  if bestIndex = -1 then raise exception.Create('No best path found');
+  path := subResult[bestIndex];
+  setlength(result, length(path)+1);
+  for j := 0 to high(path) do
+  begin
+    if path[j].Reverse then
+      result[j] := PairsList[path[j].PairIndex].Last
+    else
+      result[j] := PairsList[path[j].PairIndex].First;
+  end;
+  if path[high(path)].Reverse then
+    result[high(result)] := PairsList[path[high(path)].PairIndex].First
+  else
+    result[high(result)] := PairsList[path[high(path)].PairIndex].Last;
 end;
 
 procedure MakePathMatrix;
@@ -223,7 +296,7 @@ begin
   end;
 end;
 
-function NewColorPair(AFirst, ALast: TColorspaceEnum; AToFirstFunc, AToLastFunc: string; AHandlesExtraAlpha: boolean): TColorPair;
+function NewColorPair(AFirst, ALast: TColorspaceEnum; AToFirstFunc, AToLastFunc: string; AHandlesExtraAlpha: boolean; AWeight: integer): TColorPair;
 begin
   with Result do
   begin
@@ -232,6 +305,7 @@ begin
     ToFirstFunc:= AToFirstFunc;
     ToLastFunc:= AToLastFunc;
     HandlesExtraAlpha:= AHandlesExtraAlpha;
+    Weight := AWeight;
   end;
 end;
 
@@ -905,7 +979,8 @@ begin
   AddColorPair(csStdCMYKA, csStdRGBA);
 
   AddColorPair(csExpandedPixel, csBGRAPixel, 'GammaExpansion', 'GammaCompression');
-  AddColorPair(csLinearRGBA, csStdRGBA);
+  AddColorPair(csExpandedPixel, csStdRGBA, '','',true, 2);
+  AddColorPair(csLinearRGBA, csStdRGBA, '','',true, 2);
   AddColorPair(csLinearRGBA, csExpandedPixel);
   AddColorPair(csHSLAPixel, csBGRAPixel, 'BGRAToHSLA', 'HSLAToBGRA');
   AddColorPair(csGSBAPixel, csBGRAPixel, 'BGRAToGSBA', 'GSBAToBGRA');
@@ -913,7 +988,7 @@ begin
   AddColorPair(csGSBAPixel, csExpandedPixel, 'ExpandedToGSBA', 'GSBAToExpanded');
   AddColorPair(csHSLAPixel, csGSBAPixel, 'GSBAToHSLA', 'HSLAToGSBA');
   AddColorPair(csXYZA, csLinearRGBA);
-  AddColorPair(csLabA, csXYZA);
+  AddColorPair(csLabA, csXYZA, '','',true, 2);
   AddColorPair(csLabA, csLChA);
   AddColorPair(csAdobeRGBA, csXYZA);
 

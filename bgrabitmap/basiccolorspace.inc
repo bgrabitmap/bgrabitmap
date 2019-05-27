@@ -9,11 +9,11 @@ type
 { Gamma conversion arrays. Should be used as readonly }
 var
   // TBGRAPixel -> TExpandedPixel
-  GammaExpansionTab:   packed array[0..255] of word;
+  GammaExpansionTab:     packed array[0..255] of word;
+  GammaExpansionTabHalf: packed array[0..254] of word;
 
   // TExpandedPixel -> TBGRAPixel
   GammaCompressionTab : packed array[0..65535] of byte;          //rounded value
-  GammaCompressionTabFrac : packed array[0..65535] of shortint;  //fractional part of value from -0.5 to +0.5
 
 procedure BGRASetGamma(AGamma: single = 1.7);
 function BGRAGetGamma: single;
@@ -376,7 +376,6 @@ begin
   //the linear factor is used to normalize expanded values in the range 0..65535
   GammaLinearFactor := 65535 / power(255, GammaExpFactor);
   GammaExpansionTab[0] := 0;
-  GammaCompressionTab[0] := 0;
   nextpos := 0;
   for i := 0 to 255 do
   begin
@@ -387,16 +386,11 @@ begin
     else
       nextpos := round(power(i+0.5, GammaExpFactor) * GammaLinearFactor);
     GammaExpansionTab[i] := midpos;
+    GammaExpansionTabHalf[i] := nextpos;
     for j := prevpos to midpos-1 do
-    begin
       GammaCompressionTab[j] := i;
-      GammaCompressionTabFrac[j] := -128 + (j-prevpos)*128 div (midpos-prevpos);
-    end;
     for j := midpos to nextpos-1 do
-    begin
       GammaCompressionTab[j] := i;
-      GammaCompressionTabFrac[j] := (j-midpos)*128 div (nextpos-midpos);
-    end;
   end;
   GammaCompressionTab[0] := 0;
 end;
