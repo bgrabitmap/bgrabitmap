@@ -527,9 +527,9 @@ begin
   with ALinearRGBA do
   begin
     // Observer= 2°, Illuminant= D65
-    result.X := red * 0.4124 + green * 0.3576 + blue * 0.1805;
-    result.Y := red * 0.2126 + green * 0.7152 + blue * 0.0722;
-    result.Z := red * 0.0193 + green * 0.1192 + blue * 0.9505;
+    result.X := red * 0.4124564 + green * 0.3575761 + blue * 0.1804375;
+    result.Y := red * 0.2126729 + green * 0.7151522 + blue * 0.0721750;
+    result.Z := red * 0.0193339 + green * 0.1191920 + blue * 0.9503041;
   end;
   Result.alpha := ALinearRGBA.alpha;
 end;
@@ -538,9 +538,9 @@ function XYZAToLinearRGBA(const AXYZA: TXYZA): TLinearRGBA;
 begin
   with AXYZA do
   begin
-    result.red := Clamp(X * 3.2406 + Y * (-1.5372) + Z * (-0.49), 0, 1);
-    result.green := Clamp(X * (-0.969) + Y * 1.8758 + Z * 0.0415, 0, 1);
-    result.blue := Clamp(X * 0.0557 + Y * (-0.2040) + Z * 1.0570, 0, 1);
+    result.red := Clamp(X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314), 0, 1);
+    result.green := Clamp(X * (-0.9692660) + Y * 1.8760108 + Z * 0.0415560, 0, 1);
+    result.blue := Clamp(X * 0.0556434 + Y * (-0.2040259) + Z * 1.0572252, 0, 1);
   end;
   Result.alpha := AXYZA.alpha;
 end;
