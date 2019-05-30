@@ -466,11 +466,13 @@ begin
     if reExp < AValue then
     begin
       reExp2 := GammaExpansionTabHalf[compByte];
-      result := (compByte + (AValue-reExp)/(reExp2-reExp)*0.5)*oneOver255;
+      if reExp2<>reExp then
+        result := (compByte + (AValue-reExp)/(reExp2-reExp)*0.5)*oneOver255;
     end else
     begin
       reExp2 := GammaExpansionTabHalf[compByte-1];
-      result := (compByte - (reExp-AValue)/(reExp-reExp2)*0.5)*oneOver255;
+      if reExp2<>reExp then
+        result := (compByte - (reExp-AValue)/(reExp-reExp2)*0.5)*oneOver255;
     end;
   end;
 end;
@@ -489,6 +491,7 @@ const
   intRange = 255 shl fracShift;
   fracAnd = (1 shl fracShift)-1;
   fracHalf = 1 shl (fracShift-1);
+  fracQuarter = 1 shl (fracShift-2);
 var
   valInt, byteVal, fracPart: integer;
   half: Word;
@@ -503,14 +506,16 @@ begin
   begin
     result := GammaExpansionTab[byteVal+1];
     half := GammaExpansionTabHalf[byteVal];
-    dec(result, ((result-half)*(1024-fracPart)+256) shr 9);
+    dec(result, ((result-half)*((1 shl fracShift)-fracPart)+fracQuarter) shr (fracShift-1));
   end
   else
   begin
     result := GammaExpansionTab[byteVal];
-    half := GammaExpansionTabHalf[byteVal];
     if fracPart > 0 then
-      inc(result, ((half-result)*fracPart+256) shr 9);
+    begin
+      half := GammaExpansionTabHalf[byteVal];
+      inc(result, ((half-result)*fracPart+fracQuarter) shr (fracShift-1));
+    end;
   end;
 end;
 
