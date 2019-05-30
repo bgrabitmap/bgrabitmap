@@ -133,6 +133,7 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); virtual; abstract;
     class procedure Convert(const ASource; out ADest; ADestColorspace: TColorspaceAny;
                             ACount: integer = 1; AReferenceWhite: PXYZReferenceWhite = nil);
+    class function GetConversion(ADestColorspace: TColorspaceAny): TColorspaceConvertArrayProc;
     class function HasReferenceWhite: boolean; virtual; abstract;
   end;
 
@@ -227,6 +228,11 @@ begin
   end;
 end;
 
+class function TCustomColorspace.GetConversion(ADestColorspace: TColorspaceAny): TColorspaceConvertArrayProc;
+begin
+  result := ColorspaceCollection.GetConversion(self, ADestColorspace);
+end;
+
 { ColorspaceCollection }
 
 class function ColorspaceCollection.GetCount: integer;
@@ -279,11 +285,20 @@ begin
   FColorspaceConversions[idxSource][idxDest] := AConversion;
 end;
 
+procedure CopyColorsAny(ASource: pointer; ADest: Pointer; ACount: integer;
+         {%H-}ASourceStride:integer; ADestStride:integer; {%H-}AReferenceWhite: PXYZReferenceWhite);
+begin
+  move(ASource^, ADest^, ADestStride * ACount);
+end;
+
 class function ColorspaceCollection.GetConversion(ASource: TColorspaceAny;
   ADest: TColorspaceAny): TColorspaceConvertArrayProc;
 var
   idxSource, idxDest: Integer;
 begin
+  if ASource = ADest then
+    exit(@CopyColorsAny);
+
   idxSource := IndexOf(ASource);
   if idxSource = -1 then raise exception.Create('Colorspace not registered');
   idxDest := IndexOf(ADest);
