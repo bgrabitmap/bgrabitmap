@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, typinfo, rttiutils, BGRABitmapTypes;
 
 type
-  TColorspaceEnum = (csColor, csBGRAPixel, csStdRGBA, //sRGB
+  TColorspaceEnum = (csColor, csBGRAPixel, csFPColor, csStdRGBA, //sRGB
     csAdobeRGBA,
     csStdHSLA, csStdHSVA, csStdCMYKA,            //based on sRGB
     csExpandedPixel, csLinearRGBA,               //linear RGB
@@ -39,6 +39,9 @@ const
    VariableNames: 'red,green,blue';                      FullNames: 'Red,Green,Blue';                 MinMax: '0,0,0,255,255,255'),
    (Name: 'BGRAPixel';     Declaration: 'record helper'; Colorspace: 'StdRGB';      HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtByte;    BasicHelper: true;
    VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,255,255,255,255'),
+   (Name: 'FPColor';       Declaration: 'record helper'; Colorspace: 'StdRGB';      HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtWord;    BasicHelper: true;
+   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,65535,65535,65535,65535'),
+
    (Name: 'StdRGBA';       Declaration: 'packed record'; Colorspace: 'StdRGB';      HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtSingle;  BasicHelper: false;
    VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,1,1,1,1'),
    (Name: 'AdobeRGBA';     Declaration: 'packed record'; Colorspace: 'AdobeRGB';    HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtByte;    BasicHelper: false;
@@ -167,7 +170,6 @@ var
   i, j: Integer;
   cs: TColorspaceEnum;
   subEnd: TPath;
-  found: Boolean;
   subResult: TPathArray;
 begin
   result := nil;
@@ -977,6 +979,8 @@ begin
   AddColorPair(csStdHSVA, csStdRGBA);
   AddColorPair(csStdHSLA, csStdHSVA);
   AddColorPair(csStdCMYKA, csStdRGBA);
+  AddColorPair(csFPColor, csBGRAPixel, 'BGRAToFPColor', 'FPColorToBGRA');
+  AddColorPair(csFPColor, csExpandedPixel, 'ExpandedToFPColor', 'FPColorToExpanded', true, 2);
 
   AddColorPair(csExpandedPixel, csBGRAPixel, 'GammaExpansion', 'GammaCompression');
   AddColorPair(csExpandedPixel, csStdRGBA, '','',true, 2);

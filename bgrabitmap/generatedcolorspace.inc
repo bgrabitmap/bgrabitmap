@@ -114,6 +114,21 @@ type
     class function HasReferenceWhite: boolean; override;
   end;
   
+  { TFPColorColorspace }
+  
+  TFPColorColorspace = class(TCustomColorspace)
+    class function GetChannelName(AIndex: integer): string; override;
+    class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
+    class function GetMaxValue(AIndex: integer): single; override;
+    class function GetMinValue(AIndex: integer): single; override;
+    class function GetName: string; override;
+    class function GetSize: integer; override;
+    class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
+    class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
+    class function HasReferenceWhite: boolean; override;
+  end;
+  
   { TStdRGBAColorspace }
   
   TStdRGBAColorspace = class(TCustomColorspace)
@@ -309,6 +324,8 @@ type
   public
     function ToBGRAPixel: TBGRAPixel;overload;
     function ToBGRAPixel(AAlpha: byte): TBGRAPixel;overload;
+    function ToFPColor: TFPColor;overload;
+    function ToFPColor(AAlpha: word): TFPColor;overload;
     function ToStdRGBA: TStdRGBA;overload;
     function ToStdRGBA(AAlpha: single): TStdRGBA;overload;
     function ToAdobeRGBA: TAdobeRGBA;overload;
@@ -335,6 +352,7 @@ type
     function ToLChA(AAlpha: single): TLChA;overload;
     function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    procedure FromFPColor(AValue: TFPColor);
     procedure FromStdRGBA(AValue: TStdRGBA);
     procedure FromAdobeRGBA(AValue: TAdobeRGBA);
     procedure FromStdHSLA(AValue: TStdHSLA);
@@ -384,12 +402,43 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
   
+  { TFPColorHelper }
+  
+  TFPColorHelper = record helper(TFPColorBasicHelper) for TFPColor
+    class function New(const ARed,AGreen,ABlue,AAlpha:word): TFPColor;overload;static;
+    class function New(const ARed,AGreen,ABlue:word): TFPColor;overload;static;
+    class function Colorspace: TColorspaceAny; static;
+    function ToStdRGBA: TStdRGBA;
+    function ToAdobeRGBA: TAdobeRGBA;
+    function ToStdHSLA: TStdHSLA;
+    function ToStdHSVA: TStdHSVA;
+    function ToStdCMYK: TStdCMYK;
+    function ToLinearRGBA: TLinearRGBA;
+    function ToXYZA: TXYZA;
+    function ToLabA: TLabA;overload;
+    function ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
+    function ToLChA: TLChA;overload;
+    function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
+    procedure FromStdRGBA(AValue: TStdRGBA);
+    procedure FromAdobeRGBA(AValue: TAdobeRGBA);
+    procedure FromStdHSLA(AValue: TStdHSLA);
+    procedure FromStdHSVA(AValue: TStdHSVA);
+    procedure FromStdCMYK(AValue: TStdCMYK);
+    procedure FromLinearRGBA(AValue: TLinearRGBA);
+    procedure FromXYZA(AValue: TXYZA);
+    procedure FromLabA(AValue: TLabA); overload;
+    procedure FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromLChA(AValue: TLChA); overload;
+    procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
+  end;
+  
   { TStdRGBAHelper }
   
   TStdRGBAHelper = record helper for TStdRGBA
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
     function ToBGRAPixel: TBGRAPixel;
+    function ToFPColor: TFPColor;
     function ToAdobeRGBA: TAdobeRGBA;
     function ToStdHSLA: TStdHSLA;
     function ToStdHSVA: TStdHSVA;
@@ -405,6 +454,7 @@ type
     function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    procedure FromFPColor(AValue: TFPColor);
     procedure FromAdobeRGBA(AValue: TAdobeRGBA);
     procedure FromStdHSLA(AValue: TStdHSLA);
     procedure FromStdHSVA(AValue: TStdHSVA);
@@ -426,6 +476,7 @@ type
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
     function ToBGRAPixel: TBGRAPixel;
+    function ToFPColor: TFPColor;
     function ToStdRGBA: TStdRGBA;
     function ToStdHSLA: TStdHSLA;
     function ToStdHSVA: TStdHSVA;
@@ -441,6 +492,7 @@ type
     function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    procedure FromFPColor(AValue: TFPColor);
     procedure FromStdRGBA(AValue: TStdRGBA);
     procedure FromStdHSLA(AValue: TStdHSLA);
     procedure FromStdHSVA(AValue: TStdHSVA);
@@ -462,6 +514,7 @@ type
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
     function ToBGRAPixel: TBGRAPixel;
+    function ToFPColor: TFPColor;
     function ToStdRGBA: TStdRGBA;
     function ToAdobeRGBA: TAdobeRGBA;
     function ToStdHSVA: TStdHSVA;
@@ -477,6 +530,7 @@ type
     function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    procedure FromFPColor(AValue: TFPColor);
     procedure FromStdRGBA(AValue: TStdRGBA);
     procedure FromAdobeRGBA(AValue: TAdobeRGBA);
     procedure FromStdHSVA(AValue: TStdHSVA);
@@ -498,6 +552,7 @@ type
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
     function ToBGRAPixel: TBGRAPixel;
+    function ToFPColor: TFPColor;
     function ToStdRGBA: TStdRGBA;
     function ToAdobeRGBA: TAdobeRGBA;
     function ToStdHSLA: TStdHSLA;
@@ -513,6 +568,7 @@ type
     function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    procedure FromFPColor(AValue: TFPColor);
     procedure FromStdRGBA(AValue: TStdRGBA);
     procedure FromAdobeRGBA(AValue: TAdobeRGBA);
     procedure FromStdHSLA(AValue: TStdHSLA);
@@ -535,6 +591,8 @@ type
     function ToColor: TColor;
     function ToBGRAPixel: TBGRAPixel;overload;
     function ToBGRAPixel(AAlpha: byte): TBGRAPixel;overload;
+    function ToFPColor: TFPColor;overload;
+    function ToFPColor(AAlpha: word): TFPColor;overload;
     function ToStdRGBA: TStdRGBA;overload;
     function ToStdRGBA(AAlpha: single): TStdRGBA;overload;
     function ToAdobeRGBA: TAdobeRGBA;overload;
@@ -561,6 +619,7 @@ type
     function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    procedure FromFPColor(AValue: TFPColor);
     procedure FromStdRGBA(AValue: TStdRGBA);
     procedure FromAdobeRGBA(AValue: TAdobeRGBA);
     procedure FromStdHSLA(AValue: TStdHSLA);
@@ -612,6 +671,7 @@ type
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
     function ToBGRAPixel: TBGRAPixel;
+    function ToFPColor: TFPColor;
     function ToStdRGBA: TStdRGBA;
     function ToAdobeRGBA: TAdobeRGBA;
     function ToStdHSLA: TStdHSLA;
@@ -627,6 +687,7 @@ type
     function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    procedure FromFPColor(AValue: TFPColor);
     procedure FromStdRGBA(AValue: TStdRGBA);
     procedure FromAdobeRGBA(AValue: TAdobeRGBA);
     procedure FromStdHSLA(AValue: TStdHSLA);
@@ -708,6 +769,7 @@ type
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
     function ToBGRAPixel: TBGRAPixel;
+    function ToFPColor: TFPColor;
     function ToStdRGBA: TStdRGBA;
     function ToAdobeRGBA: TAdobeRGBA;
     function ToStdHSLA: TStdHSLA;
@@ -723,6 +785,7 @@ type
     function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    procedure FromFPColor(AValue: TFPColor);
     procedure FromStdRGBA(AValue: TStdRGBA);
     procedure FromAdobeRGBA(AValue: TAdobeRGBA);
     procedure FromStdHSLA(AValue: TStdHSLA);
@@ -746,6 +809,8 @@ type
     function ToColor(const AReferenceWhite: TXYZReferenceWhite): TColor;overload;
     function ToBGRAPixel: TBGRAPixel;overload;
     function ToBGRAPixel(const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
+    function ToFPColor: TFPColor;overload;
+    function ToFPColor(const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
     function ToStdRGBA: TStdRGBA;overload;
     function ToStdRGBA(const AReferenceWhite: TXYZReferenceWhite): TStdRGBA;overload;
     function ToAdobeRGBA: TAdobeRGBA;overload;
@@ -771,6 +836,8 @@ type
     procedure FromColor(AValue: TColor; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromBGRAPixel(AValue: TBGRAPixel); overload;
     procedure FromBGRAPixel(AValue: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromFPColor(AValue: TFPColor); overload;
+    procedure FromFPColor(AValue: TFPColor; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromStdRGBA(AValue: TStdRGBA); overload;
     procedure FromStdRGBA(AValue: TStdRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromAdobeRGBA(AValue: TAdobeRGBA); overload;
@@ -802,6 +869,8 @@ type
     function ToColor(const AReferenceWhite: TXYZReferenceWhite): TColor;overload;
     function ToBGRAPixel: TBGRAPixel;overload;
     function ToBGRAPixel(const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
+    function ToFPColor: TFPColor;overload;
+    function ToFPColor(const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
     function ToStdRGBA: TStdRGBA;overload;
     function ToStdRGBA(const AReferenceWhite: TXYZReferenceWhite): TStdRGBA;overload;
     function ToAdobeRGBA: TAdobeRGBA;overload;
@@ -827,6 +896,8 @@ type
     procedure FromColor(AValue: TColor; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromBGRAPixel(AValue: TBGRAPixel); overload;
     procedure FromBGRAPixel(AValue: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromFPColor(AValue: TFPColor); overload;
+    procedure FromFPColor(AValue: TFPColor; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromStdRGBA(AValue: TStdRGBA); overload;
     procedure FromStdRGBA(AValue: TStdRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromAdobeRGBA(AValue: TAdobeRGBA); overload;
@@ -868,8 +939,18 @@ operator := (const AValue: TBGRAPixel): TLinearRGBA;
 operator := (const AValue: TBGRAPixel): TXYZA;
 operator := (const AValue: TBGRAPixel): TLabA;
 operator := (const AValue: TBGRAPixel): TLChA;
+operator := (const AValue: TFPColor): TStdRGBA;
+operator := (const AValue: TFPColor): TAdobeRGBA;
+operator := (const AValue: TFPColor): TStdHSLA;
+operator := (const AValue: TFPColor): TStdHSVA;
+operator := (const AValue: TFPColor): TStdCMYK;
+operator := (const AValue: TFPColor): TLinearRGBA;
+operator := (const AValue: TFPColor): TXYZA;
+operator := (const AValue: TFPColor): TLabA;
+operator := (const AValue: TFPColor): TLChA;
 operator := (const AValue: TStdRGBA): TColor;
 operator := (const AValue: TStdRGBA): TBGRAPixel;
+operator := (const AValue: TStdRGBA): TFPColor;
 operator := (const AValue: TStdRGBA): TAdobeRGBA;
 operator := (const AValue: TStdRGBA): TStdHSLA;
 operator := (const AValue: TStdRGBA): TStdHSVA;
@@ -883,6 +964,7 @@ operator := (const AValue: TStdRGBA): TLabA;
 operator := (const AValue: TStdRGBA): TLChA;
 operator := (const AValue: TAdobeRGBA): TColor;
 operator := (const AValue: TAdobeRGBA): TBGRAPixel;
+operator := (const AValue: TAdobeRGBA): TFPColor;
 operator := (const AValue: TAdobeRGBA): TStdRGBA;
 operator := (const AValue: TAdobeRGBA): TStdHSLA;
 operator := (const AValue: TAdobeRGBA): TStdHSVA;
@@ -896,6 +978,7 @@ operator := (const AValue: TAdobeRGBA): TLabA;
 operator := (const AValue: TAdobeRGBA): TLChA;
 operator := (const AValue: TStdHSLA): TColor;
 operator := (const AValue: TStdHSLA): TBGRAPixel;
+operator := (const AValue: TStdHSLA): TFPColor;
 operator := (const AValue: TStdHSLA): TStdRGBA;
 operator := (const AValue: TStdHSLA): TAdobeRGBA;
 operator := (const AValue: TStdHSLA): TStdHSVA;
@@ -909,6 +992,7 @@ operator := (const AValue: TStdHSLA): TLabA;
 operator := (const AValue: TStdHSLA): TLChA;
 operator := (const AValue: TStdHSVA): TColor;
 operator := (const AValue: TStdHSVA): TBGRAPixel;
+operator := (const AValue: TStdHSVA): TFPColor;
 operator := (const AValue: TStdHSVA): TStdRGBA;
 operator := (const AValue: TStdHSVA): TAdobeRGBA;
 operator := (const AValue: TStdHSVA): TStdHSLA;
@@ -922,6 +1006,7 @@ operator := (const AValue: TStdHSVA): TLabA;
 operator := (const AValue: TStdHSVA): TLChA;
 operator := (const AValue: TStdCMYK): TColor;
 operator := (const AValue: TStdCMYK): TBGRAPixel;
+operator := (const AValue: TStdCMYK): TFPColor;
 operator := (const AValue: TStdCMYK): TStdRGBA;
 operator := (const AValue: TStdCMYK): TAdobeRGBA;
 operator := (const AValue: TStdCMYK): TStdHSLA;
@@ -944,6 +1029,7 @@ operator := (const AValue: TExpandedPixel): TLabA;
 operator := (const AValue: TExpandedPixel): TLChA;
 operator := (const AValue: TLinearRGBA): TColor;
 operator := (const AValue: TLinearRGBA): TBGRAPixel;
+operator := (const AValue: TLinearRGBA): TFPColor;
 operator := (const AValue: TLinearRGBA): TStdRGBA;
 operator := (const AValue: TLinearRGBA): TAdobeRGBA;
 operator := (const AValue: TLinearRGBA): TStdHSLA;
@@ -975,6 +1061,7 @@ operator := (const AValue: TGSBAPixel): TLabA;
 operator := (const AValue: TGSBAPixel): TLChA;
 operator := (const AValue: TXYZA): TColor;
 operator := (const AValue: TXYZA): TBGRAPixel;
+operator := (const AValue: TXYZA): TFPColor;
 operator := (const AValue: TXYZA): TStdRGBA;
 operator := (const AValue: TXYZA): TAdobeRGBA;
 operator := (const AValue: TXYZA): TStdHSLA;
@@ -988,6 +1075,7 @@ operator := (const AValue: TXYZA): TLabA;
 operator := (const AValue: TXYZA): TLChA;
 operator := (const AValue: TLabA): TColor;
 operator := (const AValue: TLabA): TBGRAPixel;
+operator := (const AValue: TLabA): TFPColor;
 operator := (const AValue: TLabA): TStdRGBA;
 operator := (const AValue: TLabA): TAdobeRGBA;
 operator := (const AValue: TLabA): TStdHSLA;
@@ -1001,6 +1089,7 @@ operator := (const AValue: TLabA): TXYZA;
 operator := (const AValue: TLabA): TLChA;
 operator := (const AValue: TLChA): TColor;
 operator := (const AValue: TLChA): TBGRAPixel;
+operator := (const AValue: TLChA): TFPColor;
 operator := (const AValue: TLChA): TStdRGBA;
 operator := (const AValue: TLChA): TAdobeRGBA;
 operator := (const AValue: TLChA): TStdHSLA;
@@ -1022,6 +1111,17 @@ procedure ConvertColorArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; AC
 begin
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := ColorToBGRA(TColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function ColorToFPColor(const AColor: TColor;const AAlpha: word=65535): TFPColor;
+begin Result := BGRAToFPColor(ColorToBGRA(AColor));
+  Result.alpha := AAlpha end;
+
+procedure ConvertColorArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TColor); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := ColorToFPColor(TColor(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1173,6 +1273,13 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
+procedure ConvertBGRAPixelArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := BGRAToFPColor(TBGRAPixel(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
 procedure ConvertBGRAPixelArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
@@ -1289,6 +1396,148 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
+function FPColorToColor(const AFPColor: TFPColor): TColor;
+begin Result := BGRAToColor(FPColorToBGRA(AFPColor)) end;
+
+procedure ConvertFPColorArrayToColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TColor(ADest^) := FPColorToColor(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+procedure ConvertFPColorArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TBGRAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TBGRAPixel(ADest^) := FPColorToBGRA(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToStdRGBA(const AFPColor: TFPColor): TStdRGBA;
+begin Result := ExpandedPixelToStdRGBA(FPColorToExpanded(AFPColor)) end;
+
+procedure ConvertFPColorArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TStdRGBA(ADest^) := FPColorToStdRGBA(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToAdobeRGBA(const AFPColor: TFPColor): TAdobeRGBA;
+begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor)))) end;
+
+procedure ConvertFPColorArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TAdobeRGBA(ADest^) := FPColorToAdobeRGBA(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToStdHSLA(const AFPColor: TFPColor): TStdHSLA;
+begin Result := StdRGBAToStdHSLA(ExpandedPixelToStdRGBA(FPColorToExpanded(AFPColor))) end;
+
+procedure ConvertFPColorArrayToStdHSLAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TStdHSLA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TStdHSLA(ADest^) := FPColorToStdHSLA(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToStdHSVA(const AFPColor: TFPColor): TStdHSVA;
+begin Result := StdRGBAToStdHSVA(ExpandedPixelToStdRGBA(FPColorToExpanded(AFPColor))) end;
+
+procedure ConvertFPColorArrayToStdHSVAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TStdHSVA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TStdHSVA(ADest^) := FPColorToStdHSVA(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToStdCMYK(const AFPColor: TFPColor): TStdCMYK;
+begin Result := StdRGBAToStdCMYK(ExpandedPixelToStdRGBA(FPColorToExpanded(AFPColor))) end;
+
+procedure ConvertFPColorArrayToStdCMYKArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TStdCMYK); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TStdCMYK(ADest^) := FPColorToStdCMYK(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+procedure ConvertFPColorArrayToExpandedPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TExpandedPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TExpandedPixel(ADest^) := FPColorToExpanded(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToLinearRGBA(const AFPColor: TFPColor): TLinearRGBA;
+begin Result := ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor)) end;
+
+procedure ConvertFPColorArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TLinearRGBA(ADest^) := FPColorToLinearRGBA(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToHSLAPixel(const AFPColor: TFPColor): THSLAPixel;
+begin Result := ExpandedToHSLA(FPColorToExpanded(AFPColor)) end;
+
+procedure ConvertFPColorArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    THSLAPixel(ADest^) := FPColorToHSLAPixel(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToGSBAPixel(const AFPColor: TFPColor): TGSBAPixel;
+begin Result := ExpandedToGSBA(FPColorToExpanded(AFPColor)) end;
+
+procedure ConvertFPColorArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TGSBAPixel(ADest^) := FPColorToGSBAPixel(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToXYZA(const AFPColor: TFPColor): TXYZA;
+begin Result := LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor))) end;
+
+procedure ConvertFPColorArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TXYZA(ADest^) := FPColorToXYZA(TFPColor(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToLabA(const AFPColor: TFPColor): TLabA;overload;
+begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor)))) end;
+
+function FPColorToLabA(const AFPColor: TFPColor; const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
+begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor))),AReferenceWhite) end;
+
+procedure ConvertFPColorArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TLabA(ADest^) := FPColorToLabA(TFPColor(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function FPColorToLChA(const AFPColor: TFPColor): TLChA;overload;
+begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor))))) end;
+
+function FPColorToLChA(const AFPColor: TFPColor; const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
+begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor))),AReferenceWhite)) end;
+
+procedure ConvertFPColorArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TLChA(ADest^) := FPColorToLChA(TFPColor(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
 function StdRGBAToColor(const AStdRGBA: TStdRGBA): TColor;
 begin Result := BGRAToColor(StdRGBAToBGRAPixel(AStdRGBA)) end;
 
@@ -1303,6 +1552,16 @@ procedure ConvertStdRGBAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; 
 begin
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := StdRGBAToBGRAPixel(TStdRGBA(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function StdRGBAToFPColor(const AStdRGBA: TStdRGBA): TFPColor;
+begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(AStdRGBA)) end;
+
+procedure ConvertStdRGBAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdRGBA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := StdRGBAToFPColor(TStdRGBA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1426,6 +1685,16 @@ procedure ConvertAdobeRGBAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer
 begin
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := AdobeRGBAToBGRAPixel(TAdobeRGBA(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function AdobeRGBAToFPColor(const AAdobeRGBA: TAdobeRGBA): TFPColor;
+begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA)))) end;
+
+procedure ConvertAdobeRGBAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := AdobeRGBAToFPColor(TAdobeRGBA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1564,6 +1833,16 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
+function StdHSLAToFPColor(const AStdHSLA: TStdHSLA): TFPColor;
+begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(StdHSLAToStdRGBA(AStdHSLA))) end;
+
+procedure ConvertStdHSLAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := StdHSLAToFPColor(TStdHSLA(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
 procedure ConvertStdHSLAArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
@@ -1693,6 +1972,16 @@ procedure ConvertStdHSVAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; 
 begin
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := StdHSVAToBGRAPixel(TStdHSVA(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function StdHSVAToFPColor(const AStdHSVA: TStdHSVA): TFPColor;
+begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(StdHSVAToStdRGBA(AStdHSVA))) end;
+
+procedure ConvertStdHSVAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := StdHSVAToFPColor(TStdHSVA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1826,6 +2115,17 @@ procedure ConvertStdCMYKArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; 
 begin
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := StdCMYKToBGRAPixel(TStdCMYK(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function StdCMYKToFPColor(const AStdCMYK: TStdCMYK;const AAlpha: word=65535): TFPColor;
+begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(StdCMYKToStdRGBA(AStdCMYK)));
+  Result.alpha := AAlpha end;
+
+procedure ConvertStdCMYKArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := StdCMYKToFPColor(TStdCMYK(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1973,6 +2273,13 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
+procedure ConvertExpandedPixelArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TExpandedPixel); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := ExpandedToFPColor(TExpandedPixel(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
 procedure ConvertExpandedPixelArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TExpandedPixel); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
@@ -2096,6 +2403,16 @@ procedure ConvertLinearRGBAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointe
 begin
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := LinearRGBAToBGRAPixel(TLinearRGBA(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function LinearRGBAToFPColor(const ALinearRGBA: TLinearRGBA): TFPColor;
+begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(ALinearRGBA)) end;
+
+procedure ConvertLinearRGBAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := LinearRGBAToFPColor(TLinearRGBA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2225,6 +2542,16 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
+function HSLAPixelToFPColor(const AHSLAPixel: THSLAPixel): TFPColor;
+begin Result := ExpandedToFPColor(HSLAToExpanded(AHSLAPixel)) end;
+
+procedure ConvertHSLAPixelArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := HSLAPixelToFPColor(THSLAPixel(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
 function HSLAPixelToStdRGBA(const AHSLAPixel: THSLAPixel): TStdRGBA;
 begin Result := ExpandedPixelToStdRGBA(HSLAToExpanded(AHSLAPixel)) end;
 
@@ -2351,6 +2678,16 @@ procedure ConvertGSBAPixelArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer
 begin
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := GSBAToBGRA(TGSBAPixel(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function GSBAPixelToFPColor(const AGSBAPixel: TGSBAPixel): TFPColor;
+begin Result := ExpandedToFPColor(GSBAToExpanded(AGSBAPixel)) end;
+
+procedure ConvertGSBAPixelArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := GSBAPixelToFPColor(TGSBAPixel(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2486,6 +2823,16 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
+function XYZAToFPColor(const AXYZA: TXYZA): TFPColor;
+begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AXYZA))) end;
+
+procedure ConvertXYZAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TFPColor(ADest^) := XYZAToFPColor(TXYZA(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
 function XYZAToStdRGBA(const AXYZA: TXYZA): TStdRGBA;
 begin Result := LinearRGBAToStdRGBA(XYZAToLinearRGBA(AXYZA)) end;
 
@@ -2617,6 +2964,20 @@ begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := LabAToBGRAPixel(TLabA(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function LabAToFPColor(const ALabA: TLabA): TFPColor;overload;
+begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA)))) end;
+
+function LabAToFPColor(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
+begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite)))) end;
+
+procedure ConvertLabAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TFPColor(ADest^) := LabAToFPColor(TLabA(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2786,6 +3147,20 @@ begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := LChAToBGRAPixel(TLChA(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function LChAToFPColor(const ALChA: TLChA): TFPColor;overload;
+begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA))))) end;
+
+function LChAToFPColor(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
+begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite)))) end;
+
+procedure ConvertLChAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TFPColor(ADest^) := LChAToFPColor(TLChA(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -3228,6 +3603,79 @@ begin
 end;
 
 class function TBGRAPixelColorspace.HasReferenceWhite: boolean;
+begin result := False end;
+
+
+{ TFPColorColorspace }
+
+class function TFPColorColorspace.GetChannelName(AIndex: integer): string;
+begin
+  case AIndex of
+  0: result := 'Red';
+  1: result := 'Green';
+  2: result := 'Blue';
+  3: result := 'Alpha';
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class function TFPColorColorspace.GetChannelCount: integer;
+begin result := 4 end;
+
+class function TFPColorColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
+
+class function TFPColorColorspace.GetMaxValue(AIndex: integer): single;
+begin
+  case AIndex of
+  0: result := 65535;
+  1: result := 65535;
+  2: result := 65535;
+  3: result := 65535;
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class function TFPColorColorspace.GetMinValue(AIndex: integer): single;
+begin
+  case AIndex of
+  0: result := 0;
+  1: result := 0;
+  2: result := 0;
+  3: result := 0;
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class function TFPColorColorspace.GetName: string;
+begin result := 'FPColor' end;
+
+class function TFPColorColorspace.GetSize: integer;
+begin result := sizeof(TFPColor) end;
+
+class function TFPColorColorspace.GetChannel(AColor: Pointer; AIndex: integer): single;
+begin
+  case AIndex of
+  0: result := TFPColor(AColor^).red;
+  1: result := TFPColor(AColor^).green;
+  2: result := TFPColor(AColor^).blue;
+  3: result := TFPColor(AColor^).alpha;
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class procedure TFPColorColorspace.SetChannel(AColor: Pointer; AIndex: integer; AValue: single);
+begin
+  case AIndex of
+  0: TFPColor(AColor^).red := Round(Clamp(AValue,0,65535));
+  1: TFPColor(AColor^).green := Round(Clamp(AValue,0,65535));
+  2: TFPColor(AColor^).blue := Round(Clamp(AValue,0,65535));
+  3: TFPColor(AColor^).alpha := Round(Clamp(AValue,0,65535));
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class function TFPColorColorspace.HasReferenceWhite: boolean;
 begin result := False end;
 
 
@@ -4139,6 +4587,12 @@ begin Result := ColorToBGRA(Self) end;
 function TColorHelper.ToBGRAPixel(AAlpha: byte): TBGRAPixel;overload;
 begin result := ColorToBGRA(self, AAlpha) end;
 
+function TColorHelper.ToFPColor: TFPColor;overload;
+begin Result := ColorToFPColor(Self) end;
+
+function TColorHelper.ToFPColor(AAlpha: word): TFPColor;overload;
+begin result := ColorToFPColor(self, AAlpha) end;
+
 function TColorHelper.ToStdRGBA: TStdRGBA;overload;
 begin Result := ColorToStdRGBA(Self) end;
 
@@ -4216,6 +4670,9 @@ begin Result := ColorToLChA(Self,AReferenceWhite) end;
 
 procedure TColorHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAToColor(AValue) end;
+
+procedure TColorHelper.FromFPColor(AValue: TFPColor);
+begin Self := FPColorToColor(AValue) end;
 
 procedure TColorHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToColor(AValue) end;
@@ -4346,6 +4803,93 @@ begin Self := LChAToBGRAPixel(AValue) end;
 procedure TBGRAPixelHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToBGRAPixel(AValue,AReferenceWhite) end;
 
+{ TFPColorHelper }
+
+class function TFPColorHelper.New(const ARed,AGreen,ABlue,AAlpha:word): TFPColor;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := AAlpha;
+end;
+
+class function TFPColorHelper.New(const ARed,AGreen,ABlue:word): TFPColor;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := 65535;
+end;
+
+class function TFPColorHelper.Colorspace: TColorspaceAny; static;
+begin result := TFPColorColorspace end;
+
+function TFPColorHelper.ToStdRGBA: TStdRGBA;
+begin Result := FPColorToStdRGBA(Self) end;
+
+function TFPColorHelper.ToAdobeRGBA: TAdobeRGBA;
+begin Result := FPColorToAdobeRGBA(Self) end;
+
+function TFPColorHelper.ToStdHSLA: TStdHSLA;
+begin Result := FPColorToStdHSLA(Self) end;
+
+function TFPColorHelper.ToStdHSVA: TStdHSVA;
+begin Result := FPColorToStdHSVA(Self) end;
+
+function TFPColorHelper.ToStdCMYK: TStdCMYK;
+begin Result := FPColorToStdCMYK(Self) end;
+
+function TFPColorHelper.ToLinearRGBA: TLinearRGBA;
+begin Result := FPColorToLinearRGBA(Self) end;
+
+function TFPColorHelper.ToXYZA: TXYZA;
+begin Result := FPColorToXYZA(Self) end;
+
+function TFPColorHelper.ToLabA: TLabA;overload;
+begin Result := FPColorToLabA(Self) end;
+
+function TFPColorHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
+begin Result := FPColorToLabA(Self,AReferenceWhite) end;
+
+function TFPColorHelper.ToLChA: TLChA;overload;
+begin Result := FPColorToLChA(Self) end;
+
+function TFPColorHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
+begin Result := FPColorToLChA(Self,AReferenceWhite) end;
+
+procedure TFPColorHelper.FromStdRGBA(AValue: TStdRGBA);
+begin Self := StdRGBAToFPColor(AValue) end;
+
+procedure TFPColorHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
+begin Self := AdobeRGBAToFPColor(AValue) end;
+
+procedure TFPColorHelper.FromStdHSLA(AValue: TStdHSLA);
+begin Self := StdHSLAToFPColor(AValue) end;
+
+procedure TFPColorHelper.FromStdHSVA(AValue: TStdHSVA);
+begin Self := StdHSVAToFPColor(AValue) end;
+
+procedure TFPColorHelper.FromStdCMYK(AValue: TStdCMYK);
+begin Self := StdCMYKToFPColor(AValue) end;
+
+procedure TFPColorHelper.FromLinearRGBA(AValue: TLinearRGBA);
+begin Self := LinearRGBAToFPColor(AValue) end;
+
+procedure TFPColorHelper.FromXYZA(AValue: TXYZA);
+begin Self := XYZAToFPColor(AValue) end;
+
+procedure TFPColorHelper.FromLabA(AValue: TLabA); overload;
+begin Self := LabAToFPColor(AValue) end;
+
+procedure TFPColorHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := LabAToFPColor(AValue,AReferenceWhite) end;
+
+procedure TFPColorHelper.FromLChA(AValue: TLChA); overload;
+begin Self := LChAToFPColor(AValue) end;
+
+procedure TFPColorHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := LChAToFPColor(AValue,AReferenceWhite) end;
+
 { TStdRGBAHelper }
 
 class function TStdRGBAHelper.Colorspace: TColorspaceAny; static;
@@ -4356,6 +4900,9 @@ begin Result := StdRGBAToColor(Self) end;
 
 function TStdRGBAHelper.ToBGRAPixel: TBGRAPixel;
 begin Result := StdRGBAToBGRAPixel(Self) end;
+
+function TStdRGBAHelper.ToFPColor: TFPColor;
+begin Result := StdRGBAToFPColor(Self) end;
 
 function TStdRGBAHelper.ToAdobeRGBA: TAdobeRGBA;
 begin Result := StdRGBAToAdobeRGBA(Self) end;
@@ -4401,6 +4948,9 @@ begin Self := ColorToStdRGBA(AValue) end;
 
 procedure TStdRGBAHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToStdRGBA(AValue) end;
+
+procedure TStdRGBAHelper.FromFPColor(AValue: TFPColor);
+begin Self := FPColorToStdRGBA(AValue) end;
 
 procedure TStdRGBAHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
 begin Self := AdobeRGBAToStdRGBA(AValue) end;
@@ -4452,6 +5002,9 @@ begin Result := AdobeRGBAToColor(Self) end;
 function TAdobeRGBAHelper.ToBGRAPixel: TBGRAPixel;
 begin Result := AdobeRGBAToBGRAPixel(Self) end;
 
+function TAdobeRGBAHelper.ToFPColor: TFPColor;
+begin Result := AdobeRGBAToFPColor(Self) end;
+
 function TAdobeRGBAHelper.ToStdRGBA: TStdRGBA;
 begin Result := AdobeRGBAToStdRGBA(Self) end;
 
@@ -4496,6 +5049,9 @@ begin Self := ColorToAdobeRGBA(AValue) end;
 
 procedure TAdobeRGBAHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToAdobeRGBA(AValue) end;
+
+procedure TAdobeRGBAHelper.FromFPColor(AValue: TFPColor);
+begin Self := FPColorToAdobeRGBA(AValue) end;
 
 procedure TAdobeRGBAHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToAdobeRGBA(AValue) end;
@@ -4547,6 +5103,9 @@ begin Result := StdHSLAToColor(Self) end;
 function TStdHSLAHelper.ToBGRAPixel: TBGRAPixel;
 begin Result := StdHSLAToBGRAPixel(Self) end;
 
+function TStdHSLAHelper.ToFPColor: TFPColor;
+begin Result := StdHSLAToFPColor(Self) end;
+
 function TStdHSLAHelper.ToStdRGBA: TStdRGBA;
 begin Result := StdHSLAToStdRGBA(Self) end;
 
@@ -4591,6 +5150,9 @@ begin Self := ColorToStdHSLA(AValue) end;
 
 procedure TStdHSLAHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToStdHSLA(AValue) end;
+
+procedure TStdHSLAHelper.FromFPColor(AValue: TFPColor);
+begin Self := FPColorToStdHSLA(AValue) end;
 
 procedure TStdHSLAHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToStdHSLA(AValue) end;
@@ -4642,6 +5204,9 @@ begin Result := StdHSVAToColor(Self) end;
 function TStdHSVAHelper.ToBGRAPixel: TBGRAPixel;
 begin Result := StdHSVAToBGRAPixel(Self) end;
 
+function TStdHSVAHelper.ToFPColor: TFPColor;
+begin Result := StdHSVAToFPColor(Self) end;
+
 function TStdHSVAHelper.ToStdRGBA: TStdRGBA;
 begin Result := StdHSVAToStdRGBA(Self) end;
 
@@ -4686,6 +5251,9 @@ begin Self := ColorToStdHSVA(AValue) end;
 
 procedure TStdHSVAHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToStdHSVA(AValue) end;
+
+procedure TStdHSVAHelper.FromFPColor(AValue: TFPColor);
+begin Self := FPColorToStdHSVA(AValue) end;
 
 procedure TStdHSVAHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToStdHSVA(AValue) end;
@@ -4739,6 +5307,12 @@ begin Result := StdCMYKToBGRAPixel(Self) end;
 
 function TStdCMYKHelper.ToBGRAPixel(AAlpha: byte): TBGRAPixel;overload;
 begin result := StdCMYKToBGRAPixel(self, AAlpha) end;
+
+function TStdCMYKHelper.ToFPColor: TFPColor;overload;
+begin Result := StdCMYKToFPColor(Self) end;
+
+function TStdCMYKHelper.ToFPColor(AAlpha: word): TFPColor;overload;
+begin result := StdCMYKToFPColor(self, AAlpha) end;
 
 function TStdCMYKHelper.ToStdRGBA: TStdRGBA;overload;
 begin Result := StdCMYKToStdRGBA(Self) end;
@@ -4817,6 +5391,9 @@ begin Self := ColorToStdCMYK(AValue) end;
 
 procedure TStdCMYKHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToStdCMYK(AValue) end;
+
+procedure TStdCMYKHelper.FromFPColor(AValue: TFPColor);
+begin Self := FPColorToStdCMYK(AValue) end;
 
 procedure TStdCMYKHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToStdCMYK(AValue) end;
@@ -4955,6 +5532,9 @@ begin Result := LinearRGBAToColor(Self) end;
 function TLinearRGBAHelper.ToBGRAPixel: TBGRAPixel;
 begin Result := LinearRGBAToBGRAPixel(Self) end;
 
+function TLinearRGBAHelper.ToFPColor: TFPColor;
+begin Result := LinearRGBAToFPColor(Self) end;
+
 function TLinearRGBAHelper.ToStdRGBA: TStdRGBA;
 begin Result := LinearRGBAToStdRGBA(Self) end;
 
@@ -4999,6 +5579,9 @@ begin Self := ColorToLinearRGBA(AValue) end;
 
 procedure TLinearRGBAHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToLinearRGBA(AValue) end;
+
+procedure TLinearRGBAHelper.FromFPColor(AValue: TFPColor);
+begin Self := FPColorToLinearRGBA(AValue) end;
 
 procedure TLinearRGBAHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToLinearRGBA(AValue) end;
@@ -5224,6 +5807,9 @@ begin Result := XYZAToColor(Self) end;
 function TXYZAHelper.ToBGRAPixel: TBGRAPixel;
 begin Result := XYZAToBGRAPixel(Self) end;
 
+function TXYZAHelper.ToFPColor: TFPColor;
+begin Result := XYZAToFPColor(Self) end;
+
 function TXYZAHelper.ToStdRGBA: TStdRGBA;
 begin Result := XYZAToStdRGBA(Self) end;
 
@@ -5268,6 +5854,9 @@ begin Self := ColorToXYZA(AValue) end;
 
 procedure TXYZAHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToXYZA(AValue) end;
+
+procedure TXYZAHelper.FromFPColor(AValue: TFPColor);
+begin Self := FPColorToXYZA(AValue) end;
 
 procedure TXYZAHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToXYZA(AValue) end;
@@ -5324,6 +5913,12 @@ begin Result := LabAToBGRAPixel(Self) end;
 
 function TLabAHelper.ToBGRAPixel(const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
 begin Result := LabAToBGRAPixel(Self,AReferenceWhite) end;
+
+function TLabAHelper.ToFPColor: TFPColor;overload;
+begin Result := LabAToFPColor(Self) end;
+
+function TLabAHelper.ToFPColor(const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
+begin Result := LabAToFPColor(Self,AReferenceWhite) end;
 
 function TLabAHelper.ToStdRGBA: TStdRGBA;overload;
 begin Result := LabAToStdRGBA(Self) end;
@@ -5399,6 +5994,12 @@ begin Self := BGRAPixelToLabA(AValue) end;
 
 procedure TLabAHelper.FromBGRAPixel(AValue: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := BGRAPixelToLabA(AValue,AReferenceWhite) end;
+
+procedure TLabAHelper.FromFPColor(AValue: TFPColor); overload;
+begin Self := FPColorToLabA(AValue) end;
+
+procedure TLabAHelper.FromFPColor(AValue: TFPColor; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := FPColorToLabA(AValue,AReferenceWhite) end;
 
 procedure TLabAHelper.FromStdRGBA(AValue: TStdRGBA); overload;
 begin Self := StdRGBAToLabA(AValue) end;
@@ -5480,6 +6081,12 @@ begin Result := LChAToBGRAPixel(Self) end;
 function TLChAHelper.ToBGRAPixel(const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
 begin Result := LChAToBGRAPixel(Self,AReferenceWhite) end;
 
+function TLChAHelper.ToFPColor: TFPColor;overload;
+begin Result := LChAToFPColor(Self) end;
+
+function TLChAHelper.ToFPColor(const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
+begin Result := LChAToFPColor(Self,AReferenceWhite) end;
+
 function TLChAHelper.ToStdRGBA: TStdRGBA;overload;
 begin Result := LChAToStdRGBA(Self) end;
 
@@ -5554,6 +6161,12 @@ begin Self := BGRAPixelToLChA(AValue) end;
 
 procedure TLChAHelper.FromBGRAPixel(AValue: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := BGRAPixelToLChA(AValue,AReferenceWhite) end;
+
+procedure TLChAHelper.FromFPColor(AValue: TFPColor); overload;
+begin Self := FPColorToLChA(AValue) end;
+
+procedure TLChAHelper.FromFPColor(AValue: TFPColor; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := FPColorToLChA(AValue,AReferenceWhite) end;
 
 procedure TLChAHelper.FromStdRGBA(AValue: TStdRGBA); overload;
 begin Self := StdRGBAToLChA(AValue) end;
@@ -5674,11 +6287,41 @@ begin Result := BGRAPixelToLabA(AValue) end;
 operator := (const AValue: TBGRAPixel): TLChA;
 begin Result := BGRAPixelToLChA(AValue) end;
 
+operator := (const AValue: TFPColor): TStdRGBA;
+begin Result := FPColorToStdRGBA(AValue) end;
+
+operator := (const AValue: TFPColor): TAdobeRGBA;
+begin Result := FPColorToAdobeRGBA(AValue) end;
+
+operator := (const AValue: TFPColor): TStdHSLA;
+begin Result := FPColorToStdHSLA(AValue) end;
+
+operator := (const AValue: TFPColor): TStdHSVA;
+begin Result := FPColorToStdHSVA(AValue) end;
+
+operator := (const AValue: TFPColor): TStdCMYK;
+begin Result := FPColorToStdCMYK(AValue) end;
+
+operator := (const AValue: TFPColor): TLinearRGBA;
+begin Result := FPColorToLinearRGBA(AValue) end;
+
+operator := (const AValue: TFPColor): TXYZA;
+begin Result := FPColorToXYZA(AValue) end;
+
+operator := (const AValue: TFPColor): TLabA;
+begin Result := FPColorToLabA(AValue) end;
+
+operator := (const AValue: TFPColor): TLChA;
+begin Result := FPColorToLChA(AValue) end;
+
 operator := (const AValue: TStdRGBA): TColor;
 begin Result := StdRGBAToColor(AValue) end;
 
 operator := (const AValue: TStdRGBA): TBGRAPixel;
 begin Result := StdRGBAToBGRAPixel(AValue) end;
+
+operator := (const AValue: TStdRGBA): TFPColor;
+begin Result := StdRGBAToFPColor(AValue) end;
 
 operator := (const AValue: TStdRGBA): TAdobeRGBA;
 begin Result := StdRGBAToAdobeRGBA(AValue) end;
@@ -5719,6 +6362,9 @@ begin Result := AdobeRGBAToColor(AValue) end;
 operator := (const AValue: TAdobeRGBA): TBGRAPixel;
 begin Result := AdobeRGBAToBGRAPixel(AValue) end;
 
+operator := (const AValue: TAdobeRGBA): TFPColor;
+begin Result := AdobeRGBAToFPColor(AValue) end;
+
 operator := (const AValue: TAdobeRGBA): TStdRGBA;
 begin Result := AdobeRGBAToStdRGBA(AValue) end;
 
@@ -5757,6 +6403,9 @@ begin Result := StdHSLAToColor(AValue) end;
 
 operator := (const AValue: TStdHSLA): TBGRAPixel;
 begin Result := StdHSLAToBGRAPixel(AValue) end;
+
+operator := (const AValue: TStdHSLA): TFPColor;
+begin Result := StdHSLAToFPColor(AValue) end;
 
 operator := (const AValue: TStdHSLA): TStdRGBA;
 begin Result := StdHSLAToStdRGBA(AValue) end;
@@ -5797,6 +6446,9 @@ begin Result := StdHSVAToColor(AValue) end;
 operator := (const AValue: TStdHSVA): TBGRAPixel;
 begin Result := StdHSVAToBGRAPixel(AValue) end;
 
+operator := (const AValue: TStdHSVA): TFPColor;
+begin Result := StdHSVAToFPColor(AValue) end;
+
 operator := (const AValue: TStdHSVA): TStdRGBA;
 begin Result := StdHSVAToStdRGBA(AValue) end;
 
@@ -5835,6 +6487,9 @@ begin Result := StdCMYKToColor(AValue) end;
 
 operator := (const AValue: TStdCMYK): TBGRAPixel;
 begin Result := StdCMYKToBGRAPixel(AValue) end;
+
+operator := (const AValue: TStdCMYK): TFPColor;
+begin Result := StdCMYKToFPColor(AValue) end;
 
 operator := (const AValue: TStdCMYK): TStdRGBA;
 begin Result := StdCMYKToStdRGBA(AValue) end;
@@ -5901,6 +6556,9 @@ begin Result := LinearRGBAToColor(AValue) end;
 
 operator := (const AValue: TLinearRGBA): TBGRAPixel;
 begin Result := LinearRGBAToBGRAPixel(AValue) end;
+
+operator := (const AValue: TLinearRGBA): TFPColor;
+begin Result := LinearRGBAToFPColor(AValue) end;
 
 operator := (const AValue: TLinearRGBA): TStdRGBA;
 begin Result := LinearRGBAToStdRGBA(AValue) end;
@@ -5995,6 +6653,9 @@ begin Result := XYZAToColor(AValue) end;
 operator := (const AValue: TXYZA): TBGRAPixel;
 begin Result := XYZAToBGRAPixel(AValue) end;
 
+operator := (const AValue: TXYZA): TFPColor;
+begin Result := XYZAToFPColor(AValue) end;
+
 operator := (const AValue: TXYZA): TStdRGBA;
 begin Result := XYZAToStdRGBA(AValue) end;
 
@@ -6033,6 +6694,9 @@ begin Result := LabAToColor(AValue) end;
 
 operator := (const AValue: TLabA): TBGRAPixel;
 begin Result := LabAToBGRAPixel(AValue) end;
+
+operator := (const AValue: TLabA): TFPColor;
+begin Result := LabAToFPColor(AValue) end;
 
 operator := (const AValue: TLabA): TStdRGBA;
 begin Result := LabAToStdRGBA(AValue) end;
@@ -6073,6 +6737,9 @@ begin Result := LChAToColor(AValue) end;
 operator := (const AValue: TLChA): TBGRAPixel;
 begin Result := LChAToBGRAPixel(AValue) end;
 
+operator := (const AValue: TLChA): TFPColor;
+begin Result := LChAToFPColor(AValue) end;
+
 operator := (const AValue: TLChA): TStdRGBA;
 begin Result := LChAToStdRGBA(AValue) end;
 
@@ -6111,6 +6778,7 @@ begin Result := LChAToLabA(AValue) end;
 {$UNDEF INCLUDE_INITIALIZATION}
   ColorspaceCollection.Add(TColorColorspace);
   ColorspaceCollection.Add(TBGRAPixelColorspace);
+  ColorspaceCollection.Add(TFPColorColorspace);
   ColorspaceCollection.Add(TStdRGBAColorspace);
   ColorspaceCollection.Add(TAdobeRGBAColorspace);
   ColorspaceCollection.Add(TStdHSLAColorspace);
@@ -6124,6 +6792,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.Add(TLabAColorspace);
   ColorspaceCollection.Add(TLChAColorspace);
   ColorspaceCollection.AddConversion(TColorColorspace, TBGRAPixelColorspace, @ConvertColorArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TColorColorspace, TFPColorColorspace, @ConvertColorArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TStdRGBAColorspace, @ConvertColorArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TAdobeRGBAColorspace, @ConvertColorArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TStdHSLAColorspace, @ConvertColorArrayToStdHSLAArray);
@@ -6137,6 +6806,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TColorColorspace, TLabAColorspace, @ConvertColorArrayToLabAArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TLChAColorspace, @ConvertColorArrayToLChAArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TColorColorspace, @ConvertBGRAPixelArrayToColorArray);
+  ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TFPColorColorspace, @ConvertBGRAPixelArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TStdRGBAColorspace, @ConvertBGRAPixelArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TAdobeRGBAColorspace, @ConvertBGRAPixelArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TStdHSLAColorspace, @ConvertBGRAPixelArrayToStdHSLAArray);
@@ -6149,8 +6819,23 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TXYZAColorspace, @ConvertBGRAPixelArrayToXYZAArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TLabAColorspace, @ConvertBGRAPixelArrayToLabAArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TLChAColorspace, @ConvertBGRAPixelArrayToLChAArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TColorColorspace, @ConvertFPColorArrayToColorArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TBGRAPixelColorspace, @ConvertFPColorArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TStdRGBAColorspace, @ConvertFPColorArrayToStdRGBAArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TAdobeRGBAColorspace, @ConvertFPColorArrayToAdobeRGBAArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TStdHSLAColorspace, @ConvertFPColorArrayToStdHSLAArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TStdHSVAColorspace, @ConvertFPColorArrayToStdHSVAArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TStdCMYKColorspace, @ConvertFPColorArrayToStdCMYKArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TExpandedPixelColorspace, @ConvertFPColorArrayToExpandedPixelArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TLinearRGBAColorspace, @ConvertFPColorArrayToLinearRGBAArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, THSLAPixelColorspace, @ConvertFPColorArrayToHSLAPixelArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TGSBAPixelColorspace, @ConvertFPColorArrayToGSBAPixelArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TXYZAColorspace, @ConvertFPColorArrayToXYZAArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TLabAColorspace, @ConvertFPColorArrayToLabAArray);
+  ColorspaceCollection.AddConversion(TFPColorColorspace, TLChAColorspace, @ConvertFPColorArrayToLChAArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TColorColorspace, @ConvertStdRGBAArrayToColorArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TBGRAPixelColorspace, @ConvertStdRGBAArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TStdRGBAColorspace, TFPColorColorspace, @ConvertStdRGBAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TAdobeRGBAColorspace, @ConvertStdRGBAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TStdHSLAColorspace, @ConvertStdRGBAArrayToStdHSLAArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TStdHSVAColorspace, @ConvertStdRGBAArrayToStdHSVAArray);
@@ -6164,6 +6849,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TLChAColorspace, @ConvertStdRGBAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TColorColorspace, @ConvertAdobeRGBAArrayToColorArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TBGRAPixelColorspace, @ConvertAdobeRGBAArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TFPColorColorspace, @ConvertAdobeRGBAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TStdRGBAColorspace, @ConvertAdobeRGBAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TStdHSLAColorspace, @ConvertAdobeRGBAArrayToStdHSLAArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TStdHSVAColorspace, @ConvertAdobeRGBAArrayToStdHSVAArray);
@@ -6177,6 +6863,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TLChAColorspace, @ConvertAdobeRGBAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TColorColorspace, @ConvertStdHSLAArrayToColorArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TBGRAPixelColorspace, @ConvertStdHSLAArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TStdHSLAColorspace, TFPColorColorspace, @ConvertStdHSLAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TStdRGBAColorspace, @ConvertStdHSLAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TAdobeRGBAColorspace, @ConvertStdHSLAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TStdHSVAColorspace, @ConvertStdHSLAArrayToStdHSVAArray);
@@ -6190,6 +6877,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TLChAColorspace, @ConvertStdHSLAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TColorColorspace, @ConvertStdHSVAArrayToColorArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TBGRAPixelColorspace, @ConvertStdHSVAArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TStdHSVAColorspace, TFPColorColorspace, @ConvertStdHSVAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TStdRGBAColorspace, @ConvertStdHSVAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TAdobeRGBAColorspace, @ConvertStdHSVAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TStdHSLAColorspace, @ConvertStdHSVAArrayToStdHSLAArray);
@@ -6203,6 +6891,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TLChAColorspace, @ConvertStdHSVAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TColorColorspace, @ConvertStdCMYKArrayToColorArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TBGRAPixelColorspace, @ConvertStdCMYKArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TStdCMYKColorspace, TFPColorColorspace, @ConvertStdCMYKArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TStdRGBAColorspace, @ConvertStdCMYKArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TAdobeRGBAColorspace, @ConvertStdCMYKArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TStdHSLAColorspace, @ConvertStdCMYKArrayToStdHSLAArray);
@@ -6216,6 +6905,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TLChAColorspace, @ConvertStdCMYKArrayToLChAArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TColorColorspace, @ConvertExpandedPixelArrayToColorArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TBGRAPixelColorspace, @ConvertExpandedPixelArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TFPColorColorspace, @ConvertExpandedPixelArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TStdRGBAColorspace, @ConvertExpandedPixelArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TAdobeRGBAColorspace, @ConvertExpandedPixelArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TStdHSLAColorspace, @ConvertExpandedPixelArrayToStdHSLAArray);
@@ -6229,6 +6919,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TLChAColorspace, @ConvertExpandedPixelArrayToLChAArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TColorColorspace, @ConvertLinearRGBAArrayToColorArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TBGRAPixelColorspace, @ConvertLinearRGBAArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TFPColorColorspace, @ConvertLinearRGBAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TStdRGBAColorspace, @ConvertLinearRGBAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TAdobeRGBAColorspace, @ConvertLinearRGBAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TStdHSLAColorspace, @ConvertLinearRGBAArrayToStdHSLAArray);
@@ -6242,6 +6933,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TLChAColorspace, @ConvertLinearRGBAArrayToLChAArray);
   ColorspaceCollection.AddConversion(THSLAPixelColorspace, TColorColorspace, @ConvertHSLAPixelArrayToColorArray);
   ColorspaceCollection.AddConversion(THSLAPixelColorspace, TBGRAPixelColorspace, @ConvertHSLAPixelArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TFPColorColorspace, @ConvertHSLAPixelArrayToFPColorArray);
   ColorspaceCollection.AddConversion(THSLAPixelColorspace, TStdRGBAColorspace, @ConvertHSLAPixelArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(THSLAPixelColorspace, TAdobeRGBAColorspace, @ConvertHSLAPixelArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(THSLAPixelColorspace, TStdHSLAColorspace, @ConvertHSLAPixelArrayToStdHSLAArray);
@@ -6255,6 +6947,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(THSLAPixelColorspace, TLChAColorspace, @ConvertHSLAPixelArrayToLChAArray);
   ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TColorColorspace, @ConvertGSBAPixelArrayToColorArray);
   ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TBGRAPixelColorspace, @ConvertGSBAPixelArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TFPColorColorspace, @ConvertGSBAPixelArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TStdRGBAColorspace, @ConvertGSBAPixelArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TAdobeRGBAColorspace, @ConvertGSBAPixelArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TStdHSLAColorspace, @ConvertGSBAPixelArrayToStdHSLAArray);
@@ -6268,6 +6961,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TLChAColorspace, @ConvertGSBAPixelArrayToLChAArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TColorColorspace, @ConvertXYZAArrayToColorArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TBGRAPixelColorspace, @ConvertXYZAArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TXYZAColorspace, TFPColorColorspace, @ConvertXYZAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TStdRGBAColorspace, @ConvertXYZAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TAdobeRGBAColorspace, @ConvertXYZAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TStdHSLAColorspace, @ConvertXYZAArrayToStdHSLAArray);
@@ -6281,6 +6975,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TXYZAColorspace, TLChAColorspace, @ConvertXYZAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TColorColorspace, @ConvertLabAArrayToColorArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TBGRAPixelColorspace, @ConvertLabAArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TLabAColorspace, TFPColorColorspace, @ConvertLabAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TStdRGBAColorspace, @ConvertLabAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TAdobeRGBAColorspace, @ConvertLabAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TStdHSLAColorspace, @ConvertLabAArrayToStdHSLAArray);
@@ -6294,6 +6989,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TLabAColorspace, TLChAColorspace, @ConvertLabAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TColorColorspace, @ConvertLChAArrayToColorArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TBGRAPixelColorspace, @ConvertLChAArrayToBGRAPixelArray);
+  ColorspaceCollection.AddConversion(TLChAColorspace, TFPColorColorspace, @ConvertLChAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TStdRGBAColorspace, @ConvertLChAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TAdobeRGBAColorspace, @ConvertLChAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TStdHSLAColorspace, @ConvertLChAArrayToStdHSLAArray);
