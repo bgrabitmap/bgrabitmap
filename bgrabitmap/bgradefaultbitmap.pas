@@ -464,9 +464,9 @@ type
     {** Draws an antialiased line from (x1,y1) to (x2,y2) using an improved version of Bresenham's algorithm
         ''c'' specifies the color. ''DrawLastPixel'' specifies if (x2,y2) must be drawn }
     procedure DrawLineAntialias(x1, y1, x2, y2: integer; c: TBGRAPixel; DrawLastPixel: boolean); overload; override;
-    {** Draws an antialiased line with two colors ''c1'' and ''c2'' as dashes of lenght ''dashLen'' }
+    {** Draws an antialiased line with two colors ''c1'' and ''c2'' as dashes of length ''dashLen'' }
     procedure DrawLineAntialias(x1, y1, x2, y2: integer; c1, c2: TBGRAPixel; dashLen: integer; DrawLastPixel: boolean); overload; override;
-    {** Draws an antialiased line with two colors ''c1'' and ''c2'' as dashes of lenght ''dashLen''.
+    {** Draws an antialiased line with two colors ''c1'' and ''c2'' as dashes of length ''dashLen''.
         ''DashPos'' can be used to specify the start dash position and to retrieve the dash position at the end
         of the line, in order to draw a polyline with consistent dashes }
     procedure DrawLineAntialias(x1, y1, x2, y2: integer; c1, c2: TBGRAPixel; dashLen: integer; DrawLastPixel: boolean; var DashPos: integer); override;
