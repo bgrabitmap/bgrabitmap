@@ -277,8 +277,10 @@ type
     procedure strokeText(AText: string; x,y: single);
     function measureText(AText: string): TCanvas2dTextSize;
 
-    procedure fill;
-    procedure stroke;
+    procedure fill; overload;
+    procedure fill(AFillProc: TBGRAPathFillProc; AData: pointer); overload;
+    procedure stroke; overload;
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer); overload;
     procedure fillOverStroke;
     procedure strokeOverFill;
     procedure clearPath;
@@ -2489,10 +2491,78 @@ begin
   FillTexts(false);
 end;
 
+procedure TBGRACanvas2D.stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer);
+var
+  startIndex: integer;
+
+  procedure CallStrokeProc(AEndIndex: integer);
+  var
+    j: Integer;
+    subPts: array of TPointF;
+    closed: boolean;
+  begin
+    closed := false;
+    while (AEndIndex>startIndex)
+      and (FPathPoints[AEndIndex-1]=FPathPoints[startIndex]) do
+    begin
+      dec(AEndIndex);
+      closed := true;
+    end;
+    if AEndIndex > startIndex then
+    begin
+      setlength(subPts, AEndIndex-startIndex);
+      for j := 0 to high(subPts) do
+        subPts[j] := FPathPoints[startIndex+j];
+      ADrawProc(subPts, closed, AData);
+    end;
+  end;
+
+var i: integer;
+begin
+  startIndex := 0;
+  for i := 0 to FPathPointCount-1 do
+    if isEmptyPointF(FPathPoints[i]) then
+    begin
+      CallStrokeProc(i);
+      startIndex := i+1;
+    end;
+  CallStrokeProc(FPathPointCount);
+end;
+
 procedure TBGRACanvas2D.stroke;
 begin
   if FPathPointCount > 0 then
     StrokePoly(slice(FPathPoints,FPathPointCount));
+end;
+
+procedure TBGRACanvas2D.fill(AFillProc: TBGRAPathFillProc; AData: pointer);
+var
+  startIndex: integer;
+
+  procedure CallFillProc(AEndIndex: integer);
+  var
+    j: Integer;
+    subPts: array of TPointF;
+  begin
+    if AEndIndex > startIndex then
+    begin
+      setlength(subPts, AEndIndex-startIndex);
+      for j := 0 to high(subPts) do
+        subPts[j] := FPathPoints[startIndex+j];
+      AFillProc(subPts, AData);
+    end;
+  end;
+
+var i: integer;
+begin
+  startIndex := 0;
+  for i := 0 to FPathPointCount-1 do
+    if isEmptyPointF(FPathPoints[i]) then
+    begin
+      CallFillProc(i);
+      startIndex := i+1;
+    end;
+  CallFillProc(FPathPointCount);
 end;
 
 procedure TBGRACanvas2D.fillOverStroke;
