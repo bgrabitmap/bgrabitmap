@@ -235,7 +235,8 @@ type
     procedure stroke(ABitmap: TBGRACustomBitmap; const AMatrix: TAffineMatrix; AColor: TBGRAPixel; AWidth: single; AAcceptedDeviation: single = DefaultDeviation); overload;
     procedure stroke(ABitmap: TBGRACustomBitmap; const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; AWidth: single; AAcceptedDeviation: single = DefaultDeviation); overload;
     procedure stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer); overload; override;
-    procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AAcceptedDeviation: single = DefaultDeviation; AData: pointer = nil); overload;
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AData: pointer); overload; override;
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AAcceptedDeviation: single; AData: pointer = nil); overload;
     procedure fill(ABitmap: TBGRACustomBitmap; AColor: TBGRAPixel; AAcceptedDeviation: single = DefaultDeviation); overload;
     procedure fill(ABitmap: TBGRACustomBitmap; ATexture: IBGRAScanner; AAcceptedDeviation: single = DefaultDeviation); overload;
     procedure fill(ABitmap: TBGRACustomBitmap; x,y: single; AColor: TBGRAPixel; AAcceptedDeviation: single = DefaultDeviation); overload;
@@ -243,7 +244,8 @@ type
     procedure fill(ABitmap: TBGRACustomBitmap; const AMatrix: TAffineMatrix; AColor: TBGRAPixel; AAcceptedDeviation: single = DefaultDeviation); overload;
     procedure fill(ABitmap: TBGRACustomBitmap; const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; AAcceptedDeviation: single = DefaultDeviation); overload;
     procedure fill(AFillProc: TBGRAPathFillProc; AData: pointer); overload; override;
-    procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AAcceptedDeviation: single = DefaultDeviation; AData: pointer = nil); overload;
+    procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AData: pointer); overload; override;
+    procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AAcceptedDeviation: single; AData: pointer = nil); overload;
     function CreateCursor(AAcceptedDeviation: single = DefaultDeviation): TBGRAPathCursor;
     procedure Fit(ARect: TRectF; AAcceptedDeviation: single = DefaultDeviation);
     procedure FitInto(ADest: TBGRAPath; ARect: TRectF; AAcceptedDeviation: single = DefaultDeviation);
@@ -1687,6 +1689,12 @@ begin
 end;
 
 procedure TBGRAPath.stroke(ADrawProc: TBGRAPathDrawProc;
+  const AMatrix: TAffineMatrix; AData: pointer);
+begin
+  stroke(ADrawProc, AMatrix, DefaultDeviation, AData);
+end;
+
+procedure TBGRAPath.stroke(ADrawProc: TBGRAPathDrawProc;
   const AMatrix: TAffineMatrix; AAcceptedDeviation: single; AData: pointer);
 begin
   InternalDraw(ADrawProc,AMatrix,AAcceptedDeviation,AData);
@@ -1731,6 +1739,12 @@ end;
 procedure TBGRAPath.fill(AFillProc: TBGRAPathFillProc; AData: pointer);
 begin
   fill(AFillProc, AffineMatrixIdentity, DefaultDeviation, AData);
+end;
+
+procedure TBGRAPath.fill(AFillProc: TBGRAPathFillProc;
+  const AMatrix: TAffineMatrix; AData: pointer);
+begin
+  fill(AFillProc, AMatrix, DefaultDeviation, AData);
 end;
 
 procedure TBGRAPath.fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix;

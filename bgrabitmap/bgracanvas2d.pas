@@ -279,8 +279,10 @@ type
 
     procedure fill; overload;
     procedure fill(AFillProc: TBGRAPathFillProc; AData: pointer); overload;
+    procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AData: pointer); overload; //may not render curve nicely
     procedure stroke; overload;
     procedure stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer); overload;
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AData: pointer); overload; //may not render curve nicely
     procedure fillOverStroke;
     procedure strokeOverFill;
     procedure clearPath;
@@ -2492,6 +2494,12 @@ begin
 end;
 
 procedure TBGRACanvas2D.stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer);
+begin
+  stroke(ADrawProc, AffineMatrixIdentity, AData);
+end;
+
+procedure TBGRACanvas2D.stroke(ADrawProc: TBGRAPathDrawProc;
+  const AMatrix: TAffineMatrix; AData: pointer);
 var
   startIndex: integer;
 
@@ -2511,8 +2519,13 @@ var
     if AEndIndex > startIndex then
     begin
       setlength(subPts, AEndIndex-startIndex);
-      for j := 0 to high(subPts) do
-        subPts[j] := FPathPoints[startIndex+j];
+      if IsAffineMatrixIdentity(AMatrix) then
+      begin
+        for j := 0 to high(subPts) do
+          subPts[j] := FPathPoints[startIndex+j];
+      end else
+        for j := 0 to high(subPts) do
+          subPts[j] := AMatrix*FPathPoints[startIndex+j];
       ADrawProc(subPts, closed, AData);
     end;
   end;
@@ -2536,6 +2549,12 @@ begin
 end;
 
 procedure TBGRACanvas2D.fill(AFillProc: TBGRAPathFillProc; AData: pointer);
+begin
+  fill(AFillProc, AffineMatrixIdentity, AData);
+end;
+
+procedure TBGRACanvas2D.fill(AFillProc: TBGRAPathFillProc;
+  const AMatrix: TAffineMatrix; AData: pointer);
 var
   startIndex: integer;
 
@@ -2547,8 +2566,14 @@ var
     if AEndIndex > startIndex then
     begin
       setlength(subPts, AEndIndex-startIndex);
-      for j := 0 to high(subPts) do
-        subPts[j] := FPathPoints[startIndex+j];
+      if IsAffineMatrixIdentity(AMatrix) then
+      begin
+        for j := 0 to high(subPts) do
+          subPts[j] := FPathPoints[startIndex+j];
+      end else
+        for j := 0 to high(subPts) do
+          subPts[j] := AMatrix*FPathPoints[startIndex+j];
+
       AFillProc(subPts, AData);
     end;
   end;
