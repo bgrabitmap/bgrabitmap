@@ -90,6 +90,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency({%H-}AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -105,6 +106,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -120,6 +122,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -135,6 +138,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -150,6 +154,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -165,6 +170,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -180,6 +186,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -195,6 +202,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency({%H-}AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -210,6 +218,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -225,6 +234,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -240,6 +250,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -255,6 +266,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -270,6 +282,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -285,6 +298,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -300,6 +314,7 @@ type
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
     class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
     class function GetName: string; override;
@@ -3483,6 +3498,9 @@ begin result := 3 end;
 class function TColorColorspace.IndexOfAlphaChannel: integer;
 begin result := -1 end;
 
+class function TColorColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin result := ctFullyOpaque end;
+
 class function TColorColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3551,6 +3569,13 @@ begin result := 4 end;
 
 class function TBGRAPixelColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
+
+class function TBGRAPixelColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TBGRAPixel(AColor^).alpha >= 255 then exit(ctFullyOpaque) else
+  if TBGRAPixel(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
 
 class function TBGRAPixelColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3625,6 +3650,13 @@ begin result := 4 end;
 class function TFPColorColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
 
+class function TFPColorColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TFPColor(AColor^).alpha >= 65535 then exit(ctFullyOpaque) else
+  if TFPColor(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
+
 class function TFPColorColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3697,6 +3729,13 @@ begin result := 4 end;
 
 class function TStdRGBAColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
+
+class function TStdRGBAColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TStdRGBA(AColor^).alpha >= 1 then exit(ctFullyOpaque) else
+  if TStdRGBA(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
 
 class function TStdRGBAColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3771,6 +3810,13 @@ begin result := 4 end;
 class function TAdobeRGBAColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
 
+class function TAdobeRGBAColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TAdobeRGBA(AColor^).alpha >= 255 then exit(ctFullyOpaque) else
+  if TAdobeRGBA(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
+
 class function TAdobeRGBAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3843,6 +3889,13 @@ begin result := 4 end;
 
 class function TStdHSLAColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
+
+class function TStdHSLAColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TStdHSLA(AColor^).alpha >= 1 then exit(ctFullyOpaque) else
+  if TStdHSLA(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
 
 class function TStdHSLAColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -3917,6 +3970,13 @@ begin result := 4 end;
 class function TStdHSVAColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
 
+class function TStdHSVAColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TStdHSVA(AColor^).alpha >= 1 then exit(ctFullyOpaque) else
+  if TStdHSVA(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
+
 class function TStdHSVAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -3989,6 +4049,9 @@ begin result := 4 end;
 
 class function TStdCMYKColorspace.IndexOfAlphaChannel: integer;
 begin result := -1 end;
+
+class function TStdCMYKColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin result := ctFullyOpaque end;
 
 class function TStdCMYKColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -4063,6 +4126,13 @@ begin result := 4 end;
 class function TExpandedPixelColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
 
+class function TExpandedPixelColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TExpandedPixel(AColor^).alpha >= 65535 then exit(ctFullyOpaque) else
+  if TExpandedPixel(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
+
 class function TExpandedPixelColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -4135,6 +4205,13 @@ begin result := 4 end;
 
 class function TLinearRGBAColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
+
+class function TLinearRGBAColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TLinearRGBA(AColor^).alpha >= 1 then exit(ctFullyOpaque) else
+  if TLinearRGBA(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
 
 class function TLinearRGBAColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -4209,6 +4286,13 @@ begin result := 4 end;
 class function THSLAPixelColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
 
+class function THSLAPixelColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if THSLAPixel(AColor^).alpha >= 65535 then exit(ctFullyOpaque) else
+  if THSLAPixel(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
+
 class function THSLAPixelColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -4281,6 +4365,13 @@ begin result := 4 end;
 
 class function TGSBAPixelColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
+
+class function TGSBAPixelColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TGSBAPixel(AColor^).alpha >= 65535 then exit(ctFullyOpaque) else
+  if TGSBAPixel(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
 
 class function TGSBAPixelColorspace.GetMaxValue(AIndex: integer): single;
 begin
@@ -4355,6 +4446,13 @@ begin result := 4 end;
 class function TXYZAColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
 
+class function TXYZAColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TXYZA(AColor^).alpha >= 1 then exit(ctFullyOpaque) else
+  if TXYZA(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
+
 class function TXYZAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -4428,6 +4526,13 @@ begin result := 4 end;
 class function TLabAColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
 
+class function TLabAColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TLabA(AColor^).alpha >= 1 then exit(ctFullyOpaque) else
+  if TLabA(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
+
 class function TLabAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
@@ -4500,6 +4605,13 @@ begin result := 4 end;
 
 class function TLChAColorspace.IndexOfAlphaChannel: integer;
 begin result := 3 end;
+
+class function TLChAColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TLChA(AColor^).alpha >= 1 then exit(ctFullyOpaque) else
+  if TLChA(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
 
 class function TLChAColorspace.GetMaxValue(AIndex: integer): single;
 begin

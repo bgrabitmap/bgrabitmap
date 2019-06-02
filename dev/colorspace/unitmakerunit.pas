@@ -675,6 +675,10 @@ var
       Add('  class function GetChannelName(AIndex: integer): string; override;');
       Add('  class function GetChannelCount: integer; override;');
       Add('  class function IndexOfAlphaChannel: integer; override;');
+      if not ColorspaceInfo[Colorspace].HasAlpha then
+        Add('  class function GetColorTransparency({%H-}AColor: Pointer): TColorTransparency; override;')
+      else
+        Add('  class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;');
       Add('  class function GetMaxValue(AIndex: integer): single; override;');
       Add('  class function GetMinValue(AIndex: integer): single; override;');
       Add('  class function GetName: string; override;');
@@ -704,6 +708,15 @@ var
       else
         AddProcedureImp('class function '+ColorTypeName+'Colorspace.IndexOfAlphaChannel: integer;',
                         'result := -1');
+
+      if not ColorspaceInfo[Colorspace].HasAlpha then
+        AddProcedureImp('class function '+ColorTypeName+'Colorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;',
+                        'result := ctFullyOpaque')
+      else
+        AddProcedureImp('class function '+ColorTypeName+'Colorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;',
+                        ['if '+ColorTypeName+'(AColor^).'+VariablesNames[cn-1]+' >= '+MaxValues[cn-1]+' then exit(ctFullyOpaque) else',
+                        'if '+ColorTypeName+'(AColor^).'+VariablesNames[cn-1]+' <= '+MinValues[cn-1]+' then exit(ctFullyTransparent) else',
+                        'exit(ctSemiTransparent)']);
 
       setlength(body, cn + 3);
       body[0] := 'case AIndex of';

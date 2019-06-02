@@ -118,6 +118,8 @@ type
   TColorspaceConvertArrayProc = procedure(ASource: pointer; ADest: Pointer; ACount: integer;
                   ASourceStride:integer; ADestStride:integer; AReferenceWhite: PXYZReferenceWhite);
 
+  TColorTransparency = (ctFullyTransparent, ctSemiTransparent, ctFullyOpaque);
+
   { TCustomColorspace }
 
   TCustomColorspace = class
@@ -125,6 +127,7 @@ type
     class function GetChannelCount: integer; virtual; abstract;
     class function IndexOfChannel(AName: string): integer;
     class function IndexOfAlphaChannel: integer; virtual; abstract;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; virtual; abstract;
     class function GetMaxValue(AIndex: integer): single; virtual; abstract;
     class function GetMinValue(AIndex: integer): single; virtual; abstract;
     class function GetName: string; virtual; abstract;
