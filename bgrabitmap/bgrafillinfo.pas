@@ -250,7 +250,9 @@ function IsPointInRoundRectangle(x1, y1, x2, y2, rx, ry: single; point: TPointF)
 function IsPointInRectangle(x1, y1, x2, y2: single; point: TPointF): boolean;
 
 function BGRAShapeComputeMinMax(AShape: TBGRACustomFillInfo; out minx, miny, maxx, maxy: integer;
-  bmpDest: TBGRACustomBitmap): boolean;
+  bmpDest: TBGRACustomBitmap): boolean; overload;
+function BGRAShapeComputeMinMax(AShape: TBGRACustomFillInfo; out minx, miny, maxx, maxy: integer;
+  clip: TRect): boolean; overload;
 
 implementation
 
@@ -258,7 +260,13 @@ uses Math;
 
 function BGRAShapeComputeMinMax(AShape: TBGRACustomFillInfo; out minx, miny, maxx, maxy: integer;
   bmpDest: TBGRACustomBitmap): boolean;
-var clip,bounds: TRect;
+begin
+  result := BGRAShapeComputeMinMax(AShape, minx,miny,maxx,maxy, bmpDest.ClipRect);
+end;
+
+function BGRAShapeComputeMinMax(AShape: TBGRACustomFillInfo; out minx, miny, maxx, maxy: integer;
+  clip: TRect): boolean;
+var bounds: TRect;
 begin
   result := true;
   bounds := AShape.GetBounds;
@@ -273,8 +281,6 @@ begin
   maxy := bounds.bottom - 1;
   minx := bounds.left;
   maxx := bounds.right - 1;
-
-  clip := bmpDest.ClipRect;
 
   if minx < clip.Left then
     minx := clip.Left;

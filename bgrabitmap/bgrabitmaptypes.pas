@@ -182,6 +182,9 @@ const
 {$DEFINE INCLUDE_SCANNER_INTERFACE }
 {$I bgracustombitmap.inc}
 
+{$DEFINE INCLUDE_INTERFACE}
+{$I unibitmap.inc}
+
 {==== Integer math ====}
 
   {* Computes the value modulo cycle, and if the ''value'' is negative, the result
@@ -551,6 +554,9 @@ end;
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I geometrytypes.inc}
+
+{$DEFINE INCLUDE_IMPLEMENTATION}
+{$I unibitmap.inc}
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I csscolorconst.inc}

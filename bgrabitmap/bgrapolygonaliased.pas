@@ -194,7 +194,9 @@ procedure PolygonPerspectiveMappingShaderAliased(bmp: TBGRACustomBitmap; const p
 { Aliased round rectangle }
 procedure BGRARoundRectAliased(dest: TBGRACustomBitmap; X1, Y1, X2, Y2: integer;
   DX, DY: integer; BorderColor, FillColor: TBGRAPixel; FillTexture: IBGRAScanner = nil; ADrawMode: TDrawMode = dmDrawWithTransparency;
-  skipFill: boolean = false);
+  skipFill: boolean = false); overload;
+procedure BGRARoundRectAliased(dest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer;
+  DX, DY: integer; const BorderColor, FillColor: TUniversalBrush; AAlpha: Word; skipBorder: boolean = false; skipFill: boolean = false); overload;
 procedure BGRAFillRoundRectAliased(dest: TBGRACustomBitmap; X1, Y1, X2, Y2: integer;
   DX, DY: integer; FillColor: TBGRAPixel; FillTexture: IBGRAScanner = nil; ADrawMode: TDrawMode = dmDrawWithTransparency);
 
@@ -1011,6 +1013,198 @@ begin
             dest.HorizLine(RowStart, Ceil(CY) - Succ(J),
               RowEnd, FillColor, ADrawMode);
           end;
+        end;
+      end;
+
+    end;
+    Inc(J);
+  end;
+end;
+
+procedure BGRARoundRectAliased(dest: TCustomUniversalBitmap; X1, Y1, X2,
+  Y2: integer; DX, DY: integer; const BorderColor, FillColor: TUniversalBrush;
+  AAlpha: Word; skipBorder: boolean; skipFill: boolean);
+var
+  CX, CY, CX1, CY1, A, B, NX, NY: single;
+  X, Y, EX, EY: integer;
+  LX1, LY1: integer;
+  LX2, LY2: integer;
+  DivSqrA, DivSqrB: single;
+  I, J, S: integer;
+  EdgeList: array of TPoint;
+  temp:   integer;
+  LX, LY: integer;
+  RowStart,RowEnd: integer;
+
+  procedure AddEdge(X, Y: integer);
+  begin
+    If (Y > High(EdgeList)) or (Y < 0) then exit;
+    if (EdgeList[Y].X = -1) or (X < EdgeList[Y].X) then
+      EdgeList[Y].X := X;
+    if (EdgeList[Y].Y = -1) or (X > EdgeList[Y].Y) then
+      EdgeList[Y].Y := X;
+  end;
+
+begin
+  if AAlpha = 0 then exit;
+  if (x1 > x2) then
+  begin
+    temp := x1;
+    x1   := x2;
+    x2   := temp;
+  end;
+  if (y1 > y2) then
+  begin
+    temp := y1;
+    y1   := y2;
+    y2   := temp;
+  end;
+  if (x2 - x1 <= 0) or (y2 - y1 <= 0) then exit;
+  LX := x2 - x1 - DX;
+  LY := y2 - y1 - DY;
+  if LX < 0 then LX := 0;
+  if LY < 0 then LY := 0;
+  Dec(x2);
+  Dec(y2);
+
+  if (X1 = X2) and (Y1 = Y2) then
+  begin
+    if not skipBorder then
+      dest.DrawPixel(X1, Y1, BorderColor, AAlpha);
+    Exit;
+  end;
+  if (X2 - X1 = 1) or (Y2 - Y1 = 1) then
+  begin
+    if not skipBorder then
+      dest.FillRect(X1, Y1, X2 + 1, Y2 + 1, BorderColor, AAlpha);
+    Exit;
+  end;
+  if (LX > X2 - X1) or (LY > Y2 - Y1) then
+  begin
+    if not skipBorder then
+      dest.Rectangle(X1, Y1, X2 + 1, Y2 + 1, BorderColor, AAlpha);
+    if not skipFill then
+      dest.FillRect(X1 + 1, Y1 + 1, X2, Y2, FillColor, AAlpha);
+    Exit;
+  end;
+
+  SetLength(EdgeList, Ceil((Y2 - Y1 + 1) / 2));
+  for I := 0 to Pred(High(EdgeList)) do
+    EdgeList[I] := Point(-1, -1);
+  EdgeList[High(EdgeList)] := Point(0, 0);
+
+  A  := (X2 - X1 + 1 - LX) / 2;
+  B  := (Y2 - Y1 + 1 - LY) / 2;
+  CX := (X2 + X1 + 1) / 2;
+  CY := (Y2 + Y1 + 1) / 2;
+
+  CX1 := X2 + 1 - A - Floor(CX);
+  CY1 := Y2 + 1 - B - Floor(CY);
+
+  EX := Floor(Sqr(A) / Sqrt(Sqr(A) + Sqr(B)) + Frac(A));
+  EY := Floor(Sqr(B) / Sqrt(Sqr(A) + Sqr(B)) + Frac(B));
+
+  DivSqrA := 1 / Sqr(A);
+  DivSqrB := 1 / Sqr(B);
+
+  NY := B;
+  AddEdge(Floor(CX1), Round(CY1 + B) - 1);
+  for X := 1 to Pred(EX) do
+  begin
+    NY := B * Sqrt(1 - Sqr(X + 0.5 - Frac(A)) * DivSqrA);
+
+    AddEdge(Floor(CX1) + X, Round(CY1 + NY) - 1);
+  end;
+
+  LX1 := Floor(CX1) + Pred(EX);
+  LY1 := Round(CY1 + NY) - 1;
+
+  NX := A;
+  AddEdge(Round(CX1 + A) - 1, Floor(CY1));
+  for Y := 1 to Pred(EY) do
+  begin
+    NX := A * Sqrt(1 - Sqr(Y + 0.5 - Frac(B)) * DivSqrB);
+
+    AddEdge(Round(CX1 + NX) - 1, Floor(CY1) + Y);
+  end;
+
+  LX2 := Round(CX1 + NX) - 1;
+  LY2 := Floor(CY1) + Pred(EY);
+
+  if Abs(LX1 - LX2) > 1 then
+  begin
+    if Abs(LY1 - LY2) > 1 then
+      AddEdge(LX1 + 1, LY1 - 1)
+    else
+      AddEdge(LX1 + 1, LY1);
+  end
+  else
+  if Abs(LY1 - LY2) > 1 then
+    AddEdge(LX2, LY1 - 1);
+
+  for I := 0 to High(EdgeList) do
+  begin
+    if EdgeList[I].X = -1 then
+      EdgeList[I] := Point(Round(CX1 + A) - 1, Round(CX1 + A) - 1)
+    else
+      Break;
+  end;
+
+  J := 0;
+  while J < Length(EdgeList) do
+  begin
+    if (J = 0) and (Frac(CY) > 0) then
+    begin
+      if not skipBorder then
+      for I := EdgeList[J].X to EdgeList[J].Y do
+      begin
+        dest.DrawPixel(Floor(CX) + I, Floor(CY) + J, BorderColor, AAlpha);
+        dest.DrawPixel(Ceil(CX) - Succ(I), Floor(CY) + J, BorderColor, AAlpha);
+      end;
+
+      if not SkipFill then
+        dest.HorizLine(Ceil(CX) - EdgeList[J].X, Floor(CY) + J, Floor(CX) +
+          Pred(EdgeList[J].X), FillColor, AAlpha);
+    end
+    else
+    if (J = High(EdgeList)) then
+    begin
+      if Frac(CX) > 0 then
+        S := -EdgeList[J].Y
+      else
+        S := -Succ(EdgeList[J].Y);
+
+      if not skipBorder then
+      for I := S to EdgeList[J].Y do
+      begin
+        dest.DrawPixel(Floor(CX) + I, Floor(CY) + J, BorderColor, AAlpha);
+        dest.DrawPixel(Floor(CX) + I, Ceil(CY) - Succ(J), BorderColor, AAlpha);
+      end;
+    end
+    else
+    begin
+      if not skipBorder then
+      for I := EdgeList[J].X to EdgeList[J].Y do
+      begin
+        dest.DrawPixel(Floor(CX) + I, Floor(CY) + J, BorderColor, AAlpha);
+        dest.DrawPixel(Floor(CX) + I, Ceil(CY) - Succ(J), BorderColor, AAlpha);
+        if Floor(CX) + I <> Ceil(CX) - Succ(I) then
+        begin
+          dest.DrawPixel(Ceil(CX) - Succ(I), Floor(CY) + J, BorderColor, AAlpha);
+          dest.DrawPixel(Ceil(CX) - Succ(I), Ceil(CY) - Succ(J), BorderColor, AAlpha);
+        end;
+      end;
+
+      if not SkipFill then
+      begin
+        RowStart := Ceil(CX) - EdgeList[J].X;
+        RowEnd := Floor(CX) + Pred(EdgeList[J].X);
+        if RowEnd >= RowStart then
+        begin
+          dest.HorizLine(RowStart, Floor(CY) + J,
+            RowEnd, FillColor, AAlpha);
+          dest.HorizLine(RowStart, Ceil(CY) - Succ(J),
+            RowEnd, FillColor, AAlpha);
         end;
       end;
 
