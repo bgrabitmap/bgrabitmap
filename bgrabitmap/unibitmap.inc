@@ -135,7 +135,7 @@ type
         this bitmap if necessary }
     function GetUnique: TCustomUniversalBitmap;
     function Duplicate(ACopyProperties: boolean=false): TCustomUniversalBitmap;
-    procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap);
+    procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); virtual;
 
     procedure InvalidateBitmap; virtual;         //call if you modify with Scanline
     procedure LoadFromBitmapIfNeeded; virtual;   //call to ensure that data is up to date
@@ -634,7 +634,7 @@ end;
 function TCustomUniversalBitmap.InternalDuplicate(ACopyProperties: boolean): TCustomUniversalBitmap;
 begin
   LoadFromBitmapIfNeeded;
-  result := TCustomUniversalBitmap.Create(Colorspace,LineOrder);
+  result := InternalNew;
   result.SetSize(FWidth,FHeight);
   Move(FDataByte^, result.FDataByte^, FRowSize*FHeight);
   result.InvalidateBitmap;
