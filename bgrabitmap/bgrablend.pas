@@ -14,7 +14,8 @@ uses
 { Brush providers }
 
 procedure BGRASolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency);
-procedure BGRAScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency);
+procedure BGRAScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
+                           AOffsetX: integer = 0; AOffsetY: integer = 0);
 procedure BGRAEraseBrush(out ABrush: TUniversalBrush; AAlpha: Word);
 procedure BGRAAlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word);
 
@@ -175,8 +176,8 @@ begin
   PBGRAPixel(AContextData^.Dest) := pDest;
 end;
 
-procedure BGRASolidBrushSkipPixels(AFixedData: Pointer;
-  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+procedure BGRASolidBrushSkipPixels({%H-}AFixedData: Pointer;
+  AContextData: PUniBrushContext; {%H-}AAlpha: Word; ACount: integer);
 begin
   inc(PBGRAPixel(AContextData^.Dest), ACount);
 end;
@@ -315,18 +316,20 @@ type
   TBGRAScannerBrushFixedData = record
     Scanner: Pointer; //avoid ref count by using pointer type
     HasPutPixels: boolean;
+    OffsetX, OffsetY: integer;
   end;
 
 procedure BRGBAScannerBrushInitContext(AFixedData: Pointer;
   AContextData: PUniBrushContext);
 begin
-  IBGRAScanner(PBGRAScannerBrushFixedData(AFixedData)^.Scanner).ScanMoveTo(AContextData^.Ofs.X, AContextData^.Ofs.Y);
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
+    IBGRAScanner(Scanner).ScanMoveTo(AContextData^.Ofs.X + OffsetX,
+                                     AContextData^.Ofs.Y + OffsetY);
 end;
 
 procedure BGRAScannerBrushSetPixels(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TBGRAPixel;
   bAlpha: Byte;
   pDest: PBGRAPixel;
   buf: packed array[0..3] of TBGRAPixel;
@@ -614,13 +617,15 @@ begin
 end;
 
 procedure BGRAScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner;
-  ADrawMode: TDrawMode);
+  ADrawMode: TDrawMode; AOffsetX: integer = 0; AOffsetY: integer = 0);
 begin
   ABrush.Colorspace:= TBGRAPixelColorspace;
   with PBGRAScannerBrushFixedData(@ABrush.FixedData)^ do
   begin
     Scanner := Pointer(AScanner);
     HasPutPixels:= AScanner.IsScanPutPixelsDefined;
+    OffsetX := AOffsetX;
+    OffsetY := AOffsetY;
   end;
   ABrush.InternalInitContext:= @BRGBAScannerBrushInitContext;
   case ADrawMode of

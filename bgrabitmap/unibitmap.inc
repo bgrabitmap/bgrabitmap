@@ -140,7 +140,8 @@ type
     procedure SolidBrushExpanded(out {%H-}ABrush: TUniversalBrush; ARed,AGreen,ABlue,AAlpha: Word; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     procedure SolidBrushExpanded(out {%H-}ABrush: TUniversalBrush; AColor: TExpandedPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     class procedure SolidBrushIndirect(out {%H-}ABrush: TUniversalBrush; {%H-}AColor: Pointer; {%H-}ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
-    class procedure ScannerBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner; {%H-}ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
+    class procedure ScannerBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner; {%H-}ADrawMode: TDrawMode = dmDrawWithTransparency;
+                                 {%H-}AOffsetX: integer = 0; {%H-}AOffsetY: integer = 0); virtual;
 
     {TFPCustomImage}
     {** Creates a new bitmap, initialize properties and bitmap data }
@@ -791,7 +792,8 @@ begin
 end;
 
 class procedure TCustomUniversalBitmap.ScannerBrush(out
-  ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode);
+  ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode;
+  AOffsetX: integer = 0; AOffsetY: integer = 0);
 begin
   raise exception.Create('Scanner brush not implemented');
 end;
