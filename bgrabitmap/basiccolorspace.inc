@@ -58,6 +58,7 @@ type
   function ColorImportance(ec: TExpandedPixel): word;
   {** Merge two gamma expanded pixels (so taking into account gamma correction) }
   function MergeBGRA(ec1, ec2: TExpandedPixel): TExpandedPixel; overload;
+  function MergeBGRA(ec1: TExpandedPixel; weight1: integer; ec2: TExpandedPixel; weight2: integer): TExpandedPixel; overload;
   {** Computes the difference (with gamma correction) between two pixels,
       taking into account all dimensions, including transparency. The
       result ranges from 0 to 65535 }
@@ -688,6 +689,43 @@ begin
     Result.green := (int64(ec1.green) * ec1.alpha + int64(ec2.green) * ec2.alpha + c12 shr 1) div c12;
     Result.blue  := (int64(ec1.blue) * ec1.alpha + int64(ec2.blue) * ec2.alpha + c12 shr 1) div c12;
     Result.alpha := (c12 + 1) shr 1;
+  end;
+end;
+
+function MergeBGRA(ec1: TExpandedPixel; weight1: integer; ec2: TExpandedPixel;
+  weight2: integer): TExpandedPixel;
+var
+    f1,f2,f12: int64;
+begin
+  if (weight1 = 0) then
+  begin
+    if (weight2 = 0) then
+      result := BGRAPixelTransparent
+    else
+      Result := ec2
+  end
+  else
+  if (weight2 = 0) then
+    Result := ec1
+  else
+  if (weight1+weight2 = 0) then
+    Result := BGRAPixelTransparent
+  else
+  begin
+    f1 := int64(ec1.alpha)*weight1;
+    f2 := int64(ec2.alpha)*weight2;
+    f12 := f1+f2;
+    if f12 = 0 then
+      result := BGRAPixelTransparent
+    else
+    begin
+      Result.red   := (ec1.red * f1 + ec2.red * f2 + f12 shr 1) div f12;
+      Result.green := (ec1.green * f1 + ec2.green * f2 + f12 shr 1) div f12;
+      Result.blue  := (ec1.blue * f1 + ec2.blue * f2 + f12 shr 1) div f12;
+      {$hints off}
+      Result.alpha := (f12 + ((weight1+weight2) shr 1)) div (weight1+weight2);
+      {$hints on}
+    end;
   end;
 end;
 
