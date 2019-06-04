@@ -11,6 +11,13 @@ interface
 uses
   BGRABitmapTypes;
 
+{ Brush providers }
+
+procedure BGRASolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency);
+procedure BGRAScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency);
+procedure BGRAEraseBrush(out ABrush: TUniversalBrush; AAlpha: Word);
+procedure BGRAAlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word);
+
 { Draw one pixel with alpha blending }
 procedure DrawPixelInlineWithAlphaCheck(dest: PBGRAPixel; const c: TBGRAPixel); inline; overload;
 procedure DrawPixelInlineWithAlphaCheck(dest: PBGRAPixel; c: TBGRAPixel; appliedOpacity: byte); inline; overload;
@@ -25,6 +32,7 @@ procedure InterpolateBilinear(pUpLeft,pUpRight,pDownLeft,pDownRight: PBGRAPixel;
 procedure CopyPixelsWithOpacity(dest,src: PBGRAPixel; opacity: byte; Count: integer); inline;
 function ApplyOpacity(opacity1,opacity2: byte): byte; inline;
 function FastRoundDiv255(value: cardinal): cardinal; inline;
+function FastRoundDiv257(valueWord: cardinal): byte; inline;
 
 { Draw a series of pixels with alpha blending }
 procedure PutPixels(pdest: PBGRAPixel; psource: PBGRAPixel; copycount: integer; mode: TDrawMode; AOpacity:byte);
@@ -111,6 +119,483 @@ procedure BGRAFillClearTypeRGBMask(dest: TBGRACustomBitmap; x, y: integer;
 procedure BGRAFillClearTypeMaskPtr(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; maskData: PByte; maskPixelSize: NativeInt; maskRowSize: NativeInt; maskWidth,maskHeight: integer; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
 
 implementation
+
+type
+  PBGRASolidBrushFixedData = ^TBGRASolidBrushFixedData;
+  TBGRASolidBrushFixedData = record
+    BGRA: TBGRAPixel;
+    Expanded: TExpandedPixel;
+  end;
+
+procedure BGRASolidBrushSetPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PBGRAPixel;
+  bAlpha: Byte;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  if AAlpha >= $ff7f then
+  begin
+    while ACount > 0 do
+    begin
+      pDest^ := PBGRASolidBrushFixedData(AFixedData)^.BGRA;
+      inc(pDest);
+      dec(ACount);
+    end;
+  end else
+  begin
+    with PBGRASolidBrushFixedData(AFixedData)^ do
+    begin
+      if BGRA.alpha = 255 then
+      begin
+        bAlpha := FastRoundDiv257(AAlpha);
+        while ACount > 0 do
+        begin
+          DrawExpandedPixelInlineNoAlphaCheck(pDest, Expanded, bAlpha);
+          inc(pDest);
+          dec(ACount);
+        end;
+      end
+      else
+      begin
+        while ACount > 0 do
+        begin
+          pDest^ := GammaCompression(MergeBGRA(GammaExpansion(pDest^), not AAlpha, Expanded, AAlpha));
+          inc(pDest);
+          dec(ACount);
+        end;
+      end;
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRASolidBrushSkipPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+begin
+  inc(PBGRAPixel(AContextData^.Dest), ACount);
+end;
+
+procedure BGRASolidBrushDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  bAlpha: byte;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  with PBGRASolidBrushFixedData(AFixedData)^ do
+  begin
+    pDest := PBGRAPixel(AContextData^.Dest);
+    bAlpha := FastRoundDiv257(Expanded.alpha*AAlpha shr 16);
+    while ACount > 0 do
+    begin
+      DrawExpandedPixelInlineNoAlphaCheck(pDest, Expanded, bAlpha);
+      inc(pDest);
+      dec(ACount);
+    end;
+    PBGRAPixel(AContextData^.Dest) := pDest;
+  end;
+end;
+
+procedure BGRASolidBrushLinearDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  c: TBGRAPixel;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  with PBGRASolidBrushFixedData(AFixedData)^ do
+  begin
+    pDest := PBGRAPixel(AContextData^.Dest);
+    if AAlpha >= $ff7f then
+    begin
+      while ACount > 0 do
+      begin
+        FastBlendPixelInline(pDest, BGRA);
+        inc(pDest);
+        dec(ACount);
+      end;
+    end else
+    begin
+      c := BGRA;
+      c.alpha := FastRoundDiv257(c.alpha*AAlpha shr 8);
+      while ACount > 0 do
+      begin
+        FastBlendPixelInline(pDest, c);
+        inc(pDest);
+        dec(ACount);
+      end;
+    end;
+    PBGRAPixel(AContextData^.Dest) := pDest;
+  end;
+end;
+
+procedure BGRASolidBrushXorPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  c: TBGRAPixel;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  with PBGRASolidBrushFixedData(AFixedData)^ do
+  begin
+    pDest := PBGRAPixel(AContextData^.Dest);
+    if AAlpha >= $ff7f then
+    begin
+      while ACount > 0 do
+      begin
+        PDWord(pdest)^ := PDWord(pdest)^ xor PDWord(@BGRA)^;
+        inc(pDest);
+        dec(ACount);
+      end;
+    end else
+    begin
+      while ACount > 0 do
+      begin
+        PDWord(@c)^ := PDWord(pdest)^ xor PDWord(@BGRA)^;
+        pDest^ := MergeBGRA(pDest^, not AAlpha, c, AAlpha);
+        inc(pDest);
+        dec(ACount);
+      end;
+    end;
+    PBGRAPixel(AContextData^.Dest) := pDest;
+  end;
+end;
+
+procedure BGRASolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer;
+  ADrawMode: TDrawMode);
+begin
+  ABrush.Colorspace:= TBGRAPixelColorspace;
+  with PBGRASolidBrushFixedData(@ABrush.FixedData)^ do
+  begin
+    BGRA := PBGRAPixel(AColor)^;
+    if not (ADrawMode in[dmLinearBlend,dmXor]) then
+      Expanded := GammaExpansion(BGRA);
+  end;
+  ABrush.InternalInitContext:= nil;
+  case ADrawMode of
+    dmSet: ABrush.InternalPutNextPixels:= @BGRASolidBrushSetPixels;
+
+    dmSetExceptTransparent: if PBGRAPixel(AColor)^.alpha <> 255 then
+      ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels
+      else ABrush.InternalPutNextPixels:= @BGRASolidBrushSetPixels;
+
+    dmDrawWithTransparency: if PBGRAPixel(AColor)^.alpha = 0 then
+      ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels
+      else ABrush.InternalPutNextPixels:= @BGRASolidBrushDrawPixels;
+
+    dmLinearBlend: if PBGRAPixel(AColor)^.alpha = 0 then
+      ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels
+      else ABrush.InternalPutNextPixels:= @BGRASolidBrushLinearDrawPixels;
+
+    dmXor: ABrush.InternalPutNextPixels:= @BGRASolidBrushXorPixels;
+  end;
+
+end;
+
+procedure BRGBAScannerBrushInitContext(AFixedData: Pointer;
+  AContextData: PUniBrushContext);
+begin
+  IBGRAScanner(AFixedData^).ScanMoveTo(AContextData^.Ofs.X, AContextData^.Ofs.Y);
+end;
+
+procedure BGRAScannerBrushSetPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  src: TBGRAPixel;
+  bAlpha: Byte;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  if AAlpha >= $ff7f then
+  begin
+    while ACount > 0 do
+    begin
+      pDest^ := IBGRAScanner(AFixedData^).ScanNextPixel;
+      inc(pDest);
+      dec(ACount);
+    end;
+  end else
+  begin
+    bAlpha := FastRoundDiv257(AAlpha);
+    while ACount > 0 do
+    begin
+      pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, IBGRAScanner(AFixedData^).ScanNextPixel, bAlpha);
+      inc(pDest);
+      dec(ACount);
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAScannerBrushSetPixelsExceptTransparent(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  src: TBGRAPixel;
+  bAlpha: Byte;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  if AAlpha >= $ff7f then
+  begin
+    while ACount > 0 do
+    begin
+      src := IBGRAScanner(AFixedData^).ScanNextPixel;
+      if src.alpha = 255 then pDest^ := src;
+      inc(pDest);
+      dec(ACount);
+    end;
+  end else
+  begin
+    bAlpha := FastRoundDiv257(AAlpha);
+    while ACount > 0 do
+    begin
+      src := IBGRAScanner(AFixedData^).ScanNextPixel;
+      if src.alpha = 255 then
+        pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, src, bAlpha);
+      inc(pDest);
+      dec(ACount);
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAScannerBrushDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  src: TBGRAPixel;
+  bAlpha: Byte;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  if AAlpha >= $ff7f then
+  begin
+    while ACount > 0 do
+    begin
+      src := IBGRAScanner(AFixedData^).ScanNextPixel;
+      DrawPixelInlineWithAlphaCheck(pDest, src);
+      inc(pDest);
+      dec(ACount);
+    end;
+  end else
+  begin
+    bAlpha := FastRoundDiv257(AAlpha);
+    while ACount > 0 do
+    begin
+      src := IBGRAScanner(AFixedData^).ScanNextPixel;
+      DrawPixelInlineWithAlphaCheck(pDest, src, bAlpha);
+      inc(pDest);
+      dec(ACount);
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAScannerBrushLinearDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  src: TBGRAPixel;
+  bAlpha: Byte;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  if AAlpha >= $ff7f then
+  begin
+    while ACount > 0 do
+    begin
+      src := IBGRAScanner(AFixedData^).ScanNextPixel;
+      FastBlendPixelInline(pDest, src);
+      inc(pDest);
+      dec(ACount);
+    end;
+  end else
+  begin
+    bAlpha := FastRoundDiv257(AAlpha);
+    while ACount > 0 do
+    begin
+      src := IBGRAScanner(AFixedData^).ScanNextPixel;
+      FastBlendPixelInline(pDest, src, bAlpha);
+      inc(pDest);
+      dec(ACount);
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAScannerBrushXorPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  src: TBGRAPixel;
+  bAlpha: byte;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  if AAlpha >= $ff7f then
+  begin
+    while ACount > 0 do
+    begin
+      src := IBGRAScanner(AFixedData^).ScanNextPixel;
+      PDWord(pdest)^ := PDWord(pdest)^ xor PDWord(@src)^;
+      inc(pDest);
+      dec(ACount);
+    end;
+  end else
+  begin
+    bAlpha := FastRoundDiv257(AAlpha);
+    while ACount > 0 do
+    begin
+      src := IBGRAScanner(AFixedData^).ScanNextPixel;
+      PDWord(@src)^ := PDWord(pdest)^ xor PDWord(@src)^;
+      pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, src, bAlpha);
+      inc(pDest);
+      dec(ACount);
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner;
+  ADrawMode: TDrawMode);
+begin
+  ABrush.Colorspace:= TBGRAPixelColorspace;
+  PPointer(@ABrush.FixedData)^ := Pointer(AScanner);
+  ABrush.InternalInitContext:= @BRGBAScannerBrushInitContext;
+  case ADrawMode of
+    dmSet: ABrush.InternalPutNextPixels:= @BGRAScannerBrushSetPixels;
+    dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @BGRAScannerBrushSetPixelsExceptTransparent;
+    dmDrawWithTransparency: ABrush.InternalPutNextPixels:= @BGRAScannerBrushDrawPixels;
+    dmLinearBlend: ABrush.InternalPutNextPixels:= @BGRAScannerBrushLinearDrawPixels;
+    dmXor: ABrush.InternalPutNextPixels:= @BGRAScannerBrushXorPixels;
+  end;
+end;
+
+procedure BGRASolidBrushErasePixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  bAlpha: byte;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  bAlpha := PByte(AFixedData)^ * AAlpha shr 16;
+  while ACount > 0 do
+  begin
+    ErasePixelInline(pDest, bAlpha);
+    inc(pDest);
+    dec(ACount);
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAEraseBrush(out ABrush: TUniversalBrush; AAlpha: Word);
+var
+  bAlpha: Byte;
+begin
+  if AAlpha >= $ff7f then
+    BGRASolidBrushIndirect(ABrush, @BGRAPixelTransparent, dmSet)
+  else
+  begin
+    ABrush.Colorspace:= TBGRAPixelColorspace;
+    bAlpha := FastRoundDiv257(AAlpha);
+    PByte(@ABrush.FixedData)^ := bAlpha;
+    ABrush.InternalInitContext:= nil;
+    if bAlpha = 0 then
+      ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels
+    else
+      ABrush.InternalPutNextPixels:= @BGRASolidBrushErasePixels;
+  end;
+end;
+
+procedure BGRASolidBrushAlphaPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  alphaAdd: Word;
+  pDest: PBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end else
+  if AAlpha >= $ff7f then
+  begin
+    AlphaFillInline(PBGRAPixel(AContextData^.Dest), PByte(AFixedData)^, ACount);
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+  end else
+  begin
+    pDest := PBGRAPixel(AContextData^.Dest);
+    alphaAdd := PByte(AFixedData)^*AAlpha;
+    while ACount > 0 do
+    begin
+      pDest^.alpha := (pDest^.alpha*(not AAlpha) + alphaAdd) shr 16;
+      inc(pDest);
+      dec(ACount);
+    end;
+    PBGRAPixel(AContextData^.Dest) := pDest;
+  end;
+end;
+
+procedure BGRAAlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word);
+var
+  bAlpha: Byte;
+begin
+  if AAlpha <= $80 then
+    BGRASolidBrushIndirect(ABrush, @BGRAPixelTransparent, dmSet)
+  else
+  begin
+    ABrush.Colorspace:= TBGRAPixelColorspace;
+    bAlpha := FastRoundDiv257(AAlpha);
+    PByte(@ABrush.FixedData)^ := bAlpha;
+    ABrush.InternalInitContext:= nil;
+    ABrush.InternalPutNextPixels:= @BGRASolidBrushAlphaPixels;
+  end;
+end;
 
 procedure BGRAFillClearTypeMaskPtr(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; maskData: PByte; maskPixelSize: NativeInt; maskRowSize: NativeInt; maskWidth,maskHeight: integer; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
 var
@@ -731,6 +1216,11 @@ end;
 function FastRoundDiv255(value: cardinal): cardinal; inline;
 begin
   result := (value + (value shr 7)) shr 8;
+end;
+
+function FastRoundDiv257(valueWord: cardinal): byte; inline;
+begin
+  result := cardinal(valueWord + 127 - (valueWord shr 8)) shr 8;
 end;
 
 procedure DrawExpandedPixelInlineWithAlphaCheck(dest: PBGRAPixel; const ec: TExpandedPixel);
