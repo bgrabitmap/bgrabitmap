@@ -66,7 +66,7 @@ type
     FConvertToFPColor, FConvertFromFPColor,
     FConvertFromBGRA, FConvertFromExpanded: TColorspaceConvertArrayProc;
 
-    procedure Init(AColorspace: TColorspaceAny); virtual;
+    procedure Init; virtual;
     procedure ReallocData; virtual;
     procedure FreeData; virtual;
 
@@ -84,16 +84,21 @@ type
     function GetHasTransparentPixels: boolean; virtual;
     function GetHeight: integer; virtual;
     function GetLineOrder: TRawImageLineOrder; virtual;
+    procedure SetLineOrder(AValue: TRawImageLineOrder); virtual;
     function GetNbPixels: integer; virtual;
     function GetRefCount: integer; virtual;
     function GetScanLineByte(y: integer): PByte; virtual;
     function GetWidth: integer; virtual;
-    procedure SetClipRect(AValue: TRect); virtual;
+    procedure SetClipRect(const AValue: TRect); virtual;
     procedure RaiseInvalidBrushColorspace; virtual;
     procedure RaiseMissingUniDrawer; virtual;
     function CheckHorizLineBounds(var x:int32or64; y: int32or64; var x2: int32or64): boolean; inline;
     function CheckVertLineBounds(x: int32or64; var y, y2: int32or64): boolean; inline;
     class function DefaultColorspace: TColorspaceAny; virtual;
+    function InternalDuplicate(ACopyProperties: boolean=false): TCustomUniversalBitmap; virtual;
+    function InternalNew: TCustomUniversalBitmap; virtual;
+    procedure InternalCopyPixels(ASource,ADest: PByte; ASourceStride,ADestStride: PtrInt; ACount: integer); virtual;
+    procedure InternalSwapPixels(ABuf1,ABuf2: PByte; AStride1,AStride2: PtrInt; ACount: integer); virtual;
 
   public
 
@@ -104,10 +109,26 @@ type
         See [[BGRABitmap Types imported from Graphics|BGRAGraphics]] }
     FillMode:  TFillMode;
 
+    {** Creates an image of width and height equal to zero. In this case,
+        ''DataByte'' = '''nil''' }
     constructor Create; overload;
     constructor Create(AColorspace: TColorspaceAny; ALineOrder: TRawImageLineOrder); overload;
     constructor Create(AColorspace: TColorspaceAny; AWidth, AHeight: integer;
                        ALineOrder: TRawImageLineOrder); overload;
+
+    {** Adds a reference (this reference count is not the same as
+        the reference count of an interface, it changes only by
+        explicit calls }
+    function NewReference: TCustomUniversalBitmap;
+    {** Free a reference. When the resulting reference count gets
+        to zero, the image is freed. The initial reference count
+        is equal to 1 }
+    procedure FreeReference;
+    {** Returns an object with a reference count equal to 1. Duplicate
+        this bitmap if necessary }
+    function GetUnique: TCustomUniversalBitmap;
+    function Duplicate(ACopyProperties: boolean=false): TCustomUniversalBitmap;
+    procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap);
 
     procedure InvalidateBitmap; virtual;         //call if you modify with Scanline
     procedure LoadFromBitmapIfNeeded; virtual;   //call to ensure that data is up to date
@@ -122,7 +143,9 @@ type
     class procedure ScannerBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner; {%H-}ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
 
     {TFPCustomImage}
+    {** Creates a new bitmap, initialize properties and bitmap data }
     constructor Create(AWidth, AHeight: integer); overload; override;
+    {** Sets the dimension of an existing bitmap /!\ Data can be random }
     procedure SetSize(AWidth, AHeight: integer); override;
     destructor Destroy; override;
 
@@ -144,6 +167,9 @@ type
     {** Fill the whole image or clipping rect with the specified brush }
     procedure Fill(const ABrush: TUniversalBrush; AAlpha: Word = 65535); virtual;
     procedure FillTransparent; virtual;
+    procedure AlphaFill(alpha: byte); virtual;
+    procedure ApplyGlobalOpacity(alpha: byte); overload; virtual;
+    procedure ApplyGlobalOpacity(ARect: TRect; alpha: byte); overload; virtual;
     {** Fills completely a rectangle, without any border }
     procedure FillRect(ALeft, ATop, ARight, ABottom: integer; const ABrush: TUniversalBrush; AAlpha: Word = 65535); virtual;
     procedure FillRect(const ARect: TRect; const ABrush: TUniversalBrush; AAlpha: Word = 65535); virtual;
@@ -209,10 +235,10 @@ type
     procedure DrawPolygon(const points: array of TPoint; const ABrush: TUniversalBrush; AAlpha: Word = 65535);
     procedure DrawPolygonAntialias(const points: array of TPoint; const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload;
     procedure DrawPolygonAntialias(const points: array of TPoint; const ABrush1, ABrush2: TUniversalBrush; ADashLen: integer; AAlpha: Word = 65535); overload;
-    procedure ErasePolygon(const points: array of TPoint; alpha: byte);
-    procedure ErasePolygonAntialias(const points: array of TPoint; alpha: byte);
-    procedure AlphaPolygon(const points: array of TPoint; alpha: byte);
-    procedure AlphaPolygonAntialias(const points: array of TPoint; alpha: byte);
+    procedure ErasePolygonOutline(const points: array of TPoint; alpha: byte);
+    procedure ErasePolygonOutlineAntialias(const points: array of TPoint; alpha: byte);
+    procedure AlphaPolygonOutline(const points: array of TPoint; alpha: byte);
+    procedure AlphaPolygonOutlineAntialias(const points: array of TPoint; alpha: byte);
 
     procedure DrawPathAliased(APath: IBGRAPath; const ABrush: TUniversalBrush; AAlpha: Word = 65535; APixelCenteredCoordinates: boolean = true); overload;
     procedure DrawPathAliased(APath: IBGRAPath; const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush; AAlpha: Word = 65535; APixelCenteredCoordinates: boolean = true); overload;
@@ -250,6 +276,20 @@ type
 
     property Colorspace: TColorspaceAny read FColorspace;
 
+    procedure VerticalFlip; overload; virtual;
+    procedure VerticalFlip(ARect: TRect); overload; virtual;
+    procedure HorizontalFlip; overload; virtual;
+    procedure HorizontalFlip(ARect: TRect); overload; virtual;
+    procedure RotateUDInplace; overload; virtual;
+    procedure RotateUDInplace(ARect: TRect); overload; virtual;
+
+    { Return a new bitmap rotated in a clock wise direction. }
+    function RotateCW: TCustomUniversalBitmap;
+    { Return a new bitmap rotated in a counter clock wise direction. }
+    function RotateCCW: TCustomUniversalBitmap;
+    { Return a new bitmap rotated 180° (upside down). }
+    function RotateUD: TCustomUniversalBitmap;
+
     {** Width of the image in pixels }
     property Width: integer Read GetWidth;
     {** Height of the image in pixels }
@@ -272,7 +312,7 @@ type
         If it is equal to ''riloTopToBottom'', the first line is the top line.
         If it is equal to ''riloBottomToTop'', the first line is the bottom line.
         See [[BGRABitmap Miscellaneous types|miscellaneous types]] }
-    property LineOrder: TRawImageLineOrder Read GetLineOrder;
+    property LineOrder: TRawImageLineOrder Read GetLineOrder write SetLineOrder;
 
     {** Provides a pointer to the first pixel in memory.
         Depending on the ''LineOrder'' property, this can be the top-left pixel or the bottom-left pixel.
@@ -337,6 +377,42 @@ type
 
   end;
   TUniversalDrawerAny = class of TCustomUniversalDrawer;
+
+  { TGenericUniversalBitmap }
+
+  generic TGenericUniversalBitmap<TPixel,TColorspace> = class(TCustomUniversalBitmap)
+  private
+    type PPixel = ^TPixel;
+    function GetDataPtr: PPixel; inline;
+    function GetScanLine(y: integer): PPixel; inline;
+  protected
+    class function DefaultColorspace: TColorspaceAny; override;
+    procedure Init; override; //ensure colorspace
+    function GetScanlineFast(y: integer): PPixel; inline; //typed function
+    procedure InternalCopyPixels(ASource,ADest: PByte; ASourceStride,ADestStride: PtrInt; ACount: integer); override;
+    procedure InternalSwapPixels(ABuf1,ABuf2: PByte; AStride1,AStride2: PtrInt; ACount: integer); override;
+  public
+    //typed functions
+
+    {** Creates an image of dimensions ''AWidth'' and ''AHeight'' and fills it with ''Color'' }
+    constructor Create(AWidth, AHeight: integer; const AColor: TPixel);
+    class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload;
+    procedure SetPixel(x,y: int32or64; AColor: TPixel); overload; inline;
+    function GetPixel(x,y: int32or64): TPixel; inline;
+    function GetPixelCycle(x,y: int32or64): TPixel; inline;
+    {** Returns the address of the left-most pixel of any line.
+        The parameter y ranges from 0 to Height-1 }
+    property ScanLine[y: integer]: PPixel Read GetScanLine;
+    property Data: PPixel read GetDataPtr;
+
+    //optimized
+    procedure SetPixelIndirect(x,y: int32or64; AColor: pointer); override;
+    procedure GetPixelIndirect(x,y: int32or64; AColor: pointer); override;
+    procedure GetPixelCycleIndirect(x,y: int32or64; AColor: pointer); override;
+    function GetPixelAddress(x, y: integer): PByte; override;
+    procedure HorizontalFlip(ARect: TRect); overload; override;
+    procedure RotateUDInplace(ARect: TRect); overload; override;
+  end;
 
 var
   UniDrawerClass: TUniversalDrawerAny;
@@ -413,6 +489,7 @@ end;
 
 function TCustomUniversalBitmap.GetDataBytePtr: PByte;
 begin
+  LoadFromBitmapIfNeeded;
   result := FDataByte;
 end;
 
@@ -471,19 +548,19 @@ end;
 function TCustomUniversalBitmap.GetPixelAddress(x,y: integer): PByte;
 begin
   Result := FDataByte;
-  if FLineOrder = riloBottomToTop then
-    y := FHeight - 1 - y;
+  if FLineOrder = riloBottomToTop then y := FHeight - 1 - y;
   Inc(Result, FRowSize * y + IntPtr(FPixelSize)*x);
 end;
 
 function TCustomUniversalBitmap.GetScanLineByte(y: integer): PByte;
 begin
-  if (y < 0) or (y >= Height) then
+  if (y < 0) or (y >= FHeight) then
     raise ERangeError.Create('Scanline: out of bounds')
   else
   begin
     LoadFromBitmapIfNeeded;
-    Result := GetPixelAddress(y,0);
+    if FLineOrder = riloBottomToTop then y := FHeight - 1 - y;
+    Result := FDataByte + FRowSize*y;
   end;
 end;
 
@@ -492,7 +569,7 @@ begin
   result := FWidth;
 end;
 
-procedure TCustomUniversalBitmap.SetClipRect(AValue: TRect);
+procedure TCustomUniversalBitmap.SetClipRect(const AValue: TRect);
 begin
   IntersectRect(FClipRect,AValue,Rect(0,0,FWidth,FHeight));
 end;
@@ -546,6 +623,50 @@ begin
   result := TBGRAPixelColorspace;
 end;
 
+function TCustomUniversalBitmap.InternalDuplicate(ACopyProperties: boolean): TCustomUniversalBitmap;
+begin
+  LoadFromBitmapIfNeeded;
+  result := TCustomUniversalBitmap.Create(Colorspace,LineOrder);
+  result.SetSize(FWidth,FHeight);
+  Move(FDataByte^, result.FDataByte^, FRowSize*FHeight);
+  result.InvalidateBitmap;
+  result.Caption := Caption;
+  if ACopyProperties then
+    CopyPropertiesTo(result);
+end;
+
+function TCustomUniversalBitmap.InternalNew: TCustomUniversalBitmap;
+begin
+  result := TCustomUniversalBitmap.Create(Colorspace, LineOrder);
+end;
+
+procedure TCustomUniversalBitmap.InternalCopyPixels(ASource, ADest: PByte;
+  ASourceStride, ADestStride: PtrInt; ACount: integer);
+begin
+  while ACount>0 do
+  begin
+    move(ASource^, ADest^, FPixelSize);
+    inc(ASource, ASourceStride);
+    inc(ADest, ADestStride);
+    dec(ACount);
+  end;
+end;
+
+procedure TCustomUniversalBitmap.InternalSwapPixels(ABuf1, ABuf2: PByte;
+  AStride1, AStride2: PtrInt; ACount: integer);
+var temp: array[0..31] of byte;
+begin
+  while ACount>0 do
+  begin
+    move(ABuf1^, {%H-}temp, FPixelSize);
+    move(ABuf2^, ABuf1^, FPixelSize);
+    move(temp, ABuf2^, FPixelSize);
+    inc(ABuf1, AStride1);
+    inc(ABuf2, AStride2);
+    dec(ACount);
+  end;
+end;
+
 procedure TCustomUniversalBitmap.PathFillAliasedCallback(
   const APoints: array of TPointF; AData: pointer);
 begin
@@ -577,15 +698,20 @@ begin
   end;
 end;
 
-procedure TCustomUniversalBitmap.Init(AColorspace: TColorspaceAny);
+procedure TCustomUniversalBitmap.SetLineOrder(AValue: TRawImageLineOrder);
+begin
+  FLineOrder:= AValue;
+end;
+
+procedure TCustomUniversalBitmap.Init;
 begin
   FRefCount := 1;
-  FColorspace := AColorspace;
-  FPixelSize := AColorspace.GetSize;
-  FConvertToFPColor:= AColorspace.GetConversion(TFPColorColorspace);
-  FConvertFromFPColor:= TFPColorColorspace.GetConversion(AColorspace);
-  FConvertFromBGRA := TBGRAPixelColorspace.GetConversion(AColorspace);
-  FConvertFromExpanded := TExpandedPixelColorspace.GetConversion(AColorspace);
+  if FColorspace = nil then FColorspace := DefaultColorspace;
+  FPixelSize := FColorspace.GetSize;
+  FConvertToFPColor:= FColorspace.GetConversion(TFPColorColorspace);
+  FConvertFromFPColor:= TFPColorColorspace.GetConversion(FColorspace);
+  FConvertFromBGRA := TBGRAPixelColorspace.GetConversion(FColorspace);
+  FConvertFromExpanded := TExpandedPixelColorspace.GetConversion(FColorspace);
   FReferenceWhite := nil;
   FWidth := 0;
   FHeight := 0;
@@ -681,6 +807,7 @@ end;
 procedure TCustomUniversalBitmap.FreeData;
 begin
   Freemem(FDataByte);
+  FDataByte := nil;
 end;
 
 function TCustomUniversalBitmap.CheckClippedRectBounds(var x, y, x2, y2: integer): boolean;
@@ -754,21 +881,22 @@ end;
 
 constructor TCustomUniversalBitmap.Create;
 begin
-  Init(DefaultColorspace);
+  Init;
   inherited Create(0, 0);
 end;
 
 constructor TCustomUniversalBitmap.Create(AColorspace: TColorspaceAny;
   ALineOrder: TRawImageLineOrder);
 begin
-  Init(AColorspace);
+  FColorspace := AColorspace;
+  Init;
   FLineOrder:= ALineOrder;
   inherited Create(0,0);
 end;
 
 constructor TCustomUniversalBitmap.Create(AWidth, AHeight: integer);
 begin
-  Init(DefaultColorspace);
+  Init;
   inherited Create(AWidth, AHeight);
   if FDataByte<>nil then FillByte(FDataByte^, FHeight*FRowSize, 0);
 end;
@@ -776,10 +904,56 @@ end;
 constructor TCustomUniversalBitmap.Create(AColorspace: TColorspaceAny; AWidth,
   AHeight: integer; ALineOrder: TRawImageLineOrder);
 begin
-  Init(AColorspace);
+  FColorspace := AColorspace;
+  Init;
   FLineOrder:= ALineOrder;
   inherited Create(AWidth, AHeight);
-  if FDataByte<>nil then FillByte(FDataByte^, FHeight*FRowSize, 0);
+  if FDataByte<>nil then
+    FillByte(FDataByte^, FHeight*FRowSize, 0);
+end;
+
+function TCustomUniversalBitmap.NewReference: TCustomUniversalBitmap;
+begin
+  if self <> nil then Inc(FRefCount);
+  Result := self;
+end;
+
+procedure TCustomUniversalBitmap.FreeReference;
+begin
+  if self = nil then
+    exit;
+
+  if FRefCount > 0 then
+  begin
+    Dec(FRefCount);
+    if FRefCount = 0 then
+    begin
+      self.Destroy;
+    end;
+  end;
+end;
+
+function TCustomUniversalBitmap.GetUnique: TCustomUniversalBitmap;
+begin
+  if FRefCount > 1 then
+  begin
+    Dec(FRefCount);
+    Result := self.Duplicate;
+  end
+  else
+    Result := self;
+end;
+
+function TCustomUniversalBitmap.Duplicate(ACopyProperties: boolean): TCustomUniversalBitmap;
+begin
+  result := InternalDuplicate(ACopyProperties);
+end;
+
+procedure TCustomUniversalBitmap.CopyPropertiesTo(
+  ABitmap: TCustomUniversalBitmap);
+begin
+  ABitmap.FillMode := FillMode;
+  ABitmap.ClipRect := ClipRect;
 end;
 
 procedure TCustomUniversalBitmap.SetSize(AWidth, AHeight: integer);
@@ -858,6 +1032,24 @@ var
 begin
   EraseBrush(b, 65535);
   Fill(b);
+end;
+
+procedure TCustomUniversalBitmap.AlphaFill(alpha: byte);
+var
+  b: TUniversalBrush;
+begin
+  AlphaBrush(b, alpha + (alpha shl 8));
+  Fill(b);
+end;
+
+procedure TCustomUniversalBitmap.ApplyGlobalOpacity(alpha: byte);
+begin
+  ApplyGlobalOpacity(ClipRect, alpha);
+end;
+
+procedure TCustomUniversalBitmap.ApplyGlobalOpacity(ARect: TRect; alpha: byte);
+begin
+  EraseRect(ARect, 255-alpha);
 end;
 
 procedure TCustomUniversalBitmap.FillRect(ALeft, ATop, ARight, ABottom: integer;
@@ -946,7 +1138,7 @@ procedure TCustomUniversalBitmap.GetPixelIndirect(x, y: int32or64; AColor: point
 var
   pScan: Pointer;
 begin
-  if not PtInClipRect(x,y) then
+  if (x < 0) or (x >= FWidth) or (y < 0) or (y >= FHeight) then //it is possible to read pixels outside of the cliprect
     FillByte(AColor^, FPixelSize, 0)
   else
   begin
@@ -1229,7 +1421,7 @@ begin
   UniDrawerClass.DrawPolygonAntialias(self, points, ABrush1,ABrush2, ADashLen, AAlpha);
 end;
 
-procedure TCustomUniversalBitmap.ErasePolygon(const points: array of TPoint;
+procedure TCustomUniversalBitmap.ErasePolygonOutline(const points: array of TPoint;
   alpha: byte);
 var
   b: TUniversalBrush;
@@ -1239,7 +1431,7 @@ begin
   DrawPolygon(points, b);
 end;
 
-procedure TCustomUniversalBitmap.ErasePolygonAntialias(
+procedure TCustomUniversalBitmap.ErasePolygonOutlineAntialias(
   const points: array of TPoint; alpha: byte);
 var
   b: TUniversalBrush;
@@ -1249,7 +1441,7 @@ begin
   DrawPolygonAntialias(points, b);
 end;
 
-procedure TCustomUniversalBitmap.AlphaPolygon(const points: array of TPoint;
+procedure TCustomUniversalBitmap.AlphaPolygonOutline(const points: array of TPoint;
   alpha: byte);
 var
   b: TUniversalBrush;
@@ -1258,7 +1450,7 @@ begin
   DrawPolygon(points, b);
 end;
 
-procedure TCustomUniversalBitmap.AlphaPolygonAntialias(
+procedure TCustomUniversalBitmap.AlphaPolygonOutlineAntialias(
   const points: array of TPoint; alpha: byte);
 var
   b: TUniversalBrush;
@@ -1503,6 +1695,302 @@ var
 begin
   AlphaBrush(b, alpha + (alpha shl 8));
   FillPathAliased(APath,AMatrix,b,65535,APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.VerticalFlip;
+begin
+  VerticalFlip(rect(0,0,Width,Height));
+end;
+
+procedure TCustomUniversalBitmap.VerticalFlip(ARect: TRect);
+var
+  yb,h2: integer;
+  line: Pointer;
+  linesize, delta: PtrInt;
+  PStart,PEnd: Pointer;
+begin
+  if (ARect.Right <= ARect.Left) or (ARect.Bottom <= ARect.Top) then exit;
+  if not IntersectRect(ARect, ARect, rect(0,0,Width,Height)) then exit;
+  LoadFromBitmapIfNeeded;
+  linesize := (ARect.Right-ARect.Left) * FPixelSize;
+  line     := nil;
+  getmem(line, linesize);
+  PStart := GetPixelAddress(ARect.Left, ARect.Top);
+  PEnd   := GetPixelAddress(ARect.Left,ARect.Bottom-1);
+  h2 := (ARect.Bottom-ARect.Top) div 2;
+  if LineOrder = riloTopToBottom then delta := +RowSize else delta := -RowSize;
+  for yb := h2-1 downto 0 do
+  begin
+    move(PStart^, line^, linesize);
+    move(PEnd^, PStart^, linesize);
+    move(line^, PEnd^, linesize);
+    Inc(PStart, delta);
+    Dec(PEnd, delta);
+  end;
+  freemem(line);
+  InvalidateBitmap;
+end;
+
+procedure TCustomUniversalBitmap.HorizontalFlip;
+begin
+  HorizontalFlip(rect(0,0,Width,Height));
+end;
+
+procedure TCustomUniversalBitmap.HorizontalFlip(ARect: TRect);
+var
+  yb, w: integer;
+  PStart: PByte;
+  PEnd:   PByte;
+begin
+  if (ARect.Right <= ARect.Left) or (ARect.Bottom <= ARect.Top) then exit;
+  if not IntersectRect(ARect, ARect, rect(0,0,Width,Height)) then exit;
+  w := ARect.Right-ARect.Left;
+  LoadFromBitmapIfNeeded;
+  for yb := ARect.Top to ARect.Bottom-1 do
+  begin
+    PStart := GetPixelAddress(ARect.Left,yb);
+    PEnd   := PStart + (w-1)*FPixelSize;
+    InternalSwapPixels(PStart, PEnd, FPixelSize, -FPixelSize, w shr 1);
+  end;
+  InvalidateBitmap;
+end;
+
+procedure TCustomUniversalBitmap.RotateUDInplace;
+begin
+  RotateUDInplace(rect(0,0,Width,Height));
+end;
+
+procedure TCustomUniversalBitmap.RotateUDInplace(ARect: TRect);
+var
+  yb,h,h2:  integer;
+  line:   PByte;
+  linesize, delta: IntPtr;
+  PStart: PByte;
+  PEnd:   PByte;
+  w: integer;
+begin
+  if (ARect.Right <= ARect.Left) or (ARect.Bottom <= ARect.Top) then exit;
+  if not IntersectRect(ARect, ARect, rect(0,0,Width,Height)) then exit;
+  LoadFromBitmapIfNeeded;
+  w := ARect.Right-ARect.Left;
+  linesize := w * FPixelSize;
+  line     := nil;
+  getmem(line, linesize);
+  PStart := GetPixelAddress(ARect.Left, ARect.Top);
+  PEnd   := GetPixelAddress(ARect.Right-1, ARect.Bottom-1);
+  h := ARect.Bottom-ARect.Top;
+  h2 := h div 2;
+  if LineOrder = riloTopToBottom then delta := +RowSize else delta := -RowSize;
+  for yb := h2-1 downto 0 do
+  begin
+    InternalSwapPixels(PStart, PEnd, FPixelSize, -FPixelSize, w);
+    Inc(PStart, delta);
+    Dec(PEnd, delta);
+  end;
+  if odd(h) then
+    InternalSwapPixels(PStart, PEnd, FPixelSize, -FPixelSize, w shr 1);
+  freemem(line);
+  InvalidateBitmap;
+end;
+
+function TCustomUniversalBitmap.RotateCW: TCustomUniversalBitmap;
+var
+  psrc, pdest: PByte;
+  yb: integer;
+  delta: PtrInt;
+begin
+  LoadFromBitmapIfNeeded;
+  result := InternalNew;
+  result.SetSize(Height, Width);
+  if Result.LineOrder = riloTopToBottom then
+    delta := Result.RowSize
+  else
+    delta := -Result.RowSize;
+  for yb := 0 to Height - 1 do
+  begin
+    psrc  := ScanLineByte[yb];
+    pdest := Result.GetPixelAddress(Height-1-yb, 0);
+    InternalCopyPixels(psrc, pdest, FPixelSize, delta, Width);
+  end;
+end;
+
+function TCustomUniversalBitmap.RotateCCW: TCustomUniversalBitmap;
+var
+  psrc, pdest: PByte;
+  yb: integer;
+  delta: PtrInt;
+begin
+  LoadFromBitmapIfNeeded;
+  result := InternalNew;
+  result.SetSize(Height, Width);
+  if Result.LineOrder = riloTopToBottom then
+    delta := Result.RowSize
+  else
+    delta := -Result.RowSize;
+  for yb := 0 to Height - 1 do
+  begin
+    psrc  := ScanLineByte[yb];
+    pdest := Result.GetPixelAddress(yb, Width - 1);
+    InternalCopyPixels(psrc, pdest, FPixelSize,-delta, Width);
+  end;
+end;
+
+function TCustomUniversalBitmap.RotateUD: TCustomUniversalBitmap;
+var
+  yb: Integer;
+  psrc, pdest: PByte;
+begin
+  LoadFromBitmapIfNeeded;
+  result := InternalNew;
+  result.SetSize(Width, Height);
+  for yb := 0 to Height-1 do
+  begin
+    psrc  := ScanLineByte[yb];
+    pdest := result.GetPixelAddress(Width-1,Height-1-yb);
+    InternalCopyPixels(psrc, pdest, FPixelSize, -FPixelSize, Width);
+  end;
+end;
+
+{ TGenericUniversalBitmap }
+
+function TGenericUniversalBitmap.GetDataPtr: PPixel;
+begin
+  result := PPixel(GetDataBytePtr);
+end;
+
+function TGenericUniversalBitmap.GetScanLine(y: integer): PPixel;
+begin
+  result := PPixel(GetScanLineByte(y));
+end;
+
+class function TGenericUniversalBitmap.DefaultColorspace: TColorspaceAny;
+begin
+  Result:= TColorspace;
+end;
+
+procedure TGenericUniversalBitmap.Init;
+begin
+  inherited Init;
+  if FColorspace <> DefaultColorspace then raise exception.Create('Unexpected colorspace');
+end;
+
+{ Get scanline without checking bounds nor updated from bitmap }
+function TGenericUniversalBitmap.GetScanlineFast(y: integer): PPixel;
+begin
+  if FLineOrder = riloBottomToTop then y := FHeight - 1 - y;
+  result := PPixel(FDataByte+FRowSize*y);
+end;
+
+procedure TGenericUniversalBitmap.InternalCopyPixels(ASource, ADest: PByte;
+  ASourceStride, ADestStride: PtrInt; ACount: integer);
+begin
+  while ACount>0 do
+  begin
+    PPixel(ADest)^ := PPixel(ASource)^;
+    inc(ASource, ASourceStride);
+    inc(ADest, ADestStride);
+    dec(ACount);
+  end;
+end;
+
+procedure TGenericUniversalBitmap.InternalSwapPixels(ABuf1, ABuf2: PByte;
+  AStride1, AStride2: PtrInt; ACount: integer);
+var temp: TPixel;
+begin
+  while ACount>0 do
+  begin
+    temp := PPixel(ABuf1)^;
+    PPixel(ABuf1)^ := PPixel(ABuf2)^;
+    PPixel(ABuf2)^ := temp;
+    inc(ABuf1, AStride1);
+    inc(ABuf2, AStride2);
+    dec(ACount);
+  end;
+end;
+
+constructor TGenericUniversalBitmap.Create(AWidth, AHeight: integer;
+  const AColor: TPixel);
+var
+  p: PByte;
+  i: Integer;
+begin
+  Init;
+  inherited Create(0, 0);
+  SetSize(AWidth,AHeight);
+  p := DataByte;
+  for i := NbPixels-1 downto 0 do
+  begin
+    PPixel(p)^ := AColor;
+    inc(p, sizeof(TPixel));
+  end;
+end;
+
+class procedure TGenericUniversalBitmap.SolidBrush(out ABrush: TUniversalBrush;
+  const AColor: TPixel; ADrawMode: TDrawMode);
+begin
+  SolidBrushIndirect(ABrush, @AColor, ADrawMode);
+end;
+
+procedure TGenericUniversalBitmap.SetPixelIndirect(x, y: int32or64;
+  AColor: pointer);
+begin
+  if not PtInClipRect(x,y) then exit;
+  LoadFromBitmapIfNeeded;
+  (GetScanlineFast(y)+x)^ := PPixel(AColor)^;
+  InvalidateBitmap;
+end;
+
+procedure TGenericUniversalBitmap.GetPixelIndirect(x, y: int32or64;
+  AColor: pointer);
+begin
+  if (x < 0) or (x >= FWidth) or (y < 0) or (y >= FHeight) then //it is possible to read pixels outside of the cliprect
+    FillByte(AColor^, FPixelSize, 0) else
+  begin
+    LoadFromBitmapIfNeeded;
+    PPixel(AColor)^ := (GetScanlineFast(y)+x)^;
+  end;
+end;
+
+procedure TGenericUniversalBitmap.GetPixelCycleIndirect(x, y: int32or64;
+  AColor: pointer);
+begin
+  if (Width = 0) or (Height = 0) then
+    FillByte(AColor^, FPixelSize, 0) else
+  begin
+    LoadFromBitmapIfNeeded;
+    PPixel(AColor)^ := (GetScanlineFast(PositiveMod(y, Height)) + PositiveMod(x, Width))^;
+  end;
+end;
+
+procedure TGenericUniversalBitmap.SetPixel(x, y: int32or64; AColor: TPixel);
+begin
+  SetPixelIndirect(x,y,@AColor);
+end;
+
+function TGenericUniversalBitmap.GetPixel(x, y: int32or64): TPixel;
+begin
+  GetPixelIndirect(x,y, @result);
+end;
+
+function TGenericUniversalBitmap.GetPixelCycle(x, y: int32or64): TPixel;
+begin
+  GetPixelCycleIndirect(x,y, @result);
+end;
+
+function TGenericUniversalBitmap.GetPixelAddress(x, y: integer): PByte;
+begin
+  if FLineOrder = riloBottomToTop then y := FHeight - 1 - y;
+  result := FDataByte + FRowSize * y + IntPtr(x)*sizeof(TPixel);
+end;
+
+procedure TGenericUniversalBitmap.HorizontalFlip(ARect: TRect);
+begin
+  inherited HorizontalFlip(ARect);
+end;
+
+procedure TGenericUniversalBitmap.RotateUDInplace(ARect: TRect);
+begin
+  inherited RotateUDInplace(ARect);
 end;
 
 {$ENDIF}
