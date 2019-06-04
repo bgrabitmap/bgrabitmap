@@ -174,7 +174,8 @@ type
 
     {** Fill the whole image regardless of clipping rect }
     procedure Fill(const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
-    procedure Fill(ATexture: IBGRAScanner; AMode: TDrawMode = dmSet; AAlpha: Word = 65535); overload; virtual;
+    procedure Fill(ATexture: IBGRAScanner; AMode: TDrawMode); overload; virtual;
+    procedure Fill(ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word); overload; virtual;
     procedure FillTransparent; virtual;
     procedure AlphaFill(alpha: byte); virtual;
     procedure ApplyGlobalOpacity(alpha: byte); overload; virtual;
@@ -1069,6 +1070,14 @@ begin
     inc(pDest, delta);
   end;
   InvalidateBitmap;
+end;
+
+procedure TCustomUniversalBitmap.Fill(ATexture: IBGRAScanner; AMode: TDrawMode);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture, AMode);
+  Fill(b);
 end;
 
 procedure TCustomUniversalBitmap.Fill(ATexture: IBGRAScanner; AMode: TDrawMode;
