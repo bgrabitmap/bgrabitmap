@@ -20,6 +20,9 @@ type
 
     {** Creates an image of dimensions ''AWidth'' and ''AHeight'' and fills it with ''Color'' }
     constructor Create(AWidth, AHeight: integer; const AColor: TPixel);
+    function Equals(comp: TCustomUniversalBitmap): boolean; overload;
+    function Equals(const comp: TPixel): boolean; overload;
+
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload;
     procedure SetPixel(x,y: int32or64; const AColor: TPixel); overload; virtual;
     function GetPixel(x,y: int32or64): TPixel; inline;
@@ -150,6 +153,46 @@ begin
     PPixel(p)^ := AColor;
     inc(p, sizeof(TPixel));
   end;
+end;
+
+function TGenericUniversalBitmap.Equals(comp: TCustomUniversalBitmap): boolean;
+var
+  p,pComp: PByte;
+  y, x: Integer;
+  delta, compDelta: PtrInt;
+begin
+  if (comp.Colorspace<>Colorspace) or
+     (comp.Width <> Width) or (comp.Height <> Height) then exit(false);
+  p := GetPixelAddress(0,0);
+  if LineOrder = riloTopToBottom then delta := 0 else delta := -RowSize*2;
+  pComp := comp.GetPixelAddress(0,0);
+  if comp.LineOrder = riloTopToBottom then compDelta := 0 else compDelta := -comp.RowSize*2;
+  for y := 0 to Height-1 do
+  begin
+    for x := Width-1 downto 0 do
+    begin
+      if PPixel(p)^ <> PPixel(pComp)^ then exit(false);
+      inc(p, sizeof(TPixel));
+      inc(pComp, sizeof(TPixel));
+    end;
+    inc(p, delta);
+    inc(pComp, compDelta);
+  end;
+  result := true;
+end;
+
+function TGenericUniversalBitmap.Equals(const comp: TPixel): boolean;
+var
+  p: PByte;
+  i: Integer;
+begin
+  p := DataByte;
+  for i := NbPixels-1 downto 0 do
+  begin
+    if PPixel(p)^ <> comp then exit(false);
+    inc(p, sizeof(TPixel));
+  end;
+  result := true;
 end;
 
 class procedure TGenericUniversalBitmap.SolidBrush(out ABrush: TUniversalBrush;
