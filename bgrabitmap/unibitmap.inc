@@ -259,33 +259,33 @@ type
 
     {** Draw the border of a rectangle }
     procedure Rectangle(x, y, x2, y2: integer; const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
-    procedure Rectangle(x, y, x2, y2: integer; ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual;
+    procedure Rectangle(x, y, x2, y2: integer; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     {** Draw a filled rectangle with a border }
     procedure Rectangle(x, y, x2, y2: integer; const ABorderBrush, AFillBrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
 
     procedure RoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; const ABorderBrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
-    procedure RoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual;
+    procedure RoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     procedure RoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; const ABorderBrush, AFillBrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
     procedure FillRoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; const AFillBrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
-    procedure FillRoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual;
+    procedure FillRoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     procedure EraseRoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; alpha: byte); virtual;
     procedure AlphaFillRoundRect(X1, Y1, X2, Y2: integer; DX, DY: integer; alpha: byte); virtual;
 
     procedure EllipseInRect(ARect: TRect; const ABorderBrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
-    procedure EllipseInRect(ARect: TRect; ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual;
+    procedure EllipseInRect(ARect: TRect; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     procedure EllipseInRect(ARect: TRect; const ABorderBrush, AFillBrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
     procedure FillEllipseInRect(ARect: TRect; const AFillBrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
-    procedure FillEllipseInRect(ARect: TRect; ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual;
+    procedure FillEllipseInRect(ARect: TRect; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     procedure EraseEllipseInRect(ARect: TRect; alpha: byte); virtual;
     procedure AlphaFillEllipseInRect(ARect: TRect; alpha: byte); virtual;
 
     procedure FillShape(AShape: TBGRACustomFillInfo; const ABrush: TUniversalBrush; AAlpha: Word = 65535); virtual;
-    procedure FillShape(AShape: TBGRACustomFillInfo; ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean; AAlpha: Word = 65535); virtual;
+    procedure FillShape(AShape: TBGRACustomFillInfo; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word = 65535); virtual;
     procedure EraseShape(AShape: TBGRACustomFillInfo; alpha: byte); virtual;
     procedure AlphaFillShape(AShape: TBGRACustomFillInfo; alpha: byte); virtual;
 
     procedure FillPoly(const APoints: array of TPointF; const ABrush: TUniversalBrush; AAlpha: Word = 65535; APixelCenteredCoordinates: boolean = true); overload; virtual;
-    procedure FillPoly(const APoints: array of TPointF; ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean; AAlpha: Word = 65535; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillPoly(const APoints: array of TPointF; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word = 65535; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure ErasePoly(const APoints: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); virtual;
     procedure AlphaFillPoly(const APoints: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); virtual;
 
@@ -1604,8 +1604,7 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.Rectangle(x, y, x2, y2: integer;
-  ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean;
-  AAlpha: Word);
+  ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
@@ -1635,8 +1634,7 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.RoundRect(X1, Y1, X2, Y2: integer; DX,
-  DY: integer; ATexture: IBGRAScanner; AMode: TDrawMode;
-  ADrawLastPixel: boolean; AAlpha: Word);
+  DY: integer; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
@@ -1652,8 +1650,7 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.FillRoundRect(X1, Y1, X2, Y2: integer; DX,
-  DY: integer; ATexture: IBGRAScanner; AMode: TDrawMode;
-  ADrawLastPixel: boolean; AAlpha: Word);
+  DY: integer; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
@@ -1689,8 +1686,7 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.EllipseInRect(ARect: TRect;
-  ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean;
-  AAlpha: Word);
+  ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
@@ -1715,8 +1711,7 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.FillEllipseInRect(ARect: TRect;
-  ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean;
-  AAlpha: Word);
+  ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
@@ -1750,8 +1745,7 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.FillShape(AShape: TBGRACustomFillInfo;
-  ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean;
-  AAlpha: Word);
+  ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
@@ -1787,8 +1781,8 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.FillPoly(const APoints: array of TPointF;
-  ATexture: IBGRAScanner; AMode: TDrawMode; ADrawLastPixel: boolean;
-  AAlpha: Word; APixelCenteredCoordinates: boolean);
+  ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word;
+  APixelCenteredCoordinates: boolean);
 var
   b: TUniversalBrush;
 begin
