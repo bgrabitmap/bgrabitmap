@@ -1914,7 +1914,6 @@ var
   p: PByte;
   i: Integer;
 begin
-  Init;
   inherited Create(0, 0);
   SetSize(AWidth,AHeight);
   p := DataByte;
