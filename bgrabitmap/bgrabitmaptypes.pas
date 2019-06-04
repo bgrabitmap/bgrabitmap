@@ -185,6 +185,9 @@ const
 {$DEFINE INCLUDE_INTERFACE}
 {$I unibitmap.inc}
 
+{$DEFINE INCLUDE_INTERFACE}
+{$I unibitmapgeneric.inc}
+
 {==== Integer math ====}
 
   {* Computes the value modulo cycle, and if the ''value'' is negative, the result
@@ -557,6 +560,9 @@ end;
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I unibitmap.inc}
+
+{$DEFINE INCLUDE_IMPLEMENTATION}
+{$I unibitmapgeneric.inc}
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I csscolorconst.inc}
