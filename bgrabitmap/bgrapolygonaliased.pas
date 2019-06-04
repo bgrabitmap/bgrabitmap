@@ -810,215 +810,25 @@ procedure BGRARoundRectAliased(dest: TBGRACustomBitmap; X1, Y1, X2, Y2: integer;
   DX, DY: integer; BorderColor, FillColor: TBGRAPixel; FillTexture: IBGRAScanner = nil; ADrawMode: TDrawMode = dmDrawWithTransparency;
   skipFill: boolean = false);
 var
-  CX, CY, CX1, CY1, A, B, NX, NY: single;
-  X, Y, EX, EY: integer;
-  LX1, LY1: integer;
-  LX2, LY2: integer;
-  DivSqrA, DivSqrB: single;
-  I, J, S: integer;
-  EdgeList: array of TPoint;
-  temp:   integer;
-  LX, LY: integer;
-  RowStart,RowEnd: integer;
-  PixelProc: procedure (x, y: int32or64; c: TBGRAPixel) of object;
-  skipBorder: boolean;
-
-  procedure AddEdge(X, Y: integer);
-  begin
-    If (Y > High(EdgeList)) or (Y < 0) then exit;
-    if (EdgeList[Y].X = -1) or (X < EdgeList[Y].X) then
-      EdgeList[Y].X := X;
-    if (EdgeList[Y].Y = -1) or (X > EdgeList[Y].Y) then
-      EdgeList[Y].Y := X;
-  end;
-
+  bBorder, bFill: TUniversalBrush;
+  skipBorder: Boolean;
 begin
-  if (x1 > x2) then
-  begin
-    temp := x1;
-    x1   := x2;
-    x2   := temp;
-  end;
-  if (y1 > y2) then
-  begin
-    temp := y1;
-    y1   := y2;
-    y2   := temp;
-  end;
-  if (x2 - x1 <= 0) or (y2 - y1 <= 0) then
-    exit;
-  LX := x2 - x1 - DX;
-  LY := y2 - y1 - DY;
-  if LX < 0 then LX := 0;
-  if LY < 0 then LY := 0;
-  Dec(x2);
-  Dec(y2);
+  dest.SolidBrush(bBorder, BorderColor, ADrawMode);
+  skipBorder := ((ADrawMode in[dmLinearBlend,dmDrawWithTransparency]) and (BorderColor.alpha=0))
+      or ((ADrawMode = dmSetExceptTransparent) and (BorderColor.alpha<>255))
+      or ((ADrawMode = dmXor) and (PDWord(@BorderColor)^=0));
 
-  if (X1 = X2) and (Y1 = Y2) then
-  begin
-    dest.DrawPixel(X1, Y1, BorderColor, ADrawMode);
-    Exit;
-  end;
-
-  if (X2 - X1 = 1) or (Y2 - Y1 = 1) then
-  begin
-    dest.FillRect(X1, Y1, X2 + 1, Y2 + 1, BorderColor, ADrawMode);
-    Exit;
-  end;
-
-  if (LX > X2 - X1) or (LY > Y2 - Y1) then
-  begin
-    dest.Rectangle(X1, Y1, X2 + 1, Y2 + 1, BorderColor, ADrawMode);
-    if not skipFill then
-      if FillTexture <> nil then
-        dest.FillRect(X1 + 1, Y1 + 1, X2, Y2, FillTexture, ADrawMode) else
-        dest.FillRect(X1 + 1, Y1 + 1, X2, Y2, FillColor, ADrawMode);
-    Exit;
-  end;
-
-  SetLength(EdgeList, Ceil((Y2 - Y1 + 1) / 2));
-  for I := 0 to Pred(High(EdgeList)) do
-    EdgeList[I] := Point(-1, -1);
-  EdgeList[High(EdgeList)] := Point(0, 0);
-
-  A  := (X2 - X1 + 1 - LX) / 2;
-  B  := (Y2 - Y1 + 1 - LY) / 2;
-  CX := (X2 + X1 + 1) / 2;
-  CY := (Y2 + Y1 + 1) / 2;
-
-  CX1 := X2 + 1 - A - Floor(CX);
-  CY1 := Y2 + 1 - B - Floor(CY);
-
-  EX := Floor(Sqr(A) / Sqrt(Sqr(A) + Sqr(B)) + Frac(A));
-  EY := Floor(Sqr(B) / Sqrt(Sqr(A) + Sqr(B)) + Frac(B));
-
-  DivSqrA := 1 / Sqr(A);
-  DivSqrB := 1 / Sqr(B);
-
-  NY := B;
-  AddEdge(Floor(CX1), Round(CY1 + B) - 1);
-  for X := 1 to Pred(EX) do
-  begin
-    NY := B * Sqrt(1 - Sqr(X + 0.5 - Frac(A)) * DivSqrA);
-
-    AddEdge(Floor(CX1) + X, Round(CY1 + NY) - 1);
-  end;
-
-  LX1 := Floor(CX1) + Pred(EX);
-  LY1 := Round(CY1 + NY) - 1;
-
-  NX := A;
-  AddEdge(Round(CX1 + A) - 1, Floor(CY1));
-  for Y := 1 to Pred(EY) do
-  begin
-    NX := A * Sqrt(1 - Sqr(Y + 0.5 - Frac(B)) * DivSqrB);
-
-    AddEdge(Round(CX1 + NX) - 1, Floor(CY1) + Y);
-  end;
-
-  LX2 := Round(CX1 + NX) - 1;
-  LY2 := Floor(CY1) + Pred(EY);
-
-  if Abs(LX1 - LX2) > 1 then
-  begin
-    if Abs(LY1 - LY2) > 1 then
-      AddEdge(LX1 + 1, LY1 - 1)
-    else
-      AddEdge(LX1 + 1, LY1);
-  end
+  if FillTexture <> nil then
+    dest.ScannerBrush(bFill, FillTexture, ADrawMode)
   else
-  if Abs(LY1 - LY2) > 1 then
-    AddEdge(LX2, LY1 - 1);
-
-  for I := 0 to High(EdgeList) do
   begin
-    if EdgeList[I].X = -1 then
-      EdgeList[I] := Point(Round(CX1 + A) - 1, Round(CX1 + A) - 1)
-    else
-      Break;
+    dest.SolidBrush(bFill, FillColor, ADrawMode);
+    skipFill := (skipFill or (ADrawMode in[dmLinearBlend,dmDrawWithTransparency]) and (FillColor.alpha=0))
+        or ((ADrawMode = dmSetExceptTransparent) and (FillColor.alpha<>255))
+        or ((ADrawMode = dmXor) and (PDWord(@FillColor)^=0));
   end;
 
-  case ADrawMode of
-  dmSetExceptTransparent: begin PixelProc := @dest.SetPixel; skipBorder:= BorderColor.alpha <> 255; end;  dmDrawWithTransparency: begin PixelProc := @dest.DrawPixel; skipBorder:= BorderColor.alpha = 0; end;
-  dmXor: begin PixelProc := @dest.XorPixel; skipBorder:= DWord(BorderColor) = 0; end;
-  dmLinearBlend: begin PixelProc := @dest.FastBlendPixel; skipBorder:= BorderColor.alpha = 0; end;
-  else
-  begin PixelProc := @dest.SetPixel; skipBorder := false; end;
-  end;
-
-  J := 0;
-  while J < Length(EdgeList) do
-  begin
-    if (J = 0) and (Frac(CY) > 0) then
-    begin
-      if not skipBorder then
-      for I := EdgeList[J].X to EdgeList[J].Y do
-      begin
-        PixelProc(Floor(CX) + I, Floor(CY) + J, BorderColor);
-        PixelProc(Ceil(CX) - Succ(I), Floor(CY) + J, BorderColor);
-      end;
-
-      if not SkipFill then
-        if FillTexture <> nil then
-          dest.HorizLine(Ceil(CX) - EdgeList[J].X, Floor(CY) + J, Floor(CX) +
-            Pred(EdgeList[J].X), FillTexture, ADrawMode) else
-          dest.HorizLine(Ceil(CX) - EdgeList[J].X, Floor(CY) + J, Floor(CX) +
-            Pred(EdgeList[J].X), FillColor, ADrawMode);
-    end
-    else
-    if (J = High(EdgeList)) then
-    begin
-      if Frac(CX) > 0 then
-        S := -EdgeList[J].Y
-      else
-        S := -Succ(EdgeList[J].Y);
-
-      if not skipBorder then
-      for I := S to EdgeList[J].Y do
-      begin
-        PixelProc(Floor(CX) + I, Floor(CY) + J, BorderColor);
-        PixelProc(Floor(CX) + I, Ceil(CY) - Succ(J), BorderColor);
-      end;
-    end
-    else
-    begin
-      if not skipBorder then
-      for I := EdgeList[J].X to EdgeList[J].Y do
-      begin
-        PixelProc(Floor(CX) + I, Floor(CY) + J, BorderColor);
-        PixelProc(Floor(CX) + I, Ceil(CY) - Succ(J), BorderColor);
-        if Floor(CX) + I <> Ceil(CX) - Succ(I) then
-        begin
-          PixelProc(Ceil(CX) - Succ(I), Floor(CY) + J, BorderColor);
-          PixelProc(Ceil(CX) - Succ(I), Ceil(CY) - Succ(J), BorderColor);
-        end;
-      end;
-
-      if not SkipFill then
-      begin
-        RowStart := Ceil(CX) - EdgeList[J].X;
-        RowEnd := Floor(CX) + Pred(EdgeList[J].X);
-        if RowEnd >= RowStart then
-        begin
-          if FillTexture <> nil then
-          begin
-            dest.HorizLine(RowStart, Floor(CY) + J,
-              RowEnd, FillTexture, ADrawMode);
-            dest.HorizLine(RowStart, Ceil(CY) - Succ(J),
-              RowEnd, FillTexture, ADrawMode);
-          end else
-          begin
-            dest.HorizLine(RowStart, Floor(CY) + J,
-              RowEnd, FillColor, ADrawMode);
-            dest.HorizLine(RowStart, Ceil(CY) - Succ(J),
-              RowEnd, FillColor, ADrawMode);
-          end;
-        end;
-      end;
-
-    end;
-    Inc(J);
-  end;
+  BGRARoundRectAliased(dest, X1,Y1,X2,Y2, DX,DY, bBorder, bFill, 65535, skipBorder,skipFill);
 end;
 
 procedure BGRARoundRectAliased(dest: TCustomUniversalBitmap; X1, Y1, X2,

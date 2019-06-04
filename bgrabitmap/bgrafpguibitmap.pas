@@ -152,7 +152,7 @@ procedure TBGRAfpGUIBitmap.ReallocData;
 begin
   FBitmap.Width := Width;
   FBitmap.Height:= Height;
-  FData := FBitmap.RawImage.ImageData;
+  FDataByte := PByte(FBitmap.RawImage.ImageData);
   InvalidateBitmap;
   FScanPtr := nil;
 end;

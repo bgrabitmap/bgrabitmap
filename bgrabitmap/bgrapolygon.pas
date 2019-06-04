@@ -38,6 +38,7 @@ procedure FillShapeAntialias(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillI
   c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
 procedure FillShapeAntialiasWithTexture(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
   scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
+
 procedure FillShapeAliased(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
   c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; AliasingIncludeBottomRight: Boolean= false);
 procedure FillShapeAliased(bmp: TCustomUniversalBitmap; shapeInfo: TBGRACustomFillInfo;
@@ -544,77 +545,25 @@ end;
 procedure FillShapeAliased(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
   c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; AliasingIncludeBottomRight: Boolean= false);
 var
-  inter:    array of TIntersectionInfo;
-  nbInter:  integer;
-
-  miny, maxy, minx, maxx: integer;
-  xb,yb, i: integer;
-  x1, x2: single;
-  ix1, ix2: integer;
-  pdest: PBGRAPixel;
-  AliasingOfs: TPointF;
-  ec: TExpandedPixel;
-
+  bFill: TUniversalBrush;
 begin
-  if (scan=nil) and (c.alpha=0) then exit;
-  If not BGRAShapeComputeMinMax(shapeInfo,minx,miny,maxx,maxy,bmp) then exit;
-  inter := shapeInfo.CreateIntersectionArray;
-
-  if AliasingIncludeBottomRight then
-    AliasingOfs := PointF(0,0) else
-    AliasingOfs := PointF(-0.0001,-0.0001);
-
-  ec := GammaExpansion(c);
-  if (scan = nil) and (c.alpha = 255) then drawmode := dmSet;
-
-  //vertical scan
-  for yb := miny to maxy do
+  if scan <> nil then
+    bmp.ScannerBrush(bFill, scan, drawmode)
+  else
   begin
-    //find intersections
-    shapeInfo.ComputeAndSort( yb+0.5-AliasingOfs.Y, inter, nbInter, NonZeroWinding);
-
-    for i := 0 to nbinter div 2 - 1 do
+    if EraseMode then
     begin
-      x1 := inter[i + i].interX+AliasingOfs.X;
-      x2 := inter[i + i+ 1].interX+AliasingOfs.X;
-
-      if x1 <> x2 then
-      begin
-        ComputeAliasedRowBounds(x1,x2, minx,maxx, ix1,ix2);
-        if ix1 <= ix2 then
-        begin
-          //render scanline
-          if scan <> nil then //with texture scan
-          begin
-            pdest := bmp.ScanLine[yb] + ix1;
-            scan.ScanMoveTo(ix1,yb);
-            ScannerPutPixels(scan,pdest,ix2-ix1+1,drawmode);
-          end else
-          if EraseMode then //erase with alpha
-          begin
-            pdest := bmp.ScanLine[yb] + ix1;
-            for xb := ix1 to ix2 do
-            begin
-              ErasePixelInline(pdest, c.alpha);
-              Inc(pdest);
-            end;
-          end
-          else
-          begin
-            case drawmode of
-              dmFastBlend: bmp.FastBlendHorizLine(ix1,yb,ix2, c);
-              dmDrawWithTransparency: bmp.DrawHorizLine(ix1,yb,ix2, ec);
-              dmSet: bmp.SetHorizLine(ix1,yb,ix2, c);
-              dmXor: bmp.XorHorizLine(ix1,yb,ix2, c);
-            end;
-          end;
-        end;
-      end;
+      if c.alpha = 0 then exit;
+      bmp.EraseBrush(bFill, c.alpha + (c.alpha shl 8));
+    end else
+    begin
+      bmp.SolidBrush(bFill, c, drawmode);
+      if ((drawmode in[dmLinearBlend,dmDrawWithTransparency]) and (c.alpha=0))
+          or ((drawmode = dmSetExceptTransparent) and (c.alpha<>255))
+          or ((drawmode = dmXor) and (PDWord(@c)^=0)) then exit;
     end;
   end;
-
-  shapeInfo.FreeIntersectionArray(inter);
-  bmp.InvalidateBitmap;
+  FillShapeAliased(bmp, shapeInfo, bFill,65535,NonZeroWinding,AliasingIncludeBottomRight);
 end;
 
 procedure FillShapeAliased(bmp: TCustomUniversalBitmap;

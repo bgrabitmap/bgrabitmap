@@ -78,7 +78,7 @@ begin
   inherited ReallocData;
   if (FWidth <> 0) and (FHeight <> 0) then
   begin  
-    FPixbuf := gdk_pixbuf_new_from_data(pguchar(FData),
+    FPixbuf := gdk_pixbuf_new_from_data(pguchar(FDataByte),
       GDK_COLORSPACE_RGB, True, 8, Width, Height, Width*Sizeof(TBGRAPixel), nil, nil);
     if FPixbuf = nil then
       raise Exception.Create('Error initializing Pixbuf');

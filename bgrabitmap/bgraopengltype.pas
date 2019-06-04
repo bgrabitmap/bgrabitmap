@@ -264,7 +264,7 @@ type
     procedure SwapRedBlueWithoutInvalidate(ARect: TRect);
   public
     procedure InvalidateBitmap; override;
-    procedure Fill(c: TBGRAPixel); override;
+    procedure Fill(const c: TBGRAPixel); override;
     procedure NoClip; override;
     destructor Destroy; override;
     procedure SwapRedBlue; overload; override;
@@ -1606,7 +1606,7 @@ begin
   FTextureInvalidated := true;
 end;
 
-procedure TBGLCustomBitmap.Fill(c: TBGRAPixel);
+procedure TBGLCustomBitmap.Fill(const c: TBGRAPixel);
 var oldClip: TRect;
 begin
   oldClip := ClipRect;

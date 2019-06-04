@@ -94,7 +94,7 @@ begin
   if DIB_SectionHandle <> 0 then
   begin
     DeleteObject(DIB_SectionHandle);
-    FData := nil;
+    FDataByte := nil;
     DIB_SectionHandle := 0;
   end;
 end;
@@ -251,9 +251,9 @@ begin
   begin
     ScreenDC := GetDC(0);
     info     := DIBitmapInfo(Width, Height);
-    DIB_SectionHandle := CreateDIBSection(ScreenDC, info, DIB_RGB_COLORS, FData, 0, 0);
+    DIB_SectionHandle := CreateDIBSection(ScreenDC, info, DIB_RGB_COLORS, FDataByte, 0, 0);
 
-    if (NbPixels > 0) and (FData = nil) then
+    if (NbPixels > 0) and (FDataByte = nil) then
       raise EOutOfMemory.Create('TBGRAWinBitmap.ReallocBitmap: Windows error ' +
         IntToStr(GetLastError));
 
