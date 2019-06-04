@@ -310,10 +310,17 @@ begin
 
 end;
 
+type
+  PBGRAScannerBrushFixedData = ^TBGRAScannerBrushFixedData;
+  TBGRAScannerBrushFixedData = record
+    Scanner: Pointer; //avoid ref count by using pointer type
+    HasPutPixels: boolean;
+  end;
+
 procedure BRGBAScannerBrushInitContext(AFixedData: Pointer;
   AContextData: PUniBrushContext);
 begin
-  IBGRAScanner(AFixedData^).ScanMoveTo(AContextData^.Ofs.X, AContextData^.Ofs.Y);
+  IBGRAScanner(PBGRAScannerBrushFixedData(AFixedData)^.Scanner).ScanMoveTo(AContextData^.Ofs.X, AContextData^.Ofs.Y);
 end;
 
 procedure BGRAScannerBrushSetPixels(AFixedData: Pointer;
@@ -322,6 +329,7 @@ var
   src: TBGRAPixel;
   bAlpha: Byte;
   pDest: PBGRAPixel;
+  buf: packed array[0..3] of TBGRAPixel;
 begin
   if AAlpha <= $80 then
   begin
@@ -329,22 +337,43 @@ begin
     exit;
   end;
   pDest := PBGRAPixel(AContextData^.Dest);
-  if AAlpha >= $ff7f then
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
-    while ACount > 0 do
+    if AAlpha >= $ff7f then
     begin
-      pDest^ := IBGRAScanner(AFixedData^).ScanNextPixel;
-      inc(pDest);
-      dec(ACount);
-    end;
-  end else
-  begin
-    bAlpha := FastRoundDiv257(AAlpha);
-    while ACount > 0 do
+      if HasPutPixels then
+      begin
+        IBGRAScanner(Scanner).ScanPutPixels(pDest, ACount, dmSet);
+        inc(pDest, ACount);
+      end else
+        while ACount > 0 do
+        begin
+          pDest^ := IBGRAScanner(Scanner).ScanNextPixel;
+          inc(pDest);
+          dec(ACount);
+        end;
+    end else
     begin
-      pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, IBGRAScanner(AFixedData^).ScanNextPixel, bAlpha);
-      inc(pDest);
-      dec(ACount);
+      bAlpha := FastRoundDiv257(AAlpha);
+      if HasPutPixels then
+      begin
+        while ACount > 3 do
+        begin
+          IBGRAScanner(Scanner).ScanPutPixels(buf, 4, dmSet);
+          pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, buf[0], bAlpha);
+          (pDest+1)^ := MergeBGRAWithGammaCorrection((pDest+1)^, not bAlpha, buf[1], bAlpha);
+          (pDest+2)^ := MergeBGRAWithGammaCorrection((pDest+2)^, not bAlpha, buf[2], bAlpha);
+          (pDest+3)^ := MergeBGRAWithGammaCorrection((pDest+3)^, not bAlpha, buf[3], bAlpha);
+          inc(pDest, 4);
+          dec(ACount, 4);
+        end;
+      end;
+      while ACount > 0 do
+      begin
+        pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, IBGRAScanner(Scanner).ScanNextPixel, bAlpha);
+        inc(pDest);
+        dec(ACount);
+      end;
     end;
   end;
   PBGRAPixel(AContextData^.Dest) := pDest;
@@ -353,9 +382,9 @@ end;
 procedure BGRAScannerBrushSetPixelsExceptTransparent(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TBGRAPixel;
   bAlpha: Byte;
   pDest: PBGRAPixel;
+  buf: packed array[0..3] of TBGRAPixel;
 begin
   if AAlpha <= $80 then
   begin
@@ -363,25 +392,46 @@ begin
     exit;
   end;
   pDest := PBGRAPixel(AContextData^.Dest);
-  if AAlpha >= $ff7f then
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
-    while ACount > 0 do
+    if AAlpha >= $ff7f then
     begin
-      src := IBGRAScanner(AFixedData^).ScanNextPixel;
-      if src.alpha = 255 then pDest^ := src;
-      inc(pDest);
-      dec(ACount);
-    end;
-  end else
-  begin
-    bAlpha := FastRoundDiv257(AAlpha);
-    while ACount > 0 do
+      if HasPutPixels then
+      begin
+        IBGRAScanner(Scanner).ScanPutPixels(pDest, ACount, dmSetExceptTransparent);
+        inc(pDest, ACount);
+      end else
+        while ACount > 0 do
+        begin
+          buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
+          if buf[0].alpha = 255 then pDest^ := buf[0];
+          inc(pDest);
+          dec(ACount);
+        end;
+    end else
     begin
-      src := IBGRAScanner(AFixedData^).ScanNextPixel;
-      if src.alpha = 255 then
-        pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, src, bAlpha);
-      inc(pDest);
-      dec(ACount);
+      bAlpha := FastRoundDiv257(AAlpha);
+      if HasPutPixels then
+      begin
+        while ACount > 3 do
+        begin
+          IBGRAScanner(Scanner).ScanPutPixels(buf, 4, dmSet);
+          if buf[0].alpha = 255 then pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, buf[0], bAlpha);
+          if buf[1].alpha = 255 then (pDest+1)^ := MergeBGRAWithGammaCorrection((pDest+1)^, not bAlpha, buf[1], bAlpha);
+          if buf[2].alpha = 255 then (pDest+2)^ := MergeBGRAWithGammaCorrection((pDest+2)^, not bAlpha, buf[2], bAlpha);
+          if buf[3].alpha = 255 then (pDest+3)^ := MergeBGRAWithGammaCorrection((pDest+3)^, not bAlpha, buf[3], bAlpha);
+          inc(pDest, 4);
+          dec(ACount, 4);
+        end;
+      end;
+      while ACount > 0 do
+      begin
+        buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
+        if buf[0].alpha = 255 then
+          pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, buf[0], bAlpha);
+        inc(pDest);
+        dec(ACount);
+      end;
     end;
   end;
   PBGRAPixel(AContextData^.Dest) := pDest;
@@ -390,9 +440,9 @@ end;
 procedure BGRAScannerBrushDrawPixels(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TBGRAPixel;
   bAlpha: Byte;
   pDest: PBGRAPixel;
+  buf: packed array[0..3] of TBGRAPixel;
 begin
   if AAlpha <= $80 then
   begin
@@ -400,24 +450,45 @@ begin
     exit;
   end;
   pDest := PBGRAPixel(AContextData^.Dest);
-  if AAlpha >= $ff7f then
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
-    while ACount > 0 do
+    if AAlpha >= $ff7f then
     begin
-      src := IBGRAScanner(AFixedData^).ScanNextPixel;
-      DrawPixelInlineWithAlphaCheck(pDest, src);
-      inc(pDest);
-      dec(ACount);
-    end;
-  end else
-  begin
-    bAlpha := FastRoundDiv257(AAlpha);
-    while ACount > 0 do
+      if HasPutPixels then
+      begin
+        IBGRAScanner(Scanner).ScanPutPixels(pDest, ACount, dmDrawWithTransparency);
+        inc(pDest, ACount);
+      end else
+        while ACount > 0 do
+        begin
+          buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
+          DrawPixelInlineWithAlphaCheck(pDest, buf[0]);
+          inc(pDest);
+          dec(ACount);
+        end;
+    end else
     begin
-      src := IBGRAScanner(AFixedData^).ScanNextPixel;
-      DrawPixelInlineWithAlphaCheck(pDest, src, bAlpha);
-      inc(pDest);
-      dec(ACount);
+      bAlpha := FastRoundDiv257(AAlpha);
+      if HasPutPixels then
+      begin
+        while ACount > 3 do
+        begin
+          IBGRAScanner(Scanner).ScanPutPixels(buf, 4, dmSet);
+          DrawPixelInlineWithAlphaCheck(pDest, buf[0], bAlpha);
+          DrawPixelInlineWithAlphaCheck(pDest+1, buf[1], bAlpha);
+          DrawPixelInlineWithAlphaCheck(pDest+2, buf[2], bAlpha);
+          DrawPixelInlineWithAlphaCheck(pDest+3, buf[3], bAlpha);
+          inc(pDest, 4);
+          dec(ACount, 4);
+        end;
+      end;
+      while ACount > 0 do
+      begin
+        buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
+        DrawPixelInlineWithAlphaCheck(pDest, buf[0], bAlpha);
+        inc(pDest);
+        dec(ACount);
+      end;
     end;
   end;
   PBGRAPixel(AContextData^.Dest) := pDest;
@@ -426,9 +497,9 @@ end;
 procedure BGRAScannerBrushLinearDrawPixels(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TBGRAPixel;
   bAlpha: Byte;
   pDest: PBGRAPixel;
+  buf: packed array[0..3] of TBGRAPixel;
 begin
   if AAlpha <= $80 then
   begin
@@ -436,24 +507,45 @@ begin
     exit;
   end;
   pDest := PBGRAPixel(AContextData^.Dest);
-  if AAlpha >= $ff7f then
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
-    while ACount > 0 do
+    if AAlpha >= $ff7f then
     begin
-      src := IBGRAScanner(AFixedData^).ScanNextPixel;
-      FastBlendPixelInline(pDest, src);
-      inc(pDest);
-      dec(ACount);
-    end;
-  end else
-  begin
-    bAlpha := FastRoundDiv257(AAlpha);
-    while ACount > 0 do
+      if HasPutPixels then
+      begin
+        IBGRAScanner(Scanner).ScanPutPixels(pDest, ACount, dmLinearBlend);
+        inc(pDest, ACount);
+      end else
+        while ACount > 0 do
+        begin
+          buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
+          FastBlendPixelInline(pDest, buf[0]);
+          inc(pDest);
+          dec(ACount);
+        end;
+    end else
     begin
-      src := IBGRAScanner(AFixedData^).ScanNextPixel;
-      FastBlendPixelInline(pDest, src, bAlpha);
-      inc(pDest);
-      dec(ACount);
+      bAlpha := FastRoundDiv257(AAlpha);
+      if HasPutPixels then
+      begin
+        while ACount > 3 do
+        begin
+          IBGRAScanner(Scanner).ScanPutPixels(buf, 4, dmSet);
+          FastBlendPixelInline(pDest, buf[0], bAlpha);
+          FastBlendPixelInline(pDest+1, buf[1], bAlpha);
+          FastBlendPixelInline(pDest+2, buf[2], bAlpha);
+          FastBlendPixelInline(pDest+3, buf[3], bAlpha);
+          inc(pDest, 4);
+          dec(ACount, 4);
+        end;
+      end;
+      while ACount > 0 do
+      begin
+        buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
+        FastBlendPixelInline(pDest, buf[0], bAlpha);
+        inc(pDest);
+        dec(ACount);
+      end;
     end;
   end;
   PBGRAPixel(AContextData^.Dest) := pDest;
@@ -462,9 +554,9 @@ end;
 procedure BGRAScannerBrushXorPixels(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TBGRAPixel;
   bAlpha: byte;
   pDest: PBGRAPixel;
+  buf: packed array[0..3] of TBGRAPixel;
 begin
   if AAlpha <= $80 then
   begin
@@ -472,25 +564,50 @@ begin
     exit;
   end;
   pDest := PBGRAPixel(AContextData^.Dest);
-  if AAlpha >= $ff7f then
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
-    while ACount > 0 do
+    if AAlpha >= $ff7f then
     begin
-      src := IBGRAScanner(AFixedData^).ScanNextPixel;
-      PDWord(pdest)^ := PDWord(pdest)^ xor PDWord(@src)^;
-      inc(pDest);
-      dec(ACount);
-    end;
-  end else
-  begin
-    bAlpha := FastRoundDiv257(AAlpha);
-    while ACount > 0 do
+      if HasPutPixels then
+      begin
+        IBGRAScanner(Scanner).ScanPutPixels(pDest, ACount, dmXor);
+        inc(pDest, ACount);
+      end else
+        while ACount > 0 do
+        begin
+          buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
+          PDWord(pdest)^ := PDWord(pdest)^ xor PDWord(@buf[0])^;
+          inc(pDest);
+          dec(ACount);
+        end;
+    end else
     begin
-      src := IBGRAScanner(AFixedData^).ScanNextPixel;
-      PDWord(@src)^ := PDWord(pdest)^ xor PDWord(@src)^;
-      pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, src, bAlpha);
-      inc(pDest);
-      dec(ACount);
+      bAlpha := FastRoundDiv257(AAlpha);
+      if HasPutPixels then
+      begin
+        while ACount > 3 do
+        begin
+          IBGRAScanner(Scanner).ScanPutPixels(buf, 4, dmSet);
+          PDWord(@buf[0])^ := PDWord(pdest)^ xor PDWord(@buf[0])^;
+          PDWord(@buf[1])^ := PDWord(pdest+1)^ xor PDWord(@buf[1])^;
+          PDWord(@buf[2])^ := PDWord(pdest+2)^ xor PDWord(@buf[2])^;
+          PDWord(@buf[3])^ := PDWord(pdest+3)^ xor PDWord(@buf[3])^;
+          pDest^ := MergeBGRA(pDest^, not bAlpha, buf[0], bAlpha);
+          (pDest+1)^ := MergeBGRA((pDest+1)^, not bAlpha, buf[1], bAlpha);
+          (pDest+2)^ := MergeBGRA((pDest+2)^, not bAlpha, buf[2], bAlpha);
+          (pDest+3)^ := MergeBGRA((pDest+3)^, not bAlpha, buf[3], bAlpha);
+          inc(pDest, 4);
+          dec(ACount, 4);
+        end;
+      end;
+      while ACount > 0 do
+      begin
+        buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
+        PDWord(@buf[0])^ := PDWord(pdest)^ xor PDWord(@buf[0])^;
+        pDest^ := MergeBGRA(pDest^, not bAlpha, buf[0], bAlpha);
+        inc(pDest);
+        dec(ACount);
+      end;
     end;
   end;
   PBGRAPixel(AContextData^.Dest) := pDest;
@@ -500,7 +617,11 @@ procedure BGRAScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner;
   ADrawMode: TDrawMode);
 begin
   ABrush.Colorspace:= TBGRAPixelColorspace;
-  PPointer(@ABrush.FixedData)^ := Pointer(AScanner);
+  with PBGRAScannerBrushFixedData(@ABrush.FixedData)^ do
+  begin
+    Scanner := Pointer(AScanner);
+    HasPutPixels:= AScanner.IsScanPutPixelsDefined;
+  end;
   ABrush.InternalInitContext:= @BRGBAScannerBrushInitContext;
   case ADrawMode of
     dmSet: ABrush.InternalPutNextPixels:= @BGRAScannerBrushSetPixels;
