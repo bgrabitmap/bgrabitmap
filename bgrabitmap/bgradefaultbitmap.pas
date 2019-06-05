@@ -653,11 +653,7 @@ type
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); override;
     procedure ReplaceColor(before, after: TColor); override;
-    procedure ReplaceColor(before, after: TBGRAPixel); override;
     procedure ReplaceColor(ABounds: TRect; before, after: TColor); override;
-    procedure ReplaceColor(ABounds: TRect; before, after: TBGRAPixel); override;
-    procedure ReplaceTransparent(after: TBGRAPixel); override;
-    procedure ReplaceTransparent(ABounds: TRect; after: TBGRAPixel); override;
     procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; Color: TBGRAPixel;
       mode: TFloodfillMode; Tolerance: byte = 0); override;
     procedure GradientFill(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
@@ -3646,26 +3642,6 @@ begin
   InvalidateBitmap;
 end;
 
-procedure TBGRADefaultBitmap.ReplaceColor(before, after: TBGRAPixel);
-var
-  p: PBGRAPixel;
-  n: integer;
-begin
-  if before.alpha = 0 then
-  begin
-    ReplaceTransparent(after);
-    exit;
-  end;
-  p := Data;
-  for n := NbPixels - 1 downto 0 do
-  begin
-    if PDWord(p)^ = DWord(before) then
-      p^ := after;
-    Inc(p);
-  end;
-  InvalidateBitmap;
-end;
-
 procedure TBGRADefaultBitmap.ReplaceColor(ABounds: TRect; before, after: TColor);
 var p: PLongWord;
   xb,yb,xcount: integer;
@@ -3688,67 +3664,6 @@ begin
     begin
       if p^ and colorMask = beforeBGR then
         p^ := (p^ and not ColorMask) or afterBGR;
-      Inc(p);
-    end;
-  end;
-  InvalidateBitmap;
-end;
-
-procedure TBGRADefaultBitmap.ReplaceColor(ABounds: TRect; before,
-  after: TBGRAPixel);
-var p: PBGRAPixel;
-  xb,yb,xcount: integer;
-begin
-  if before.alpha = 0 then
-  begin
-    ReplaceTransparent(ABounds,after);
-    exit;
-  end;
-  if not IntersectRect(ABounds,ABounds,ClipRect) then exit;
-  xcount := ABounds.Right-ABounds.Left;
-  for yb := ABounds.Top to ABounds.Bottom-1 do
-  begin
-    p := ScanLine[yb]+ABounds.Left;
-    for xb := xcount-1 downto 0 do
-    begin
-      if PDWord(p)^ = DWord(before) then
-        p^ := after;
-      Inc(p);
-    end;
-  end;
-  InvalidateBitmap;
-end;
-
-{ Replace transparent pixels by the specified color }
-procedure TBGRADefaultBitmap.ReplaceTransparent(after: TBGRAPixel);
-var
-  p: PBGRAPixel;
-  n: integer;
-begin
-  p := Data;
-  for n := NbPixels - 1 downto 0 do
-  begin
-    if p^.alpha = 0 then
-      p^ := after;
-    Inc(p);
-  end;
-  InvalidateBitmap;
-end;
-
-procedure TBGRADefaultBitmap.ReplaceTransparent(ABounds: TRect;
-  after: TBGRAPixel);
-var p: PBGRAPixel;
-  xb,yb,xcount: integer;
-begin
-  if not IntersectRect(ABounds,ABounds,ClipRect) then exit;
-  xcount := ABounds.Right-ABounds.Left;
-  for yb := ABounds.Top to ABounds.Bottom-1 do
-  begin
-    p := ScanLine[yb]+ABounds.Left;
-    for xb := xcount-1 downto 0 do
-    begin
-      if p^.alpha = 0 then
-        p^ := after;
       Inc(p);
     end;
   end;

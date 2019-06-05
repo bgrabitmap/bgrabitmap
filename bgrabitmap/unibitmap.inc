@@ -119,6 +119,7 @@ type
     procedure InternalCopyPixels(ASource,ADest: PByte; ASourceStride,ADestStride: PtrInt; ACount: integer); virtual;
     procedure InternalSwapPixels(ABuf1,ABuf2: PByte; AStride1,AStride2: PtrInt; ACount: integer); virtual;
     procedure InternalSetPixels(ASource,ADest: PByte; ADestStride: PtrInt; ACount: integer); virtual;
+    procedure AssignTransparentPixel(out ADest); virtual;
 
   public
 
@@ -700,6 +701,11 @@ begin
   end;
 end;
 
+procedure TCustomUniversalBitmap.AssignTransparentPixel(out ADest);
+begin
+  FillByte(ADest, FPixelSize, 0);
+end;
+
 function TCustomUniversalBitmap.GetLinearAntialiasing: boolean;
 begin
   result := FAntialiasingDrawMode in[dmLinearBlend,dmXor];
@@ -1011,8 +1017,7 @@ begin
   Init;
   FLineOrder:= ALineOrder;
   inherited Create(AWidth, AHeight);
-  if FDataByte<>nil then
-    FillByte(FDataByte^, FHeight*FRowSize, 0);
+  if FDataByte<>nil then FillByte(FDataByte^, FHeight*FRowSize, 0);
 end;
 
 function TCustomUniversalBitmap.NewReference: TCustomUniversalBitmap;
@@ -1311,7 +1316,7 @@ var
   pScan: Pointer;
 begin
   if (x < 0) or (x >= FWidth) or (y < 0) or (y >= FHeight) then //it is possible to read pixels outside of the cliprect
-    FillByte(AColor^, FPixelSize, 0)
+    AssignTransparentPixel(AColor^)
   else
   begin
     LoadFromBitmapIfNeeded;
@@ -1325,8 +1330,7 @@ procedure TCustomUniversalBitmap.GetPixelCycleIndirect(x, y: int32or64;
 var
   pScan: PByte;
 begin
-  if (Width=0) or (Height=0) then
-    FillByte(AColor^, FPixelSize, 0)
+  if (FWidth=0) or (FHeight=0) then AssignTransparentPixel(AColor^)
   else
   begin
     LoadFromBitmapIfNeeded;

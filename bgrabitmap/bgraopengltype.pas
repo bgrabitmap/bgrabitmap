@@ -271,8 +271,8 @@ type
     function Resample(newWidth, newHeight: integer; mode: TResampleMode=rmFineResample): TBGRACustomBitmap; override;
     procedure ApplyGlobalOpacity(alpha: byte); overload; override;
     procedure ReplaceColor(before, after: TColor); overload; override;
-    procedure ReplaceColor(before, after: TBGRAPixel); overload; override;
-    procedure ReplaceTransparent(after: TBGRAPixel); overload; override;
+    procedure ReplaceColor(const ABefore, AAfter: TBGRAPixel); overload; override;
+    procedure ReplaceTransparent(const AAfter: TBGRAPixel); overload; override;
     procedure SetClipRect(const AValue: TRect); override;
     procedure SetSize(AWidth, AHeight: integer); override;
     property Width: integer read FActualWidth;
@@ -1671,21 +1671,21 @@ begin
   ClipRect := oldClip;
 end;
 
-procedure TBGLCustomBitmap.ReplaceColor(before, after: TBGRAPixel);
+procedure TBGLCustomBitmap.ReplaceColor(const ABefore, AAfter: TBGRAPixel);
 var oldClip: TRect;
 begin
   oldClip := ClipRect;
   NoClip;
-  ReplaceColor(FActualRect, before, after);
+  ReplaceColor(FActualRect, ABefore, AAfter);
   ClipRect := oldClip;
 end;
 
-procedure TBGLCustomBitmap.ReplaceTransparent(after: TBGRAPixel);
+procedure TBGLCustomBitmap.ReplaceTransparent(const AAfter: TBGRAPixel);
 var oldClip: TRect;
 begin
   oldClip := ClipRect;
   NoClip;
-  ReplaceTransparent(FActualRect,after);
+  ReplaceTransparent(FActualRect,AAfter);
   ClipRect := oldClip;
 end;
 

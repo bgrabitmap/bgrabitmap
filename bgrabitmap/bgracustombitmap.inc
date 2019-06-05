@@ -617,11 +617,7 @@ type
      procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); overload; virtual; abstract;
      procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); overload; virtual; abstract;
      procedure ReplaceColor(before, after: TColor); overload; virtual; abstract;
-     procedure ReplaceColor(before, after: TBGRAPixel); overload; virtual; abstract;
      procedure ReplaceColor(ARect: TRect; before, after: TColor); overload; virtual; abstract;
-     procedure ReplaceColor(ARect: TRect; before, after: TBGRAPixel); overload; virtual; abstract;
-     procedure ReplaceTransparent(after: TBGRAPixel); overload; virtual; abstract;
-     procedure ReplaceTransparent(ABounds: TRect; after: TBGRAPixel); overload; virtual; abstract;
      procedure FloodFill(X, Y: integer; Color: TBGRAPixel;
        mode: TFloodfillMode; Tolerance: byte = 0); virtual;
      procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; Color: TBGRAPixel;

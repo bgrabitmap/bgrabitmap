@@ -36,6 +36,10 @@ type
 
     procedure Fill(const AColor: TPixel); overload; virtual;
     procedure Fill(const AColor: TPixel; AMode : TDrawMode; AAlpha : Word = 65535); overload; virtual;
+    procedure ReplaceColor(const ABefore, AAfter: TPixel); overload; virtual;
+    procedure ReplaceColor(ARect: TRect; const ABefore, AAfter: TPixel); overload; virtual;
+    procedure ReplaceTransparent(const AAfter: TBGRAPixel); overload; virtual;
+    procedure ReplaceTransparent(ARect: TRect; const AAfter: TPixel); overload; virtual;
     procedure FillRect(ALeft, ATop, ARight, ABottom: integer; const AColor: TPixel; ADrawMode: TDrawMode = dmSet; AAlpha: Word = 65535); overload; virtual;
     procedure FillRect(const ARect: TRect; const AColor: TPixel; ADrawMode: TDrawMode = dmSet; AAlpha: Word = 65535); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel); overload; virtual;
@@ -257,7 +261,7 @@ procedure TGenericUniversalBitmap.GetPixelIndirect(x, y: int32or64;
   AColor: pointer);
 begin
   if (x < 0) or (x >= FWidth) or (y < 0) or (y >= FHeight) then //it is possible to read pixels outside of the cliprect
-    FillByte(AColor^, FPixelSize, 0) else
+    AssignTransparentPixel(AColor^) else
   begin
     LoadFromBitmapIfNeeded;
     PPixel(AColor)^ := (GetScanlineFast(y)+x)^;
@@ -267,8 +271,7 @@ end;
 procedure TGenericUniversalBitmap.GetPixelCycleIndirect(x, y: int32or64;
   AColor: pointer);
 begin
-  if (Width = 0) or (Height = 0) then
-    FillByte(AColor^, FPixelSize, 0) else
+  if (Width = 0) or (Height = 0) then AssignTransparentPixel(AColor^) else
   begin
     LoadFromBitmapIfNeeded;
     PPixel(AColor)^ := (GetScanlineFast(PositiveMod(y, Height)) + PositiveMod(x, Width))^;
@@ -307,6 +310,56 @@ var
 begin
   SolidBrush(b, AColor, AMode);
   Fill(b, AAlpha);
+end;
+
+procedure TGenericUniversalBitmap.ReplaceColor(const ABefore, AAfter: TPixel);
+var
+  p: PPixel;
+  n: integer;
+begin
+  p := Data;
+  for n := NbPixels - 1 downto 0 do
+  begin
+    if p^ = ABefore then p^ := AAfter;
+    Inc(p);
+  end;
+  InvalidateBitmap;
+end;
+
+procedure TGenericUniversalBitmap.ReplaceColor(ARect: TRect;
+  const ABefore,AAfter: TPixel);
+var
+  p: PPixel;
+  n,w,yb: integer;
+begin
+  if not CheckClippedRectBounds(ARect.Left,ARect.Top,ARect.Right,ARect.Bottom) then exit;
+  LoadFromBitmapIfNeeded;
+  w := ARect.Width-1;
+  for yb := ARect.Top to ARect.Bottom-1 do
+  begin
+    p := GetScanlineFast(yb)+ARect.Left;
+    for n := w downto 0 do
+    begin
+      if p^ = ABefore then p^ := AAfter;
+      Inc(p);
+    end;
+  end;
+  InvalidateBitmap;
+end;
+
+procedure TGenericUniversalBitmap.ReplaceTransparent(const AAfter: TBGRAPixel);
+var before: TPixel;
+begin
+  AssignTransparentPixel(before);
+  ReplaceColor(before, AAfter);
+end;
+
+procedure TGenericUniversalBitmap.ReplaceTransparent(ARect: TRect;
+  const AAfter: TPixel);
+var before: TPixel;
+begin
+  AssignTransparentPixel(before);
+  ReplaceColor(ARect, before, AAfter);
 end;
 
 procedure TGenericUniversalBitmap.FillRect(ALeft, ATop, ARight,
