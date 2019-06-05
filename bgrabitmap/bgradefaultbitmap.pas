@@ -281,7 +281,8 @@ type
     procedure Deserialize(AStream: TStream); override;
 
     // universal brushes
-    class procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; override;
+    class procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
+    class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure ScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
                                  AOffsetX: integer = 0; AOffsetY: integer = 0); override;
     class procedure EraseBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
@@ -1299,6 +1300,12 @@ class procedure TBGRADefaultBitmap.SolidBrushIndirect(out
   ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode);
 begin
   BGRASolidBrushIndirect(ABrush, AColor, ADrawMode);
+end;
+
+class procedure TBGRADefaultBitmap.SolidBrush(out ABrush: TUniversalBrush;
+  const AColor: TBGRAPixel; ADrawMode: TDrawMode);
+begin
+  BGRASolidBrushIndirect(ABrush, @AColor, ADrawMode);
 end;
 
 class procedure TBGRADefaultBitmap.ScannerBrush(out ABrush: TUniversalBrush;
