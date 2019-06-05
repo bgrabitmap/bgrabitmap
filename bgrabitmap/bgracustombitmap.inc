@@ -380,14 +380,12 @@ type
      function GetPixelCycle256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter; repeatX: boolean; repeatY: boolean): TBGRAPixel; overload; virtual; abstract;
 
      {Line primitives}
-     procedure SetHorizLine(x, y, x2: int32or64; c: TBGRAPixel); virtual; abstract;
      procedure XorHorizLine(x, y, x2: int32or64; c: TBGRAPixel); virtual; abstract;
      procedure DrawHorizLine(x, y, x2: int32or64; ec: TExpandedPixel); overload; virtual; abstract;
      procedure DrawHorizLine(x, y, x2: int32or64; texture: IBGRAScanner); overload;
      procedure FastBlendHorizLine(x, y, x2: int32or64; c: TBGRAPixel); virtual; abstract;
      procedure DrawHorizLineDiff(x, y, x2: int32or64; c, compare: TBGRAPixel; maxDiff: byte); virtual; abstract;
 
-     procedure SetVertLine(x, y, y2: int32or64; c: TBGRAPixel); virtual; abstract;
      procedure XorVertLine(x, y, y2: int32or64; c: TBGRAPixel); virtual; abstract;
      procedure DrawVertLine(x, y, y2: int32or64; c: TBGRAPixel); virtual; abstract;
      procedure FastBlendVertLine(x, y, y2: int32or64; c: TBGRAPixel); virtual; abstract;
@@ -606,7 +604,7 @@ type
 
      // compatibility: take into account ClipRect
      procedure Fill(texture: IBGRAScanner); overload; virtual;
-     procedure Fill(texture: IBGRAScanner; mode: TDrawMode); overload; virtual;
+     procedure Fill(texture: IBGRAScanner; mode: TDrawMode); overload; override;
 
      procedure Fill(c: TBGRAPixel; start, Count: integer); overload; virtual; abstract;
      procedure DrawPixels(c: TBGRAPixel; start, Count: integer); virtual; abstract;

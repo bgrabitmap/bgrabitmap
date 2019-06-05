@@ -281,7 +281,7 @@ type
     procedure Deserialize(AStream: TStream); override;
 
     // universal brushes
-    class procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
+    procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure ScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
                                  AOffsetX: integer = 0; AOffsetY: integer = 0); override;
@@ -348,9 +348,6 @@ type
     {* These functions do not take into account current pen style/cap/join.
        See [[BGRABitmap tutorial 13|coordinate system]]. }
 
-    {** Replaces the content of the pixels at line ''y'' and
-        at columns ''x'' to ''x2'' included, using specified color }
-    procedure SetHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override;
     {** Applies xor to the pixels at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color.
         This includes the alpha channel, so if you want to preserve the
@@ -373,8 +370,6 @@ type
     procedure DrawHorizLineDiff(x, y, x2: int32or64; c, compare: TBGRAPixel;
       maxDiff: byte); override;
 
-    {** Replaces a vertical line at column ''x'' and at row ''y'' to ''y2'' }
-    procedure SetVertLine(x, y, y2: int32or64; c: TBGRAPixel); override;
     {** Xors a vertical line at column ''x'' and at row ''y'' to ''y2'' }
     procedure XorVertLine(x, y, y2: int32or64; c: TBGRAPixel); override;
     {** Draws a vertical line with gamma correction at column ''x'' and at row ''y'' to ''y2'' }
@@ -1296,7 +1291,7 @@ begin
   InvalidateBitmap;
 end;
 
-class procedure TBGRADefaultBitmap.SolidBrushIndirect(out
+procedure TBGRADefaultBitmap.SolidBrushIndirect(out
   ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode);
 begin
   BGRASolidBrushIndirect(ABrush, AColor, ADrawMode);
@@ -1908,13 +1903,6 @@ end;
 
 {---------------------------- Line primitives ---------------------------------}
 
-procedure TBGRADefaultBitmap.SetHorizLine(x, y, x2: int32or64; c: TBGRAPixel);
-begin
-  if not CheckHorizLineBounds(x,y,x2) then exit;
-  FillInline(scanline[y] + x, c, x2 - x + 1);
-  InvalidateBitmap;
-end;
-
 procedure TBGRADefaultBitmap.XorHorizLine(x, y, x2: int32or64; c: TBGRAPixel);
 begin
   if not CheckHorizLineBounds(x,y,x2) then exit;
@@ -1946,22 +1934,6 @@ begin
   end;
   if not CheckHorizLineBounds(x,y,x2) then exit;
   AlphaFillInline(scanline[y] + x, alpha, x2 - x + 1);
-  InvalidateBitmap;
-end;
-
-procedure TBGRADefaultBitmap.SetVertLine(x, y, y2: int32or64; c: TBGRAPixel);
-var
-  n, delta: int32or64;
-  p: PBGRAPixel;
-begin
-  if not CheckVertLineBounds(x,y,y2) then exit;
-  if LineOrder = riloTopToBottom then delta := Width else delta := -Width;
-  p    := scanline[y] + x;
-  for n := y2 - y downto 0 do
-  begin
-    p^ := c;
-    Inc(p, delta);
-  end;
   InvalidateBitmap;
 end;
 

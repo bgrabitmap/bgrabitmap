@@ -15,6 +15,7 @@ type
     function GetScanlineFast(y: integer): PPixel; inline; //typed function
     procedure InternalCopyPixels(ASource,ADest: PByte; ASourceStride,ADestStride: PtrInt; ACount: integer); override;
     procedure InternalSwapPixels(ABuf1,ABuf2: PByte; AStride1,AStride2: PtrInt; ACount: integer); override;
+    procedure InternalSetPixels(ASource,ADest: PByte; ADestStride: PtrInt; ACount: integer); override;
   public
     //typed functions
 
@@ -23,6 +24,7 @@ type
     function Equals(comp: TCustomUniversalBitmap): boolean; overload;
     function Equals(const comp: TPixel): boolean; overload;
 
+    procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
     procedure SetPixel(x,y: int32or64; const AColor: TPixel); overload; virtual;
     function GetPixel(x,y: int32or64): TPixel; inline;
@@ -39,7 +41,12 @@ type
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word); overload; virtual;
+    {** Replaces the content of the pixels at line ''y'' and
+        at columns ''x'' to ''x2'' included, using specified color }
+    procedure SetHorizLine(x, y, x2: int32or64; const AColor: TPixel); virtual;
     procedure HorizLine(x, y, x2: int32or64; const AColor: TPixel; AMode : TDrawMode = dmDrawWithTransparency; AAlpha: Word = 65535); overload; virtual;
+    {** Replaces a vertical line at column ''x'' and at row ''y'' to ''y2'' }
+    procedure SetVertLine(x, y, y2: int32or64; const AColor: TPixel); virtual;
     procedure VertLine(x, y, y2: int32or64; const AColor: TPixel; AMode : TDrawMode = dmDrawWithTransparency; AAlpha: Word = 65535); overload; virtual;
     procedure DrawLine(x1, y1, x2, y2: integer; const AColor: TPixel; ADrawLastPixel: boolean; AMode : TDrawMode = dmDrawWithTransparency; AAlpha: Word = 65535); overload; virtual;
     procedure DrawLineAntialias(x1, y1, x2, y2: integer; const AColor: TPixel; ADrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual;
@@ -139,6 +146,17 @@ begin
   end;
 end;
 
+procedure TGenericUniversalBitmap.InternalSetPixels(ASource, ADest: PByte;
+  ADestStride: PtrInt; ACount: integer);
+begin
+  while ACount>0 do
+  begin
+    PPixel(ADest)^ := PPixel(ASource)^;
+    inc(ADest, ADestStride);
+    dec(ACount);
+  end;
+end;
+
 constructor TGenericUniversalBitmap.Create(AWidth, AHeight: integer;
   const AColor: TPixel);
 var
@@ -195,10 +213,35 @@ begin
   result := true;
 end;
 
+procedure TGenericUniversalBitmap.SolidBrushIndirect(out
+  ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode);
+begin
+  SolidBrush(ABrush, PPixel(AColor)^, ADrawMode);
+end;
+
 class procedure TGenericUniversalBitmap.SolidBrush(out ABrush: TUniversalBrush;
   const AColor: TPixel; ADrawMode: TDrawMode);
+var
+  ct: TColorTransparency;
 begin
-  SolidBrushIndirect(ABrush, @AColor, ADrawMode);
+  ct := TColorspace.GetColorTransparency(@AColor);
+  if (ADrawMode in[dmLinearBlend,dmDrawWithTransparency]) and
+   (ct = ctSemiTransparent) then
+     raise exception.Create('Semi-tranparent drawing not handled by default brush')
+  else if ADrawMode = dmXor then
+     raise exception.Create('Xor mode not handled by default brush');
+
+  ABrush.Colorspace := TColorspace;
+  ABrush.InternalInitContext:= nil;
+  PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.PixelSize:= sizeof(TPixel);
+
+  if (ADrawMode <> dmSet) and (ct <> ctFullyOpaque) then
+    ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSkipPixels
+  else
+  begin
+    PPixel(@PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.Color)^ := AColor;
+    ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSetPixels
+  end;
 end;
 
 procedure TGenericUniversalBitmap.SetPixelIndirect(x, y: int32or64;
@@ -311,6 +354,18 @@ begin
   DrawPixel(x,y, b,AAlpha);
 end;
 
+procedure TGenericUniversalBitmap.SetHorizLine(x, y, x2: int32or64;
+  const AColor: TPixel);
+var
+  pScan: PByte;
+begin
+  if not CheckHorizLineBounds(x,y,x2) then exit;
+  LoadFromBitmapIfNeeded;
+  pScan := GetPixelAddress(x,y);
+  InternalSetPixels(@AColor, pScan, sizeof(TPixel), x2-x+1);
+  InvalidateBitmap;
+end;
+
 procedure TGenericUniversalBitmap.HorizLine(x, y, x2: int32or64;
   const AColor: TPixel; AMode: TDrawMode; AAlpha: Word);
 var
@@ -318,6 +373,25 @@ var
 begin
   SolidBrush(b, AColor, AMode);
   HorizLine(x,y,x2, b,AAlpha);
+end;
+
+procedure TGenericUniversalBitmap.SetVertLine(x, y, y2: int32or64;
+  const AColor: TPixel);
+var
+  pScan: PByte;
+  delta: PtrInt;
+  yb: Int32or64;
+begin
+  if not CheckVertLineBounds(x,y,y2) then exit;
+  LoadFromBitmapIfNeeded;
+  pScan := GetPixelAddress(x,y);
+  if LineOrder = riloTopToBottom then delta := RowSize else delta := -rowSize;
+  for yb := y to y2 do
+  begin
+    PPixel(pScan)^ := AColor;
+    inc(pScan, delta);
+  end;
+  InvalidateBitmap;
 end;
 
 procedure TGenericUniversalBitmap.VertLine(x, y, y2: int32or64;

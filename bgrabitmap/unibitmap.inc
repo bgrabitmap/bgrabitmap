@@ -36,6 +36,18 @@ type
   end;
 
 type
+  PDefaultSolidBrushIndirectFixedData = ^TDefaultSolidBrushIndirectFixedData;
+  TDefaultSolidBrushIndirectFixedData = packed record
+    PixelSize: integer;
+    Color: packed array[0..23] of byte;
+  end;
+
+procedure DefaultSolidBrushIndirectSkipPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; {%H-}AAlpha: Word; ACount: integer);
+procedure DefaultSolidBrushIndirectSetPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; {%H-}AAlpha: Word; ACount: integer);
+
+type
   TPathCallbackData = record
     BrushAddress: PUniversalBrush;
     Alpha: Word;
@@ -106,6 +118,7 @@ type
     function InternalNew: TCustomUniversalBitmap; virtual;
     procedure InternalCopyPixels(ASource,ADest: PByte; ASourceStride,ADestStride: PtrInt; ACount: integer); virtual;
     procedure InternalSwapPixels(ABuf1,ABuf2: PByte; AStride1,AStride2: PtrInt; ACount: integer); virtual;
+    procedure InternalSetPixels(ASource,ADest: PByte; ADestStride: PtrInt; ACount: integer); virtual;
 
   public
 
@@ -142,11 +155,11 @@ type
 
     class procedure EraseBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AAlpha: Word); virtual;
     class procedure AlphaBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AAlpha: Word); virtual;
-    procedure SolidBrushBGRA(out {%H-}ABrush: TUniversalBrush; ARed,AGreen,ABlue,AAlpha: Byte; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
-    procedure SolidBrushBGRA(out {%H-}ABrush: TUniversalBrush; AColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
-    procedure SolidBrushExpanded(out {%H-}ABrush: TUniversalBrush; ARed,AGreen,ABlue,AAlpha: Word; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
-    procedure SolidBrushExpanded(out {%H-}ABrush: TUniversalBrush; AColor: TExpandedPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
-    class procedure SolidBrushIndirect(out {%H-}ABrush: TUniversalBrush; {%H-}AColor: Pointer; {%H-}ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
+    procedure SolidBrushBGRA(out ABrush: TUniversalBrush; ARed,AGreen,ABlue,AAlpha: Byte; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
+    procedure SolidBrushBGRA(out ABrush: TUniversalBrush; AColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
+    procedure SolidBrushExpanded(out ABrush: TUniversalBrush; ARed,AGreen,ABlue,AAlpha: Word; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
+    procedure SolidBrushExpanded(out ABrush: TUniversalBrush; AColor: TExpandedPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
+    procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
     class procedure ScannerBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner; {%H-}ADrawMode: TDrawMode = dmDrawWithTransparency;
                                  {%H-}AOffsetX: integer = 0; {%H-}AOffsetY: integer = 0); virtual;
 
@@ -676,6 +689,17 @@ begin
   end;
 end;
 
+procedure TCustomUniversalBitmap.InternalSetPixels(ASource, ADest: PByte;
+  ADestStride: PtrInt; ACount: integer);
+begin
+  while ACount>0 do
+  begin
+    move(ASource^, ADest^, FPixelSize);
+    inc(ADest, ADestStride);
+    dec(ACount);
+  end;
+end;
+
 function TCustomUniversalBitmap.GetLinearAntialiasing: boolean;
 begin
   result := FAntialiasingDrawMode in[dmLinearBlend,dmXor];
@@ -811,10 +835,61 @@ begin
   SolidBrushIndirect(ABrush, @c2, ADrawMode);
 end;
 
-class procedure TCustomUniversalBitmap.SolidBrushIndirect(out ABrush: TUniversalBrush;
-  AColor: Pointer; ADrawMode: TDrawMode);
+procedure DefaultSolidBrushIndirectSkipPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 begin
-  raise exception.Create('Solid brush not implemented');
+  inc(AContextData^.Dest, ACount*PtrInt(PDefaultSolidBrushIndirectFixedData(AFixedData)^.PixelSize));
+end;
+
+procedure DefaultSolidBrushIndirectSetPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PByte;
+begin
+  if AAlpha < 32768 then
+  begin
+    inc(AContextData^.Dest, ACount*PtrInt(PDefaultSolidBrushIndirectFixedData(AFixedData)^.PixelSize));
+    exit;
+  end;
+  pDest := AContextData^.Dest;
+  while ACount > 0 do
+  begin
+    with PDefaultSolidBrushIndirectFixedData(AFixedData)^ do
+    begin
+      move(Color, pDest^, PixelSize);
+      inc(pDest, PixelSize);
+    end;
+    dec(ACount);
+  end;
+  AContextData^.Dest := pDest;
+end;
+
+procedure TCustomUniversalBitmap.SolidBrushIndirect(out ABrush: TUniversalBrush;
+  AColor: Pointer; ADrawMode: TDrawMode);
+var
+  ct: TColorTransparency;
+begin
+  if FPixelSize+4 > sizeof(ABrush.FixedData) then
+    raise exception.Create('Brush fixed data size too small');
+
+  ct := Colorspace.GetColorTransparency(AColor);
+  if (ADrawMode in[dmLinearBlend,dmDrawWithTransparency]) and
+   (ct = ctSemiTransparent) then
+     raise exception.Create('Semi-tranparent drawing not handled by default brush')
+  else if ADrawMode = dmXor then
+     raise exception.Create('Xor mode not handled by default brush');
+
+  ABrush.Colorspace := Colorspace;
+  ABrush.InternalInitContext:= nil;
+  PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.PixelSize:= FPixelSize;
+
+  if (ADrawMode <> dmSet) and (ct <> ctFullyOpaque) then
+    ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSkipPixels
+  else
+  begin
+    move(AColor^, PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.Color, FPixelSize);
+    ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSetPixels
+  end;
 end;
 
 class procedure TCustomUniversalBitmap.ScannerBrush(out
