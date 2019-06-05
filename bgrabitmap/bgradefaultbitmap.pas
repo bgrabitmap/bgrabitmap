@@ -298,9 +298,6 @@ type
     {** Draws a pixel with gamma correction at (''x'',''y''). Pixel is supplied
         in sRGB colorspace }
     procedure DrawPixel(x, y: int32or64; const c: TBGRAPixel); overload; override;
-    {** Draws a pixel with gamma correction at (''x'',''y''). Pixel is supplied
-        in gamma expanded colorspace }
-    procedure DrawPixel(x, y: int32or64; const ec: TExpandedPixel); overload; override;
     {** Draws a pixel without gamma correction at (''x'',''y''). Pixel is supplied
         in sRGB colorspace }
     procedure FastBlendPixel(x, y: int32or64; const c: TBGRAPixel); override;
@@ -358,9 +355,6 @@ type
         This includes the alpha channel, so if you want to preserve the
         opacity, provide a color ''c'' with alpha channel equal to zero }
     procedure XorHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override;
-    {** Draws an horizontal line with gamma correction at line ''y'' and
-        at columns ''x'' to ''x2'' included, using specified color }
-    procedure DrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel); override; overload;
     {** Draws an horizontal line with gamma correction at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color }
     procedure DrawHorizLine(x, y, x2: int32or64; ec: TExpandedPixel); override; overload;
@@ -1516,14 +1510,6 @@ begin
   InvalidateBitmap;
 end;
 
-procedure TBGRADefaultBitmap.DrawPixel(x, y: int32or64; const ec: TExpandedPixel);
-begin
-  if not PtInClipRect(x,y) then exit;
-  LoadFromBitmapIfNeeded;
-  DrawExpandedPixelInlineWithAlphaCheck(GetScanlineFast(y) + x, ec);
-  InvalidateBitmap;
-end;
-
 procedure TBGRADefaultBitmap.FastBlendPixel(x, y: int32or64; const c: TBGRAPixel);
 begin
   if not PtInClipRect(x,y) then exit;
@@ -1926,13 +1912,6 @@ procedure TBGRADefaultBitmap.XorHorizLine(x, y, x2: int32or64; c: TBGRAPixel);
 begin
   if not CheckHorizLineBounds(x,y,x2) then exit;
   XorInline(scanline[y] + x, c, x2 - x + 1);
-  InvalidateBitmap;
-end;
-
-procedure TBGRADefaultBitmap.DrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel);
-begin
-  if not CheckHorizLineBounds(x,y,x2) then exit;
-  DrawPixelsInline(scanline[y] + x, c, x2 - x + 1);
   InvalidateBitmap;
 end;
 
@@ -3884,6 +3863,7 @@ var
   end;
 
 begin
+  if (mode = fmDrawWithTransparency) and (Color.alpha = 0) then exit;
   if PtInClipRect(X,Y) then
   begin
     S := GetPixel(X, Y);

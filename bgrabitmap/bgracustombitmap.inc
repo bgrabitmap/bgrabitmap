@@ -371,7 +371,6 @@ type
      procedure SetPixel(x, y: int32or64; c: TColor); overload; virtual; abstract;
      procedure XorPixel(x, y: int32or64; const c: TBGRAPixel); overload; virtual; abstract;
      procedure DrawPixel(x, y: int32or64; const c: TBGRAPixel; ADrawMode: TDrawMode); overload; override;
-     procedure DrawPixel(x, y: int32or64; const ec: TExpandedPixel); overload; virtual; abstract;
      procedure FastBlendPixel(x, y: int32or64; const c: TBGRAPixel); virtual; abstract;
      function GetPixel256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter = rfLinear; smoothBorder: boolean = true): TBGRAPixel; virtual; abstract;
      function GetPixel(x, y: single; AResampleFilter: TResampleFilter = rfLinear; smoothBorder: boolean = true): TBGRAPixel; overload; virtual; abstract;
@@ -383,7 +382,6 @@ type
      {Line primitives}
      procedure SetHorizLine(x, y, x2: int32or64; c: TBGRAPixel); virtual; abstract;
      procedure XorHorizLine(x, y, x2: int32or64; c: TBGRAPixel); virtual; abstract;
-     procedure DrawHorizLine(x, y, x2: int32or64; c: TBGRAPixel); overload; virtual; abstract;
      procedure DrawHorizLine(x, y, x2: int32or64; ec: TExpandedPixel); overload; virtual; abstract;
      procedure DrawHorizLine(x, y, x2: int32or64; texture: IBGRAScanner); overload;
      procedure FastBlendHorizLine(x, y, x2: int32or64; c: TBGRAPixel); virtual; abstract;
