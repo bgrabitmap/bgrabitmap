@@ -5,7 +5,7 @@ unit UniversalDrawer;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAGraphics;
+  Classes, SysUtils, BGRABitmapTypes, BGRAGraphics, BGRAPen, BGRAArrow;
 
 type
 
@@ -44,6 +44,12 @@ type
 
     class procedure FillShape(ADest: TCustomUniversalBitmap; AShape: TBGRACustomFillInfo; AFillMode: TFillMode; ABrush: TUniversalBrush; AAlpha: Word = 65535); override;
     class procedure FillPoly(ADest: TCustomUniversalBitmap; const APoints: array of TPointF; AFillMode: TFillMode; ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true; AAlpha: Word = 65535); override;
+
+    // using pen
+    class function CreatePenStroker: TBGRACustomPenStroker; override;
+    class function CreateArrow: TBGRACustomArrow; override;
+
+    class procedure DrawLineAntialias(ADest: TCustomUniversalBitmap; x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word = 65535); overload; override;
 
   end;
 
@@ -548,6 +554,24 @@ class procedure TUniversalDrawer.FillPoly(ADest: TCustomUniversalBitmap;
   ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean; AAlpha: Word);
 begin
   BGRAPolygon.FillPolyAliased(ADest, APoints, ABrush, AAlpha, AFillMode = fmWinding, APixelCenteredCoordinates);
+end;
+
+class function TUniversalDrawer.CreatePenStroker: TBGRACustomPenStroker;
+begin
+  result := TBGRAPenStroker.Create;
+end;
+
+class function TUniversalDrawer.CreateArrow: TBGRACustomArrow;
+begin
+  result := TBGRAArrow.Create;
+end;
+
+class procedure TUniversalDrawer.DrawLineAntialias(ADest: TCustomUniversalBitmap;
+  x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word);
+begin
+  //temporary
+  DrawLineAntialias(ADest,round(x1),round(y1),round(x2),round(y2),
+                    ABrush,true,AAlpha);
 end;
 
 initialization

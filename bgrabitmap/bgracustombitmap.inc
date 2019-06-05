@@ -107,8 +107,6 @@ type
      function GetArrowStartSize: TPointF; virtual; abstract;
      procedure SetArrowEndSize(AValue: TPointF); virtual; abstract;
      procedure SetArrowStartSize(AValue: TPointF); virtual; abstract;
-     function GetLineCap: TPenEndCap; virtual; abstract;
-     procedure SetLineCap(AValue: TPenEndCap); virtual; abstract;
      function GetFontRenderer: TBGRACustomFontRenderer; virtual; abstract;
      procedure SetFontRenderer(AValue: TBGRACustomFontRenderer); virtual; abstract;
      function GetAverageColor: TColor; virtual; abstract;
@@ -135,7 +133,6 @@ type
      procedure SetPenStyle(const AValue: TPenStyle); virtual; abstract;
      function GetCustomPenStyle: TBGRAPenStyle; virtual; abstract;
      procedure SetCustomPenStyle(const AValue: TBGRAPenStyle); virtual; abstract;
-     function GetPenStroker: TBGRACustomPenStroker; virtual; abstract;
      function GetFontPixelMetric: TFontPixelMetric; virtual; abstract;
      procedure ClearTransparentPixels; virtual; abstract;
 
@@ -208,8 +205,6 @@ type
      property CustomPenStyle: TBGRAPenStyle read GetCustomPenStyle write SetCustomPenStyle;
      {** How to draw the ends of a line }
      property LineCap: TPenEndCap read GetLineCap write SetLineCap;
-     {** You can use this class to generate strokes polygonal representations }
-     property Pen: TBGRACustomPenStroker read GetPenStroker;
 
      {** Size of arrows at the start of the line }
      property ArrowStartSize: TPointF read GetArrowStartSize write SetArrowStartSize;
@@ -310,6 +305,9 @@ type
      function Duplicate(DuplicateProperties, DuplicateXorMask: Boolean) : TBGRACustomBitmap;
      procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); override;
      function GetPart(ARect: TRect): TBGRACustomBitmap;
+
+     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
+                 AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGRACustomBitmap;
 
      {** Can only be called with an existing instance of ''TBGRACustomBitmap''.
          Sets the dimensions of an existing ''TBGRACustomBitmap'' instance. }
@@ -631,8 +629,6 @@ type
        gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
        Sinus: Boolean=False;
        ditherAlgo: TDitheringAlgorithm = daNearestNeighbor); overload; virtual; abstract;
-     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
-                AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGRACustomBitmap; virtual; abstract;
 
      {Canvas drawing functions}
      procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
@@ -1100,6 +1096,13 @@ end;
 function TBGRACustomBitmap.GetPart(ARect: TRect): TBGRACustomBitmap;
 begin
   result := TBGRACustomBitmap(inherited GetPart(ARect));
+end;
+
+function TBGRACustomBitmap.CreateBrushTexture(ABrushStyle: TBrushStyle;
+  APatternColor, ABackgroundColor: TBGRAPixel; AWidth: integer;
+  AHeight: integer; APenWidth: single): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited CreateBrushTexture(ABrushStyle, APatternColor, ABackgroundColor, AWidth,AHeight,APenWidth));
 end;
 
 procedure TBGRACustomBitmap.SetSize(AWidth, AHeight: integer);

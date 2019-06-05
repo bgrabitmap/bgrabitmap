@@ -182,27 +182,7 @@ end;
 function CreateBrushTexture(prototype: TBGRACustomBitmap; brushstyle: TBrushStyle;
   PatternColor, BackgroundColor: TBGRAPixel; width: integer = 8; height: integer = 8; penwidth: single = 1): TBGRACustomBitmap;
 begin
-  result := prototype.NewBitmap(width,height);
-  if brushstyle <> bsClear then
-  begin
-    result.Fill(BackgroundColor);
-    if brushstyle in[bsDiagCross,bsBDiagonal] then
-    begin
-      result.DrawLineAntialias(-1,height,width,-1,PatternColor,penwidth);
-      result.DrawLineAntialias(-1-penwidth,0+penwidth,0+penwidth,-1-penwidth,PatternColor,penwidth);
-      result.DrawLineAntialias(width-1-penwidth,height+penwidth,width+penwidth,height-1-penwidth,PatternColor,penwidth);
-    end;
-    if brushstyle in[bsDiagCross,bsFDiagonal] then
-    begin
-      result.DrawLineAntialias(-1,-1,width,height,PatternColor,penwidth);
-      result.DrawLineAntialias(width-1-penwidth,-1-penwidth,width+penwidth,0+penwidth,PatternColor,penwidth);
-      result.DrawLineAntialias(-1-penwidth,height-1-penwidth,0+penwidth,height+penwidth,PatternColor,penwidth);
-    end;
-    if brushstyle in[bsHorizontal,bsCross] then
-      result.DrawLineAntialias(-1,height div 2,width,height div 2,PatternColor,penwidth);
-    if brushstyle in[bsVertical,bsCross] then
-      result.DrawLineAntialias(width div 2,-1,width div 2,height,PatternColor,penwidth);
-  end;
+  result := prototype.CreateBrushTexture(brushstyle, PatternColor, BackgroundColor, width,height, penwidth);
 end;
 
 function IsSolidPenStyle(ACustomPenStyle: TBGRAPenStyle): boolean;
@@ -1148,7 +1128,7 @@ end;
 
 function TBGRAPenStroker.GetCustomPenStyle: TBGRAPenStyle;
 begin
-  result := FCustomPenStyle;
+  result := DuplicatePenStyle(FCustomPenStyle);
 end;
 
 function TBGRAPenStroker.GetJoinStyle: TPenJoinStyle;
@@ -1188,19 +1168,9 @@ end;
 
 procedure TBGRAPenStroker.SetCustomPenStyle(AValue: TBGRAPenStyle);
 begin
-  if FCustomPenStyle=AValue then Exit;
-  FCustomPenStyle:=AValue;
-  if AValue = SolidPenStyle then FPenStyle := psSolid
-  else if AValue = ClearPenStyle then FPenStyle:= psClear
-  else if AValue = DashPenStyle then FPenStyle:= psDash
-  else if AValue = DotPenStyle then FPenStyle := psDot
-  else if AValue = DashDotPenStyle then FPenStyle:= psDashDot
-  else if AValue = DashDotDotPenStyle then FPenStyle:= psDashDotDot
-  else
-  begin
-    FPenStyle := psPattern;
-    FCustomPenStyle:= DuplicatePenStyle(AValue);
-  end;
+  if PenStyleEqual(FCustomPenStyle,AValue) then Exit;
+  FCustomPenStyle:= DuplicatePenStyle(AValue);
+  FPenStyle:= BGRAToPenStyle(AValue);
 end;
 
 procedure TBGRAPenStroker.SetJoinStyle(AValue: TPenJoinStyle);

@@ -58,13 +58,10 @@ type
 
   TCustomUniversalBitmap = class(TFPCustomImage)
   private
-    function GetLinearAntialiasing: boolean;
     procedure PathFillAliasedCallback(const APoints: array of TPointF;
       AData: pointer);
     procedure PathStrokeAliasedCallback(const APoints: array of TPointF;
       AClosed: boolean; AData: Pointer);
-    procedure SetAntialiasingDrawMode(AValue: TDrawMode);
-    procedure SetLinearAntialiasing(AValue: boolean);
 
   protected
     FRefCount: integer;
@@ -80,6 +77,7 @@ type
     FClipRect: TRect;
     FConvertToFPColor, FConvertFromFPColor,
     FConvertFromBGRA, FConvertFromExpanded: TColorspaceConvertArrayProc;
+    FPenStroker: TBGRACustomPenStroker;
 
     {** Specifies if linear antialiasing must be used when drawing
         antialiased shapes }
@@ -120,6 +118,9 @@ type
     procedure InternalSwapPixels(ABuf1,ABuf2: PByte; AStride1,AStride2: PtrInt; ACount: integer); virtual;
     procedure InternalSetPixels(ASource,ADest: PByte; ADestStride: PtrInt; ACount: integer); virtual;
     procedure AssignTransparentPixel(out ADest); virtual;
+    function GetLinearAntialiasing: boolean; virtual;
+    procedure SetLinearAntialiasing(AValue: boolean); virtual;
+    procedure SetAntialiasingDrawMode(AValue: TDrawMode); virtual;
 
   public
 
@@ -405,6 +406,23 @@ type
     {** Current reference white used for color conversion }
     property ReferenceWhite: PXYZReferenceWhite read FReferenceWhite write FReferenceWhite;
 
+
+  protected {----------- pen style ----------------}
+    function GetArrow: TBGRACustomArrow; virtual;
+    function GetLineCap: TPenEndCap; virtual;
+    function GetPenStroker: TBGRACustomPenStroker; virtual;
+    procedure SetLineCap(AValue: TPenEndCap); virtual;
+
+  public
+     {** How to draw the ends of a line (applies to arrow as well) }
+     property LineCap: TPenEndCap read GetLineCap write SetLineCap;
+     {** You can use this class to generate strokes polygonal representations }
+     property Pen: TBGRACustomPenStroker read GetPenStroker;
+     {** Properties of arrow }
+     property Arrow: TBGRACustomArrow read GetArrow;
+
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word = 65535); overload; virtual;
+
   end;
 
   TCustomUniversalDrawer = class
@@ -438,6 +456,12 @@ type
 
     class procedure FillShape(ADest: TCustomUniversalBitmap; AShape: TBGRACustomFillInfo; AFillMode: TFillMode; ABrush: TUniversalBrush; AAlpha: Word = 65535); virtual; abstract;
     class procedure FillPoly(ADest: TCustomUniversalBitmap; const APoints: array of TPointF; AFillMode: TFillMode; ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true; AAlpha: Word = 65535); virtual; abstract;
+
+    // using pen
+    class function CreatePenStroker: TBGRACustomPenStroker; virtual; abstract;
+    class function CreateArrow: TBGRACustomArrow; virtual; abstract;
+
+    class procedure DrawLineAntialias(ADest: TCustomUniversalBitmap; x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word = 65535); overload; virtual; abstract;
 
   end;
   TUniversalDrawerAny = class of TCustomUniversalDrawer;
@@ -711,9 +735,36 @@ begin
   FillByte({%H-}ADest, FPixelSize, 0);
 end;
 
+function TCustomUniversalBitmap.GetArrow: TBGRACustomArrow;
+begin
+  if Pen.Arrow = nil then
+  begin
+    if UniDrawerClass = nil then RaiseMissingUniDrawer;
+    Pen.Arrow := UniDrawerClass.CreateArrow;
+    Pen.Arrow.LineCap := LineCap;
+    Pen.ArrowOwned := true;
+  end;
+  result := Pen.Arrow;
+end;
+
 function TCustomUniversalBitmap.GetLinearAntialiasing: boolean;
 begin
   result := FAntialiasingDrawMode in[dmLinearBlend,dmXor];
+end;
+
+function TCustomUniversalBitmap.GetLineCap: TPenEndCap;
+begin
+  result := Pen.LineCap;
+end;
+
+function TCustomUniversalBitmap.GetPenStroker: TBGRACustomPenStroker;
+begin
+  if FPenStroker = nil then
+  begin
+    if UniDrawerClass = nil then RaiseMissingUniDrawer;
+    FPenStroker := UniDrawerClass.CreatePenStroker;
+  end;
+  result := FPenStroker;
 end;
 
 procedure TCustomUniversalBitmap.PathFillAliasedCallback(
@@ -759,6 +810,23 @@ begin
   else AntialiasingDrawMode:= dmDrawWithTransparency;
 end;
 
+procedure TCustomUniversalBitmap.SetLineCap(AValue: TPenEndCap);
+begin
+  if AValue <> Pen.LineCap then
+  begin
+    Pen.LineCap := AValue;
+    if Assigned(Pen.Arrow) then
+      Pen.Arrow.LineCap := AValue;
+  end;
+end;
+
+procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
+  const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word);
+begin
+  if UniDrawerClass=nil then RaiseMissingUniDrawer;
+  UniDrawerClass.DrawLineAntialias(self, x1,y1,x2,y2, ABrush,APenWidth,AAlpha);
+end;
+
 procedure TCustomUniversalBitmap.SetLineOrder(AValue: TRawImageLineOrder);
 begin
   FLineOrder:= AValue;
@@ -783,6 +851,7 @@ begin
   FClipRect := EmptyRect;
   FillMode := fmWinding;
   FAntialiasingDrawMode:= dmDrawWithTransparency;
+  FPenStroker := nil;
 end;
 
 procedure TCustomUniversalBitmap.InvalidateBitmap;
@@ -1144,6 +1213,7 @@ end;
 destructor TCustomUniversalBitmap.Destroy;
 begin
   FreeData;
+  FreeAndNil(FPenStroker);
   inherited Destroy;
 end;
 

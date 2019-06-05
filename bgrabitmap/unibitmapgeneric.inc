@@ -27,6 +27,9 @@ type
 
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
+    function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TPixel;
+            AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TCustomUniversalBitmap;
+
     procedure SetPixel(x,y: int32or64; const AColor: TPixel); overload; virtual;
     function GetPixel(x,y: int32or64): TPixel; inline;
     function GetPixelCycle(x,y: int32or64): TPixel; inline;
@@ -302,6 +305,40 @@ begin
   begin
     PPixel(@PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.Color)^ := AColor;
     ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSetPixels
+  end;
+end;
+
+function TGenericUniversalBitmap.CreateBrushTexture(ABrushStyle: TBrushStyle;
+  APatternColor, ABackgroundColor: TPixel; AWidth: integer; AHeight: integer;
+  APenWidth: single): TCustomUniversalBitmap;
+var
+  b: TUniversalBrush;
+begin
+  result := InternalNew;
+  result.SetSize(AWidth,AHeight);
+  if ABrushStyle=bsClear then
+    result.FillTransparent
+  else
+  begin
+    SolidBrush(b, ABackgroundColor, dmSet);
+    result.Fill(b);
+    SolidBrush(b, APatternColor,dmDrawWithTransparency);
+    if ABrushStyle in[bsDiagCross,bsBDiagonal] then
+    begin
+      result.DrawLineAntialias(-1,AHeight,AWidth,-1, b,APenWidth);
+      result.DrawLineAntialias(-1-APenWidth,0+APenWidth,0+APenWidth,-1-APenWidth, b,APenWidth);
+      result.DrawLineAntialias(AWidth-1-APenWidth,AHeight+APenWidth,AWidth+APenWidth,AHeight-1-APenWidth, b,APenWidth);
+    end;
+    if ABrushStyle in[bsDiagCross,bsFDiagonal] then
+    begin
+      result.DrawLineAntialias(-1,-1,AWidth,AHeight, b,APenWidth);
+      result.DrawLineAntialias(AWidth-1-APenWidth,-1-APenWidth,AWidth+APenWidth,0+APenWidth, b,APenWidth);
+      result.DrawLineAntialias(-1-APenWidth,AHeight-1-APenWidth,0+APenWidth,AHeight+APenWidth, b,APenWidth);
+    end;
+    if ABrushStyle in[bsHorizontal,bsCross] then
+      result.DrawLineAntialias(-1,AHeight div 2,AWidth,AHeight div 2, b,APenWidth);
+    if ABrushStyle in[bsVertical,bsCross] then
+      result.DrawLineAntialias(AWidth div 2,-1,AWidth div 2,AHeight, b,APenWidth);
   end;
 end;
 
