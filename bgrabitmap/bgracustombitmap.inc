@@ -309,6 +309,7 @@ type
      function Duplicate(DuplicateProperties: Boolean = False): TBGRACustomBitmap;
      function Duplicate(DuplicateProperties, DuplicateXorMask: Boolean) : TBGRACustomBitmap;
      procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); override;
+     function GetPart(ARect: TRect): TBGRACustomBitmap;
 
      {** Can only be called with an existing instance of ''TBGRACustomBitmap''.
          Sets the dimensions of an existing ''TBGRACustomBitmap'' instance. }
@@ -642,7 +643,6 @@ type
      procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); overload; virtual; abstract;
      procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); overload; virtual; abstract;
      procedure DrawPart(ARect: TRect; ACanvas: TCanvas; x, y: integer; Opaque: boolean); virtual;
-     function GetPart(ARect: TRect): TBGRACustomBitmap; virtual; abstract;
      function GetPtrBitmap(Top,Bottom: Integer): TBGRACustomBitmap; virtual; abstract;
 
      {BGRA bitmap functions}
@@ -709,7 +709,6 @@ type
      function GetImageBounds(Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
      function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
      function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
-     function GetDifferenceBounds(ABitmap: TBGRACustomBitmap): TRect; virtual; abstract;
      function MakeBitmapCopy(BackgroundColor: TColor): TBitmap; virtual; abstract;
 
      {Filters}
@@ -1096,6 +1095,11 @@ begin
     other.ScanOffset := ScanOffset;
     other.HotSpot := HotSpot;
   end;
+end;
+
+function TBGRACustomBitmap.GetPart(ARect: TRect): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited GetPart(ARect));
 end;
 
 procedure TBGRACustomBitmap.SetSize(AWidth, AHeight: integer);

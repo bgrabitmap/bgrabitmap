@@ -150,6 +150,11 @@ type
     function GetUnique: TCustomUniversalBitmap;
     function Duplicate(ACopyProperties: boolean=false): TCustomUniversalBitmap;
     procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); virtual;
+    {** Get a part of the image with repetition in both directions. It means
+      that if the bounds are within the image, the result is just that part
+      of the image, but if the bounds are bigger than the image, the image
+      is tiled. }
+    function GetPart(const ARect: TRect): TCustomUniversalBitmap;
 
     procedure InvalidateBitmap; virtual;         //call if you modify with Scanline
     procedure LoadFromBitmapIfNeeded; virtual;   //call to ensure that data is up to date
@@ -703,7 +708,7 @@ end;
 
 procedure TCustomUniversalBitmap.AssignTransparentPixel(out ADest);
 begin
-  FillByte(ADest, FPixelSize, 0);
+  FillByte({%H-}ADest, FPixelSize, 0);
 end;
 
 function TCustomUniversalBitmap.GetLinearAntialiasing: boolean;
@@ -1062,6 +1067,56 @@ procedure TCustomUniversalBitmap.CopyPropertiesTo(
 begin
   ABitmap.FillMode := FillMode;
   ABitmap.ClipRect := ClipRect;
+end;
+
+function TCustomUniversalBitmap.GetPart(const ARect: TRect): TCustomUniversalBitmap;
+var
+  sx, sy: integer;
+  xSrc0, ySrc, remainX, xSrc, yDest, copyCount, copyByte: integer;
+  pSrc, pDest, pSrcLine: PByte;
+begin
+  sx := ARect.Width;
+  sy := ARect.Height;
+  if (sx = 0) or (sy = 0) then exit(nil);
+  result := InternalNew;
+  result.SetSize(sx,sy);
+  if (FWidth = 0) or (FHeight = 0) then
+  begin
+    result.FillTransparent;
+    exit;
+  end;
+  LoadFromBitmapIfNeeded;
+  xSrc0 := PositiveMod(ARect.Left, FWidth);
+  ySrc := PositiveMod(ARect.Top, FHeight);
+  for yDest := 0 to sy-1 do
+  begin
+    xSrc := xSrc0;
+    pSrcLine := GetScanLineByte(ySrc);
+    pSrc := pSrcLine + xSrc*FPixelSize;
+    pDest := result.GetScanLineByte(yDest);
+    remainX := sx;
+    while remainX > 0 do
+    begin
+      if xSrc+remainX > FWidth then
+      begin
+        copyCount := FWidth-xSrc;
+        copyByte := copyCount*FPixelSize;
+        move(pSrc^, pDest^, copyByte);
+        inc(pDest, copyByte);
+        xSrc := 0;
+        pSrc := pSrcLine;
+        dec(remainX, copyCount);
+      end
+      else
+      begin
+        move(pSrc^, pDest^, remainX*FPixelSize);
+        break;
+      end;
+    end;
+    inc(ySrc);
+    if ySrc = FHeight then ySrc := 0;
+  end;
+  result.InvalidateBitmap;
 end;
 
 procedure TCustomUniversalBitmap.SetSize(AWidth, AHeight: integer);

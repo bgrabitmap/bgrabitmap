@@ -23,6 +23,7 @@ type
     constructor Create(AWidth, AHeight: integer; const AColor: TPixel);
     function Equals(comp: TCustomUniversalBitmap): boolean; overload;
     function Equals(const comp: TPixel): boolean; overload;
+    function GetDifferenceBounds(ABitmap: TCustomUniversalBitmap): TRect;
 
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
@@ -215,6 +216,62 @@ begin
     inc(p, sizeof(TPixel));
   end;
   result := true;
+end;
+
+function TGenericUniversalBitmap.GetDifferenceBounds(
+  ABitmap: TCustomUniversalBitmap): TRect;
+var
+  minx, miny, maxx, maxy: integer;
+  xb, yb: integer;
+  p, p2:  PPixel;
+begin
+  if (ABitmap.Width <> Width) or (ABitmap.Height <> Height)
+    or (ABitmap.Colorspace <> Colorspace) then
+  begin
+    result := rect(0,0,Width,Height);
+    if ABitmap.Width > result.Right then result.Right := ABitmap.Width;
+    if ABitmap.Height > result.bottom then result.bottom := ABitmap.Height;
+    exit;
+  end;
+  maxx := -1;
+  maxy := -1;
+  minx := self.Width;
+  miny := self.Height;
+  for yb := 0 to self.Height - 1 do
+  begin
+    p := self.ScanLine[yb];
+    p2 := PPixel(ABitmap.ScanLineByte[yb]);
+    for xb := 0 to self.Width - 1 do
+    begin
+      if p^ <> p2^ then
+      begin
+        if xb < minx then
+          minx := xb;
+        if yb < miny then
+          miny := yb;
+        if xb > maxx then
+          maxx := xb;
+        if yb > maxy then
+          maxy := yb;
+      end;
+      Inc(p);
+      Inc(p2);
+    end;
+  end;
+  if minx > maxx then
+  begin
+    Result.left   := 0;
+    Result.top    := 0;
+    Result.right  := 0;
+    Result.bottom := 0;
+  end
+  else
+  begin
+    Result.left   := minx;
+    Result.top    := miny;
+    Result.right  := maxx + 1;
+    Result.bottom := maxy + 1;
+  end;
 end;
 
 procedure TGenericUniversalBitmap.SolidBrushIndirect(out

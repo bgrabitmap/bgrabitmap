@@ -692,9 +692,7 @@ type
     procedure BlendImageOver(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte = 255;
         ALinearBlend: boolean = false); override;
 
-    function GetPart(ARect: TRect): TBGRACustomBitmap; override;
     function GetPtrBitmap(Top,Bottom: Integer): TBGRACustomBitmap; override;
-    function GetDifferenceBounds(ABitmap: TBGRACustomBitmap): TRect; override;
     function MakeBitmapCopy(BackgroundColor: TColor): TBitmap; override;
 
     function Resample(newWidth, newHeight: integer;
@@ -5020,60 +5018,6 @@ begin
   self.InvalidateBitmap;
 end;
 
-function TBGRADefaultBitmap.GetDifferenceBounds(ABitmap: TBGRACustomBitmap): TRect;
-var
-  minx, miny, maxx, maxy: integer;
-  xb, yb: integer;
-  p, p2:  PBGRAPixel;
-begin
-  if (ABitmap.Width <> Width) or (ABitmap.Height <> Height) then
-  begin
-    result := rect(0,0,Width,Height);
-    if ABitmap.Width > result.Right then result.Right := ABitmap.Width;
-    if ABitmap.Height > result.bottom then result.bottom := ABitmap.Height;
-    exit;
-  end;
-  maxx := -1;
-  maxy := -1;
-  minx := self.Width;
-  miny := self.Height;
-  for yb := 0 to self.Height - 1 do
-  begin
-    p := self.ScanLine[yb];
-    p2 := ABitmap.ScanLine[yb];
-    for xb := 0 to self.Width - 1 do
-    begin
-      if p^ <> p2^ then
-      begin
-        if xb < minx then
-          minx := xb;
-        if yb < miny then
-          miny := yb;
-        if xb > maxx then
-          maxx := xb;
-        if yb > maxy then
-          maxy := yb;
-      end;
-      Inc(p);
-      Inc(p2);
-    end;
-  end;
-  if minx > maxx then
-  begin
-    Result.left   := 0;
-    Result.top    := 0;
-    Result.right  := 0;
-    Result.bottom := 0;
-  end
-  else
-  begin
-    Result.left   := minx;
-    Result.top    := miny;
-    Result.right  := maxx + 1;
-    Result.bottom := maxy + 1;
-  end;
-end;
-
 { Make a copy of the transparent bitmap to a TBitmap with a background color
   instead of transparency }
 function TBGRADefaultBitmap.MakeBitmapCopy(BackgroundColor: TColor): TBitmap;
@@ -5088,80 +5032,6 @@ begin
   opaqueCopy.PutImage(0, 0, self, dmDrawWithTransparency);
   opaqueCopy.Draw(Result.canvas, 0, 0, True);
   opaqueCopy.Free;
-end;
-
-{ Get a part of the image with repetition in both directions. It means
-  that if the bounds are within the image, the result is just that part
-  of the image, but if the bounds are bigger than the image, the image
-  is tiled. }
-function TBGRADefaultBitmap.GetPart(ARect: TRect): TBGRACustomBitmap;
-var
-  copywidth, copyheight, widthleft, heightleft, curxin, curyin, xdest,
-  ydest, tx, ty: integer;
-begin
-  tx := ARect.Right - ARect.Left;
-  ty := ARect.Bottom - ARect.Top;
-
-  if (tx <= 0) or (ty <= 0) then
-  begin
-    result := nil;
-    exit;
-  end;
-
-  LoadFromBitmapIfNeeded;
-  if ARect.Left >= Width then
-    ARect.Left := ARect.Left mod Width
-  else
-  if ARect.Left < 0 then
-    ARect.Left := Width - ((-ARect.Left) mod Width);
-  ARect.Right  := ARect.Left + tx;
-
-  if ARect.Top >= Height then
-    ARect.Top := ARect.Top mod Height
-  else
-  if ARect.Top < 0 then
-    ARect.Top  := Height - ((-ARect.Top) mod Height);
-  ARect.Bottom := ARect.Top + ty;
-
-  if (ARect.Left = 0) and (ARect.Top = 0) and
-     (ARect.Right = Width) and
-    (ARect.Bottom = Height) then
-  begin
-    result := Duplicate;
-    exit;
-  end;
-
-  result     := NewBitmap(tx, ty);
-  heightleft := result.Height;
-  curyin     := ARect.Top;
-  ydest      := -ARect.Top;
-  while heightleft > 0 do
-  begin
-    if curyin + heightleft > Height then
-      copyheight := Height - curyin
-    else
-      copyheight := heightleft;
-
-    widthleft := result.Width;
-    curxin    := ARect.Left;
-    xdest     := -ARect.Left;
-    while widthleft > 0 do
-    begin
-      if curxin + widthleft > Width then
-        copywidth := Width - curxin
-      else
-        copywidth := widthleft;
-
-      result.PutImage(xdest, ydest, self, dmSet);
-
-      curxin := 0;
-      Dec(widthleft, copywidth);
-      Inc(xdest, Width);
-    end;
-    curyin := 0;
-    Dec(heightleft, copyheight);
-    Inc(ydest, Height);
-  end;
 end;
 
 function TBGRADefaultBitmap.GetPtrBitmap(Top, Bottom: Integer
