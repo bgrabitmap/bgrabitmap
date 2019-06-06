@@ -89,7 +89,6 @@ type
     FCanvas2D: TBGRACanvas2D;
 
     //drawing options
-    FEraseMode: boolean;      //when polygons are erased instead of drawn
     FFontHeight: integer;
     FFontRenderer: TBGRACustomFontRenderer;
 
@@ -1688,7 +1687,6 @@ begin
   FScanHeight:= FHeight;
   FCanvasOpacity := 255;
   FAlphaCorrectionNeeded := False;
-  FEraseMode := False;
 
   FontName  := 'Arial';
   FontStyle := [];
