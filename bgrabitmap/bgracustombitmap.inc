@@ -201,8 +201,6 @@ type
      property PenStyle: TPenStyle read GetPenStyle Write SetPenStyle;
      {** Custom pen style. See [[BGRABitmap Geometry types|geometric types]] }
      property CustomPenStyle: TBGRAPenStyle read GetCustomPenStyle write SetCustomPenStyle;
-     {** How to draw the ends of a line }
-     property LineCap: TPenEndCap read GetLineCap write SetLineCap;
 
      {** Size of arrows at the start of the line }
      property ArrowStartSize: TPointF read GetArrowStartSize write SetArrowStartSize;
