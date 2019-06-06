@@ -49,7 +49,9 @@ type
     class function CreatePenStroker: TBGRACustomPenStroker; override;
     class function CreateArrow: TBGRACustomArrow; override;
 
-    class procedure DrawLineAntialias(ADest: TCustomUniversalBitmap; x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word = 65535); overload; override;
+    class procedure FillPolyAntialias(ADest: TCustomUniversalBitmap;
+                    const APoints: array of TPointF; AFillMode: TFillMode;
+                    ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean); override;
 
   end;
 
@@ -566,12 +568,13 @@ begin
   result := TBGRAArrow.Create;
 end;
 
-class procedure TUniversalDrawer.DrawLineAntialias(ADest: TCustomUniversalBitmap;
-  x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word);
+class procedure TUniversalDrawer.FillPolyAntialias(
+  ADest: TCustomUniversalBitmap; const APoints: array of TPointF;
+  AFillMode: TFillMode; ABrush: TUniversalBrush;
+  APixelCenteredCoordinates: boolean);
 begin
-  //temporary
-  DrawLineAntialias(ADest,round(x1),round(y1),round(x2),round(y2),
-                    ABrush,true,AAlpha);
+  BGRAPolygon.FillPolyAntialias(ADest, APoints, ABrush,
+    AFillMode = fmWinding, APixelCenteredCoordinates);
 end;
 
 initialization

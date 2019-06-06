@@ -53,102 +53,45 @@
     begin
       if densMinX < minx then densMinX := minx;
       if densMaxX > maxx then densMaxX := maxx;
-
-      pdest := bmp.ScanLine[yb] + densMinX;
+      xb := densMinX;
       pdens := density + (densMinX-minx);
-      //render scanline
-      if scan <> nil then //with texture scan
+      pDest := bmp.GetPixelAddress(densMinX,yb);
+      brush.MoveTo(@ctx, pDest,xb,yb);
+      while xb<=densMaxX do
       begin
-        scan.ScanMoveTo(densMinX,yb);
-        if MemScanCopy <> nil then
+        tempDensity:= pDens^;
+        inc(pDens);
+        inc(xb);
+        drawCount := 1;
+        if tempDensity>=256{$ifdef PARAM_ANTIALIASINGFACTOR} shl AntialiasPrecisionShift{$endif} then
         begin
-          scan.ScanPutPixels(MemScanCopy,densMaxX-densMinX+1,dmSet);
-          pscan := MemScanCopy;
-          for xb := densMinX to densMaxX do
+          while (xb<=densMaxX) and (pDens^ >= 256{$ifdef PARAM_ANTIALIASINGFACTOR} shl AntialiasPrecisionShift{$endif}) do
           begin
-            tempDensity := pdens^;
-            Inc(pdens);
-            if tempDensity >= 256 {$ifdef PARAM_ANTIALIASINGFACTOR}shl AntialiasPrecisionShift{$endif} then
-              {$ifdef PARAM_LINEARANTIALIASING}
-              FastBlendPixelInline
-              {$else}
-              DrawPixelInlineWithAlphaCheck{$endif}(pdest, pscan^) else
-            if tempDensity <> 0 then
-            begin
-              c := pscan^;
-              {$ifdef PARAM_LINEARANTIALIASING}
-              FastBlendPixelInline
-              {$else}
-              DrawPixelInlineWithAlphaCheck{$endif}(pdest, BGRA(c.red, c.green, c.blue,
-              {$ifdef PARAM_ANTIALIASINGFACTOR}DivByAntialiasPrecision256{$endif}
-              (c.alpha * tempDensity
-              {$ifdef PARAM_ANTIALIASINGFACTOR} ) {$else} +128) shr 8 {$endif}
-              ));
-            end;
-            inc(pscan);
-            Inc(pdest);
+            inc(xb);
+            inc(pDens);
+            inc(drawCount);
           end;
+          brush.PutNextPixels(@ctx, 65535, drawCount);
         end else
         begin
-          for xb := densMinX to densMaxX do
+          while (xb<=densMaxX) and (pDens^ = tempDensity) do
           begin
-            tempDensity := pdens^;
-            Inc(pdens);
-            c := ScanNextPixelProc();
-            if tempDensity <> 0 then
-              {$ifdef PARAM_LINEARANTIALIASING}
-              FastBlendPixelInline
-              {$else}
-              DrawPixelInlineWithAlphaCheck{$endif}(pdest, BGRA(c.red, c.green, c.blue,
-              {$ifdef PARAM_ANTIALIASINGFACTOR}DivByAntialiasPrecision256{$endif}
-              (c.alpha * tempDensity
-              {$ifdef PARAM_ANTIALIASINGFACTOR} ) {$else} +128) shr 8 {$endif}
-              ));
-            Inc(pdest);
+            inc(xb);
+            inc(pDens);
+            inc(drawCount);
           end;
-        end;
-
-      end else
-      if EraseMode then //erase with alpha
-      begin
-        for xb := densMinX to densMaxX do
-        begin
-          tempDensity := pdens^;
-          Inc(pdens);
-          if tempDensity <> 0 then
-            ErasePixelInline(pdest,
-            {$ifdef PARAM_ANTIALIASINGFACTOR}DivByAntialiasPrecision256{$endif}
-            (c.alpha * tempDensity
-            {$ifdef PARAM_ANTIALIASINGFACTOR} ) {$else} +128) shr 8 {$endif}
-            );
-          Inc(pdest);
-        end;
-      end
-      else
-      begin  //solid color
-        for xb := densMinX to densMaxX do
-        begin
-          tempDensity := pdens^;
-          Inc(pdens);
-          if tempDensity <> 0 then
+          if tempDensity = 0 then
+            brush.PutNextPixels(@ctx, 0, drawCount )
+          else
           begin
-            c2.alpha :=
-              {$ifdef PARAM_ANTIALIASINGFACTOR}DivByAntialiasPrecision256{$endif}
-              (c.alpha * tempDensity
-              {$ifdef PARAM_ANTIALIASINGFACTOR} ) {$else} +128) shr 8 {$endif}
-              ;
-            {$ifdef PARAM_LINEARANTIALIASING}
-            FastBlendPixelInline(pdest, c2);
-            {$else}
-            DrawPixelInlineExpandedOrNotWithAlphaCheck(pdest, ec, c2);
-            {$endif}
+            dec(tempDensity);
+            brush.PutNextPixels(@ctx, (tempDensity shl (8{$ifdef PARAM_ANTIALIASINGFACTOR}-AntialiasPrecisionShift{$endif}))
+                              + (tempDensity{$ifdef PARAM_ANTIALIASINGFACTOR} shr (2*AntialiasPrecisionShift){$endif}), drawCount );
           end;
-          Inc(pdest);
         end;
       end;
     end;
   end
   
 {$undef PARAM_ANTIALIASINGFACTOR}
-{$undef PARAM_LINEARANTIALIASING}
 {$ENDIF}

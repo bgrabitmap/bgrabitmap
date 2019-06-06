@@ -373,62 +373,15 @@ type
     {** Replace alpha values in a vertical line at column ''x'' and at row ''y'' to ''y2'' }
     procedure AlphaVertLine(x, y, y2: int32or64; alpha: byte); override;
 
-    {==== Drawing lines and polylines (floating point coordinates) ====}
-    {* These functions use the current pen style/cap/join. The parameter ''w''
-       specifies the width of the line and the base unit for dashes.
-       See [[BGRABitmap tutorial 13|coordinate system]]. }
-
-    {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join }
-    procedure DrawLineAntialias(x1, y1, x2, y2: single; c: TBGRAPixel; w: single); overload; override;
-    {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join.
-        ''texture'' specifies the source color to use when filling the line }
-    procedure DrawLineAntialias(x1, y1, x2, y2: single; texture: IBGRAScanner; w: single); overload; override;
-    {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join.
-        ''Closed'' specifies if the end of the line is closed. If it is not closed,
-        a space is left so that the next line can fit }
-    procedure DrawLineAntialias(x1, y1, x2, y2: single; c: TBGRAPixel; w: single; ClosedCap: boolean); overload; override;
-    {** Same as above with ''texture'' specifying the source color to use when filling the line }
-    procedure DrawLineAntialias(x1, y1, x2, y2: single; texture: IBGRAScanner; w: single; ClosedCap: boolean); overload; override;
-
-    {** Draws a polyline using current pen style/cap/join }
-    procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single); overload; override;
-    {** Draws a polyline using current pen style/cap/join.
-        ''texture'' specifies the source color to use when filling the line }
-    procedure DrawPolyLineAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single); overload; override;
-    {** Draws a polyline using current pen style/cap/join.
-        ''Closed'' specifies if the end of the line is closed. If it is not closed,
-        a space is left so that the next line can fit }
-    procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; ClosedCap: boolean); overload; override;
-    procedure DrawPolyLineAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single; ClosedCap: boolean); overload; override;
-    {** Draws a polyline using current pen style/cap/join.
+    {** Draws and fill a polyline using current pen style/cap/join in one go.
+        The stroke is stricly over the fill even if partially transparent.
         ''fillcolor'' specifies a color to fill the polygon formed by the points }
     procedure DrawPolyLineAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; override;
-    {** Draws a polyline using current pen style/cap/join.
-        The last point considered as a join with the first point if it has
-        the same coordinate }
-    procedure DrawPolyLineAntialiasAutocycle(const points: array of TPointF; c: TBGRAPixel; w: single); override;
-    procedure DrawPolyLineAntialiasAutocycle(const points: array of TPointF; texture: IBGRAScanner; w: single); override;
-    {** Draws a polygon using current pen style/cap/join.
-        The polygon is always closed. You don't need to set the last point
-        to be the same as the first point }
-    procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single); overload; override;
-    {** Draws a polygon using current pen style/cap/join.
-        The polygon is always closed. You don't need to set the last point
-        to be the same as the first point }
-    procedure DrawPolygonAntialias(const points: array of TPointF; texture: IBGRAScanner; w: single); overload; override;
-    {** Draws a filled polygon using current pen style/cap/join.
+    {** Draws a filled polygon using current pen style/cap/join in one go.
+        The stroke is stricly over the fill even if partially transparent.
         The polygon is always closed. You don't need to set the last point
         to be the same as the first point. }
     procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; override;
-
-    {** Erases a line from (x1,y1) to (x2,y2) using current pen style/cap/join }
-    procedure EraseLineAntialias(x1, y1, x2, y2: single; alpha: byte; w: single); override;
-    {** Erases a line from (x1,y1) to (x2,y2) using current pen style/cap/join.
-        ''Closed'' specifies if the end of the line is closed. If it is not closed,
-        a space is left so that the next line can fit }
-    procedure EraseLineAntialias(x1, y1, x2, y2: single; alpha: byte; w: single; Closed: boolean); override;
-    {** Erases a polyline using current pen style/cap/join }
-    procedure ErasePolyLineAntialias(const points: array of TPointF; alpha: byte; w: single); override;
 
     {** Fills completely a rectangle, without any border, with the specified ''texture'' and
         with the specified ''mode'' }
@@ -511,10 +464,6 @@ type
     procedure EraseEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; alpha: byte); overload; override;
 
     {==== Polygons and path ====}
-    procedure FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel; APixelCenteredCoordinates: boolean = true); overload; override;
-    procedure FillPolyAntialias(const points: array of TPointF; texture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; override;
-    procedure ErasePolyAntialias(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean = true); override;
-
     procedure FillTriangleLinearColor(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); override;
     procedure FillTriangleLinearColorAntialias(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); override;
     procedure FillTriangleLinearMapping(pt1,pt2,pt3: TPointF; texture: IBGRAScanner; tex1, tex2, tex3: TPointF; TextureInterpolation: Boolean= True); override;
@@ -547,21 +496,11 @@ type
     procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
     procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
     procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single); overload; override;
-    procedure FillPath(APath: IBGRAPath; AFillColor: TBGRAPixel); overload; override;
-    procedure FillPath(APath: IBGRAPath; AFillTexture: IBGRAScanner); overload; override;
-    procedure ErasePath(APath: IBGRAPath; alpha: byte); overload; override;
 
     procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); overload; override;
     procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
     procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
     procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single); overload; override;
-    procedure FillPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AFillColor: TBGRAPixel); overload; override;
-    procedure FillPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AFillTexture: IBGRAScanner); overload; override;
-    procedure ErasePath(APath: IBGRAPath; AMatrix: TAffineMatrix; alpha: byte); overload; override;
 
     procedure ArrowStartAsNone; override;
     procedure ArrowStartAsClassic(AFlipped: boolean = false; ACut: boolean = false; ARelativePenWidth: single = 1); override;
@@ -681,7 +620,6 @@ type
     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
 
     procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
-
     procedure BlendImage(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation); override;
     procedure BlendImageOver(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte = 255;
         ALinearBlend: boolean = false); override;
@@ -2137,55 +2075,6 @@ end;
 {---------------------------- Lines ---------------------------------}
 { Call appropriate functions }
 
-procedure TBGRADefaultBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
-  c: TBGRAPixel; w: single);
-begin
-  FillPolyAntialias( Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],w,c), c);
-end;
-
-procedure TBGRADefaultBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
-  texture: IBGRAScanner; w: single);
-begin
-  FillPolyAntialias( Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],w), texture);
-end;
-
-procedure TBGRADefaultBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
-  c: TBGRAPixel; w: single; ClosedCap: boolean);
-begin
-  FillPolyAntialias( Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],w,c,ClosedCap), c);
-end;
-
-procedure TBGRADefaultBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
-  texture: IBGRAScanner; w: single; ClosedCap: boolean);
-begin
-  FillPolyAntialias( Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],w,ClosedCap), texture);
-end;
-
-procedure TBGRADefaultBitmap.DrawPolyLineAntialias(const points: array of TPointF;
-  c: TBGRAPixel; w: single);
-begin
-  FillPolyAntialias( Pen.ComputePolyline(points,w,c), c);
-end;
-
-procedure TBGRADefaultBitmap.DrawPolyLineAntialias(
-  const points: array of TPointF; texture: IBGRAScanner; w: single);
-begin
-  FillPolyAntialias( Pen.ComputePolyline(points,w), texture);
-end;
-
-procedure TBGRADefaultBitmap.DrawPolyLineAntialias(const points: array of TPointF;
-  c: TBGRAPixel; w: single; ClosedCap: boolean);
-begin
-  FillPolyAntialias( Pen.ComputePolyline(points,w,c,ClosedCap), c);
-end;
-
-procedure TBGRADefaultBitmap.DrawPolyLineAntialias(
-  const points: array of TPointF; texture: IBGRAScanner; w: single;
-  ClosedCap: boolean);
-begin
-  FillPolyAntialias( Pen.ComputePolyline(points,w,ClosedCap), texture);
-end;
-
 procedure TBGRADefaultBitmap.DrawPolyLineAntialias(
   const points: array of TPointF; c: TBGRAPixel; w: single;
   fillcolor: TBGRAPixel);
@@ -2202,30 +2091,6 @@ begin
   multi.Free;
 end;
 
-procedure TBGRADefaultBitmap.DrawPolyLineAntialiasAutocycle(
-  const points: array of TPointF; c: TBGRAPixel; w: single);
-begin
-  FillPolyAntialias( Pen.ComputePolylineAutocycle(points,w), c);
-end;
-
-procedure TBGRADefaultBitmap.DrawPolyLineAntialiasAutocycle(
-  const points: array of TPointF; texture: IBGRAScanner; w: single);
-begin
-  FillPolyAntialias( Pen.ComputePolylineAutocycle(points,w), texture);
-end;
-
-procedure TBGRADefaultBitmap.DrawPolygonAntialias(const points: array of TPointF;
-  c: TBGRAPixel; w: single);
-begin
-  FillPolyAntialias( Pen.ComputePolygon(points,w), c);
-end;
-
-procedure TBGRADefaultBitmap.DrawPolygonAntialias(
-  const points: array of TPointF; texture: IBGRAScanner; w: single);
-begin
-  FillPolyAntialias( Pen.ComputePolygon(points,w), texture);
-end;
-
 procedure TBGRADefaultBitmap.DrawPolygonAntialias(
   const points: array of TPointF; c: TBGRAPixel; w: single;
   fillcolor: TBGRAPixel);
@@ -2240,37 +2105,6 @@ begin
   else
     multi.Draw(self,dmDrawWithTransparency);
   multi.Free;
-end;
-
-procedure TBGRADefaultBitmap.EraseLineAntialias(x1, y1, x2, y2: single;
-  alpha: byte; w: single; Closed: boolean);
-begin
-  FEraseMode := True;
-  DrawLineAntialias(x1, y1, x2, y2, BGRA(0, 0, 0, alpha), w, Closed);
-  FEraseMode := False;
-end;
-
-procedure TBGRADefaultBitmap.ErasePolyLineAntialias(const points: array of TPointF;
-  alpha: byte; w: single);
-begin
-  FEraseMode := True;
-  DrawPolyLineAntialias(points, BGRA(0,0,0,alpha),w);
-  FEraseMode := False;
-end;
-
-procedure TBGRADefaultBitmap.FillPath(APath: IBGRAPath; AFillColor: TBGRAPixel);
-begin
-  FillPolyAntialias(APath.getPoints,AFillColor);
-end;
-
-procedure TBGRADefaultBitmap.FillPath(APath: IBGRAPath; AFillTexture: IBGRAScanner);
-begin
-  FillPolyAntialias(APath.getPoints,AFillTexture);
-end;
-
-procedure TBGRADefaultBitmap.ErasePath(APath: IBGRAPath; alpha: byte);
-begin
-  ErasePolyAntialias(APath.getPoints,alpha);
 end;
 
 procedure TBGRADefaultBitmap.DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix;
@@ -2336,42 +2170,6 @@ begin
   multi.Draw(self);
   multi.Free;
   tempPath.Free;
-end;
-
-procedure TBGRADefaultBitmap.DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix;
-  AStrokeColor: TBGRAPixel; AWidth: single);
-var tempPath: TBGRAPath;
-begin
-  tempPath := TBGRAPath.Create(APath);
-  tempPath.stroke(self, AMatrix, AStrokeColor, AWidth);
-  tempPath.Free;
-end;
-
-procedure TBGRADefaultBitmap.DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix;
-  AStrokeTexture: IBGRAScanner; AWidth: single);
-var tempPath: TBGRAPath;
-begin
-  tempPath := TBGRAPath.Create(APath);
-  tempPath.stroke(self, AMatrix, AStrokeTexture, AWidth);
-  tempPath.Free;
-end;
-
-procedure TBGRADefaultBitmap.FillPath(APath: IBGRAPath; AMatrix: TAffineMatrix;
-  AFillColor: TBGRAPixel);
-begin
-  FillPolyAntialias(APath.getPoints(AMatrix),AFillColor);
-end;
-
-procedure TBGRADefaultBitmap.FillPath(APath: IBGRAPath; AMatrix: TAffineMatrix;
-  AFillTexture: IBGRAScanner);
-begin
-  FillPolyAntialias(APath.getPoints(AMatrix),AFillTexture);
-end;
-
-procedure TBGRADefaultBitmap.ErasePath(APath: IBGRAPath;
-  AMatrix: TAffineMatrix; alpha: byte);
-begin
-  ErasePolyAntialias(APath.getPoints(AMatrix),alpha);
 end;
 
 procedure TBGRADefaultBitmap.ArrowStartAsNone;
@@ -2668,32 +2466,6 @@ begin
   PolygonPerspectiveTextureMappingAliasedWithLightness(self,points,pointsZ,texture,texCoords,TextureInterpolation,lightnesses, FillMode = fmWinding, zbuffer);
 end;
 
-procedure TBGRADefaultBitmap.EraseLineAntialias(x1, y1, x2, y2: single;
-  alpha: byte; w: single);
-begin
-  FEraseMode := True;
-  DrawLineAntialias(x1,y1,x2,y2, BGRA(0,0,0,alpha),w);
-  FEraseMode := False;
-end;
-
-procedure TBGRADefaultBitmap.FillPolyAntialias(const points: array of TPointF; c: TBGRAPixel; APixelCenteredCoordinates: boolean);
-begin
-  BGRAPolygon.FillPolyAntialias(self, points, c, FEraseMode, FillMode = fmWinding, LinearAntialiasing, APixelCenteredCoordinates);
-end;
-
-procedure TBGRADefaultBitmap.FillPolyAntialias(const points: array of TPointF;
-  texture: IBGRAScanner; APixelCenteredCoordinates: boolean);
-begin
-  BGRAPolygon.FillPolyAntialiasWithTexture(self, points, texture, FillMode = fmWinding, LinearAntialiasing, APixelCenteredCoordinates);
-end;
-
-procedure TBGRADefaultBitmap.ErasePolyAntialias(const points: array of TPointF; alpha: byte; APixelCenteredCoordinates: boolean);
-begin
-  FEraseMode := True;
-  FillPolyAntialias(points, BGRA(0, 0, 0, alpha), APixelCenteredCoordinates);
-  FEraseMode := False;
-end;
-
 procedure TBGRADefaultBitmap.FillShapeAntialias(shape: TBGRACustomFillInfo;
   c: TBGRAPixel);
 begin
@@ -2736,16 +2508,6 @@ procedure TBGRADefaultBitmap.DrawPath(APath: IBGRAPath;
   AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner);
 begin
   DrawPath(APath,AffineMatrixIdentity,AStrokeTexture,AWidth,AFillTexture);
-end;
-
-procedure TBGRADefaultBitmap.DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single);
-begin
-  DrawPath(APath, AffineMatrixIdentity, AStrokeColor, AWidth);
-end;
-
-procedure TBGRADefaultBitmap.DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single);
-begin
-  DrawPath(APath, AffineMatrixIdentity, AStrokeTexture, AWidth);
 end;
 
 procedure TBGRADefaultBitmap.EllipseAntialias(x, y, rx, ry: single;

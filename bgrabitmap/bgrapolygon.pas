@@ -36,6 +36,10 @@ uses
 
 procedure FillShapeAntialias(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
   c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
+procedure FillShapeAntialias(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
+  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode);
+procedure FillShapeAntialias(bmp: TCustomUniversalBitmap; shapeInfo: TBGRACustomFillInfo;
+  brush: TUniversalBrush; NonZeroWinding: boolean);
 procedure FillShapeAntialiasWithTexture(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
   scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
 
@@ -112,14 +116,17 @@ type
 
 procedure FillPolyAliased(bmp: TBGRACustomBitmap; points: array of TPointF;
   c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true);
-procedure FillPolyAliasedWithTexture(bmp: TBGRACustomBitmap; points: array of TPointF;
+procedure FillPolyAliasedWithTexture(bmp: TBGRACustomBitmap; const points: array of TPointF;
   scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true);
-procedure FillPolyAliased(bmp: TCustomUniversalBitmap; points: array of TPointF;
+procedure FillPolyAliased(bmp: TCustomUniversalBitmap; const points: array of TPointF;
   brush: TUniversalBrush; Alpha: Word; NonZeroWinding: boolean; APixelCenteredCoordinates: boolean = true);
+
 procedure FillPolyAntialias(bmp: TBGRACustomBitmap; points: array of TPointF;
   c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
-procedure FillPolyAntialiasWithTexture(bmp: TBGRACustomBitmap; points: array of TPointF;
+procedure FillPolyAntialiasWithTexture(bmp: TBGRACustomBitmap; const points: array of TPointF;
   scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
+procedure FillPolyAntialias(bmp: TCustomUniversalBitmap; const points: array of TPointF;
+  brush: TUniversalBrush; NonZeroWinding: boolean; APixelCenteredCoordinates: boolean = true);
 
 procedure FillEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry: single;
   c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false);
@@ -162,384 +169,13 @@ type
   end;
 
 procedure FillShapeAntialias(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
-  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean);
-const oneOver512 = 1/512;
+  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
 var
-  inter:   array of TIntersectionInfo;
-  nbInter: integer;
-
-  firstScan, lastScan: record
-    inter:   array of TIntersectionInfo;
-    nbInter: integer;
-    sliceIndex: integer;
-  end;
-
-  miny, maxy, minx, maxx,
-  densMinX, densMaxX: integer;
-  joinDensity, nextJoinDensity: boolean;
-
-  density: PDensity;
-
-  xb, yb, yc, i: integer;
-  tempDensity: UInt32or64;
-
-  x1, x2, x1b,x2b: single;
-  ix1, ix2: integer;
-  pdest:    PBGRAPixel;
-  pdens:    PDensity;
-
-  curvedSeg,optimised: boolean;
-  ec: TExpandedPixel;
-  c2:TBGRAPixel;
-  MemScanCopy,pscan: pbgrapixel;
-  ScanNextPixelProc: TScanNextPixelFunction;
-  temp: Single;
-
-  function GetYScan(num: integer): single; inline;
-  begin
-    result := yb + (num * 2 + 1) / (AntialiasPrecision * 2);
-  end;
-
-  procedure SubTriangleDensity(x1,density1, x2, density2: single);
-  var ix1,ix2,n: integer;
-      slope: single;
-    function densityAt(x: single): single; inline;
-    begin
-      result := (x-x1)*slope+density1;
-    end;
-  var
-      curdens: single;
-      pdens: pdensity;
-      newvalue: Int32or64;
-  begin
-    if (x1 <> x2) and (x1 < maxx + 1) and (x2 >= minx) then
-    begin
-      slope := (density2-density1)/(x2-x1);
-      if x1 < minx then
-      begin
-        density1 := densityAt(minx);
-        x1 := minx;
-      end;
-      if x2 >= maxx + 1 then
-      begin
-        density2 := densityAt(maxx+1);
-        x2 := maxx + 1;
-      end;
-      ix1  := floor(x1);
-      ix2  := floor(x2);
-
-      if ix1 = ix2 then
-      begin
-        newValue := (density + (ix1 - minx))^ - round((x2 - x1)*(density1+density2)/2);
-        if newValue < 0 then newValue := 0;
-        if newValue > 256 then newValue := 256;
-        (density + (ix1 - minx))^ := newValue
-      end
-      else
-      begin
-        newValue := (density + (ix1 - minx))^ - round((1 - (x1 - ix1))*(density1+densityAt(ix1+1))/2) ;
-        if newValue < 0 then newValue := 0;
-        if newValue > 256 then newValue := 256;
-        (density + (ix1 - minx))^ := newValue;
-        if (ix2 <= maxx) then
-        begin
-          newValue := (density + (ix2 - minx))^ - round((x2 - ix2)*(density2+densityAt(ix2))/2);
-          if newValue < 0 then newValue := 0;
-          if newValue > 256 then newValue := 256;
-          (density + (ix2 - minx))^ := newValue;
-        end;
-      end;
-      if ix2 > ix1 + 1 then
-      begin
-        curdens := densityAt(ix1+1.5);
-        pdens := density + (ix1+1 - minx);
-        for n := ix2-1-(ix1+1) downto 0 do
-        begin
-          newValue := pdens^ - round(curdens);
-          if newValue < 0 then newValue := 0;
-          if newValue > 256 then newValue := 256;
-          pdens^ := newValue;
-          curdens += slope;
-          inc(pdens);
-        end;
-      end;
-    end;
-  end;
-
+  drawMode: TDrawMode;
 begin
-  if (scan=nil) and (c.alpha=0) then exit;
-  If not BGRAShapeComputeMinMax(shapeInfo,minx,miny,maxx,maxy,bmp) then exit;
-
-  inter := shapeInfo.CreateIntersectionArray;
-  getmem(density, (maxx - minx + 2)*sizeof(TDensity)); //more for safety
-  ec := GammaExpansion(c);
-  c2 := c;
-
-  MemScanCopy := nil;
-  ScanNextPixelProc := nil;
-  if scan <> nil then
-  begin
-    if scan.IsScanPutPixelsDefined then
-      GetMem(MemScanCopy,(maxx-minx+1)*sizeof(TBGRAPixel));
-    ScanNextPixelProc := @scan.ScanNextPixel;
-  end;
-
-  curvedSeg := shapeInfo.SegmentsCurved;
-  if not curvedSeg then
-  begin
-    firstScan.inter := shapeInfo.CreateIntersectionArray;
-    lastScan.inter := shapeInfo.CreateIntersectionArray;
-  end;
-
-  //vertical scan
-  for yb := miny to maxy do
-  begin
-    //mean density
-    fillchar(density^,(maxx-minx+1)*sizeof(TDensity),0);
-
-    densMinX := maxx+1;
-    densMaxX := minx-1;
-
-    if not curvedSeg then
-    begin
-      with firstScan do
-      begin
-        shapeInfo.ComputeAndSort(yb+1/256,inter,nbInter,NonZeroWinding);
-        sliceIndex:= shapeInfo.GetSliceIndex;
-      end;
-      with lastScan do
-      begin
-        shapeInfo.ComputeAndSort(yb+255/256,inter,nbInter,NonZeroWinding);
-        sliceIndex:= shapeInfo.GetSliceIndex;
-      end;
-      if (firstScan.sliceIndex = lastScan.sliceIndex) and (firstScan.nbInter = lastScan.nbInter) then
-      begin
-        optimised := true;
-        for i := 0 to firstScan.nbInter-1 do
-          if firstScan.inter[i].numSegment <> lastScan.inter[i].numSegment then
-          begin
-            optimised := false;
-            break;
-          end;
-      end else
-        optimised := false;
-
-      if optimised then
-      begin
-        nextJoinDensity := false;
-        for i := 0 to firstScan.nbinter div 2 - 1 do
-        begin
-          joinDensity := nextJoinDensity;
-          x1 := firstScan.inter[i+i].interX;
-          x1b := lastScan.inter[i+i].interX;
-          x2 := firstScan.inter[i+i+1].interX;
-          x2b := lastScan.inter[i+i+1].interX;
-          nextJoinDensity := not ((i+i+2 >= firstScan.nbInter) or
-              ((firstScan.inter[i+i+2].interX >= x2+1) and
-               (lastScan.inter[i+i+2].interX >= x2b+1)));
-          if (abs(x1-x1b)<oneOver512) and (abs(x2-x2b)<oneOver512) and
-              not joinDensity and not nextJoinDensity then
-          begin
-            x1 := (x1+x1b)*0.5;
-            x2 := (x2+x2b)*0.5;
-
-            if x1 < minx then x1 := minx;
-            ix1 := floor(x1);
-
-            if x2 >= maxx+1 then
-            begin
-              x2 := maxx+1;
-              ix2 := maxx;
-            end else
-              ix2 := floor(x2);
-            if ix2 > maxx then ix2 := maxx;
-
-            if ix1>ix2 then continue;
-            if ix1=ix2 then
-            begin
-              tempDensity:= round((x2-x1)*256);
-              if scan <> nil then //with texture scan
-              begin
-                scan.ScanMoveTo(ix1,yb);
-                c := scan.ScanNextPixel;
-                c.alpha := c.alpha*tempDensity shr 8;
-                if linearBlend then
-                  bmp.DrawPixel(ix1, yb, c, dmLinearBlend)
-                else
-                  bmp.DrawPixel(ix1, yb, c, dmDrawWithTransparency);
-              end else
-              if EraseMode then //erase with alpha
-                bmp.ErasePixel(ix1,yb,c.alpha*tempDensity shr 8)
-              else
-              begin  //solid color
-                c2.alpha := c.alpha*tempDensity shr 8;
-                if linearBlend then
-                  bmp.DrawPixel(ix1, yb, c2, dmLinearBlend)
-                else
-                  bmp.DrawPixel(ix1, yb, c2, dmDrawWithTransparency);
-              end;
-            end else
-            begin
-              tempDensity:= round((ix1+1-x1)*256);
-              if scan <> nil then scan.ScanMoveTo(ix1,yb);
-              if tempDensity < 256 then
-              begin
-                if scan <> nil then //with texture scan
-                begin
-                  c := scan.ScanNextPixel;
-                  c.alpha := c.alpha*tempDensity shr 8;
-                  if linearBlend then
-                    bmp.DrawPixel(ix1, yb, c, dmLinearBlend)
-                  else
-                    bmp.DrawPixel(ix1, yb, c, dmDrawWithTransparency);
-                end else
-                if EraseMode then //erase with alpha
-                  bmp.ErasePixel(ix1,yb, c.alpha*tempDensity shr 8)
-                else
-                begin  //solid color
-                  c2.alpha := c.alpha*tempDensity shr 8;
-                  if linearBlend then
-                    bmp.DrawPixel(ix1, yb, c2, dmLinearBlend)
-                  else
-                    bmp.DrawPixel(ix1, yb, c2, dmDrawWithTransparency);
-                end;
-                inc(ix1);
-              end;
-              tempDensity:= round((x2-ix2)*256);
-              if tempDensity < 256 then dec(ix2);
-              if ix2 >= ix1 then
-              begin
-                if scan <> nil then //with texture scan
-                begin
-                  if linearBlend then
-                    ScannerPutPixels(scan, bmp.ScanLine[yb] + ix1, ix2-ix1+1, dmLinearBlend)
-                  else
-                    ScannerPutPixels(scan, bmp.ScanLine[yb] + ix1, ix2-ix1+1, dmDrawWithTransparency);
-                end else
-                if EraseMode then //erase with alpha
-                  bmp.EraseLine(ix1,yb,ix2,yb,c.alpha,True)
-                else
-                begin  //solid color
-                  if LinearBlend then
-                    bmp.HorizLine(ix1,yb,ix2,c,dmLinearBlend)
-                  else
-                    bmp.HorizLine(ix1,yb,ix2,c,dmDrawWithTransparency);
-                end;
-              end;
-              if tempDensity < 256 then
-              begin
-                inc(ix2);
-                if scan <> nil then //with texture scan
-                begin
-                  c := scan.ScanNextPixel;
-                  c.alpha := c.alpha*tempDensity shr 8;
-                  if linearBlend then
-                    bmp.DrawPixel(ix2, yb, c, dmLinearBlend)
-                  else
-                    bmp.DrawPixel(ix2, yb, c, dmDrawWithTransparency);
-                end else
-                if EraseMode then //erase with alpha
-                  bmp.ErasePixel(ix2,yb,c.alpha*tempDensity shr 8)
-                else
-                begin  //solid color
-                  c2.alpha := c.alpha*tempDensity shr 8;
-                  if linearBlend then
-                    bmp.DrawPixel(ix2, yb, c2, dmLinearBlend)
-                  else
-                    bmp.DrawPixel(ix2, yb, c2, dmDrawWithTransparency);
-                end;
-              end;
-            end;
-            continue;
-          end else
-          begin
-            if (x1 > x1b) then
-            begin
-              temp := x1;
-              x1 := x1b;
-              x1b := temp;
-            end;
-            if (x2 < x2b) then
-            begin
-              temp := x2;
-              x2 := x2b;
-              x2b := temp;
-            end;
-
-  	    {$DEFINE INCLUDE_FILLDENSITY}
-  	    {$DEFINE PARAM_SINGLESEGMENT}
-            {$i density256.inc}
-            SubTriangleDensity(x1,256,x1b,0);
-            SubTriangleDensity(x2b,0,x2,256);
-          end;
-        end;
-      end else
-      begin
-        for yc := 0 to AntialiasPrecision - 1 do
-        begin
-          //find intersections
-          shapeInfo.ComputeAndSort(GetYScan(yc),inter,nbInter,NonZeroWinding);
-
-	  {$DEFINE INCLUDE_FILLDENSITY}
-          {$i density256.inc}
-        end;
-      end;
-    end else
-    begin
-      optimised := false;
-      //precision scan
-      for yc := 0 to AntialiasPrecision - 1 do
-      begin
-        //find intersections
-        shapeInfo.ComputeAndSort(GetYScan(yc),inter,nbInter,NonZeroWinding);
-
-	{$DEFINE INCLUDE_FILLDENSITY}
-        {$i density256.inc}
-      end;
-    end;
-
-    if LinearBlend then
-    begin
-      if optimised then
-	{$DEFINE INCLUDE_RENDERDENSITY}
-        {$define PARAM_LINEARANTIALIASING}
-        {$i density256.inc}
-      else
-	{$DEFINE INCLUDE_RENDERDENSITY}
-        {$define PARAM_LINEARANTIALIASING}
-        {$define PARAM_ANTIALIASINGFACTOR}
-        {$i density256.inc}
-    end else
-    begin
-      if optimised then
-        {$DEFINE INCLUDE_RENDERDENSITY}
-        {$i density256.inc}
-      else
-        {$DEFINE INCLUDE_RENDERDENSITY}
-        {$define PARAM_ANTIALIASINGFACTOR}
-        {$i density256.inc}
-    end;
-  end;
-
-  freemem(MemScanCopy);
-  shapeInfo.FreeIntersectionArray(inter);
-
-  if not curvedSeg then
-  begin
-    with firstScan do
-    begin
-      for i := 0 to high(inter) do
-        inter[i].free;
-    end;
-    with lastScan do
-    begin
-      for i := 0 to high(inter) do
-        inter[i].free;
-    end;
-  end;
-  freemem(density);
-
-  bmp.InvalidateBitmap;
+  if LinearBlend then drawMode := dmLinearBlend else
+    drawMode := dmDrawWithTransparency;
+  FillShapeAntialias(bmp, shapeInfo, c, EraseMode, scan, NonZeroWinding, drawmode);
 end;
 
 procedure FillShapeAliased(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
@@ -620,6 +256,309 @@ begin
   bmp.InvalidateBitmap;
 end;
 
+procedure FillShapeAntialias(bmp: TBGRACustomBitmap;
+  shapeInfo: TBGRACustomFillInfo; c: TBGRAPixel; EraseMode: boolean;
+  scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode);
+var
+  bFill: TUniversalBrush;
+begin
+  if scan <> nil then
+    bmp.ScannerBrush(bFill, scan, drawmode)
+  else
+  begin
+    if EraseMode then
+    begin
+      if c.alpha = 0 then exit;
+      bmp.EraseBrush(bFill, c.alpha + (c.alpha shl 8));
+    end else
+    begin
+      bmp.SolidBrush(bFill, c, drawmode);
+      if ((drawmode in[dmLinearBlend,dmDrawWithTransparency]) and (c.alpha=0))
+          or ((drawmode = dmSetExceptTransparent) and (c.alpha<>255))
+          or ((drawmode = dmXor) and (PDWord(@c)^=0)) then exit;
+    end;
+  end;
+  FillShapeAntialias(bmp, shapeInfo, bFill,NonZeroWinding);
+end;
+
+procedure FillShapeAntialias(bmp: TCustomUniversalBitmap;
+  shapeInfo: TBGRACustomFillInfo; brush: TUniversalBrush;
+  NonZeroWinding: boolean);
+const oneOver512 = 1/512;
+var
+  inter:   array of TIntersectionInfo;
+  nbInter: integer;
+
+  firstScan, lastScan: record
+    inter:   array of TIntersectionInfo;
+    nbInter: integer;
+    sliceIndex: integer;
+  end;
+
+  miny, maxy, minx, maxx,
+  densMinX, densMaxX: integer;
+  joinDensity, nextJoinDensity: boolean;
+
+  density: PDensity;
+
+  xb, yb, yc, i: integer;
+  tempDensity: UInt32or64;
+
+  x1, x2, x1b,x2b: single;
+  ix1, ix2, drawCount: integer;
+  pdens:    PDensity;
+
+  curvedSeg,optimised: boolean;
+  temp: Single;
+  pDest: PByte;
+  ctx: TUniBrushContext;
+
+  function GetYScan(num: integer): single; inline;
+  begin
+    result := yb + (num * 2 + 1) / (AntialiasPrecision * 2);
+  end;
+
+  procedure SubTriangleDensity(x1,density1, x2, density2: single);
+  var ix1,ix2,n: integer;
+      slope: single;
+    function densityAt(x: single): single; inline;
+    begin
+      result := (x-x1)*slope+density1;
+    end;
+  var
+      curdens: single;
+      pdens: pdensity;
+      newvalue: Int32or64;
+  begin
+    if (x1 <> x2) and (x1 < maxx + 1) and (x2 >= minx) then
+    begin
+      slope := (density2-density1)/(x2-x1);
+      if x1 < minx then
+      begin
+        density1 := densityAt(minx);
+        x1 := minx;
+      end;
+      if x2 >= maxx + 1 then
+      begin
+        density2 := densityAt(maxx+1);
+        x2 := maxx + 1;
+      end;
+      ix1  := floor(x1);
+      ix2  := floor(x2);
+
+      if ix1 = ix2 then
+      begin
+        newValue := (density + (ix1 - minx))^ - round((x2 - x1)*(density1+density2)/2);
+        if newValue < 0 then newValue := 0;
+        if newValue > 256 then newValue := 256;
+        (density + (ix1 - minx))^ := newValue
+      end
+      else
+      begin
+        newValue := (density + (ix1 - minx))^ - round((1 - (x1 - ix1))*(density1+densityAt(ix1+1))/2) ;
+        if newValue < 0 then newValue := 0;
+        if newValue > 256 then newValue := 256;
+        (density + (ix1 - minx))^ := newValue;
+        if (ix2 <= maxx) then
+        begin
+          newValue := (density + (ix2 - minx))^ - round((x2 - ix2)*(density2+densityAt(ix2))/2);
+          if newValue < 0 then newValue := 0;
+          if newValue > 256 then newValue := 256;
+          (density + (ix2 - minx))^ := newValue;
+        end;
+      end;
+      if ix2 > ix1 + 1 then
+      begin
+        curdens := densityAt(ix1+1.5);
+        pdens := density + (ix1+1 - minx);
+        for n := ix2-1-(ix1+1) downto 0 do
+        begin
+          newValue := pdens^ - round(curdens);
+          if newValue < 0 then newValue := 0;
+          if newValue > 256 then newValue := 256;
+          pdens^ := newValue;
+          curdens += slope;
+          inc(pdens);
+        end;
+      end;
+    end;
+  end;
+
+begin
+  If not BGRAShapeComputeMinMax(shapeInfo,minx,miny,maxx,maxy,bmp.ClipRect) then exit;
+  bmp.LoadFromBitmapIfNeeded;
+
+  inter := shapeInfo.CreateIntersectionArray;
+  getmem(density, (maxx - minx + 2)*sizeof(TDensity)); //more for safety
+
+  curvedSeg := shapeInfo.SegmentsCurved;
+  if not curvedSeg then
+  begin
+    firstScan.inter := shapeInfo.CreateIntersectionArray;
+    lastScan.inter := shapeInfo.CreateIntersectionArray;
+  end;
+
+  //vertical scan
+  for yb := miny to maxy do
+  begin
+    //mean density
+    fillchar(density^,(maxx-minx+1)*sizeof(TDensity),0);
+
+    densMinX := maxx+1;
+    densMaxX := minx-1;
+
+    if not curvedSeg then
+    begin
+      with firstScan do
+      begin
+        shapeInfo.ComputeAndSort(yb+1/256,inter,nbInter,NonZeroWinding);
+        sliceIndex:= shapeInfo.GetSliceIndex;
+      end;
+      with lastScan do
+      begin
+        shapeInfo.ComputeAndSort(yb+255/256,inter,nbInter,NonZeroWinding);
+        sliceIndex:= shapeInfo.GetSliceIndex;
+      end;
+      if (firstScan.sliceIndex = lastScan.sliceIndex) and (firstScan.nbInter = lastScan.nbInter) then
+      begin
+        optimised := true;
+        for i := 0 to firstScan.nbInter-1 do
+          if firstScan.inter[i].numSegment <> lastScan.inter[i].numSegment then
+          begin
+            optimised := false;
+            break;
+          end;
+      end else
+        optimised := false;
+
+      if optimised then
+      begin
+        nextJoinDensity := false;
+        for i := 0 to firstScan.nbinter div 2 - 1 do
+        begin
+          joinDensity := nextJoinDensity;
+          x1 := firstScan.inter[i+i].interX;
+          x1b := lastScan.inter[i+i].interX;
+          x2 := firstScan.inter[i+i+1].interX;
+          x2b := lastScan.inter[i+i+1].interX;
+          nextJoinDensity := not ((i+i+2 >= firstScan.nbInter) or
+              ((firstScan.inter[i+i+2].interX >= x2+1) and
+               (lastScan.inter[i+i+2].interX >= x2b+1)));
+          if (abs(x1-x1b)<oneOver512) and (abs(x2-x2b)<oneOver512) and
+              not joinDensity and not nextJoinDensity then
+          begin
+            x1 := (x1+x1b)*0.5;
+            x2 := (x2+x2b)*0.5;
+
+            if x1 < minx then x1 := minx;
+            ix1 := floor(x1);
+
+            if x2 >= maxx+1 then
+            begin
+              x2 := maxx+1;
+              ix2 := maxx;
+            end else
+              ix2 := floor(x2);
+            if ix2 > maxx then ix2 := maxx;
+
+            if ix1>ix2 then continue;
+            pDest := bmp.GetPixelAddress(ix1,yb);
+            brush.MoveTo(@ctx,pDest,ix1,yb);
+            if ix1=ix2 then
+            begin
+              tempDensity:= round((x2-x1)*65535);
+              brush.PutNextPixels(@ctx,tempDensity,1);
+            end else
+            begin
+              tempDensity:= round((ix1+1-x1)*65535);
+              brush.PutNextPixels(@ctx,tempDensity,1);
+              inc(ix1);
+
+              tempDensity:= round((x2-ix2)*65535);
+              if tempDensity < 65535 then
+              begin
+                dec(ix2);
+                if ix2 >= ix1 then brush.PutNextPixels(@ctx,65535,ix2-ix1+1);
+              end else
+                brush.PutNextPixels(@ctx,65535,ix2-ix1+1);
+            end;
+            continue;
+          end else
+          begin
+            if (x1 > x1b) then
+            begin
+              temp := x1;
+              x1 := x1b;
+              x1b := temp;
+            end;
+            if (x2 < x2b) then
+            begin
+              temp := x2;
+              x2 := x2b;
+              x2b := temp;
+            end;
+
+  	    {$DEFINE INCLUDE_FILLDENSITY}
+  	    {$DEFINE PARAM_SINGLESEGMENT}
+            {$i density256.inc}
+            SubTriangleDensity(x1,256,x1b,0);
+            SubTriangleDensity(x2b,0,x2,256);
+          end;
+        end;
+      end else
+      begin
+        for yc := 0 to AntialiasPrecision - 1 do
+        begin
+          //find intersections
+          shapeInfo.ComputeAndSort(GetYScan(yc),inter,nbInter,NonZeroWinding);
+
+	  {$DEFINE INCLUDE_FILLDENSITY}
+          {$i density256.inc}
+        end;
+      end;
+    end else
+    begin
+      optimised := false;
+      //precision scan
+      for yc := 0 to AntialiasPrecision - 1 do
+      begin
+        //find intersections
+        shapeInfo.ComputeAndSort(GetYScan(yc),inter,nbInter,NonZeroWinding);
+
+	{$DEFINE INCLUDE_FILLDENSITY}
+        {$i density256.inc}
+      end;
+    end;
+
+    if optimised then
+      {$DEFINE INCLUDE_RENDERDENSITY}
+      {$i density256.inc}
+    else
+      {$DEFINE INCLUDE_RENDERDENSITY}
+      {$define PARAM_ANTIALIASINGFACTOR}
+      {$i density256.inc}
+  end;
+
+  shapeInfo.FreeIntersectionArray(inter);
+
+  if not curvedSeg then
+  begin
+    with firstScan do
+    begin
+      for i := 0 to high(inter) do
+        inter[i].free;
+    end;
+    with lastScan do
+    begin
+      for i := 0 to high(inter) do
+        inter[i].free;
+    end;
+  end;
+  freemem(density);
+
+  bmp.InvalidateBitmap;
+end;
+
 procedure FillShapeAntialiasWithTexture(bmp: TBGRACustomBitmap;
   shapeInfo: TBGRACustomFillInfo; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean);
 begin
@@ -640,7 +579,7 @@ begin
 end;
 
 procedure FillPolyAliasedWithTexture(bmp: TBGRACustomBitmap;
-  points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
+  const points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
 var
   info: TCustomFillPolyInfo;
 begin
@@ -653,7 +592,7 @@ begin
 end;
 
 procedure FillPolyAliased(bmp: TCustomUniversalBitmap;
-  points: array of TPointF; brush: TUniversalBrush; Alpha: Word;
+  const points: array of TPointF; brush: TUniversalBrush; Alpha: Word;
   NonZeroWinding: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TCustomFillPolyInfo;
@@ -680,7 +619,7 @@ begin
 end;
 
 procedure FillPolyAntialiasWithTexture(bmp: TBGRACustomBitmap;
-  points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
+  const points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TCustomFillPolyInfo;
 begin
@@ -689,6 +628,20 @@ begin
 
   info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
   FillShapeAntialiasWithTexture(bmp, info, scan, NonZeroWinding, LinearBlend);
+  info.Free;
+end;
+
+procedure FillPolyAntialias(bmp: TCustomUniversalBitmap;
+  const points: array of TPointF; brush: TUniversalBrush;
+  NonZeroWinding: boolean; APixelCenteredCoordinates: boolean);
+var
+  info: TCustomFillPolyInfo;
+begin
+  if length(points) < 3 then
+    exit;
+
+  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
+  FillShapeAntialias(bmp, info, brush, NonZeroWinding);
   info.Free;
 end;
 

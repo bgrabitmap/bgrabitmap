@@ -88,8 +88,34 @@ type
     procedure GetPixelIndirect(x,y: int32or64; AColor: pointer); override;
     procedure GetPixelCycleIndirect(x,y: int32or64; AColor: pointer); override;
     function GetPixelAddress(x, y: integer): PByte; override;
-    procedure HorizontalFlip(ARect: TRect); overload; override;
-    procedure RotateUDInplace(ARect: TRect); overload; override;
+
+    // using pen
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; const AColor: TPixel; APenWidth: single); overload; virtual;
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; const AColor: TPixel; APenWidth: single; AClosedCap: boolean); overload; virtual;
+
+    {** Draws a polyline using current pen style/cap/join }
+    procedure DrawPolyLineAntialias(const APoints: array of TPointF; const AColor: TPixel; APenWidth: single); overload; virtual;
+    {** Draws a polyline using current pen style/cap/join.
+        ''Closed'' specifies if the end of the line is roundly closed. If it is not closed,
+        a space is left so that the next line can fit }
+    procedure DrawPolyLineAntialias(const APoints: array of TPointF; const AColor: TPixel; APenWidth: single; AClosedCap: boolean); overload; virtual;
+    {** Draws a polyline using current pen style/cap/join.
+        The last point considered as a join with the first point if it has
+        the same coordinate }
+    procedure DrawPolyLineAntialiasAutocycle(const APoints: array of TPointF; const AColor: TPixel; APenWidth: single); overload; virtual;
+    {** Draws a polygon using current pen style/cap/join.
+        The polygon is always closed. You don't need to set the last point
+        to be the same as the first point }
+    procedure DrawPolygonAntialias(const APoints: array of TPointF; const AColor: TPixel; APenWidth: single); overload; virtual;
+
+    procedure DrawPath(APath: IBGRAPath; const AColor: TPixel; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure DrawPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const AColor: TPixel; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
+
+    // antialias fill
+    procedure FillPolyAntialias(const APoints: array of TPointF; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillPath(APath: IBGRAPath; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
+
   end;
 
 {$ENDIF}
@@ -802,14 +828,115 @@ begin
   result := FDataByte + FRowSize * y + IntPtr(x)*sizeof(TPixel);
 end;
 
-procedure TGenericUniversalBitmap.HorizontalFlip(ARect: TRect);
+procedure TGenericUniversalBitmap.FillPolyAntialias(
+  const APoints: array of TPointF; const AColor: TPixel;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
 begin
-  inherited HorizontalFlip(ARect);
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  FillPolyAntialias(APoints, b, APixelCenteredCoordinates);
 end;
 
-procedure TGenericUniversalBitmap.RotateUDInplace(ARect: TRect);
+procedure TGenericUniversalBitmap.FillPath(APath: IBGRAPath;
+  const AColor: TPixel; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
 begin
-  inherited RotateUDInplace(ARect);
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  FillPath(APath, b, APixelCenteredCoordinates);
+end;
+
+procedure TGenericUniversalBitmap.FillPath(APath: IBGRAPath;
+  const AMatrix: TAffineMatrix; const AColor: TPixel;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  FillPath(APath,AMatrix, b, APixelCenteredCoordinates);
+end;
+
+procedure TGenericUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
+  const AColor: TPixel; APenWidth: single);
+var
+  b: TUniversalBrush;
+  c: TBGRAPixel;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  c := AColor;
+  FillPolyAntialias(Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c), b);
+end;
+
+procedure TGenericUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
+  const AColor: TPixel; APenWidth: single; AClosedCap: boolean);
+var
+  b: TUniversalBrush;
+  c: TBGRAPixel;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  c := AColor;
+  FillPolyAntialias(Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c,AClosedCap), b);
+end;
+
+procedure TGenericUniversalBitmap.DrawPolyLineAntialias(
+  const APoints: array of TPointF; const AColor: TPixel; APenWidth: single);
+var
+  b: TUniversalBrush;
+  c: TBGRAPixel;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  c := AColor;
+  FillPolyAntialias(Pen.ComputePolyline(APoints,APenWidth,c),b);
+end;
+
+procedure TGenericUniversalBitmap.DrawPolyLineAntialias(
+  const APoints: array of TPointF; const AColor: TPixel; APenWidth: single;
+  AClosedCap: boolean);
+var
+  b: TUniversalBrush;
+  c: TBGRAPixel;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  c := AColor;
+  FillPolyAntialias(Pen.ComputePolyline(APoints,APenWidth,c,AClosedCap),b);
+end;
+
+procedure TGenericUniversalBitmap.DrawPolyLineAntialiasAutocycle(
+  const APoints: array of TPointF; const AColor: TPixel; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  DrawPolyLineAntialiasAutocycle(APoints, b, APenWidth);
+end;
+
+procedure TGenericUniversalBitmap.DrawPolygonAntialias(
+  const APoints: array of TPointF; const AColor: TPixel; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  DrawPolygonAntialias(APoints, b, APenWidth);
+end;
+
+procedure TGenericUniversalBitmap.DrawPath(APath: IBGRAPath;
+  const AColor: TPixel; AWidth: single; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  DrawPath(APath, AColor, AWidth, APixelCenteredCoordinates);
+end;
+
+procedure TGenericUniversalBitmap.DrawPath(APath: IBGRAPath;
+  const AMatrix: TAffineMatrix; const AColor: TPixel; AWidth: single;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  DrawPath(APath,AMatrix, AColor, AWidth, APixelCenteredCoordinates);
 end;
 
 {$ENDIF}

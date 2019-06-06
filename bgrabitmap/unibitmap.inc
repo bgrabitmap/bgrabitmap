@@ -51,6 +51,7 @@ type
   TPathCallbackData = record
     BrushAddress: PUniversalBrush;
     Alpha: Word;
+    Width: single;
     PixelCenteredCoords: boolean;
   end;
 
@@ -58,9 +59,9 @@ type
 
   TCustomUniversalBitmap = class(TFPCustomImage)
   private
-    procedure PathFillAliasedCallback(const APoints: array of TPointF;
-      AData: pointer);
     procedure PathStrokeAliasedCallback(const APoints: array of TPointF;
+      AClosed: boolean; AData: Pointer);
+    procedure PathStrokeAntialiasCallback(const APoints: array of TPointF;
       AClosed: boolean; AData: Pointer);
 
   protected
@@ -331,6 +332,8 @@ type
 
     procedure FillPathAliased(APath: IBGRAPath; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true; AAlpha: Word = 65535); overload;
     procedure FillPathAliased(APath: IBGRAPath; const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true; AAlpha: Word = 65535); overload;
+    procedure FillPathAliased(APath: IBGRAPath; ATexture: IBGRAScanner; AMode: TDrawMode; APixelCenteredCoordinates: boolean = true; AAlpha: Word = 65535); overload;
+    procedure FillPathAliased(APath: IBGRAPath; const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; AMode: TDrawMode; APixelCenteredCoordinates: boolean = true; AAlpha: Word = 65535); overload;
     procedure ErasePathAliased(APath: IBGRAPath; alpha: byte; APixelCenteredCoordinates: boolean = true); overload;
     procedure ErasePathAliased(APath: IBGRAPath; const AMatrix: TAffineMatrix; alpha: byte; APixelCenteredCoordinates: boolean = true); overload;
     procedure AlphaFillPathAliased(APath: IBGRAPath; alpha: byte; APixelCenteredCoordinates: boolean = true); overload;
@@ -421,7 +424,76 @@ type
      {** Properties of arrow }
      property Arrow: TBGRACustomArrow read GetArrow;
 
-    procedure DrawLineAntialias(x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word = 65535); overload; virtual;
+     {==== Drawing lines and polylines (floating point coordinates) ====}
+     {* These functions use the current pen style/cap/join. The parameter ''APenWidth''
+        specifies the width of the line and the base unit for dashes.
+        See [[BGRABitmap tutorial 13|coordinate system]]. }
+
+     {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join }
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single); overload; virtual;
+    {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join.
+        ''texture'' specifies the source color to use when filling the line }
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; ATexture: IBGRAScanner; APenWidth: single); overload; virtual;
+    {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join.
+        ''Closed'' specifies if the end of the line is roundly closed. If it is not closed,
+        a space is left so that the next line can fit }
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single; AClosedCap: boolean); overload; virtual;
+    {** Same as above with ''texture'' specifying the source color to use when filling the line }
+    procedure DrawLineAntialias(x1, y1, x2, y2: single; ATexture: IBGRAScanner; APenWidth: single; AClosedCap: boolean); overload; virtual;
+    {** Erases a line from (x1,y1) to (x2,y2) using current pen style/cap/join }
+    procedure EraseLineAntialias(x1, y1, x2, y2: single; AAlpha: Byte; APenWidth: single); overload; virtual;
+    {** Erases a line from (x1,y1) to (x2,y2) using current pen style/cap/join.
+        ''Closed'' specifies if the end of the line is roundly closed. If it is not closed,
+        a space is left so that the next line can fit }
+    procedure EraseLineAntialias(x1, y1, x2, y2: single; AAlpha: Byte; APenWidth: single; AClosedCap: boolean); overload; virtual;
+
+    {** Draws a polyline using current pen style/cap/join }
+    procedure DrawPolyLineAntialias(const APoints: array of TPointF; const ABrush: TUniversalBrush; APenWidth: single); overload; virtual;
+    {** Draws a polyline using current pen style/cap/join.
+        ''texture'' specifies the source color to use when filling the line }
+    procedure DrawPolyLineAntialias(const APoints: array of TPointF; ATexture: IBGRAScanner; APenWidth: single); overload; virtual;
+    {** Erases a polyline using current pen style/cap/join }
+    procedure ErasePolyLineAntialias(const APoints: array of TPointF; AAlpha: byte; APenWidth: single); overload; virtual;
+
+    {** Draws a polyline using current pen style/cap/join.
+        ''Closed'' specifies if the end of the line is roundly closed. If it is not closed,
+        a space is left so that the next line can fit }
+    procedure DrawPolyLineAntialias(const APoints: array of TPointF; const ABrush: TUniversalBrush; APenWidth: single; AClosedCap: boolean); overload; virtual;
+    procedure DrawPolyLineAntialias(const APoints: array of TPointF; ATexture: IBGRAScanner; APenWidth: single; AClosedCap: boolean); overload; virtual;
+    procedure ErasePolyLineAntialias(const APoints: array of TPointF; AAlpha: byte; APenWidth: single; AClosedCap: boolean); overload; virtual;
+
+    {** Draws a polyline using current pen style/cap/join.
+        The last point considered as a join with the first point if it has
+        the same coordinate }
+    procedure DrawPolyLineAntialiasAutocycle(const APoints: array of TPointF; const ABrush: TUniversalBrush; APenWidth: single); overload; virtual;
+    {** Draws a polygon using current pen style/cap/join. Use a texture to fill the line.
+        The polygon is always closed. You don't need to set the last point
+        to be the same as the first point }
+    procedure DrawPolyLineAntialiasAutocycle(const APoints: array of TPointF; ATexture: IBGRAScanner; APenWidth: single); overload; virtual;
+    procedure ErasePolyLineAntialiasAutocycle(const APoints: array of TPointF; AAlpha: byte; APenWidth: single); overload; virtual;
+
+    {** Draws a polygon using current pen style/cap/join.
+        The polygon is always closed. You don't need to set the last point
+        to be the same as the first point }
+    procedure DrawPolygonAntialias(const APoints: array of TPointF; const ABrush: TUniversalBrush; APenWidth: single); overload; virtual;
+    procedure DrawPolygonAntialias(const APoints: array of TPointF; ATexture: IBGRAScanner; APenWidth: single); overload; virtual;
+    procedure ErasePolygonAntialias(const APoints: array of TPointF; AAlpha: byte; APenWidth: single); overload; virtual;
+
+    procedure DrawPath(APath: IBGRAPath; const ABrush: TUniversalBrush; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure DrawPath(APath: IBGRAPath; ATexture: IBGRAScanner; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure DrawPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure DrawPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
+
+    //antialias fill
+    procedure FillPolyAntialias(const APoints: array of TPointF; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillPolyAntialias(const APoints: array of TPointF; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure ErasePolyAntialias(const APoints: array of TPointF; AAlpha: Byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillPath(APath: IBGRAPath; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillPath(APath: IBGRAPath; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure ErasePath(APath: IBGRAPath; AAlpha: Byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure ErasePath(APath: IBGRAPath; const AMatrix: TAffineMatrix; AAlpha: byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
 
   end;
 
@@ -437,13 +509,13 @@ type
         of the line, in order to draw a polyline with consistent dashes }
     class procedure DrawLineAntialias(ADest: TCustomUniversalBitmap; x1, y1, x2, y2: integer; const ABrush1, ABrush2: TUniversalBrush; ADashLen: integer; var DashPos: integer; DrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual; abstract;
 
-    class procedure DrawPolyLine(ADest: TCustomUniversalBitmap; const points: array of TPoint; const ABrush: TUniversalBrush; ADrawLastPixel: boolean; AAlpha: Word = 65535); virtual; abstract;
-    class procedure DrawPolyLineAntialias(ADest: TCustomUniversalBitmap; const points: array of TPoint; const ABrush: TUniversalBrush; DrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual; abstract;
-    class procedure DrawPolyLineAntialias(ADest: TCustomUniversalBitmap; const points: array of TPoint; const ABrush1, ABrush2: TUniversalBrush; ADashLen: integer; DrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual; abstract;
+    class procedure DrawPolyLine(ADest: TCustomUniversalBitmap; const APoints: array of TPoint; const ABrush: TUniversalBrush; ADrawLastPixel: boolean; AAlpha: Word = 65535); virtual; abstract;
+    class procedure DrawPolyLineAntialias(ADest: TCustomUniversalBitmap; const APoints: array of TPoint; const ABrush: TUniversalBrush; DrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual; abstract;
+    class procedure DrawPolyLineAntialias(ADest: TCustomUniversalBitmap; const APoints: array of TPoint; const ABrush1, ABrush2: TUniversalBrush; ADashLen: integer; DrawLastPixel: boolean; AAlpha: Word = 65535); overload; virtual; abstract;
 
-    class procedure DrawPolygon(ADest: TCustomUniversalBitmap; const points: array of TPoint; const ABrush: TUniversalBrush; AAlpha: Word = 65535); virtual; abstract;
-    class procedure DrawPolygonAntialias(ADest: TCustomUniversalBitmap; const points: array of TPoint; const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual; abstract;
-    class procedure DrawPolygonAntialias(ADest: TCustomUniversalBitmap; const points: array of TPoint; const ABrush1, ABrush2: TUniversalBrush; ADashLen: integer; AAlpha: Word = 65535); overload; virtual; abstract;
+    class procedure DrawPolygon(ADest: TCustomUniversalBitmap; const APoints: array of TPoint; const ABrush: TUniversalBrush; AAlpha: Word = 65535); virtual; abstract;
+    class procedure DrawPolygonAntialias(ADest: TCustomUniversalBitmap; const APoints: array of TPoint; const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual; abstract;
+    class procedure DrawPolygonAntialias(ADest: TCustomUniversalBitmap; const APoints: array of TPoint; const ABrush1, ABrush2: TUniversalBrush; ADashLen: integer; AAlpha: Word = 65535); overload; virtual; abstract;
 
     {** Draw the border of a rectangle }
     class procedure Rectangle(ADest: TCustomUniversalBitmap; x, y, x2, y2: integer; const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual; abstract;
@@ -461,7 +533,9 @@ type
     class function CreatePenStroker: TBGRACustomPenStroker; virtual; abstract;
     class function CreateArrow: TBGRACustomArrow; virtual; abstract;
 
-    class procedure DrawLineAntialias(ADest: TCustomUniversalBitmap; x1, y1, x2, y2: single; const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word = 65535); overload; virtual; abstract;
+    class procedure FillPolyAntialias(ADest: TCustomUniversalBitmap;
+                    const APoints: array of TPointF; AFillMode: TFillMode;
+                    ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean); virtual; abstract;
 
   end;
   TUniversalDrawerAny = class of TCustomUniversalDrawer;
@@ -767,13 +841,6 @@ begin
   result := FPenStroker;
 end;
 
-procedure TCustomUniversalBitmap.PathFillAliasedCallback(
-  const APoints: array of TPointF; AData: pointer);
-begin
-  with TPathCallbackData(AData^) do
-    UniDrawerClass.FillPoly(self, APoints, FillMode, BrushAddress^, PixelCenteredCoords, Alpha);
-end;
-
 procedure TCustomUniversalBitmap.PathStrokeAliasedCallback(
   const APoints: array of TPointF; AClosed: boolean; AData: Pointer);
 var pts: array of TPoint;
@@ -798,6 +865,12 @@ begin
   end;
 end;
 
+procedure TCustomUniversalBitmap.PathStrokeAntialiasCallback(
+  const APoints: array of TPointF; AClosed: boolean; AData: Pointer);
+begin
+  //todo
+end;
+
 procedure TCustomUniversalBitmap.SetAntialiasingDrawMode(AValue: TDrawMode);
 begin
   if FAntialiasingDrawMode=AValue then Exit;
@@ -820,11 +893,281 @@ begin
   end;
 end;
 
-procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
-  const ABrush: TUniversalBrush; APenWidth: single; AAlpha: Word);
+procedure TCustomUniversalBitmap.FillPolyAntialias(
+  const APoints: array of TPointF; const ABrush: TUniversalBrush;
+  APixelCenteredCoordinates: boolean);
 begin
   if UniDrawerClass=nil then RaiseMissingUniDrawer;
-  UniDrawerClass.DrawLineAntialias(self, x1,y1,x2,y2, ABrush,APenWidth,AAlpha);
+  UniDrawerClass.FillPolyAntialias(self, APoints, FillMode,
+                  ABrush, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.FillPolyAntialias(
+  const APoints: array of TPointF; ATexture: IBGRAScanner;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  FillPolyAntialias(APoints, b, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.ErasePolyAntialias(
+  const APoints: array of TPointF; AAlpha: Byte;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  FillPolyAntialias(APoints, b, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.FillPath(APath: IBGRAPath;
+  const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean);
+begin
+  FillPolyAntialias(APath.getPoints,ABrush,APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.FillPath(APath: IBGRAPath;
+  ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  FillPath(APath, b, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.FillPath(APath: IBGRAPath;
+  const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush;
+  APixelCenteredCoordinates: boolean);
+begin
+  FillPolyAntialias(APath.getPoints(AMatrix), ABrush,APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.FillPath(APath: IBGRAPath;
+  const AMatrix: TAffineMatrix; ATexture: IBGRAScanner;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  FillPath(APath,AMatrix, b, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.ErasePath(APath: IBGRAPath; AAlpha: Byte;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  FillPath(APath, b, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.ErasePath(APath: IBGRAPath;
+  const AMatrix: TAffineMatrix; AAlpha: byte; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  FillPath(APath, b, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
+  const ABrush: TUniversalBrush; APenWidth: single);
+begin
+  FillPolyAntialias(Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth), ABrush);
+end;
+
+procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
+  ATexture: IBGRAScanner; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  DrawLineAntialias(x1,y1,x2,y2, b,APenWidth);
+end;
+
+procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
+  const ABrush: TUniversalBrush; APenWidth: single; AClosedCap: boolean);
+begin
+  FillPolyAntialias(Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,AClosedCap), ABrush);
+end;
+
+procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
+  ATexture: IBGRAScanner; APenWidth: single; AClosedCap: boolean);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  DrawLineAntialias(x1,y1,x2,y2, b,APenWidth, AClosedCap);
+end;
+
+procedure TCustomUniversalBitmap.EraseLineAntialias(x1, y1, x2, y2: single;
+  AAlpha: Byte; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  DrawLineAntialias(x1,y1,x2,y2, b, APenWidth);
+end;
+
+procedure TCustomUniversalBitmap.EraseLineAntialias(x1, y1, x2, y2: single;
+  AAlpha: Byte; APenWidth: single; AClosedCap: boolean);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  DrawLineAntialias(x1,y1,x2,y2, b, APenWidth, AClosedCap);
+end;
+
+procedure TCustomUniversalBitmap.DrawPolyLineAntialias(
+  const APoints: array of TPointF; const ABrush: TUniversalBrush;
+  APenWidth: single);
+begin
+  FillPolyAntialias(Pen.ComputePolyline(APoints,APenWidth),ABrush);
+end;
+
+procedure TCustomUniversalBitmap.DrawPolyLineAntialias(
+  const APoints: array of TPointF; ATexture: IBGRAScanner; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  DrawPolyLineAntialias(APoints, b, APenWidth);
+end;
+
+procedure TCustomUniversalBitmap.ErasePolyLineAntialias(
+  const APoints: array of TPointF; AAlpha: byte; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  DrawPolyLineAntialias(APoints, b, APenWidth);
+end;
+
+procedure TCustomUniversalBitmap.DrawPolyLineAntialias(
+  const APoints: array of TPointF; const ABrush: TUniversalBrush;
+  APenWidth: single; AClosedCap: boolean);
+begin
+  FillPolyAntialias(Pen.ComputePolyline(APoints,APenWidth,AClosedCap),ABrush);
+end;
+
+procedure TCustomUniversalBitmap.DrawPolyLineAntialias(
+  const APoints: array of TPointF; ATexture: IBGRAScanner; APenWidth: single;
+  AClosedCap: boolean);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  DrawPolyLineAntialias(APoints, b, APenWidth, AClosedCap);
+end;
+
+procedure TCustomUniversalBitmap.ErasePolyLineAntialias(
+  const APoints: array of TPointF; AAlpha: byte; APenWidth: single;
+  AClosedCap: boolean);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  DrawPolyLineAntialias(APoints, b, APenWidth, AClosedCap);
+end;
+
+procedure TCustomUniversalBitmap.DrawPolyLineAntialiasAutocycle(
+  const APoints: array of TPointF; const ABrush: TUniversalBrush;
+  APenWidth: single);
+begin
+   FillPolyAntialias(Pen.ComputePolylineAutoCycle(APoints,APenWidth),ABrush);
+end;
+
+procedure TCustomUniversalBitmap.DrawPolyLineAntialiasAutocycle(
+  const APoints: array of TPointF; ATexture: IBGRAScanner; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  DrawPolyLineAntialiasAutocycle(APoints, b, APenWidth);
+end;
+
+procedure TCustomUniversalBitmap.ErasePolyLineAntialiasAutocycle(
+  const APoints: array of TPointF; AAlpha: byte; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  DrawPolyLineAntialiasAutocycle(APoints, b, APenWidth);
+end;
+
+procedure TCustomUniversalBitmap.DrawPolygonAntialias(
+  const APoints: array of TPointF; const ABrush: TUniversalBrush;
+  APenWidth: single);
+begin
+   FillPolyAntialias(Pen.ComputePolygon(APoints,APenWidth),ABrush);
+end;
+
+procedure TCustomUniversalBitmap.DrawPolygonAntialias(
+  const APoints: array of TPointF; ATexture: IBGRAScanner; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  DrawPolygonAntialias(APoints, b, APenWidth);
+end;
+
+procedure TCustomUniversalBitmap.ErasePolygonAntialias(
+  const APoints: array of TPointF; AAlpha: byte; APenWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  DrawPolygonAntialias(APoints, b, APenWidth);
+end;
+
+procedure TCustomUniversalBitmap.DrawPath(APath: IBGRAPath;
+  const ABrush: TUniversalBrush; AWidth: single;
+  APixelCenteredCoordinates: boolean);
+var
+  data: TPathCallbackData;
+begin
+  if UniDrawerClass=nil then RaiseMissingUniDrawer;
+  data.BrushAddress := @ABrush;
+  data.Alpha:= 65535;
+  data.Width:= AWidth;
+  data.PixelCenteredCoords := APixelCenteredCoordinates;
+  APath.stroke(@PathStrokeAntialiasCallback, @data);
+end;
+
+procedure TCustomUniversalBitmap.DrawPath(APath: IBGRAPath;
+  ATexture: IBGRAScanner; AWidth: single;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  DrawPath(APath, b,AWidth,APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.DrawPath(APath: IBGRAPath;
+  const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush; AWidth: single;
+  APixelCenteredCoordinates: boolean);
+var
+  data: TPathCallbackData;
+begin
+  if UniDrawerClass=nil then RaiseMissingUniDrawer;
+  data.BrushAddress := @ABrush;
+  data.Alpha:= 65535;
+  data.Width:= AWidth;
+  data.PixelCenteredCoords := APixelCenteredCoordinates;
+  APath.stroke(@PathStrokeAntialiasCallback, AMatrix, @data);
+end;
+
+procedure TCustomUniversalBitmap.DrawPath(APath: IBGRAPath;
+  const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; AWidth: single;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  DrawPath(APath,AMatrix, b,AWidth,APixelCenteredCoordinates);
 end;
 
 procedure TCustomUniversalBitmap.SetLineOrder(AValue: TRawImageLineOrder);
@@ -2065,27 +2408,37 @@ end;
 procedure TCustomUniversalBitmap.FillPathAliased(APath: IBGRAPath;
   const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean;
   AAlpha: Word);
-var
-  data: TPathCallbackData;
 begin
   if UniDrawerClass=nil then RaiseMissingUniDrawer;
-  data.BrushAddress := @ABrush;
-  data.Alpha:= AAlpha;
-  data.PixelCenteredCoords := APixelCenteredCoordinates;
-  APath.fill(@PathFillAliasedCallback, @data);
+  FillPoly(APath.getPoints, ABrush, APixelCenteredCoordinates, AAlpha);
 end;
 
 procedure TCustomUniversalBitmap.FillPathAliased(APath: IBGRAPath;
   const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush;
   APixelCenteredCoordinates: boolean; AAlpha: Word);
-var
-  data: TPathCallbackData;
 begin
   if UniDrawerClass=nil then RaiseMissingUniDrawer;
-  data.BrushAddress := @ABrush;
-  data.Alpha:= AAlpha;
-  data.PixelCenteredCoords := APixelCenteredCoordinates;
-  APath.fill(@PathFillAliasedCallback, AMatrix, @data);
+  FillPoly(APath.getPoints(AMatrix), ABrush, APixelCenteredCoordinates, AAlpha);
+end;
+
+procedure TCustomUniversalBitmap.FillPathAliased(APath: IBGRAPath;
+  ATexture: IBGRAScanner; AMode: TDrawMode; APixelCenteredCoordinates: boolean;
+  AAlpha: Word);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture, AMode);
+  FillPathAliased(APath, b,APixelCenteredCoordinates,AAlpha);
+end;
+
+procedure TCustomUniversalBitmap.FillPathAliased(APath: IBGRAPath;
+  const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; AMode: TDrawMode;
+  APixelCenteredCoordinates: boolean; AAlpha: Word);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture, AMode);
+  FillPathAliased(APath,AMatrix, b,APixelCenteredCoordinates,AAlpha);
 end;
 
 procedure TCustomUniversalBitmap.ErasePathAliased(APath: IBGRAPath;
