@@ -865,9 +865,9 @@ begin
   pat.GradientFill(0,0,8,8,BGRABlack,BGRAWhite,gtLinear,PointF(0,0),PointF(8,8),dmSet);
 //  ctx.surface.CreateBrushTexture(bsDiagCross,BGRA(255,255,0),BGRA(255,0,0)) as TBGRABitmap;
   ctx.fillStyle(ctx.createPattern(pat,'repeat-x'));
-  ctx.fillRect(0,0,ctx.width,pat.height-1);
+  ctx.fillRect(pat.width,0,ctx.width,pat.height);
   ctx.fillStyle(ctx.createPattern(pat,'repeat-y'));
-  ctx.fillRect(0,0,pat.width-1,ctx.height);
+  ctx.fillRect(0,0,pat.width,ctx.height);
 
   ctx.rotate(Pi);
   ctx.globalAlpha:= 0.25;
