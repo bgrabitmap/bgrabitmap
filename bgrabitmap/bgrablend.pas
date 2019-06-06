@@ -334,14 +334,15 @@ var
   pDest: PBGRAPixel;
   buf: packed array[0..3] of TBGRAPixel;
 begin
-  if AAlpha <= $80 then
-  begin
-    inc(PBGRAPixel(AContextData^.Dest), ACount);
-    exit;
-  end;
-  pDest := PBGRAPixel(AContextData^.Dest);
   with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
+    if AAlpha <= $80 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PBGRAPixel(AContextData^.Dest);
     if AAlpha >= $ff7f then
     begin
       if HasPutPixels then
@@ -389,14 +390,15 @@ var
   pDest: PBGRAPixel;
   buf: packed array[0..3] of TBGRAPixel;
 begin
-  if AAlpha <= $80 then
-  begin
-    inc(PBGRAPixel(AContextData^.Dest), ACount);
-    exit;
-  end;
-  pDest := PBGRAPixel(AContextData^.Dest);
   with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
+    if AAlpha <= $80 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PBGRAPixel(AContextData^.Dest);
     if AAlpha >= $ff7f then
     begin
       if HasPutPixels then
@@ -447,14 +449,15 @@ var
   pDest: PBGRAPixel;
   buf: packed array[0..3] of TBGRAPixel;
 begin
-  if AAlpha <= $80 then
-  begin
-    inc(PBGRAPixel(AContextData^.Dest), ACount);
-    exit;
-  end;
-  pDest := PBGRAPixel(AContextData^.Dest);
   with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
+    if AAlpha <= $80 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PBGRAPixel(AContextData^.Dest);
     if AAlpha >= $ff7f then
     begin
       if HasPutPixels then
@@ -504,14 +507,15 @@ var
   pDest: PBGRAPixel;
   buf: packed array[0..3] of TBGRAPixel;
 begin
-  if AAlpha <= $80 then
-  begin
-    inc(PBGRAPixel(AContextData^.Dest), ACount);
-    exit;
-  end;
-  pDest := PBGRAPixel(AContextData^.Dest);
   with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
+    if AAlpha <= $80 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PBGRAPixel(AContextData^.Dest);
     if AAlpha >= $ff7f then
     begin
       if HasPutPixels then
@@ -561,14 +565,15 @@ var
   pDest: PBGRAPixel;
   buf: packed array[0..3] of TBGRAPixel;
 begin
-  if AAlpha <= $80 then
-  begin
-    inc(PBGRAPixel(AContextData^.Dest), ACount);
-    exit;
-  end;
-  pDest := PBGRAPixel(AContextData^.Dest);
   with PBGRAScannerBrushFixedData(AFixedData)^ do
   begin
+    if AAlpha <= $80 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PBGRAPixel(AContextData^.Dest);
     if AAlpha >= $ff7f then
     begin
       if HasPutPixels then

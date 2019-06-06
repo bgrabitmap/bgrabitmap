@@ -30,6 +30,7 @@ type
     {** Copy a row of pixels from ''X'' to ''X''+''count''-1 to a specified destination
         ''pdest''. ''mode'' indicates how to combine with existing data }
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode);
+    procedure ScanSkipPixels(ACount: integer);
     {** Returns True if the function ''ScanPutPixels'' is available. Otherwise
         you need to call ''ScanNextPixel'' and combine pixels for example
         with ''SetPixel'' }
@@ -54,6 +55,7 @@ type
   TBGRACustomScanner = class(IBGRAScanner)
   private
     FCurX,FCurY: integer;
+    FOwnCur: boolean;
   public
     function ScanAtInteger(X,Y: integer): TBGRAPixel; virtual;
     function ScanAtIntegerExpanded(X,Y: integer): TExpandedPixel; virtual;
@@ -63,6 +65,7 @@ type
     function ScanAt(X,Y: Single): TBGRAPixel; virtual; abstract;
     function ScanAtExpanded(X,Y: Single): TExpandedPixel; virtual;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); virtual;
+    procedure ScanSkipPixels(ACount: integer); virtual;
     function IsScanPutPixelsDefined: boolean; virtual;
     function GetTextureGL: IUnknown; virtual;
     function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
@@ -749,6 +752,7 @@ type
      function ScanAt(X,Y: Single): TBGRAPixel; virtual; abstract;
      function ScanAtExpanded(X,Y: Single): TExpandedPixel; virtual;
      procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); virtual;
+     procedure ScanSkipPixels(ACount: integer); virtual;
      function IsScanPutPixelsDefined: boolean; virtual;
      function ProvidesScanline(ARect: TRect): boolean; virtual;
      function GetScanlineAt(X, Y: integer): PBGRAPixel; virtual;
@@ -897,6 +901,7 @@ procedure TBGRACustomScanner.ScanMoveTo(X, Y: Integer);
 begin
   FCurX := X;
   FCurY := Y;
+  FOwnCur := true;
 end;
 
 { Call ScanAt to determine pixel value }
@@ -922,6 +927,20 @@ procedure TBGRACustomScanner.ScanPutPixels(pdest: PBGRAPixel; count: integer;
 begin
   //do nothing
 end;
+
+procedure TBGRACustomScanner.ScanSkipPixels(ACount: integer);
+begin
+  if FOwnCur then inc(FCurX, ACount)
+  else
+  begin
+    while ACount > 0 do
+    begin
+      ScanNextPixel;
+      dec(ACount);
+    end;
+  end;
+end;
+
 {$hints on}
 
 function TBGRACustomScanner.IsScanPutPixelsDefined: boolean;
@@ -2136,6 +2155,15 @@ begin
   //do nothing
 end;
 {$hints on}
+
+procedure TBGRACustomBitmap.ScanSkipPixels(ACount: integer);
+begin
+  while ACount > 0 do
+  begin
+    ScanNextPixel;
+    dec(ACount);
+  end;
+end;
 
 function TBGRACustomBitmap.IsScanPutPixelsDefined: boolean;
 begin

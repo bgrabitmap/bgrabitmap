@@ -199,6 +199,7 @@ type
     function ScanAt(X, Y: Single): TBGRAPixel; override;
     function ScanAtExpanded(X, Y: Single): TExpandedPixel; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
+    procedure ScanSkipPixels(ACount: integer); override;
     function IsScanPutPixelsDefined: boolean; override;
     property Transform: TAffineMatrix read FTransform write SetTransform;
     property Gradient: TBGRACustomGradient read FGradient;
@@ -240,6 +241,7 @@ type
     function ScanAt(X,Y: Single): TBGRAPixel; override;
     function ScanNextPixel: TBGRAPixel; override;
     function ScanNextExpandedPixel: TExpandedPixel; override;
+    procedure ScanSkipPixels(ACount: integer); override;
   end;
 
   { TBGRASolidColorMaskScanner }
@@ -257,6 +259,7 @@ type
     destructor Destroy; override;
     function IsScanPutPixelsDefined: boolean; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
+    procedure ScanSkipPixels(ACount: integer); override;
     procedure ScanMoveTo(X,Y: Integer); override;
     function ScanNextPixel: TBGRAPixel; override;
     function ScanAt(X,Y: Single): TBGRAPixel; override;
@@ -279,6 +282,7 @@ type
     destructor Destroy; override;
     function IsScanPutPixelsDefined: boolean; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
+    procedure ScanSkipPixels(ACount: integer); override;
     procedure ScanMoveTo(X,Y: Integer); override;
     function ScanNextPixel: TBGRAPixel; override;
     function ScanAt(X,Y: Single): TBGRAPixel; override;
@@ -300,6 +304,7 @@ type
     destructor Destroy; override;
     function IsScanPutPixelsDefined: boolean; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
+    procedure ScanSkipPixels(ACount: integer); override;
     procedure ScanMoveTo(X,Y: Integer); override;
     function ScanNextPixel: TBGRAPixel; override;
     function ScanAt(X,Y: Single): TBGRAPixel; override;
@@ -1014,6 +1019,11 @@ begin
   FCurColor += FStep;
 end;
 
+procedure TBGRAGradientTriangleScanner.ScanSkipPixels(ACount: integer);
+begin
+  FCurColor += FStep*ACount;
+end;
+
 { TBGRAGradientScanner }
 
 procedure TBGRAGradientScanner.SetTransform(AValue: TAffineMatrix);
@@ -1588,6 +1598,12 @@ begin
   end;
 end;
 
+procedure TBGRAGradientScanner.ScanSkipPixels(ACount: integer);
+begin
+  if not FRepeatHoriz and not FIsAverage then
+    FPosition.Offset(FMatrix[1,1]*ACount,FMatrix[2,1]*ACount);
+end;
+
 function TBGRAGradientScanner.IsScanPutPixelsDefined: boolean;
 begin
   result := true;
@@ -1736,6 +1752,12 @@ begin
   end;
 end;
 
+procedure TBGRATextureMaskScanner.ScanSkipPixels(ACount: integer);
+begin
+  FMask.ScanSkipPixels(ACount);
+  FTexture.ScanSkipPixels(ACount);
+end;
+
 procedure TBGRATextureMaskScanner.ScanMoveTo(X, Y: Integer);
 begin
   FMask.ScanMoveTo(X+FOffset.X,Y+FOffset.Y);
@@ -1839,6 +1861,11 @@ begin
         dec(count);
       end;
   end;
+end;
+
+procedure TBGRASolidColorMaskScanner.ScanSkipPixels(ACount: integer);
+begin
+  FMask.ScanSkipPixels(ACount);
 end;
 
 procedure TBGRASolidColorMaskScanner.ScanMoveTo(X, Y: Integer);
@@ -1955,6 +1982,11 @@ begin
         dec(count);
       end;
   end;
+end;
+
+procedure TBGRAOpacityScanner.ScanSkipPixels(ACount: integer);
+begin
+  FTexture.ScanSkipPixels(ACount);
 end;
 
 procedure TBGRAOpacityScanner.ScanMoveTo(X, Y: Integer);

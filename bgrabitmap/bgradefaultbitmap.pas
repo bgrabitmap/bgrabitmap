@@ -657,12 +657,14 @@ type
     procedure GradientFill(x, y, x2, y2: integer; gradient: TBGRACustomGradient;
       gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
       Sinus: Boolean=False; ditherAlgo: TDitheringAlgorithm = daNearestNeighbor); override;
+
     function ScanAtInteger(X,Y: integer): TBGRAPixel; override;
     procedure ScanMoveTo(X,Y: Integer); override;
     function ScanNextPixel: TBGRAPixel; override;
     function ScanAt(X,Y: Single): TBGRAPixel; override;
     function IsScanPutPixelsDefined: boolean; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
+    procedure ScanSkipPixels(ACount: integer); override;
 
     {Canvas drawing functions}
     procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); overload; override;
@@ -3958,6 +3960,21 @@ begin
         PDWord(pdest)^ := PDWord(pdest)^ xor DWord(ScanNextPixel);
         inc(pdest);
       end;
+  end;
+end;
+
+procedure TBGRADefaultBitmap.ScanSkipPixels(ACount: integer);
+var
+  nbCopy: Integer;
+begin
+  if (FScanWidth <= 0) or (FScanHeight <= 0) then exit;
+  while ACount > 0 do
+  begin
+    nbCopy := FScanWidth-FScanCurX;
+    if ACount < nbCopy then nbCopy := ACount;
+    inc(FScanCurX,nbCopy);
+    if FScanCurX = FScanWidth then FScanCurX := 0;
+    dec(ACount,nbCopy);
   end;
 end;
 

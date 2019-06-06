@@ -50,6 +50,7 @@ type
     procedure ScanMoveTo(X, Y: Integer); override;
     procedure ScanMoveToF(X, Y: single); inline;
     function ScanNextPixel: TBGRAPixel; override;
+    procedure ScanSkipPixels(ACount: integer); override;
     function ScanAt(X, Y: Single): TBGRAPixel; override;
     property Matrix: TAffineMatrix read FMatrix write SetMatrix;
     property ViewMatrix: TAffineMatrix read GetViewMatrix write SetViewMatrix;
@@ -119,6 +120,7 @@ type
     function IsScanPutPixelsDefined: boolean; override;
     procedure ScanMoveTo(X, Y: Integer); override;
     function ScanNextPixel: TBGRAPixel; override;
+    procedure ScanSkipPixels(ACount: integer); override;
     constructor Create(ASource: IBGRAScanner;
       ASourceMatrix: TAffineMatrix; const APoints: array of TPointF;
       ATextureInterpolation: boolean = true); overload;
@@ -143,6 +145,7 @@ type
     procedure ScanMoveTo(X, Y: Integer); override;
     function ScanNextPixel: TBGRAPixel; override;
     function ScanAt(X, Y: Single): TBGRAPixel; override;
+    procedure ScanSkipPixels(ACount: integer); override;
   end;
 
   { TBGRAExtendedBorderScanner }
@@ -170,6 +173,7 @@ type
     function ScanAt(X, Y: Single): TBGRAPixel; override;
     function IsScanPutPixelsDefined: boolean; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
+    procedure ScanSkipPixels(ACount: integer); override;
   end;
 
 
@@ -253,6 +257,7 @@ type
     procedure ScanMoveToF(X,Y: Single);
     function ScanAt(X,Y: Single): TBGRAPixel; override;
     function ScanNextPixel: TBGRAPixel; override;
+    procedure ScanSkipPixels(ACount: integer); override;
   end;
 
 type
@@ -274,6 +279,7 @@ type
     procedure ScanMoveTo(X, Y: Integer); override;
     function ScanAt(X, Y: Single): TBGRAPixel; override;
     function ScanNextPixel: TBGRAPixel; override;
+    procedure ScanSkipPixels(ACount: integer); override;
     property IncludeOppositePlane: boolean read GetIncludeOppositePlane write SetIncludeOppositePlane;
   end;
 
@@ -305,6 +311,7 @@ type
     function Apply(pt: TPointF): TPointF;
     procedure ScanMoveTo(x,y:single);
     function ScanNext: TPointF;
+    procedure ScanSkip(ACount: integer);
     property OutsideValue: TPointF read FOutsideValue write FOutsideValue;
     property IncludeOppositePlane: boolean read FIncludeOppositePlane write FIncludeOppositePlane;
   end;
@@ -693,6 +700,11 @@ begin
   FSource.ScanPutPixels(pdest, count, mode);
 end;
 
+procedure TBGRAScannerOffset.ScanSkipPixels(ACount: integer);
+begin
+  FSource.ScanSkipPixels(ACount);
+end;
+
 { TBGRABitmapScanner }
 
 constructor TBGRABitmapScanner.Create(ASource: TBGRACustomBitmap; ARepeatX,
@@ -713,11 +725,7 @@ begin
     exit;
   end;
   Inc(Y,FOrigin.Y);
-  if FRepeatY then
-  begin
-    Y := Y mod FSource.Height;
-    if Y < 0 then inc(Y, FSource.Height);
-  end;
+  if FRepeatY then Y := PositiveMod(Y,FSource.Height);
   if (Y < 0) or (Y >= FSource.Height) then
   begin
     FScanline := nil;
@@ -725,11 +733,7 @@ begin
   end;
   FScanline := FSource.Scanline[Y];
   FCurX := X+FOrigin.X;
-  if FRepeatX then
-  begin
-    FCurX := FCurX mod FSource.Width;
-    if FCurX < 0 then inc(FCurX, FSource.Width);
-  end;
+  if FRepeatX then FCurX := PositiveMod(FCurX, FSource.Width);
 end;
 
 function TBGRABitmapScanner.ScanNextPixel: TBGRAPixel;
@@ -762,6 +766,15 @@ end;
 function TBGRABitmapScanner.ScanAt(X, Y: Single): TBGRAPixel;
 begin
   Result := FSource.GetPixelCycle(X+FOrigin.X,Y+FOrigin.Y,rfLinear,FRepeatX,FRepeatY);
+end;
+
+procedure TBGRABitmapScanner.ScanSkipPixels(ACount: integer);
+begin
+  if FScanLine <> nil then
+  begin
+    inc(FCurX, ACount);
+    if FCurX > FSource.Width then FCurX := PositiveMod(FCurX, FSource.Width);
+  end;
 end;
 
 { TBGRATriangleLinearMapping }
@@ -808,6 +821,11 @@ function TBGRATriangleLinearMapping.ScanNextPixel: TBGRAPixel;
 begin
   result := FScanAtFunc(FCurTexCoord.X,FCurTexCoord.Y);
   FCurTexCoord.Offset(FStep);
+end;
+
+procedure TBGRATriangleLinearMapping.ScanSkipPixels(ACount: integer);
+begin
+  FCurTexCoord.Offset(FStep*ACount);
 end;
 
 { TBGRAAffineScannerTransform }
@@ -925,6 +943,11 @@ begin
   result := InternalScanCurrentPixel;
   FCur.Offset(FMatrix[1,1], FMatrix[2,1]);
   if GlobalOpacity <> 255 then result.alpha := ApplyOpacity(result.alpha,GlobalOpacity);
+end;
+
+procedure TBGRAAffineScannerTransform.ScanSkipPixels(ACount: integer);
+begin
+  FCur.Offset(FMatrix[1,1]*ACount, FMatrix[2,1]*ACount);
 end;
 
 function TBGRAAffineScannerTransform.ScanAt(X, Y: Single): TBGRAPixel;
@@ -1071,6 +1094,11 @@ end;
 function TBGRAQuadLinearScanner.ScanNextPixel: TBGRAPixel;
 begin
   Result:= FScanFunc();
+end;
+
+procedure TBGRAQuadLinearScanner.ScanSkipPixels(ACount: integer);
+begin
+  ScanMoveToF(FCurXF+ACount,FCurYF);
 end;
 
 function TBGRAQuadLinearScanner.ScanGeneral: TBGRAPixel;
@@ -1657,6 +1685,11 @@ begin
   end;
 end;
 
+procedure TBGRAPerspectiveScannerTransform.ScanSkipPixels(ACount: integer);
+begin
+  if FMatrix<>nil then FMatrix.ScanSkip(ACount);
+end;
+
 { TPerspectiveTransform }
 
 procedure TPerspectiveTransform.Init;
@@ -1954,6 +1987,13 @@ begin
   ScanDenom += w0;
   ScanNumX += sx;
   scanNumY += shy;
+end;
+
+procedure TPerspectiveTransform.ScanSkip(ACount: integer);
+begin
+  ScanDenom += w0*ACount;
+  ScanNumX += sx*ACount;
+  scanNumY += shy*ACount;
 end;
 
 { TBGRATwirlScanner }
