@@ -410,23 +410,29 @@ type
     property ReferenceWhite: PXYZReferenceWhite read FReferenceWhite write FReferenceWhite;
 
 
-  protected {----------- pen style ----------------}
+    {==== Pen style ====}
+  protected
     function GetArrow: TBGRACustomArrow; virtual;
     function GetLineCap: TPenEndCap; virtual;
     function GetPenStroker: TBGRACustomPenStroker; virtual;
     procedure SetLineCap(AValue: TPenEndCap); virtual;
 
   public
+     {** You can use this class set pen style and generate strokes polygonal representations }
+     property Pen: TBGRACustomPenStroker read GetPenStroker;
      {** How to draw the ends of a line (applies to arrow as well) }
      property LineCap: TPenEndCap read GetLineCap write SetLineCap;
-     {** You can use this class to generate strokes polygonal representations }
-     property Pen: TBGRACustomPenStroker read GetPenStroker;
-     {** Properties of arrow }
+     {** Properties of arrow ends }
      property Arrow: TBGRACustomArrow read GetArrow;
 
-     {==== Drawing lines and polylines (floating point coordinates) ====}
+     {==== Drawing lines and paths (floating point coordinates) ====}
      {* These functions use the current pen style/cap/join. The parameter ''APenWidth''
         specifies the width of the line and the base unit for dashes.
+        See [[BGRABitmap tutorial 13|coordinate system]].
+      * The coordinates are pixel-centered by default, so that when filling a rectangle,
+        if the supplied values are integers, the border will be half transparent.
+        If you want the border to be completely filled, you can subtract/add
+        0.5 to the coordinates to include the remaining thin border.
         See [[BGRABitmap tutorial 13|coordinate system]]. }
 
      {** Draws a line from (x1,y1) to (x2,y2) using current pen style/cap/join }
@@ -477,17 +483,43 @@ type
         to be the same as the first point }
     procedure DrawPolygonAntialias(const APoints: array of TPointF; const ABrush: TUniversalBrush; APenWidth: single); overload; virtual;
     procedure DrawPolygonAntialias(const APoints: array of TPointF; ATexture: IBGRAScanner; APenWidth: single); overload; virtual;
-    procedure ErasePolygonAntialias(const APoints: array of TPointF; AAlpha: byte; APenWidth: single); overload; virtual;
+    procedure ErasePolygonOutlineAntialias(const APoints: array of TPointF; AAlpha: byte; APenWidth: single); overload; virtual;
+
+    {** Draws an ellipse without antialising. ''rx'' is the horizontal radius and
+        ''ry'' the vertical radius }
+    procedure Ellipse(x, y, rx, ry: single; const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word = 65535); overload; virtual;
+    procedure Ellipse(x, y, rx, ry: single; ATexture: IBGRAScanner; AMode: TDrawMode; AWidth: single; AAlpha: Word = 65535); overload; virtual;
+    procedure Ellipse(const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word = 65535); overload; virtual;
+    procedure Ellipse(const AOrigin, AXAxis, AYAxis: TPointF; ATexture: IBGRAScanner; AMode: TDrawMode; AWidth: single; AAlpha: Word = 65535); overload; virtual;
+    {** Draws an ellipse with antialising. ''rx'' is the horizontal radius and
+        ''ry'' the vertical radius }
+    procedure EllipseAntialias(x, y, rx, ry: single; const ABrush: TUniversalBrush; AWidth: single); overload; virtual;
+    procedure EllipseAntialias(x, y, rx, ry: single; ATexture: IBGRAScanner; AWidth: single); overload; virtual;
+    procedure EllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush; AWidth: single); overload; virtual;
+    procedure EllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; ATexture: IBGRAScanner; AWidth: single); overload; virtual;
 
     procedure DrawPath(APath: IBGRAPath; const ABrush: TUniversalBrush; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure DrawPath(APath: IBGRAPath; ATexture: IBGRAScanner; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure DrawPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure DrawPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
 
-    //antialias fill
+    //-------------------------------- antialias fill ---------------------------------------------
+    procedure FillShapeAntialias(AShape: TBGRACustomFillInfo; const ABrush: TUniversalBrush); overload; virtual;
+    procedure FillShapeAntialias(AShape: TBGRACustomFillInfo; ATexture: IBGRAScanner); overload; virtual;
+    procedure EraseShapeAntialias(AShape: TBGRACustomFillInfo; AAlpha: Byte); overload; virtual;
     procedure FillPolyAntialias(const APoints: array of TPointF; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillPolyAntialias(const APoints: array of TPointF; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure ErasePolyAntialias(const APoints: array of TPointF; AAlpha: Byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    {** Fills an ellipse which axes are parallel to X and Y axes }
+    procedure FillEllipseAntialias(x, y, rx, ry: single; const ABrush: TUniversalBrush); overload; virtual;
+    procedure FillEllipseAntialias(x, y, rx, ry: single; ATexture: IBGRAScanner); overload; virtual;
+    {** Erases the content of an ellipse which axes are parallel to X and Y axes }
+    procedure EraseEllipseAntialias(x, y, rx, ry: single; AAlpha: Byte); overload; virtual;
+    {** Fills an ellipse with any axes }
+    procedure FillEllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush); overload; virtual;
+    procedure FillEllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; ATexture: IBGRAScanner); overload; virtual;
+    {** Erases the content of an ellipse with any axes }
+    procedure EraseEllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; AAlpha: Byte); overload; virtual;
     procedure FillPath(APath: IBGRAPath; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillPath(APath: IBGRAPath; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure ErasePath(APath: IBGRAPath; AAlpha: Byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
@@ -533,9 +565,25 @@ type
     class function CreatePenStroker: TBGRACustomPenStroker; virtual; abstract;
     class function CreateArrow: TBGRACustomArrow; virtual; abstract;
 
+    class procedure Ellipse(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; x, y, rx, ry: single;
+        const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word=65535); overload; virtual; abstract;
+    class procedure Ellipse(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; AOrigin, AXAxis, AYAxis: TPointF;
+        const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word=65535); overload; virtual; abstract;
+    class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; x, y, rx, ry: single;
+        const ABrush: TUniversalBrush; AWidth: single); overload; virtual; abstract;
+    class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; AOrigin, AXAxis, AYAxis: TPointF;
+        const ABrush: TUniversalBrush; AWidth: single); overload; virtual; abstract;
+
+    class procedure FillShapeAntialias(ADest: TCustomUniversalBitmap;
+                    AShape: TBGRACustomFillInfo; AFillMode: TFillMode;
+                    ABrush: TUniversalBrush); virtual; abstract;
     class procedure FillPolyAntialias(ADest: TCustomUniversalBitmap;
                     const APoints: array of TPointF; AFillMode: TFillMode;
                     ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean); virtual; abstract;
+    class procedure FillEllipseAntialias(ADest: TCustomUniversalBitmap;
+                    x, y, rx, ry: single; const ABrush: TUniversalBrush); overload; virtual; abstract;
+    class procedure FillEllipseAntialias(ADest: TCustomUniversalBitmap;
+                    const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush); overload; virtual; abstract;
 
   end;
   TUniversalDrawerAny = class of TCustomUniversalDrawer;
@@ -922,6 +970,56 @@ begin
   FillPolyAntialias(APoints, b, APixelCenteredCoordinates);
 end;
 
+procedure TCustomUniversalBitmap.FillEllipseAntialias(x, y, rx, ry: single;
+  const ABrush: TUniversalBrush);
+begin
+  if UniDrawerClass=nil then RaiseMissingUniDrawer;
+  UniDrawerClass.FillEllipseAntialias(self, x,y,rx,ry, ABrush);
+end;
+
+procedure TCustomUniversalBitmap.FillEllipseAntialias(x, y, rx, ry: single;
+  ATexture: IBGRAScanner);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  FillEllipseAntialias(x, y, rx, ry, b);
+end;
+
+procedure TCustomUniversalBitmap.EraseEllipseAntialias(x, y, rx, ry: single;
+  AAlpha: Byte);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  FillEllipseAntialias(x, y, rx, ry, b);
+end;
+
+procedure TCustomUniversalBitmap.FillEllipseAntialias(const AOrigin, AXAxis,
+  AYAxis: TPointF; const ABrush: TUniversalBrush);
+begin
+  if UniDrawerClass=nil then RaiseMissingUniDrawer;
+  UniDrawerClass.FillEllipseAntialias(self, AOrigin, AXAxis, AYAxis, ABrush);
+end;
+
+procedure TCustomUniversalBitmap.FillEllipseAntialias(const AOrigin, AXAxis,
+  AYAxis: TPointF; ATexture: IBGRAScanner);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  FillEllipseAntialias(AOrigin, AXAxis, AYAxis, b);
+end;
+
+procedure TCustomUniversalBitmap.EraseEllipseAntialias(const AOrigin, AXAxis,
+  AYAxis: TPointF; AAlpha: Byte);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  FillEllipseAntialias(AOrigin, AXAxis, AYAxis, b);
+end;
+
 procedure TCustomUniversalBitmap.FillPath(APath: IBGRAPath;
   const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean);
 begin
@@ -1113,13 +1211,77 @@ begin
   DrawPolygonAntialias(APoints, b, APenWidth);
 end;
 
-procedure TCustomUniversalBitmap.ErasePolygonAntialias(
+procedure TCustomUniversalBitmap.ErasePolygonOutlineAntialias(
   const APoints: array of TPointF; AAlpha: byte; APenWidth: single);
 var
   b: TUniversalBrush;
 begin
   EraseBrush(b, AAlpha + (AAlpha shl 8));
   DrawPolygonAntialias(APoints, b, APenWidth);
+end;
+
+procedure TCustomUniversalBitmap.Ellipse(x, y, rx, ry: single;
+  const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word);
+begin
+  if UniDrawerClass = nil then RaiseMissingUniDrawer;
+  UniDrawerClass.Ellipse(self, Pen, x,y,rx,ry, ABrush, AWidth, AAlpha);
+end;
+
+procedure TCustomUniversalBitmap.Ellipse(x, y, rx, ry: single;
+  ATexture: IBGRAScanner; AMode: TDrawMode; AWidth: single; AAlpha: Word);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AMode);
+  Ellipse(x,y,rx,ry, b, AWidth, AAlpha);
+end;
+
+procedure TCustomUniversalBitmap.Ellipse(const AOrigin, AXAxis, AYAxis: TPointF;
+  const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word);
+begin
+  if UniDrawerClass = nil then RaiseMissingUniDrawer;
+  UniDrawerClass.Ellipse(self, Pen, AOrigin, AXAxis, AYAxis, ABrush, AWidth, AAlpha);
+end;
+
+procedure TCustomUniversalBitmap.Ellipse(const AOrigin, AXAxis, AYAxis: TPointF;
+  ATexture: IBGRAScanner; AMode: TDrawMode; AWidth: single; AAlpha: Word);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AMode);
+  Ellipse(AOrigin, AXAxis, AYAxis, b,AWidth,AAlpha);
+end;
+
+procedure TCustomUniversalBitmap.EllipseAntialias(x, y, rx, ry: single;
+  const ABrush: TUniversalBrush; AWidth: single);
+begin
+  if UniDrawerClass = nil then RaiseMissingUniDrawer;
+  UniDrawerClass.EllipseAntialias(self, Pen, x,y,rx,ry, ABrush, AWidth);
+end;
+
+procedure TCustomUniversalBitmap.EllipseAntialias(x, y, rx, ry: single;
+  ATexture: IBGRAScanner; AWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  EllipseAntialias(x,y,rx,ry, b, AWidth);
+end;
+
+procedure TCustomUniversalBitmap.EllipseAntialias(const AOrigin, AXAxis,
+  AYAxis: TPointF; const ABrush: TUniversalBrush; AWidth: single);
+begin
+  if UniDrawerClass = nil then RaiseMissingUniDrawer;
+  UniDrawerClass.EllipseAntialias(self, Pen, AOrigin, AXAxis, AYAxis, ABrush, AWidth);
+end;
+
+procedure TCustomUniversalBitmap.EllipseAntialias(const AOrigin, AXAxis,
+  AYAxis: TPointF; ATexture: IBGRAScanner; AWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  EllipseAntialias(AOrigin, AXAxis, AYAxis, b,AWidth);
 end;
 
 procedure TCustomUniversalBitmap.DrawPath(APath: IBGRAPath;
@@ -1168,6 +1330,32 @@ var
 begin
   ScannerBrush(b, ATexture,AntialiasingDrawMode);
   DrawPath(APath,AMatrix, b,AWidth,APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.FillShapeAntialias(
+  AShape: TBGRACustomFillInfo; const ABrush: TUniversalBrush);
+begin
+  if UniDrawerClass=nil then RaiseMissingUniDrawer;
+  UniDrawerClass.FillShapeAntialias(self, AShape, FillMode,
+                  ABrush);
+end;
+
+procedure TCustomUniversalBitmap.FillShapeAntialias(
+  AShape: TBGRACustomFillInfo; ATexture: IBGRAScanner);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture,AntialiasingDrawMode);
+  FillShapeAntialias(AShape, b);
+end;
+
+procedure TCustomUniversalBitmap.EraseShapeAntialias(
+  AShape: TBGRACustomFillInfo; AAlpha: Byte);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha + (AAlpha shl 8));
+  FillShapeAntialias(AShape, b);
 end;
 
 procedure TCustomUniversalBitmap.SetLineOrder(AValue: TRawImageLineOrder);

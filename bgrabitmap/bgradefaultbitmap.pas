@@ -374,7 +374,16 @@ type
     with the specified ''mode'' }
     procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); overload; override;
 
-    //using multi-shape filler
+    {==== Rectangles, ellipses and path (floating point coordinates) ====}
+    {* These functions use the current pen style/cap/join. The parameter ''w''
+       specifies the width of the line and the base unit for dashes
+     * The coordinates are pixel-centered, so that when filling a rectangle,
+       if the supplied values are integers, the border will be half transparent.
+       If you want the border to be completely filled, you can subtract/add
+       0.5 to the coordinates to include the remaining thin border.
+       See [[BGRABitmap tutorial 13|coordinate system]]. }
+
+    {==== Multi-shape fill ====}
 
     {** Draws and fill a polyline using current pen style/cap/join in one go.
         The stroke is stricly over the fill even if partially transparent.
@@ -386,24 +395,21 @@ type
         to be the same as the first point. }
     procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; override;
 
+    {** Draws and fills an ellipse }
+    procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; override;
+    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; override;
+
+    {** Draws and fills a path }
     procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); overload; override;
     procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
     procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
     procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
 
+    {** Draws and fills a path with a matrix transform }
     procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); overload; override;
     procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
     procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
     procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
-
-    {==== Rectangles and ellipses (floating point coordinates) ====}
-    {* These functions use the current pen style/cap/join. The parameter ''w''
-       specifies the width of the line and the base unit for dashes
-     * The coordinates are pixel-centered, so that when filling a rectangle,
-       if the supplied values are integers, the border will be half transparent.
-       If you want the border to be completely filled, you can subtract/add
-       0.5 to the coordinates to include the remaining thin border.
-       See [[BGRABitmap tutorial 13|coordinate system]]. }
 
     {** Draws a rectangle with antialiasing and fills it with color ''back''.
         Note that the pixel (x2,y2) is included contrary to integer coordinates }
@@ -442,37 +448,8 @@ type
     {** Erases the content of a rounded rectangle with a texture }
     procedure EraseRoundRectAntialias(x,y,x2,y2,rx,ry: single; alpha: byte; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
 
-    {** Draws an ellipse without antialising. ''rx'' is the horizontal radius and
-        ''ry'' the vertical radius }
-    procedure Ellipse(x, y, rx, ry: single; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); overload; override;
-    procedure Ellipse(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; ADrawMode: TDrawMode); overload; override;
-    {** Draws an ellipse with antialising. ''rx'' is the horizontal radius and
-        ''ry'' the vertical radius }
-    procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single); overload; override;
-    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single); overload; override;
-    {** Draws an ellipse border with a ''texture'' }
-    procedure EllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner; w: single); overload; override;
-    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner; w: single); overload; override;
-    {** Draws and fills an ellipse }
-    procedure EllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; override;
-    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; override;
-    {** Fills an ellipse }
-    procedure FillEllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel); overload; override;
-    procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; c: TBGRAPixel); overload; override;
-    {** Fills an ellipse with a ''texture'' }
-    procedure FillEllipseAntialias(x, y, rx, ry: single; texture: IBGRAScanner); overload; override;
-    procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; texture: IBGRAScanner); overload; override;
-    {** Fills an ellipse with a gradient of color. ''outercolor'' specifies
-        the end color of the gradient on the border of the ellipse and
-        ''innercolor'' the end color of the gradient at the center of the
-        ellipse }
-    procedure FillEllipseLinearColorAntialias(x, y, rx, ry: single; outercolor, innercolor: TBGRAPixel); overload; override;
-    procedure FillEllipseLinearColorAntialias(AOrigin, AXAxis, AYAxis: TPointF; outercolor, innercolor: TBGRAPixel); overload; override;
-    {** Erases the content of an ellipse }
-    procedure EraseEllipseAntialias(x, y, rx, ry: single; alpha: byte); overload; override;
-    procedure EraseEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; alpha: byte); overload; override;
+    {==== Gradient polygons ====}
 
-    {==== Polygons and path ====}
     procedure FillTriangleLinearColor(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); override;
     procedure FillTriangleLinearColorAntialias(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); override;
     procedure FillTriangleLinearMapping(pt1,pt2,pt3: TPointF; texture: IBGRAScanner; tex1, tex2, tex3: TPointF; TextureInterpolation: Boolean= True); override;
@@ -491,15 +468,17 @@ type
     procedure FillQuadAffineMapping(Orig,HAxis,VAxis: TPointF; AImage: TBGRACustomBitmap; APixelCenteredCoordinates: boolean = true; ADrawMode: TDrawMode = dmDrawWithTransparency; AOpacity: byte = 255); override;
     procedure FillQuadAffineMappingAntialias(Orig,HAxis,VAxis: TPointF; AImage: TBGRACustomBitmap; APixelCenteredCoordinates: boolean = true; AOpacity: byte = 255); override;
 
+    {** Fills an ellipse with a gradient of color. ''outercolor'' specifies
+        the end color of the gradient on the border of the ellipse and
+        ''innercolor'' the end color of the gradient at the center of the ellipse }
+    procedure FillEllipseLinearColorAntialias(x, y, rx, ry: single; outercolor, innercolor: TBGRAPixel); overload; override;
+    procedure FillEllipseLinearColorAntialias(AOrigin, AXAxis, AYAxis: TPointF; outercolor, innercolor: TBGRAPixel); overload; override;
+
     procedure FillPolyLinearMapping(const points: array of TPointF; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean); override;
     procedure FillPolyLinearMappingLightness(const points: array of TPointF; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean); override;
     procedure FillPolyLinearColor(const points: array of TPointF; AColors: array of TBGRAPixel); override;
     procedure FillPolyPerspectiveMapping(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean; zbuffer: psingle = nil); override;
     procedure FillPolyPerspectiveMappingLightness(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean; zbuffer: psingle = nil); override;
-
-    procedure FillShapeAntialias(shape: TBGRACustomFillInfo; c: TBGRAPixel); overload; override;
-    procedure FillShapeAntialias(shape: TBGRACustomFillInfo; texture: IBGRAScanner); overload; override;
-    procedure EraseShapeAntialias(shape: TBGRACustomFillInfo; alpha: byte); override;
 
     procedure ArrowStartAsNone; override;
     procedure ArrowStartAsClassic(AFlipped: boolean = false; ACut: boolean = false; ARelativePenWidth: single = 1); override;
@@ -2465,26 +2444,6 @@ begin
   PolygonPerspectiveTextureMappingAliasedWithLightness(self,points,pointsZ,texture,texCoords,TextureInterpolation,lightnesses, FillMode = fmWinding, zbuffer);
 end;
 
-procedure TBGRADefaultBitmap.FillShapeAntialias(shape: TBGRACustomFillInfo;
-  c: TBGRAPixel);
-begin
-  BGRAPolygon.FillShapeAntialias(self, shape, c, FEraseMode, nil, FillMode = fmWinding, LinearAntialiasing);
-end;
-
-procedure TBGRADefaultBitmap.FillShapeAntialias(shape: TBGRACustomFillInfo;
-  texture: IBGRAScanner);
-begin
-  BGRAPolygon.FillShapeAntialiasWithTexture(self, shape, texture, FillMode = fmWinding, LinearAntialiasing);
-end;
-
-procedure TBGRADefaultBitmap.EraseShapeAntialias(shape: TBGRACustomFillInfo;
-  alpha: byte);
-begin
-  FEraseMode := True;
-  FillShapeAntialias(shape, BGRA(0, 0, 0, alpha));
-  FEraseMode := False;
-end;
-
 procedure TBGRADefaultBitmap.DrawPath(APath: IBGRAPath;
   AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel);
 begin
@@ -2507,40 +2466,6 @@ procedure TBGRADefaultBitmap.DrawPath(APath: IBGRAPath;
   AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner);
 begin
   DrawPath(APath,AffineMatrixIdentity,AStrokeTexture,AWidth,AFillTexture);
-end;
-
-procedure TBGRADefaultBitmap.EllipseAntialias(x, y, rx, ry: single;
-  c: TBGRAPixel; w: single);
-begin
-  if (PenStyle = psClear) or (c.alpha = 0) or (w = 0) then exit;
-  if (PenStyle = psSolid) then
-    BGRAPolygon.BorderEllipseAntialias(self, x, y, rx, ry, w, c, FEraseMode, LinearAntialiasing)
-  else
-    DrawPolygonAntialias(ComputeEllipseContour(x,y,rx,ry),c,w);
-end;
-
-procedure TBGRADefaultBitmap.EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF;
-  c: TBGRAPixel; w: single);
-begin
-  if (PenStyle = psClear) or (c.alpha = 0) or (w = 0) then exit;
-  DrawPolygonAntialias(ComputeEllipseContour(AOrigin, AXAxis, AYAxis),c,w);
-end;
-
-procedure TBGRADefaultBitmap.EllipseAntialias(x, y, rx, ry: single;
-  texture: IBGRAScanner; w: single);
-begin
-  if (PenStyle = psClear) or (w = 0) then exit;
-  if (PenStyle = psSolid) then
-    BGRAPolygon.BorderEllipseAntialiasWithTexture(self, x, y, rx, ry, w, texture, LinearAntialiasing)
-  else
-    DrawPolygonAntialias(ComputeEllipseContour(x,y,rx,ry),texture,w);
-end;
-
-procedure TBGRADefaultBitmap.EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF;
-  texture: IBGRAScanner; w: single);
-begin
-  if (PenStyle = psClear) or (w = 0) then exit;
-  DrawPolygonAntialias(ComputeEllipseContour(AOrigin, AXAxis, AYAxis),texture,w);
 end;
 
 procedure TBGRADefaultBitmap.EllipseAntialias(x, y, rx, ry: single;
@@ -2599,36 +2524,6 @@ begin
   multi.Free;
 end;
 
-procedure TBGRADefaultBitmap.FillEllipseAntialias(x, y, rx, ry: single; c: TBGRAPixel);
-begin
-  BGRAPolygon.FillEllipseAntialias(self, x, y, rx, ry, c, FEraseMode, LinearAntialiasing);
-end;
-
-procedure TBGRADefaultBitmap.FillEllipseAntialias(AOrigin, AXAxis,
-  AYAxis: TPointF; c: TBGRAPixel);
-var
-  pts: array of TPointF;
-begin
-  if c.alpha = 0 then exit;
-  pts := ComputeEllipseContour(AOrigin,AXAxis,AYAxis);
-  FillPolyAntialias(pts, c);
-end;
-
-procedure TBGRADefaultBitmap.FillEllipseAntialias(x, y, rx, ry: single;
-  texture: IBGRAScanner);
-begin
-  BGRAPolygon.FillEllipseAntialiasWithTexture(self, x, y, rx, ry, texture, LinearAntialiasing);
-end;
-
-procedure TBGRADefaultBitmap.FillEllipseAntialias(AOrigin, AXAxis,
-  AYAxis: TPointF; texture: IBGRAScanner);
-var
-  pts: array of TPointF;
-begin
-  pts := ComputeEllipseContour(AOrigin,AXAxis,AYAxis);
-  FillPolyAntialias(pts, texture);
-end;
-
 procedure TBGRADefaultBitmap.FillEllipseLinearColorAntialias(x, y, rx,
   ry: single; outercolor, innercolor: TBGRAPixel);
 var
@@ -2665,21 +2560,6 @@ begin
   FillEllipseAntialias(AOrigin,AXAxis,AYAxis,affine);
   affine.Free;
   grad.Free;
-end;
-
-procedure TBGRADefaultBitmap.EraseEllipseAntialias(x, y, rx, ry: single; alpha: byte);
-begin
-  FEraseMode := True;
-  FillEllipseAntialias(x, y, rx, ry, BGRA(0, 0, 0, alpha));
-  FEraseMode := False;
-end;
-
-procedure TBGRADefaultBitmap.EraseEllipseAntialias(AOrigin, AXAxis,
-  AYAxis: TPointF; alpha: byte);
-begin
-  FEraseMode := True;
-  FillEllipseAntialias(AOrigin, AXAxis, AYAxis, BGRA(0, 0, 0, alpha));
-  FEraseMode := False;
 end;
 
 procedure TBGRADefaultBitmap.RectangleAntialias(x, y, x2, y2: single;
@@ -2945,23 +2825,6 @@ procedure TBGRADefaultBitmap.EraseRoundRectAntialias(x, y, x2, y2, rx,
   ry: single; alpha: byte; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
 begin
   BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,BGRA(0,0,0,alpha),True, LinearAntialiasing, pixelCenteredCoordinates);
-end;
-
-procedure TBGRADefaultBitmap.Ellipse(x, y, rx, ry: single; c: TBGRAPixel;
-  w: single; ADrawMode: TDrawMode);
-begin
-  if (PenStyle = psClear) or (c.alpha = 0) or (w = 0) then exit;
-  if (PenStyle = psSolid) then
-    BGRAPolygon.BorderEllipse(self, x, y, rx, ry, w, c, FEraseMode, ADrawMode)
-  else
-    FillPoly(ComputeWidePolygon(ComputeEllipseContour(x,y,rx,ry),w),c, ADrawMode);
-end;
-
-procedure TBGRADefaultBitmap.Ellipse(AOrigin, AXAxis, AYAxis: TPointF;
-  c: TBGRAPixel; w: single; ADrawMode: TDrawMode);
-begin
-  if (PenStyle = psClear) or (c.alpha = 0) or (w = 0) then exit;
-  FillPoly(ComputeWidePolygon(ComputeEllipseContour(AOrigin, AXAxis, AYAxis),w),c,ADrawMode);
 end;
 
 {------------------------- Text functions ---------------------------------------}
