@@ -1464,6 +1464,7 @@ begin
   begin
     if mode = dmSet then
       FillDWord(pdest^, count, DWord(BGRAPixelTransparent));
+    FCur.Offset(FMatrix[1,1]*count, FMatrix[2,1]*count);
     exit;
   end;
 
@@ -1580,6 +1581,7 @@ begin
   end;
 
   if mode <> dmSet then PutPixels(pdest,FBuffer,count,mode,255);
+  FCur.Offset(FMatrix[1,1]*count, FMatrix[2,1]*count);
 end;
 
 function TBGRAAffineBitmapTransform.IsScanPutPixelsDefined: boolean;
