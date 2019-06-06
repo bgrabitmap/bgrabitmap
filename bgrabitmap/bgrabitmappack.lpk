@@ -30,7 +30,7 @@
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
     <Version Major="9" Minor="9" Release="4"/>
-    <Files Count="127">
+    <Files Count="129">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -541,6 +541,14 @@
         <Filename Value="unibitmapgeneric.inc"/>
         <Type Value="Include"/>
       </Item127>
+      <Item128>
+        <Filename Value="density256.inc"/>
+        <Type Value="Include"/>
+      </Item128>
+      <Item129>
+        <Filename Value="linearrgbabitmap.pas"/>
+        <UnitName Value="linearrgbabitmap"/>
+      </Item129>
     </Files>
     <RequiredPkgs Count="2">
       <Item1>
