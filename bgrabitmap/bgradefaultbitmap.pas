@@ -62,8 +62,8 @@ type
       gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
       Sinus: Boolean=False;
       ditherAlgo: TDitheringAlgorithm = daFloydSteinberg); overload;
-  protected
 
+  protected
     //Pixel data
     FScanWidth, FScanHeight: integer;    //possibility to reduce the zone being scanned
     FDataModified: boolean;              //if data image has changed so TBitmap should be updated
@@ -98,21 +98,21 @@ type
       AlwaysReplaceAlpha: boolean = False; RaiseErrorOnInvalidPixelFormat: boolean = True): boolean; virtual; abstract;
     procedure ClearTransparentPixels; override;
 
-    //GUI bitmap object
-    function GetBitmap: TBitmap; override;
-    function GetCanvas: TCanvas; override;
-    procedure DiscardBitmapChange; inline;
-    procedure DoAlphaCorrection;
-    procedure SetCanvasOpacity(AValue: byte); override;
-    function GetCanvasOpacity: byte; override;
-    function GetCanvasAlphaCorrection: boolean; override;
-    procedure SetCanvasAlphaCorrection(const AValue: boolean); override;
-    procedure DoLoadFromBitmap; virtual;
-
     //FreePascal drawing routines
     function GetCanvasFP: TFPImageCanvas; override;
     procedure SetCanvasDrawModeFP(const AValue: TDrawMode); override;
     function GetCanvasDrawModeFP: TDrawMode; override;
+
+    //GUI bitmap object
+    function GetBitmap: TBitmap; override;
+    function GetCanvas: TCanvas; override;
+    function GetCanvasOpacity: byte; override;
+    procedure SetCanvasOpacity(AValue: byte); override;
+    function GetCanvasAlphaCorrection: boolean; override;
+    procedure SetCanvasAlphaCorrection(const AValue: boolean); override;
+    procedure DoAlphaCorrection;
+    procedure DiscardBitmapChange; inline;
+    procedure DoLoadFromBitmap; virtual;
 
     {Allocation routines}
     procedure ReallocData; override;
@@ -139,7 +139,7 @@ type
     function GetAverageColor: TColor; override;
     function GetAveragePixel: TBGRAPixel; override;
 
-    //drawing
+  protected //pen style accesors
     function GetPenJoinStyle: TPenJoinStyle; override;
     procedure SetPenJoinStyle(const AValue: TPenJoinStyle); override;
     function GetPenMiterLimit: single; override;
@@ -162,17 +162,18 @@ type
     procedure SetArrowEndRepeat(AValue: integer); override;
     procedure SetArrowStartRepeat(AValue: integer); override;
 
+  protected //font accessors
     function GetFontHeight: integer; override;
     procedure SetFontHeight(AHeight: integer); override;
     function GetFontFullHeight: integer; override;
     procedure SetFontFullHeight(AHeight: integer); override;
     function GetFontPixelMetric: TFontPixelMetric; override;
-    function GetFontRenderer: TBGRACustomFontRenderer; override;
-    procedure SetFontRenderer(AValue: TBGRACustomFontRenderer); override;
     function CreateDefaultFontRenderer: TBGRACustomFontRenderer; virtual; abstract;
     function GetFontVerticalAnchorOffset: single; override;
     function GetFontAnchorRotatedOffset: TPointF; overload;
     function GetFontAnchorRotatedOffset(ACustomOrientation: integer): TPointF; overload;
+    function GetFontRenderer: TBGRACustomFontRenderer; override;
+    procedure SetFontRenderer(AValue: TBGRACustomFontRenderer); override;
 
     function InternalGetPixelCycle256(ix,iy: int32or64; iFactX,iFactY: int32or64): TBGRAPixel;
     function InternalGetPixel256(ix,iy: int32or64; iFactX,iFactY: int32or64; smoothBorder: boolean): TBGRAPixel;
@@ -189,10 +190,6 @@ type
     property Canvas2D: TBGRACanvas2D read GetCanvas2D;
     {** For more properties, see parent class [[TBGRACustomBitmap and IBGRAScanner#TBGRACustomBitmap|TBGRACustomBitmap]] }
 
-    {==== Reference counting ====}
-
-    {** Can only be called with an existing instance of ''TBGRABitmap''.
-        Sets the dimensions of an existing ''TBGRABitmap'' instance. }
     procedure SetSize(AWidth, AHeight: integer); override;
 
     {==== Constructors ====}
@@ -373,6 +370,12 @@ type
     {** Replace alpha values in a vertical line at column ''x'' and at row ''y'' to ''y2'' }
     procedure AlphaVertLine(x, y, y2: int32or64; alpha: byte); override;
 
+    {** Fills completely a rectangle, without any border, with the specified ''texture'' and
+    with the specified ''mode'' }
+    procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); overload; override;
+
+    //using multi-shape filler
+
     {** Draws and fill a polyline using current pen style/cap/join in one go.
         The stroke is stricly over the fill even if partially transparent.
         ''fillcolor'' specifies a color to fill the polygon formed by the points }
@@ -383,9 +386,15 @@ type
         to be the same as the first point. }
     procedure DrawPolygonAntialias(const points: array of TPointF; c: TBGRAPixel; w: single; fillcolor: TBGRAPixel); overload; override;
 
-    {** Fills completely a rectangle, without any border, with the specified ''texture'' and
-        with the specified ''mode'' }
-    procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
+
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
+    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
 
     {==== Rectangles and ellipses (floating point coordinates) ====}
     {* These functions use the current pen style/cap/join. The parameter ''w''
@@ -491,16 +500,6 @@ type
     procedure FillShapeAntialias(shape: TBGRACustomFillInfo; c: TBGRAPixel); overload; override;
     procedure FillShapeAntialias(shape: TBGRACustomFillInfo; texture: IBGRAScanner); overload; override;
     procedure EraseShapeAntialias(shape: TBGRACustomFillInfo; alpha: byte); override;
-
-    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
-
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillColor: TBGRAPixel); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
-    procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; override;
 
     procedure ArrowStartAsNone; override;
     procedure ArrowStartAsClassic(AFlipped: boolean = false; ACut: boolean = false; ARelativePenWidth: single = 1); override;
