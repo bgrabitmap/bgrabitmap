@@ -2014,7 +2014,7 @@ begin
     repeatX := false;
     repeatY := false;
   end;
-  origin := ApplyTransform(PointF(0,0)) + PointF(0.5,0.5);
+  origin := ApplyTransform(PointF(0,0));
   result := TBGRACanvasPattern2D.Create(image,repeatX,repeatY,
      origin, origin+PointF(currentState.matrix[1,1],currentState.matrix[2,1])*image.Width,
      origin+PointF(currentState.matrix[1,2],currentState.matrix[2,2])*image.Height);
