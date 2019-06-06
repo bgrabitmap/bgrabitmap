@@ -479,6 +479,7 @@ begin
               begin
                 dec(ix2);
                 if ix2 >= ix1 then brush.PutNextPixels(@ctx,65535,ix2-ix1+1);
+                brush.PutNextPixels(@ctx,tempDensity,1);
               end else
                 brush.PutNextPixels(@ctx,65535,ix2-ix1+1);
             end;
