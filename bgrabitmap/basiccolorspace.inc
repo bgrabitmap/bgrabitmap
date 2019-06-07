@@ -1210,7 +1210,7 @@ function GSBAToBGRA(c: TGSBAPixel): TBGRAPixel;
 var ec: TExpandedPixel;
 begin
   ec := GSBAToExpanded(c);
-  result := GammaCompression(c);
+  result := GammaCompression(ec);
 end;
 
 function GSBAToBGRA(const c: THSLAPixel): TBGRAPixel;

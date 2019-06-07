@@ -322,9 +322,20 @@ function Clamp(const V, Min, Max: single): single;
 begin
   Result := V;
   if Result < Min then
-    Result := Min;
-  if Result > Max then
-    Result := Max;
+    Result := Min
+  else if Result > Max then
+    Result := Max
+  else Result := V;
+end;
+
+function ClampInt(V, Min, Max: integer): integer;
+begin
+  Result := V;
+  if Result < Min then
+    Result := Min
+  else if Result > Max then
+    Result := Max
+  else Result := V;
 end;
 
 function PositiveModSingle(x, cycle: single): single;
@@ -425,10 +436,10 @@ function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 begin
   with AStdRGBA do
   begin
-    result.red := round(Clamp(red * 255, 0, 255));
-    result.green := round(Clamp(green * 255, 0, 255));
-    result.blue := round(Clamp(blue * 255, 0, 255));
-    result.alpha := round(Clamp(alpha * 255, 0, 255));
+    result.red := ClampInt(round(red * 255), 0, 255);
+    result.green := ClampInt(round(green * 255), 0, 255);
+    result.blue := ClampInt(round(blue * 255), 0, 255);
+    result.alpha := ClampInt(round(alpha * 255), 0, 255);
   end;
 end;
 
@@ -448,10 +459,10 @@ function LinearRGBAToExpandedPixel(const ALinearRGBA: TLinearRGBA): TExpandedPix
 begin
   with ALinearRGBA do
   begin
-    result.red := round(Clamp(red * 65535, 0, 65535));
-    result.green := round(Clamp(green * 65535, 0, 65535));
-    result.blue := round(Clamp(blue * 65535, 0, 65535));
-    result.alpha := round(Clamp(alpha * 65535, 0, 65535));
+    result.red := ClampInt(round(red * 65535), 0, 65535);
+    result.green := ClampInt(round(green * 65535), 0, 65535);
+    result.blue := ClampInt(round(blue * 65535), 0, 65535);
+    result.alpha := ClampInt(round(alpha * 65535), 0, 65535);
   end;
 end;
 
@@ -831,35 +842,24 @@ begin
   result.red := GammaCompressionTab[round(R*65535)];
   result.green := GammaCompressionTab[round(G*65535)];
   result.blue := GammaCompressionTab[round(B*65535)];
-  result.alpha := round(Clamp(AXYZA.alpha,0,1)*255);
+  result.alpha := ClampInt(round(AXYZA.alpha*255),0,255);
 end;
 
 function StdRGBAToLinearRGBA(const AStdRGBA: TStdRGBA): TLinearRGBA;
-
-  function GammaExpansionF(ACompressed: single): single;
-  const oneOver65535 : single = 1/65535;
-  begin
-    result := GammaExpansionFW(ACompressed)*oneOver65535;
-  end;
-
+var
+  ec: TExpandedPixel;
 begin
-  result.red := GammaExpansionF(AStdRGBA.red);
-  result.green := GammaExpansionF(AStdRGBA.green);
-  result.blue := GammaExpansionF(AStdRGBA.blue);
+  ec := StdRGBAToExpandedPixel(AStdRGBA);
+  result := ExpandedPixelToLinearRGBA(ec);
   result.alpha := AStdRGBA.alpha;
 end;
 
 function LinearRGBAToStdRGBA(const ALinearRGBA: TLinearRGBA): TStdRGBA;
-
-  function GammaCompressionF(AExpanded: single): single;
-  begin
-    result := GammaCompressionWF(round(AExpanded*65535));
-  end;
-
+var
+  ec: TExpandedPixel;
 begin
-  result.red := GammaCompressionF(ALinearRGBA.red);
-  result.green := GammaCompressionF(ALinearRGBA.green);
-  result.blue := GammaCompressionF(ALinearRGBA.blue);
+  ec := LinearRGBAToExpandedPixel(ALinearRGBA);
+  result := ExpandedPixelToStdRGBA(ec);
   result.alpha := ALinearRGBA.alpha;
 end;
 

@@ -615,7 +615,7 @@ end;
 function FPColorToBGRA(AValue: TFPColor): TBGRAPixel;
 begin
   with AValue do
-    Result := BGRA(red shr 8, green shr 8, blue shr 8, alpha shr 8);
+    Result := BGRA(FastRoundDiv257(red), FastRoundDiv257(green), FastRoundDiv257(blue), alpha shr 8);
 end;
 
 function BGRAToFPColor(AValue: TBGRAPixel): TFPColor; inline;
