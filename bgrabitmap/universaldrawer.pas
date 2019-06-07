@@ -58,6 +58,9 @@ type
     class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
         const ABrush: TUniversalBrush; AWidth: single); overload; override;
 
+    class procedure FillRectAntialias(ADest: TCustomUniversalBitmap;
+                    x, y, x2, y2: single; const ABrush: TUniversalBrush;
+                    APixelCenteredCoordinates: boolean = true); override;
     class procedure FillShapeAntialias(ADest: TCustomUniversalBitmap;
                     AShape: TBGRACustomFillInfo; AFillMode: TFillMode;
                     ABrush: TUniversalBrush); override;
@@ -73,7 +76,7 @@ type
 
 implementation
 
-uses BGRAPolygon, BGRAPolygonAliased, BGRAPath;
+uses BGRAPolygon, BGRAPolygonAliased, BGRAPath, BGRAFillInfo;
 
 { TUniversalDrawer }
 
@@ -636,6 +639,17 @@ begin
   if (APen.Style = psClear) or (AWidth = 0) or ABrush.DoesNothing then exit;
   FillPolyAntialias(ADest, APen.ComputePolygon(BGRAPath.ComputeEllipse(AOrigin, AXAxis, AYAxis), AWidth),
            ADest.FillMode, ABrush, true);
+end;
+
+class procedure TUniversalDrawer.FillRectAntialias(
+  ADest: TCustomUniversalBitmap; x, y, x2, y2: single;
+  const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean);
+var
+  fi: TFillRectangleInfo;
+begin
+  if ABrush.DoesNothing then exit;
+  fi := TFillRectangleInfo.Create(x,y,x2,y2,APixelCenteredCoordinates);
+  FillShapeAntialias(ADest, fi, fmAlternate, ABrush);
 end;
 
 class procedure TUniversalDrawer.FillShapeAntialias(

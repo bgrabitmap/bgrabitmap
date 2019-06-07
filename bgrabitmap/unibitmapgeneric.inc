@@ -135,6 +135,8 @@ type
     procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel); overload; virtual;
     procedure FillPath(APath: IBGRAPath; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillRectAntialias(x, y, x2, y2: single; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillRectAntialias(const ARectF: TRectF; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
 
   end;
 
@@ -896,6 +898,24 @@ var
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   FillPath(APath,AMatrix, b, APixelCenteredCoordinates);
+end;
+
+procedure TGenericUniversalBitmap.FillRectAntialias(x, y, x2, y2: single;
+  const AColor: TPixel; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  FillRectAntialias(x,y,x2,y2,b,APixelCenteredCoordinates);
+end;
+
+procedure TGenericUniversalBitmap.FillRectAntialias(const ARectF: TRectF;
+  const AColor: TPixel; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  FillRectAntialias(ARectF,b,APixelCenteredCoordinates);
 end;
 
 procedure TGenericUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;

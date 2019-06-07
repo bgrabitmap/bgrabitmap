@@ -540,6 +540,15 @@ type
     procedure FillEllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; ATexture: IBGRAScanner); overload; virtual;
     {** Erases the content of an ellipse with any axes }
     procedure EraseEllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; AAlpha: Byte); overload; virtual;
+    {** Fills a rectangle with antialiasing. Note that the pixel (x2,y2) is
+        included contrary to integer coordinates. For example (-0.5,-0.5,0.5,0.5)
+        with pixel-centered coords fills one pixel }
+    procedure FillRectAntialias(x, y, x2, y2: single; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillRectAntialias(x, y, x2, y2: single; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure EraseRectAntialias(x, y, x2, y2: single; AAlpha: Byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillRectAntialias(const ARectF: TRectF; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure FillRectAntialias(const ARectF: TRectF; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    procedure EraseRectAntialias(const ARectF: TRectF; AAlpha: Byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillPath(APath: IBGRAPath; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillPath(APath: IBGRAPath; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure ErasePath(APath: IBGRAPath; AAlpha: Byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
@@ -594,6 +603,9 @@ type
     class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
         const ABrush: TUniversalBrush; AWidth: single); overload; virtual; abstract;
 
+    class procedure FillRectAntialias(ADest: TCustomUniversalBitmap;
+                    x, y, x2, y2: single; const ABrush: TUniversalBrush;
+                    APixelCenteredCoordinates: boolean = true); virtual; abstract;
     class procedure FillShapeAntialias(ADest: TCustomUniversalBitmap;
                     AShape: TBGRACustomFillInfo; AFillMode: TFillMode;
                     ABrush: TUniversalBrush); virtual; abstract;
@@ -1057,6 +1069,52 @@ var
 begin
   EraseBrush(b, AAlpha + (AAlpha shl 8));
   FillEllipseAntialias(AOrigin, AXAxis, AYAxis, b);
+end;
+
+procedure TCustomUniversalBitmap.FillRectAntialias(x, y, x2, y2: single;
+  const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean);
+begin
+  if UniDrawerClass=nil then RaiseMissingUniDrawer;
+  UniDrawerClass.FillRectAntialias(self, x,y,x2,y2, ABrush,APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.FillRectAntialias(x, y, x2, y2: single;
+  ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture, AntialiasingDrawMode);
+  FillRectAntialias(x,y,x2,y2, b, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.EraseRectAntialias(x, y, x2, y2: single;
+  AAlpha: Byte; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  EraseBrush(b, AAlpha);
+  FillRectAntialias(x,y,x2,y2, b, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.FillRectAntialias(const ARectF: TRectF;
+  const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean);
+begin
+  FillRectAntialias(ARectF.Left, ARectF.Top, ARectF.Right, ARectF.Bottom,
+     ABrush, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.FillRectAntialias(const ARectF: TRectF;
+  ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean);
+begin
+  FillRectAntialias(ARectF.Left, ARectF.Top, ARectF.Right, ARectF.Bottom,
+     ATexture, APixelCenteredCoordinates);
+end;
+
+procedure TCustomUniversalBitmap.EraseRectAntialias(const ARectF: TRectF;
+  AAlpha: Byte; APixelCenteredCoordinates: boolean);
+begin
+  EraseRectAntialias(ARectF.Left, ARectF.Top, ARectF.Right, ARectF.Bottom,
+     AAlpha, APixelCenteredCoordinates);
 end;
 
 procedure TCustomUniversalBitmap.FillPath(APath: IBGRAPath;

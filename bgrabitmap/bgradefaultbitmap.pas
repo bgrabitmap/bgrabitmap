@@ -413,16 +413,9 @@ type
     {** Draws a rectangle with antialiasing and fills it with color ''back''.
         Note that the pixel (x2,y2) is included contrary to integer coordinates }
     procedure RectangleAntialias(x, y, x2, y2: single; c: TBGRAPixel; w: single; back: TBGRAPixel); override;
-    {** Draws a rectangle with antialiasing. Note that the pixel (x2,y2) is
-        included contrary to integer coordinates }
+
+    {** Draws a rectangle with antialiasing.  }
     procedure RectangleAntialias(x, y, x2, y2: single; texture: IBGRAScanner; w: single); override;
-    {** Fills a rectangle with antialiasing. For example (-0.5,-0.5,0.5,0.5)
-        fills one pixel }
-    procedure FillRectAntialias(x, y, x2, y2: single; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); overload; override;
-    {** Fills a rectangle with a texture }
-    procedure FillRectAntialias(x, y, x2, y2: single; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); overload; override;
-    {** Erases the content of a rectangle with antialiasing }
-    procedure EraseRectAntialias(x, y, x2, y2: single; alpha: byte; pixelCenteredCoordinates: boolean = true); override;
 
     {** Draws a rounded rectangle border with antialiasing. The corners have an
         elliptical radius of ''rx'' and ''ry''. ''options'' specifies how to
@@ -2742,69 +2735,6 @@ begin
   dither.DrawMode := mode;
   dither.Execute;
   dither.Free;
-end;
-
-procedure TBGRADefaultBitmap.FillRectAntialias(x, y, x2, y2: single; c: TBGRAPixel; pixelCenteredCoordinates: boolean);
-var tx,ty: single;
-begin
-  if not pixelCenteredCoordinates then
-  begin
-    x -= 0.5;
-    y -= 0.5;
-    x2 -= 0.5;
-    y2 -= 0.5;
-  end;
-
-  tx := x2-x;
-  ty := y2-y;
-  if (abs(tx)<1e-3) or (abs(ty)<1e-3) then exit;
-  if (abs(tx) > 2) and (abs(ty) > 2) then
-  begin
-    if (tx < 0) then
-    begin
-      tx := -tx;
-      x := x2;
-      x2 := x+tx;
-    end;
-    if (ty < 0) then
-    begin
-      ty := -ty;
-      y := y2;
-      y2 := y+ty;
-    end;
-    FillRectAntialias(x,y,x2,ceil(y)+0.5,c);
-    FillRectAntialias(x,ceil(y)+0.5,ceil(x)+0.5,floor(y2)-0.5,c);
-    FillRectAntialias(floor(x2)-0.5,ceil(y)+0.5,x2,floor(y2)-0.5,c);
-    FillRectAntialias(x,floor(y2)-0.5,x2,y2,c);
-    FillRect(ceil(x)+1,ceil(y)+1,floor(x2),floor(y2),c,dmDrawWithTransparency);
-  end else
-    FillPolyAntialias([pointf(x, y), pointf(x2, y), pointf(x2, y2), pointf(x, y2)], c);
-end;
-
-procedure TBGRADefaultBitmap.EraseRectAntialias(x, y, x2, y2: single;
-  alpha: byte; pixelCenteredCoordinates: boolean);
-begin
-  if not pixelCenteredCoordinates then
-  begin
-    x -= 0.5;
-    y -= 0.5;
-    x2 -= 0.5;
-    y2 -= 0.5;
-  end;
-  ErasePolyAntialias([pointf(x, y), pointf(x2, y), pointf(x2, y2), pointf(x, y2)], alpha);
-end;
-
-procedure TBGRADefaultBitmap.FillRectAntialias(x, y, x2, y2: single;
-  texture: IBGRAScanner; pixelCenteredCoordinates: boolean);
-begin
-  if not pixelCenteredCoordinates then
-  begin
-    x -= 0.5;
-    y -= 0.5;
-    x2 -= 0.5;
-    y2 -= 0.5;
-  end;
-  FillPolyAntialias([pointf(x, y), pointf(x2, y), pointf(x2, y2), pointf(x, y2)], texture);
 end;
 
 procedure TBGRADefaultBitmap.FillRoundRectAntialias(x, y, x2, y2, rx,ry: single;
