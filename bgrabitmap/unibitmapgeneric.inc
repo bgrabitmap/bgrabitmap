@@ -346,7 +346,10 @@ begin
   PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.PixelSize:= sizeof(TPixel);
 
   if (ADrawMode <> dmSet) and (ct <> ctFullyOpaque) then
-    ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSkipPixels
+  begin
+    ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSkipPixels;
+    ABrush.DoesNothing:= true;
+  end
   else
   begin
     PPixel(@PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.Color)^ := AColor;

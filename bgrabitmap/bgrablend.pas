@@ -295,18 +295,29 @@ begin
     dmSet: ABrush.InternalPutNextPixels:= @BGRASolidBrushSetPixels;
 
     dmSetExceptTransparent: if PBGRAPixel(AColor)^.alpha <> 255 then
-      ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels
-      else ABrush.InternalPutNextPixels:= @BGRASolidBrushSetPixels;
+      begin
+        ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels;
+        ABrush.DoesNothing := true;
+      end else ABrush.InternalPutNextPixels:= @BGRASolidBrushSetPixels;
 
     dmDrawWithTransparency: if PBGRAPixel(AColor)^.alpha = 0 then
-      ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels
-      else ABrush.InternalPutNextPixels:= @BGRASolidBrushDrawPixels;
+      begin
+        ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels;
+        ABrush.DoesNothing := true;
+      end else ABrush.InternalPutNextPixels:= @BGRASolidBrushDrawPixels;
 
     dmLinearBlend: if PBGRAPixel(AColor)^.alpha = 0 then
-      ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels
-      else ABrush.InternalPutNextPixels:= @BGRASolidBrushLinearDrawPixels;
+      begin
+        ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels;
+        ABrush.DoesNothing := true;
+      end
+        else ABrush.InternalPutNextPixels:= @BGRASolidBrushLinearDrawPixels;
 
-    dmXor: ABrush.InternalPutNextPixels:= @BGRASolidBrushXorPixels;
+    dmXor: if PDWord(AColor)^ = 0 then
+      begin
+        ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels;
+        ABrush.DoesNothing := true;
+      end else ABrush.InternalPutNextPixels:= @BGRASolidBrushXorPixels;
   end;
 
 end;

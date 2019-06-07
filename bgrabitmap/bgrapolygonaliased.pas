@@ -857,6 +857,9 @@ var
 
 begin
   if AAlpha = 0 then exit;
+  if BorderColor.DoesNothing then skipBorder:= true;
+  if FillColor.DoesNothing then skipFill:= true;
+  if skipBorder and skipFill then exit;
   if (x1 > x2) then
   begin
     temp := x1;

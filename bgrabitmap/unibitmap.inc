@@ -23,16 +23,36 @@ type
                                       // 65535 to draw without opacity adjustment)
      ACount: integer);                //number of pixels to output
 
+const
+  UniversalBrushFlag_DoNothing = 1;   //the brush does nothing at all and can be skipped
+  UniversalBrushFlag_Reserved1 = 2;
+  UniversalBrushFlag_Reserved2 = 4;
+  UniversalBrushFlag_Reserved3 = 8;
+  UniversalBrushFlag_Reserved4 = 16;
+  UniversalBrushFlag_Reserved5 = 32;
+  UniversalBrushFlag_Reserved6 = 64;
+  UniversalBrushFlag_Reserved7 = 128;
+  //you can define your custom flags from 256 on
+
+type
   { TUniversalBrush }
 
   PUniversalBrush = ^TUniversalBrush;
   TUniversalBrush = record
-    Colorspace: TColorspaceAny;
+  private
+    FColorspace: TColorspaceAny;
+    function GetDoesNothing: boolean; inline;
+    procedure SetColorspace(AValue: TColorspaceAny);
+    procedure SetDoesNothing(AValue: boolean); inline;
+  public
     FixedData: array[0..31] of byte;
     InternalInitContext: TUniBrushInitContextProc;       //do not call directly
     InternalPutNextPixels: TUniBrushPutNextPixelsProc;   //do not call directly
+    Flags: Cardinal;
     procedure MoveTo(AContext: PUniBrushContext; ADest: pointer; AOfsX,AOfsY: integer); inline;
     procedure PutNextPixels(AContext: PUniBrushContext; AAlpha: Word; ACount: integer); inline;
+    property Colorspace: TColorspaceAny read FColorspace write SetColorspace;
+    property DoesNothing: boolean read GetDoesNothing write SetDoesNothing;
   end;
 
 type
@@ -567,11 +587,11 @@ type
 
     class procedure Ellipse(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; x, y, rx, ry: single;
         const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word=65535); overload; virtual; abstract;
-    class procedure Ellipse(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; AOrigin, AXAxis, AYAxis: TPointF;
+    class procedure Ellipse(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
         const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word=65535); overload; virtual; abstract;
     class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; x, y, rx, ry: single;
         const ABrush: TUniversalBrush; AWidth: single); overload; virtual; abstract;
-    class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; AOrigin, AXAxis, AYAxis: TPointF;
+    class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
         const ABrush: TUniversalBrush; AWidth: single); overload; virtual; abstract;
 
     class procedure FillShapeAntialias(ADest: TCustomUniversalBitmap;
@@ -597,6 +617,25 @@ var
 {$UNDEF INCLUDE_IMPLEMENTATION}
 
 { TUniversalBrush }
+
+function TUniversalBrush.GetDoesNothing: boolean;
+begin
+  result := (Flags and UniversalBrushFlag_DoNothing) <> 0;
+end;
+
+procedure TUniversalBrush.SetColorspace(AValue: TColorspaceAny);
+begin
+  FColorspace:=AValue;
+  InternalInitContext:= nil;
+  InternalPutNextPixels := nil;
+  Flags := 0;
+end;
+
+procedure TUniversalBrush.SetDoesNothing(AValue: boolean);
+begin
+  if AValue then Flags := Flags or UniversalBrushFlag_DoNothing
+  else Flags := Flags and not UniversalBrushFlag_DoNothing;
+end;
 
 procedure TUniversalBrush.MoveTo(AContext: PUniBrushContext; ADest: pointer;
   AOfsX, AOfsY: integer);
@@ -1290,6 +1329,7 @@ procedure TCustomUniversalBitmap.DrawPath(APath: IBGRAPath;
 var
   data: TPathCallbackData;
 begin
+  if ABrush.DoesNothing then exit;
   if UniDrawerClass=nil then RaiseMissingUniDrawer;
   data.BrushAddress := @ABrush;
   data.Alpha:= 65535;
@@ -1314,6 +1354,7 @@ procedure TCustomUniversalBitmap.DrawPath(APath: IBGRAPath;
 var
   data: TPathCallbackData;
 begin
+  if ABrush.DoesNothing then exit;
   if UniDrawerClass=nil then RaiseMissingUniDrawer;
   data.BrushAddress := @ABrush;
   data.Alpha:= 65535;
@@ -1491,11 +1532,13 @@ begin
      raise exception.Create('Xor mode not handled by default brush');
 
   ABrush.Colorspace := Colorspace;
-  ABrush.InternalInitContext:= nil;
   PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.PixelSize:= FPixelSize;
 
   if (ADrawMode <> dmSet) and (ct <> ctFullyOpaque) then
-    ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSkipPixels
+  begin
+    ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSkipPixels;
+    ABrush.DoesNothing:= true;
+  end
   else
   begin
     move(AColor^, PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.Color, FPixelSize);
@@ -1792,7 +1835,7 @@ var
   yb: Integer;
   ctx: TUniBrushContext;
 begin
-  if NbPixels = 0 then exit;
+  if ABrush.DoesNothing or (NbPixels = 0) then exit;
   LoadFromBitmapIfNeeded;
   if LineOrder = riloBottomToTop then
     delta := -RowSize
@@ -1861,7 +1904,7 @@ var
 begin
   if ABrush.Colorspace <> Colorspace then RaiseInvalidBrushColorspace;
   if not CheckClippedRectBounds({%H-}ALeft,{%H-}ATop,{%H-}ARight,{%H-}ABottom) or
-    (AAlpha = 0) then exit;
+    (AAlpha = 0) or ABrush.DoesNothing then exit;
 
   LoadFromBitmapIfNeeded;
   pScan := GetPixelAddress(ALeft, ATop);
@@ -2086,7 +2129,7 @@ var
   ctx: TUniBrushContext;
 begin
   if ABrush.Colorspace <> Colorspace then RaiseInvalidBrushColorspace;
-  if not CheckVertLineBounds(x,y,y2) then exit;
+  if not CheckVertLineBounds(x,y,y2) or ABrush.DoesNothing then exit;
   LoadFromBitmapIfNeeded;
   pScan := GetPixelAddress(x,y);
   if LineOrder = riloTopToBottom then delta := RowSize else delta := -rowSize;
@@ -2342,6 +2385,7 @@ procedure TCustomUniversalBitmap.DrawPathAliased(APath: IBGRAPath;
 var
   data: TPathCallbackData;
 begin
+  if ABrush.DoesNothing then exit;
   if UniDrawerClass=nil then RaiseMissingUniDrawer;
   data.BrushAddress := @ABrush;
   data.Alpha:= AAlpha;
@@ -2355,6 +2399,7 @@ procedure TCustomUniversalBitmap.DrawPathAliased(APath: IBGRAPath;
 var
   data: TPathCallbackData;
 begin
+  if ABrush.DoesNothing then exit;
   if UniDrawerClass=nil then RaiseMissingUniDrawer;
   data.BrushAddress := @ABrush;
   data.Alpha:= AAlpha;
@@ -2507,7 +2552,6 @@ procedure TCustomUniversalBitmap.EraseEllipseInRect(ARect: TRect; alpha: byte);
 var
   b: TUniversalBrush;
 begin
-  if alpha = 0 then exit;
   EraseBrush(b, alpha + (alpha shl 8));
   FillEllipseInRect(ARect,b);
 end;

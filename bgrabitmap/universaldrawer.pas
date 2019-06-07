@@ -50,13 +50,13 @@ type
     class function CreateArrow: TBGRACustomArrow; override;
 
     class procedure Ellipse(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; x, y, rx, ry: single;
-        const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word=65535); overload; virtual;
+        const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word=65535); overload; override;
     class procedure Ellipse(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
-        const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word=65535); overload; virtual;
+        const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word=65535); overload; override;
     class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; x, y, rx, ry: single;
-        const ABrush: TUniversalBrush; AWidth: single); overload; virtual;
+        const ABrush: TUniversalBrush; AWidth: single); overload; override;
     class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
-        const ABrush: TUniversalBrush; AWidth: single); overload; virtual;
+        const ABrush: TUniversalBrush; AWidth: single); overload; override;
 
     class procedure FillShapeAntialias(ADest: TCustomUniversalBitmap;
                     AShape: TBGRACustomFillInfo; AFillMode: TFillMode;
@@ -108,7 +108,7 @@ var
   DX, DY, SX, SY, E: integer;
   drawPixelProc: TDrawPixelProc;
 begin
-  if AAlpha= 0 then exit;
+  if ABrush.DoesNothing or (AAlpha= 0) then exit;
   if (Y1 = Y2) then
   begin
     if (X1 = X2) then
@@ -202,7 +202,7 @@ var
   DX, DY, SX, SY, E: integer;
   curAlpha: Word;
 begin
-  if AAlpha= 0 then exit;
+  if ABrush.DoesNothing or (AAlpha= 0) then exit;
   if (Y1 = Y2) and (X1 = X2) then
   begin
     if DrawLastPixel then
@@ -285,7 +285,7 @@ var
   curAlpha: Word;
   curBrush: PUniversalBrush;
 begin
-  if AAlpha= 0 then exit;
+  if (ABrush1.DoesNothing and ABrush2.DoesNothing) and (AAlpha= 0) then exit;
   if ADashLen<=0 then ADashLen := 1;
 
   DashPos := PositiveMod(DashPos,ADashLen+ADashLen);
@@ -394,6 +394,7 @@ class procedure TUniversalDrawer.DrawPolyLine(ADest: TCustomUniversalBitmap;
   DrawLastPixel: boolean; AAlpha: Word);
 var i,start: integer;
 begin
+  if ABrush.DoesNothing then exit;
   start := 0;
   for i := 0 to high(points) do
   if IsEmptyPoint(points[i]) then start := i+1 else
@@ -412,6 +413,7 @@ class procedure TUniversalDrawer.DrawPolyLineAntialias(
   const ABrush: TUniversalBrush; DrawLastPixel: boolean; AAlpha: Word);
 var i,start: integer;
 begin
+  if ABrush.DoesNothing then exit;
   start := 0;
   for i := 0 to high(points) do
   if IsEmptyPoint(points[i]) then start := i+1 else
@@ -431,6 +433,7 @@ class procedure TUniversalDrawer.DrawPolyLineAntialias(
   AAlpha: Word);
 var i,start, dashPos: integer;
 begin
+  if ABrush1.DoesNothing and ABrush2.DoesNothing then exit;
   start := 0;
   dashPos := 0;
   for i := 0 to high(points) do
@@ -458,6 +461,7 @@ class procedure TUniversalDrawer.DrawPolygon(ADest: TCustomUniversalBitmap;
   const points: array of TPoint; const ABrush: TUniversalBrush; AAlpha: Word);
 var i,start: integer;
 begin
+  if ABrush.DoesNothing then exit;
   start := 0;
   for i := 0 to high(points) do
   if IsEmptyPoint(points[i]) then start := i+1 else
@@ -477,6 +481,7 @@ class procedure TUniversalDrawer.DrawPolygonAntialias(
   const ABrush: TUniversalBrush; AAlpha: Word);
 var i,start: integer;
 begin
+  if ABrush.DoesNothing then exit;
   start := 0;
   for i := 0 to high(points) do
   if IsEmptyPoint(points[i]) then start := i+1 else
@@ -496,6 +501,7 @@ class procedure TUniversalDrawer.DrawPolygonAntialias(
   ABrush2: TUniversalBrush; ADashLen: integer; AAlpha: Word);
 var i,start, dashPos: integer;
 begin
+  if ABrush1.DoesNothing and ABrush2.DoesNothing then exit;
   start := 0;
   dashPos := 0;
   for i := 0 to high(points) do
@@ -524,7 +530,7 @@ end;
 class procedure TUniversalDrawer.Rectangle(ADest: TCustomUniversalBitmap; x, y, x2, y2: integer;
   const ABrush: TUniversalBrush; AAlpha: Word);
 begin
-  if not CheckRectBounds({%H-}x,{%H-}y,{%H-}x2,{%H-}y2,1) then exit;
+  if not CheckRectBounds({%H-}x,{%H-}y,{%H-}x2,{%H-}y2,1) or ABrush.DoesNothing then exit;
   ADest.HorizLine(x, y, x2-1, ABrush, AAlpha);
   if y2-y > 2 then
   begin
@@ -592,15 +598,18 @@ begin
   if (APen.Style = psSolid) then
     BGRAPolygon.BorderEllipse(ADest, x, y, rx, ry, AWidth, ABrush, AAlpha)
   else
+  begin
+    if ABrush.DoesNothing then exit;
     FillPoly(ADest, APen.ComputePolygon(BGRAPath.ComputeEllipse(x,y,rx,ry),AWidth),
              ADest.FillMode, ABrush, true, AAlpha);
+  end;
 end;
 
 class procedure TUniversalDrawer.Ellipse(ADest: TCustomUniversalBitmap;
   APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
   const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word);
 begin
-  if (APen.Style = psClear) or (AWidth = 0) then exit;
+  if (APen.Style = psClear) or (AWidth = 0) or ABrush.DoesNothing then exit;
   FillPoly(ADest, APen.ComputePolygon(BGRAPath.ComputeEllipse(AOrigin, AXAxis, AYAxis), AWidth),
            ADest.FillMode, ABrush, true, AAlpha);
 end;
@@ -613,15 +622,18 @@ begin
   if (APen.Style = psSolid) then
     BGRAPolygon.BorderEllipseAntialias(ADest, x, y, rx, ry, AWidth, ABrush)
   else
+  begin
+    if ABrush.DoesNothing then exit;
     FillPolyAntialias(ADest, APen.ComputePolygon(BGRAPath.ComputeEllipse(x,y,rx,ry),AWidth),
              ADest.FillMode, ABrush, true);
+  end;
 end;
 
 class procedure TUniversalDrawer.EllipseAntialias(
   ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin,
   AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush; AWidth: single);
 begin
-  if (APen.Style = psClear) or (AWidth = 0) then exit;
+  if (APen.Style = psClear) or (AWidth = 0) or ABrush.DoesNothing then exit;
   FillPolyAntialias(ADest, APen.ComputePolygon(BGRAPath.ComputeEllipse(AOrigin, AXAxis, AYAxis), AWidth),
            ADest.FillMode, ABrush, true);
 end;
@@ -664,8 +676,9 @@ begin
       abs(AYAxis.x-AOrigin.x),abs(AXAxis.y-AOrigin.y), ABrush)
   else
   begin
+    if ABrush.DoesNothing then exit;
     pts := BGRAPath.ComputeEllipse(AOrigin,AXAxis,AYAxis);
-    FillPolyAntialias(ADest, pts, ADest.FillMode, ABrush, true);
+    FillPolyAntialias(ADest, pts, fmAlternate, ABrush, true);
   end;
 end;
 

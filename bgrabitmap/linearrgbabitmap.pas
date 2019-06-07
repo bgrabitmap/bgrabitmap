@@ -301,7 +301,6 @@ class procedure TLinearRGBABitmap.SolidBrush(out ABrush: TUniversalBrush;
 begin
   ABrush.Colorspace:= TLinearRGBAColorspace;
   PLinearRGBA(@ABrush.FixedData)^ := AColor;
-  ABrush.InternalInitContext:= nil;
   case ADrawMode of
     dmSet: ABrush.InternalPutNextPixels:= @LinearRGBASolidBrushSetPixels;
 
@@ -309,11 +308,17 @@ begin
       if AColor.alpha < 1 then
         ABrush.InternalPutNextPixels:= @LinearRGBASolidBrushSkipPixels
       else
+      begin
         ABrush.InternalPutNextPixels:= @LinearRGBASolidBrushSetPixels;
+        ABrush.DoesNothing := true;
+      end;
 
     dmDrawWithTransparency,dmLinearBlend:
       if AColor.alpha<=0 then
-        ABrush.InternalPutNextPixels:= @LinearRGBASolidBrushSkipPixels
+      begin
+        ABrush.InternalPutNextPixels:= @LinearRGBASolidBrushSkipPixels;
+        ABrush.DoesNothing := true;
+      end
       else if AColor.alpha>=1 then
         ABrush.InternalPutNextPixels:= @LinearRGBASolidBrushSetPixels
       else
@@ -363,7 +368,7 @@ class procedure TLinearRGBABitmap.AlphaBrush(out ABrush: TUniversalBrush;
 begin
   if AAlpha = 0 then
   begin
-    SolidBrush(ABrush, LinearRGBATransparent, dmDrawWithTransparency);
+    SolidBrush(ABrush, LinearRGBATransparent, dmSet);
     exit;
   end;
   ABrush.Colorspace:= TLinearRGBAColorspace;
