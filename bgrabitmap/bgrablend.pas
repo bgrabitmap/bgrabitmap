@@ -33,7 +33,6 @@ procedure InterpolateBilinear(pUpLeft,pUpRight,pDownLeft,pDownRight: PBGRAPixel;
 procedure CopyPixelsWithOpacity(dest,src: PBGRAPixel; opacity: byte; Count: integer); inline;
 function ApplyOpacity(opacity1,opacity2: byte): byte; inline;
 function FastRoundDiv255(value: cardinal): cardinal; inline;
-function FastRoundDiv257(valueWord: cardinal): byte; inline;
 
 { Draw a series of pixels with alpha blending }
 procedure PutPixels(pdest: PBGRAPixel; psource: PBGRAPixel; copycount: integer; mode: TDrawMode; AOpacity:byte);
@@ -1358,11 +1357,6 @@ end;
 function FastRoundDiv255(value: cardinal): cardinal; inline;
 begin
   result := (value + (value shr 7)) shr 8;
-end;
-
-function FastRoundDiv257(valueWord: cardinal): byte; inline;
-begin
-  result := cardinal(valueWord + 127 - (valueWord shr 8)) shr 8;
 end;
 
 procedure DrawExpandedPixelInlineWithAlphaCheck(dest: PBGRAPixel; const ec: TExpandedPixel);

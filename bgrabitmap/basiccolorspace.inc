@@ -138,7 +138,7 @@ type
   {** Converts a pixel from sRGB to correct HSL color space }
   function BGRAToGSBA(c: TBGRAPixel): TGSBAPixel;
   {** Converts a pixel from gamma expanded RGB to correct HSL color space }
-  function ExpandedToGSBA(ec: TExpandedPixel): TGSBAPixel;
+  function ExpandedToGSBA(const ec: TExpandedPixel): TGSBAPixel;
   {** Converts a G hue (GSBA) to a H hue (HSLA) }
   function GtoH(ghue: word): word;
   {** Converts a H hue (HSLA) to a G hue (GSBA) }
@@ -370,13 +370,25 @@ const
   blueWeightShl10  = 117; // = 0.114
 
 procedure BGRANoGamma;
-var i: integer;
+var i,j: integer;
+  prevExp, nextExp: Word;
 begin
   GammaExpFactor := 1;
+  prevExp := 0;
   for i := 0 to 255 do
+  begin
     GammaExpansionTab[i] := (i shl 8) + i;
-  for i := 0 to 65535 do
-    GammaCompressionTab[i] := i shr 8;
+    if i = 255 then nextExp := 65535
+    else
+    begin
+      nextExp := GammaExpansionTab[i]+128;
+      GammaExpansionTabHalf[i] := nextExp+1;
+    end;
+    for j := prevExp to nextExp do
+      GammaCompressionTab[j] := i;
+    if i < 255 then
+      prevExp := nextExp+1;
+  end;
 end;
 
 procedure BGRASetGamma(AGamma: single);
@@ -403,7 +415,8 @@ begin
     else
       nextpos := round(power(i+0.5, GammaExpFactor) * GammaLinearFactor);
     GammaExpansionTab[i] := midpos;
-    GammaExpansionTabHalf[i] := nextpos;
+    if i < 255 then
+      GammaExpansionTabHalf[i] := nextpos;
     for j := prevpos to midpos-1 do
       GammaCompressionTab[j] := i;
     for j := midpos to nextpos-1 do
@@ -1075,28 +1088,14 @@ end;
 { TGSBAPixel }
 
 function BGRAToGSBA(c: TBGRAPixel): TGSBAPixel;
-var lightness: UInt32Or64;
-    red,green,blue: Int32or64;
-    hsla: THSLAPixel;
+var
+  ec: TExpandedPixel;
 begin
-  red   := GammaExpansionTab[c.red];
-  green := GammaExpansionTab[c.green];
-  blue  := GammaExpansionTab[c.blue];
-  hsla.alpha := c.alpha shl 8 + c.alpha;
-
-  lightness := (red * redWeightShl10 + green * greenWeightShl10 +
-    blue * blueWeightShl10 + 512) shr 10;
-
-  ExpandedToHSLAInline(red,green,blue,hsla);
-  result := TGSBAPixel(hsla);
-
-  if result.lightness > 32768 then
-    result.saturation := result.saturation* UInt32or64(not result.lightness) div 32767;
-  result.lightness := lightness;
-  result.hue := HtoG(result.hue);
+  ec := GammaExpansion(c);
+  result := ExpandedToGSBA(ec);
 end;
 
-function ExpandedToGSBA(ec: TExpandedPixel): TGSBAPixel;
+function ExpandedToGSBA(const ec: TExpandedPixel): TGSBAPixel;
 var lightness: UInt32Or64;
     red,green,blue: Int32or64;
     hsla: THSLAPixel;
@@ -1209,13 +1208,9 @@ end;
 
 function GSBAToBGRA(c: TGSBAPixel): TBGRAPixel;
 var ec: TExpandedPixel;
-    lightness: word;
 begin
-  c.hue := GtoH(c.hue);
-  lightness := c.lightness;
-  c.lightness := 32768;
-  ec := HSLAToExpanded(THSLAPixel(c));
-  result := GammaCompression(SetLightness(ec, lightness));
+  ec := GSBAToExpanded(c);
+  result := GammaCompression(c);
 end;
 
 function GSBAToBGRA(const c: THSLAPixel): TBGRAPixel;
