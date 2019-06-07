@@ -449,7 +449,7 @@ type
      procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeColor: TBGRAPixel; AWidth: single; AFillTexture: IBGRAScanner); overload; virtual; abstract;
      procedure DrawPath(APath: IBGRAPath; AMatrix: TAffineMatrix; AStrokeTexture: IBGRAScanner; AWidth: single; AFillTexture: IBGRAScanner); overload; virtual; abstract;
 
-     {==== Gradient polygons ====}
+     {==== Gradient/textured polygons ====}
 
      procedure FillTriangleLinearColor(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); overload; virtual; abstract;
      procedure FillTriangleLinearColorAntialias(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); overload; virtual; abstract;
@@ -514,8 +514,6 @@ type
      procedure FillRect(r: TRect; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); overload; virtual;
      procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; ditheringAlgorithm: TDitheringAlgorithm); overload; virtual;
      procedure FillRect(x, y, x2, y2: integer; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); overload; virtual; abstract;
-     procedure FillRectAntialias(ARect: TRectF; c: TBGRAPixel; pixelCenteredCoordinates: boolean = true); overload;
-     procedure FillRectAntialias(ARect: TRectF; texture: IBGRAScanner; pixelCenteredCoordinates: boolean = true); overload;
 
      procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
      procedure TextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
@@ -533,7 +531,7 @@ type
      function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; overload; virtual; abstract;
      function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
 
-     { Draw the UTF8 encoded string, (x,y) being the top-left corner. The color c or texture is used to fill the text.
+     { Draw the UTF8 encoded string, (x,y) being the top-left corner by default. The color c or texture is used to fill the text.
        The value of FontOrientation is taken into account, so that the text may be rotated. }
      procedure TextOut(x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual;
      procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual;
@@ -1533,18 +1531,6 @@ procedure TBGRACustomBitmap.FillRect(x, y, x2, y2: integer;
   ditheringAlgorithm: TDitheringAlgorithm);
 begin
   FillRect(x,y,x2,y2,texture,mode,Point(0,0),ditheringAlgorithm);
-end;
-
-procedure TBGRACustomBitmap.FillRectAntialias(ARect: TRectF; c: TBGRAPixel;
-  pixelCenteredCoordinates: boolean);
-begin
-  FillRectAntialias(ARect.Left,ARect.Top,ARect.Right,ARect.Bottom, c, pixelCenteredCoordinates);
-end;
-
-procedure TBGRACustomBitmap.FillRectAntialias(ARect: TRectF;
-  texture: IBGRAScanner; pixelCenteredCoordinates: boolean);
-begin
-  FillRectAntialias(ARect.Left,ARect.Top,ARect.Right,ARect.Bottom, texture, pixelCenteredCoordinates);
 end;
 
 procedure TBGRACustomBitmap.TextOutCurved(APath: IBGRAPath; sUTF8: string;
