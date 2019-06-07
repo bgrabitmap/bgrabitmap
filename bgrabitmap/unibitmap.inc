@@ -966,8 +966,16 @@ end;
 
 procedure TCustomUniversalBitmap.PathStrokeAntialiasCallback(
   const APoints: array of TPointF; AClosed: boolean; AData: Pointer);
+var pts: array of TPointF;
 begin
-  //todo
+  with TPathCallbackData(AData^) do
+  begin
+    if AClosed then
+      pts := Pen.ComputePolygon(APoints, Width)
+    else
+      pts := Pen.ComputePolyline(APoints, Width);
+    FillPolyAntialias(pts, BrushAddress^, PixelCenteredCoords);
+  end;
 end;
 
 procedure TCustomUniversalBitmap.SetAntialiasingDrawMode(AValue: TDrawMode);
@@ -1164,7 +1172,7 @@ var
   b: TUniversalBrush;
 begin
   EraseBrush(b, AAlpha + (AAlpha shl 8));
-  FillPath(APath, b, APixelCenteredCoordinates);
+  FillPath(APath,AMatrix, b, APixelCenteredCoordinates);
 end;
 
 procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;

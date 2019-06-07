@@ -1023,7 +1023,7 @@ var
   b: TUniversalBrush;
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
-  DrawPath(APath, AColor, AWidth, APixelCenteredCoordinates);
+  DrawPath(APath, b, AWidth, APixelCenteredCoordinates);
 end;
 
 procedure TGenericUniversalBitmap.DrawPath(APath: IBGRAPath;
@@ -1033,7 +1033,7 @@ var
   b: TUniversalBrush;
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
-  DrawPath(APath,AMatrix, AColor, AWidth, APixelCenteredCoordinates);
+  DrawPath(APath,AMatrix, b, AWidth, APixelCenteredCoordinates);
 end;
 
 {$ENDIF}
