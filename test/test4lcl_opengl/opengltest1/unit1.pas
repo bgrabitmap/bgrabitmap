@@ -100,7 +100,7 @@ var path: string;
 begin
   if not DataLoaded then
   begin
-    path := 'ground.png';
+    path := ExtractFilePath(Application.ExeName) + '..' + PathDelim + 'tux_game' + PathDelim + 'ground.png';
     //Do this :
     //Way1
     //Tex := BGLTexture(path);
