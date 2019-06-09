@@ -5,87 +5,87 @@
 type
 
   { TStdRGBA }
-  
+
   PStdRGBA = ^TStdRGBA;
   TStdRGBA = packed record
     red,green,blue,alpha: single;
     class function New(const ARed,AGreen,ABlue,AAlpha:single): TStdRGBA;overload;static;
     class function New(const ARed,AGreen,ABlue:single): TStdRGBA;overload;static;
   end;
-  
+
   { TAdobeRGBA }
-  
+
   PAdobeRGBA = ^TAdobeRGBA;
   TAdobeRGBA = packed record
     red,green,blue,alpha: byte;
     class function New(const ARed,AGreen,ABlue,AAlpha:byte): TAdobeRGBA;overload;static;
     class function New(const ARed,AGreen,ABlue:byte): TAdobeRGBA;overload;static;
   end;
-  
+
   { TStdHSLA }
-  
+
   PStdHSLA = ^TStdHSLA;
   TStdHSLA = packed record
     hue,saturation,lightness,alpha: single;
     class function New(const AHue,ASaturation,ALightness,AAlpha:single): TStdHSLA;overload;static;
     class function New(const AHue,ASaturation,ALightness:single): TStdHSLA;overload;static;
   end;
-  
+
   { TStdHSVA }
-  
+
   PStdHSVA = ^TStdHSVA;
   TStdHSVA = packed record
     hue,saturation,value,alpha: single;
     class function New(const AHue,ASaturation,AValue,AAlpha:single): TStdHSVA;overload;static;
     class function New(const AHue,ASaturation,AValue:single): TStdHSVA;overload;static;
   end;
-  
+
   { TStdCMYK }
-  
+
   PStdCMYK = ^TStdCMYK;
   TStdCMYK = packed record
     C,M,Y,K: single;
     class function New(const ACyan,AMagenta,AYellow,ABlack:single): TStdCMYK;static;
   end;
-  
+
   { TLinearRGBA }
-  
+
   PLinearRGBA = ^TLinearRGBA;
   TLinearRGBA = packed record
     red,green,blue,alpha: single;
     class function New(const ARed,AGreen,ABlue,AAlpha:single): TLinearRGBA;overload;static;
     class function New(const ARed,AGreen,ABlue:single): TLinearRGBA;overload;static;
   end;
-  
+
   { TXYZA }
-  
+
   PXYZA = ^TXYZA;
   TXYZA = packed record
     X,Y,Z,alpha: single;
     class function New(const AX,AY,AZ,AAlpha:single): TXYZA;overload;static;
     class function New(const AX,AY,AZ:single): TXYZA;overload;static;
   end;
-  
+
   { TLabA }
-  
+
   PLabA = ^TLabA;
   TLabA = packed record
     L,a,b,alpha: single;
     class function New(const ALightness,Aa,Ab,AAlpha:single): TLabA;overload;static;
     class function New(const ALightness,Aa,Ab:single): TLabA;overload;static;
   end;
-  
+
   { TLChA }
-  
+
   PLChA = ^TLChA;
   TLChA = packed record
     L,C,h,alpha: single;
     class function New(const ALightness,AChroma,AHue,AAlpha:single): TLChA;overload;static;
     class function New(const ALightness,AChroma,AHue:single): TLChA;overload;static;
   end;
-  
+
   { TColorColorspace }
-  
+
   TColorColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -99,9 +99,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TBGRAPixelColorspace }
-  
+
   TBGRAPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -115,9 +115,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TFPColorColorspace }
-  
+
   TFPColorColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -131,9 +131,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TStdRGBAColorspace }
-  
+
   TStdRGBAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -147,9 +147,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TAdobeRGBAColorspace }
-  
+
   TAdobeRGBAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -163,9 +163,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TStdHSLAColorspace }
-  
+
   TStdHSLAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -179,9 +179,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TStdHSVAColorspace }
-  
+
   TStdHSVAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -195,9 +195,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TStdCMYKColorspace }
-  
+
   TStdCMYKColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -211,9 +211,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TExpandedPixelColorspace }
-  
+
   TExpandedPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -227,9 +227,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TLinearRGBAColorspace }
-  
+
   TLinearRGBAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -243,9 +243,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { THSLAPixelColorspace }
-  
+
   THSLAPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -259,9 +259,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TGSBAPixelColorspace }
-  
+
   TGSBAPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -275,9 +275,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TXYZAColorspace }
-  
+
   TXYZAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -291,9 +291,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TLabAColorspace }
-  
+
   TLabAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -307,9 +307,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TLChAColorspace }
-  
+
   TLChAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
     class function GetChannelCount: integer; override;
@@ -323,9 +323,9 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
   end;
-  
+
   { TColorHelper }
-  
+
   TColorHelper = type helper for TColor
     class function New(const ARed,AGreen,ABlue:byte): TColor;static;
     class function Colorspace: TColorspaceAny; static;
@@ -386,9 +386,9 @@ type
     property green: byte read GetGreen write SetGreen;
     property blue: byte read GetBlue write SetBlue;
   end;
-  
+
   { TBGRAPixelHelper }
-  
+
   TBGRAPixelHelper = record helper(TBGRAPixelBasicHelper) for TBGRAPixel
     class function New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;static;
     class function New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;static;
@@ -416,9 +416,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TFPColorHelper }
-  
+
   TFPColorHelper = record helper(TFPColorBasicHelper) for TFPColor
     class function New(const ARed,AGreen,ABlue,AAlpha:word): TFPColor;overload;static;
     class function New(const ARed,AGreen,ABlue:word): TFPColor;overload;static;
@@ -446,9 +446,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TStdRGBAHelper }
-  
+
   TStdRGBAHelper = record helper for TStdRGBA
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
@@ -484,9 +484,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TAdobeRGBAHelper }
-  
+
   TAdobeRGBAHelper = record helper for TAdobeRGBA
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
@@ -522,9 +522,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TStdHSLAHelper }
-  
+
   TStdHSLAHelper = record helper for TStdHSLA
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
@@ -560,9 +560,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TStdHSVAHelper }
-  
+
   TStdHSVAHelper = record helper for TStdHSVA
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
@@ -598,9 +598,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TStdCMYKHelper }
-  
+
   TStdCMYKHelper = record helper for TStdCMYK
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
@@ -649,9 +649,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TExpandedPixelHelper }
-  
+
   TExpandedPixelHelper = record helper(TExpandedPixelBasicHelper) for TExpandedPixel
     class function New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;static;
     class function New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;static;
@@ -679,9 +679,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TLinearRGBAHelper }
-  
+
   TLinearRGBAHelper = record helper for TLinearRGBA
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
@@ -717,9 +717,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { THSLAPixelHelper }
-  
+
   THSLAPixelHelper = record helper(THSLAPixelBasicHelper) for THSLAPixel
     class function New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;static;
     class function New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;static;
@@ -747,9 +747,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TGSBAPixelHelper }
-  
+
   TGSBAPixelHelper = record helper(TGSBAPixelBasicHelper) for TGSBAPixel
     class function New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;static;
     class function New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;static;
@@ -777,9 +777,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TXYZAHelper }
-  
+
   TXYZAHelper = record helper for TXYZA
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;
@@ -815,9 +815,9 @@ type
     procedure FromLChA(AValue: TLChA); overload;
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
-  
+
   { TLabAHelper }
-  
+
   TLabAHelper = record helper for TLabA
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;overload;
@@ -875,9 +875,9 @@ type
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLChA(AValue: TLChA);
   end;
-  
+
   { TLChAHelper }
-  
+
   TLChAHelper = record helper for TLChA
     class function Colorspace: TColorspaceAny; static;
     function ToColor: TColor;overload;
@@ -935,7 +935,7 @@ type
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
   end;
-  
+
 operator := (const AValue: TColor): TStdRGBA;
 operator := (const AValue: TColor): TAdobeRGBA;
 operator := (const AValue: TColor): TStdHSLA;
@@ -1151,17 +1151,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function ColorToAdobeRGBA(const AColor: TColor;const AAlpha: byte=255): TAdobeRGBA;
-begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ColorToBGRA(AColor)))));
-  Result.alpha := AAlpha end;
-
-procedure ConvertColorArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TColor); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TAdobeRGBA(ADest^) := ColorToAdobeRGBA(TColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 function ColorToStdHSLA(const AColor: TColor;const AAlpha: single=1): TStdHSLA;
 begin Result := StdRGBAToStdHSLA(BGRAPixelToStdRGBA(ColorToBGRA(AColor)));
   Result.alpha := AAlpha end;
@@ -1205,82 +1194,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function ColorToLinearRGBA(const AColor: TColor;const AAlpha: single=1): TLinearRGBA;
-begin Result := ExpandedPixelToLinearRGBA(GammaExpansion(ColorToBGRA(AColor)));
-  Result.alpha := AAlpha end;
-
-procedure ConvertColorArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TColor); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TLinearRGBA(ADest^) := ColorToLinearRGBA(TColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function ColorToHSLAPixel(const AColor: TColor;const AAlpha: word=65535): THSLAPixel;
-begin Result := BGRAToHSLA(ColorToBGRA(AColor));
-  Result.alpha := AAlpha end;
-
-procedure ConvertColorArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TColor); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := ColorToHSLAPixel(TColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function ColorToGSBAPixel(const AColor: TColor;const AAlpha: word=65535): TGSBAPixel;
-begin Result := BGRAToGSBA(ColorToBGRA(AColor));
-  Result.alpha := AAlpha end;
-
-procedure ConvertColorArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TColor); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := ColorToGSBAPixel(TColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function ColorToXYZA(const AColor: TColor;const AAlpha: single=1): TXYZA;
-begin Result := LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ColorToBGRA(AColor))));
-  Result.alpha := AAlpha end;
-
-procedure ConvertColorArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TColor); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TXYZA(ADest^) := ColorToXYZA(TColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function ColorToLabA(const AColor: TColor;const AAlpha: single=1): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ColorToBGRA(AColor)))));
-  Result.alpha := AAlpha end;
-
-function ColorToLabA(const AColor: TColor; const AReferenceWhite: TXYZReferenceWhite;const AAlpha: single=1): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ColorToBGRA(AColor)))),AReferenceWhite);
-  Result.alpha := AAlpha end;
-
-procedure ConvertColorArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TColor); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLabA(ADest^) := ColorToLabA(TColor(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function ColorToLChA(const AColor: TColor;const AAlpha: single=1): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ColorToBGRA(AColor))))));
-  Result.alpha := AAlpha end;
-
-function ColorToLChA(const AColor: TColor; const AReferenceWhite: TXYZReferenceWhite;const AAlpha: single=1): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ColorToBGRA(AColor)))),AReferenceWhite));
-  Result.alpha := AAlpha end;
-
-procedure ConvertColorArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TColor); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLChA(ADest^) := ColorToLChA(TColor(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertBGRAPixelArrayToColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(TColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
@@ -1299,16 +1212,6 @@ procedure ConvertBGRAPixelArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; 
 begin
   while ACount > 0 do begin
     TStdRGBA(ADest^) := BGRAPixelToStdRGBA(TBGRAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function BGRAPixelToAdobeRGBA(const ABGRAPixel: TBGRAPixel): TAdobeRGBA;
-begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ABGRAPixel)))) end;
-
-procedure ConvertBGRAPixelArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TAdobeRGBA(ADest^) := BGRAPixelToAdobeRGBA(TBGRAPixel(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1349,68 +1252,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function BGRAPixelToLinearRGBA(const ABGRAPixel: TBGRAPixel): TLinearRGBA;
-begin Result := ExpandedPixelToLinearRGBA(GammaExpansion(ABGRAPixel)) end;
-
-procedure ConvertBGRAPixelArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TLinearRGBA(ADest^) := BGRAPixelToLinearRGBA(TBGRAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-procedure ConvertBGRAPixelArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := BGRAToHSLA(TBGRAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-procedure ConvertBGRAPixelArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := BGRAToGSBA(TBGRAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function BGRAPixelToXYZA(const ABGRAPixel: TBGRAPixel): TXYZA;
-begin Result := LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ABGRAPixel))) end;
-
-procedure ConvertBGRAPixelArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TXYZA(ADest^) := BGRAPixelToXYZA(TBGRAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function BGRAPixelToLabA(const ABGRAPixel: TBGRAPixel): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ABGRAPixel)))) end;
-
-function BGRAPixelToLabA(const ABGRAPixel: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ABGRAPixel))),AReferenceWhite) end;
-
-procedure ConvertBGRAPixelArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLabA(ADest^) := BGRAPixelToLabA(TBGRAPixel(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function BGRAPixelToLChA(const ABGRAPixel: TBGRAPixel): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ABGRAPixel))))) end;
-
-function BGRAPixelToLChA(const ABGRAPixel: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GammaExpansion(ABGRAPixel))),AReferenceWhite)) end;
-
-procedure ConvertBGRAPixelArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TBGRAPixel); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLChA(ADest^) := BGRAPixelToLChA(TBGRAPixel(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 function FPColorToColor(const AFPColor: TFPColor): TColor;
 begin Result := BGRAToColor(FPColorToBGRA(AFPColor)) end;
 
@@ -1428,128 +1269,10 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function FPColorToStdRGBA(const AFPColor: TFPColor): TStdRGBA;
-begin Result := ExpandedPixelToStdRGBA(FPColorToExpanded(AFPColor)) end;
-
-procedure ConvertFPColorArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdRGBA(ADest^) := FPColorToStdRGBA(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToAdobeRGBA(const AFPColor: TFPColor): TAdobeRGBA;
-begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor)))) end;
-
-procedure ConvertFPColorArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TAdobeRGBA(ADest^) := FPColorToAdobeRGBA(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToStdHSLA(const AFPColor: TFPColor): TStdHSLA;
-begin Result := StdRGBAToStdHSLA(ExpandedPixelToStdRGBA(FPColorToExpanded(AFPColor))) end;
-
-procedure ConvertFPColorArrayToStdHSLAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TStdHSLA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSLA(ADest^) := FPColorToStdHSLA(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToStdHSVA(const AFPColor: TFPColor): TStdHSVA;
-begin Result := StdRGBAToStdHSVA(ExpandedPixelToStdRGBA(FPColorToExpanded(AFPColor))) end;
-
-procedure ConvertFPColorArrayToStdHSVAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TStdHSVA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSVA(ADest^) := FPColorToStdHSVA(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToStdCMYK(const AFPColor: TFPColor): TStdCMYK;
-begin Result := StdRGBAToStdCMYK(ExpandedPixelToStdRGBA(FPColorToExpanded(AFPColor))) end;
-
-procedure ConvertFPColorArrayToStdCMYKArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TStdCMYK); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdCMYK(ADest^) := FPColorToStdCMYK(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertFPColorArrayToExpandedPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TExpandedPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
     TExpandedPixel(ADest^) := FPColorToExpanded(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToLinearRGBA(const AFPColor: TFPColor): TLinearRGBA;
-begin Result := ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor)) end;
-
-procedure ConvertFPColorArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TLinearRGBA(ADest^) := FPColorToLinearRGBA(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToHSLAPixel(const AFPColor: TFPColor): THSLAPixel;
-begin Result := ExpandedToHSLA(FPColorToExpanded(AFPColor)) end;
-
-procedure ConvertFPColorArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := FPColorToHSLAPixel(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToGSBAPixel(const AFPColor: TFPColor): TGSBAPixel;
-begin Result := ExpandedToGSBA(FPColorToExpanded(AFPColor)) end;
-
-procedure ConvertFPColorArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := FPColorToGSBAPixel(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToXYZA(const AFPColor: TFPColor): TXYZA;
-begin Result := LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor))) end;
-
-procedure ConvertFPColorArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TXYZA(ADest^) := FPColorToXYZA(TFPColor(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToLabA(const AFPColor: TFPColor): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor)))) end;
-
-function FPColorToLabA(const AFPColor: TFPColor; const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor))),AReferenceWhite) end;
-
-procedure ConvertFPColorArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLabA(ADest^) := FPColorToLabA(TFPColor(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function FPColorToLChA(const AFPColor: TFPColor): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor))))) end;
-
-function FPColorToLChA(const AFPColor: TFPColor; const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(FPColorToExpanded(AFPColor))),AReferenceWhite)) end;
-
-procedure ConvertFPColorArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TFPColor); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLChA(ADest^) := FPColorToLChA(TFPColor(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1567,26 +1290,6 @@ procedure ConvertStdRGBAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; 
 begin
   while ACount > 0 do begin
     TBGRAPixel(ADest^) := StdRGBAToBGRAPixel(TStdRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdRGBAToFPColor(const AStdRGBA: TStdRGBA): TFPColor;
-begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(AStdRGBA)) end;
-
-procedure ConvertStdRGBAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdRGBA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TFPColor(ADest^) := StdRGBAToFPColor(TStdRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdRGBAToAdobeRGBA(const AStdRGBA: TStdRGBA): TAdobeRGBA;
-begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(AStdRGBA))) end;
-
-procedure ConvertStdRGBAArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdRGBA); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TAdobeRGBA(ADest^) := StdRGBAToAdobeRGBA(TStdRGBA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1618,141 +1321,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-procedure ConvertStdRGBAArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdRGBA); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TLinearRGBA(ADest^) := StdRGBAToLinearRGBA(TStdRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdRGBAToHSLAPixel(const AStdRGBA: TStdRGBA): THSLAPixel;
-begin Result := ExpandedToHSLA(StdRGBAToExpandedPixel(AStdRGBA)) end;
-
-procedure ConvertStdRGBAArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdRGBA); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := StdRGBAToHSLAPixel(TStdRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdRGBAToGSBAPixel(const AStdRGBA: TStdRGBA): TGSBAPixel;
-begin Result := ExpandedToGSBA(StdRGBAToExpandedPixel(AStdRGBA)) end;
-
-procedure ConvertStdRGBAArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdRGBA); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := StdRGBAToGSBAPixel(TStdRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdRGBAToXYZA(const AStdRGBA: TStdRGBA): TXYZA;
-begin Result := LinearRGBAToXYZA(StdRGBAToLinearRGBA(AStdRGBA)) end;
-
-procedure ConvertStdRGBAArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdRGBA); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TXYZA(ADest^) := StdRGBAToXYZA(TStdRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdRGBAToLabA(const AStdRGBA: TStdRGBA): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(AStdRGBA))) end;
-
-function StdRGBAToLabA(const AStdRGBA: TStdRGBA; const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(AStdRGBA)),AReferenceWhite) end;
-
-procedure ConvertStdRGBAArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdRGBA); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLabA(ADest^) := StdRGBAToLabA(TStdRGBA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdRGBAToLChA(const AStdRGBA: TStdRGBA): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(AStdRGBA)))) end;
-
-function StdRGBAToLChA(const AStdRGBA: TStdRGBA; const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(AStdRGBA)),AReferenceWhite)) end;
-
-procedure ConvertStdRGBAArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdRGBA); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLChA(ADest^) := StdRGBAToLChA(TStdRGBA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function AdobeRGBAToColor(const AAdobeRGBA: TAdobeRGBA): TColor;
-begin Result := BGRAToColor(GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA))))) end;
-
-procedure ConvertAdobeRGBAArrayToColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TColor(ADest^) := AdobeRGBAToColor(TAdobeRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function AdobeRGBAToBGRAPixel(const AAdobeRGBA: TAdobeRGBA): TBGRAPixel;
-begin Result := GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA)))) end;
-
-procedure ConvertAdobeRGBAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TBGRAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TBGRAPixel(ADest^) := AdobeRGBAToBGRAPixel(TAdobeRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function AdobeRGBAToFPColor(const AAdobeRGBA: TAdobeRGBA): TFPColor;
-begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA)))) end;
-
-procedure ConvertAdobeRGBAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TFPColor(ADest^) := AdobeRGBAToFPColor(TAdobeRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function AdobeRGBAToStdRGBA(const AAdobeRGBA: TAdobeRGBA): TStdRGBA;
-begin Result := LinearRGBAToStdRGBA(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA))) end;
-
-procedure ConvertAdobeRGBAArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdRGBA(ADest^) := AdobeRGBAToStdRGBA(TAdobeRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function AdobeRGBAToStdHSLA(const AAdobeRGBA: TAdobeRGBA): TStdHSLA;
-begin Result := StdRGBAToStdHSLA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA)))) end;
-
-procedure ConvertAdobeRGBAArrayToStdHSLAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TStdHSLA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSLA(ADest^) := AdobeRGBAToStdHSLA(TAdobeRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function AdobeRGBAToStdHSVA(const AAdobeRGBA: TAdobeRGBA): TStdHSVA;
-begin Result := StdRGBAToStdHSVA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA)))) end;
-
-procedure ConvertAdobeRGBAArrayToStdHSVAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TStdHSVA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSVA(ADest^) := AdobeRGBAToStdHSVA(TAdobeRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function AdobeRGBAToStdCMYK(const AAdobeRGBA: TAdobeRGBA): TStdCMYK;
-begin Result := StdRGBAToStdCMYK(LinearRGBAToStdRGBA(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA)))) end;
-
-procedure ConvertAdobeRGBAArrayToStdCMYKArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TStdCMYK); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdCMYK(ADest^) := AdobeRGBAToStdCMYK(TAdobeRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 function AdobeRGBAToExpandedPixel(const AAdobeRGBA: TAdobeRGBA): TExpandedPixel;
 begin Result := LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA))) end;
 
@@ -1770,26 +1338,6 @@ procedure ConvertAdobeRGBAArrayToLinearRGBAArray(ASource: pointer; ADest: Pointe
 begin
   while ACount > 0 do begin
     TLinearRGBA(ADest^) := AdobeRGBAToLinearRGBA(TAdobeRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function AdobeRGBAToHSLAPixel(const AAdobeRGBA: TAdobeRGBA): THSLAPixel;
-begin Result := ExpandedToHSLA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA)))) end;
-
-procedure ConvertAdobeRGBAArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := AdobeRGBAToHSLAPixel(TAdobeRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function AdobeRGBAToGSBAPixel(const AAdobeRGBA: TAdobeRGBA): TGSBAPixel;
-begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AdobeRGBAToXYZA(AAdobeRGBA)))) end;
-
-procedure ConvertAdobeRGBAArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := AdobeRGBAToGSBAPixel(TAdobeRGBA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1848,30 +1396,10 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function StdHSLAToFPColor(const AStdHSLA: TStdHSLA): TFPColor;
-begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(StdHSLAToStdRGBA(AStdHSLA))) end;
-
-procedure ConvertStdHSLAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TFPColor(ADest^) := StdHSLAToFPColor(TStdHSLA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertStdHSLAArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
     TStdRGBA(ADest^) := StdHSLAToStdRGBA(TStdHSLA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSLAToAdobeRGBA(const AStdHSLA: TStdHSLA): TAdobeRGBA;
-begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSLAToStdRGBA(AStdHSLA)))) end;
-
-procedure ConvertStdHSLAArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TAdobeRGBA(ADest^) := StdHSLAToAdobeRGBA(TStdHSLA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1902,74 +1430,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function StdHSLAToLinearRGBA(const AStdHSLA: TStdHSLA): TLinearRGBA;
-begin Result := StdRGBAToLinearRGBA(StdHSLAToStdRGBA(AStdHSLA)) end;
-
-procedure ConvertStdHSLAArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TLinearRGBA(ADest^) := StdHSLAToLinearRGBA(TStdHSLA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSLAToHSLAPixel(const AStdHSLA: TStdHSLA): THSLAPixel;
-begin Result := ExpandedToHSLA(StdRGBAToExpandedPixel(StdHSLAToStdRGBA(AStdHSLA))) end;
-
-procedure ConvertStdHSLAArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := StdHSLAToHSLAPixel(TStdHSLA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSLAToGSBAPixel(const AStdHSLA: TStdHSLA): TGSBAPixel;
-begin Result := ExpandedToGSBA(StdRGBAToExpandedPixel(StdHSLAToStdRGBA(AStdHSLA))) end;
-
-procedure ConvertStdHSLAArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := StdHSLAToGSBAPixel(TStdHSLA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSLAToXYZA(const AStdHSLA: TStdHSLA): TXYZA;
-begin Result := LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSLAToStdRGBA(AStdHSLA))) end;
-
-procedure ConvertStdHSLAArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TXYZA(ADest^) := StdHSLAToXYZA(TStdHSLA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSLAToLabA(const AStdHSLA: TStdHSLA): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSLAToStdRGBA(AStdHSLA)))) end;
-
-function StdHSLAToLabA(const AStdHSLA: TStdHSLA; const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSLAToStdRGBA(AStdHSLA))),AReferenceWhite) end;
-
-procedure ConvertStdHSLAArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLabA(ADest^) := StdHSLAToLabA(TStdHSLA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSLAToLChA(const AStdHSLA: TStdHSLA): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSLAToStdRGBA(AStdHSLA))))) end;
-
-function StdHSLAToLChA(const AStdHSLA: TStdHSLA; const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSLAToStdRGBA(AStdHSLA))),AReferenceWhite)) end;
-
-procedure ConvertStdHSLAArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSLA); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLChA(ADest^) := StdHSLAToLChA(TStdHSLA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 function StdHSVAToColor(const AStdHSVA: TStdHSVA): TColor;
 begin Result := BGRAToColor(StdRGBAToBGRAPixel(StdHSVAToStdRGBA(AStdHSVA))) end;
 
@@ -1990,30 +1450,10 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function StdHSVAToFPColor(const AStdHSVA: TStdHSVA): TFPColor;
-begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(StdHSVAToStdRGBA(AStdHSVA))) end;
-
-procedure ConvertStdHSVAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TFPColor(ADest^) := StdHSVAToFPColor(TStdHSVA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertStdHSVAArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
     TStdRGBA(ADest^) := StdHSVAToStdRGBA(TStdHSVA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSVAToAdobeRGBA(const AStdHSVA: TStdHSVA): TAdobeRGBA;
-begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSVAToStdRGBA(AStdHSVA)))) end;
-
-procedure ConvertStdHSVAArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TAdobeRGBA(ADest^) := StdHSVAToAdobeRGBA(TStdHSVA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2044,74 +1484,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function StdHSVAToLinearRGBA(const AStdHSVA: TStdHSVA): TLinearRGBA;
-begin Result := StdRGBAToLinearRGBA(StdHSVAToStdRGBA(AStdHSVA)) end;
-
-procedure ConvertStdHSVAArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TLinearRGBA(ADest^) := StdHSVAToLinearRGBA(TStdHSVA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSVAToHSLAPixel(const AStdHSVA: TStdHSVA): THSLAPixel;
-begin Result := ExpandedToHSLA(StdRGBAToExpandedPixel(StdHSVAToStdRGBA(AStdHSVA))) end;
-
-procedure ConvertStdHSVAArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := StdHSVAToHSLAPixel(TStdHSVA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSVAToGSBAPixel(const AStdHSVA: TStdHSVA): TGSBAPixel;
-begin Result := ExpandedToGSBA(StdRGBAToExpandedPixel(StdHSVAToStdRGBA(AStdHSVA))) end;
-
-procedure ConvertStdHSVAArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := StdHSVAToGSBAPixel(TStdHSVA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSVAToXYZA(const AStdHSVA: TStdHSVA): TXYZA;
-begin Result := LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSVAToStdRGBA(AStdHSVA))) end;
-
-procedure ConvertStdHSVAArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TXYZA(ADest^) := StdHSVAToXYZA(TStdHSVA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSVAToLabA(const AStdHSVA: TStdHSVA): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSVAToStdRGBA(AStdHSVA)))) end;
-
-function StdHSVAToLabA(const AStdHSVA: TStdHSVA; const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSVAToStdRGBA(AStdHSVA))),AReferenceWhite) end;
-
-procedure ConvertStdHSVAArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLabA(ADest^) := StdHSVAToLabA(TStdHSVA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdHSVAToLChA(const AStdHSVA: TStdHSVA): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSVAToStdRGBA(AStdHSVA))))) end;
-
-function StdHSVAToLChA(const AStdHSVA: TStdHSVA; const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdHSVAToStdRGBA(AStdHSVA))),AReferenceWhite)) end;
-
-procedure ConvertStdHSVAArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdHSVA); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLChA(ADest^) := StdHSVAToLChA(TStdHSVA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 function StdCMYKToColor(const AStdCMYK: TStdCMYK): TColor;
 begin Result := BGRAToColor(StdRGBAToBGRAPixel(StdCMYKToStdRGBA(AStdCMYK))) end;
 
@@ -2133,32 +1505,10 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function StdCMYKToFPColor(const AStdCMYK: TStdCMYK;const AAlpha: word=65535): TFPColor;
-begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(StdCMYKToStdRGBA(AStdCMYK)));
-  Result.alpha := AAlpha end;
-
-procedure ConvertStdCMYKArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TFPColor(ADest^) := StdCMYKToFPColor(TStdCMYK(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertStdCMYKArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
     TStdRGBA(ADest^) := StdCMYKToStdRGBA(TStdCMYK(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdCMYKToAdobeRGBA(const AStdCMYK: TStdCMYK;const AAlpha: byte=255): TAdobeRGBA;
-begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdCMYKToStdRGBA(AStdCMYK))));
-  Result.alpha := AAlpha end;
-
-procedure ConvertStdCMYKArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TAdobeRGBA(ADest^) := StdCMYKToAdobeRGBA(TStdCMYK(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2192,82 +1542,6 @@ procedure ConvertStdCMYKArrayToExpandedPixelArray(ASource: pointer; ADest: Point
 begin
   while ACount > 0 do begin
     TExpandedPixel(ADest^) := StdCMYKToExpandedPixel(TStdCMYK(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdCMYKToLinearRGBA(const AStdCMYK: TStdCMYK;const AAlpha: single=1): TLinearRGBA;
-begin Result := StdRGBAToLinearRGBA(StdCMYKToStdRGBA(AStdCMYK));
-  Result.alpha := AAlpha end;
-
-procedure ConvertStdCMYKArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TLinearRGBA(ADest^) := StdCMYKToLinearRGBA(TStdCMYK(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdCMYKToHSLAPixel(const AStdCMYK: TStdCMYK;const AAlpha: word=65535): THSLAPixel;
-begin Result := ExpandedToHSLA(StdRGBAToExpandedPixel(StdCMYKToStdRGBA(AStdCMYK)));
-  Result.alpha := AAlpha end;
-
-procedure ConvertStdCMYKArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := StdCMYKToHSLAPixel(TStdCMYK(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdCMYKToGSBAPixel(const AStdCMYK: TStdCMYK;const AAlpha: word=65535): TGSBAPixel;
-begin Result := ExpandedToGSBA(StdRGBAToExpandedPixel(StdCMYKToStdRGBA(AStdCMYK)));
-  Result.alpha := AAlpha end;
-
-procedure ConvertStdCMYKArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := StdCMYKToGSBAPixel(TStdCMYK(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdCMYKToXYZA(const AStdCMYK: TStdCMYK;const AAlpha: single=1): TXYZA;
-begin Result := LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdCMYKToStdRGBA(AStdCMYK)));
-  Result.alpha := AAlpha end;
-
-procedure ConvertStdCMYKArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TXYZA(ADest^) := StdCMYKToXYZA(TStdCMYK(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdCMYKToLabA(const AStdCMYK: TStdCMYK;const AAlpha: single=1): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdCMYKToStdRGBA(AStdCMYK))));
-  Result.alpha := AAlpha end;
-
-function StdCMYKToLabA(const AStdCMYK: TStdCMYK; const AReferenceWhite: TXYZReferenceWhite;const AAlpha: single=1): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdCMYKToStdRGBA(AStdCMYK))),AReferenceWhite);
-  Result.alpha := AAlpha end;
-
-procedure ConvertStdCMYKArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLabA(ADest^) := StdCMYKToLabA(TStdCMYK(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function StdCMYKToLChA(const AStdCMYK: TStdCMYK;const AAlpha: single=1): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdCMYKToStdRGBA(AStdCMYK)))));
-  Result.alpha := AAlpha end;
-
-function StdCMYKToLChA(const AStdCMYK: TStdCMYK; const AReferenceWhite: TXYZReferenceWhite;const AAlpha: single=1): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(StdRGBAToLinearRGBA(StdCMYKToStdRGBA(AStdCMYK))),AReferenceWhite));
-  Result.alpha := AAlpha end;
-
-procedure ConvertStdCMYKArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TStdCMYK); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLChA(ADest^) := StdCMYKToLChA(TStdCMYK(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2401,43 +1675,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function LinearRGBAToColor(const ALinearRGBA: TLinearRGBA): TColor;
-begin Result := BGRAToColor(GammaCompression(LinearRGBAToExpandedPixel(ALinearRGBA))) end;
-
-procedure ConvertLinearRGBAArrayToColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TColor(ADest^) := LinearRGBAToColor(TLinearRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LinearRGBAToBGRAPixel(const ALinearRGBA: TLinearRGBA): TBGRAPixel;
-begin Result := GammaCompression(LinearRGBAToExpandedPixel(ALinearRGBA)) end;
-
-procedure ConvertLinearRGBAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TBGRAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TBGRAPixel(ADest^) := LinearRGBAToBGRAPixel(TLinearRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LinearRGBAToFPColor(const ALinearRGBA: TLinearRGBA): TFPColor;
-begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(ALinearRGBA)) end;
-
-procedure ConvertLinearRGBAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TFPColor(ADest^) := LinearRGBAToFPColor(TLinearRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-procedure ConvertLinearRGBAArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdRGBA(ADest^) := LinearRGBAToStdRGBA(TLinearRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 function LinearRGBAToAdobeRGBA(const ALinearRGBA: TLinearRGBA): TAdobeRGBA;
 begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(ALinearRGBA)) end;
 
@@ -2448,60 +1685,10 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function LinearRGBAToStdHSLA(const ALinearRGBA: TLinearRGBA): TStdHSLA;
-begin Result := StdRGBAToStdHSLA(LinearRGBAToStdRGBA(ALinearRGBA)) end;
-
-procedure ConvertLinearRGBAArrayToStdHSLAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TStdHSLA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSLA(ADest^) := LinearRGBAToStdHSLA(TLinearRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LinearRGBAToStdHSVA(const ALinearRGBA: TLinearRGBA): TStdHSVA;
-begin Result := StdRGBAToStdHSVA(LinearRGBAToStdRGBA(ALinearRGBA)) end;
-
-procedure ConvertLinearRGBAArrayToStdHSVAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TStdHSVA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSVA(ADest^) := LinearRGBAToStdHSVA(TLinearRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LinearRGBAToStdCMYK(const ALinearRGBA: TLinearRGBA): TStdCMYK;
-begin Result := StdRGBAToStdCMYK(LinearRGBAToStdRGBA(ALinearRGBA)) end;
-
-procedure ConvertLinearRGBAArrayToStdCMYKArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TStdCMYK); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdCMYK(ADest^) := LinearRGBAToStdCMYK(TLinearRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertLinearRGBAArrayToExpandedPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TExpandedPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
     TExpandedPixel(ADest^) := LinearRGBAToExpandedPixel(TLinearRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LinearRGBAToHSLAPixel(const ALinearRGBA: TLinearRGBA): THSLAPixel;
-begin Result := ExpandedToHSLA(LinearRGBAToExpandedPixel(ALinearRGBA)) end;
-
-procedure ConvertLinearRGBAArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := LinearRGBAToHSLAPixel(TLinearRGBA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LinearRGBAToGSBAPixel(const ALinearRGBA: TLinearRGBA): TGSBAPixel;
-begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(ALinearRGBA)) end;
-
-procedure ConvertLinearRGBAArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLinearRGBA); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := LinearRGBAToGSBAPixel(TLinearRGBA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2540,97 +1727,10 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function HSLAPixelToColor(const AHSLAPixel: THSLAPixel): TColor;
-begin Result := BGRAToColor(HSLAToBGRA(AHSLAPixel)) end;
-
-procedure ConvertHSLAPixelArrayToColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TColor(ADest^) := HSLAPixelToColor(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-procedure ConvertHSLAPixelArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TBGRAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TBGRAPixel(ADest^) := HSLAToBGRA(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function HSLAPixelToFPColor(const AHSLAPixel: THSLAPixel): TFPColor;
-begin Result := ExpandedToFPColor(HSLAToExpanded(AHSLAPixel)) end;
-
-procedure ConvertHSLAPixelArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TFPColor(ADest^) := HSLAPixelToFPColor(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function HSLAPixelToStdRGBA(const AHSLAPixel: THSLAPixel): TStdRGBA;
-begin Result := ExpandedPixelToStdRGBA(HSLAToExpanded(AHSLAPixel)) end;
-
-procedure ConvertHSLAPixelArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdRGBA(ADest^) := HSLAPixelToStdRGBA(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function HSLAPixelToAdobeRGBA(const AHSLAPixel: THSLAPixel): TAdobeRGBA;
-begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(HSLAToExpanded(AHSLAPixel)))) end;
-
-procedure ConvertHSLAPixelArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TAdobeRGBA(ADest^) := HSLAPixelToAdobeRGBA(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function HSLAPixelToStdHSLA(const AHSLAPixel: THSLAPixel): TStdHSLA;
-begin Result := StdRGBAToStdHSLA(ExpandedPixelToStdRGBA(HSLAToExpanded(AHSLAPixel))) end;
-
-procedure ConvertHSLAPixelArrayToStdHSLAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TStdHSLA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSLA(ADest^) := HSLAPixelToStdHSLA(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function HSLAPixelToStdHSVA(const AHSLAPixel: THSLAPixel): TStdHSVA;
-begin Result := StdRGBAToStdHSVA(ExpandedPixelToStdRGBA(HSLAToExpanded(AHSLAPixel))) end;
-
-procedure ConvertHSLAPixelArrayToStdHSVAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TStdHSVA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSVA(ADest^) := HSLAPixelToStdHSVA(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function HSLAPixelToStdCMYK(const AHSLAPixel: THSLAPixel): TStdCMYK;
-begin Result := StdRGBAToStdCMYK(ExpandedPixelToStdRGBA(HSLAToExpanded(AHSLAPixel))) end;
-
-procedure ConvertHSLAPixelArrayToStdCMYKArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TStdCMYK); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdCMYK(ADest^) := HSLAPixelToStdCMYK(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertHSLAPixelArrayToExpandedPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TExpandedPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
     TExpandedPixel(ADest^) := HSLAToExpanded(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function HSLAPixelToLinearRGBA(const AHSLAPixel: THSLAPixel): TLinearRGBA;
-begin Result := ExpandedPixelToLinearRGBA(HSLAToExpanded(AHSLAPixel)) end;
-
-procedure ConvertHSLAPixelArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TLinearRGBA(ADest^) := HSLAPixelToLinearRGBA(THSLAPixel(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2641,135 +1741,10 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function HSLAPixelToXYZA(const AHSLAPixel: THSLAPixel): TXYZA;
-begin Result := LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(HSLAToExpanded(AHSLAPixel))) end;
-
-procedure ConvertHSLAPixelArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TXYZA(ADest^) := HSLAPixelToXYZA(THSLAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function HSLAPixelToLabA(const AHSLAPixel: THSLAPixel): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(HSLAToExpanded(AHSLAPixel)))) end;
-
-function HSLAPixelToLabA(const AHSLAPixel: THSLAPixel; const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(HSLAToExpanded(AHSLAPixel))),AReferenceWhite) end;
-
-procedure ConvertHSLAPixelArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLabA(ADest^) := HSLAPixelToLabA(THSLAPixel(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function HSLAPixelToLChA(const AHSLAPixel: THSLAPixel): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(HSLAToExpanded(AHSLAPixel))))) end;
-
-function HSLAPixelToLChA(const AHSLAPixel: THSLAPixel; const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(HSLAToExpanded(AHSLAPixel))),AReferenceWhite)) end;
-
-procedure ConvertHSLAPixelArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(THSLAPixel); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLChA(ADest^) := HSLAPixelToLChA(THSLAPixel(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToColor(const AGSBAPixel: TGSBAPixel): TColor;
-begin Result := BGRAToColor(GSBAToBGRA(AGSBAPixel)) end;
-
-procedure ConvertGSBAPixelArrayToColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TColor(ADest^) := GSBAPixelToColor(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-procedure ConvertGSBAPixelArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TBGRAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TBGRAPixel(ADest^) := GSBAToBGRA(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToFPColor(const AGSBAPixel: TGSBAPixel): TFPColor;
-begin Result := ExpandedToFPColor(GSBAToExpanded(AGSBAPixel)) end;
-
-procedure ConvertGSBAPixelArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TFPColor(ADest^) := GSBAPixelToFPColor(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToStdRGBA(const AGSBAPixel: TGSBAPixel): TStdRGBA;
-begin Result := ExpandedPixelToStdRGBA(GSBAToExpanded(AGSBAPixel)) end;
-
-procedure ConvertGSBAPixelArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdRGBA(ADest^) := GSBAPixelToStdRGBA(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToAdobeRGBA(const AGSBAPixel: TGSBAPixel): TAdobeRGBA;
-begin Result := XYZAToAdobeRGBA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GSBAToExpanded(AGSBAPixel)))) end;
-
-procedure ConvertGSBAPixelArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TAdobeRGBA(ADest^) := GSBAPixelToAdobeRGBA(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToStdHSLA(const AGSBAPixel: TGSBAPixel): TStdHSLA;
-begin Result := StdRGBAToStdHSLA(ExpandedPixelToStdRGBA(GSBAToExpanded(AGSBAPixel))) end;
-
-procedure ConvertGSBAPixelArrayToStdHSLAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TStdHSLA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSLA(ADest^) := GSBAPixelToStdHSLA(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToStdHSVA(const AGSBAPixel: TGSBAPixel): TStdHSVA;
-begin Result := StdRGBAToStdHSVA(ExpandedPixelToStdRGBA(GSBAToExpanded(AGSBAPixel))) end;
-
-procedure ConvertGSBAPixelArrayToStdHSVAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TStdHSVA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSVA(ADest^) := GSBAPixelToStdHSVA(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToStdCMYK(const AGSBAPixel: TGSBAPixel): TStdCMYK;
-begin Result := StdRGBAToStdCMYK(ExpandedPixelToStdRGBA(GSBAToExpanded(AGSBAPixel))) end;
-
-procedure ConvertGSBAPixelArrayToStdCMYKArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TStdCMYK); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdCMYK(ADest^) := GSBAPixelToStdCMYK(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertGSBAPixelArrayToExpandedPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TExpandedPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
     TExpandedPixel(ADest^) := GSBAToExpanded(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToLinearRGBA(const AGSBAPixel: TGSBAPixel): TLinearRGBA;
-begin Result := ExpandedPixelToLinearRGBA(GSBAToExpanded(AGSBAPixel)) end;
-
-procedure ConvertGSBAPixelArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TLinearRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TLinearRGBA(ADest^) := GSBAPixelToLinearRGBA(TGSBAPixel(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2780,118 +1755,10 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function GSBAPixelToXYZA(const AGSBAPixel: TGSBAPixel): TXYZA;
-begin Result := LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GSBAToExpanded(AGSBAPixel))) end;
-
-procedure ConvertGSBAPixelArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TXYZA(ADest^) := GSBAPixelToXYZA(TGSBAPixel(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToLabA(const AGSBAPixel: TGSBAPixel): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GSBAToExpanded(AGSBAPixel)))) end;
-
-function GSBAPixelToLabA(const AGSBAPixel: TGSBAPixel; const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GSBAToExpanded(AGSBAPixel))),AReferenceWhite) end;
-
-procedure ConvertGSBAPixelArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLabA(ADest^) := GSBAPixelToLabA(TGSBAPixel(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function GSBAPixelToLChA(const AGSBAPixel: TGSBAPixel): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GSBAToExpanded(AGSBAPixel))))) end;
-
-function GSBAPixelToLChA(const AGSBAPixel: TGSBAPixel; const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := LabAToLChA(XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(GSBAToExpanded(AGSBAPixel))),AReferenceWhite)) end;
-
-procedure ConvertGSBAPixelArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TGSBAPixel); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TLChA(ADest^) := GSBAPixelToLChA(TGSBAPixel(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function XYZAToColor(const AXYZA: TXYZA): TColor;
-begin Result := BGRAToColor(GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AXYZA)))) end;
-
-procedure ConvertXYZAArrayToColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TColor(ADest^) := XYZAToColor(TXYZA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function XYZAToBGRAPixel(const AXYZA: TXYZA): TBGRAPixel;
-begin Result := GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AXYZA))) end;
-
-procedure ConvertXYZAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TBGRAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TBGRAPixel(ADest^) := XYZAToBGRAPixel(TXYZA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function XYZAToFPColor(const AXYZA: TXYZA): TFPColor;
-begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AXYZA))) end;
-
-procedure ConvertXYZAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TFPColor(ADest^) := XYZAToFPColor(TXYZA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function XYZAToStdRGBA(const AXYZA: TXYZA): TStdRGBA;
-begin Result := LinearRGBAToStdRGBA(XYZAToLinearRGBA(AXYZA)) end;
-
-procedure ConvertXYZAArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdRGBA(ADest^) := XYZAToStdRGBA(TXYZA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertXYZAArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
     TAdobeRGBA(ADest^) := XYZAToAdobeRGBA(TXYZA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function XYZAToStdHSLA(const AXYZA: TXYZA): TStdHSLA;
-begin Result := StdRGBAToStdHSLA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(AXYZA))) end;
-
-procedure ConvertXYZAArrayToStdHSLAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TStdHSLA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSLA(ADest^) := XYZAToStdHSLA(TXYZA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function XYZAToStdHSVA(const AXYZA: TXYZA): TStdHSVA;
-begin Result := StdRGBAToStdHSVA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(AXYZA))) end;
-
-procedure ConvertXYZAArrayToStdHSVAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TStdHSVA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdHSVA(ADest^) := XYZAToStdHSVA(TXYZA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function XYZAToStdCMYK(const AXYZA: TXYZA): TStdCMYK;
-begin Result := StdRGBAToStdCMYK(LinearRGBAToStdRGBA(XYZAToLinearRGBA(AXYZA))) end;
-
-procedure ConvertXYZAArrayToStdCMYKArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TStdCMYK); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TStdCMYK(ADest^) := XYZAToStdCMYK(TXYZA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2909,26 +1776,6 @@ procedure ConvertXYZAArrayToLinearRGBAArray(ASource: pointer; ADest: Pointer; AC
 begin
   while ACount > 0 do begin
     TLinearRGBA(ADest^) := XYZAToLinearRGBA(TXYZA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function XYZAToHSLAPixel(const AXYZA: TXYZA): THSLAPixel;
-begin Result := ExpandedToHSLA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AXYZA))) end;
-
-procedure ConvertXYZAArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := XYZAToHSLAPixel(TXYZA(ASource^));
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function XYZAToGSBAPixel(const AXYZA: TXYZA): TGSBAPixel;
-begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(AXYZA))) end;
-
-procedure ConvertXYZAArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := XYZAToGSBAPixel(TXYZA(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -2954,62 +1801,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function LabAToColor(const ALabA: TLabA): TColor;overload;
-begin Result := BGRAToColor(GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA))))) end;
-
-function LabAToColor(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TColor;overload;
-begin Result := BGRAToColor(GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite))))) end;
-
-procedure ConvertLabAArrayToColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TColor(ADest^) := LabAToColor(TLabA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LabAToBGRAPixel(const ALabA: TLabA): TBGRAPixel;overload;
-begin Result := GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA)))) end;
-
-function LabAToBGRAPixel(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
-begin Result := GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite)))) end;
-
-procedure ConvertLabAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TBGRAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TBGRAPixel(ADest^) := LabAToBGRAPixel(TLabA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LabAToFPColor(const ALabA: TLabA): TFPColor;overload;
-begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA)))) end;
-
-function LabAToFPColor(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
-begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite)))) end;
-
-procedure ConvertLabAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TFPColor(ADest^) := LabAToFPColor(TLabA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LabAToStdRGBA(const ALabA: TLabA): TStdRGBA;overload;
-begin Result := LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(ALabA))) end;
-
-function LabAToStdRGBA(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TStdRGBA;overload;
-begin Result := LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite))) end;
-
-procedure ConvertLabAArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TStdRGBA(ADest^) := LabAToStdRGBA(TLabA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 function LabAToAdobeRGBA(const ALabA: TLabA): TAdobeRGBA;overload;
 begin Result := XYZAToAdobeRGBA(LabAToXYZA(ALabA)) end;
 
@@ -3021,48 +1812,6 @@ begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
   while ACount > 0 do begin
     TAdobeRGBA(ADest^) := LabAToAdobeRGBA(TLabA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LabAToStdHSLA(const ALabA: TLabA): TStdHSLA;overload;
-begin Result := StdRGBAToStdHSLA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(ALabA)))) end;
-
-function LabAToStdHSLA(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TStdHSLA;overload;
-begin Result := StdRGBAToStdHSLA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite)))) end;
-
-procedure ConvertLabAArrayToStdHSLAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TStdHSLA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TStdHSLA(ADest^) := LabAToStdHSLA(TLabA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LabAToStdHSVA(const ALabA: TLabA): TStdHSVA;overload;
-begin Result := StdRGBAToStdHSVA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(ALabA)))) end;
-
-function LabAToStdHSVA(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TStdHSVA;overload;
-begin Result := StdRGBAToStdHSVA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite)))) end;
-
-procedure ConvertLabAArrayToStdHSVAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TStdHSVA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TStdHSVA(ADest^) := LabAToStdHSVA(TLabA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LabAToStdCMYK(const ALabA: TLabA): TStdCMYK;overload;
-begin Result := StdRGBAToStdCMYK(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(ALabA)))) end;
-
-function LabAToStdCMYK(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TStdCMYK;overload;
-begin Result := StdRGBAToStdCMYK(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite)))) end;
-
-procedure ConvertLabAArrayToStdCMYKArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TStdCMYK); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TStdCMYK(ADest^) := LabAToStdCMYK(TLabA(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -3094,34 +1843,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function LabAToHSLAPixel(const ALabA: TLabA): THSLAPixel;overload;
-begin Result := ExpandedToHSLA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA)))) end;
-
-function LabAToHSLAPixel(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): THSLAPixel;overload;
-begin Result := ExpandedToHSLA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite)))) end;
-
-procedure ConvertLabAArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := LabAToHSLAPixel(TLabA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LabAToGSBAPixel(const ALabA: TLabA): TGSBAPixel;overload;
-begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA)))) end;
-
-function LabAToGSBAPixel(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TGSBAPixel;overload;
-begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(ALabA,AReferenceWhite)))) end;
-
-procedure ConvertLabAArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := LabAToGSBAPixel(TLabA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 procedure ConvertLabAArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
@@ -3137,62 +1858,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function LChAToColor(const ALChA: TLChA): TColor;overload;
-begin Result := BGRAToColor(GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA)))))) end;
-
-function LChAToColor(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TColor;overload;
-begin Result := BGRAToColor(GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite))))) end;
-
-procedure ConvertLChAArrayToColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TColor(ADest^) := LChAToColor(TLChA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LChAToBGRAPixel(const ALChA: TLChA): TBGRAPixel;overload;
-begin Result := GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA))))) end;
-
-function LChAToBGRAPixel(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
-begin Result := GammaCompression(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite)))) end;
-
-procedure ConvertLChAArrayToBGRAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TBGRAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TBGRAPixel(ADest^) := LChAToBGRAPixel(TLChA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LChAToFPColor(const ALChA: TLChA): TFPColor;overload;
-begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA))))) end;
-
-function LChAToFPColor(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
-begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite)))) end;
-
-procedure ConvertLChAArrayToFPColorArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TFPColor); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TFPColor(ADest^) := LChAToFPColor(TLChA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LChAToStdRGBA(const ALChA: TLChA): TStdRGBA;overload;
-begin Result := LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA)))) end;
-
-function LChAToStdRGBA(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TStdRGBA;overload;
-begin Result := LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite))) end;
-
-procedure ConvertLChAArrayToStdRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TStdRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TStdRGBA(ADest^) := LChAToStdRGBA(TLChA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
 function LChAToAdobeRGBA(const ALChA: TLChA): TAdobeRGBA;overload;
 begin Result := XYZAToAdobeRGBA(LabAToXYZA(LChAToLabA(ALChA))) end;
 
@@ -3204,48 +1869,6 @@ begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
   while ACount > 0 do begin
     TAdobeRGBA(ADest^) := LChAToAdobeRGBA(TLChA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LChAToStdHSLA(const ALChA: TLChA): TStdHSLA;overload;
-begin Result := StdRGBAToStdHSLA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA))))) end;
-
-function LChAToStdHSLA(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TStdHSLA;overload;
-begin Result := StdRGBAToStdHSLA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite)))) end;
-
-procedure ConvertLChAArrayToStdHSLAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TStdHSLA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TStdHSLA(ADest^) := LChAToStdHSLA(TLChA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LChAToStdHSVA(const ALChA: TLChA): TStdHSVA;overload;
-begin Result := StdRGBAToStdHSVA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA))))) end;
-
-function LChAToStdHSVA(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TStdHSVA;overload;
-begin Result := StdRGBAToStdHSVA(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite)))) end;
-
-procedure ConvertLChAArrayToStdHSVAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TStdHSVA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TStdHSVA(ADest^) := LChAToStdHSVA(TLChA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LChAToStdCMYK(const ALChA: TLChA): TStdCMYK;overload;
-begin Result := StdRGBAToStdCMYK(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA))))) end;
-
-function LChAToStdCMYK(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TStdCMYK;overload;
-begin Result := StdRGBAToStdCMYK(LinearRGBAToStdRGBA(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite)))) end;
-
-procedure ConvertLChAArrayToStdCMYKArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TStdCMYK); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TStdCMYK(ADest^) := LChAToStdCMYK(TLChA(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -3274,34 +1897,6 @@ begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
   while ACount > 0 do begin
     TLinearRGBA(ADest^) := LChAToLinearRGBA(TLChA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LChAToHSLAPixel(const ALChA: TLChA): THSLAPixel;overload;
-begin Result := ExpandedToHSLA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA))))) end;
-
-function LChAToHSLAPixel(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): THSLAPixel;overload;
-begin Result := ExpandedToHSLA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite)))) end;
-
-procedure ConvertLChAArrayToHSLAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(THSLAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    THSLAPixel(ADest^) := LChAToHSLAPixel(TLChA(ASource^), AReferenceWhite^);
-    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
-end;
-
-function LChAToGSBAPixel(const ALChA: TLChA): TGSBAPixel;overload;
-begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA))))) end;
-
-function LChAToGSBAPixel(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TGSBAPixel;overload;
-begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(XYZAToLinearRGBA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite)))) end;
-
-procedure ConvertLChAArrayToGSBAPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TGSBAPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
-begin
-  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
-  while ACount > 0 do begin
-    TGSBAPixel(ADest^) := LChAToGSBAPixel(TLChA(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -4456,9 +3051,9 @@ end;
 class function TXYZAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
-  0: result := 1;
+  0: result := 1.0622;
   1: result := 1;
-  2: result := 1;
+  2: result := 1.7826;
   3: result := 1;
   else raise ERangeError.Create('Index out of bounds');
   end;
@@ -4697,37 +3292,40 @@ function TColorHelper.ToBGRAPixel: TBGRAPixel;overload;
 begin Result := ColorToBGRA(Self) end;
 
 function TColorHelper.ToBGRAPixel(AAlpha: byte): TBGRAPixel;overload;
-begin result := ColorToBGRA(self, AAlpha) end;
+begin result := ColorToBGRA(Self, AAlpha) end;
 
 function TColorHelper.ToFPColor: TFPColor;overload;
 begin Result := ColorToFPColor(Self) end;
 
 function TColorHelper.ToFPColor(AAlpha: word): TFPColor;overload;
-begin result := ColorToFPColor(self, AAlpha) end;
+begin result := ColorToFPColor(Self, AAlpha) end;
 
 function TColorHelper.ToStdRGBA: TStdRGBA;overload;
 begin Result := ColorToStdRGBA(Self) end;
 
 function TColorHelper.ToStdRGBA(AAlpha: single): TStdRGBA;overload;
-begin result := ColorToStdRGBA(self, AAlpha) end;
+begin result := ColorToStdRGBA(Self, AAlpha) end;
 
 function TColorHelper.ToAdobeRGBA: TAdobeRGBA;overload;
-begin Result := ColorToAdobeRGBA(Self) end;
+begin Result := ExpandedPixelToAdobeRGBA(ColorToExpandedPixel(Self)) end;
 
 function TColorHelper.ToAdobeRGBA(AAlpha: byte): TAdobeRGBA;overload;
-begin result := ColorToAdobeRGBA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToAdobeRGBA(ColorToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TColorHelper.ToStdHSLA: TStdHSLA;overload;
 begin Result := ColorToStdHSLA(Self) end;
 
 function TColorHelper.ToStdHSLA(AAlpha: single): TStdHSLA;overload;
-begin result := ColorToStdHSLA(self, AAlpha) end;
+begin result := ColorToStdHSLA(Self, AAlpha) end;
 
 function TColorHelper.ToStdHSVA: TStdHSVA;overload;
 begin Result := ColorToStdHSVA(Self) end;
 
 function TColorHelper.ToStdHSVA(AAlpha: single): TStdHSVA;overload;
-begin result := ColorToStdHSVA(self, AAlpha) end;
+begin result := ColorToStdHSVA(Self, AAlpha) end;
 
 function TColorHelper.ToStdCMYK: TStdCMYK;
 begin Result := ColorToStdCMYK(Self) end;
@@ -4736,49 +3334,67 @@ function TColorHelper.ToExpandedPixel: TExpandedPixel;overload;
 begin Result := ColorToExpandedPixel(Self) end;
 
 function TColorHelper.ToExpandedPixel(AAlpha: word): TExpandedPixel;overload;
-begin result := ColorToExpandedPixel(self, AAlpha) end;
+begin result := ColorToExpandedPixel(Self, AAlpha) end;
 
 function TColorHelper.ToLinearRGBA: TLinearRGBA;overload;
-begin Result := ColorToLinearRGBA(Self) end;
+begin Result := ExpandedPixelToLinearRGBA(ColorToExpandedPixel(Self)) end;
 
 function TColorHelper.ToLinearRGBA(AAlpha: single): TLinearRGBA;overload;
-begin result := ColorToLinearRGBA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToLinearRGBA(ColorToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TColorHelper.ToHSLAPixel: THSLAPixel;overload;
-begin Result := ColorToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(ColorToExpandedPixel(Self)) end;
 
 function TColorHelper.ToHSLAPixel(AAlpha: word): THSLAPixel;overload;
-begin result := ColorToHSLAPixel(self, AAlpha) end;
+begin
+  Result := ExpandedToHSLA(ColorToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TColorHelper.ToGSBAPixel: TGSBAPixel;overload;
-begin Result := ColorToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(ColorToExpandedPixel(Self)) end;
 
 function TColorHelper.ToGSBAPixel(AAlpha: word): TGSBAPixel;overload;
-begin result := ColorToGSBAPixel(self, AAlpha) end;
+begin
+  Result := ExpandedToGSBA(ColorToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TColorHelper.ToXYZA: TXYZA;overload;
-begin Result := ColorToXYZA(Self) end;
+begin Result := ExpandedPixelToXYZA(ColorToExpandedPixel(Self)) end;
 
 function TColorHelper.ToXYZA(AAlpha: single): TXYZA;overload;
-begin result := ColorToXYZA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToXYZA(ColorToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TColorHelper.ToLabA: TLabA;overload;
-begin Result := ColorToLabA(Self) end;
+begin Result := ExpandedPixelToLabA(ColorToExpandedPixel(Self)) end;
 
 function TColorHelper.ToLabA(AAlpha: single): TLabA;overload;
-begin result := ColorToLabA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToLabA(ColorToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TColorHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := ColorToLabA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLabA(ColorToExpandedPixel(Self),AReferenceWhite) end;
 
 function TColorHelper.ToLChA: TLChA;overload;
-begin Result := ColorToLChA(Self) end;
+begin Result := ExpandedPixelToLChA(ColorToExpandedPixel(Self)) end;
 
 function TColorHelper.ToLChA(AAlpha: single): TLChA;overload;
-begin result := ColorToLChA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToLChA(ColorToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TColorHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := ColorToLChA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLChA(ColorToExpandedPixel(Self),AReferenceWhite) end;
 
 procedure TColorHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAToColor(AValue) end;
@@ -4790,7 +3406,7 @@ procedure TColorHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToColor(AValue) end;
 
 procedure TColorHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
-begin Self := AdobeRGBAToColor(AValue) end;
+begin Self := ExpandedPixelToColor(AdobeRGBAToExpandedPixel(AValue)) end;
 
 procedure TColorHelper.FromStdHSLA(AValue: TStdHSLA);
 begin Self := StdHSLAToColor(AValue) end;
@@ -4805,28 +3421,28 @@ procedure TColorHelper.FromExpandedPixel(AValue: TExpandedPixel);
 begin Self := ExpandedPixelToColor(AValue) end;
 
 procedure TColorHelper.FromLinearRGBA(AValue: TLinearRGBA);
-begin Self := LinearRGBAToColor(AValue) end;
+begin Self := ExpandedPixelToColor(LinearRGBAToExpandedPixel(AValue)) end;
 
 procedure TColorHelper.FromHSLAPixel(AValue: THSLAPixel);
-begin Self := HSLAPixelToColor(AValue) end;
+begin Self := ExpandedPixelToColor(HSLAToExpanded(AValue)) end;
 
 procedure TColorHelper.FromGSBAPixel(AValue: TGSBAPixel);
-begin Self := GSBAPixelToColor(AValue) end;
+begin Self := ExpandedPixelToColor(GSBAToExpanded(AValue)) end;
 
 procedure TColorHelper.FromXYZA(AValue: TXYZA);
-begin Self := XYZAToColor(AValue) end;
+begin Self := ExpandedPixelToColor(XYZAToExpandedPixel(AValue)) end;
 
 procedure TColorHelper.FromLabA(AValue: TLabA); overload;
-begin Self := LabAToColor(AValue) end;
+begin Self := ExpandedPixelToColor(LabAToExpandedPixel(AValue)) end;
 
 procedure TColorHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LabAToColor(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToColor(LabAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TColorHelper.FromLChA(AValue: TLChA); overload;
-begin Self := LChAToColor(AValue) end;
+begin Self := ExpandedPixelToColor(LChAToExpandedPixel(AValue)) end;
 
 procedure TColorHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LChAToColor(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToColor(LChAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 { TBGRAPixelHelper }
 
@@ -4853,7 +3469,7 @@ function TBGRAPixelHelper.ToStdRGBA: TStdRGBA;
 begin Result := BGRAPixelToStdRGBA(Self) end;
 
 function TBGRAPixelHelper.ToAdobeRGBA: TAdobeRGBA;
-begin Result := BGRAPixelToAdobeRGBA(Self) end;
+begin Result := ExpandedPixelToAdobeRGBA(GammaExpansion(Self)) end;
 
 function TBGRAPixelHelper.ToStdHSLA: TStdHSLA;
 begin Result := BGRAPixelToStdHSLA(Self) end;
@@ -4865,28 +3481,28 @@ function TBGRAPixelHelper.ToStdCMYK: TStdCMYK;
 begin Result := BGRAPixelToStdCMYK(Self) end;
 
 function TBGRAPixelHelper.ToLinearRGBA: TLinearRGBA;
-begin Result := BGRAPixelToLinearRGBA(Self) end;
+begin Result := ExpandedPixelToLinearRGBA(GammaExpansion(Self)) end;
 
 function TBGRAPixelHelper.ToXYZA: TXYZA;
-begin Result := BGRAPixelToXYZA(Self) end;
+begin Result := ExpandedPixelToXYZA(GammaExpansion(Self)) end;
 
 function TBGRAPixelHelper.ToLabA: TLabA;overload;
-begin Result := BGRAPixelToLabA(Self) end;
+begin Result := ExpandedPixelToLabA(GammaExpansion(Self)) end;
 
 function TBGRAPixelHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := BGRAPixelToLabA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLabA(GammaExpansion(Self),AReferenceWhite) end;
 
 function TBGRAPixelHelper.ToLChA: TLChA;overload;
-begin Result := BGRAPixelToLChA(Self) end;
+begin Result := ExpandedPixelToLChA(GammaExpansion(Self)) end;
 
 function TBGRAPixelHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := BGRAPixelToLChA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLChA(GammaExpansion(Self),AReferenceWhite) end;
 
 procedure TBGRAPixelHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToBGRAPixel(AValue) end;
 
 procedure TBGRAPixelHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
-begin Self := AdobeRGBAToBGRAPixel(AValue) end;
+begin Self := GammaCompression(AdobeRGBAToExpandedPixel(AValue)) end;
 
 procedure TBGRAPixelHelper.FromStdHSLA(AValue: TStdHSLA);
 begin Self := StdHSLAToBGRAPixel(AValue) end;
@@ -4898,22 +3514,22 @@ procedure TBGRAPixelHelper.FromStdCMYK(AValue: TStdCMYK);
 begin Self := StdCMYKToBGRAPixel(AValue) end;
 
 procedure TBGRAPixelHelper.FromLinearRGBA(AValue: TLinearRGBA);
-begin Self := LinearRGBAToBGRAPixel(AValue) end;
+begin Self := GammaCompression(LinearRGBAToExpandedPixel(AValue)) end;
 
 procedure TBGRAPixelHelper.FromXYZA(AValue: TXYZA);
-begin Self := XYZAToBGRAPixel(AValue) end;
+begin Self := GammaCompression(XYZAToExpandedPixel(AValue)) end;
 
 procedure TBGRAPixelHelper.FromLabA(AValue: TLabA); overload;
-begin Self := LabAToBGRAPixel(AValue) end;
+begin Self := GammaCompression(LabAToExpandedPixel(AValue)) end;
 
 procedure TBGRAPixelHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LabAToBGRAPixel(AValue,AReferenceWhite) end;
+begin Self := GammaCompression(LabAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TBGRAPixelHelper.FromLChA(AValue: TLChA); overload;
-begin Self := LChAToBGRAPixel(AValue) end;
+begin Self := GammaCompression(LChAToExpandedPixel(AValue)) end;
 
 procedure TBGRAPixelHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LChAToBGRAPixel(AValue,AReferenceWhite) end;
+begin Self := GammaCompression(LChAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 { TFPColorHelper }
 
@@ -4937,70 +3553,70 @@ class function TFPColorHelper.Colorspace: TColorspaceAny; static;
 begin result := TFPColorColorspace end;
 
 function TFPColorHelper.ToStdRGBA: TStdRGBA;
-begin Result := FPColorToStdRGBA(Self) end;
+begin Result := ExpandedPixelToStdRGBA(FPColorToExpanded(Self)) end;
 
 function TFPColorHelper.ToAdobeRGBA: TAdobeRGBA;
-begin Result := FPColorToAdobeRGBA(Self) end;
+begin Result := ExpandedPixelToAdobeRGBA(FPColorToExpanded(Self)) end;
 
 function TFPColorHelper.ToStdHSLA: TStdHSLA;
-begin Result := FPColorToStdHSLA(Self) end;
+begin Result := ExpandedPixelToStdHSLA(FPColorToExpanded(Self)) end;
 
 function TFPColorHelper.ToStdHSVA: TStdHSVA;
-begin Result := FPColorToStdHSVA(Self) end;
+begin Result := ExpandedPixelToStdHSVA(FPColorToExpanded(Self)) end;
 
 function TFPColorHelper.ToStdCMYK: TStdCMYK;
-begin Result := FPColorToStdCMYK(Self) end;
+begin Result := ExpandedPixelToStdCMYK(FPColorToExpanded(Self)) end;
 
 function TFPColorHelper.ToLinearRGBA: TLinearRGBA;
-begin Result := FPColorToLinearRGBA(Self) end;
+begin Result := ExpandedPixelToLinearRGBA(FPColorToExpanded(Self)) end;
 
 function TFPColorHelper.ToXYZA: TXYZA;
-begin Result := FPColorToXYZA(Self) end;
+begin Result := ExpandedPixelToXYZA(FPColorToExpanded(Self)) end;
 
 function TFPColorHelper.ToLabA: TLabA;overload;
-begin Result := FPColorToLabA(Self) end;
+begin Result := ExpandedPixelToLabA(FPColorToExpanded(Self)) end;
 
 function TFPColorHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := FPColorToLabA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLabA(FPColorToExpanded(Self),AReferenceWhite) end;
 
 function TFPColorHelper.ToLChA: TLChA;overload;
-begin Result := FPColorToLChA(Self) end;
+begin Result := ExpandedPixelToLChA(FPColorToExpanded(Self)) end;
 
 function TFPColorHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := FPColorToLChA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLChA(FPColorToExpanded(Self),AReferenceWhite) end;
 
 procedure TFPColorHelper.FromStdRGBA(AValue: TStdRGBA);
-begin Self := StdRGBAToFPColor(AValue) end;
+begin Self := ExpandedToFPColor(StdRGBAToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
-begin Self := AdobeRGBAToFPColor(AValue) end;
+begin Self := ExpandedToFPColor(AdobeRGBAToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromStdHSLA(AValue: TStdHSLA);
-begin Self := StdHSLAToFPColor(AValue) end;
+begin Self := ExpandedToFPColor(StdHSLAToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromStdHSVA(AValue: TStdHSVA);
-begin Self := StdHSVAToFPColor(AValue) end;
+begin Self := ExpandedToFPColor(StdHSVAToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromStdCMYK(AValue: TStdCMYK);
-begin Self := StdCMYKToFPColor(AValue) end;
+begin Self := ExpandedToFPColor(StdCMYKToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromLinearRGBA(AValue: TLinearRGBA);
-begin Self := LinearRGBAToFPColor(AValue) end;
+begin Self := ExpandedToFPColor(LinearRGBAToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromXYZA(AValue: TXYZA);
-begin Self := XYZAToFPColor(AValue) end;
+begin Self := ExpandedToFPColor(XYZAToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromLabA(AValue: TLabA); overload;
-begin Self := LabAToFPColor(AValue) end;
+begin Self := ExpandedToFPColor(LabAToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LabAToFPColor(AValue,AReferenceWhite) end;
+begin Self := ExpandedToFPColor(LabAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TFPColorHelper.FromLChA(AValue: TLChA); overload;
-begin Self := LChAToFPColor(AValue) end;
+begin Self := ExpandedToFPColor(LChAToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LChAToFPColor(AValue,AReferenceWhite) end;
+begin Self := ExpandedToFPColor(LChAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 { TStdRGBAHelper }
 
@@ -5014,10 +3630,10 @@ function TStdRGBAHelper.ToBGRAPixel: TBGRAPixel;
 begin Result := StdRGBAToBGRAPixel(Self) end;
 
 function TStdRGBAHelper.ToFPColor: TFPColor;
-begin Result := StdRGBAToFPColor(Self) end;
+begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(Self)) end;
 
 function TStdRGBAHelper.ToAdobeRGBA: TAdobeRGBA;
-begin Result := StdRGBAToAdobeRGBA(Self) end;
+begin Result := ExpandedPixelToAdobeRGBA(StdRGBAToExpandedPixel(Self)) end;
 
 function TStdRGBAHelper.ToStdHSLA: TStdHSLA;
 begin Result := StdRGBAToStdHSLA(Self) end;
@@ -5032,28 +3648,28 @@ function TStdRGBAHelper.ToExpandedPixel: TExpandedPixel;
 begin Result := StdRGBAToExpandedPixel(Self) end;
 
 function TStdRGBAHelper.ToLinearRGBA: TLinearRGBA;
-begin Result := StdRGBAToLinearRGBA(Self) end;
+begin Result := ExpandedPixelToLinearRGBA(StdRGBAToExpandedPixel(Self)) end;
 
 function TStdRGBAHelper.ToHSLAPixel: THSLAPixel;
-begin Result := StdRGBAToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(StdRGBAToExpandedPixel(Self)) end;
 
 function TStdRGBAHelper.ToGSBAPixel: TGSBAPixel;
-begin Result := StdRGBAToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(StdRGBAToExpandedPixel(Self)) end;
 
 function TStdRGBAHelper.ToXYZA: TXYZA;
-begin Result := StdRGBAToXYZA(Self) end;
+begin Result := ExpandedPixelToXYZA(StdRGBAToExpandedPixel(Self)) end;
 
 function TStdRGBAHelper.ToLabA: TLabA;overload;
-begin Result := StdRGBAToLabA(Self) end;
+begin Result := ExpandedPixelToLabA(StdRGBAToExpandedPixel(Self)) end;
 
 function TStdRGBAHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := StdRGBAToLabA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLabA(StdRGBAToExpandedPixel(Self),AReferenceWhite) end;
 
 function TStdRGBAHelper.ToLChA: TLChA;overload;
-begin Result := StdRGBAToLChA(Self) end;
+begin Result := ExpandedPixelToLChA(StdRGBAToExpandedPixel(Self)) end;
 
 function TStdRGBAHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := StdRGBAToLChA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLChA(StdRGBAToExpandedPixel(Self),AReferenceWhite) end;
 
 procedure TStdRGBAHelper.FromColor(AValue: TColor);
 begin Self := ColorToStdRGBA(AValue) end;
@@ -5062,10 +3678,10 @@ procedure TStdRGBAHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToStdRGBA(AValue) end;
 
 procedure TStdRGBAHelper.FromFPColor(AValue: TFPColor);
-begin Self := FPColorToStdRGBA(AValue) end;
+begin Self := ExpandedPixelToStdRGBA(FPColorToExpanded(AValue)) end;
 
 procedure TStdRGBAHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
-begin Self := AdobeRGBAToStdRGBA(AValue) end;
+begin Self := ExpandedPixelToStdRGBA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 procedure TStdRGBAHelper.FromStdHSLA(AValue: TStdHSLA);
 begin Self := StdHSLAToStdRGBA(AValue) end;
@@ -5080,28 +3696,28 @@ procedure TStdRGBAHelper.FromExpandedPixel(AValue: TExpandedPixel);
 begin Self := ExpandedPixelToStdRGBA(AValue) end;
 
 procedure TStdRGBAHelper.FromLinearRGBA(AValue: TLinearRGBA);
-begin Self := LinearRGBAToStdRGBA(AValue) end;
+begin Self := ExpandedPixelToStdRGBA(LinearRGBAToExpandedPixel(AValue)) end;
 
 procedure TStdRGBAHelper.FromHSLAPixel(AValue: THSLAPixel);
-begin Self := HSLAPixelToStdRGBA(AValue) end;
+begin Self := ExpandedPixelToStdRGBA(HSLAToExpanded(AValue)) end;
 
 procedure TStdRGBAHelper.FromGSBAPixel(AValue: TGSBAPixel);
-begin Self := GSBAPixelToStdRGBA(AValue) end;
+begin Self := ExpandedPixelToStdRGBA(GSBAToExpanded(AValue)) end;
 
 procedure TStdRGBAHelper.FromXYZA(AValue: TXYZA);
-begin Self := XYZAToStdRGBA(AValue) end;
+begin Self := ExpandedPixelToStdRGBA(XYZAToExpandedPixel(AValue)) end;
 
 procedure TStdRGBAHelper.FromLabA(AValue: TLabA); overload;
-begin Self := LabAToStdRGBA(AValue) end;
+begin Self := ExpandedPixelToStdRGBA(LabAToExpandedPixel(AValue)) end;
 
 procedure TStdRGBAHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LabAToStdRGBA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToStdRGBA(LabAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TStdRGBAHelper.FromLChA(AValue: TLChA); overload;
-begin Self := LChAToStdRGBA(AValue) end;
+begin Self := ExpandedPixelToStdRGBA(LChAToExpandedPixel(AValue)) end;
 
 procedure TStdRGBAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LChAToStdRGBA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToStdRGBA(LChAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 { TAdobeRGBAHelper }
 
@@ -5109,25 +3725,25 @@ class function TAdobeRGBAHelper.Colorspace: TColorspaceAny; static;
 begin result := TAdobeRGBAColorspace end;
 
 function TAdobeRGBAHelper.ToColor: TColor;
-begin Result := AdobeRGBAToColor(Self) end;
+begin Result := ExpandedPixelToColor(AdobeRGBAToExpandedPixel(Self)) end;
 
 function TAdobeRGBAHelper.ToBGRAPixel: TBGRAPixel;
-begin Result := AdobeRGBAToBGRAPixel(Self) end;
+begin Result := GammaCompression(AdobeRGBAToExpandedPixel(Self)) end;
 
 function TAdobeRGBAHelper.ToFPColor: TFPColor;
-begin Result := AdobeRGBAToFPColor(Self) end;
+begin Result := ExpandedToFPColor(AdobeRGBAToExpandedPixel(Self)) end;
 
 function TAdobeRGBAHelper.ToStdRGBA: TStdRGBA;
-begin Result := AdobeRGBAToStdRGBA(Self) end;
+begin Result := ExpandedPixelToStdRGBA(AdobeRGBAToExpandedPixel(Self)) end;
 
 function TAdobeRGBAHelper.ToStdHSLA: TStdHSLA;
-begin Result := AdobeRGBAToStdHSLA(Self) end;
+begin Result := ExpandedPixelToStdHSLA(AdobeRGBAToExpandedPixel(Self)) end;
 
 function TAdobeRGBAHelper.ToStdHSVA: TStdHSVA;
-begin Result := AdobeRGBAToStdHSVA(Self) end;
+begin Result := ExpandedPixelToStdHSVA(AdobeRGBAToExpandedPixel(Self)) end;
 
 function TAdobeRGBAHelper.ToStdCMYK: TStdCMYK;
-begin Result := AdobeRGBAToStdCMYK(Self) end;
+begin Result := ExpandedPixelToStdCMYK(AdobeRGBAToExpandedPixel(Self)) end;
 
 function TAdobeRGBAHelper.ToExpandedPixel: TExpandedPixel;
 begin Result := AdobeRGBAToExpandedPixel(Self) end;
@@ -5136,10 +3752,10 @@ function TAdobeRGBAHelper.ToLinearRGBA: TLinearRGBA;
 begin Result := AdobeRGBAToLinearRGBA(Self) end;
 
 function TAdobeRGBAHelper.ToHSLAPixel: THSLAPixel;
-begin Result := AdobeRGBAToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(AdobeRGBAToExpandedPixel(Self)) end;
 
 function TAdobeRGBAHelper.ToGSBAPixel: TGSBAPixel;
-begin Result := AdobeRGBAToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(AdobeRGBAToExpandedPixel(Self)) end;
 
 function TAdobeRGBAHelper.ToXYZA: TXYZA;
 begin Result := AdobeRGBAToXYZA(Self) end;
@@ -5157,25 +3773,25 @@ function TAdobeRGBAHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLC
 begin Result := AdobeRGBAToLChA(Self,AReferenceWhite) end;
 
 procedure TAdobeRGBAHelper.FromColor(AValue: TColor);
-begin Self := ColorToAdobeRGBA(AValue) end;
+begin Self := ExpandedPixelToAdobeRGBA(ColorToExpandedPixel(AValue)) end;
 
 procedure TAdobeRGBAHelper.FromBGRAPixel(AValue: TBGRAPixel);
-begin Self := BGRAPixelToAdobeRGBA(AValue) end;
+begin Self := ExpandedPixelToAdobeRGBA(GammaExpansion(AValue)) end;
 
 procedure TAdobeRGBAHelper.FromFPColor(AValue: TFPColor);
-begin Self := FPColorToAdobeRGBA(AValue) end;
+begin Self := ExpandedPixelToAdobeRGBA(FPColorToExpanded(AValue)) end;
 
 procedure TAdobeRGBAHelper.FromStdRGBA(AValue: TStdRGBA);
-begin Self := StdRGBAToAdobeRGBA(AValue) end;
+begin Self := ExpandedPixelToAdobeRGBA(StdRGBAToExpandedPixel(AValue)) end;
 
 procedure TAdobeRGBAHelper.FromStdHSLA(AValue: TStdHSLA);
-begin Self := StdHSLAToAdobeRGBA(AValue) end;
+begin Self := ExpandedPixelToAdobeRGBA(StdHSLAToExpandedPixel(AValue)) end;
 
 procedure TAdobeRGBAHelper.FromStdHSVA(AValue: TStdHSVA);
-begin Self := StdHSVAToAdobeRGBA(AValue) end;
+begin Self := ExpandedPixelToAdobeRGBA(StdHSVAToExpandedPixel(AValue)) end;
 
 procedure TAdobeRGBAHelper.FromStdCMYK(AValue: TStdCMYK);
-begin Self := StdCMYKToAdobeRGBA(AValue) end;
+begin Self := ExpandedPixelToAdobeRGBA(StdCMYKToExpandedPixel(AValue)) end;
 
 procedure TAdobeRGBAHelper.FromExpandedPixel(AValue: TExpandedPixel);
 begin Self := ExpandedPixelToAdobeRGBA(AValue) end;
@@ -5184,10 +3800,10 @@ procedure TAdobeRGBAHelper.FromLinearRGBA(AValue: TLinearRGBA);
 begin Self := LinearRGBAToAdobeRGBA(AValue) end;
 
 procedure TAdobeRGBAHelper.FromHSLAPixel(AValue: THSLAPixel);
-begin Self := HSLAPixelToAdobeRGBA(AValue) end;
+begin Self := ExpandedPixelToAdobeRGBA(HSLAToExpanded(AValue)) end;
 
 procedure TAdobeRGBAHelper.FromGSBAPixel(AValue: TGSBAPixel);
-begin Self := GSBAPixelToAdobeRGBA(AValue) end;
+begin Self := ExpandedPixelToAdobeRGBA(GSBAToExpanded(AValue)) end;
 
 procedure TAdobeRGBAHelper.FromXYZA(AValue: TXYZA);
 begin Self := XYZAToAdobeRGBA(AValue) end;
@@ -5216,13 +3832,13 @@ function TStdHSLAHelper.ToBGRAPixel: TBGRAPixel;
 begin Result := StdHSLAToBGRAPixel(Self) end;
 
 function TStdHSLAHelper.ToFPColor: TFPColor;
-begin Result := StdHSLAToFPColor(Self) end;
+begin Result := ExpandedToFPColor(StdHSLAToExpandedPixel(Self)) end;
 
 function TStdHSLAHelper.ToStdRGBA: TStdRGBA;
 begin Result := StdHSLAToStdRGBA(Self) end;
 
 function TStdHSLAHelper.ToAdobeRGBA: TAdobeRGBA;
-begin Result := StdHSLAToAdobeRGBA(Self) end;
+begin Result := ExpandedPixelToAdobeRGBA(StdHSLAToExpandedPixel(Self)) end;
 
 function TStdHSLAHelper.ToStdHSVA: TStdHSVA;
 begin Result := StdHSLAToStdHSVA(Self) end;
@@ -5234,28 +3850,28 @@ function TStdHSLAHelper.ToExpandedPixel: TExpandedPixel;
 begin Result := StdHSLAToExpandedPixel(Self) end;
 
 function TStdHSLAHelper.ToLinearRGBA: TLinearRGBA;
-begin Result := StdHSLAToLinearRGBA(Self) end;
+begin Result := ExpandedPixelToLinearRGBA(StdHSLAToExpandedPixel(Self)) end;
 
 function TStdHSLAHelper.ToHSLAPixel: THSLAPixel;
-begin Result := StdHSLAToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(StdHSLAToExpandedPixel(Self)) end;
 
 function TStdHSLAHelper.ToGSBAPixel: TGSBAPixel;
-begin Result := StdHSLAToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(StdHSLAToExpandedPixel(Self)) end;
 
 function TStdHSLAHelper.ToXYZA: TXYZA;
-begin Result := StdHSLAToXYZA(Self) end;
+begin Result := ExpandedPixelToXYZA(StdHSLAToExpandedPixel(Self)) end;
 
 function TStdHSLAHelper.ToLabA: TLabA;overload;
-begin Result := StdHSLAToLabA(Self) end;
+begin Result := ExpandedPixelToLabA(StdHSLAToExpandedPixel(Self)) end;
 
 function TStdHSLAHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := StdHSLAToLabA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLabA(StdHSLAToExpandedPixel(Self),AReferenceWhite) end;
 
 function TStdHSLAHelper.ToLChA: TLChA;overload;
-begin Result := StdHSLAToLChA(Self) end;
+begin Result := ExpandedPixelToLChA(StdHSLAToExpandedPixel(Self)) end;
 
 function TStdHSLAHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := StdHSLAToLChA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLChA(StdHSLAToExpandedPixel(Self),AReferenceWhite) end;
 
 procedure TStdHSLAHelper.FromColor(AValue: TColor);
 begin Self := ColorToStdHSLA(AValue) end;
@@ -5264,13 +3880,13 @@ procedure TStdHSLAHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToStdHSLA(AValue) end;
 
 procedure TStdHSLAHelper.FromFPColor(AValue: TFPColor);
-begin Self := FPColorToStdHSLA(AValue) end;
+begin Self := ExpandedPixelToStdHSLA(FPColorToExpanded(AValue)) end;
 
 procedure TStdHSLAHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToStdHSLA(AValue) end;
 
 procedure TStdHSLAHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
-begin Self := AdobeRGBAToStdHSLA(AValue) end;
+begin Self := ExpandedPixelToStdHSLA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 procedure TStdHSLAHelper.FromStdHSVA(AValue: TStdHSVA);
 begin Self := StdHSVAToStdHSLA(AValue) end;
@@ -5282,28 +3898,28 @@ procedure TStdHSLAHelper.FromExpandedPixel(AValue: TExpandedPixel);
 begin Self := ExpandedPixelToStdHSLA(AValue) end;
 
 procedure TStdHSLAHelper.FromLinearRGBA(AValue: TLinearRGBA);
-begin Self := LinearRGBAToStdHSLA(AValue) end;
+begin Self := ExpandedPixelToStdHSLA(LinearRGBAToExpandedPixel(AValue)) end;
 
 procedure TStdHSLAHelper.FromHSLAPixel(AValue: THSLAPixel);
-begin Self := HSLAPixelToStdHSLA(AValue) end;
+begin Self := ExpandedPixelToStdHSLA(HSLAToExpanded(AValue)) end;
 
 procedure TStdHSLAHelper.FromGSBAPixel(AValue: TGSBAPixel);
-begin Self := GSBAPixelToStdHSLA(AValue) end;
+begin Self := ExpandedPixelToStdHSLA(GSBAToExpanded(AValue)) end;
 
 procedure TStdHSLAHelper.FromXYZA(AValue: TXYZA);
-begin Self := XYZAToStdHSLA(AValue) end;
+begin Self := ExpandedPixelToStdHSLA(XYZAToExpandedPixel(AValue)) end;
 
 procedure TStdHSLAHelper.FromLabA(AValue: TLabA); overload;
-begin Self := LabAToStdHSLA(AValue) end;
+begin Self := ExpandedPixelToStdHSLA(LabAToExpandedPixel(AValue)) end;
 
 procedure TStdHSLAHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LabAToStdHSLA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToStdHSLA(LabAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TStdHSLAHelper.FromLChA(AValue: TLChA); overload;
-begin Self := LChAToStdHSLA(AValue) end;
+begin Self := ExpandedPixelToStdHSLA(LChAToExpandedPixel(AValue)) end;
 
 procedure TStdHSLAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LChAToStdHSLA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToStdHSLA(LChAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 { TStdHSVAHelper }
 
@@ -5317,13 +3933,13 @@ function TStdHSVAHelper.ToBGRAPixel: TBGRAPixel;
 begin Result := StdHSVAToBGRAPixel(Self) end;
 
 function TStdHSVAHelper.ToFPColor: TFPColor;
-begin Result := StdHSVAToFPColor(Self) end;
+begin Result := ExpandedToFPColor(StdHSVAToExpandedPixel(Self)) end;
 
 function TStdHSVAHelper.ToStdRGBA: TStdRGBA;
 begin Result := StdHSVAToStdRGBA(Self) end;
 
 function TStdHSVAHelper.ToAdobeRGBA: TAdobeRGBA;
-begin Result := StdHSVAToAdobeRGBA(Self) end;
+begin Result := ExpandedPixelToAdobeRGBA(StdHSVAToExpandedPixel(Self)) end;
 
 function TStdHSVAHelper.ToStdHSLA: TStdHSLA;
 begin Result := StdHSVAToStdHSLA(Self) end;
@@ -5335,28 +3951,28 @@ function TStdHSVAHelper.ToExpandedPixel: TExpandedPixel;
 begin Result := StdHSVAToExpandedPixel(Self) end;
 
 function TStdHSVAHelper.ToLinearRGBA: TLinearRGBA;
-begin Result := StdHSVAToLinearRGBA(Self) end;
+begin Result := ExpandedPixelToLinearRGBA(StdHSVAToExpandedPixel(Self)) end;
 
 function TStdHSVAHelper.ToHSLAPixel: THSLAPixel;
-begin Result := StdHSVAToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(StdHSVAToExpandedPixel(Self)) end;
 
 function TStdHSVAHelper.ToGSBAPixel: TGSBAPixel;
-begin Result := StdHSVAToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(StdHSVAToExpandedPixel(Self)) end;
 
 function TStdHSVAHelper.ToXYZA: TXYZA;
-begin Result := StdHSVAToXYZA(Self) end;
+begin Result := ExpandedPixelToXYZA(StdHSVAToExpandedPixel(Self)) end;
 
 function TStdHSVAHelper.ToLabA: TLabA;overload;
-begin Result := StdHSVAToLabA(Self) end;
+begin Result := ExpandedPixelToLabA(StdHSVAToExpandedPixel(Self)) end;
 
 function TStdHSVAHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := StdHSVAToLabA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLabA(StdHSVAToExpandedPixel(Self),AReferenceWhite) end;
 
 function TStdHSVAHelper.ToLChA: TLChA;overload;
-begin Result := StdHSVAToLChA(Self) end;
+begin Result := ExpandedPixelToLChA(StdHSVAToExpandedPixel(Self)) end;
 
 function TStdHSVAHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := StdHSVAToLChA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLChA(StdHSVAToExpandedPixel(Self),AReferenceWhite) end;
 
 procedure TStdHSVAHelper.FromColor(AValue: TColor);
 begin Self := ColorToStdHSVA(AValue) end;
@@ -5365,13 +3981,13 @@ procedure TStdHSVAHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToStdHSVA(AValue) end;
 
 procedure TStdHSVAHelper.FromFPColor(AValue: TFPColor);
-begin Self := FPColorToStdHSVA(AValue) end;
+begin Self := ExpandedPixelToStdHSVA(FPColorToExpanded(AValue)) end;
 
 procedure TStdHSVAHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToStdHSVA(AValue) end;
 
 procedure TStdHSVAHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
-begin Self := AdobeRGBAToStdHSVA(AValue) end;
+begin Self := ExpandedPixelToStdHSVA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 procedure TStdHSVAHelper.FromStdHSLA(AValue: TStdHSLA);
 begin Self := StdHSLAToStdHSVA(AValue) end;
@@ -5383,28 +3999,28 @@ procedure TStdHSVAHelper.FromExpandedPixel(AValue: TExpandedPixel);
 begin Self := ExpandedPixelToStdHSVA(AValue) end;
 
 procedure TStdHSVAHelper.FromLinearRGBA(AValue: TLinearRGBA);
-begin Self := LinearRGBAToStdHSVA(AValue) end;
+begin Self := ExpandedPixelToStdHSVA(LinearRGBAToExpandedPixel(AValue)) end;
 
 procedure TStdHSVAHelper.FromHSLAPixel(AValue: THSLAPixel);
-begin Self := HSLAPixelToStdHSVA(AValue) end;
+begin Self := ExpandedPixelToStdHSVA(HSLAToExpanded(AValue)) end;
 
 procedure TStdHSVAHelper.FromGSBAPixel(AValue: TGSBAPixel);
-begin Self := GSBAPixelToStdHSVA(AValue) end;
+begin Self := ExpandedPixelToStdHSVA(GSBAToExpanded(AValue)) end;
 
 procedure TStdHSVAHelper.FromXYZA(AValue: TXYZA);
-begin Self := XYZAToStdHSVA(AValue) end;
+begin Self := ExpandedPixelToStdHSVA(XYZAToExpandedPixel(AValue)) end;
 
 procedure TStdHSVAHelper.FromLabA(AValue: TLabA); overload;
-begin Self := LabAToStdHSVA(AValue) end;
+begin Self := ExpandedPixelToStdHSVA(LabAToExpandedPixel(AValue)) end;
 
 procedure TStdHSVAHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LabAToStdHSVA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToStdHSVA(LabAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TStdHSVAHelper.FromLChA(AValue: TLChA); overload;
-begin Self := LChAToStdHSVA(AValue) end;
+begin Self := ExpandedPixelToStdHSVA(LChAToExpandedPixel(AValue)) end;
 
 procedure TStdHSVAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LChAToStdHSVA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToStdHSVA(LChAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 { TStdCMYKHelper }
 
@@ -5418,85 +4034,109 @@ function TStdCMYKHelper.ToBGRAPixel: TBGRAPixel;overload;
 begin Result := StdCMYKToBGRAPixel(Self) end;
 
 function TStdCMYKHelper.ToBGRAPixel(AAlpha: byte): TBGRAPixel;overload;
-begin result := StdCMYKToBGRAPixel(self, AAlpha) end;
+begin result := StdCMYKToBGRAPixel(Self, AAlpha) end;
 
 function TStdCMYKHelper.ToFPColor: TFPColor;overload;
-begin Result := StdCMYKToFPColor(Self) end;
+begin Result := ExpandedToFPColor(StdCMYKToExpandedPixel(Self)) end;
 
 function TStdCMYKHelper.ToFPColor(AAlpha: word): TFPColor;overload;
-begin result := StdCMYKToFPColor(self, AAlpha) end;
+begin
+  Result := ExpandedToFPColor(StdCMYKToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TStdCMYKHelper.ToStdRGBA: TStdRGBA;overload;
 begin Result := StdCMYKToStdRGBA(Self) end;
 
 function TStdCMYKHelper.ToStdRGBA(AAlpha: single): TStdRGBA;overload;
-begin result := StdCMYKToStdRGBA(self, AAlpha) end;
+begin result := StdCMYKToStdRGBA(Self, AAlpha) end;
 
 function TStdCMYKHelper.ToAdobeRGBA: TAdobeRGBA;overload;
-begin Result := StdCMYKToAdobeRGBA(Self) end;
+begin Result := ExpandedPixelToAdobeRGBA(StdCMYKToExpandedPixel(Self)) end;
 
 function TStdCMYKHelper.ToAdobeRGBA(AAlpha: byte): TAdobeRGBA;overload;
-begin result := StdCMYKToAdobeRGBA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToAdobeRGBA(StdCMYKToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TStdCMYKHelper.ToStdHSLA: TStdHSLA;overload;
 begin Result := StdCMYKToStdHSLA(Self) end;
 
 function TStdCMYKHelper.ToStdHSLA(AAlpha: single): TStdHSLA;overload;
-begin result := StdCMYKToStdHSLA(self, AAlpha) end;
+begin result := StdCMYKToStdHSLA(Self, AAlpha) end;
 
 function TStdCMYKHelper.ToStdHSVA: TStdHSVA;overload;
 begin Result := StdCMYKToStdHSVA(Self) end;
 
 function TStdCMYKHelper.ToStdHSVA(AAlpha: single): TStdHSVA;overload;
-begin result := StdCMYKToStdHSVA(self, AAlpha) end;
+begin result := StdCMYKToStdHSVA(Self, AAlpha) end;
 
 function TStdCMYKHelper.ToExpandedPixel: TExpandedPixel;overload;
 begin Result := StdCMYKToExpandedPixel(Self) end;
 
 function TStdCMYKHelper.ToExpandedPixel(AAlpha: word): TExpandedPixel;overload;
-begin result := StdCMYKToExpandedPixel(self, AAlpha) end;
+begin result := StdCMYKToExpandedPixel(Self, AAlpha) end;
 
 function TStdCMYKHelper.ToLinearRGBA: TLinearRGBA;overload;
-begin Result := StdCMYKToLinearRGBA(Self) end;
+begin Result := ExpandedPixelToLinearRGBA(StdCMYKToExpandedPixel(Self)) end;
 
 function TStdCMYKHelper.ToLinearRGBA(AAlpha: single): TLinearRGBA;overload;
-begin result := StdCMYKToLinearRGBA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToLinearRGBA(StdCMYKToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TStdCMYKHelper.ToHSLAPixel: THSLAPixel;overload;
-begin Result := StdCMYKToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(StdCMYKToExpandedPixel(Self)) end;
 
 function TStdCMYKHelper.ToHSLAPixel(AAlpha: word): THSLAPixel;overload;
-begin result := StdCMYKToHSLAPixel(self, AAlpha) end;
+begin
+  Result := ExpandedToHSLA(StdCMYKToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TStdCMYKHelper.ToGSBAPixel: TGSBAPixel;overload;
-begin Result := StdCMYKToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(StdCMYKToExpandedPixel(Self)) end;
 
 function TStdCMYKHelper.ToGSBAPixel(AAlpha: word): TGSBAPixel;overload;
-begin result := StdCMYKToGSBAPixel(self, AAlpha) end;
+begin
+  Result := ExpandedToGSBA(StdCMYKToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TStdCMYKHelper.ToXYZA: TXYZA;overload;
-begin Result := StdCMYKToXYZA(Self) end;
+begin Result := ExpandedPixelToXYZA(StdCMYKToExpandedPixel(Self)) end;
 
 function TStdCMYKHelper.ToXYZA(AAlpha: single): TXYZA;overload;
-begin result := StdCMYKToXYZA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToXYZA(StdCMYKToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TStdCMYKHelper.ToLabA: TLabA;overload;
-begin Result := StdCMYKToLabA(Self) end;
+begin Result := ExpandedPixelToLabA(StdCMYKToExpandedPixel(Self)) end;
 
 function TStdCMYKHelper.ToLabA(AAlpha: single): TLabA;overload;
-begin result := StdCMYKToLabA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToLabA(StdCMYKToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TStdCMYKHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := StdCMYKToLabA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLabA(StdCMYKToExpandedPixel(Self),AReferenceWhite) end;
 
 function TStdCMYKHelper.ToLChA: TLChA;overload;
-begin Result := StdCMYKToLChA(Self) end;
+begin Result := ExpandedPixelToLChA(StdCMYKToExpandedPixel(Self)) end;
 
 function TStdCMYKHelper.ToLChA(AAlpha: single): TLChA;overload;
-begin result := StdCMYKToLChA(self, AAlpha) end;
+begin
+  Result := ExpandedPixelToLChA(StdCMYKToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
 
 function TStdCMYKHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := StdCMYKToLChA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLChA(StdCMYKToExpandedPixel(Self),AReferenceWhite) end;
 
 procedure TStdCMYKHelper.FromColor(AValue: TColor);
 begin Self := ColorToStdCMYK(AValue) end;
@@ -5505,13 +4145,13 @@ procedure TStdCMYKHelper.FromBGRAPixel(AValue: TBGRAPixel);
 begin Self := BGRAPixelToStdCMYK(AValue) end;
 
 procedure TStdCMYKHelper.FromFPColor(AValue: TFPColor);
-begin Self := FPColorToStdCMYK(AValue) end;
+begin Self := ExpandedPixelToStdCMYK(FPColorToExpanded(AValue)) end;
 
 procedure TStdCMYKHelper.FromStdRGBA(AValue: TStdRGBA);
 begin Self := StdRGBAToStdCMYK(AValue) end;
 
 procedure TStdCMYKHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
-begin Self := AdobeRGBAToStdCMYK(AValue) end;
+begin Self := ExpandedPixelToStdCMYK(AdobeRGBAToExpandedPixel(AValue)) end;
 
 procedure TStdCMYKHelper.FromStdHSLA(AValue: TStdHSLA);
 begin Self := StdHSLAToStdCMYK(AValue) end;
@@ -5523,28 +4163,28 @@ procedure TStdCMYKHelper.FromExpandedPixel(AValue: TExpandedPixel);
 begin Self := ExpandedPixelToStdCMYK(AValue) end;
 
 procedure TStdCMYKHelper.FromLinearRGBA(AValue: TLinearRGBA);
-begin Self := LinearRGBAToStdCMYK(AValue) end;
+begin Self := ExpandedPixelToStdCMYK(LinearRGBAToExpandedPixel(AValue)) end;
 
 procedure TStdCMYKHelper.FromHSLAPixel(AValue: THSLAPixel);
-begin Self := HSLAPixelToStdCMYK(AValue) end;
+begin Self := ExpandedPixelToStdCMYK(HSLAToExpanded(AValue)) end;
 
 procedure TStdCMYKHelper.FromGSBAPixel(AValue: TGSBAPixel);
-begin Self := GSBAPixelToStdCMYK(AValue) end;
+begin Self := ExpandedPixelToStdCMYK(GSBAToExpanded(AValue)) end;
 
 procedure TStdCMYKHelper.FromXYZA(AValue: TXYZA);
-begin Self := XYZAToStdCMYK(AValue) end;
+begin Self := ExpandedPixelToStdCMYK(XYZAToExpandedPixel(AValue)) end;
 
 procedure TStdCMYKHelper.FromLabA(AValue: TLabA); overload;
-begin Self := LabAToStdCMYK(AValue) end;
+begin Self := ExpandedPixelToStdCMYK(LabAToExpandedPixel(AValue)) end;
 
 procedure TStdCMYKHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LabAToStdCMYK(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToStdCMYK(LabAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TStdCMYKHelper.FromLChA(AValue: TLChA); overload;
-begin Self := LChAToStdCMYK(AValue) end;
+begin Self := ExpandedPixelToStdCMYK(LChAToExpandedPixel(AValue)) end;
 
 procedure TStdCMYKHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LChAToStdCMYK(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToStdCMYK(LChAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 { TExpandedPixelHelper }
 
@@ -5639,37 +4279,37 @@ class function TLinearRGBAHelper.Colorspace: TColorspaceAny; static;
 begin result := TLinearRGBAColorspace end;
 
 function TLinearRGBAHelper.ToColor: TColor;
-begin Result := LinearRGBAToColor(Self) end;
+begin Result := ExpandedPixelToColor(LinearRGBAToExpandedPixel(Self)) end;
 
 function TLinearRGBAHelper.ToBGRAPixel: TBGRAPixel;
-begin Result := LinearRGBAToBGRAPixel(Self) end;
+begin Result := GammaCompression(LinearRGBAToExpandedPixel(Self)) end;
 
 function TLinearRGBAHelper.ToFPColor: TFPColor;
-begin Result := LinearRGBAToFPColor(Self) end;
+begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(Self)) end;
 
 function TLinearRGBAHelper.ToStdRGBA: TStdRGBA;
-begin Result := LinearRGBAToStdRGBA(Self) end;
+begin Result := ExpandedPixelToStdRGBA(LinearRGBAToExpandedPixel(Self)) end;
 
 function TLinearRGBAHelper.ToAdobeRGBA: TAdobeRGBA;
 begin Result := LinearRGBAToAdobeRGBA(Self) end;
 
 function TLinearRGBAHelper.ToStdHSLA: TStdHSLA;
-begin Result := LinearRGBAToStdHSLA(Self) end;
+begin Result := ExpandedPixelToStdHSLA(LinearRGBAToExpandedPixel(Self)) end;
 
 function TLinearRGBAHelper.ToStdHSVA: TStdHSVA;
-begin Result := LinearRGBAToStdHSVA(Self) end;
+begin Result := ExpandedPixelToStdHSVA(LinearRGBAToExpandedPixel(Self)) end;
 
 function TLinearRGBAHelper.ToStdCMYK: TStdCMYK;
-begin Result := LinearRGBAToStdCMYK(Self) end;
+begin Result := ExpandedPixelToStdCMYK(LinearRGBAToExpandedPixel(Self)) end;
 
 function TLinearRGBAHelper.ToExpandedPixel: TExpandedPixel;
 begin Result := LinearRGBAToExpandedPixel(Self) end;
 
 function TLinearRGBAHelper.ToHSLAPixel: THSLAPixel;
-begin Result := LinearRGBAToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(LinearRGBAToExpandedPixel(Self)) end;
 
 function TLinearRGBAHelper.ToGSBAPixel: TGSBAPixel;
-begin Result := LinearRGBAToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(Self)) end;
 
 function TLinearRGBAHelper.ToXYZA: TXYZA;
 begin Result := LinearRGBAToXYZA(Self) end;
@@ -5687,37 +4327,37 @@ function TLinearRGBAHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TL
 begin Result := LinearRGBAToLChA(Self,AReferenceWhite) end;
 
 procedure TLinearRGBAHelper.FromColor(AValue: TColor);
-begin Self := ColorToLinearRGBA(AValue) end;
+begin Self := ExpandedPixelToLinearRGBA(ColorToExpandedPixel(AValue)) end;
 
 procedure TLinearRGBAHelper.FromBGRAPixel(AValue: TBGRAPixel);
-begin Self := BGRAPixelToLinearRGBA(AValue) end;
+begin Self := ExpandedPixelToLinearRGBA(GammaExpansion(AValue)) end;
 
 procedure TLinearRGBAHelper.FromFPColor(AValue: TFPColor);
-begin Self := FPColorToLinearRGBA(AValue) end;
+begin Self := ExpandedPixelToLinearRGBA(FPColorToExpanded(AValue)) end;
 
 procedure TLinearRGBAHelper.FromStdRGBA(AValue: TStdRGBA);
-begin Self := StdRGBAToLinearRGBA(AValue) end;
+begin Self := ExpandedPixelToLinearRGBA(StdRGBAToExpandedPixel(AValue)) end;
 
 procedure TLinearRGBAHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
 begin Self := AdobeRGBAToLinearRGBA(AValue) end;
 
 procedure TLinearRGBAHelper.FromStdHSLA(AValue: TStdHSLA);
-begin Self := StdHSLAToLinearRGBA(AValue) end;
+begin Self := ExpandedPixelToLinearRGBA(StdHSLAToExpandedPixel(AValue)) end;
 
 procedure TLinearRGBAHelper.FromStdHSVA(AValue: TStdHSVA);
-begin Self := StdHSVAToLinearRGBA(AValue) end;
+begin Self := ExpandedPixelToLinearRGBA(StdHSVAToExpandedPixel(AValue)) end;
 
 procedure TLinearRGBAHelper.FromStdCMYK(AValue: TStdCMYK);
-begin Self := StdCMYKToLinearRGBA(AValue) end;
+begin Self := ExpandedPixelToLinearRGBA(StdCMYKToExpandedPixel(AValue)) end;
 
 procedure TLinearRGBAHelper.FromExpandedPixel(AValue: TExpandedPixel);
 begin Self := ExpandedPixelToLinearRGBA(AValue) end;
 
 procedure TLinearRGBAHelper.FromHSLAPixel(AValue: THSLAPixel);
-begin Self := HSLAPixelToLinearRGBA(AValue) end;
+begin Self := ExpandedPixelToLinearRGBA(HSLAToExpanded(AValue)) end;
 
 procedure TLinearRGBAHelper.FromGSBAPixel(AValue: TGSBAPixel);
-begin Self := GSBAPixelToLinearRGBA(AValue) end;
+begin Self := ExpandedPixelToLinearRGBA(GSBAToExpanded(AValue)) end;
 
 procedure TLinearRGBAHelper.FromXYZA(AValue: TXYZA);
 begin Self := XYZAToLinearRGBA(AValue) end;
@@ -5756,70 +4396,70 @@ class function THSLAPixelHelper.Colorspace: TColorspaceAny; static;
 begin result := THSLAPixelColorspace end;
 
 function THSLAPixelHelper.ToStdRGBA: TStdRGBA;
-begin Result := HSLAPixelToStdRGBA(Self) end;
+begin Result := ExpandedPixelToStdRGBA(HSLAToExpanded(Self)) end;
 
 function THSLAPixelHelper.ToAdobeRGBA: TAdobeRGBA;
-begin Result := HSLAPixelToAdobeRGBA(Self) end;
+begin Result := ExpandedPixelToAdobeRGBA(HSLAToExpanded(Self)) end;
 
 function THSLAPixelHelper.ToStdHSLA: TStdHSLA;
-begin Result := HSLAPixelToStdHSLA(Self) end;
+begin Result := ExpandedPixelToStdHSLA(HSLAToExpanded(Self)) end;
 
 function THSLAPixelHelper.ToStdHSVA: TStdHSVA;
-begin Result := HSLAPixelToStdHSVA(Self) end;
+begin Result := ExpandedPixelToStdHSVA(HSLAToExpanded(Self)) end;
 
 function THSLAPixelHelper.ToStdCMYK: TStdCMYK;
-begin Result := HSLAPixelToStdCMYK(Self) end;
+begin Result := ExpandedPixelToStdCMYK(HSLAToExpanded(Self)) end;
 
 function THSLAPixelHelper.ToLinearRGBA: TLinearRGBA;
-begin Result := HSLAPixelToLinearRGBA(Self) end;
+begin Result := ExpandedPixelToLinearRGBA(HSLAToExpanded(Self)) end;
 
 function THSLAPixelHelper.ToXYZA: TXYZA;
-begin Result := HSLAPixelToXYZA(Self) end;
+begin Result := ExpandedPixelToXYZA(HSLAToExpanded(Self)) end;
 
 function THSLAPixelHelper.ToLabA: TLabA;overload;
-begin Result := HSLAPixelToLabA(Self) end;
+begin Result := ExpandedPixelToLabA(HSLAToExpanded(Self)) end;
 
 function THSLAPixelHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := HSLAPixelToLabA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLabA(HSLAToExpanded(Self),AReferenceWhite) end;
 
 function THSLAPixelHelper.ToLChA: TLChA;overload;
-begin Result := HSLAPixelToLChA(Self) end;
+begin Result := ExpandedPixelToLChA(HSLAToExpanded(Self)) end;
 
 function THSLAPixelHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := HSLAPixelToLChA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLChA(HSLAToExpanded(Self),AReferenceWhite) end;
 
 procedure THSLAPixelHelper.FromStdRGBA(AValue: TStdRGBA);
-begin Self := StdRGBAToHSLAPixel(AValue) end;
+begin Self := ExpandedToHSLA(StdRGBAToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
-begin Self := AdobeRGBAToHSLAPixel(AValue) end;
+begin Self := ExpandedToHSLA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromStdHSLA(AValue: TStdHSLA);
-begin Self := StdHSLAToHSLAPixel(AValue) end;
+begin Self := ExpandedToHSLA(StdHSLAToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromStdHSVA(AValue: TStdHSVA);
-begin Self := StdHSVAToHSLAPixel(AValue) end;
+begin Self := ExpandedToHSLA(StdHSVAToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromStdCMYK(AValue: TStdCMYK);
-begin Self := StdCMYKToHSLAPixel(AValue) end;
+begin Self := ExpandedToHSLA(StdCMYKToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromLinearRGBA(AValue: TLinearRGBA);
-begin Self := LinearRGBAToHSLAPixel(AValue) end;
+begin Self := ExpandedToHSLA(LinearRGBAToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromXYZA(AValue: TXYZA);
-begin Self := XYZAToHSLAPixel(AValue) end;
+begin Self := ExpandedToHSLA(XYZAToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromLabA(AValue: TLabA); overload;
-begin Self := LabAToHSLAPixel(AValue) end;
+begin Self := ExpandedToHSLA(LabAToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LabAToHSLAPixel(AValue,AReferenceWhite) end;
+begin Self := ExpandedToHSLA(LabAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure THSLAPixelHelper.FromLChA(AValue: TLChA); overload;
-begin Self := LChAToHSLAPixel(AValue) end;
+begin Self := ExpandedToHSLA(LChAToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LChAToHSLAPixel(AValue,AReferenceWhite) end;
+begin Self := ExpandedToHSLA(LChAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 { TGSBAPixelHelper }
 
@@ -5843,70 +4483,70 @@ class function TGSBAPixelHelper.Colorspace: TColorspaceAny; static;
 begin result := TGSBAPixelColorspace end;
 
 function TGSBAPixelHelper.ToStdRGBA: TStdRGBA;
-begin Result := GSBAPixelToStdRGBA(Self) end;
+begin Result := ExpandedPixelToStdRGBA(GSBAToExpanded(Self)) end;
 
 function TGSBAPixelHelper.ToAdobeRGBA: TAdobeRGBA;
-begin Result := GSBAPixelToAdobeRGBA(Self) end;
+begin Result := ExpandedPixelToAdobeRGBA(GSBAToExpanded(Self)) end;
 
 function TGSBAPixelHelper.ToStdHSLA: TStdHSLA;
-begin Result := GSBAPixelToStdHSLA(Self) end;
+begin Result := ExpandedPixelToStdHSLA(GSBAToExpanded(Self)) end;
 
 function TGSBAPixelHelper.ToStdHSVA: TStdHSVA;
-begin Result := GSBAPixelToStdHSVA(Self) end;
+begin Result := ExpandedPixelToStdHSVA(GSBAToExpanded(Self)) end;
 
 function TGSBAPixelHelper.ToStdCMYK: TStdCMYK;
-begin Result := GSBAPixelToStdCMYK(Self) end;
+begin Result := ExpandedPixelToStdCMYK(GSBAToExpanded(Self)) end;
 
 function TGSBAPixelHelper.ToLinearRGBA: TLinearRGBA;
-begin Result := GSBAPixelToLinearRGBA(Self) end;
+begin Result := ExpandedPixelToLinearRGBA(GSBAToExpanded(Self)) end;
 
 function TGSBAPixelHelper.ToXYZA: TXYZA;
-begin Result := GSBAPixelToXYZA(Self) end;
+begin Result := ExpandedPixelToXYZA(GSBAToExpanded(Self)) end;
 
 function TGSBAPixelHelper.ToLabA: TLabA;overload;
-begin Result := GSBAPixelToLabA(Self) end;
+begin Result := ExpandedPixelToLabA(GSBAToExpanded(Self)) end;
 
 function TGSBAPixelHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
-begin Result := GSBAPixelToLabA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLabA(GSBAToExpanded(Self),AReferenceWhite) end;
 
 function TGSBAPixelHelper.ToLChA: TLChA;overload;
-begin Result := GSBAPixelToLChA(Self) end;
+begin Result := ExpandedPixelToLChA(GSBAToExpanded(Self)) end;
 
 function TGSBAPixelHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
-begin Result := GSBAPixelToLChA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToLChA(GSBAToExpanded(Self),AReferenceWhite) end;
 
 procedure TGSBAPixelHelper.FromStdRGBA(AValue: TStdRGBA);
-begin Self := StdRGBAToGSBAPixel(AValue) end;
+begin Self := ExpandedToGSBA(StdRGBAToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
-begin Self := AdobeRGBAToGSBAPixel(AValue) end;
+begin Self := ExpandedToGSBA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromStdHSLA(AValue: TStdHSLA);
-begin Self := StdHSLAToGSBAPixel(AValue) end;
+begin Self := ExpandedToGSBA(StdHSLAToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromStdHSVA(AValue: TStdHSVA);
-begin Self := StdHSVAToGSBAPixel(AValue) end;
+begin Self := ExpandedToGSBA(StdHSVAToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromStdCMYK(AValue: TStdCMYK);
-begin Self := StdCMYKToGSBAPixel(AValue) end;
+begin Self := ExpandedToGSBA(StdCMYKToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromLinearRGBA(AValue: TLinearRGBA);
-begin Self := LinearRGBAToGSBAPixel(AValue) end;
+begin Self := ExpandedToGSBA(LinearRGBAToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromXYZA(AValue: TXYZA);
-begin Self := XYZAToGSBAPixel(AValue) end;
+begin Self := ExpandedToGSBA(XYZAToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromLabA(AValue: TLabA); overload;
-begin Self := LabAToGSBAPixel(AValue) end;
+begin Self := ExpandedToGSBA(LabAToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LabAToGSBAPixel(AValue,AReferenceWhite) end;
+begin Self := ExpandedToGSBA(LabAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TGSBAPixelHelper.FromLChA(AValue: TLChA); overload;
-begin Self := LChAToGSBAPixel(AValue) end;
+begin Self := ExpandedToGSBA(LChAToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := LChAToGSBAPixel(AValue,AReferenceWhite) end;
+begin Self := ExpandedToGSBA(LChAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 { TXYZAHelper }
 
@@ -5914,28 +4554,28 @@ class function TXYZAHelper.Colorspace: TColorspaceAny; static;
 begin result := TXYZAColorspace end;
 
 function TXYZAHelper.ToColor: TColor;
-begin Result := XYZAToColor(Self) end;
+begin Result := ExpandedPixelToColor(XYZAToExpandedPixel(Self)) end;
 
 function TXYZAHelper.ToBGRAPixel: TBGRAPixel;
-begin Result := XYZAToBGRAPixel(Self) end;
+begin Result := GammaCompression(XYZAToExpandedPixel(Self)) end;
 
 function TXYZAHelper.ToFPColor: TFPColor;
-begin Result := XYZAToFPColor(Self) end;
+begin Result := ExpandedToFPColor(XYZAToExpandedPixel(Self)) end;
 
 function TXYZAHelper.ToStdRGBA: TStdRGBA;
-begin Result := XYZAToStdRGBA(Self) end;
+begin Result := ExpandedPixelToStdRGBA(XYZAToExpandedPixel(Self)) end;
 
 function TXYZAHelper.ToAdobeRGBA: TAdobeRGBA;
 begin Result := XYZAToAdobeRGBA(Self) end;
 
 function TXYZAHelper.ToStdHSLA: TStdHSLA;
-begin Result := XYZAToStdHSLA(Self) end;
+begin Result := ExpandedPixelToStdHSLA(XYZAToExpandedPixel(Self)) end;
 
 function TXYZAHelper.ToStdHSVA: TStdHSVA;
-begin Result := XYZAToStdHSVA(Self) end;
+begin Result := ExpandedPixelToStdHSVA(XYZAToExpandedPixel(Self)) end;
 
 function TXYZAHelper.ToStdCMYK: TStdCMYK;
-begin Result := XYZAToStdCMYK(Self) end;
+begin Result := ExpandedPixelToStdCMYK(XYZAToExpandedPixel(Self)) end;
 
 function TXYZAHelper.ToExpandedPixel: TExpandedPixel;
 begin Result := XYZAToExpandedPixel(Self) end;
@@ -5944,10 +4584,10 @@ function TXYZAHelper.ToLinearRGBA: TLinearRGBA;
 begin Result := XYZAToLinearRGBA(Self) end;
 
 function TXYZAHelper.ToHSLAPixel: THSLAPixel;
-begin Result := XYZAToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(XYZAToExpandedPixel(Self)) end;
 
 function TXYZAHelper.ToGSBAPixel: TGSBAPixel;
-begin Result := XYZAToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(XYZAToExpandedPixel(Self)) end;
 
 function TXYZAHelper.ToLabA: TLabA;overload;
 begin Result := XYZAToLabA(Self) end;
@@ -5962,28 +4602,28 @@ function TXYZAHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;ov
 begin Result := XYZAToLChA(Self,AReferenceWhite) end;
 
 procedure TXYZAHelper.FromColor(AValue: TColor);
-begin Self := ColorToXYZA(AValue) end;
+begin Self := ExpandedPixelToXYZA(ColorToExpandedPixel(AValue)) end;
 
 procedure TXYZAHelper.FromBGRAPixel(AValue: TBGRAPixel);
-begin Self := BGRAPixelToXYZA(AValue) end;
+begin Self := ExpandedPixelToXYZA(GammaExpansion(AValue)) end;
 
 procedure TXYZAHelper.FromFPColor(AValue: TFPColor);
-begin Self := FPColorToXYZA(AValue) end;
+begin Self := ExpandedPixelToXYZA(FPColorToExpanded(AValue)) end;
 
 procedure TXYZAHelper.FromStdRGBA(AValue: TStdRGBA);
-begin Self := StdRGBAToXYZA(AValue) end;
+begin Self := ExpandedPixelToXYZA(StdRGBAToExpandedPixel(AValue)) end;
 
 procedure TXYZAHelper.FromAdobeRGBA(AValue: TAdobeRGBA);
 begin Self := AdobeRGBAToXYZA(AValue) end;
 
 procedure TXYZAHelper.FromStdHSLA(AValue: TStdHSLA);
-begin Self := StdHSLAToXYZA(AValue) end;
+begin Self := ExpandedPixelToXYZA(StdHSLAToExpandedPixel(AValue)) end;
 
 procedure TXYZAHelper.FromStdHSVA(AValue: TStdHSVA);
-begin Self := StdHSVAToXYZA(AValue) end;
+begin Self := ExpandedPixelToXYZA(StdHSVAToExpandedPixel(AValue)) end;
 
 procedure TXYZAHelper.FromStdCMYK(AValue: TStdCMYK);
-begin Self := StdCMYKToXYZA(AValue) end;
+begin Self := ExpandedPixelToXYZA(StdCMYKToExpandedPixel(AValue)) end;
 
 procedure TXYZAHelper.FromExpandedPixel(AValue: TExpandedPixel);
 begin Self := ExpandedPixelToXYZA(AValue) end;
@@ -5992,10 +4632,10 @@ procedure TXYZAHelper.FromLinearRGBA(AValue: TLinearRGBA);
 begin Self := LinearRGBAToXYZA(AValue) end;
 
 procedure TXYZAHelper.FromHSLAPixel(AValue: THSLAPixel);
-begin Self := HSLAPixelToXYZA(AValue) end;
+begin Self := ExpandedPixelToXYZA(HSLAToExpanded(AValue)) end;
 
 procedure TXYZAHelper.FromGSBAPixel(AValue: TGSBAPixel);
-begin Self := GSBAPixelToXYZA(AValue) end;
+begin Self := ExpandedPixelToXYZA(GSBAToExpanded(AValue)) end;
 
 procedure TXYZAHelper.FromLabA(AValue: TLabA); overload;
 begin Self := LabAToXYZA(AValue) end;
@@ -6015,28 +4655,28 @@ class function TLabAHelper.Colorspace: TColorspaceAny; static;
 begin result := TLabAColorspace end;
 
 function TLabAHelper.ToColor: TColor;overload;
-begin Result := LabAToColor(Self) end;
+begin Result := ExpandedPixelToColor(LabAToExpandedPixel(Self)) end;
 
 function TLabAHelper.ToColor(const AReferenceWhite: TXYZReferenceWhite): TColor;overload;
-begin Result := LabAToColor(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToColor(LabAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLabAHelper.ToBGRAPixel: TBGRAPixel;overload;
-begin Result := LabAToBGRAPixel(Self) end;
+begin Result := GammaCompression(LabAToExpandedPixel(Self)) end;
 
 function TLabAHelper.ToBGRAPixel(const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
-begin Result := LabAToBGRAPixel(Self,AReferenceWhite) end;
+begin Result := GammaCompression(LabAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLabAHelper.ToFPColor: TFPColor;overload;
-begin Result := LabAToFPColor(Self) end;
+begin Result := ExpandedToFPColor(LabAToExpandedPixel(Self)) end;
 
 function TLabAHelper.ToFPColor(const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
-begin Result := LabAToFPColor(Self,AReferenceWhite) end;
+begin Result := ExpandedToFPColor(LabAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLabAHelper.ToStdRGBA: TStdRGBA;overload;
-begin Result := LabAToStdRGBA(Self) end;
+begin Result := ExpandedPixelToStdRGBA(LabAToExpandedPixel(Self)) end;
 
 function TLabAHelper.ToStdRGBA(const AReferenceWhite: TXYZReferenceWhite): TStdRGBA;overload;
-begin Result := LabAToStdRGBA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToStdRGBA(LabAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLabAHelper.ToAdobeRGBA: TAdobeRGBA;overload;
 begin Result := LabAToAdobeRGBA(Self) end;
@@ -6045,22 +4685,22 @@ function TLabAHelper.ToAdobeRGBA(const AReferenceWhite: TXYZReferenceWhite): TAd
 begin Result := LabAToAdobeRGBA(Self,AReferenceWhite) end;
 
 function TLabAHelper.ToStdHSLA: TStdHSLA;overload;
-begin Result := LabAToStdHSLA(Self) end;
+begin Result := ExpandedPixelToStdHSLA(LabAToExpandedPixel(Self)) end;
 
 function TLabAHelper.ToStdHSLA(const AReferenceWhite: TXYZReferenceWhite): TStdHSLA;overload;
-begin Result := LabAToStdHSLA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToStdHSLA(LabAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLabAHelper.ToStdHSVA: TStdHSVA;overload;
-begin Result := LabAToStdHSVA(Self) end;
+begin Result := ExpandedPixelToStdHSVA(LabAToExpandedPixel(Self)) end;
 
 function TLabAHelper.ToStdHSVA(const AReferenceWhite: TXYZReferenceWhite): TStdHSVA;overload;
-begin Result := LabAToStdHSVA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToStdHSVA(LabAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLabAHelper.ToStdCMYK: TStdCMYK;overload;
-begin Result := LabAToStdCMYK(Self) end;
+begin Result := ExpandedPixelToStdCMYK(LabAToExpandedPixel(Self)) end;
 
 function TLabAHelper.ToStdCMYK(const AReferenceWhite: TXYZReferenceWhite): TStdCMYK;overload;
-begin Result := LabAToStdCMYK(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToStdCMYK(LabAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLabAHelper.ToExpandedPixel: TExpandedPixel;overload;
 begin Result := LabAToExpandedPixel(Self) end;
@@ -6075,16 +4715,16 @@ function TLabAHelper.ToLinearRGBA(const AReferenceWhite: TXYZReferenceWhite): TL
 begin Result := LabAToLinearRGBA(Self,AReferenceWhite) end;
 
 function TLabAHelper.ToHSLAPixel: THSLAPixel;overload;
-begin Result := LabAToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(LabAToExpandedPixel(Self)) end;
 
 function TLabAHelper.ToHSLAPixel(const AReferenceWhite: TXYZReferenceWhite): THSLAPixel;overload;
-begin Result := LabAToHSLAPixel(Self,AReferenceWhite) end;
+begin Result := ExpandedToHSLA(LabAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLabAHelper.ToGSBAPixel: TGSBAPixel;overload;
-begin Result := LabAToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(LabAToExpandedPixel(Self)) end;
 
 function TLabAHelper.ToGSBAPixel(const AReferenceWhite: TXYZReferenceWhite): TGSBAPixel;overload;
-begin Result := LabAToGSBAPixel(Self,AReferenceWhite) end;
+begin Result := ExpandedToGSBA(LabAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLabAHelper.ToXYZA: TXYZA;overload;
 begin Result := LabAToXYZA(Self) end;
@@ -6096,28 +4736,28 @@ function TLabAHelper.ToLChA: TLChA;
 begin Result := LabAToLChA(Self) end;
 
 procedure TLabAHelper.FromColor(AValue: TColor); overload;
-begin Self := ColorToLabA(AValue) end;
+begin Self := ExpandedPixelToLabA(ColorToExpandedPixel(AValue)) end;
 
 procedure TLabAHelper.FromColor(AValue: TColor; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := ColorToLabA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLabA(ColorToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLabAHelper.FromBGRAPixel(AValue: TBGRAPixel); overload;
-begin Self := BGRAPixelToLabA(AValue) end;
+begin Self := ExpandedPixelToLabA(GammaExpansion(AValue)) end;
 
 procedure TLabAHelper.FromBGRAPixel(AValue: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := BGRAPixelToLabA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLabA(GammaExpansion(AValue),AReferenceWhite) end;
 
 procedure TLabAHelper.FromFPColor(AValue: TFPColor); overload;
-begin Self := FPColorToLabA(AValue) end;
+begin Self := ExpandedPixelToLabA(FPColorToExpanded(AValue)) end;
 
 procedure TLabAHelper.FromFPColor(AValue: TFPColor; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := FPColorToLabA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLabA(FPColorToExpanded(AValue),AReferenceWhite) end;
 
 procedure TLabAHelper.FromStdRGBA(AValue: TStdRGBA); overload;
-begin Self := StdRGBAToLabA(AValue) end;
+begin Self := ExpandedPixelToLabA(StdRGBAToExpandedPixel(AValue)) end;
 
 procedure TLabAHelper.FromStdRGBA(AValue: TStdRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := StdRGBAToLabA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLabA(StdRGBAToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLabAHelper.FromAdobeRGBA(AValue: TAdobeRGBA); overload;
 begin Self := AdobeRGBAToLabA(AValue) end;
@@ -6126,22 +4766,22 @@ procedure TLabAHelper.FromAdobeRGBA(AValue: TAdobeRGBA; const AReferenceWhite: T
 begin Self := AdobeRGBAToLabA(AValue,AReferenceWhite) end;
 
 procedure TLabAHelper.FromStdHSLA(AValue: TStdHSLA); overload;
-begin Self := StdHSLAToLabA(AValue) end;
+begin Self := ExpandedPixelToLabA(StdHSLAToExpandedPixel(AValue)) end;
 
 procedure TLabAHelper.FromStdHSLA(AValue: TStdHSLA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := StdHSLAToLabA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLabA(StdHSLAToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLabAHelper.FromStdHSVA(AValue: TStdHSVA); overload;
-begin Self := StdHSVAToLabA(AValue) end;
+begin Self := ExpandedPixelToLabA(StdHSVAToExpandedPixel(AValue)) end;
 
 procedure TLabAHelper.FromStdHSVA(AValue: TStdHSVA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := StdHSVAToLabA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLabA(StdHSVAToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLabAHelper.FromStdCMYK(AValue: TStdCMYK); overload;
-begin Self := StdCMYKToLabA(AValue) end;
+begin Self := ExpandedPixelToLabA(StdCMYKToExpandedPixel(AValue)) end;
 
 procedure TLabAHelper.FromStdCMYK(AValue: TStdCMYK; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := StdCMYKToLabA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLabA(StdCMYKToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLabAHelper.FromExpandedPixel(AValue: TExpandedPixel); overload;
 begin Self := ExpandedPixelToLabA(AValue) end;
@@ -6156,16 +4796,16 @@ procedure TLabAHelper.FromLinearRGBA(AValue: TLinearRGBA; const AReferenceWhite:
 begin Self := LinearRGBAToLabA(AValue,AReferenceWhite) end;
 
 procedure TLabAHelper.FromHSLAPixel(AValue: THSLAPixel); overload;
-begin Self := HSLAPixelToLabA(AValue) end;
+begin Self := ExpandedPixelToLabA(HSLAToExpanded(AValue)) end;
 
 procedure TLabAHelper.FromHSLAPixel(AValue: THSLAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := HSLAPixelToLabA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLabA(HSLAToExpanded(AValue),AReferenceWhite) end;
 
 procedure TLabAHelper.FromGSBAPixel(AValue: TGSBAPixel); overload;
-begin Self := GSBAPixelToLabA(AValue) end;
+begin Self := ExpandedPixelToLabA(GSBAToExpanded(AValue)) end;
 
 procedure TLabAHelper.FromGSBAPixel(AValue: TGSBAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := GSBAPixelToLabA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLabA(GSBAToExpanded(AValue),AReferenceWhite) end;
 
 procedure TLabAHelper.FromXYZA(AValue: TXYZA); overload;
 begin Self := XYZAToLabA(AValue) end;
@@ -6182,28 +4822,28 @@ class function TLChAHelper.Colorspace: TColorspaceAny; static;
 begin result := TLChAColorspace end;
 
 function TLChAHelper.ToColor: TColor;overload;
-begin Result := LChAToColor(Self) end;
+begin Result := ExpandedPixelToColor(LChAToExpandedPixel(Self)) end;
 
 function TLChAHelper.ToColor(const AReferenceWhite: TXYZReferenceWhite): TColor;overload;
-begin Result := LChAToColor(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToColor(LChAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLChAHelper.ToBGRAPixel: TBGRAPixel;overload;
-begin Result := LChAToBGRAPixel(Self) end;
+begin Result := GammaCompression(LChAToExpandedPixel(Self)) end;
 
 function TLChAHelper.ToBGRAPixel(const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
-begin Result := LChAToBGRAPixel(Self,AReferenceWhite) end;
+begin Result := GammaCompression(LChAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLChAHelper.ToFPColor: TFPColor;overload;
-begin Result := LChAToFPColor(Self) end;
+begin Result := ExpandedToFPColor(LChAToExpandedPixel(Self)) end;
 
 function TLChAHelper.ToFPColor(const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
-begin Result := LChAToFPColor(Self,AReferenceWhite) end;
+begin Result := ExpandedToFPColor(LChAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLChAHelper.ToStdRGBA: TStdRGBA;overload;
-begin Result := LChAToStdRGBA(Self) end;
+begin Result := ExpandedPixelToStdRGBA(LChAToExpandedPixel(Self)) end;
 
 function TLChAHelper.ToStdRGBA(const AReferenceWhite: TXYZReferenceWhite): TStdRGBA;overload;
-begin Result := LChAToStdRGBA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToStdRGBA(LChAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLChAHelper.ToAdobeRGBA: TAdobeRGBA;overload;
 begin Result := LChAToAdobeRGBA(Self) end;
@@ -6212,22 +4852,22 @@ function TLChAHelper.ToAdobeRGBA(const AReferenceWhite: TXYZReferenceWhite): TAd
 begin Result := LChAToAdobeRGBA(Self,AReferenceWhite) end;
 
 function TLChAHelper.ToStdHSLA: TStdHSLA;overload;
-begin Result := LChAToStdHSLA(Self) end;
+begin Result := ExpandedPixelToStdHSLA(LChAToExpandedPixel(Self)) end;
 
 function TLChAHelper.ToStdHSLA(const AReferenceWhite: TXYZReferenceWhite): TStdHSLA;overload;
-begin Result := LChAToStdHSLA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToStdHSLA(LChAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLChAHelper.ToStdHSVA: TStdHSVA;overload;
-begin Result := LChAToStdHSVA(Self) end;
+begin Result := ExpandedPixelToStdHSVA(LChAToExpandedPixel(Self)) end;
 
 function TLChAHelper.ToStdHSVA(const AReferenceWhite: TXYZReferenceWhite): TStdHSVA;overload;
-begin Result := LChAToStdHSVA(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToStdHSVA(LChAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLChAHelper.ToStdCMYK: TStdCMYK;overload;
-begin Result := LChAToStdCMYK(Self) end;
+begin Result := ExpandedPixelToStdCMYK(LChAToExpandedPixel(Self)) end;
 
 function TLChAHelper.ToStdCMYK(const AReferenceWhite: TXYZReferenceWhite): TStdCMYK;overload;
-begin Result := LChAToStdCMYK(Self,AReferenceWhite) end;
+begin Result := ExpandedPixelToStdCMYK(LChAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLChAHelper.ToExpandedPixel: TExpandedPixel;overload;
 begin Result := LChAToExpandedPixel(Self) end;
@@ -6242,16 +4882,16 @@ function TLChAHelper.ToLinearRGBA(const AReferenceWhite: TXYZReferenceWhite): TL
 begin Result := LChAToLinearRGBA(Self,AReferenceWhite) end;
 
 function TLChAHelper.ToHSLAPixel: THSLAPixel;overload;
-begin Result := LChAToHSLAPixel(Self) end;
+begin Result := ExpandedToHSLA(LChAToExpandedPixel(Self)) end;
 
 function TLChAHelper.ToHSLAPixel(const AReferenceWhite: TXYZReferenceWhite): THSLAPixel;overload;
-begin Result := LChAToHSLAPixel(Self,AReferenceWhite) end;
+begin Result := ExpandedToHSLA(LChAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLChAHelper.ToGSBAPixel: TGSBAPixel;overload;
-begin Result := LChAToGSBAPixel(Self) end;
+begin Result := ExpandedToGSBA(LChAToExpandedPixel(Self)) end;
 
 function TLChAHelper.ToGSBAPixel(const AReferenceWhite: TXYZReferenceWhite): TGSBAPixel;overload;
-begin Result := LChAToGSBAPixel(Self,AReferenceWhite) end;
+begin Result := ExpandedToGSBA(LChAToExpandedPixel(Self,AReferenceWhite)) end;
 
 function TLChAHelper.ToXYZA: TXYZA;overload;
 begin Result := LChAToXYZA(Self) end;
@@ -6263,28 +4903,28 @@ function TLChAHelper.ToLabA: TLabA;
 begin Result := LChAToLabA(Self) end;
 
 procedure TLChAHelper.FromColor(AValue: TColor); overload;
-begin Self := ColorToLChA(AValue) end;
+begin Self := ExpandedPixelToLChA(ColorToExpandedPixel(AValue)) end;
 
 procedure TLChAHelper.FromColor(AValue: TColor; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := ColorToLChA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLChA(ColorToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLChAHelper.FromBGRAPixel(AValue: TBGRAPixel); overload;
-begin Self := BGRAPixelToLChA(AValue) end;
+begin Self := ExpandedPixelToLChA(GammaExpansion(AValue)) end;
 
 procedure TLChAHelper.FromBGRAPixel(AValue: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := BGRAPixelToLChA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLChA(GammaExpansion(AValue),AReferenceWhite) end;
 
 procedure TLChAHelper.FromFPColor(AValue: TFPColor); overload;
-begin Self := FPColorToLChA(AValue) end;
+begin Self := ExpandedPixelToLChA(FPColorToExpanded(AValue)) end;
 
 procedure TLChAHelper.FromFPColor(AValue: TFPColor; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := FPColorToLChA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLChA(FPColorToExpanded(AValue),AReferenceWhite) end;
 
 procedure TLChAHelper.FromStdRGBA(AValue: TStdRGBA); overload;
-begin Self := StdRGBAToLChA(AValue) end;
+begin Self := ExpandedPixelToLChA(StdRGBAToExpandedPixel(AValue)) end;
 
 procedure TLChAHelper.FromStdRGBA(AValue: TStdRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := StdRGBAToLChA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLChA(StdRGBAToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLChAHelper.FromAdobeRGBA(AValue: TAdobeRGBA); overload;
 begin Self := AdobeRGBAToLChA(AValue) end;
@@ -6293,22 +4933,22 @@ procedure TLChAHelper.FromAdobeRGBA(AValue: TAdobeRGBA; const AReferenceWhite: T
 begin Self := AdobeRGBAToLChA(AValue,AReferenceWhite) end;
 
 procedure TLChAHelper.FromStdHSLA(AValue: TStdHSLA); overload;
-begin Self := StdHSLAToLChA(AValue) end;
+begin Self := ExpandedPixelToLChA(StdHSLAToExpandedPixel(AValue)) end;
 
 procedure TLChAHelper.FromStdHSLA(AValue: TStdHSLA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := StdHSLAToLChA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLChA(StdHSLAToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLChAHelper.FromStdHSVA(AValue: TStdHSVA); overload;
-begin Self := StdHSVAToLChA(AValue) end;
+begin Self := ExpandedPixelToLChA(StdHSVAToExpandedPixel(AValue)) end;
 
 procedure TLChAHelper.FromStdHSVA(AValue: TStdHSVA; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := StdHSVAToLChA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLChA(StdHSVAToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLChAHelper.FromStdCMYK(AValue: TStdCMYK); overload;
-begin Self := StdCMYKToLChA(AValue) end;
+begin Self := ExpandedPixelToLChA(StdCMYKToExpandedPixel(AValue)) end;
 
 procedure TLChAHelper.FromStdCMYK(AValue: TStdCMYK; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := StdCMYKToLChA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLChA(StdCMYKToExpandedPixel(AValue),AReferenceWhite) end;
 
 procedure TLChAHelper.FromExpandedPixel(AValue: TExpandedPixel); overload;
 begin Self := ExpandedPixelToLChA(AValue) end;
@@ -6323,16 +4963,16 @@ procedure TLChAHelper.FromLinearRGBA(AValue: TLinearRGBA; const AReferenceWhite:
 begin Self := LinearRGBAToLChA(AValue,AReferenceWhite) end;
 
 procedure TLChAHelper.FromHSLAPixel(AValue: THSLAPixel); overload;
-begin Self := HSLAPixelToLChA(AValue) end;
+begin Self := ExpandedPixelToLChA(HSLAToExpanded(AValue)) end;
 
 procedure TLChAHelper.FromHSLAPixel(AValue: THSLAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := HSLAPixelToLChA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLChA(HSLAToExpanded(AValue),AReferenceWhite) end;
 
 procedure TLChAHelper.FromGSBAPixel(AValue: TGSBAPixel); overload;
-begin Self := GSBAPixelToLChA(AValue) end;
+begin Self := ExpandedPixelToLChA(GSBAToExpanded(AValue)) end;
 
 procedure TLChAHelper.FromGSBAPixel(AValue: TGSBAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
-begin Self := GSBAPixelToLChA(AValue,AReferenceWhite) end;
+begin Self := ExpandedPixelToLChA(GSBAToExpanded(AValue),AReferenceWhite) end;
 
 procedure TLChAHelper.FromXYZA(AValue: TXYZA); overload;
 begin Self := XYZAToLChA(AValue) end;
@@ -6349,7 +4989,7 @@ operator := (const AValue: TColor): TStdRGBA;
 begin Result := ColorToStdRGBA(AValue) end;
 
 operator := (const AValue: TColor): TAdobeRGBA;
-begin Result := ColorToAdobeRGBA(AValue) end;
+begin Result := ExpandedPixelToAdobeRGBA(ColorToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TColor): TStdHSLA;
 begin Result := ColorToStdHSLA(AValue) end;
@@ -6361,22 +5001,22 @@ operator := (const AValue: TColor): TStdCMYK;
 begin Result := ColorToStdCMYK(AValue) end;
 
 operator := (const AValue: TColor): TLinearRGBA;
-begin Result := ColorToLinearRGBA(AValue) end;
+begin Result := ExpandedPixelToLinearRGBA(ColorToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TColor): TXYZA;
-begin Result := ColorToXYZA(AValue) end;
+begin Result := ExpandedPixelToXYZA(ColorToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TColor): TLabA;
-begin Result := ColorToLabA(AValue) end;
+begin Result := ExpandedPixelToLabA(ColorToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TColor): TLChA;
-begin Result := ColorToLChA(AValue) end;
+begin Result := ExpandedPixelToLChA(ColorToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TBGRAPixel): TStdRGBA;
 begin Result := BGRAPixelToStdRGBA(AValue) end;
 
 operator := (const AValue: TBGRAPixel): TAdobeRGBA;
-begin Result := BGRAPixelToAdobeRGBA(AValue) end;
+begin Result := ExpandedPixelToAdobeRGBA(GammaExpansion(AValue)) end;
 
 operator := (const AValue: TBGRAPixel): TStdHSLA;
 begin Result := BGRAPixelToStdHSLA(AValue) end;
@@ -6388,43 +5028,43 @@ operator := (const AValue: TBGRAPixel): TStdCMYK;
 begin Result := BGRAPixelToStdCMYK(AValue) end;
 
 operator := (const AValue: TBGRAPixel): TLinearRGBA;
-begin Result := BGRAPixelToLinearRGBA(AValue) end;
+begin Result := ExpandedPixelToLinearRGBA(GammaExpansion(AValue)) end;
 
 operator := (const AValue: TBGRAPixel): TXYZA;
-begin Result := BGRAPixelToXYZA(AValue) end;
+begin Result := ExpandedPixelToXYZA(GammaExpansion(AValue)) end;
 
 operator := (const AValue: TBGRAPixel): TLabA;
-begin Result := BGRAPixelToLabA(AValue) end;
+begin Result := ExpandedPixelToLabA(GammaExpansion(AValue)) end;
 
 operator := (const AValue: TBGRAPixel): TLChA;
-begin Result := BGRAPixelToLChA(AValue) end;
+begin Result := ExpandedPixelToLChA(GammaExpansion(AValue)) end;
 
 operator := (const AValue: TFPColor): TStdRGBA;
-begin Result := FPColorToStdRGBA(AValue) end;
+begin Result := ExpandedPixelToStdRGBA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TAdobeRGBA;
-begin Result := FPColorToAdobeRGBA(AValue) end;
+begin Result := ExpandedPixelToAdobeRGBA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TStdHSLA;
-begin Result := FPColorToStdHSLA(AValue) end;
+begin Result := ExpandedPixelToStdHSLA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TStdHSVA;
-begin Result := FPColorToStdHSVA(AValue) end;
+begin Result := ExpandedPixelToStdHSVA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TStdCMYK;
-begin Result := FPColorToStdCMYK(AValue) end;
+begin Result := ExpandedPixelToStdCMYK(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TLinearRGBA;
-begin Result := FPColorToLinearRGBA(AValue) end;
+begin Result := ExpandedPixelToLinearRGBA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TXYZA;
-begin Result := FPColorToXYZA(AValue) end;
+begin Result := ExpandedPixelToXYZA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TLabA;
-begin Result := FPColorToLabA(AValue) end;
+begin Result := ExpandedPixelToLabA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TLChA;
-begin Result := FPColorToLChA(AValue) end;
+begin Result := ExpandedPixelToLChA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TStdRGBA): TColor;
 begin Result := StdRGBAToColor(AValue) end;
@@ -6433,10 +5073,10 @@ operator := (const AValue: TStdRGBA): TBGRAPixel;
 begin Result := StdRGBAToBGRAPixel(AValue) end;
 
 operator := (const AValue: TStdRGBA): TFPColor;
-begin Result := StdRGBAToFPColor(AValue) end;
+begin Result := ExpandedToFPColor(StdRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdRGBA): TAdobeRGBA;
-begin Result := StdRGBAToAdobeRGBA(AValue) end;
+begin Result := ExpandedPixelToAdobeRGBA(StdRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdRGBA): TStdHSLA;
 begin Result := StdRGBAToStdHSLA(AValue) end;
@@ -6451,43 +5091,43 @@ operator := (const AValue: TStdRGBA): TExpandedPixel;
 begin Result := StdRGBAToExpandedPixel(AValue) end;
 
 operator := (const AValue: TStdRGBA): TLinearRGBA;
-begin Result := StdRGBAToLinearRGBA(AValue) end;
+begin Result := ExpandedPixelToLinearRGBA(StdRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdRGBA): THSLAPixel;
-begin Result := StdRGBAToHSLAPixel(AValue) end;
+begin Result := ExpandedToHSLA(StdRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdRGBA): TGSBAPixel;
-begin Result := StdRGBAToGSBAPixel(AValue) end;
+begin Result := ExpandedToGSBA(StdRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdRGBA): TXYZA;
-begin Result := StdRGBAToXYZA(AValue) end;
+begin Result := ExpandedPixelToXYZA(StdRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdRGBA): TLabA;
-begin Result := StdRGBAToLabA(AValue) end;
+begin Result := ExpandedPixelToLabA(StdRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdRGBA): TLChA;
-begin Result := StdRGBAToLChA(AValue) end;
+begin Result := ExpandedPixelToLChA(StdRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TColor;
-begin Result := AdobeRGBAToColor(AValue) end;
+begin Result := ExpandedPixelToColor(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TBGRAPixel;
-begin Result := AdobeRGBAToBGRAPixel(AValue) end;
+begin Result := GammaCompression(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TFPColor;
-begin Result := AdobeRGBAToFPColor(AValue) end;
+begin Result := ExpandedToFPColor(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TStdRGBA;
-begin Result := AdobeRGBAToStdRGBA(AValue) end;
+begin Result := ExpandedPixelToStdRGBA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TStdHSLA;
-begin Result := AdobeRGBAToStdHSLA(AValue) end;
+begin Result := ExpandedPixelToStdHSLA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TStdHSVA;
-begin Result := AdobeRGBAToStdHSVA(AValue) end;
+begin Result := ExpandedPixelToStdHSVA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TStdCMYK;
-begin Result := AdobeRGBAToStdCMYK(AValue) end;
+begin Result := ExpandedPixelToStdCMYK(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TExpandedPixel;
 begin Result := AdobeRGBAToExpandedPixel(AValue) end;
@@ -6496,10 +5136,10 @@ operator := (const AValue: TAdobeRGBA): TLinearRGBA;
 begin Result := AdobeRGBAToLinearRGBA(AValue) end;
 
 operator := (const AValue: TAdobeRGBA): THSLAPixel;
-begin Result := AdobeRGBAToHSLAPixel(AValue) end;
+begin Result := ExpandedToHSLA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TGSBAPixel;
-begin Result := AdobeRGBAToGSBAPixel(AValue) end;
+begin Result := ExpandedToGSBA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TXYZA;
 begin Result := AdobeRGBAToXYZA(AValue) end;
@@ -6517,13 +5157,13 @@ operator := (const AValue: TStdHSLA): TBGRAPixel;
 begin Result := StdHSLAToBGRAPixel(AValue) end;
 
 operator := (const AValue: TStdHSLA): TFPColor;
-begin Result := StdHSLAToFPColor(AValue) end;
+begin Result := ExpandedToFPColor(StdHSLAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSLA): TStdRGBA;
 begin Result := StdHSLAToStdRGBA(AValue) end;
 
 operator := (const AValue: TStdHSLA): TAdobeRGBA;
-begin Result := StdHSLAToAdobeRGBA(AValue) end;
+begin Result := ExpandedPixelToAdobeRGBA(StdHSLAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSLA): TStdHSVA;
 begin Result := StdHSLAToStdHSVA(AValue) end;
@@ -6535,22 +5175,22 @@ operator := (const AValue: TStdHSLA): TExpandedPixel;
 begin Result := StdHSLAToExpandedPixel(AValue) end;
 
 operator := (const AValue: TStdHSLA): TLinearRGBA;
-begin Result := StdHSLAToLinearRGBA(AValue) end;
+begin Result := ExpandedPixelToLinearRGBA(StdHSLAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSLA): THSLAPixel;
-begin Result := StdHSLAToHSLAPixel(AValue) end;
+begin Result := ExpandedToHSLA(StdHSLAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSLA): TGSBAPixel;
-begin Result := StdHSLAToGSBAPixel(AValue) end;
+begin Result := ExpandedToGSBA(StdHSLAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSLA): TXYZA;
-begin Result := StdHSLAToXYZA(AValue) end;
+begin Result := ExpandedPixelToXYZA(StdHSLAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSLA): TLabA;
-begin Result := StdHSLAToLabA(AValue) end;
+begin Result := ExpandedPixelToLabA(StdHSLAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSLA): TLChA;
-begin Result := StdHSLAToLChA(AValue) end;
+begin Result := ExpandedPixelToLChA(StdHSLAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): TColor;
 begin Result := StdHSVAToColor(AValue) end;
@@ -6559,13 +5199,13 @@ operator := (const AValue: TStdHSVA): TBGRAPixel;
 begin Result := StdHSVAToBGRAPixel(AValue) end;
 
 operator := (const AValue: TStdHSVA): TFPColor;
-begin Result := StdHSVAToFPColor(AValue) end;
+begin Result := ExpandedToFPColor(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): TStdRGBA;
 begin Result := StdHSVAToStdRGBA(AValue) end;
 
 operator := (const AValue: TStdHSVA): TAdobeRGBA;
-begin Result := StdHSVAToAdobeRGBA(AValue) end;
+begin Result := ExpandedPixelToAdobeRGBA(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): TStdHSLA;
 begin Result := StdHSVAToStdHSLA(AValue) end;
@@ -6577,22 +5217,22 @@ operator := (const AValue: TStdHSVA): TExpandedPixel;
 begin Result := StdHSVAToExpandedPixel(AValue) end;
 
 operator := (const AValue: TStdHSVA): TLinearRGBA;
-begin Result := StdHSVAToLinearRGBA(AValue) end;
+begin Result := ExpandedPixelToLinearRGBA(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): THSLAPixel;
-begin Result := StdHSVAToHSLAPixel(AValue) end;
+begin Result := ExpandedToHSLA(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): TGSBAPixel;
-begin Result := StdHSVAToGSBAPixel(AValue) end;
+begin Result := ExpandedToGSBA(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): TXYZA;
-begin Result := StdHSVAToXYZA(AValue) end;
+begin Result := ExpandedPixelToXYZA(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): TLabA;
-begin Result := StdHSVAToLabA(AValue) end;
+begin Result := ExpandedPixelToLabA(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): TLChA;
-begin Result := StdHSVAToLChA(AValue) end;
+begin Result := ExpandedPixelToLChA(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdCMYK): TColor;
 begin Result := StdCMYKToColor(AValue) end;
@@ -6601,13 +5241,13 @@ operator := (const AValue: TStdCMYK): TBGRAPixel;
 begin Result := StdCMYKToBGRAPixel(AValue) end;
 
 operator := (const AValue: TStdCMYK): TFPColor;
-begin Result := StdCMYKToFPColor(AValue) end;
+begin Result := ExpandedToFPColor(StdCMYKToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdCMYK): TStdRGBA;
 begin Result := StdCMYKToStdRGBA(AValue) end;
 
 operator := (const AValue: TStdCMYK): TAdobeRGBA;
-begin Result := StdCMYKToAdobeRGBA(AValue) end;
+begin Result := ExpandedPixelToAdobeRGBA(StdCMYKToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdCMYK): TStdHSLA;
 begin Result := StdCMYKToStdHSLA(AValue) end;
@@ -6619,22 +5259,22 @@ operator := (const AValue: TStdCMYK): TExpandedPixel;
 begin Result := StdCMYKToExpandedPixel(AValue) end;
 
 operator := (const AValue: TStdCMYK): TLinearRGBA;
-begin Result := StdCMYKToLinearRGBA(AValue) end;
+begin Result := ExpandedPixelToLinearRGBA(StdCMYKToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdCMYK): THSLAPixel;
-begin Result := StdCMYKToHSLAPixel(AValue) end;
+begin Result := ExpandedToHSLA(StdCMYKToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdCMYK): TGSBAPixel;
-begin Result := StdCMYKToGSBAPixel(AValue) end;
+begin Result := ExpandedToGSBA(StdCMYKToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdCMYK): TXYZA;
-begin Result := StdCMYKToXYZA(AValue) end;
+begin Result := ExpandedPixelToXYZA(StdCMYKToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdCMYK): TLabA;
-begin Result := StdCMYKToLabA(AValue) end;
+begin Result := ExpandedPixelToLabA(StdCMYKToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdCMYK): TLChA;
-begin Result := StdCMYKToLChA(AValue) end;
+begin Result := ExpandedPixelToLChA(StdCMYKToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TExpandedPixel): TStdRGBA;
 begin Result := ExpandedPixelToStdRGBA(AValue) end;
@@ -6664,37 +5304,37 @@ operator := (const AValue: TExpandedPixel): TLChA;
 begin Result := ExpandedPixelToLChA(AValue) end;
 
 operator := (const AValue: TLinearRGBA): TColor;
-begin Result := LinearRGBAToColor(AValue) end;
+begin Result := ExpandedPixelToColor(LinearRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLinearRGBA): TBGRAPixel;
-begin Result := LinearRGBAToBGRAPixel(AValue) end;
+begin Result := GammaCompression(LinearRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLinearRGBA): TFPColor;
-begin Result := LinearRGBAToFPColor(AValue) end;
+begin Result := ExpandedToFPColor(LinearRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLinearRGBA): TStdRGBA;
-begin Result := LinearRGBAToStdRGBA(AValue) end;
+begin Result := ExpandedPixelToStdRGBA(LinearRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLinearRGBA): TAdobeRGBA;
 begin Result := LinearRGBAToAdobeRGBA(AValue) end;
 
 operator := (const AValue: TLinearRGBA): TStdHSLA;
-begin Result := LinearRGBAToStdHSLA(AValue) end;
+begin Result := ExpandedPixelToStdHSLA(LinearRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLinearRGBA): TStdHSVA;
-begin Result := LinearRGBAToStdHSVA(AValue) end;
+begin Result := ExpandedPixelToStdHSVA(LinearRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLinearRGBA): TStdCMYK;
-begin Result := LinearRGBAToStdCMYK(AValue) end;
+begin Result := ExpandedPixelToStdCMYK(LinearRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLinearRGBA): TExpandedPixel;
 begin Result := LinearRGBAToExpandedPixel(AValue) end;
 
 operator := (const AValue: TLinearRGBA): THSLAPixel;
-begin Result := LinearRGBAToHSLAPixel(AValue) end;
+begin Result := ExpandedToHSLA(LinearRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLinearRGBA): TGSBAPixel;
-begin Result := LinearRGBAToGSBAPixel(AValue) end;
+begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLinearRGBA): TXYZA;
 begin Result := LinearRGBAToXYZA(AValue) end;
@@ -6706,82 +5346,82 @@ operator := (const AValue: TLinearRGBA): TLChA;
 begin Result := LinearRGBAToLChA(AValue) end;
 
 operator := (const AValue: THSLAPixel): TStdRGBA;
-begin Result := HSLAPixelToStdRGBA(AValue) end;
+begin Result := ExpandedPixelToStdRGBA(HSLAToExpanded(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TAdobeRGBA;
-begin Result := HSLAPixelToAdobeRGBA(AValue) end;
+begin Result := ExpandedPixelToAdobeRGBA(HSLAToExpanded(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TStdHSLA;
-begin Result := HSLAPixelToStdHSLA(AValue) end;
+begin Result := ExpandedPixelToStdHSLA(HSLAToExpanded(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TStdHSVA;
-begin Result := HSLAPixelToStdHSVA(AValue) end;
+begin Result := ExpandedPixelToStdHSVA(HSLAToExpanded(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TStdCMYK;
-begin Result := HSLAPixelToStdCMYK(AValue) end;
+begin Result := ExpandedPixelToStdCMYK(HSLAToExpanded(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TLinearRGBA;
-begin Result := HSLAPixelToLinearRGBA(AValue) end;
+begin Result := ExpandedPixelToLinearRGBA(HSLAToExpanded(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TXYZA;
-begin Result := HSLAPixelToXYZA(AValue) end;
+begin Result := ExpandedPixelToXYZA(HSLAToExpanded(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TLabA;
-begin Result := HSLAPixelToLabA(AValue) end;
+begin Result := ExpandedPixelToLabA(HSLAToExpanded(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TLChA;
-begin Result := HSLAPixelToLChA(AValue) end;
+begin Result := ExpandedPixelToLChA(HSLAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TStdRGBA;
-begin Result := GSBAPixelToStdRGBA(AValue) end;
+begin Result := ExpandedPixelToStdRGBA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TAdobeRGBA;
-begin Result := GSBAPixelToAdobeRGBA(AValue) end;
+begin Result := ExpandedPixelToAdobeRGBA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TStdHSLA;
-begin Result := GSBAPixelToStdHSLA(AValue) end;
+begin Result := ExpandedPixelToStdHSLA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TStdHSVA;
-begin Result := GSBAPixelToStdHSVA(AValue) end;
+begin Result := ExpandedPixelToStdHSVA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TStdCMYK;
-begin Result := GSBAPixelToStdCMYK(AValue) end;
+begin Result := ExpandedPixelToStdCMYK(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TLinearRGBA;
-begin Result := GSBAPixelToLinearRGBA(AValue) end;
+begin Result := ExpandedPixelToLinearRGBA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TXYZA;
-begin Result := GSBAPixelToXYZA(AValue) end;
+begin Result := ExpandedPixelToXYZA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TLabA;
-begin Result := GSBAPixelToLabA(AValue) end;
+begin Result := ExpandedPixelToLabA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TLChA;
-begin Result := GSBAPixelToLChA(AValue) end;
+begin Result := ExpandedPixelToLChA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TXYZA): TColor;
-begin Result := XYZAToColor(AValue) end;
+begin Result := ExpandedPixelToColor(XYZAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TXYZA): TBGRAPixel;
-begin Result := XYZAToBGRAPixel(AValue) end;
+begin Result := GammaCompression(XYZAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TXYZA): TFPColor;
-begin Result := XYZAToFPColor(AValue) end;
+begin Result := ExpandedToFPColor(XYZAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TXYZA): TStdRGBA;
-begin Result := XYZAToStdRGBA(AValue) end;
+begin Result := ExpandedPixelToStdRGBA(XYZAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TXYZA): TAdobeRGBA;
 begin Result := XYZAToAdobeRGBA(AValue) end;
 
 operator := (const AValue: TXYZA): TStdHSLA;
-begin Result := XYZAToStdHSLA(AValue) end;
+begin Result := ExpandedPixelToStdHSLA(XYZAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TXYZA): TStdHSVA;
-begin Result := XYZAToStdHSVA(AValue) end;
+begin Result := ExpandedPixelToStdHSVA(XYZAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TXYZA): TStdCMYK;
-begin Result := XYZAToStdCMYK(AValue) end;
+begin Result := ExpandedPixelToStdCMYK(XYZAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TXYZA): TExpandedPixel;
 begin Result := XYZAToExpandedPixel(AValue) end;
@@ -6790,10 +5430,10 @@ operator := (const AValue: TXYZA): TLinearRGBA;
 begin Result := XYZAToLinearRGBA(AValue) end;
 
 operator := (const AValue: TXYZA): THSLAPixel;
-begin Result := XYZAToHSLAPixel(AValue) end;
+begin Result := ExpandedToHSLA(XYZAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TXYZA): TGSBAPixel;
-begin Result := XYZAToGSBAPixel(AValue) end;
+begin Result := ExpandedToGSBA(XYZAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TXYZA): TLabA;
 begin Result := XYZAToLabA(AValue) end;
@@ -6802,28 +5442,28 @@ operator := (const AValue: TXYZA): TLChA;
 begin Result := XYZAToLChA(AValue) end;
 
 operator := (const AValue: TLabA): TColor;
-begin Result := LabAToColor(AValue) end;
+begin Result := ExpandedPixelToColor(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TBGRAPixel;
-begin Result := LabAToBGRAPixel(AValue) end;
+begin Result := GammaCompression(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TFPColor;
-begin Result := LabAToFPColor(AValue) end;
+begin Result := ExpandedToFPColor(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TStdRGBA;
-begin Result := LabAToStdRGBA(AValue) end;
+begin Result := ExpandedPixelToStdRGBA(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TAdobeRGBA;
 begin Result := LabAToAdobeRGBA(AValue) end;
 
 operator := (const AValue: TLabA): TStdHSLA;
-begin Result := LabAToStdHSLA(AValue) end;
+begin Result := ExpandedPixelToStdHSLA(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TStdHSVA;
-begin Result := LabAToStdHSVA(AValue) end;
+begin Result := ExpandedPixelToStdHSVA(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TStdCMYK;
-begin Result := LabAToStdCMYK(AValue) end;
+begin Result := ExpandedPixelToStdCMYK(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TExpandedPixel;
 begin Result := LabAToExpandedPixel(AValue) end;
@@ -6832,10 +5472,10 @@ operator := (const AValue: TLabA): TLinearRGBA;
 begin Result := LabAToLinearRGBA(AValue) end;
 
 operator := (const AValue: TLabA): THSLAPixel;
-begin Result := LabAToHSLAPixel(AValue) end;
+begin Result := ExpandedToHSLA(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TGSBAPixel;
-begin Result := LabAToGSBAPixel(AValue) end;
+begin Result := ExpandedToGSBA(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TXYZA;
 begin Result := LabAToXYZA(AValue) end;
@@ -6844,28 +5484,28 @@ operator := (const AValue: TLabA): TLChA;
 begin Result := LabAToLChA(AValue) end;
 
 operator := (const AValue: TLChA): TColor;
-begin Result := LChAToColor(AValue) end;
+begin Result := ExpandedPixelToColor(LChAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLChA): TBGRAPixel;
-begin Result := LChAToBGRAPixel(AValue) end;
+begin Result := GammaCompression(LChAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLChA): TFPColor;
-begin Result := LChAToFPColor(AValue) end;
+begin Result := ExpandedToFPColor(LChAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLChA): TStdRGBA;
-begin Result := LChAToStdRGBA(AValue) end;
+begin Result := ExpandedPixelToStdRGBA(LChAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLChA): TAdobeRGBA;
 begin Result := LChAToAdobeRGBA(AValue) end;
 
 operator := (const AValue: TLChA): TStdHSLA;
-begin Result := LChAToStdHSLA(AValue) end;
+begin Result := ExpandedPixelToStdHSLA(LChAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLChA): TStdHSVA;
-begin Result := LChAToStdHSVA(AValue) end;
+begin Result := ExpandedPixelToStdHSVA(LChAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLChA): TStdCMYK;
-begin Result := LChAToStdCMYK(AValue) end;
+begin Result := ExpandedPixelToStdCMYK(LChAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLChA): TExpandedPixel;
 begin Result := LChAToExpandedPixel(AValue) end;
@@ -6874,10 +5514,10 @@ operator := (const AValue: TLChA): TLinearRGBA;
 begin Result := LChAToLinearRGBA(AValue) end;
 
 operator := (const AValue: TLChA): THSLAPixel;
-begin Result := LChAToHSLAPixel(AValue) end;
+begin Result := ExpandedToHSLA(LChAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLChA): TGSBAPixel;
-begin Result := LChAToGSBAPixel(AValue) end;
+begin Result := ExpandedToGSBA(LChAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLChA): TXYZA;
 begin Result := LChAToXYZA(AValue) end;
@@ -6906,115 +5546,49 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TColorColorspace, TBGRAPixelColorspace, @ConvertColorArrayToBGRAPixelArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TFPColorColorspace, @ConvertColorArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TStdRGBAColorspace, @ConvertColorArrayToStdRGBAArray);
-  ColorspaceCollection.AddConversion(TColorColorspace, TAdobeRGBAColorspace, @ConvertColorArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TStdHSLAColorspace, @ConvertColorArrayToStdHSLAArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TStdHSVAColorspace, @ConvertColorArrayToStdHSVAArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TStdCMYKColorspace, @ConvertColorArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TColorColorspace, TExpandedPixelColorspace, @ConvertColorArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(TColorColorspace, TLinearRGBAColorspace, @ConvertColorArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TColorColorspace, THSLAPixelColorspace, @ConvertColorArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TColorColorspace, TGSBAPixelColorspace, @ConvertColorArrayToGSBAPixelArray);
-  ColorspaceCollection.AddConversion(TColorColorspace, TXYZAColorspace, @ConvertColorArrayToXYZAArray);
-  ColorspaceCollection.AddConversion(TColorColorspace, TLabAColorspace, @ConvertColorArrayToLabAArray);
-  ColorspaceCollection.AddConversion(TColorColorspace, TLChAColorspace, @ConvertColorArrayToLChAArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TColorColorspace, @ConvertBGRAPixelArrayToColorArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TFPColorColorspace, @ConvertBGRAPixelArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TStdRGBAColorspace, @ConvertBGRAPixelArrayToStdRGBAArray);
-  ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TAdobeRGBAColorspace, @ConvertBGRAPixelArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TStdHSLAColorspace, @ConvertBGRAPixelArrayToStdHSLAArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TStdHSVAColorspace, @ConvertBGRAPixelArrayToStdHSVAArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TStdCMYKColorspace, @ConvertBGRAPixelArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TExpandedPixelColorspace, @ConvertBGRAPixelArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TLinearRGBAColorspace, @ConvertBGRAPixelArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TBGRAPixelColorspace, THSLAPixelColorspace, @ConvertBGRAPixelArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TGSBAPixelColorspace, @ConvertBGRAPixelArrayToGSBAPixelArray);
-  ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TXYZAColorspace, @ConvertBGRAPixelArrayToXYZAArray);
-  ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TLabAColorspace, @ConvertBGRAPixelArrayToLabAArray);
-  ColorspaceCollection.AddConversion(TBGRAPixelColorspace, TLChAColorspace, @ConvertBGRAPixelArrayToLChAArray);
   ColorspaceCollection.AddConversion(TFPColorColorspace, TColorColorspace, @ConvertFPColorArrayToColorArray);
   ColorspaceCollection.AddConversion(TFPColorColorspace, TBGRAPixelColorspace, @ConvertFPColorArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TStdRGBAColorspace, @ConvertFPColorArrayToStdRGBAArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TAdobeRGBAColorspace, @ConvertFPColorArrayToAdobeRGBAArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TStdHSLAColorspace, @ConvertFPColorArrayToStdHSLAArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TStdHSVAColorspace, @ConvertFPColorArrayToStdHSVAArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TStdCMYKColorspace, @ConvertFPColorArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TFPColorColorspace, TExpandedPixelColorspace, @ConvertFPColorArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TLinearRGBAColorspace, @ConvertFPColorArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, THSLAPixelColorspace, @ConvertFPColorArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TGSBAPixelColorspace, @ConvertFPColorArrayToGSBAPixelArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TXYZAColorspace, @ConvertFPColorArrayToXYZAArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TLabAColorspace, @ConvertFPColorArrayToLabAArray);
-  ColorspaceCollection.AddConversion(TFPColorColorspace, TLChAColorspace, @ConvertFPColorArrayToLChAArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TColorColorspace, @ConvertStdRGBAArrayToColorArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TBGRAPixelColorspace, @ConvertStdRGBAArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TStdRGBAColorspace, TFPColorColorspace, @ConvertStdRGBAArrayToFPColorArray);
-  ColorspaceCollection.AddConversion(TStdRGBAColorspace, TAdobeRGBAColorspace, @ConvertStdRGBAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TStdHSLAColorspace, @ConvertStdRGBAArrayToStdHSLAArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TStdHSVAColorspace, @ConvertStdRGBAArrayToStdHSVAArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TStdCMYKColorspace, @ConvertStdRGBAArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TStdRGBAColorspace, TExpandedPixelColorspace, @ConvertStdRGBAArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(TStdRGBAColorspace, TLinearRGBAColorspace, @ConvertStdRGBAArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TStdRGBAColorspace, THSLAPixelColorspace, @ConvertStdRGBAArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TStdRGBAColorspace, TGSBAPixelColorspace, @ConvertStdRGBAArrayToGSBAPixelArray);
-  ColorspaceCollection.AddConversion(TStdRGBAColorspace, TXYZAColorspace, @ConvertStdRGBAArrayToXYZAArray);
-  ColorspaceCollection.AddConversion(TStdRGBAColorspace, TLabAColorspace, @ConvertStdRGBAArrayToLabAArray);
-  ColorspaceCollection.AddConversion(TStdRGBAColorspace, TLChAColorspace, @ConvertStdRGBAArrayToLChAArray);
-  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TColorColorspace, @ConvertAdobeRGBAArrayToColorArray);
-  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TBGRAPixelColorspace, @ConvertAdobeRGBAArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TFPColorColorspace, @ConvertAdobeRGBAArrayToFPColorArray);
-  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TStdRGBAColorspace, @ConvertAdobeRGBAArrayToStdRGBAArray);
-  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TStdHSLAColorspace, @ConvertAdobeRGBAArrayToStdHSLAArray);
-  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TStdHSVAColorspace, @ConvertAdobeRGBAArrayToStdHSVAArray);
-  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TStdCMYKColorspace, @ConvertAdobeRGBAArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TExpandedPixelColorspace, @ConvertAdobeRGBAArrayToExpandedPixelArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TLinearRGBAColorspace, @ConvertAdobeRGBAArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, THSLAPixelColorspace, @ConvertAdobeRGBAArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TGSBAPixelColorspace, @ConvertAdobeRGBAArrayToGSBAPixelArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TXYZAColorspace, @ConvertAdobeRGBAArrayToXYZAArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TLabAColorspace, @ConvertAdobeRGBAArrayToLabAArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TLChAColorspace, @ConvertAdobeRGBAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TColorColorspace, @ConvertStdHSLAArrayToColorArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TBGRAPixelColorspace, @ConvertStdHSLAArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TStdHSLAColorspace, TFPColorColorspace, @ConvertStdHSLAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TStdRGBAColorspace, @ConvertStdHSLAArrayToStdRGBAArray);
-  ColorspaceCollection.AddConversion(TStdHSLAColorspace, TAdobeRGBAColorspace, @ConvertStdHSLAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TStdHSVAColorspace, @ConvertStdHSLAArrayToStdHSVAArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TStdCMYKColorspace, @ConvertStdHSLAArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TExpandedPixelColorspace, @ConvertStdHSLAArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(TStdHSLAColorspace, TLinearRGBAColorspace, @ConvertStdHSLAArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TStdHSLAColorspace, THSLAPixelColorspace, @ConvertStdHSLAArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TStdHSLAColorspace, TGSBAPixelColorspace, @ConvertStdHSLAArrayToGSBAPixelArray);
-  ColorspaceCollection.AddConversion(TStdHSLAColorspace, TXYZAColorspace, @ConvertStdHSLAArrayToXYZAArray);
-  ColorspaceCollection.AddConversion(TStdHSLAColorspace, TLabAColorspace, @ConvertStdHSLAArrayToLabAArray);
-  ColorspaceCollection.AddConversion(TStdHSLAColorspace, TLChAColorspace, @ConvertStdHSLAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TColorColorspace, @ConvertStdHSVAArrayToColorArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TBGRAPixelColorspace, @ConvertStdHSVAArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TStdHSVAColorspace, TFPColorColorspace, @ConvertStdHSVAArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TStdRGBAColorspace, @ConvertStdHSVAArrayToStdRGBAArray);
-  ColorspaceCollection.AddConversion(TStdHSVAColorspace, TAdobeRGBAColorspace, @ConvertStdHSVAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TStdHSLAColorspace, @ConvertStdHSVAArrayToStdHSLAArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TStdCMYKColorspace, @ConvertStdHSVAArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TStdHSVAColorspace, TExpandedPixelColorspace, @ConvertStdHSVAArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(TStdHSVAColorspace, TLinearRGBAColorspace, @ConvertStdHSVAArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TStdHSVAColorspace, THSLAPixelColorspace, @ConvertStdHSVAArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TStdHSVAColorspace, TGSBAPixelColorspace, @ConvertStdHSVAArrayToGSBAPixelArray);
-  ColorspaceCollection.AddConversion(TStdHSVAColorspace, TXYZAColorspace, @ConvertStdHSVAArrayToXYZAArray);
-  ColorspaceCollection.AddConversion(TStdHSVAColorspace, TLabAColorspace, @ConvertStdHSVAArrayToLabAArray);
-  ColorspaceCollection.AddConversion(TStdHSVAColorspace, TLChAColorspace, @ConvertStdHSVAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TColorColorspace, @ConvertStdCMYKArrayToColorArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TBGRAPixelColorspace, @ConvertStdCMYKArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TStdCMYKColorspace, TFPColorColorspace, @ConvertStdCMYKArrayToFPColorArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TStdRGBAColorspace, @ConvertStdCMYKArrayToStdRGBAArray);
-  ColorspaceCollection.AddConversion(TStdCMYKColorspace, TAdobeRGBAColorspace, @ConvertStdCMYKArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TStdHSLAColorspace, @ConvertStdCMYKArrayToStdHSLAArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TStdHSVAColorspace, @ConvertStdCMYKArrayToStdHSVAArray);
   ColorspaceCollection.AddConversion(TStdCMYKColorspace, TExpandedPixelColorspace, @ConvertStdCMYKArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(TStdCMYKColorspace, TLinearRGBAColorspace, @ConvertStdCMYKArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TStdCMYKColorspace, THSLAPixelColorspace, @ConvertStdCMYKArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TStdCMYKColorspace, TGSBAPixelColorspace, @ConvertStdCMYKArrayToGSBAPixelArray);
-  ColorspaceCollection.AddConversion(TStdCMYKColorspace, TXYZAColorspace, @ConvertStdCMYKArrayToXYZAArray);
-  ColorspaceCollection.AddConversion(TStdCMYKColorspace, TLabAColorspace, @ConvertStdCMYKArrayToLabAArray);
-  ColorspaceCollection.AddConversion(TStdCMYKColorspace, TLChAColorspace, @ConvertStdCMYKArrayToLChAArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TColorColorspace, @ConvertExpandedPixelArrayToColorArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TBGRAPixelColorspace, @ConvertExpandedPixelArrayToBGRAPixelArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TFPColorColorspace, @ConvertExpandedPixelArrayToFPColorArray);
@@ -7029,88 +5603,28 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TXYZAColorspace, @ConvertExpandedPixelArrayToXYZAArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TLabAColorspace, @ConvertExpandedPixelArrayToLabAArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TLChAColorspace, @ConvertExpandedPixelArrayToLChAArray);
-  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TColorColorspace, @ConvertLinearRGBAArrayToColorArray);
-  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TBGRAPixelColorspace, @ConvertLinearRGBAArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TFPColorColorspace, @ConvertLinearRGBAArrayToFPColorArray);
-  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TStdRGBAColorspace, @ConvertLinearRGBAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TAdobeRGBAColorspace, @ConvertLinearRGBAArrayToAdobeRGBAArray);
-  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TStdHSLAColorspace, @ConvertLinearRGBAArrayToStdHSLAArray);
-  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TStdHSVAColorspace, @ConvertLinearRGBAArrayToStdHSVAArray);
-  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TStdCMYKColorspace, @ConvertLinearRGBAArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TExpandedPixelColorspace, @ConvertLinearRGBAArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, THSLAPixelColorspace, @ConvertLinearRGBAArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TGSBAPixelColorspace, @ConvertLinearRGBAArrayToGSBAPixelArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TXYZAColorspace, @ConvertLinearRGBAArrayToXYZAArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TLabAColorspace, @ConvertLinearRGBAArrayToLabAArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TLChAColorspace, @ConvertLinearRGBAArrayToLChAArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TColorColorspace, @ConvertHSLAPixelArrayToColorArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TBGRAPixelColorspace, @ConvertHSLAPixelArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TFPColorColorspace, @ConvertHSLAPixelArrayToFPColorArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TStdRGBAColorspace, @ConvertHSLAPixelArrayToStdRGBAArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TAdobeRGBAColorspace, @ConvertHSLAPixelArrayToAdobeRGBAArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TStdHSLAColorspace, @ConvertHSLAPixelArrayToStdHSLAArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TStdHSVAColorspace, @ConvertHSLAPixelArrayToStdHSVAArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TStdCMYKColorspace, @ConvertHSLAPixelArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(THSLAPixelColorspace, TExpandedPixelColorspace, @ConvertHSLAPixelArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TLinearRGBAColorspace, @ConvertHSLAPixelArrayToLinearRGBAArray);
   ColorspaceCollection.AddConversion(THSLAPixelColorspace, TGSBAPixelColorspace, @ConvertHSLAPixelArrayToGSBAPixelArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TXYZAColorspace, @ConvertHSLAPixelArrayToXYZAArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TLabAColorspace, @ConvertHSLAPixelArrayToLabAArray);
-  ColorspaceCollection.AddConversion(THSLAPixelColorspace, TLChAColorspace, @ConvertHSLAPixelArrayToLChAArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TColorColorspace, @ConvertGSBAPixelArrayToColorArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TBGRAPixelColorspace, @ConvertGSBAPixelArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TFPColorColorspace, @ConvertGSBAPixelArrayToFPColorArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TStdRGBAColorspace, @ConvertGSBAPixelArrayToStdRGBAArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TAdobeRGBAColorspace, @ConvertGSBAPixelArrayToAdobeRGBAArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TStdHSLAColorspace, @ConvertGSBAPixelArrayToStdHSLAArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TStdHSVAColorspace, @ConvertGSBAPixelArrayToStdHSVAArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TStdCMYKColorspace, @ConvertGSBAPixelArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TExpandedPixelColorspace, @ConvertGSBAPixelArrayToExpandedPixelArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TLinearRGBAColorspace, @ConvertGSBAPixelArrayToLinearRGBAArray);
   ColorspaceCollection.AddConversion(TGSBAPixelColorspace, THSLAPixelColorspace, @ConvertGSBAPixelArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TXYZAColorspace, @ConvertGSBAPixelArrayToXYZAArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TLabAColorspace, @ConvertGSBAPixelArrayToLabAArray);
-  ColorspaceCollection.AddConversion(TGSBAPixelColorspace, TLChAColorspace, @ConvertGSBAPixelArrayToLChAArray);
-  ColorspaceCollection.AddConversion(TXYZAColorspace, TColorColorspace, @ConvertXYZAArrayToColorArray);
-  ColorspaceCollection.AddConversion(TXYZAColorspace, TBGRAPixelColorspace, @ConvertXYZAArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TXYZAColorspace, TFPColorColorspace, @ConvertXYZAArrayToFPColorArray);
-  ColorspaceCollection.AddConversion(TXYZAColorspace, TStdRGBAColorspace, @ConvertXYZAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TAdobeRGBAColorspace, @ConvertXYZAArrayToAdobeRGBAArray);
-  ColorspaceCollection.AddConversion(TXYZAColorspace, TStdHSLAColorspace, @ConvertXYZAArrayToStdHSLAArray);
-  ColorspaceCollection.AddConversion(TXYZAColorspace, TStdHSVAColorspace, @ConvertXYZAArrayToStdHSVAArray);
-  ColorspaceCollection.AddConversion(TXYZAColorspace, TStdCMYKColorspace, @ConvertXYZAArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TExpandedPixelColorspace, @ConvertXYZAArrayToExpandedPixelArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TLinearRGBAColorspace, @ConvertXYZAArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TXYZAColorspace, THSLAPixelColorspace, @ConvertXYZAArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TXYZAColorspace, TGSBAPixelColorspace, @ConvertXYZAArrayToGSBAPixelArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TLabAColorspace, @ConvertXYZAArrayToLabAArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TLChAColorspace, @ConvertXYZAArrayToLChAArray);
-  ColorspaceCollection.AddConversion(TLabAColorspace, TColorColorspace, @ConvertLabAArrayToColorArray);
-  ColorspaceCollection.AddConversion(TLabAColorspace, TBGRAPixelColorspace, @ConvertLabAArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TLabAColorspace, TFPColorColorspace, @ConvertLabAArrayToFPColorArray);
-  ColorspaceCollection.AddConversion(TLabAColorspace, TStdRGBAColorspace, @ConvertLabAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TAdobeRGBAColorspace, @ConvertLabAArrayToAdobeRGBAArray);
-  ColorspaceCollection.AddConversion(TLabAColorspace, TStdHSLAColorspace, @ConvertLabAArrayToStdHSLAArray);
-  ColorspaceCollection.AddConversion(TLabAColorspace, TStdHSVAColorspace, @ConvertLabAArrayToStdHSVAArray);
-  ColorspaceCollection.AddConversion(TLabAColorspace, TStdCMYKColorspace, @ConvertLabAArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TExpandedPixelColorspace, @ConvertLabAArrayToExpandedPixelArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TLinearRGBAColorspace, @ConvertLabAArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TLabAColorspace, THSLAPixelColorspace, @ConvertLabAArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TLabAColorspace, TGSBAPixelColorspace, @ConvertLabAArrayToGSBAPixelArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TXYZAColorspace, @ConvertLabAArrayToXYZAArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TLChAColorspace, @ConvertLabAArrayToLChAArray);
-  ColorspaceCollection.AddConversion(TLChAColorspace, TColorColorspace, @ConvertLChAArrayToColorArray);
-  ColorspaceCollection.AddConversion(TLChAColorspace, TBGRAPixelColorspace, @ConvertLChAArrayToBGRAPixelArray);
-  ColorspaceCollection.AddConversion(TLChAColorspace, TFPColorColorspace, @ConvertLChAArrayToFPColorArray);
-  ColorspaceCollection.AddConversion(TLChAColorspace, TStdRGBAColorspace, @ConvertLChAArrayToStdRGBAArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TAdobeRGBAColorspace, @ConvertLChAArrayToAdobeRGBAArray);
-  ColorspaceCollection.AddConversion(TLChAColorspace, TStdHSLAColorspace, @ConvertLChAArrayToStdHSLAArray);
-  ColorspaceCollection.AddConversion(TLChAColorspace, TStdHSVAColorspace, @ConvertLChAArrayToStdHSVAArray);
-  ColorspaceCollection.AddConversion(TLChAColorspace, TStdCMYKColorspace, @ConvertLChAArrayToStdCMYKArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TExpandedPixelColorspace, @ConvertLChAArrayToExpandedPixelArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TLinearRGBAColorspace, @ConvertLChAArrayToLinearRGBAArray);
-  ColorspaceCollection.AddConversion(TLChAColorspace, THSLAPixelColorspace, @ConvertLChAArrayToHSLAPixelArray);
-  ColorspaceCollection.AddConversion(TLChAColorspace, TGSBAPixelColorspace, @ConvertLChAArrayToGSBAPixelArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TXYZAColorspace, @ConvertLChAArrayToXYZAArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TLabAColorspace, @ConvertLChAArrayToLabAArray);
 {$ENDIF}

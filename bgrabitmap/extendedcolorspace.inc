@@ -118,6 +118,14 @@ type
   TColorspaceConvertArrayProc = procedure(ASource: pointer; ADest: Pointer; ACount: integer;
                   ASourceStride:integer; ADestStride:integer; AReferenceWhite: PXYZReferenceWhite);
 
+  { TBridgedConversion }
+
+  TBridgedConversion = record
+    ConvertToBridge,FinalConvert: TColorspaceConvertArrayProc;
+    procedure Convert(ASource: pointer; ADest: Pointer; ACount: integer;
+              ASourceStride:integer; ADestStride:integer; AReferenceWhite: PXYZReferenceWhite); inline;
+  end;
+
   TColorTransparency = (ctFullyTransparent, ctSemiTransparent, ctFullyOpaque);
 
   { TCustomColorspace }
@@ -136,9 +144,12 @@ type
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); virtual; abstract;
     class procedure Convert(const ASource; out ADest; ADestColorspace: TColorspaceAny;
                             ACount: integer = 1; AReferenceWhite: PXYZReferenceWhite = nil);
-    class function GetConversion(ADestColorspace: TColorspaceAny): TColorspaceConvertArrayProc;
+    class function GetDirectConversion(ADestColorspace: TColorspaceAny): TColorspaceConvertArrayProc;
+    class function GetBridgeConversion(ADestColorspace: TColorspaceAny): TBridgedConversion;
     class function HasReferenceWhite: boolean; virtual; abstract;
   end;
+
+  { ColorspaceCollection }
 
   ColorspaceCollection = class
   protected
@@ -151,7 +162,8 @@ type
     class function IndexOf(AColorspace: TColorspaceAny): integer; static;
     class procedure Add(AColorspace: TColorspaceAny); static;
     class procedure AddConversion(ASource: TColorspaceAny; ADest: TColorspaceAny; AConversion: TColorspaceConvertArrayProc); static;
-    class function GetConversion(ASource: TColorspaceAny; ADest: TColorspaceAny): TColorspaceConvertArrayProc; static;
+    class function GetDirectConversion(ASource: TColorspaceAny; ADest: TColorspaceAny): TColorspaceConvertArrayProc; static;
+    class function GetBridgedConversion(ASource: TColorspaceAny; ADest: TColorspaceAny): TBridgedConversion; static;
   end;
 
 {$DEFINE INCLUDE_INTERFACE}
@@ -200,6 +212,43 @@ function GetReferenceWhiteByIndex(AIndex: integer): TXYZReferenceWhite;
 {$IFDEF INCLUDE_IMPLEMENTATION}
 {$UNDEF INCLUDE_IMPLEMENTATION} 
 
+{ TBridgedConversion }
+
+procedure TBridgedConversion.Convert(ASource: pointer; ADest: Pointer;
+  ACount: integer; ASourceStride: integer; ADestStride: integer;
+  AReferenceWhite: PXYZReferenceWhite);
+const
+  bufSize = 512;
+  bufCount = 512 div sizeof(TExpandedPixel);
+var
+  buf: array[0..bufSize-1] of byte;
+  psrc, pdest: PByte;
+begin
+  if Assigned(ConvertToBridge) then
+  begin
+    psrc := PByte(ASource);
+    pdest := PByte(ADest);
+    while ACount > 0 do
+    begin
+      if ACount > bufCount then
+      begin
+        ConvertToBridge(psrc, @buf, bufCount, ASourceStride, sizeof(TExpandedPixel), AReferenceWhite);
+        FinalConvert(@buf, pdest, bufCount, sizeof(TExpandedPixel), ADestStride, AReferenceWhite);
+        inc(psrc, ASourceStride*bufCount);
+        inc(pdest, ADestStride*bufCount);
+        dec(ACount,bufCount);
+      end
+      else
+      begin
+        ConvertToBridge(psrc, @buf, ACount, ASourceStride, sizeof(TExpandedPixel), AReferenceWhite);
+        FinalConvert(@buf, pdest, ACount, sizeof(TExpandedPixel), ADestStride, AReferenceWhite);
+        break;
+      end;
+    end;
+  end else
+    FinalConvert(ASource,ADest,ACount,ASourceStride,ADestStride,AReferenceWhite);
+end;
+
 { TCustomColorspace }
 
 class function TCustomColorspace.IndexOfChannel(AName: string): integer;
@@ -215,25 +264,28 @@ class procedure TCustomColorspace.Convert(const ASource;
   out ADest; ADestColorspace: TColorspaceAny;
   ACount: integer; AReferenceWhite: PXYZReferenceWhite);
 var
-  convProc: TColorspaceConvertArrayProc;
+  conv: TBridgedConversion;
 begin
   if self = TCustomColorspace then
-    raise exception.Create('Cannot convert from abstract colorspace')
-  else
+    raise exception.Create('Cannot convert from abstract colorspace');
   if self = ADestColorspace then
     move(ASource, {%H-}ADest, self.GetSize * ACount)
   else
   begin
-    convProc := ColorspaceCollection.GetConversion(self, ADestColorspace);
-    if convProc = nil then
-      raise exception.Create('Conversion procedure not found');
-    convProc(@ASource, @ADest, ACount, self.GetSize, ADestColorspace.GetSize, AReferenceWhite);
+    conv := ColorspaceCollection.GetBridgedConversion(self, ADestColorspace);
+    conv.Convert(@ASource,@ADest,ACount,self.GetSize,ADestColorspace.GetSize,AReferenceWhite);
   end;
 end;
 
-class function TCustomColorspace.GetConversion(ADestColorspace: TColorspaceAny): TColorspaceConvertArrayProc;
+class function TCustomColorspace.GetDirectConversion(ADestColorspace: TColorspaceAny): TColorspaceConvertArrayProc;
 begin
-  result := ColorspaceCollection.GetConversion(self, ADestColorspace);
+  result := ColorspaceCollection.GetDirectConversion(self, ADestColorspace);
+end;
+
+class function TCustomColorspace.GetBridgeConversion(
+  ADestColorspace: TColorspaceAny): TBridgedConversion;
+begin
+  result := ColorspaceCollection.GetBridgedConversion(self, ADestColorspace);
 end;
 
 { ColorspaceCollection }
@@ -294,7 +346,7 @@ begin
   move(ASource^, ADest^, ADestStride * ACount);
 end;
 
-class function ColorspaceCollection.GetConversion(ASource: TColorspaceAny;
+class function ColorspaceCollection.GetDirectConversion(ASource: TColorspaceAny;
   ADest: TColorspaceAny): TColorspaceConvertArrayProc;
 var
   idxSource, idxDest: Integer;
@@ -312,6 +364,22 @@ begin
     result := FColorspaceConversions[idxSource][idxDest]
   else
     result := nil;
+end;
+
+class function ColorspaceCollection.GetBridgedConversion(
+  ASource: TColorspaceAny; ADest: TColorspaceAny): TBridgedConversion;
+begin
+  result.FinalConvert:= GetDirectConversion(ASource,ADest);
+  if result.FinalConvert<>nil then
+  begin // direct conversion so no bridge needed
+    result.ConvertToBridge:= nil;
+  end else
+  begin
+    result.ConvertToBridge:= GetDirectConversion(ASource,TExpandedPixelColorspace);
+    if result.ConvertToBridge=nil then raise exception.Create('Cannot convert '+ASource.GetName+' to bridge');
+    result.FinalConvert:= GetDirectConversion(TExpandedPixelColorspace,ADest);
+    if result.FinalConvert=nil then raise exception.Create('Cannot convert '+ADest.GetName+' from bridge');
+  end;
 end;
 
 var

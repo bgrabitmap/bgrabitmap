@@ -97,7 +97,7 @@ type
     FLineOrder: TRawImageLineOrder;
     FClipRect: TRect;
     FConvertToFPColor, FConvertFromFPColor,
-    FConvertFromBGRA, FConvertFromExpanded: TColorspaceConvertArrayProc;
+    FConvertFromBGRA, FConvertFromExpanded: TBridgedConversion;
     FPenStroker: TBGRACustomPenStroker;
 
     {** Specifies if linear antialiasing must be used when drawing
@@ -1475,10 +1475,10 @@ begin
   FRefCount := 1;
   if FColorspace = nil then FColorspace := DefaultColorspace;
   FPixelSize := FColorspace.GetSize;
-  FConvertToFPColor:= FColorspace.GetConversion(TFPColorColorspace);
-  FConvertFromFPColor:= TFPColorColorspace.GetConversion(FColorspace);
-  FConvertFromBGRA := TBGRAPixelColorspace.GetConversion(FColorspace);
-  FConvertFromExpanded := TExpandedPixelColorspace.GetConversion(FColorspace);
+  FConvertToFPColor:= FColorspace.GetBridgeConversion(TFPColorColorspace);
+  FConvertFromFPColor:= TFPColorColorspace.GetBridgeConversion(FColorspace);
+  FConvertFromBGRA := TBGRAPixelColorspace.GetBridgeConversion(FColorspace);
+  FConvertFromExpanded := TExpandedPixelColorspace.GetBridgeConversion(FColorspace);
   FReferenceWhite := nil;
   FWidth := 0;
   FHeight := 0;
@@ -1520,7 +1520,7 @@ var c: TBGRAPixel;
   c2: array[0..31] of byte;
 begin
   c.red := ARed; c.green := AGreen; c.blue := ABlue; c.alpha := AAlpha;
-  FConvertFromBGRA(@c,@c2,1,sizeof(c),FPixelSize,FReferenceWhite);
+  FConvertFromBGRA.Convert(@c,@c2,1,sizeof(c),FPixelSize,FReferenceWhite);
   SolidBrushIndirect(ABrush, @c2, ADrawMode);
 end;
 
@@ -1529,7 +1529,7 @@ procedure TCustomUniversalBitmap.SolidBrushBGRA(out ABrush: TUniversalBrush;
 var
   c2: array[0..31] of byte;
 begin
-  FConvertFromBGRA(@AColor,@c2,1,sizeof(AColor),FPixelSize,FReferenceWhite);
+  FConvertFromBGRA.Convert(@AColor,@c2,1,sizeof(AColor),FPixelSize,FReferenceWhite);
   SolidBrushIndirect(ABrush, @c2, ADrawMode);
 end;
 
@@ -1540,7 +1540,7 @@ var c: TExpandedPixel;
   c2: array[0..31] of byte;
 begin
   c.red := ARed; c.green := AGreen; c.blue := ABlue; c.alpha := AAlpha;
-  FConvertFromExpanded(@c,@c2,1,sizeof(c),FPixelSize,FReferenceWhite);
+  FConvertFromExpanded.Convert(@c,@c2,1,sizeof(c),FPixelSize,FReferenceWhite);
   SolidBrushIndirect(ABrush, @c2, ADrawMode);
 end;
 
@@ -1549,7 +1549,7 @@ procedure TCustomUniversalBitmap.SolidBrushExpanded(out
 var
   c2: array[0..31] of byte;
 begin
-  FConvertFromExpanded(@AColor,@c2,1,sizeof(AColor),FPixelSize,FReferenceWhite);
+  FConvertFromExpanded.Convert(@AColor,@c2,1,sizeof(AColor),FPixelSize,FReferenceWhite);
   SolidBrushIndirect(ABrush, @c2, ADrawMode);
 end;
 
@@ -1679,7 +1679,7 @@ procedure TCustomUniversalBitmap.SetInternalColor(x, y: integer; const Value: TF
 begin
   if not PtInClipRect(x,y) then exit;
   LoadFromBitmapIfNeeded;
-  FConvertFromFPColor(@Value, GetPixelAddress(x,y),
+  FConvertFromFPColor.Convert(@Value, GetPixelAddress(x,y),
                       1, sizeof(TFPColor), FPixelSize, FReferenceWhite);
   InvalidateBitmap;
 end;
@@ -1688,7 +1688,7 @@ function TCustomUniversalBitmap.GetInternalColor(x, y: integer): TFPColor;
 begin
   if not PtInClipRect(x,y) then exit(colTransparent);
   LoadFromBitmapIfNeeded;
-  FConvertFromFPColor(GetPixelAddress(x,y), @result,
+  FConvertFromFPColor.Convert(GetPixelAddress(x,y), @result,
                       1, FPixelSize, sizeof(TFPColor), FReferenceWhite);
 end;
 
