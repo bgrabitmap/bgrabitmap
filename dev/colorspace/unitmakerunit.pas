@@ -372,7 +372,8 @@ var
 
   procedure Add(ls: string);
   begin
-    intsl.Add(InfSpaceAdd + ls);
+    if ls = '' then intsl.add('') else
+      intsl.Add(InfSpaceAdd + ls);
   end;
 
   procedure AddImp(ls: string);
@@ -536,7 +537,7 @@ var
         vn := GetVariablesNames(c2);
         avn := vn[Length(vn) - 1];
         if not avn.StartsWith('[') then avn := '.'+avn;
-        ls := ls + #13#10 + '  ' + 'Result' + avn + ' := AAlpha;';
+        ls := ls + LineEnding + '  ' + 'Result' + avn + ' := AAlpha;';
         h := GetFunction(functionName,
                          'const A' + ColorspaceInfo[c1].Name + ': T' + ColorspaceInfo[c1].Name + ';const AAlpha' + ': ' + ChannelValueTypeName[ColorspaceInfo[c2].ValueType] + '=' + vmax,
                          'T' + ColorspaceInfo[c2].Name, needRefPoint);
