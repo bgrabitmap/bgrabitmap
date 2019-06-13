@@ -200,9 +200,11 @@ function XYZAToAdobeRGBA(const AXYZA: TXYZA): TAdobeRGBA;
 
 procedure SetReferenceWhite(AObserverAngle: integer; AIlluminant: string); overload;
 procedure SetReferenceWhite(AReferenceWhite: TXYZReferenceWhite); overload;
-function GetReferenceWhite: TXYZReferenceWhite;
+function GetReferenceWhite: TXYZReferenceWhite; overload;
+function GetReferenceWhite(AObserverAngle: integer; AIlluminant: string): TXYZReferenceWhite; overload;
+function GetReferenceWhiteIndirect(AObserverAngle: integer; AIlluminant: string): PXYZReferenceWhite;
 
-procedure AddReferenceWhite(AReferenceWhite: TXYZReferenceWhite); overload;
+procedure AddReferenceWhite(const AReferenceWhite: TXYZReferenceWhite); overload;
 procedure AddReferenceWhite(AObserverAngle: integer; AIlluminant: string; AX, AY, AZ: single); overload;
 function GetReferenceWhiteCount: integer;
 function GetReferenceWhiteByIndex(AIndex: integer): TXYZReferenceWhite;
@@ -432,6 +434,9 @@ begin
   AddReferenceWhite(10, 'D65', 0.94811, 1.00, 1.07304);
   AddReferenceWhite(2, 'D75', 0.94972, 1.00, 1.22638);
   AddReferenceWhite(10, 'D75', 0.94416, 1.00, 1.20641);
+  //equal energy
+  AddReferenceWhite(2, 'E', 1,1,1);
+  AddReferenceWhite(10, 'E', 1,1,1);
   //fluorescent light
   AddReferenceWhite(2, 'F2', 0.99187, 1.00, 0.67395);
   AddReferenceWhite(10, 'F2', 1.03280, 1.00, 0.69026);
@@ -467,8 +472,36 @@ begin
   Result := CurrentReferenceWhite;
 end;
 
-procedure AddReferenceWhite(AReferenceWhite: TXYZReferenceWhite);
+function GetReferenceWhite(AObserverAngle: integer; AIlluminant: string): TXYZReferenceWhite;
+var
+  p: PXYZReferenceWhite;
 begin
+  p := GetReferenceWhiteIndirect(AObserverAngle, AIlluminant);
+  if p = nil then raise exception.Create('Reference white not found');
+  result := p^;
+end;
+
+function GetReferenceWhiteIndirect(AObserverAngle: integer; AIlluminant: string): PXYZReferenceWhite;
+var
+  rp: PXYZReferenceWhite;
+  i: integer;
+begin
+  for i := 0 to Length(ReferenceWhiteArray) - 1 do
+  begin
+    rp := @ReferenceWhiteArray[i];
+    if (rp^.ObserverAngle = AObserverAngle) and (rp^.Illuminant = AIlluminant) then
+    begin
+      result := rp;
+      exit;
+    end;
+  end;
+  result := nil;
+end;
+
+procedure AddReferenceWhite(const AReferenceWhite: TXYZReferenceWhite);
+begin
+  if GetReferenceWhiteIndirect(AReferenceWhite.ObserverAngle, AReferenceWhite.Illuminant)<>nil then
+    raise exception.Create('Reference white already defined');
   SetLength(ReferenceWhiteArray, Length(ReferenceWhiteArray) + 1);
   ReferenceWhiteArray[Length(ReferenceWhiteArray) - 1] := AReferenceWhite;
 end;
