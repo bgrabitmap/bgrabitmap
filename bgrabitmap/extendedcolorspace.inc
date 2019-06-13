@@ -147,6 +147,7 @@ type
     class function GetDirectConversion(ADestColorspace: TColorspaceAny): TColorspaceConvertArrayProc;
     class function GetBridgeConversion(ADestColorspace: TColorspaceAny): TBridgedConversion;
     class function HasReferenceWhite: boolean; virtual; abstract;
+    class function HasImaginaryColors: boolean; virtual; abstract;
   end;
 
   { ColorspaceCollection }

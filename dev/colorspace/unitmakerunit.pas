@@ -44,54 +44,54 @@ type
     ValueType: TChannelValueType;
     BasicHelper: boolean;
     VariableNames, FullNames, MinMax: string;
-    IsBridge: boolean;
+    IsBridge, HasImaginary: boolean;
   end;
 
 const
   ColorspaceInfo: array [TColorspaceEnum] of TColorspaceInfo =
   ((Name: 'Color';         Declaration: 'type helper';   Colorspace: 'StdRGB';      HasAlpha: false;  HasWhiteRef: false;  ValueType: cvtByte;    BasicHelper: false;
-   VariableNames: 'red,green,blue';                      FullNames: 'Red,Green,Blue';                 MinMax: '0,0,0,255,255,255';                IsBridge: false),
+   VariableNames: 'red,green,blue';                      FullNames: 'Red,Green,Blue';                 MinMax: '0,0,0,255,255,255';                IsBridge: false; HasImaginary: false),
    (Name: 'BGRAPixel';     Declaration: 'record helper'; Colorspace: 'StdRGB';      HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtByte;    BasicHelper: true;
-   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,255,255,255,255';          IsBridge: false),
+   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,255,255,255,255';          IsBridge: false; HasImaginary: false),
    (Name: 'FPColor';       Declaration: 'record helper'; Colorspace: 'StdRGB';      HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtWord;    BasicHelper: true;
-   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: false),
+   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: false; HasImaginary: false),
 
    (Name: 'StdRGBA';       Declaration: 'packed record'; Colorspace: 'StdRGB';      HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtSingle;  BasicHelper: false;
-   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false),
+   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false; HasImaginary: false),
    (Name: 'AdobeRGBA';     Declaration: 'packed record'; Colorspace: 'AdobeRGB';    HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtByte;    BasicHelper: false;
-   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,255,255,255,255';          IsBridge: false),
+   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,255,255,255,255';          IsBridge: false; HasImaginary: false),
 
    (Name: 'StdHSLA';       Declaration: 'packed record'; Colorspace: 'StdHSL';      HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtSingle;  BasicHelper: false;
-   VariableNames: 'hue,saturation,lightness,alpha';      FullNames: 'Hue,Saturation,Lightness,Alpha'; MinMax: '0,0,0,0,360,1,1,1';                IsBridge: false),
+   VariableNames: 'hue,saturation,lightness,alpha';      FullNames: 'Hue,Saturation,Lightness,Alpha'; MinMax: '0,0,0,0,360,1,1,1';                IsBridge: false; HasImaginary: false),
    (Name: 'StdHSVA';       Declaration: 'packed record'; Colorspace: 'StdHSV';      HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtSingle;  BasicHelper: false;
-   VariableNames: 'hue,saturation,value,alpha';          FullNames: 'Hue,Saturation,Value,Alpha';     MinMax: '0,0,0,0,360,1,1,1';                IsBridge: false),
+   VariableNames: 'hue,saturation,value,alpha';          FullNames: 'Hue,Saturation,Value,Alpha';     MinMax: '0,0,0,0,360,1,1,1';                IsBridge: false; HasImaginary: false),
    (Name: 'StdCMYK';       Declaration: 'packed record'; Colorspace: 'StdCMYK';     HasAlpha: false;  HasWhiteRef: false;  ValueType: cvtSingle;  BasicHelper: false;
-   VariableNames: 'C,M,Y,K';                             FullNames: 'Cyan,Magenta,Yellow,Black';      MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false),
+   VariableNames: 'C,M,Y,K';                             FullNames: 'Cyan,Magenta,Yellow,Black';      MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false; HasImaginary: false),
 
 {   (Name: 'LinearGrayByte';Declaration: 'packed record'; Colorspace: 'LinearGray';  HasAlpha: false;  HasWhiteRef: false;  ValueType: cvtByte;    BasicHelper: false;
-   VariableNames: 'gray';                                FullNames: 'Gray';         MinMax: '0,255';                                              IsBridge: false),
+   VariableNames: 'gray';                                FullNames: 'Gray';         MinMax: '0,255';                                              IsBridge: false; HasImaginary: false),
    (Name: 'LinearGrayWord';Declaration: 'packed record'; Colorspace: 'LinearGray';  HasAlpha: false;  HasWhiteRef: false;  ValueType: cvtWord;    BasicHelper: false;
-   VariableNames: 'gray';                                FullNames: 'Gray';         MinMax: '0,65535';                                            IsBridge: false),}
+   VariableNames: 'gray';                                FullNames: 'Gray';         MinMax: '0,65535';                                            IsBridge: false; HasImaginary: false),}
 
    (Name: 'ExpandedPixel'; Declaration: 'record helper'; Colorspace: 'LinearRGB';   HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtWord;    BasicHelper: true;
-   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: true),
+   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: true; HasImaginary: false),
    (Name: 'LinearRGBA';    Declaration: 'packed record'; Colorspace: 'LinearRGB';   HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtSingle;  BasicHelper: false;
-   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false),
+   VariableNames: 'red,green,blue,alpha';                FullNames: 'Red,Green,Blue,Alpha';           MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false; HasImaginary: false),
 
    (Name: 'HSLAPixel';     Declaration: 'record helper'; Colorspace: 'HSL';         HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtWord;    BasicHelper: true;
-   VariableNames: 'hue,saturation,lightness,alpha';      FullNames: 'Hue,Saturation,Lightness,Alpha'; MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: false),
+   VariableNames: 'hue,saturation,lightness,alpha';      FullNames: 'Hue,Saturation,Lightness,Alpha'; MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: false; HasImaginary: false),
    (Name: 'GSBAPixel';     Declaration: 'record helper'; Colorspace: 'GSB';         HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtWord;    BasicHelper: true;
-   VariableNames: 'hue,saturation,lightness,alpha';      FullNames: 'Hue,Saturation,Brightness,Alpha';MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: false),
+   VariableNames: 'hue,saturation,lightness,alpha';      FullNames: 'Hue,Saturation,Brightness,Alpha';MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: false; HasImaginary: false),
 
    (Name: 'XYZA';          Declaration: 'packed record'; Colorspace: 'CIE XYZ';     HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtSingle;  BasicHelper: false;
-   VariableNames: 'X,Y,Z,alpha';                         FullNames: 'X,Y,Z,Alpha';                    MinMax: '0,0,0,0,1.0622,1,1.7826,1';        IsBridge: false),
+   VariableNames: 'X,Y,Z,alpha';                         FullNames: 'X,Y,Z,Alpha';                    MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false; HasImaginary: true),
 {   (Name: 'XYZAWord';      Declaration: 'packed record'; Colorspace: 'CIE XYZ';     HasAlpha: true;   HasWhiteRef: false;  ValueType: cvtWord;    BasicHelper: false;
-   VariableNames: 'X,Y,Z,alpha';                         FullNames: 'X,Y,Z,Alpha';                    MinMax: '0,0,0,0,34806,32768,58412,65535';  IsBridge: false),}
+   VariableNames: 'X,Y,Z,alpha';                         FullNames: 'X,Y,Z,Alpha';                    MinMax: '0,0,0,0,34806,32768,58412,65535';  IsBridge: false; HasImaginary: true),}
 
    (Name: 'LabA';          Declaration: 'packed record'; Colorspace: 'CIE Lab';     HasAlpha: true;   HasWhiteRef: true;   ValueType: cvtSingle;  BasicHelper: false;
-   VariableNames: 'L,a,b,alpha';                         FullNames: 'Lightness,a,b,Alpha';            MinMax: '0,-128,-128,0,100,127,127,1';      IsBridge: false),
+   VariableNames: 'L,a,b,alpha';                         FullNames: 'Lightness,a,b,Alpha';            MinMax: '0,-166,-132,0,100,142,147,1';      IsBridge: false; HasImaginary: true),
    (Name: 'LChA';          Declaration: 'packed record'; Colorspace: 'CIE LCh';     HasAlpha: true;   HasWhiteRef: true;   ValueType: cvtSingle;  BasicHelper: false;
-   VariableNames: 'L,C,h,alpha';                         FullNames: 'Lightness,Chroma,Hue,Alpha';     MinMax: '0,0,0,0,100,180,360,1';            IsBridge: false) );
+   VariableNames: 'L,C,h,alpha';                         FullNames: 'Lightness,Chroma,Hue,Alpha';     MinMax: '0,0,0,0,100,192,360,1';            IsBridge: false; HasImaginary: true) );
 
 type
   TColorPair = record
@@ -753,6 +753,7 @@ var
       Add('  class function GetChannel(AColor: Pointer; AIndex: integer): single; override;');
       Add('  class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;');
       Add('  class function HasReferenceWhite: boolean; override;');
+      Add('  class function HasImaginaryColors: boolean; override;');
       Add('end;');
       Add('');
       AddImp('{ '+ColorTypeName+'Colorspace }');
@@ -826,6 +827,8 @@ var
 
       AddProcedureImp('class function '+ColorTypeName+'Colorspace.HasReferenceWhite: boolean;',
                       'result := ' + BoolToStr(ColorspaceInfo[Colorspace].HasWhiteRef, true) + ';');
+      AddProcedureImp('class function '+ColorTypeName+'Colorspace.HasImaginaryColors: boolean;',
+                      'result := ' + BoolToStr(ColorspaceInfo[Colorspace].HasImaginary, true) + ';');
 
       AddImp('');
       exit;

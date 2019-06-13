@@ -98,6 +98,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TBGRAPixelColorspace }
@@ -114,6 +115,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TFPColorColorspace }
@@ -130,6 +132,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TStdRGBAColorspace }
@@ -146,6 +149,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TAdobeRGBAColorspace }
@@ -162,6 +166,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TStdHSLAColorspace }
@@ -178,6 +183,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TStdHSVAColorspace }
@@ -194,6 +200,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TStdCMYKColorspace }
@@ -210,6 +217,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TExpandedPixelColorspace }
@@ -226,6 +234,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TLinearRGBAColorspace }
@@ -242,6 +251,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { THSLAPixelColorspace }
@@ -258,6 +268,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TGSBAPixelColorspace }
@@ -274,6 +285,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TXYZAColorspace }
@@ -290,6 +302,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TLabAColorspace }
@@ -306,6 +319,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TLChAColorspace }
@@ -322,6 +336,7 @@ type
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
     class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
     class function HasReferenceWhite: boolean; override;
+    class function HasImaginaryColors: boolean; override;
   end;
 
   { TColorHelper }
@@ -2145,6 +2160,9 @@ end;
 class function TColorColorspace.HasReferenceWhite: boolean;
 begin result := False end;
 
+class function TColorColorspace.HasImaginaryColors: boolean;
+begin result := False end;
+
 
 { TBGRAPixelColorspace }
 
@@ -2223,6 +2241,9 @@ begin
 end;
 
 class function TBGRAPixelColorspace.HasReferenceWhite: boolean;
+begin result := False end;
+
+class function TBGRAPixelColorspace.HasImaginaryColors: boolean;
 begin result := False end;
 
 
@@ -2305,6 +2326,9 @@ end;
 class function TFPColorColorspace.HasReferenceWhite: boolean;
 begin result := False end;
 
+class function TFPColorColorspace.HasImaginaryColors: boolean;
+begin result := False end;
+
 
 { TStdRGBAColorspace }
 
@@ -2383,6 +2407,9 @@ begin
 end;
 
 class function TStdRGBAColorspace.HasReferenceWhite: boolean;
+begin result := False end;
+
+class function TStdRGBAColorspace.HasImaginaryColors: boolean;
 begin result := False end;
 
 
@@ -2465,6 +2492,9 @@ end;
 class function TAdobeRGBAColorspace.HasReferenceWhite: boolean;
 begin result := False end;
 
+class function TAdobeRGBAColorspace.HasImaginaryColors: boolean;
+begin result := False end;
+
 
 { TStdHSLAColorspace }
 
@@ -2543,6 +2573,9 @@ begin
 end;
 
 class function TStdHSLAColorspace.HasReferenceWhite: boolean;
+begin result := False end;
+
+class function TStdHSLAColorspace.HasImaginaryColors: boolean;
 begin result := False end;
 
 
@@ -2625,6 +2658,9 @@ end;
 class function TStdHSVAColorspace.HasReferenceWhite: boolean;
 begin result := False end;
 
+class function TStdHSVAColorspace.HasImaginaryColors: boolean;
+begin result := False end;
+
 
 { TStdCMYKColorspace }
 
@@ -2699,6 +2735,9 @@ begin
 end;
 
 class function TStdCMYKColorspace.HasReferenceWhite: boolean;
+begin result := False end;
+
+class function TStdCMYKColorspace.HasImaginaryColors: boolean;
 begin result := False end;
 
 
@@ -2781,6 +2820,9 @@ end;
 class function TExpandedPixelColorspace.HasReferenceWhite: boolean;
 begin result := False end;
 
+class function TExpandedPixelColorspace.HasImaginaryColors: boolean;
+begin result := False end;
+
 
 { TLinearRGBAColorspace }
 
@@ -2859,6 +2901,9 @@ begin
 end;
 
 class function TLinearRGBAColorspace.HasReferenceWhite: boolean;
+begin result := False end;
+
+class function TLinearRGBAColorspace.HasImaginaryColors: boolean;
 begin result := False end;
 
 
@@ -2941,6 +2986,9 @@ end;
 class function THSLAPixelColorspace.HasReferenceWhite: boolean;
 begin result := False end;
 
+class function THSLAPixelColorspace.HasImaginaryColors: boolean;
+begin result := False end;
+
 
 { TGSBAPixelColorspace }
 
@@ -3021,6 +3069,9 @@ end;
 class function TGSBAPixelColorspace.HasReferenceWhite: boolean;
 begin result := False end;
 
+class function TGSBAPixelColorspace.HasImaginaryColors: boolean;
+begin result := False end;
+
 
 { TXYZAColorspace }
 
@@ -3051,9 +3102,9 @@ end;
 class function TXYZAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
-  0: result := 1.0622;
+  0: result := 1;
   1: result := 1;
-  2: result := 1.7826;
+  2: result := 1;
   3: result := 1;
   else raise ERangeError.Create('Index out of bounds');
   end;
@@ -3101,6 +3152,9 @@ end;
 class function TXYZAColorspace.HasReferenceWhite: boolean;
 begin result := False end;
 
+class function TXYZAColorspace.HasImaginaryColors: boolean;
+begin result := True end;
+
 
 { TLabAColorspace }
 
@@ -3132,8 +3186,8 @@ class function TLabAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
   0: result := 100;
-  1: result := 127;
-  2: result := 127;
+  1: result := 142;
+  2: result := 147;
   3: result := 1;
   else raise ERangeError.Create('Index out of bounds');
   end;
@@ -3143,8 +3197,8 @@ class function TLabAColorspace.GetMinValue(AIndex: integer): single;
 begin
   case AIndex of
   0: result := 0;
-  1: result := -128;
-  2: result := -128;
+  1: result := -166;
+  2: result := -132;
   3: result := 0;
   else raise ERangeError.Create('Index out of bounds');
   end;
@@ -3181,6 +3235,9 @@ end;
 class function TLabAColorspace.HasReferenceWhite: boolean;
 begin result := True end;
 
+class function TLabAColorspace.HasImaginaryColors: boolean;
+begin result := True end;
+
 
 { TLChAColorspace }
 
@@ -3212,7 +3269,7 @@ class function TLChAColorspace.GetMaxValue(AIndex: integer): single;
 begin
   case AIndex of
   0: result := 100;
-  1: result := 180;
+  1: result := 192;
   2: result := 360;
   3: result := 1;
   else raise ERangeError.Create('Index out of bounds');
@@ -3259,6 +3316,9 @@ begin
 end;
 
 class function TLChAColorspace.HasReferenceWhite: boolean;
+begin result := True end;
+
+class function TLChAColorspace.HasImaginaryColors: boolean;
 begin result := True end;
 
 
