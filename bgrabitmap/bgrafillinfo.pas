@@ -253,7 +253,7 @@ type
     procedure ComputeIntersection(cury: single; var inter: ArrayOfTIntersectionInfo;
       var nbInter: integer); override;
   public
-    constructor Create(const points: array of TPointF);
+    constructor Create(const points: array of TPointF; APixelCenteredCoordinates: boolean = true);
     destructor Destroy; override;
   end;
 
@@ -1277,10 +1277,10 @@ begin
     end;
 end;
 
-constructor TSimpleFillPolyInfo.Create(const points: array of TPointF);
+constructor TSimpleFillPolyInfo.Create(const points: array of TPointF; APixelCenteredCoordinates: boolean);
 var i,j: integer;
 begin
-  inherited Create(points);
+  inherited Create(points, APixelCenteredCoordinates);
 
   setlength(FSimple, length(FPoints));
   for i := 0 to high(FPoints) do
