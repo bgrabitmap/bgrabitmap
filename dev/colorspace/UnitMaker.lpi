@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectOptions>
-    <Version Value="10"/>
+    <Version Value="11"/>
     <General>
       <Flags>
         <MainUnitHasCreateFormStatements Value="False"/>
@@ -14,9 +14,6 @@
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
-    <VersionInfo>
-      <StringTable ProductVersion=""/>
-    </VersionInfo>
     <BuildModes Count="1">
       <Item1 Name="Default" Default="True"/>
     </BuildModes>
@@ -24,16 +21,17 @@
       <Version Value="2"/>
     </PublishOptions>
     <RunParams>
-      <local>
-        <FormatVersion Value="1"/>
-      </local>
+      <FormatVersion Value="2"/>
+      <Modes Count="1">
+        <Mode0 Name="default"/>
+      </Modes>
     </RunParams>
     <RequiredPackages Count="1">
       <Item1>
         <PackageName Value="BGRABitmapPack"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="2">
+    <Units Count="3">
       <Unit0>
         <Filename Value="UnitMaker.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -43,6 +41,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="BGRAColors"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="unitmakerunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UnitMakerUnit"/>
+      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
