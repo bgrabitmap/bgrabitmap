@@ -145,7 +145,7 @@ type
     class procedure Convert(const ASource; out ADest; ADestColorspace: TColorspaceAny;
                             ACount: integer = 1; AReferenceWhite: PXYZReferenceWhite = nil);
     class function GetDirectConversion(ADestColorspace: TColorspaceAny): TColorspaceConvertArrayProc;
-    class function GetBridgeConversion(ADestColorspace: TColorspaceAny): TBridgedConversion;
+    class function GetBridgedConversion(ADestColorspace: TColorspaceAny): TBridgedConversion;
     class function HasReferenceWhite: boolean; virtual; abstract;
     class function HasImaginaryColors: boolean; virtual; abstract;
   end;
@@ -306,7 +306,7 @@ begin
   result := ColorspaceCollection.GetDirectConversion(self, ADestColorspace);
 end;
 
-class function TCustomColorspace.GetBridgeConversion(
+class function TCustomColorspace.GetBridgedConversion(
   ADestColorspace: TColorspaceAny): TBridgedConversion;
 begin
   result := ColorspaceCollection.GetBridgedConversion(self, ADestColorspace);

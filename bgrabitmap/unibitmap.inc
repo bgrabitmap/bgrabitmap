@@ -1475,10 +1475,10 @@ begin
   FRefCount := 1;
   if FColorspace = nil then FColorspace := DefaultColorspace;
   FPixelSize := FColorspace.GetSize;
-  FConvertToFPColor:= FColorspace.GetBridgeConversion(TFPColorColorspace);
-  FConvertFromFPColor:= TFPColorColorspace.GetBridgeConversion(FColorspace);
-  FConvertFromBGRA := TBGRAPixelColorspace.GetBridgeConversion(FColorspace);
-  FConvertFromExpanded := TExpandedPixelColorspace.GetBridgeConversion(FColorspace);
+  FConvertToFPColor:= FColorspace.GetBridgedConversion(TFPColorColorspace);
+  FConvertFromFPColor:= TFPColorColorspace.GetBridgedConversion(FColorspace);
+  FConvertFromBGRA := TBGRAPixelColorspace.GetBridgedConversion(FColorspace);
+  FConvertFromExpanded := TExpandedPixelColorspace.GetBridgedConversion(FColorspace);
   FReferenceWhite := nil;
   FWidth := 0;
   FHeight := 0;
