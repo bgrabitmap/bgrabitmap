@@ -167,6 +167,19 @@ type
     class function GetBridgedConversion(ASource: TColorspaceAny; ADest: TColorspaceAny): TBridgedConversion; static;
   end;
 
+type {* How to handle overflow when converting from XYZ }
+  TColorspaceOverflow =
+    {** Colors outside of target colorspace are converted to transparent }
+    (xroClipToTarget,
+    {** Each color channel is saturated independently (hue may be lost) }
+    xroSaturateEachChannel,
+    {** Hue is preserved by reducing intensity or saturation }
+    xroPreserveHue);
+
+var
+  XYZToRGBOverflowMin : TColorspaceOverflow = xroSaturateEachChannel;
+  XYZToRGBOverflowMax : TColorspaceOverflow = xroSaturateEachChannel;
+
 {$DEFINE INCLUDE_INTERFACE}
 {$I generatedcolorspace.inc}
 
@@ -179,7 +192,9 @@ function GammaCompressionWF(AValue: Word): single;
 function StdRGBAToExpandedPixel(const AStdRGBA: TStdRGBA): TExpandedPixel;
 function GammaExpansionFW(AValue: single): word;
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA): TXYZA;
-function XYZAToLinearRGBA(const AXYZA: TXYZA): TLinearRGBA;
+function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA; const AReferenceWhite: TXYZReferenceWhite): TXYZA; overload;
+function XYZAToLinearRGBA(const AXYZA: TXYZA): TLinearRGBA; overload;
+function XYZAToLinearRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TLinearRGBA; overload;
 function XYZAToLabA(const AXYZA: TXYZA): TLabA; overload;
 function XYZAToLabA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TLabA; overload;
 function LabAToXYZA(const ALabA: TLabA): TXYZA; overload;
@@ -196,19 +211,25 @@ function StdRGBAToStdCMYK(const AStdRGBA: TStdRGBA): TStdCMYK;
 function StdCMYKToStdRGBA(const AStdCMYK: TStdCMYK; AAlpha: Single = 1): TStdRGBA;
 function LabAToLChA(const ALabA: TLabA): TLChA;
 function LChAToLabA(const ALChA: TLChA): TLabA;
-function AdobeRGBAToXYZA(const ASource: TAdobeRGBA): TXYZA;
-function XYZAToAdobeRGBA(const AXYZA: TXYZA): TAdobeRGBA;
+function AdobeRGBAToXYZA(const ASource: TAdobeRGBA): TXYZA; overload;
+function AdobeRGBAToXYZA(const ASource: TAdobeRGBA; const AReferenceWhite: TXYZReferenceWhite): TXYZA; overload;
+function XYZAToAdobeRGBA(const AXYZA: TXYZA): TAdobeRGBA; overload;
+function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA; overload;
 
 procedure SetReferenceWhite(AObserverAngle: integer; AIlluminant: string); overload;
 procedure SetReferenceWhite(AReferenceWhite: TXYZReferenceWhite); overload;
 function GetReferenceWhite: TXYZReferenceWhite; overload;
+function GetReferenceWhiteIndirect: PXYZReferenceWhite; overload;
 function GetReferenceWhite(AObserverAngle: integer; AIlluminant: string): TXYZReferenceWhite; overload;
-function GetReferenceWhiteIndirect(AObserverAngle: integer; AIlluminant: string): PXYZReferenceWhite;
+function GetReferenceWhiteIndirect(AObserverAngle: integer; AIlluminant: string): PXYZReferenceWhite; overload;
 
 procedure AddReferenceWhite(const AReferenceWhite: TXYZReferenceWhite); overload;
 procedure AddReferenceWhite(AObserverAngle: integer; AIlluminant: string; AX, AY, AZ: single); overload;
 function GetReferenceWhiteCount: integer;
 function GetReferenceWhiteByIndex(AIndex: integer): TXYZReferenceWhite;
+
+var
+  ReferenceWhite2D65, ReferenceWhite2E: TXYZReferenceWhite;
 
 {$ENDIF}
 
@@ -473,6 +494,11 @@ begin
   Result := CurrentReferenceWhite;
 end;
 
+function GetReferenceWhiteIndirect: PXYZReferenceWhite;
+begin
+  result := @CurrentReferenceWhite;
+end;
+
 function GetReferenceWhite(AObserverAngle: integer; AIlluminant: string): TXYZReferenceWhite;
 var
   p: PXYZReferenceWhite;
@@ -660,6 +686,12 @@ end;
 
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA): TXYZA;
 begin
+  result := LinearRGBAToXYZA(ALinearRGBA, GetReferenceWhiteIndirect^);
+end;
+
+function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA;
+  const AReferenceWhite: TXYZReferenceWhite): TXYZA;
+begin
   with ALinearRGBA do
   begin
     // Observer= 2°, Illuminant= D65
@@ -668,22 +700,92 @@ begin
     result.Z := red * 0.0193339 + green * 0.1191920 + blue * 0.9503041;
   end;
   Result.alpha := ALinearRGBA.alpha;
+  result.X *= AReferenceWhite.X / ReferenceWhite2D65.X;
+  result.Y *= AReferenceWhite.Y / ReferenceWhite2D65.Y;
+  result.Z *= AReferenceWhite.Z / ReferenceWhite2D65.Z;
 end;
 
 function XYZAToLinearRGBA(const AXYZA: TXYZA): TLinearRGBA;
 begin
+  result := XYZAToLinearRGBA(AXYZA, GetReferenceWhiteIndirect^);
+end;
+
+function XYZAToLinearRGBA(const AXYZA: TXYZA;
+  const AReferenceWhite: TXYZReferenceWhite): TLinearRGBA;
+var
+  minVal, lightVal, maxVal,
+  adX,adY,adZ: Single;
+begin
   with AXYZA do
   begin
-    result.red := Clamp(X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314), 0, 1);
-    result.green := Clamp(X * (-0.9692660) + Y * 1.8760108 + Z * 0.0415560, 0, 1);
-    result.blue := Clamp(X * 0.0556434 + Y * (-0.2040259) + Z * 1.0572252, 0, 1);
+    adX := X*ReferenceWhite2D65.X/AReferenceWhite.X;
+    adY := Y*ReferenceWhite2D65.Y/AReferenceWhite.Y;
+    adZ := Z*ReferenceWhite2D65.Z/AReferenceWhite.Z;
+    result.red := adX * 3.2404542 + adY * (-1.5371385) + adZ * (-0.4985314);
+    result.green := adX * (-0.9692660) + adY * 1.8760108 + adZ * 0.0415560;
+    result.blue := adX * 0.0556434 + adY * (-0.2040259) + adZ * 1.0572252;
+  end;
+  if ( (XYZToRGBOverflowMin = xroClipToTarget) and ((result.red < 0) or
+       (result.green < 0) or (result.blue < 0)) ) or
+     ( (XYZToRGBOverflowMax = xroClipToTarget) and ((result.red > 1) or
+       (result.green > 1) or (result.blue > 1)) ) then
+  begin
+    result.red := 0;
+    result.green := 0;
+    result.blue := 0;
+    result.alpha := 0;
+    exit;
+  end;
+  case XYZToRGBOverflowMin of
+    xroPreserveHue: begin
+        minVal := min(min(result.red,result.green),result.blue);
+        if minVal<0 then
+        begin
+          lightVal := result.red*0.299+result.green*0.587+result.blue*0.114;
+          if lightVal <= 0 then
+          begin
+            result.red := 0;
+            result.green := 0;
+            result.blue := 0;
+          end else
+          begin
+            result.red := (result.red-minVal)*lightVal/(lightVal-minVal);
+            result.green := (result.green-minVal)*lightVal/(lightVal-minVal);
+            result.blue := (result.blue-minVal)*lightVal/(lightVal-minVal);
+          end;
+        end;
+      end;
+  end;
+  case XYZToRGBOverflowMax of
+    xroPreserveHue:
+      begin
+        maxVal := max(max(result.red,result.green),result.blue);
+        if maxVal > 1 then
+        begin
+          result.red := result.red/maxVal;
+          result.green := result.green/maxVal;
+          result.blue := result.blue/maxVal;
+        end;
+      end;
+    xroSaturateEachChannel:
+      begin
+        if result.red > 1 then result.red := 1;
+        if result.green > 1 then result.green := 1;
+        if result.blue > 1 then result.blue := 1;
+      end;
+  end;
+  if XYZToRGBOverflowMin = xroSaturateEachChannel then
+  begin
+    if result.red < 0 then result.red := 0;
+    if result.green < 0 then result.green := 0;
+    if result.blue < 0 then result.blue := 0;
   end;
   Result.alpha := AXYZA.alpha;
 end;
 
 function XYZAToLabA(const AXYZA: TXYZA): TLabA;
 begin
-  Result := XYZAToLabA(AXYZA, CurrentReferenceWhite);
+  Result := XYZAToLabA(AXYZA, GetReferenceWhiteIndirect^);
 end;
 
 function XYZAToLabA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TLabA;
@@ -714,7 +816,7 @@ end;
 
 function LabAToXYZA(const ALabA: TLabA): TXYZA;
 begin
-  Result := LabAToXYZA(ALabA, CurrentReferenceWhite);
+  Result := LabAToXYZA(ALabA, GetReferenceWhiteIndirect^);
 end;
 
 function LabAToXYZA(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TXYZA;
@@ -920,7 +1022,7 @@ begin
   result.Alpha:= ALChA.alpha;
 end;
 
-function AdobeRGBAToXYZA(const ASource: TAdobeRGBA): TXYZA;
+function AdobeRGBAToXYZA(const ASource: TAdobeRGBA; const AReferenceWhite: TXYZReferenceWhite): TXYZA;
 var R,G,B: single;
 begin
   R := GammaExpansionTab[ASource.red]/65535;
@@ -930,21 +1032,37 @@ begin
   result.Y := R*0.29735 + G*0.62736 + B*0.07529;
   result.Z := R*0.02703 + G*0.07069 + B*0.99133;
   result.alpha := ASource.alpha/255;
+  result.X *= AReferenceWhite.X/ReferenceWhite2D65.X;
+  result.Y *= AReferenceWhite.Y/ReferenceWhite2D65.Y;
+  result.Z *= AReferenceWhite.Z/ReferenceWhite2D65.Z;
 end;
 
-function XYZAToAdobeRGBA(const AXYZA: TXYZA): TAdobeRGBA;
-var R,G,B: single;
+function AdobeRGBAToXYZA(const ASource: TAdobeRGBA): TXYZA;
+begin
+  result := AdobeRGBAToXYZA(ASource, GetReferenceWhiteIndirect^);
+end;
+
+function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA;
+var R,G,B, adX, adY, adZ: single;
 begin
   with AXYZA do
   begin
-    R := Clamp(2.04159*X - 0.56501*Y - 0.34473*Z,0,1);
-    G := Clamp(-0.96924*X + 1.87597*Y + 0.04156*Z,0,1);
-    B := Clamp(0.01344*X - 0.11836*Y + 1.01518*Z,0,1);
+    adX := X*ReferenceWhite2D65.X/AReferenceWhite.X;
+    adY := Y*ReferenceWhite2D65.Y/AReferenceWhite.Y;
+    adZ := Z*ReferenceWhite2D65.Z/AReferenceWhite.Z;
+    R := Clamp(2.04159*adX - 0.56501*adY - 0.34473*adZ,0,1);
+    G := Clamp(-0.96924*adX + 1.87597*adY + 0.04156*adZ,0,1);
+    B := Clamp(0.01344*adX - 0.11836*adY + 1.01518*adZ,0,1);
   end;
   result.red := GammaCompressionTab[round(R*65535)];
   result.green := GammaCompressionTab[round(G*65535)];
   result.blue := GammaCompressionTab[round(B*65535)];
   result.alpha := ClampInt(round(AXYZA.alpha*255),0,255);
+end;
+
+function XYZAToAdobeRGBA(const AXYZA: TXYZA): TAdobeRGBA;
+begin
+  result := XYZAToAdobeRGBA(AXYZA, GetReferenceWhiteIndirect^);
 end;
 
 function StdRGBAToLinearRGBA(const AStdRGBA: TStdRGBA): TLinearRGBA;
@@ -1065,7 +1183,9 @@ end;
 {$UNDEF INCLUDE_INITIALIZATION} 
 
   PrepareReferenceWhiteArray;
-  SetReferenceWhite(2, 'D65');
+  ReferenceWhite2D65 := GetReferenceWhite(2, 'D65');
+  ReferenceWhite2E := GetReferenceWhite(2, 'E');
+  SetReferenceWhite(ReferenceWhite2D65);
 
   {$DEFINE INCLUDE_INITIALIZATION}
   {$I generatedcolorspace.inc}
