@@ -31,7 +31,7 @@ function IsRealColor(xyza: TXYZA): boolean;
 
 implementation
 
-uses BGRAFillInfo, Math;
+uses BGRAFillInfo;
 
 operator = (const c1, c2: TXYZA): boolean;
 begin
