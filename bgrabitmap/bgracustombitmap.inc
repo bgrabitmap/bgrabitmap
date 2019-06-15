@@ -112,8 +112,6 @@ type
      function GetCanvasAlphaCorrection: boolean; virtual; abstract;
      procedure SetCanvasAlphaCorrection(const AValue: boolean); virtual; abstract;
 
-     function GetTextureGL: IUnknown; virtual;
-
      function InternalNew: TCustomUniversalBitmap; override;
      procedure ClearTransparentPixels; virtual; abstract;
 
@@ -668,8 +666,8 @@ type
      function GetMaskFromAlpha: TBGRACustomBitmap; virtual; abstract;
      function GetImageBounds(Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
      function GetImageBounds(Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
-     function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
-     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
+     function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; override;
+     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; override;
 
      {inplace filters}
      procedure Negative; virtual; abstract;
@@ -989,11 +987,6 @@ begin
     raise exception.Create('Dimension mismatch');
   DiscardXorMask;
   FXorMask:=AValue;
-end;
-
-function TBGRACustomBitmap.GetTextureGL: IUnknown;
-begin
-  result := nil;
 end;
 
 function TBGRACustomBitmap.GetFontRightToLeftFor(AText: string): boolean;

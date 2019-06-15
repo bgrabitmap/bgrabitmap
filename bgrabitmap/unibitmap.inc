@@ -563,7 +563,10 @@ type
     procedure FillPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure ErasePath(APath: IBGRAPath; const AMatrix: TAffineMatrix; AAlpha: byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
 
-  public {==== 'IBGRAScanner'' interface ====}
+  protected {==== 'IBGRAScanner'' interface ====}
+    function ProvidesScanline({%H-}ARect: TRect): boolean; virtual;
+    function GetScanlineAt({%H-}X, {%H-}Y: integer): PBGRAPixel; virtual;
+  public
     {** Offset to apply when the image is scanned }
     ScanOffset: TPoint;
 
@@ -577,8 +580,6 @@ type
     function IsScanPutPixelsDefined: boolean; virtual;
     procedure ScanPutPixels({%H-}pdest: PBGRAPixel; {%H-}count: integer; {%H-}mode: TDrawMode); virtual;
     procedure ScanSkipPixels(ACount: integer); virtual;
-    function ProvidesScanline({%H-}ARect: TRect): boolean; virtual;
-    function GetScanlineAt({%H-}X, {%H-}Y: integer): PBGRAPixel; virtual;
     function GetTextureGL: IUnknown; virtual;
     function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
