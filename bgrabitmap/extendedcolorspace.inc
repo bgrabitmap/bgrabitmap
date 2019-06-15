@@ -1070,7 +1070,7 @@ begin
 end;
 
 function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA;
-var R,G,B, adX, adY, adZ: single;
+var R,G,B: single;
   ad: TXYZA;
 begin
   ad := AXYZA;
