@@ -129,8 +129,6 @@ type
      {** Scan interpolation filter is used when the bitmap is used
          as a scanner (interface ''IBGRAScanner'') }
      ScanInterpolationFilter: TResampleFilter;
-     {** Offset to apply when the image is scanned using ''IBGRAScanner'' interface }
-     ScanOffset: TPoint;
 
      {** Cursor position for mouse pointer }
      HotSpot: TPoint;
@@ -624,7 +622,6 @@ type
      {BGRA bitmap functions}
      procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); overload; virtual; abstract;
      procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); overload; virtual; abstract;
-     procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); overload; virtual; abstract;
      procedure PutImage(x, y: integer; Source: TBitmap; mode: TDrawMode; AOpacity: byte = 255); overload;
      procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); virtual; abstract;
      procedure StretchPutImageProportionally(ARect: TRect; AHorizAlign: TAlignment; AVertAlign: TTextLayout; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255);
@@ -730,24 +727,11 @@ type
      function FilterPlane: TBGRACustomBitmap; virtual; abstract;
 
      //IBGRAScanner
-     function ScanAtInteger(X,Y: integer): TBGRAPixel; virtual; abstract;
-     function ScanAtIntegerExpanded(X,Y: integer): TExpandedPixel; virtual;
-     procedure ScanMoveTo(X,Y: Integer); virtual; abstract;
-     function ScanNextPixel: TBGRAPixel; virtual; abstract;
-     function ScanNextExpandedPixel: TExpandedPixel; virtual;
-     function ScanAt(X,Y: Single): TBGRAPixel; virtual; abstract;
-     function ScanAtExpanded(X,Y: Single): TExpandedPixel; virtual;
-     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); virtual;
-     procedure ScanSkipPixels(ACount: integer); virtual;
-     function IsScanPutPixelsDefined: boolean; virtual;
-     function ProvidesScanline(ARect: TRect): boolean; virtual;
-     function GetScanlineAt(X, Y: integer): PBGRAPixel; virtual;
-  protected
-     //interface
-     function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-     function _AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-     function _Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-
+     function ScanAtIntegerExpanded(X,Y: integer): TExpandedPixel; override;
+     function ScanNextExpandedPixel: TExpandedPixel; override;
+     function ScanAtExpanded(X,Y: Single): TExpandedPixel; override;
+     function ProvidesScanline(ARect: TRect): boolean; override;
+     function GetScanlineAt(X, Y: integer): PBGRAPixel; override;
   end;
 
 type
@@ -1093,7 +1077,6 @@ begin
     other.JoinStyle := JoinStyle;
     other.ResampleFilter := ResampleFilter;
     other.ScanInterpolationFilter:= ScanInterpolationFilter;
-    other.ScanOffset := ScanOffset;
     other.HotSpot := HotSpot;
   end;
 end;
@@ -2100,48 +2083,6 @@ end;
 function TBGRACustomBitmap.ScanAtExpanded(X, Y: Single): TExpandedPixel;
 begin
   result := GammaExpansion(ScanAt(X,Y));
-end;
-
-{ Interface gateway }
-function TBGRACustomBitmap.QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-begin
-  if GetInterface(iid, obj) then
-    Result := S_OK
-  else
-    Result := longint(E_NOINTERFACE);
-end;
-
-{ There is no automatic reference counting, but it is compulsory to define these functions }
-function TBGRACustomBitmap._AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-begin
-  result := 0;
-end;
-
-function TBGRACustomBitmap._Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-begin
-  result := 0;
-end;
-
-{$hints off}
-procedure TBGRACustomBitmap.ScanPutPixels(pdest: PBGRAPixel; count: integer;
-  mode: TDrawMode);
-begin
-  //do nothing
-end;
-{$hints on}
-
-procedure TBGRACustomBitmap.ScanSkipPixels(ACount: integer);
-begin
-  while ACount > 0 do
-  begin
-    ScanNextPixel;
-    dec(ACount);
-  end;
-end;
-
-function TBGRACustomBitmap.IsScanPutPixelsDefined: boolean;
-begin
-  result := False;
 end;
 
 function TBGRACustomBitmap.ProvidesScanline(ARect: TRect): boolean;

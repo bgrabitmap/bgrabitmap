@@ -77,7 +77,7 @@ type
 
   { TCustomUniversalBitmap }
 
-  TCustomUniversalBitmap = class(TFPCustomImage)
+  TCustomUniversalBitmap = class(TFPCustomImage, IBGRAScanner)
   private
     procedure PathStrokeAliasedCallback(const APoints: array of TPointF;
       AClosed: boolean; AData: Pointer);
@@ -95,9 +95,16 @@ type
     FRowSize: PtrInt;
     FDataByte: PByte;
     FLineOrder: TRawImageLineOrder;
+
+    //Scan
+    FScanWidth, FScanHeight: integer;    //possibility to reduce the zone being scanned
+    FScanPtr : PByte;                    //current scan address
+    FScanCurX,FScanCurY: integer;        //current scan coordinates
+
     FClipRect: TRect;
     FConvertToFPColor, FConvertFromFPColor,
-    FConvertFromBGRA, FConvertFromExpanded: TBridgedConversion;
+    FConvertToBGRA, FConvertFromBGRA,
+    FConvertToExpanded, FConvertFromExpanded: TBridgedConversion;
     FPenStroker: TBGRACustomPenStroker;
 
     {** Specifies if linear antialiasing must be used when drawing
@@ -523,7 +530,7 @@ type
     procedure DrawPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure DrawPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
 
-    //-------------------------------- antialias fill ---------------------------------------------
+    {==== Antialias fill ====}
     procedure FillShapeAntialias(AShape: TBGRACustomFillInfo; const ABrush: TUniversalBrush); overload; virtual;
     procedure FillShapeAntialias(AShape: TBGRACustomFillInfo; ATexture: IBGRAScanner); overload; virtual;
     procedure EraseShapeAntialias(AShape: TBGRACustomFillInfo; AAlpha: Byte); overload; virtual;
@@ -555,6 +562,35 @@ type
     procedure FillPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure ErasePath(APath: IBGRAPath; const AMatrix: TAffineMatrix; AAlpha: byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
+
+  public {==== 'IBGRAScanner'' interface ====}
+    {** Offset to apply when the image is scanned }
+    ScanOffset: TPoint;
+
+    function ScanAtInteger(X,Y: integer): TBGRAPixel; virtual;
+    function ScanAtIntegerExpanded(X, Y: integer): TExpandedPixel; virtual;
+    procedure ScanMoveTo(X,Y: Integer); virtual;
+    function ScanNextPixel: TBGRAPixel; virtual;
+    function ScanNextExpandedPixel: TExpandedPixel; virtual;
+    function ScanAt(X,Y: Single): TBGRAPixel; virtual;
+    function ScanAtExpanded(X, Y: Single): TExpandedPixel; virtual;
+    function IsScanPutPixelsDefined: boolean; virtual;
+    procedure ScanPutPixels({%H-}pdest: PBGRAPixel; {%H-}count: integer; {%H-}mode: TDrawMode); virtual;
+    procedure ScanSkipPixels(ACount: integer); virtual;
+    function ProvidesScanline({%H-}ARect: TRect): boolean; virtual;
+    function GetScanlineAt({%H-}X, {%H-}Y: integer): PBGRAPixel; virtual;
+    function GetTextureGL: IUnknown; virtual;
+    function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
+    function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
+
+  protected
+    //interface
+    function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+    function _AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+    function _Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+
+  public
+    procedure PutImage(X, Y: integer; ASource: TCustomUniversalBitmap; AMode: TDrawMode; AOpacity: byte = 255); virtual;
 
   end;
 
@@ -1175,6 +1211,244 @@ begin
   FillPath(APath,AMatrix, b, APixelCenteredCoordinates);
 end;
 
+function TCustomUniversalBitmap.ScanAtInteger(X, Y: integer): TBGRAPixel;
+begin
+  if (FScanWidth <> 0) and (FScanHeight <> 0) then
+    FConvertToBGRA.Convert(GetPixelAddress(PositiveMod(X+ScanOffset.X, FScanWidth),
+                             PositiveMod(Y+ScanOffset.Y, FScanHeight)),
+                           @result, 1, FPixelSize, sizeof(TBGRAPixel), nil)
+  else
+    result := BGRAPixelTransparent;
+end;
+
+function TCustomUniversalBitmap.ScanAtIntegerExpanded(X, Y: integer): TExpandedPixel;
+begin
+  if (FScanWidth <> 0) and (FScanHeight <> 0) then
+    FConvertToExpanded.Convert(GetPixelAddress(PositiveMod(X+ScanOffset.X, FScanWidth),
+                                 PositiveMod(Y+ScanOffset.Y, FScanHeight)),
+                               @result, 1, FPixelSize, sizeof(TExpandedPixel), nil)
+  else
+    result := ExpandedPixelTransparent;
+end;
+
+procedure TCustomUniversalBitmap.ScanMoveTo(X, Y: Integer);
+begin
+  if (FScanWidth = 0) or (FScanHeight = 0) then exit;
+  LoadFromBitmapIfNeeded;
+  FScanCurX := PositiveMod(X+ScanOffset.X, FScanWidth);
+  FScanCurY := PositiveMod(Y+ScanOffset.Y, FScanHeight);
+  FScanPtr := GetPixelAddress(FScanCurX,FScanCurY);
+end;
+
+function TCustomUniversalBitmap.ScanNextPixel: TBGRAPixel;
+begin
+  if (FScanWidth <> 0) and (FScanHeight <> 0) then
+  begin
+    FConvertToBGRA.Convert(FScanPtr, @result, 1, FPixelSize, sizeof(TBGRAPixel), nil);
+    inc(FScanCurX);
+    inc(FScanPtr, FPixelSize);
+    if FScanCurX = FScanWidth then //cycle
+    begin
+      FScanCurX := 0;
+      dec(FScanPtr, FRowSize);
+    end;
+  end
+  else
+    result := BGRAPixelTransparent;
+end;
+
+function TCustomUniversalBitmap.ScanNextExpandedPixel: TExpandedPixel;
+begin
+  if (FScanWidth <> 0) and (FScanHeight <> 0) then
+  begin
+    FConvertToExpanded.Convert(FScanPtr, @result, 1, FPixelSize, sizeof(TExpandedPixel), nil);
+    inc(FScanCurX);
+    inc(FScanPtr, FPixelSize);
+    if FScanCurX = FScanWidth then //cycle
+    begin
+      FScanCurX := 0;
+      dec(FScanPtr, FRowSize);
+    end;
+  end
+  else
+    result := BGRAPixelTransparent;
+end;
+
+function TCustomUniversalBitmap.ScanAt(X, Y: Single): TBGRAPixel;
+begin
+  result := ScanAtInteger(round(X),round(Y));
+end;
+
+function TCustomUniversalBitmap.ScanAtExpanded(X, Y: Single): TExpandedPixel;
+begin
+  result := ScanAtIntegerExpanded(round(X),round(Y));
+end;
+
+function TCustomUniversalBitmap.IsScanPutPixelsDefined: boolean;
+begin
+  result := False;
+end;
+
+procedure TCustomUniversalBitmap.ScanPutPixels(pdest: PBGRAPixel;
+  count: integer; mode: TDrawMode);
+begin
+  //do nothing
+end;
+
+procedure TCustomUniversalBitmap.ScanSkipPixels(ACount: integer);
+var
+  fit: Integer;
+begin
+  if (FScanWidth <= 0) or (FScanHeight <= 0) then exit;
+  if ACount > FScanWidth then ACount := PositiveMod(ACount, FScanWidth);
+  fit := FScanWidth-FScanCurX;
+  if ACount > fit then
+  begin
+    dec(ACount, fit);
+    dec(FScanPtr, FScanCurX*PtrInt(FPixelSize));
+    FScanCurX := 0;
+  end;
+  inc(FScanCurX, ACount);
+  inc(FScanPtr, ACount*PtrInt(FPixelSize));
+end;
+
+function TCustomUniversalBitmap.ProvidesScanline(ARect: TRect): boolean;
+begin
+  result := false;
+end;
+
+function TCustomUniversalBitmap.GetScanlineAt(X, Y: integer): PBGRAPixel;
+begin
+  result := nil;
+end;
+
+function TCustomUniversalBitmap.GetTextureGL: IUnknown;
+begin
+  result := nil;
+end;
+
+function TCustomUniversalBitmap.GetImageBoundsWithin(const ARect: TRect;
+  Channel: TChannel; ANothingValue: Byte): TRect;
+var
+  idxChannel: Integer;
+  actualRect: TRect;
+  maxx, maxy, minx, miny, yb, xb, xb2: LongInt;
+  p: PByte;
+  minValueF, nothingValueF: Single;
+begin
+  case Channel of
+  cAlpha: idxChannel := Colorspace.IndexOfAlphaChannel;
+  cRed: idxChannel := Colorspace.IndexOfChannel('Red');
+  cGreen: idxChannel := Colorspace.IndexOfChannel('Red');
+  cBlue: idxChannel := Colorspace.IndexOfChannel('Red');
+  else raise exception.Create('Unexpected channel');
+  end;
+  if idxChannel = -1 then raise exception.Create('Channel not found');
+  minValueF := Colorspace.GetMinValue(idxChannel);
+  nothingValueF := (ANothingValue - minValueF)/(Colorspace.GetMaxValue(idxChannel)-minValueF);
+  actualRect := TRect.Intersect(ARect, rect(0,0,Width,Height));
+  maxx := actualRect.Left-1;
+  maxy := actualRect.Top-1;
+  minx := actualRect.Right;
+  miny := actualRect.Bottom;
+  for yb := actualRect.Top to actualRect.Bottom-1 do
+  begin
+    p := GetPixelAddress(actualRect.Left,yb);
+    for xb := actualRect.Left to actualRect.Right - 1 do
+    begin
+      if Colorspace.GetChannel(p, idxChannel) <> nothingValueF then
+      begin
+        if xb < minx then
+          minx := xb;
+        if yb < miny then
+          miny := yb;
+        if xb > maxx then
+          maxx := xb;
+        if yb > maxy then
+          maxy := yb;
+
+        inc(p, (actualRect.Right-1-xb)*FPixelSize);
+        for xb2 := actualRect.Right-1 downto xb+1 do
+        begin
+          if Colorspace.GetChannel(p, idxChannel) <> nothingValueF then
+          begin
+            if xb2 > maxx then
+              maxx := xb2;
+            break;
+          end;
+          dec(p, FPixelSize);
+        end;
+        break;
+      end;
+      Inc(p, FPixelSize);
+    end;
+  end;
+  if minx > maxx then
+  begin
+    Result.left   := 0;
+    Result.top    := 0;
+    Result.right  := 0;
+    Result.bottom := 0;
+  end
+  else
+  begin
+    Result.left   := minx;
+    Result.top    := miny;
+    Result.right  := maxx + 1;
+    Result.bottom := maxy + 1;
+  end;
+end;
+
+function TCustomUniversalBitmap.GetImageBoundsWithin(const ARect: TRect;
+  Channels: TChannels; ANothingValue: Byte): TRect;
+var
+  c: TChannel;
+  resultForChannel: TRect;
+begin
+  result := EmptyRect;
+  for c := low(TChannel) to high(TChannel) do
+  begin
+    if c in Channels then
+    begin
+      resultForChannel := GetImageBoundsWithin(ARect, c, ANothingValue);
+      if IsRectEmpty(result) then result := resultForChannel
+      else UnionRect(result, result, resultForChannel);
+    end;
+  end;
+end;
+
+{ Interface gateway }
+function TCustomUniversalBitmap.QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+begin
+  if GetInterface(iid, obj) then
+    Result := S_OK
+  else
+    Result := longint(E_NOINTERFACE);
+end;
+
+{ There is no automatic reference counting, but it is compulsory to define these functions }
+function TCustomUniversalBitmap._AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+begin
+  result := 0;
+end;
+
+function TCustomUniversalBitmap._Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
+begin
+  result := 0;
+end;
+
+procedure TCustomUniversalBitmap.PutImage(X, Y: integer;
+  ASource: TCustomUniversalBitmap; AMode: TDrawMode; AOpacity: byte);
+var
+  oldOfs: TPoint;
+begin
+  if (ASource = nil) or (AOpacity = 0) then exit;
+  oldOfs := ASource.ScanOffset;
+  ASource.ScanOffset := Point(-X,-Y);
+  FillRect(RectWithSize(X,Y,ASource.Width,ASource.Height), ASource, AMode, AOpacity + (AOpacity shl 8));
+  ASource.ScanOffset := oldOfs;
+end;
+
 procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
   const ABrush: TUniversalBrush; APenWidth: single);
 begin
@@ -1477,11 +1751,21 @@ begin
   FPixelSize := FColorspace.GetSize;
   FConvertToFPColor:= FColorspace.GetBridgedConversion(TFPColorColorspace);
   FConvertFromFPColor:= TFPColorColorspace.GetBridgedConversion(FColorspace);
+  FConvertToBGRA := FColorspace.GetBridgedConversion(TBGRAPixelColorspace);
   FConvertFromBGRA := TBGRAPixelColorspace.GetBridgedConversion(FColorspace);
+  FConvertToExpanded := FColorspace.GetBridgedConversion(TExpandedPixelColorspace);
   FConvertFromExpanded := TExpandedPixelColorspace.GetBridgedConversion(FColorspace);
   FReferenceWhite := nil;
   FWidth := 0;
   FHeight := 0;
+
+  FScanWidth := 0;
+  FScanHeight:= 0;
+  ScanOffset := Point(0,0);
+  FScanPtr := nil;
+  FScanCurX:= 0;
+  FScanCurY:= 0;
+
   FNbPixels := 0;
   FRowSize := 0;
   FDataByte := nil;
@@ -1625,12 +1909,14 @@ begin
   if (FNbPixels > 0) and (FDataByte = nil) then
     raise EOutOfMemory.Create('TUniversalBitmap: Not enough memory');
   InvalidateBitmap;
+  FScanPtr:= nil;
 end;
 
 procedure TCustomUniversalBitmap.FreeData;
 begin
   Freemem(FDataByte);
   FDataByte := nil;
+  FScanPtr:= nil;
 end;
 
 function TCustomUniversalBitmap.CheckClippedRectBounds(var x, y, x2, y2: integer): boolean;
@@ -1776,6 +2062,7 @@ procedure TCustomUniversalBitmap.CopyPropertiesTo(
 begin
   ABitmap.FillMode := FillMode;
   ABitmap.ClipRect := ClipRect;
+  ABitmap.ScanOffset := ScanOffset;
 end;
 
 function TCustomUniversalBitmap.GetPart(const ARect: TRect): TCustomUniversalBitmap;
@@ -1838,6 +2125,8 @@ begin
   inherited SetSize(AWidth, AHeight);
   FWidth    := AWidth;
   FHeight   := AHeight;
+  FScanWidth := AWidth;
+  FScanHeight:= AHeight;
   nbPixels64 := int64(AWidth) * int64(AHeight);
   if nbPixels64 > maxLongint then
   begin

@@ -65,12 +65,7 @@ type
 
   protected
     //Pixel data
-    FScanWidth, FScanHeight: integer;    //possibility to reduce the zone being scanned
     FDataModified: boolean;              //if data image has changed so TBitmap should be updated
-
-    //Scan
-    FScanPtr : PBGRAPixel;          //current scan address
-    FScanCurX,FScanCurY: integer;   //current scan coordinates
 
     //GUI bitmap object
     FBitmap:   TBitmap;
@@ -113,9 +108,6 @@ type
     procedure DiscardBitmapChange; inline;
     procedure DoLoadFromBitmap; virtual;
 
-    {Allocation routines}
-    procedure ReallocData; override;
-    procedure FreeData; override;
     function CreatePtrBitmap(AWidth,AHeight: integer; AData: PBGRAPixel): TBGRAPtrBitmap; virtual;
 
     procedure RebuildBitmap; virtual; abstract;
@@ -568,12 +560,10 @@ type
       Sinus: Boolean=False; ditherAlgo: TDitheringAlgorithm = daNearestNeighbor); override;
 
     function ScanAtInteger(X,Y: integer): TBGRAPixel; override;
-    procedure ScanMoveTo(X,Y: Integer); override;
     function ScanNextPixel: TBGRAPixel; override;
     function ScanAt(X,Y: Single): TBGRAPixel; override;
     function IsScanPutPixelsDefined: boolean; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
-    procedure ScanSkipPixels(ACount: integer); override;
 
     {Canvas drawing functions}
     procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); overload; override;
@@ -584,7 +574,7 @@ type
     {BGRA bitmap functions}
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); overload; override;
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); overload; override;
-    procedure PutImage(x, y: integer; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); overload; override;
+    procedure PutImage(X, Y: integer; ASource: TCustomUniversalBitmap; AMode: TDrawMode; AOpacity: byte = 255); overload; override;
     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255; APixelCenteredCoords: boolean = true); overload; override;
     function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true; APixelCenteredCoords: boolean = true): TRect; overload; override;
     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
@@ -1077,8 +1067,6 @@ end;
 procedure TBGRADefaultBitmap.SetSize(AWidth, AHeight: integer);
 begin
   inherited SetSize(AWidth, AHeight);
-  FScanWidth := FWidth;
-  FScanHeight:= FHeight;
   FreeBitmap;
 end;
 
@@ -1676,8 +1664,6 @@ begin
   FCanvasFP  := nil;
   FCanvasBGRA := nil;
   CanvasDrawModeFP := dmDrawWithTransparency;
-  FScanWidth := FWidth;
-  FScanHeight:= FHeight;
   FCanvasOpacity := 255;
   FAlphaCorrectionNeeded := False;
 
@@ -1689,7 +1675,6 @@ begin
 
   ResampleFilter := rfHalfCosine;
   ScanInterpolationFilter := rfLinear;
-  ScanOffset := Point(0,0);
 end;
 
 procedure TBGRADefaultBitmap.SetInternalColor(x, y: integer; const Value: TFPColor);
@@ -3398,24 +3383,18 @@ begin
     result := BGRAPixelTransparent;
 end;
 
-{ Scanning procedures for IBGRAScanner interface }
-procedure TBGRADefaultBitmap.ScanMoveTo(X, Y: Integer);
-begin
-  if (FScanWidth = 0) or (FScanHeight = 0) then exit;
-  LoadFromBitmapIfNeeded;
-  FScanCurX := PositiveMod(X+ScanOffset.X, FScanWidth);
-  FScanCurY := PositiveMod(Y+ScanOffset.Y, FScanHeight);
-  FScanPtr := ScanLine[FScanCurY];
-end;
-
 function TBGRADefaultBitmap.ScanNextPixel: TBGRAPixel;
 begin
   if (FScanWidth <> 0) and (FScanHeight <> 0) then
   begin
-    result := (FScanPtr+FScanCurX)^;
+    result := PBGRAPixel(FScanPtr)^;
     inc(FScanCurX);
+    inc(FScanPtr, sizeof(TBGRAPixel));
     if FScanCurX = FScanWidth then //cycle
+    begin
       FScanCurX := 0;
+      dec(FScanPtr, FRowSize);
+    end;
   end
   else
     result := BGRAPixelTransparent;
@@ -3493,10 +3472,15 @@ begin
       begin
         nbCopy := FScanWidth-FScanCurX;
         if count < nbCopy then nbCopy := count;
-        move((FScanPtr+FScanCurX)^,pdest^,nbCopy*sizeof(TBGRAPixel));
+        move(FScanPtr^,pdest^,nbCopy*sizeof(TBGRAPixel));
         inc(pdest,nbCopy);
         inc(FScanCurX,nbCopy);
-        if FScanCurX = FScanWidth then FScanCurX := 0;
+        inc(FScanPtr,nbCopy*sizeof(TBGRAPixel));
+        if FScanCurX = FScanWidth then
+        begin
+          FScanCurX := 0;
+          dec(FScanPtr, RowSize);
+        end;
         dec(count,nbCopy);
       end;
     dmSetExceptTransparent:
@@ -3512,21 +3496,6 @@ begin
         PDWord(pdest)^ := PDWord(pdest)^ xor DWord(ScanNextPixel);
         inc(pdest);
       end;
-  end;
-end;
-
-procedure TBGRADefaultBitmap.ScanSkipPixels(ACount: integer);
-var
-  nbCopy: Integer;
-begin
-  if (FScanWidth <= 0) or (FScanHeight <= 0) then exit;
-  while ACount > 0 do
-  begin
-    nbCopy := FScanWidth-FScanCurX;
-    if ACount < nbCopy then nbCopy := ACount;
-    inc(FScanCurX,nbCopy);
-    if FScanCurX = FScanWidth then FScanCurX := 0;
-    dec(ACount,nbCopy);
   end;
 end;
 
@@ -3632,8 +3601,8 @@ begin
   result := FCanvas2D;
 end;
 
-procedure TBGRADefaultBitmap.PutImage(x, y: integer; Source: TBGRACustomBitmap;
-  mode: TDrawMode; AOpacity: byte);
+procedure TBGRADefaultBitmap.PutImage(X, Y: integer; ASource: TCustomUniversalBitmap;
+  AMode: TDrawMode; AOpacity: byte);
 var
   yb, minxb, minyb, maxxb, maxyb, ignoreleft, copycount, sourcewidth,
   i, delta_source, delta_dest: integer;
@@ -3641,15 +3610,20 @@ var
   tempPixel: TBGRAPixel;
 
 begin
-  if (source = nil) or (AOpacity = 0) then exit;
-  sourcewidth := Source.Width;
+  if (ASource = nil) or (AOpacity = 0) then exit;
+  if not (ASource is TBGRACustomBitmap) then
+  begin
+    inherited PutImage(X,Y, ASource, AMode, AOpacity);
+    exit;
+  end;
+  sourcewidth := ASource.Width;
 
-  if not CheckPutImageBounds(x,y,sourcewidth,source.height,minxb,minyb,maxxb,maxyb,ignoreleft,FClipRect) then exit;
+  if not CheckPutImageBounds(X,Y,sourcewidth,ASource.height,minxb,minyb,maxxb,maxyb,ignoreleft,FClipRect) then exit;
 
   copycount := maxxb - minxb + 1;
 
-  psource := Source.ScanLine[minyb - y] + ignoreleft;
-  if Source.LineOrder = riloBottomToTop then
+  psource := PBGRAPixel(ASource.ScanLineByte[minyb - Y]) + ignoreleft;
+  if ASource.LineOrder = riloBottomToTop then
     delta_source := -sourcewidth
   else
     delta_source := sourcewidth;
@@ -3660,7 +3634,7 @@ begin
   else
     delta_dest := Width;
 
-  case mode of
+  case AMode of
     dmSet:
     begin
       if AOpacity <> 255 then
@@ -3715,8 +3689,8 @@ begin
         Inc(pdest, delta_dest);
       end;
       InvalidateBitmap;
-      if (Source is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(Source).XorMask) then
-        PutImage(x,y,TBGRADefaultBitmap(Source).XorMask,dmXor,AOpacity);
+      if (ASource is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(ASource).XorMask) then
+        PutImage(X,Y,TBGRADefaultBitmap(ASource).XorMask,dmXor,AOpacity);
     end;
     dmDrawWithTransparency:
     begin
@@ -3744,8 +3718,8 @@ begin
         Inc(pdest, delta_dest);
       end;
       InvalidateBitmap;
-      if (Source is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(Source).XorMask) then
-        PutImage(x,y,TBGRADefaultBitmap(Source).XorMask,dmXor,AOpacity);
+      if (ASource is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(ASource).XorMask) then
+        PutImage(X,Y,TBGRADefaultBitmap(ASource).XorMask,dmXor,AOpacity);
     end;
     dmFastBlend:
     begin
@@ -3772,8 +3746,8 @@ begin
         Inc(pdest, delta_dest);
       end;
       InvalidateBitmap;
-      if (Source is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(Source).XorMask) then
-        PutImage(x,y,TBGRADefaultBitmap(Source).XorMask,dmXor,AOpacity);
+      if (ASource is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(ASource).XorMask) then
+        PutImage(X,Y,TBGRADefaultBitmap(ASource).XorMask,dmXor,AOpacity);
     end;
     dmXor:
     begin
@@ -4578,18 +4552,6 @@ begin
 end;
 
 {-------------------------- Allocation routines -------------------------------}
-
-procedure TBGRADefaultBitmap.ReallocData;
-begin
-  inherited ReallocData;
-  FScanPtr := nil;
-end;
-
-procedure TBGRADefaultBitmap.FreeData;
-begin
-  inherited FreeData;
-  FScanPtr := nil;
-end;
 
 function TBGRADefaultBitmap.CreatePtrBitmap(AWidth, AHeight: integer;
   AData: PBGRAPixel): TBGRAPtrBitmap;
