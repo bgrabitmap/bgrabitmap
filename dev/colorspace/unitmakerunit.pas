@@ -402,25 +402,25 @@ var
     AddImp('');
   end;
 
-  function GetProcedure(pn, ls: string; ov: boolean): string;
+  function GetProcedure(AFullname, AParams: string; AOverload: boolean): string;
   begin
-    Result := 'procedure ' + pn;
-    if ls <> '' then
-      Result += '(' + ls + ')';
+    Result := 'procedure ' + AFullname;
+    if AParams <> '' then
+      Result += '(' + AParams + ')';
     Result += ';';
-    if ov then
+    if AOverload then
       Result += ' overload;';
   end;
 
-  function GetFunction(pn, ls, res: string; ov: boolean; st: boolean = False): string;
+  function GetFunction(AFullname, AParams, AResultType: string; AOverload: boolean; AStatic: boolean = False): string;
   begin
-    Result := 'function ' + pn;
-    if ls <> '' then
-      Result += '(' + ls + ')';
-    Result += ': ' + res + ';';
-    if ov then
+    Result := 'function ' + AFullname;
+    if AParams <> '' then
+      Result += '(' + AParams + ')';
+    Result += ': ' + AResultType + ';';
+    if AOverload then
       Result += 'overload;';
-    if st then
+    if AStatic then
       Result += 'static;';
   end;
 
@@ -926,6 +926,25 @@ var
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         add('public');
       end;
+
+      if Colorspace = csXYZA then
+      begin
+        h := GetProcedure(HelperName+'.ChromaticAdapt', 'const AFrom, ATo: TXYZReferenceWhite', false);
+        AddProcedureImp(h, 'if (AFrom.X = ATo.X) and (AFrom.Y = ATo.Y) and (AFrom.Z = ATo.Z) then exit;'+LineEnding+
+                           'self.X *= ATo.X/AFrom.X;'+LineEnding+
+                           'self.Y *= ATo.Y/AFrom.Y;'+LineEnding+
+                           'self.Z *= ATo.Z/AFrom.Z;');
+        Add('  ' + StringReplace(h, HelperName+'.', '', []));
+      end{ else
+      if Colorspace = csXYZAWord then
+      begin
+        h := GetProcedure(HelperName+'.ChromaticAdapt', 'const AFrom, ATo: TXYZReferenceWhite', false);
+        AddProcedureImp(h, 'if (AFrom.X = ATo.X) and (AFrom.Y = ATo.Y) and (AFrom.Z = ATo.Z) then exit;'+LineEnding+
+                           'self.X := ClampInt(Round(self.X*(ATo.X/AFrom.X)),0,65535);'+LineEnding+
+                           'self.Y := ClampInt(Round(self.Y*(ATo.Y/AFrom.Y)),0,65535);'+LineEnding+
+                           'self.Z := ClampInt(Round(self.Z*(ATo.Z/AFrom.Z)),0,65535);');
+        Add('  ' + StringReplace(h, HelperName+'.', '', []));
+      end};
 
       for cs := Low(TColorspaceEnum) to High(TColorspaceEnum) do
       begin

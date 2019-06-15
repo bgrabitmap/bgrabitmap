@@ -229,7 +229,7 @@ function GetReferenceWhiteCount: integer;
 function GetReferenceWhiteByIndex(AIndex: integer): TXYZReferenceWhite;
 
 var
-  ReferenceWhite2D65, ReferenceWhite2E: TXYZReferenceWhite;
+  ReferenceWhite2D50, ReferenceWhite2D65, ReferenceWhite2E: TXYZReferenceWhite;
 
 {$ENDIF}
 
@@ -692,17 +692,26 @@ end;
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA;
   const AReferenceWhite: TXYZReferenceWhite): TXYZA;
 begin
-  with ALinearRGBA do
+  if AReferenceWhite.Illuminant = 'D50' then
   begin
-    // Observer= 2°, Illuminant= D65
-    result.X := red * 0.4124564 + green * 0.3575761 + blue * 0.1804375;
-    result.Y := red * 0.2126729 + green * 0.7151522 + blue * 0.0721750;
-    result.Z := red * 0.0193339 + green * 0.1191920 + blue * 0.9503041;
+    with ALinearRGBA do
+    begin
+      result.X := red * 0.4360746 + green * 0.3850649 + blue * 0.1430804;
+      result.Y := red * 0.2225045 + green * 0.7168786 + blue * 0.0606169;
+      result.Z := red * 0.0139322 + green * 0.0971045 + blue * 0.7141733;
+    end;
+    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+  end else
+  begin
+    with ALinearRGBA do
+    begin
+      result.X := red * 0.4124564 + green * 0.3575761 + blue * 0.1804375;
+      result.Y := red * 0.2126729 + green * 0.7151522 + blue * 0.0721750;
+      result.Z := red * 0.0193339 + green * 0.1191920 + blue * 0.9503041;
+    end;
+    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
   end;
   Result.alpha := ALinearRGBA.alpha;
-  result.X *= AReferenceWhite.X / ReferenceWhite2D65.X;
-  result.Y *= AReferenceWhite.Y / ReferenceWhite2D65.Y;
-  result.Z *= AReferenceWhite.Z / ReferenceWhite2D65.Z;
 end;
 
 function XYZAToLinearRGBA(const AXYZA: TXYZA): TLinearRGBA;
@@ -713,17 +722,28 @@ end;
 function XYZAToLinearRGBA(const AXYZA: TXYZA;
   const AReferenceWhite: TXYZReferenceWhite): TLinearRGBA;
 var
-  minVal, lightVal, maxVal,
-  adX,adY,adZ: Single;
+  minVal, lightVal, maxVal: single;
+  ad: TXYZA;
 begin
-  with AXYZA do
+  ad := AXYZA;
+  if AReferenceWhite.Illuminant = 'D50' then
   begin
-    adX := X*ReferenceWhite2D65.X/AReferenceWhite.X;
-    adY := Y*ReferenceWhite2D65.Y/AReferenceWhite.Y;
-    adZ := Z*ReferenceWhite2D65.Z/AReferenceWhite.Z;
-    result.red := adX * 3.2404542 + adY * (-1.5371385) + adZ * (-0.4985314);
-    result.green := adX * (-0.9692660) + adY * 1.8760108 + adZ * 0.0415560;
-    result.blue := adX * 0.0556434 + adY * (-0.2040259) + adZ * 1.0572252;
+    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    with ad do
+    begin
+      result.red := X * 3.1338561 + Y * (-1.6168667) + Z * (-0.4906146);
+      result.green := X * (-0.9787684) + Y * 1.9161415 + Z * 0.0334540;
+      result.blue := X * 0.0719453 + Y * (-0.2289914) + Z * 1.4052427;
+    end;
+  end else
+  begin
+    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+    with ad do
+    begin
+      result.red := X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314);
+      result.green := X * (-0.9692660) + Y * 1.8760108 + Z * 0.0415560;
+      result.blue := X * 0.0556434 + Y * (-0.2040259) + Z * 1.0572252;
+    end;
   end;
   if ( (XYZToRGBOverflowMin = xroClipToTarget) and ((result.red < 0) or
        (result.green < 0) or (result.blue < 0)) ) or
@@ -1028,13 +1048,20 @@ begin
   R := GammaExpansionTab[ASource.red]/65535;
   G := GammaExpansionTab[ASource.green]/65535;
   B := GammaExpansionTab[ASource.blue]/65535;
-  result.X := R*0.57667 + G*0.18556 + B*0.18823;
-  result.Y := R*0.29735 + G*0.62736 + B*0.07529;
-  result.Z := R*0.02703 + G*0.07069 + B*0.99133;
+  if AReferenceWhite.Illuminant = 'D50' then
+  begin
+    result.X := R*0.6097559 + G*0.2052401 + B*0.1492240;
+    result.Y := R*0.3111242 + G*0.6256560 + B*0.0632197;
+    result.Z := R*0.0194811 + G*0.0608902 + B*0.7448387;
+    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+  end else
+  begin
+    result.X := R*0.5767309 + G*0.1855540 + B*0.1881852;
+    result.Y := R*0.2973769 + G*0.6273491 + B*0.0752741;
+    result.Z := R*0.0270343 + G*0.0706872 + B*0.9911085;
+    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+  end;
   result.alpha := ASource.alpha/255;
-  result.X *= AReferenceWhite.X/ReferenceWhite2D65.X;
-  result.Y *= AReferenceWhite.Y/ReferenceWhite2D65.Y;
-  result.Z *= AReferenceWhite.Z/ReferenceWhite2D65.Z;
 end;
 
 function AdobeRGBAToXYZA(const ASource: TAdobeRGBA): TXYZA;
@@ -1044,15 +1071,27 @@ end;
 
 function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA;
 var R,G,B, adX, adY, adZ: single;
+  ad: TXYZA;
 begin
-  with AXYZA do
+  ad := AXYZA;
+  if AReferenceWhite.Illuminant = 'D50' then
   begin
-    adX := X*ReferenceWhite2D65.X/AReferenceWhite.X;
-    adY := Y*ReferenceWhite2D65.Y/AReferenceWhite.Y;
-    adZ := Z*ReferenceWhite2D65.Z/AReferenceWhite.Z;
-    R := Clamp(2.04159*adX - 0.56501*adY - 0.34473*adZ,0,1);
-    G := Clamp(-0.96924*adX + 1.87597*adY + 0.04156*adZ,0,1);
-    B := Clamp(0.01344*adX - 0.11836*adY + 1.01518*adZ,0,1);
+    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    with ad do
+    begin
+      R := Clamp(1.9624274*X - 0.6105343*Y - 0.3413404*Z,0,1);
+      G := Clamp(-0.9787684*X + 1.9161415*Y + 0.0334540*Z,0,1);
+      B := Clamp(0.0286869*X - 0.1406752*Y + 1.3487655*Z,0,1);
+    end;
+  end else
+  begin
+    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+    with ad do
+    begin
+      R := Clamp(2.0413690*X - 0.5649464*Y - 0.3446944*Z,0,1);
+      G := Clamp(-0.9692660*X + 1.8760108*Y + 0.0415560*Z,0,1);
+      B := Clamp(0.0134474*X - 0.1183897*Y + 1.0154096*Z,0,1);
+    end;
   end;
   result.red := GammaCompressionTab[round(R*65535)];
   result.green := GammaCompressionTab[round(G*65535)];
@@ -1183,9 +1222,10 @@ end;
 {$UNDEF INCLUDE_INITIALIZATION} 
 
   PrepareReferenceWhiteArray;
+  ReferenceWhite2D50 := GetReferenceWhite(2, 'D50');
   ReferenceWhite2D65 := GetReferenceWhite(2, 'D65');
   ReferenceWhite2E := GetReferenceWhite(2, 'E');
-  SetReferenceWhite(ReferenceWhite2D65);
+  SetReferenceWhite(ReferenceWhite2D50);
 
   {$DEFINE INCLUDE_INITIALIZATION}
   {$I generatedcolorspace.inc}

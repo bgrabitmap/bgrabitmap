@@ -773,6 +773,7 @@ type
 
   TXYZAHelper = record helper for TXYZA
     class function Colorspace: TColorspaceAny; static;
+    procedure ChromaticAdapt(const AFrom, ATo: TXYZReferenceWhite);
     function ToColor: TColor;overload;
     function ToColor(const AReferenceWhite: TXYZReferenceWhite): TColor;overload;
     function ToBGRAPixel: TBGRAPixel;overload;
@@ -4456,6 +4457,12 @@ begin Self := ExpandedToGSBA(LChAToExpandedPixel(AValue)) end;
 
 class function TXYZAHelper.Colorspace: TColorspaceAny; static;
 begin result := TXYZAColorspace end;
+
+procedure TXYZAHelper.ChromaticAdapt(const AFrom, ATo: TXYZReferenceWhite);
+begin if (AFrom.X = ATo.X) and (AFrom.Y = ATo.Y) and (AFrom.Z = ATo.Z) then exit;
+self.X *= ATo.X/AFrom.X;
+self.Y *= ATo.Y/AFrom.Y;
+self.Z *= ATo.Z/AFrom.Z end;
 
 function TXYZAHelper.ToColor: TColor;overload;
 begin Result := ExpandedPixelToColor(XYZAToExpandedPixel(Self)) end;
