@@ -212,6 +212,8 @@ type
     {** Stores an empty image (of size zero) }
     class procedure SerializeEmpty(AStream: TStream); static;
 
+    {==== Clipping ====}
+
     {** Stop clipping (clipping rectangle becomes the whole image) }
     procedure NoClip; virtual;
     {** Checks if the specified point is in the clipping rectangle ''ClipRect'' }
@@ -219,6 +221,8 @@ type
     {** Check if the bounds are within the clipping rectangle and adjust the coordinates to fit
         (similar to IntersectRect but may flip the coordinates) }
     function CheckClippedRectBounds(var x,y,x2,y2: integer): boolean;
+
+    {==== Basic drawing functions ====}
 
     {** Fill the whole image regardless of clipping rect }
     procedure Fill(const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
