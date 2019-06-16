@@ -515,9 +515,9 @@ type
     {** Draws an ellipse without antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
     procedure Ellipse(x, y, rx, ry: single; const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word = 65535); overload; virtual;
-    procedure Ellipse(x, y, rx, ry: single; ATexture: IBGRAScanner; AMode: TDrawMode; AWidth: single; AAlpha: Word = 65535); overload; virtual;
+    procedure Ellipse(x, y, rx, ry: single; ATexture: IBGRAScanner; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     procedure Ellipse(const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word = 65535); overload; virtual;
-    procedure Ellipse(const AOrigin, AXAxis, AYAxis: TPointF; ATexture: IBGRAScanner; AMode: TDrawMode; AWidth: single; AAlpha: Word = 65535); overload; virtual;
+    procedure Ellipse(const AOrigin, AXAxis, AYAxis: TPointF; ATexture: IBGRAScanner; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     {** Draws an ellipse with antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
     procedure EllipseAntialias(x, y, rx, ry: single; const ABrush: TUniversalBrush; AWidth: single); overload; virtual;
@@ -1634,7 +1634,7 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.Ellipse(x, y, rx, ry: single;
-  ATexture: IBGRAScanner; AMode: TDrawMode; AWidth: single; AAlpha: Word);
+  ATexture: IBGRAScanner; AWidth: single; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
@@ -1650,7 +1650,7 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.Ellipse(const AOrigin, AXAxis, AYAxis: TPointF;
-  ATexture: IBGRAScanner; AMode: TDrawMode; AWidth: single; AAlpha: Word);
+  ATexture: IBGRAScanner; AWidth: single; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin

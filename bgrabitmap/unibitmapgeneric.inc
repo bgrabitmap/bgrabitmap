@@ -119,8 +119,8 @@ type
 
     {** Draws an ellipse without antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
-    procedure Ellipse(x, y, rx, ry: single; const AColor: TPixel; AMode: TDrawMode; AWidth: single; AAlpha: Word = 65535); overload; virtual;
-    procedure Ellipse(AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel; AMode: TDrawMode; AWidth: single; AAlpha: Word = 65535); overload; virtual;
+    procedure Ellipse(x, y, rx, ry: single; const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
+    procedure Ellipse(AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     {** Draws an ellipse with antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
     procedure EllipseAntialias(x, y, rx, ry: single; const AColor: TPixel; AWidth: single); overload; virtual;
@@ -982,7 +982,7 @@ begin
 end;
 
 procedure TGenericUniversalBitmap.Ellipse(x, y, rx, ry: single;
-  const AColor: TPixel; AMode: TDrawMode; AWidth: single; AAlpha: Word);
+  const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
@@ -991,7 +991,7 @@ begin
 end;
 
 procedure TGenericUniversalBitmap.Ellipse(AOrigin, AXAxis, AYAxis: TPointF;
-  const AColor: TPixel; AMode: TDrawMode; AWidth: single; AAlpha: Word);
+  const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
