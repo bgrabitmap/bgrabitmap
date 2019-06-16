@@ -41,6 +41,8 @@ type
     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload;
     function ProvidesScanline(ARect: TRect): boolean;
     function GetScanlineAt(X,Y: integer): PBGRAPixel;
+    function GetScanCustomColorspace: TColorspaceAny;
+    procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer);
   end;
 
   {** A type of function of a scanner that returns the content at floating point coordinates }
@@ -56,6 +58,7 @@ type
   private
     FCurX,FCurY: integer;
     FOwnCur: boolean;
+    FChunk: packed array[0..3] of TExpandedPixel;
   public
     function ScanAtInteger(X,Y: integer): TBGRAPixel; virtual;
     function ScanAtIntegerExpanded(X,Y: integer): TExpandedPixel; virtual;
@@ -72,6 +75,8 @@ type
     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
     function ProvidesScanline({%H-}ARect: TRect): boolean; virtual;
     function GetScanlineAt({%H-}X,{%H-}Y: integer): PBGRAPixel; virtual;
+    function GetScanCustomColorspace: TColorspaceAny; virtual;
+    procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer); virtual;
   protected
     function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
     function _AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
@@ -941,6 +946,27 @@ end;
 function TBGRACustomScanner.GetScanlineAt(X, Y: integer): PBGRAPixel;
 begin
   result := nil;
+end;
+
+function TBGRACustomScanner.GetScanCustomColorspace: TColorspaceAny;
+begin
+  result := TExpandedPixelColorspace;
+end;
+
+procedure TBGRACustomScanner.ScanNextCustomChunk(var ACount: integer; out
+  APixels: Pointer);
+var
+  i: Integer;
+  p: PExpandedPixel;
+begin
+  if ACount > length(FChunk) then ACount := length(FChunk);
+  p := @FChunk[low(FChunk)];
+  APixels := p;
+  for i := ACount-1 downto 0 do
+  begin
+    p^ := ScanNextExpandedPixel;
+    inc(p);
+  end;
 end;
 
 { Interface gateway }

@@ -566,6 +566,7 @@ type
   protected {==== 'IBGRAScanner'' interface ====}
     function ProvidesScanline({%H-}ARect: TRect): boolean; virtual;
     function GetScanlineAt({%H-}X, {%H-}Y: integer): PBGRAPixel; virtual;
+    function GetTextureGL: IUnknown; virtual;
   public
     {** Offset to apply when the image is scanned }
     ScanOffset: TPoint;
@@ -580,9 +581,10 @@ type
     function IsScanPutPixelsDefined: boolean; virtual;
     procedure ScanPutPixels({%H-}pdest: PBGRAPixel; {%H-}count: integer; {%H-}mode: TDrawMode); virtual;
     procedure ScanSkipPixels(ACount: integer); virtual;
-    function GetTextureGL: IUnknown; virtual;
     function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
+    function GetScanCustomColorspace: TColorspaceAny; virtual;
+    procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer); virtual;
 
   protected
     //interface
@@ -1301,9 +1303,9 @@ var
   fit: Integer;
 begin
   if (FScanWidth <= 0) or (FScanHeight <= 0) then exit;
-  if ACount > FScanWidth then ACount := PositiveMod(ACount, FScanWidth);
+  if ACount >= FScanWidth then ACount := PositiveMod(ACount, FScanWidth);
   fit := FScanWidth-FScanCurX;
-  if ACount > fit then
+  if ACount >= fit then
   begin
     dec(ACount, fit);
     dec(FScanPtr, FScanCurX*PtrInt(FPixelSize));
@@ -1415,6 +1417,30 @@ begin
       if IsRectEmpty(result) then result := resultForChannel
       else UnionRect(result, result, resultForChannel);
     end;
+  end;
+end;
+
+function TCustomUniversalBitmap.GetScanCustomColorspace: TColorspaceAny;
+begin
+  result := Colorspace;
+end;
+
+procedure TCustomUniversalBitmap.ScanNextCustomChunk(var ACount: integer; out
+  APixels: Pointer);
+var
+  quantity: Integer;
+begin
+  APixels := FScanPtr;
+  quantity := FScanWidth-FScanCurX;
+  if ACount <= quantity then
+    quantity := ACount
+    else ACount := quantity;
+  Inc(FScanPtr, quantity*PtrInt(FPixelSize));
+  inc(FScanCurX, quantity);
+  if FScanCurX = FWidth then
+  begin
+    FScanCurX := 0;
+    Dec(FScanPtr, RowSize);
   end;
 end;
 

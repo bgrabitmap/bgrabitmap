@@ -79,87 +79,104 @@ begin
   inc(PXYZA(AContextData^.Dest), ACount);
 end;
 
-procedure XYZASolidBrushSetPixels(AFixedData: Pointer;
-    AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+procedure XYZAChunkSetPixels(
+    ASource: PXYZA; ADest: PXYZA;
+    AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
 const oneOver65535 = 1/65535;
 var
-  pSrc,pDest: PXYZA;
   alphaOver, finalAlpha, finalAlphaInv, residualAlpha: single;
 begin
-  if AAlpha=0 then
-  begin
-    inc(PXYZA(AContextData^.Dest), ACount);
-    exit;
-  end;
-  pDest := PXYZA(AContextData^.Dest);
+  if AAlpha=0 then exit;
   if AAlpha=65535 then
   begin
     while ACount > 0 do
     begin
-      pDest^ := PXYZA(AFixedData)^;
-      inc(pDest);
+      ADest^ := ASource^;
+      inc(ADest);
       dec(ACount);
+      inc(PByte(ASource), ASourceStride);
     end;
   end else
   begin
-    pSrc := PXYZA(AFixedData);
     alphaOver := AAlpha*single(oneOver65535);
     while ACount > 0 do
     begin
-      residualAlpha := pDest^.alpha*(1-alphaOver);
-      finalAlpha := residualAlpha + pSrc^.alpha*alphaOver;
-      if finalAlpha <= 0 then pDest^ := XYZATransparent else
+      residualAlpha := ADest^.alpha*(1-alphaOver);
+      finalAlpha := residualAlpha + ASource^.alpha*alphaOver;
+      if finalAlpha <= 0 then ADest^ := XYZATransparent else
       begin
-        pDest^.alpha:= finalAlpha;
+        ADest^.alpha:= finalAlpha;
         finalAlphaInv := 1/finalAlpha;
-        pDest^.X := (pDest^.X*residualAlpha +
-                     pSrc^.X*(finalAlpha-residualAlpha) ) * finalAlphaInv;
-        pDest^.Y := (pDest^.Y*residualAlpha +
-                     pSrc^.Y*(finalAlpha-residualAlpha) ) * finalAlphaInv;
-        pDest^.Z := (pDest^.Z*residualAlpha +
-                     pSrc^.Z*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+        ADest^.X := (ADest^.X*residualAlpha +
+                     ASource^.X*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+        ADest^.Y := (ADest^.Y*residualAlpha +
+                     ASource^.Y*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+        ADest^.Z := (ADest^.Z*residualAlpha +
+                     ASource^.Z*(finalAlpha-residualAlpha) ) * finalAlphaInv;
       end;
-      inc(pDest);
+      inc(ADest);
       dec(ACount);
+      inc(PByte(ASource), ASourceStride);
     end;
   end;
-  PXYZA(AContextData^.Dest) := pDest;
+end;
+
+procedure XYZASolidBrushSetPixels(AFixedData: Pointer;
+    AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PXYZA;
+begin
+  pDest := PXYZA(AContextData^.Dest);
+  XYZAChunkSetPixels( PXYZA(AFixedData), pDest, AAlpha, ACount, 0);
+  inc(pDest, ACount);
+  AContextData^.Dest := pDest;
+end;
+
+procedure XYZAChunkDrawPixels(
+    ASource: PXYZA; ADest: PXYZA;
+    AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
+const oneOver65535 = 1/65535;
+var
+  alphaOver, srcAlphaOver, finalAlpha, finalAlphaInv, residualAlpha: single;
+begin
+  if AAlpha=0 then exit;
+  alphaOver := AAlpha*single(oneOver65535);
+  while ACount > 0 do
+  begin
+    srcAlphaOver := ASource^.alpha*alphaOver;
+    if srcAlphaOver >= 1 then
+      ADest^ := ASource^
+    else
+    begin
+      residualAlpha := ADest^.alpha*(1-srcAlphaOver);
+      finalAlpha := residualAlpha + srcAlphaOver;
+      if finalAlpha <= 0 then ADest^ := XYZATransparent else
+      begin
+        ADest^.alpha:= finalAlpha;
+        finalAlphaInv := 1/finalAlpha;
+        ADest^.X := (ADest^.X*residualAlpha +
+                     ASource^.X*srcAlphaOver ) * finalAlphaInv;
+        ADest^.Y := (ADest^.Y*residualAlpha +
+                     ASource^.Y*srcAlphaOver ) * finalAlphaInv;
+        ADest^.Z := (ADest^.Z*residualAlpha +
+                     ASource^.Z*srcAlphaOver ) * finalAlphaInv;
+      end;
+    end;
+    inc(ADest);
+    dec(ACount);
+    inc(PByte(ASource), ASourceStride);
+  end;
 end;
 
 procedure XYZASolidBrushDrawPixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
-const oneOver65535 = 1/65535;
 var
-  pSrc,pDest: PXYZA;
-  alphaOver, finalAlpha, finalAlphaInv, residualAlpha: single;
+  pDest: PXYZA;
 begin
-  if AAlpha=0 then
-  begin
-    inc(PXYZA(AContextData^.Dest), ACount);
-    exit;
-  end;
-  pSrc := PXYZA(AFixedData);
   pDest := PXYZA(AContextData^.Dest);
-  alphaOver := pSrc^.alpha*AAlpha*single(oneOver65535);
-  while ACount > 0 do
-  begin
-    residualAlpha := pDest^.alpha*(1-alphaOver);
-    finalAlpha := residualAlpha + alphaOver;
-    if finalAlpha <= 0 then pDest^ := XYZATransparent else
-    begin
-      pDest^.alpha:= finalAlpha;
-      finalAlphaInv := 1/finalAlpha;
-      pDest^.X := (pDest^.X*residualAlpha +
-                   pSrc^.X*alphaOver ) * finalAlphaInv;
-      pDest^.Y := (pDest^.Y*residualAlpha +
-                   pSrc^.Y*alphaOver ) * finalAlphaInv;
-      pDest^.Z := (pDest^.Z*residualAlpha +
-                   pSrc^.Z*alphaOver ) * finalAlphaInv;
-    end;
-    inc(pDest);
-    dec(ACount);
-  end;
-  PXYZA(AContextData^.Dest) := pDest;
+  XYZAChunkDrawPixels( PXYZA(AFixedData), pDest, AAlpha, ACount, 0);
+  inc(pDest, ACount);
+  AContextData^.Dest := pDest;
 end;
 
 type
@@ -167,6 +184,7 @@ type
   TXYZAScannerBrushFixedData = record
     Scanner: Pointer; //avoid ref count by using pointer type
     OffsetX, OffsetY: integer;
+    Conversion: TBridgedConversion;
   end;
 
 procedure XYZAScannerBrushInitContext(AFixedData: Pointer;
@@ -177,10 +195,13 @@ begin
                                      AContextData^.Ofs.Y + OffsetY);
 end;
 
-procedure XYZAScannerBrushSetPixels(AFixedData: Pointer;
+procedure XYZAScannerConvertBrushSetPixels(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TXYZA;
+  psrc: Pointer;
+  pDest: PXYZA;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TXYZA;
 begin
   with PXYZAScannerBrushFixedData(AFixedData)^ do
   begin
@@ -190,20 +211,101 @@ begin
       IBGRAScanner(Scanner).ScanSkipPixels(ACount);
       exit;
     end;
+    pDest := PXYZA(AContextData^.Dest);
+    pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
     while ACount > 0 do
     begin
-      src := IBGRAScanner(Scanner).ScanNextExpandedPixel.ToXYZA;
-      XYZASolidBrushSetPixels(@src, AContextData, AAlpha, 1);
+      if ACount > length(buf) then qty := length(buf) else qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TXYZA), nil);
+      XYZAChunkSetPixels(@buf, pDest, AAlpha, qty, sizeof(TXYZA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
+procedure XYZAScannerChunkBrushSetPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pDest: PXYZA;
+  qty: Integer;
+begin
+  with PXYZAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PXYZA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PXYZA(AContextData^.Dest);
+    while ACount > 0 do
+    begin
+      qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      XYZAChunkSetPixels(PXYZA(psrc), pDest, AAlpha, qty, sizeof(TXYZA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
+procedure XYZAChunkSetPixelsExceptTransparent(
+    ASource: PXYZA; ADest: PXYZA;
+    AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
+const oneOver65535 = 1/65535;
+var
+  alphaOver, finalAlpha, finalAlphaInv, residualAlpha: single;
+begin
+  if AAlpha=0 then exit;
+  if AAlpha=65535 then
+  begin
+    while ACount > 0 do
+    begin
+      if ASource^.alpha >= 1 then
+        ADest^ := ASource^;
+      inc(ADest);
       dec(ACount);
+      inc(PByte(ASource), ASourceStride);
+    end;
+  end else
+  begin
+    alphaOver := AAlpha*single(oneOver65535);
+    while ACount > 0 do
+    begin
+      if ASource^.alpha >= 1 then
+      begin
+        residualAlpha := ADest^.alpha*(1-alphaOver);
+        finalAlpha := residualAlpha + ASource^.alpha*alphaOver;
+        if finalAlpha <= 0 then ADest^ := XYZATransparent else
+        begin
+          ADest^.alpha:= finalAlpha;
+          finalAlphaInv := 1/finalAlpha;
+          ADest^.X := (ADest^.X*residualAlpha +
+                       ASource^.X*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+          ADest^.Y := (ADest^.Y*residualAlpha +
+                       ASource^.Y*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+          ADest^.Z := (ADest^.Z*residualAlpha +
+                       ASource^.Z*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+        end;
+      end;
+      inc(ADest);
+      dec(ACount);
+      inc(PByte(ASource), ASourceStride);
     end;
   end;
 end;
 
-procedure XYZAScannerBrushSetPixelsExceptTransparent(AFixedData: Pointer;
+procedure XYZAScannerChunkBrushSetPixelsExceptTransparent(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TXYZA;
-  expPix: TExpandedPixel;
+  pDest: PXYZA;
+  qty: Integer;
+  psrc: Pointer;
 begin
   with PXYZAScannerBrushFixedData(AFixedData)^ do
   begin
@@ -213,25 +315,26 @@ begin
       IBGRAScanner(Scanner).ScanSkipPixels(ACount);
       exit;
     end;
+    pDest := PXYZA(AContextData^.Dest);
     while ACount > 0 do
     begin
-      expPix := IBGRAScanner(Scanner).ScanNextExpandedPixel;
-      if expPix.alpha = 65535 then
-      begin
-        src := expPix.ToXYZA;
-        XYZASolidBrushSetPixels(@src, AContextData, AAlpha, 1);
-      end else
-        inc(PXYZA(AContextData^.Dest));
-      dec(ACount);
+      qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      XYZAChunkSetPixelsExceptTransparent(PXYZA(psrc), pDest, AAlpha, qty, sizeof(TXYZA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
     end;
+    AContextData^.Dest := pDest;
   end;
 end;
 
-procedure XYZAScannerBrushDrawPixels(AFixedData: Pointer;
+procedure XYZAScannerConvertBrushSetPixelsExceptTransparent(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TXYZA;
-  expPix: TExpandedPixel;
+  psrc: Pointer;
+  pDest: PXYZA;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TXYZA;
 begin
   with PXYZAScannerBrushFixedData(AFixedData)^ do
   begin
@@ -241,21 +344,77 @@ begin
       IBGRAScanner(Scanner).ScanSkipPixels(ACount);
       exit;
     end;
+    pDest := PXYZA(AContextData^.Dest);
+    pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
     while ACount > 0 do
     begin
-      expPix := IBGRAScanner(Scanner).ScanNextExpandedPixel;
-      if expPix.alpha = 65535 then
-      begin
-        src := expPix.ToXYZA;
-        XYZASolidBrushSetPixels(@src, AContextData, AAlpha, 1);
-      end else if expPix.alpha > 0 then
-      begin
-        src := expPix.ToXYZA;
-        XYZASolidBrushDrawPixels(@src, AContextData, AAlpha, 1);
-      end else
-        inc(PXYZA(AContextData^.Dest));
-      dec(ACount);
+      if ACount > length(buf) then qty := length(buf) else qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TXYZA), nil);
+      XYZAChunkSetPixelsExceptTransparent(@buf, pDest, AAlpha, qty, sizeof(TXYZA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
     end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
+procedure XYZAScannerChunkBrushDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  qty: Integer;
+  pDest: PXYZA;
+begin
+  with PXYZAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PXYZA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PXYZA(AContextData^.Dest);
+    while ACount > 0 do
+    begin
+      qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      XYZAChunkDrawPixels(PXYZA(psrc), pDest, AAlpha, qty, sizeof(TXYZA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
+procedure XYZAScannerConvertBrushDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pDest: PXYZA;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TXYZA;
+begin
+  with PXYZAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PXYZA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PXYZA(AContextData^.Dest);
+    pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
+    while ACount > 0 do
+    begin
+      if ACount > length(buf) then qty := length(buf) else qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TXYZA), nil);
+      XYZAChunkDrawPixels(@buf, pDest, AAlpha, qty, sizeof(TXYZA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
   end;
 end;
 
@@ -366,6 +525,8 @@ end;
 class procedure TXYZABitmap.ScannerBrush(out ABrush: TUniversalBrush;
   AScanner: IBGRAScanner; ADrawMode: TDrawMode;
   AOffsetX: integer; AOffsetY: integer);
+var
+  sourceSpace: TColorspaceAny;
 begin
   ABrush.Colorspace:= TXYZAColorspace;
   with PXYZAScannerBrushFixedData(@ABrush.FixedData)^ do
@@ -375,12 +536,27 @@ begin
     OffsetY := AOffsetY;
   end;
   ABrush.InternalInitContext:= @XYZAScannerBrushInitContext;
-  case ADrawMode of
-    dmSet: ABrush.InternalPutNextPixels:= @XYZAScannerBrushSetPixels;
-    dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @XYZAScannerBrushSetPixelsExceptTransparent;
-    dmDrawWithTransparency,dmLinearBlend:
-      ABrush.InternalPutNextPixels:= @XYZAScannerBrushDrawPixels;
-    dmXor: raise exception.Create('Xor mode not available with floating point values');
+  sourceSpace := AScanner.GetScanCustomColorspace;
+  if sourceSpace = TXYZAColorspace then
+  begin
+    case ADrawMode of
+      dmSet: ABrush.InternalPutNextPixels:= @XYZAScannerChunkBrushSetPixels;
+      dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @XYZAScannerChunkBrushSetPixelsExceptTransparent;
+      dmDrawWithTransparency,dmLinearBlend:
+        ABrush.InternalPutNextPixels:= @XYZAScannerChunkBrushDrawPixels;
+      dmXor: raise exception.Create('Xor mode not available with floating point values');
+    end;
+  end else
+  begin
+    with PXYZAScannerBrushFixedData(@ABrush.FixedData)^ do
+      Conversion := sourceSpace.GetBridgedConversion(TXYZAColorspace);
+    case ADrawMode of
+      dmSet: ABrush.InternalPutNextPixels:= @XYZAScannerConvertBrushSetPixels;
+      dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @XYZAScannerConvertBrushSetPixelsExceptTransparent;
+      dmDrawWithTransparency,dmLinearBlend:
+        ABrush.InternalPutNextPixels:= @XYZAScannerConvertBrushDrawPixels;
+      dmXor: raise exception.Create('Xor mode not available with floating point values');
+    end;
   end;
 end;
 

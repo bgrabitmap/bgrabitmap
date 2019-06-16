@@ -574,7 +574,7 @@ type
     {BGRA bitmap functions}
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); overload; override;
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency); overload; override;
-    procedure PutImage(X, Y: integer; ASource: TCustomUniversalBitmap; AMode: TDrawMode; AOpacity: byte = 255); overload; override;
+    procedure PutImage(X, Y: integer; ASource: TCustomUniversalBitmap; AMode: TDrawMode; AOpacity: byte); overload; override;
     procedure PutImageAffine(AMatrix: TAffineMatrix; Source: TBGRACustomBitmap; AOutputBounds: TRect; AResampleFilter: TResampleFilter; AMode: TDrawMode; AOpacity: Byte=255; APixelCenteredCoords: boolean = true); overload; override;
     function GetImageAffineBounds(AMatrix: TAffineMatrix; ASourceBounds: TRect; AClipOutput: boolean = true; APixelCenteredCoords: boolean = true): TRect; overload; override;
     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
@@ -3603,181 +3603,11 @@ end;
 
 procedure TBGRADefaultBitmap.PutImage(X, Y: integer; ASource: TCustomUniversalBitmap;
   AMode: TDrawMode; AOpacity: byte);
-var
-  yb, minxb, minyb, maxxb, maxyb, ignoreleft, copycount, sourcewidth,
-  i, delta_source, delta_dest: integer;
-  psource, pdest: PBGRAPixel;
-  tempPixel: TBGRAPixel;
-
 begin
-  if (ASource = nil) or (AOpacity = 0) then exit;
-  if not (ASource is TBGRACustomBitmap) then
-  begin
-    inherited PutImage(X,Y, ASource, AMode, AOpacity);
-    exit;
-  end;
-  sourcewidth := ASource.Width;
-
-  if not CheckPutImageBounds(X,Y,sourcewidth,ASource.height,minxb,minyb,maxxb,maxyb,ignoreleft,FClipRect) then exit;
-
-  copycount := maxxb - minxb + 1;
-
-  psource := PBGRAPixel(ASource.ScanLineByte[minyb - Y]) + ignoreleft;
-  if ASource.LineOrder = riloBottomToTop then
-    delta_source := -sourcewidth
-  else
-    delta_source := sourcewidth;
-
-  pdest := Scanline[minyb] + minxb;
-  if FLineOrder = riloBottomToTop then
-    delta_dest := -Width
-  else
-    delta_dest := Width;
-
-  case AMode of
-    dmSet:
-    begin
-      if AOpacity <> 255 then
-      begin
-        for yb := minyb to maxyb do
-        begin
-          CopyPixelsWithOpacity(pdest, psource, AOpacity, copycount);
-          Inc(psource, delta_source);
-          Inc(pdest, delta_dest);
-        end;
-      end
-      else
-      begin
-        copycount *= sizeof(TBGRAPixel);
-        for yb := minyb to maxyb do
-        begin
-          move(psource^, pdest^, copycount);
-          Inc(psource, delta_source);
-          Inc(pdest, delta_dest);
-        end;
-      end;
-      InvalidateBitmap;
-    end;
-    dmSetExceptTransparent:
-    begin
-      Dec(delta_source, copycount);
-      Dec(delta_dest, copycount);
-      for yb := minyb to maxyb do
-      begin
-        if AOpacity <> 255 then
-        begin
-          for i := copycount - 1 downto 0 do
-          begin
-            if psource^.alpha = 255 then
-            begin
-              tempPixel := psource^;
-              tempPixel.alpha := ApplyOpacity(tempPixel.alpha,AOpacity);
-              FastBlendPixelInline(pdest,tempPixel);
-            end;
-            Inc(pdest);
-            Inc(psource);
-          end;
-        end else
-          for i := copycount - 1 downto 0 do
-          begin
-            if psource^.alpha = 255 then
-              pdest^ := psource^;
-            Inc(pdest);
-            Inc(psource);
-          end;
-        Inc(psource, delta_source);
-        Inc(pdest, delta_dest);
-      end;
-      InvalidateBitmap;
-      if (ASource is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(ASource).XorMask) then
-        PutImage(X,Y,TBGRADefaultBitmap(ASource).XorMask,dmXor,AOpacity);
-    end;
-    dmDrawWithTransparency:
-    begin
-      Dec(delta_source, copycount);
-      Dec(delta_dest, copycount);
-      for yb := minyb to maxyb do
-      begin
-        if AOpacity <> 255 then
-        begin
-          for i := copycount - 1 downto 0 do
-          begin
-            DrawPixelInlineWithAlphaCheck(pdest, psource^, AOpacity);
-            Inc(pdest);
-            Inc(psource);
-          end;
-        end
-        else
-          for i := copycount - 1 downto 0 do
-          begin
-            DrawPixelInlineWithAlphaCheck(pdest, psource^);
-            Inc(pdest);
-            Inc(psource);
-          end;
-        Inc(psource, delta_source);
-        Inc(pdest, delta_dest);
-      end;
-      InvalidateBitmap;
-      if (ASource is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(ASource).XorMask) then
-        PutImage(X,Y,TBGRADefaultBitmap(ASource).XorMask,dmXor,AOpacity);
-    end;
-    dmFastBlend:
-    begin
-      Dec(delta_source, copycount);
-      Dec(delta_dest, copycount);
-      for yb := minyb to maxyb do
-      begin
-        if AOpacity <> 255 then
-        begin
-          for i := copycount - 1 downto 0 do
-          begin
-            FastBlendPixelInline(pdest, psource^, AOpacity);
-            Inc(pdest);
-            Inc(psource);
-          end;
-        end else
-          for i := copycount - 1 downto 0 do
-          begin
-            FastBlendPixelInline(pdest, psource^);
-            Inc(pdest);
-            Inc(psource);
-          end;
-        Inc(psource, delta_source);
-        Inc(pdest, delta_dest);
-      end;
-      InvalidateBitmap;
-      if (ASource is TBGRADefaultBitmap) and Assigned(TBGRADefaultBitmap(ASource).XorMask) then
-        PutImage(X,Y,TBGRADefaultBitmap(ASource).XorMask,dmXor,AOpacity);
-    end;
-    dmXor:
-    begin
-      if AOpacity <> 255 then
-      begin
-        Dec(delta_source, copycount);
-        Dec(delta_dest, copycount);
-        for yb := minyb to maxyb do
-        begin
-          for i := copycount - 1 downto 0 do
-          begin
-            FastBlendPixelInline(pdest, TBGRAPixel(PDWord(pdest)^ xor PDword(psource)^), AOpacity);
-            Inc(pdest);
-            Inc(psource);
-          end;
-          Inc(psource, delta_source);
-          Inc(pdest, delta_dest);
-        end;
-      end else
-      begin
-        for yb := minyb to maxyb do
-        begin
-          XorPixels(pdest, psource, copycount);
-          Inc(psource, delta_source);
-          Inc(pdest, delta_dest);
-        end;
-      end;
-      InvalidateBitmap;
-    end;
-  end;
+  inherited PutImage(X,Y, ASource, AMode, AOpacity);
+  if (AMode in [dmSetExceptTransparent,dmDrawWithTransparency,dmLinearBlend]) and
+     (ASource is TBGRACustomBitmap) and Assigned(TBGRACustomBitmap(ASource).XorMask) then
+    PutImage(X,Y,TBGRACustomBitmap(ASource).XorMask,dmXor,AOpacity);
 end;
 
 procedure TBGRADefaultBitmap.BlendImage(x, y: integer; Source: TBGRACustomBitmap;

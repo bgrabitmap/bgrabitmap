@@ -44,87 +44,104 @@ begin
   inc(PLinearRGBA(AContextData^.Dest), ACount);
 end;
 
-procedure LinearRGBASolidBrushSetPixels(AFixedData: Pointer;
-    AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+procedure LinearRGBAChunkSetPixels(
+    ASource: PLinearRGBA; ADest: PLinearRGBA;
+    AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
 const oneOver65535 = 1/65535;
 var
-  pSrc,pDest: PLinearRGBA;
   alphaOver, finalAlpha, finalAlphaInv, residualAlpha: single;
 begin
-  if AAlpha=0 then
-  begin
-    inc(PLinearRGBA(AContextData^.Dest), ACount);
-    exit;
-  end;
-  pDest := PLinearRGBA(AContextData^.Dest);
+  if AAlpha=0 then exit;
   if AAlpha=65535 then
   begin
     while ACount > 0 do
     begin
-      pDest^ := PLinearRGBA(AFixedData)^;
-      inc(pDest);
+      ADest^ := ASource^;
+      inc(ADest);
       dec(ACount);
+      inc(PByte(ASource), ASourceStride);
     end;
   end else
   begin
-    pSrc := PLinearRGBA(AFixedData);
     alphaOver := AAlpha*single(oneOver65535);
     while ACount > 0 do
     begin
-      residualAlpha := pDest^.alpha*(1-alphaOver);
-      finalAlpha := residualAlpha + pSrc^.alpha*alphaOver;
-      if finalAlpha <= 0 then pDest^ := LinearRGBATransparent else
+      residualAlpha := ADest^.alpha*(1-alphaOver);
+      finalAlpha := residualAlpha + ASource^.alpha*alphaOver;
+      if finalAlpha <= 0 then ADest^ := LinearRGBATransparent else
       begin
-        pDest^.alpha:= finalAlpha;
+        ADest^.alpha:= finalAlpha;
         finalAlphaInv := 1/finalAlpha;
-        pDest^.red := (pDest^.red*residualAlpha +
-                        pSrc^.red*(finalAlpha-residualAlpha) ) * finalAlphaInv;
-        pDest^.green := (pDest^.green*residualAlpha +
-                         pSrc^.green*(finalAlpha-residualAlpha) ) * finalAlphaInv;
-        pDest^.blue := (pDest^.blue*residualAlpha +
-                        pSrc^.blue*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+        ADest^.red := (ADest^.red*residualAlpha +
+                        ASource^.red*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+        ADest^.green := (ADest^.green*residualAlpha +
+                         ASource^.green*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+        ADest^.blue := (ADest^.blue*residualAlpha +
+                        ASource^.blue*(finalAlpha-residualAlpha) ) * finalAlphaInv;
       end;
-      inc(pDest);
+      inc(ADest);
       dec(ACount);
+      inc(PByte(ASource), ASourceStride);
     end;
   end;
-  PLinearRGBA(AContextData^.Dest) := pDest;
+end;
+
+procedure LinearRGBASolidBrushSetPixels(AFixedData: Pointer;
+    AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PLinearRGBA;
+begin
+  pDest := PLinearRGBA(AContextData^.Dest);
+  LinearRGBAChunkSetPixels( PLinearRGBA(AFixedData), pDest, AAlpha, ACount, 0);
+  inc(pDest, ACount);
+  AContextData^.Dest := pDest;
+end;
+
+procedure LinearRGBAChunkDrawPixels(
+    ASource: PLinearRGBA; ADest: PLinearRGBA;
+    AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
+const oneOver65535 = 1/65535;
+var
+  alphaOver, srcAlphaOver, finalAlpha, finalAlphaInv, residualAlpha: single;
+begin
+  if AAlpha=0 then exit;
+  alphaOver := AAlpha*single(oneOver65535);
+  while ACount > 0 do
+  begin
+    srcAlphaOver := ASource^.alpha*alphaOver;
+    if srcAlphaOver >= 1 then
+      ADest^ := ASource^
+    else
+    begin
+      residualAlpha := ADest^.alpha*(1-srcAlphaOver);
+      finalAlpha := residualAlpha + srcAlphaOver;
+      if finalAlpha <= 0 then ADest^ := LinearRGBATransparent else
+      begin
+        ADest^.alpha:= finalAlpha;
+        finalAlphaInv := 1/finalAlpha;
+        ADest^.red := (ADest^.red*residualAlpha +
+                        ASource^.red*srcAlphaOver ) * finalAlphaInv;
+        ADest^.green := (ADest^.green*residualAlpha +
+                         ASource^.green*srcAlphaOver ) * finalAlphaInv;
+        ADest^.blue := (ADest^.blue*residualAlpha +
+                        ASource^.blue*srcAlphaOver ) * finalAlphaInv;
+      end;
+    end;
+    inc(ADest);
+    dec(ACount);
+    inc(PByte(ASource), ASourceStride);
+  end;
 end;
 
 procedure LinearRGBASolidBrushDrawPixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
-const oneOver65535 = 1/65535;
 var
-  pSrc,pDest: PLinearRGBA;
-  alphaOver, finalAlpha, finalAlphaInv, residualAlpha: single;
+  pDest: PLinearRGBA;
 begin
-  if AAlpha=0 then
-  begin
-    inc(PLinearRGBA(AContextData^.Dest), ACount);
-    exit;
-  end;
-  pSrc := PLinearRGBA(AFixedData);
   pDest := PLinearRGBA(AContextData^.Dest);
-  alphaOver := pSrc^.alpha*AAlpha*single(oneOver65535);
-  while ACount > 0 do
-  begin
-    residualAlpha := pDest^.alpha*(1-alphaOver);
-    finalAlpha := residualAlpha + alphaOver;
-    if finalAlpha <= 0 then pDest^ := LinearRGBATransparent else
-    begin
-      pDest^.alpha:= finalAlpha;
-      finalAlphaInv := 1/finalAlpha;
-      pDest^.red := (pDest^.red*residualAlpha +
-                      pSrc^.red*alphaOver ) * finalAlphaInv;
-      pDest^.green := (pDest^.green*residualAlpha +
-                       pSrc^.green*alphaOver ) * finalAlphaInv;
-      pDest^.blue := (pDest^.blue*residualAlpha +
-                      pSrc^.blue*alphaOver ) * finalAlphaInv;
-    end;
-    inc(pDest);
-    dec(ACount);
-  end;
-  PLinearRGBA(AContextData^.Dest) := pDest;
+  LinearRGBAChunkDrawPixels( PLinearRGBA(AFixedData), pDest, AAlpha, ACount, 0);
+  inc(pDest, ACount);
+  AContextData^.Dest := pDest;
 end;
 
 type
@@ -132,6 +149,7 @@ type
   TLinearRGBAScannerBrushFixedData = record
     Scanner: Pointer; //avoid ref count by using pointer type
     OffsetX, OffsetY: integer;
+    Conversion: TBridgedConversion;
   end;
 
 procedure LinearRGBAScannerBrushInitContext(AFixedData: Pointer;
@@ -142,10 +160,13 @@ begin
                                      AContextData^.Ofs.Y + OffsetY);
 end;
 
-procedure LinearRGBAScannerBrushSetPixels(AFixedData: Pointer;
+procedure LinearRGBAScannerConvertBrushSetPixels(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TLinearRGBA;
+  psrc: Pointer;
+  pDest: PLinearRGBA;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TLinearRGBA;
 begin
   with PLinearRGBAScannerBrushFixedData(AFixedData)^ do
   begin
@@ -155,20 +176,101 @@ begin
       IBGRAScanner(Scanner).ScanSkipPixels(ACount);
       exit;
     end;
+    pDest := PLinearRGBA(AContextData^.Dest);
+    pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
     while ACount > 0 do
     begin
-      src := IBGRAScanner(Scanner).ScanNextExpandedPixel.ToLinearRGBA;
-      LinearRGBASolidBrushSetPixels(@src, AContextData, AAlpha, 1);
+      if ACount > length(buf) then qty := length(buf) else qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TLinearRGBA), nil);
+      LinearRGBAChunkSetPixels(@buf, pDest, AAlpha, qty, sizeof(TLinearRGBA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
+procedure LinearRGBAScannerChunkBrushSetPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pDest: PLinearRGBA;
+  qty: Integer;
+begin
+  with PLinearRGBAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PLinearRGBA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PLinearRGBA(AContextData^.Dest);
+    while ACount > 0 do
+    begin
+      qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      LinearRGBAChunkSetPixels(PLinearRGBA(psrc), pDest, AAlpha, qty, sizeof(TLinearRGBA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
+procedure LinearRGBAChunkSetPixelsExceptTransparent(
+    ASource: PLinearRGBA; ADest: PLinearRGBA;
+    AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
+const oneOver65535 = 1/65535;
+var
+  alphaOver, finalAlpha, finalAlphaInv, residualAlpha: single;
+begin
+  if AAlpha=0 then exit;
+  if AAlpha=65535 then
+  begin
+    while ACount > 0 do
+    begin
+      if ASource^.alpha >= 1 then
+        ADest^ := ASource^;
+      inc(ADest);
       dec(ACount);
+      inc(PByte(ASource), ASourceStride);
+    end;
+  end else
+  begin
+    alphaOver := AAlpha*single(oneOver65535);
+    while ACount > 0 do
+    begin
+      if ASource^.alpha >= 1 then
+      begin
+        residualAlpha := ADest^.alpha*(1-alphaOver);
+        finalAlpha := residualAlpha + ASource^.alpha*alphaOver;
+        if finalAlpha <= 0 then ADest^ := LinearRGBATransparent else
+        begin
+          ADest^.alpha:= finalAlpha;
+          finalAlphaInv := 1/finalAlpha;
+          ADest^.red := (ADest^.red*residualAlpha +
+                          ASource^.red*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+          ADest^.green := (ADest^.green*residualAlpha +
+                           ASource^.green*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+          ADest^.blue := (ADest^.blue*residualAlpha +
+                          ASource^.blue*(finalAlpha-residualAlpha) ) * finalAlphaInv;
+        end;
+      end;
+      inc(ADest);
+      dec(ACount);
+      inc(PByte(ASource), ASourceStride);
     end;
   end;
 end;
 
-procedure LinearRGBAScannerBrushSetPixelsExceptTransparent(AFixedData: Pointer;
+procedure LinearRGBAScannerChunkBrushSetPixelsExceptTransparent(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TLinearRGBA;
-  expPix: TExpandedPixel;
+  pDest: PLinearRGBA;
+  qty: Integer;
+  psrc: Pointer;
 begin
   with PLinearRGBAScannerBrushFixedData(AFixedData)^ do
   begin
@@ -178,25 +280,26 @@ begin
       IBGRAScanner(Scanner).ScanSkipPixels(ACount);
       exit;
     end;
+    pDest := PLinearRGBA(AContextData^.Dest);
     while ACount > 0 do
     begin
-      expPix := IBGRAScanner(Scanner).ScanNextExpandedPixel;
-      if expPix.alpha = 65535 then
-      begin
-        src := expPix.ToLinearRGBA;
-        LinearRGBASolidBrushSetPixels(@src, AContextData, AAlpha, 1);
-      end else
-        inc(PLinearRGBA(AContextData^.Dest));
-      dec(ACount);
+      qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      LinearRGBAChunkSetPixelsExceptTransparent(PLinearRGBA(psrc), pDest, AAlpha, qty, sizeof(TLinearRGBA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
     end;
+    AContextData^.Dest := pDest;
   end;
 end;
 
-procedure LinearRGBAScannerBrushDrawPixels(AFixedData: Pointer;
+procedure LinearRGBAScannerConvertBrushSetPixelsExceptTransparent(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
-  src: TLinearRGBA;
-  expPix: TExpandedPixel;
+  psrc: Pointer;
+  pDest: PLinearRGBA;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TLinearRGBA;
 begin
   with PLinearRGBAScannerBrushFixedData(AFixedData)^ do
   begin
@@ -206,21 +309,77 @@ begin
       IBGRAScanner(Scanner).ScanSkipPixels(ACount);
       exit;
     end;
+    pDest := PLinearRGBA(AContextData^.Dest);
+    pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
     while ACount > 0 do
     begin
-      expPix := IBGRAScanner(Scanner).ScanNextExpandedPixel;
-      if expPix.alpha = 65535 then
-      begin
-        src := expPix.ToLinearRGBA;
-        LinearRGBASolidBrushSetPixels(@src, AContextData, AAlpha, 1);
-      end else if expPix.alpha > 0 then
-      begin
-        src := expPix.ToLinearRGBA;
-        LinearRGBASolidBrushDrawPixels(@src, AContextData, AAlpha, 1);
-      end else
-        inc(PLinearRGBA(AContextData^.Dest));
-      dec(ACount);
+      if ACount > length(buf) then qty := length(buf) else qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TLinearRGBA), nil);
+      LinearRGBAChunkSetPixelsExceptTransparent(@buf, pDest, AAlpha, qty, sizeof(TLinearRGBA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
     end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
+procedure LinearRGBAScannerChunkBrushDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  qty: Integer;
+  pDest: PLinearRGBA;
+begin
+  with PLinearRGBAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PLinearRGBA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PLinearRGBA(AContextData^.Dest);
+    while ACount > 0 do
+    begin
+      qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      LinearRGBAChunkDrawPixels(PLinearRGBA(psrc), pDest, AAlpha, qty, sizeof(TLinearRGBA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
+procedure LinearRGBAScannerConvertBrushDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pDest: PLinearRGBA;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TLinearRGBA;
+begin
+  with PLinearRGBAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PLinearRGBA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PLinearRGBA(AContextData^.Dest);
+    pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
+    while ACount > 0 do
+    begin
+      if ACount > length(buf) then qty := length(buf) else qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TLinearRGBA), nil);
+      LinearRGBAChunkDrawPixels(@buf, pDest, AAlpha, qty, sizeof(TLinearRGBA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
   end;
 end;
 
@@ -331,6 +490,8 @@ end;
 class procedure TLinearRGBABitmap.ScannerBrush(out ABrush: TUniversalBrush;
   AScanner: IBGRAScanner; ADrawMode: TDrawMode;
   AOffsetX: integer; AOffsetY: integer);
+var
+  sourceSpace: TColorspaceAny;
 begin
   ABrush.Colorspace:= TLinearRGBAColorspace;
   with PLinearRGBAScannerBrushFixedData(@ABrush.FixedData)^ do
@@ -340,12 +501,27 @@ begin
     OffsetY := AOffsetY;
   end;
   ABrush.InternalInitContext:= @LinearRGBAScannerBrushInitContext;
-  case ADrawMode of
-    dmSet: ABrush.InternalPutNextPixels:= @LinearRGBAScannerBrushSetPixels;
-    dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @LinearRGBAScannerBrushSetPixelsExceptTransparent;
-    dmDrawWithTransparency,dmLinearBlend:
-      ABrush.InternalPutNextPixels:= @LinearRGBAScannerBrushDrawPixels;
-    dmXor: raise exception.Create('Xor mode not available with floating point values');
+  sourceSpace := AScanner.GetScanCustomColorspace;
+  if sourceSpace = TLinearRGBAColorspace then
+  begin
+    case ADrawMode of
+      dmSet: ABrush.InternalPutNextPixels:= @LinearRGBAScannerChunkBrushSetPixels;
+      dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @LinearRGBAScannerChunkBrushSetPixelsExceptTransparent;
+      dmDrawWithTransparency,dmLinearBlend:
+        ABrush.InternalPutNextPixels:= @LinearRGBAScannerChunkBrushDrawPixels;
+      dmXor: raise exception.Create('Xor mode not available with floating point values');
+    end;
+  end else
+  begin
+    with PLinearRGBAScannerBrushFixedData(@ABrush.FixedData)^ do
+      Conversion := sourceSpace.GetBridgedConversion(TLinearRGBAColorspace);
+    case ADrawMode of
+      dmSet: ABrush.InternalPutNextPixels:= @LinearRGBAScannerConvertBrushSetPixels;
+      dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @LinearRGBAScannerConvertBrushSetPixelsExceptTransparent;
+      dmDrawWithTransparency,dmLinearBlend:
+        ABrush.InternalPutNextPixels:= @LinearRGBAScannerConvertBrushDrawPixels;
+      dmXor: raise exception.Create('Xor mode not available with floating point values');
+    end;
   end;
 end;
 
