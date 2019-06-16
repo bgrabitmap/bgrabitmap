@@ -12,6 +12,9 @@ type
   { TUniversalDrawer }
 
   TUniversalDrawer = class(TCustomUniversalDrawer)
+
+    {==== Pixelwise drawing ====}
+
     class function CheckRectBounds(var x,y,x2,y2: integer; minsize: integer): boolean;
 
     {** Draws an aliased line from (x1,y1) to (x2,y2) using Bresenham's algorithm.
@@ -45,7 +48,7 @@ type
     class procedure FillShape(ADest: TCustomUniversalBitmap; AShape: TBGRACustomFillInfo; AFillMode: TFillMode; ABrush: TUniversalBrush; AAlpha: Word = 65535); override;
     class procedure FillPoly(ADest: TCustomUniversalBitmap; const APoints: array of TPointF; AFillMode: TFillMode; ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true; AAlpha: Word = 65535); override;
 
-    // using pen
+    {==== Using pen ====}
     class function CreatePenStroker: TBGRACustomPenStroker; override;
     class function CreateArrow: TBGRACustomArrow; override;
 
@@ -58,6 +61,7 @@ type
     class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
         const ABrush: TUniversalBrush; AWidth: single); overload; override;
 
+    {==== Filling ====}
     class procedure FillRectAntialias(ADest: TCustomUniversalBitmap;
                     x, y, x2, y2: single; const ABrush: TUniversalBrush;
                     APixelCenteredCoordinates: boolean = true); override;
