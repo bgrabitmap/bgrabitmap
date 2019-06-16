@@ -602,6 +602,9 @@ type
   end;
 
   TCustomUniversalDrawer = class
+
+    {==== Pixelwise drawing ====}
+
     {** Draws an aliased line from (x1,y1) to (x2,y2) using Bresenham's algorithm.
         ''DrawLastPixel'' specifies if (x2,y2) must be drawn. }
     class procedure DrawLine(ADest: TCustomUniversalBitmap; x1, y1, x2, y2: integer; const ABrush: TUniversalBrush; ADrawLastPixel: boolean; AAlpha: Word = 65535); virtual; abstract;
@@ -633,7 +636,7 @@ type
     class procedure FillShape(ADest: TCustomUniversalBitmap; AShape: TBGRACustomFillInfo; AFillMode: TFillMode; ABrush: TUniversalBrush; AAlpha: Word = 65535); virtual; abstract;
     class procedure FillPoly(ADest: TCustomUniversalBitmap; const APoints: array of TPointF; AFillMode: TFillMode; ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true; AAlpha: Word = 65535); virtual; abstract;
 
-    // using pen
+    {==== Using pen ====}
     class function CreatePenStroker: TBGRACustomPenStroker; virtual; abstract;
     class function CreateArrow: TBGRACustomArrow; virtual; abstract;
 
@@ -646,6 +649,7 @@ type
     class procedure EllipseAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
         const ABrush: TUniversalBrush; AWidth: single); overload; virtual; abstract;
 
+    {==== Filling ====}
     class procedure FillRectAntialias(ADest: TCustomUniversalBitmap;
                     x, y, x2, y2: single; const ABrush: TUniversalBrush;
                     APixelCenteredCoordinates: boolean = true); virtual; abstract;
