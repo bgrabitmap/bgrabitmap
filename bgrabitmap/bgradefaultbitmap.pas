@@ -90,7 +90,6 @@ type
     //Pixel data
     function LoadFromRawImage(ARawImage: TRawImage; DefaultOpacity: byte;
       AlwaysReplaceAlpha: boolean = False; RaiseErrorOnInvalidPixelFormat: boolean = True): boolean; virtual; abstract;
-    procedure ClearTransparentPixels; override;
 
     //FreePascal drawing routines
     function GetCanvasFP: TFPImageCanvas; override;
@@ -208,6 +207,9 @@ type
     {** Free the object and all its resources }
     destructor Destroy; override;
 
+    {** Clear all channels of transparent pixels }
+    procedure ClearTransparentPixels; override;
+
     {------------------------- Quasi-constructors -----------------------------}
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with dimensions ''AWidth'' and ''AHeight'',
@@ -245,12 +247,6 @@ type
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates an image by copying the content of a ''TFPCustomImage'' }
     function NewBitmap(AFPImage: TFPCustomImage): TBGRACustomBitmap; overload; override;
-
-    {** Load image from a stream. The specified image reader is used }
-    procedure LoadFromStream(Str: TStream; Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); overload; override;
-
-    {** Load image from an embedded Lazarus resource. Format is detected automatically }
-    procedure LoadFromResource(AFilename: string; AOptions: TBGRALoadingOptions); overload; override;
 
     {** Assign the content of the specified ''Source''. It can be a ''TBGRACustomBitmap'' or
         a ''TFPCustomImage'' }
@@ -1006,59 +1002,6 @@ var
 begin
   BGRAClass := TBGRABitmapAny(self.ClassType);
   Result    := BGRAClass.Create(AFPImage);
-end;
-
-procedure TBGRADefaultBitmap.LoadFromStream(Str: TStream;
-  Handler: TFPCustomImageReader; AOptions: TBGRALoadingOptions);
-var OldBmpOption: TBMPTransparencyOption;
-  OldJpegPerf: TJPEGReadPerformance;
-begin
-  DiscardXorMask;
-  if (loBmpAutoOpaque in AOptions) and (Handler is TBGRAReaderBMP) then
-  begin
-    OldBmpOption := TBGRAReaderBMP(Handler).TransparencyOption;
-    TBGRAReaderBMP(Handler).TransparencyOption := toAuto;
-    inherited LoadFromStream(Str, Handler, AOptions);
-    TBGRAReaderBMP(Handler).TransparencyOption := OldBmpOption;
-  end else
-  if (loJpegQuick in AOptions) and (Handler is TBGRAReaderJpeg) then
-  begin
-    OldJpegPerf := TBGRAReaderJpeg(Handler).Performance;
-    TBGRAReaderJpeg(Handler).Performance := jpBestSpeed;
-    inherited LoadFromStream(Str, Handler, AOptions);
-    TBGRAReaderJpeg(Handler).Performance := OldJpegPerf;
-  end else
-    inherited LoadFromStream(Str, Handler, AOptions);
-end;
-
-procedure TBGRADefaultBitmap.LoadFromResource(AFilename: string;
-  AOptions: TBGRALoadingOptions);
-var
-  stream: TStream;
-  format: TBGRAImageFormat;
-  reader: TFPCustomImageReader;
-  ext: String;
-begin
-  stream := BGRAResource.GetResourceStream(AFilename);
-  try
-    ext := Uppercase(ExtractFileExt(AFilename));
-    if (ext = '.BMP') and BGRAResource.IsWinResource(AFilename) then
-    begin
-      reader := TBGRAReaderBMP.Create;
-      TBGRAReaderBMP(reader).Subformat := bsfHeaderless;
-    end else
-    begin
-      format := DetectFileFormat(stream, ext);
-      reader := CreateBGRAImageReader(format);
-    end;
-    try
-      LoadFromStream(stream, reader, AOptions);
-    finally
-      reader.Free;
-    end;
-  finally
-    stream.Free;
-  end;
 end;
 
 {----------------------- TFPCustomImage override ------------------------------}

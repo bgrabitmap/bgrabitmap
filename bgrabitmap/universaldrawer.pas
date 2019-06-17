@@ -5,13 +5,55 @@ unit UniversalDrawer;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAGraphics, BGRAPen, BGRAArrow;
+  Classes, SysUtils, FPImage, BGRABitmapTypes, BGRAGraphics, BGRAPen, BGRAArrow;
 
 type
 
   { TUniversalDrawer }
 
   TUniversalDrawer = class(TCustomUniversalDrawer)
+
+    {==== Load and save files ====}
+
+    //there are UTF8 functions that are different from standard function as those
+    //depend on TFPCustomImage that does not clearly handle UTF8
+
+    {** Load image from a file. ''filename'' is an ANSI string }
+    class procedure LoadFromFile(ADest: TCustomUniversalBitmap; const AFilename: string); overload; override;
+    class procedure LoadFromFile(ADest: TCustomUniversalBitmap; const AFilename: string; AOptions: TBGRALoadingOptions); overload; override;
+    {** Load image from a file with the specified image reader. ''filename'' is an ANSI string }
+    class procedure LoadFromFile(ADest: TCustomUniversalBitmap; const AFilename:String; AHandler:TFPCustomImageReader); overload; override;
+    class procedure LoadFromFile(ADest: TCustomUniversalBitmap; const AFilename:String; AHandler:TFPCustomImageReader; AOptions: TBGRALoadingOptions); overload; override;
+    {** Load image from a file. ''filename'' is an UTF8 string }
+    class procedure LoadFromFileUTF8(ADest: TCustomUniversalBitmap; const AFilenameUTF8: string; AOptions: TBGRALoadingOptions = []); overload; override;
+    {** Load image from a file with the specified image reader. ''filename'' is an UTF8 string }
+    class procedure LoadFromFileUTF8(ADest: TCustomUniversalBitmap; const AFilenameUTF8: string; AHandler: TFPCustomImageReader; AOptions: TBGRALoadingOptions = []); overload; override;
+    {** Load image from a stream. Format is detected automatically }
+    class procedure LoadFromStream(ADest: TCustomUniversalBitmap; AStream: TStream); overload; override;
+    class procedure LoadFromStream(ADest: TCustomUniversalBitmap; AStream: TStream; AOptions: TBGRALoadingOptions); overload; override;
+    {** Load image from a stream. The specified image reader is used }
+    class procedure LoadFromStream(ADest: TCustomUniversalBitmap; AStream: TStream; AHandler: TFPCustomImageReader); overload; override;
+    class procedure LoadFromStream(ADest: TCustomUniversalBitmap; AStream: TStream; AHandler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); overload; override;
+    {** Load image from an embedded Lazarus resource. Format is detected automatically }
+    class procedure LoadFromResource(ADest: TCustomUniversalBitmap; AFilename: string); overload; override;
+    class procedure LoadFromResource(ADest: TCustomUniversalBitmap; AFilename: string; AOptions: TBGRALoadingOptions); overload; override;
+    {** Load image from an embedded Lazarus resource. The specified image reader is used }
+    class procedure LoadFromResource(ADest: TCustomUniversalBitmap; AFilename: string; AHandler: TFPCustomImageReader); overload; override;
+    class procedure LoadFromResource(ADest: TCustomUniversalBitmap; AFilename: string; AHandler: TFPCustomImageReader; AOptions: TBGRALoadingOptions); overload; override;
+
+    {** Save image to a file. The format is guessed from the file extension. ''filename'' is an ANSI string }
+    class procedure SaveToFile(ASource: TCustomUniversalBitmap; const AFilename: string); overload; override;
+    {** Save image to a file with the specified image writer. ''filename'' is an ANSI string }
+    class procedure SaveToFile(ASource: TCustomUniversalBitmap; const AFilename: string; AHandler:TFPCustomImageWriter); overload; override;
+    {** Save image to a file. The format is guessed from the file extension. ''filename'' is an ANSI string }
+    class procedure SaveToFileUTF8(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string); overload; override;
+    {** Save image to a file with the specified image writer. ''filename'' is an UTF8 string }
+    class procedure SaveToFileUTF8(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string; AHandler:TFPCustomImageWriter); overload; override;
+
+    {** Save image to a stream in the specified image format }
+    class procedure SaveToStreamAs(ASource: TCustomUniversalBitmap; AStream: TStream; AFormat: TBGRAImageFormat); override;
+    {** Save image to a stream in PNG format }
+    class procedure SaveToStreamAsPng(ASource: TCustomUniversalBitmap; AStream: TStream); override;
 
     {==== Pixelwise drawing ====}
 
@@ -80,9 +122,242 @@ type
 
 implementation
 
-uses BGRAPolygon, BGRAPolygonAliased, BGRAPath, BGRAFillInfo;
+uses BGRAPolygon, BGRAPolygonAliased, BGRAPath, BGRAFillInfo, BGRAUTF8,
+  BGRAReadBMP, BGRAReadJpeg, BGRAWritePNG;
 
 { TUniversalDrawer }
+
+class procedure TUniversalDrawer.LoadFromFile(ADest: TCustomUniversalBitmap;
+  const AFilename: string);
+begin
+  LoadFromFileUTF8(ADest, SysToUtf8(AFilename));
+end;
+
+class procedure TUniversalDrawer.LoadFromFile(ADest: TCustomUniversalBitmap;
+  const AFilename: string; AOptions: TBGRALoadingOptions);
+begin
+  LoadFromFileUTF8(ADest, SysToUtf8(AFilename), AOptions);
+end;
+
+class procedure TUniversalDrawer.LoadFromFile(ADest: TCustomUniversalBitmap;
+  const AFilename: String; AHandler: TFPCustomImageReader);
+begin
+  LoadFromFileUTF8(ADest, SysToUtf8(AFilename), AHandler);
+end;
+
+class procedure TUniversalDrawer.LoadFromFile(ADest: TCustomUniversalBitmap;
+  const AFilename: String; AHandler: TFPCustomImageReader;
+  AOptions: TBGRALoadingOptions);
+begin
+  LoadFromFileUTF8(ADest, SysToUtf8(AFilename), AHandler, AOptions);
+end;
+
+class procedure TUniversalDrawer.LoadFromFileUTF8(
+  ADest: TCustomUniversalBitmap; const AFilenameUTF8: string;
+  AOptions: TBGRALoadingOptions);
+var
+  stream: TStream;
+  format: TBGRAImageFormat;
+  reader: TFPCustomImageReader;
+begin
+  stream := TFileStreamUTF8.Create(AFilenameUTF8, fmOpenRead or fmShareDenyWrite);
+  try
+    format := DetectFileFormat(Stream, ExtractFileExt(AFilenameUTF8));
+    reader := CreateBGRAImageReader(format);
+    try
+      LoadFromStream(ADest, stream, reader, AOptions);
+    finally
+      reader.Free;
+    end;
+  finally
+    stream.Free;
+  end;
+end;
+
+class procedure TUniversalDrawer.LoadFromFileUTF8(
+  ADest: TCustomUniversalBitmap; const AFilenameUTF8: string;
+  AHandler: TFPCustomImageReader; AOptions: TBGRALoadingOptions);
+var
+  stream: TStream;
+begin
+  stream := TFileStreamUTF8.Create(AFilenameUTF8, fmOpenRead or fmShareDenyWrite);
+  try
+    LoadFromStream(ADest, stream, AHandler, AOptions);
+  finally
+    stream.Free;
+  end;
+end;
+
+class procedure TUniversalDrawer.LoadFromStream(ADest: TCustomUniversalBitmap;
+  AStream: TStream);
+begin
+  LoadFromStream(ADest, AStream, [loKeepTransparentRGB]);
+end;
+
+class procedure TUniversalDrawer.LoadFromStream(ADest: TCustomUniversalBitmap;
+  AStream: TStream; AOptions: TBGRALoadingOptions);
+var
+  format: TBGRAImageFormat;
+  reader: TFPCustomImageReader;
+begin
+  format := DetectFileFormat(AStream);
+  reader := CreateBGRAImageReader(format);
+  try
+    LoadFromStream(ADest, AStream, reader, AOptions);
+  finally
+    reader.Free;
+  end;
+end;
+
+class procedure TUniversalDrawer.LoadFromStream(ADest: TCustomUniversalBitmap;
+  AStream: TStream; AHandler: TFPCustomImageReader);
+begin
+  LoadFromStream(ADest, AStream, AHandler, [loKeepTransparentRGB]);
+end;
+
+class procedure TUniversalDrawer.LoadFromStream(ADest: TCustomUniversalBitmap; AStream: TStream; AHandler: TFPCustomImageReader; AOptions: TBGRALoadingOptions);
+var OldBmpOption: TBMPTransparencyOption;
+  OldJpegPerf: TJPEGReadPerformance;
+begin
+  if (loBmpAutoOpaque in AOptions) and (AHandler is TBGRAReaderBMP) then
+  begin
+    OldBmpOption := TBGRAReaderBMP(AHandler).TransparencyOption;
+    TBGRAReaderBMP(AHandler).TransparencyOption := toAuto;
+    TFPCustomImage(ADest).LoadFromStream(AStream, AHandler);
+    TBGRAReaderBMP(AHandler).TransparencyOption := OldBmpOption;
+  end else
+  if (loJpegQuick in AOptions) and (AHandler is TBGRAReaderJpeg) then
+  begin
+    OldJpegPerf := TBGRAReaderJpeg(AHandler).Performance;
+    TBGRAReaderJpeg(AHandler).Performance := jpBestSpeed;
+    TFPCustomImage(ADest).LoadFromStream(AStream, AHandler);
+    TBGRAReaderJpeg(AHandler).Performance := OldJpegPerf;
+  end else
+    TFPCustomImage(ADest).LoadFromStream(AStream, AHandler);
+  if not (loKeepTransparentRGB in AOptions) then
+    ADest.ClearTransparentPixels;
+end;
+
+class procedure TUniversalDrawer.LoadFromResource(
+  ADest: TCustomUniversalBitmap; AFilename: string);
+begin
+  LoadFromResource(ADest, AFilename, [loKeepTransparentRGB]);
+end;
+
+class procedure TUniversalDrawer.LoadFromResource(
+  ADest: TCustomUniversalBitmap; AFilename: string;
+  AOptions: TBGRALoadingOptions);
+var
+  stream: TStream;
+  format: TBGRAImageFormat;
+  reader: TFPCustomImageReader;
+  ext: String;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    ext := Uppercase(ExtractFileExt(AFilename));
+    if (ext = '.BMP') and BGRAResource.IsWinResource(AFilename) then
+    begin
+      reader := TBGRAReaderBMP.Create;
+      TBGRAReaderBMP(reader).Subformat := bsfHeaderless;
+    end else
+    begin
+      format := DetectFileFormat(stream, ext);
+      reader := CreateBGRAImageReader(format);
+    end;
+    try
+      LoadFromStream(ADest, stream, reader, AOptions);
+    finally
+      reader.Free;
+    end;
+  finally
+    stream.Free;
+  end;
+end;
+
+class procedure TUniversalDrawer.LoadFromResource(
+  ADest: TCustomUniversalBitmap; AFilename: string;
+  AHandler: TFPCustomImageReader);
+begin
+  LoadFromResource(ADest, AFilename, AHandler, [loKeepTransparentRGB]);
+end;
+
+class procedure TUniversalDrawer.LoadFromResource(
+  ADest: TCustomUniversalBitmap; AFilename: string;
+  AHandler: TFPCustomImageReader; AOptions: TBGRALoadingOptions);
+var
+  stream: TStream;
+begin
+  stream := BGRAResource.GetResourceStream(AFilename);
+  try
+    LoadFromStream(ADest, stream, AHandler, AOptions);
+  finally
+    stream.Free;
+  end;
+end;
+
+class procedure TUniversalDrawer.SaveToFile(ASource: TCustomUniversalBitmap;
+  const AFilename: string);
+begin
+  SaveToFileUTF8(ASource, SysToUtf8(AFilename));
+end;
+
+class procedure TUniversalDrawer.SaveToFile(ASource: TCustomUniversalBitmap;
+  const AFilename: string; AHandler: TFPCustomImageWriter);
+begin
+  SaveToFileUTF8(ASource, SysToUtf8(AFilename), AHandler);
+end;
+
+class procedure TUniversalDrawer.SaveToFileUTF8(
+  ASource: TCustomUniversalBitmap; const AFilenameUTF8: string);
+var
+  writer: TFPCustomImageWriter;
+  format: TBGRAImageFormat;
+begin
+  format := SuggestImageFormat(AFilenameUTF8);
+  if (format = ifXPixMap) and (ASource.NbPixels > 32768) then //xpm is slow so avoid big images
+    raise exception.Create('Image is too big to be saved as XPM');
+  writer := CreateBGRAImageWriter(Format, ASource.HasTransparentPixels);
+  if writer is TBGRAWriterPNG then TBGRAWriterPNG(writer).WordSized := true;
+  try
+    SaveToFileUTF8(ASource, AFilenameUTF8, writer);
+  finally
+    writer.free;
+  end;
+end;
+
+class procedure TUniversalDrawer.SaveToFileUTF8(
+  ASource: TCustomUniversalBitmap; const AFilenameUTF8: string;
+  AHandler: TFPCustomImageWriter);
+var
+  stream: TFileStreamUTF8;
+begin
+   stream := TFileStreamUTF8.Create(AFilenameUTF8, fmCreate);
+   try
+     TFPCustomImage(ASource).SaveToStream(stream, AHandler);
+   finally
+     stream.Free;
+   end;
+end;
+
+class procedure TUniversalDrawer.SaveToStreamAs(
+  ASource: TCustomUniversalBitmap; AStream: TStream; AFormat: TBGRAImageFormat);
+var handler: TFPCustomImageWriter;
+begin
+  handler := CreateBGRAImageWriter(AFormat, ASource.HasTransparentPixels);
+  if handler is TBGRAWriterPNG then TBGRAWriterPNG(handler).WordSized := true;
+  try
+    TFPCustomImage(ASource).SaveToStream(AStream, handler)
+  finally
+    handler.Free;
+  end;
+end;
+
+class procedure TUniversalDrawer.SaveToStreamAsPng(
+  ASource: TCustomUniversalBitmap; AStream: TStream);
+begin
+  SaveToStreamAs(ASource, AStream, ifPNG);
+end;
 
 class function TUniversalDrawer.CheckRectBounds(
   var x, y, x2, y2: integer; minsize: integer): boolean;
