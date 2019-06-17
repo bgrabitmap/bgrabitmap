@@ -166,6 +166,9 @@ type
     constructor Create(AColorspace: TColorspaceAny; AWidth, AHeight: integer;
                        ALineOrder: TRawImageLineOrder); overload;
 
+    procedure Assign(Source: TPersistent); override;
+    function NewBitmap: TCustomUniversalBitmap;
+
     {** Adds a reference (this reference count is not the same as
         the reference count of an interface, it changes only by
         explicit calls }
@@ -2162,6 +2165,38 @@ begin
   FLineOrder:= ALineOrder;
   inherited Create(AWidth, AHeight);
   if FDataByte<>nil then FillByte(FDataByte^, FHeight*FRowSize, 0);
+end;
+
+procedure TCustomUniversalBitmap.Assign(Source: TPersistent);
+var pdest: PByte;
+  x,y: NativeInt;
+  col: TFPColor;
+begin
+  if Source is TCustomUniversalBitmap then
+  begin
+    SetSize(TCustomUniversalBitmap(Source).Width, TCustomUniversalBitmap(Source).Height);
+    PutImage(0, 0, TCustomUniversalBitmap(Source), dmSet);
+  end else
+  if Source is TFPCustomImage then
+  begin
+    SetSize(TFPCustomImage(Source).Width, TFPCustomImage(Source).Height);
+    for y := 0 to TFPCustomImage(Source).Height-1 do
+    begin
+      pdest := GetPixelAddress(0,y);
+      for x := 0 to TFPCustomImage(Source).Width-1 do
+      begin
+        col := TFPCustomImage(Source).Colors[x,y];
+        FConvertFromFPColor.Convert(@col, pdest, 1, sizeof(TFPColor), FPixelSize, nil);
+        inc(pdest);
+      end;
+    end;
+  end else
+    inherited Assign(Source);
+end;
+
+function TCustomUniversalBitmap.NewBitmap: TCustomUniversalBitmap;
+begin
+  result := InternalNew;
 end;
 
 function TCustomUniversalBitmap.NewReference: TCustomUniversalBitmap;

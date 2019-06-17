@@ -21,6 +21,8 @@ type
 
     {** Creates an image of dimensions ''AWidth'' and ''AHeight'' and fills it with ''Color'' }
     constructor Create(AWidth, AHeight: integer; const AColor: TPixel);
+    function NewBitmap(AWidth, AHeight: integer; const AColor: TPixel): TCustomUniversalBitmap; overload;
+
     function Equals(comp: TCustomUniversalBitmap): boolean; overload;
     function Equals(const comp: TPixel): boolean; overload;
     function GetDifferenceBounds(ABitmap: TCustomUniversalBitmap): TRect;
@@ -227,6 +229,17 @@ begin
     PPixel(p)^ := AColor;
     inc(p, sizeof(TPixel));
   end;
+end;
+
+function TGenericUniversalBitmap.NewBitmap(AWidth, AHeight: integer;
+  const AColor: TPixel): TCustomUniversalBitmap;
+var
+  b: TUniversalBrush;
+begin
+  result := InternalNew;
+  result.SetSize(AWidth,AHeight);
+  SolidBrush(b, AColor, dmSet);
+  result.Fill(b);
 end;
 
 function TGenericUniversalBitmap.Equals(comp: TCustomUniversalBitmap): boolean;

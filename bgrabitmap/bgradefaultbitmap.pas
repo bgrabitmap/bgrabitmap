@@ -227,6 +227,8 @@ type
        See tutorial 2 on [[BGRABitmap_tutorial_2|how to load and display an image]].
      * See reference on [[TBGRACustomBitmap_and_IBGRAScanner#Load_and_save_files|loading and saving files]] }
 
+    function NewBitmap: TBGRACustomBitmap; overload; override;
+
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with dimensions ''AWidth'' and ''AHeight'',
         and fills it with Color }
@@ -950,6 +952,16 @@ begin
   if BGRAClass = TBGRAPtrBitmap then
     BGRAClass := TBGRADefaultBitmap;
   Result      := BGRAClass.Create(AWidth, AHeight);
+end;
+
+function TBGRADefaultBitmap.NewBitmap: TBGRACustomBitmap;
+var
+  BGRAClass: TBGRABitmapAny;
+begin
+  BGRAClass := TBGRABitmapAny(self.ClassType);
+  if BGRAClass = TBGRAPtrBitmap then
+    BGRAClass := TBGRADefaultBitmap;
+  Result      := BGRAClass.Create(0, 0);
 end;
 
 { Can only be called from an existing instance of TBGRABitmap.

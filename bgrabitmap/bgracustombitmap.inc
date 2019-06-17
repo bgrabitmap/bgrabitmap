@@ -305,6 +305,7 @@ type
      constructor Create(AFilename: string; AIsUtf8Filename: boolean; AOptions: TBGRALoadingOptions); overload; virtual; abstract;
      constructor Create(AStream: TStream); overload; virtual; abstract;
 
+     function NewBitmap: TBGRACustomBitmap; overload; virtual; abstract;
      function NewBitmap(AWidth, AHeight: integer): TBGRACustomBitmap; overload; virtual; abstract;
      function NewBitmap(AWidth, AHeight: integer; Color: TBGRAPixel): TBGRACustomBitmap; overload; virtual; abstract;
      function NewBitmap(Filename: string): TBGRACustomBitmap; overload; virtual; abstract;
