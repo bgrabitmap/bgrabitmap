@@ -14,6 +14,7 @@ type
   TLinearRGBABitmap = class(specialize TGenericUniversalBitmap<TLinearRGBA,TLinearRGBAColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;
+    procedure AssignTransparentPixel(out ADest); override;
   public
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TLinearRGBA; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure ScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
@@ -453,6 +454,11 @@ end;
 function TLinearRGBABitmap.InternalNew: TCustomUniversalBitmap;
 begin
   Result:= TLinearRGBABitmap.Create;
+end;
+
+procedure TLinearRGBABitmap.AssignTransparentPixel(out ADest);
+begin
+  TLinearRGBA(ADest) := LinearRGBATransparent;
 end;
 
 class procedure TLinearRGBABitmap.SolidBrush(out ABrush: TUniversalBrush;

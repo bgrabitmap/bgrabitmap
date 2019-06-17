@@ -14,6 +14,7 @@ type
   TXYZABitmap = class(specialize TGenericUniversalBitmap<TXYZA,TXYZAColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;
+    procedure AssignTransparentPixel(out ADest); override;
   public
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TXYZA; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure ScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
@@ -488,6 +489,11 @@ end;
 function TXYZABitmap.InternalNew: TCustomUniversalBitmap;
 begin
   Result:= TXYZABitmap.Create;
+end;
+
+procedure TXYZABitmap.AssignTransparentPixel(out ADest);
+begin
+  TXYZA(ADest) := XYZATransparent;
 end;
 
 class procedure TXYZABitmap.SolidBrush(out ABrush: TUniversalBrush;
