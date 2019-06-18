@@ -307,6 +307,7 @@ begin
       IFD.GreenBits:=SampleBits[1]; //magenta
       IFD.BlueBits:=SampleBits[2];   //yellow
       IFD.GrayBits:=SampleBits[3];  //black
+      PremultipliedAlpha:= false;
     end;
   8,9:
     begin
@@ -325,6 +326,7 @@ begin
         IFD.GrayBits:=SampleBits[0];
         if (IFD.GrayBits <> 8) and (IFD.GrayBits <> 16) then TiffError('Only 8 bit and 16 bit depth allowed for L* component');
       end;
+      PremultipliedAlpha:= false;
     end
   else
     TiffError('Photometric interpretation not handled (' + inttostr(IFD.PhotoMetricInterpretation)+')');
