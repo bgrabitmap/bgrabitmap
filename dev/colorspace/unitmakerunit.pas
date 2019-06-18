@@ -716,7 +716,7 @@ var
     ov, ba: boolean;
     vsam, vsfm, body, vn2: TStringArray;
     cn: integer;
-    typeDeclaration, fn: string;
+    typeDeclaration, flagStr: string;
     handlesExtraAlpha: boolean;
   begin
     ColorspaceName := ColorspaceInfo[Colorspace].Name;
@@ -752,8 +752,7 @@ var
       Add('  class function GetSize: integer; override;');
       Add('  class function GetChannel(AColor: Pointer; AIndex: integer): single; override;');
       Add('  class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;');
-      Add('  class function HasReferenceWhite: boolean; override;');
-      Add('  class function HasImaginaryColors: boolean; override;');
+      Add('  class function GetFlags: TColorspaceFlags; override;');
       Add('end;');
       Add('');
       AddImp('{ '+ColorTypeName+'Colorspace }');
@@ -825,10 +824,12 @@ var
       body[high(body)] := 'end;';
       AddProcedureImp('class procedure '+ColorTypeName+'Colorspace.SetChannel(AColor: Pointer; AIndex: integer; AValue: single);', body);
 
-      AddProcedureImp('class function '+ColorTypeName+'Colorspace.HasReferenceWhite: boolean;',
-                      'result := ' + BoolToStr(ColorspaceInfo[Colorspace].NeedRefWhite, true) + ';');
-      AddProcedureImp('class function '+ColorTypeName+'Colorspace.HasImaginaryColors: boolean;',
-                      'result := ' + BoolToStr(ColorspaceInfo[Colorspace].HasImaginary, true) + ';');
+      if ColorspaceInfo[Colorspace].NeedRefWhite then flagStr := 'cfMovableReferenceWhite' else
+      if Colorspace >= csXYZA then flagStr := 'cfReferenceWhiteIndependent' else
+        flagStr := 'cfFixedReferenceWhite';
+      if ColorspaceInfo[Colorspace].HasImaginary then flagStr += ',cfHasImaginaryColors';
+      AddProcedureImp('class function '+ColorTypeName+'Colorspace.GetFlags: TColorspaceFlags;',
+                      'result := [' + flagStr + '];');
 
       AddImp('');
       exit;
@@ -965,7 +966,6 @@ var
           h := GetFunction('To' + n, 'AAlpha: ' + ChannelValueTypeName[ColorspaceInfo[cs].ValueType], 'T' + n, b or ba);
           Add('  ' + h);
           h := GetFunction(HelperName + '.To' + n, 'AAlpha: ' + ChannelValueTypeName[ColorspaceInfo[cs].ValueType], 'T' + n, b or ba);
-          fn := GetConversionFunction(Colorspace, cs, handlesExtraAlpha);
           if handlesExtraAlpha then
             AddProcedureImp(h, 'result := '+GetConversionFunctionRec(ColorSpace, cs, 'Self, AAlpha', '')+';')
           else

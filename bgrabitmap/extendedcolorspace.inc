@@ -127,6 +127,11 @@ type
   end;
 
   TColorTransparency = (ctFullyTransparent, ctSemiTransparent, ctFullyOpaque);
+  TColorspaceFlag = (cfFixedReferenceWhite,       // ex: sRGB, AdobeRGB fixed at D65
+                     cfMovableReferenceWhite,     // XYZ
+                     cfReferenceWhiteIndependent, // L*a*b*, LCh
+                     cfHasImaginaryColors);       // XYZ, L*a*b*, LCh
+  TColorspaceFlags = set of TColorspaceFlag;
 
   { TCustomColorspace }
 
@@ -146,8 +151,7 @@ type
                             ACount: integer = 1; AReferenceWhite: PXYZReferenceWhite = nil);
     class function GetDirectConversion(ADestColorspace: TColorspaceAny): TColorspaceConvertArrayProc;
     class function GetBridgedConversion(ADestColorspace: TColorspaceAny): TBridgedConversion;
-    class function HasReferenceWhite: boolean; virtual; abstract;
-    class function HasImaginaryColors: boolean; virtual; abstract;
+    class function GetFlags: TColorspaceFlags; virtual; abstract;
   end;
 
   { ColorspaceCollection }

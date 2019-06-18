@@ -441,7 +441,7 @@ begin
     cbYAxis.ItemIndex:= 1;
   end;
 
-  cbReferenceWhite.Enabled := (colorspace = TLabAColorspace) or (colorspace = TLChAColorspace);
+  cbReferenceWhite.Enabled := cfReferenceWhiteIndependent in colorspace.GetFlags;
   if colorspace = TXYZAColorspace then SetReferenceWhite(2, 'E')
   else UpdateReferenceWhiteFromCombo;
 
@@ -629,7 +629,7 @@ begin
       inc(p, valueSize);
     end;
 
-    if colorspace.HasImaginaryColors and (XYZToRGBOverflowMin <> xroClipToTarget) then
+    if (cfHasImaginaryColors in colorspace.GetFlags) and (XYZToRGBOverflowMin <> xroClipToTarget) then
     begin
       setlength(xyzaBuf, Bitmap.Width);
       colorspace.Convert(rowData^, xyzaBuf[0], TXYZAColorspace, Bitmap.Width);
