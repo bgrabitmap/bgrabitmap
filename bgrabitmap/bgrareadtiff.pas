@@ -1695,15 +1695,76 @@ var
       LastChannelValues[Channel] := 0;
   end;
 
-  function ReadNextColor(var Run: Pointer; var BitPos: byte): TFPColor;
-  var Channel, PaletteIndex: DWord;
-    GrayValue: Word;
-    L,a,b: single;
+  procedure ReadNextPixelData(var Run: Pointer; var BitPos: byte);
+  var Channel: DWord;
   begin
     for Channel := 0 to SampleCnt-1 do
       ReadImgValue(SampleBits[Channel], Run,BitPos,IFD.FillOrder,
                    IFD.Predictor,LastChannelValues[Channel],
                    ChannelValues[Channel]);
+  end;
+
+  function GetPixelAsLab: TLabA;
+  begin
+    result.L := 0;
+    result.a := 0;
+    result.b := 0;
+    result.alpha := 1;
+
+    case IFD.PhotoMetricInterpretation of
+    8: begin
+         case IFD.GrayBits of
+           8,16: result.L := ChannelValues[0]*(100/65535);
+           0:begin
+               result.L := ChannelValues[0]*(100/65535);
+               case IFD.RedBits of
+                 16: result.a := SmallInt(ChannelValues[1])/256;
+                 8: result.a := ShortInt(ChannelValues[1] shr 8);
+               end;
+               case IFD.BlueBits of
+                 16: result.b := SmallInt(ChannelValues[2])/256;
+                 8: result.b := ShortInt(ChannelValues[2] shr 8);
+               end;
+             end;
+         end;
+       end;
+    9: begin
+         case IFD.GrayBits of
+           16: result.L := ChannelValues[0]*(100/65280);
+           8: result.L := ChannelValues[0]*(100/65535);
+           0:begin
+               case IFD.GreenBits of
+                 16: result.L := ChannelValues[0]*(100/65280);
+                 8: result.L := ChannelValues[0]*(100/65535);
+               end;
+               case IFD.RedBits of
+                 16: result.a := (ChannelValues[1]-32768)/256;
+                 8: result.a := (ChannelValues[1] shr 8)-128;
+               end;
+               case IFD.BlueBits of
+                 16: result.b := (ChannelValues[2]-32768)/256;
+                 8: result.b := (ChannelValues[2] shr 8)-128;
+               end;
+             end;
+         end;
+       end;
+     //10: ITULAB: ITU L*a*b*
+     //32844: LOGL: CIE Log2(L)
+     //32845: LOGLUV: CIE Log2(L) (u',v')
+    else
+      TiffError('PhotometricInterpretation='+IntToStr(IFD.PhotoMetricInterpretation)+' not supported');
+    end;
+  end;
+
+  function GetPixelAsFPColor: TFPColor;
+  var PaletteIndex: DWord;
+    GrayValue: Word;
+  begin
+    if IFD.PhotoMetricInterpretation >= 8 then
+    begin
+      result.FromLabA(GetPixelAsLab);
+      exit;
+    end;
 
     case IFD.PhotoMetricInterpretation of
     0,1: // 0:bilevel grayscale 0 is white; 1:0 is black
@@ -1729,54 +1790,6 @@ var
       result:=CMYKToFPColor(ChannelValues[0],ChannelValues[1],ChannelValues[2],ChannelValues[3]);
 
      //6: YCBCR: CCIR 601
-
-    8: begin
-         L := 0;
-         a := 0;
-         b := 0;
-         case IFD.GrayBits of
-           8,16: L := ChannelValues[0]*(100/65535);
-           0:begin
-               L := ChannelValues[0]*(100/65535);
-               case IFD.RedBits of
-                 16: a := SmallInt(ChannelValues[1])/256;
-                 8: a := ShortInt(ChannelValues[1] shr 8);
-               end;
-               case IFD.BlueBits of
-                 16: b := SmallInt(ChannelValues[2])/256;
-                 8: b := ShortInt(ChannelValues[2] shr 8);
-               end;
-             end;
-         end;
-         result := TLabA.New(L,a,b).ToFPColor;
-       end;
-    9: begin
-         L := 0;
-         a := 0;
-         b := 0;
-         case IFD.GrayBits of
-           16: L := ChannelValues[0]*(100/65280);
-           8: L := ChannelValues[0]*(100/65535);
-           0:begin
-               case IFD.GreenBits of
-                 16: L := ChannelValues[0]*(100/65280);
-                 8: L := ChannelValues[0]*(100/65535);
-               end;
-               case IFD.RedBits of
-                 16: a := (ChannelValues[1]-32768)/256;
-                 8: a := (ChannelValues[1] shr 8)-128;
-               end;
-               case IFD.BlueBits of
-                 16: b := (ChannelValues[2]-32768)/256;
-                 8: b := (ChannelValues[2] shr 8)-128;
-               end;
-             end;
-         end;
-         result := TLabA.New(L,a,b).ToFPColor;
-       end;
-     //10: ITULAB: ITU L*a*b*
-     //32844: LOGL: CIE Log2(L)
-     //32845: LOGLUV: CIE Log2(L) (u',v')
     else
       TiffError('PhotometricInterpretation='+IntToStr(IFD.PhotoMetricInterpretation)+' not supported');
     end;
@@ -1807,12 +1820,16 @@ var
   x, y, cx, cy, dx1,dy1, dx2,dy2, sx: integer;
   SampleBitsPerPixel: DWord;
   CurFPImg: TFPCustomImage;
-  aContinue: Boolean;
+  aContinue, ConvertFromLab: Boolean;
   ExpectedChunkLength: PtrInt;
   ChunkType: TTiffChunkType;
   TilesAcross, TilesDown: DWord;
   ChunkLeft, ChunkTop, ChunkWidth, ChunkHeight: DWord;
   ChunkBytesPerLine: DWord;
+
+  LabArray: array of TLabA;
+  ConversionFromLab: TBridgedConversion;
+  DestStride: PtrInt;
 begin
   if (IFD.ImageWidth=0) or (IFD.ImageHeight=0) then
     exit;
@@ -1906,6 +1923,15 @@ begin
       writeln('TBGRAReaderTiff.LoadImageFromStream SampleBitsPerPixel=',SampleBitsPerPixel);
     {$endif}
 
+    LabArray := nil;
+    if (IFD.PhotoMetricInterpretation >= 8) and
+       (CurFPImg is TCustomUniversalBitmap) then
+    begin
+      ConvertFromLab := true;
+      ConversionFromLab := TLabAColorspace.GetBridgedConversion(TCustomUniversalBitmap(CurFPImg).Colorspace)
+    end else
+      ConvertFromLab := false;
+
     // read chunks
     for ChunkIndex:=0 to ChunkCount-1 do begin
       CurOffset:=ChunkOffsets[ChunkIndex];
@@ -1995,11 +2021,33 @@ begin
         InitColor;
         x:=sx;
 
-        for cx:=0 to ChunkWidth-1 do begin
-          CurFPImg.Colors[x,y]:= ReadNextColor(Run,BitPos);
-          // next column
-          inc(x,dx1);
-          inc(y,dy1);
+        if ConvertFromLab then
+        begin
+          if length(LabArray)<ChunkWidth then setlength(LabArray, ChunkWidth);
+
+          for cx:=0 to ChunkWidth-1 do begin
+            ReadNextPixelData(Run,BitPos);
+            LabArray[cx] := GetPixelAsLab;
+          end;
+
+          DestStride := dy1*TCustomUniversalBitmap(CurFPImg).RowSize;
+          if TCustomUniversalBitmap(CurFPImg).LineOrder = riloBottomToTop then
+            DestStride := -DestStride;
+          inc(DestStride, dx1*PtrInt(TCustomUniversalBitmap(CurFPImg).Colorspace.GetSize));
+
+          ConversionFromLab.Convert(@LabArray[0], TCustomUniversalBitmap(CurFPImg).GetPixelAddress(x,y), ChunkWidth, sizeof(TLabA), DestStride, nil);
+
+          inc(x,dx1*ChunkWidth);
+          inc(y,dy1*ChunkWidth);
+        end else
+        begin
+          for cx:=0 to ChunkWidth-1 do begin
+            ReadNextPixelData(Run,BitPos);
+            CurFPImg.Colors[x,y]:= GetPixelAsFPColor;
+            // next column
+            inc(x,dx1);
+            inc(y,dy1);
+          end;
         end;
 
         // next line
