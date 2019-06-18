@@ -2121,7 +2121,7 @@ function TCustomUniversalBitmap.GetInternalColor(x, y: integer): TFPColor;
 begin
   if not PtInClipRect(x,y) then exit(colTransparent);
   LoadFromBitmapIfNeeded;
-  FConvertFromFPColor.Convert(GetPixelAddress(x,y), @result,
+  FConvertToFPColor.Convert(GetPixelAddress(x,y), @result,
                       1, FPixelSize, sizeof(TFPColor), FReferenceWhite);
 end;
 
