@@ -182,7 +182,7 @@ begin
     format := DetectFileFormat(Stream, ExtractFileExt(AFilenameUTF8));
     reader := CreateBGRAImageReader(format);
     try
-      LoadFromStream(ADest, stream, reader, AOptions);
+      ADest.LoadFromStream(stream, reader, AOptions);
     finally
       reader.Free;
     end;
@@ -199,7 +199,7 @@ var
 begin
   stream := TFileStreamUTF8.Create(AFilenameUTF8, fmOpenRead or fmShareDenyWrite);
   try
-    LoadFromStream(ADest, stream, AHandler, AOptions);
+    ADest.LoadFromStream(stream, AHandler, AOptions);
   finally
     stream.Free;
   end;
@@ -208,7 +208,7 @@ end;
 class procedure TUniversalDrawer.LoadFromStream(ADest: TCustomUniversalBitmap;
   AStream: TStream);
 begin
-  LoadFromStream(ADest, AStream, [loKeepTransparentRGB]);
+  ADest.LoadFromStream(AStream, [loKeepTransparentRGB]);
 end;
 
 class procedure TUniversalDrawer.LoadFromStream(ADest: TCustomUniversalBitmap;
@@ -220,7 +220,7 @@ begin
   format := DetectFileFormat(AStream);
   reader := CreateBGRAImageReader(format);
   try
-    LoadFromStream(ADest, AStream, reader, AOptions);
+    ADest.LoadFromStream(AStream, reader, AOptions);
   finally
     reader.Free;
   end;
@@ -229,7 +229,7 @@ end;
 class procedure TUniversalDrawer.LoadFromStream(ADest: TCustomUniversalBitmap;
   AStream: TStream; AHandler: TFPCustomImageReader);
 begin
-  LoadFromStream(ADest, AStream, AHandler, [loKeepTransparentRGB]);
+  ADest.LoadFromStream(AStream, AHandler, [loKeepTransparentRGB]);
 end;
 
 class procedure TUniversalDrawer.LoadFromStream(ADest: TCustomUniversalBitmap; AStream: TStream; AHandler: TFPCustomImageReader; AOptions: TBGRALoadingOptions);
@@ -283,7 +283,7 @@ begin
       reader := CreateBGRAImageReader(format);
     end;
     try
-      LoadFromStream(ADest, stream, reader, AOptions);
+      ADest.LoadFromStream(stream, reader, AOptions);
     finally
       reader.Free;
     end;
@@ -307,7 +307,7 @@ var
 begin
   stream := BGRAResource.GetResourceStream(AFilename);
   try
-    LoadFromStream(ADest, stream, AHandler, AOptions);
+    ADest.LoadFromStream(stream, AHandler, AOptions);
   finally
     stream.Free;
   end;
