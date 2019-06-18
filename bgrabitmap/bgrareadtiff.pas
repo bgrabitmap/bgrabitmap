@@ -1754,6 +1754,9 @@ var
     else
       TiffError('PhotometricInterpretation='+IntToStr(IFD.PhotoMetricInterpretation)+' not supported');
     end;
+
+    if AlphaChannel >= 0 then
+      result.alpha:= ChannelValues[AlphaChannel]/65535;
   end;
 
   function GetPixelAsFPColor: TFPColor;
