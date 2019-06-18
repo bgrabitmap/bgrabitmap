@@ -1817,7 +1817,7 @@ var
   CurByteCnt: PtrInt;
   Run: PByte;
   BitPos: Byte;
-  x, y, cx, cy, dx1,dy1, dx2,dy2, sx: integer;
+  x, y, cx, cy, dx1,dy1, dx2,dy2, sx, sy: integer;
   SampleBitsPerPixel: DWord;
   CurFPImg: TFPCustomImage;
   aContinue, ConvertFromLab: Boolean;
@@ -1992,34 +1992,32 @@ begin
 
       // Orientation
       if IFD.Orientation in [1..4] then begin
-        x:=ChunkLeft; y:=ChunkTop;
+        sx:=ChunkLeft; sy:=ChunkTop;
         dy1 := 0; dx2 := 0;
         case IFD.Orientation of
         1: begin dx1:=1; dy2:=1; end;// 0,0 is left, top
-        2: begin x:=IFD.ImageWidth-x-1; dx1:=-1; dy2:=1; end;// 0,0 is right, top
-        3: begin x:=IFD.ImageWidth-x-1; dx1:=-1; y:=IFD.ImageHeight-y-1; dy2:=-1; end;// 0,0 is right, bottom
-        4: begin dx1:=1; y:=IFD.ImageHeight-y-1; dy2:=-1; end;// 0,0 is left, bottom
+        2: begin sx:=IFD.ImageWidth-sx-1; dx1:=-1; dy2:=1; end;// 0,0 is right, top
+        3: begin sx:=IFD.ImageWidth-sx-1; dx1:=-1; sy:=IFD.ImageHeight-sy-1; dy2:=-1; end;// 0,0 is right, bottom
+        4: begin dx1:=1; sy:=IFD.ImageHeight-sy-1; dy2:=-1; end;// 0,0 is left, bottom
         end;
       end else begin
         // rotated
-        x:=ChunkTop; y:=ChunkLeft;
+        sx:=ChunkTop; sy:=ChunkLeft;
         dx1 := 0; dy2 := 0;
         case IFD.Orientation of
         5: begin dy1:=1; dx2:=1; end;// 0,0 is top, left (rotated)
-        6: begin dy1:=1; x:=IFD.ImageWidth-x-1; dx2:=-1; end;// 0,0 is top, right (rotated)
-        7: begin y:=IFD.ImageHeight-y-1; dy1:=-1; x:=IFD.ImageHeight-x-1; dx2:=-1; end;// 0,0 is bottom, right (rotated)
-        8: begin y:=IFD.ImageHeight-y-1; dy1:=-1; dx2:=1; end;// 0,0 is bottom, left (rotated)
+        6: begin dy1:=1; sx:=IFD.ImageWidth-sx-1; dx2:=-1; end;// 0,0 is top, right (rotated)
+        7: begin sy:=IFD.ImageHeight-sy-1; dy1:=-1; sx:=IFD.ImageHeight-sx-1; dx2:=-1; end;// 0,0 is bottom, right (rotated)
+        8: begin sy:=IFD.ImageHeight-sy-1; dy1:=-1; dx2:=1; end;// 0,0 is bottom, left (rotated)
         end;
       end;
 
       //writeln('TBGRAReaderTiff.LoadImageFromStream Chunk ',ChunkIndex,' ChunkLeft=',ChunkLeft,' ChunkTop=',ChunkTop,' IFD.ImageWidth=',IFD.ImageWidth,' IFD.ImageHeight=',IFD.ImageHeight,' ChunkWidth=',ChunkWidth,' ChunkHeight=',ChunkHeight,' PaddingRight=',PaddingRight);
-      sx:=x;
       for cy:=0 to ChunkHeight-1 do begin
-        //writeln('TBGRAReaderTiff.LoadImageFromStream y=',y);
         Run:=Chunk+ChunkBytesPerLine*cy;
         BitPos := 0;
         InitColor;
-        x:=sx;
+        //writeln('TBGRAReaderTiff.LoadImageFromStream (x,y)=(',sx,',',sy,')');
 
         if ConvertFromLab then
         begin
@@ -2035,12 +2033,12 @@ begin
             DestStride := -DestStride;
           inc(DestStride, dx1*PtrInt(TCustomUniversalBitmap(CurFPImg).Colorspace.GetSize));
 
-          ConversionFromLab.Convert(@LabArray[0], TCustomUniversalBitmap(CurFPImg).GetPixelAddress(x,y), ChunkWidth, sizeof(TLabA), DestStride, nil);
-
-          inc(x,dx1*ChunkWidth);
-          inc(y,dy1*ChunkWidth);
+          ConversionFromLab.Convert(@LabArray[0], TCustomUniversalBitmap(CurFPImg).GetPixelAddress(sx,sy),
+                                    ChunkWidth, sizeof(TLabA), DestStride, nil);
         end else
         begin
+          x:= sx;
+          y:= sy;
           for cx:=0 to ChunkWidth-1 do begin
             ReadNextPixelData(Run,BitPos);
             CurFPImg.Colors[x,y]:= GetPixelAsFPColor;
@@ -2051,8 +2049,8 @@ begin
         end;
 
         // next line
-        inc(x,dx2);
-        inc(y,dy2);
+        inc(sx,dx2);
+        inc(sy,dy2);
       end;
       // next chunk
     end;
