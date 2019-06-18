@@ -93,6 +93,7 @@ type
     class function GetColorTransparency({%H-}AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -109,6 +110,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -125,6 +127,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -141,6 +144,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -157,6 +161,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -173,6 +178,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -189,6 +195,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -205,6 +212,7 @@ type
     class function GetColorTransparency({%H-}AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -221,6 +229,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -237,6 +246,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -253,6 +263,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -269,6 +280,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -285,6 +297,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -301,6 +314,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -317,6 +331,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
     class function GetMaxValue(AIndex: integer): single; override;
     class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
     class function GetName: string; override;
     class function GetSize: integer; override;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
@@ -2033,6 +2048,9 @@ begin
   end;
 end;
 
+class function TColorColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 8 end;
+
 class function TColorColorspace.GetName: string;
 begin result := 'Color' end;
 
@@ -2110,6 +2128,9 @@ begin
   else raise ERangeError.Create('Index out of bounds');
   end;
 end;
+
+class function TBGRAPixelColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 8 end;
 
 class function TBGRAPixelColorspace.GetName: string;
 begin result := 'BGRAPixel' end;
@@ -2191,6 +2212,9 @@ begin
   end;
 end;
 
+class function TFPColorColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 16 end;
+
 class function TFPColorColorspace.GetName: string;
 begin result := 'FPColor' end;
 
@@ -2270,6 +2294,9 @@ begin
   else raise ERangeError.Create('Index out of bounds');
   end;
 end;
+
+class function TStdRGBAColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 28 end;
 
 class function TStdRGBAColorspace.GetName: string;
 begin result := 'StdRGBA' end;
@@ -2351,6 +2378,9 @@ begin
   end;
 end;
 
+class function TAdobeRGBAColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 8 end;
+
 class function TAdobeRGBAColorspace.GetName: string;
 begin result := 'AdobeRGBA' end;
 
@@ -2430,6 +2460,9 @@ begin
   else raise ERangeError.Create('Index out of bounds');
   end;
 end;
+
+class function TStdHSLAColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 28 end;
 
 class function TStdHSLAColorspace.GetName: string;
 begin result := 'StdHSLA' end;
@@ -2511,6 +2544,9 @@ begin
   end;
 end;
 
+class function TStdHSVAColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 28 end;
+
 class function TStdHSVAColorspace.GetName: string;
 begin result := 'StdHSVA' end;
 
@@ -2586,6 +2622,9 @@ begin
   else raise ERangeError.Create('Index out of bounds');
   end;
 end;
+
+class function TStdCMYKColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 28 end;
 
 class function TStdCMYKColorspace.GetName: string;
 begin result := 'StdCMYK' end;
@@ -2667,6 +2706,9 @@ begin
   end;
 end;
 
+class function TExpandedPixelColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 16 end;
+
 class function TExpandedPixelColorspace.GetName: string;
 begin result := 'ExpandedPixel' end;
 
@@ -2746,6 +2788,9 @@ begin
   else raise ERangeError.Create('Index out of bounds');
   end;
 end;
+
+class function TLinearRGBAColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 28 end;
 
 class function TLinearRGBAColorspace.GetName: string;
 begin result := 'LinearRGBA' end;
@@ -2827,6 +2872,9 @@ begin
   end;
 end;
 
+class function THSLAPixelColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 16 end;
+
 class function THSLAPixelColorspace.GetName: string;
 begin result := 'HSLAPixel' end;
 
@@ -2906,6 +2954,9 @@ begin
   else raise ERangeError.Create('Index out of bounds');
   end;
 end;
+
+class function TGSBAPixelColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 16 end;
 
 class function TGSBAPixelColorspace.GetName: string;
 begin result := 'GSBAPixel' end;
@@ -2987,6 +3038,9 @@ begin
   end;
 end;
 
+class function TXYZAColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 28 end;
+
 class function TXYZAColorspace.GetName: string;
 begin result := 'XYZA' end;
 
@@ -3067,6 +3121,9 @@ begin
   end;
 end;
 
+class function TLabAColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 28 end;
+
 class function TLabAColorspace.GetName: string;
 begin result := 'LabA' end;
 
@@ -3146,6 +3203,9 @@ begin
   else raise ERangeError.Create('Index out of bounds');
   end;
 end;
+
+class function TLChAColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 28 end;
 
 class function TLChAColorspace.GetName: string;
 begin result := 'LChA' end;

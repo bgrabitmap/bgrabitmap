@@ -143,6 +143,7 @@ type
     class function GetColorTransparency(AColor: Pointer): TColorTransparency; virtual; abstract;
     class function GetMaxValue(AIndex: integer): single; virtual; abstract;
     class function GetMinValue(AIndex: integer): single; virtual; abstract;
+    class function GetChannelBitDepth(AIndex: integer): byte; virtual; abstract;
     class function GetName: string; virtual; abstract;
     class function GetSize: integer; virtual; abstract;
     class function GetChannel(AColor: Pointer; AIndex: integer): single; virtual; abstract;

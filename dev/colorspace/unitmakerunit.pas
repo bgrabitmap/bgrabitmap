@@ -33,6 +33,7 @@ type
 const
   ChannelValueTypeName : array[TChannelValueType] of string = ('byte', 'word', 'longword', 'single', 'double');
   ChannelValueTypePrecision : array[TChannelValueType] of integer = (1, 2, 4, 2, 6);
+  ChannelValueTypeBitDepth : array[TChannelValueType] of integer = (8, 16, 32, 28, 58);
   MAXWORD = $ffff;
 
 type
@@ -748,6 +749,7 @@ var
         Add('  class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;');
       Add('  class function GetMaxValue(AIndex: integer): single; override;');
       Add('  class function GetMinValue(AIndex: integer): single; override;');
+      Add('  class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;');
       Add('  class function GetName: string; override;');
       Add('  class function GetSize: integer; override;');
       Add('  class function GetChannel(AColor: Pointer; AIndex: integer): single; override;');
@@ -796,6 +798,9 @@ var
       for i := 0 to cn - 1 do
         body[i+1] := inttostr(i)+': result := ' + MinValues[i] + ';';
       AddProcedureImp('class function '+ColorTypeName+'Colorspace.GetMinValue(AIndex: integer): single;', body);
+
+      AddProcedureImp('class function '+ColorTypeName+'Colorspace.GetChannelBitDepth(AIndex: integer): byte;',
+                      'result := ' + IntToStr(ChannelValueTypeBitDepth[ColorspaceInfo[Colorspace].ValueType]) + ';');
 
       AddProcedureImp('class function '+ColorTypeName+'Colorspace.GetName: string;',
                       'result := ''' + ColorspaceName + ''';');
@@ -966,6 +971,7 @@ var
           h := GetFunction('To' + n, 'AAlpha: ' + ChannelValueTypeName[ColorspaceInfo[cs].ValueType], 'T' + n, b or ba);
           Add('  ' + h);
           h := GetFunction(HelperName + '.To' + n, 'AAlpha: ' + ChannelValueTypeName[ColorspaceInfo[cs].ValueType], 'T' + n, b or ba);
+          GetConversionFunction(Colorspace, cs, handlesExtraAlpha);
           if handlesExtraAlpha then
             AddProcedureImp(h, 'result := '+GetConversionFunctionRec(ColorSpace, cs, 'Self, AAlpha', '')+';')
           else

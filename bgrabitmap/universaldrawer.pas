@@ -13,6 +13,8 @@ type
 
   TUniversalDrawer = class(TCustomUniversalDrawer)
 
+    class function GetMaxColorChannelDepth(ADest: TCustomUniversalBitmap): byte;
+
     {==== Load and save files ====}
 
     //there are UTF8 functions that are different from standard function as those
@@ -126,6 +128,21 @@ uses BGRAPolygon, BGRAPolygonAliased, BGRAPath, BGRAFillInfo, BGRAUTF8,
   BGRAReadBMP, BGRAReadJpeg, BGRAWritePNG;
 
 { TUniversalDrawer }
+
+class function TUniversalDrawer.GetMaxColorChannelDepth(ADest: TCustomUniversalBitmap): byte;
+var
+  idxAlpha, i: Integer;
+  bits: Byte;
+begin
+  result := 0;
+  idxAlpha := ADest.Colorspace.IndexOfAlphaChannel;
+  for i := 0 to ADest.Colorspace.GetChannelCount-1 do
+    if i <> idxAlpha then
+    begin
+      bits := ADest.Colorspace.GetChannelBitDepth(i);
+      if bits > result then result := bits;
+    end;
+end;
 
 class procedure TUniversalDrawer.LoadFromFile(ADest: TCustomUniversalBitmap;
   const AFilename: string);
@@ -318,7 +335,10 @@ begin
   if (format = ifXPixMap) and (ASource.NbPixels > 32768) then //xpm is slow so avoid big images
     raise exception.Create('Image is too big to be saved as XPM');
   writer := CreateBGRAImageWriter(Format, ASource.HasTransparentPixels);
-  if writer is TBGRAWriterPNG then TBGRAWriterPNG(writer).WordSized := true;
+  if GetMaxColorChannelDepth(ASource) > 8 then
+  begin
+    if writer is TBGRAWriterPNG then TBGRAWriterPNG(writer).WordSized := true;
+  end;
   try
     SaveToFileUTF8(ASource, AFilenameUTF8, writer);
   finally
@@ -342,14 +362,17 @@ end;
 
 class procedure TUniversalDrawer.SaveToStreamAs(
   ASource: TCustomUniversalBitmap; AStream: TStream; AFormat: TBGRAImageFormat);
-var handler: TFPCustomImageWriter;
+var writer: TFPCustomImageWriter;
 begin
-  handler := CreateBGRAImageWriter(AFormat, ASource.HasTransparentPixels);
-  if handler is TBGRAWriterPNG then TBGRAWriterPNG(handler).WordSized := true;
+  writer := CreateBGRAImageWriter(AFormat, ASource.HasTransparentPixels);
+  if GetMaxColorChannelDepth(ASource) > 8 then
+  begin
+    if writer is TBGRAWriterPNG then TBGRAWriterPNG(writer).WordSized := true;
+  end;
   try
-    TFPCustomImage(ASource).SaveToStream(AStream, handler)
+    TFPCustomImage(ASource).SaveToStream(AStream, writer)
   finally
-    handler.Free;
+    writer.Free;
   end;
 end;
 
