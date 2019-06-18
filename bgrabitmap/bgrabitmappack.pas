@@ -28,7 +28,7 @@ uses
   BGRAIconCursor, BGRABlurGL, BGRAReadTiff, BGRALazPaint, BGRAMemDirectory, 
   BGRAUnicode, BGRATextBidi, BGRALayerOriginal, BGRASVGOriginal, 
   BGRAGradientOriginal, BGRAUnicodeText, UniversalDrawer, LinearRGBABitmap, 
-  XYZABitmap;
+  XYZABitmap, BGRAWriteTiff;
 
 implementation
 

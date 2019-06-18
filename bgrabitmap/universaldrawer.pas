@@ -125,7 +125,7 @@ type
 implementation
 
 uses BGRAPolygon, BGRAPolygonAliased, BGRAPath, BGRAFillInfo, BGRAUTF8,
-  BGRAReadBMP, BGRAReadJpeg, BGRAWritePNG;
+  BGRAReadBMP, BGRAReadJpeg, BGRAWritePNG, BGRAWriteTiff;
 
 { TUniversalDrawer }
 
@@ -1003,4 +1003,3 @@ initialization
   UniDrawerClass := TUniversalDrawer;
 
 end.
-

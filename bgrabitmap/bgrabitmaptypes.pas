@@ -534,7 +534,7 @@ implementation
 
 uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
   FPReadXwd, FPReadXPM,
-  FPWriteTiff, FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
+  FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM;
 
 function BGRABitmapVersionStr: string;
@@ -1370,7 +1370,6 @@ initialization
   DefaultBGRAImageWriter[ifPcx] := TFPWriterPCX;
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
   DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;
-  DefaultBGRAImageWriter[ifTiff] := TFPWriterTiff;
   //writing XWD not implemented
 
   DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;
