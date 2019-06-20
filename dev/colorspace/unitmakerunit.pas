@@ -13,9 +13,9 @@ uses
 --------------+---------------------------------------------
 sRGB          |  BGRAPixel       FPColor         StdRGBA
 Adobe RGB     |  AdobeRGBA
-linear gray   |  LinearGrayByte  LinearGrayWord
+gray          |  (ByteMask)      (WordMask)
 linear RGB    |                  ExpandedPixel   LinearRGBA
-XYZ           |                  XYZAWord        XYZA
+XYZ           |                  WordXYZA        XYZA
 
 }
 
@@ -23,9 +23,10 @@ type
   TColorspaceEnum = (csColor, csBGRAPixel, csFPColor, csStdRGBA, //sRGB
     csAdobeRGBA,
     csStdHSLA, csStdHSVA, csStdCMYKA,              //based on sRGB
-    {csLinearGrayByte, csLinearGrayWord,}            //linear grayscale
+    {csByteMask, csWordMask,}                        //linear grayscale
     csExpandedPixel, csLinearRGBA,                 //linear RGB
-    csHSLAPixel, csGSBAPixel, csXYZA, {csXYZAWord,}  //based on linear RGB
+    csHSLAPixel, csGSBAPixel,                      //based on linear RGB
+    csXYZA, csWordXYZA,                            //CIE XYZ
     csLabA, csLChA);                               //based on XYZ
 
   TChannelValueType = (cvtByte, cvtWord, cvtLongWord, cvtSingle, cvtDouble);
@@ -69,9 +70,9 @@ const
    (Name: 'StdCMYK';       Declaration: 'packed record'; Colorspace: 'StdCMYK';     HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtSingle;  BasicHelper: false;
    VariableNames: 'C,M,Y,K';                             FullNames: 'Cyan,Magenta,Yellow,Black';      MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false; HasImaginary: false),
 
-{   (Name: 'LinearGrayByte';Declaration: 'packed record'; Colorspace: 'LinearGray';  HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtByte;    BasicHelper: false;
+{   (Name: 'ByteMask';      Declaration: 'packed record'; Colorspace: 'Grayscale';   HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtByte;    BasicHelper: false;
    VariableNames: 'gray';                                FullNames: 'Gray';         MinMax: '0,255';                                              IsBridge: false; HasImaginary: false),
-   (Name: 'LinearGrayWord';Declaration: 'packed record'; Colorspace: 'LinearGray';  HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtWord;    BasicHelper: false;
+   (Name: 'WordMask';      Declaration: 'packed record'; Colorspace: 'Grayscale';  HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtWord;    BasicHelper: false;
    VariableNames: 'gray';                                FullNames: 'Gray';         MinMax: '0,65535';                                            IsBridge: false; HasImaginary: false),}
 
    (Name: 'ExpandedPixel'; Declaration: 'record helper'; Colorspace: 'LinearRGB';   HasAlpha: true;   NeedRefWhite: false;  ValueType: cvtWord;    BasicHelper: true;
@@ -86,8 +87,8 @@ const
 
    (Name: 'XYZA';          Declaration: 'packed record'; Colorspace: 'CIE XYZ';     HasAlpha: true;   NeedRefWhite: true;   ValueType: cvtSingle;  BasicHelper: false;
    VariableNames: 'X,Y,Z,alpha';                         FullNames: 'X,Y,Z,Alpha';                    MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false; HasImaginary: true),
-{   (Name: 'XYZAWord';      Declaration: 'packed record'; Colorspace: 'CIE XYZ';     HasAlpha: true;   NeedRefWhite: true;   ValueType: cvtWord;    BasicHelper: false;
-   VariableNames: 'X,Y,Z,alpha';                         FullNames: 'X,Y,Z,Alpha';                    MinMax: '0,0,0,0,34806,32768,58412,65535';  IsBridge: false; HasImaginary: true),}
+   (Name: 'WordXYZA';      Declaration: 'packed record'; Colorspace: 'CIE XYZ';     HasAlpha: true;   NeedRefWhite: true;   ValueType: cvtWord;    BasicHelper: false;
+   VariableNames: 'X,Y,Z,alpha';                         FullNames: 'X,Y,Z,Alpha';                    MinMax: '0,0,0,0,50000,50000,50000,65535';  IsBridge: false; HasImaginary: true),
 
    (Name: 'LabA';          Declaration: 'packed record'; Colorspace: 'CIE Lab';     HasAlpha: true;   NeedRefWhite: false;  ValueType: cvtSingle;  BasicHelper: false;
    VariableNames: 'L,a,b,alpha';                         FullNames: 'Lightness,a,b,Alpha';            MinMax: '0,-166,-132,0,100,142,147,1';      IsBridge: false; HasImaginary: true),
@@ -175,13 +176,19 @@ begin
   result := GetConversionFunction(AFrom,ATo,AHandlesExtraAlpha);
 end;
 
+function NeedXYZReferenceWhite(c1,c2: TColorspaceEnum): boolean;
+begin
+  result := (ColorspaceInfo[c1].NeedRefWhite or ColorspaceInfo[c2].NeedRefWhite) and not
+            ([c1,c2] = [csXYZA,csWordXYZA]);
+end;
+
 function GetConversionFunctionRec(c1, c2: TColorspaceEnum; AValueParam: string; AReferenceWhiteParam: string = ''): string;
 var
   c, cBridge: TColorspaceEnum;
 
   procedure AppendConv(ATo: TColorspaceEnum);
   begin
-    if (AReferenceWhiteParam <> '') and (ColorspaceInfo[c].NeedRefWhite or ColorspaceInfo[ATo].NeedRefWhite) then
+    if (AReferenceWhiteParam <> '') and NeedXYZReferenceWhite(c,ATo) then
       result := GetConversionFunction(c,ATo)+'('+result+','+AReferenceWhiteParam+')'
     else
       result := GetConversionFunction(c,ATo)+'('+result+')';
@@ -477,11 +484,6 @@ var
       Result := fn + '(' + p + ')';
     end;
 
-    function NeedXYZReferenceWhite(cs1, cs2: TColorspaceEnum): boolean;
-    begin
-      result := ColorspaceInfo[cs1].NeedRefWhite or ColorspaceInfo[cs2].NeedRefWhite;
-    end;
-
     function AddConverter(c1, c2: TColorspaceEnum): string;
     var
       bp: TColorspaceArray;
@@ -706,11 +708,6 @@ var
         end
       end;
       params.Free;
-    end;
-
-    function NeedXYZReferenceWhite(cs: TColorspaceEnum): boolean;
-    begin
-      result := ColorspaceInfo[cs].NeedRefWhite or ColorspaceInfo[Colorspace].NeedRefWhite;
     end;
 
   var
@@ -941,8 +938,8 @@ var
                            'self.Y *= ATo.Y/AFrom.Y;'+LineEnding+
                            'self.Z *= ATo.Z/AFrom.Z;');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
-      end{ else
-      if Colorspace = csXYZAWord then
+      end else
+      if Colorspace = csWordXYZA then
       begin
         h := GetProcedure(HelperName+'.ChromaticAdapt', 'const AFrom, ATo: TXYZReferenceWhite', false);
         AddProcedureImp(h, 'if (AFrom.X = ATo.X) and (AFrom.Y = ATo.Y) and (AFrom.Z = ATo.Z) then exit;'+LineEnding+
@@ -950,7 +947,7 @@ var
                            'self.Y := ClampInt(Round(self.Y*(ATo.Y/AFrom.Y)),0,65535);'+LineEnding+
                            'self.Z := ClampInt(Round(self.Z*(ATo.Z/AFrom.Z)),0,65535);');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
-      end};
+      end;
 
       for cs := Low(TColorspaceEnum) to High(TColorspaceEnum) do
       begin
@@ -958,7 +955,7 @@ var
         if ColorspaceInfo[Colorspace].BasicHelper and (ColorspaceInfo[cs].BasicHelper or (cs = csColor)) then continue;
 
         n := ColorspaceInfo[cs].Name;
-        b := NeedXYZReferenceWhite(cs);
+        b := NeedXYZReferenceWhite(cs,Colorspace);
         ba := not ColorspaceInfo[Colorspace].HasAlpha and ColorspaceInfo[cs].HasAlpha;
 
         h := GetFunction('To' + n, '', 'T' + n, b or ba);
@@ -997,7 +994,7 @@ var
 
         n := ColorspaceInfo[cs].Name;
         nt := 'T' + n;
-        b := NeedXYZReferenceWhite(cs);
+        b := NeedXYZReferenceWhite(cs,Colorspace);
         h := GetProcedure('From' + n, 'AValue: ' + nt, b);
         Add('  ' + h);
         h := GetProcedure(HelperName + '.From' + n, 'AValue: ' + nt, b);
@@ -1090,8 +1087,8 @@ begin
   AddColorPair(csFPColor, csBGRAPixel, 'BGRAToFPColor', 'FPColorToBGRA');
   AddColorPair(csFPColor, csExpandedPixel, 'ExpandedToFPColor', 'FPColorToExpanded', true, 2);
 
-{  AddColorPair(csHSLAPixel, csBGRAPixel, 'BGRAToHSLA', 'HSLAToBGRA');
-  AddColorPair(csGSBAPixel, csBGRAPixel, 'BGRAToGSBA', 'GSBAToBGRA');}
+  {AddColorPair(csHSLAPixel, csBGRAPixel, 'BGRAToHSLA', 'HSLAToBGRA', true, 2);
+  AddColorPair(csGSBAPixel, csBGRAPixel, 'BGRAToGSBA', 'GSBAToBGRA', true, 2);}
   AddColorPair(csHSLAPixel, csGSBAPixel, 'GSBAToHSLA', 'HSLAToGSBA');
   AddColorPair(csHSLAPixel, csExpandedPixel, 'ExpandedToHSLA', 'HSLAToExpanded');
   AddColorPair(csGSBAPixel, csExpandedPixel, 'ExpandedToGSBA', 'GSBAToExpanded');
@@ -1103,8 +1100,9 @@ begin
   AddColorPair(csStdCMYKA, csStdRGBA);
   AddColorPair(csStdRGBA, csExpandedPixel, '','',true, 2);
 
- { AddColorPair(csLinearGrayWord, csExpandedPixel, 'ExpandedToLinearGrayWord', 'LinearGrayWordToExpanded');
-  AddColorPair(csLinearGrayByte, csLinearGrayWord, 'LinearGrayWordToByte', 'LinearGrayByteToWord');  }
+ { AddColorPair(csWordMask, csExpandedPixel, 'ExpandedToWordMask', 'WordMaskToExpanded');
+  AddColorPair(csByteMask, csWordMask, 'MaskWordToByte', 'MaskByteToWord');
+  AddColorPair(csByteMask, csBGRAPixel, 'BGRAToMask', 'MaskToBGRA');}
 
   //the other bridge is TXYZA
   //TLinearRGBA is between TExpandedPixel and TXYZA
@@ -1112,8 +1110,8 @@ begin
   AddColorPair(csExpandedPixel, csLinearRGBA);
   //AddColorPair(csStdRGBA,       csLinearRGBA, '','',true, 2);
 
-{  AddColorPair(csExpandedPixel, csXYZAWord);
-  AddColorPair(csXYZA, csXYZAWord);   }
+  AddColorPair(csExpandedPixel, csWordXYZA);
+  AddColorPair(csXYZA, csWordXYZA);
 
   AddColorPair(csXYZA, csLinearRGBA);
   AddColorPair(csLabA, csXYZA, '','',true, 2);

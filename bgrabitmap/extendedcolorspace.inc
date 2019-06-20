@@ -196,10 +196,16 @@ function ExpandedPixelToStdRGBA(const AExpandedPixel: TExpandedPixel): TStdRGBA;
 function GammaCompressionWF(AValue: Word): single;
 function StdRGBAToExpandedPixel(const AStdRGBA: TStdRGBA): TExpandedPixel;
 function GammaExpansionFW(AValue: single): word;
-function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA): TXYZA;
+function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA): TXYZA; overload;
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA; const AReferenceWhite: TXYZReferenceWhite): TXYZA; overload;
 function XYZAToLinearRGBA(const AXYZA: TXYZA): TLinearRGBA; overload;
 function XYZAToLinearRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TLinearRGBA; overload;
+function ExpandedPixelToWordXYZA(const AExpandedPixel: TExpandedPixel): TWordXYZA; overload;
+function ExpandedPixelToWordXYZA(const AExpandedPixel: TExpandedPixel; const AReferenceWhite: TXYZReferenceWhite): TWordXYZA; overload;
+function XYZAToWordXYZA(const AXYZA: TXYZA): TWordXYZA;
+function WordXYZAToXYZA(const AWordXYZA: TWordXYZA): TXYZA;
+function WordXYZAToExpandedPixel(const AXYZA: TWordXYZA): TExpandedPixel; overload;
+function WordXYZAToExpandedPixel(const AXYZA: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite): TExpandedPixel; overload;
 function XYZAToLabA(const AXYZA: TXYZA): TLabA; overload;
 function XYZAToLabA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TLabA; overload;
 function LabAToXYZA(const ALabA: TLabA): TXYZA; overload;
@@ -806,6 +812,149 @@ begin
     if result.blue < 0 then result.blue := 0;
   end;
   Result.alpha := AXYZA.alpha;
+end;
+
+function ExpandedPixelToWordXYZA(const AExpandedPixel: TExpandedPixel): TWordXYZA; overload;
+begin
+  result := ExpandedPixelToWordXYZA(AExpandedPixel, GetReferenceWhiteIndirect^);
+end;
+
+function ExpandedPixelToWordXYZA(const AExpandedPixel: TExpandedPixel; const AReferenceWhite: TXYZReferenceWhite): TWordXYZA; overload;
+begin
+  if AReferenceWhite.Illuminant = 'D50' then
+  begin
+    with AExpandedPixel do
+    begin
+      result.X := ClampInt(round((red * 0.4360746 + green * 0.3850649 + blue * 0.1430804)*(50000/65535)),0,65535);
+      result.Y := ClampInt(round((red * 0.2225045 + green * 0.7168786 + blue * 0.0606169)*(50000/65535)),0,65535);
+      result.Z := ClampInt(round((red * 0.0139322 + green * 0.0971045 + blue * 0.7141733)*(50000/65535)),0,65535);
+    end;
+    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+  end else
+  begin
+    with AExpandedPixel do
+    begin
+      result.X := ClampInt(round((red * 0.4124564 + green * 0.3575761 + blue * 0.1804375)*(50000/65535)),0,65535);
+      result.Y := ClampInt(round((red * 0.2126729 + green * 0.7151522 + blue * 0.0721750)*(50000/65535)),0,65535);
+      result.Z := ClampInt(round((red * 0.0193339 + green * 0.1191920 + blue * 0.9503041)*(50000/65535)),0,65535);
+    end;
+    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+  end;
+  Result.alpha := AExpandedPixel.alpha;
+end;
+
+function WordXYZAToExpandedPixel(const AXYZA: TWordXYZA): TExpandedPixel; overload;
+begin
+  result := WordXYZAToExpandedPixel(AXYZA, GetReferenceWhiteIndirect^);
+end;
+
+function WordXYZAToExpandedPixel(const AXYZA: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite): TExpandedPixel; overload;
+var
+  minVal, lightVal, maxVal,
+  r,g,b, valRangeDiv2: NativeInt;
+  ad: TWordXYZA;
+begin
+  ad := AXYZA;
+  if AReferenceWhite.Illuminant = 'D50' then
+  begin
+    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    with ad do
+    begin
+      r := round((X * 3.1338561 + Y * (-1.6168667) + Z * (-0.4906146))*(65535/50000));
+      g := round((X * (-0.9787684) + Y * 1.9161415 + Z * 0.0334540)*(65535/50000));
+      b := round((X * 0.0719453 + Y * (-0.2289914) + Z * 1.4052427)*(65535/50000));
+    end;
+  end else
+  begin
+    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+    with ad do
+    begin
+      r := round((X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314))*(65535/50000));
+      g := round((X * (-0.9692660) + Y * 1.8760108 + Z * 0.0415560)*(65535/50000));
+      b := round((X * 0.0556434 + Y * (-0.2040259) + Z * 1.0572252)*(65535/50000));
+    end;
+  end;
+  if ( (XYZToRGBOverflowMin = xroClipToTarget) and ((r < 0) or
+       (g < 0) or (b < 0)) ) or
+     ( (XYZToRGBOverflowMax = xroClipToTarget) and ((r > 65535) or
+       (g > 65535) or (b > 65535)) ) then
+  begin
+    result.red := 0;
+    result.green := 0;
+    result.blue := 0;
+    result.alpha := 0;
+    exit;
+  end;
+  case XYZToRGBOverflowMin of
+    xroPreserveHue: begin
+        minVal := min(min(r,g),b);
+        if minVal<0 then
+        begin
+          lightVal := r*redWeightShl10 + g*greenWeightShl10
+                    + b*blueWeightShl10;
+          if lightVal <= 0 then
+          begin
+            result.red := 0;
+            result.green := 0;
+            result.blue := 0;
+            Result.alpha := AXYZA.alpha;
+            exit;
+          end else
+          begin
+            lightVal := (lightVal+512) shr 10;
+            valRangeDiv2 := (lightVal-minVal) shr 1;
+            r := (int64(r-minVal)*lightVal+valRangeDiv2) div (lightVal-minVal);
+            g := (int64(g-minVal)*lightVal+valRangeDiv2) div (lightVal-minVal);
+            b := (int64(b-minVal)*lightVal+valRangeDiv2) div (lightVal-minVal);
+          end;
+        end;
+      end;
+  end;
+  case XYZToRGBOverflowMax of
+    xroPreserveHue:
+      begin
+        maxVal := max(max(r,g),b);
+        if maxVal > 65535 then
+        begin
+          r := (int64(r)*65535+(maxVal shr 1)) div maxVal;
+          g := (int64(g)*65535+(maxVal shr 1)) div maxVal;
+          b := (int64(b)*65535+(maxVal shr 1)) div maxVal;
+        end;
+      end;
+    xroSaturateEachChannel:
+      begin
+        if r > 65535 then r := 65535;
+        if g > 65535 then g := 65535;
+        if b > 65535 then b := 65535;
+      end;
+  end;
+  if XYZToRGBOverflowMin = xroSaturateEachChannel then
+  begin
+    if r < 0 then r := 0;
+    if g < 0 then g := 0;
+    if b < 0 then b := 0;
+  end;
+  result.red := r;
+  result.green := g;
+  result.blue := b;
+  Result.alpha := AXYZA.alpha;
+end;
+
+function XYZAToWordXYZA(const AXYZA: TXYZA): TWordXYZA;
+begin
+  result.X := ClampInt(round(AXYZA.X*50000),0,65535);
+  result.Y := ClampInt(round(AXYZA.Y*50000),0,65535);
+  result.Z := ClampInt(round(AXYZA.Z*50000),0,65535);
+  result.alpha := round(AXYZA.alpha*65535);
+end;
+
+function WordXYZAToXYZA(const AWordXYZA: TWordXYZA): TXYZA;
+const oneOver50000 = 1/50000;
+begin
+  result.X := AWordXYZA.X*oneOver50000;
+  result.Y := AWordXYZA.Y*oneOver50000;
+  result.Z := AWordXYZA.Z*oneOver50000;
+  result.alpha:= AWordXYZA.alpha*(1/65535);
 end;
 
 function XYZAToLabA(const AXYZA: TXYZA): TLabA;

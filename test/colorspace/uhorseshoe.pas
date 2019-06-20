@@ -421,7 +421,7 @@ begin
   for i := 0 to colorspace.GetChannelCount-1 do
     cbYAxis.Items.Add(colorspace.GetChannelName(i));
 
-  if colorspace = TXYZAColorspace then
+  if (colorspace = TXYZAColorspace) or (colorspace = TWordXYZAColorspace) then
   begin
     cbXAxis.ItemIndex:= colorspace.IndexOfChannel('X');
     cbYAxis.ItemIndex:= colorspace.IndexOfChannel('Z');
@@ -442,7 +442,7 @@ begin
   end;
 
   cbReferenceWhite.Enabled := cfReferenceWhiteIndependent in colorspace.GetFlags;
-  if colorspace = TXYZAColorspace then SetReferenceWhite(2, 'E')
+  if (colorspace = TXYZAColorspace) or (colorspace = TWordXYZAColorspace) then SetReferenceWhite(2, 'E')
   else UpdateReferenceWhiteFromCombo;
 
   UpdateSelectedAxis;
@@ -550,6 +550,7 @@ var
   s: string;
   temp: TBGRABitmap;
   xyzaBuf: array of TXYZA;
+  wordXyzaBuf: array of TWordXYZA;
 begin
   colorspace := SelectedColorspace;
   valueSize := colorspace.GetSize;
@@ -629,6 +630,17 @@ begin
       inc(p, valueSize);
     end;
 
+    if colorspace = TWordXYZAColorspace then
+    begin
+      setlength(wordXyzaBuf, Bitmap.Width);
+      colorspace.Convert(rowData^, wordXyzaBuf[0], TWordXYZAColorspace, Bitmap.Width);
+      for x := 0 to Bitmap.Width-1 do
+      begin
+        if not IsOptimalReflect(wordXyzaBuf[x]) then
+          wordXyzaBuf[x].alpha := 0;
+      end;
+      TWordXYZAColorspace.Convert(wordXyzaBuf[0], temp.ScanLine[y]^, TBGRAPixelColorspace, Bitmap.Width, @ReferenceWhite2D65);
+    end else
     if (cfHasImaginaryColors in colorspace.GetFlags) and (XYZToRGBOverflowMin <> xroClipToTarget) then
     begin
       setlength(xyzaBuf, Bitmap.Width);

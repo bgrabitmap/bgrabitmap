@@ -106,6 +106,7 @@ begin
       finalAlpha := residualAlpha + ASource^.alpha*alphaOver;
       if finalAlpha <= 0 then ADest^ := XYZATransparent else
       begin
+        if finalAlpha > 1 then finalAlpha := 1;
         ADest^.alpha:= finalAlpha;
         finalAlphaInv := 1/finalAlpha;
         ADest^.X := (ADest^.X*residualAlpha +
@@ -153,6 +154,7 @@ begin
       finalAlpha := residualAlpha + srcAlphaOver;
       if finalAlpha <= 0 then ADest^ := XYZATransparent else
       begin
+        if finalAlpha > 1 then finalAlpha := 1;
         ADest^.alpha:= finalAlpha;
         finalAlphaInv := 1/finalAlpha;
         ADest^.X := (ADest^.X*residualAlpha +
@@ -281,7 +283,7 @@ begin
       if ASource^.alpha >= 1 then
       begin
         residualAlpha := ADest^.alpha*(1-alphaOver);
-        finalAlpha := residualAlpha + ASource^.alpha*alphaOver;
+        finalAlpha := residualAlpha + alphaOver;
         if finalAlpha <= 0 then ADest^ := XYZATransparent else
         begin
           ADest^.alpha:= finalAlpha;

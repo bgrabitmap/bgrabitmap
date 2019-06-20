@@ -66,6 +66,15 @@ type
     class function New(const AX,AY,AZ:single): TXYZA;overload;static;
   end;
 
+  { TWordXYZA }
+
+  PWordXYZA = ^TWordXYZA;
+  TWordXYZA = packed record
+    X,Y,Z,alpha: word;
+    class function New(const AX,AY,AZ,AAlpha:word): TWordXYZA;overload;static;
+    class function New(const AX,AY,AZ:word): TWordXYZA;overload;static;
+  end;
+
   { TLabA }
 
   PLabA = ^TLabA;
@@ -305,6 +314,23 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
+  { TWordXYZAColorspace }
+
+  TWordXYZAColorspace = class(TCustomColorspace)
+    class function GetChannelName(AIndex: integer): string; override;
+    class function GetChannelCount: integer; override;
+    class function IndexOfAlphaChannel: integer; override;
+    class function GetColorTransparency(AColor: Pointer): TColorTransparency; override;
+    class function GetMaxValue(AIndex: integer): single; override;
+    class function GetMinValue(AIndex: integer): single; override;
+    class function GetChannelBitDepth({%H-}AIndex: integer): byte; override;
+    class function GetName: string; override;
+    class function GetSize: integer; override;
+    class function GetChannel(AColor: Pointer; AIndex: integer): single; override;
+    class procedure SetChannel(AColor: Pointer; AIndex: integer; AValue: single); override;
+    class function GetFlags: TColorspaceFlags; override;
+  end;
+
   { TLabAColorspace }
 
   TLabAColorspace = class(TCustomColorspace)
@@ -376,6 +402,9 @@ type
     function ToXYZA: TXYZA;overload;
     function ToXYZA(AAlpha: single): TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(AAlpha: word): TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;overload;
     function ToLabA(AAlpha: single): TLabA;overload;
     function ToLChA: TLChA;overload;
@@ -393,6 +422,8 @@ type
     procedure FromGSBAPixel(AValue: TGSBAPixel);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
     property red: byte read GetRed write SetRed;
@@ -414,6 +445,8 @@ type
     function ToLinearRGBA: TLinearRGBA;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromStdRGBA(AValue: TStdRGBA);
@@ -424,6 +457,8 @@ type
     procedure FromLinearRGBA(AValue: TLinearRGBA);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -442,6 +477,8 @@ type
     function ToLinearRGBA: TLinearRGBA;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromStdRGBA(AValue: TStdRGBA);
@@ -452,6 +489,8 @@ type
     procedure FromLinearRGBA(AValue: TLinearRGBA);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -473,6 +512,8 @@ type
     function ToGSBAPixel: TGSBAPixel;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromColor(AValue: TColor);
@@ -488,6 +529,8 @@ type
     procedure FromGSBAPixel(AValue: TGSBAPixel);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -509,6 +552,8 @@ type
     function ToGSBAPixel: TGSBAPixel;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromColor(AValue: TColor);
@@ -524,6 +569,8 @@ type
     procedure FromGSBAPixel(AValue: TGSBAPixel);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -545,6 +592,8 @@ type
     function ToGSBAPixel: TGSBAPixel;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromColor(AValue: TColor);
@@ -560,6 +609,8 @@ type
     procedure FromGSBAPixel(AValue: TGSBAPixel);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -581,6 +632,8 @@ type
     function ToGSBAPixel: TGSBAPixel;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromColor(AValue: TColor);
@@ -596,6 +649,8 @@ type
     procedure FromGSBAPixel(AValue: TGSBAPixel);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -628,6 +683,9 @@ type
     function ToXYZA: TXYZA;overload;
     function ToXYZA(AAlpha: single): TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(AAlpha: word): TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;overload;
     function ToLabA(AAlpha: single): TLabA;overload;
     function ToLChA: TLChA;overload;
@@ -645,6 +703,8 @@ type
     procedure FromGSBAPixel(AValue: TGSBAPixel);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -663,6 +723,8 @@ type
     function ToLinearRGBA: TLinearRGBA;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromStdRGBA(AValue: TStdRGBA);
@@ -673,6 +735,8 @@ type
     procedure FromLinearRGBA(AValue: TLinearRGBA);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -694,6 +758,8 @@ type
     function ToGSBAPixel: TGSBAPixel;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromColor(AValue: TColor);
@@ -709,6 +775,8 @@ type
     procedure FromGSBAPixel(AValue: TGSBAPixel);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -727,6 +795,8 @@ type
     function ToLinearRGBA: TLinearRGBA;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromStdRGBA(AValue: TStdRGBA);
@@ -737,6 +807,8 @@ type
     procedure FromLinearRGBA(AValue: TLinearRGBA);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -755,6 +827,8 @@ type
     function ToLinearRGBA: TLinearRGBA;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
     procedure FromStdRGBA(AValue: TStdRGBA);
@@ -765,6 +839,8 @@ type
     procedure FromLinearRGBA(AValue: TLinearRGBA);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
     procedure FromLChA(AValue: TLChA);
   end;
@@ -798,6 +874,7 @@ type
     function ToHSLAPixel(const AReferenceWhite: TXYZReferenceWhite): THSLAPixel;overload;
     function ToGSBAPixel: TGSBAPixel;overload;
     function ToGSBAPixel(const AReferenceWhite: TXYZReferenceWhite): TGSBAPixel;overload;
+    function ToWordXYZA: TWordXYZA;
     function ToLabA: TLabA;overload;
     function ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
     function ToLChA: TLChA;overload;
@@ -826,6 +903,72 @@ type
     procedure FromHSLAPixel(AValue: THSLAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromGSBAPixel(AValue: TGSBAPixel); overload;
     procedure FromGSBAPixel(AValue: TGSBAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA);
+    procedure FromLabA(AValue: TLabA); overload;
+    procedure FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromLChA(AValue: TLChA); overload;
+    procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
+  end;
+
+  { TWordXYZAHelper }
+
+  TWordXYZAHelper = record helper for TWordXYZA
+    class function Colorspace: TColorspaceAny; static;
+    procedure ChromaticAdapt(const AFrom, ATo: TXYZReferenceWhite);
+    function ToColor: TColor;overload;
+    function ToColor(const AReferenceWhite: TXYZReferenceWhite): TColor;overload;
+    function ToBGRAPixel: TBGRAPixel;overload;
+    function ToBGRAPixel(const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
+    function ToFPColor: TFPColor;overload;
+    function ToFPColor(const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
+    function ToStdRGBA: TStdRGBA;overload;
+    function ToStdRGBA(const AReferenceWhite: TXYZReferenceWhite): TStdRGBA;overload;
+    function ToAdobeRGBA: TAdobeRGBA;overload;
+    function ToAdobeRGBA(const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA;overload;
+    function ToStdHSLA: TStdHSLA;overload;
+    function ToStdHSLA(const AReferenceWhite: TXYZReferenceWhite): TStdHSLA;overload;
+    function ToStdHSVA: TStdHSVA;overload;
+    function ToStdHSVA(const AReferenceWhite: TXYZReferenceWhite): TStdHSVA;overload;
+    function ToStdCMYK: TStdCMYK;overload;
+    function ToStdCMYK(const AReferenceWhite: TXYZReferenceWhite): TStdCMYK;overload;
+    function ToExpandedPixel: TExpandedPixel;overload;
+    function ToExpandedPixel(const AReferenceWhite: TXYZReferenceWhite): TExpandedPixel;overload;
+    function ToLinearRGBA: TLinearRGBA;overload;
+    function ToLinearRGBA(const AReferenceWhite: TXYZReferenceWhite): TLinearRGBA;overload;
+    function ToHSLAPixel: THSLAPixel;overload;
+    function ToHSLAPixel(const AReferenceWhite: TXYZReferenceWhite): THSLAPixel;overload;
+    function ToGSBAPixel: TGSBAPixel;overload;
+    function ToGSBAPixel(const AReferenceWhite: TXYZReferenceWhite): TGSBAPixel;overload;
+    function ToXYZA: TXYZA;
+    function ToLabA: TLabA;overload;
+    function ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
+    function ToLChA: TLChA;overload;
+    function ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
+    procedure FromColor(AValue: TColor); overload;
+    procedure FromColor(AValue: TColor; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromBGRAPixel(AValue: TBGRAPixel); overload;
+    procedure FromBGRAPixel(AValue: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromFPColor(AValue: TFPColor); overload;
+    procedure FromFPColor(AValue: TFPColor; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromStdRGBA(AValue: TStdRGBA); overload;
+    procedure FromStdRGBA(AValue: TStdRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromAdobeRGBA(AValue: TAdobeRGBA); overload;
+    procedure FromAdobeRGBA(AValue: TAdobeRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromStdHSLA(AValue: TStdHSLA); overload;
+    procedure FromStdHSLA(AValue: TStdHSLA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromStdHSVA(AValue: TStdHSVA); overload;
+    procedure FromStdHSVA(AValue: TStdHSVA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromStdCMYK(AValue: TStdCMYK); overload;
+    procedure FromStdCMYK(AValue: TStdCMYK; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromExpandedPixel(AValue: TExpandedPixel); overload;
+    procedure FromExpandedPixel(AValue: TExpandedPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromLinearRGBA(AValue: TLinearRGBA); overload;
+    procedure FromLinearRGBA(AValue: TLinearRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromHSLAPixel(AValue: THSLAPixel); overload;
+    procedure FromHSLAPixel(AValue: THSLAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromGSBAPixel(AValue: TGSBAPixel); overload;
+    procedure FromGSBAPixel(AValue: TGSBAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromXYZA(AValue: TXYZA);
     procedure FromLabA(AValue: TLabA); overload;
     procedure FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLChA(AValue: TLChA); overload;
@@ -850,6 +993,8 @@ type
     function ToGSBAPixel: TGSBAPixel;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLChA: TLChA;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
@@ -865,6 +1010,8 @@ type
     procedure FromGSBAPixel(AValue: TGSBAPixel);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLChA(AValue: TLChA);
   end;
 
@@ -886,6 +1033,8 @@ type
     function ToGSBAPixel: TGSBAPixel;
     function ToXYZA: TXYZA;overload;
     function ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
+    function ToWordXYZA: TWordXYZA;overload;
+    function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
@@ -901,6 +1050,8 @@ type
     procedure FromGSBAPixel(AValue: TGSBAPixel);
     procedure FromXYZA(AValue: TXYZA); overload;
     procedure FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA); overload;
+    procedure FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
     procedure FromLabA(AValue: TLabA);
   end;
 
@@ -911,6 +1062,7 @@ operator := (const AValue: TColor): TStdHSVA;
 operator := (const AValue: TColor): TStdCMYK;
 operator := (const AValue: TColor): TLinearRGBA;
 operator := (const AValue: TColor): TXYZA;
+operator := (const AValue: TColor): TWordXYZA;
 operator := (const AValue: TColor): TLabA;
 operator := (const AValue: TColor): TLChA;
 operator := (const AValue: TBGRAPixel): TStdRGBA;
@@ -920,6 +1072,7 @@ operator := (const AValue: TBGRAPixel): TStdHSVA;
 operator := (const AValue: TBGRAPixel): TStdCMYK;
 operator := (const AValue: TBGRAPixel): TLinearRGBA;
 operator := (const AValue: TBGRAPixel): TXYZA;
+operator := (const AValue: TBGRAPixel): TWordXYZA;
 operator := (const AValue: TBGRAPixel): TLabA;
 operator := (const AValue: TBGRAPixel): TLChA;
 operator := (const AValue: TFPColor): TStdRGBA;
@@ -929,6 +1082,7 @@ operator := (const AValue: TFPColor): TStdHSVA;
 operator := (const AValue: TFPColor): TStdCMYK;
 operator := (const AValue: TFPColor): TLinearRGBA;
 operator := (const AValue: TFPColor): TXYZA;
+operator := (const AValue: TFPColor): TWordXYZA;
 operator := (const AValue: TFPColor): TLabA;
 operator := (const AValue: TFPColor): TLChA;
 operator := (const AValue: TStdRGBA): TColor;
@@ -943,6 +1097,7 @@ operator := (const AValue: TStdRGBA): TLinearRGBA;
 operator := (const AValue: TStdRGBA): THSLAPixel;
 operator := (const AValue: TStdRGBA): TGSBAPixel;
 operator := (const AValue: TStdRGBA): TXYZA;
+operator := (const AValue: TStdRGBA): TWordXYZA;
 operator := (const AValue: TStdRGBA): TLabA;
 operator := (const AValue: TStdRGBA): TLChA;
 operator := (const AValue: TAdobeRGBA): TColor;
@@ -957,6 +1112,7 @@ operator := (const AValue: TAdobeRGBA): TLinearRGBA;
 operator := (const AValue: TAdobeRGBA): THSLAPixel;
 operator := (const AValue: TAdobeRGBA): TGSBAPixel;
 operator := (const AValue: TAdobeRGBA): TXYZA;
+operator := (const AValue: TAdobeRGBA): TWordXYZA;
 operator := (const AValue: TAdobeRGBA): TLabA;
 operator := (const AValue: TAdobeRGBA): TLChA;
 operator := (const AValue: TStdHSLA): TColor;
@@ -971,6 +1127,7 @@ operator := (const AValue: TStdHSLA): TLinearRGBA;
 operator := (const AValue: TStdHSLA): THSLAPixel;
 operator := (const AValue: TStdHSLA): TGSBAPixel;
 operator := (const AValue: TStdHSLA): TXYZA;
+operator := (const AValue: TStdHSLA): TWordXYZA;
 operator := (const AValue: TStdHSLA): TLabA;
 operator := (const AValue: TStdHSLA): TLChA;
 operator := (const AValue: TStdHSVA): TColor;
@@ -985,6 +1142,7 @@ operator := (const AValue: TStdHSVA): TLinearRGBA;
 operator := (const AValue: TStdHSVA): THSLAPixel;
 operator := (const AValue: TStdHSVA): TGSBAPixel;
 operator := (const AValue: TStdHSVA): TXYZA;
+operator := (const AValue: TStdHSVA): TWordXYZA;
 operator := (const AValue: TStdHSVA): TLabA;
 operator := (const AValue: TStdHSVA): TLChA;
 operator := (const AValue: TStdCMYK): TColor;
@@ -999,6 +1157,7 @@ operator := (const AValue: TStdCMYK): TLinearRGBA;
 operator := (const AValue: TStdCMYK): THSLAPixel;
 operator := (const AValue: TStdCMYK): TGSBAPixel;
 operator := (const AValue: TStdCMYK): TXYZA;
+operator := (const AValue: TStdCMYK): TWordXYZA;
 operator := (const AValue: TStdCMYK): TLabA;
 operator := (const AValue: TStdCMYK): TLChA;
 operator := (const AValue: TExpandedPixel): TStdRGBA;
@@ -1008,6 +1167,7 @@ operator := (const AValue: TExpandedPixel): TStdHSVA;
 operator := (const AValue: TExpandedPixel): TStdCMYK;
 operator := (const AValue: TExpandedPixel): TLinearRGBA;
 operator := (const AValue: TExpandedPixel): TXYZA;
+operator := (const AValue: TExpandedPixel): TWordXYZA;
 operator := (const AValue: TExpandedPixel): TLabA;
 operator := (const AValue: TExpandedPixel): TLChA;
 operator := (const AValue: TLinearRGBA): TColor;
@@ -1022,6 +1182,7 @@ operator := (const AValue: TLinearRGBA): TExpandedPixel;
 operator := (const AValue: TLinearRGBA): THSLAPixel;
 operator := (const AValue: TLinearRGBA): TGSBAPixel;
 operator := (const AValue: TLinearRGBA): TXYZA;
+operator := (const AValue: TLinearRGBA): TWordXYZA;
 operator := (const AValue: TLinearRGBA): TLabA;
 operator := (const AValue: TLinearRGBA): TLChA;
 operator := (const AValue: THSLAPixel): TStdRGBA;
@@ -1031,6 +1192,7 @@ operator := (const AValue: THSLAPixel): TStdHSVA;
 operator := (const AValue: THSLAPixel): TStdCMYK;
 operator := (const AValue: THSLAPixel): TLinearRGBA;
 operator := (const AValue: THSLAPixel): TXYZA;
+operator := (const AValue: THSLAPixel): TWordXYZA;
 operator := (const AValue: THSLAPixel): TLabA;
 operator := (const AValue: THSLAPixel): TLChA;
 operator := (const AValue: TGSBAPixel): TStdRGBA;
@@ -1040,6 +1202,7 @@ operator := (const AValue: TGSBAPixel): TStdHSVA;
 operator := (const AValue: TGSBAPixel): TStdCMYK;
 operator := (const AValue: TGSBAPixel): TLinearRGBA;
 operator := (const AValue: TGSBAPixel): TXYZA;
+operator := (const AValue: TGSBAPixel): TWordXYZA;
 operator := (const AValue: TGSBAPixel): TLabA;
 operator := (const AValue: TGSBAPixel): TLChA;
 operator := (const AValue: TXYZA): TColor;
@@ -1054,8 +1217,24 @@ operator := (const AValue: TXYZA): TExpandedPixel;
 operator := (const AValue: TXYZA): TLinearRGBA;
 operator := (const AValue: TXYZA): THSLAPixel;
 operator := (const AValue: TXYZA): TGSBAPixel;
+operator := (const AValue: TXYZA): TWordXYZA;
 operator := (const AValue: TXYZA): TLabA;
 operator := (const AValue: TXYZA): TLChA;
+operator := (const AValue: TWordXYZA): TColor;
+operator := (const AValue: TWordXYZA): TBGRAPixel;
+operator := (const AValue: TWordXYZA): TFPColor;
+operator := (const AValue: TWordXYZA): TStdRGBA;
+operator := (const AValue: TWordXYZA): TAdobeRGBA;
+operator := (const AValue: TWordXYZA): TStdHSLA;
+operator := (const AValue: TWordXYZA): TStdHSVA;
+operator := (const AValue: TWordXYZA): TStdCMYK;
+operator := (const AValue: TWordXYZA): TExpandedPixel;
+operator := (const AValue: TWordXYZA): TLinearRGBA;
+operator := (const AValue: TWordXYZA): THSLAPixel;
+operator := (const AValue: TWordXYZA): TGSBAPixel;
+operator := (const AValue: TWordXYZA): TXYZA;
+operator := (const AValue: TWordXYZA): TLabA;
+operator := (const AValue: TWordXYZA): TLChA;
 operator := (const AValue: TLabA): TColor;
 operator := (const AValue: TLabA): TBGRAPixel;
 operator := (const AValue: TLabA): TFPColor;
@@ -1069,6 +1248,7 @@ operator := (const AValue: TLabA): TLinearRGBA;
 operator := (const AValue: TLabA): THSLAPixel;
 operator := (const AValue: TLabA): TGSBAPixel;
 operator := (const AValue: TLabA): TXYZA;
+operator := (const AValue: TLabA): TWordXYZA;
 operator := (const AValue: TLabA): TLChA;
 operator := (const AValue: TLChA): TColor;
 operator := (const AValue: TLChA): TBGRAPixel;
@@ -1083,6 +1263,7 @@ operator := (const AValue: TLChA): TLinearRGBA;
 operator := (const AValue: TLChA): THSLAPixel;
 operator := (const AValue: TLChA): TGSBAPixel;
 operator := (const AValue: TLChA): TXYZA;
+operator := (const AValue: TLChA): TWordXYZA;
 operator := (const AValue: TLChA): TLabA;
 {$ENDIF}
 {$IFDEF INCLUDE_IMPLEMENTATION}
@@ -1314,6 +1495,20 @@ begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
   while ACount > 0 do begin
     TXYZA(ADest^) := AdobeRGBAToXYZA(TAdobeRGBA(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function AdobeRGBAToWordXYZA(const AAdobeRGBA: TAdobeRGBA): TWordXYZA;overload;
+begin Result := XYZAToWordXYZA(AdobeRGBAToXYZA(AAdobeRGBA)) end;
+
+function AdobeRGBAToWordXYZA(const AAdobeRGBA: TAdobeRGBA; const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := XYZAToWordXYZA(AdobeRGBAToXYZA(AAdobeRGBA,AReferenceWhite)) end;
+
+procedure ConvertAdobeRGBAArrayToWordXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TAdobeRGBA); ADestStride:integer=sizeOf(TWordXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TWordXYZA(ADest^) := AdobeRGBAToWordXYZA(TAdobeRGBA(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1612,6 +1807,14 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
+procedure ConvertExpandedPixelArrayToWordXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TExpandedPixel); ADestStride:integer=sizeOf(TWordXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TWordXYZA(ADest^) := ExpandedPixelToWordXYZA(TExpandedPixel(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
 function ExpandedPixelToLabA(const AExpandedPixel: TExpandedPixel): TLabA;
 begin Result := XYZAToLabA(LinearRGBAToXYZA(ExpandedPixelToLinearRGBA(AExpandedPixel))) end;
 
@@ -1735,6 +1938,13 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
+procedure ConvertXYZAArrayToWordXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TWordXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TWordXYZA(ADest^) := XYZAToWordXYZA(TXYZA(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
 procedure ConvertXYZAArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TXYZA); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
@@ -1754,6 +1964,63 @@ begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
   while ACount > 0 do begin
     TLChA(ADest^) := XYZAToLChA(TXYZA(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function WordXYZAToAdobeRGBA(const AWordXYZA: TWordXYZA): TAdobeRGBA;overload;
+begin Result := XYZAToAdobeRGBA(WordXYZAToXYZA(AWordXYZA)) end;
+
+function WordXYZAToAdobeRGBA(const AWordXYZA: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA;overload;
+begin Result := XYZAToAdobeRGBA(WordXYZAToXYZA(AWordXYZA),AReferenceWhite) end;
+
+procedure ConvertWordXYZAArrayToAdobeRGBAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TWordXYZA); ADestStride:integer=sizeOf(TAdobeRGBA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TAdobeRGBA(ADest^) := WordXYZAToAdobeRGBA(TWordXYZA(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+procedure ConvertWordXYZAArrayToExpandedPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TWordXYZA); ADestStride:integer=sizeOf(TExpandedPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TExpandedPixel(ADest^) := WordXYZAToExpandedPixel(TWordXYZA(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+procedure ConvertWordXYZAArrayToXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TWordXYZA); ADestStride:integer=sizeOf(TXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  while ACount > 0 do begin
+    TXYZA(ADest^) := WordXYZAToXYZA(TWordXYZA(ASource^));
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function WordXYZAToLabA(const AWordXYZA: TWordXYZA): TLabA;overload;
+begin Result := XYZAToLabA(WordXYZAToXYZA(AWordXYZA)) end;
+
+function WordXYZAToLabA(const AWordXYZA: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
+begin Result := XYZAToLabA(WordXYZAToXYZA(AWordXYZA),AReferenceWhite) end;
+
+procedure ConvertWordXYZAArrayToLabAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TWordXYZA); ADestStride:integer=sizeOf(TLabA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TLabA(ADest^) := WordXYZAToLabA(TWordXYZA(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function WordXYZAToLChA(const AWordXYZA: TWordXYZA): TLChA;overload;
+begin Result := LabAToLChA(XYZAToLabA(WordXYZAToXYZA(AWordXYZA))) end;
+
+function WordXYZAToLChA(const AWordXYZA: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
+begin Result := LabAToLChA(XYZAToLabA(WordXYZAToXYZA(AWordXYZA),AReferenceWhite)) end;
+
+procedure ConvertWordXYZAArrayToLChAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TWordXYZA); ADestStride:integer=sizeOf(TLChA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TLChA(ADest^) := WordXYZAToLChA(TWordXYZA(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1792,6 +2059,20 @@ begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
   while ACount > 0 do begin
     TXYZA(ADest^) := LabAToXYZA(TLabA(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function LabAToWordXYZA(const ALabA: TLabA): TWordXYZA;overload;
+begin Result := XYZAToWordXYZA(LabAToXYZA(ALabA)) end;
+
+function LabAToWordXYZA(const ALabA: TLabA; const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := XYZAToWordXYZA(LabAToXYZA(ALabA,AReferenceWhite)) end;
+
+procedure ConvertLabAArrayToWordXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLabA); ADestStride:integer=sizeOf(TWordXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TWordXYZA(ADest^) := LabAToWordXYZA(TLabA(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1843,6 +2124,20 @@ begin
   if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
   while ACount > 0 do begin
     TXYZA(ADest^) := LChAToXYZA(TLChA(ASource^), AReferenceWhite^);
+    inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
+end;
+
+function LChAToWordXYZA(const ALChA: TLChA): TWordXYZA;overload;
+begin Result := XYZAToWordXYZA(LabAToXYZA(LChAToLabA(ALChA))) end;
+
+function LChAToWordXYZA(const ALChA: TLChA; const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := XYZAToWordXYZA(LabAToXYZA(LChAToLabA(ALChA),AReferenceWhite)) end;
+
+procedure ConvertLChAArrayToWordXYZAArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TLChA); ADestStride:integer=sizeOf(TWordXYZA); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
+begin
+  if AReferenceWhite = nil then AReferenceWhite := @CurrentReferenceWhite;
+  while ACount > 0 do begin
+    TWordXYZA(ADest^) := LChAToWordXYZA(TLChA(ASource^), AReferenceWhite^);
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
@@ -1969,6 +2264,24 @@ begin
   Result.Y := AY;
   Result.Z := AZ;
   Result.alpha := 1;
+end;
+
+{ TWordXYZA }
+
+class function TWordXYZA.New(const AX,AY,AZ,AAlpha:word): TWordXYZA;overload;
+begin
+  Result.X := AX;
+  Result.Y := AY;
+  Result.Z := AZ;
+  Result.alpha := AAlpha;
+end;
+
+class function TWordXYZA.New(const AX,AY,AZ:word): TWordXYZA;overload;
+begin
+  Result.X := AX;
+  Result.Y := AY;
+  Result.Z := AZ;
+  Result.alpha := 65535;
 end;
 
 { TLabA }
@@ -3073,6 +3386,89 @@ class function TXYZAColorspace.GetFlags: TColorspaceFlags;
 begin result := [cfMovableReferenceWhite,cfHasImaginaryColors] end;
 
 
+{ TWordXYZAColorspace }
+
+class function TWordXYZAColorspace.GetChannelName(AIndex: integer): string;
+begin
+  case AIndex of
+  0: result := 'X';
+  1: result := 'Y';
+  2: result := 'Z';
+  3: result := 'Alpha';
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class function TWordXYZAColorspace.GetChannelCount: integer;
+begin result := 4 end;
+
+class function TWordXYZAColorspace.IndexOfAlphaChannel: integer;
+begin result := 3 end;
+
+class function TWordXYZAColorspace.GetColorTransparency(AColor: Pointer): TColorTransparency;
+begin
+  if TWordXYZA(AColor^).alpha >= 65535 then exit(ctFullyOpaque) else
+  if TWordXYZA(AColor^).alpha <= 0 then exit(ctFullyTransparent) else
+  exit(ctSemiTransparent)
+end;
+
+class function TWordXYZAColorspace.GetMaxValue(AIndex: integer): single;
+begin
+  case AIndex of
+  0: result := 50000;
+  1: result := 50000;
+  2: result := 50000;
+  3: result := 65535;
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class function TWordXYZAColorspace.GetMinValue(AIndex: integer): single;
+begin
+  case AIndex of
+  0: result := 0;
+  1: result := 0;
+  2: result := 0;
+  3: result := 0;
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class function TWordXYZAColorspace.GetChannelBitDepth(AIndex: integer): byte;
+begin result := 16 end;
+
+class function TWordXYZAColorspace.GetName: string;
+begin result := 'WordXYZA' end;
+
+class function TWordXYZAColorspace.GetSize: integer;
+begin result := sizeof(TWordXYZA) end;
+
+class function TWordXYZAColorspace.GetChannel(AColor: Pointer; AIndex: integer): single;
+begin
+  case AIndex of
+  0: result := TWordXYZA(AColor^).X;
+  1: result := TWordXYZA(AColor^).Y;
+  2: result := TWordXYZA(AColor^).Z;
+  3: result := TWordXYZA(AColor^).alpha;
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class procedure TWordXYZAColorspace.SetChannel(AColor: Pointer; AIndex: integer; AValue: single);
+begin
+  case AIndex of
+  0: TWordXYZA(AColor^).X := Round(Clamp(AValue,0,50000));
+  1: TWordXYZA(AColor^).Y := Round(Clamp(AValue,0,50000));
+  2: TWordXYZA(AColor^).Z := Round(Clamp(AValue,0,50000));
+  3: TWordXYZA(AColor^).alpha := Round(Clamp(AValue,0,65535));
+  else raise ERangeError.Create('Index out of bounds');
+  end;
+end;
+
+class function TWordXYZAColorspace.GetFlags: TColorspaceFlags;
+begin result := [cfMovableReferenceWhite,cfHasImaginaryColors] end;
+
+
 { TLabAColorspace }
 
 class function TLabAColorspace.GetChannelName(AIndex: integer): string;
@@ -3352,6 +3748,18 @@ end;
 function TColorHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(ColorToExpandedPixel(Self),AReferenceWhite) end;
 
+function TColorHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(ColorToExpandedPixel(Self)) end;
+
+function TColorHelper.ToWordXYZA(AAlpha: word): TWordXYZA;overload;
+begin
+  Result := ExpandedPixelToWordXYZA(ColorToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
+
+function TColorHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(ColorToExpandedPixel(Self),AReferenceWhite) end;
+
 function TColorHelper.ToLabA: TLabA;overload;
 begin Result := ExpandedPixelToLabA(ColorToExpandedPixel(Self)) end;
 
@@ -3409,6 +3817,12 @@ begin Self := ExpandedPixelToColor(XYZAToExpandedPixel(AValue)) end;
 procedure TColorHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := ExpandedPixelToColor(XYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
+procedure TColorHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := ExpandedPixelToColor(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure TColorHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToColor(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
+
 procedure TColorHelper.FromLabA(AValue: TLabA);
 begin Self := ExpandedPixelToColor(LabAToExpandedPixel(AValue)) end;
 
@@ -3460,6 +3874,12 @@ begin Result := ExpandedPixelToXYZA(GammaExpansion(Self)) end;
 function TBGRAPixelHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(GammaExpansion(Self),AReferenceWhite) end;
 
+function TBGRAPixelHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(GammaExpansion(Self)) end;
+
+function TBGRAPixelHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(GammaExpansion(Self),AReferenceWhite) end;
+
 function TBGRAPixelHelper.ToLabA: TLabA;
 begin Result := ExpandedPixelToLabA(GammaExpansion(Self)) end;
 
@@ -3489,6 +3909,12 @@ begin Self := GammaCompression(XYZAToExpandedPixel(AValue)) end;
 
 procedure TBGRAPixelHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := GammaCompression(XYZAToExpandedPixel(AValue,AReferenceWhite)) end;
+
+procedure TBGRAPixelHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := GammaCompression(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure TBGRAPixelHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := GammaCompression(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TBGRAPixelHelper.FromLabA(AValue: TLabA);
 begin Self := GammaCompression(LabAToExpandedPixel(AValue)) end;
@@ -3541,6 +3967,12 @@ begin Result := ExpandedPixelToXYZA(FPColorToExpanded(Self)) end;
 function TFPColorHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(FPColorToExpanded(Self),AReferenceWhite) end;
 
+function TFPColorHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(FPColorToExpanded(Self)) end;
+
+function TFPColorHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(FPColorToExpanded(Self),AReferenceWhite) end;
+
 function TFPColorHelper.ToLabA: TLabA;
 begin Result := ExpandedPixelToLabA(FPColorToExpanded(Self)) end;
 
@@ -3570,6 +4002,12 @@ begin Self := ExpandedToFPColor(XYZAToExpandedPixel(AValue)) end;
 
 procedure TFPColorHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := ExpandedToFPColor(XYZAToExpandedPixel(AValue,AReferenceWhite)) end;
+
+procedure TFPColorHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := ExpandedToFPColor(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure TFPColorHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedToFPColor(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TFPColorHelper.FromLabA(AValue: TLabA);
 begin Self := ExpandedToFPColor(LabAToExpandedPixel(AValue)) end;
@@ -3621,6 +4059,12 @@ begin Result := ExpandedPixelToXYZA(StdRGBAToExpandedPixel(Self)) end;
 function TStdRGBAHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(StdRGBAToExpandedPixel(Self),AReferenceWhite) end;
 
+function TStdRGBAHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(StdRGBAToExpandedPixel(Self)) end;
+
+function TStdRGBAHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(StdRGBAToExpandedPixel(Self),AReferenceWhite) end;
+
 function TStdRGBAHelper.ToLabA: TLabA;
 begin Result := ExpandedPixelToLabA(StdRGBAToExpandedPixel(Self)) end;
 
@@ -3665,6 +4109,12 @@ begin Self := ExpandedPixelToStdRGBA(XYZAToExpandedPixel(AValue)) end;
 
 procedure TStdRGBAHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := ExpandedPixelToStdRGBA(XYZAToExpandedPixel(AValue,AReferenceWhite)) end;
+
+procedure TStdRGBAHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := ExpandedPixelToStdRGBA(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure TStdRGBAHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToStdRGBA(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TStdRGBAHelper.FromLabA(AValue: TLabA);
 begin Self := ExpandedPixelToStdRGBA(LabAToExpandedPixel(AValue)) end;
@@ -3716,6 +4166,12 @@ begin Result := AdobeRGBAToXYZA(Self) end;
 function TAdobeRGBAHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := AdobeRGBAToXYZA(Self,AReferenceWhite) end;
 
+function TAdobeRGBAHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := AdobeRGBAToWordXYZA(Self) end;
+
+function TAdobeRGBAHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := AdobeRGBAToWordXYZA(Self,AReferenceWhite) end;
+
 function TAdobeRGBAHelper.ToLabA: TLabA;
 begin Result := AdobeRGBAToLabA(Self) end;
 
@@ -3760,6 +4216,12 @@ begin Self := XYZAToAdobeRGBA(AValue) end;
 
 procedure TAdobeRGBAHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := XYZAToAdobeRGBA(AValue,AReferenceWhite) end;
+
+procedure TAdobeRGBAHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := WordXYZAToAdobeRGBA(AValue) end;
+
+procedure TAdobeRGBAHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := WordXYZAToAdobeRGBA(AValue,AReferenceWhite) end;
 
 procedure TAdobeRGBAHelper.FromLabA(AValue: TLabA);
 begin Self := LabAToAdobeRGBA(AValue) end;
@@ -3811,6 +4273,12 @@ begin Result := ExpandedPixelToXYZA(StdHSLAToExpandedPixel(Self)) end;
 function TStdHSLAHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(StdHSLAToExpandedPixel(Self),AReferenceWhite) end;
 
+function TStdHSLAHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(StdHSLAToExpandedPixel(Self)) end;
+
+function TStdHSLAHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(StdHSLAToExpandedPixel(Self),AReferenceWhite) end;
+
 function TStdHSLAHelper.ToLabA: TLabA;
 begin Result := ExpandedPixelToLabA(StdHSLAToExpandedPixel(Self)) end;
 
@@ -3855,6 +4323,12 @@ begin Self := ExpandedPixelToStdHSLA(XYZAToExpandedPixel(AValue)) end;
 
 procedure TStdHSLAHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := ExpandedPixelToStdHSLA(XYZAToExpandedPixel(AValue,AReferenceWhite)) end;
+
+procedure TStdHSLAHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := ExpandedPixelToStdHSLA(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure TStdHSLAHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToStdHSLA(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TStdHSLAHelper.FromLabA(AValue: TLabA);
 begin Self := ExpandedPixelToStdHSLA(LabAToExpandedPixel(AValue)) end;
@@ -3906,6 +4380,12 @@ begin Result := ExpandedPixelToXYZA(StdHSVAToExpandedPixel(Self)) end;
 function TStdHSVAHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(StdHSVAToExpandedPixel(Self),AReferenceWhite) end;
 
+function TStdHSVAHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(StdHSVAToExpandedPixel(Self)) end;
+
+function TStdHSVAHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(StdHSVAToExpandedPixel(Self),AReferenceWhite) end;
+
 function TStdHSVAHelper.ToLabA: TLabA;
 begin Result := ExpandedPixelToLabA(StdHSVAToExpandedPixel(Self)) end;
 
@@ -3950,6 +4430,12 @@ begin Self := ExpandedPixelToStdHSVA(XYZAToExpandedPixel(AValue)) end;
 
 procedure TStdHSVAHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := ExpandedPixelToStdHSVA(XYZAToExpandedPixel(AValue,AReferenceWhite)) end;
+
+procedure TStdHSVAHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := ExpandedPixelToStdHSVA(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure TStdHSVAHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToStdHSVA(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TStdHSVAHelper.FromLabA(AValue: TLabA);
 begin Self := ExpandedPixelToStdHSVA(LabAToExpandedPixel(AValue)) end;
@@ -4052,6 +4538,18 @@ end;
 function TStdCMYKHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(StdCMYKToExpandedPixel(Self),AReferenceWhite) end;
 
+function TStdCMYKHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(StdCMYKToExpandedPixel(Self)) end;
+
+function TStdCMYKHelper.ToWordXYZA(AAlpha: word): TWordXYZA;overload;
+begin
+  Result := ExpandedPixelToWordXYZA(StdCMYKToExpandedPixel(Self));
+  result.alpha := AAlpha;
+end;
+
+function TStdCMYKHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(StdCMYKToExpandedPixel(Self),AReferenceWhite) end;
+
 function TStdCMYKHelper.ToLabA: TLabA;overload;
 begin Result := ExpandedPixelToLabA(StdCMYKToExpandedPixel(Self)) end;
 
@@ -4109,6 +4607,12 @@ begin Self := ExpandedPixelToStdCMYK(XYZAToExpandedPixel(AValue)) end;
 procedure TStdCMYKHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := ExpandedPixelToStdCMYK(XYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
+procedure TStdCMYKHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := ExpandedPixelToStdCMYK(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure TStdCMYKHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToStdCMYK(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
+
 procedure TStdCMYKHelper.FromLabA(AValue: TLabA);
 begin Self := ExpandedPixelToStdCMYK(LabAToExpandedPixel(AValue)) end;
 
@@ -4160,6 +4664,12 @@ begin Result := ExpandedPixelToXYZA(Self) end;
 function TExpandedPixelHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(Self,AReferenceWhite) end;
 
+function TExpandedPixelHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(Self) end;
+
+function TExpandedPixelHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(Self,AReferenceWhite) end;
+
 function TExpandedPixelHelper.ToLabA: TLabA;
 begin Result := ExpandedPixelToLabA(Self) end;
 
@@ -4189,6 +4699,12 @@ begin Self := XYZAToExpandedPixel(AValue) end;
 
 procedure TExpandedPixelHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := XYZAToExpandedPixel(AValue,AReferenceWhite) end;
+
+procedure TExpandedPixelHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := WordXYZAToExpandedPixel(AValue) end;
+
+procedure TExpandedPixelHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := WordXYZAToExpandedPixel(AValue,AReferenceWhite) end;
 
 procedure TExpandedPixelHelper.FromLabA(AValue: TLabA);
 begin Self := LabAToExpandedPixel(AValue) end;
@@ -4240,6 +4756,12 @@ begin Result := LinearRGBAToXYZA(Self) end;
 function TLinearRGBAHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := LinearRGBAToXYZA(Self,AReferenceWhite) end;
 
+function TLinearRGBAHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(LinearRGBAToExpandedPixel(Self)) end;
+
+function TLinearRGBAHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(LinearRGBAToExpandedPixel(Self),AReferenceWhite) end;
+
 function TLinearRGBAHelper.ToLabA: TLabA;
 begin Result := LinearRGBAToLabA(Self) end;
 
@@ -4284,6 +4806,12 @@ begin Self := XYZAToLinearRGBA(AValue) end;
 
 procedure TLinearRGBAHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := XYZAToLinearRGBA(AValue,AReferenceWhite) end;
+
+procedure TLinearRGBAHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := ExpandedPixelToLinearRGBA(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure TLinearRGBAHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToLinearRGBA(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TLinearRGBAHelper.FromLabA(AValue: TLabA);
 begin Self := LabAToLinearRGBA(AValue) end;
@@ -4336,6 +4864,12 @@ begin Result := ExpandedPixelToXYZA(HSLAToExpanded(Self)) end;
 function THSLAPixelHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(HSLAToExpanded(Self),AReferenceWhite) end;
 
+function THSLAPixelHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(HSLAToExpanded(Self)) end;
+
+function THSLAPixelHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(HSLAToExpanded(Self),AReferenceWhite) end;
+
 function THSLAPixelHelper.ToLabA: TLabA;
 begin Result := ExpandedPixelToLabA(HSLAToExpanded(Self)) end;
 
@@ -4365,6 +4899,12 @@ begin Self := ExpandedToHSLA(XYZAToExpandedPixel(AValue)) end;
 
 procedure THSLAPixelHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := ExpandedToHSLA(XYZAToExpandedPixel(AValue,AReferenceWhite)) end;
+
+procedure THSLAPixelHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := ExpandedToHSLA(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure THSLAPixelHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedToHSLA(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure THSLAPixelHelper.FromLabA(AValue: TLabA);
 begin Self := ExpandedToHSLA(LabAToExpandedPixel(AValue)) end;
@@ -4417,6 +4957,12 @@ begin Result := ExpandedPixelToXYZA(GSBAToExpanded(Self)) end;
 function TGSBAPixelHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := ExpandedPixelToXYZA(GSBAToExpanded(Self),AReferenceWhite) end;
 
+function TGSBAPixelHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(GSBAToExpanded(Self)) end;
+
+function TGSBAPixelHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := ExpandedPixelToWordXYZA(GSBAToExpanded(Self),AReferenceWhite) end;
+
 function TGSBAPixelHelper.ToLabA: TLabA;
 begin Result := ExpandedPixelToLabA(GSBAToExpanded(Self)) end;
 
@@ -4446,6 +4992,12 @@ begin Self := ExpandedToGSBA(XYZAToExpandedPixel(AValue)) end;
 
 procedure TGSBAPixelHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := ExpandedToGSBA(XYZAToExpandedPixel(AValue,AReferenceWhite)) end;
+
+procedure TGSBAPixelHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := ExpandedToGSBA(WordXYZAToExpandedPixel(AValue)) end;
+
+procedure TGSBAPixelHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedToGSBA(WordXYZAToExpandedPixel(AValue,AReferenceWhite)) end;
 
 procedure TGSBAPixelHelper.FromLabA(AValue: TLabA);
 begin Self := ExpandedToGSBA(LabAToExpandedPixel(AValue)) end;
@@ -4536,6 +5088,9 @@ begin Result := ExpandedToGSBA(XYZAToExpandedPixel(Self)) end;
 function TXYZAHelper.ToGSBAPixel(const AReferenceWhite: TXYZReferenceWhite): TGSBAPixel;overload;
 begin Result := ExpandedToGSBA(XYZAToExpandedPixel(Self,AReferenceWhite)) end;
 
+function TXYZAHelper.ToWordXYZA: TWordXYZA;
+begin Result := XYZAToWordXYZA(Self) end;
+
 function TXYZAHelper.ToLabA: TLabA;overload;
 begin Result := XYZAToLabA(Self) end;
 
@@ -4620,6 +5175,9 @@ begin Self := ExpandedPixelToXYZA(GSBAToExpanded(AValue)) end;
 procedure TXYZAHelper.FromGSBAPixel(AValue: TGSBAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := ExpandedPixelToXYZA(GSBAToExpanded(AValue),AReferenceWhite) end;
 
+procedure TXYZAHelper.FromWordXYZA(AValue: TWordXYZA);
+begin Self := WordXYZAToXYZA(AValue) end;
+
 procedure TXYZAHelper.FromLabA(AValue: TLabA); overload;
 begin Self := LabAToXYZA(AValue) end;
 
@@ -4631,6 +5189,191 @@ begin Self := LChAToXYZA(AValue) end;
 
 procedure TXYZAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := LChAToXYZA(AValue,AReferenceWhite) end;
+
+{ TWordXYZAHelper }
+
+class function TWordXYZAHelper.Colorspace: TColorspaceAny; static;
+begin result := TWordXYZAColorspace end;
+
+procedure TWordXYZAHelper.ChromaticAdapt(const AFrom, ATo: TXYZReferenceWhite);
+begin if (AFrom.X = ATo.X) and (AFrom.Y = ATo.Y) and (AFrom.Z = ATo.Z) then exit;
+self.X := ClampInt(Round(self.X*(ATo.X/AFrom.X)),0,65535);
+self.Y := ClampInt(Round(self.Y*(ATo.Y/AFrom.Y)),0,65535);
+self.Z := ClampInt(Round(self.Z*(ATo.Z/AFrom.Z)),0,65535) end;
+
+function TWordXYZAHelper.ToColor: TColor;overload;
+begin Result := ExpandedPixelToColor(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToColor(const AReferenceWhite: TXYZReferenceWhite): TColor;overload;
+begin Result := ExpandedPixelToColor(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToBGRAPixel: TBGRAPixel;overload;
+begin Result := GammaCompression(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToBGRAPixel(const AReferenceWhite: TXYZReferenceWhite): TBGRAPixel;overload;
+begin Result := GammaCompression(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToFPColor: TFPColor;overload;
+begin Result := ExpandedToFPColor(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToFPColor(const AReferenceWhite: TXYZReferenceWhite): TFPColor;overload;
+begin Result := ExpandedToFPColor(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToStdRGBA: TStdRGBA;overload;
+begin Result := ExpandedPixelToStdRGBA(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToStdRGBA(const AReferenceWhite: TXYZReferenceWhite): TStdRGBA;overload;
+begin Result := ExpandedPixelToStdRGBA(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToAdobeRGBA: TAdobeRGBA;overload;
+begin Result := WordXYZAToAdobeRGBA(Self) end;
+
+function TWordXYZAHelper.ToAdobeRGBA(const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA;overload;
+begin Result := WordXYZAToAdobeRGBA(Self,AReferenceWhite) end;
+
+function TWordXYZAHelper.ToStdHSLA: TStdHSLA;overload;
+begin Result := ExpandedPixelToStdHSLA(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToStdHSLA(const AReferenceWhite: TXYZReferenceWhite): TStdHSLA;overload;
+begin Result := ExpandedPixelToStdHSLA(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToStdHSVA: TStdHSVA;overload;
+begin Result := ExpandedPixelToStdHSVA(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToStdHSVA(const AReferenceWhite: TXYZReferenceWhite): TStdHSVA;overload;
+begin Result := ExpandedPixelToStdHSVA(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToStdCMYK: TStdCMYK;overload;
+begin Result := ExpandedPixelToStdCMYK(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToStdCMYK(const AReferenceWhite: TXYZReferenceWhite): TStdCMYK;overload;
+begin Result := ExpandedPixelToStdCMYK(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToExpandedPixel: TExpandedPixel;overload;
+begin Result := WordXYZAToExpandedPixel(Self) end;
+
+function TWordXYZAHelper.ToExpandedPixel(const AReferenceWhite: TXYZReferenceWhite): TExpandedPixel;overload;
+begin Result := WordXYZAToExpandedPixel(Self,AReferenceWhite) end;
+
+function TWordXYZAHelper.ToLinearRGBA: TLinearRGBA;overload;
+begin Result := ExpandedPixelToLinearRGBA(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToLinearRGBA(const AReferenceWhite: TXYZReferenceWhite): TLinearRGBA;overload;
+begin Result := ExpandedPixelToLinearRGBA(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToHSLAPixel: THSLAPixel;overload;
+begin Result := ExpandedToHSLA(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToHSLAPixel(const AReferenceWhite: TXYZReferenceWhite): THSLAPixel;overload;
+begin Result := ExpandedToHSLA(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToGSBAPixel: TGSBAPixel;overload;
+begin Result := ExpandedToGSBA(WordXYZAToExpandedPixel(Self)) end;
+
+function TWordXYZAHelper.ToGSBAPixel(const AReferenceWhite: TXYZReferenceWhite): TGSBAPixel;overload;
+begin Result := ExpandedToGSBA(WordXYZAToExpandedPixel(Self,AReferenceWhite)) end;
+
+function TWordXYZAHelper.ToXYZA: TXYZA;
+begin Result := WordXYZAToXYZA(Self) end;
+
+function TWordXYZAHelper.ToLabA: TLabA;overload;
+begin Result := WordXYZAToLabA(Self) end;
+
+function TWordXYZAHelper.ToLabA(const AReferenceWhite: TXYZReferenceWhite): TLabA;overload;
+begin Result := WordXYZAToLabA(Self,AReferenceWhite) end;
+
+function TWordXYZAHelper.ToLChA: TLChA;overload;
+begin Result := WordXYZAToLChA(Self) end;
+
+function TWordXYZAHelper.ToLChA(const AReferenceWhite: TXYZReferenceWhite): TLChA;overload;
+begin Result := WordXYZAToLChA(Self,AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromColor(AValue: TColor); overload;
+begin Self := ExpandedPixelToWordXYZA(ColorToExpandedPixel(AValue)) end;
+
+procedure TWordXYZAHelper.FromColor(AValue: TColor; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(ColorToExpandedPixel(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromBGRAPixel(AValue: TBGRAPixel); overload;
+begin Self := ExpandedPixelToWordXYZA(GammaExpansion(AValue)) end;
+
+procedure TWordXYZAHelper.FromBGRAPixel(AValue: TBGRAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(GammaExpansion(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromFPColor(AValue: TFPColor); overload;
+begin Self := ExpandedPixelToWordXYZA(FPColorToExpanded(AValue)) end;
+
+procedure TWordXYZAHelper.FromFPColor(AValue: TFPColor; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(FPColorToExpanded(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromStdRGBA(AValue: TStdRGBA); overload;
+begin Self := ExpandedPixelToWordXYZA(StdRGBAToExpandedPixel(AValue)) end;
+
+procedure TWordXYZAHelper.FromStdRGBA(AValue: TStdRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(StdRGBAToExpandedPixel(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromAdobeRGBA(AValue: TAdobeRGBA); overload;
+begin Self := AdobeRGBAToWordXYZA(AValue) end;
+
+procedure TWordXYZAHelper.FromAdobeRGBA(AValue: TAdobeRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := AdobeRGBAToWordXYZA(AValue,AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromStdHSLA(AValue: TStdHSLA); overload;
+begin Self := ExpandedPixelToWordXYZA(StdHSLAToExpandedPixel(AValue)) end;
+
+procedure TWordXYZAHelper.FromStdHSLA(AValue: TStdHSLA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(StdHSLAToExpandedPixel(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromStdHSVA(AValue: TStdHSVA); overload;
+begin Self := ExpandedPixelToWordXYZA(StdHSVAToExpandedPixel(AValue)) end;
+
+procedure TWordXYZAHelper.FromStdHSVA(AValue: TStdHSVA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(StdHSVAToExpandedPixel(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromStdCMYK(AValue: TStdCMYK); overload;
+begin Self := ExpandedPixelToWordXYZA(StdCMYKToExpandedPixel(AValue)) end;
+
+procedure TWordXYZAHelper.FromStdCMYK(AValue: TStdCMYK; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(StdCMYKToExpandedPixel(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromExpandedPixel(AValue: TExpandedPixel); overload;
+begin Self := ExpandedPixelToWordXYZA(AValue) end;
+
+procedure TWordXYZAHelper.FromExpandedPixel(AValue: TExpandedPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(AValue,AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromLinearRGBA(AValue: TLinearRGBA); overload;
+begin Self := ExpandedPixelToWordXYZA(LinearRGBAToExpandedPixel(AValue)) end;
+
+procedure TWordXYZAHelper.FromLinearRGBA(AValue: TLinearRGBA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(LinearRGBAToExpandedPixel(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromHSLAPixel(AValue: THSLAPixel); overload;
+begin Self := ExpandedPixelToWordXYZA(HSLAToExpanded(AValue)) end;
+
+procedure TWordXYZAHelper.FromHSLAPixel(AValue: THSLAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(HSLAToExpanded(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromGSBAPixel(AValue: TGSBAPixel); overload;
+begin Self := ExpandedPixelToWordXYZA(GSBAToExpanded(AValue)) end;
+
+procedure TWordXYZAHelper.FromGSBAPixel(AValue: TGSBAPixel; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := ExpandedPixelToWordXYZA(GSBAToExpanded(AValue),AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromXYZA(AValue: TXYZA);
+begin Self := XYZAToWordXYZA(AValue) end;
+
+procedure TWordXYZAHelper.FromLabA(AValue: TLabA); overload;
+begin Self := LabAToWordXYZA(AValue) end;
+
+procedure TWordXYZAHelper.FromLabA(AValue: TLabA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := LabAToWordXYZA(AValue,AReferenceWhite) end;
+
+procedure TWordXYZAHelper.FromLChA(AValue: TLChA); overload;
+begin Self := LChAToWordXYZA(AValue) end;
+
+procedure TWordXYZAHelper.FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := LChAToWordXYZA(AValue,AReferenceWhite) end;
 
 { TLabAHelper }
 
@@ -4679,6 +5422,12 @@ begin Result := LabAToXYZA(Self) end;
 function TLabAHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := LabAToXYZA(Self,AReferenceWhite) end;
 
+function TLabAHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := LabAToWordXYZA(Self) end;
+
+function TLabAHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := LabAToWordXYZA(Self,AReferenceWhite) end;
+
 function TLabAHelper.ToLChA: TLChA;
 begin Result := LabAToLChA(Self) end;
 
@@ -4723,6 +5472,12 @@ begin Self := XYZAToLabA(AValue) end;
 
 procedure TLabAHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := XYZAToLabA(AValue,AReferenceWhite) end;
+
+procedure TLabAHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := WordXYZAToLabA(AValue) end;
+
+procedure TLabAHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := WordXYZAToLabA(AValue,AReferenceWhite) end;
 
 procedure TLabAHelper.FromLChA(AValue: TLChA);
 begin Self := LChAToLabA(AValue) end;
@@ -4774,6 +5529,12 @@ begin Result := LChAToXYZA(Self) end;
 function TLChAHelper.ToXYZA(const AReferenceWhite: TXYZReferenceWhite): TXYZA;overload;
 begin Result := LChAToXYZA(Self,AReferenceWhite) end;
 
+function TLChAHelper.ToWordXYZA: TWordXYZA;overload;
+begin Result := LChAToWordXYZA(Self) end;
+
+function TLChAHelper.ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
+begin Result := LChAToWordXYZA(Self,AReferenceWhite) end;
+
 function TLChAHelper.ToLabA: TLabA;
 begin Result := LChAToLabA(Self) end;
 
@@ -4819,6 +5580,12 @@ begin Self := XYZAToLChA(AValue) end;
 procedure TLChAHelper.FromXYZA(AValue: TXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
 begin Self := XYZAToLChA(AValue,AReferenceWhite) end;
 
+procedure TLChAHelper.FromWordXYZA(AValue: TWordXYZA); overload;
+begin Self := WordXYZAToLChA(AValue) end;
+
+procedure TLChAHelper.FromWordXYZA(AValue: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite); overload;
+begin Self := WordXYZAToLChA(AValue,AReferenceWhite) end;
+
 procedure TLChAHelper.FromLabA(AValue: TLabA);
 begin Self := LabAToLChA(AValue) end;
 
@@ -4844,6 +5611,9 @@ begin Result := ExpandedPixelToLinearRGBA(ColorToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TColor): TXYZA;
 begin Result := ExpandedPixelToXYZA(ColorToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TColor): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(ColorToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TColor): TLabA;
 begin Result := ExpandedPixelToLabA(ColorToExpandedPixel(AValue)) end;
@@ -4872,6 +5642,9 @@ begin Result := ExpandedPixelToLinearRGBA(GammaExpansion(AValue)) end;
 operator := (const AValue: TBGRAPixel): TXYZA;
 begin Result := ExpandedPixelToXYZA(GammaExpansion(AValue)) end;
 
+operator := (const AValue: TBGRAPixel): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(GammaExpansion(AValue)) end;
+
 operator := (const AValue: TBGRAPixel): TLabA;
 begin Result := ExpandedPixelToLabA(GammaExpansion(AValue)) end;
 
@@ -4898,6 +5671,9 @@ begin Result := ExpandedPixelToLinearRGBA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TXYZA;
 begin Result := ExpandedPixelToXYZA(FPColorToExpanded(AValue)) end;
+
+operator := (const AValue: TFPColor): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(FPColorToExpanded(AValue)) end;
 
 operator := (const AValue: TFPColor): TLabA;
 begin Result := ExpandedPixelToLabA(FPColorToExpanded(AValue)) end;
@@ -4941,6 +5717,9 @@ begin Result := ExpandedToGSBA(StdRGBAToExpandedPixel(AValue)) end;
 operator := (const AValue: TStdRGBA): TXYZA;
 begin Result := ExpandedPixelToXYZA(StdRGBAToExpandedPixel(AValue)) end;
 
+operator := (const AValue: TStdRGBA): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(StdRGBAToExpandedPixel(AValue)) end;
+
 operator := (const AValue: TStdRGBA): TLabA;
 begin Result := ExpandedPixelToLabA(StdRGBAToExpandedPixel(AValue)) end;
 
@@ -4982,6 +5761,9 @@ begin Result := ExpandedToGSBA(AdobeRGBAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TAdobeRGBA): TXYZA;
 begin Result := AdobeRGBAToXYZA(AValue) end;
+
+operator := (const AValue: TAdobeRGBA): TWordXYZA;
+begin Result := AdobeRGBAToWordXYZA(AValue) end;
 
 operator := (const AValue: TAdobeRGBA): TLabA;
 begin Result := AdobeRGBAToLabA(AValue) end;
@@ -5025,6 +5807,9 @@ begin Result := ExpandedToGSBA(StdHSLAToExpandedPixel(AValue)) end;
 operator := (const AValue: TStdHSLA): TXYZA;
 begin Result := ExpandedPixelToXYZA(StdHSLAToExpandedPixel(AValue)) end;
 
+operator := (const AValue: TStdHSLA): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(StdHSLAToExpandedPixel(AValue)) end;
+
 operator := (const AValue: TStdHSLA): TLabA;
 begin Result := ExpandedPixelToLabA(StdHSLAToExpandedPixel(AValue)) end;
 
@@ -5066,6 +5851,9 @@ begin Result := ExpandedToGSBA(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): TXYZA;
 begin Result := ExpandedPixelToXYZA(StdHSVAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TStdHSVA): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(StdHSVAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TStdHSVA): TLabA;
 begin Result := ExpandedPixelToLabA(StdHSVAToExpandedPixel(AValue)) end;
@@ -5109,6 +5897,9 @@ begin Result := ExpandedToGSBA(StdCMYKToExpandedPixel(AValue)) end;
 operator := (const AValue: TStdCMYK): TXYZA;
 begin Result := ExpandedPixelToXYZA(StdCMYKToExpandedPixel(AValue)) end;
 
+operator := (const AValue: TStdCMYK): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(StdCMYKToExpandedPixel(AValue)) end;
+
 operator := (const AValue: TStdCMYK): TLabA;
 begin Result := ExpandedPixelToLabA(StdCMYKToExpandedPixel(AValue)) end;
 
@@ -5135,6 +5926,9 @@ begin Result := ExpandedPixelToLinearRGBA(AValue) end;
 
 operator := (const AValue: TExpandedPixel): TXYZA;
 begin Result := ExpandedPixelToXYZA(AValue) end;
+
+operator := (const AValue: TExpandedPixel): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(AValue) end;
 
 operator := (const AValue: TExpandedPixel): TLabA;
 begin Result := ExpandedPixelToLabA(AValue) end;
@@ -5178,6 +5972,9 @@ begin Result := ExpandedToGSBA(LinearRGBAToExpandedPixel(AValue)) end;
 operator := (const AValue: TLinearRGBA): TXYZA;
 begin Result := LinearRGBAToXYZA(AValue) end;
 
+operator := (const AValue: TLinearRGBA): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(LinearRGBAToExpandedPixel(AValue)) end;
+
 operator := (const AValue: TLinearRGBA): TLabA;
 begin Result := LinearRGBAToLabA(AValue) end;
 
@@ -5205,6 +6002,9 @@ begin Result := ExpandedPixelToLinearRGBA(HSLAToExpanded(AValue)) end;
 operator := (const AValue: THSLAPixel): TXYZA;
 begin Result := ExpandedPixelToXYZA(HSLAToExpanded(AValue)) end;
 
+operator := (const AValue: THSLAPixel): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(HSLAToExpanded(AValue)) end;
+
 operator := (const AValue: THSLAPixel): TLabA;
 begin Result := ExpandedPixelToLabA(HSLAToExpanded(AValue)) end;
 
@@ -5231,6 +6031,9 @@ begin Result := ExpandedPixelToLinearRGBA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TXYZA;
 begin Result := ExpandedPixelToXYZA(GSBAToExpanded(AValue)) end;
+
+operator := (const AValue: TGSBAPixel): TWordXYZA;
+begin Result := ExpandedPixelToWordXYZA(GSBAToExpanded(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TLabA;
 begin Result := ExpandedPixelToLabA(GSBAToExpanded(AValue)) end;
@@ -5274,11 +6077,59 @@ begin Result := ExpandedToHSLA(XYZAToExpandedPixel(AValue)) end;
 operator := (const AValue: TXYZA): TGSBAPixel;
 begin Result := ExpandedToGSBA(XYZAToExpandedPixel(AValue)) end;
 
+operator := (const AValue: TXYZA): TWordXYZA;
+begin Result := XYZAToWordXYZA(AValue) end;
+
 operator := (const AValue: TXYZA): TLabA;
 begin Result := XYZAToLabA(AValue) end;
 
 operator := (const AValue: TXYZA): TLChA;
 begin Result := XYZAToLChA(AValue) end;
+
+operator := (const AValue: TWordXYZA): TColor;
+begin Result := ExpandedPixelToColor(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): TBGRAPixel;
+begin Result := GammaCompression(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): TFPColor;
+begin Result := ExpandedToFPColor(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): TStdRGBA;
+begin Result := ExpandedPixelToStdRGBA(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): TAdobeRGBA;
+begin Result := WordXYZAToAdobeRGBA(AValue) end;
+
+operator := (const AValue: TWordXYZA): TStdHSLA;
+begin Result := ExpandedPixelToStdHSLA(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): TStdHSVA;
+begin Result := ExpandedPixelToStdHSVA(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): TStdCMYK;
+begin Result := ExpandedPixelToStdCMYK(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): TExpandedPixel;
+begin Result := WordXYZAToExpandedPixel(AValue) end;
+
+operator := (const AValue: TWordXYZA): TLinearRGBA;
+begin Result := ExpandedPixelToLinearRGBA(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): THSLAPixel;
+begin Result := ExpandedToHSLA(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): TGSBAPixel;
+begin Result := ExpandedToGSBA(WordXYZAToExpandedPixel(AValue)) end;
+
+operator := (const AValue: TWordXYZA): TXYZA;
+begin Result := WordXYZAToXYZA(AValue) end;
+
+operator := (const AValue: TWordXYZA): TLabA;
+begin Result := WordXYZAToLabA(AValue) end;
+
+operator := (const AValue: TWordXYZA): TLChA;
+begin Result := WordXYZAToLChA(AValue) end;
 
 operator := (const AValue: TLabA): TColor;
 begin Result := ExpandedPixelToColor(LabAToExpandedPixel(AValue)) end;
@@ -5318,6 +6169,9 @@ begin Result := ExpandedToGSBA(LabAToExpandedPixel(AValue)) end;
 
 operator := (const AValue: TLabA): TXYZA;
 begin Result := LabAToXYZA(AValue) end;
+
+operator := (const AValue: TLabA): TWordXYZA;
+begin Result := LabAToWordXYZA(AValue) end;
 
 operator := (const AValue: TLabA): TLChA;
 begin Result := LabAToLChA(AValue) end;
@@ -5361,6 +6215,9 @@ begin Result := ExpandedToGSBA(LChAToExpandedPixel(AValue)) end;
 operator := (const AValue: TLChA): TXYZA;
 begin Result := LChAToXYZA(AValue) end;
 
+operator := (const AValue: TLChA): TWordXYZA;
+begin Result := LChAToWordXYZA(AValue) end;
+
 operator := (const AValue: TLChA): TLabA;
 begin Result := LChAToLabA(AValue) end;
 
@@ -5380,6 +6237,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.Add(THSLAPixelColorspace);
   ColorspaceCollection.Add(TGSBAPixelColorspace);
   ColorspaceCollection.Add(TXYZAColorspace);
+  ColorspaceCollection.Add(TWordXYZAColorspace);
   ColorspaceCollection.Add(TLabAColorspace);
   ColorspaceCollection.Add(TLChAColorspace);
   ColorspaceCollection.AddConversion(TColorColorspace, TBGRAPixelColorspace, @ConvertColorArrayToBGRAPixelArray);
@@ -5408,6 +6266,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TExpandedPixelColorspace, @ConvertAdobeRGBAArrayToExpandedPixelArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TLinearRGBAColorspace, @ConvertAdobeRGBAArrayToLinearRGBAArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TXYZAColorspace, @ConvertAdobeRGBAArrayToXYZAArray);
+  ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TWordXYZAColorspace, @ConvertAdobeRGBAArrayToWordXYZAArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TLabAColorspace, @ConvertAdobeRGBAArrayToLabAArray);
   ColorspaceCollection.AddConversion(TAdobeRGBAColorspace, TLChAColorspace, @ConvertAdobeRGBAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TStdHSLAColorspace, TColorColorspace, @ConvertStdHSLAArrayToColorArray);
@@ -5440,6 +6299,7 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, THSLAPixelColorspace, @ConvertExpandedPixelArrayToHSLAPixelArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TGSBAPixelColorspace, @ConvertExpandedPixelArrayToGSBAPixelArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TXYZAColorspace, @ConvertExpandedPixelArrayToXYZAArray);
+  ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TWordXYZAColorspace, @ConvertExpandedPixelArrayToWordXYZAArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TLabAColorspace, @ConvertExpandedPixelArrayToLabAArray);
   ColorspaceCollection.AddConversion(TExpandedPixelColorspace, TLChAColorspace, @ConvertExpandedPixelArrayToLChAArray);
   ColorspaceCollection.AddConversion(TLinearRGBAColorspace, TAdobeRGBAColorspace, @ConvertLinearRGBAArrayToAdobeRGBAArray);
@@ -5454,16 +6314,24 @@ begin Result := LChAToLabA(AValue) end;
   ColorspaceCollection.AddConversion(TXYZAColorspace, TAdobeRGBAColorspace, @ConvertXYZAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TExpandedPixelColorspace, @ConvertXYZAArrayToExpandedPixelArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TLinearRGBAColorspace, @ConvertXYZAArrayToLinearRGBAArray);
+  ColorspaceCollection.AddConversion(TXYZAColorspace, TWordXYZAColorspace, @ConvertXYZAArrayToWordXYZAArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TLabAColorspace, @ConvertXYZAArrayToLabAArray);
   ColorspaceCollection.AddConversion(TXYZAColorspace, TLChAColorspace, @ConvertXYZAArrayToLChAArray);
+  ColorspaceCollection.AddConversion(TWordXYZAColorspace, TAdobeRGBAColorspace, @ConvertWordXYZAArrayToAdobeRGBAArray);
+  ColorspaceCollection.AddConversion(TWordXYZAColorspace, TExpandedPixelColorspace, @ConvertWordXYZAArrayToExpandedPixelArray);
+  ColorspaceCollection.AddConversion(TWordXYZAColorspace, TXYZAColorspace, @ConvertWordXYZAArrayToXYZAArray);
+  ColorspaceCollection.AddConversion(TWordXYZAColorspace, TLabAColorspace, @ConvertWordXYZAArrayToLabAArray);
+  ColorspaceCollection.AddConversion(TWordXYZAColorspace, TLChAColorspace, @ConvertWordXYZAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TAdobeRGBAColorspace, @ConvertLabAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TExpandedPixelColorspace, @ConvertLabAArrayToExpandedPixelArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TLinearRGBAColorspace, @ConvertLabAArrayToLinearRGBAArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TXYZAColorspace, @ConvertLabAArrayToXYZAArray);
+  ColorspaceCollection.AddConversion(TLabAColorspace, TWordXYZAColorspace, @ConvertLabAArrayToWordXYZAArray);
   ColorspaceCollection.AddConversion(TLabAColorspace, TLChAColorspace, @ConvertLabAArrayToLChAArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TAdobeRGBAColorspace, @ConvertLChAArrayToAdobeRGBAArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TExpandedPixelColorspace, @ConvertLChAArrayToExpandedPixelArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TLinearRGBAColorspace, @ConvertLChAArrayToLinearRGBAArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TXYZAColorspace, @ConvertLChAArrayToXYZAArray);
+  ColorspaceCollection.AddConversion(TLChAColorspace, TWordXYZAColorspace, @ConvertLChAArrayToWordXYZAArray);
   ColorspaceCollection.AddConversion(TLChAColorspace, TLabAColorspace, @ConvertLChAArrayToLabAArray);
 {$ENDIF}
