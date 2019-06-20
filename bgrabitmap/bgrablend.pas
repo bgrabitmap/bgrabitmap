@@ -325,8 +325,10 @@ type
   PBGRAScannerBrushFixedData = ^TBGRAScannerBrushFixedData;
   TBGRAScannerBrushFixedData = record
     Scanner: Pointer; //avoid ref count by using pointer type
-    HasPutPixels: boolean;
     OffsetX, OffsetY: integer;
+    case boolean of
+    true: (HasPutPixels: boolean);           //BGRA
+    false: (Conversion: TBridgedConversion); //other
   end;
 
 procedure BRGBAScannerBrushInitContext(AFixedData: Pointer;
@@ -393,6 +395,58 @@ begin
   PBGRAPixel(AContextData^.Dest) := pDest;
 end;
 
+procedure BGRAScannerConvertBrushSetPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pBuf,pDest: PBGRAPixel;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TBGRAPixel;
+  bAlpha: Byte;
+begin
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+    end else
+    begin
+      pDest := PBGRAPixel(AContextData^.Dest);
+      pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
+      if AAlpha >= $ff7f then
+      begin
+        while ACount > 0 do
+        begin
+          qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, pDest, qty, pixSize, sizeof(TBGRAPixel), nil);
+          dec(ACount, qty);
+        end;
+      end else
+      begin
+        bAlpha := FastRoundDiv257(AAlpha);
+        while ACount > 0 do
+        begin
+          if ACount > length(buf) then qty := length(buf) else qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TBGRAPixel), nil);
+          pBuf := @buf;
+          dec(ACount, qty);
+          while qty > 0 do
+          begin
+            pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, pBuf^, bAlpha);
+            inc(pDest);
+            inc(pBuf);
+            dec(qty);
+          end;
+        end;
+      end;
+      AContextData^.Dest := pDest;
+    end;
+  end;
+end;
+
 procedure BGRAScannerBrushSetPixelsExceptTransparent(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
@@ -450,6 +504,67 @@ begin
     end;
   end;
   PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAScannerConvertBrushSetPixelsExceptTransparent(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pBuf,pDest: PBGRAPixel;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TBGRAPixel;
+  bAlpha: Byte;
+begin
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+    end else
+    begin
+      pDest := PBGRAPixel(AContextData^.Dest);
+      pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
+      if AAlpha >= $ff7f then
+      begin
+        while ACount > 0 do
+        begin
+          if ACount > length(buf) then qty := length(buf) else qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TBGRAPixel), nil);
+          pBuf := @buf;
+          dec(ACount, qty);
+          while qty > 0 do
+          begin
+            if pBuf^.alpha = 255 then pDest^ := pBuf^;
+            inc(pDest);
+            inc(pBuf);
+            dec(qty);
+          end;
+        end;
+      end else
+      begin
+        bAlpha := FastRoundDiv257(AAlpha);
+        while ACount > 0 do
+        begin
+          if ACount > length(buf) then qty := length(buf) else qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TBGRAPixel), nil);
+          pBuf := @buf;
+          dec(ACount, qty);
+          while qty > 0 do
+          begin
+            if pBuf^.alpha = 255 then
+              pDest^ := MergeBGRAWithGammaCorrection(pDest^, not bAlpha, pBuf^, bAlpha);
+            inc(pDest);
+            inc(pBuf);
+            dec(qty);
+          end;
+        end;
+      end;
+      AContextData^.Dest := pDest;
+    end;
+  end;
 end;
 
 procedure BGRAScannerBrushDrawPixels(AFixedData: Pointer;
@@ -510,6 +625,66 @@ begin
   PBGRAPixel(AContextData^.Dest) := pDest;
 end;
 
+procedure BGRAScannerConvertBrushDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pBuf,pDest: PBGRAPixel;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TBGRAPixel;
+  bAlpha: Byte;
+begin
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+    end else
+    begin
+      pDest := PBGRAPixel(AContextData^.Dest);
+      pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
+      if AAlpha >= $ff7f then
+      begin
+        while ACount > 0 do
+        begin
+          if ACount > length(buf) then qty := length(buf) else qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TBGRAPixel), nil);
+          pBuf := @buf;
+          dec(ACount, qty);
+          while qty > 0 do
+          begin
+            DrawPixelInlineWithAlphaCheck(pDest, pBuf^);
+            inc(pDest);
+            inc(pBuf);
+            dec(qty);
+          end;
+        end;
+      end else
+      begin
+        bAlpha := FastRoundDiv257(AAlpha);
+        while ACount > 0 do
+        begin
+          if ACount > length(buf) then qty := length(buf) else qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TBGRAPixel), nil);
+          pBuf := @buf;
+          dec(ACount, qty);
+          while qty > 0 do
+          begin
+            DrawPixelInlineWithAlphaCheck(pDest, pBuf^, bAlpha);
+            inc(pDest);
+            inc(pBuf);
+            dec(qty);
+          end;
+        end;
+      end;
+      AContextData^.Dest := pDest;
+    end;
+  end;
+end;
+
 procedure BGRAScannerBrushLinearDrawPixels(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
@@ -566,6 +741,66 @@ begin
     end;
   end;
   PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAScannerConvertBrushLinearDrawPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pBuf,pDest: PBGRAPixel;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TBGRAPixel;
+  bAlpha: Byte;
+begin
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+    end else
+    begin
+      pDest := PBGRAPixel(AContextData^.Dest);
+      pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
+      if AAlpha >= $ff7f then
+      begin
+        while ACount > 0 do
+        begin
+          if ACount > length(buf) then qty := length(buf) else qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TBGRAPixel), nil);
+          pBuf := @buf;
+          dec(ACount, qty);
+          while qty > 0 do
+          begin
+            FastBlendPixelInline(pDest, pBuf^);
+            inc(pDest);
+            inc(pBuf);
+            dec(qty);
+          end;
+        end;
+      end else
+      begin
+        bAlpha := FastRoundDiv257(AAlpha);
+        while ACount > 0 do
+        begin
+          if ACount > length(buf) then qty := length(buf) else qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TBGRAPixel), nil);
+          pBuf := @buf;
+          dec(ACount, qty);
+          while qty > 0 do
+          begin
+            FastBlendPixelInline(pDest, pBuf^, bAlpha);
+            inc(pDest);
+            inc(pBuf);
+            dec(qty);
+          end;
+        end;
+      end;
+      AContextData^.Dest := pDest;
+    end;
+  end;
 end;
 
 procedure BGRAScannerBrushXorPixels(AFixedData: Pointer;
@@ -631,8 +866,71 @@ begin
   PBGRAPixel(AContextData^.Dest) := pDest;
 end;
 
+procedure BGRAScannerConvertBrushXorPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pBuf,pDest: PBGRAPixel;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TBGRAPixel;
+  bAlpha: Byte;
+begin
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+    end else
+    begin
+      pDest := PBGRAPixel(AContextData^.Dest);
+      pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
+      if AAlpha >= $ff7f then
+      begin
+        while ACount > 0 do
+        begin
+          if ACount > length(buf) then qty := length(buf) else qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TBGRAPixel), nil);
+          pBuf := @buf;
+          dec(ACount, qty);
+          while qty > 0 do
+          begin
+            PDWord(pDest)^ := PDWord(pDest)^ xor PDWord(pBuf)^;
+            inc(pDest);
+            inc(pBuf);
+            dec(qty);
+          end;
+        end;
+      end else
+      begin
+        bAlpha := FastRoundDiv257(AAlpha);
+        while ACount > 0 do
+        begin
+          if ACount > length(buf) then qty := length(buf) else qty := ACount;
+          IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+          Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TBGRAPixel), nil);
+          pBuf := @buf;
+          dec(ACount, qty);
+          while qty > 0 do
+          begin
+            PDWord(pBuf)^ := PDWord(pDest)^ xor PDWord(pBuf)^;
+            pDest^ := MergeBGRA(pDest^, not bAlpha, pBuf^, bAlpha);
+            inc(pDest);
+            inc(pBuf);
+            dec(qty);
+          end;
+        end;
+      end;
+      AContextData^.Dest := pDest;
+    end;
+  end;
+end;
+
 procedure BGRAScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner;
   ADrawMode: TDrawMode; AOffsetX: integer = 0; AOffsetY: integer = 0);
+var
+  sourceSpace: TColorspaceAny;
 begin
   ABrush.Colorspace:= TBGRAPixelColorspace;
   with PBGRAScannerBrushFixedData(@ABrush.FixedData)^ do
@@ -643,12 +941,27 @@ begin
     OffsetY := AOffsetY;
   end;
   ABrush.InternalInitContext:= @BRGBAScannerBrushInitContext;
-  case ADrawMode of
-    dmSet: ABrush.InternalPutNextPixels:= @BGRAScannerBrushSetPixels;
-    dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @BGRAScannerBrushSetPixelsExceptTransparent;
-    dmDrawWithTransparency: ABrush.InternalPutNextPixels:= @BGRAScannerBrushDrawPixels;
-    dmLinearBlend: ABrush.InternalPutNextPixels:= @BGRAScannerBrushLinearDrawPixels;
-    dmXor: ABrush.InternalPutNextPixels:= @BGRAScannerBrushXorPixels;
+  sourceSpace := AScanner.GetScanCustomColorspace;
+  if sourceSpace = TBGRAPixelColorspace then
+  begin
+    case ADrawMode of
+      dmSet: ABrush.InternalPutNextPixels:= @BGRAScannerBrushSetPixels;
+      dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @BGRAScannerBrushSetPixelsExceptTransparent;
+      dmDrawWithTransparency: ABrush.InternalPutNextPixels:= @BGRAScannerBrushDrawPixels;
+      dmLinearBlend: ABrush.InternalPutNextPixels:= @BGRAScannerBrushLinearDrawPixels;
+      dmXor: ABrush.InternalPutNextPixels:= @BGRAScannerBrushXorPixels;
+    end;
+  end else
+  begin
+    with PBGRAScannerBrushFixedData(@ABrush.FixedData)^ do
+      Conversion := sourceSpace.GetBridgedConversion(TBGRAPixelColorspace);
+    case ADrawMode of
+      dmSet: ABrush.InternalPutNextPixels:= @BGRAScannerConvertBrushSetPixels;
+      dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @BGRAScannerConvertBrushSetPixelsExceptTransparent;
+      dmLinearBlend: ABrush.InternalPutNextPixels:= @BGRAScannerConvertBrushLinearDrawPixels;
+      dmDrawWithTransparency: ABrush.InternalPutNextPixels:= @BGRAScannerConvertBrushDrawPixels;
+      dmXor: ABrush.InternalPutNextPixels:= @BGRAScannerConvertBrushXorPixels;
+    end;
   end;
 end;
 
