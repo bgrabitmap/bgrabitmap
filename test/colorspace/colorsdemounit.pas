@@ -167,6 +167,8 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   BGRASetGamma(2.2);
+  XYZToRGBOverflowMax:= xroPreserveHue;
+  XYZToRGBOverflowMin:= xroPreserveHue;
   InitControls;
 end;
 
