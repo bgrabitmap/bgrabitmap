@@ -227,10 +227,11 @@ begin
   SetControlsValues([S2_tb, V_tb], 0, 100, 10);
   SetControlsValues([X_tb, Y2_tb, Z_tb], 0, 100, 10);
   SetControlsValues([L2_tb], 0, 100, 10);
-  SetControlsValues([A_tb, B2_tb], -128, 127, 10);
+  SetControlsValues([A_tb], -160, 160, 10);
+  SetControlsValues([B2_tb], -140, 140, 10);
   SetControlsValues([C_tb, M_tb, Y_tb, K_tb], 0, 100, 10);
   SetControlsValues([L3_tb], 0, 100, 10);
-  SetControlsValues([C2_tb], 0, 180, 10);
+  SetControlsValues([C2_tb], 0, round(TLChAColorspace.GetMaxValue(1)), 10);
   SetControlsValues([H3_tb], 0, 360, 10);
   SetControlsValues([Alpha_tb], 0, 100, 10);
   SetControlsValues([lH_tb, lH2_tb], 0, 360, 10);
