@@ -188,6 +188,8 @@ var
 {$DEFINE INCLUDE_INTERFACE}
 {$I generatedcolorspace.inc}
 
+function BGRAToMask(const ABGRAPixel: TBGRAPixel): TByteMask;
+function MaskToBGRA(const AMask: TByteMask; AAlpha: byte = 255): TBGRAPixel;
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 function BGRAPixelToStdRGBA(const ABGRAPixel: TBGRAPixel): TStdRGBA;
 function LinearRGBAToExpandedPixel(const ALinearRGBA: TLinearRGBA): TExpandedPixel;
@@ -570,6 +572,23 @@ end;
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I generatedcolorspace.inc}
+
+function BGRAToMask(const ABGRAPixel: TBGRAPixel): TByteMask;
+var
+  ec: TExpandedPixel;
+begin
+  ec    := GammaExpansion(ABGRAPixel);
+  result.gray:= (ec.red * redWeightShl10 + ec.green * greenWeightShl10 +
+    ec.blue * blueWeightShl10 + (1 shl 17)) shr 18;
+end;
+
+function MaskToBGRA(const AMask: TByteMask; AAlpha: byte): TBGRAPixel;
+begin
+  result.red := GammaCompressionTab[AMask.gray+(AMask.gray shl 8)];
+  result.green := result.red;
+  result.blue := result.red;
+  result.alpha := AAlpha;
+end;
 
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 begin

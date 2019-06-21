@@ -13,7 +13,7 @@ uses
 --------------+---------------------------------------------
 sRGB          |  BGRAPixel       FPColor         StdRGBA
 Adobe RGB     |  AdobeRGBA
-gray          |  (ByteMask)      (WordMask)
+gray          |  ByteMask        (WordMask)
 linear RGB    |                  ExpandedPixel   LinearRGBA
 XYZ           |                  WordXYZA        XYZA
 
@@ -23,7 +23,7 @@ type
   TColorspaceEnum = (csColor, csBGRAPixel, csFPColor, csStdRGBA, //sRGB
     csAdobeRGBA,
     csStdHSLA, csStdHSVA, csStdCMYKA,              //based on sRGB
-    {csByteMask, csWordMask,}                        //linear grayscale
+    csByteMask, {csWordMask,}                        //linear grayscale
     csExpandedPixel, csLinearRGBA,                 //linear RGB
     csHSLAPixel, csGSBAPixel,                      //based on linear RGB
     csXYZA, csWordXYZA,                            //CIE XYZ
@@ -70,9 +70,9 @@ const
    (Name: 'StdCMYK';       Declaration: 'packed record'; Colorspace: 'StdCMYK';     HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtSingle;  BasicHelper: false;
    VariableNames: 'C,M,Y,K';                             FullNames: 'Cyan,Magenta,Yellow,Black';      MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false; HasImaginary: false),
 
-{   (Name: 'ByteMask';      Declaration: 'packed record'; Colorspace: 'Grayscale';   HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtByte;    BasicHelper: false;
+   (Name: 'ByteMask';      Declaration: 'packed record'; Colorspace: 'Grayscale';   HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtByte;    BasicHelper: false;
    VariableNames: 'gray';                                FullNames: 'Gray';         MinMax: '0,255';                                              IsBridge: false; HasImaginary: false),
-   (Name: 'WordMask';      Declaration: 'packed record'; Colorspace: 'Grayscale';  HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtWord;    BasicHelper: false;
+{   (Name: 'WordMask';      Declaration: 'packed record'; Colorspace: 'Grayscale';  HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtWord;    BasicHelper: false;
    VariableNames: 'gray';                                FullNames: 'Gray';         MinMax: '0,65535';                                            IsBridge: false; HasImaginary: false),}
 
    (Name: 'ExpandedPixel'; Declaration: 'record helper'; Colorspace: 'LinearRGB';   HasAlpha: true;   NeedRefWhite: false;  ValueType: cvtWord;    BasicHelper: true;
@@ -1101,8 +1101,8 @@ begin
   AddColorPair(csStdRGBA, csExpandedPixel, '','',true, 2);
 
  { AddColorPair(csWordMask, csExpandedPixel, 'ExpandedToWordMask', 'WordMaskToExpanded');
-  AddColorPair(csByteMask, csWordMask, 'MaskWordToByte', 'MaskByteToWord');
-  AddColorPair(csByteMask, csBGRAPixel, 'BGRAToMask', 'MaskToBGRA');}
+  AddColorPair(csByteMask, csWordMask, 'MaskWordToByte', 'MaskByteToWord');}
+  AddColorPair(csByteMask, csBGRAPixel, 'BGRAToMask', 'MaskToBGRA');
 
   //the other bridge is TXYZA
   //TLinearRGBA is between TExpandedPixel and TXYZA
