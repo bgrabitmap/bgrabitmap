@@ -43,6 +43,9 @@ type
     function GetScanlineAt(X,Y: integer): PBGRAPixel;
     function GetScanCustomColorspace: TColorspaceAny;
     procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer);
+    procedure ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer);
+    function ScanAtIntegerMask(X,Y: integer): TByteMask;
+    function ScanAtMask(X,Y: Single): TByteMask;
   end;
 
   {** A type of function of a scanner that returns the content at floating point coordinates }
@@ -77,6 +80,9 @@ type
     function GetScanlineAt({%H-}X,{%H-}Y: integer): PBGRAPixel; virtual;
     function GetScanCustomColorspace: TColorspaceAny; virtual;
     procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer); virtual;
+    procedure ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer); virtual;
+    function ScanAtIntegerMask(X,Y: integer): TByteMask; virtual;
+    function ScanAtMask(X,Y: Single): TByteMask; virtual;
   protected
     function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
     function _AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
@@ -623,9 +629,6 @@ type
      procedure EraseMask(x,y: integer; AMask: TBGRACustomBitmap; alpha: byte=255); virtual; abstract;
      procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); overload; virtual; abstract;
      procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); overload; virtual; abstract;
-     procedure ApplyMask(mask: TBGRACustomBitmap); overload;
-     procedure ApplyMask(mask: TBGRACustomBitmap; ARect: TRect); overload;
-     procedure ApplyMask(mask: TBGRACustomBitmap; ARect: TRect; AMaskRectTopLeft: TPoint); overload; virtual; abstract;
      function GetMaskFromAlpha: TBGRACustomBitmap; virtual; abstract;
      function GetImageBounds(Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
      function GetImageBounds(Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
@@ -693,6 +696,9 @@ type
      function ScanAtExpanded(X,Y: Single): TExpandedPixel; override;
      function ProvidesScanline(ARect: TRect): boolean; override;
      function GetScanlineAt(X, Y: integer): PBGRAPixel; override;
+     procedure ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer); override;
+     function ScanAtIntegerMask(X,Y: integer): TByteMask; override;
+     function ScanAtMask(X,Y: Single): TByteMask; override;
   end;
 
 type
@@ -925,6 +931,43 @@ begin
     p^ := ScanNextExpandedPixel;
     inc(p);
   end;
+end;
+
+procedure TBGRACustomScanner.ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer);
+var
+  cs: TColorspaceAny;
+  pPixels: Pointer;
+begin
+  cs := GetScanCustomColorspace;
+  if cs = TBGRAPixelColorspace then
+  begin
+    ScanNextCustomChunk(ACount, pPixels);
+    AMask := @PBGRAPixel(pPixels)^.green;
+    AStride := sizeof(TBGRAPixel);
+  end else
+  if cs = TByteMaskColorspace then
+  begin
+    ScanNextCustomChunk(ACount, pPixels);
+    AMask := PByteMask(pPixels);
+    AStride := sizeof(TByteMask);
+  end else
+    raise exception.Create('This scanner does not provide a mask.');
+end;
+
+function TBGRACustomScanner.ScanAtIntegerMask(X,Y: integer): TByteMask;
+begin
+  if GetScanCustomColorspace = TBGRAPixelColorspace then
+    result := ScanAtInteger(X,Y).green
+  else
+    result := ScanAtMask(X,Y);
+end;
+
+function TBGRACustomScanner.ScanAtMask(X,Y: Single): TByteMask;
+begin
+  if GetScanCustomColorspace = TBGRAPixelColorspace then
+    result := ScanAt(X,Y).green
+  else
+    raise exception.Create('This scanner does not provide a mask.');
 end;
 
 { Interface gateway }
@@ -1845,16 +1888,6 @@ begin
   if Assigned(XorMask) then result.FXorMask := self.XorMask.RotateUD;
 end;
 
-procedure TBGRACustomBitmap.ApplyMask(mask: TBGRACustomBitmap);
-begin
-  ApplyMask(mask, Rect(0,0,Width,Height), Point(0,0));
-end;
-
-procedure TBGRACustomBitmap.ApplyMask(mask: TBGRACustomBitmap; ARect: TRect);
-begin
-  ApplyMask(mask, ARect, ARect.TopLeft);
-end;
-
 function TBGRACustomBitmap.GetImageBounds(Channel: TChannel; ANothingValue: Byte
   ): TRect;
 begin
@@ -1903,6 +1936,25 @@ end;
 function TBGRACustomBitmap.GetScanlineAt(X, Y: integer): PBGRAPixel;
 begin
   result := ScanLine[y+ScanOffset.y]+x+ScanOffset.x;
+end;
+
+procedure TBGRACustomBitmap.ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer);
+var
+  PPixels: Pointer;
+begin
+  ScanNextCustomChunk(ACount, PPixels);
+  AMask := @PBGRAPixel(PPixels)^.green;
+  AStride := sizeof(TBGRAPixel);
+end;
+
+function TBGRACustomBitmap.ScanAtIntegerMask(X,Y: integer): TByteMask;
+begin
+  result := ScanAtInteger(X,Y).green;
+end;
+
+function TBGRACustomBitmap.ScanAtMask(X,Y: Single): TByteMask;
+begin
+  result := ScanAt(X,Y).green;
 end;
 
 {$ENDIF}

@@ -265,6 +265,8 @@ type
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure ScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
                                  AOffsetX: integer = 0; AOffsetY: integer = 0); override;
+    class procedure MaskBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner;
+                              AOffsetX: integer = 0; AOffsetY: integer = 0); override;
     class procedure EraseBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
     class procedure AlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
 
@@ -599,7 +601,6 @@ type
     procedure SwapRedBlue(ARect: TRect); override;
     procedure GrayscaleToAlpha; override;
     procedure AlphaToGrayscale; override;
-    procedure ApplyMask(mask: TBGRACustomBitmap; ARect: TRect; AMaskRectTopLeft: TPoint); overload; override;
     function GetMaskFromAlpha: TBGRACustomBitmap; override;
     procedure ConvertToLinearRGB; override;
     procedure ConvertFromLinearRGB; override;
@@ -1126,6 +1127,12 @@ class procedure TBGRADefaultBitmap.ScannerBrush(out ABrush: TUniversalBrush;
   AOffsetX: integer; AOffsetY: integer);
 begin
   BGRAScannerBrush(ABrush, AScanner, ADrawMode, AOffsetX, AOffsetY);
+end;
+
+class procedure TBGRADefaultBitmap.MaskBrush(out ABrush: TUniversalBrush;
+  AScanner: IBGRAScanner; AOffsetX: integer; AOffsetY: integer);
+begin
+  BGRAMaskBrush(ABrush, AScanner, AOffsetX, AOffsetY);
 end;
 
 class procedure TBGRADefaultBitmap.EraseBrush(out ABrush: TUniversalBrush;
@@ -4157,43 +4164,6 @@ begin
     Inc(p);
     Dec(n);
   until n = 0;
-  InvalidateBitmap;
-end;
-
-{ Apply a mask to the bitmap. It means that alpha channel is
-  changed according to grayscale values of the mask.
-
-  See : http://wiki.lazarus.freepascal.org/BGRABitmap_tutorial_5 }
-procedure TBGRADefaultBitmap.ApplyMask(mask: TBGRACustomBitmap; ARect: TRect; AMaskRectTopLeft: TPoint);
-var
-  p, pmask: PBGRAPixel;
-  yb, xb:   integer;
-  MaskOffsetX,MaskOffsetY,w: integer;
-  opacity: NativeUint;
-begin
-  if (ARect.Right <= ARect.Left) or (ARect.Bottom <= ARect.Top) then exit;
-  IntersectRect(ARect, ARect, rect(0,0,Width,Height));
-  MaskOffsetX := AMaskRectTopLeft.x - ARect.Left;
-  MaskOffsetY := AMaskRectTopLeft.y - ARect.Top;
-  OffsetRect(ARect, MaskOffsetX, MaskOffsetY);
-  IntersectRect(ARect, ARect, rect(0,0,mask.Width,mask.Height));
-  OffsetRect(ARect, -MaskOffsetX, -MaskOffsetY);
-
-  LoadFromBitmapIfNeeded;
-  w := ARect.Right-ARect.Left-1;
-  for yb := ARect.Top to ARect.Bottom - 1 do
-  begin
-    p     := Scanline[yb]+ARect.Left;
-    pmask := Mask.Scanline[yb+MaskOffsetY]+ARect.Left+MaskOffsetX;
-    for xb := w downto 0 do
-    begin
-      opacity := ApplyOpacity(p^.alpha, pmask^.red);
-      if opacity = 0 then p^ := BGRAPixelTransparent
-      else p^.alpha := opacity;
-      Inc(p);
-      Inc(pmask);
-    end;
-  end;
   InvalidateBitmap;
 end;
 

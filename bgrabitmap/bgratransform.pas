@@ -1441,6 +1441,11 @@ end;
 
 function TBGRAAffineBitmapTransform.InternalScanCurrentPixel: TBGRAPixel;
 begin
+  if FEmptyMatrix then
+  begin
+    result := BGRAPixelTransparent;
+    exit;
+  end;
   result := FBitmap.GetPixelCycle(FCur.X,FCur.Y,FResampleFilter,FRepeatImageX,FRepeatImageY);
 end;
 

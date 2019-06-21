@@ -203,6 +203,8 @@ type
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
     class procedure ScannerBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner; {%H-}ADrawMode: TDrawMode = dmDrawWithTransparency;
                                  {%H-}AOffsetX: integer = 0; {%H-}AOffsetY: integer = 0); virtual;
+    class procedure MaskBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner;
+                              {%H-}AOffsetX: integer = 0; {%H-}AOffsetY: integer = 0); virtual;
 
     {TFPCustomImage}
     {** Creates a new bitmap, initialize properties and bitmap data }
@@ -280,6 +282,11 @@ type
     procedure Fill(ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word); overload; virtual;
     procedure FillTransparent; virtual;
     procedure AlphaFill(alpha: byte); virtual;
+
+    {** Masking }
+    procedure ApplyMask(mask: TCustomUniversalBitmap; AAlpha: Word = 65535); overload;
+    procedure ApplyMask(mask: TCustomUniversalBitmap; ARect: TRect; AAlpha: Word = 65535); overload;
+    procedure ApplyMask(mask: TCustomUniversalBitmap; ARect: TRect; AMaskRectTopLeft: TPoint; AAlpha: Word = 65535); overload; virtual;
     procedure ApplyGlobalOpacity(alpha: byte); overload; virtual;
 
     {** Fills completely a rectangle, without any border }
@@ -639,6 +646,9 @@ type
     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
     function GetScanCustomColorspace: TColorspaceAny; virtual;
     procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer); virtual;
+    procedure ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer); virtual;
+    function ScanAtIntegerMask(X,Y: integer): TByteMask; virtual;
+    function ScanAtMask(X,Y: Single): TByteMask; virtual;
 
   protected
     //interface
@@ -1564,6 +1574,21 @@ begin
   end;
 end;
 
+procedure TCustomUniversalBitmap.ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer);
+begin
+  raise exception.Create('This bitmap does not provide a mask.');
+end;
+
+function TCustomUniversalBitmap.ScanAtIntegerMask(X,Y: integer): TByteMask;
+begin
+  result := ScanAtMask(X,Y);
+end;
+
+function TCustomUniversalBitmap.ScanAtMask(X,Y: Single): TByteMask;
+begin
+  raise exception.Create('This bitmap does not provide a mask.');
+end;
+
 { Interface gateway }
 function TCustomUniversalBitmap.QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
 begin
@@ -2048,6 +2073,12 @@ class procedure TCustomUniversalBitmap.ScannerBrush(out
   AOffsetX: integer = 0; AOffsetY: integer = 0);
 begin
   raise exception.Create('Scanner brush not implemented');
+end;
+
+class procedure TCustomUniversalBitmap.MaskBrush(out ABrush: TUniversalBrush;
+  AScanner: IBGRAScanner; AOffsetX: integer; AOffsetY: integer);
+begin
+  raise exception.Create('Mask brush not implemented');
 end;
 
 procedure TCustomUniversalBitmap.ReallocData;
@@ -2550,6 +2581,29 @@ var
 begin
   AlphaBrush(b, alpha + (alpha shl 8));
   Fill(b);
+end;
+
+procedure TCustomUniversalBitmap.ApplyMask(mask: TCustomUniversalBitmap; AAlpha: Word);
+begin
+  ApplyMask(mask, Rect(0,0,Width,Height), Point(0,0), AAlpha);
+end;
+
+procedure TCustomUniversalBitmap.ApplyMask(mask: TCustomUniversalBitmap; ARect: TRect; AAlpha: Word);
+begin
+  ApplyMask(mask, ARect, ARect.TopLeft, AAlpha);
+end;
+
+{ Apply a mask to the bitmap. It means that alpha channel is
+  changed according to grayscale values of the mask.
+
+  See : http://wiki.lazarus.freepascal.org/BGRABitmap_tutorial_5 }
+procedure TCustomUniversalBitmap.ApplyMask(mask: TCustomUniversalBitmap;
+  ARect: TRect; AMaskRectTopLeft: TPoint; AAlpha: Word);
+var
+  b: TUniversalBrush;
+begin
+  MaskBrush(b, mask, -AMaskRectTopLeft.X, -AMaskRectTopLeft.Y);
+  FillRect(ARect, b, AAlpha);
 end;
 
 procedure TCustomUniversalBitmap.ApplyGlobalOpacity(alpha: byte);

@@ -16,6 +16,7 @@ uses
 procedure BGRASolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency);
 procedure BGRAScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
                            AOffsetX: integer = 0; AOffsetY: integer = 0);
+procedure BGRAMaskBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; AOffsetX: integer = 0; AOffsetY: integer = 0);
 procedure BGRAEraseBrush(out ABrush: TUniversalBrush; AAlpha: Word);
 procedure BGRAAlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word);
 
@@ -421,6 +422,7 @@ begin
           qty := ACount;
           IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
           Conversion.Convert(psrc, pDest, qty, pixSize, sizeof(TBGRAPixel), nil);
+          inc(pDest, qty);
           dec(ACount, qty);
         end;
       end else
@@ -942,7 +944,7 @@ begin
   end;
   ABrush.InternalInitContext:= @BRGBAScannerBrushInitContext;
   sourceSpace := AScanner.GetScanCustomColorspace;
-  if sourceSpace = TBGRAPixelColorspace then
+  if (AScanner.IsScanPutPixelsDefined) or (sourceSpace = TBGRAPixelColorspace) then
   begin
     case ADrawMode of
       dmSet: ABrush.InternalPutNextPixels:= @BGRAScannerBrushSetPixels;
@@ -985,6 +987,75 @@ begin
     dec(ACount);
   end;
   PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAMaskBrushApply(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  bAlpha: Byte;
+  pDest: PBGRAPixel;
+  qty, maskStride: Integer;
+  pMask: PByteMask;
+begin
+  with PBGRAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha <= $80 then
+    begin
+      inc(PBGRAPixel(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PBGRAPixel(AContextData^.Dest);
+    if AAlpha >= $ff7f then
+    begin
+      while ACount > 0 do
+      begin
+        qty := ACount;
+        IBGRAScanner(Scanner).ScanNextMaskChunk(qty, pMask, maskStride);
+        dec(ACount,qty);
+        while qty > 0 do
+        begin
+          pDest^.alpha := ApplyOpacity(pDest^.alpha, pMask^.gray);
+          if pDest^.alpha = 0 then pDest^ := BGRAPixelTransparent;
+          inc(pDest);
+          inc(pMask, maskStride);
+          dec(qty);
+        end;
+      end;
+    end else
+    begin
+      bAlpha := FastRoundDiv257(AAlpha);
+      while ACount > 0 do
+      begin
+        qty := ACount;
+        IBGRAScanner(Scanner).ScanNextMaskChunk(qty, pMask, maskStride);
+        dec(ACount,qty);
+        while qty > 0 do
+        begin
+          pDest^.alpha := ApplyOpacity(pDest^.alpha, ApplyOpacity(pMask^.gray, bAlpha));
+          if pDest^.alpha = 0 then pDest^ := BGRAPixelTransparent;
+          inc(pDest);
+          inc(pMask, maskStride);
+          dec(qty);
+        end;
+      end;
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAMaskBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner;
+  AOffsetX: integer; AOffsetY: integer);
+begin
+  ABrush.Colorspace:= TBGRAPixelColorspace;
+  with PBGRAScannerBrushFixedData(@ABrush.FixedData)^ do
+  begin
+    Scanner := Pointer(AScanner);
+    OffsetX := AOffsetX;
+    OffsetY := AOffsetY;
+  end;
+  ABrush.InternalInitContext:= @BRGBAScannerBrushInitContext;
+  ABrush.InternalPutNextPixels:= @BGRAMaskBrushApply;
 end;
 
 procedure BGRAEraseBrush(out ABrush: TUniversalBrush; AAlpha: Word);

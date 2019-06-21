@@ -19,6 +19,8 @@ type
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TWordXYZA; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure ScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
                                  AOffsetX: integer = 0; AOffsetY: integer = 0); override;
+    class procedure MaskBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner;
+                              AOffsetX: integer = 0; AOffsetY: integer = 0); override;
     class procedure EraseBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
     class procedure AlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
     procedure ReplaceImaginary(const AAfter: TWordXYZA);
@@ -389,6 +391,63 @@ begin
   end;
 end;
 
+procedure WordXYZAMaskBrushApply(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PWordXYZA;
+  qty, maskStride: Integer;
+  pMask: PByteMask;
+  factor: NativeUInt;
+begin
+  with PWordXYZAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PWordXYZA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PWordXYZA(AContextData^.Dest);
+    if AAlpha = 65535 then
+    begin
+      while ACount > 0 do
+      begin
+        qty := ACount;
+        IBGRAScanner(Scanner).ScanNextMaskChunk(qty, pMask, maskStride);
+        dec(ACount,qty);
+        while qty > 0 do
+        begin
+          if pMask^.gray >= 128 then
+            pDest^.alpha := (pDest^.alpha*(pMask^.gray+1)) shr 8
+          else pDest^.alpha := pDest^.alpha*pMask^.gray shr 8;
+          if pDest^.alpha = 0 then pDest^ := WordXYZATransparent;
+          inc(pDest);
+          inc(pMask, maskStride);
+          dec(qty);
+        end;
+      end;
+    end else
+    begin
+      factor := AAlpha + (AAlpha shr 8) + (AAlpha shr 14);
+      while ACount > 0 do
+      begin
+        qty := ACount;
+        IBGRAScanner(Scanner).ScanNextMaskChunk(qty, pMask, maskStride);
+        dec(ACount,qty);
+        while qty > 0 do
+        begin
+          pDest^.alpha := (pDest^.alpha*((factor*pMask^.gray+128) shr 8)) shr 16;
+          if pDest^.alpha = 0 then pDest^ := WordXYZATransparent;
+          inc(pDest);
+          inc(pMask, maskStride);
+          dec(qty);
+        end;
+      end;
+    end;
+    PWordXYZA(AContextData^.Dest) := pDest;
+  end;
+end;
+
 procedure WordXYZAAlphaBrushSetPixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
@@ -535,6 +594,20 @@ begin
       dmXor: raise exception.Create('Xor mode not available with floating point values');
     end;
   end;
+end;
+
+class procedure TWordXYZABitmap.MaskBrush(out ABrush: TUniversalBrush;
+  AScanner: IBGRAScanner; AOffsetX: integer; AOffsetY: integer);
+begin
+  ABrush.Colorspace:= TWordXYZAColorspace;
+  with PWordXYZAScannerBrushFixedData(@ABrush.FixedData)^ do
+  begin
+    Scanner := Pointer(AScanner);
+    OffsetX := AOffsetX;
+    OffsetY := AOffsetY;
+  end;
+  ABrush.InternalInitContext:= @WordXYZAScannerBrushInitContext;
+  ABrush.InternalPutNextPixels:= @WordXYZAMaskBrushApply;
 end;
 
 class procedure TWordXYZABitmap.EraseBrush(out ABrush: TUniversalBrush;

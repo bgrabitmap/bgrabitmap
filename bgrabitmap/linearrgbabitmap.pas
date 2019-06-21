@@ -19,6 +19,8 @@ type
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TLinearRGBA; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure ScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
                                  AOffsetX: integer = 0; AOffsetY: integer = 0); override;
+    class procedure MaskBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner;
+                              AOffsetX: integer = 0; AOffsetY: integer = 0); override;
     class procedure EraseBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
     class procedure AlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
   end;
@@ -384,6 +386,42 @@ begin
   end;
 end;
 
+procedure LinearRGBAMaskBrushApply(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PLinearRGBA;
+  qty, maskStride: Integer;
+  pMask: PByteMask;
+  factor: single;
+begin
+  with PLinearRGBAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PLinearRGBA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PLinearRGBA(AContextData^.Dest);
+    factor := AAlpha/(65535*255);
+    while ACount > 0 do
+    begin
+      qty := ACount;
+      IBGRAScanner(Scanner).ScanNextMaskChunk(qty, pMask, maskStride);
+      dec(ACount,qty);
+      while qty > 0 do
+      begin
+        pDest^.alpha := pDest^.alpha*pMask^.gray*factor;
+        if pDest^.alpha = 0 then pDest^ := LinearRGBATransparent;
+        inc(pDest);
+        inc(pMask, maskStride);
+        dec(qty);
+      end;
+    end;
+    PLinearRGBA(AContextData^.Dest) := pDest;
+  end;
+end;
+
 procedure LinearRGBAAlphaBrushSetPixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 const oneOver65535 = 1/65535;
@@ -529,6 +567,20 @@ begin
       dmXor: raise exception.Create('Xor mode not available with floating point values');
     end;
   end;
+end;
+
+class procedure TLinearRGBABitmap.MaskBrush(out ABrush: TUniversalBrush;
+  AScanner: IBGRAScanner; AOffsetX: integer; AOffsetY: integer);
+begin
+  ABrush.Colorspace:= TLinearRGBAColorspace;
+  with PLinearRGBAScannerBrushFixedData(@ABrush.FixedData)^ do
+  begin
+    Scanner := Pointer(AScanner);
+    OffsetX := AOffsetX;
+    OffsetY := AOffsetY;
+  end;
+  ABrush.InternalInitContext:= @LinearRGBAScannerBrushInitContext;
+  ABrush.InternalPutNextPixels:= @LinearRGBAMaskBrushApply;
 end;
 
 class procedure TLinearRGBABitmap.EraseBrush(out ABrush: TUniversalBrush;
