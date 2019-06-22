@@ -9,7 +9,8 @@ interface
 { Here are various functions that draw gradients, shadow and lighting }
 
 uses
-  Classes, BGRAGraphics, BGRABitmapTypes, BGRABitmap, BGRABlend, BGRAPhongTypes, BGRASSE;
+  Classes, BGRAGraphics, BGRABitmapTypes, BGRABitmap, BGRABlend, BGRAPhongTypes,
+  BGRASSE, BGRAGrayscaleMask;
 
 {$IFDEF BGRABITMAP_USE_LCL}{ Creates a bitmap with the specified text horizontally centered and with a shadow }
 function TextShadow(AWidth,AHeight: Integer; AText: String; AFontHeight: Integer; ATextColor,AShadowColor: TBGRAPixel;
@@ -604,7 +605,7 @@ procedure TPhongShading.DrawScannerSSE(dest: TBGRACustomBitmap;
 
 function CreateConeMap(size: integer): TBGRABitmap;
 var cx,cy,r: single;
-    mask: TBGRABitmap;
+    mask: TGrayscaleMask;
 begin
   cx := (size-1)/2;
   cy := (size-1)/2;
@@ -612,7 +613,7 @@ begin
   result := TBGRABitmap.Create(size,size);
   result.GradientFill(0,0,size,size,BGRAWhite,BGRABlack,gtRadial,PointF(cx,cy),PointF(cx+r,cy),dmSet,False);
 
-  mask := TBGRABitmap.Create(size,size,BGRABlack);
+  mask := TGrayscaleMask.Create(size,size,BGRABlack);
   mask.FillEllipseAntialias(cx,cy,r,r,BGRAWhite);
   result.ApplyMask(mask);
   mask.Free;
@@ -622,7 +623,7 @@ function CreateConePreciseMap(width,height: integer): TBGRABitmap;
 var cx,cy,rx,ry,d: single;
     xb,yb: integer;
     p: PBGRAPixel;
-    mask: TBGRABitmap;
+    mask: TGrayscaleMask;
 begin
   result := TBGRABitmap.Create(width,height);
   cx := (width-1)/2;
@@ -642,7 +643,7 @@ begin
    end;
   end;
   //antialiased border
-  mask := TBGRABitmap.Create(width,height,BGRABlack);
+  mask := TGrayscaleMask.Create(width,height,BGRABlack);
   mask.FillEllipseAntialias(cx,cy,rx,ry,BGRAWhite);
   result.ApplyMask(mask);
   mask.Free;
@@ -652,7 +653,7 @@ function CreateVerticalConePreciseMap(width, height: integer): TBGRABitmap;
 var cx,rx,d,vpos: single;
     xb,yb: integer;
     p: PBGRAPixel;
-    mask: TBGRABitmap;
+    mask: TGrayscaleMask;
 begin
   result := TBGRABitmap.Create(width,height);
   if (height=0) or (width=0) then exit;
@@ -672,7 +673,7 @@ begin
    end;
   end;
   //antialiased border
-  mask := TBGRABitmap.Create(width,height,BGRABlack);
+  mask := TGrayscaleMask.Create(width,height,BGRABlack);
   mask.FillPolyAntialias([PointF(width/2,-0.5),PointF(0,height-0.5),PointF(width-0.5,height-0.5)],BGRAWhite);
   result.ApplyMask(mask);
   mask.Free;
@@ -722,7 +723,7 @@ var cx,cy,rx,ry,d: single;
     xb,yb: integer;
     p: PBGRAPixel;
     h: integer;
-    mask: TBGRABitmap;
+    mask: TGrayscaleMask;
 begin
   result := TBGRABitmap.Create(width,height);
   cx := (width-1)/2;
@@ -748,7 +749,7 @@ begin
    end;
   end;
   //antialiased border
-  mask := TBGRABitmap.Create(width,height,BGRABlack);
+  mask := TGrayscaleMask.Create(width,height,BGRABlack);
   mask.FillEllipseAntialias(cx,cy,rx,ry,BGRAWhite);
   result.ApplyMask(mask);
   mask.Free;
@@ -786,7 +787,7 @@ function CreateSpherePreciseMap(width, height: integer): TBGRABitmap;
 var cx,cy,rx,ry,d: single;
     xb,yb: integer;
     p: PBGRAPixel;
-    mask: TBGRABitmap;
+    mask: TGrayscaleMask;
 begin
   result := TBGRABitmap.Create(width,height);
   cx := (width-1)/2;
@@ -806,7 +807,7 @@ begin
    end;
   end;
   //antialiased border
-  mask := TBGRABitmap.Create(width,height,BGRABlack);
+  mask := TGrayscaleMask.Create(width,height,BGRABlack);
   mask.FillEllipseAntialias(cx,cy,rx,ry,BGRAWhite);
   result.ApplyMask(mask);
   mask.Free;
