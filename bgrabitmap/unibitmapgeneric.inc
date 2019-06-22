@@ -939,7 +939,7 @@ var
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   c := AColor;
-  FillPolyAntialias(Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c), b);
+  FillPolyAntialias(GetInternalPen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c), b);
 end;
 
 procedure TGenericUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
@@ -950,7 +950,7 @@ var
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   c := AColor;
-  FillPolyAntialias(Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c,AClosedCap), b);
+  FillPolyAntialias(GetInternalPen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c,AClosedCap), b);
 end;
 
 procedure TGenericUniversalBitmap.DrawPolyLineAntialias(
@@ -961,7 +961,7 @@ var
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   c := AColor;
-  FillPolyAntialias(Pen.ComputePolyline(APoints,APenWidth,c),b);
+  FillPolyAntialias(GetInternalPen.ComputePolyline(APoints,APenWidth,c),b);
 end;
 
 procedure TGenericUniversalBitmap.DrawPolyLineAntialias(
@@ -973,7 +973,7 @@ var
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   c := AColor;
-  FillPolyAntialias(Pen.ComputePolyline(APoints,APenWidth,c,AClosedCap),b);
+  FillPolyAntialias(GetInternalPen.ComputePolyline(APoints,APenWidth,c,AClosedCap),b);
 end;
 
 procedure TGenericUniversalBitmap.DrawPolyLineAntialiasAutocycle(

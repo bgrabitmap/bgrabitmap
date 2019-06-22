@@ -502,6 +502,7 @@ type
   protected
     function GetArrow: TBGRACustomArrow; virtual;
     function GetLineCap: TPenEndCap; virtual;
+    function GetInternalPen: TBGRACustomPenStroker; virtual;
     function GetPenStroker: TBGRACustomPenStroker; virtual;
     procedure SetLineCap(AValue: TPenEndCap); virtual;
 
@@ -648,7 +649,7 @@ type
     procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer); virtual;
     procedure ScanNextMaskChunk(var {%H-}ACount: integer; out {%H-}AMask: PByteMask; out {%H-}AStride: integer); virtual;
     function ScanAtIntegerMask(X,Y: integer): TByteMask; virtual;
-    function ScanAtMask(X,Y: Single): TByteMask; virtual;
+    function ScanAtMask({%H-}X,{%H-}Y: Single): TByteMask; virtual;
 
   protected
     //interface
@@ -1078,15 +1079,18 @@ begin
 end;
 
 function TCustomUniversalBitmap.GetArrow: TBGRACustomArrow;
+var
+  p: TBGRACustomPenStroker;
 begin
-  if Pen.Arrow = nil then
+  p := GetInternalPen;
+  if p.Arrow = nil then
   begin
     if UniDrawerClass = nil then RaiseMissingUniDrawer;
-    Pen.Arrow := UniDrawerClass.CreateArrow;
-    Pen.Arrow.LineCap := LineCap;
-    Pen.ArrowOwned := true;
+    p.Arrow := UniDrawerClass.CreateArrow;
+    p.Arrow.LineCap := LineCap;
+    p.ArrowOwned := true;
   end;
-  result := Pen.Arrow;
+  result := p.Arrow;
 end;
 
 function TCustomUniversalBitmap.GetLinearAntialiasing: boolean;
@@ -1096,10 +1100,10 @@ end;
 
 function TCustomUniversalBitmap.GetLineCap: TPenEndCap;
 begin
-  result := Pen.LineCap;
+  result := GetInternalPen.LineCap;
 end;
 
-function TCustomUniversalBitmap.GetPenStroker: TBGRACustomPenStroker;
+function TCustomUniversalBitmap.GetInternalPen: TBGRACustomPenStroker;
 begin
   if FPenStroker = nil then
   begin
@@ -1107,6 +1111,12 @@ begin
     FPenStroker := UniDrawerClass.CreatePenStroker;
   end;
   result := FPenStroker;
+end;
+
+function TCustomUniversalBitmap.GetPenStroker: TBGRACustomPenStroker;
+begin
+  result := GetInternalPen;
+  if result.Arrow = nil then GetArrow;
 end;
 
 procedure TCustomUniversalBitmap.PathStrokeAliasedCallback(
@@ -1140,9 +1150,9 @@ begin
   with TPathCallbackData(AData^) do
   begin
     if AClosed then
-      pts := Pen.ComputePolygon(APoints, Width)
+      pts := GetInternalPen.ComputePolygon(APoints, Width)
     else
-      pts := Pen.ComputePolyline(APoints, Width);
+      pts := GetInternalPen.ComputePolyline(APoints, Width);
     FillPolyAntialias(pts, BrushAddress^, PixelCenteredCoords);
   end;
 end;
@@ -1161,11 +1171,11 @@ end;
 
 procedure TCustomUniversalBitmap.SetLineCap(AValue: TPenEndCap);
 begin
-  if AValue <> Pen.LineCap then
+  if AValue <> GetInternalPen.LineCap then
   begin
-    Pen.LineCap := AValue;
-    if Assigned(Pen.Arrow) then
-      Pen.Arrow.LineCap := AValue;
+    GetInternalPen.LineCap := AValue;
+    if Assigned(GetInternalPen.Arrow) then
+      GetInternalPen.Arrow.LineCap := AValue;
   end;
 end;
 
@@ -1584,7 +1594,7 @@ begin
   result := ScanAtMask(X,Y);
 end;
 
-function TCustomUniversalBitmap.ScanAtMask({%H-}X,{%H-}Y: Single): TByteMask;
+function TCustomUniversalBitmap.ScanAtMask(X,Y: Single): TByteMask;
 begin
   result.gray := 0;
   raise exception.Create('This bitmap does not provide a mask.');
@@ -1625,7 +1635,7 @@ end;
 procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
   const ABrush: TUniversalBrush; APenWidth: single);
 begin
-  FillPolyAntialias(Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth), ABrush);
+  FillPolyAntialias(GetInternalPen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth), ABrush);
 end;
 
 procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
@@ -1640,7 +1650,7 @@ end;
 procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
   const ABrush: TUniversalBrush; APenWidth: single; AClosedCap: boolean);
 begin
-  FillPolyAntialias(Pen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,AClosedCap), ABrush);
+  FillPolyAntialias(GetInternalPen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,AClosedCap), ABrush);
 end;
 
 procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
@@ -1674,7 +1684,7 @@ procedure TCustomUniversalBitmap.DrawPolyLineAntialias(
   const APoints: array of TPointF; const ABrush: TUniversalBrush;
   APenWidth: single);
 begin
-  FillPolyAntialias(Pen.ComputePolyline(APoints,APenWidth),ABrush);
+  FillPolyAntialias(GetInternalPen.ComputePolyline(APoints,APenWidth),ABrush);
 end;
 
 procedure TCustomUniversalBitmap.DrawPolyLineAntialias(
@@ -1699,7 +1709,7 @@ procedure TCustomUniversalBitmap.DrawPolyLineAntialias(
   const APoints: array of TPointF; const ABrush: TUniversalBrush;
   APenWidth: single; AClosedCap: boolean);
 begin
-  FillPolyAntialias(Pen.ComputePolyline(APoints,APenWidth,AClosedCap),ABrush);
+  FillPolyAntialias(GetInternalPen.ComputePolyline(APoints,APenWidth,AClosedCap),ABrush);
 end;
 
 procedure TCustomUniversalBitmap.DrawPolyLineAntialias(
@@ -1726,7 +1736,7 @@ procedure TCustomUniversalBitmap.DrawPolyLineAntialiasAutocycle(
   const APoints: array of TPointF; const ABrush: TUniversalBrush;
   APenWidth: single);
 begin
-   FillPolyAntialias(Pen.ComputePolylineAutoCycle(APoints,APenWidth),ABrush);
+   FillPolyAntialias(GetInternalPen.ComputePolylineAutoCycle(APoints,APenWidth),ABrush);
 end;
 
 procedure TCustomUniversalBitmap.DrawPolyLineAntialiasAutocycle(
@@ -1751,7 +1761,7 @@ procedure TCustomUniversalBitmap.DrawPolygonAntialias(
   const APoints: array of TPointF; const ABrush: TUniversalBrush;
   APenWidth: single);
 begin
-   FillPolyAntialias(Pen.ComputePolygon(APoints,APenWidth),ABrush);
+   FillPolyAntialias(GetInternalPen.ComputePolygon(APoints,APenWidth),ABrush);
 end;
 
 procedure TCustomUniversalBitmap.DrawPolygonAntialias(
@@ -1776,7 +1786,7 @@ procedure TCustomUniversalBitmap.Ellipse(x, y, rx, ry: single;
   const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word);
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
-  UniDrawerClass.Ellipse(self, Pen, x,y,rx,ry, ABrush, AWidth, AAlpha);
+  UniDrawerClass.Ellipse(self, GetInternalPen, x,y,rx,ry, ABrush, AWidth, AAlpha);
 end;
 
 procedure TCustomUniversalBitmap.Ellipse(x, y, rx, ry: single;
@@ -1792,7 +1802,7 @@ procedure TCustomUniversalBitmap.Ellipse(const AOrigin, AXAxis, AYAxis: TPointF;
   const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word);
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
-  UniDrawerClass.Ellipse(self, Pen, AOrigin, AXAxis, AYAxis, ABrush, AWidth, AAlpha);
+  UniDrawerClass.Ellipse(self, GetInternalPen, AOrigin, AXAxis, AYAxis, ABrush, AWidth, AAlpha);
 end;
 
 procedure TCustomUniversalBitmap.Ellipse(const AOrigin, AXAxis, AYAxis: TPointF;
@@ -1808,7 +1818,7 @@ procedure TCustomUniversalBitmap.EllipseAntialias(x, y, rx, ry: single;
   const ABrush: TUniversalBrush; AWidth: single);
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
-  UniDrawerClass.EllipseAntialias(self, Pen, x,y,rx,ry, ABrush, AWidth);
+  UniDrawerClass.EllipseAntialias(self, GetInternalPen, x,y,rx,ry, ABrush, AWidth);
 end;
 
 procedure TCustomUniversalBitmap.EllipseAntialias(x, y, rx, ry: single;
@@ -1824,7 +1834,7 @@ procedure TCustomUniversalBitmap.EllipseAntialias(const AOrigin, AXAxis,
   AYAxis: TPointF; const ABrush: TUniversalBrush; AWidth: single);
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
-  UniDrawerClass.EllipseAntialias(self, Pen, AOrigin, AXAxis, AYAxis, ABrush, AWidth);
+  UniDrawerClass.EllipseAntialias(self, GetInternalPen, AOrigin, AXAxis, AYAxis, ABrush, AWidth);
 end;
 
 procedure TCustomUniversalBitmap.EllipseAntialias(const AOrigin, AXAxis,

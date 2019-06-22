@@ -753,7 +753,7 @@ end;
 
 function TBGRADefaultBitmap.GetCustomPenStyle: TBGRAPenStyle;
 begin
-  result := Pen.CustomPenStyle;
+  result := GetInternalPen.CustomPenStyle;
 end;
 
 procedure TBGRADefaultBitmap.SetCanvasAlphaCorrection(const AValue: boolean);
@@ -790,17 +790,17 @@ end;
 
 procedure TBGRADefaultBitmap.SetCustomPenStyle(const AValue: TBGRAPenStyle);
 begin
-  Pen.CustomPenStyle := AValue;
+  GetInternalPen.CustomPenStyle := AValue;
 end;
 
 procedure TBGRADefaultBitmap.SetPenStyle(const AValue: TPenStyle);
 begin
-  Pen.Style := AValue;
+  GetInternalPen.Style := AValue;
 end;
 
 function TBGRADefaultBitmap.GetPenStyle: TPenStyle;
 begin
-  Result:= Pen.Style;
+  Result:= GetInternalPen.Style;
 end;
 
 function TBGRADefaultBitmap.GetArrowEndSize: TPointF;
@@ -2033,7 +2033,7 @@ begin
   multi.FillMode := FillMode;
   multi.PolygonOrder := poLastOnTop;
   multi.AddPathFill(tempPath,AMatrix,AFillColor);
-  multi.AddPathStroke(tempPath,AMatrix,AStrokeColor,AWidth,Pen);
+  multi.AddPathStroke(tempPath,AMatrix,AStrokeColor,AWidth,GetInternalPen);
   multi.Draw(self);
   multi.Free;
   tempPath.Free;
@@ -2049,7 +2049,7 @@ begin
   multi.FillMode := FillMode;
   multi.PolygonOrder := poLastOnTop;
   multi.AddPathFill(tempPath,AMatrix,AFillColor);
-  multi.AddPathStroke(tempPath,AMatrix,AStrokeTexture,AWidth,Pen);
+  multi.AddPathStroke(tempPath,AMatrix,AStrokeTexture,AWidth,GetInternalPen);
   multi.Draw(self);
   multi.Free;
   tempPath.Free;
@@ -2065,7 +2065,7 @@ begin
   multi.FillMode := FillMode;
   multi.PolygonOrder := poLastOnTop;
   multi.AddPathFill(tempPath,AMatrix,AFillTexture);
-  multi.AddPathStroke(tempPath,AMatrix,AStrokeColor,AWidth,Pen);
+  multi.AddPathStroke(tempPath,AMatrix,AStrokeColor,AWidth,GetInternalPen);
   multi.Draw(self);
   multi.Free;
   tempPath.Free;
@@ -2082,7 +2082,7 @@ begin
   multi.FillMode := FillMode;
   multi.PolygonOrder := poLastOnTop;
   multi.AddPathFill(tempPath,AMatrix,AFillTexture);
-  multi.AddPathStroke(tempPath,AMatrix,AStrokeTexture,AWidth,Pen);
+  multi.AddPathStroke(tempPath,AMatrix,AStrokeTexture,AWidth,GetInternalPen);
   multi.Draw(self);
   multi.Free;
   tempPath.Free;
@@ -2876,19 +2876,19 @@ end;
 function TBGRADefaultBitmap.ComputeWidePolyline(const points: array of TPointF;
   w: single): ArrayOfTPointF;
 begin
-  result := Pen.ComputePolyline(points,w);
+  result := GetInternalPen.ComputePolyline(points,w);
 end;
 
 function TBGRADefaultBitmap.ComputeWidePolyline(const points: array of TPointF;
   w: single; ClosedCap: boolean): ArrayOfTPointF;
 begin
-  result := Pen.ComputePolyline(points,w,ClosedCap);
+  result := GetInternalPen.ComputePolyline(points,w,ClosedCap);
 end;
 
 function TBGRADefaultBitmap.ComputeWidePolygon(const points: array of TPointF;
   w: single): ArrayOfTPointF;
 begin
-  result := Pen.ComputePolygon(points,w);
+  result := GetInternalPen.ComputePolygon(points,w);
 end;
 
 function TBGRADefaultBitmap.ComputeEllipseContour(x, y, rx, ry: single; quality: single): ArrayOfTPointF;
@@ -4007,22 +4007,22 @@ end;
 
 function TBGRADefaultBitmap.GetPenJoinStyle: TPenJoinStyle;
 begin
-  result := Pen.JoinStyle;
+  result := GetInternalPen.JoinStyle;
 end;
 
 procedure TBGRADefaultBitmap.SetPenJoinStyle(const AValue: TPenJoinStyle);
 begin
-  Pen.JoinStyle := AValue;
+  GetInternalPen.JoinStyle := AValue;
 end;
 
 function TBGRADefaultBitmap.GetPenMiterLimit: single;
 begin
-  result := Pen.MiterLimit;
+  result := GetInternalPen.MiterLimit;
 end;
 
 procedure TBGRADefaultBitmap.SetPenMiterLimit(const AValue: single);
 begin
-  Pen.MiterLimit := AValue;
+  GetInternalPen.MiterLimit := AValue;
 end;
 
 procedure TBGRADefaultBitmap.SetCanvasOpacity(AValue: byte);
