@@ -268,14 +268,14 @@ type
   TBGRATextureMaskScanner = class(TBGRACustomScanner)
   private
     FOffset: TPoint;
-    FMask: TBGRACustomBitmap;
+    FMask: TCustomUniversalBitmap;
     FTexture: IBGRAScanner;
     FTextureScanNext : TScanNextPixelFunction;
     FTextureScanAt : TScanAtFunction;
     FGlobalOpacity: Byte;
     FMemTex: packed array of TBGRAPixel;
   public
-    constructor Create(AMask: TBGRACustomBitmap; AOffset: TPoint; ATexture: IBGRAScanner; AGlobalOpacity: Byte = 255);
+    constructor Create(AMask: TCustomUniversalBitmap; AOffset: TPoint; ATexture: IBGRAScanner; AGlobalOpacity: Byte = 255);
     destructor Destroy; override;
     function IsScanPutPixelsDefined: boolean; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
@@ -1608,7 +1608,7 @@ end;
 
 { TBGRATextureMaskScanner }
 
-constructor TBGRATextureMaskScanner.Create(AMask: TBGRACustomBitmap;
+constructor TBGRATextureMaskScanner.Create(AMask: TCustomUniversalBitmap;
   AOffset: TPoint; ATexture: IBGRAScanner; AGlobalOpacity: Byte);
 begin
   FMask := AMask;

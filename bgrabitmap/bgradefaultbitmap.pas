@@ -542,8 +542,8 @@ type
     procedure Fill(c: TBGRAPixel; start, Count: integer); overload; override;
     procedure DrawPixels(c: TBGRAPixel; start, Count: integer); override;
     procedure AlphaFill(alpha: byte; start, Count: integer); override;
-    procedure FillMask(x,y: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); override;
-    procedure FillMask(x,y: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte = 255); override;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); override;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte = 255); override;
     procedure EraseMask(x,y: integer; AMask: TBGRACustomBitmap; alpha: byte=255); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); override;
@@ -2989,7 +2989,7 @@ begin
   InvalidateBitmap;
 end;
 
-procedure TBGRADefaultBitmap.FillMask(x, y: integer; AMask: TBGRACustomBitmap;
+procedure TBGRADefaultBitmap.FillMask(x, y: integer; AMask: TCustomUniversalBitmap;
   color: TBGRAPixel; ADrawMode: TDrawMode);
 var
   scan: TBGRACustomScanner;
@@ -3000,7 +3000,7 @@ begin
   scan.Free;
 end;
 
-procedure TBGRADefaultBitmap.FillMask(x, y: integer; AMask: TBGRACustomBitmap;
+procedure TBGRADefaultBitmap.FillMask(x, y: integer; AMask: TCustomUniversalBitmap;
   texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte);
 var
   scan: TBGRACustomScanner;

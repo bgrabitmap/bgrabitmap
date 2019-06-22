@@ -486,7 +486,7 @@ begin
   PWordXYZA(AContextData^.Dest) := pDest;
 end;
 
-procedure WordXYZAAlphaBrushDrawPixels(AFixedData: Pointer;
+procedure WordXYZAAlphaBrushErasePixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
   pDest: PWordXYZA;
@@ -621,7 +621,7 @@ begin
   ABrush.Colorspace:= TWordXYZAColorspace;
   PWord(@ABrush.FixedData)^ := AAlpha;
   ABrush.InternalInitContext:= nil;
-  ABrush.InternalPutNextPixels:= @WordXYZAAlphaBrushDrawPixels;
+  ABrush.InternalPutNextPixels:= @WordXYZAAlphaBrushErasePixels;
 end;
 
 class procedure TWordXYZABitmap.AlphaBrush(out ABrush: TUniversalBrush;

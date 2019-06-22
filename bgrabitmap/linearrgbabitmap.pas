@@ -459,7 +459,7 @@ begin
   PLinearRGBA(AContextData^.Dest) := pDest;
 end;
 
-procedure LinearRGBAAlphaBrushDrawPixels(AFixedData: Pointer;
+procedure LinearRGBAAlphaBrushErasePixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 const oneOver65535 = 1/65535;
 var
@@ -594,7 +594,7 @@ begin
   ABrush.Colorspace:= TLinearRGBAColorspace;
   PSingle(@ABrush.FixedData)^ := AAlpha/65535;
   ABrush.InternalInitContext:= nil;
-  ABrush.InternalPutNextPixels:= @LinearRGBAAlphaBrushDrawPixels;
+  ABrush.InternalPutNextPixels:= @LinearRGBAAlphaBrushErasePixels;
 end;
 
 class procedure TLinearRGBABitmap.AlphaBrush(out ABrush: TUniversalBrush;

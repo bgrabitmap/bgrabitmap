@@ -496,7 +496,7 @@ begin
   PXYZA(AContextData^.Dest) := pDest;
 end;
 
-procedure XYZAAlphaBrushDrawPixels(AFixedData: Pointer;
+procedure XYZAAlphaBrushErasePixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 const oneOver65535 = 1/65535;
 var
@@ -631,7 +631,7 @@ begin
   ABrush.Colorspace:= TXYZAColorspace;
   PSingle(@ABrush.FixedData)^ := AAlpha/65535;
   ABrush.InternalInitContext:= nil;
-  ABrush.InternalPutNextPixels:= @XYZAAlphaBrushDrawPixels;
+  ABrush.InternalPutNextPixels:= @XYZAAlphaBrushErasePixels;
 end;
 
 class procedure TXYZABitmap.AlphaBrush(out ABrush: TUniversalBrush;
