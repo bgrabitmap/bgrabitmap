@@ -18,10 +18,11 @@ var
   bmpWidth,bmpHeight,lineDelta: NativeInt;
 
   procedure LoadMask(out ABlurOfs: TPoint);
-  var x,y,n,i: NativeInt;
+  var x,y,n: NativeInt;
       tempWeight: NativeInt;
       diffMask: array of packed array of NativeInt;
-      p: PBGRAPixel;
+      p: PByteMask;
+      qty,pStride: integer;
   begin
     ABlurOfs := point(blurMask.Width shr 1, blurMask.Height shr 1);
 
@@ -29,11 +30,22 @@ var
     maskWidth := blurMask.Width;
     maskHeight := blurMask.Height;
     n := 0;
-    p := blurMask.Data;
-    for i := blurMask.NbPixels-1 downto 0 do
+    for y:= 0 to maskHeight-1 do
     begin
-      if p^.red <> 0 then inc(n);
-      inc(p);
+      blurMask.ScanMoveTo(0,Y);
+      x := maskWidth;
+      while x > 0 do
+      begin
+        qty := x;
+        blurMask.ScanNextMaskChunk(qty, p, pStride);
+        dec(x, qty);
+        while qty > 0 do
+        begin
+          if p^.gray <> 0 then inc(n);
+          inc(p, pStride);
+          dec(qty);
+        end;
+      end;
     end;
 
     //initialize arrays
@@ -48,20 +60,28 @@ var
     for y := 0 to maskHeight - 1 do
     begin
       PixelArrayLineStart[y] := n;
-      p := blurMask.ScanLine[y];
-      for x := 0 to maskWidth - 1 do
+      blurMask.ScanMoveTo(0,Y);
+      x := 0;
+      while x < maskWidth do
       begin
-        tempWeight := p^.red;
-        inc(p);
-        dec(diffMask[y,x], tempWeight);
-        inc(diffMask[y,x+1], tempWeight);
-
-        if tempWeight <> 0 then
+        qty := maskWidth - x;
+        blurMask.ScanNextMaskChunk(qty, p, pStride);
+        while qty > 0 do
         begin
-          Pixel[n].Weight := tempWeight;
-          Pixel[n].Coord := Point(x,y);
-          Pixel[n].PtrOfs := (y-ABlurOfs.Y)*lineDelta + (x-ABlurOfs.X)*sizeof(TBGRAPixel);
-          Inc(n);
+          tempWeight := p^.gray;
+          dec(diffMask[y,x], tempWeight);
+          inc(diffMask[y,x+1], tempWeight);
+
+          if tempWeight <> 0 then
+          begin
+            Pixel[n].Weight := tempWeight;
+            Pixel[n].Coord := Point(x,y);
+            Pixel[n].PtrOfs := (y-ABlurOfs.Y)*lineDelta + (x-ABlurOfs.X)*sizeof(TBGRAPixel);
+            Inc(n);
+          end;
+          inc(x);
+          inc(p, pStride);
+          dec(qty);
         end;
       end;
     end;

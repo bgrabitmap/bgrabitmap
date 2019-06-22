@@ -620,8 +620,8 @@ type
     function FilterBlurRadial(ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
     function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; override;
     function FilterBlurMotion(ABounds: TRect; distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; override;
-    function FilterCustomBlur(mask: TBGRACustomBitmap): TBGRACustomBitmap; overload; override;
-    function FilterCustomBlur(ABounds: TRect; mask: TBGRACustomBitmap): TBGRACustomBitmap; overload; override;
+    function FilterCustomBlur(mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload; override;
+    function FilterCustomBlur(ABounds: TRect; mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload; override;
     function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; override;
     function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; override;
     function FilterEmbossHighlight(FillSelection: boolean): TBGRACustomBitmap; overload; override;
@@ -3848,14 +3848,14 @@ begin
   end;
 end;
 
-function TBGRADefaultBitmap.FilterCustomBlur(mask: TBGRACustomBitmap):
+function TBGRADefaultBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap):
 TBGRACustomBitmap;
 begin
   Result := BGRAFilters.FilterBlur(self, mask);
 end;
 
 function TBGRADefaultBitmap.FilterCustomBlur(ABounds: TRect;
-  mask: TBGRACustomBitmap): TBGRACustomBitmap;
+  mask: TCustomUniversalBitmap): TBGRACustomBitmap;
 var task: TFilterTask;
 begin
   task := BGRAFilters.CreateBlurTask(self, ABounds, mask);

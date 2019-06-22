@@ -671,8 +671,8 @@ type
      function FilterBlurRadial(ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterBlurMotion(ABounds: TRect; distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterCustomBlur(mask: TBGRACustomBitmap): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterCustomBlur(ABounds: TRect; mask: TBGRACustomBitmap): TBGRACustomBitmap; overload; virtual; abstract;
+     function FilterCustomBlur(mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload; virtual; abstract;
+     function FilterCustomBlur(ABounds: TRect; mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterEmbossHighlight(FillSelection: boolean): TBGRACustomBitmap; overload; virtual; abstract;

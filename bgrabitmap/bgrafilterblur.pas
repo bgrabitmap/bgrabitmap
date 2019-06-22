@@ -13,10 +13,10 @@ type
   TCustomBlurTask = class(TFilterTask)
   private
     FBounds: TRect;
-    FMask: TBGRACustomBitmap;
+    FMask: TCustomUniversalBitmap;
     FMaskOwned: boolean;
   public
-    constructor Create(bmp: TBGRACustomBitmap; ABounds: TRect; AMask: TBGRACustomBitmap; AMaskIsThreadSafe: boolean = false);
+    constructor Create(bmp: TBGRACustomBitmap; ABounds: TRect; AMask: TCustomUniversalBitmap; AMaskIsThreadSafe: boolean = false);
     destructor Destroy; override;
   protected
     procedure DoExecute; override;
@@ -53,10 +53,10 @@ type
 
 implementation
 
-uses Types, Math, SysUtils;
+uses Types, Math, SysUtils, BGRAGrayscaleMask;
 
 procedure FilterBlur(bmp: TBGRACustomBitmap; ABounds: TRect;
-   blurMask: TBGRACustomBitmap; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward; overload;
+   blurMask: TCustomUniversalBitmap; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward; overload;
 procedure FilterBlurMotion(bmp: TBGRACustomBitmap; ABounds: TRect; distance: single;
   angle: single; oriented: boolean; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward; overload;
 procedure FilterBlurRadial(bmp: TBGRACustomBitmap; ABounds: TRect; radiusX,radiusY: single;
@@ -83,7 +83,7 @@ type
 { TCustomBlurTask }
 
 constructor TCustomBlurTask.Create(bmp: TBGRACustomBitmap; ABounds: TRect;
-  AMask: TBGRACustomBitmap; AMaskIsThreadSafe: boolean);
+  AMask: TCustomUniversalBitmap; AMaskIsThreadSafe: boolean);
 begin
   SetSource(bmp);
   FBounds := ABounds;
@@ -277,15 +277,14 @@ end;
 { Blur disk creates a disk mask with a FillEllipse }
 procedure FilterBlurDisk(bmp: TBGRACustomBitmap; ABounds: TRect; radiusX,radiusY: single; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
 var
-  blurShape: TBGRACustomBitmap;
+  blurShape: TGrayscaleMask;
 begin
   if (radiusX <= 0) and (radiusY <= 0) then
   begin
     ADestination.PutImagePart(ABounds.Left,ABounds.Top,bmp,ABounds,dmSet);
     exit;
   end;
-  blurShape := bmp.NewBitmap(2 * ceil(radiusX) + 1, 2 * ceil(radiusY) + 1);
-  blurShape.Fill(BGRABlack);
+  blurShape := TGrayscaleMask.Create(2 * ceil(radiusX) + 1, 2 * ceil(radiusY) + 1, BGRABlack);
   blurShape.FillEllipseAntialias(ceil(radiusX), ceil(radiusY), radiusX + 0.5, radiusY + 0.5, BGRAWhite);
   FilterBlur(bmp, ABounds, blurShape, ADestination, ACheckShouldStop);
   blurShape.Free;
@@ -294,15 +293,14 @@ end;
 { Corona blur use a circle as mask }
 procedure FilterBlurCorona(bmp: TBGRACustomBitmap; ABounds: TRect; radiusX,radiusY: single; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
 var
-  blurShape: TBGRACustomBitmap;
+  blurShape: TGrayscaleMask;
 begin
   if (radiusX <= 0) and (radiusY <= 0) then
   begin
     ADestination.PutImagePart(ABounds.Left,ABounds.Top,bmp,ABounds,dmSet);
     exit;
   end;
-  blurShape := bmp.NewBitmap(2 * ceil(radiusX) + 1, 2 * ceil(radiusY) + 1);
-  blurShape.Fill(BGRABlack);
+  blurShape := TGrayscaleMask.Create(2 * ceil(radiusX) + 1, 2 * ceil(radiusY) + 1, BGRABlack);
   blurShape.EllipseAntialias(ceil(radiusX), ceil(radiusY), radiusX, radiusY, BGRAWhite, 1);
   FilterBlur(bmp, ABounds, blurShape, ADestination, ACheckShouldStop);
   blurShape.Free;
@@ -445,13 +443,13 @@ end;
 { General purpose blur : compute pixel sum according to the mask and then
   compute only difference while scanning from the left to the right }
 procedure FilterBlurSmallMask(bmp: TBGRACustomBitmap;
-  blurMask: TBGRACustomBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
+  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
 procedure FilterBlurSmallMaskWithShift(bmp: TBGRACustomBitmap;
-  blurMask: TBGRACustomBitmap; maskShift: integer; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
+  blurMask: TCustomUniversalBitmap; maskShift: integer; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
 procedure FilterBlurBigMask(bmp: TBGRACustomBitmap;
-  blurMask: TBGRACustomBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
+  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
 procedure FilterBlurMask64(bmp: TBGRACustomBitmap;
-  blurMask: TBGRACustomBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
+  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
 
 //make sure value is in the range 0..255
 function clampByte(value: NativeInt): NativeUInt; inline;
@@ -474,7 +472,7 @@ begin
 end;
 
 procedure FilterBlur(bmp: TBGRACustomBitmap;
-  ABounds: TRect; blurMask: TBGRACustomBitmap; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+  ABounds: TRect; blurMask: TCustomUniversalBitmap; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
 {$IFDEF CPU64}
 begin
     FilterBlurMask64(bmp,blurMask,ABounds,ADestination,ACheckShouldStop);
@@ -482,16 +480,26 @@ end;
 {$ELSE}
 var
   maskSum: int64;
-  i: Int32or64;
-  p: PBGRAPixel;
-  maskShift: integer;
+  p: PByteMask;
+  y, count, qty, maskShift, pStride: integer;
 begin
   maskSum := 0;
-  p := blurMask.data;
-  for i := 0 to blurMask.NbPixels-1 do
+  for y:= 0 to blurMask.Height-1 do
   begin
-    inc(maskSum,p^.red);
-    inc(p);
+    blurMask.ScanMoveTo(0,Y);
+    count := blurMask.Width;
+    while count > 0 do
+    begin
+      qty := count;
+      blurMask.ScanNextMaskChunk(qty, p, pStride);
+      dec(count, qty);
+      while qty > 0 do
+      begin
+        inc(maskSum,p^.gray);
+        inc(p, pStride);
+        dec(qty);
+      end;
+    end;
   end;
   maskShift := 0;
   while maskSum > 32768 do
@@ -512,7 +520,7 @@ end;
 
 //32-bit blur with shift
 procedure FilterBlurSmallMaskWithShift(bmp: TBGRACustomBitmap;
-  blurMask: TBGRACustomBitmap; maskShift: integer; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+  blurMask: TCustomUniversalBitmap; maskShift: integer; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
 
   var
     sumR, sumG, sumB, sumA, Adiv, RGBdiv : NativeInt;
@@ -538,7 +546,7 @@ procedure FilterBlurSmallMaskWithShift(bmp: TBGRACustomBitmap;
 
 //32-bit blur
 procedure FilterBlurSmallMask(bmp: TBGRACustomBitmap;
-  blurMask: TBGRACustomBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
 
   var
     sumR, sumG, sumB, sumA, Adiv : NativeInt;
@@ -563,7 +571,7 @@ procedure FilterBlurSmallMask(bmp: TBGRACustomBitmap;
 
 //64-bit blur
 procedure FilterBlurMask64(bmp: TBGRACustomBitmap;
-  blurMask: TBGRACustomBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
 
   var
     sumR, sumG, sumB, sumA, Adiv : int64;
@@ -585,7 +593,7 @@ procedure FilterBlurMask64(bmp: TBGRACustomBitmap;
 
 //floating point blur
 procedure FilterBlurBigMask(bmp: TBGRACustomBitmap;
-  blurMask: TBGRACustomBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
 
   var
     sumR, sumG, sumB, sumA, Adiv : single;

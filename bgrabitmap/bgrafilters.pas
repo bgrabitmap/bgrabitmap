@@ -107,8 +107,8 @@ function CreateMotionBlurTask(ABmp: TBGRACustomBitmap; ABounds: TRect; ADistance
 
 { General purpose blur filter, with a blur mask as parameter to describe
   how pixels influence each other }
-function FilterBlur(bmp: TBGRACustomBitmap; AMask: TBGRACustomBitmap; AMaskIsThreadSafe: boolean = false): TBGRACustomBitmap;
-function CreateBlurTask(ABmp: TBGRACustomBitmap; ABounds: TRect; AMask: TBGRACustomBitmap; AMaskIsThreadSafe: boolean = false): TFilterTask;
+function FilterBlur(bmp: TBGRACustomBitmap; AMask: TCustomUniversalBitmap; AMaskIsThreadSafe: boolean = false): TBGRACustomBitmap;
+function CreateBlurTask(ABmp: TBGRACustomBitmap; ABounds: TRect; AMask: TCustomUniversalBitmap; AMaskIsThreadSafe: boolean = false): TFilterTask;
 
 ////////////////////////////// OTHER FILTERS /////////////////////////////////
 
@@ -730,7 +730,7 @@ begin
   result := TMotionBlurTask.Create(ABmp,ABounds,ADistance,AAngle,AOriented);
 end;
 
-function FilterBlur(bmp: TBGRACustomBitmap; AMask: TBGRACustomBitmap; AMaskIsThreadSafe: boolean = false): TBGRACustomBitmap;
+function FilterBlur(bmp: TBGRACustomBitmap; AMask: TCustomUniversalBitmap; AMaskIsThreadSafe: boolean = false): TBGRACustomBitmap;
 var task: TFilterTask;
 begin
   task := TCustomBlurTask.Create(bmp,rect(0,0,bmp.Width,bmp.Height), AMask, AMaskIsThreadSafe);
@@ -739,7 +739,7 @@ begin
 end;
 
 function CreateBlurTask(ABmp: TBGRACustomBitmap; ABounds: TRect;
-  AMask: TBGRACustomBitmap; AMaskIsThreadSafe: boolean = false): TFilterTask;
+  AMask: TCustomUniversalBitmap; AMaskIsThreadSafe: boolean = false): TFilterTask;
 begin
   result := TCustomBlurTask.Create(ABmp, ABounds, AMask, AMaskIsThreadSafe);
 end;
