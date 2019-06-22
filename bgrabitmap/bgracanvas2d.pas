@@ -18,7 +18,7 @@ interface
 
 uses
   Classes, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATransform,
-  BGRAGradientScanner, BGRAPath, BGRAPen;
+  BGRAGradientScanner, BGRAPath, BGRAPen, BGRAGrayscaleMask;
 
 type
   IBGRACanvasTextureProvider2D = interface
@@ -46,9 +46,9 @@ type
 
   TBGRACanvasState2D = class
   private
-    FClipMask: TBGRACustomBitmap;
+    FClipMask: TGrayscaleMask;
     FClipMaskOwned: boolean;
-    function GetClipMaskReadWrite: TBGRACustomBitmap;
+    function GetClipMaskReadWrite: TGrayscaleMask;
   public
     strokeColor: TBGRAPixel;
     strokeTextureProvider: IBGRACanvasTextureProvider2D;
@@ -72,12 +72,12 @@ type
     shadowFastest: boolean;
 
     matrix: TAffineMatrix;
-    constructor Create(AMatrix: TAffineMatrix; AClipMask: TBGRACustomBitmap; AClipMaskOwned: boolean);
+    constructor Create(AMatrix: TAffineMatrix; AClipMask: TGrayscaleMask; AClipMaskOwned: boolean);
     function Duplicate: TBGRACanvasState2D;
     destructor Destroy; override;
-    procedure SetClipMask(AClipMask: TBGRACustomBitmap; AOwned: boolean);
-    property clipMaskReadOnly: TBGRACustomBitmap read FClipMask;
-    property clipMaskReadWrite: TBGRACustomBitmap read GetClipMaskReadWrite;
+    procedure SetClipMask(AClipMask: TGrayscaleMask; AOwned: boolean);
+    property clipMaskReadOnly: TGrayscaleMask read FClipMask;
+    property clipMaskReadWrite: TGrayscaleMask read GetClipMaskReadWrite;
   end;
 
   TCanvas2dTextSize = record
@@ -666,19 +666,19 @@ end;
 
 { TBGRACanvasState2D }
 
-function TBGRACanvasState2D.GetClipMaskReadWrite: TBGRACustomBitmap;
+function TBGRACanvasState2D.GetClipMaskReadWrite: TGrayscaleMask;
 begin
   if not FClipMaskOwned then
   begin
     if FClipMask <> nil then
-      FClipMask := FClipMask.Duplicate;
+      FClipMask := FClipMask.Duplicate as TGrayscaleMask;
     FClipMaskOwned := true;
   end;
   result := FClipMask;
 end;
 
 constructor TBGRACanvasState2D.Create(AMatrix: TAffineMatrix;
-  AClipMask: TBGRACustomBitmap; AClipMaskOwned: boolean);
+  AClipMask: TGrayscaleMask; AClipMaskOwned: boolean);
 begin
   strokeColor := BGRABlack;
   fillColor := BGRABlack;
@@ -748,7 +748,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TBGRACanvasState2D.SetClipMask(AClipMask: TBGRACustomBitmap;
+procedure TBGRACanvasState2D.SetClipMask(AClipMask: TGrayscaleMask;
   AOwned: boolean);
 begin
   if FClipMaskOwned and Assigned(FClipMask) then FreeAndNil(FClipMask);
@@ -2613,21 +2613,22 @@ end;
 
 procedure TBGRACanvas2D.clip;
 var
-  tempBmp: TBGRACustomBitmap;
+  tempBmp: TGrayscaleMask;
 begin
   if FPathPointCount = 0 then
   begin
-    currentState.clipMaskReadWrite.Fill(BGRABlack);
+    if currentState.clipMaskReadOnly <> nil then
+      currentState.clipMaskReadWrite.Fill(BGRABlack);
     exit;
   end;
   if currentState.clipMaskReadOnly = nil then
-    currentState.SetClipMask(surface.NewBitmap(width,height,BGRAWhite),True);
-  tempBmp := surface.NewBitmap(width,height,BGRABlack);
+    currentState.SetClipMask(TGrayscaleMask.Create(width,height,BGRAWhite),True);
+  tempBmp := TGrayscaleMask.Create(width,height,BGRABlack);
   if antialiasing then
     tempBmp.FillPolyAntialias(slice(FPathPoints,FPathPointCount),BGRAWhite)
   else
-    tempBmp.FillPoly(slice(FPathPoints,FPathPointCount),BGRAWhite,dmSet);
-  currentState.clipMaskReadWrite.BlendImage(0,0,tempBmp,boDarken);
+    tempBmp.FillPoly(slice(FPathPoints,FPathPointCount),BGRAWhite);
+  currentState.clipMaskReadWrite.ApplyMask(tempBmp);
   tempBmp.Free;
 end;
 
