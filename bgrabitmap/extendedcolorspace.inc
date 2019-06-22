@@ -579,7 +579,7 @@ var
 begin
   ec    := GammaExpansion(ABGRAPixel);
   result.gray:= (ec.red * redWeightShl10 + ec.green * greenWeightShl10 +
-    ec.blue * blueWeightShl10 + (1 shl 17)) shr 18;
+    ec.blue * blueWeightShl10 + (1 shl 9)) shr 18;
 end;
 
 function MaskToBGRA(const AMask: TByteMask; AAlpha: byte): TBGRAPixel;
