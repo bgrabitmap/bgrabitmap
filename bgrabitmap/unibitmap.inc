@@ -646,7 +646,7 @@ type
     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
     function GetScanCustomColorspace: TColorspaceAny; virtual;
     procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer); virtual;
-    procedure ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer); virtual;
+    procedure ScanNextMaskChunk(var {%H-}ACount: integer; out {%H-}AMask: PByteMask; out {%H-}AStride: integer); virtual;
     function ScanAtIntegerMask(X,Y: integer): TByteMask; virtual;
     function ScanAtMask(X,Y: Single): TByteMask; virtual;
 
@@ -1584,8 +1584,9 @@ begin
   result := ScanAtMask(X,Y);
 end;
 
-function TCustomUniversalBitmap.ScanAtMask(X,Y: Single): TByteMask;
+function TCustomUniversalBitmap.ScanAtMask({%H-}X,{%H-}Y: Single): TByteMask;
 begin
+  result.gray := 0;
   raise exception.Create('This bitmap does not provide a mask.');
 end;
 
