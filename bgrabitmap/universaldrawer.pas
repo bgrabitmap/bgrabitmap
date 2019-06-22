@@ -952,6 +952,7 @@ begin
   if ABrush.DoesNothing then exit;
   fi := TFillRectangleInfo.Create(x,y,x2,y2,APixelCenteredCoordinates);
   FillShapeAntialias(ADest, fi, fmAlternate, ABrush);
+  fi.Free;
 end;
 
 class procedure TUniversalDrawer.FillShapeAntialias(
