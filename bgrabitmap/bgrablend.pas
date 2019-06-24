@@ -944,7 +944,8 @@ begin
   end;
   ABrush.InternalInitContext:= @BRGBAScannerBrushInitContext;
   sourceSpace := AScanner.GetScanCustomColorspace;
-  if (AScanner.IsScanPutPixelsDefined) or (sourceSpace = TBGRAPixelColorspace) then
+  if (AScanner.IsScanPutPixelsDefined) or (sourceSpace = TBGRAPixelColorspace)
+    or (sourceSpace = TExpandedPixelColorspace) then
   begin
     case ADrawMode of
       dmSet: ABrush.InternalPutNextPixels:= @BGRAScannerBrushSetPixels;
