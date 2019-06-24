@@ -521,100 +521,280 @@ begin
 end;
 {$ENDIF}
 
+type
+  TBlurClearSumProc = procedure(AData: Pointer);
+  TBlurAccumulateProc = procedure(AData: Pointer; pPix: pointer; maskAlpha: NativeInt);
+  TBlurComputeAverageProc = procedure(AData: Pointer; pPix: pointer);
+
+procedure FilterBlurGeneric(bmp: TCustomUniversalBitmap; blurMask: TCustomUniversalBitmap;
+  ABounds: TRect; ADestination: TCustomUniversalBitmap; ACheckShouldStop: TCheckShouldStopFunc;
+  AClearSum: TBlurClearSumProc; AAccumulate: TBlurAccumulateProc;
+  AComputeAverage: TBlurComputeAverageProc; AData: Pointer);
+
+  {$I blurnormal.inc}
+
 //32-bit blur with shift
-procedure FilterBlurSmallMaskWithShift(bmp: TBGRACustomBitmap;
-  blurMask: TCustomUniversalBitmap; maskShift: integer; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+type
+  TFilterBlurSmallMaskWithShift_Sum = record
+      sumR, sumG, sumB,
+      sumA, Adiv, RGBdiv : NativeInt;
+      maskShift: integer;
+    end;
 
-  var
-    sumR, sumG, sumB, sumA, Adiv, RGBdiv : NativeInt;
+procedure FilterBlurSmallMaskWithShift_ClearSum(AData: pointer);
+begin
+  with TFilterBlurSmallMaskWithShift_Sum(AData^) do
+  begin
+    sumR   := 0;
+    sumG   := 0;
+    sumB   := 0;
+    sumA   := 0;
+    Adiv   := 0;
+    RGBdiv := 0;
+  end;
+end;
 
-  function ComputeAverage: TBGRAPixel; inline;
-  var temp,rgbDivShr1: NativeInt;
+procedure FilterBlurSmallMaskWithShift_ComputeAverage(AData: pointer; pPix: pointer);
+var temp,rgbDivShr1: NativeInt;
+begin
+  with TFilterBlurSmallMaskWithShift_Sum(AData^) do
+  if (Adiv <= 0) or (RGBdiv <= 0) then
+    PBGRAPixel(pPix)^ := BGRAPixelTransparent else
   begin
     temp := sumA + Adiv shr 1;
     if temp < Adiv then
-      result := BGRAPixelTransparent
+      PBGRAPixel(pPix)^ := BGRAPixelTransparent
     else
     begin
       rgbDivShr1 := RGBdiv shr 1;
-      result.alpha := temp div Adiv;
-      result.red   := clampByte((sumR + rgbDivShr1) div RGBdiv);
-      result.green := clampByte((sumG + rgbDivShr1) div RGBdiv);
-      result.blue  := clampByte((sumB + rgbDivShr1) div RGBdiv);
+      PBGRAPixel(pPix)^.alpha := temp div Adiv;
+      PBGRAPixel(pPix)^.red   := clampByte((sumR + rgbDivShr1) div RGBdiv);
+      PBGRAPixel(pPix)^.green := clampByte((sumG + rgbDivShr1) div RGBdiv);
+      PBGRAPixel(pPix)^.blue  := clampByte((sumB + rgbDivShr1) div RGBdiv);
     end;
   end;
+end;
 
-  {$define PARAM_MASKSHIFT}
-  {$I blurnormal.inc}
+procedure FilterBlurSmallMaskWithShift_AccumulateSum(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+var
+  pixMaskAlpha: NativeInt;
+  tempPixel: TBGRAPixel;
+begin
+  with TFilterBlurSmallMaskWithShift_Sum(AData^) do
+  begin
+    tempPixel := PBGRAPixel(pPix)^;
+    pixMaskAlpha := maskAlpha * tempPixel.alpha;
+    sumA    += pixMaskAlpha;
+    Adiv    += maskAlpha;
+    pixMaskAlpha := (cardinal(pixMaskAlpha)+$80000000) shr maskShift - ($80000000 shr maskShift);
+    RGBdiv  += pixMaskAlpha;
+    sumR    += NativeInt(tempPixel.red) * pixMaskAlpha;
+    sumG    += NativeInt(tempPixel.green) * pixMaskAlpha;
+    sumB    += NativeInt(tempPixel.blue) * pixMaskAlpha;
+  end;
+end;
+
+procedure FilterBlurSmallMaskWithShift(bmp: TBGRACustomBitmap;
+  blurMask: TCustomUniversalBitmap; maskShift: integer; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+var Sum: TFilterBlurSmallMaskWithShift_Sum;
+begin
+  Sum.maskShift:= maskShift;
+  FilterBlurGeneric(bmp, blurMask, ABounds, ADestination, ACheckShouldStop,
+                    @FilterBlurSmallMaskWithShift_ClearSum,
+                    @FilterBlurSmallMaskWithShift_AccumulateSum,
+                    @FilterBlurSmallMaskWithShift_ComputeAverage, @Sum);
+end;
 
 //32-bit blur
-procedure FilterBlurSmallMask(bmp: TBGRACustomBitmap;
-  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+type
+  TFilterBlurSmallMask_Sum= record
+    sumR, sumG, sumB, sumA, Adiv : integer;
+  end;
 
-  var
-    sumR, sumG, sumB, sumA, Adiv : NativeInt;
+procedure FilterBlurSmallMask_ClearSum(AData: pointer);
+begin
+  with TFilterBlurSmallMask_Sum(AData^) do
+  begin
+    sumR   := 0;
+    sumG   := 0;
+    sumB   := 0;
+    sumA   := 0;
+    Adiv   := 0;
+  end;
+end;
 
-  function ComputeAverage: TBGRAPixel; inline;
-  var temp,sumAShr1: NativeInt;
+procedure FilterBlurSmallMask_ComputeAverage(AData: pointer; pPix: pointer);
+var temp,sumAShr1: integer;
+begin
+  with TFilterBlurSmallMask_Sum(AData^) do
+  if Adiv <= 0 then PBGRAPixel(pPix)^ := BGRAPixelTransparent else
   begin
     temp := sumA + Adiv shr 1;
     if temp < Adiv then
-      result := BGRAPixelTransparent
+      PBGRAPixel(pPix)^ := BGRAPixelTransparent
     else
     begin
       sumAShr1 := sumA shr 1;
-      result.alpha := temp div Adiv;
-      result.red   := clampByte((sumR + sumAShr1) div sumA);
-      result.green := clampByte((sumG + sumAShr1) div sumA);
-      result.blue  := clampByte((sumB + sumAShr1) div sumA);
+      PBGRAPixel(pPix)^.alpha := temp div Adiv;
+      PBGRAPixel(pPix)^.red   := clampByte((sumR + sumAShr1) div sumA);
+      PBGRAPixel(pPix)^.green := clampByte((sumG + sumAShr1) div sumA);
+      PBGRAPixel(pPix)^.blue  := clampByte((sumB + sumAShr1) div sumA);
     end;
   end;
+end;
 
-  {$I blurnormal.inc}
+procedure FilterBlurSmallMask_AccumulateSum(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+var
+  pixMaskAlpha: integer;
+  tempPixel: TBGRAPixel;
+begin
+  with TFilterBlurSmallMask_Sum(AData^) do
+  begin
+    tempPixel := PBGRAPixel(pPix)^;
+    pixMaskAlpha := integer(maskAlpha) * tempPixel.alpha;
+    sumA    += pixMaskAlpha;
+    Adiv    += maskAlpha;
+    sumR    += integer(tempPixel.red) * pixMaskAlpha;
+    sumG    += integer(tempPixel.green) * pixMaskAlpha;
+    sumB    += integer(tempPixel.blue) * pixMaskAlpha;
+  end;
+end;
+
+procedure FilterBlurSmallMask(bmp: TBGRACustomBitmap;
+  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+var Sum: TFilterBlurSmallMask_Sum;
+begin
+  FilterBlurGeneric(bmp, blurMask, ABounds, ADestination, ACheckShouldStop,
+                    @FilterBlurSmallMask_ClearSum,
+                    @FilterBlurSmallMask_AccumulateSum,
+                    @FilterBlurSmallMask_ComputeAverage, @Sum);
+end;
 
 //64-bit blur
+type
+  TFilterBlurMask64_Sum= record
+    sumR, sumG, sumB, sumA, Adiv : int64;
+  end;
+
+procedure FilterBlurMask64_ClearSum(AData: pointer);
+begin
+  with TFilterBlurMask64_Sum(AData^) do
+  begin
+    sumR   := 0;
+    sumG   := 0;
+    sumB   := 0;
+    sumA   := 0;
+    Adiv   := 0;
+  end;
+end;
+
+procedure FilterBlurMask64_ComputeAverage(AData: pointer; pPix: pointer);
+begin
+  with TFilterBlurMask64_Sum(AData^) do
+  begin
+    if Adiv <= 0 then PBGRAPixel(pPix)^ := BGRAPixelTransparent else
+    begin
+      PBGRAPixel(pPix)^.alpha := (sumA + Adiv shr 1) div Adiv;
+      if PBGRAPixel(pPix)^.alpha = 0 then
+        PBGRAPixel(pPix)^ := BGRAPixelTransparent
+      else
+      begin
+        PBGRAPixel(pPix)^.red   := clampByte((sumR + sumA shr 1) div sumA);
+        PBGRAPixel(pPix)^.green := clampByte((sumG + sumA shr 1) div sumA);
+        PBGRAPixel(pPix)^.blue  := clampByte((sumB + sumA shr 1) div sumA);
+      end;
+    end;
+  end;
+end;
+
+procedure FilterBlurMask64_AccumulateSum(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+var
+  pixMaskAlpha: NativeInt;
+  tempPixel: TBGRAPixel;
+begin
+  with TFilterBlurMask64_Sum(AData^) do
+  begin
+    tempPixel := PBGRAPixel(pPix)^;
+    pixMaskAlpha := maskAlpha * tempPixel.alpha;
+    sumA    += pixMaskAlpha;
+    Adiv    += maskAlpha;
+    sumR    += tempPixel.red * pixMaskAlpha;
+    sumG    += tempPixel.green * pixMaskAlpha;
+    sumB    += tempPixel.blue * pixMaskAlpha;
+  end;
+end;
+
 procedure FilterBlurMask64(bmp: TBGRACustomBitmap;
   blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
-
-  var
-    sumR, sumG, sumB, sumA, Adiv : int64;
-
-  function ComputeAverage: TBGRAPixel; inline;
-  begin
-    result.alpha := (sumA + Adiv shr 1) div Adiv;
-    if result.alpha = 0 then
-      result := BGRAPixelTransparent
-    else
-    begin
-      result.red   := clampByte((sumR + sumA shr 1) div sumA);
-      result.green := clampByte((sumG + sumA shr 1) div sumA);
-      result.blue  := clampByte((sumB + sumA shr 1) div sumA);
-    end;
-  end;
-
-  {$I blurnormal.inc}
+var Sum: TFilterBlurSmallMask_Sum;
+begin
+  FilterBlurGeneric(bmp, blurMask, ABounds, ADestination, ACheckShouldStop,
+                    @FilterBlurMask64_ClearSum,
+                    @FilterBlurMask64_AccumulateSum,
+                    @FilterBlurMask64_ComputeAverage, @Sum);
+end;
 
 //floating point blur
-procedure FilterBlurBigMask(bmp: TBGRACustomBitmap;
-  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
-
-  var
+type
+  TFilterBlurBigMask_Sum= record
     sumR, sumG, sumB, sumA, Adiv : single;
-
-  function ComputeAverage: TBGRAPixel; inline;
-  begin
-    result.alpha := round(sumA/Adiv);
-    if result.alpha = 0 then
-      result := BGRAPixelTransparent
-    else
-    begin
-      result.red   := clampByte(round(sumR/sumA));
-      result.green := clampByte(round(sumG/sumA));
-      result.blue  := clampByte(round(sumB/sumA));
-    end;
   end;
 
-  {$I blurnormal.inc}
+procedure FilterBlurBigMask_ClearSum(AData: pointer);
+begin
+  with TFilterBlurBigMask_Sum(AData^) do
+  begin
+    sumR   := 0;
+    sumG   := 0;
+    sumB   := 0;
+    sumA   := 0;
+    Adiv   := 0;
+  end;
+end;
+
+procedure FilterBlurBigMask_ComputeAverage(AData: pointer; pPix: pointer);
+begin
+  with TFilterBlurBigMask_Sum(AData^) do
+  if Adiv <= 0 then PBGRAPixel(pPix)^ := BGRAPixelTransparent else
+  begin
+    PBGRAPixel(pPix)^.alpha := round(sumA/Adiv);
+    if PBGRAPixel(pPix)^.alpha = 0 then
+      PBGRAPixel(pPix)^ := BGRAPixelTransparent
+    else
+    begin
+      PBGRAPixel(pPix)^.red   := clampByte(round(sumR/sumA));
+      PBGRAPixel(pPix)^.green := clampByte(round(sumG/sumA));
+      PBGRAPixel(pPix)^.blue  := clampByte(round(sumB/sumA));
+    end;
+  end;
+end;
+
+procedure FilterBlurBigMask_AccumulateSum(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+var
+  pixMaskAlpha: NativeInt;
+  tempPixel: TBGRAPixel;
+begin
+  with TFilterBlurBigMask_Sum(AData^) do
+  begin
+    tempPixel := PBGRAPixel(pPix)^;
+    pixMaskAlpha := maskAlpha * tempPixel.alpha;
+    sumA    += pixMaskAlpha;
+    Adiv    += maskAlpha;
+    sumR    += tempPixel.red * pixMaskAlpha;
+    sumG    += tempPixel.green * pixMaskAlpha;
+    sumB    += tempPixel.blue * pixMaskAlpha;
+  end;
+end;
+
+procedure FilterBlurBigMask(bmp: TBGRACustomBitmap;
+  blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+var Sum: TFilterBlurBigMask_Sum;
+begin
+  FilterBlurGeneric(bmp, blurMask, ABounds, ADestination, ACheckShouldStop,
+                    @FilterBlurBigMask_ClearSum,
+                    @FilterBlurBigMask_AccumulateSum,
+                    @FilterBlurBigMask_ComputeAverage, @Sum);
+end;
 
 constructor TBoxBlurTask.Create(bmp: TBGRACustomBitmap; ABounds: TRect;
   radius: single);
