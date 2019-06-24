@@ -53,7 +53,8 @@ type
 
 implementation
 
-uses Types, Math, SysUtils, BGRAGrayscaleMask;
+uses Types, Math, SysUtils, BGRAGrayscaleMask,
+  BGRAGradientScanner;
 
 procedure FilterBlur(bmp: TBGRACustomBitmap; ABounds: TRect;
    blurMask: TCustomUniversalBitmap; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward; overload;
@@ -240,31 +241,33 @@ var
   blurShape: TBGRACustomBitmap;
   n: Int32or64;
   p: PBGRAPixel;
-  maxRadius: single;
-  temp: TBGRACustomBitmap;
+  shift, addRound: cardinal;
+  grad: TBGRAGradientScanner;
+  minRadius,maxRadius: single;
 begin
   if (radiusX <= 0) and (radiusY <= 0) then
   begin
     ADestination.PutImagePart(ABounds.Left,ABounds.Top,bmp,ABounds,dmSet);
     exit;
   end;
-  maxRadius:= max(radiusX,radiusY);
-  blurShape := bmp.NewBitmap(2 * ceil(maxRadius) + 1, 2 * ceil(maxRadius) + 1);
-  blurShape.GradientFill(0, 0, blurShape.Width, blurShape.Height, BGRAWhite,
-    BGRABlack, gtRadial, pointF(ceil(maxRadius), ceil(maxRadius)), pointF(ceil(maxRadius)-maxRadius-0.5, ceil(maxRadius)), dmSet);
-  if (ceil(radiusX)<>ceil(radiusY)) then
+  blurShape := bmp.NewBitmap(2 * ceil(radiusX) + 1, 2 * ceil(radiusY) + 1);
+  grad := TBGRAGradientScanner.Create(BGRAWhite, BGRABlack, gtRadial,
+                pointF(ceil(radiusX), ceil(radiusY)),
+                pointF(ceil(radiusX)-radiusX-0.5, ceil(radiusY)),
+                pointF(ceil(radiusX), ceil(radiusY)-radiusY-0.5),false);
+  blurShape.Fill(grad, dmSet);
+  grad.Free;
+  minRadius := min(radiusX,radiusY);
+  maxRadius := max(radiusX,radiusY);
+  shift := min(ceil((maxRadius-8)/2), floor(minRadius));
+  if shift > 0 then
   begin
-    temp := blurShape.Resample(2 * ceil(radiusX) + 1, 2 * ceil(radiusY) + 1);
-    blurShape.Free;
-    blurShape := temp;
-    temp := nil;
-  end;
-  if (radiusX > 10) or (radiusY > 10) then
-  begin
+    if shift > 5 then shift := 5;
+    addRound := 1 shl (shift-1);
     p := blurShape.Data;
     for n := 0 to blurShape.NbPixels-1 do
     begin
-      p^.red := p^.red and $F0;
+      p^.red := (p^.red+addRound) shr shift;
       p^.green := p^.red;
       p^.blue := p^.red;
       inc(p);
