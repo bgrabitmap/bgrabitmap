@@ -1102,7 +1102,8 @@ begin
 
  { AddColorPair(csWordMask, csExpandedPixel, 'ExpandedToWordMask', 'WordMaskToExpanded');
   AddColorPair(csByteMask, csWordMask, 'MaskWordToByte', 'MaskByteToWord');}
-  AddColorPair(csByteMask, csBGRAPixel, 'BGRAToMask', 'MaskToBGRA');
+  AddColorPair(csByteMask, csBGRAPixel, 'BGRAToMask', 'MaskToBGRA', true, 3);
+  AddColorPair(csByteMask, csExpandedPixel, 'ExpandedPixelToByteMask', 'ByteMaskToExpandedPixel', true, 2);
 
   //the other bridge is TXYZA
   //TLinearRGBA is between TExpandedPixel and TXYZA

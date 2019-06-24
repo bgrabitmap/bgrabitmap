@@ -189,7 +189,9 @@ var
 {$I generatedcolorspace.inc}
 
 function BGRAToMask(const ABGRAPixel: TBGRAPixel): TByteMask;
+function ExpandedPixelToByteMask(const AExpandedPixel: TExpandedPixel): TByteMask;
 function MaskToBGRA(const AMask: TByteMask; AAlpha: byte = 255): TBGRAPixel;
+function ByteMaskToExpandedPixel(const AMask: TByteMask; AAlpha: byte = 255): TExpandedPixel;
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 function BGRAPixelToStdRGBA(const ABGRAPixel: TBGRAPixel): TStdRGBA;
 function LinearRGBAToExpandedPixel(const ALinearRGBA: TLinearRGBA): TExpandedPixel;
@@ -582,9 +584,23 @@ begin
     ec.blue * blueWeightShl10 + (1 shl 9)) shr 18;
 end;
 
+function ExpandedPixelToByteMask(const AExpandedPixel: TExpandedPixel): TByteMask;
+begin
+  result.gray:= (AExpandedPixel.red * redWeightShl10 + AExpandedPixel.green * greenWeightShl10 +
+    AExpandedPixel.blue * blueWeightShl10 + (1 shl 9)) shr 18;
+end;
+
 function MaskToBGRA(const AMask: TByteMask; AAlpha: byte): TBGRAPixel;
 begin
   result.red := GammaCompressionTab[AMask.gray+(AMask.gray shl 8)];
+  result.green := result.red;
+  result.blue := result.red;
+  result.alpha := AAlpha;
+end;
+
+function ByteMaskToExpandedPixel(const AMask: TByteMask; AAlpha: byte = 255): TExpandedPixel;
+begin
+  result.red := AMask.gray+(AMask.gray shl 8);
   result.green := result.red;
   result.blue := result.red;
   result.alpha := AAlpha;

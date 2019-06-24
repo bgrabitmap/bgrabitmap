@@ -1988,10 +1988,6 @@ begin
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
 
-function ByteMaskToExpandedPixel(const AByteMask: TByteMask;const AAlpha: word=65535): TExpandedPixel;
-begin Result := GammaExpansion(MaskToBGRA(AByteMask));
-  Result.alpha := AAlpha end;
-
 procedure ConvertByteMaskArrayToExpandedPixelArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TByteMask); ADestStride:integer=sizeOf(TExpandedPixel); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
   while ACount > 0 do begin
@@ -2069,9 +2065,6 @@ begin
     TStdCMYK(ADest^) := ExpandedPixelToStdCMYK(TExpandedPixel(ASource^));
     inc(PByte(ASource), ASourceStride); inc(PByte(ADest), ADestStride); dec(ACount); end;
 end;
-
-function ExpandedPixelToByteMask(const AExpandedPixel: TExpandedPixel): TByteMask;
-begin Result := BGRAToMask(GammaCompression(AExpandedPixel)) end;
 
 procedure ConvertExpandedPixelArrayToByteMaskArray(ASource: pointer; ADest: Pointer; ACount: integer; ASourceStride:integer=sizeOf(TExpandedPixel); ADestStride:integer=sizeOf(TByteMask); {%H-}AReferenceWhite: PXYZReferenceWhite=nil);
 begin
