@@ -643,6 +643,8 @@ type
     function IsScanPutPixelsDefined: boolean; virtual;
     procedure ScanPutPixels({%H-}pdest: PBGRAPixel; {%H-}count: integer; {%H-}mode: TDrawMode); virtual;
     procedure ScanSkipPixels(ACount: integer); virtual;
+    function GetImageBounds(Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload;
+    function GetImageBounds(Channels: TChannels; ANothingValue: Byte = 0): TRect; overload;
     function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
     function GetScanCustomColorspace: TColorspaceAny; virtual;
@@ -1453,6 +1455,18 @@ begin
   end;
   inc(FScanCurX, ACount);
   inc(FScanPtr, ACount*PtrInt(FPixelSize));
+end;
+
+function TCustomUniversalBitmap.GetImageBounds(Channel: TChannel;
+  ANothingValue: Byte): TRect;
+begin
+  result := GetImageBoundsWithin(rect(0,0,Width,Height), Channel, ANothingValue);
+end;
+
+function TCustomUniversalBitmap.GetImageBounds(Channels: TChannels;
+  ANothingValue: Byte): TRect;
+begin
+  result := GetImageBoundsWithin(rect(0,0,Width,Height), Channels, ANothingValue);
 end;
 
 function TCustomUniversalBitmap.ProvidesScanline(ARect: TRect): boolean;

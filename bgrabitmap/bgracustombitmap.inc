@@ -632,8 +632,6 @@ type
      procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); overload; virtual; abstract;
      procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); overload; virtual; abstract;
      function GetMaskFromAlpha: TBGRACustomBitmap; virtual; abstract;
-     function GetImageBounds(Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
-     function GetImageBounds(Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
      function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; override;
      function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; override;
 
@@ -1894,18 +1892,6 @@ function TBGRACustomBitmap.RotateUD: TBGRACustomBitmap;
 begin
   result := TBGRACustomBitmap(Inherited RotateUD);
   if Assigned(XorMask) then result.FXorMask := self.XorMask.RotateUD;
-end;
-
-function TBGRACustomBitmap.GetImageBounds(Channel: TChannel; ANothingValue: Byte
-  ): TRect;
-begin
-  result := InternalGetImageBoundsWithin(self,nil,rect(0,0,Width,Height),[Channel],ANothingValue);
-end;
-
-function TBGRACustomBitmap.GetImageBounds(Channels: TChannels;
-  ANothingValue: Byte): TRect;
-begin
-  result := InternalGetImageBoundsWithin(self,nil,rect(0,0,Width,Height),Channels,ANothingValue);
 end;
 
 function TBGRACustomBitmap.GetImageBoundsWithin(const ARect: TRect;
