@@ -123,6 +123,7 @@ type
      function GetCanvasAlphaCorrection: boolean; virtual; abstract;
      procedure SetCanvasAlphaCorrection(const AValue: boolean); virtual; abstract;
 
+     procedure Init; override;
      function InternalNew: TCustomUniversalBitmap; override;
 
      procedure InternalArc(cx,cy,rx,ry: single; const StartPoint,EndPoint: TPointF; ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil); overload;
@@ -137,6 +138,7 @@ type
      {** Scan interpolation filter is used when the bitmap is used
          as a scanner (interface ''IBGRAScanner'') }
      ScanInterpolationFilter: TResampleFilter;
+     ScanMaskChannel: TChannel;
 
      {** Cursor position for mouse pointer }
      HotSpot: TPoint;
@@ -1014,6 +1016,12 @@ begin
     raise exception.Create('Dimension mismatch');
   DiscardXorMask;
   FXorMask:=AValue;
+end;
+
+procedure TBGRACustomBitmap.Init;
+begin
+  inherited Init;
+  ScanMaskChannel:= cGreen;
 end;
 
 function TBGRACustomBitmap.GetFontRightToLeftFor(AText: string): boolean;
@@ -1943,18 +1951,24 @@ var
   PPixels: Pointer;
 begin
   ScanNextCustomChunk(ACount, PPixels);
-  AMask := @PBGRAPixel(PPixels)^.green;
+  AMask := (PByteMask(PPixels)+TBGRAPixel_ChannelByteOffset[ScanMaskChannel]);
   AStride := sizeof(TBGRAPixel);
 end;
 
 function TBGRACustomBitmap.ScanAtIntegerMask(X,Y: integer): TByteMask;
+var
+  c: TBGRAPixel;
 begin
-  result := ScanAtInteger(X,Y).green;
+  c := ScanAtInteger(X,Y);
+  result := (PByte(@c)+TBGRAPixel_ChannelByteOffset[ScanMaskChannel])^;
 end;
 
 function TBGRACustomBitmap.ScanAtMask(X,Y: Single): TByteMask;
+var
+  c: TBGRAPixel;
 begin
-  result := ScanAt(X,Y).green;
+  c := ScanAt(X,Y);
+  result := (PByte(@c)+TBGRAPixel_ChannelByteOffset[ScanMaskChannel])^;
 end;
 
 {$ENDIF}

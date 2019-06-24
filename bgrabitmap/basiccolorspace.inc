@@ -6,6 +6,10 @@ type
   {** Combination of channels }
   TChannels = set of TChannel;
 
+const
+  TBGRAPixel_ChannelByteOffset : array[TChannel] of integer =
+  (TBGRAPixel_RedByteOffset, TBGRAPixel_GreenByteOffset, TBGRAPixel_BlueByteOffset, TBGRAPixel_AlphaByteOffset);
+
 { Gamma conversion arrays. Should be used as readonly }
 var
   // TBGRAPixel -> TExpandedPixel

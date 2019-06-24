@@ -393,13 +393,7 @@ begin
   if NbPixels > 0 then
   begin
     pdest := DataByte;
-    Case AChannel of
-      cAlpha: ofs := TBGRAPixel_AlphaByteOffset;
-      cRed: ofs := TBGRAPixel_RedByteOffset;
-      cGreen: ofs := TBGRAPixel_GreenByteOffset;
-    else
-      ofs := TBGRAPixel_BlueByteOffset;
-    end;
+    ofs := TBGRAPixel_ChannelByteOffset[AChannel];
     for y := 0 to FHeight-1 do
     begin
       psrc := PByte(ABitmap.ScanLine[y])+ofs;

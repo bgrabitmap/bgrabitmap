@@ -122,12 +122,7 @@ uses BGRABlend, math, SysUtils;
 procedure TBGRAEmbossHightlightScanner.SetSourceChannel(AValue: TChannel);
 begin
   FSourceChannel:=AValue;
-  case FSourceChannel of
-  cRed: FChannelOffset:= TBGRAPixel_RedByteOffset;
-  cGreen: FChannelOffset:= TBGRAPixel_GreenByteOffset;
-  cBlue: FChannelOffset:= TBGRAPixel_BlueByteOffset;
-  else {cAlpha:} FChannelOffset:= TBGRAPixel_AlphaByteOffset;
-  end;
+  FChannelOffset:= TBGRAPixel_ChannelByteOffset[FSourceChannel];
 end;
 
 function TBGRAEmbossHightlightScanner.DoFilter3X3(PTop, PMiddle,
