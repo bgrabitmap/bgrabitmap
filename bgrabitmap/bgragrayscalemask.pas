@@ -12,9 +12,10 @@ type
 
   TGrayscaleMask = class(specialize TGenericUniversalBitmap<TByteMask,TByteMaskColorspace>)
   private
+     function GetScanLine(Y: Integer): PByte; inline;
+  protected
      function InternalNew: TCustomUniversalBitmap; override;
      procedure AssignTransparentPixel(out ADest); override;
-     function GetScanLine(Y: Integer): PByte; inline;
   public
      constructor Create(AWidth,AHeight: Integer; AValue: byte); overload;
      constructor Create(ABitmap: TBGRACustomBitmap; AChannel: TChannel); overload;
@@ -489,7 +490,7 @@ function TGrayscaleMask.GetImageBoundsWithin(const ARect: TRect;
 begin
   if cAlpha in Channels then raise exception.Create('Channel not found')
   else if Channels = [] then result := EmptyRect
-  else result := GetImageBoundsWithin(ARect, cGreen);
+  else result := GetImageBoundsWithin(ARect, cGreen, ANothingValue);
 end;
 
 class procedure TGrayscaleMask.SolidBrush(out ABrush: TUniversalBrush;
