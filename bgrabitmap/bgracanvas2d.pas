@@ -165,7 +165,7 @@ type
     procedure SetFillMode(mode: TFillMode);
     procedure StrokePoly(const points: array of TPointF);
     procedure DrawShadow(const points, points2: array of TPointF; AFillMode: TFillMode = fmWinding);
-    procedure DrawShadowMask(X,Y: integer; AMask: TBGRACustomBitmap; AMaskOwned: boolean);
+    procedure DrawShadowMask(X,Y: integer; AMask: TCustomUniversalBitmap; AMaskOwned: boolean);
     procedure ClearPoly(const points: array of TPointF);
     function ApplyTransform(const points: array of TPointF; matrix: TAffineMatrix): ArrayOfTPointF; overload;
     function ApplyTransform(const points: array of TPointF): ArrayOfTPointF; overload;
@@ -1202,7 +1202,7 @@ procedure TBGRACanvas2D.FillTexts(AErase: boolean);
 var
   i,j: Integer;
   hy,hx,h: single;
-  bmp,bmpTransf,shadowBmp: TBGRACustomBitmap;
+  bmp,bmpTransf: TBGRACustomBitmap;
   tempScan: TBGRACustomScanner;
   m: TAffineMatrix;
   s: TSize;
@@ -1283,11 +1283,7 @@ begin
             surface.EraseMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf) else
           begin
             if hasShadow then
-            begin
-              shadowBmp := BGRABitmapFactory.Create(bmpTransf.Width,bmpTransf.Height);
-              shadowBmp.FillMask(0,0, bmpTransf, getShadowColor, GetDrawMode);
-              DrawShadowMask(surfaceBounds.Left+round(shadowOffsetX),surfaceBounds.Top+round(shadowOffsetY), shadowBmp, true);
-            end;
+              DrawShadowMask(surfaceBounds.Left+round(shadowOffsetX),surfaceBounds.Top+round(shadowOffsetY), bmpTransf, false);
 
             if currentState.clipMaskReadOnly <> nil then
             begin
@@ -1488,7 +1484,7 @@ procedure TBGRACanvas2D.DrawShadow(const points, points2: array of TPointF;
 var ofsPts,ofsPts2: array of TPointF;
     offset: TPointF;
     i: Integer;
-    tempBmp: TBGRACustomBitmap;
+    tempBmp: TGrayscaleMask;
     maxRect: TRect;
     foundRect: TRect;
     firstFound: boolean;
@@ -1543,18 +1539,26 @@ begin
       ofsPts2[i].Offset(offset);
   end;
 
-  tempBmp := surface.NewBitmap(foundRect.Right-foundRect.Left,foundRect.Bottom-foundRect.Top,BGRAPixelTransparent);
+  tempBmp := TGrayscaleMask.Create(foundRect.Right-foundRect.Left,foundRect.Bottom-foundRect.Top,BGRABlack);
   tempBmp.FillMode := AFillMode;
-  tempBmp.FillPolyAntialias(ofsPts, getShadowColor);
-  tempBmp.FillPolyAntialias(ofsPts2, getShadowColor);
+  tempBmp.FillPolyAntialias(ofsPts, BGRAWhite);
+  tempBmp.FillPolyAntialias(ofsPts2, BGRAWhite);
   DrawShadowMask(foundRect.Left,foundRect.Top, tempBmp, true);
 end;
 
-procedure TBGRACanvas2D.DrawShadowMask(X, Y: integer; AMask: TBGRACustomBitmap; AMaskOwned: boolean);
+procedure TBGRACanvas2D.DrawShadowMask(X, Y: integer; AMask: TCustomUniversalBitmap; AMaskOwned: boolean);
 const invSqrt2 = 1/sqrt(2);
 var
-  bmp: TBGRACustomBitmap;
+  bmp: TCustomUniversalBitmap;
+  gs: TGrayscaleMask;
 begin
+  if AMask.Colorspace <> TByteMaskColorspace then
+  begin
+    gs := TGrayscaleMask.Create(AMask as TBGRACustomBitmap, cGreen);
+    if AMaskOwned then AMask.Free;
+    AMask := gs;
+    AMaskOwned:= true;
+  end;
   bmp := AMask;
   if shadowBlur > 0 then
   begin
@@ -1576,7 +1580,7 @@ begin
     if (bmp = AMask) and not AMaskOwned then bmp := AMask.Duplicate;
     bmp.ApplyMask(currentState.clipMaskReadOnly);
   end;
-  surface.PutImage(X,Y,bmp,GetDrawMode,currentState.globalAlpha);
+  surface.FillMask(X,Y,bmp,ApplyGlobalAlpha(getShadowColor),GetDrawMode);
   if bmp <> AMask then bmp.Free;
   if AMaskOwned then AMask.Free;
 end;
