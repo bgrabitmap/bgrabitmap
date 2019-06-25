@@ -24,6 +24,7 @@ type
     Label48: TLabel;
     Label49: TLabel;
     Label50: TLabel;
+    Label51: TLabel;
     LIsReal: TLabel;
     lB_se1: TFloatSpinEdit;
     lB_tb1: TTrackBar;
@@ -296,7 +297,7 @@ end;
 
 procedure TForm1.UpdateColorControls(SourceTag: integer);
 var
-  i: integer;
+  i,decVal,errPos: integer;
   tb: TTrackBar;
   fse: TFloatSpinEdit;
 begin
@@ -309,7 +310,11 @@ begin
     13, 14, 15, 16: col.AsStdCMYK := TStdCMYK.New(C_se.Value / 100, M_se.Value / 100, Y_se.Value / 100, K_se.Value / 100);
     20, 21, 22: col.AsLChA := TLChA.New(L3_se.Value, C2_se.Value, H3_se.Value, Alpha_se.Value / 100);
     23: col.AsHex := Hex_edt.Text;
-    24: col.AsDecimal := StrToInt(Dec_edt.Text);
+    24: begin
+          val(Dec_edt.Text, decVal, errPos);
+          if (errPos = 0) and (decVal>=0) then
+            col.AsDecimal := decVal;
+        end;
     25, 26, 27: col.AsStdRGBA := TStdRGBA.New(sR_se.Value / 255, sG_se.Value / 255, sB_se.Value / 255, Alpha_se.Value / 100);
     28: col.Name := Name_edt.Text;
     29: col.AlphaPercent := Alpha_se.Value;

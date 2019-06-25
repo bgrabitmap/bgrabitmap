@@ -1,11 +1,11 @@
 object Form1: TForm1
-  Left = 443
-  Height = 633
-  Top = 109
-  Width = 957
+  Left = 336
+  Height = 609
+  Top = 116
+  Width = 941
   Caption = 'Colors'
-  ClientHeight = 633
-  ClientWidth = 957
+  ClientHeight = 609
+  ClientWidth = 941
   OnCreate = FormCreate
   Position = poDesktopCenter
   LCLVersion = '2.0.0.4'
@@ -13,7 +13,7 @@ object Form1: TForm1
     Tag = 1
     Left = 339
     Height = 37
-    Top = 83
+    Top = 75
     Width = 200
     Max = 255
     Position = 0
@@ -22,7 +22,7 @@ object Form1: TForm1
   object Label1: TLabel
     Left = 323
     Height = 17
-    Top = 85
+    Top = 77
     Width = 7
     Caption = 'R'
     ParentColor = False
@@ -31,7 +31,7 @@ object Form1: TForm1
     Tag = 2
     Left = 339
     Height = 37
-    Top = 120
+    Top = 110
     Width = 200
     Max = 255
     Position = 0
@@ -40,7 +40,7 @@ object Form1: TForm1
   object Label2: TLabel
     Left = 323
     Height = 17
-    Top = 123
+    Top = 113
     Width = 9
     Caption = 'G'
     ParentColor = False
@@ -49,7 +49,7 @@ object Form1: TForm1
     Tag = 3
     Left = 339
     Height = 37
-    Top = 158
+    Top = 145
     Width = 200
     Max = 255
     Position = 0
@@ -58,7 +58,7 @@ object Form1: TForm1
   object Label3: TLabel
     Left = 323
     Height = 17
-    Top = 161
+    Top = 148
     Width = 8
     Caption = 'B'
     ParentColor = False
@@ -67,7 +67,7 @@ object Form1: TForm1
     Tag = 4
     Left = 24
     Height = 37
-    Top = 234
+    Top = 207
     Width = 200
     Max = 255
     Position = 0
@@ -76,7 +76,7 @@ object Form1: TForm1
   object Label4: TLabel
     Left = 8
     Height = 17
-    Top = 237
+    Top = 210
     Width = 9
     Caption = 'H'
     ParentColor = False
@@ -85,7 +85,7 @@ object Form1: TForm1
     Tag = 5
     Left = 24
     Height = 37
-    Top = 265
+    Top = 242
     Width = 200
     Max = 255
     Position = 0
@@ -94,7 +94,7 @@ object Form1: TForm1
   object Label5: TLabel
     Left = 8
     Height = 17
-    Top = 267
+    Top = 244
     Width = 7
     Caption = 'S'
     ParentColor = False
@@ -103,7 +103,7 @@ object Form1: TForm1
     Tag = 6
     Left = 24
     Height = 37
-    Top = 295
+    Top = 278
     Width = 200
     Max = 255
     Position = 0
@@ -112,7 +112,7 @@ object Form1: TForm1
   object Label6: TLabel
     Left = 8
     Height = 17
-    Top = 297
+    Top = 280
     Width = 6
     Caption = 'L'
     ParentColor = False
@@ -121,7 +121,7 @@ object Form1: TForm1
     Tag = 7
     Left = 24
     Height = 37
-    Top = 358
+    Top = 342
     Width = 200
     Max = 255
     Position = 0
@@ -130,7 +130,7 @@ object Form1: TForm1
   object Label7: TLabel
     Left = 8
     Height = 17
-    Top = 361
+    Top = 345
     Width = 9
     Caption = 'H'
     ParentColor = False
@@ -139,7 +139,7 @@ object Form1: TForm1
     Tag = 8
     Left = 24
     Height = 37
-    Top = 389
+    Top = 378
     Width = 200
     Max = 255
     Position = 0
@@ -148,7 +148,7 @@ object Form1: TForm1
   object Label8: TLabel
     Left = 8
     Height = 17
-    Top = 391
+    Top = 380
     Width = 7
     Caption = 'S'
     ParentColor = False
@@ -157,7 +157,7 @@ object Form1: TForm1
     Tag = 9
     Left = 24
     Height = 37
-    Top = 419
+    Top = 413
     Width = 200
     Max = 255
     Position = 0
@@ -166,61 +166,61 @@ object Form1: TForm1
   object Label9: TLabel
     Left = 8
     Height = 17
-    Top = 421
+    Top = 415
     Width = 7
     Caption = 'V'
     ParentColor = False
   end
   object L2_tb: TTrackBar
     Tag = 10
-    Left = 656
+    Left = 652
     Height = 37
-    Top = 338
+    Top = 355
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 30
   end
   object Label10: TLabel
-    Left = 640
+    Left = 636
     Height = 17
-    Top = 334
+    Top = 355
     Width = 6
     Caption = 'L'
     ParentColor = False
   end
   object A_tb: TTrackBar
     Tag = 11
-    Left = 656
+    Left = 652
     Height = 37
-    Top = 373
+    Top = 390
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 32
   end
   object Label11: TLabel
-    Left = 640
+    Left = 636
     Height = 17
-    Top = 369
+    Top = 390
     Width = 7
     Caption = 'a'
     ParentColor = False
   end
   object B2_tb: TTrackBar
     Tag = 12
-    Left = 656
+    Left = 652
     Height = 37
-    Top = 408
+    Top = 425
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 34
   end
   object Label12: TLabel
-    Left = 640
+    Left = 636
     Height = 17
-    Top = 411
+    Top = 426
     Width = 7
     Caption = 'b'
     ParentColor = False
@@ -229,7 +229,7 @@ object Form1: TForm1
     Tag = 13
     Left = 24
     Height = 37
-    Top = 488
+    Top = 476
     Width = 200
     Max = 255
     Position = 0
@@ -238,7 +238,7 @@ object Form1: TForm1
   object Label13: TLabel
     Left = 8
     Height = 17
-    Top = 490
+    Top = 478
     Width = 8
     Caption = 'C'
     ParentColor = False
@@ -247,7 +247,7 @@ object Form1: TForm1
     Tag = 14
     Left = 24
     Height = 37
-    Top = 516
+    Top = 507
     Width = 200
     Max = 255
     Position = 0
@@ -256,7 +256,7 @@ object Form1: TForm1
   object Label14: TLabel
     Left = 8
     Height = 17
-    Top = 518
+    Top = 509
     Width = 11
     Caption = 'M'
     ParentColor = False
@@ -265,7 +265,7 @@ object Form1: TForm1
     Tag = 15
     Left = 24
     Height = 37
-    Top = 544
+    Top = 538
     Width = 200
     Max = 255
     Position = 0
@@ -274,7 +274,7 @@ object Form1: TForm1
   object Label15: TLabel
     Left = 8
     Height = 17
-    Top = 546
+    Top = 540
     Width = 7
     Caption = 'Y'
     ParentColor = False
@@ -283,7 +283,7 @@ object Form1: TForm1
     Tag = 16
     Left = 24
     Height = 37
-    Top = 572
+    Top = 569
     Width = 200
     Max = 255
     Position = 0
@@ -292,7 +292,7 @@ object Form1: TForm1
   object Label16: TLabel
     Left = 8
     Height = 17
-    Top = 574
+    Top = 571
     Width = 7
     Caption = 'K'
     ParentColor = False
@@ -301,7 +301,7 @@ object Form1: TForm1
     Tag = 1
     Left = 547
     Height = 27
-    Top = 87
+    Top = 79
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -312,7 +312,7 @@ object Form1: TForm1
     Tag = 2
     Left = 547
     Height = 27
-    Top = 124
+    Top = 114
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -323,7 +323,7 @@ object Form1: TForm1
     Tag = 3
     Left = 547
     Height = 27
-    Top = 162
+    Top = 149
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -334,7 +334,7 @@ object Form1: TForm1
     Tag = 4
     Left = 232
     Height = 27
-    Top = 243
+    Top = 216
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -345,7 +345,7 @@ object Form1: TForm1
     Tag = 5
     Left = 232
     Height = 27
-    Top = 273
+    Top = 250
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -356,7 +356,7 @@ object Form1: TForm1
     Tag = 6
     Left = 232
     Height = 27
-    Top = 303
+    Top = 286
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -367,7 +367,7 @@ object Form1: TForm1
     Tag = 7
     Left = 232
     Height = 27
-    Top = 364
+    Top = 348
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -378,7 +378,7 @@ object Form1: TForm1
     Tag = 8
     Left = 232
     Height = 27
-    Top = 395
+    Top = 384
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -389,7 +389,7 @@ object Form1: TForm1
     Tag = 9
     Left = 232
     Height = 27
-    Top = 425
+    Top = 419
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -398,9 +398,9 @@ object Form1: TForm1
   end
   object L2_se: TFloatSpinEdit
     Tag = 10
-    Left = 864
+    Left = 860
     Height = 27
-    Top = 344
+    Top = 361
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -409,9 +409,9 @@ object Form1: TForm1
   end
   object A_se: TFloatSpinEdit
     Tag = 11
-    Left = 864
+    Left = 860
     Height = 27
-    Top = 379
+    Top = 396
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -420,9 +420,9 @@ object Form1: TForm1
   end
   object B2_se: TFloatSpinEdit
     Tag = 12
-    Left = 864
+    Left = 860
     Height = 27
-    Top = 414
+    Top = 431
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -433,7 +433,7 @@ object Form1: TForm1
     Tag = 13
     Left = 232
     Height = 27
-    Top = 488
+    Top = 476
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -444,7 +444,7 @@ object Form1: TForm1
     Tag = 14
     Left = 232
     Height = 27
-    Top = 516
+    Top = 507
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -455,7 +455,7 @@ object Form1: TForm1
     Tag = 15
     Left = 232
     Height = 27
-    Top = 544
+    Top = 538
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -466,7 +466,7 @@ object Form1: TForm1
     Tag = 16
     Left = 232
     Height = 27
-    Top = 572
+    Top = 569
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -474,96 +474,96 @@ object Form1: TForm1
     Value = 0
   end
   object Label17: TLabel
-    Left = 644
+    Left = 544
     Height = 17
-    Top = 532
+    Top = 4
     Width = 73
     Caption = 'Hexadecimal'
     ParentColor = False
   end
   object Hex_edt: TEdit
     Tag = 23
-    Left = 724
+    Left = 624
     Height = 27
-    Top = 528
+    Top = 0
     Width = 96
     TabOrder = 50
   end
   object Name_edt: TEdit
     Tag = 28
-    Left = 724
+    Left = 624
     Height = 27
-    Top = 585
+    Top = 26
     Width = 96
     TabOrder = 51
   end
   object Label18: TLabel
-    Left = 644
+    Left = 544
     Height = 17
-    Top = 589
+    Top = 30
     Width = 34
     Caption = 'Name'
     ParentColor = False
   end
   object X_tb: TTrackBar
     Tag = 17
-    Left = 339
+    Left = 652
     Height = 37
-    Top = 488
+    Top = 75
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 24
   end
   object Label19: TLabel
-    Left = 323
+    Left = 636
     Height = 17
-    Top = 490
+    Top = 77
     Width = 7
     Caption = 'X'
     ParentColor = False
   end
   object Y2_tb: TTrackBar
     Tag = 18
-    Left = 339
+    Left = 652
     Height = 37
-    Top = 523
+    Top = 110
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 26
   end
   object Label20: TLabel
-    Left = 323
+    Left = 636
     Height = 17
-    Top = 525
+    Top = 112
     Width = 7
     Caption = 'Y'
     ParentColor = False
   end
   object Z_tb: TTrackBar
     Tag = 19
-    Left = 339
+    Left = 652
     Height = 37
-    Top = 558
+    Top = 145
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 28
   end
   object Label21: TLabel
-    Left = 323
+    Left = 636
     Height = 17
-    Top = 560
+    Top = 147
     Width = 7
     Caption = 'Z'
     ParentColor = False
   end
   object X_se: TFloatSpinEdit
     Tag = 17
-    Left = 547
+    Left = 860
     Height = 27
-    Top = 494
+    Top = 81
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -572,9 +572,9 @@ object Form1: TForm1
   end
   object Y2_se: TFloatSpinEdit
     Tag = 18
-    Left = 547
+    Left = 860
     Height = 27
-    Top = 529
+    Top = 116
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -583,9 +583,9 @@ object Form1: TForm1
   end
   object Z_se: TFloatSpinEdit
     Tag = 19
-    Left = 547
+    Left = 860
     Height = 27
-    Top = 564
+    Top = 151
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -594,63 +594,63 @@ object Form1: TForm1
   end
   object L3_tb: TTrackBar
     Tag = 20
-    Left = 656
+    Left = 652
     Height = 37
-    Top = 189
+    Top = 210
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 36
   end
   object Label22: TLabel
-    Left = 639
+    Left = 635
     Height = 17
-    Top = 193
+    Top = 214
     Width = 6
     Caption = 'L'
     ParentColor = False
   end
   object C2_tb: TTrackBar
     Tag = 21
-    Left = 656
+    Left = 652
     Height = 37
-    Top = 225
+    Top = 246
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 38
   end
   object Label23: TLabel
-    Left = 639
+    Left = 635
     Height = 17
-    Top = 229
+    Top = 250
     Width = 8
     Caption = 'C'
     ParentColor = False
   end
   object H3_tb: TTrackBar
     Tag = 22
-    Left = 656
+    Left = 652
     Height = 37
-    Top = 262
+    Top = 283
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 40
   end
   object Label24: TLabel
-    Left = 639
+    Left = 635
     Height = 17
-    Top = 266
+    Top = 287
     Width = 9
     Caption = 'H'
     ParentColor = False
   end
   object L3_se: TFloatSpinEdit
     Tag = 20
-    Left = 864
+    Left = 860
     Height = 27
-    Top = 201
+    Top = 222
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -659,9 +659,9 @@ object Form1: TForm1
   end
   object C2_se: TFloatSpinEdit
     Tag = 21
-    Left = 864
+    Left = 860
     Height = 27
-    Top = 237
+    Top = 258
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -670,9 +670,9 @@ object Form1: TForm1
   end
   object H3_se: TFloatSpinEdit
     Tag = 22
-    Left = 864
+    Left = 860
     Height = 27
-    Top = 274
+    Top = 295
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -680,17 +680,20 @@ object Form1: TForm1
     Value = 0
   end
   object Color_pnl: TPanel
-    Left = 827
-    Height = 80
-    Top = 528
-    Width = 56
+    Left = 448
+    Height = 41
+    Hint = 'Selected color'
+    Top = 0
+    Width = 40
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 54
   end
   object gamma_tb: TTrackBar
     Left = 96
     Height = 37
     Top = 0
-    Width = 443
+    Width = 256
     Frequency = 10
     Max = 300
     Min = 100
@@ -707,7 +710,7 @@ object Form1: TForm1
     ParentColor = False
   end
   object gamma_se: TFloatSpinEdit
-    Left = 547
+    Left = 359
     Height = 27
     Top = 6
     Width = 75
@@ -721,7 +724,7 @@ object Form1: TForm1
     Tag = 25
     Left = 24
     Height = 37
-    Top = 82
+    Top = 75
     Width = 200
     Frequency = 16
     Max = 255
@@ -731,7 +734,7 @@ object Form1: TForm1
   object Label26: TLabel
     Left = 8
     Height = 17
-    Top = 84
+    Top = 77
     Width = 7
     Caption = 'R'
     ParentColor = False
@@ -740,7 +743,7 @@ object Form1: TForm1
     Tag = 26
     Left = 24
     Height = 37
-    Top = 120
+    Top = 110
     Width = 200
     Frequency = 16
     Max = 255
@@ -750,7 +753,7 @@ object Form1: TForm1
   object Label27: TLabel
     Left = 8
     Height = 17
-    Top = 122
+    Top = 112
     Width = 9
     Caption = 'G'
     ParentColor = False
@@ -759,7 +762,7 @@ object Form1: TForm1
     Tag = 27
     Left = 24
     Height = 37
-    Top = 159
+    Top = 145
     Width = 200
     Frequency = 16
     Max = 255
@@ -769,7 +772,7 @@ object Form1: TForm1
   object Label28: TLabel
     Left = 8
     Height = 17
-    Top = 161
+    Top = 147
     Width = 8
     Caption = 'B'
     ParentColor = False
@@ -778,7 +781,7 @@ object Form1: TForm1
     Tag = 25
     Left = 232
     Height = 27
-    Top = 88
+    Top = 81
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -789,7 +792,7 @@ object Form1: TForm1
     Tag = 26
     Left = 232
     Height = 27
-    Top = 126
+    Top = 116
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -800,7 +803,7 @@ object Form1: TForm1
     Tag = 27
     Left = 232
     Height = 27
-    Top = 165
+    Top = 151
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -811,87 +814,103 @@ object Form1: TForm1
     Left = 8
     Height = 17
     Top = 56
-    Width = 156
+    Width = 163
     Caption = 'sRGB (gamma compressed)'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object Label30: TLabel
     Left = 323
     Height = 17
     Top = 56
-    Width = 174
+    Width = 186
     Caption = 'Linear RGB (gamma expanded)'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object Label31: TLabel
     Left = 8
     Height = 17
-    Top = 208
-    Width = 28
+    Top = 190
+    Width = 29
     Caption = 'sHSL'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object Label32: TLabel
     Left = 8
     Height = 17
-    Top = 338
-    Width = 63
+    Top = 324
+    Width = 65
     Caption = 'sHSV/sHSB'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object Label33: TLabel
-    Left = 323
+    Left = 636
     Height = 17
-    Top = 464
-    Width = 21
+    Top = 56
+    Width = 22
     Caption = 'XYZ'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object Label34: TLabel
-    Left = 640
+    Left = 636
     Height = 17
-    Top = 311
-    Width = 20
-    Caption = 'Lab'
+    Top = 331
+    Width = 43
+    Caption = 'L*a*b*'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object Label35: TLabel
     Left = 8
     Height = 17
-    Top = 464
-    Width = 33
-    Caption = 'CMYK'
+    Top = 458
+    Width = 40
+    Caption = 'sCMYK'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object Label36: TLabel
-    Left = 639
+    Left = 635
     Height = 17
-    Top = 165
-    Width = 21
-    Caption = 'LCh'
+    Top = 190
+    Width = 42
+    Caption = 'L*C*h°'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object Dec_edt: TEdit
     Tag = 24
-    Left = 724
+    Left = 799
     Height = 27
-    Top = 557
+    Top = 0
     Width = 96
     TabOrder = 55
   end
   object Label37: TLabel
-    Left = 644
+    Left = 736
     Height = 17
-    Top = 561
+    Top = 4
     Width = 46
     Caption = 'Decimal'
     ParentColor = False
   end
   object Alpha_se: TFloatSpinEdit
     Tag = 29
-    Left = 867
+    Left = 547
     Height = 27
-    Top = 482
+    Top = 182
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -900,41 +919,47 @@ object Form1: TForm1
   end
   object Alpha_tb: TTrackBar
     Tag = 29
-    Left = 660
+    Left = 339
     Height = 37
-    Top = 480
-    Width = 200
+    Top = 180
+    Width = 201
     Max = 255
     Position = 0
     TabOrder = 57
   end
   object Label38: TLabel
-    Left = 644
+    Left = 323
     Height = 17
-    Top = 482
+    Top = 182
     Width = 8
     Caption = 'A'
     ParentColor = False
   end
   object Grayscale_pnl: TPanel
-    Left = 883
-    Height = 40
-    Top = 528
-    Width = 56
+    Left = 488
+    Height = 20
+    Hint = 'Grayscale'
+    Top = 1
+    Width = 37
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 58
   end
   object Invert_pnl: TPanel
-    Left = 883
-    Height = 40
-    Top = 568
-    Width = 56
+    Left = 488
+    Height = 20
+    Hint = 'Inverted color'
+    Top = 21
+    Width = 37
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 59
   end
   object lH_tb: TTrackBar
     Tag = 50
     Left = 336
     Height = 37
-    Top = 234
+    Top = 239
     Width = 200
     Max = 255
     Position = 0
@@ -943,7 +968,7 @@ object Form1: TForm1
   object Label39: TLabel
     Left = 320
     Height = 17
-    Top = 237
+    Top = 242
     Width = 9
     Caption = 'H'
     ParentColor = False
@@ -952,7 +977,7 @@ object Form1: TForm1
     Tag = 51
     Left = 336
     Height = 37
-    Top = 265
+    Top = 272
     Width = 200
     Max = 255
     Position = 0
@@ -961,7 +986,7 @@ object Form1: TForm1
   object Label40: TLabel
     Left = 320
     Height = 17
-    Top = 267
+    Top = 274
     Width = 7
     Caption = 'S'
     ParentColor = False
@@ -970,7 +995,7 @@ object Form1: TForm1
     Tag = 52
     Left = 336
     Height = 37
-    Top = 295
+    Top = 304
     Width = 200
     Max = 255
     Position = 0
@@ -979,7 +1004,7 @@ object Form1: TForm1
   object Label41: TLabel
     Left = 320
     Height = 17
-    Top = 297
+    Top = 306
     Width = 6
     Caption = 'L'
     ParentColor = False
@@ -988,7 +1013,7 @@ object Form1: TForm1
     Tag = 50
     Left = 544
     Height = 27
-    Top = 243
+    Top = 248
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -999,7 +1024,7 @@ object Form1: TForm1
     Tag = 51
     Left = 544
     Height = 27
-    Top = 273
+    Top = 280
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -1010,7 +1035,7 @@ object Form1: TForm1
     Tag = 52
     Left = 544
     Height = 27
-    Top = 303
+    Top = 312
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -1020,16 +1045,18 @@ object Form1: TForm1
   object Label42: TLabel
     Left = 320
     Height = 17
-    Top = 208
-    Width = 60
+    Top = 219
+    Width = 64
     Caption = 'Linear HSL'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object lH2_tb: TTrackBar
     Tag = 53
     Left = 336
     Height = 37
-    Top = 358
+    Top = 370
     Width = 200
     Max = 255
     Position = 0
@@ -1038,7 +1065,7 @@ object Form1: TForm1
   object Label43: TLabel
     Left = 320
     Height = 17
-    Top = 361
+    Top = 373
     Width = 9
     Caption = 'G'
     ParentColor = False
@@ -1047,7 +1074,7 @@ object Form1: TForm1
     Tag = 54
     Left = 336
     Height = 37
-    Top = 389
+    Top = 403
     Width = 200
     Max = 255
     Position = 0
@@ -1056,7 +1083,7 @@ object Form1: TForm1
   object Label44: TLabel
     Left = 320
     Height = 17
-    Top = 391
+    Top = 405
     Width = 7
     Caption = 'S'
     ParentColor = False
@@ -1065,7 +1092,7 @@ object Form1: TForm1
     Tag = 55
     Left = 336
     Height = 37
-    Top = 419
+    Top = 436
     Width = 200
     Max = 255
     Position = 0
@@ -1074,7 +1101,7 @@ object Form1: TForm1
   object Label45: TLabel
     Left = 320
     Height = 17
-    Top = 421
+    Top = 438
     Width = 8
     Caption = 'B'
     ParentColor = False
@@ -1083,7 +1110,7 @@ object Form1: TForm1
     Tag = 53
     Left = 544
     Height = 27
-    Top = 364
+    Top = 376
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -1094,7 +1121,7 @@ object Form1: TForm1
     Tag = 54
     Left = 544
     Height = 27
-    Top = 395
+    Top = 409
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -1105,7 +1132,7 @@ object Form1: TForm1
     Tag = 55
     Left = 544
     Height = 27
-    Top = 425
+    Top = 442
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -1115,70 +1142,72 @@ object Form1: TForm1
   object Label46: TLabel
     Left = 320
     Height = 17
-    Top = 338
-    Width = 114
+    Top = 350
+    Width = 117
     Caption = 'GSB (corrected HSL)'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object lR_tb1: TTrackBar
     Tag = 60
-    Left = 655
+    Left = 336
     Height = 37
-    Top = 35
+    Top = 501
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 72
   end
   object Label47: TLabel
-    Left = 639
+    Left = 320
     Height = 17
-    Top = 37
+    Top = 503
     Width = 7
     Caption = 'R'
     ParentColor = False
   end
   object lG_tb1: TTrackBar
     Tag = 61
-    Left = 655
+    Left = 336
     Height = 37
-    Top = 72
+    Top = 535
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 73
   end
   object Label48: TLabel
-    Left = 639
+    Left = 320
     Height = 17
-    Top = 75
+    Top = 538
     Width = 9
     Caption = 'G'
     ParentColor = False
   end
   object lB_tb1: TTrackBar
     Tag = 62
-    Left = 655
+    Left = 336
     Height = 37
-    Top = 110
+    Top = 569
     Width = 200
     Max = 255
     Position = 0
     TabOrder = 74
   end
   object Label49: TLabel
-    Left = 639
+    Left = 320
     Height = 17
-    Top = 113
+    Top = 572
     Width = 8
     Caption = 'B'
     ParentColor = False
   end
   object lR_se1: TFloatSpinEdit
     Tag = 60
-    Left = 863
+    Left = 544
     Height = 27
-    Top = 39
+    Top = 505
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -1187,9 +1216,9 @@ object Form1: TForm1
   end
   object lG_se1: TFloatSpinEdit
     Tag = 61
-    Left = 863
+    Left = 544
     Height = 27
-    Top = 76
+    Top = 539
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -1198,9 +1227,9 @@ object Form1: TForm1
   end
   object lB_se1: TFloatSpinEdit
     Tag = 62
-    Left = 863
+    Left = 544
     Height = 27
-    Top = 114
+    Top = 573
     Width = 75
     MaxValue = 255
     MinValue = 0
@@ -1208,19 +1237,31 @@ object Form1: TForm1
     Value = 0
   end
   object Label50: TLabel
-    Left = 639
+    Left = 320
     Height = 17
-    Top = 8
-    Width = 63
+    Top = 481
+    Width = 66
     Caption = 'Adobe RGB'
+    Font.Style = [fsBold]
     ParentColor = False
+    ParentFont = False
   end
   object LIsReal: TLabel
-    Left = 339
+    Left = 800
     Height = 17
-    Top = 600
-    Width = 58
-    Caption = 'real color?'
+    Top = 30
+    Width = 97
+    Caption = 'Real or imaginary'
+    Font.Style = [fsItalic]
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label51: TLabel
+    Left = 736
+    Height = 17
+    Top = 30
+    Width = 24
+    Caption = 'Kind'
     ParentColor = False
   end
 end
