@@ -160,6 +160,7 @@ var
 begin
   bmpWidth := bmp.Width;
   bmpHeight:= bmp.Height;
+  bmp.LoadFromBitmapIfNeeded;
 
   if (ADestination.Width <> bmpWidth) or (ADestination.Height <> bmpHeight) then
     raise exception.Create('Dimension mismatch');

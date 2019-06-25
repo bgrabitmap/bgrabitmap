@@ -5,19 +5,24 @@ unit BGRAGrayscaleMask;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, UniversalDrawer;
+  Classes, SysUtils, BGRABitmapTypes, {%H-}UniversalDrawer;
 
 type
   { TGrayscaleMask }
 
   TGrayscaleMask = class(specialize TGenericUniversalBitmap<TByteMask,TByteMaskColorspace>)
   private
+     function InternalNew: TCustomUniversalBitmap; override;
+     procedure AssignTransparentPixel(out ADest); override;
      function GetScanLine(Y: Integer): PByte; inline;
   public
      constructor Create(AWidth,AHeight: Integer; AValue: byte); overload;
      constructor Create(ABitmap: TBGRACustomBitmap; AChannel: TChannel); overload;
      constructor CreateDownSample(ABitmap: TBGRACustomBitmap; AWidth,AHeight: integer);
      procedure CopyFrom(ABitmap: TBGRACustomBitmap; AChannel: TChannel);
+     function GetImageBounds: TRect; overload; override;
+     function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; override;
+     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; override;
 
      class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TByteMask; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
      class procedure ScannerBrush(out ABrush: TUniversalBrush; AScanner: IBGRAScanner; ADrawMode: TDrawMode = dmDrawWithTransparency;
@@ -377,6 +382,16 @@ end;
 
 { TGrayscaleMask }
 
+function TGrayscaleMask.InternalNew: TCustomUniversalBitmap;
+begin
+  Result:= TGrayscaleMask.Create;
+end;
+
+procedure TGrayscaleMask.AssignTransparentPixel(out ADest);
+begin
+  TByteMask(ADest).gray := 0;
+end;
+
 function TGrayscaleMask.GetScanLine(Y: Integer): PByte;
 begin
   result := PByte(GetScanLineByte(y));
@@ -405,6 +420,76 @@ begin
       end;
     end;
   end;
+end;
+
+function TGrayscaleMask.GetImageBounds: TRect;
+begin
+  Result:= GetImageBounds(cGreen);
+end;
+
+function TGrayscaleMask.GetImageBoundsWithin(const ARect: TRect;
+  Channel: TChannel; ANothingValue: Byte): TRect;
+var
+  minx, miny, maxx, maxy: integer;
+  xb, xb2, yb: integer;
+  p: PByte;
+  actualRect: TRect;
+begin
+  if Channel = cAlpha then raise exception.Create('Channel not found');
+  actualRect := TRect.Intersect(ARect,rect(0,0,self.Width,self.Height));
+  maxx := actualRect.Left-1;
+  maxy := actualRect.Top-1;
+  minx := actualRect.Right;
+  miny := actualRect.Bottom;
+  for yb := actualRect.Top to actualRect.Bottom-1 do
+  begin
+    p := GetPixelAddress(actualRect.Left,yb);
+    for xb := actualRect.Left to actualRect.Right - 1 do
+    begin
+      if p^<>ANothingValue then
+      begin
+        if xb < minx then minx := xb;
+        if yb < miny then miny := yb;
+        if xb > maxx then maxx := xb;
+        if yb > maxy then maxy := yb;
+
+        inc(p, actualRect.Right-1-xb);
+        for xb2 := actualRect.Right-1 downto xb+1 do
+        begin
+          if p^ <> ANothingValue then
+          begin
+            if xb2 > maxx then maxx := xb2;
+            break;
+          end;
+          dec(p);
+        end;
+        break;
+      end;
+      Inc(p);
+    end;
+  end;
+  if minx > maxx then
+  begin
+    Result.left   := 0;
+    Result.top    := 0;
+    Result.right  := 0;
+    Result.bottom := 0;
+  end
+  else
+  begin
+    Result.left   := minx;
+    Result.top    := miny;
+    Result.right  := maxx + 1;
+    Result.bottom := maxy + 1;
+  end;
+end;
+
+function TGrayscaleMask.GetImageBoundsWithin(const ARect: TRect;
+  Channels: TChannels; ANothingValue: Byte): TRect;
+begin
+  if cAlpha in Channels then raise exception.Create('Channel not found')
+  else if Channels = [] then result := EmptyRect
+  else result := GetImageBoundsWithin(ARect, cGreen);
 end;
 
 class procedure TGrayscaleMask.SolidBrush(out ABrush: TUniversalBrush;

@@ -120,12 +120,24 @@ type
     class procedure FillEllipseAntialias(ADest: TCustomUniversalBitmap;
                     const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush); overload; override;
 
+    //filters
+    class procedure FilterBlurRadial(ASource: TCustomUniversalBitmap; const ABounds: TRect;
+                              radiusX, radiusY: single; blurType: TRadialBlurType;
+                              ADest: TCustomUniversalBitmap); override;
+    class procedure FilterBlurMotion(ASource: TCustomUniversalBitmap; const ABounds: TRect;
+                              distance: single; angle: single; oriented: boolean;
+                              ADest: TCustomUniversalBitmap); override;
+    class procedure FilterCustomBlur(ASource: TCustomUniversalBitmap; const ABounds: TRect;
+                              mask: TCustomUniversalBitmap;
+                              ADest: TCustomUniversalBitmap); override;
+
   end;
 
 implementation
 
 uses BGRAPolygon, BGRAPolygonAliased, BGRAPath, BGRAFillInfo, BGRAUTF8,
-  BGRAReadBMP, BGRAReadJpeg, BGRAWritePNG, BGRAWriteTiff;
+  BGRAReadBMP, BGRAReadJpeg, BGRAWritePNG, BGRAWriteTiff,
+  BGRAFilterBlur;
 
 { TUniversalDrawer }
 
@@ -997,6 +1009,31 @@ begin
     pts := BGRAPath.ComputeEllipse(AOrigin,AXAxis,AYAxis);
     FillPolyAntialias(ADest, pts, fmAlternate, ABrush, true);
   end;
+end;
+
+class procedure TUniversalDrawer.FilterBlurRadial(
+  ASource: TCustomUniversalBitmap; const ABounds: TRect; radiusX,
+  radiusY: single; blurType: TRadialBlurType; ADest: TCustomUniversalBitmap);
+begin
+  BGRAFilterBlur.FilterBlurRadial(ASource, ABounds,
+                radiusX,radiusY, blurType, ADest, nil);
+end;
+
+class procedure TUniversalDrawer.FilterBlurMotion(
+  ASource: TCustomUniversalBitmap; const ABounds: TRect;
+  distance: single; angle: single; oriented: boolean;
+  ADest: TCustomUniversalBitmap);
+begin
+  BGRAFilterBlur.FilterBlurMotion(ASource, ABounds,
+           distance, angle, oriented, ADest, nil);
+end;
+
+class procedure TUniversalDrawer.FilterCustomBlur(
+  ASource: TCustomUniversalBitmap; const ABounds: TRect;
+  mask: TCustomUniversalBitmap; ADest: TCustomUniversalBitmap);
+begin
+  BGRAFilterBlur.FilterBlurCustom(ASource, ABounds,
+      mask, ADest, nil);
 end;
 
 initialization

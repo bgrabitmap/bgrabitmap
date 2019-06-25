@@ -6,7 +6,8 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ComCtrls,
-  ExtCtrls, StdCtrls, BGRABitmap, BGRABitmapTypes, EpikTimer, LMessages;
+  ExtCtrls, StdCtrls, BGRABitmap, BGRABitmapTypes, EpikTimer, LMessages,
+  BGRAGrayscaleMask;
 
 type
 
@@ -44,7 +45,8 @@ type
     procedure UpdateLabelRadius;
   public
     { public declarations }
-    image,shadowBase: TBGRABitmap;
+    image: TBGRABitmap;
+    shadowBase: TGrayscaleMask;
     timer : TEpikTimer;
     movingShadow: boolean;
     movingOrigin,shadowOfs: TPoint;
@@ -76,7 +78,8 @@ end;
 { TForm1 }
 
 procedure TForm1.FormPaint(Sender: TObject);
-var bmp,ombre: TBGRABitmap;
+var bmp: TBGRABitmap;
+    ombre: TGrayscaleMask;
     x,y,tx,ty: integer;
     blurType: TRadialBlurType;
     radiusX,radiusY,len: single;
@@ -95,25 +98,25 @@ begin
   if Radio_Motion.Checked or Radio_OrientedMotion.Checked then
   begin
     len := sqrt(sqr(radiusX)+sqr(radiusY));
-    ombre := shadowBase.FilterBlurMotion(len*2,ComputeAngle(radiusX,radiusY),Radio_OrientedMotion.Checked) as TBGRABitmap;
+    ombre := shadowBase.FilterBlurMotion(len*2,ComputeAngle(radiusX,radiusY),Radio_OrientedMotion.Checked) as TGrayscaleMask;
   end else
   begin
     if Radio_Box.Checked then
     begin
       blurType := rbBox;
-      ombre := shadowBase.FilterBlurRadial(radiusX,radiusY,blurType) as TBGRABitmap;
+      ombre := shadowBase.FilterBlurRadial(radiusX,radiusY,blurType) as TGrayscaleMask;
     end else
     begin
       if Radio_Fast.Checked then blurType := rbFast else
       if Radio_Corona.Checked then blurType := rbCorona else
       if Radio_Disk.Checked then blurType := rbDisk else
       if Radio_Radial.Checked then blurType := rbNormal;
-      ombre := shadowBase.FilterBlurRadial(radiusX,radiusY,blurType) as TBGRABitmap;
+      ombre := shadowBase.FilterBlurRadial(radiusX,radiusY,blurType) as TGrayscaleMask;
     end;
   end;
   timer.Stop;
-  ombre.Rectangle(0,0,ombre.width,ombre.height,BGRA(0,0,0,128),dmDrawWithTransparency);
-  bmp.PutImage(x-shadowOfs.x,y-shadowOfs.y,ombre,dmDrawWithTransparency);
+  ombre.Rectangle(0,0,ombre.width,ombre.height,TByteMask.New(128));
+  bmp.FillMask(x+shadowOfs.x,y+shadowOfs.y,ombre,BGRA(64,128,64), dmDrawWithTransparency);
   ombre.free;
 
   bmp.PutImage(x,y,image,dmDrawWithTransparency);
@@ -152,12 +155,11 @@ begin
   image.FontName := 'Times New Roman';
   image.FontHeight := 300;
   image.FontAntialias:= true;
-  image.TextOut(image.Width div 2,-100,'a',BGRA(128,192,128,240),taCenter);
-  shadowBase := TBGRABitmap.Create(image.Width,image.Height,BGRAWhite);
-  image.CopyPropertiesTo(shadowBase);
-  shadowBase.TextOut(shadowBase.Width div 2,-100,'a',BGRA(64,128,64),taCenter);
+  image.TextOut(image.Width div 2,-100,'a',BGRA(128,192,128,255),taCenter);
+  shadowBase := TGrayscaleMask.Create(image, cAlpha);
   UpdateLabelRadius;
   timer := TEpikTimer.Create(Self);
+  shadowOfs := Point(10,10);
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
@@ -181,8 +183,8 @@ procedure TForm1.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
 begin
   if movingShadow then
   begin
-    inc(shadowOfs.x, movingOrigin.X-X);
-    inc(shadowOfs.y, movingOrigin.Y-Y);
+    inc(shadowOfs.x, X-movingOrigin.X);
+    inc(shadowOfs.y, Y-movingOrigin.Y);
     movingOrigin := Point(X,Y);
     Invalidate;
   end;

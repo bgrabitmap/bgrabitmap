@@ -665,14 +665,14 @@ type
      function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterContour: TBGRACustomBitmap; virtual; abstract;
      function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRACustomBitmap; virtual; abstract;
-     function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterBlurRadial(ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterBlurRadial(ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterBlurMotion(ABounds: TRect; distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterCustomBlur(mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterCustomBlur(ABounds: TRect; mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload; virtual; abstract;
+     function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload;
+     function FilterBlurRadial(ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload;
+     function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload;
+     function FilterBlurRadial(ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload;
+     function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload;
+     function FilterBlurMotion(ABounds: TRect; distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload;
+     function FilterCustomBlur(mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload;
+     function FilterCustomBlur(ABounds: TRect; mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload;
      function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterEmbossHighlight(FillSelection: boolean): TBGRACustomBitmap; overload; virtual; abstract;
@@ -1892,6 +1892,54 @@ function TBGRACustomBitmap.RotateUD: TBGRACustomBitmap;
 begin
   result := TBGRACustomBitmap(Inherited RotateUD);
   if Assigned(XorMask) then result.FXorMask := self.XorMask.RotateUD;
+end;
+
+function TBGRACustomBitmap.FilterBlurRadial(radius: single;
+  blurType: TRadialBlurType): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited FilterBlurRadial(radius, blurType));
+end;
+
+function TBGRACustomBitmap.FilterBlurRadial(ABounds: TRect; radius: single;
+  blurType: TRadialBlurType): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited FilterBlurRadial(ABounds, radius, blurType));
+end;
+
+function TBGRACustomBitmap.FilterBlurRadial(radiusX, radiusY: single;
+  blurType: TRadialBlurType): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited FilterBlurRadial(radiusX,radiusY, blurType));
+end;
+
+function TBGRACustomBitmap.FilterBlurRadial(ABounds: TRect; radiusX,
+  radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited FilterBlurRadial(ABounds, radiusX,radiusY, blurType));
+end;
+
+function TBGRACustomBitmap.FilterBlurMotion(distance: single; angle: single;
+  oriented: boolean): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited FilterBlurMotion(distance, angle, oriented));
+end;
+
+function TBGRACustomBitmap.FilterBlurMotion(ABounds: TRect; distance: single;
+  angle: single; oriented: boolean): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited FilterBlurMotion(ABounds, distance, angle, oriented));
+end;
+
+function TBGRACustomBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap
+  ): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited FilterCustomBlur(mask));
+end;
+
+function TBGRACustomBitmap.FilterCustomBlur(ABounds: TRect;
+  mask: TCustomUniversalBitmap): TBGRACustomBitmap;
+begin
+  result := TBGRACustomBitmap(inherited FilterCustomBlur(ABounds,mask));
 end;
 
 function TBGRACustomBitmap.GetImageBoundsWithin(const ARect: TRect;

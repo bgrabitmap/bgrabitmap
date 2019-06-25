@@ -268,6 +268,8 @@ type
 
     {** Stop clipping (clipping rectangle becomes the whole image) }
     procedure NoClip; virtual;
+    {** Reduce the clipping region further by intersection and returns the previous clipping rectangle }
+    function IntersectClip(const ARect: TRect): TRect;
     {** Checks if the specified point is in the clipping rectangle ''ClipRect'' }
     function PtInClipRect(x, y: int32or64): boolean; inline;
     {** Check if the bounds are within the clipping rectangle and adjust the coordinates to fit
@@ -643,7 +645,8 @@ type
     function IsScanPutPixelsDefined: boolean; virtual;
     procedure ScanPutPixels({%H-}pdest: PBGRAPixel; {%H-}count: integer; {%H-}mode: TDrawMode); virtual;
     procedure ScanSkipPixels(ACount: integer); virtual;
-    function GetImageBounds(Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload;
+    function GetImageBounds: TRect; overload; virtual;
+    function GetImageBounds(Channel: TChannel; ANothingValue: Byte = 0): TRect; overload;
     function GetImageBounds(Channels: TChannels; ANothingValue: Byte = 0): TRect; overload;
     function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
@@ -661,6 +664,17 @@ type
 
   public
     procedure PutImage(X, Y: integer; ASource: TCustomUniversalBitmap; AMode: TDrawMode; AOpacity: byte = 255); virtual;
+
+  public
+    //filters
+    function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload;
+    function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload;
+    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload;
+    function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload;
+    function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap; overload;
+    function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap; overload;
+    function FilterCustomBlur(mask: TCustomUniversalBitmap): TCustomUniversalBitmap; overload;
+    function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap): TCustomUniversalBitmap; overload;
 
   end;
 
@@ -770,6 +784,17 @@ type
                     x, y, rx, ry: single; const ABrush: TUniversalBrush); overload; virtual; abstract;
     class procedure FillEllipseAntialias(ADest: TCustomUniversalBitmap;
                     const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush); overload; virtual; abstract;
+
+    //filters
+    class procedure FilterBlurRadial(ASource: TCustomUniversalBitmap; const ABounds: TRect;
+                              radiusX, radiusY: single; blurType: TRadialBlurType;
+                              ADest: TCustomUniversalBitmap); virtual; abstract;
+    class procedure FilterBlurMotion(ASource: TCustomUniversalBitmap; const ABounds: TRect;
+                              distance: single; angle: single; oriented: boolean;
+                              ADest: TCustomUniversalBitmap); virtual; abstract;
+    class procedure FilterCustomBlur(ASource: TCustomUniversalBitmap; const ABounds: TRect;
+                              mask: TCustomUniversalBitmap;
+                              ADest: TCustomUniversalBitmap); virtual; abstract;
 
   end;
   TUniversalDrawerAny = class of TCustomUniversalDrawer;
@@ -1457,6 +1482,11 @@ begin
   inc(FScanPtr, ACount*PtrInt(FPixelSize));
 end;
 
+function TCustomUniversalBitmap.GetImageBounds: TRect;
+begin
+  result := GetImageBounds(cAlpha);
+end;
+
 function TCustomUniversalBitmap.GetImageBounds(Channel: TChannel;
   ANothingValue: Byte): TRect;
 begin
@@ -1496,10 +1526,12 @@ begin
   case Channel of
   cAlpha: idxChannel := Colorspace.IndexOfAlphaChannel;
   cRed: idxChannel := Colorspace.IndexOfChannel('Red');
-  cGreen: idxChannel := Colorspace.IndexOfChannel('Red');
-  cBlue: idxChannel := Colorspace.IndexOfChannel('Red');
+  cGreen: idxChannel := Colorspace.IndexOfChannel('Green');
+  cBlue: idxChannel := Colorspace.IndexOfChannel('Blue');
   else raise exception.Create('Unexpected channel');
   end;
+  if (idxChannel = -1) and (Channel in [cRed,cGreen,cBlue]) then
+    idxChannel := Colorspace.IndexOfChannel('Gray');
   if idxChannel = -1 then raise exception.Create('Channel not found');
   minValueF := Colorspace.GetMinValue(idxChannel);
   nothingValueF := (ANothingValue - minValueF)/(Colorspace.GetMaxValue(idxChannel)-minValueF);
@@ -1644,6 +1676,59 @@ begin
   ASource.ScanOffset := Point(-X,-Y);
   FillRect(RectWithSize(X,Y,ASource.Width,ASource.Height), ASource, AMode, AOpacity + (AOpacity shl 8));
   ASource.ScanOffset := oldOfs;
+end;
+
+function TCustomUniversalBitmap.FilterBlurRadial(radius: single;
+  blurType: TRadialBlurType): TCustomUniversalBitmap;
+begin
+  Result := FilterBlurRadial(rect(0,0,Width,Height), radius,radius, blurType);
+end;
+
+function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect;
+  radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap;
+begin
+  Result := FilterBlurRadial(ABounds, radius,radius, blurType);
+end;
+
+function TCustomUniversalBitmap.FilterBlurRadial(radiusX, radiusY: single;
+  blurType: TRadialBlurType): TCustomUniversalBitmap;
+begin
+  Result := FilterBlurRadial(rect(0,0,Width,Height), radiusX,radiusY, blurType);
+end;
+
+function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect; radiusX,
+  radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap;
+begin
+  if UniDrawerClass = nil then RaiseMissingUniDrawer;
+  result := NewBitmap; result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
+  UniDrawerClass.FilterBlurRadial(self, ABounds, radiusX,radiusY, blurType, result);
+end;
+
+function TCustomUniversalBitmap.FilterBlurMotion(distance: single;
+  angle: single; oriented: boolean): TCustomUniversalBitmap;
+begin
+  result := FilterBlurMotion(rect(0,0,Width,Height), distance, angle, oriented);
+end;
+
+function TCustomUniversalBitmap.FilterBlurMotion(const ABounds: TRect;
+  distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap;
+begin
+  if UniDrawerClass = nil then RaiseMissingUniDrawer;
+  result := NewBitmap; result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
+  UniDrawerClass.FilterBlurMotion(self, ABounds, distance, angle, oriented, result);
+end;
+
+function TCustomUniversalBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap): TCustomUniversalBitmap;
+begin
+  result := FilterCustomBlur(rect(0,0,Width,Height), mask);
+end;
+
+function TCustomUniversalBitmap.FilterCustomBlur(const ABounds: TRect;
+  mask: TCustomUniversalBitmap): TCustomUniversalBitmap;
+begin
+  if UniDrawerClass = nil then RaiseMissingUniDrawer;
+  result := NewBitmap; result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
+  UniDrawerClass.FilterCustomBlur(self, ABounds, mask, result);
 end;
 
 procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
@@ -2550,6 +2635,16 @@ end;
 procedure TCustomUniversalBitmap.NoClip;
 begin
   FClipRect := rect(0,0,FWidth,FHeight);
+end;
+
+function TCustomUniversalBitmap.IntersectClip(const ARect: TRect): TRect;
+var
+  remain: TRect;
+begin
+  result := ClipRect;
+  remain := EmptyRect;
+  IntersectRect(remain, ARect, result);
+  ClipRect := remain;
 end;
 
 procedure TCustomUniversalBitmap.Fill(const ABrush: TUniversalBrush; AAlpha: Word = 65535);

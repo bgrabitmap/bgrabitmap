@@ -614,14 +614,6 @@ type
     function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRACustomBitmap; overload; override;
     function FilterContour: TBGRACustomBitmap; override;
     function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRACustomBitmap; override;
-    function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
-    function FilterBlurRadial(ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
-    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
-    function FilterBlurRadial(ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
-    function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; override;
-    function FilterBlurMotion(ABounds: TRect; distance: single; angle: single; oriented: boolean): TBGRACustomBitmap; overload; override;
-    function FilterCustomBlur(mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload; override;
-    function FilterCustomBlur(ABounds: TRect; mask: TCustomUniversalBitmap): TBGRACustomBitmap; overload; override;
     function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; override;
     function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; override;
     function FilterEmbossHighlight(FillSelection: boolean): TBGRACustomBitmap; overload; override;
@@ -3788,82 +3780,10 @@ begin
   Result := BGRAFilters.FilterContour(self);
 end;
 
-function TBGRADefaultBitmap.FilterBlurRadial(radius: single;
-  blurType: TRadialBlurType): TBGRACustomBitmap;
-begin
-  Result := BGRAFilters.FilterBlurRadial(self, radius, blurType);
-end;
-
-function TBGRADefaultBitmap.FilterBlurRadial(ABounds: TRect; radius: single;
-  blurType: TRadialBlurType): TBGRACustomBitmap;
-var task: TFilterTask;
-begin
-  task := BGRAFilters.CreateRadialBlurTask(self, ABounds, radius, blurType);
-  try
-    result := task.Execute;
-  finally
-    task.Free;
-  end;
-end;
-
-function TBGRADefaultBitmap.FilterBlurRadial(radiusX, radiusY: single;
-  blurType: TRadialBlurType): TBGRACustomBitmap;
-begin
-  Result := BGRAFilters.FilterBlurRadial(self, radiusX,radiusY, blurType);
-end;
-
-function TBGRADefaultBitmap.FilterBlurRadial(ABounds: TRect; radiusX,
-  radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap;
-var task: TFilterTask;
-begin
-  task := BGRAFilters.CreateRadialBlurTask(self, ABounds, radiusX,radiusY, blurType);
-  try
-    result := task.Execute;
-  finally
-    task.Free;
-  end;
-end;
-
 function TBGRADefaultBitmap.FilterPixelate(pixelSize: integer;
   useResample: boolean; filter: TResampleFilter): TBGRACustomBitmap;
 begin
   Result:= BGRAFilters.FilterPixelate(self, pixelSize, useResample, filter);
-end;
-
-function TBGRADefaultBitmap.FilterBlurMotion(distance: single;
-  angle: single; oriented: boolean): TBGRACustomBitmap;
-begin
-  Result := BGRAFilters.FilterBlurMotion(self, distance, angle, oriented);
-end;
-
-function TBGRADefaultBitmap.FilterBlurMotion(ABounds: TRect; distance: single;
-  angle: single; oriented: boolean): TBGRACustomBitmap;
-var task: TFilterTask;
-begin
-  task := BGRAFilters.CreateMotionBlurTask(self,ABounds,distance,angle,oriented);
-  try
-    Result := task.Execute;
-  finally
-    task.Free;
-  end;
-end;
-
-function TBGRADefaultBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap):
-TBGRACustomBitmap;
-begin
-  Result := BGRAFilters.FilterBlur(self, mask);
-end;
-
-function TBGRADefaultBitmap.FilterCustomBlur(ABounds: TRect;
-  mask: TCustomUniversalBitmap): TBGRACustomBitmap;
-var task: TFilterTask;
-begin
-  task := BGRAFilters.CreateBlurTask(self, ABounds, mask);
-  try
-    result := task.Execute;
-  finally
-    task.Free;
-  end;
 end;
 
 function TBGRADefaultBitmap.FilterEmboss(angle: single;

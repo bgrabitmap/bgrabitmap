@@ -88,7 +88,7 @@ function FilterRotate(bmp: TBGRACustomBitmap; origin: TPointF;
 
 { A radial blur applies a blur with a circular influence, i.e, each pixel
   is merged with pixels within the specified radius. There is an exception
-  with rbFast blur, the optimization entails an hyperbolic shape. }
+  with rbFast blur, the optimization entails a hyperbolic shape. }
 type TRadialBlurTask = BGRAFilterBlur.TRadialBlurTask;
 function FilterBlurRadial(bmp: TBGRACustomBitmap; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload;
 function FilterBlurRadial(bmp: TBGRACustomBitmap; radiusX: single; radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload;
@@ -677,7 +677,7 @@ end;
 function FilterBlurRadial(bmp: TBGRACustomBitmap; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap;
 var task: TFilterTask;
 begin
-  task := CreateRadialBlurTask(bmp,rect(0,0,bmp.Width,bmp.Height),radius,blurTYpe);
+  task := CreateRadialBlurTask(bmp,rect(0,0,bmp.Width,bmp.Height),radius,blurType);
   result := task.Execute;
   task.Free;
 end;
@@ -685,7 +685,7 @@ end;
 function FilterBlurRadial(bmp: TBGRACustomBitmap; radiusX: single; radiusY: single; blurType: TRadialBlurType): TBGRACustomBitmap;
 var task: TFilterTask;
 begin
-  task := CreateRadialBlurTask(bmp,rect(0,0,bmp.Width,bmp.Height),radiusX,radiusY,blurTYpe);
+  task := CreateRadialBlurTask(bmp,rect(0,0,bmp.Width,bmp.Height),radiusX,radiusY,blurType);
   result := task.Execute;
   task.Free;
 end;
