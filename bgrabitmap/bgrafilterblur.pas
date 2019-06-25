@@ -726,7 +726,7 @@ end;
 
 procedure FilterBlurMask64(bmp: TBGRACustomBitmap;
   blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TBGRACustomBitmap; ACheckShouldStop: TCheckShouldStopFunc);
-var Sum: TFilterBlurSmallMask_Sum;
+var Sum: TFilterBlurMask64_Sum;
 begin
   FilterBlurGeneric(bmp, blurMask, ABounds, ADestination, ACheckShouldStop,
                     @FilterBlurMask64_ClearSum,
