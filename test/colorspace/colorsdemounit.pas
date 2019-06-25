@@ -300,6 +300,7 @@ var
   i,decVal,errPos: integer;
   tb: TTrackBar;
   fse: TFloatSpinEdit;
+  viewBmp: TBGRABitmap;
 begin
   case SourceTag of
     1, 2, 3: col.AsLinearRGBA := TLinearRGBA.New(lR_se.Value / 100, lG_se.Value / 100, lB_se.Value / 100, Alpha_se.Value / 100);
@@ -425,9 +426,14 @@ begin
     end;
   end;
 
-  Color_pnl.Color := col.AsColor;
-  Grayscale_pnl.Color := col.AsGrayscale.AsColor;
-  Invert_pnl.Color := col.AsInvert.AsColor;
+  viewBmp := TBGRABitmap.Create(3,1, clBtnFace);
+  viewBmp.DrawPixel(0,0, col.AsBGRAPixel, dmDrawWithTransparency);
+  viewBmp.DrawPixel(1,0, col.AsGrayscale.AsBGRAPixel, dmDrawWithTransparency);
+  viewBmp.DrawPixel(2,0, col.AsInvert.AsBGRAPixel, dmDrawWithTransparency);
+  Color_pnl.Color := viewBmp.GetPixel(0,0);
+  Grayscale_pnl.Color := viewBmp.GetPixel(1,0);
+  Invert_pnl.Color := viewBmp.GetPixel(2,0);
+  viewBmp.Free;
 
   if IsRealColor(col.AsXYZA) then
     LIsReal.Caption := 'Real color'
