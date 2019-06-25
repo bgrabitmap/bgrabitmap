@@ -1,7 +1,7 @@
 object Form1: TForm1
   Left = 425
   Height = 415
-  Top = 166
+  Top = 205
   Width = 940
   Caption = 'XYZ horseshoe'
   ClientHeight = 415
@@ -134,6 +134,19 @@ object Form1: TForm1
       Position = 0
       Anchors = [akLeft, akBottom]
       TabOrder = 5
+    end
+    object cbFluorescent: TCheckBox
+      Left = 160
+      Height = 22
+      Hint = 'Include fluorescent colors or light sources'
+      Top = 8
+      Width = 47
+      Anchors = [akLeft, akRight]
+      Caption = 'Fluo'
+      OnClick = cbFluorescentClick
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 6
     end
   end
   object Splitter1: TSplitter

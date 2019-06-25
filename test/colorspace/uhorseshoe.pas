@@ -17,6 +17,7 @@ type
     cbColorspace: TComboBox;
     cbReferenceWhite: TComboBox;
     cbOverflow: TComboBox;
+    cbFluorescent: TCheckBox;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
@@ -36,6 +37,7 @@ type
     Splitter1: TSplitter;
     vsHorseshoe: TBGRAVirtualScreen;
     procedure cbColorspaceChange(Sender: TObject);
+    procedure cbFluorescentClick(Sender: TObject);
     procedure cbOverflowChange(Sender: TObject);
     procedure cbReferenceWhiteChange(Sender: TObject);
     procedure cbXAxisChange(Sender: TObject);
@@ -438,7 +440,10 @@ begin
   end else
   begin
     cbXAxis.ItemIndex:= 0;
-    cbYAxis.ItemIndex:= 1;
+    if colorspace.GetChannelCount> 1 then
+      cbYAxis.ItemIndex:= 1
+    else
+      cbYAxis.ItemIndex:= 0;
   end;
 
   cbReferenceWhite.Enabled := cfReferenceWhiteIndependent in colorspace.GetFlags;
@@ -518,6 +523,11 @@ begin
   UpdateSelectedColorspace;
 end;
 
+procedure TForm1.cbFluorescentClick(Sender: TObject);
+begin
+  vsGradient.DiscardBitmap;
+end;
+
 procedure TForm1.cbOverflowChange(Sender: TObject);
 begin
   vsGradient.DiscardBitmap;
@@ -550,7 +560,6 @@ var
   s: string;
   temp: TBGRABitmap;
   xyzaBuf: array of TXYZA;
-  wordXyzaBuf: array of TWordXYZA;
 begin
   colorspace := SelectedColorspace;
   valueSize := colorspace.GetSize;
@@ -598,14 +607,27 @@ begin
   minChX := colorspace.GetMinValue(idxChX);
   maxChX := colorspace.GetMaxValue(idxChX);
   idxChY := cbYAxis.ItemIndex;
-  minChY := colorspace.GetMinValue(idxChY);
-  maxChY := colorspace.GetMaxValue(idxChY);
+  if idxChY = -1 then
+  begin
+    minChY := 0;
+    maxChY := 1;
+  end else
+  begin
+    minChY := colorspace.GetMinValue(idxChY);
+    maxChY := colorspace.GetMaxValue(idxChY);
+  end;
 
   WriteStr(s, minChY:0:2, '\', minChX:0:2);
   lblMin.Caption := s;
-  WriteStr(s, maxChX:0:2);
+  if maxChX > 250 then
+    WriteStr(s, maxChX:0:0)
+  else
+    WriteStr(s, maxChX:0:2);
   lblMaxX.Caption := s;
-  WriteStr(s, maxChY:0:2);
+  if maxChY > 250 then
+    WriteStr(s, maxChY:0:0)
+  else
+    WriteStr(s, maxChY:0:2);
   lblMaxY.Caption := s;
 
   temp := TBGRABitmap.Create(Bitmap.Width,Bitmap.Height);
@@ -630,18 +652,28 @@ begin
       inc(p, valueSize);
     end;
 
-    if colorspace = TWordXYZAColorspace then
-    begin
-      setlength(wordXyzaBuf, Bitmap.Width);
-      colorspace.Convert(rowData^, wordXyzaBuf[0], TWordXYZAColorspace, Bitmap.Width);
-      for x := 0 to Bitmap.Width-1 do
-      begin
-        if not IsOptimalReflect(wordXyzaBuf[x]) then
-          wordXyzaBuf[x].alpha := 0;
-      end;
-      TWordXYZAColorspace.Convert(wordXyzaBuf[0], temp.ScanLine[y]^, TBGRAPixelColorspace, Bitmap.Width, @ReferenceWhite2D65);
-    end else
     if (cfHasImaginaryColors in colorspace.GetFlags) and (XYZToRGBOverflowMin <> xroClipToTarget) then
+    begin
+      setlength(xyzaBuf, Bitmap.Width);
+      colorspace.Convert(rowData^, xyzaBuf[0], TXYZAColorspace, Bitmap.Width);
+      if cbFluorescent.Checked then
+      begin
+        for x := 0 to Bitmap.Width-1 do
+        begin
+          if not IsRealColor(xyzaBuf[x]) then
+            xyzaBuf[x] := XYZATransparent;
+        end;
+      end else
+      begin
+        for x := 0 to Bitmap.Width-1 do
+        begin
+          if not IsOptimalReflect(xyzaBuf[x]) then
+            xyzaBuf[x] := XYZATransparent;
+        end;
+      end;
+      TXYZAColorspace.Convert(xyzaBuf[0], temp.ScanLine[y]^, TBGRAPixelColorspace, Bitmap.Width, @ReferenceWhite2D65);
+    end else
+    if (not cbFluorescent.Checked) and ((cfHasImaginaryColors in colorspace.GetFlags) or (colorspace = TAdobeRGBAColorspace)) then
     begin
       setlength(xyzaBuf, Bitmap.Width);
       colorspace.Convert(rowData^, xyzaBuf[0], TXYZAColorspace, Bitmap.Width);
@@ -650,7 +682,7 @@ begin
         if not IsOptimalReflect(xyzaBuf[x]) then
           xyzaBuf[x] := XYZATransparent;
       end;
-      TXYZAColorspace.Convert(xyzaBuf[0], temp.ScanLine[y]^, TBGRAPixelColorspace, Bitmap.Width, @ReferenceWhite2D65);
+      TXYZAColorspace.Convert(xyzaBuf[0], temp.ScanLine[y]^, TBGRAPixelColorspace, Bitmap.Width);
     end else
       colorspace.Convert(rowData^, temp.ScanLine[y]^, TBGRAPixelColorspace, Bitmap.Width);
   end;

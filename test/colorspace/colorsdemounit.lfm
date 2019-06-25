@@ -8,7 +8,7 @@ object Form1: TForm1
   ClientWidth = 957
   OnCreate = FormCreate
   Position = poDesktopCenter
-  LCLVersion = '1.8.0.6'
+  LCLVersion = '2.0.0.4'
   object lR_tb: TTrackBar
     Tag = 1
     Left = 339
@@ -303,7 +303,6 @@ object Form1: TForm1
     Height = 27
     Top = 87
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 1
@@ -315,7 +314,6 @@ object Form1: TForm1
     Height = 27
     Top = 124
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 3
@@ -327,7 +325,6 @@ object Form1: TForm1
     Height = 27
     Top = 162
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 5
@@ -339,7 +336,6 @@ object Form1: TForm1
     Height = 27
     Top = 243
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 13
@@ -351,7 +347,6 @@ object Form1: TForm1
     Height = 27
     Top = 273
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 15
@@ -363,7 +358,6 @@ object Form1: TForm1
     Height = 27
     Top = 303
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 17
@@ -375,7 +369,6 @@ object Form1: TForm1
     Height = 27
     Top = 364
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 19
@@ -387,7 +380,6 @@ object Form1: TForm1
     Height = 27
     Top = 395
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 21
@@ -399,7 +391,6 @@ object Form1: TForm1
     Height = 27
     Top = 425
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 23
@@ -411,7 +402,6 @@ object Form1: TForm1
     Height = 27
     Top = 344
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 31
@@ -423,7 +413,6 @@ object Form1: TForm1
     Height = 27
     Top = 379
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 33
@@ -435,7 +424,6 @@ object Form1: TForm1
     Height = 27
     Top = 414
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 35
@@ -447,7 +435,6 @@ object Form1: TForm1
     Height = 27
     Top = 488
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 43
@@ -459,7 +446,6 @@ object Form1: TForm1
     Height = 27
     Top = 516
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 45
@@ -471,7 +457,6 @@ object Form1: TForm1
     Height = 27
     Top = 544
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 47
@@ -483,7 +468,6 @@ object Form1: TForm1
     Height = 27
     Top = 572
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 49
@@ -581,7 +565,6 @@ object Form1: TForm1
     Height = 27
     Top = 494
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 25
@@ -593,7 +576,6 @@ object Form1: TForm1
     Height = 27
     Top = 529
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 27
@@ -605,7 +587,6 @@ object Form1: TForm1
     Height = 27
     Top = 564
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 29
@@ -671,7 +652,6 @@ object Form1: TForm1
     Height = 27
     Top = 201
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 37
@@ -683,7 +663,6 @@ object Form1: TForm1
     Height = 27
     Top = 237
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 39
@@ -695,7 +674,6 @@ object Form1: TForm1
     Height = 27
     Top = 274
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 41
@@ -733,7 +711,6 @@ object Form1: TForm1
     Height = 27
     Top = 6
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     OnChange = gamma_seChange
@@ -803,7 +780,6 @@ object Form1: TForm1
     Height = 27
     Top = 88
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 7
@@ -815,7 +791,6 @@ object Form1: TForm1
     Height = 27
     Top = 126
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 9
@@ -827,7 +802,6 @@ object Form1: TForm1
     Height = 27
     Top = 165
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 11
@@ -919,7 +893,6 @@ object Form1: TForm1
     Height = 27
     Top = 482
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 56
@@ -1017,7 +990,6 @@ object Form1: TForm1
     Height = 27
     Top = 243
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 63
@@ -1029,7 +1001,6 @@ object Form1: TForm1
     Height = 27
     Top = 273
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 64
@@ -1041,7 +1012,6 @@ object Form1: TForm1
     Height = 27
     Top = 303
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 65
@@ -1115,7 +1085,6 @@ object Form1: TForm1
     Height = 27
     Top = 364
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 69
@@ -1127,7 +1096,6 @@ object Form1: TForm1
     Height = 27
     Top = 395
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 70
@@ -1139,7 +1107,6 @@ object Form1: TForm1
     Height = 27
     Top = 425
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 71
@@ -1213,7 +1180,6 @@ object Form1: TForm1
     Height = 27
     Top = 39
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 75
@@ -1225,7 +1191,6 @@ object Form1: TForm1
     Height = 27
     Top = 76
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 76
@@ -1237,7 +1202,6 @@ object Form1: TForm1
     Height = 27
     Top = 114
     Width = 75
-    Increment = 1
     MaxValue = 255
     MinValue = 0
     TabOrder = 77
@@ -1249,6 +1213,14 @@ object Form1: TForm1
     Top = 8
     Width = 63
     Caption = 'Adobe RGB'
+    ParentColor = False
+  end
+  object LIsReal: TLabel
+    Left = 339
+    Height = 17
+    Top = 600
+    Width = 58
+    Caption = 'real color?'
     ParentColor = False
   end
 end

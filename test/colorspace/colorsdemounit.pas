@@ -24,6 +24,7 @@ type
     Label48: TLabel;
     Label49: TLabel;
     Label50: TLabel;
+    LIsReal: TLabel;
     lB_se1: TFloatSpinEdit;
     lB_tb1: TTrackBar;
     lG_se1: TFloatSpinEdit;
@@ -159,6 +160,8 @@ var
   Form1: TForm1;
 
 implementation
+
+uses XYZABitmap;
 
 {$R *.lfm}
 
@@ -420,6 +423,11 @@ begin
   Color_pnl.Color := col.AsColor;
   Grayscale_pnl.Color := col.AsGrayscale.AsColor;
   Invert_pnl.Color := col.AsInvert.AsColor;
+
+  if IsRealColor(col.AsXYZA) then
+    LIsReal.Caption := 'Real color'
+  else
+    LIsReal.Caption := 'Imaginary color';
 end;
 
 function TForm1.FindComponentByTag(ATag: integer; AClassName: string): TComponent;
