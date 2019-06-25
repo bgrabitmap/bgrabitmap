@@ -152,6 +152,62 @@ begin
   AContextData^.Dest := pDest;
 end;
 
+procedure WordXYZAChunkXorPixels(
+    ASource: PWordXYZA; ADest: PWordXYZA;
+    AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
+var
+  alphaOver: NativeUInt;
+  finalAlpha, residualAlpha, finalAlphaDiv2: NativeUInt;
+  xored: TWordXYZA;
+begin
+  if AAlpha=0 then exit;
+  if AAlpha=65535 then
+  begin
+    while ACount > 0 do
+    begin
+      PQWord(ADest)^ := PQWord(ADest)^ xor PQWord(ASource)^;
+      inc(ADest);
+      dec(ACount);
+      inc(PByte(ASource), ASourceStride);
+    end;
+  end else
+  begin
+    if AAlpha > 32768 then alphaOver := AAlpha+1 else alphaOver := AAlpha;
+    while ACount > 0 do
+    begin
+      PQWord(@xored)^ := PQWord(ADest)^ xor PQWord(ASource)^;
+      residualAlpha := (ADest^.alpha*NativeUInt(65536-alphaOver)+32768) shr 16;
+      finalAlpha := residualAlpha + ((xored.alpha*alphaOver+32768) shr 16);
+      if finalAlpha <= 0 then ADest^ := WordXYZATransparent else
+      begin
+        if finalAlpha > 65535 then finalAlpha := 65535;
+        finalAlphaDiv2 := finalAlpha shr 1;
+        ADest^.alpha:= finalAlpha;
+        ADest^.X := (ADest^.X*residualAlpha +
+                     xored.X*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+        ADest^.Y := (ADest^.Y*residualAlpha +
+                     xored.Y*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+        ADest^.Z := (ADest^.Z*residualAlpha +
+                     xored.Z*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+      end;
+      inc(ADest);
+      dec(ACount);
+      inc(PByte(ASource), ASourceStride);
+    end;
+  end;
+end;
+
+procedure WordXYZASolidBrushXorPixels(AFixedData: Pointer;
+    AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PWordXYZA;
+begin
+  pDest := PWordXYZA(AContextData^.Dest);
+  WordXYZAChunkXorPixels( PWordXYZA(AFixedData), pDest, AAlpha, ACount, 0);
+  inc(pDest, ACount);
+  AContextData^.Dest := pDest;
+end;
+
 type
   PWordXYZAScannerBrushFixedData = ^TWordXYZAScannerBrushFixedData;
   TWordXYZAScannerBrushFixedData = record
@@ -391,6 +447,65 @@ begin
   end;
 end;
 
+procedure WordXYZAScannerChunkBrushXorPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  qty: Integer;
+  pDest: PWordXYZA;
+begin
+  with PWordXYZAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PWordXYZA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PWordXYZA(AContextData^.Dest);
+    while ACount > 0 do
+    begin
+      qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      WordXYZAChunkXorPixels(PWordXYZA(psrc), pDest, AAlpha, qty, sizeof(TWordXYZA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
+procedure WordXYZAScannerConvertBrushXorPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  psrc: Pointer;
+  pDest: PWordXYZA;
+  qty, pixSize: Integer;
+  buf: packed array[0..7] of TWordXYZA;
+begin
+  with PWordXYZAScannerBrushFixedData(AFixedData)^ do
+  begin
+    if AAlpha = 0 then
+    begin
+      inc(PWordXYZA(AContextData^.Dest), ACount);
+      IBGRAScanner(Scanner).ScanSkipPixels(ACount);
+      exit;
+    end;
+    pDest := PWordXYZA(AContextData^.Dest);
+    pixSize := IBGRAScanner(Scanner).GetScanCustomColorspace.GetSize;
+    while ACount > 0 do
+    begin
+      if ACount > length(buf) then qty := length(buf) else qty := ACount;
+      IBGRAScanner(Scanner).ScanNextCustomChunk(qty, psrc);
+      Conversion.Convert(psrc, @buf, qty, pixSize, sizeof(TWordXYZA), nil);
+      WordXYZAChunkXorPixels(@buf, pDest, AAlpha, qty, sizeof(TWordXYZA) );
+      inc(pDest, qty);
+      dec(ACount, qty);
+    end;
+    AContextData^.Dest := pDest;
+  end;
+end;
+
 procedure WordXYZAMaskBrushApply(AFixedData: Pointer;
   AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
@@ -554,7 +669,12 @@ begin
       else
         ABrush.InternalPutNextPixels:= @WordXYZASolidBrushDrawPixels;
 
-    dmXor: raise exception.Create('Xor mode not available with floating point values');
+    dmXor: if PQWord(@AColor)^ = 0 then
+           begin
+             ABrush.InternalPutNextPixels:= @WordXYZASolidBrushSkipPixels;
+             ABrush.DoesNothing := true;
+           end else
+             ABrush.InternalPutNextPixels:= @WordXYZASolidBrushXorPixels;
   end;
 end;
 
@@ -580,7 +700,7 @@ begin
       dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @WordXYZAScannerChunkBrushSetPixelsExceptTransparent;
       dmDrawWithTransparency,dmLinearBlend:
         ABrush.InternalPutNextPixels:= @WordXYZAScannerChunkBrushDrawPixels;
-      dmXor: raise exception.Create('Xor mode not available with floating point values');
+      dmXor: ABrush.InternalPutNextPixels:= @WordXYZAScannerChunkBrushXorPixels;
     end;
   end else
   begin
@@ -591,7 +711,7 @@ begin
       dmSetExceptTransparent: ABrush.InternalPutNextPixels:= @WordXYZAScannerConvertBrushSetPixelsExceptTransparent;
       dmDrawWithTransparency,dmLinearBlend:
         ABrush.InternalPutNextPixels:= @WordXYZAScannerConvertBrushDrawPixels;
-      dmXor: raise exception.Create('Xor mode not available with floating point values');
+      dmXor: ABrush.InternalPutNextPixels:= @WordXYZAScannerConvertBrushXorPixels;
     end;
   end;
 end;
