@@ -66,14 +66,16 @@ begin
 end;
 
 function IsRealColor(xyza: TXYZA): boolean;
+const dim = 0.015;
 var
   n: Single;
 begin
+  xyza.ChromaticAdapt(GetReferenceWhiteIndirect^, ReferenceWhite2E);
   if (xyza.Y < 0) or (xyza.Y > 1) or (xyza.X < 0) or (xyza.Z < 0) then exit(false);
   if (xyza.Y = 0) then exit((xyza.X=0) and (xyza.Z=0));
   if xyHorseshoePolygon = nil then MakeXYHorseshoePolygon;
   n := xyza.X + xyza.Y + xyza.Z;
-  result := xyHorseshoePolygon.IsPointInside(xyza.X/n, xyza.Y/n, false);
+  result := xyHorseshoePolygon.IsPointInside(xyza.X/n*(1-dim)+1/3*dim, xyza.Y/n*(1-dim)+1/3*dim, false);
 end;
 
 procedure XYZASolidBrushSkipPixels({%H-}AFixedData: Pointer;
