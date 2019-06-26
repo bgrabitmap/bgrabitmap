@@ -22,10 +22,13 @@ object Form1: TForm1
   object Label1: TLabel
     Left = 323
     Height = 17
+    Hint = 'Red intensity'
     Top = 77
     Width = 7
     Caption = 'R'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lG_tb: TTrackBar
     Tag = 2
@@ -40,10 +43,13 @@ object Form1: TForm1
   object Label2: TLabel
     Left = 323
     Height = 17
+    Hint = 'Green intensity'
     Top = 113
     Width = 9
     Caption = 'G'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lB_tb: TTrackBar
     Tag = 3
@@ -58,10 +64,13 @@ object Form1: TForm1
   object Label3: TLabel
     Left = 323
     Height = 17
+    Hint = 'Blue intensity'
     Top = 148
     Width = 8
     Caption = 'B'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object H_tb: TTrackBar
     Tag = 4
@@ -76,10 +85,13 @@ object Form1: TForm1
   object Label4: TLabel
     Left = 8
     Height = 17
+    Hint = 'Hue angle'
     Top = 210
     Width = 9
     Caption = 'H'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object S_tb: TTrackBar
     Tag = 5
@@ -94,10 +106,13 @@ object Form1: TForm1
   object Label5: TLabel
     Left = 8
     Height = 17
+    Hint = 'Color saturation (~ chroma)'
     Top = 244
     Width = 7
     Caption = 'S'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object L_tb: TTrackBar
     Tag = 6
@@ -112,10 +127,13 @@ object Form1: TForm1
   object Label6: TLabel
     Left = 8
     Height = 17
+    Hint = 'Black/White composition'
     Top = 280
     Width = 6
     Caption = 'L'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object H2_tb: TTrackBar
     Tag = 7
@@ -130,10 +148,13 @@ object Form1: TForm1
   object Label7: TLabel
     Left = 8
     Height = 17
+    Hint = 'Hue angle'
     Top = 345
     Width = 9
     Caption = 'H'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object S2_tb: TTrackBar
     Tag = 8
@@ -148,10 +169,13 @@ object Form1: TForm1
   object Label8: TLabel
     Left = 8
     Height = 17
+    Hint = 'Color saturation (~ chroma)'
     Top = 380
     Width = 7
     Caption = 'S'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object V_tb: TTrackBar
     Tag = 9
@@ -166,10 +190,13 @@ object Form1: TForm1
   object Label9: TLabel
     Left = 8
     Height = 17
+    Hint = 'Value (maximum per channel)'
     Top = 415
     Width = 7
     Caption = 'V'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object L2_tb: TTrackBar
     Tag = 10
@@ -184,10 +211,13 @@ object Form1: TForm1
   object Label10: TLabel
     Left = 636
     Height = 17
+    Hint = 'Perceived lightness'
     Top = 355
     Width = 6
     Caption = 'L'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object A_tb: TTrackBar
     Tag = 11
@@ -202,10 +232,13 @@ object Form1: TForm1
   object Label11: TLabel
     Left = 636
     Height = 17
+    Hint = 'Mint/Pink contrast'
     Top = 390
     Width = 7
     Caption = 'a'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object B2_tb: TTrackBar
     Tag = 12
@@ -220,10 +253,13 @@ object Form1: TForm1
   object Label12: TLabel
     Left = 636
     Height = 17
+    Hint = 'Blue/Yellow contrast'
     Top = 426
     Width = 7
     Caption = 'b'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object C_tb: TTrackBar
     Tag = 13
@@ -238,10 +274,13 @@ object Form1: TForm1
   object Label13: TLabel
     Left = 8
     Height = 17
+    Hint = 'Cyan (negative red)'
     Top = 478
     Width = 8
     Caption = 'C'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object M_tb: TTrackBar
     Tag = 14
@@ -256,10 +295,13 @@ object Form1: TForm1
   object Label14: TLabel
     Left = 8
     Height = 17
+    Hint = 'Magenta (negative green)'
     Top = 509
     Width = 11
     Caption = 'M'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Y_tb: TTrackBar
     Tag = 15
@@ -274,10 +316,13 @@ object Form1: TForm1
   object Label15: TLabel
     Left = 8
     Height = 17
+    Hint = 'Yellow (negative blue)'
     Top = 540
     Width = 7
     Caption = 'Y'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object K_tb: TTrackBar
     Tag = 16
@@ -292,10 +337,13 @@ object Form1: TForm1
   object Label16: TLabel
     Left = 8
     Height = 17
+    Hint = 'Black (negative white)'
     Top = 571
     Width = 7
     Caption = 'K'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lR_se: TFloatSpinEdit
     Tag = 1
@@ -518,10 +566,13 @@ object Form1: TForm1
   object Label19: TLabel
     Left = 636
     Height = 17
+    Hint = 'Pinkness'
     Top = 77
     Width = 7
     Caption = 'X'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Y2_tb: TTrackBar
     Tag = 18
@@ -536,10 +587,13 @@ object Form1: TForm1
   object Label20: TLabel
     Left = 636
     Height = 17
+    Hint = 'Luminance'
     Top = 112
     Width = 7
     Caption = 'Y'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Z_tb: TTrackBar
     Tag = 19
@@ -554,10 +608,13 @@ object Form1: TForm1
   object Label21: TLabel
     Left = 636
     Height = 17
+    Hint = 'Blueness (S cones)'
     Top = 147
     Width = 7
     Caption = 'Z'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object X_se: TFloatSpinEdit
     Tag = 17
@@ -605,10 +662,13 @@ object Form1: TForm1
   object Label22: TLabel
     Left = 635
     Height = 17
+    Hint = 'Perceived lightness'
     Top = 214
     Width = 6
     Caption = 'L'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object C2_tb: TTrackBar
     Tag = 21
@@ -623,10 +683,13 @@ object Form1: TForm1
   object Label23: TLabel
     Left = 635
     Height = 17
+    Hint = 'Chroma (color saturation)'
     Top = 250
     Width = 8
     Caption = 'C'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object H3_tb: TTrackBar
     Tag = 22
@@ -641,10 +704,13 @@ object Form1: TForm1
   object Label24: TLabel
     Left = 635
     Height = 17
+    Hint = 'Hue angle'
     Top = 287
-    Width = 9
-    Caption = 'H'
+    Width = 12
+    Caption = 'h°'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object L3_se: TFloatSpinEdit
     Tag = 20
@@ -734,10 +800,13 @@ object Form1: TForm1
   object Label26: TLabel
     Left = 8
     Height = 17
+    Hint = 'Red (gamma compressed)'
     Top = 77
     Width = 7
     Caption = 'R'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object sG_tb: TTrackBar
     Tag = 26
@@ -753,10 +822,13 @@ object Form1: TForm1
   object Label27: TLabel
     Left = 8
     Height = 17
+    Hint = 'Green (gamma compressed)'
     Top = 112
     Width = 9
     Caption = 'G'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object sB_tb: TTrackBar
     Tag = 27
@@ -772,10 +844,13 @@ object Form1: TForm1
   object Label28: TLabel
     Left = 8
     Height = 17
+    Hint = 'Blue (gamma compressed)'
     Top = 147
     Width = 8
     Caption = 'B'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object sR_se: TFloatSpinEdit
     Tag = 25
@@ -813,82 +888,106 @@ object Form1: TForm1
   object Label29: TLabel
     Left = 8
     Height = 17
+    Hint = 'Legacy colorspace (Web)'
     Top = 56
     Width = 163
     Caption = 'sRGB (gamma compressed)'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Label30: TLabel
     Left = 323
     Height = 17
+    Hint = 'Legacy primary colors (linear intensity)'
     Top = 56
     Width = 186
     Caption = 'Linear RGB (gamma expanded)'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Label31: TLabel
     Left = 8
     Height = 17
+    Hint = 'Hue and saturation (gamma compressed)'
     Top = 190
     Width = 29
     Caption = 'sHSL'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Label32: TLabel
     Left = 8
     Height = 17
+    Hint = 'Hue and saturation (gamma compressed)'
     Top = 324
     Width = 65
     Caption = 'sHSV/sHSB'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Label33: TLabel
     Left = 636
     Height = 17
+    Hint = 'Color matching curves integrals'
     Top = 56
     Width = 22
     Caption = 'XYZ'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Label34: TLabel
     Left = 636
     Height = 17
+    Hint = 'Perceived color contrast'
     Top = 331
     Width = 43
     Caption = 'L*a*b*'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Label35: TLabel
     Left = 8
     Height = 17
+    Hint = 'Cyan/magenta/yellow/black composition (gamma compressed)'
     Top = 458
     Width = 40
     Caption = 'sCMYK'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Label36: TLabel
     Left = 635
     Height = 17
+    Hint = 'Perceived hue and chroma'
     Top = 190
     Width = 42
     Caption = 'L*C*h°'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Dec_edt: TEdit
     Tag = 24
@@ -930,10 +1029,13 @@ object Form1: TForm1
   object Label38: TLabel
     Left = 323
     Height = 17
+    Hint = 'Transparency (alpha channel)'
     Top = 182
     Width = 8
     Caption = 'A'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object Grayscale_pnl: TPanel
     Left = 488
@@ -968,10 +1070,13 @@ object Form1: TForm1
   object Label39: TLabel
     Left = 320
     Height = 17
+    Hint = 'Hue angle'
     Top = 242
     Width = 9
     Caption = 'H'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lS_tb: TTrackBar
     Tag = 51
@@ -986,10 +1091,13 @@ object Form1: TForm1
   object Label40: TLabel
     Left = 320
     Height = 17
+    Hint = 'Color saturation (~ chroma)'
     Top = 274
     Width = 7
     Caption = 'S'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lL_tb: TTrackBar
     Tag = 52
@@ -1004,10 +1112,13 @@ object Form1: TForm1
   object Label41: TLabel
     Left = 320
     Height = 17
+    Hint = 'Black/White composition'
     Top = 306
     Width = 6
     Caption = 'L'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lH_se: TFloatSpinEdit
     Tag = 50
@@ -1045,12 +1156,15 @@ object Form1: TForm1
   object Label42: TLabel
     Left = 320
     Height = 17
+    Hint = 'Hue and saturation (linear intensity)'
     Top = 219
     Width = 64
     Caption = 'Linear HSL'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lH2_tb: TTrackBar
     Tag = 53
@@ -1065,10 +1179,13 @@ object Form1: TForm1
   object Label43: TLabel
     Left = 320
     Height = 17
+    Hint = 'Hue angle'
     Top = 373
     Width = 9
     Caption = 'G'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lS2_tb: TTrackBar
     Tag = 54
@@ -1083,10 +1200,13 @@ object Form1: TForm1
   object Label44: TLabel
     Left = 320
     Height = 17
+    Hint = 'Color saturation (~ chroma)'
     Top = 405
     Width = 7
     Caption = 'S'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lL2_tb: TTrackBar
     Tag = 55
@@ -1101,10 +1221,13 @@ object Form1: TForm1
   object Label45: TLabel
     Left = 320
     Height = 17
+    Hint = 'Brightness (luminance)'
     Top = 438
     Width = 8
     Caption = 'B'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lH2_se: TFloatSpinEdit
     Tag = 53
@@ -1142,12 +1265,15 @@ object Form1: TForm1
   object Label46: TLabel
     Left = 320
     Height = 17
+    Hint = 'Hue and saturation with luminance'
     Top = 350
     Width = 117
     Caption = 'GSB (corrected HSL)'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lR_tb1: TTrackBar
     Tag = 60
@@ -1162,10 +1288,13 @@ object Form1: TForm1
   object Label47: TLabel
     Left = 320
     Height = 17
+    Hint = 'Red (gamma compressed)'
     Top = 503
     Width = 7
     Caption = 'R'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lG_tb1: TTrackBar
     Tag = 61
@@ -1180,10 +1309,13 @@ object Form1: TForm1
   object Label48: TLabel
     Left = 320
     Height = 17
+    Hint = 'Mint leaf green (gamma compressed)'
     Top = 538
     Width = 9
     Caption = 'G'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lB_tb1: TTrackBar
     Tag = 62
@@ -1198,10 +1330,13 @@ object Form1: TForm1
   object Label49: TLabel
     Left = 320
     Height = 17
+    Hint = 'Blue (gamma compressed)'
     Top = 572
     Width = 8
     Caption = 'B'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lR_se1: TFloatSpinEdit
     Tag = 60
@@ -1239,12 +1374,15 @@ object Form1: TForm1
   object Label50: TLabel
     Left = 320
     Height = 17
+    Hint = 'Adobe colorspace (green primary is slightly mint)'
     Top = 481
     Width = 66
     Caption = 'Adobe RGB'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object LIsReal: TLabel
     Left = 800
@@ -1277,10 +1415,13 @@ object Form1: TForm1
   object Label52: TLabel
     Left = 636
     Height = 17
+    Hint = 'Reflectance'
     Top = 494
     Width = 7
     Caption = 'R'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lambda1_tb: TTrackBar
     Tag = 71
@@ -1295,10 +1436,13 @@ object Form1: TForm1
   object Label53: TLabel
     Left = 636
     Height = 17
+    Hint = 'Starting wavelength'
     Top = 529
     Width = 14
     Caption = 'λ1'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object lambda2_tb: TTrackBar
     Tag = 72
@@ -1313,10 +1457,13 @@ object Form1: TForm1
   object Label54: TLabel
     Left = 636
     Height = 17
+    Hint = 'Ending wavelength'
     Top = 565
     Width = 14
     Caption = 'λ2'
     ParentColor = False
+    ParentShowHint = False
+    ShowHint = True
   end
   object reflectance_se: TFloatSpinEdit
     Tag = 70
@@ -1354,11 +1501,14 @@ object Form1: TForm1
   object Label55: TLabel
     Left = 636
     Height = 17
+    Hint = 'Color reflected by a surface'
     Top = 470
     Width = 42
     Caption = 'R λ1 λ2'
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
+    ParentShowHint = False
+    ShowHint = True
   end
 end
