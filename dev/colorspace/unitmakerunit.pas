@@ -933,19 +933,13 @@ var
       if Colorspace = csXYZA then
       begin
         h := GetProcedure(HelperName+'.ChromaticAdapt', 'const AFrom, ATo: TXYZReferenceWhite', false);
-        AddProcedureImp(h, 'if (AFrom.X = ATo.X) and (AFrom.Y = ATo.Y) and (AFrom.Z = ATo.Z) then exit;'+LineEnding+
-                           'self.X *= ATo.X/AFrom.X;'+LineEnding+
-                           'self.Y *= ATo.Y/AFrom.Y;'+LineEnding+
-                           'self.Z *= ATo.Z/AFrom.Z;');
+        AddProcedureImp(h, 'ChromaticAdaptXYZ(self.X,self.Y,self.Z, AFrom,ATo);');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
       end else
       if Colorspace = csWordXYZA then
       begin
         h := GetProcedure(HelperName+'.ChromaticAdapt', 'const AFrom, ATo: TXYZReferenceWhite', false);
-        AddProcedureImp(h, 'if (AFrom.X = ATo.X) and (AFrom.Y = ATo.Y) and (AFrom.Z = ATo.Z) then exit;'+LineEnding+
-                           'self.X := ClampInt(Round(self.X*(ATo.X/AFrom.X)),0,65535);'+LineEnding+
-                           'self.Y := ClampInt(Round(self.Y*(ATo.Y/AFrom.Y)),0,65535);'+LineEnding+
-                           'self.Z := ClampInt(Round(self.Z*(ATo.Z/AFrom.Z)),0,65535);');
+        AddProcedureImp(h, 'ChromaticAdaptWordXYZ(self.X,self.Y,self.Z, AFrom,ATo);');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
       end;
 

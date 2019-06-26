@@ -5634,10 +5634,7 @@ class function TXYZAHelper.Colorspace: TColorspaceAny; static;
 begin result := TXYZAColorspace end;
 
 procedure TXYZAHelper.ChromaticAdapt(const AFrom, ATo: TXYZReferenceWhite);
-begin if (AFrom.X = ATo.X) and (AFrom.Y = ATo.Y) and (AFrom.Z = ATo.Z) then exit;
-self.X *= ATo.X/AFrom.X;
-self.Y *= ATo.Y/AFrom.Y;
-self.Z *= ATo.Z/AFrom.Z end;
+begin ChromaticAdaptXYZ(self.X,self.Y,self.Z, AFrom,ATo) end;
 
 function TXYZAHelper.ToColor: TColor;overload;
 begin Result := ExpandedPixelToColor(XYZAToExpandedPixel(Self)) end;
@@ -5831,10 +5828,7 @@ class function TWordXYZAHelper.Colorspace: TColorspaceAny; static;
 begin result := TWordXYZAColorspace end;
 
 procedure TWordXYZAHelper.ChromaticAdapt(const AFrom, ATo: TXYZReferenceWhite);
-begin if (AFrom.X = ATo.X) and (AFrom.Y = ATo.Y) and (AFrom.Z = ATo.Z) then exit;
-self.X := ClampInt(Round(self.X*(ATo.X/AFrom.X)),0,65535);
-self.Y := ClampInt(Round(self.Y*(ATo.Y/AFrom.Y)),0,65535);
-self.Z := ClampInt(Round(self.Z*(ATo.Z/AFrom.Z)),0,65535) end;
+begin ChromaticAdaptWordXYZ(self.X,self.Y,self.Z, AFrom,ATo) end;
 
 function TWordXYZAHelper.ToColor: TColor;overload;
 begin Result := ExpandedPixelToColor(WordXYZAToExpandedPixel(Self)) end;

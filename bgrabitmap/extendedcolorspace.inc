@@ -16,7 +16,8 @@ type
   TXYZReferenceWhite = packed record
     X, Y, Z: single;
     ObserverAngle: integer;
-    Illuminant: string
+    Illuminant: string;
+    L,M,S: single;
   end;
 
   TCustomColorspace = class;
@@ -138,6 +139,10 @@ function AdobeRGBAToXYZA(const ASource: TAdobeRGBA; const AReferenceWhite: TXYZR
 function XYZAToAdobeRGBA(const AXYZA: TXYZA): TAdobeRGBA; overload;
 function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA; overload;
 function SpectrumRangeReflectToXYZA(reflectance,wavelen1,wavelen2,alpha: single): TXYZA;
+procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
+procedure LMSToXYZ(const L,M,S: Single; out X,Y,Z: single);
+procedure ChromaticAdaptXYZ(var X,Y,Z: single; const AFrom, ATo: TXYZReferenceWhite); inline;
+procedure ChromaticAdaptWordXYZ(var X,Y,Z: word; const AFrom, ATo: TXYZReferenceWhite); inline;
 
 procedure SetReferenceWhite(AObserverAngle: integer; AIlluminant: string); overload;
 procedure SetReferenceWhite(AReferenceWhite: TXYZReferenceWhite); overload;
@@ -454,6 +459,8 @@ begin
     raise exception.Create('Reference white already defined');
   SetLength(ReferenceWhiteArray, Length(ReferenceWhiteArray) + 1);
   ReferenceWhiteArray[Length(ReferenceWhiteArray) - 1] := AReferenceWhite;
+  with ReferenceWhiteArray[Length(ReferenceWhiteArray) - 1] do
+    XYZToLMS(X,Y,Z, L,M,S);
 end;
 
 procedure AddReferenceWhite(AObserverAngle: integer; AIlluminant: string; AX, AY, AZ: single);
@@ -1388,6 +1395,45 @@ begin
   result.Y *= fromRefWhite^.Y/totalXYZ.Y * reflectance;
   result.Z *= fromRefWhite^.Z/totalXYZ.Z * reflectance;
   result.ChromaticAdapt(fromRefWhite^, GetReferenceWhiteIndirect^);
+end;
+
+procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
+begin
+  L := max(0.8951*X+0.2664*Y-0.1615*Z, 0);
+  M := max(-0.7502*X+1.7135*Y+0.0367*Z, 0);
+  S := max(0.0389*X-0.0685*Y+1.0296*Z, 0);
+end;
+
+procedure LMSToXYZ(const L,M,S: Single; out X,Y,Z: single);
+begin
+  X := 0.98699*L-0.14705*M+0.16006*S;
+  Y := 0.43230*L+0.51836*M+0.04933*S;
+  Z := -0.00853*L+0.04004*M+0.96849*S;
+end;
+
+procedure ChromaticAdaptXYZ(var X,Y,Z: Single; const AFrom, ATo: TXYZReferenceWhite);
+var
+  L, M, S: single;
+begin
+  if (AFrom.L=ATo.L) and (AFrom.M=ATo.M) and (AFrom.S=ATo.S) then exit;
+  XYZToLMS(X,Y,Z, L,M,S);
+  L *= ATo.L/AFrom.L;
+  M *= ATo.M/AFrom.M;
+  S *= ATo.S/AFrom.S;
+  LMSToXYZ(L,M,S, X,Y,Z);
+end;
+
+procedure ChromaticAdaptWordXYZ(var X,Y,Z: Word; const AFrom, ATo: TXYZReferenceWhite);
+const oneOver50000 = 1/50000;
+var Xf,Yf,Zf: Single;
+begin
+  Xf := X*oneOver50000;
+  Yf := Y*oneOver50000;
+  Zf := Z*oneOver50000;
+  ChromaticAdaptXYZ(Xf,Yf,Zf, AFrom,ATo);
+  X := min(round(Xf*50000),65535);
+  Y := min(round(Yf*50000),65535);
+  Z := min(round(Zf*50000),65535);
 end;
 
 {$ENDIF}
