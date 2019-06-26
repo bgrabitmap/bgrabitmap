@@ -5,104 +5,11 @@ type
   TSpectralLocusPoint = record
     W,X,Y,Z: Single;
   end;
+  TIlluminantSpectrumPoint = record
+    W,Y: Single;
+  end;
 
-const //horseshoe shape of visible colors
-  SpectralLocus: array[0..94] of TSpectralLocusPoint =
- ((W:360; X:0.0001299; Y:0.000003917; Z:0.0006061),
-  (W:365; X:0.0002321; Y:0.000006965; Z:0.001086),
-  (W:370; X:0.0004149; Y:0.00001239; Z:0.001946),
-  (W:375; X:0.0007416; Y:0.00002202; Z:0.003486),
-  (W:380; X:0.001368; Y:0.000039; Z:0.006450001),
-  (W:385; X:0.002236; Y:0.000064; Z:0.01054999),
-  (W:390; X:0.004243; Y:0.00012; Z:0.02005001),
-  (W:395; X:0.00765; Y:0.000217; Z:0.03621),
-  (W:400; X:0.01431; Y:0.000396; Z:0.06785001),
-  (W:405; X:0.02319; Y:0.00064; Z:0.1102),
-  (W:410; X:0.04351; Y:0.00121; Z:0.2074),
-  (W:415; X:0.07763; Y:0.00218; Z:0.3713),
-  (W:420; X:0.13438; Y:0.004; Z:0.6456),
-  (W:425; X:0.21477; Y:0.0073; Z:1.0390501),
-  (W:430; X:0.2839; Y:0.0116; Z:1.3856),
-  (W:435; X:0.3285; Y:0.01684; Z:1.62296),
-  (W:440; X:0.34828; Y:0.023; Z:1.74706),
-  (W:445; X:0.34806; Y:0.0298; Z:1.7826),
-  (W:450; X:0.3362; Y:0.038; Z:1.77211),
-  (W:455; X:0.3187; Y:0.048; Z:1.7441),
-  (W:460; X:0.2908; Y:0.06; Z:1.6692),
-  (W:465; X:0.2511; Y:0.0739; Z:1.5281),
-  (W:470; X:0.19536; Y:0.09098; Z:1.28764),
-  (W:475; X:0.1421; Y:0.1126; Z:1.0419),
-  (W:480; X:0.09564; Y:0.13902; Z:0.8129501),
-  (W:485; X:0.05795001; Y:0.1693; Z:0.6162),
-  (W:490; X:0.03201; Y:0.20802; Z:0.46518),
-  (W:495; X:0.0147; Y:0.2586; Z:0.3533),
-  (W:500; X:0.0049; Y:0.323; Z:0.272),
-  (W:505; X:0.0024; Y:0.4073; Z:0.2123),
-  (W:510; X:0.0093; Y:0.503; Z:0.1582),
-  (W:515; X:0.0291; Y:0.6082; Z:0.1117),
-  (W:520; X:0.06327; Y:0.71; Z:0.07824999),
-  (W:525; X:0.1096; Y:0.7932; Z:0.05725001),
-  (W:530; X:0.1655; Y:0.862; Z:0.04216),
-  (W:535; X:0.2257499; Y:0.9148501; Z:0.02984),
-  (W:540; X:0.2904; Y:0.954; Z:0.0203),
-  (W:545; X:0.3597; Y:0.9803; Z:0.0134),
-  (W:550; X:0.4334499; Y:0.9949501; Z:0.008749999),
-  (W:555; X:0.5120501; Y:1; Z:0.005749999),
-  (W:560; X:0.5945; Y:0.995; Z:0.0039),
-  (W:565; X:0.6784; Y:0.9786; Z:0.002749999),
-  (W:570; X:0.7621; Y:0.952; Z:0.0021),
-  (W:575; X:0.8425; Y:0.9154; Z:0.0018),
-  (W:580; X:0.9163; Y:0.87; Z:0.001650001),
-  (W:585; X:0.9786; Y:0.8163; Z:0.0014),
-  (W:590; X:1.0263; Y:0.757; Z:0.0011),
-  (W:595; X:1.0567; Y:0.6949; Z:0.001),
-  (W:600; X:1.0622; Y:0.631; Z:0.0008),
-  (W:605; X:1.0456; Y:0.5668; Z:0.0006),
-  (W:610; X:1.0026; Y:0.503; Z:0.00034),
-  (W:615; X:0.9384; Y:0.4412; Z:0.00024),
-  (W:620; X:0.8544499; Y:0.381; Z:0.00019),
-  (W:625; X:0.7514; Y:0.321; Z:0.0001),
-  (W:630; X:0.6424; Y:0.265; Z:0.00005),
-  (W:635; X:0.5419; Y:0.217; Z:0.00003),
-  (W:640; X:0.4479; Y:0.175; Z:0.00002),
-  (W:645; X:0.3608; Y:0.1382; Z:0.00001),
-  (W:650; X:0.2835; Y:0.107; Z:0),
-  (W:655; X:0.2187; Y:0.0816; Z:0),
-  (W:660; X:0.1649; Y:0.061; Z:0),
-  (W:665; X:0.1212; Y:0.04458; Z:0),
-  (W:670; X:0.0874; Y:0.032; Z:0),
-  (W:675; X:0.0636; Y:0.0232; Z:0),
-  (W:680; X:0.04677; Y:0.017; Z:0),
-  (W:685; X:0.0329; Y:0.01192; Z:0),
-  (W:690; X:0.0227; Y:0.00821; Z:0),
-  (W:695; X:0.01584; Y:0.005723; Z:0),
-  (W:700; X:0.01135916; Y:0.004102; Z:0),
-  (W:705; X:0.008110916; Y:0.002929; Z:0),
-  (W:710; X:0.005790346; Y:0.002091; Z:0),
-  (W:715; X:0.004106457; Y:0.001484; Z:0),
-  (W:720; X:0.002899327; Y:0.001047; Z:0),
-  (W:725; X:0.00204919; Y:0.00074; Z:0),
-  (W:730; X:0.001439971; Y:0.00052; Z:0),
-  (W:735; X:0.0009999493; Y:0.0003611; Z:0),
-  (W:740; X:0.0006900786; Y:0.0002492; Z:0),
-  (W:745; X:0.0004760213; Y:0.0001719; Z:0),
-  (W:750; X:0.0003323011; Y:0.00012; Z:0),
-  (W:755; X:0.0002348261; Y:0.0000848; Z:0),
-  (W:760; X:0.0001661505; Y:0.00006; Z:0),
-  (W:765; X:0.000117413; Y:0.0000424; Z:0),
-  (W:770; X:8.307527E-05; Y:0.00003; Z:0),
-  (W:775; X:5.870652E-05; Y:0.0000212; Z:0),
-  (W:780; X:4.150994E-05; Y:0.00001499; Z:0),
-  (W:785; X:2.935326E-05; Y:0.0000106; Z:0),
-  (W:790; X:2.067383E-05; Y:7.4657E-06; Z:0),
-  (W:795; X:1.455977E-05; Y:5.2578E-06; Z:0),
-  (W:800; X:0.000010254; Y:3.7029E-06; Z:0),
-  (W:805; X:7.221456E-06; Y:2.6078E-06; Z:0),
-  (W:810; X:5.085868E-06; Y:1.8366E-06; Z:0),
-  (W:815; X:3.581652E-06; Y:1.2934E-06; Z:0),
-  (W:820; X:2.522525E-06; Y:9.1093E-07; Z:0),
-  (W:825; X:1.776509E-06; Y:6.4153E-07; Z:0),
-  (W:830; X:1.251141E-06; Y:4.5181E-07; Z:0));
+{$I spectraldata.inc}
 
 type
   PXYZReferenceWhite = ^TXYZReferenceWhite;
@@ -230,6 +137,7 @@ function AdobeRGBAToXYZA(const ASource: TAdobeRGBA): TXYZA; overload;
 function AdobeRGBAToXYZA(const ASource: TAdobeRGBA; const AReferenceWhite: TXYZReferenceWhite): TXYZA; overload;
 function XYZAToAdobeRGBA(const AXYZA: TXYZA): TAdobeRGBA; overload;
 function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA; overload;
+function SpectrumRangeReflectToXYZA(reflectance,wavelen1,wavelen2,alpha: single): TXYZA;
 
 procedure SetReferenceWhite(AObserverAngle: integer; AIlluminant: string); overload;
 procedure SetReferenceWhite(AReferenceWhite: TXYZReferenceWhite); overload;
@@ -1403,6 +1311,83 @@ begin
   result.green := gp + m;
   result.blue := bp + m;
   result.alpha := AStdHSLA.alpha;
+end;
+
+function SpectrumRangeReflectToXYZA(reflectance,wavelen1,wavelen2,alpha: single): TXYZA;
+var isEqualEnergy: boolean;
+  fromRefWhite: PXYZReferenceWhite;
+
+  function GetIlluminantSpectrum(AIndex: integer): single;
+  begin
+    if isEqualEnergy then result := 1 else
+      result := IlluminantSpectrumD65[AIndex].Y;
+  end;
+
+  procedure IncludeWavelength(fromWavelen, toWavelen: single);
+  var i: integer;
+    factor, ill: single;
+  begin
+    for i := 0 to high(SpectralLocus) do
+      if (SpectralLocus[i].W+2.5 >= fromWavelen) and
+         (SpectralLocus[i].W-2.5 < toWavelen) then
+      begin
+        factor := 1;
+        if SpectralLocus[i].W-2.5 < fromWavelen then
+          factor -= (fromWavelen - (SpectralLocus[i].W-2.5))/5;
+        if SpectralLocus[i].W+2.5 > toWavelen then
+          factor -= ((SpectralLocus[i].W+2.5) - toWavelen)/5;
+        if factor > 0 then
+        begin
+          ill := GetIlluminantSpectrum(i);
+          result.X += SpectralLocus[i].X*factor*ill;
+          result.Y += SpectralLocus[i].Y*factor*ill;
+          result.Z += SpectralLocus[i].Z*factor*ill;
+        end;
+      end;
+  end;
+
+var
+  minWavelen, maxWavelen, ill: single;
+  totalXYZ: TXYZA;
+  i: Integer;
+begin
+  result.X := 0;
+  result.Y := 0;
+  result.Z := 0;
+  result.alpha:= alpha;
+
+  with GetReferenceWhiteIndirect^ do
+    isEqualEnergy := (X = 1) and (Y = 1) and (Z = 1);
+  if isEqualEnergy then fromRefWhite := @ReferenceWhite2E
+  else fromRefWhite := @ReferenceWhite2D65;
+
+  totalXYZ := BGRABlack;
+  for i := 0 to high(SpectralLocus) do
+  begin
+    ill := GetIlluminantSpectrum(i);
+    totalXYZ.X += SpectralLocus[i].X*ill;
+    totalXYZ.Y += SpectralLocus[i].Y*ill;
+    totalXYZ.Z += SpectralLocus[i].Z*ill;
+  end;
+
+  minWavelen := SpectralLocus[0].W;
+  maxWavelen := SpectralLocus[high(SpectralLocus)].W;
+
+  if wavelen1 <= minWavelen then wavelen1 := minWavelen-2.5;
+  if wavelen2 >= maxWavelen then wavelen2 := maxWavelen+2.5;
+
+  if wavelen2 > wavelen1 then
+    IncludeWavelength(wavelen1, wavelen2)
+  else
+  begin
+    IncludeWavelength(wavelen1, maxWavelen+2.5);
+    IncludeWavelength(minWavelen-2.5, wavelen2);
+  end;
+
+  result.X *= fromRefWhite^.X/totalXYZ.X * reflectance;
+  result.Y *= fromRefWhite^.Y/totalXYZ.Y * reflectance;
+  result.Z *= fromRefWhite^.Z/totalXYZ.Z * reflectance;
+  result.ChromaticAdapt(fromRefWhite^, GetReferenceWhiteIndirect^);
 end;
 
 {$ENDIF}

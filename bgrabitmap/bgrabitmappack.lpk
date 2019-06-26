@@ -30,7 +30,7 @@
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
     <Version Major="9" Minor="9" Release="4"/>
-    <Files Count="133">
+    <Files Count="134">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -565,6 +565,10 @@
         <Filename Value="expandedbitmap.pas"/>
         <UnitName Value="expandedbitmap"/>
       </Item133>
+      <Item134>
+        <Filename Value="spectraldata.inc"/>
+        <Type Value="Binary"/>
+      </Item134>
     </Files>
     <RequiredPkgs Count="2">
       <Item1>
