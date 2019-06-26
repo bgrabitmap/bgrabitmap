@@ -14,17 +14,27 @@ type
 
   TForm1 = class(TForm)
     A_se: TFloatSpinEdit;
+    lambda1_se: TFloatSpinEdit;
     A_tb: TTrackBar;
+    lambda1_tb: TTrackBar;
     B2_se: TFloatSpinEdit;
+    lambda2_se: TFloatSpinEdit;
     B2_tb: TTrackBar;
+    lambda2_tb: TTrackBar;
     Dec_edt: TEdit;
     Alpha_se: TFloatSpinEdit;
     Alpha_tb: TTrackBar;
+    reflectance_se: TFloatSpinEdit;
+    reflectance_tb: TTrackBar;
     Label47: TLabel;
     Label48: TLabel;
     Label49: TLabel;
     Label50: TLabel;
     Label51: TLabel;
+    Label52: TLabel;
+    Label53: TLabel;
+    Label54: TLabel;
+    Label55: TLabel;
     LIsReal: TLabel;
     lB_se1: TFloatSpinEdit;
     lB_tb1: TTrackBar;
@@ -212,8 +222,8 @@ var
     begin
       with ca[i] do
       begin
-        Min := Mi;
         Max := Mx;
+        Min := Mi;
         Frequency := Fr;
       end;
     end;
@@ -229,7 +239,8 @@ begin
   SetControlsValues([S_tb, L_tb], 0, 100, 10);
   SetControlsValues([H2_tb], 0, 360, 10);
   SetControlsValues([S2_tb, V_tb], 0, 100, 10);
-  SetControlsValues([X_tb, Y2_tb, Z_tb], 0, 100, 10);
+  SetControlsValues([Y2_tb], 0, 100, 10);
+  SetControlsValues([X_tb, Z_tb], 0, 120, 10);
   SetControlsValues([L2_tb], 0, 100, 10);
   SetControlsValues([A_tb], -160, 160, 10);
   SetControlsValues([B2_tb], -140, 140, 10);
@@ -240,6 +251,8 @@ begin
   SetControlsValues([Alpha_tb], 0, 100, 10);
   SetControlsValues([lH_tb, lH2_tb], 0, 360, 10);
   SetControlsValues([lS_tb, lL_tb, lS2_tb, lL2_tb], 0, 100, 10);
+  SetControlsValues([reflectance_tb], 0, 100, 10);
+  SetControlsValues([lambda1_tb,lambda2_tb], 360, 830, 10);
 
   for i := 0 to ComponentCount - 1 do
   begin
@@ -322,6 +335,7 @@ begin
     50, 51, 52: col.AsHSLAPixel := THSLAPixel.New(round(lH_se.Value/360*65536) and $ffff, round(lS_se.Value / 100*65535), round(lL_se.Value / 100*65535), round(Alpha_se.Value / 100*65535));
     53, 54, 55: col.AsGSBAPixel := TGSBAPixel.New(round(lH2_se.Value/360*65536) and $ffff, round(lS2_se.Value / 100*65535), round(lL2_se.Value / 100*65535), round(Alpha_se.Value / 100*65535));
     60, 61, 62: col.AsAdobeRGBA := TAdobeRGBA.New(round(lR_se1.Value), round(lG_se1.Value), round(lB_se1.Value), round(Alpha_se.Value / 100 * 255));
+    70, 71, 72: col.AsXYZA := SpectrumRangeReflectToXYZA(reflectance_se.Value / 100, lambda1_se.Value, lambda2_se.Value, Alpha_se.Value / 100);
   end;
 
   if not (SourceTag in [1, 2, 3]) then

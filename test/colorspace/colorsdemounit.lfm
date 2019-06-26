@@ -1264,4 +1264,101 @@ object Form1: TForm1
     Caption = 'Kind'
     ParentColor = False
   end
+  object reflectance_tb: TTrackBar
+    Tag = 70
+    Left = 652
+    Height = 37
+    Top = 494
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 78
+  end
+  object Label52: TLabel
+    Left = 636
+    Height = 17
+    Top = 494
+    Width = 7
+    Caption = 'R'
+    ParentColor = False
+  end
+  object lambda1_tb: TTrackBar
+    Tag = 71
+    Left = 652
+    Height = 37
+    Top = 529
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 79
+  end
+  object Label53: TLabel
+    Left = 636
+    Height = 17
+    Top = 529
+    Width = 14
+    Caption = 'λ1'
+    ParentColor = False
+  end
+  object lambda2_tb: TTrackBar
+    Tag = 72
+    Left = 652
+    Height = 37
+    Top = 564
+    Width = 200
+    Max = 255
+    Position = 0
+    TabOrder = 80
+  end
+  object Label54: TLabel
+    Left = 636
+    Height = 17
+    Top = 565
+    Width = 14
+    Caption = 'λ2'
+    ParentColor = False
+  end
+  object reflectance_se: TFloatSpinEdit
+    Tag = 70
+    Left = 860
+    Height = 27
+    Top = 500
+    Width = 75
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 81
+    Value = 0
+  end
+  object lambda1_se: TFloatSpinEdit
+    Tag = 71
+    Left = 860
+    Height = 27
+    Top = 535
+    Width = 75
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 82
+    Value = 0
+  end
+  object lambda2_se: TFloatSpinEdit
+    Tag = 72
+    Left = 860
+    Height = 27
+    Top = 570
+    Width = 75
+    MaxValue = 255
+    MinValue = 0
+    TabOrder = 83
+    Value = 0
+  end
+  object Label55: TLabel
+    Left = 636
+    Height = 17
+    Top = 470
+    Width = 42
+    Caption = 'R λ1 λ2'
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
 end
