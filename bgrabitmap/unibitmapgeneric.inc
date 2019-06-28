@@ -936,10 +936,12 @@ procedure TGenericUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
 var
   b: TUniversalBrush;
   c: TBGRAPixel;
+  p: TBGRACustomPenStroker;
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   c := AColor;
-  FillPolyAntialias(GetInternalPen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c), b);
+  p := GetInternalPen;
+  FillPolyAntialias(p.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c), b);
 end;
 
 procedure TGenericUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
@@ -947,10 +949,12 @@ procedure TGenericUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
 var
   b: TUniversalBrush;
   c: TBGRAPixel;
+  p: TBGRACustomPenStroker;
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   c := AColor;
-  FillPolyAntialias(GetInternalPen.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c,AClosedCap), b);
+  p := GetInternalPen;
+  FillPolyAntialias(p.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c,AClosedCap), b);
 end;
 
 procedure TGenericUniversalBitmap.DrawPolyLineAntialias(
@@ -958,10 +962,12 @@ procedure TGenericUniversalBitmap.DrawPolyLineAntialias(
 var
   b: TUniversalBrush;
   c: TBGRAPixel;
+  p: TBGRACustomPenStroker;
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   c := AColor;
-  FillPolyAntialias(GetInternalPen.ComputePolyline(APoints,APenWidth,c),b);
+  p := GetInternalPen;
+  FillPolyAntialias(p.ComputePolyline(APoints,APenWidth,c),b);
 end;
 
 procedure TGenericUniversalBitmap.DrawPolyLineAntialias(
@@ -970,10 +976,12 @@ procedure TGenericUniversalBitmap.DrawPolyLineAntialias(
 var
   b: TUniversalBrush;
   c: TBGRAPixel;
+  p: TBGRACustomPenStroker;
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   c := AColor;
-  FillPolyAntialias(GetInternalPen.ComputePolyline(APoints,APenWidth,c,AClosedCap),b);
+  p := GetInternalPen;
+  FillPolyAntialias(p.ComputePolyline(APoints,APenWidth,c,AClosedCap),b);
 end;
 
 procedure TGenericUniversalBitmap.DrawPolyLineAntialiasAutocycle(
