@@ -109,6 +109,8 @@ begin
   s:= prof.FormatTime('create: ',v);
 
   prof.BeginMeasure;
+  svg.ContainerWidthAsPixel := 480;
+  svg.ContainerHeightAsPixel := 360;
   bmp.FontRenderer := TBGRAVectorizedFontRenderer.Create;
   bmp.SetSize(Round(svg.WidthAsPixel*kzoom),Round(svg.HeightAsPixel*kzoom));
   bmp.Fill(BGRAWhite);
