@@ -927,16 +927,22 @@ begin
   ctx.fontEmHeight:= ctx.height/10;
   ctx.textBaseline:= 'alphabetic';
 
+  ctx.shadowBlur:= 5;
+  ctx.shadowOffset := PointF(5,5);
+  ctx.shadowColor(BGRABlack);
+
   ctx.beginPath;
   if AVectorizedFont then
     ctx.text('Vectorized font',ctx.fontEmHeight*0.2,ctx.fontEmHeight)
   else
     ctx.text('Raster font',ctx.fontEmHeight*0.2,ctx.fontEmHeight);
-  ctx.lineWidth := 6;
+  ctx.lineWidth := 5;
   ctx.lineJoin:= 'round';
-  ctx.strokeStyle(clGreen);
+  ctx.strokeStyle(BGRA(0,192,0));
   ctx.fillStyle(clBlack);
   ctx.fillOverStroke;
+
+  ctx.shadowNone;
 
   grad := ctx.createLinearGradient(0,0,ctx.width,ctx.height);
   grad.addColorStop(0.3, '#000080');
