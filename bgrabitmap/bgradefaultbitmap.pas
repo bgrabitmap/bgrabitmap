@@ -3488,20 +3488,25 @@ var
   p: PBGRAPixel;
   n: integer;
   colormask: longword;
+  changed: boolean;
 begin
   if CanvasAlphaCorrection then
   begin
     p := PBGRAPixel(FDataByte); // avoid Data to avoid reloading from bitmap and thus stack overflow
-    colormask := longword(BGRA(255,255,255,0));
+    colormask := $ffffffff - (255 shl TBGRAPixel_AlphaShift);
+    changed := false;
     for n := NbPixels - 1 downto 0 do
     begin
       if (longword(p^) and colormask <> 0) and (p^.alpha = 0) then
+      begin
         p^.alpha := FCanvasOpacity;
+        changed := true;
+      end;
       Inc(p);
     end;
+    if changed then InvalidateBitmap;
   end;
   FAlphaCorrectionNeeded := False;
-  InvalidateBitmap;
 end;
 
 { Ensure that transparent pixels have all channels to zero }
