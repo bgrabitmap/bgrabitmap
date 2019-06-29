@@ -3497,7 +3497,7 @@ begin
     changed := false;
     for n := NbPixels - 1 downto 0 do
     begin
-      if (longword(p^) and colormask <> 0) and (p^.alpha = 0) then
+      if (plongword(p)^ and colormask <> 0) and (p^.alpha = 0) then
       begin
         p^.alpha := FCanvasOpacity;
         changed := true;
