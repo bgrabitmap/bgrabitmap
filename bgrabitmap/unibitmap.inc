@@ -2710,7 +2710,7 @@ end;
 
 procedure TCustomUniversalBitmap.ApplyMask(mask: TCustomUniversalBitmap; ARect: TRect; AAlpha: Word);
 begin
-  ApplyMask(mask, ARect, Point(0,0), AAlpha);
+  ApplyMask(mask, ARect, ARect.TopLeft, AAlpha);
 end;
 
 { Apply a mask to the bitmap. It means that alpha channel is
@@ -2722,7 +2722,7 @@ procedure TCustomUniversalBitmap.ApplyMask(mask: TCustomUniversalBitmap;
 var
   b: TUniversalBrush;
 begin
-  MaskBrush(b, mask, -AMaskRectTopLeft.X, -AMaskRectTopLeft.Y);
+  MaskBrush(b, mask, AMaskRectTopLeft.X-ARect.Left, AMaskRectTopLeft.Y-ARect.Top);
   FillRect(ARect, b, AAlpha);
 end;
 
