@@ -228,23 +228,50 @@ begin
 end;
 
 procedure TForm1.Test1(ctx: TBGRACanvas2D);
+
+  procedure DrawShape(colors: TBGRACustomGradient);
+  begin
+    ctx.fillStyle('rgb(1000,1000,1000)');  //out of bounds so it is saturated to 255,255,255
+    ctx.fillRect (0, 0, ctx.Width, ctx.Height);
+    ctx.fillStyle(ctx.createLinearGradient(0,0,20,0,colors));
+    ctx.shadowOffset := PointF(10,10);
+    ctx.shadowColor('rgba(0,0,0,0.5)');
+    ctx.shadowBlur := 4;
+    ctx.fillRect (mx-100, my-100, 200, 200);
+  end;
+
 var
   colors: TBGRACustomGradient;
+
+
 begin
   if (mx < 0) or (my < 0) then
   begin
     mx := ctx.Width div 2;
     my := ctx.height div 2;
   end;
-  ctx.fillStyle('rgb(1000,1000,1000)');  //out of bounds so it is saturated to 255,255,255
-  ctx.fillRect (0, 0, ctx.Width, ctx.Height);
+
+  ctx.save;
+  ctx.beginPath;
+  ctx.moveTo(0,0);
+  ctx.lineTo(ctx.Width,0);
+  ctx.lineTo(0,ctx.Height);
+  ctx.clip;
   colors := TBGRAMultiGradient.Create([BGRA(0,255,0),BGRA(0,192,128),BGRA(0,255,0)],[0,0.5,1],True,True);
-  ctx.fillStyle(ctx.createLinearGradient(0,0,20,0,colors));
-  ctx.shadowOffset := PointF(5,5);
-  ctx.shadowColor('rgba(0,0,0,0.5)');
-  ctx.shadowBlur := 4;
-  ctx.fillRect (mx-100, my-100, 200, 200);
+  DrawShape(colors);
   colors.Free;
+  ctx.restore;
+
+  ctx.save;
+  ctx.beginPath;
+  ctx.moveTo(ctx.Width,ctx.Height);
+  ctx.lineTo(0,ctx.Height);
+  ctx.lineTo(ctx.Width,0);
+  ctx.clip;
+  colors := TBGRAMultiGradient.Create([BGRA(0,255,255),BGRA(0,192,128),BGRA(0,255,255)],[0,0.5,1],True,True);
+  DrawShape(colors);
+  colors.Free;
+  ctx.restore;
 end;
 
 procedure TForm1.Test2(ctx: TBGRACanvas2D);
