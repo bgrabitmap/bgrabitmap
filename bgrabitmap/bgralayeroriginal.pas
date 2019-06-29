@@ -192,6 +192,7 @@ type
     procedure LoadFromStream(AStream: TStream); override;
     procedure LoadImageFromStream(AStream: TStream);
     procedure SaveImageToStream(AStream: TStream);
+    procedure AssignImage(AImage: TBGRACustomBitmap);
     class function StorageClassName: RawByteString; override;
     property Width: integer read GetImageWidth;
     property Height: integer read GetImageHeight;
@@ -1673,6 +1674,13 @@ begin
       raise exception.Create('Error while saving');
   end else
     FImage.SaveToStreamAsPng(AStream);
+end;
+
+procedure TBGRALayerImageOriginal.AssignImage(AImage: TBGRACustomBitmap);
+begin
+  FreeAndNil(FJpegStream);
+  FImage.Assign(AImage);
+  ContentChanged;
 end;
 
 class function TBGRALayerImageOriginal.StorageClassName: RawByteString;
