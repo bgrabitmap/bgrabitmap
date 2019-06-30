@@ -37,7 +37,7 @@ uses
 
 
 const
-  BGRABitmapVersion = 9090400;
+  BGRABitmapVersion = 10010000;
 
   function BGRABitmapVersionStr: string;
 
@@ -82,6 +82,59 @@ type
 
   TEmbossOption = (eoTransparent, eoPreserveHue);
   TEmbossOptions = set of TEmbossOption;
+
+  {* List of image formats }
+  TBGRAImageFormat = (
+    {** Unknown format }
+    ifUnknown,
+    {** JPEG format, opaque, lossy compression }
+    ifJpeg,
+    {** PNG format, transparency, lossless compression }
+    ifPng,
+    {** GIF format, single transparent color, lossless in theory but only low number of colors allowed }
+    ifGif,
+    {** BMP format, transparency, no compression. Note that transparency is
+        not supported by all BMP readers so it is recommended to avoid
+        storing images with transparency in this format }
+    ifBmp,
+    {** iGO BMP (16-bit, rudimentary lossless compression) }
+    ifBmpMioMap,
+    {** ICO format, contains different sizes of the same image }
+    ifIco,
+    {** CUR format, has hotspot, contains different sizes of the same image }
+    ifCur,
+    {** PCX format, opaque, rudimentary lossless compression }
+    ifPcx,
+    {** Paint.NET format, layers, lossless compression }
+    ifPaintDotNet,
+    {** LazPaint format, layers, lossless compression }
+    ifLazPaint,
+    {** OpenRaster format, layers, lossless compression }
+    ifOpenRaster,
+    {** Phoxo format, layers }
+    ifPhoxo,
+    {** Photoshop format, layers, rudimentary lossless compression }
+    ifPsd,
+    {** Targa format (TGA), transparency, rudimentary lossless compression }
+    ifTarga,
+    {** TIFF format, limited support }
+    ifTiff,
+    {** X-Window capture, limited support }
+    ifXwd,
+    {** X-Pixmap, text encoded image, limited support }
+    ifXPixMap,
+    {** Scalable Vector Graphic, vectorial, read-only as raster }
+    ifSvg);
+
+  {* Options when loading an image }
+  TBGRALoadingOption = (
+     {** Do not clear RGB channels when alpha is zero (not recommended) }
+     loKeepTransparentRGB,
+     {** Consider BMP to be opaque if no alpha value is provided (for compatibility) }
+     loBmpAutoOpaque,
+     {** Load JPEG quickly however with a lower quality }
+     loJpegQuick);
+  TBGRALoadingOptions = set of TBGRALoadingOption;
 
   TTextLayout = BGRAGraphics.TTextLayout;
   TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
@@ -181,6 +234,12 @@ const
 
 {$DEFINE INCLUDE_SCANNER_INTERFACE }
 {$I bgracustombitmap.inc}
+
+{$DEFINE INCLUDE_INTERFACE}
+{$I unibitmap.inc}
+
+{$DEFINE INCLUDE_INTERFACE}
+{$I unibitmapgeneric.inc}
 
 {==== Integer math ====}
 
@@ -410,49 +469,6 @@ const
   function StrToResampleFilter(str: string): TResampleFilter;
 
 type
-  {* List of image formats }
-  TBGRAImageFormat = (
-    {** Unknown format }
-    ifUnknown,
-    {** JPEG format, opaque, lossy compression }
-    ifJpeg,
-    {** PNG format, transparency, lossless compression }
-    ifPng,
-    {** GIF format, single transparent color, lossless in theory but only low number of colors allowed }
-    ifGif,
-    {** BMP format, transparency, no compression. Note that transparency is
-        not supported by all BMP readers so it is recommended to avoid
-        storing images with transparency in this format }
-    ifBmp,
-    {** iGO BMP (16-bit, rudimentary lossless compression) }
-    ifBmpMioMap,
-    {** ICO format, contains different sizes of the same image }
-    ifIco,
-    {** CUR format, has hotspot, contains different sizes of the same image }
-    ifCur,
-    {** PCX format, opaque, rudimentary lossless compression }
-    ifPcx,
-    {** Paint.NET format, layers, lossless compression }
-    ifPaintDotNet,
-    {** LazPaint format, layers, lossless compression }
-    ifLazPaint,
-    {** OpenRaster format, layers, lossless compression }
-    ifOpenRaster,
-    {** Phoxo format, layers }
-    ifPhoxo,
-    {** Photoshop format, layers, rudimentary lossless compression }
-    ifPsd,
-    {** Targa format (TGA), transparency, rudimentary lossless compression }
-    ifTarga,
-    {** TIFF format, limited support }
-    ifTiff,
-    {** X-Window capture, limited support }
-    ifXwd,
-    {** X-Pixmap, text encoded image, limited support }
-    ifXPixMap,
-    {** Scalable Vector Graphic, vectorial, read-only as raster }
-    ifSvg);
-
   {* Image information from superficial analysis }
   TQuickImageInfo = record
     {** Width in pixels }
@@ -472,16 +488,6 @@ type
     {** Return a draft of the bitmap, the ratio may change compared to the original width and height (useful to make thumbnails) }
     function GetBitmapDraft(AStream: TStream; AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual; abstract;
   end;
-
-  {* Options when loading an image }
-  TBGRALoadingOption = (
-     {** Do not clear RGB channels when alpha is zero (not recommended) }
-     loKeepTransparentRGB,
-     {** Consider BMP to be opaque if no alpha value is provided (for compatibility) }
-     loBmpAutoOpaque,
-     {** Load JPEG quickly however with a lower quality }
-     loJpegQuick);
-  TBGRALoadingOptions = set of TBGRALoadingOption;
 
 var
   {** List of stream readers for images }
@@ -528,7 +534,7 @@ implementation
 
 uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
   FPReadXwd, FPReadXPM,
-  FPWriteTiff, FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
+  FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM;
 
 function BGRABitmapVersionStr: string;
@@ -551,6 +557,12 @@ end;
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I geometrytypes.inc}
+
+{$DEFINE INCLUDE_IMPLEMENTATION}
+{$I unibitmap.inc}
+
+{$DEFINE INCLUDE_IMPLEMENTATION}
+{$I unibitmapgeneric.inc}
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I csscolorconst.inc}
@@ -1358,7 +1370,6 @@ initialization
   DefaultBGRAImageWriter[ifPcx] := TFPWriterPCX;
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
   DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;
-  DefaultBGRAImageWriter[ifTiff] := TFPWriterTiff;
   //writing XWD not implemented
 
   DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;

@@ -119,6 +119,25 @@ type
     property RadiusY: single read FRY;
   end;
 
+  { TFillRectangleInfo }
+
+  TFillRectangleInfo = class(TFillShapeInfo)
+  private
+    FX1, FY1, FX2, FY2: single;
+    function GetBottomRight: TPointF;
+    function GetTopLeft: TPointF;
+  protected
+    function NbMaxIntersection: integer; override;
+    procedure ComputeIntersection(cury: single;
+      var inter: ArrayOfTIntersectionInfo; var nbInter: integer); override;
+  public
+    WindingFactor: integer;
+    constructor Create(x1, y1, x2, y2: single; APixelCenteredCoordinates: boolean = true);
+    function GetBounds: TRect; override;
+    property TopLeft: TPointF read GetTopLeft;
+    property BottomRight: TPointF read GetBottomRight;
+  end;
+
   { TFillBorderRoundRectInfo }
 
   TFillBorderRoundRectInfo = class(TFillShapeInfo)
@@ -234,7 +253,7 @@ type
     procedure ComputeIntersection(cury: single; var inter: ArrayOfTIntersectionInfo;
       var nbInter: integer); override;
   public
-    constructor Create(const points: array of TPointF);
+    constructor Create(const points: array of TPointF; APixelCenteredCoordinates: boolean = true);
     destructor Destroy; override;
   end;
 
@@ -250,7 +269,9 @@ function IsPointInRoundRectangle(x1, y1, x2, y2, rx, ry: single; point: TPointF)
 function IsPointInRectangle(x1, y1, x2, y2: single; point: TPointF): boolean;
 
 function BGRAShapeComputeMinMax(AShape: TBGRACustomFillInfo; out minx, miny, maxx, maxy: integer;
-  bmpDest: TBGRACustomBitmap): boolean;
+  bmpDest: TBGRACustomBitmap): boolean; overload;
+function BGRAShapeComputeMinMax(AShape: TBGRACustomFillInfo; out minx, miny, maxx, maxy: integer;
+  clip: TRect): boolean; overload;
 
 implementation
 
@@ -258,7 +279,13 @@ uses Math;
 
 function BGRAShapeComputeMinMax(AShape: TBGRACustomFillInfo; out minx, miny, maxx, maxy: integer;
   bmpDest: TBGRACustomBitmap): boolean;
-var clip,bounds: TRect;
+begin
+  result := BGRAShapeComputeMinMax(AShape, minx,miny,maxx,maxy, bmpDest.ClipRect);
+end;
+
+function BGRAShapeComputeMinMax(AShape: TBGRACustomFillInfo; out minx, miny, maxx, maxy: integer;
+  clip: TRect): boolean;
+var bounds: TRect;
 begin
   result := true;
   bounds := AShape.GetBounds;
@@ -273,8 +300,6 @@ begin
   maxy := bounds.bottom - 1;
   minx := bounds.left;
   maxx := bounds.right - 1;
-
-  clip := bmpDest.ClipRect;
 
   if minx < clip.Left then
     minx := clip.Left;
@@ -386,6 +411,77 @@ end;
 function DivByAntialiasPrecision65536(value: UInt32or64): UInt32or64;
 begin             //
   result := value shr (AntialiasPrecisionShift+16);//div (65536*AntialiasPrecision);
+end;
+
+{ TFillRectangleInfo }
+
+function TFillRectangleInfo.GetBottomRight: TPointF;
+begin
+  result := PointF(FX2-0.5,FY2-0.5);
+end;
+
+function TFillRectangleInfo.GetTopLeft: TPointF;
+begin
+  result := PointF(FX1-0.5,FY1-0.5);
+end;
+
+function TFillRectangleInfo.NbMaxIntersection: integer;
+begin
+  Result:= 2;
+end;
+
+procedure TFillRectangleInfo.ComputeIntersection(cury: single;
+  var inter: ArrayOfTIntersectionInfo; var nbInter: integer);
+begin
+  if (cury >= FY1) and (cury <= FY2) then
+  begin
+    inter[nbinter].interX := FX1;
+    inter[nbinter].winding := -windingFactor;
+    inter[nbinter].numSegment := 0;
+    Inc(nbinter);
+    inter[nbinter].interX := FX2;
+    inter[nbinter].winding := +windingFactor;
+    inter[nbinter].numSegment := 1;
+    Inc(nbinter);
+  end;
+end;
+
+constructor TFillRectangleInfo.Create(x1, y1, x2, y2: single;
+  APixelCenteredCoordinates: boolean);
+var
+  temp: Single;
+begin
+  if y1 > y2 then
+  begin
+    temp := y1;
+    y1 := y2;
+    y2 := temp;
+  end;
+  if x1 > x2 then
+  begin
+    temp := x1;
+    x1 := x2;
+    x2 := temp;
+  end;
+  if APixelCenteredCoordinates then
+  begin
+    FX1  := x1 + 0.5;
+    FY1  := y1 + 0.5;
+    FX2  := x2 + 0.5;
+    FY2  := y2 + 0.5;
+  end else
+  begin
+    FX1 := x1;
+    FY1 := y1;
+    FX2 := x2;
+    FY2 := y2;
+  end;
+  WindingFactor := 1;
+end;
+
+function TFillRectangleInfo.GetBounds: TRect;
+begin
+  result := rect(floor(fx1),floor(fy1),floor(fx2)+1,floor(fy2)+1);
 end;
 
 { TFillShapeInfo }
@@ -1181,10 +1277,10 @@ begin
     end;
 end;
 
-constructor TSimpleFillPolyInfo.Create(const points: array of TPointF);
+constructor TSimpleFillPolyInfo.Create(const points: array of TPointF; APixelCenteredCoordinates: boolean);
 var i,j: integer;
 begin
-  inherited Create(points);
+  inherited Create(points, APixelCenteredCoordinates);
 
   setlength(FSimple, length(FPoints));
   for i := 0 to high(FPoints) do

@@ -81,6 +81,12 @@ type
 
   TBGRASVG = class(TSVGCustomElement)
   private
+    function GetComputedHeight: TFloatWithCSSUnit;
+    function GetComputedWidth: TFloatWithCSSUnit;
+    function GetContainerHeight: TFloatWithCSSUnit;
+    function GetContainerHeightAsPixel: single;
+    function GetContainerWidth: TFloatWithCSSUnit;
+    function GetContainerWidthAsPixel: single;
     function GetCustomDpi: TPointF;
     function GetFontSize: TFloatWithCSSUnit;
     function GetHeight: TFloatWithCSSUnit;
@@ -100,6 +106,10 @@ type
     function GetWidthAsInch: single;
     function GetWidthAsPixel: single;
     function GetZoomable: boolean;
+    procedure SetContainerHeight(AValue: TFloatWithCSSUnit);
+    procedure SetContainerHeightAsPixel(AValue: single);
+    procedure SetContainerWidth(AValue: TFloatWithCSSUnit);
+    procedure SetContainerWidthAsPixel(AValue: single);
     procedure SetCustomDpi(AValue: TPointF);
     procedure SetDefaultDpi(AValue: single);
     procedure SetFontSize(AValue: TFloatWithCSSUnit);
@@ -152,12 +162,18 @@ type
     property FontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
     property Width: TFloatWithCSSUnit read GetWidth write SetWidth;
     property Height: TFloatWithCSSUnit read GetHeight write SetHeight;
+    property ComputedWidth: TFloatWithCSSUnit read GetComputedWidth;
+    property ComputedHeight: TFloatWithCSSUnit read GetComputedHeight;
     property WidthAsPixel: single read GetWidthAsPixel write SetWidthAsPixel;
     property HeightAsPixel: single read GetHeightAsPixel write SetHeightAsPixel;
     property WidthAsCm: single read GetWidthAsCm write SetWidthAsCm;
     property HeightAsCm: single read GetHeightAsCm write SetHeightAsCm;
     property WidthAsInch: single read GetWidthAsInch write SetWidthAsInch;
     property HeightAsInch: single read GetHeightAsInch write SetHeightAsInch;
+    property ContainerWidth: TFloatWithCSSUnit read GetContainerWidth write SetContainerWidth;
+    property ContainerWidthAsPixel: single read GetContainerWidthAsPixel write SetContainerWidthAsPixel;
+    property ContainerHeight: TFloatWithCSSUnit read GetContainerHeight write SetContainerHeight;
+    property ContainerHeightAsPixel: single read GetContainerHeightAsPixel write SetContainerHeightAsPixel;
     property Zoomable: boolean read GetZoomable write SetZoomable;
     property ViewBox: TSVGViewBox read GetViewBox write SetViewBox;
     property ViewBoxInUnit[AUnit: TCSSUnit]: TSVGViewBox read GetViewBox;
@@ -560,6 +576,54 @@ end;
 
 { TBGRASVG }
 
+function TBGRASVG.GetComputedHeight: TFloatWithCSSUnit;
+var
+  h: TFloatWithCSSUnit;
+begin
+  h := Height;
+  if h.CSSUnit = cuPercent then
+  with ContainerHeight do
+  begin
+    h.value := value * h.value/100;
+    h.CSSUnit := CSSUnit;
+  end;
+  result := h;
+end;
+
+function TBGRASVG.GetComputedWidth: TFloatWithCSSUnit;
+var
+  w: TFloatWithCSSUnit;
+begin
+  w := Width;
+  if w.CSSUnit = cuPercent then
+  with ContainerWidth do
+  begin
+    w.value := value * w.value/100;
+    w.CSSUnit := CSSUnit;
+  end;
+  result := w;
+end;
+
+function TBGRASVG.GetContainerHeight: TFloatWithCSSUnit;
+begin
+  result := Units.ContainerHeight;
+end;
+
+function TBGRASVG.GetContainerHeightAsPixel: single;
+begin
+  result := Units.ConvertHeight(Units.ContainerHeight, cuPixel).value;
+end;
+
+function TBGRASVG.GetContainerWidth: TFloatWithCSSUnit;
+begin
+  result := Units.ContainerWidth;
+end;
+
+function TBGRASVG.GetContainerWidthAsPixel: single;
+begin
+  result := Units.ConvertWidth(Units.ContainerWidth, cuPixel).value;
+end;
+
 function TBGRASVG.GetCustomDpi: TPointF;
 begin
   result := Units.CustomDpi;
@@ -577,17 +641,17 @@ end;
 
 function TBGRASVG.GetHeightAsCm: single;
 begin
-  result := FUnits.ConvertHeight(Height,cuCentimeter).value;
+  result := FUnits.ConvertHeight(ComputedHeight,cuCentimeter).value;
 end;
 
 function TBGRASVG.GetHeightAsInch: single;
 begin
-  result := FUnits.ConvertHeight(Height,cuInch).value;
+  result := FUnits.ConvertHeight(ComputedHeight,cuInch).value;
 end;
 
 function TBGRASVG.GetHeightAsPixel: single;
 begin
-  result := FUnits.ConvertHeight(Height,cuCustom).value;
+  result := FUnits.ConvertHeight(ComputedHeight,cuCustom).value;
 end;
 
 function TBGRASVG.GetPreserveAspectRatio: TSVGPreserveAspectRatio;
@@ -653,22 +717,44 @@ end;
 
 function TBGRASVG.GetWidthAsCm: single;
 begin
-  result := FUnits.ConvertWidth(Width,cuCentimeter).value;
+  result := FUnits.ConvertWidth(ComputedWidth,cuCentimeter).value;
 end;
 
 function TBGRASVG.GetWidthAsInch: single;
 begin
-  result := FUnits.ConvertWidth(Width,cuInch).value;
+  result := FUnits.ConvertWidth(ComputedWidth,cuInch).value;
 end;
 
 function TBGRASVG.GetWidthAsPixel: single;
 begin
-  result := FUnits.ConvertWidth(Width,cuCustom).value;
+  result := FUnits.ConvertWidth(ComputedWidth,cuCustom).value;
 end;
 
 function TBGRASVG.GetZoomable: boolean;
 begin
   result := AttributeDef['zoomAndPan','magnify']<>'disable';
+end;
+
+procedure TBGRASVG.SetContainerHeight(AValue: TFloatWithCSSUnit);
+begin
+  if AValue.CSSUnit = cuPercent then raise exception.Create('Container width cannot be expressed as percentage');
+  Units.ContainerHeight := AValue;
+end;
+
+procedure TBGRASVG.SetContainerHeightAsPixel(AValue: single);
+begin
+  ContainerHeight := FloatWithCSSUnit(AValue, cuPixel);
+end;
+
+procedure TBGRASVG.SetContainerWidth(AValue: TFloatWithCSSUnit);
+begin
+  if AValue.CSSUnit = cuPercent then raise exception.Create('Container width cannot be expressed as percentage');
+  Units.ContainerWidth := AValue;
+end;
+
+procedure TBGRASVG.SetContainerWidthAsPixel(AValue: single);
+begin
+  ContainerWidth := FloatWithCSSUnit(AValue, cuPixel);
 end;
 
 procedure TBGRASVG.SetAttribute(AName: string; AValue: string);

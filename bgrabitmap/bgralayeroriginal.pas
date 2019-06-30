@@ -137,7 +137,9 @@ type
   private
     FOnChange: TOriginalChangeEvent;
     FOnEditingChange: TOriginalEditingChangeEvent;
+    FRenderStorage: TBGRACustomOriginalStorage;
     procedure SetOnChange(AValue: TOriginalChangeEvent);
+    procedure SetRenderStorage(AValue: TBGRACustomOriginalStorage);
   protected
     FGuid: TGuid;
     function GetGuid: TGuid;
@@ -148,7 +150,9 @@ type
   public
     constructor Create; virtual;
     destructor Destroy; override;
-    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); virtual; abstract;
+    //one of the two Render functions must be overriden
+    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); virtual;
+    procedure Render(ADest: TBGRABitmap; ARenderOffset: TPoint; AMatrix: TAffineMatrix; ADraft: boolean); virtual;
     function GetRenderBounds(ADestRect: TRect; AMatrix: TAffineMatrix): TRect; virtual; abstract;
     procedure ConfigureEditor({%H-}AEditor: TBGRAOriginalEditor); virtual;
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); virtual; abstract;
@@ -164,6 +168,7 @@ type
     property Guid: TGuid read GetGuid write SetGuid;
     property OnChange: TOriginalChangeEvent read FOnChange write SetOnChange;
     property OnEditingChange: TOriginalEditingChangeEvent read FOnEditingChange write FOnEditingChange;
+    property RenderStorage: TBGRACustomOriginalStorage read FRenderStorage write SetRenderStorage;
   end;
 
   { TBGRALayerImageOriginal }
@@ -187,6 +192,7 @@ type
     procedure LoadFromStream(AStream: TStream); override;
     procedure LoadImageFromStream(AStream: TStream);
     procedure SaveImageToStream(AStream: TStream);
+    procedure AssignImage(AImage: TBGRACustomBitmap);
     class function StorageClassName: RawByteString; override;
     property Width: integer read GetImageWidth;
     property Height: integer read GetImageHeight;
@@ -202,6 +208,9 @@ type
     function GetInteger(AName: utf8string): integer;
     function GetIntegerDef(AName: utf8string; ADefault: integer): integer;
     function GetPointF(AName: utf8string): TPointF;
+    function GetRectF(AName: utf8string): TRectF;
+    function GetRect(AName: utf8string): TRect;
+    function GetAffineMatrix(AName: utf8string): TAffineMatrix;
     function GetRawString(AName: utf8string): RawByteString; virtual; abstract;
     function GetSingle(AName: utf8string): single;
     function GetSingleArray(AName: utf8string): ArrayOfSingle;
@@ -211,6 +220,9 @@ type
     procedure SetColorArray(AName: UTF8String; AValue: ArrayOfTBGRAPixel);
     procedure SetInteger(AName: utf8string; AValue: integer);
     procedure SetPointF(AName: utf8string; AValue: TPointF);
+    procedure SetRectF(AName: utf8string; AValue: TRectF);
+    procedure SetRect(AName: utf8string; AValue: TRect);
+    procedure SetAffineMatrix(AName: utf8string; AValue: TAffineMatrix);
     procedure SetRawString(AName: utf8string; AValue: RawByteString); virtual; abstract;
     procedure SetSingle(AName: utf8string; AValue: single);
     procedure SetSingleArray(AName: utf8string; AValue: ArrayOfSingle);
@@ -219,13 +231,15 @@ type
   public
     constructor Create;
     procedure RemoveAttribute(AName: utf8string); virtual; abstract;
+    function HasAttribute(AName: utf8string): boolean; virtual; abstract;
     procedure RemoveObject(AName: utf8string); virtual; abstract;
     function CreateObject(AName: utf8string): TBGRACustomOriginalStorage; virtual; abstract;
     function OpenObject(AName: utf8string): TBGRACustomOriginalStorage; virtual; abstract;
     function ObjectExists(AName: utf8string): boolean; virtual; abstract;
+    procedure EnumerateObjects(AList: TStringList); virtual; abstract;
     procedure RemoveFile(AName: utf8string); virtual; abstract;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; virtual; abstract;
-    procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); virtual; abstract;
+    procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean; AOwnStream: boolean = false); virtual; abstract;
     property RawString[AName: utf8string]: RawByteString read GetRawString write SetRawString;
     property Int[AName: utf8string]: integer read GetInteger write SetInteger;
     property IntDef[AName: utf8string; ADefault: integer]: integer read GetIntegerDef;
@@ -234,6 +248,9 @@ type
     property FloatArray[AName: utf8string]: ArrayOfSingle read GetSingleArray write SetSingleArray;
     property FloatDef[AName: utf8string; ADefault: single]: single read GetSingleDef;
     property PointF[AName: utf8string]: TPointF read GetPointF write SetPointF;
+    property RectangleF[AName: utf8string]: TRectF read GetRectF write SetRectF;
+    property Rectangle[AName: utf8string]: TRect read GetRect write SetRect;
+    property AffineMatrix[AName: utf8string]: TAffineMatrix read GetAffineMatrix write SetAffineMatrix;
     property Color[AName: UTF8String]: TBGRAPixel read GetColor write SetColor;
     property ColorArray[AName: UTF8String]: ArrayOfTBGRAPixel read GetColorArray write SetColorArray;
   end;
@@ -251,13 +268,15 @@ type
     constructor Create;
     constructor Create(AMemDir: TMemDirectory; AMemDirOwned: boolean = false);
     procedure RemoveAttribute(AName: utf8string); override;
+    function HasAttribute(AName: utf8string): boolean; override;
     procedure RemoveObject(AName: utf8string); override;
     function CreateObject(AName: utf8string): TBGRACustomOriginalStorage; override;
     function OpenObject(AName: utf8string): TBGRACustomOriginalStorage; override;
     function ObjectExists(AName: utf8string): boolean; override;
+    procedure EnumerateObjects(AList: TStringList); override;
     procedure RemoveFile(AName: utf8string); override;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; override;
-    procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean); override;
+    procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean; AOwnStream: boolean = false); override;
     procedure SaveToStream(AStream: TStream);
     procedure LoadFromStream(AStream: TStream);
     procedure LoadFromResource(AFilename: string);
@@ -982,6 +1001,16 @@ begin
     FMemDir.Delete(idx);
 end;
 
+function TBGRAMemOriginalStorage.HasAttribute(AName: utf8string): boolean;
+var
+  idx: Integer;
+begin
+  if pos('.',AName)<>0 then exit(false);
+  idx := FMemDir.IndexOf(AName,'',true);
+  if idx = -1 then exit(false)
+  else exit(not FMemDir.IsDirectory[idx]);
+end;
+
 procedure TBGRAMemOriginalStorage.RemoveObject(AName: utf8string);
 var
   idx: Integer;
@@ -1027,6 +1056,15 @@ begin
   result:= Assigned(dir);
 end;
 
+procedure TBGRAMemOriginalStorage.EnumerateObjects(AList: TStringList);
+var
+  i: Integer;
+begin
+  for i := 0 to FMemDir.Count-1 do
+    if FMemDir.IsDirectory[i] then
+      AList.Add(FMemDir.Entry[i].Name);
+end;
+
 procedure TBGRAMemOriginalStorage.RemoveFile(AName: utf8string);
 var
   idx: Integer;
@@ -1053,11 +1091,11 @@ begin
     result := false;
 end;
 
-procedure TBGRAMemOriginalStorage.WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean);
+procedure TBGRAMemOriginalStorage.WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean; AOwnStream: boolean);
 var
   idxEntry: Integer;
 begin
-  idxEntry := FMemDir.Add(EntryFilename(AName), ASource, true, false);
+  idxEntry := FMemDir.Add(EntryFilename(AName), ASource, true, AOwnStream);
   if ACompress then FMemDir.IsEntryCompressed[idxEntry] := true;
 end;
 
@@ -1098,6 +1136,80 @@ function TBGRACustomOriginalStorage.GetDelimiter: char;
 begin
   if FFormats.DecimalSeparator = ',' then
     result := ';' else result := ',';
+end;
+
+function TBGRACustomOriginalStorage.GetRectF(AName: utf8string): TRectF;
+var
+  a: array of Single;
+begin
+  a := FloatArray[AName];
+  if length(a)<4 then
+    result := EmptyRectF
+  else
+  begin
+    result.Left := a[0];
+    result.Top := a[1];
+    result.Right := a[2];
+    result.Bottom := a[3];
+  end;
+end;
+
+procedure TBGRACustomOriginalStorage.SetRectF(AName: utf8string; AValue: TRectF);
+var
+  a: array of Single;
+begin
+  setlength(a,4);
+  a[0] := AValue.Left;
+  a[1] := AValue.Top;
+  a[2] := AValue.Right;
+  a[3] := AValue.Bottom;
+  FloatArray[AName] := a;
+end;
+
+function TBGRACustomOriginalStorage.GetAffineMatrix(AName: utf8string): TAffineMatrix;
+var
+  stream: TMemoryStream;
+begin
+  stream:= TMemoryStream.Create;
+  if ReadFile(AName, stream) and (stream.Size >= sizeof(result)) then
+  begin
+    stream.Position:= 0;
+    {$PUSH}{$HINTS OFF}stream.ReadBuffer({%H-}result, sizeof({%H-}result));{$POP}
+    DWord(result[1,1]) := NtoLE(DWord(result[1,1]));
+    DWord(result[2,1]) := NtoLE(DWord(result[2,1]));
+    DWord(result[1,2]) := NtoLE(DWord(result[1,2]));
+    DWord(result[2,2]) := NtoLE(DWord(result[2,2]));
+    DWord(result[1,3]) := NtoLE(DWord(result[1,3]));
+    DWord(result[2,3]) := NtoLE(DWord(result[2,3]));
+  end else
+    result := AffineMatrixIdentity;
+  stream.Free;
+end;
+
+procedure TBGRACustomOriginalStorage.SetAffineMatrix(AName: utf8string;
+  AValue: TAffineMatrix);
+var
+  stream: TMemoryStream;
+begin
+  stream:= TMemoryStream.Create;
+  stream.WriteBuffer(AValue, sizeof(AValue));
+  WriteFile(AName,stream,false,true);
+end;
+
+function TBGRACustomOriginalStorage.GetRect(AName: utf8string): TRect;
+var
+  rF: TRectF;
+begin
+  rF := RectangleF[AName];
+  result := rect(round(rF.Left),round(rF.Top),round(rF.Right),round(rF.Bottom));
+end;
+
+procedure TBGRACustomOriginalStorage.SetRect(AName: utf8string; AValue: TRect);
+var
+  rF: TRectF;
+begin
+  rF := rectF(AValue.Left,AValue.Top,AValue.Right,AValue.Bottom);
+  RectangleF[AName] := rF;
 end;
 
 function TBGRACustomOriginalStorage.GetBool(AName: utf8string): boolean;
@@ -1247,6 +1359,12 @@ begin
   FOnChange:=AValue;
 end;
 
+procedure TBGRALayerCustomOriginal.SetRenderStorage(AValue: TBGRACustomOriginalStorage);
+begin
+  if FRenderStorage=AValue then Exit;
+  FRenderStorage:=AValue;
+end;
+
 function TBGRALayerCustomOriginal.GetGuid: TGuid;
 begin
   result := FGuid;
@@ -1278,11 +1396,24 @@ end;
 constructor TBGRALayerCustomOriginal.Create;
 begin
   FGuid := GUID_NULL;
+  FRenderStorage := nil;
 end;
 
 destructor TBGRALayerCustomOriginal.Destroy;
 begin
   inherited Destroy;
+end;
+
+procedure TBGRALayerCustomOriginal.Render(ADest: TBGRABitmap;
+  AMatrix: TAffineMatrix; ADraft: boolean);
+begin
+  Render(ADest, Point(0,0), AMatrix, ADraft);
+end;
+
+procedure TBGRALayerCustomOriginal.Render(ADest: TBGRABitmap;
+  ARenderOffset: TPoint; AMatrix: TAffineMatrix; ADraft: boolean);
+begin
+  Render(ADest, AffineMatrixTranslation(ARenderOffset.X, ARenderOffset.Y)*AMatrix, ADraft);
 end;
 
 procedure TBGRALayerCustomOriginal.ConfigureEditor(AEditor: TBGRAOriginalEditor);
@@ -1543,6 +1674,13 @@ begin
       raise exception.Create('Error while saving');
   end else
     FImage.SaveToStreamAsPng(AStream);
+end;
+
+procedure TBGRALayerImageOriginal.AssignImage(AImage: TBGRACustomBitmap);
+begin
+  FreeAndNil(FJpegStream);
+  FImage.Assign(AImage);
+  ContentChanged;
 end;
 
 class function TBGRALayerImageOriginal.StorageClassName: RawByteString;

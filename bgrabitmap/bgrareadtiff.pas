@@ -15,7 +15,7 @@
 
  Working:
    Sample bitdepth: 1, 4, 8, 12, 16
-   Color format: black and white, grayscale, RGB, colormap
+   Color format: black and white, grayscale, RGB, colormap, L*a*b*
    Alpha channel: none, premultiplied, separated
    Compression: packbits, LZW, deflate
    Endian-ness: little endian and big endian
@@ -28,7 +28,7 @@
 
  ToDo:
    Compression: FAX, Jpeg...
-   Color format: YCbCr, Lab...
+   Color format: YCbCr, ITU L*a*b*
    PlanarConfiguration: 2 (one chunk for each channel)
    bigtiff 64bit offsets
    XMP tag 700
@@ -307,7 +307,27 @@ begin
       IFD.GreenBits:=SampleBits[1]; //magenta
       IFD.BlueBits:=SampleBits[2];   //yellow
       IFD.GrayBits:=SampleBits[3];  //black
+      PremultipliedAlpha:= false;
     end;
+  8,9:
+    begin
+      if (RegularSampleCnt<>1) and (RegularSampleCnt<>3) then
+        TiffError('L*a*b* colorspace needs either one component for grayscale or three components, but found '+inttostr(RegularSampleCnt));
+      if RegularSampleCnt = 3 then
+      begin
+        IFD.GreenBits:=SampleBits[0];
+        if (IFD.GreenBits <> 8) and (IFD.GreenBits <> 16) then TiffError('Only 8 bit and 16 bit depth allowed for L* component');
+        IFD.RedBits:=SampleBits[1];
+        IFD.BlueBits:=SampleBits[2]; //in fact inverse blue so more like yellow
+        if ((IFD.RedBits <> 8) and (IFD.RedBits <> 16))
+        or ((IFD.BlueBits <> 8) and (IFD.BlueBits <> 16)) then TiffError('Only 8 bit and 16 bit depth allowed for a* and b* component');
+      end else
+      begin
+        IFD.GrayBits:=SampleBits[0];
+        if (IFD.GrayBits <> 8) and (IFD.GrayBits <> 16) then TiffError('Only 8 bit and 16 bit depth allowed for L* component');
+      end;
+      PremultipliedAlpha:= false;
+    end
   else
     TiffError('Photometric interpretation not handled (' + inttostr(IFD.PhotoMetricInterpretation)+')');
   end;
@@ -790,6 +810,8 @@ begin
         3: write('3=Palette color');
         4: write('4=Transparency Mask');
         5: write('5=CMYK 8bit');
+        8: write('8=L*a*b* with a and b [-128;127]');
+        9: write('9=L*a*b* with a and b [0;255]');
         end;
         writeln;
       end;
@@ -1673,14 +1695,79 @@ var
       LastChannelValues[Channel] := 0;
   end;
 
-  function ReadNextColor(var Run: Pointer; var BitPos: byte): TFPColor;
-  var Channel, PaletteIndex: DWord;
-    GrayValue: Word;
+  procedure ReadNextPixelData(var Run: Pointer; var BitPos: byte);
+  var Channel: DWord;
   begin
     for Channel := 0 to SampleCnt-1 do
       ReadImgValue(SampleBits[Channel], Run,BitPos,IFD.FillOrder,
                    IFD.Predictor,LastChannelValues[Channel],
                    ChannelValues[Channel]);
+  end;
+
+  function GetPixelAsLab: TLabA;
+  begin
+    result.L := 0;
+    result.a := 0;
+    result.b := 0;
+    result.alpha := 1;
+
+    case IFD.PhotoMetricInterpretation of
+    8: begin
+         case IFD.GrayBits of
+           8,16: result.L := ChannelValues[0]*(100/65535);
+           0:begin
+               result.L := ChannelValues[0]*(100/65535);
+               case IFD.RedBits of
+                 16: result.a := SmallInt(ChannelValues[1])/256;
+                 8: result.a := ShortInt(ChannelValues[1] shr 8);
+               end;
+               case IFD.BlueBits of
+                 16: result.b := SmallInt(ChannelValues[2])/256;
+                 8: result.b := ShortInt(ChannelValues[2] shr 8);
+               end;
+             end;
+         end;
+       end;
+    9: begin
+         case IFD.GrayBits of
+           16: result.L := ChannelValues[0]*(100/65280);
+           8: result.L := ChannelValues[0]*(100/65535);
+           0:begin
+               case IFD.GreenBits of
+                 16: result.L := ChannelValues[0]*(100/65280);
+                 8: result.L := ChannelValues[0]*(100/65535);
+               end;
+               case IFD.RedBits of
+                 16: result.a := (ChannelValues[1]-32768)/256;
+                 8: result.a := (ChannelValues[1] shr 8)-128;
+               end;
+               case IFD.BlueBits of
+                 16: result.b := (ChannelValues[2]-32768)/256;
+                 8: result.b := (ChannelValues[2] shr 8)-128;
+               end;
+             end;
+         end;
+       end;
+     //10: ITULAB: ITU L*a*b*
+     //32844: LOGL: CIE Log2(L)
+     //32845: LOGLUV: CIE Log2(L) (u',v')
+    else
+      TiffError('PhotometricInterpretation='+IntToStr(IFD.PhotoMetricInterpretation)+' not supported');
+    end;
+
+    if AlphaChannel >= 0 then
+      result.alpha:= ChannelValues[AlphaChannel]/65535;
+  end;
+
+  function GetPixelAsFPColor: TFPColor;
+  var PaletteIndex: DWord;
+    GrayValue: Word;
+  begin
+    if IFD.PhotoMetricInterpretation >= 8 then
+    begin
+      result.FromLabA(GetPixelAsLab);
+      exit;
+    end;
 
     case IFD.PhotoMetricInterpretation of
     0,1: // 0:bilevel grayscale 0 is white; 1:0 is black
@@ -1706,11 +1793,6 @@ var
       result:=CMYKToFPColor(ChannelValues[0],ChannelValues[1],ChannelValues[2],ChannelValues[3]);
 
      //6: YCBCR: CCIR 601
-     //8: CIELAB: 1976 CIE L*a*b*
-     //9: ICCLAB: ICC L*a*b*. Introduced post TIFF rev 6.0 by Adobe TIFF Technote 4
-     //10: ITULAB: ITU L*a*b*
-     //32844: LOGL: CIE Log2(L)
-     //32845: LOGLUV: CIE Log2(L) (u',v')
     else
       TiffError('PhotometricInterpretation='+IntToStr(IFD.PhotoMetricInterpretation)+' not supported');
     end;
@@ -1738,15 +1820,19 @@ var
   CurByteCnt: PtrInt;
   Run: PByte;
   BitPos: Byte;
-  x, y, cx, cy, dx1,dy1, dx2,dy2, sx: integer;
+  x, y, cx, cy, dx1,dy1, dx2,dy2, sx, sy: integer;
   SampleBitsPerPixel: DWord;
   CurFPImg: TFPCustomImage;
-  aContinue: Boolean;
+  aContinue, ConvertFromLab: Boolean;
   ExpectedChunkLength: PtrInt;
   ChunkType: TTiffChunkType;
   TilesAcross, TilesDown: DWord;
   ChunkLeft, ChunkTop, ChunkWidth, ChunkHeight: DWord;
   ChunkBytesPerLine: DWord;
+
+  LabArray: array of TLabA;
+  ConversionFromLab: TBridgedConversion;
+  DestStride: PtrInt;
 begin
   if (IFD.ImageWidth=0) or (IFD.ImageHeight=0) then
     exit;
@@ -1840,6 +1926,15 @@ begin
       writeln('TBGRAReaderTiff.LoadImageFromStream SampleBitsPerPixel=',SampleBitsPerPixel);
     {$endif}
 
+    LabArray := nil;
+    if (IFD.PhotoMetricInterpretation >= 8) and
+       (CurFPImg is TCustomUniversalBitmap) then
+    begin
+      ConvertFromLab := true;
+      ConversionFromLab := TLabAColorspace.GetBridgedConversion(TCustomUniversalBitmap(CurFPImg).Colorspace)
+    end else
+      ConvertFromLab := false;
+
     // read chunks
     for ChunkIndex:=0 to ChunkCount-1 do begin
       CurOffset:=ChunkOffsets[ChunkIndex];
@@ -1900,45 +1995,65 @@ begin
 
       // Orientation
       if IFD.Orientation in [1..4] then begin
-        x:=ChunkLeft; y:=ChunkTop;
+        sx:=ChunkLeft; sy:=ChunkTop;
         dy1 := 0; dx2 := 0;
         case IFD.Orientation of
         1: begin dx1:=1; dy2:=1; end;// 0,0 is left, top
-        2: begin x:=IFD.ImageWidth-x-1; dx1:=-1; dy2:=1; end;// 0,0 is right, top
-        3: begin x:=IFD.ImageWidth-x-1; dx1:=-1; y:=IFD.ImageHeight-y-1; dy2:=-1; end;// 0,0 is right, bottom
-        4: begin dx1:=1; y:=IFD.ImageHeight-y-1; dy2:=-1; end;// 0,0 is left, bottom
+        2: begin sx:=IFD.ImageWidth-sx-1; dx1:=-1; dy2:=1; end;// 0,0 is right, top
+        3: begin sx:=IFD.ImageWidth-sx-1; dx1:=-1; sy:=IFD.ImageHeight-sy-1; dy2:=-1; end;// 0,0 is right, bottom
+        4: begin dx1:=1; sy:=IFD.ImageHeight-sy-1; dy2:=-1; end;// 0,0 is left, bottom
         end;
       end else begin
         // rotated
-        x:=ChunkTop; y:=ChunkLeft;
+        sx:=ChunkTop; sy:=ChunkLeft;
         dx1 := 0; dy2 := 0;
         case IFD.Orientation of
         5: begin dy1:=1; dx2:=1; end;// 0,0 is top, left (rotated)
-        6: begin dy1:=1; x:=IFD.ImageWidth-x-1; dx2:=-1; end;// 0,0 is top, right (rotated)
-        7: begin y:=IFD.ImageHeight-y-1; dy1:=-1; x:=IFD.ImageHeight-x-1; dx2:=-1; end;// 0,0 is bottom, right (rotated)
-        8: begin y:=IFD.ImageHeight-y-1; dy1:=-1; dx2:=1; end;// 0,0 is bottom, left (rotated)
+        6: begin dy1:=1; sx:=IFD.ImageWidth-sx-1; dx2:=-1; end;// 0,0 is top, right (rotated)
+        7: begin sy:=IFD.ImageHeight-sy-1; dy1:=-1; sx:=IFD.ImageHeight-sx-1; dx2:=-1; end;// 0,0 is bottom, right (rotated)
+        8: begin sy:=IFD.ImageHeight-sy-1; dy1:=-1; dx2:=1; end;// 0,0 is bottom, left (rotated)
         end;
       end;
 
       //writeln('TBGRAReaderTiff.LoadImageFromStream Chunk ',ChunkIndex,' ChunkLeft=',ChunkLeft,' ChunkTop=',ChunkTop,' IFD.ImageWidth=',IFD.ImageWidth,' IFD.ImageHeight=',IFD.ImageHeight,' ChunkWidth=',ChunkWidth,' ChunkHeight=',ChunkHeight,' PaddingRight=',PaddingRight);
-      sx:=x;
       for cy:=0 to ChunkHeight-1 do begin
-        //writeln('TBGRAReaderTiff.LoadImageFromStream y=',y);
         Run:=Chunk+ChunkBytesPerLine*cy;
         BitPos := 0;
         InitColor;
-        x:=sx;
+        //writeln('TBGRAReaderTiff.LoadImageFromStream (x,y)=(',sx,',',sy,')');
 
-        for cx:=0 to ChunkWidth-1 do begin
-          CurFPImg.Colors[x,y]:= ReadNextColor(Run,BitPos);
-          // next column
-          inc(x,dx1);
-          inc(y,dy1);
+        if ConvertFromLab then
+        begin
+          if length(LabArray)<ChunkWidth then setlength(LabArray, ChunkWidth);
+
+          for cx:=0 to ChunkWidth-1 do begin
+            ReadNextPixelData(Run,BitPos);
+            LabArray[cx] := GetPixelAsLab;
+          end;
+
+          DestStride := dy1*TCustomUniversalBitmap(CurFPImg).RowSize;
+          if TCustomUniversalBitmap(CurFPImg).LineOrder = riloBottomToTop then
+            DestStride := -DestStride;
+          inc(DestStride, dx1*PtrInt(TCustomUniversalBitmap(CurFPImg).Colorspace.GetSize));
+
+          ConversionFromLab.Convert(@LabArray[0], TCustomUniversalBitmap(CurFPImg).GetPixelAddress(sx,sy),
+                                    ChunkWidth, sizeof(TLabA), DestStride, nil);
+        end else
+        begin
+          x:= sx;
+          y:= sy;
+          for cx:=0 to ChunkWidth-1 do begin
+            ReadNextPixelData(Run,BitPos);
+            CurFPImg.Colors[x,y]:= GetPixelAsFPColor;
+            // next column
+            inc(x,dx1);
+            inc(y,dy1);
+          end;
         end;
 
         // next line
-        inc(x,dx2);
-        inc(y,dy2);
+        inc(sx,dx2);
+        inc(sy,dy2);
       end;
       // next chunk
     end;

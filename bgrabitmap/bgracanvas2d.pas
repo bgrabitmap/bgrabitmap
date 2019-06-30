@@ -18,7 +18,7 @@ interface
 
 uses
   Classes, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATransform,
-  BGRAGradientScanner, BGRAPath, BGRAPen;
+  BGRAGradientScanner, BGRAPath, BGRAPen, BGRAGrayscaleMask;
 
 type
   IBGRACanvasTextureProvider2D = interface
@@ -46,9 +46,9 @@ type
 
   TBGRACanvasState2D = class
   private
-    FClipMask: TBGRACustomBitmap;
+    FClipMask: TGrayscaleMask;
     FClipMaskOwned: boolean;
-    function GetClipMaskReadWrite: TBGRACustomBitmap;
+    function GetClipMaskReadWrite: TGrayscaleMask;
   public
     strokeColor: TBGRAPixel;
     strokeTextureProvider: IBGRACanvasTextureProvider2D;
@@ -72,12 +72,12 @@ type
     shadowFastest: boolean;
 
     matrix: TAffineMatrix;
-    constructor Create(AMatrix: TAffineMatrix; AClipMask: TBGRACustomBitmap; AClipMaskOwned: boolean);
+    constructor Create(AMatrix: TAffineMatrix; AClipMask: TGrayscaleMask; AClipMaskOwned: boolean);
     function Duplicate: TBGRACanvasState2D;
     destructor Destroy; override;
-    procedure SetClipMask(AClipMask: TBGRACustomBitmap; AOwned: boolean);
-    property clipMaskReadOnly: TBGRACustomBitmap read FClipMask;
-    property clipMaskReadWrite: TBGRACustomBitmap read GetClipMaskReadWrite;
+    procedure SetClipMask(AClipMask: TGrayscaleMask; AOwned: boolean);
+    property clipMaskReadOnly: TGrayscaleMask read FClipMask;
+    property clipMaskReadWrite: TGrayscaleMask read GetClipMaskReadWrite;
   end;
 
   TCanvas2dTextSize = record
@@ -165,7 +165,7 @@ type
     procedure SetFillMode(mode: TFillMode);
     procedure StrokePoly(const points: array of TPointF);
     procedure DrawShadow(const points, points2: array of TPointF; AFillMode: TFillMode = fmWinding);
-    procedure DrawShadowMask(X,Y: integer; AMask: TBGRACustomBitmap; AMaskOwned: boolean);
+    procedure DrawShadowMask(X,Y: integer; AMask: TCustomUniversalBitmap; AMaskOwned: boolean);
     procedure ClearPoly(const points: array of TPointF);
     function ApplyTransform(const points: array of TPointF; matrix: TAffineMatrix): ArrayOfTPointF; overload;
     function ApplyTransform(const points: array of TPointF): ArrayOfTPointF; overload;
@@ -277,8 +277,12 @@ type
     procedure strokeText(AText: string; x,y: single);
     function measureText(AText: string): TCanvas2dTextSize;
 
-    procedure fill;
-    procedure stroke;
+    procedure fill; overload;
+    procedure fill(AFillProc: TBGRAPathFillProc; AData: pointer); overload;
+    procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AData: pointer); overload; //may not render curve nicely
+    procedure stroke; overload;
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer); overload;
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AData: pointer); overload; //may not render curve nicely
     procedure fillOverStroke;
     procedure strokeOverFill;
     procedure clearPath;
@@ -662,19 +666,19 @@ end;
 
 { TBGRACanvasState2D }
 
-function TBGRACanvasState2D.GetClipMaskReadWrite: TBGRACustomBitmap;
+function TBGRACanvasState2D.GetClipMaskReadWrite: TGrayscaleMask;
 begin
   if not FClipMaskOwned then
   begin
     if FClipMask <> nil then
-      FClipMask := FClipMask.Duplicate;
+      FClipMask := FClipMask.Duplicate as TGrayscaleMask;
     FClipMaskOwned := true;
   end;
   result := FClipMask;
 end;
 
 constructor TBGRACanvasState2D.Create(AMatrix: TAffineMatrix;
-  AClipMask: TBGRACustomBitmap; AClipMaskOwned: boolean);
+  AClipMask: TGrayscaleMask; AClipMaskOwned: boolean);
 begin
   strokeColor := BGRABlack;
   fillColor := BGRABlack;
@@ -744,7 +748,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TBGRACanvasState2D.SetClipMask(AClipMask: TBGRACustomBitmap;
+procedure TBGRACanvasState2D.SetClipMask(AClipMask: TGrayscaleMask;
   AOwned: boolean);
 begin
   if FClipMaskOwned and Assigned(FClipMask) then FreeAndNil(FClipMask);
@@ -1198,7 +1202,7 @@ procedure TBGRACanvas2D.FillTexts(AErase: boolean);
 var
   i,j: Integer;
   hy,hx,h: single;
-  bmp,bmpTransf,shadowBmp: TBGRACustomBitmap;
+  bmp,bmpTransf: TBGRACustomBitmap;
   tempScan: TBGRACustomScanner;
   m: TAffineMatrix;
   s: TSize;
@@ -1279,11 +1283,7 @@ begin
             surface.EraseMask(surfaceBounds.Left,surfaceBounds.Top, bmpTransf) else
           begin
             if hasShadow then
-            begin
-              shadowBmp := BGRABitmapFactory.Create(bmpTransf.Width,bmpTransf.Height);
-              shadowBmp.FillMask(0,0, bmpTransf, getShadowColor, GetDrawMode);
-              DrawShadowMask(surfaceBounds.Left+round(shadowOffsetX),surfaceBounds.Top+round(shadowOffsetY), shadowBmp, true);
-            end;
+              DrawShadowMask(surfaceBounds.Left+round(shadowOffsetX),surfaceBounds.Top+round(shadowOffsetY), bmpTransf, false);
 
             if currentState.clipMaskReadOnly <> nil then
             begin
@@ -1484,7 +1484,7 @@ procedure TBGRACanvas2D.DrawShadow(const points, points2: array of TPointF;
 var ofsPts,ofsPts2: array of TPointF;
     offset: TPointF;
     i: Integer;
-    tempBmp: TBGRACustomBitmap;
+    tempBmp: TGrayscaleMask;
     maxRect: TRect;
     foundRect: TRect;
     firstFound: boolean;
@@ -1539,18 +1539,26 @@ begin
       ofsPts2[i].Offset(offset);
   end;
 
-  tempBmp := surface.NewBitmap(foundRect.Right-foundRect.Left,foundRect.Bottom-foundRect.Top,BGRAPixelTransparent);
+  tempBmp := TGrayscaleMask.Create(foundRect.Right-foundRect.Left,foundRect.Bottom-foundRect.Top,BGRABlack);
   tempBmp.FillMode := AFillMode;
-  tempBmp.FillPolyAntialias(ofsPts, getShadowColor);
-  tempBmp.FillPolyAntialias(ofsPts2, getShadowColor);
+  tempBmp.FillPolyAntialias(ofsPts, BGRAWhite);
+  tempBmp.FillPolyAntialias(ofsPts2, BGRAWhite);
   DrawShadowMask(foundRect.Left,foundRect.Top, tempBmp, true);
 end;
 
-procedure TBGRACanvas2D.DrawShadowMask(X, Y: integer; AMask: TBGRACustomBitmap; AMaskOwned: boolean);
+procedure TBGRACanvas2D.DrawShadowMask(X, Y: integer; AMask: TCustomUniversalBitmap; AMaskOwned: boolean);
 const invSqrt2 = 1/sqrt(2);
 var
-  bmp: TBGRACustomBitmap;
+  bmp: TCustomUniversalBitmap;
+  gs: TGrayscaleMask;
 begin
+  if AMask.Colorspace <> TByteMaskColorspace then
+  begin
+    gs := TGrayscaleMask.Create(AMask as TBGRACustomBitmap, cGreen);
+    if AMaskOwned then AMask.Free;
+    AMask := gs;
+    AMaskOwned:= true;
+  end;
   bmp := AMask;
   if shadowBlur > 0 then
   begin
@@ -1572,7 +1580,7 @@ begin
     if (bmp = AMask) and not AMaskOwned then bmp := AMask.Duplicate;
     bmp.ApplyMask(currentState.clipMaskReadOnly);
   end;
-  surface.PutImage(X,Y,bmp,GetDrawMode,currentState.globalAlpha);
+  surface.FillMask(X,Y,bmp,ApplyGlobalAlpha(getShadowColor),GetDrawMode);
   if bmp <> AMask then bmp.Free;
   if AMaskOwned then AMask.Free;
 end;
@@ -2010,7 +2018,7 @@ begin
     repeatX := false;
     repeatY := false;
   end;
-  origin := ApplyTransform(PointF(0,0)) + PointF(0.5,0.5);
+  origin := ApplyTransform(PointF(0,0));
   result := TBGRACanvasPattern2D.Create(image,repeatX,repeatY,
      origin, origin+PointF(currentState.matrix[1,1],currentState.matrix[2,1])*image.Width,
      origin+PointF(currentState.matrix[1,2],currentState.matrix[2,2])*image.Height);
@@ -2489,10 +2497,101 @@ begin
   FillTexts(false);
 end;
 
+procedure TBGRACanvas2D.stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer);
+begin
+  stroke(ADrawProc, AffineMatrixIdentity, AData);
+end;
+
+procedure TBGRACanvas2D.stroke(ADrawProc: TBGRAPathDrawProc;
+  const AMatrix: TAffineMatrix; AData: pointer);
+var
+  startIndex: integer;
+
+  procedure CallStrokeProc(AEndIndex: integer);
+  var
+    j: Integer;
+    subPts: array of TPointF;
+    closed: boolean;
+  begin
+    closed := false;
+    while (AEndIndex>startIndex)
+      and (FPathPoints[AEndIndex-1]=FPathPoints[startIndex]) do
+    begin
+      dec(AEndIndex);
+      closed := true;
+    end;
+    if AEndIndex > startIndex then
+    begin
+      setlength(subPts, AEndIndex-startIndex);
+      if IsAffineMatrixIdentity(AMatrix) then
+      begin
+        for j := 0 to high(subPts) do
+          subPts[j] := FPathPoints[startIndex+j];
+      end else
+        for j := 0 to high(subPts) do
+          subPts[j] := AMatrix*FPathPoints[startIndex+j];
+      ADrawProc(subPts, closed, AData);
+    end;
+  end;
+
+var i: integer;
+begin
+  startIndex := 0;
+  for i := 0 to FPathPointCount-1 do
+    if isEmptyPointF(FPathPoints[i]) then
+    begin
+      CallStrokeProc(i);
+      startIndex := i+1;
+    end;
+  CallStrokeProc(FPathPointCount);
+end;
+
 procedure TBGRACanvas2D.stroke;
 begin
   if FPathPointCount > 0 then
     StrokePoly(slice(FPathPoints,FPathPointCount));
+end;
+
+procedure TBGRACanvas2D.fill(AFillProc: TBGRAPathFillProc; AData: pointer);
+begin
+  fill(AFillProc, AffineMatrixIdentity, AData);
+end;
+
+procedure TBGRACanvas2D.fill(AFillProc: TBGRAPathFillProc;
+  const AMatrix: TAffineMatrix; AData: pointer);
+var
+  startIndex: integer;
+
+  procedure CallFillProc(AEndIndex: integer);
+  var
+    j: Integer;
+    subPts: array of TPointF;
+  begin
+    if AEndIndex > startIndex then
+    begin
+      setlength(subPts, AEndIndex-startIndex);
+      if IsAffineMatrixIdentity(AMatrix) then
+      begin
+        for j := 0 to high(subPts) do
+          subPts[j] := FPathPoints[startIndex+j];
+      end else
+        for j := 0 to high(subPts) do
+          subPts[j] := AMatrix*FPathPoints[startIndex+j];
+
+      AFillProc(subPts, AData);
+    end;
+  end;
+
+var i: integer;
+begin
+  startIndex := 0;
+  for i := 0 to FPathPointCount-1 do
+    if isEmptyPointF(FPathPoints[i]) then
+    begin
+      CallFillProc(i);
+      startIndex := i+1;
+    end;
+  CallFillProc(FPathPointCount);
 end;
 
 procedure TBGRACanvas2D.fillOverStroke;
@@ -2518,21 +2617,22 @@ end;
 
 procedure TBGRACanvas2D.clip;
 var
-  tempBmp: TBGRACustomBitmap;
+  tempBmp: TGrayscaleMask;
 begin
   if FPathPointCount = 0 then
   begin
-    currentState.clipMaskReadWrite.Fill(BGRABlack);
+    if currentState.clipMaskReadOnly <> nil then
+      currentState.clipMaskReadWrite.Fill(BGRABlack);
     exit;
   end;
   if currentState.clipMaskReadOnly = nil then
-    currentState.SetClipMask(surface.NewBitmap(width,height,BGRAWhite),True);
-  tempBmp := surface.NewBitmap(width,height,BGRABlack);
+    currentState.SetClipMask(TGrayscaleMask.Create(width,height,BGRAWhite),True);
+  tempBmp := TGrayscaleMask.Create(width,height,BGRABlack);
   if antialiasing then
     tempBmp.FillPolyAntialias(slice(FPathPoints,FPathPointCount),BGRAWhite)
   else
-    tempBmp.FillPoly(slice(FPathPoints,FPathPointCount),BGRAWhite,dmSet);
-  currentState.clipMaskReadWrite.BlendImage(0,0,tempBmp,boDarken);
+    tempBmp.FillPoly(slice(FPathPoints,FPathPointCount),BGRAWhite);
+  currentState.clipMaskReadWrite.ApplyMask(tempBmp);
   tempBmp.Free;
 end;
 

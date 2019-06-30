@@ -29,8 +29,8 @@
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="9" Minor="9" Release="4"/>
-    <Files Count="121">
+    <Version Major="10" Minor="1"/>
+    <Files Count="134">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -173,82 +173,84 @@
       </Item35>
       <Item36>
         <Filename Value="blendpixelinline.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item36>
       <Item37>
         <Filename Value="blendpixels.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item37>
       <Item38>
         <Filename Value="blendpixelsover.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item38>
       <Item39>
         <Filename Value="blurfast.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item39>
       <Item40>
         <Filename Value="blurnormal.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item40>
       <Item41>
         <Filename Value="csscolorconst.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item41>
       <Item42>
         <Filename Value="lightingclasses3d.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item42>
       <Item43>
         <Filename Value="lineartexscan.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item43>
       <Item44>
         <Filename Value="lineartexscan2.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item44>
       <Item45>
         <Filename Value="multishapeline.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item45>
       <Item46>
         <Filename Value="perspectivecolorscan.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item46>
       <Item47>
         <Filename Value="perspectivescan.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item47>
       <Item48>
         <Filename Value="perspectivescan2.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item48>
       <Item49>
         <Filename Value="phongdraw.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item49>
       <Item50>
         <Filename Value="phongdrawsse.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item50>
       <Item51>
         <Filename Value="phonglight.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item51>
       <Item52>
         <Filename Value="phonglightsse.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item52>
       <Item53>
         <Filename Value="polyaliaspersp.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item53>
       <Item54>
         <Filename Value="shapes3d.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item54>
       <Item55>
         <Filename Value="bgrasse.inc"/>
+        <Type Value="Include"/>
+        <AddToUsesPkgSection Value="True"/>
         <UnitName Value="bgrasse"/>
       </Item55>
       <Item56>
@@ -337,19 +339,19 @@
       </Item76>
       <Item77>
         <Filename Value="vertex3d.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item77>
       <Item78>
         <Filename Value="face3d.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item78>
       <Item79>
         <Filename Value="part3d.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item79>
       <Item80>
         <Filename Value="object3d.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item80>
       <Item81>
         <Filename Value="bgrapalette.pas"/>
@@ -365,7 +367,7 @@
       </Item83>
       <Item84>
         <Filename Value="paletteformats.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item84>
       <Item85>
         <Filename Value="bgrautf8.pas"/>
@@ -385,11 +387,11 @@
       </Item88>
       <Item89>
         <Filename Value="geometrytypes.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item89>
       <Item90>
         <Filename Value="bgracustombitmap.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item90>
       <Item91>
         <Filename Value="bgragraphics.pas"/>
@@ -433,7 +435,7 @@
       </Item100>
       <Item101>
         <Filename Value="blurbox.inc"/>
-        <Type Value="Text"/>
+        <Type Value="Include"/>
       </Item101>
       <Item102>
         <Filename Value="bgraphoxo.pas"/>
@@ -509,12 +511,64 @@
       </Item119>
       <Item120>
         <Filename Value="bezier.inc"/>
-        <Type Value="Binary"/>
+        <Type Value="Include"/>
       </Item120>
       <Item121>
         <Filename Value="bgraunicodetext.pas"/>
         <UnitName Value="BGRAUnicodeText"/>
       </Item121>
+      <Item122>
+        <Filename Value="generatedcolorspace.inc"/>
+        <Type Value="Include"/>
+      </Item122>
+      <Item123>
+        <Filename Value="extendedcolorspace.inc"/>
+        <Type Value="Include"/>
+      </Item123>
+      <Item124>
+        <Filename Value="basiccolorspace.inc"/>
+        <Type Value="Include"/>
+      </Item124>
+      <Item125>
+        <Filename Value="unibitmap.inc"/>
+        <Type Value="Include"/>
+      </Item125>
+      <Item126>
+        <Filename Value="universaldrawer.pas"/>
+        <UnitName Value="UniversalDrawer"/>
+      </Item126>
+      <Item127>
+        <Filename Value="unibitmapgeneric.inc"/>
+        <Type Value="Include"/>
+      </Item127>
+      <Item128>
+        <Filename Value="density256.inc"/>
+        <Type Value="Include"/>
+      </Item128>
+      <Item129>
+        <Filename Value="linearrgbabitmap.pas"/>
+        <UnitName Value="LinearRGBABitmap"/>
+      </Item129>
+      <Item130>
+        <Filename Value="xyzabitmap.pas"/>
+        <UnitName Value="XYZABitmap"/>
+      </Item130>
+      <Item131>
+        <Filename Value="bgrawritetiff.pas"/>
+        <UnitName Value="BGRAWriteTiff"/>
+      </Item131>
+      <Item132>
+        <Filename Value="wordxyzabitmap.pas"/>
+        <UnitName Value="WordXYZABitmap"/>
+      </Item132>
+      <Item133>
+        <Filename Value="expandedbitmap.pas"/>
+        <UnitName Value="expandedbitmap"/>
+      </Item133>
+      <Item134>
+        <Filename Value="spectraldata.inc"/>
+        <Type Value="Binary"/>
+      </Item134>
     </Files>
     <RequiredPkgs Count="2">
       <Item1>

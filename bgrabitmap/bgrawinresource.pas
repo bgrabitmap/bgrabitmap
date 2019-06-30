@@ -721,7 +721,7 @@ begin
       pHeaderData := PByte(headerData);
       typeNameOrId := GetNameOrId(pHeaderData, remaining);
       entryNameOrId := GetNameOrId(pHeaderData, remaining);
-      padding := (4 - ((pHeaderData-PByte(headerData)) and 3)) and 3;
+      padding := (4 - (PtrUInt(pHeaderData-PByte(headerData)) and 3)) and 3;
       inc(pHeaderData, padding);
       dec(remaining, padding);
 

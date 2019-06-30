@@ -133,6 +133,7 @@ const
   function ColorToBGRA(color: TColor; opacity: byte): TBGRAPixel; overload;
   {** Converts a pixel into a TColor value, discarding the alpha value }
   function BGRAToColor(c: TBGRAPixel): TColor;
+  function FastRoundDiv257(valueWord: cardinal): byte; inline;
   {** Converts a ''TFPColor'' value into a pixel. Note that even if
       ''TFPColor'' have 16-bit values, they are not considered as
       gamma expanded }
@@ -604,12 +605,17 @@ begin
   Result := RGBToColor(c.red, c.green, c.blue);
 end;
 
+function FastRoundDiv257(valueWord: cardinal): byte; inline;
+begin
+  result := cardinal(valueWord + 127 - (valueWord shr 8)) shr 8;
+end;
+
 { Conversion from TFPColor to TBGRAPixel assuming TFPColor
   is already gamma compressed }
 function FPColorToBGRA(AValue: TFPColor): TBGRAPixel;
 begin
   with AValue do
-    Result := BGRA(red shr 8, green shr 8, blue shr 8, alpha shr 8);
+    Result := BGRA(FastRoundDiv257(red), FastRoundDiv257(green), FastRoundDiv257(blue), alpha shr 8);
 end;
 
 function BGRAToFPColor(AValue: TBGRAPixel): TFPColor; inline;

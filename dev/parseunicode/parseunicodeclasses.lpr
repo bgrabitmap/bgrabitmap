@@ -2,122 +2,137 @@ program parseunicodeclasses;
 
 uses Classes, sysutils;
 
+  function ArrayOfCodeToCase(ACodes: array of integer; AIndent: string): string;
+  var
+    codeCount, i: Integer;
+    bufLines: TStringList;
+    buf: String;
+  begin
+    codeCount := length(ACodes);
+    if codeCount = 0 then exit('');
+
+    bufLines := TStringList.Create;
+    i := 0;
+    buf := AIndent+'  ';
+    while i < codeCount do
+    begin
+      if i > 0 then buf += ', ';
+
+      if length(buf) > 95 then
+      begin
+        bufLines.Add(buf);
+        buf := AIndent+'  ';
+      end;
+
+      if (i+2 < codeCount) and (ACodes[i]+1 = ACodes[i+1]) and (ACodes[i+1]+1 = ACodes[i+2]) then
+      begin
+        buf += '$'+IntToHex(ACodes[i],2) + '..';
+        while (i+1 < codeCount) and (ACodes[i]+1 = ACodes[i+1]) do inc(i);
+        buf += '$'+IntToHex(ACodes[i],2);
+      end else
+        buf += '$'+IntToHex(ACodes[i],2);
+
+      inc(i);
+    end;
+
+    if trim(buf) <> '' then bufLines.Add(buf);
+
+    result := '';
+    for i := 0 to bufLines.Count-1 do
+    begin
+      if i > 0 then result += LineEnding;
+      result += bufLines[i];
+    end;
+
+    bufLines.Free;
+    result += ': ';
+  end;
+
   procedure GenerateUnicodeFunctions;
   const Indent = '      ';
   var
-    tIn,tOut: TextFile;
+    tOut: TextFile;
 
-    procedure IncludeClasses(AClasses: TStrings; AMinCode, AMaxCode: integer);
+    procedure ParseUnicodeData;
     var
-      line,curBidi,newBidi: string;
-      codes: array of integer;
-      codeCount: integer;
-      cells: TStringList;
-      curCode: LongInt;
+      unicodeData: TStringList;
 
-      procedure FlushCase;
-      var i: integer;
-        buf: string;
-        bufLines: TStringList;
-      begin
-        if codeCount = 0 then exit;
+      procedure IncludeClasses(AClasses: TStrings; AMinCode, AMaxCode: integer);
+      var
+        curBidi: string;
+        codes: array of integer;
+        codeCount: integer;
 
-        bufLines := TStringList.Create;
-        i := 0;
-        buf := Indent+'  ';
-        while i < codeCount do
+        procedure FlushCase;
+        var
+          caseStr: string;
         begin
-          if i > 0 then buf += ', ';
+          if codeCount = 0 then exit;
 
-          if length(buf) > 95 then
-          begin
-            bufLines.Add(buf);
-            buf := Indent+'  ';
+          caseStr := ArrayOfCodeToCase(slice(codes, codeCount), Indent);
+
+          case curBidi of
+          'CS': WriteLn(tOut,caseStr+'result := ubcCommonSeparator;');
+          'L': WriteLn(tOut,caseStr+'result := ubcLeftToRight;');
+          'EN': WriteLn(tOut,caseStr+'result := ubcEuropeanNumber;');
+          'ES': WriteLn(tOut,caseStr+'result := ubcEuropeanNumberSeparator;');
+          'ET': WriteLn(tOut,caseStr+'result := ubcEuropeanNumberTerminator;');
+          'R': WriteLn(tOut,caseStr+'result := ubcRightToLeft;');
+          'AL': WriteLn(tOut,caseStr+'result := ubcArabicLetter;');
+          'AN': WriteLn(tOut,caseStr+'result := ubcArabicNumber;');
+          'NSM': WriteLn(tOut,caseStr+'result := ubcNonSpacingMark;');
+          'BN': WriteLn(tOut,caseStr+'result := ubcBoundaryNeutral;');
+          'B': WriteLn(tOut,caseStr+'result := ubcParagraphSeparator;');
+          'S': WriteLn(tOut,caseStr+'result := ubcSegmentSeparator;');
+          'WS': WriteLn(tOut,caseStr+'result := ubcWhiteSpace;');
+          'ON': WriteLn(tOut,caseStr+'result := ubcOtherNeutrals;');
           end;
-
-          if (i+2 < codeCount) and (codes[i]+1 = codes[i+1]) and (codes[i+1]+1 = codes[i+2]) then
-          begin
-            buf += '$'+IntToHex(codes[i],2) + '..';
-            while (i+1 < codeCount) and (codes[i]+1 = codes[i+1]) do inc(i);
-            buf += '$'+IntToHex(codes[i],2);
-          end else
-            buf += '$'+IntToHex(codes[i],2);
-
-          inc(i);
+          codeCount:= 0;
         end;
 
-        if trim(buf) <> '' then bufLines.Add(buf);
+      var
+        newBidi: string;
+        cells: TStringList;
+        curCode: LongInt;
+        i: integer;
 
-        buf := '';
-        for i := 0 to bufLines.Count-1 do
-        begin
-          if i > 0 then buf += LineEnding;
-          buf += bufLines[i];
-        end;
-
-        bufLines.Free;
-
-        case curBidi of
-        'CS': WriteLn(tOut,buf+': result := ubcCommonSeparator;');
-        'L': WriteLn(tOut,buf+': result := ubcLeftToRight;');
-        'EN': WriteLn(tOut,buf+': result := ubcEuropeanNumber;');
-        'ES': WriteLn(tOut,buf+': result := ubcEuropeanNumberSeparator;');
-        'ET': WriteLn(tOut,buf+': result := ubcEuropeanNumberTerminator;');
-        'R': WriteLn(tOut,buf+': result := ubcRightToLeft;');
-        'AL': WriteLn(tOut,buf+': result := ubcArabicLetter;');
-        'AN': WriteLn(tOut,buf+': result := ubcArabicNumber;');
-        'NSM': WriteLn(tOut,buf+': result := ubcNonSpacingMark;');
-        'BN': WriteLn(tOut,buf+': result := ubcBoundaryNeutral;');
-        'B': WriteLn(tOut,buf+': result := ubcParagraphSeparator;');
-        'S': WriteLn(tOut,buf+': result := ubcSegmentSeparator;');
-        'WS': WriteLn(tOut,buf+': result := ubcWhiteSpace;');
-        'ON': WriteLn(tOut,buf+': result := ubcOtherNeutrals;');
-        end;
-        codeCount:= 0;
-      end;
-
-    begin
-      AssignFile(tIn, 'UnicodeData.txt');
-      Reset(tIn);
-
-      cells := TStringList.Create;
-      codeCount := 0;
-      curBidi := '?';
-      while not eof(tIn) do
       begin
-        ReadLn(tIn,line);
+        writeln('Parsing unicode data for classes ', AClasses.DelimitedText,'...');
+        cells := TStringList.Create;
         cells.Delimiter := ';';
         cells.QuoteChar := '"';
         cells.StrictDelimiter := true;
-        cells.DelimitedText := line;
-        if cells.Count >= 5 then
+        codes := nil;
+        codeCount := 0;
+        curBidi := '?';
+        for i := 0 to unicodeData.Count-1 do
         begin
-          newBidi := cells[4];
-          if AClasses.IndexOf(newBidi)<>-1 then
+          cells.DelimitedText := unicodeData[i];
+          if cells.Count >= 5 then
           begin
-            if newBidi <> curBidi then
+            newBidi := cells[4];
+            if AClasses.IndexOf(newBidi)<>-1 then
             begin
-              FlushCase;
-              curBidi := newBidi;
-            end;
-            curCode := StrToInt('$'+cells[0]);
-            if (curCode >= AMinCode) and (curCode <= AMaxCode) then
-            begin
-              if codeCount >= length(codes) then
-                setlength(codes, codeCount*2 + 8);
-              codes[codeCount] := curCode;
-              inc(codeCount);
+              if newBidi <> curBidi then
+              begin
+                FlushCase;
+                curBidi := newBidi;
+              end;
+              curCode := StrToInt('$'+cells[0]);
+              if (curCode >= AMinCode) and (curCode <= AMaxCode) then
+              begin
+                if codeCount >= length(codes) then
+                  setlength(codes, codeCount*2 + 8);
+                codes[codeCount] := curCode;
+                inc(codeCount);
+              end;
             end;
           end;
         end;
+        FlushCase;
+        cells.Free;
       end;
-      FlushCase;
-      cells.Free;
 
-      CloseFile(tIn);
-    end;
-
-    procedure ParseUnicodeBidiClasses;
     var c: TStringList;
 
       procedure Include(AMinCode,AMaxCode: integer);
@@ -149,7 +164,51 @@ uses Classes, sysutils;
         writeln(tout,Indent+'end;');
       end;
 
+      procedure ParseUnicodeMirrored;
+      var
+        codes: array of integer;
+        codeCount, i: integer;
+        cells: TStringList;
+        curCode: integer;
+      begin
+        writeln('Parsing unicode data for mirorred characters...');
+        codes := nil;
+        codeCount := 0;
+        cells := TStringList.Create;
+        cells.Delimiter := ';';
+        cells.QuoteChar := '"';
+        cells.StrictDelimiter := true;
+        for i := 0 to unicodeData.Count-1 do
+        begin
+          cells.DelimitedText := unicodeData[i];
+          if cells.Count >= 10 then
+          begin
+            if cells[9]='Y' then
+            begin
+              curCode := StrToInt('$'+cells[0]);
+              if codeCount >= length(codes) then
+                setlength(codes, codeCount*2 + 8);
+              codes[codeCount] := curCode;
+              inc(codeCount);
+            end;
+          end;
+        end;
+        cells.Free;
+
+        Writeln(tOut,'function IsUnicodeMirrored(u: cardinal): boolean;');
+        writeln(tout,'begin');
+        writeln(tout,'  case u of');
+        writeln(tout, ArrayOfCodeToCase(Slice(codes, codeCount), '  '), 'result:= true;');
+        writeln(tout,'  else result := false;');
+        writeln(tout,'  end;');
+        writeln(tout,'end;');
+        writeln(tout);
+      end;
+
     begin
+      unicodeData := TStringList.Create;
+      unicodeData.LoadFromFile('UnicodeData.txt');
+
       Writeln(tOut,'function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;');
       FormatSettings.ShortDateFormat := 'yyyy/mm/dd';
       Writeln(tOut,'begin //generated '+DateToStr(Date));
@@ -183,17 +242,20 @@ uses Classes, sysutils;
       writeln(tOut,'    else result := ubcUnknown;');
       writeln(tOut,'    end');
       writeln(tOut,'  end');
-
-
       c.Free;
 
       writeln(tout,'end;');
       writeln(tout);
+
+      ParseUnicodeMirrored;
+
+      unicodeData.Free;
     end;
 
     procedure ParseBidiBrackets;
     var elem: TStringList;
       line: string;
+      tIn: TextFile;
     begin
       Writeln(tOut,'type');
       writeln(tout,'  TUnicodeBracketInfo = record');
@@ -210,6 +272,7 @@ uses Classes, sysutils;
       Writeln(tOut,'begin');
       Writeln(tOut,'  case u of');
 
+      writeln('Parsing bracket data...');
       assignfile(tIn, 'BidiBrackets.txt');
       reset(tin);
       elem := TStringList.Create;
@@ -243,7 +306,7 @@ uses Classes, sysutils;
     AssignFile(tOut, 'UnicodeFunctions.generated.pas');
     Rewrite(tOut);
 
-    ParseUnicodeBidiClasses;
+    ParseUnicodeData;
     ParseBidiBrackets;
 
     CloseFile(tOut);

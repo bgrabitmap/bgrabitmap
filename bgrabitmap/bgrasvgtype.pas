@@ -200,7 +200,7 @@ type
     class procedure LocateStyleDeclaration(AText: string; AProperty: string;
       out AStartPos, AColonPos, AValueLength: integer);
     function GetInlineStyle(const AName,ADefault: string): string;
-    function GetStyleFromStyleSheet(const AName,ADefault: string): string; virtual;
+    function GetStyleFromStyleSheet(const {%H-}AName,ADefault: string): string; virtual;
     function GetStyle(const AName,ADefault: string): string; overload;
     function GetStyle(const AName: string): string; overload;
 
@@ -412,7 +412,12 @@ begin
     result := GetStyleFromStyleSheet(AName,'');
     if result = '' then
     begin
-      result := GetAttribute(AName,'', false);
+      result := GetAttributeFromElement(FDomElem, AName, false);
+      if (result = 'currentColor') and (AName <> 'color') then
+      begin
+        AName := 'color';
+        result := GetAttributeFromElement(FDomElem, AName, false);
+      end;
 
       if result = '' then
       begin
@@ -429,6 +434,12 @@ begin
             result := GetPropertyFromStyleDeclaration(styleDecl, AName, '');
             if result <> '' then exit;
             result := GetAttributeFromElement(curNode, AName, false);
+            if (result = 'currentColor') and (AName <> 'color') then
+            begin
+              curNode := FDomElem;
+              AName := 'color';
+              continue;
+            end;
             if result <> '' then exit;
           end;
         end;
@@ -609,13 +620,6 @@ function TSVGCustomElement.GetAttributeFromElement(ANode: TDOMElement;
 begin
   repeat
     result := Trim(ANode.GetAttribute(AName));
-    if (result = 'currentColor') and (AName <> 'color') then
-    begin
-      AName := 'color';
-      ANode := FDomElem; //get from the current element
-      ACanInherit:= true;
-      result := Trim(ANode.GetAttribute(AName));
-    end;
     if result = 'inherit' then result := '';
     if (result = '') and ACanInherit and
       (ANode.ParentNode is TDOMElement) then
@@ -629,7 +633,9 @@ function TSVGCustomElement.GetAttribute(AName, ADefault: string;
   ACanInherit: boolean): string;
 begin
   result := GetAttributeFromElement(FDomElem, AName, ACanInherit);
-  if result = '' then result := ADefault;
+  if result = '' then result := ADefault else
+  if (result = 'currentColor') and (AName <> 'color') then
+    result := GetAttribute('color', ADefault, ACanInherit);
 end;
 
 function TSVGCustomElement.GetAttribute(AName, ADefault: string): string;
@@ -1630,7 +1636,8 @@ end;
 
 function TSVGElement.GetID: string;
 begin
-  result := Attribute['id'];
+  result := Attribute['xml:id'];
+  if result = '' then result := Attribute['id'];
 end; 
 
 function TSVGElement.GetClassAttr: string;
@@ -1780,8 +1787,11 @@ end;
 
 procedure TSVGElement.SetID(AValue: string);
 begin
-  Attribute['id'] := AValue;
-end; 
+  if Attribute['xml:id']<>'' then
+    Attribute['xml:id'] := AValue
+  else
+    Attribute['id'] := AValue;
+end;
 
 procedure TSVGElement.SetClassAttr(AValue: string);
 begin

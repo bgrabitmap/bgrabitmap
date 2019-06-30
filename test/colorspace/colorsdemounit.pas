@@ -14,16 +14,28 @@ type
 
   TForm1 = class(TForm)
     A_se: TFloatSpinEdit;
+    lambda1_se: TFloatSpinEdit;
     A_tb: TTrackBar;
+    lambda1_tb: TTrackBar;
     B2_se: TFloatSpinEdit;
+    lambda2_se: TFloatSpinEdit;
     B2_tb: TTrackBar;
+    lambda2_tb: TTrackBar;
     Dec_edt: TEdit;
     Alpha_se: TFloatSpinEdit;
     Alpha_tb: TTrackBar;
+    reflectance_se: TFloatSpinEdit;
+    reflectance_tb: TTrackBar;
     Label47: TLabel;
     Label48: TLabel;
     Label49: TLabel;
     Label50: TLabel;
+    Label51: TLabel;
+    Label52: TLabel;
+    Label53: TLabel;
+    Label54: TLabel;
+    Label55: TLabel;
+    LIsReal: TLabel;
     lB_se1: TFloatSpinEdit;
     lB_tb1: TTrackBar;
     lG_se1: TFloatSpinEdit;
@@ -160,6 +172,8 @@ var
 
 implementation
 
+uses XYZABitmap;
+
 {$R *.lfm}
 
 { TForm1 }
@@ -167,6 +181,8 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   BGRASetGamma(2.2);
+  XYZToRGBOverflowMax:= xroPreserveHue;
+  XYZToRGBOverflowMin:= xroPreserveHue;
   InitControls;
 end;
 
@@ -206,8 +222,8 @@ var
     begin
       with ca[i] do
       begin
-        Min := Mi;
         Max := Mx;
+        Min := Mi;
         Frequency := Fr;
       end;
     end;
@@ -223,16 +239,20 @@ begin
   SetControlsValues([S_tb, L_tb], 0, 100, 10);
   SetControlsValues([H2_tb], 0, 360, 10);
   SetControlsValues([S2_tb, V_tb], 0, 100, 10);
-  SetControlsValues([X_tb, Y2_tb, Z_tb], 0, 100, 10);
+  SetControlsValues([Y2_tb], 0, 100, 10);
+  SetControlsValues([X_tb, Z_tb], 0, 120, 10);
   SetControlsValues([L2_tb], 0, 100, 10);
-  SetControlsValues([A_tb, B2_tb], -128, 127, 10);
+  SetControlsValues([A_tb], -160, 160, 10);
+  SetControlsValues([B2_tb], -140, 140, 10);
   SetControlsValues([C_tb, M_tb, Y_tb, K_tb], 0, 100, 10);
   SetControlsValues([L3_tb], 0, 100, 10);
-  SetControlsValues([C2_tb], 0, 180, 10);
+  SetControlsValues([C2_tb], 0, round(TLChAColorspace.GetMaxValue(1)), 10);
   SetControlsValues([H3_tb], 0, 360, 10);
   SetControlsValues([Alpha_tb], 0, 100, 10);
   SetControlsValues([lH_tb, lH2_tb], 0, 360, 10);
   SetControlsValues([lS_tb, lL_tb, lS2_tb, lL2_tb], 0, 100, 10);
+  SetControlsValues([reflectance_tb], 0, 100, 10);
+  SetControlsValues([lambda1_tb,lambda2_tb], 360, 830, 10);
 
   for i := 0 to ComponentCount - 1 do
   begin
@@ -290,9 +310,10 @@ end;
 
 procedure TForm1.UpdateColorControls(SourceTag: integer);
 var
-  i: integer;
+  i,decVal,errPos: integer;
   tb: TTrackBar;
   fse: TFloatSpinEdit;
+  viewBmp: TBGRABitmap;
 begin
   case SourceTag of
     1, 2, 3: col.AsLinearRGBA := TLinearRGBA.New(lR_se.Value / 100, lG_se.Value / 100, lB_se.Value / 100, Alpha_se.Value / 100);
@@ -303,13 +324,18 @@ begin
     13, 14, 15, 16: col.AsStdCMYK := TStdCMYK.New(C_se.Value / 100, M_se.Value / 100, Y_se.Value / 100, K_se.Value / 100);
     20, 21, 22: col.AsLChA := TLChA.New(L3_se.Value, C2_se.Value, H3_se.Value, Alpha_se.Value / 100);
     23: col.AsHex := Hex_edt.Text;
-    24: col.AsDecimal := StrToInt(Dec_edt.Text);
+    24: begin
+          val(Dec_edt.Text, decVal, errPos);
+          if (errPos = 0) and (decVal>=0) then
+            col.AsDecimal := decVal;
+        end;
     25, 26, 27: col.AsStdRGBA := TStdRGBA.New(sR_se.Value / 255, sG_se.Value / 255, sB_se.Value / 255, Alpha_se.Value / 100);
     28: col.Name := Name_edt.Text;
     29: col.AlphaPercent := Alpha_se.Value;
     50, 51, 52: col.AsHSLAPixel := THSLAPixel.New(round(lH_se.Value/360*65536) and $ffff, round(lS_se.Value / 100*65535), round(lL_se.Value / 100*65535), round(Alpha_se.Value / 100*65535));
     53, 54, 55: col.AsGSBAPixel := TGSBAPixel.New(round(lH2_se.Value/360*65536) and $ffff, round(lS2_se.Value / 100*65535), round(lL2_se.Value / 100*65535), round(Alpha_se.Value / 100*65535));
     60, 61, 62: col.AsAdobeRGBA := TAdobeRGBA.New(round(lR_se1.Value), round(lG_se1.Value), round(lB_se1.Value), round(Alpha_se.Value / 100 * 255));
+    70, 71, 72: col.AsXYZA := SpectrumRangeReflectToXYZA(reflectance_se.Value / 100, lambda1_se.Value, lambda2_se.Value, Alpha_se.Value / 100);
   end;
 
   if not (SourceTag in [1, 2, 3]) then
@@ -414,9 +440,19 @@ begin
     end;
   end;
 
-  Color_pnl.Color := col.AsColor;
-  Grayscale_pnl.Color := col.AsGrayscale.AsColor;
-  Invert_pnl.Color := col.AsInvert.AsColor;
+  viewBmp := TBGRABitmap.Create(3,1, clBtnFace);
+  viewBmp.DrawPixel(0,0, col.AsBGRAPixel, dmDrawWithTransparency);
+  viewBmp.DrawPixel(1,0, col.AsGrayscale.AsBGRAPixel, dmDrawWithTransparency);
+  viewBmp.DrawPixel(2,0, col.AsInvert.AsBGRAPixel, dmDrawWithTransparency);
+  Color_pnl.Color := viewBmp.GetPixel(0,0);
+  Grayscale_pnl.Color := viewBmp.GetPixel(1,0);
+  Invert_pnl.Color := viewBmp.GetPixel(2,0);
+  viewBmp.Free;
+
+  if IsRealColor(col.AsXYZA) then
+    LIsReal.Caption := 'Real color'
+  else
+    LIsReal.Caption := 'Imaginary color';
 end;
 
 function TForm1.FindComponentByTag(ATag: integer; AClassName: string): TComponent;

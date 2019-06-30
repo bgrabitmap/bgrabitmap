@@ -67,6 +67,7 @@ type
     function InternalGetFontPixelMetric: TFontPixelMetric;
     procedure DefaultWorkBreakHandler(var ABeforeUTF8, AAfterUTF8: string);
   public
+    OverrideUnderlineDecoration: boolean; // draw unerline according to computed font pixel metric instead of using LCL rendering of underline
     procedure SplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string);
     function GetFontPixelMetric: TFontPixelMetric; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; override;
@@ -1073,8 +1074,9 @@ begin
   if FFont.Name <> FontName then
     FFont.Name := FontName;
   fs := FontStyle;
-  if ((CompareText(Trim(FontName),'FreeSans')=0) or (CompareText(Trim(FontName),'FreeMono')=0) or
-     (CompareText(Trim(FontName),'FreeSerif')=0)) and (fsUnderline in fs) then
+  if (OverrideUnderlineDecoration or (CompareText(Trim(FontName),'FreeSans')=0) or
+     (CompareText(Trim(FontName),'FreeMono')=0) or (CompareText(Trim(FontName),'FreeSerif')=0))
+     and (fsUnderline in fs) then
   begin
     Exclude(fs, fsUnderline);
     FOwnUnderline := true;

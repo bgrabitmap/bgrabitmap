@@ -1109,10 +1109,12 @@ end;
 
 procedure TBGLCanvas.InternalSetColor(const AColor: TBGRAPixel);
 begin
+  {$PUSH}{$WARNINGS OFF}
   if TBGRAPixel_RGBAOrder then
     glColor4ubv(@AColor)
   else
     glColor4ub(AColor.red,AColor.green,AColor.blue,AColor.alpha);
+  {$POP}
 end;
 
 procedure TBGLCanvas.InternalSetColorF(const AColor: TColorF);
@@ -1184,10 +1186,12 @@ function TBGLCanvas.GetImage(x, y, w, h: integer): TBGRACustomBitmap;
 begin
   NeedOpenGL2_0;
   result := BGRABitmapFactory.Create(w,h);
+  {$PUSH}{$WARNINGS OFF}
   if TBGRAPixel_RGBAOrder then
     glReadPixels(x,self.Height-y-h, w,h, GL_RGBA, GL_UNSIGNED_BYTE, result.Data)
   else
     glReadPixels(x,self.Height-y-h, w,h, GL_BGRA, GL_UNSIGNED_BYTE, result.Data);
+  {$POP}
 end;
 
 function TBGLCanvas.CreateFrameBuffer(AWidth, AHeight: integer): TBGLCustomFrameBuffer;
@@ -1403,10 +1407,12 @@ end;
 
 procedure TBGLTexture.InternalSetColor(const AColor: TBGRAPixel);
 begin
+  {$PUSH}{$WARNINGS OFF}
   if TBGRAPixel_RGBAOrder then
     glColor4ubv(@AColor)
   else
     glColor4ub(AColor.red,AColor.green,AColor.blue,AColor.alpha);
+  {$POP}
 end;
 
 procedure TBGLTexture.DoDrawTriangleOrQuad(const APoints: array of TPointF;

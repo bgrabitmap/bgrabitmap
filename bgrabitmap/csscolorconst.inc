@@ -7,6 +7,7 @@ var
      color with alpha = 0 is transparent, however it is recommended to
      use all other channels to zero as well. }
   BGRAPixelTransparent: TBGRAPixel;
+  ExpandedPixelTransparent: TExpandedPixel;
 
   {* [#FFFFFF] White opaque }
   BGRAWhite: TBGRAPixel;
@@ -546,6 +547,7 @@ end;
 {$IFDEF INCLUDE_INIT}
 {$UNDEF INCLUDE_INIT}
   BGRAPixelTransparent := BGRA(0,0,0,0);
+  ExpandedPixelTransparent := BGRAPixelTransparent.ToExpanded;
   BGRAWhite := BGRA(255,255,255);
   BGRABlack := BGRA(0,0,0);
 

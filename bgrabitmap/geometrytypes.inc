@@ -413,6 +413,8 @@ type
 
 type
   TBGRACustomPathCursor = class;
+  TBGRAPathDrawProc = procedure(const APoints: array of TPointF; AClosed: boolean; AData: Pointer) of object;
+  TBGRAPathFillProc = procedure(const APoints: array of TPointF; AData: pointer) of object;
 
   {* A path is the ability to define a contour with ''moveTo'', ''lineTo''...
      Even if it is an interface, it must not implement reference counting. }
@@ -441,6 +443,12 @@ type
     function getPoints: ArrayOfTPointF; overload;
     {** Returns the content of the path as an array of points with the transformation specified by ''AMatrix'' }
     function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; overload;
+    {** Calls a given draw procedure for each sub path with computed coordinates for rendering }
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer); overload;
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AData: pointer); overload;
+    {** Calls a given fill procedure for each sub path with computed coordinates for rendering }
+    procedure fill(AFillProc: TBGRAPathFillProc; AData: pointer); overload;
+    procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AData: pointer); overload;
     {** Returns a cursor to go through the path. The cursor must be freed by calling ''Free''. }
     function getCursor: TBGRACustomPathCursor;
   end;
@@ -461,8 +469,12 @@ type
     procedure closedSpline(const pts: array of TPointF; style: TSplineStyle); virtual; abstract;
     procedure copyTo(dest: IBGRAPath); virtual; abstract;
   protected
-    function getPoints: ArrayOfTPointF; virtual; abstract;
-    function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; virtual; abstract;
+    function getPoints: ArrayOfTPointF; overload; virtual; abstract;
+    function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; overload; virtual; abstract;
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer); overload; virtual; abstract;
+    procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AData: pointer); overload; virtual; abstract;
+    procedure fill(AFillProc: TBGRAPathFillProc; AData: pointer); overload; virtual; abstract;
+    procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AData: pointer); overload; virtual; abstract;
     function getLength: single; virtual; abstract;
     function getCursor: TBGRACustomPathCursor; virtual; abstract;
   protected

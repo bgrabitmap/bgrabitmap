@@ -34,12 +34,31 @@ interface
 uses
   Classes, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAFillInfo, BGRAPath;
 
-procedure FillShapeAntialias(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
-  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
-procedure FillShapeAntialiasWithTexture(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
-  scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
 procedure FillShapeAliased(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
   c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; AliasingIncludeBottomRight: Boolean= false);
+procedure FillShapeAliased(bmp: TCustomUniversalBitmap; shapeInfo: TBGRACustomFillInfo;
+  brush: TUniversalBrush; Alpha: Word; NonZeroWinding: boolean; AliasingIncludeBottomRight: Boolean= false);
+procedure FillPolyAliased(bmp: TBGRACustomBitmap; points: array of TPointF;
+  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true);
+procedure FillPolyAliasedWithTexture(bmp: TBGRACustomBitmap; const points: array of TPointF;
+  scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true);
+procedure FillPolyAliased(bmp: TCustomUniversalBitmap; const points: array of TPointF;
+  brush: TUniversalBrush; Alpha: Word; NonZeroWinding: boolean; APixelCenteredCoordinates: boolean = true);
+
+procedure FillShapeAntialias(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
+  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
+procedure FillShapeAntialias(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
+  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode);
+procedure FillShapeAntialias(bmp: TCustomUniversalBitmap; shapeInfo: TBGRACustomFillInfo;
+  brush: TUniversalBrush; NonZeroWinding: boolean);
+procedure FillShapeAntialiasWithTexture(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
+  scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
+procedure FillPolyAntialias(bmp: TBGRACustomBitmap; points: array of TPointF;
+  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
+procedure FillPolyAntialiasWithTexture(bmp: TBGRACustomBitmap; const points: array of TPointF;
+  scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
+procedure FillPolyAntialias(bmp: TCustomUniversalBitmap; const points: array of TPointF;
+  brush: TUniversalBrush; NonZeroWinding: boolean; APixelCenteredCoordinates: boolean = true);
 
 type
 
@@ -107,25 +126,19 @@ type
     property ShapeCount: integer read nbShapes;
   end;
 
-procedure FillPolyAliased(bmp: TBGRACustomBitmap; points: array of TPointF;
-  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true);
-procedure FillPolyAliasedWithTexture(bmp: TBGRACustomBitmap; points: array of TPointF;
-  scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean = true);
-procedure FillPolyAntialias(bmp: TBGRACustomBitmap; points: array of TPointF;
-  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
-procedure FillPolyAntialiasWithTexture(bmp: TBGRACustomBitmap; points: array of TPointF;
-  scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false; APixelCenteredCoordinates: boolean = true);
-
+procedure FillEllipseAntialias(bmp: TCustomUniversalBitmap; x, y, rx, ry: single; ABrush: TUniversalBrush);
 procedure FillEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry: single;
   c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false);
 procedure FillEllipseAntialiasWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry: single;
   scan: IBGRAScanner; LinearBlend: boolean = false);
 
+procedure BorderEllipseAntialias(bmp: TCustomUniversalBitmap; x, y, rx, ry, w: single; ABrush: TUniversalBrush);
 procedure BorderEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
   c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean = false);
 procedure BorderEllipseAntialiasWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
   scan: IBGRAScanner; LinearBlend: boolean = false);
 
+procedure BorderEllipse(bmp: TCustomUniversalBitmap; x, y, rx, ry, w: single; ABrush: TUniversalBrush; AAlpha: word = 65535);
 procedure BorderEllipse(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
   c: TBGRAPixel; EraseMode: boolean; drawmode: TDrawMode);
 procedure BorderEllipseWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
@@ -148,16 +161,142 @@ implementation
 
 uses Math, BGRABlend, BGRAGradientScanner, BGRATransform;
 
-type
-  TPathStrokeData = record
-    Stroker: TBGRACustomPenStroker;
-    Texture: IBGRAScanner;
-    Color: TBGRAPixel;
-    Width: Single;
+procedure AnyBrush(out ABrush: TUniversalBrush; ABmp: TBGRACustomBitmap; ACol: TBGRAPixel;
+   AEraseMode: boolean; AScan: IBGRAScanner; ADrawmode: TDrawMode);
+begin
+  if AScan <> nil then
+    ABmp.ScannerBrush(ABrush, AScan, ADrawmode)
+  else
+  begin
+    if AEraseMode then ABmp.EraseBrush(ABrush, ACol.alpha + (ACol.alpha shl 8))
+    else ABmp.SolidBrush(ABrush, ACol, ADrawmode);;
+  end;
+end;
+
+procedure AnyBrush(out ABrush: TUniversalBrush; ABmp: TBGRACustomBitmap; ACol: TBGRAPixel;
+   AEraseMode: boolean; AScan: IBGRAScanner; ALinearBlend: boolean);
+begin
+  if ALinearBlend then AnyBrush(ABrush,ABmp,ACol,AEraseMode,AScan,dmLinearBlend)
+  else AnyBrush(ABrush,ABmp,ACol,AEraseMode,AScan,dmDrawWithTransparency);
+end;
+
+procedure FillShapeAliased(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
+  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; AliasingIncludeBottomRight: Boolean= false);
+var
+  bFill: TUniversalBrush;
+begin
+  AnyBrush(bFill, bmp, c,EraseMode,scan,drawmode);
+  FillShapeAliased(bmp, shapeInfo, bFill,65535,NonZeroWinding,AliasingIncludeBottomRight);
+end;
+
+procedure FillShapeAliased(bmp: TCustomUniversalBitmap;
+  shapeInfo: TBGRACustomFillInfo; brush: TUniversalBrush; Alpha: Word;
+  NonZeroWinding: boolean; AliasingIncludeBottomRight: Boolean);
+var
+  inter:    array of TIntersectionInfo;
+  nbInter:  integer;
+
+  miny, maxy, minx, maxx: integer;
+  yb, i: integer;
+  x1, x2: single;
+  ix1, ix2: integer;
+  pdest: PByte;
+  AliasingOfs: TPointF;
+  ctx: TUniBrushContext;
+
+begin
+  if brush.DoesNothing or (Alpha=0) then exit;
+  If not BGRAShapeComputeMinMax(shapeInfo,minx,miny,maxx,maxy,bmp.ClipRect) then exit;
+  inter := shapeInfo.CreateIntersectionArray;
+
+  if AliasingIncludeBottomRight then
+    AliasingOfs := PointF(0,0) else
+    AliasingOfs := PointF(-0.0001,-0.0001);
+  bmp.LoadFromBitmapIfNeeded;
+
+  //vertical scan
+  for yb := miny to maxy do
+  begin
+    //find intersections
+    shapeInfo.ComputeAndSort( yb+0.5-AliasingOfs.Y, inter, nbInter, NonZeroWinding);
+
+    for i := 0 to nbinter div 2 - 1 do
+    begin
+      x1 := inter[i + i].interX+AliasingOfs.X;
+      x2 := inter[i + i+ 1].interX+AliasingOfs.X;
+
+      if x1 <> x2 then
+      begin
+        ComputeAliasedRowBounds(x1,x2, minx,maxx, ix1,ix2);
+        if ix1 <= ix2 then
+        begin
+          //render scanline
+          pdest := bmp.GetPixelAddress(ix1,yb);
+          brush.MoveTo(@ctx, pdest, ix1,yb);
+          brush.PutNextPixels(@ctx, Alpha, ix2-ix1+1);
+        end;
+      end;
+    end;
   end;
 
+  shapeInfo.FreeIntersectionArray(inter);
+  bmp.InvalidateBitmap;
+end;
+
+procedure FillPolyAliased(bmp: TBGRACustomBitmap; points: array of TPointF;
+  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  AnyBrush(b, bmp, c,EraseMode,nil,drawmode);
+  FillPolyAliased(bmp, points, b, 65535, NonZeroWinding, APixelCenteredCoordinates);
+end;
+
+procedure FillPolyAliasedWithTexture(bmp: TBGRACustomBitmap;
+  const points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  AnyBrush(b, bmp, BGRAPixelTransparent,false,scan,drawmode);
+  FillPolyAliased(bmp, points, b, 65535, NonZeroWinding, APixelCenteredCoordinates);
+end;
+
+procedure FillPolyAliased(bmp: TCustomUniversalBitmap;
+  const points: array of TPointF; brush: TUniversalBrush; Alpha: Word;
+  NonZeroWinding: boolean; APixelCenteredCoordinates: boolean);
+var
+  info: TCustomFillPolyInfo;
+begin
+  if brush.DoesNothing or (length(points) < 3) then exit;
+  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
+  FillShapeAliased(bmp, info, brush, Alpha, NonZeroWinding);
+  info.Free;
+end;
+
+//////////////////////////////////////////////////////////////////////////////
+
 procedure FillShapeAntialias(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
-  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean);
+  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean = false);
+var
+  drawMode: TDrawMode;
+begin
+  if LinearBlend then drawMode := dmLinearBlend else drawMode := dmDrawWithTransparency;
+  FillShapeAntialias(bmp, shapeInfo, c, EraseMode, scan, NonZeroWinding, drawmode);
+end;
+
+procedure FillShapeAntialias(bmp: TBGRACustomBitmap;
+  shapeInfo: TBGRACustomFillInfo; c: TBGRAPixel; EraseMode: boolean;
+  scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode);
+var
+  bFill: TUniversalBrush;
+begin
+  AnyBrush(bFill, bmp, c,EraseMode,scan,drawmode);
+  FillShapeAntialias(bmp, shapeInfo, bFill,NonZeroWinding);
+end;
+
+procedure FillShapeAntialias(bmp: TCustomUniversalBitmap;
+  shapeInfo: TBGRACustomFillInfo; brush: TUniversalBrush;
+  NonZeroWinding: boolean);
 const oneOver512 = 1/512;
 var
   inter:   array of TIntersectionInfo;
@@ -179,16 +318,13 @@ var
   tempDensity: UInt32or64;
 
   x1, x2, x1b,x2b: single;
-  ix1, ix2: integer;
-  pdest:    PBGRAPixel;
+  ix1, ix2, drawCount: integer;
   pdens:    PDensity;
 
   curvedSeg,optimised: boolean;
-  ec: TExpandedPixel;
-  c2:TBGRAPixel;
-  MemScanCopy,pscan: pbgrapixel;
-  ScanNextPixelProc: TScanNextPixelFunction;
   temp: Single;
+  pDest: PByte;
+  ctx: TUniBrushContext;
 
   function GetYScan(num: integer): single; inline;
   begin
@@ -262,22 +398,11 @@ var
   end;
 
 begin
-  if (scan=nil) and (c.alpha=0) then exit;
-  If not BGRAShapeComputeMinMax(shapeInfo,minx,miny,maxx,maxy,bmp) then exit;
+  If brush.DoesNothing or not BGRAShapeComputeMinMax(shapeInfo,minx,miny,maxx,maxy,bmp.ClipRect) then exit;
+  bmp.LoadFromBitmapIfNeeded;
 
   inter := shapeInfo.CreateIntersectionArray;
   getmem(density, (maxx - minx + 2)*sizeof(TDensity)); //more for safety
-  ec := GammaExpansion(c);
-  c2 := c;
-
-  MemScanCopy := nil;
-  ScanNextPixelProc := nil;
-  if scan <> nil then
-  begin
-    if scan.IsScanPutPixelsDefined then
-      GetMem(MemScanCopy,(maxx-minx+1)*sizeof(TBGRAPixel));
-    ScanNextPixelProc := @scan.ScanNextPixel;
-  end;
 
   curvedSeg := shapeInfo.SegmentsCurved;
   if not curvedSeg then
@@ -350,100 +475,26 @@ begin
             if ix2 > maxx then ix2 := maxx;
 
             if ix1>ix2 then continue;
+            pDest := bmp.GetPixelAddress(ix1,yb);
+            brush.MoveTo(@ctx,pDest,ix1,yb);
             if ix1=ix2 then
             begin
-              tempDensity:= round((x2-x1)*256);
-              if scan <> nil then //with texture scan
-              begin
-                scan.ScanMoveTo(ix1,yb);
-                c := scan.ScanNextPixel;
-                c.alpha := c.alpha*tempDensity shr 8;
-                if linearBlend then
-                  bmp.DrawPixel(ix1, yb, c, dmLinearBlend)
-                else
-                  bmp.DrawPixel(ix1, yb, c, dmDrawWithTransparency);
-              end else
-              if EraseMode then //erase with alpha
-                bmp.ErasePixel(ix1,yb,c.alpha*tempDensity shr 8)
-              else
-              begin  //solid color
-                c2.alpha := c.alpha*tempDensity shr 8;
-                if linearBlend then
-                  bmp.DrawPixel(ix1, yb, c2, dmLinearBlend)
-                else
-                  bmp.DrawPixel(ix1, yb, c2, dmDrawWithTransparency);
-              end;
+              tempDensity:= round((x2-x1)*65535);
+              brush.PutNextPixels(@ctx,tempDensity,1);
             end else
             begin
-              tempDensity:= round((ix1+1-x1)*256);
-              if scan <> nil then scan.ScanMoveTo(ix1,yb);
-              if tempDensity < 256 then
+              tempDensity:= round((ix1+1-x1)*65535);
+              brush.PutNextPixels(@ctx,tempDensity,1);
+              inc(ix1);
+
+              tempDensity:= round((x2-ix2)*65535);
+              if tempDensity < 65535 then
               begin
-                if scan <> nil then //with texture scan
-                begin
-                  c := scan.ScanNextPixel;
-                  c.alpha := c.alpha*tempDensity shr 8;
-                  if linearBlend then
-                    bmp.DrawPixel(ix1, yb, c, dmLinearBlend)
-                  else
-                    bmp.DrawPixel(ix1, yb, c, dmDrawWithTransparency);
-                end else
-                if EraseMode then //erase with alpha
-                  bmp.ErasePixel(ix1,yb, c.alpha*tempDensity shr 8)
-                else
-                begin  //solid color
-                  c2.alpha := c.alpha*tempDensity shr 8;
-                  if linearBlend then
-                    bmp.DrawPixel(ix1, yb, c2, dmLinearBlend)
-                  else
-                    bmp.DrawPixel(ix1, yb, c2, dmDrawWithTransparency);
-                end;
-                inc(ix1);
-              end;
-              tempDensity:= round((x2-ix2)*256);
-              if tempDensity < 256 then dec(ix2);
-              if ix2 >= ix1 then
-              begin
-                if scan <> nil then //with texture scan
-                begin
-                  if linearBlend then
-                    ScannerPutPixels(scan, bmp.ScanLine[yb] + ix1, ix2-ix1+1, dmLinearBlend)
-                  else
-                    ScannerPutPixels(scan, bmp.ScanLine[yb] + ix1, ix2-ix1+1, dmDrawWithTransparency);
-                end else
-                if EraseMode then //erase with alpha
-                  bmp.EraseLine(ix1,yb,ix2,yb,c.alpha,True)
-                else
-                begin  //solid color
-                  if LinearBlend then
-                    bmp.HorizLine(ix1,yb,ix2,c,dmLinearBlend)
-                  else
-                    bmp.HorizLine(ix1,yb,ix2,c,dmDrawWithTransparency);
-                end;
-              end;
-              if tempDensity < 256 then
-              begin
-                inc(ix2);
-                if scan <> nil then //with texture scan
-                begin
-                  c := scan.ScanNextPixel;
-                  c.alpha := c.alpha*tempDensity shr 8;
-                  if linearBlend then
-                    bmp.DrawPixel(ix2, yb, c, dmLinearBlend)
-                  else
-                    bmp.DrawPixel(ix2, yb, c, dmDrawWithTransparency);
-                end else
-                if EraseMode then //erase with alpha
-                  bmp.ErasePixel(ix2,yb,c.alpha*tempDensity shr 8)
-                else
-                begin  //solid color
-                  c2.alpha := c.alpha*tempDensity shr 8;
-                  if linearBlend then
-                    bmp.DrawPixel(ix2, yb, c2, dmLinearBlend)
-                  else
-                    bmp.DrawPixel(ix2, yb, c2, dmDrawWithTransparency);
-                end;
-              end;
+                dec(ix2);
+                if ix2 >= ix1 then brush.PutNextPixels(@ctx,65535,ix2-ix1+1);
+                brush.PutNextPixels(@ctx,tempDensity,1);
+              end else
+                brush.PutNextPixels(@ctx,65535,ix2-ix1+1);
             end;
             continue;
           end else
@@ -493,30 +544,15 @@ begin
       end;
     end;
 
-    if LinearBlend then
-    begin
-      if optimised then
-	{$DEFINE INCLUDE_RENDERDENSITY}
-        {$define PARAM_LINEARANTIALIASING}
-        {$i density256.inc}
-      else
-	{$DEFINE INCLUDE_RENDERDENSITY}
-        {$define PARAM_LINEARANTIALIASING}
-        {$define PARAM_ANTIALIASINGFACTOR}
-        {$i density256.inc}
-    end else
-    begin
-      if optimised then
-        {$DEFINE INCLUDE_RENDERDENSITY}
-        {$i density256.inc}
-      else
-        {$DEFINE INCLUDE_RENDERDENSITY}
-        {$define PARAM_ANTIALIASINGFACTOR}
-        {$i density256.inc}
-    end;
+    if optimised then
+      {$DEFINE INCLUDE_RENDERDENSITY}
+      {$i density256.inc}
+    else
+      {$DEFINE INCLUDE_RENDERDENSITY}
+      {$define PARAM_ANTIALIASINGFACTOR}
+      {$i density256.inc}
   end;
 
-  freemem(MemScanCopy);
   shapeInfo.FreeIntersectionArray(inter);
 
   if not curvedSeg then
@@ -537,191 +573,53 @@ begin
   bmp.InvalidateBitmap;
 end;
 
-procedure FillShapeAliased(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
-  c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; AliasingIncludeBottomRight: Boolean= false);
-var
-  inter:    array of TIntersectionInfo;
-  nbInter:  integer;
-
-  miny, maxy, minx, maxx: integer;
-  xb,yb, i: integer;
-  x1, x2: single;
-  ix1, ix2: integer;
-  pdest: PBGRAPixel;
-  AliasingOfs: TPointF;
-  ec: TExpandedPixel;
-
-begin
-  if (scan=nil) and (c.alpha=0) then exit;
-  If not BGRAShapeComputeMinMax(shapeInfo,minx,miny,maxx,maxy,bmp) then exit;
-  inter := shapeInfo.CreateIntersectionArray;
-
-  if AliasingIncludeBottomRight then
-    AliasingOfs := PointF(0,0) else
-    AliasingOfs := PointF(-0.0001,-0.0001);
-
-  ec := GammaExpansion(c);
-  if (scan = nil) and (c.alpha = 255) then drawmode := dmSet;
-
-  //vertical scan
-  for yb := miny to maxy do
-  begin
-    //find intersections
-    shapeInfo.ComputeAndSort( yb+0.5-AliasingOfs.Y, inter, nbInter, NonZeroWinding);
-
-    for i := 0 to nbinter div 2 - 1 do
-    begin
-      x1 := inter[i + i].interX+AliasingOfs.X;
-      x2 := inter[i + i+ 1].interX+AliasingOfs.X;
-
-      if x1 <> x2 then
-      begin
-        ComputeAliasedRowBounds(x1,x2, minx,maxx, ix1,ix2);
-        if ix1 <= ix2 then
-        begin
-          //render scanline
-          if scan <> nil then //with texture scan
-          begin
-            pdest := bmp.ScanLine[yb] + ix1;
-            scan.ScanMoveTo(ix1,yb);
-            ScannerPutPixels(scan,pdest,ix2-ix1+1,drawmode);
-          end else
-          if EraseMode then //erase with alpha
-          begin
-            pdest := bmp.ScanLine[yb] + ix1;
-            for xb := ix1 to ix2 do
-            begin
-              ErasePixelInline(pdest, c.alpha);
-              Inc(pdest);
-            end;
-          end
-          else
-          begin
-            case drawmode of
-              dmFastBlend: bmp.FastBlendHorizLine(ix1,yb,ix2, c);
-              dmDrawWithTransparency: bmp.DrawHorizLine(ix1,yb,ix2, ec);
-              dmSet: bmp.SetHorizLine(ix1,yb,ix2, c);
-              dmXor: bmp.XorHorizLine(ix1,yb,ix2, c);
-            end;
-          end;
-        end;
-      end;
-    end;
-  end;
-
-  shapeInfo.FreeIntersectionArray(inter);
-  bmp.InvalidateBitmap;
-end;
-
 procedure FillShapeAntialiasWithTexture(bmp: TBGRACustomBitmap;
   shapeInfo: TBGRACustomFillInfo; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean);
 begin
   FillShapeAntialias(bmp,shapeInfo,BGRAPixelTransparent,False,scan,NonZeroWinding,LinearBlend);
 end;
 
-procedure FillPolyAliased(bmp: TBGRACustomBitmap; points: array of TPointF;
-  c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
-var
-  info: TCustomFillPolyInfo;
-begin
-  if length(points) < 3 then
-    exit;
-
-  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
-  FillShapeAliased(bmp, info, c, EraseMode, nil, NonZeroWinding, drawmode);
-  info.Free;
-end;
-
-procedure FillPolyAliasedWithTexture(bmp: TBGRACustomBitmap;
-  points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; APixelCenteredCoordinates: boolean);
-var
-  info: TCustomFillPolyInfo;
-begin
-  if length(points) < 3 then
-    exit;
-
-  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
-  FillShapeAliased(bmp, info, BGRAPixelTransparent,False,scan, NonZeroWinding, drawmode);
-  info.Free;
-end;
-
 procedure FillPolyAntialias(bmp: TBGRACustomBitmap; points: array of TPointF;
   c: TBGRAPixel; EraseMode: boolean; NonZeroWinding: boolean; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
 var
-  info: TCustomFillPolyInfo;
+  b: TUniversalBrush;
 begin
-  if length(points) < 3 then
-    exit;
-
-  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
-  FillShapeAntialias(bmp, info, c, EraseMode, nil, NonZeroWinding, LinearBlend);
-  info.Free;
+  AnyBrush(b, bmp,c,EraseMode,nil,LinearBlend);
+  FillPolyAntialias(bmp, points, b, NonZeroWinding, APixelCenteredCoordinates);
 end;
 
 procedure FillPolyAntialiasWithTexture(bmp: TBGRACustomBitmap;
-  points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
+  const points: array of TPointF; scan: IBGRAScanner; NonZeroWinding: boolean; LinearBlend: boolean; APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  AnyBrush(b, bmp,BGRAPixelTransparent,false,scan,LinearBlend);
+  FillPolyAntialias(bmp, points, b, NonZeroWinding, APixelCenteredCoordinates);
+end;
+
+procedure FillPolyAntialias(bmp: TCustomUniversalBitmap;
+  const points: array of TPointF; brush: TUniversalBrush;
+  NonZeroWinding: boolean; APixelCenteredCoordinates: boolean);
 var
   info: TCustomFillPolyInfo;
 begin
-  if length(points) < 3 then
-    exit;
-
+  if brush.DoesNothing or (length(points) < 3) then exit;
   info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
-  FillShapeAntialiasWithTexture(bmp, info, scan, NonZeroWinding, LinearBlend);
+  FillShapeAntialias(bmp, info, brush, NonZeroWinding);
   info.Free;
 end;
 
-procedure FillEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry: single;
-  c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean);
-var
-  info: TFillEllipseInfo;
-begin
-  if (rx = 0) or (ry = 0) or (x = EmptySingle) or (y = EmptySingle) then
-    exit;
-
-  info := TFillEllipseInfo.Create(x, y, rx, ry);
-  FillShapeAntialias(bmp, info, c, EraseMode, nil, False, LinearBlend);
-  info.Free;
-end;
-
-procedure FillEllipseAntialiasWithTexture(bmp: TBGRACustomBitmap; x, y, rx,
-  ry: single; scan: IBGRAScanner; LinearBlend: boolean);
-var
-  info: TFillEllipseInfo;
-begin
-  if (rx = 0) or (ry = 0) or (x = EmptySingle) or (y = EmptySingle) then
-    exit;
-
-  info := TFillEllipseInfo.Create(x, y, rx, ry);
-  FillShapeAntialiasWithTexture(bmp, info, scan, False, LinearBlend);
-  info.Free;
-end;
-
-procedure BorderEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
-  c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean);
-var
-  info: TFillBorderEllipseInfo;
-begin
-  if ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then
-    exit;
-  info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
-  FillShapeAntialias(bmp, info, c, EraseMode, nil, False, LinearBlend);
-  info.Free;
-end;
-
-procedure BorderEllipseAntialiasWithTexture(bmp: TBGRACustomBitmap; x, y, rx,
-  ry, w: single; scan: IBGRAScanner; LinearBlend: boolean);
-var
-  info: TFillBorderEllipseInfo;
-begin
-  if ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then
-    exit;
-  info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
-  FillShapeAntialiasWithTexture(bmp, info, scan, False, LinearBlend);
-  info.Free;
-end;
+////////////////////////////////////////////////////////////////////////
 
 { TBGRAMultishapeFiller }
+
+type
+  TPathStrokeData = record
+    Stroker: TBGRACustomPenStroker;
+    Texture: IBGRAScanner;
+    Color: TBGRAPixel;
+    Width: Single;
+  end;
 
 function TBGRAMultishapeFiller.AddShape(AInfo: TBGRACustomFillInfo; AInternalInfo: boolean; ATexture: IBGRAScanner; AInternalTexture: TObject; AColor: TBGRAPixel): integer;
 begin
@@ -1493,28 +1391,93 @@ begin
   dest.InvalidateBitmap;
 end;
 
-procedure BorderEllipse(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
-  c: TBGRAPixel; EraseMode: boolean; drawmode: TDrawMode);
+//////////////////////////////////////////////////////////////////////////////
+
+procedure FillEllipseAntialias(bmp: TCustomUniversalBitmap; x, y, rx,
+  ry: single; ABrush: TUniversalBrush);
+var
+  info: TFillEllipseInfo;
+begin
+  if ABrush.DoesNothing or (rx = 0) or (ry = 0) or (x = EmptySingle) or (y = EmptySingle) then exit;
+  info := TFillEllipseInfo.Create(x, y, rx, ry);
+  FillShapeAntialias(bmp, info, ABrush, False);
+  info.Free;
+end;
+
+procedure FillEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry: single;
+  c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean);
+var
+  b: TUniversalBrush;
+begin
+  AnyBrush(b, bmp,c,EraseMode,nil,LinearBlend);
+  FillEllipseAntialias(bmp, x,y,rx,ry, b);
+end;
+
+procedure FillEllipseAntialiasWithTexture(bmp: TBGRACustomBitmap; x, y, rx,
+  ry: single; scan: IBGRAScanner; LinearBlend: boolean);
+var
+  b: TUniversalBrush;
+begin
+  AnyBrush(b, bmp, BGRAPixelTransparent,false,scan,LinearBlend);
+  FillEllipseAntialias(bmp, x,y,rx,ry, b);
+end;
+
+procedure BorderEllipseAntialias(bmp: TCustomUniversalBitmap; x, y, rx, ry,
+  w: single; ABrush: TUniversalBrush);
 var
   info: TFillBorderEllipseInfo;
 begin
-  if ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then
-    exit;
+  if ABrush.DoesNothing or ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then exit;
   info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
-  FillShapeAliased(bmp, info, c, EraseMode, nil, False, drawmode);
+  FillShapeAntialias(bmp, info, ABrush, False);
   info.Free;
+end;
+
+procedure BorderEllipseAntialias(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
+  c: TBGRAPixel; EraseMode: boolean; LinearBlend: boolean);
+var
+  b: TUniversalBrush;
+begin
+  AnyBrush(b, bmp,c,EraseMode,nil,LinearBlend);
+  BorderEllipseAntialias(bmp, x,y,rx,ry,w,b);
+end;
+
+procedure BorderEllipseAntialiasWithTexture(bmp: TBGRACustomBitmap; x, y, rx,
+  ry, w: single; scan: IBGRAScanner; LinearBlend: boolean);
+var
+  b: TUniversalBrush;
+begin
+  AnyBrush(b, bmp,BGRAPixelTransparent,false,scan,LinearBlend);
+  BorderEllipseAntialias(bmp, x,y,rx,ry,w,b);
+end;
+   
+procedure BorderEllipse(bmp: TCustomUniversalBitmap; x, y, rx, ry, w: single;
+  ABrush: TUniversalBrush; AAlpha: word);
+var
+  info: TFillBorderEllipseInfo;
+begin
+  if ABrush.DoesNothing or ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then exit;
+  info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
+  FillShapeAliased(bmp, info, ABrush, AAlpha, False);
+  info.Free;
+end;
+
+procedure BorderEllipse(bmp: TBGRACustomBitmap; x, y, rx, ry, w: single;
+  c: TBGRAPixel; EraseMode: boolean; drawmode: TDrawMode);
+var
+  bFill: TUniversalBrush;
+begin
+  AnyBrush(bFill, bmp, c,EraseMode,nil,drawmode);
+  BorderEllipse(bmp, x,y,rx,ry,w,bFill);
 end;
 
 procedure BorderEllipseWithTexture(bmp: TBGRACustomBitmap; x, y, rx, ry,
   w: single; scan: IBGRAScanner; drawmode: TDrawMode);
 var
-  info: TFillBorderEllipseInfo;
+  bFill: TUniversalBrush;
 begin
-  if ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then
-    exit;
-  info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
-  FillShapeAliased(bmp, info, BGRAPixelTransparent, False, scan, false, drawmode);
-  info.Free;
+  bmp.ScannerBrush(bFill, scan,drawMode);
+  BorderEllipse(bmp, x,y,rx,ry,w,bFill);
 end;
 
 procedure FillRoundRectangleAntialias(bmp: TBGRACustomBitmap; x1, y1, x2, y2,

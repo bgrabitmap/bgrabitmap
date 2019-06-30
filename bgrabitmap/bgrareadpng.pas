@@ -41,7 +41,6 @@ Type
 
   TBGRAReaderPNG = class (TBGRAImageReader)
     private
-
       FHeader : THeaderChunk;
       ZData : TMemoryStream;  // holds compressed data until all blocks are read
       Decompress : TDeCompressionStream; // decompresses the data
@@ -62,6 +61,9 @@ Type
       FHandleScanLine: THandleScanLineProc;
       FVerticalShrinkMask: DWord;
       FVerticalShrinkShr: Integer;
+      FGammaCorrection: single;
+      FGammaCorrectionTable: packed array of word;
+      FGammaCorrectionTableComputed: boolean;
       function GetOriginalHeight: integer;
       function GetOriginalWidth: integer;
       function GetVerticalShrinkFactor: integer;
@@ -79,6 +81,8 @@ Type
       function ColorColor16 (const CD:TColorData) : TFPColor;
       function ColorColorAlpha8 (const CD:TColorData) : TFPColor;
       function ColorColorAlpha16 (const CD:TColorData) : TFPColor;
+      function CheckGammaCorrection: boolean;
+      procedure ApplyGammaCorrection(var AColor: TFPColor);
 
       function BGRAColorGray1 (const CD:TColorData) : TBGRAPixel;
       function BGRAColorGray2 (const CD:TColorData) : TBGRAPixel;
@@ -101,6 +105,8 @@ Type
       procedure HandleChunk; virtual;
       procedure HandlePalette; virtual;
       procedure HandleAlpha; virtual;
+      procedure HandleStdRGB; virtual;
+      procedure HandleGamma; virtual;
       function CalcX (relX:integer) : integer;
       function CalcY (relY:integer) : integer;
       function CalcColor(const ScanLine : PByteArray): TColorData;
@@ -171,7 +177,7 @@ var
   {%H-}ChunkHeader : TChunkHeader;
   {%H-}HeaderChunk : THeaderChunk;
 begin
-  fillchar({%H-}result, sizeof(result), 0);
+  {$PUSH}{$HINTS OFF}fillchar({%H-}result, sizeof({%H-}result), 0);{$POP}
   if AStream.Read({%H-}FileHeader, sizeof(FileHeader))<> sizeof(FileHeader) then exit;
   if QWord(FileHeader) <> QWord(PNGComn.Signature) then exit;
   if AStream.Read({%H-}ChunkHeader, sizeof(ChunkHeader))<> sizeof(ChunkHeader) then exit;
@@ -342,6 +348,21 @@ begin
   end;
 end;
 
+procedure TBGRAReaderPNG.HandleStdRGB;
+begin
+  FGammaCorrection:= 1;
+  FGammaCorrectionTableComputed:= false;
+end;
+
+procedure TBGRAReaderPNG.HandleGamma;
+var
+  invGammaInt: Longword;
+begin
+  invGammaInt := BEtoN(PLongword(chunk.data)^);
+  FGammaCorrection:= invGammaInt/45455;  { 1/2.2 is default }
+  FGammaCorrectionTableComputed:= false;
+end;
+
 procedure TBGRAReaderPNG.HandlePalette;
 var r : longword;
     c : TFPColor;
@@ -370,13 +391,14 @@ begin
         t := data^[r];
         c.blue := t + (t shl 8);
         inc (r);
+        ApplyGammaCorrection(c);
         ThePalette.Add (c);
         end;
       end;
 end;
 
 procedure TBGRAReaderPNG.SetPalettePixel (x,y:integer; const CD : TColordata);
-begin  // both PNG and palette have palette
+begin  // both PNG and Img have palette
   TheImage.Pixels[x,y] := CD;
 end;
 
@@ -390,6 +412,7 @@ var c : TFPColor;
 begin  // both PNG and Img work without palette, and no transparency colordata
   // c := ConvertColor (CD,CFmt);
   c := ConvertColor (CD);
+  ApplyGammaCorrection(c);
   TheImage.Colors[x,y] := c;
 end;
 
@@ -398,6 +421,7 @@ var c : TFPColor;
 begin  // both PNG and Img work without palette, and there is a transparency colordata
   //c := ConvertColor (CD,CFmt);
   c := ConvertColor (CD);
+  ApplyGammaCorrection(c);
   if TransparentDataValue = CD then
     c.alpha := alphaTransparent;
   TheImage.Colors[x,y] := c;
@@ -891,6 +915,51 @@ begin
     end;
 end;
 
+function TBGRAReaderPNG.CheckGammaCorrection: boolean;
+var
+  i: Integer;
+begin
+  if not FGammaCorrectionTableComputed then
+  begin
+    if abs(FGammaCorrection-1) < 0.01 then
+    begin
+      FGammaCorrectionTable := nil;
+    end else
+    begin
+      setlength(FGammaCorrectionTable, 65536);
+      FGammaCorrectionTable[0] := 0;
+      i := 1;
+      while i <= 65535 do
+      begin
+        if i+3 <= 65535 then
+        begin
+          FGammaCorrectionTable[i+3] := Round(Power((i+3)/65535, FGammaCorrection)*65535);
+          FGammaCorrectionTable[i] := (FGammaCorrectionTable[i-1]*3+FGammaCorrectionTable[i+3]+2) shr 2;
+          FGammaCorrectionTable[i+1] := (FGammaCorrectionTable[i-1]+FGammaCorrectionTable[i+3]+1) shr 1;
+          FGammaCorrectionTable[i+2] := (FGammaCorrectionTable[i-1]+FGammaCorrectionTable[i+3]*3+2) shr 2;
+          inc(i,4);
+        end else
+        begin
+          FGammaCorrectionTable[i] := Round(Power(i/65535, FGammaCorrection)*65535);
+          inc(i);
+        end;
+      end;
+    end;
+    FGammaCorrectionTableComputed:= true;
+  end;
+  result := FGammaCorrectionTable<>nil;
+end;
+
+procedure TBGRAReaderPNG.ApplyGammaCorrection(var AColor: TFPColor);
+begin
+  if FGammaCorrectionTable<>nil then
+  begin
+    AColor.red := FGammaCorrectionTable[AColor.red];
+    AColor.green := FGammaCorrectionTable[AColor.green];
+    AColor.blue := FGammaCorrectionTable[AColor.blue];
+  end;
+end;
+
 function TBGRAReaderPNG.BGRAColorGray1(const CD: TColorData): TBGRAPixel;
 begin
   if CD = 0 then
@@ -1210,7 +1279,8 @@ procedure TBGRAReaderPNG.DoDecompress;
       switchLine, currentLine, previousLine : pByteArray;
   begin
     FSetPixel := DecideSetPixel;
-    if not Pltte and (TheImage is TBGRACustomBitmap) then
+    if not Pltte and (TheImage is TBGRACustomBitmap) and
+      not CheckGammaCorrection then
     begin
       if UseTransparent then
         FHandleScanLine := @BGRAHandleScanLineTr
@@ -1284,6 +1354,8 @@ begin
     ctIDAT : HandleData;
     ctIEND : EndOfFile := True;
     cttRNS : HandleAlpha;
+    ctsRGB : HandleStdRGB;
+    ctgAMA : HandleGamma;
     else HandleUnknown;
   end;
 end;
@@ -1305,6 +1377,8 @@ begin
   begin
     FVerticalShrinkShr := 0;
     FVerticalShrinkMask := 0;
+    FGammaCorrection := 1;
+    FGammaCorrectionTableComputed:= false;
     outputHeight := Height;
     if MinifyHeight <> 0 then
       begin

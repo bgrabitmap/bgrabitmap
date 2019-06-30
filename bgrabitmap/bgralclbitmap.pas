@@ -676,12 +676,14 @@ begin
   if (FWidth > 0) and (FHeight > 0) then
   begin
     RawImage.Init;
+    {$PUSH}{$WARNINGS OFF}
     if TBGRAPixel_RGBAOrder then
       RawImage.Description.Init_BPP32_R8G8B8A8_BIO_TTB(FWidth, FHeight)
     else
       RawImage.Description.Init_BPP32_B8G8R8A8_BIO_TTB(FWidth, FHeight);
+    {$POP}
     RawImage.Description.LineOrder := FLineOrder;
-    RawImage.Data     := PByte(FData);
+    RawImage.Data     := FDataByte;
     RawImage.DataSize := FWidth * FHeight * sizeof(TBGRAPixel);
     if not RawImage_CreateBitmaps(RawImage, BitmapHandle, MaskHandle, False) then
       raise FPImageException.Create('Failed to create bitmap handle');
@@ -766,12 +768,14 @@ begin
   if (FWidth > 0) and (FHeight > 0) then
   begin
     RawImage.Init;
+    {$PUSH}{$WARNINGS OFF}
     if TBGRAPixel_RGBAOrder then
       RawImage.Description.Init_BPP32_R8G8B8A8_BIO_TTB(FWidth, FHeight)
     else
       RawImage.Description.Init_BPP32_B8G8R8A8_BIO_TTB(FWidth, FHeight);
+    {$POP}
     RawImage.Description.LineOrder := FLineOrder;
-    RawImage.Data     := PByte(FData);
+    RawImage.Data     := FDataByte;
     RawImage.DataSize := FWidth * FHeight * sizeof(TBGRAPixel);
     if not RawImage_CreateBitmaps(RawImage, BitmapHandle, MaskHandle, False) then
       raise FPImageException.Create('Failed to create bitmap handle');

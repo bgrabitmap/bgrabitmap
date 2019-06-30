@@ -31,12 +31,17 @@ type
     procedure FormDestroy(Sender: TObject);
   private
     { private declarations }
+    OriginalBounds: TRect;
+    OriginalWindowState: TWindowState;
+    procedure SwitchFullScreen;
   public
     bmp: TBGLBitmap;
     Tex: IBGLTexture;
     OpenGLControl: TOpenGLControl;
     DataLoaded: boolean;
-    procedure Load;
+    procedure Load;  
+    procedure Unload;
+    procedure OpenGLControlDblClick(Sender: TObject);
     procedure OpenGLControlPaint(Sender: TObject);
     procedure OpenGLControlMouseMove(Sender: TObject; {%H-}Shift: TShiftState; {%H-}X, {%H-}Y: integer);
   end;
@@ -50,6 +55,25 @@ implementation
 
 { TForm1 }
 
+procedure TForm1.SwitchFullScreen;
+begin
+  if BorderStyle <> bsNone then begin
+    // To full screen
+    OriginalWindowState := WindowState;
+    OriginalBounds := BoundsRect;
+
+    BorderStyle := bsNone;
+    BoundsRect := Screen.MonitorFromWindow(Handle).BoundsRect;
+  end else begin
+    // From full screen
+    BorderStyle := bsSizeable;
+    if OriginalWindowState = wsMaximized then
+      WindowState := wsMaximized
+    else
+      BoundsRect := OriginalBounds;
+  end;
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   OpenGLControl := TOpenGLControl.Create(Self);
@@ -59,6 +83,7 @@ begin
     Parent := Self;
     OnPaint := @OpenGLControlPaint;
     OnMouseMove := @OpenGLControlMouseMove;
+    OnDblClick := @OpenGLControlDblClick;
     //If you dont do it,you will have some problems
     AutoResizeViewport := True;
   end;
@@ -92,6 +117,22 @@ begin
   end;
 end;
 
+procedure TForm1.Unload;
+begin
+  if DataLoaded then
+  begin
+    Tex := nil;
+    DataLoaded := False;
+  end;
+end;
+
+// double-click to switch to full screen
+procedure TForm1.OpenGLControlDblClick(Sender: TObject);
+begin
+  Unload; //context may change when switching to full-screen
+  SwitchFullScreen;
+end;
+
 procedure TForm1.OpenGLControlPaint(Sender: TObject);
 var
   mousePos: TPoint;
@@ -113,5 +154,3 @@ begin
 end;
 
 end.
-
-

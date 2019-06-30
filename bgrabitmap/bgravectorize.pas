@@ -88,8 +88,12 @@ type
   end;
 
   TGlyphSizes = array of record
-            Glyph: String;
-            Width,Height: single;
+    Text, Glyph: String;
+    Width,Height: single;
+  end;
+  TGlyphSizesCallbackData = record
+    Sizes: TGlyphSizes;
+    Count: integer;
   end;
 
   TBGRAVectorizedFontHeader = record
@@ -147,6 +151,7 @@ type
     procedure SetStyle(AValue: TFontStyles);
     function GetFontEmHeightRatio: single;
     procedure SetVectorizeLCL(AValue: boolean);
+    procedure GlyphCallbackForGlyphSizes(ATextUTF8: string; AGlyph: TBGRAGlyph; AData: Pointer; out AContinue: boolean);
   protected
     procedure UpdateFont;
     procedure UpdateMatrix;
@@ -165,8 +170,9 @@ type
     constructor Create(AVectorizeLCL: boolean); overload;
     destructor Destroy; override;
     function GetGlyphSize(AIdentifier:string): TPointF;
-    function GetTextGlyphSizes(AText:string): TGlyphSizes;
-    function GetTextSize(AText:string): TPointF;
+    function GetTextGlyphSizes(ATextUTF8:string): TGlyphSizes;
+    function GetTextSize(ATextUTF8:string): TPointF;
+    function TextFitInfo(ATextUTF8: string; AMaxWidth: single): integer;
     procedure SplitText(var ATextUTF8: string; AMaxWidth: single; out ARemainsUTF8: string);
     procedure DrawText(ADest: TBGRACanvas2D; ATextUTF8: string; X, Y: Single; AAlign: TBGRATypeWriterAlignment=twaTopLeft); override;
     procedure CopyTextPathTo(ADest: IBGRAPath; ATextUTF8: string; X, Y: Single;
@@ -501,10 +507,8 @@ var
     end;
 
     procedure NiceLines;
-    var cur2, prev, next,next2, startIdx, endIdx: integer;
-      shouldRemove: Boolean;
-      slope: single;
-      delta, nb: integer;
+    var cur2, next,next2, startIdx, endIdx: integer;
+      nb: integer;
       u: TPoint;
 
       function SameDirection(p1,p2: integer): boolean;
@@ -609,22 +613,6 @@ var
                                (segs[i].p2.y+segs[i+1].p1.y) div 2,
                                cur2, endIdx);
               end;
-
-              {next := getnext(startIdx);
-              slope := (points[next].coord.y-points[startIdx].coord.y)/(points[next].coord.x-points[startIdx].coord.x);
-              if slope < 0 then
-              begin
-                delta := iHalf+round(abs(slope)*iDiag);
-                InsertPoint(points[startIdx].coord.x + dx * delta, points[startIdx].coord.y, startIdx, next);
-              end;
-
-              next := getprev(endIdx);
-              slope := (points[next].coord.y-points[endIdx].coord.y)/(points[next].coord.x-points[endIdx].coord.x);
-              if slope > 0 then
-              begin
-                delta := iHalf+round(abs(slope)*iDiag);
-                InsertPoint(points[endIdx].coord.x - dx * delta, points[endIdx].coord.y, next, endIdx);
-              end;}
             end;
           end;
         end;
@@ -1060,7 +1048,8 @@ begin
   begin
     FVectorizedFont:= TBGRAVectorizedFont.Create(False);
     FVectorizedFont.Name := FontName;
-    FVectorizedFont.Style := FontStyle;
+    FVectorizedFont.Style := FontStyle - [fsUnderline];
+    FVectorizedFont.UnderlineDecoration := fsUnderline in FontStyle;
     FVectorizedFont.Directory := FDirectoryUTF8;
     if not FVectorizedFont.FontFound and LCLFontAvailable then
       FVectorizedFont.VectorizeLCL := True;
@@ -1398,12 +1387,9 @@ end;
 
 function TBGRAVectorizedFontRenderer.TextFitInfo(sUTF8: string;
   AMaxWidth: integer): integer;
-var
-  remains: string;
 begin
   UpdateFont;
-  FVectorizedFont.SplitText(sUTF8, AMaxWidth, remains);
-  result := length(sUTF8);
+  result := FVectorizedFont.TextFitInfo(sUTF8, AMaxWidth);
 end;
 
 destructor TBGRAVectorizedFontRenderer.Destroy;
@@ -1470,6 +1456,30 @@ end;
 function TBGRAVectorizedFont.GetVectorizeLCL: boolean;
 begin
   result := FFont <> nil;
+end;
+
+procedure TBGRAVectorizedFont.GlyphCallbackForGlyphSizes(ATextUTF8: string; AGlyph: TBGRAGlyph;
+  AData: Pointer; out AContinue: boolean);
+begin
+  with TGlyphSizesCallbackData(AData^) do
+  begin
+    if Count = length(Sizes) then
+      setlength(Sizes, 2*Count+1);
+    Sizes[Count].Text := ATextUTF8;
+    if AGlyph<>nil then
+    begin
+      Sizes[Count].Glyph:= AGlyph.Identifier;
+      Sizes[Count].Width:= AGlyph.Width*FullHeight;
+      Sizes[Count].Height:= AGlyph.Height*FullHeight;
+    end else
+    begin
+      Sizes[Count].Glyph:= '';
+      Sizes[Count].Width:= 0;
+      Sizes[Count].Height:= 0;
+    end;
+    inc(Count);
+  end;
+  AContinue:= true;
 end;
 
 procedure TBGRAVectorizedFont.SetEmHeight(AValue: single);
@@ -1644,75 +1654,31 @@ begin
     result := PointF(g.Width*FullHeight,g.Height*FullHeight);
 end;
 
-function TBGRAVectorizedFont.GetTextGlyphSizes(AText: string): TGlyphSizes;
+function TBGRAVectorizedFont.GetTextGlyphSizes(ATextUTF8: string): TGlyphSizes;
 var
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  g: TBGRAGlyph;
-  numChar: integer;
+  data: TGlyphSizesCallbackData;
 begin
-  if AText = '' then
-  begin
-    result := nil;
-    exit;
-  end;
-  setlength(result, UTF8Length(AText));
-  pstr := @AText[1];
-  left := length(AText);
-  numChar := 0;
-  while left > 0 do
-  begin
-    charlen := UTF8CharacterLength(pstr);
-    setlength(nextchar, charlen);
-    move(pstr^, nextchar[1], charlen);
-    inc(pstr,charlen);
-    dec(left,charlen);
-
-    result[numChar].Glyph := nextchar;
-    g := GetGlyph(nextchar);
-    if g <> nil then
-    begin
-      result[numChar].Width := g.Width*FullHeight;
-      result[numChar].Height := g.Height*FullHeight;
-    end else
-    begin
-      result[numChar].Width := 0;
-      result[numChar].Height := 0;
-    end;
-    inc(numChar);
-  end;
+  data.Count:= 0;
+  setlength(data.Sizes, UTF8Length(ATextUTF8));
+  BrowseGlyphs(ATextUTF8, @GlyphCallbackForGlyphSizes, @data);
+  setlength(data.Sizes, data.Count);
+  result := data.Sizes;
 end;
 
-function TBGRAVectorizedFont.GetTextSize(AText: string): TPointF;
-var
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  g: TBGRAGlyph;
-  gSizeY: single;
+function TBGRAVectorizedFont.GetTextSize(ATextUTF8: string): TPointF;
 begin
-  result := PointF(0,0);
-  if AText = '' then exit else
-  begin
-    pstr := @AText[1];
-    left := length(AText);
-    while left > 0 do
-    begin
-      charlen := UTF8CharacterLength(pstr);
-      setlength(nextchar, charlen);
-      move(pstr^, nextchar[1], charlen);
-      inc(pstr,charlen);
-      dec(left,charlen);
+  result := GetTextSizeBeforeTransform(ATextUTF8)*FullHeight;
+end;
 
-      g := GetGlyph(nextchar);
-      if g <> nil then
-      begin
-        result.x += g.Width*FullHeight;
-        gSizeY := g.Height*FullHeight;
-        if gSizeY > result.y then result.Y := gSizeY;
-      end;
-    end;
+function TBGRAVectorizedFont.TextFitInfo(ATextUTF8: string; AMaxWidth: single): integer;
+var
+  charCount, byteCount: integer;
+  usedWidth: single;
+begin
+  if FullHeight=0 then result := UTF8Length(ATextUTF8) else
+  begin
+    TextFitInfoBeforeTransform(ATextUTF8, AMaxWidth/FullHeight, charCount, byteCount, usedWidth);
+    result := charCount;
   end;
 end;
 
@@ -1795,7 +1761,9 @@ begin
       for i := 0 to high(underlinePoly) do
         underlinePoly[i] := m*underlinePoly[i];
       if OutlineMode <> twoPath then ADest.beginPath;
-      ADest.polylineTo(underlinePoly);
+      ADest.moveTo(m*underlinePoly[high(underlinePoly)]);
+      for i := high(underlinePoly)-1 downto 0 do
+        ADest.lineTo(m*underlinePoly[i]);
       DrawLastPath(ADest);
     end;
   end;
@@ -1809,7 +1777,9 @@ begin
       for i := 0 to high(underlinePoly) do
         underlinePoly[i] := m*underlinePoly[i];
       if OutlineMode <> twoPath then ADest.beginPath;
-      ADest.polylineTo(underlinePoly);
+      ADest.moveTo(m*underlinePoly[high(underlinePoly)]);
+      for i := high(underlinePoly)-1 downto 0 do
+        ADest.lineTo(m*underlinePoly[i]);
       DrawLastPath(ADest);
     end;
   end;
@@ -1833,8 +1803,8 @@ begin
     if underlinePoly <> nil then
     begin
       m := GetTextMatrix(ATextUTF8, X,Y,AAlign);
-      ADest.moveTo(m*underlinePoly[0]);
-      for i := 1 to high(underlinePoly) do
+      ADest.moveTo(m*underlinePoly[high(underlinePoly)]);
+      for i := high(underlinePoly)-1 downto 0 do
         ADest.lineTo(m*underlinePoly[i]);
       ADest.closePath;
     end;
@@ -1846,8 +1816,8 @@ begin
     if underlinePoly <> nil then
     begin
       m := GetTextMatrix(ATextUTF8, X,Y,AAlign);
-      ADest.moveTo(m*underlinePoly[0]);
-      for i := 1 to high(underlinePoly) do
+      ADest.moveTo(m*underlinePoly[high(underlinePoly)]);
+      for i := high(underlinePoly)-1 downto 0 do
         ADest.lineTo(m*underlinePoly[i]);
       ADest.closePath;
     end;
@@ -2069,7 +2039,9 @@ begin
     FDirectory += DirectorySeparator;
   if FindFirstUTF8(FDirectory +'*.glyphs', faAnyFile, SearchRec) = 0 then
   repeat
+    {$PUSH}{$WARNINGS OFF}
     if (faDirectory or faVolumeId or faSysFile) and SearchRec.Attr = 0 then
+    {$POP}
     begin
       Fullname := FDirectory+SearchRec.Name;
       Info := LoadGlyphsInfo(Fullname);
@@ -2120,22 +2092,25 @@ end;
 function TBGRAVectorizedFont.GetGlyph(AIdentifier: string): TBGRAGlyph;
 var size: TSize;
   g: TBGRAPolygonalGlyph;
+  pts: array of TPointF;
+  dx,dy: Integer;
 begin
   Result:=inherited GetGlyph(AIdentifier);
   if (result = nil) and (FResolution > 0) and (FFont <> nil) then
   begin
     g := TBGRAPolygonalGlyph.Create(AIdentifier);
     size := BGRATextSize(FFont, fqSystem, AIdentifier, 1);
-    FBuffer.SetSize(size.cx+size.cy,size.cy);
+    dx := FResolution div 2;
+    dy := FResolution div 2;
+    FBuffer.SetSize(size.cx+2*dx,FResolution+2*dy);
     FBuffer.Fill(BGRAWhite);
-    FBuffer.Canvas.Font := FFont;
-    FBuffer.Canvas.Font.Color := clBlack;
-    FBuffer.Canvas.TextOut(size.cy div 2,0,AIdentifier);
-    g.SetPoints(VectorizeMonochrome(FBuffer,1/FResolution,False,true,50));
+    BGRATextOut(FBuffer, FFont, fqSystem, dx,dy, AIdentifier, BGRABlack, nil, taLeftJustify);
+    pts := VectorizeMonochrome(FBuffer,1/FResolution,False,true,50);
+    g.SetPoints(pts);
     g.QuadraticCurves := FQuadraticCurves and (OutlineMode in[twoPath, twoFill]);
-    g.Width := size.cx/size.cy;
+    g.Width := size.cx/FResolution;
     g.Height := 1;
-    g.Offset := PointF(-0.5,0);
+    g.Offset := PointF(-dx/FResolution,-dy/FResolution);
     SetGlyph(AIdentifier,g);
     result := g;
   end else
@@ -2164,6 +2139,7 @@ begin
   FBuffer := BGRABitmapFactory.Create;
   FFullHeight := 20;
   FItalicSlope := 0;
+  LigatureWithF := true;
   UpdateFont;
   UpdateMatrix;
   FWordBreakHandler:= nil;

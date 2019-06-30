@@ -18,3 +18,9 @@ test/testbiditext2/project1
 dev/releaser/releaser
 
 test/testbiditext/project1
+
+dev/colorspace/UnitMaker
+
+test/colorspace/ColorsDemo
+
+test/colorspace/HorseShoe

@@ -62,6 +62,7 @@ type
     procedure ScanMoveTo(X,Y: Integer); override;
     function ScanNextPixel: TBGRAPixel; override;
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); override;
+    procedure ScanSkipPixels(ACount: integer); override;
     function IsScanPutPixelsDefined: boolean; override;
     function ScanAt(X,Y: Single): TBGRAPixel; override;
     property Source: IBGRAScanner read FSource;
@@ -287,6 +288,12 @@ begin
     inc(FCurX,count);
     PutPixels(pdest, @FVariablePixelBuffer[0], count, mode, 255);
   end;
+end;
+
+procedure TBGRAFilterScanner.ScanSkipPixels(ACount: integer);
+begin
+  inc(FOutputBufferPos, ACount);
+  inc(FCurX, ACount);
 end;
 
 function TBGRAFilterScanner.IsScanPutPixelsDefined: boolean;
