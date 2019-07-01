@@ -113,6 +113,7 @@ function IsClearPenStyle(ACustomPenStyle: TBGRAPenStyle): boolean;
 function DuplicatePenStyle(ACustomPenStyle: array of single): TBGRAPenStyle;
 function PenStyleEqual(AStyle1, AStyle2: TBGRAPenStyle): boolean;
 function BGRAToPenStyle(ACustomPenStyle: TBGRAPenStyle): TPenStyle;
+function PenStyleToBGRA(APenStyle: TPenStyle): TBGRAPenStyle;
 
 implementation
 
@@ -216,6 +217,18 @@ begin
   if PenStyleEqual(ACustomPenStyle, DashDotPenStyle) then exit(psDashDot);
   if PenStyleEqual(ACustomPenStyle, DashDotDotPenStyle) then exit(psDashDotDot);
   exit(psPattern);
+end;
+
+function PenStyleToBGRA(APenStyle: TPenStyle): TBGRAPenStyle;
+begin
+  Case APenStyle of
+  psSolid: result := SolidPenStyle;
+  psDash: result := DashPenStyle;
+  psDot: result := DotPenStyle;
+  psDashDot: result := DashDotPenStyle;
+  psDashDotDot: result := DashDotDotPenStyle;
+  else result := ClearPenStyle;
+  end;
 end;
 
 function PenStyleEqual(AStyle1, AStyle2: TBGRAPenStyle): boolean;
@@ -1205,15 +1218,8 @@ end;
 
 procedure TBGRAPenStroker.SetPenStyle(AValue: TPenStyle);
 begin
-  if FPenStyle=AValue then Exit;
-  Case AValue of
-  psSolid: FCustomPenStyle := SolidPenStyle;
-  psDash: FCustomPenStyle := DashPenStyle;
-  psDot: FCustomPenStyle := DotPenStyle;
-  psDashDot: FCustomPenStyle := DashDotPenStyle;
-  psDashDotDot: FCustomPenStyle := DashDotDotPenStyle;
-  else FCustomPenStyle := ClearPenStyle;
-  end;
+  if (FPenStyle=AValue) or (AValue=psPattern) then Exit;
+  FCustomPenStyle := PenStyleToBGRA(AValue);
   FPenStyle := AValue;
 end;
 
