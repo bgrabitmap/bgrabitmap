@@ -329,10 +329,10 @@ begin
   for i := 0 to Count-1 do
   if i <> idx then
   begin
-    if Entry[i].CompareNameAndExtension(ANewName,AExtension,ACaseSensitive) <> 0 then
+    if Entry[i].CompareNameAndExtension(ANewName,AExtension,ACaseSensitive) = 0 then
       raise exception.Create('Name with extension already in use');
   end;
-  Entry[i].Name := ANewName;
+  Entry[idx].Name := ANewName;
   exit(true);
 end;
 
