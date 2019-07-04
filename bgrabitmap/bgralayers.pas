@@ -1115,11 +1115,12 @@ begin
     if ASharedLayerIds and (ASource is TBGRALayeredBitmap) then
       LayerUniqueId[idx] := TBGRALayeredBitmap(ASource).LayerUniqueId[i];
     for idxOrig := 0 to high(usedOriginals) do
-      if usedOriginals[i].sourceGuid = ASource.LayerOriginalGuid[i] then
+      if usedOriginals[idxOrig].sourceGuid = ASource.LayerOriginalGuid[i] then
       begin
-        LayerOriginalGuid[idx] := usedOriginals[i].newGuid;
+        LayerOriginalGuid[idx] := usedOriginals[idxOrig].newGuid;
         LayerOriginalMatrix[idx] := ASource.LayerOriginalMatrix[i];
         LayerOriginalRenderStatus[idx] := ASource.LayerOriginalRenderStatus[i];
+        break;
       end;
   end;
 end;
