@@ -166,7 +166,7 @@ begin
     end;
   end else
   begin
-    FSourceScanner.ScanMoveTo(X,Y);
+    FSourceScanner.ScanMoveTo(X+FScanOffset.X,Y+FScanOffset.Y);
     pexp := result;
     while Count > 0 do
     begin
