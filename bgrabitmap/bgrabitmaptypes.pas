@@ -1110,7 +1110,7 @@ var
 
     if (copy(magicAsText,1,8) = '/* XPM *') or (copy(magicAsText,1,6) = '! XPM2') then inc(scores[ifXPixMap]);
 
-    if (copy(magicAsText,1,6) = '<?xml ') then inc(scores[ifSvg]);
+    if (copy(magicAsText,1,6) = '<?xml ') or (copy(magicAsText,1,5) = '<svg ') then inc(scores[ifSvg]);
 
     AStream.Position := streamStartPos;
   end;
