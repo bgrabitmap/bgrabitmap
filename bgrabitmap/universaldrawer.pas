@@ -137,7 +137,7 @@ implementation
 
 uses BGRAPolygon, BGRAPolygonAliased, BGRAPath, BGRAFillInfo, BGRAUTF8,
   BGRAReadBMP, BGRAReadJpeg, BGRAWritePNG, BGRAWriteTiff,
-  BGRAFilterBlur;
+  BGRAFilterBlur, Math;
 
 { TUniversalDrawer }
 
@@ -424,8 +424,19 @@ var
   Y, X: integer;
   DX, DY, SX, SY, E: integer;
   drawPixelProc: TDrawPixelProc;
+  skip: Boolean;
+  r: TRect;
+  E64: Int64;
 begin
-  if ABrush.DoesNothing or (AAlpha= 0) then exit;
+  r := ADest.ClipRect;
+  skip := false;
+  if ABrush.DoesNothing or (AAlpha= 0) then skip := true;
+  if (x1 < r.Left) and (x2 < r.Left) then skip := true;
+  if (x1 >= r.Right) and (x2 >= r.Right) then skip := true;
+  if (y1 < r.Top) and (y2 < r.Top) then skip := true;
+  if (y1 >= r.Bottom) and (y2 >= r.Bottom) then skip := true;
+  if skip then exit;
+
   if (Y1 = Y2) then
   begin
     if (X1 = X2) then
@@ -477,7 +488,22 @@ begin
   if DX > DY then
   begin
     E := DY - DX shr 1;
-
+    if (X < r.Left) and (SX > 0) then
+    begin
+      E64 := E+int64(DY)*(r.Left-X)+DX;
+      E := (E64 mod DX)-DX;
+      Inc(Y, (E64 div DX)*SY);
+      X := r.Left;
+    end;
+    if (X >= r.Right) and (SX < 0) then
+    begin
+      E64 := E+int64(DY)*(X-(r.Right-1))+DX;
+      E := (E64 mod DX)-DX;
+      Inc(Y, (E64 div DX)*SY);
+      X := r.Right-1;
+    end;
+    if (X2 < r.Left-1) and (SX < 0) then X2 := r.Left-1;
+    if (X2 > r.Right) and (SX > 0) then X2 := r.Right;
     while X <> X2 do
     begin
       drawPixelProc(X, Y, ABrush, AAlpha);
@@ -493,7 +519,22 @@ begin
   else
   begin
     E := DX - DY shr 1;
-
+    if (Y < r.Top) and (SY > 0) then
+    begin
+      E64 := E+int64(DX)*(r.Top-Y)+DY;
+      E := (E64 mod DY)-DY;
+      Inc(X, (E64 div DY)*SX);
+      Y := r.Top;
+    end;
+    if (Y >= r.Bottom) and (SY < 0) then
+    begin
+      E64 := E+int64(DX)*(Y-(r.Bottom-1))+DY;
+      E := (E64 mod DY)-DY;
+      Inc(X, (E64 div DY)*SX);
+      Y := r.Bottom-1;
+    end;
+    if (Y2 < r.Top-1) and (SY < 0) then Y2 := r.Top-1;
+    if (Y2 > r.Bottom) and (SY > 0) then Y2 := r.Bottom;
     while Y <> Y2 do
     begin
       drawPixelProc(X, Y, ABrush, AAlpha);
@@ -515,81 +556,10 @@ class procedure TUniversalDrawer.DrawLineAntialias(ADest: TCustomUniversalBitmap
   x1, y1, x2, y2: integer; const ABrush: TUniversalBrush;
   DrawLastPixel: boolean; AAlpha: Word = 65535);
 var
-  Y, X:  integer;
-  DX, DY, SX, SY, E: integer;
-  curAlpha: Word;
+  dashPos: integer;
 begin
-  if ABrush.DoesNothing or (AAlpha= 0) then exit;
-  if (Y1 = Y2) and (X1 = X2) then
-  begin
-    if DrawLastPixel then
-      ADest.DrawPixel(X1, Y1, ABrush, AAlpha);
-    Exit;
-  end;
-
-  DX := X2 - X1;
-  DY := Y2 - Y1;
-
-  if DX < 0 then
-  begin
-    SX := -1;
-    DX := -DX;
-  end
-  else
-    SX := 1;
-
-  if DY < 0 then
-  begin
-    SY := -1;
-    DY := -DY;
-  end
-  else
-    SY := 1;
-
-  DX := DX shl 1;
-  DY := DY shl 1;
-
-  X := X1;
-  Y := Y1;
-
-  if DX > DY then
-  begin
-    E := 0;
-
-    while X <> X2 do
-    begin
-      curAlpha := AAlpha * E div DX;
-      ADest.DrawPixel(X, Y, ABrush, AAlpha - curAlpha);
-      ADest.DrawPixel(X, Y + SY, ABrush, curAlpha);
-      Inc(E, DY);
-      if E >= DX then
-      begin
-        Inc(Y, SY);
-        Dec(E, DX);
-      end;
-      Inc(X, SX);
-    end;
-  end
-  else
-  begin
-    E := 0;
-
-    while Y <> Y2 do
-    begin
-      curAlpha := AAlpha * E div DY;
-      ADest.DrawPixel(X, Y, ABrush, AAlpha - curAlpha);
-      ADest.DrawPixel(X + SX, Y, ABrush, curAlpha);
-      Inc(E, DX);
-      if E >= DY then
-      begin
-        Inc(X, SX);
-        Dec(E, DY);
-      end;
-      Inc(Y, SY);
-    end;
-  end;
-  if DrawLastPixel then
-    ADest.DrawPixel(X2, Y2, ABrush, AAlpha);
+  dashPos := 0;
+  DrawLineAntialias(ADest,x1,y1,x2,y2, ABrush,ABrush,$1000000,dashPos,DrawLastPixel,AAlpha);
 end;
 
 class procedure TUniversalDrawer.DrawLineAntialias(ADest: TCustomUniversalBitmap;
@@ -597,55 +567,101 @@ class procedure TUniversalDrawer.DrawLineAntialias(ADest: TCustomUniversalBitmap
   ADashLen: integer; var DashPos: integer; DrawLastPixel: boolean;
   AAlpha: Word = 65535);
 var
-  Y, X:  integer;
-  DX, DY, SX, SY, E: integer;
-  curAlpha: Word;
   curBrush: PUniversalBrush;
+
+  procedure SkipDash(ACount: integer);
+  begin
+    if ACount = 0 then exit;
+    DashPos := PositiveMod(DashPos+ACount, ADashLen+ADashLen);
+    if DashPos < ADashLen then curBrush := @ABrush1 else curBrush := @ABrush2;
+  end;
+
+var
+  X, Y, DX, DY, SX, SY, E,count, skipAfter: integer;
+  curAlpha: Word;
+  skip: Boolean;
+  r: TRect;
+  E64: Int64;
 begin
-  if (ABrush1.DoesNothing and ABrush2.DoesNothing) and (AAlpha= 0) then exit;
+  r := ADest.ClipRect;
+  skip := false;
+  if (ABrush1.DoesNothing and ABrush2.DoesNothing) or (AAlpha=0) then skip := true;
+  if (x1 < r.Left) and (x2 < r.Left) then skip := true;
+  if (x1 >= r.Right) and (x2 >= r.Right) then skip := true;
+  if (y1 < r.Top) and (y2 < r.Top) then skip := true;
+  if (y1 >= r.Bottom) and (y2 >= r.Bottom) then skip := true;
+
   if ADashLen<=0 then ADashLen := 1;
+  if skip then
+  begin
+    count := max(abs(x2-x1),abs(y2-y1));
+    if DrawLastPixel then inc(count);
+    SkipDash(count);
+    exit;
+  end;
 
   DashPos := PositiveMod(DashPos,ADashLen+ADashLen);
-  if DashPos < ADashLen then
-  curBrush := @ABrush1
-  else curBrush := @ABrush2;
+  if DashPos < ADashLen then curBrush := @ABrush1 else curBrush := @ABrush2;
 
   if (Y1 = Y2) and (X1 = X2) then
   begin
     if DrawLastPixel then
+    begin
       ADest.DrawPixel(X1, Y1, curBrush^, AAlpha);
+      inc(DashPos);
+      if DashPos = ADashLen + ADashLen then DashPos := 0;
+    end;
     Exit;
   end;
 
   DX := X2 - X1;
   DY := Y2 - Y1;
-
   if DX < 0 then
   begin
     SX := -1;
     DX := -DX;
-  end
-  else
-    SX := 1;
+  end else SX := 1;
 
   if DY < 0 then
   begin
     SY := -1;
     DY := -DY;
-  end
-  else
-    SY := 1;
+  end else SY := 1;
 
   DX := DX shl 1;
   DY := DY shl 1;
-
   X := X1;
   Y := Y1;
-
   if DX > DY then
   begin
     E := 0;
-
+    if (X < r.Left) and (SX > 0) then
+    begin
+      E64 := E+int64(DY)*(r.Left-X);
+      E := E64 mod DX;
+      Inc(Y, (E64 div DX)*SY);
+      SkipDash(r.Left-X);
+      X := r.Left;
+    end;
+    if (X >= r.Right) and (SX < 0) then
+    begin
+      E64 := E+int64(DY)*(X-(r.Right-1));
+      E := E64 mod DX;
+      Inc(Y, (E64 div DX)*SY);
+      SkipDash(X-(r.Right-1));
+      X := r.Right-1;
+    end;
+    if (X2 < r.Left-1) and (SX < 0) then
+    begin
+      skipAfter := (r.Left-1)-X2;
+      X2 := r.Left-1;
+    end else
+    if (X2 > r.Right) and (SX > 0) then
+    begin
+      skipAfter := X2-r.Right;
+      X2 := r.Right;
+    end else
+      skipAfter := 0;
     while X <> X2 do
     begin
       curAlpha := AAlpha * E div DX;
@@ -673,7 +689,33 @@ begin
   else
   begin
     E := 0;
-
+    if (Y < r.Top) and (SY > 0) then
+    begin
+      E64 := E+int64(DX)*(r.Top-Y);
+      E := E64 mod DY;
+      Inc(X, (E64 div DY)*SX);
+      SkipDash(r.Top-Y);
+      Y := r.Top;
+    end;
+    if (Y >= r.Bottom) and (SY < 0) then
+    begin
+      E64 := E+int64(DX)*(Y-(r.Bottom-1));
+      E := E64 mod DY;
+      Inc(X, (E64 div DY)*SX);
+      SkipDash(Y-(r.Bottom-1));
+      Y := r.Bottom-1;
+    end;
+    if (Y2 < r.Top-1) and (SY < 0) then
+    begin
+      skipAfter := (r.Top-1)-Y2;
+      Y2 := r.Top-1;
+    end else
+    if (Y2 > r.Bottom) and (SY > 0) then
+    begin
+      skipAfter := Y2-r.Bottom;
+      Y2 := r.Bottom;
+    end else
+      skipAfter := 0;
     while Y <> Y2 do
     begin
       curAlpha := AAlpha * E div DY;
@@ -704,6 +746,7 @@ begin
     inc(DashPos);
     if DashPos = ADashLen + ADashLen then DashPos := 0;
   end;
+  SkipDash(skipAfter);
 end;
 
 class procedure TUniversalDrawer.DrawPolyLine(ADest: TCustomUniversalBitmap;

@@ -1331,14 +1331,8 @@ end;
 
 procedure TBGRACanvas2D.lineStyle(AStyle: TPenStyle);
 begin
-  case AStyle of
-    psSolid: lineStyle(SolidPenStyle);
-    psDash: lineStyle(DashPenStyle);
-    psDot: lineStyle(DotPenStyle);
-    psDashDot: lineStyle(DashDotPenStyle);
-    psDashDotDot: lineStyle(DashDotDotPenStyle);
-    psClear: lineStyle(ClearPenStyle);
-  end;
+  if AStyle = psPattern then exit;
+  lineStyle(PenStyleToBGRA(AStyle));
 end;
 
 function TBGRACanvas2D.QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};

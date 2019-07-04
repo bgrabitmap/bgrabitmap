@@ -68,6 +68,7 @@ type
       OnMove: TOriginalMovePointEvent;
       RightButton: boolean;
       SnapToPoint: integer;
+      HitBox: TAffineBox;
     end;
     FPolylines: array of record
       Coords: array of TPointF;
@@ -106,13 +107,14 @@ type
     function AddArrow(const AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
     function AddPolyline(const ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle): integer; overload;
     function AddPolyline(const ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle; ABackColor: TBGRAPixel): integer; overload;
+    procedure SetHitBox(AIndex: integer; AHitBox: TAffineBox);
     procedure MouseMove(Shift: TShiftState; ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure MouseUp(RightButton: boolean; {%H-}Shift: TShiftState; {%H-}ViewX, {%H-}ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean); virtual;
     procedure KeyDown({%H-}Shift: TShiftState; {%H-}Key: TSpecialKey; out AHandled: boolean); virtual;
     procedure KeyUp({%H-}Shift: TShiftState; {%H-}Key: TSpecialKey; out AHandled: boolean); virtual;
     procedure KeyPress({%H-}UTF8Key: string; out AHandled: boolean); virtual;
-    function GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;
+    function GetPointAt(const ACoord: TPointF; ARightButton: boolean): integer;
     function Render(ADest: TBGRABitmap; const {%H-}ALayoutRect: TRect): TRect; virtual;
     function GetRenderBounds(const {%H-}ALayoutRect: TRect): TRect; virtual;
     function SnapToGrid(const ACoord: TPointF; AIsViewCoord: boolean): TPointF;
@@ -621,6 +623,7 @@ begin
     OnMove := AOnMove;
     RightButton:= ARightButton;
     SnapToPoint:= ASnapToPoint;
+    HitBox := TAffineBox.EmptyBox;
   end;
 end;
 
@@ -636,6 +639,7 @@ begin
     OnMove := nil;
     RightButton:= ARightButton;
     SnapToPoint:= -1;
+    HitBox := TAffineBox.EmptyBox;
   end;
 end;
 
@@ -651,6 +655,7 @@ begin
     OnMove := AOnMoveEnd;
     RightButton:= ARightButton;
     SnapToPoint:= -1;
+    HitBox := TAffineBox.EmptyBox;
   end;
 end;
 
@@ -673,6 +678,12 @@ begin
   FPolylines[result].Closed:= AClosed;
   FPolylines[result].Style := AStyle;
   FPolylines[result].BackColor := ABackColor;
+end;
+
+procedure TBGRAOriginalEditor.SetHitBox(AIndex: integer; AHitBox: TAffineBox);
+begin
+  if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
+  FPoints[AIndex].HitBox := AHitBox;
 end;
 
 procedure TBGRAOriginalEditor.MouseMove(Shift: TShiftState; ViewX, ViewY: single; out
@@ -782,22 +793,23 @@ begin
   AHandled := false;
 end;
 
-function TBGRAOriginalEditor.GetPointAt(ACoord: TPointF; ARightButton: boolean): integer;
+function TBGRAOriginalEditor.GetPointAt(const ACoord: TPointF; ARightButton: boolean): integer;
 var v: TPointF;
   curDist,newDist: single;
   i: Integer;
+  transfCoord: TPointF;
 begin
   if ARightButton then
     curDist := sqr(2.5*FPointSize)
   else
     curDist := sqr(1.5*FPointSize);
   result := -1;
-  ACoord:= Matrix*ACoord;
+  transfCoord:= Matrix*ACoord;
 
   for i := 0 to high(FPoints) do
   if FPoints[i].RightButton = ARightButton then
   begin
-    v := Matrix*FPoints[i].Coord - ACoord;
+    v := Matrix*FPoints[i].Coord - transfCoord;
     newDist := v*v;
     if newDist <= curDist then
     begin
@@ -814,7 +826,7 @@ begin
   for i := 0 to high(FPoints) do
   if FPoints[i].RightButton <> ARightButton then
   begin
-    v := Matrix*FPoints[i].Coord - ACoord;
+    v := Matrix*FPoints[i].Coord - transfCoord;
     newDist := v*v;
     if newDist <= curDist then
     begin
@@ -822,6 +834,14 @@ begin
       result := i;
     end;
   end;
+
+  for i := 0 to high(FPoints) do
+  if (FPoints[i].RightButton = ARightButton)
+    and FPoints[i].HitBox.Contains(ACoord) then exit(i);
+
+  for i := 0 to high(FPoints) do
+  if (FPoints[i].RightButton <> ARightButton)
+    and FPoints[i].HitBox.Contains(ACoord) then exit(i);
 end;
 
 function TBGRAOriginalEditor.Render(ADest: TBGRABitmap; const ALayoutRect: TRect): TRect;

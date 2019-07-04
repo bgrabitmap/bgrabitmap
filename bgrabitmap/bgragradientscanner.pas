@@ -1467,6 +1467,7 @@ constructor TBGRAGradientScanner.Create(gradient: TBGRACustomGradient;
 begin
   FGradient := gradient;
   FGradientOwner := AGradientOwner;
+  InitGradient;
   Init(AGradientType,AOrigin,d1,AffineMatrixIdentity,Sinus);
 end;
 
@@ -1477,6 +1478,7 @@ begin
   if AGradientType in[gtLinear,gtReflected] then raise EInvalidArgument.Create('Two directions are not required for linear and reflected gradients');
   FGradient := gradient;
   FGradientOwner := AGradientOwner;
+  InitGradient;
   Init(AGradientType,AOrigin,d1,d2,AffineMatrixIdentity,Sinus);
 end;
 
@@ -1486,6 +1488,7 @@ constructor TBGRAGradientScanner.Create(gradient: TBGRACustomGradient;
 begin
   FGradient := gradient;
   FGradientOwner := AGradientOwner;
+  InitGradient;
   Init(AOrigin, ARadius, AFocal, AFocalRadius, AffineMatrixIdentity, AffineMatrixIdentity);
 end;
 
