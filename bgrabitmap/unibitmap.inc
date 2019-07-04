@@ -1616,6 +1616,7 @@ procedure TCustomUniversalBitmap.ScanNextCustomChunk(var ACount: integer; out
 var
   quantity: Integer;
 begin
+  if (FScanWidth = 0) or (FScanHeight = 0) then raise exception.Create('Zero size scanner');
   APixels := FScanPtr;
   quantity := FScanWidth-FScanCurX;
   if ACount <= quantity then
