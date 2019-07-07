@@ -962,7 +962,7 @@ begin
   tempLCL.Canvas.FillRect(0,0,tempLCL.Width,tempLCL.Height);
   with tempLCL do begin
   {$ELSE}
-  temp := bmp.NewBitmap(rotBounds.Right-rotBounds.Left,rotBounds.Bottom-rotBounds.Top, BGRABlack);
+  temp := BGRABitmapFactory.Create(rotBounds.Right-rotBounds.Left,rotBounds.Bottom-rotBounds.Top, BGRABlack);
   with temp do begin
   {$ENDIF}
     Canvas.Font := Font;
@@ -1040,7 +1040,7 @@ begin
   tempLCL.Canvas.FillRect(0,0,tempLCL.Width,tempLCL.Height);
   with tempLCL do begin
   {$ELSE}
-  temp := bmp.NewBitmap(tx*sizeFactor, ty*sizeFactor, BGRABlack);
+  temp := BGRABitmapFactory.Create(tx*sizeFactor, ty*sizeFactor, BGRABlack);
   with temp do begin
   {$ENDIF}
     Canvas.Font := Font;
