@@ -433,13 +433,15 @@ end;
 {$ENDIF}
 
 operator*(constref A: TMatrix3D; var M: TPoint3D_128): TPoint3D_128;
-{$IFDEF BGRASSE_AVAILABLE}var oldMt: single;{$ENDIF}
+{$IFDEF BGRASSE_AVAILABLE}var oldMt: single;
+  resultAddr: pointer;{$ENDIF}
 begin
   {$IFDEF BGRASSE_AVAILABLE}
   if UseSSE then
   begin
     oldMt := M.t;
     M.t := SingleConst1;
+    resultAddr := @result;
     {$IFDEF cpux86_64}
     if UseSSE3 then
     asm
@@ -451,7 +453,7 @@ begin
       mov rax, M
       movups xmm0, [rax]
 
-      lea rax, result
+      mov rax, resultAddr
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -479,7 +481,7 @@ begin
       mov rax, M
       movups xmm0, [rax]
 
-      lea rax, result
+      mov rax, resultAddr
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -530,7 +532,7 @@ begin
       mov eax, M
       movups xmm0, [eax]
 
-      lea eax, result
+      mov eax, resultAddr
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -558,7 +560,7 @@ begin
       mov eax, M
       movups xmm0, [eax]
 
-      lea eax, result
+      mov eax, resultAddr
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -612,10 +614,12 @@ begin
 end;
 
 function MultiplyVect3DWithoutTranslation(constref A: TMatrix3D; constref M: TPoint3D_128): TPoint3D_128;
+{$IFDEF BGRASSE_AVAILABLE}var resultAddr: pointer;{$ENDIF}
 begin
   {$IFDEF BGRASSE_AVAILABLE}
   if UseSSE then
   begin
+    resultAddr := @result;
     {$IFDEF cpux86_64}
     if UseSSE3 then
     asm
@@ -627,7 +631,7 @@ begin
       mov rax, M
       movups xmm0, [rax]
 
-      lea rax, result
+      mov rax, resultAddr
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -655,7 +659,7 @@ begin
       mov rax, M
       movups xmm0, [rax]
 
-      lea rax, result
+      mov rax, resultAddr
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -706,7 +710,7 @@ begin
       mov eax, M
       movups xmm0, [eax]
 
-      lea eax, result
+      mov eax, resultAddr
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
@@ -734,7 +738,7 @@ begin
       mov eax, M
       movups xmm0, [eax]
 
-      lea eax, result
+      mov eax, resultAddr
 
       movaps xmm4,xmm0
       mulps xmm4,xmm5
