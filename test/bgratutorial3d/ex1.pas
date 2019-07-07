@@ -23,7 +23,7 @@ interface
 
 uses
   Classes, SysUtils, BGRAScene3D, BGRABitmapTypes
-  {$IFNDEF NO_OPENGL_SURFACE}, BGRAOpenGL, BGRAOpenGL3D,{$ENDIF};
+  {$IFNDEF NO_OPENGL_SURFACE}, BGRAOpenGL, BGRAOpenGL3D{$ENDIF};
 
 type
 

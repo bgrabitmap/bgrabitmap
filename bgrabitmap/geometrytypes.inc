@@ -59,7 +59,11 @@ type
   public
     constructor Create(Origin: TPoint; AWidth, AHeight: Longint); overload;
     constructor Create(ALeft, ATop, ARight, ABottom: Longint); overload;
-    procedure Intersect(const ARect: TRect);
+    procedure Intersect(R: TRect);
+    class function Intersect(R1: TRect; R2: TRect): TRect; static;
+    function IntersectsWith(R: TRect): Boolean;
+    class function Union(R1, R2: TRect): TRect; static;
+    procedure Union(R: TRect);
     procedure Offset(DX, DY: Longint);
     procedure Inflate(DX, DY: Longint);
     function Contains(const APoint: TPoint): boolean; overload;
@@ -721,9 +725,30 @@ begin
   self.Bottom := ABottom;
 end;
 
-procedure TRectHelper.Intersect(const ARect: TRect);
+procedure TRectHelper.Intersect(R: TRect);
 begin
-  IntersectRect(self, self, ARect);
+  IntersectRect(self, self, R);
+end;
+
+class function TRectHelper.Intersect(R1: TRect; R2: TRect): TRect;
+begin
+  result := EmptyRect;
+  IntersectRect(result, R1, R2);
+end;
+
+function TRectHelper.IntersectsWith(R: TRect): Boolean;
+begin
+  Result := (Left < R.Right) and (R.Left < Right) and (Top < R.Bottom) and (R.Top < Bottom);
+end;
+
+class function TRectHelper.Union(R1, R2: TRect): TRect;
+begin
+  UnionRect(Result, R1, R2);
+end;
+
+procedure TRectHelper.Union(R: TRect);
+begin
+  UnionRect(self, self, R);
 end;
 
 procedure TRectHelper.Offset(DX, DY: Longint);

@@ -227,7 +227,7 @@ begin
   prevPos := Stream.Position;
   count := Stream.Read({%H-}magic, sizeof(magic));
   Stream.Position:= prevPos;
-  result:= (count = sizeof(magic)) and (magic = '<?xml ');
+  result:= (count = sizeof(magic)) and ((magic = '<?xml ') or (copy(magic,1,5)='<svg '));
 end;
 
 procedure TFPReaderSVG.InternalRead(Stream: TStream; Img: TFPCustomImage);

@@ -1455,11 +1455,16 @@ begin
  end;
 end;
 
+function StringStartsWith(AText, AStart: string): boolean;
+begin
+  Result:= (AStart<>'') and (StrLComp(PChar(AStart),PChar(AText),length(AStart))=0);
+end;
+
 function TSVGDataLink.FindElementByRef(ARef: string; AClass: TSVGFactory): TSVGElement;
 begin
-  if ARef.StartsWith('url(#') then
+  if StringStartsWith(ARef,'url(#') then
     result := FindElementById(System.Copy(ARef,6,Length(ARef)-6), AClass)
-  else if ARef.StartsWith('#') then
+  else if StringStartsWith(ARef,'#') then
     result := FindElementById(System.Copy(ARef,2,Length(ARef)-1), AClass)
   else
     exit(nil);
