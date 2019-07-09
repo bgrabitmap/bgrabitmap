@@ -563,7 +563,7 @@
       </Item132>
       <Item133>
         <Filename Value="expandedbitmap.pas"/>
-        <UnitName Value="expandedbitmap"/>
+        <UnitName Value="ExpandedBitmap"/>
       </Item133>
       <Item134>
         <Filename Value="spectraldata.inc"/>
