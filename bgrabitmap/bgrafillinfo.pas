@@ -212,7 +212,7 @@ type
                 winding: integer;
                 includeStartingPoint: boolean;
                 originalY1: single;
-                x1,y1,y2: single;
+                x1,y1,x2,y2: single;
                 next: POnePassRecord;
                 nextWaiting: POnePassRecord;
                 nextDrawing: POnePassRecord;
@@ -324,17 +324,14 @@ end;
 
 procedure ComputeAliasedRowBounds(x1,x2: single; minx,maxx: integer; out ix1,ix2: integer);
 begin
-  if frac(x1)=0.5 then
-    ix1 := trunc(x1) else
-    ix1 := round(x1);
-  if frac(x2)=0.5 then
-    ix2 := trunc(x2)-1 else
-    ix2 := round(x2)-1;
-
-  if ix1 < minx then
-    ix1 := minx;
-  if ix2 >= maxx then
-    ix2 := maxx;
+  ix1 := trunc(x1);
+  if frac(x1)>0.5 then inc(ix1)
+  else if frac(x1)<=-0.5 then dec(ix1);
+  ix2 := trunc(x2)-1;
+  if frac(x2)>0.5 then inc(ix2)
+  else if frac(x2)<=-0.5 then dec(ix2);
+  if ix1 < minx then ix1 := minx;
+  if ix2 >= maxx then ix2 := maxx;
 end;
 
 function IsPointInPolygon(const points: ArrayOfTPointF; point: TPointF
@@ -1154,7 +1151,10 @@ begin
 {      if nbinter = length(inter) then
         raise exception.Create('too much'); }
       if inter[nbinter] = nil then inter[nbinter] := CreateIntersectionInfo;
-      SetIntersectionValues(inter[nbinter], (cury - p^.y1)*p^.slope + p^.x1, p^.winding, p^.id, cury - p^.originalY1, p^.data);
+      if p^.slope >= 0 then
+        SetIntersectionValues(inter[nbinter], (cury - p^.y1)*p^.slope + p^.x1, p^.winding, p^.id, cury - p^.originalY1, p^.data)
+      else
+        SetIntersectionValues(inter[nbinter], (cury - p^.y2)*p^.slope + p^.x2, p^.winding, p^.id, cury - p^.originalY1, p^.data);
       inc(nbinter);
     end else
     if (cury > p^.y2+1) then
@@ -1196,7 +1196,10 @@ begin
     p^.originalY1 := p^.y1;
     p^.winding:= ComputeWinding(p^.y1,p^.y2);
     if p^.y1 < p^.y2 then
-      p^.x1 := FPoints[i].x
+    begin
+      p^.x1 := FPoints[i].x;
+      p^.x2 := FPoints[j].x;
+    end
     else
     if p^.y1 > p^.y2 then
     begin
@@ -1204,6 +1207,7 @@ begin
       p^.y1 := p^.y2;
       p^.y2 := temp;
       p^.x1 := FPoints[j].x;
+      p^.x2 := FPoints[i].x;
     end;
   end;
 

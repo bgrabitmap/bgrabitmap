@@ -210,8 +210,8 @@ begin
   inter := shapeInfo.CreateIntersectionArray;
 
   if AliasingIncludeBottomRight then
-    AliasingOfs := PointF(0,0) else
-    AliasingOfs := PointF(-0.0001,-0.0001);
+    AliasingOfs := PointF(0.0001, 0.0001) else
+    AliasingOfs := PointF(0,0);
   bmp.LoadFromBitmapIfNeeded;
 
   //vertical scan
@@ -864,6 +864,7 @@ begin
     [tex1,tex2,tex3,tex4],
     [pt1,pt2,pt3,pt4]);
   mapping.Culling := ACulling;
+  mapping.Padding := true;
   AddShape(TOnePassFillPolyInfo.Create([pt1,pt2,pt3,pt4]),True,mapping,mapping,BGRAPixelTransparent);
 end;
 
@@ -1169,8 +1170,8 @@ begin
   end;
 
   if AliasingIncludeBottomRight then
-    AliasingOfs := PointF(0,0) else
-    AliasingOfs := PointF(-0.0001,-0.0001);
+    AliasingOfs := PointF(0.0001,0.0001) else
+    AliasingOfs := PointF(0,0);
 
   setlength(sums,maxx-minx+1);
   setlength(shapeRowsList, nbShapes);
