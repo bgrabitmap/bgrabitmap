@@ -149,9 +149,9 @@ end;
 
 procedure TForm1.RedrawScene;
 begin
-  if BGRASurface.Visible then BGRASurface.RedrawBitmap;
+  if BGRASurface.Visible then BGRASurface.DiscardBitmap;
   {$IFNDEF NO_OPENGL_SURFACE}
-  if Assigned(BGLSurface) and BGLSurface.Visible then BGLSurface.Repaint;
+  if Assigned(BGLSurface) and BGLSurface.Visible then BGLSurface.Invalidate;
   {$ENDIF}
 end;
 

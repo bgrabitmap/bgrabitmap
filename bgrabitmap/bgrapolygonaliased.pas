@@ -441,7 +441,7 @@ begin
   for yb := miny to maxy do
   begin
     //find intersections
-    polyInfo.ComputeAndSort(yb+0.5001,inter,nbInter,NonZeroWinding);
+    polyInfo.ComputeAndSort(yb+0.5,inter,nbInter,NonZeroWinding);
 
     for i := 0 to nbinter div 2 - 1 do
     begin
@@ -678,7 +678,7 @@ begin
   for yb := miny to maxy do
   begin
     //find intersections
-    polyInfo.ComputeAndSort(yb+0.5001,inter,nbInter,NonZeroWinding);
+    polyInfo.ComputeAndSort(yb+0.5,inter,nbInter,NonZeroWinding);
 
     for i := 0 to nbinter div 2 - 1 do
     begin
@@ -749,7 +749,7 @@ begin
   for yb := miny to maxy do
   begin
     //find intersections
-    polyInfo.ComputeAndSort(yb+0.5001,inter,nbInter,NonZeroWinding);
+    polyInfo.ComputeAndSort(yb+0.5,inter,nbInter,NonZeroWinding);
     for i := 0 to nbinter div 2 - 1 do
     begin
       x1 := inter[i + i].interX;

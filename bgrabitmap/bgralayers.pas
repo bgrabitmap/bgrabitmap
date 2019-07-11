@@ -292,6 +292,7 @@ type
     procedure VerticalFlip(ALayerIndex: integer); overload;
     procedure Resample(AWidth, AHeight: integer; AResampleMode: TResampleMode; AFineResampleFilter: TResampleFilter = rfLinear);
     procedure SetLayerBitmap(layer: integer; ABitmap: TBGRABitmap; AOwned: boolean);
+    function TakeLayerBitmap(layer: integer): TBGRABitmap;
     procedure ApplyLayerOffset(ALayerIndex: integer; APadWithTranparentPixels: boolean);
 
     function DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect; overload;
@@ -1976,6 +1977,16 @@ begin
     FLayers[layer].Owner := AOwned;
     FLayers[layer].OriginalGuid := GUID_NULL;
     FLayers[layer].OriginalMatrix := AffineMatrixIdentity;
+  end;
+end;
+
+function TBGRALayeredBitmap.TakeLayerBitmap(layer: integer): TBGRABitmap;
+begin
+  result := GetLayerBitmapDirectly(layer);
+  if Assigned(result) then
+  begin
+    if FLayers[layer].Owner then FLayers[layer].Owner := false
+    else result := result.Duplicate as TBGRABitmap;
   end;
 end;
 

@@ -442,7 +442,7 @@ type
 
     procedure FillQuadLinearColor(pt1,pt2,pt3,pt4: TPointF; c1,c2,c3,c4: TBGRAPixel); override;
     procedure FillQuadLinearColorAntialias(pt1,pt2,pt3,pt4: TPointF; c1,c2,c3,c4: TBGRAPixel); override;
-    procedure FillQuadLinearMapping(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; TextureInterpolation: Boolean= True; ACulling: TFaceCulling = fcNone); override;
+    procedure FillQuadLinearMapping(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; TextureInterpolation: Boolean= True; ACulling: TFaceCulling = fcNone; ACropToPolygon: boolean = true); override;
     procedure FillQuadLinearMappingLightness(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; light1,light2,light3,light4: word; TextureInterpolation: Boolean= True); override;
     procedure FillQuadLinearMappingAntialias(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; ACulling: TFaceCulling = fcNone); override;
     procedure FillQuadPerspectiveMapping(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
@@ -1014,8 +1014,11 @@ end;
 { Set the size of the current bitmap. All data is lost during the process }
 procedure TBGRADefaultBitmap.SetSize(AWidth, AHeight: integer);
 begin
-  inherited SetSize(AWidth, AHeight);
-  FreeBitmap;
+  if (Width <> AWidth) or (Height <> AHeight) then
+  begin
+    inherited SetSize(AWidth, AHeight);
+    FreeBitmap;
+  end;
 end;
 
 {---------------------- Constructors ---------------------------------}
@@ -2203,9 +2206,10 @@ end;
 
 procedure TBGRADefaultBitmap.FillQuadLinearMapping(pt1, pt2, pt3, pt4: TPointF;
   texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF;
-  TextureInterpolation: Boolean; ACulling: TFaceCulling);
+  TextureInterpolation: Boolean; ACulling: TFaceCulling; ACropToPolygon: boolean);
 var
   scan: TBGRAQuadLinearScanner;
+  r: TRect;
 begin
   if ((abs(pt1.y-pt2.y)<1e-6) and (abs(pt3.y-pt4.y)<1e-6)) or
      ((abs(pt3.y-pt2.y)<1e-6) and (abs(pt1.y-pt4.y)<1e-6)) then
@@ -2217,7 +2221,19 @@ begin
          [tex1,tex2,tex3,tex4],
          [pt1,pt2,pt3,pt4],TextureInterpolation);
     scan.Culling := ACulling;
-    FillPoly([pt1,pt2,pt3,pt4],scan,dmDrawWithTransparency);
+    if ACropToPolygon then
+    begin
+      scan.Padding := true;
+      FillPoly([pt1,pt2,pt3,pt4],scan,dmDrawWithTransparency);
+    end
+    else
+    begin
+      r := RectWithSize(floor(pt1.x),floor(pt1.y),1,1);
+      UnionRect(r, r,RectWithSize(floor(pt2.x),floor(pt2.y),1,1));
+      UnionRect(r, r,RectWithSize(floor(pt3.x),floor(pt3.y),1,1));
+      UnionRect(r, r,RectWithSize(floor(pt4.x),floor(pt4.y),1,1));
+      FillRect(r,scan,dmDrawWithTransparency);
+    end;
     scan.Free;
   end;
 end;

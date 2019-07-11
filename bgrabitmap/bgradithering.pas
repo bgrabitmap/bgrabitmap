@@ -585,6 +585,10 @@ begin
             end;
           end;
           OnOutputPixel(destX,destY,approxIndex,approx);
+        end else
+        begin
+          ApproximateColor(BGRAPixelTransparent, approx, approxIndex);
+          OnOutputPixel(destX,destY,approxIndex,approx);
         end;
       end
     end
@@ -639,6 +643,10 @@ begin
               AddError(nextLine[i+1], diff, 1);
           end;
         end;
+        OnOutputPixel(destX,destY,approxIndex,approx);
+      end else
+      begin
+        ApproximateColor(BGRAPixelTransparent, approx, approxIndex);
         OnOutputPixel(destX,destY,approxIndex,approx);
       end;
       inc(p);

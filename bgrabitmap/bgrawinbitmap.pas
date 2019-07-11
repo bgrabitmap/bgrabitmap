@@ -72,6 +72,7 @@ type
     procedure Changed(Sender: TObject); override;
   public
     constructor Create(AUser: TBGRAWinBitmap); overload;
+    property User: TBGRAWinBitmap read FUser write FUser;
   end;
 
 procedure TWinBitmapTracker.Changed(Sender: TObject);
@@ -93,6 +94,7 @@ procedure TBGRAWinBitmap.FreeData;
 begin
   if DIB_SectionHandle <> 0 then
   begin
+    FreeBitmap;
     DeleteObject(DIB_SectionHandle);
     FDataByte := nil;
     DIB_SectionHandle := 0;
@@ -103,8 +105,9 @@ procedure TBGRAWinBitmap.RebuildBitmap;
 begin
   if FBitmap = nil then
   begin
-    FBitmap := TWinBitmapTracker.Create(self);
+    FBitmap := TWinBitmapTracker.Create(nil);
     FBitmap.Handle := DIB_SectionHandle;
+    TWinBitmapTracker(FBitmap).User := self;
   end;
 end;
 
@@ -112,7 +115,8 @@ procedure TBGRAWinBitmap.FreeBitmap;
 begin
   if FBitmap <> nil then
   begin
-    FBitmap.Handle := 0;
+    TWinBitmapTracker(FBitmap).User := nil;
+    FBitmap.ReleaseHandle;
     FBitmap.Free;
     FBitmap := nil;
   end;
@@ -218,7 +222,7 @@ begin
   end;
 end;
 
-procedure TBGRAWinBitmap.AlphaCorrectionNeeded; inline;
+procedure TBGRAWinBitmap.AlphaCorrectionNeeded;
 begin
   FAlphaCorrectionNeeded := True;
 end;
