@@ -1014,8 +1014,11 @@ end;
 { Set the size of the current bitmap. All data is lost during the process }
 procedure TBGRADefaultBitmap.SetSize(AWidth, AHeight: integer);
 begin
-  inherited SetSize(AWidth, AHeight);
-  FreeBitmap;
+  if (Width <> AWidth) or (Height <> AHeight) then
+  begin
+    inherited SetSize(AWidth, AHeight);
+    FreeBitmap;
+  end;
 end;
 
 {---------------------- Constructors ---------------------------------}

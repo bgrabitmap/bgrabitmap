@@ -94,6 +94,7 @@ procedure TBGRAWinBitmap.FreeData;
 begin
   if DIB_SectionHandle <> 0 then
   begin
+    FreeBitmap;
     DeleteObject(DIB_SectionHandle);
     FDataByte := nil;
     DIB_SectionHandle := 0;
@@ -115,7 +116,7 @@ begin
   if FBitmap <> nil then
   begin
     TWinBitmapTracker(FBitmap).User := nil;
-    FBitmap.Handle := 0;
+    FBitmap.ReleaseHandle;
     FBitmap.Free;
     FBitmap := nil;
   end;

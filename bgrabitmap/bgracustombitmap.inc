@@ -1121,8 +1121,11 @@ end;
 
 procedure TBGRACustomBitmap.SetSize(AWidth, AHeight: integer);
 begin
-  inherited SetSize(AWidth, AHeight);
-  DiscardXorMask;
+  if (AWidth <> Width) or (AHeight <> Height) then
+  begin
+    inherited SetSize(AWidth, AHeight);
+    DiscardXorMask;
+  end;
 end;
 
 procedure TBGRACustomBitmap.InternalArc(cx, cy, rx, ry: single;
