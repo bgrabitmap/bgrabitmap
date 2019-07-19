@@ -249,20 +249,22 @@ type
     function AddOwnedLayer(ABitmap: TBGRABitmap; Position: TPoint; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
     function AddOwnedLayer(ABitmap: TBGRABitmap; Position: TPoint; Opacity: byte = 255): integer; overload;
     function AddOwnedLayer(ABitmap: TBGRABitmap; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
-    function AddLayerFromOriginal(AGuid: TGuid; Opacity: byte = 255): integer; overload;
-    function AddLayerFromOriginal(AGuid: TGuid; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
-    function AddLayerFromOriginal(AGuid: TGuid; Matrix: TAffineMatrix; Opacity: byte = 255): integer; overload;
-    function AddLayerFromOriginal(AGuid: TGuid; Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(const AGuid: TGuid; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(const AGuid: TGuid; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(const AGuid: TGuid; Matrix: TAffineMatrix; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(const AGuid: TGuid; Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; Opacity: byte = 255): integer; overload;
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; Matrix: TAffineMatrix; Opacity: byte = 255): integer; overload;
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
 
     function AddOriginal(AOriginal: TBGRALayerCustomOriginal; AOwned: boolean = true): integer;
-    function AddOriginalFromStream(AStream: TStream; ALateLoad: boolean = false): integer;
-    function AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage; ALateLoad: boolean = false): integer;
+    function AddOriginalFromStream(AStream: TStream; ALateLoad: boolean = false): integer; overload;
+    function AddOriginalFromStream(AStream: TStream; const AGuid: TGuid; ALateLoad: boolean = false): integer; overload;
+    function AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage; ALateLoad: boolean = false): integer; overload;
+    function AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage; const AGuid: TGuid; ALateLoad: boolean = false): integer; overload;
     procedure SaveOriginalToStream(AIndex: integer; AStream: TStream); overload;
-    procedure SaveOriginalToStream(AGuid: TGUID; AStream: TStream); overload;
+    procedure SaveOriginalToStream(const AGuid: TGuid; AStream: TStream); overload;
     function RemoveOriginal(AOriginal: TBGRALayerCustomOriginal): boolean;
     procedure DeleteOriginal(AIndex: integer);
     procedure NotifyLoaded; override;
@@ -1299,25 +1301,25 @@ begin
   FLayers[result].Owner := True;
 end;
 
-function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+function TBGRALayeredBitmap.AddLayerFromOriginal(const AGuid: TGuid;
   Opacity: byte): integer;
 begin
   result := AddLayerFromOriginal(AGuid, DefaultBlendingOperation, Opacity);
 end;
 
-function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+function TBGRALayeredBitmap.AddLayerFromOriginal(const AGuid: TGuid;
   BlendOp: TBlendOperation; Opacity: byte): integer;
 begin
   result := AddLayerFromOriginal(AGuid, AffineMatrixIdentity, BlendOp, Opacity);
 end;
 
-function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+function TBGRALayeredBitmap.AddLayerFromOriginal(const AGuid: TGuid;
   Matrix: TAffineMatrix; Opacity: byte): integer;
 begin
   result := AddLayerFromOriginal(AGuid, Matrix, DefaultBlendingOperation, Opacity);
 end;
 
-function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+function TBGRALayeredBitmap.AddLayerFromOriginal(const AGuid: TGuid;
   Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte): integer;
 begin
   result := AddOwnedLayer(TBGRABitmap.Create, BlendOp, Opacity);
@@ -1398,12 +1400,22 @@ end;
 function TBGRALayeredBitmap.AddOriginalFromStream(AStream: TStream;
   ALateLoad: boolean): integer;
 var
+  newGuid: TGUID;
+begin
+  if CreateGUID(newGuid)<> 0 then raise exception.Create('Error while creating GUID');
+  result := AddOriginalFromStream(AStream, newGuid, ALateLoad);
+end;
+
+
+function TBGRALayeredBitmap.AddOriginalFromStream(AStream: TStream;
+  const AGuid: TGuid; ALateLoad: boolean): integer;
+var
   storage: TBGRAMemOriginalStorage;
 begin
   storage:= TBGRAMemOriginalStorage.Create;
   storage.LoadFromStream(AStream);
   try
-    result := AddOriginalFromStorage(storage, ALateLoad);
+    result := AddOriginalFromStorage(storage, AGuid, ALateLoad);
   finally
     storage.Free;
   end;
@@ -1411,10 +1423,18 @@ end;
 
 function TBGRALayeredBitmap.AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage; ALateLoad: boolean): integer;
 var
+  newGuid: TGUID;
+begin
+  if CreateGUID(newGuid)<> 0 then raise exception.Create('Error while creating GUID');
+  result := AddOriginalFromStorage(AStorage, newGuid, ALateLoad);
+end;
+
+function TBGRALayeredBitmap.AddOriginalFromStorage(
+  AStorage: TBGRAMemOriginalStorage; const AGuid: TGuid; ALateLoad: boolean): integer;
+var
   origClassName: String;
   origClass: TBGRALayerOriginalAny;
   orig: TBGRALayerCustomOriginal;
-  newGuid: TGuid;
   dir, subdir: TMemDirectory;
 begin
   result := -1;
@@ -1422,17 +1442,15 @@ begin
   if origClassName = '' then raise Exception.Create('Original class name not defined');
   if ALateLoad then
   begin
-    if CreateGUID(newGuid)<> 0 then
-      raise exception.Create('Error while creating GUID');
-    if IndexOfOriginal(newGuid)<>-1 then
+    if IndexOfOriginal(AGuid)<>-1 then
       raise exception.Create('Duplicate GUID');
 
     dir := MemDirectory.Directory[MemDirectory.AddDirectory(OriginalsDirectory)];
-    subdir := dir.Directory[dir.AddDirectory(GUIDToString(newGuid))];
+    subdir := dir.Directory[dir.AddDirectory(GUIDToString(AGuid))];
     AStorage.CopyTo(subdir);
 
     if FOriginals = nil then FOriginals := TBGRALayerOriginalList.Create;
-    result := FOriginals.Add(BGRALayerOriginalEntry(newGuid));
+    result := FOriginals.Add(BGRALayerOriginalEntry(AGuid));
   end else
   begin
     origClass := FindLayerOriginalClass(origClassName);
@@ -1440,6 +1458,7 @@ begin
     orig := origClass.Create;
     try
       orig.LoadFromStorage(AStorage);
+      orig.Guid := AGuid;
       result := AddOriginal(orig, true);
     except on ex:exception do
       begin
@@ -1470,7 +1489,8 @@ begin
   end;
 end;
 
-procedure TBGRALayeredBitmap.SaveOriginalToStream(AGuid: TGUID; AStream: TStream);
+procedure TBGRALayeredBitmap.SaveOriginalToStream(const AGuid: TGuid;
+  AStream: TStream);
 var
   idxOrig: Integer;
 begin
