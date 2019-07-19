@@ -762,9 +762,7 @@ function TBidiTextLayout.TextSizeBidiOverride(sUTF8: string;
   ARightToLeft: boolean): TPointF;
 begin
   AddOverrideIfNecessary(sUTF8, ARightToLeft);
-
-  with FRenderer.TextSizeAngle(sUTF8, FRenderer.FontOrientation) do
-    result := PointF(cx, cy);
+  result := FRenderer.TextSizeAngleF(sUTF8, FRenderer.FontOrientation);
 end;
 
 procedure TBidiTextLayout.ParagraphSplit(ASender: TObject;
@@ -871,13 +869,13 @@ var
 begin
   over := AddOverrideIfNecessary(sUTF8, ARightToLeft);
 
-  result := FRenderer.TextFitInfo(sUTF8, round(AWidth));
+  result := FRenderer.TextFitInfoF(sUTF8, AWidth);
   if over then dec(result);
 end;
 
 function TBidiTextLayout.GetFontFullHeight: single;
 begin
-  result := FRenderer.TextSizeAngle('Hg', FRenderer.FontOrientation).cy;
+  result := FRenderer.TextSizeAngleF('Hg', FRenderer.FontOrientation).y;
 end;
 
 function TBidiTextLayout.GetFontBaseline: single;

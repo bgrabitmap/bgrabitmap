@@ -69,6 +69,7 @@ type
     constructor Create; overload;
     constructor Create(ADirectoryUTF8: string); overload;
     function GetFontPixelMetric: TFontPixelMetric; override;
+    function GetFontPixelMetricF: TFontPixelMetricF; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
@@ -82,9 +83,12 @@ type
     procedure CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment); override;
     procedure CopyTextPathTo(ADest: IBGRAPath; x, y: single; s: string; align: TAlignment; ARightToLeft: boolean); override;
     function HandlesTextPath: boolean; override;
-    function TextSize(s: string): TSize; override;
-    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
+    function TextSize(sUTF8: string): TSize; overload; override;
+    function TextSizeF(sUTF8: string): TPointF; overload; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; overload; override;
+    function TextSizeF(sUTF8: string; AMaxWidthF: single; {%H-}ARightToLeft: boolean): TPointF; overload; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
+    function TextFitInfoF(sUTF8: string; AMaxWidthF: single): integer; override;
     destructor Destroy; override;
   end;
 
@@ -1062,9 +1066,9 @@ begin
     FVectorizedFontArray[high(FVectorizedFontArray)].VectorizedFont := FVectorizedFont;
   end;
   if FontEmHeight > 0 then
-    FVectorizedFont.EmHeight := FontEmHeight
+    FVectorizedFont.EmHeight := FontEmHeightF
   else
-    FVectorizedFont.FullHeight:= -FontEmHeight;
+    FVectorizedFont.FullHeight:= -FontEmHeightF;
   if OutlineActuallyVisible then
   begin
     if OuterOutlineOnly then
@@ -1264,6 +1268,23 @@ begin
   end;
 end;
 
+function TBGRAVectorizedFontRenderer.GetFontPixelMetricF: TFontPixelMetricF;
+var factor: single;
+  fpm: TFontPixelMetric;
+begin
+  UpdateFont;
+  fpm := FVectorizedFont.FontPixelMetric;
+  result.Defined := fpm.Defined;
+  if FVectorizedFont.Resolution > 0 then
+    factor := FVectorizedFont.FullHeight/FVectorizedFont.Resolution
+  else factor := 1;
+  result.Baseline := fpm.Baseline*factor;
+  result.CapLine := fpm.CapLine*factor;
+  result.Lineheight := fpm.Lineheight*factor;
+  result.DescentLine := fpm.DescentLine*factor;
+  result.xLine := fpm.xLine*factor;
+end;
+
 procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment);
 begin
@@ -1354,34 +1375,44 @@ begin
   Result:= true;
 end;
 
-function TBGRAVectorizedFontRenderer.TextSize(s: string): TSize;
+function TBGRAVectorizedFontRenderer.TextSize(sUTF8: string): TSize;
 var sizeF: TPointF;
 begin
-  UpdateFont;
-  sizeF := FVectorizedFont.GetTextSize(s);
+  sizeF := TextSizeF(sUTF8);
   result.cx := round(sizeF.x);
   result.cy := round(sizeF.y);
 end;
 
-function TBGRAVectorizedFontRenderer.TextSize(sUTF8: string;
-  AMaxWidth: integer; ARightToLeft: boolean): TSize;
-var
-  remains: string;
-  w,h,totalH: single;
+function TBGRAVectorizedFontRenderer.TextSizeF(sUTF8: string): TPointF;
 begin
   UpdateFont;
+  result := FVectorizedFont.GetTextSize(sUTF8);
+end;
 
-  result.cx := 0;
-  totalH := 0;
+function TBGRAVectorizedFontRenderer.TextSize(sUTF8: string;
+  AMaxWidth: integer; ARightToLeft: boolean): TSize;
+begin
+  with TextSizeF(sUTF8, AMaxWidth, ARightToLeft) do
+    result := Size(system.Round(x),system.Round(y));
+end;
+
+function TBGRAVectorizedFontRenderer.TextSizeF(sUTF8: string;
+  AMaxWidthF: single; ARightToLeft: boolean): TPointF;
+var
+  remains: string;
+  w,h: single;
+begin
+  UpdateFont;
+  result.x := 0;
+  result.y := 0;
   h := FVectorizedFont.FullHeight;
   repeat
-    FVectorizedFont.SplitText(sUTF8, AMaxWidth, remains);
+    FVectorizedFont.SplitText(sUTF8, AMaxWidthF, remains);
     w := FVectorizedFont.GetTextSize(sUTF8).x;
-    if round(w)>result.cx then result.cx := round(w);
-    totalH += h;
+    if w > result.x then result.x := w;
+    result.y += h;
     sUTF8 := remains;
   until remains = '';
-  result.cy := ceil(totalH);
 end;
 
 function TBGRAVectorizedFontRenderer.TextFitInfo(sUTF8: string;
@@ -1389,6 +1420,13 @@ function TBGRAVectorizedFontRenderer.TextFitInfo(sUTF8: string;
 begin
   UpdateFont;
   result := FVectorizedFont.TextFitInfo(sUTF8, AMaxWidth);
+end;
+
+function TBGRAVectorizedFontRenderer.TextFitInfoF(sUTF8: string;
+  AMaxWidthF: single): integer;
+begin
+  UpdateFont;
+  result := FVectorizedFont.TextFitInfo(sUTF8, AMaxWidthF);
 end;
 
 destructor TBGRAVectorizedFontRenderer.Destroy;

@@ -300,6 +300,22 @@ type
     Lineheight: integer;
   end;
 
+  {* Measurements of a font in floating point values }
+  TFontPixelMetricF = record
+    {** The values have been computed }
+    Defined: boolean;
+    {** Position of the baseline, where most letters lie }
+    Baseline,
+    {** Position of the top of the small letters (x being one of them) }
+    xLine,
+    {** Position of the top of the UPPERCASE letters }
+    CapLine,
+    {** Position of the bottom of letters like g and p }
+    DescentLine,
+    {** Total line height including line spacing defined by the font }
+    Lineheight: single;
+  end;
+
   {* Vertical anchoring of the font. When text is drawn, a start coordinate
       is necessary. Text can be positioned in different ways. This enum
       defines what position it is regarding the font }
@@ -335,6 +351,13 @@ type
   { TBGRACustomFontRenderer }
   {* Abstract class for all font renderers }
   TBGRACustomFontRenderer = class
+  protected
+    {** Specifies the height of the font without taking into account additional line spacing.
+        A negative value means that it is the full height instead }
+    FFontEmHeightF: single;
+    function GetFontEmHeight: integer;
+    procedure SetFontEmHeight(AValue: integer);
+  public
     {** Specifies the font to use. Unless the font renderer accept otherwise,
         the name is in human readable form, like 'Arial', 'Times New Roman', ...  }
     FontName: string;
@@ -351,20 +374,21 @@ type
         It is expressed in tenth of degrees, positive values going counter-clockwise }
     FontOrientation: integer;
 
-    {** Specifies the height of the font without taking into account additional line spacing.
-        A negative value means that it is the full height instead }
-    FontEmHeight: integer;
-
     {** Returns measurement for the current font in pixels }
     function GetFontPixelMetric: TFontPixelMetric; virtual; abstract;
+    function GetFontPixelMetricF: TFontPixelMetricF; virtual;
 
     {** Returns the total size of the string provided using the current font.
         Orientation is not taken into account, so that the width is along the text }
     function TextSize(sUTF8: string): TSize; overload; virtual; abstract;
+    function TextSizeF(sUTF8: string): TPointF; overload; virtual;
     function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; overload; virtual; abstract;
+    function TextSizeF(sUTF8: string; AMaxWidthF: single; ARightToLeft: boolean): TPointF; overload; virtual;
 
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
+    function TextFitInfoF(sUTF8: string; AMaxWidthF: single): integer; virtual;
     function TextSizeAngle(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TSize; virtual;
+    function TextSizeAngleF(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TPointF; virtual;
 
     {** Draws the UTF8 encoded string, with color ''c''.
         If align is taLeftJustify, (''x'',''y'') is the top-left corner.
@@ -401,6 +425,9 @@ type
     procedure CopyTextPathTo({%H-}ADest: IBGRAPath; {%H-}x, {%H-}y: single; {%H-}s: string; {%H-}align: TAlignment); virtual; //optional
     procedure CopyTextPathTo({%H-}ADest: IBGRAPath; {%H-}x, {%H-}y: single; {%H-}s: string; {%H-}align: TAlignment; {%H-}ARightToLeft: boolean); virtual; //optional
     function HandlesTextPath: boolean; virtual;
+
+    property FontEmHeight: integer read GetFontEmHeight write SetFontEmHeight;
+    property FontEmHeightF: single read FFontEmHeightF write FFontEmHeightF;
   end;
 
   {* Output mode for the improved renderer for readability. This is used by the font renderer based on LCL in ''BGRAText'' }
@@ -753,10 +780,57 @@ end;
 
 { TBGRACustomFontRenderer }
 
+function TBGRACustomFontRenderer.GetFontEmHeight: integer;
+begin
+  result := round(FFontEmHeightF);
+end;
+
+procedure TBGRACustomFontRenderer.SetFontEmHeight(AValue: integer);
+begin
+  FFontEmHeightF:= AValue;
+end;
+
+function TBGRACustomFontRenderer.GetFontPixelMetricF: TFontPixelMetricF;
+begin
+  with GetFontPixelMetric do
+  begin
+    result.Defined := Defined;
+    result.Baseline := Baseline;
+    result.xLine := xLine;
+    result.CapLine := CapLine;
+    result.DescentLine := DescentLine;
+    result.Lineheight := LineHeight;
+  end;
+end;
+
+function TBGRACustomFontRenderer.TextSizeF(sUTF8: string): TPointF;
+begin
+  with TextSize(sUTF8) do
+    result := PointF(cx,cy);
+end;
+
+function TBGRACustomFontRenderer.TextSizeF(sUTF8: string; AMaxWidthF: single;
+  ARightToLeft: boolean): TPointF;
+begin
+  with TextSize(sUTF8, round(AMaxWidthF), ARightToLeft) do
+    result := PointF(cx,cy);
+end;
+
+function TBGRACustomFontRenderer.TextFitInfoF(sUTF8: string; AMaxWidthF: single): integer;
+begin
+  result := TextFitInfo(sUTF8, round(AMaxWidthF));
+end;
+
 function TBGRACustomFontRenderer.TextSizeAngle(sUTF8: string;
   orientationTenthDegCCW: integer): TSize;
 begin
   result := TextSize(sUTF8); //ignore orientation by default
+end;
+
+function TBGRACustomFontRenderer.TextSizeAngleF(sUTF8: string;
+  orientationTenthDegCCW: integer): TPointF;
+begin
+  result := TextSizeF(sUTF8); //ignore orientation by default
 end;
 
 procedure TBGRACustomFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
