@@ -272,7 +272,9 @@ type
     procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean = false; AFullSizeLayer: boolean = false); overload;
     procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean; ARenderBounds: TRect; AFullSizeLayer: boolean = false); overload;
     procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean; ARenderBoundsF: TRectF; AFullSizeLayer: boolean = false); overload;
+    procedure RenderLayerFromOriginalIfNecessary(layer: integer; ADraft: boolean; var ABounds: TRect);
     function RenderOriginalsIfNecessary(ADraft: boolean = false): TRect;
+    function RenderOriginalIfNecessary(const AGuid: TGuid; ADraft: boolean = false): TRect;
     procedure RemoveUnusedOriginals;
 
     destructor Destroy; override;
@@ -1637,6 +1639,7 @@ begin
   orig := LayerOriginal[layer];
   if Assigned(orig) then
   begin
+    Unfreeze(layer);
     layerDir := GetLayerDirectory(layer);
     renderDir := layerDir.Directory[layerDir.AddDirectory(RenderSubDirectory)];
     orig.RenderStorage := TBGRAMemOriginalStorage.Create(renderDir);
@@ -1709,7 +1712,8 @@ begin
   RenderLayerFromOriginal(layer, ADraft, r, AFullSizeLayer);
 end;
 
-function TBGRALayeredBitmap.RenderOriginalsIfNecessary(ADraft: boolean): TRect;
+procedure TBGRALayeredBitmap.RenderLayerFromOriginalIfNecessary(layer: integer;
+  ADraft: boolean; var ABounds: TRect);
   procedure UnionLayerArea(ALayer: integer);
   var
     r: TRect;
@@ -1720,51 +1724,68 @@ function TBGRALayeredBitmap.RenderOriginalsIfNecessary(ADraft: boolean): TRect;
 
     r := RectWithSize(LayerOffset[ALayer].X, LayerOffset[ALayer].Y,
                       FLayers[ALayer].Source.Width, FLayers[ALayer].Source.Height);
-    if IsRectEmpty(result) then result := r else
-      UnionRect(result,result,r);
+    if IsRectEmpty(ABounds) then ABounds := r else
+      UnionRect(ABounds,ABounds,r);
   end;
 
 var
-  i: Integer;
   r: TRect;
 
 begin
+  case LayerOriginalRenderStatus[layer] of
+  orsNone:
+       begin
+         UnionLayerArea(layer);
+         RenderLayerFromOriginal(layer, ADraft);
+         UnionLayerArea(layer);
+       end;
+  orsDraft: if not ADraft then
+       begin
+         UnionLayerArea(layer);
+         RenderLayerFromOriginal(layer, ADraft);
+         UnionLayerArea(layer);
+       end;
+  orsPartialDraft,orsPartialProof:
+       if not ADraft and (LayerOriginalRenderStatus[layer] = orsPartialDraft) then
+       begin
+         UnionLayerArea(layer);
+         RenderLayerFromOriginal(layer, ADraft, rect(0,0,Width,Height), true);
+         UnionLayerArea(layer);
+       end
+       else
+       begin
+         with FLayers[layer].OriginalInvalidatedBounds do
+           r := Rect(floor(Left),floor(Top),ceil(Right),ceil(Bottom));
+         RenderLayerFromOriginal(layer, ADraft, r, true);
+         if not IsRectEmpty(r) then
+         begin
+           if IsRectEmpty(ABounds) then
+             ABounds := r
+           else
+             UnionRect(ABounds, ABounds, r);
+         end;
+       end;
+  end;
+end;
+
+function TBGRALayeredBitmap.RenderOriginalsIfNecessary(ADraft: boolean): TRect;
+var
+  i: Integer;
+begin
   result:= EmptyRect;
   for i := 0 to NbLayers-1 do
-    case LayerOriginalRenderStatus[i] of
-    orsNone:
-         begin
-           UnionLayerArea(i);
-           RenderLayerFromOriginal(i, ADraft);
-           UnionLayerArea(i);
-         end;
-    orsDraft: if not ADraft then
-         begin
-           UnionLayerArea(i);
-           RenderLayerFromOriginal(i, ADraft);
-           UnionLayerArea(i);
-         end;
-    orsPartialDraft,orsPartialProof:
-         if not ADraft and (LayerOriginalRenderStatus[i] = orsPartialDraft) then
-         begin
-           UnionLayerArea(i);
-           RenderLayerFromOriginal(i, ADraft, rect(0,0,Width,Height), true);
-           UnionLayerArea(i);
-         end
-         else
-         begin
-           with FLayers[i].OriginalInvalidatedBounds do
-             r := Rect(floor(Left),floor(Top),ceil(Right),ceil(Bottom));
-           RenderLayerFromOriginal(i, ADraft, r, true);
-           if not IsRectEmpty(r) then
-           begin
-             if IsRectEmpty(result) then
-               result := r
-             else
-               UnionRect(result, result, r);
-           end;
-         end;
-    end;
+    RenderLayerFromOriginalIfNecessary(i, ADraft, result);
+end;
+
+function TBGRALayeredBitmap.RenderOriginalIfNecessary(const AGuid: TGuid;
+  ADraft: boolean): TRect;
+var
+  i: Integer;
+begin
+  result:= EmptyRect;
+  for i := 0 to NbLayers-1 do
+    if LayerOriginalGuid[i] = AGuid then
+      RenderLayerFromOriginalIfNecessary(i, ADraft, result);
 end;
 
 procedure TBGRALayeredBitmap.RemoveUnusedOriginals;
