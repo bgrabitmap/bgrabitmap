@@ -24,6 +24,7 @@ type
       procedure ComputeIntersection(cury: single; var inter: ArrayOfTIntersectionInfo; var nbInter: integer); virtual;
       //sort from left to right
       procedure SortIntersection(var inter: ArrayOfTIntersectionInfo; nbInter: integer); virtual;
+      procedure InternalQuickSortIntersection(inter0: pointer; idxL, idxH: Integer); virtual;
       //apply non-zero winding rule. it can change the number of intersections
       procedure ConvertFromNonZeroWinding(var inter: ArrayOfTIntersectionInfo; var nbInter: integer); virtual;
       //returns maximum of intersection per line
@@ -550,6 +551,8 @@ var
   i,j,k: Integer;
   tempInter: TIntersectionInfo;
 begin
+  if nbInter > 10 then
+    InternalQuickSortIntersection(@inter[0], 0, nbInter-1);
   for i := 1 to nbinter - 1 do
   begin
     j := i;
@@ -562,6 +565,49 @@ begin
       inter[j]  := tempInter;
     end;
   end;
+end;
+
+procedure TFillShapeInfo.InternalQuickSortIntersection(inter0: pointer;
+      idxL, idxH: Integer);
+const Stride = sizeof(pointer);
+      MinSub = 10;
+type PIntersectionInfo = ^TIntersectionInfo;
+var
+  ls,hs : Integer;
+  li,hi : Integer;
+  mi    : Integer;
+  ms    : Integer;
+  pb    : PByte;
+  tempInfo: TIntersectionInfo;
+  m: Single;
+begin
+  pb:=PByte(inter0);
+  li:=idxL;
+  hi:=idxH;
+  mi:=(li+hi) div 2;
+  ls:=li*Stride;
+  hs:=hi*Stride;
+  ms:=mi*Stride;
+  m := PIntersectionInfo(pb+ms)^.interX;
+  repeat
+    while PIntersectionInfo(pb+ls)^.interX < m do begin
+      inc(ls, Stride);
+      inc(li);
+    end;
+    while m < PIntersectionInfo(pb+hs)^.interX do begin
+      dec(hs, Stride);
+      dec(hi);
+    end;
+    if ls <= hs then begin
+      tempInfo := PIntersectionInfo(pb+ls)^;
+      PIntersectionInfo(pb+ls)^ := PIntersectionInfo(pb+hs)^;
+      PIntersectionInfo(pb+hs)^ := tempInfo;
+      inc(ls, Stride); inc(li);
+      dec(hs, Stride); dec(hi);
+    end;
+  until ls>hs;
+  if hi>=idxL+MinSub-1 then InternalQuickSortIntersection(inter0, idxL, hi);
+  if li+MinSub-1<=idxH then InternalQuickSortIntersection(inter0, li, idxH);
 end;
 
 procedure TFillShapeInfo.ConvertFromNonZeroWinding(var inter: ArrayOfTIntersectionInfo; var nbInter: integer);
