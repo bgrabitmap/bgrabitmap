@@ -131,6 +131,7 @@ type
     procedure ReadAdditionalHeader({%H-}AStream: TStream); virtual;
     function HeaderName: string; virtual;
     procedure BrowseGlyphs(ATextUTF8: string; ACallback: TBrowseGlyphCallback; AData: pointer);
+    procedure BrowseAllGlyphs(ACallback: TBrowseGlyphCallback; AData: pointer);
   public
     OutlineMode: TBGRATypeWriterOutlineMode;
     DrawGlyphsSimultaneously : boolean;
@@ -1158,6 +1159,21 @@ begin
       ACallback(nextchar, g, AData, shouldContinue);
       if not shouldContinue then break;
     end;
+  end;
+end;
+
+procedure TBGRACustomTypeWriter.BrowseAllGlyphs(
+  ACallback: TBrowseGlyphCallback; AData: pointer);
+var
+  g: TAvgLvlTreeNode;
+  shouldContinue: boolean;
+begin
+  g := FGlyphs.FindLowest;
+  shouldContinue:= true;
+  while Assigned(g) and shouldContinue do
+  begin
+    ACallback(TBGRAGlyph(g.Data).Identifier, TBGRAGlyph(g.Data), AData, shouldContinue);
+    g := g.Successor;
   end;
 end;
 
