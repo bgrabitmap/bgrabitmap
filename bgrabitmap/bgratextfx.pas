@@ -36,8 +36,10 @@ type
   TBGRATextEffectFontRenderer = class(TCustomLCLFontRenderer)
   private
     function GetShaderLightPosition: TPoint;
+    function GetShaderLightPositionF: TPointF;
     function GetVectorizedRenderer: TBGRAVectorizedFontRenderer;
-    procedure SetShaderLightPosition(AValue: TPoint);
+    procedure SetShaderLightPosition(const AValue: TPoint);
+    procedure SetShaderLightPositionF(const AValue: TPointF);
   protected
     FShaderOwner: boolean;
     FShader: TCustomPhongShading;
@@ -74,6 +76,7 @@ type
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     property Shader: TCustomPhongShading read FShader;
     property ShaderLightPosition: TPoint read GetShaderLightPosition write SetShaderLightPosition;
+    property ShaderLightPositionF: TPointF read GetShaderLightPositionF write SetShaderLightPositionF;
     property VectorizedFontRenderer: TBGRAVectorizedFontRenderer read GetVectorizedRenderer;
   end;
 
@@ -326,6 +329,14 @@ begin
     result := FShader.LightPosition;
 end;
 
+function TBGRATextEffectFontRenderer.GetShaderLightPositionF: TPointF;
+begin
+  if FShader = nil then
+    result := pointF(0,0)
+  else
+    result := FShader.LightPositionF;
+end;
+
 function TBGRATextEffectFontRenderer.GetVectorizedRenderer: TBGRAVectorizedFontRenderer;
 begin
   FVectorizedRenderer.FontEmHeight := FontEmHeight;
@@ -347,10 +358,16 @@ begin
   result := FVectorizedRenderer;
 end;
 
-procedure TBGRATextEffectFontRenderer.SetShaderLightPosition(AValue: TPoint);
+procedure TBGRATextEffectFontRenderer.SetShaderLightPosition(const AValue: TPoint);
 begin
   if FShader <> nil then
     FShader.LightPosition := AValue;
+end;
+
+procedure TBGRATextEffectFontRenderer.SetShaderLightPositionF(const AValue: TPointF);
+begin
+  if FShader <> nil then
+    FShader.LightPositionF := AValue;
 end;
 
 function TBGRATextEffectFontRenderer.ShadowActuallyVisible: boolean;

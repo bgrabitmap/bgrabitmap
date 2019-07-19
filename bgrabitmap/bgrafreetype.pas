@@ -44,7 +44,9 @@ type
     function GetCollection: TCustomFreeTypeFontCollection;
     function GetDrawer(ASurface: TBGRACustomBitmap): TBGRAFreeTypeDrawer;
     function GetShaderLightPosition: TPoint;
-    procedure SetShaderLightPosition(AValue: TPoint);
+    function GetShaderLightPositionF: TPointF;
+    procedure SetShaderLightPosition(const AValue: TPoint);
+    procedure SetShaderLightPositionF(const AValue: TPointF);
   protected
     FShaderOwner: boolean;
     FShader: TCustomPhongShading;
@@ -86,6 +88,7 @@ type
     destructor Destroy; override;
     property Collection: TCustomFreeTypeFontCollection read GetCollection;
     property ShaderLightPosition: TPoint read GetShaderLightPosition write SetShaderLightPosition;
+    property ShaderLightPositionF: TPointF read GetShaderLightPositionF write SetShaderLightPositionF;
   end;
 
   { TBGRAFreeTypeDrawer }
@@ -175,10 +178,25 @@ begin
     result := FShader.LightPosition;
 end;
 
-procedure TBGRAFreeTypeFontRenderer.SetShaderLightPosition(AValue: TPoint);
+function TBGRAFreeTypeFontRenderer.GetShaderLightPositionF: TPointF;
+begin
+  if FShader = nil then
+    result := pointF(0,0)
+  else
+    result := FShader.LightPositionF;
+end;
+
+procedure TBGRAFreeTypeFontRenderer.SetShaderLightPosition(const AValue: TPoint);
 begin
   if FShader <> nil then
     FShader.LightPosition := AValue;
+end;
+
+procedure TBGRAFreeTypeFontRenderer.SetShaderLightPositionF(
+  const AValue: TPointF);
+begin
+  if FShader <> nil then
+    FShader.LightPositionF := AValue;
 end;
 
 procedure TBGRAFreeTypeFontRenderer.UpdateFont;
