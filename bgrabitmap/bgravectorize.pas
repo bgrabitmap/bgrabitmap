@@ -52,7 +52,7 @@ type
     procedure InternalTextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment; ABidiMode: TFontBidiMode);
     procedure Init;
   public
-    MaxFontResolution: integer;
+    MinFontResolution, MaxFontResolution: integer;
     QuadraticCurves: boolean;
 
     OutlineVisible: boolean;
@@ -1081,6 +1081,7 @@ begin
   if FVectorizedFont.VectorizeLCL then
   begin
     neededResolution := trunc((FVectorizedFont.FullHeight+80)/50)*50;
+    if neededResolution < MinFontResolution then neededResolution := MinFontResolution;
     if neededResolution > MaxFontResolution then neededResolution := MaxFontResolution;
     if FVectorizedFont.Resolution < neededResolution then FVectorizedFont.Resolution:= neededResolution;
   end;
