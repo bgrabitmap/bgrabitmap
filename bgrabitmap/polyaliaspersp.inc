@@ -86,30 +86,29 @@ end;
 
 {$hints off}
 
-function TPolygonPerspectiveTextureMappingInfo.CreateSegmentData(numPt,
-  nextPt: integer; x, y: single): pointer;
+function TPolygonPerspectiveTextureMappingInfo.CreateSegmentData(numPt, nextPt: integer;
+  ASeg: PCustomPointRecord): pointer;
 var
   info: PPerspectiveTextureInfo;
-  ty,dy: single;
+  ty: single;
   CurInvZ,NextInvZ: single;
   CurTexCoordDivByZ: TPointF;
   NextTexCoordDivByZ: TPointF;
 begin
   New(info);
+  ty := ASeg^.y2-ASeg^.y;
   CurInvZ := 1/FPointsZ[numPt];
   CurTexCoordDivByZ := FTexCoords[numPt]*CurInvZ;
   NextInvZ := 1/FPointsZ[nextPt];
   NextTexCoordDivByZ := FTexCoords[nextPt]*NextInvZ;
-  ty := FPoints[nextPt].y-FPoints[numPt].y;
   info^.TexCoordDivByZSlopes := (NextTexCoordDivByZ - CurTexCoordDivByZ)*(1/ty);
-  dy := y-FPoints[numPt].y;
-  info^.TexCoordDivByZ := CurTexCoordDivByZ + info^.TexCoordDivByZSlopes*dy;
+  info^.TexCoordDivByZ := CurTexCoordDivByZ;
   info^.InvZSlope := (NextInvZ-CurInvZ)/ty;
-  info^.InvZ := CurInvZ+dy*info^.InvZSlope;
+  info^.InvZ := CurInvZ;
   if FLightnesses <> nil then
   begin
     info^.lightnessSlope := (FLightnesses[nextPt] - FLightnesses[numPt])*(1/ty);
-    info^.lightness := FLightnesses[numPt] + info^.lightnessSlope*dy;
+    info^.lightness := FLightnesses[numPt];
   end else
   begin
     info^.lightness := 32768;
@@ -560,11 +559,11 @@ begin
 end;
 
 {$hints off}
-function TPolygonPerspectiveMappingShaderInfo.CreateSegmentData(numPt,
-  nextPt: integer; x, y: single): pointer;
+function TPolygonPerspectiveMappingShaderInfo.CreateSegmentData(numPt, nextPt: integer;
+    ASeg: PCustomPointRecord): pointer;
 var
   info: PPerspectiveTextureInfo;
-  ty,dy: single;
+  ty: single;
   CurInvZ,NextInvZ: single;
   CurTexCoordDivByZ: TPointF;
   NextTexCoordDivByZ: TPointF;
@@ -572,28 +571,27 @@ var
   Cur3DDivByZ,Next3DDivByZ: TPoint3D_128;
 begin
   New(info);
+  ty := ASeg^.y2-ASeg^.y;
   CurInvZ := FPositions3D[numPt].z;
   if CurInvZ = 0 then CurInvZ := 1 else CurInvZ := 1/CurInvZ;
   CurTexCoordDivByZ := FTexCoords[numPt]*CurInvZ;
   NextInvZ := FPositions3D[nextPt].z;
   if NextInvZ = 0 then NextInvZ := 1 else NextInvZ := 1/NextInvZ;
   NextTexCoordDivByZ := FTexCoords[nextPt]*NextInvZ;
-  ty := FPoints[nextPt].y-FPoints[numPt].y;
   info^.TexCoordDivByZSlopes := (NextTexCoordDivByZ - CurTexCoordDivByZ)*(1/ty);
-  dy := y-FPoints[numPt].y;
-  info^.TexCoordDivByZ := CurTexCoordDivByZ + info^.TexCoordDivByZSlopes*dy;
+  info^.TexCoordDivByZ := CurTexCoordDivByZ;
   info^.InvZSlope := (NextInvZ-CurInvZ)/ty;
-  info^.InvZ := CurInvZ+dy*info^.InvZSlope;
+  info^.InvZ := CurInvZ;
 
   Cur3DDivByZ := FPositions3D[numPt]*CurInvZ;
   Next3DDivByZ := FPositions3D[nextPt]*NextInvZ;
   info^.Position3DSlope := (Next3DDivByZ - Cur3DDivByZ)*(1/ty);
-  info^.Position3D := Cur3DDivByZ + info^.Position3DSlope*dy;
+  info^.Position3D := Cur3DDivByZ;
 
   Cur3DDivByZ := FNormals3D[numPt]*CurInvZ;
   Next3DDivByZ := FNormals3D[nextPt]*NextInvZ;
   info^.Normal3DSlope := (Next3DDivByZ - Cur3DDivByZ)*(1/ty);
-  info^.Normal3D := Cur3DDivByZ + info^.Normal3DSlope*dy;
+  info^.Normal3D := Cur3DDivByZ;
 
   Result:= info;
 end;

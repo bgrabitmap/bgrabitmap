@@ -37,7 +37,7 @@ type
       ANumSegment: integer; dy: single; AData: pointer); override;
   public
     constructor Create(const points: array of TPointF; const Colors: array of TBGRAPixel);
-    function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; override;
+    function CreateSegmentData(numPt, nextPt: integer; ASeg: PCustomPointRecord): pointer; override;
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;
 
@@ -70,7 +70,7 @@ type
       ANumSegment: integer; dy: single; AData: pointer); override;
   public
     constructor Create(const points: array of TPointF; const pointsZ: array of single; const Colors: array of TBGRAPixel);
-    function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; override;
+    function CreateSegmentData(numPt, nextPt: integer; ASeg: PCustomPointRecord): pointer; override;
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;
 
@@ -106,7 +106,7 @@ type
   public
     constructor Create(const points: array of TPointF; const texCoords: array of TPointF); overload;
     constructor Create(const points: array of TPointF; const texCoords: array of TPointF; const lightnesses: array of word); overload;
-    function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; override;
+    function CreateSegmentData(numPt, nextPt: integer; ASeg: PCustomPointRecord): pointer; override;
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;
 
@@ -151,7 +151,7 @@ type
   public
     constructor Create(const points: array of TPointF; const pointsZ: array of single; const texCoords: array of TPointF); overload;
     constructor Create(const points: array of TPointF; const pointsZ: array of single; const texCoords: array of TPointF; const lightnesses: array of word); overload;
-    function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; override;
+    function CreateSegmentData(numPt, nextPt: integer; ASeg: PCustomPointRecord): pointer; override;
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;
 
@@ -166,7 +166,7 @@ type
   public
     constructor Create(const points: array of TPointF; const points3D: array of TPoint3D; const normals: array of TPoint3D; const texCoords: array of TPointF); overload;
     constructor Create(const points: array of TPointF; const points3D: array of TPoint3D_128; const normals: array of TPoint3D_128; const texCoords: array of TPointF); overload;
-    function CreateSegmentData(numPt,nextPt: integer; x,y: single): pointer; override;
+    function CreateSegmentData(numPt, nextPt: integer; ASeg: PCustomPointRecord): pointer; override;
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;
 
@@ -223,61 +223,45 @@ constructor TPolygonPerspectiveColorGradientInfo.Create(
   const Colors: array of TBGRAPixel);
 var
   i: Integer;
-  lPoints: array of TPointF;
-  nbP: integer;
   ec: TExpandedPixel;
 begin
   if (length(Colors) <> length(points)) or (length(points) <> length(pointsZ)) then
     raise Exception.Create('Dimensions mismatch');
+  inherited Create(points);
 
-  setlength(lPoints, length(points));
-  SetLength(FColors, length(points));
-  SetLength(FPointsZ, length(points));
-  nbP := 0;
-  for i := 0 to high(points) do
-  if (i=0) or (points[i]<>points[i-1]) then
+  SetLength(FColors, length(FPoints));
+  SetLength(FPointsZ, length(FPoints));
+  for i := 0 to high(FPoints) do
   begin
-    lPoints[nbP] := points[i];
-    FPointsZ[nbP] := PointsZ[i];
-    ec := GammaExpansion(Colors[i]);
-    FColors[nbP] := ColorF(ec.red,ec.green,ec.blue,ec.alpha);
-    inc(nbP);
+    ec := GammaExpansion(Colors[FPoints[i].originalIndex]);
+    FColors[i] := ColorF(ec.red,ec.green,ec.blue,ec.alpha);
+    FPointsZ[i] := pointsZ[FPoints[i].originalIndex];
   end;
-  if (nbP>0) and (lPoints[nbP-1] = lPoints[0]) then dec(NbP);
-  setlength(lPoints, nbP);
-  SetLength(FPointsZ, nbP);
-  SetLength(FColors, nbP);
-
-  inherited Create(lPoints);
 end;
 
-{$hints off}
-function TPolygonPerspectiveColorGradientInfo.CreateSegmentData(numPt,
-  nextPt: integer; x, y: single): pointer;
+function TPolygonPerspectiveColorGradientInfo.CreateSegmentData(numPt, nextPt: integer;
+  ASeg: PCustomPointRecord): pointer;
 var
   info: PPerspectiveColorInfo;
-  InvTy,dy: single;
+  InvTy: single;
   CurColorDivByZ,NextColorDivByZ: TColorF;
   CurInvZ,NextInvZ: single;
 begin
   New(info);
-  InvTy := 1/(FPoints[nextPt].y-FPoints[numPt].y);
-
+  InvTy := 1/(ASeg^.y2-ASeg^.y);
   CurInvZ := 1/FPointsZ[numPt];
   CurColorDivByZ := FColors[numPt]*CurInvZ;
   NextInvZ := 1/FPointsZ[nextPt];
   NextColorDivByZ := FColors[nextPt]*NextInvZ;
 
   info^.ColorSlopesDivZ := (NextColorDivByZ - CurColorDivByZ)*InvTy;
-  dy := y-FPoints[numPt].y;
-  info^.ColorDivZ := CurColorDivByZ + info^.ColorSlopesDivZ*dy;
+  info^.ColorDivZ := CurColorDivByZ;
 
   info^.InvZSlope := (NextInvZ-CurInvZ)*InvTy;
-  info^.InvZ := CurInvZ+dy*info^.InvZSlope;
+  info^.InvZ := CurInvZ;
 
   Result:= info;
 end;
-{$hints on}
 
 function TPolygonPerspectiveColorGradientInfo.CreateIntersectionInfo: TIntersectionInfo;
 begin
@@ -301,46 +285,32 @@ constructor TPolygonLinearColorGradientInfo.Create(
   const points: array of TPointF; const Colors: array of TBGRAPixel);
 var
   i: Integer;
-  lPoints: array of TPointF;
-  nbP: integer;
   ec: TExpandedPixel;
 begin
   if length(Colors) <> length(points) then
     raise Exception.Create('Dimensions mismatch');
 
-  setlength(lPoints, length(points));
-  SetLength(FColors, length(points));
-  nbP := 0;
-  for i := 0 to high(points) do
-  if (i=0) or (points[i]<>points[i-1]) then
+  inherited Create(Points);
+  setlength(FColors, length(FPoints));
+  for i := 0 to high(FColors) do
   begin
-    lPoints[nbP] := points[i];
-    ec := GammaExpansion(Colors[i]);
-    FColors[nbP] := ColorF(ec.red,ec.green,ec.blue,ec.alpha);
-    inc(nbP);
+    ec := GammaExpansion(Colors[FPoints[i].originalIndex]);
+    FColors[i] := ColorF(ec.red,ec.green,ec.blue,ec.alpha);
   end;
-  if (nbP>0) and (lPoints[nbP-1] = lPoints[0]) then dec(NbP);
-  setlength(lPoints, nbP);
-  SetLength(FColors, nbP);
-
-  inherited Create(lPoints);
 end;
 
-{$hints off}
-function TPolygonLinearColorGradientInfo.CreateSegmentData(numPt, nextPt: integer; x,
-  y: single): pointer;
+function TPolygonLinearColorGradientInfo.CreateSegmentData(numPt, nextPt: integer;
+  ASeg: PCustomPointRecord): pointer;
 var
   info: PLinearColorInfo;
-  ty,dy: single;
+  ty: single;
 begin
   New(info);
-  ty := FPoints[nextPt].y-FPoints[numPt].y;
+  ty := ASeg^.y2 - ASeg^.y;
   info^.ColorSlopes := (FColors[nextPt] - FColors[numPt])*(1/ty);
-  dy := y-FPoints[numPt].y;
-  info^.Color := FColors[numPt] + info^.ColorSlopes*dy;
+  info^.Color := FColors[numPt];
   Result:= info;
 end;
-{$hints on}
 
 function TPolygonLinearColorGradientInfo.CreateIntersectionInfo: TIntersectionInfo;
 begin
@@ -494,27 +464,13 @@ constructor TPolygonLinearTextureMappingInfo.Create(const points: array of TPoin
   const texCoords: array of TPointF);
 var
   i: Integer;
-  lPoints: array of TPointF;
-  nbP: integer;
 begin
   if length(texCoords) <> length(points) then
     raise Exception.Create('Dimensions mismatch');
-
-  setlength(lPoints, length(points));
-  SetLength(FTexCoords, length(points));
-  nbP := 0;
-  for i := 0 to high(points) do
-  if (i=0) or (points[i]<>points[i-1]) then
-  begin
-    lPoints[nbP] := points[i];
-    FTexCoords[nbP] := texCoords[i];
-    inc(nbP);
-  end;
-  if (nbP>0) and (lPoints[nbP-1] = lPoints[0]) then dec(NbP);
-  setlength(lPoints, nbP);
-  SetLength(FTexCoords, nbP);
-
-  inherited Create(lPoints);
+  inherited Create(points);
+  SetLength(FTexCoords, length(FPoints));
+  for i := 0 to high(FPoints) do
+    FTexCoords[i] := texCoords[FPoints[i].originalIndex];
 end;
 
 constructor TPolygonLinearTextureMappingInfo.Create(
@@ -522,48 +478,33 @@ constructor TPolygonLinearTextureMappingInfo.Create(
   const lightnesses: array of word);
 var
   i: Integer;
-  lPoints: array of TPointF;
-  nbP: integer;
 begin
   if (length(texCoords) <> length(points)) or (length(lightnesses) <> length(points)) then
     raise Exception.Create('Dimensions mismatch');
-
-  setlength(lPoints, length(points));
-  SetLength(FTexCoords, length(points));
-  setlength(FLightnesses, length(lightnesses));
-  nbP := 0;
-  for i := 0 to high(points) do
-  if (i=0) or (points[i]<>points[i-1]) then
+  inherited Create(points);
+  SetLength(FTexCoords, length(FPoints));
+  setlength(FLightnesses, length(FPoints));
+  for i := 0 to high(FPoints) do
   begin
-    lPoints[nbP] := points[i];
-    FTexCoords[nbP] := texCoords[i];
-    FLightnesses[nbP] := lightnesses[i];
-    inc(nbP);
+    FTexCoords[i] := texCoords[FPoints[i].originalIndex];
+    FLightnesses[i] := lightnesses[FPoints[i].originalIndex];
   end;
-  if (nbP>0) and (lPoints[nbP-1] = lPoints[0]) then dec(NbP);
-  setlength(lPoints, nbP);
-  SetLength(FTexCoords, nbP);
-  SetLength(FLightnesses, nbP);
-
-  inherited Create(lPoints);
 end;
 
-{$hints off}
-function TPolygonLinearTextureMappingInfo.CreateSegmentData(numPt, nextPt: integer; x,
-  y: single): pointer;
+function TPolygonLinearTextureMappingInfo.CreateSegmentData(numPt, nextPt: integer;
+  ASeg: PCustomPointRecord): pointer;
 var
   info: PLinearTextureInfo;
-  ty,dy: single;
+  ty: single;
 begin
   New(info);
-  ty := FPoints[nextPt].y-FPoints[numPt].y;
-  dy := y-FPoints[numPt].y;
+  ty := ASeg^.y2-ASeg^.y;
   info^.TexCoordSlopes := (FTexCoords[nextPt] - FTexCoords[numPt])*(1/ty);
-  info^.TexCoord := FTexCoords[numPt] + info^.TexCoordSlopes*dy;
+  info^.TexCoord := FTexCoords[numPt];
   if FLightnesses <> nil then
   begin
     info^.lightnessSlope := (FLightnesses[nextPt] - FLightnesses[numPt])*(1/ty);
-    info^.lightness := FLightnesses[numPt] + info^.lightnessSlope*dy;
+    info^.lightness := FLightnesses[numPt];
   end else
   begin
     info^.lightness := 32768;
@@ -571,7 +512,6 @@ begin
   end;
   Result:= info;
 end;
-{$hints on}
 
 function TPolygonLinearTextureMappingInfo.CreateIntersectionInfo: TIntersectionInfo;
 begin

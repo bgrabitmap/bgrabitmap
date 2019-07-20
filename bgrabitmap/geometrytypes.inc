@@ -572,6 +572,7 @@ type
     {** Last polygon is on top }
     poLastOnTop);
 
+  PIntersectionInfo = ^TIntersectionInfo;
   { TIntersectionInfo }
   {* Contains an intersection between an horizontal line and any shape. It
      is used when filling shapes }
