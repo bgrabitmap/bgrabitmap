@@ -302,14 +302,97 @@ uses Classes, sysutils;
       Writeln(tOut);
     end;
 
+    procedure ParseArabicLigature;
+    var
+      line: string;
+      tIn: TextFile;
+      cells: TStringList;
+      chars: TStringList;
+      u: cardinal;
+
+      procedure AddJoiningType(joinType: string; joinTypeEnum: string);
+      var
+        i,nb: Integer;
+        charsList: array of integer;
+      begin
+        nb := 0;
+        for i := 0 to chars.Count-1 do
+          if chars.ValueFromIndex[i]=joinType then inc(nb);
+        if nb = 0 then exit;
+        setlength(charsList, nb);
+        nb := 0;
+        for i := 0 to chars.Count-1 do
+          if chars.ValueFromIndex[i]=joinType then
+          begin
+            charsList[nb] := StrToInt('$'+chars.Names[i]);
+            inc(nb);
+          end;
+        writeln(tOut,ArrayOfCodeToCase(charsList, '  ')+'result := '+joinTypeEnum+';');
+      end;
+
+    begin
+      Writeln(tOut,'function GetUnicodeJoiningType(u: cardinal): TUnicodeJoiningType;');
+      Writeln(tOut,'begin');
+      Writeln(tOut,'  case u of');
+      writeln('Parsing arabic ligature data...');
+      assignfile(tIn, 'UnicodeData.txt');
+      reset(tin);
+      chars := TStringList.Create;
+      cells := TStringList.Create;
+      cells.Delimiter := ';';
+      cells.QuoteChar := '"';
+      cells.StrictDelimiter := true;
+      while not eof(tIn) do
+      begin
+        readln(tIn, line);
+        cells.DelimitedText:= line;
+        if cells.Count >= 6 then
+        begin
+          u := StrToInt('$'+cells[0]);
+          if (cells[2] = 'Mn') or (cells[2] = 'Me') or (cells[2] = 'Cf') then
+            chars.Values[IntToHex(u,6)] := 'T';
+        end;
+      end;
+      CloseFile(tIn);
+      assignfile(tIn, 'ArabicShaping.txt');
+      reset(tIn);
+      while not eof(tIn) do
+      begin
+        readln(tIn, line);
+        if (line = '') or (line[1]='#') then continue;
+        cells.DelimitedText:= line;
+        if cells.Count >= 4 then
+        begin
+          u := StrToInt('$'+cells[0]);
+          chars.Values[IntToHex(u,6)] := trim(cells[2]);
+        end;
+      end;
+      closefile(tIn);
+      cells.Free;
+      chars.Sort;
+      AddJoiningType('U', 'ujtNonJoining');
+      AddJoiningType('T', 'ujtTransparent');
+      AddJoiningType('R', 'ujtRightJoining');
+      AddJoiningType('L', 'ujtLeftJoining');
+      AddJoiningType('D', 'ujtDualJoining');
+      AddJoiningType('C', 'ujtJoinCausing');
+      chars.Free;
+      Writeln(tOut,'  else result := ujtNonJoining;');
+      Writeln(tOut,'  end;');
+      Writeln(tOut,'end;');
+      Writeln(tOut);
+    end;
+
   begin
     AssignFile(tOut, 'UnicodeFunctions.generated.pas');
     Rewrite(tOut);
 
     ParseUnicodeData;
     ParseBidiBrackets;
+    ParseArabicLigature;
 
     CloseFile(tOut);
+    writeln('Done.');
   end;
 
 begin
