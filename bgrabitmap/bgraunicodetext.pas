@@ -420,7 +420,7 @@ var
   newBidi: TBidiUTF8Array;
 begin
   if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
-  if length(ATextUTF8)=0 then exit;
+  if length(ATextUTF8)=0 then exit(0);
 
   if FBidiMode <> fbmAuto then
     newBidi:= AnalyzeBidiUTF8(ATextUTF8, FBidiMode = fbmRightToLeft)
