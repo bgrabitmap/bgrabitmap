@@ -813,11 +813,8 @@ end;
 
 function TBidiTextLayout.TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer;
   ARightToLeft: boolean; ASplitIndex: integer): TPointF;
-var nextIndex, prevIndex: integer;
+var checkIndex: integer;
   s: String;
-  extraS: string4;
-  extraW, combW: Single;
-  charClass: TUnicodeBidiClass;
 begin
   if ASplitIndex <= AStartIndex then
   begin
@@ -828,38 +825,14 @@ begin
   end;
 
   s := FAnalysis.CopyTextUTF8(AStartIndex, ASplitIndex-AStartIndex);
+  checkIndex := ASplitIndex-1;
+  while (checkIndex > AStartIndex) and
+    (GetUnicodeJoiningType(GetUnicodeChar(checkIndex))=ujtTransparent) do dec(checkIndex);
+  if ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureAfter then
+    s := s+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER) else
+  if not ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureBefore then
+    s := s+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
   result := TextSizeBidiOverride(s, ARightToLeft);
-
-  nextIndex := ASplitIndex;
-  //check if there might be a ligature
-  if (nextIndex < AEndIndex) and (GetUnicodeBidiClass(GetUnicodeChar(nextIndex)) in [ubcRightToLeft,ubcArabicLetter,ubcLeftToRight,ubcArabicNumber,ubcEuropeanNumber]) then
-  begin
-    inc(nextIndex);
-    //find previous letter
-    prevIndex := ASplitIndex-1;
-    while (prevIndex > AStartIndex) and (GetUnicodeBidiClass(GetUnicodeChar(prevIndex)) = ubcNonSpacingMark) do dec(prevIndex);
-    charClass := GetUnicodeBidiClass(GetUnicodeChar(prevIndex));
-    //arabic ligatures are asymmetric in size so use the tatweel to measure the actual size
-    if charClass = ubcArabicLetter then
-    begin
-      //measure tatweel size
-      extraS := UnicodeCharToUTF8(UNICODE_ARABIC_TATWEEL);
-      extraW := TextSizeBidiOverride(extraS, ARightToLeft).x;
-      combW := TextSizeBidiOverride(s+extraS, ARightToLeft).x;
-      result.x := combW - extraW;  //subtract the size of the tatweel (which itself is not included in the ligature)
-    end else
-    // otherwise, assume that the ligature is symmetric so subtract half of the ligature size
-    begin
-      //measure the next char on its own
-      while (nextIndex < AEndIndex) and (GetUnicodeBidiClass(GetUnicodeChar(nextIndex)) = ubcNonSpacingMark) do inc(nextIndex);
-      extraS := FAnalysis.CopyTextUTF8(ASplitIndex, nextIndex-ASplitIndex);
-      extraW := TextSizeBidiOverride(extraS, ARightToLeft).x;
-
-      combW := TextSizeBidiOverride(s+extraS, ARightToLeft).x;
-      if combW < result.x then result.x := combW
-      else result.x -= (result.x+extraW - combW) * 0.5;
-    end;
-  end;
 end;
 
 function TBidiTextLayout.TextFitInfoBidiOverride(sUTF8: string; AWidth: single;
