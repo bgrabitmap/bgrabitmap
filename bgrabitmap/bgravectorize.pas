@@ -157,9 +157,9 @@ type
     function GetFontEmHeightRatio: single;
     procedure SetVectorizeLCL(AValue: boolean);
     procedure GlyphCallbackForGlyphSizes(ATextUTF8: string; AGlyph: TBGRAGlyph;
-      {%H-}AMirrored: boolean; AData: Pointer; out AContinue: boolean);
+      {%H-}AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean);
     procedure UpdateQuadraticCallback({%H-}ATextUTF8: string; AGlyph: TBGRAGlyph;
-      {%H-}AMirrored: boolean; {%H-}AData: Pointer; out AContinue: boolean);
+      {%H-}AFlags: TBrowseGlyphCallbackFlags; {%H-}AData: Pointer; out AContinue: boolean);
   protected
     procedure UpdateFont;
     procedure UpdateMatrix;
@@ -1498,7 +1498,7 @@ begin
 end;
 
 procedure TBGRAVectorizedFont.GlyphCallbackForGlyphSizes(ATextUTF8: string; AGlyph: TBGRAGlyph;
-  AMirrored: boolean; AData: Pointer; out AContinue: boolean);
+  AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean);
 begin
   with TGlyphSizesCallbackData(AData^) do
   begin
@@ -1522,7 +1522,7 @@ begin
 end;
 
 procedure TBGRAVectorizedFont.UpdateQuadraticCallback(ATextUTF8: string;
-  AGlyph: TBGRAGlyph; AMirrored: boolean; AData: Pointer; out AContinue: boolean);
+  AGlyph: TBGRAGlyph; AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean);
 begin
   if AGlyph is TBGRAPolygonalGlyph then
     TBGRAPolygonalGlyph(AGlyph).QuadraticCurves:= FQuadraticCurves;
@@ -1708,7 +1708,7 @@ var
 begin
   data.Count:= 0;
   setlength(data.Sizes, UTF8Length(ATextUTF8));
-  BrowseGlyphs(ATextUTF8, @GlyphCallbackForGlyphSizes, @data);
+  BrowseGlyphs(ATextUTF8, @GlyphCallbackForGlyphSizes, @data, false);
   setlength(data.Sizes, data.Count);
   result := data.Sizes;
 end;
