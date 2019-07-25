@@ -26,9 +26,10 @@ const
   BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH = 2; //implicit end of paragraph (paragraph spacing below due to end of text)
   BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH = 4; //explicit end of paragraph (paragraph spacing below due to paragraph split)
   BIDI_FLAG_END_OF_LINE = 8;               //line break <br>
-  BIDI_FLAG_LIGATURE_RIGHT = 16;           //<medial> and <final> arabic letter (possible for joining type R and D)
-  BIDI_FLAG_LIGATURE_LEFT = 32;            //<initial> and <medial> arabic letter (possible for joining type L and D)
+  BIDI_FLAG_LIGATURE_RIGHT = 16;           //joins to the letter on the right (possible for joining type R and D)
+  BIDI_FLAG_LIGATURE_LEFT = 32;            //joins to the letter on the left (possible for joining type L and D)
   BIDI_FLAG_LIGATURE_BOUNDARY = 64;        //zero-width joiner or non-joiner
+  BIDI_FLAG_RTL_SCRIPT = 128;              //script is written from right to left (arabic, N'Ko...)
 
 type
   PUnicodeBidiInfo = ^TUnicodeBidiInfo;
@@ -48,6 +49,7 @@ type
     function GetRemoved: boolean;
     function GetRightToLeft: boolean;
     function GetParagraphRightToLeft: boolean;
+    function GetRightToLeftScript: boolean;
   public
     ParagraphBidiLevel, BidiLevel: byte;
     Flags, Dummy: Byte;
@@ -62,6 +64,7 @@ type
     property HasLigatureLeft: boolean read GetHasLigatureLeft;
     property IsLigatureBoundary: boolean read GetIsLigartureBoundary;
     property IsDiscardable: boolean read GetDiscardable;
+    property IsRightToLeftScript: boolean read GetRightToLeftScript;
   end;
 
   TUnicodeBidiArray = packed array of TUnicodeBidiInfo;
@@ -699,6 +702,11 @@ end;
 function TUnicodeBidiInfo.GetParagraphRightToLeft: boolean;
 begin
   result := Odd(ParagraphBidiLevel);
+end;
+
+function TUnicodeBidiInfo.GetRightToLeftScript: boolean;
+begin
+  result := (Flags and BIDI_FLAG_RTL_SCRIPT) <> 0;
 end;
 
 function AnalyzeBidiUnicode(u: PCardinal; ALength: integer; baseDirection: cardinal): TUnicodeBidiArray;
@@ -1483,6 +1491,8 @@ begin
       UNICODE_ZERO_WIDTH_JOINER, UNICODE_ZERO_WIDTH_NON_JOINER:
         result[i].Flags := result[i].Flags OR BIDI_FLAG_LIGATURE_BOUNDARY;
       end;
+      if a[i].bidiClass in [ubcArabicLetter,ubcArabicNumber,ubcRightToLeft] then
+        result[i].Flags := result[i].Flags OR BIDI_FLAG_RTL_SCRIPT;
     end;
     SplitParagraphs;
   end;

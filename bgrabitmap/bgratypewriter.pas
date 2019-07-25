@@ -1013,7 +1013,7 @@ var
 var
   cur: integer;
   curCharStart,curCharEnd: integer;
-  curRTL,curLigatureLeft,curLigatureRight,reversed,merged: boolean;
+  curRTL,curRTLScript,curLigatureLeft,curLigatureRight,reversed,merged: boolean;
 
   procedure TryMerge(const AChars: array of string; ARightToLeft: boolean);
   var
@@ -1065,6 +1065,7 @@ begin
     curCharStart := charInfo[cur].charStart;
     curCharEnd := charInfo[cur].charEnd;
     curRTL:= charInfo[cur].bidiInfo^.IsRightToLeft;
+    curRTLScript := charInfo[cur].bidiInfo^.IsRightToLeftScript;
     curLigatureLeft:= charInfo[cur].bidiInfo^.HasLigatureLeft;
     curLigatureRight:= charInfo[cur].bidiInfo^.HasLigatureRight;
     reversed := false;
@@ -1085,8 +1086,10 @@ begin
 
     glyphId := nextchar;
     if reversed then glyphId:= UTF8ReverseString(glyphId);
-    if curLigatureRight then glyphId := UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER)+glyphId;
-    if curLigatureLeft then glyphId := glyphId+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
+    if (curLigatureRight and curRTLScript) or
+       (curLigatureLeft and not curRTLScript) then glyphId := UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER)+glyphId;
+    if (curLigatureLeft and curRTLScript) or
+       (curLigatureRight and not curRTLScript) then glyphId := glyphId+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
     g := GetGlyph(glyphId);
     if g <> nil then
     begin
