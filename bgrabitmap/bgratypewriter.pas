@@ -573,12 +573,13 @@ begin
           partialCharCount := Trunc(UTF8Length(ATextUTF8)*(MaxWidth-WidthAccumulator)/AGlyph.Width);
           p := @ATextUTF8[1];
           pEnd := p+length(ATextUTF8);
-          while p<pEnd do
+          while (p<pEnd) and (partialCharCount > 0) do
           begin
             charLen := UTF8CharacterLength(p);
             inc(p, charLen);
             inc(ByteCount, charLen);
             inc(CharCount);
+            dec(partialCharCount);
           end;
         end;
       end;
