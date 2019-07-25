@@ -1021,7 +1021,7 @@ var
     i: Integer;
     match: Boolean;
   begin
-    if merged or (cur+length(AChars) > length(charInfo)) then exit;
+    if merged or (cur-1+length(AChars) > length(charInfo)) then exit;
     if length(AChars)<=1 then raise exception.Create('Expecting several characters');
     match := true;
     if not ADisplayOrder and curRTL then
