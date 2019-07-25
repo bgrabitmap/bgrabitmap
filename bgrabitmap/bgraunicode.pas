@@ -1520,28 +1520,22 @@ var
   function DetermineIsolateDirectionFromFirstStrongClass(startIndex: integer): cardinal;
   var
     curIndex: Integer;
-    firstStrongClass: TUnicodeBidiClass;
   begin
     curIndex := startIndex;
-    firstStrongClass := ubcUnknown;
     while curIndex <> -1 do
     begin
       Assert(curIndex >= 0, 'Expecting valid index');
-      if firstStrongClass = ubcUnknown then
-      begin
-        if a[curIndex].bidiClass in [ubcLeftToRight,ubcRightToLeft,ubcArabicLetter] then
-        begin
-          firstStrongClass := a[curIndex].bidiClass;
-          break;
-        end;
+      case a[curIndex].bidiClass of
+        ubcLeftToRight: exit(UNICODE_LEFT_TO_RIGHT_ISOLATE);
+        ubcRightToLeft,ubcArabicLetter: exit(UNICODE_RIGHT_TO_LEFT_ISOLATE);
+      end;
+      case u[curIndex] of
+        UNICODE_LEFT_TO_RIGHT_OVERRIDE: exit(UNICODE_LEFT_TO_RIGHT_ISOLATE);
+        UNICODE_RIGHT_TO_LEFT_OVERRIDE: exit(UNICODE_RIGHT_TO_LEFT_ISOLATE);
       end;
       curIndex := a[curIndex].nextInIsolate;
     end;
-
-    if firstStrongClass in[ubcRightToLeft,ubcArabicLetter] then
-      result := UNICODE_RIGHT_TO_LEFT_ISOLATE
-    else
-      result := UNICODE_LEFT_TO_RIGHT_ISOLATE;
+    result := UNICODE_LEFT_TO_RIGHT_ISOLATE;
   end;
 
   procedure LinkCharsInIsolate(startIndex: integer; charCount: integer; out endIndex : integer);
