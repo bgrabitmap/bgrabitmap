@@ -26,8 +26,9 @@ const
   BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH = 2; //implicit end of paragraph (paragraph spacing below due to end of text)
   BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH = 4; //explicit end of paragraph (paragraph spacing below due to paragraph split)
   BIDI_FLAG_END_OF_LINE = 8;               //line break <br>
-  BIDI_FLAG_LIGATURE_BEFORE = 16;          //<medial> and <final> arabic letter (possible for joining type R and D)
-  BIDI_FLAG_LIGATURE_AFTER = 32;           //<initial> and <medial> arabic letter (possible for joining type L and D)
+  BIDI_FLAG_LIGATURE_RIGHT = 16;           //<medial> and <final> arabic letter (possible for joining type R and D)
+  BIDI_FLAG_LIGATURE_LEFT = 32;            //<initial> and <medial> arabic letter (possible for joining type L and D)
+  BIDI_FLAG_LIGATURE_BOUNDARY = 64;        //zero-width joiner or non-joiner
 
 type
   PUnicodeBidiInfo = ^TUnicodeBidiInfo;
@@ -36,12 +37,14 @@ type
 
   TUnicodeBidiInfo = packed record
   private
+    function GetDiscardable: boolean;
     function GetEndOfLine: boolean;
     function GetEndOfParagraph: boolean;
     function GetExplicitEndOfParagraph: boolean;
-    function GetHasLigatureAfter: boolean;
-    function GetHasLigatureBefore: boolean;
+    function GetHasLigatureLeft: boolean;
+    function GetHasLigatureRight: boolean;
     function GetImplicitEndOfParagraph: boolean;
+    function GetIsLigartureBoundary: boolean;
     function GetRemoved: boolean;
     function GetRightToLeft: boolean;
     function GetParagraphRightToLeft: boolean;
@@ -55,8 +58,10 @@ type
     property IsEndOfParagraph: boolean read GetEndOfParagraph;
     property IsExplicitEndOfParagraph: boolean read GetExplicitEndOfParagraph;
     property IsImplicitEndOfParagraph: boolean read GetImplicitEndOfParagraph;
-    property HasLigatureBefore: boolean read GetHasLigatureBefore;
-    property HasLigatureAfter: boolean read GetHasLigatureAfter;
+    property HasLigatureRight: boolean read GetHasLigatureRight;
+    property HasLigatureLeft: boolean read GetHasLigatureLeft;
+    property IsLigatureBoundary: boolean read GetIsLigartureBoundary;
+    property IsDiscardable: boolean read GetDiscardable;
   end;
 
   TUnicodeBidiArray = packed array of TUnicodeBidiInfo;
@@ -641,6 +646,11 @@ end;
 
 { TUnicodeBidiInfo }
 
+function TUnicodeBidiInfo.GetDiscardable: boolean;
+begin
+  result := IsRemoved and not IsLigatureBoundary;
+end;
+
 function TUnicodeBidiInfo.GetEndOfLine: boolean;
 begin
   result := (Flags and BIDI_FLAG_END_OF_LINE) <> 0;
@@ -656,19 +666,24 @@ begin
   result := (Flags and BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH) <> 0;
 end;
 
-function TUnicodeBidiInfo.GetHasLigatureAfter: boolean;
+function TUnicodeBidiInfo.GetHasLigatureLeft: boolean;
 begin
-  result := (Flags and BIDI_FLAG_LIGATURE_AFTER) <> 0;
+  result := (Flags and BIDI_FLAG_LIGATURE_LEFT) <> 0;
 end;
 
-function TUnicodeBidiInfo.GetHasLigatureBefore: boolean;
+function TUnicodeBidiInfo.GetHasLigatureRight: boolean;
 begin
-  result := (Flags and BIDI_FLAG_LIGATURE_BEFORE) <> 0;
+  result := (Flags and BIDI_FLAG_LIGATURE_RIGHT) <> 0;
 end;
 
 function TUnicodeBidiInfo.GetImplicitEndOfParagraph: boolean;
 begin
   result := (Flags and BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetIsLigartureBoundary: boolean;
+begin
+  result := (Flags and BIDI_FLAG_LIGATURE_BOUNDARY) <> 0;
 end;
 
 function TUnicodeBidiInfo.GetRemoved: boolean;
@@ -1034,28 +1049,41 @@ var
   procedure ResolveLigature(startIndex, afterEndIndex: integer);
   var
     prevJoiningType, joiningType: TUnicodeJoiningType;
+    prevJoiningTypeBidilevel: byte;
     prevJoiningTypeIndex: integer;
     curIndex: Integer;
   begin
     prevJoiningType := ujtNonJoining;
     prevJoiningTypeIndex := -1;
+    prevJoiningTypeBidilevel:= 0;
     curIndex := startIndex;
     while curIndex <> afterEndIndex do
     begin
-      if not result[curIndex].IsRemoved then
+      if prevJoiningTypeBidilevel <> result[curIndex].BidiLevel then
+        prevJoiningType := ujtNonJoining;
+      joiningType := GetUnicodeJoiningType(u[curIndex]);
+      if result[curIndex].IsRightToLeft then
       begin
-        joiningType := GetUnicodeJoiningType(u[curIndex]);
         if (joiningType in[ujtRightJoining,ujtDualJoining])
           and (prevJoiningType in[ujtLeftJoining,ujtDualJoining,ujtJoinCausing]) then
-          result[curIndex].Flags:= result[curIndex].Flags or BIDI_FLAG_LIGATURE_BEFORE;
+          result[curIndex].Flags:= result[curIndex].Flags or BIDI_FLAG_LIGATURE_RIGHT;
         if (prevJoiningType in[ujtLeftJoining,ujtDualJoining]) and (prevJoiningTypeIndex <> -1) and
           (joiningType in[ujtRightJoining,ujtDualJoining,ujtJoinCausing]) then
-          result[prevJoiningTypeIndex].Flags:= result[prevJoiningTypeIndex].Flags or BIDI_FLAG_LIGATURE_AFTER;
-        if joiningType <> ujtTransparent then
-        begin
-          prevJoiningType := joiningType;
-          prevJoiningTypeIndex:= curIndex;
-        end;
+          result[prevJoiningTypeIndex].Flags:= result[prevJoiningTypeIndex].Flags or BIDI_FLAG_LIGATURE_LEFT;
+      end else
+      begin
+        if (joiningType in[ujtLeftJoining,ujtDualJoining])
+          and (prevJoiningType in[ujtRightJoining,ujtDualJoining,ujtJoinCausing]) then
+          result[curIndex].Flags:= result[curIndex].Flags or BIDI_FLAG_LIGATURE_LEFT;
+        if (prevJoiningType in[ujtRightJoining,ujtDualJoining]) and (prevJoiningTypeIndex <> -1) and
+          (joiningType in[ujtLeftJoining,ujtDualJoining,ujtJoinCausing]) then
+          result[prevJoiningTypeIndex].Flags:= result[prevJoiningTypeIndex].Flags or BIDI_FLAG_LIGATURE_RIGHT;
+      end;
+      if joiningType <> ujtTransparent then
+      begin
+        prevJoiningType := joiningType;
+        prevJoiningTypeIndex:= curIndex;
+        prevJoiningTypeBidilevel:= result[curIndex].BidiLevel;
       end;
       curIndex := a[curIndex].nextInIsolate;
     end;
@@ -1449,8 +1477,12 @@ begin
     for i := 0 to high(a) do
     begin
       a[i].bidiClass := GetUnicodeBidiClass(u[i]);
-      if u[i] = UNICODE_LINE_SEPARATOR then  //line separator within paragraph
-        result[i].Flags := result[i].Flags or BIDI_FLAG_END_OF_LINE
+      case u[i] of
+      UNICODE_LINE_SEPARATOR: //line separator within paragraph
+        result[i].Flags := result[i].Flags or BIDI_FLAG_END_OF_LINE;
+      UNICODE_ZERO_WIDTH_JOINER, UNICODE_ZERO_WIDTH_NON_JOINER:
+        result[i].Flags := result[i].Flags OR BIDI_FLAG_LIGATURE_BOUNDARY;
+      end;
     end;
     SplitParagraphs;
   end;

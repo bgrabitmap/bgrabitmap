@@ -102,7 +102,7 @@ type
     constructor Create(ATextUTF8: string; ABidiMode: TFontBidiMode);
     function GetParagraphAt(ACharIndex: integer): integer;
     function CopyTextUTF8(AStartIndex, ACount: integer): string;
-    function CopyTextUTF8WithoutRemovedChars(AStartIndex,AEndIndex: integer; out ANonRemovedCount: integer): string;
+    function CopyTextUTF8DiscardChars(AStartIndex,AEndIndex: integer; out ANonDiscardedCount: integer): string;
     function InsertText(ATextUTF8: string; APosition: integer): integer;
     function DeleteText(APosition, ACount: integer): integer;
     function DeleteTextBefore(APosition, ACount: integer): integer;
@@ -389,25 +389,25 @@ begin
   result := copy(FText, FBidi[AStartIndex].Offset+1, FBidi[AStartIndex+ACount].Offset-FBidi[AStartIndex].Offset)
 end;
 
-function TUnicodeAnalysis.CopyTextUTF8WithoutRemovedChars(AStartIndex,
-  AEndIndex: integer; out ANonRemovedCount: integer): string;
+function TUnicodeAnalysis.CopyTextUTF8DiscardChars(AStartIndex,
+  AEndIndex: integer; out ANonDiscardedCount: integer): string;
 var i, len, charLen: integer;
 begin
   CheckCharRange(AStartIndex, AEndIndex, 0, CharCount);
 
-  ANonRemovedCount:= 0;
+  ANonDiscardedCount:= 0;
   len := 0;
   for i := AStartIndex to AEndIndex-1 do
-    if not FBidi[i].BidiInfo.IsRemoved then
+    if not FBidi[i].BidiInfo.IsDiscardable then
     begin
       inc(len, FBidi[i+1].Offset - FBidi[i].Offset);
-      inc(ANonRemovedCount);
+      inc(ANonDiscardedCount);
     end;
 
   setlength(result, len);
   len := 0;
   for i := AStartIndex to AEndIndex-1 do
-    if not FBidi[i].BidiInfo.IsRemoved then
+    if not FBidi[i].BidiInfo.IsDiscardable then
     begin
       charLen := FBidi[i+1].Offset - FBidi[i].Offset;
       move(FText[FBidi[i].Offset+1], result[len+1], charLen);
@@ -515,14 +515,14 @@ begin
   startIndex := ABidiTree.StartIndex;
   endIndex:= ABidiTree.EndIndex;
 
-  while (startIndex < endIndex) and FBidi[startIndex].BidiInfo.IsRemoved do inc(startIndex);
-  while (startIndex < endIndex) and FBidi[endIndex-1].BidiInfo.IsRemoved do dec(endIndex);
+  while (startIndex < endIndex) and FBidi[startIndex].BidiInfo.IsDiscardable do inc(startIndex);
+  while (startIndex < endIndex) and FBidi[endIndex-1].BidiInfo.IsDiscardable do dec(endIndex);
   if endIndex = startIndex then exit;
 
   i := startIndex;
   while i < endIndex do
   begin
-    if not FBidi[i].BidiInfo.IsRemoved then
+    if not FBidi[i].BidiInfo.IsDiscardable then
     begin
       if FBidi[i].BidiInfo.BidiLevel > ABidiTree.BidiLevel then
       begin

@@ -156,9 +156,10 @@ type
     procedure SetStyle(AValue: TFontStyles);
     function GetFontEmHeightRatio: single;
     procedure SetVectorizeLCL(AValue: boolean);
-    procedure GlyphCallbackForGlyphSizes(ATextUTF8: string; AGlyph: TBGRAGlyph; AData: Pointer; out AContinue: boolean);
-    procedure UpdateQuadraticCallback(ATextUTF8: string; AGlyph: TBGRAGlyph;
-      AData: Pointer; out AContinue: boolean);
+    procedure GlyphCallbackForGlyphSizes(ATextUTF8: string; AGlyph: TBGRAGlyph;
+      {%H-}AMirrored: boolean; AData: Pointer; out AContinue: boolean);
+    procedure UpdateQuadraticCallback({%H-}ATextUTF8: string; AGlyph: TBGRAGlyph;
+      {%H-}AMirrored: boolean; {%H-}AData: Pointer; out AContinue: boolean);
   protected
     procedure UpdateFont;
     procedure UpdateMatrix;
@@ -213,7 +214,7 @@ type
 
 implementation
 
-uses BGRAUTF8, math;
+uses BGRAUTF8;
 
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean; ADiagonalFillPercent: single; AIntermediateDiagonals: boolean): ArrayOfTPointF;
@@ -1497,7 +1498,7 @@ begin
 end;
 
 procedure TBGRAVectorizedFont.GlyphCallbackForGlyphSizes(ATextUTF8: string; AGlyph: TBGRAGlyph;
-  AData: Pointer; out AContinue: boolean);
+  AMirrored: boolean; AData: Pointer; out AContinue: boolean);
 begin
   with TGlyphSizesCallbackData(AData^) do
   begin
@@ -1521,7 +1522,7 @@ begin
 end;
 
 procedure TBGRAVectorizedFont.UpdateQuadraticCallback(ATextUTF8: string;
-  AGlyph: TBGRAGlyph; AData: Pointer; out AContinue: boolean);
+  AGlyph: TBGRAGlyph; AMirrored: boolean; AData: Pointer; out AContinue: boolean);
 begin
   if AGlyph is TBGRAPolygonalGlyph then
     TBGRAPolygonalGlyph(AGlyph).QuadraticCurves:= FQuadraticCurves;

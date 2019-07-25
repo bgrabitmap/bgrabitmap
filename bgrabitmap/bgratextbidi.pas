@@ -132,7 +132,7 @@ type
     function GetUntransformedParagraphAt(APosition: TPointF): integer; overload;
 
     function GetSameLevelString(startIndex,endIndex: integer): string; overload;
-    function GetSameLevelString(startIndex,endIndex: integer; out nonRemovedCount: integer): string; overload;
+    function GetSameLevelString(startIndex,endIndex: integer; out nonDiscardedCount: integer): string; overload;
     function ComputeBidiTree(AMaxWidth: single; startIndex, endIndex: integer; bidiLevel: byte): TBidiTree;
     procedure AddPartsFromTree(APos: TPointF; ATree: TBidiTree; fullHeight, baseLine: single; brokenLineIndex: integer);
     procedure Init(ATextUTF8: string; ABidiMode: TFontBidiMode); virtual;
@@ -244,7 +244,7 @@ type
     FBidiPos: single;
     FSize: TPointF;
     FTextUTF8: string;
-    FNonRemovedCount: integer;
+    FNonDiscardedCount: integer;
     FLayout: TBidiTextLayout;
     FMaxWidth: single;
     function GetCumulatedBidiPos: single;
@@ -336,7 +336,7 @@ begin
   FMaxWidth := TBidiLayoutTreeData(AData^).MaxWidth;
   if IsLeaf then
   begin
-    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonRemovedCount);
+    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonDiscardedCount);
     FSize := Layout.TextSizeBidiOverride(FTextUTF8, odd(BidiLevel));
     //writeln('Created leaf ', round(FSize.x), ' of level ',BidiLevel);
   end
@@ -344,7 +344,7 @@ begin
   begin
     //writeln('Created branch of level ',BidiLevel);
     FTextUTF8:= '';
-    FNonRemovedCount:= 0;
+    FNonDiscardedCount:= 0;
     FSize := PointF(0,0);
   end;
 end;
@@ -369,7 +369,7 @@ begin
   inherited Shorten(AEndIndex);
   if IsLeaf then
   begin
-    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonRemovedCount);
+    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonDiscardedCount);
     FSize := Layout.TextSizeBidiOverride(FTextUTF8, odd(BidiLevel));
     //writeln('Shortened leaf ', round(FSize.x));
   end else
@@ -394,14 +394,14 @@ begin
   if Width > remain then
   begin
     fitInfo := Layout.TextFitInfoBidiOverride(FTextUTF8, remain, odd(BidiLevel));
-    if fitInfo < FNonRemovedCount then
+    if fitInfo < FNonDiscardedCount then
     begin
       //writeln('Splitting leaf ',round(Width), ' (max ',round(remain),')');
       splitIndex:= StartIndex;
       a:= Layout.FAnalysis;
       while fitInfo > 0 do
       begin
-        while (splitIndex < EndIndex) and a.BidiInfo[splitIndex].IsRemoved do
+        while (splitIndex < EndIndex) and a.BidiInfo[splitIndex].IsDiscardable do
           Inc(splitIndex);
         if splitIndex < EndIndex then inc(splitIndex);
         dec(fitInfo);
@@ -828,9 +828,8 @@ begin
   checkIndex := ASplitIndex-1;
   while (checkIndex > AStartIndex) and
     (GetUnicodeJoiningType(GetUnicodeChar(checkIndex))=ujtTransparent) do dec(checkIndex);
-  if ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureAfter then
-    s := s+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER) else
-  if not ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureBefore then
+  if (ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureLeft) or
+     (not ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureRight) then
     s := s+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
   result := TextSizeBidiOverride(s, ARightToLeft);
 end;
@@ -953,14 +952,14 @@ end;
 
 function TBidiTextLayout.GetSameLevelString(startIndex, endIndex: integer): string;
 var
-  nonRemovedCount: integer;
+  nonDiscardedCount: integer;
 begin
-  result := GetSameLevelString(startIndex,endIndex,nonRemovedCount);
+  result := GetSameLevelString(startIndex,endIndex,nonDiscardedCount);
 end;
 
-function TBidiTextLayout.GetSameLevelString(startIndex, endIndex: integer; out nonRemovedCount: integer): string;
+function TBidiTextLayout.GetSameLevelString(startIndex, endIndex: integer; out nonDiscardedCount: integer): string;
 begin
-  result := FAnalysis.CopyTextUTF8WithoutRemovedChars(startIndex, endIndex, nonRemovedCount);
+  result := FAnalysis.CopyTextUTF8DiscardChars(startIndex, endIndex, nonDiscardedCount);
 end;
 
 function TBidiTextLayout.ComputeBidiTree(AMaxWidth: single; startIndex,
