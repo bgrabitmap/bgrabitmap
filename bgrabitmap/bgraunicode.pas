@@ -1054,7 +1054,7 @@ var
     ResolveBrackets;
   end;
 
-  procedure ResolveLigature(startIndex, afterEndIndex: integer);
+  procedure ResolveLigature(startIndex: integer);
   var
     prevJoiningType, joiningType: TUnicodeJoiningType;
     prevJoiningTypeBidilevel: byte;
@@ -1065,7 +1065,7 @@ var
     prevJoiningTypeIndex := -1;
     prevJoiningTypeBidilevel:= 0;
     curIndex := startIndex;
-    while curIndex <> afterEndIndex do
+    while curIndex <> -1 do
     begin
       if prevJoiningTypeBidilevel <> result[curIndex].BidiLevel then
         prevJoiningType := ujtNonJoining;
@@ -1103,7 +1103,6 @@ var
     ResolveWeakTypes(startIndex, afterEndIndex, sos, eos);
     ResolveBrackets(startIndex, afterEndIndex, sos, eos);
     ResolveNeutrals(startIndex, afterEndIndex, sos, eos);
-    ResolveLigature(startIndex, afterEndIndex);
   end;
 
   procedure SameLevelRuns(startIndex: integer);
@@ -1397,6 +1396,7 @@ var
 
     SameLevelRuns(startIndex);
     ResolveImplicitLevels(startIndex);
+    ResolveLigature(startIndex);
 
     if isParagraph then
       ResetEndOfParagraphLevels(startIndex);
