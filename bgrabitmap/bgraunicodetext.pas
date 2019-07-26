@@ -684,11 +684,8 @@ begin
   bidiStart := ParagraphStartIndex[AParagraphIndex];
   bidiCount := ParagraphEndIndex[AParagraphIndex]-bidiStart;
 
-  if bidiCount > 0 then
-  begin
-    if AUpdateBidi then InternalUpdateBidiIsolate(bidiStart, bidiCount);
-    InternalUpdateUnbrokenLines(AParagraphIndex);
-  end;
+  if AUpdateBidi then InternalUpdateBidiIsolate(bidiStart, bidiCount);
+  InternalUpdateUnbrokenLines(AParagraphIndex);
 
   if Assigned(FOnCharDeleted) then FOnCharDeleted(self, AParagraphIndex, bidiStart, bidiCount);
 end;
