@@ -1388,6 +1388,7 @@ end;
 function TBGRAVectorizedFontRenderer.TextSizeF(sUTF8: string): TPointF;
 begin
   UpdateFont;
+  FVectorizedFont.BidiMode := fbmAuto;
   result := FVectorizedFont.GetTextSize(sUTF8);
 end;
 
@@ -1405,6 +1406,7 @@ var
   w,h: single;
 begin
   UpdateFont;
+  FVectorizedFont.BidiMode := fbmAuto;
   result.x := 0;
   result.y := 0;
   h := FVectorizedFont.FullHeight;
@@ -1421,6 +1423,7 @@ function TBGRAVectorizedFontRenderer.TextFitInfo(sUTF8: string;
   AMaxWidth: integer): integer;
 begin
   UpdateFont;
+  FVectorizedFont.BidiMode := fbmAuto;
   result := FVectorizedFont.TextFitInfo(sUTF8, AMaxWidth);
 end;
 
@@ -1428,6 +1431,7 @@ function TBGRAVectorizedFontRenderer.TextFitInfoF(sUTF8: string;
   AMaxWidthF: single): integer;
 begin
   UpdateFont;
+  FVectorizedFont.BidiMode := fbmAuto;
   result := FVectorizedFont.TextFitInfo(sUTF8, AMaxWidthF);
 end;
 
