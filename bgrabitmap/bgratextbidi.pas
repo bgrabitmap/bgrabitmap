@@ -1297,7 +1297,7 @@ begin
             if (tabSectionCount = 1) and (splitIndex = tabSectionStart) then
             begin
               inc(splitIndex);
-              while (splitIndex < nextTabIndex) and (GetUnicodeBidiClass(UnicodeChar[splitIndex]) = ubcNonSpacingMark) do inc(splitIndex);
+              while (splitIndex < nextTabIndex) and not FAnalysis.BidiInfo[splitIndex].IsMulticharStart do inc(splitIndex);
             end;
             partStr := FAnalysis.CopyTextUTF8(tabSectionStart, splitIndex-tabSectionStart);
             remainStr := FAnalysis.CopyTextUTF8(splitIndex, nextTabIndex-splitIndex);
@@ -1682,7 +1682,7 @@ begin
               while (curW < w) and (curIndex < PartEndIndex[j]) do
               begin
                 newIndex := curIndex+1;
-                while (newIndex < PartEndIndex[j]) and (GetUnicodeBidiClass(GetUnicodeChar(newIndex)) = ubcNonSpacingMark) do inc(newIndex);
+                while (newIndex < PartEndIndex[j]) and not FAnalysis.BidiInfo[newIndex].IsMulticharStart do inc(newIndex);
                 newW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], newIndex).x;
                 if newW >= w then
                 begin

@@ -453,19 +453,9 @@ begin
   if APosition+ACount > CharCount then raise exception.Create('Exceed end of text');
   if ACount = 0 then exit(0);
 
-  //keep Cr/Lf pair together
-  if IsUnicodeCrLf(UnicodeChar[APosition+ACount-1]) then
-  begin
-    idxPara := GetParagraphAt(APosition+ACount-1);
-    if (ParagraphEndIndex[idxPara] > APosition+ACount) and
-       IsUnicodeCrLf(UnicodeChar[APosition+ACount]) and
-       (UnicodeChar[APosition+ACount] <> UnicodeChar[APosition+ACount-1]) then Inc(ACount);
-  end;
-
-  //keep non spacing marks after last char together
+  //keep Cr/Lf pair together and non spacing marks after last char together
   while (APosition+ACount < CharCount) and
-    (GetUnicodeBidiClass(UnicodeChar[APosition+ACount])=ubcNonSpacingMark)
-  do inc(ACount);
+    not BidiInfo[APosition+ACount].IsMulticharStart do inc(ACount);
 
   result := ACount;
 end;
@@ -478,22 +468,10 @@ begin
   if APosition-ACount < 0 then raise exception.Create('Exceed start of text');
   if ACount = 0 then exit(0);
 
-  //keep Cr/Lf pair together
-  if IsUnicodeCrLf(UnicodeChar[APosition-1]) then
-   begin
-     idxPara := GetParagraphAt(APosition-1);
-     if (ParagraphStartIndex[idxPara] < APosition-1) and
-        IsUnicodeCrLf(UnicodeChar[APosition-2]) and
-        (UnicodeChar[APosition-2] <> UnicodeChar[APosition-1]) then
-       Inc(ACount);
-   end;
-
   //keep before non spacing marks until real char together
   idxPara := GetParagraphAt(APosition-ACount);
-  while (APosition-ACount > ParagraphStartIndex[idxPara]) and
-    (GetUnicodeBidiClass(UnicodeChar[APosition-ACount])=ubcNonSpacingMark) and
-    not IsUnicodeIsolateOrFormatting(UnicodeChar[APosition-ACount-1])
-  do inc(ACount);
+  while (APosition-ACount > 0) and
+    not BidiInfo[APosition-ACount].IsMulticharStart do inc(ACount);
 
   result := ACount;
 end;

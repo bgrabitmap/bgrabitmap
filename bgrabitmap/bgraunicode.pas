@@ -30,6 +30,8 @@ const
   BIDI_FLAG_LIGATURE_LEFT = 32;            //joins to the letter on the left (possible for joining type L and D)
   BIDI_FLAG_LIGATURE_BOUNDARY = 64;        //zero-width joiner or non-joiner
   BIDI_FLAG_RTL_SCRIPT = 128;              //script is written from right to left (arabic, N'Ko...)
+  BIDI_FLAG_NON_SPACING_MARK = 256;        //it is a non-spacing mark
+  BIDI_FLAG_MULTICHAR_START = 512;         //start of a multichar (letter + non spacing marks, non spacing marks)
 
 type
   PUnicodeBidiInfo = ^TUnicodeBidiInfo;
@@ -45,14 +47,16 @@ type
     function GetHasLigatureLeft: boolean;
     function GetHasLigatureRight: boolean;
     function GetImplicitEndOfParagraph: boolean;
-    function GetIsLigartureBoundary: boolean;
+    function GetLigatureBoundary: boolean;
+    function GetMulticharStart: boolean;
+    function GetNonSpacingMark: boolean;
     function GetRemoved: boolean;
     function GetRightToLeft: boolean;
     function GetParagraphRightToLeft: boolean;
     function GetRightToLeftScript: boolean;
   public
     ParagraphBidiLevel, BidiLevel: byte;
-    Flags, Dummy: Byte;
+    Flags: Word;
     property IsRemoved: boolean read GetRemoved;
     property IsRightToLeft: boolean read GetRightToLeft;
     property IsParagraphRightToLeft: boolean read GetParagraphRightToLeft;
@@ -62,9 +66,11 @@ type
     property IsImplicitEndOfParagraph: boolean read GetImplicitEndOfParagraph;
     property HasLigatureRight: boolean read GetHasLigatureRight;
     property HasLigatureLeft: boolean read GetHasLigatureLeft;
-    property IsLigatureBoundary: boolean read GetIsLigartureBoundary;
+    property IsLigatureBoundary: boolean read GetLigatureBoundary;
     property IsDiscardable: boolean read GetDiscardable;
     property IsRightToLeftScript: boolean read GetRightToLeftScript;
+    property IsNonSpacingMark: boolean read GetNonSpacingMark;
+    property IsMulticharStart: boolean read GetMulticharStart;
   end;
 
   TUnicodeBidiArray = packed array of TUnicodeBidiInfo;
@@ -684,9 +690,19 @@ begin
   result := (Flags and BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH) <> 0;
 end;
 
-function TUnicodeBidiInfo.GetIsLigartureBoundary: boolean;
+function TUnicodeBidiInfo.GetLigatureBoundary: boolean;
 begin
   result := (Flags and BIDI_FLAG_LIGATURE_BOUNDARY) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetMulticharStart: boolean;
+begin
+  result := (Flags and BIDI_FLAG_MULTICHAR_START) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetNonSpacingMark: boolean;
+begin
+  result := (Flags and BIDI_FLAG_NON_SPACING_MARK) <> 0;
 end;
 
 function TUnicodeBidiInfo.GetRemoved: boolean;
@@ -1458,9 +1474,12 @@ var
       if a[curIndex].bidiClass = ubcParagraphSeparator then
       begin
         //skip second CRLF char
-        if ((u[curIndex] = 13) or (u[curIndex] = 10)) and (curIndex+1 < ALength) and
-           ((u[curIndex+1] = 13) or (u[curIndex+1] = 10)) and (u[curIndex+1] <> u[curIndex]) then
+        if IsUnicodeCrLf(u[curIndex]) and (curIndex+1 < ALength) and
+           IsUnicodeCrLf(u[curIndex+1]) and (u[curIndex+1] <> u[curIndex]) then
+        begin
           inc(curIndex);
+          result[curIndex].Flags := result[curIndex].Flags and not BIDI_FLAG_MULTICHAR_START;
+        end;
 
         result[curIndex].Flags := result[curIndex].Flags or BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH;
 
@@ -1491,8 +1510,14 @@ begin
       UNICODE_ZERO_WIDTH_JOINER, UNICODE_ZERO_WIDTH_NON_JOINER:
         result[i].Flags := result[i].Flags OR BIDI_FLAG_LIGATURE_BOUNDARY;
       end;
-      if a[i].bidiClass in [ubcArabicLetter,ubcArabicNumber,ubcRightToLeft] then
+      case a[i].bidiClass of
+      ubcArabicLetter,ubcArabicNumber,ubcRightToLeft:
         result[i].Flags := result[i].Flags OR BIDI_FLAG_RTL_SCRIPT;
+      ubcNonSpacingMark: result[i].Flags := result[i].Flags OR BIDI_FLAG_NON_SPACING_MARK;
+      end;
+      if (a[i].bidiClass <> ubcNonSpacingMark) or
+        (i = 0) or (a[i-1].bidiClass in [ubcSegmentSeparator, ubcParagraphSeparator]) then
+        result[i].Flags := result[i].Flags OR BIDI_FLAG_MULTICHAR_START;
     end;
     SplitParagraphs;
   end;
