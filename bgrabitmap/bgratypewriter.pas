@@ -90,7 +90,7 @@ type
   end;
 
   TBGRATextDisplayInfo = array of TBGRAGlyphDisplayInfo;
-  TBrowseGlyphCallbackFlag = (gcfMirrored, gcfMerged);
+  TBrowseGlyphCallbackFlag = (gcfMirrored, gcfMerged, gcfRightToLeft);
   TBrowseGlyphCallbackFlags = set of TBrowseGlyphCallbackFlag;
   TBrowseGlyphCallback = procedure(ATextUTF8: string; AGlyph: TBGRAGlyph;
     AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean) of object;
@@ -958,7 +958,7 @@ type
   var
     i: Integer;
   begin
-    if info.charEnd-info.charStart = length(text) then
+    if info.charEnd-info.charStart >= length(text) then
     begin
       for i := 1 to length(text) do
         if ATextUTF8[info.charStart+i-1] <> text[i] then exit(false);
@@ -973,19 +973,26 @@ var
   procedure OrderedCharInfo;
   var
     displayOrder: TUnicodeDisplayOrder;
-    bidiIdx, orderIndex: integer;
+    bidiIdx, orderIndex, nb: integer;
   begin
     displayOrder := GetUTF8DisplayOrder(bidiArray);
-    setlength(charInfo, length(displayOrder));
+    orderIndex := 0;
+    nb := 0;
     for orderIndex := 0 to high(displayOrder) do
+      if bidiArray[displayOrder[orderIndex]].BidiInfo.IsMulticharStart then inc(nb);
+    setlength(charInfo, nb);
+    nb := 0;
+    for orderIndex := 0 to high(displayOrder) do
+    if bidiArray[displayOrder[orderIndex]].BidiInfo.IsMulticharStart then
     begin
       bidiIdx := displayOrder[orderIndex];
-      charInfo[orderIndex].charStart := bidiArray[bidiIdx].Offset+1;
-      if bidiIdx < high(bidiArray) then
-        charInfo[orderIndex].charEnd := bidiArray[bidiIdx+1].Offset+1
-      else
-        charInfo[orderIndex].charEnd := length(ATextUTF8)+1;
-      charInfo[orderIndex].bidiInfo := @bidiArray[bidiIdx].BidiInfo;
+      charInfo[nb].charStart := bidiArray[bidiIdx].Offset+1;
+      charInfo[nb].bidiInfo := @bidiArray[bidiIdx].BidiInfo;
+      while (bidiIdx < high(bidiArray)) and
+        not bidiArray[bidiIdx+1].BidiInfo.IsMulticharStart do inc(bidiIdx);
+      if bidiIdx < high(bidiArray) then charInfo[nb].charEnd := bidiArray[bidiIdx+1].Offset+1
+      else charInfo[nb].charEnd := length(ATextUTF8)+1;
+      inc(nb);
     end;
   end;
 
@@ -994,29 +1001,39 @@ var
     i,nb: Integer;
   begin
     nb := 0;
-    for i := 0 to high(bidiArray) do
-      if not bidiArray[i].BidiInfo.IsRemoved then inc(nb);
+    i := 0;
+    while i <= high(bidiArray) do
+    begin
+      if not bidiArray[i].BidiInfo.IsRemoved then
+      begin
+        inc(nb);
+        while (i < high(bidiArray)) and not bidiArray[i+1].BidiInfo.IsMulticharStart do inc(i);
+      end;
+      inc(i);
+    end;
     setlength(charInfo,nb);
     nb := 0;
-    for i := 0 to high(bidiArray) do
+    i := 0;
+    while i <= high(bidiArray) do
+    begin
       if not bidiArray[i].BidiInfo.IsRemoved then
       begin
         charInfo[nb].charStart := bidiArray[i].Offset+1;
-        if i < high(bidiArray) then
-          charInfo[nb].charEnd := bidiArray[i+1].Offset+1
-        else
-          charInfo[nb].charEnd := length(ATextUTF8)+1;
         charInfo[nb].bidiInfo:= @bidiArray[i].BidiInfo;
+        while (i < high(bidiArray)) and not bidiArray[i+1].BidiInfo.IsMulticharStart do inc(i);
+        if i < high(bidiArray) then charInfo[nb].charEnd := bidiArray[i+1].Offset+1
+        else charInfo[nb].charEnd := length(ATextUTF8)+1;
         inc(nb);
       end;
+      inc(i);
+    end;
   end;
 
 var
-  cur: integer;
-  curCharStart,curCharEnd: integer;
-  curRTL,curRTLScript,curLigatureLeft,curLigatureRight,reversed,merged: boolean;
+  cur,curStart: integer;
+  curRTL,curRTLScript,curLigatureLeft,curLigatureRight,merged: boolean;
 
-  procedure TryMerge(const AChars: array of string; ARightToLeft: boolean);
+  procedure TryMerge(const AChars: array of string);
   var
     i: Integer;
     match: Boolean;
@@ -1034,13 +1051,10 @@ var
     if match then
     begin
       inc(cur, length(AChars)-1);
-      curCharStart:= min(curCharStart,charInfo[cur-1].charStart);
-      curCharEnd := max(curCharEnd,charInfo[cur-1].charEnd);
       if not ADisplayOrder and curRTL then
         curLigatureLeft:= charInfo[cur-1].bidiInfo^.HasLigatureLeft
       else
         curLigatureRight:= charInfo[cur-1].bidiInfo^.HasLigatureRight;
-      reversed := curRTL <> ARightToLeft;
       merged := true;
     end;
   end;
@@ -1051,42 +1065,59 @@ var
   u: Cardinal;
   shouldContinue: boolean;
   flags: TBrowseGlyphCallbackFlags;
+  i,charDestPos,charLen: integer;
 begin
   if ATextUTF8 = '' then exit;
 
   if BidiMode = fbmAuto then bidiArray := AnalyzeBidiUTF8(ATextUTF8)
   else bidiArray := AnalyzeBidiUTF8(ATextUTF8, BidiMode = fbmRightToLeft);
-
-  if ADisplayOrder then OrderedCharInfo else
-    UnorderedCharInfo;
+  if ADisplayOrder then OrderedCharInfo else UnorderedCharInfo;
 
   cur := 0;
   while cur < length(charInfo) do
   begin
-    curCharStart := charInfo[cur].charStart;
-    curCharEnd := charInfo[cur].charEnd;
+    curStart := cur;
     curRTL:= charInfo[cur].bidiInfo^.IsRightToLeft;
     curRTLScript := charInfo[cur].bidiInfo^.IsRightToLeftScript;
     curLigatureLeft:= charInfo[cur].bidiInfo^.HasLigatureLeft;
     curLigatureRight:= charInfo[cur].bidiInfo^.HasLigatureRight;
-    reversed := false;
     merged := false;
     inc(cur);
-    if curCharEnd <= curCharStart then continue;
-    TryMerge(['f','f','i'],false);
-    TryMerge(['f','f','l'],false);
-    TryMerge(['f','f'],false);
-    TryMerge(['f','i'],false);
-    TryMerge(['f','l'],false);
-    TryMerge([aleph,lam],true);
-    TryMerge([alephHamzaAbove,lam],true);
-    TryMerge([alephHamzaBelow,lam],true);
-    TryMerge([alephMaddaAbove,lam],true);
-    setlength(nextchar, curCharEnd-curCharStart);
-    move(ATextUTF8[curCharStart], nextchar[1], length(nextchar));
-
-    glyphId := nextchar;
-    if reversed then glyphId:= UTF8ReverseString(glyphId);
+    TryMerge(['f','f','i']);
+    TryMerge(['f','f','l']);
+    TryMerge(['f','f']);
+    TryMerge(['f','i']);
+    TryMerge(['f','l']);
+    TryMerge([aleph,lam]);
+    TryMerge([alephHamzaAbove,lam]);
+    TryMerge([alephHamzaBelow,lam]);
+    TryMerge([alephMaddaAbove,lam]);
+    //text extract correspond to the unordered actual sequence of characters
+    setlength(nextchar, max(charInfo[curStart].charEnd, charInfo[cur-1].charEnd)
+                       -min(charInfo[curStart].charStart, charInfo[cur-1].charStart));
+    move(ATextUTF8[min(charInfo[curStart].charStart, charInfo[cur-1].charStart)], nextchar[1], length(nextchar));
+    //glyph direction corresponds to script direction
+    if (curRTL and not ADisplayOrder) <> curRTLScript then
+    begin
+      setlength(glyphId, length(nextChar));
+      charDestPos := 1;
+      for i := cur-1 downto curStart do
+      begin
+        charLen := charInfo[i].charEnd-charInfo[i].charStart;
+        move(ATextUTF8[charInfo[i].charStart], glyphId[charDestPos], charLen);
+        inc(charDestPos, charLen);
+      end;
+    end else
+    begin
+      setlength(glyphId, length(nextChar));
+      charDestPos := 1;
+      for i := curStart to cur-1 do
+      begin
+        charLen := charInfo[i].charEnd-charInfo[i].charStart;
+        move(ATextUTF8[charInfo[i].charStart], glyphId[charDestPos], charLen);
+        inc(charDestPos, charLen);
+      end;
+    end;
     if (curLigatureRight and curRTLScript) or
        (curLigatureLeft and not curRTLScript) then glyphId := UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER)+glyphId;
     if (curLigatureLeft and curRTLScript) or
@@ -1096,6 +1127,7 @@ begin
     begin
       flags := [];
       if merged then include(flags, gcfMerged);
+      if curRTL then include(flags, gcfRightToLeft);
       if curRTL and (UTF8Length(glyphId)=1) then
       begin
         u := UTF8CodepointToUnicode(pchar(glyphId), length(glyphId));
