@@ -659,12 +659,18 @@ begin
     storage := TBGRAMemOriginalStorage.Create(dir);
     try
       result.LoadFromStorage(storage);
-    finally
-      storage.Free;
+      FOriginals[AIndex] := BGRALayerOriginalEntry(result);
+      result.OnChange:= @OriginalChange;
+      result.OnEditingChange:= @OriginalEditingChange;
+    except
+      on ex: exception do
+      begin
+        FreeAndNil(result);
+        storage.Free;
+        raise exception.Create(ex.Message);
+      end;
     end;
-    FOriginals[AIndex] := BGRALayerOriginalEntry(result);
-    result.OnChange:= @OriginalChange;
-    result.OnEditingChange:= @OriginalEditingChange;
+    storage.Free;
   end;
 end;
 
