@@ -157,6 +157,8 @@ type
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; r: TRectF; useSvgAspectRatio: boolean = false); overload;
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y,w,h: single); overload;
     function GetStretchRectF(AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y,w,h: single): TRectF;
+    function FindElementById(AID: string): TSVGElement; overload;
+    function FindElementById(AID: string; AClass: TSVGFactory): TSVGElement; overload;
     property AsUTF8String: utf8string read GetUTF8String write SetUTF8String;
     property Units: TSVGUnits read GetUnits;
     property FontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
@@ -1164,6 +1166,16 @@ begin
   end;
 
   result := Units.GetStretchRectF(RectF(sx,sy,sx+sw,sy+sh), preserveAspectRatio);
+end;
+
+function TBGRASVG.FindElementById(AID: string): TSVGElement;
+begin
+  result := DataLink.FindElementById(AId, TSVGElement);
+end;
+
+function TBGRASVG.FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
+begin
+  result := DataLink.FindElementById(AId, AClass);
 end;
 
 initialization

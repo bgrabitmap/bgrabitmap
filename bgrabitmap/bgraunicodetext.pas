@@ -102,7 +102,7 @@ type
     constructor Create(ATextUTF8: string; ABidiMode: TFontBidiMode);
     function GetParagraphAt(ACharIndex: integer): integer;
     function CopyTextUTF8(AStartIndex, ACount: integer): string;
-    function CopyTextUTF8WithoutRemovedChars(AStartIndex,AEndIndex: integer; out ANonRemovedCount: integer): string;
+    function CopyTextUTF8DiscardChars(AStartIndex,AEndIndex: integer; out ANonDiscardedCount: integer): string;
     function InsertText(ATextUTF8: string; APosition: integer): integer;
     function DeleteText(APosition, ACount: integer): integer;
     function DeleteTextBefore(APosition, ACount: integer): integer;
@@ -389,25 +389,25 @@ begin
   result := copy(FText, FBidi[AStartIndex].Offset+1, FBidi[AStartIndex+ACount].Offset-FBidi[AStartIndex].Offset)
 end;
 
-function TUnicodeAnalysis.CopyTextUTF8WithoutRemovedChars(AStartIndex,
-  AEndIndex: integer; out ANonRemovedCount: integer): string;
+function TUnicodeAnalysis.CopyTextUTF8DiscardChars(AStartIndex,
+  AEndIndex: integer; out ANonDiscardedCount: integer): string;
 var i, len, charLen: integer;
 begin
   CheckCharRange(AStartIndex, AEndIndex, 0, CharCount);
 
-  ANonRemovedCount:= 0;
+  ANonDiscardedCount:= 0;
   len := 0;
   for i := AStartIndex to AEndIndex-1 do
-    if not FBidi[i].BidiInfo.IsRemoved then
+    if not FBidi[i].BidiInfo.IsDiscardable then
     begin
       inc(len, FBidi[i+1].Offset - FBidi[i].Offset);
-      inc(ANonRemovedCount);
+      inc(ANonDiscardedCount);
     end;
 
   setlength(result, len);
   len := 0;
   for i := AStartIndex to AEndIndex-1 do
-    if not FBidi[i].BidiInfo.IsRemoved then
+    if not FBidi[i].BidiInfo.IsDiscardable then
     begin
       charLen := FBidi[i+1].Offset - FBidi[i].Offset;
       move(FText[FBidi[i].Offset+1], result[len+1], charLen);
@@ -420,7 +420,7 @@ var
   newBidi: TBidiUTF8Array;
 begin
   if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
-  if length(ATextUTF8)=0 then exit;
+  if length(ATextUTF8)=0 then exit(0);
 
   if FBidiMode <> fbmAuto then
     newBidi:= AnalyzeBidiUTF8(ATextUTF8, FBidiMode = fbmRightToLeft)
@@ -453,19 +453,9 @@ begin
   if APosition+ACount > CharCount then raise exception.Create('Exceed end of text');
   if ACount = 0 then exit(0);
 
-  //keep Cr/Lf pair together
-  if IsUnicodeCrLf(UnicodeChar[APosition+ACount-1]) then
-  begin
-    idxPara := GetParagraphAt(APosition+ACount-1);
-    if (ParagraphEndIndex[idxPara] > APosition+ACount) and
-       IsUnicodeCrLf(UnicodeChar[APosition+ACount]) and
-       (UnicodeChar[APosition+ACount] <> UnicodeChar[APosition+ACount-1]) then Inc(ACount);
-  end;
-
-  //keep non spacing marks after last char together
+  //keep Cr/Lf pair together and non spacing marks after last char together
   while (APosition+ACount < CharCount) and
-    (GetUnicodeBidiClass(UnicodeChar[APosition+ACount])=ubcNonSpacingMark)
-  do inc(ACount);
+    not BidiInfo[APosition+ACount].IsMulticharStart do inc(ACount);
 
   result := ACount;
 end;
@@ -478,22 +468,10 @@ begin
   if APosition-ACount < 0 then raise exception.Create('Exceed start of text');
   if ACount = 0 then exit(0);
 
-  //keep Cr/Lf pair together
-  if IsUnicodeCrLf(UnicodeChar[APosition-1]) then
-   begin
-     idxPara := GetParagraphAt(APosition-1);
-     if (ParagraphStartIndex[idxPara] < APosition-1) and
-        IsUnicodeCrLf(UnicodeChar[APosition-2]) and
-        (UnicodeChar[APosition-2] <> UnicodeChar[APosition-1]) then
-       Inc(ACount);
-   end;
-
   //keep before non spacing marks until real char together
   idxPara := GetParagraphAt(APosition-ACount);
-  while (APosition-ACount > ParagraphStartIndex[idxPara]) and
-    (GetUnicodeBidiClass(UnicodeChar[APosition-ACount])=ubcNonSpacingMark) and
-    not IsUnicodeIsolateOrFormatting(UnicodeChar[APosition-ACount-1])
-  do inc(ACount);
+  while (APosition-ACount > 0) and
+    not BidiInfo[APosition-ACount].IsMulticharStart do inc(ACount);
 
   result := ACount;
 end;
@@ -515,14 +493,14 @@ begin
   startIndex := ABidiTree.StartIndex;
   endIndex:= ABidiTree.EndIndex;
 
-  while (startIndex < endIndex) and FBidi[startIndex].BidiInfo.IsRemoved do inc(startIndex);
-  while (startIndex < endIndex) and FBidi[endIndex-1].BidiInfo.IsRemoved do dec(endIndex);
+  while (startIndex < endIndex) and FBidi[startIndex].BidiInfo.IsDiscardable do inc(startIndex);
+  while (startIndex < endIndex) and FBidi[endIndex-1].BidiInfo.IsDiscardable do dec(endIndex);
   if endIndex = startIndex then exit;
 
   i := startIndex;
   while i < endIndex do
   begin
-    if not FBidi[i].BidiInfo.IsRemoved then
+    if not FBidi[i].BidiInfo.IsDiscardable then
     begin
       if FBidi[i].BidiInfo.BidiLevel > ABidiTree.BidiLevel then
       begin
@@ -706,11 +684,8 @@ begin
   bidiStart := ParagraphStartIndex[AParagraphIndex];
   bidiCount := ParagraphEndIndex[AParagraphIndex]-bidiStart;
 
-  if bidiCount > 0 then
-  begin
-    if AUpdateBidi then InternalUpdateBidiIsolate(bidiStart, bidiCount);
-    InternalUpdateUnbrokenLines(AParagraphIndex);
-  end;
+  if AUpdateBidi then InternalUpdateBidiIsolate(bidiStart, bidiCount);
+  InternalUpdateUnbrokenLines(AParagraphIndex);
 
   if Assigned(FOnCharDeleted) then FOnCharDeleted(self, AParagraphIndex, bidiStart, bidiCount);
 end;

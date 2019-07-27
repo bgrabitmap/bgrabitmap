@@ -249,20 +249,22 @@ type
     function AddOwnedLayer(ABitmap: TBGRABitmap; Position: TPoint; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
     function AddOwnedLayer(ABitmap: TBGRABitmap; Position: TPoint; Opacity: byte = 255): integer; overload;
     function AddOwnedLayer(ABitmap: TBGRABitmap; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
-    function AddLayerFromOriginal(AGuid: TGuid; Opacity: byte = 255): integer; overload;
-    function AddLayerFromOriginal(AGuid: TGuid; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
-    function AddLayerFromOriginal(AGuid: TGuid; Matrix: TAffineMatrix; Opacity: byte = 255): integer; overload;
-    function AddLayerFromOriginal(AGuid: TGuid; Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(const AGuid: TGuid; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(const AGuid: TGuid; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(const AGuid: TGuid; Matrix: TAffineMatrix; Opacity: byte = 255): integer; overload;
+    function AddLayerFromOriginal(const AGuid: TGuid; Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; Opacity: byte = 255): integer; overload;
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; Matrix: TAffineMatrix; Opacity: byte = 255): integer; overload;
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
 
     function AddOriginal(AOriginal: TBGRALayerCustomOriginal; AOwned: boolean = true): integer;
-    function AddOriginalFromStream(AStream: TStream; ALateLoad: boolean = false): integer;
-    function AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage; ALateLoad: boolean = false): integer;
+    function AddOriginalFromStream(AStream: TStream; ALateLoad: boolean = false): integer; overload;
+    function AddOriginalFromStream(AStream: TStream; const AGuid: TGuid; ALateLoad: boolean = false): integer; overload;
+    function AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage; ALateLoad: boolean = false): integer; overload;
+    function AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage; const AGuid: TGuid; ALateLoad: boolean = false): integer; overload;
     procedure SaveOriginalToStream(AIndex: integer; AStream: TStream); overload;
-    procedure SaveOriginalToStream(AGuid: TGUID; AStream: TStream); overload;
+    procedure SaveOriginalToStream(const AGuid: TGuid; AStream: TStream); overload;
     function RemoveOriginal(AOriginal: TBGRALayerCustomOriginal): boolean;
     procedure DeleteOriginal(AIndex: integer);
     procedure NotifyLoaded; override;
@@ -270,7 +272,9 @@ type
     procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean = false; AFullSizeLayer: boolean = false); overload;
     procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean; ARenderBounds: TRect; AFullSizeLayer: boolean = false); overload;
     procedure RenderLayerFromOriginal(layer: integer; ADraft: boolean; ARenderBoundsF: TRectF; AFullSizeLayer: boolean = false); overload;
+    procedure RenderLayerFromOriginalIfNecessary(layer: integer; ADraft: boolean; var ABounds: TRect);
     function RenderOriginalsIfNecessary(ADraft: boolean = false): TRect;
+    function RenderOriginalIfNecessary(const AGuid: TGuid; ADraft: boolean = false): TRect;
     procedure RemoveUnusedOriginals;
 
     destructor Destroy; override;
@@ -655,12 +659,18 @@ begin
     storage := TBGRAMemOriginalStorage.Create(dir);
     try
       result.LoadFromStorage(storage);
-    finally
-      storage.Free;
+      FOriginals[AIndex] := BGRALayerOriginalEntry(result);
+      result.OnChange:= @OriginalChange;
+      result.OnEditingChange:= @OriginalEditingChange;
+    except
+      on ex: exception do
+      begin
+        FreeAndNil(result);
+        storage.Free;
+        raise exception.Create(ex.Message);
+      end;
     end;
-    FOriginals[AIndex] := BGRALayerOriginalEntry(result);
-    result.OnChange:= @OriginalChange;
-    result.OnEditingChange:= @OriginalEditingChange;
+    storage.Free;
   end;
 end;
 
@@ -1299,25 +1309,25 @@ begin
   FLayers[result].Owner := True;
 end;
 
-function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+function TBGRALayeredBitmap.AddLayerFromOriginal(const AGuid: TGuid;
   Opacity: byte): integer;
 begin
   result := AddLayerFromOriginal(AGuid, DefaultBlendingOperation, Opacity);
 end;
 
-function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+function TBGRALayeredBitmap.AddLayerFromOriginal(const AGuid: TGuid;
   BlendOp: TBlendOperation; Opacity: byte): integer;
 begin
   result := AddLayerFromOriginal(AGuid, AffineMatrixIdentity, BlendOp, Opacity);
 end;
 
-function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+function TBGRALayeredBitmap.AddLayerFromOriginal(const AGuid: TGuid;
   Matrix: TAffineMatrix; Opacity: byte): integer;
 begin
   result := AddLayerFromOriginal(AGuid, Matrix, DefaultBlendingOperation, Opacity);
 end;
 
-function TBGRALayeredBitmap.AddLayerFromOriginal(AGuid: TGuid;
+function TBGRALayeredBitmap.AddLayerFromOriginal(const AGuid: TGuid;
   Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte): integer;
 begin
   result := AddOwnedLayer(TBGRABitmap.Create, BlendOp, Opacity);
@@ -1398,12 +1408,22 @@ end;
 function TBGRALayeredBitmap.AddOriginalFromStream(AStream: TStream;
   ALateLoad: boolean): integer;
 var
+  newGuid: TGUID;
+begin
+  if CreateGUID(newGuid)<> 0 then raise exception.Create('Error while creating GUID');
+  result := AddOriginalFromStream(AStream, newGuid, ALateLoad);
+end;
+
+
+function TBGRALayeredBitmap.AddOriginalFromStream(AStream: TStream;
+  const AGuid: TGuid; ALateLoad: boolean): integer;
+var
   storage: TBGRAMemOriginalStorage;
 begin
   storage:= TBGRAMemOriginalStorage.Create;
   storage.LoadFromStream(AStream);
   try
-    result := AddOriginalFromStorage(storage, ALateLoad);
+    result := AddOriginalFromStorage(storage, AGuid, ALateLoad);
   finally
     storage.Free;
   end;
@@ -1411,10 +1431,18 @@ end;
 
 function TBGRALayeredBitmap.AddOriginalFromStorage(AStorage: TBGRAMemOriginalStorage; ALateLoad: boolean): integer;
 var
+  newGuid: TGUID;
+begin
+  if CreateGUID(newGuid)<> 0 then raise exception.Create('Error while creating GUID');
+  result := AddOriginalFromStorage(AStorage, newGuid, ALateLoad);
+end;
+
+function TBGRALayeredBitmap.AddOriginalFromStorage(
+  AStorage: TBGRAMemOriginalStorage; const AGuid: TGuid; ALateLoad: boolean): integer;
+var
   origClassName: String;
   origClass: TBGRALayerOriginalAny;
   orig: TBGRALayerCustomOriginal;
-  newGuid: TGuid;
   dir, subdir: TMemDirectory;
 begin
   result := -1;
@@ -1422,17 +1450,15 @@ begin
   if origClassName = '' then raise Exception.Create('Original class name not defined');
   if ALateLoad then
   begin
-    if CreateGUID(newGuid)<> 0 then
-      raise exception.Create('Error while creating GUID');
-    if IndexOfOriginal(newGuid)<>-1 then
+    if IndexOfOriginal(AGuid)<>-1 then
       raise exception.Create('Duplicate GUID');
 
     dir := MemDirectory.Directory[MemDirectory.AddDirectory(OriginalsDirectory)];
-    subdir := dir.Directory[dir.AddDirectory(GUIDToString(newGuid))];
+    subdir := dir.Directory[dir.AddDirectory(GUIDToString(AGuid))];
     AStorage.CopyTo(subdir);
 
     if FOriginals = nil then FOriginals := TBGRALayerOriginalList.Create;
-    result := FOriginals.Add(BGRALayerOriginalEntry(newGuid));
+    result := FOriginals.Add(BGRALayerOriginalEntry(AGuid));
   end else
   begin
     origClass := FindLayerOriginalClass(origClassName);
@@ -1440,6 +1466,7 @@ begin
     orig := origClass.Create;
     try
       orig.LoadFromStorage(AStorage);
+      orig.Guid := AGuid;
       result := AddOriginal(orig, true);
     except on ex:exception do
       begin
@@ -1470,7 +1497,8 @@ begin
   end;
 end;
 
-procedure TBGRALayeredBitmap.SaveOriginalToStream(AGuid: TGUID; AStream: TStream);
+procedure TBGRALayeredBitmap.SaveOriginalToStream(const AGuid: TGuid;
+  AStream: TStream);
 var
   idxOrig: Integer;
 begin
@@ -1617,6 +1645,7 @@ begin
   orig := LayerOriginal[layer];
   if Assigned(orig) then
   begin
+    Unfreeze(layer);
     layerDir := GetLayerDirectory(layer);
     renderDir := layerDir.Directory[layerDir.AddDirectory(RenderSubDirectory)];
     orig.RenderStorage := TBGRAMemOriginalStorage.Create(renderDir);
@@ -1689,7 +1718,8 @@ begin
   RenderLayerFromOriginal(layer, ADraft, r, AFullSizeLayer);
 end;
 
-function TBGRALayeredBitmap.RenderOriginalsIfNecessary(ADraft: boolean): TRect;
+procedure TBGRALayeredBitmap.RenderLayerFromOriginalIfNecessary(layer: integer;
+  ADraft: boolean; var ABounds: TRect);
   procedure UnionLayerArea(ALayer: integer);
   var
     r: TRect;
@@ -1700,51 +1730,68 @@ function TBGRALayeredBitmap.RenderOriginalsIfNecessary(ADraft: boolean): TRect;
 
     r := RectWithSize(LayerOffset[ALayer].X, LayerOffset[ALayer].Y,
                       FLayers[ALayer].Source.Width, FLayers[ALayer].Source.Height);
-    if IsRectEmpty(result) then result := r else
-      UnionRect(result,result,r);
+    if IsRectEmpty(ABounds) then ABounds := r else
+      UnionRect(ABounds,ABounds,r);
   end;
 
 var
-  i: Integer;
   r: TRect;
 
 begin
+  case LayerOriginalRenderStatus[layer] of
+  orsNone:
+       begin
+         UnionLayerArea(layer);
+         RenderLayerFromOriginal(layer, ADraft);
+         UnionLayerArea(layer);
+       end;
+  orsDraft: if not ADraft then
+       begin
+         UnionLayerArea(layer);
+         RenderLayerFromOriginal(layer, ADraft);
+         UnionLayerArea(layer);
+       end;
+  orsPartialDraft,orsPartialProof:
+       if not ADraft and (LayerOriginalRenderStatus[layer] = orsPartialDraft) then
+       begin
+         UnionLayerArea(layer);
+         RenderLayerFromOriginal(layer, ADraft, rect(0,0,Width,Height), true);
+         UnionLayerArea(layer);
+       end
+       else
+       begin
+         with FLayers[layer].OriginalInvalidatedBounds do
+           r := Rect(floor(Left),floor(Top),ceil(Right),ceil(Bottom));
+         RenderLayerFromOriginal(layer, ADraft, r, true);
+         if not IsRectEmpty(r) then
+         begin
+           if IsRectEmpty(ABounds) then
+             ABounds := r
+           else
+             UnionRect(ABounds, ABounds, r);
+         end;
+       end;
+  end;
+end;
+
+function TBGRALayeredBitmap.RenderOriginalsIfNecessary(ADraft: boolean): TRect;
+var
+  i: Integer;
+begin
   result:= EmptyRect;
   for i := 0 to NbLayers-1 do
-    case LayerOriginalRenderStatus[i] of
-    orsNone:
-         begin
-           UnionLayerArea(i);
-           RenderLayerFromOriginal(i, ADraft);
-           UnionLayerArea(i);
-         end;
-    orsDraft: if not ADraft then
-         begin
-           UnionLayerArea(i);
-           RenderLayerFromOriginal(i, ADraft);
-           UnionLayerArea(i);
-         end;
-    orsPartialDraft,orsPartialProof:
-         if not ADraft and (LayerOriginalRenderStatus[i] = orsPartialDraft) then
-         begin
-           UnionLayerArea(i);
-           RenderLayerFromOriginal(i, ADraft, rect(0,0,Width,Height), true);
-           UnionLayerArea(i);
-         end
-         else
-         begin
-           with FLayers[i].OriginalInvalidatedBounds do
-             r := Rect(floor(Left),floor(Top),ceil(Right),ceil(Bottom));
-           RenderLayerFromOriginal(i, ADraft, r, true);
-           if not IsRectEmpty(r) then
-           begin
-             if IsRectEmpty(result) then
-               result := r
-             else
-               UnionRect(result, result, r);
-           end;
-         end;
-    end;
+    RenderLayerFromOriginalIfNecessary(i, ADraft, result);
+end;
+
+function TBGRALayeredBitmap.RenderOriginalIfNecessary(const AGuid: TGuid;
+  ADraft: boolean): TRect;
+var
+  i: Integer;
+begin
+  result:= EmptyRect;
+  for i := 0 to NbLayers-1 do
+    if LayerOriginalGuid[i] = AGuid then
+      RenderLayerFromOriginalIfNecessary(i, ADraft, result);
 end;
 
 procedure TBGRALayeredBitmap.RemoveUnusedOriginals;

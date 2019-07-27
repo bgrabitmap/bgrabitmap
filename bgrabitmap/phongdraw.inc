@@ -105,9 +105,9 @@ begin
   {$endif}
 
   //light origin
-  vLS := Point3D_128(LightPosition.X-ofsX,
-                  LightPosition.Y-ofsY,
-                  LightPositionZ);
+  vLS := Point3D_128(FLightPosition3D.X-ofsX,
+                  FLightPosition3D.Y-ofsY,
+                  FLightPosition3D.Z);
 
   //surface vectors
   vS1 := Point3D_128(1,0,0);

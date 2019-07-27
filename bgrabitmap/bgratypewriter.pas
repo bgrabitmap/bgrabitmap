@@ -90,13 +90,22 @@ type
   end;
 
   TBGRATextDisplayInfo = array of TBGRAGlyphDisplayInfo;
-  TBrowseGlyphCallback = procedure(ATextUTF8: string; AGlyph: TBGRAGlyph; AData: Pointer; out AContinue: boolean) of object;
+  TBrowseGlyphCallbackFlag = (gcfMirrored, gcfMerged, gcfRightToLeft);
+  TBrowseGlyphCallbackFlags = set of TBrowseGlyphCallbackFlag;
+  TBrowseGlyphCallback = procedure(ATextUTF8: string; AGlyph: TBGRAGlyph;
+    AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean) of object;
 
   TTextFitInfoCallbackData = record
     WidthAccumulator, MaxWidth: single;
     CharCount: integer;
     ByteCount: integer;
-    SplitGlyphText: string;
+  end;
+
+  TDisplayInfoCallbackData = record
+    Align: TBGRATypeWriterAlignment;
+    Matrix: TAffineMatrix;
+    Info: TBGRATextDisplayInfo;
+    InfoIndex: integer;
   end;
 
   { TBGRACustomTypeWriter }
@@ -105,10 +114,14 @@ type
   private
     FBidiMode: TFontBidiMode;
     FGlyphs: TAvgLvlTree;
+    procedure GlyphCallbackForDisplayInfo({%H-}ATextUTF8: string;
+      AGlyph: TBGRAGlyph; AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out
+      AContinue: boolean);
     procedure GlyphCallbackForTextFitInfoBeforeTransform(ATextUTF8: string;
-      AGlyph: TBGRAGlyph; AData: Pointer; out AContinue: boolean);
+      AGlyph: TBGRAGlyph; AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean);
     procedure SetBidiMode(AValue: TFontBidiMode);
-    procedure GlyphCallbackForTextSizeBeforeTransform({%H-}ATextUTF8: string; AGlyph: TBGRAGlyph; AData: pointer; out AContinue: boolean);
+    procedure GlyphCallbackForTextSizeBeforeTransform({%H-}ATextUTF8: string;
+      AGlyph: TBGRAGlyph; {%H-}AFlags: TBrowseGlyphCallbackFlags; AData: pointer; out AContinue: boolean);
   protected
     TypeWriterMatrix: TAffineMatrix;
     function CompareGlyph({%H-}Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
@@ -130,7 +143,8 @@ type
     function ReadCustomTypeWriterHeader(AStream: TStream): TBGRACustomTypeWriterHeader;
     procedure ReadAdditionalHeader({%H-}AStream: TStream); virtual;
     function HeaderName: string; virtual;
-    procedure BrowseGlyphs(ATextUTF8: string; ACallback: TBrowseGlyphCallback; AData: pointer);
+    procedure BrowseGlyphs(ATextUTF8: string; ACallback: TBrowseGlyphCallback; AData: pointer; ADisplayOrder: boolean);
+    procedure BrowseAllGlyphs(ACallback: TBrowseGlyphCallback; AData: pointer);
   public
     OutlineMode: TBGRATypeWriterOutlineMode;
     DrawGlyphsSimultaneously : boolean;
@@ -159,7 +173,14 @@ function ComputeEasyBezier(APoints: array of TPointF; ACurveMode: array of TGlyp
 
 implementation
 
-uses BGRAUTF8, BGRAUnicode;
+uses BGRAUTF8, BGRAUnicode, math;
+
+const
+  aleph = 'ا';
+  alephHamzaBelow = 'إ';
+  alephHamzaAbove = 'أ';
+  alephMaddaAbove = 'آ';
+  lam = 'ل';
 
 procedure LEWritePointF(Stream: TStream; AValue: TPointF);
 begin
@@ -526,9 +547,12 @@ begin
 end;
 
 procedure TBGRACustomTypeWriter.GlyphCallbackForTextFitInfoBeforeTransform(
-  ATextUTF8: string; AGlyph: TBGRAGlyph; AData: Pointer; out AContinue: boolean);
+  ATextUTF8: string; AGlyph: TBGRAGlyph; AFlags: TBrowseGlyphCallbackFlags;
+  AData: Pointer; out AContinue: boolean);
 var
   newWidth: Single;
+  partialCharCount, charLen: Integer;
+  p,pEnd: PChar;
 begin
   AContinue := true;
   with TTextFitInfoCallbackData(AData^) do
@@ -544,10 +568,50 @@ begin
       end else
       begin
         AContinue := false;
-        SplitGlyphText:= ATextUTF8;
+        if gcfMerged in AFlags then
+        begin
+          partialCharCount := Trunc(UTF8Length(ATextUTF8)*(MaxWidth-WidthAccumulator)/AGlyph.Width);
+          p := @ATextUTF8[1];
+          pEnd := p+length(ATextUTF8);
+          while (p<pEnd) and (partialCharCount > 0) do
+          begin
+            charLen := UTF8CharacterLength(p);
+            inc(p, charLen);
+            inc(ByteCount, charLen);
+            inc(CharCount);
+            dec(partialCharCount);
+          end;
+        end;
       end;
     end;
   end;
+end;
+
+procedure TBGRACustomTypeWriter.GlyphCallbackForDisplayInfo(ATextUTF8: string;
+  AGlyph: TBGRAGlyph; AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean);
+var
+  m2: TAffineMatrix;
+begin
+  with TDisplayInfoCallbackData(AData^) do
+  begin
+    if Align in [twaLeft,twaMiddle,twaRight] then
+      m2 := Matrix*AffineMatrixTranslation(0,-AGlyph.Height/2) else
+    if Align in [twaBottomLeft,twaBottom,twaBottomRight] then
+      m2 := Matrix*AffineMatrixTranslation(0,-AGlyph.Height)
+    else
+      m2 := Matrix;
+
+    if gcfMirrored in AFlags then
+      m2 := m2*AffineMatrixTranslation(AGlyph.Width,0)*AffineMatrixScale(-1,1);
+
+    Info[InfoIndex].Glyph := AGlyph;
+    Info[InfoIndex].Mirrored:= gcfMirrored in AFlags;
+    Info[InfoIndex].Matrix := m2;
+
+    Matrix := Matrix*AffineMatrixTranslation(AGlyph.Width,0);
+    inc(InfoIndex);
+  end;
+  AContinue:= true;
 end;
 
 function TBGRACustomTypeWriter.CompareGlyph(Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
@@ -583,53 +647,19 @@ end;
 function TBGRACustomTypeWriter.GetTextSizeBeforeTransform(ATextUTF8: string): TPointF;
 begin
   result := PointF(0,0);
-  BrowseGlyphs(ATextUTF8, @GlyphCallbackForTextSizeBeforeTransform, @result);
+  BrowseGlyphs(ATextUTF8, @GlyphCallbackForTextSizeBeforeTransform, @result, false);
 end;
 
 procedure TBGRACustomTypeWriter.TextFitInfoBeforeTransform(ATextUTF8: string; AMaxWidth: single;
   out ACharCount, AByteCount: integer; out AUsedWidth: single);
 var
   data: TTextFitInfoCallbackData;
-  g: TBGRAGlyph;
 begin
   data.WidthAccumulator:= 0;
   data.MaxWidth := AMaxWidth;
   data.CharCount:= 0;
   data.ByteCount:= 0;
-  data.SplitGlyphText:= '';
-  BrowseGlyphs(ATextUTF8, @GlyphCallbackForTextFitInfoBeforeTransform, @data);
-  if (length(data.SplitGlyphText)>=2) and (data.SplitGlyphText[1]='f')
-     and (data.SplitGlyphText[2] in['f','i','l']) then // ligature with F
-  begin
-    if copy(data.SplitGlyphText,1,2)='ff' then
-    begin
-      g := GetGlyph('ff');
-      if data.WidthAccumulator + g.Width <= AMaxWidth then
-      begin
-        inc(data.CharCount,2);
-        inc(data.ByteCount,2);
-        data.WidthAccumulator += g.Width;
-      end else
-      begin
-        g := GetGlyph('f');
-        if data.WidthAccumulator + g.Width <= AMaxWidth then
-        begin
-          inc(data.CharCount,1);
-          inc(data.ByteCount,1);
-          data.WidthAccumulator += g.Width;
-        end;
-      end;
-    end else
-    begin
-      g := GetGlyph('f');
-      if data.WidthAccumulator + g.Width <= AMaxWidth then
-      begin
-        inc(data.CharCount,1);
-        inc(data.ByteCount,1);
-        data.WidthAccumulator += g.Width;
-      end;
-    end;
-  end;
+  BrowseGlyphs(ATextUTF8, @GlyphCallbackForTextFitInfoBeforeTransform, @data, false);
   ACharCount:= data.CharCount;
   AByteCount:= data.ByteCount;
   AUsedWidth:= data.WidthAccumulator;
@@ -695,116 +725,33 @@ function TBGRACustomTypeWriter.GetTextBox(ATextUTF8: string; X, Y: Single;
   AAlign: TBGRATypeWriterAlignment): TAffineBox;
 var
   m: TAffineMatrix;
-  totalWidth,minY,maxY,gMinY,gMaxY: single;
-
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  g: TBGRAGlyph;
-
+  size: TPointF;
 begin
   if ATextUTF8 = '' then result := TAffineBox.EmptyBox else
   begin
-    m := GetTextMatrix(ATextUTF8,X,Y,AAlign);
-    minY := 0;
-    maxY := 0;
-    totalWidth := 0;
-
-    pstr := @ATextUTF8[1];
-    left := length(ATextUTF8);
-    while left > 0 do
-    begin
-      charlen := UTF8CharacterLength(pstr);
-      setlength(nextchar, charlen);
-      move(pstr^, nextchar[1], charlen);
-      inc(pstr,charlen);
-      dec(left,charlen);
-
-      g := GetGlyph(nextchar);
-      if g <> nil then
-      begin
-        totalWidth += g.Width;
-
-        if AAlign in [twaLeft,twaMiddle,twaRight] then
-        begin
-          gMinY := -g.Height/2;
-          gMaxY := g.Height/2;
-        end else
-        if AAlign in [twaBottomLeft,twaBottom,twaBottomRight] then
-        begin
-          gMinY := -g.Height;
-          gMaxY := 0;
-        end
-        else
-        begin
-          gMinY := 0;
-          gMaxY := g.Height;
-        end;
-        if gMinY < minY then minY := gMinY;
-        if gMaxY > maxY then maxY := gMaxY;
-      end;
-    end;
-
-    result := TAffineBox.AffineBox(m*PointF(0,minY),m*PointF(totalWidth,minY),m*PointF(0,maxY));
+    size := GetTextSizeBeforeTransform(ATextUTF8);
+    m := AffineMatrixTranslation(X,Y)*TypeWriterMatrix;
+    if AAlign in[twaTop,twaMiddle,twaBottom] then m := m*AffineMatrixTranslation(-size.x/2,0) else
+    if AAlign in[twaTopRight, twaRight, twaBottomRight] then m := m*AffineMatrixTranslation(-size.x,0);
+    if AAlign in [twaLeft,twaMiddle,twaRight] then m := m*AffineMatrixTranslation(0,-size.y/2) else
+    if AAlign in [twaBottomLeft,twaBottom,twaBottomRight] then m := m*AffineMatrixTranslation(0,-size.y);
+    result := TAffineBox.AffineBox(m*PointF(0,0),m*PointF(size.x,0),m*PointF(0,size.y));
   end;
 end;
 
 function TBGRACustomTypeWriter.GetTextGlyphBoxes(ATextUTF8: string; X, Y: Single;
   AAlign: TBGRATypeWriterAlignment): TGlyphBoxes;
 var
-  m: TAffineMatrix;
-  gMinY,gMaxY: single;
-
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  g: TBGRAGlyph;
-  numChar: integer;
-
+  di: TBGRATextDisplayInfo;
+  i: Integer;
 begin
-  if ATextUTF8 = '' then result := nil else
+  di := GetDisplayInfo(ATextUTF8, X,Y, AAlign);
+  setlength(result, length(di));
+  for i := 0 to high(result) do
+  with di[i] do
   begin
-    setlength(result, UTF8Length(ATextUTF8));
-
-    m := GetTextMatrix(ATextUTF8,X,Y,AAlign);
-
-    pstr := @ATextUTF8[1];
-    left := length(ATextUTF8);
-    numChar := 0;
-    while left > 0 do
-    begin
-      charlen := UTF8CharacterLength(pstr);
-      setlength(nextchar, charlen);
-      move(pstr^, nextchar[1], charlen);
-      inc(pstr,charlen);
-      dec(left,charlen);
-
-      result[numChar].Glyph := nextchar;
-      g := GetGlyph(nextchar);
-      if g <> nil then
-      begin
-        if AAlign in [twaLeft,twaMiddle,twaRight] then
-        begin
-          gMinY := -g.Height/2;
-          gMaxY := g.Height/2;
-        end else
-        if AAlign in [twaBottomLeft,twaBottom,twaBottomRight] then
-        begin
-          gMinY := -g.Height;
-          gMaxY := 0;
-        end
-        else
-        begin
-          gMinY := 0;
-          gMaxY := g.Height;
-        end;
-        result[numChar].Box := TAffineBox.AffineBox(m*PointF(0,gMinY),m*PointF(g.Width,gMinY),m*PointF(0,gMaxY));
-        m := m*AffineMatrixTranslation(g.Width,0);
-      end else
-        result[numChar].Box := TAffineBox.EmptyBox;
-
-      inc(numChar);
-    end;
+    result[i].Glyph := Glyph.Identifier;
+    result[i].Box := TAffineBox.AffineBox(Matrix*PointF(0,0),Matrix*PointF(Glyph.Width,0),Matrix*PointF(0,Glyph.Height));
   end;
 end;
 
@@ -824,109 +771,16 @@ end;
 
 function TBGRACustomTypeWriter.GetDisplayInfo(ATextUTF8: string; X,
   Y: Single; AAlign: TBGRATypeWriterAlignment): TBGRATextDisplayInfo;
-type
-  TCharInfo = record
-    charStart, charEnd: integer;
-    rtl: boolean;
-  end;
 var
-  m,m2: TAffineMatrix;
-  bidiArray: TBidiUTF8Array;
-  displayOrder: TUnicodeDisplayOrder;
-  charInfo: array of TCharInfo;
-  o, bidiIdx: integer;
-  curCharInfo: TCharInfo;
-  nextchar: string;
-  g: TBGRAGlyph;
-  u: Cardinal;
-  resIdx: integer;
+  data: TDisplayInfoCallbackData;
 begin
-  if ATextUTF8 = '' then
-  begin
-    result := nil;
-    exit;
-  end;
-  m := GetTextMatrix(ATextUTF8, X,Y,AAlign);
-  m2 := m;
-
-  if BidiMode = fbmAuto then bidiArray := AnalyzeBidiUTF8(ATextUTF8)
-  else bidiArray := AnalyzeBidiUTF8(ATextUTF8, BidiMode = fbmRightToLeft);
-  displayOrder := GetUTF8DisplayOrder(bidiArray);
-
-  setlength(charInfo, length(displayOrder));
-  for o := 0 to high(displayOrder) do
-  begin
-    bidiIdx := displayOrder[o];
-    charInfo[o].charStart := bidiArray[bidiIdx].Offset+1;
-    if bidiIdx < high(bidiArray) then
-      charInfo[o].charEnd := bidiArray[bidiIdx+1].Offset+1
-    else
-      charInfo[o].charEnd := length(ATextUTF8)+1;
-    charInfo[o].rtl := bidiArray[bidiIdx].BidiInfo.IsRightToLeft;
-  end;
-
-  setlength(result, length(displayOrder));
-  resIdx := 0;
-  o := 0;
-  while o < length(displayOrder) do
-  begin
-    curCharInfo := charInfo[o];
-    inc(o);
-    if curCharInfo.charEnd <= curCharInfo.charStart then continue;
-    if LigatureWithF and not curCharInfo.rtl then
-    begin
-      if (curCharInfo.charEnd = curCharInfo.charStart+1) and (ATextUTF8[curCharInfo.charStart]='f')
-         and (o < length(displayOrder)) then
-      begin
-        if (charInfo[o].charStart = curCharInfo.charEnd) and
-           (charInfo[o].charEnd = charInfo[o].charStart+1) and
-           (ATextUTF8[charInfo[o].charStart]='f') then
-        begin
-          curCharInfo.charEnd:= charInfo[o].charEnd;
-          inc(o);
-        end;
-        if (charInfo[o].charStart = curCharInfo.charEnd) and
-           (charInfo[o].charEnd = charInfo[o].charStart+1) and
-           (ATextUTF8[charInfo[o].charStart] in['i','l']) then
-        begin
-          curCharInfo.charEnd:= charInfo[o].charEnd;
-          inc(o);
-        end;
-      end;
-    end;
-    setlength(nextchar, curCharInfo.charEnd-curCharInfo.charStart);
-    move(ATextUTF8[curCharInfo.charStart], nextchar[1], length(nextchar));
-
-    g := GetGlyph(nextchar);
-    if g <> nil then
-    begin
-      if AAlign in [twaLeft,twaMiddle,twaRight] then
-        m2 := m*AffineMatrixTranslation(0,-g.Height/2) else
-      if AAlign in [twaBottomLeft,twaBottom,twaBottomRight] then
-        m2 := m*AffineMatrixTranslation(0,-g.Height)
-      else
-        m2 := m;
-
-      result[resIdx].Mirrored := false;
-
-      if curCharInfo.rtl then
-      begin
-        u := UTF8CodepointToUnicode(pchar(nextchar), length(nextchar));
-        if IsUnicodeMirrored(u) then
-        begin
-          m2 := m2*AffineMatrixTranslation(g.Width,0)*AffineMatrixScale(-1,1);
-          result[resIdx].Mirrored := true;
-        end;
-      end;
-
-      result[resIdx].Glyph := g;
-      result[resIdx].Matrix := m2;
-
-      m := m*AffineMatrixTranslation(g.Width,0);
-      inc(resIdx);
-    end;
-  end;
-  setlength(result, resIdx);
+  data.Align := AAlign;
+  data.Matrix := GetTextMatrix(ATextUTF8, X,Y,AAlign);
+  setlength(data.Info, UTF8Length(ATextUTF8));
+  data.InfoIndex := 0;
+  BrowseGlyphs(ATextUTF8, @GlyphCallbackForDisplayInfo, @data, true);
+  setlength(data.Info, data.InfoIndex);
+  result := data.Info;
 end;
 
 procedure TBGRACustomTypeWriter.GlyphPath(ADest: TBGRACanvas2D; AIdentifier: string;
@@ -1049,33 +903,14 @@ end;
 function TBGRACustomTypeWriter.GetTextMatrix(ATextUTF8: string; X, Y: Single;
   AAlign: TBGRATypeWriterAlignment): TAffineMatrix;
 var
-  tGlyph: TPointF;
-  totalWidth: single;
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  g: TBGRAGlyph;
+  tGlyph, size: TPointF;
 begin
   tGlyph := PointF(0,0);
   if not (AAlign in [twaLeft,twaTopLeft,twaBottomLeft]) then
   begin
-    totalWidth := 0;
-    pstr := @ATextUTF8[1];
-    left := length(ATextUTF8);
-    while left > 0 do
-    begin
-      charlen := UTF8CharacterLength(pstr);
-      setlength(nextchar, charlen);
-      move(pstr^, nextchar[1], charlen);
-      inc(pstr,charlen);
-      dec(left,charlen);
-
-      g := GetGlyph(nextchar);
-      if g <> nil then totalWidth += g.Width;
-    end;
-
-    if AAlign in[twaTop,twaMiddle,twaBottom] then tGlyph.X -= totalWidth/2 else
-    if AAlign in[twaTopRight, twaRight, twaBottomRight] then tGlyph.X -= totalWidth;
+    size := GetTextSizeBeforeTransform(ATextUTF8);
+    if AAlign in[twaTop,twaMiddle,twaBottom] then tGlyph.X := size.x/2 else
+    if AAlign in[twaTopRight, twaRight, twaBottomRight] then tGlyph.X := size.x;
   end;
   result := AffineMatrixTranslation(X,Y)*TypeWriterMatrix*AffineMatrixTranslation(tGlyph.X,tGlyph.Y);
 end;
@@ -1113,56 +948,216 @@ begin
 end;
 
 procedure TBGRACustomTypeWriter.BrowseGlyphs(ATextUTF8: string;
-  ACallback: TBrowseGlyphCallback; AData: pointer);
+  ACallback: TBrowseGlyphCallback; AData: pointer; ADisplayOrder: boolean);
+type
+  TCharInfo = record
+    charStart, charEnd: integer;
+    bidiInfo: PUnicodeBidiInfo;
+  end;
+  function CharEquals(const info: TCharInfo; text: string): boolean;
+  var
+    i: Integer;
+  begin
+    if info.charEnd-info.charStart >= length(text) then
+    begin
+      for i := 1 to length(text) do
+        if ATextUTF8[info.charStart+i-1] <> text[i] then exit(false);
+      result := true;
+    end else
+      result := false;
+  end;
 var
   bidiArray: TBidiUTF8Array;
-  rtl: Boolean;
-  nextchar: string;
-  g: TBGRAGlyph;
-  i, charStart, charEnd: Integer;
-  shouldContinue: boolean;
-begin
-  if ATextUTF8 = '' then exit else
+  charInfo: array of TCharInfo;
+
+  procedure OrderedCharInfo;
+  var
+    displayOrder: TUnicodeDisplayOrder;
+    bidiIdx, orderIndex, nb: integer;
   begin
-    if BidiMode = fbmAuto then bidiArray := AnalyzeBidiUTF8(ATextUTF8)
-    else bidiArray := AnalyzeBidiUTF8(ATextUTF8, BidiMode = fbmRightToLeft);
-
-    i := 0;
-    while i < length(bidiArray) do
+    displayOrder := GetUTF8DisplayOrder(bidiArray);
+    orderIndex := 0;
+    nb := 0;
+    for orderIndex := 0 to high(displayOrder) do
+      if bidiArray[displayOrder[orderIndex]].BidiInfo.IsMulticharStart then inc(nb);
+    setlength(charInfo, nb);
+    nb := 0;
+    for orderIndex := 0 to high(displayOrder) do
+    if bidiArray[displayOrder[orderIndex]].BidiInfo.IsMulticharStart then
     begin
-      charStart := bidiArray[i].Offset+1;
-      if i = high(bidiArray) then charEnd := length(ATextUTF8)+1
-      else charEnd := bidiArray[i+1].Offset+1;
-      rtl := bidiArray[i].BidiInfo.IsRightToLeft;
-      inc(i);
-      if LigatureWithF and not rtl then
-      begin
-        if (charEnd-charStart = 1) and (ATextUTF8[charStart] = 'f') and (i < length(bidiArray)) then
-        begin
-          if (ATextUTF8[charEnd] = 'f') then
-          begin
-            inc(i);
-            inc(charEnd);
-          end;
-          if (ATextUTF8[charEnd] in['i','l']) then
-          begin
-            inc(i);
-            inc(charEnd);
-          end;
-        end;
-      end;
-      setlength(nextchar, charEnd-charStart);
-      move(ATextUTF8[charStart], nextchar[1], length(nextchar));
+      bidiIdx := displayOrder[orderIndex];
+      charInfo[nb].charStart := bidiArray[bidiIdx].Offset+1;
+      charInfo[nb].bidiInfo := @bidiArray[bidiIdx].BidiInfo;
+      while (bidiIdx < high(bidiArray)) and
+        not bidiArray[bidiIdx+1].BidiInfo.IsMulticharStart do inc(bidiIdx);
+      if bidiIdx < high(bidiArray) then charInfo[nb].charEnd := bidiArray[bidiIdx+1].Offset+1
+      else charInfo[nb].charEnd := length(ATextUTF8)+1;
+      inc(nb);
+    end;
+  end;
 
-      g := GetGlyph(nextchar);
-      ACallback(nextchar, g, AData, shouldContinue);
+  procedure UnorderedCharInfo;
+  var
+    i,nb: Integer;
+  begin
+    nb := 0;
+    i := 0;
+    while i <= high(bidiArray) do
+    begin
+      if not bidiArray[i].BidiInfo.IsRemoved then
+      begin
+        inc(nb);
+        while (i < high(bidiArray)) and not bidiArray[i+1].BidiInfo.IsMulticharStart do inc(i);
+      end;
+      inc(i);
+    end;
+    setlength(charInfo,nb);
+    nb := 0;
+    i := 0;
+    while i <= high(bidiArray) do
+    begin
+      if not bidiArray[i].BidiInfo.IsRemoved then
+      begin
+        charInfo[nb].charStart := bidiArray[i].Offset+1;
+        charInfo[nb].bidiInfo:= @bidiArray[i].BidiInfo;
+        while (i < high(bidiArray)) and not bidiArray[i+1].BidiInfo.IsMulticharStart do inc(i);
+        if i < high(bidiArray) then charInfo[nb].charEnd := bidiArray[i+1].Offset+1
+        else charInfo[nb].charEnd := length(ATextUTF8)+1;
+        inc(nb);
+      end;
+      inc(i);
+    end;
+  end;
+
+var
+  cur,curStart: integer;
+  curRTL,curRTLScript,curLigatureLeft,curLigatureRight,merged: boolean;
+
+  procedure TryMerge(const AChars: array of string);
+  var
+    i: Integer;
+    match: Boolean;
+  begin
+    if merged or (cur-1+length(AChars) > length(charInfo)) then exit;
+    if length(AChars)<=1 then raise exception.Create('Expecting several characters');
+    match := true;
+    if not ADisplayOrder and curRTL then
+    begin
+      for i := 0 to high(AChars) do
+        if not CharEquals(charInfo[cur-1+high(AChars)-i], AChars[i]) then match := false;
+    end else
+      for i := 0 to high(AChars) do
+        if not CharEquals(charInfo[cur-1+i], AChars[i]) then match := false;
+    if match then
+    begin
+      inc(cur, length(AChars)-1);
+      if not ADisplayOrder and curRTL then
+        curLigatureLeft:= charInfo[cur-1].bidiInfo^.HasLigatureLeft
+      else
+        curLigatureRight:= charInfo[cur-1].bidiInfo^.HasLigatureRight;
+      merged := true;
+    end;
+  end;
+
+var
+  nextchar,glyphId: string;
+  g: TBGRAGlyph;
+  u: Cardinal;
+  shouldContinue: boolean;
+  flags: TBrowseGlyphCallbackFlags;
+  i,charDestPos,charLen: integer;
+begin
+  if ATextUTF8 = '' then exit;
+
+  if BidiMode = fbmAuto then bidiArray := AnalyzeBidiUTF8(ATextUTF8)
+  else bidiArray := AnalyzeBidiUTF8(ATextUTF8, BidiMode = fbmRightToLeft);
+  if ADisplayOrder then OrderedCharInfo else UnorderedCharInfo;
+
+  cur := 0;
+  while cur < length(charInfo) do
+  begin
+    curStart := cur;
+    curRTL:= charInfo[cur].bidiInfo^.IsRightToLeft;
+    curRTLScript := charInfo[cur].bidiInfo^.IsRightToLeftScript;
+    curLigatureLeft:= charInfo[cur].bidiInfo^.HasLigatureLeft;
+    curLigatureRight:= charInfo[cur].bidiInfo^.HasLigatureRight;
+    merged := false;
+    inc(cur);
+    TryMerge(['f','f','i']);
+    TryMerge(['f','f','l']);
+    TryMerge(['f','f']);
+    TryMerge(['f','i']);
+    TryMerge(['f','l']);
+    TryMerge([aleph,lam]);
+    TryMerge([alephHamzaAbove,lam]);
+    TryMerge([alephHamzaBelow,lam]);
+    TryMerge([alephMaddaAbove,lam]);
+    //text extract correspond to the unordered actual sequence of characters
+    setlength(nextchar, max(charInfo[curStart].charEnd, charInfo[cur-1].charEnd)
+                       -min(charInfo[curStart].charStart, charInfo[cur-1].charStart));
+    move(ATextUTF8[min(charInfo[curStart].charStart, charInfo[cur-1].charStart)], nextchar[1], length(nextchar));
+    //glyph direction corresponds to script direction
+    if (curRTL and not ADisplayOrder) <> curRTLScript then
+    begin
+      setlength(glyphId, length(nextChar));
+      charDestPos := 1;
+      for i := cur-1 downto curStart do
+      begin
+        charLen := charInfo[i].charEnd-charInfo[i].charStart;
+        move(ATextUTF8[charInfo[i].charStart], glyphId[charDestPos], charLen);
+        inc(charDestPos, charLen);
+      end;
+    end else
+    begin
+      setlength(glyphId, length(nextChar));
+      charDestPos := 1;
+      for i := curStart to cur-1 do
+      begin
+        charLen := charInfo[i].charEnd-charInfo[i].charStart;
+        move(ATextUTF8[charInfo[i].charStart], glyphId[charDestPos], charLen);
+        inc(charDestPos, charLen);
+      end;
+    end;
+    if (curLigatureRight and curRTLScript) or
+       (curLigatureLeft and not curRTLScript) then glyphId := UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER)+glyphId;
+    if (curLigatureLeft and curRTLScript) or
+       (curLigatureRight and not curRTLScript) then glyphId := glyphId+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
+    g := GetGlyph(glyphId);
+    if g <> nil then
+    begin
+      flags := [];
+      if merged then include(flags, gcfMerged);
+      if curRTL then include(flags, gcfRightToLeft);
+      if curRTL and (UTF8Length(glyphId)=1) then
+      begin
+        u := UTF8CodepointToUnicode(pchar(glyphId), length(glyphId));
+        if IsUnicodeMirrored(u) then include(flags, gcfMirrored);
+      end;
+      ACallback(nextchar, g, flags, AData, shouldContinue);
       if not shouldContinue then break;
     end;
   end;
 end;
 
+procedure TBGRACustomTypeWriter.BrowseAllGlyphs(
+  ACallback: TBrowseGlyphCallback; AData: pointer);
+var
+  g: TAvgLvlTreeNode;
+  shouldContinue: boolean;
+begin
+  g := FGlyphs.FindLowest;
+  shouldContinue:= true;
+  while Assigned(g) and shouldContinue do
+  begin
+    ACallback(TBGRAGlyph(g.Data).Identifier, TBGRAGlyph(g.Data), [],
+      AData, shouldContinue);
+    g := g.Successor;
+  end;
+end;
+
 procedure TBGRACustomTypeWriter.GlyphCallbackForTextSizeBeforeTransform(
-  ATextUTF8: string; AGlyph: TBGRAGlyph; AData: pointer; out AContinue: boolean);
+  ATextUTF8: string; AGlyph: TBGRAGlyph; AFlags: TBrowseGlyphCallbackFlags;
+  AData: pointer; out AContinue: boolean);
 var
   gSizeY: Single;
 begin

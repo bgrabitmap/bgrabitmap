@@ -44,7 +44,9 @@ type
     function GetCollection: TCustomFreeTypeFontCollection;
     function GetDrawer(ASurface: TBGRACustomBitmap): TBGRAFreeTypeDrawer;
     function GetShaderLightPosition: TPoint;
-    procedure SetShaderLightPosition(AValue: TPoint);
+    function GetShaderLightPositionF: TPointF;
+    procedure SetShaderLightPosition(const AValue: TPoint);
+    procedure SetShaderLightPositionF(const AValue: TPointF);
   protected
     FShaderOwner: boolean;
     FShader: TCustomPhongShading;
@@ -70,18 +72,23 @@ type
     constructor Create; overload;
     constructor Create(AShader: TCustomPhongShading; AShaderOwner: boolean); overload;
     function GetFontPixelMetric: TFontPixelMetric; override;
+    function GetFontPixelMetricF: TFontPixelMetricF; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; c: TBGRAPixel); overload; override;
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; s: string; style: TTextStyle; texture: IBGRAScanner); overload; override;
-    function TextSize(s: string): TSize; overload; override;
+    function TextSize(sUTF8: string): TSize; overload; override;
+    function TextSizeF(sUTF8: string): TPointF; overload; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; overload; override;
+    function TextSizeF(sUTF8: string; AMaxWidthF: single; {%H-}ARightToLeft: boolean): TPointF; overload; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
+    function TextFitInfoF(sUTF8: string; AMaxWidthF: single): integer; override;
     destructor Destroy; override;
     property Collection: TCustomFreeTypeFontCollection read GetCollection;
     property ShaderLightPosition: TPoint read GetShaderLightPosition write SetShaderLightPosition;
+    property ShaderLightPositionF: TPointF read GetShaderLightPositionF write SetShaderLightPositionF;
   end;
 
   { TBGRAFreeTypeDrawer }
@@ -171,10 +178,25 @@ begin
     result := FShader.LightPosition;
 end;
 
-procedure TBGRAFreeTypeFontRenderer.SetShaderLightPosition(AValue: TPoint);
+function TBGRAFreeTypeFontRenderer.GetShaderLightPositionF: TPointF;
+begin
+  if FShader = nil then
+    result := pointF(0,0)
+  else
+    result := FShader.LightPositionF;
+end;
+
+procedure TBGRAFreeTypeFontRenderer.SetShaderLightPosition(const AValue: TPoint);
 begin
   if FShader <> nil then
     FShader.LightPosition := AValue;
+end;
+
+procedure TBGRAFreeTypeFontRenderer.SetShaderLightPositionF(
+  const AValue: TPointF);
+begin
+  if FShader <> nil then
+    FShader.LightPositionF := AValue;
 end;
 
 procedure TBGRAFreeTypeFontRenderer.UpdateFont;
@@ -197,10 +219,10 @@ begin
     begin
     end;
   end;
-  if FontEmHeight >= 0 then
-    FFont.SizeInPixels := FontEmHeight
+  if FontEmHeightF >= 0 then
+    FFont.SizeInPixels := FontEmHeightF
   else
-    FFont.LineFullHeight := -FontEmHeight;
+    FFont.LineFullHeight := -FontEmHeightF;
   case FontQuality of
     fqSystem:
     begin
@@ -314,6 +336,17 @@ begin
   result.DescentLine:= round(FFont.Ascent+FFont.Descent);
   result.Lineheight := round(FFont.LineFullHeight);
   result.xLine := round(FFont.Ascent*0.45);
+  result.Defined := True;
+end;
+
+function TBGRAFreeTypeFontRenderer.GetFontPixelMetricF: TFontPixelMetricF;
+begin
+  UpdateFont;
+  result.Baseline := FFont.Ascent;
+  result.CapLine:= FFont.Ascent*0.2;
+  result.DescentLine:= FFont.Ascent+FFont.Descent;
+  result.Lineheight := FFont.LineFullHeight;
+  result.xLine := FFont.Ascent*0.45;
   result.Defined := True;
 end;
 
@@ -443,40 +476,57 @@ begin
   FDrawer.Texture := nil;
 end;
 
-function TBGRAFreeTypeFontRenderer.TextSize(s: string): TSize;
+function TBGRAFreeTypeFontRenderer.TextSize(sUTF8: string): TSize;
+begin
+  with TextSizeF(sUTF8) do
+    result := Size(System.Round(x),System.Round(y));
+end;
+
+function TBGRAFreeTypeFontRenderer.TextSizeF(sUTF8: string): TPointF;
 begin
   UpdateFont;
-  result.cx := round(FFont.TextWidth(s));
-  result.cy := round(FFont.LineFullHeight);
+  result.x := FFont.TextWidth(sUTF8);
+  result.y := FFont.LineFullHeight;
 end;
 
 function TBGRAFreeTypeFontRenderer.TextSize(sUTF8: string; AMaxWidth: integer;
   ARightToLeft: boolean): TSize;
+begin
+  with TextSizeF(sUTF8, AMaxWidth, ARightToLeft) do
+    result := Size(System.Round(x),System.Round(y));
+end;
+
+function TBGRAFreeTypeFontRenderer.TextSizeF(sUTF8: string; AMaxWidthF: single;
+  ARightToLeft: boolean): TPointF;
 var
   remains: string;
-  w,h,totalH: single;
+  w,h: single;
 begin
   UpdateFont;
-
-  result.cx := 0;
-  totalH := 0;
+  result.x := 0;
+  result.y := 0;
   h := FFont.LineFullHeight;
   repeat
-    FFont.SplitText(sUTF8, AMaxWidth, remains);
+    FFont.SplitText(sUTF8, AMaxWidthF, remains);
     w := FFont.TextWidth(sUTF8);
-    if round(w)>result.cx then result.cx := round(w);
-    totalH += h;
+    if w>result.x then result.x := w;
+    result.y += h;
     sUTF8 := remains;
   until remains = '';
-  result.cy := ceil(totalH);
 end;
 
 function TBGRAFreeTypeFontRenderer.TextFitInfo(sUTF8: string; AMaxWidth: integer): integer;
+begin
+  result := TextFitInfoF(sUTF8, AMaxWidth);
+end;
+
+function TBGRAFreeTypeFontRenderer.TextFitInfoF(sUTF8: string;
+  AMaxWidthF: single): integer;
 var
   remains: string;
 begin
   UpdateFont;
-  FFont.SplitText(sUTF8, AMaxWidth, remains);
+  FFont.SplitText(sUTF8, AMaxWidthF, remains);
   result := length(sUTF8);
 end;
 

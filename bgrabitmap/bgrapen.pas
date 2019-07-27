@@ -846,12 +846,23 @@ begin
         littleBorder.origin := pts[i+1] + borders[i].leftSide.dir*maxMiter;
         littleBorder.dir := borders[i].leftDir;
         HasLittleBorder := true;
+        nbJoinLeft := 0;
+        nbJoinRight:= 0;
+        ShouldFlushLine := True;
+      end else
+      begin
+        pt1 := pts[i+1] + borders[i].leftDir;
+        pt2 := pts[i+1] + borders[i].leftSide.dir*hw;
+        SetJoinLeft(ComputeRoundJoin(pts[i+1],pt1,pt2));
+        pt1 := pts[i+1] - borders[i].leftDir;
+        SetJoinRight(ComputeRoundJoin(pts[i+1],pt1,pt2));
+        AddJoin(-1);
+        FlushLine(-1);
+        nbJoinLeft := 0;
+        nbJoinRight:= 0;
+        AddPt(pts[i+1]+borders[i+1].leftDir,
+              pts[i+1]-borders[i+1].leftDir);
       end;
-
-      nbJoinLeft := 0;
-      nbJoinRight:= 0;
-
-      ShouldFlushLine := True;
     end else
     if turn > 0.99999 then //straight line
     begin

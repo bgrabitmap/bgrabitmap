@@ -132,7 +132,7 @@ type
     function GetUntransformedParagraphAt(APosition: TPointF): integer; overload;
 
     function GetSameLevelString(startIndex,endIndex: integer): string; overload;
-    function GetSameLevelString(startIndex,endIndex: integer; out nonRemovedCount: integer): string; overload;
+    function GetSameLevelString(startIndex,endIndex: integer; out nonDiscardedCount: integer): string; overload;
     function ComputeBidiTree(AMaxWidth: single; startIndex, endIndex: integer; bidiLevel: byte): TBidiTree;
     procedure AddPartsFromTree(APos: TPointF; ATree: TBidiTree; fullHeight, baseLine: single; brokenLineIndex: integer);
     procedure Init(ATextUTF8: string; ABidiMode: TFontBidiMode); virtual;
@@ -244,7 +244,7 @@ type
     FBidiPos: single;
     FSize: TPointF;
     FTextUTF8: string;
-    FNonRemovedCount: integer;
+    FNonDiscardedCount: integer;
     FLayout: TBidiTextLayout;
     FMaxWidth: single;
     function GetCumulatedBidiPos: single;
@@ -336,7 +336,7 @@ begin
   FMaxWidth := TBidiLayoutTreeData(AData^).MaxWidth;
   if IsLeaf then
   begin
-    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonRemovedCount);
+    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonDiscardedCount);
     FSize := Layout.TextSizeBidiOverride(FTextUTF8, odd(BidiLevel));
     //writeln('Created leaf ', round(FSize.x), ' of level ',BidiLevel);
   end
@@ -344,7 +344,7 @@ begin
   begin
     //writeln('Created branch of level ',BidiLevel);
     FTextUTF8:= '';
-    FNonRemovedCount:= 0;
+    FNonDiscardedCount:= 0;
     FSize := PointF(0,0);
   end;
 end;
@@ -369,7 +369,7 @@ begin
   inherited Shorten(AEndIndex);
   if IsLeaf then
   begin
-    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonRemovedCount);
+    FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonDiscardedCount);
     FSize := Layout.TextSizeBidiOverride(FTextUTF8, odd(BidiLevel));
     //writeln('Shortened leaf ', round(FSize.x));
   end else
@@ -394,14 +394,14 @@ begin
   if Width > remain then
   begin
     fitInfo := Layout.TextFitInfoBidiOverride(FTextUTF8, remain, odd(BidiLevel));
-    if fitInfo < FNonRemovedCount then
+    if fitInfo < FNonDiscardedCount then
     begin
       //writeln('Splitting leaf ',round(Width), ' (max ',round(remain),')');
       splitIndex:= StartIndex;
       a:= Layout.FAnalysis;
       while fitInfo > 0 do
       begin
-        while (splitIndex < EndIndex) and a.BidiInfo[splitIndex].IsRemoved do
+        while (splitIndex < EndIndex) and a.BidiInfo[splitIndex].IsDiscardable do
           Inc(splitIndex);
         if splitIndex < EndIndex then inc(splitIndex);
         dec(fitInfo);
@@ -762,9 +762,7 @@ function TBidiTextLayout.TextSizeBidiOverride(sUTF8: string;
   ARightToLeft: boolean): TPointF;
 begin
   AddOverrideIfNecessary(sUTF8, ARightToLeft);
-
-  with FRenderer.TextSizeAngle(sUTF8, FRenderer.FontOrientation) do
-    result := PointF(cx, cy);
+  result := FRenderer.TextSizeAngleF(sUTF8, FRenderer.FontOrientation);
 end;
 
 procedure TBidiTextLayout.ParagraphSplit(ASender: TObject;
@@ -815,11 +813,8 @@ end;
 
 function TBidiTextLayout.TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer;
   ARightToLeft: boolean; ASplitIndex: integer): TPointF;
-var nextIndex, prevIndex: integer;
+var checkIndex: integer;
   s: String;
-  extraS: string4;
-  extraW, combW: Single;
-  charClass: TUnicodeBidiClass;
 begin
   if ASplitIndex <= AStartIndex then
   begin
@@ -830,38 +825,13 @@ begin
   end;
 
   s := FAnalysis.CopyTextUTF8(AStartIndex, ASplitIndex-AStartIndex);
+  checkIndex := ASplitIndex-1;
+  while (checkIndex > AStartIndex) and
+    (GetUnicodeJoiningType(GetUnicodeChar(checkIndex))=ujtTransparent) do dec(checkIndex);
+  if (ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureLeft) or
+     (not ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureRight) then
+    s := s+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
   result := TextSizeBidiOverride(s, ARightToLeft);
-
-  nextIndex := ASplitIndex;
-  //check if there might be a ligature
-  if (nextIndex < AEndIndex) and (GetUnicodeBidiClass(GetUnicodeChar(nextIndex)) in [ubcRightToLeft,ubcArabicLetter,ubcLeftToRight,ubcArabicNumber,ubcEuropeanNumber]) then
-  begin
-    inc(nextIndex);
-    //find previous letter
-    prevIndex := ASplitIndex-1;
-    while (prevIndex > AStartIndex) and (GetUnicodeBidiClass(GetUnicodeChar(prevIndex)) = ubcNonSpacingMark) do dec(prevIndex);
-    charClass := GetUnicodeBidiClass(GetUnicodeChar(prevIndex));
-    //arabic ligatures are asymmetric in size so use the tatweel to measure the actual size
-    if charClass = ubcArabicLetter then
-    begin
-      //measure tatweel size
-      extraS := UnicodeCharToUTF8(UNICODE_ARABIC_TATWEEL);
-      extraW := TextSizeBidiOverride(extraS, ARightToLeft).x;
-      combW := TextSizeBidiOverride(s+extraS, ARightToLeft).x;
-      result.x := combW - extraW;  //subtract the size of the tatweel (which itself is not included in the ligature)
-    end else
-    // otherwise, assume that the ligature is symmetric so subtract half of the ligature size
-    begin
-      //measure the next char on its own
-      while (nextIndex < AEndIndex) and (GetUnicodeBidiClass(GetUnicodeChar(nextIndex)) = ubcNonSpacingMark) do inc(nextIndex);
-      extraS := FAnalysis.CopyTextUTF8(ASplitIndex, nextIndex-ASplitIndex);
-      extraW := TextSizeBidiOverride(extraS, ARightToLeft).x;
-
-      combW := TextSizeBidiOverride(s+extraS, ARightToLeft).x;
-      if combW < result.x then result.x := combW
-      else result.x -= (result.x+extraW - combW) * 0.5;
-    end;
-  end;
 end;
 
 function TBidiTextLayout.TextFitInfoBidiOverride(sUTF8: string; AWidth: single;
@@ -871,13 +841,13 @@ var
 begin
   over := AddOverrideIfNecessary(sUTF8, ARightToLeft);
 
-  result := FRenderer.TextFitInfo(sUTF8, round(AWidth));
+  result := FRenderer.TextFitInfoF(sUTF8, AWidth);
   if over then dec(result);
 end;
 
 function TBidiTextLayout.GetFontFullHeight: single;
 begin
-  result := FRenderer.TextSizeAngle('Hg', FRenderer.FontOrientation).cy;
+  result := FRenderer.TextSizeAngleF('Hg', FRenderer.FontOrientation).y;
 end;
 
 function TBidiTextLayout.GetFontBaseline: single;
@@ -982,14 +952,14 @@ end;
 
 function TBidiTextLayout.GetSameLevelString(startIndex, endIndex: integer): string;
 var
-  nonRemovedCount: integer;
+  nonDiscardedCount: integer;
 begin
-  result := GetSameLevelString(startIndex,endIndex,nonRemovedCount);
+  result := GetSameLevelString(startIndex,endIndex,nonDiscardedCount);
 end;
 
-function TBidiTextLayout.GetSameLevelString(startIndex, endIndex: integer; out nonRemovedCount: integer): string;
+function TBidiTextLayout.GetSameLevelString(startIndex, endIndex: integer; out nonDiscardedCount: integer): string;
 begin
-  result := FAnalysis.CopyTextUTF8WithoutRemovedChars(startIndex, endIndex, nonRemovedCount);
+  result := FAnalysis.CopyTextUTF8DiscardChars(startIndex, endIndex, nonDiscardedCount);
 end;
 
 function TBidiTextLayout.ComputeBidiTree(AMaxWidth: single; startIndex,
@@ -1327,7 +1297,7 @@ begin
             if (tabSectionCount = 1) and (splitIndex = tabSectionStart) then
             begin
               inc(splitIndex);
-              while (splitIndex < nextTabIndex) and (GetUnicodeBidiClass(UnicodeChar[splitIndex]) = ubcNonSpacingMark) do inc(splitIndex);
+              while (splitIndex < nextTabIndex) and not FAnalysis.BidiInfo[splitIndex].IsMulticharStart do inc(splitIndex);
             end;
             partStr := FAnalysis.CopyTextUTF8(tabSectionStart, splitIndex-tabSectionStart);
             remainStr := FAnalysis.CopyTextUTF8(splitIndex, nextTabIndex-splitIndex);
@@ -1712,7 +1682,7 @@ begin
               while (curW < w) and (curIndex < PartEndIndex[j]) do
               begin
                 newIndex := curIndex+1;
-                while (newIndex < PartEndIndex[j]) and (GetUnicodeBidiClass(GetUnicodeChar(newIndex)) = ubcNonSpacingMark) do inc(newIndex);
+                while (newIndex < PartEndIndex[j]) and not FAnalysis.BidiInfo[newIndex].IsMulticharStart do inc(newIndex);
                 newW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], newIndex).x;
                 if newW >= w then
                 begin

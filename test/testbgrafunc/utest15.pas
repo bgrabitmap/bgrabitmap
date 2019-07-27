@@ -76,8 +76,7 @@ begin
 
   if map <> nil then
   begin
-    phong.LightPosition.X := round(lightPos1.x * Width);
-    phong.LightPosition.Y := round(lightPos1.y * Height);
+    phong.LightPositionF := PointF(lightPos1.x * Width, lightPos1.y * Height);
     phong.Draw(virtualScreen,map,64,0,0,colorMap);
     virtualScreen.GradientFill(phong.LightPosition.X-lightSize,phong.LightPosition.Y-lightSize,
       phong.LightPosition.X+lightSize,phong.LightPosition.Y+lightSize, BGRA(255,255,240,255),BGRAPixelTransparent,

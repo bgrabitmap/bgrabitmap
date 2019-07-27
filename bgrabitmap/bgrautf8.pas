@@ -563,6 +563,8 @@ begin
     u := UTF8CodepointToUnicode(p, charLen);
     case u of
       UNICODE_POP_DIRECTIONAL_ISOLATE: if isolateNesting > 0 then dec(isolateNesting);
+      UNICODE_LEFT_TO_RIGHT_OVERRIDE: exit(ubcLeftToRight);
+      UNICODE_RIGHT_TO_LEFT_OVERRIDE: exit(ubcRightToLeft);
     end;
     curBidi := GetUnicodeBidiClass(u);
     if isolateNesting = 0 then

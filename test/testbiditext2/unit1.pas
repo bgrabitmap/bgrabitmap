@@ -101,6 +101,7 @@ begin
   FCurLastParagraph:= -1;
 
   FTestText := 'تحتوي العربية على 28 حرفاً مكتوباً. ويرى بعض اللغويين أنه يجب إضافة حرف الهمزة إلى حروف العربية، ليصبح عدد الحروف 29. تُكتب العربية من اليمين إلى اليسار - ومثلها اللغة الفارسية والعبرية على عكس كثير من اللغات العالمية - ومن أعلى الصفحة إلى أسفلها.'+LineEnding+
+             'Arabic reversed "' + UTF8OverrideDirection('صباح الخير',false)+'". '+ LineEnding +
              #9'The French language (French: français, pronounced "Fronce-eh") is a Romance language that was first spoken in France.'+LineEnding+
              'Glorious is reversed as '+ UTF8OverrideDirection('"glorious"',True) + '. ' +
                '"Hello!" is '+ UTF8EmbedDirection('"مرحبا!"',True) + ' in arabic.' + LineEnding +

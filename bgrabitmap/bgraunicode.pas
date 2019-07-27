@@ -16,6 +16,8 @@ type
                       ubcCommonSeparator, ubcNonSpacingMark,
                       ubcLeftToRight, ubcEuropeanNumber, ubcEuropeanNumberSeparator, ubcEuropeanNumberTerminator,
                       ubcRightToLeft, ubcArabicLetter, ubcArabicNumber, ubcUnknown);
+  TUnicodeJoiningType = (ujtNonJoining{U}, ujtTransparent{T}, ujtRightJoining{R}, ujtLeftJoining{L},
+                         ujtDualJoining{D}, ujtJoinCausing{C});
 
 const
   ubcNeutral = [ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals];
@@ -24,6 +26,12 @@ const
   BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH = 2; //implicit end of paragraph (paragraph spacing below due to end of text)
   BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH = 4; //explicit end of paragraph (paragraph spacing below due to paragraph split)
   BIDI_FLAG_END_OF_LINE = 8;               //line break <br>
+  BIDI_FLAG_LIGATURE_RIGHT = 16;           //joins to the letter on the right (possible for joining type R and D)
+  BIDI_FLAG_LIGATURE_LEFT = 32;            //joins to the letter on the left (possible for joining type L and D)
+  BIDI_FLAG_LIGATURE_BOUNDARY = 64;        //zero-width joiner or non-joiner
+  BIDI_FLAG_RTL_SCRIPT = 128;              //script is written from right to left (arabic, N'Ko...)
+  BIDI_FLAG_NON_SPACING_MARK = 256;        //it is a non-spacing mark
+  BIDI_FLAG_MULTICHAR_START = 512;         //start of a multichar (letter + non spacing marks, non spacing marks)
 
 type
   PUnicodeBidiInfo = ^TUnicodeBidiInfo;
@@ -32,16 +40,23 @@ type
 
   TUnicodeBidiInfo = packed record
   private
+    function GetDiscardable: boolean;
     function GetEndOfLine: boolean;
     function GetEndOfParagraph: boolean;
     function GetExplicitEndOfParagraph: boolean;
+    function GetHasLigatureLeft: boolean;
+    function GetHasLigatureRight: boolean;
     function GetImplicitEndOfParagraph: boolean;
+    function GetLigatureBoundary: boolean;
+    function GetMulticharStart: boolean;
+    function GetNonSpacingMark: boolean;
     function GetRemoved: boolean;
     function GetRightToLeft: boolean;
     function GetParagraphRightToLeft: boolean;
+    function GetRightToLeftScript: boolean;
   public
     ParagraphBidiLevel, BidiLevel: byte;
-    Flags, Dummy: Byte;
+    Flags: Word;
     property IsRemoved: boolean read GetRemoved;
     property IsRightToLeft: boolean read GetRightToLeft;
     property IsParagraphRightToLeft: boolean read GetParagraphRightToLeft;
@@ -49,6 +64,13 @@ type
     property IsEndOfParagraph: boolean read GetEndOfParagraph;
     property IsExplicitEndOfParagraph: boolean read GetExplicitEndOfParagraph;
     property IsImplicitEndOfParagraph: boolean read GetImplicitEndOfParagraph;
+    property HasLigatureRight: boolean read GetHasLigatureRight;
+    property HasLigatureLeft: boolean read GetHasLigatureLeft;
+    property IsLigatureBoundary: boolean read GetLigatureBoundary;
+    property IsDiscardable: boolean read GetDiscardable;
+    property IsRightToLeftScript: boolean read GetRightToLeftScript;
+    property IsNonSpacingMark: boolean read GetNonSpacingMark;
+    property IsMulticharStart: boolean read GetMulticharStart;
   end;
 
   TUnicodeBidiArray = packed array of TUnicodeBidiInfo;
@@ -113,6 +135,7 @@ type //bracket matching
 
 function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
 function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;
+function GetUnicodeJoiningType(u: cardinal): TUnicodeJoiningType;
 function IsZeroWidthUnicode(u: cardinal): boolean;
 function IsUnicodeMirrored(u: cardinal): boolean;
 function IsUnicodeParagraphSeparator(u: cardinal): boolean;
@@ -129,257 +152,8 @@ function AnalyzeBidiUnicode(u: PCardinal; ALength: integer; baseDirection: cardi
 function GetUnicodeDisplayOrder(const AInfo: TUnicodeBidiArray): TUnicodeDisplayOrder; overload;
 function GetUnicodeDisplayOrder(ALevels: PByte; ACount: integer): TUnicodeDisplayOrder; overload;
 function GetUnicodeDisplayOrder(ABidiInfo: PUnicodeBidiInfo; AStride, ACount: integer): TUnicodeDisplayOrder; overload;
-procedure GenerateUnicodeFunctions; //to regenerate the code of GetUnicodeBidiClass and GetUnicodeBracketInfo
 
 implementation
-
-procedure GenerateUnicodeFunctions;
-const Indent = '      ';
-var
-  tIn,tOut: TextFile;
-
-  procedure IncludeClasses(AClasses: TStrings; AMinCode, AMaxCode: integer);
-  var
-    line,curBidi,newBidi: string;
-    codes: array of integer;
-    codeCount: integer;
-    cells: TStringList;
-    curCode: LongInt;
-
-    procedure FlushCase;
-    var i: integer;
-      buf: string;
-      bufLines: TStringList;
-    begin
-      if codeCount = 0 then exit;
-
-      bufLines := TStringList.Create;
-      i := 0;
-      buf := Indent+'  ';
-      while i < codeCount do
-      begin
-        if i > 0 then buf += ', ';
-
-        if length(buf) > 95 then
-        begin
-          bufLines.Add(buf);
-          buf := Indent+'  ';
-        end;
-
-        if (i+2 < codeCount) and (codes[i]+1 = codes[i+1]) and (codes[i+1]+1 = codes[i+2]) then
-        begin
-          buf += '$'+IntToHex(codes[i],2) + '..';
-          while (i+1 < codeCount) and (codes[i]+1 = codes[i+1]) do inc(i);
-          buf += '$'+IntToHex(codes[i],2);
-        end else
-          buf += '$'+IntToHex(codes[i],2);
-
-        inc(i);
-      end;
-
-      if trim(buf) <> '' then bufLines.Add(buf);
-
-      buf := '';
-      for i := 0 to bufLines.Count-1 do
-      begin
-        if i > 0 then buf += LineEnding;
-        buf += bufLines[i];
-      end;
-
-      bufLines.Free;
-
-      case curBidi of
-      'CS': WriteLn(tOut,buf+': result := ubcCommonSeparator;');
-      'L': WriteLn(tOut,buf+': result := ubcLeftToRight;');
-      'EN': WriteLn(tOut,buf+': result := ubcEuropeanNumber;');
-      'ES': WriteLn(tOut,buf+': result := ubcEuropeanNumberSeparator;');
-      'ET': WriteLn(tOut,buf+': result := ubcEuropeanNumberTerminator;');
-      'R': WriteLn(tOut,buf+': result := ubcRightToLeft;');
-      'AL': WriteLn(tOut,buf+': result := ubcArabicLetter;');
-      'AN': WriteLn(tOut,buf+': result := ubcArabicNumber;');
-      'NSM': WriteLn(tOut,buf+': result := ubcNonSpacingMark;');
-      'BN': WriteLn(tOut,buf+': result := ubcBoundaryNeutral;');
-      'B': WriteLn(tOut,buf+': result := ubcParagraphSeparator;');
-      'S': WriteLn(tOut,buf+': result := ubcSegmentSeparator;');
-      'WS': WriteLn(tOut,buf+': result := ubcWhiteSpace;');
-      'ON': WriteLn(tOut,buf+': result := ubcOtherNeutrals;');
-      end;
-      codeCount:= 0;
-    end;
-
-  begin
-    AssignFile(tIn, 'UnicodeData.txt');
-    Reset(tIn);
-
-    cells := TStringList.Create;
-    codeCount := 0;
-    curBidi := '?';
-    codes := nil;
-    while not eof(tIn) do
-    begin
-      ReadLn(tIn,line);
-      cells.Delimiter := ';';
-      cells.QuoteChar := '"';
-      cells.StrictDelimiter := true;
-      cells.DelimitedText := line;
-      if cells.Count >= 5 then
-      begin
-        newBidi := cells[4];
-        if AClasses.IndexOf(newBidi)<>-1 then
-        begin
-          if newBidi <> curBidi then
-          begin
-            FlushCase;
-            curBidi := newBidi;
-          end;
-          curCode := StrToInt('$'+cells[0]);
-          if (curCode >= AMinCode) and (curCode <= AMaxCode) then
-          begin
-            if codeCount >= length(codes) then
-              setlength(codes, codeCount*2 + 8);
-            codes[codeCount] := curCode;
-            inc(codeCount);
-          end;
-        end;
-      end;
-    end;
-    FlushCase;
-    cells.Free;
-
-    CloseFile(tIn);
-  end;
-
-  procedure ParseUnicodeBidiClasses;
-  var c: TStringList;
-
-    procedure Include(AMinCode,AMaxCode: integer);
-    begin
-      Writeln(tOut,Indent+'case u of');
-      c.CommaText := 'BN';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'S';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'B';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'WS';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'L,R,AL';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'EN';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'ES';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'ET';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'AN';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'CS,NSM';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      c.CommaText := 'ON';
-      IncludeClasses(c, AMinCode,AMaxCode);
-      writeln(tout,Indent+'else result := ubcUnknown;');
-      writeln(tout,Indent+'end;');
-    end;
-
-  begin
-    Writeln(tOut,'function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;');
-    FormatSettings.ShortDateFormat := 'yyyy/mm/dd';
-    Writeln(tOut,'begin //generated '+DateToStr(Date));
-    c := TStringList.Create;
-    writeln(tOut,'  case u of');
-    writeln(tOut,'  $00000..$07FFF:');
-    writeln(tOut,'    case u of');
-    writeln(tOut,'    $00000..$003FF:');
-    Include($00000, $003FF);
-    writeln(tOut,'    $00400..$007FF:');
-    Include($00400, $007FF);
-    writeln(tOut,'    $00800..$00FFF:');
-    Include($00800, $00FFF);
-    writeln(tOut,'    $01000..$01FFF:');
-    Include($01000, $01FFF);
-    writeln(tOut,'    else');
-    Include($02000, $07FFF);
-    writeln(tOut,'    end;');
-    writeln(tOut,'  $08000..$0FFFF:');
-    Include($08000, $0FFFF);
-    writeln(tOut,'  else');
-    writeln(tOut,'    case u of');
-    writeln(tOut,'    $10000..$10FFF:');
-    Include($10000, $10FFF);
-    writeln(tOut,'    $11000..$117FF:');
-    Include($11000, $117FF);
-    writeln(tOut,'    $11800..$17FFF:');
-    Include($11800, $17FFF);
-    writeln(tOut,'    $18000..$FFFFF:');
-    Include($18000, $FFFFF);
-    writeln(tOut,'    else result := ubcUnknown;');
-    writeln(tOut,'    end');
-    writeln(tOut,'  end');
-
-
-    c.Free;
-
-    writeln(tout,'end;');
-    writeln(tout);
-  end;
-
-  procedure ParseBidiBrackets;
-  var elem: TStringList;
-    line: string;
-  begin
-    Writeln(tOut,'type');
-    writeln(tout,'  TUnicodeBracketInfo = record');
-    writeln(tout,'    IsBracket: boolean;');
-    writeln(tout,'    OpeningBracket,ClosingBracket: cardinal;');
-    writeln(tout,'  end;');
-    Writeln(tOut,'function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;');
-    Writeln(tOut,'  procedure Bracket(AOpening,AClosing: cardinal);');
-    Writeln(tOut,'  begin');
-    Writeln(tOut,'    result.IsBracket := true;');
-    Writeln(tOut,'    result.OpeningBracket := AOpening;');
-    Writeln(tOut,'    result.ClosingBracket := AClosing;');
-    Writeln(tOut,'  end;');
-    Writeln(tOut,'begin');
-    Writeln(tOut,'  case u of');
-
-    assignfile(tIn, 'BidiBrackets.txt');
-    reset(tin);
-    elem := TStringList.Create;
-    elem.Delimiter := ';';
-    elem.StrictDelimiter:= true;
-    while not eof(tin) do
-    begin
-      readln(tin, line);
-      elem.DelimitedText:= line;
-      if elem.Count >= 3 then
-      begin
-        if copy(trim(elem[2]),1,1) = 'o' then
-          writeln(tOut,'  $'+trim(elem[0])+', $'+trim(elem[1])+': Bracket($'+trim(elem[0])+', $'+trim(elem[1])+');');
-      end;
-    end;
-    elem.Free;
-    closefile(tin);
-
-    writeln(tout,'  else');
-    writeln(tout,'    begin');
-    writeln(tout,'      result.IsBracket := false;');
-    writeln(tout,'      result.OpeningBracket := 0;');
-    writeln(tout,'      result.ClosingBracket := 0;');
-    writeln(tout,'    end;');
-    Writeln(tOut,'  end;');
-    Writeln(tOut,'end;');
-    Writeln(tOut);
-  end;
-
-begin
-  AssignFile(tOut, 'UnicodeFunctions.generated.pas');
-  Rewrite(tOut);
-
-  ParseUnicodeBidiClasses;
-  ParseBidiBrackets;
-
-  CloseFile(tOut);
-end;
 
 function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
 begin //generated 2019-05-19
@@ -773,6 +547,72 @@ begin
 end;
 {$POP}
 
+function GetUnicodeJoiningType(u: cardinal): TUnicodeJoiningType;
+begin
+  case u of
+    $600..$605, $608, $60B, $621, $674, $6DD, $856..$858, $861, $866, $8AD, $8E2, $1806, $180E,
+    $1880..$1884, $200C, $202F, $2066..$2069, $A873, $10AC6, $10AC8, $10ACB, $10ACC, $10AE2, $10AE3,
+    $10BAF, $10F45, $110BD, $110CD: result := ujtNonJoining;
+    $AD, $300..$36F, $483..$489, $591..$5BD, $5BF, $5C1, $5C2, $5C4, $5C5, $5C7, $610..$61A, $61C,
+    $64B..$65F, $670, $6D6..$6DC, $6DF..$6E4, $6E7, $6E8, $6EA..$6ED, $70F, $711, $730..$74A, $7A6..$7B0,
+    $7EB..$7F3, $7FD, $816..$819, $81B..$823, $825..$827, $829..$82D, $859..$85B, $8D3..$8E1, $8E3..$902,
+    $93A, $93C, $941..$948, $94D, $951..$957, $962, $963, $981, $9BC, $9C1..$9C4, $9CD, $9E2, $9E3,
+    $9FE, $A01, $A02, $A3C, $A41, $A42, $A47, $A48, $A4B..$A4D, $A51, $A70, $A71, $A75, $A81, $A82,
+    $ABC, $AC1..$AC5, $AC7, $AC8, $ACD, $AE2, $AE3, $AFA..$AFF, $B01, $B3C, $B3F, $B41..$B44, $B4D,
+    $B56, $B62, $B63, $B82, $BC0, $BCD, $C00, $C04, $C3E..$C40, $C46..$C48, $C4A..$C4D, $C55, $C56,
+    $C62, $C63, $C81, $CBC, $CBF, $CC6, $CCC, $CCD, $CE2, $CE3, $D00, $D01, $D3B, $D3C, $D41..$D44,
+    $D4D, $D62, $D63, $DCA, $DD2..$DD4, $DD6, $E31, $E34..$E3A, $E47..$E4E, $EB1, $EB4..$EBC, $EC8..$ECD,
+    $F18, $F19, $F35, $F37, $F39, $F71..$F7E, $F80..$F84, $F86, $F87, $F8D..$F97, $F99..$FBC, $FC6,
+    $102D..$1030, $1032..$1037, $1039, $103A, $103D, $103E, $1058, $1059, $105E..$1060, $1071..$1074,
+    $1082, $1085, $1086, $108D, $109D, $135D..$135F, $1712..$1714, $1732..$1734, $1752, $1753, $1772,
+    $1773, $17B4, $17B5, $17B7..$17BD, $17C6, $17C9..$17D3, $17DD, $180B..$180D, $1885, $1886, $18A9,
+    $1920..$1922, $1927, $1928, $1932, $1939..$193B, $1A17, $1A18, $1A1B, $1A56, $1A58..$1A5E, $1A60,
+    $1A62, $1A65..$1A6C, $1A73..$1A7C, $1A7F, $1AB0..$1ABE, $1B00..$1B03, $1B34, $1B36..$1B3A, $1B3C,
+    $1B42, $1B6B..$1B73, $1B80, $1B81, $1BA2..$1BA5, $1BA8, $1BA9, $1BAB..$1BAD, $1BE6, $1BE8, $1BE9,
+    $1BED, $1BEF..$1BF1, $1C2C..$1C33, $1C36, $1C37, $1CD0..$1CD2, $1CD4..$1CE0, $1CE2..$1CE8, $1CED,
+    $1CF4, $1CF8, $1CF9, $1DC0..$1DF9, $1DFB..$1DFF, $200B, $200E, $200F, $202A..$202E, $2060..$2064,
+    $206A..$206F, $20D0..$20F0, $2CEF..$2CF1, $2D7F, $2DE0..$2DFF, $302A..$302D, $3099, $309A, $A66F..$A672,
+    $A674..$A67D, $A69E, $A69F, $A6F0, $A6F1, $A802, $A806, $A80B, $A825, $A826, $A8C4, $A8C5, $A8E0..$A8F1,
+    $A8FF, $A926..$A92D, $A947..$A951, $A980..$A982, $A9B3, $A9B6..$A9B9, $A9BC, $A9BD, $A9E5, $AA29..$AA2E,
+    $AA31, $AA32, $AA35, $AA36, $AA43, $AA4C, $AA7C, $AAB0, $AAB2..$AAB4, $AAB7, $AAB8, $AABE, $AABF,
+    $AAC1, $AAEC, $AAED, $AAF6, $ABE5, $ABE8, $ABED, $FB1E, $FE00..$FE0F, $FE20..$FE2F, $FEFF, $FFF9..$FFFB,
+    $101FD, $102E0, $10376..$1037A, $10A01..$10A03, $10A05, $10A06, $10A0C..$10A0F, $10A38..$10A3A,
+    $10A3F, $10AE5, $10AE6, $10D24..$10D27, $10F46..$10F50, $11001, $11038..$11046, $1107F..$11081,
+    $110B3..$110B6, $110B9, $110BA, $11100..$11102, $11127..$1112B, $1112D..$11134, $11173, $11180,
+    $11181, $111B6..$111BE, $111C9..$111CC, $1122F..$11231, $11234, $11236, $11237, $1123E, $112DF,
+    $112E3..$112EA, $11300, $11301, $1133B, $1133C, $11340, $11366..$1136C, $11370..$11374, $11438..$1143F,
+    $11442..$11444, $11446, $1145E, $114B3..$114B8, $114BA, $114BF, $114C0, $114C2, $114C3, $115B2..$115B5,
+    $115BC, $115BD, $115BF, $115C0, $115DC, $115DD, $11633..$1163A, $1163D, $1163F, $11640, $116AB,
+    $116AD, $116B0..$116B5, $116B7, $1171D..$1171F, $11722..$11725, $11727..$1172B, $1182F..$11837,
+    $11839, $1183A, $119D4..$119D7, $119DA, $119DB, $119E0, $11A01..$11A0A, $11A33..$11A38, $11A3B..$11A3E,
+    $11A47, $11A51..$11A56, $11A59..$11A5B, $11A8A..$11A96, $11A98, $11A99, $11C30..$11C36, $11C38..$11C3D,
+    $11C3F, $11C92..$11CA7, $11CAA..$11CB0, $11CB2, $11CB3, $11CB5, $11CB6, $11D31..$11D36, $11D3A,
+    $11D3C, $11D3D, $11D3F..$11D45, $11D47, $11D90, $11D91, $11D95, $11D97, $11EF3, $11EF4, $13430..$13438,
+    $16AF0..$16AF4, $16B30..$16B36, $16F4F, $16F8F..$16F92, $1BC9D, $1BC9E, $1BCA0..$1BCA3, $1D167..$1D169,
+    $1D173..$1D182, $1D185..$1D18B, $1D1AA..$1D1AD, $1D242..$1D244, $1DA00..$1DA36, $1DA3B..$1DA6C,
+    $1DA75, $1DA84, $1DA9B..$1DA9F, $1DAA1..$1DAAF, $1E000..$1E006, $1E008..$1E018, $1E01B..$1E021,
+    $1E023, $1E024, $1E026..$1E02A, $1E130..$1E136, $1E2EC..$1E2EF, $1E8D0..$1E8D6, $1E944..$1E94B,
+    $E0001, $E0020..$E007F, $E0100..$E01EF: result := ujtTransparent;
+    $622..$625, $627, $629, $62F..$632, $648, $671..$673, $675..$677, $688..$699, $6C0, $6C3..$6CB,
+    $6CD, $6CF, $6D2, $6D3, $6D5, $6EE, $6EF, $710, $715..$719, $71E, $728, $72A, $72C, $72F, $74D,
+    $759..$75B, $76B, $76C, $771, $773, $774, $778, $779, $840, $846, $847, $849, $854, $867, $869,
+    $86A, $8AA..$8AC, $8AE, $8B1, $8B2, $8B9, $10AC5, $10AC7, $10AC9, $10ACA, $10ACE..$10AD2, $10ADD,
+    $10AE1, $10AE4, $10AEF, $10B81, $10B83..$10B85, $10B89, $10B8C, $10B8E, $10B8F, $10B91, $10BA9..$10BAC,
+    $10D22, $10F33, $10F54: result := ujtRightJoining;
+    $A872, $10ACD, $10AD7, $10D00: result := ujtLeftJoining;
+    $620, $626, $628, $62A..$62E, $633..$63F, $641..$647, $649, $64A, $66E, $66F, $678..$687, $69A..$6BF,
+    $6C1, $6C2, $6CC, $6CE, $6D0, $6D1, $6FA..$6FC, $6FF, $712..$714, $71A..$71D, $71F..$727, $729,
+    $72B, $72D, $72E, $74E..$758, $75C..$76A, $76D..$770, $772, $775..$777, $77A..$77F, $7CA..$7EA,
+    $841..$845, $848, $84A..$853, $855, $860, $862..$865, $868, $8A0..$8A9, $8AF, $8B0, $8B3, $8B4,
+    $8B6..$8B8, $8BA..$8BD, $1807, $1820..$1878, $1887..$18A8, $18AA, $A840..$A871, $10AC0..$10AC4,
+    $10AD3..$10AD6, $10AD8..$10ADC, $10ADE..$10AE0, $10AEB..$10AEE, $10B80, $10B82, $10B86..$10B88,
+    $10B8A, $10B8B, $10B8D, $10B90, $10BAD, $10BAE, $10D01..$10D21, $10D23, $10F30..$10F32, $10F34..$10F44,
+    $10F51..$10F53, $1E900..$1E943: result := ujtDualJoining;
+    $640, $7FA, $180A, $200D: result := ujtJoinCausing;
+  else result := ujtNonJoining;
+  end;
+end;
+
 function IsZeroWidthUnicode(u: cardinal): boolean;
 begin
   case u of
@@ -815,6 +655,11 @@ end;
 
 { TUnicodeBidiInfo }
 
+function TUnicodeBidiInfo.GetDiscardable: boolean;
+begin
+  result := IsRemoved and not IsLigatureBoundary;
+end;
+
 function TUnicodeBidiInfo.GetEndOfLine: boolean;
 begin
   result := (Flags and BIDI_FLAG_END_OF_LINE) <> 0;
@@ -830,9 +675,34 @@ begin
   result := (Flags and BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH) <> 0;
 end;
 
+function TUnicodeBidiInfo.GetHasLigatureLeft: boolean;
+begin
+  result := (Flags and BIDI_FLAG_LIGATURE_LEFT) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetHasLigatureRight: boolean;
+begin
+  result := (Flags and BIDI_FLAG_LIGATURE_RIGHT) <> 0;
+end;
+
 function TUnicodeBidiInfo.GetImplicitEndOfParagraph: boolean;
 begin
   result := (Flags and BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetLigatureBoundary: boolean;
+begin
+  result := (Flags and BIDI_FLAG_LIGATURE_BOUNDARY) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetMulticharStart: boolean;
+begin
+  result := (Flags and BIDI_FLAG_MULTICHAR_START) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetNonSpacingMark: boolean;
+begin
+  result := (Flags and BIDI_FLAG_NON_SPACING_MARK) <> 0;
 end;
 
 function TUnicodeBidiInfo.GetRemoved: boolean;
@@ -848,6 +718,11 @@ end;
 function TUnicodeBidiInfo.GetParagraphRightToLeft: boolean;
 begin
   result := Odd(ParagraphBidiLevel);
+end;
+
+function TUnicodeBidiInfo.GetRightToLeftScript: boolean;
+begin
+  result := (Flags and BIDI_FLAG_RTL_SCRIPT) <> 0;
 end;
 
 function AnalyzeBidiUnicode(u: PCardinal; ALength: integer; baseDirection: cardinal): TUnicodeBidiArray;
@@ -1195,6 +1070,49 @@ var
     ResolveBrackets;
   end;
 
+  procedure ResolveLigature(startIndex: integer);
+  var
+    prevJoiningType, joiningType: TUnicodeJoiningType;
+    prevJoiningTypeBidilevel: byte;
+    prevJoiningTypeIndex: integer;
+    curIndex: Integer;
+  begin
+    prevJoiningType := ujtNonJoining;
+    prevJoiningTypeIndex := -1;
+    prevJoiningTypeBidilevel:= 0;
+    curIndex := startIndex;
+    while curIndex <> -1 do
+    begin
+      if prevJoiningTypeBidilevel <> result[curIndex].BidiLevel then
+        prevJoiningType := ujtNonJoining;
+      joiningType := GetUnicodeJoiningType(u[curIndex]);
+      if result[curIndex].IsRightToLeft then
+      begin
+        if (joiningType in[ujtRightJoining,ujtDualJoining])
+          and (prevJoiningType in[ujtLeftJoining,ujtDualJoining,ujtJoinCausing]) then
+          result[curIndex].Flags:= result[curIndex].Flags or BIDI_FLAG_LIGATURE_RIGHT;
+        if (prevJoiningType in[ujtLeftJoining,ujtDualJoining]) and (prevJoiningTypeIndex <> -1) and
+          (joiningType in[ujtRightJoining,ujtDualJoining,ujtJoinCausing]) then
+          result[prevJoiningTypeIndex].Flags:= result[prevJoiningTypeIndex].Flags or BIDI_FLAG_LIGATURE_LEFT;
+      end else
+      begin
+        if (joiningType in[ujtLeftJoining,ujtDualJoining])
+          and (prevJoiningType in[ujtRightJoining,ujtDualJoining,ujtJoinCausing]) then
+          result[curIndex].Flags:= result[curIndex].Flags or BIDI_FLAG_LIGATURE_LEFT;
+        if (prevJoiningType in[ujtRightJoining,ujtDualJoining]) and (prevJoiningTypeIndex <> -1) and
+          (joiningType in[ujtLeftJoining,ujtDualJoining,ujtJoinCausing]) then
+          result[prevJoiningTypeIndex].Flags:= result[prevJoiningTypeIndex].Flags or BIDI_FLAG_LIGATURE_RIGHT;
+      end;
+      if joiningType <> ujtTransparent then
+      begin
+        prevJoiningType := joiningType;
+        prevJoiningTypeIndex:= curIndex;
+        prevJoiningTypeBidilevel:= result[curIndex].BidiLevel;
+      end;
+      curIndex := a[curIndex].nextInIsolate;
+    end;
+  end;
+
   procedure AnalyzeSequence(startIndex, afterEndIndex: integer; sos, eos: TUnicodeBidiClass);
   begin
     if afterEndIndex = startIndex then exit;
@@ -1404,28 +1322,22 @@ var
   function DetermineIsolateDirectionFromFirstStrongClass(startIndex: integer): cardinal;
   var
     curIndex: Integer;
-    firstStrongClass: TUnicodeBidiClass;
   begin
     curIndex := startIndex;
-    firstStrongClass := ubcUnknown;
     while curIndex <> -1 do
     begin
       Assert(curIndex >= 0, 'Expecting valid index');
-      if firstStrongClass = ubcUnknown then
-      begin
-        if a[curIndex].bidiClass in [ubcLeftToRight,ubcRightToLeft,ubcArabicLetter] then
-        begin
-          firstStrongClass := a[curIndex].bidiClass;
-          break;
-        end;
+      case a[curIndex].bidiClass of
+        ubcLeftToRight: exit(UNICODE_LEFT_TO_RIGHT_ISOLATE);
+        ubcRightToLeft,ubcArabicLetter: exit(UNICODE_RIGHT_TO_LEFT_ISOLATE);
+      end;
+      case u[curIndex] of
+        UNICODE_LEFT_TO_RIGHT_OVERRIDE: exit(UNICODE_LEFT_TO_RIGHT_ISOLATE);
+        UNICODE_RIGHT_TO_LEFT_OVERRIDE: exit(UNICODE_RIGHT_TO_LEFT_ISOLATE);
       end;
       curIndex := a[curIndex].nextInIsolate;
     end;
-
-    if firstStrongClass in[ubcRightToLeft,ubcArabicLetter] then
-      result := UNICODE_RIGHT_TO_LEFT_ISOLATE
-    else
-      result := UNICODE_LEFT_TO_RIGHT_ISOLATE;
+    result := UNICODE_LEFT_TO_RIGHT_ISOLATE;
   end;
 
   procedure LinkCharsInIsolate(startIndex: integer; charCount: integer; out endIndex : integer);
@@ -1500,6 +1412,7 @@ var
 
     SameLevelRuns(startIndex);
     ResolveImplicitLevels(startIndex);
+    ResolveLigature(startIndex);
 
     if isParagraph then
       ResetEndOfParagraphLevels(startIndex);
@@ -1561,9 +1474,12 @@ var
       if a[curIndex].bidiClass = ubcParagraphSeparator then
       begin
         //skip second CRLF char
-        if ((u[curIndex] = 13) or (u[curIndex] = 10)) and (curIndex+1 < ALength) and
-           ((u[curIndex+1] = 13) or (u[curIndex+1] = 10)) and (u[curIndex+1] <> u[curIndex]) then
+        if IsUnicodeCrLf(u[curIndex]) and (curIndex+1 < ALength) and
+           IsUnicodeCrLf(u[curIndex+1]) and (u[curIndex+1] <> u[curIndex]) then
+        begin
           inc(curIndex);
+          result[curIndex].Flags := result[curIndex].Flags and not BIDI_FLAG_MULTICHAR_START;
+        end;
 
         result[curIndex].Flags := result[curIndex].Flags or BIDI_FLAG_EXPLICIT_END_OF_PARAGRAPH;
 
@@ -1588,8 +1504,20 @@ begin
     for i := 0 to high(a) do
     begin
       a[i].bidiClass := GetUnicodeBidiClass(u[i]);
-      if u[i] = UNICODE_LINE_SEPARATOR then  //line separator within paragraph
-        result[i].Flags := result[i].Flags or BIDI_FLAG_END_OF_LINE
+      case u[i] of
+      UNICODE_LINE_SEPARATOR: //line separator within paragraph
+        result[i].Flags := result[i].Flags or BIDI_FLAG_END_OF_LINE;
+      UNICODE_ZERO_WIDTH_JOINER, UNICODE_ZERO_WIDTH_NON_JOINER:
+        result[i].Flags := result[i].Flags OR BIDI_FLAG_LIGATURE_BOUNDARY;
+      end;
+      case a[i].bidiClass of
+      ubcArabicLetter,ubcArabicNumber,ubcRightToLeft:
+        result[i].Flags := result[i].Flags OR BIDI_FLAG_RTL_SCRIPT;
+      ubcNonSpacingMark: result[i].Flags := result[i].Flags OR BIDI_FLAG_NON_SPACING_MARK;
+      end;
+      if (a[i].bidiClass <> ubcNonSpacingMark) or
+        (i = 0) or (a[i-1].bidiClass in [ubcSegmentSeparator, ubcParagraphSeparator]) then
+        result[i].Flags := result[i].Flags OR BIDI_FLAG_MULTICHAR_START;
     end;
     SplitParagraphs;
   end;

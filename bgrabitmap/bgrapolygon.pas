@@ -9,6 +9,7 @@ unit BGRAPolygon;
 
   Various shapes are handled :
   - TFillPolyInfo : polygon scanned in any order
+  - TSimpleFillPolyInfo : polygon with few points
   - TOnePassFillPolyInfo : polygon scanned from top to bottom
   - TFillEllipseInfo : ellipse
   - TFillBorderEllipseInfo : ellipse border
@@ -268,7 +269,10 @@ var
   info: TCustomFillPolyInfo;
 begin
   if brush.DoesNothing or (length(points) < 3) then exit;
-  info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
+  if length(points)<=10 then
+    info := TSimpleFillPolyInfo.Create(points, APixelCenteredCoordinates)
+  else
+    info := TOnePassFillPolyInfo.Create(points, APixelCenteredCoordinates);
   FillShapeAliased(bmp, info, brush, Alpha, NonZeroWinding);
   info.Free;
 end;
