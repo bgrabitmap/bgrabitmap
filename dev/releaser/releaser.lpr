@@ -6,8 +6,8 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp,
-  ReleaserTypes, ManagerFile, ArchiveUrl, PackageFile, ProjectFile, ConstFile
+  Classes, SysUtils, CustApp, ReleaserTypes, ManagerFile, ArchiveUrl,
+  PackageFile, ProjectFile, ConstFile, TextLine
   { you can add units after this };
 
 type
@@ -141,6 +141,8 @@ begin
         'package': factory := TPackageFile;
         'project': factory := TProjectFile;
         'const': factory := TConstFile;
+        'echo': for i := 0 to line.Count-1 do writeln(line[i]);
+        'text': factory := TTextLine;
         else
           raise exception.Create('Unknown command "'+cmd+'"');
         end;
