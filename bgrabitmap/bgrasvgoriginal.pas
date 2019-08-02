@@ -8,6 +8,25 @@ uses
   Classes, SysUtils, BGRABitmapTypes, BGRABitmap, BGRASVG, BGRATransform, BGRALayerOriginal;
 
 type
+  TBGRALayerSVGOriginal = class;
+
+  { TBGRASVGOriginalDiff }
+
+  TBGRASVGOriginalDiff = class(TBGRAOriginalDiff)
+  protected
+    FContentVersionBefore,FContentVersionAfter: integer;
+    FSvgStreamBefore,FSvgStreamAfter: TMemoryStream;
+    FDpiBefore, FDpiAfter: single;
+  public
+    constructor Create(AFromOriginal: TBGRALayerSVGOriginal);
+    procedure ComputeDiff(AToOriginal: TBGRALayerSVGOriginal);
+    procedure Apply(AOriginal: TBGRALayerCustomOriginal); override;
+    procedure Unapply(AOriginal: TBGRALayerCustomOriginal); override;
+    function CanAppend(ADiff: TBGRAOriginalDiff): boolean; override;
+    procedure Append(ADiff: TBGRAOriginalDiff); override;
+    destructor Destroy; override;
+  end;
+
   { TBGRALayerSVGOriginal }
 
   TBGRALayerSVGOriginal = class(TBGRALayerCustomOriginal)
@@ -18,8 +37,10 @@ type
     procedure SetDPI(AValue: single);
   protected
     FSVG: TBGRASVG;
+    FDiff: TBGRASVGOriginalDiff;
     FContentVersion: integer;
-    procedure ContentChanged;
+    procedure BeginUpdate;
+    procedure EndUpdate;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -40,6 +61,89 @@ implementation
 
 uses BGRACanvas2D, BGRAMemDirectory;
 
+{ TBGRASVGOriginalDiff }
+
+constructor TBGRASVGOriginalDiff.Create(AFromOriginal: TBGRALayerSVGOriginal);
+begin
+  if Assigned(AFromOriginal.FSVG) then
+  begin
+    FSvgStreamBefore := TMemoryStream.Create;
+    AFromOriginal.FSVG.SaveToStream(FSvgStreamBefore);
+  end;
+  FContentVersionBefore:= AFromOriginal.FContentVersion;
+  FDpiBefore:= AFromOriginal.DPI;
+end;
+
+procedure TBGRASVGOriginalDiff.ComputeDiff(AToOriginal: TBGRALayerSVGOriginal);
+begin
+  FreeAndNil(FSvgStreamAfter);
+  if Assigned(AToOriginal.FSVG) then
+  begin
+    FSvgStreamAfter := TMemoryStream.Create;
+    AToOriginal.FSVG.SaveToStream(FSvgStreamAfter);
+  end;
+  FContentVersionAfter:= AToOriginal.FContentVersion;
+  FDpiAfter:= AToOriginal.DPI;
+end;
+
+procedure TBGRASVGOriginalDiff.Apply(AOriginal: TBGRALayerCustomOriginal);
+var
+  orig: TBGRALayerSVGOriginal;
+begin
+  orig := AOriginal as TBGRALayerSVGOriginal;
+  if Assigned(FSvgStreamAfter) then
+  begin
+    FSvgStreamAfter.Position:= 0;
+    orig.FSVG.LoadFromStream(FSvgStreamAfter);
+  end else
+    orig.FSVG.Content.Clear;
+  orig.FContentVersion := FContentVersionAfter;
+end;
+
+procedure TBGRASVGOriginalDiff.Unapply(AOriginal: TBGRALayerCustomOriginal);
+var
+  orig: TBGRALayerSVGOriginal;
+begin
+  orig := AOriginal as TBGRALayerSVGOriginal;
+  if Assigned(FSvgStreamBefore) then
+  begin
+    FSvgStreamBefore.Position:= 0;
+    orig.FSVG.LoadFromStream(FSvgStreamBefore);
+  end else
+    orig.FSVG.Content.Clear;
+  orig.FContentVersion := FContentVersionBefore;
+end;
+
+function TBGRASVGOriginalDiff.CanAppend(ADiff: TBGRAOriginalDiff): boolean;
+begin
+  result := (ADiff is TBGRASVGOriginalDiff) and
+    (TBGRASVGOriginalDiff(ADiff).FContentVersionAfter >= FContentVersionAfter);
+end;
+
+procedure TBGRASVGOriginalDiff.Append(ADiff: TBGRAOriginalDiff);
+var
+  next: TBGRASVGOriginalDiff;
+begin
+  next := ADiff as TBGRASVGOriginalDiff;
+  if next.FContentVersionAfter < FContentVersionAfter then
+    raise exception.Create('Cannot append diff made before this one.');
+  FDpiAfter:= next.FDpiAfter;
+  FreeAndNil(FSvgStreamAfter);
+  if Assigned(next.FSvgStreamAfter) then
+  begin
+    FSvgStreamAfter := TMemoryStream.Create;
+    next.FSvgStreamAfter.Position:= 0;
+    FSvgStreamAfter.CopyFrom(next.FSvgStreamAfter, next.FSvgStreamAfter.Size);
+  end;
+  FContentVersionAfter:= next.FContentVersionAfter;
+end;
+
+destructor TBGRASVGOriginalDiff.Destroy;
+begin
+  FSvgStreamBefore.Free;
+  inherited Destroy;
+end;
+
 { TBGRALayerSVGOriginal }
 
 function TBGRALayerSVGOriginal.GetDPI: single;
@@ -59,14 +163,22 @@ end;
 
 procedure TBGRALayerSVGOriginal.SetDPI(AValue: single);
 begin
+  BeginUpdate;
   FSVG.DefaultDpi:= AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
-procedure TBGRALayerSVGOriginal.ContentChanged;
+procedure TBGRALayerSVGOriginal.BeginUpdate;
 begin
-  inc(FContentVersion);
-  NotifyChange;
+  if DiffExpected and (FDiff=nil) then
+    FDiff := TBGRASVGOriginalDiff.Create(self);
+end;
+
+procedure TBGRALayerSVGOriginal.EndUpdate;
+begin
+  if Assigned(FDiff) then FDiff.ComputeDiff(self);
+  NotifyChange(FDiff);
+  FDiff := nil;
 end;
 
 constructor TBGRALayerSVGOriginal.Create;
@@ -79,6 +191,7 @@ end;
 destructor TBGRALayerSVGOriginal.Destroy;
 begin
   FSVG.Free;
+  FDiff.Free;
   inherited Destroy;
 end;
 
@@ -177,7 +290,7 @@ end;
 procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream);
 begin
   FSVG.LoadFromStream(AStream);
-  ContentChanged;
+  Inc(FContentVersion);
 end;
 
 class function TBGRALayerSVGOriginal.StorageClassName: RawByteString;

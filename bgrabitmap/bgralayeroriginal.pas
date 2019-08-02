@@ -13,12 +13,13 @@ type
   PRectF = BGRABitmapTypes.PRectF;
   TAffineMatrix = BGRATransform.TAffineMatrix;
   TBGRALayerCustomOriginal = class;
+  TBGRAOriginalDiff = class;
   TBGRALayerOriginalAny = class of TBGRALayerCustomOriginal;
   TOriginalMovePointEvent = procedure(ASender: TObject; APrevCoord, ANewCoord: TPointF; AShift: TShiftState) of object;
   TOriginalStartMovePointEvent = procedure(ASender: TObject; AIndex: integer; AShift: TShiftState) of object;
   TOriginalClickPointEvent = procedure(ASender: TObject; AIndex: integer; AShift: TShiftState) of object;
   TOriginalHoverPointEvent = procedure(ASender: TObject; AIndex: integer) of object;
-  TOriginalChangeEvent = procedure(ASender: TObject; ABounds: PRectF = nil) of object;
+  TOriginalChangeEvent = procedure(ASender: TObject; ABounds: PRectF; var ADiff: TBGRAOriginalDiff) of object;
   TOriginalEditingChangeEvent = procedure(ASender: TObject) of object;
   TOriginalEditorCursor = (oecDefault, oecMove, oecMoveW, oecMoveE, oecMoveN, oecMoveS,
                            oecMoveNE, oecMoveSW, oecMoveNW, oecMoveSE, oecHandPoint, oecText);
@@ -137,6 +138,13 @@ type
   TBGRACustomOriginalStorage = class;
   ArrayOfSingle = array of single;
 
+  TBGRAOriginalDiff = class
+    procedure Apply(AOriginal: TBGRALayerCustomOriginal); virtual; abstract;
+    procedure Unapply(AOriginal: TBGRALayerCustomOriginal); virtual; abstract;
+    function CanAppend(ADiff: TBGRAOriginalDiff): boolean; virtual; abstract;
+    procedure Append(ADiff: TBGRAOriginalDiff); virtual; abstract;
+  end;
+
   { TBGRALayerCustomOriginal }
 
   TBGRALayerCustomOriginal = class
@@ -144,15 +152,17 @@ type
     FOnChange: TOriginalChangeEvent;
     FOnEditingChange: TOriginalEditingChangeEvent;
     FRenderStorage: TBGRACustomOriginalStorage;
+    function GetDiffExpected: boolean;
     procedure SetOnChange(AValue: TOriginalChangeEvent);
     procedure SetRenderStorage(AValue: TBGRACustomOriginalStorage);
   protected
     FGuid: TGuid;
     function GetGuid: TGuid;
     procedure SetGuid(AValue: TGuid);
-    procedure NotifyChange; overload;
-    procedure NotifyChange(ABounds: TRectF); overload;
+    procedure NotifyChange(ADiff: TBGRAOriginalDiff = nil); overload;
+    procedure NotifyChange(ABounds: TRectF; ADiff: TBGRAOriginalDiff = nil); overload;
     procedure NotifyEditorChange;
+    property DiffExpected: boolean read GetDiffExpected;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -177,6 +187,25 @@ type
     property RenderStorage: TBGRACustomOriginalStorage read FRenderStorage write SetRenderStorage;
   end;
 
+  TBGRALayerImageOriginal = class;
+
+  { TBGRAImageOriginalDiff }
+
+  TBGRAImageOriginalDiff = class(TBGRAOriginalDiff)
+  protected
+    FContentVersionBefore,FContentVersionAfter: integer;
+    FImageBefore,FImageAfter: TBGRABitmap;
+    FJpegStreamBefore,FJpegStreamAfter: TMemoryStream;
+  public
+    constructor Create(AFromOriginal: TBGRALayerImageOriginal);
+    destructor Destroy; override;
+    procedure ComputeDiff(AToOriginal: TBGRALayerImageOriginal);
+    procedure Apply(AOriginal: TBGRALayerCustomOriginal); override;
+    procedure Unapply(AOriginal: TBGRALayerCustomOriginal); override;
+    function CanAppend(ADiff: TBGRAOriginalDiff): boolean; override;
+    procedure Append(ADiff: TBGRAOriginalDiff); override;
+  end;
+
   { TBGRALayerImageOriginal }
 
   TBGRALayerImageOriginal = class(TBGRALayerCustomOriginal)
@@ -187,7 +216,11 @@ type
     FImage: TBGRABitmap;
     FJpegStream: TMemoryStream;
     FContentVersion: integer;
-    procedure ContentChanged;
+    FDiff: TBGRAImageOriginalDiff;
+    procedure BeginUpdate;
+    procedure EndUpdate;
+    procedure InternalLoadImageFromStream(AStream: TStream; AUpdate: boolean);
+    procedure InternalClear;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -196,6 +229,7 @@ type
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
     procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); override;
     procedure LoadFromStream(AStream: TStream); override;
+    procedure Clear;
     procedure LoadImageFromStream(AStream: TStream);
     procedure SaveImageToStream(AStream: TStream);
     procedure AssignImage(AImage: TBGRACustomBitmap);
@@ -236,6 +270,7 @@ type
     function GetDelimiter: char;
   public
     constructor Create;
+    function Duplicate: TBGRACustomOriginalStorage; virtual; abstract;
     procedure RemoveAttribute(AName: utf8string); virtual; abstract;
     function HasAttribute(AName: utf8string): boolean; virtual; abstract;
     procedure RemoveObject(AName: utf8string); virtual; abstract;
@@ -273,6 +308,7 @@ type
     destructor Destroy; override;
     constructor Create;
     constructor Create(AMemDir: TMemDirectory; AMemDirOwned: boolean = false);
+    function Duplicate: TBGRACustomOriginalStorage; override;
     procedure RemoveAttribute(AName: utf8string); override;
     function HasAttribute(AName: utf8string): boolean; override;
     procedure RemoveObject(AName: utf8string); override;
@@ -326,6 +362,103 @@ begin
     if LayerOriginalClasses[i].StorageClassName = AStorageClassName then
       exit(LayerOriginalClasses[i]);
   exit(nil);
+end;
+
+{ TBGRAImageOriginalDiff }
+
+constructor TBGRAImageOriginalDiff.Create(AFromOriginal: TBGRALayerImageOriginal);
+begin
+  FImageBefore := AFromOriginal.FImage.NewReference as TBGRABitmap;
+  if Assigned(AFromOriginal.FJpegStream) then
+  begin
+    FJpegStreamBefore := TMemoryStream.Create;
+    AFromOriginal.FJpegStream.Position:= 0;
+    FJpegStreamBefore.CopyFrom(AFromOriginal.FJpegStream, AFromOriginal.FJpegStream.Size);
+  end;
+  FContentVersionBefore:= AFromOriginal.FContentVersion;
+end;
+
+procedure TBGRAImageOriginalDiff.ComputeDiff(
+  AToOriginal: TBGRALayerImageOriginal);
+begin
+  if Assigned(FImageAfter) then FImageAfter.FreeReference;
+  FImageAfter := AToOriginal.FImage.NewReference as TBGRABitmap;
+  FreeAndNil(FJpegStreamAfter);
+  if Assigned(AToOriginal.FJpegStream) then
+  begin
+    FJpegStreamAfter := TMemoryStream.Create;
+    AToOriginal.FJpegStream.Position:= 0;
+    FJpegStreamAfter.CopyFrom(AToOriginal.FJpegStream, AToOriginal.FJpegStream.Size);
+  end;
+  FContentVersionAfter:= AToOriginal.FContentVersion;
+end;
+
+procedure TBGRAImageOriginalDiff.Apply(AOriginal: TBGRALayerCustomOriginal);
+var
+  orig: TBGRALayerImageOriginal;
+begin
+  orig := AOriginal as TBGRALayerImageOriginal;
+  orig.FImage.FreeReference;
+  orig.FImage := FImageAfter.NewReference as TBGRABitmap;
+  FreeAndNil(orig.FJpegStream);
+  if Assigned(FJpegStreamAfter) then
+  begin
+    orig.FJpegStream := TMemoryStream.Create;
+    FJpegStreamAfter.Position := 0;
+    orig.FJpegStream.CopyFrom(FJpegStreamAfter, FJpegStreamAfter.Size);
+  end;
+  orig.FContentVersion := FContentVersionAfter;
+end;
+
+procedure TBGRAImageOriginalDiff.Unapply(AOriginal: TBGRALayerCustomOriginal);
+var
+  orig: TBGRALayerImageOriginal;
+begin
+  orig := AOriginal as TBGRALayerImageOriginal;
+  orig.FImage.FreeReference;
+  orig.FImage := FImageBefore.NewReference as TBGRABitmap;
+  FreeAndNil(orig.FJpegStream);
+  if Assigned(FJpegStreamBefore) then
+  begin
+    orig.FJpegStream := TMemoryStream.Create;
+    FJpegStreamBefore.Position := 0;
+    orig.FJpegStream.CopyFrom(FJpegStreamBefore, FJpegStreamBefore.Size);
+  end;
+  orig.FContentVersion := FContentVersionBefore;
+end;
+
+function TBGRAImageOriginalDiff.CanAppend(ADiff: TBGRAOriginalDiff): boolean;
+begin
+  result := (ADiff is TBGRAImageOriginalDiff) and
+    (TBGRAImageOriginalDiff(ADiff).FContentVersionAfter >= FContentVersionAfter);
+end;
+
+procedure TBGRAImageOriginalDiff.Append(ADiff: TBGRAOriginalDiff);
+var
+  next: TBGRAImageOriginalDiff;
+begin
+  next := ADiff as TBGRAImageOriginalDiff;
+  if next.FContentVersionAfter < FContentVersionAfter then
+    raise exception.Create('Cannot append diff made before this one.');
+  FImageAfter.FreeReference;
+  FImageAfter := next.FImageAfter.NewReference as TBGRABitmap;
+  FreeAndNil(FJpegStreamAfter);
+  if Assigned(next.FJpegStreamAfter) then
+  begin
+    FJpegStreamAfter := TMemoryStream.Create;
+    next.FJpegStreamAfter.Position:= 0;
+    FJpegStreamAfter.CopyFrom(next.FJpegStreamAfter, next.FJpegStreamAfter.Size);
+  end;
+  FContentVersionAfter:= next.FContentVersionAfter;
+end;
+
+destructor TBGRAImageOriginalDiff.Destroy;
+begin
+  FImageBefore.FreeReference;
+  FImageAfter.FreeReference;
+  FJpegStreamBefore.Free;
+  FJpegStreamAfter.Free;
+  inherited Destroy;
 end;
 
 { TBGRAOriginalEditor }
@@ -1013,6 +1146,12 @@ begin
   FMemDirOwned:= AMemDirOwned;
 end;
 
+function TBGRAMemOriginalStorage.Duplicate: TBGRACustomOriginalStorage;
+begin
+  result := TBGRAMemOriginalStorage.Create;
+  CopyTo(TBGRAMemOriginalStorage(result).FMemDir);
+end;
+
 procedure TBGRAMemOriginalStorage.RemoveAttribute(AName: utf8string);
 var
   idx: Integer;
@@ -1384,6 +1523,11 @@ begin
   FOnChange:=AValue;
 end;
 
+function TBGRALayerCustomOriginal.GetDiffExpected: boolean;
+begin
+  result := Assigned(FOnChange);
+end;
+
 procedure TBGRALayerCustomOriginal.SetRenderStorage(AValue: TBGRACustomOriginalStorage);
 begin
   if FRenderStorage=AValue then Exit;
@@ -1400,16 +1544,18 @@ begin
   FGuid := AValue;
 end;
 
-procedure TBGRALayerCustomOriginal.NotifyChange;
+procedure TBGRALayerCustomOriginal.NotifyChange(ADiff: TBGRAOriginalDiff);
 begin
   if Assigned(FOnChange) then
-    FOnChange(self);
+    FOnChange(self, nil, ADiff);
+  ADiff.Free;
 end;
 
-procedure TBGRALayerCustomOriginal.NotifyChange(ABounds: TRectF);
+procedure TBGRALayerCustomOriginal.NotifyChange(ABounds: TRectF; ADiff: TBGRAOriginalDiff);
 begin
   if Assigned(FOnChange) then
-    FOnChange(self, @ABounds);
+    FOnChange(self, @ABounds, ADiff);
+  ADiff.Free;
 end;
 
 procedure TBGRALayerCustomOriginal.NotifyEditorChange;
@@ -1545,32 +1691,97 @@ end;
 
 function TBGRALayerImageOriginal.GetImageHeight: integer;
 begin
-  result := FImage.Height;
+  if Assigned(FImage) then
+    result := FImage.Height
+  else
+    result := 0;
 end;
 
 function TBGRALayerImageOriginal.GetImageWidth: integer;
 begin
-  result := FImage.Width;
+  if Assigned(FImage) then
+    result := FImage.Width
+  else
+    result := 0;
 end;
 
-procedure TBGRALayerImageOriginal.ContentChanged;
+procedure TBGRALayerImageOriginal.BeginUpdate;
 begin
-  inc(FContentVersion);
-  NotifyChange;
+  if DiffExpected and (FDiff=nil) then
+    FDiff := TBGRAImageOriginalDiff.Create(self);
+end;
+
+procedure TBGRALayerImageOriginal.EndUpdate;
+begin
+  if Assigned(FDiff) then FDiff.ComputeDiff(self);
+  NotifyChange(FDiff);
+  FDiff := nil;
+end;
+
+procedure TBGRALayerImageOriginal.InternalLoadImageFromStream(AStream: TStream; AUpdate: boolean);
+var
+  newJpegStream: TMemoryStream;
+  newImage: TBGRABitmap;
+begin
+  if DetectFileFormat(AStream) = ifJpeg then
+  begin
+    newJpegStream := TMemoryStream.Create;
+    try
+      newJpegStream.CopyFrom(AStream, AStream.Size);
+      newJpegStream.Position := 0;
+      newImage := TBGRABitmap.Create(newJpegStream);
+      if AUpdate then BeginUpdate;
+      InternalClear;
+      FImage := newImage;
+      FJpegStream := newJpegStream;
+      newImage := nil;
+      newJpegStream := nil;
+      if AUpdate then
+      begin
+        Inc(FContentVersion);
+        EndUpdate;
+      end;
+    finally
+      newJpegStream.Free;
+      newImage.Free;
+    end;
+  end else
+  begin
+    newImage := TBGRABitmap.Create(AStream);
+    if AUpdate then BeginUpdate;
+    InternalClear;
+    FImage := newImage;
+    if AUpdate then
+    begin
+      Inc(FContentVersion);
+      EndUpdate;
+    end;
+  end;
+end;
+
+procedure TBGRALayerImageOriginal.InternalClear;
+begin
+  if Assigned(FImage) then
+  begin
+    FImage.FreeReference;
+    FImage := nil
+  end;
+  FreeAndNil(FJpegStream);
 end;
 
 constructor TBGRALayerImageOriginal.Create;
 begin
   inherited Create;
-  FImage := TBGRABitmap.Create;
+  FImage := nil;
   FContentVersion := 0;
   FJpegStream := nil;
 end;
 
 destructor TBGRALayerImageOriginal.Destroy;
 begin
-  FImage.Free;
+  FImage.FreeReference;
   FJpegStream.Free;
+  FDiff.Free;
   inherited Destroy;
 end;
 
@@ -1599,29 +1810,27 @@ end;
 procedure TBGRALayerImageOriginal.LoadFromStorage(
   AStorage: TBGRACustomOriginalStorage);
 var imgStream: TMemoryStream;
+  newImage: TBGRABitmap;
 begin
-  if not Assigned(FImage) then FImage := TBGRABitmap.Create;
   imgStream := TMemoryStream.Create;
   try
     if AStorage.ReadFile('content.png', imgStream) then
     begin
       imgStream.Position:= 0;
-      FImage.LoadFromStream(imgStream);
-      FreeAndNil(FJpegStream);
+      newImage := TBGRABitmap.Create(imgStream);
+      InternalClear;
+      FImage := newImage;
     end else
     if AStorage.ReadFile('content.jpg', imgStream) then
     begin
-      FreeAndNil(FJpegStream);
+      imgStream.Position:= 0;
+      newImage := TBGRABitmap.Create(imgStream);
+      InternalClear;
+      FImage := newImage;
       FJpegStream := imgStream;
       imgStream:= nil;
-
-      FJpegStream.Position:= 0;
-      FImage.LoadFromStream(FJpegStream);
     end else
-    begin
-      FImage.SetSize(0,0);
-      FreeAndNil(FJpegStream);
-    end;
+      InternalClear;
     FContentVersion := AStorage.Int['content-version'];
   finally
     imgStream.Free;
@@ -1654,6 +1863,11 @@ begin
         end;
       end;
     end;
+  end else
+  begin
+    AStorage.RemoveFile('content.jpg');
+    AStorage.RemoveFile('content.png');
+    AStorage.Int['content-version'] := FContentVersion;
   end;
 end;
 
@@ -1662,32 +1876,20 @@ begin
   if TMemDirectory.CheckHeader(AStream) then
     inherited LoadFromStream(AStream)
   else
-    LoadImageFromStream(AStream);
+    InternalLoadImageFromStream(AStream, False);
+end;
+
+procedure TBGRALayerImageOriginal.Clear;
+begin
+  BeginUpdate;
+  InternalClear;
+  Inc(FContentVersion);
+  EndUpdate;
 end;
 
 procedure TBGRALayerImageOriginal.LoadImageFromStream(AStream: TStream);
-var
-  newJpegStream: TMemoryStream;
 begin
-  if DetectFileFormat(AStream) = ifJpeg then
-  begin
-    newJpegStream := TMemoryStream.Create;
-    try
-      newJpegStream.CopyFrom(AStream, AStream.Size);
-      newJpegStream.Position := 0;
-      FImage.LoadFromStream(newJpegStream);
-      FJpegStream.Free;
-      FJpegStream := newJpegStream;
-      newJpegStream := nil;
-    finally
-      newJpegStream.Free;
-    end;
-  end else
-  begin
-    FreeAndNil(FJpegStream);
-    FImage.LoadFromStream(AStream);
-  end;
-  ContentChanged;
+  InternalLoadImageFromStream(AStream, True);
 end;
 
 procedure TBGRALayerImageOriginal.SaveImageToStream(AStream: TStream);
@@ -1698,14 +1900,22 @@ begin
     if AStream.CopyFrom(FJpegStream, FJpegStream.Size)<>FJpegStream.Size then
       raise exception.Create('Error while saving');
   end else
-    FImage.SaveToStreamAsPng(AStream);
+  if Assigned(FImage) then
+    FImage.SaveToStreamAsPng(AStream)
+  else raise exception.Create('No image to be saved');
 end;
 
 procedure TBGRALayerImageOriginal.AssignImage(AImage: TBGRACustomBitmap);
+var
+  newImage: TBGRABitmap;
 begin
-  FreeAndNil(FJpegStream);
-  FImage.Assign(AImage);
-  ContentChanged;
+  newImage := TBGRABitmap.Create;
+  newImage.Assign(AImage);
+  BeginUpdate;
+  InternalClear;
+  FImage := newImage;
+  Inc(FContentVersion);
+  EndUpdate;
 end;
 
 class function TBGRALayerImageOriginal.StorageClassName: RawByteString;

@@ -138,7 +138,8 @@ type
     property HasMemFiles: boolean read GetHasMemFiles;
   end;
 
-  TEmbeddedOriginalChangeEvent = procedure (ASender: TObject; AOriginal: TBGRALayerCustomOriginal) of object;
+  TEmbeddedOriginalChangeEvent = procedure (ASender: TObject; AOriginal: TBGRALayerCustomOriginal;
+                                            var ADiff: TBGRAOriginalDiff) of object;
   TEmbeddedOriginalEditingChangeEvent = procedure (ASender: TObject; AOriginal: TBGRALayerCustomOriginal) of object;
 
   TBGRALayerInfo = record
@@ -212,7 +213,7 @@ type
                 out ADir: TMemDirectory;
                 out AClass: TBGRALayerOriginalAny);
     procedure StoreOriginal(AOriginal: TBGRALayerCustomOriginal);
-    procedure OriginalChange(ASender: TObject; ABounds: PRectF = nil);
+    procedure OriginalChange(ASender: TObject; ABounds: PRectF; var ADiff: TBGRAOriginalDiff);
     procedure OriginalEditingChange(ASender: TObject);
     function GetLayerDirectory(layer: integer): TMemDirectory;
 
@@ -566,7 +567,7 @@ begin
   end;
 end;
 
-procedure TBGRALayeredBitmap.OriginalChange(ASender: TObject; ABounds: PRectF);
+procedure TBGRALayeredBitmap.OriginalChange(ASender: TObject; ABounds: PRectF; var ADiff: TBGRAOriginalDiff);
 var
   i: Integer;
   orig: TBGRALayerCustomOriginal;
@@ -601,7 +602,7 @@ begin
       end;
   end;
   if Assigned(FOriginalChange) then
-    FOriginalChange(self, orig);
+    FOriginalChange(self, orig, ADiff);
 end;
 
 procedure TBGRALayeredBitmap.OriginalEditingChange(ASender: TObject);
