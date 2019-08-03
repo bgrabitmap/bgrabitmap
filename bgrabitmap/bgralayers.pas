@@ -2002,11 +2002,17 @@ begin
     LayerOriginalMatrix[i] := AffineMatrixScale(AWidth/prevWidth,AHeight/prevHeight)*LayerOriginalMatrix[i]
   else
   begin
-    oldFilter := LayerBitmap[i].ResampleFilter;
-    LayerBitmap[i].ResampleFilter := AFineResampleFilter;
-    resampled := LayerBitmap[i].Resample(AWidth,AHeight, AResampleMode) as TBGRABitmap;
-    LayerBitmap[i].ResampleFilter := oldFilter;
-    SetLayerBitmap(i, resampled, True);
+    if LayerBitmap[i].NbPixels <> 0 then
+    begin
+      oldFilter := LayerBitmap[i].ResampleFilter;
+      LayerBitmap[i].ResampleFilter := AFineResampleFilter;
+      resampled := LayerBitmap[i].Resample(max(1,round(LayerBitmap[i].Width*AWidth/prevWidth)),
+        max(1,round(LayerBitmap[i].Height*AHeight/prevHeight)), AResampleMode) as TBGRABitmap;
+      LayerBitmap[i].ResampleFilter := oldFilter;
+      SetLayerBitmap(i, resampled, True);
+    end;
+    with LayerOffset[i] do
+      LayerOffset[i] := Point(round(X*AWidth/prevWidth),round(Y*AHeight/prevHeight));
   end;
   if AResampleMode = rmFineResample then RenderOriginalsIfNecessary;
 end;
