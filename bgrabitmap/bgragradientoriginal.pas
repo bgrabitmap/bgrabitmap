@@ -69,7 +69,8 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
-    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); override;
+    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); overload; override;
+    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean; ADrawMode: TDrawMode); overload;
     function CreateScanner(AMatrix: TAffineMatrix): TBGRACustomScanner;
     procedure ConfigureEditor(AEditor: TBGRAOriginalEditor); override;
     function GetRenderBounds(ADestRect: TRect; {%H-}AMatrix: TAffineMatrix): TRect; override;
@@ -438,13 +439,19 @@ end;
 
 procedure TBGRALayerGradientOriginal.Render(ADest: TBGRABitmap;
   AMatrix: TAffineMatrix; ADraft: boolean);
+begin
+  Render(ADest,AMatrix,ADraft,dmSet);
+end;
+
+procedure TBGRALayerGradientOriginal.Render(ADest: TBGRABitmap;
+  AMatrix: TAffineMatrix; ADraft: boolean; ADrawMode: TDrawMode);
 var
   grad: TBGRACustomScanner;
   dither: TDitheringAlgorithm;
 begin
   grad := CreateScanner(AMatrix);
   if ADraft then dither := daNearestNeighbor else dither := daFloydSteinberg;
-  ADest.FillRect(ADest.ClipRect, grad,dmSet, dither);
+  ADest.FillRect(ADest.ClipRect, grad,ADrawMode, dither);
   grad.Free;
 end;
 
