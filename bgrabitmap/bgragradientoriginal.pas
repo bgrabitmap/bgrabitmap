@@ -25,6 +25,7 @@ type
     procedure Unapply(AOriginal: TBGRALayerCustomOriginal); override;
     function CanAppend(ADiff: TBGRAOriginalDiff): boolean; override;
     procedure Append(ADiff: TBGRAOriginalDiff); override;
+    function IsIdentity: boolean; override;
   end;
 
   { TBGRALayerGradientOriginal }
@@ -150,6 +151,11 @@ begin
   next := ADiff as TBGRAGradientOriginalDiff;
   FreeAndNil(FStorageAfter);
   FStorageAfter := next.FStorageAfter.Duplicate as TBGRAMemOriginalStorage;
+end;
+
+function TBGRAGradientOriginalDiff.IsIdentity: boolean;
+begin
+  result := FStorageBefore.Equals(FStorageAfter);
 end;
 
 { TBGRALayerGradientOriginal }

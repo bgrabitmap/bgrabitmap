@@ -143,6 +143,7 @@ type
     procedure Unapply(AOriginal: TBGRALayerCustomOriginal); virtual; abstract;
     function CanAppend(ADiff: TBGRAOriginalDiff): boolean; virtual; abstract;
     procedure Append(ADiff: TBGRAOriginalDiff); virtual; abstract;
+    function IsIdentity: boolean; virtual; abstract;
   end;
 
   { TBGRALayerCustomOriginal }
@@ -204,6 +205,7 @@ type
     procedure Unapply(AOriginal: TBGRALayerCustomOriginal); override;
     function CanAppend(ADiff: TBGRAOriginalDiff): boolean; override;
     procedure Append(ADiff: TBGRAOriginalDiff); override;
+    function IsIdentity: boolean; override;
   end;
 
   { TBGRALayerImageOriginal }
@@ -308,6 +310,7 @@ type
     destructor Destroy; override;
     constructor Create;
     constructor Create(AMemDir: TMemDirectory; AMemDirOwned: boolean = false);
+    function Equals(Obj: TObject): boolean; override;
     function Duplicate: TBGRACustomOriginalStorage; override;
     procedure RemoveAttribute(AName: utf8string); override;
     function HasAttribute(AName: utf8string): boolean; override;
@@ -450,6 +453,16 @@ begin
     FJpegStreamAfter.CopyFrom(next.FJpegStreamAfter, next.FJpegStreamAfter.Size);
   end;
   FContentVersionAfter:= next.FContentVersionAfter;
+end;
+
+function TBGRAImageOriginalDiff.IsIdentity: boolean;
+begin
+  result := FImageBefore.Equals(FImageAfter) and
+    ( ((FJpegStreamBefore=nil) and (FJpegStreamAfter=nil)) or
+      (Assigned(FJpegStreamBefore) and Assigned(FJpegStreamAfter) and
+       (FJpegStreamBefore.Size = FJpegStreamAfter.Size) and
+       CompareMem(FJpegStreamBefore.Memory,FJpegStreamBefore.Memory,FJpegStreamBefore.Size)) );
+
 end;
 
 destructor TBGRAImageOriginalDiff.Destroy;
@@ -1144,6 +1157,15 @@ begin
   inherited Create;
   FMemDir := AMemDir;
   FMemDirOwned:= AMemDirOwned;
+end;
+
+function TBGRAMemOriginalStorage.Equals(Obj: TObject): boolean;
+var
+  other: TBGRAMemOriginalStorage;
+begin
+  if not (Obj is TBGRAMemOriginalStorage) then exit(false);
+  other := TBGRAMemOriginalStorage(obj);
+  result := FMemDir.Equals(other.FMemDir);
 end;
 
 function TBGRAMemOriginalStorage.Duplicate: TBGRACustomOriginalStorage;

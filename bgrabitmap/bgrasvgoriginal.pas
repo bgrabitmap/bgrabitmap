@@ -24,6 +24,7 @@ type
     procedure Unapply(AOriginal: TBGRALayerCustomOriginal); override;
     function CanAppend(ADiff: TBGRAOriginalDiff): boolean; override;
     procedure Append(ADiff: TBGRAOriginalDiff); override;
+    function IsIdentity: boolean; override;
     destructor Destroy; override;
   end;
 
@@ -136,6 +137,15 @@ begin
     FSvgStreamAfter.CopyFrom(next.FSvgStreamAfter, next.FSvgStreamAfter.Size);
   end;
   FContentVersionAfter:= next.FContentVersionAfter;
+end;
+
+function TBGRASVGOriginalDiff.IsIdentity: boolean;
+begin
+  result := (FDpiBefore = FDpiAfter) and
+    ( ((FSvgStreamBefore=nil) and (FSvgStreamAfter=nil)) or
+      (Assigned(FSvgStreamBefore) and Assigned(FSvgStreamAfter) and
+       (FSvgStreamBefore.Size = FSvgStreamAfter.Size) and
+       CompareMem(FSvgStreamBefore.Memory,FSvgStreamAfter.Memory,FSvgStreamBefore.Size)) );
 end;
 
 destructor TBGRASVGOriginalDiff.Destroy;
