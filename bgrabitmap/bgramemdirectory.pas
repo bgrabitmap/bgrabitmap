@@ -459,13 +459,12 @@ var
   other: TMemDirectory;
   i, j: Integer;
   data,otherData: TMemoryStream;
+  different: Boolean;
 begin
   if Obj = self then exit(true);
   if not (Obj is TMemDirectory) then exit(false);
   other := TMemDirectory(Obj);
   if other.Count <> Count then exit(false);
-  data := TMemoryStream.Create;
-  otherData := TMemoryStream.Create;
   for i := 0 to Count-1 do
   begin
     j := other.IndexOf(Entry[i].Name,Entry[i].Extension,true);
@@ -478,15 +477,16 @@ begin
     if Entry[i].FileSize <> other.Entry[j].FileSize then exit(false)
     else
     begin
+      data := TMemoryStream.Create;
+      otherData := TMemoryStream.Create;
       Entry[i].CopyTo(data);
       other.Entry[j].CopyTo(otherData);
-      if not CompareMem(data.Memory, otherData.Memory, data.Size) then exit(false);
-      data.Clear;
-      otherData.Clear;
+      different := not CompareMem(data.Memory, otherData.Memory, data.Size);
+      data.Free;
+      otherData.Free;
+      if different then exit(false);
     end;
   end;
-  data.Free;
-  otherData.Free;
   result := true;
 end;
 
