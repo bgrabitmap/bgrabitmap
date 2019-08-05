@@ -1898,7 +1898,10 @@ begin
   if TMemDirectory.CheckHeader(AStream) then
     inherited LoadFromStream(AStream)
   else
+  begin
     InternalLoadImageFromStream(AStream, False);
+    inc(FContentVersion);
+  end;
 end;
 
 procedure TBGRALayerImageOriginal.Clear;

@@ -299,8 +299,10 @@ end;
 
 procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream);
 begin
+  BeginUpdate;
   FSVG.LoadFromStream(AStream);
   Inc(FContentVersion);
+  EndUpdate;
 end;
 
 class function TBGRALayerSVGOriginal.StorageClassName: RawByteString;
