@@ -273,7 +273,7 @@ begin
       svgStream := TMemoryStream.Create;
       try
         FSVG.SaveToStream(svgStream);
-        AStorage.WriteFile('content.svg', svgStream, true);
+        AStorage.WriteFile('content.svg', svgStream, true, true);
         svgStream := nil;
         AStorage.Int['content-version'] := FContentVersion;
       finally
