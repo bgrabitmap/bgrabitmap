@@ -550,7 +550,7 @@ type
     procedure ReplaceColor(before, after: TColor); override;
     procedure ReplaceColor(ABounds: TRect; before, after: TColor); override;
     procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; Color: TBGRAPixel;
-      mode: TFloodfillMode; Tolerance: byte = 0); override;
+      mode: TFloodfillMode; Tolerance: byte = 0; DestOfsX: integer = 0; DestOfsY: integer = 0); override;
     procedure GradientFill(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
       gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
       gammaColorCorrection: boolean = True; Sinus: Boolean=False;
@@ -3147,7 +3147,7 @@ end;
   it checks pixels on the line above and on the line below. }
 procedure TBGRADefaultBitmap.ParallelFloodFill(X, Y: integer;
   Dest: TBGRACustomBitmap; Color: TBGRAPixel; mode: TFloodfillMode;
-  Tolerance: byte);
+  Tolerance: byte; DestOfsX: integer; DestOfsY: integer);
 var
   S:     TBGRAPixel;
   SX, EX, I: integer;
@@ -3246,12 +3246,12 @@ begin
 
       SetVisited(SX, Y, EX);
       if mode = fmSet then
-        dest.SetHorizLine(SX, Y, EX, Color)
+        dest.SetHorizLine(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Color)
       else
       if mode = fmDrawWithTransparency then
-        dest.DrawHorizLine(SX, Y, EX, Color)
+        dest.DrawHorizLine(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Color)
       else
-        dest.DrawHorizLineDiff(SX, Y, EX, Color, S, Tolerance);
+        dest.DrawHorizLineDiff(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Color, S, Tolerance);
 
       Added := False;
       if Y > FClipRect.Top then
