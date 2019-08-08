@@ -50,7 +50,7 @@ type
     procedure FormDestroy(Sender: TObject);
   private
     procedure OriginalChange(Sender: TObject; {%H-}AOriginal: TBGRALayerCustomOriginal;
-                var ADiff: TBGRAOriginalDiff);
+                var {%H-}ADiff: TBGRAOriginalDiff);
     procedure SetVSCursor(ACursor: TOriginalEditorCursor);
   public
     FLayers: TBGRALayeredBitmap;
