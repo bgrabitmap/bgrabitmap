@@ -47,6 +47,7 @@ type
     procedure Fit(Origin,HAxis,VAxis: TPointF); virtual;
     procedure Scale(sx,sy: single); overload;
     procedure Scale(factor: single); overload;
+    function GetScanCustomColorspace: TColorspaceAny; override;
     procedure ScanMoveTo(X, Y: Integer); override;
     procedure ScanMoveToF(X, Y: single); inline;
     function ScanNextPixel: TBGRAPixel; override;
@@ -921,6 +922,11 @@ end;
 procedure TBGRAAffineScannerTransform.Scale(factor: single);
 begin
   Scale(factor,factor);
+end;
+
+function TBGRAAffineScannerTransform.GetScanCustomColorspace: TColorspaceAny;
+begin
+  Result:= TBGRAPixelColorspace;
 end;
 
 procedure TBGRAAffineScannerTransform.ScanMoveTo(X, Y: Integer);
