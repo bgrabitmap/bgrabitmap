@@ -100,7 +100,7 @@ type
 
 implementation
 
-uses BGRATransform;
+uses BGRATransform, math;
 
 { TBGRAGradientOriginalDiff }
 
@@ -454,11 +454,23 @@ procedure TBGRALayerGradientOriginal.Render(ADest: TBGRABitmap;
 var
   grad: TBGRACustomScanner;
   dither: TDitheringAlgorithm;
+  temp: TBGRABitmap;
 begin
-  grad := CreateScanner(AMatrix);
-  if ADraft then dither := daNearestNeighbor else dither := daFloydSteinberg;
-  ADest.FillRect(ADest.ClipRect, grad,ADrawMode, dither);
-  grad.Free;
+  if ADraft and ((ADest.ClipRect.Width > 384) or (ADest.ClipRect.Height > 384)) then
+  begin
+    temp := TBGRABitmap.Create(0,0);
+    temp.SetSize(min(384,ADest.Width),min(384,ADest.Height));
+    Render(temp, AffineMatrixScale(temp.Width/ADest.Width,
+                                   temp.Height/ADest.Height)*AMatrix, ADraft);
+    ADest.StretchPutImage(rect(0,0,ADest.Width,Adest.Height),temp, ADrawMode);
+    temp.Free;
+  end else
+  begin
+    grad := CreateScanner(AMatrix);
+    if ADraft then dither := daNearestNeighbor else dither := daFloydSteinberg;
+    ADest.FillRect(ADest.ClipRect, grad,ADrawMode, dither);
+    grad.Free;
+  end;
 end;
 
 function TBGRALayerGradientOriginal.CreateScanner(AMatrix: TAffineMatrix): TBGRACustomScanner;
