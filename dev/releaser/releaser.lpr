@@ -7,7 +7,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Classes, SysUtils, CustApp, ReleaserTypes, ManagerFile, ArchiveUrl,
-  PackageFile, ProjectFile, ConstFile, TextLine
+  PackageFile, ProjectFile, ConstFile, TextLine, CopyFile
   { you can add units after this };
 
 type
@@ -143,6 +143,7 @@ begin
         'const': factory := TConstFile;
         'echo': for i := 0 to line.Count-1 do writeln(line[i]);
         'text': factory := TTextLine;
+        'copy': factory := TCopyFile;
         else
           raise exception.Create('Unknown command "'+cmd+'"');
         end;
@@ -192,7 +193,7 @@ begin
     end else
     begin
       for i := 0 to objs.Count-1 do
-        if objs[i] is TConstFile then  //constants are loosely checked
+        if (objs[i] is TConstFile) or (objs[i] is TCopyFile) then  //constants and copied files are loosely checked
           objs[i].UpdateVersion(newVer);
     end;
 
