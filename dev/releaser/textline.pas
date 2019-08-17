@@ -19,7 +19,7 @@ type
     FText: string;
     FChanged: boolean;
   public
-    constructor Create(AParameters: TStringList); override;
+    constructor Create(AParameters: TStringList; ALogicDir: string); override;
     destructor Destroy; override;
     procedure Save; override;
     function GetLineForVersion(AVersion: TVersion): string;
@@ -32,15 +32,15 @@ implementation
 
 { TTextLine }
 
-constructor TTextLine.Create(AParameters: TStringList);
+constructor TTextLine.Create(AParameters: TStringList; ALogicDir: string);
 var
   ver: TVersion;
   str: TStringStream;
   stream: TFileStream;
 begin
-  inherited Create(AParameters);
+  inherited Create(AParameters, ALogicDir);
   ExpectParamCount(2);
-  FFilename := ExpandFileName(Param[0]);
+  FFilename := ExpandFileName(ReplaceVariables(Param[0]));
   FTextLine := Param[1];
   FTextLineStart:= 0;
   FTextLineEnd:= 0;
@@ -82,7 +82,7 @@ end;
 
 function TTextLine.GetLineForVersion(AVersion: TVersion): string;
 begin
-  result := StringReplace(FTextLine, '$(Version)', VersionToStr(AVersion), [rfIgnoreCase,rfReplaceAll]);
+  result := ReplaceVariables(FTextLine, AVersion);
 end;
 
 procedure TTextLine.GetVersions(AVersionList: TStringList);

@@ -154,7 +154,7 @@ begin
               if objs[i] is factory then
                 raise exception.Create('Unicity constraint not satisfied for '+factory.ClassName);
           end;
-          objs.Add(factory.Create(line));
+          objs.Add(factory.Create(line, logicDir));
         end;
       end;
     end;
@@ -184,6 +184,7 @@ begin
 
     if Trim(newVerStr)='' then newVer := ver
     else newVer := StrToVersion(newVerStr);
+
     if newVer <> ver then
     begin
       for i := 0 to objs.Count-1 do

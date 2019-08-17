@@ -25,9 +25,13 @@ type
   private
     function GetParam(AIndex: integer): string;
     function GetParamCount: integer;
+  protected
+    FLogicDir: string;
+    function ReplaceVariables(AText: string; AVersion: TVersion): string; overload;
+    function ReplaceVariables(AText: string): string; overload;
   public
     FParameters: TStringList;
-    constructor Create(AParameters: TStringList); virtual;
+    constructor Create(AParameters: TStringList; ALogicDir: string); virtual;
     procedure ExpectParamCount(ACount: integer);
     destructor Destroy; override;
     property ParamCount: integer read GetParamCount;
@@ -112,10 +116,25 @@ begin
   result := FParameters.Count;
 end;
 
-constructor TReleaserObject.Create(AParameters: TStringList);
+function TReleaserObject.ReplaceVariables(AText: string; AVersion: TVersion): string;
+begin
+  result := AText;
+  result := StringReplace(result, '$(Version)', VersionToStr(AVersion), [rfIgnoreCase,rfReplaceAll]);
+  result := StringReplace(result, '$(LogicDir)', FLogicDir, [rfIgnoreCase,rfReplaceAll]);
+end;
+
+function TReleaserObject.ReplaceVariables(AText: string): string;
+begin
+  result := AText;
+  result := StringReplace(result, '$(Version)', '?', [rfIgnoreCase,rfReplaceAll]);
+  result := StringReplace(result, '$(LogicDir)', FLogicDir, [rfIgnoreCase,rfReplaceAll]);
+end;
+
+constructor TReleaserObject.Create(AParameters: TStringList; ALogicDir: string);
 begin
   FParameters := TStringList.Create;
   FParameters.AddStrings(AParameters);
+  FLogicDir := ALogicDir;
 end;
 
 procedure TReleaserObject.ExpectParamCount(ACount: integer);

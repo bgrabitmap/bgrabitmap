@@ -24,7 +24,7 @@ type
     function GetDataNode: TJSONObject;
     function GetDownloadUrl: string;
   public
-    constructor Create(AParameters: TStringList); override;
+    constructor Create(AParameters: TStringList; ALogicDir: string); override;
     destructor Destroy; override;
     class function IsUnique: boolean; override;
     procedure LinkWith(AOtherObject: TReleaserObject); override;
@@ -91,13 +91,13 @@ begin
   else result := '';
 end;
 
-constructor TManagerFile.Create(AParameters: TStringList);
+constructor TManagerFile.Create(AParameters: TStringList; ALogicDir: string);
 var
   stream: TFileStream;
 begin
-  inherited Create(AParameters);
+  inherited Create(AParameters, ALogicDir);
   ExpectParamCount(1);
-  FFilename:= ExpandFileName(Param[0]);
+  FFilename:= ExpandFileName(ReplaceVariables(Param[0]));
   if FileExists(FFilename) then
   begin
     FNew := false;

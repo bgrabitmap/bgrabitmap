@@ -19,7 +19,7 @@ type
     procedure AnalyzeVersionLine(ALine: string; out AValueStart,
       AValueLength: integer);
   public
-    constructor Create(AParameters: TStringList); override;
+    constructor Create(AParameters: TStringList; ALogicDir: string); override;
     destructor Destroy; override;
     procedure Save; override;
     function TryVersion(out AValue: TVersion): boolean;
@@ -57,15 +57,15 @@ begin
   end;
 end;
 
-constructor TConstFile.Create(AParameters: TStringList);
+constructor TConstFile.Create(AParameters: TStringList; ALogicDir: string);
 var
   ver: TVersion;
   str: TStringStream;
   stream: TFileStream;
 begin
-  inherited Create(AParameters);
+  inherited Create(AParameters, ALogicDir);
   ExpectParamCount(2);
-  FFilename := ExpandFileName(Param[0]);
+  FFilename := ExpandFileName(ReplaceVariables(Param[0]));
   FConstname := Param[1];
   stream := nil;
   str := nil;
