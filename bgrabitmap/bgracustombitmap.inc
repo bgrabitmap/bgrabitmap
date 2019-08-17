@@ -566,7 +566,7 @@ type
      procedure FloodFill(X, Y: integer; Color: TBGRAPixel;
        mode: TFloodfillMode; Tolerance: byte = 0); virtual;
      procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; Color: TBGRAPixel;
-       mode: TFloodfillMode; Tolerance: byte = 0); virtual; abstract;
+       mode: TFloodfillMode; Tolerance: byte = 0; DestOfsX: integer = 0; DestOfsY: integer = 0); virtual; abstract;
      procedure GradientFill(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
        gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
        gammaColorCorrection: boolean = True; Sinus: Boolean=False;

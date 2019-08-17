@@ -6,8 +6,8 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp,
-  ReleaserTypes, ManagerFile, ArchiveUrl, PackageFile, ProjectFile, ConstFile
+  Classes, SysUtils, CustApp, ReleaserTypes, ManagerFile, ArchiveUrl,
+  PackageFile, ProjectFile, ConstFile, TextLine, CopyFile
   { you can add units after this };
 
 type
@@ -141,6 +141,9 @@ begin
         'package': factory := TPackageFile;
         'project': factory := TProjectFile;
         'const': factory := TConstFile;
+        'echo': for i := 0 to line.Count-1 do writeln(line[i]);
+        'text': factory := TTextLine;
+        'copy': factory := TCopyFile;
         else
           raise exception.Create('Unknown command "'+cmd+'"');
         end;
@@ -152,7 +155,7 @@ begin
               if objs[i] is factory then
                 raise exception.Create('Unicity constraint not satisfied for '+factory.ClassName);
           end;
-          objs.Add(factory.Create(line));
+          objs.Add(factory.Create(line, logicDir));
         end;
       end;
     end;
@@ -182,6 +185,7 @@ begin
 
     if Trim(newVerStr)='' then newVer := ver
     else newVer := StrToVersion(newVerStr);
+
     if newVer <> ver then
     begin
       for i := 0 to objs.Count-1 do
@@ -189,7 +193,7 @@ begin
     end else
     begin
       for i := 0 to objs.Count-1 do
-        if objs[i] is TConstFile then  //constants are loosely checked
+        if (objs[i] is TConstFile) or (objs[i] is TCopyFile) then  //constants and copied files are loosely checked
           objs[i].UpdateVersion(newVer);
     end;
 

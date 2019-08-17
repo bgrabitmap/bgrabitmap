@@ -10,12 +10,29 @@ uses
 type
   TBGRAColorInterpolation = BGRAGradientScanner.TBGRAColorInterpolation;
   TBGRAGradientRepetition = BGRAGradientScanner.TBGRAGradientRepetition;
+  TBGRALayerGradientOriginal = class;
+
+  { TBGRAGradientOriginalDiff }
+
+  TBGRAGradientOriginalDiff = class(TBGRAOriginalDiff)
+  protected
+    FStorageBefore, FStorageAfter: TBGRAMemOriginalStorage;
+  public
+    constructor Create(AOriginal: TBGRALayerGradientOriginal);
+    procedure ComputeDifference(AOriginal: TBGRALayerGradientOriginal);
+    destructor Destroy; override;
+    procedure Apply(AOriginal: TBGRALayerCustomOriginal); override;
+    procedure Unapply(AOriginal: TBGRALayerCustomOriginal); override;
+    function CanAppend(ADiff: TBGRAOriginalDiff): boolean; override;
+    procedure Append(ADiff: TBGRAOriginalDiff); override;
+    function IsIdentity: boolean; override;
+  end;
 
   { TBGRALayerGradientOriginal }
 
   TBGRALayerGradientOriginal = class(TBGRALayerCustomOriginal)
   private
-    procedure SetColorInterpoaltion(AValue: TBGRAColorInterpolation);
+    procedure SetColorInterpolation(AValue: TBGRAColorInterpolation);
     procedure SetEndColor(AValue: TBGRAPixel);
     procedure SetFocalPoint(AValue: TPointF);
     procedure SetFocalRadius(AValue: Single);
@@ -34,6 +51,8 @@ type
     FRadius,FFocalRadius: single;
     FColorInterpolation: TBGRAColorInterpolation;
     FRepetition: TBGRAGradientRepetition;
+    FUpdateCount: integer;
+    FUpdateDiff: TBGRAGradientOriginalDiff;
     function GetComputedRadius: single;
     function GetComputedYAxis: TPointF;
     function GetComputedFocalPoint: TPointF;
@@ -45,9 +64,14 @@ type
     procedure OnMoveFocalPoint({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
     procedure OnMoveFocalRadius({%H-}ASender: TObject; {%H-}APrevCoord, ANewCoord: TPointF; {%H-}AShift: TShiftState);
     procedure OnStartMove({%H-}ASender: TObject; {%H-}AIndex: integer; {%H-}AShift: TShiftState);
+    procedure BeginUpdate;
+    procedure EndUpdate;
+    procedure NotifyChangeWithoutDiff;
   public
     constructor Create; override;
-    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); override;
+    destructor Destroy; override;
+    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); overload; override;
+    procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean; ADrawMode: TDrawMode); overload;
     function CreateScanner(AMatrix: TAffineMatrix): TBGRACustomScanner;
     procedure ConfigureEditor(AEditor: TBGRAOriginalEditor); override;
     function GetRenderBounds(ADestRect: TRect; {%H-}AMatrix: TAffineMatrix): TRect; override;
@@ -69,14 +93,70 @@ type
     property FocalPoint: TPointF read FFocalPoint write SetFocalPoint;     //default Origin
     property Radius: Single read FRadius write SetRadius;                  //default 1
     property FocalRadius: Single read FFocalRadius write SetFocalRadius;   //default 0
-    property ColorInterpolation: TBGRAColorInterpolation read FColorInterpolation write SetColorInterpoaltion;
+    property ColorInterpolation: TBGRAColorInterpolation read FColorInterpolation write SetColorInterpolation;
     property Repetition: TBGRAGradientRepetition read FRepetition write SetRepetition;
 
   end;
 
 implementation
 
-uses BGRATransform;
+uses BGRATransform, math;
+
+{ TBGRAGradientOriginalDiff }
+
+constructor TBGRAGradientOriginalDiff.Create(AOriginal: TBGRALayerGradientOriginal);
+begin
+  FStorageBefore := TBGRAMemOriginalStorage.Create;
+  AOriginal.SaveToStorage(FStorageBefore);
+end;
+
+procedure TBGRAGradientOriginalDiff.ComputeDifference(
+  AOriginal: TBGRALayerGradientOriginal);
+begin
+  if Assigned(FStorageAfter) then FreeAndNil(FStorageAfter);
+  FStorageAfter := TBGRAMemOriginalStorage.Create;
+  AOriginal.SaveToStorage(FStorageAfter);
+end;
+
+destructor TBGRAGradientOriginalDiff.Destroy;
+begin
+  FStorageBefore.Free;
+  FStorageAfter.Free;
+  inherited Destroy;
+end;
+
+procedure TBGRAGradientOriginalDiff.Apply(AOriginal: TBGRALayerCustomOriginal);
+begin
+  if not Assigned(FStorageAfter) then raise exception.Create('Undefined state after diff');
+  AOriginal.LoadFromStorage(FStorageAfter);
+  (AOriginal as TBGRALayerGradientOriginal).NotifyChangeWithoutDiff;
+end;
+
+procedure TBGRAGradientOriginalDiff.Unapply(AOriginal: TBGRALayerCustomOriginal);
+begin
+  if not Assigned(FStorageBefore) then raise exception.Create('Undefined state before diff');
+  AOriginal.LoadFromStorage(FStorageBefore);
+  (AOriginal as TBGRALayerGradientOriginal).NotifyChangeWithoutDiff;
+end;
+
+function TBGRAGradientOriginalDiff.CanAppend(ADiff: TBGRAOriginalDiff): boolean;
+begin
+  result := ADiff is TBGRAGradientOriginalDiff;
+end;
+
+procedure TBGRAGradientOriginalDiff.Append(ADiff: TBGRAOriginalDiff);
+var
+  next: TBGRAGradientOriginalDiff;
+begin
+  next := ADiff as TBGRAGradientOriginalDiff;
+  FreeAndNil(FStorageAfter);
+  FStorageAfter := next.FStorageAfter.Duplicate as TBGRAMemOriginalStorage;
+end;
+
+function TBGRAGradientOriginalDiff.IsIdentity: boolean;
+begin
+  result := FStorageBefore.Equals(FStorageAfter);
+end;
 
 { TBGRALayerGradientOriginal }
 
@@ -85,84 +165,95 @@ begin
   if FRadius = EmptySingle then result := 1 else result := FRadius;
 end;
 
-procedure TBGRALayerGradientOriginal.SetColorInterpoaltion(
+procedure TBGRALayerGradientOriginal.SetColorInterpolation(
   AValue: TBGRAColorInterpolation);
 begin
   if FColorInterpolation=AValue then Exit;
+  BeginUpdate;
   FColorInterpolation:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetEndColor(AValue: TBGRAPixel);
 begin
   if FEndColor=AValue then Exit;
+  BeginUpdate;
   FEndColor:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetFocalPoint(AValue: TPointF);
 begin
   if FFocalPoint=AValue then Exit;
+  BeginUpdate;
   FFocalPoint:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetFocalRadius(AValue: Single);
 begin
   if FFocalRadius=AValue then Exit;
+  BeginUpdate;
   FFocalRadius:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetGradientType(AValue: TGradientType);
 begin
   if FGradientType=AValue then Exit;
+  BeginUpdate;
   FGradientType:=AValue;
   if FGradientType in [gtLinear,gtReflected] then FYAxis := EmptyPointF;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetOrigin(AValue: TPointF);
 begin
   if FOrigin=AValue then Exit;
+  BeginUpdate;
   FOrigin:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetRadius(AValue: Single);
 begin
   if FRadius=AValue then Exit;
+  BeginUpdate;
   FRadius:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetRepetition(
   AValue: TBGRAGradientRepetition);
 begin
   if FRepetition=AValue then Exit;
+  BeginUpdate;
   FRepetition:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetStartColor(AValue: TBGRAPixel);
 begin
   if FStartColor=AValue then Exit;
+  BeginUpdate;
   FStartColor:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetXAxis(AValue: TPointF);
 begin
   if FXAxis=AValue then Exit;
+  BeginUpdate;
   FXAxis:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.SetYAxis(AValue: TPointF);
 begin
   if FYAxis=AValue then Exit;
+  BeginUpdate;
   FYAxis:=AValue;
-  NotifyChange;
+  EndUpdate;
 end;
 
 function TBGRALayerGradientOriginal.GetComputedYAxis: TPointF;
@@ -193,12 +284,13 @@ procedure TBGRALayerGradientOriginal.OnMoveOrigin(ASender: TObject; APrevCoord,
 var
   delta: TPointF;
 begin
+  BeginUpdate;
   delta := ANewCoord-APrevCoord;
   FOrigin.Offset(delta);
   FXAxis.Offset(delta);
   FYAxis.Offset(delta);
   FFocalPoint.Offset(delta);
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.OnMoveXAxis(ASender: TObject; APrevCoord,
@@ -207,6 +299,7 @@ var
   m: TAffineMatrix;
   c: TPointF;
 begin
+  BeginUpdate;
   if not (ssAlt in AShift) or (GradientType in [gtLinear,gtReflected]) then
   begin
     if not isEmptyPointF(FYAxis) and not isEmptyPointF(FYAxisBackup) then
@@ -227,8 +320,7 @@ begin
     FOrigin := FOriginBackup;
 
   FXAxis := ANewCoord;
-
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.OnMoveXAxisNeg(ASender: TObject;
@@ -237,6 +329,7 @@ var
   delta, c: TPointF;
   m: TAffineMatrix;
 begin
+  BeginUpdate;
   delta := ANewCoord-APrevCoord;
 
   if (GradientType = gtLinear) and (ssShift in AShift) then
@@ -249,7 +342,7 @@ begin
     FXAxis := FXAxisBackup;
 
   FOrigin.Offset(delta);
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.OnMoveYAxis(ASender: TObject; APrevCoord,
@@ -257,6 +350,7 @@ procedure TBGRALayerGradientOriginal.OnMoveYAxis(ASender: TObject; APrevCoord,
 var
   m: TAffineMatrix;
 begin
+  BeginUpdate;
   if not (ssAlt in AShift) or (GradientType in [gtLinear,gtReflected]) then
   begin
     if not isEmptyPointF(FXAxis) then
@@ -266,7 +360,7 @@ begin
     end;
   end;
   FYAxis := ANewCoord;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.OnMoveFocalPoint(ASender: TObject;
@@ -280,6 +374,7 @@ procedure TBGRALayerGradientOriginal.OnMoveFocalRadius(ASender: TObject;
 var refLen: single;
   u, focalOrig: TPointF;
 begin
+  BeginUpdate;
   focalOrig := ComputedFocalPoint;
   if isEmptyPointF(focalOrig) or isEmptyPointF(FOrigin) or isEmptyPointF(FXAxis) then exit;
   refLen := VectLen(FOrigin-FXAxis);
@@ -288,7 +383,7 @@ begin
   u := (FOrigin-FXAxis)*(1/refLen);
   FFocalRadius := u * (ANewCoord-focalOrig) / refLen - 0.1;
   if FFocalRadius < 0 then FFocalRadius:= 0;
-  NotifyChange;
+  EndUpdate;
 end;
 
 procedure TBGRALayerGradientOriginal.OnStartMove(ASender: TObject;
@@ -297,6 +392,33 @@ begin
   FOriginBackup := FOrigin;
   FXAxisBackup := FXAxis;
   FYAxisBackup := ComputedYAxis;
+end;
+
+procedure TBGRALayerGradientOriginal.BeginUpdate;
+begin
+  if DiffExpected and (FUpdateCount = 0) then
+    FUpdateDiff := TBGRAGradientOriginalDiff.Create(self);
+  inc(FUpdateCount);
+end;
+
+procedure TBGRALayerGradientOriginal.EndUpdate;
+begin
+  if FUpdateCount > 0 then
+  begin
+    dec(FUpdateCount);
+    if FUpdateCount = 0 then
+    begin
+      if Assigned(FUpdateDiff) then
+        FUpdateDiff.ComputeDifference(self);
+      NotifyChange(FUpdateDiff);
+      FUpdateDiff := nil;
+    end;
+  end;
+end;
+
+procedure TBGRALayerGradientOriginal.NotifyChangeWithoutDiff;
+begin
+  NotifyChange;
 end;
 
 constructor TBGRALayerGradientOriginal.Create;
@@ -315,16 +437,40 @@ begin
   FYAxis := EmptyPointF;
 end;
 
+destructor TBGRALayerGradientOriginal.Destroy;
+begin
+  FUpdateDiff.Free;
+  inherited Destroy;
+end;
+
 procedure TBGRALayerGradientOriginal.Render(ADest: TBGRABitmap;
   AMatrix: TAffineMatrix; ADraft: boolean);
+begin
+  Render(ADest,AMatrix,ADraft,dmSet);
+end;
+
+procedure TBGRALayerGradientOriginal.Render(ADest: TBGRABitmap;
+  AMatrix: TAffineMatrix; ADraft: boolean; ADrawMode: TDrawMode);
 var
   grad: TBGRACustomScanner;
   dither: TDitheringAlgorithm;
+  temp: TBGRABitmap;
 begin
-  grad := CreateScanner(AMatrix);
-  if ADraft then dither := daNearestNeighbor else dither := daFloydSteinberg;
-  ADest.FillRect(ADest.ClipRect, grad,dmSet, dither);
-  grad.Free;
+  if ADraft and ((ADest.ClipRect.Width > 384) or (ADest.ClipRect.Height > 384)) then
+  begin
+    temp := TBGRABitmap.Create(0,0);
+    temp.SetSize(min(384,ADest.Width),min(384,ADest.Height));
+    Render(temp, AffineMatrixScale(temp.Width/ADest.Width,
+                                   temp.Height/ADest.Height)*AMatrix, ADraft);
+    ADest.StretchPutImage(rect(0,0,ADest.Width,Adest.Height),temp, ADrawMode);
+    temp.Free;
+  end else
+  begin
+    grad := CreateScanner(AMatrix);
+    if ADraft then dither := daNearestNeighbor else dither := daFloydSteinberg;
+    ADest.FillRect(ADest.ClipRect, grad,ADrawMode, dither);
+    grad.Free;
+  end;
 end;
 
 function TBGRALayerGradientOriginal.CreateScanner(AMatrix: TAffineMatrix): TBGRACustomScanner;
@@ -494,11 +640,12 @@ end;
 
 procedure TBGRALayerGradientOriginal.Transform(AMatrix: TAffineMatrix);
 begin
+  BeginUpdate;
   if not isEmptyPointF(FOrigin) then FOrigin := AMatrix*FOrigin;
   if not isEmptyPointF(FXAxis) then FXAxis := AMatrix*FXAxis;
   if not isEmptyPointF(FYAxis) then FYAxis := AMatrix*FYAxis;
   if not isEmptyPointF(FFocalPoint) then FFocalPoint := AMatrix*FFocalPoint;
-  NotifyChange;
+  EndUpdate;
 end;
 
 initialization

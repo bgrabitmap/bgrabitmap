@@ -18,7 +18,7 @@ type
     FChanged: boolean;
     function GetName: string;
   public
-    constructor Create(AParameters: TStringList); override;
+    constructor Create(AParameters: TStringList; ALogicDir: string); override;
     destructor Destroy; override;
     property Filename: string read FFilename;
     function GetVersion: TVersion;
@@ -59,13 +59,13 @@ begin
   result := ChangeFileExt(ExtractFileName(FFilename),'');
 end;
 
-constructor TPackageFile.Create(AParameters: TStringList);
+constructor TPackageFile.Create(AParameters: TStringList; ALogicDir: string);
 var
   stream: TFileStream;
 begin
-  inherited Create(AParameters);
+  inherited Create(AParameters, ALogicDir);
   ExpectParamCount(1);
-  FFilename:= ExpandFileName(Param[0]);
+  FFilename:= ExpandFileName(ReplaceVariables(Param[0]));
   stream := TFileStream.Create(FFilename, fmOpenRead);
   try
     ReadXMLFile(FXml,stream);

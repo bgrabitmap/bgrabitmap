@@ -27,6 +27,8 @@ uses
 //vectorize a monochrome bitmap
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean = true; ADiagonalFillPercent: single = 66; AIntermediateDiagonals: boolean = true): ArrayOfTPointF;
+function VectorizeMonochrome(ASource: TBGRACustomBitmap; ARect: TRect; AZoom: single; APixelCenteredCoordinates: boolean;
+  AWhiteBackground: boolean = true; ADiagonalFillPercent: single = 66; AIntermediateDiagonals: boolean = true): ArrayOfTPointF;
 
 type
   TBGRAVectorizedFont = class;
@@ -216,7 +218,7 @@ implementation
 
 uses BGRAUTF8;
 
-function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
+function VectorizeMonochrome(ASource: TBGRACustomBitmap; ARect: TRect; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean; ADiagonalFillPercent: single; AIntermediateDiagonals: boolean): ArrayOfTPointF;
 const unitShift = 6;
       iHalf = 1 shl (unitShift-1);
@@ -651,6 +653,9 @@ var
   end;
 
 begin
+  IntersectRect(ARect, ARect, rect(0,0,ASource.Width,ASource.Height));
+  if IsRectEmpty(ARect) then exit(nil);
+
   iDiag := round((ADiagonalFillPercent-50)/100 * iHalf)*2; //even rounding to keep alignment with iOut
   iOut := (iHalf-iDiag) div 2;
 
@@ -658,18 +663,18 @@ begin
   points := nil;
   polygonF := nil;
 
-  setlength(ortho,ASource.height,ASource.width);
-  for y := 0 to ASource.Height-1 do
+  setlength(ortho,ARect.Height,ARect.Width);
+  for y := 0 to ARect.Height-1 do
   begin
     if y = 0 then
       pprev := nil
     else
-      pprev := ASource.ScanLine[y-1];
-    p := ASource.ScanLine[y];
-    if y = ASource.Height-1 then
+      pprev := ASource.ScanLine[ARect.Top+y-1]+ARect.Left;
+    p := ASource.ScanLine[ARect.Top+y]+ARect.Left;
+    if y = ARect.Height-1 then
       pnext := nil
     else
-      pnext := ASource.ScanLine[y+1];
+      pnext := ASource.ScanLine[ARect.Top+y+1]+ARect.Left;
 
     {$hints off}
     fillchar(cur,sizeof(cur),0);
@@ -677,7 +682,7 @@ begin
     cur[6] := CheckPixel(p^); inc(p);
     if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
     if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
-    for x := 0 to ASource.Width-1 do
+    for x := 0 to ARect.Width-1 do
     begin
       cur[1] := cur[2];
       cur[2] := cur[3];
@@ -686,7 +691,7 @@ begin
       cur[7] := cur[8];
       cur[8] := cur[9];
 
-      if x = ASource.Width-1 then
+      if x = ARect.Width-1 then
       begin
         cur[6]:= false;
         cur[9]:= false;
@@ -715,21 +720,21 @@ begin
   end;
 
   PointsCurrentLineStart := nbPoints;
-  for y := 0 to ASource.Height-1 do
+  for y := 0 to ARect.Height-1 do
   begin
-    iy := y shl unitShift;
+    iy := (y+ARect.Top) shl unitShift;
 
     PointsPreviousLineStart := PointsCurrentLineStart;
     PointsCurrentLineStart := nbPoints;
     if y = 0 then
       pprev := nil
     else
-      pprev := ASource.ScanLine[y-1];
-    p := ASource.ScanLine[y];
-    if y = ASource.Height-1 then
+      pprev := ASource.ScanLine[ARect.Top+y-1]+ARect.Left;
+    p := ASource.ScanLine[ARect.Top+y]+ARect.Left;
+    if y = ARect.Height-1 then
       pnext := nil
     else
-      pnext := ASource.ScanLine[y+1];
+      pnext := ASource.ScanLine[ARect.Top+y+1]+ARect.Left;
 
     {$hints off}
     fillchar(cur,sizeof(cur),0);
@@ -737,8 +742,8 @@ begin
     cur[6] := CheckPixel(p^); inc(p);
     if pprev <> nil then begin cur[9] := CheckPixel(pprev^); inc(pprev); end;
     if pnext <> nil then begin cur[3] := CheckPixel(pnext^); inc(pnext); end;
-    ix := 0;
-    for x := 0 to ASource.Width-1 do
+    ix := ARect.Left shl unitShift;
+    for x := 0 to ARect.Width-1 do
     begin
       cur[1] := cur[2];
       cur[2] := cur[3];
@@ -747,7 +752,7 @@ begin
       cur[7] := cur[8];
       cur[8] := cur[9];
 
-      if x = ASource.Width-1 then
+      if x = ARect.Width-1 then
       begin
         cur[6]:= false;
         cur[9]:= false;
@@ -1030,6 +1035,14 @@ begin
       AddPolygon(n);
 
   result := polygonF;
+end;
+
+function VectorizeMonochrome(ASource: TBGRACustomBitmap;
+  AZoom: single; APixelCenteredCoordinates: boolean; AWhiteBackground: boolean;
+  ADiagonalFillPercent: single; AIntermediateDiagonals: boolean): ArrayOfTPointF;
+begin
+  result := VectorizeMonochrome(ASource, rect(0,0,ASource.Width,ASource.Height), AZoom, APixelCenteredCoordinates,
+    AWhiteBackground, ADiagonalFillPercent, AIntermediateDiagonals);
 end;
 
 { TBGRAVectorizedFontRenderer }

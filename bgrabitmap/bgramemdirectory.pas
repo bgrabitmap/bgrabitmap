@@ -68,6 +68,7 @@ type
     function SplitPath(APath: utf8string): TMemDirectoryPath;
   public
     constructor Create(AParentDirectory: TMemDirectory = nil);
+    function Equals(Obj: TObject): boolean; override;
     procedure LoadFromStream(AStream: TStream); override;
     class function CheckHeader(AStream: TStream): boolean; static;
     procedure LoadFromEmbeddedStream(ARootStream, ADataStream: TStream; AStartPos: int64);
@@ -451,6 +452,42 @@ constructor TMemDirectory.Create(AParentDirectory: TMemDirectory);
 begin
   inherited Create;
   FParentDirectory := AParentDirectory;
+end;
+
+function TMemDirectory.Equals(Obj: TObject): boolean;
+var
+  other: TMemDirectory;
+  i, j: Integer;
+  data,otherData: TMemoryStream;
+  different: Boolean;
+begin
+  if Obj = self then exit(true);
+  if not (Obj is TMemDirectory) then exit(false);
+  other := TMemDirectory(Obj);
+  if other.Count <> Count then exit(false);
+  for i := 0 to Count-1 do
+  begin
+    j := other.IndexOf(Entry[i].Name,Entry[i].Extension,true);
+    if j = -1 then exit(false);
+    if IsDirectory[i] then
+    begin
+      if not other.IsDirectory[j] then exit(false);
+      if not other.Directory[j].Equals(Directory[i]) then exit(false);
+    end else
+    if Entry[i].FileSize <> other.Entry[j].FileSize then exit(false)
+    else
+    begin
+      data := TMemoryStream.Create;
+      otherData := TMemoryStream.Create;
+      Entry[i].CopyTo(data);
+      other.Entry[j].CopyTo(otherData);
+      different := not CompareMem(data.Memory, otherData.Memory, data.Size);
+      data.Free;
+      otherData.Free;
+      if different then exit(false);
+    end;
+  end;
+  result := true;
 end;
 
 { TMemDirectoryEntry }

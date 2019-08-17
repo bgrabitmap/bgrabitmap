@@ -138,7 +138,8 @@ type
     property HasMemFiles: boolean read GetHasMemFiles;
   end;
 
-  TEmbeddedOriginalChangeEvent = procedure (ASender: TObject; AOriginal: TBGRALayerCustomOriginal) of object;
+  TEmbeddedOriginalChangeEvent = procedure (ASender: TObject; AOriginal: TBGRALayerCustomOriginal;
+                                            var ADiff: TBGRAOriginalDiff) of object;
   TEmbeddedOriginalEditingChangeEvent = procedure (ASender: TObject; AOriginal: TBGRALayerCustomOriginal) of object;
 
   TBGRALayerInfo = record
@@ -170,10 +171,11 @@ type
     FWidth,FHeight: integer;
     FOriginals: TBGRALayerOriginalList;
     FOriginalEditor: TBGRAOriginalEditor;
-    FOriginalEditorOriginal: TBGRALayerCustomOriginal;
+    FOriginalEditorOriginal: TGuid;
     FOriginalEditorViewMatrix: TAffineMatrix;
     procedure EditorFocusedChanged(Sender: TObject);
     function GetLayerOriginalClass(layer: integer): TBGRALayerOriginalAny;
+    function GetOriginalEditor: TBGRAOriginalEditor;
     function GetOriginalGuid(AIndex: integer): TGUID;
     procedure SetEditorFocused(AValue: boolean);
 
@@ -212,7 +214,7 @@ type
                 out ADir: TMemDirectory;
                 out AClass: TBGRALayerOriginalAny);
     procedure StoreOriginal(AOriginal: TBGRALayerCustomOriginal);
-    procedure OriginalChange(ASender: TObject; ABounds: PRectF = nil);
+    procedure OriginalChange(ASender: TObject; ABounds: PRectF; var ADiff: TBGRAOriginalDiff);
     procedure OriginalEditingChange(ASender: TObject);
     function GetLayerDirectory(layer: integer): TMemDirectory;
 
@@ -305,6 +307,7 @@ type
     function GetEditorBounds(ADestRect: TRect; ALayerIndex: integer; X, Y: Integer; APointSize: single): TRect; overload;
     function GetEditorBounds(ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
     function GetEditorBounds(ADestRect: TRect; ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single): TRect; overload;
+    procedure ClearEditor;
     procedure MouseMove(Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
     procedure MouseDown(RightButton: boolean; Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
     procedure MouseUp(RightButton: boolean; Shift: TShiftState; ImageX, ImageY: Single; out ACursor: TOriginalEditorCursor);
@@ -343,7 +346,7 @@ type
     property OnOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent read FOriginalEditingChange write FOriginalEditingChange;
     property EditorFocused: boolean read FEditorFocused write SetEditorFocused;
     property OnEditorFocusChanged: TNotifyEvent read FOnEditorFocusChanged write FOnEditorFocusChanged;
-    property OriginalEditor: TBGRAOriginalEditor read FOriginalEditor;
+    property OriginalEditor: TBGRAOriginalEditor read GetOriginalEditor;
   end;
 
   TAffineMatrix = BGRABitmapTypes.TAffineMatrix;
@@ -566,7 +569,7 @@ begin
   end;
 end;
 
-procedure TBGRALayeredBitmap.OriginalChange(ASender: TObject; ABounds: PRectF);
+procedure TBGRALayeredBitmap.OriginalChange(ASender: TObject; ABounds: PRectF; var ADiff: TBGRAOriginalDiff);
 var
   i: Integer;
   orig: TBGRALayerCustomOriginal;
@@ -601,7 +604,7 @@ begin
       end;
   end;
   if Assigned(FOriginalChange) then
-    FOriginalChange(self, orig);
+    FOriginalChange(self, orig, ADiff);
 end;
 
 procedure TBGRALayeredBitmap.OriginalEditingChange(ASender: TObject);
@@ -716,7 +719,7 @@ end;
 
 procedure TBGRALayeredBitmap.SetEditorFocused(AValue: boolean);
 begin
-  if Assigned(FOriginalEditor) then FOriginalEditor.Focused := AValue
+  if Assigned(OriginalEditor) then OriginalEditor.Focused := AValue
   else
   begin
     if FEditorFocused=AValue then Exit;
@@ -740,11 +743,21 @@ begin
   end;
 end;
 
+function TBGRALayeredBitmap.GetOriginalEditor: TBGRAOriginalEditor;
+begin
+  if Assigned(FOriginalEditor) and (IndexOfOriginal(FOriginalEditorOriginal)=-1) then
+  begin
+    FreeAndNil(FOriginalEditor);
+    FOriginalEditorOriginal := GUID_NULL;
+  end;
+  result := FOriginalEditor;
+end;
+
 procedure TBGRALayeredBitmap.EditorFocusedChanged(Sender: TObject);
 begin
-  if Assigned(FOriginalEditor) then
+  if Assigned(OriginalEditor) then
   begin
-    FEditorFocused := FOriginalEditor.Focused;
+    FEditorFocused := OriginalEditor.Focused;
     if Assigned(FOnEditorFocusChanged) then FOnEditorFocusChanged(self);
   end;
 end;
@@ -2001,11 +2014,17 @@ begin
     LayerOriginalMatrix[i] := AffineMatrixScale(AWidth/prevWidth,AHeight/prevHeight)*LayerOriginalMatrix[i]
   else
   begin
-    oldFilter := LayerBitmap[i].ResampleFilter;
-    LayerBitmap[i].ResampleFilter := AFineResampleFilter;
-    resampled := LayerBitmap[i].Resample(AWidth,AHeight, AResampleMode) as TBGRABitmap;
-    LayerBitmap[i].ResampleFilter := oldFilter;
-    SetLayerBitmap(i, resampled, True);
+    if LayerBitmap[i].NbPixels <> 0 then
+    begin
+      oldFilter := LayerBitmap[i].ResampleFilter;
+      LayerBitmap[i].ResampleFilter := AFineResampleFilter;
+      resampled := LayerBitmap[i].Resample(max(1,round(LayerBitmap[i].Width*AWidth/prevWidth)),
+        max(1,round(LayerBitmap[i].Height*AHeight/prevHeight)), AResampleMode) as TBGRABitmap;
+      LayerBitmap[i].ResampleFilter := oldFilter;
+      SetLayerBitmap(i, resampled, True);
+    end;
+    with LayerOffset[i] do
+      LayerOffset[i] := Point(round(X*AWidth/prevWidth),round(Y*AHeight/prevHeight));
   end;
   if AResampleMode = rmFineResample then RenderOriginalsIfNecessary;
 end;
@@ -2085,10 +2104,10 @@ var
 begin
   orig := LayerOriginal[ALayerIndex];
 
-  if orig <> FOriginalEditorOriginal then
+  if orig.Guid <> FOriginalEditorOriginal then
   begin
     FreeAndNil(FOriginalEditor);
-    FOriginalEditorOriginal := orig;
+    FOriginalEditorOriginal := orig.Guid;
   end;
 
   if Assigned(orig) then
@@ -2134,10 +2153,10 @@ var
 begin
   orig := LayerOriginal[ALayerIndex];
 
-  if orig <> FOriginalEditorOriginal then
+  if orig.Guid <> FOriginalEditorOriginal then
   begin
     FreeAndNil(FOriginalEditor);
-    FOriginalEditorOriginal := orig;
+    FOriginalEditorOriginal := orig.Guid;
   end;
 
   if Assigned(orig) then
@@ -2158,6 +2177,12 @@ begin
     result := FOriginalEditor.GetRenderBounds(ADestRect);
   end else
     result := EmptyRect;
+end;
+
+procedure TBGRALayeredBitmap.ClearEditor;
+begin
+  FreeAndNil(FOriginalEditor);
+  FOriginalEditorOriginal := GUID_NULL;
 end;
 
 procedure TBGRALayeredBitmap.MouseMove(Shift: TShiftState; ImageX, ImageY: Single; out
@@ -2189,10 +2214,10 @@ procedure TBGRALayeredBitmap.MouseMove(Shift: TShiftState; ImageX, ImageY: Singl
 var
   viewPt: TPointF;
 begin
-  if Assigned(FOriginalEditor) then
+  if Assigned(OriginalEditor) then
   begin
     viewPt := FOriginalEditorViewMatrix*PointF(ImageX,ImageY);
-    FOriginalEditor.MouseMove(Shift, viewPt.X, viewPt.Y, ACursor, AHandled);
+    OriginalEditor.MouseMove(Shift, viewPt.X, viewPt.Y, ACursor, AHandled);
   end
   else
   begin
@@ -2207,10 +2232,10 @@ procedure TBGRALayeredBitmap.MouseDown(RightButton: boolean;
 var
   viewPt: TPointF;
 begin
-  if Assigned(FOriginalEditor) then
+  if Assigned(OriginalEditor) then
   begin
     viewPt := FOriginalEditorViewMatrix*PointF(ImageX,ImageY);
-    FOriginalEditor.MouseDown(RightButton, Shift, viewPt.X, viewPt.Y, ACursor, AHandled);
+    OriginalEditor.MouseDown(RightButton, Shift, viewPt.X, viewPt.Y, ACursor, AHandled);
   end
   else
   begin
@@ -2224,10 +2249,10 @@ procedure TBGRALayeredBitmap.MouseUp(RightButton: boolean; Shift: TShiftState;
 var
   viewPt: TPointF;
 begin
-  if Assigned(FOriginalEditor) then
+  if Assigned(OriginalEditor) then
   begin
     viewPt := FOriginalEditorViewMatrix*PointF(ImageX,ImageY);
-    FOriginalEditor.MouseUp(RightButton, Shift, viewPt.X,viewPt.Y, ACursor, AHandled);
+    OriginalEditor.MouseUp(RightButton, Shift, viewPt.X,viewPt.Y, ACursor, AHandled);
   end
   else
   begin
@@ -2239,8 +2264,8 @@ end;
 procedure TBGRALayeredBitmap.KeyDown(Shift: TShiftState; Key: TSpecialKey; out
   AHandled: boolean);
 begin
-  if Assigned(FOriginalEditor) then
-    FOriginalEditor.KeyDown(Shift, Key, AHandled)
+  if Assigned(OriginalEditor) then
+    OriginalEditor.KeyDown(Shift, Key, AHandled)
   else
     AHandled := false;
 end;
@@ -2248,16 +2273,16 @@ end;
 procedure TBGRALayeredBitmap.KeyUp(Shift: TShiftState; Key: TSpecialKey; out
   AHandled: boolean);
 begin
-  if Assigned(FOriginalEditor) then
-    FOriginalEditor.KeyUp(Shift, Key, AHandled)
+  if Assigned(OriginalEditor) then
+    OriginalEditor.KeyUp(Shift, Key, AHandled)
   else
     AHandled := false;
 end;
 
 procedure TBGRALayeredBitmap.KeyPress(UTF8Key: string; out AHandled: boolean);
 begin
-  if Assigned(FOriginalEditor) then
-    FOriginalEditor.KeyPress(UTF8Key, AHandled)
+  if Assigned(OriginalEditor) then
+    OriginalEditor.KeyPress(UTF8Key, AHandled)
   else
     AHandled := false;
 end;

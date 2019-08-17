@@ -119,6 +119,7 @@ begin
   end else
   begin
     FUncompressedData.Read(result.Data^,result.NbPixels*Sizeof(TBGRAPixel));
+    if result.LineOrder <> FLineOrder then result.VerticalFlip;
     If TBGRAPixel_RGBAOrder then result.SwapRedBlue;
   end;
 end;

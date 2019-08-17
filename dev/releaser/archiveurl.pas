@@ -15,7 +15,7 @@ type
   private
     FUrl: string;
   public
-    constructor Create(AParameters: TStringList); override;
+    constructor Create(AParameters: TStringList; ALogicDir: string); override;
     class function IsUnique: boolean; override;
     function GetUrlForVersion(AVersion: TVersion): string;
     property Url: string read FUrl;
@@ -27,9 +27,9 @@ implementation
 
 { TArchiveUrl }
 
-constructor TArchiveUrl.Create(AParameters: TStringList);
+constructor TArchiveUrl.Create(AParameters: TStringList; ALogicDir: string);
 begin
-  inherited Create(AParameters);
+  inherited Create(AParameters, ALogicDir);
   ExpectParamCount(1);
   FUrl := Param[0];
 end;
@@ -41,7 +41,7 @@ end;
 
 function TArchiveUrl.GetUrlForVersion(AVersion: TVersion): string;
 begin
-  result := StringReplace(FUrl, '$(Version)', VersionToStr(AVersion), [rfIgnoreCase,rfReplaceAll]);
+  result := ReplaceVariables(FUrl, AVersion);
 end;
 
 procedure TArchiveUrl.GetVersions(AVersionList: TStringList);

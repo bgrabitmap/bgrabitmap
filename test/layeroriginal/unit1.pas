@@ -49,7 +49,8 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
-    procedure OriginalChange(Sender: TObject; {%H-}AOriginal: TBGRALayerCustomOriginal);
+    procedure OriginalChange(Sender: TObject; {%H-}AOriginal: TBGRALayerCustomOriginal;
+                var {%H-}ADiff: TBGRAOriginalDiff);
     procedure SetVSCursor(ACursor: TOriginalEditorCursor);
   public
     FLayers: TBGRALayeredBitmap;
@@ -239,7 +240,8 @@ begin
 end;
 
 procedure TForm1.OriginalChange(Sender: TObject;
-  AOriginal: TBGRALayerCustomOriginal);
+  AOriginal: TBGRALayerCustomOriginal;
+  var ADiff: TBGRAOriginalDiff);
 begin
   BGRAVirtualScreen1.DiscardBitmap;
 end;
