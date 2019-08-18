@@ -1432,7 +1432,7 @@ procedure BorderEllipseAntialias(bmp: TCustomUniversalBitmap; x, y, rx, ry,
 var
   info: TFillBorderEllipseInfo;
 begin
-  if ABrush.DoesNothing or ((rx = 0) and (ry = 0)) or (w=0) or (x = EmptySingle) or (y = EmptySingle) then exit;
+  if ABrush.DoesNothing or (w=0) or (x = EmptySingle) or (y = EmptySingle) then exit;
   info := TFillBorderEllipseInfo.Create(x, y, rx, ry, w);
   FillShapeAntialias(bmp, info, ABrush, False);
   info.Free;
