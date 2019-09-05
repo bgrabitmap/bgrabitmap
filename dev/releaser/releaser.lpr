@@ -7,7 +7,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Classes, SysUtils, CustApp, ReleaserTypes, ManagerFile, ArchiveUrl,
-  PackageFile, ProjectFile, ConstFile, TextLine, CopyFile
+  PackageFile, ProjectFile, ConstFile, TextLine, CopyFile, MacBundle
   { you can add units after this };
 
 type
@@ -140,6 +140,7 @@ begin
         'archive': factory := TArchiveUrl;
         'package': factory := TPackageFile;
         'project': factory := TProjectFile;
+        'bundle': factory := TMacBundle;
         'const': factory := TConstFile;
         'echo': for i := 0 to line.Count-1 do writeln(line[i]);
         'text': factory := TTextLine;
