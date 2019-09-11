@@ -205,7 +205,7 @@ begin
     on ex:exception do
     begin
       write('Error');
-      if lineNumber <> 0 then write(' on line',lineNumber);
+      if lineNumber <> 0 then write(' on line ',lineNumber);
       writeln(': ', ex.Message);
     end;
   end;

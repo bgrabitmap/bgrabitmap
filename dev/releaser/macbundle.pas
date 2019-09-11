@@ -22,6 +22,7 @@ type
     function GetPListFilename: string;
     function ReadDict(ARoot: TDOMNode): TStringList;
     procedure UpdateDict(ARoot: TDOMNode; ADict: TStringList);
+    function GetPList: TDOMNode;
   public
     constructor Create(AParameters: TStringList; ALogicDir: string); override;
     destructor Destroy; override;
@@ -68,11 +69,11 @@ begin
       begin
         if entry.NodeName = 'key' then
         begin
-          key := entry.NodeValue;
+          key := entry.TextContent;
           entry := entry.NextSibling;
           if (entry <> nil) and (entry.NodeName = 'string') then
           begin
-            result.Values[key] := entry.NodeValue;
+            result.Values[key] := entry.TextContent;
             entry := entry.NextSibling;
           end
           else if (entry <> nil) and (entry.NodeName <> 'key') then
@@ -80,7 +81,8 @@ begin
         end else
           entry := entry.NextSibling;
       end;
-    end;
+    end else
+      raise exception.Create('"dict" node not found');
   end;
 end;
 
@@ -99,11 +101,11 @@ begin
       begin
         if entry.NodeName = 'key' then
         begin
-          key := entry.NodeValue;
+          key := entry.TextContent;
           entry := entry.NextSibling;
           if (entry <> nil) and (entry.NodeName = 'string') then
           begin
-            entry.NodeValue := ADict.Values[key];
+            entry.TextContent := ADict.Values[key];
             entry := entry.NextSibling;
           end
           else if (entry <> nil) and (entry.NodeName <> 'key') then
@@ -111,14 +113,21 @@ begin
         end else
           entry := entry.NextSibling;
       end;
-    end;
+    end else
+      raise exception.Create('"dict" node not found');
   end;
+end;
+
+function TMacBundle.GetPList: TDOMNode;
+begin
+  result := FXml.FirstChild;
+  while (result <> nil) and not (result is TDOMElement) do result := result.NextSibling;
+  if (result = nil) or (result.NodeName <> 'plist') then raise exception.Create('"plist" node not found');
 end;
 
 constructor TMacBundle.Create(AParameters: TStringList; ALogicDir: string);
 var
   stream: TFileStream;
-  plist: TDOMNode;
 begin
   inherited Create(AParameters, ALogicDir);
   ExpectParamCount(1);
@@ -129,9 +138,7 @@ begin
   finally
     stream.Free;
   end;
-  plist := FXml.FindNode('plist');
-  if plist = nil then raise exception.Create('plist node not found');
-  FDict := ReadDict(plist);
+  FDict := ReadDict(GetPList);
   writeln('Bundle ',Name,' version ',VersionToStr(GetVersion));
 end;
 
@@ -170,7 +177,7 @@ begin
   if FChanged then
   begin
     writeln('Updating bundle ', Name,'...');
-    WriteXMLFile(FXml, FFilename);
+    WriteXMLFile(FXml, GetPListFilename);
   end else
     writeln('Bundle unchanged');
 end;
@@ -192,7 +199,7 @@ begin
       FDict.Values['CFBundleShortVersionString'] := versionStr;
       FChanged := true;
     end;
-    UpdateDict(FXml.FindNode('plist'), FDict);
+    UpdateDict(GetPList, FDict);
   end;
 end;
 
