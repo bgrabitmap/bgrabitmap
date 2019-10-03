@@ -76,7 +76,7 @@ type
     function GetTransparent: Boolean; override;
     function GetEmpty: boolean; override;
 
-    function IndexOfOriginal(AGuid: TGuid): integer; overload; virtual;
+    function IndexOfOriginal(const AGuid: TGuid): integer; overload; virtual;
     function IndexOfOriginal(AOriginal: TBGRALayerCustomOriginal): integer; overload; virtual;
 
     procedure SetWidth(Value: Integer); override;
@@ -280,6 +280,9 @@ type
     function RenderOriginalsIfNecessary(ADraft: boolean = false): TRect;
     function RenderOriginalIfNecessary(const AGuid: TGuid; ADraft: boolean = false): TRect;
     procedure RemoveUnusedOriginals;
+    procedure UnloadOriginals;
+    procedure UnloadOriginal(AIndex: integer); overload;
+    procedure UnloadOriginal(const AGuid: TGuid); overload;
 
     destructor Destroy; override;
     constructor Create; overload; override;
@@ -337,7 +340,7 @@ type
     property LayerOriginalMatrix[layer: integer]: TAffineMatrix read GetLayerOriginalMatrix write SetLayerOriginalMatrix;
     property LayerOriginalRenderStatus[layer: integer]: TOriginalRenderStatus read GetLayerOriginalRenderStatus write SetLayerOriginalRenderStatus;
 
-    function IndexOfOriginal(AGuid: TGuid): integer; overload; override;
+    function IndexOfOriginal(const AGuid: TGuid): integer; overload; override;
     function IndexOfOriginal(AOriginal: TBGRALayerCustomOriginal): integer; overload; override;
     property OriginalCount: integer read GetOriginalCount;
     property Original[AIndex: integer]: TBGRALayerCustomOriginal read GetOriginalByIndex;
@@ -1834,6 +1837,35 @@ begin
     if useCount[i] = 0 then DeleteOriginal(i);
 end;
 
+procedure TBGRALayeredBitmap.UnloadOriginals;
+var
+  i: Integer;
+begin
+  for i := 0 to OriginalCount-1 do
+    UnloadOriginal(i);
+end;
+
+procedure TBGRALayeredBitmap.UnloadOriginal(AIndex: integer);
+var
+  origInfo: TBGRALayerOriginalEntry;
+begin
+  if (AIndex >= 0) and (AIndex < OriginalCount) then
+  begin
+    origInfo := FOriginals[AIndex];
+    if Assigned(origInfo.Instance) then
+    begin
+      StoreOriginal(origInfo.Instance);
+      FreeAndNil(origInfo.Instance);
+      FOriginals[AIndex] := origInfo;
+    end;
+  end;
+end;
+
+procedure TBGRALayeredBitmap.UnloadOriginal(const AGuid: TGuid);
+begin
+  UnloadOriginal(IndexOfOriginal(AGuid));
+end;
+
 destructor TBGRALayeredBitmap.Destroy;
 begin
   FOriginalEditor.Free;
@@ -2299,7 +2331,7 @@ begin
     AHandled := false;
 end;
 
-function TBGRALayeredBitmap.IndexOfOriginal(AGuid: TGuid): integer;
+function TBGRALayeredBitmap.IndexOfOriginal(const AGuid: TGuid): integer;
 var
   i: Integer;
 begin
@@ -2502,7 +2534,7 @@ begin
   result := (NbLayers = 0) and (Width = 0) and (Height = 0);
 end;
 
-function TBGRACustomLayeredBitmap.IndexOfOriginal(AGuid: TGuid): integer;
+function TBGRACustomLayeredBitmap.IndexOfOriginal(const AGuid: TGuid): integer;
 begin
   result := -1;
 end;
