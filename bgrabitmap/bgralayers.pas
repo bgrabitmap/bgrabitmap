@@ -71,6 +71,7 @@ type
     function GetOriginalCount: integer; virtual;
     function GetOriginalByIndex({%H-}AIndex: integer): TBGRALayerCustomOriginal; virtual;
     function GetOriginalByIndexKnown({%H-}AIndex: integer): boolean; virtual;
+    function GetOriginalByIndexLoaded({%H-}AIndex: integer): boolean; virtual;
     function GetOriginalByIndexClass({%H-}AIndex: integer): TBGRALayerOriginalAny; virtual;
     function GetTransparent: Boolean; override;
     function GetEmpty: boolean; override;
@@ -198,6 +199,7 @@ type
     function GetOriginalCount: integer; override;
     function GetOriginalByIndex(AIndex: integer): TBGRALayerCustomOriginal; override;
     function GetOriginalByIndexKnown(AIndex: integer): boolean; override;
+    function GetOriginalByIndexLoaded(AIndex: integer): boolean; override;
     function GetOriginalByIndexClass(AIndex: integer): TBGRALayerOriginalAny; override;
     procedure SetBlendOperation(Layer: integer; op: TBlendOperation);
     procedure SetLayerVisible(layer: integer; AValue: boolean);
@@ -709,6 +711,14 @@ begin
   result:= Assigned(dir) and Assigned(c);
 end;
 
+function TBGRALayeredBitmap.GetOriginalByIndexLoaded(AIndex: integer): boolean;
+begin
+  if (AIndex < 0) or (AIndex >= OriginalCount) then
+    raise ERangeError.Create('Index out of bounds');
+
+  Result:= Assigned(FOriginals[AIndex].Instance);
+end;
+
 function TBGRALayeredBitmap.GetOriginalGuid(AIndex: integer): TGUID;
 begin
   if (AIndex < 0) or (AIndex >= OriginalCount) then
@@ -1111,9 +1121,9 @@ begin
      (ASource.LayerOriginalKnown[i] or (ASource is TBGRALayeredBitmap)) then
   begin
     idxOrig := ASource.IndexOfOriginal(ASource.LayerOriginalGuid[i]);
-    if not usedOriginals[idxOrig].used then
+    if (idxOrig <> -1) and not usedOriginals[idxOrig].used then
     begin
-      if ASource.LayerOriginalKnown[i] then
+      if ASource.GetOriginalByIndexLoaded(idxOrig) then
       begin
         orig := ASource.GetOriginalByIndex(idxOrig);
         idxNewOrig := AddOriginal(orig, false);
@@ -1507,7 +1517,7 @@ begin
   begin
     FindOriginal(FOriginals[AIndex].Guid, dir, c);
     if dir = nil then
-      raise exception.Create('Originals directory not found');
+      raise exception.Create('Original directory not found');
     dir.SaveToStream(AStream);
   end;
 end;
@@ -2359,6 +2369,11 @@ begin
 end;
 
 function TBGRACustomLayeredBitmap.GetOriginalByIndexKnown(AIndex: integer): boolean;
+begin
+  result := true;
+end;
+
+function TBGRACustomLayeredBitmap.GetOriginalByIndexLoaded(AIndex: integer): boolean;
 begin
   result := true;
 end;
