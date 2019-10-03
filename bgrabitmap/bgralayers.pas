@@ -1406,7 +1406,6 @@ begin
       raise exception.Create('GUID is already in use');
     end;
   end;
-  StoreOriginal(AOriginal);
   if FOriginals = nil then FOriginals := TBGRALayerOriginalList.Create;
   if AOwned then
   begin
@@ -1415,7 +1414,10 @@ begin
     AOriginal.OnEditingChange:= @OriginalEditingChange;
   end
   else
+  begin
+    StoreOriginal(AOriginal);
     result := FOriginals.Add(BGRALayerOriginalEntry(AOriginal.Guid));
+  end;
 end;
 
 function TBGRALayeredBitmap.AddOriginalFromStream(AStream: TStream;
