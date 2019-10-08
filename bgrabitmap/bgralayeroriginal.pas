@@ -70,7 +70,7 @@ type
     FGridActive: boolean;
     FPoints: array of record
       Origin, Coord: TPointF;
-      OnMove: TOriginalMovePointEvent;
+      OnMove, OnAlternateMove: TOriginalMovePointEvent;
       RightButton: boolean;
       SnapToPoint: integer;
       HitBox: TAffineBox;
@@ -108,6 +108,7 @@ type
     procedure AddClickPointHandler(AOnClickPoint: TOriginalClickPointEvent);
     procedure AddHoverPointHandler(AOnHoverPoint: TOriginalHoverPointEvent);
     function AddPoint(const ACoord: TPointF; AOnMove: TOriginalMovePointEvent; ARightButton: boolean = false; ASnapToPoint: integer = -1): integer;
+    procedure AddPointAlternateMove(AIndex: integer; AOnAlternateMove: TOriginalMovePointEvent);
     function AddFixedPoint(const ACoord: TPointF; ARightButton: boolean = false): integer;
     function AddArrow(const AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
     function AddPolyline(const ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle): integer; overload;
@@ -773,10 +774,18 @@ begin
     Origin := EmptyPointF;
     Coord := ACoord;
     OnMove := AOnMove;
+    OnAlternateMove:= nil;
     RightButton:= ARightButton;
     SnapToPoint:= ASnapToPoint;
     HitBox := TAffineBox.EmptyBox;
   end;
+end;
+
+procedure TBGRAOriginalEditor.AddPointAlternateMove(AIndex: integer;
+  AOnAlternateMove: TOriginalMovePointEvent);
+begin
+  if (AIndex >= 0) and (AIndex < PointCount) then
+    FPoints[AIndex].OnAlternateMove:= AOnAlternateMove;
 end;
 
 function TBGRAOriginalEditor.AddFixedPoint(const ACoord: TPointF;
@@ -789,6 +798,7 @@ begin
     Origin := EmptyPointF;
     Coord := ACoord;
     OnMove := nil;
+    OnAlternateMove:= nil;
     RightButton:= ARightButton;
     SnapToPoint:= -1;
     HitBox := TAffineBox.EmptyBox;
@@ -805,6 +815,7 @@ begin
     Origin := AOrigin;
     Coord := AEndCoord;
     OnMove := AOnMoveEnd;
+    OnAlternateMove:= nil;
     RightButton:= ARightButton;
     SnapToPoint:= -1;
     HitBox := TAffineBox.EmptyBox;
@@ -857,7 +868,11 @@ begin
     end;
     if newCoord <> FPoints[FPointMoving].Coord then
     begin
-      FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
+      if (FMovingRightButton xor FPoints[FPointMoving].RightButton) and
+        Assigned(FPoints[FPointMoving].OnAlternateMove) then
+        FPoints[FPointMoving].OnAlternateMove(self, FPoints[FPointMoving].Coord, newCoord, Shift)
+      else
+        FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
       FPoints[FPointMoving].Coord := newCoord;
     end;
     ACursor := GetMoveCursor(FPointMoving);
@@ -889,7 +904,7 @@ begin
   FPrevMousePos:= ViewCoordToOriginal(PointF(ViewX,ViewY));
   if FPointMoving = -1 then
   begin
-    clickedPoint := GetPointAt(FPrevMousePos, RightButton);;
+    clickedPoint := GetPointAt(FPrevMousePos, RightButton);
     if clickedPoint <> -1 then
     begin
       if Assigned(FPoints[clickedPoint].OnMove) then
