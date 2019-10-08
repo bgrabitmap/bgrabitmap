@@ -235,6 +235,7 @@ type
     procedure LoadImageFromStream(AStream: TStream);
     procedure SaveImageToStream(AStream: TStream);
     procedure AssignImage(AImage: TBGRACustomBitmap);
+    function GetImageCopy: TBGRABitmap;
     class function StorageClassName: RawByteString; override;
     property Width: integer read GetImageWidth;
     property Height: integer read GetImageHeight;
@@ -1941,6 +1942,12 @@ begin
   FImage := newImage;
   Inc(FContentVersion);
   EndUpdate;
+end;
+
+function TBGRALayerImageOriginal.GetImageCopy: TBGRABitmap;
+begin
+  if FImage = nil then result := nil
+  else result := FImage.Duplicate as TBGRABitmap;
 end;
 
 class function TBGRALayerImageOriginal.StorageClassName: RawByteString;
