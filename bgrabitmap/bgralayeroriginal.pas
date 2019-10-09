@@ -83,6 +83,7 @@ type
     end;
     FPointSize: single;
     FPointMoving: integer;
+    FPointWasMoved: boolean;
     FPointCoordDelta: TPointF;
     FMovingRightButton: boolean;
     FPrevMousePos: TPointF;
@@ -868,6 +869,7 @@ begin
     end;
     if newCoord <> FPoints[FPointMoving].Coord then
     begin
+      FPointWasMoved:= true;
       if (FMovingRightButton xor FPoints[FPointMoving].RightButton) and
         Assigned(FPoints[FPointMoving].OnAlternateMove) then
         FPoints[FPointMoving].OnAlternateMove(self, FPoints[FPointMoving].Coord, newCoord, Shift)
@@ -910,6 +912,7 @@ begin
       if Assigned(FPoints[clickedPoint].OnMove) then
       begin
         FPointMoving:= clickedPoint;
+        FPointWasMoved:= false;
         FMovingRightButton:= RightButton;
         FPointCoordDelta := FPoints[FPointMoving].Coord - FPrevMousePos;
         for i := 0 to FStartMoveHandlers.Count-1 do
@@ -933,10 +936,17 @@ end;
 
 procedure TBGRAOriginalEditor.MouseUp(RightButton: boolean; Shift: TShiftState;
   ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
+var
+  i: Integer;
 begin
   AHandled:= false;
   if (RightButton = FMovingRightButton) and (FPointMoving <> -1) then
   begin
+    if not FPointWasMoved then
+    begin
+      for i := 0 to FClickPointHandlers.Count-1 do
+        FClickPointHandlers[i](self, FPointMoving, Shift);
+    end;
     FPointMoving:= -1;
     AHandled:= true;
   end;
