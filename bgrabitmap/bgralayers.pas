@@ -510,6 +510,8 @@ end;
 
 procedure TBGRALayeredBitmap.SetLayerOriginalGuid(layer: integer;
   const AValue: TGuid);
+var
+  layerDir: TMemDirectory;
 begin
   if (layer < 0) or (layer >= NbLayers) then
     raise Exception.Create('Index out of bounds')
@@ -517,6 +519,9 @@ begin
   begin
     if FLayers[layer].OriginalGuid = AValue then exit;
     FLayers[layer].OriginalGuid := AValue;
+    layerDir := GetLayerDirectory(layer, false);
+    if Assigned(layerDir) then
+      layerDir.Delete(RenderSubDirectory,'');
 
     if (AValue <> GUID_NULL) and (IndexOfOriginal(AValue) <> -1) then
     begin
