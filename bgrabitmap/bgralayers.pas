@@ -218,7 +218,7 @@ type
     procedure StoreOriginal(AOriginal: TBGRALayerCustomOriginal);
     procedure OriginalChange(ASender: TObject; ABounds: PRectF; var ADiff: TBGRAOriginalDiff);
     procedure OriginalEditingChange(ASender: TObject);
-    function GetLayerDirectory(layer: integer): TMemDirectory;
+    function GetLayerDirectory(ALayerIndex: integer; ACanCreate: boolean): TMemDirectory;
 
   public
     procedure LoadFromFile(const filenameUTF8: string); override;
@@ -229,7 +229,8 @@ type
     procedure ClearOriginals;
     procedure RemoveLayer(index: integer);
     procedure InsertLayer(index: integer; fromIndex: integer);
-    procedure Assign(ASource: TBGRACustomLayeredBitmap; ASharedLayerIds: boolean = false); overload;
+    procedure Assign(ASource: TBGRACustomLayeredBitmap; ASharedLayerIds: boolean = false;
+                ACopyAdditionalMemData: boolean = false); overload;
     function MoveLayerUp(index: integer): integer;
     function MoveLayerDown(index: integer): integer;
 
@@ -621,13 +622,15 @@ begin
     FOriginalEditingChange(self, orig);
 end;
 
-function TBGRALayeredBitmap.GetLayerDirectory(layer: integer): TMemDirectory;
+function TBGRALayeredBitmap.GetLayerDirectory(ALayerIndex: integer; ACanCreate: boolean): TMemDirectory;
 var
   layersDir: TMemDirectory;
   id: LongInt;
 begin
+  if (MemDirectory.IndexOf(LayersDirectory,'')=-1) and not ACanCreate then exit(nil);
   layersDir := MemDirectory.Directory[MemDirectory.AddDirectory(LayersDirectory)];
-  id := LayerUniqueId[layer];
+  id := LayerUniqueId[ALayerIndex];
+  if (layersDir.IndexOf(IntToStr(id),'')=-1) and not ACanCreate then exit(nil);
   result := layersDir.Directory[layersDir.AddDirectory(IntToStr(id))];
 end;
 
@@ -1073,8 +1076,11 @@ begin
   if Assigned(FMemDirectory) then
   begin
     id := LayerUniqueId[index];
-    layersDir := FMemDirectory.Directory[FMemDirectory.AddDirectory(LayersDirectory)];
-    layersDir.Delete(IntToStr(id),'');
+    if FMemDirectory.IndexOf(LayersDirectory,'')<>-1 then
+    begin
+      layersDir := FMemDirectory.Directory[FMemDirectory.AddDirectory(LayersDirectory)];
+      layersDir.Delete(IntToStr(id),'');
+    end;
   end;
   if FLayers[index].Owner then FLayers[index].Source.Free;
   for i := index to FNbLayers-2 do
@@ -1097,7 +1103,8 @@ begin
   FLayers[index] := info;
 end;
 
-procedure TBGRALayeredBitmap.Assign(ASource: TBGRACustomLayeredBitmap; ASharedLayerIds: boolean);
+procedure TBGRALayeredBitmap.Assign(ASource: TBGRACustomLayeredBitmap; ASharedLayerIds: boolean;
+  ACopyAdditionalMemData: boolean);
 var i,idx,idxOrig,idxNewOrig: integer;
     usedOriginals: array of record
        used: boolean;
@@ -1105,6 +1112,7 @@ var i,idx,idxOrig,idxNewOrig: integer;
     end;
     orig: TBGRALayerCustomOriginal;
     stream: TMemoryStream;
+    targetDir, layerDir: TMemDirectory;
 
 begin
   if ASource = nil then
@@ -1159,7 +1167,23 @@ begin
         LayerOriginalRenderStatus[idx] := ASource.LayerOriginalRenderStatus[i];
         break;
       end;
+    if ASource is TBGRALayeredBitmap then
+    begin
+      layerDir := TBGRALayeredBitmap(ASource).GetLayerDirectory(i,false);
+      if Assigned(layerDir) then
+        layerDir.CopyTo(GetLayerDirectory(idx,true), true);
+    end;
   end;
+  if ACopyAdditionalMemData and ASource.HasMemFiles then
+    for i := 0 to ASource.GetMemDirectory.Count-1 do
+    if (ASource.GetMemDirectory.Entry[i].CompareNameAndExtension(OriginalsDirectory,'')<>0) and
+       (ASource.GetMemDirectory.Entry[i].CompareNameAndExtension(LayersDirectory,'')<>0) and
+       (ASource.GetMemDirectory.IsDirectory[i]) then
+    begin
+      with ASource.GetMemDirectory.Entry[i] do
+        targetDir := GetMemDirectory.Directory[GetMemDirectory.AddDirectory(Name,Extension)];
+      ASource.GetMemDirectory.Directory[i].CopyTo(targetDir, true);
+    end;
 end;
 
 function TBGRALayeredBitmap.MoveLayerUp(index: integer): integer;
@@ -1633,7 +1657,8 @@ end;
 
 procedure TBGRALayeredBitmap.NotifySaving;
 var
-  i: Integer;
+  i, id, ErrPos: Integer;
+  layersDir: TMemDirectory;
 begin
   inherited NotifySaving;
 
@@ -1642,6 +1667,21 @@ begin
   for i := 0 to OriginalCount-1 do
     if Assigned(FOriginals[i].Instance) then
       StoreOriginal(FOriginals[i].Instance);
+
+  //remove invalid layer references
+  if MemDirectory.IndexOf(LayersDirectory,'')<>-1 then
+  begin
+    layersDir := MemDirectory.Directory[MemDirectory.AddDirectory(LayersDirectory)];
+    for i := layersDir.Count-1 downto 0 do
+    if layersDir.IsDirectory[i] then
+    begin
+      val(layersDir.Entry[i].Name, id, errPos);
+      if (errPos <> 0) or (GetLayerIndexFromId(id)=-1) then
+        layersDir.Delete(i);
+    end;
+    if layersDir.Count = 0 then
+      MemDirectory.Delete(LayersDirectory,'');
+  end;
 end;
 
 procedure TBGRALayeredBitmap.RenderLayerFromOriginal(layer: integer;
@@ -1674,7 +1714,8 @@ begin
   if Assigned(orig) then
   begin
     Unfreeze(layer);
-    layerDir := GetLayerDirectory(layer);
+    layerDir := GetLayerDirectory(layer, true);
+    if layerDir.IndexOf(RenderSubDirectory,'') = -1 then writeln('create render dir');
     renderDir := layerDir.Directory[layerDir.AddDirectory(RenderSubDirectory)];
     orig.RenderStorage := TBGRAMemOriginalStorage.Create(renderDir);
 
