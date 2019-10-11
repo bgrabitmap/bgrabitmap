@@ -479,6 +479,7 @@ end;
 
 procedure TBGRALayeredBitmap.SetLayerUniqueId(layer: integer; AValue: integer);
 var i: integer;
+  layerDir: TMemDirectory;
 begin
   if (layer < 0) or (layer >= NbLayers) then
     raise Exception.Create('Index out of bounds')
@@ -487,6 +488,9 @@ begin
     for i := 0 to NbLayers-1 do
       if (i <> layer) and (FLayers[i].UniqueId = AValue) then
         raise Exception.Create('Another layer has the same identifier');
+    layerDir := GetLayerDirectory(layer,false);
+    if Assigned(layerDir) then
+      layerDir.ParentDirectory.Rename(inttostr(FLayers[layer].UniqueId),'',inttostr(AValue));
     FLayers[layer].UniqueId := AValue;
   end;
 end;
