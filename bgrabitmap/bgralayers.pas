@@ -2120,6 +2120,8 @@ end;
 
 procedure TBGRALayeredBitmap.SetLayerBitmap(layer: integer;
   ABitmap: TBGRABitmap; AOwned: boolean);
+var
+  layerDir: TMemDirectory;
 begin
   if (layer < 0) or (layer >= NbLayers) then
     raise Exception.Create('Index out of bounds')
@@ -2132,6 +2134,9 @@ begin
     FLayers[layer].Owner := AOwned;
     FLayers[layer].OriginalGuid := GUID_NULL;
     FLayers[layer].OriginalMatrix := AffineMatrixIdentity;
+    layerDir := GetLayerDirectory(layer, false);
+    if Assigned(layerDir) then
+      layerDir.Delete(RenderSubDirectory,'');
   end;
 end;
 
