@@ -1720,7 +1720,6 @@ begin
   begin
     Unfreeze(layer);
     layerDir := GetLayerDirectory(layer, true);
-    if layerDir.IndexOf(RenderSubDirectory,'') = -1 then writeln('create render dir');
     renderDir := layerDir.Directory[layerDir.AddDirectory(RenderSubDirectory)];
     orig.RenderStorage := TBGRAMemOriginalStorage.Create(renderDir);
 
