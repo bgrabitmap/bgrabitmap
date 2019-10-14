@@ -962,8 +962,8 @@ begin
   begin
     p1.x:= Units.ConvertWidth(g.x1,AUnit,w).value;
     p1.y:= Units.ConvertHeight(g.y1,AUnit,h).value;
-    p2.x:= Units.ConvertWidth(g.x1,AUnit,w).value;
-    p2.y:= Units.ConvertHeight(g.y1,AUnit,h).value;
+    p2.x:= Units.ConvertWidth(g.x2,AUnit,w).value;
+    p2.y:= Units.ConvertHeight(g.y2,AUnit,h).value;
     m := ACanvas2d.matrix;
     ACanvas2d.transform(g.gradientMatrix[AUnit]);
     FCanvasGradient:= ACanvas2d.createLinearGradient(p1,p2);
