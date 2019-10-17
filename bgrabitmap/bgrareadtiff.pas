@@ -69,7 +69,6 @@ type
     FCheckIFDOrder: TTiffCheckIFDOrder;
     FFirstIFDStart: DWord;
     FOnCreateImage: TTiffCreateCompatibleImgEvent;
-    FReverserEndian: boolean;
     {$ifdef FPC_Debug_Image}
     FDebug: boolean;
     {$endif}
@@ -138,7 +137,6 @@ type
     procedure LoadImageFromStream(IFD: TTiffIFD);  // call LoadIFDsFromStream before
     procedure ReleaseStream;
     property StartPos: int64 read fStartPos;
-    property ReverserEndian: boolean read FReverserEndian;
     property TheStream: TStream read s;
     property FirstIFDStart: DWord read FFirstIFDStart;
   end;
