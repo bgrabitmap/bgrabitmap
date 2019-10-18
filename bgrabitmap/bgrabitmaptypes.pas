@@ -123,6 +123,8 @@ type
     ifXwd,
     {** X-Pixmap, text encoded image, limited support }
     ifXPixMap,
+    {** text or binary encoded image, no compression, extension PBM, PGM, PPM }
+    ifPortableAnyMap,
     {** Scalable Vector Graphic, vectorial, read-only as raster }
     ifSvg);
 
@@ -562,7 +564,7 @@ implementation
 uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
   FPReadXwd, FPReadXPM,
   FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
-  FPWriteTGA, FPWriteXPM;
+  FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM;
 
 function BGRABitmapVersionStr: string;
 var numbers: TStringList;
@@ -1186,6 +1188,9 @@ var
 
     if (copy(magicAsText,1,6) = '<?xml ') or (copy(magicAsText,1,5) = '<svg ') then inc(scores[ifSvg]);
 
+    if (length(magicAsText)>3) and (magicAsText[1]='P') and
+      (magicAsText[2] in['1'..'6']) and (magicAsText[3] = #10) then inc(scores[ifPortableAnyMap]);
+
     AStream.Position := streamStartPos;
   end;
 
@@ -1245,7 +1250,8 @@ begin
   if (ext = '.xwd') then result := ifXwd else
   if (ext = '.xpm') then result := ifXPixMap else
   if (ext = '.oxo') then result := ifPhoxo else
-  if (ext = '.svg') then result := ifSvg;
+  if (ext = '.svg') then result := ifSvg else
+  if (ext = '.pbm') or (ext = '.pgm') or (ext = '.ppm') then result := ifPortableAnyMap;
 end;
 
 function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
@@ -1269,6 +1275,7 @@ begin
     ifXwd: result := 'xwd';
     ifXPixMap: result := 'xpm';
     ifSvg: result := 'svg';
+    ifPortableAnyMap: result := 'ppm';
     else result := '?';
   end;
 end;
@@ -1444,9 +1451,11 @@ initialization
   DefaultBGRAImageWriter[ifPcx] := TFPWriterPCX;
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
   DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;
+  DefaultBGRAImageWriter[ifPortableAnyMap] := TFPWriterPNM;
   //writing XWD not implemented
 
   DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;
+  DefaultBGRAImageReader[ifPortableAnyMap] := TFPReaderPNM;
   //the other readers are registered by their unit
 
   {$IFDEF BGRABITMAP_USE_LCL}
