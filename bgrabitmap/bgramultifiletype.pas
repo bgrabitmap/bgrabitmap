@@ -224,12 +224,14 @@ begin
 end;
 
 function TMultiFileContainer.GetRawString(AIndex: integer): RawByteString;
-var s: TStringStream;
+var s: TMemoryStream;
 begin
-  s := TStringStream.Create('');
+  s := TMemoryStream.Create;
   try
     Entry[AIndex].CopyTo(s);
-    result := s.DataString;
+    setlength(result, s.Size);
+    if length(result)>0 then
+      move(s.Memory^, result[1], length(result));
   finally
     s.Free;
   end;

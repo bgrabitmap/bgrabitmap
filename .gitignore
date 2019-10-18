@@ -24,3 +24,4 @@ dev/colorspace/UnitMaker
 test/colorspace/ColorsDemo
 
 test/colorspace/HorseShoe
+.DS_Store

@@ -29,7 +29,7 @@
         <PackageName Value="LazUtils"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="10">
+    <Units Count="11">
       <Unit0>
         <Filename Value="releaser.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -79,6 +79,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="CopyFile"/>
       </Unit9>
+      <Unit10>
+        <Filename Value="macbundle.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MacBundle"/>
+      </Unit10>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

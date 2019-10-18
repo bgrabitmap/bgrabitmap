@@ -300,7 +300,7 @@ type
       * If it is more out of the bounds, the result is ''BGRAPixelTransparent''.
       * ''AResampleFilter'' specifies how pixels must be interpolated. Accepted
         values are ''rfBox'', ''rfLinear'', ''rfHalfCosine'' and ''rfCosine'' }
-    function GetPixel(x, y: single; AResampleFilter: TResampleFilter = rfLinear; smoothBorder: boolean = true): TBGRAPixel; override;
+    function GetPixel(x, y: single; AResampleFilter: TResampleFilter = rfLinear; smoothBorder: boolean = true): TBGRAPixel; overload; override;
     {** Similar to previous ''GetPixel'' function, but the fractional part of
         the coordinate is supplied with a number from 0 to 255. The actual
         coordinate is (''x'' + ''fracX256''/256, ''y'' + ''fracY256''/256) }

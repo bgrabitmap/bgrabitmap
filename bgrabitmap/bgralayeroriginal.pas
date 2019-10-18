@@ -70,7 +70,7 @@ type
     FGridActive: boolean;
     FPoints: array of record
       Origin, Coord: TPointF;
-      OnMove: TOriginalMovePointEvent;
+      OnMove, OnAlternateMove: TOriginalMovePointEvent;
       RightButton: boolean;
       SnapToPoint: integer;
       HitBox: TAffineBox;
@@ -83,6 +83,7 @@ type
     end;
     FPointSize: single;
     FPointMoving: integer;
+    FPointWasMoved: boolean;
     FPointCoordDelta: TPointF;
     FMovingRightButton: boolean;
     FPrevMousePos: TPointF;
@@ -108,6 +109,7 @@ type
     procedure AddClickPointHandler(AOnClickPoint: TOriginalClickPointEvent);
     procedure AddHoverPointHandler(AOnHoverPoint: TOriginalHoverPointEvent);
     function AddPoint(const ACoord: TPointF; AOnMove: TOriginalMovePointEvent; ARightButton: boolean = false; ASnapToPoint: integer = -1): integer;
+    procedure AddPointAlternateMove(AIndex: integer; AOnAlternateMove: TOriginalMovePointEvent);
     function AddFixedPoint(const ACoord: TPointF; ARightButton: boolean = false): integer;
     function AddArrow(const AOrigin, AEndCoord: TPointF; AOnMoveEnd: TOriginalMovePointEvent; ARightButton: boolean = false): integer;
     function AddPolyline(const ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle): integer; overload;
@@ -235,6 +237,7 @@ type
     procedure LoadImageFromStream(AStream: TStream);
     procedure SaveImageToStream(AStream: TStream);
     procedure AssignImage(AImage: TBGRACustomBitmap);
+    function GetImageCopy: TBGRABitmap;
     class function StorageClassName: RawByteString; override;
     property Width: integer read GetImageWidth;
     property Height: integer read GetImageHeight;
@@ -772,10 +775,18 @@ begin
     Origin := EmptyPointF;
     Coord := ACoord;
     OnMove := AOnMove;
+    OnAlternateMove:= nil;
     RightButton:= ARightButton;
     SnapToPoint:= ASnapToPoint;
     HitBox := TAffineBox.EmptyBox;
   end;
+end;
+
+procedure TBGRAOriginalEditor.AddPointAlternateMove(AIndex: integer;
+  AOnAlternateMove: TOriginalMovePointEvent);
+begin
+  if (AIndex >= 0) and (AIndex < PointCount) then
+    FPoints[AIndex].OnAlternateMove:= AOnAlternateMove;
 end;
 
 function TBGRAOriginalEditor.AddFixedPoint(const ACoord: TPointF;
@@ -788,6 +799,7 @@ begin
     Origin := EmptyPointF;
     Coord := ACoord;
     OnMove := nil;
+    OnAlternateMove:= nil;
     RightButton:= ARightButton;
     SnapToPoint:= -1;
     HitBox := TAffineBox.EmptyBox;
@@ -804,6 +816,7 @@ begin
     Origin := AOrigin;
     Coord := AEndCoord;
     OnMove := AOnMoveEnd;
+    OnAlternateMove:= nil;
     RightButton:= ARightButton;
     SnapToPoint:= -1;
     HitBox := TAffineBox.EmptyBox;
@@ -856,7 +869,12 @@ begin
     end;
     if newCoord <> FPoints[FPointMoving].Coord then
     begin
-      FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
+      FPointWasMoved:= true;
+      if (FMovingRightButton xor FPoints[FPointMoving].RightButton) and
+        Assigned(FPoints[FPointMoving].OnAlternateMove) then
+        FPoints[FPointMoving].OnAlternateMove(self, FPoints[FPointMoving].Coord, newCoord, Shift)
+      else
+        FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
       FPoints[FPointMoving].Coord := newCoord;
     end;
     ACursor := GetMoveCursor(FPointMoving);
@@ -888,12 +906,13 @@ begin
   FPrevMousePos:= ViewCoordToOriginal(PointF(ViewX,ViewY));
   if FPointMoving = -1 then
   begin
-    clickedPoint := GetPointAt(FPrevMousePos, RightButton);;
+    clickedPoint := GetPointAt(FPrevMousePos, RightButton);
     if clickedPoint <> -1 then
     begin
       if Assigned(FPoints[clickedPoint].OnMove) then
       begin
         FPointMoving:= clickedPoint;
+        FPointWasMoved:= false;
         FMovingRightButton:= RightButton;
         FPointCoordDelta := FPoints[FPointMoving].Coord - FPrevMousePos;
         for i := 0 to FStartMoveHandlers.Count-1 do
@@ -917,10 +936,17 @@ end;
 
 procedure TBGRAOriginalEditor.MouseUp(RightButton: boolean; Shift: TShiftState;
   ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
+var
+  i: Integer;
 begin
   AHandled:= false;
   if (RightButton = FMovingRightButton) and (FPointMoving <> -1) then
   begin
+    if not FPointWasMoved then
+    begin
+      for i := 0 to FClickPointHandlers.Count-1 do
+        FClickPointHandlers[i](self, FPointMoving, Shift);
+    end;
     FPointMoving:= -1;
     AHandled:= true;
   end;
@@ -1941,6 +1967,12 @@ begin
   FImage := newImage;
   Inc(FContentVersion);
   EndUpdate;
+end;
+
+function TBGRALayerImageOriginal.GetImageCopy: TBGRABitmap;
+begin
+  if FImage = nil then result := nil
+  else result := FImage.Duplicate as TBGRABitmap;
 end;
 
 class function TBGRALayerImageOriginal.StorageClassName: RawByteString;
