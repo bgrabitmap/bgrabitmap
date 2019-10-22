@@ -101,6 +101,7 @@ type
     procedure SetGridMatrix(AValue: TAffineMatrix);
     procedure SetGridActive(AValue: boolean);
     function GetMoveCursor(APointIndex: integer): TOriginalEditorCursor; virtual;
+    function GetFixedShiftForButton(AShift: TShiftState; ARightDown: boolean): TShiftState;
   public
     constructor Create;
     destructor Destroy; override;
@@ -518,6 +519,14 @@ begin
   end;
 end;
 
+function TBGRAOriginalEditor.GetFixedShiftForButton(AShift: TShiftState;
+  ARightDown: boolean): TShiftState;
+begin
+  result := AShift - [ssLeft,ssMiddle,ssRight];
+  if ARightDown then include(result, ssRight)
+  else include(result, ssLeft);
+end;
+
 function TBGRAOriginalEditor.GetPointCoord(AIndex: integer): TPointF;
 begin
   if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
@@ -854,6 +863,7 @@ procedure TBGRAOriginalEditor.MouseMove(Shift: TShiftState; ViewX, ViewY: single
   ACursor: TOriginalEditorCursor; out AHandled: boolean);
 var newMousePos, newCoord, snapCoord: TPointF;
   hoverPoint, i: Integer;
+  subShift: TShiftState;
 begin
   AHandled := false;
   newMousePos := ViewCoordToOriginal(PointF(ViewX,ViewY));
@@ -870,11 +880,12 @@ begin
     if newCoord <> FPoints[FPointMoving].Coord then
     begin
       FPointWasMoved:= true;
+      subShift := GetFixedShiftForButton(Shift, FMovingRightButton);
       if (FMovingRightButton xor FPoints[FPointMoving].RightButton) and
         Assigned(FPoints[FPointMoving].OnAlternateMove) then
-        FPoints[FPointMoving].OnAlternateMove(self, FPoints[FPointMoving].Coord, newCoord, Shift)
+        FPoints[FPointMoving].OnAlternateMove(self, FPoints[FPointMoving].Coord, newCoord, subShift)
       else
-        FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, Shift);
+        FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, subShift);
       FPoints[FPointMoving].Coord := newCoord;
     end;
     ACursor := GetMoveCursor(FPointMoving);
@@ -901,6 +912,7 @@ procedure TBGRAOriginalEditor.MouseDown(RightButton: boolean;
   AHandled: boolean);
 var
   i, clickedPoint: Integer;
+  subShift: TShiftState;
 begin
   AHandled:= false;
   FPrevMousePos:= ViewCoordToOriginal(PointF(ViewX,ViewY));
@@ -909,6 +921,7 @@ begin
     clickedPoint := GetPointAt(FPrevMousePos, RightButton);
     if clickedPoint <> -1 then
     begin
+      subShift := GetFixedShiftForButton(Shift, RightButton);
       if Assigned(FPoints[clickedPoint].OnMove) then
       begin
         FPointMoving:= clickedPoint;
@@ -916,11 +929,11 @@ begin
         FMovingRightButton:= RightButton;
         FPointCoordDelta := FPoints[FPointMoving].Coord - FPrevMousePos;
         for i := 0 to FStartMoveHandlers.Count-1 do
-          FStartMoveHandlers[i](self, FPointMoving, Shift);
+          FStartMoveHandlers[i](self, FPointMoving, subShift);
       end else
       begin
         for i := 0 to FClickPointHandlers.Count-1 do
-          FClickPointHandlers[i](self, clickedPoint, Shift);
+          FClickPointHandlers[i](self, clickedPoint, subShift);
       end;
       AHandled:= true;
     end;
@@ -938,14 +951,16 @@ procedure TBGRAOriginalEditor.MouseUp(RightButton: boolean; Shift: TShiftState;
   ViewX, ViewY: single; out ACursor: TOriginalEditorCursor; out AHandled: boolean);
 var
   i: Integer;
+  subShift: TShiftState;
 begin
   AHandled:= false;
   if (RightButton = FMovingRightButton) and (FPointMoving <> -1) then
   begin
     if not FPointWasMoved then
     begin
+      subShift := GetFixedShiftForButton(Shift, RightButton);
       for i := 0 to FClickPointHandlers.Count-1 do
-        FClickPointHandlers[i](self, FPointMoving, Shift);
+        FClickPointHandlers[i](self, FPointMoving, subShift);
     end;
     FPointMoving:= -1;
     AHandled:= true;
