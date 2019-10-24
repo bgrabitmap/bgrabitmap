@@ -287,11 +287,9 @@ begin
 
       if eoPreserveHue in AOptions then
       begin
-        {$push}{$hints off}
-        diff := ((refPixel.red * refPixel.alpha - cMiddle.red * cMiddle.alpha)+
-                 (refPixel.green * refPixel.alpha - cMiddle.green * cMiddle.alpha)+
-                 (refPixel.blue * refPixel.alpha - cMiddle.blue * cMiddle.alpha))* AStrength div 128;
-        {$pop}
+        diff := (integer(refPixel.red * refPixel.alpha) - integer(cMiddle.red * cMiddle.alpha)+
+                 integer(refPixel.green * refPixel.alpha) - integer(cMiddle.green * cMiddle.alpha)+
+                 integer(refPixel.blue * refPixel.alpha) - integer(cMiddle.blue * cMiddle.alpha))* AStrength div 128;
         if diff > 0 then
           hMiddle := BGRAToHSLA(refPixel)
         else
