@@ -67,7 +67,7 @@ Type
       function GetOriginalHeight: integer;
       function GetOriginalWidth: integer;
       function GetVerticalShrinkFactor: integer;
-      procedure ReadChunk;
+      function ReadChunk: boolean;
       procedure HandleData;
       procedure HandleUnknown;
       function ColorGray1 (const CD:TColorData) : TFPColor;
@@ -218,7 +218,7 @@ begin
   end;
 end;
 
-procedure TBGRAReaderPNG.ReadChunk;
+function TBGRAReaderPNG.ReadChunk: boolean;
 var {%H-}ChunkHeader : TChunkHeader;
     readCRC : longword;
     l : longword;
@@ -261,7 +261,14 @@ begin
     l := l xor All1Bits;
     {$ENDIF}
     if ReadCRC <> l then
-      raise PNGImageException.Create ('CRC check failed');
+      begin
+        //if chunk is essential, then raise an error
+        if ReadType[0] = upcase(ReadType[0]) then
+          raise PNGImageException.Create ('CRC check failed')
+        else
+          result := false;
+      end
+      else result := true;
     end;
 end;
 
@@ -1397,8 +1404,8 @@ begin
     EndOfFile := false;
     while not EndOfFile do
       begin
-      ReadChunk;
-      HandleChunk;
+      if ReadChunk then
+        HandleChunk;
       end;
     ZData.position:=0;
     Decompress := TDecompressionStream.Create (ZData);
@@ -1431,6 +1438,8 @@ begin
     end;
     // Check IHDR
     ReadChunk;
+    if chunk.aType <> ctIHDR then
+      raise PNGImageException.Create('Header chunk expected but '+chunk.ReadType+' found');
     fillchar(FHeader, sizeof(FHeader), 0);
     move (chunk.data^, FHeader, min(sizeof(Header), chunk.alength));
     with header do
