@@ -188,7 +188,7 @@ var
     clearcode := 1 shl codesize;
     endcode   := clearcode + 1;
     stridx    := endcode + 1;
-    codelen   := codesize + 1;
+    codelen   := CeilLn2(stridx+1);
     codemask  := (1 shl codelen) - 1;
     for i := 0 to clearcode - 1 do
     begin
@@ -209,7 +209,7 @@ var
     clearcode := 1 shl codesize;
     endcode   := clearcode + 1;
     stridx    := endcode + 1;
-    codelen   := codesize + 1;
+    codelen   := CeilLn2(stridx+1);
     codemask  := (1 shl codelen) - 1;
     for i := clearcode to GIFCodeTableSize-1 do
     begin
@@ -258,20 +258,9 @@ var
     strtab^[stridx].prefix := prefix;
     strtab^[stridx].suffix := suffix;
     Inc(stridx);
-    case stridx of
-      0..1: codelen      := 1;
-      2..3: codelen      := 2;
-      4..7: codelen      := 3;
-      8..15: codelen     := 4;
-      16..31: codelen    := 5;
-      32..63: codelen    := 6;
-      64..127: codelen   := 7;
-      128..255: codelen  := 8;
-      256..511: codelen  := 9;
-      512..1023: codelen := 10;
-      1024..2047: codelen := 11;
-      2048..4096: codelen := 12;
-    end;
+    if (stridx = 1 shl codelen)
+      and (stridx < GIFCodeTableSize) then
+        inc(codelen);
     codemask := (1 shl codelen) - 1;
   end;
 
@@ -513,7 +502,7 @@ var
     end;
 
     WriteCode(ClearCode);
-    CurCodeSize := ABitDepth + 1;
+    CurCodeSize := CeilLn2(FirstCodeSlot+1);
     NextCodeSlot := FirstCodeSlot;
   end;
 
@@ -525,12 +514,15 @@ begin
    if ABitDepth > 8 then
      raise exception.Create('Maximum bit depth is 8');
 
+   //most readers won't handle less than 2 bits
+   if ABitDepth < 2 then ABitDepth := 2;
+
    //output
    AStream.WriteByte(ABitDepth);
    ClearCode := 1 shl ABitDepth;
    EndStreamCode := ClearCode + 1;
    FirstCodeSlot := ClearCode + 2;
-   CurCodeSize := ABitDepth + 1;
+   CurCodeSize := CeilLn2(FirstCodeSlot+1);
 
    OutputBufferSize := 0;
    BitBuffer := 0;

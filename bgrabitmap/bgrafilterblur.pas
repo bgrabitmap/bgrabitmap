@@ -515,7 +515,7 @@ begin
   grad.Free;
   minRadius := min(radiusX,radiusY);
   maxRadius := max(radiusX,radiusY);
-  shift := min(ceil((maxRadius-8)/2), floor(minRadius));
+  shift := max(0,min(ceil((maxRadius-8)/2), floor(minRadius)));
   if shift > 0 then
   begin
     if shift > 5 then shift := 5;

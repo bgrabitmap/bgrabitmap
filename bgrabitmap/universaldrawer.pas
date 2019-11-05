@@ -137,7 +137,7 @@ implementation
 
 uses BGRAPolygon, BGRAPolygonAliased, BGRAPath, BGRAFillInfo, BGRAUTF8,
   BGRAReadBMP, BGRAReadJpeg, BGRAWritePNG, BGRAWriteTiff,
-  BGRAFilterBlur, Math;
+  BGRAFilterBlur, Math, FPWritePNM;
 
 { TUniversalDrawer }
 
@@ -342,6 +342,7 @@ class procedure TUniversalDrawer.SaveToFileUTF8(
 var
   writer: TFPCustomImageWriter;
   format: TBGRAImageFormat;
+  ext: String;
 begin
   format := SuggestImageFormat(AFilenameUTF8);
   if (format = ifXPixMap) and (ASource.NbPixels > 32768) then //xpm is slow so avoid big images
@@ -350,6 +351,13 @@ begin
   if GetMaxColorChannelDepth(ASource) > 8 then
   begin
     if writer is TBGRAWriterPNG then TBGRAWriterPNG(writer).WordSized := true;
+  end;
+  if writer is TFPWriterPNM then
+  begin
+    ext := LowerCase(ExtractFileExt(AFilenameUTF8));
+    if ext = '.pbm' then TFPWriterPNM(writer).ColorDepth:= pcdBlackWhite else
+    if ext = '.pgm' then TFPWriterPNM(writer).ColorDepth:= pcdGrayscale else
+    if ext = '.ppm' then TFPWriterPNM(writer).ColorDepth:= pcdRGB;
   end;
   try
     SaveToFileUTF8(ASource, AFilenameUTF8, writer);
