@@ -653,7 +653,7 @@ end;
 
 function TBGRASVG.GetHeightAsPixel: single;
 begin
-  result := FUnits.ConvertHeight(ComputedHeight,cuCustom).value;
+  result := FUnits.ConvertHeight(ComputedHeight,cuPixel).value;
 end;
 
 function TBGRASVG.GetPreserveAspectRatio: TSVGPreserveAspectRatio;
@@ -729,7 +729,7 @@ end;
 
 function TBGRASVG.GetWidthAsPixel: single;
 begin
-  result := FUnits.ConvertWidth(ComputedWidth,cuCustom).value;
+  result := FUnits.ConvertWidth(ComputedWidth,cuPixel).value;
 end;
 
 function TBGRASVG.GetZoomable: boolean;
