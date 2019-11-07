@@ -7,7 +7,7 @@ interface
 {$I bgrabitmap.inc}
 
 {$IFDEF BGRABITMAP_USE_LCL}
-uses Graphics, GraphType, FPImage;
+uses Graphics, GraphType, FPImage, FPCanvas;
 
 type
   PColor = Graphics.PColor;
@@ -74,6 +74,7 @@ const
   bsBDiagonal = Graphics.bsBDiagonal;
   bsCross = Graphics.bsCross;
   bsDiagCross = Graphics.bsDiagCross;
+  bsPattern = FPCanvas.bsPattern;
 
 type
   TBrush = Graphics.TBrush;
