@@ -57,13 +57,14 @@ type
     function GetInvisible: boolean;
     procedure SetBackColor(const AValue: TBGRAPixel);
     procedure SetBrushStyle(const AValue: TBrushStyle);
+    procedure SetTexture(AValue: IBGRAScanner);
   protected
-    FStyle: TBrushStyle;
+    FStyle, FStyleBeforeTexture: TBrushStyle;
     FBackColor: TBGRAPixel;
-    InternalBitmap: TBGRACustomBitmap;
-    InternalBitmapColor: TBGRAPixel;
+    FTexture: IBGRAScanner;
+    FInternalBitmap: TBGRACustomBitmap;
+    FInternalBitmapColor: TBGRAPixel;
   public
-    Texture: IBGRAScanner;
     constructor Create;
     destructor Destroy; override;
     procedure Assign(Source: TObject); override;
@@ -72,6 +73,7 @@ type
     property BackColor: TBGRAPixel read FBackColor write SetBackColor;
     property ActualColor: TBGRAPixel read GetActualColor;
     property Invisible: boolean read GetInvisible;
+    property Texture: IBGRAScanner read FTexture write SetTexture;
   end;
 
   { TBGRAFont }
@@ -316,30 +318,50 @@ procedure TBGRABrush.SetBackColor(const AValue: TBGRAPixel);
 begin
   if FBackColor=AValue then exit;
   FBackColor:=AValue;
-  FreeAndNil(InternalBitmap);
+  FreeAndNil(FInternalBitmap);
 end;
 
 procedure TBGRABrush.SetBrushStyle(const AValue: TBrushStyle);
 begin
   if FStyle=AValue then exit;
   FStyle:=AValue;
-  FreeAndNil(InternalBitmap);
+  if FStyle <> bsPattern then FTexture := nil;
+  FreeAndNil(FInternalBitmap);
+end;
+
+procedure TBGRABrush.SetTexture(AValue: IBGRAScanner);
+begin
+  if FTexture=AValue then Exit;
+  FTexture:=AValue;
+  if Assigned(AValue) then
+  begin
+    if FStyle <> bsPattern then
+    begin
+      FStyleBeforeTexture:= FStyle;
+      FStyle:= bsPattern;
+    end;
+  end else
+  begin
+    if FStyle = bsPattern then
+      FStyle := FStyleBeforeTexture;
+  end;
 end;
 
 constructor TBGRABrush.Create;
 begin
   BGRAColor := BGRAWhite;
-  InternalBitmap := nil;
-  InternalBitmapColor := BGRAPixelTransparent;
-  Style := bsSolid;
-  Texture := nil;
-  BackColor := BGRAPixelTransparent;
+  FInternalBitmap := nil;
+  FInternalBitmapColor := BGRAPixelTransparent;
+  FStyle := bsSolid;
+  FStyleBeforeTexture:= Style;
+  FTexture := nil;
+  FBackColor := BGRAPixelTransparent;
 end;
 
 destructor TBGRABrush.Destroy;
 begin
   Texture := nil;
-  InternalBitmap.Free;
+  FInternalBitmap.Free;
   inherited Destroy;
 end;
 
@@ -372,8 +394,8 @@ begin
   else
   begin
     //free pattern if color has changed
-    if (InternalBitmap <> nil) and (InternalBitmapColor <> BGRAColor) then
-      FreeAndNil(InternalBitmap);
+    if (FInternalBitmap <> nil) and (FInternalBitmapColor <> BGRAColor) then
+      FreeAndNil(FInternalBitmap);
 
     //styles that do not have pattern
     if Style in[bsSolid,bsClear] then
@@ -381,12 +403,12 @@ begin
     else
     begin
       //create pattern if needed
-      if InternalBitmap = nil then
+      if FInternalBitmap = nil then
       begin
-        InternalBitmap := CreateBrushTexture(Prototype, Style, BGRAColor,BackColor);
-        InternalBitmapColor := BGRAColor;
+        FInternalBitmap := CreateBrushTexture(Prototype, Style, BGRAColor,BackColor);
+        FInternalBitmapColor := BGRAColor;
       end;
-      result := InternalBitmap;
+      result := FInternalBitmap;
     end;
   end;
 end;
