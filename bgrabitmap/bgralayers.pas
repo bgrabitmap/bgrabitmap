@@ -2754,7 +2754,7 @@ begin
     begin
       temp := LayeredBitmapWriters[i].theClass.Create;
       try
-        temp.Assign(self);
+        temp.Assign(self, true, true);
         temp.SaveToStream(Stream);
       finally
         temp.Free;
