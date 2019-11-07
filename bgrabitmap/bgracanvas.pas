@@ -325,7 +325,7 @@ procedure TBGRABrush.SetBrushStyle(const AValue: TBrushStyle);
 begin
   if FStyle=AValue then exit;
   FStyle:=AValue;
-  if FStyle <> bsPattern then FTexture := nil;
+  if FStyle <> bsImage then FTexture := nil;
   FreeAndNil(FInternalBitmap);
 end;
 
@@ -335,14 +335,14 @@ begin
   FTexture:=AValue;
   if Assigned(AValue) then
   begin
-    if FStyle <> bsPattern then
+    if FStyle <> bsImage then
     begin
       FStyleBeforeTexture:= FStyle;
-      FStyle:= bsPattern;
+      FStyle:= bsImage;
     end;
   end else
   begin
-    if FStyle = bsPattern then
+    if FStyle = bsImage then
       FStyle := FStyleBeforeTexture;
   end;
 end;

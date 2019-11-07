@@ -74,7 +74,7 @@ const
   bsBDiagonal = Graphics.bsBDiagonal;
   bsCross = Graphics.bsCross;
   bsDiagCross = Graphics.bsDiagCross;
-  bsPattern = FPCanvas.bsPattern;
+  bsImage = FPCanvas.bsImage;
 
 type
   TBrush = Graphics.TBrush;
