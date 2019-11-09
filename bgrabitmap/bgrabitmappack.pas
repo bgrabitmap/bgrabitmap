@@ -28,7 +28,8 @@ uses
   BGRAIconCursor, BGRABlurGL, BGRAReadTiff, BGRALazPaint, BGRAMemDirectory, 
   BGRAUnicode, BGRATextBidi, BGRALayerOriginal, BGRASVGOriginal, 
   BGRAGradientOriginal, BGRAUnicodeText, UniversalDrawer, LinearRGBABitmap, 
-  XYZABitmap, BGRAWriteTiff, WordXYZABitmap, ExpandedBitmap;
+  XYZABitmap, BGRAWriteTiff, WordXYZABitmap, ExpandedBitmap, libwebp, 
+  linuxlib, BGRAReadWebP, BGRAWriteWebP;
 
 implementation
 

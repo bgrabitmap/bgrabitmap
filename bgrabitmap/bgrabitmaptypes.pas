@@ -126,7 +126,9 @@ type
     {** text or binary encoded image, no compression, extension PBM, PGM, PPM }
     ifPortableAnyMap,
     {** Scalable Vector Graphic, vectorial, read-only as raster }
-    ifSvg);
+    ifSvg,
+    {** Lossless or lossy compression using V8 algorithm (need libwebp library) }
+    ifWebP);
 
   {* Options when loading an image }
   TBGRALoadingOption = (
@@ -564,7 +566,8 @@ implementation
 uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
   FPReadXwd, FPReadXPM,
   FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
-  FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM;
+  FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM,
+  BGRAReadWebP, BGRAWriteWebP;
 
 function BGRABitmapVersionStr: string;
 var numbers: TStringList;
@@ -1023,7 +1026,7 @@ var
   var
     {%H-}magic: packed array[0..7] of byte;
     {%H-}dwords: packed array[0..9] of DWORD;
-    magicAsText: string;
+    magicAsText, moreMagic: string;
 
     streamStartPos, maxFileSize: Int64;
     expectedFileSize: DWord;
@@ -1191,6 +1194,15 @@ var
     if (length(magicAsText)>3) and (magicAsText[1]='P') and
       (magicAsText[2] in['1'..'6']) and (magicAsText[3] = #10) then inc(scores[ifPortableAnyMap]);
 
+    if (copy(magicAsText,1,4) = 'RIFF') then
+    begin
+      AStream.Position:= streamStartPos+8;
+      setlength(moreMagic, 4);
+      if (AStream.Read(moreMagic[1],4) = 4)
+       and (moreMagic = 'WEBP') then
+        inc(scores[ifWebP], 2);
+    end;
+
     AStream.Position := streamStartPos;
   end;
 
@@ -1251,7 +1263,8 @@ begin
   if (ext = '.xpm') then result := ifXPixMap else
   if (ext = '.oxo') then result := ifPhoxo else
   if (ext = '.svg') then result := ifSvg else
-  if (ext = '.pbm') or (ext = '.pgm') or (ext = '.ppm') then result := ifPortableAnyMap;
+  if (ext = '.pbm') or (ext = '.pgm') or (ext = '.ppm') then result := ifPortableAnyMap else
+  if (ext = '.webp') then result := ifWebP;
 end;
 
 function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
@@ -1276,6 +1289,7 @@ begin
     ifXPixMap: result := 'xpm';
     ifSvg: result := 'svg';
     ifPortableAnyMap: result := 'ppm';
+    ifWebP: result := 'webp';
     else result := '?';
   end;
 end;

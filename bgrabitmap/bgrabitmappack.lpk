@@ -30,7 +30,7 @@
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
     <Version Major="10" Minor="6" Release="4"/>
-    <Files Count="134">
+    <Files Count="138">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -569,6 +569,22 @@
         <Filename Value="spectraldata.inc"/>
         <Type Value="Binary"/>
       </Item134>
+      <Item135>
+        <Filename Value="libwebp.pas"/>
+        <UnitName Value="libwebp"/>
+      </Item135>
+      <Item136>
+        <Filename Value="linuxlib.pas"/>
+        <UnitName Value="linuxlib"/>
+      </Item136>
+      <Item137>
+        <Filename Value="bgrareadwebp.pas"/>
+        <UnitName Value="bgrareadwebp"/>
+      </Item137>
+      <Item138>
+        <Filename Value="bgrawritewebp.pas"/>
+        <UnitName Value="bgrawritewebp"/>
+      </Item138>
     </Files>
     <RequiredPkgs Count="2">
       <Item1>
