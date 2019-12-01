@@ -358,6 +358,8 @@ type
 type
   {* Point in 3D with single-precision floating point coordinates }
 
+  PPoint3D = ^TPoint3D;
+
   { TPoint3D }
 
   TPoint3D = record
