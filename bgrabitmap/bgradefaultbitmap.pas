@@ -541,14 +541,14 @@ type
     {Filling}
     procedure Fill(c: TBGRAPixel; start, Count: integer); overload; override;
     procedure DrawPixels(c: TBGRAPixel; start, Count: integer); override;
-    procedure AlphaFill(alpha: byte; start, Count: integer); override;
+    procedure AlphaFill(alpha: byte; start, Count: integer); overload; override;
     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); override;
     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte = 255); override;
     procedure EraseMask(x,y: integer; AMask: TBGRACustomBitmap; alpha: byte=255); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); override;
-    procedure ReplaceColor(before, after: TColor); override;
-    procedure ReplaceColor(ABounds: TRect; before, after: TColor); override;
+    procedure ReplaceColor(before, after: TColor); overload; override;
+    procedure ReplaceColor(ABounds: TRect; before, after: TColor); overload; override;
     procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; Color: TBGRAPixel;
       mode: TFloodfillMode; Tolerance: byte = 0; DestOfsX: integer = 0; DestOfsY: integer = 0); override;
     procedure GradientFill(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
