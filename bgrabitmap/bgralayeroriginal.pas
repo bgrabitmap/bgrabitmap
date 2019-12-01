@@ -1004,9 +1004,9 @@ var v: TPointF;
   transfCoord: TPointF;
 begin
   if ARightButton then
-    curDist := sqr(2.5*FPointSize)
+    curDist := sqr(2.25*FPointSize)
   else
-    curDist := sqr(1.5*FPointSize);
+    curDist := sqr(1.25*FPointSize);
   result := -1;
   transfCoord:= Matrix*ACoord;
 
@@ -1024,9 +1024,9 @@ begin
   if result <> -1 then exit;
 
   if not ARightButton then
-    curDist := sqr(2.5*FPointSize)
+    curDist := sqr(2.25*FPointSize)
   else
-    curDist := sqr(1.5*FPointSize);
+    curDist := sqr(1.25*FPointSize);
   for i := 0 to high(FPoints) do
   if FPoints[i].RightButton <> ARightButton then
   begin
