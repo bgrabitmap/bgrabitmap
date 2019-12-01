@@ -909,8 +909,8 @@ begin
   if not (AAlign in [twaLeft,twaTopLeft,twaBottomLeft]) then
   begin
     size := GetTextSizeBeforeTransform(ATextUTF8);
-    if AAlign in[twaTop,twaMiddle,twaBottom] then tGlyph.X := size.x/2 else
-    if AAlign in[twaTopRight, twaRight, twaBottomRight] then tGlyph.X := size.x;
+    if AAlign in[twaTop,twaMiddle,twaBottom] then tGlyph.X := -size.x/2 else
+    if AAlign in[twaTopRight, twaRight, twaBottomRight] then tGlyph.X := -size.x;
   end;
   result := AffineMatrixTranslation(X,Y)*TypeWriterMatrix*AffineMatrixTranslation(tGlyph.X,tGlyph.Y);
 end;
