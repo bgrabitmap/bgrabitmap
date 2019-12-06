@@ -476,19 +476,24 @@ procedure TBGRATextEffectFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap;
         w := abs(OutlineWidth)*2/3
       else
         w := abs(OutlineWidth)-1;
-      boundsF := p.GetBounds;
-      boundsF.Left -= 1;
-      boundsF.Top -= 1;
-      boundsF.Right += 1;
-      boundsF.Bottom += 1;
-      if ShadowActuallyVisible then
+      if p.IsEmpty then
+        boundsF := EmptyRectF
+      else
       begin
-        boundsF.Left -= ShadowRadius;
-        boundsF.Top -= ShadowRadius;
-        boundsF.Right += ShadowRadius;
-        boundsF.Bottom += ShadowRadius;
+        boundsF := p.GetBounds;
+        boundsF.Left -= 1;
+        boundsF.Top -= 1;
+        boundsF.Right += 1;
+        boundsF.Bottom += 1;
+        if ShadowActuallyVisible then
+        begin
+          boundsF.Left -= ShadowRadius;
+          boundsF.Top -= ShadowRadius;
+          boundsF.Right += ShadowRadius;
+          boundsF.Bottom += ShadowRadius;
+        end;
+        boundsF := TRectF.Intersect(boundsF, RectF(0,0,ADest.Width,ADest.Height));
       end;
-      boundsF := TRectF.Intersect(boundsF, RectF(0,0,ADest.Width,ADest.Height));
       if not boundsF.IsEmpty then
       begin
         with boundsF do
