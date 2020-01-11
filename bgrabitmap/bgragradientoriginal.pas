@@ -53,6 +53,7 @@ type
     FRepetition: TBGRAGradientRepetition;
     FUpdateCount: integer;
     FUpdateDiff: TBGRAGradientOriginalDiff;
+    function GetAverageColor: TBGRAPixel;
     function GetComputedRadius: single;
     function GetComputedYAxis: TPointF;
     function GetComputedFocalPoint: TPointF;
@@ -83,9 +84,13 @@ type
     property ComputedFocalPoint: TPointF read GetComputedFocalPoint;
     property ComputedFocalRadius: single read GetComputedFocalRadius;
     procedure Transform(AMatrix: TAffineMatrix);
+    procedure AssignExceptGeometry(AOther: TBGRALayerGradientOriginal);
+    procedure FitGeometry(const ABox: TAffineBox);
+    procedure SetColors(AStartColor, AEndColor: TBGRAPixel);
 
     property StartColor: TBGRAPixel read FStartColor write SetStartColor;
     property EndColor: TBGRAPixel read FEndColor write SetEndColor;
+    property AverageColor: TBGRAPixel read GetAverageColor;
     property GradientType: TGradientType read FGradientType write SetGradientType;   //default gtLinear
     property Origin: TPointF read FOrigin write SetOrigin;
     property XAxis: TPointF read FXAxis write SetXAxis;
@@ -163,6 +168,11 @@ end;
 function TBGRALayerGradientOriginal.GetComputedRadius: single;
 begin
   if FRadius = EmptySingle then result := 1 else result := FRadius;
+end;
+
+function TBGRALayerGradientOriginal.GetAverageColor: TBGRAPixel;
+begin
+  result := MergeBGRAWithGammaCorrection(StartColor, 1, EndColor, 1);
 end;
 
 procedure TBGRALayerGradientOriginal.SetColorInterpolation(
@@ -645,6 +655,54 @@ begin
   if not isEmptyPointF(FXAxis) then FXAxis := AMatrix*FXAxis;
   if not isEmptyPointF(FYAxis) then FYAxis := AMatrix*FYAxis;
   if not isEmptyPointF(FFocalPoint) then FFocalPoint := AMatrix*FFocalPoint;
+  EndUpdate;
+end;
+
+procedure TBGRALayerGradientOriginal.AssignExceptGeometry(
+  AOther: TBGRALayerGradientOriginal);
+begin
+  if (GradientType = AOther.GradientType) and
+    (StartColor = AOther.StartColor) and
+    (EndColor = AOther.EndColor) and
+    (ColorInterpolation = AOther.ColorInterpolation) and
+    (Repetition = AOther.Repetition) then exit;
+  BeginUpdate;
+  GradientType := AOther.GradientType;
+  StartColor:= AOther.StartColor;
+  EndColor:= AOther.EndColor;
+  ColorInterpolation:= AOther.ColorInterpolation;
+  Repetition:= AOther.Repetition;
+  EndUpdate;
+end;
+
+procedure TBGRALayerGradientOriginal.FitGeometry(const ABox: TAffineBox);
+begin
+  BeginUpdate;
+  if GradientType = gtLinear then
+  begin
+    Origin := ABox.TopLeft;
+    XAxis := ABox.BottomRight;
+  end else
+  begin
+    Origin := (ABox.TopLeft + ABox.BottomRight)*0.5;
+    if GradientType = gtReflected then
+      XAxis := ABox.BottomRight
+    else
+    begin
+      XAxis := (ABox.TopRight + ABox.BottomRight)*0.5;
+      YAxis := (ABox.BottomLeft + ABox.BottomRight)*0.5;
+    end;
+  end;
+  EndUpdate;
+end;
+
+procedure TBGRALayerGradientOriginal.SetColors(AStartColor,
+  AEndColor: TBGRAPixel);
+begin
+  if (AStartColor = StartColor) and (AEndColor = EndColor) then exit;
+  BeginUpdate;
+  StartColor := AStartColor;
+  EndColor := AEndColor;
   EndUpdate;
 end;
 
