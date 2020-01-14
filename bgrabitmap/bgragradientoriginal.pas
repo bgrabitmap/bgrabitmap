@@ -87,6 +87,7 @@ type
     procedure AssignExceptGeometry(AOther: TBGRALayerGradientOriginal);
     procedure FitGeometry(const ABox: TAffineBox);
     procedure SetColors(AStartColor, AEndColor: TBGRAPixel);
+    procedure ApplyOpacity(AOpacity: byte);
 
     property StartColor: TBGRAPixel read FStartColor write SetStartColor;
     property EndColor: TBGRAPixel read FEndColor write SetEndColor;
@@ -105,7 +106,7 @@ type
 
 implementation
 
-uses BGRATransform, math;
+uses BGRATransform, BGRABlend, math;
 
 { TBGRAGradientOriginalDiff }
 
@@ -704,6 +705,17 @@ begin
   StartColor := AStartColor;
   EndColor := AEndColor;
   EndUpdate;
+end;
+
+procedure TBGRALayerGradientOriginal.ApplyOpacity(AOpacity: byte);
+var
+  cStart, cEnd: TBGRAPixel;
+begin
+  cStart := StartColor;
+  cStart.alpha := BGRABlend.ApplyOpacity(cStart.alpha, AOpacity);
+  cEnd := EndColor;
+  cEnd.alpha := BGRABlend.ApplyOpacity(cEnd.alpha, AOpacity);
+  SetColors(cStart, cEnd);
 end;
 
 initialization
