@@ -28,6 +28,7 @@ type
     function GetDifferenceBounds(ABitmap: TCustomUniversalBitmap): TRect;
 
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
+    class procedure IdleBrush(out ABrush: TUniversalBrush); virtual;
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TPixel;
             AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TCustomUniversalBitmap;
@@ -342,6 +343,15 @@ procedure TGenericUniversalBitmap.SolidBrushIndirect(out
   ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode);
 begin
   SolidBrush(ABrush, PPixel(AColor)^, ADrawMode);
+end;
+
+class procedure TGenericUniversalBitmap.IdleBrush(out ABrush: TUniversalBrush);
+begin
+  ABrush.Colorspace := TColorspace;
+  ABrush.InternalInitContext:= nil;
+  PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.PixelSize:= sizeof(TPixel);
+  ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSkipPixels;
+  ABrush.DoesNothing:= true;
 end;
 
 class procedure TGenericUniversalBitmap.SolidBrush(out ABrush: TUniversalBrush;
