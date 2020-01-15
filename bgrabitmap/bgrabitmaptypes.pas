@@ -56,6 +56,10 @@ type
     fmSet,
     {** Pixels that are filled are drawn upon with the fill color }
     fmDrawWithTransparency,
+    {** Pixels that are filled are drawn without gamma correction upon with the fill color }
+    fmLinearBlend,
+    {** Pixels that are XORed with the fill color}
+    fmXor,
     {** Pixels that are filled are drawn upon to the extent that the color underneath is similar to
         the start color. The more different the different is, the less it is drawn upon }
     fmProgressive);
