@@ -58,7 +58,7 @@ type
 
   { TMultiFileContainer }
 
-  TMultiFileContainer = class
+  TMultiFileContainer = class(TPersistent)
   private
     FEntries: TMultiFileEntryList;
   protected
@@ -76,6 +76,7 @@ type
     constructor Create(AFilename: utf8string); overload;
     constructor Create(AStream: TStream); overload;
     constructor Create(AStream: TStream; AStartPos: Int64); overload;
+    procedure Assign(Source: TPersistent); override;
     function Add(AName: utf8string; AExtension: utf8string; AContent: TStream; AOverwrite: boolean = false; AOwnStream: boolean = true): integer; overload;
     function Add(AName: utf8string; AExtension: utf8string; AContent: RawByteString; AOverwrite: boolean = false): integer; overload;
     function Add(AFilename: TEntryFilename; AContent: TStream; AOverwrite: boolean = false; AOwnStream: boolean = true): integer; overload;
@@ -305,6 +306,31 @@ begin
   Init;
   AStream.Position := AStartPos;
   LoadFromStream(AStream);
+end;
+
+procedure TMultiFileContainer.Assign(Source: TPersistent);
+var
+  other: TMultiFileContainer;
+  otherEntry, newEntry: TMultiFileEntry;
+  i: Integer;
+  content: TMemoryStream;
+begin
+  if Source is TMultiFileContainer then
+  begin
+    Clear;
+    other := TMultiFileContainer(Source);
+    for i := 0 to other.Count-1 do
+    begin
+      content := TMemoryStream.Create;
+      otherEntry := other.Entry[i];
+      otherEntry.CopyTo(content);
+      newEntry := CreateEntry(otherEntry.Name, otherEntry.Extension, content);
+      if not Assigned(newEntry) then
+        raise exception.Create('Unable to create entry');
+      AddEntry(newEntry);
+    end;
+  end else
+    inherited Assign(Source);
 end;
 
 function TMultiFileContainer.Add(AName: utf8string; AExtension: utf8string;

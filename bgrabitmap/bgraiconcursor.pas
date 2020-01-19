@@ -1,6 +1,7 @@
 unit BGRAIconCursor;
 
 {$mode objfpc}{$H+}
+{$i bgrabitmap.inc}
 
 interface
 
@@ -49,8 +50,10 @@ type
       AContent: TStream): TMultiFileEntry; override;
     function ExpectedMagic: Word;
     procedure Init; override;
+    procedure AssignTo(Dest: TPersistent); override;
   public
     constructor Create(AFileType: TBGRAImageFormat); overload;
+    procedure Assign(Source: TPersistent); override;
     function Add(ABitmap: TBGRACustomBitmap; ABitDepth: integer; AOverwrite: boolean = false): integer; overload;
     function Add(AContent: TStream; AOverwrite: boolean = false; AOwnStream: boolean = true): integer; overload;
     procedure LoadFromStream(AStream: TStream); override;
@@ -71,7 +74,7 @@ function BGRABitDepthIconCursor(ABitmap: TBGRACustomBitmap): integer;
 implementation
 
 uses BGRAWinResource, BGRAUTF8, BGRAReadPng, BGRAReadBMP, FPWriteBMP, BGRAPalette, BGRAWritePNG,
-  BGRAColorQuantization;
+  BGRAColorQuantization{$IFDEF BGRABITMAP_USE_LCL}, Graphics{$ENDIF};
 
 function BGRADitherIconCursor(ABitmap: TBGRACustomBitmap; ABitDepth: integer;
   ADithering: TDitheringAlgorithm): TBGRACustomBitmap;
@@ -470,6 +473,28 @@ begin
   FFileType:= ifUnknown;
 end;
 
+procedure TBGRAIconCursor.AssignTo(Dest: TPersistent);
+{$IFDEF BGRABITMAP_USE_LCL}
+var
+  temp: TMemoryStream;
+{$ENDIF}
+begin
+  {$IFDEF BGRABITMAP_USE_LCL}
+  if Dest is TCustomIcon then
+  begin
+    temp := TMemoryStream.Create;
+    try
+      SaveToStream(temp);
+      temp.Position:= 0;
+      TCustomIcon(Dest).LoadFromStream(temp);
+    finally
+      temp.Free;
+    end;
+  end else
+  {$ENDIF}
+    inherited AssignTo(Dest);
+end;
+
 constructor TBGRAIconCursor.Create(AFileType: TBGRAImageFormat);
 begin
   if not (AFileType in [ifIco,ifCur,ifUnknown]) then
@@ -805,6 +830,28 @@ begin
       exit;
     end;
   result := -1;
+end;
+
+procedure TBGRAIconCursor.Assign(Source: TPersistent);
+{$IFDEF BGRABITMAP_USE_LCL}
+var
+  temp: TMemoryStream;
+{$ENDIF}
+begin
+  {$IFDEF BGRABITMAP_USE_LCL}
+  if Source is TCustomIcon then
+  begin
+    temp := TMemoryStream.Create;
+    try
+      TCustomIcon(Source).SaveToStream(temp);
+      temp.Position:= 0;
+      LoadFromStream(temp);
+    finally
+      temp.Free;
+    end;
+  end else
+  {$ENDIF}
+    inherited Assign(Source);
 end;
 
 end.
