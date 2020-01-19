@@ -66,6 +66,7 @@ type
   end;
 
 function BGRADitherIconCursor(ABitmap: TBGRACustomBitmap; ABitDepth: integer; ADithering: TDitheringAlgorithm): TBGRACustomBitmap;
+function BGRABitDepthIconCursor(ABitmap: TBGRACustomBitmap): integer;
 
 implementation
 
@@ -137,6 +138,53 @@ begin
       end;
     end;
   end;
+end;
+
+function BGRABitDepthIconCursor(ABitmap: TBGRACustomBitmap): integer;
+var pal: TBGRAPalette;
+  p: PBGRAPixel;
+  n: integer;
+
+  function BlackAndWhite: boolean;
+  var
+    i: Integer;
+  begin
+    if pal.Count > 2 then result := false
+    else
+    begin
+      for i := 0 to pal.Count-1 do
+        if (pal.Color[i] <> BGRAWhite) and (pal.Color[i] <> BGRABlack) then
+          exit(false);
+      result := true;
+    end;
+  end;
+
+begin
+  pal := TBGRAPalette.Create;
+  p := ABitmap.Data;
+  n := ABitmap.NbPixels;
+  while (n > 0) and (pal.Count < 257) do
+  begin
+    if p^.alpha = 0 then
+    begin
+      if pal.Count < 257 then pal.AddColor(BGRABlack);
+    end else
+    if p^.alpha = 255 then
+    begin
+      if pal.Count < 257 then pal.AddColor(p^);
+    end else
+    begin
+      pal.Free;
+      exit(32);
+    end;
+    inc(p);
+    dec(n);
+  end;
+  if pal.Count > 256 then result := 24 else
+  if pal.Count > 16 then result := 8 else
+  if (pal.Count > 2) or not BlackAndWhite then result := 4 else
+    result := 1;
+  pal.Free;
 end;
 
 { TBGRAIconCursorEntry }
