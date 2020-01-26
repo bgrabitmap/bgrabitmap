@@ -258,8 +258,10 @@ function ComputeBezierCurve(const curve: TCubicBezierCurve; AAcceptedDeviation: 
 function ComputeBezierCurve(const curve: TQuadraticBezierCurve; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF; overload;
 function ComputeBezierSpline(const spline: array of TCubicBezierCurve; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF; overload;
 function ComputeBezierSpline(const spline: array of TQuadraticBezierCurve; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF; overload;
-function ComputeClosedSpline(const points: array of TPointF; Style: TSplineStyle; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
-function ComputeOpenedSpline(const points: array of TPointF; Style: TSplineStyle; EndCoeff: single = 0.25; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
+function ComputeClosedSpline(const APoints: array of TPointF; AStyle: TSplineStyle; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
+function ComputeClosedSpline(const APoints: array of TPointF; AStart, ACount: integer; AStyle: TSplineStyle; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
+function ComputeOpenedSpline(const APoints: array of TPointF; AStyle: TSplineStyle; AEndCoeff: single = 0.25; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
+function ComputeOpenedSpline(const APoints: array of TPointF; AStart, ACount: integer; AStyle: TSplineStyle; AEndCoeff: single = 0.25; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
 function ClosedSplineStartPoint(const points: array of TPointF; Style: TSplineStyle): TPointF;
 function ComputeEasyBezier(const curve: TEasyBezierCurve; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
 
@@ -462,7 +464,7 @@ begin
   end;
 end;
 
-function ComputeClosedSpline(const points: array of TPointF; Style: TSplineStyle; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
+function InternalComputeClosedSpline(const APoints: array of TPointF; AStart, ACount: integer; AStyle: TSplineStyle; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
 var
   i, j, nb, idx, pre: integer;
   ptPrev, ptPrev2, ptNext, ptNext2: TPointF;
@@ -470,39 +472,39 @@ var
   kernel: TWideKernelFilter;
 
 begin
-  if Style = ssEasyBezier then
+  if AStyle = ssEasyBezier then
   begin
-    result := ComputeEasyBezier(EasyBezierCurve(points, true, cmCurve));
+    result := ComputeEasyBezier(EasyBezierCurve(APoints, AStart, ACount, true, cmCurve));
     exit;
   end;
 
-  if length(points) <= 2 then
+  if ACount <= 2 then
   begin
-    setlength(result,length(points));
+    setlength(result, ACount);
     for i := 0 to high(result) do
-      result[i] := points[i];
+      result[i] := APoints[AStart + i];
     exit;
   end;
 
   nb := 1;
-  for i := 0 to high(points) do
+  for i := 0 to ACount-1 do
   begin
-    ptPrev2 := points[(i + length(points) - 1) mod length(points)];
-    ptPrev  := points[i];
-    ptNext  := points[(i + 1) mod length(points)];
-    ptNext2 := points[(i + 2) mod length(points)];
+    ptPrev2 := APoints[(i + ACount - 1) mod ACount + AStart];
+    ptPrev  := APoints[i + AStart];
+    ptNext  := APoints[(i + 1) mod ACount + AStart];
+    ptNext2 := APoints[(i + 2) mod ACount + AStart];
     inc(nb, ComputeCurvePartPrecision(ptPrev2, ptPrev, ptNext, ptNext2, AAcceptedDeviation) );
   end;
 
-  kernel := CreateInterpolator(style);
+  kernel := CreateInterpolator(AStyle);
   setlength(Result, nb);
   idx := 0;
-  for i := 0 to high(points) do
+  for i := 0 to ACount-1 do
   begin
-    ptPrev2 := points[(i + length(points) - 1) mod length(points)];
-    ptPrev  := points[i];
-    ptNext  := points[(i + 1) mod length(points)];
-    ptNext2 := points[(i + 2) mod length(points)];
+    ptPrev2 := APoints[(i + ACount - 1) mod ACount + AStart];
+    ptPrev  := APoints[i+ AStart];
+    ptNext  := APoints[(i + 1) mod ACount + AStart];
+    ptNext2 := APoints[(i + 2) mod ACount + AStart];
     pre     := ComputeCurvePartPrecision(ptPrev2, ptPrev, ptNext, ptNext2, AAcceptedDeviation);
     if i=0 then
       j := 0
@@ -520,69 +522,93 @@ begin
   kernel.Free;
 end;
 
-function ComputeOpenedSpline(const points: array of TPointF; Style: TSplineStyle; EndCoeff: single; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
+function ComputeClosedSpline(const APoints: array of TPointF; AStyle: TSplineStyle; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
+var
+  nbParts, partIndex, start, i: integer;
+  parts: array of array of TPointF;
+begin
+  nbParts := 1;
+  for i := 0 to high(APoints) do
+    if isEmptyPointF(APoints[i]) then inc(nbParts);
+  if nbParts = 1 then
+    exit(InternalComputeClosedSpline(APoints, 0, length(APoints), AStyle, AAcceptedDeviation));
+  setlength(parts, nbParts);
+  partIndex := 0;
+  start := 0;
+  for i := 0 to high(APoints) do
+    if isEmptyPointF(APoints[i]) then
+    begin
+      parts[partIndex] := InternalComputeClosedSpline(APoints, start, i-start, AStyle, AAcceptedDeviation);
+      inc(partIndex);
+      start := i+1;
+    end;
+  parts[partIndex] := InternalComputeClosedSpline(APoints, start, length(APoints)-start, AStyle, AAcceptedDeviation);
+  result := ConcatPointsF(parts, true);
+end;
+
+function InternalComputeOpenedSpline(const APoints: array of TPointF; AStart, ACount: integer; AStyle: TSplineStyle; AEndCoeff: single; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
 var
   i, j, nb, idx, pre: integer;
   ptPrev, ptPrev2, ptNext, ptNext2: TPointF;
   t: single;
   kernel: TWideKernelFilter;
 begin
-  if Style = ssEasyBezier then
+  if AStyle = ssEasyBezier then
   begin
-    result := ComputeEasyBezier(EasyBezierCurve(points, false, cmCurve));
+    result := ComputeEasyBezier(EasyBezierCurve(APoints, AStart, ACount, false, cmCurve));
     exit;
   end;
 
-  if length(points) <= 2 then
+  if ACount <= 2 then
   begin
-    setlength(result,length(points));
+    setlength(result, ACount);
     for i := 0 to high(result) do
-      result[i] := points[i];
+      result[i] := APoints[AStart + i];
     exit;
   end;
-  if style in[ssInsideWithEnds,ssCrossingWithEnds] then EndCoeff := 0;
-  if EndCoeff < -0.3 then EndCoeff := -0.3;
+  if AStyle in[ssInsideWithEnds,ssCrossingWithEnds] then AEndCoeff := 0;
+  if AEndCoeff < -0.3 then AEndCoeff := -0.3;
 
   nb := 1;
-  for i := 0 to high(points) - 1 do
+  for i := 0 to ACount - 2 do
   begin
-    ptPrev  := points[i];
-    ptNext  := points[i + 1];
+    ptPrev  := APoints[AStart + i];
+    ptNext  := APoints[AStart + i + 1];
     if i=0 then
-      ptPrev2 := (ptPrev+(ptNext+points[i + 2])*EndCoeff)*(1/(1+2*EndCoeff))
+      ptPrev2 := (ptPrev+(ptNext+APoints[AStart + i + 2])*AEndCoeff)*(1/(1+2*AEndCoeff))
     else
-      ptPrev2 := points[i - 1];
-    if i = high(points)-1 then
-      ptNext2 := (ptNext+(ptPrev+points[i - 1])*EndCoeff)*(1/(1+2*EndCoeff))
+      ptPrev2 := APoints[AStart + i - 1];
+    if i = ACount - 2 then
+      ptNext2 := (ptNext+(ptPrev+APoints[AStart + i - 1])*AEndCoeff)*(1/(1+2*AEndCoeff))
     else
-      ptNext2 := points[i + 2];
+      ptNext2 := APoints[AStart + i + 2];
     inc(nb, ComputeCurvePartPrecision(ptPrev2, ptPrev, ptNext, ptNext2, AAcceptedDeviation) );
   end;
 
-  kernel := CreateInterpolator(style);
-  if Style in[ssInsideWithEnds,ssCrossingWithEnds] then
+  kernel := CreateInterpolator(AStyle);
+  if AStyle in[ssInsideWithEnds,ssCrossingWithEnds] then
   begin
     inc(nb,2);
     setlength(Result, nb);
-    result[0] := points[0];
+    result[0] := APoints[AStart];
     idx := 1;
   end else
   begin
     idx := 0;
     setlength(Result, nb);
   end;
-  for i := 0 to high(points) - 1 do
+  for i := 0 to ACount - 2 do
   begin
-    ptPrev  := points[i];
-    ptNext  := points[i + 1];
+    ptPrev  := APoints[AStart + i];
+    ptNext  := APoints[AStart + i + 1];
     if i=0 then
-      ptPrev2 := (ptPrev+(ptNext+points[i + 2])*EndCoeff)*(1/(1+2*EndCoeff))
+      ptPrev2 := (ptPrev+(ptNext+APoints[i + 2 + AStart])*AEndCoeff)*(1/(1+2*AEndCoeff))
     else
-      ptPrev2 := points[i - 1];
-    if i = high(points)-1 then
-      ptNext2 := (ptNext+(ptPrev+points[i - 1])*EndCoeff)*(1/(1+2*EndCoeff))
+      ptPrev2 := APoints[AStart + i - 1];
+    if i = ACount - 2 then
+      ptNext2 := (ptNext+(ptPrev+APoints[i - 1 + AStart])*AEndCoeff)*(1/(1+2*AEndCoeff))
     else
-      ptNext2 := points[i + 2];
+      ptNext2 := APoints[AStart + i + 2];
     pre     := ComputeCurvePartPrecision(ptPrev2, ptPrev, ptNext, ptNext2, AAcceptedDeviation);
     if i=0 then
     begin
@@ -598,8 +624,59 @@ begin
     end;
   end;
   kernel.Free;
-  if Style in[ssInsideWithEnds,ssCrossingWithEnds] then
-    result[idx] := points[high(points)];
+  if AStyle in[ssInsideWithEnds,ssCrossingWithEnds] then
+    result[idx] := APoints[AStart + ACount - 1];
+end;
+
+function ComputeClosedSpline(const APoints: array of TPointF; AStart,
+  ACount: integer; AStyle: TSplineStyle; AAcceptedDeviation: single): ArrayOfTPointF;
+var
+  i: Integer;
+begin
+  if (AStart < 0) or (AStart + ACount > length(APoints)) then
+    raise exception.Create('Index out of bounds');
+  for i := 0 to ACount-1 do
+    if IsEmptyPointF(APoints[AStart + i]) then
+      raise exception.Create('Unexpected empty point');
+  result := InternalComputeClosedSpline(APoints, AStart, ACount, AStyle, AAcceptedDeviation);
+end;
+
+function ComputeOpenedSpline(const APoints: array of TPointF; AStyle: TSplineStyle; AEndCoeff: single; AAcceptedDeviation: single = DefaultDeviation): ArrayOfTPointF;
+var
+  nbParts, partIndex, start, i: integer;
+  parts: array of array of TPointF;
+begin
+  nbParts := 1;
+  for i := 0 to high(APoints) do
+    if isEmptyPointF(APoints[i]) then inc(nbParts);
+  if nbParts = 1 then
+    exit(InternalComputeOpenedSpline(APoints, 0, length(APoints), AStyle, AEndCoeff, AAcceptedDeviation));
+  setlength(parts, nbParts);
+  partIndex := 0;
+  start := 0;
+  for i := 0 to high(APoints) do
+    if isEmptyPointF(APoints[i]) then
+    begin
+      parts[partIndex] := InternalComputeOpenedSpline(APoints, start, i-start, AStyle, AEndCoeff, AAcceptedDeviation);
+      inc(partIndex);
+      start := i+1;
+    end;
+  parts[partIndex] := InternalComputeOpenedSpline(APoints, start, length(APoints)-start, AStyle, AEndCoeff, AAcceptedDeviation);
+  result := ConcatPointsF(parts, true);
+end;
+
+function ComputeOpenedSpline(const APoints: array of TPointF; AStart,
+  ACount: integer; AStyle: TSplineStyle; AEndCoeff: single;
+  AAcceptedDeviation: single): ArrayOfTPointF;
+var
+  i: Integer;
+begin
+  if (AStart < 0) or (AStart + ACount > length(APoints)) then
+    raise exception.Create('Index out of bounds');
+  for i := 0 to ACount-1 do
+    if IsEmptyPointF(APoints[AStart + i]) then
+      raise exception.Create('Unexpected empty point');
+  result := InternalComputeOpenedSpline(APoints, AStart, ACount, AStyle, AEndCoeff, AAcceptedDeviation);
 end;
 
 function ClosedSplineStartPoint(const points: array of TPointF;
@@ -2319,6 +2396,10 @@ var elem: PSplineElement;
   i: NativeInt;
   p: PPointF;
 begin
+  if length(pts) = 0 then exit;
+  for i := 0 to high(pts) do
+    if isEmptyPointF(pts[i]) then
+      raise exception.Create('Unexpected empty point');
   if length(pts) <= 2 then
   begin
     polyline(pts);
@@ -2346,6 +2427,9 @@ var elem: PSplineElement;
   p: PPointF;
 begin
   if length(pts) = 0 then exit;
+  for i := 0 to high(pts) do
+    if isEmptyPointF(pts[i]) then
+      raise exception.Create('Unexpected empty point');
   if not LastCoordDefined then moveTo(ClosedSplineStartPoint(pts, style));
   if length(pts) <= 2 then exit;
   elem := AllocateElement(peClosedSpline, length(pts)*sizeof(TPointF));
