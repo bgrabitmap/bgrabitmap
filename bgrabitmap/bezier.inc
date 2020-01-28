@@ -176,10 +176,10 @@ const
   function EasyBezierCurve(APoints: array of TPointF; AClosed: boolean; ACurveMode: array of TEasyBezierCurveMode;
     AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve; overload;
 
-  function EasyBezierCurve(APoints: array of TPointF; AStart, AEnd: integer; AClosed: boolean; ACurveMode: TEasyBezierCurveMode;
+  function EasyBezierCurve(APoints: array of TPointF; AStart, ACount: integer; AClosed: boolean; ACurveMode: TEasyBezierCurveMode;
     AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve; overload;
 
-  function EasyBezierCurve(APoints: array of TPointF; AStart, AEnd: integer; AClosed: boolean; ACurveMode: array of TEasyBezierCurveMode;
+  function EasyBezierCurve(APoints: array of TPointF; AStart, ACount: integer; AClosed: boolean; ACurveMode: array of TEasyBezierCurveMode;
     AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve; overload;
 
 {$ENDIF}
@@ -1131,21 +1131,21 @@ begin
   result := EasyBezierCurve(APoints, 0, length(APoints), AClosed, ACurveMode, AMinimumDotProduct);
 end;
 
-function EasyBezierCurve(APoints: array of TPointF; AStart, AEnd: integer; AClosed: boolean;
+function EasyBezierCurve(APoints: array of TPointF; AStart, ACount: integer; AClosed: boolean;
   ACurveMode: TEasyBezierCurveMode; AMinimumDotProduct: single): TEasyBezierCurve;
 begin
   result.Init;
-  result.SetPoints(APoints, ACurveMode, AStart, AEnd);
+  result.SetPoints(APoints, ACurveMode, AStart, ACount);
   result.Closed:= AClosed;
   result.MinimumDotProduct:= AMinimumDotProduct;
 end;
 
-function EasyBezierCurve(APoints: array of TPointF; AStart, AEnd: integer; AClosed: boolean;
+function EasyBezierCurve(APoints: array of TPointF; AStart, ACount: integer; AClosed: boolean;
   ACurveMode: array of TEasyBezierCurveMode;
   AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve;
 begin
   result.Init;
-  result.SetPoints(APoints, ACurveMode, AStart, AEnd);
+  result.SetPoints(APoints, ACurveMode, AStart, ACount);
   result.Closed:= AClosed;
   result.MinimumDotProduct:= AMinimumDotProduct;
 end;
