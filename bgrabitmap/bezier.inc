@@ -1366,7 +1366,7 @@ begin
   setlength(FPoints, ACount);
   if length(ACurveMode) > 0 then
     j := AStart mod length(ACurveMode);
-  for i := 0 to ACount do
+  for i := 0 to ACount-1 do
   begin
     FPoints[i].Coord := APoints[i + AStart];
     if length(ACurveMode) = 0 then
