@@ -1363,7 +1363,7 @@ var
 begin
   if (AStart < 0) or (AStart+ACount > length(APoints)) then
     raise exception.Create('Index out of bounds');
-  setlength(FPoints, length(APoints));
+  setlength(FPoints, ACount);
   if length(ACurveMode) > 0 then
     j := AStart mod length(ACurveMode);
   for i := 0 to ACount do
