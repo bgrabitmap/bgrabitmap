@@ -3378,7 +3378,10 @@ var
   scanner: TBGRAGradientScanner;
 begin
   if (c1.alpha = 0) and (c2.alpha = 0) then
-    FillRect(x, y, x2, y2, BGRAPixelTransparent, dmSet)
+  begin
+    if mode = dmSet then
+      FillRect(x, y, x2, y2, BGRAPixelTransparent, dmSet);
+  end
   else
   begin
     scanner := TBGRAGradientScanner.Create(c1,c2,gtype,o1,o2,gammaColorCorrection,Sinus);
