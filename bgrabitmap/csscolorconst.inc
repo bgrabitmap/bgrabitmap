@@ -126,7 +126,7 @@ var
    * [#000080] Navy,   [#0000FF] Blue, [#008080] Teal,   [#00FFFF] Aqua.
    * Shortcut constants are provided: [#000000] ''VGABlack'', [#808080] ''VGAGray''... }
   VGAColors: TBGRAColorList;
-  {* List of [http://www.w3schools.com/cssref/css_colornames.asp web colors].
+  {* List of [https://www.w3schools.com/cssref/css_colors.asp web colors].
   Shortcut constants are provided: [#000000] ''CSSBlack'', [#FF0000] ''CSSRed''... }
   CSSColors: TBGRAColorList;
 
