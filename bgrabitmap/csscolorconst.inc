@@ -134,7 +134,7 @@ var
 
 {* Converts a ''TBGRAPixel'' value into a string, using color names provided in ''AColorList'', and
    considering that a color matches in the color list if its difference is within ''AMaxDiff'' }
-function BGRAToStr(c: TBGRAPixel; AColorList: TBGRAColorList = nil; AMaxDiff: Word= 0): string;
+function BGRAToStr(c: TBGRAPixel; AColorList: TBGRAColorList = nil; AMaxDiff: Word= 0; AOptionalAlpha: boolean = false): string;
 {* Converts a fully defined string into a ''TBGRAPixel'' value. Color names from ''VGAColors'' and ''CSSColors''
    are used if there is an exact match }
 function StrToBGRA(str: string): TBGRAPixel; overload;
@@ -259,7 +259,7 @@ end;
 {------------------- string conversion ---------------------------------}
 
 { Write a color in hexadecimal format RRGGBBAA or using the name in a color list }
-function BGRAToStr(c: TBGRAPixel; AColorList: TBGRAColorList = nil; AMaxDiff: Word= 0): string;
+function BGRAToStr(c: TBGRAPixel; AColorList: TBGRAColorList; AMaxDiff: Word; AOptionalAlpha: boolean): string;
 var idx: integer;
 begin
   if Assigned(AColorList) then
@@ -271,7 +271,10 @@ begin
       exit;
     end;
   end;
-  result := IntToHex(c.red,2)+IntToHex(c.green,2)+IntToHex(c.Blue,2)+IntToHex(c.Alpha,2);
+  if AOptionalAlpha and (c.alpha = 255) then
+    result := IntToHex(c.red,2)+IntToHex(c.green,2)+IntToHex(c.Blue,2)
+  else
+    result := IntToHex(c.red,2)+IntToHex(c.green,2)+IntToHex(c.Blue,2)+IntToHex(c.Alpha,2);
 end;
 
 type
