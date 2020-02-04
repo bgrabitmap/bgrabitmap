@@ -377,6 +377,7 @@ type
      procedure DrawHorizLine(x, y, x2: int32or64; texture: IBGRAScanner); overload;
      procedure FastBlendHorizLine(x, y, x2: int32or64; c: TBGRAPixel); virtual; abstract;
      procedure DrawHorizLineDiff(x, y, x2: int32or64; c, compare: TBGRAPixel; maxDiff: byte); virtual; abstract;
+     procedure HorizLineDiff(x, y, x2: int32or64; const ABrush: TUniversalBrush; ACompare: TBGRAPixel; AMaxDiffW: word); virtual; abstract;
 
      procedure XorVertLine(x, y, y2: int32or64; c: TBGRAPixel); virtual; abstract;
      procedure DrawVertLine(x, y, y2: int32or64; c: TBGRAPixel); virtual; abstract;
@@ -564,9 +565,13 @@ type
      procedure ReplaceColor(before, after: TColor); overload; virtual; abstract;
      procedure ReplaceColor(ARect: TRect; before, after: TColor); overload; virtual; abstract;
      procedure FloodFill(X, Y: integer; Color: TBGRAPixel;
-       mode: TFloodfillMode; Tolerance: byte = 0); virtual;
+       mode: TFloodfillMode; Tolerance: byte = 0); overload; virtual;
+     procedure FloodFill(X, Y: integer; const Brush: TUniversalBrush;
+       Progressive: boolean; ToleranceW: Word = $00ff); overload; virtual;
      procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; Color: TBGRAPixel;
-       mode: TFloodfillMode; Tolerance: byte = 0; DestOfsX: integer = 0; DestOfsY: integer = 0); virtual; abstract;
+       mode: TFloodfillMode; Tolerance: byte = 0; DestOfsX: integer = 0; DestOfsY: integer = 0); overload; virtual; abstract;
+     procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; const Brush: TUniversalBrush;
+       Progressive: boolean; ToleranceW: Word = $00ff; DestOfsX: integer = 0; DestOfsY: integer = 0); overload; virtual; abstract;
      procedure GradientFill(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
        gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
        gammaColorCorrection: boolean = True; Sinus: Boolean=False;
@@ -1561,7 +1566,13 @@ end;
 procedure TBGRACustomBitmap.FloodFill(X, Y: integer; Color: TBGRAPixel;
   mode: TFloodfillMode; Tolerance: byte);
 begin
-  ParallelFloodFill(X,Y,Self,Color,mode,Tolerance);
+  ParallelFloodFill(X,Y, Self, Color, mode, Tolerance);
+end;
+
+procedure TBGRACustomBitmap.FloodFill(X, Y: integer;
+  const Brush: TUniversalBrush; Progressive: boolean; ToleranceW: Word);
+begin
+  ParallelFloodFill(X,Y, Self, Brush, Progressive, ToleranceW);
 end;
 
 procedure TBGRACustomBitmap.DrawPart(ARect: TRect; ACanvas: TCanvas; x,

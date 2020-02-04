@@ -1022,17 +1022,20 @@ var
 begin
   if FSegmentsDataCreated then exit;
   FSegmentsDataCreated := true;
-  p := @FPoints[0];
-  for i := 0 to high(FPoints) do
+  if FPoints<>nil then
   begin
-    if not p^.empty and (p^.slope <> EmptySingle) then
+    p := @FPoints[0];
+    for i := 0 to high(FPoints) do
     begin
-      if p^.winding < 0 then
-        p^.data := CreateSegmentData(p^.next,i, p)
-      else
-        p^.data := CreateSegmentData(i,p^.next, p);
+      if not p^.empty and (p^.slope <> EmptySingle) then
+      begin
+        if p^.winding < 0 then
+          p^.data := CreateSegmentData(p^.next,i, p)
+        else
+          p^.data := CreateSegmentData(i,p^.next, p);
+      end;
+      inc(p);
     end;
-    inc(p);
   end;
 end;
 

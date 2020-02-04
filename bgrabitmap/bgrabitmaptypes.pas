@@ -37,7 +37,7 @@ uses
 
 
 const
-  BGRABitmapVersion = 10060400;
+  BGRABitmapVersion = 10060500;
 
   function BGRABitmapVersionStr: string;
 
@@ -56,6 +56,10 @@ type
     fmSet,
     {** Pixels that are filled are drawn upon with the fill color }
     fmDrawWithTransparency,
+    {** Pixels that are filled are drawn without gamma correction upon with the fill color }
+    fmLinearBlend,
+    {** Pixels that are XORed with the fill color}
+    fmXor,
     {** Pixels that are filled are drawn upon to the extent that the color underneath is similar to
         the start color. The more different the different is, the less it is drawn upon }
     fmProgressive);
@@ -126,7 +130,9 @@ type
     {** text or binary encoded image, no compression, extension PBM, PGM, PPM }
     ifPortableAnyMap,
     {** Scalable Vector Graphic, vectorial, read-only as raster }
-    ifSvg);
+    ifSvg,
+    {** Lossless or lossy compression using V8 algorithm (need libwebp library) }
+    ifWebP);
 
   {* Options when loading an image }
   TBGRALoadingOption = (
@@ -564,7 +570,8 @@ implementation
 uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
   FPReadXwd, FPReadXPM,
   FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
-  FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM;
+  FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM,
+  BGRAReadWebP, BGRAWriteWebP;
 
 function BGRABitmapVersionStr: string;
 var numbers: TStringList;
@@ -1023,7 +1030,7 @@ var
   var
     {%H-}magic: packed array[0..7] of byte;
     {%H-}dwords: packed array[0..9] of DWORD;
-    magicAsText: string;
+    magicAsText, moreMagic: string;
 
     streamStartPos, maxFileSize: Int64;
     expectedFileSize: DWord;
@@ -1191,6 +1198,15 @@ var
     if (length(magicAsText)>3) and (magicAsText[1]='P') and
       (magicAsText[2] in['1'..'6']) and (magicAsText[3] = #10) then inc(scores[ifPortableAnyMap]);
 
+    if (copy(magicAsText,1,4) = 'RIFF') then
+    begin
+      AStream.Position:= streamStartPos+8;
+      setlength(moreMagic, 4);
+      if (AStream.Read(moreMagic[1],4) = 4)
+       and (moreMagic = 'WEBP') then
+        inc(scores[ifWebP], 2);
+    end;
+
     AStream.Position := streamStartPos;
   end;
 
@@ -1251,7 +1267,8 @@ begin
   if (ext = '.xpm') then result := ifXPixMap else
   if (ext = '.oxo') then result := ifPhoxo else
   if (ext = '.svg') then result := ifSvg else
-  if (ext = '.pbm') or (ext = '.pgm') or (ext = '.ppm') then result := ifPortableAnyMap;
+  if (ext = '.pbm') or (ext = '.pgm') or (ext = '.ppm') then result := ifPortableAnyMap else
+  if (ext = '.webp') then result := ifWebP;
 end;
 
 function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
@@ -1276,6 +1293,7 @@ begin
     ifXPixMap: result := 'xpm';
     ifSvg: result := 'svg';
     ifPortableAnyMap: result := 'ppm';
+    ifWebP: result := 'webp';
     else result := '?';
   end;
 end;
@@ -1340,7 +1358,7 @@ type
     code: pchar;
   end;
 
-{$IFDEF BGRABITMAP_USE_FPGUI}{$IFDEF MSWINDOWS}
+{$IF defined(BGRABITMAP_USE_FPGUI) or defined(BGRABITMAP_DONT_USE_LCL)}{$IFDEF MSWINDOWS}
 const
   RT_BITMAP = MAKEINTRESOURCE(2);
   RT_RCDATA = MAKEINTRESOURCE(10);

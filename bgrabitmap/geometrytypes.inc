@@ -205,7 +205,7 @@ type
   {** Creates an array of ''TPointF'' }
   function PointsF(const pts: array of TPointF): ArrayOfTPointF;
   {** Concatenates arrays of ''TPointF'' }
-  function ConcatPointsF(const APolylines: array of ArrayOfTPointF): ArrayOfTPointF;
+  function ConcatPointsF(const APolylines: array of ArrayOfTPointF; AInsertEmptyPointInBetween: boolean = false): ArrayOfTPointF;
   {** Compute the length of the polyline contained in the array.
       ''AClosed'' specifies if the last point is to be joined to the first one }
   function PolylineLen(const pts: array of TPointF; AClosed: boolean = false): single;
@@ -357,6 +357,8 @@ type
 
 type
   {* Point in 3D with single-precision floating point coordinates }
+
+  PPoint3D = ^TPoint3D;
 
   { TPoint3D }
 
@@ -1410,8 +1412,8 @@ begin
   for i := 0 to high(pts) do result[i] := pts[i];
 end;
 
-function ConcatPointsF(const APolylines: array of ArrayOfTPointF
-  ): ArrayOfTPointF;
+function ConcatPointsF(const APolylines: array of ArrayOfTPointF;
+  AInsertEmptyPointInBetween: boolean): ArrayOfTPointF;
 var
   i,pos,count:integer;
   j: Integer;
@@ -1419,14 +1421,22 @@ begin
   count := 0;
   for i := 0 to high(APolylines) do
     inc(count,length(APolylines[i]));
+  if AInsertEmptyPointInBetween then inc(count, length(APolylines)-1);
   setlength(result,count);
   pos := 0;
   for i := 0 to high(APolylines) do
+  begin
+    if AInsertEmptyPointInBetween and (i > 0) then
+    begin
+      result[pos] := EmptyPointF;
+      inc(pos);
+    end;
     for j := 0 to high(APolylines[i]) do
     begin
       result[pos] := APolylines[i][j];
       inc(pos);
     end;
+  end;
 end;
 
 function VectLen(v: TPointF): single;

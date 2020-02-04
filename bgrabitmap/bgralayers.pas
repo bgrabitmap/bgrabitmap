@@ -263,6 +263,12 @@ type
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; Matrix: TAffineMatrix; Opacity: byte = 255): integer; overload;
     function AddLayerFromOwnedOriginal(AOriginal: TBGRALayerCustomOriginal; Matrix: TAffineMatrix; BlendOp: TBlendOperation; Opacity: byte = 255): integer; overload;
 
+    class function IsValidRegistryIndentifier(AIdentifier: string): boolean;
+    function GetLayerRegistry(ALayerIndex: integer; ARegistryIdentifier: string): RawByteString;
+    procedure SetLayerRegistry(ALayerIndex: integer; ARegistryIdentifier: string; AValue: RawByteString);
+    function GetGlobalRegistry(ARegistryIdentifier: string): RawByteString;
+    procedure SetGlobalRegistry(ARegistryIdentifier: string; AValue: RawByteString);
+
     function AddOriginal(AOriginal: TBGRALayerCustomOriginal; AOwned: boolean = true): integer;
     function AddOriginalFromStream(AStream: TStream; ALateLoad: boolean = false): integer; overload;
     function AddOriginalFromStream(AStream: TStream; const AGuid: TGuid; ALateLoad: boolean = false): integer; overload;
@@ -389,6 +395,7 @@ const
   OriginalsDirectory = 'originals';
   LayersDirectory = 'layers';
   RenderSubDirectory = 'render';
+  RegistrySubDirectory = 'registry';
 
 var
   OnLayeredBitmapLoadStartProc: TOnLayeredBitmapLoadStartProc;
@@ -1423,6 +1430,65 @@ function TBGRALayeredBitmap.AddLayerFromOwnedOriginal(
 begin
   if IndexOfOriginal(AOriginal) = -1 then AddOriginal(AOriginal);
   result := AddLayerFromOriginal(AOriginal.Guid, Matrix, BlendOp, Opacity);
+end;
+
+class function TBGRALayeredBitmap.IsValidRegistryIndentifier(AIdentifier: string): boolean;
+var
+  i: Integer;
+begin
+  if length(AIdentifier) = 0 then exit(false);
+  for i := 1 to length(AIdentifier) do
+    if not (AIdentifier[i] in ['A'..'Z','a'..'z','0'..'9','_','-']) then exit(false);
+  exit(true);
+end;
+
+function TBGRALayeredBitmap.GetLayerRegistry(ALayerIndex: integer;
+  ARegistryIdentifier: string): RawByteString;
+var
+  layerDir, registryDir: TMemDirectory;
+begin
+  if not IsValidRegistryIndentifier(ARegistryIdentifier) then
+    raise exception.Create('Invalid registry identifier');
+  layerDir := GetLayerDirectory(ALayerIndex, false);
+  if layerDir = nil then exit('');
+  registryDir := layerDir.Directory[layerDir.AddDirectory(RegistrySubDirectory,'')];
+  result := registryDir.RawStringByFilename[ARegistryIdentifier]
+end;
+
+procedure TBGRALayeredBitmap.SetLayerRegistry(ALayerIndex: integer;
+  ARegistryIdentifier: string; AValue: RawByteString);
+var
+  layerDir, registryDir: TMemDirectory;
+begin
+  if not IsValidRegistryIndentifier(ARegistryIdentifier) then
+    raise exception.Create('Invalid registry identifier');
+  layerDir := GetLayerDirectory(ALayerIndex, true);
+  registryDir := layerDir.Directory[layerDir.AddDirectory(RegistrySubDirectory,'')];
+  if length(AValue) = 0 then
+    registryDir.Delete(ARegistryIdentifier,'')
+  else registryDir.RawStringByFilename[ARegistryIdentifier] := AValue;
+end;
+
+function TBGRALayeredBitmap.GetGlobalRegistry(ARegistryIdentifier: string): RawByteString;
+var
+  registryDir: TMemDirectory;
+begin
+  if not IsValidRegistryIndentifier(ARegistryIdentifier) then
+    raise exception.Create('Invalid registry identifier');
+  registryDir := MemDirectory.Directory[MemDirectory.AddDirectory(RegistrySubDirectory,'')];
+  result := registryDir.RawStringByFilename[ARegistryIdentifier]
+end;
+
+procedure TBGRALayeredBitmap.SetGlobalRegistry(ARegistryIdentifier: string; AValue: RawByteString);
+var
+  registryDir: TMemDirectory;
+begin
+  if not IsValidRegistryIndentifier(ARegistryIdentifier) then
+    raise exception.Create('Invalid registry identifier');
+  registryDir := MemDirectory.Directory[MemDirectory.AddDirectory(RegistrySubDirectory,'')];
+  if length(AValue) = 0 then
+    registryDir.Delete(ARegistryIdentifier,'')
+  else registryDir.RawStringByFilename[ARegistryIdentifier] := AValue;
 end;
 
 function TBGRALayeredBitmap.AddOriginal(AOriginal: TBGRALayerCustomOriginal; AOwned: boolean): integer;
@@ -2688,7 +2754,7 @@ begin
     begin
       temp := LayeredBitmapWriters[i].theClass.Create;
       try
-        temp.Assign(self);
+        temp.Assign(self, true, true);
         temp.SaveToStream(Stream);
       finally
         temp.Free;

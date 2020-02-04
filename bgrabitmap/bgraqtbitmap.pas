@@ -73,8 +73,12 @@ end;
 
 procedure TBGRAQtBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
   AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer);
-var psrc,pdest: PBGRAPixel;
+{$IFDEF DARWIN}
+var
+  psrc,pdest: PBGRAPixel;
   bmp: TBGRAQtBitmap;
+  x, y: integer;
+{$ENDIF}
 begin
   {$IFDEF DARWIN}
   bmp := TBGRAQtBitmap.Create(AWidth,AHeight);

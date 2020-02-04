@@ -351,6 +351,8 @@ type
         pixels are not changed }
     procedure DrawHorizLineDiff(x, y, x2: int32or64; c, compare: TBGRAPixel;
       maxDiff: byte); override;
+    procedure HorizLineDiff(x, y, x2: int32or64; const ABrush: TUniversalBrush;
+      ACompare: TBGRAPixel; AMaxDiffW: word); override;
 
     {** Xors a vertical line at column ''x'' and at row ''y'' to ''y2'' }
     procedure XorVertLine(x, y, y2: int32or64; c: TBGRAPixel); override;
@@ -541,16 +543,18 @@ type
     {Filling}
     procedure Fill(c: TBGRAPixel; start, Count: integer); overload; override;
     procedure DrawPixels(c: TBGRAPixel; start, Count: integer); override;
-    procedure AlphaFill(alpha: byte; start, Count: integer); override;
+    procedure AlphaFill(alpha: byte; start, Count: integer); overload; override;
     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); override;
     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte = 255); override;
     procedure EraseMask(x,y: integer; AMask: TBGRACustomBitmap; alpha: byte=255); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); override;
-    procedure ReplaceColor(before, after: TColor); override;
-    procedure ReplaceColor(ABounds: TRect; before, after: TColor); override;
+    procedure ReplaceColor(before, after: TColor); overload; override;
+    procedure ReplaceColor(ABounds: TRect; before, after: TColor); overload; override;
     procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; Color: TBGRAPixel;
-      mode: TFloodfillMode; Tolerance: byte = 0; DestOfsX: integer = 0; DestOfsY: integer = 0); override;
+      mode: TFloodfillMode; Tolerance: byte = 0; DestOfsX: integer = 0; DestOfsY: integer = 0); overload; override;
+    procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; const Brush: TUniversalBrush;
+      Progressive: boolean; ToleranceW: Word = $00ff; DestOfsX: integer = 0; DestOfsY: integer = 0); overload; override;
     procedure GradientFill(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
       gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
       gammaColorCorrection: boolean = True; Sinus: Boolean=False;
@@ -1816,6 +1820,42 @@ procedure TBGRADefaultBitmap.DrawHorizLineDiff(x, y, x2: int32or64;
 begin
   if not CheckHorizLineBounds(x,y,x2) then exit;
   DrawPixelsInlineDiff(scanline[y] + x, c, x2 - x + 1, compare, maxDiff);
+  InvalidateBitmap;
+end;
+
+procedure TBGRADefaultBitmap.HorizLineDiff(x, y, x2: int32or64;
+  const ABrush: TUniversalBrush; ACompare: TBGRAPixel; AMaxDiffW: word);
+var
+  pScan: PBGRAPixel;
+  ctx: TUniBrushContext;
+  sameCount, remain: Int32or64;
+  startAlpha, nextAlpha: Word;
+begin
+  if ABrush.Colorspace <> Colorspace then RaiseInvalidBrushColorspace;
+  if not CheckHorizLineBounds(x,y,x2) then exit;
+  LoadFromBitmapIfNeeded;
+  pScan := PBGRAPixel(GetPixelAddress(x,y));
+  ABrush.MoveTo(@ctx, pScan,x,y);
+  remain := x2-x+1;
+  nextAlpha := (65535 * (AMaxDiffW + 1 - BGRAWordDiff(pScan^, ACompare)) + (AMaxDiffW + 1) shr 1) div (AMaxDiffW + 1);
+  inc(pScan);
+  while remain > 0 do
+  begin
+    startAlpha := nextAlpha;
+    sameCount := 1;
+    dec(remain);
+    while remain > 0 do
+    begin
+      nextAlpha := (65535 * (AMaxDiffW + 1 - BGRAWordDiff(pScan^, ACompare)) + (AMaxDiffW + 1) shr 1) div (AMaxDiffW + 1);
+      inc(pScan);
+      if nextAlpha = startAlpha then
+      begin
+        inc(sameCount);
+        dec(remain);
+      end else break;
+    end;
+    ABrush.PutNextPixels(@ctx, startAlpha, sameCount);
+  end;
   InvalidateBitmap;
 end;
 
@@ -3132,6 +3172,22 @@ begin
   InvalidateBitmap;
 end;
 
+procedure TBGRADefaultBitmap.ParallelFloodFill(X, Y: integer;
+  Dest: TBGRACustomBitmap; Color: TBGRAPixel; mode: TFloodfillMode;
+  Tolerance: byte; DestOfsX: integer; DestOfsY: integer);
+var
+  b: TUniversalBrush;
+begin
+  case mode of
+    fmSet: SolidBrush(b, Color, dmSet);
+    fmDrawWithTransparency: SolidBrush(b, Color, dmDrawWithTransparency);
+    fmLinearBlend: SolidBrush(b, Color, dmLinearBlend);
+    fmXor: SolidBrush(b, Color, dmXor);
+    fmProgressive: SolidBrush(b, Color, dmDrawWithTransparency);
+  end;
+  ParallelFloodFill(X,Y, Dest, b, mode=fmProgressive, (Tolerance shl 8)+$ff, DestOfsX, DestOfsY);
+end;
+
 { General purpose FloodFill. It can be used to fill inplace or to
   fill a destination bitmap according to the content of the current bitmap.
 
@@ -3146,8 +3202,8 @@ end;
   The first direction to be checked is horizontal, then
   it checks pixels on the line above and on the line below. }
 procedure TBGRADefaultBitmap.ParallelFloodFill(X, Y: integer;
-  Dest: TBGRACustomBitmap; Color: TBGRAPixel; mode: TFloodfillMode;
-  Tolerance: byte; DestOfsX: integer; DestOfsY: integer);
+  Dest: TBGRACustomBitmap; const Brush: TUniversalBrush; Progressive: boolean;
+  ToleranceW: Word; DestOfsX: integer; DestOfsY: integer);
 var
   S:     TBGRAPixel;
   SX, EX, I: integer;
@@ -3168,7 +3224,7 @@ var
     else
     begin
       ComparedColor := GetPixel(AX, AY);
-      Result := BGRADiff(ComparedColor, S) <= Tolerance;
+      Result := BGRAWordDiff(ComparedColor, S) <= ToleranceW;
     end;
   end;
 
@@ -3219,7 +3275,7 @@ var
   end;
 
 begin
-  if (mode = fmDrawWithTransparency) and (Color.alpha = 0) then exit;
+  if Brush.DoesNothing then exit;
   if PtInClipRect(X,Y) then
   begin
     S := GetPixel(X, Y);
@@ -3245,13 +3301,10 @@ begin
         Inc(EX);
 
       SetVisited(SX, Y, EX);
-      if mode = fmSet then
-        dest.SetHorizLine(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Color)
+      if Progressive then
+        dest.HorizLineDiff(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Brush, S, ToleranceW)
       else
-      if mode = fmDrawWithTransparency then
-        dest.DrawHorizLine(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Color)
-      else
-        dest.DrawHorizLineDiff(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Color, S, Tolerance);
+        dest.HorizLine(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Brush);
 
       Added := False;
       if Y > FClipRect.Top then
@@ -3325,7 +3378,10 @@ var
   scanner: TBGRAGradientScanner;
 begin
   if (c1.alpha = 0) and (c2.alpha = 0) then
-    FillRect(x, y, x2, y2, BGRAPixelTransparent, dmSet)
+  begin
+    if mode = dmSet then
+      FillRect(x, y, x2, y2, BGRAPixelTransparent, dmSet);
+  end
   else
   begin
     scanner := TBGRAGradientScanner.Create(c1,c2,gtype,o1,o2,gammaColorCorrection,Sinus);

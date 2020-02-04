@@ -28,6 +28,7 @@ type
     function GetDifferenceBounds(ABitmap: TCustomUniversalBitmap): TRect;
 
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
+    class procedure IdleBrush(out ABrush: TUniversalBrush); virtual;
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TPixel;
             AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TCustomUniversalBitmap;
@@ -122,11 +123,11 @@ type
     {** Draws an ellipse without antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
     procedure Ellipse(x, y, rx, ry: single; const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
-    procedure Ellipse(AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
+    procedure Ellipse(const AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     {** Draws an ellipse with antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
     procedure EllipseAntialias(x, y, rx, ry: single; const AColor: TPixel; AWidth: single); overload; virtual;
-    procedure EllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel; AWidth: single); overload; virtual;
+    procedure EllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel; AWidth: single); overload; virtual;
 
     procedure DrawPath(APath: IBGRAPath; const AColor: TPixel; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure DrawPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const AColor: TPixel; AWidth: single; APixelCenteredCoordinates: boolean = true); overload; virtual;
@@ -134,7 +135,7 @@ type
     //-------------------------------- antialias fill ---------------------------------------------
     procedure FillPolyAntialias(const APoints: array of TPointF; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillEllipseAntialias(x, y, rx, ry: single; const AColor: TPixel); overload; virtual;
-    procedure FillEllipseAntialias(AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel); overload; virtual;
+    procedure FillEllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel); overload; virtual;
     procedure FillPath(APath: IBGRAPath; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillRectAntialias(x, y, x2, y2: single; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
@@ -342,6 +343,15 @@ procedure TGenericUniversalBitmap.SolidBrushIndirect(out
   ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode);
 begin
   SolidBrush(ABrush, PPixel(AColor)^, ADrawMode);
+end;
+
+class procedure TGenericUniversalBitmap.IdleBrush(out ABrush: TUniversalBrush);
+begin
+  ABrush.Colorspace := TColorspace;
+  ABrush.InternalInitContext:= nil;
+  PDefaultSolidBrushIndirectFixedData(@ABrush.FixedData)^.PixelSize:= sizeof(TPixel);
+  ABrush.InternalPutNextPixels:= @DefaultSolidBrushIndirectSkipPixels;
+  ABrush.DoesNothing:= true;
 end;
 
 class procedure TGenericUniversalBitmap.SolidBrush(out ABrush: TUniversalBrush;
@@ -885,13 +895,15 @@ begin
   FillEllipseAntialias(x,y,rx,ry, b);
 end;
 
-procedure TGenericUniversalBitmap.FillEllipseAntialias(AOrigin, AXAxis,
+procedure TGenericUniversalBitmap.FillEllipseAntialias(const AOrigin, AXAxis,
   AYAxis: TPointF; const AColor: TPixel);
 var
   b: TUniversalBrush;
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
+  {$PUSH}{$R-}
   FillEllipseAntialias(AOrigin, AXAxis, AYAxis, b);
+  {$POP}
 end;
 
 procedure TGenericUniversalBitmap.FillPath(APath: IBGRAPath;
@@ -1011,13 +1023,15 @@ begin
   Ellipse(x,y,rx,ry, b, AWidth,AAlpha);
 end;
 
-procedure TGenericUniversalBitmap.Ellipse(AOrigin, AXAxis, AYAxis: TPointF;
+procedure TGenericUniversalBitmap.Ellipse(const AOrigin, AXAxis, AYAxis: TPointF;
   const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word);
 var
   b: TUniversalBrush;
 begin
   SolidBrush(b,AColor,AMode);
+  {$PUSH}{$R-}
   Ellipse(AOrigin, AXAxis, AYAxis, b, AWidth,AAlpha);
+  {$POP}
 end;
 
 procedure TGenericUniversalBitmap.EllipseAntialias(x, y, rx, ry: single;
@@ -1029,13 +1043,15 @@ begin
   EllipseAntialias(x,y,rx,ry, b, AWidth);
 end;
 
-procedure TGenericUniversalBitmap.EllipseAntialias(AOrigin, AXAxis,
+procedure TGenericUniversalBitmap.EllipseAntialias(const AOrigin, AXAxis,
   AYAxis: TPointF; const AColor: TPixel; AWidth: single);
 var
   b: TUniversalBrush;
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
+  {$PUSH}{$R-}
   EllipseAntialias(AOrigin, AXAxis, AYAxis, b, AWidth);
+  {$POP}
 end;
 
 procedure TGenericUniversalBitmap.DrawPath(APath: IBGRAPath;

@@ -1318,6 +1318,7 @@ var
   iStart,i,h: integer;
   availableWidth: integer;
 begin
+  if sUTF8='' then exit;
   previousClip := ADest.ClipRect;
   if style.Clipping then
   begin
@@ -1418,6 +1419,7 @@ var mode : TBGRATextOutImproveReadabilityMode;
   m: TAffineMatrix;
   i: Integer;
 begin
+  if sUTF8='' then exit;
   {$IFDEF LINUX}
   //help LCL detect the correct direction
   case GetFirstStrongBidiClassUTF8(sUTF8) of
@@ -1464,6 +1466,7 @@ procedure TCustomLCLFontRenderer.InternalTextOutEllipse(
   AShowPrefix: boolean; ARightToLeft: boolean);
 var remain: string;
 begin
+  if sUTF8='' then exit;
   if InternalTextSize(sUTF8,AShowPrefix).cx > availableWidth then
   begin
     InternalSplitText(sUTF8, round(availableWidth - InternalTextSize('...',AShowPrefix).cx), remain, nil);
