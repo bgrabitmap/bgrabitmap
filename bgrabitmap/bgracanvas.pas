@@ -461,8 +461,8 @@ begin
     pmNot: result := BGRA(255,255,255,0);
     pmCopy: result := BGRAColor;
     pmNotCopy: result := BGRA(not BGRAColor.red, not BGRAColor.green, not BGRAColor.blue, BGRAColor.alpha);
-    pmXor: result := BGRA(BGRAColor.red, BGRAColor.green, BGRAColor.blue, 0);
-    pmNotXor: result := BGRA(not BGRAColor.red, not BGRAColor.green, not BGRAColor.blue, 0);
+    pmMerge, pmNotMerge, pmMask, pmNotMask, pmXor: result := BGRA(BGRAColor.red, BGRAColor.green, BGRAColor.blue, 0);
+    pmMergePenNot, pmMaskPenNot, pmMergeNotPen, pmMaskNotPen, pmNotXor: result := BGRA(not BGRAColor.red, not BGRAColor.green, not BGRAColor.blue, 0);
     else
       raise exception.Create('Unhandled pen mode');
     end;
@@ -474,10 +474,9 @@ begin
   case Mode of
     pmBlack, pmWhite, pmNop, pmCopy, pmNotCopy:
       result := dmDrawWithTransparency;
-    pmNot, pmXor, pmNotXor:
-      result := dmXor;
     else
-      raise exception.Create('Unhandled pen mode');
+      {pmNot, pmXor, pmNotXor and others}
+      result := dmXor;
   end;
 end;
 
@@ -559,11 +558,144 @@ begin
   inherited Assign(Source);
 end;
 
+type
+  PBGRAPenBrushFixedData = ^TBGRAPenBrushFixedData;
+  TBGRAPenBrushFixedData = record
+    BGRA: TBGRAPixel;
+    NotResult: boolean;
+  end;
+
+procedure BGRAPenSkipPixels({%H-}AFixedData: Pointer;
+  AContextData: PUniBrushContext; {%H-}AAlpha: Word; ACount: integer);
+begin
+  inc(PBGRAPixel(AContextData^.Dest), ACount);
+end;
+
+procedure BGRAPenMergePixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PBGRAPixel;
+  merged: TBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  with PBGRAPenBrushFixedData(AFixedData)^ do
+  begin
+    while ACount > 0 do
+    begin
+      merged.red := pDest^.red or PBGRAPenBrushFixedData(AFixedData)^.BGRA.red;
+      merged.green := pDest^.green or PBGRAPenBrushFixedData(AFixedData)^.BGRA.green;
+      merged.blue := pDest^.blue or PBGRAPenBrushFixedData(AFixedData)^.BGRA.blue;
+      if NotResult then
+      begin
+        merged.red := not merged.red;
+        merged.green := not merged.green;
+        merged.blue := not merged.blue;
+      end;
+      if AAlpha >= $ff7f then
+        pDest^ := merged else
+        pDest^ := GammaCompression(MergeBGRA(GammaExpansion(pDest^), not AAlpha,
+                                             GammaExpansion(merged), AAlpha));
+      inc(pDest);
+      dec(ACount);
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAPenMaskPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PBGRAPixel;
+  merged: TBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  with PBGRAPenBrushFixedData(AFixedData)^ do
+  begin
+    while ACount > 0 do
+    begin
+      merged.red := pDest^.red and PBGRAPenBrushFixedData(AFixedData)^.BGRA.red;
+      merged.green := pDest^.green and PBGRAPenBrushFixedData(AFixedData)^.BGRA.green;
+      merged.blue := pDest^.blue and PBGRAPenBrushFixedData(AFixedData)^.BGRA.blue;
+      if NotResult then
+      begin
+        merged.red := not merged.red;
+        merged.green := not merged.green;
+        merged.blue := not merged.blue;
+      end;
+      if AAlpha >= $ff7f then
+        pDest^ := merged else
+        pDest^ := GammaCompression(MergeBGRA(GammaExpansion(pDest^), not AAlpha,
+                                             GammaExpansion(merged), AAlpha));
+      inc(pDest);
+      dec(ACount);
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
 procedure TBGRAPen.GetUniversalBrush(out ABrush: TUniversalBrush);
 var c: TBGRAPixel;
 begin
+  if Opacity = 0 then
+  begin
+    TBGRACustomBitmap.IdleBrush(ABrush);
+    exit;
+  end;
   c := ActualColor;
-  BGRASolidBrushIndirect(ABrush, @c, ActualDrawMode);
+  case Mode of
+    pmMerge, pmNotMerge, pmMergeNotPen, pmMaskPenNot: //or-based
+      begin
+        ABrush.Colorspace:= TBGRAPixelColorspace;
+        ABrush.InternalInitContext:= nil;
+        PBGRAPenBrushFixedData(@ABrush.FixedData)^.BGRA := c;
+        if Mode in [pmNotMerge, pmMaskPenNot] then
+        begin
+          ABrush.DoesNothing := false;
+          PBGRAPenBrushFixedData(@ABrush.FixedData)^.NotResult:= true;
+          ABrush.InternalPutNextPixels:= @BGRAPenMergePixels;
+        end else
+        begin
+          ABrush.DoesNothing:= (c.red = 0) and (c.green = 0) and (c.blue = 0);
+          PBGRAPenBrushFixedData(@ABrush.FixedData)^.NotResult:= false;
+          if ABrush.DoesNothing then
+            ABrush.InternalPutNextPixels:= @BGRAPenSkipPixels
+          else
+            ABrush.InternalPutNextPixels:= @BGRAPenMergePixels;
+        end;
+      end;
+    pmMask, pmNotMask, pmMaskNotPen, pmMergePenNot: //and-based
+      begin
+        ABrush.Colorspace:= TBGRAPixelColorspace;
+        ABrush.InternalInitContext:= nil;
+        PBGRAPenBrushFixedData(@ABrush.FixedData)^.BGRA := c;
+        if Mode in [pmNotMask, pmMergePenNot] then
+        begin
+          ABrush.DoesNothing := false;
+          PBGRAPenBrushFixedData(@ABrush.FixedData)^.NotResult:= true;
+          ABrush.InternalPutNextPixels:= @BGRAPenMaskPixels;
+        end else
+        begin
+          ABrush.DoesNothing:= (c.red = 255) and (c.green = 255) and (c.blue = 255);
+          PBGRAPenBrushFixedData(@ABrush.FixedData)^.NotResult:= false;
+          if ABrush.DoesNothing then
+            ABrush.InternalPutNextPixels:= @BGRAPenSkipPixels
+          else
+            ABrush.InternalPutNextPixels:= @BGRAPenMaskPixels;
+        end;
+      end;
+    else //draw-based and xor-based
+      BGRASolidBrushIndirect(ABrush, @c, ActualDrawMode);
+  end;
 end;
 
 { TBGRAColoredObject }
