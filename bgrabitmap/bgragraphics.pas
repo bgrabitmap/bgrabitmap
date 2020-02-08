@@ -17,6 +17,7 @@ type
   TPenEndCap = Graphics.TPenEndCap;
   TPenJoinStyle = Graphics.TPenJoinStyle;
   TPenStyle = Graphics.TPenStyle;
+  TPenMode = Graphics.TPenMode;
 
 const
   amDontCare = Graphics.amDontCare;
@@ -42,6 +43,23 @@ const
   psClear = Graphics.psClear;
   psInsideframe = Graphics.psInsideframe;
   psPattern = Graphics.psPattern;
+
+  pmBlack = Graphics.pmBlack;
+  pmWhite = Graphics.pmWhite;
+  pmNop = Graphics.pmNop;
+  pmNot = Graphics.pmNot;
+  pmCopy = Graphics.pmCopy;
+  pmNotCopy = Graphics.pmNotCopy;
+  pmMergePenNot = Graphics.pmMergePenNot;
+  pmMaskPenNot = Graphics.pmMaskPenNot;
+  pmMergeNotPen = Graphics.pmMergeNotPen;
+  pmMaskNotPen = Graphics.pmMaskNotPen;
+  pmMerge = Graphics.pmMerge;
+  pmNotMerge = Graphics.pmNotMerge;
+  pmMask = Graphics.pmMask;
+  pmNotMask = Graphics.pmNotMask;
+  pmXor = Graphics.pmXor;
+  pmNotXor = Graphics.pmNotXor;
 
   tmAuto = Graphics.tmAuto;
   tmFixed = Graphics.tmFixed;
@@ -255,6 +273,7 @@ type
   {* Style to use for the pen. The unit for the pattern is the width of the
      line }
   TPenStyle = TFPPenStyle;
+  TPenMode = TFPPenMode;
 
 const
   {** Pen is continuous }
@@ -273,6 +292,23 @@ const
   psInsideframe = FPCanvas.psInsideframe;
   {** Custom pattern used }
   psPattern = FPCanvas.psPattern;
+
+  pmBlack = FPCanvas.pmBlack;
+  pmWhite = FPCanvas.pmWhite;
+  pmNop = FPCanvas.pmNop;
+  pmNot = FPCanvas.pmNot;
+  pmCopy = FPCanvas.pmCopy;
+  pmNotCopy = FPCanvas.pmNotCopy;
+  pmMergePenNot = FPCanvas.pmMergePenNot;
+  pmMaskPenNot = FPCanvas.pmMaskPenNot;
+  pmMergeNotPen = FPCanvas.pmMergeNotPen;
+  pmMaskNotPen = FPCanvas.pmMaskNotPen;
+  pmMerge = FPCanvas.pmMerge;
+  pmNotMerge = FPCanvas.pmNotMerge;
+  pmMask = FPCanvas.pmMask;
+  pmNotMask = FPCanvas.pmNotMask;
+  pmXor = FPCanvas.pmXor;
+  pmNotXor = FPCanvas.pmNotXor;
 
 type
   TTransparentMode = (

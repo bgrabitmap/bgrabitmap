@@ -406,10 +406,7 @@ type
 
     {** Draws a rectangle with antialiasing and fills it with color ''back''.
         Note that the pixel (x2,y2) is included contrary to integer coordinates }
-    procedure RectangleAntialias(x, y, x2, y2: single; c: TBGRAPixel; w: single; back: TBGRAPixel); override;
-
-    {** Draws a rectangle with antialiasing.  }
-    procedure RectangleAntialias(x, y, x2, y2: single; texture: IBGRAScanner; w: single); override;
+    procedure RectangleAntialias(x, y, x2, y2: single; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; override;
 
     {** Draws a rounded rectangle border with antialiasing. The corners have an
         elliptical radius of ''rx'' and ''ry''. ''options'' specifies how to
@@ -424,15 +421,6 @@ type
     procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; pencolor: TBGRAPixel; w: single; fillcolor: TBGRAPixel; options: TRoundRectangleOptions = []); overload; override;
     {** Draws and fills a round rectangle with textures }
     procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; penTexture: IBGRAScanner; w: single; fillTexture: IBGRAScanner; options: TRoundRectangleOptions = []); overload; override;
-
-    {** Fills a rounded rectangle with antialiasing. The corners have an
-        elliptical radius of ''rx'' and ''ry''. ''options'' specifies how to
-        draw the corners. See [[BGRABitmap Geometry types|geometry types]] }
-    procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; c: TBGRAPixel; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
-    {** Fills a rounded rectangle with a texture }
-    procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
-    {** Erases the content of a rounded rectangle with a texture }
-    procedure EraseRoundRectAntialias(x,y,x2,y2,rx,ry: single; alpha: byte; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
 
     {==== Gradient polygons ====}
 
@@ -2593,40 +2581,6 @@ begin
   multi.Free;
 end;
 
-procedure TBGRADefaultBitmap.RectangleAntialias(x, y, x2, y2: single;
-  texture: IBGRAScanner; w: single);
-var
-  bevel,hw: single;
-  multi: TBGRAMultishapeFiller;
-begin
-  if (PenStyle = psClear) or (w=0) then exit;
-
-  hw := w/2;
-  if not CheckAntialiasRectBounds(x,y,x2,y2,w) then
-  begin
-    if JoinStyle = pjsBevel then
-    begin
-      bevel := (2-sqrt(2))*hw;
-      FillRoundRectAntialias(x - hw, y - hw, x2 + hw, y2 + hw, bevel,bevel, texture, [rrTopLeftBevel, rrTopRightBevel, rrBottomLeftBevel, rrBottomRightBevel]);
-    end else
-    if JoinStyle = pjsRound then
-     FillRoundRectAntialias(x - hw, y - hw, x2 + hw, y2 + hw, hw,hw, texture)
-    else
-     FillRectAntialias(x - hw, y - hw, x2 + hw, y2 + hw, texture);
-    exit;
-  end;
-
-  { use multishape filler for fine junction between polygons }
-  multi := TBGRAMultishapeFiller.Create;
-  multi.FillMode := FillMode;
-  if (JoinStyle = pjsMiter) and (PenStyle = psSolid) then
-    multi.AddRectangleBorder(x,y,x2,y2,w, texture)
-  else
-    multi.AddPolygon(ComputeWidePolygon([Pointf(x,y),Pointf(x2,y),Pointf(x2,y2),Pointf(x,y2)],w), texture);
-  multi.Draw(self);
-  multi.Free;
-end;
-
 procedure TBGRADefaultBitmap.RoundRectAntialias(x, y, x2, y2, rx, ry: single;
    c: TBGRAPixel; w: single; options: TRoundRectangleOptions);
 begin
@@ -2730,24 +2684,6 @@ begin
   dither.DrawMode := mode;
   dither.Execute;
   dither.Free;
-end;
-
-procedure TBGRADefaultBitmap.FillRoundRectAntialias(x, y, x2, y2, rx,ry: single;
-  c: TBGRAPixel; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
-begin
-  BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,c,False, LinearAntialiasing, pixelCenteredCoordinates);
-end;
-
-procedure TBGRADefaultBitmap.FillRoundRectAntialias(x, y, x2, y2, rx,
-  ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
-begin
-  BGRAPolygon.FillRoundRectangleAntialiasWithTexture(self,x,y,x2,y2,rx,ry,options,texture, LinearAntialiasing, pixelCenteredCoordinates);
-end;
-
-procedure TBGRADefaultBitmap.EraseRoundRectAntialias(x, y, x2, y2, rx,
-  ry: single; alpha: byte; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
-begin
-  BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,BGRA(0,0,0,alpha),True, LinearAntialiasing, pixelCenteredCoordinates);
 end;
 
 {------------------------- Text functions ---------------------------------------}

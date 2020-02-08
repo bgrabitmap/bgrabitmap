@@ -464,9 +464,7 @@ type
      procedure FillPieInRect(const ARect: TRect; StartAngleRad,EndAngleRad: Single; AFillColor: TBGRAPixel); overload;
      procedure FillPieInRect(const ARect: TRect; StartAngleRad,EndAngleRad: Single; texture: IBGRAScanner); overload;
 
-     procedure RectangleAntialias(x, y, x2, y2: single; c: TBGRAPixel; w: single); overload; virtual;
      procedure RectangleAntialias(x, y, x2, y2: single; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; virtual; abstract;
-     procedure RectangleAntialias(x, y, x2, y2: single; texture: IBGRAScanner; w: single); overload; virtual; abstract;
      procedure RectangleWithin(x1,y1,x2,y2: single; ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel; APixelCenteredCoordinates: boolean = true); overload;
      procedure RectangleWithin(r: TRect; ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel); overload;
 
@@ -474,9 +472,6 @@ type
      procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; pencolor: TBGRAPixel; w: single; fillcolor: TBGRAPixel; options: TRoundRectangleOptions = []); overload; virtual; abstract;
      procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; penTexture: IBGRAScanner; w: single; fillTexture: IBGRAScanner; options: TRoundRectangleOptions = []); overload; virtual; abstract;
      procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; w: single; options: TRoundRectangleOptions = []); overload; virtual; abstract;
-     procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; c: TBGRAPixel; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; virtual; abstract;
-     procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; virtual; abstract;
-     procedure EraseRoundRectAntialias(x,y,x2,y2,rx,ry: single; alpha: byte; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); virtual; abstract;
 
      procedure FillRect(r: TRect; texture: IBGRAScanner; mode: TDrawMode; ditheringAlgorithm: TDitheringAlgorithm); overload; virtual;
      procedure FillRect(r: TRect; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); overload; virtual;
@@ -1337,12 +1332,6 @@ begin
 end;
 
 { Following functions are defined for convenience }
-procedure TBGRACustomBitmap.RectangleAntialias(x, y, x2, y2: single;
-  c: TBGRAPixel; w: single);
-begin
-  RectangleAntialias(x, y, x2, y2, c, w, BGRAPixelTransparent);
-end;
-
 procedure TBGRACustomBitmap.RectangleWithin(x1, y1, x2, y2: single;
   ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel;
   APixelCenteredCoordinates: boolean);

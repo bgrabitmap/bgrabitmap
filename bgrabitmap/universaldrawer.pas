@@ -60,6 +60,7 @@ type
     {==== Pixelwise drawing ====}
 
     class function CheckRectBounds(var x,y,x2,y2: integer; minsize: integer): boolean;
+    class function CheckAntialiasRectBounds(var x, y, x2, y2: single; w: single): boolean;
 
     {** Draws an aliased line from (x1,y1) to (x2,y2) using Bresenham's algorithm.
         ''DrawLastPixel'' specifies if (x2,y2) must be drawn. }
@@ -96,6 +97,11 @@ type
     class function CreatePenStroker: TBGRACustomPenStroker; override;
     class function CreateArrow: TBGRACustomArrow; override;
 
+    class procedure RectangleAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; x, y, x2, y2: single;
+                       const ABrush: TUniversalBrush; AWidth: single); override;
+    class procedure DrawPolygonAntialias(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker;
+                       const APoints: array of TPointF; const ABrush: TUniversalBrush; AWidth: single); overload; override;
+
     class procedure Ellipse(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; x, y, rx, ry: single;
         const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word=65535); overload; override;
     class procedure Ellipse(ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; const AOrigin, AXAxis, AYAxis: TPointF;
@@ -109,6 +115,9 @@ type
     class procedure FillRectAntialias(ADest: TCustomUniversalBitmap;
                     x, y, x2, y2: single; const ABrush: TUniversalBrush;
                     APixelCenteredCoordinates: boolean = true); override;
+    class procedure FillRoundRectAntialias(ADest: TCustomUniversalBitmap;
+                    x,y,x2,y2, rx,ry: single; const ABrush: TUniversalBrush;
+                    AOptions: TRoundRectangleOptions = []; APixelCenteredCoordinates: boolean = true); override;
     class procedure FillShapeAntialias(ADest: TCustomUniversalBitmap;
                     AShape: TBGRACustomFillInfo; AFillMode: TFillMode;
                     ABrush: TUniversalBrush); override;
@@ -421,6 +430,27 @@ begin
     y2   := temp;
   end;
   result := (x2 - x > minsize) and (y2 - y > minsize);
+end;
+
+class function TUniversalDrawer.CheckAntialiasRectBounds(var x, y, x2,
+  y2: single; w: single): boolean;
+var
+  temp: Single;
+begin
+  if (x > x2) then
+  begin
+    temp := x;
+    x    := x2;
+    x2   := temp;
+  end;
+  if (y > y2) then
+  begin
+    temp := y;
+    y    := y2;
+    y2   := temp;
+  end;
+
+  result := (x2 - x > w) and (y2 - y > w);
 end;
 
 class procedure TUniversalDrawer.DrawLine(ADest: TCustomUniversalBitmap; x1,
@@ -958,6 +988,45 @@ begin
   result := TBGRAArrow.Create;
 end;
 
+class procedure TUniversalDrawer.RectangleAntialias(
+  ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker; x, y, x2, y2: single;
+  const ABrush: TUniversalBrush; AWidth: single);
+var
+  hw, bevel: Single;
+begin
+  if (APen.Style = psClear) or (AWidth = 0) then exit;
+
+  if not CheckAntialiasRectBounds(x,y,x2,y2, AWidth) then
+  begin
+    hw := AWidth/2;
+    if APen.JoinStyle = pjsBevel then
+    begin
+      bevel := (2 - sqrt(2)) * hw;
+      FillRoundRectAntialias(ADest, x - hw, y - hw, x2 + hw, y2 + hw, bevel,bevel, ABrush,
+        [rrTopLeftBevel, rrTopRightBevel, rrBottomLeftBevel, rrBottomRightBevel]);
+    end else
+    if APen.JoinStyle = pjsRound then
+      FillRoundRectAntialias(ADest, x - hw, y - hw, x2 + hw, y2 + hw, hw,hw, ABrush)
+    else
+      FillRectAntialias(ADest, x - hw, y - hw, x2 + hw, y2 + hw, ABrush);
+  end else
+  if (APen.JoinStyle = pjsMiter) and (APen.Style = psSolid) and (APen.MiterLimit > 1.4142) then
+  begin
+    hw := AWidth/2;
+    FillPolyAntialias(ADest, [PointF(x-hw,y-hw),PointF(x2+hw,y-hw),PointF(x2+hw,y2+hw),PointF(x-hw,y2+hw),EmptyPointF,
+                PointF(x+hw,y2-hw),PointF(x2-hw,y2-hw),PointF(x2-hw,y+hw),PointF(x+hw,y+hw)],
+                fmWinding, ABrush, true);
+  end else
+    DrawPolygonAntialias(ADest, APen, [Pointf(x,y),Pointf(x2,y),Pointf(x2,y2),Pointf(x,y2)], ABrush, AWidth);
+end;
+
+class procedure TUniversalDrawer.DrawPolygonAntialias(
+  ADest: TCustomUniversalBitmap; APen: TBGRACustomPenStroker;
+  const APoints: array of TPointF; const ABrush: TUniversalBrush; AWidth: single);
+begin
+  FillPolyAntialias(ADest, APen.ComputePolygon(APoints, AWidth), ADest.FillMode, ABrush, true);
+end;
+
 class procedure TUniversalDrawer.Ellipse(ADest: TCustomUniversalBitmap;
   APen: TBGRACustomPenStroker; x, y,rx, ry: single;
   const ABrush: TUniversalBrush; AWidth: single; AAlpha: Word);
@@ -1014,6 +1083,19 @@ var
 begin
   if ABrush.DoesNothing then exit;
   fi := TFillRectangleInfo.Create(x,y,x2,y2,APixelCenteredCoordinates);
+  FillShapeAntialias(ADest, fi, fmAlternate, ABrush);
+  fi.Free;
+end;
+
+class procedure TUniversalDrawer.FillRoundRectAntialias(
+  ADest: TCustomUniversalBitmap; x, y, x2, y2, rx, ry: single;
+  const ABrush: TUniversalBrush; AOptions: TRoundRectangleOptions;
+  APixelCenteredCoordinates: boolean);
+var
+  fi: TFillRoundRectangleInfo;
+begin
+  if ABrush.DoesNothing or (x = x2) or (y = y2) then exit;
+  fi := TFillRoundRectangleInfo.Create(x,y,x2,y2, rx,ry, AOptions, APixelCenteredCoordinates);
   FillShapeAntialias(ADest, fi, fmAlternate, ABrush);
   fi.Free;
 end;

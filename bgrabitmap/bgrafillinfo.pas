@@ -1334,7 +1334,6 @@ end;
 constructor TOnePassFillPolyInfo.Create(const points: array of TPointF; APixelCenteredCoordinates: boolean);
 var i,j: integer;
   p: POnePassRecord;
-  temp: single;
 begin
   inherited create(points, APixelCenteredCoordinates);
 
@@ -1388,7 +1387,7 @@ end;
 
 procedure TSimpleFillPolyInfo.ComputeIntersection(cury: single;
   var inter: ArrayOfTIntersectionInfo; var nbInter: integer);
-var i,j: integer;
+var i: integer;
   p: PCustomPointRecord;
   pInter: PIntersectionInfo;
 begin
@@ -1610,7 +1609,8 @@ begin
     if cury < FY1+FRY then
     begin
       d := abs((cury - (FY1+FRY)) / FRY);
-      d2 := sqrt(1 - sqr(d)) * FRX;
+      if d > 1 then d2 := 0
+      else d2 := sqrt(1 - sqr(d)) * FRX;
 
       if rrTopLeftSquare in FOptions then
         inter[nbinter].interX := FX1 else
@@ -1635,7 +1635,8 @@ begin
     if cury > FY2-FRY then
     begin
       d := abs((cury - (FY2-FRY)) / FRY);
-      d2 := sqrt(1 - sqr(d)) * FRX;
+      if d > 1 then d2 := 0
+      else d2 := sqrt(1 - sqr(d)) * FRX;
 
       if rrBottomLeftSquare in FOptions then
         inter[nbinter].interX := FX1 else
