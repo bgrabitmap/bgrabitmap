@@ -381,7 +381,7 @@ type
 procedure OnLayeredBitmapLoadFromStreamStart;
 procedure OnLayeredBitmapLoadStart(AFilenameUTF8: string);
 procedure OnLayeredBitmapLoadProgress(APercentage: integer);
-procedure OnLayeredBitmapLoaded();
+procedure OnLayeredBitmapLoaded;
 procedure RegisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc; AProgress: TOnLayeredBitmapLoadProgressProc;
      ADone: TOnLayeredBitmapLoadedProc);
 procedure UnregisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc; AProgress: TOnLayeredBitmapLoadProgressProc;

@@ -16,6 +16,8 @@ type
   TBGRALazPaintImage = class(TBGRALayeredBitmap)
   private
     FSelectedLayerIndex: integer;
+  protected
+    procedure InternalLoadFromStream(AStream: TStream);
   public
     constructor Create; overload; override;
     constructor Create(AWidth, AHeight: integer); overload; override;
@@ -78,6 +80,16 @@ begin
 end;
 
 procedure TBGRALazPaintImage.LoadFromStream(AStream: TStream);
+begin
+  OnLayeredBitmapLoadFromStreamStart;
+  try
+    InternalLoadFromStream(AStream);
+  finally
+    OnLayeredBitmapLoaded;
+  end;
+end;
+
+procedure TBGRALazPaintImage.InternalLoadFromStream(AStream: TStream);
 var
   {%H-}header: TLazPaintImageHeader;
   bmp: TBGRACustomBitmap;
@@ -92,7 +104,7 @@ begin
    and (header.layersOffset >= sizeof(header)) then
   begin
     AStream.Position:= AStream.Position+header.layersOffset;
-    LoadLayersFromStream(AStream, FSelectedLayerIndex, false, self);
+    LoadLayersFromStream(AStream, FSelectedLayerIndex, false, self, True);
   end else
   begin
     reader := TBGRAReaderLazPaintWithLayers.Create(self);
@@ -120,9 +132,11 @@ procedure TBGRALazPaintImage.LoadFromFile(const filenameUTF8: string);
 var AStream: TFileStreamUTF8;
 begin
   AStream := TFileStreamUTF8.Create(filenameUTF8,fmOpenRead or fmShareDenyWrite);
+  OnLayeredBitmapLoadStart(filenameUTF8);
   try
     LoadFromStream(AStream);
   finally
+    OnLayeredBitmapLoaded;
     AStream.Free;
   end;
 end;
@@ -179,7 +193,7 @@ begin
   begin
     if CheckStreamForLayers(str) then
     begin
-      LoadLayersFromStream(str, FSelectedLayerIndex, false, FLayers);
+      LoadLayersFromStream(str, FSelectedLayerIndex, false, FLayers, True);
       FLayersLoaded := true;
     end;
   end;

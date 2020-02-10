@@ -44,6 +44,7 @@ type
     procedure AnalyzeZip; virtual;
     procedure PrepareZipToSave; virtual;
     function GetMimeType: string; override;
+    procedure InternalLoadFromStream(AStream: TStream);
 
   public
     constructor Create; overload; override;
@@ -463,9 +464,11 @@ procedure TBGRAOpenRasterDocument.LoadFromFile(const filenameUTF8: string);
 var AStream: TFileStreamUTF8;
 begin
   AStream := TFileStreamUTF8.Create(filenameUTF8,fmOpenRead or fmShareDenyWrite);
+  OnLayeredBitmapLoadStart(filenameUTF8);
   try
     LoadFromStream(AStream);
   finally
+    OnLayeredBitmapLoaded;
     AStream.Free;
   end;
 end;
@@ -490,6 +493,16 @@ begin
     result := OpenRasterMimeType
    else
     result := GetMemoryStreamAsString('mimetype');
+end;
+
+procedure TBGRAOpenRasterDocument.InternalLoadFromStream(AStream: TStream);
+begin
+  try
+    UnzipFromStream(AStream);
+    AnalyzeZip;
+  finally
+    ClearFiles;
+  end;
 end;
 
 constructor TBGRAOpenRasterDocument.Create;
@@ -780,11 +793,9 @@ procedure TBGRAOpenRasterDocument.LoadFromStream(AStream: TStream);
 begin
   OnLayeredBitmapLoadFromStreamStart;
   try
-    UnzipFromStream(AStream);
-    AnalyzeZip;
+    InternalLoadFromStream(AStream);
   finally
     OnLayeredBitmapLoaded;
-    ClearFiles;
   end;
 end;
 

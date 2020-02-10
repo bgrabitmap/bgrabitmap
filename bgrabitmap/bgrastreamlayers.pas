@@ -10,7 +10,7 @@ uses
 
 function CheckStreamForLayers(AStream: TStream): boolean;
 function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false;
-         ADestination: TBGRALayeredBitmap = nil): TBGRALayeredBitmap;
+         ADestination: TBGRALayeredBitmap = nil; AProgress: boolean = false): TBGRALayeredBitmap;
 procedure SaveLayersToStream(AStream: TStream; ALayers: TBGRACustomLayeredBitmap; ASelectedLayerIndex: integer; ACompression: TLzpCompression = lzpZStream);
 procedure SaveLayerBitmapToStream(AStream: TStream; ABitmap: TBGRABitmap; ACaption: string; ACompression: TLzpCompression = lzpZStream);
 function LoadLayerBitmapFromStream(AStream: TStream; ACompression: TLzpCompression = lzpZStream) : TBGRABitmap;
@@ -126,8 +126,8 @@ begin
   end;
 end;
 
-function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false;
-         ADestination: TBGRALayeredBitmap = nil): TBGRALayeredBitmap;
+function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean;
+         ADestination: TBGRALayeredBitmap; AProgress: boolean): TBGRALayeredBitmap;
 var
   OldPosition: Int64;
   HeaderFound: string;
@@ -199,6 +199,7 @@ begin
     AStream.Position:= LayerStackStartPosition;
     for i := 0 to NbLayers-1 do
     begin
+      if AProgress then OnLayeredBitmapLoadProgress(round(i*100/NbLayers));
       LayerHeaderSize:= LEReadLongint(AStream);
 
       LayerHeaderPosition := AStream.Position;
@@ -244,6 +245,7 @@ begin
 
       if LayerEndPosition <> -1 then AStream.Position := LayerEndPosition;
     end;
+    if AProgress then OnLayeredBitmapLoadProgress(100);
 
     RenameLayersToUniqueId(result);
     result.NotifyLoaded;

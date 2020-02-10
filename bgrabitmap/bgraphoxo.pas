@@ -44,6 +44,7 @@ type
   protected
     function GetMimeType: string; override;
     procedure AddLayerFromPhoxoData(const ABlockHeader: TPhoxoBlockHeader; ABlockData: PByte);
+    procedure InternalLoadFromStream(AStream: TStream);
   public
     constructor Create; overload; override;
     constructor Create(AWidth, AHeight: integer); overload; override;
@@ -280,6 +281,16 @@ begin
 end;
 
 procedure TBGRAPhoxoDocument.LoadFromStream(AStream: TStream);
+begin
+  OnLayeredBitmapLoadFromStreamStart;
+  try
+    InternalLoadFromStream(AStream);
+  finally
+    OnLayeredBitmapLoaded;
+  end;
+end;
+
+procedure TBGRAPhoxoDocument.InternalLoadFromStream(AStream: TStream);
 var blockHeader: TPhoxoBlockHeader;
     blockData: PByte;
     wCaption: widestring;
@@ -349,9 +360,11 @@ procedure TBGRAPhoxoDocument.LoadFromFile(const filenameUTF8: string);
 var AStream: TFileStreamUTF8;
 begin
   AStream := TFileStreamUTF8.Create(filenameUTF8,fmOpenRead or fmShareDenyWrite);
+  OnLayeredBitmapLoadStart(filenameUTF8);
   try
-    LoadFromStream(AStream);
+    InternalLoadFromStream(AStream);
   finally
+    OnLayeredBitmapLoaded;
     AStream.Free;
   end;
 end;
