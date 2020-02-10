@@ -11,7 +11,8 @@ uses
 function CheckStreamForLayers(AStream: TStream): boolean;
 function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false;
          ADestination: TBGRALayeredBitmap = nil; AProgress: boolean = false): TBGRALayeredBitmap;
-procedure SaveLayersToStream(AStream: TStream; ALayers: TBGRACustomLayeredBitmap; ASelectedLayerIndex: integer; ACompression: TLzpCompression = lzpZStream);
+procedure SaveLayersToStream(AStream: TStream; ALayers: TBGRACustomLayeredBitmap; ASelectedLayerIndex: integer;
+         ACompression: TLzpCompression = lzpZStream; AProgress: boolean = false);
 procedure SaveLayerBitmapToStream(AStream: TStream; ABitmap: TBGRABitmap; ACaption: string; ACompression: TLzpCompression = lzpZStream);
 function LoadLayerBitmapFromStream(AStream: TStream; ACompression: TLzpCompression = lzpZStream) : TBGRABitmap;
 procedure RegisterStreamLayers;
@@ -259,7 +260,8 @@ begin
   end;
 end;
 
-procedure SaveLayersToStream(AStream: TStream; ALayers: TBGRACustomLayeredBitmap; ASelectedLayerIndex: integer; ACompression: TLzpCompression);
+procedure SaveLayersToStream(AStream: TStream; ALayers: TBGRACustomLayeredBitmap;
+         ASelectedLayerIndex: integer; ACompression: TLzpCompression; AProgress: boolean);
 var
   StackOption: longint;
   i: integer;
@@ -291,6 +293,7 @@ begin
 
   for i := 0 to ALayers.NbLayers-1 do
   begin
+    if AProgress then OnLayeredBitmapSaveProgress(round(i*100/ALayers.NbLayers));
     LEWriteLongint(AStream, sizeof(h));
     LayerHeaderPosition := AStream.Position;
 
@@ -328,6 +331,7 @@ begin
 
     AStream.Position:= LayerBitmapPosition+BitmapSize;
   end;
+  if AProgress then OnLayeredBitmapSaveProgress(100);
 
   EndPos:= AStream.Position;
   if ALayers.HasMemFiles then

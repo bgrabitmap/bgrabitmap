@@ -394,6 +394,20 @@ procedure RegisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc; AProgres
 procedure UnregisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc; AProgress: TOnLayeredBitmapLoadProgressProc;
      ADone: TOnLayeredBitmapLoadedProc);
 
+type
+  TOnLayeredBitmapSaveStartProc = procedure(AFilenameUTF8: string) of object;
+  TOnLayeredBitmapSaveProgressProc = procedure(APercentage: integer) of object;
+  TOnLayeredBitmapSavedProc = procedure() of object;
+
+procedure OnLayeredBitmapSaveToStreamStart;
+procedure OnLayeredBitmapSaveStart(AFilenameUTF8: string);
+procedure OnLayeredBitmapSaveProgress(APercentage: integer);
+procedure OnLayeredBitmapSaved;
+procedure RegisterSavingHandler(AStart: TOnLayeredBitmapSaveStartProc; AProgress: TOnLayeredBitmapSaveProgressProc;
+     ADone: TOnLayeredBitmapSavedProc);
+procedure UnregisterSavingHandler(AStart: TOnLayeredBitmapSaveStartProc; AProgress: TOnLayeredBitmapSaveProgressProc;
+     ADone: TOnLayeredBitmapSavedProc);
+
 implementation
 
 uses BGRAUTF8, BGRABlend, BGRAMultiFileType, math;
@@ -408,6 +422,9 @@ var
   OnLayeredBitmapLoadStartProc: TOnLayeredBitmapLoadStartProc;
   OnLayeredBitmapLoadProgressProc: TOnLayeredBitmapLoadProgressProc;
   OnLayeredBitmapLoadedProc: TOnLayeredBitmapLoadedProc;
+  OnLayeredBitmapSaveStartProc: TOnLayeredBitmapSaveStartProc;
+  OnLayeredBitmapSaveProgressProc: TOnLayeredBitmapSaveProgressProc;
+  OnLayeredBitmapSavedProc: TOnLayeredBitmapSavedProc;
 
 var
   NextLayerUniqueId: cardinal;
@@ -3208,12 +3225,11 @@ end;
 procedure OnLayeredBitmapLoaded;
 begin
   if Assigned(OnLayeredBitmapLoadedProc) then
-    OnLayeredBitmapLoadedProc();
+    OnLayeredBitmapLoadedProc;
 end;
 
 procedure RegisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc;
-  AProgress: TOnLayeredBitmapLoadProgressProc; ADone: TOnLayeredBitmapLoadedProc
-  );
+  AProgress: TOnLayeredBitmapLoadProgressProc; ADone: TOnLayeredBitmapLoadedProc);
 begin
   OnLayeredBitmapLoadProgressProc:= AProgress;
   OnLayeredBitmapLoadStartProc := AStart;
@@ -3226,6 +3242,45 @@ begin
   if OnLayeredBitmapLoadProgressProc = AProgress then OnLayeredBitmapLoadProgressProc := nil;
   if OnLayeredBitmapLoadStartProc = AStart then OnLayeredBitmapLoadStartProc := nil;
   if OnLayeredBitmapLoadedProc = ADone then OnLayeredBitmapLoadedProc := nil;
+end;
+
+procedure OnLayeredBitmapSaveToStreamStart;
+begin
+  OnLayeredBitmapSaveStart('<Stream>');
+end;
+
+procedure OnLayeredBitmapSaveStart(AFilenameUTF8: string);
+begin
+  if Assigned(OnLayeredBitmapSaveStartProc) then
+    OnLayeredBitmapSaveStartProc(AFilenameUTF8);
+end;
+
+procedure OnLayeredBitmapSaveProgress(APercentage: integer);
+begin
+  if Assigned(OnLayeredBitmapSaveProgressProc) then
+    OnLayeredBitmapSaveProgressProc(APercentage);
+end;
+
+procedure OnLayeredBitmapSaved;
+begin
+  if Assigned(OnLayeredBitmapSavedProc) then
+    OnLayeredBitmapSavedProc;
+end;
+
+procedure RegisterSavingHandler(AStart: TOnLayeredBitmapSaveStartProc;
+  AProgress: TOnLayeredBitmapSaveProgressProc; ADone: TOnLayeredBitmapSavedProc);
+begin
+  OnLayeredBitmapSaveProgressProc:= AProgress;
+  OnLayeredBitmapSaveStartProc := AStart;
+  OnLayeredBitmapSavedProc:= ADone;
+end;
+
+procedure UnregisterSavingHandler(AStart: TOnLayeredBitmapSaveStartProc;
+  AProgress: TOnLayeredBitmapSaveProgressProc; ADone: TOnLayeredBitmapSavedProc);
+begin
+  if OnLayeredBitmapSaveProgressProc = AProgress then OnLayeredBitmapSaveProgressProc := nil;
+  if OnLayeredBitmapSaveStartProc = AStart then OnLayeredBitmapSaveStartProc := nil;
+  if OnLayeredBitmapSavedProc = ADone then OnLayeredBitmapSavedProc := nil;
 end;
 
 procedure RegisterLayeredBitmapWriter(AExtensionUTF8: string; AWriter: TBGRALayeredBitmapClass);

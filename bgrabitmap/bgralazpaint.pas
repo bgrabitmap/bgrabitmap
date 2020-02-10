@@ -18,13 +18,14 @@ type
     FSelectedLayerIndex: integer;
   protected
     procedure InternalLoadFromStream(AStream: TStream);
+    procedure InternalSaveToStream(AStream: TStream);
   public
     constructor Create; overload; override;
     constructor Create(AWidth, AHeight: integer); overload; override;
     procedure LoadFromStream(AStream: TStream); override;
     procedure LoadFromFile(const filenameUTF8: string); override;
-    procedure SaveToFile(const filenameUTF8: string); override;
     procedure SaveToStream(AStream: TStream); override;
+    procedure SaveToFile(const filenameUTF8: string); override;
     property SelectedLayerIndex: integer read FSelectedLayerIndex write FSelectedLayerIndex;
   end;
 
@@ -145,14 +146,26 @@ procedure TBGRALazPaintImage.SaveToFile(const filenameUTF8: string);
 var AStream: TFileStreamUTF8;
 begin
   AStream := TFileStreamUTF8.Create(filenameUTF8,fmCreate or fmShareDenyWrite);
+  OnLayeredBitmapSaveStart(filenameUTF8);
   try
-    SaveToStream(AStream);
+    InternalSaveToStream(AStream);
   finally
+    OnLayeredBitmapSaved;
     AStream.Free;
   end;
 end;
 
 procedure TBGRALazPaintImage.SaveToStream(AStream: TStream);
+begin
+  OnLayeredBitmapSaveToStreamStart;
+  try
+    InternalSaveToStream(AStream);
+  finally
+    OnLayeredBitmapSaved;
+  end;
+end;
+
+procedure TBGRALazPaintImage.InternalSaveToStream(AStream: TStream);
 var
   writer: TBGRAWriterLazPaint;
   flat: TBGRACustomBitmap;
@@ -221,7 +234,7 @@ function TBGRAWriterLazPaintWithLayers.InternalWriteLayers(Str: TStream;
 begin
   If Assigned(FLayers) then
   begin
-    SaveLayersToStream(str, FLayers, FSelectedLayerIndex, FCompression);
+    SaveLayersToStream(str, FLayers, FSelectedLayerIndex, FCompression, True);
     Result:=true;
   end
   else result := False;

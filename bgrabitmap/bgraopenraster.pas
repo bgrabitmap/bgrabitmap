@@ -45,6 +45,7 @@ type
     procedure PrepareZipToSave; virtual;
     function GetMimeType: string; override;
     procedure InternalLoadFromStream(AStream: TStream);
+    procedure InternalSaveToStream(AStream: TStream);
 
   public
     constructor Create; overload; override;
@@ -56,8 +57,8 @@ type
               out ABitmap: TBGRABitmap);
     procedure LoadFromStream(AStream: TStream); override;
     procedure LoadFromFile(const filenameUTF8: string); override;
-    procedure SaveToFile(const filenameUTF8: string); override;
     procedure SaveToStream(AStream: TStream); override;
+    procedure SaveToFile(const filenameUTF8: string); override;
     property MimeType : string read GetMimeType write SetMimeType;
     property StackXML : TXMLDocument read FStackXML;
   end;
@@ -405,6 +406,7 @@ begin
 
   for i := NbLayers-1 downto 0 do
   begin
+    OnLayeredBitmapSaveProgress(round((NbLayers-1-i) * 100 / NbLayers));
     layerFilename := 'data/layer'+inttostr(i)+'.png';
     if CopyLayerToMemoryStream(i, layerFilename) then
     begin
@@ -455,6 +457,7 @@ begin
       end;
     end;
   end;
+  OnLayeredBitmapSaveProgress(100);
   StackStream := TMemoryStream.Create;
   WriteXMLFile(StackXML, StackStream);
   SetMemoryStream('stack.xml',StackStream);
@@ -473,18 +476,36 @@ begin
   end;
 end;
 
-procedure TBGRAOpenRasterDocument.SaveToFile(const filenameUTF8: string);
-begin
-  PrepareZipToSave;
-  ZipToFile(filenameUTF8);
-  ClearFiles;
-end;
-
 procedure TBGRAOpenRasterDocument.SaveToStream(AStream: TStream);
 begin
-  PrepareZipToSave;
-  ZipToStream(AStream);
-  ClearFiles;
+  OnLayeredBitmapSaveToStreamStart;
+  try
+    InternalSaveToStream(AStream);
+  finally
+    OnLayeredBitmapSaved;
+  end;
+end;
+
+procedure TBGRAOpenRasterDocument.SaveToFile(const filenameUTF8: string);
+begin
+  OnLayeredBitmapSaveStart(filenameUTF8);
+  try
+    PrepareZipToSave;
+    ZipToFile(filenameUTF8);
+  finally
+    OnLayeredBitmapSaved;
+    ClearFiles;
+  end;
+end;
+
+procedure TBGRAOpenRasterDocument.InternalSaveToStream(AStream: TStream);
+begin
+  try
+    PrepareZipToSave;
+    ZipToStream(AStream);
+  finally
+    ClearFiles;
+  end;
 end;
 
 function TBGRAOpenRasterDocument.GetMimeType: string;
