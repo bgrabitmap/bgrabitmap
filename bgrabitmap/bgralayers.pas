@@ -142,6 +142,7 @@ type
   TEmbeddedOriginalChangeEvent = procedure (ASender: TObject; AOriginal: TBGRALayerCustomOriginal;
                                             var ADiff: TBGRAOriginalDiff) of object;
   TEmbeddedOriginalEditingChangeEvent = procedure (ASender: TObject; AOriginal: TBGRALayerCustomOriginal) of object;
+  TLayeredActionProgressEvent = procedure(ASender: TObject; AProgressPercent: integer) of object;
 
   TBGRALayerInfo = record
     UniqueId: integer;
@@ -165,8 +166,10 @@ type
   private
     FNbLayers: integer;
     FLayers: array of TBGRALayerInfo;
+    FOnActionDone: TNotifyEvent;
     FOnEditorFocusChanged: TNotifyEvent;
     FEditorFocused: boolean;
+    FOnActionProgress: TLayeredActionProgressEvent;
     FOriginalChange: TEmbeddedOriginalChangeEvent;
     FOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent;
     FWidth,FHeight: integer;
@@ -179,6 +182,8 @@ type
     function GetOriginalEditor: TBGRAOriginalEditor;
     function GetOriginalGuid(AIndex: integer): TGUID;
     procedure SetEditorFocused(AValue: boolean);
+    procedure SetOnActionDone(AValue: TNotifyEvent);
+    procedure SetOnActionProgress(AValue: TLayeredActionProgressEvent);
 
   protected
     function GetWidth: integer; override;
@@ -359,6 +364,8 @@ type
     property EditorFocused: boolean read FEditorFocused write SetEditorFocused;
     property OnEditorFocusChanged: TNotifyEvent read FOnEditorFocusChanged write FOnEditorFocusChanged;
     property OriginalEditor: TBGRAOriginalEditor read GetOriginalEditor;
+    property OnActionProgress: TLayeredActionProgressEvent read FOnActionProgress write SetOnActionProgress;
+    property OnActionDone: TNotifyEvent read FOnActionDone write SetOnActionDone;
   end;
 
   TAffineMatrix = BGRABitmapTypes.TAffineMatrix;
@@ -758,6 +765,19 @@ begin
     FEditorFocused:=AValue;
     if Assigned(FOnEditorFocusChanged) then FOnEditorFocusChanged(self);
   end;
+end;
+
+procedure TBGRALayeredBitmap.SetOnActionDone(AValue: TNotifyEvent);
+begin
+  if FOnActionDone=AValue then Exit;
+  FOnActionDone:=AValue;
+end;
+
+procedure TBGRALayeredBitmap.SetOnActionProgress(
+  AValue: TLayeredActionProgressEvent);
+begin
+  if FOnActionProgress=AValue then Exit;
+  FOnActionProgress:=AValue;
 end;
 
 function TBGRALayeredBitmap.GetLayerOriginalClass(layer: integer): TBGRALayerOriginalAny;
@@ -2048,6 +2068,7 @@ begin
   m := AffineMatrixTranslation(Width,0)*AffineMatrixRotationDeg(90);
   for i := 0 to NbLayers-1 do
   begin
+    if Assigned(OnActionProgress) then OnActionProgress(self, round(i*100/NbLayers));
     newOfs:= m*PointF(FLayers[i].x,FLayers[i].y+FLayers[i].Source.Height);
     newBmp := FLayers[i].Source.RotateCW as TBGRABitmap;
     if FLayers[i].Owner then FreeAndNil(FLayers[i].Source);
@@ -2057,6 +2078,7 @@ begin
     FLayers[i].y := round(newOfs.y);
     FLayers[i].OriginalMatrix := m*FLayers[i].OriginalMatrix;
   end;
+  if Assigned(OnActionDone) then OnActionDone(self);
 end;
 
 procedure TBGRALayeredBitmap.RotateCCW;
@@ -2069,6 +2091,7 @@ begin
   m := AffineMatrixTranslation(0,Height)*AffineMatrixRotationDeg(-90);
   for i := 0 to NbLayers-1 do
   begin
+    if Assigned(OnActionProgress) then OnActionProgress(self, round(i*100/NbLayers));
     newOfs:= m*PointF(FLayers[i].x+FLayers[i].Source.Width,FLayers[i].y);
     newBmp := FLayers[i].Source.RotateCCW as TBGRABitmap;
     if FLayers[i].Owner then FreeAndNil(FLayers[i].Source);
@@ -2078,6 +2101,7 @@ begin
     FLayers[i].y := round(newOfs.y);
     FLayers[i].OriginalMatrix := m*FLayers[i].OriginalMatrix;
   end;
+  if Assigned(OnActionDone) then OnActionDone(self);
 end;
 
 procedure TBGRALayeredBitmap.RotateUD;
@@ -2085,7 +2109,11 @@ var i: integer;
 begin
   Unfreeze;
   for i := 0 to NbLayers-1 do
+  begin
+    if Assigned(OnActionProgress) then OnActionProgress(self, round(i*100/NbLayers));
     RotateUD(i);
+  end;
+  if Assigned(OnActionDone) then OnActionDone(self);
 end;
 
 procedure TBGRALayeredBitmap.RotateUD(ALayerIndex: integer);
@@ -2110,7 +2138,11 @@ var i: integer;
 begin
   Unfreeze;
   for i := 0 to NbLayers-1 do
+  begin
+    if Assigned(OnActionProgress) then OnActionProgress(self, round(i*100/NbLayers));
     HorizontalFlip(i);
+  end;
+  if Assigned(OnActionDone) then OnActionDone(self);
 end;
 
 procedure TBGRALayeredBitmap.HorizontalFlip(ALayerIndex: integer);
@@ -2135,7 +2167,11 @@ var i: integer;
 begin
   Unfreeze;
   for i := 0 to NbLayers-1 do
+  begin
+    if Assigned(OnActionProgress) then OnActionProgress(self, round(i*100/NbLayers));
     VerticalFlip(i);
+  end;
+  if Assigned(OnActionDone) then OnActionDone(self);
 end;
 
 procedure TBGRALayeredBitmap.VerticalFlip(ALayerIndex: integer);
@@ -2160,6 +2196,7 @@ procedure TBGRALayeredBitmap.Resample(AWidth, AHeight: integer;
 var i, prevWidth, prevHeight: integer;
     resampled: TBGRABitmap;
     oldFilter : TResampleFilter;
+    dummyRect: TRect;
 begin
   if (AWidth < 0) or (AHeight < 0) then
     raise exception.Create('Invalid size');
@@ -2168,24 +2205,30 @@ begin
   prevHeight := Height;
   if prevHeight < 1 then prevHeight := AHeight;
   SetSize(AWidth, AHeight); //unfreeze
+  dummyRect := EmptyRect;
   for i := 0 to NbLayers-1 do
-  if (FLayers[i].OriginalGuid <> GUID_NULL) and LayerOriginalKnown[i] then
-    LayerOriginalMatrix[i] := AffineMatrixScale(AWidth/prevWidth,AHeight/prevHeight)*LayerOriginalMatrix[i]
-  else
   begin
-    if LayerBitmap[i].NbPixels <> 0 then
+    if Assigned(OnActionProgress) then OnActionProgress(self, round(i*100/NbLayers));
+    if (FLayers[i].OriginalGuid <> GUID_NULL) and LayerOriginalKnown[i] then
     begin
-      oldFilter := LayerBitmap[i].ResampleFilter;
-      LayerBitmap[i].ResampleFilter := AFineResampleFilter;
-      resampled := LayerBitmap[i].Resample(max(1,round(LayerBitmap[i].Width*AWidth/prevWidth)),
-        max(1,round(LayerBitmap[i].Height*AHeight/prevHeight)), AResampleMode) as TBGRABitmap;
-      LayerBitmap[i].ResampleFilter := oldFilter;
-      SetLayerBitmap(i, resampled, True);
+      LayerOriginalMatrix[i] := AffineMatrixScale(AWidth/prevWidth,AHeight/prevHeight)*LayerOriginalMatrix[i];
+      if AResampleMode = rmFineResample then RenderLayerFromOriginalIfNecessary(i, false, dummyRect);
+    end else
+    begin
+      if LayerBitmap[i].NbPixels <> 0 then
+      begin
+        oldFilter := LayerBitmap[i].ResampleFilter;
+        LayerBitmap[i].ResampleFilter := AFineResampleFilter;
+        resampled := LayerBitmap[i].Resample(max(1,round(LayerBitmap[i].Width*AWidth/prevWidth)),
+          max(1,round(LayerBitmap[i].Height*AHeight/prevHeight)), AResampleMode) as TBGRABitmap;
+        LayerBitmap[i].ResampleFilter := oldFilter;
+        SetLayerBitmap(i, resampled, True);
+      end;
+      with LayerOffset[i] do
+        LayerOffset[i] := Point(round(X*AWidth/prevWidth),round(Y*AHeight/prevHeight));
     end;
-    with LayerOffset[i] do
-      LayerOffset[i] := Point(round(X*AWidth/prevWidth),round(Y*AHeight/prevHeight));
   end;
-  if AResampleMode = rmFineResample then RenderOriginalsIfNecessary;
+  if Assigned(OnActionDone) then OnActionDone(self);
 end;
 
 procedure TBGRALayeredBitmap.SetLayerBitmap(layer: integer;
