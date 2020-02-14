@@ -1817,9 +1817,13 @@ procedure TCustomUniversalBitmap.EraseLineAntialias(x1, y1, x2, y2: single;
   AAlpha: Byte; APenWidth: single; AClosedCap: boolean);
 var
   b: TUniversalBrush;
+  c: TBGRAPixel;
+  p: TBGRACustomPenStroker;
 begin
   EraseBrush(b, AAlpha + (AAlpha shl 8));
-  DrawLineAntialias(x1,y1,x2,y2, b, APenWidth, AClosedCap);
+  c := BGRA(0,0,0, AAlpha);
+  p := GetInternalPen;
+  FillPolyAntialias(p.ComputePolyline([PointF(x1,y1),PointF(x2,y2)],APenWidth,c,AClosedCap), b);
 end;
 
 procedure TCustomUniversalBitmap.DrawPolyLineAntialias(
@@ -1869,9 +1873,11 @@ procedure TCustomUniversalBitmap.ErasePolyLineAntialias(
   AClosedCap: boolean);
 var
   b: TUniversalBrush;
+  c: TBGRAPixel;
 begin
   EraseBrush(b, AAlpha + (AAlpha shl 8));
-  DrawPolyLineAntialias(APoints, b, APenWidth, AClosedCap);
+  c := BGRA(0,0,0, AAlpha);
+  FillPolyAntialias(GetInternalPen.ComputePolyline(APoints,APenWidth,c,AClosedCap), b);
 end;
 
 procedure TCustomUniversalBitmap.DrawPolyLineAntialiasAutocycle(
