@@ -1851,44 +1851,128 @@ procedure TBGRADefaultBitmap.InternalTextOutCurved(
   ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel;
   ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single);
 var
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  charwidth, angle, textlen: single;
+  bidiArray: TBidiUTF8Array;
+  displayOrder: TUnicodeDisplayOrder;
+  displayIndex: integer;
+  currentChar: string;
+  currentBidiInfo: TUnicodeBidiInfo;
+
+  procedure MulticharsRewind;
+  begin
+    displayIndex := 0;
+    while (displayIndex < length(displayOrder))
+      and not bidiArray[displayOrder[displayIndex]].BidiInfo.IsMulticharStart do
+        inc(displayIndex);
+  end;
+
+  procedure MulticharsNext;
+  begin
+    inc(displayIndex);
+    while (displayIndex < length(displayOrder))
+      and not bidiArray[displayOrder[displayIndex]].BidiInfo.IsMulticharStart do
+        inc(displayIndex);
+  end;
+
+  function MulticharsEndOfString: boolean;
+  begin
+    result := displayIndex >= length(displayOrder);
+  end;
+
+  procedure MulticharsPeek;
+  var
+    startIndex, nextIndex, charLen, startOffset: Integer;
+  begin
+    startIndex := displayOrder[displayIndex];
+    startOffset := bidiArray[startIndex].Offset;
+    currentBidiInfo := bidiArray[startIndex].BidiInfo;
+    nextIndex := startIndex+1;
+    while (nextIndex < length(bidiArray))
+      and not bidiArray[nextIndex].BidiInfo.IsMulticharStart do
+        inc(nextIndex);
+    if nextIndex >= length(bidiArray) then
+      charLen := length(sUTF8) - startOffset
+    else
+      charLen := bidiArray[nextIndex].Offset - startOffset;
+    setlength(currentChar, charLen);
+    if charLen > 0 then move(sUTF8[startOffset+1], currentChar[1], charLen);
+  end;
+
+var
+  currentGlyph: string;
+  currentGlyphWidth: single;
+
+  procedure GlyphGetNext;
+  var
+    rtlScript, ligatureLeft, ligatureRight: Boolean;
+  begin
+    MulticharsPeek;
+    MulticharsNext;
+    currentGlyph := currentChar;
+    rtlScript := currentBidiInfo.IsRightToLeftScript;
+    ligatureRight := currentBidiInfo.HasLigatureRight;
+    ligatureLeft := currentBidiInfo.HasLigatureLeft;
+    if currentChar.StartsWith(UTF8_ARABIC_ALEPH) or
+       currentChar.StartsWith(UTF8_ARABIC_ALEPH_HAMZA_BELOW) or
+       currentChar.StartsWith(UTF8_ARABIC_ALEPH_HAMZA_ABOVE) or
+       currentChar.StartsWith(UTF8_ARABIC_ALEPH_MADDA_ABOVE) then
+    begin
+      MulticharsPeek;
+      if currentChar.StartsWith(UTF8_ARABIC_LAM) then
+      begin
+        currentGlyph := currentChar + currentGlyph;
+        ligatureRight := currentBidiInfo.HasLigatureRight;
+        MulticharsNext;
+      end;
+    end;
+    currentGlyph := UTF8Ligature(currentGlyph, rtlScript, ligatureLeft, ligatureRight);
+    currentGlyphWidth := TextSize(currentGlyph).cx;
+  end;
+
+var
+  angle, textLen: single;
 begin
   if (ATexture = nil) and (AColor.alpha = 0) then exit;
   sUTF8 := CleanTextOutString(sUTF8);
   if sUTF8 = '' then exit;
-  pstr := @sUTF8[1];
-  left := length(sUTF8);
+  case FontBidiMode of
+    fbmAuto: bidiArray := AnalyzeBidiUTF8(sUTF8);
+    fbmLeftToRight: bidiArray := AnalyzeBidiUTF8(sUTF8, false);
+    fbmRightToLeft: bidiArray := AnalyzeBidiUTF8(sUTF8, true);
+    else bidiArray := nil;
+  end;
+  if bidiArray = nil then exit;
+  displayOrder := GetUTF8DisplayOrder(bidiArray);
+
   if AALign<> taLeftJustify then
   begin
-    textlen := TextSize(sUTF8).cx + (UTF8Length(sUTF8)-1)*ALetterSpacing;
+    MulticharsRewind;
+    textLen := -ALetterSpacing;
+    while not MulticharsEndOfString do
+    begin
+      GlyphGetNext;
+      textLen += ALetterSpacing + currentGlyphWidth;
+    end;
     case AAlign of
-      taCenter: ACursor.MoveBackward(textlen*0.5);
-      taRightJustify: ACursor.MoveBackward(textlen);
+      taCenter: ACursor.MoveBackward(textLen*0.5);
+      taRightJustify: ACursor.MoveBackward(textLen);
     end;
   end;
-  while left > 0 do
+
+  while not MulticharsEndOfString do
   begin
-    charlen := UTF8CharacterLength(pstr);
-    setlength(nextchar, charlen);
-    move(pstr^, nextchar[1], charlen);
-    inc(pstr,charlen);
-    dec(left,charlen);
-    charwidth := TextSize(nextchar).cx;
-    ACursor.MoveForward(charwidth);
-    ACursor.MoveBackward(charwidth, false);
-    ACursor.MoveForward(charwidth*0.5);
+    GlyphGetNext;
+    ACursor.MoveForward(currentGlyphWidth);
+    ACursor.MoveBackward(currentGlyphWidth, false);
+    ACursor.MoveForward(currentGlyphWidth*0.5);
     with ACursor.CurrentTangent do angle := arctan2(y,x);
     with ACursor.CurrentCoordinate do
     begin
       if ATexture = nil then
-        TextOutAngle(x,y, system.round(-angle*1800/Pi), nextchar, AColor, taCenter)
+        TextOutAngle(x,y, system.round(-angle*1800/Pi), currentGlyph, AColor, taCenter)
       else
-        TextOutAngle(x,y, system.round(-angle*1800/Pi), nextchar, ATexture, taCenter);
+        TextOutAngle(x,y, system.round(-angle*1800/Pi), currentGlyph, ATexture, taCenter);
     end;
-    ACursor.MoveForward(charwidth*0.5 + ALetterSpacing);
+    ACursor.MoveForward(currentGlyphWidth*0.5 + ALetterSpacing);
   end;
 end;
 
