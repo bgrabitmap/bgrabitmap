@@ -58,6 +58,7 @@ function FileOpenUTF8(Const FileName : string; Mode : Integer) : THandle;
 function FileCreateUTF8(Const FileName : string) : THandle; overload;
 function FileCreateUTF8(Const FileName : string; Rights: Cardinal) : THandle; overload;
 function FileExistsUTF8(Const FileName : string): boolean;
+function DeleteFileUTF8(Const FileName : string): boolean;
 function FindFirstUTF8(const Path: string; Attr: Longint; out Rslt: TSearchRec): Longint;
 function FindNextUTF8(var Rslt: TSearchRec): Longint;
 procedure FindCloseUTF8(var F: TSearchrec);
@@ -169,6 +170,11 @@ end;
 function FileExistsUTF8(Const FileName : string): boolean;
 begin
   result := LazFileUtils.FileExistsUTF8(FileName);
+end;
+
+function DeleteFileUTF8(const FileName: string): boolean;
+begin
+  result := LazFileUtils.DeleteFileUTF8(FileName);
 end;
 
 function FindFirstUTF8(const Path: string; Attr: Longint; out Rslt: TSearchRec
