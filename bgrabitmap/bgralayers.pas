@@ -271,6 +271,8 @@ type
     class function IsValidRegistryIndentifier(AIdentifier: string): boolean;
     function GetLayerRegistry(ALayerIndex: integer; ARegistryIdentifier: string): RawByteString;
     procedure SetLayerRegistry(ALayerIndex: integer; ARegistryIdentifier: string; AValue: RawByteString);
+    procedure SaveLayerRegistryToStream(ALayerIndex: integer; AStream: TStream);
+    procedure LoadLayerRegistryFromStream(ALayerIndex: integer; AStream: TStream);
     function GetGlobalRegistry(ARegistryIdentifier: string): RawByteString;
     procedure SetGlobalRegistry(ARegistryIdentifier: string; AValue: RawByteString);
 
@@ -1504,6 +1506,26 @@ begin
   if length(AValue) = 0 then
     registryDir.Delete(ARegistryIdentifier,'')
   else registryDir.RawStringByFilename[ARegistryIdentifier] := AValue;
+end;
+
+procedure TBGRALayeredBitmap.SaveLayerRegistryToStream(ALayerIndex: integer;
+  AStream: TStream);
+var
+  layerDir, registryDir: TMemDirectory;
+begin
+  layerDir := GetLayerDirectory(ALayerIndex, true);
+  registryDir := layerDir.Directory[layerDir.AddDirectory(RegistrySubDirectory,'')];
+  registryDir.SaveToStream(AStream);
+end;
+
+procedure TBGRALayeredBitmap.LoadLayerRegistryFromStream(ALayerIndex: integer;
+  AStream: TStream);
+var
+  layerDir, registryDir: TMemDirectory;
+begin
+  layerDir := GetLayerDirectory(ALayerIndex, true);
+  registryDir := layerDir.Directory[layerDir.AddDirectory(RegistrySubDirectory,'')];
+  registryDir.LoadFromStream(AStream);
 end;
 
 function TBGRALayeredBitmap.GetGlobalRegistry(ARegistryIdentifier: string): RawByteString;
