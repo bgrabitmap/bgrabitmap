@@ -1043,3 +1043,14 @@ begin
   end;
 end;
 
+procedure BlendMaskPixelInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+const alphaMax = 255*7;
+var alpha: byte;
+begin
+  alpha := (c.green shl 2) + (c.red shl 1) + c.blue;
+  alpha := alpha*c.alpha + (255*7)*(not c.alpha);
+  alpha := (alpha + (alphaMax shr 1)) div alphaMax;
+  if alpha = 0 then dest^ := BGRAPixelTransparent
+  else dest^.alpha := alpha;
+end;
+

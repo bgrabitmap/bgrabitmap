@@ -328,6 +328,17 @@ begin
         end;
 end;
 
+procedure BlendMaskPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          BlendMaskPixelInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
 type
   TBlendPixelsProc = procedure(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
 
@@ -337,7 +348,8 @@ const
       @LightenPixels, @ScreenPixels, @AddPixels, @LinearAddPixels, @ColorDodgePixels, @DividePixels, @NiceGlowPixels, @SoftLightPixels, @HardLightPixels,
       @GlowPixels, @ReflectPixels, @LinearOverlayPixels, @OverlayPixels, @DarkenPixels, @LinearMultiplyPixels, @ColorBurnPixels,
       @DifferencePixels, @LinearDifferencePixels, @ExclusionPixels, @LinearExclusionPixels, @SubtractPixels, @LinearSubtractPixels,
-      @SubtractInversePixels, @LinearSubtractInversePixels, @NegationPixels, @LinearNegationPixels, @BlendXorPixels, @SvgSoftLightPixels);
+      @SubtractInversePixels, @LinearSubtractInversePixels, @NegationPixels, @LinearNegationPixels, @BlendXorPixels, @SvgSoftLightPixels,
+      @BlendMaskPixels);
 
 procedure BlendPixels(pdest: PBGRAPixel; psrc: PBGRAPixel;
   blendOp: TBlendOperation; Count: integer);
