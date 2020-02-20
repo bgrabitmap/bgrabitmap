@@ -139,7 +139,7 @@ begin
   if rootPos = 0 then
     raise exception.Create('Invalid root offset');
   rootSize := LEReadInt64(AStream);
-  if rootSize <= 4 then
+  if rootSize < 4 then
     raise exception.Create('Invalid root size');
   AStream.Position:= rootPos + startPos;
   rootStream:= TMemoryStream.Create;
