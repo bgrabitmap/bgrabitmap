@@ -1757,7 +1757,7 @@ end;
 function TBGRACustomBitmap.GetImageAffineBounds(AMatrix: TAffineMatrix;
   Source: TBGRACustomBitmap; APixelCenteredCoords: boolean): TRect;
 begin
-  result := GetImageAffineBounds(AMatrix, Source.GetImageBounds, APixelCenteredCoords);
+  result := GetImageAffineBounds(AMatrix, Source.GetImageBounds, true, APixelCenteredCoords);
 end;
 
 procedure TBGRACustomBitmap.PutImageAngle(x, y: single;
