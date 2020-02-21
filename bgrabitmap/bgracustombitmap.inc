@@ -617,9 +617,10 @@ type
      procedure ComputeImageAngleAxes(x,y,w,h,angle: single; imageCenterX,imageCenterY: single; ARestoreOffsetAfterRotation: boolean;
        out Origin,HAxis,VAxis: TPointF);
      function GetImageAngleBounds(x,y: single; Source: TBGRACustomBitmap; angle: single; imageCenterX: single = 0; imageCenterY: single = 0; ARestoreOffsetAfterRotation: boolean = false): TRect;
-     procedure BlendImage(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation); virtual; abstract;
-     procedure BlendImageOver(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte = 255;
-         ALinearBlend: boolean = false); virtual; abstract;
+     procedure BlendImage(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation); overload; virtual; abstract;
+     procedure BlendImage(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation); overload; virtual; abstract;
+     procedure BlendImageOver(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
+     procedure BlendImageOver(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
      function Resample(newWidth, newHeight: integer;
        mode: TResampleMode = rmFineResample): TBGRACustomBitmap; virtual; abstract;
 

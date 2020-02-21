@@ -572,9 +572,10 @@ type
     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
 
     procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
-    procedure BlendImage(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation); override;
-    procedure BlendImageOver(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte = 255;
-        ALinearBlend: boolean = false); override;
+    procedure BlendImage(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation); overload; override;
+    procedure BlendImage(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation); overload; override;
+    procedure BlendImageOver(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; override;
+    procedure BlendImageOver(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; override;
 
     function GetPtrBitmap(Top,Bottom: Integer): TBGRACustomBitmap; override;
     function MakeBitmapCopy(BackgroundColor: TColor): TBitmap; override;
@@ -3661,69 +3662,122 @@ begin
     PutImage(X,Y,TBGRACustomBitmap(ASource).XorMask,dmXor,AOpacity);
 end;
 
-procedure TBGRADefaultBitmap.BlendImage(x, y: integer; Source: TBGRACustomBitmap;
-  operation: TBlendOperation);
-var
-  yb, minxb, minyb, maxxb, maxyb, ignoreleft, copycount, sourcewidth,
-  delta_source, delta_dest: integer;
-  psource, pdest: PBGRAPixel;
+procedure TBGRADefaultBitmap.BlendImage(x, y: integer; ASource: TBGRACustomBitmap;
+  AOperation: TBlendOperation);
 begin
-  sourcewidth := Source.Width;
+  BlendImage(RectWithSize(x,y,ASource.Width,ASource.Height), ASource, -x,-y,AOperation);
+end;
 
-  if not CheckPutImageBounds(x,y,sourcewidth,source.height,minxb,minyb,maxxb,maxyb,ignoreleft,FClipRect) then exit;
+procedure TBGRADefaultBitmap.BlendImage(ADest: TRect; ASource: IBGRAScanner;
+  AOffsetX, AOffsetY: integer; AOperation: TBlendOperation);
+const BufSize = 8;
+var
+  yb, remain, i, delta_dest: integer;
+  psource, pdest: PBGRAPixel;
+  sourceRect: TRect;
+  sourceScanline, sourcePut: boolean;
+  buf: packed array[0..BufSize-1] of TBGRAPixel;
+begin
+  if not CheckClippedRectBounds(ADest.Left, ADest.Top, ADest.Right, ADest.Bottom) then exit;
 
-  copycount := maxxb - minxb + 1;
+  sourceRect := ADest;
+  sourceRect.Offset(AOffsetX, AOffsetY);
+  sourceScanline := ASource.ProvidesScanline(sourceRect);
+  sourcePut := ASource.IsScanPutPixelsDefined;
 
-  psource := Source.ScanLine[minyb - y] + ignoreleft;
-  if Source.LineOrder = riloBottomToTop then
-    delta_source := -sourcewidth
-  else
-    delta_source := sourcewidth;
-
-  pdest := Scanline[minyb] + minxb;
-  if FLineOrder = riloBottomToTop then
+  pdest := Scanline[ADest.Top] + ADest.Left;
+  if LineOrder = riloBottomToTop then
     delta_dest := -Width
-  else
-    delta_dest := Width;
+    else delta_dest := Width;
 
-  for yb := minyb to maxyb do
+  for yb := sourceRect.Top to sourceRect.Bottom-1 do
   begin
-    BlendPixels(pdest, psource, operation, copycount);
-    Inc(psource, delta_source);
+    if sourceScanline then
+    begin
+      psource := ASource.GetScanlineAt(sourceRect.Left, yb);
+      BlendPixels(pdest, psource, AOperation, ADest.Width);
+    end else
+    begin
+      ASource.ScanMoveTo(sourceRect.Left, yb);
+      remain := ADest.Width;
+      if sourcePut then
+        while remain >= BufSize do
+        begin
+          ASource.ScanPutPixels(@buf, BufSize, dmSet);
+          BlendPixels(pdest, @buf, AOperation, BufSize);
+          inc(pdest, bufSize);
+          dec(remain, bufSize);
+        end;
+      if remain > 0 then
+      begin
+        for i := 0 to remain-1 do
+          buf[i] := ASource.ScanNextPixel;
+        BlendPixels(pdest, @buf, AOperation, remain);
+        inc(pdest, remain);
+      end;
+      dec(pdest, ADest.Width);
+    end;
     Inc(pdest, delta_dest);
   end;
   InvalidateBitmap;
 end;
 
 procedure TBGRADefaultBitmap.BlendImageOver(x, y: integer;
-  Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean);
-var
-  yb, minxb, minyb, maxxb, maxyb, ignoreleft, copycount, sourcewidth,
-  delta_source, delta_dest: integer;
-  psource, pdest: PBGRAPixel;
+  ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean);
 begin
-  sourcewidth := Source.Width;
+  BlendImageOver(RectWithSize(x,y,ASource.Width,ASource.Height), ASource, -x,-y,
+                 AOperation, AOpacity, ALinearBlend);
+end;
 
-  if not CheckPutImageBounds(x,y,sourcewidth,source.height,minxb,minyb,maxxb,maxyb,ignoreleft,FClipRect) then exit;
+procedure TBGRADefaultBitmap.BlendImageOver(ADest: TRect; ASource: IBGRAScanner;
+  AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean);
+const BufSize = 8;
+var
+  yb, remain, i, delta_dest: integer;
+  psource, pdest: PBGRAPixel;
+  sourceRect: TRect;
+  sourceScanline, sourcePut: boolean;
+  buf: packed array[0..BufSize-1] of TBGRAPixel;
+begin
+  if not CheckClippedRectBounds(ADest.Left, ADest.Top, ADest.Right, ADest.Bottom) then exit;
 
-  copycount := maxxb - minxb + 1;
+  sourceRect := ADest;
+  sourceRect.Offset(AOffsetX, AOffsetY);
+  sourceScanline := ASource.ProvidesScanline(sourceRect);
+  sourcePut := ASource.IsScanPutPixelsDefined;
 
-  psource := Source.ScanLine[minyb - y] + ignoreleft;
-  if Source.LineOrder = riloBottomToTop then
-    delta_source := -sourcewidth
-  else
-    delta_source := sourcewidth;
-
-  pdest := Scanline[minyb] + minxb;
-  if FLineOrder = riloBottomToTop then
+  pdest := Scanline[ADest.Top] + ADest.Left;
+  if LineOrder = riloBottomToTop then
     delta_dest := -Width
-  else
-    delta_dest := Width;
+    else delta_dest := Width;
 
-  for yb := minyb to maxyb do
+  for yb := sourceRect.Top to sourceRect.Bottom-1 do
   begin
-    BlendPixelsOver(pdest, psource, operation, copycount, AOpacity, ALinearBlend);
-    Inc(psource, delta_source);
+    if sourceScanline then
+    begin
+      psource := ASource.GetScanlineAt(sourceRect.Left, yb);
+      BlendPixelsOver(pdest, psource, AOperation, ADest.Width, AOpacity, ALinearBlend);
+    end else
+    begin
+      ASource.ScanMoveTo(sourceRect.Left, yb);
+      remain := ADest.Width;
+      if sourcePut then
+        while remain >= BufSize do
+        begin
+          ASource.ScanPutPixels(@buf, BufSize, dmSet);
+          BlendPixelsOver(pdest, @buf, AOperation, BufSize, AOpacity, ALinearBlend);
+          inc(pdest, bufSize);
+          dec(remain, bufSize);
+        end;
+      if remain > 0 then
+      begin
+        for i := 0 to remain-1 do
+          buf[i] := ASource.ScanNextPixel;
+        BlendPixelsOver(pdest, @buf, AOperation, remain, AOpacity, ALinearBlend);
+        inc(pdest, remain);
+      end;
+      dec(pdest, ADest.Width);
+    end;
     Inc(pdest, delta_dest);
   end;
   InvalidateBitmap;
