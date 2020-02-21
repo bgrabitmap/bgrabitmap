@@ -47,9 +47,15 @@ type
     FLinearBlend: boolean;
     FMemDirectory: TMemDirectory;
     FMemDirectoryOwned: boolean;
+    FSelectionDrawMode: TDrawMode;
+    FSelectionLayerIndex: integer;
+    FSelectionRect: TRect;
+    FSelectionScanner: IBGRAScanner;
+    FSelectionScannerOffset: TPoint;
     function GetDefaultBlendingOperation: TBlendOperation;
     function GetHasMemFiles: boolean;
     function GetLinearBlend: boolean;
+    function GetSelectionVisible: boolean;
     procedure SetLinearBlend(AValue: boolean);
 
   protected
@@ -88,6 +94,7 @@ type
     function RangeIntersect(first1,last1,first2,last2: integer): boolean;
     procedure RemoveFrozenRange(index: integer);
     function ContainsFrozenRange(first,last: integer): boolean;
+    function GetLayerDrawMode(AIndex: integer): TDrawMode;
 
   public
     procedure SaveToFile(const filenameUTF8: string); override;
@@ -96,6 +103,7 @@ type
     constructor Create; override;
     destructor Destroy; override;
     function ToString: ansistring; override;
+    procedure DiscardSelection;
     function GetLayerBitmapDirectly(layer: integer): TBGRABitmap; virtual;
     function GetLayerBitmapCopy(layer: integer): TBGRABitmap; virtual; abstract;
     function ComputeFlatImage(ASeparateXorMask: boolean = false): TBGRABitmap; overload;
@@ -108,6 +116,7 @@ type
     procedure Draw(Dest: TBGRABitmap; x,y: integer); overload;
     procedure Draw(Dest: TBGRABitmap; x,y: integer; ASeparateXorMask: boolean); overload;
     procedure Draw(Dest: TBGRABitmap; AX,AY: integer; firstLayer, lastLayer: integer; ASeparateXorMask: boolean = false); overload;
+    function DrawLayer(Dest: TBGRABitmap; X,Y: Integer; AIndex: integer; ASeparateXorMask: boolean = false; ADestinationEmpty: boolean = false): boolean;
 
     procedure FreezeExceptOneLayer(layer: integer); overload;
     procedure Freeze(firstLayer, lastLayer: integer); overload;
@@ -132,6 +141,12 @@ type
     property LayerOriginalGuid[layer: integer]: TGuid read GetLayerOriginalGuid;
     property LayerOriginalMatrix[layer: integer]: TAffineMatrix read GetLayerOriginalMatrix;
     property LayerOriginalRenderStatus[layer: integer]: TOriginalRenderStatus read GetLayerOriginalRenderStatus;
+    property SelectionScanner: IBGRAScanner read FSelectionScanner write FSelectionScanner;
+    property SelectionScannerOffset: TPoint read FSelectionScannerOffset write FSelectionScannerOffset;
+    property SelectionRect: TRect read FSelectionRect write FSelectionRect;
+    property SelectionLayerIndex: integer read FSelectionLayerIndex write FSelectionLayerIndex;
+    property SelectionDrawMode: TDrawMode read FSelectionDrawMode write FSelectionDrawMode;
+    property SelectionVisible: boolean read GetSelectionVisible;
     property LinearBlend: boolean read GetLinearBlend write SetLinearBlend; //use linear blending unless specified
     property DefaultBlendingOperation: TBlendOperation read GetDefaultBlendingOperation;
     property MemDirectory: TMemDirectory read GetMemDirectory write SetMemDirectory;
@@ -2561,6 +2576,12 @@ begin
   result := FLinearBlend;
 end;
 
+function TBGRACustomLayeredBitmap.GetSelectionVisible: boolean;
+begin
+  result := (FSelectionScanner <> nil) and (FSelectionLayerIndex >= 0) and
+    (FSelectionLayerIndex < NbLayers) and FSelectionRect.IntersectsWith(rect(0,0,Width,Height));
+end;
+
 function TBGRACustomLayeredBitmap.GetMemDirectory: TMemDirectory;
 begin
   if FMemDirectory = nil then
@@ -2731,6 +2752,13 @@ begin
   result := false;
 end;
 
+function TBGRACustomLayeredBitmap.GetLayerDrawMode(AIndex: integer): TDrawMode;
+begin
+  if (BlendOperation[AIndex] = boTransparent) and not LinearBlend then
+    result := dmDrawWithTransparency
+    else result := dmLinearBlend;
+end;
+
 function TBGRACustomLayeredBitmap.GetEmpty: boolean;
 begin
   result := (NbLayers = 0) and (Width = 0) and (Height = 0);
@@ -2859,6 +2887,11 @@ begin
   FLinearBlend:= True;
   FMemDirectory := nil;
   FMemDirectoryOwned:= false;
+  FSelectionDrawMode:= dmDrawWithTransparency;
+  FSelectionLayerIndex:= -1;
+  FSelectionRect:= EmptyRect;
+  FSelectionScanner:= nil;
+  FSelectionScannerOffset:= Point(0,0);
 end;
 
 {$hints on}
@@ -2872,6 +2905,14 @@ begin
   begin
     Result += LineEnding + 'Layer ' + IntToStr(i) + ' : ' + LayerName[i] + LineEnding;
   end;
+end;
+
+procedure TBGRACustomLayeredBitmap.DiscardSelection;
+begin
+  fillchar(FSelectionScanner, sizeof(FSelectionScanner), 0);
+  FSelectionRect := EmptyRect;
+  FSelectionLayerIndex := -1;
+  FSelectionScannerOffset:= Point(0,0);
 end;
 
 function TBGRACustomLayeredBitmap.ComputeFlatImage(ASeparateXorMask: boolean): TBGRABitmap;
@@ -2893,15 +2934,15 @@ end;
 
 destructor TBGRACustomLayeredBitmap.Destroy;
 begin
+  DiscardSelection;
   Clear;
 end;
 
 function TBGRACustomLayeredBitmap.ComputeFlatImage(ARect: TRect; firstLayer, lastLayer: integer; ASeparateXorMask: boolean): TBGRABitmap;
 var
-  tempLayer: TBGRABitmap;
   i,j: integer;
-  mustFreeCopy: boolean;
-  op: TBlendOperation;
+  destEmpty: boolean;
+
 begin
   if (firstLayer < 0) or (lastLayer > NbLayers-1) then
     raise ERangeError.Create('Layer index out of bounds');
@@ -2911,6 +2952,8 @@ begin
     exit;
   end;
   Result := TBGRABitmap.Create(ARect.Right-ARect.Left, ARect.Bottom-ARect.Top);
+  destEmpty := true;
+  if SelectionVisible then Unfreeze(SelectionLayerIndex);
   i := firstLayer;
   while i <= lastLayer do
   begin
@@ -2926,44 +2969,12 @@ begin
         else
           Result.PutImage(-ARect.Left,-ARect.Top,FFrozenRange[j].image,dmLinearBlend);
         i := FFrozenRange[j].lastLayer+1;
+        destEmpty := false;
         continue;
       end;
     end;
-    if LayerVisible[i] and (LayerOpacity[i]<>0) then
-    begin
-      tempLayer := GetLayerBitmapDirectly(i);
-      if tempLayer <> nil then
-        mustFreeCopy := false
-      else
-      begin
-        mustFreeCopy := true;
-        tempLayer := GetLayerBitmapCopy(i);
-      end;
-      if tempLayer <> nil then
-      with LayerOffset[i] do
-      begin
-        op := BlendOperation[i];
-        //XOR mask
-        if (op = boXor) and ASeparateXorMask then
-        begin
-          result.NeedXorMask;
-          result.XorMask.BlendImageOver(x-ARect.Left,y-ARect.Top, tempLayer, op, LayerOpacity[i], LinearBlend);
-        end else
-        //first layer is simply the background
-        if i = firstLayer then
-          Result.PutImage(x-ARect.Left, y-ARect.Top, tempLayer, dmSet, LayerOpacity[i])
-        else
-        //simple blend operations
-        if (op = boLinearBlend) or ((op = boTransparent) and LinearBlend) then
-          Result.PutImage(x-ARect.Left,y-ARect.Top,tempLayer,dmLinearBlend, LayerOpacity[i]) else
-        if op = boTransparent then
-          Result.PutImage(x-ARect.Left,y-ARect.Top,tempLayer,dmDrawWithTransparency, LayerOpacity[i])
-        else
-          //complex blend operations are done in a third bitmap
-          result.BlendImageOver(x-ARect.Left,y-ARect.Top, tempLayer, op, LayerOpacity[i], LinearBlend);
-        if mustFreeCopy then tempLayer.Free;
-      end;
-    end;
+    if DrawLayer(result, -ARect.Left, -ARect.Top, i, ASeparateXorMask, destEmpty) then
+      destEmpty := false;
     inc(i);
   end;
   if result.XorMask <> nil then
@@ -3012,17 +3023,17 @@ procedure TBGRACustomLayeredBitmap.Draw(Dest: TBGRABitmap; AX, AY: integer; firs
 var
   temp: TBGRABitmap;
   i,j: integer;
-  tempLayer: TBGRABitmap;
-  mustFreeCopy: boolean;
-  OldClipRect: TRect;
   NewClipRect: TRect;
 begin
-  OldClipRect := Dest.ClipRect;
   NewClipRect := rect(0,0,0,0);
-  if not IntersectRect(NewClipRect,rect(AX,AY,AX+Width,AY+Height),Dest.ClipRect) then exit; //nothing to be drawn
+  //nothing to be drawn?
+  if not IntersectRect(NewClipRect, rect(AX,AY,AX+Width,AY+Height), Dest.ClipRect) then exit;
 
   for i := firstLayer to lastLayer do
-    if LayerVisible[i] and not (BlendOperation[i] in[boTransparent,boLinearBlend]) then
+    if LayerVisible[i] and
+      (not (BlendOperation[i] in[boTransparent,boLinearBlend]) or
+       ( (SelectionLayerIndex = i) and SelectionVisible
+         and (SelectionDrawMode <> GetLayerDrawMode(i)) ) ) then
     begin
       temp := ComputeFlatImage(rect(NewClipRect.Left-AX,NewClipRect.Top-AY,NewClipRect.Right-AX,NewClipRect.Bottom-AY), ASeparateXorMask);
       if self.LinearBlend then
@@ -3033,7 +3044,6 @@ begin
       exit;
     end;
 
-  Dest.ClipRect := NewClipRect;
   i := firstLayer;
   while i <= lastLayer do
   begin
@@ -3043,36 +3053,198 @@ begin
       if j <> -1 then
       begin
         if not FFrozenRange[j].linearBlend then
-          Dest.PutImage(AX,AY,FFrozenRange[j].image,dmDrawWithTransparency)
-        else
-          Dest.PutImage(AX,AY,FFrozenRange[j].image,dmLinearBlend);
+          Dest.PutImage(AX, AY, FFrozenRange[j].image, dmDrawWithTransparency)
+          else Dest.PutImage(AX, AY, FFrozenRange[j].image, dmLinearBlend);
         i := FFrozenRange[j].lastLayer+1;
         continue;
       end;
     end;
-    if LayerVisible[i] then
-    begin
-      tempLayer := GetLayerBitmapDirectly(i);
-      if tempLayer <> nil then
-        mustFreeCopy := false
-      else
-      begin
-        mustFreeCopy := true;
-        tempLayer := GetLayerBitmapCopy(i);
-      end;
-      if tempLayer <> nil then
-      with LayerOffset[i] do
-      begin
-        if (BlendOperation[i] = boTransparent) and not self.LinearBlend then //here it is specified not to use linear blending
-          Dest.PutImage(AX+x,AY+y,tempLayer,dmDrawWithTransparency, LayerOpacity[i])
-        else
-          Dest.PutImage(AX+x,AY+y,tempLayer,dmLinearBlend, LayerOpacity[i]);
-        if mustFreeCopy then tempLayer.Free;
-      end;
-    end;
+    DrawLayer(Dest, AX,AY, i, ASeparateXorMask, false);
     inc(i);
   end;
-  Dest.ClipRect := OldClipRect;
+end;
+
+function TBGRACustomLayeredBitmap.DrawLayer(Dest: TBGRABitmap; X, Y: Integer;
+  AIndex: integer; ASeparateXorMask: boolean; ADestinationEmpty: boolean): boolean;
+type IntArray4 = array[1..4] of integer;
+
+  function MergeSort(const ATab: IntArray4): IntArray4;
+  var
+    posA, posB, pos: Integer;
+  begin
+    posA := 1;
+    posB := 3;
+    pos := 1;
+    while (posA <= 2) and (posB <= 4) do
+    begin
+      if ATab[posA] <= ATab[posB] then
+      begin
+        result[pos] := ATab[posA];
+        inc(posA);
+      end else
+      begin
+        result[pos] := ATab[posB];
+        inc(posB);
+      end;
+      inc(pos);
+    end;
+    while posA <= 2 do
+    begin
+      result[pos] := ATab[posA];
+      inc(posA); inc(pos);
+    end;
+    while posB <= 4 do
+    begin
+      result[pos] := ATab[posB];
+      inc(posB); inc(pos);
+    end;
+  end;
+
+var
+  opacity: Byte;
+
+  procedure Blend(ADestRect: TRect; AScan: IBGRAScanner; AScanOfsX, AScanOfsY: integer; ABlendOp: TBlendOperation);
+  begin
+    //XOR mask
+    if (ABlendOp = boXor) and ASeparateXorMask then
+    begin
+      Dest.NeedXorMask;
+      Dest.XorMask.BlendImageOver(ADestRect, AScan, AScanOfsX, AScanOfsY, ABlendOp, opacity, LinearBlend);
+    end else
+    //first layer is simply the background
+    if ADestinationEmpty and (ABlendOp <> boMask) then
+      Dest.FillRect(ADestRect, AScan, dmSet, Point(AScanOfsX, AScanOfsY), opacity*$0101)
+    else
+      Dest.BlendImageOver(ADestRect, AScan, AScanOfsX, AScanOfsY, ABlendOp, opacity, LinearBlend);
+  end;
+
+var
+  tempLayer: TBGRABitmap;
+  tempLayerScanOfs, selScanOfs: TPoint;
+  blendOp: TBlendOperation;
+
+  procedure BlendBoth(ATile: TRect);
+  var
+    mergeBuf, selBuf: PByte;
+    pTemp: PByte;
+    tempStride, rowSize, destStride: PtrInt;
+    tileWidth, yb: LongInt;
+    pDest: PByte;
+  begin
+    tileWidth := ATile.Width;
+    rowSize := tileWidth * sizeof(TBGRAPixel);
+    getmem(mergeBuf, rowSize*2);
+    selBuf := mergeBuf+rowSize;
+    try
+      if tempLayer.LineOrder = riloTopToBottom then
+        tempStride := tempLayer.RowSize else tempStride := -tempLayer.RowSize;
+      pTemp := tempLayer.GetPixelAddress(ATile.Left + tempLayerScanOfs.X,
+                 ATile.Top + tempLayerScanOfs.Y);
+      pDest := Dest.GetPixelAddress(ATile.Left, ATile.Top);
+      if Dest.LineOrder = riloTopToBottom then
+        destStride := Dest.RowSize else destStride := -Dest.RowSize;
+      for yb := ATile.Top to ATile.Bottom-1 do
+      begin
+        move(pTemp^, mergeBuf^, rowSize);
+        SelectionScanner.ScanMoveTo(ATile.Left + selScanOfs.X, yb + selScanOfs.Y);
+        ScannerPutPixels(SelectionScanner, PBGRAPixel(selBuf), tileWidth, dmSet);
+        PutPixels(PBGRAPixel(mergeBuf), PBGRAPixel(selBuf), tileWidth, SelectionDrawMode, 255);
+        BlendPixelsOver(PBGRAPixel(pDest), PBGRAPixel(mergeBuf),
+          blendOp, tileWidth, opacity, LinearBlend);
+        inc(pTemp, tempStride);
+        inc(pDest, destStride);
+      end;
+    finally
+      freemem(mergeBuf);
+    end;
+  end;
+
+var
+  mustFreeCopy, containsSel, containsLayer: Boolean;
+  ofs: TPoint;
+  rSel, oldClip, rLayer, rTile: TRect;
+  xTab,yTab: IntArray4;
+  xb, yb: Integer;
+begin
+  if not LayerVisible[AIndex] then exit(false);
+  opacity := LayerOpacity[AIndex];
+  if opacity = 0 then exit(false);
+
+  tempLayer := GetLayerBitmapDirectly(AIndex);
+  if tempLayer <> nil then mustFreeCopy := false else
+    begin
+      mustFreeCopy := true;
+      tempLayer := GetLayerBitmapCopy(AIndex);
+    end;
+
+  ofs := LayerOffset[AIndex];
+  oldClip := Dest.IntersectClip(rect(X,Y,X+self.Width,Y+self.Height));
+
+  if (SelectionLayerIndex = AIndex) and SelectionVisible then
+  begin
+    rSel := SelectionRect;
+    rSel.Offset(X, Y);
+    rSel.Intersect(Dest.ClipRect);
+  end else
+    rSel := EmptyRect;
+
+  if Assigned(tempLayer) then
+  begin
+    rLayer := RectWithSize(ofs.x + X, ofs.y + Y, tempLayer.Width, tempLayer.Height);
+    rLayer.Intersect(Dest.ClipRect);
+  end else
+    rLayer := EmptyRect;
+
+  if (tempLayer <> nil) and (not rLayer.IsEmpty or not rSel.IsEmpty) then
+  begin
+    if AIndex = 0 then blendOp := boTransparent else blendOp := BlendOperation[AIndex];
+    tempLayerScanOfs := Point(-(ofs.X+X), -(ofs.Y+Y));
+
+    if rSel.IsEmpty then
+      Blend(rLayer, tempLayer, tempLayerScanOfs.X, tempLayerScanOfs.y, blendOp)
+    else
+    begin
+      selScanOfs := Point(SelectionScannerOffset.X - X, SelectionScannerOffset.Y - Y);
+
+      xTab[1] := rSel.Left;    yTab[1] := rSel.Top;
+      xTab[2] := rSel.Right;   yTab[2] := rSel.Bottom;
+      xTab[3] := rLayer.Left;  yTab[3] := rLayer.Top;
+      xTab[4] := rLayer.Right; yTab[4] := rLayer.Bottom;
+      xTab := MergeSort(xTab); yTab := MergeSort(yTab);
+
+      for yb := 1 to 3 do
+      begin
+        rTile.Top := yTab[yb];
+        rTile.Bottom := yTab[yb+1];
+        if rTile.Bottom > rTile.Top then
+          for xb := 1 to 3 do
+          begin
+            rTile.Left := xTab[xb];
+            rTile.Right := xTab[xb+1];
+            if rTile.Right > rTile.Left then
+            begin
+              containsSel := rTile.IntersectsWith(rSel);
+              containsLayer := rTile.IntersectsWith(rLayer);
+              if containsLayer then
+              begin
+                if not containsSel then
+                  Blend(rTile, tempLayer, tempLayerScanOfs.X, tempLayerScanOfs.y, blendOp)
+                else
+                  BlendBoth(rTile);
+              end else
+              if containsSel then
+                Blend(rTile, SelectionScanner, selScanOfs.X, selScanOfs.Y, blendOp)
+            end;
+          end;
+      end;
+    end;
+
+    result := true;
+  end else
+    result := false;
+
+  Dest.ClipRect := oldClip;
+  if mustFreeCopy then tempLayer.Free;
 end;
 
 procedure TBGRACustomLayeredBitmap.FreezeExceptOneLayer(layer: integer);
@@ -3124,7 +3296,8 @@ begin
   start := -1;
   linear := false; //to avoid hint
   for j := firstlayer to lastLayer do
-  if (BlendOperation[j] in [boTransparent,boLinearBlend]) or (start = 0) or ((firstlayer= 0) and (j=0)) then
+  if ((BlendOperation[j] in [boTransparent,boLinearBlend]) or (start = 0) or ((firstlayer= 0) and (j=0)))
+     and (not SelectionVisible or (j <> SelectionLayerIndex)) then
   begin
     nextLinear := (BlendOperation[j] = boLinearBlend) or self.LinearBlend;
     if start = -1 then
