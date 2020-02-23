@@ -352,6 +352,8 @@ begin
               BlendOperation[idx] := boLinearNegation else
             if (opstr = 'bgra:xor') or (opstr = 'xor') then
               BlendOperation[idx] := boXor else
+            if opstr = 'bgra:mask' then
+              BlendOperation[idx] := boMask else
             begin
               //messagedlg('Unknown blend operation : ' + attr.NodeValue,mtInformation,[mbOk],0);
               BlendOperation[idx] := boTransparent;
@@ -445,6 +447,7 @@ begin
         boLinearNegation,boNegation: strval := 'bgra:negation';
         boXor: strval := 'bgra:xor';
         boSvgSoftLight: strval := 'svg:soft-light';
+        boMask: strval := 'bgra:mask';
         else strval := 'svg:src-over';
       end;
       layerNode.SetAttribute('composite-op',widestring(strval));
