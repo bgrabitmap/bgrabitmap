@@ -339,6 +339,17 @@ begin
         end;
 end;
 
+procedure LinearMultiplySaturationPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          LinearMultiplySaturationInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
 type
   TBlendPixelsProc = procedure(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
 
@@ -349,7 +360,7 @@ const
       @GlowPixels, @ReflectPixels, @LinearOverlayPixels, @OverlayPixels, @DarkenPixels, @LinearMultiplyPixels, @ColorBurnPixels,
       @DifferencePixels, @LinearDifferencePixels, @ExclusionPixels, @LinearExclusionPixels, @SubtractPixels, @LinearSubtractPixels,
       @SubtractInversePixels, @LinearSubtractInversePixels, @NegationPixels, @LinearNegationPixels, @BlendXorPixels, @SvgSoftLightPixels,
-      @BlendMaskPixels);
+      @BlendMaskPixels, @LinearMultiplySaturationPixels);
 
 procedure BlendPixels(pdest: PBGRAPixel; psrc: PBGRAPixel;
   blendOp: TBlendOperation; Count: integer);

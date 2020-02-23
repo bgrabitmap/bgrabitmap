@@ -354,6 +354,8 @@ begin
               BlendOperation[idx] := boXor else
             if opstr = 'bgra:mask' then
               BlendOperation[idx] := boMask else
+            if opstr = 'bgra:linear-multiply-saturation' then
+              BlendOperation[idx] := boLinearMultiplySaturation else
             begin
               //messagedlg('Unknown blend operation : ' + attr.NodeValue,mtInformation,[mbOk],0);
               BlendOperation[idx] := boTransparent;
@@ -448,6 +450,7 @@ begin
         boXor: strval := 'bgra:xor';
         boSvgSoftLight: strval := 'svg:soft-light';
         boMask: strval := 'bgra:mask';
+        boLinearMultiplySaturation: strval := 'bgra:linear-multiply-saturation';
         else strval := 'svg:src-over';
       end;
       layerNode.SetAttribute('composite-op',widestring(strval));
