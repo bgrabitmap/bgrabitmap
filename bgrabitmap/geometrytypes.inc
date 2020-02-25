@@ -110,6 +110,7 @@ type
     function Floor: TPoint;
     function Round: TPoint;
     function Length: Single;
+    function IsEmpty: boolean;
   end;
 
 type
@@ -882,6 +883,11 @@ end;
 function TPointFHelper.Length: Single;
 begin
   result:= VectLen(self);
+end;
+
+function TPointFHelper.IsEmpty: boolean;
+begin
+  result := isEmptyPointF(self);
 end;
 
 class function TRectFHelper.Intersect(const R1: TRectF; const R2: TRectF): TRectF;
