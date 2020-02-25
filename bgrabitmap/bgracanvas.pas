@@ -1339,7 +1339,6 @@ end;
 
 procedure TBGRACanvas.FillRect(x1, y1, x2, y2: integer);
 var
-  tex: IBGRAScanner;
   b: TUniversalBrush;
 begin
   if NoBrush then exit;
