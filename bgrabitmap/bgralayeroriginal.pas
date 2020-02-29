@@ -73,6 +73,7 @@ type
   private
     FFocused: boolean;
     FOnFocusChanged: TNotifyEvent;
+    function GetIsMovingPoint: boolean;
     function GetPointCoord(AIndex: integer): TPointF;
     function GetPointCount: integer;
     procedure SetFocused(AValue: boolean);
@@ -148,6 +149,7 @@ type
     property PointCount: integer read GetPointCount;
     property PointCoord[AIndex: integer]: TPointF read GetPointCoord;
     property OnFocusChanged: TNotifyEvent read FOnFocusChanged write FOnFocusChanged;
+    property IsMovingPoint: boolean read GetIsMovingPoint;
   end;
 
   TBGRACustomOriginalStorage = class;
@@ -543,6 +545,11 @@ function TBGRAOriginalEditor.GetPointCoord(AIndex: integer): TPointF;
 begin
   if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
   result := FPoints[AIndex].Coord;
+end;
+
+function TBGRAOriginalEditor.GetIsMovingPoint: boolean;
+begin
+  result := FPointMoving <> -1;
 end;
 
 function TBGRAOriginalEditor.GetPointCount: integer;
