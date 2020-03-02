@@ -29,7 +29,7 @@ implementation
 
 {$R *.lfm}
 
-uses BGRABitmap, BGRABitmapTypes, BGRAText;
+uses BGRABitmap, BGRABitmapTypes, BGRAText, BGRAPath;
 
 { TForm1 }
 
@@ -49,16 +49,17 @@ end;
 procedure TForm1.FormPaint(Sender: TObject);
 const zoom = 1;
   TestText = 'في XHTML 1.0 يتم تحقيق ذلك بإضافة + العنصر المضمن bdo.';//'أب+';
-  TestText2 = 'before مصر after.';
+  TestText2 = 'before مصر after سلام كَعْك.';
 var
   image: TBGRABitmap;
   TS, tempTS: TTextStyle;
   y, prevHeight: Integer;
   s: TSize;
+  p: TBGRAPath;
 begin
   image := TBGRABitmap.Create(ClientWidth div zoom, ClientHeight div zoom, BGRAWhite);
   image.FontName := Font.Name;
-  image.FontHeight := Font.Height;
+  image.FontHeight := round(Font.Height*96/PixelsPerInch);
   image.FontQuality := fqSystemClearType;
 
   Canvas.Brush.Style := bsClear;
@@ -125,7 +126,45 @@ begin
   image.FontStyle := [fsUnderline];
   image.TextOutAngle(250,y, -150, TestText2, BGRABlack, taLeftJustify);
   image.FontStyle := [];
-  inc(y,20);
+  inc(y,40);
+
+  image.FontHeight := 25;
+  image.TextOut(240,y, 'Curved LTR', BGRABlack, taRightJustify);
+  p := TBGRAPath.Create;
+  p.translate(image.FontFullHeight/2, image.FontFullHeight/2);
+  p.moveTo(250,y);
+  p.arc(500,y, 250,50, 0, Pi,0, true);
+  image.FontVerticalAnchor:= fvaCapCenter;
+  image.FontBidiMode:= fbmLeftToRight;
+  image.TextOutCurved(p, TestText2, BGRABlack, taLeftJustify, 0);
+  image.FontVerticalAnchor:= fvaTop;
+  p.Free;
+  inc(y,round(image.FontFullHeight*1.2));
+
+  image.TextOut(240,y, 'Curved RTL', BGRABlack, taRightJustify);
+  p := TBGRAPath.Create;
+  p.translate(image.FontFullHeight/2, image.FontFullHeight/2);
+  p.moveTo(250,y);
+  p.arc(500,y, 250,50, 0, Pi,0, true);
+  image.FontVerticalAnchor:= fvaCapCenter;
+  image.FontBidiMode:= fbmRightToLeft;
+  image.TextOutCurved(p, TestText2, BGRABlack, taLeftJustify, 0);
+  image.FontVerticalAnchor:= fvaTop;
+  p.Free;
+  inc(y,round(image.FontFullHeight*1.2));
+
+  image.TextOut(240,y, 'Curved auto', BGRABlack, taRightJustify);
+  p := TBGRAPath.Create;
+  p.translate(image.FontFullHeight/2, image.FontFullHeight/2);
+  p.moveTo(250,y);
+  p.arc(500,y, 250,50, 0, Pi,0, true);
+  image.FontVerticalAnchor:= fvaCapCenter;
+  image.FontBidiMode:= fbmAuto;
+  image.TextOutCurved(p, TestText2, BGRABlack, taLeftJustify, 0);
+  image.FontVerticalAnchor:= fvaTop;
+  p.Free;
+  inc(y,round(image.FontFullHeight*1.2));
+
 
   image.FontFullHeight := 40;
   ts.Alignment := taLeftJustify;
@@ -139,6 +178,7 @@ begin
 
   image.Free;
 
+  Canvas.Font.Height := round(Font.Height*96/PixelsPerInch);
   Canvas.Font.Color := clBlack;
   TS.RightToLeft := False;
   TS.ShowPrefix := false;

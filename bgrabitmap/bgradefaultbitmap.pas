@@ -406,10 +406,7 @@ type
 
     {** Draws a rectangle with antialiasing and fills it with color ''back''.
         Note that the pixel (x2,y2) is included contrary to integer coordinates }
-    procedure RectangleAntialias(x, y, x2, y2: single; c: TBGRAPixel; w: single; back: TBGRAPixel); override;
-
-    {** Draws a rectangle with antialiasing.  }
-    procedure RectangleAntialias(x, y, x2, y2: single; texture: IBGRAScanner; w: single); override;
+    procedure RectangleAntialias(x, y, x2, y2: single; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; override;
 
     {** Draws a rounded rectangle border with antialiasing. The corners have an
         elliptical radius of ''rx'' and ''ry''. ''options'' specifies how to
@@ -424,15 +421,6 @@ type
     procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; pencolor: TBGRAPixel; w: single; fillcolor: TBGRAPixel; options: TRoundRectangleOptions = []); overload; override;
     {** Draws and fills a round rectangle with textures }
     procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; penTexture: IBGRAScanner; w: single; fillTexture: IBGRAScanner; options: TRoundRectangleOptions = []); overload; override;
-
-    {** Fills a rounded rectangle with antialiasing. The corners have an
-        elliptical radius of ''rx'' and ''ry''. ''options'' specifies how to
-        draw the corners. See [[BGRABitmap Geometry types|geometry types]] }
-    procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; c: TBGRAPixel; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
-    {** Fills a rounded rectangle with a texture }
-    procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
-    {** Erases the content of a rounded rectangle with a texture }
-    procedure EraseRoundRectAntialias(x,y,x2,y2,rx,ry: single; alpha: byte; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; override;
 
     {==== Gradient polygons ====}
 
@@ -584,9 +572,10 @@ type
     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
 
     procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
-    procedure BlendImage(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation); override;
-    procedure BlendImageOver(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte = 255;
-        ALinearBlend: boolean = false); override;
+    procedure BlendImage(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation); overload; override;
+    procedure BlendImage(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation); overload; override;
+    procedure BlendImageOver(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; override;
+    procedure BlendImageOver(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; override;
 
     function GetPtrBitmap(Top,Bottom: Integer): TBGRACustomBitmap; override;
     function MakeBitmapCopy(BackgroundColor: TColor): TBitmap; override;
@@ -1863,44 +1852,128 @@ procedure TBGRADefaultBitmap.InternalTextOutCurved(
   ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel;
   ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single);
 var
-  pstr: pchar;
-  left,charlen: integer;
-  nextchar: string;
-  charwidth, angle, textlen: single;
+  bidiArray: TBidiUTF8Array;
+  displayOrder: TUnicodeDisplayOrder;
+  displayIndex: integer;
+  currentChar: string;
+  currentBidiInfo: TUnicodeBidiInfo;
+
+  procedure MulticharsRewind;
+  begin
+    displayIndex := 0;
+    while (displayIndex < length(displayOrder))
+      and not bidiArray[displayOrder[displayIndex]].BidiInfo.IsMulticharStart do
+        inc(displayIndex);
+  end;
+
+  procedure MulticharsNext;
+  begin
+    inc(displayIndex);
+    while (displayIndex < length(displayOrder))
+      and not bidiArray[displayOrder[displayIndex]].BidiInfo.IsMulticharStart do
+        inc(displayIndex);
+  end;
+
+  function MulticharsEndOfString: boolean;
+  begin
+    result := displayIndex >= length(displayOrder);
+  end;
+
+  procedure MulticharsPeek;
+  var
+    startIndex, nextIndex, charLen, startOffset: Integer;
+  begin
+    startIndex := displayOrder[displayIndex];
+    startOffset := bidiArray[startIndex].Offset;
+    currentBidiInfo := bidiArray[startIndex].BidiInfo;
+    nextIndex := startIndex+1;
+    while (nextIndex < length(bidiArray))
+      and not bidiArray[nextIndex].BidiInfo.IsMulticharStart do
+        inc(nextIndex);
+    if nextIndex >= length(bidiArray) then
+      charLen := length(sUTF8) - startOffset
+    else
+      charLen := bidiArray[nextIndex].Offset - startOffset;
+    setlength(currentChar, charLen);
+    if charLen > 0 then move(sUTF8[startOffset+1], currentChar[1], charLen);
+  end;
+
+var
+  currentGlyph: string;
+  currentGlyphWidth: single;
+
+  procedure GlyphGetNext;
+  var
+    rtlScript, ligatureLeft, ligatureRight: Boolean;
+  begin
+    MulticharsPeek;
+    MulticharsNext;
+    currentGlyph := currentChar;
+    rtlScript := currentBidiInfo.IsRightToLeftScript;
+    ligatureRight := currentBidiInfo.HasLigatureRight;
+    ligatureLeft := currentBidiInfo.HasLigatureLeft;
+    if currentChar.StartsWith(UTF8_ARABIC_ALEPH) or
+       currentChar.StartsWith(UTF8_ARABIC_ALEPH_HAMZA_BELOW) or
+       currentChar.StartsWith(UTF8_ARABIC_ALEPH_HAMZA_ABOVE) or
+       currentChar.StartsWith(UTF8_ARABIC_ALEPH_MADDA_ABOVE) then
+    begin
+      MulticharsPeek;
+      if currentChar.StartsWith(UTF8_ARABIC_LAM) then
+      begin
+        currentGlyph := currentChar + currentGlyph;
+        ligatureRight := currentBidiInfo.HasLigatureRight;
+        MulticharsNext;
+      end;
+    end;
+    currentGlyph := UTF8Ligature(currentGlyph, rtlScript, ligatureLeft, ligatureRight);
+    currentGlyphWidth := TextSize(currentGlyph).cx;
+  end;
+
+var
+  angle, textLen: single;
 begin
   if (ATexture = nil) and (AColor.alpha = 0) then exit;
   sUTF8 := CleanTextOutString(sUTF8);
   if sUTF8 = '' then exit;
-  pstr := @sUTF8[1];
-  left := length(sUTF8);
+  case FontBidiMode of
+    fbmAuto: bidiArray := AnalyzeBidiUTF8(sUTF8);
+    fbmLeftToRight: bidiArray := AnalyzeBidiUTF8(sUTF8, false);
+    fbmRightToLeft: bidiArray := AnalyzeBidiUTF8(sUTF8, true);
+    else bidiArray := nil;
+  end;
+  if bidiArray = nil then exit;
+  displayOrder := GetUTF8DisplayOrder(bidiArray);
+
   if AALign<> taLeftJustify then
   begin
-    textlen := TextSize(sUTF8).cx + (UTF8Length(sUTF8)-1)*ALetterSpacing;
+    MulticharsRewind;
+    textLen := -ALetterSpacing;
+    while not MulticharsEndOfString do
+    begin
+      GlyphGetNext;
+      textLen += ALetterSpacing + currentGlyphWidth;
+    end;
     case AAlign of
-      taCenter: ACursor.MoveBackward(textlen*0.5);
-      taRightJustify: ACursor.MoveBackward(textlen);
+      taCenter: ACursor.MoveBackward(textLen*0.5);
+      taRightJustify: ACursor.MoveBackward(textLen);
     end;
   end;
-  while left > 0 do
+
+  while not MulticharsEndOfString do
   begin
-    charlen := UTF8CharacterLength(pstr);
-    setlength(nextchar, charlen);
-    move(pstr^, nextchar[1], charlen);
-    inc(pstr,charlen);
-    dec(left,charlen);
-    charwidth := TextSize(nextchar).cx;
-    ACursor.MoveForward(charwidth);
-    ACursor.MoveBackward(charwidth, false);
-    ACursor.MoveForward(charwidth*0.5);
+    GlyphGetNext;
+    ACursor.MoveForward(currentGlyphWidth);
+    ACursor.MoveBackward(currentGlyphWidth, false);
+    ACursor.MoveForward(currentGlyphWidth*0.5);
     with ACursor.CurrentTangent do angle := arctan2(y,x);
     with ACursor.CurrentCoordinate do
     begin
       if ATexture = nil then
-        TextOutAngle(x,y, system.round(-angle*1800/Pi), nextchar, AColor, taCenter)
+        TextOutAngle(x,y, system.round(-angle*1800/Pi), currentGlyph, AColor, taCenter)
       else
-        TextOutAngle(x,y, system.round(-angle*1800/Pi), nextchar, ATexture, taCenter);
+        TextOutAngle(x,y, system.round(-angle*1800/Pi), currentGlyph, ATexture, taCenter);
     end;
-    ACursor.MoveForward(charwidth*0.5 + ALetterSpacing);
+    ACursor.MoveForward(currentGlyphWidth*0.5 + ALetterSpacing);
   end;
 end;
 
@@ -2593,40 +2666,6 @@ begin
   multi.Free;
 end;
 
-procedure TBGRADefaultBitmap.RectangleAntialias(x, y, x2, y2: single;
-  texture: IBGRAScanner; w: single);
-var
-  bevel,hw: single;
-  multi: TBGRAMultishapeFiller;
-begin
-  if (PenStyle = psClear) or (w=0) then exit;
-
-  hw := w/2;
-  if not CheckAntialiasRectBounds(x,y,x2,y2,w) then
-  begin
-    if JoinStyle = pjsBevel then
-    begin
-      bevel := (2-sqrt(2))*hw;
-      FillRoundRectAntialias(x - hw, y - hw, x2 + hw, y2 + hw, bevel,bevel, texture, [rrTopLeftBevel, rrTopRightBevel, rrBottomLeftBevel, rrBottomRightBevel]);
-    end else
-    if JoinStyle = pjsRound then
-     FillRoundRectAntialias(x - hw, y - hw, x2 + hw, y2 + hw, hw,hw, texture)
-    else
-     FillRectAntialias(x - hw, y - hw, x2 + hw, y2 + hw, texture);
-    exit;
-  end;
-
-  { use multishape filler for fine junction between polygons }
-  multi := TBGRAMultishapeFiller.Create;
-  multi.FillMode := FillMode;
-  if (JoinStyle = pjsMiter) and (PenStyle = psSolid) then
-    multi.AddRectangleBorder(x,y,x2,y2,w, texture)
-  else
-    multi.AddPolygon(ComputeWidePolygon([Pointf(x,y),Pointf(x2,y),Pointf(x2,y2),Pointf(x,y2)],w), texture);
-  multi.Draw(self);
-  multi.Free;
-end;
-
 procedure TBGRADefaultBitmap.RoundRectAntialias(x, y, x2, y2, rx, ry: single;
    c: TBGRAPixel; w: single; options: TRoundRectangleOptions);
 begin
@@ -2730,24 +2769,6 @@ begin
   dither.DrawMode := mode;
   dither.Execute;
   dither.Free;
-end;
-
-procedure TBGRADefaultBitmap.FillRoundRectAntialias(x, y, x2, y2, rx,ry: single;
-  c: TBGRAPixel; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
-begin
-  BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,c,False, LinearAntialiasing, pixelCenteredCoordinates);
-end;
-
-procedure TBGRADefaultBitmap.FillRoundRectAntialias(x, y, x2, y2, rx,
-  ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
-begin
-  BGRAPolygon.FillRoundRectangleAntialiasWithTexture(self,x,y,x2,y2,rx,ry,options,texture, LinearAntialiasing, pixelCenteredCoordinates);
-end;
-
-procedure TBGRADefaultBitmap.EraseRoundRectAntialias(x, y, x2, y2, rx,
-  ry: single; alpha: byte; options: TRoundRectangleOptions; pixelCenteredCoordinates: boolean);
-begin
-  BGRAPolygon.FillRoundRectangleAntialias(self,x,y,x2,y2,rx,ry,options,BGRA(0,0,0,alpha),True, LinearAntialiasing, pixelCenteredCoordinates);
 end;
 
 {------------------------- Text functions ---------------------------------------}
@@ -3641,69 +3662,122 @@ begin
     PutImage(X,Y,TBGRACustomBitmap(ASource).XorMask,dmXor,AOpacity);
 end;
 
-procedure TBGRADefaultBitmap.BlendImage(x, y: integer; Source: TBGRACustomBitmap;
-  operation: TBlendOperation);
-var
-  yb, minxb, minyb, maxxb, maxyb, ignoreleft, copycount, sourcewidth,
-  delta_source, delta_dest: integer;
-  psource, pdest: PBGRAPixel;
+procedure TBGRADefaultBitmap.BlendImage(x, y: integer; ASource: TBGRACustomBitmap;
+  AOperation: TBlendOperation);
 begin
-  sourcewidth := Source.Width;
+  BlendImage(RectWithSize(x,y,ASource.Width,ASource.Height), ASource, -x,-y,AOperation);
+end;
 
-  if not CheckPutImageBounds(x,y,sourcewidth,source.height,minxb,minyb,maxxb,maxyb,ignoreleft,FClipRect) then exit;
+procedure TBGRADefaultBitmap.BlendImage(ADest: TRect; ASource: IBGRAScanner;
+  AOffsetX, AOffsetY: integer; AOperation: TBlendOperation);
+const BufSize = 8;
+var
+  yb, remain, i, delta_dest: integer;
+  psource, pdest: PBGRAPixel;
+  sourceRect: TRect;
+  sourceScanline, sourcePut: boolean;
+  buf: packed array[0..BufSize-1] of TBGRAPixel;
+begin
+  if not CheckClippedRectBounds(ADest.Left, ADest.Top, ADest.Right, ADest.Bottom) then exit;
 
-  copycount := maxxb - minxb + 1;
+  sourceRect := ADest;
+  sourceRect.Offset(AOffsetX, AOffsetY);
+  sourceScanline := ASource.ProvidesScanline(sourceRect);
+  sourcePut := ASource.IsScanPutPixelsDefined;
 
-  psource := Source.ScanLine[minyb - y] + ignoreleft;
-  if Source.LineOrder = riloBottomToTop then
-    delta_source := -sourcewidth
-  else
-    delta_source := sourcewidth;
-
-  pdest := Scanline[minyb] + minxb;
-  if FLineOrder = riloBottomToTop then
+  pdest := Scanline[ADest.Top] + ADest.Left;
+  if LineOrder = riloBottomToTop then
     delta_dest := -Width
-  else
-    delta_dest := Width;
+    else delta_dest := Width;
 
-  for yb := minyb to maxyb do
+  for yb := sourceRect.Top to sourceRect.Bottom-1 do
   begin
-    BlendPixels(pdest, psource, operation, copycount);
-    Inc(psource, delta_source);
+    if sourceScanline then
+    begin
+      psource := ASource.GetScanlineAt(sourceRect.Left, yb);
+      BlendPixels(pdest, psource, AOperation, ADest.Width);
+    end else
+    begin
+      ASource.ScanMoveTo(sourceRect.Left, yb);
+      remain := ADest.Width;
+      if sourcePut then
+        while remain >= BufSize do
+        begin
+          ASource.ScanPutPixels(@buf, BufSize, dmSet);
+          BlendPixels(pdest, @buf, AOperation, BufSize);
+          inc(pdest, bufSize);
+          dec(remain, bufSize);
+        end;
+      if remain > 0 then
+      begin
+        for i := 0 to remain-1 do
+          buf[i] := ASource.ScanNextPixel;
+        BlendPixels(pdest, @buf, AOperation, remain);
+        inc(pdest, remain);
+      end;
+      dec(pdest, ADest.Width);
+    end;
     Inc(pdest, delta_dest);
   end;
   InvalidateBitmap;
 end;
 
 procedure TBGRADefaultBitmap.BlendImageOver(x, y: integer;
-  Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean);
-var
-  yb, minxb, minyb, maxxb, maxyb, ignoreleft, copycount, sourcewidth,
-  delta_source, delta_dest: integer;
-  psource, pdest: PBGRAPixel;
+  ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean);
 begin
-  sourcewidth := Source.Width;
+  BlendImageOver(RectWithSize(x,y,ASource.Width,ASource.Height), ASource, -x,-y,
+                 AOperation, AOpacity, ALinearBlend);
+end;
 
-  if not CheckPutImageBounds(x,y,sourcewidth,source.height,minxb,minyb,maxxb,maxyb,ignoreleft,FClipRect) then exit;
+procedure TBGRADefaultBitmap.BlendImageOver(ADest: TRect; ASource: IBGRAScanner;
+  AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean);
+const BufSize = 8;
+var
+  yb, remain, i, delta_dest: integer;
+  psource, pdest: PBGRAPixel;
+  sourceRect: TRect;
+  sourceScanline, sourcePut: boolean;
+  buf: packed array[0..BufSize-1] of TBGRAPixel;
+begin
+  if not CheckClippedRectBounds(ADest.Left, ADest.Top, ADest.Right, ADest.Bottom) then exit;
 
-  copycount := maxxb - minxb + 1;
+  sourceRect := ADest;
+  sourceRect.Offset(AOffsetX, AOffsetY);
+  sourceScanline := ASource.ProvidesScanline(sourceRect);
+  sourcePut := ASource.IsScanPutPixelsDefined;
 
-  psource := Source.ScanLine[minyb - y] + ignoreleft;
-  if Source.LineOrder = riloBottomToTop then
-    delta_source := -sourcewidth
-  else
-    delta_source := sourcewidth;
-
-  pdest := Scanline[minyb] + minxb;
-  if FLineOrder = riloBottomToTop then
+  pdest := Scanline[ADest.Top] + ADest.Left;
+  if LineOrder = riloBottomToTop then
     delta_dest := -Width
-  else
-    delta_dest := Width;
+    else delta_dest := Width;
 
-  for yb := minyb to maxyb do
+  for yb := sourceRect.Top to sourceRect.Bottom-1 do
   begin
-    BlendPixelsOver(pdest, psource, operation, copycount, AOpacity, ALinearBlend);
-    Inc(psource, delta_source);
+    if sourceScanline then
+    begin
+      psource := ASource.GetScanlineAt(sourceRect.Left, yb);
+      BlendPixelsOver(pdest, psource, AOperation, ADest.Width, AOpacity, ALinearBlend);
+    end else
+    begin
+      ASource.ScanMoveTo(sourceRect.Left, yb);
+      remain := ADest.Width;
+      if sourcePut then
+        while remain >= BufSize do
+        begin
+          ASource.ScanPutPixels(@buf, BufSize, dmSet);
+          BlendPixelsOver(pdest, @buf, AOperation, BufSize, AOpacity, ALinearBlend);
+          inc(pdest, bufSize);
+          dec(remain, bufSize);
+        end;
+      if remain > 0 then
+      begin
+        for i := 0 to remain-1 do
+          buf[i] := ASource.ScanNextPixel;
+        BlendPixelsOver(pdest, @buf, AOperation, remain, AOpacity, ALinearBlend);
+        inc(pdest, remain);
+      end;
+      dec(pdest, ADest.Width);
+    end;
     Inc(pdest, delta_dest);
   end;
   InvalidateBitmap;

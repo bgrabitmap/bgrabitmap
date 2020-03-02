@@ -1043,3 +1043,60 @@ begin
   end;
 end;
 
+procedure BlendMaskPixelInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+const alphaMax = 255*7;
+var alpha: byte;
+begin
+  alpha := (c.green shl 2) + (c.red shl 1) + c.blue;
+  alpha := alpha*c.alpha + (255*7)*(not c.alpha);
+  alpha := (alpha + (alphaMax shr 1)) div alphaMax;
+  if alpha = 0 then dest^ := BGRAPixelTransparent
+  else dest^.alpha := alpha;
+end;
+
+function ByteLinearMultiplySaturationInline(a,b,l: byte): byte; inline;
+begin
+  if b = 255 then
+    result := a
+  else if b = 0 then
+    result := l
+  else
+    result := (a-l)*b div 255 + l;
+end;
+
+procedure LinearMultiplySaturationInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+var
+  destalpha: byte;
+  mini,maxi,l: byte;
+begin
+  destalpha   := dest^.alpha;
+  if destalpha = 0 then
+  begin
+    dest^ := c
+  end else
+  begin
+    mini := dest^.red; maxi := dest^.red;
+    if dest^.green < mini then mini := dest^.green else
+    if dest^.green > maxi then maxi := dest^.green;
+    if dest^.blue < mini then mini := dest^.blue else
+    if dest^.blue > maxi then maxi := dest^.blue;
+    l := (mini+maxi) div 2;
+
+    if destalpha = 255 then
+    begin
+      dest^.red := ByteLinearMultiplySaturationInline(dest^.red, c.red, l);
+      dest^.green := ByteLinearMultiplySaturationInline(dest^.green, c.green, l);
+      dest^.blue  := ByteLinearMultiplySaturationInline(dest^.blue, c.blue, l);
+      dest^.alpha := c.alpha;
+    end else
+    begin
+      dest^.red   := (ByteLinearMultiplySaturationInline(dest^.red, c.red, l) * destalpha +
+        c.red * (not destalpha)) shr 8;
+      dest^.green := (ByteLinearMultiplySaturationInline(dest^.green, c.green, l) * destalpha +
+        c.green * (not destalpha)) shr 8;
+      dest^.blue  := (ByteLinearMultiplySaturationInline(dest^.blue, c.blue, l) * destalpha +
+        c.blue * (not destalpha)) shr 8;
+      dest^.alpha := c.alpha;
+    end;
+  end;
+end;

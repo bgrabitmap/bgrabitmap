@@ -1041,10 +1041,10 @@ begin
   if OutputHeight <= 0 then exit;
 
   percent:=0;
-  percentAdd := 100 div BFI.Height;
-  percentAcc:=BFI.Height div 2;
-  percentAccAdd := 100 mod BFI.Height;
-  percentMod:=BFI.Height;
+  percentMod:= OutputHeight;
+  percentAdd := 100 div percentMod;
+  percentAcc:= percentMod div 2;
+  percentAccAdd := 100 mod percentMod;
 
   DeltaX:=-1; DeltaY:=-1;
   if TopDown then
@@ -1060,10 +1060,10 @@ begin
   end;
   OutputRowDelta:= SourceRowDelta;
 
-  SourceRowAdd := (BFI.Height div OutputHeight)*SourceRowDelta;
-  SourceRowAcc := OutputHeight div 2;
-  SourceRowAccAdd := BFI.Height mod OutputHeight;
   SourceRowMod := OutputHeight;
+  SourceRowAdd := (BFI.Height div SourceRowMod)*SourceRowDelta;
+  SourceRowAcc := SourceRowMod div 2;
+  SourceRowAccAdd := BFI.Height mod SourceRowMod;
   If TopDown then
   begin
     OutputRow := 0;
@@ -1102,7 +1102,11 @@ begin
     prevPercent := percent;
     inc(percent,percentAdd);
     inc(percentAcc,percentAccAdd);
-    if percentAcc>=percentMod then inc(percent);
+    if percentAcc>=percentMod then
+    begin
+      dec(percentAcc, percentMod);
+      inc(percent);
+    end;
     if (percent<>prevPercent) and Assigned(ProgressProc) then ProgressProc(percent, ShouldContinue);
   end;
 end;

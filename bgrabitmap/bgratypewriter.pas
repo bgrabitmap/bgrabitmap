@@ -175,13 +175,6 @@ implementation
 
 uses BGRAUTF8, BGRAUnicode, math;
 
-const
-  aleph = 'ا';
-  alephHamzaBelow = 'إ';
-  alephHamzaAbove = 'أ';
-  alephMaddaAbove = 'آ';
-  lam = 'ل';
-
 procedure LEWritePointF(Stream: TStream; AValue: TPointF);
 begin
   LEWriteSingle(Stream,AValue.x);
@@ -1088,10 +1081,10 @@ begin
     TryMerge(['f','f']);
     TryMerge(['f','i']);
     TryMerge(['f','l']);
-    TryMerge([aleph,lam]);
-    TryMerge([alephHamzaAbove,lam]);
-    TryMerge([alephHamzaBelow,lam]);
-    TryMerge([alephMaddaAbove,lam]);
+    TryMerge([UTF8_ARABIC_ALEPH,UTF8_ARABIC_LAM]);
+    TryMerge([UTF8_ARABIC_ALEPH_HAMZA_ABOVE,UTF8_ARABIC_LAM]);
+    TryMerge([UTF8_ARABIC_ALEPH_HAMZA_BELOW,UTF8_ARABIC_LAM]);
+    TryMerge([UTF8_ARABIC_ALEPH_MADDA_ABOVE,UTF8_ARABIC_LAM]);
     //text extract correspond to the unordered actual sequence of characters
     setlength(nextchar, max(charInfo[curStart].charEnd, charInfo[cur-1].charEnd)
                        -min(charInfo[curStart].charStart, charInfo[cur-1].charStart));
@@ -1118,10 +1111,7 @@ begin
         inc(charDestPos, charLen);
       end;
     end;
-    if (curLigatureRight and curRTLScript) or
-       (curLigatureLeft and not curRTLScript) then glyphId := UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER)+glyphId;
-    if (curLigatureLeft and curRTLScript) or
-       (curLigatureRight and not curRTLScript) then glyphId := glyphId+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
+    glyphId := UTF8Ligature(glyphId, curRTLScript, curLigatureLeft, curLigatureRight);
     g := GetGlyph(glyphId);
     if g <> nil then
     begin

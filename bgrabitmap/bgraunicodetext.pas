@@ -446,8 +446,6 @@ begin
 end;
 
 function TUnicodeAnalysis.IncludeNonSpacingChars(APosition, ACount: integer): integer;
-var
-  idxPara: Integer;
 begin
   if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
   if APosition+ACount > CharCount then raise exception.Create('Exceed end of text');
@@ -461,15 +459,12 @@ begin
 end;
 
 function TUnicodeAnalysis.IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
-var
-  idxPara: Integer;
 begin
   if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
   if APosition-ACount < 0 then raise exception.Create('Exceed start of text');
   if ACount = 0 then exit(0);
 
   //keep before non spacing marks until real char together
-  idxPara := GetParagraphAt(APosition-ACount);
   while (APosition-ACount > 0) and
     not BidiInfo[APosition-ACount].IsMulticharStart do inc(ACount);
 

@@ -17,17 +17,17 @@ type
     procedure SetCompression(AValue: TLzpCompression);
     procedure SetIncludeThumbnail(AValue: boolean);
     function WriteThumbnail(Str: TStream; Img: TFPCustomImage): boolean;
-    protected
-      CompressionMode: DWord;
-      procedure InternalWrite(Str: TStream; Img: TFPCustomImage); override;
-      function InternalWriteLayers({%H-}Str: TStream; {%H-}Img: TFPCustomImage): boolean; virtual;
-      function GetNbLayers: integer; virtual;
-    public
-      Caption: string;
-      constructor Create; override;
-      class procedure WriteRLEImage(Str: TStream; Img: TFPCustomImage; ACaption: string= ''); static;
-      property Compression: TLzpCompression read GetCompression write SetCompression;
-      property IncludeThumbnail: boolean read GetIncludeThumbnail write SetIncludeThumbnail;
+  protected
+    CompressionMode: DWord;
+    procedure InternalWrite(Str: TStream; Img: TFPCustomImage); override;
+    function InternalWriteLayers({%H-}Str: TStream; {%H-}Img: TFPCustomImage): boolean; virtual;
+    function GetNbLayers: integer; virtual;
+  public
+    Caption: string;
+    constructor Create; override;
+    class procedure WriteRLEImage(Str: TStream; Img: TFPCustomImage; ACaption: string= ''); static;
+    property Compression: TLzpCompression read GetCompression write SetCompression;
+    property IncludeThumbnail: boolean read GetIncludeThumbnail write SetIncludeThumbnail;
   end;
 
 implementation

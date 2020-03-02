@@ -44,6 +44,8 @@ type
     procedure AnalyzeZip; virtual;
     procedure PrepareZipToSave; virtual;
     function GetMimeType: string; override;
+    procedure InternalLoadFromStream(AStream: TStream);
+    procedure InternalSaveToStream(AStream: TStream);
 
   public
     constructor Create; overload; override;
@@ -55,8 +57,8 @@ type
               out ABitmap: TBGRABitmap);
     procedure LoadFromStream(AStream: TStream); override;
     procedure LoadFromFile(const filenameUTF8: string); override;
-    procedure SaveToFile(const filenameUTF8: string); override;
     procedure SaveToStream(AStream: TStream); override;
+    procedure SaveToFile(const filenameUTF8: string); override;
     property MimeType : string read GetMimeType write SetMimeType;
     property StackXML : TXMLDocument read FStackXML;
   end;
@@ -350,6 +352,10 @@ begin
               BlendOperation[idx] := boLinearNegation else
             if (opstr = 'bgra:xor') or (opstr = 'xor') then
               BlendOperation[idx] := boXor else
+            if opstr = 'bgra:mask' then
+              BlendOperation[idx] := boMask else
+            if opstr = 'bgra:linear-multiply-saturation' then
+              BlendOperation[idx] := boLinearMultiplySaturation else
             begin
               //messagedlg('Unknown blend operation : ' + attr.NodeValue,mtInformation,[mbOk],0);
               BlendOperation[idx] := boTransparent;
@@ -404,6 +410,7 @@ begin
 
   for i := NbLayers-1 downto 0 do
   begin
+    OnLayeredBitmapSaveProgress(round((NbLayers-1-i) * 100 / NbLayers));
     layerFilename := 'data/layer'+inttostr(i)+'.png';
     if CopyLayerToMemoryStream(i, layerFilename) then
     begin
@@ -442,6 +449,8 @@ begin
         boLinearNegation,boNegation: strval := 'bgra:negation';
         boXor: strval := 'bgra:xor';
         boSvgSoftLight: strval := 'svg:soft-light';
+        boMask: strval := 'bgra:mask';
+        boLinearMultiplySaturation: strval := 'bgra:linear-multiply-saturation';
         else strval := 'svg:src-over';
       end;
       layerNode.SetAttribute('composite-op',widestring(strval));
@@ -454,6 +463,7 @@ begin
       end;
     end;
   end;
+  OnLayeredBitmapSaveProgress(100);
   StackStream := TMemoryStream.Create;
   WriteXMLFile(StackXML, StackStream);
   SetMemoryStream('stack.xml',StackStream);
@@ -463,25 +473,45 @@ procedure TBGRAOpenRasterDocument.LoadFromFile(const filenameUTF8: string);
 var AStream: TFileStreamUTF8;
 begin
   AStream := TFileStreamUTF8.Create(filenameUTF8,fmOpenRead or fmShareDenyWrite);
+  OnLayeredBitmapLoadStart(filenameUTF8);
   try
     LoadFromStream(AStream);
   finally
+    OnLayeredBitmapLoaded;
     AStream.Free;
+  end;
+end;
+
+procedure TBGRAOpenRasterDocument.SaveToStream(AStream: TStream);
+begin
+  OnLayeredBitmapSaveToStreamStart;
+  try
+    InternalSaveToStream(AStream);
+  finally
+    OnLayeredBitmapSaved;
   end;
 end;
 
 procedure TBGRAOpenRasterDocument.SaveToFile(const filenameUTF8: string);
 begin
-  PrepareZipToSave;
-  ZipToFile(filenameUTF8);
-  ClearFiles;
+  OnLayeredBitmapSaveStart(filenameUTF8);
+  try
+    PrepareZipToSave;
+    ZipToFile(filenameUTF8);
+  finally
+    OnLayeredBitmapSaved;
+    ClearFiles;
+  end;
 end;
 
-procedure TBGRAOpenRasterDocument.SaveToStream(AStream: TStream);
+procedure TBGRAOpenRasterDocument.InternalSaveToStream(AStream: TStream);
 begin
-  PrepareZipToSave;
-  ZipToStream(AStream);
-  ClearFiles;
+  try
+    PrepareZipToSave;
+    ZipToStream(AStream);
+  finally
+    ClearFiles;
+  end;
 end;
 
 function TBGRAOpenRasterDocument.GetMimeType: string;
@@ -490,6 +520,16 @@ begin
     result := OpenRasterMimeType
    else
     result := GetMemoryStreamAsString('mimetype');
+end;
+
+procedure TBGRAOpenRasterDocument.InternalLoadFromStream(AStream: TStream);
+begin
+  try
+    UnzipFromStream(AStream);
+    AnalyzeZip;
+  finally
+    ClearFiles;
+  end;
 end;
 
 constructor TBGRAOpenRasterDocument.Create;
@@ -780,11 +820,9 @@ procedure TBGRAOpenRasterDocument.LoadFromStream(AStream: TStream);
 begin
   OnLayeredBitmapLoadFromStreamStart;
   try
-    UnzipFromStream(AStream);
-    AnalyzeZip;
+    InternalLoadFromStream(AStream);
   finally
     OnLayeredBitmapLoaded;
-    ClearFiles;
   end;
 end;
 

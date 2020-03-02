@@ -120,6 +120,8 @@ type
         to be the same as the first point }
     procedure DrawPolygonAntialias(const APoints: array of TPointF; const AColor: TPixel; APenWidth: single); overload; virtual;
 
+    procedure RectangleAntialias(x, y, x2, y2: single; const AColor: TPixel; AWidth: single); overload; virtual;
+
     {** Draws an ellipse without antialising. ''rx'' is the horizontal radius and
         ''ry'' the vertical radius }
     procedure Ellipse(x, y, rx, ry: single; const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
@@ -140,6 +142,11 @@ type
     procedure FillPath(APath: IBGRAPath; const AMatrix: TAffineMatrix; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillRectAntialias(x, y, x2, y2: single; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure FillRectAntialias(const ARectF: TRectF; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
+
+    {** Fills a rounded rectangle with antialiasing. The corners have an
+        elliptical radius of ''rx'' and ''ry''. ''options'' specifies how to
+        draw the corners. See [[BGRABitmap Geometry types|geometry types]] }
+    procedure FillRoundRectAntialias(x, y, x2, y2, rx, ry: single; const AColor: TPixel; AOptions: TRoundRectangleOptions = []; APixelCenteredCoordinates: boolean = true); overload; virtual;
 
   end;
 
@@ -943,6 +950,16 @@ begin
   FillRectAntialias(ARectF,b,APixelCenteredCoordinates);
 end;
 
+procedure TGenericUniversalBitmap.FillRoundRectAntialias(x, y, x2, y2, rx,
+  ry: single; const AColor: TPixel; AOptions: TRoundRectangleOptions;
+  APixelCenteredCoordinates: boolean);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  FillRoundRectAntialias(x,y,x2,y2, rx,ry, b, AOptions, APixelCenteredCoordinates);
+end;
+
 procedure TGenericUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
   const AColor: TPixel; APenWidth: single);
 var
@@ -1012,6 +1029,15 @@ var
 begin
   SolidBrush(b,AColor,AntialiasingDrawMode);
   DrawPolygonAntialias(APoints, b, APenWidth);
+end;
+
+procedure TGenericUniversalBitmap.RectangleAntialias(x, y, x2, y2: single;
+  const AColor: TPixel; AWidth: single);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b,AColor,AntialiasingDrawMode);
+  RectangleAntialias(x,y,x2,y2, b, AWidth);
 end;
 
 procedure TGenericUniversalBitmap.Ellipse(x, y, rx, ry: single;

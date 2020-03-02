@@ -274,7 +274,11 @@ var
     colorIndex: integer;
   begin
     if (s^.prefix <> nil) then
+    begin
+      if s^.prefix = s then
+        raise exception.Create('Circular reference in prefix');
       WriteStr(s^.prefix);
+    end;
     if (ycnt >= yd) then
     begin
       if interlaced then
@@ -348,44 +352,47 @@ begin
   codesize  := 0;
   AStream.Read(codesize, 1);
   InitStringTable;
-  curcode := getnextcode;
-  //Write('Reading ');
-  while (curcode <> endcode) and (pass < 5) and not endofsrc do
-  begin
-    if (curcode = clearcode) then
+  try
+    curcode := getnextcode;
+    //Write('Reading ');
+    while (curcode <> endcode) and (pass < 5) and not endofsrc do
     begin
-      ClearStringTable;
-      repeat
-        curcode := getnextcode;
-      until (curcode <> clearcode);
-      if (curcode = endcode) then
-        break;
-      WriteStr(code2str(curcode));
-      oldcode := curcode;
-    end
-    else
-    begin
-      if (curcode < stridx) then
+      if (curcode = clearcode) then
       begin
-        WriteStr(Code2Str(curcode));
-        AddStr2Tab(Code2Str(oldcode), firstchar(Code2Str(curcode)));
+        ClearStringTable;
+        repeat
+          curcode := getnextcode;
+        until (curcode <> clearcode);
+        if (curcode = endcode) then
+          break;
+        WriteStr(code2str(curcode));
         oldcode := curcode;
       end
       else
       begin
-        if (curcode > stridx) then
+        if (curcode < stridx) then
         begin
-          //write('!Invalid! ');
-          break;
+          WriteStr(Code2Str(curcode));
+          AddStr2Tab(Code2Str(oldcode), firstchar(Code2Str(curcode)));
+          oldcode := curcode;
+        end
+        else
+        begin
+          if (curcode > stridx) then
+          begin
+            //write('!Invalid! ');
+            break;
+          end;
+          AddStr2Tab(Code2Str(oldcode), firstchar(Code2Str(oldcode)));
+          WriteStr(Code2Str(stridx - 1));
+          oldcode := curcode;
         end;
-        AddStr2Tab(Code2Str(oldcode), firstchar(Code2Str(oldcode)));
-        WriteStr(Code2Str(stridx - 1));
-        oldcode := curcode;
       end;
+      curcode := getnextcode;
     end;
-    curcode := getnextcode;
+  finally
+    DoneStringTable;
   end;
-  DoneStringTable;
   //Writeln;
   if not endofsrc then
   begin
@@ -783,6 +790,15 @@ var
     end;
   end;
 
+  procedure DiscardImages;
+  var
+    i: Integer;
+  begin
+    for i := 0 to NbImages-1 do
+      FreeAndNil(result.Images[i].Image);
+    NbImages:= 0;
+  end;
+
 begin
   result.Width := 0;
   result.Height := 0;
@@ -797,46 +813,54 @@ begin
   DelayMs     := 100;
   disposeMode := dmErase;
 
-  FillChar({%H-}GIFSignature,sizeof(GIFSignature),0);
-  stream.Read(GIFSignature, sizeof(GIFSignature));
-  if (GIFSignature[1] = 'G') and (GIFSignature[2] = 'I') and (GIFSignature[3] = 'F') then
-  begin
-    stream.ReadBuffer({%H-}GIFScreenDescriptor, sizeof(GIFScreenDescriptor));
-    GIFScreenDescriptor.Width := LEtoN(GIFScreenDescriptor.Width);
-    GIFScreenDescriptor.Height := LEtoN(GIFScreenDescriptor.Height);
-    result.Width  := GIFScreenDescriptor.Width;
-    result.Height := GIFScreenDescriptor.Height;
-    if GIFScreenDescriptor.AspectRatio64 = 0 then
-      result.AspectRatio:= 1
-    else
-      result.AspectRatio:= (GIFScreenDescriptor.AspectRatio64+15)/64;
-    if (GIFScreenDescriptor.flags and GIFScreenDescriptor_GlobalColorTableFlag =
-      GIFScreenDescriptor_GlobalColorTableFlag) then
+  try
+    FillChar({%H-}GIFSignature,sizeof(GIFSignature),0);
+    stream.Read(GIFSignature, sizeof(GIFSignature));
+    if (GIFSignature[1] = 'G') and (GIFSignature[2] = 'I') and (GIFSignature[3] = 'F') then
     begin
-      LoadGlobalPalette;
-      if GIFScreenDescriptor.BackgroundColorIndex < length(globalPalette) then
-        result.BackgroundColor :=
-          BGRAToColor(globalPalette[GIFScreenDescriptor.BackgroundColorIndex]);
-    end;
-    repeat
-      stream.ReadBuffer({%H-}GIFBlockID, sizeof(GIFBlockID));
-      case GIFBlockID of
-        ';': ;
-        ',': begin
-               if NbImages >= MaxImageCount then break;
-               LoadImage;
-             end;
-        '!': ReadExtension;
-        else
-        begin
-          raise Exception.Create('TBGRAAnimatedGif: unexpected block type');
-          break;
-        end;
+      stream.ReadBuffer({%H-}GIFScreenDescriptor, sizeof(GIFScreenDescriptor));
+      GIFScreenDescriptor.Width := LEtoN(GIFScreenDescriptor.Width);
+      GIFScreenDescriptor.Height := LEtoN(GIFScreenDescriptor.Height);
+      result.Width  := GIFScreenDescriptor.Width;
+      result.Height := GIFScreenDescriptor.Height;
+      if GIFScreenDescriptor.AspectRatio64 = 0 then
+        result.AspectRatio:= 1
+      else
+        result.AspectRatio:= (GIFScreenDescriptor.AspectRatio64+15)/64;
+      if (GIFScreenDescriptor.flags and GIFScreenDescriptor_GlobalColorTableFlag =
+        GIFScreenDescriptor_GlobalColorTableFlag) then
+      begin
+        LoadGlobalPalette;
+        if GIFScreenDescriptor.BackgroundColorIndex < length(globalPalette) then
+          result.BackgroundColor :=
+            BGRAToColor(globalPalette[GIFScreenDescriptor.BackgroundColorIndex]);
       end;
-    until (GIFBlockID = ';') or (stream.Position >= stream.size);
-  end
-  else
-    raise Exception.Create('TBGRAAnimatedGif: invalid header');
+      repeat
+        stream.ReadBuffer({%H-}GIFBlockID, sizeof(GIFBlockID));
+        case GIFBlockID of
+          ';': ;
+          ',': begin
+                 if NbImages >= MaxImageCount then break;
+                 LoadImage;
+               end;
+          '!': ReadExtension;
+          else
+          begin
+            raise Exception.Create('GIF format: unexpected block type');
+            break;
+          end;
+        end;
+      until (GIFBlockID = ';') or (stream.Position >= stream.size);
+    end
+    else
+      raise Exception.Create('GIF format: invalid header');
+  except
+    on ex: Exception do
+    begin
+      DiscardImages;
+      raise Exception.Create('GIF format: '+ ex.Message);
+    end;
+  end;
   setlength(result.Images, NbImages);
 end;
 

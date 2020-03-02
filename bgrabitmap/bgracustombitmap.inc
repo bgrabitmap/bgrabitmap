@@ -464,9 +464,7 @@ type
      procedure FillPieInRect(const ARect: TRect; StartAngleRad,EndAngleRad: Single; AFillColor: TBGRAPixel); overload;
      procedure FillPieInRect(const ARect: TRect; StartAngleRad,EndAngleRad: Single; texture: IBGRAScanner); overload;
 
-     procedure RectangleAntialias(x, y, x2, y2: single; c: TBGRAPixel; w: single); overload; virtual;
      procedure RectangleAntialias(x, y, x2, y2: single; c: TBGRAPixel; w: single; back: TBGRAPixel); overload; virtual; abstract;
-     procedure RectangleAntialias(x, y, x2, y2: single; texture: IBGRAScanner; w: single); overload; virtual; abstract;
      procedure RectangleWithin(x1,y1,x2,y2: single; ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel; APixelCenteredCoordinates: boolean = true); overload;
      procedure RectangleWithin(r: TRect; ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel); overload;
 
@@ -474,9 +472,6 @@ type
      procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; pencolor: TBGRAPixel; w: single; fillcolor: TBGRAPixel; options: TRoundRectangleOptions = []); overload; virtual; abstract;
      procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; penTexture: IBGRAScanner; w: single; fillTexture: IBGRAScanner; options: TRoundRectangleOptions = []); overload; virtual; abstract;
      procedure RoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; w: single; options: TRoundRectangleOptions = []); overload; virtual; abstract;
-     procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; c: TBGRAPixel; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; virtual; abstract;
-     procedure FillRoundRectAntialias(x,y,x2,y2,rx,ry: single; texture: IBGRAScanner; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); overload; virtual; abstract;
-     procedure EraseRoundRectAntialias(x,y,x2,y2,rx,ry: single; alpha: byte; options: TRoundRectangleOptions = []; pixelCenteredCoordinates: boolean = true); virtual; abstract;
 
      procedure FillRect(r: TRect; texture: IBGRAScanner; mode: TDrawMode; ditheringAlgorithm: TDitheringAlgorithm); overload; virtual;
      procedure FillRect(r: TRect; texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm); overload; virtual;
@@ -622,9 +617,10 @@ type
      procedure ComputeImageAngleAxes(x,y,w,h,angle: single; imageCenterX,imageCenterY: single; ARestoreOffsetAfterRotation: boolean;
        out Origin,HAxis,VAxis: TPointF);
      function GetImageAngleBounds(x,y: single; Source: TBGRACustomBitmap; angle: single; imageCenterX: single = 0; imageCenterY: single = 0; ARestoreOffsetAfterRotation: boolean = false): TRect;
-     procedure BlendImage(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation); virtual; abstract;
-     procedure BlendImageOver(x, y: integer; Source: TBGRACustomBitmap; operation: TBlendOperation; AOpacity: byte = 255;
-         ALinearBlend: boolean = false); virtual; abstract;
+     procedure BlendImage(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation); overload; virtual; abstract;
+     procedure BlendImage(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation); overload; virtual; abstract;
+     procedure BlendImageOver(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
+     procedure BlendImageOver(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
      function Resample(newWidth, newHeight: integer;
        mode: TResampleMode = rmFineResample): TBGRACustomBitmap; virtual; abstract;
 
@@ -1337,12 +1333,6 @@ begin
 end;
 
 { Following functions are defined for convenience }
-procedure TBGRACustomBitmap.RectangleAntialias(x, y, x2, y2: single;
-  c: TBGRAPixel; w: single);
-begin
-  RectangleAntialias(x, y, x2, y2, c, w, BGRAPixelTransparent);
-end;
-
 procedure TBGRACustomBitmap.RectangleWithin(x1, y1, x2, y2: single;
   ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel;
   APixelCenteredCoordinates: boolean);
@@ -1767,7 +1757,7 @@ end;
 function TBGRACustomBitmap.GetImageAffineBounds(AMatrix: TAffineMatrix;
   Source: TBGRACustomBitmap; APixelCenteredCoords: boolean): TRect;
 begin
-  result := GetImageAffineBounds(AMatrix, Source.GetImageBounds, APixelCenteredCoords);
+  result := GetImageAffineBounds(AMatrix, Source.GetImageBounds, true, APixelCenteredCoords);
 end;
 
 procedure TBGRACustomBitmap.PutImageAngle(x, y: single;

@@ -305,6 +305,7 @@ begin
     LayerData[i] := TMemoryStream.Create;
     LoadLayer(LayerData[i], Stream, LayerDataSize(i));
   end;
+  OnLayeredBitmapLoadProgress(100);
 end;
 
 function TPaintDotNetFile.ToString: ansistring;

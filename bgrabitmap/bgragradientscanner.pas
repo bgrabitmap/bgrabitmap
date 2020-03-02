@@ -109,6 +109,34 @@ type
     property InterpolationFunction: TGradientInterpolationFunction read FInterpolationFunction write FInterpolationFunction;
   end;
 
+  { TBGRABufferedGradient }
+
+  TBGRABufferedGradient = class(TBGRACustomGradient)
+  protected
+    FGradient: TBGRACustomGradient;
+    FGradientOwned: boolean;
+    FPadded: boolean;
+    FAverageColorComputed: boolean;
+    FAverageColorExpanded: TExpandedPixel;
+    FMonochromeComputed: boolean;
+    FMonochrome: boolean;
+    FBufferSize, FBufferShift: integer;
+    FColorTab: array of TBGRAPixel;
+    FColorComputed: bitpacked array[0..65535] of boolean;
+    FRepetition: TBGRAGradientRepetition;
+  public
+    constructor Create(AGradient: TBGRACustomGradient; AOwner: boolean; APadded: boolean;
+      ABufferSize: integer);
+    destructor Destroy; override;
+    {** Returns the color at a given ''position''. The reference range is
+        from 0 to 65535, however values beyond are possible as well }
+    function GetColorAt(position: integer): TBGRAPixel; override;
+    {** Returns the average color of the gradient }
+    function GetAverageColor: TBGRAPixel; override;
+    function GetAverageExpandedColor: TExpandedPixel; override;
+    function GetMonochrome: boolean; override;
+  end;
+
   TBGRAGradientScannerInternalScanNextFunc = function():single of object;
   TBGRAGradientScannerInternalScanAtFunc = function(const p: TPointF):single of object;
 
@@ -310,6 +338,86 @@ type
 implementation
 
 uses BGRABlend, Math;
+
+{ TBGRABufferedGradient }
+
+constructor TBGRABufferedGradient.Create(AGradient: TBGRACustomGradient;
+  AOwner: boolean; APadded: boolean; ABufferSize: integer);
+var
+  bufferPowSize: integer;
+begin
+  FGradient := AGradient;
+  FGradientOwned:= AOwner;
+  FPadded := APadded;
+  bufferPowSize := 0;
+  while ABufferSize > 1 do
+  begin
+    ABufferSize := ABufferSize shr 1;
+    inc(bufferPowSize);
+  end;
+  if bufferPowSize > 16 then bufferPowSize := 16;
+  FBufferSize:= 1 shl bufferPowSize;
+  setlength(FColorTab, FBufferSize);
+  FBufferShift := 16-bufferPowSize;
+end;
+
+destructor TBGRABufferedGradient.Destroy;
+begin
+  if FGradientOwned then FGradient.Free;
+  inherited Destroy;
+end;
+
+function TBGRABufferedGradient.GetColorAt(position: integer): TBGRAPixel;
+var
+  posBuf: Integer;
+begin
+  if FPadded then
+  begin
+    if position < 0 then
+      position := 0 else
+    if position >= 65536 then
+      position := 65536;
+    posBuf := position shr FBufferShift;
+    if posBuf > FBufferSize shr 1 then dec(posBuf);
+  end else
+  begin
+    position := position and 131071;
+    posBuf := position shr (FBufferShift+1);
+  end;
+
+  if not FColorComputed[posBuf] then
+  begin
+    result := FGradient.GetColorAt(position);
+    FColorTab[posBuf] := result;
+    FColorComputed[posBuf] := true;
+  end else
+    result := FColorTab[posBuf];
+end;
+
+function TBGRABufferedGradient.GetAverageColor: TBGRAPixel;
+begin
+  result := GammaCompression(GetAverageExpandedColor);
+end;
+
+function TBGRABufferedGradient.GetAverageExpandedColor: TExpandedPixel;
+begin
+  if not FAverageColorComputed then
+  begin
+    FAverageColorExpanded := FGradient.GetAverageExpandedColor;
+    FAverageColorComputed := true;
+  end;
+  result := FAverageColorExpanded;
+end;
+
+function TBGRABufferedGradient.GetMonochrome: boolean;
+begin
+  if not FMonochromeComputed then
+  begin
+    FMonochrome:= FGradient.Monochrome;
+    FMonochromeComputed:= true;
+  end;
+  result := FMonochrome;
+end;
 
 { TBGRASimpleGradient }
 

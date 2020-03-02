@@ -73,9 +73,12 @@ type
   private
     FFocused: boolean;
     FOnFocusChanged: TNotifyEvent;
+    function GetIsMovingPoint: boolean;
     function GetPointCoord(AIndex: integer): TPointF;
     function GetPointCount: integer;
+    function GetPointHighlighted(AIndex: integer): boolean;
     procedure SetFocused(AValue: boolean);
+    procedure SetPointHighlighted(AIndex: integer; AValue: boolean);
   protected
     FMatrix,FMatrixInverse: TAffineMatrix;          //view matrix from original coord
     FGridMatrix,FGridMatrixInverse: TAffineMatrix;  //grid matrix in original coord
@@ -83,7 +86,7 @@ type
     FPoints: array of record
       Origin, Coord: TPointF;
       OnMove, OnAlternateMove: TOriginalMovePointEvent;
-      RightButton: boolean;
+      RightButton, Highlighted: boolean;
       SnapToPoint: integer;
       HitBox: TAffineBox;
     end;
@@ -103,8 +106,8 @@ type
     FCurHoverPoint: integer;
     FHoverPointHandlers: THoverPointHandlers;
     FClickPointHandlers: TClickPointHandlers;
-    function RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean): TRect; virtual;
-    function GetRenderPointBounds(ACoord: TPointF): TRect; virtual;
+    function RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean; AHighlighted: boolean): TRect; virtual;
+    function GetRenderPointBounds(ACoord: TPointF; AHighlighted: boolean): TRect; virtual;
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
     function GetRenderArrowBounds(AOrigin, AEndCoord: TPointF): TRect; virtual;
     function RenderPolygon(ADest: TBGRABitmap; ACoords: array of TPointF; AClosed: boolean; AStyle: TBGRAOriginalPolylineStyle; ABackColor: TBGRAPixel): TRect; virtual;
@@ -147,7 +150,9 @@ type
     property PointSize: single read FPointSize write FPointSize;
     property PointCount: integer read GetPointCount;
     property PointCoord[AIndex: integer]: TPointF read GetPointCoord;
+    property PointHighlighted[AIndex: integer]: boolean read GetPointHighlighted write SetPointHighlighted;
     property OnFocusChanged: TNotifyEvent read FOnFocusChanged write FOnFocusChanged;
+    property IsMovingPoint: boolean read GetIsMovingPoint;
   end;
 
   TBGRACustomOriginalStorage = class;
@@ -545,9 +550,20 @@ begin
   result := FPoints[AIndex].Coord;
 end;
 
+function TBGRAOriginalEditor.GetIsMovingPoint: boolean;
+begin
+  result := FPointMoving <> -1;
+end;
+
 function TBGRAOriginalEditor.GetPointCount: integer;
 begin
   result := length(FPoints);
+end;
+
+function TBGRAOriginalEditor.GetPointHighlighted(AIndex: integer): boolean;
+begin
+  if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
+  result := FPoints[AIndex].Highlighted;
 end;
 
 procedure TBGRAOriginalEditor.SetFocused(AValue: boolean);
@@ -555,6 +571,13 @@ begin
   if FFocused=AValue then Exit;
   FFocused:=AValue;
   if Assigned(FOnFocusChanged) then FOnFocusChanged(self);
+end;
+
+procedure TBGRAOriginalEditor.SetPointHighlighted(AIndex: integer;
+  AValue: boolean);
+begin
+  if (AIndex < 0) or (AIndex >= PointCount) then raise exception.Create('Index out of bounds');
+  FPoints[AIndex].Highlighted := AValue;
 end;
 
 procedure TBGRAOriginalEditor.SetGridActive(AValue: boolean);
@@ -570,18 +593,24 @@ begin
   FGridMatrixInverse := AffineMatrixInverse(FGridMatrix);
 end;
 
-function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean): TRect;
+function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean; AHighlighted: boolean): TRect;
 const alpha = 192;
 var filler: TBGRAMultishapeFiller;
   c: TBGRAPixel;
 begin
-  result := GetRenderPointBounds(ACoord);
+  result := GetRenderPointBounds(ACoord, AHighlighted);
   if not isEmptyPointF(ACoord) then
   begin
+    if AAlternateColor then c := BGRA(255,128,128,alpha)
+      else if AHighlighted then c := BGRA(96,170,255,alpha)
+      else c := BGRA(255,255,255,alpha);
+    if AHighlighted then
+      ADest.GradientFill(result.Left, result.Top, result.Right, result.Bottom,
+                  c, BGRAPixelTransparent,
+                  gtRadial, PointF(ACoord.x,ACoord.y), PointF(result.right,ACoord.y),
+                  dmDrawWithTransparency);
     filler := TBGRAMultishapeFiller.Create;
     filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 4, BGRA(0,0,0,alpha));
-    if AAlternateColor then c := BGRA(255,128,128,alpha)
-      else c := BGRA(255,255,255,alpha);
     filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 1, c);
     filler.PolygonOrder:= poLastOnTop;
     filler.Draw(ADest);
@@ -589,12 +618,18 @@ begin
   end;
 end;
 
-function TBGRAOriginalEditor.GetRenderPointBounds(ACoord: TPointF): TRect;
+function TBGRAOriginalEditor.GetRenderPointBounds(ACoord: TPointF; AHighlighted: boolean): TRect;
+var
+  r: Single;
 begin
   if isEmptyPointF(ACoord) then
     result := EmptyRect
   else
-    result := rect(floor(ACoord.x - FPointSize + 0.5), floor(ACoord.y - FPointSize + 0.5), ceil(ACoord.x + FPointSize + 0.5), ceil(ACoord.y + FPointSize + 0.5));
+  begin
+    if AHighlighted then r := FPointSize*2 else r := FPointSize;
+    result := rect(floor(ACoord.x - r + 0.5), floor(ACoord.y - r + 0.5),
+                   ceil(ACoord.x + r + 0.5), ceil(ACoord.y + r + 0.5));
+  end;
 end;
 
 function TBGRAOriginalEditor.RenderArrow(ADest: TBGRABitmap; AOrigin,
@@ -822,6 +857,7 @@ begin
     OnMove := nil;
     OnAlternateMove:= nil;
     RightButton:= ARightButton;
+    Highlighted:= false;
     SnapToPoint:= -1;
     HitBox := TAffineBox.EmptyBox;
   end;
@@ -839,6 +875,7 @@ begin
     OnMove := AOnMoveEnd;
     OnAlternateMove:= nil;
     RightButton:= ARightButton;
+    Highlighted:= false;
     SnapToPoint:= -1;
     HitBox := TAffineBox.EmptyBox;
   end;
@@ -1058,7 +1095,7 @@ begin
   for i := 0 to high(FPoints) do
   begin
     if isEmptyPointF(FPoints[i].Origin) then
-      elemRect := RenderPoint(ADest, OriginalCoordToView(FPoints[i].Coord), FPoints[i].RightButton)
+      elemRect := RenderPoint(ADest, OriginalCoordToView(FPoints[i].Coord), FPoints[i].RightButton, FPoints[i].Highlighted)
     else
       elemRect := RenderArrow(ADest, OriginalCoordToView(FPoints[i].Origin), OriginalCoordToView(FPoints[i].Coord));
     if not IsRectEmpty(elemRect) then
@@ -1101,7 +1138,7 @@ begin
   for i := 0 to high(FPoints) do
   begin
     if isEmptyPointF(FPoints[i].Origin) then
-      elemRect := GetRenderPointBounds(OriginalCoordToView(FPoints[i].Coord))
+      elemRect := GetRenderPointBounds(OriginalCoordToView(FPoints[i].Coord), FPoints[i].Highlighted)
     else
       elemRect := GetRenderArrowBounds(OriginalCoordToView(FPoints[i].Origin), OriginalCoordToView(FPoints[i].Coord));
     if not IsRectEmpty(elemRect) then

@@ -806,6 +806,57 @@ begin
         end;
 end;
 
+procedure MaskPixelsDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+const alphaMax = 255*7*255;
+var
+  alpha, opacity256: NativeUInt;
+  newAlpha: byte;
+begin
+  if Opacity >= 128 then opacity256 := Opacity+1 else opacity256 := Opacity;
+  while Count > 0 do
+        begin
+          if pdest^.alpha > 0 then
+          begin
+            alpha := (psrc^.green shl 2) + (psrc^.red shl 1) + psrc^.blue;
+            alpha := alpha*psrc^.alpha + (255*7)*(not psrc^.alpha);
+            newAlpha := (pdest^.alpha * alpha + (alphaMax shr 1)) div alphaMax;
+            pdest^.alpha := (pdest^.alpha*NativeUInt(256 - opacity256) + newAlpha*opacity256) shr 8;
+            if pdest^.alpha = 0 then pdest^ := BGRAPixelTransparent;
+          end;
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearMultiplySaturationLinearOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearMultiplySaturationInline(@temp, psrc^);
+          FastBlendPixelInline(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearMultiplySaturationDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearMultiplySaturationInline(@temp, psrc^);
+          DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
 {************************** table ****************************************}
 
 type
@@ -817,12 +868,14 @@ const
       @LightenPixelsDrawOver, @ScreenPixelsDrawOver, @AddPixelsDrawOver, @LinearAddPixelsDrawOver, @ColorDodgePixelsDrawOver, @DividePixelsDrawOver, @NiceGlowPixelsDrawOver, @SoftLightPixelsDrawOver, @HardLightPixelsDrawOver,
       @GlowPixelsDrawOver, @ReflectPixelsDrawOver, @LinearOverlayPixelsDrawOver, @OverlayPixelsDrawOver, @DarkenPixelsDrawOver, @LinearMultiplyPixelsDrawOver, @ColorBurnPixelsDrawOver,
       @DifferencePixelsDrawOver, @LinearDifferencePixelsDrawOver, @ExclusionPixelsDrawOver, @LinearExclusionPixelsDrawOver, @SubtractPixelsDrawOver, @LinearSubtractPixelsDrawOver,
-      @SubtractInversePixelsDrawOver, @LinearSubtractInversePixelsDrawOver, @NegationPixelsDrawOver, @LinearNegationPixelsDrawOver, @BlendXorPixelsDrawOver, @SvgSoftLightPixelsDrawOver),
+      @SubtractInversePixelsDrawOver, @LinearSubtractInversePixelsDrawOver, @NegationPixelsDrawOver, @LinearNegationPixelsDrawOver, @BlendXorPixelsDrawOver, @SvgSoftLightPixelsDrawOver,
+      @MaskPixelsDrawOver, @LinearMultiplySaturationDrawOver),
       (@FastBlendPixelsWithOpacity, @FastBlendPixelsWithOpacity,
       @LightenPixelsLinearOver, @ScreenPixelsLinearOver, @AddPixelsLinearOver, @LinearAddPixelsLinearOver, @ColorDodgePixelsLinearOver, @DividePixelsLinearOver, @NiceGlowPixelsLinearOver, @SoftLightPixelsLinearOver, @HardLightPixelsLinearOver,
       @GlowPixelsLinearOver, @ReflectPixelsLinearOver, @LinearOverlayPixelsLinearOver, @OverlayPixelsLinearOver, @DarkenPixelsLinearOver, @LinearMultiplyPixelsLinearOver, @ColorBurnPixelsLinearOver,
       @DifferencePixelsLinearOver, @LinearDifferencePixelsLinearOver, @ExclusionPixelsLinearOver, @LinearExclusionPixelsLinearOver, @SubtractPixelsLinearOver, @LinearSubtractPixelsLinearOver,
-      @SubtractInversePixelsLinearOver, @LinearSubtractInversePixelsLinearOver, @NegationPixelsLinearOver, @LinearNegationPixelsLinearOver, @BlendXorPixelsLinearOver, @SvgSoftLightPixelsLinearOver));
+      @SubtractInversePixelsLinearOver, @LinearSubtractInversePixelsLinearOver, @NegationPixelsLinearOver, @LinearNegationPixelsLinearOver, @BlendXorPixelsLinearOver, @SvgSoftLightPixelsLinearOver,
+      @MaskPixelsDrawOver, @LinearMultiplySaturationLinearOver));
 
 {************************* calling procedure ***************************}
 

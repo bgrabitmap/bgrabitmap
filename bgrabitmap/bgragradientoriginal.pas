@@ -73,7 +73,7 @@ type
     destructor Destroy; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); overload; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean; ADrawMode: TDrawMode); overload;
-    function CreateScanner(AMatrix: TAffineMatrix): TBGRACustomScanner;
+    function CreateScanner(AMatrix: TAffineMatrix; ADraft: boolean = false): TBGRACustomScanner;
     procedure ConfigureEditor(AEditor: TBGRAOriginalEditor); override;
     function GetRenderBounds(ADestRect: TRect; {%H-}AMatrix: TAffineMatrix): TRect; override;
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
@@ -467,24 +467,24 @@ var
   dither: TDitheringAlgorithm;
   temp: TBGRABitmap;
 begin
-  if ADraft and ((ADest.ClipRect.Width > 384) or (ADest.ClipRect.Height > 384)) then
+  if ADraft and (ADest.ClipRect.Width*ADest.ClipRect.Height > 512*512) then
   begin
     temp := TBGRABitmap.Create(0,0);
-    temp.SetSize(min(384,ADest.Width),min(384,ADest.Height));
+    temp.SetSize(min(400,ADest.Width),min(400,ADest.Height));
     Render(temp, AffineMatrixScale(temp.Width/ADest.Width,
                                    temp.Height/ADest.Height)*AMatrix, ADraft);
     ADest.StretchPutImage(rect(0,0,ADest.Width,Adest.Height),temp, ADrawMode);
     temp.Free;
   end else
   begin
-    grad := CreateScanner(AMatrix);
+    grad := CreateScanner(AMatrix, ADraft);
     if ADraft then dither := daNearestNeighbor else dither := daFloydSteinberg;
     ADest.FillRect(ADest.ClipRect, grad,ADrawMode, dither);
     grad.Free;
   end;
 end;
 
-function TBGRALayerGradientOriginal.CreateScanner(AMatrix: TAffineMatrix): TBGRACustomScanner;
+function TBGRALayerGradientOriginal.CreateScanner(AMatrix: TAffineMatrix; ADraft: boolean): TBGRACustomScanner;
 var
   colors: TBGRACustomGradient;
   grad: TBGRAGradientScanner;
@@ -492,6 +492,8 @@ begin
   if isEmptyPointF(FOrigin) or isEmptyPointF(FXAxis) then exit(nil);
 
   colors := TBGRASimpleGradient.CreateAny(FColorInterpolation, FStartColor,FEndColor, FRepetition);
+  if ADraft then
+    colors := TBGRABufferedGradient.Create(colors, true, FRepetition = grPad, 1024);
 
   if FGradientType = gtRadial then
   begin

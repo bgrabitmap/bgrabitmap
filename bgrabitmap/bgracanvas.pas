@@ -28,11 +28,15 @@ type
 
   TBGRAPen = class(TBGRAColoredObject)
   private
+    FPenMode: TPenMode;
     function GetActualColor: TBGRAPixel;
+    function GetActualDrawMode: TDrawMode;
     function GetActualWidth: integer;
     function GetCustomPenStyle: TBGRAPenStyle;
+    function GetInvisible: boolean;
     function GetPenStyle: TPenStyle;
     procedure SetCustomPenStyle(const AValue: TBGRAPenStyle);
+    procedure SetPenMode(AValue: TPenMode);
     procedure SetPenStyle(const AValue: TPenStyle);
   protected
     FCustomPenStyle:  TBGRAPenStyle;
@@ -43,10 +47,14 @@ type
     JoinStyle: TPenJoinStyle;
     constructor Create;
     procedure Assign(Source: TObject); override;
+    procedure GetUniversalBrush(out ABrush: TUniversalBrush);
     property Style: TPenStyle read GetPenStyle Write SetPenStyle;
+    property Mode: TPenMode read FPenMode write SetPenMode;
     property CustomStyle: TBGRAPenStyle read GetCustomPenStyle write SetCustomPenStyle;
     property ActualWidth: integer read GetActualWidth;
     property ActualColor: TBGRAPixel read GetActualColor;
+    property ActualDrawMode: TDrawMode read GetActualDrawMode;
+    property Invisible: boolean read GetInvisible;
   end;
 
   { TBGRABrush }
@@ -54,6 +62,7 @@ type
   TBGRABrush = class(TBGRAColoredObject)
   private
     function GetActualColor: TBGRAPixel;
+    function GetActualDrawMode: TDrawMode;
     function GetInvisible: boolean;
     procedure SetBackColor(const AValue: TBGRAPixel);
     procedure SetBrushStyle(const AValue: TBrushStyle);
@@ -68,10 +77,12 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Assign(Source: TObject); override;
+    procedure GetUniversalBrush(ABitmapPrototype: TBGRACustomBitmap; out ABrush: TUniversalBrush);
     function BuildTexture(Prototype: TBGRACustomBitmap): IBGRAScanner;
     property Style: TBrushStyle read FStyle write SetBrushStyle;
     property BackColor: TBGRAPixel read FBackColor write SetBackColor;
     property ActualColor: TBGRAPixel read GetActualColor;
+    property ActualDrawMode: TDrawMode read GetActualDrawMode;
     property Invisible: boolean read GetInvisible;
     property Texture: IBGRAScanner read FTexture write SetTexture;
   end;
@@ -136,10 +147,12 @@ type
     DrawFontBackground : boolean;
     constructor Create(ABitmap: TBGRACustomBitmap);
     destructor Destroy; override;
-    procedure MoveTo(x,y: integer);
-    procedure MoveTo(p: TPoint);
-    procedure LineTo(x,y: integer);
-    procedure LineTo(p: TPoint);
+    procedure MoveTo(x,y: integer); overload;
+    procedure MoveTo(p: TPoint); overload;
+    procedure LineTo(x,y: integer); overload;
+    procedure LineTo(p: TPoint); overload;
+    procedure Line(x1,y1,x2,y2: integer); overload;
+    procedure Line(p1,p2: TPoint); overload;
     procedure Arc(x1,y1,x2,y2,sx,sy,ex,ey: integer);
     procedure Arc(x1,y1,x2,y2,StartDeg16,LengthDeg16: integer);
     procedure Arc65536(x1,y1,x2,y2: integer; start65536,end65536: word; Options: TArcOptions);
@@ -220,7 +233,7 @@ type
 
 implementation
 
-uses BGRAPen, BGRAPath, BGRAPolygon, BGRAPolygonAliased, Math;
+uses BGRAPen, BGRAPath, BGRAPolygon, BGRAPolygonAliased, Math, BGRABlend;
 
 { TBGRAFont }
 
@@ -308,6 +321,11 @@ begin
     result := BGRAColor;
 end;
 
+function TBGRABrush.GetActualDrawMode: TDrawMode;
+begin
+  result := dmDrawWithTransparency;
+end;
+
 function TBGRABrush.GetInvisible: boolean;
 begin
   result := (texture = nil) and ((style = bsClear) or ((style= bsSolid) and (bgracolor.alpha = 0))
@@ -386,6 +404,21 @@ begin
   inherited Assign(Source);
 end;
 
+procedure TBGRABrush.GetUniversalBrush(ABitmapPrototype: TBGRACustomBitmap; out ABrush: TUniversalBrush);
+var
+  tex: IBGRAScanner;
+  c: TBGRAPixel;
+begin
+  tex := BuildTexture(ABitmapPrototype);
+  if tex <> nil then
+    BGRAScannerBrush(ABrush, tex, ActualDrawMode)
+  else
+  begin
+    c := ActualColor;
+    BGRASolidBrushIndirect(ABrush, @c, ActualDrawMode);
+  end;
+end;
+
 function TBGRABrush.BuildTexture(Prototype: TBGRACustomBitmap): IBGRAScanner;
 begin
   //user-defined texture
@@ -420,7 +453,31 @@ begin
   if (Style = psClear) or (Opacity = 0) then
     result := BGRAPixelTransparent
   else
-    result := BGRAColor;
+  begin
+    case Mode of
+    pmBlack: result := BGRABlack;
+    pmWhite: result := BGRAWhite;
+    pmNop: result := BGRAPixelTransparent;
+    pmNot: result := BGRA(255,255,255,0);
+    pmCopy: result := BGRAColor;
+    pmNotCopy: result := BGRA(not BGRAColor.red, not BGRAColor.green, not BGRAColor.blue, BGRAColor.alpha);
+    pmMerge, pmNotMerge, pmMask, pmNotMask, pmXor: result := BGRA(BGRAColor.red, BGRAColor.green, BGRAColor.blue, 0);
+    pmMergePenNot, pmMaskPenNot, pmMergeNotPen, pmMaskNotPen, pmNotXor: result := BGRA(not BGRAColor.red, not BGRAColor.green, not BGRAColor.blue, 0);
+    else
+      raise exception.Create('Unhandled pen mode');
+    end;
+  end;
+end;
+
+function TBGRAPen.GetActualDrawMode: TDrawMode;
+begin
+  case Mode of
+    pmBlack, pmWhite, pmNop, pmCopy, pmNotCopy:
+      result := dmDrawWithTransparency;
+    else
+      {pmNot, pmXor, pmNotXor and others}
+      result := dmXor;
+  end;
 end;
 
 function TBGRAPen.GetActualWidth: integer;
@@ -434,6 +491,13 @@ begin
   result := DuplicatePenStyle(FCustomPenStyle);
 end;
 
+function TBGRAPen.GetInvisible: boolean;
+var b: TUniversalBrush;
+begin
+  GetUniversalBrush(b);
+  result := b.DoesNothing;
+end;
+
 function TBGRAPen.GetPenStyle: TPenStyle;
 begin
   Result:= FPenStyle;
@@ -443,6 +507,12 @@ procedure TBGRAPen.SetCustomPenStyle(const AValue: TBGRAPenStyle);
 begin
   FCustomPenStyle := DuplicatePenStyle(AValue);
   FPenStyle:= BGRAToPenStyle(AValue);
+end;
+
+procedure TBGRAPen.SetPenMode(AValue: TPenMode);
+begin
+  if FPenMode=AValue then Exit;
+  FPenMode:=AValue;
 end;
 
 procedure TBGRAPen.SetPenStyle(const AValue: TPenStyle);
@@ -459,6 +529,7 @@ begin
   JoinStyle := pjsRound;
   Style := psSolid;
   BGRAColor := BGRABlack;
+  Mode := pmCopy;
 end;
 
 procedure TBGRAPen.Assign(Source: TObject);
@@ -485,6 +556,146 @@ begin
     Opacity := 255;
   end;
   inherited Assign(Source);
+end;
+
+type
+  PBGRAPenBrushFixedData = ^TBGRAPenBrushFixedData;
+  TBGRAPenBrushFixedData = record
+    BGRA: TBGRAPixel;
+    NotResult: boolean;
+  end;
+
+procedure BGRAPenSkipPixels({%H-}AFixedData: Pointer;
+  AContextData: PUniBrushContext; {%H-}AAlpha: Word; ACount: integer);
+begin
+  inc(PBGRAPixel(AContextData^.Dest), ACount);
+end;
+
+procedure BGRAPenMergePixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PBGRAPixel;
+  merged: TBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  with PBGRAPenBrushFixedData(AFixedData)^ do
+  begin
+    while ACount > 0 do
+    begin
+      merged.red := pDest^.red or PBGRAPenBrushFixedData(AFixedData)^.BGRA.red;
+      merged.green := pDest^.green or PBGRAPenBrushFixedData(AFixedData)^.BGRA.green;
+      merged.blue := pDest^.blue or PBGRAPenBrushFixedData(AFixedData)^.BGRA.blue;
+      if NotResult then
+      begin
+        merged.red := not merged.red;
+        merged.green := not merged.green;
+        merged.blue := not merged.blue;
+      end;
+      if AAlpha >= $ff7f then
+        pDest^ := merged else
+        pDest^ := GammaCompression(MergeBGRA(GammaExpansion(pDest^), not AAlpha,
+                                             GammaExpansion(merged), AAlpha));
+      inc(pDest);
+      dec(ACount);
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure BGRAPenMaskPixels(AFixedData: Pointer;
+  AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
+var
+  pDest: PBGRAPixel;
+  merged: TBGRAPixel;
+begin
+  if AAlpha <= $80 then
+  begin
+    inc(PBGRAPixel(AContextData^.Dest), ACount);
+    exit;
+  end;
+  pDest := PBGRAPixel(AContextData^.Dest);
+  with PBGRAPenBrushFixedData(AFixedData)^ do
+  begin
+    while ACount > 0 do
+    begin
+      merged.red := pDest^.red and PBGRAPenBrushFixedData(AFixedData)^.BGRA.red;
+      merged.green := pDest^.green and PBGRAPenBrushFixedData(AFixedData)^.BGRA.green;
+      merged.blue := pDest^.blue and PBGRAPenBrushFixedData(AFixedData)^.BGRA.blue;
+      if NotResult then
+      begin
+        merged.red := not merged.red;
+        merged.green := not merged.green;
+        merged.blue := not merged.blue;
+      end;
+      if AAlpha >= $ff7f then
+        pDest^ := merged else
+        pDest^ := GammaCompression(MergeBGRA(GammaExpansion(pDest^), not AAlpha,
+                                             GammaExpansion(merged), AAlpha));
+      inc(pDest);
+      dec(ACount);
+    end;
+  end;
+  PBGRAPixel(AContextData^.Dest) := pDest;
+end;
+
+procedure TBGRAPen.GetUniversalBrush(out ABrush: TUniversalBrush);
+var c: TBGRAPixel;
+begin
+  if Opacity = 0 then
+  begin
+    TBGRACustomBitmap.IdleBrush(ABrush);
+    exit;
+  end;
+  c := ActualColor;
+  case Mode of
+    pmMerge, pmNotMerge, pmMergeNotPen, pmMaskPenNot: //or-based
+      begin
+        ABrush.Colorspace:= TBGRAPixelColorspace;
+        ABrush.InternalInitContext:= nil;
+        PBGRAPenBrushFixedData(@ABrush.FixedData)^.BGRA := c;
+        if Mode in [pmNotMerge, pmMaskPenNot] then
+        begin
+          ABrush.DoesNothing := false;
+          PBGRAPenBrushFixedData(@ABrush.FixedData)^.NotResult:= true;
+          ABrush.InternalPutNextPixels:= @BGRAPenMergePixels;
+        end else
+        begin
+          ABrush.DoesNothing:= (c.red = 0) and (c.green = 0) and (c.blue = 0);
+          PBGRAPenBrushFixedData(@ABrush.FixedData)^.NotResult:= false;
+          if ABrush.DoesNothing then
+            ABrush.InternalPutNextPixels:= @BGRAPenSkipPixels
+          else
+            ABrush.InternalPutNextPixels:= @BGRAPenMergePixels;
+        end;
+      end;
+    pmMask, pmNotMask, pmMaskNotPen, pmMergePenNot: //and-based
+      begin
+        ABrush.Colorspace:= TBGRAPixelColorspace;
+        ABrush.InternalInitContext:= nil;
+        PBGRAPenBrushFixedData(@ABrush.FixedData)^.BGRA := c;
+        if Mode in [pmNotMask, pmMergePenNot] then
+        begin
+          ABrush.DoesNothing := false;
+          PBGRAPenBrushFixedData(@ABrush.FixedData)^.NotResult:= true;
+          ABrush.InternalPutNextPixels:= @BGRAPenMaskPixels;
+        end else
+        begin
+          ABrush.DoesNothing:= (c.red = 255) and (c.green = 255) and (c.blue = 255);
+          PBGRAPenBrushFixedData(@ABrush.FixedData)^.NotResult:= false;
+          if ABrush.DoesNothing then
+            ABrush.InternalPutNextPixels:= @BGRAPenSkipPixels
+          else
+            ABrush.InternalPutNextPixels:= @BGRAPenMaskPixels;
+        end;
+      end;
+    else //draw-based and xor-based
+      BGRASolidBrushIndirect(ABrush, @c, ActualDrawMode);
+  end;
 end;
 
 { TBGRAColoredObject }
@@ -669,7 +880,7 @@ end;
 
 function TBGRACanvas.NoPen: boolean;
 begin
-  result := Pen.ActualColor.alpha = 0;
+  result := Pen.Invisible;
 end;
 
 function TBGRACanvas.NoBrush: boolean;
@@ -710,25 +921,27 @@ end;
 
 procedure TBGRACanvas.LineTo(x, y: integer);
 var pts: array of TPointF;
+  b: TUniversalBrush;
 begin
-  if not NoPen then
+  Pen.GetUniversalBrush(b);
+  if not b.DoesNothing then
   begin
     //1 pixel-wide solid pen is rendered with pixel line
     if (Pen.Style = psSolid) and (Pen.ActualWidth = 1) then
     begin
       if AntialiasingMode = amOff then
-        FBitmap.DrawLine(FPenPos.x,FPenPos.y,x,y,Pen.ActualColor,False)
+        FBitmap.DrawLine(FPenPos.x,FPenPos.y,x,y, b, False)
       else
-        FBitmap.DrawLineAntialias(FPenPos.x,FPenPos.y,x,y,Pen.ActualColor,False);
+        FBitmap.DrawLineAntialias(FPenPos.x,FPenPos.y,x,y, b, False);
     end else
     begin
       ApplyPenStyle;
       if AntialiasingMode = amOff then
       begin
         pts := FBitmap.ComputeWidePolyline([PointF(FPenPos.x,FPenPos.y),PointF(x,y)],Pen.ActualWidth);
-        FBitmap.FillPoly(pts,Pen.ActualColor,dmDrawWithTransparency);
+        FBitmap.FillPoly(pts, b);
       end else
-        FBitmap.DrawLineAntialias(FPenPos.x,FPenPos.y,x,y,Pen.ActualColor,Pen.ActualWidth);
+        FBitmap.DrawLineAntialias(FPenPos.x,FPenPos.y,x,y, b, Pen.ActualWidth);
     end;
   end;
   MoveTo(x,y);
@@ -737,6 +950,18 @@ end;
 procedure TBGRACanvas.LineTo(p: TPoint);
 begin
   LineTo(p.x,p.y);
+end;
+
+procedure TBGRACanvas.Line(x1, y1, x2, y2: integer);
+begin
+  MoveTo(x1,y1);
+  LineTo(x2,y2);
+end;
+
+procedure TBGRACanvas.Line(p1, p2: TPoint);
+begin
+  MoveTo(p1);
+  LineTo(p2);
 end;
 
 procedure TBGRACanvas.Arc(x1, y1, x2, y2, sx, sy, ex, ey: integer);
@@ -761,6 +986,8 @@ var cx,cy,rx,ry,w: single;
     arcPts,penPts: array of TPointF;
     multi: TBGRAMultishapeFiller;
     tex: IBGRAScanner;
+    hasFill, hasPen: Boolean;
+    b: TUniversalBrush;
 begin
   if NoPen and NoBrush then exit;
   if not ComputeEllipseC(x1,y1,x2,y2,cx,cy,rx,ry) then exit;
@@ -787,35 +1014,58 @@ begin
     if (rx<0) or (ry<0) then exit;
   end;
 
-  multi := TBGRAMultishapeFiller.Create;
-  multi.Antialiasing := AntialiasingMode <> amOff;
-  multi.FillMode := FillMode;
-  multi.PolygonOrder := poLastOnTop;
-  multi.AliasingIncludeBottomRight := True;
   arcPts := ComputeArc65536(cx,cy,rx,ry,start65536,end65536);
   if (aoPie in Options) and (start65536 <> end65536) then
   begin
     setlength(arcPts,length(arcPts)+1);
     arcPts[high(arcPts)] := PointF(cx,cy);
   end;
-  if (aoFillPath in Options) and not NoBrush then
-  begin
-    tex := Brush.BuildTexture(FBitmap);
-    if tex <> nil then
-      multi.AddPolygon(arcPts,tex) else
-      multi.AddPolygon(arcPts,Brush.ActualColor);
-  end;
-  if not NoPen then
+
+  hasFill := (aoFillPath in Options) and not NoBrush;
+  hasPen := not NoPen;
+  if hasPen then
   begin
     ApplyPenStyle;
     if (aoClosePath in Options) or (aoPie in Options) then
       penPts := FBitmap.ComputeWidePolygon(arcPts,w)
-    else
-      penPts := FBitmap.ComputeWidePolyline(arcPts,w);
-    multi.AddPolygon( penPts, Pen.ActualColor );
+      else penPts := FBitmap.ComputeWidePolyline(arcPts,w);
   end;
-  multi.Draw(FBitmap);
-  multi.Free;
+
+  if hasPen and (Pen.ActualDrawMode <> dmDrawWithTransparency) then
+  begin
+    if hasFill then
+    begin
+      Brush.GetUniversalBrush(FBitmap, b);
+      if AntialiasingMode <> amOff then
+        FBitmap.FillPolyAntialias(arcPts, b)
+        else FBitmap.FillPoly(arcPts, b);
+    end;
+    if hasPen then
+    begin
+      Pen.GetUniversalBrush(b);
+      if AntialiasingMode <> amOff then
+        FBitmap.FillPolyAntialias(penPts, b)
+        else FBitmap.FillPoly(penPts, b);
+    end;
+  end else
+  begin
+    multi := TBGRAMultishapeFiller.Create;
+    multi.Antialiasing := AntialiasingMode <> amOff;
+    multi.FillMode := FillMode;
+    multi.PolygonOrder := poLastOnTop;
+    multi.AliasingIncludeBottomRight := True;
+    if hasFill then
+    begin
+      tex := Brush.BuildTexture(FBitmap);
+      if tex <> nil then
+        multi.AddPolygon(arcPts, tex) else
+        multi.AddPolygon(arcPts, Brush.ActualColor);
+    end;
+    if hasPen then
+      multi.AddPolygon(penPts, Pen.ActualColor);
+    multi.Draw(FBitmap, Brush.ActualDrawMode);
+    multi.Free;
+  end;
 end;
 
 procedure TBGRACanvas.Chord(x1, y1, x2, y2, sx, sy, ex, ey: integer);
@@ -862,16 +1112,17 @@ procedure TBGRACanvas.Ellipse(x1, y1, x2, y2: integer);
 var cx,cy,rx,ry,w: single;
     tex: IBGRAScanner;
     multi: TBGRAMultishapeFiller;
+    pb, bb: TUniversalBrush;
 begin
   if NoPen and NoBrush then exit;
-  tex := Brush.BuildTexture(FBitmap);
   if (AntialiasingMode = amOff) and not NoPen and (Pen.Style = psSolid) and (Pen.ActualWidth = 1) then
   begin
-    BGRARoundRectAliased(FBitmap,x1,y1,x2,y2,abs(x2-x1),abs(y2-y1),Pen.ActualColor,Brush.ActualColor,tex);
+    Pen.GetUniversalBrush(pb);
+    Brush.GetUniversalBrush(FBitmap, bb);
+    BGRARoundRectAliased(FBitmap, x1,y1,x2,y2, abs(x2-x1),abs(y2-y1), pb,bb, 65535);
     exit;
   end;
   if not ComputeEllipseC(x1,y1,x2,y2,cx,cy,rx,ry) then exit;
-  tex := Brush.BuildTexture(FBitmap);
   w := Pen.ActualWidth;
   rx -=0.50;
   ry -=0.50;
@@ -893,27 +1144,52 @@ begin
     ry -=0.2;
     if (rx<0) or (ry<0) then exit;
   end;
-  multi := TBGRAMultishapeFiller.Create;
-  multi.Antialiasing := AntialiasingMode <> amOff;
-  multi.PolygonOrder := poLastOnTop;
-  multi.AliasingIncludeBottomRight := True;
-  if not NoBrush then
+
+  if not NoPen and (Pen.ActualDrawMode <> dmDrawWithTransparency) then
   begin
-    if tex <> nil then
-      multi.AddEllipse(cx,cy,rx,ry,tex)
-    else
-      multi.AddEllipse(cx,cy,rx,ry,Brush.ActualColor);
-  end;
-  if not NoPen then
+    if not NoBrush then
+    begin
+      Brush.GetUniversalBrush(FBitmap, bb);
+      if AntialiasingMode <> amOff then
+        FBitmap.FillEllipseAntialias(cx,cy,rx,ry, bb)
+        else FBitmap.FillEllipseInRect(
+               rect(round(cx-rx+0.5), round(cy-ry+0.5), round(cx+rx+0.5), round(cy+ry+0.5)), bb);
+    end;
+    if not NoPen then
+    begin
+      Pen.GetUniversalBrush(pb);
+      ApplyPenStyle;
+      if AntialiasingMode <> amOff then
+        FBitmap.EllipseAntialias(cx,cy,rx,ry, pb, w)
+      else FBitmap.Ellipse(cx,cy,rx,ry, pb, w);
+    end;
+  end else
   begin
-    ApplyPenStyle;
-    if (Pen.Style = psSolid) and multi.Antialiasing then
-      multi.AddEllipseBorder(cx,cy,rx,ry,w,Pen.ActualColor)
-    else
-      multi.AddPolygon(FBitmap.ComputeWidePolygon(ComputeEllipse(cx,cy,rx,ry),w),Pen.ActualColor);
+    multi := TBGRAMultishapeFiller.Create;
+    multi.Antialiasing := AntialiasingMode <> amOff;
+    multi.PolygonOrder := poLastOnTop;
+    multi.AliasingIncludeBottomRight := True;
+    if not NoBrush then
+    begin
+      tex := Brush.BuildTexture(FBitmap);
+      if tex <> nil then
+        multi.AddEllipse(cx,cy,rx,ry,tex)
+      else
+        multi.AddEllipse(cx,cy,rx,ry,Brush.ActualColor);
+    end;
+    if not NoPen then
+    begin
+      if (Pen.Style = psSolid) and multi.Antialiasing then
+        multi.AddEllipseBorder(cx,cy,rx,ry,w,Pen.ActualColor)
+      else
+      begin
+        ApplyPenStyle;
+        multi.AddPolygon(FBitmap.ComputeWidePolygon(ComputeEllipse(cx,cy,rx,ry),w),Pen.ActualColor);
+      end;
+    end;
+    multi.Draw(FBitmap);
+    multi.Free;
   end;
-  multi.Draw(FBitmap);
-  multi.Free;
 end;
 
 procedure TBGRACanvas.Ellipse(const bounds: TRect);
@@ -923,11 +1199,12 @@ end;
 
 procedure TBGRACanvas.Rectangle(x1, y1, x2, y2: integer; Filled: Boolean = True);
 var tx,ty: integer;
-    w: single;
     tex: IBGRAScanner;
     multi: TBGRAMultishapeFiller;
+    b: TUniversalBrush;
 begin
-  if NoPen and NoBrush then exit;
+  if NoBrush then Filled := false;
+  if NoPen and not Filled then exit;
   if not CheckRectangle(x1,y1,x2,y2,tx,ty) then exit;
 
   if NoPen then
@@ -937,44 +1214,41 @@ begin
     dec(x2);
     dec(y2);
 
-    if (Pen.Style = psSolid) and not Filled then
+    if not NoPen and (Pen.ActualDrawMode <> dmDrawWithTransparency) then
     begin
-      ApplyPenStyle;
-      FBitmap.RectangleAntialias(x1,y1,x2,y2,Pen.ActualColor,Pen.ActualWidth);
-      exit;
-    end;
-
-    tex := Brush.BuildTexture(FBitmap);
-
-    if (Pen.Style = psSolid) and (tex=nil) then
+      if AntialiasingMode <> amOff then
+      begin
+        if Filled then FillRect(x1,y1,x2,y2);
+        ApplyPenStyle;
+        Pen.GetUniversalBrush(b);
+        FBitmap.RectangleAntialias(x1,y1,x2,y2, b, Pen.ActualWidth);
+      end else
+        PolygonF([PointF(x1,y1), PointF(x2,y1), PointF(x2,y2), PointF(x1,y2)]);
+    end else
     begin
-      ApplyPenStyle;
-      FBitmap.RectangleAntialias(x1,y1,x2,y2,Pen.ActualColor,Pen.ActualWidth,Brush.ActualColor);
-      exit;
+      multi := TBGRAMultishapeFiller.Create;
+      multi.Antialiasing := AntialiasingMode <> amOff;
+      multi.PolygonOrder := poLastOnTop;
+      if Filled then
+      begin
+        tex := Brush.BuildTexture(FBitmap);
+        if tex <> nil then
+          multi.AddRectangle(x1,y1,x2,y2,tex)
+          else multi.AddRectangle(x1,y1,x2,y2,Brush.ActualColor);
+      end;
+      if not NoPen then
+      begin
+        ApplyPenStyle;
+        if (Pen.Style = psSolid) and (Pen.JoinStyle = pjsMiter) and (FBitmap.JoinMiterLimit > 1.4142) then
+          multi.AddRectangleBorder(x1,y1,x2,y2, Pen.ActualWidth, Pen.ActualColor)
+        else
+          multi.AddPolygon(FBitmap.ComputeWidePolygon(
+            [PointF(x1,y1),PointF(x2,y1),PointF(x2,y2),PointF(x1,y2)], Pen.ActualWidth),
+            Pen.ActualColor);
+      end;
+      multi.Draw(FBitmap);
+      multi.Free;
     end;
-
-    w := Pen.ActualWidth;
-    multi := TBGRAMultishapeFiller.Create;
-    multi.Antialiasing := AntialiasingMode <> amOff;
-    multi.PolygonOrder := poLastOnTop;
-    if not NoBrush and Filled then
-    begin
-      if tex <> nil then
-        multi.AddRectangle(x1,y1,x2,y2,tex)
-      else
-        multi.AddRectangle(x1,y1,x2,y2,Brush.ActualColor);
-    end;
-    if not NoPen then
-    begin
-      ApplyPenStyle;
-      if (Pen.Style = psSolid) and (Pen.JoinStyle = pjsMiter) then
-        multi.AddRectangleBorder(x1,y1,x2,y2,w,Pen.ActualColor)
-      else
-        multi.AddPolygon(FBitmap.ComputeWidePolygon(
-          [PointF(x1,y1),PointF(x2,y1),PointF(x2,y2),PointF(x1,y2)],w), Pen.ActualColor);
-    end;
-    multi.Draw(FBitmap);
-    multi.Free;
   end;
 end;
 
@@ -995,56 +1269,62 @@ end;
 
 procedure TBGRACanvas.RoundRect(x1, y1, x2, y2: integer; dx,dy: integer);
 var tx,ty: integer;
-    w: single;
     tex: IBGRAScanner;
     multi: TBGRAMultishapeFiller;
     x1f,y1f,x2f,y2f: single;
+    pb, fb: TUniversalBrush;
 begin
-  if NoPen and NoBrush then exit;
-  tex := Brush.BuildTexture(FBitmap);
-  if (AntialiasingMode = amOff) and not NoPen and (Pen.Style = psSolid) and (Pen.ActualWidth = 1) then
-  begin
-    BGRARoundRectAliased(FBitmap,x1,y1,x2,y2,dx,dy,Pen.ActualColor,Brush.ActualColor,tex);
-    exit;
-  end;
   if not CheckRectangle(x1,y1,x2,y2,tx,ty) then exit;
-
-  dec(x2);
-  dec(y2);
-  w := Pen.ActualWidth;
-  multi := TBGRAMultishapeFiller.Create;
-  multi.Antialiasing := AntialiasingMode <> amOff;
-  multi.PolygonOrder := poLastOnTop;
-  if not NoBrush then
-  begin
-    if NoPen then
-    begin
-      x1f := x1-0.5;
-      y1f := y1-0.5;
-      x2f := x2+0.5;
-      y2f := y2+0.5;
-    end else
-    begin
-      x1f := x1;
-      y1f := y1;
-      x2f := x2;
-      y2f := y2;
-    end;
-    if tex <> nil then
-      multi.AddRoundRectangle(x1f,y1f,x2f,y2f,dx/2,dy/2,tex)
-    else
-      multi.AddRoundRectangle(x1f,y1f,x2f,y2f,dx/2,dy/2,Brush.ActualColor);
-  end;
-  if not NoPen then
+  if not NoPen and (AntialiasingMode = amOff) and (Pen.Style = psSolid) and (Pen.ActualWidth = 1) then
   begin
     ApplyPenStyle;
-    if (Pen.Style = psSolid) and (Pen.JoinStyle = pjsMiter) then
-      multi.AddRoundRectangleBorder(x1,y1,x2,y2,dx/2,dy/2,w,Pen.ActualColor)
-    else
-      multi.AddPolygon(FBitmap.ComputeWidePolygon(ComputeRoundRect(x1,y1,x2,y2,dx/2,dy/2),w),Pen.ActualColor);
+    Pen.GetUniversalBrush(pb);
+    Brush.GetUniversalBrush(FBitmap, fb);
+    FBitmap.RoundRect(x1,y1,x2,y2, dx,dy, pb, fb);
+  end else
+  begin
+    dec(x2);
+    dec(y2);
+    if not NoPen and (Pen.ActualDrawMode <> dmDrawWithTransparency) then
+      PolygonF(FBitmap.ComputeRoundRect(x1,y1,x2,y2, dx/2,dy/2, [])) else
+    begin
+      multi := TBGRAMultishapeFiller.Create;
+      multi.Antialiasing := AntialiasingMode <> amOff;
+      multi.PolygonOrder := poLastOnTop;
+      if not NoBrush then
+      begin
+        if NoPen then
+        begin
+          x1f := x1-0.5;
+          y1f := y1-0.5;
+          x2f := x2+0.5;
+          y2f := y2+0.5;
+        end else
+        begin
+          x1f := x1;
+          y1f := y1;
+          x2f := x2;
+          y2f := y2;
+        end;
+        tex := Brush.BuildTexture(FBitmap);
+        if tex <> nil then
+          multi.AddRoundRectangle(x1f,y1f,x2f,y2f,dx/2,dy/2,tex)
+        else
+          multi.AddRoundRectangle(x1f,y1f,x2f,y2f,dx/2,dy/2,Brush.ActualColor);
+      end;
+      if not NoPen then
+      begin
+        ApplyPenStyle;
+        if Pen.Style = psSolid then
+          multi.AddRoundRectangleBorder(x1,y1,x2,y2,dx/2,dy/2, Pen.ActualWidth ,Pen.ActualColor)
+        else
+          multi.AddPolygon(FBitmap.ComputeWidePolygon(ComputeRoundRect(x1,y1,x2,y2,dx/2,dy/2), Pen.ActualWidth),
+                           Pen.ActualColor);
+      end;
+      multi.Draw(FBitmap);
+      multi.Free;
+    end;
   end;
-  multi.Draw(FBitmap);
-  multi.Free;
 end;
 
 procedure TBGRACanvas.RoundRect(const bounds: TRect; dx,dy: integer);
@@ -1059,14 +1339,11 @@ end;
 
 procedure TBGRACanvas.FillRect(x1, y1, x2, y2: integer);
 var
-  tex: IBGRAScanner;
+  b: TUniversalBrush;
 begin
   if NoBrush then exit;
-  tex := Brush.BuildTexture(FBitmap);
-  if tex <> nil then
-    FBitmap.FillRect(x1,y1,x2,y2,tex,dmDrawWithTransparency)
-  else
-    FBitmap.FillRect(x1,y1,x2,y2,Brush.ActualColor,dmDrawWithTransparency);
+  Brush.GetUniversalBrush(FBitmap, b);
+  FBitmap.FillRect(x1,y1,x2,y2, b);
 end;
 
 procedure TBGRACanvas.FillRect(const bounds: TRect);
@@ -1076,8 +1353,9 @@ end;
 
 procedure TBGRACanvas.FrameRect(x1, y1, x2, y2: integer; width: integer = 1);
 var
-  tex: IBGRAScanner;
   Temp: integer;
+  b: TUniversalBrush;
+  ofs: single;
 begin
   if (x1= x2) or (y1 =y2) or NoBrush then exit;
   if x1 > x2 then
@@ -1095,13 +1373,12 @@ begin
   dec(x2);
   dec(y2);
 
-  tex := Brush.BuildTexture(FBitmap);
+  Brush.GetUniversalBrush(FBitmap, b);
   FBitmap.PenStyle := psSolid;
   FBitmap.JoinStyle := pjsMiter;
-  if tex <> nil then
-    FBitmap.RectangleAntialias(x1,y1,x2,y2,tex,width)
-  else
-    FBitmap.RectangleAntialias(x1,y1,x2,y2,Brush.ActualColor,width);
+  if not odd(width) and (AntialiasingMode = amOff) then
+    ofs := 0.5 else ofs := 0;
+  FBitmap.RectangleAntialias(x1+ofs, y1+ofs, x2+ofs, y2+ofs, b, width);
 end;
 
 procedure TBGRACanvas.FrameRect(const bounds: TRect; width: integer = 1);
@@ -1234,28 +1511,13 @@ end;
 procedure TBGRACanvas.FloodFill(X, Y: Integer; FillColor: TBGRAPixel;
   FillStyle: TFillStyle);
 var
-  tex: IBGRAScanner;
-  texRepeat,mask: TBGRACustomBitmap;
+  b: TUniversalBrush;
 begin
-  tex := Brush.BuildTexture(FBitmap);
   if FillStyle = fsSurface then
   begin
     if FBitmap.GetPixel(X,Y) <> FillColor then exit;
-    if tex <> nil then
-    begin
-      texRepeat := FBitmap.NewBitmap(FBitmap.Width,FBitmap.Height);
-      texRepeat.Fill(tex);
-      mask := FBitmap.NewBitmap(FBitmap.Width,FBitmap.Height);
-      mask.Fill(BGRABlack);
-      FBitmap.ParallelFloodFill(X,Y,mask,BGRAWhite,fmSet);
-      texRepeat.ApplyMask(mask);
-      mask.Free;
-      FBitmap.PutImage(0,0,texRepeat,dmDrawWithTransparency);
-      texRepeat.Free;
-    end
-    else
-      if Brush.ActualColor.alpha <> 0 then
-        FBitmap.FloodFill(X,Y,Brush.ActualColor,fmDrawWithTransparency);
+    Brush.GetUniversalBrush(FBitmap, b);
+    FBitmap.FloodFill(X,Y, b, false);
   end;
    //fsBorder not handled
 end;
@@ -1267,7 +1529,7 @@ end;
 
 procedure TBGRACanvas.Polygon(const APoints: array of TPoint);
 begin
-  Polygon(@APoints[0],length(APoints),FillMode = fmWinding);
+  Polygon(@APoints[0],length(APoints), FillMode = fmWinding);
 end;
 
 procedure TBGRACanvas.Polygon(const Points: array of TPoint; Winding: Boolean;
@@ -1275,7 +1537,7 @@ procedure TBGRACanvas.Polygon(const Points: array of TPoint; Winding: Boolean;
 begin
   if (StartIndex < 0) or (StartIndex >= length(Points)) then exit;
   if NumPts < 0 then NumPts := length(Points)-StartIndex;
-  Polygon(@Points[StartIndex],NumPts,Winding);
+  Polygon(@Points[StartIndex], NumPts, Winding);
 end;
 
 procedure TBGRACanvas.Polygon(Points: PPoint; NumPts: Integer; Winding: boolean);
@@ -1292,7 +1554,7 @@ begin
     ptsF[i] := PointF(Points^.x,Points^.y)+Ofs;
     inc(Points);
   end;
-  PolygonF(ptsF,Winding);
+  PolygonF(ptsF, Winding);
 end;
 
 procedure TBGRACanvas.PolygonF(const APoints: array of TPointF);
@@ -1302,33 +1564,47 @@ end;
 
 procedure TBGRACanvas.PolygonF(const APoints: array of TPointF; Winding: Boolean; FillOnly: Boolean = False);
 var
+  hasPen, hasBrush: Boolean;
+  b: TUniversalBrush;
+  penPts: ArrayOfTPointF;
   multi: TBGRAMultishapeFiller;
   tex: IBGRAScanner;
 begin
-  if NoPen and NoBrush then exit;
-
-  multi := TBGRAMultishapeFiller.Create;
-  multi.Antialiasing := AntialiasingMode <> amOff;
-  if Winding then multi.FillMode := fmWinding else
-    multi.FillMode := fmAlternate;
-  multi.PolygonOrder := poLastOnTop;
-
-  if not NoBrush then
-  begin
-    tex := Brush.BuildTexture(FBitmap);
-    if tex <> nil then
-      multi.AddPolygon(APoints,tex)
-    else
-      multi.AddPolygon(APoints,Brush.ActualColor);
-  end;
-
-  if not NoPen and not FillOnly then
+  hasPen := not NoPen and not FillOnly;
+  hasBrush := not NoBrush;
+  if not HasPen and not HasBrush then exit;
+  if hasPen and (Pen.ActualDrawMode <> dmDrawWithTransparency) then
   begin
     ApplyPenStyle;
-    multi.AddPolygon(FBitmap.ComputeWidePolygon(APoints,Pen.ActualWidth),Pen.ActualColor);
+    Pen.GetUniversalBrush(b);
+    penPts := FBitmap.ComputeWidePolygon(APoints, Pen.ActualWidth);
+    if AntialiasingMode = amOff then
+      FBitmap.FillPoly(penPts, b)
+      else FBitmap.FillPolyAntialias(penPts, b);
+    if hasBrush then
+      PolygonF(APoints, Winding, true);
+  end else
+  begin
+    multi := TBGRAMultishapeFiller.Create;
+    multi.Antialiasing := AntialiasingMode <> amOff;
+    if Winding then multi.FillMode := fmWinding else
+      multi.FillMode := fmAlternate;
+    multi.PolygonOrder := poLastOnTop;
+    if hasBrush then
+    begin
+      tex := Brush.BuildTexture(FBitmap);
+      if tex <> nil then
+        multi.AddPolygon(APoints, tex)
+        else multi.AddPolygon(APoints, Brush.ActualColor);
+    end;
+    if hasPen then
+    begin
+      ApplyPenStyle;
+      multi.AddPolygon(FBitmap.ComputeWidePolygon(APoints,Pen.ActualWidth), Pen.ActualColor);
+    end;
+    multi.Draw(FBitmap);
+    multi.Free
   end;
-  multi.Draw(FBitmap);
-  multi.Free
 end;
 
 procedure TBGRACanvas.Polyline(const APoints: array of TPoint);

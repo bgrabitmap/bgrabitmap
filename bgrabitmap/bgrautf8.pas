@@ -8,6 +8,13 @@ interface
 uses
   Classes, SysUtils, BGRAUnicode{$IFDEF BGRABITMAP_USE_LCL}, lazutf8classes{$ENDIF};
 
+const
+  UTF8_ARABIC_ALEPH = 'ا';
+  UTF8_ARABIC_ALEPH_HAMZA_BELOW = 'إ';
+  UTF8_ARABIC_ALEPH_HAMZA_ABOVE = 'أ';
+  UTF8_ARABIC_ALEPH_MADDA_ABOVE = 'آ';
+  UTF8_ARABIC_LAM = 'ل';
+
 {$IFDEF BGRABITMAP_USE_LCL}
 type
   TFileStreamUTF8 = lazutf8classes.TFileStreamUTF8;
@@ -51,6 +58,7 @@ function FileOpenUTF8(Const FileName : string; Mode : Integer) : THandle;
 function FileCreateUTF8(Const FileName : string) : THandle; overload;
 function FileCreateUTF8(Const FileName : string; Rights: Cardinal) : THandle; overload;
 function FileExistsUTF8(Const FileName : string): boolean;
+function DeleteFileUTF8(Const FileName : string): boolean;
 function FindFirstUTF8(const Path: string; Attr: Longint; out Rslt: TSearchRec): Longint;
 function FindNextUTF8(var Rslt: TSearchRec): Longint;
 procedure FindCloseUTF8(var F: TSearchrec);
@@ -72,6 +80,7 @@ type
   end;
   TBidiUTF8Array = packed array of TBidiUTF8Info;
   TUnicodeDisplayOrder = BGRAUnicode.TUnicodeDisplayOrder;
+  TUnicodeBidiInfo = BGRAUnicode.TUnicodeBidiInfo;
 
 function GetBidiClassUTF8(P: PChar): TUnicodeBidiClass;
 function GetFirstStrongBidiClassUTF8(const sUTF8: string): TUnicodeBidiClass;
@@ -86,6 +95,7 @@ function ContainsBidiIsolateOrFormattingUTF8(const sUTF8: string): boolean;
 
 function UTF8OverrideDirection(const sUTF8: string; ARightToLeft: boolean): string;
 function UTF8EmbedDirection(const sUTF8: string; ARightToLeft: boolean): string;
+function UTF8Ligature(const sUTF8: string; ARightToLeft: boolean; ALigatureLeft, ALigatureRight: boolean): string;
 
 //little endian stream functions
 function LEReadInt64(Stream: TStream): int64;
@@ -160,6 +170,11 @@ end;
 function FileExistsUTF8(Const FileName : string): boolean;
 begin
   result := LazFileUtils.FileExistsUTF8(FileName);
+end;
+
+function DeleteFileUTF8(const FileName: string): boolean;
+begin
+  result := LazFileUtils.DeleteFileUTF8(FileName);
 end;
 
 function FindFirstUTF8(const Path: string; Attr: Longint; out Rslt: TSearchRec
@@ -817,6 +832,18 @@ begin
     result := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_EMBEDDING) + sUTF8 + UnicodeCharToUTF8(UNICODE_POP_DIRECTIONAL_FORMATTING)
   else
     result := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_EMBEDDING) + sUTF8 + UnicodeCharToUTF8(UNICODE_POP_DIRECTIONAL_FORMATTING);
+end;
+
+function UTF8Ligature(const sUTF8: string; ARightToLeft: boolean;
+  ALigatureLeft, ALigatureRight: boolean): string;
+begin
+  result := sUTF8;
+  if (ALigatureRight and ARightToLeft) or
+     (ALigatureLeft and not ARightToLeft) then
+     result := UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER) + result;
+  if (ALigatureLeft and ARightToLeft) or
+     (ALigatureRight and not ARightToLeft) then
+     result := result + UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
 end;
 
 //little endian stream functions
