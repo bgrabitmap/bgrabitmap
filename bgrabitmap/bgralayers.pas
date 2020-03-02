@@ -435,13 +435,25 @@ const
   RenderSubDirectory = 'render';
   RegistrySubDirectory = 'registry';
 
+type
+  TOnLayeredBitmapLoadStartProcList = specialize TFPGList<TOnLayeredBitmapLoadStartProc>;
+  TOnLayeredBitmapLoadProgressProcList = specialize TFPGList<TOnLayeredBitmapLoadProgressProc>;
+  TOnLayeredBitmapLoadedProcList = specialize TFPGList<TOnLayeredBitmapLoadedProc>;
+  TOnLayeredBitmapSaveStartProcList = specialize TFPGList<TOnLayeredBitmapSaveStartProc>;
+  TOnLayeredBitmapSaveProgressProcList = specialize TFPGList<TOnLayeredBitmapSaveProgressProc>;
+  TOnLayeredBitmapSavedProcList = specialize TFPGList<TOnLayeredBitmapSavedProc>;
+
 var
-  OnLayeredBitmapLoadStartProc: TOnLayeredBitmapLoadStartProc;
-  OnLayeredBitmapLoadProgressProc: TOnLayeredBitmapLoadProgressProc;
-  OnLayeredBitmapLoadedProc: TOnLayeredBitmapLoadedProc;
-  OnLayeredBitmapSaveStartProc: TOnLayeredBitmapSaveStartProc;
-  OnLayeredBitmapSaveProgressProc: TOnLayeredBitmapSaveProgressProc;
-  OnLayeredBitmapSavedProc: TOnLayeredBitmapSavedProc;
+  LayeredBitmapLoadEvents: record
+    OnStart: TOnLayeredBitmapLoadStartProcList;
+    OnProgress: TOnLayeredBitmapLoadProgressProcList;
+    OnDone: TOnLayeredBitmapLoadedProcList;
+  end;
+  LayeredBitmapSaveEvents: record
+    OnStart: TOnLayeredBitmapSaveStartProcList;
+    OnProgress: TOnLayeredBitmapSaveProgressProcList;
+    OnDone: TOnLayeredBitmapSavedProcList;
+  end;
 
 var
   NextLayerUniqueId: cardinal;
@@ -3406,37 +3418,56 @@ begin
 end;
 
 procedure OnLayeredBitmapLoadStart(AFilenameUTF8: string);
+var i: Integer;
 begin
-  if Assigned(OnLayeredBitmapLoadStartProc) then
-    OnLayeredBitmapLoadStartProc(AFilenameUTF8);
+  with LayeredBitmapLoadEvents do if Assigned(OnStart) then
+    for i := 0 to OnStart.Count-1 do OnStart[i](AFilenameUTF8);
 end;
 
 procedure OnLayeredBitmapLoadProgress(APercentage: integer);
+var i: Integer;
 begin
-  if Assigned(OnLayeredBitmapLoadProgressProc) then
-    OnLayeredBitmapLoadProgressProc(APercentage);
+  with LayeredBitmapLoadEvents do if Assigned(OnProgress) then
+    for i := 0 to OnProgress.Count-1 do OnProgress[i](APercentage);
 end;
 
 procedure OnLayeredBitmapLoaded;
+var i: Integer;
 begin
-  if Assigned(OnLayeredBitmapLoadedProc) then
-    OnLayeredBitmapLoadedProc;
+  with LayeredBitmapLoadEvents do if Assigned(OnDone) then
+    for i := 0 to OnDone.Count-1 do OnDone[i];
 end;
 
 procedure RegisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc;
   AProgress: TOnLayeredBitmapLoadProgressProc; ADone: TOnLayeredBitmapLoadedProc);
 begin
-  OnLayeredBitmapLoadProgressProc:= AProgress;
-  OnLayeredBitmapLoadStartProc := AStart;
-  OnLayeredBitmapLoadedProc:= ADone;
+  with LayeredBitmapLoadEvents do begin
+    if (AStart <> nil) and ((OnStart = nil) or (OnStart.IndexOf(AStart) = -1)) then
+    begin
+      if OnStart = nil then OnStart := TOnLayeredBitmapLoadStartProcList.Create;
+      OnStart.Add(AStart);
+    end;
+    if (AProgress <> nil) and ((OnProgress = nil) or (OnProgress.IndexOf(AProgress) = -1)) then
+    begin
+      if OnProgress = nil then OnProgress := TOnLayeredBitmapLoadProgressProcList.Create;
+      OnProgress.Add(AProgress);
+    end;
+    if (ADone <> nil) and ((OnDone = nil) or (OnDone.IndexOf(ADone) = -1)) then
+    begin
+      if OnDone = nil then OnDone := TOnLayeredBitmapLoadedProcList.Create;
+      OnDone.Add(ADone);
+    end;
+  end;
 end;
 
 procedure UnregisterLoadingHandler(AStart: TOnLayeredBitmapLoadStartProc;
   AProgress: TOnLayeredBitmapLoadProgressProc; ADone: TOnLayeredBitmapLoadedProc);
 begin
-  if OnLayeredBitmapLoadProgressProc = AProgress then OnLayeredBitmapLoadProgressProc := nil;
-  if OnLayeredBitmapLoadStartProc = AStart then OnLayeredBitmapLoadStartProc := nil;
-  if OnLayeredBitmapLoadedProc = ADone then OnLayeredBitmapLoadedProc := nil;
+  with LayeredBitmapLoadEvents do begin
+    if Assigned(OnStart) then OnStart.Remove(AStart);
+    if Assigned(OnProgress) then OnProgress.Remove(AProgress);
+    if Assigned(OnDone) then OnDone.Remove(ADone);
+  end;
 end;
 
 procedure OnLayeredBitmapSaveToStreamStart;
@@ -3445,37 +3476,56 @@ begin
 end;
 
 procedure OnLayeredBitmapSaveStart(AFilenameUTF8: string);
+var i: Integer;
 begin
-  if Assigned(OnLayeredBitmapSaveStartProc) then
-    OnLayeredBitmapSaveStartProc(AFilenameUTF8);
+  with LayeredBitmapSaveEvents do if Assigned(OnStart) then
+    for i := 0 to OnStart.Count-1 do OnStart[i](AFilenameUTF8);
 end;
 
 procedure OnLayeredBitmapSaveProgress(APercentage: integer);
+var i: Integer;
 begin
-  if Assigned(OnLayeredBitmapSaveProgressProc) then
-    OnLayeredBitmapSaveProgressProc(APercentage);
+  with LayeredBitmapSaveEvents do if Assigned(OnProgress) then
+    for i := 0 to OnProgress.Count-1 do OnProgress[i](APercentage);
 end;
 
 procedure OnLayeredBitmapSaved;
+var i: Integer;
 begin
-  if Assigned(OnLayeredBitmapSavedProc) then
-    OnLayeredBitmapSavedProc;
+  with LayeredBitmapSaveEvents do if Assigned(OnDone) then
+    for i := 0 to OnDone.Count-1 do OnDone[i];
 end;
 
 procedure RegisterSavingHandler(AStart: TOnLayeredBitmapSaveStartProc;
   AProgress: TOnLayeredBitmapSaveProgressProc; ADone: TOnLayeredBitmapSavedProc);
 begin
-  OnLayeredBitmapSaveProgressProc:= AProgress;
-  OnLayeredBitmapSaveStartProc := AStart;
-  OnLayeredBitmapSavedProc:= ADone;
+  with LayeredBitmapSaveEvents do begin
+    if (AStart <> nil) and ((OnStart = nil) or (OnStart.IndexOf(AStart) = -1)) then
+    begin
+      if OnStart = nil then OnStart := TOnLayeredBitmapSaveStartProcList.Create;
+      OnStart.Add(AStart);
+    end;
+    if (AProgress <> nil) and ((OnProgress = nil) or (OnProgress.IndexOf(AProgress) = -1)) then
+    begin
+      if OnProgress = nil then OnProgress := TOnLayeredBitmapSaveProgressProcList.Create;
+      OnProgress.Add(AProgress);
+    end;
+    if (ADone <> nil) and ((OnDone = nil) or (OnDone.IndexOf(ADone) = -1)) then
+    begin
+      if OnDone = nil then OnDone := TOnLayeredBitmapSavedProcList.Create;
+      OnDone.Add(ADone);
+    end;
+  end;
 end;
 
 procedure UnregisterSavingHandler(AStart: TOnLayeredBitmapSaveStartProc;
   AProgress: TOnLayeredBitmapSaveProgressProc; ADone: TOnLayeredBitmapSavedProc);
 begin
-  if OnLayeredBitmapSaveProgressProc = AProgress then OnLayeredBitmapSaveProgressProc := nil;
-  if OnLayeredBitmapSaveStartProc = AStart then OnLayeredBitmapSaveStartProc := nil;
-  if OnLayeredBitmapSavedProc = ADone then OnLayeredBitmapSavedProc := nil;
+  with LayeredBitmapSaveEvents do begin
+    if Assigned(OnStart) then OnStart.Remove(AStart);
+    if Assigned(OnProgress) then OnProgress.Remove(AProgress);
+    if Assigned(OnDone) then OnDone.Remove(ADone);
+  end;
 end;
 
 procedure RegisterLayeredBitmapWriter(AExtensionUTF8: string; AWriter: TBGRALayeredBitmapClass);
@@ -3492,6 +3542,19 @@ end;
 initialization
 
   NextLayerUniqueId := 1;
+
+finalization
+
+  with LayeredBitmapLoadEvents do begin
+    OnStart.Free;
+    OnProgress.Free;
+    OnDone.Free;
+  end;
+  with LayeredBitmapSaveEvents do begin
+    OnStart.Free;
+    OnProgress.Free;
+    OnDone.Free;
+  end;
 
 end.
 
