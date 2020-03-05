@@ -242,7 +242,7 @@ var
 
   polygonF: array of TPointF;
 
-  function CheckPixel(const APixel: TBGRAPixel): boolean;
+  function CheckPixel(const APixel: TBGRAPixel): boolean; inline;
   begin
     result := (APixel.green <= 128) xor not AWhiteBackground;
   end;
@@ -652,9 +652,86 @@ var
     MakePolygon(cycle);
   end;
 
+  function GetBoundsWithin: TRect;
+  var p: PBGRAPixel;
+    yb, xb, xb2, maxx, maxy, minx, miny: LongInt;
+  begin
+    maxx := ARect.Left-1;
+    maxy := ARect.Top-1;
+    minx := ARect.Right;
+    miny := ARect.Bottom;
+    for yb := ARect.Top to ARect.Bottom-1 do
+    begin
+      p := ASource.ScanLine[yb] + ARect.Left;
+      for xb := ARect.Left to ARect.Right - 1 do
+      begin
+        if CheckPixel(p^) then
+        begin
+          if xb < minx then minx := xb;
+          if yb < miny then miny := yb;
+          if xb > maxx then maxx := xb;
+          if yb > maxy then maxy := yb;
+
+          inc(p, ARect.Right-1-xb);
+          for xb2 := ARect.Right-1 downto xb+1 do
+          begin
+            if CheckPixel(p^) then
+            begin
+              if xb2 > maxx then maxx := xb2;
+              break;
+            end;
+            dec(p);
+          end;
+          break;
+        end;
+        Inc(p);
+      end;
+    end;
+    if minx > maxx then Result := EmptyRect
+    else
+    begin
+      Result.left   := minx;
+      Result.top    := miny;
+      Result.right  := maxx + 1;
+      Result.bottom := maxy + 1;
+    end;
+  end;
+
+  function IsRectFull: boolean;
+  var
+    yb, xb: LongInt;
+    p: PBGRAPixel;
+  begin
+    for yb := ARect.Top to ARect.Bottom-1 do
+    begin
+      p := ASource.ScanLine[yb] + ARect.Left;
+      for xb := ARect.Left to ARect.Right - 1 do
+      begin
+        if not CheckPixel(p^) then exit(false);
+        inc(p);
+      end;
+    end;
+    result := true;
+  end;
+
 begin
   IntersectRect(ARect, ARect, rect(0,0,ASource.Width,ASource.Height));
   if IsRectEmpty(ARect) then exit(nil);
+  ARect := GetBoundsWithin;
+  if IsRectEmpty(ARect) then exit(nil);
+
+  factor := AZoom;
+  offset := AZoom*0.5;
+  if APixelCenteredCoordinates then Offset -= 0.5;
+
+  if IsRectFull then
+  begin
+    result := PointsF([PointF((ARect.Left-0.5)*factor+offset, (ARect.Top-0.5)*factor+offset),
+                       PointF((ARect.Left-0.5)*factor+offset, (ARect.Bottom-0.5)*factor+offset),
+                       PointF((ARect.Right-0.5)*factor+offset, (ARect.Bottom-0.5)*factor+offset),
+                       PointF((ARect.Right-0.5)*factor+offset, (ARect.Top-0.5)*factor+offset)]);
+    exit;
+  end;
 
   iDiag := round((ADiagonalFillPercent-50)/100 * iHalf)*2; //even rounding to keep alignment with iOut
   iOut := (iHalf-iDiag) div 2;
@@ -1026,9 +1103,8 @@ begin
     end;
   end;
 
-  factor := AZoom/iUnit;
-  offset := AZoom*0.5;
-  if APixelCenteredCoordinates then Offset -= 0.5;
+  factor /= iUnit;
+
   for n := 0 to nbPoints-1 do
     with points[n] do
     if not drawn and not removed then
