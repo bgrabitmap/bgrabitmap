@@ -638,6 +638,11 @@ const
   function StrToGradientType(str: string): TGradientType;
 
 type
+  TBGRAGradientGetColorAtFunc = function(position: integer): TBGRAPixel of object;
+  TBGRAGradientGetColorAtFloatFunc = function(position: single): TBGRAPixel of object;
+  TBGRAGradientGetExpandedColorAtFunc = function(position: integer): TExpandedPixel of object;
+  TBGRAGradientGetExpandedColorAtFloatFunc = function(position: single): TExpandedPixel of object;
+
   { TBGRACustomGradient }
   {* Defines a gradient of color, not specifying its shape but only the
      series of colors }

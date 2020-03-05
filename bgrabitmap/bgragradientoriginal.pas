@@ -464,7 +464,6 @@ procedure TBGRALayerGradientOriginal.Render(ADest: TBGRABitmap;
   AMatrix: TAffineMatrix; ADraft: boolean; ADrawMode: TDrawMode);
 var
   grad: TBGRACustomScanner;
-  dither: TDitheringAlgorithm;
   temp: TBGRABitmap;
 begin
   if ADraft and (ADest.ClipRect.Width*ADest.ClipRect.Height > 512*512) then
@@ -478,8 +477,9 @@ begin
   end else
   begin
     grad := CreateScanner(AMatrix, ADraft);
-    if ADraft then dither := daNearestNeighbor else dither := daFloydSteinberg;
-    ADest.FillRect(ADest.ClipRect, grad,ADrawMode, dither);
+    if ADraft then
+      ADest.FillRect(ADest.ClipRect, grad,ADrawMode)
+      else ADest.FillRect(ADest.ClipRect, grad,ADrawMode, daFloydSteinberg);
     grad.Free;
   end;
 end;

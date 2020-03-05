@@ -160,6 +160,8 @@ type
     FAverageExpandedColor: TExpandedPixel;
     FScanNextFunc: TBGRAGradientScannerInternalScanNextFunc;
     FScanAtFunc: TBGRAGradientScannerInternalScanAtFunc;
+    FGetGradientColor: TBGRAGradientGetColorAtFloatFunc;
+    FGetGradientExpandedColor: TBGRAGradientGetExpandedColorAtFloatFunc;
     FFocalDistance: single;
     FFocalDirection, FFocalNormal: TPointF;
     FRadialDenominator, FRadialDeltaSign, maxW1, maxW2: single;
@@ -198,8 +200,14 @@ type
     function ScanNextExpandedInline: TExpandedPixel; inline;
     procedure SetTransform(AValue: TAffineMatrix);
     procedure SetFlipGradient(AValue: boolean);
+    procedure SetSinus(AValue: boolean);
     function GetGradientColor(a: single): TBGRAPixel;
     function GetGradientExpandedColor(a: single): TExpandedPixel;
+    function GetGradientColorFlipped(a: single): TBGRAPixel;
+    function GetGradientExpandedColorFlipped(a: single): TExpandedPixel;
+    function GetGradientColorSinus(a: single): TBGRAPixel;
+    function GetGradientExpandedColorSinus(a: single): TExpandedPixel;
+    procedure UpdateGetGradientColorFunctions;
   public
     constructor Create(AGradientType: TGradientType; AOrigin, d1: TPointF); overload;
     constructor Create(AGradientType: TGradientType; AOrigin, d1, d2: TPointF); overload;
@@ -232,7 +240,7 @@ type
     property Transform: TAffineMatrix read FTransform write SetTransform;
     property Gradient: TBGRACustomGradient read FGradient;
     property FlipGradient: boolean read FFlipGradient write SetFlipGradient;
-    property Sinus: boolean Read FSinus write FSinus;
+    property Sinus: boolean Read FSinus write SetSinus;
   end;
 
   { TBGRAConstantScanner }
@@ -1186,6 +1194,7 @@ procedure TBGRAGradientScanner.SetFlipGradient(AValue: boolean);
 begin
   if FFlipGradient=AValue then Exit;
   FFlipGradient:=AValue;
+  UpdateGetGradientColorFunctions;
 end;
 
 function TBGRAGradientScanner.GetGradientColor(a: single): TBGRAPixel;
@@ -1226,6 +1235,59 @@ begin
   end;
 end;
 
+function TBGRAGradientScanner.GetGradientColorFlipped(a: single): TBGRAPixel;
+begin
+  result := FGradient.GetColorAtF(1 - a);
+end;
+
+function TBGRAGradientScanner.GetGradientExpandedColorFlipped(a: single): TExpandedPixel;
+begin
+  result := FGradient.GetExpandedColorAtF(1 - a);
+end;
+
+function TBGRAGradientScanner.GetGradientColorSinus(a: single): TBGRAPixel;
+begin
+  if FFlipGradient then a := 1-a;
+  a *= 65536;
+  if (a <= low(int64)) or (a >= high(int64)) then
+    result := FAverageColor
+    else result := FGradient.GetColorAt(Sin65536(round(a) and 65535));
+end;
+
+function TBGRAGradientScanner.GetGradientExpandedColorSinus(a: single): TExpandedPixel;
+begin
+  if FFlipGradient then a := 1-a;
+  a *= 65536;
+  if (a <= low(int64)) or (a >= high(int64)) then
+    result := FAverageExpandedColor
+    else result := FGradient.GetExpandedColorAt(Sin65536(round(a) and 65535));
+end;
+
+procedure TBGRAGradientScanner.UpdateGetGradientColorFunctions;
+begin
+  if FSinus then
+  begin
+    FGetGradientColor:= @GetGradientColorSinus;
+    FGetGradientExpandedColor:= @GetGradientExpandedColorSinus;
+  end else
+  if FFlipGradient then
+  begin
+    FGetGradientColor:= @GetGradientColorFlipped;
+    FGetGradientExpandedColor:= @GetGradientExpandedColorFlipped;
+  end else
+  begin
+    FGetGradientColor:= @FGradient.GetColorAtF;
+    FGetGradientExpandedColor:= @FGradient.GetExpandedColorAtF;
+  end;
+end;
+
+procedure TBGRAGradientScanner.SetSinus(AValue: boolean);
+begin
+  if FSinus=AValue then Exit;
+  FSinus:=AValue;
+  UpdateGetGradientColorFunctions;
+end;
+
 procedure TBGRAGradientScanner.Init(AGradientType: TGradientType; AOrigin, d1: TPointF;
   ATransform: TAffineMatrix; Sinus: Boolean);
 var d2: TPointF;
@@ -1253,6 +1315,7 @@ begin
 
   InitGradientType;
   InitTransform;
+  UpdateGetGradientColorFunctions;
 end;
 
 procedure TBGRAGradientScanner.Init(AOrigin: TPointF; ARadius: single;
@@ -1277,6 +1340,7 @@ begin
 
   InitGradientType;
   InitTransform;
+  UpdateGetGradientColorFunctions;
 end;
 
 procedure TBGRAGradientScanner.InitGradientType;
@@ -1396,20 +1460,20 @@ begin
 
   case FGradientType of
     gtReflected: FRepeatHoriz := (FMatrix[1,1]=0);
-    gtDiamond,gtAngular: FRepeatHoriz:= FIsAverage;
+    gtDiamond,gtAngular: FRepeatHoriz:= false;
     gtRadial: begin
+      FRepeatHoriz:= false;
       if FFocalRadius = FRadius then FIsAverage:= true;
-      FRepeatHoriz:= FIsAverage;
     end
   else
     {gtLinear:} FRepeatHoriz := (FMatrix[1,1]=0);
   end;
 
   if FGradient.Monochrome then
-  begin
-    FRepeatHoriz:= true;
     FIsAverage:= true;
-  end;
+
+  if FIsAverage then
+    FRepeatHoriz:= true;
 
   FPosition := PointF(0,0);
 end;
@@ -1418,6 +1482,7 @@ procedure TBGRAGradientScanner.InitGradient;
 begin
   FAverageColor := FGradient.GetAverageColor;
   FAverageExpandedColor := FGradient.GetAverageExpandedColor;
+  UpdateGetGradientColorFunctions;
 end;
 
 function TBGRAGradientScanner.ComputeRadialFocal(const p: TPointF): single;
@@ -1531,24 +1596,16 @@ end;
 
 function TBGRAGradientScanner.ScanNextInline: TBGRAPixel;
 begin
-  if FIsAverage then
-    result := FAverageColor
-  else
-  begin
-    result := GetGradientColor(FScanNextFunc());
-    FPosition.Offset(FMatrix[1,1],FMatrix[2,1]);
-  end;
+  result := FGetGradientColor(FScanNextFunc());
+  FPosition.x := FPosition.x + FMatrix[1,1];
+  FPosition.y := FPosition.y + FMatrix[2,1];
 end;
 
 function TBGRAGradientScanner.ScanNextExpandedInline: TExpandedPixel;
 begin
-  if FIsAverage then
-    result := FAverageExpandedColor
-  else
-  begin
-    result := GetGradientExpandedColor(FScanNextFunc());
-    FPosition.Offset(FMatrix[1,1],FMatrix[2,1]);
-  end;
+  result := FGetGradientExpandedColor(FScanNextFunc());
+  FPosition.x := FPosition.x + FMatrix[1,1];
+  FPosition.y := FPosition.y + FMatrix[2,1];
 end;
 
 constructor TBGRAGradientScanner.Create(c1, c2: TBGRAPixel;
@@ -1612,8 +1669,15 @@ begin
   FPosition := FMatrix*PointF(x,y);
   if FRepeatHoriz then
   begin
-    FHorizColor := ScanNextInline;
-    FHorizExpandedColor := ScanNextExpandedInline;
+    if FIsAverage then
+    begin
+      FHorizColor := FAverageColor;
+      FHorizExpandedColor := FAverageExpandedColor;
+    end else
+    begin
+      FHorizColor := ScanNextInline;
+      FHorizExpandedColor := ScanNextExpandedInline;
+    end;
   end;
 end;
 
