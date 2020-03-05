@@ -647,12 +647,14 @@ end;
 
 function BGRAWordDiff(c1, c2: TBGRAPixel): word;
 begin
-  result := ExpandedDiff(GammaExpansion(c1),GammaExpansion(c2));
+  if c1 = c2 then result := 0
+  else result := ExpandedDiff(GammaExpansion(c1),GammaExpansion(c2));
 end;
 
 function BGRADiff(c1,c2: TBGRAPixel): byte;
 begin
-  result := ExpandedDiff(GammaExpansion(c1),GammaExpansion(c2)) shr 8;
+  if c1 = c2 then result := 0
+  else result := ExpandedDiff(GammaExpansion(c1),GammaExpansion(c2)) shr 8;
 end;
 
 function FastBGRALinearDiff(c1, c2: TBGRAPixel): byte;

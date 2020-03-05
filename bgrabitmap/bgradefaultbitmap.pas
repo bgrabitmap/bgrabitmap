@@ -1819,6 +1819,7 @@ var
   ctx: TUniBrushContext;
   sameCount, remain: Int32or64;
   startAlpha, nextAlpha: Word;
+  compExpand: TExpandedPixel;
 begin
   if ABrush.Colorspace <> Colorspace then RaiseInvalidBrushColorspace;
   if not CheckHorizLineBounds(x,y,x2) then exit;
@@ -1826,7 +1827,9 @@ begin
   pScan := PBGRAPixel(GetPixelAddress(x,y));
   ABrush.MoveTo(@ctx, pScan,x,y);
   remain := x2-x+1;
-  nextAlpha := (65535 * (AMaxDiffW + 1 - BGRAWordDiff(pScan^, ACompare)) + (AMaxDiffW + 1) shr 1) div (AMaxDiffW + 1);
+  compExpand := ACompare.ToExpanded;
+  if pScan^ = ACompare then nextAlpha := 65535
+  else nextAlpha := (65535 * (AMaxDiffW + 1 - ExpandedDiff(GammaExpansion(pScan^), compExpand)) + (AMaxDiffW + 1) shr 1) div (AMaxDiffW + 1);
   inc(pScan);
   while remain > 0 do
   begin
@@ -1835,7 +1838,8 @@ begin
     dec(remain);
     while remain > 0 do
     begin
-      nextAlpha := (65535 * (AMaxDiffW + 1 - BGRAWordDiff(pScan^, ACompare)) + (AMaxDiffW + 1) shr 1) div (AMaxDiffW + 1);
+      if pScan^ = ACompare then nextAlpha := 65535
+      else nextAlpha := (65535 * (AMaxDiffW + 1 - ExpandedDiff(GammaExpansion(pScan^), compExpand)) + (AMaxDiffW + 1) shr 1) div (AMaxDiffW + 1);
       inc(pScan);
       if nextAlpha = startAlpha then
       begin
@@ -3226,7 +3230,8 @@ procedure TBGRADefaultBitmap.ParallelFloodFill(X, Y: integer;
   Dest: TBGRACustomBitmap; const Brush: TUniversalBrush; Progressive: boolean;
   ToleranceW: Word; DestOfsX: integer; DestOfsY: integer);
 var
-  S:     TBGRAPixel;
+  S: TBGRAPixel;
+  SExpand: TExpandedPixel;
   SX, EX, I: integer;
   Added: boolean;
 
@@ -3235,17 +3240,16 @@ var
 
   Stack:      array of integer;
   StackCount: integer;
+  pScan: PBGRAPixel;
 
   function CheckPixel(AX, AY: integer): boolean; inline;
-  var
-    ComparedColor: TBGRAPixel;
   begin
     if Visited[AX shr 5 + AY * VisitedLineSize] and (1 shl (AX and 31)) <> 0 then
       Result := False
     else
     begin
-      ComparedColor := GetPixel(AX, AY);
-      Result := BGRAWordDiff(ComparedColor, S) <= ToleranceW;
+      if (pScan+AX)^ = S then result := true else
+        Result := ExpandedDiff(GammaExpansion((pScan+AX)^), SExpand) <= ToleranceW;
     end;
   end;
 
@@ -3300,6 +3304,7 @@ begin
   if PtInClipRect(X,Y) then
   begin
     S := GetPixel(X, Y);
+    SExpand := s.ToExpanded;
 
     VisitedLineSize := (Width + 31) shr 5;
     SetLength(Visited, VisitedLineSize * Height);
@@ -3311,6 +3316,7 @@ begin
     Push(X, Y);
     repeat
       Pop(X, Y);
+      pScan := GetScanlineFast(Y);
       if not CheckPixel(X, Y) then
         Continue;
 
@@ -3329,6 +3335,8 @@ begin
 
       Added := False;
       if Y > FClipRect.Top then
+      begin
+        pScan := GetScanlineFast(Pred(Y));
         for I := SX to EX do
           if CheckPixel(I, Pred(Y)) then
           begin
@@ -3339,9 +3347,12 @@ begin
           end
           else
             Added := False;
+      end;
 
       Added := False;
       if Y < Pred(FClipRect.Bottom) then
+      begin
+        pScan := GetScanlineFast(Succ(Y));
         for I := SX to EX do
           if CheckPixel(I, Succ(Y)) then
           begin
@@ -3352,6 +3363,7 @@ begin
           end
           else
             Added := False;
+      end;
     until StackCount <= 0;
   end;
 end;
