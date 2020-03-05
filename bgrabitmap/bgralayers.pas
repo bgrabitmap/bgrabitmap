@@ -3130,7 +3130,10 @@ var
     end else
     //first layer is simply the background
     if ADestinationEmpty and (ABlendOp <> boMask) then
-      Dest.FillRect(ADestRect, AScan, dmSet, Point(AScanOfsX, AScanOfsY), opacity*$0101)
+    begin
+      Dest.FillRect(ADestRect, AScan, dmSet, Point(AScanOfsX, AScanOfsY));
+      Dest.ApplyGlobalOpacity(ADestRect, opacity);
+    end
     else
       Dest.BlendImageOver(ADestRect, AScan, AScanOfsX, AScanOfsY, ABlendOp, opacity, LinearBlend);
   end;
@@ -3142,7 +3145,7 @@ var
 
   procedure BlendBoth(ATile: TRect);
   var
-    mergeBuf, selBuf: PByte;
+    mergeBuf: PByte;
     pTemp: PByte;
     tempStride, rowSize, destStride: PtrInt;
     tileWidth, yb: LongInt;
@@ -3150,8 +3153,9 @@ var
   begin
     tileWidth := ATile.Width;
     rowSize := tileWidth * sizeof(TBGRAPixel);
-    getmem(mergeBuf, rowSize*2);
-    selBuf := mergeBuf+rowSize;
+    if not ADestinationEmpty then
+      getmem(mergeBuf, rowSize)
+      else mergeBuf := nil;
     try
       if tempLayer.LineOrder = riloTopToBottom then
         tempStride := tempLayer.RowSize else tempStride := -tempLayer.RowSize;
@@ -3160,16 +3164,29 @@ var
       pDest := Dest.GetPixelAddress(ATile.Left, ATile.Top);
       if Dest.LineOrder = riloTopToBottom then
         destStride := Dest.RowSize else destStride := -Dest.RowSize;
-      for yb := ATile.Top to ATile.Bottom-1 do
+      if ADestinationEmpty then
       begin
-        move(pTemp^, mergeBuf^, rowSize);
-        SelectionScanner.ScanMoveTo(ATile.Left + selScanOfs.X, yb + selScanOfs.Y);
-        ScannerPutPixels(SelectionScanner, PBGRAPixel(selBuf), tileWidth, dmSet);
-        PutPixels(PBGRAPixel(mergeBuf), PBGRAPixel(selBuf), tileWidth, SelectionDrawMode, 255);
-        BlendPixelsOver(PBGRAPixel(pDest), PBGRAPixel(mergeBuf),
-          blendOp, tileWidth, opacity, LinearBlend);
-        inc(pTemp, tempStride);
-        inc(pDest, destStride);
+        for yb := ATile.Top to ATile.Bottom-1 do
+        begin
+          move(pTemp^, pDest^, rowSize);
+          SelectionScanner.ScanMoveTo(ATile.Left + selScanOfs.X, yb + selScanOfs.Y);
+          ScannerPutPixels(SelectionScanner, PBGRAPixel(pDest), tileWidth, SelectionDrawMode);
+          inc(pTemp, tempStride);
+          inc(pDest, destStride);
+        end;
+        Dest.ApplyGlobalOpacity(ATile, opacity);
+      end else
+      begin
+        for yb := ATile.Top to ATile.Bottom-1 do
+        begin
+          move(pTemp^, mergeBuf^, rowSize);
+          SelectionScanner.ScanMoveTo(ATile.Left + selScanOfs.X, yb + selScanOfs.Y);
+          ScannerPutPixels(SelectionScanner, PBGRAPixel(mergeBuf), tileWidth, SelectionDrawMode);
+          BlendPixelsOver(PBGRAPixel(pDest), PBGRAPixel(mergeBuf),
+              blendOp, tileWidth, opacity, LinearBlend);
+          inc(pTemp, tempStride);
+          inc(pDest, destStride);
+        end;
       end;
     finally
       freemem(mergeBuf);
