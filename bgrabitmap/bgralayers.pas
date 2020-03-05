@@ -114,8 +114,8 @@ type
     procedure Draw(Canvas: TCanvas; x,y: integer); overload;
     procedure Draw(Canvas: TCanvas; x,y: integer; firstLayer, lastLayer: integer); overload;
     procedure Draw(Dest: TBGRABitmap; x,y: integer); overload;
-    procedure Draw(Dest: TBGRABitmap; x,y: integer; ASeparateXorMask: boolean); overload;
-    procedure Draw(Dest: TBGRABitmap; AX,AY: integer; firstLayer, lastLayer: integer; ASeparateXorMask: boolean = false); overload;
+    procedure Draw(Dest: TBGRABitmap; x,y: integer; ASeparateXorMask: boolean; ADestinationEmpty: boolean = false); overload;
+    procedure Draw(Dest: TBGRABitmap; AX,AY: integer; firstLayer, lastLayer: integer; ASeparateXorMask: boolean = false; ADestinationEmpty: boolean = false); overload;
     function DrawLayer(Dest: TBGRABitmap; X,Y: Integer; AIndex: integer; ASeparateXorMask: boolean = false; ADestinationEmpty: boolean = false): boolean;
 
     procedure FreezeExceptOneLayer(layer: integer); overload;
@@ -3022,16 +3022,16 @@ end;
 
 procedure TBGRACustomLayeredBitmap.Draw(Dest: TBGRABitmap; x, y: integer);
 begin
-  Draw(Dest,x,y,0,NbLayers-1);
+  Draw(Dest, x, y, 0, NbLayers-1);
 end;
 
 procedure TBGRACustomLayeredBitmap.Draw(Dest: TBGRABitmap; x, y: integer;
-  ASeparateXorMask: boolean);
+  ASeparateXorMask: boolean; ADestinationEmpty: boolean);
 begin
-  Draw(Dest,x,y,0,NbLayers-1,ASeparateXorMask);
+  Draw(Dest, x, y, 0, NbLayers-1, ASeparateXorMask, ADestinationEmpty);
 end;
 
-procedure TBGRACustomLayeredBitmap.Draw(Dest: TBGRABitmap; AX, AY: integer; firstLayer, lastLayer: integer; ASeparateXorMask: boolean);
+procedure TBGRACustomLayeredBitmap.Draw(Dest: TBGRABitmap; AX, AY: integer; firstLayer, lastLayer: integer; ASeparateXorMask: boolean; ADestinationEmpty: boolean);
 var
   temp: TBGRABitmap;
   i,j: integer;
@@ -3048,10 +3048,11 @@ begin
          and (SelectionDrawMode <> GetLayerDrawMode(i)) ) ) then
     begin
       temp := ComputeFlatImage(rect(NewClipRect.Left-AX,NewClipRect.Top-AY,NewClipRect.Right-AX,NewClipRect.Bottom-AY), ASeparateXorMask);
+      if ADestinationEmpty then
+        Dest.PutImage(NewClipRect.Left, NewClipRect.Top, temp, dmSet) else
       if self.LinearBlend then
-        Dest.PutImage(NewClipRect.Left,NewClipRect.Top,temp,dmLinearBlend)
-      else
-        Dest.PutImage(NewClipRect.Left,NewClipRect.Top,temp,dmDrawWithTransparency);
+        Dest.PutImage(NewClipRect.Left, NewClipRect.Top, temp, dmLinearBlend)
+        else Dest.PutImage(NewClipRect.Left, NewClipRect.Top, temp, dmDrawWithTransparency);
       temp.Free;
       exit;
     end;
@@ -3064,14 +3065,18 @@ begin
       j := GetLayerFrozenRange(i);
       if j <> -1 then
       begin
+        if ADestinationEmpty then
+          Dest.PutImage(AX, AY, FFrozenRange[j].image, dmSet) else
         if not FFrozenRange[j].linearBlend then
           Dest.PutImage(AX, AY, FFrozenRange[j].image, dmDrawWithTransparency)
           else Dest.PutImage(AX, AY, FFrozenRange[j].image, dmLinearBlend);
         i := FFrozenRange[j].lastLayer+1;
+        ADestinationEmpty := false;
         continue;
       end;
     end;
-    DrawLayer(Dest, AX,AY, i, ASeparateXorMask, false);
+    if DrawLayer(Dest, AX,AY, i, ASeparateXorMask, ADestinationEmpty) then
+      ADestinationEmpty := false;
     inc(i);
   end;
 end;
