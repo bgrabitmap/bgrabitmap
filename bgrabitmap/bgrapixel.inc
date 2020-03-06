@@ -514,15 +514,15 @@ function MergeBGRA(c1: TBGRAPixel; weight1: integer; c2: TBGRAPixel;
 var
     f1,f2,f12: int64;
 begin
-  if (weight1 = 0) then
+  if (weight1 = 0) or (c1.alpha = 0) then
   begin
-    if (weight2 = 0) then
+    if (weight2 = 0) or (c2.alpha = 0) then
       result := BGRAPixelTransparent
     else
       Result := c2
   end
   else
-  if (weight2 = 0) then
+  if (weight2 = 0) or (c2.alpha = 0) then
     Result := c1
   else
   if (weight1+weight2 = 0) then
@@ -553,15 +553,15 @@ var
 begin
   w1 := weight1;
   w2 := weight2;
-  if (w1 = 0) then
+  if (w1 = 0) or (c1.alpha = 0) then
   begin
-    if (w2 = 0) then
+    if (w2 = 0) or (c2.alpha = 0) then
       result := BGRAPixelTransparent
     else
       Result := c2
   end
   else
-  if (w2 = 0) then
+  if (w2 = 0) or (c2.alpha = 0) then
     Result := c1
   else
   begin
@@ -647,12 +647,14 @@ end;
 
 function BGRAWordDiff(c1, c2: TBGRAPixel): word;
 begin
-  result := ExpandedDiff(GammaExpansion(c1),GammaExpansion(c2));
+  if c1 = c2 then result := 0
+  else result := ExpandedDiff(GammaExpansion(c1),GammaExpansion(c2));
 end;
 
 function BGRADiff(c1,c2: TBGRAPixel): byte;
 begin
-  result := ExpandedDiff(GammaExpansion(c1),GammaExpansion(c2)) shr 8;
+  if c1 = c2 then result := 0
+  else result := ExpandedDiff(GammaExpansion(c1),GammaExpansion(c2)) shr 8;
 end;
 
 function FastBGRALinearDiff(c1, c2: TBGRAPixel): byte;

@@ -453,13 +453,8 @@ var
       result := AWanted;
   end;
 
-  function GetNextBufferByte: byte;
+  function GetByteFromNextBuffer: byte;
   begin
-    if BufferPos < BufferSize then
-    begin
-      result := Buffer[BufferPos];
-      inc(BufferPos);
-    end else
     if BufferSize = 0 then
       result := $e0
     else
@@ -473,6 +468,16 @@ var
       end else
         result := $e0;
     end;
+  end;
+
+  function GetNextBufferByte: byte; inline;
+  begin
+    if BufferPos < BufferSize then
+    begin
+      result := Buffer[BufferPos];
+      inc(BufferPos);
+    end else
+      result := GetByteFromNextBuffer;
   end;
 
   procedure RepeatValue(AValue: NativeInt; ACount: NativeInt);

@@ -144,12 +144,8 @@ begin
   pDest := PBGRAPixel(AContextData^.Dest);
   if AAlpha >= $ff7f then
   begin
-    while ACount > 0 do
-    begin
-      pDest^ := PBGRASolidBrushFixedData(AFixedData)^.BGRA;
-      inc(pDest);
-      dec(ACount);
-    end;
+    FillDWord(pDest^, ACount, PDWord(@PBGRASolidBrushFixedData(AFixedData)^.BGRA)^);
+    inc(pDest, ACount);
   end else
   begin
     with PBGRASolidBrushFixedData(AFixedData)^ do
@@ -199,11 +195,18 @@ begin
   begin
     pDest := PBGRAPixel(AContextData^.Dest);
     bAlpha := FastRoundDiv257(Expanded.alpha*AAlpha shr 16);
-    while ACount > 0 do
+    if bAlpha = 255 then
     begin
-      DrawExpandedPixelInlineNoAlphaCheck(pDest, Expanded, bAlpha);
-      inc(pDest);
-      dec(ACount);
+      FillDWord(pDest^, ACount, PDWord(@BGRA)^);
+      inc(pDest, ACount);
+    end else
+    begin
+      while ACount > 0 do
+      begin
+        DrawExpandedPixelInlineNoAlphaCheck(pDest, Expanded, bAlpha);
+        inc(pDest);
+        dec(ACount);
+      end;
     end;
     PBGRAPixel(AContextData^.Dest) := pDest;
   end;

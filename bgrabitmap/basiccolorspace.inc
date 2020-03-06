@@ -761,6 +761,9 @@ var
   ColorDiff: word;
   TempHueDiff: word;
 begin
+  if (ec1.alpha = 0) and (ec2.alpha = 0) then exit(0) else
+  if (ec1.alpha = ec2.alpha) and (ec1.red = ec2.red) and
+     (ec1.green = ec2.green) and (ec1.blue = ec2.blue) then exit(0);
   CompRedAlpha1 := ec1.red * ec1.alpha shr 16; //gives 0..65535
   CompGreenAlpha1 := ec1.green * ec1.alpha shr 16;
   CompBlueAlpha1 := ec1.blue * ec1.alpha shr 16;
