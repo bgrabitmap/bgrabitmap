@@ -593,7 +593,7 @@ begin
 end;
 
 procedure TBGRAReaderPNG.BGRAHandleScanLine (const y : integer; const ScanLine : PByteArray);
-var x, rx : integer;
+var rx : integer;
     c : TColorData;
     pdest: PBGRAPixel;
 begin
@@ -630,6 +630,19 @@ begin
            end;
            exit;
          end;
+      3: begin
+           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+           for rx := 0 to ScanlineLength[CurrentPass]-1 do
+           begin
+             pdest^.red := ScanLine^[DataIndex];
+             pdest^.green := ScanLine^[DataIndex+1];
+             pdest^.blue := ScanLine^[DataIndex+2];
+             pdest^.alpha := 255;
+             Inc(pdest, deltaX);
+             inc(DataIndex, 3);
+           end;
+           exit;
+         end;
       4: begin
            pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
            for rx := 0 to ScanlineLength[CurrentPass]-1 do
@@ -646,37 +659,20 @@ begin
            end;
            exit;
          end;
-      8: begin
-           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
-           for rx := 0 to ScanlineLength[CurrentPass]-1 do
-           begin
-             pdest^ := FBGRAConvertColor(
-             {$IFDEF ENDIAN_BIG}
-             swap(PQWord(@ScanLine^[DataIndex])^)
-             {$ELSE}
-             PQWord(@ScanLine^[DataIndex])^
-             {$ENDIF}  );
-             if pdest^.alpha = 0 then pdest^ := BGRAPixelTransparent;
-             Inc(pdest, deltaX);
-             inc(DataIndex,8);
-           end;
-           exit;
-         end;
     end;
   {$POP}
 
-  X := StartX;
+  pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
   for rx := 0 to ScanlineLength[CurrentPass]-1 do
     begin
-    c := CalcColor(ScanLine);
-    FSetPixel (x,y,c);
-    Inc(X, deltaX);
+    pdest^ := FBGRAConvertColor(CalcColor(ScanLine));
+    Inc(pdest, deltaX);
     end
 end;
 
 procedure TBGRAReaderPNG.BGRAHandleScanLineTr(const y: integer;
   const ScanLine: PByteArray);
-var x, rx : integer;
+var rx : integer;
     c : TColorData;
     pdest: PBGRAPixel;
 begin
@@ -766,12 +762,11 @@ begin
          end;
     end;
 
-  X := StartX;
+  pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
   for rx := 0 to ScanlineLength[CurrentPass]-1 do
     begin
-    c := CalcColor(ScanLine);
-    FSetPixel (x,y,c);
-    Inc(X, deltaX);
+    pdest^ := FBGRAConvertColor(CalcColor(ScanLine));
+    Inc(pdest, deltaX);
     end
 end;
 
