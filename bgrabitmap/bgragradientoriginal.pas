@@ -187,7 +187,7 @@ end;
 
 procedure TBGRALayerGradientOriginal.SetEndColor(AValue: TBGRAPixel);
 begin
-  if FEndColor=AValue then Exit;
+  if FEndColor.EqualsExactly(AValue) then Exit;
   BeginUpdate;
   FEndColor:=AValue;
   EndUpdate;
@@ -245,7 +245,7 @@ end;
 
 procedure TBGRALayerGradientOriginal.SetStartColor(AValue: TBGRAPixel);
 begin
-  if FStartColor=AValue then Exit;
+  if FStartColor.EqualsExactly(AValue) then Exit;
   BeginUpdate;
   FStartColor:=AValue;
   EndUpdate;
