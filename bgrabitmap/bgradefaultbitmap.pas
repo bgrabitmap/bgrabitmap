@@ -1221,18 +1221,18 @@ var
   pUpLeft, pUpRight, pDownLeft, pDownRight: PBGRAPixel;
   scan: PBGRAPixel;
 begin
-  if (iy >= 0) and (iy < Height) then
+  if (iy >= 0) and (iy < FHeight) then
   begin
     scan := GetScanlineFast(iy);
 
-    if (ix >= 0) and (ix < Width) then
+    if (ix >= 0) and (ix < FWidth) then
       pUpLeft := scan+ix
     else if smoothBorder then
       pUpLeft := @BGRAPixelTransparent
     else
       pUpLeft := nil;
 
-    if (ix+1 >= 0) and (ix+1 < Width) then
+    if (ix+1 >= 0) and (ix+1 < FWidth) then
       pUpRight := scan+(ix+1)
     else if smoothBorder then
       pUpRight := @BGRAPixelTransparent
@@ -1249,18 +1249,18 @@ begin
     pUpRight := nil;
   end;
 
-  if (iy+1 >= 0) and (iy+1 < Height) then
+  if (iy+1 >= 0) and (iy+1 < FHeight) then
   begin
     scan := GetScanlineFast(iy+1);
 
-    if (ix >= 0) and (ix < Width) then
+    if (ix >= 0) and (ix < FWidth) then
       pDownLeft := scan+ix
     else if smoothBorder then
       pDownLeft := @BGRAPixelTransparent
     else
       pDownLeft := nil;
 
-    if (ix+1 >= 0) and (ix+1 < Width) then
+    if (ix+1 >= 0) and (ix+1 < FWidth) then
       pDownRight := scan+(ix+1)
     else if smoothBorder then
       pDownRight := @BGRAPixelTransparent
