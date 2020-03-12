@@ -1930,6 +1930,7 @@ var
   ConversionFromLab: TBridgedConversion;
   DestStride: PtrInt;
   PDest: PByte;
+  CurPixelValue: TBGRAPixel;
 
   procedure ComputeDestStride;
   begin
@@ -2163,7 +2164,7 @@ begin
           y:= sy;
           if All16Bit then
           begin
-            if CurFPImg is TBGRACustomBitmap then
+            if (CurFPImg is TBGRACustomBitmap) and (IFD.Predictor <> 2) then
             begin
               ComputeDestStride;
               PDest := TBGRACustomBitmap(CurFPImg).GetPixelAddress(sx,sy);
@@ -2227,6 +2228,19 @@ begin
               PDest := TBGRACustomBitmap(CurFPImg).GetPixelAddress(sx,sy);
               if (IFD.PhotoMetricInterpretation = 0) and (SampleCnt = 1) then
               begin
+                if IFD.Predictor = 2 then
+                begin
+                  CurPixelValue := BGRAPixelTransparent;
+                  for cx:=0 to ChunkWidth-1 do begin
+                    {$PUSH}{$R-}inc(CurPixelValue.green, run^);{$POP}
+                    PBGRAPixel(PDest)^.red:= not CurPixelValue.green;
+                    PBGRAPixel(PDest)^.green:= not CurPixelValue.green;
+                    PBGRAPixel(PDest)^.blue:= not CurPixelValue.green;
+                    PBGRAPixel(PDest)^.alpha:= 255;
+                    inc(Run);
+                    inc(PDest, DestStride);
+                  end;
+                end else
                 for cx:=0 to ChunkWidth-1 do begin
                   PBGRAPixel(PDest)^.red:= not (Run^);
                   PBGRAPixel(PDest)^.green:= not (Run^);
@@ -2238,6 +2252,19 @@ begin
               end else
               if (IFD.PhotoMetricInterpretation = 1) and (SampleCnt = 1) then
               begin
+                if IFD.Predictor = 2 then
+                begin
+                  CurPixelValue := BGRAPixelTransparent;
+                  for cx:=0 to ChunkWidth-1 do begin
+                    {$PUSH}{$R-}inc(CurPixelValue.green, run^);{$POP}
+                    PBGRAPixel(PDest)^.red:= CurPixelValue.green;
+                    PBGRAPixel(PDest)^.green:= CurPixelValue.green;
+                    PBGRAPixel(PDest)^.blue:= CurPixelValue.green;
+                    PBGRAPixel(PDest)^.alpha:= 255;
+                    inc(Run);
+                    inc(PDest, DestStride);
+                  end;
+                end else
                 for cx:=0 to ChunkWidth-1 do begin
                   PBGRAPixel(PDest)^.red:= Run^;
                   PBGRAPixel(PDest)^.green:= Run^;
@@ -2249,6 +2276,21 @@ begin
               end else
               if (IFD.PhotoMetricInterpretation = 2) and (SampleCnt = 3) then
               begin
+                if IFD.Predictor = 2 then
+                begin
+                  CurPixelValue := BGRAPixelTransparent;
+                  for cx:=0 to ChunkWidth-1 do begin
+                    {$PUSH}{$R-}inc(CurPixelValue.red, run^);{$POP}
+                    {$PUSH}{$R-}inc(CurPixelValue.green, (run+1)^);{$POP}
+                    {$PUSH}{$R-}inc(CurPixelValue.blue, (run+2)^);{$POP}
+                    PBGRAPixel(PDest)^.red:= CurPixelValue.red;
+                    PBGRAPixel(PDest)^.green:= CurPixelValue.green;
+                    PBGRAPixel(PDest)^.blue:= CurPixelValue.blue;
+                    PBGRAPixel(PDest)^.alpha:= 255;
+                    inc(Run,3);
+                    inc(PDest, DestStride);
+                  end;
+                end else
                 for cx:=0 to ChunkWidth-1 do begin
                   PBGRAPixel(PDest)^.red:= Run^;
                   PBGRAPixel(PDest)^.green:= (Run+1)^;
