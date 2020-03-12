@@ -82,15 +82,50 @@ const //flag to distinguish ranges of opcodes
 
 
 procedure EncodeLazRLE(var sourceBuffer; size:PtrInt; ADest: TStream);
+const BufferSize = 4096;
 var
+  buffer: array[0..BufferSize-1] of byte;
+  bufferPos: integer;
   smallRepetitions: array[0..maxSmallRepCount-1] of record
     value: NativeInt;
     count: NativeInt; //minSmallRep..maxSmallRep
   end;
   smallRepetitionsCount, smallRepTotal: NativeInt;
-  buf: TStream;
   previousWordSizeRepetition, previousByteSizeRepetition: NativeInt;
   lastPackedDumpValue: NativeInt;
+
+  procedure FlushBuffer;
+  begin
+    ADest.WriteBuffer(buffer, BufferSize);
+    bufferPos := 0;
+  end;
+
+  procedure WriteByte(b: byte); inline;
+  begin
+    buffer[bufferPos] := b;
+    inc(bufferPos);
+    if bufferPos = BufferSize then FlushBuffer;
+  end;
+
+  procedure WriteBytes(p: PByte; ACount: integer);
+  var
+    writeCount: Integer;
+  begin
+    while bufferPos+ACount >= BufferSize do
+    begin
+      writeCount := BufferSize-bufferPos;
+      move(p^, buffer[bufferPos], writeCount);
+      inc(p, writeCount);
+      bufferPos := BufferSize;
+      dec(ACount, writeCount);
+      FlushBuffer;
+    end;
+    if ACount > 0 then
+    begin
+      move(p^, buffer[bufferPos], ACount);
+      inc(bufferPos, ACount);
+    end;
+  end;
 
   procedure OutputNormalRepetition(AValue,ACount: NativeInt);
   begin
@@ -99,15 +134,15 @@ var
 
     if (AValue = 0) and (ACount <= 16) then
       begin
-        buf.WriteByte((ACount-1) or repetitionOf0Flag);
+        WriteByte((ACount-1) or repetitionOf0Flag);
       end else
     if (AValue = 255) and (ACount <= 16) then
       begin
-        buf.WriteByte((ACount-1) or repetitionOf255Flag);
+        WriteByte((ACount-1) or repetitionOf255Flag);
       end else
       begin
-        buf.WriteByte(ACount or simpleRepetitionFlag);
-        buf.WriteByte(AValue);
+        WriteByte(ACount or simpleRepetitionFlag);
+        WriteByte(AValue);
       end;
   end;
 
@@ -120,16 +155,16 @@ var
     if smallRepetitionsCount >= 4 then
     begin
       smallOutput:= smallRepetitionsCount and not 3;
-      buf.Writebyte(packedRepetitionFlag or (smallOutput shr 2));
+      WriteByte(packedRepetitionFlag or (smallOutput shr 2));
       packedCount := 0;
       for i := 0 to smallOutput-1 do
       begin
         packedCount := packedCount + ((smallRepetitions[i].count-minSmallRep) shl ((i and 3) shl 1));
         if (i and 3) = 3 then
         begin
-          buf.WriteByte(packedCount);
+          WriteByte(packedCount);
           for j := i-3 to i do
-            buf.WriteByte(smallRepetitions[j].value);
+            WriteByte(smallRepetitions[j].value);
           packedCount:= 0;
         end;
       end;
@@ -169,27 +204,27 @@ var
       begin
         if ACount = previousWordSizeRepetition then
         begin
-          buf.WriteByte(previousWordSizeRepetitionOpCode);
-          buf.WriteByte(AValue);
+          WriteByte(previousWordSizeRepetitionOpCode);
+          WriteByte(AValue);
         end else
         if ACount = previousByteSizeRepetition then
         begin
-          buf.WriteByte(previousByteSizeRepetitionOpCode);
-          buf.WriteByte(AValue);
+          WriteByte(previousByteSizeRepetitionOpCode);
+          WriteByte(AValue);
         end else
         if ACount <= 64+255 then
         begin
-          buf.WriteByte(byteRepetitionOpCode);
-          buf.WriteByte(ACount-64);
-          buf.WriteByte(AValue);
+          WriteByte(byteRepetitionOpCode);
+          WriteByte(ACount-64);
+          WriteByte(AValue);
           previousByteSizeRepetition := ACount;
         end else
         if ACount <= 65535 then
         begin
-          buf.WriteByte(wordRepetitionOpCode);
-          buf.WriteByte(ACount shr 8);
-          buf.WriteByte(ACount and 255);
-          buf.WriteByte(AValue);
+          WriteByte(wordRepetitionOpCode);
+          WriteByte(ACount shr 8);
+          WriteByte(ACount and 255);
+          WriteByte(AValue);
           previousWordSizeRepetition := ACount;
         end else
           raise exception.Create('Invalid count');
@@ -212,12 +247,12 @@ var
     begin
       if ACount > 255+64 then
         raise exception.Create('Invalid count');
-      buf.WriteByte($01 or simpleDumpFlag);
-      buf.WriteByte(ACount-64);
+      WriteByte($01 or simpleDumpFlag);
+      WriteByte(ACount-64);
     end else
-      buf.WriteByte(ACount or simpleDumpFlag);
+      WriteByte(ACount or simpleDumpFlag);
 
-    buf.Write(p^, ACount);
+    WriteBytes(p, ACount);
   end;
 
   procedure DumpPacked(p : PByte; ACount: NativeInt);
@@ -249,9 +284,9 @@ var
         DumpPacked(p+31, ACount-31);
         exit;
       end;
-      buf.WriteByte(ACount or packedDumpFlag);
+      WriteByte(ACount or packedDumpFlag);
       lastPackedDumpValue:= p^;
-      buf.WriteByte(lastPackedDumpValue);
+      WriteByte(lastPackedDumpValue);
       dec(ACount);
       inc(p);
     end else
@@ -266,7 +301,7 @@ var
       DumpPacked(p, ACount);
       exit;
     end else
-      buf.WriteByte(ACount or packedDumpFromLastFlag);
+      WriteByte(ACount or packedDumpFromLastFlag);
 
     nbPackedValues := 0;
     while ACount >0 do
@@ -283,10 +318,10 @@ var
     begin
       if idx+1 = nbPackedValues then
       begin
-        buf.WriteByte(packedValues[idx] shl 4);
+        WriteByte(packedValues[idx] shl 4);
         break;
       end;
-      buf.WriteByte((packedValues[idx] shl 4) + packedValues[idx+1]);
+      WriteByte((packedValues[idx] shl 4) + packedValues[idx+1]);
       inc(idx,2);
     end;
   end;
@@ -345,7 +380,7 @@ begin
   psrc := @sourceBuffer;
   if psrc = nil then
     raise exception.Create('Source buffer not provided');
-  buf := TWriteBufStream.Create(ADest,4096);
+  bufferPos := 0;
   curValue := psrc^;
   curCount := 1;
   inc(psrc);
@@ -415,8 +450,8 @@ begin
   end;
   if curCount > 0 then OutputRepetition(curValue,curCount);
   FlushSmallRepetitions;
-  buf.WriteByte(endOfStreamOpCode);
-  buf.Free;
+  WriteByte(endOfStreamOpCode);
+  FlushBuffer;
 end;
 
 function DecodeLazRLE(ASource: TStream; var destBuffer; availableOutputSize: PtrInt; availableInputSize: int64 = -1): PtrInt;

@@ -268,6 +268,7 @@ var
   i,x,y: integer;
   PlaneFlags: Byte;
   a: NativeInt;
+  psrc: PBGRAPixel;
 
 begin
   NbPixels := Img.Width*img.Height;
@@ -281,26 +282,52 @@ begin
 
   NbNonTranspPixels := 0;
   NbOpaquePixels:= 0;
-  for y := 0 to img.Height-1 do
-    for x := 0 to img.Width-1 do
+  if img is TBGRACustomBitmap then
+  begin
+    for y := 0 to img.Height-1 do
     begin
-      with img.Colors[x,y] do
+      psrc := TBGRACustomBitmap(img).ScanLine[y];
+      for x := img.Width-1 downto 0 do
       begin
-        a := alpha shr 8;
-        PPlaneCur[3]^ := a;
-        inc(PPlaneCur[3]);
-        if a = 0 then continue;
-        if a = 255 then inc(NbOpaquePixels);
+        with psrc^ do
+        begin
+          PPlaneCur[3]^ := alpha;
+          inc(PPlaneCur[3]);
+          if alpha = 0 then begin inc(psrc); continue; end;
+          if alpha = 255 then inc(NbOpaquePixels);
 
-        inc(NbNonTranspPixels);
-        PPlaneCur[0]^ := red shr 8;
-        PPlaneCur[1]^ := green shr 8;
-        PPlaneCur[2]^ := blue shr 8;
-        inc(PPlaneCur[0]);
-        inc(PPlaneCur[1]);
-        inc(PPlaneCur[2]);
+          inc(NbNonTranspPixels);
+          PPlaneCur[0]^ := red;
+          PPlaneCur[1]^ := green;
+          PPlaneCur[2]^ := blue;
+          inc(PPlaneCur[0]);
+          inc(PPlaneCur[1]);
+          inc(PPlaneCur[2]);
+        end;
+        inc(psrc);
       end;
     end;
+  end else
+    for y := 0 to img.Height-1 do
+      for x := 0 to img.Width-1 do
+      begin
+        with img.Colors[x,y] do
+        begin
+          a := alpha shr 8;
+          PPlaneCur[3]^ := a;
+          inc(PPlaneCur[3]);
+          if a = 0 then continue;
+          if a = 255 then inc(NbOpaquePixels);
+
+          inc(NbNonTranspPixels);
+          PPlaneCur[0]^ := red shr 8;
+          PPlaneCur[1]^ := green shr 8;
+          PPlaneCur[2]^ := blue shr 8;
+          inc(PPlaneCur[0]);
+          inc(PPlaneCur[1]);
+          inc(PPlaneCur[2]);
+        end;
+      end;
 
   PlaneFlags := 0;
   if NbOpaquePixels = NbPixels then PlaneFlags := PlaneFlags or LazpaintChannelNoAlpha;
