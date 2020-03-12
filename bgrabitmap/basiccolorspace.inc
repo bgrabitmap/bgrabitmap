@@ -354,6 +354,11 @@ begin
   result := BGRAToFPColor(Self);
 end;
 
+function TBGRAPixel.EqualsExactly(constref AColor: TBGRAPixel): boolean;
+begin
+  result := PDWord(@AColor)^ = PDWord(@self)^;
+end;
+
 class operator TBGRAPixel.:=(Source: TBGRAPixel): TColor;
 begin
   result := Source.ToColor;
