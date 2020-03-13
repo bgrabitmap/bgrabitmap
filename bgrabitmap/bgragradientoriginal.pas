@@ -32,6 +32,7 @@ type
 
   TBGRALayerGradientOriginal = class(TBGRALayerCustomOriginal)
   private
+    function GetIsOpaque: boolean;
     procedure SetColorInterpolation(AValue: TBGRAColorInterpolation);
     procedure SetEndColor(AValue: TBGRAPixel);
     procedure SetFocalPoint(AValue: TPointF);
@@ -102,6 +103,7 @@ type
     property FocalRadius: Single read FFocalRadius write SetFocalRadius;   //default 0
     property ColorInterpolation: TBGRAColorInterpolation read FColorInterpolation write SetColorInterpolation;
     property Repetition: TBGRAGradientRepetition read FRepetition write SetRepetition;
+    property IsOpaque: boolean read GetIsOpaque;
 
   end;
 
@@ -175,6 +177,33 @@ end;
 function TBGRALayerGradientOriginal.GetAverageColor: TBGRAPixel;
 begin
   result := MergeBGRAWithGammaCorrection(StartColor, 1, EndColor, 1);
+end;
+
+function TBGRALayerGradientOriginal.GetIsOpaque: boolean;
+var
+  xLen, yLen, focalLen: Single;
+  focalCoord, u, v: TPointF;
+begin
+  result := (StartColor.alpha = 255) and (EndColor.alpha = 255);
+  if result and (GradientType = gtRadial) and not FocalPoint.IsEmpty and
+    not Origin.IsEmpty and not XAxis.IsEmpty then
+  begin
+    u := XAxis - Origin;
+    v := ComputedYAxis - Origin;
+    xLen := VectLen(u);
+    yLen := VectLen(v);
+    if (xLen = 0) or (yLen = 0) then
+      result := false
+    else
+    begin
+      focalCoord := PointF((FocalPoint - Origin)*u/sqr(xLen),
+                           (FocalPoint - Origin)*v/sqr(yLen));
+      focalLen := VectLen(focalCoord);
+      if (focalLen + ComputedFocalRadius + 0.01 >= ComputedRadius) and not
+        (ComputedFocalRadius > focalLen + ComputedRadius + 0.01) then
+        result := false;
+    end;
+  end;
 end;
 
 procedure TBGRALayerGradientOriginal.SetColorInterpolation(
@@ -467,6 +496,9 @@ var
   grad: TBGRACustomScanner;
   temp: TBGRABitmap;
 begin
+  if (ADrawMode in[dmDrawWithTransparency, dmLinearBlend, dmSetExceptTransparent]) and
+    IsOpaque then ADrawMode := dmSet;
+
   if ADraft and (ADest.ClipRect.Width*ADest.ClipRect.Height > 512*512) then
   begin
     temp := TBGRABitmap.Create(0,0);

@@ -1101,6 +1101,7 @@ end;
 
 function TBGRACustomGradient.GetColorAtF(position: single): TBGRAPixel;
 begin
+  if position = EmptySingle then exit(BGRAPixelTransparent);
   position *= 65536;
   if position < low(integer) then
     result := GetColorAt(low(Integer))
@@ -1112,6 +1113,7 @@ end;
 
 function TBGRACustomGradient.GetExpandedColorAtF(position: single): TExpandedPixel;
 begin
+  if position = EmptySingle then exit(BGRAPixelTransparent);
   position *= 65536;
   if position < low(integer) then
     result := GetExpandedColorAt(low(Integer))
