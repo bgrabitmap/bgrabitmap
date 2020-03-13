@@ -144,6 +144,7 @@ type
   private
     function GetAsPolygon: ArrayOfTPointF;
     function GetBottomRight: TPointF;
+    function GetCenter: TPointF;
     function GetHeight: single;
     function GetIsEmpty: boolean;
     function GetRectBounds: TRect;
@@ -167,6 +168,7 @@ type
     property Width: single read GetWidth;
     property Height: single read GetHeight;
     property Surface: single read GetSurface;
+    property Center: TPointF read GetCenter;
   end;
 
   const
@@ -953,6 +955,11 @@ begin
     result := EmptyPointF
   else
     result := TopRight + (BottomLeft-TopLeft);
+end;
+
+function TAffineBox.GetCenter: TPointF;
+begin
+  result := (TopLeft + BottomRight)*0.5;
 end;
 
 function TAffineBox.GetHeight: single;
