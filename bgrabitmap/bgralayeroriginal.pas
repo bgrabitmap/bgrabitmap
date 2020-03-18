@@ -935,7 +935,10 @@ begin
         FPoints[FPointMoving].OnAlternateMove(self, FPoints[FPointMoving].Coord, newCoord, subShift)
       else
         FPoints[FPointMoving].OnMove(self, FPoints[FPointMoving].Coord, newCoord, subShift);
-      FPoints[FPointMoving].Coord := newCoord;
+      if (FPointMoving >= 0) and (FPointMoving < length(FPoints)) then
+        FPoints[FPointMoving].Coord := newCoord
+      else
+        FPointMoving := -1;
     end;
     ACursor := GetMoveCursor(FPointMoving);
     AHandled:= true;
