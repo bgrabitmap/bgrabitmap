@@ -239,6 +239,8 @@ type
     procedure OriginalChange(ASender: TObject; ABounds: PRectF; var ADiff: TBGRAOriginalDiff);
     procedure OriginalEditingChange(ASender: TObject);
     function GetLayerDirectory(ALayerIndex: integer; ACanCreate: boolean): TMemDirectory;
+    procedure UpdateOriginalEditor(ALayerIndex: integer; AMatrix: TAffineMatrix;
+      APointSize: single);
 
   public
     procedure LoadFromFile(const filenameUTF8: string); override;
@@ -701,6 +703,40 @@ begin
   id := LayerUniqueId[ALayerIndex];
   if (layersDir.IndexOf(IntToStr(id),'')=-1) and not ACanCreate then exit(nil);
   result := layersDir.Directory[layersDir.AddDirectory(IntToStr(id))];
+end;
+
+procedure TBGRALayeredBitmap.UpdateOriginalEditor(ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single);
+var
+  orig: TBGRALayerCustomOriginal;
+begin
+  orig := LayerOriginal[ALayerIndex];
+
+  if (orig = nil) or (orig.Guid <> FOriginalEditorOriginal) then
+  begin
+    FreeAndNil(FOriginalEditor);
+    if orig = nil then
+      FOriginalEditorOriginal := GUID_NULL
+      else FOriginalEditorOriginal := orig.Guid;
+  end;
+
+  if Assigned(OriginalEditor) then
+    FOriginalEditor.Clear;
+
+  if Assigned(orig) then
+  begin
+    if OriginalEditor = nil then
+    begin
+      FOriginalEditor := orig.CreateEditor;
+      if FOriginalEditor = nil then
+        raise exception.Create('Unexpected nil value');
+      FOriginalEditor.Focused := FEditorFocused;
+      FOriginalEditor.OnFocusChanged:=@EditorFocusedChanged;
+    end;
+    orig.ConfigureEditor(FOriginalEditor);
+    FOriginalEditorViewMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
+    FOriginalEditor.Matrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
+    FOriginalEditor.PointSize := APointSize;
+  end;
 end;
 
 function TBGRALayeredBitmap.GetOriginalCount: integer;
@@ -2372,33 +2408,11 @@ end;
 
 function TBGRALayeredBitmap.DrawEditor(ADest: TBGRABitmap; ALayerIndex: integer;
   AMatrix: TAffineMatrix; APointSize: single): TRect;
-var
-  orig: TBGRALayerCustomOriginal;
 begin
-  orig := LayerOriginal[ALayerIndex];
-
-  if orig.Guid <> FOriginalEditorOriginal then
-  begin
-    FreeAndNil(FOriginalEditor);
-    FOriginalEditorOriginal := orig.Guid;
-  end;
-
-  if Assigned(orig) then
-  begin
-    if FOriginalEditor = nil then
-    begin
-      FOriginalEditor := orig.CreateEditor;
-      FOriginalEditor.Focused := FEditorFocused;
-      FOriginalEditor.OnFocusChanged:=@EditorFocusedChanged;
-    end;
-    FOriginalEditor.Clear;
-    orig.ConfigureEditor(FOriginalEditor);
-    FOriginalEditorViewMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
-    FOriginalEditor.Matrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
-    FOriginalEditor.PointSize := APointSize;
-    result := FOriginalEditor.Render(ADest, rect(0,0,ADest.Width,ADest.Height));
-  end else
-    result := EmptyRect;
+  UpdateOriginalEditor(ALayerIndex, AMatrix, APointSize);
+  if Assigned(OriginalEditor) then
+    result := OriginalEditor.Render(ADest, rect(0,0,ADest.Width,ADest.Height))
+    else result := EmptyRect;
 end;
 
 function TBGRALayeredBitmap.GetEditorBounds(ALayerIndex: integer; X,
@@ -2424,37 +2438,16 @@ function TBGRALayeredBitmap.GetEditorBounds(ADestRect: TRect; ALayerIndex: integ
 var
   orig: TBGRALayerCustomOriginal;
 begin
-  orig := LayerOriginal[ALayerIndex];
+  UpdateOriginalEditor(ALayerIndex, AMatrix, APointSize);
 
-  if orig.Guid <> FOriginalEditorOriginal then
-  begin
-    FreeAndNil(FOriginalEditor);
-    FOriginalEditorOriginal := orig.Guid;
-  end;
-
-  if Assigned(orig) then
-  begin
-    if FOriginalEditor = nil then
-    begin
-      FOriginalEditor := orig.CreateEditor;
-      if FOriginalEditor = nil then
-        raise exception.Create('Unexpected nil value');
-      FOriginalEditor.Focused := FEditorFocused;
-      FOriginalEditor.OnFocusChanged:=@EditorFocusedChanged;
-    end;
-    FOriginalEditor.Clear;
-    orig.ConfigureEditor(FOriginalEditor);
-    FOriginalEditorViewMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
-    FOriginalEditor.Matrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
-    FOriginalEditor.PointSize := APointSize;
-    result := FOriginalEditor.GetRenderBounds(ADestRect);
-  end else
-    result := EmptyRect;
+  if Assigned(OriginalEditor) then
+    result := OriginalEditor.GetRenderBounds(ADestRect)
+    else result := EmptyRect;
 end;
 
 procedure TBGRALayeredBitmap.ClearEditor;
 begin
-  FreeAndNil(FOriginalEditor);
+  if Assigned(FOriginalEditor) then FOriginalEditor.Clear;
   FOriginalEditorOriginal := GUID_NULL;
 end;
 
