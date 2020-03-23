@@ -1504,48 +1504,22 @@ end;
 {$POP}
 
 function IntersectLine(line1, line2: TLineDef; out parallel: boolean): TPointF;
-var divFactor: double;
+  procedure SetParallel;
+  begin
+    parallel := true;
+    //return the center of the segment between line origins
+    result.x := (line1.origin.x+line2.origin.x)/2;
+    result.y := (line1.origin.y+line2.origin.y)/2;
+  end;
+var pos, step: single;
+  n: TPointF;
 begin
   parallel := false;
-  //if lines are parallel
-  if ((line1.dir.x = line2.dir.x) and (line1.dir.y = line2.dir.y)) or
-     ((abs(line1.dir.y) < 1e-6) and (abs(line2.dir.y) < 1e-6)) then
-  begin
-       parallel := true;
-       //return the center of the segment between line origins
-       result.x := (line1.origin.x+line2.origin.x)/2;
-       result.y := (line1.origin.y+line2.origin.y)/2;
-  end else
-  if abs(line1.dir.y) < 1e-6 then //line1 is horizontal
-  begin
-       result.y := line1.origin.y;
-       result.x := line2.origin.x + (result.y - line2.origin.y)
-               /line2.dir.y*line2.dir.x;
-  end else
-  if abs(line2.dir.y) < 1e-6 then //line2 is horizontal
-  begin
-       result.y := line2.origin.y;
-       result.x := line1.origin.x + (result.y - line1.origin.y)
-               /line1.dir.y*line1.dir.x;
-  end else
-  begin
-       divFactor := line1.dir.x/line1.dir.y - line2.dir.x/line2.dir.y;
-       if abs(divFactor) < 1e-6 then //almost parallel
-       begin
-            parallel := true;
-            //return the center of the segment between line origins
-            result.x := (line1.origin.x+line2.origin.x)/2;
-            result.y := (line1.origin.y+line2.origin.y)/2;
-       end else
-       begin
-         result.y := (line2.origin.x - line1.origin.x +
-                  line1.origin.y*line1.dir.x/line1.dir.y -
-                  line2.origin.y*line2.dir.x/line2.dir.y)
-                  / divFactor;
-         result.x := line1.origin.x + (result.y - line1.origin.y)
-                 /line1.dir.y*line1.dir.x;
-       end;
-  end;
+  n := PointF(-line2.dir.y, line2.dir.x);
+  step := line1.dir*n;
+  if step = 0 then begin SetParallel; exit; end;
+  pos := (line2.origin - line1.origin)*n;
+  result := line1.origin + line1.dir * (pos/step);
 end;
 
 { Check if a polygon is convex, i.e. it always turns in the same direction }
