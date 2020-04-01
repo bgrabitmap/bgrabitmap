@@ -77,7 +77,6 @@ end;
 
 function TManagerFile.GetDownloadUrl: string;
 var
-  i: Integer;
   url: string;
   data: TJSONObject;
 begin
