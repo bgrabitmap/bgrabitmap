@@ -354,6 +354,11 @@ begin
   result := BGRAToFPColor(Self);
 end;
 
+function TBGRAPixel.EqualsExactly(constref AColor: TBGRAPixel): boolean;
+begin
+  result := PDWord(@AColor)^ = PDWord(@self)^;
+end;
+
 class operator TBGRAPixel.:=(Source: TBGRAPixel): TColor;
 begin
   result := Source.ToColor;
@@ -841,13 +846,13 @@ begin
   if not AGammaCompression then
   begin
     result.red := Min(255,Max(0,round(c[1]*255)));
-    result.green := Min(255,Max(0,round(c[1]*255)));
-    result.blue := Min(255,Max(0,round(c[1]*255)));
+    result.green := Min(255,Max(0,round(c[2]*255)));
+    result.blue := Min(255,Max(0,round(c[3]*255)));
   end else
   begin
     result.red := GammaCompressionTab[Min(65535,Max(0,round(c[1]*65535)))];
-    result.green := GammaCompressionTab[Min(65535,Max(0,round(c[1]*65535)))];
-    result.blue := GammaCompressionTab[Min(65535,Max(0,round(c[1]*65535)))];
+    result.green := GammaCompressionTab[Min(65535,Max(0,round(c[2]*65535)))];
+    result.blue := GammaCompressionTab[Min(65535,Max(0,round(c[3]*65535)))];
   end;
   result.alpha := Min(255,Max(0,round(c[4]*255)));
 end;

@@ -40,7 +40,7 @@ type
     procedure LinkWith({%H-}AOtherObject: TReleaserObject); virtual;
     procedure GetVersions(AVersionList: TStringList); virtual; abstract;
     procedure CheckVersion({%H-}AVersion: TVersion); virtual;
-    procedure UpdateVersion(AVersion: TVersion); virtual;
+    procedure UpdateVersion({%H-}AVersion: TVersion); virtual;
     procedure Save; virtual; abstract;
   end;
 

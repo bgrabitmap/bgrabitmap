@@ -23,7 +23,7 @@ type
     destructor Destroy; override;
     procedure Save; override;
     function GetLineForVersion(AVersion: TVersion): string;
-    procedure GetVersions(AVersionList: TStringList); override;
+    procedure GetVersions({%H-}AVersionList: TStringList); override;
     procedure CheckVersion(AVersion: TVersion); override;
     procedure UpdateVersion(AVersion: TVersion); override;
   end;
@@ -34,7 +34,6 @@ implementation
 
 constructor TTextLine.Create(AParameters: TStringList; ALogicDir: string);
 var
-  ver: TVersion;
   str: TStringStream;
   stream: TFileStream;
 begin

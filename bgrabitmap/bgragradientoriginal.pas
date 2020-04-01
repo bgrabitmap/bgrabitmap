@@ -32,6 +32,7 @@ type
 
   TBGRALayerGradientOriginal = class(TBGRALayerCustomOriginal)
   private
+    function GetIsOpaque: boolean;
     procedure SetColorInterpolation(AValue: TBGRAColorInterpolation);
     procedure SetEndColor(AValue: TBGRAPixel);
     procedure SetFocalPoint(AValue: TPointF);
@@ -88,6 +89,7 @@ type
     procedure FitGeometry(const ABox: TAffineBox);
     procedure SetColors(AStartColor, AEndColor: TBGRAPixel);
     procedure ApplyOpacity(AOpacity: byte);
+    function Equals(Obj: TObject): boolean; override;
 
     property StartColor: TBGRAPixel read FStartColor write SetStartColor;
     property EndColor: TBGRAPixel read FEndColor write SetEndColor;
@@ -101,6 +103,7 @@ type
     property FocalRadius: Single read FFocalRadius write SetFocalRadius;   //default 0
     property ColorInterpolation: TBGRAColorInterpolation read FColorInterpolation write SetColorInterpolation;
     property Repetition: TBGRAGradientRepetition read FRepetition write SetRepetition;
+    property IsOpaque: boolean read GetIsOpaque;
 
   end;
 
@@ -176,6 +179,33 @@ begin
   result := MergeBGRAWithGammaCorrection(StartColor, 1, EndColor, 1);
 end;
 
+function TBGRALayerGradientOriginal.GetIsOpaque: boolean;
+var
+  xLen, yLen, focalLen: Single;
+  focalCoord, u, v: TPointF;
+begin
+  result := (StartColor.alpha = 255) and (EndColor.alpha = 255);
+  if result and (GradientType = gtRadial) and not FocalPoint.IsEmpty and
+    not Origin.IsEmpty and not XAxis.IsEmpty then
+  begin
+    u := XAxis - Origin;
+    v := ComputedYAxis - Origin;
+    xLen := VectLen(u);
+    yLen := VectLen(v);
+    if (xLen = 0) or (yLen = 0) then
+      result := false
+    else
+    begin
+      focalCoord := PointF((FocalPoint - Origin)*u/sqr(xLen),
+                           (FocalPoint - Origin)*v/sqr(yLen));
+      focalLen := VectLen(focalCoord);
+      if (focalLen + ComputedFocalRadius + 0.01 >= ComputedRadius) and not
+        (ComputedFocalRadius > focalLen + ComputedRadius + 0.01) then
+        result := false;
+    end;
+  end;
+end;
+
 procedure TBGRALayerGradientOriginal.SetColorInterpolation(
   AValue: TBGRAColorInterpolation);
 begin
@@ -187,7 +217,7 @@ end;
 
 procedure TBGRALayerGradientOriginal.SetEndColor(AValue: TBGRAPixel);
 begin
-  if FEndColor=AValue then Exit;
+  if FEndColor.EqualsExactly(AValue) then Exit;
   BeginUpdate;
   FEndColor:=AValue;
   EndUpdate;
@@ -245,7 +275,7 @@ end;
 
 procedure TBGRALayerGradientOriginal.SetStartColor(AValue: TBGRAPixel);
 begin
-  if FStartColor=AValue then Exit;
+  if FStartColor.EqualsExactly(AValue) then Exit;
   BeginUpdate;
   FStartColor:=AValue;
   EndUpdate;
@@ -466,6 +496,9 @@ var
   grad: TBGRACustomScanner;
   temp: TBGRABitmap;
 begin
+  if (ADrawMode in[dmDrawWithTransparency, dmLinearBlend, dmSetExceptTransparent]) and
+    IsOpaque then ADrawMode := dmSet;
+
   if ADraft and (ADest.ClipRect.Width*ADest.ClipRect.Height > 512*512) then
   begin
     temp := TBGRABitmap.Create(0,0);
@@ -665,8 +698,8 @@ procedure TBGRALayerGradientOriginal.AssignExceptGeometry(
   AOther: TBGRALayerGradientOriginal);
 begin
   if (GradientType = AOther.GradientType) and
-    (StartColor = AOther.StartColor) and
-    (EndColor = AOther.EndColor) and
+    (StartColor.EqualsExactly(AOther.StartColor)) and
+    (EndColor.EqualsExactly(AOther.EndColor)) and
     (ColorInterpolation = AOther.ColorInterpolation) and
     (Repetition = AOther.Repetition) then exit;
   BeginUpdate;
@@ -718,6 +751,29 @@ begin
   cEnd := EndColor;
   cEnd.alpha := BGRABlend.ApplyOpacity(cEnd.alpha, AOpacity);
   SetColors(cStart, cEnd);
+end;
+
+function TBGRALayerGradientOriginal.Equals(Obj: TObject): boolean;
+var
+  other: TBGRALayerGradientOriginal;
+begin
+  if Obj is TBGRALayerGradientOriginal then
+  begin
+    other := TBGRALayerGradientOriginal(Obj);
+    result := StartColor.EqualsExactly(other.StartColor) and
+              EndColor.EqualsExactly(other.EndColor) and
+              (GradientType = other.GradientType) and
+              (Origin = other.Origin) and
+              (XAxis = other.XAxis) and
+              ((GradientType in[gtLinear, gtReflected]) or
+               (YAxis = other.YAxis)) and
+              ((GradientType <> gtRadial) or
+               ((FocalPoint = other.FocalPoint) and
+                (FocalRadius = other.FocalRadius))) and
+              (ColorInterpolation = other.ColorInterpolation) and
+              (Repetition = other.Repetition);
+  end else
+    Result:=inherited Equals(Obj);
 end;
 
 initialization

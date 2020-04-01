@@ -523,6 +523,7 @@ end;
 
 function TBGRASimpleGradient.GetColorAtF(position: single): TBGRAPixel;
 begin
+  if position = EmptySingle then result := BGRAPixelTransparent else
   if FRepetition <> grPad then
     result := GetColorAt(round(frac(position*0.5)*131072)) else  //divided by 2 for reflected repetition
   begin
@@ -573,6 +574,7 @@ end;
 function TBGRASimpleGradient.GetExpandedColorAtF(position: single
   ): TExpandedPixel;
 begin
+  if position = EmptySingle then result := BGRAPixelTransparent else
   if FRepetition <> grPad then
     result := GetExpandedColorAt(round(frac(position*0.5)*131072)) else  //divided by 2 for reflected repetition
   begin
@@ -1487,7 +1489,8 @@ end;
 
 function TBGRAGradientScanner.ComputeRadialFocal(const p: TPointF): single;
 var
-  w1,w2,h,d1,d2,delta,num: single;
+  w1,w2,num: single;
+  h,d1,d2,delta: double;
 begin
   w1 := p*FFocalDirection;
   w2 := FFocalDistance-w1;

@@ -52,6 +52,7 @@ type
     function ToString: string;
     function ToGrayscale(AGammaCorrection: boolean = true): TBGRAPixel;
     function ToFPColor: TFPColor;
+    function EqualsExactly(constref AColor: TBGRAPixel): boolean;
     class Operator := (Source: TBGRAPixel): TColor;
     class Operator := (Source: TColor): TBGRAPixel;
     property Intensity: word read GetClassIntensity write SetClassIntensity;

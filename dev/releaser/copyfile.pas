@@ -19,7 +19,7 @@ type
   public
     constructor Create(AParameters: TStringList; ALogicDir: string); override;
     procedure Save; override;
-    procedure GetVersions(AVersionList: TStringList); override;
+    procedure GetVersions({%H-}AVersionList: TStringList); override;
     procedure UpdateVersion(AVersion: TVersion); override;
   end;
 

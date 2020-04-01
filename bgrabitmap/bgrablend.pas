@@ -1397,6 +1397,22 @@ begin
   {$POP}
   w2 := iFactX-w4;
 
+  if (pUpLeft <> nil) and (pUpRight <> nil) and (pDownLeft <> nil) and (pDownRight <> nil) and
+     (pUpLeft^.alpha = pUpRight^.alpha) and (pUpLeft^.alpha = pDownLeft^.alpha) and
+     (pUpRight^.alpha = pDownRight^.alpha) then
+  begin
+    if pUpLeft^.alpha = 0 then
+      ADest^ := BGRAPixelTransparent
+    else
+    begin
+      ADest^.red := (pUpLeft^.red*w1 + pUpRight^.red*w2 + pDownLeft^.red*w3 + pDownRight^.red*w4 + 128) shr 8;
+      ADest^.green := (pUpLeft^.green*w1 + pUpRight^.green*w2 + pDownLeft^.green*w3 + pDownRight^.green*w4 + 128) shr 8;
+      ADest^.blue := (pUpLeft^.blue*w1 + pUpRight^.blue*w2 + pDownLeft^.blue*w3 + pDownRight^.blue*w4 + 128) shr 8;
+      ADest^.alpha := pUpLeft^.alpha;
+    end;
+    exit;
+  end;
+
   { For each pixel around the coordinate, compute
     the weight for it and multiply values by it before
     adding to the sum }

@@ -5,7 +5,7 @@ unit ProjectFile;
 interface
 
 uses
-  Classes, SysUtils, ReleaserTypes, fgl, laz2_XMLRead, laz2_XMLWrite, Laz2_DOM;
+  Classes, SysUtils, ReleaserTypes, laz2_XMLRead, laz2_XMLWrite, Laz2_DOM;
 
 type
 
