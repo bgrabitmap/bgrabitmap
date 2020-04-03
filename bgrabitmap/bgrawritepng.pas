@@ -40,7 +40,7 @@ type
 
   { TBGRAWriterPNG }
 
-  TBGRAWriterPNG = class (TFPCustomImageWriter)
+  TBGRAWriterPNG = class (TBGRACustomWriterPNG)
     private
       FUsetRNS, FCompressedText, FWordSized, FIndexed,
       FUseAlpha, FGrayScale : boolean;
@@ -74,6 +74,8 @@ type
     protected
       property Header : THeaderChunk read FHeader;
       procedure InternalWrite ({%H-}Str:TStream; {%H-}Img:TFPCustomImage); override;
+      function GetUseAlpha: boolean; override;
+      procedure SetUseAlpha(AValue: boolean); override;
       procedure WriteIHDR; virtual;
       procedure WritePLTE; virtual;
       procedure WritetRNS; virtual;
@@ -117,7 +119,6 @@ type
       property Indexed : boolean read FIndexed write FIndexed;
       property CompressedText : boolean read FCompressedText write FCompressedText;
       property WordSized : boolean read FWordSized write FWordSized;
-      property UseAlpha : boolean read FUseAlpha write FUseAlpha;
       property CompressionLevel : TCompressionLevel read FCompressionLevel write FCompressionLevel;
   end;
 
@@ -954,5 +955,19 @@ begin
   WriteTexts;
   WriteIEND;
 end;
+
+function TBGRAWriterPNG.GetUseAlpha: boolean;
+begin
+  result := FUseAlpha;
+end;
+
+procedure TBGRAWriterPNG.SetUseAlpha(AValue: boolean);
+begin
+  FUseAlpha := AValue;
+end;
+
+initialization
+
+  DefaultBGRAImageWriter[ifPng] := TBGRAWriterPNG;
 
 end.
