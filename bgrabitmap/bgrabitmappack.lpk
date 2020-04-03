@@ -579,11 +579,11 @@
       </Item136>
       <Item137>
         <Filename Value="bgrareadwebp.pas"/>
-        <UnitName Value="bgrareadwebp"/>
+        <UnitName Value="BGRAReadWebP"/>
       </Item137>
       <Item138>
         <Filename Value="bgrawritewebp.pas"/>
-        <UnitName Value="bgrawritewebp"/>
+        <UnitName Value="BGRAWriteWebP"/>
       </Item138>
     </Files>
     <RequiredPkgs Count="2">
