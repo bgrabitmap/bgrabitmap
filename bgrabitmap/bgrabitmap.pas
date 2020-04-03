@@ -141,8 +141,8 @@ implementation
 
 uses BGRABitmapTypes, BGRAReadBMP, BGRAReadBmpMioMap, BGRAReadGif,
   BGRAReadIco, BGRAReadJpeg, BGRAReadLzp, BGRAReadPCX,
-  BGRAReadPng, BGRAReadPSD, BGRAReadTGA, BGRAReadXPM,
-  BGRAWriteLzp;
+  BGRAReadPng, BGRAWritePNG, BGRAReadPSD, BGRAReadTGA, BGRAReadXPM,
+  BGRAWriteLzp, BGRAReadWebP, BGRAWriteWebP;
 
 var
   tempBmp: TBGRABitmap;

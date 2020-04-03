@@ -37,7 +37,7 @@ uses
 
 
 const
-  BGRABitmapVersion = 10080000;
+  BGRABitmapVersion = 10080100;
 
   function BGRABitmapVersionStr: string;
 
@@ -524,6 +524,16 @@ type
     function GetBitmapDraft(AStream: TStream; AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual; abstract;
   end;
 
+  { TBGRACustomWriterPNG }
+
+  TBGRACustomWriterPNG = class(TFPCustomImageWriter)
+  protected
+    function GetUseAlpha: boolean; virtual; abstract;
+    procedure SetUseAlpha(AValue: boolean); virtual; abstract;
+  public
+    property UseAlpha : boolean read GetUseAlpha write SetUseAlpha;
+  end;
+
 var
   {** List of stream readers for images }
   DefaultBGRAImageReader: array[TBGRAImageFormat] of TFPCustomImageReaderClass;
@@ -569,9 +579,8 @@ implementation
 
 uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
   FPReadXwd, FPReadXPM,
-  FPWriteJPEG, BGRAWritePNG, FPWriteBMP, FPWritePCX,
-  FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM,
-  BGRAReadWebP, BGRAWriteWebP;
+  FPWriteJPEG, FPWriteBMP, FPWritePCX,
+  FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM;
 
 function BGRABitmapVersionStr: string;
 var numbers: TStringList;
@@ -1329,8 +1338,9 @@ begin
 
   if AFormat = ifPng then
   begin
-    result := TBGRAWriterPNG.Create;
-    TBGRAWriterPNG(result).UseAlpha := AHasTransparentPixels;
+    result := DefaultBGRAImageWriter[AFormat].Create;
+    if result is TBGRACustomWriterPNG then
+      TBGRACustomWriterPNG(result).UseAlpha := AHasTransparentPixels;
   end else
   if AFormat = ifBmp then
   begin
@@ -1473,7 +1483,6 @@ initialization
   {$I csscolorconst.inc}
   
   DefaultBGRAImageWriter[ifJpeg] := TFPWriterJPEG;
-  DefaultBGRAImageWriter[ifPng] := TBGRAWriterPNG;
   DefaultBGRAImageWriter[ifBmp] := TFPWriterBMP;
   DefaultBGRAImageWriter[ifPcx] := TFPWriterPCX;
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;

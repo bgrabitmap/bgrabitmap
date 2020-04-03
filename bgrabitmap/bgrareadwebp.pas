@@ -44,7 +44,7 @@ end;
 
 function TBGRAReaderWebP.ReadHeader(Str: TStream): TWebPHeader;
 begin
-  fillchar(result, sizeof(result), 0);
+  fillchar({%H-}result, sizeof({%H-}result), 0);
   Str.Read(result, sizeof(result));
   result.FileSize:= LEtoN(result.FileSize);
 end;
