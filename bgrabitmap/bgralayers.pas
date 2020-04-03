@@ -192,7 +192,7 @@ type
     FOriginalEditor: TBGRAOriginalEditor;
     FOriginalEditorOriginal: TGuid;
     FOriginalEditorViewMatrix: TAffineMatrix;
-    procedure EditorFocusedChanged(Sender: TObject);
+    procedure EditorFocusedChanged({%H-}Sender: TObject);
     function GetLayerOriginalClass(layer: integer): TBGRALayerOriginalAny;
     function GetOriginalEditor: TBGRAOriginalEditor;
     function GetOriginalGuid(AIndex: integer): TGUID;
@@ -2435,8 +2435,6 @@ end;
 
 function TBGRALayeredBitmap.GetEditorBounds(ADestRect: TRect; ALayerIndex: integer;
   AMatrix: TAffineMatrix; APointSize: single): TRect;
-var
-  orig: TBGRALayerCustomOriginal;
 begin
   UpdateOriginalEditor(ALayerIndex, AMatrix, APointSize);
 

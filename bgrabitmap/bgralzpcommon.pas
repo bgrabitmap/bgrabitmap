@@ -46,8 +46,6 @@ function DecodeLazRLE(ASource: TStream; var destBuffer; availableOutputSize: Ptr
 
 implementation
 
-uses bufstream;
-
 const //flag to distinguish ranges of opcodes
       simpleRepetitionFlag = $00;    // $01..$3f: normal repetition
       packedRepetitionFlag = $40;    // $41..$5f: packed repetition

@@ -594,7 +594,6 @@ end;
 
 procedure TBGRAReaderPNG.BGRAHandleScanLine (const y : integer; const ScanLine : PByteArray);
 var rx : integer;
-    c : TColorData;
     pdest: PBGRAPixel;
 begin
   UsingBitGroup := 0;
