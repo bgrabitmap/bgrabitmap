@@ -494,6 +494,7 @@ type
     { Returns the total size of the string provided using the current font.
       Orientation is not taken into account, so that the width is along the text. End of lines are stripped from the string. }
     function TextSize(sUTF8: string): TSize; override;
+    function TextSizeMultiline(sUTF8: string; AMaxWidth: single = EmptySingle; AParagraphSpacing: single = 0): TSize; override;
 
     { Returns the affine box of the string provided using the current font.
       Orientation is taken into account. End of lines are stripped from the string. }
@@ -755,22 +756,6 @@ end;
 procedure TBGRADefaultBitmap.DoLoadFromBitmap;
 begin
   //nothing
-end;
-
-procedure TBGRADefaultBitmap.SetCanvasDrawModeFP(const AValue: TDrawMode);
-begin
-  FCanvasDrawModeFP := AValue;
-  Case AValue of
-  dmLinearBlend: FCanvasPixelProcFP := @FastBlendPixel;
-  dmDrawWithTransparency: FCanvasPixelProcFP := @DrawPixel;
-  dmXor: FCanvasPixelProcFP:= @XorPixel;
-  else FCanvasPixelProcFP := @SetPixel;
-  end;
-end;
-
-function TBGRADefaultBitmap.GetCanvasDrawModeFP: TDrawMode;
-begin
-  Result:= FCanvasDrawModeFP;
 end;
 
 procedure TBGRADefaultBitmap.SetCustomPenStyle(const AValue: TBGRAPenStyle);
@@ -1572,6 +1557,22 @@ begin
     FCanvasFP := TFPImageCanvas.Create(self);
   {$warnings on}
   result := FCanvasFP;
+end;
+
+procedure TBGRADefaultBitmap.SetCanvasDrawModeFP(const AValue: TDrawMode);
+begin
+  FCanvasDrawModeFP := AValue;
+  Case AValue of
+  dmLinearBlend: FCanvasPixelProcFP := @FastBlendPixel;
+  dmDrawWithTransparency: FCanvasPixelProcFP := @DrawPixel;
+  dmXor: FCanvasPixelProcFP:= @XorPixel;
+  else FCanvasPixelProcFP := @SetPixel;
+  end;
+end;
+
+function TBGRADefaultBitmap.GetCanvasDrawModeFP: TDrawMode;
+begin
+  Result:= FCanvasDrawModeFP;
 end;
 
 procedure TBGRADefaultBitmap.LoadFromBitmapIfNeeded;
@@ -2880,6 +2881,21 @@ end;
 function TBGRADefaultBitmap.TextSize(sUTF8: string): TSize;
 begin
   result := FontRenderer.TextSize(CleanTextOutString(sUTF8));
+end;
+
+function TBGRADefaultBitmap.TextSizeMultiline(sUTF8: string; AMaxWidth: single;
+  AParagraphSpacing: single): TSize;
+var
+  layout: TBidiTextLayout;
+begin
+  if FontBidiMode = fbmAuto then
+    layout := TBidiTextLayout.Create(FontRenderer, sUTF8)
+  else
+    layout := TBidiTextLayout.Create(FontRenderer, sUTF8, GetFontRightToLeftFor(sUTF8));
+  layout.ParagraphSpacingBelow:= AParagraphSpacing;
+  layout.AvailableWidth := AMaxWidth;
+  result := size(ceil(layout.UsedWidth), ceil(layout.TotalTextHeight));
+  layout.Free;
 end;
 
 function TBGRADefaultBitmap.TextAffineBox(sUTF8: string): TAffineBox;

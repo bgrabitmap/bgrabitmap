@@ -48,6 +48,7 @@ type
     function GetBrokenLineStartCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineUntransformedStartCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineStartIndex(AIndex: integer): integer;
+    function GetBrokenLineUsedWidth(AIndex: integer): single;
     function GetCharCount: integer;
     function GetFontBidiMode: TFontBidiMode;
     function GetMatrix: TAffineMatrix;
@@ -70,6 +71,7 @@ type
     function GetText: string;
     function GetTotalTextHeight: single;
     function GetUnicodeChar(APosition0: integer): cardinal;
+    function GetUsedWidth: single;
     function GetUTF8Char(APosition0: integer): string4;
     procedure SetAvailableHeight(AValue: single);
     procedure SetAvailableWidth(AValue: single);
@@ -97,6 +99,7 @@ type
                    startIndex, endIndex: integer;
                    bidiLevel: byte;
                    rectF: TRectF;
+                   usedWidth: single;
                    firstPartIndex, lastPartIndexPlusOne: integer;
                  end;
     FBrokenLineCount: integer;
@@ -196,6 +199,7 @@ type
     property BrokenLineStartIndex[AIndex: integer]: integer read GetBrokenLineStartIndex;
     property BrokenLineEndIndex[AIndex: integer]: integer read GetBrokenLineEndIndex;
     property BrokenLineRectF[AIndex: integer]: TRectF read GetBrokenLineRectF;
+    property BrokenLineUsedWidth[AIndex: integer]: single read GetBrokenLineUsedWidth;
     property BrokenLineAffineBox[AIndex: integer]: TAffineBox read GetBrokenLineAffineBox;
     property BrokenLineRightToLeft[AIndex: integer]: boolean read GetBrokenLineRightToLeft;
     property BrokenLineStartCaret[AIndex: integer]: TBidiCaretPos read GetBrokenLineStartCaret;
@@ -226,6 +230,7 @@ type
     property ParagraphRightToLeft[AIndex: integer]: boolean read GetParagraphRightToLeft;
     property ParagraphCount: integer read GetParagraphCount;
 
+    property UsedWidth: single read GetUsedWidth;
     property TotalTextHeight: single read GetTotalTextHeight;
 
     property Matrix: TAffineMatrix read GetMatrix;
@@ -529,6 +534,14 @@ begin
   result := FBrokenLine[AIndex].startIndex;
 end;
 
+function TBidiTextLayout.GetBrokenLineUsedWidth(AIndex: integer): single;
+begin
+  NeedLayout;
+  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
+    raise ERangeError.Create('Invalid index');
+  result := FBrokenLine[AIndex].usedWidth;
+end;
+
 function TBidiTextLayout.GetCharCount: integer;
 begin
   result := FAnalysis.CharCount;
@@ -671,6 +684,15 @@ end;
 function TBidiTextLayout.GetUnicodeChar(APosition0: integer): cardinal;
 begin
   result := FAnalysis.UnicodeChar[APosition0];
+end;
+
+function TBidiTextLayout.GetUsedWidth: single;
+var
+  i: Integer;
+begin
+  result := 0;
+  for i := 0 to BrokenLineCount-1 do
+    result := max(result, BrokenLineUsedWidth[i]);
 end;
 
 function TBidiTextLayout.GetUTF8Char(APosition0: integer): string4;
@@ -1082,6 +1104,7 @@ var lineHeight, baseLine, tabPixelSize: single;
     FBrokenLine[FBrokenLineCount].endIndex:= ACharEnd;
     FBrokenLine[FBrokenLineCount].bidiLevel := ABidiLevel;
     FBrokenLine[FBrokenLineCount].firstPartIndex:= FPartCount;
+    FBrokenLine[FBrokenLineCount].usedWidth:= AWidth;
     if FAvailableWidth <> EmptySingle then
       FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,FAvailableWidth,pos.y+AHeight)
     else

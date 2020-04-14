@@ -493,6 +493,7 @@ type
      function TextSize(sUTF8: string; AMaxWidth: integer): TSize; overload; virtual; abstract;
      function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; overload; virtual; abstract;
      function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
+     function TextSizeMultiline(sUTF8: string; AMaxWidth: single = EmptySingle; AParagraphSpacing: single = 0): TSize; virtual; abstract;
 
      { Draw the UTF8 encoded string, (x,y) being the top-left corner by default. The color c or texture is used to fill the text.
        The value of FontOrientation is taken into account, so that the text may be rotated. }
