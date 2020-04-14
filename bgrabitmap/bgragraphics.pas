@@ -422,6 +422,8 @@ const
   bsCross = FPCanvas.bsCross;
   {** Draw both diagonal lines }
   bsDiagCross = FPCanvas.bsDiagCross;
+  {** Fills with an image }
+  bsImage = FPCanvas.bsImage;
 
 type
 

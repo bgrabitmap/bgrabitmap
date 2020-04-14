@@ -291,6 +291,11 @@ begin
   result := FileExists(UTF8ToSys(FileName));
 end;
 
+function DeleteFileUTF8(const FileName: string): boolean;
+begin
+  result := DeleteFile(UTF8ToSys(FileName));
+end;
+
 function FindFirstUTF8(const Path: string; Attr: Longint; out Rslt: TSearchRec
   ): Longint;
 begin
