@@ -539,6 +539,7 @@ begin
   if Source is TBGRAPen then
   begin
     sp := Source as TBGRAPen;
+    Mode := sp.Mode;
     Width := sp.Width;
     EndCap := sp.EndCap;
     JoinStyle := sp.JoinStyle;
@@ -548,6 +549,7 @@ begin
   if Source is TPen then
   begin
     p := Source as TPen;
+    Mode := p.Mode;
     Width := p.Width;
     EndCap := p.EndCap;
     JoinStyle := p.JoinStyle;
