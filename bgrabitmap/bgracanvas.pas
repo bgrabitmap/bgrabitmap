@@ -712,7 +712,7 @@ end;
 
 procedure TBGRAColoredObject.SetColor(const AValue: TColor);
 begin
-  BGRAColor := ColorToBGRA(ColorToRGB(AValue),BGRAColor.alpha);
+  BGRAColor := ColorToBGRA(AValue,BGRAColor.alpha);
 end;
 
 procedure TBGRAColoredObject.SetOpacity(const AValue: Byte);
@@ -1465,8 +1465,8 @@ var
     BDiff,GDiff,RDiff: Integer;
     CStart,CStop: TExpandedPixel;
   begin
-    CStart := GammaExpansion(ColorToBGRA(ColorToRGB(AStart)));
-    CStop := GammaExpansion(ColorToBGRA(ColorToRGB(AStop)));
+    CStart := GammaExpansion(ColorToBGRA(AStart));
+    CStop := GammaExpansion(ColorToBGRA(AStop));
 
     RDiff := CStop.red - CStart.red;
     GDiff := CStop.green - CStart.green;

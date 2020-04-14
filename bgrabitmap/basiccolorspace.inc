@@ -1391,7 +1391,7 @@ operator := (const AValue: TExpandedPixel): TColor;
 begin Result := BGRAToColor(GammaCompression(AValue)); end;
 
 operator := (const AValue: TColor): TExpandedPixel;
-begin Result := GammaExpansion(ColorToBGRA(ColorToRGB(AValue))) end;
+begin Result := GammaExpansion(ColorToBGRA(AValue)) end;
 
 operator :=(const Source: TExpandedPixel): TBGRAPixel;
 begin
@@ -1538,7 +1538,7 @@ begin
 end;
 
 operator := (const AValue: TColor): THSLAPixel;
-begin Result := BGRAToHSLA(ColorToBGRA(ColorToRGB(AValue))) end;
+begin Result := BGRAToHSLA(ColorToBGRA(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TColor;
 begin Result := BGRAToColor(HSLAToBGRA(AValue)) end;
@@ -1617,7 +1617,7 @@ begin
 end;
 
 operator := (const AValue: TColor): TGSBAPixel;
-begin Result := BGRAToGSBA(ColorToBGRA(ColorToRGB(AValue))) end;
+begin Result := BGRAToGSBA(ColorToBGRA(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TColor;
 begin Result := BGRAToColor(GSBAToBGRA(AValue)) end;

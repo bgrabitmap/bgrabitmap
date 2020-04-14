@@ -49,11 +49,11 @@ var
       sa := sin(sin(angleofs)/2);
       penwidth := i*8+1;
       image.PenStyle := dashstyle;
-      image.DrawPolyLineAntialias([PointF(x+40,y),PointF(x,y),PointF(x+sa*6*penwidth,y+ca*6*penwidth)],ColorToBGRA(ColorToRGB(clHighlight)),penwidth);
+      image.DrawPolyLineAntialias([PointF(x+40,y),PointF(x,y),PointF(x+sa*6*penwidth,y+ca*6*penwidth)],ColorToBGRA(clHighlight),penwidth);
       if penwidth > 5 then
       begin
         image.penStyle := psSolid;
-        image.DrawPolyLineAntialias([PointF(x+40,y),PointF(x,y),PointF(x+sa*6*penwidth,y+ca*6*penwidth)],ColorToBGRA(ColorToRGB(clHighlightText)),1);
+        image.DrawPolyLineAntialias([PointF(x+40,y),PointF(x,y),PointF(x+sa*6*penwidth,y+ca*6*penwidth)],ColorToBGRA(clHighlightText),1);
       end;
       y += penwidth*2+6*penwidth+5;
       angleofs += Pi*0.6;
@@ -62,8 +62,8 @@ var
 
 begin
     angleofs := time;
-    image := TBGRABitmap.Create(Width,Height,ColorToBGRA(ColorToRGB(clBtnFace)));
-    c := ColorToBGRA(ColorToRGB(clWindowText));
+    image := TBGRABitmap.Create(Width,Height,ColorToBGRA(clBtnFace));
+    c := ColorToBGRA(clWindowText);
 
     image.LineCap := pecFlat;
     DrawLines(30,20,'Flat cap');

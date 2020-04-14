@@ -249,9 +249,9 @@ begin
     BGLViewPort(ClientWidth,ClientHeight)
   else
   if Color = clDefault then
-    BGLViewPort(ClientWidth,ClientHeight,ColorToBGRA(ColorToRGB(clWindow)))
+    BGLViewPort(ClientWidth,ClientHeight,ColorToBGRA(clWindow))
   else
-    BGLViewPort(ClientWidth,ClientHeight,ColorToBGRA(ColorToRGB(Color)));
+    BGLViewPort(ClientWidth,ClientHeight,ColorToBGRA(Color));
 
   RedrawContent(ctx);
   inherited DoOnPaint;

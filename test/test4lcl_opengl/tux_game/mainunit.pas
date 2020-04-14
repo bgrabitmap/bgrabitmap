@@ -237,9 +237,9 @@ begin
   end else
   begin
     //draw a handle to indicate it is reduced
-    BGLContext.Canvas.Fill(ColorToBGRA(ColorToRGB(clBtnFace)));
-    BGLContext.Canvas.Line(1,3,BGLContext.Width-2,3, ColorToBGRA(ColorToRGB(clBtnHighlight)));
-    BGLContext.Canvas.Line(1,4,BGLContext.Width-2,4, ColorToBGRA(ColorToRGB(clBtnShadow)));
+    BGLContext.Canvas.Fill(ColorToBGRA(clBtnFace));
+    BGLContext.Canvas.Line(1,3,BGLContext.Width-2,3, ColorToBGRA(clBtnHighlight));
+    BGLContext.Canvas.Line(1,4,BGLContext.Width-2,4, ColorToBGRA(clBtnShadow));
   end;
 end;
 

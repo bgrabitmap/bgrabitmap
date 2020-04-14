@@ -63,7 +63,7 @@ begin
     virtualScreen.Fill(BGRABlack);
     virtualScreen.DrawPolyLineAntialias(virtualScreen.ComputeOpenedSpline(pts,ssCrossing),BGRAWhite,(width+height)/80,True);
     filtered := virtualScreen.FilterEmbossHighlight(True) as TBGRABitmap;
-    virtualScreen.Fill(ColorToRGB(clBtnFace));
+    virtualScreen.Fill(clBtnFace);
     virtualScreen.PutImage(0,0,filtered,dmDrawWithTransparency);
     filtered.Free;
     virtualscreen.Draw(Canvas,Left,Top,True);

@@ -649,7 +649,7 @@ end;
 procedure TBGRACanvasGradient2D.addColorStop(APosition: single; AColor: TColor
   );
 begin
-  addColorStop(APosition, ColorToBGRA(ColorToRGB(AColor)));
+  addColorStop(APosition, ColorToBGRA(AColor));
 end;
 
 procedure TBGRACanvasGradient2D.addColorStop(APosition: single; AColor: string
@@ -1856,7 +1856,7 @@ end;
 
 procedure TBGRACanvas2D.strokeStyle(color: TColor);
 begin
-  currentState.strokeColor := ColorToBGRA(ColorToRGB(color));
+  currentState.strokeColor := ColorToBGRA(color);
   currentState.strokeTextureProvider := nil;
 end;
 
@@ -1895,7 +1895,7 @@ end;
 
 procedure TBGRACanvas2D.fillStyle(color: TColor);
 begin
-  currentState.fillColor := ColorToBGRA(ColorToRGB(color));
+  currentState.fillColor := ColorToBGRA(color);
   currentState.fillTextureProvider := nil;
 end;
 
@@ -1923,7 +1923,7 @@ end;
 
 procedure TBGRACanvas2D.shadowColor(color: TColor);
 begin
-  shadowColor(ColorToBGRA(ColorToRGB(color)));
+  shadowColor(ColorToBGRA(color));
 end;
 
 procedure TBGRACanvas2D.shadowColor(color: string);

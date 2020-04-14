@@ -4358,7 +4358,7 @@ begin
   Result.Width := Width;
   Result.Height := Height;
   opaqueCopy := NewBitmap(Width, Height);
-  opaqueCopy.Fill(ColorToRGB(BackgroundColor));
+  opaqueCopy.Fill(BackgroundColor);
   opaqueCopy.PutImage(0, 0, self, dmDrawWithTransparency);
   opaqueCopy.Draw(Result.canvas, 0, 0, True);
   opaqueCopy.Free;
