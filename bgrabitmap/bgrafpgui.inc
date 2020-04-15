@@ -20,10 +20,9 @@ const
 function clRgbBtnHighlight: TColor;
 function clRgbBtnShadow: TColor;
 function ColorToRGB(c: TColor): TColor; inline;
-function RGBToColor(R, G, B: Byte): TColor;
-procedure RedGreenBlue(rgb: TColor; out Red, Green, Blue: Byte); // does not work on system color
 function GetScreenDPIX: integer;
 function GetScreenDPIY: integer;
+
 {$ENDIF}
 
 {$IFDEF INCLUDE_IMPLEMENTATION}
@@ -68,18 +67,6 @@ end;
 function ColorToRGB(c: TColor): TColor; inline;
 begin
   result := fpgColorToRGB(c);
-end;
-
-function RGBToColor(R, G, B: Byte): TColor;
-begin
-  Result := (R shl 16) or (G shl 8) or B;
-end;
-
-procedure RedGreenBlue(rgb: TColor; out Red, Green, Blue: Byte);
-begin
-  Blue := rgb and $000000ff;
-  Green := (rgb shr 8) and $000000ff;
-  Red := (rgb shr 16) and $000000ff;
 end;
 
 function GetScreenDPIX: integer;

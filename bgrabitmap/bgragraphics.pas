@@ -224,6 +224,9 @@ type
   {** Converts a ''TColor'' into a ''TFPColor'' value }
   function TColorToFPColor(const c: TColor): TFPColor;
 
+  function RGBToColor(R, G, B: Byte): TColor; inline;
+  procedure RedGreenBlue(rgb: TColor; out Red, Green, Blue: Byte); // does not work on system color
+
 type
   {* Direction of change in a gradient }
   TGradientDirection = (
@@ -624,7 +627,7 @@ end;
 
 function FPColorToTColor(const FPColor: TFPColor): TColor;
 begin
-  {$IFDEF BGRABITMAP_USE_FPGUI}
+  {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}
   Result:=((FPColor.Blue shr 8) and $ff)
        or (FPColor.Green and $ff00)
        or ((FPColor.Red shl 8) and $ff0000);
@@ -637,7 +640,7 @@ end;
 
 function TColorToFPColor(const c: TColor): TFPColor;
 begin
-  {$IFDEF BGRABITMAP_USE_FPGUI}
+  {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}
   Result.Blue:=(c and $ff);
   Result.Blue:=Result.Blue+(Result.Blue shl 8);
   Result.Green:=(c and $ff00);
@@ -653,6 +656,28 @@ begin
   Result.Blue:=Result.Blue+(Result.Blue shr 8);
   {$ENDIF}
   Result.Alpha:=FPImage.alphaOpaque;
+end;
+
+procedure RedGreenBlue(rgb: TColor; out Red, Green, Blue: Byte);
+begin
+  {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}
+  Blue := rgb and $000000ff;
+  Green := (rgb shr 8) and $000000ff;
+  Red := (rgb shr 16) and $000000ff;
+  {$ELSE}
+  Red := rgb and $000000ff;
+  Green := (rgb shr 8) and $000000ff;
+  Blue := (rgb shr 16) and $000000ff;
+  {$ENDIF}
+end;
+
+function RGBToColor(R, G, B: Byte): TColor;
+begin
+  {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}
+  Result := (R shl 16) or (G shl 8) or B;
+  {$ELSE}
+  Result := (B shl 16) or (G shl 8) or R;
+  {$ENDIF}
 end;
 
 { TGraphic }

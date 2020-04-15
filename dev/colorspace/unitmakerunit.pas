@@ -909,23 +909,23 @@ var
       begin
         Add('private');
         h := GetFunction(HelperName+'.GetRed', '', 'byte', false);
-        AddProcedureImp(h, 'result := self and $ff;');
+        AddProcedureImp(h, 'result := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}(self shr 16) and $ff{$ELSE}self and $ff{$ENDIF};');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetFunction(HelperName+'.GetGreen', '', 'byte', false);
         AddProcedureImp(h, 'result := (self shr 8) and $ff;');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetFunction(HelperName+'.GetBlue', '', 'byte', false);
-        AddProcedureImp(h, 'result := (self shr 16) and $ff;');
+        AddProcedureImp(h, 'result := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}self and $ff{$ELSE}(self shr 16) and $ff{$ENDIF};');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
 
         h := GetProcedure(HelperName+'.SetRed', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := Cardinal(self and $ffff00) or AValue;');
+        AddProcedureImp(h, 'self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}Cardinal(self and $00ffff) or (AValue shl 16){$ELSE}Cardinal(self and $ffff00) or AValue{$ENDIF};');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetProcedure(HelperName+'.SetGreen', 'AValue: byte', false);
         AddProcedureImp(h, 'self := Cardinal(self and $ff00ff) or (AValue shl 8);');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetProcedure(HelperName+'.SetBlue', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := Cardinal(self and $00ffff) or (AValue shl 16);');
+        AddProcedureImp(h, 'self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}Cardinal(self and $ffff00) or AValue{$ELSE}Cardinal(self and $00ffff) or (AValue shl 16){$ENDIF};');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         add('public');
       end;
