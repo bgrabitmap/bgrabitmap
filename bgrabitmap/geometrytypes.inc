@@ -5,7 +5,7 @@
 const
   {* Value indicating that there is nothing in the single-precision floating point value.
      It is also used as a separator in lists }
-  EmptySingle: single = -3.402823e38;
+  EmptySingle = single(-3.402823e38);
 
 type
   {* Pointer to a ''TPointF'' structure }
