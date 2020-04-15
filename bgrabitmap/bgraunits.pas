@@ -5,7 +5,7 @@ unit BGRAUnits;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes;
+  SysUtils, BGRABitmapTypes;
 
 type
   TSVGNumber = single;//double

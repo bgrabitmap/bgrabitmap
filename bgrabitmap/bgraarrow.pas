@@ -5,7 +5,7 @@ unit BGRAArrow;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAGraphics;
+  SysUtils, BGRABitmapTypes, BGRAGraphics;
 
 type
   { TBGRAArrow }

@@ -5,7 +5,7 @@ unit BGRACoordPool3D;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRASSE, BGRAMatrix3D;
+  SysUtils, BGRABitmapTypes, BGRASSE, BGRAMatrix3D;
 
 type
   PBGRACoordData3D = ^TBGRACoordData3D;
