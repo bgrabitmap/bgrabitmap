@@ -1695,7 +1695,7 @@ begin
                         PointF(Left+width,Bottom-width),PointF(Right-width,Bottom-width),
                         PointF(Right-width,Top+width),PointF(Right,Top)],color2,color2, false);
   end;
-  InflateRect(bounds,-width,-width);
+  bounds.Inflate(-width, -width);
 end;
 
 procedure TBGLCustomCanvas.PutImage(x, y: single; ATexture: IBGLTexture;

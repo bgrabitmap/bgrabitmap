@@ -1322,8 +1322,8 @@ begin
   previousClip := ADest.ClipRect;
   if style.Clipping then
   begin
-    intersected := rect(0,0,0,0);
-    if not IntersectRect(intersected, previousClip, ARect) then exit;
+    intersected := TRect.Intersect(previousClip, ARect);
+    if intersected.IsEmpty then exit;
     ADest.ClipRect := intersected;
   end;
   FFont.Orientation := 0;

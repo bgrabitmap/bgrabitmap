@@ -130,7 +130,7 @@ var
   begin
     //evaluate required bounds taking blur radius into acount
     AClippedBounds := bmp.GetImageBounds;
-    if IsRectEmpty(AClippedBounds) then
+    if AClippedBounds.IsEmpty then
     begin
       result := false;
       exit;
@@ -139,7 +139,9 @@ var
     AClippedBounds.Top    := max(0, AClippedBounds.Top - blurOfs.Y);
     AClippedBounds.Right  := min(bmpWidth, AClippedBounds.Right + maskWidth - 1 - blurOfs.X);
     AClippedBounds.Bottom := min(bmpHeight, AClippedBounds.Bottom + maskHeight - 1 - blurOfs.Y);
-    if not IntersectRect(AClippedBounds, AClippedBounds, AWantedBounds) then
+    AClippedBounds.Intersect(AWantedBounds);
+
+    if AClippedBounds.IsEmpty then
     begin
       result := false;
       exit;

@@ -1989,7 +1989,8 @@ var xb,yb: NativeInt;
   c: TBGRAPixel;
   buf1,buf2: ArrayOfTBGRAPixel;
 begin
-  if not IntersectRect(ARect,ARect,ClipRect) then exit;
+  ARect.Intersect(ClipRect);
+  if ARect.IsEmpty then exit;
   setlength(buf1, ARect.Width);
   setlength(buf2, ARect.Width);
   for yb := ARect.top to ARect.Bottom-1 do
@@ -2347,9 +2348,9 @@ begin
     else
     begin
       r := RectWithSize(floor(pt1.x),floor(pt1.y),1,1);
-      UnionRect(r, r,RectWithSize(floor(pt2.x),floor(pt2.y),1,1));
-      UnionRect(r, r,RectWithSize(floor(pt3.x),floor(pt3.y),1,1));
-      UnionRect(r, r,RectWithSize(floor(pt4.x),floor(pt4.y),1,1));
+      r.Union( RectWithSize(floor(pt2.x),floor(pt2.y),1,1) );
+      r.Union( RectWithSize(floor(pt3.x),floor(pt3.y),1,1) );
+      r.Union( RectWithSize(floor(pt4.x),floor(pt4.y),1,1) );
       FillRect(r,scan,dmDrawWithTransparency);
     end;
     scan.Free;
@@ -3198,7 +3199,8 @@ begin
   beforeBGR := LongWord(BGRA(rBefore,gBefore,bBefore,0));
   afterBGR  := LongWord(BGRA(rAfter,gAfter,bAfter,0));
 
-  if not IntersectRect(ABounds,ABounds,ClipRect) then exit;
+  ABounds.Intersect(ClipRect);
+  if ABounds.IsEmpty then exit;
   xcount := ABounds.Right-ABounds.Left;
   for yb := ABounds.Top to ABounds.Bottom-1 do
   begin
@@ -3821,15 +3823,15 @@ var affine: TBGRAAffineBitmapTransform;
     sourceBounds: TRect;
 begin
   if (Source = nil) or (Source.Width = 0) or (Source.Height = 0) or (AOpacity = 0) then exit;
-  IntersectRect(AOutputBounds,AOutputBounds,ClipRect);
-  if IsRectEmpty(AOutputBounds) then exit;
+  AOutputBounds.Intersect(ClipRect);
+  if AOutputBounds.IsEmpty then exit;
 
   if not APixelCenteredCoords then AMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
   if IsAffineRoughlyTranslation(AMatrix, rect(0,0,Source.Width,Source.Height)) then
   begin
     sourceBounds := AOutputBounds;
-    OffsetRect(sourceBounds, -round(AMatrix[1,3]),-round(AMatrix[2,3]));
-    IntersectRect(sourceBounds,sourceBounds,rect(0,0,Source.Width,Source.Height));
+    sourceBounds.Offset(-round(AMatrix[1,3]), -round(AMatrix[2,3]));
+    sourceBounds.Intersect( rect(0,0,Source.Width,Source.Height) );
     PutImagePart(round(AMatrix[1,3])+sourceBounds.Left,round(AMatrix[2,3])+sourceBounds.Top,Source,sourceBounds,AMode,AOpacity);
   end else
   begin
@@ -3864,13 +3866,13 @@ const pointMargin = 0.5 - 1/512;
 
 begin
   result := EmptyRect;
-  if IsRectEmpty(ASourceBounds) then exit;
+  if ASourceBounds.IsEmpty then exit;
 
   if not APixelCenteredCoords then AMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
   if IsAffineRoughlyTranslation(AMatrix,ASourceBounds) then
   begin
     result := ASourceBounds;
-    OffsetRect(result,round(AMatrix[1,3]),round(AMatrix[2,3]));
+    result.Offset(round(AMatrix[1,3]), round(AMatrix[2,3]));
   end else
   begin
     FirstPoint(AMatrix*PointF(ASourceBounds.Left-pointMargin,ASourceBounds.Top-pointMargin));
@@ -3878,7 +3880,7 @@ begin
     IncludePoint(AMatrix*PointF(ASourceBounds.Left-pointMargin,ASourceBounds.Bottom-1+pointMargin));
     IncludePoint(AMatrix*PointF(ASourceBounds.Right-1+pointMargin,ASourceBounds.Bottom-1+pointMargin));
   end;
-  if AClipOutput then IntersectRect(result,result,ClipRect);
+  if AClipOutput then result.Intersect(ClipRect);
 end;
 
 procedure TBGRADefaultBitmap.StretchPutImage(ARect: TRect;
@@ -4168,7 +4170,8 @@ end;
 
 procedure TBGRADefaultBitmap.NegativeRect(ABounds: TRect);
 begin
-  if not IntersectRect(ABounds,ABounds,ClipRect) then exit;
+  ABounds.Intersect(ClipRect);
+  if ABounds.IsEmpty then exit;
   TBGRAFilterScannerNegative.ComputeFilterInplace(self, ABounds, True);
 end;
 
@@ -4182,7 +4185,8 @@ end;
 
 procedure TBGRADefaultBitmap.LinearNegativeRect(ABounds: TRect);
 begin
-  if not IntersectRect(ABounds,ABounds,ClipRect) then exit;
+  ABounds.Intersect(ClipRect);
+  if ABounds.IsEmpty then exit;
   TBGRAFilterScannerNegative.ComputeFilterInplace(self, ABounds, False);
 end;
 
@@ -4193,7 +4197,8 @@ end;
 
 procedure TBGRADefaultBitmap.InplaceGrayscale(ABounds: TRect; AGammaCorrection: boolean = true);
 begin
-  if not IntersectRect(ABounds,ABounds,ClipRect) then exit;
+  ABounds.Intersect(ClipRect);
+  if ABounds.IsEmpty then exit;
   TBGRAFilterScannerGrayscale.ComputeFilterInplace(self, ABounds, AGammaCorrection);
 end;
 
@@ -4206,7 +4211,8 @@ procedure TBGRADefaultBitmap.InplaceNormalize(ABounds: TRect;
   AEachChannel: boolean);
 var scanner: TBGRAFilterScannerNormalize;
 begin
-  if not IntersectRect(ABounds,ABounds,ClipRect) then exit;
+  ABounds.Intersect(ClipRect);
+  if ABounds.IsEmpty then exit;
   scanner := TBGRAFilterScannerNormalize.Create(self,Point(0,0),ABounds,AEachChannel);
   FillRect(ABounds,scanner,dmSet);
   scanner.Free;
@@ -4321,10 +4327,9 @@ var xcount,patY,w,n,patY1,patY2m1,patX,patX1: NativeInt;
     delta: PtrInt;
     actualRect: TRect;
 begin
-  actualRect := ARect;
-  IntersectRect(actualRect, ARect, self.ClipRect);
+  actualRect := TRect.Intersect(ARect, ClipRect);
+  if actualRect.IsEmpty then exit;
   w := actualRect.Right-actualRect.Left;
-  if (w <= 0) or (actualRect.Bottom <= actualRect.Top) then exit;
   delta := self.Width;
   if self.LineOrder = riloBottomToTop then delta := -delta;
   delta := (delta-w)*SizeOf(TBGRAPixel);

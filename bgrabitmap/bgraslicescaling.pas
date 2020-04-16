@@ -485,7 +485,7 @@ begin
     Result[spBottomRight] := rect(Width - Right, Height - Bottom, Width, Height);
   end;
   for pos := low(TSlicePosition) to high(TSlicePosition) do
-    OffsetRect(Result[pos], ARect.Left, ARect.Top);
+    Result[pos].Offset(ARect.Left, ARect.Top);
 end;
 
 procedure TBGRASliceScaling.SliceScalingDraw(ADest: TBGRABitmap;

@@ -1422,7 +1422,7 @@ begin
     multi.Draw(FBitmap);
     multi.Free;
   end;
-  InflateRect(bounds,-width,-width);
+  bounds.Inflate(-width,-width);
 end;
 
 procedure TBGRACanvas.GradientFill(ARect: TRect; AStart, AStop: TColor;

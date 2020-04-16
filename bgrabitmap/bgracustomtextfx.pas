@@ -110,7 +110,7 @@ end;
 function TBGRACustomTextEffect.GetShadowBounds(ARadius: integer): TRect;
 begin
   result := Bounds;
-  if (ARadius > 0) and not IsRectEmpty(result) then
+  if (ARadius > 0) and not result.IsEmpty then
     result.Inflate(ARadius, ARadius);
 end;
 

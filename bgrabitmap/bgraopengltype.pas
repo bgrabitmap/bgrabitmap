@@ -1692,8 +1692,7 @@ end;
 procedure TBGLCustomBitmap.SetClipRect(const AValue: TRect);
 var r: TRect;
 begin
-  r := AValue;
-  IntersectRect(r, r,FActualRect);
+  r := TRect.Intersect(AValue, FActualRect);
   inherited SetClipRect(r);
 end;
 

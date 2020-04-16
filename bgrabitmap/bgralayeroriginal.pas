@@ -671,7 +671,7 @@ begin
   else
   begin
     result := Rect(floor(AOrigin.x+0.5-1.5),floor(AOrigin.y+0.5-1.5),ceil(AOrigin.x+0.5+1.5),ceil(AOrigin.y+0.5+1.5));
-    UnionRect(result, result, rect(floor(AEndCoord.x+0.5-FPointSize-1.5), floor(AEndCoord.y+0.5-FPointSize-1.5),
+    result.Union( rect(floor(AEndCoord.x+0.5-FPointSize-1.5), floor(AEndCoord.y+0.5-FPointSize-1.5),
                       ceil(AEndCoord.x+0.5+FPointSize+1.5), ceil(AEndCoord.y+0.5+FPointSize+1.5)) );
   end;
 end;
@@ -1101,12 +1101,12 @@ begin
       elemRect := RenderPoint(ADest, OriginalCoordToView(FPoints[i].Coord), FPoints[i].RightButton, FPoints[i].Highlighted)
     else
       elemRect := RenderArrow(ADest, OriginalCoordToView(FPoints[i].Origin), OriginalCoordToView(FPoints[i].Coord));
-    if not IsRectEmpty(elemRect) then
+    if not elemRect.IsEmpty then
     begin
-      if IsRectEmpty(result) then
+      if result.IsEmpty then
         result := elemRect
       else
-        UnionRect(result, result, elemRect);
+        result.Union(elemRect);
     end;
   end;
   for i := 0 to high(FPolylines) do
@@ -1121,12 +1121,12 @@ begin
           ptsF[j] := OriginalCoordToView(Coords[j]);
       elemRect := RenderPolygon(ADest, ptsF, Closed, Style, BackColor);
     end;
-    if not IsRectEmpty(elemRect) then
+    if not elemRect.IsEmpty then
     begin
-      if IsRectEmpty(result) then
+      if result.IsEmpty then
         result := elemRect
       else
-        UnionRect(result, result, elemRect);
+        result.Union(elemRect);
     end;
   end;
 end;
@@ -1144,12 +1144,12 @@ begin
       elemRect := GetRenderPointBounds(OriginalCoordToView(FPoints[i].Coord), FPoints[i].Highlighted)
     else
       elemRect := GetRenderArrowBounds(OriginalCoordToView(FPoints[i].Origin), OriginalCoordToView(FPoints[i].Coord));
-    if not IsRectEmpty(elemRect) then
+    if not elemRect.IsEmpty then
     begin
-      if IsRectEmpty(result) then
+      if result.IsEmpty then
         result := elemRect
       else
-        UnionRect(result, result, elemRect);
+        result.Union(elemRect);
     end;
   end;
   for i := 0 to high(FPolylines) do
@@ -1164,12 +1164,12 @@ begin
           ptsF[j] := OriginalCoordToView(Coords[j]);
       elemRect := GetRenderPolygonBounds(ptsF);
     end;
-    if not IsRectEmpty(elemRect) then
+    if not elemRect.IsEmpty then
     begin
-      if IsRectEmpty(result) then
+      if result.IsEmpty then
         result := elemRect
       else
-        UnionRect(result, result, elemRect);
+        result.Union(elemRect);
     end;
   end;
 end;

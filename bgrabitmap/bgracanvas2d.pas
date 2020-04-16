@@ -1251,13 +1251,13 @@ begin
         shadowBounds.Inflate(ceil(shadowBlur),ceil(shadowBlur));
         shadowBounds.Offset(round(shadowOffsetX),round(shadowOffsetY));
         shadowBounds.Intersect(surface.ClipRect);
-        if not IsRectEmpty(shadowBounds) then
+        if not shadowBounds.IsEmpty then
         begin
           shadowBounds.Offset(-round(shadowOffsetX),-round(shadowOffsetY));
-          UnionRect(surfaceBounds, surfaceBounds, shadowBounds);
+          surfaceBounds.Union(shadowBounds);
         end;
       end;
-      if not IsRectEmpty(surfaceBounds) then
+      if not surfaceBounds.IsEmpty then
       begin
         bmp.SetSize(s.cx+pad.cx*2,s.cy+pad.cy*2);
         bmp.Fill(BGRABlack);
@@ -1524,8 +1524,9 @@ begin
     for i := 0 to high(ofsPts2) do
       AddPt(ofsPts2[i]);
     if firstFound then exit;
-    InflateRect(foundRect, ceil(shadowBlur),ceil(shadowBlur));
-    if not IntersectRect(foundRect, foundRect,maxRect) then exit;
+    foundRect.Inflate(ceil(shadowBlur), ceil(shadowBlur));
+    foundRect.Intersect(maxRect);
+    if foundRect.IsEmpty then exit;
     offset := PointF(-foundRect.Left,-foundRect.Top);
     for i := 0 to high(ofsPts) do
       ofsPts[i].Offset(offset);

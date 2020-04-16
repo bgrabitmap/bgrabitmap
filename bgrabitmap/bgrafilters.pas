@@ -137,7 +137,7 @@ procedure TGrayscaleTask.DoExecute;
 var
   yb: LongInt;
 begin
-  if IsRectEmpty(FBounds) then exit;
+  if FBounds.IsEmpty then exit;
   for yb := FBounds.Top to FBounds.bottom - 1 do
   begin
     if GetShouldStop(yb) then break;
@@ -181,8 +181,8 @@ var scanner: TBGRAFilterScannerNormalize;
   remain: TRect;
 begin
   Result := bmp.NewBitmap(bmp.Width, bmp.Height);
-  remain := EmptyRect;
-  if not IntersectRect(remain,ABounds,rect(0,0,bmp.Width,bmp.Height)) then exit;
+  remain := TRect.Intersect(ABounds, rect(0,0,bmp.Width,bmp.Height));
+  if remain.IsEmpty then exit;
   scanner := TBGRAFilterScannerNormalize.Create(bmp,Point(0,0),remain,eachChannel);
   result.FillRect(remain,scanner,dmSet);
   scanner.Free;
@@ -198,7 +198,7 @@ function FilterSharpen(bmp: TBGRACustomBitmap; ABounds: TRect; AAmount: integer 
 var scanner: TBGRAFilterScanner;
 begin
   Result := bmp.NewBitmap(bmp.Width, bmp.Height);
-  if IsRectEmpty(ABounds) then exit;
+  if ABounds.IsEmpty then exit;
   scanner := TBGRASharpenScanner.Create(bmp,ABounds,AAmount);
   result.FillRect(ABounds,scanner,dmSet);
   scanner.Free;
@@ -255,11 +255,11 @@ begin
   y256 := trunc((dy-idy)*256);
 
   Result := bmp.NewBitmap(bmp.Width, bmp.Height);
-  if IsRectEmpty(ABounds) then exit;
+  if ABounds.IsEmpty then exit;
 
   bounds := bmp.GetImageBounds;
-
-  if not IntersectRect(bounds, bounds, ABounds) then exit;
+  bounds.Intersect(ABounds);
+  if bounds.IsEmpty then exit;
   bounds.Left   := max(0, bounds.Left - 1);
   bounds.Top    := max(0, bounds.Top - 1);
   bounds.Right  := min(bmp.Width, bounds.Right + 1);

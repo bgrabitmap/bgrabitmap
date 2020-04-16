@@ -81,12 +81,13 @@ begin
   if (ADestination.Width <> bmp.Width) or (ADestination.Height <> bmp.Height) then
     raise exception.Create('Dimension mismatch');
   bounds := bmp.GetImageBounds;
-  if IsRectEmpty(bounds) then exit;
+  if bounds.IsEmpty then exit;
   bounds.Left   := max(0, bounds.Left - iRadiusX);
   bounds.Top    := max(0, bounds.Top - iRadiusY);
   bounds.Right  := min(bmp.Width, bounds.Right + iRadiusX);
   bounds.Bottom := min(bmp.Height, bounds.Bottom + iRadiusY);
-  if not IntersectRect(bounds,bounds,ABounds) then exit;
+  bounds.Intersect(ABounds);
+  if bounds.IsEmpty then exit;
 
   if radiusX*radiusY >= 100 then
   begin

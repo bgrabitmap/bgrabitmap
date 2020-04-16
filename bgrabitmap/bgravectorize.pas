@@ -715,10 +715,10 @@ var
   end;
 
 begin
-  IntersectRect(ARect, ARect, rect(0,0,ASource.Width,ASource.Height));
-  if IsRectEmpty(ARect) then exit(nil);
+  ARect.Intersect( rect(0,0,ASource.Width,ASource.Height) );
+  if ARect.IsEmpty then exit(nil);
   ARect := GetBoundsWithin;
-  if IsRectEmpty(ARect) then exit(nil);
+  if ARect.IsEmpty then exit(nil);
 
   factor := AZoom;
   offset := AZoom*0.5;
@@ -1216,8 +1216,8 @@ begin
   previousClip := ADest.ClipRect;
   if style.Clipping then
   begin
-    intersectedClip := rect(0,0,0,0);
-    if not IntersectRect(intersectedClip, previousClip, ARect) then exit;
+    intersectedClip := TRect.Intersect(previousClip, ARect);
+    if intersectedClip.IsEmpty then exit;
     ADest.ClipRect := intersectedClip;
   end;
   UpdateFont;

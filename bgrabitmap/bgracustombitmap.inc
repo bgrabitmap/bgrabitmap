@@ -725,8 +725,7 @@ begin
   pixelBuffer := nil;
   if ASourceBitmap <> nil then
   begin
-    actualRect := EmptyRect;
-    IntersectRect(actualRect,ARect,rect(0,0,ASourceBitmap.Width,ASourceBitmap.Height))
+    actualRect := TRect.Intersect(ARect, rect(0,0,ASourceBitmap.Width,ASourceBitmap.Height));
   end
   else if ASourceTexture <> nil then
   begin
@@ -1606,12 +1605,12 @@ begin
   ratio := min(ARect.Width/Source.Width, ARect.Height/Source.Height);
   imgRect := RectWithSize(ARect.Left,ARect.Top, round(Source.Width*ratio), round(Source.Height*ratio));
   case AHorizAlign of
-    taCenter: OffsetRect(imgRect, (ARect.Width-imgRect.Width) div 2, 0);
-    taRightJustify: OffsetRect(imgRect, ARect.Width-imgRect.Width, 0);
+    taCenter: imgRect.Offset((ARect.Width-imgRect.Width) div 2, 0);
+    taRightJustify: imgRect.Offset(ARect.Width-imgRect.Width, 0);
   end;
   case AVertAlign of
-    tlCenter: OffsetRect(imgRect, 0,(ARect.Height-imgRect.Height) div 2);
-    tlBottom: OffsetRect(imgRect, 0,ARect.Height-imgRect.Height);
+    tlCenter: imgRect.Offset(0,(ARect.Height-imgRect.Height) div 2);
+    tlBottom: imgRect.Offset(0,ARect.Height-imgRect.Height);
   end;
   StretchPutImage(imgRect, Source, mode, AOpacity);
 end;
@@ -1637,7 +1636,8 @@ begin
 
   oldClip := ClipRect;
   newClip := rect(x,y,x+w,y+h);
-  if not IntersectRect(newClip,newClip,oldClip) then exit;
+  newClip.Intersect(oldClip);
+  if newClip.IsEmpty then exit;
 
   ClipRect := newClip;
 

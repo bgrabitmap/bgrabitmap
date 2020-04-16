@@ -989,7 +989,7 @@ end;
 
 procedure TCustomUniversalBitmap.SetClipRect(const AValue: TRect);
 begin
-  IntersectRect(FClipRect,AValue,Rect(0,0,FWidth,FHeight));
+  FClipRect := TRect.Intersect(AValue, Rect(0,0,Width,Height));
 end;
 
 procedure TCustomUniversalBitmap.RaiseInvalidBrushColorspace;
@@ -1642,8 +1642,8 @@ begin
     if c in Channels then
     begin
       resultForChannel := GetImageBoundsWithin(ARect, c, ANothingValue);
-      if IsRectEmpty(result) then result := resultForChannel
-      else UnionRect(result, result, resultForChannel);
+      if result.IsEmpty then result := resultForChannel
+      else result.Union(resultForChannel);
     end;
   end;
 end;
@@ -2708,8 +2708,7 @@ var
   remain: TRect;
 begin
   result := ClipRect;
-  remain := EmptyRect;
-  IntersectRect(remain, ARect, result);
+  remain := TRect.Intersect(ARect, result);
   ClipRect := remain;
 end;
 
@@ -3632,7 +3631,8 @@ var
   PStart,PEnd: Pointer;
 begin
   if (ARect.Right <= ARect.Left) or (ARect.Bottom <= ARect.Top) then exit;
-  if not IntersectRect(ARect, ARect, rect(0,0,Width,Height)) then exit;
+  ARect.Intersect(rect(0,0,Width,Height));
+  if ARect.IsEmpty then exit;
   LoadFromBitmapIfNeeded;
   linesize := (ARect.Right-ARect.Left) * FPixelSize;
   line     := nil;
@@ -3665,7 +3665,8 @@ var
   PEnd:   PByte;
 begin
   if (ARect.Right <= ARect.Left) or (ARect.Bottom <= ARect.Top) then exit;
-  if not IntersectRect(ARect, ARect, rect(0,0,Width,Height)) then exit;
+  ARect.Intersect(rect(0,0,Width,Height));
+  if ARect.IsEmpty then exit;
   w := ARect.Right-ARect.Left;
   LoadFromBitmapIfNeeded;
   for yb := ARect.Top to ARect.Bottom-1 do
@@ -3692,7 +3693,8 @@ var
   w: integer;
 begin
   if (ARect.Right <= ARect.Left) or (ARect.Bottom <= ARect.Top) then exit;
-  if not IntersectRect(ARect, ARect, rect(0,0,Width,Height)) then exit;
+  ARect.Intersect(rect(0,0,Width,Height));
+  if ARect.IsEmpty then exit;
   LoadFromBitmapIfNeeded;
   w := ARect.Right-ARect.Left;
   linesize := w * FPixelSize;

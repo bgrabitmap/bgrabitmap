@@ -423,8 +423,8 @@ begin
   previousClip := ADest.ClipRect;
   if style.Clipping then
   begin
-    intersectedClip := rect(0,0,0,0);
-    if not IntersectRect(intersectedClip, previousClip, ARect) then exit;
+    intersectedClip := TRect.Intersect(previousClip, ARect);
+    if intersectedClip.IsEmpty then exit;
     ADest.ClipRect := intersectedClip;
   end;
   UpdateFont;
