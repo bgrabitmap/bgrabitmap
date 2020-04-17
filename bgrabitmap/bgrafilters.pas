@@ -9,7 +9,7 @@ interface
   a result. }
 
 uses
-  Classes, BGRABitmapTypes, BGRAFilterType, BGRAFilterBlur;
+  BGRAClasses, BGRABitmapTypes, BGRAFilterType, BGRAFilterBlur;
 
 type
   TFilterTask = BGRAFilterType.TFilterTask;
@@ -121,7 +121,7 @@ function FilterPixelate(bmp: TBGRACustomBitmap; pixelSize: integer; useResample:
 
 implementation
 
-uses Math, BGRATransform, Types, SysUtils, BGRAFilterScanner;
+uses Math, BGRATransform, SysUtils, BGRAFilterScanner;
 
 /////////////////////// PIXELWISE FILTERS ////////////////////////////////
 

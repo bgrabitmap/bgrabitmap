@@ -5,7 +5,7 @@ unit BGRAUnicodeText;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAUnicode, BGRAUTF8;
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAUnicode, BGRAUTF8;
 
 type
   TDeleteCharEvent = procedure(ASender: TObject; AParagraphIndex: integer; ACharStart, ACharCount: integer) of object;

@@ -23,7 +23,7 @@ unit BGRAReadPSD;
 interface
 
 uses
-  Classes, SysUtils, FPimage, FPReadPSD;
+  BGRAClasses, SysUtils, FPimage, FPReadPSD;
 
 type
   { TBGRAReaderPSD }

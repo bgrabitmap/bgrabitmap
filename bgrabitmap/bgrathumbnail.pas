@@ -6,7 +6,7 @@ unit BGRAThumbnail;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, FPimage;
+  BGRAClasses, SysUtils, BGRABitmap, BGRABitmapTypes, FPimage;
 
 function GetBitmapThumbnail(ABitmap: TBGRACustomBitmap; AWidth,AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil; AVerticalShrink: single = 1; AHorizShrink: single = 1): TBGRABitmap; overload;
 function GetBitmapThumbnail(ABitmap: TBGRACustomBitmap; AFormat: TBGRAImageFormat; AWidth,AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil; AVerticalShrink: single = 1; AHorizShrink: single = 1): TBGRABitmap; overload;
@@ -41,7 +41,7 @@ var
 
 implementation
 
-uses Types, base64, BGRAUTF8,
+uses base64, BGRAUTF8,
      DOM, XMLRead, BGRAReadJPEG, BGRAReadPng, BGRAReadGif, BGRAReadBMP,
      BGRAReadPSD, BGRAReadIco, UnzipperExt, BGRAReadLzp;
 

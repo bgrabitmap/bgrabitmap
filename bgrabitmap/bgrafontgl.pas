@@ -5,7 +5,7 @@ unit BGRAFontGL;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRAOpenGLType, BGRABitmapTypes,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRAOpenGLType, BGRABitmapTypes,
   Avl_Tree;
 
 type

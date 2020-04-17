@@ -5,7 +5,7 @@ unit BGRAGifFormat;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRABitmap, BGRABitmapTypes,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmap, BGRABitmapTypes,
   BGRAPalette;
 
 type
@@ -974,7 +974,7 @@ var
     try
       for i := 0 to numberFromPal-1 do
         rgbs[i] := BGRAToPackedRgbTriple(pal.Color[i]);
-      black := BGRAToPackedRgbTriple(ColorToBGRA(clBlack));
+      black := BGRAToPackedRgbTriple(BGRABlack);
       for i := numberFromPal to numberToWrite-1 do
         rgbs[i] := black;
       Stream.WriteBuffer(rgbs^,sizeof(TPackedRGBTriple)*numberToWrite);

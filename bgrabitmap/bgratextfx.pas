@@ -25,7 +25,7 @@ unit BGRATextFX;
 interface
 
 uses
-  Classes, SysUtils, Graphics, Types, BGRABitmapTypes, BGRAPhongTypes, BGRAText,
+  BGRAClasses, SysUtils, Graphics, BGRABitmapTypes, BGRAPhongTypes, BGRAText,
   BGRACustomTextFX, BGRAVectorize;
 
 type

@@ -33,7 +33,7 @@ unit BGRAPolygon;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAFillInfo, BGRAPath;
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAFillInfo, BGRAPath;
 
 procedure FillShapeAliased(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
   c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; AliasingIncludeBottomRight: Boolean= false);

@@ -6,7 +6,7 @@ unit BGRASVGType;
 interface
 
 uses
-  Classes, SysUtils, BGRATransform, BGRABitmapTypes, BGRAUnits,
+  BGRAClasses, SysUtils, BGRATransform, BGRABitmapTypes, BGRAUnits,
   laz2_DOM, BGRACanvas2D, fgl, BGRAGraphics;
 
 type

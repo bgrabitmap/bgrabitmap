@@ -5,7 +5,7 @@ unit BGRAfpGUIBitmap;
 interface
 
 uses
-  SysUtils, Classes, BGRAGraphics, BGRABitmapTypes, BGRADefaultBitmap,
+  SysUtils, BGRAClasses, BGRAGraphics, BGRABitmapTypes, BGRADefaultBitmap,
   BGRAFreeType, EasyLazFreeType, LazFreeTypeFontCollection,
   BGRACanvas;
 

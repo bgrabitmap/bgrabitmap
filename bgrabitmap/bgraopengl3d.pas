@@ -6,7 +6,7 @@ interface
 
 uses BGRABitmapTypes,
   BGRASceneTypes, BGRASSE,
-  Classes, BGRAMatrix3D,
+  BGRAClasses, BGRAMatrix3D,
   BGRACanvasGL,
   BGRAScene3D,
   BGRAOpenGLType,

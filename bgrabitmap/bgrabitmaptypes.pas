@@ -31,7 +31,7 @@ unit BGRABitmapTypes;
 interface
 
 uses
-  Classes, Types, BGRAGraphics,
+  BGRAClasses, BGRAGraphics,
   FPImage{$IFDEF BGRABITMAP_USE_FPCANVAS}, FPImgCanv{$ENDIF}
   {$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
   BGRAMultiFileType;

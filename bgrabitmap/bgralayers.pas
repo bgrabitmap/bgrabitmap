@@ -6,7 +6,7 @@ unit BGRALayers;
 interface
 
 uses
-  BGRAGraphics, Classes, SysUtils, Types, BGRABitmapTypes, BGRABitmap,
+  BGRAGraphics, BGRAClasses, SysUtils, BGRABitmapTypes, BGRABitmap,
   BGRAMemDirectory, BGRATransform, fgl, BGRALayerOriginal;
 
 type

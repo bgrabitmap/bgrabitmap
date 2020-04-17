@@ -47,7 +47,7 @@ interface
   to the platform }
 
 uses
-  Classes, SysUtils,
+  BGRAClasses, SysUtils,
 {$IFDEF BGRABITMAP_USE_FPGUI}
     BGRAfpGUIBitmap,
 {$ELSE}

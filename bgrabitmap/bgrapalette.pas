@@ -5,7 +5,7 @@ unit BGRAPalette;
 interface
 
 uses
-  Classes, SysUtils, Avl_Tree, BGRABitmapTypes, FPimage;
+  BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, FPimage;
 
 const
   MaxLastAddedColors = 10;

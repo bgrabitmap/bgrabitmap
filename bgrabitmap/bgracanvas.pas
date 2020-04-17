@@ -6,7 +6,7 @@ unit BGRACanvas;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, Types, FPImage, BGRABitmapTypes
+  BGRAClasses, SysUtils, BGRAGraphics, FPImage, BGRABitmapTypes
   {$IFDEF BGRABITMAP_USE_FPCANVAS}, FPCanvas{$ENDIF};
 
 type

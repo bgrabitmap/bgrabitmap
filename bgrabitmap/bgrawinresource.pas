@@ -5,7 +5,7 @@ unit BGRAWinResource;
 interface
 
 uses
-  Classes, SysUtils, BGRAMultiFileType, BGRABitmapTypes, BGRAReadBMP;
+  BGRAClasses, SysUtils, BGRAMultiFileType, BGRABitmapTypes, BGRAReadBMP;
 
 const
   RT_CURSOR = 1;

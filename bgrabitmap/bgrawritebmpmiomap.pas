@@ -5,7 +5,7 @@ unit BGRAWriteBmpMioMap;
 interface
 
 uses
-  Classes, SysUtils, FPimage, BGRABitmapTypes, BGRAReadBmpMioMap;
+  BGRAClasses, SysUtils, FPimage, BGRABitmapTypes, BGRAReadBmpMioMap;
 
 type
 

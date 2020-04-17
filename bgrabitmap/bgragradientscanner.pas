@@ -7,7 +7,7 @@ interface
 { This unit contains scanners that generate gradients }
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRATransform;
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRATransform;
 
 type
   TBGRAColorInterpolation = (ciStdRGB, ciLinearRGB, ciLinearHSLPositive, ciLinearHSLNegative, ciGSBPositive, ciGSBNegative);

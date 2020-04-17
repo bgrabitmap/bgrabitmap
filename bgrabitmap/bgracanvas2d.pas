@@ -17,7 +17,7 @@ unit BGRACanvas2D;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATransform,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATransform,
   BGRAGradientScanner, BGRAPath, BGRAPen, BGRAGrayscaleMask;
 
 type
@@ -342,7 +342,7 @@ type
 
 implementation
 
-uses Types, Math, BGRAFillInfo, BGRAPolygon, BGRABlend, FPWriteJPEG, FPWriteBMP, base64;
+uses Math, BGRAFillInfo, BGRAPolygon, BGRABlend, FPWriteJPEG, FPWriteBMP, base64;
 
 type
   TColorStop = record
@@ -1244,7 +1244,7 @@ begin
 
       pad := Size(round(h/3), round(h/3));
       m := m*AffineMatrixTranslation(-pad.cx,-pad.cy);
-      surfaceBounds := surface.GetImageAffineBounds(m, Types.Rect(0,0,s.cx+pad.cx*2,s.cy+pad.cy*2));
+      surfaceBounds := surface.GetImageAffineBounds(m, BGRAClasses.Rect(0,0,s.cx+pad.cx*2,s.cy+pad.cy*2));
       if hasShadow then
       begin
         shadowBounds := surfaceBounds;
@@ -1487,7 +1487,7 @@ var ofsPts,ofsPts2: array of TPointF;
     var pixRect: TRect;
     begin
       if isEmptyPointF(coord) then exit;
-      pixRect := Types.Rect(round(floor(coord.x)),round(floor(coord.y)),round(ceil(coord.x+0.999))+1,round(ceil(coord.y+0.999))+1);
+      pixRect := BGRAClasses.Rect(round(floor(coord.x)),round(floor(coord.y)),round(ceil(coord.x+0.999))+1,round(ceil(coord.y+0.999))+1);
       if firstFound then
       begin
         foundRect := pixRect;
@@ -1512,7 +1512,7 @@ begin
   for i := 0 to high(ofsPts2) do
     ofsPts2[i] := points2[i]+offset;
 
-  maxRect := Types.Rect(0,0,width,height);
+  maxRect := BGRAClasses.Rect(0,0,width,height);
   if currentState.clipMaskReadOnly <> nil then
     foundRect := maxRect
   else

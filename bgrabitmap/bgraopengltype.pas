@@ -5,8 +5,8 @@ unit BGRAOpenGLType;
 interface
 
 uses
-  Types, BGRAGraphics, BGRABitmap, BGRABitmapTypes,
-  FPimage, Classes, SysUtils, BGRATransform,
+  BGRAGraphics, BGRABitmap, BGRABitmapTypes,
+  FPimage, BGRAClasses, SysUtils, BGRATransform,
   BGRASSE, BGRAMatrix3D;
 
 type

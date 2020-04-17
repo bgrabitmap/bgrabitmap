@@ -7,7 +7,7 @@ unit BGRAReadPCX;
 
 interface
 
-uses FPImage, Classes, SysUtils, FPReadPCX;
+uses FPImage, BGRAClasses, SysUtils, FPReadPCX;
 
 type
 

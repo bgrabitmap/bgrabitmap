@@ -23,7 +23,7 @@ unit BGRAReadTGA;
 
 interface
 
-uses FPReadTGA, FPimage, Classes;
+uses FPReadTGA, FPimage, BGRAClasses;
 
 type
   { TBGRAReaderTarga }

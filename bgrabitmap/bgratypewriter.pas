@@ -5,7 +5,7 @@ unit BGRATypewriter;
 interface
 
 uses
-  Classes, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform;
+  BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform;
 
 type
   TGlyphBoxes = array of record

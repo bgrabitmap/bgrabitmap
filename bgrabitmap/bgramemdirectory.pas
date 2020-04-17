@@ -5,7 +5,7 @@ unit BGRAMemDirectory;
 interface
 
 uses
-  Classes, SysUtils, BGRAMultiFileType, fgl;
+  BGRAClasses, SysUtils, BGRAMultiFileType, fgl;
 
 const
   MemDirectoryFileHeader = 'TMemDirectory'#26#0#0;

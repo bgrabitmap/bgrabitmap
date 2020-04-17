@@ -5,7 +5,7 @@ unit BGRALzpCommon;
 interface
 
 uses
-  Classes, SysUtils;
+  BGRAClasses, SysUtils;
 
 const
   LAZPAINT_COMPRESSION_MODE_ZSTREAM = 1;

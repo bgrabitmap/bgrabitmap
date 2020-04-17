@@ -5,7 +5,7 @@ unit BGRAScene3D;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAColorInt,
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAColorInt,
   BGRASSE, BGRAMatrix3D,
   BGRASceneTypes, BGRARenderer3D;
 

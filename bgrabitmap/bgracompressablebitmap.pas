@@ -26,7 +26,7 @@ interface
   at a time. }
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRABitmap, zstream;
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRABitmap, zstream;
 
 type
 

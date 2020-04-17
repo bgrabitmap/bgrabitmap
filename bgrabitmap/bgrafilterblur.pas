@@ -5,7 +5,7 @@ unit BGRAFilterBlur;
 interface
 
 uses
-  Classes, BGRABitmapTypes, BGRAFilterType;
+  BGRAClasses, BGRABitmapTypes, BGRAFilterType;
 
 type
   { TCustomBlurTask }
@@ -60,7 +60,7 @@ procedure FilterBlurRadial(bmp: TCustomUniversalBitmap; ABounds: TRect; radiusX,
 
 implementation
 
-uses Types, Math, SysUtils, BGRAGrayscaleMask,
+uses Math, SysUtils, BGRAGrayscaleMask,
   BGRAGradientScanner;
 
 type

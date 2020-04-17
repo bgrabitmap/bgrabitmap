@@ -6,7 +6,7 @@ unit BGRAStreamLayers;
 interface
 
 uses
-  Classes, SysUtils, BGRALayers, BGRABitmap, BGRALzpCommon, BGRAMemDirectory;
+  BGRAClasses, SysUtils, BGRALayers, BGRABitmap, BGRALzpCommon, BGRAMemDirectory;
 
 function CheckStreamForLayers(AStream: TStream): boolean;
 function LoadLayersFromStream(AStream: TStream; out ASelectedLayerIndex: integer; ALoadLayerUniqueIds: boolean = false;

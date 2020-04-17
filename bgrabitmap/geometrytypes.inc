@@ -9,44 +9,18 @@ const
 
 type
   {* Pointer to a ''TPointF'' structure }
-  PPointF = ^TPointF;
+  PPointF = ^BGRAClasses.TPointF;
   {* Contains a point with single-precision floating point coordinates }
-  {$if FPC_FULLVERSION>=030001}
-  TPointF = Types.TPointF;
-  {$else}
-  TPointF = packed record x, y: single;
-  end;
-  {$endif}
-
+  TPointF = BGRAClasses.TPointF;
   {* Contains an array of points with single-precision floating point coordinates }
   ArrayOfTPointF = array of TPointF;
 
   {* An affine matrix contains three 2D vectors: the image of x, the image of y and the translation }
   TAffineMatrix = array[1..2,1..3] of single;
+  TRectF = BGRAClasses.TRectF;
 
-  {$if FPC_FULLVERSION>=030001}
-  TRectF = Types.TRectF;
-  {$else}
-  {$define BGRA_DEFINE_TRECTF}
-  { TRectF }
-
-  TRectF =
-  {$ifndef FPC_REQUIRES_PROPER_ALIGNMENT}
-  packed
-  {$endif FPC_REQUIRES_PROPER_ALIGNMENT}
-  record
-  private
-    function GetHeight: single;
-    function GetWidth: Single;
-  public
-    property Width: Single read GetWidth;
-    property Height: single read GetHeight;
-    procedure Offset (const dx,dy : Single);
-    case Integer of
-     0: (Left, Top, Right, Bottom: Single);
-     1: (TopLeft, BottomRight: TPointF);
-  end;
-
+{$if FPC_FULLVERSION<030001}
+  {$define BGRA_DEFINE_TRECTHELPER}
   { TRectHelper }
 
   TRectHelper = record helper for TRect
@@ -74,8 +48,11 @@ type
   end;
 
 operator=(const ARect1,ARect2: TRect): boolean;
+{$endif}
 
+{$if FPC_FULLVERSION<030001}
 type
+  {$define BGRA_DEFINE_TSIZEHELPER}
   { TSizeHelper }
 
   TSizeHelper = record helper for TSize
@@ -86,8 +63,7 @@ type
     property Width: integer read GetWidth;
     property Height: integer read GetHeight;
   end;
-
-  {$endif}
+{$ENDIF}
 
 const
   EmptyPoint : TPoint = (X: -2147483648; Y: -2147483648);
@@ -674,25 +650,7 @@ type
 {$IFDEF INCLUDE_IMPLEMENTATION}
 {$UNDEF INCLUDE_IMPLEMENTATION}
 
-{$IFDEF BGRA_DEFINE_TRECTF}
-{ TRectF }
-
-function TRectF.GetHeight: single;
-begin
-  result := Bottom-Top;
-end;
-
-function TRectF.GetWidth: Single;
-begin
-  result := Right-Left;
-end;
-
-procedure TRectF.Offset(const dx, dy: Single);
-begin
-  left:=left+dx; right:=right+dx;
-  bottom:=bottom+dy; top:=top+dy;
-end;
-
+{$IFDEF BGRA_DEFINE_TRECTHELPER}
 { TRectHelper }
 
 function TRectHelper.GetHeight: integer;
@@ -738,13 +696,16 @@ end;
 
 procedure TRectHelper.Intersect(R: TRect);
 begin
-  IntersectRect(self, self, R);
+  self := TRect.Intersect(self, R);
 end;
 
 class function TRectHelper.Intersect(R1: TRect; R2: TRect): TRect;
 begin
-  result := EmptyRect;
-  IntersectRect(result, R1, R2);
+  if R1.Left >= R2.Left then result.Left := R1.Left else result.Left := R2.Left;
+  if R1.Top >= R2.Top then result.Top := R1.Top else result.Top := R2.Top;
+  if R1.Right <= R2.Right then result.Right := R1.Right else result.Right := R2.Right;
+  if R1.Bottom <= R2.Bottom then result.Bottom := R1.Bottom else result.Bottom := R2.Bottom;
+  if result.IsEmpty then fillchar(result, sizeof(result), 0);
 end;
 
 function TRectHelper.IntersectsWith(R: TRect): Boolean;
@@ -754,22 +715,32 @@ end;
 
 class function TRectHelper.Union(R1, R2: TRect): TRect;
 begin
-  UnionRect(Result, R1, R2);
+  if R1.Left <= R2.Left then result.Left := R1.Left else result.Left := R2.Left;
+  if R1.Top <= R2.Top then result.Top := R1.Top else result.Top := R2.Top;
+  if R1.Right >= R2.Right then result.Right := R1.Right else result.Right := R2.Right;
+  if R1.Bottom >= R2.Bottom then result.Bottom := R1.Bottom else result.Bottom := R2.Bottom;
+  if result.IsEmpty then fillchar(result, sizeof(result), 0);
 end;
 
 procedure TRectHelper.Union(R: TRect);
 begin
-  UnionRect(self, self, R);
+  self := TRect.Union(self, R);
 end;
 
 procedure TRectHelper.Offset(DX, DY: Longint);
 begin
-  OffsetRect(self, DX,DY);
+  Inc(Left, DX);
+  Inc(Top, DY);
+  Inc(Right, DX);
+  Inc(Bottom, DY);
 end;
 
 procedure TRectHelper.Inflate(DX, DY: Longint);
 begin
-  InflateRect(self, DX,DY);
+  Dec(Left, DX);
+  Dec(Top, DY);
+  Inc(Right, DX);
+  Inc(Bottom, DY);
 end;
 
 function TRectHelper.Contains(const APoint: TPoint): boolean;
@@ -788,7 +759,9 @@ begin
   result:= (ARect1.Left = ARect2.Left) and (ARect1.Top = ARect2.Top) and
            (ARect1.Right = ARect2.Right) and (ARect1.Bottom = ARect2.Bottom);
 end;
+{$ENDIF}
 
+{$ifdef BGRA_DEFINE_TSIZEHELPER}
 { TSizeHelper }
 
 function TSizeHelper.GetHeight: integer;
@@ -800,7 +773,6 @@ function TSizeHelper.GetWidth: integer;
 begin
   result := cx;
 end;
-
 {$ENDIF}
 
 function IsEmptyPoint(const APoint: TPoint): boolean;

@@ -7,7 +7,7 @@ interface
 { This unit contains bitmap transformations as classes and the TAffineMatrix record and functions. }
 
 uses
-  Classes, SysUtils, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRABitmapTypes;
 
 type
   { Contains an affine matrix, i.e. a matrix to transform linearly and translate TPointF coordinates }

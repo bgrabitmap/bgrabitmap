@@ -7,7 +7,7 @@ interface
 uses BGRABitmapTypes,
   BGRASceneTypes, BGRASSE,
   BGRAPolygon, BGRAColorInt,
-  Classes, BGRAMatrix3D,
+  BGRAClasses, BGRAMatrix3D,
   BGRAPolygonAliased;
 
 type

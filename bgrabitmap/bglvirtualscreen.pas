@@ -5,7 +5,7 @@ unit BGLVirtualScreen;
 interface
 
 uses
-  Classes, SysUtils, LResources, Forms, Controls, Graphics, Dialogs,
+  Classes, BGRAClasses, SysUtils, LResources, Forms, Controls, Graphics, Dialogs,
   ExtCtrls, BGRABitmapTypes, BGRAOpenGL, OpenGLContext, BGRACanvasGL,
   BGRASpriteGL;
 
@@ -150,8 +150,6 @@ type
 procedure Register;
 
 implementation
-
-uses Types;
 
 procedure Register;
 begin
@@ -378,7 +376,7 @@ begin
   if (BevelOuter <> bvNone) and (w > 0) then
     ctx.Canvas.Frame3d(ARect, w, BevelOuter); // Note: Frame3D inflates ARect
 
-  InflateRect(ARect, -BorderWidth, -BorderWidth);
+  ARect.Inflate(-BorderWidth, -BorderWidth);
 
   // if BevelInner is set then skip the BorderWidth and draw a frame with BevelWidth
   if (BevelInner <> bvNone) and (w > 0) then

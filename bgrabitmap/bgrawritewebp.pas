@@ -5,7 +5,7 @@ unit BGRAWriteWebP;
 interface
 
 uses
-  Classes, SysUtils, FPimage;
+  BGRAClasses, SysUtils, FPimage;
 
 type
   { TBGRAWriterWebP }

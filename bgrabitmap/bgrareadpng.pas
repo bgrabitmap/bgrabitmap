@@ -28,7 +28,7 @@ unit BGRAReadPng;
 interface
 
 uses
-  SysUtils,Classes, FPImage, FPImgCmn, PNGComn, ZStream, BGRABitmapTypes;
+  SysUtils,BGRAClasses, FPImage, FPImgCmn, PNGComn, ZStream, BGRABitmapTypes;
 
 Type
 

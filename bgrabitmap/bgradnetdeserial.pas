@@ -13,7 +13,7 @@ interface
   This unit is used by BGRAPaintNet to read Paint.NET images. }
 
 uses
-  Classes, SysUtils;
+  BGRAClasses, SysUtils;
 
 type
   arrayOfLongword = array of longword;

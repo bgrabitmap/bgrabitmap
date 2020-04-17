@@ -5,7 +5,7 @@ unit BGRACustomTextFX;
 interface
 
 uses
-  Classes, SysUtils, Types, BGRABitmapTypes, BGRAPhongTypes;
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAPhongTypes;
 
 const DefaultOutlineWidth = 3;
 

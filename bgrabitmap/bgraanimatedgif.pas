@@ -6,7 +6,7 @@ unit BGRAAnimatedGif;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, FPImage, BGRABitmap, BGRABitmapTypes,
+  BGRAClasses, SysUtils, BGRAGraphics, FPImage, BGRABitmap, BGRABitmapTypes,
   BGRAPalette, BGRAGifFormat;
 
 type

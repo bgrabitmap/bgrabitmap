@@ -33,7 +33,7 @@ interface
   and call functions from other units to perform advanced drawing functions. }
 
 uses
-  SysUtils, Classes, Types, FPImage, BGRAGraphics, BGRABitmapTypes,
+  SysUtils, BGRAClasses, FPImage, BGRAGraphics, BGRABitmapTypes,
   {$IFDEF BGRABITMAP_USE_FPCANVAS}FPImgCanv,{$ENDIF}
   BGRACanvas, BGRACanvas2D, BGRATransform, BGRATextBidi,
   UniversalDrawer;

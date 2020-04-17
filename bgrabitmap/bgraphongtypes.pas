@@ -5,7 +5,7 @@ unit BGRAPhongTypes;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRABitmapTypes;
 
 type
 

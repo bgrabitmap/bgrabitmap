@@ -37,7 +37,7 @@ interface
   }
 
 uses
-  Classes, BGRABitmapTypes, BGRATransform;
+  BGRABitmapTypes, BGRATransform;
 
 const
   DefaultDeviation = 0.1;

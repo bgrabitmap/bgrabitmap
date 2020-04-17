@@ -6,7 +6,7 @@ unit BGRAIconCursor;
 interface
 
 uses
-  Classes, SysUtils, BGRAMultiFileType, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRAMultiFileType, BGRABitmapTypes;
 
 type
   { TBGRAIconCursorEntry }

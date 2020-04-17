@@ -193,7 +193,7 @@ end;
 {$ELSE}
 
 uses
-  Classes, FPCanvas, FPImage
+  BGRAClasses, FPCanvas, FPImage
   {$DEFINE INCLUDE_USES}
   {$IFDEF BGRABITMAP_USE_FPGUI}
     {$i bgrafpgui.inc}

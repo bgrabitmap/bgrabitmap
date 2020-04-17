@@ -37,7 +37,7 @@ interface
   in BGRAFreeType. }
 
 uses
-  Classes, Types, SysUtils, BGRAGraphics, BGRABitmapTypes, InterfaceBase, BGRAPen, BGRAGrayscaleMask,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, InterfaceBase, BGRAPen, BGRAGrayscaleMask,
   LCLVersion;
 
 type

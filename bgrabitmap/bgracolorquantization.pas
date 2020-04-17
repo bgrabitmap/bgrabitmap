@@ -5,7 +5,7 @@ unit BGRAColorQuantization;
 interface
 
 uses
-  Classes, SysUtils, BGRAPalette, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRAPalette, BGRABitmapTypes;
 
 type
   TBGRAColorBox = class;

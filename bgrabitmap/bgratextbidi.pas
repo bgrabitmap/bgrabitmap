@@ -6,7 +6,7 @@ unit BGRATextBidi;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAUTF8, BGRAUnicode, BGRATransform,
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAUTF8, BGRAUnicode, BGRATransform,
   BGRAUnicodeText;
 
 type

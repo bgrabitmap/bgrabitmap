@@ -8,7 +8,7 @@ unit BGRAReadGif;
 interface
 
 uses
-  Classes, SysUtils, FPimage, FPReadGif;
+  BGRAClasses, SysUtils, FPimage, FPReadGif;
 
 type
   PGifRGB = ^TGifRGB;

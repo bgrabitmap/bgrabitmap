@@ -35,7 +35,7 @@ unit BGRAReadBMP;
 
 interface
 
-uses FPImage, classes, sysutils, BMPcomn, BGRABitmapTypes;
+uses FPImage, BGRAClasses, SysUtils, BMPcomn, BGRABitmapTypes;
 
 type
   TBMPTransparencyOption = (toAuto, toTransparent, toOpaque);

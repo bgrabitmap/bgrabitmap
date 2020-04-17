@@ -27,7 +27,7 @@ unit BGRAQtBitmap;
 interface
 
 uses
-  Classes, SysUtils, BGRALCLBitmap, Graphics,
+  BGRAClasses, SysUtils, BGRALCLBitmap, Graphics,
   GraphType, BGRABitmapTypes;
 
 type

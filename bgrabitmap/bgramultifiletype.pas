@@ -6,7 +6,7 @@ unit BGRAMultiFileType;
 interface
 
 uses
-  Classes, SysUtils, fgl;
+  BGRAClasses, SysUtils, fgl;
 
 type
 

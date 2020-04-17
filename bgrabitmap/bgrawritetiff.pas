@@ -38,7 +38,7 @@ unit BGRAWriteTiff;
 interface
 
 uses
-  Math, Classes, SysUtils, zbase, zdeflate, FPimage, FPTiffCmn,
+  Math, BGRAClasses, SysUtils, zbase, zdeflate, FPimage, FPTiffCmn,
   BGRABitmapTypes;
 
 type

@@ -5,7 +5,7 @@ unit BGRAFilterScanner;
 interface
 
 uses
-  Classes, BGRABitmapTypes, BGRAFilterType;
+  BGRAClasses, BGRABitmapTypes, BGRAFilterType;
 
 type
   { TBGRAFilterScannerGrayscale }

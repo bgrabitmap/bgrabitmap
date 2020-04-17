@@ -5,7 +5,7 @@ unit BGRAFillInfo;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRABitmapTypes;
 
 const
   AntialiasPrecision = 16;

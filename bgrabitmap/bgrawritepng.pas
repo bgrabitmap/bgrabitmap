@@ -25,7 +25,7 @@ unit BGRAWritePNG;
 interface
 
 
-uses sysutils, classes, FPImage, FPImgCmn, PNGcomn, ZStream, BGRABitmapTypes;
+uses sysutils, BGRAClasses, FPImage, FPImgCmn, PNGcomn, ZStream, BGRABitmapTypes;
 
 type
   THeaderChunk = packed record

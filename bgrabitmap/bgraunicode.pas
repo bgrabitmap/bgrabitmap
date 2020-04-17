@@ -9,7 +9,7 @@ unit BGRAUnicode;
 interface
 
 uses
-  Classes, SysUtils;
+  BGRAClasses, SysUtils;
 
 type
   TUnicodeBidiClass = (ubcBoundaryNeutral, ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals,

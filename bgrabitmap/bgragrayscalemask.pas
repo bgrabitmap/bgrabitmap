@@ -5,7 +5,7 @@ unit BGRAGrayscaleMask;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, {%H-}UniversalDrawer;
+  BGRAClasses, SysUtils, BGRABitmapTypes, {%H-}UniversalDrawer;
 
 type
   { TGrayscaleMask }

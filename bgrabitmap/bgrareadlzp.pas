@@ -5,7 +5,7 @@ unit BGRAReadLzp;
 interface
 
 uses
-  Classes, SysUtils, FPimage, BGRALzpCommon, BGRABitmapTypes, BGRABitmap;
+  BGRAClasses, SysUtils, FPimage, BGRALzpCommon, BGRABitmapTypes, BGRABitmap;
 
 type
 

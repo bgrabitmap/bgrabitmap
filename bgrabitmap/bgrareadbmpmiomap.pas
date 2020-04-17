@@ -5,7 +5,7 @@ unit BGRAReadBmpMioMap;
 interface
 
 uses
-  Classes, SysUtils, FPimage, BGRABitmapTypes;
+  BGRAClasses, SysUtils, FPimage, BGRABitmapTypes;
 
 const
   MioMapMagicValue = 'RL';

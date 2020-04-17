@@ -22,7 +22,8 @@ interface
 }
 
 uses
-  Types, Classes, SysUtils, Graphics, BGRABitmapTypes, BGRATypewriter, BGRATransform, BGRACanvas2D, BGRAText;
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATypewriter,
+  BGRATransform, BGRACanvas2D, BGRAText;
 
 //vectorize a monochrome bitmap
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;

@@ -6,7 +6,7 @@ unit BGRALayerOriginal;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl
+  BGRAClasses, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl
   {$IFDEF BGRABITMAP_USE_LCL},LCLType{$ENDIF};
 
 type
@@ -354,7 +354,7 @@ function FindLayerOriginalClass(AStorageClassName: string): TBGRALayerOriginalAn
 
 implementation
 
-uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, Types, BGRAGraphics;
+uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, BGRAGraphics;
 
 {$IFDEF BGRABITMAP_USE_LCL}
 function LCLKeyToSpecialKey(AKey: Word; AShift: TShiftState): TSpecialKey;

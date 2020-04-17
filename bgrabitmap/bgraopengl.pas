@@ -6,7 +6,7 @@ unit BGRAOpenGL;
 interface
 
 uses
-  Classes, SysUtils, FPimage, BGRAGraphics,
+  BGRAClasses, SysUtils, FPimage, BGRAGraphics,
   BGRAOpenGLType, BGRASpriteGL, BGRACanvasGL, GL, GLext, GLU, BGRABitmapTypes,
   BGRAFontGL, BGRASSE, BGRAMatrix3D;
 

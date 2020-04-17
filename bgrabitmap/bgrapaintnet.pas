@@ -18,7 +18,7 @@ interface
   and also registers a reader for BGRALayers }
 
 uses
-  Classes, SysUtils, BGRADNetDeserial, FPImage, BGRABitmapTypes, BGRABitmap, BGRALayers;
+  BGRAClasses, SysUtils, BGRADNetDeserial, FPImage, BGRABitmapTypes, BGRABitmap, BGRALayers;
 
 type
 

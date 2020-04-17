@@ -5,7 +5,7 @@ unit BGRAPhoxo;
 interface
 
 uses
-  BGRABitmapTypes, FPImage, BGRALayers, BGRABitmap, Classes, SysUtils, BMPcomn;
+  BGRABitmapTypes, FPImage, BGRALayers, BGRABitmap, BGRAClasses, SysUtils, BMPcomn;
 
 const
   PhoxoHeaderMagic : packed array[1..4] of char = 'oXo ';

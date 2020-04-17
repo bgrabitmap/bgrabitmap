@@ -5,7 +5,7 @@ unit BGRALCLBitmap;
 interface
 
 uses
-  Classes, SysUtils, Graphics, GraphType, BGRABitmapTypes, BGRADefaultBitmap;
+  BGRAClasses, SysUtils, Graphics, GraphType, BGRABitmapTypes, BGRADefaultBitmap;
 
 type
   { TBGRALCLBitmap }
@@ -67,7 +67,7 @@ type
 
 implementation
 
-uses Types, BGRAText, LCLType, LCLIntf, FPimage;
+uses BGRAText, LCLType, LCLIntf, FPimage;
 
 { TBitmapTracker }
 
@@ -681,8 +681,8 @@ begin
   bmp.PixelFormat := pf24bit;
   bmp.Width := ADestination.Width;
   bmp.Height := ADestination.Height;
-  bmp.Canvas.CopyRect(Classes.rect(0, 0, ADestination.Width, ADestination.Height), CanvasSource,
-    Classes.rect(x, y, x + ADestination.Width, y + ADestination.Height));
+  bmp.Canvas.CopyRect(rect(0, 0, ADestination.Width, ADestination.Height), CanvasSource,
+    rect(x, y, x + ADestination.Width, y + ADestination.Height));
   LoadFromRawImageImplementation(ADestination, bmp.RawImage, 255, True, False);
   bmp.Free;
   ADestination.InvalidateBitmap;

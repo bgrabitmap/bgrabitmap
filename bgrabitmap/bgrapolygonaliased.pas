@@ -13,7 +13,7 @@ interface
   linear interpolation. Inverse values are used for projective transform. }
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAFillInfo, BGRASSE;
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAFillInfo, BGRASSE;
 
 type
   //segment information for linear color

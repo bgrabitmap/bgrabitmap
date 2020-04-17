@@ -5,7 +5,7 @@ unit BGRAReadWebP;
 interface
 
 uses
-  Classes, SysUtils, FPImage;
+  BGRAClasses, SysUtils, FPImage;
 
 type
   TWebPHeader = record

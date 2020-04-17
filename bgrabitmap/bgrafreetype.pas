@@ -28,7 +28,7 @@ interface
 {$i bgrabitmap.inc}
 
 uses
-  Types, Classes, SysUtils, BGRAGraphics, BGRABitmapTypes, EasyLazFreeType, FPimage,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, EasyLazFreeType, FPimage,
   BGRACustomTextFX, BGRAPhongTypes;
 
 type

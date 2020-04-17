@@ -47,7 +47,7 @@ unit BGRAReadTiff;
 interface
 
 uses
-  Math, Classes, SysUtils, ctypes, zinflate, zbase, FPimage, FPTiffCmn,
+  Math, BGRAClasses, SysUtils, ctypes, zinflate, zbase, FPimage, FPTiffCmn,
   BGRABitmapTypes;
 
 type

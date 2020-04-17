@@ -5,7 +5,7 @@ unit BGRACanvasGL;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRABitmapTypes,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes,
   BGRAOpenGLType, BGRATransform, BGRAPath,
   BGRASSE, BGRAMatrix3D;
 
@@ -312,7 +312,7 @@ type
 
 implementation
 
-uses Math, Types, BGRAGradientScanner;
+uses Math, BGRAGradientScanner;
 
 type
   TGLStrokeData = record

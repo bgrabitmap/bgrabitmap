@@ -18,7 +18,7 @@ interface
   from TWideKernelFilter. It is slower of course than simple interpolation. }
 
 uses
-  Types, SysUtils, BGRABitmapTypes;
+  SysUtils, BGRABitmapTypes;
 
 {------------------------------- Simple stretch ------------------------------------}
 
@@ -96,7 +96,7 @@ function WideKernelResample(bmp: TBGRACustomBitmap;
 
 implementation
 
-uses Math, BGRABlend;
+uses Math, BGRABlend, BGRAClasses;
 
 function SimpleStretch(bmp: TBGRACustomBitmap;
   newWidth, newHeight: integer): TBGRACustomBitmap;

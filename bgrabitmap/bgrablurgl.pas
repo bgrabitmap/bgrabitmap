@@ -5,7 +5,7 @@ unit BGRABlurGL;
 interface
 
 uses
-  Classes, BGRAOpenGL3D, BGRABitmapTypes, BGRACanvasGL, BGRAOpenGLType;
+  BGRAClasses, BGRAOpenGL3D, BGRABitmapTypes, BGRACanvasGL, BGRAOpenGLType;
 
 type
 
