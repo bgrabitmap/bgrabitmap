@@ -287,9 +287,9 @@ type
     fqSystemClearType,
     {** Garanties a high quality antialiasing. }
     fqFineAntialiasing,
-    {** Fine antialiasing with ClearType in assuming an LCD display in red/green/blue order }
+    {** Fine antialiasing with ClearType assuming an LCD display in red/green/blue order }
     fqFineClearTypeRGB,
-    {** Fine antialiasing with ClearType in assuming an LCD display in blue/green/red order }
+    {** Fine antialiasing with ClearType assuming an LCD display in blue/green/red order }
     fqFineClearTypeBGR);
 
   {* Measurements of a font }
