@@ -565,6 +565,7 @@ type
     procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); overload; override;
     procedure InvalidateBitmap; override;         //call if you modify with Scanline
     procedure LoadFromBitmapIfNeeded; override;   //call to ensure that bitmap data is up to date
+    procedure NotifyBitmapChange; inline;
 
     {BGRA bitmap functions}
     procedure CrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePosition: byte; mode: TDrawMode = dmDrawWithTransparency); overload; override;
@@ -669,18 +670,6 @@ procedure BGRAGradientFill(bmp: TBGRACustomBitmap; x, y, x2, y2: integer;
   c1, c2: TBGRAPixel; gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
   gammaColorCorrection: boolean = True; Sinus: Boolean=False);
 
-type
-
-  { TBitmapTracker }
-
-  TBitmapTracker = class(TBitmap)
-  protected
-    FUser: TBGRADefaultBitmap;
-    procedure Changed(Sender: TObject); override;
-  public
-    constructor Create(AUser: TBGRADefaultBitmap); overload;
-  end;
-
 implementation
 
 uses Math, BGRAUTF8, BGRABlend, BGRAFilters, BGRAGradientScanner,
@@ -688,24 +677,6 @@ uses Math, BGRAUTF8, BGRABlend, BGRAFilters, BGRAGradientScanner,
   BGRAPath, FPReadPcx, FPWritePcx, FPReadXPM, FPWriteXPM,
   BGRAReadBMP, BGRAReadJpeg,
   BGRADithering, BGRAFilterScanner;
-
-{ TBitmapTracker }
-
-constructor TBitmapTracker.Create(AUser: TBGRADefaultBitmap);
-begin
-  FUser := AUser;
-  inherited Create;
-end;
-
-procedure TBitmapTracker.Changed(Sender: TObject);
-begin
-  if FUser <> nil then
-  begin
-    FUser.FBitmapModified := True;
-    FUser.FAlphaCorrectionNeeded := true;
-  end;
-  inherited Changed(Sender);
-end;
 
 { TBGRADefaultBitmap }
 
@@ -1607,6 +1578,12 @@ end;
 procedure TBGRADefaultBitmap.DiscardBitmapChange; inline;
 begin
   FBitmapModified := False;
+end;
+
+procedure TBGRADefaultBitmap.NotifyBitmapChange;
+begin
+  FBitmapModified := True;
+  FAlphaCorrectionNeeded := true;
 end;
 
 { Initialize properties }

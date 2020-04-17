@@ -53,9 +53,36 @@ type
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
   end;
 
+type
+
+  { TBitmapTracker }
+
+  TBitmapTracker = class(TBitmap)
+  protected
+    FUser: TBGRADefaultBitmap;
+    procedure Changed(Sender: TObject); override;
+  public
+    constructor Create(AUser: TBGRADefaultBitmap); overload;
+  end;
+
 implementation
 
 uses Types, BGRAText, LCLType, LCLIntf, FPimage;
+
+{ TBitmapTracker }
+
+constructor TBitmapTracker.Create(AUser: TBGRADefaultBitmap);
+begin
+  FUser := AUser;
+  inherited Create;
+end;
+
+procedure TBitmapTracker.Changed(Sender: TObject);
+begin
+  if FUser <> nil then
+    FUser.NotifyBitmapChange;
+  inherited Changed(Sender);
+end;
 
 type
   TCopyPixelProc = procedure (psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
