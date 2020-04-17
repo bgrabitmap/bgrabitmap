@@ -1272,14 +1272,12 @@ end;
 procedure TBGRAPalette.LoadFromStream(AStream: TStream;
   AFormat: TBGRAPaletteFormat);
 var buf: TReadBufStream;
-  bridge: TClassesStreamBridge;
   handled: boolean;
   i: Integer;
 begin
   RegisterDefaultPaletteFormats;
   Clear;
-  bridge := TClassesStreamBridge.Create(AStream);
-  buf := TReadBufStream.Create(bridge);
+  buf := TReadBufStream.Create(AStream);
   try
     handled := false;
     for i := 0 to High(PaletteFormats) do
@@ -1293,7 +1291,6 @@ begin
     if not handled then ExceptionUnknownPaletteFormat;
   finally
     buf.Free;
-    bridge.Free;
   end;
 end;
 
@@ -1324,13 +1321,11 @@ end;
 procedure TBGRAPalette.SaveToStream(AStream: TStream;
   AFormat: TBGRAPaletteFormat);
 var buf: TWriteBufStream;
-  bridge: TClassesStreamBridge;
   handled: boolean;
   i: Integer;
 begin
   RegisterDefaultPaletteFormats;
-  bridge := TClassesStreamBridge.Create(AStream);
-  buf := TWriteBufStream.Create(bridge);
+  buf := TWriteBufStream.Create(AStream);
   try
     handled := false;
     for i := 0 to High(PaletteFormats) do
@@ -1343,7 +1338,6 @@ begin
     if not handled then ExceptionUnknownPaletteFormat;
   finally
     buf.Free;
-    bridge.Free;
   end;
 end;
 
