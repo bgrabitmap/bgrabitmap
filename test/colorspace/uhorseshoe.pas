@@ -699,7 +699,7 @@ var i,j,k,l,m: integer;
 
 initialization
 
-  writeln('Computing reflective color bounds...');
+  //writeln('Computing reflective color bounds...');
   xyzMax.X := 0;
   xyzMax.Y := 0;
   xyzMax.Z := 0;
@@ -771,8 +771,8 @@ initialization
     end;
   end;
 
-  writeln('xyz min ',optimalXYZMin.x,', ',optimalXYZMin.y,', ',optimalXYZMin.z);
-  writeln('xyz max ',optimalXYZMax.x,', ',optimalXYZMax.y,', ',optimalXYZMax.z);
+  //writeln('xyz min ',optimalXYZMin.x,', ',optimalXYZMin.y,', ',optimalXYZMin.z);
+  //writeln('xyz max ',optimalXYZMax.x,', ',optimalXYZMax.y,', ',optimalXYZMax.z);
   {writeln('Lab min ',labMin.L,', ',labMin.a,', ',labMin.b);
   writeln('Lab max ',labMax.L,', ',labMax.a,', ',labMax.b);
   writeln('LCh min ',lChMin.L,', ',lChMin.C,', ',lChMin.h);
