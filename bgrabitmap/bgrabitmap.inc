@@ -15,6 +15,9 @@
   {$UNDEF BGRABITMAP_USE_LCL}
   {$DEFINE TCOLOR_BLUE_IN_LOW_BYTE}
 {$ENDIF}
+{$IFNDEF BGRABITMAP_DONT_USE_FPCANVAS}
+  {$DEFINE BGRABITMAP_USE_FPCANVAS}
+{$ENDIF}
 
 { Extensions of LCL to be used. Add // at the beginning of the line
   to comment them if the functions are not available }

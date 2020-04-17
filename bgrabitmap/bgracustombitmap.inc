@@ -111,7 +111,7 @@ type
      function GetAveragePixel: TBGRAPixel; virtual; abstract;
 
      //FreePascal drawing routines
-     function GetCanvasFP: TFPImageCanvas; virtual; abstract;
+     {$IFDEF BGRABITMAP_USE_FPCANVAS}function GetCanvasFP: TFPImageCanvas; virtual; abstract;{$ENDIF}
      function GetCanvasDrawModeFP: TDrawMode; virtual; abstract;
      procedure SetCanvasDrawModeFP(const AValue: TDrawMode); virtual; abstract;
 
@@ -156,7 +156,8 @@ type
      property AveragePixel: TBGRAPixel Read GetAveragePixel;
 
      {** Canvas compatible with FreePascal }
-     property CanvasFP: TFPImageCanvas read GetCanvasFP;
+     {$IFDEF BGRABITMAP_USE_FPCANVAS}property CanvasFP: TFPImageCanvas read GetCanvasFP;{$ENDIF}
+
      {** Draw mode to used when image is access using FreePascal functions
          and ''Colors'' property }
      property CanvasDrawModeFP: TDrawMode read GetCanvasDrawModeFP write SetCanvasDrawModeFP;

@@ -1,11 +1,13 @@
 unit BGRACanvas;
 
 {$mode objfpc}{$H+}
+{$i bgrabitmap.inc}
 
 interface
 
 uses
-  Classes, SysUtils, FPCanvas, BGRAGraphics, Types, FPImage, BGRABitmapTypes;
+  Classes, SysUtils, BGRAGraphics, Types, FPImage, BGRABitmapTypes
+  {$IFDEF BGRABITMAP_USE_FPCANVAS}, FPCanvas{$ENDIF};
 
 type
 
@@ -265,7 +267,7 @@ end;
 procedure TBGRAFont.Assign(Source: TObject);
 var sf: TBGRAFont;
     f: TFont;
-    cf: TFPCustomFont;
+    {$IFDEF BGRABITMAP_USE_FPCANVAS}cf: TFPCustomFont;{$ENDIF}
 begin
   if Source is TFont then
   begin
@@ -288,7 +290,8 @@ begin
     Quality := sf.Quality;
     Orientation := sf.Orientation;
     Texture := sf.Texture;
-  end else
+  end
+  {$IFDEF BGRABITMAP_USE_FPCANVAS}else
   if Source is TFPCustomFont then
   begin
     cf := Source as TFPCustomFont;
@@ -307,7 +310,7 @@ begin
     if cf.Size = 0 then
       Height := 16 else
        Height := round(cf.Size*1.8);
-  end;
+  end{$ENDIF};
   inherited Assign(Source);
 end;
 

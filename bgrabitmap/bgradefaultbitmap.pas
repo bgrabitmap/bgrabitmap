@@ -25,6 +25,7 @@
 unit BGRADefaultBitmap;
 
 {$mode objfpc}{$H+}
+{$i bgrabitmap.inc}
 
 interface
 
@@ -32,7 +33,8 @@ interface
   and call functions from other units to perform advanced drawing functions. }
 
 uses
-  SysUtils, Classes, Types, FPImage, BGRAGraphics, BGRABitmapTypes, FPImgCanv,
+  SysUtils, Classes, Types, FPImage, BGRAGraphics, BGRABitmapTypes,
+  {$IFDEF BGRABITMAP_USE_FPCANVAS}FPImgCanv,{$ENDIF}
   BGRACanvas, BGRACanvas2D, BGRATransform, BGRATextBidi,
   UniversalDrawer;
 
@@ -75,7 +77,7 @@ type
                                       //take it into account
 
     //FreePascal drawing routines
-    FCanvasFP: TFPImageCanvas;
+    {$IFDEF BGRABITMAP_USE_FPCANVAS}FCanvasFP: TFPImageCanvas;{$ENDIF}
     FCanvasDrawModeFP: TDrawMode;
     FCanvasPixelProcFP: procedure(x, y: int32or64; const col: TBGRAPixel) of object;
 
@@ -92,7 +94,7 @@ type
       AlwaysReplaceAlpha: boolean = False; RaiseErrorOnInvalidPixelFormat: boolean = True): boolean; virtual; abstract;
 
     //FreePascal drawing routines
-    function GetCanvasFP: TFPImageCanvas; override;
+    {$IFDEF BGRABITMAP_USE_FPCANVAS}function GetCanvasFP: TFPImageCanvas; override;{$ENDIF}
     procedure SetCanvasDrawModeFP(const AValue: TDrawMode); override;
     function GetCanvasDrawModeFP: TDrawMode; override;
 
@@ -1028,7 +1030,7 @@ destructor TBGRADefaultBitmap.Destroy;
 begin
   DiscardXorMask;
   FFontRenderer.Free;
-  FCanvasFP.Free;
+  {$IFDEF BGRABITMAP_USE_FPCANVAS}FCanvasFP.Free;{$ENDIF}
   FCanvasBGRA.Free;
   FCanvas2D.Free;
   FreeBitmap;
@@ -1550,14 +1552,14 @@ begin
   Result := FBitmap.Canvas;
 end;
 
-function TBGRADefaultBitmap.GetCanvasFP: TFPImageCanvas;
+{$IFDEF BGRABITMAP_USE_FPCANVAS}function TBGRADefaultBitmap.GetCanvasFP: TFPImageCanvas;
 begin
   {$warnings off}
   if FCanvasFP = nil then
     FCanvasFP := TFPImageCanvas.Create(self);
   {$warnings on}
   result := FCanvasFP;
-end;
+end;{$ENDIF}
 
 procedure TBGRADefaultBitmap.SetCanvasDrawModeFP(const AValue: TDrawMode);
 begin
@@ -1612,8 +1614,8 @@ procedure TBGRADefaultBitmap.Init;
 begin
   inherited Init;
   FBitmap    := nil;
-  FCanvasFP  := nil;
-  FCanvasBGRA := nil;
+  {$IFDEF BGRABITMAP_USE_FPCANVAS}FCanvasFP  := nil;{$ENDIF}
+  FCanvasBGRA := nil; 
   CanvasDrawModeFP := dmDrawWithTransparency;
   FCanvasOpacity := 255;
   FAlphaCorrectionNeeded := False;
