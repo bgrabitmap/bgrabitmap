@@ -1730,7 +1730,7 @@ var
   output: TStringStream;
   encode64: TBase64EncodingStream;
 begin
-  if surface = nil then exit;
+  if surface = nil then exit('');
   stream := TMemoryStream.Create;
   if mimeType='image/jpeg' then
   begin
