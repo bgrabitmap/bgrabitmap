@@ -5,7 +5,7 @@ unit BGRAPalette;
 interface
 
 uses
-  Classes, SysUtils, AvgLvlTree, BGRABitmapTypes, FPimage;
+  Classes, SysUtils, Avl_Tree, BGRABitmapTypes, FPimage;
 
 const
   MaxLastAddedColors = 10;
@@ -57,17 +57,17 @@ type
     property Color[AIndex: integer]: TBGRAPixel read GetColorByIndex;
   end;
 
+type
   { TBGRAAvgLvlPalette }
 
   TBGRAAvgLvlPalette = class(TBGRACustomPalette)
   protected
-    FTree: TAvgLvlTree;
+    FTree: TAVLTree;
     FArray: array of PBGRAPixel;
     FLastAddedColors: packed array[0..MaxLastAddedColors-1] of PBGRAPixel;
     FLastAddedColorCount: integer;
     function GetCount: integer; override;
     function GetColorByIndex(AIndex: integer): TBGRAPixel; override;
-    function OnCompareItems({%H-}Tree: TAvgLvlTree; Data1, Data2: Pointer): integer; virtual;
     procedure FreeEntry(AEntry: PBGRAPixel); virtual; abstract;
     procedure NeedArray; virtual;
     procedure ClearArray; virtual;
@@ -549,7 +549,7 @@ end;
 { TBGRAIndexedPalette }
 
 procedure TBGRAIndexedPalette.NeedArray;
-var Node: TAvgLvlTreeNode;
+var Node: TAVLTreeNode;
   n: UInt32;
 begin
   n := Count;
@@ -585,7 +585,7 @@ begin
 end;
 
 function TBGRAIndexedPalette.IndexOfColor(AValue: TBGRAPixel): integer;
-Var Node: TAvgLvlTreeNode;
+Var Node: TAVLTreeNode;
 begin
   Node := FTree.Find(@AValue);
   if Assigned(Node) then
@@ -833,7 +833,7 @@ end;
 
 function TBGRAWeightedPalette.IncColor(AValue: TBGRAPixel; out NewWeight: UInt32
   ): boolean;
-Var Node: TAvgLvlTreeNode;
+Var Node: TAVLTreeNode;
   Entry: PBGRAPixel;
 begin
   Entry := GetLastColor(AValue);
@@ -867,7 +867,7 @@ end;
 function TBGRAWeightedPalette.DecColor(AValue: TBGRAPixel; out NewWeight: UInt32
   ): boolean;
 var
-  Node : TAvgLvlTreeNode;
+  Node : TAVLTreeNode;
   Entry: PBGRAPixel;
 begin
   Node := FTree.Find(@AValue);
@@ -925,7 +925,7 @@ end;
 
 function TBGRAReferencePalette.RemoveColor(AValue: PBGRAPixel): boolean;
 var
-  Node : TAvgLvlTreeNode;
+  Node : TAVLTreeNode;
 begin
   Node := FTree.Find(AValue);
   if Assigned(Node) then
@@ -938,98 +938,7 @@ begin
     result := false;
 end;
 
-{ TBGRAAvgLvlPalette }
-
-constructor TBGRAAvgLvlPalette.Create;
-begin
-  FTree := TAvgLvlTree.Create;
-  FTree.OnObjectCompare := @OnCompareItems;
-end;
-
-destructor TBGRAAvgLvlPalette.Destroy;
-begin
-  Clear;
-  FreeAndNil(FTree);
-  inherited Destroy;
-end;
-
-function TBGRAAvgLvlPalette.GetAsArrayOfColor: ArrayOfTBGRAPixel;
-var i: NativeInt;
-begin
-  NeedArray;
-  setlength(result, Length(FArray));
-  for i := 0 to high(result) do
-    result[i] := FArray[i]^;
-end;
-
-function TBGRAAvgLvlPalette.GetAsArrayOfWeightedColor: ArrayOfWeightedColor;
-var i: NativeInt;
-begin
-  NeedArray;
-  setlength(result, Length(FArray));
-  for i := 0 to high(result) do
-  with result[i] do
-  begin
-    Color := FArray[i]^;
-    Weight:= 1;
-  end;
-end;
-
-procedure TBGRAAvgLvlPalette.Clear;
-var Node: TAvgLvlTreeNode;
-begin
-  For Node in FTree do
-    FreeEntry(PBGRAPixel(Node.Data));
-  FTree.Clear;
-  ClearArray;
-  FLastAddedColorCount := 0;
-end;
-
-function TBGRAAvgLvlPalette.GetCount: integer;
-begin
-  result := FTree.Count;
-end;
-
-function TBGRAAvgLvlPalette.ContainsColor(AValue: TBGRAPixel): boolean;
-Var Node: TAvgLvlTreeNode;
-begin
-  if Assigned(GetLastColor(AValue)) then
-  begin
-    result := true;
-    exit;
-  end;
-  Node := FTree.Find(@AValue);
-  result := Assigned(Node);
-  if result then AddLastColor(PBGRAPixel(Node.Data));
-end;
-
-function TBGRAAvgLvlPalette.IndexOfColor(AValue: TBGRAPixel): integer;
-Var Node: TAvgLvlTreeNode;
-begin
-  Node := FTree.Find(@AValue);
-  if Assigned(Node) then
-  begin
-    result := 0;
-    Node := Node.Precessor;
-    while Assigned(Node) do
-    begin
-      inc(result);
-      Node := Node.Precessor;
-    end;
-  end else
-    result := -1;
-end;
-
-function TBGRAAvgLvlPalette.GetColorByIndex(AIndex: integer): TBGRAPixel;
-begin
-  NeedArray;
-  if (AIndex >= 0) and (AIndex < length(FArray)) then
-    result := FArray[AIndex]^
-  else
-    raise ERangeError.Create('Index out of bounds');
-end;
-
-function TBGRAAvgLvlPalette.OnCompareItems(Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
+function PaletteOnCompareItems(Data1, Data2: Pointer): integer;
 var gray1, gray2: NativeUInt;
   c1, c2: TBGRAPixel;
 begin
@@ -1067,8 +976,99 @@ begin
   end;
 end;
 
+{ TBGRAAvgLvlPalette }
+
+constructor TBGRAAvgLvlPalette.Create;
+begin
+  FTree := TAVLTree.Create;
+  FTree.OnCompare := @PaletteOnCompareItems;
+end;
+
+destructor TBGRAAvgLvlPalette.Destroy;
+begin
+  Clear;
+  FreeAndNil(FTree);
+  inherited Destroy;
+end;
+
+function TBGRAAvgLvlPalette.GetAsArrayOfColor: ArrayOfTBGRAPixel;
+var i: NativeInt;
+begin
+  NeedArray;
+  setlength(result, Length(FArray));
+  for i := 0 to high(result) do
+    result[i] := FArray[i]^;
+end;
+
+function TBGRAAvgLvlPalette.GetAsArrayOfWeightedColor: ArrayOfWeightedColor;
+var i: NativeInt;
+begin
+  NeedArray;
+  setlength(result, Length(FArray));
+  for i := 0 to high(result) do
+  with result[i] do
+  begin
+    Color := FArray[i]^;
+    Weight:= 1;
+  end;
+end;
+
+procedure TBGRAAvgLvlPalette.Clear;
+var Node: TAVLTreeNode;
+begin
+  For Node in FTree do
+    FreeEntry(PBGRAPixel(Node.Data));
+  FTree.Clear;
+  ClearArray;
+  FLastAddedColorCount := 0;
+end;
+
+function TBGRAAvgLvlPalette.GetCount: integer;
+begin
+  result := FTree.Count;
+end;
+
+function TBGRAAvgLvlPalette.ContainsColor(AValue: TBGRAPixel): boolean;
+Var Node: TAVLTreeNode;
+begin
+  if Assigned(GetLastColor(AValue)) then
+  begin
+    result := true;
+    exit;
+  end;
+  Node := FTree.Find(@AValue);
+  result := Assigned(Node);
+  if result then AddLastColor(PBGRAPixel(Node.Data));
+end;
+
+function TBGRAAvgLvlPalette.IndexOfColor(AValue: TBGRAPixel): integer;
+Var Node: TAVLTreeNode;
+begin
+  Node := FTree.Find(@AValue);
+  if Assigned(Node) then
+  begin
+    result := 0;
+    Node := Node.Left;
+    while Assigned(Node) do
+    begin
+      inc(result);
+      Node := Node.Left;
+    end;
+  end else
+    result := -1;
+end;
+
+function TBGRAAvgLvlPalette.GetColorByIndex(AIndex: integer): TBGRAPixel;
+begin
+  NeedArray;
+  if (AIndex >= 0) and (AIndex < length(FArray)) then
+    result := FArray[AIndex]^
+  else
+    raise ERangeError.Create('Index out of bounds');
+end;
+
 procedure TBGRAAvgLvlPalette.NeedArray;
-var Node: TAvgLvlTreeNode;
+var Node: TAVLTreeNode;
   i,n: integer;
 begin
   n := Count;
@@ -1189,7 +1189,7 @@ begin
 end;
 
 function TBGRAPalette.AddColor(AValue: TBGRAPixel): boolean;
-Var Node: TAvgLvlTreeNode;
+Var Node: TAVLTreeNode;
   Entry: PBGRAPixel;
 begin
   if Assigned(GetLastColor(AValue)) then
@@ -1236,7 +1236,7 @@ end;
 
 function TBGRAPalette.RemoveColor(AValue: TBGRAPixel): boolean;
 var
-  Node : TAvgLvlTreeNode;
+  Node : TAVLTreeNode;
 begin
   Node := FTree.Find(@AValue);
   if Assigned(Node) then
@@ -1272,12 +1272,14 @@ end;
 procedure TBGRAPalette.LoadFromStream(AStream: TStream;
   AFormat: TBGRAPaletteFormat);
 var buf: TReadBufStream;
+  bridge: TClassesStreamBridge;
   handled: boolean;
   i: Integer;
 begin
   RegisterDefaultPaletteFormats;
   Clear;
-  buf := TReadBufStream.Create(AStream);
+  bridge := TClassesStreamBridge.Create(AStream);
+  buf := TReadBufStream.Create(bridge);
   try
     handled := false;
     for i := 0 to High(PaletteFormats) do
@@ -1291,6 +1293,7 @@ begin
     if not handled then ExceptionUnknownPaletteFormat;
   finally
     buf.Free;
+    bridge.Free;
   end;
 end;
 
@@ -1321,11 +1324,13 @@ end;
 procedure TBGRAPalette.SaveToStream(AStream: TStream;
   AFormat: TBGRAPaletteFormat);
 var buf: TWriteBufStream;
+  bridge: TClassesStreamBridge;
   handled: boolean;
   i: Integer;
 begin
   RegisterDefaultPaletteFormats;
-  buf := TWriteBufStream.Create(AStream);
+  bridge := TClassesStreamBridge.Create(AStream);
+  buf := TWriteBufStream.Create(bridge);
   try
     handled := false;
     for i := 0 to High(PaletteFormats) do
@@ -1338,6 +1343,7 @@ begin
     if not handled then ExceptionUnknownPaletteFormat;
   finally
     buf.Free;
+    bridge.Free;
   end;
 end;
 

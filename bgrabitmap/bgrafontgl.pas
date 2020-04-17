@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, BGRAGraphics, BGRAOpenGLType, BGRABitmapTypes,
-  AvgLvlTree;
+  Avl_Tree;
 
 type
   { TRenderedGlyph }
@@ -62,7 +62,7 @@ type
 
   TBGLRenderedFont = class(TBGLCustomFont,IBGLRenderedFont)
   private
-    FGlyphs: TAvgLvlTree;
+    FGlyphs: TAVLTree;
 
     FName: string;
     FColor: TBGRAPixel;
@@ -77,8 +77,7 @@ type
     FClipped: boolean;
     FWordBreakHandler: TWordBreakHandler;
 
-    function CompareGlyph({%H-}Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
-    function FindGlyph(AIdentifier: string): TAvgLvlTreeNode;
+    function FindGlyph(AIdentifier: string): TAVLTreeNode;
     function GetBackgroundColor: TBGRAPixel;
     function GetColor: TBGRAPixel;
     function GetFontEmHeight: integer;
@@ -166,16 +165,16 @@ begin
   FTexture.GradientColors := false;
 end;
 
-{ TBGLRenderedFont }
-
-function TBGLRenderedFont.CompareGlyph(Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
+function CompareGlyphNode(Data1, Data2: Pointer): integer;
 begin
   result := CompareStr(TRenderedGlyph(Data1).Identifier,TRenderedGlyph(Data2).Identifier);
 end;
 
-function TBGLRenderedFont.FindGlyph(AIdentifier: string): TAvgLvlTreeNode;
+{ TBGLRenderedFont }
+
+function TBGLRenderedFont.FindGlyph(AIdentifier: string): TAVLTreeNode;
 var Comp: integer;
-  Node: TAvgLvlTreeNode;
+  Node: TAVLTreeNode;
 begin
   Node:=FGlyphs.Root;
   while (Node<>nil) do begin
@@ -358,7 +357,7 @@ begin
 end;
 
 function TBGLRenderedFont.GetGlyph(AIdentifier: string): TRenderedGlyph;
-var Node: TAvgLvlTreeNode;
+var Node: TAVLTreeNode;
 begin
   Node := FindGlyph(AIdentifier);
   if Node = nil then
@@ -401,7 +400,7 @@ begin
 end;
 
 procedure TBGLRenderedFont.SetGlyph(AIdentifier: string; AValue: TRenderedGlyph);
-var Node: TAvgLvlTreeNode;
+var Node: TAVLTreeNode;
 begin
   if AValue.Identifier <> AIdentifier then
     raise exception.Create('Identifier mismatch');
@@ -621,7 +620,7 @@ begin
   FUseGradientColor:= false;
   FClipped:= false;
 
-  FGlyphs := TAvgLvlTree.CreateObjectCompare(@CompareGlyph);
+  FGlyphs := TAVLTree.Create(@CompareGlyphNode);
   FWordBreakHandler:= nil;
 end;
 

@@ -5,7 +5,7 @@ unit BGRATypewriter;
 interface
 
 uses
-  Classes, SysUtils, AvgLvlTree, BGRABitmapTypes, BGRACanvas2D, BGRATransform;
+  Classes, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform;
 
 type
   TGlyphBoxes = array of record
@@ -113,7 +113,7 @@ type
   TBGRACustomTypeWriter = class
   private
     FBidiMode: TFontBidiMode;
-    FGlyphs: TAvgLvlTree;
+    FGlyphs: TAVLTree;
     procedure GlyphCallbackForDisplayInfo({%H-}ATextUTF8: string;
       AGlyph: TBGRAGlyph; AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out
       AContinue: boolean);
@@ -124,8 +124,7 @@ type
       AGlyph: TBGRAGlyph; {%H-}AFlags: TBrowseGlyphCallbackFlags; AData: pointer; out AContinue: boolean);
   protected
     TypeWriterMatrix: TAffineMatrix;
-    function CompareGlyph({%H-}Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
-    function FindGlyph(AIdentifier: string): TAvgLvlTreeNode;
+    function FindGlyph(AIdentifier: string): TAVLTreeNode;
     function GetGlyph(AIdentifier: string): TBGRAGlyph; virtual;
     procedure SetGlyph(AIdentifier: string; AValue: TBGRAGlyph);
     function GetDisplayInfo(ATextUTF8: string; X,Y: Single;
@@ -506,10 +505,15 @@ begin
   AStream.Position:= EndPosition;
 end;
 
+function CompareGlyphNode(Data1, Data2: Pointer): integer;
+begin
+  result := CompareStr(TBGRAGlyph(Data1).Identifier,TBGRAGlyph(Data2).Identifier);
+end;
+
 { TBGRACustomTypeWriter }
 
 function TBGRACustomTypeWriter.GetGlyph(AIdentifier: string): TBGRAGlyph;
-var Node: TAvgLvlTreeNode;
+var Node: TAVLTreeNode;
 begin
   Node := FindGlyph(AIdentifier);
   if Node = nil then
@@ -519,7 +523,7 @@ begin
 end;
 
 procedure TBGRACustomTypeWriter.SetGlyph(AIdentifier: string; AValue: TBGRAGlyph);
-var Node: TAvgLvlTreeNode;
+var Node: TAVLTreeNode;
 begin
   if AValue.Identifier <> AIdentifier then
     raise exception.Create('Identifier mismatch');
@@ -607,14 +611,9 @@ begin
   AContinue:= true;
 end;
 
-function TBGRACustomTypeWriter.CompareGlyph(Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
-begin
-  result := CompareStr(TBGRAGlyph(Data1).Identifier,TBGRAGlyph(Data2).Identifier);
-end;
-
-function TBGRACustomTypeWriter.FindGlyph(AIdentifier: string): TAvgLvlTreeNode;
+function TBGRACustomTypeWriter.FindGlyph(AIdentifier: string): TAVLTreeNode;
 var Comp: integer;
-  Node: TAvgLvlTreeNode;
+  Node: TAVLTreeNode;
 begin
   Node:=FGlyphs.Root;
   while (Node<>nil) do begin
@@ -631,7 +630,7 @@ end;
 
 constructor TBGRACustomTypeWriter.Create;
 begin
-  FGlyphs := TAvgLvlTree.CreateObjectCompare(@CompareGlyph);
+  FGlyphs := TAVLTree.Create(@CompareGlyphNode);
   TypeWriterMatrix := AffineMatrixIdentity;
   OutlineMode:= twoFill;
   DrawGlyphsSimultaneously := false;
@@ -808,7 +807,7 @@ begin
 end;
 
 procedure TBGRACustomTypeWriter.RemoveGlyph(AIdentifier: string);
-var Node: TAvgLvlTreeNode;
+var Node: TAVLTreeNode;
 begin
   Node := FindGlyph(AIdentifier);
   if Node <> nil then FGlyphs.Delete(Node);
@@ -820,7 +819,8 @@ begin
 end;
 
 procedure TBGRACustomTypeWriter.SaveGlyphsToStream(AStream: TStream);
-var Enumerator: TAvgLvlTreeNodeEnumerator;
+var
+  Enumerator: TAVLTreeNodeEnumerator;
 begin
   LEWriteLongint(AStream,CustomHeaderSize);
   WriteCustomHeader(AStream);
@@ -1132,7 +1132,7 @@ end;
 procedure TBGRACustomTypeWriter.BrowseAllGlyphs(
   ACallback: TBrowseGlyphCallback; AData: pointer);
 var
-  g: TAvgLvlTreeNode;
+  g: TAVLTreeNode;
   shouldContinue: boolean;
 begin
   g := FGlyphs.FindLowest;
@@ -1141,7 +1141,7 @@ begin
   begin
     ACallback(TBGRAGlyph(g.Data).Identifier, TBGRAGlyph(g.Data), [],
       AData, shouldContinue);
-    g := g.Successor;
+    g := g.Right;
   end;
 end;
 
