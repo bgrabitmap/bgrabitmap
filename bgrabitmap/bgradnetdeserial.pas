@@ -858,9 +858,9 @@ end;
 
 procedure TDotNetDeserialization.LoadFromFile(filename: string);
 var
-  stream: TFileStream;
+  stream: TFileStreamUTF8;
 begin
-  stream := TFileStream.Create(filename, fmOpenRead);
+  stream := TFileStreamUTF8.Create(SysToUTF8(filename), fmOpenRead);
   try
     LoadFromStream(stream);
   finally

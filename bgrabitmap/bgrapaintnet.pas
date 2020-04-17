@@ -99,12 +99,12 @@ end;
 
 function IsPaintDotNetFile(filename: string): boolean;
 var
-  stream: TFileStream;
+  stream: TFileStreamUTF8;
 begin
   Result := False;
   if FileExists(filename) then
   begin
-    stream := TFileStream.Create(filename, fmOpenRead);
+    stream := TFileStreamUTF8.Create(SysToUTF8(filename), fmOpenRead);
     Result := IsPaintDotNetStream(stream);
     stream.Free;
   end;

@@ -391,9 +391,9 @@ begin
 end;
 
 procedure TMultiFileContainer.LoadFromFile(AFilename: utf8string);
-var stream: TFileStream;
+var stream: TFileStreamUTF8;
 begin
-  stream := TFileStream.Create(Utf8ToAnsi(AFilename), fmOpenRead);
+  stream := TFileStreamUTF8.Create(AFilename, fmOpenRead);
   LoadFromStream(stream);
   stream.Free;
 end;
@@ -411,9 +411,9 @@ begin
 end;
 
 procedure TMultiFileContainer.SaveToFile(AFilename: utf8string);
-var stream: TFileStream;
+var stream: TFileStreamUTF8;
 begin
-  stream := TFileStream.Create(Utf8ToAnsi(AFilename), fmCreate);
+  stream := TFileStreamUTF8.Create(AFilename, fmCreate);
   SaveToStream(stream);
   stream.Free;
 end;

@@ -906,9 +906,9 @@ begin
 end;
 
 procedure TBGRAScene3D.LoadMaterialsFromFile(AFilename: string);
-var source: TFileStream;
+var source: TFileStreamUTF8;
 begin
-  source := TFileStream.Create(AFilename,fmOpenRead,fmShareDenyWrite);
+  source := TFileStreamUTF8.Create(SysToUTF8(AFilename),fmOpenRead,fmShareDenyWrite);
   try
     LoadMaterialsFromStream(source);
   finally
