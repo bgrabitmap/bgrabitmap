@@ -63,6 +63,7 @@ type
     OutlineColor: TBGRAPixel;
     OutlineWidth: single;
     OutlineVisible,OuterOutlineOnly: boolean;
+    OutlineJoin: TPenJoinStyle;
     OutlineTexture: IBGRAScanner;
     constructor Create; overload;
     constructor Create(AShader: TCustomPhongShading; AShaderOwner: boolean); overload;
@@ -352,6 +353,7 @@ begin
   FVectorizedRenderer.OutlineWidth := OutlineWidth;
   FVectorizedRenderer.OutlineTexture := OutlineTexture;
   FVectorizedRenderer.OuterOutlineOnly := OuterOutlineOnly;
+  FVectorizedRenderer.OutlineJoin := OutlineJoin;
   result := FVectorizedRenderer;
 end;
 
@@ -396,6 +398,7 @@ begin
   OutlineVisible := True;
   OutlineWidth:= DefaultOutlineWidth;
   OuterOutlineOnly:= false;
+  OutlineJoin := pjsMiter;
   FVectorizedRenderer := TBGRAVectorizedFontRenderer.Create;
 end;
 

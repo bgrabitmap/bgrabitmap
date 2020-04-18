@@ -63,6 +63,7 @@ type
     OutlineColor: TBGRAPixel;
     OutlineTexture: IBGRAScanner;
     OuterOutlineOnly: boolean;
+    OutlineJoin: TPenJoinStyle;
 
     ShadowVisible: boolean;
     ShadowColor: TBGRAPixel;
@@ -1188,6 +1189,7 @@ begin
   end;
   result := FCanvas2D;
   FCanvas2D.antialiasing:= FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB];
+  FCanvas2D.lineJoinLCL := OutlineJoin;
   if OutlineTexture <> nil then
     FCanvas2D.strokeStyle(OutlineTexture)
   else
@@ -1324,6 +1326,7 @@ begin
   OutlineVisible:= True;
   OutlineColor := BGRAPixelTransparent;
   OuterOutlineOnly := false;
+  OutlineJoin := pjsMiter;
 
   ShadowColor := BGRABlack;
   ShadowVisible := false;
@@ -1675,7 +1678,7 @@ begin
       OldHeight := FFont.Height;
       FFont.Height := FontEmHeightSign * 100;
       lEmHeight := BGRATextSize(FFont, fqSystem, 'Hg', 1).cy;
-      FFont.Height := FixLCLFontFullHeight(FFont.Name, FontFullHeightSign * 100);
+      FFont.Height := FixSystemFontFullHeight(FFont.Name, FontFullHeightSign * 100);
       lFullHeight := BGRATextSize(FFont, fqSystem, 'Hg', 1).cy;
       if lEmHeight = 0 then
         FFontEmHeightRatio := 1
@@ -1716,7 +1719,7 @@ begin
     ClearGlyphs;
     FFont.Name := FName;
     FFont.Style := FStyle;
-    FFont.Height := FixLCLFontFullHeight(FFont.Name, FontFullHeightSign * FResolution);
+    FFont.Height := FixSystemFontFullHeight(FFont.Name, FontFullHeightSign * FResolution);
     FFont.Quality := fqNonAntialiased;
     FFontEmHeightRatio := 1;
     FFontEmHeightRatioComputed := false;
