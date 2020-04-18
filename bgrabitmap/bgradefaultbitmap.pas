@@ -1508,6 +1508,8 @@ begin
   if FDataModified or (FBitmap = nil) then
   begin
     RebuildBitmap;
+    FBitmapModified := false;
+    FAlphaCorrectionNeeded:= false;
     FDataModified := False;
   end;
   Result := FBitmap;
@@ -1518,6 +1520,8 @@ begin
   if FDataModified or (FBitmap = nil) then
   begin
     RebuildBitmap;
+    FBitmapModified := false;
+    FAlphaCorrectionNeeded:= false;
     FDataModified := False;
   end;
   Result := FBitmap.Canvas;

@@ -719,7 +719,6 @@ begin
   end;
 
   FBitmap.Canvas.AntialiasingMode := amOff;
-  FBitmapModified := False;
 end;
 
 function TBGRALCLPtrBitmap.CreatePtrBitmap(AWidth, AHeight: integer;
@@ -811,8 +810,6 @@ begin
   end;
 
   FBitmap.Canvas.AntialiasingMode := amOff;
-  FBitmapModified := False;
-  FAlphaCorrectionNeeded:= false;
 end;
 
 function TBGRALCLBitmap.CreatePtrBitmap(AWidth, AHeight: integer;
