@@ -1,6 +1,7 @@
 unit BGRAText;
 
 {$mode objfpc}{$H+}
+{$i bgrabitmap.inc}
 
 interface
 
@@ -22,6 +23,9 @@ interface
     {$DEFINE FIX_FONT_VERTICAL_OFFSET}
   {$ENDIF}
 {$ENDIF}
+{$IFDEF BGRABITMAP_USE_MSEGUI}
+  {$DEFINE RENDER_TEXT_ON_TBITMAP}
+{$ENDIF}
 
 {
   Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
@@ -37,8 +41,11 @@ interface
   in BGRAFreeType. }
 
 uses
-  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, InterfaceBase, BGRAPen, BGRAGrayscaleMask,
-  LCLVersion;
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAPen, BGRAGrayscaleMask
+  {$IFDEF LCL},InterfaceBase, LCLVersion{$ENDIF};
+
+const
+  RenderTextOnBitmap = {$IFDEF RENDER_TEXT_ON_TBITMAP}true{$ELSE}false{$ENDIF};
 
 type
   TWordBreakHandler = BGRABitmapTypes.TWordBreakHandler;
@@ -142,10 +149,17 @@ function GetLCLFontPixelMetric(AFont: TFont): TFontPixelMetric;
 var
   BGRATextOutImproveReadabilityProc : procedure (bmp: TBGRACustomBitmap; AFont: TFont; xf,yf: single; text: string; color: TBGRAPixel; tex: IBGRAScanner; align: TAlignment; mode : TBGRATextOutImproveReadabilityMode);
 
+procedure BitmapTextOut(ABitmap: TBitmap; ACoord: TPoint; AText: string);
+procedure BitmapTextRect(ABitmap: TBitmap; ARect: TRect; ACoord: TPoint; 
+  AText: string; const AStyle: TTextStyle);
+function BitmapTextExtent(ABitmap: TBitmap; AText: string): TSize;
+function BitmapTextFitInfo(ABitmap: TBitmap; AText: string; AMaxWidth: integer): integer;
+procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
+
 implementation
 
-uses GraphType, Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
-     {$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF};
+uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
+     {$IFDEF LCL}{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
 
 const MaxPixelMetricCount = 100;
 
@@ -165,6 +179,41 @@ var
                           metric: TFontPixelMetric;
                         end;
   FontPixelMetricCount: integer;
+  
+{$IFDEF BGRABITMAP_USE_MSEGUI}
+{$i bgramsegui_text.inc}
+{$ELSE}
+procedure BitmapTextOut(ABitmap: TBitmap; ACoord: TPoint; AText: string);
+begin
+  ABitmap.Canvas.Brush.Style := bsClear;
+  ABitmap.Canvas.TextOut(ACoord.X, ACoord.Y, AText);
+end;
+
+procedure BitmapTextRect(ABitmap: TBitmap; ARect: TRect; ACoord: TPoint; 
+  AText: string; const AStyle: TTextStyle);
+begin
+  ABitmap.Canvas.Brush.Style := bsClear;
+  ABitmap.Canvas.TextRect(ARect, ACoord.X, ACoord.Y, AText, AStyle);
+end;
+
+function BitmapTextExtent(ABitmap: TBitmap; AText: string): TSize;
+begin
+  result := ABitmap.Canvas.TextExtent(AText);
+end;
+
+function BitmapTextFitInfo(ABitmap: TBitmap; AText: string; AMaxWidth: integer): integer;
+begin
+  result := ABitmap.Canvas.TextFitInfo(AText, AMaxWidth);
+end;
+
+procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
+begin
+  ABitmap.Canvas.Brush.Style := bsSolid;
+  ABitmap.Canvas.Brush.Color := AColor;
+  ABitmap.Canvas.Pen.Style := psClear;
+  ABitmap.Canvas.FillRect(ARect);
+end;
+{$ENDIF}
 
 procedure ComputeFontVerticalBounds(text: string; font: TFont; out top, bottom, totalHeight: integer);
 var
@@ -189,8 +238,7 @@ begin
   mask.Canvas.Font.Quality := fqAntialiased;
   mask.Canvas.Font.Color := clWhite;
   mask.Canvas.Font.Style := font.style * [fsBold,fsItalic];
-  mask.Canvas.Brush.Style := bsClear;
-  mask.Canvas.TextOut(0,0,text);
+  BitmapTextOut(mask.Bitmap, Point(0,0), text);
   top := -1;
   bottom := -1;
   totalHeight:= mask.Height;
@@ -408,7 +456,7 @@ begin
     exit;
   end;
 
-  if WidgetSet.LCLPlatform = lpNoGUI then
+  if {$IFDEF LCL}WidgetSet.LCLPlatform = lpNoGUI{$ELSE}False{$ENDIF} then
   begin
     LCLFontDisabledValue:= True;
     result := -1;
@@ -417,12 +465,14 @@ begin
 
   try
     if tempBmp = nil then tempBmp := TBitmap.Create;
+    tempBmp.Width := 30;
+    tempBmp.Height := 30;
     tempBmp.Canvas.Font.Name := 'Arial';
     tempBmp.Canvas.Font.Style := [];
     tempBmp.Canvas.Font.Height := 20;
-    HeightP1  := tempBmp.Canvas.TextExtent('Hg').cy;
+    HeightP1  := BitmapTextExtent(tempBmp, 'Hg').cy;
     tempBmp.Canvas.Font.Height := -20;
-    HeightM1  := tempBmp.Canvas.TextExtent('Hg').cy;
+    HeightM1  := BitmapTextExtent(tempBmp, 'Hg').cy;
 
     if HeightP1 > HeightM1 then
       FontHeightSignValue := 1
@@ -452,18 +502,19 @@ begin
     exit;
   end;
   result := fqFineAntialiasing;
-  if not LCLFontDisabledValue and not (WidgetSet.LCLPlatform = lpNoGUI) then
+  if not LCLFontDisabledValue and not ({$IFDEF LCL}WidgetSet.LCLPlatform = lpNoGUI{$ELSE}False{$ENDIF}) then
   begin
     lclBmp := TBitmap.Create;
-    lclBmp.Canvas.FillRect(0,0,lclBmp.Width,lclBmp.Height);
     lclBmp.Canvas.Font.Height := -50;
     lclBmp.Canvas.Font.Quality := fqCleartype;
-    with lclBmp.Canvas.TextExtent('/') do
+    lclBmp.Canvas.Font.Color := clBlack;
+    with BitmapTextExtent(lclBmp, '/') do
     begin
       lclBmp.Width := cx;
       lclBmp.Height := cy;
     end;
-    lclBmp.Canvas.TextOut(0,0,'/');
+    BitmapFillRect(lclBmp, rect(0,0,lclBmp.Width,lclBmp.Height), clWhite);
+    BitmapTextOut(lclBmp, Point(0,0), '/');
     bgra:= BGRABitmapFactory.Create(lclBmp);
     x:= bgra.Width div 2;
     for y := 0 to bgra.Height-1 do
@@ -591,11 +642,11 @@ begin
         tempBmp.Canvas.Font.Height := Font.Height;
         actualAntialiasingLevel:= 1;
       end;
-      result := tempBmp.Canvas.TextExtent(sUTF8);
+      result := BitmapTextExtent(tempBmp, sUTF8);
       if Font.Orientation <> 0 then
       begin
         tempBmp.Canvas.Font.Orientation:= 0;
-        extraVerticalMarginDueToRotation := result.cy - tempBmp.Canvas.TextHeight(sUTF8);
+        extraVerticalMarginDueToRotation := result.cy - BitmapTextExtent(tempBmp, sUTF8).cy;
       end;
     except
       on ex: exception do
@@ -611,7 +662,7 @@ end;
 function BGRATextFitInfo(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string;
   CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
 var
-  actualAntialiasingLevel{$IF lcl_fullversion < 1070000}, len1{$ENDIF}: Integer;
+  actualAntialiasingLevel{$IFDEF LCL}{$IF lcl_fullversion < 1070000}, len1{$ENDIF}{$ENDIF}: Integer;
 begin
   if (AMaxWidth = 0) or (length(sUTF8)=0) then exit(0);
   actualAntialiasingLevel:= CustomAntialiasingLevel;
@@ -630,11 +681,11 @@ begin
         tempBmp.Canvas.Font.Height := Font.Height;
         actualAntialiasingLevel:= 1;
       end;
-      {$IF lcl_fullversion < 1070000}
+      {$IFDEF LCL}{$IF lcl_fullversion < 1070000}
       len1 := tempBmp.Canvas.TextWidth(copy(sUTF8,1,UTF8CharacterLength(@sUTF8[1])));
       if len1 > AMaxWidth*actualAntialiasingLevel then exit(0);
-      {$ENDIF}
-      result := tempBmp.Canvas.TextFitInfo(sUTF8, AMaxWidth*actualAntialiasingLevel);
+      {$ENDIF}{$ENDIF}
+      result := BitmapTextFitInfo(tempBmp, sUTF8, AMaxWidth*actualAntialiasingLevel);
     except
       on ex: exception do
       begin
@@ -958,8 +1009,7 @@ begin
   tempLCL := TBitmap.Create;
   tempLCL.Width := rotBounds.Right-rotBounds.Left;
   tempLCL.Height := rotBounds.Bottom-rotBounds.Top;
-  tempLCL.Canvas.Brush.Color := clBlack;
-  tempLCL.Canvas.FillRect(0,0,tempLCL.Width,tempLCL.Height);
+  BitmapFillRect(tempLCL, Rect(0,0,tempLCL.Width,tempLCL.Height), clBlack);
   with tempLCL do begin
   {$ELSE}
   temp := BGRABitmapFactory.Create(rotBounds.Right-rotBounds.Left,rotBounds.Bottom-rotBounds.Top, BGRABlack);
@@ -969,8 +1019,7 @@ begin
     Canvas.Font.Color := clWhite;
     Canvas.Font.Orientation := orientationTenthDegCCW;
     Canvas.Font.Height := round(Font.Height*sizeFactor);
-    Canvas.Brush.Style := bsClear;
-    Canvas.TextOut(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY, sUTF8);
+    BitmapTextOut({$IFDEF RENDER_TEXT_ON_TBITMAP}tempLCL{$ELSE}temp.Bitmap{$ENDIF}, Point(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY), sUTF8);
   end;
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
@@ -1036,8 +1085,7 @@ begin
   tempLCL := TBitmap.Create;
   tempLCL.Width := tx*sizeFactor;
   tempLCL.Height := ty*sizeFactor;
-  tempLCL.Canvas.Brush.Color := clBlack;
-  tempLCL.Canvas.FillRect(0,0,tempLCL.Width,tempLCL.Height);
+  BitmapFillRect(tempLCL, Rect(0,0,tempLCL.Width,tempLCL.Height), clBlack);
   with tempLCL do begin
   {$ELSE}
   temp := BGRABitmapFactory.Create(tx*sizeFactor, ty*sizeFactor, BGRABlack);
@@ -1048,10 +1096,10 @@ begin
     if Quality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB] then Canvas.Font.Height := Font.Height*CustomAntialiasingLevel
        else Canvas.Font.Height := Font.Height;
     Canvas.Font.Color := clWhite;
-    Canvas.Brush.Style := bsClear;
-    Canvas.TextRect(rect(lim.Left-ARect.Left, lim.Top-ARect.Top,
-                         (ARect.Right-ARect.Left)*sizeFactor, (ARect.Bottom-ARect.Top)*sizeFactor),
-                         round((xf - lim.Left)*sizeFactor), round((yf - lim.Top)*sizeFactor), sUTF8, style);
+    BitmapTextRect({$IFDEF RENDER_TEXT_ON_TBITMAP}tempLCL{$ELSE}temp.Bitmap{$ENDIF}, rect(lim.Left-ARect.Left, lim.Top-ARect.Top,
+         (ARect.Right-ARect.Left)*sizeFactor, (ARect.Bottom-ARect.Top)*sizeFactor),
+         Point(round((xf - lim.Left)*sizeFactor), round((yf - lim.Top)*sizeFactor)), 
+         sUTF8, style);
   end;
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);

@@ -329,10 +329,11 @@ type
   {** A combination of font styles }
   TFontStyles = set of TFontStyle;
   {$ENDIF}
+  {$IFNDEF TFontQuality}
   {* Quality to use when font is rendered by the system }
   TFontQuality = (fqDefault, fqDraft, fqProof, fqNonAntialiased, fqAntialiased, fqCleartype, fqCleartypeNatural);
+  {$ENDIF}
 
-type
   {$IFNDEF TCanvas}
   { TCanvas }
   {* A surface on which to draw }

@@ -6,7 +6,7 @@ interface
 
 uses
   SysUtils, BGRAClasses, BGRAGraphics, BGRABitmapTypes, BGRADefaultBitmap,
-  msebitmap;
+  BGRAText, msebitmap;
 
 type
 
@@ -23,7 +23,9 @@ type
       =True): boolean; override;
     procedure FreeBitmap; override;
     procedure NotAvailable;
+    procedure InternalAssignBitmapPixels(ASource: TBitmap);
   public
+    procedure Assign(ASource: TPersistent); override;
     destructor Destroy; override;
     procedure GetImageFromCanvas({%H-}CanvasSource: TCanvas; {%H-}x, {%H-}y: integer); override; //not available
     procedure DataDrawTransparent({%H-}ACanvas: TCanvas; {%H-}Rect: TRect; {%H-}AData: Pointer;
@@ -114,39 +116,57 @@ begin
   CopyDataToBitmap(Data, Width, Height, LineOrder, FBitmap);
 end;
 
-procedure TBGRAMSEguiBitmap.DoLoadFromBitmap; 
+procedure TBGRAMSEguiBitmap.InternalAssignBitmapPixels(ASource: TBitmap);
 var 
   ppix,pbmp: PLongword;
   pmask: PByte;
   getMask: boolean;
   x,y: integer;
 begin
-  if Assigned(FBitmap) then
+  if ASource is TMaskedBitmap then
+    getMask := TMaskedBitmap(ASource).Masked
+    else getMask := false;
+  for y := 0 to Height-1 do
   begin
-    getMask := TMaskedBitmap(FBitmap).Masked;
-    for y := 0 to Height-1 do
+    ppix := plongword(GetScanlineFast(y));
+    pbmp := ASource.Scanline[y];
+    if getMask then pmask := TMaskedBitmap(ASource).Mask.Scanline[y];
+    for x := 0 to Width-1 do
     begin
-      ppix := plongword(GetScanlineFast(y));
-      pbmp := FBitmap.Scanline[y];
-      if getMask then pmask := TMaskedBitmap(FBitmap).Mask.Scanline[y];
-      for x := 0 to Width-1 do
+      if getMask then
       begin
-        if getMask then
-        begin
-          ppix^ := (pbmp^ and $ffffff) or (pmask^ shl 24); 
-          inc(pmask);
-        end else
-          ppix^ := (pbmp^ and $ffffff) or $ff000000;
-        inc(ppix);
-        inc(pbmp);
-      end;
+        ppix^ := (pbmp^ and $ffffff) or (pmask^ shl 24); 
+        inc(pmask);
+      end else
+        ppix^ := (pbmp^ and $ffffff) or $ff000000;
+      inc(ppix);
+      inc(pbmp);
     end;
   end;
 end;
 
+procedure TBGRAMSEguiBitmap.Assign(ASource: TPersistent); 
+var bmp: TBitmap;
+begin
+  if ASource is TBitmap then
+  begin
+    bmp := TBitmap(ASource);
+    SetSize(bmp.Width, bmp.Height);
+    InternalAssignBitmapPixels(bmp);
+    InvalidateBitmap;
+  end else
+    inherited Assign(ASource);
+end;
+
+procedure TBGRAMSEguiBitmap.DoLoadFromBitmap; 
+begin
+  if Assigned(FBitmap) then
+    InternalAssignBitmapPixels(FBitmap);
+end;
+
 function TBGRAMSEguiBitmap.CreateDefaultFontRenderer: TBGRACustomFontRenderer;
 begin
-  raise exception.Create('Text functions not implemented');
+  result := TLCLFontRenderer.Create;
 end;
 
 function TBGRAMSEguiBitmap.LoadFromRawImage(ARawImage: TRawImage;

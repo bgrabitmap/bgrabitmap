@@ -25,7 +25,7 @@ unit BGRATextFX;
 interface
 
 uses
-  BGRAClasses, SysUtils, Graphics, BGRABitmapTypes, BGRAPhongTypes, BGRAText,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAPhongTypes, BGRAText,
   BGRACustomTextFX, BGRAVectorize;
 
 type
@@ -100,7 +100,7 @@ procedure BGRATextOutImproveReadability(bmp: TBGRACustomBitmap; AFont: TFont; xf
 
 implementation
 
-uses BGRAGradientScanner, GraphType, Math, BGRAGrayscaleMask, BGRAPath, BGRATransform,
+uses BGRAGradientScanner, Math, BGRAGrayscaleMask, BGRAPath, BGRATransform,
   BGRAPolygon, BGRAPen;
 
 procedure BGRATextOutImproveReadability(bmp: TBGRACustomBitmap; AFont: TFont; xf,yf: single; text: string; color: TBGRAPixel; tex: IBGRAScanner; align: TAlignment; mode : TBGRATextOutImproveReadabilityMode);
@@ -694,6 +694,7 @@ end;
 procedure TBGRATextEffect.Init(AText: string; Font: TFont; Antialiasing: boolean; SubOffsetX,SubOffsetY: single; GrainX, GrainY: Integer);
 const FXAntialiasingLevel = FontAntialiasingLevel;
 var temp: TBGRACustomBitmap;
+	tempBmp: TBitmap;
     size: TSize;
     p: PBGRAPixel;
     n,v,maxAlpha: integer;
@@ -780,13 +781,28 @@ begin
     SizeY := SizeY+ (GrainY-1);
     dec(SizeY, SizeY mod GrainY);
   end;
-  temp := BGRABitmapFactory.Create(sizeX, sizeY+2*OnePixel,clBlack);
-  temp.Canvas.Font := Font;
-  temp.Canvas.Font.Height := Font.Height*OnePixel;
-  temp.Canvas.Font.Color := clWhite;
-  temp.Canvas.Font.Quality := FontDefaultQuality;
-  temp.Canvas.Brush.Style := bsClear;
-  temp.Canvas.TextOut(-FOffset.X+iSubX, -FOffset.Y+iSubY, AText);
+  if RenderTextOnBitmap then
+  begin
+    tempBmp := TBitmap.Create;
+    tempBmp.Width := sizeX;
+    tempBmp.Height := sizeY+2*OnePixel;
+    BitmapFillRect(tempBmp, rect(0,0,tempBmp.Width,tempBmp.Height), clBlack);
+    tempBmp.Canvas.Font := Font;
+    tempBmp.Canvas.Font.Height := Font.Height*OnePixel;
+    tempBmp.Canvas.Font.Color := clWhite;
+    tempBmp.Canvas.Font.Quality := FontDefaultQuality;
+    BitmapTextOut(tempBmp, Point(-FOffset.X+iSubX, -FOffset.Y+iSubY), AText);
+    temp := BGRABitmapFactory.Create(tempBmp);
+    tempBmp.Free;
+  end else
+  begin
+    temp := BGRABitmapFactory.Create(sizeX, sizeY+2*OnePixel,clBlack);
+    temp.Canvas.Font := Font;
+    temp.Canvas.Font.Height := Font.Height*OnePixel;
+    temp.Canvas.Font.Color := clWhite;
+    temp.Canvas.Font.Quality := FontDefaultQuality;
+    BitmapTextOut(temp.Bitmap, Point(-FOffset.X+iSubX, -FOffset.Y+iSubY), AText);
+  end;
 
   if Antialiasing then
   begin

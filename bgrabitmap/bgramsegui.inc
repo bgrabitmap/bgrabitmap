@@ -158,11 +158,21 @@ type
     procedure StretchDraw(ARect: TRect; ABitmap: TBitmap); overload;
   end;
 
+  {$DEFINE TFontQuality}
+  TFontQuality = (fqDefault, fqNonAntialiased, fqAntialiased, fqCleartype);
+
   TFontHelper = class helper for TFont
   private
     function GetOrientation: integer;
+    procedure SetOrientation(AOrientation: integer);
+    function GetFontQuality: TFontQuality;
+    procedure SetFontQuality(AQuality: TFontQuality);
+    function GetHeightHelper: integer;
+    procedure SetHeightHelper(AHeight: integer);
   public
-    property Orientation: integer read GetOrientation;
+    property Orientation: integer read GetOrientation write SetOrientation;
+    property Quality: TFontQuality read GetFontQuality write SetFontQuality;
+    property Height: integer read GetHeightHelper write SetHeightHelper;
   end;
 
 const
@@ -296,6 +306,43 @@ End;
 function TFontHelper.GetOrientation: integer;
 begin
   result := 0;
+end;
+
+procedure TFontHelper.SetOrientation(AOrientation: integer);
+begin
+  if AOrientation <> 0 then
+    raise exception.Create('Only orientation 0 allowed at font level');
+end;
+
+function TFontHelper.GetFontQuality: TFontQuality;
+begin
+  if foo_antialiased2 in options then result := fqClearType else
+  if foo_antialiased in options then result := fqAntialiased else
+  if foo_nonantialiased in options then result := fqNonAntialiased else
+    result := fqDefault;
+end;
+
+procedure TFontHelper.SetFontQuality(AQuality: TFontQuality);
+begin
+  options := options - [foo_nonantialiased, foo_antialiased, foo_antialiased2];
+  case AQuality of
+  fqNonAntialiased: options := options + [foo_nonantialiased];
+  fqAntialiased: options := options + [foo_antialiased];
+  fqClearType: options := options + [foo_antialiased2];
+  end;
+end;
+
+function TFontHelper.GetHeightHelper: integer;
+begin
+  result := round(inherited Height * 1.5);
+end;
+
+procedure TFontHelper.SetHeightHelper(AHeight: integer);
+begin
+  if AHeight < 0 then
+     inherited Height := -AHeight
+   else
+     inherited Height := round(AHeight/1.5);
 end;
 
 {$ENDIF}
