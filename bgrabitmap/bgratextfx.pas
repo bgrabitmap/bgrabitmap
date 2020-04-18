@@ -33,7 +33,7 @@ type
 
   { TBGRATextEffectFontRenderer }
 
-  TBGRATextEffectFontRenderer = class(TCustomLCLFontRenderer)
+  TBGRATextEffectFontRenderer = class(TBGRASystemFontRenderer)
   private
     function GetShaderLightPosition: TPoint;
     function GetShaderLightPositionF: TPointF;

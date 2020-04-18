@@ -166,7 +166,7 @@ end;
 
 function TBGRAMSEguiBitmap.CreateDefaultFontRenderer: TBGRACustomFontRenderer;
 begin
-  result := TLCLFontRenderer.Create;
+  result := TMSEFontRenderer.Create;
 end;
 
 function TBGRAMSEguiBitmap.LoadFromRawImage(ARawImage: TRawImage;

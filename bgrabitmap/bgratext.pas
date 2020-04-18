@@ -30,10 +30,11 @@ interface
 {
   Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
 
-  This unit provides basic text rendering functions using LCL.
+  This unit provides basic text rendering functions using system renderer 
+  (LCL or MSEgui).
 
-  Text functions use a temporary bitmap where the operating system text drawing is used.
-  Then it is scaled down (if antialiasing is activated), and colored.
+  Text functions use a temporary bitmap where the operating system text drawing 
+  is used. Then it is scaled down (if antialiasing is activated) and colored.
 
   These routines are rather slow, so you may use other font renderers
   like TBGRATextEffectFontRenderer in BGRATextFX if you want to use LCL fonts,
@@ -50,9 +51,9 @@ const
 type
   TWordBreakHandler = BGRABitmapTypes.TWordBreakHandler;
 
-  { TCustomLCLFontRenderer }
+  { TBGRASystemFontRenderer }
 
-  TCustomLCLFontRenderer = class(TBGRACustomFontRenderer)
+  TBGRASystemFontRenderer = class(TBGRACustomFontRenderer)
   protected
     FFont: TFont;             //font parameters
     FWordBreakHandler: TWordBreakHandler;
@@ -98,11 +99,11 @@ type
     property OnWordBreak: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
   end;
 
-  { TLCLFontRenderer }
-
-  TLCLFontRenderer = class(TCustomLCLFontRenderer)
-
-  end;
+{$IFDEF BGRABITMAP_USE_MSEGUI}
+  TMSEFontRenderer = class(TBGRASystemFontRenderer);
+{$ELSE}
+  TLCLFontRenderer = class(TBGRASystemFontRenderer);
+{$ENDIF}
 
 function CleanTextOutString(s: string): string; //this works with UTF8 strings as well
 function RemoveLineEnding(var s: string; indexByte: integer): boolean; //this works with UTF8 strings however the index is the byte index
@@ -1112,10 +1113,10 @@ begin
   grayscale.Free;
 end;
 
-{ TCustomLCLFontRenderer }
+{ TBGRASystemFontRenderer }
 
 { Update font properties to internal TFont object }
-procedure TCustomLCLFontRenderer.UpdateFont;
+procedure TBGRASystemFontRenderer.UpdateFont;
 var fixedHeight: integer;
   fs: TFontStyles;
 begin
@@ -1146,7 +1147,7 @@ begin
     FFont.Quality := FontDefaultQuality;
 end;
 
-function TCustomLCLFontRenderer.InternalTextSize(sUTF8: string; AShowPrefix: boolean): TSize;
+function TBGRASystemFontRenderer.InternalTextSize(sUTF8: string; AShowPrefix: boolean): TSize;
 begin
   if AShowPrefix then sUTF8 := RemovePrefix(sUTF8);
   result := BGRAText.BGRATextSize(FFont,FontQuality,sUTF8,FontAntialiasingLevel);
@@ -1154,7 +1155,7 @@ begin
     result := BGRAText.BGRATextSize(FFont,FontQuality,sUTF8,4);
 end;
 
-procedure TCustomLCLFontRenderer.SplitText(var ATextUTF8: string;
+procedure TBGRASystemFontRenderer.SplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string);
 var WordBreakHandler: TWordBreakHandler;
 begin
@@ -1167,13 +1168,13 @@ begin
   InternalSplitText(ATextUTF8, AMaxWidth, ARemainsUTF8, WordBreakHandler);
 end;
 
-function TCustomLCLFontRenderer.GetFontPixelMetric: TFontPixelMetric;
+function TBGRASystemFontRenderer.GetFontPixelMetric: TFontPixelMetric;
 begin
   UpdateFont;
   result := InternalGetFontPixelMetric;
 end;
 
-procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
+procedure TBGRASystemFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
   sUTF8: string; c: TBGRAPixel; align: TAlignment);
 begin
   UpdateFont;
@@ -1181,7 +1182,7 @@ begin
   InternalTextOut(ADest,x,y,sUTF8,c,nil,align);
 end;
 
-procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel;
   align: TAlignment; ARightToLeft: boolean);
 begin
@@ -1190,7 +1191,7 @@ begin
   InternalTextOut(ADest,x,y,sUTF8,c,nil,align,false,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
+procedure TBGRASystemFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
   sUTF8: string; texture: IBGRAScanner; align: TAlignment);
 begin
   UpdateFont;
@@ -1198,7 +1199,7 @@ begin
   InternalTextOut(ADest,x,y,sUTF8,BGRAPixelTransparent,texture,align,false);
 end;
 
-procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientationTenthDegCCW: integer; sUTF8: string;
   texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean);
 begin
@@ -1207,21 +1208,21 @@ begin
   InternalTextOut(ADest,x,y,sUTF8,BGRAPixelTransparent,texture,align,false,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string;
+procedure TBGRASystemFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string;
   texture: IBGRAScanner; align: TAlignment);
 begin
   UpdateFont;
   InternalTextOut(ADest, x,y, sUTF8, BGRAPixelTransparent,texture, align);
 end;
 
-procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel;
+procedure TBGRASystemFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel;
   align: TAlignment);
 begin
   UpdateFont;
   InternalTextOut(ADest, x,y, sUTF8, c,nil, align);
 end;
 
-procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
   y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment;
   ARightToLeft: boolean);
 begin
@@ -1230,7 +1231,7 @@ begin
                 False, ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
   y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment;
   ARightToLeft: boolean);
 begin
@@ -1238,21 +1239,21 @@ begin
   InternalTextOut(ADest, x,y, sUTF8, c,nil, align, false, ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string;
+procedure TBGRASystemFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string;
   style: TTextStyle; c: TBGRAPixel);
 begin
   UpdateFont;
   InternalTextRect(ADest,ARect,x,y,sUTF8,style,c,nil);
 end;
 
-procedure TCustomLCLFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string;
+procedure TBGRASystemFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string;
   style: TTextStyle; texture: IBGRAScanner);
 begin
   UpdateFont;
   InternalTextRect(ADest,ARect,x,y,sUTF8,style,BGRAPixelTransparent,texture);
 end;
 
-procedure TCustomLCLFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
+procedure TBGRASystemFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
   AText: string; x, y, AMaxWidth: integer; AColor: TBGRAPixel;
   AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
 begin
@@ -1260,7 +1261,7 @@ begin
   InternalTextWordBreak(ADest,AText,x,y,AMaxWidth,AColor,nil,AHorizAlign,AVertAlign,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
+procedure TBGRASystemFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
   AText: string; x, y, AMaxWidth: integer; ATexture: IBGRAScanner;
   AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
 begin
@@ -1268,7 +1269,7 @@ begin
   InternalTextWordBreak(ADest,AText,x,y,AMaxWidth,BGRAPixelTransparent,ATexture,AHorizAlign,AVertAlign,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.InternalTextWordBreak(
+procedure TBGRASystemFontRenderer.InternalTextWordBreak(
   ADest: TBGRACustomBitmap; ATextUTF8: string; x, y, AMaxWidth: integer;
   AColor: TBGRAPixel; ATexture: IBGRAScanner; AHorizAlign: TAlignment;
   AVertAlign: TTextLayout; ARightToLeft: boolean);
@@ -1357,7 +1358,7 @@ begin
   lines.Free;
 end;
 
-procedure TCustomLCLFontRenderer.InternalTextRect(ADest: TBGRACustomBitmap;
+procedure TBGRASystemFontRenderer.InternalTextRect(ADest: TBGRACustomBitmap;
   ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel;
   ATexture: IBGRAScanner);
 var
@@ -1458,7 +1459,7 @@ begin
     ADest.ClipRect := previousClip;
 end;
 
-procedure TCustomLCLFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap; x,
   y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
   align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
 var mode : TBGRATextOutImproveReadabilityMode;
@@ -1508,7 +1509,7 @@ begin
   end;
 end;
 
-procedure TCustomLCLFontRenderer.InternalTextOutEllipse(
+procedure TBGRASystemFontRenderer.InternalTextOutEllipse(
   ADest: TBGRACustomBitmap; x, y, availableWidth: single; sUTF8: string;
   c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment;
   AShowPrefix: boolean; ARightToLeft: boolean);
@@ -1523,7 +1524,7 @@ begin
   InternalTextOut(ADest,x,y,sUTF8,c,texture,align,AShowPrefix,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
+procedure TBGRASystemFontRenderer.InternalSplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string; out ALineEndingBreak: boolean; AWordBreak: TWordBreakHandler);
 var p,skipCount, charLen: integer;
   zeroWidth: boolean;
@@ -1574,14 +1575,14 @@ begin
   if Assigned(AWordBreak) then AWordBreak(ATextUTF8,ARemainsUTF8);
 end;
 
-procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
+procedure TBGRASystemFontRenderer.InternalSplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string; AWordBreak: TWordBreakHandler);
 var lineEndingBreak: boolean;
 begin
   InternalSplitText(ATextUTF8,AMaxWidth,ARemainsUTF8,lineEndingBreak,AWordBreak);
 end;
 
-function TCustomLCLFontRenderer.InternalGetFontPixelMetric: TFontPixelMetric;
+function TBGRASystemFontRenderer.InternalGetFontPixelMetric: TFontPixelMetric;
 var fxFont: TFont;
 begin
   if FontQuality in[fqSystem,fqSystemClearType] then
@@ -1601,13 +1602,13 @@ begin
   end;
 end;
 
-procedure TCustomLCLFontRenderer.DefaultWorkBreakHandler(var ABeforeUTF8,
+procedure TBGRASystemFontRenderer.DefaultWorkBreakHandler(var ABeforeUTF8,
   AAfterUTF8: string);
 begin
   BGRADefaultWordBreakHandler(ABeforeUTF8,AAfterUTF8);
 end;
 
-function TCustomLCLFontRenderer.TextSize(sUTF8: string): TSize;
+function TBGRASystemFontRenderer.TextSize(sUTF8: string): TSize;
 var oldOrientation: integer;
 begin
   oldOrientation:= FontOrientation;
@@ -1617,7 +1618,7 @@ begin
   FontOrientation:= oldOrientation;
 end;
 
-function TCustomLCLFontRenderer.TextSizeAngle(sUTF8: string;
+function TBGRASystemFontRenderer.TextSizeAngle(sUTF8: string;
   orientationTenthDegCCW: integer): TSize;
 var oldOrientation: integer;
 begin
@@ -1628,7 +1629,7 @@ begin
   FontOrientation:= oldOrientation;
 end;
 
-function TCustomLCLFontRenderer.TextSize(sUTF8: string;
+function TBGRASystemFontRenderer.TextSize(sUTF8: string;
   AMaxWidth: integer; ARightToLeft: boolean): TSize;
 var
   remains: string;
@@ -1673,19 +1674,19 @@ begin
   end;
 end;
 
-function TCustomLCLFontRenderer.TextFitInfo(sUTF8: string; AMaxWidth: integer
+function TBGRASystemFontRenderer.TextFitInfo(sUTF8: string; AMaxWidth: integer
   ): integer;
 begin
   UpdateFont;
   result := BGRATextFitInfo(FFont, FontQuality, sUTF8, FontAntialiasingLevel, AMaxWidth);
 end;
 
-constructor TCustomLCLFontRenderer.Create;
+constructor TBGRASystemFontRenderer.Create;
 begin
   FFont := TFont.Create;
 end;
 
-destructor TCustomLCLFontRenderer.Destroy;
+destructor TBGRASystemFontRenderer.Destroy;
 begin
   FFont.Free;
   inherited Destroy;
