@@ -241,8 +241,8 @@ const
 {$DEFINE INCLUDE_INTERFACE}
 {$i csscolorconst.inc}
 
-{$DEFINE INCLUDE_SCANNER_INTERFACE }
-{$I bgracustombitmap.inc}
+{$DEFINE INCLUDE_INTERFACE}
+{$I bgrascanner.inc}
 
 {$DEFINE INCLUDE_INTERFACE}
 {$I unibitmap.inc}
@@ -615,6 +615,9 @@ end;
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I bgracustombitmap.inc}
+
+{$DEFINE INCLUDE_IMPLEMENTATION}
+{$I bgrascanner.inc}
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I bgrapixel.inc}
