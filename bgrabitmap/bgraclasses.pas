@@ -6,9 +6,10 @@ unit BGRAClasses;
 interface
 
 uses
-  Types, Classes;
+  {$IFDEF BGRABITMAP_USE_MSEGUI}Types, Classes, mclasses, msegraphutils, mseguiglob{$ELSE}Types, Classes{$ENDIF};
 
 type
+  //types always imported from Classes
   TFPList = Classes.TFPList;
   TList = Classes.TList;
   TNotifyEvent = Classes.TNotifyEvent;
@@ -17,20 +18,29 @@ type
   EFOpenError = Classes.EFOpenError;
   TAlignment = Classes.TAlignment;
   TSeekOrigin = Classes.TSeekOrigin;
-  TPersistent = Classes.TPersistent;
-  TComponent = Classes.TComponent;
-  TStream = Classes.TStream;
-  TResourceStream = Classes.TResourceStream;
-  TMemoryStream = Classes.TMemoryStream;
-  THandleStream = Classes.THandleStream;
-  TStringStream = Classes.TStringStream;
-  TStrings = Classes.TStrings;
-  TStringList = Classes.TStringList;
+
+  TPersistent = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TPersistent;
+  TComponent = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TComponent;
+  TStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TStream;
+  TResourceStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TResourceStream;
+  TMemoryStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TMemoryStream;
+  THandleStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.THandleStream;
+  TStringStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TStringStream;
+  TStrings = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TStrings;
+  TStringList = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TStringList;
 
 type
+  {$IFDEF BGRABITMAP_USE_MSEGUI}
+  TPoint = msegraphutils.pointty;
+  TSize = msegraphutils.sizety;
+  TRect = Classes.TRect;
+  TClassesPoint = Classes.TPoint;
+  TMSERect = msegraphutils.rectty;
+  {$ELSE}
   TPoint = Types.TPoint;
   TSize = Types.TSize;
   TRect = Types.TRect;
+  {$ENDIF}
   PPoint = ^TPoint;
   PSize = ^TSize;
   PRect = ^TRect;
@@ -61,14 +71,29 @@ type
   {$ENDIF}
 
 const
+  //types always imported from Classes
   taLeftJustify = Classes.taLeftJustify;
   taRightJustify = Classes.taRightJustify;
   taCenter = Classes.taCenter;
 
 type
+  {$IFDEF BGRABITMAP_USE_MSEGUI}
+  TShiftState = mseguiglob.shiftstatesty;
+  {$ELSE}
   TShiftState = Classes.TShiftState;
+  {$ENDIF}
 
 const
+  {$IFDEF BGRABITMAP_USE_MSEGUI}
+  ssShift = mseguiglob.ss_shift;
+  ssAlt = mseguiglob.ss_alt;
+  ssCtrl = mseguiglob.ss_ctrl;
+  ssLeft = mseguiglob.ss_left;
+  ssRight = mseguiglob.ss_right;
+  ssMiddle = mseguiglob.ss_middle;
+  ssDouble = mseguiglob.ss_double;
+  ssTriple = mseguiglob.ss_triple;
+  {$ELSE}
   ssShift = Classes.ssShift;
   ssAlt = Classes.ssAlt;
   ssCtrl = Classes.ssCtrl;
@@ -77,11 +102,22 @@ const
   ssMiddle = Classes.ssMiddle;
   ssDouble = Classes.ssDouble;
   ssTriple = Classes.ssTriple;
+  {$ENDIF}
 
   soBeginning = Classes.soBeginning;
   soCurrent = Classes.soCurrent;
   soEnd = Classes.soEnd;
 
+  {$IFDEF BGRABITMAP_USE_MSEGUI}
+  fmCreate        = $FF00;
+  fmOpenRead      = 0;
+  fmOpenWrite     = 1;
+  fmOpenReadWrite = 2;
+
+  soFromBeginning = 0;
+  soFromCurrent = 1;
+  soFromEnd = 2;
+  {$ELSE}
   fmCreate = Classes.fmCreate;
   fmOpenRead = Classes.fmOpenRead;
   fmOpenWrite = Classes.fmOpenWrite;
@@ -89,6 +125,7 @@ const
   soFromBeginning = Classes.soFromBeginning;
   soFromCurrent = Classes.soFromCurrent;
   soFromEnd = Classes.soFromEnd;
+  {$ENDIF}
 
 function Rect(ALeft, ATop, ARight, ABottom: Integer): TRect;
 function Point(AX, AY: Integer): TPoint;

@@ -50,7 +50,7 @@ type
 operator=(const ARect1,ARect2: TRect): boolean;
 {$endif}
 
-{$if FPC_FULLVERSION<030001}
+{$if (FPC_FULLVERSION<030001) or defined(BGRABITMAP_USE_MSEGUI)}
 type
   {$define BGRA_DEFINE_TSIZEHELPER}
   { TSizeHelper }
