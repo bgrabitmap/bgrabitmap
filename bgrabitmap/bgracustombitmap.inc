@@ -418,8 +418,10 @@ type
      procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
 
      { Overrides the font orientation with the parameter orientationTenthDegCCW }
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
 
@@ -1201,10 +1203,22 @@ begin
 end;
 
 procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
+  orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel);
+begin
+  TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,c,taLeftJustify);
+end;
+
+procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
   orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel;
   align: TAlignment);
 begin
   TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,c,align, GetFontRightToLeftFor(sUTF8));
+end;
+
+procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
+  orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner);
+begin
+  TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,texture,taLeftJustify);
 end;
 
 procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
