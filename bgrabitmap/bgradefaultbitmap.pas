@@ -1932,10 +1932,10 @@ begin
   if bidiArray = nil then exit;
   displayOrder := GetUTF8DisplayOrder(bidiArray);
 
-  if AALign<> taLeftJustify then
+  if AAlign<> taLeftJustify then
   begin
-    MulticharsRewind;
     textLen := -ALetterSpacing;
+    MulticharsRewind;
     while not MulticharsEndOfString do
     begin
       GlyphGetNext;
@@ -1947,6 +1947,7 @@ begin
     end;
   end;
 
+  MulticharsRewind;
   while not MulticharsEndOfString do
   begin
     GlyphGetNext;
