@@ -393,11 +393,12 @@ type
     function TextSizeF(sUTF8: string): TPointF; overload; virtual;
     function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; overload; virtual; abstract;
     function TextSizeF(sUTF8: string; AMaxWidthF: single; ARightToLeft: boolean): TPointF; overload; virtual;
-
-    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
-    function TextFitInfoF(sUTF8: string; AMaxWidthF: single): integer; virtual;
     function TextSizeAngle(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TSize; virtual;
     function TextSizeAngleF(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TPointF; virtual;
+
+    {** Returns the number of Unicode characters that fit into the specified size }
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
+    function TextFitInfoF(sUTF8: string; AMaxWidthF: single): integer; virtual;
 
     {** Draws the UTF8 encoded string, with color ''c''.
         If align is taLeftJustify, (''x'',''y'') is the top-left corner.

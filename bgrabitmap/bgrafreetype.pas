@@ -143,7 +143,7 @@ type
 
 implementation
 
-uses BGRABlend, Math, BGRATransform;
+uses BGRABlend, Math, BGRATransform, BGRAUTF8;
 
 { TBGRAFreeTypeFontRenderer }
 
@@ -527,7 +527,7 @@ var
 begin
   UpdateFont;
   FFont.SplitText(sUTF8, AMaxWidthF, remains);
-  result := length(sUTF8);
+  result := UTF8Length(sUTF8);
 end;
 
 destructor TBGRAFreeTypeFontRenderer.Destroy;
