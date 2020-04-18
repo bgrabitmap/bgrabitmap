@@ -1150,7 +1150,7 @@ begin
     FVectorizedFont.Style := FontStyle - [fsUnderline];
     FVectorizedFont.UnderlineDecoration := fsUnderline in FontStyle;
     FVectorizedFont.Directory := FDirectoryUTF8;
-    if not FVectorizedFont.FontFound and LCLFontAvailable then
+    if not FVectorizedFont.FontFound and SystemFontAvailable then
       FVectorizedFont.VectorizeLCL := True;
     Setlength(FVectorizedFontArray,length(FVectorizedFontArray)+1);
     FVectorizedFontArray[high(FVectorizedFontArray)].FontName := FontName;

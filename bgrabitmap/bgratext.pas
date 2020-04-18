@@ -6,16 +6,16 @@ unit BGRAText;
 interface
 
 {$IFDEF LINUX}
-  {$DEFINE LCL_RENDERER_IS_FINE}
-  {$DEFINE LCL_CLEARTYPE_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_CLEARTYPE_RENDERER_IS_FINE}
   {$DEFINE RENDER_TEXT_ON_TBITMAP}
 {$ENDIF}
 {$IFDEF FREEBSD}
-  {$DEFINE LCL_RENDERER_IS_FINE}
-  {$DEFINE LCL_CLEARTYPE_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_CLEARTYPE_RENDERER_IS_FINE}
 {$ENDIF}
 {$IFDEF DARWIN}
-  {$DEFINE LCL_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_RENDERER_IS_FINE}
   {$DEFINE RENDER_TEXT_ON_TBITMAP}
 {$ENDIF}
 {$IFDEF WINDOWS}
@@ -75,7 +75,7 @@ type
     function InternalGetFontPixelMetric: TFontPixelMetric;
     procedure DefaultWorkBreakHandler(var ABeforeUTF8, AAfterUTF8: string);
   public
-    OverrideUnderlineDecoration: boolean; // draw unerline according to computed font pixel metric instead of using LCL rendering of underline
+    OverrideUnderlineDecoration: boolean; // draw unerline according to computed font pixel metric instead of using system rendering of underline
     procedure SplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string);
     function GetFontPixelMetric: TFontPixelMetric; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; override;
@@ -133,17 +133,17 @@ function BGRATextStrikeOut(ATopLeft: TPointF; AWidth: Single; ABaseline, AEmHeig
 function GetFontHeightSign: integer;
 function FontEmHeightSign: integer;
 function FontFullHeightSign: integer;
-function LCLFontAvailable: boolean;
+function SystemFontAvailable: boolean;
 function GetFineClearTypeAuto: TBGRAFontQuality;
-function FixLCLFontFullHeight({%H-}AFontName: string; AFontHeight: integer): integer;
+function FixSystemFontFullHeight({%H-}AFontName: string; AFontHeight: integer): integer;
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TGrayscaleMask; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
 procedure BGRAFillClearTypeMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
 procedure BGRAFillClearTypeRGBMask(dest: TBGRACustomBitmap; x,y: integer; mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner = nil; KeepRGBOrder: boolean=true);
 
-const FontAntialiasingLevel = {$IFDEF LCL_RENDERER_IS_FINE}3{$ELSE}6{$ENDIF};
+const FontAntialiasingLevel = {$IFDEF SYSTEM_RENDERER_IS_FINE}3{$ELSE}6{$ENDIF};
 const FontDefaultQuality = fqAntialiased;
-const IsLclFontRendererFine = {$IFDEF LCL_RENDERER_IS_FINE}true{$ELSE}false{$ENDIF};
+const IsLclFontRendererFine = {$IFDEF SYSTEM_RENDERER_IS_FINE}true{$ELSE}false{$ENDIF};
 
 function GetLCLFontPixelMetric(AFont: TFont): TFontPixelMetric;
 
@@ -165,7 +165,7 @@ uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
 const MaxPixelMetricCount = 100;
 
 var
-  LCLFontDisabledValue: boolean;
+  SystemFontDisabledValue: boolean;
   TempBmp: TBitmap;
   fqFineClearTypeComputed: boolean;
   fqFineClearTypeValue: TBGRAFontQuality;
@@ -226,7 +226,7 @@ var
   mask: TBGRACustomBitmap;
   size: TSize;
 begin
-  if not LCLFontAvailable then
+  if not SystemFontAvailable then
   begin
     top := 0;
     bottom := 0;
@@ -445,7 +445,7 @@ function GetFontHeightSign: integer;
 var
   HeightP1, HeightM1: integer;
 begin
-  if LCLFontDisabledValue then
+  if SystemFontDisabledValue then
   begin
     result := DefaultFontHeightSign;
     exit;
@@ -459,7 +459,7 @@ begin
 
   if {$IFDEF LCL}WidgetSet.LCLPlatform = lpNoGUI{$ELSE}False{$ENDIF} then
   begin
-    LCLFontDisabledValue:= True;
+    SystemFontDisabledValue:= True;
     result := -1;
     exit;
   end;
@@ -482,7 +482,7 @@ begin
   except
     on ex: Exception do
     begin
-      LCLFontDisabledValue := True;
+      SystemFontDisabledValue := True;
       result := -1;
       exit;
     end;
@@ -503,7 +503,7 @@ begin
     exit;
   end;
   result := fqFineAntialiasing;
-  if not LCLFontDisabledValue and not ({$IFDEF LCL}WidgetSet.LCLPlatform = lpNoGUI{$ELSE}False{$ENDIF}) then
+  if not SystemFontDisabledValue and not ({$IFDEF LCL}WidgetSet.LCLPlatform = lpNoGUI{$ELSE}False{$ENDIF}) then
   begin
     lclBmp := TBitmap.Create;
     lclBmp.Canvas.Font.Height := -50;
@@ -543,7 +543,7 @@ var LCLFontFullHeightRatio : array of record
                         end;
 {$ENDIF}
 
-function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
+function FixSystemFontFullHeight(AFontName: string; AFontHeight: integer): integer;
 {$IFNDEF WINDOWS}
 const TestHeight = 200;
 var
@@ -598,10 +598,10 @@ begin
   result := -FontEmHeightSign;
 end;
 
-function LCLFontAvailable: boolean;
+function SystemFontAvailable: boolean;
 begin
   if not FontHeightSignComputed then GetFontHeightSign;
-  result := not LCLFontDisabledValue;
+  result := not SystemFontDisabledValue;
 end;
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,
@@ -628,7 +628,7 @@ function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality; sUTF8: s
 begin
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   extraVerticalMarginDueToRotation := 0;
-  if not LCLFontAvailable then
+  if not SystemFontAvailable then
     result := Size(0,0)
   else
   begin
@@ -653,7 +653,7 @@ begin
       on ex: exception do
       begin
         result := Size(0,0);
-        LCLFontDisabledValue := True;
+        SystemFontDisabledValue := True;
       end;
     end;
 
@@ -667,7 +667,7 @@ var
 begin
   if (AMaxWidth = 0) or (length(sUTF8)=0) then exit(0);
   actualAntialiasingLevel:= CustomAntialiasingLevel;
-  if not LCLFontAvailable then
+  if not SystemFontAvailable then
     result := 0
   else
   begin
@@ -691,7 +691,7 @@ begin
       on ex: exception do
       begin
         result := 0;
-        LCLFontDisabledValue := True;
+        SystemFontDisabledValue := True;
       end;
     end;
 
@@ -709,7 +709,7 @@ end;
 
 function BGRATextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
 begin
-  {$IFDEF LCL_RENDERER_IS_FINE}
+  {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if Quality = fqFineAntialiasing then Quality:= fqSystem;
   {$ENDIF}
   result := BGRAOriginalTextSize(Font, Quality, sUTF8, CustomAntialiasingLevel);
@@ -853,7 +853,7 @@ var
   style: TTextStyle;
   noPrefix: string;
 begin
-  if not LCLFontAvailable then exit;
+  if not SystemFontAvailable then exit;
 
   if CustomAntialiasingLevel = 0 then
     CustomAntialiasingLevel:= FontAntialiasingLevel;
@@ -864,12 +864,12 @@ begin
     exit;
   end;
 
-  {$IFDEF LCL_RENDERER_IS_FINE}
+  {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if (Quality in [fqFineAntialiasing, fqFineClearTypeRGB, fqFineClearTypeBGR]) and
      (BGRATextSize(Font, fqSystem, 'Hg', 1).cy >= 13) then
   begin
     if Quality = fqFineAntialiasing then Quality := fqSystem;
-    {$IFDEF LCL_CLEARTYPE_RENDERER_IS_FINE}
+    {$IFDEF SYSTEM_CLEARTYPE_RENDERER_IS_FINE}
     if Quality = GetFineClearTypeAuto then Quality := fqSystemClearType;
     {$ENDIF}
   end;
@@ -941,7 +941,7 @@ var
   end;
 
 begin
-  if not LCLFontAvailable then exit;
+  if not SystemFontAvailable then exit;
 
   if CustomAntialiasingLevel = 0 then
     CustomAntialiasingLevel:= FontAntialiasingLevel;
@@ -1046,7 +1046,7 @@ var
   tempLCL: TBitmap;
   {$ENDIF}
 begin
-  if not LCLFontAvailable then exit;
+  if not SystemFontAvailable then exit;
 
   if CustomAntialiasingLevel = 0 then
     CustomAntialiasingLevel:= FontAntialiasingLevel;
@@ -1066,12 +1066,12 @@ begin
   if (tx <= 0) or (ty <= 0) then
     exit;
 
-  {$IFDEF LCL_RENDERER_IS_FINE}
+  {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if (Quality in [fqFineAntialiasing, fqFineClearTypeRGB, fqFineClearTypeBGR]) and
      (BGRATextSize(Font, fqSystem, 'Hg', 1).cy >= 13) then
   begin
     if Quality = fqFineAntialiasing then Quality := fqSystem;
-    {$IFDEF LCL_CLEARTYPE_RENDERER_IS_FINE}
+    {$IFDEF SYSTEM_CLEARTYPE_RENDERER_IS_FINE}
     if Quality = GetFineClearTypeAuto then Quality := fqSystemClearType;
     {$ENDIF}
   end;
@@ -1134,7 +1134,7 @@ begin
   if FFont.Style <> fs then
     FFont.Style := fs;
   if FontEmHeight < 0 then
-    fixedHeight := FixLCLFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
+    fixedHeight := FixSystemFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
   else
     fixedHeight := FontEmHeight * FontEmHeightSign;
   if FFont.Height <> fixedHeight then
@@ -1479,7 +1479,7 @@ begin
       end;
   end;
   {$ENDIF}
-  if Assigned(BGRATextOutImproveReadabilityProc) and (FontQuality in[{$IFNDEF LCL_RENDERER_IS_FINE}fqFineAntialiasing,{$ENDIF}fqFineClearTypeBGR,fqFineClearTypeRGB]) and (FFont.Orientation mod 3600 = 0) then
+  if Assigned(BGRATextOutImproveReadabilityProc) and (FontQuality in[{$IFNDEF SYSTEM_RENDERER_IS_FINE}fqFineAntialiasing,{$ENDIF}fqFineClearTypeBGR,fqFineClearTypeRGB]) and (FFont.Orientation mod 3600 = 0) then
   begin
     case FontQuality of
       fqFineClearTypeBGR: mode := irClearTypeBGR;
