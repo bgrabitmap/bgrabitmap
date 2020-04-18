@@ -8,6 +8,9 @@ const
   EmptySingle = single(-3.402823e38);
 
 type
+  TPoint = BGRAClasses.TPoint;
+  TSize = BGRAClasses.TSize;
+  
   {* Pointer to a ''TPointF'' structure }
   PPointF = ^BGRAClasses.TPointF;
   {* Contains a point with single-precision floating point coordinates }
