@@ -48,7 +48,7 @@ type
     function ShaderActuallyActive: boolean;
     function OutlineActuallyVisible: boolean;
     procedure Init;
-    function VectorizedFontNeeded: boolean;
+    function VectorizedFontNeeded(AOrientation: integer): boolean;
     procedure InternalTextOutAngle(ADest: TBGRACustomBitmap; x, y: single; AOrientation: integer; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false); override;
   public
@@ -403,7 +403,7 @@ begin
   FVectorizedRenderer := TBGRAVectorizedFontRenderer.Create;
 end;
 
-function TBGRATextEffectFontRenderer.VectorizedFontNeeded: boolean;
+function TBGRATextEffectFontRenderer.VectorizedFontNeeded(AOrientation: integer): boolean;
   function IsBigFont: boolean;
   var textsz: TSize;
   begin
@@ -415,7 +415,7 @@ var bAntialiasing, bSpecialOutline, bOriented, bEffectVectorizedSupported: boole
 begin
   bAntialiasing := FontQuality in [fqFineAntialiasing,fqFineClearTypeRGB,fqFineClearTypeBGR];
   bSpecialOutline:= OutlineActuallyVisible and (abs(OutlineWidth) <> DefaultOutlineWidth);
-  bOriented := FontOrientation <> 0;
+  bOriented := AOrientation <> 0;
   bEffectVectorizedSupported := OutlineActuallyVisible or ShadowActuallyVisible or ShaderActuallyActive;
   result := bSpecialOutline or
             (bAntialiasing and IsBigFont) or
@@ -472,6 +472,7 @@ procedure TBGRATextEffectFontRenderer.InternalTextOutAngle(
     b: TRect;
     fx: TBGRATextEffect;
     oldShaderLightPos: TPoint;
+    h: integer;
   begin
     p := TBGRAPath.Create;
     try
@@ -519,10 +520,11 @@ procedure TBGRATextEffectFontRenderer.InternalTextOutAngle(
                 oldShaderLightPos := Shader.LightPosition;
                 Shader.LightPosition := Point(Shader.LightPosition.X - b.Left,
                                               Shader.LightPosition.Y - b.Top); 
+                h := VectorizedFontRenderer.TextSize('Hg').cy;
                 if texture <> nil then
-                  fx.DrawShaded(shaded, 0,0, Shader, round(fx.TextSize.cy*0.05), texture, taLeftJustify)
+                  fx.DrawShaded(shaded, 0,0, Shader, round(h*0.05), texture, taLeftJustify)
                 else
-                  fx.DrawShaded(shaded, 0,0, Shader, round(fx.TextSize.cy*0.05), c, taLeftJustify);
+                  fx.DrawShaded(shaded, 0,0, Shader, round(h*0.05), c, taLeftJustify);
                 Shader.LightPosition := oldShaderLightPos;
                 shaded.AlphaFill(255);
                 shaded.ScanOffset := Point(-b.Left,-b.Top);
@@ -571,7 +573,7 @@ procedure TBGRATextEffectFontRenderer.InternalTextOutAngle(
 
 var fx: TBGRATextEffect;
 begin
-  if VectorizedFontNeeded then
+  if VectorizedFontNeeded(AOrientation) then
   begin
     if ShaderActuallyActive or ShadowActuallyVisible then
       ComplexVectorized else
@@ -619,7 +621,7 @@ end;
 
 function TBGRATextEffectFontRenderer.TextSize(sUTF8: string): TSize;
 begin
-  if VectorizedFontNeeded then
+  if VectorizedFontNeeded(0) then
     result := VectorizedFontRenderer.TextSize(sUTF8)
   else
     result := inherited TextSize(sUTF8);
@@ -628,7 +630,7 @@ end;
 function TBGRATextEffectFontRenderer.TextSizeAngle(sUTF8: string; 
   orientationTenthDegCCW: integer): TSize; 
 begin
-  if VectorizedFontNeeded then
+  if VectorizedFontNeeded(orientationTenthDegCCW) then
     result := VectorizedFontRenderer.TextSizeAngle(sUTF8, orientationTenthDegCCW)
   else
     result := inherited TextSizeAngle(sUTF8, orientationTenthDegCCW); 
@@ -637,7 +639,7 @@ end;
 function TBGRATextEffectFontRenderer.TextSize(sUTF8: string;
   AMaxWidth: integer; ARightToLeft: boolean): TSize;
 begin
-  if VectorizedFontNeeded then
+  if VectorizedFontNeeded(FontOrientation) then
     result := VectorizedFontRenderer.TextSize(sUTF8, AMaxWidth, ARightToLeft)
   else
     result := inherited TextSize(sUTF8, AMaxWidth, ARightToLeft);
@@ -646,7 +648,7 @@ end;
 function TBGRATextEffectFontRenderer.TextFitInfo(sUTF8: string;
   AMaxWidth: integer): integer;
 begin
-  if VectorizedFontNeeded then
+  if VectorizedFontNeeded(FontOrientation) then
     result := VectorizedFontRenderer.TextFitInfo(sUTF8, AMaxWidth)
   else
     result := inherited TextFitInfo(sUTF8, AMaxWidth)
