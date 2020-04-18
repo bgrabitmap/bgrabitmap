@@ -1503,8 +1503,13 @@ end;
 
 function TBGRADefaultBitmap.GetBitmap: TBitmap;
 begin
-  if FAlphaCorrectionNeeded and CanvasAlphaCorrection then
-    LoadFromBitmapIfNeeded;
+  if FAlphaCorrectionNeeded then
+  begin
+    if CanvasAlphaCorrection then
+      LoadFromBitmapIfNeeded
+    else
+      FAlphaCorrectionNeeded := false;
+  end;
   if FDataModified or (FBitmap = nil) then
   begin
     RebuildBitmap;

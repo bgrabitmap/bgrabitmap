@@ -24,6 +24,7 @@ type
     procedure FreeBitmap; override;
     procedure NotAvailable;
     procedure InternalAssignBitmapPixels(ASource: TBitmap);
+    function GetCanvas: TCanvas; override;
   public
     procedure Assign(ASource: TPersistent); override;
     destructor Destroy; override;
@@ -51,7 +52,7 @@ type
 
 implementation
 
-uses msegraphics, msegraphutils;
+uses msegraphics, msegraphutils, math;
 
 { TBitmapTracker }
 
@@ -121,17 +122,18 @@ var
   ppix,pbmp: PLongword;
   pmask: PByte;
   getMask: boolean;
-  x,y: integer;
+  x,y,wm1: integer;
 begin
   if ASource is TMaskedBitmap then
     getMask := TMaskedBitmap(ASource).Masked
     else getMask := false;
-  for y := 0 to Height-1 do
+  wm1 := min(Width-1, ASource.Width-1);
+  for y := 0 to min(Height-1, ASource.Height-1) do
   begin
     ppix := plongword(GetScanlineFast(y));
     pbmp := ASource.Scanline[y];
     if getMask then pmask := TMaskedBitmap(ASource).Mask.Scanline[y];
-    for x := 0 to Width-1 do
+    for x := 0 to wm1 do
     begin
       if getMask then
       begin
@@ -143,6 +145,12 @@ begin
       inc(pbmp);
     end;
   end;
+end;
+
+function TBGRAMSEguiBitmap.GetCanvas: TCanvas; 
+begin
+  result := inherited GetCanvas;
+  NotifyBitmapChange;
 end;
 
 procedure TBGRAMSEguiBitmap.Assign(ASource: TPersistent); 
