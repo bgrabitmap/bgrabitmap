@@ -540,6 +540,8 @@ begin
   if not SystemFontDisabledValue and not ({$IFDEF LCL}WidgetSet.LCLPlatform = lpNoGUI{$ELSE}False{$ENDIF}) then
   begin
     lclBmp := TBitmap.Create;
+    lclBmp.Width := 1;
+    lclBmp.Height := 1;
     lclBmp.Canvas.Font.Height := -50;
     lclBmp.Canvas.Font.Quality := fqCleartype;
     lclBmp.Canvas.Font.Color := clBlack;
