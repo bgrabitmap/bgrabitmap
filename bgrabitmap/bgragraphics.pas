@@ -191,7 +191,6 @@ end;
 
 {$ELSE}
 
-{$DEFINE INCLUDE_USES}
 {$IFDEF BGRABITMAP_USE_MSEGUI}
   {$i bgramsegui_uses.inc}
 {$ELSE}
