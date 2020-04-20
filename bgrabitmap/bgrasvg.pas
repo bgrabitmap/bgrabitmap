@@ -5,7 +5,7 @@ unit BGRASVG;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRABitmapTypes, laz2_DOM, BGRAUnits, BGRASVGShapes,
+  BGRAClasses, SysUtils, BGRABitmapTypes, DOM, BGRAUnits, BGRASVGShapes,
   BGRACanvas2D, BGRASVGType, FPimage;
 
 type
@@ -143,7 +143,7 @@ type
     constructor CreateFromString(AUTF8String: string);
     destructor Destroy; override;
     procedure LoadFromFile(AFilenameUTF8: string);
-    procedure LoadFromStream(AStream: TStream);
+    procedure LoadFromStream(AStream: TStream; AURI: UnicodeString = 'stream:');
     procedure LoadFromResource(AFilename: string);
     procedure SaveToFile(AFilenameUTF8: string);
     procedure SaveToStream(AStream: TStream);
@@ -214,7 +214,7 @@ procedure RegisterSvgFormat;
 
 implementation
 
-uses laz2_XMLRead, laz2_XMLWrite, BGRAUTF8, math;
+uses XMLRead, XMLWrite, BGRAUTF8, math, xmltextreader, URIParser;
 
 const SvgNamespace = 'http://www.w3.org/2000/svg';
 
@@ -959,17 +959,19 @@ var stream: TStream;
 begin
   stream := TFileStreamUTF8.Create(AFilenameUTF8,fmOpenRead or fmShareDenyWrite);
   try
-    LoadFromStream(stream);
+    LoadFromStream(stream, UTF8ToUTF16(FilenameToURI(AFilenameUTF8)));
   finally
     stream.Free;
   end;
 end;
 
-procedure TBGRASVG.LoadFromStream(AStream: TStream);
+procedure TBGRASVG.LoadFromStream(AStream: TStream; AURI: UnicodeString);
 var xml: TXMLDocument;
   root: TDOMNode;
   byteOrderMark: packed array[1..3] of byte;
   startPos: int64;
+  parser: TDOMParser;
+  source: TXMLInputSource;
 begin
   //skip utf8 byte order mark
   startPos:= AStream.Position;
@@ -979,7 +981,16 @@ begin
       inc(startPos, 3);
   end;
   AStream.Position:= startPos;
-  ReadXMLFile(xml,AStream,[xrfPreserveWhiteSpace]);
+  source := TXMLInputSource.Create(AStream);
+  source.BaseURI:= AURI;
+  parser := TDOMParser.Create;
+  parser.Options.PreserveWhitespace:= true;
+  try
+    parser.Parse(source, xml);
+  finally
+    parser.Free;
+    source.Free;
+  end;
   root := xml.FirstChild;
   while (root <> nil) and not (root is TDOMElement) do root := root.NextSibling;
   if root = nil then

@@ -5,7 +5,7 @@ unit BGRASVGShapes;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRAUnits, laz2_DOM, BGRAPath, BGRABitmapTypes,
+  BGRAClasses, SysUtils, BGRAUnits, DOM, BGRAPath, BGRABitmapTypes,
   BGRACanvas2D, BGRASVGType;
 
 type
@@ -50,7 +50,7 @@ type
                 const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
       property GradientElement: TSVGGradient read GetGradientElement;
   end;       
-  
+
   { TSVGLine }
 
   TSVGLine = class(TSVGElement)
@@ -764,7 +764,7 @@ function CreateSVGElementFromNode(AElement: TDOMElement; AUnits: TCSSUnitConvert
 
 implementation
 
-uses BGRATransform, BGRAGraphics;
+uses BGRATransform, BGRAGraphics, BGRAUTF8;
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
 var tag: string;
@@ -1183,7 +1183,7 @@ begin
     end else
     begin
       if FContent.ElementDOMNode[i] is TDOMText then
-        result += TDOMText(FContent.ElementDOMNode[i]).Data;
+        result += UTF16ToUTF8(TDOMText(FContent.ElementDOMNode[i]).Data);
     end;
   FInGetSimpleText := false;
 end;
@@ -1626,7 +1626,7 @@ begin
     begin
       node := Content.ElementDOMNode[i];
       if node is TDOMText then
-        AppendPart(TDOMText(node).Data);
+        AppendPart(UTF16ToUTF8(TDOMText(node).Data));
     end;
   end;
   setlength(result, idxOut);

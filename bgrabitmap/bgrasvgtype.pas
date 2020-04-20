@@ -7,7 +7,7 @@ interface
 
 uses
   BGRAClasses, SysUtils, BGRATransform, BGRABitmapTypes, BGRAUnits,
-  laz2_DOM, BGRACanvas2D, fgl, BGRAGraphics;
+  DOM, BGRACanvas2D, fgl, BGRAGraphics;
 
 type
   ArrayOfFloat = array of single;

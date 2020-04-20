@@ -87,7 +87,7 @@ procedure RegisterPhoxoFormat;
 
 implementation
 
-uses BGRAUTF8, LazUTF8;
+uses BGRAUTF8;
 
 var AlreadyRegistered: boolean;
 
