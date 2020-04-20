@@ -18,16 +18,16 @@ type
   EFOpenError = Classes.EFOpenError;
   TAlignment = Classes.TAlignment;
   TSeekOrigin = Classes.TSeekOrigin;
+  TStream = Classes.TStream;
+  TPersistent = Classes.TPersistent;
+  TStrings = Classes.TStrings;
+  TStringList = Classes.TStringList;
 
-  TPersistent = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TPersistent;
   TComponent = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TComponent;
-  TStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TStream;
   TResourceStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TResourceStream;
   TMemoryStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TMemoryStream;
   THandleStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.THandleStream;
   TStringStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TStringStream;
-  TStrings = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TStrings;
-  TStringList = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TStringList;
 
 type
   {$IFDEF BGRABITMAP_USE_MSEGUI}
