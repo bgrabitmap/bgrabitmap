@@ -82,7 +82,7 @@ implementation
 uses zstream, Math, BGRAUTF8;
 
 {$hints off}
-function BEReadLongword(Stream: TStream): longword;
+function BEReadLongword(Stream: TStream): LongWord;
 begin
   Stream.Read(Result, sizeof(Result));
   Result := BEtoN(Result);
@@ -468,7 +468,7 @@ procedure TPaintDotNetFile.LoadLayer(dest: TMemoryStream; src: TStream;
   uncompressedSize: int64);
 var
   CompressionFlag: byte;
-  maxChunkSize, decompressedChunkSize, compressedChunkSize: longword;
+  maxChunkSize, decompressedChunkSize, compressedChunkSize: LongWord;
   chunks:   array of TMemoryStream;
   numChunk: integer;
   chunkCount, i: integer;

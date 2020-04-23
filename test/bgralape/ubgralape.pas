@@ -24,7 +24,7 @@ var
     Bitmap: TBGRABitmap;
     Registered: boolean;
     Invalidated: boolean;
-    LockedCount: NativeInt;
+    LockedCount: Int32or64;
   end;
   target: TBGRABitmap;
   targetIndex: integer;

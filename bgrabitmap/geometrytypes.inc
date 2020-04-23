@@ -1456,7 +1456,7 @@ end;
 
 function PolylineLen(const pts: array of TPointF; AClosed: boolean): single;
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   result := 0;
   for i := 0 to high(pts)-1 do

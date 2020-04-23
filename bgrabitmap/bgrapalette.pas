@@ -238,16 +238,16 @@ procedure BGRARegisterPaletteFormat(AFormatIndex: TBGRAPaletteFormat; AExtension
 function BGRARegisteredPaletteFormatFilter(AAllSupportedDescription: string) : string;
 
 procedure ArrayOfWeightedColor_QuickSort(AColors: ArrayOfWeightedColor; AMinIndex,
-  AMaxIndex: NativeInt; AComparer: TBGRAPixelComparer = nil);
+  AMaxIndex: Int32or64; AComparer: TBGRAPixelComparer = nil);
 
 procedure ArrayOfWeightedColor_InsertionSort(AColors: ArrayOfWeightedColor; AMinIndex,
-  AMaxIndex: NativeInt; AComparer: TBGRAPixelComparer = nil);
+  AMaxIndex: Int32or64; AComparer: TBGRAPixelComparer = nil);
 
 procedure ArrayOfTBGRAPixel_QuickSort(AColors: ArrayOfTBGRAPixel; AMinIndex,
-  AMaxIndex: NativeInt; AComparer: TBGRAPixelComparer = nil);
+  AMaxIndex: Int32or64; AComparer: TBGRAPixelComparer = nil);
 
 procedure ArrayOfTBGRAPixel_InsertionSort(AColors: ArrayOfTBGRAPixel; AMinIndex,
-  AMaxIndex: NativeInt; AComparer: TBGRAPixelComparer = nil);
+  AMaxIndex: Int32or64; AComparer: TBGRAPixelComparer = nil);
 
 implementation
 
@@ -255,15 +255,15 @@ uses BGRAUTF8, bufstream;
 
 function IsDWordGreater(p1, p2: PBGRAPixel): boolean;
 begin
-  result := DWord(p1^) > DWord(p2^);
+  result := LongWord(p1^) > LongWord(p2^);
 end;
 
 const
   InsertionSortLimit = 10;
 
 procedure ArrayOfWeightedColor_InsertionSort(AColors: ArrayOfWeightedColor; AMinIndex,
-  AMaxIndex: NativeInt; AComparer: TBGRAPixelComparer = nil);
-var i,j,insertPos: NativeInt;
+  AMaxIndex: Int32or64; AComparer: TBGRAPixelComparer = nil);
+var i,j,insertPos: Int32or64;
   compared: TBGRAWeightedPaletteEntry;
 begin
   if AComparer = nil then AComparer := @IsDWordGreater;
@@ -283,11 +283,11 @@ begin
 end;
 
 procedure ArrayOfWeightedColor_QuickSort(AColors: ArrayOfWeightedColor; AMinIndex,
-  AMaxIndex: NativeInt; AComparer: TBGRAPixelComparer = nil);
+  AMaxIndex: Int32or64; AComparer: TBGRAPixelComparer = nil);
 var Pivot: TBGRAPixel;
-  CurMin,CurMax,i : NativeInt;
+  CurMin,CurMax,i : Int32or64;
 
-  procedure Swap(a,b: NativeInt);
+  procedure Swap(a,b: Int32or64);
   var Temp: TBGRAWeightedPaletteEntry;
   begin
     if a = b then exit;
@@ -332,8 +332,8 @@ begin
 end;
 
 procedure ArrayOfTBGRAPixel_InsertionSort(AColors: ArrayOfTBGRAPixel; AMinIndex,
-  AMaxIndex: NativeInt; AComparer: TBGRAPixelComparer = nil);
-var i,j,insertPos: NativeInt;
+  AMaxIndex: Int32or64; AComparer: TBGRAPixelComparer = nil);
+var i,j,insertPos: Int32or64;
   compared: TBGRAPixel;
 begin
   if AComparer = nil then AComparer := @IsDWordGreater;
@@ -353,11 +353,11 @@ begin
 end;
 
 procedure ArrayOfTBGRAPixel_QuickSort(AColors: ArrayOfTBGRAPixel; AMinIndex,
-  AMaxIndex: NativeInt; AComparer: TBGRAPixelComparer = nil);
+  AMaxIndex: Int32or64; AComparer: TBGRAPixelComparer = nil);
 var Pivot: TBGRAPixel;
-  CurMin,CurMax,i : NativeInt;
+  CurMin,CurMax,i : Int32or64;
 
-  procedure Swap(a,b: NativeInt);
+  procedure Swap(a,b: Int32or64);
   var Temp: TBGRAPixel;
   begin
     if a = b then exit;
@@ -407,7 +407,7 @@ function BGRARequiredBitDepth(ABitmap: TBGRACustomBitmap; AAlpha: TAlphaChannelP
 var
   palette: TBGRAPalette;
   p: PBGRAPixel;
-  i: NativeInt;
+  i: Int32or64;
   transparentEntry: boolean;
 begin
   palette := TBGRAPalette.Create;
@@ -811,7 +811,7 @@ end;
 
 function TBGRAWeightedPalette.GetAsArrayOfWeightedColor: ArrayOfWeightedColor;
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   NeedArray;
   setlength(result, length(FArray));
@@ -939,7 +939,7 @@ begin
 end;
 
 function PaletteOnCompareItems(Data1, Data2: Pointer): integer;
-var gray1, gray2: NativeUInt;
+var gray1, gray2: UInt32or64;
   c1, c2: TBGRAPixel;
 begin
   c1 := PBGRAPixel(Data1)^;
@@ -992,7 +992,7 @@ begin
 end;
 
 function TBGRAAvgLvlPalette.GetAsArrayOfColor: ArrayOfTBGRAPixel;
-var i: NativeInt;
+var i: Int32or64;
 begin
   NeedArray;
   setlength(result, Length(FArray));
@@ -1001,7 +1001,7 @@ begin
 end;
 
 function TBGRAAvgLvlPalette.GetAsArrayOfWeightedColor: ArrayOfWeightedColor;
-var i: NativeInt;
+var i: Int32or64;
 begin
   NeedArray;
   setlength(result, Length(FArray));
@@ -1105,10 +1105,10 @@ end;
 
 function TBGRAAvgLvlPalette.GetLastColor(AValue: TBGRAPixel): PBGRAPixel;
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   for i := FLastAddedColorCount-1 downto 0 do
-    if PDWord(FLastAddedColors[i])^ = DWord(AValue) then
+    if PLongWord(FLastAddedColors[i])^ = LongWord(AValue) then
     begin
       result := FLastAddedColors[i];
       exit;
@@ -1228,7 +1228,7 @@ begin
 end;
 
 procedure TBGRAPalette.AddColors(APalette: TBGRACustomPalette);
-var i: NativeInt;
+var i: Int32or64;
 begin
   for i := 0 to APalette.Count- 1 do
     AddColor(APalette.Color[i]);

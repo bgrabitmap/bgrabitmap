@@ -1,4 +1,4 @@
-function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
+function GetUnicodeBidiClass(u: LongWord): TUnicodeBidiClass;
 begin //generated 2019-05-19
   case u of
   $00000..$07FFF:
@@ -289,7 +289,7 @@ begin //generated 2019-05-19
   end
 end;
 
-function IsUnicodeMirrored(u: cardinal): boolean;
+function IsUnicodeMirrored(u: LongWord): boolean;
 begin
   case u of
     $28, $29, $3C, $3E, $5B, $5D, $7B, $7D, $AB, $BB, $F3A..$F3D, $169B, $169C, $2039, $203A, $2045, 
@@ -313,10 +313,10 @@ end;
 type
   TUnicodeBracketInfo = record
     IsBracket: boolean;
-    OpeningBracket,ClosingBracket: cardinal;
+    OpeningBracket,ClosingBracket: LongWord;
   end;
-function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;
-  procedure Bracket(AOpening,AClosing: cardinal);
+function GetUnicodeBracketInfo(u: LongWord): TUnicodeBracketInfo;
+  procedure Bracket(AOpening,AClosing: LongWord);
   begin
     result.IsBracket := true;
     result.OpeningBracket := AOpening;

@@ -424,7 +424,7 @@ end;
 
 operator*(M: TAffineMatrix; A: array of TPointF): ArrayOfTPointF;
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   setlength(result, length(A));
@@ -1022,7 +1022,7 @@ end;
 procedure TBGRAQuadLinearScanner.Init(ASource: IBGRAScanner;
   const APoints: array of TPointF; ATextureInterpolation: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   v: TPointF;
   len: single;
 begin
@@ -1078,7 +1078,7 @@ end;
 procedure TBGRAQuadLinearScanner.ScanPutPixels(pdest: PBGRAPixel; count: integer;
   mode: TDrawMode);
 var
-  n: NativeInt;
+  n: Int32or64;
   p: PBGRAPixel;
 begin
   if mode = dmSet then
@@ -1462,11 +1462,11 @@ const PrecisionShift = {$IFDEF CPU64}24{$ELSE}12{$ENDIF};
       Precision = 1 shl PrecisionShift;
 var p: PBGRAPixel;
   n: integer;
-  posXPrecision, posYPrecision: NativeInt;
-  deltaXPrecision,deltaYPrecision: NativeInt;
-  ix,iy,shrMask,w,h: NativeInt;
+  posXPrecision, posYPrecision: Int32or64;
+  deltaXPrecision,deltaYPrecision: Int32or64;
+  ix,iy,shrMask,w,h: Int32or64;
   py0: PByte;
-  deltaRow: NativeInt;
+  deltaRow: Int32or64;
 begin
   w := FBitmap.Width;
   h := FBitmap.Height;
@@ -1475,7 +1475,7 @@ begin
   if GlobalOpacity = 0 then
   begin
     if mode = dmSet then
-      FillDWord(pdest^, count, DWord(BGRAPixelTransparent));
+      FillDWord(pdest^, count, LongWord(BGRAPixelTransparent));
     FCur.Offset(FMatrix[1,1]*count, FMatrix[2,1]*count);
     exit;
   end;

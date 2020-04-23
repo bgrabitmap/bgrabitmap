@@ -919,13 +919,13 @@ var
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
 
         h := GetProcedure(HelperName+'.SetRed', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}Cardinal(self and $00ffff) or (AValue shl 16){$ELSE}Cardinal(self and $ffff00) or AValue{$ENDIF};');
+        AddProcedureImp(h, 'self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}LongWord(self and $00ffff) or (AValue shl 16){$ELSE}LongWord(self and $ffff00) or AValue{$ENDIF};');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetProcedure(HelperName+'.SetGreen', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := Cardinal(self and $ff00ff) or (AValue shl 8);');
+        AddProcedureImp(h, 'self := LongWord(self and $ff00ff) or (AValue shl 8);');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetProcedure(HelperName+'.SetBlue', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}Cardinal(self and $ffff00) or AValue{$ELSE}Cardinal(self and $00ffff) or (AValue shl 16){$ENDIF};');
+        AddProcedureImp(h, 'self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}LongWord(self and $ffff00) or AValue{$ELSE}LongWord(self and $00ffff) or (AValue shl 16){$ENDIF};');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         add('public');
       end;

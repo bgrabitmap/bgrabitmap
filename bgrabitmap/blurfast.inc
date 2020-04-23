@@ -1,13 +1,13 @@
 
 var
-  blurRowY,blurRowX: packed array of NativeUInt;
-  iRadiusX,iRadiusY: NativeInt;
-  weightFactor: NativeUInt;
+  blurRowY,blurRowX: packed array of UInt32or64;
+  iRadiusX,iRadiusY: Int32or64;
+  weightFactor: UInt32or64;
 
   { Compute weights of pixels in a row }
   procedure ComputeBlurRow;
   var
-    i: NativeInt;
+    i: Int32or64;
     ofs: single;
   begin
     SetLength(blurRowX, 2*iRadiusX+1);
@@ -29,11 +29,11 @@ var
 
 var
   srcDelta,srcPixSize,
-  verticalWeightShift, horizontalWeightShift: NativeInt;
-  ys1,ys2: NativeInt;
+  verticalWeightShift, horizontalWeightShift: Int32or64;
+  ys1,ys2: Int32or64;
 
   { Compute blur result in a vertical direction }
-  procedure ComputeVerticalRow(psrc: PByte; var sums: TRowSum; pw: PNativeUInt; count: NativeInt);
+  procedure ComputeVerticalRow(psrc: PByte; var sums: TRowSum; pw: PNativeUInt; count: Int32or64);
   begin
     while count > 0 do
     with sums do
@@ -48,16 +48,16 @@ var
 var
   psum, psumEnd: PRowSum;
   sums: packed array of TRowSum;
-  sumStartIndex: NativeInt;
+  sumStartIndex: Int32or64;
   total: TRowSum;
   extendedTotal: TExtendedRowSum;
-  yb,xb,xs,x,xEnd: NativeInt;
+  yb,xb,xs,x,xEnd: Int32or64;
   pw: PNativeUInt;
   psrc, pdest: PByte;
-  bmpWidth,bmpHeight : NativeInt;
+  bmpWidth,bmpHeight : Int32or64;
   accumulationFactor: double;
   bounds: TRect;
-  highSum: NativeInt;
+  highSum: Int32or64;
   tempDest: TCustomUniversalBitmap;
   destPixSize: Integer;
 

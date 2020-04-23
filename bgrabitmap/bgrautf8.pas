@@ -26,7 +26,7 @@ type
     FFileName: utf8string;
   public
     constructor Create(const AFileName: utf8string; Mode: Word); overload;
-    constructor Create(const AFileName: utf8string; Mode: Word; Rights: Cardinal); overload;
+    constructor Create(const AFileName: utf8string; Mode: Word; Rights: LongWord); overload;
     destructor Destroy; override;
     property FileName: utf8string Read FFilename;
   end;
@@ -56,7 +56,7 @@ function UTF8CharStart(UTF8Str: PChar; Len, CharIndex: PtrInt): PChar;
 
 function FileOpenUTF8(Const FileName : string; Mode : Integer) : THandle;
 function FileCreateUTF8(Const FileName : string) : THandle; overload;
-function FileCreateUTF8(Const FileName : string; Rights: Cardinal) : THandle; overload;
+function FileCreateUTF8(Const FileName : string; Rights: LongWord) : THandle; overload;
 function FileExistsUTF8(Const FileName : string): boolean;
 function DeleteFileUTF8(Const FileName : string): boolean;
 function FindFirstUTF8(const Path: string; Attr: Longint; out Rslt: TSearchRec): Longint;
@@ -69,9 +69,9 @@ type
 function UTF8CharacterLength(p: PChar): integer;
 function UTF8Length(const s: string): PtrInt; overload;
 function UTF8Length(p: PChar; ByteCount: PtrInt): PtrInt; overload;
-function UnicodeCharToUTF8(u: cardinal): string4;
+function UnicodeCharToUTF8(u: LongWord): string4;
 function UTF8ReverseString(const s: string): string;
-function UTF8CodepointToUnicode(p: PChar; ACodePointLen: integer): cardinal;
+function UTF8CodepointToUnicode(p: PChar; ACodePointLen: integer): LongWord;
 function UTF8ToUTF16(const S: AnsiString): UnicodeString;
 function UTF16ToUTF8(const S: UnicodeString): AnsiString;
 
@@ -164,7 +164,7 @@ begin
   result := LazFileUtils.FileCreateUTF8(FileName);
 end;
 
-function FileCreateUTF8(Const FileName : string; Rights: Cardinal) : THandle; overload;
+function FileCreateUTF8(Const FileName : string; Rights: LongWord) : THandle; overload;
 begin
   result := LazFileUtils.FileCreateUTF8(FileName, Rights);
 end;
@@ -210,7 +210,7 @@ begin
   result := LazUtf8.UTF8Length(p, ByteCount);
 end;
 
-function UnicodeCharToUTF8(u: cardinal): string4;
+function UnicodeCharToUTF8(u: LongWord): string4;
 begin
   result := LazUtf8.UnicodeToUTF8(u);
 end;
@@ -293,7 +293,7 @@ begin
   result := FileCreate(UTF8ToSys(FileName));
 end;
 
-function FileCreateUTF8(const FileName: string; Rights: Cardinal): THandle;
+function FileCreateUTF8(const FileName: string; Rights: LongWord): THandle;
 begin
   result := FileCreate(UTF8ToSys(FileName),Rights);
 end;
@@ -395,7 +395,7 @@ begin
   end;
 end;
 
-function UnicodeToUTF8Inline(CodePoint: cardinal; Buf: PChar): integer;
+function UnicodeToUTF8Inline(CodePoint: LongWord; Buf: PChar): integer;
 begin
   case CodePoint of
     0..$7f:
@@ -429,7 +429,7 @@ begin
   end;
 end;
 
-function UnicodeCharToUTF8(u: cardinal): string4;
+function UnicodeCharToUTF8(u: LongWord): string4;
 begin
   result[0] := chr(UnicodeToUTF8Inline(u,@result[1]));
 end;
@@ -455,7 +455,7 @@ begin
     inherited Create(lHandle);
 end;
 
-constructor TFileStreamUTF8.Create(const AFileName: utf8string; Mode: Word; Rights: Cardinal);
+constructor TFileStreamUTF8.Create(const AFileName: utf8string; Mode: Word; Rights: LongWord);
 var
   lHandle: THandle;
 begin
@@ -560,7 +560,7 @@ var
   DestI, SrcI: SizeUInt;
   B1, B2, B3, B4: Byte;
   W: Word;
-  C: Cardinal;
+  C: LongWord;
 
   function UnfinishedCharError: Boolean;
   begin
@@ -770,7 +770,7 @@ function ConvertUTF16ToUTF8(Dest: PChar; DestCharCount: SizeUInt;
 var
   DestI, SrcI: SizeUInt;
   W1, W2: Word;
-  C: Cardinal;
+  C: LongWord;
 
   function UnfinishedCharError: Boolean;
   begin
@@ -970,7 +970,7 @@ begin
   end;
 end;
 
-function UTF8CodepointToUnicode(p: PChar; ACodePointLen: integer): cardinal;
+function UTF8CodepointToUnicode(p: PChar; ACodePointLen: integer): LongWord;
 begin
   case ACodePointLen of
     0: result := 0;
@@ -1011,7 +1011,7 @@ function GetFirstStrongBidiClassUTF8(const sUTF8: string): TUnicodeBidiClass;
 var
   p,pEnd: PChar;
   charLen: Integer;
-  u: Cardinal;
+  u: LongWord;
   curBidi: TUnicodeBidiClass;
   isolateNesting: integer;
 begin
@@ -1048,7 +1048,7 @@ function GetLastStrongBidiClassUTF8(const sUTF8: string): TUnicodeBidiClass;
 var
   p,pEnd: PChar;
   charLen: Integer;
-  u: Cardinal;
+  u: LongWord;
   curBidi: TUnicodeBidiClass;
   isolateNesting: integer;
 begin
@@ -1088,7 +1088,7 @@ function IsZeroWidthUTF8(const sUTF8: string): boolean;
 var
   p,pEnd: PChar;
   charLen: Integer;
-  u: Cardinal;
+  u: LongWord;
 begin
   if sUTF8 = '' then exit(true);
   p := @sUTF8[1];
@@ -1133,7 +1133,7 @@ var
 
 var
   charLen: integer;
-  u: Cardinal;
+  u: LongWord;
 
 begin
   i := 1;
@@ -1158,7 +1158,7 @@ begin
 end;
 
 type
-  TUnicodeArray = packed array of cardinal;
+  TUnicodeArray = packed array of LongWord;
   TIntegerArray = array of integer;
 
 procedure UTF8ToUnicode(const sUTF8: string; out u: TUnicodeArray; out ofs: TIntegerArray);
@@ -1199,7 +1199,7 @@ begin
   end;
 end;
 
-function AnalyzeBidiUTF8(const sUTF8: string; ABaseDirection: cardinal): TBidiUTF8Array;
+function AnalyzeBidiUTF8(const sUTF8: string; ABaseDirection: LongWord): TBidiUTF8Array;
 var
   u: TUnicodeArray;
   ofs: TIntegerArray;
@@ -1246,7 +1246,7 @@ function ContainsBidiIsolateOrFormattingUTF8(const sUTF8: string): boolean;
 var
   p,pEnd: PChar;
   charLen: Integer;
-  u: Cardinal;
+  u: LongWord;
 begin
   if sUTF8 = '' then exit(false);
   p := @sUTF8[1];
@@ -1334,7 +1334,7 @@ end;
 
 function LEReadSingle(Stream: TStream): single;
 var
-  ResultAsDWord : longword absolute result;
+  ResultAsDWord : LongWord absolute result;
 begin
   ResultAsDWord := 0;
   stream.Read(ResultAsDWord, sizeof(Result));
@@ -1343,7 +1343,7 @@ end;
 
 procedure LEWriteSingle(Stream: TStream; AValue: single);
 var
-  ValueAsDWord : longword absolute AValue;
+  ValueAsDWord : LongWord absolute AValue;
 begin
   ValueAsDWord := NtoLE(ValueAsDWord);
   stream.Write(ValueAsDWord, sizeof(AValue));

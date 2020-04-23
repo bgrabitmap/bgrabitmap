@@ -801,7 +801,7 @@ end;
 function WordXYZAToExpandedPixel(const AXYZA: TWordXYZA; const AReferenceWhite: TXYZReferenceWhite): TExpandedPixel; overload;
 var
   minVal, lightVal, maxVal,
-  r,g,b, valRangeDiv2: NativeInt;
+  r,g,b, valRangeDiv2: Int32or64;
   ad: TWordXYZA;
 begin
   ad := AXYZA;

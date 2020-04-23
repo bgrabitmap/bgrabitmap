@@ -77,7 +77,7 @@ type
     FCurrentElementEndCoord: TPointF;
     FCurrentElementLength: single;
     FCurrentElementPoints: array of TPointF;
-    FCurrentSegment: NativeInt;
+    FCurrentSegment: Int32or64;
     FCurrentSegmentPos: single;
     function GoToNextElement(ACanJump: boolean): boolean;
     function GoToPreviousElement(ACanJump: boolean): boolean;
@@ -1533,7 +1533,7 @@ end;
 function TBGRAPath.ToPoints(AAcceptedDeviation: single): ArrayOfTPointF;
 var sub: array of ArrayOfTPointF;
     temp: ArrayOfTPointF;
-    nbSub,nbPts,curPt,curSub: NativeInt;
+    nbSub,nbPts,curPt,curSub: Int32or64;
     startPos,pos: PtrInt;
     elemType: TBGRAPathElementType;
     elem: pointer;
@@ -2035,7 +2035,7 @@ var pts: ArrayOfTPointF;
   elemType: TBGRAPathElementType;
   elem: pointer;
   pt : TPointF;
-  i: NativeInt;
+  i: Int32or64;
 begin
   GetElementAt(APos, elemType, elem);
   case elemType of
@@ -2093,13 +2093,13 @@ end;
 procedure TBGRAPath.InternalDraw(ADrawProc: TBGRAPathDrawProc;
   const AMatrix: TAffineMatrix; AAcceptedDeviation: single; AData: pointer);
 var
-  nbSub: NativeInt;
+  nbSub: Int32or64;
 
   procedure OutputSub(subPathStartPos, subPathEndPos: IntPtr);
   var
     sub: array of ArrayOfTPointF;
     temp: ArrayOfTPointF;
-    startPos,pos,nbPts,curPt,curSub: NativeInt;
+    startPos,pos,nbPts,curPt,curSub: Int32or64;
     elemType: TBGRAPathElementType;
     elem: pointer;
   begin
@@ -2393,7 +2393,7 @@ end;
 procedure TBGRAPath.openedSpline(const pts: array of TPointF;
   style: TSplineStyle);
 var elem: PSplineElement;
-  i: NativeInt;
+  i: Int32or64;
   p: PPointF;
 begin
   if length(pts) = 0 then exit;
@@ -2423,7 +2423,7 @@ end;
 procedure TBGRAPath.closedSpline(const pts: array of TPointF;
   style: TSplineStyle);
 var elem: PSplineElement;
-  i: NativeInt;
+  i: Int32or64;
   p: PPointF;
 begin
   if length(pts) = 0 then exit;

@@ -9,6 +9,9 @@ uses
   {$IFDEF BGRABITMAP_USE_MSEGUI}Types, Classes, mclasses, msegraphutils, mseguiglob{$ELSE}Types, Classes{$ENDIF};
 
 type
+  Int32or64 = {$IFDEF CPU64}Int64{$ELSE}LongInt{$ENDIF};
+  UInt32or64 = {$IFDEF CPU64}UInt64{$ELSE}LongWord{$ENDIF};
+
   //types always imported from Classes
   TFPList = Classes.TFPList;
   TList = Classes.TList;

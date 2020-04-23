@@ -115,7 +115,7 @@ var
   lines: array[0..3] of integer;
   parts: array[0..3] of TGrayscaleMask;
   n,nbLines: integer;
-  alphaMax: NativeUint;
+  alphaMax: UInt32or64;
   ptrPart: TBGRACustomBitmap;
   pmask: PByte;
   fx: TBGRATextEffect;

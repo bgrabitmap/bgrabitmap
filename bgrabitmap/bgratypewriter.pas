@@ -161,7 +161,7 @@ type
     function GetGlyphBox(AIdentifier: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft): TAffineBox;
     function GetTextBox(ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft): TAffineBox;
     function GetTextGlyphBoxes(ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft): TGlyphBoxes;
-    procedure NeedGlyphRange(AUnicodeFrom, AUnicodeTo: Cardinal);
+    procedure NeedGlyphRange(AUnicodeFrom, AUnicodeTo: LongWord);
     procedure NeedGlyphAnsiRange;
     destructor Destroy; override;
     property BidiMode: TFontBidiMode read FBidiMode write SetBidiMode;
@@ -747,8 +747,8 @@ begin
   end;
 end;
 
-procedure TBGRACustomTypeWriter.NeedGlyphRange(AUnicodeFrom, AUnicodeTo: Cardinal);
-var c: cardinal;
+procedure TBGRACustomTypeWriter.NeedGlyphRange(AUnicodeFrom, AUnicodeTo: LongWord);
+var c: LongWord;
 begin
   for c := AUnicodeFrom to AUnicodeTo do
     GetGlyph(UnicodeCharToUTF8(c));
@@ -1055,7 +1055,7 @@ var
 var
   nextchar,glyphId: string;
   g: TBGRAGlyph;
-  u: Cardinal;
+  u: LongWord;
   shouldContinue: boolean;
   flags: TBrowseGlyphCallbackFlags;
   i,charDestPos,charLen: integer;

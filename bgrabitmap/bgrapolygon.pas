@@ -1105,7 +1105,7 @@ var
 
 type
     TCardinalSum = record
-          sumR,sumG,sumB,sumA: cardinal;
+          sumR,sumG,sumB,sumA: LongWord;
         end;
 
 var

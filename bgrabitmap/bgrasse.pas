@@ -92,8 +92,8 @@ type
     {64} PositionStepInvZ, {80} NormalStepInvZ: TPoint3D_128;
     {96} dummy4: single;
     {100} dummy3: LongBool;
-    {104} dummy1: longword;
-    {108} dummy2: longword;
+    {104} dummy1: LongWord;
+    {108} dummy2: LongWord;
     {112} dummy: packed array[0..15]of byte;
   end; {128}
 
@@ -278,7 +278,7 @@ end;
     pop ebx
   end;
   {$else}
-  var p: pdword;
+  var p: PLongWord;
   begin
     p := @v;
     p^ := 0;
@@ -303,7 +303,7 @@ procedure ClearPoint3D_128_AlignedSSE(out v: TPoint3D_128);
   {$endif}
  end;
 {$else}
-var p: pdword;
+var p: PLongWord;
 begin
   p := @v;
   p^ := 0;

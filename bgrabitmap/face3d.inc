@@ -28,10 +28,10 @@ type
     FBiface: boolean;
     FLightThroughFactor: single;
     FLightThroughFactorOverride: boolean;
-    FCustomFlags: DWord;
-    function GetCustomFlags: DWord;
+    FCustomFlags: LongWord;
+    function GetCustomFlags: LongWord;
     function GetVertexDescription(AIndex : integer): PBGRAFaceVertexDescription;
-    procedure SetCustomFlags(AValue: DWord);
+    procedure SetCustomFlags(AValue: LongWord);
     procedure ComputeActualVertexColor(AIndex: integer);
     procedure ComputeActualTexCoord(AMinIndex, AMaxIndex: integer);
     procedure UpdateTexture;
@@ -100,7 +100,7 @@ type
     property ActualMaterial: TBGRAMaterial3D read FActualMaterial;
     property ActualTexture: IBGRAScanner read FActualTexture;
     property VertexDescription[AIndex : integer]: PBGRAFaceVertexDescription read GetVertexDescription;
-    property CustomFlags: DWord read GetCustomFlags write SetCustomFlags;
+    property CustomFlags: LongWord read GetCustomFlags write SetCustomFlags;
   end;
 
 { TBGRAFace3D }
@@ -111,7 +111,7 @@ begin
   result := @FVertices[AIndex];
 end;
 
-function TBGRAFace3D.GetCustomFlags: DWord;
+function TBGRAFace3D.GetCustomFlags: LongWord;
 begin
   result := FCustomFlags;
 end;
@@ -121,7 +121,7 @@ begin
   result := FVertices[AIndex].Normal;
 end;
 
-procedure TBGRAFace3D.SetCustomFlags(AValue: DWord);
+procedure TBGRAFace3D.SetCustomFlags(AValue: LongWord);
 begin
   FCustomFlags:= AValue;
 end;

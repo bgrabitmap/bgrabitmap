@@ -89,8 +89,8 @@ type
   TUniformVariable = object
   private
     FProgram: TBGLShader3D;
-    FVariable: DWord;
-    procedure Init(AProgram: TBGLShader3D; AVariable: DWord);
+    FVariable: LongWord;
+    procedure Init(AProgram: TBGLShader3D; AVariable: LongWord);
   end;
 
   { TUniformVariableSingle }
@@ -163,35 +163,35 @@ type
 
   TAttributeVariableSingle = object(TAttributeVariable)
   protected
-    procedure Init(AProgram: TObject; AAttribute: DWord);
+    procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
   { TAttributeVariablePointF }
 
   TAttributeVariablePointF = object(TAttributeVariable)
   protected
-    procedure Init(AProgram: TObject; AAttribute: DWord);
+    procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
   { TAttributeVariablePoint3D }
 
   TAttributeVariablePoint3D = object(TAttributeVariable)
   protected
-    procedure Init(AProgram: TObject; AAttribute: DWord);
+    procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
   { TAttributeVariableInteger }
 
   TAttributeVariableInteger = object(TAttributeVariable)
   protected
-    procedure Init(AProgram: TObject; AAttribute: DWord);
+    procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
   { TAttributeVariablePoint }
 
   TAttributeVariablePoint = object(TAttributeVariable)
   protected
-    procedure Init(AProgram: TObject; AAttribute: DWord);
+    procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
   { TBGLShader3D }
@@ -205,7 +205,7 @@ type
     FFragmentShaderSource: string;
     FVertexShader,
     FFragmentShader,
-    FProgram: DWord;
+    FProgram: LongWord;
     function GetUniformVariableSingle(AName: string): TUniformVariableSingle;
     function GetUniformVariablePointF(AName: string): TUniformVariablePointF;
     function GetUniformVariablePoint3D(AName: string): TUniformVariablePoint3D;
@@ -217,8 +217,8 @@ type
     function GetAttributeVariableSingle(AName: string): TAttributeVariableSingle;
     function GetAttributeVariablePointF(AName: string): TAttributeVariablePointF;
     function GetAttributeVariablePoint3D(AName: string): TAttributeVariablePoint3D;
-    procedure SetUniformSingle(AVariable: DWord; const AValue; AElementCount: integer; AComponentCount: integer);
-    procedure SetUniformInteger(AVariable: DWord; const AValue; AElementCount: integer; AComponentCount: integer);
+    procedure SetUniformSingle(AVariable: LongWord; const AValue; AElementCount: integer; AComponentCount: integer);
+    procedure SetUniformInteger(AVariable: LongWord; const AValue; AElementCount: integer; AComponentCount: integer);
     procedure CheckUsage(AUsing: boolean);
     procedure StartUse; override;
     procedure EndUse; override;
@@ -334,35 +334,35 @@ end;
 
 { TAttributeVariablePoint3D }
 
-procedure TAttributeVariablePoint3D.Init(AProgram: TObject; AAttribute: DWord);
+procedure TAttributeVariablePoint3D.Init(AProgram: TObject; AAttribute: LongWord);
 begin
   inherited Init(AProgram,AAttribute,3,True);
 end;
 
 { TAttributeVariablePointF }
 
-procedure TAttributeVariablePointF.Init(AProgram: TObject; AAttribute: DWord);
+procedure TAttributeVariablePointF.Init(AProgram: TObject; AAttribute: LongWord);
 begin
   inherited Init(AProgram,AAttribute,2,True);
 end;
 
 { TAttributeVariableInteger }
 
-procedure TAttributeVariableInteger.Init(AProgram: TObject; AAttribute: DWord);
+procedure TAttributeVariableInteger.Init(AProgram: TObject; AAttribute: LongWord);
 begin
   inherited Init(AProgram,AAttribute,1,False);
 end;
 
 { TAttributeVariablePoint }
 
-procedure TAttributeVariablePoint.Init(AProgram: TObject; AAttribute: DWord);
+procedure TAttributeVariablePoint.Init(AProgram: TObject; AAttribute: LongWord);
 begin
   inherited Init(AProgram,AAttribute,2,False);
 end;
 
 { TAttributeVariableSingle }
 
-procedure TAttributeVariableSingle.Init(AProgram: TObject; AAttribute: DWord);
+procedure TAttributeVariableSingle.Init(AProgram: TObject; AAttribute: LongWord);
 begin
   inherited Init(AProgram,AAttribute,1,True);
 end;
@@ -439,7 +439,7 @@ end;
 
 { TUniformVariable }
 
-procedure TUniformVariable.Init(AProgram: TBGLShader3D; AVariable: DWord);
+procedure TUniformVariable.Init(AProgram: TBGLShader3D; AVariable: LongWord);
 begin
   FProgram := AProgram;
   FVariable := AVariable;
@@ -544,13 +544,13 @@ begin
   {$pop}
 end;
 
-procedure TBGLShader3D.SetUniformSingle(AVariable: DWord; const AValue; AElementCount: integer; AComponentCount: integer);
+procedure TBGLShader3D.SetUniformSingle(AVariable: LongWord; const AValue; AElementCount: integer; AComponentCount: integer);
 begin
   CheckUsage(True);
   FCanvas.Lighting.SetUniformSingle(AVariable, AValue, AElementCount, AComponentCount);
 end;
 
-procedure TBGLShader3D.SetUniformInteger(AVariable: DWord; const AValue; AElementCount: integer; AComponentCount: integer);
+procedure TBGLShader3D.SetUniformInteger(AVariable: LongWord; const AValue; AElementCount: integer; AComponentCount: integer);
 begin
   CheckUsage(True);
   FCanvas.Lighting.SetUniformInteger(AVariable, AValue, AElementCount, AComponentCount);
@@ -850,7 +850,7 @@ var
   ColorCenter: TBGRAPixel;
 
   procedure ComputeCenter;
-  var j: NativeInt;
+  var j: Int32or64;
   begin
     with ADescription do
     begin
@@ -868,7 +868,7 @@ var
   end;
 
 var tex: IBGLTexture;
-  i,j: NativeInt;
+  i,j: Int32or64;
 begin
   result := true;
 

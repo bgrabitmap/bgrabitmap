@@ -92,7 +92,7 @@ procedure SaveToStreamAsAdobeSwatchExchange(APalette: TBGRAPalette; AStream: TSt
   end;
   procedure WriteSingle(AValue: Single);
   begin
-    DWord(AValue) := BEtoN(DWord(AValue));
+    LongWord(AValue) := BEtoN(LongWord(AValue));
     AStream.WriteBuffer(AValue,sizeof(AValue));
   end;
   procedure WriteBlock(ABlockType: Int16; AContentLength: Int32); overload;
@@ -338,7 +338,7 @@ function LoadFromStreamAsAdobeSwatchExchange(APalette: TBGRAPalette; AStream: TS
     {$PUSH}{$HINTS OFF}
     AStream.Read(Result, sizeof(result));
     {$POP}
-    DWord(Result) := BEtoN(DWord(Result));
+    LongWord(Result) := BEtoN(LongWord(Result));
   end;
   function DblToByte(AValue: double): byte;
   begin

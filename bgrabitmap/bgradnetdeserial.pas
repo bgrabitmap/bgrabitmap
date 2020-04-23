@@ -16,7 +16,7 @@ uses
   BGRAClasses, SysUtils;
 
 type
-  arrayOfLongword = array of longword;
+  arrayOfLongword = array of LongWord;
 
   TTypeCategory = (ftPrimitiveType = 0, ftString = 1, ftObjectType =
     2, ftRuntimeType = 3,
@@ -39,7 +39,7 @@ type
   TFieldType = record
     category: TTypeCategory;
     primitiveType: TPrimitiveType;
-    refAssembly: longword;
+    refAssembly: LongWord;
     Name: string;
   end;
 
@@ -48,11 +48,11 @@ type
     nbFields:    integer;
     fieldNames:  array of string;
     fieldTypes:  array of TFieldType;
-    refAssembly: longword;
+    refAssembly: LongWord;
   end;
 
   TAssemblyReference = record
-    idAssembly: longword;
+    idAssembly: LongWord;
     Name: string;
   end;
 
@@ -62,22 +62,22 @@ type
   protected
     FContainer: TDotNetDeserialization;
     function GetTypeAsString: string; virtual; abstract;
-    function GetFieldAsString(Index: longword): string; overload; virtual; abstract;
+    function GetFieldAsString(Index: LongWord): string; overload; virtual; abstract;
     function GetFieldAsString(Name: string): string; overload;
-    function GetFieldCount: longword; virtual; abstract;
-    function GetFieldName(Index: longword): string; virtual; abstract;
-    function GetFieldTypeAsString(Index: longword): string; virtual; abstract;
-    function IsReferenceType(index: longword): boolean; virtual; abstract;
+    function GetFieldCount: LongWord; virtual; abstract;
+    function GetFieldName(Index: LongWord): string; virtual; abstract;
+    function GetFieldTypeAsString(Index: LongWord): string; virtual; abstract;
+    function IsReferenceType(index: LongWord): boolean; virtual; abstract;
   public
-    idObject:   longword;
+    idObject:   LongWord;
     refCount:   integer;
     inToString: boolean;
     constructor Create(container: TDotNetDeserialization); virtual;
-    property FieldCount: longword read GetFieldCount;
-    property FieldName[Index: longword]:string read GetFieldName;
-    property FieldAsString[Index: longword]: string read GetFieldAsString;
+    property FieldCount: LongWord read GetFieldCount;
+    property FieldName[Index: LongWord]:string read GetFieldName;
+    property FieldAsString[Index: LongWord]: string read GetFieldAsString;
     property FieldByNameAsString[Name: string]: string read GetFieldAsString;
-    property FieldTypeAsString[Index: longword]: string read GetFieldTypeAsString;
+    property FieldTypeAsString[Index: LongWord]: string read GetFieldTypeAsString;
     property TypeAsString: string read GetTypeAsString;
     function GetFieldIndex(Name: string): integer;
   end;
@@ -86,11 +86,11 @@ type
 
   TSerializedClass = class(TCustomSerializedObject)
   protected
-    function GetFieldAsString(Index: longword): string; override;
-    function GetFieldCount: longword; override;
-    function GetFieldName(Index: longword): string; override;
-    function GetFieldTypeAsString(Index: longword): string; override;
-    function IsReferenceType(index: longword): boolean; override;
+    function GetFieldAsString(Index: LongWord): string; override;
+    function GetFieldCount: LongWord; override;
+    function GetFieldName(Index: LongWord): string; override;
+    function GetFieldTypeAsString(Index: LongWord): string; override;
+    function IsReferenceType(index: LongWord): boolean; override;
     function GetTypeAsString: string; override;
   public
     numType: integer;
@@ -102,26 +102,26 @@ type
   TSerializedArray = class(TCustomSerializedObject)
   private
     data:       pointer;
-    FItemSize:   longword;
-    function GetItemPtr(Index: longword): pointer;
+    FItemSize:   LongWord;
+    function GetItemPtr(Index: LongWord): pointer;
     procedure InitData;
   protected
     FArrayType: TGenericArrayType;
-    function GetFieldAsString(Index: longword): string; override;
-    function GetFieldCount: longword; override;
-    function GetFieldName(Index: longword): string; override;
-    function GetFieldTypeAsString(Index: longword): string; override;
-    function IsReferenceType(index: longword): boolean; override;
+    function GetFieldAsString(Index: LongWord): string; override;
+    function GetFieldCount: LongWord; override;
+    function GetFieldName(Index: LongWord): string; override;
+    function GetFieldTypeAsString(Index: LongWord): string; override;
+    function IsReferenceType(index: LongWord): boolean; override;
     function GetTypeAsString: string; override;
   public
-    dimensions: array of longword;
+    dimensions: array of LongWord;
     itemType:   TFieldType;
-    nbItems:    longword;
-    constructor Create(AContainer: TDotNetDeserialization; AItemType: TFieldType; ALength: longword); overload;
+    nbItems:    LongWord;
+    constructor Create(AContainer: TDotNetDeserialization; AItemType: TFieldType; ALength: LongWord); overload;
     constructor Create(AContainer: TDotNetDeserialization; AArrayType: TGenericArrayType; AItemType: TFieldType; ADimensions: arrayOfLongword); overload;
     destructor Destroy; override;
-    property ItemPtr[Index:longword]: pointer read GetItemPtr;
-    property ItemSize: longword read FItemSize;
+    property ItemPtr[Index:LongWord]: pointer read GetItemPtr;
+    property ItemSize: LongWord read FItemSize;
   end;
 
   { TSerializedValue }
@@ -149,7 +149,7 @@ type
     function GetObjectField(obj: TCustomSerializedObject; Name: string): TCustomSerializedObject; overload;
     function GetObjectField(obj: TCustomSerializedObject; index: integer): TCustomSerializedObject; overload;
     function GetObject(id: string): TCustomSerializedObject; overload;
-    function GetObject(id: longword): TCustomSerializedObject; overload;
+    function GetObject(id: LongWord): TCustomSerializedObject; overload;
     function IsBoxedValue(obj: TCustomSerializedObject; index: integer): boolean;
     function GetBoxedValue(obj: TCustomSerializedObject; index: integer): string;
     procedure LoadFromStream(Stream: TStream);
@@ -158,13 +158,13 @@ type
     function ToString: string; override;
     constructor Create;
     destructor Destroy; override;
-    function GetTypeOfClassObject(idObject: longword): integer;
+    function GetTypeOfClassObject(idObject: LongWord): integer;
   private
     EndOfStream:      boolean;
     ArrayFillerCount: Longword;
-    currentAutoObjectValue: longword;
-    function nextAutoObjectId: longword;
-    function LoadNextFromStream(Stream: TStream): longword;
+    currentAutoObjectValue: LongWord;
+    function nextAutoObjectId: LongWord;
+    function LoadNextFromStream(Stream: TStream): LongWord;
     function LoadStringFromStream(Stream: TStream): string;
     function LoadDotNetCharFromStream(Stream: TStream): string;
     function LoadTypeFromStream(Stream: TStream; IsRuntimeType: boolean): integer;
@@ -177,7 +177,7 @@ function WinReadByte(stream: TStream): byte;
 function WinReadWord(Stream: TStream): word;
 function WinReadSmallInt(Stream: TStream): smallint;
 function WinReadLongint(Stream: TStream): longint;
-function WinReadLongword(Stream: TStream): longword;
+function WinReadLongword(Stream: TStream): LongWord;
 function WinReadInt64(Stream: TStream): int64;
 function WinReadQWord(Stream: TStream): QWord;
 
@@ -232,7 +232,7 @@ begin
   Result := LEtoN(Result);
 end;
 
-function WinReadLongword(Stream: TStream): longword;
+function WinReadLongword(Stream: TStream): LongWord;
 begin
   stream.Read(Result, sizeof(Result));
   Result := LEtoN(Result);
@@ -252,7 +252,7 @@ end;
 
 {$hints on}
 
-function GetFieldTypeSize(const fieldType: TFieldType): longword;
+function GetFieldTypeSize(const fieldType: TFieldType): LongWord;
 begin
   case fieldType.category of
     ftPrimitiveType:
@@ -293,7 +293,7 @@ var
   value4bytes: record
     case byte of
     1: (tempSingle:   single);
-    2: (tempLongWord: longword);
+    2: (tempLongWord: LongWord);
     3: (tempLongInt: longint);
   end;
   value8bytes: record
@@ -302,7 +302,7 @@ var
     2: (tempInt64:    Int64);
     2: (tempUInt64:   QWord);
   end;
-  tempIdObject: longword;
+  tempIdObject: LongWord;
 
 begin
   if IsDotNetTypeStoredAsString(fieldType) then
@@ -342,7 +342,7 @@ begin
         ptInt32,ptUInt32,ptSingle:
         begin
           {$hints off}
-          move(value, value4bytes.tempLongWord,sizeof(longword));
+          move(value, value4bytes.tempLongWord,sizeof(LongWord));
           {$hints on}
           value4bytes.tempLongWord := LEtoN(value4bytes.tempLongWord);
           if fieldType.primitiveType = ptInt32 then
@@ -495,27 +495,27 @@ end;
 
 { TSerializedClass }
 
-function TSerializedClass.GetFieldAsString(Index: longword): string;
+function TSerializedClass.GetFieldAsString(Index: LongWord): string;
 begin
   result := fields[Index].Value;
 end;
 
-function TSerializedClass.GetFieldCount: longword;
+function TSerializedClass.GetFieldCount: LongWord;
 begin
   Result:= length(fields);
 end;
 
-function TSerializedClass.GetFieldName(Index: longword): string;
+function TSerializedClass.GetFieldName(Index: LongWord): string;
 begin
   result := fields[Index].Name;
 end;
 
-function TSerializedClass.GetFieldTypeAsString(Index: longword): string;
+function TSerializedClass.GetFieldTypeAsString(Index: LongWord): string;
 begin
   result := fields[Index].valueType;
 end;
 
-function TSerializedClass.IsReferenceType(index: longword): boolean;
+function TSerializedClass.IsReferenceType(index: LongWord): boolean;
 begin
   Result:= FContainer.objectTypes[numType].fieldTypes[index].category <> ftPrimitiveType;
 end;
@@ -534,14 +534,14 @@ begin
   fillchar(data^, itemSize*nbItems, 0);
 end;
 
-function TSerializedArray.GetItemPtr(Index: longword): pointer;
+function TSerializedArray.GetItemPtr(Index: LongWord): pointer;
 begin
   if index >= nbItems then
     raise exception.Create('Index out of bounds');
   result := pointer(pbyte(data)+Index*itemsize);
 end;
 
-function TSerializedArray.GetFieldAsString(Index: longword): string;
+function TSerializedArray.GetFieldAsString(Index: LongWord): string;
 begin
   if data = nil then
     result := ''
@@ -549,14 +549,14 @@ begin
     result := DotNetValueToString(ItemPtr[index]^, itemType);
 end;
 
-function TSerializedArray.GetFieldCount: longword;
+function TSerializedArray.GetFieldCount: LongWord;
 begin
   Result:= nbItems;
 end;
 
-function TSerializedArray.GetFieldName(Index: longword): string;
+function TSerializedArray.GetFieldName(Index: LongWord): string;
 var
-  r: longword;
+  r: LongWord;
 begin
   result := '[';
   for r := 1 to length(dimensions) do
@@ -569,14 +569,14 @@ begin
 end;
 
 {$hints off}
-function TSerializedArray.GetFieldTypeAsString(Index: longword): string;
+function TSerializedArray.GetFieldTypeAsString(Index: LongWord): string;
 begin
   Result:= DotNetTypeToString(itemType);
 end;
 {$hints on}
 
 {$hints off}
-function TSerializedArray.IsReferenceType(index: longword): boolean;
+function TSerializedArray.IsReferenceType(index: LongWord): boolean;
 begin
   Result:= itemType.category <> ftPrimitiveType;
 end;
@@ -592,7 +592,7 @@ begin
   AppendStr(result, ']');
 end;
 
-constructor TSerializedArray.Create(AContainer: TDotNetDeserialization; AItemType: TFieldType; ALength: longword);
+constructor TSerializedArray.Create(AContainer: TDotNetDeserialization; AItemType: TFieldType; ALength: LongWord);
 begin
   inherited Create(AContainer);
   setlength(dimensions,1);
@@ -605,7 +605,7 @@ end;
 
 constructor TSerializedArray.Create(AContainer: TDotNetDeserialization; AArrayType: TGenericArrayType; AItemType: TFieldType;
   ADimensions: arrayOfLongword);
-var n: longword;
+var n: LongWord;
 begin
   inherited Create(AContainer);
   setlength(dimensions, length(ADimensions));
@@ -623,7 +623,7 @@ end;
 
 destructor TSerializedArray.Destroy;
 var ps: PString;
-  n: longword;
+  n: LongWord;
 begin
   if IsDotNetTypeStoredAsString(itemType) and (nbItems <> 0) then
   begin
@@ -763,7 +763,7 @@ end;
 
 function TDotNetDeserialization.GetObject(id: string): TCustomSerializedObject;
 var
-  idObj: longword;
+  idObj: LongWord;
 begin
   if copy(id, 1, 1) = '#' then
     Delete(id, 1, 1);
@@ -771,7 +771,7 @@ begin
   Result := GetObject(idObj);
 end;
 
-function TDotNetDeserialization.GetObject(id: longword): TCustomSerializedObject;
+function TDotNetDeserialization.GetObject(id: LongWord): TCustomSerializedObject;
 var
   i: integer;
 begin
@@ -886,7 +886,7 @@ function TDotNetDeserialization.ToString: string;
     tab: string; main: boolean): string;
   var
     j, k:   integer;
-    subId:  longword;
+    subId:  LongWord;
     subNum: integer;
     objType, subExpectedType: string;
     fieldTypeStr: string;
@@ -1011,7 +1011,7 @@ begin
   inherited Destroy;
 end;
 
-function TDotNetDeserialization.GetTypeOfClassObject(idObject: longword
+function TDotNetDeserialization.GetTypeOfClassObject(idObject: LongWord
   ): integer;
 var
   i: Integer;
@@ -1030,29 +1030,29 @@ begin
   raise exception.Create('GetTypeOfClassObject: Object not found');
 end;
 
-function TDotNetDeserialization.nextAutoObjectId: longword;
+function TDotNetDeserialization.nextAutoObjectId: LongWord;
 begin
   Inc(currentAutoObjectValue);
   Result := currentAutoObjectValue;
 end;
 
-function TDotNetDeserialization.LoadNextFromStream(Stream: TStream): longword;
+function TDotNetDeserialization.LoadNextFromStream(Stream: TStream): LongWord;
 var
   blockType:    byte;
-  idRefObject, tempIdObject: longword;
+  idRefObject, tempIdObject: LongWord;
   tempType:     TFieldType;
-  arrayCount, arrayIndex,FillZeroCount : longword;
+  arrayCount, arrayIndex,FillZeroCount : LongWord;
   tempAnyObj: TCustomSerializedObject;
   newClassObj: TSerializedClass;
   newValueObj: TSerializedValue;
   newArrayObj: TSerializedArray;
   genericArrayType: TGenericArrayType;
-  genericArrayRank: longword;
-  genericArrayDims: array of longword;
+  genericArrayRank: LongWord;
+  genericArrayDims: array of LongWord;
   genericArrayItemType: TFieldType;
 
-  function GetArrayCellNumber(index: longword): string;
-  var r: longword;
+  function GetArrayCellNumber(index: LongWord): string;
+  var r: LongWord;
   begin
     result := '';
     for r := 1 to genericArrayRank do
@@ -1450,8 +1450,8 @@ var
     1: (ptr: pointer);
     2: (bytes: array[0..7] of byte);
     end;
-  dataLen: longword;
-  tempIdObject: longword;
+  dataLen: LongWord;
+  tempIdObject: LongWord;
 begin
   try
     if fieldType.Category = ftPrimitiveType then

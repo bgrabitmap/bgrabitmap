@@ -70,7 +70,7 @@ type
     function GetPartStartIndex(AIndex: integer): integer;
     function GetText: string;
     function GetTotalTextHeight: single;
-    function GetUnicodeChar(APosition0: integer): cardinal;
+    function GetUnicodeChar(APosition0: integer): LongWord;
     function GetUsedWidth: single;
     function GetUTF8Char(APosition0: integer): string4;
     procedure SetAvailableHeight(AValue: single);
@@ -192,7 +192,7 @@ type
 
     property CharCount: integer read GetCharCount;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
-    property UnicodeChar[APosition0: integer]: cardinal read GetUnicodeChar;
+    property UnicodeChar[APosition0: integer]: LongWord read GetUnicodeChar;
 
     property BrokenLineCount: integer read GetBrokenLineCount;
     property BrokenLineParagraphIndex[AIndex: integer]: integer read GetBrokenLineParagraphIndex;
@@ -682,7 +682,7 @@ begin
   result := FParagraph[ParagraphCount-1].rectF.Bottom - FParagraph[0].rectF.Top;
 end;
 
-function TBidiTextLayout.GetUnicodeChar(APosition0: integer): cardinal;
+function TBidiTextLayout.GetUnicodeChar(APosition0: integer): LongWord;
 begin
   result := FAnalysis.UnicodeChar[APosition0];
 end;
@@ -910,7 +910,7 @@ var
   pEnd: Pointer;
   add, hasStrong: boolean;
   charLen: Integer;
-  u: Cardinal;
+  u: LongWord;
   curBidi: TUnicodeBidiClass;
   isSpacing: boolean;
 begin
@@ -1633,7 +1633,7 @@ end;
 function TBidiTextLayout.GetCharIndexAt(APosition: TPointF): integer;
 var
   brokenLineIndex,j, fit: Integer;
-  u,u2: cardinal;
+  u,u2: LongWord;
   axis, origin: TPointF;
   len, w, curW, newW: Single;
   str: String;

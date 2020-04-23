@@ -231,10 +231,10 @@ end;
   in the specified direction. }
 function FilterEmboss(bmp: TBGRACustomBitmap; angle: single; ABounds: TRect; AStrength: integer; AOptions: TEmbossOptions): TBGRACustomBitmap;
 var
-  yb, xb: NativeInt;
+  yb, xb: Int32or64;
   dx, dy: single;
-  idx, idy: NativeInt;
-  x256,y256: NativeInt;
+  idx, idy: Int32or64;
+  x256,y256: Int32or64;
   cMiddle: TBGRAPixel;
   hMiddle: THSLAPixel;
 
@@ -243,8 +243,8 @@ var
 
   bounds: TRect;
   psrc: PBGRAPixel;
-  redDiff,greenDiff,blueDiff: NativeUInt;
-  diff: NativeInt;
+  redDiff,greenDiff,blueDiff: UInt32or64;
+  diff: Int32or64;
 begin
   //compute pixel position and weight
   dx   := cos(angle * Pi / 180);
@@ -301,9 +301,9 @@ begin
       end else
       begin
         {$push}{$hints off}{$r-}
-        redDiff := NativeUInt(max(0, 65536 + (refPixel.red * refPixel.alpha - cMiddle.red * cMiddle.alpha) * AStrength div 64)) shr 9;
-        greenDiff := NativeUInt(max(0, 65536 + (refPixel.green * refPixel.alpha - cMiddle.green * cMiddle.alpha) * AStrength div 64)) shr 9;
-        blueDiff := NativeUInt(max(0, 65536 + (refPixel.blue * refPixel.alpha - cMiddle.blue * cMiddle.alpha) * AStrength div 64)) shr 9;
+        redDiff := UInt32or64(max(0, 65536 + (refPixel.red * refPixel.alpha - cMiddle.red * cMiddle.alpha) * AStrength div 64)) shr 9;
+        greenDiff := UInt32or64(max(0, 65536 + (refPixel.green * refPixel.alpha - cMiddle.green * cMiddle.alpha) * AStrength div 64)) shr 9;
+        blueDiff := UInt32or64(max(0, 65536 + (refPixel.blue * refPixel.alpha - cMiddle.blue * cMiddle.alpha) * AStrength div 64)) shr 9;
         {$pop}
         if (redDiff <> 128) or (greenDiff <> 128) or (blueDiff <> 128) then
         begin
@@ -312,7 +312,7 @@ begin
           tempPixel.blue := min(255, blueDiff);
           if eoTransparent in AOptions then
           begin
-            tempPixel.alpha := min(255,abs(NativeInt(redDiff-128))+abs(NativeInt(greenDiff-128))+abs(NativeInt(blueDiff-128)));
+            tempPixel.alpha := min(255,abs(Int32or64(redDiff-128))+abs(Int32or64(greenDiff-128))+abs(Int32or64(blueDiff-128)));
             pdest^ := tempPixel;
           end else
           begin

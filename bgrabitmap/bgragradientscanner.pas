@@ -7,7 +7,7 @@ interface
 { This unit contains scanners that generate gradients }
 
 uses
-  BGRAClasses, SysUtils, BGRABitmapTypes, BGRATransform;
+  SysUtils, BGRABitmapTypes, BGRATransform;
 
 type
   TBGRAColorInterpolation = (ciStdRGB, ciLinearRGB, ciLinearHSLPositive, ciLinearHSLNegative, ciGSBPositive, ciGSBNegative);
@@ -69,7 +69,7 @@ type
   TBGRAHueGradient = class(TBGRASimpleGradient)
   private
     hsla1,hsla2: THSLAPixel;
-    hue1,hue2: longword;
+    hue1,hue2: LongWord;
     FOptions: THueGradientOptions;
     procedure Init(c1,c2: THSLAPixel; AOptions: THueGradientOptions);
     function InterpolateToHSLA(position: word): THSLAPixel;
@@ -801,9 +801,9 @@ begin
 end;
 
 function TBGRAMultiGradient.GetColorAt(position: integer): TBGRAPixel;
-var i: NativeInt;
+var i: Int32or64;
     ec: TExpandedPixel;
-    curPos,posDiff: NativeInt;
+    curPos,posDiff: Int32or64;
 begin
   if FCycle then
     position := (position-FPositions[0]) mod (FPositions[high(FPositions)] - FPositions[0]) + FPositions[0];
@@ -830,17 +830,17 @@ begin
       if GammaCorrection then
       begin
         if FEColors[i+1].red < FEColors[i].red then
-          ec.red := FEColors[i].red - NativeUInt(curPos)*NativeUInt(FEColors[i].red-FEColors[i+1].red) div NativeUInt(posDiff) else
-          ec.red := FEColors[i].red + NativeUInt(curPos)*NativeUInt(FEColors[i+1].red-FEColors[i].red) div NativeUInt(posDiff);
+          ec.red := FEColors[i].red - UInt32or64(curPos)*UInt32or64(FEColors[i].red-FEColors[i+1].red) div UInt32or64(posDiff) else
+          ec.red := FEColors[i].red + UInt32or64(curPos)*UInt32or64(FEColors[i+1].red-FEColors[i].red) div UInt32or64(posDiff);
         if FEColors[i+1].green < FEColors[i].green then
-          ec.green := FEColors[i].green - NativeUInt(curPos)*NativeUInt(FEColors[i].green-FEColors[i+1].green) div NativeUInt(posDiff) else
-          ec.green := FEColors[i].green + NativeUInt(curPos)*NativeUInt(FEColors[i+1].green-FEColors[i].green) div NativeUInt(posDiff);
+          ec.green := FEColors[i].green - UInt32or64(curPos)*UInt32or64(FEColors[i].green-FEColors[i+1].green) div UInt32or64(posDiff) else
+          ec.green := FEColors[i].green + UInt32or64(curPos)*UInt32or64(FEColors[i+1].green-FEColors[i].green) div UInt32or64(posDiff);
         if FEColors[i+1].blue < FEColors[i].blue then
-          ec.blue := FEColors[i].blue - NativeUInt(curPos)*NativeUInt(FEColors[i].blue-FEColors[i+1].blue) div NativeUInt(posDiff) else
-          ec.blue := FEColors[i].blue + NativeUInt(curPos)*NativeUInt(FEColors[i+1].blue-FEColors[i].blue) div NativeUInt(posDiff);
+          ec.blue := FEColors[i].blue - UInt32or64(curPos)*UInt32or64(FEColors[i].blue-FEColors[i+1].blue) div UInt32or64(posDiff) else
+          ec.blue := FEColors[i].blue + UInt32or64(curPos)*UInt32or64(FEColors[i+1].blue-FEColors[i].blue) div UInt32or64(posDiff);
         if FEColors[i+1].alpha < FEColors[i].alpha then
-          ec.alpha := FEColors[i].alpha - NativeUInt(curPos)*NativeUInt(FEColors[i].alpha-FEColors[i+1].alpha) div NativeUInt(posDiff) else
-          ec.alpha := FEColors[i].alpha + NativeUInt(curPos)*NativeUInt(FEColors[i+1].alpha-FEColors[i].alpha) div NativeUInt(posDiff);
+          ec.alpha := FEColors[i].alpha - UInt32or64(curPos)*UInt32or64(FEColors[i].alpha-FEColors[i+1].alpha) div UInt32or64(posDiff) else
+          ec.alpha := FEColors[i].alpha + UInt32or64(curPos)*UInt32or64(FEColors[i+1].alpha-FEColors[i].alpha) div UInt32or64(posDiff);
         result := GammaCompression(ec);
       end else
       begin
@@ -855,9 +855,9 @@ end;
 
 function TBGRAMultiGradient.GetExpandedColorAt(position: integer
   ): TExpandedPixel;
-var i: NativeInt;
-    curPos,posDiff: NativeInt;
-    rw,gw,bw: NativeUInt;
+var i: Int32or64;
+    curPos,posDiff: Int32or64;
+    rw,gw,bw: UInt32or64;
 begin
   if FCycle then
     position := (position-FPositions[0]) mod (FPositions[high(FPositions)] - FPositions[0]) + FPositions[0];
@@ -884,30 +884,30 @@ begin
       if GammaCorrection then
       begin
         if FEColors[i+1].red < FEColors[i].red then
-          result.red := FEColors[i].red - NativeUInt(curPos)*NativeUInt(FEColors[i].red-FEColors[i+1].red) div NativeUInt(posDiff) else
-          result.red := FEColors[i].red + NativeUInt(curPos)*NativeUInt(FEColors[i+1].red-FEColors[i].red) div NativeUInt(posDiff);
+          result.red := FEColors[i].red - UInt32or64(curPos)*UInt32or64(FEColors[i].red-FEColors[i+1].red) div UInt32or64(posDiff) else
+          result.red := FEColors[i].red + UInt32or64(curPos)*UInt32or64(FEColors[i+1].red-FEColors[i].red) div UInt32or64(posDiff);
         if FEColors[i+1].green < FEColors[i].green then
-          result.green := FEColors[i].green - NativeUInt(curPos)*NativeUInt(FEColors[i].green-FEColors[i+1].green) div NativeUInt(posDiff) else
-          result.green := FEColors[i].green + NativeUInt(curPos)*NativeUInt(FEColors[i+1].green-FEColors[i].green) div NativeUInt(posDiff);
+          result.green := FEColors[i].green - UInt32or64(curPos)*UInt32or64(FEColors[i].green-FEColors[i+1].green) div UInt32or64(posDiff) else
+          result.green := FEColors[i].green + UInt32or64(curPos)*UInt32or64(FEColors[i+1].green-FEColors[i].green) div UInt32or64(posDiff);
         if FEColors[i+1].blue < FEColors[i].blue then
-          result.blue := FEColors[i].blue - NativeUInt(curPos)*NativeUInt(FEColors[i].blue-FEColors[i+1].blue) div NativeUInt(posDiff) else
-          result.blue := FEColors[i].blue + NativeUInt(curPos)*NativeUInt(FEColors[i+1].blue-FEColors[i].blue) div NativeUInt(posDiff);
+          result.blue := FEColors[i].blue - UInt32or64(curPos)*UInt32or64(FEColors[i].blue-FEColors[i+1].blue) div UInt32or64(posDiff) else
+          result.blue := FEColors[i].blue + UInt32or64(curPos)*UInt32or64(FEColors[i+1].blue-FEColors[i].blue) div UInt32or64(posDiff);
         if FEColors[i+1].alpha < FEColors[i].alpha then
-          result.alpha := FEColors[i].alpha - NativeUInt(curPos)*NativeUInt(FEColors[i].alpha-FEColors[i+1].alpha) div NativeUInt(posDiff) else
-          result.alpha := FEColors[i].alpha + NativeUInt(curPos)*NativeUInt(FEColors[i+1].alpha-FEColors[i].alpha) div NativeUInt(posDiff);
+          result.alpha := FEColors[i].alpha - UInt32or64(curPos)*UInt32or64(FEColors[i].alpha-FEColors[i+1].alpha) div UInt32or64(posDiff) else
+          result.alpha := FEColors[i].alpha + UInt32or64(curPos)*UInt32or64(FEColors[i+1].alpha-FEColors[i].alpha) div UInt32or64(posDiff);
       end else
       begin
-        rw := NativeInt(FColors[i].red shl 8) + (((curPos) shl 8)*(FColors[i+1].red-FColors[i].red)) div (posDiff);
-        gw := NativeInt(FColors[i].green shl 8) + (((curPos) shl 8)*(FColors[i+1].green-FColors[i].green)) div (posDiff);
-        bw := NativeInt(FColors[i].blue shl 8) + (((curPos) shl 8)*(FColors[i+1].blue-FColors[i].blue)) div (posDiff);
+        rw := Int32or64(FColors[i].red shl 8) + (((curPos) shl 8)*(FColors[i+1].red-FColors[i].red)) div (posDiff);
+        gw := Int32or64(FColors[i].green shl 8) + (((curPos) shl 8)*(FColors[i+1].green-FColors[i].green)) div (posDiff);
+        bw := Int32or64(FColors[i].blue shl 8) + (((curPos) shl 8)*(FColors[i+1].blue-FColors[i].blue)) div (posDiff);
 
         if rw >= $ff00 then result.red := $ffff
-        else result.red := (GammaExpansionTab[rw shr 8]*NativeUInt(255 - (rw and 255)) + GammaExpansionTab[(rw shr 8)+1]*NativeUInt(rw and 255)) shr 8;
+        else result.red := (GammaExpansionTab[rw shr 8]*UInt32or64(255 - (rw and 255)) + GammaExpansionTab[(rw shr 8)+1]*UInt32or64(rw and 255)) shr 8;
         if gw >= $ff00 then result.green := $ffff
-        else result.green := (GammaExpansionTab[gw shr 8]*NativeUInt(255 - (gw and 255)) + GammaExpansionTab[(gw shr 8)+1]*NativeUInt(gw and 255)) shr 8;
+        else result.green := (GammaExpansionTab[gw shr 8]*UInt32or64(255 - (gw and 255)) + GammaExpansionTab[(gw shr 8)+1]*UInt32or64(gw and 255)) shr 8;
         if bw >= $ff00 then result.blue := $ffff
-        else result.blue := (GammaExpansionTab[bw shr 8]*NativeUInt(255 - (bw and 255)) + GammaExpansionTab[(bw shr 8)+1]*NativeUInt(bw and 255)) shr 8;
-        result.alpha := NativeInt(FColors[i].alpha shl 8) + (((curPos) shl 8)*(FColors[i+1].alpha-FColors[i].alpha)) div (posDiff);
+        else result.blue := (GammaExpansionTab[bw shr 8]*UInt32or64(255 - (bw and 255)) + GammaExpansionTab[(bw shr 8)+1]*UInt32or64(bw and 255)) shr 8;
+        result.alpha := Int32or64(FColors[i].alpha shl 8) + (((curPos) shl 8)*(FColors[i+1].alpha-FColors[i].alpha)) div (posDiff);
         result.alpha := result.alpha + (result.alpha shr 8);
       end;
     end;
@@ -949,7 +949,7 @@ end;
 
 function TBGRASimpleGradientWithGammaCorrection.InterpolateToBGRA(position: word
   ): TBGRAPixel;
-var b,b2: cardinal;
+var b,b2: LongWord;
     ec: TExpandedPixel;
 begin
   b      := position;
@@ -963,7 +963,7 @@ end;
 
 function TBGRASimpleGradientWithGammaCorrection.InterpolateToExpanded(
   position: word): TExpandedPixel;
-var b,b2: cardinal;
+var b,b2: LongWord;
 begin
   b      := position;
   b2     := 65536-b;
@@ -989,7 +989,7 @@ end;
 
 function TBGRASimpleGradientWithoutGammaCorrection.InterpolateToBGRA(
   position: word): TBGRAPixel;
-var b,b2: cardinal;
+var b,b2: LongWord;
 begin
   b      := position shr 6;
   b2     := 1024-b;
@@ -1001,7 +1001,7 @@ end;
 
 function TBGRASimpleGradientWithoutGammaCorrection.InterpolateToExpanded(
   position: word): TExpandedPixel;
-var b,b2: cardinal;
+var b,b2: LongWord;
     rw,gw,bw: word;
 begin
   b      := position shr 6;
@@ -1013,17 +1013,17 @@ begin
   if rw >= $ff00 then
     result.red := 65535
   else
-    result.red := (GammaExpansionTab[rw shr 8]*NativeUInt(255 - (rw and 255)) + GammaExpansionTab[(rw shr 8)+1]*NativeUInt(rw and 255)) shr 8;
+    result.red := (GammaExpansionTab[rw shr 8]*UInt32or64(255 - (rw and 255)) + GammaExpansionTab[(rw shr 8)+1]*UInt32or64(rw and 255)) shr 8;
 
   if gw >= $ff00 then
     result.green := 65535
   else
-    result.green := (GammaExpansionTab[gw shr 8]*NativeUInt(255 - (gw and 255)) + GammaExpansionTab[(gw shr 8)+1]*NativeUInt(gw and 255)) shr 8;
+    result.green := (GammaExpansionTab[gw shr 8]*UInt32or64(255 - (gw and 255)) + GammaExpansionTab[(gw shr 8)+1]*UInt32or64(gw and 255)) shr 8;
 
   if bw >= $ff00 then
     result.blue := 65535
   else
-    result.blue := (GammaExpansionTab[bw shr 8]*NativeUInt(255 - (bw and 255)) + GammaExpansionTab[(bw shr 8)+1]*NativeUInt(bw and 255)) shr 8;
+    result.blue := (GammaExpansionTab[bw shr 8]*UInt32or64(255 - (bw and 255)) + GammaExpansionTab[(bw shr 8)+1]*UInt32or64(bw and 255)) shr 8;
 
   result.alpha := (FColor1.alpha * b2 + FColor2.alpha * b + 511) shr 2;
 end;
@@ -1751,7 +1751,7 @@ begin
     dmXor:
       while count > 0 do
       begin
-        PDword(pdest)^ := PDword(pdest)^ xor DWord(ScanNextInline);
+        PLongWord(pdest)^ := PLongWord(pdest)^ xor LongWord(ScanNextInline);
         inc(pdest);
         dec(count);
       end;
@@ -1861,7 +1861,7 @@ begin
         dmXor:
           while qty > 0 do
           begin
-            PDword(pdest)^ := PDword(pdest)^ xor DWord(GetNextWithGlobal);
+            PLongWord(pdest)^ := PLongWord(pdest)^ xor LongWord(GetNextWithGlobal);
             inc(pdest);
             dec(qty);
           end;
@@ -1901,7 +1901,7 @@ begin
         dmXor:
           while qty > 0 do
           begin
-            PDword(pdest)^ := PDword(pdest)^ xor DWord(GetNext);
+            PLongWord(pdest)^ := PLongWord(pdest)^ xor LongWord(GetNext);
             inc(pdest);
             dec(qty);
           end;
@@ -2014,7 +2014,7 @@ begin
       dmXor:
         while qty > 0 do
         begin
-          PDword(pdest)^ := PDword(pdest)^ xor DWord(GetNext);
+          PLongWord(pdest)^ := PLongWord(pdest)^ xor LongWord(GetNext);
           inc(pdest);
           dec(qty);
         end;
@@ -2139,7 +2139,7 @@ begin
     dmXor:
       while count > 0 do
       begin
-        PDword(pdest)^ := PDword(pdest)^ xor DWord(GetNext);
+        PLongWord(pdest)^ := PLongWord(pdest)^ xor LongWord(GetNext);
         inc(pdest);
         dec(count);
       end;

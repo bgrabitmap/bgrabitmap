@@ -1095,7 +1095,7 @@ end;
 
 procedure TBGRADefaultBitmap.Assign(Source: TPersistent);
 var pdest: PBGRAPixel;
-  x,y: NativeInt;
+  x,y: Int32or64;
 begin
   if Source is TBGRACustomBitmap then
   begin
@@ -1243,12 +1243,12 @@ end;
 
 procedure TBGRADefaultBitmap.XorPixel(x, y: int32or64; const c: TBGRAPixel);
 var
-  p : PDWord;
+  p : PLongWord;
 begin
   if not PtInClipRect(x,y) then exit;
   LoadFromBitmapIfNeeded;
-  p := PDWord(GetScanlineFast(y) +x);
-  p^ := p^ xor DWord(c);
+  p := PLongWord(GetScanlineFast(y) +x);
+  p^ := p^ xor LongWord(c);
   InvalidateBitmap;
 end;
 
@@ -1729,7 +1729,7 @@ begin
   p    := scanline[y] + x;
   for n := y2 - y downto 0 do
   begin
-    PDword(p)^ := PDword(p)^ xor DWord(c);
+    PLongWord(p)^ := PLongWord(p)^ xor LongWord(c);
     Inc(p, delta);
   end;
   InvalidateBitmap;
@@ -1973,7 +1973,7 @@ end;
 
 procedure TBGRADefaultBitmap.InternalCrossFade(ARect: TRect; Source1,
   Source2: IBGRAScanner; AFadePos: byte; AFadeMask: IBGRAScanner; mode: TDrawMode);
-var xb,yb: NativeInt;
+var xb,yb: Int32or64;
   pdest: PBGRAPixel;
   c: TBGRAPixel;
   buf1,buf2: ArrayOfTBGRAPixel;
@@ -3156,7 +3156,7 @@ procedure TBGRADefaultBitmap.ReplaceColor(before, after: TColor);
 var
   p: PLongWord;
   n: integer;
-  colorMask,beforeBGR, afterBGR: longword;
+  colorMask,beforeBGR, afterBGR: LongWord;
   rAfter,gAfter,bAfter,rBefore,gBefore,bBefore: byte;
 begin
   colorMask := LongWord(BGRA(255,255,255,0));
@@ -3179,7 +3179,7 @@ procedure TBGRADefaultBitmap.ReplaceColor(ABounds: TRect; before, after: TColor)
 var p: PLongWord;
   xb,yb,xcount: integer;
 
-  colorMask,beforeBGR, afterBGR: longword;
+  colorMask,beforeBGR, afterBGR: LongWord;
   rAfter,gAfter,bAfter,rBefore,gBefore,bBefore: byte;
 begin
   colorMask := LongWord(BGRA(255,255,255,0));
@@ -3242,7 +3242,7 @@ var
   SX, EX, I: integer;
   Added: boolean;
 
-  Visited: array of longword;
+  Visited: array of LongWord;
   VisitedLineSize: integer;
 
   Stack:      array of integer;
@@ -3262,7 +3262,7 @@ var
 
   procedure SetVisited(X1, AY, X2: integer);
   var
-    StartMask, EndMask: longword;
+    StartMask, EndMask: LongWord;
     StartPos, EndPos:   integer;
   begin
     if X2 < X1 then
@@ -3517,7 +3517,7 @@ begin
   if (FScanWidth <= 0) or (FScanHeight <= 0) then
   begin
     if mode = dmSet then
-      FillDWord(pdest^, count, DWord(BGRAPixelTransparent));
+      FillDWord(pdest^, count, LongWord(BGRAPixelTransparent));
     exit;
   end;
   case mode of
@@ -3559,7 +3559,7 @@ begin
     dmXor:
       for i := 0 to count-1 do
       begin
-        PDWord(pdest)^ := PDWord(pdest)^ xor DWord(ScanNextPixel);
+        PLongWord(pdest)^ := PLongWord(pdest)^ xor LongWord(ScanNextPixel);
         inc(pdest);
       end;
   end;
@@ -3599,7 +3599,7 @@ procedure TBGRADefaultBitmap.DoAlphaCorrection;
 var
   p: PBGRAPixel;
   n: integer;
-  colormask: longword;
+  colormask: LongWord;
   changed: boolean;
 begin
   if CanvasAlphaCorrection then
@@ -4243,7 +4243,7 @@ end;
 procedure TBGRADefaultBitmap.AlphaToGrayscale;
 var
   n:    integer;
-  temp: longword;
+  temp: LongWord;
   p:    PLongword;
 begin
   LoadFromBitmapIfNeeded;
@@ -4311,7 +4311,7 @@ procedure TBGRADefaultBitmap.DrawCheckers(ARect: TRect; AColorEven,
   AColorOdd: TBGRAPixel);
 const tx = 8; ty = 8; //must be a power of 2
       xMask = tx*2-1;
-var xcount,patY,w,n,patY1,patY2m1,patX,patX1: NativeInt;
+var xcount,patY,w,n,patY1,patY2m1,patX,patX1: Int32or64;
     pdest: PBGRAPixel;
     delta: PtrInt;
     actualRect: TRect;
@@ -4339,7 +4339,7 @@ begin
       begin
         n := 8-patX;
         if n > xcount then n := xcount;
-        FillDWord(pdest^,n,DWord(AColorEven));
+        FillDWord(pdest^,n,LongWord(AColorEven));
         dec(xcount,n);
         inc(pdest,n);
         patX := tx;
@@ -4347,7 +4347,7 @@ begin
       begin
         n := 16-patX;
         if n > xcount then n := xcount;
-        FillDWord(pdest^,n,DWord(AColorOdd));
+        FillDWord(pdest^,n,LongWord(AColorOdd));
         dec(xcount,n);
         inc(pdest,n);
         patX := 0;

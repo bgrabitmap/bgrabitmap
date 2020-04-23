@@ -31,9 +31,9 @@ type
 
   TLazPaintImageHeader = packed record
     magic: packed array[0..7] of char;
-    zero1, headerSize: DWord;
-    width, height, nbLayers, previewOffset: DWord;
-    zero2, compressionMode, reserved1, layersOffset: DWord;
+    zero1, headerSize: LongWord;
+    width, height, nbLayers, previewOffset: LongWord;
+    zero2, compressionMode, reserved1, layersOffset: LongWord;
   end;
 
 procedure LazPaintImageHeader_SwapEndianIfNeeded(AHeader: TLazPaintImageHeader);
@@ -85,12 +85,12 @@ var
   buffer: array[0..BufferSize-1] of byte;
   bufferPos: integer;
   smallRepetitions: array[0..maxSmallRepCount-1] of record
-    value: NativeInt;
-    count: NativeInt; //minSmallRep..maxSmallRep
+    value: Int32or64;
+    count: Int32or64; //minSmallRep..maxSmallRep
   end;
-  smallRepetitionsCount, smallRepTotal: NativeInt;
-  previousWordSizeRepetition, previousByteSizeRepetition: NativeInt;
-  lastPackedDumpValue: NativeInt;
+  smallRepetitionsCount, smallRepTotal: Int32or64;
+  previousWordSizeRepetition, previousByteSizeRepetition: Int32or64;
+  lastPackedDumpValue: Int32or64;
 
   procedure FlushBuffer;
   begin
@@ -125,7 +125,7 @@ var
     end;
   end;
 
-  procedure OutputNormalRepetition(AValue,ACount: NativeInt);
+  procedure OutputNormalRepetition(AValue,ACount: Int32or64);
   begin
     If (ACount < 1) or (ACount > maxNormalRepetition) then
       raise exception.Create('Invalid count');
@@ -145,9 +145,9 @@ var
   end;
 
   procedure FlushSmallRepetitions;
-  var i,j: NativeInt;
-    packedCount: NativeInt;
-    smallOutput: NativeInt;
+  var i,j: Int32or64;
+    packedCount: Int32or64;
+    smallOutput: Int32or64;
   begin
     if smallRepetitionsCount = 0 then exit;
     if smallRepetitionsCount >= 4 then
@@ -177,7 +177,7 @@ var
     smallRepTotal := 0;
   end;
 
-  procedure OutputRepetition(AValue,ACount: NativeInt; AAccumulate: boolean = true);
+  procedure OutputRepetition(AValue,ACount: Int32or64; AAccumulate: boolean = true);
   begin
     if AAccumulate and (ACount >= minSmallRep) and (ACount <= maxSmallRep) and (maxSmallRepCount>0) then
     begin
@@ -230,7 +230,7 @@ var
     end;
   end;
 
-  procedure DumpNoPack(P: PByte; ACount: NativeInt);
+  procedure DumpNoPack(P: PByte; ACount: Int32or64);
   begin
     if ACount = 0 then exit;
     if ACount = 1 then
@@ -253,10 +253,10 @@ var
     WriteBytes(p, ACount);
   end;
 
-  procedure DumpPacked(p : PByte; ACount: NativeInt);
+  procedure DumpPacked(p : PByte; ACount: Int32or64);
   var diffLast: integer;
-      packedValues: array[0..31] of NativeInt;
-      nbPackedValues, idx: NativeInt;
+      packedValues: array[0..31] of Int32or64;
+      nbPackedValues, idx: Int32or64;
 
   begin
     if ACount = 0 then exit else
@@ -324,12 +324,12 @@ var
     end;
   end;
 
-  procedure Dump(p: PByte; ACount: NativeInt);
+  procedure Dump(p: PByte; ACount: Int32or64);
   const smallestPackedDump = 5;
         smallestPackedDumpTail = 3;
   var
-    diffVal,i: NativeInt;
-    fitPackStart: NativeInt;
+    diffVal,i: Int32or64;
+    fitPackStart: Int32or64;
     p2: PByte;
   begin
     if ACount >= smallestPackedDump then
@@ -371,8 +371,8 @@ var
 
 var
   psrc,psrcBefore: PByte;
-  curValue: NativeInt;
-  curCount: NativeInt;
+  curValue: Int32or64;
+  curCount: Int32or64;
 begin
   if size = 0 then exit;
   psrc := @sourceBuffer;
@@ -455,13 +455,13 @@ end;
 function DecodeLazRLE(ASource: TStream; var destBuffer; availableOutputSize: PtrInt; availableInputSize: int64 = -1): PtrInt;
 const MaxBufferSize = 1024;
 var
-  opCode: NativeInt;
+  opCode: Int32or64;
   pdest: PByte;
-  lastRepeatWordSize, lastRepeatByteSize: NativeInt;
-  lastPackedDumpValue: NativeInt;
+  lastRepeatWordSize, lastRepeatByteSize: Int32or64;
+  lastPackedDumpValue: Int32or64;
 
   Buffer: packed array of byte;
-  BufferPos, BufferSize: NativeInt;
+  BufferPos, BufferSize: Int32or64;
   BufferStartLocation: Int64;
 
   procedure OutputOverflow(AWanted: PtrInt; AFunctionName: string);
@@ -513,7 +513,7 @@ var
       result := GetByteFromNextBuffer;
   end;
 
-  procedure RepeatValue(AValue: NativeInt; ACount: NativeInt);
+  procedure RepeatValue(AValue: Int32or64; ACount: Int32or64);
   begin
     if result+ACount > availableOutputSize then OutputOverflow(ACount,'RepeatValue');
     fillchar(pdest^, ACount, AValue);
@@ -521,8 +521,8 @@ var
     inc(result, ACount);
   end;
 
-  procedure PackedRepeatValues(ACount: NativeInt);
-  var packedCount: NativeInt;
+  procedure PackedRepeatValues(ACount: Int32or64);
+  var packedCount: Int32or64;
   begin
     while ACount > 0 do
     begin
@@ -538,7 +538,7 @@ var
     end;
   end;
 
-  procedure DumpValues(ACount: NativeInt);
+  procedure DumpValues(ACount: Int32or64);
   begin
     if result+ACount > availableOutputSize then OutputOverflow(ACount, 'DumpValues');
     inc(result, ACount);
@@ -550,8 +550,8 @@ var
     end;
   end;
 
-  procedure PackedDumpValues(ACount: NativeInt);
-  var packedData: NativeInt;
+  procedure PackedDumpValues(ACount: Int32or64);
+  var packedData: Int32or64;
   begin
     if result+ACount > availableOutputSize then OutputOverflow(ACount, 'PackedDumpValues');
     inc(result, ACount);

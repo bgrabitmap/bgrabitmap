@@ -195,7 +195,7 @@ uses Classes, sysutils;
         end;
         cells.Free;
 
-        Writeln(tOut,'function IsUnicodeMirrored(u: cardinal): boolean;');
+        Writeln(tOut,'function IsUnicodeMirrored(u: LongWord): boolean;');
         writeln(tout,'begin');
         writeln(tout,'  case u of');
         writeln(tout, ArrayOfCodeToCase(Slice(codes, codeCount), '  '), 'result:= true;');
@@ -209,7 +209,7 @@ uses Classes, sysutils;
       unicodeData := TStringList.Create;
       unicodeData.LoadFromFile('UnicodeData.txt');
 
-      Writeln(tOut,'function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;');
+      Writeln(tOut,'function GetUnicodeBidiClass(u: LongWord): TUnicodeBidiClass;');
       FormatSettings.ShortDateFormat := 'yyyy/mm/dd';
       Writeln(tOut,'begin //generated '+DateToStr(Date));
       c := TStringList.Create;
@@ -260,10 +260,10 @@ uses Classes, sysutils;
       Writeln(tOut,'type');
       writeln(tout,'  TUnicodeBracketInfo = record');
       writeln(tout,'    IsBracket: boolean;');
-      writeln(tout,'    OpeningBracket,ClosingBracket: cardinal;');
+      writeln(tout,'    OpeningBracket,ClosingBracket: LongWord;');
       writeln(tout,'  end;');
-      Writeln(tOut,'function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;');
-      Writeln(tOut,'  procedure Bracket(AOpening,AClosing: cardinal);');
+      Writeln(tOut,'function GetUnicodeBracketInfo(u: LongWord): TUnicodeBracketInfo;');
+      Writeln(tOut,'  procedure Bracket(AOpening,AClosing: LongWord);');
       Writeln(tOut,'  begin');
       Writeln(tOut,'    result.IsBracket := true;');
       Writeln(tOut,'    result.OpeningBracket := AOpening;');
@@ -308,7 +308,7 @@ uses Classes, sysutils;
       tIn: TextFile;
       cells: TStringList;
       chars: TStringList;
-      u: cardinal;
+      u: LongWord;
 
       procedure AddJoiningType(joinType: string; joinTypeEnum: string);
       var
@@ -331,7 +331,7 @@ uses Classes, sysutils;
       end;
 
     begin
-      Writeln(tOut,'function GetUnicodeJoiningType(u: cardinal): TUnicodeJoiningType;');
+      Writeln(tOut,'function GetUnicodeJoiningType(u: LongWord): TUnicodeJoiningType;');
       Writeln(tOut,'begin');
       Writeln(tOut,'  case u of');
       writeln('Parsing arabic ligature data...');

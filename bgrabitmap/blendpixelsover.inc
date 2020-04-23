@@ -809,7 +809,7 @@ end;
 procedure MaskPixelsDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
 const alphaMax = 255*7*255;
 var
-  alpha, opacity256: NativeUInt;
+  alpha, opacity256: UInt32or64;
   newAlpha: byte;
 begin
   if Opacity >= 128 then opacity256 := Opacity+1 else opacity256 := Opacity;
@@ -820,7 +820,7 @@ begin
             alpha := (psrc^.green shl 2) + (psrc^.red shl 1) + psrc^.blue;
             alpha := alpha*psrc^.alpha + (255*7)*(not psrc^.alpha);
             newAlpha := (pdest^.alpha * alpha + (alphaMax shr 1)) div alphaMax;
-            pdest^.alpha := (pdest^.alpha*NativeUInt(256 - opacity256) + newAlpha*opacity256) shr 8;
+            pdest^.alpha := (pdest^.alpha*UInt32or64(256 - opacity256) + newAlpha*opacity256) shr 8;
             if pdest^.alpha = 0 then pdest^ := BGRAPixelTransparent;
           end;
           Inc(pdest);

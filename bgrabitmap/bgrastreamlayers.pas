@@ -51,12 +51,12 @@ begin
   OriginalGuid.D1 := NtoBE(OriginalGuid.D1);
   OriginalGuid.D2 := NtoBE(OriginalGuid.D2);
   OriginalGuid.D3 := NtoBE(OriginalGuid.D3);
-  DWord(OriginalMatrix[1,1]) := NtoLE(DWord(OriginalMatrix[1,1]));
-  DWord(OriginalMatrix[2,1]) := NtoLE(DWord(OriginalMatrix[2,1]));
-  DWord(OriginalMatrix[1,2]) := NtoLE(DWord(OriginalMatrix[1,2]));
-  DWord(OriginalMatrix[2,2]) := NtoLE(DWord(OriginalMatrix[2,2]));
-  DWord(OriginalMatrix[1,3]) := NtoLE(DWord(OriginalMatrix[1,3]));
-  DWord(OriginalMatrix[2,3]) := NtoLE(DWord(OriginalMatrix[2,3]));
+  LongWord(OriginalMatrix[1,1]) := NtoLE(LongWord(OriginalMatrix[1,1]));
+  LongWord(OriginalMatrix[2,1]) := NtoLE(LongWord(OriginalMatrix[2,1]));
+  LongWord(OriginalMatrix[1,2]) := NtoLE(LongWord(OriginalMatrix[1,2]));
+  LongWord(OriginalMatrix[2,2]) := NtoLE(LongWord(OriginalMatrix[2,2]));
+  LongWord(OriginalMatrix[1,3]) := NtoLE(LongWord(OriginalMatrix[1,3]));
+  LongWord(OriginalMatrix[2,3]) := NtoLE(LongWord(OriginalMatrix[2,3]));
 end;
 
 procedure SaveLayeredBitmapToStream(AStream: TStream; ALayers: TBGRACustomLayeredBitmap);

@@ -756,7 +756,7 @@ begin
   dest.SolidBrush(bBorder, BorderColor, ADrawMode);
   skipBorder := ((ADrawMode in[dmLinearBlend,dmDrawWithTransparency]) and (BorderColor.alpha=0))
       or ((ADrawMode = dmSetExceptTransparent) and (BorderColor.alpha<>255))
-      or ((ADrawMode = dmXor) and (PDWord(@BorderColor)^=0));
+      or ((ADrawMode = dmXor) and (PLongWord(@BorderColor)^=0));
 
   if FillTexture <> nil then
     dest.ScannerBrush(bFill, FillTexture, ADrawMode)
@@ -765,7 +765,7 @@ begin
     dest.SolidBrush(bFill, FillColor, ADrawMode);
     skipFill := (skipFill or (ADrawMode in[dmLinearBlend,dmDrawWithTransparency]) and (FillColor.alpha=0))
         or ((ADrawMode = dmSetExceptTransparent) and (FillColor.alpha<>255))
-        or ((ADrawMode = dmXor) and (PDWord(@FillColor)^=0));
+        or ((ADrawMode = dmXor) and (PLongWord(@FillColor)^=0));
   end;
 
   BGRARoundRectAliased(dest, X1,Y1,X2,Y2, DX,DY, bBorder, bFill, 65535, skipBorder,skipFill);

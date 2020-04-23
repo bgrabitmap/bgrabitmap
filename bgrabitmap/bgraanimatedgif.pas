@@ -847,7 +847,7 @@ procedure TBGRAAnimatedGif.Update(Canvas: TCanvas; ARect: TRect);
 var
   n: integer;
   PChangePix, PNewPix, PBackground, PNewBackground: PLongWord;
-  oldpix, newpix, newbackpix: longword;
+  oldpix, newpix, newbackpix: LongWord;
   NewBackgroundImage: TBGRABitmap;
 begin
   if (BackgroundMode = gbmUpdateBackgroundContinuously) and
@@ -1048,8 +1048,8 @@ procedure TBGRAAnimatedGif.UpdateEraseBackground(Canvas: TCanvas;
 var
   n:      integer;
   PChangePix, PNewPix: PLongWord;
-  newpix: longword;
-  MemPixEraseColor: longword;
+  newpix: LongWord;
+  MemPixEraseColor: LongWord;
 begin
   if EraseColor = clNone then
   begin

@@ -18,7 +18,7 @@ type
     procedure SetIncludeThumbnail(AValue: boolean);
     function WriteThumbnail(Str: TStream; Img: TFPCustomImage): boolean;
   protected
-    CompressionMode: DWord;
+    CompressionMode: LongWord;
     procedure InternalWrite(Str: TStream; Img: TFPCustomImage); override;
     function InternalWriteLayers({%H-}Str: TStream; {%H-}Img: TFPCustomImage): boolean; virtual;
     function GetNbLayers: integer; virtual;
@@ -207,14 +207,14 @@ var
 
   procedure OutputPlane(AIndex: integer);
   begin
-    str.WriteDWord(NtoLE(DWord(CompressedPlane[AIndex].Size)));
+    str.WriteDWord(NtoLE(LongWord(CompressedPlane[AIndex].Size)));
     CompressedPlane[AIndex].Position:= 0;
     str.CopyFrom(CompressedPlane[AIndex],CompressedPlane[AIndex].Size);
   end;
 
   procedure OutputRGB(AIndex: integer);
   begin
-    str.WriteDWord(NtoLE(DWord(CompressedRGB[AIndex].Size)));
+    str.WriteDWord(NtoLE(LongWord(CompressedRGB[AIndex].Size)));
     CompressedRGB[AIndex].Position:= 0;
     str.CopyFrom(CompressedRGB[AIndex],CompressedRGB[AIndex].Size);
   end;
@@ -267,7 +267,7 @@ var
 var
   i,x,y: integer;
   PlaneFlags: Byte;
-  a: NativeInt;
+  a: Int32or64;
   psrc: PBGRAPixel;
 
 begin
@@ -394,9 +394,9 @@ begin
   if (CompressedRGB[3] <> nil) and (NonRGBSize > RGBSize) then
     PlaneFlags:= PlaneFlags or LazpaintPalettedRGB;
 
-  str.WriteDWord(NtoLE(DWord(img.width)));
-  str.WriteDWord(NtoLE(DWord(img.Height)));
-  str.WriteDWord(NtoLE(DWord(length(ACaption))));
+  str.WriteDWord(NtoLE(LongWord(img.width)));
+  str.WriteDWord(NtoLE(LongWord(img.Height)));
+  str.WriteDWord(NtoLE(LongWord(length(ACaption))));
   if length(ACaption)>0 then str.WriteBuffer(ACaption[1],length(ACaption));
   str.WriteByte(PlaneFlags);
 

@@ -1454,12 +1454,12 @@ begin
   begin
     stream.Position:= 0;
     {$PUSH}{$HINTS OFF}stream.ReadBuffer({%H-}result, sizeof({%H-}result));{$POP}
-    DWord(result[1,1]) := NtoLE(DWord(result[1,1]));
-    DWord(result[2,1]) := NtoLE(DWord(result[2,1]));
-    DWord(result[1,2]) := NtoLE(DWord(result[1,2]));
-    DWord(result[2,2]) := NtoLE(DWord(result[2,2]));
-    DWord(result[1,3]) := NtoLE(DWord(result[1,3]));
-    DWord(result[2,3]) := NtoLE(DWord(result[2,3]));
+    LongWord(result[1,1]) := NtoLE(LongWord(result[1,1]));
+    LongWord(result[2,1]) := NtoLE(LongWord(result[2,1]));
+    LongWord(result[1,2]) := NtoLE(LongWord(result[1,2]));
+    LongWord(result[2,2]) := NtoLE(LongWord(result[2,2]));
+    LongWord(result[1,3]) := NtoLE(LongWord(result[1,3]));
+    LongWord(result[2,3]) := NtoLE(LongWord(result[2,3]));
   end else
     result := AffineMatrixIdentity;
   stream.Free;

@@ -836,7 +836,7 @@ procedure FilterOriginalText(Quality: TBGRAFontQuality; CustomAntialiasingLevel:
   out grayscaleMask: TGrayscaleMask);
 var
   n: integer;
-  maxAlpha: NativeUint;
+  maxAlpha: UInt32or64;
   pb: PByte;
   multiplyX: integer;
   resampled: TBGRACustomBitmap;
@@ -1639,7 +1639,7 @@ procedure TBGRASystemFontRenderer.InternalSplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string; out ALineEndingBreak: boolean; AWordBreak: TWordBreakHandler);
 var p,skipCount, charLen: integer;
   zeroWidth: boolean;
-  u: Cardinal;
+  u: LongWord;
 begin
   ALineEndingBreak:= false;
   if ATextUTF8= '' then

@@ -49,16 +49,16 @@ type
   public
     Tag: Word;
     EntryType: Word;
-    Count: DWord;
+    Count: LongWord;
     Data: Pointer;
-    DataPos: DWord;
-    Bytes: DWord;
+    DataPos: LongWord;
+    Bytes: LongWord;
     destructor Destroy; override;
   end;
 
   TTiffWriterChunk = record
     Data: Pointer;
-    Bytes: DWord;
+    Bytes: LongWord;
   end;
   PTiffWriterChunk = ^TTiffWriterChunk;
 
@@ -70,7 +70,7 @@ type
     ChunkByteCounts: TTiffWriterEntry;
     constructor Create(ChunkType: TTiffChunkType);
     destructor Destroy; override;
-    procedure SetCount(NewCount: DWord);
+    procedure SetCount(NewCount: LongWord);
   end;
 
   { TBGRAWriterTiff }
@@ -82,7 +82,7 @@ type
     fStartPos: Int64;
     FEntries: TFPList; // list of TFPList of TTiffWriterEntry
     fStream: TStream;
-    fPosition: DWord;
+    fPosition: LongWord;
     procedure ClearEntries;
     procedure WriteTiff;
     procedure WriteHeader;
@@ -90,22 +90,22 @@ type
     procedure WriteEntry(Entry: TTiffWriterEntry);
     procedure WriteData;
     procedure WriteEntryData(Entry: TTiffWriterEntry);
-    procedure WriteBuf(var Buf; Count: DWord);
+    procedure WriteBuf(var Buf; Count: LongWord);
     procedure WriteWord(w: Word);
-    procedure WriteDWord(d: DWord);
+    procedure WriteDWord(d: LongWord);
   protected
     procedure InternalWrite(Stream: TStream; Img: TFPCustomImage); override;
     procedure AddEntryString(Tag: word; const s: string);
     procedure AddEntryShort(Tag: word; Value: Word);
-    procedure AddEntryLong(Tag: word; Value: DWord);
-    procedure AddEntryShortOrLong(Tag: word; Value: DWord);
+    procedure AddEntryLong(Tag: word; Value: LongWord);
+    procedure AddEntryShortOrLong(Tag: word; Value: LongWord);
     procedure AddEntryRational(Tag: word; const Value: TTiffRational);
-    procedure AddEntry(Tag: Word; EntryType: Word; EntryCount: DWord;
-                       Data: Pointer; Bytes: DWord;
+    procedure AddEntry(Tag: Word; EntryType: Word; EntryCount: LongWord;
+                       Data: Pointer; Bytes: LongWord;
                        CopyData: boolean = true);
     procedure AddEntry(Entry: TTiffWriterEntry);
     procedure TiffError(Msg: string);
-    procedure EncodeDeflate(var Buffer: Pointer; var Count: DWord);
+    procedure EncodeDeflate(var Buffer: Pointer; var Count: LongWord);
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -118,8 +118,8 @@ type
 
 function CompareTiffWriteEntries(Entry1, Entry2: Pointer): integer;
 
-function CompressDeflate(InputData: PByte; InputCount: cardinal;
-  out Compressed: PByte; var CompressedCount: cardinal;
+function CompressDeflate(InputData: PByte; InputCount: LongWord;
+  out Compressed: PByte; var CompressedCount: LongWord;
   ErrorMsg: PAnsiString = nil): boolean;
 
 implementation
@@ -129,8 +129,8 @@ begin
   Result:=integer(TTiffWriterEntry(Entry1).Tag)-integer(TTiffWriterEntry(Entry2).Tag);
 end;
 
-function CompressDeflate(InputData: PByte; InputCount: cardinal; out
-  Compressed: PByte; var CompressedCount: cardinal; ErrorMsg: PAnsiString
+function CompressDeflate(InputData: PByte; InputCount: LongWord; out
+  Compressed: PByte; var CompressedCount: LongWord; ErrorMsg: PAnsiString
   ): boolean;
 var
   stream : z_stream;
@@ -217,7 +217,7 @@ begin
   inc(fPosition,2);
 end;
 
-procedure TBGRAWriterTiff.WriteDWord(d: DWord);
+procedure TBGRAWriterTiff.WriteDWord(d: LongWord);
 begin
   if fStream<>nil then
     fStream.WriteDWord(d);
@@ -266,7 +266,7 @@ var
   List: TFPList;
   j: Integer;
   Entry: TTiffWriterEntry;
-  NextIFDPos: DWord;
+  NextIFDPos: LongWord;
 begin
   for i:=0 to FEntries.Count-1 do begin
     List:=TFPList(FEntries[i]);
@@ -291,7 +291,7 @@ end;
 
 procedure TBGRAWriterTiff.WriteEntry(Entry: TTiffWriterEntry);
 var
-  PadBytes: DWord;
+  PadBytes: LongWord;
 begin
   {$IFDEF FPC_Debug_Image}
   //writeln('TBGRAWriterTiff.WriteEntry Tag=',Entry.Tag,' Type=',Entry.EntryType,' Count=',Entry.Count,' Bytes=',Entry.Bytes);
@@ -317,7 +317,7 @@ var
   Entry: TTiffWriterEntry;
   Chunks: TTiffWriterChunkOffsets;
   k: Integer;
-  Bytes: DWord;
+  Bytes: LongWord;
 begin
   for i:=0 to FEntries.Count-1 do begin
     List:=TFPList(FEntries[i]);
@@ -333,9 +333,9 @@ begin
         Chunks:=TTiffWriterChunkOffsets(Entry);
         // write Chunks
         for k:=0 to Chunks.Count-1 do begin
-          PDWord(Chunks.Data)[k]:=fPosition;
+          PLongWord(Chunks.Data)[k]:=fPosition;
           Bytes:=Chunks.Chunks[k].Bytes;
-          PDWord(Chunks.ChunkByteCounts.Data)[k]:=Bytes;
+          PLongWord(Chunks.ChunkByteCounts.Data)[k]:=Bytes;
           {$IFDEF FPC_Debug_Image}
           //writeln('TBGRAWriterTiff.WriteData Chunk fPosition=',fPosition,' Bytes=',Bytes);
           {$ENDIF}
@@ -355,7 +355,7 @@ begin
   end;
 end;
 
-procedure TBGRAWriterTiff.WriteBuf(var Buf; Count: DWord);
+procedure TBGRAWriterTiff.WriteBuf(var Buf; Count: LongWord);
 begin
   if Count=0 then exit;
   if (fStream<>nil) then
@@ -383,7 +383,7 @@ procedure TBGRAWriterTiff.AddImage(Img: TFPCustomImage);
     end;
   end;
 
-  procedure WriteValueUnscaled(var Run: PByte; Value: Cardinal; BitDepth: byte);
+  procedure WriteValueUnscaled(var Run: PByte; Value: LongWord; BitDepth: byte);
   begin
     if BitDepth=8 then begin
       Run^:= Value;
@@ -397,31 +397,31 @@ procedure TBGRAWriterTiff.AddImage(Img: TFPCustomImage);
 var
   IFD: TTiffIFD;
   GrayBits, RedBits, GreenBits, BlueBits, AlphaBits: Word;
-  ImgWidth, ImgHeight: DWord;
+  ImgWidth, ImgHeight: LongWord;
   Compression: Word;
   BitsPerSample: array[0..3] of Word;
   SamplesPerPixel: Integer;
   ExtraSample, defaultColorBits: Word;
-  BitsPerPixel: DWord;
+  BitsPerPixel: LongWord;
   i: Integer;
-  OrientedWidth, OrientedHeight: DWord;
-  BytesPerLine: DWord;
+  OrientedWidth, OrientedHeight: LongWord;
+  BytesPerLine: LongWord;
   ChunkType: TTiffChunkType;
-  ChunkCount: DWord;
+  ChunkCount: LongWord;
   ChunkOffsets: TTiffWriterChunkOffsets;
-  ChunkIndex: DWord;
-  ChunkBytes: DWord;
+  ChunkIndex: LongWord;
+  ChunkBytes: LongWord;
   Chunk: PByte;
-  ChunkLeft, ChunkTop, ChunkWidth, ChunkHeight: DWord;
-  TilesAcross, TilesDown: DWord;
+  ChunkLeft, ChunkTop, ChunkWidth, ChunkHeight: LongWord;
+  TilesAcross, TilesDown: LongWord;
   Run: PByte;
   Value: Integer;
   CurEntries: TFPList;
   Shorts: array[0..3] of Word;
-  NewSubFileType: DWord;
-  cx,cy,x,y,sx,sy: DWord;
+  NewSubFileType: LongWord;
+  cx,cy,x,y,sx,sy: LongWord;
   dx1,dy1,dx2,dy2: integer;
-  ChunkBytesPerLine: DWord;
+  ChunkBytesPerLine: LongWord;
   labArray: array of TLabA;
   ConvertToLab: Boolean;
   ConversionToLab: TBridgedConversion;
@@ -514,7 +514,7 @@ var
     case IFD.PhotoMetricInterpretation of
     0,1: // grayscale
       begin
-        Value:=(DWord(AColor.red)+AColor.green+AColor.blue) div 3;
+        Value:=(LongWord(AColor.red)+AColor.green+AColor.blue) div 3;
         if ExtraSample=1 then Value := Value*AColor.alpha div 65535;
         if IFD.PhotoMetricInterpretation=0 then Value:=$ffff-Value;// 0 is white
         WriteValue(Run, Value, GrayBits);
@@ -867,12 +867,12 @@ begin
   AddEntry(Tag,3,1,@Value,2);
 end;
 
-procedure TBGRAWriterTiff.AddEntryLong(Tag: word; Value: DWord);
+procedure TBGRAWriterTiff.AddEntryLong(Tag: word; Value: LongWord);
 begin
   AddEntry(Tag,4,1,@Value,4);
 end;
 
-procedure TBGRAWriterTiff.AddEntryShortOrLong(Tag: word; Value: DWord);
+procedure TBGRAWriterTiff.AddEntryShortOrLong(Tag: word; Value: LongWord);
 begin
   if Value<=High(Word) then
     AddEntryShort(Tag,Value)
@@ -886,8 +886,8 @@ begin
   AddEntry(Tag,5,1,@Value,8);
 end;
 
-procedure TBGRAWriterTiff.AddEntry(Tag: Word; EntryType: Word; EntryCount: DWord;
-  Data: Pointer; Bytes: DWord; CopyData: boolean);
+procedure TBGRAWriterTiff.AddEntry(Tag: Word; EntryType: Word; EntryCount: LongWord;
+  Data: Pointer; Bytes: LongWord; CopyData: boolean);
 var
   Entry: TTiffWriterEntry;
 begin
@@ -921,10 +921,10 @@ begin
   raise Exception.Create('TBGRAWriterTiff.TiffError: '+Msg);
 end;
 
-procedure TBGRAWriterTiff.EncodeDeflate(var Buffer: Pointer; var Count: DWord);
+procedure TBGRAWriterTiff.EncodeDeflate(var Buffer: Pointer; var Count: LongWord);
 var
   NewBuffer: PByte;
-  NewCount: cardinal;
+  NewCount: LongWord;
   ErrorMsg: String;
 begin
   ErrorMsg:='';
@@ -998,9 +998,9 @@ begin
   inherited Destroy;
 end;
 
-procedure TTiffWriterChunkOffsets.SetCount(NewCount: DWord);
+procedure TTiffWriterChunkOffsets.SetCount(NewCount: LongWord);
 var
-  Size: DWord;
+  Size: LongWord;
 begin
   {$IFDEF FPC_Debug_Image}
   writeln('TTiffWriteStripOffsets.SetCount OldCount=',Count,' NewCount=',NewCount);
@@ -1009,7 +1009,7 @@ begin
   Size:=Count*SizeOf(TTiffWriterChunk);
   ReAllocMem(Chunks,Size);
   if Size>0 then FillByte(Chunks^,Size,0);
-  Size:=Count*SizeOf(DWord);
+  Size:=Count*SizeOf(LongWord);
   // Offsets
   ReAllocMem(Data,Size);
   if Size>0 then FillByte(Data^,Size,0);

@@ -83,7 +83,7 @@ procedure TBGRAfpGUIBitmap.RebuildBitmap;
 var pmask, pmaskline: PByte;
   pdata: PBGRAPixel;
   raw: TRawImage;
-  x,y,bit,masklinesize,curmaskbyte: NativeUInt;
+  x,y,bit,masklinesize,curmaskbyte: UInt32or64;
 begin
   if FBitmap.Transparent then
   begin

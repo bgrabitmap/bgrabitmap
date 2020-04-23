@@ -19,13 +19,13 @@ type
         AlphaValue: Byte;
         Padding: Byte;
       end;
-    FPaletteIndexes: packed array[0..65535] of NativeInt;
-    FPaletteOffset: NativeInt;
+    FPaletteIndexes: packed array[0..65535] of Int32or64;
+    FPaletteOffset: Int32or64;
     FPaletteAlpha: boolean;
     FChunks: array of TMemoryStream;
     FCurrentChunk: TMemoryStream;
     FMaxChunkSize: Word;
-    function IndexOfColor(const AColor: TBGRAPixel): NativeInt;
+    function IndexOfColor(const AColor: TBGRAPixel): Int32or64;
     procedure InitHeader(Img: TFPCustomImage);
     procedure InitPalette;
     procedure InitChunks;
@@ -48,10 +48,10 @@ implementation
 
 { TBGRAWriterBmpMioMap }
 
-function TBGRAWriterBmpMioMap.IndexOfColor(const AColor: TBGRAPixel): NativeInt;
+function TBGRAWriterBmpMioMap.IndexOfColor(const AColor: TBGRAPixel): Int32or64;
 var searchedColorValue: Word;
   searchedAlphaValue: Byte;
-  i,startSearch,endSearch: NativeInt;
+  i,startSearch,endSearch: Int32or64;
 begin
   searchedColorValue:= BGRAToMioMap(AColor);
   searchedAlphaValue:= AlphaToMioMap(AColor.alpha);
@@ -119,7 +119,7 @@ begin
 end;
 
 procedure TBGRAWriterBmpMioMap.InitPalette;
-var i: NativeInt;
+var i: Int32or64;
 begin
   for i := 0 to high(FPaletteIndexes) do
     FPaletteIndexes[i] := -1;
@@ -178,12 +178,12 @@ begin
 end;
 
 procedure TBGRAWriterBmpMioMap.BuildPaletteAndChunks(Img: TFPCustomImage);
-var y,w: NativeInt;
+var y,w: Int32or64;
   PData,PDataEnd: PBGRAPixel;
   p: PBGRAPixel;
   currentColorIndex,
   nextColorIndex,
-  repCount: NativeInt;
+  repCount: Int32or64;
   b: byte;
   changeOfsRec: packed record
       valFD: byte;
@@ -291,7 +291,7 @@ var
       valHi: byte;
       valLo: byte;
   end;
-  i: NativeInt;
+  i: Int32or64;
 begin
   for i := 0 to high(FChunks) do
   begin
@@ -331,7 +331,7 @@ procedure TBGRAWriterBmpMioMap.WritePalette(Str: TStream);
 var
   colors: packed array of Word;
   alphas: packed array of byte;
-  i: NativeInt;
+  i: Int32or64;
 begin
   setlength(Colors, FHeader.nbColors);
   for i := 0 to FHeader.nbColors-1 do
@@ -349,7 +349,7 @@ end;
 procedure TBGRAWriterBmpMioMap.ReadScanline(Img: TFPCustomImage; Y: integer;
   ADest: PBGRAPixel);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if Img is TBGRACustomBitmap then
     Move(TBGRACustomBitmap(Img).ScanLine[Y]^, ADest^, Img.Width*sizeof(TBGRAPixel))

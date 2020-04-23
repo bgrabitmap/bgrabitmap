@@ -47,7 +47,7 @@ const
   CopySize = 65536;
 var
   saveFrom: TBGRACustomBitmap;
-  outSize, remain, toWrite: DWord;
+  outSize, remain, toWrite: LongWord;
   outData, p: PByte;
 begin
   NeedLibWebP;

@@ -628,8 +628,8 @@ function InternalGetImageBoundsWithin(ASourceBitmap: TBGRACustomBitmap; ASourceT
 var
   minx, miny, maxx, maxy: integer;
   xb, xb2, yb: integer;
-  p:      PDWord;
-  colorMask, colorZeros: DWord;
+  p:      PLongWord;
+  colorMask, colorZeros: LongWord;
   actualRect: TRect;
   pixelBuffer: TBGRAPixelBuffer;
 begin
@@ -656,30 +656,30 @@ begin
   colorZeros := 0;
   if cBlue in Channels then
   begin
-    colorMask := colorMask or longword(BGRA(0,0,255,0));
-    colorZeros:= colorZeros or longword(BGRA(0,0,ANothingValue,0));
+    colorMask := colorMask or LongWord(BGRA(0,0,255,0));
+    colorZeros:= colorZeros or LongWord(BGRA(0,0,ANothingValue,0));
   end;
   if cGreen in Channels then
   begin
-    colorMask := colorMask or longword(BGRA(0,255,0,0));
-    colorZeros:= colorZeros or longword(BGRA(0,ANothingValue,0,0));
+    colorMask := colorMask or LongWord(BGRA(0,255,0,0));
+    colorZeros:= colorZeros or LongWord(BGRA(0,ANothingValue,0,0));
   end;
   if cRed in Channels then
   begin
-    colorMask := colorMask or longword(BGRA(255,0,0,0));
-    colorZeros:= colorZeros or longword(BGRA(ANothingValue,0,0,0));
+    colorMask := colorMask or LongWord(BGRA(255,0,0,0));
+    colorZeros:= colorZeros or LongWord(BGRA(ANothingValue,0,0,0));
   end;
   if cAlpha in Channels then
   begin
-    colorMask := colorMask or longword(BGRA(0,0,0,255));
-    colorZeros:= colorZeros or longword(BGRA(0,0,0,ANothingValue));
+    colorMask := colorMask or LongWord(BGRA(0,0,0,255));
+    colorZeros:= colorZeros or LongWord(BGRA(0,0,0,ANothingValue));
   end;
   colorMask := NtoLE(colorMask);
   colorZeros := NtoLE(colorZeros);
   for yb := actualRect.Top to actualRect.Bottom-1 do
   begin
     if ASourceBitmap <> nil then
-      p := PDWord(ASourceBitmap.ScanLine[yb])+actualRect.Left
+      p := PLongWord(ASourceBitmap.ScanLine[yb])+actualRect.Left
     else
     begin
       p := @pixelBuffer[0];

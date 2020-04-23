@@ -44,8 +44,8 @@ const
 
 type
   TMultiFileContainer = BGRAMultiFileType.TMultiFileContainer;
-  Int32or64 = {$IFDEF CPU64}Int64{$ELSE}LongInt{$ENDIF};
-  UInt32or64 = {$IFDEF CPU64}UInt64{$ELSE}LongWord{$ENDIF};
+  Int32or64 = BGRAClasses.Int32or64;
+  UInt32or64 = BGRAClasses.UInt32or64;
   HDC = {$IFDEF BGRABITMAP_USE_LCL}LCLType.HDC{$ELSE}PtrUInt{$ENDIF};
 
 {=== Miscellaneous types ===}
@@ -586,7 +586,7 @@ uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
 
 function BGRABitmapVersionStr: string;
 var numbers: TStringList;
-  i,remaining: cardinal;
+  i,remaining: LongWord;
 begin
   numbers := TStringList.Create;
   remaining := BGRABitmapVersion;
@@ -714,7 +714,7 @@ procedure BGRADefaultWordBreakHandler(var ABefore, AAfter: string);
 const spacingChars = [' '];
   wordBreakChars = [' ',#9,'-','?','!'];
 var p, charLen: integer;
-  u: Cardinal;
+  u: LongWord;
 begin
   if (AAfter <> '') and (ABefore <> '') and not (AAfter[1] in spacingChars) and not (ABefore[length(ABefore)] in wordBreakChars) then
   begin
@@ -1043,11 +1043,11 @@ var
   procedure DetectFromStream;
   var
     {%H-}magic: packed array[0..7] of byte;
-    {%H-}dwords: packed array[0..9] of DWORD;
+    {%H-}dwords: packed array[0..9] of LongWord;
     magicAsText, moreMagic: string;
 
     streamStartPos, maxFileSize: Int64;
-    expectedFileSize: DWord;
+    expectedFileSize: LongWord;
 
     procedure DetectTarga;
     var
@@ -1073,7 +1073,7 @@ var
 
     procedure DetectLazPaint;
     var
-      w,h: dword;
+      w,h: LongWord;
       i: integer;
     begin
       if (copy(magicAsText,1,8) = 'LazPaint') then //with header

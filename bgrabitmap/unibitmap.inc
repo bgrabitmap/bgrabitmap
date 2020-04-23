@@ -48,7 +48,7 @@ type
     FixedData: array[0..31] of byte;
     InternalInitContext: TUniBrushInitContextProc;       //do not call directly
     InternalPutNextPixels: TUniBrushPutNextPixelsProc;   //do not call directly
-    Flags: Cardinal;
+    Flags: LongWord;
     procedure MoveTo(AContext: PUniBrushContext; ADest: pointer; AOfsX,AOfsY: integer); inline;
     procedure PutNextPixels(AContext: PUniBrushContext; AAlpha: Word; ACount: integer); inline;
     property Colorspace: TColorspaceAny read FColorspace write SetColorspace;
@@ -2376,7 +2376,7 @@ end;
 
 procedure TCustomUniversalBitmap.Assign(Source: TPersistent);
 var pdest: PByte;
-  x,y: NativeInt;
+  x,y: Int32or64;
   col: TFPColor;
 begin
   if Source is TCustomUniversalBitmap then

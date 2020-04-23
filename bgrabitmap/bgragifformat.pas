@@ -419,7 +419,7 @@ var  //input position
   end;
 
 var // GIF buffer can be up to 255 bytes long
-  OutputBufferSize: NativeInt;
+  OutputBufferSize: Int32or64;
   OutputBuffer: packed array[0..255] of byte;
 
   procedure FlushByteOutput;
@@ -442,7 +442,7 @@ var // GIF buffer can be up to 255 bytes long
 type TCode = Word;
 
 var
-  BitBuffer       : DWord; // steady stream of bit output
+  BitBuffer       : LongWord; // steady stream of bit output
   BitBufferLen    : Byte;  // number of bits in buffer
   CurCodeSize     : byte;  // current code size
 
@@ -1052,7 +1052,7 @@ var
     procedure DitherAndCompressImage(AFrame: integer; APalette: TBGRAPalette; AQuantizer: TBGRACustomColorQuantizer);
     var ImageData: Pointer;
       Image: TBGRABitmap;
-      y,x: NativeInt;
+      y,x: Int32or64;
       psource: PBGRAPixel;
       pdest: PByte;
     begin

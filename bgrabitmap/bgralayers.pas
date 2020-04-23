@@ -458,7 +458,7 @@ var
   end;
 
 var
-  NextLayerUniqueId: cardinal;
+  NextLayerUniqueId: LongWord;
   LayeredBitmapReaders: array of record
      extension: string;
      theClass: TBGRACustomLayeredBitmapClass;

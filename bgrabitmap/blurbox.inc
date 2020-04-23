@@ -20,16 +20,16 @@ type
   PVertical = ^TVertical;
 var
   verticals: PVertical;
-  left,right,width,height: NativeInt;
-  iRadiusX,iRadiusY: NativeInt;
-  factExtraX,factExtraY: NativeUInt;
+  left,right,width,height: Int32or64;
+  iRadiusX,iRadiusY: Int32or64;
+  factExtraX,factExtraY: UInt32or64;
 
   procedure PrepareVerticals;
   var
-    xb,yb: NativeInt;
+    xb,yb: Int32or64;
     psrc,p: PByte;
     pvert : PVertical;
-    {%H-}a2: NativeUInt;
+    {%H-}a2: UInt32or64;
     delta: PtrInt;
     srcPixSize: Integer;
   begin
@@ -127,8 +127,8 @@ var
   var
     psrc0,psrc1,psrc2,psrc3: PByte;
     pvert : PVertical;
-    xb: NativeInt;
-    {%H-}a2: NativeUInt;
+    xb: Int32or64;
+    {%H-}a2: UInt32or64;
     srcPixSize: Integer;
   begin
     pvert := verticals;
@@ -290,7 +290,7 @@ var
 
   procedure MainLoop;
   var
-    xb,yb,xdest: NativeInt;
+    xb,yb,xdest: Int32or64;
     pdest: PByte;
     pvert : PVertical;
     sumRed,sumGreen,sumBlue,sumAlpha,sumCount,

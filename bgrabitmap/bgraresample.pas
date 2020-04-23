@@ -115,14 +115,14 @@ procedure StretchPutImage(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer;
 type
   TTransitionState = (tsNone, tsPlain, tsLeft, tsMiddle, tsRight);
 var
-  x_src,y_src, y_src2, prev_y_src, prev_y_src2: NativeInt;
+  x_src,y_src, y_src2, prev_y_src, prev_y_src2: Int32or64;
   inc_x_src, mod_x_src, acc_x_src, inc_y_src, mod_y_src, acc_y_src,
-  acc_x_src2, acc_y_src2: NativeInt;
-  x_dest, y_dest: NativeInt;
+  acc_x_src2, acc_y_src2: Int32or64;
+  x_dest, y_dest: Int32or64;
 
   PDest, PSrc1, PSrc2: PBGRAPixel;
   vertColors: packed array[1..2] of TBGRAPixel;
-  DeltaSrcX: NativeInt;
+  DeltaSrcX: Int32or64;
   targetRect: TRect;
   tempData: PBGRAPixel;
   prevHorizTransition,horizTransition,prevVertTransition,vertTransition: TTransitionState;
@@ -131,8 +131,8 @@ var
   procedure LinearMix(PSrc: PBGRAPixel; DeltaSrc: integer; AccSrcQuarter: boolean;
         PDest: PBGRAPixel; slightlyDifferent: boolean; var transition: TTransitionState);
   var
-    asum: NativeInt;
-    a1,a2: NativeInt;
+    asum: Int32or64;
+    a1,a2: Int32or64;
     newTransition: TTransitionState;
   begin
     if (DeltaSrc=0) or ANoTransition then
@@ -410,19 +410,19 @@ end;
 procedure DownSamplePutImage2(source: TBGRACustomBitmap;
   dest: TBGRACustomBitmap; OffsetX, OffsetY: Integer; ADrawMode: TDrawMode);
 const factorX = 2; factorY = 2; nbi= factorX*factorY;
-var xb,yb,ys: NativeInt;
+var xb,yb,ys: Int32or64;
     pdest: PBGRAPixel;
     psrc1,psrc2: PBGRAPixel;
-    asum,maxsum: NativeUInt;
-    newWidth,newHeight: NativeInt;
-    r,g,b: NativeUInt;
+    asum,maxsum: UInt32or64;
+    newWidth,newHeight: Int32or64;
+    r,g,b: UInt32or64;
 begin
   if (source.Width mod factorX <> 0) or (source.Height mod factorY <> 0) then
      raise exception.Create('Source size must be a multiple of factorX and factorY');
   newWidth := source.Width div factorX;
   newHeight := source.Height div factorY;
   ys := 0;
-  maxsum := 255*NativeInt(factorX)*NativeInt(factorY);
+  maxsum := 255*Int32or64(factorX)*Int32or64(factorY);
   for yb := 0 to newHeight-1 do
   begin
     pdest := dest.ScanLine[yb+OffsetY]+OffsetX;
@@ -487,19 +487,19 @@ end;
 procedure DownSamplePutImage3(source: TBGRACustomBitmap;
   dest: TBGRACustomBitmap; OffsetX, OffsetY: Integer; ADrawMode: TDrawMode);
 const factorX = 3; factorY = 3; nbi= factorX*factorY;
-var xb,yb,ys: NativeInt;
+var xb,yb,ys: Int32or64;
     pdest: PBGRAPixel;
     psrc1,psrc2,psrc3: PBGRAPixel;
-    asum,maxsum: NativeUInt;
-    newWidth,newHeight: NativeInt;
-    r,g,b: NativeUInt;
+    asum,maxsum: UInt32or64;
+    newWidth,newHeight: Int32or64;
+    r,g,b: UInt32or64;
 begin
   if (source.Width mod factorX <> 0) or (source.Height mod factorY <> 0) then
      raise exception.Create('Source size must be a multiple of factorX and factorY');
   newWidth := source.Width div factorX;
   newHeight := source.Height div factorY;
   ys := 0;
-  maxsum := 255*NativeInt(factorX)*NativeInt(factorY);
+  maxsum := 255*Int32or64(factorX)*Int32or64(factorY);
   for yb := 0 to newHeight-1 do
   begin
     pdest := dest.ScanLine[yb+OffsetY]+OffsetX;
@@ -578,12 +578,12 @@ end;
 
 procedure DownSamplePutImage(source: TBGRACustomBitmap; factorX, factorY: integer;
   dest: TBGRACustomBitmap; OffsetX, OffsetY: Integer; ADrawMode: TDrawMode);
-var xb,yb,ys,iy,ix: NativeInt;
+var xb,yb,ys,iy,ix: Int32or64;
     pdest,psrci: PBGRAPixel;
     psrc: array of PBGRAPixel;
-    asum,maxsum: NativeUInt;
-    newWidth,newHeight: NativeInt;
-    r,g,b,nbi: NativeUInt;
+    asum,maxsum: UInt32or64;
+    newWidth,newHeight: Int32or64;
+    r,g,b,nbi: UInt32or64;
 begin
   if ADrawMode = dmXor then raise exception.Create('dmXor drawmode not supported');
   if (factorX = 2) and (factorY = 2) then
@@ -601,7 +601,7 @@ begin
   newWidth := source.Width div factorX;
   newHeight := source.Height div factorY;
   ys := 0;
-  maxsum := 255*NativeInt(factorX)*NativeInt(factorY);
+  maxsum := 255*Int32or64(factorX)*Int32or64(factorY);
   nbi := factorX*factorY;
   setlength(psrc, factorY);
   for yb := 0 to newHeight-1 do
