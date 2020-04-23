@@ -1646,7 +1646,8 @@ begin
       begin
           for i := copycount - 1 downto 0 do
           begin
-            FastBlendPixelInline(pdest, TBGRAPixel(PDWord(pdest)^ xor PDword(psource)^), AOpacity);
+            PDWord(@tempPixel)^ := PDWord(pdest)^ xor PDWord(psource)^;
+            FastBlendPixelInline(pdest, tempPixel, AOpacity);
             Inc(pdest);
             Inc(psource);
           end;
