@@ -34,6 +34,11 @@ type
     class function LoadFromStream(AStream: TStream): TBGRAGlyph; static;
   end;
 
+  TKerningInfo = class
+    IdLeft, IdRight: string;
+    KerningOffset: single;
+  end;
+
   TGlyphPointCurveMode= TEasyBezierCurveMode;
 
 const
@@ -121,6 +126,7 @@ type
   private
     FBidiMode: TFontBidiMode;
     FGlyphs: TAVLTree;
+    FKerningInfos: TAVLTree;
     procedure GlyphCallbackForDisplayInfo({%H-}ATextUTF8: string;
       AGlyph: TBGRAGlyph; AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out
       AContinue: boolean);
@@ -151,7 +157,9 @@ type
     function HeaderName: string; virtual;
     procedure BrowseGlyphs(ATextUTF8: string; ACallback: TBrowseGlyphCallback; AData: pointer; ADisplayOrder: boolean);
     procedure BrowseAllGlyphs(ACallback: TBrowseGlyphCallback; AData: pointer);
-    function GetKerning(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single; virtual;
+    function FindKerning(AIdLeft, AIdRight: string): TAVLTreeNode;
+    function GetKerningOffset(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single;
+    function ComputeKerning(AIdLeft, AIdRight: string): single; virtual;
   public
     OutlineMode: TBGRATypeWriterOutlineMode;
     DrawGlyphsSimultaneously : boolean;
@@ -518,6 +526,13 @@ begin
   result := CompareStr(TBGRAGlyph(Data1).Identifier,TBGRAGlyph(Data2).Identifier);
 end;
 
+function CompareKerningInfo(Data1, Data2: Pointer): integer;
+begin
+  result := CompareStr(TKerningInfo(Data1).IdLeft, TKerningInfo(Data2).IdLeft);
+  if result = 0 then
+    result := CompareStr(TKerningInfo(Data1).IdRight, TKerningInfo(Data2).IdRight);
+end;
+
 { TBGRACustomTypeWriter }
 
 function TBGRACustomTypeWriter.GetGlyph(AIdentifier: string): TBGRAGlyph;
@@ -564,7 +579,7 @@ begin
   begin
     newWidth := WidthAccumulator+AGlyph.Width;
     if gcfKerning in AFlags then
-      IncF(newWidth, GetKerning(PrevGlyphId, AGlyph.Identifier, gcfRightToLeft in AFlags));
+      IncF(newWidth, GetKerningOffset(PrevGlyphId, AGlyph.Identifier, gcfRightToLeft in AFlags));
     if newWidth < MaxWidth then
     begin
       WidthAccumulator := newWidth;
@@ -596,11 +611,17 @@ procedure TBGRACustomTypeWriter.GlyphCallbackForDisplayInfo(ATextUTF8: string;
   AGlyph: TBGRAGlyph; AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean);
 var
   m2: TAffineMatrix;
+  kerning: Single;
 begin
   with TDisplayInfoCallbackData(AData^) do
   begin
     if gcfKerning in AFlags then
-      Matrix := Matrix*AffineMatrixTranslation(GetKerning(PrevGlyphId, AGlyph.Identifier, gcfRightToLeft in AFlags),0);
+    begin
+      if gcfRightToLeft in AFlags then
+        kerning := GetKerningOffset(AGlyph.Identifier, PrevGlyphId, gcfRightToLeft in AFlags)
+        else kerning := GetKerningOffset(PrevGlyphId, AGlyph.Identifier, gcfRightToLeft in AFlags);
+      Matrix := Matrix*AffineMatrixTranslation(kerning,0);
+    end;
 
     if Align in [twaLeft,twaMiddle,twaRight] then
       m2 := Matrix*AffineMatrixTranslation(0,-AGlyph.Height/2) else
@@ -646,6 +667,7 @@ begin
   TypeWriterMatrix := AffineMatrixIdentity;
   OutlineMode:= twoFill;
   DrawGlyphsSimultaneously := false;
+  FKerningInfos := nil;
 end;
 
 function TBGRACustomTypeWriter.GetTextSizeBeforeTransform(ATextUTF8: string): TPointF;
@@ -821,13 +843,15 @@ end;
 procedure TBGRACustomTypeWriter.ClearGlyphs;
 begin
   FGlyphs.FreeAndClear;
+  if Assigned(FKerningInfos) then
+    FKerningInfos.FreeAndClear;
 end;
 
 procedure TBGRACustomTypeWriter.RemoveGlyph(AIdentifier: string);
 var Node: TAVLTreeNode;
 begin
   Node := FindGlyph(AIdentifier);
-  if Node <> nil then FGlyphs.Delete(Node);
+  if Node <> nil then FGlyphs.FreeAndDelete(Node);
 end;
 
 procedure TBGRACustomTypeWriter.AddGlyph(AGlyph: TBGRAGlyph);
@@ -1178,7 +1202,7 @@ begin
   with TTextSizeCallbackData(AData^) do
   begin
     if gcfKerning in AFlags then
-      incF(size.x, GetKerning(PrevGlyphId, AGlyph.Identifier, gcfRightToLeft in AFlags) );
+      incF(size.x, GetKerningOffset(PrevGlyphId, AGlyph.Identifier, gcfRightToLeft in AFlags) );
     IncF(Size.x, AGlyph.Width);
     gSizeY := AGlyph.Height;
     if gSizeY > Size.y then Size.y := gSizeY;
@@ -1187,13 +1211,66 @@ begin
   AContinue:= true;
 end;
 
-function TBGRACustomTypeWriter.GetKerning(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single;
+function TBGRACustomTypeWriter.FindKerning(AIdLeft, AIdRight: string): TAVLTreeNode;
+var Comp: integer;
+  Node: TAVLTreeNode;
+begin
+  if not Assigned(FKerningInfos) then exit(nil);
+  Node:=FKerningInfos.Root;
+  while (Node<>nil) do begin
+    Comp:=CompareStr(AIdLeft,TKerningInfo(Node.Data).IdLeft);
+    if Comp=0 then
+      Comp:=CompareStr(AIdRight,TKerningInfo(Node.Data).IdRight);
+    if Comp=0 then break;
+    if Comp<0 then begin
+      Node:=Node.Left
+    end else begin
+      Node:=Node.Right
+    end;
+  end;
+  result := Node;
+end;
+
+function TBGRACustomTypeWriter.GetKerningOffset(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single;
+var
+  temp: String;
+  node: TAVLTreeNode;
+  info: TKerningInfo;
+begin
+  if ARightToLeft then
+  begin
+    temp := AIdBefore;
+    AIdBefore := AIdAfter;
+    AIdAfter := temp;
+  end;
+  if FKerningInfos = nil then
+    FKerningInfos := TAVLTree.Create(@CompareKerningInfo);
+  node := FindKerning(AIdBefore, AIdAfter);
+  if Assigned(node) then
+    result := TKerningInfo(node.Data).KerningOffset
+  else
+  begin
+    result := ComputeKerning(AIdBefore, AIdAfter);
+    info := TKerningInfo.Create;
+    info.IdLeft:= AIdBefore;
+    info.IdRight:= AIdAfter;
+    info.KerningOffset:= result;
+    FKerningInfos.Add(Pointer(info));
+  end;
+end;
+
+function TBGRACustomTypeWriter.ComputeKerning(AIdLeft, AIdRight: string): single;
 begin
   result := 0;
 end;
 
 destructor TBGRACustomTypeWriter.Destroy;
 begin
+  if Assigned(FKerningInfos) then
+  begin
+    FKerningInfos.FreeAndClear;
+    FKerningInfos.Free;
+  end;
   FGlyphs.FreeAndClear;
   FGlyphs.Free;
   inherited Destroy;
