@@ -314,11 +314,11 @@ var
   b: byte;
 begin
   Result := 'Paint.Net document' + LineEnding + LineEnding;
-  Result += Content.ToString;
+  AppendStr(Result, Content.ToString);
   for i := 0 to NbLayers - 1 do
   begin
-    Result += LineEnding + 'Layer ' + IntToStr(i) + ' : ' + LayerName[i] + LineEnding;
-    Result += '[ ';
+    AppendStr(Result, LineEnding + 'Layer ' + IntToStr(i) + ' : ' + LayerName[i] + LineEnding);
+    AppendStr(Result, '[ ');
     LayerData[i].Position := 0;
     if LayerData[i].Size > 256 then
       nbbytes := 256
@@ -329,11 +329,11 @@ begin
         {$hints off}
       LayerData[i].ReadBuffer(b, 1);
         {$hints on}
-      Result += IntToHex(b, 2) + ' ';
+      AppendStr(Result, IntToHex(b, 2) + ' ');
     end;
     if LayerData[i].Size > nbbytes then
-      Result += '...';
-    Result   += ']' + lineending;
+      AppendStr(Result, '...');
+    AppendStr(Result, ']' + lineending);
   end;
 end;
 

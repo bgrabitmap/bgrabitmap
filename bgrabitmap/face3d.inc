@@ -156,8 +156,8 @@ begin
         ActualTexCoord := TexCoord
       else
         ActualTexCoord := Vertex.TexCoord;
-      ActualTexCoord.x *= zoom.x;
-      ActualTexCoord.y *= zoom.y;
+      ActualTexCoord.x := ActualTexCoord.x * zoom.x;
+      ActualTexCoord.y := ActualTexCoord.y * zoom.y;
     end;
 end;
 

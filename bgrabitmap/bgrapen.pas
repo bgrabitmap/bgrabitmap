@@ -117,7 +117,7 @@ function PenStyleToBGRA(APenStyle: TPenStyle): TBGRAPenStyle;
 
 implementation
 
-uses math, BGRAPath;
+uses math, BGRAClasses, BGRAPath;
 
 procedure BGRADrawLineAliased(dest: TBGRACustomBitmap; x1, y1, x2, y2: integer;
   c: TBGRAPixel; DrawLastPixel: boolean; ADrawMode: TDrawMode);
@@ -252,7 +252,7 @@ var
     inc(styleIndex);
     if styleIndex = length(penstyle) then
       styleIndex := 0;
-    remainingDash += penstyle[styleindex];
+    IncF(remainingDash, penstyle[styleindex]);
   end;
 
 var
@@ -349,7 +349,7 @@ begin
       raise Exception.Create('Invalid pen dash length')
     else
     begin
-      styleLength += penstyle[i];
+      IncF(styleLength, penstyle[i]);
       if styleLength >= posstyle then
       begin
         styleIndex := i;
@@ -375,19 +375,19 @@ begin
     begin
       if len-lenDone < remainingDash then
       begin
-        remainingDash -= len-lenDone;
+        DecF(remainingDash, len-lenDone);
         if remainingDash = 0 then NextStyleIndex;
         lenDone := len;
       end else
       if betweenDash then
       begin
-        lenDone += remainingDash;
+        IncF(lenDone, remainingDash);
         StartDash(i, lenDone/len);
         remainingDash := 0;
         NextStyleIndex;
       end else
       begin
-        lenDone += remainingDash;
+        IncF(lenDone, remainingDash);
         EndDash(i, lenDone/len);
         remainingDash := 0;
         NextStyleIndex;
@@ -474,7 +474,7 @@ var
       s := sin(a)*hw*flipvalue;
       c := cos(a);
       t := (1 - c) * (0.2 + alphaFactor*0.3) + alphaFactor;
-      c *= hw;
+      c := c * hw;
       AddPt( PointF(origin.x+ dir.x*(c-t) - dir.y*s, origin.y + dir.y*(c-t) + dir.x*s),
              PointF(origin.x+ dir.x*(c-t) + dir.y*s, origin.y + dir.y*(c-t) - dir.x*s) );
     end;
@@ -487,8 +487,8 @@ var
   begin
     a1 := arctan2(pt1.y-origin.y,pt1.x-origin.x);
     a2 := arctan2(pt2.y-origin.y,pt2.x-origin.x);
-    if a2-a1 > Pi then a2 -= 2*Pi;
-    if a1-a2 > Pi then a1 -= 2*Pi;
+    if a2-a1 > Pi then DecF(a2, 2*Pi);
+    if a1-a2 > Pi then DecF(a1, 2*Pi);
     if a2=a1 then
     begin
       setlength(result,1);
@@ -779,7 +779,7 @@ begin
         endArrowDone := true;
         break;
       end;
-      linePos += len;
+      IncF(linePos, len);
     end;
   end;
 
@@ -822,7 +822,7 @@ begin
     borders[i].leftSide.dir := dir;
     borders[i].rightSide.origin := pts[i] - borders[i].leftDir;
     borders[i].rightSide.dir := dir;
-    linePos += len;
+    IncF(linePos, len);
   end;
 
   //first points
@@ -891,8 +891,7 @@ begin
       len := sqrt(diff*diff);
       if (len > maxMiter) and (turn >= 0) then //if miter too far
       begin
-        diff.x /= len;
-        diff.y /= len;
+        diff.Scale(1/len);
         if joinstyle <> pjsRound then
         begin
           //compute little border
@@ -1222,7 +1221,7 @@ begin
   FStrokeZoom := max(VectLen(PointF(FStrokeMatrix[1,1],FStrokeMatrix[2,1])),
           VectLen(PointF(FStrokeMatrix[1,2],FStrokeMatrix[2,2])));
   if FStrokeZoom > 0 then
-    FStrokeMatrix *= AffineMatrixScale(1/FStrokeZoom,1/FStrokeZoom);
+    FStrokeMatrix := FStrokeMatrix * AffineMatrixScale(1/FStrokeZoom,1/FStrokeZoom);
   FStrokeMatrixIdentity := IsAffineMatrixIdentity(FStrokeMatrix);
   FStrokeMatrixInverse := AffineMatrixInverse(FStrokeMatrix);
 end;

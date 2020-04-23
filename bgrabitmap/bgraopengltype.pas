@@ -969,12 +969,12 @@ procedure TBGLCustomTexture.StretchDraw(x, y, w, h: single;
   AHorizAlign: TAlignment; AVertAlign: TTextLayout; AColor: TBGRAPixel);
 begin
   case AHorizAlign of
-  taCenter: x -= w*0.5;
-  taRightJustify: x -= w-1;
+  taCenter: DecF(x, w*0.5);
+  taRightJustify: DecF(x, w-1);
   end;
   case AVertAlign of
-  tlCenter: y -= h*0.5;
-  tlBottom: y -= h;
+  tlCenter: DecF(y, h*0.5);
+  tlBottom: DecF(y, h);
   end;
   DoStretchDraw(x,y,w,h,AColor);
 end;
@@ -1028,8 +1028,8 @@ begin
   rotationCenter := PointF(imageCenter.x*w/FWidth, imageCenter.y*h/FHeight);
   if not ARestoreOffsetAfterRotation then
   begin
-    x -= rotationCenter.x;
-    y -= rotationCenter.y;
+    DecF(x, rotationCenter.x);
+    DecF(y, rotationCenter.y);
   end;
   DoStretchDrawAngle(x,y,w,h,angleDeg,rotationCenter+PointF(x,y),AColor);
 end;

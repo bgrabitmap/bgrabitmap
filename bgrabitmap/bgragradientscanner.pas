@@ -1109,7 +1109,7 @@ begin
   result.green := GammaCompressionTab[g];
   result.blue := GammaCompressionTab[b];
   result.alpha := a shr 8;
-  FCurColor += FStep;
+  FCurColor := FCurColor + FStep;
 end;
 
 function TBGRAGradientTriangleScanner.ScanNextExpandedPixel: TExpandedPixel;
@@ -1131,12 +1131,12 @@ begin
   result.green := g;
   result.blue := b;
   result.alpha := a;
-  FCurColor += FStep;
+  FCurColor := FCurColor + FStep;
 end;
 
 procedure TBGRAGradientTriangleScanner.ScanSkipPixels(ACount: integer);
 begin
-  FCurColor += FStep*ACount;
+  FCurColor := FCurColor + FStep*ACount;
 end;
 
 { TBGRAGradientScanner }
@@ -1227,7 +1227,7 @@ begin
     if FFlipGradient then a := 1-a;
     if FSinus then
     begin
-      a *= 65536;
+      a := a * 65536;
       if (a <= low(int64)) or (a >= high(int64)) then
         result := FAverageExpandedColor
       else
@@ -1250,7 +1250,7 @@ end;
 function TBGRAGradientScanner.GetGradientColorSinus(a: single): TBGRAPixel;
 begin
   if FFlipGradient then a := 1-a;
-  a *= 65536;
+  a := a * 65536;
   if (a <= low(int64)) or (a >= high(int64)) then
     result := FAverageColor
     else result := FGradient.GetColorAt(Sin65536(round(a) and 65535));
@@ -1259,7 +1259,7 @@ end;
 function TBGRAGradientScanner.GetGradientExpandedColorSinus(a: single): TExpandedPixel;
 begin
   if FFlipGradient then a := 1-a;
-  a *= 65536;
+  a := a * 65536;
   if (a <= low(int64)) or (a >= high(int64)) then
     result := FAverageExpandedColor
     else result := FGradient.GetExpandedColorAt(Sin65536(round(a) and 65535));
@@ -1374,7 +1374,7 @@ begin
 
       FFocalDirection := FRelativeFocal;
       FFocalDistance := VectLen(FFocalDirection);
-      if FFocalDistance > 0 then FFocalDirection *= 1/FFocalDistance;
+      if FFocalDistance > 0 then FFocalDirection := FFocalDirection * (1/FFocalDistance);
       FFocalNormal := PointF(-FFocalDirection.y,FFocalDirection.x);
       FRadialDenominator := sqr(FRadius-FFocalRadius)-sqr(FFocalDistance);
 

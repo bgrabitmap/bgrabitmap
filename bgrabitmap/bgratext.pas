@@ -976,8 +976,8 @@ begin
 
   case align of
     taLeftJustify: ;
-    taCenter: xf -= size.cx/2/sizeFactor;
-    taRightJustify: xf -= size.cx/sizeFactor;
+    taCenter: DecF(xf, size.cx/2/sizeFactor);
+    taRightJustify: DecF(xf, size.cx/sizeFactor);
   end;
 
   xMarginF := size.cy/sizeFactor;
@@ -1419,8 +1419,8 @@ begin
     if not lineEndingBreak then
       // append following direction to part
       case GetFirstStrongBidiClassUTF8(remains) of
-        ubcLeftToRight: if ARightToLeft then part += UnicodeCharToUTF8($200E);
-        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then part += UnicodeCharToUTF8($200F);
+        ubcLeftToRight: if ARightToLeft then AppendStr(part, UnicodeCharToUTF8($200E));
+        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then AppendStr(part, UnicodeCharToUTF8($200F));
       end;
     lines.Add(part);
     // prefix next part with previous direction
@@ -1630,7 +1630,7 @@ begin
   if InternalTextSize(sUTF8,AShowPrefix).cx > availableWidth then
   begin
     InternalSplitText(sUTF8, round(availableWidth - InternalTextSize('...',AShowPrefix).cx), remain, nil);
-    sUTF8 += '...';
+    AppendStr(sUTF8, '...');
   end;
   InternalTextOut(ADest,x,y,sUTF8,c,texture,align,AShowPrefix,ARightToLeft);
 end;

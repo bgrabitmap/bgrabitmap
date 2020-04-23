@@ -145,20 +145,20 @@
           movups xmm5, texPos
           movups xmm1, texStep
         end;
-        InvZPos += zStep;
+        IncF(InvZPos, zStep);
         asm
           addps xmm5, xmm1
           movlps texPos, xmm5
         end;
         {$ELSE}
-        InvZPos += zStep;
+        IncF(InvZPos, zStep);
         {$ENDIF}
       {$ELSE}
         {$IFNDEF PARAM_USESOLIDCOLOR}
-        texPos.x += texStep.x;
-        texPos.y += texStep.y;
+        IncF(texPos.x, texStep.x);
+        IncF(texPos.y, texStep.y);
         {$ENDIF}
-        InvZPos += zStep;
+        IncF(InvZPos, zStep);
       {$ENDIF}
 
       {$IFDEF PARAM_USESHADER}

@@ -130,6 +130,14 @@ const
 function Rect(ALeft, ATop, ARight, ABottom: Integer): TRect;
 function Point(AX, AY: Integer): TPoint;
 function Size(AWidth, AHeight: Integer): TSize;
+procedure IncF(var ADest: single; ADelta: single); overload; inline;
+procedure IncF(var ADest: double; ADelta: double); overload; inline;
+procedure DecF(var ADest: single; ADelta: single); overload; inline;
+procedure DecF(var ADest: double; ADelta: double); overload; inline;
+procedure Inc64(var AValue: int64; const ADelta: int64); overload; inline;
+procedure Dec64(var AValue: int64; const ADelta: int64); overload; inline;
+procedure Inc64(var AValue: uint64; const ADelta: uint64); overload; inline;
+procedure Dec64(var AValue: uint64; const ADelta: uint64); overload; inline;
 
 implementation
 
@@ -177,6 +185,62 @@ function Size(AWidth, AHeight: Integer): TSize;
 begin
   Result.cx := AWidth;
   Result.cy := AHeight;
+end;
+
+procedure IncF(var ADest: single; ADelta: single);
+begin
+  ADest := ADest + ADelta;
+end;
+
+procedure IncF(var ADest: double; ADelta: double);
+begin
+  ADest := ADest + ADelta;
+end;
+
+procedure DecF(var ADest: single; ADelta: single);
+begin
+  ADest := ADest - ADelta;
+end;
+
+procedure DecF(var ADest: double; ADelta: double);
+begin
+  ADest := ADest - ADelta;
+end;
+
+procedure Inc64(var AValue: int64; const ADelta: int64);
+begin
+  {$IFDEF CPU64}
+  Inc(AValue, ADelta);
+  {$ELSE}
+  AValue := AValue + ADelta;
+  {$ENDIF}
+end;
+
+procedure Dec64(var AValue: int64; const ADelta: int64);
+begin
+  {$IFDEF CPU64}
+  Dec(AValue, ADelta);
+  {$ELSE}
+  AValue := AValue - ADelta;
+  {$ENDIF}
+end;
+
+procedure Inc64(var AValue: uint64; const ADelta: uint64);
+begin
+  {$IFDEF CPU64}
+  Inc(AValue, ADelta);
+  {$ELSE}
+  AValue := AValue + ADelta;
+  {$ENDIF}
+end;
+
+procedure Dec64(var AValue: uint64; const ADelta: uint64);
+begin
+  {$IFDEF CPU64}
+  Dec(AValue, ADelta);
+  {$ELSE}
+  AValue := AValue - ADelta;
+  {$ENDIF}
 end;
 
 end.

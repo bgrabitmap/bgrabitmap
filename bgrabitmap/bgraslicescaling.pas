@@ -366,8 +366,8 @@ begin
   for p := low(TSliceRepeatPosition) to high(TSliceRepeatPosition) do
     if SliceRepeat[p] then
     begin
-      if result <> '' then result += '+';
-      result += SliceRepeatPositionStr[p];
+      if result <> '' then AppendStr(result, '+');
+      AppendStr(result, SliceRepeatPositionStr[p]);
     end;
 end;
 

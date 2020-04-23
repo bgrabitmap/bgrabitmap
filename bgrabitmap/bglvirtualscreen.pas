@@ -280,12 +280,12 @@ begin
 
       if knownFPS > 0 then
       begin
-        FSmoothedElapseAccumulator += 1000/knownFPS;
+        IncF(FSmoothedElapseAccumulator, 1000/knownFPS);
       end else
-        FSmoothedElapseAccumulator += FrameDiffTimeInMSecs;
+        IncF(FSmoothedElapseAccumulator, FrameDiffTimeInMSecs);
 
       FOnElapse(self, ctx, Trunc(FSmoothedElapseAccumulator));
-      FSmoothedElapseAccumulator -= Trunc(FSmoothedElapseAccumulator);
+      DecF(FSmoothedElapseAccumulator, Trunc(FSmoothedElapseAccumulator));
     end else
       FOnElapse(self, ctx, FrameDiffTimeInMSecs);
   end;

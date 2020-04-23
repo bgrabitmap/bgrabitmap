@@ -1546,11 +1546,11 @@ begin
   with FColors[n].Color do
   begin
     cura := (alpha / 255)*FColors[n].Weight;
-    a     += cura;
-    r     += GammaExpansionTab[red] * cura;
-    g     += GammaExpansionTab[green] * cura;
-    b     += GammaExpansionTab[blue] * cura;
-    w     += FColors[n].Weight;
+    IncF(a, cura);
+    IncF(r, GammaExpansionTab[red] * cura);
+    IncF(g, GammaExpansionTab[green] * cura);
+    IncF(b, GammaExpansionTab[blue] * cura);
+    Inc(w, FColors[n].Weight);
   end;
   if w = 0 then
     Result := BGRAPixelTransparent
@@ -1620,11 +1620,11 @@ begin
   with FColors[n].Color do
   begin
     cura := (alpha / 255)*FColors[n].Weight;
-    a     += cura;
-    r     += red * cura;
-    g     += green * cura;
-    b     += blue * cura;
-    w     += FColors[n].Weight;
+    IncF(a, cura);
+    IncF(r, red * cura);
+    IncF(g, green * cura);
+    IncF(b, blue * cura);
+    Inc(w, FColors[n].Weight);
     if w >= wantedWeight then break;
   end;
   if w = 0 then
@@ -1705,11 +1705,11 @@ begin
   with FColors[n].Color do
   begin
     cura := (alpha / 255)*FColors[n].Weight;
-    a     += cura;
-    r     += red * cura;
-    g     += green * cura;
-    b     += blue * cura;
-    w     += FColors[n].Weight;
+    IncF(a, cura);
+    IncF(r, red * cura);
+    IncF(g, green * cura);
+    IncF(b, blue * cura);
+    Inc(w, FColors[n].Weight);
     if w >= wantedWeight then break;
   end;
   if w = 0 then

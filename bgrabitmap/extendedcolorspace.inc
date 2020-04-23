@@ -997,7 +997,7 @@ begin
         result.hue := 240.0 + 60.0 * (red - green) / Delta;
 
       if result.hue < 0.0 then
-        result.hue += 360.0;
+        IncF(result.hue, 360.0);
     end;
     result.alpha := alpha;
   end;
@@ -1256,8 +1256,8 @@ begin
         result.hue := 2 + (blue - red) / d
       else
         result.hue := 4 + (red - green) / d;
-      if result.hue < 0 then result.hue += 6;
-      result.hue *= 60;
+      if result.hue < 0 then IncF(result.hue, 6);
+      result.hue := result.hue * 60;
     end;
     result.alpha := alpha;
   end;
@@ -1340,15 +1340,15 @@ var isEqualEnergy: boolean;
       begin
         factor := 1;
         if SpectralLocus[i].W-2.5 < fromWavelen then
-          factor -= (fromWavelen - (SpectralLocus[i].W-2.5))/5;
+          DecF(factor, (fromWavelen - (SpectralLocus[i].W-2.5))/5);
         if SpectralLocus[i].W+2.5 > toWavelen then
-          factor -= ((SpectralLocus[i].W+2.5) - toWavelen)/5;
+          DecF(factor, ((SpectralLocus[i].W+2.5) - toWavelen)/5);
         if factor > 0 then
         begin
           ill := GetIlluminantSpectrum(i);
-          result.X += SpectralLocus[i].X*factor*ill;
-          result.Y += SpectralLocus[i].Y*factor*ill;
-          result.Z += SpectralLocus[i].Z*factor*ill;
+          IncF(result.X, SpectralLocus[i].X*factor*ill);
+          IncF(result.Y, SpectralLocus[i].Y*factor*ill);
+          IncF(result.Z, SpectralLocus[i].Z*factor*ill);
         end;
       end;
   end;
@@ -1372,9 +1372,9 @@ begin
   for i := 0 to high(SpectralLocus) do
   begin
     ill := GetIlluminantSpectrum(i);
-    totalXYZ.X += SpectralLocus[i].X*ill;
-    totalXYZ.Y += SpectralLocus[i].Y*ill;
-    totalXYZ.Z += SpectralLocus[i].Z*ill;
+    IncF(totalXYZ.X, SpectralLocus[i].X*ill);
+    IncF(totalXYZ.Y, SpectralLocus[i].Y*ill);
+    IncF(totalXYZ.Z, SpectralLocus[i].Z*ill);
   end;
 
   minWavelen := SpectralLocus[0].W;
@@ -1391,9 +1391,9 @@ begin
     IncludeWavelength(minWavelen-2.5, wavelen2);
   end;
 
-  result.X *= fromRefWhite^.X/totalXYZ.X * reflectance;
-  result.Y *= fromRefWhite^.Y/totalXYZ.Y * reflectance;
-  result.Z *= fromRefWhite^.Z/totalXYZ.Z * reflectance;
+  result.X := result.X * fromRefWhite^.X/totalXYZ.X * reflectance;
+  result.Y := result.Y * fromRefWhite^.Y/totalXYZ.Y * reflectance;
+  result.Z := result.Z * fromRefWhite^.Z/totalXYZ.Z * reflectance;
   result.ChromaticAdapt(fromRefWhite^, GetReferenceWhiteIndirect^);
 end;
 
@@ -1417,9 +1417,9 @@ var
 begin
   if (AFrom.L=ATo.L) and (AFrom.M=ATo.M) and (AFrom.S=ATo.S) then exit;
   XYZToLMS(X,Y,Z, L,M,S);
-  L *= ATo.L/AFrom.L;
-  M *= ATo.M/AFrom.M;
-  S *= ATo.S/AFrom.S;
+  L := L * ATo.L/AFrom.L;
+  M := M * ATo.M/AFrom.M;
+  S := S * ATo.S/AFrom.S;
   LMSToXYZ(L,M,S, X,Y,Z);
 end;
 

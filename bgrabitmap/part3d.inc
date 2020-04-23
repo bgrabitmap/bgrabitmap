@@ -442,7 +442,7 @@ end;
 procedure TBGRAPart3D.Scale(size: TPoint3D; Before: boolean = true);
 begin
   if Before then
-    FMatrix *= MatrixScale3D(size)
+    FMatrix := FMatrix * MatrixScale3D(size)
   else
     FMatrix := MatrixScale3D(size)*FMatrix;
 end;
@@ -465,7 +465,7 @@ end;
 procedure TBGRAPart3D.RotateXRad(angle: single; Before: boolean = true);
 begin
   if Before then
-    FMatrix *= MatrixRotateX(angle)
+    FMatrix := FMatrix * MatrixRotateX(angle)
   else
     FMatrix := MatrixRotateX(angle) * FMatrix;
 end;
@@ -473,7 +473,7 @@ end;
 procedure TBGRAPart3D.RotateYRad(angle: single; Before: boolean = true);
 begin
   if Before then
-    FMatrix *= MatrixRotateY(angle)
+    FMatrix := FMatrix * MatrixRotateY(angle)
   else
     FMatrix := MatrixRotateY(angle) * FMatrix;
 end;
@@ -481,7 +481,7 @@ end;
 procedure TBGRAPart3D.RotateZRad(angle: single; Before: boolean = true);
 begin
   if Before then
-    FMatrix *= MatrixRotateZ(angle)
+    FMatrix := FMatrix * MatrixRotateZ(angle)
   else
     FMatrix := MatrixRotateZ(angle) * FMatrix;
 end;
@@ -544,7 +544,7 @@ end;
 procedure TBGRAPart3D.Translate(ofs: TPoint3D; Before: boolean = true);
 begin
   if Before then
-    FMatrix *= MatrixTranslation3D(ofs)
+    FMatrix := FMatrix * MatrixTranslation3D(ofs)
   else
     FMatrix := MatrixTranslation3D(ofs)*FMatrix;
 end;

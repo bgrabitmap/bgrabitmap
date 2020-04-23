@@ -1110,11 +1110,11 @@ begin
         begin
           cBorder := psrc^;
           Inc(psrc);
-          rSum += cBorder.red * cBorder.alpha * factVert1;
-          gSum += cBorder.green * cBorder.alpha * factVert1;
-          bSum += cBorder.blue * cBorder.alpha * factVert1;
-          aSum += cBorder.alpha * factVert1;
-          Sum  += factVert1;
+          IncF(rSum, cBorder.red * cBorder.alpha * factVert1);
+          IncF(gSum, cBorder.green * cBorder.alpha * factVert1);
+          IncF(bSum, cBorder.blue * cBorder.alpha * factVert1);
+          IncF(aSum, cBorder.alpha * factVert1);
+          IncF(Sum, factVert1);
         end;
 
         if (factVert2 <> 0) and (iysrc2 < bmp.Height) then
@@ -1124,11 +1124,11 @@ begin
           begin
             cBorder := psrc^;
             Inc(psrc);
-            rSum += cBorder.red * cBorder.alpha * factVert2;
-            gSum += cBorder.green * cBorder.alpha * factVert2;
-            bSum += cBorder.blue * cBorder.alpha * factVert2;
-            aSum += cBorder.alpha * factVert2;
-            Sum  += factVert2;
+            IncF(rSum, cBorder.red * cBorder.alpha * factVert2);
+            IncF(gSum, cBorder.green * cBorder.alpha * factVert2);
+            IncF(bSum, cBorder.blue * cBorder.alpha * factVert2);
+            IncF(aSum, cBorder.alpha * factVert2);
+            IncF(Sum, factVert2);
           end;
         end;
       end;
@@ -1140,11 +1140,11 @@ begin
         begin
           cBorder := psrc^;
           Inc(psrc, lineDelta);
-          rSum += cBorder.red * cBorder.alpha * factHoriz1;
-          gSum += cBorder.green * cBorder.alpha * factHoriz1;
-          bSum += cBorder.blue * cBorder.alpha * factHoriz1;
-          aSum += cBorder.alpha * factHoriz1;
-          Sum  += factHoriz1;
+          IncF(rSum, cBorder.red * cBorder.alpha * factHoriz1);
+          IncF(gSum, cBorder.green * cBorder.alpha * factHoriz1);
+          IncF(bSum, cBorder.blue * cBorder.alpha * factHoriz1);
+          IncF(aSum, cBorder.alpha * factHoriz1);
+          IncF(Sum, factHoriz1);
         end;
 
         if (factHoriz2 <> 0) and (ixsrc2 < bmp.Width) then
@@ -1154,11 +1154,11 @@ begin
           begin
             cBorder := psrc^;
             Inc(psrc, lineDelta);
-            rSum += cBorder.red * cBorder.alpha * factHoriz2;
-            gSum += cBorder.green * cBorder.alpha * factHoriz2;
-            bSum += cBorder.blue * cBorder.alpha * factHoriz2;
-            aSum += cBorder.alpha * factHoriz2;
-            Sum  += factHoriz2;
+            IncF(rSum, cBorder.red * cBorder.alpha * factHoriz2);
+            IncF(gSum, cBorder.green * cBorder.alpha * factHoriz2);
+            IncF(bSum, cBorder.blue * cBorder.alpha * factHoriz2);
+            IncF(aSum, cBorder.alpha * factHoriz2);
+            IncF(Sum, factHoriz2);
           end;
         end;
       end;
@@ -1172,11 +1172,11 @@ begin
           for xb2 := ixsrc1p1 to ixsrc2m1 do
           begin
             cFull := psrc^;
-            rSum  += cFull.red * cFull.alpha;
-            gSum  += cFull.green * cFull.alpha;
-            bSum  += cFull.blue * cFull.alpha;
-            aSum  += cFull.alpha;
-            Sum   += 1;
+            IncF(rSum, cFull.red * cFull.alpha);
+            IncF(gSum, cFull.green * cFull.alpha);
+            IncF(bSum, cFull.blue * cFull.alpha);
+            IncF(aSum, cFull.alpha);
+            IncF(Sum, 1);
             Inc(psrc);
           end;
           Inc(psrc, delta);
@@ -1483,10 +1483,10 @@ begin
         c := (scanlinesSrc[clusterY[yc].Pos]+xb)^;
         w := clusterY[yc].Weight;
         wa := w * c.alpha;
-        sumA += wa;
-        sumR += c.red * wa;
-        sumG += c.green * wa;
-        sumB += c.blue * wa;
+        IncF(sumA, wa);
+        IncF(sumR, c.red * wa);
+        IncF(sumG, c.green * wa);
+        IncF(sumB, c.blue * wa);
       end;
     end;
 
@@ -1503,10 +1503,10 @@ begin
         w := clusterX[xc].Weight;
         with verticalSum[ClusterX[xc].Pos - MapXLoPos] do
         begin
-          sum.sumA += sumA*w;
-          sum.sumR += sumR*w;
-          sum.sumG += sumG*w;
-          sum.sumB += sumB*w;
+          IncF(sum.sumA, sumA*w);
+          IncF(sum.sumR, sumR*w);
+          IncF(sum.sumG, sumG*w);
+          IncF(sum.sumB, sumB*w);
         end;
       end;
 

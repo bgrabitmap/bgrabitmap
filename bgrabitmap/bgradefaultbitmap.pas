@@ -1944,7 +1944,7 @@ begin
     while not MulticharsEndOfString do
     begin
       GlyphGetNext;
-      textLen += ALetterSpacing + currentGlyphWidth;
+      IncF(textLen, ALetterSpacing + currentGlyphWidth);
     end;
     case AAlign of
       taCenter: ACursor.MoveBackward(textLen*0.5);
@@ -4083,10 +4083,10 @@ begin
   for n := NbPixels - 1 downto 0 do
   begin
     alpha := p^.alpha / 255;
-    sum   += alpha;
-    r     += p^.red * alpha;
-    g     += p^.green * alpha;
-    b     += p^.blue * alpha;
+    incF(sum, alpha);
+    incF(r, p^.red * alpha);
+    incF(g, p^.green * alpha);
+    incF(b, p^.blue * alpha);
     Inc(p);
   end;
   if sum = 0 then

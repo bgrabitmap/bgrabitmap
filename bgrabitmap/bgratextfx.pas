@@ -215,19 +215,19 @@ begin
 
       if yb < 2 then
       begin
-        newCenter += parts[yb].Height;
-        prevCenter += lines[yb]-fromy;
+        IncF(newCenter, parts[yb].Height);
+        IncF(prevCenter, lines[yb]-fromy);
       end else
       if yb = 2 then
       begin
-        newCenter += parts[yb].Height/2;
-        prevCenter += (lines[yb]-fromy)/2;
+        IncF(newCenter, parts[yb].Height/2);
+        IncF(prevCenter, (lines[yb]-fromy)/2);
       end;
     end else
       parts[yb] := nil;
   end;
 
-  prevCenter /= FontAntialiasingLevel;
+  prevCenter := prevCenter / FontAntialiasingLevel;
   diffCenter := prevCenter-newCenter;
   y := round( yf + diffCenter );
 
@@ -488,16 +488,16 @@ procedure TBGRATextEffectFontRenderer.InternalTextOutAngle(
       else
       begin
         boundsF := p.GetBounds;
-        boundsF.Left -= 1;
-        boundsF.Top -= 1;
-        boundsF.Right += 1;
-        boundsF.Bottom += 1;
+        DecF(boundsF.Left, 1);
+        DecF(boundsF.Top, 1);
+        IncF(boundsF.Right, 1);
+        IncF(boundsF.Bottom, 1);
         if ShadowActuallyVisible then
         begin
-          boundsF.Left -= ShadowRadius;
-          boundsF.Top -= ShadowRadius;
-          boundsF.Right += ShadowRadius;
-          boundsF.Bottom += ShadowRadius;
+          DecF(boundsF.Left, ShadowRadius);
+          DecF(boundsF.Top, ShadowRadius);
+          IncF(boundsF.Right, ShadowRadius);
+          IncF(boundsF.Bottom, ShadowRadius);
         end;
         boundsF := TRectF.Intersect(boundsF, RectF(0,0,ADest.Width,ADest.Height));
       end;

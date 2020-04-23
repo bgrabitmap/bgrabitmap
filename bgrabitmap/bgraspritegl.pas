@@ -458,7 +458,7 @@ begin
             AValue := FrameLoopEnd+0.49
           else
           begin
-            AValue -= Trunc((AValue-(FrameLoopStart-0.5))/loopLength)*loopLength;
+            DecF(AValue, Trunc((AValue-(FrameLoopStart-0.5))/loopLength)*loopLength);
             if AValue > FrameLoopEnd+0.49 then AValue := FrameLoopStart-0.49;
             if AValue < FrameLoopStart-0.49 then AValue := FrameLoopStart-0.49;
           end;
@@ -469,7 +469,7 @@ begin
             AValue := FrameLoopStart-0.49
           else
           begin
-            AValue += Trunc((FrameLoopEnd+0.5-AValue)/loopLength)*loopLength;
+            IncF(AValue, Trunc((FrameLoopEnd+0.5-AValue)/loopLength)*loopLength);
             if AValue > FrameLoopEnd+0.49 then AValue := FrameLoopEnd+0.49;
             if AValue < FrameLoopStart-0.49 then AValue := FrameLoopEnd+0.49;
           end;

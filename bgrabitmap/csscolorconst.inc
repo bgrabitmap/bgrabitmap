@@ -453,8 +453,8 @@ begin
     if str[1]='#' then delete(str,1,1);
 
     //add alpha if missing (if you want an undefined alpha use '??' or '?')
-    if length(str)=6 then str += 'FF';
-    if length(str)=3 then str += 'F';
+    if length(str)=6 then AppendStr(str, 'FF')
+    else if length(str)=3 then AppendStr(str, 'F');
 
     //hex notation
     if length(str)=8 then
@@ -490,19 +490,19 @@ begin
       begin
         val('$'+str[1],parsedValue.red,errPos);
         if errPos <> 0 then error := true;
-        parsedValue.red *= $11;
+        parsedValue.red := parsedValue.red * $11;
       end else missingValues := true;
       if str[2] <> '?' then
       begin
         val('$'+str[2],parsedValue.green,errPos);
         if errPos <> 0 then error := true;
-        parsedValue.green *= $11;
+        parsedValue.green := parsedValue.green * $11;
       end else missingValues := true;
       if str[3] <> '?' then
       begin
         val('$'+str[3],parsedValue.blue,errPos);
         if errPos <> 0 then error := true;
-        parsedValue.blue *= $11;
+        parsedValue.blue := parsedValue.blue * $11;
       end else missingValues := true;
       if str[4] <> '?' then
       begin
@@ -512,7 +512,7 @@ begin
           error := true;
           parsedValue.alpha := 255;
         end else
-          parsedValue.alpha *= $11;
+          parsedValue.alpha := parsedValue.alpha * $11;
       end else missingValues := true;
     end else
       error := true; //string format not recognised

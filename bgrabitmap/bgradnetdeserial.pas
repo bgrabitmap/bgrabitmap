@@ -561,11 +561,11 @@ begin
   result := '[';
   for r := 1 to length(dimensions) do
   begin
-    if r <> 1 then result+=',';
-    result += inttostr(index mod dimensions[r-1]);
+    if r <> 1 then AppendStr(result, ',');
+    AppendStr(result, inttostr(index mod dimensions[r-1]));
     index := index div dimensions[r-1];
   end;
-  result += ']';
+  AppendStr(result, ']');
 end;
 
 {$hints off}
@@ -588,8 +588,8 @@ var
 begin
   Result:= DotNetTypeToString(itemType)+'[';
   for i := 2 to length(dimensions) do
-    result += ',';
-  result += ']';
+    AppendStr(result, ',');
+  AppendStr(result, ']');
 end;
 
 constructor TSerializedArray.Create(AContainer: TDotNetDeserialization; AItemType: TFieldType; ALength: longword);
@@ -614,7 +614,7 @@ begin
     for n := 0 to length(ADimensions)-1 do
     begin
       dimensions[n] := ADimensions[n];
-      nbItems *= ADimensions[n];
+      nbItems := nbItems * ADimensions[n];
     end;
   FArrayType := AArrayType;
   itemType := AItemType;
@@ -908,12 +908,12 @@ function TDotNetDeserialization.ToString: string;
       objType := TypeAsString;
       if main then
       begin
-        Result += tab + 'Object';
-        Result += ' #' + IntToStr(idObject);
+        AppendStr(Result, tab + 'Object');
+        AppendStr(Result, ' #' + IntToStr(idObject));
         if (objType = '') or (objType = expectedType) then
-          Result += ' = '
+          AppendStr(Result, ' = ')
         else
-          Result += ' As ' + objType + ' = ';
+          AppendStr(Result, ' As ' + objType + ' = ');
       end
       else
       begin
@@ -922,7 +922,7 @@ function TDotNetDeserialization.ToString: string;
         else
           Result := '(' + objType + ') ';
         if (idObject < idArrayFiller) and (refCount > 0) then
-          Result += '#' + IntToStr(idObject) + ' = ';
+          AppendStr(Result, '#' + IntToStr(idObject) + ' = ');
       end;
       if (length(objType) > 2) and (copy(objType, length(objType) - 1, 2) = '[]') then
         subExpectedType := copy(objType, 1, length(objType) - 2)
@@ -931,32 +931,32 @@ function TDotNetDeserialization.ToString: string;
 
       if not main and (objects[num] is TSerializedValue) then
       begin
-        Result += (objects[num] as TSerializedValue).ValueAsString + LineEnding;
+        AppendStr(Result, (objects[num] as TSerializedValue).ValueAsString + LineEnding);
       end
       else
       if (FieldCount = 0) then
       begin
-        Result += '{}' + LineEnding;
+        AppendStr(Result, '{}' + LineEnding);
       end
       else
       begin
-        Result += '{' + LineEnding;
+        AppendStr(Result, '{' + LineEnding);
         for j := 0 to FieldCount-1 do
         begin
-          Result += tab + '  ' + FieldName[j];
+          AppendStr(Result, tab + '  ' + FieldName[j]);
           fieldTypeStr := FieldTypeAsString[j];
           if (fieldTypeStr <> '') and (fieldTypeStr <> subExpectedType) and
             not ((subExpectedType = '') and ((fieldTypeStr = 'Int32') or
             (fieldTypeStr = 'Boolean') or (fieldTypeStr = 'Double'))) then
-            Result += ' As ' + fieldTypeStr;
-          Result   += ' = ';
+            AppendStr(Result, ' As ' + fieldTypeStr);
+          AppendStr(Result, ' = ');
           if not IsReferenceType(j) then
-            Result += FieldAsString[j] + lineending
+            AppendStr(Result, FieldAsString[j] + lineending)
           else
           begin
             try
               subId  := StrToInt64(copy(fieldAsString[j], 2, length(fieldAsString[j]) - 1));
-              if subId = 0 then result += 'null'+LineEnding else
+              if subId = 0 then AppendStr(Result, 'null'+LineEnding) else
               begin
                 begin
                   subNum := -1;
@@ -968,18 +968,18 @@ function TDotNetDeserialization.ToString: string;
                   end;
                 end;
                 if subNum = -1 then
-                  Result += '(Not found) #' + IntToStr(subId)+LineEnding
+                  AppendStr(Result, '(Not found) #' + IntToStr(subId)+LineEnding)
                 else
-                  Result += objectToString(subNum, fieldTypeStr, tab + '  ', False);
+                  AppendStr(Result, objectToString(subNum, fieldTypeStr, tab + '  ', False));
               end;
             except
-              result += '!' + fieldAsString[j]+'!' +LineEnding
+              AppendStr(Result, '!' + fieldAsString[j]+'!' +LineEnding)
             end;
           end;
         end;
-        Result += tab + '}' + LineEnding;
+        AppendStr(Result, tab + '}' + LineEnding);
         if main then
-          Result += LineEnding;
+          AppendStr(Result, LineEnding);
       end;
     end;
   end;
@@ -989,12 +989,12 @@ var
 begin
   Result := '';
   for i := 0 to high(assemblies) do
-    Result += 'Imports ' + assemblies[i].Name + LineEnding;
-  Result   += lineEnding;
+    AppendStr(Result, 'Imports ' + assemblies[i].Name + LineEnding);
+  AppendStr(Result, lineEnding);
   for i := 0 to high(objects) do
     objects[i].inToString := False;
   for i := 0 to high(objects) do
-    Result += ObjectToString(i, 'Object', '', True);
+    AppendStr(Result, ObjectToString(i, 'Object', '', True));
 end;
 
 constructor TDotNetDeserialization.Create;
@@ -1057,8 +1057,8 @@ var
     result := '';
     for r := 1 to genericArrayRank do
     begin
-      if r <> 1 then result+=',';
-      result += inttostr(index mod genericArrayDims[r-1]);
+      if r <> 1 then AppendStr(result, ',');
+      AppendStr(result, inttostr(index mod genericArrayDims[r-1]));
       index := index div genericArrayDims[r-1];
     end;
   end;
@@ -1278,7 +1278,7 @@ begin
               if arrayIndex=0 then
                 arrayCount := genericArrayDims[arrayIndex]
               else
-                arrayCount *= genericArrayDims[arrayIndex];
+                arrayCount := arrayCount * genericArrayDims[arrayIndex];
             end;
           genericArrayItemType.category := TTypeCategory(WinReadByte(Stream));
           genericArrayItemType := LoadFieldType(stream,genericArrayItemType.category);
@@ -1496,7 +1496,7 @@ begin
       result.primitiveType := TPrimitiveType(WinReadByte(stream));
       result.Name := PrimitiveTypeName(result.primitiveType);
       if result.category = ftArrayOfPrimitiveType then
-        result.Name += '[]';
+        AppendStr(result.Name, '[]');
     end;
     ftString: result.Name      := 'String';
     ftObjectType: result.Name  := 'Object';

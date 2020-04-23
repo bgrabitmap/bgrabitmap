@@ -243,12 +243,12 @@ begin
   else
   begin
     if not FPaused then
-      FTimeAccumulator += (curDate - FPrevDate) * 24 * 60 * 60 * 1000;
+      IncF(FTimeAccumulator, (curDate - FPrevDate) * 24 * 60 * 60 * 1000);
     if FTotalAnimationTime > 0 then FTimeAccumulator:= frac(FTimeAccumulator/FTotalAnimationTime)*FTotalAnimationTime;
     nextImage := FCurrentImage;
     while FTimeAccumulator > FImages[nextImage].DelayMs do
     begin
-      FTimeAccumulator -= FImages[nextImage].DelayMs;
+      DecF(FTimeAccumulator, FImages[nextImage].DelayMs);
       Inc(nextImage);
       if nextImage >= Count then
       begin
@@ -461,7 +461,7 @@ begin
   else
   begin
     acc := FTimeAccumulator;
-    if not FPaused then acc += (Now- FPrevDate) * 24 * 60 * 60 * 1000;
+    if not FPaused then IncF(acc, (Now- FPrevDate) * 24 * 60 * 60 * 1000);
     if acc >= FImages[FCurrentImage].DelayMs then
       result := 0
     else

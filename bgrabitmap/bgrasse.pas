@@ -105,16 +105,16 @@ implementation
 
 procedure TPoint3D_128.Offset(const point3D_128: TPoint3D_128);
 begin
-  self.x += point3D_128.x;
-  self.y += point3D_128.y;
-  self.z += point3D_128.z;
+  self.x := self.x + point3D_128.x;
+  self.y := self.y + point3D_128.y;
+  self.z := self.z + point3D_128.z;
 end;
 
 procedure TPoint3D_128.Scale(AScale: single);
 begin
-  self.x *= AScale;
-  self.y *= AScale;
-  self.z *= AScale;
+  self.x := self.x * AScale;
+  self.y := self.y * AScale;
+  self.z := self.z * AScale;
 end;
 
 function Point3D(const point3D_128: TPoint3D_128): TPoint3D; inline; overload;
@@ -210,9 +210,9 @@ asm
 end;
 {$else}
 begin
-  dest.x += src.x;
-  dest.y += src.y;
-  dest.z += src.z;
+  dest.x := dest.x + src.x;
+  dest.y := dest.y + src.y;
+  dest.z := dest.z + src.z;
 end;
 {$endif}
 

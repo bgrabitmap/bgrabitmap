@@ -1066,11 +1066,11 @@ var
   i: Integer;
 begin
   FProjection.Zoom := Zoom;
-  FProjection.Zoom.X *= ScaleX;
-  FProjection.Zoom.Y *= ScaleY;
+  FProjection.Zoom.X := FProjection.Zoom.X * ScaleX;
+  FProjection.Zoom.Y := FProjection.Zoom.Y * ScaleY;
   FProjection.Center := ViewCenter;
-  FProjection.Center.X *= ScaleX;
-  FProjection.Center.Y *= ScaleY;
+  FProjection.Center.X := FProjection.Center.X * ScaleX;
+  FProjection.Center.Y := FProjection.Center.Y * ScaleY;
   for i := 0 to FObjectCount-1 do
     FObjects[i].ComputeWithMatrix(Camera.Matrix, FProjection);
 end;

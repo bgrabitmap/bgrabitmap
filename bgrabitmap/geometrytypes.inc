@@ -785,36 +785,38 @@ end;
 
 procedure TPointFHelper.Offset(const apt: TPointF);
 begin
-  self.x += apt.x;
-  self.y += apt.y;
+  if isEmptyPointF(self) then exit;
+  IncF(self.x, apt.x);
+  IncF(self.y, apt.y);
 end;
 
 procedure TPointFHelper.Offset(const apt: TPoint);
 begin
-  self.x += apt.x;
-  self.y += apt.y;
+  if isEmptyPointF(self) then exit;
+  IncF(self.x, apt.x);
+  IncF(self.y, apt.y);
 end;
 
 procedure TPointFHelper.Offset(dx, dy: longint);
 begin
   if isEmptyPointF(self) then exit;
-  self.x += dx;
-  self.y += dy;
+  IncF(self.x, dx);
+  IncF(self.y, dy);
 end;
 
 procedure TPointFHelper.Offset(dx, dy: single);
 begin
   if isEmptyPointF(self) then exit;
-  self.x += dx;
-  self.y += dy;
+  IncF(self.x, dx);
+  IncF(self.y, dy);
 end;
 
 procedure TPointFHelper.Scale(AScale: single);
 begin
   if not isEmptyPointF(self) then
   begin
-    self.x *= AScale;
-    self.y *= AScale;
+    self.x := self.x * AScale;
+    self.y := self.y * AScale;
   end;
 end;
 
@@ -1084,7 +1086,7 @@ end;
 function TBGRACustomGradient.GetColorAtF(position: single): TBGRAPixel;
 begin
   if position = EmptySingle then exit(BGRAPixelTransparent);
-  position *= 65536;
+  position := position * 65536;
   if position < low(integer) then
     result := GetColorAt(low(Integer))
   else if position > high(integer) then
@@ -1096,7 +1098,7 @@ end;
 function TBGRACustomGradient.GetExpandedColorAtF(position: single): TExpandedPixel;
 begin
   if position = EmptySingle then exit(BGRAPixelTransparent);
-  position *= 65536;
+  position := position * 65536;
   if position < low(integer) then
     result := GetExpandedColorAt(low(Integer))
   else if position > high(integer) then
@@ -1272,16 +1274,16 @@ end;
 
 procedure TPoint3D.Offset(const point3D: TPoint3D);
 begin
-  self.x += point3d.x;
-  self.y += point3d.y;
-  self.z += point3d.z;
+  IncF(self.x, point3d.x);
+  IncF(self.y, point3d.y);
+  IncF(self.z, point3d.z);
 end;
 
 procedure TPoint3D.Scale(AScale: single);
 begin
-  self.x *= AScale;
-  self.y *= AScale;
-  self.z *= AScale;
+  self.x := self.x * AScale;
+  self.y := self.y * AScale;
+  self.z := self.z * AScale;
 end;
 
 function Point3D(x, y, z: single): TPoint3D;
@@ -1297,9 +1299,9 @@ begin
   len := v*v;
   if len = 0 then exit;
   len := sqrt(len);
-  v.x /= len;
-  v.y /= len;
-  v.z /= len;
+  v.x := v.x / len;
+  v.y := v.y / len;
+  v.z := v.z / len;
 end;
 
 function VectLen3D(const v: TPoint3D): single;
@@ -1458,9 +1460,9 @@ var
 begin
   result := 0;
   for i := 0 to high(pts)-1 do
-    result += VectLen(pts[i+1]-pts[i]);
+    IncF(result, VectLen(pts[i+1] - pts[i]) );
   if AClosed then
-    result += VectLen(pts[0]-pts[high(pts)]);
+    incF(result, VectLen(pts[0] - pts[high(pts)]) );
 end;
 
 { Check if a PointF structure is empty or should be treated as a list separator }

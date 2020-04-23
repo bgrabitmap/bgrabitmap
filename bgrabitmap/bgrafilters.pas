@@ -852,7 +852,7 @@ begin
 
       diff := diag1.sd - diag2.sd;
       if abs(diff) < 3 then
-        diff -= (diag1.b - diag2.b) * (3 - abs(diff)) / 2;
+        DecF(diff, (diag1.b - diag2.b) * (3 - abs(diff)) / 2);
       //which diagonal to highlight?
       if abs(diff) < 0.2 then
         diff := 0;

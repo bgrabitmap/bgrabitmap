@@ -1077,10 +1077,10 @@ procedure TBGRACustomBitmap.RectangleWithin(x1, y1, x2, y2: single;
 begin
   if not APixelCenteredCoordinates then
   begin
-    x1 -= 0.5;
-    y1 -= 0.5;
-    x2 -= 0.5;
-    y2 -= 0.5;
+    DecF(x1, 0.5);
+    DecF(y1, 0.5);
+    DecF(x2, 0.5);
+    DecF(y2, 0.5);
   end;
   RectangleAntialias(x1+w*0.5,y1+w*0.5,x2-w*0.5,y2-w*0.5, ABorderColor, w, AFillColor);
 end;
@@ -1567,10 +1567,10 @@ var
   { Compute rotated coordinates }
   function Coord(relX,relY: single): TPointF;
   begin
-    relX -= imageCenterX;
-    relY -= imageCenterY;
-    result.x := relX*cosa-relY*sina+x;
-    result.y := relY*cosa+relX*sina+y;
+    DecF(relX, imageCenterX);
+    DecF(relY, imageCenterY);
+    result.x := relX*cosa - relY*sina+ x;
+    result.y := relY*cosa + relX*sina+ y;
     if ARestoreOffsetAfterRotation then
       result.Offset(imageCenterX,imageCenterY);
   end;
@@ -1594,10 +1594,10 @@ var
   { Compute rotated coordinates }
   function Coord(relX,relY: single): TPointF;
   begin
-    relX -= imageCenterX;
-    relY -= imageCenterY;
-    result.x := relX*cosa-relY*sina+x;
-    result.y := relY*cosa+relX*sina+y;
+    DecF(relX, imageCenterX);
+    DecF(relY, imageCenterY);
+    result.x := relX*cosa - relY*sina + x;
+    result.y := relY*cosa + relX*sina + y;
     if ARestoreOffsetAfterRotation then
       result.Offset(imageCenterX,imageCenterY);
   end;

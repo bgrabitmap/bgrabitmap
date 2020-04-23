@@ -285,7 +285,7 @@ function IsLargeArc(const arc: TArcDef): boolean;
 
 implementation
 
-uses Math, BGRAResample, SysUtils;
+uses Math, BGRAClasses, BGRAResample, SysUtils;
 
 type
   TStrokeData = record
@@ -970,8 +970,8 @@ begin
   if lambda > 1 then
   begin
     lambda := sqrt(lambda);
-    rx *= lambda;
-    ry *= lambda;
+    rx := rx * lambda;
+    ry := ry * lambda;
   end;
   result.radius := PointF(rx,ry);
 
@@ -1067,7 +1067,7 @@ procedure TBGRAPathCursor.MoveForwardInElement(ADistance: single);
 var segLen,rightSpace,remaining: single;
 begin
   if not NeedPolygonalApprox then exit;
-  ADistance *= FCurrentElementArcPosScale;
+  ADistance := ADistance * FCurrentElementArcPosScale;
   remaining := ADistance;
   while remaining > 0 do
   begin
@@ -1078,11 +1078,11 @@ begin
     rightSpace := segLen*(1-FCurrentSegmentPos);
     if (segLen > 0) and (remaining <= rightSpace) then
     begin
-      FCurrentSegmentPos += remaining/segLen;
+      IncF(FCurrentSegmentPos, remaining/segLen);
       exit;
     end else
     begin
-      remaining -= rightSpace;
+      DecF(remaining, rightSpace);
       if FCurrentSegment < high(FCurrentElementPoints)-1 then
       begin
         inc(FCurrentSegment);
@@ -1101,7 +1101,7 @@ var
   segLen,leftSpace,remaining: Single;
 begin
   if not NeedPolygonalApprox then exit;
-  ADistance *= FCurrentElementArcPosScale;
+  ADistance := ADistance * FCurrentElementArcPosScale;
   remaining := ADistance;
   while remaining > 0 do
   begin
@@ -1112,11 +1112,11 @@ begin
     leftSpace := segLen*FCurrentSegmentPos;
     if (segLen > 0) and (remaining <= leftSpace) then
     begin
-      FCurrentSegmentPos -= remaining/segLen;
+      DecF(FCurrentSegmentPos, remaining/segLen);
       exit;
     end else
     begin
-      remaining -= leftSpace;
+      DecF(remaining, leftSpace);
       if FCurrentSegment > 0 then
       begin
         dec(FCurrentSegment);
@@ -1159,7 +1159,7 @@ begin
     FArcPos := FCurrentElementArcPos;
     pos := FDataPos;
     while Path.GoToPreviousElement(pos) do
-      FArcPos += Path.GetElementLength(pos, FAcceptedDeviation);
+      IncF(FArcPos, Path.GetElementLength(pos, FAcceptedDeviation));
   end;
   result := FArcPos;
 end;
@@ -1442,8 +1442,8 @@ begin
     if newArcPos > FCurrentElementLength then
     begin
       step := FCurrentElementLength - FCurrentElementArcPos;
-      result += step;
-      remaining -= step;
+      IncF(result, step);
+      DecF(remaining, step);
       if not GoToNextElement(ACanJump) then
       begin
         MoveForwardInElement(step);
@@ -1460,7 +1460,7 @@ begin
     end;
   end;
   if FArcPos <> EmptySingle then
-    FArcPos += result;
+    IncF(FArcPos, result);
 end;
 
 function TBGRAPathCursor.MoveBackward(ADistance: single; ACanJump: boolean = true): single;
@@ -1487,8 +1487,8 @@ begin
     if newArcPos < 0 then
     begin
       step := FCurrentElementArcPos;
-      result += step;
-      remaining -= step;
+      IncF(result, step);
+      DecF(remaining, step);
       if not GoToPreviousElement(ACanJump) then
       begin
         MoveBackwardInElement(step);
@@ -1506,7 +1506,7 @@ begin
     end;
   end;
   if FArcPos <> EmptySingle then
-    FArcPos -= result;
+    DecF(FArcPos, result);
 end;
 
 destructor TBGRAPathCursor.Destroy;
@@ -1526,7 +1526,7 @@ begin
   pos := 0;
   result := 0;
   repeat
-    result += GetElementLength(pos, AAcceptedDeviation);
+    IncF(result, GetElementLength(pos, AAcceptedDeviation));
   until not GoToNextElement(pos);
 end;
 
@@ -1899,9 +1899,9 @@ var
 
   procedure addCommand(command: char; parameters: string);
   begin
-    if result <> '' then result += ' '; //optional whitespace
-    if command <> implicitCommand then result += command;
-    result += trim(parameters);
+    if result <> '' then AppendStr(Result, ' '); //optional whitespace
+    if command <> implicitCommand then AppendStr(Result, command);
+    AppendStr(Result, trim(parameters));
     if command = 'M' then implicitCommand:= 'L'
     else if command = 'm' then implicitCommand:= 'l'
     else if command in['z','Z'] then implicitCommand:= #0
@@ -2241,7 +2241,7 @@ var p: integer;
   begin
     result.x := parseFloat;
     result.y := parseFloat;
-    if relative and not isEmptyPointF(lastCoord) then result += lastCoord;
+    if relative and not isEmptyPointF(lastCoord) then result.Offset(lastCoord);
     if isEmptyPointF(lastCoord) then startCoord := result;
   end;
 
@@ -2299,7 +2299,7 @@ begin
         if not isEmptyPointF(lastCoord) then
         begin
           p1 := lastCoord;
-          if relative then p1.x += parseFloat
+          if relative then IncF(p1.x, parseFloat)
           else p1.x := parseFloat;
         end else
         begin
@@ -2317,7 +2317,7 @@ begin
         if not isEmptyPointF(lastCoord) then
         begin
           p1 := lastCoord;
-          if relative then p1.y += parseFloat
+          if relative then IncF(p1.y, parseFloat)
           else p1.y := parseFloat;
         end else
         begin
@@ -2650,7 +2650,7 @@ begin
       result := BGRABitmapTypes.BezierCurve(GetElementStartCoord(APos),ControlPoint1,ControlPoint2,Destination).ComputeLength(AAcceptedDeviation);
   peArc: begin
       result := VectLen(ArcStartPoint(PArcElement(elem)^) - GetElementStartCoord(APos));
-      result += PolylineLen(ComputeArc(PArcElement(elem)^, DefaultDeviation/AAcceptedDeviation));
+      IncF(result, PolylineLen(ComputeArc(PArcElement(elem)^, DefaultDeviation/AAcceptedDeviation)));
     end;
   peClosedSpline,peOpenedSpline:
     begin
@@ -2764,7 +2764,7 @@ end;
 procedure TBGRAPath.translate(x, y: single);
 begin
   OnMatrixChange;
-  FMatrix *= AffineMatrixTranslation(x,y);
+  FMatrix := FMatrix * AffineMatrixTranslation(x,y);
 end;
 
 procedure TBGRAPath.resetTransform;
@@ -2778,8 +2778,8 @@ end;
 procedure TBGRAPath.rotate(angleRadCW: single);
 begin
   OnMatrixChange;
-  FMatrix *= AffineMatrixRotationRad(-angleRadCW);
-  FAngleRadCW += angleRadCW;
+  FMatrix := FMatrix * AffineMatrixRotationRad(-angleRadCW);
+  IncF(FAngleRadCW, angleRadCW);
 end;
 
 procedure TBGRAPath.rotateDeg(angleDeg: single);
@@ -2805,8 +2805,8 @@ end;
 procedure TBGRAPath.scale(factor: single);
 begin
   OnMatrixChange;
-  FMatrix *= AffineMatrixScale(factor,factor);
-  FScale *= factor;
+  FMatrix := FMatrix * AffineMatrixScale(factor,factor);
+  FScale := FScale * factor;
 end;
 
 procedure TBGRAPath.moveTo(x, y: single);

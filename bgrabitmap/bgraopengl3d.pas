@@ -639,13 +639,13 @@ begin
         v.z := -v.z;
         num := IntToStr(AddDirectionalLight(GetColorF, v));
         str(GetMinIntensity,minInt);
-        FShaderLightingCode +=
+        AppendStr(FShaderLightingCode,
         '  L = gl_LightSource['+num+'].position.xyz; ' +
         '  Idiff += vec3(gl_LightSource['+num+'].diffuse * max(dot(NN,L), '+minInt+') ); ' +
         '  if (gl_FrontMaterial.shininess > 0) { ' +
         '    H = normalize(L + vec3(0,0,1)); ' +
         '    Ispec += gl_LightSource['+num+'].specular * pow(abs(dot(NN,H)), gl_FrontMaterial.shininess*2); ' +
-        '  } ';
+        '  } ');
       end
       else
       begin
@@ -657,7 +657,7 @@ begin
           colorMult := GetColorF * ColorF(int,int,int,1);
           num := IntToStr(AddPointLight(colorMult, v, 0,1));
           str(GetMinIntensity/int,minInt);
-          FShaderLightingCode +=
+          AppendStr(FShaderLightingCode,
         '  L = (gl_LightSource['+num+'].position.xyz - V).xyz; ' +
         '  d = length(L); ' +
         '  L *= 1/d; ' +
@@ -665,13 +665,13 @@ begin
         '  if (gl_FrontMaterial.shininess > 0) { ' +
         '    H = normalize(L + vec3(0,0,1)); ' +
         '    Ispec += gl_LightSource['+num+'].specular  * pow(abs(dot(NN,H))/(d*d), gl_FrontMaterial.shininess*2); ' +
-        '  } ';
+        '  } ');
         end;
       end;
 
     end;
   end;
-  FShaderLightingCode +=
+  AppendStr(FShaderLightingCode,
         '  color = #color# * vec4(Idiff,1) + Ispec; ' +
         '  clampedColor = clamp(color,0,1); ' +
         '  sat = dot( color - clampedColor, vec4(1) ); ' +
@@ -685,7 +685,7 @@ begin
         '    else gl_FragColor = clampedColor; ' +
         '  } ' +
         '  else gl_FragColor = clampedColor; ' +
-        '} ';
+        '} ');
 end;
 
 constructor TBGLLighting3D.Create(ACanvas: TBGLCustomCanvas; AAmbiantLight: TColorF; ALights: TList);

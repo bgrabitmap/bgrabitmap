@@ -241,12 +241,12 @@ begin
   pstr := @Text[1];
   left := length(Text);
   case AHorizontalAlign of
-  taCenter: x -= round(TextWidth(Text)/2);
-  taRightJustify: x -= TextWidth(Text);
+  taCenter: DecF(x, round(TextWidth(Text)/2));
+  taRightJustify: DecF(x, TextWidth(Text));
   end;
   case AVerticalAlign of
-  tlCenter: y -= round(TextHeight(Text)/2);
-  tlBottom: y -= TextHeight(Text)*Scale;
+  tlCenter: DecF(y, round(TextHeight(Text)/2));
+  tlBottom: DecF(y, TextHeight(Text)*Scale);
   end;
   while left > 0 do
   begin
@@ -263,7 +263,7 @@ begin
         g.Draw(x,y,Scale,FGradTopLeft,FGradTopRight,FGradBottomRight,FGradBottomLeft)
       else
         g.Draw(x,y,Scale,AColor);
-      x += (g.AdvancePx + StepX)  * Scale;
+      IncF(x, (g.AdvancePx + StepX)  * Scale);
     end;
   end;
 end;
@@ -302,12 +302,12 @@ procedure TBGLRenderedFont.DoTextRect(X, Y, Width, Height: Single;
       CurX := X;
       LineWidth := 0;
       for i := 0 to words.Count-1 do
-        LineWidth += TextWidth(words[i]);
+        IncF(LineWidth, TextWidth(words[i]));
 
       for i := 0 to words.Count-1 do
       begin
         DoTextOut(CurX+round((Width-LineWidth)/(words.Count-1)*i),LineY,words[i],AColor,taLeftJustify,tlTop);
-        CurX += TextWidth(words[i]);
+        IncF(CurX, TextWidth(words[i]));
       end;
       words.Free;
     end else
@@ -351,7 +351,7 @@ begin
   for i := 0 to lines.Count-1 do
   begin
     DoDrawTextLine(CurY,TextWidth(lines[i]),lines[i],Justify and (i<>originalNbLines-1));
-    CurY += lineHeight;
+    IncF(CurY, lineHeight);
   end;
   lines.Free;
 end;
@@ -509,8 +509,8 @@ begin
       g := GetGlyph(nextchar);
       if g <> nil then
       begin
-        if not firstChar then totalWidth += StepX*Scale;
-        totalWidth += g.AdvancePx*Scale;
+        if not firstChar then IncF(totalWidth, StepX*Scale);
+        IncF(totalWidth, g.AdvancePx*Scale);
         if not firstChar and (totalWidth > AMaxWidth) then
         begin
           ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
@@ -658,8 +658,8 @@ begin
       if firstChar then
         firstchar := false
       else
-        result += StepX * Scale;
-      result += g.AdvancePx * Scale;
+        IncF(result, StepX * Scale);
+      IncF(result, g.AdvancePx * Scale);
     end;
   end;
 end;

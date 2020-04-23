@@ -997,25 +997,25 @@ begin
   if NoPen and NoBrush then exit;
   if not ComputeEllipseC(x1,y1,x2,y2,cx,cy,rx,ry) then exit;
 
-  rx -=0.50;
-  ry -=0.50;
+  DecF(rx, 0.50);
+  DecF(ry, 0.50);
   w := Pen.ActualWidth;
 
   if AntialiasingMode = amOff then
   begin
     if not NoPen and not Odd(Pen.ActualWidth) then
     begin
-      rx -= 0.01;
-      ry -= 0.01;
+      DecF(rx, 0.01);
+      DecF(ry, 0.01);
     end;
   end;
 
   if NoPen then
   begin
-    cx -=0.5;
-    cy -=0.5;
-    rx -=0.2;
-    ry -=0.2;
+    DecF(cx, 0.5);
+    DecF(cy, 0.5);
+    DecF(rx, 0.2);
+    DecF(ry, 0.2);
     if (rx<0) or (ry<0) then exit;
   end;
 
@@ -1129,24 +1129,24 @@ begin
   end;
   if not ComputeEllipseC(x1,y1,x2,y2,cx,cy,rx,ry) then exit;
   w := Pen.ActualWidth;
-  rx -=0.50;
-  ry -=0.50;
+  DecF(rx, 0.50);
+  DecF(ry, 0.50);
 
   if AntialiasingMode = amOff then
   begin
     if not NoPen and not Odd(Pen.ActualWidth) then
     begin
-      rx -= 0.01;
-      ry -= 0.01;
+      DecF(rx, 0.01);
+      DecF(ry, 0.01);
     end;
   end;
 
   if NoPen then
   begin
-    cx -=0.5;
-    cy -=0.5;
-    rx -=0.2;
-    ry -=0.2;
+    DecF(cx, 0.5);
+    DecF(cy, 0.5);
+    DecF(rx, 0.2);
+    DecF(ry, 0.2);
     if (rx<0) or (ry<0) then exit;
   end;
 

@@ -428,14 +428,14 @@ begin
       FDefaultUnitWidth.CSSUnit := FProportionalViewSize.width.CSSUnit;
       if FDefaultUnitWidth.CSSUnit = cuCustom then
         begin
-          FDefaultUnitWidth.value /= FDefaultDpi^;
+          FDefaultUnitWidth.value := FDefaultUnitWidth.value / FDefaultDpi^;
           FDefaultUnitWidth.CSSUnit := cuInch;
         end;
       FDefaultUnitHeight.value := FProportionalViewSize.height.value/FViewBox.size.y;
       FDefaultUnitHeight.CSSUnit := FProportionalViewSize.height.CSSUnit;
       if FDefaultUnitHeight.CSSUnit = cuCustom then
         begin
-          FDefaultUnitHeight.value /= FDefaultDpi^;
+          FDefaultUnitHeight.value := FDefaultUnitHeight.value / FDefaultDpi^;
           FDefaultUnitHeight.CSSUnit := cuInch;
         end;
       FUseDefaultDPI := false;
@@ -1168,12 +1168,12 @@ begin
   sh := size.height.value*zoom;
 
   case AHorizAlign of
-    taCenter: sx += (w - sw)/2;
-    taRightJustify: sx += w - sw;
+    taCenter: IncF(sx, (w - sw)/2);
+    taRightJustify: IncF(sx, w - sw);
   end;
   case AVertAlign of
-    tlCenter: sy += (h - sh)/2;
-    tlBottom: sy += h - sh;
+    tlCenter: IncF(sy, (h - sh)/2);
+    tlBottom: IncF(sy, h - sh);
   end;
 
   result := Units.GetStretchRectF(RectF(sx,sy,sx+sw,sy+sh), preserveAspectRatio);

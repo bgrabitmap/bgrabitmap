@@ -296,7 +296,8 @@ end;
 function TBidiLayoutTree.GetCumulatedBidiPos: single;
 begin
   result := BidiPos;
-  if Assigned(Parent) then result += TBidiLayoutTree(Parent).CumulatedBidiPos;
+  if Assigned(Parent) then
+    IncF(result, TBidiLayoutTree(Parent).CumulatedBidiPos);
 end;
 
 function TBidiLayoutTree.GetMaxWidth: single;
@@ -1116,7 +1117,7 @@ var lineHeight, baseLine, tabPixelSize: single;
         FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,AWidth,pos.y+AHeight);
       end;
     end;
-    FBrokenLineCount += 1;
+    inc(FBrokenLineCount);
 
     if FAvailableWidth = EmptySingle then
     begin
@@ -1176,7 +1177,7 @@ begin
       FParagraph[paraIndex].rectF.Left := EmptySingle;
       FParagraph[paraIndex].rectF.Right := EmptySingle;
     end;
-    pos.y += paraSpacingAbove;
+    IncF(pos.y, paraSpacingAbove);
     paraRTL := ParagraphRightToLeft[paraIndex];
 
     if FAvailableWidth <> EmptySingle then
@@ -1253,7 +1254,7 @@ begin
                 PointF(0,0), '', FBrokenLineCount-1);
 
         FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
-        pos.y += FLineHeight;
+        IncF(pos.y, FLineHeight);
       end else
       //break lines
       while subStart < lineEnd do
@@ -1354,7 +1355,7 @@ begin
                 tabSection[tabSectionCount-1].endIndex:= splitIndex;
               end;
 
-              curBidiPos += nextTree.Width;
+              IncF(curBidiPos, nextTree.Width);
               if nextTree.Height > lineHeight then lineHeight := nextTree.Height;
 
               tabSectionStart := splitIndex;
@@ -1363,7 +1364,7 @@ begin
             break;
           end else
           begin
-            curBidiPos += nextTree.Width;
+            IncF(curBidiPos, nextTree.Width);
             if nextTree.Height > lineHeight then lineHeight := nextTree.Height;
             tabSectionStart := splitIndex;
           end;
@@ -1424,10 +1425,10 @@ begin
         end;
         FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
 
-        pos.y += lineHeight;
+        IncF(pos.y, lineHeight);
       end;
     end;
-    pos.y += paraSpacingBelow;
+    IncF(pos.y, paraSpacingBelow);
     FParagraph[paraIndex].rectF.Bottom := pos.y;
   end;
   ClearTabSections;
@@ -2265,14 +2266,14 @@ begin
       dy := 0;
     if odd(root.BidiLevel) then
     begin
-      APos.x -= root.Width;
+      DecF(APos.x, root.Width);
       AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
               RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, brokenLineIndex);
     end else
     begin
       AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
               RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, brokenLineIndex);
-      APos.x += root.Width;
+      IncF(APos.x, root.Width);
     end;
   end else
   begin
@@ -2284,22 +2285,22 @@ begin
         if odd(branch.BidiLevel) then
         begin
           AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
-          APos.x -= branch.Width;
+          DecF(APos.x, branch.Width);
         end else
         begin
-          APos.x -= branch.Width;
+          DecF(APos.x, branch.Width);
           AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
         end;
       end else
       begin
         if odd(branch.BidiLevel) then
         begin
-          APos.x += branch.Width;
+          IncF(APos.x, branch.Width);
           AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
         end else
         begin
           AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
-          APos.x += branch.Width;
+          IncF(APos.x, branch.Width);
         end;
       end;
     end;

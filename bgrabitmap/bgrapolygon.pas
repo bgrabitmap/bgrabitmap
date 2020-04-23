@@ -394,7 +394,7 @@ var
           if newValue < 0 then newValue := 0;
           if newValue > 256 then newValue := 256;
           pdens^ := newValue;
-          curdens += slope;
+          IncF(curdens, slope);
           inc(pdens);
         end;
       end;

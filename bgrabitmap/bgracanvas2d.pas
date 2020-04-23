@@ -75,6 +75,7 @@ type
     constructor Create(AMatrix: TAffineMatrix; AClipMask: TGrayscaleMask; AClipMaskOwned: boolean);
     function Duplicate: TBGRACanvasState2D;
     destructor Destroy; override;
+    procedure transform(AMatrix: TAffineMatrix);
     procedure SetClipMask(AClipMask: TGrayscaleMask; AOwned: boolean);
     property clipMaskReadOnly: TGrayscaleMask read FClipMask;
     property clipMaskReadWrite: TGrayscaleMask read GetClipMaskReadWrite;
@@ -748,6 +749,11 @@ begin
   inherited Destroy;
 end;
 
+procedure TBGRACanvasState2D.transform(AMatrix: TAffineMatrix);
+begin
+  matrix := matrix*AMatrix;
+end;
+
 procedure TBGRACanvasState2D.SetClipMask(AClipMask: TGrayscaleMask;
   AOwned: boolean);
 begin
@@ -932,11 +938,11 @@ begin
 
   result := '';
   if fsItalic in currentState.fontStyle then
-    result := result+'italic ';
+    AppendStr(result, 'italic ');
   if fsBold in currentState.fontStyle then
-    result += 'bold ';
-  result += FloatToStrF(currentState.fontEmHeight,ffGeneral,6,0,formats)+'px ';
-  result += currentState.fontName;
+    AppendStr(result, 'bold ');
+  AppendStr(result, FloatToStrF(currentState.fontEmHeight,ffGeneral,6,0,formats)+'px ');
+  AppendStr(result, currentState.fontName);
   result := trim(result);
 end;
 
@@ -1778,44 +1784,44 @@ end;
 
 procedure TBGRACanvas2D.scale(x, y: single);
 begin
-  currentState.matrix *= AffineMatrixScale(x,y);
+  currentState.transform(AffineMatrixScale(x,y));
 end;
 
 procedure TBGRACanvas2D.scale(factor: single);
 begin
-  currentState.matrix *= AffineMatrixScale(factor,factor);
+  currentState.transform( AffineMatrixScale(factor,factor) );
 end;
 
 procedure TBGRACanvas2D.rotate(angleRadCW: single);
 begin
-  currentState.matrix *= AffineMatrixRotationRad(-angleRadCW);
+  currentState.transform( AffineMatrixRotationRad(-angleRadCW) );
 end;
 
 procedure TBGRACanvas2D.translate(x, y: single);
 begin
   if (x = 0) and (y = 0) then exit;
-  currentState.matrix *= AffineMatrixTranslation(x,y);
+  currentState.transform( AffineMatrixTranslation(x,y) );
 end;
 
 procedure TBGRACanvas2D.skewx(angleRadCW: single);
 begin
-  currentState.matrix *= AffineMatrixSkewXRad(-angleRadCW);
+  currentState.transform( AffineMatrixSkewXRad(-angleRadCW) );
 end;
 
 procedure TBGRACanvas2D.skewy(angleRadCW: single);
 begin
-  currentState.matrix *= AffineMatrixSkewYRad(-angleRadCW);
+  currentState.transform( AffineMatrixSkewYRad(-angleRadCW) );
 end;
 
 procedure TBGRACanvas2D.transform(m11,m21, m12,m22, m13,m23: single);
 begin
-  currentState.matrix *= AffineMatrix(m11,m12,m13,
-                                      m21,m22,m23);
+  currentState.transform( AffineMatrix(m11,m12,m13,
+                                       m21,m22,m23) );
 end;
 
 procedure TBGRACanvas2D.transform(AMatrix: TAffineMatrix);
 begin
-  currentState.matrix *= AMatrix;
+  currentState.transform( AMatrix );
 end;
 
 procedure TBGRACanvas2D.setTransform(m11,m21, m12,m22, m13,m23: single);

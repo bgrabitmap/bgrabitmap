@@ -659,7 +659,7 @@ begin
   FPowerTableExp2 := 0;
   While Exponent*FPowerTableSize/16 < FSpecularIndex do
   begin
-    Exponent *= 2;
+    Exponent := Exponent * 2;
     Inc(FPowerTableExp2);
   end;
 
@@ -1060,7 +1060,7 @@ begin
     PowerTablePos := NH;
     for i := FPowerTableExp2-1 downto 0 do
       PowerTablePos := PowerTablePos*PowerTablePos;
-    PowerTablePos *= FPowerTableSize;
+    PowerTablePos := PowerTablePos * FPowerTableSize;
     {$ENDIF}
     PowerTableIPos := round(PowerTablePos+0.5);
     PowerTableFPos := PowerTablePos-PowerTableIPos;
@@ -1068,23 +1068,23 @@ begin
   end; //faster than NnH := exp(FSpecularIndex*ln(NH)); !
 
   if FAutoDiffuseColor then
-    Context^.diffuseColor += ALightColor*round(DiffuseIntensity*65536)
+    Context^.diffuseColor := Context^.diffuseColor + ALightColor*round(DiffuseIntensity*65536)
   else
-    Context^.diffuseColor += ALightColor*FDiffuseColorInt*round(DiffuseIntensity*65536);
+    Context^.diffuseColor := Context^.diffuseColor + ALightColor*FDiffuseColorInt*round(DiffuseIntensity*65536);
 
   if FAutoSpecularColor then
-    Context^.specularColor += ALightColor*round(SpecularIntensity* NnH*65536)
+    Context^.specularColor := Context^.specularColor + ALightColor*round(SpecularIntensity* NnH*65536)
   else
-    Context^.specularColor += ALightColor*FSpecularColorInt*round(SpecularIntensity* NnH*65536);
+    Context^.specularColor := Context^.specularColor + ALightColor*FSpecularColorInt*round(SpecularIntensity* NnH*65536);
 end;
 
 procedure TBGRAMaterial3D.ComputeDiffuseColor(Context: PSceneLightingContext;
   const DiffuseIntensity: single; const ALightColor: TColorInt65536);
 begin
   if FAutoDiffuseColor then
-    Context^.diffuseColor += ALightColor*round(DiffuseIntensity*65536)
+    Context^.diffuseColor := Context^.diffuseColor + ALightColor*round(DiffuseIntensity*65536)
   else
-    Context^.diffuseColor += ALightColor*FDiffuseColorInt*round(DiffuseIntensity*65536);
+    Context^.diffuseColor := Context^.diffuseColor + ALightColor*FDiffuseColorInt*round(DiffuseIntensity*65536);
 end;
 
 procedure TBGRAMaterial3D.ComputeDiffuseLightness(

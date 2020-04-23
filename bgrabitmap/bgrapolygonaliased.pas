@@ -390,7 +390,7 @@ var
       ec.blue := round(colorPos[3]);
       ec.alpha := round(colorPos[4]);
       DrawPixelInlineWithAlphaCheck(pdest, GammaCompression(ec));
-      colorPos += colorStep;
+      colorPos := colorPos + colorStep;
       inc(pdest);
     end;
   end;

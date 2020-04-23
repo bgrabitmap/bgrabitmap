@@ -886,10 +886,10 @@ begin
     exit;
   end;
   tGlyph := PointF(0,0);
-  if AAlign in [twaTop,twaMiddle,twaBottom] then tGlyph.X -= AGlyph.Width/2;
-  if AAlign in [twaTopRight,twaRight,twaBottomRight] then tGlyph.X -= AGlyph.Width;
-  if AAlign in [twaLeft,twaMiddle,twaRight] then tGlyph.Y -= AGlyph.Height/2;
-  if AAlign in [twaBottomLeft,twaBottom,twaBottomRight] then tGlyph.Y -= AGlyph.Height;
+  if AAlign in [twaTop,twaMiddle,twaBottom] then DecF(tGlyph.X, AGlyph.Width/2);
+  if AAlign in [twaTopRight,twaRight,twaBottomRight] then DecF(tGlyph.X, AGlyph.Width);
+  if AAlign in [twaLeft,twaMiddle,twaRight] then DecF(tGlyph.Y, AGlyph.Height/2);
+  if AAlign in [twaBottomLeft,twaBottom,twaBottomRight] then DecF(tGlyph.Y, AGlyph.Height);
   result := AffineMatrixTranslation(X,Y)*TypeWriterMatrix*AffineMatrixTranslation(tGlyph.X,tGlyph.Y);
 end;
 
@@ -1155,7 +1155,7 @@ begin
   begin
     with TPointF(AData^) do
     begin
-      x += AGlyph.Width;
+      IncF(x, AGlyph.Width);
       gSizeY := AGlyph.Height;
       if gSizeY > y then y := gSizeY;
     end;

@@ -462,9 +462,9 @@ begin
   ry := (r.bottom-r.top)*0.5;
   if AHasBorder then
   begin
-    rx -= 0.5;
+    DecF(rx, 0.5);
     if rx < 0 then rx := 0;
-    ry -= 0.5;
+    DecF(ry, 0.5);
     if ry < 0 then ry := 0;
   end;
   result := true;

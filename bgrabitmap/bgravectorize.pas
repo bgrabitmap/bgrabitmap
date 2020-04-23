@@ -724,7 +724,7 @@ begin
 
   factor := AZoom;
   offset := AZoom*0.5;
-  if APixelCenteredCoordinates then Offset -= 0.5;
+  if APixelCenteredCoordinates then DecF(Offset, 0.5);
 
   if IsRectFull then
   begin
@@ -1105,7 +1105,7 @@ begin
     end;
   end;
 
-  factor /= iUnit;
+  factor := factor / iUnit;
 
   for n := 0 to nbPoints-1 do
     with points[n] do
@@ -1507,7 +1507,7 @@ begin
     FVectorizedFont.SplitText(sUTF8, AMaxWidthF, remains);
     w := FVectorizedFont.GetTextSize(sUTF8).x;
     if w > result.x then result.x := w;
-    result.y += h;
+    IncF(result.y, h);
     sUTF8 := remains;
   until remains = '';
 end;
@@ -1865,7 +1865,7 @@ begin
       g := GetGlyph(nextchar);
       if g <> nil then
       begin
-        totalWidth += g.Width*FullHeight;
+        IncF(totalWidth, g.Width*FullHeight);
         if not firstChar and (totalWidth > AMaxWidth) then
         begin
           ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
@@ -2031,8 +2031,8 @@ begin
 
     case lineAlignment of
     twaMiddle: ;
-    twaBottomLeft,twaBottomRight: lineShift -= 0.5;
-    twaTopRight,twaTopLeft : lineShift += 0.5;
+    twaBottomLeft,twaBottomRight: DecF(lineShift, 0.5);
+    twaTopRight,twaTopLeft : IncF(lineShift, 0.5);
     end;
 
     pos.Offset(step*(-lineShift));
@@ -2119,8 +2119,8 @@ begin
 
   case lineAlignment of
   twaMiddle: ;
-  twaBottomLeft, twaBottomRight: lineShift -= 0.5;
-  twaTopRight,twaTopLeft : lineShift += 0.5;
+  twaBottomLeft, twaBottomRight: DecF(lineShift, 0.5);
+  twaTopRight,twaTopLeft : IncF(lineShift, 0.5);
   end;
 
   pos.Offset(step*(-lineShift));
@@ -2181,7 +2181,7 @@ begin
   FDirectoryContent := nil;
   if FDirectory = '' then exit;
   if (length(FDirectory) > 0) and not (FDirectory[length(FDirectory)] in AllowDirectorySeparators) then
-    FDirectory += DirectorySeparator;
+    AppendStr(FDirectory, DirectorySeparator);
   if FindFirstUTF8(FDirectory +'*.glyphs', faAnyFile, SearchRec) = 0 then
   repeat
     {$PUSH}{$WARNINGS OFF}

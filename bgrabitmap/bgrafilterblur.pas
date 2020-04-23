@@ -168,6 +168,7 @@ const
   factMainY = 16;
 type
   TAccumulator = UInt64;
+{$DEFINE PARAM_USE_INC64}
 {$i blurbox.inc}
 
 procedure FilterBlurBoxByte(ASource: TCustomUniversalBitmap; ABounds: TRect; ARadiusX,ARadiusY: single;
@@ -190,6 +191,7 @@ const
 type
   TAccumulator = UInt64;
 {$DEFINE PARAM_BYTEMASK}
+{$DEFINE PARAM_USE_INC64}
 {$i blurbox.inc}
 
 procedure FilterBlurBox(ASource: TCustomUniversalBitmap; ABounds: TRect; ARadiusX,ARadiusY: single;
@@ -208,8 +210,8 @@ begin
   totalSum := (2*ceil(ARadiusX)+1)*(2*ceil(ARadiusY)+1);
   factExtraX := trunc(frac(ARadiusX+0.5/factMainX)*factMainX);
   factExtraY := trunc(frac(ARadiusY+0.5/factMainY)*factMainY);
-  if factExtraX > 0 then totalSum *= factMainX;
-  if factExtraY > 0 then totalSum *= factMainY;
+  if factExtraX > 0 then totalSum := totalSum * factMainX;
+  if factExtraY > 0 then totalSum := totalSum * factMainY;
 
   if ASource.Colorspace = TBGRAPixelColorspace then
   begin
@@ -252,6 +254,11 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
       sumR,sumG,sumB,rgbDiv,sumA,aDiv: TExtendedRowValue;
     end;
 
+  procedure IncExt(var ADest: TExtendedRowValue; ADelta: TExtendedRowValue);
+  begin
+    ADest := ADest + ADelta;
+  end;
+
   procedure AccumulatePixel(psrc: Pointer; w: NativeUInt; var sums: TRowSum; verticalWeightShift: NativeInt); inline;
   var
     c: DWord;
@@ -260,7 +267,7 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
     begin
       c := PDWord(psrc)^;
       Inc(aDiv, w);
-      w *= ((c shr TBGRAPixel_AlphaShift) and $ff);
+      w := w * ((c shr TBGRAPixel_AlphaShift) and $ff);
       inc(sumA, w);
       w := w shr verticalWeightShift;
       inc(rgbDiv, w);
@@ -276,12 +283,12 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
   begin
     with psum^ do
     begin
-      ex.sumA += TExtendedRowValue(sumA)*w;
-      ex.aDiv += TExtendedRowValue(aDiv)*w;
-      ex.sumR += TExtendedRowValue(sumR)*w;
-      ex.sumG += TExtendedRowValue(sumG)*w;
-      ex.sumB += TExtendedRowValue(sumB)*w;
-      ex.rgbDiv += TExtendedRowValue(rgbDiv)*w;
+      IncExt(ex.sumA, TExtendedRowValue(sumA)*w);
+      IncExt(ex.aDiv, TExtendedRowValue(aDiv)*w);
+      IncExt(ex.sumR, TExtendedRowValue(sumR)*w);
+      IncExt(ex.sumG, TExtendedRowValue(sumG)*w);
+      IncExt(ex.sumB, TExtendedRowValue(sumB)*w);
+      IncExt(ex.rgbDiv, TExtendedRowValue(rgbDiv)*w);
     end;
   end;
 
@@ -394,6 +401,11 @@ radiusX,radiusY: single; ADestination: TCustomUniversalBitmap; ACheckShouldStop:
       sumA,aDiv: TExtendedRowValue;
     end;
 
+  procedure IncExt(var ADest: TExtendedRowValue; ADelta: TExtendedRowValue);
+  begin
+    ADest := ADest + ADelta;
+  end;
+
   procedure AccumulatePixel(psrc: Pointer; w: NativeUInt; var sums: TRowSum; verticalWeightShift: NativeInt); inline;
   begin
     with sums do
@@ -407,8 +419,8 @@ radiusX,radiusY: single; ADestination: TCustomUniversalBitmap; ACheckShouldStop:
   begin
     with psum^ do
     begin
-      ex.sumA += TExtendedRowValue(sumA)*w;
-      ex.aDiv += TExtendedRowValue(aDiv)*w;
+      IncExt(ex.sumA, TExtendedRowValue(sumA)*w);
+      IncExt(ex.aDiv, TExtendedRowValue(aDiv)*w);
     end;
   end;
 
@@ -800,13 +812,13 @@ begin
   begin
     tempPixel := PBGRAPixel(pPix)^;
     pixMaskAlpha := maskAlpha * tempPixel.alpha;
-    sumA    += pixMaskAlpha;
-    Adiv    += maskAlpha;
+    inc(sumA, pixMaskAlpha);
+    inc(Adiv, maskAlpha);
     pixMaskAlpha := (cardinal(pixMaskAlpha)+$80000000) shr maskShift - ($80000000 shr maskShift);
-    RGBdiv  += pixMaskAlpha;
-    sumR    += NativeInt(tempPixel.red) * pixMaskAlpha;
-    sumG    += NativeInt(tempPixel.green) * pixMaskAlpha;
-    sumB    += NativeInt(tempPixel.blue) * pixMaskAlpha;
+    inc(RGBdiv, pixMaskAlpha);
+    inc(sumR, NativeInt(tempPixel.red) * pixMaskAlpha);
+    inc(sumG, NativeInt(tempPixel.green) * pixMaskAlpha);
+    inc(sumB, NativeInt(tempPixel.blue) * pixMaskAlpha);
   end;
 end;
 
@@ -881,11 +893,11 @@ begin
   begin
     tempPixel := PBGRAPixel(pPix)^;
     pixMaskAlpha := integer(maskAlpha) * tempPixel.alpha;
-    sumA    += pixMaskAlpha;
-    Adiv    += maskAlpha;
-    sumR    += integer(tempPixel.red) * pixMaskAlpha;
-    sumG    += integer(tempPixel.green) * pixMaskAlpha;
-    sumB    += integer(tempPixel.blue) * pixMaskAlpha;
+    inc(sumA, pixMaskAlpha);
+    inc(Adiv, maskAlpha);
+    inc(sumR, integer(tempPixel.red) * pixMaskAlpha);
+    inc(sumG, integer(tempPixel.green) * pixMaskAlpha);
+    inc(sumB, integer(tempPixel.blue) * pixMaskAlpha);
   end;
 end;
 
@@ -893,8 +905,8 @@ procedure FilterBlurSmallMask_AccumulateSumByte(AData: pointer; pPix: pointer; m
 begin
   with TFilterBlurSmallMask_Sum(AData^) do
   begin
-    sumA    += maskAlpha * PByte(pPix)^;
-    Adiv    += maskAlpha;
+    inc(sumA, maskAlpha * PByte(pPix)^);
+    inc(Adiv, maskAlpha);
   end;
 end;
 
@@ -998,11 +1010,11 @@ begin
   begin
     tempPixel := PBGRAPixel(pPix)^;
     pixMaskAlpha := maskAlpha * tempPixel.alpha;
-    sumA    += pixMaskAlpha;
-    Adiv    += maskAlpha;
-    sumR    += tempPixel.red * pixMaskAlpha;
-    sumG    += tempPixel.green * pixMaskAlpha;
-    sumB    += tempPixel.blue * pixMaskAlpha;
+    Inc64(sumA, pixMaskAlpha);
+    Inc64(Adiv, maskAlpha);
+    Inc64(sumR, tempPixel.red * pixMaskAlpha);
+    Inc64(sumG, tempPixel.green * pixMaskAlpha);
+    Inc64(sumB, tempPixel.blue * pixMaskAlpha);
   end;
 end;
 
@@ -1010,8 +1022,8 @@ procedure FilterBlurMask64_AccumulateSumByte(AData: pointer; pPix: pointer; mask
 begin
   with TFilterBlurMask64_Sum(AData^) do
   begin
-    sumA    += maskAlpha * PByte(pPix)^;
-    Adiv    += maskAlpha;
+    Inc64(sumA, maskAlpha * PByte(pPix)^);
+    Inc64(Adiv, maskAlpha);
   end;
 end;
 
@@ -1084,11 +1096,11 @@ begin
   begin
     tempPixel := PBGRAPixel(pPix)^;
     pixMaskAlpha := maskAlpha * tempPixel.alpha;
-    sumA    += pixMaskAlpha;
-    Adiv    += maskAlpha;
-    sumR    += tempPixel.red * pixMaskAlpha;
-    sumG    += tempPixel.green * pixMaskAlpha;
-    sumB    += tempPixel.blue * pixMaskAlpha;
+    IncF(sumA, pixMaskAlpha);
+    IncF(Adiv, maskAlpha);
+    IncF(sumR, tempPixel.red * pixMaskAlpha);
+    IncF(sumG, tempPixel.green * pixMaskAlpha);
+    IncF(sumB, tempPixel.blue * pixMaskAlpha);
   end;
 end;
 

@@ -102,20 +102,21 @@ begin
   end;
 
   accumulationFactor := (iRadiusY+2)*(iRadiusY+1) div 2 + (iRadiusY+1)*iRadiusY div 2;
-  accumulationFactor *= sqr(weightFactor);
+  accumulationFactor := accumulationFactor * sqr(weightFactor);
   verticalWeightShift := 0;
   while accumulationFactor > (high(TRegularRowValue) shr BitMargin) + 1 do
   begin
     inc(verticalWeightShift);
-    accumulationFactor *= 0.5;
+    accumulationFactor := accumulationFactor * 0.5;
   end;
   horizontalWeightShift:= 0;
-  accumulationFactor *= ((iRadiusX+2)*(iRadiusX+1) div 2 + (iRadiusX+1)*iRadiusX div 2);
-  accumulationFactor *= sqr(weightFactor);
+  accumulationFactor := accumulationFactor *
+         ((iRadiusX+2)*(iRadiusX+1) div 2 + (iRadiusX+1)*iRadiusX div 2) *
+         sqr(weightFactor);
   while accumulationFactor > (high(TRegularRowValue) shr BitMargin) + 1 do
   begin
     inc(horizontalWeightShift);
-    accumulationFactor *= 0.5;
+    accumulationFactor := accumulationFactor * 0.5;
   end;
   ComputeBlurRow;
   //current vertical sums

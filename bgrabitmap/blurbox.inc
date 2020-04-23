@@ -1,3 +1,20 @@
+procedure IncAcc(var ADest: TAccumulator; ADelta: TAccumulator); inline;
+begin
+  {$IFDEF PARAM_USE_INC64}
+  inc64(ADest, ADelta);
+  {$ELSE}
+  inc(ADest, ADelta);
+  {$ENDIF}
+end;
+procedure DecAcc(var ADest: TAccumulator; ADelta: TAccumulator); inline;
+begin
+  {$IFDEF PARAM_USE_INC64}
+  dec64(ADest, ADelta);
+  {$ELSE}
+  dec(ADest, ADelta);
+  {$ENDIF}
+end;
+
 type
   TVertical = record red,green,blue,alpha,count: TAccumulator; end;
   PVertical = ^TVertical;
@@ -32,18 +49,18 @@ var
         begin
           if yb = height then break;
           {$IFDEF PARAM_BYTEMASK}
-          pvert^.green += p^;
-          pvert^.alpha += 1;
+          IncAcc(pvert^.green, p^);
+          IncAcc(pvert^.alpha, 1);
           {$ELSE}
           with PBGRAPixel(p)^ do
           if alpha <> 0 then
           begin
             a2 := alpha;
             {$HINTS OFF}
-            pvert^.red += red * a2;
-            pvert^.green += green * a2;
-            pvert^.blue += blue * a2;
-            pvert^.alpha += a2;
+            IncAcc(pvert^.red, red * a2);
+            IncAcc(pvert^.green, green * a2);
+            IncAcc(pvert^.blue, blue * a2);
+            IncAcc(pvert^.alpha, a2);
             {$HINTS ON}
           end;
           {$ENDIF}
@@ -62,18 +79,18 @@ var
         begin
           if yb = height then break;
           {$IFDEF PARAM_BYTEMASK}
-          pvert^.green += p^ * factMainY;
-          pvert^.alpha += factMainY;
+          IncAcc(pvert^.green, p^ * factMainY);
+          IncAcc(pvert^.alpha, factMainY);
           {$ELSE}
           with PBGRAPixel(p)^ do
           if alpha <> 0 then
           begin
             a2 := alpha * factMainY;
             {$HINTS OFF}
-            pvert^.red += red * a2;
-            pvert^.green += green * a2;
-            pvert^.blue += blue * a2;
-            pvert^.alpha += a2;
+            IncAcc(pvert^.red, red * a2);
+            IncAcc(pvert^.green, green * a2);
+            IncAcc(pvert^.blue, blue * a2);
+            IncAcc(pvert^.alpha, a2);
             {$HINTS ON}
           end;
           {$ENDIF}
@@ -83,18 +100,18 @@ var
         if iRadiusY < height then
         begin
           {$IFDEF PARAM_BYTEMASK}
-          pvert^.green += p^ * factExtraY;
-          pvert^.alpha += factExtraY;
+          IncAcc(pvert^.green, p^ * factExtraY);
+          IncAcc(pvert^.alpha, factExtraY);
           {$ELSE}
           with PBGRAPixel(p)^ do
           if alpha <> 0 then
           begin
             a2 := alpha * factExtraY;
             {$HINTS OFF}
-            pvert^.red += red * a2;
-            pvert^.green += green * a2;
-            pvert^.blue += blue * a2;
-            pvert^.alpha += a2;
+            IncAcc(pvert^.red, red * a2);
+            IncAcc(pvert^.green, green * a2);
+            IncAcc(pvert^.blue, blue * a2);
+            IncAcc(pvert^.alpha, a2);
             {$HINTS ON}
           end;
           {$ENDIF}
@@ -131,17 +148,17 @@ var
         if psrc1 <> nil then
         begin
           {$IFDEF PARAM_BYTEMASK}
-          pvert^.green -= psrc1^;
-          pvert^.alpha -= 1;
+          DecAcc(pvert^.green, psrc1^);
+          DecAcc(pvert^.alpha, 1);
           {$ELSE}
           with PBGRAPixel(psrc1)^ do
           if alpha <> 0 then
           begin
             {$HINTS OFF}
-            pvert^.red -= red * alpha;
-            pvert^.green -= green * alpha;
-            pvert^.blue -= blue * alpha;
-            pvert^.alpha -= alpha;
+            DecAcc(pvert^.red, red * alpha);
+            DecAcc(pvert^.green, green * alpha);
+            DecAcc(pvert^.blue, blue * alpha);
+            DecAcc(pvert^.alpha, alpha);
             {$HINTS ON}
           end;
           {$ENDIF}
@@ -151,17 +168,17 @@ var
         if psrc2 <> nil then
         begin
           {$IFDEF PARAM_BYTEMASK}
-          pvert^.green += psrc2^;
-          pvert^.alpha += 1;
+          IncAcc(pvert^.green, psrc2^);
+          IncAcc(pvert^.alpha, 1);
           {$ELSE}
           with PBGRAPixel(psrc2)^ do
           if alpha <> 0 then
           begin
             {$HINTS OFF}
-            pvert^.red += red * alpha;
-            pvert^.green += green * alpha;
-            pvert^.blue += blue * alpha;
-            pvert^.alpha += alpha;
+            IncAcc(pvert^.red, red * alpha);
+            IncAcc(pvert^.green, green * alpha);
+            IncAcc(pvert^.blue, blue * alpha);
+            IncAcc(pvert^.alpha, alpha);
             {$HINTS ON}
           end;
           {$ENDIF}
@@ -185,18 +202,18 @@ var
         if psrc0 <> nil then
         begin
           {$IFDEF PARAM_BYTEMASK}
-          pvert^.green -= psrc0^*factExtraY;
-          pvert^.alpha -= factExtraY;
+          DecAcc(pvert^.green, psrc0^*factExtraY);
+          DecAcc(pvert^.alpha, factExtraY);
           {$ELSE}
           with PBGRAPixel(psrc0)^ do
           if alpha <> 0 then
           begin
             a2 := alpha*factExtraY;
             {$HINTS OFF}
-            pvert^.red -= red * a2;
-            pvert^.green -= green * a2;
-            pvert^.blue -= blue * a2;
-            pvert^.alpha -= a2;
+            DecAcc(pvert^.red, red * a2);
+            DecAcc(pvert^.green, green * a2);
+            DecAcc(pvert^.blue, blue * a2);
+            DecAcc(pvert^.alpha, a2);
             {$HINTS ON}
           end;
           {$ENDIF}
@@ -206,18 +223,18 @@ var
         if psrc1 <> nil then
         begin
           {$IFDEF PARAM_BYTEMASK}
-          pvert^.green -= psrc1^*(factMainY - factExtraY);
-          pvert^.alpha -= (factMainY - factExtraY);
+          DecAcc(pvert^.green, psrc1^*(factMainY - factExtraY));
+          DecAcc(pvert^.alpha, (factMainY - factExtraY));
           {$ELSE}
           with PBGRAPixel(psrc1)^ do
           if alpha <> 0 then
           begin
             a2 := alpha*(factMainY - factExtraY);
             {$HINTS OFF}
-            pvert^.red -= red * a2;
-            pvert^.green -= green * a2;
-            pvert^.blue -= blue * a2;
-            pvert^.alpha -= a2;
+            DecAcc(pvert^.red, red * a2);
+            DecAcc(pvert^.green, green * a2);
+            DecAcc(pvert^.blue, blue * a2);
+            DecAcc(pvert^.alpha, a2);
             {$HINTS ON}
           end;
           {$ENDIF}
@@ -227,18 +244,18 @@ var
         if psrc2 <> nil then
         begin
           {$IFDEF PARAM_BYTEMASK}
-          pvert^.green += psrc2^*(factMainY - factExtraY);
-          pvert^.alpha += (factMainY - factExtraY);
+          IncAcc(pvert^.green, psrc2^*(factMainY - factExtraY));
+          IncAcc(pvert^.alpha, (factMainY - factExtraY));
           {$ELSE}
           with PBGRAPixel(psrc2)^ do
           if alpha <> 0 then
           begin
             a2 := alpha*(factMainY - factExtraY);
             {$HINTS OFF}
-            pvert^.red += red * a2;
-            pvert^.green += green * a2;
-            pvert^.blue += blue * a2;
-            pvert^.alpha += a2;
+            IncAcc(pvert^.red, red * a2);
+            IncAcc(pvert^.green, green * a2);
+            IncAcc(pvert^.blue, blue * a2);
+            IncAcc(pvert^.alpha, a2);
             {$HINTS ON}
           end;
           {$ENDIF}
@@ -248,18 +265,18 @@ var
         if psrc3 <> nil then
         begin
           {$IFDEF PARAM_BYTEMASK}
-          pvert^.green += psrc3^*factExtraY;
-          pvert^.alpha += factExtraY;
+          IncAcc(pvert^.green, psrc3^*factExtraY);
+          IncAcc(pvert^.alpha, factExtraY);
           {$ELSE}
           with PBGRAPixel(psrc3)^ do
           if alpha <> 0 then
           begin
             a2 := alpha*factExtraY;
             {$HINTS OFF}
-            pvert^.red += red * a2;
-            pvert^.green += green * a2;
-            pvert^.blue += blue * a2;
-            pvert^.alpha += a2;
+            IncAcc(pvert^.red, red * a2);
+            IncAcc(pvert^.green, green * a2);
+            IncAcc(pvert^.blue, blue * a2);
+            IncAcc(pvert^.alpha, a2);
             {$HINTS ON}
           end;
           {$ENDIF}
@@ -296,11 +313,11 @@ var
       for xb := 0 to iRadiusX-1 do
       begin
         if xb = width then break;
-        sumRed += pvert^.red;
-        sumGreen += pvert^.green;
-        sumBlue += pvert^.blue;
-        sumAlpha += pvert^.alpha;
-        sumCount += pvert^.count;
+        IncAcc(sumRed, pvert^.red);
+        IncAcc(sumGreen, pvert^.green);
+        IncAcc(sumBlue, pvert^.blue);
+        IncAcc(sumAlpha, pvert^.alpha);
+        IncAcc(sumCount, pvert^.count);
         inc(pvert);
       end;
       if factExtraX <> 0 then
@@ -315,35 +332,35 @@ var
           if xdest-iRadiusX-1 >= 0 then
           begin
             pvert := verticals+(xdest-iRadiusX-1);
-            sumRed -= pvert^.red;
-            sumGreen -= pvert^.green;
-            sumBlue -= pvert^.blue;
-            sumAlpha -= pvert^.alpha;
-            sumCount -= pvert^.count;
+            DecAcc(sumRed, pvert^.red);
+            DecAcc(sumGreen, pvert^.green);
+            DecAcc(sumBlue, pvert^.blue);
+            DecAcc(sumAlpha, pvert^.alpha);
+            DecAcc(sumCount, pvert^.count);
 
-            sumRed2 += pvert^.red;
-            sumGreen2 += pvert^.green;
-            sumBlue2 += pvert^.blue;
-            sumAlpha2 += pvert^.alpha;
-            sumCount2 += pvert^.count;
+            IncAcc(sumRed2, pvert^.red);
+            IncAcc(sumGreen2, pvert^.green);
+            IncAcc(sumBlue2, pvert^.blue);
+            IncAcc(sumAlpha2, pvert^.alpha);
+            IncAcc(sumCount2, pvert^.count);
           end;
           if xdest+iRadiusX < width then
           begin
             pvert := verticals+(xdest+iRadiusX);
-            sumRed += pvert^.red;
-            sumGreen += pvert^.green;
-            sumBlue += pvert^.blue;
-            sumAlpha += pvert^.alpha;
-            sumCount += pvert^.count;
+            IncAcc(sumRed, pvert^.red);
+            IncAcc(sumGreen, pvert^.green);
+            IncAcc(sumBlue, pvert^.blue);
+            IncAcc(sumAlpha, pvert^.alpha);
+            IncAcc(sumCount, pvert^.count);
           end;
           if xdest+iRadiusX+1 < width then
           begin
             pvert := verticals+(xdest+iRadiusX+1);
-            sumRed2 += pvert^.red;
-            sumGreen2 += pvert^.green;
-            sumBlue2 += pvert^.blue;
-            sumAlpha2 += pvert^.alpha;
-            sumCount2 += pvert^.count;
+            IncAcc(sumRed2, pvert^.red);
+            IncAcc(sumGreen2, pvert^.green);
+            IncAcc(sumBlue2, pvert^.blue);
+            IncAcc(sumAlpha2, pvert^.alpha);
+            IncAcc(sumCount2, pvert^.count);
           end;
           sumAlpha3 := sumAlpha*factMainX + sumAlpha2*factExtraX;
           {$IFDEF PARAM_BYTEMASK}
@@ -378,20 +395,20 @@ var
           if xdest-iRadiusX-1 >= 0 then
           begin
             pvert := verticals+(xdest-iRadiusX-1);
-            sumRed -= pvert^.red;
-            sumGreen -= pvert^.green;
-            sumBlue -= pvert^.blue;
-            sumAlpha -= pvert^.alpha;
-            sumCount -= pvert^.count;
+            DecAcc(sumRed, pvert^.red);
+            DecAcc(sumGreen, pvert^.green);
+            DecAcc(sumBlue, pvert^.blue);
+            DecAcc(sumAlpha, pvert^.alpha);
+            DecAcc(sumCount, pvert^.count);
           end;
           if xdest+iRadiusX < width then
           begin
             pvert := verticals+(xdest+iRadiusX);
-            sumRed += pvert^.red;
-            sumGreen += pvert^.green;
-            sumBlue += pvert^.blue;
-            sumAlpha += pvert^.alpha;
-            sumCount += pvert^.count;
+            IncAcc(sumRed, pvert^.red);
+            IncAcc(sumGreen, pvert^.green);
+            IncAcc(sumBlue, pvert^.blue);
+            IncAcc(sumAlpha, pvert^.alpha);
+            IncAcc(sumCount, pvert^.count);
           end;
           {$IFDEF PARAM_BYTEMASK}
           if sumAlpha > 0 then
@@ -443,3 +460,4 @@ begin
   end;
 end;
 {$UNDEF PARAM_BYTEMASK}
+{$UNDEF PARAM_USE_INC64}

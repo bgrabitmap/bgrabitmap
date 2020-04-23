@@ -1575,12 +1575,9 @@ begin
     dmSet:
     begin
       if AOpacity <> 255 then
-          CopyPixelsWithOpacity(pdest, psource, AOpacity, copycount)
+        CopyPixelsWithOpacity(pdest, psource, AOpacity, copycount)
       else
-      begin
-        copycount *= sizeof(TBGRAPixel);
-        move(psource^, pdest^, copycount);
-      end;
+        move(psource^, pdest^, copycount * sizeof(TBGRAPixel));
     end;
     dmSetExceptTransparent:
     begin

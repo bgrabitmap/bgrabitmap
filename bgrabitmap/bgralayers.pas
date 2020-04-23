@@ -2906,7 +2906,7 @@ begin
   Result := 'LayeredBitmap' + LineEnding + LineEnding;
   for i := 0 to NbLayers - 1 do
   begin
-    Result += LineEnding + 'Layer ' + IntToStr(i) + ' : ' + LayerName[i] + LineEnding;
+    AppendStr(Result, LineEnding + 'Layer ' + IntToStr(i) + ' : ' + LayerName[i] + LineEnding);
   end;
 end;
 
