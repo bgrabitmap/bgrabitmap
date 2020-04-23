@@ -176,6 +176,7 @@ type
     function ReadVectorizedFontHeader(AStream: TStream): TBGRAVectorizedFontHeader;
     function HeaderName: string; override;
     procedure SetDirectory(const AValue: string);
+    function ComputeKerning(AIdLeft, AIdRight: string): single; override;
   public
     UnderlineDecoration,StrikeOutDecoration: boolean;
     constructor Create; overload;
@@ -2362,6 +2363,23 @@ begin
   FDirectory := Trim(AValue);
   UpdateDirectory;
   UpdateFont;
+end;
+
+function TBGRAVectorizedFont.ComputeKerning(AIdLeft, AIdRight: string): single;
+var
+  together: String;
+begin
+  if Resolution = 0 then exit(0);
+  if IsRightToLeftUTF8(AIdLeft) then
+  begin
+    if IsRightToLeftUTF8(AIdRight) then
+      together := AIdRight + AIdLeft
+    else
+      together := UTF8OverrideDirection(AIdRight + AIdLeft, true);
+  end else
+    together := AIdLeft + AIdRight;
+  result := BGRATextSize(FFont, fqSystem, together, 1).cx/Resolution
+            - Glyph[AIdLeft].Width - Glyph[AIdRight].Width;
 end;
 
 end.
