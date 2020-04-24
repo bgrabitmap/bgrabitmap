@@ -708,6 +708,7 @@ end;
 procedure TBGRALayeredBitmap.UpdateOriginalEditor(ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single);
 var
   orig: TBGRALayerCustomOriginal;
+  editMatrix: TAffineMatrix;
 begin
   orig := LayerOriginal[ALayerIndex];
 
@@ -732,10 +733,15 @@ begin
       FOriginalEditor.Focused := FEditorFocused;
       FOriginalEditor.OnFocusChanged:=@EditorFocusedChanged;
     end;
-    orig.ConfigureEditor(FOriginalEditor);
-    FOriginalEditorViewMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
-    FOriginalEditor.Matrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
-    FOriginalEditor.PointSize := APointSize;
+
+    editMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
+    if IsAffineMatrixInversible(editMatrix) then
+    begin
+      orig.ConfigureEditor(FOriginalEditor);
+      FOriginalEditorViewMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
+      FOriginalEditor.Matrix := editMatrix;
+      FOriginalEditor.PointSize := APointSize;
+    end;
   end;
 end;
 
