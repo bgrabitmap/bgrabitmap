@@ -33,7 +33,7 @@ unit BGRAPolygon;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAFillInfo, BGRAPath;
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAFillInfo, BGRAPath;
 
 procedure FillShapeAliased(bmp: TBGRACustomBitmap; shapeInfo: TBGRACustomFillInfo;
   c: TBGRAPixel; EraseMode: boolean; scan: IBGRAScanner; NonZeroWinding: boolean; drawmode: TDrawMode; AliasingIncludeBottomRight: Boolean= false);
@@ -394,7 +394,7 @@ var
           if newValue < 0 then newValue := 0;
           if newValue > 256 then newValue := 256;
           pdens^ := newValue;
-          curdens += slope;
+          IncF(curdens, slope);
           inc(pdens);
         end;
       end;
@@ -1105,7 +1105,7 @@ var
 
 type
     TCardinalSum = record
-          sumR,sumG,sumB,sumA: cardinal;
+          sumR,sumG,sumB,sumA: LongWord;
         end;
 
 var

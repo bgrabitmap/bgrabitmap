@@ -5,7 +5,7 @@ unit BGRAUnits;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes;
+  SysUtils, BGRABitmapTypes;
 
 type
   TSVGNumber = single;//double
@@ -123,7 +123,7 @@ end;
 function TCSSUnitConverter.GetFontXHeight: TFloatWithCSSUnit;
 begin
   result := FCurrentFontEmHeight;
-  result.value *= 0.5; //approximation
+  result.value := result.value * 0.5; //approximation
 end;
 
 function TCSSUnitConverter.GetDPIScaled: boolean;

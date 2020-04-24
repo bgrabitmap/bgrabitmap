@@ -5,7 +5,7 @@ unit BGRACoordPool3D;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRASSE, BGRAMatrix3D;
+  SysUtils, BGRABitmapTypes, BGRASSE, BGRAMatrix3D;
 
 type
   PBGRACoordData3D = ^TBGRACoordData3D;
@@ -24,7 +24,7 @@ type
     {0} customNormal: TPoint3D_128;
     {16} viewNormal: TPoint3D_128;
     {32} used: longbool;
-    {36} filler1,filler2,filler3: longword;
+    {36} filler1,filler2,filler3: LongWord;
   end; {48}
 
   { TBGRAGenericPool }
@@ -206,7 +206,7 @@ procedure TBGRACoordPool3D.ComputeWithMatrix(const AMatrix: TMatrix3D;
   const AProjection: TProjection3D);
 var
   P: PBGRACoordData3D;
-  I: NativeInt;
+  I: Int32or64;
 begin
   if UsedCapacity = 0 then exit;
   P := PBGRACoordData3D(FPoolData.Data);
@@ -381,7 +381,7 @@ end;
 procedure TBGRANormalPool3D.ComputeWithMatrix(const AMatrix: TMatrix3D);
 var
   P: PBGRANormalData3D;
-  I: NativeInt;
+  I: Int32or64;
 begin
   if UsedCapacity = 0 then exit;
   P := PBGRANormalData3D(FPoolData.Data);

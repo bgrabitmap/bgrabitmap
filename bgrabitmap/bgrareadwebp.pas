@@ -5,12 +5,12 @@ unit BGRAReadWebP;
 interface
 
 uses
-  Classes, SysUtils, FPImage;
+  BGRAClasses, SysUtils, FPImage;
 
 type
   TWebPHeader = record
     RIFFCode: array[1..4] of char;
-    FileSize: DWord;
+    FileSize: LongWord;
     WebPCode: array[1..4] of char;
   end;
 
@@ -56,7 +56,7 @@ var
   header: TWebPHeader;
   oldPos: Int64;
   mem, p: PByte;
-  totalSize, remain: DWord;
+  totalSize, remain: LongWord;
   toRead, w, h, x, y: integer;
   loadInto: TBGRACustomBitmap;
   pbgra: PBGRAPixel;

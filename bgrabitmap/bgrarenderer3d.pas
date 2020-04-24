@@ -7,7 +7,7 @@ interface
 uses BGRABitmapTypes,
   BGRASceneTypes, BGRASSE,
   BGRAPolygon, BGRAColorInt,
-  Classes, BGRAMatrix3D,
+  BGRAClasses, BGRAMatrix3D,
   BGRAPolygonAliased;
 
 type
@@ -213,7 +213,7 @@ end;
 
 procedure TBGRAShader3D.ComputeDiffuseLightness(
   Context: PSceneLightingContext);
-var i: NativeInt;
+var i: Int32or64;
 begin
   Context^.lightness := FAmbiantLightness;
 
@@ -226,7 +226,7 @@ begin
 end;
 
 procedure TBGRAShader3D.ComputeDiffuseLight(Context: PSceneLightingContext);
-var i: NativeInt;
+var i: Int32or64;
   m: TBGRAMaterial3D;
 begin
   m := TBGRAMaterial3D(Context^.material);
@@ -248,7 +248,7 @@ end;
 
 procedure TBGRAShader3D.ComputeDiffuseAndSpecularLight(
   Context: PSceneLightingContext);
-var i: NativeInt;
+var i: Int32or64;
   m: TBGRAMaterial3D;
 begin
   m := TBGRAMaterial3D(Context^.material);
@@ -376,7 +376,7 @@ function TBGRAShader3D.Int65536ApplyLightingWithLightness(
 var
   MaterialColor: TColorInt65536;
   m: TBGRAMaterial3D;
-  Extra: NativeInt;
+  Extra: Int32or64;
 begin
   ComputeDiffuseLightness(Context);
 
@@ -480,7 +480,7 @@ begin
   if FOptions.PerspectiveMode = pmZBuffer then
   begin
     Getmem(FZBuffer, FRenderSurface.NbPixels*sizeof(single));
-    FillDWord(FZBuffer^, FRenderSurface.NbPixels, dword(single(0)));
+    FillDWord(FZBuffer^, FRenderSurface.NbPixels, LongWord(single(0)));
   end
   else
     FZBuffer := nil;
@@ -501,7 +501,7 @@ function TBGRARenderer3D.RenderFace(var ADescription: TFaceRenderingDescription;
   AComputeCoordinate: TComputeProjectionFunc): boolean;
 
   procedure ComputeCenter;
-  var j: NativeInt;
+  var j: Int32or64;
   begin
     with ADescription do
     begin
@@ -527,7 +527,7 @@ function TBGRARenderer3D.RenderFace(var ADescription: TFaceRenderingDescription;
 
   procedure DrawFaceWithShader;
   var
-    j,k: NativeInt;
+    j,k: Int32or64;
     SameColor: boolean;
   begin
     with ADescription do
@@ -593,7 +593,7 @@ function TBGRARenderer3D.RenderFace(var ADescription: TFaceRenderingDescription;
 
   procedure ComputeShadedColors;
   var
-    j: NativeInt;
+    j: Int32or64;
   begin
     with ADescription do
     begin
@@ -616,7 +616,7 @@ function TBGRARenderer3D.RenderFace(var ADescription: TFaceRenderingDescription;
 
   procedure DrawWithMultishape;
   var shadedCenter: TBGRAPixel;
-    j,k: NativeInt;
+    j,k: Int32or64;
   begin
     with ADescription do
     begin
@@ -718,7 +718,7 @@ function TBGRARenderer3D.RenderFace(var ADescription: TFaceRenderingDescription;
   procedure DrawWithoutShader;
   var
     noLighting: Boolean;
-    j: NativeInt;
+    j: Int32or64;
   begin
     with ADescription do
     begin

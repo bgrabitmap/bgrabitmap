@@ -5,7 +5,7 @@ unit BGRACanvasGL;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRABitmapTypes,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes,
   BGRAOpenGLType, BGRATransform, BGRAPath,
   BGRASSE, BGRAMatrix3D;
 
@@ -21,14 +21,14 @@ type
 
   TBGLCustomArray = class
   protected
-    FBuffer: DWord;
+    FBuffer: LongWord;
     function GetCount: integer; virtual; abstract;
     function GetRecordSize: integer; virtual; abstract;
   public
     constructor Create(ABufferAddress: pointer; ACount: integer; ARecordSize: integer); virtual; abstract;
     property Count: integer read GetCount;
     property RecordSize: integer read GetRecordSize;
-    property Handle: DWord read FBuffer;
+    property Handle: LongWord read FBuffer;
   end;
 
   { TAttributeVariable }
@@ -36,17 +36,17 @@ type
   TAttributeVariable = object
   protected
     FOwner: TObject;
-    FAttribute: DWord;
+    FAttribute: LongWord;
     FVectorSize: integer;
     FArray: TBGLCustomArray;
     FRecordOffset: integer;
     FFloat: boolean;
-    procedure Init(AOwner: TObject; AAttribute: DWord; AVectorSize: integer;
+    procedure Init(AOwner: TObject; AAttribute: LongWord; AVectorSize: integer;
               AFloat: boolean);
   public
     property Source: TBGLCustomArray read FArray write FArray;
     property RecordOffset: integer read FRecordOffset write FRecordOffset;
-    property Handle: DWord read FAttribute;
+    property Handle: LongWord read FAttribute;
     property VectorSize: integer read FVectorSize;
     property IsFloat: boolean read FFloat;
     property Owner: TObject read FOwner;
@@ -85,16 +85,16 @@ type
     function RemoveLight(AIndex: integer): boolean; virtual; abstract;
     procedure SetSpecularIndex(AIndex: integer); virtual; abstract;
 
-    function MakeVertexShader(ASource: string): DWord; virtual; abstract;
-    function MakeFragmentShader(ASource: string): DWord; virtual; abstract;
-    function MakeShaderProgram(AVertexShader, AFragmentShader: DWord): DWord; virtual; abstract;
-    procedure DeleteShaderObject(AShader: DWord); virtual; abstract;
-    procedure DeleteShaderProgram(AProgram: DWord); virtual; abstract;
-    procedure UseProgram(AProgram: DWord); virtual; abstract;
-    function GetUniformVariable(AProgram: DWord; AName: string): DWord; virtual; abstract;
-    function GetAttribVariable(AProgram: DWord; AName: string): DWord; virtual; abstract;
-    procedure SetUniformSingle(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); virtual; abstract;
-    procedure SetUniformInteger(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); virtual; abstract;
+    function MakeVertexShader(ASource: string): LongWord; virtual; abstract;
+    function MakeFragmentShader(ASource: string): LongWord; virtual; abstract;
+    function MakeShaderProgram(AVertexShader, AFragmentShader: LongWord): LongWord; virtual; abstract;
+    procedure DeleteShaderObject(AShader: LongWord); virtual; abstract;
+    procedure DeleteShaderProgram(AProgram: LongWord); virtual; abstract;
+    procedure UseProgram(AProgram: LongWord); virtual; abstract;
+    function GetUniformVariable(AProgram: LongWord; AName: string): LongWord; virtual; abstract;
+    function GetAttribVariable(AProgram: LongWord; AName: string): LongWord; virtual; abstract;
+    procedure SetUniformSingle(AVariable: LongWord; const AValue; AElementCount, AComponentCount: integer); virtual; abstract;
+    procedure SetUniformInteger(AVariable: LongWord; const AValue; AElementCount, AComponentCount: integer); virtual; abstract;
     procedure BindAttribute(AAttribute: TAttributeVariable); virtual; abstract;
     procedure UnbindAttribute(AAttribute: TAttributeVariable); virtual; abstract;
     procedure FreeShaders;
@@ -312,7 +312,7 @@ type
 
 implementation
 
-uses Math, Types, BGRAGradientScanner;
+uses Math, BGRAGradientScanner;
 
 type
   TGLStrokeData = record
@@ -327,7 +327,7 @@ type
 
 { TAttributeVariable }
 
-procedure TAttributeVariable.Init(AOwner: TObject; AAttribute: DWord;
+procedure TAttributeVariable.Init(AOwner: TObject; AAttribute: LongWord;
   AVectorSize: integer; AFloat: boolean);
 begin
   FOwner := AOwner;
@@ -462,9 +462,9 @@ begin
   ry := (r.bottom-r.top)*0.5;
   if AHasBorder then
   begin
-    rx -= 0.5;
+    DecF(rx, 0.5);
     if rx < 0 then rx := 0;
-    ry -= 0.5;
+    DecF(ry, 0.5);
     if ry < 0 then ry := 0;
   end;
   result := true;
@@ -569,7 +569,7 @@ end;
 procedure TBGLCustomCanvas.FillTriangles(const APoints: array of TPointF;
   AColor: TBGRAPixel; APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   if (length(APoints) < 3) or (AColor.alpha = 0) then exit;
@@ -584,7 +584,7 @@ end;
 procedure TBGLCustomCanvas.FillTrianglesLinearColor(const APoints: array of TPointF;
   const AColors: array of TBGRAPixel; APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   if length(APoints) < 3 then exit;
@@ -603,7 +603,7 @@ end;
 procedure TBGLCustomCanvas.FillTrianglesLinearColor(
   const APoints: array of TPoint3D; const AColors: array of TBGRAPixel);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 3 then exit;
   if length(AColors)<>length(APoints) then
@@ -620,7 +620,7 @@ end;
 procedure TBGLCustomCanvas.FillTrianglesLinearColor(
   const APoints: array of TPoint3D_128; const AColors: array of TBGRAPixel);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 3 then exit;
   if length(AColors)<>length(APoints) then
@@ -637,7 +637,7 @@ end;
 procedure TBGLCustomCanvas.FillTrianglesLinearColor(const APoints,
   ANormals: array of TPoint3D_128; const AColors: array of TBGRAPixel);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 3 then exit;
   if length(AColors)<>length(APoints) then raise exception.Create('Length of APoints and AColors do not match');
@@ -654,7 +654,7 @@ end;
 procedure TBGLCustomCanvas.FillQuads(const APoints: array of TPointF;
   AColor: TBGRAPixel; APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   if (length(APoints) < 4) or (AColor.alpha = 0) then exit;
@@ -669,7 +669,7 @@ end;
 procedure TBGLCustomCanvas.FillQuadsLinearColor(const APoints: array of TPointF;
   const AColors: array of TBGRAPixel; APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   if length(APoints) < 4 then exit;
@@ -688,7 +688,7 @@ end;
 procedure TBGLCustomCanvas.FillQuadsLinearColor(
   const APoints: array of TPoint3D; const AColors: array of TBGRAPixel);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 4 then exit;
   if length(AColors)<>length(APoints) then
@@ -705,7 +705,7 @@ end;
 procedure TBGLCustomCanvas.FillQuadsLinearColor(
   const APoints: array of TPoint3D_128; const AColors: array of TBGRAPixel);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 4 then exit;
   if length(AColors)<>length(APoints) then
@@ -722,7 +722,7 @@ end;
 procedure TBGLCustomCanvas.FillQuadsLinearColor(const APoints,
   ANormals: array of TPoint3D_128; const AColors: array of TBGRAPixel);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 4 then exit;
   if length(AColors)<>length(APoints) then raise exception.Create('Length of APoints and AColors do not match');
@@ -745,7 +745,7 @@ end;
 procedure TBGLCustomCanvas.FillQuads(const APoints: array of TPointF;
   AColor: TColorF; APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   if (length(APoints) < 4) or (AColor[4] = 0) then exit;
@@ -761,7 +761,7 @@ procedure TBGLCustomCanvas.FillQuadsLinearColor(
   const APoints: array of TPointF; const AColors: array of TColorF;
   APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   if length(APoints) < 4 then exit;
@@ -780,7 +780,7 @@ end;
 procedure TBGLCustomCanvas.FillQuadsLinearColor(
   const APoints: array of TPoint3D; const AColors: array of TColorF);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 4 then exit;
   if length(AColors)<>length(APoints) then
@@ -797,7 +797,7 @@ end;
 procedure TBGLCustomCanvas.FillQuadsLinearColor(
   const APoints: array of TPoint3D_128; const AColors: array of TColorF);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 4 then exit;
   if length(AColors)<>length(APoints) then
@@ -814,7 +814,7 @@ end;
 procedure TBGLCustomCanvas.FillQuadsLinearColor(const APoints,
   ANormals: array of TPoint3D_128; const AColors: array of TColorF);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 4 then exit;
   if length(AColors)<>length(APoints) then raise exception.Create('Length of APoints and AColors do not match');
@@ -831,7 +831,7 @@ end;
 procedure TBGLCustomCanvas.PutPixels(const APoints: array of TPointF;
   AColor: TBGRAPixel);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) = 0 then exit;
   InternalStartBlend;
@@ -845,7 +845,7 @@ end;
 procedure TBGLCustomCanvas.PutPixels(const APoints: array of TPointF;
   const AColors: array of TBGRAPixel);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) = 0 then exit;
   InternalStartBlend;
@@ -862,7 +862,7 @@ end;
 procedure TBGLCustomCanvas.FillTrianglesFan(const APoints: array of TPointF;
   ACenterColor, ABorderColor: TBGRAPixel; APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   firstPoint: boolean;
   ofs: TPointF;
 begin
@@ -904,7 +904,7 @@ end;
 procedure TBGLCustomCanvas.FillTriangles(const APoints: array of TPointF;
   AColor: TColorF; APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   if (length(APoints) < 3) or (AColor[4] = 0) then exit;
@@ -920,7 +920,7 @@ procedure TBGLCustomCanvas.FillTrianglesLinearColor(
   const APoints: array of TPointF; const AColors: array of TColorF;
   APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   if length(APoints) < 3 then exit;
@@ -939,7 +939,7 @@ end;
 procedure TBGLCustomCanvas.FillTrianglesLinearColor(
   const APoints: array of TPoint3D; const AColors: array of TColorF);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 3 then exit;
   if length(AColors)<>length(APoints) then
@@ -956,7 +956,7 @@ end;
 procedure TBGLCustomCanvas.FillTrianglesLinearColor(
   const APoints: array of TPoint3D_128; const AColors: array of TColorF);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 3 then exit;
   if length(AColors)<>length(APoints) then
@@ -973,7 +973,7 @@ end;
 procedure TBGLCustomCanvas.FillTrianglesLinearColor(const APoints,
   ANormals: array of TPoint3D_128; const AColors: array of TColorF);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if length(APoints) < 3 then exit;
   if length(AColors)<>length(APoints) then raise exception.Create('Length of APoints and AColors do not match');
@@ -990,7 +990,7 @@ end;
 procedure TBGLCustomCanvas.FillTrianglesFan(const APoints: array of TPointF;
   ACenterColor, ABorderColor: TColorF; APixelCenteredCoordinates: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   firstPoint: boolean;
   ofs: TPointF;
 begin
@@ -1030,8 +1030,8 @@ const
   STATE_SECOND = 1; //prevPoint defined and is the first point
   STATE_AFTER = 2;  //newPoint defined and is the lastest point, prevPoint is the point before that
 var
-  i: NativeInt;
-  state: NativeInt;
+  i: Int32or64;
+  state: Int32or64;
   prevPoint,newPoint,v,ofs: TPointF;
   len: single;
 
@@ -1113,8 +1113,8 @@ const
   STATE_SECOND = 1; //prevPoint defined and is the first point
   STATE_AFTER = 2;  //newPoint defined and is the lastest point, prevPoint is the point before that
 var
-  i: NativeInt;
-  state: NativeInt;
+  i: Int32or64;
+  state: Int32or64;
   prevPoint,newPoint: TPointF;
   ofs: TPointF;
 
@@ -1177,7 +1177,7 @@ end;
 procedure TBGLCustomCanvas.FillRect(r: TRect; AScanner: IBGRAScanner);
 var
   bmp: TBGLCustomBitmap;
-  yb,bandHeight,bandY: NativeInt;
+  yb,bandHeight,bandY: Int32or64;
   tx: integer;
 begin
   SwapRect(r);
@@ -1695,7 +1695,7 @@ begin
                         PointF(Left+width,Bottom-width),PointF(Right-width,Bottom-width),
                         PointF(Right-width,Top+width),PointF(Right,Top)],color2,color2, false);
   end;
-  InflateRect(bounds,-width,-width);
+  bounds.Inflate(-width, -width);
 end;
 
 procedure TBGLCustomCanvas.PutImage(x, y: single; ATexture: IBGLTexture;

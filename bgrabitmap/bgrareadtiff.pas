@@ -47,7 +47,7 @@ unit BGRAReadTiff;
 interface
 
 uses
-  Math, Classes, SysUtils, ctypes, zinflate, zbase, FPimage, FPTiffCmn,
+  Math, BGRAClasses, SysUtils, ctypes, zinflate, zbase, FPimage, FPTiffCmn,
   BGRABitmapTypes;
 
 type
@@ -67,7 +67,7 @@ type
   TBGRAReaderTiff = class(TFPCustomImageReader)
   private
     FCheckIFDOrder: TTiffCheckIFDOrder;
-    FFirstIFDStart: DWord;
+    FFirstIFDStart: LongWord;
     FOnCreateImage: TTiffCreateCompatibleImgEvent;
     {$ifdef FPC_Debug_Image}
     FDebug: boolean;
@@ -78,32 +78,32 @@ type
     s: TStream;
     function GetImages(Index: integer): TTiffIFD;
     procedure TiffError(Msg: string);
-    procedure SetStreamPos(p: DWord);
-    function ReadTiffHeader(QuickTest: boolean; out IFDStart: DWord): boolean; // returns IFD: offset to first IFD
-    function ReadIFD(Start: DWord; IFD: TTiffIFD): DWord;// Image File Directory
+    procedure SetStreamPos(p: LongWord);
+    function ReadTiffHeader(QuickTest: boolean; out IFDStart: LongWord): boolean; // returns IFD: offset to first IFD
+    function ReadIFD(Start: LongWord; IFD: TTiffIFD): LongWord;// Image File Directory
     procedure ReadDirectoryEntry(var EntryTag: Word; IFD: TTiffIFD);
-    function ReadEntryUnsigned: DWord;
+    function ReadEntryUnsigned: LongWord;
     function ReadEntrySigned: Cint32;
     function ReadEntryRational: TTiffRational;
     function ReadEntryString: string;
     function ReadByte: Byte;
     function ReadWord: Word;
-    function ReadDWord: DWord;
-    procedure ReadValues(StreamPos: DWord;
-                         out EntryType: word; out EntryCount: DWord;
+    function ReadDWord: LongWord;
+    procedure ReadValues(StreamPos: LongWord;
+                         out EntryType: word; out EntryCount: LongWord;
                          out Buffer: Pointer; out ByteCount: PtrUInt);
-    procedure ReadShortOrLongValues(StreamPos: DWord;
-                                    out Buffer: PDWord; out Count: DWord);
-    procedure ReadShortValues(StreamPos: DWord;
-                              out Buffer: PWord; out Count: DWord);
+    procedure ReadShortOrLongValues(StreamPos: LongWord;
+                                    out Buffer: PLongWord; out Count: LongWord);
+    procedure ReadShortValues(StreamPos: LongWord;
+                              out Buffer: PWord; out Count: LongWord);
     procedure ReadImageSampleProperties(IFD: TTiffIFD; out AlphaChannel: integer; out PremultipliedAlpha: boolean;
-      out SampleCnt: DWord; out SampleBits: PWord; out SampleBitsPerPixel: DWord;
-      out PaletteCnt: DWord; out PaletteValues: PWord);
+      out SampleCnt: LongWord; out SampleBits: PWord; out SampleBitsPerPixel: LongWord;
+      out PaletteCnt: LongWord; out PaletteValues: PWord);
     procedure ReadImgValue(BitCount: Word;
-      var Run: Pointer; var BitPos: Byte; FillOrder: DWord;
+      var Run: Pointer; var BitPos: Byte; FillOrder: LongWord;
       Predictor: word; var LastValue: word; out Value: Word);
     function FixEndian(w: Word): Word; inline;
-    function FixEndian(d: DWord): DWord; inline;
+    function FixEndian(d: LongWord): LongWord; inline;
     procedure SetFPImgExtras(CurImg: TFPCustomImage; IFD: TTiffIFD);
     procedure DecodePackBits(var Buffer: Pointer; var Count: PtrInt);
     procedure DecodeLZW(var Buffer: Pointer; var Count: PtrInt);
@@ -138,15 +138,15 @@ type
     procedure ReleaseStream;
     property StartPos: int64 read fStartPos;
     property TheStream: TStream read s;
-    property FirstIFDStart: DWord read FFirstIFDStart;
+    property FirstIFDStart: LongWord read FFirstIFDStart;
   end;
 
 procedure DecompressPackBits(Buffer: Pointer; Count: PtrInt;
   out NewBuffer: Pointer; out NewCount: PtrInt);
 procedure DecompressLZW(Buffer: Pointer; Count: PtrInt;
   out NewBuffer: PByte; out NewCount: PtrInt);
-function DecompressDeflate(Compressed: PByte; CompressedCount: cardinal;
-  out Decompressed: PByte; var DecompressedCount: cardinal;
+function DecompressDeflate(Compressed: PByte; CompressedCount: LongWord;
+  out Decompressed: PByte; var DecompressedCount: LongWord;
   ErrorMsg: PAnsiString = nil): boolean;
 
 implementation
@@ -175,12 +175,12 @@ end;
 
 procedure TBGRAReaderTiff.ReadImageSampleProperties(IFD: TTiffIFD;
   out AlphaChannel: integer; out PremultipliedAlpha: boolean;
-  out SampleCnt: DWord; out SampleBits: PWord; out SampleBitsPerPixel: DWord;
-  out PaletteCnt: DWord; out PaletteValues: PWord);
+  out SampleCnt: LongWord; out SampleBits: PWord; out SampleBitsPerPixel: LongWord;
+  out PaletteCnt: LongWord; out PaletteValues: PWord);
 var
   BytesPerPixel: Word;
   i: Integer;
-  ExtraSampleCnt, RegularSampleCnt: DWord;
+  ExtraSampleCnt, RegularSampleCnt: LongWord;
   ExtraSamples: PWord;
 begin
   ReadShortValues(IFD.BitsPerSample, SampleBits, SampleCnt);
@@ -389,7 +389,7 @@ begin
 end;
 
 procedure TBGRAReaderTiff.ReadImgValue(BitCount: Word;
-  var Run: Pointer; var BitPos: Byte; FillOrder: DWord;
+  var Run: Pointer; var BitPos: Byte; FillOrder: LongWord;
   Predictor: word; var LastValue: word; out Value: Word);
 var
   BitNumber: byte;
@@ -465,7 +465,7 @@ begin
   end;
 end;
 
-procedure TBGRAReaderTiff.SetStreamPos(p: DWord);
+procedure TBGRAReaderTiff.SetStreamPos(p: LongWord);
 var
   NewPosition: int64;
 begin
@@ -508,7 +508,7 @@ end;
 procedure TBGRAReaderTiff.LoadIFDsFromStream;
 var
   i,j: Integer;
-  IFDStart: DWord;
+  IFDStart: LongWord;
   IFD: TTiffIFD;
 begin
   IFDStart:=FirstIFDStart;
@@ -558,7 +558,7 @@ begin
   Result:=ImageList.Count;
 end;
 
-function TBGRAReaderTiff.ReadTiffHeader(QuickTest: boolean; out IFDStart: DWord): boolean;
+function TBGRAReaderTiff.ReadTiffHeader(QuickTest: boolean; out IFDStart: LongWord): boolean;
 var
   ByteOrder: String;
   BigEndian: Boolean;
@@ -596,7 +596,7 @@ begin
   Result:=true;
 end;
 
-function TBGRAReaderTiff.ReadIFD(Start: DWord; IFD: TTiffIFD): DWord;
+function TBGRAReaderTiff.ReadIFD(Start: LongWord; IFD: TTiffIFD): LongWord;
 var
   Count: Word;
   i: Integer;
@@ -647,18 +647,18 @@ end;
 procedure TBGRAReaderTiff.ReadDirectoryEntry(var EntryTag: Word; IFD: TTiffIFD);
 var
   EntryType: Word;
-  EntryCount: DWord;
-  EntryStart: DWord;
+  EntryCount: LongWord;
+  EntryStart: LongWord;
   NewEntryTag: Word;
-  UValue: DWord;
+  UValue: LongWord;
   SValue: integer;
   WordBuffer: PWord;
-  Count: DWord;
+  Count: LongWord;
   i: Integer;
 
-  function GetPos: DWord;
+  function GetPos: LongWord;
   begin
-     Result:=DWord(s.Position-fStartPos-2)
+     Result:=LongWord(s.Position-fStartPos-2)
   end;
 
 begin
@@ -1414,7 +1414,7 @@ begin
   end;
 end;
 
-function TBGRAReaderTiff.ReadEntryUnsigned: DWord;
+function TBGRAReaderTiff.ReadEntryUnsigned: LongWord;
 var
   EntryCount: LongWord;
   EntryType: Word;
@@ -1535,7 +1535,7 @@ begin
   EntryCount:=ReadDWord;
   SetLength(Result,EntryCount-1);
   if EntryCount>4 then begin
-    // long string -> next 4 DWord is the offset
+    // long string -> next 4 LongWord is the offset
     EntryStart:=ReadDWord;
     SetStreamPos(EntryStart);
     s.Read(Result[1],EntryCount-1);
@@ -1559,15 +1559,15 @@ begin
   Result:=FixEndian(s.ReadWord);
 end;
 
-function TBGRAReaderTiff.ReadDWord: DWord;
+function TBGRAReaderTiff.ReadDWord: LongWord;
 begin
   Result:=FixEndian(s.ReadDWord);
 end;
 
-procedure TBGRAReaderTiff.ReadValues(StreamPos: DWord; out EntryType: word; out
-  EntryCount: DWord; out Buffer: Pointer; out ByteCount: PtrUInt);
+procedure TBGRAReaderTiff.ReadValues(StreamPos: LongWord; out EntryType: word; out
+  EntryCount: LongWord; out Buffer: Pointer; out ByteCount: PtrUInt);
 var
-  EntryStart: DWord;
+  EntryStart: LongWord;
 begin
   Buffer:=nil;
   ByteCount:=0;
@@ -1597,13 +1597,13 @@ begin
   s.Read(Buffer^,ByteCount);
 end;
 
-procedure TBGRAReaderTiff.ReadShortOrLongValues(StreamPos: DWord; out
-  Buffer: PDWord; out Count: DWord);
+procedure TBGRAReaderTiff.ReadShortOrLongValues(StreamPos: LongWord; out
+  Buffer: PLongWord; out Count: LongWord);
 var
   p: Pointer;
   ByteCount: PtrUInt;
   EntryType: word;
-  i: DWord;
+  i: LongWord;
 begin
   Buffer:=nil;
   Count:=0;
@@ -1613,7 +1613,7 @@ begin
     if Count=0 then exit;
     if EntryType=3 then begin
       // short
-      GetMem(Buffer,SizeOf(DWord)*Count);
+      GetMem(Buffer,SizeOf(LongWord)*Count);
       for i:=0 to Count-1 do
         Buffer[i]:=FixEndian(PWord(p)[i]);
     end else if EntryType=4 then begin
@@ -1622,7 +1622,7 @@ begin
       p:=nil;
       if FReverseEndian then
         for i:=0 to Count-1 do
-          Buffer[i]:=FixEndian(PDWord(Buffer)[i]);
+          Buffer[i]:=FixEndian(PLongWord(Buffer)[i]);
     end else
       TiffError('only short or long allowed');
   finally
@@ -1630,13 +1630,13 @@ begin
   end;
 end;
 
-procedure TBGRAReaderTiff.ReadShortValues(StreamPos: DWord; out Buffer: PWord;
-  out Count: DWord);
+procedure TBGRAReaderTiff.ReadShortValues(StreamPos: LongWord; out Buffer: PWord;
+  out Count: LongWord);
 var
   p: Pointer;
   ByteCount: PtrUInt;
   EntryType: word;
-  i: DWord;
+  i: LongWord;
 begin
   Buffer:=nil;
   Count:=0;
@@ -1674,14 +1674,14 @@ end;
 
 procedure TBGRAReaderTiff.LoadImageFromStream(IFD: TTiffIFD);
 var
-  SampleCnt: DWord;
+  SampleCnt: LongWord;
   SampleBits: PWord;
   ChannelValues, LastChannelValues: array of word;
   All8Bit, All16Bit: boolean;
 
   procedure CheckBitCount;
   var
-    Channel: cardinal;
+    Channel: LongWord;
   begin
     All8Bit := true;
     All16Bit := true;
@@ -1693,14 +1693,14 @@ var
   end;
 
 var
-  PaletteCnt,PaletteStride: DWord;
+  PaletteCnt,PaletteStride: LongWord;
   PaletteValues: PWord;
 
   AlphaChannel: integer;
   PremultipliedAlpha: boolean;
 
   procedure InitColor;
-  var Channel: DWord;
+  var Channel: LongWord;
   begin
     SetLength(ChannelValues, SampleCnt);
     SetLength(LastChannelValues, SampleCnt);
@@ -1776,7 +1776,7 @@ var
   end;
 
   procedure ReadNextPixelData(var Run: Pointer; var BitPos: byte);
-  var Channel: DWord;
+  var Channel: LongWord;
   begin
     for Channel := 0 to SampleCnt-1 do
       ReadImgValue(SampleBits[Channel], Run,BitPos,IFD.FillOrder,
@@ -1843,7 +1843,7 @@ var
   FPColorValue: TFPColor;
 
   procedure GetPixelAsFPColor;
-  var PaletteIndex: DWord;
+  var PaletteIndex: LongWord;
     GrayValue: Word;
     lab: TLabA;
   begin
@@ -1906,25 +1906,25 @@ var
   end;
 
 var
-  ChunkOffsets: PDWord;
-  ChunkByteCounts: PDWord;
+  ChunkOffsets: PLongWord;
+  ChunkByteCounts: PLongWord;
   Chunk: PByte;
-  ChunkCount: DWord;
-  ChunkIndex: Dword;
-  CurCount: DWord;
-  CurOffset: DWord;
+  ChunkCount: LongWord;
+  ChunkIndex: LongWord;
+  CurCount: LongWord;
+  CurOffset: LongWord;
   CurByteCnt: PtrInt;
   Run: PByte;
   BitPos: Byte;
   x, y, cx, cy, dx1,dy1, dx2,dy2, sx, sy: integer;
-  SampleBitsPerPixel: DWord;
+  SampleBitsPerPixel: LongWord;
   CurFPImg: TFPCustomImage;
   aContinue, ConvertFromLab: Boolean;
   ExpectedChunkLength: PtrInt;
   ChunkType: TTiffChunkType;
-  TilesAcross, TilesDown: DWord;
-  ChunkLeft, ChunkTop, ChunkWidth, ChunkHeight: DWord;
-  ChunkBytesPerLine: DWord;
+  TilesAcross, TilesDown: LongWord;
+  ChunkLeft, ChunkTop, ChunkWidth, ChunkHeight: LongWord;
+  ChunkBytesPerLine: LongWord;
 
   LabArray: array of TLabA;
   ConversionFromLab: TBridgedConversion;
@@ -2359,7 +2359,7 @@ begin
     result:= w;
 end;
 
-function TBGRAReaderTiff.FixEndian(d: DWord): DWord; inline;
+function TBGRAReaderTiff.FixEndian(d: LongWord): LongWord; inline;
 begin
   if FReverseEndian then
     Result:= SwapEndian(d)
@@ -2393,7 +2393,7 @@ procedure TBGRAReaderTiff.DecodeDeflate(var Buffer: Pointer; var Count: PtrInt;
   ExpectedCount: PtrInt);
 var
   NewBuffer: PByte;
-  NewCount: cardinal;
+  NewCount: LongWord;
   ErrorMsg: String;
 begin
   ErrorMsg:='';
@@ -2443,7 +2443,7 @@ end;
 
 function TBGRAReaderTiff.InternalCheck(Str: TStream): boolean;
 var
-  IFDStart: DWord;
+  IFDStart: LongWord;
 begin
   try
     s:=Str;
@@ -2569,7 +2569,7 @@ const
 var
   NewCapacity: PtrInt;
   SrcPos: PtrInt;
-  CodeBuffer: DWord;
+  CodeBuffer: LongWord;
   CodeBufferLength: byte;
   CurBitLength: byte;
   Code: Word;
@@ -2596,7 +2596,7 @@ var
       If BigEndian then
         CodeBuffer := (CodeBuffer shl 8) or PByte(Buffer)[SrcPos]
       else
-        CodeBuffer := CodeBuffer or (DWord(PByte(Buffer)[SrcPos]) shl CodeBufferLength);
+        CodeBuffer := CodeBuffer or (LongWord(PByte(Buffer)[SrcPos]) shl CodeBufferLength);
       Inc(SrcPos);
       Inc(CodeBufferLength, 8);
     end;
@@ -2788,8 +2788,8 @@ begin
   ReAllocMem(NewBuffer,NewCount);
 end;
 
-function DecompressDeflate(Compressed: PByte; CompressedCount: cardinal;
-  out Decompressed: PByte; var DecompressedCount: cardinal;
+function DecompressDeflate(Compressed: PByte; CompressedCount: LongWord;
+  out Decompressed: PByte; var DecompressedCount: LongWord;
   ErrorMsg: PAnsiString = nil): boolean;
 var
   stream : z_stream;

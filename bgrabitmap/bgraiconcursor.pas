@@ -6,7 +6,7 @@ unit BGRAIconCursor;
 interface
 
 uses
-  Classes, SysUtils, BGRAMultiFileType, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRAMultiFileType, BGRABitmapTypes;
 
 type
   { TBGRAIconCursorEntry }
@@ -262,7 +262,7 @@ begin
         end else
         begin
           tempStream.Position := 8;
-          tempStream.WriteDWord(NtoLE(dword(bmp.Height*2))); //include mask size
+          tempStream.WriteDWord(NtoLE(LongWord(bmp.Height*2))); //include mask size
           if headerSize >= 20+4 then
           begin
             tempStream.Position:= 20;
@@ -628,7 +628,7 @@ begin
             bmpXOR.SaveToStream(temp, writer);
             //write double height to include mask
             temp.Position := 22;
-            temp.WriteDWord(NtoLE(DWord(bmpXOR.Height*2)));
+            temp.WriteDWord(NtoLE(LongWord(bmpXOR.Height*2)));
             //go after the file header
             temp.Position := 14;
             //copy bitmap without header
@@ -740,9 +740,9 @@ end;
 procedure TBGRAIconCursor.SaveToStream(ADestination: TStream);
 var header: TGroupIconHeader;
   i: integer;
-  accSize: DWord;
+  accSize: LongWord;
   dir: packed array of TIconFileDirEntry;
-  contentSize: DWord;
+  contentSize: LongWord;
 begin
   if Count = 0 then
     raise exception.Create('File cannot be empty');

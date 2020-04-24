@@ -6,7 +6,7 @@ unit BGRAReadIco;
 interface
 
 uses
-  Classes, SysUtils, FPimage{$IFDEF BGRABITMAP_USE_LCL}, Graphics{$ENDIF};
+  BGRAClasses, SysUtils, FPimage{$IFDEF BGRABITMAP_USE_LCL}, Graphics{$ENDIF};
 
 type
   {$IFDEF BGRABITMAP_USE_LCL}TCustomIconClass = class of TCustomIcon;{$ENDIF}

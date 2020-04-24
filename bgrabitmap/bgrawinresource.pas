@@ -5,7 +5,7 @@ unit BGRAWinResource;
 interface
 
 uses
-  Classes, SysUtils, BGRAMultiFileType, BGRABitmapTypes, BGRAReadBMP;
+  BGRAClasses, SysUtils, BGRAMultiFileType, BGRABitmapTypes, BGRAReadBMP;
 
 const
   RT_CURSOR = 1;
@@ -43,11 +43,11 @@ type
   { TResourceInfo }
 
   TResourceInfo = object
-    DataVersion: DWord;
+    DataVersion: LongWord;
     MemoryFlags: Word;
     LanguageId: Word;
-    Version: DWord;
-    Characteristics: DWord;
+    Version: LongWord;
+    Characteristics: LongWord;
     procedure SwapIfNecessary;
   end;
 
@@ -122,7 +122,7 @@ type
     Width, Height, Colors, Reserved: byte;
     //stored in little endian
     case byte of
-    0: (Variable: DWord; ImageSize: DWord; ImageId: Word);
+    0: (Variable: LongWord; ImageSize: LongWord; ImageId: Word);
     1: (Planes, BitsPerPixel: Word);
     2: (HotSpotX, HotSpotY: Word);
   end;
@@ -130,7 +130,7 @@ type
     Width, Height, Colors, Reserved: byte;
     //stored in little endian
     case byte of
-    0: (Variable: DWord; ImageSize: DWord; ImageOffset: DWord);
+    0: (Variable: LongWord; ImageSize: LongWord; ImageOffset: LongWord);
     1: (Planes, BitsPerPixel: Word);
     2: (HotSpotX, HotSpotY: Word);
   end;
@@ -378,7 +378,7 @@ var
   fileDir: packed array of TIconFileDirEntry;
   offset, written, i: integer;
   iconEntry: TCustomResourceEntry;
-  iconEntrySize: DWord;
+  iconEntrySize: LongWord;
   iconData: TMemoryStream;
   copyCount: Int64;
   subType: TNameOrId;
@@ -639,11 +639,11 @@ begin
   result := FTypeNameOrId.Id;
 end;
 
-function GetDWord(var ASource: PByte; var ARemainingBytes: Integer): DWord;
+function GetDWord(var ASource: PByte; var ARemainingBytes: Integer): LongWord;
 begin
   if ARemainingBytes >= 4 then
   begin
-    result := LEtoN(PDWord(ASource)^);
+    result := LEtoN(PLongWord(ASource)^);
     inc(ASource, 4);
     dec(ARemainingBytes, 4);
   end else
@@ -702,7 +702,7 @@ var
   entryNameOrId: TNameOrId;
   info: TResourceInfo;
   dataStream: TMemoryStream;
-  dummy: DWord;
+  dummy: LongWord;
 begin
   result := nil;
   if AStream.Position + 16 < AStream.Size then
@@ -771,7 +771,7 @@ begin
 end;
 
 procedure TCustomResourceEntry.Serialize(ADestination: TStream);
-var zero: DWord;
+var zero: LongWord;
   padding: integer;
 begin
   SerializeHeader(ADestination);

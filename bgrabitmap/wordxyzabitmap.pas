@@ -5,7 +5,7 @@ unit WordXYZABitmap;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, UniversalDrawer;
+  BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
 
@@ -54,8 +54,8 @@ procedure WordXYZAChunkSetPixels(
     ASource: PWordXYZA; ADest: PWordXYZA;
     AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
 var
-  alphaOver: NativeUInt;
-  finalAlpha, residualAlpha, finalAlphaDiv2: NativeUInt;
+  alphaOver: UInt32or64;
+  finalAlpha, residualAlpha, finalAlphaDiv2: UInt32or64;
 begin
   if AAlpha=0 then exit;
   if AAlpha=65535 then
@@ -72,7 +72,7 @@ begin
     if AAlpha > 32768 then alphaOver := AAlpha+1 else alphaOver := AAlpha;
     while ACount > 0 do
     begin
-      residualAlpha := (ADest^.alpha*NativeUInt(65536-alphaOver)+32768) shr 16;
+      residualAlpha := (ADest^.alpha*UInt32or64(65536-alphaOver)+32768) shr 16;
       finalAlpha := residualAlpha + ((ASource^.alpha*alphaOver+32768) shr 16);
       if finalAlpha <= 0 then ADest^ := WordXYZATransparent else
       begin
@@ -80,11 +80,11 @@ begin
         finalAlphaDiv2 := finalAlpha shr 1;
         ADest^.alpha:= finalAlpha;
         ADest^.X := (ADest^.X*residualAlpha +
-                     ASource^.X*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+                     ASource^.X*UInt32or64(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
         ADest^.Y := (ADest^.Y*residualAlpha +
-                     ASource^.Y*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+                     ASource^.Y*UInt32or64(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
         ADest^.Z := (ADest^.Z*residualAlpha +
-                     ASource^.Z*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+                     ASource^.Z*UInt32or64(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
       end;
       inc(ADest);
       dec(ACount);
@@ -108,7 +108,7 @@ procedure WordXYZAChunkDrawPixels(
     ASource: PWordXYZA; ADest: PWordXYZA;
     AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
 var
-  alphaOver, srcAlphaOver, finalAlpha, finalAlphaDiv2, residualAlpha: NativeUInt;
+  alphaOver, srcAlphaOver, finalAlpha, finalAlphaDiv2, residualAlpha: UInt32or64;
 begin
   if AAlpha=0 then exit;
   if AAlpha >= 32768 then alphaOver := AAlpha+1 else alphaOver := AAlpha;
@@ -120,7 +120,7 @@ begin
     else
     begin
       if srcAlphaOver >= 32768 then inc(srcAlphaOver);
-      residualAlpha := (ADest^.alpha*NativeUInt(65536-srcAlphaOver)+32768) shr 16;
+      residualAlpha := (ADest^.alpha*UInt32or64(65536-srcAlphaOver)+32768) shr 16;
       finalAlpha := residualAlpha + srcAlphaOver;
       if finalAlpha <= 0 then ADest^ := WordXYZATransparent else
       begin
@@ -156,8 +156,8 @@ procedure WordXYZAChunkXorPixels(
     ASource: PWordXYZA; ADest: PWordXYZA;
     AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
 var
-  alphaOver: NativeUInt;
-  finalAlpha, residualAlpha, finalAlphaDiv2: NativeUInt;
+  alphaOver: UInt32or64;
+  finalAlpha, residualAlpha, finalAlphaDiv2: UInt32or64;
   xored: TWordXYZA;
 begin
   if AAlpha=0 then exit;
@@ -176,7 +176,7 @@ begin
     while ACount > 0 do
     begin
       PQWord(@xored)^ := PQWord(ADest)^ xor PQWord(ASource)^;
-      residualAlpha := (ADest^.alpha*NativeUInt(65536-alphaOver)+32768) shr 16;
+      residualAlpha := (ADest^.alpha*UInt32or64(65536-alphaOver)+32768) shr 16;
       finalAlpha := residualAlpha + ((xored.alpha*alphaOver+32768) shr 16);
       if finalAlpha <= 0 then ADest^ := WordXYZATransparent else
       begin
@@ -184,11 +184,11 @@ begin
         finalAlphaDiv2 := finalAlpha shr 1;
         ADest^.alpha:= finalAlpha;
         ADest^.X := (ADest^.X*residualAlpha +
-                     xored.X*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+                     xored.X*UInt32or64(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
         ADest^.Y := (ADest^.Y*residualAlpha +
-                     xored.Y*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+                     xored.Y*UInt32or64(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
         ADest^.Z := (ADest^.Z*residualAlpha +
-                     xored.Z*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+                     xored.Z*UInt32or64(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
       end;
       inc(ADest);
       dec(ACount);
@@ -287,8 +287,8 @@ procedure WordXYZAChunkSetPixelsExceptTransparent(
     ASource: PWordXYZA; ADest: PWordXYZA;
     AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
 var
-  alphaOver: NativeUInt;
-  finalAlpha, residualAlpha, finalAlphaDiv2: NativeUInt;
+  alphaOver: UInt32or64;
+  finalAlpha, residualAlpha, finalAlphaDiv2: UInt32or64;
 begin
   if AAlpha=0 then exit;
   if AAlpha=65535 then
@@ -307,7 +307,7 @@ begin
     begin
       if ASource^.alpha = 65535 then
       begin
-        residualAlpha := (ADest^.alpha*NativeUInt(65536-alphaOver)+32768) shr 16;
+        residualAlpha := (ADest^.alpha*UInt32or64(65536-alphaOver)+32768) shr 16;
         finalAlpha := residualAlpha + AAlpha;
         if finalAlpha <= 0 then ADest^ := WordXYZATransparent else
         begin
@@ -315,11 +315,11 @@ begin
           finalAlphaDiv2 := finalAlpha shr 1;
           ADest^.alpha:= finalAlpha;
           ADest^.X := (ADest^.X*residualAlpha +
-                       ASource^.X*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+                       ASource^.X*UInt32or64(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
           ADest^.Y := (ADest^.Y*residualAlpha +
-                       ASource^.Y*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+                       ASource^.Y*UInt32or64(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
           ADest^.Z := (ADest^.Z*residualAlpha +
-                       ASource^.Z*NativeUInt(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
+                       ASource^.Z*UInt32or64(finalAlpha-residualAlpha) + finalAlphaDiv2) div finalAlpha;
         end;
       end;
       inc(ADest);
@@ -512,7 +512,7 @@ var
   pDest: PWordXYZA;
   qty, maskStride: Integer;
   pMask: PByteMask;
-  factor: NativeUInt;
+  factor: UInt32or64;
 begin
   with PWordXYZAScannerBrushFixedData(AFixedData)^ do
   begin
@@ -567,7 +567,7 @@ procedure WordXYZAAlphaBrushSetPixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
   pDest: PWordXYZA;
-  alphaOver, residualAlpha, finalAlpha: NativeUInt;
+  alphaOver, residualAlpha, finalAlpha: UInt32or64;
 begin
   if AAlpha=0 then
   begin
@@ -590,7 +590,7 @@ begin
     else alphaOver := AAlpha;
     while ACount > 0 do
     begin
-      residualAlpha := (pDest^.alpha*NativeUInt(65536-alphaOver)+32768) shr 16;
+      residualAlpha := (pDest^.alpha*UInt32or64(65536-alphaOver)+32768) shr 16;
       finalAlpha := residualAlpha + (PWord(AFixedData)^*alphaOver+32768) shr 16;
       if finalAlpha > 65535 then finalAlpha := 65535;
       pDest^.alpha:= finalAlpha;
@@ -605,7 +605,7 @@ procedure WordXYZAAlphaBrushErasePixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
   pDest: PWordXYZA;
-  alphaMul, finalAlpha: NativeUInt;
+  alphaMul, finalAlpha: UInt32or64;
 begin
   if AAlpha=0 then
   begin

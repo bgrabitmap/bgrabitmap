@@ -258,7 +258,7 @@ begin
     t := 0;
     for i := 1 to nb-2 do
     begin
-      t += step;
+      IncF(t, step);
       result[i] := p1+t*(c+t*(b+t*a))
     end;
   end else
@@ -269,7 +269,7 @@ begin
     t := 0;
     for i := 0 to nb-3 do
     begin
-      t += step;
+      IncF(t, step);
       result[i] := p1+t*(c+t*(b+t*a))
     end;
   end;
@@ -281,11 +281,11 @@ var
 begin
   f1 := (1-t);
   f2 := f1*f1;
-  f1 *= f2;
-  f2 *= t*3;
+  f1 := f1 * f2;
+  f2 := f2 * t*3;
   f4 := t*t;
   f3 := f4*(1-t)*3;
-  f4 *= t;
+  f4 := f4 * t;
 
   result.x := f1*p1.x + f2*c1.x +
               f3*c2.x + f4*p2.x;
@@ -321,12 +321,12 @@ begin
   t := 0;
   for i := 1 to nb-2 do
   begin
-    t += step;
+    IncF(t, step);
     nextCoord := ComputePointAt(t);
-    result += VectLen(nextCoord-curCoord);
+    IncF(result, VectLen(nextCoord-curCoord));
     curCoord := nextCoord;
   end;
-  result += VectLen(p2-curCoord);
+  IncF(result, VectLen(p2-curCoord));
 end;
 
 function TCubicBezierCurve.ToPoints(AAcceptedDeviation: single;
@@ -498,7 +498,7 @@ begin
     t := 0;
     for i := 1 to nb-2 do
     begin
-      t += step;
+      IncF(t, step);
       result[i] := p1+t*(pB+t*pA);
     end;
   end else
@@ -509,7 +509,7 @@ begin
     t := 0;
     for i := 0 to nb-3 do
     begin
-      t += step;
+      IncF(t, step);
       result[i] := p1+t*(pB+t*pA);
     end;
   end;
@@ -536,7 +536,7 @@ var
 begin
   rev_t := (1-t);
   f2 := rev_t*t*2;
-  rev_t *= rev_t;
+  rev_t := rev_t * rev_t;
   t2 := t*t;
   result.x := rev_t*p1.x + f2*c.x + t2*p2.x;
   result.y := rev_t*p1.y + f2*c.y + t2*p2.y;
@@ -985,7 +985,7 @@ begin
   rev_t := (1-t);
   t2 := t*t;
   f2 := weight*rev_t*t*2;
-  rev_t *= rev_t;
+  rev_t := rev_t * rev_t;
   den := rev_t+f2+t2;
   if den <> 0 then
   begin
@@ -1053,7 +1053,7 @@ begin
   begin
     nextCoord := pts[i];
     if (nextCoord <> EmptyPointF) and (curCoord <> EmptyPointF) then
-       result += VectLen(nextCoord-curCoord);
+       IncF(result, VectLen(nextCoord-curCoord));
     curCoord := nextCoord;
   end;
   finalize(pts)

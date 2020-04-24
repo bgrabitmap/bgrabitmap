@@ -9,7 +9,7 @@ interface
 { Here are various functions that draw gradients, shadow and lighting }
 
 uses
-  Classes, BGRAGraphics, BGRABitmapTypes, BGRABitmap, BGRABlend, BGRAPhongTypes,
+  BGRAClasses, BGRAGraphics, BGRABitmapTypes, BGRABitmap, BGRABlend, BGRAPhongTypes,
   BGRASSE, BGRAGrayscaleMask;
 
 {$IFDEF BGRABITMAP_USE_LCL}{ Creates a bitmap with the specified text horizontally centered and with a shadow }
@@ -179,7 +179,7 @@ function CreateCyclicPerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: 
 
 implementation
 
-uses Types, Math, SysUtils{$IFDEF BGRABITMAP_USE_LCL}, BGRATextFX{$ENDIF}; {GraphType unit used by phongdraw.inc}
+uses Math, SysUtils{$IFDEF BGRABITMAP_USE_LCL}, BGRATextFX{$ENDIF}; {GraphType unit used by phongdraw.inc}
 
 {$IFDEF BGRABITMAP_USE_LCL}function TextShadow(AWidth, AHeight: Integer; AText: String;
   AFontHeight: Integer; ATextColor, AShadowColor: TBGRAPixel; AOffSetX,

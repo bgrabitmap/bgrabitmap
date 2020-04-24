@@ -6,7 +6,7 @@ unit BGRALayerOriginal;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl
+  BGRAClasses, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl
   {$IFDEF BGRABITMAP_USE_LCL},LCLType{$ENDIF};
 
 type
@@ -354,7 +354,7 @@ function FindLayerOriginalClass(AStorageClassName: string): TBGRALayerOriginalAn
 
 implementation
 
-uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, Types, BGRAGraphics;
+uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, BGRAGraphics;
 
 {$IFDEF BGRABITMAP_USE_LCL}
 function LCLKeyToSpecialKey(AKey: Word; AShift: TShiftState): TSpecialKey;
@@ -671,7 +671,7 @@ begin
   else
   begin
     result := Rect(floor(AOrigin.x+0.5-1.5),floor(AOrigin.y+0.5-1.5),ceil(AOrigin.x+0.5+1.5),ceil(AOrigin.y+0.5+1.5));
-    UnionRect(result, result, rect(floor(AEndCoord.x+0.5-FPointSize-1.5), floor(AEndCoord.y+0.5-FPointSize-1.5),
+    result.Union( rect(floor(AEndCoord.x+0.5-FPointSize-1.5), floor(AEndCoord.y+0.5-FPointSize-1.5),
                       ceil(AEndCoord.x+0.5+FPointSize+1.5), ceil(AEndCoord.y+0.5+FPointSize+1.5)) );
   end;
 end;
@@ -1101,12 +1101,12 @@ begin
       elemRect := RenderPoint(ADest, OriginalCoordToView(FPoints[i].Coord), FPoints[i].RightButton, FPoints[i].Highlighted)
     else
       elemRect := RenderArrow(ADest, OriginalCoordToView(FPoints[i].Origin), OriginalCoordToView(FPoints[i].Coord));
-    if not IsRectEmpty(elemRect) then
+    if not elemRect.IsEmpty then
     begin
-      if IsRectEmpty(result) then
+      if result.IsEmpty then
         result := elemRect
       else
-        UnionRect(result, result, elemRect);
+        result.Union(elemRect);
     end;
   end;
   for i := 0 to high(FPolylines) do
@@ -1121,12 +1121,12 @@ begin
           ptsF[j] := OriginalCoordToView(Coords[j]);
       elemRect := RenderPolygon(ADest, ptsF, Closed, Style, BackColor);
     end;
-    if not IsRectEmpty(elemRect) then
+    if not elemRect.IsEmpty then
     begin
-      if IsRectEmpty(result) then
+      if result.IsEmpty then
         result := elemRect
       else
-        UnionRect(result, result, elemRect);
+        result.Union(elemRect);
     end;
   end;
 end;
@@ -1144,12 +1144,12 @@ begin
       elemRect := GetRenderPointBounds(OriginalCoordToView(FPoints[i].Coord), FPoints[i].Highlighted)
     else
       elemRect := GetRenderArrowBounds(OriginalCoordToView(FPoints[i].Origin), OriginalCoordToView(FPoints[i].Coord));
-    if not IsRectEmpty(elemRect) then
+    if not elemRect.IsEmpty then
     begin
-      if IsRectEmpty(result) then
+      if result.IsEmpty then
         result := elemRect
       else
-        UnionRect(result, result, elemRect);
+        result.Union(elemRect);
     end;
   end;
   for i := 0 to high(FPolylines) do
@@ -1164,12 +1164,12 @@ begin
           ptsF[j] := OriginalCoordToView(Coords[j]);
       elemRect := GetRenderPolygonBounds(ptsF);
     end;
-    if not IsRectEmpty(elemRect) then
+    if not elemRect.IsEmpty then
     begin
-      if IsRectEmpty(result) then
+      if result.IsEmpty then
         result := elemRect
       else
-        UnionRect(result, result, elemRect);
+        result.Union(elemRect);
     end;
   end;
 end;
@@ -1454,12 +1454,12 @@ begin
   begin
     stream.Position:= 0;
     {$PUSH}{$HINTS OFF}stream.ReadBuffer({%H-}result, sizeof({%H-}result));{$POP}
-    DWord(result[1,1]) := NtoLE(DWord(result[1,1]));
-    DWord(result[2,1]) := NtoLE(DWord(result[2,1]));
-    DWord(result[1,2]) := NtoLE(DWord(result[1,2]));
-    DWord(result[2,2]) := NtoLE(DWord(result[2,2]));
-    DWord(result[1,3]) := NtoLE(DWord(result[1,3]));
-    DWord(result[2,3]) := NtoLE(DWord(result[2,3]));
+    LongWord(result[1,1]) := NtoLE(LongWord(result[1,1]));
+    LongWord(result[2,1]) := NtoLE(LongWord(result[2,1]));
+    LongWord(result[1,2]) := NtoLE(LongWord(result[1,2]));
+    LongWord(result[2,2]) := NtoLE(LongWord(result[2,2]));
+    LongWord(result[1,3]) := NtoLE(LongWord(result[1,3]));
+    LongWord(result[2,3]) := NtoLE(LongWord(result[2,3]));
   end else
     result := AffineMatrixIdentity;
   stream.Free;

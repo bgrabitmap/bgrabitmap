@@ -9,7 +9,7 @@ unit BGRAUnicode;
 interface
 
 uses
-  Classes, SysUtils;
+  BGRAClasses, SysUtils;
 
 type
   TUnicodeBidiClass = (ubcBoundaryNeutral, ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals,
@@ -130,23 +130,23 @@ const
 type //bracket matching
   TUnicodeBracketInfo = record
     IsBracket: boolean;
-    OpeningBracket,ClosingBracket: cardinal;
+    OpeningBracket,ClosingBracket: LongWord;
   end;
 
-function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
-function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;
-function GetUnicodeJoiningType(u: cardinal): TUnicodeJoiningType;
-function IsZeroWidthUnicode(u: cardinal): boolean;
-function IsUnicodeMirrored(u: cardinal): boolean;
-function IsUnicodeParagraphSeparator(u: cardinal): boolean;
-function IsUnicodeCrLf(u: cardinal): boolean;
-function IsUnicodeSpace(u: cardinal): boolean;
-function IsUnicodeIsolateOrFormatting(u: cardinal): boolean;
+function GetUnicodeBidiClass(u: LongWord): TUnicodeBidiClass;
+function GetUnicodeBracketInfo(u: LongWord): TUnicodeBracketInfo;
+function GetUnicodeJoiningType(u: LongWord): TUnicodeJoiningType;
+function IsZeroWidthUnicode(u: LongWord): boolean;
+function IsUnicodeMirrored(u: LongWord): boolean;
+function IsUnicodeParagraphSeparator(u: LongWord): boolean;
+function IsUnicodeCrLf(u: LongWord): boolean;
+function IsUnicodeSpace(u: LongWord): boolean;
+function IsUnicodeIsolateOrFormatting(u: LongWord): boolean;
 
 
 { Analyze unicode and return bidi levels for each character.
   baseDirection can be either UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE or UNICODE_FIRST_STRONG_ISOLATE }
-function AnalyzeBidiUnicode(u: PCardinal; ALength: integer; baseDirection: cardinal): TUnicodeBidiArray;
+function AnalyzeBidiUnicode(u: PLongWord; ALength: integer; baseDirection: LongWord): TUnicodeBidiArray;
 
 { Determine diplay order, provided the display surface is horizontally infinite }
 function GetUnicodeDisplayOrder(const AInfo: TUnicodeBidiArray): TUnicodeDisplayOrder; overload;
@@ -155,7 +155,7 @@ function GetUnicodeDisplayOrder(ABidiInfo: PUnicodeBidiInfo; AStride, ACount: in
 
 implementation
 
-function GetUnicodeBidiClass(u: cardinal): TUnicodeBidiClass;
+function GetUnicodeBidiClass(u: LongWord): TUnicodeBidiClass;
 begin //generated 2019-05-19
   case u of
   $00000..$07FFF:
@@ -446,7 +446,7 @@ begin //generated 2019-05-19
   end
 end;
 
-function IsUnicodeMirrored(u: cardinal): boolean;
+function IsUnicodeMirrored(u: LongWord): boolean;
 begin
   case u of
     $28, $29, $3C, $3E, $5B, $5D, $7B, $7D, $AB, $BB, $F3A..$F3D, $169B, $169C, $2039, $203A, $2045,
@@ -468,8 +468,8 @@ begin
 end;
 
 {$PUSH}{$WARNINGS OFF}
-function GetUnicodeBracketInfo(u: cardinal): TUnicodeBracketInfo;
-  procedure Bracket(AOpening,AClosing: cardinal);
+function GetUnicodeBracketInfo(u: LongWord): TUnicodeBracketInfo;
+  procedure Bracket(AOpening,AClosing: LongWord);
   begin
     result.IsBracket := true;
     result.OpeningBracket := AOpening;
@@ -547,7 +547,7 @@ begin
 end;
 {$POP}
 
-function GetUnicodeJoiningType(u: cardinal): TUnicodeJoiningType;
+function GetUnicodeJoiningType(u: LongWord): TUnicodeJoiningType;
 begin
   case u of
     $600..$605, $608, $60B, $621, $674, $6DD, $856..$858, $861, $866, $8AD, $8E2, $1806, $180E,
@@ -613,7 +613,7 @@ begin
   end;
 end;
 
-function IsZeroWidthUnicode(u: cardinal): boolean;
+function IsZeroWidthUnicode(u: LongWord): boolean;
 begin
   case u of
   UNICODE_ZERO_WIDTH_SPACE, UNICODE_ZERO_WIDTH_NON_JOINER,
@@ -624,7 +624,7 @@ begin
   end;
 end;
 
-function IsUnicodeParagraphSeparator(u: cardinal): boolean;
+function IsUnicodeParagraphSeparator(u: LongWord): boolean;
 begin
   case u of
   $0A, $0D, UNICODE_NEXT_LINE, UNICODE_PARAGRAPH_SEPARATOR,
@@ -633,17 +633,17 @@ begin
   end;
 end;
 
-function IsUnicodeCrLf(u: cardinal): boolean;
+function IsUnicodeCrLf(u: LongWord): boolean;
 begin
   result := (u=10) or (u=13);
 end;
 
-function IsUnicodeSpace(u: cardinal): boolean;
+function IsUnicodeSpace(u: LongWord): boolean;
 begin
   result := GetUnicodeBidiClass(u) = ubcWhiteSpace;
 end;
 
-function IsUnicodeIsolateOrFormatting(u: cardinal): boolean;
+function IsUnicodeIsolateOrFormatting(u: LongWord): boolean;
 begin
   case u of
   UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE, UNICODE_FIRST_STRONG_ISOLATE,
@@ -725,7 +725,7 @@ begin
   result := (Flags and BIDI_FLAG_RTL_SCRIPT) <> 0;
 end;
 
-function AnalyzeBidiUnicode(u: PCardinal; ALength: integer; baseDirection: cardinal): TUnicodeBidiArray;
+function AnalyzeBidiUnicode(u: PLongWord; ALength: integer; baseDirection: LongWord): TUnicodeBidiArray;
 type
   TUnicodeAnalysisElement = record
     bidiClass: TUnicodeBidiClass;
@@ -1171,10 +1171,10 @@ var
   end;
 
   //analyse bidi formatting of an embedding or an override block
-  procedure AnalyzeFormattingBlocks(startIndex, lastIndex: integer; minBidiLevel: byte; formattingCode: cardinal);
+  procedure AnalyzeFormattingBlocks(startIndex, lastIndex: integer; minBidiLevel: byte; formattingCode: LongWord);
   var curIndex, nextIndex, levelIncrease: integer;
     subFormatBeforeStart, subFormatStart, formatNesting: integer;
-    subFormatCode: cardinal;
+    subFormatCode: LongWord;
   begin
     case formattingCode of
     UNICODE_LEFT_TO_RIGHT_OVERRIDE,UNICODE_LEFT_TO_RIGHT_EMBEDDING:
@@ -1319,7 +1319,7 @@ var
     TweakWhiteSpaceBefore(prevIndex);
   end;
 
-  function DetermineIsolateDirectionFromFirstStrongClass(startIndex: integer): cardinal;
+  function DetermineIsolateDirectionFromFirstStrongClass(startIndex: integer): LongWord;
   var
     curIndex: Integer;
   begin
@@ -1372,13 +1372,13 @@ var
   end;
 
   //split isolates in order to format them independently
-  procedure AnalyzeIsolates(startIndex: integer; charCount: integer; isolateDirection: cardinal; minBidiLevel: byte = 0;
+  procedure AnalyzeIsolates(startIndex: integer; charCount: integer; isolateDirection: LongWord; minBidiLevel: byte = 0;
                             isParagraph: boolean = false);
   var curIndex, endIndex: integer;
     nextIndex: integer;
     subBidiLevel, levelIncrease: byte;
     subIsolateStart: integer;
-    subIsolateDirection: cardinal;
+    subIsolateDirection: LongWord;
   begin
     if charCount = 0 then exit;
     Assert(startIndex>=0, 'Invalid start index');

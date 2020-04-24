@@ -22,7 +22,8 @@ interface
 }
 
 uses
-  Types, Classes, SysUtils, Graphics, BGRABitmapTypes, BGRATypewriter, BGRATransform, BGRACanvas2D, BGRAText;
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATypewriter,
+  BGRATransform, BGRACanvas2D, BGRAText;
 
 //vectorize a monochrome bitmap
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
@@ -62,6 +63,7 @@ type
     OutlineColor: TBGRAPixel;
     OutlineTexture: IBGRAScanner;
     OuterOutlineOnly: boolean;
+    OutlineJoin: TPenJoinStyle;
 
     ShadowVisible: boolean;
     ShadowColor: TBGRAPixel;
@@ -174,6 +176,7 @@ type
     function ReadVectorizedFontHeader(AStream: TStream): TBGRAVectorizedFontHeader;
     function HeaderName: string; override;
     procedure SetDirectory(const AValue: string);
+    function ComputeKerning(AIdLeft, AIdRight: string): single; override;
   public
     UnderlineDecoration,StrikeOutDecoration: boolean;
     constructor Create; overload;
@@ -715,14 +718,14 @@ var
   end;
 
 begin
-  IntersectRect(ARect, ARect, rect(0,0,ASource.Width,ASource.Height));
-  if IsRectEmpty(ARect) then exit(nil);
+  ARect.Intersect( rect(0,0,ASource.Width,ASource.Height) );
+  if ARect.IsEmpty then exit(nil);
   ARect := GetBoundsWithin;
-  if IsRectEmpty(ARect) then exit(nil);
+  if ARect.IsEmpty then exit(nil);
 
   factor := AZoom;
   offset := AZoom*0.5;
-  if APixelCenteredCoordinates then Offset -= 0.5;
+  if APixelCenteredCoordinates then DecF(Offset, 0.5);
 
   if IsRectFull then
   begin
@@ -1103,7 +1106,7 @@ begin
     end;
   end;
 
-  factor /= iUnit;
+  factor := factor / iUnit;
 
   for n := 0 to nbPoints-1 do
     with points[n] do
@@ -1148,7 +1151,7 @@ begin
     FVectorizedFont.Style := FontStyle - [fsUnderline];
     FVectorizedFont.UnderlineDecoration := fsUnderline in FontStyle;
     FVectorizedFont.Directory := FDirectoryUTF8;
-    if not FVectorizedFont.FontFound and LCLFontAvailable then
+    if not FVectorizedFont.FontFound and SystemFontAvailable then
       FVectorizedFont.VectorizeLCL := True;
     Setlength(FVectorizedFontArray,length(FVectorizedFontArray)+1);
     FVectorizedFontArray[high(FVectorizedFontArray)].FontName := FontName;
@@ -1187,6 +1190,7 @@ begin
   end;
   result := FCanvas2D;
   FCanvas2D.antialiasing:= FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB];
+  FCanvas2D.lineJoinLCL := OutlineJoin;
   if OutlineTexture <> nil then
     FCanvas2D.strokeStyle(OutlineTexture)
   else
@@ -1216,8 +1220,8 @@ begin
   previousClip := ADest.ClipRect;
   if style.Clipping then
   begin
-    intersectedClip := rect(0,0,0,0);
-    if not IntersectRect(intersectedClip, previousClip, ARect) then exit;
+    intersectedClip := TRect.Intersect(previousClip, ARect);
+    if intersectedClip.IsEmpty then exit;
     ADest.ClipRect := intersectedClip;
   end;
   UpdateFont;
@@ -1323,6 +1327,7 @@ begin
   OutlineVisible:= True;
   OutlineColor := BGRAPixelTransparent;
   OuterOutlineOnly := false;
+  OutlineJoin := pjsMiter;
 
   ShadowColor := BGRABlack;
   ShadowVisible := false;
@@ -1503,7 +1508,7 @@ begin
     FVectorizedFont.SplitText(sUTF8, AMaxWidthF, remains);
     w := FVectorizedFont.GetTextSize(sUTF8).x;
     if w > result.x then result.x := w;
-    result.y += h;
+    IncF(result.y, h);
     sUTF8 := remains;
   until remains = '';
 end;
@@ -1674,7 +1679,7 @@ begin
       OldHeight := FFont.Height;
       FFont.Height := FontEmHeightSign * 100;
       lEmHeight := BGRATextSize(FFont, fqSystem, 'Hg', 1).cy;
-      FFont.Height := FixLCLFontFullHeight(FFont.Name, FontFullHeightSign * 100);
+      FFont.Height := FixSystemFontFullHeight(FFont.Name, FontFullHeightSign * 100);
       lFullHeight := BGRATextSize(FFont, fqSystem, 'Hg', 1).cy;
       if lEmHeight = 0 then
         FFontEmHeightRatio := 1
@@ -1715,7 +1720,7 @@ begin
     ClearGlyphs;
     FFont.Name := FName;
     FFont.Style := FStyle;
-    FFont.Height := FixLCLFontFullHeight(FFont.Name, FontFullHeightSign * FResolution);
+    FFont.Height := FixSystemFontFullHeight(FFont.Name, FontFullHeightSign * FResolution);
     FFont.Quality := fqNonAntialiased;
     FFontEmHeightRatio := 1;
     FFontEmHeightRatioComputed := false;
@@ -1861,7 +1866,7 @@ begin
       g := GetGlyph(nextchar);
       if g <> nil then
       begin
-        totalWidth += g.Width*FullHeight;
+        IncF(totalWidth, g.Width*FullHeight);
         if not firstChar and (totalWidth > AMaxWidth) then
         begin
           ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
@@ -2027,8 +2032,8 @@ begin
 
     case lineAlignment of
     twaMiddle: ;
-    twaBottomLeft,twaBottomRight: lineShift -= 0.5;
-    twaTopRight,twaTopLeft : lineShift += 0.5;
+    twaBottomLeft,twaBottomRight: DecF(lineShift, 0.5);
+    twaTopRight,twaTopLeft : IncF(lineShift, 0.5);
     end;
 
     pos.Offset(step*(-lineShift));
@@ -2115,8 +2120,8 @@ begin
 
   case lineAlignment of
   twaMiddle: ;
-  twaBottomLeft, twaBottomRight: lineShift -= 0.5;
-  twaTopRight,twaTopLeft : lineShift += 0.5;
+  twaBottomLeft, twaBottomRight: DecF(lineShift, 0.5);
+  twaTopRight,twaTopLeft : IncF(lineShift, 0.5);
   end;
 
   pos.Offset(step*(-lineShift));
@@ -2177,7 +2182,7 @@ begin
   FDirectoryContent := nil;
   if FDirectory = '' then exit;
   if (length(FDirectory) > 0) and not (FDirectory[length(FDirectory)] in AllowDirectorySeparators) then
-    FDirectory += DirectorySeparator;
+    AppendStr(FDirectory, DirectorySeparator);
   if FindFirstUTF8(FDirectory +'*.glyphs', faAnyFile, SearchRec) = 0 then
   repeat
     {$PUSH}{$WARNINGS OFF}
@@ -2358,6 +2363,23 @@ begin
   FDirectory := Trim(AValue);
   UpdateDirectory;
   UpdateFont;
+end;
+
+function TBGRAVectorizedFont.ComputeKerning(AIdLeft, AIdRight: string): single;
+var
+  together: String;
+begin
+  if Resolution = 0 then exit(0);
+  if IsRightToLeftUTF8(AIdLeft) then
+  begin
+    if IsRightToLeftUTF8(AIdRight) then
+      together := AIdRight + AIdLeft
+    else
+      together := UTF8OverrideDirection(AIdRight + AIdLeft, true);
+  end else
+    together := AIdLeft + AIdRight;
+  result := BGRATextSize(FFont, fqSystem, together, 1).cx/Resolution
+            - Glyph[AIdLeft].Width - Glyph[AIdRight].Width;
 end;
 
 end.

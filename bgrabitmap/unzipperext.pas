@@ -5,7 +5,7 @@ unit UnzipperExt;
 interface
 
 uses
-  Classes, SysUtils, zipper;
+  BGRAClasses, SysUtils, zipper;
 
 type
 

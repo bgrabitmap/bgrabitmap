@@ -5,7 +5,7 @@ unit BGRAArrow;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAGraphics;
+  SysUtils, BGRABitmapTypes, BGRAGraphics;
 
 type
   { TBGRAArrow }
@@ -73,7 +73,7 @@ type
 
 implementation
 
-uses BGRATransform, BGRAPen, BGRAPath;
+uses BGRAClasses, BGRATransform, BGRAPen, BGRAPath;
 
 { TBGRAArrow }
 
@@ -238,14 +238,14 @@ begin
     ofsX := AOffsetX*AWidth;
     for i := 0 to high(result) do
       if not isEmptyPointF(result[i]) then
-        result[i].x += ofsX;
+        IncF(result[i].x, ofsX);
   end;
   if ARepeatCount > 1 then
   begin
     if ARepeatCount > 10 then ARepeatCount:= 10;
-    if AStyle in[asTriangle,asHollowTriangle] then AOffsetX += sizeFactorX/AWidth
-    else if AStyle in[asTail,asTailRepeat] then AOffsetX += (tailSizeX+tailAdditionalWidth)/AWidth+1
-    else AOffsetX += 2*ARelativePenWidth;
+    if AStyle in[asTriangle,asHollowTriangle] then IncF(AOffsetX, sizeFactorX/AWidth)
+    else if AStyle in[asTail,asTailRepeat] then IncF(AOffsetX, (tailSizeX+tailAdditionalWidth)/AWidth+1)
+    else IncF(AOffsetX, 2*ARelativePenWidth);
     if AStyle = asTail then AStyle := asTailRepeat;
     subResult := ComputeData(AStyle,ASizeFactor,ATipStyle,ALineCap,AWidth,AOffsetX,ARepeatCount-1,ARelativePenWidth,ATriangleBackOffset);
     result := ConcatPointsF([result,PointsF([EmptyPointF]),subResult]);

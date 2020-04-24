@@ -6,7 +6,7 @@ unit BGRAOpenGL;
 interface
 
 uses
-  Classes, SysUtils, FPimage, BGRAGraphics,
+  BGRAClasses, SysUtils, FPimage, BGRAGraphics,
   BGRAOpenGLType, BGRASpriteGL, BGRACanvasGL, GL, GLext, GLU, BGRABitmapTypes,
   BGRAFontGL, BGRASSE, BGRAMatrix3D;
 
@@ -93,7 +93,7 @@ type
     function GetOpenGLMaxTexSize: integer; override;
   end;
 
-function BGLTexture(ARGBAData: PDWord; AllocatedWidth,AllocatedHeight, ActualWidth,ActualHeight: integer): IBGLTexture; overload;
+function BGLTexture(ARGBAData: PLongWord; AllocatedWidth,AllocatedHeight, ActualWidth,ActualHeight: integer): IBGLTexture; overload;
 function BGLTexture(AFPImage: TFPCustomImage): IBGLTexture; overload;
 function BGLTexture(ABitmap: TBitmap): IBGLTexture; overload;
 function BGLTexture(AWidth, AHeight: integer; Color: TColor): IBGLTexture; overload;
@@ -202,8 +202,8 @@ type
     FFlipX,FFlipY: Boolean;
 
     function GetOpenGLMaxTexSize: integer; override;
-    function CreateOpenGLTexture(ARGBAData: PDWord; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer; RGBAOrder: boolean): TBGLTextureHandle; override;
-    procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PDWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); override;
+    function CreateOpenGLTexture(ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer; RGBAOrder: boolean): TBGLTextureHandle; override;
+    procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); override;
     class function SupportsBGRAOrder: boolean; override;
     procedure SetOpenGLTextureSize(ATexture: TBGLTextureHandle; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer); override;
     procedure ComputeOpenGLFramesCoord(ATexture: TBGLTextureHandle; FramesX: Integer=1; FramesY: Integer=1); override;
@@ -328,16 +328,16 @@ type
     function RemoveLight(AIndex: integer): boolean; override;
     procedure SetSpecularIndex(AIndex: integer); override;
 
-    function MakeVertexShader(ASource: string): DWord; override;
-    function MakeFragmentShader(ASource: string): DWord; override;
-    function MakeShaderProgram(AVertexShader, AFragmentShader: DWord): DWord; override;
-    procedure UseProgram(AProgram: DWord); override;
-    procedure DeleteShaderObject(AShader: DWord); override;
-    procedure DeleteShaderProgram(AProgram: DWord); override;
-    function GetUniformVariable(AProgram: DWord; AName: string): DWord; override;
-    function GetAttribVariable(AProgram: DWord; AName: string): DWord; override;
-    procedure SetUniformSingle(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); override;
-    procedure SetUniformInteger(AVariable: DWord; const AValue; AElementCount, AComponentCount: integer); override;
+    function MakeVertexShader(ASource: string): LongWord; override;
+    function MakeFragmentShader(ASource: string): LongWord; override;
+    function MakeShaderProgram(AVertexShader, AFragmentShader: LongWord): LongWord; override;
+    procedure UseProgram(AProgram: LongWord); override;
+    procedure DeleteShaderObject(AShader: LongWord); override;
+    procedure DeleteShaderProgram(AProgram: LongWord); override;
+    function GetUniformVariable(AProgram: LongWord; AName: string): LongWord; override;
+    function GetAttribVariable(AProgram: LongWord; AName: string): LongWord; override;
+    procedure SetUniformSingle(AVariable: LongWord; const AValue; AElementCount, AComponentCount: integer); override;
+    procedure SetUniformInteger(AVariable: LongWord; const AValue; AElementCount, AComponentCount: integer); override;
     procedure BindAttribute(AAttribute: TAttributeVariable); override;
     procedure UnbindAttribute(AAttribute: TAttributeVariable); override;
   end;
@@ -481,7 +481,7 @@ begin
     glBlendFunc( srcBlend, dstBlend );
 end;
 
-function BGLTexture(ARGBAData: PDWord; AllocatedWidth, AllocatedHeight,
+function BGLTexture(ARGBAData: PLongWord; AllocatedWidth, AllocatedHeight,
   ActualWidth, ActualHeight: integer): IBGLTexture;
 begin
   result := TBGLTexture.Create(ARGBAData,AllocatedWidth, AllocatedHeight,
@@ -646,7 +646,7 @@ end;
 
 constructor TBGLElementArray.Create(const AElements: array of integer);
 var bufferSize: integer;
-  i: NativeInt;
+  i: Int32or64;
 begin
   NeedOpenGL2_0;
   setlength(FElements,length(AElements));
@@ -660,7 +660,7 @@ end;
 
 procedure TBGLElementArray.Draw(ACanvas: TBGLCustomCanvas; APrimitive: TOpenGLPrimitive; AAttributes: array of TAttributeVariable);
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   for i := 0 to high(AAttributes) do
     ACanvas.Lighting.BindAttribute(AAttributes[i]);
@@ -749,12 +749,12 @@ begin
   end;
 end;
 
-function TBGLLighting.MakeVertexShader(ASource: string): DWord;
+function TBGLLighting.MakeVertexShader(ASource: string): LongWord;
 begin
   result := MakeShaderObject(GL_VERTEX_SHADER, ASource);
 end;
 
-function TBGLLighting.MakeFragmentShader(ASource: string): DWord;
+function TBGLLighting.MakeFragmentShader(ASource: string): LongWord;
 begin
   result := MakeShaderObject(GL_FRAGMENT_SHADER, ASource);
 end;
@@ -849,7 +849,7 @@ begin
   result := CheckOpenGL2_0;
 end;
 
-function TBGLLighting.MakeShaderProgram(AVertexShader, AFragmentShader: DWord): DWord;
+function TBGLLighting.MakeShaderProgram(AVertexShader, AFragmentShader: LongWord): LongWord;
 var
   programOk: GLint;
   shaderProgram: GLuint;
@@ -878,39 +878,39 @@ begin
   result := shaderProgram;
 end;
 
-procedure TBGLLighting.UseProgram(AProgram: DWord);
+procedure TBGLLighting.UseProgram(AProgram: LongWord);
 begin
   NeedOpenGL2_0;
   glUseProgram(AProgram);
 end;
 
-procedure TBGLLighting.DeleteShaderObject(AShader: DWord);
+procedure TBGLLighting.DeleteShaderObject(AShader: LongWord);
 begin
   NeedOpenGL2_0;
   if AShader<> 0 then
     glDeleteShader(AShader);
 end;
 
-procedure TBGLLighting.DeleteShaderProgram(AProgram: DWord);
+procedure TBGLLighting.DeleteShaderProgram(AProgram: LongWord);
 begin
   NeedOpenGL2_0;
   if AProgram<> 0 then
     glDeleteProgram(AProgram);
 end;
 
-function TBGLLighting.GetUniformVariable(AProgram: DWord; AName: string): DWord;
+function TBGLLighting.GetUniformVariable(AProgram: LongWord; AName: string): LongWord;
 begin
   NeedOpenGL2_0;
   result := glGetUniformLocation(AProgram, @AName[1]);
 end;
 
-function TBGLLighting.GetAttribVariable(AProgram: DWord; AName: string): DWord;
+function TBGLLighting.GetAttribVariable(AProgram: LongWord; AName: string): LongWord;
 begin
   NeedOpenGL2_0;
   result := glGetAttribLocation(AProgram, @AName[1]);
 end;
 
-procedure TBGLLighting.SetUniformSingle(AVariable: DWord;
+procedure TBGLLighting.SetUniformSingle(AVariable: LongWord;
   const AValue; AElementCount, AComponentCount: integer);
 begin
   NeedOpenGL2_0;
@@ -926,7 +926,7 @@ begin
   end;
 end;
 
-procedure TBGLLighting.SetUniformInteger(AVariable: DWord;
+procedure TBGLLighting.SetUniformInteger(AVariable: LongWord;
   const AValue; AElementCount, AComponentCount: integer);
 begin
   NeedOpenGL2_0;
@@ -1256,7 +1256,7 @@ begin
   glGetIntegerv( GL_MAX_TEXTURE_SIZE, @result );
 end;
 
-function TBGLTexture.CreateOpenGLTexture(ARGBAData: PDWord;
+function TBGLTexture.CreateOpenGLTexture(ARGBAData: PLongWord;
   AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer;
   RGBAOrder: boolean): TBGLTextureHandle;
 var p: POpenGLTexture;
@@ -1278,7 +1278,7 @@ begin
 end;
 
 procedure TBGLTexture.UpdateOpenGLTexture(ATexture: TBGLTextureHandle;
-  ARGBAData: PDWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,
+  ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,
   AActualHeight: integer; RGBAOrder: boolean);
 var providedFormat: GLenum;
 begin

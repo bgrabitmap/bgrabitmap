@@ -5,7 +5,7 @@ unit BGRALazPaint;
 interface
 
 uses
-  Classes, SysUtils, BGRALayers, BGRABitmapTypes, BGRAReadLzp, BGRAWriteLzp,
+  BGRAClasses, SysUtils, BGRALayers, BGRABitmapTypes, BGRAReadLzp, BGRAWriteLzp,
   BGRALzpCommon, FPimage;
 
 type

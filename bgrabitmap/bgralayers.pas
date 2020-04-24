@@ -6,7 +6,7 @@ unit BGRALayers;
 interface
 
 uses
-  BGRAGraphics, Classes, SysUtils, Types, BGRABitmapTypes, BGRABitmap,
+  BGRAGraphics, BGRAClasses, SysUtils, BGRABitmapTypes, BGRABitmap,
   BGRAMemDirectory, BGRATransform, fgl, BGRALayerOriginal;
 
 type
@@ -458,7 +458,7 @@ var
   end;
 
 var
-  NextLayerUniqueId: cardinal;
+  NextLayerUniqueId: LongWord;
   LayeredBitmapReaders: array of record
      extension: string;
      theClass: TBGRACustomLayeredBitmapClass;
@@ -708,6 +708,7 @@ end;
 procedure TBGRALayeredBitmap.UpdateOriginalEditor(ALayerIndex: integer; AMatrix: TAffineMatrix; APointSize: single);
 var
   orig: TBGRALayerCustomOriginal;
+  editMatrix: TAffineMatrix;
 begin
   orig := LayerOriginal[ALayerIndex];
 
@@ -732,10 +733,15 @@ begin
       FOriginalEditor.Focused := FEditorFocused;
       FOriginalEditor.OnFocusChanged:=@EditorFocusedChanged;
     end;
-    orig.ConfigureEditor(FOriginalEditor);
-    FOriginalEditorViewMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
-    FOriginalEditor.Matrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
-    FOriginalEditor.PointSize := APointSize;
+
+    editMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*LayerOriginalMatrix[ALayerIndex]*AffineMatrixTranslation(0.5,0.5);
+    if IsAffineMatrixInversible(editMatrix) then
+    begin
+      orig.ConfigureEditor(FOriginalEditor);
+      FOriginalEditorViewMatrix := AffineMatrixTranslation(-0.5,-0.5)*AMatrix*AffineMatrixTranslation(0.5,0.5);
+      FOriginalEditor.Matrix := editMatrix;
+      FOriginalEditor.PointSize := APointSize;
+    end;
   end;
 end;
 
@@ -1921,15 +1927,15 @@ begin
     else
     begin
       rNewBounds := orig.GetRenderBounds(rAll,FLayers[layer].OriginalMatrix);
-      IntersectRect({%H-}rNewBounds, rNewBounds, rAll);
+      rNewBounds.Intersect(rAll);
     end;
-    IntersectRect({%H-}rInterRender, ARenderBounds, rNewBounds);
+    rInterRender := TRect.Intersect(ARenderBounds, rNewBounds);
     if (FLayers[layer].x = rNewBounds.Left) and
       (FLayers[layer].y = rNewBounds.Top) and
       (FLayers[layer].Source.Width = rNewBounds.Width) and
       (FLayers[layer].Source.Height = rNewBounds.Height) then
     begin
-      OffsetRect(rInterRender, -rNewBounds.Left, -rNewBounds.Top);
+      rInterRender.Offset(-rNewBounds.Left, -rNewBounds.Top);
       FLayers[layer].Source.FillRect(rInterRender, BGRAPixelTransparent, dmSet);
       FLayers[layer].Source.ClipRect := rInterRender;
       orig.Render(FLayers[layer].Source, Point(-rNewBounds.Left,-rNewBounds.Top), FLayers[layer].OriginalMatrix, ADraft);
@@ -1946,8 +1952,8 @@ begin
         newSource := TBGRABitmap.Create(rNewBounds.Width,rNewBounds.Height);
         newSource.PutImage(FLayers[layer].x - rNewBounds.Left, FLayers[layer].y - rNewBounds.Top, FLayers[layer].Source, dmSet);
         FreeSource;
-        OffsetRect(rInterRender, -rNewBounds.Left, -rNewBounds.Top);
-        if not IsRectEmpty(rInterRender) then
+        rInterRender.Offset(-rNewBounds.Left, -rNewBounds.Top);
+        if not rInterRender.IsEmpty then
         begin
           newSource.FillRect(rInterRender, BGRAPixelTransparent, dmSet);
           newSource.ClipRect := rInterRender;
@@ -1995,8 +2001,8 @@ procedure TBGRALayeredBitmap.RenderLayerFromOriginalIfNecessary(layer: integer;
 
     r := RectWithSize(LayerOffset[ALayer].X, LayerOffset[ALayer].Y,
                       FLayers[ALayer].Source.Width, FLayers[ALayer].Source.Height);
-    if IsRectEmpty(ABounds) then ABounds := r else
-      UnionRect(ABounds,ABounds,r);
+    if ABounds.IsEmpty then ABounds := r else
+      ABounds.Union(r);
   end;
 
 var
@@ -2028,12 +2034,12 @@ begin
          with FLayers[layer].OriginalInvalidatedBounds do
            r := Rect(floor(Left),floor(Top),ceil(Right),ceil(Bottom));
          RenderLayerFromOriginal(layer, ADraft, r, true);
-         if not IsRectEmpty(r) then
+         if not r.Isempty then
          begin
-           if IsRectEmpty(ABounds) then
+           if ABounds.IsEmpty then
              ABounds := r
            else
-             UnionRect(ABounds, ABounds, r);
+             ABounds.Union(r);
          end;
        end;
   end;
@@ -2389,7 +2395,7 @@ begin
        (LayerOffset[ALayerIndex].Y+LayerBitmap[ALayerIndex].Height <= Height) then exit;
     r := RectWithSize(LayerOffset[ALayerIndex].X, LayerOffset[ALayerIndex].Y,
                       LayerBitmap[ALayerIndex].Width, LayerBitmap[ALayerIndex].Height);
-    IntersectRect(r, r, rect(0,0,Width,Height));
+    r.Intersect( rect(0,0,Width,Height) );
     newBmp := TBGRABitmap.Create(r.Width,r.Height);
     newBmp.PutImage(LayerOffset[ALayerIndex].X - r.Left, LayerOffset[ALayerIndex].Y - r.Top, LayerBitmap[ALayerIndex], dmSet);
     if FLayers[ALayerIndex].Owner then FLayers[ALayerIndex].Source.Free;
@@ -2906,7 +2912,7 @@ begin
   Result := 'LayeredBitmap' + LineEnding + LineEnding;
   for i := 0 to NbLayers - 1 do
   begin
-    Result += LineEnding + 'Layer ' + IntToStr(i) + ' : ' + LayerName[i] + LineEnding;
+    AppendStr(Result, LineEnding + 'Layer ' + IntToStr(i) + ' : ' + LayerName[i] + LineEnding);
   end;
 end;
 
@@ -3028,9 +3034,8 @@ var
   i,j: integer;
   NewClipRect: TRect;
 begin
-  NewClipRect := rect(0,0,0,0);
-  //nothing to be drawn?
-  if not IntersectRect(NewClipRect, rect(AX,AY,AX+Width,AY+Height), Dest.ClipRect) then exit;
+  NewClipRect := TRect.Intersect(rect(AX,AY,AX+Width,AY+Height), Dest.ClipRect);
+  if NewClipRect.IsEmpty then exit;
 
   for i := firstLayer to lastLayer do
     if LayerVisible[i] and

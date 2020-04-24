@@ -5,7 +5,7 @@ unit BGRAGrayscaleMask;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, {%H-}UniversalDrawer;
+  BGRAClasses, SysUtils, BGRABitmapTypes, {%H-}UniversalDrawer;
 
 type
   { TGrayscaleMask }
@@ -46,7 +46,7 @@ type
      function ScanAtMask(X,Y: Single): TByteMask; override;
   end;
 
-procedure DownSamplePutImageGrayscale(sourceData: PByte; sourcePixelSize: NativeInt; sourceRowDelta: NativeInt; sourceWidth, sourceHeight: NativeInt; dest: TGrayscaleMask; ADestRect: TRect); overload;
+procedure DownSamplePutImageGrayscale(sourceData: PByte; sourcePixelSize: Int32or64; sourceRowDelta: Int32or64; sourceWidth, sourceHeight: Int32or64; dest: TGrayscaleMask; ADestRect: TRect); overload;
 procedure DownSamplePutImageGrayscale(source: TBGRACustomBitmap; dest: TGrayscaleMask; ADestRect: TRect); overload;
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,
@@ -70,7 +70,7 @@ end;
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,
   y: integer; xThird: integer; mask: TGrayscaleMask; color: TBGRAPixel;
   texture: IBGRAScanner; RGBOrder: boolean);
-var delta: NativeInt;
+var delta: Int32or64;
 begin
   delta := mask.Width;
   BGRABlend.BGRAFillClearTypeMaskPtr(dest,x,y,xThird,mask.ScanLineByte[0],1,delta,mask.Width,mask.Height,color,texture,RGBOrder);
@@ -86,7 +86,7 @@ procedure ByteMaskChunkSetPixels(
     ASource: PByteMask; ADest: PByteMask;
     AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
 var
-  alphaOver: NativeUInt;
+  alphaOver: UInt32or64;
 begin
   if AAlpha=0 then exit;
   if AAlpha=65535 then
@@ -108,7 +108,7 @@ begin
     if AAlpha > 32768 then alphaOver := AAlpha+1 else alphaOver := AAlpha;
     while ACount > 0 do
     begin
-      ADest^.gray := (ADest^.gray*NativeUInt(65536-alphaOver) + ASource^.gray*alphaOver + 32768) shr 16;
+      ADest^.gray := (ADest^.gray*UInt32or64(65536-alphaOver) + ASource^.gray*alphaOver + 32768) shr 16;
       inc(ADest);
       dec(ACount);
       inc(PByte(ASource), ASourceStride);
@@ -120,7 +120,7 @@ procedure ByteMaskChunkXorPixels(
     ASource: PByteMask; ADest: PByteMask;
     AAlpha: Word; ACount: integer; ASourceStride: integer); inline;
 var
-  alphaOver: NativeUInt;
+  alphaOver: UInt32or64;
   temp: Byte;
 begin
   if AAlpha=0 then exit;
@@ -144,7 +144,7 @@ begin
     while ACount > 0 do
     begin
       temp := ADest^.gray xor ASource^.gray;
-      ADest^.gray := (ADest^.gray*NativeUInt(65536-alphaOver) + temp*alphaOver + 32768) shr 16;
+      ADest^.gray := (ADest^.gray*UInt32or64(65536-alphaOver) + temp*alphaOver + 32768) shr 16;
       inc(ADest);
       dec(ACount);
       inc(PByte(ASource), ASourceStride);
@@ -314,7 +314,7 @@ var
   pDest: PByteMask;
   qty, maskStride: Integer;
   pMask: PByteMask;
-  factor: NativeUInt;
+  factor: UInt32or64;
 begin
   with PByteMaskScannerBrushFixedData(AFixedData)^ do
   begin
@@ -365,7 +365,7 @@ procedure ByteMaskBrushErasePixels(AFixedData: Pointer;
     AContextData: PUniBrushContext; AAlpha: Word; ACount: integer);
 var
   pDest: PByteMask;
-  alphaMul,eraseMul: NativeUInt;
+  alphaMul,eraseMul: UInt32or64;
 begin
   pDest := PByteMask(AContextData^.Dest);
   if AAlpha>=32768 then alphaMul := AAlpha+1 else alphaMul := AAlpha;
@@ -403,7 +403,7 @@ procedure TGrayscaleMask.CopyFrom(ABitmap: TBGRACustomBitmap; AChannel: TChannel
 var psrc: PByte;
   pdest: PByte;
   x,y: integer;
-  ofs: NativeInt;
+  ofs: Int32or64;
 begin
   SetSize(ABitmap.Width,ABitmap.Height);
   if NbPixels > 0 then
@@ -679,16 +679,16 @@ begin
 end;
 
 procedure DownSamplePutImageGrayscale(sourceData: PByte;
-  sourcePixelSize: NativeInt; sourceRowDelta: NativeInt; sourceWidth,
-  sourceHeight: NativeInt; dest: TGrayscaleMask; ADestRect: TRect);
+  sourcePixelSize: Int32or64; sourceRowDelta: Int32or64; sourceWidth,
+  sourceHeight: Int32or64; dest: TGrayscaleMask; ADestRect: TRect);
 var
   x_dest,y_dest: integer;
   pdest: PByte;
-  nbPix,sum: NativeUInt;
-  prev_x_src,x_src,x_src_nb,xb: NativeInt;
-  x_src_inc,x_src_acc,x_src_div,x_src_rest: NativeInt;
-  prev_y_src,y_src,y_src_nb,yb: NativeInt;
-  y_src_inc,y_src_acc,y_src_div,y_src_rest: NativeInt;
+  nbPix,sum: UInt32or64;
+  prev_x_src,x_src,x_src_nb,xb: Int32or64;
+  x_src_inc,x_src_acc,x_src_div,x_src_rest: Int32or64;
+  prev_y_src,y_src,y_src_nb,yb: Int32or64;
+  y_src_inc,y_src_acc,y_src_div,y_src_rest: Int32or64;
   psrc,psrc2,psrc3: PByte;
 begin
   y_src_div := ADestRect.Bottom-ADestRect.Top;
@@ -788,7 +788,7 @@ end;
 
 procedure DownSamplePutImageGrayscale(source: TBGRACustomBitmap;
   dest: TGrayscaleMask; ADestRect: TRect);
-var delta: NativeInt;
+var delta: Int32or64;
 begin
   delta := source.Width*sizeof(TBGRAPixel);
   if source.LineOrder = riloBottomToTop then

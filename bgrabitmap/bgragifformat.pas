@@ -5,7 +5,7 @@ unit BGRAGifFormat;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRABitmap, BGRABitmapTypes,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmap, BGRABitmapTypes,
   BGRAPalette;
 
 type
@@ -419,7 +419,7 @@ var  //input position
   end;
 
 var // GIF buffer can be up to 255 bytes long
-  OutputBufferSize: NativeInt;
+  OutputBufferSize: Int32or64;
   OutputBuffer: packed array[0..255] of byte;
 
   procedure FlushByteOutput;
@@ -442,7 +442,7 @@ var // GIF buffer can be up to 255 bytes long
 type TCode = Word;
 
 var
-  BitBuffer       : DWord; // steady stream of bit output
+  BitBuffer       : LongWord; // steady stream of bit output
   BitBufferLen    : Byte;  // number of bits in buffer
   CurCodeSize     : byte;  // current code size
 
@@ -927,7 +927,7 @@ var
       if not AData.Images[i].HasLocalPalette then
         AddColorsToPalette(AData.Images[i].Image, globalPalette);
     if AData.BackgroundColor <> clNone then
-      globalPalette.AddColor(ColorToBGRA(ColorToRGB(AData.BackgroundColor)));
+      globalPalette.AddColor(ColorToBGRA(AData.BackgroundColor));
 
     if globalPalette.Count > 256 then
     begin
@@ -951,7 +951,7 @@ var
 
     globalTranspIndex:= globalPalette.IndexOfColor(BGRAPixelTransparent);
     if AData.BackgroundColor <> clNone then
-      screenDescriptor.BackgroundColorIndex:= IndexOfGlobalColor(ColorToBGRA(ColorToRGB(AData.BackgroundColor))) and 255;
+      screenDescriptor.BackgroundColorIndex:= IndexOfGlobalColor(ColorToBGRA(AData.BackgroundColor)) and 255;
 
     bitDepth := CeilLn2(globalPalette.Count);
     if bitDepth > 8 then bitDepth:= 8;
@@ -974,7 +974,7 @@ var
     try
       for i := 0 to numberFromPal-1 do
         rgbs[i] := BGRAToPackedRgbTriple(pal.Color[i]);
-      black := BGRAToPackedRgbTriple(ColorToBGRA(clBlack));
+      black := BGRAToPackedRgbTriple(BGRABlack);
       for i := numberFromPal to numberToWrite-1 do
         rgbs[i] := black;
       Stream.WriteBuffer(rgbs^,sizeof(TPackedRGBTriple)*numberToWrite);
@@ -1052,7 +1052,7 @@ var
     procedure DitherAndCompressImage(AFrame: integer; APalette: TBGRAPalette; AQuantizer: TBGRACustomColorQuantizer);
     var ImageData: Pointer;
       Image: TBGRABitmap;
-      y,x: NativeInt;
+      y,x: Int32or64;
       psource: PBGRAPixel;
       pdest: PByte;
     begin

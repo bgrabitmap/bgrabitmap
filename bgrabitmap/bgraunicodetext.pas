@@ -5,7 +5,7 @@ unit BGRAUnicodeText;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAUnicode, BGRAUTF8;
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAUnicode, BGRAUTF8;
 
 type
   TDeleteCharEvent = procedure(ASender: TObject; AParagraphIndex: integer; ACharStart, ACharCount: integer) of object;
@@ -80,7 +80,7 @@ type
     function GetParagraphFirstUnbrokenLine(AIndex: integer): integer;
     function GetParagraphLastUnbrokenLinePlusOne(AIndex: integer): integer;
     function GetParagraphStartIndex(AIndex: integer): integer;
-    function GetUnicodeChar(APosition0: integer): cardinal;
+    function GetUnicodeChar(APosition0: integer): LongWord;
     function GetUTF8Char(APosition0: integer): string4;
     function GetBidiInfo(APosition0: integer): TUnicodeBidiInfo;
     procedure SetBidiMode(AValue: TFontBidiMode);
@@ -113,7 +113,7 @@ type
 
     property TextUTF8: string read FText;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
-    property UnicodeChar[APosition0: integer]: cardinal read GetUnicodeChar;
+    property UnicodeChar[APosition0: integer]: LongWord read GetUnicodeChar;
     property BidiInfo[APosition0: integer]: TUnicodeBidiInfo read GetBidiInfo;
     property CharCount: integer read FCharCount;
     property UnbrokenLineCount: integer read FUnbrokenLineCount;
@@ -577,7 +577,7 @@ begin
     raise exception.Create('Unexpected paragraph unbroken line index');
 end;
 
-function TUnicodeAnalysis.GetUnicodeChar(APosition0: integer): cardinal;
+function TUnicodeAnalysis.GetUnicodeChar(APosition0: integer): LongWord;
 var p : PChar;
   charLen: Integer;
 begin

@@ -356,7 +356,7 @@ end;
 
 function TBGRAPixel.EqualsExactly(constref AColor: TBGRAPixel): boolean;
 begin
-  result := PDWord(@AColor)^ = PDWord(@self)^;
+  result := PLongWord(@AColor)^ = PLongWord(@self)^;
 end;
 
 class operator TBGRAPixel.:=(Source: TBGRAPixel): TColor;
@@ -403,7 +403,7 @@ end;
 procedure BGRASetGamma(AGamma: single);
 var
   GammaLinearFactor: single;
-  i,j,prevpos,nextpos,midpos: NativeInt;
+  i,j,prevpos,nextpos,midpos: Int32or64;
 begin
   if AGamma = 1 then
   begin
@@ -697,7 +697,7 @@ end;
 
 { Merge two colors of same importance }
 function MergeBGRA(ec1, ec2: TExpandedPixel): TExpandedPixel;
-var c12: cardinal;
+var c12: LongWord;
 begin
   if (ec1.alpha = 0) then
     Result := ec2
@@ -834,7 +834,7 @@ end;
 function BGRAToColorF(const a: array of TBGRAPixel; AGammaExpansion: boolean
   ): ArrayOfTColorF;
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   setlength(result, length(a));
   for i := 0 to high(a) do
@@ -1131,9 +1131,9 @@ end;
 
 function GtoH(ghue: word): word;
 const
-  segment: array[0..5] of NativeUInt =
+  segment: array[0..5] of UInt32or64 =
      (13653, 10923, 8192, 13653, 10923, 8192);
-var g: NativeUint;
+var g: UInt32or64;
 begin
   g := ghue;
   if g < segment[0] then
@@ -1171,12 +1171,12 @@ end;
 
 function HtoG(hue: word): word;
 const
-  segmentDest: array[0..5] of NativeUInt =
+  segmentDest: array[0..5] of UInt32or64 =
      (13653, 10923, 8192, 13653, 10923, 8192);
-  segmentSrc: array[0..5] of NativeUInt =
+  segmentSrc: array[0..5] of UInt32or64 =
      (10923, 10922, 10923, 10923, 10922, 10923);
 var
-  h,g: NativeUInt;
+  h,g: UInt32or64;
 begin
   h := hue;
   if h < segmentSrc[0] then
@@ -1391,7 +1391,7 @@ operator := (const AValue: TExpandedPixel): TColor;
 begin Result := BGRAToColor(GammaCompression(AValue)); end;
 
 operator := (const AValue: TColor): TExpandedPixel;
-begin Result := GammaExpansion(ColorToBGRA(ColorToRGB(AValue))) end;
+begin Result := GammaExpansion(ColorToBGRA(AValue)) end;
 
 operator :=(const Source: TExpandedPixel): TBGRAPixel;
 begin
@@ -1538,7 +1538,7 @@ begin
 end;
 
 operator := (const AValue: TColor): THSLAPixel;
-begin Result := BGRAToHSLA(ColorToBGRA(ColorToRGB(AValue))) end;
+begin Result := BGRAToHSLA(ColorToBGRA(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TColor;
 begin Result := BGRAToColor(HSLAToBGRA(AValue)) end;
@@ -1617,7 +1617,7 @@ begin
 end;
 
 operator := (const AValue: TColor): TGSBAPixel;
-begin Result := BGRAToGSBA(ColorToBGRA(ColorToRGB(AValue))) end;
+begin Result := BGRAToGSBA(ColorToBGRA(AValue)) end;
 
 operator := (const AValue: TGSBAPixel): TColor;
 begin Result := BGRAToColor(GSBAToBGRA(AValue)) end;

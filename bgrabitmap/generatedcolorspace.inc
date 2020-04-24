@@ -4016,22 +4016,22 @@ class function TColorHelper.Colorspace: TColorspaceAny; static;
 begin result := TColorColorspace end;
 
 function TColorHelper.GetRed: byte;
-begin result := self and $ff end;
+begin result := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}(self shr 16) and $ff{$ELSE}self and $ff{$ENDIF} end;
 
 function TColorHelper.GetGreen: byte;
 begin result := (self shr 8) and $ff end;
 
 function TColorHelper.GetBlue: byte;
-begin result := (self shr 16) and $ff end;
+begin result := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}self and $ff{$ELSE}(self shr 16) and $ff{$ENDIF} end;
 
 procedure TColorHelper.SetRed(AValue: byte);
-begin self := Cardinal(self and $ffff00) or AValue end;
+begin self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}LongWord(self and $00ffff) or (AValue shl 16){$ELSE}LongWord(self and $ffff00) or AValue{$ENDIF} end;
 
 procedure TColorHelper.SetGreen(AValue: byte);
-begin self := Cardinal(self and $ff00ff) or (AValue shl 8) end;
+begin self := LongWord(self and $ff00ff) or (AValue shl 8) end;
 
 procedure TColorHelper.SetBlue(AValue: byte);
-begin self := Cardinal(self and $00ffff) or (AValue shl 16) end;
+begin self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}LongWord(self and $ffff00) or AValue{$ELSE}LongWord(self and $00ffff) or (AValue shl 16){$ENDIF} end;
 
 function TColorHelper.ToBGRAPixel: TBGRAPixel;overload;
 begin Result := ColorToBGRA(Self) end;

@@ -23,7 +23,7 @@ unit BGRAReadPSD;
 interface
 
 uses
-  Classes, SysUtils, FPimage, FPReadPSD;
+  BGRAClasses, SysUtils, FPimage, FPReadPSD;
 
 type
   { TBGRAReaderPSD }
@@ -173,7 +173,7 @@ procedure TBGRAReaderPSD.InternalRead(Stream: TStream; Img: TFPCustomImage);
 var
   H,HOutput,InputLineIndex,LenOfLineIndex,channel: Integer;
   LenOfLineFactor: PtrInt;
-  BufSize:Cardinal;
+  BufSize:LongWord;
   Encoding:word;
   ContProgress: Boolean;
   CurOffset: int64;
@@ -381,7 +381,7 @@ begin
   Result:=true;
 end;
 
-function Value32To16(p: PDWord; gamma: single): Word;
+function Value32To16(p: PLongWord; gamma: single): Word;
 var v: single;
 begin
   v := (BEtoN(P^) - 1024000000)/40960000;
@@ -481,7 +481,7 @@ begin
              if FChannelCount = 1 then
                for Col:=0 to Img.Width-1 do
                begin
-                 C.Red:=Value32To16(PDWord(P),1.3);
+                 C.Red:=Value32To16(PLongWord(P),1.3);
                  C.green:=C.Red;
                  C.blue:=C.Red;
                  C.alpha:=65535;
@@ -586,9 +586,9 @@ begin
            begin
               With C do
               begin
-                Red:=Value32To16(PDWord(P),2.7);
-                green:=Value32To16(PDWord(P1),2.7);
-                blue:=Value32To16(PDWord(P2),2.7);
+                Red:=Value32To16(PLongWord(P),2.7);
+                green:=Value32To16(PLongWord(P1),2.7);
+                blue:=Value32To16(PLongWord(P2),2.7);
               end;
               Inc(P,4);
               Inc(P1,4);

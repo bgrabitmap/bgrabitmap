@@ -17,7 +17,7 @@ unit BGRACanvas2D;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATransform,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATransform,
   BGRAGradientScanner, BGRAPath, BGRAPen, BGRAGrayscaleMask;
 
 type
@@ -75,6 +75,7 @@ type
     constructor Create(AMatrix: TAffineMatrix; AClipMask: TGrayscaleMask; AClipMaskOwned: boolean);
     function Duplicate: TBGRACanvasState2D;
     destructor Destroy; override;
+    procedure transform(AMatrix: TAffineMatrix);
     procedure SetClipMask(AClipMask: TGrayscaleMask; AOwned: boolean);
     property clipMaskReadOnly: TGrayscaleMask read FClipMask;
     property clipMaskReadWrite: TGrayscaleMask read GetClipMaskReadWrite;
@@ -342,7 +343,7 @@ type
 
 implementation
 
-uses Types, Math, BGRAFillInfo, BGRAPolygon, BGRABlend, FPWriteJPEG, FPWriteBMP, base64;
+uses Math, BGRAFillInfo, BGRAPolygon, BGRABlend, FPWriteJPEG, FPWriteBMP, base64;
 
 type
   TColorStop = record
@@ -649,7 +650,7 @@ end;
 procedure TBGRACanvasGradient2D.addColorStop(APosition: single; AColor: TColor
   );
 begin
-  addColorStop(APosition, ColorToBGRA(ColorToRGB(AColor)));
+  addColorStop(APosition, ColorToBGRA(AColor));
 end;
 
 procedure TBGRACanvasGradient2D.addColorStop(APosition: single; AColor: string
@@ -746,6 +747,11 @@ begin
     FClipMask.Free;
   penStroker.Free;
   inherited Destroy;
+end;
+
+procedure TBGRACanvasState2D.transform(AMatrix: TAffineMatrix);
+begin
+  matrix := matrix*AMatrix;
 end;
 
 procedure TBGRACanvasState2D.SetClipMask(AClipMask: TGrayscaleMask;
@@ -932,11 +938,11 @@ begin
 
   result := '';
   if fsItalic in currentState.fontStyle then
-    result := result+'italic ';
+    AppendStr(result, 'italic ');
   if fsBold in currentState.fontStyle then
-    result += 'bold ';
-  result += FloatToStrF(currentState.fontEmHeight,ffGeneral,6,0,formats)+'px ';
-  result += currentState.fontName;
+    AppendStr(result, 'bold ');
+  AppendStr(result, FloatToStrF(currentState.fontEmHeight,ffGeneral,6,0,formats)+'px ');
+  AppendStr(result, currentState.fontName);
   result := trim(result);
 end;
 
@@ -1244,20 +1250,20 @@ begin
 
       pad := Size(round(h/3), round(h/3));
       m := m*AffineMatrixTranslation(-pad.cx,-pad.cy);
-      surfaceBounds := surface.GetImageAffineBounds(m, Types.Rect(0,0,s.cx+pad.cx*2,s.cy+pad.cy*2));
+      surfaceBounds := surface.GetImageAffineBounds(m, BGRAClasses.Rect(0,0,s.cx+pad.cx*2,s.cy+pad.cy*2));
       if hasShadow then
       begin
         shadowBounds := surfaceBounds;
         shadowBounds.Inflate(ceil(shadowBlur),ceil(shadowBlur));
         shadowBounds.Offset(round(shadowOffsetX),round(shadowOffsetY));
         shadowBounds.Intersect(surface.ClipRect);
-        if not IsRectEmpty(shadowBounds) then
+        if not shadowBounds.IsEmpty then
         begin
           shadowBounds.Offset(-round(shadowOffsetX),-round(shadowOffsetY));
-          UnionRect(surfaceBounds, surfaceBounds, shadowBounds);
+          surfaceBounds.Union(shadowBounds);
         end;
       end;
-      if not IsRectEmpty(surfaceBounds) then
+      if not surfaceBounds.IsEmpty then
       begin
         bmp.SetSize(s.cx+pad.cx*2,s.cy+pad.cy*2);
         bmp.Fill(BGRABlack);
@@ -1487,7 +1493,7 @@ var ofsPts,ofsPts2: array of TPointF;
     var pixRect: TRect;
     begin
       if isEmptyPointF(coord) then exit;
-      pixRect := Types.Rect(round(floor(coord.x)),round(floor(coord.y)),round(ceil(coord.x+0.999))+1,round(ceil(coord.y+0.999))+1);
+      pixRect := BGRAClasses.Rect(round(floor(coord.x)),round(floor(coord.y)),round(ceil(coord.x+0.999))+1,round(ceil(coord.y+0.999))+1);
       if firstFound then
       begin
         foundRect := pixRect;
@@ -1512,7 +1518,7 @@ begin
   for i := 0 to high(ofsPts2) do
     ofsPts2[i] := points2[i]+offset;
 
-  maxRect := Types.Rect(0,0,width,height);
+  maxRect := BGRAClasses.Rect(0,0,width,height);
   if currentState.clipMaskReadOnly <> nil then
     foundRect := maxRect
   else
@@ -1524,8 +1530,9 @@ begin
     for i := 0 to high(ofsPts2) do
       AddPt(ofsPts2[i]);
     if firstFound then exit;
-    InflateRect(foundRect, ceil(shadowBlur),ceil(shadowBlur));
-    if not IntersectRect(foundRect, foundRect,maxRect) then exit;
+    foundRect.Inflate(ceil(shadowBlur), ceil(shadowBlur));
+    foundRect.Intersect(maxRect);
+    if foundRect.IsEmpty then exit;
     offset := PointF(-foundRect.Left,-foundRect.Top);
     for i := 0 to high(ofsPts) do
       ofsPts[i].Offset(offset);
@@ -1729,7 +1736,7 @@ var
   output: TStringStream;
   encode64: TBase64EncodingStream;
 begin
-  if surface = nil then exit;
+  if surface = nil then exit('');
   stream := TMemoryStream.Create;
   if mimeType='image/jpeg' then
   begin
@@ -1777,44 +1784,44 @@ end;
 
 procedure TBGRACanvas2D.scale(x, y: single);
 begin
-  currentState.matrix *= AffineMatrixScale(x,y);
+  currentState.transform(AffineMatrixScale(x,y));
 end;
 
 procedure TBGRACanvas2D.scale(factor: single);
 begin
-  currentState.matrix *= AffineMatrixScale(factor,factor);
+  currentState.transform( AffineMatrixScale(factor,factor) );
 end;
 
 procedure TBGRACanvas2D.rotate(angleRadCW: single);
 begin
-  currentState.matrix *= AffineMatrixRotationRad(-angleRadCW);
+  currentState.transform( AffineMatrixRotationRad(-angleRadCW) );
 end;
 
 procedure TBGRACanvas2D.translate(x, y: single);
 begin
   if (x = 0) and (y = 0) then exit;
-  currentState.matrix *= AffineMatrixTranslation(x,y);
+  currentState.transform( AffineMatrixTranslation(x,y) );
 end;
 
 procedure TBGRACanvas2D.skewx(angleRadCW: single);
 begin
-  currentState.matrix *= AffineMatrixSkewXRad(-angleRadCW);
+  currentState.transform( AffineMatrixSkewXRad(-angleRadCW) );
 end;
 
 procedure TBGRACanvas2D.skewy(angleRadCW: single);
 begin
-  currentState.matrix *= AffineMatrixSkewYRad(-angleRadCW);
+  currentState.transform( AffineMatrixSkewYRad(-angleRadCW) );
 end;
 
 procedure TBGRACanvas2D.transform(m11,m21, m12,m22, m13,m23: single);
 begin
-  currentState.matrix *= AffineMatrix(m11,m12,m13,
-                                      m21,m22,m23);
+  currentState.transform( AffineMatrix(m11,m12,m13,
+                                       m21,m22,m23) );
 end;
 
 procedure TBGRACanvas2D.transform(AMatrix: TAffineMatrix);
 begin
-  currentState.matrix *= AMatrix;
+  currentState.transform( AMatrix );
 end;
 
 procedure TBGRACanvas2D.setTransform(m11,m21, m12,m22, m13,m23: single);
@@ -1856,7 +1863,7 @@ end;
 
 procedure TBGRACanvas2D.strokeStyle(color: TColor);
 begin
-  currentState.strokeColor := ColorToBGRA(ColorToRGB(color));
+  currentState.strokeColor := ColorToBGRA(color);
   currentState.strokeTextureProvider := nil;
 end;
 
@@ -1895,7 +1902,7 @@ end;
 
 procedure TBGRACanvas2D.fillStyle(color: TColor);
 begin
-  currentState.fillColor := ColorToBGRA(ColorToRGB(color));
+  currentState.fillColor := ColorToBGRA(color);
   currentState.fillTextureProvider := nil;
 end;
 
@@ -1923,7 +1930,7 @@ end;
 
 procedure TBGRACanvas2D.shadowColor(color: TColor);
 begin
-  shadowColor(ColorToBGRA(ColorToRGB(color)));
+  shadowColor(ColorToBGRA(color));
 end;
 
 procedure TBGRACanvas2D.shadowColor(color: string);

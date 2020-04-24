@@ -5,7 +5,7 @@ unit BGRAReadXPM;
 interface
 
 uses
-  Classes, SysUtils, FPReadXPM, FPimage;
+  BGRAClasses, SysUtils, FPReadXPM, FPimage;
 
 type
 

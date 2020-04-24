@@ -28,7 +28,7 @@ interface
 {$i bgrabitmap.inc}
 
 uses
-  Types, Classes, SysUtils, BGRAGraphics, BGRABitmapTypes, EasyLazFreeType, FPimage,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, EasyLazFreeType, FPimage,
   BGRACustomTextFX, BGRAPhongTypes;
 
 type
@@ -143,7 +143,7 @@ type
 
 implementation
 
-uses BGRABlend, Math, BGRATransform;
+uses BGRABlend, Math, BGRATransform, BGRAUTF8;
 
 { TBGRAFreeTypeFontRenderer }
 
@@ -423,8 +423,8 @@ begin
   previousClip := ADest.ClipRect;
   if style.Clipping then
   begin
-    intersectedClip := rect(0,0,0,0);
-    if not IntersectRect(intersectedClip, previousClip, ARect) then exit;
+    intersectedClip := TRect.Intersect(previousClip, ARect);
+    if intersectedClip.IsEmpty then exit;
     ADest.ClipRect := intersectedClip;
   end;
   UpdateFont;
@@ -510,7 +510,7 @@ begin
     FFont.SplitText(sUTF8, AMaxWidthF, remains);
     w := FFont.TextWidth(sUTF8);
     if w>result.x then result.x := w;
-    result.y += h;
+    IncF(result.y, h);
     sUTF8 := remains;
   until remains = '';
 end;
@@ -527,7 +527,7 @@ var
 begin
   UpdateFont;
   FFont.SplitText(sUTF8, AMaxWidthF, remains);
-  result := length(sUTF8);
+  result := UTF8Length(sUTF8);
 end;
 
 destructor TBGRAFreeTypeFontRenderer.Destroy;
@@ -659,7 +659,7 @@ begin
   begin
     fx := CreateTextEffect(AText, AFont);
     fx.ShadowQuality := ShadowQuality;
-    y -= AFont.Ascent;
+    DecF(y, AFont.Ascent);
     if ShadowActuallyVisible then fx.DrawShadow(Destination, round(x+ShadowOffset.X),round(y+ShadowOffset.Y), ShadowRadius, ShadowColor);
     if OuterOutlineOnly then DoOutline;
 

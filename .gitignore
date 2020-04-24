@@ -25,3 +25,5 @@ test/colorspace/ColorsDemo
 
 test/colorspace/HorseShoe
 .DS_Store
+
+*.bak1

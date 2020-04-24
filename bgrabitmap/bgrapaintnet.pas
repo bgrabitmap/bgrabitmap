@@ -18,7 +18,7 @@ interface
   and also registers a reader for BGRALayers }
 
 uses
-  Classes, SysUtils, BGRADNetDeserial, FPImage, BGRABitmapTypes, BGRABitmap, BGRALayers;
+  BGRAClasses, SysUtils, BGRADNetDeserial, FPImage, BGRABitmapTypes, BGRABitmap, BGRALayers;
 
 type
 
@@ -82,7 +82,7 @@ implementation
 uses zstream, Math, BGRAUTF8;
 
 {$hints off}
-function BEReadLongword(Stream: TStream): longword;
+function BEReadLongword(Stream: TStream): LongWord;
 begin
   Stream.Read(Result, sizeof(Result));
   Result := BEtoN(Result);
@@ -99,12 +99,12 @@ end;
 
 function IsPaintDotNetFile(filename: string): boolean;
 var
-  stream: TFileStream;
+  stream: TFileStreamUTF8;
 begin
   Result := False;
   if FileExists(filename) then
   begin
-    stream := TFileStream.Create(filename, fmOpenRead);
+    stream := TFileStreamUTF8.Create(SysToUTF8(filename), fmOpenRead);
     Result := IsPaintDotNetStream(stream);
     stream.Free;
   end;
@@ -314,11 +314,11 @@ var
   b: byte;
 begin
   Result := 'Paint.Net document' + LineEnding + LineEnding;
-  Result += Content.ToString;
+  AppendStr(Result, Content.ToString);
   for i := 0 to NbLayers - 1 do
   begin
-    Result += LineEnding + 'Layer ' + IntToStr(i) + ' : ' + LayerName[i] + LineEnding;
-    Result += '[ ';
+    AppendStr(Result, LineEnding + 'Layer ' + IntToStr(i) + ' : ' + LayerName[i] + LineEnding);
+    AppendStr(Result, '[ ');
     LayerData[i].Position := 0;
     if LayerData[i].Size > 256 then
       nbbytes := 256
@@ -329,11 +329,11 @@ begin
         {$hints off}
       LayerData[i].ReadBuffer(b, 1);
         {$hints on}
-      Result += IntToHex(b, 2) + ' ';
+      AppendStr(Result, IntToHex(b, 2) + ' ');
     end;
     if LayerData[i].Size > nbbytes then
-      Result += '...';
-    Result   += ']' + lineending;
+      AppendStr(Result, '...');
+    AppendStr(Result, ']' + lineending);
   end;
 end;
 
@@ -468,7 +468,7 @@ procedure TPaintDotNetFile.LoadLayer(dest: TMemoryStream; src: TStream;
   uncompressedSize: int64);
 var
   CompressionFlag: byte;
-  maxChunkSize, decompressedChunkSize, compressedChunkSize: longword;
+  maxChunkSize, decompressedChunkSize, compressedChunkSize: LongWord;
   chunks:   array of TMemoryStream;
   numChunk: integer;
   chunkCount, i: integer;

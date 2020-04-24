@@ -5,7 +5,7 @@ unit BGRAMacBitmap;
 interface
 
 uses
-  Classes, SysUtils, BGRALCLBitmap, BGRAGraphics, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRALCLBitmap, BGRAGraphics, BGRABitmapTypes;
 
 type
 

@@ -33,7 +33,7 @@ procedure InterpolateBilinear(pUpLeft,pUpRight,pDownLeft,pDownRight: PBGRAPixel;
 
 procedure CopyPixelsWithOpacity(dest,src: PBGRAPixel; opacity: byte; Count: integer); inline;
 function ApplyOpacity(opacity1,opacity2: byte): byte; inline;
-function FastRoundDiv255(value: cardinal): cardinal; inline;
+function FastRoundDiv255(value: LongWord): LongWord; inline;
 
 { Draw a series of pixels with alpha blending }
 procedure PutPixels(pdest: PBGRAPixel; psource: PBGRAPixel; copycount: integer; mode: TDrawMode; AOpacity:byte);
@@ -119,7 +119,7 @@ procedure BGRAFillClearTypeMask(dest: TBGRACustomBitmap; x,y: integer; xThird: i
 procedure BGRAFillClearTypeRGBMask(dest: TBGRACustomBitmap; x, y: integer;
   mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner;
   KeepRGBOrder: boolean);
-procedure BGRAFillClearTypeMaskPtr(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; maskData: PByte; maskPixelSize: NativeInt; maskRowSize: NativeInt; maskWidth,maskHeight: integer; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
+procedure BGRAFillClearTypeMaskPtr(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; maskData: PByte; maskPixelSize: Int32or64; maskRowSize: Int32or64; maskWidth,maskHeight: integer; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
 
 implementation
 
@@ -144,7 +144,7 @@ begin
   pDest := PBGRAPixel(AContextData^.Dest);
   if AAlpha >= $ff7f then
   begin
-    FillDWord(pDest^, ACount, PDWord(@PBGRASolidBrushFixedData(AFixedData)^.BGRA)^);
+    FillDWord(pDest^, ACount, PLongWord(@PBGRASolidBrushFixedData(AFixedData)^.BGRA)^);
     inc(pDest, ACount);
   end else
   begin
@@ -197,7 +197,7 @@ begin
     bAlpha := FastRoundDiv257(Expanded.alpha*AAlpha shr 16);
     if bAlpha = 255 then
     begin
-      FillDWord(pDest^, ACount, PDWord(@BGRA)^);
+      FillDWord(pDest^, ACount, PLongWord(@BGRA)^);
       inc(pDest, ACount);
     end else
     begin
@@ -267,7 +267,7 @@ begin
     begin
       while ACount > 0 do
       begin
-        PDWord(pdest)^ := PDWord(pdest)^ xor PDWord(@BGRA)^;
+        PLongWord(pdest)^ := PLongWord(pdest)^ xor PLongWord(@BGRA)^;
         inc(pDest);
         dec(ACount);
       end;
@@ -275,7 +275,7 @@ begin
     begin
       while ACount > 0 do
       begin
-        PDWord(@c)^ := PDWord(pdest)^ xor PDWord(@BGRA)^;
+        PLongWord(@c)^ := PLongWord(pdest)^ xor PLongWord(@BGRA)^;
         pDest^ := MergeBGRA(pDest^, not AAlpha, c, AAlpha);
         inc(pDest);
         dec(ACount);
@@ -318,7 +318,7 @@ begin
       end
         else ABrush.InternalPutNextPixels:= @BGRASolidBrushLinearDrawPixels;
 
-    dmXor: if PDWord(AColor)^ = 0 then
+    dmXor: if PLongWord(AColor)^ = 0 then
       begin
         ABrush.InternalPutNextPixels:= @BGRASolidBrushSkipPixels;
         ABrush.DoesNothing := true;
@@ -836,7 +836,7 @@ begin
         while ACount > 0 do
         begin
           buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
-          PDWord(pdest)^ := PDWord(pdest)^ xor PDWord(@buf[0])^;
+          PLongWord(pdest)^ := PLongWord(pdest)^ xor PLongWord(@buf[0])^;
           inc(pDest);
           dec(ACount);
         end;
@@ -848,10 +848,10 @@ begin
         while ACount > 3 do
         begin
           IBGRAScanner(Scanner).ScanPutPixels(buf, 4, dmSet);
-          PDWord(@buf[0])^ := PDWord(pdest)^ xor PDWord(@buf[0])^;
-          PDWord(@buf[1])^ := PDWord(pdest+1)^ xor PDWord(@buf[1])^;
-          PDWord(@buf[2])^ := PDWord(pdest+2)^ xor PDWord(@buf[2])^;
-          PDWord(@buf[3])^ := PDWord(pdest+3)^ xor PDWord(@buf[3])^;
+          PLongWord(@buf[0])^ := PLongWord(pdest)^ xor PLongWord(@buf[0])^;
+          PLongWord(@buf[1])^ := PLongWord(pdest+1)^ xor PLongWord(@buf[1])^;
+          PLongWord(@buf[2])^ := PLongWord(pdest+2)^ xor PLongWord(@buf[2])^;
+          PLongWord(@buf[3])^ := PLongWord(pdest+3)^ xor PLongWord(@buf[3])^;
           pDest^ := MergeBGRA(pDest^, not bAlpha, buf[0], bAlpha);
           (pDest+1)^ := MergeBGRA((pDest+1)^, not bAlpha, buf[1], bAlpha);
           (pDest+2)^ := MergeBGRA((pDest+2)^, not bAlpha, buf[2], bAlpha);
@@ -863,7 +863,7 @@ begin
       while ACount > 0 do
       begin
         buf[0] := IBGRAScanner(Scanner).ScanNextPixel;
-        PDWord(@buf[0])^ := PDWord(pdest)^ xor PDWord(@buf[0])^;
+        PLongWord(@buf[0])^ := PLongWord(pdest)^ xor PLongWord(@buf[0])^;
         pDest^ := MergeBGRA(pDest^, not bAlpha, buf[0], bAlpha);
         inc(pDest);
         dec(ACount);
@@ -903,7 +903,7 @@ begin
           dec(ACount, qty);
           while qty > 0 do
           begin
-            PDWord(pDest)^ := PDWord(pDest)^ xor PDWord(pBuf)^;
+            PLongWord(pDest)^ := PLongWord(pDest)^ xor PLongWord(pBuf)^;
             inc(pDest);
             inc(pBuf);
             dec(qty);
@@ -921,7 +921,7 @@ begin
           dec(ACount, qty);
           while qty > 0 do
           begin
-            PDWord(pBuf)^ := PDWord(pDest)^ xor PDWord(pBuf)^;
+            PLongWord(pBuf)^ := PLongWord(pDest)^ xor PLongWord(pBuf)^;
             pDest^ := MergeBGRA(pDest^, not bAlpha, pBuf^, bAlpha);
             inc(pDest);
             inc(pBuf);
@@ -1128,7 +1128,7 @@ begin
   end;
 end;
 
-procedure BGRAFillClearTypeMaskPtr(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; maskData: PByte; maskPixelSize: NativeInt; maskRowSize: NativeInt; maskWidth,maskHeight: integer; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
+procedure BGRAFillClearTypeMaskPtr(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; maskData: PByte; maskPixelSize: Int32or64; maskRowSize: Int32or64; maskWidth,maskHeight: integer; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
 var
   pdest: PBGRAPixel;
   ClearTypePixel: array[0..2] of byte;
@@ -1280,7 +1280,7 @@ begin
 end;
 
 procedure BGRAFillClearTypeMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
-var delta: NativeInt;
+var delta: Int32or64;
 begin
   delta := mask.Width*sizeof(TBGRAPixel);
   if mask.LineOrder = riloBottomToTop then
@@ -1380,9 +1380,9 @@ end;
 procedure InterpolateBilinear(pUpLeft, pUpRight, pDownLeft,
   pDownRight: PBGRAPixel; iFactX,iFactY: Integer; ADest: PBGRAPixel);
 var
-  w1,w2,w3,w4,alphaW: cardinal;
-  rSum, gSum, bSum: cardinal; //rgbDiv = aSum
-  aSum, aDiv: cardinal;
+  w1,w2,w3,w4,alphaW: LongWord;
+  rSum, gSum, bSum: LongWord; //rgbDiv = aSum
+  aSum, aDiv: LongWord;
 begin
   rSum   := 0;
   gSum   := 0;
@@ -1503,7 +1503,7 @@ begin
       dmXor:
         for i := 0 to count-1 do
         begin
-          PDWord(pdest)^ := PDWord(pdest)^ xor DWord(scanNextFunc());
+          PLongWord(pdest)^ := PLongWord(pdest)^ xor LongWord(scanNextFunc());
           inc(pdest);
         end;
       dmSetExceptTransparent:
@@ -1521,7 +1521,7 @@ procedure XorInline(dest: PBGRAPixel; c: TBGRAPixel; Count: integer);
 begin
   while Count > 0 do
   begin
-    PDWord(dest)^ := PDWord(dest)^ xor DWord(c);
+    PLongWord(dest)^ := PLongWord(dest)^ xor LongWord(c);
     Inc(dest);
     Dec(Count);
   end;
@@ -1531,7 +1531,7 @@ procedure XorPixels(pdest, psrc: PBGRAPixel; count: integer);
 begin
   while Count > 0 do
   begin
-    PDWord(pdest)^ := PDWord(psrc)^ xor PDWord(pdest)^;
+    PLongWord(pdest)^ := PLongWord(psrc)^ xor PLongWord(pdest)^;
     Inc(pdest);
     Inc(psrc);
     Dec(Count);
@@ -1552,7 +1552,7 @@ end;
 
 procedure FillInline(dest: PBGRAPixel; c: TBGRAPixel; Count: integer); inline;
 begin
-  FillDWord(dest^, Count, DWord(c));
+  FillDWord(dest^, Count, LongWord(c));
 end;
 
 procedure FastBlendPixelsInline(dest: PBGRAPixel; c: TBGRAPixel; Count: integer);
@@ -1575,12 +1575,9 @@ begin
     dmSet:
     begin
       if AOpacity <> 255 then
-          CopyPixelsWithOpacity(pdest, psource, AOpacity, copycount)
+        CopyPixelsWithOpacity(pdest, psource, AOpacity, copycount)
       else
-      begin
-        copycount *= sizeof(TBGRAPixel);
-        move(psource^, pdest^, copycount);
-      end;
+        move(psource^, pdest^, copycount * sizeof(TBGRAPixel));
     end;
     dmSetExceptTransparent:
     begin
@@ -1649,7 +1646,8 @@ begin
       begin
           for i := copycount - 1 downto 0 do
           begin
-            FastBlendPixelInline(pdest, TBGRAPixel(PDWord(pdest)^ xor PDword(psource)^), AOpacity);
+            PLongWord(@tempPixel)^ := PLongWord(pdest)^ xor PLongWord(psource)^;
+            FastBlendPixelInline(pdest, tempPixel, AOpacity);
             Inc(pdest);
             Inc(psource);
           end;
@@ -1667,7 +1665,7 @@ begin
   if c.alpha = 0 then exit;
   if c.alpha = 255 then
   begin
-    filldword(dest^,count,longword(c));
+    filldword(dest^,count,LongWord(c));
     exit;
   end;
   ec := GammaExpansion(c);
@@ -1688,7 +1686,7 @@ begin
   if ec.alpha >= $FF00 then
   begin
     c := GammaCompression(ec);
-    filldword(dest^,count,longword(c));
+    filldword(dest^,count,LongWord(c));
     exit;
   end;
   for n := Count - 1 downto 0 do
@@ -1705,7 +1703,7 @@ begin
   if c.alpha = 0 then exit;
   if c.alpha = 255 then
   begin
-    filldword(dest^,count,longword(c));
+    filldword(dest^,count,LongWord(c));
     exit;
   end;
   for n := Count - 1 downto 0 do
@@ -1760,7 +1758,7 @@ begin
   result := opacity1*(opacity2+1) shr 8;
 end;
 
-function FastRoundDiv255(value: cardinal): cardinal; inline;
+function FastRoundDiv255(value: LongWord): LongWord; inline;
 begin
   result := (value + (value shr 7)) shr 8;
 end;
@@ -1790,7 +1788,7 @@ end;
 
 procedure DrawPixelInlineNoAlphaCheck(dest: PBGRAPixel; const c: TBGRAPixel);
 var
-  a1f, a2f, a12, a12m, alphaCorr: NativeUInt;
+  a1f, a2f, a12, a12m, alphaCorr: UInt32or64;
 begin
   case dest^.alpha of
     0: dest^ := c;
@@ -1798,9 +1796,9 @@ begin
       begin
         alphaCorr := c.alpha;
         if alphaCorr >= 128 then inc(alphaCorr);
-        dest^.red := GammaCompressionTab[(GammaExpansionTab[dest^.red] * NativeUInt(256-alphaCorr) + GammaExpansionTab[c.red]*alphaCorr) shr 8];
-        dest^.green := GammaCompressionTab[(GammaExpansionTab[dest^.green] * NativeUInt(256-alphaCorr) + GammaExpansionTab[c.green]*alphaCorr) shr 8];
-        dest^.blue := GammaCompressionTab[(GammaExpansionTab[dest^.blue] * NativeUInt(256-alphaCorr) + GammaExpansionTab[c.blue]*alphaCorr) shr 8];
+        dest^.red := GammaCompressionTab[(GammaExpansionTab[dest^.red] * UInt32or64(256-alphaCorr) + GammaExpansionTab[c.red]*alphaCorr) shr 8];
+        dest^.green := GammaCompressionTab[(GammaExpansionTab[dest^.green] * UInt32or64(256-alphaCorr) + GammaExpansionTab[c.green]*alphaCorr) shr 8];
+        dest^.blue := GammaCompressionTab[(GammaExpansionTab[dest^.blue] * UInt32or64(256-alphaCorr) + GammaExpansionTab[c.blue]*alphaCorr) shr 8];
       end;
     else
     begin
@@ -1812,7 +1810,7 @@ begin
       a1f := dest^.alpha * (not c.alpha);
       a2f := (c.alpha shl 8) - c.alpha;
 
-      PDWord(dest)^ := ((GammaCompressionTab[(GammaExpansionTab[dest^.red] * a1f +
+      PLongWord(dest)^ := ((GammaCompressionTab[(GammaExpansionTab[dest^.red] * a1f +
                          GammaExpansionTab[c.red] * a2f + a12m) div a12]) shl TBGRAPixel_RedShift) or
                        ((GammaCompressionTab[(GammaExpansionTab[dest^.green] * a1f +
                          GammaExpansionTab[c.green] * a2f + a12m) div a12]) shl TBGRAPixel_GreenShift) or
@@ -1826,7 +1824,7 @@ end;
 procedure DrawExpandedPixelInlineNoAlphaCheck(dest: PBGRAPixel;
   const ec: TExpandedPixel; calpha: byte);
 var
-  a1f, a2f, a12, a12m, alphaCorr: NativeUInt;
+  a1f, a2f, a12, a12m, alphaCorr: UInt32or64;
 begin
   case dest^.alpha of
     0: begin
@@ -1839,9 +1837,9 @@ begin
       begin
         alphaCorr := calpha;
         if alphaCorr >= 128 then inc(alphaCorr);
-        dest^.red := GammaCompressionTab[(GammaExpansionTab[dest^.red] * NativeUInt(256-alphaCorr) + ec.red*alphaCorr) shr 8];
-        dest^.green := GammaCompressionTab[(GammaExpansionTab[dest^.green] * NativeUInt(256-alphaCorr) + ec.green*alphaCorr) shr 8];
-        dest^.blue := GammaCompressionTab[(GammaExpansionTab[dest^.blue] * NativeUInt(256-alphaCorr) + ec.blue*alphaCorr) shr 8];
+        dest^.red := GammaCompressionTab[(GammaExpansionTab[dest^.red] * UInt32or64(256-alphaCorr) + ec.red*alphaCorr) shr 8];
+        dest^.green := GammaCompressionTab[(GammaExpansionTab[dest^.green] * UInt32or64(256-alphaCorr) + ec.green*alphaCorr) shr 8];
+        dest^.blue := GammaCompressionTab[(GammaExpansionTab[dest^.blue] * UInt32or64(256-alphaCorr) + ec.blue*alphaCorr) shr 8];
       end;
     else
     begin
@@ -1853,7 +1851,7 @@ begin
       a1f := dest^.alpha * (not calpha);
       a2f := (calpha shl 8) - calpha;
 
-      PDWord(dest)^ := ((GammaCompressionTab[(GammaExpansionTab[dest^.red] * a1f +
+      PLongWord(dest)^ := ((GammaCompressionTab[(GammaExpansionTab[dest^.red] * a1f +
                          ec.red * a2f + a12m) div a12]) shl TBGRAPixel_RedShift) or
                        ((GammaCompressionTab[(GammaExpansionTab[dest^.green] * a1f +
                          ec.green * a2f + a12m) div a12]) shl TBGRAPixel_GreenShift) or
@@ -1866,7 +1864,7 @@ end;
 
 procedure FastBlendPixelInline(dest: PBGRAPixel; const c: TBGRAPixel);
 var
-  a1f, a2f, a12, a12m, alphaCorr: NativeUInt;
+  a1f, a2f, a12, a12m, alphaCorr: UInt32or64;
 begin
   case c.alpha of
     0: ;
@@ -1879,9 +1877,9 @@ begin
         begin
           alphaCorr := c.alpha;
           if alphaCorr >= 128 then inc(alphaCorr);
-          dest^.red := (dest^.red * NativeUInt(256-alphaCorr) + c.red*(alphaCorr+1)) shr 8;
-          dest^.green := (dest^.green * NativeUInt(256-alphaCorr) + c.green*(alphaCorr+1)) shr 8;
-          dest^.blue := (dest^.blue * NativeUInt(256-alphaCorr) + c.blue*(alphaCorr+1)) shr 8;
+          dest^.red := (dest^.red * UInt32or64(256-alphaCorr) + c.red*(alphaCorr+1)) shr 8;
+          dest^.green := (dest^.green * UInt32or64(256-alphaCorr) + c.green*(alphaCorr+1)) shr 8;
+          dest^.blue := (dest^.blue * UInt32or64(256-alphaCorr) + c.blue*(alphaCorr+1)) shr 8;
         end;
         else
         begin
@@ -1893,7 +1891,7 @@ begin
           a1f := dest^.alpha * (not c.alpha);
           a2f := (c.alpha shl 8) - c.alpha;
 
-          PDWord(dest)^ := (((dest^.red * a1f + c.red * a2f + a12m) div a12) shl TBGRAPixel_RedShift) or
+          PLongWord(dest)^ := (((dest^.red * a1f + c.red * a2f + a12m) div a12) shl TBGRAPixel_RedShift) or
                            (((dest^.green * a1f + c.green * a2f + a12m) div a12) shl TBGRAPixel_GreenShift) or
                            (((dest^.blue * a1f + c.blue * a2f + a12m) div a12) shl TBGRAPixel_BlueShift) or
                            (((a12 + a12 shr 7) shr 8) shl TBGRAPixel_AlphaShift);
@@ -1912,7 +1910,7 @@ end;
 
 procedure DrawPixelInlineDiff(dest: PBGRAPixel; c, compare: TBGRAPixel;
   maxDiff: byte); inline;
-var alpha: NativeInt;
+var alpha: Int32or64;
 begin
   alpha := (c.alpha * (maxDiff + 1 - BGRADiff(dest^, compare)) + (maxDiff + 1) shr 1) div
     (maxDiff + 1);

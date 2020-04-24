@@ -2,8 +2,8 @@ type
   PWeightedPixel = ^TWeightedPixel;
   TWeightedPixel = packed record
     Coord: TPoint;
-    Weight: NativeInt;
-    PtrOfs: NativeInt;
+    Weight: Int32or64;
+    PtrOfs: Int32or64;
   end;
 
 var
@@ -15,12 +15,12 @@ var
   DiffPixel: array of TWeightedPixel;
   DiffPixelArrayLineStart: array of integer;
 
-  bmpWidth,bmpHeight: NativeInt;
+  bmpWidth,bmpHeight: Int32or64;
 
   procedure LoadMask(out ABlurOfs: TPoint);
-  var x,y,n: NativeInt;
-      tempWeight: NativeInt;
-      diffMask: array of packed array of NativeInt;
+  var x,y,n: Int32or64;
+      tempWeight: Int32or64;
+      diffMask: array of packed array of Int32or64;
       p: PByteMask;
       qty,pStride: integer;
       srcLineDelta, srcPixSize, srcLineOfs: PtrInt;
@@ -52,7 +52,7 @@ var
     //initialize arrays
     setlength(diffMask, maskHeight, maskWidth+1);
     for y := 0 to maskHeight - 1 do
-      fillchar(diffMask[y,0], (maskWidth+1)*sizeof(NativeInt), 0);
+      fillchar(diffMask[y,0], (maskWidth+1)*sizeof(Int32or64), 0);
 
     if bmp.LineOrder = riloTopToBottom then
       srcLineDelta := bmp.RowSize else
@@ -130,7 +130,7 @@ var
   begin
     //evaluate required bounds taking blur radius into acount
     AClippedBounds := bmp.GetImageBounds;
-    if IsRectEmpty(AClippedBounds) then
+    if AClippedBounds.IsEmpty then
     begin
       result := false;
       exit;
@@ -139,7 +139,9 @@ var
     AClippedBounds.Top    := max(0, AClippedBounds.Top - blurOfs.Y);
     AClippedBounds.Right  := min(bmpWidth, AClippedBounds.Right + maskWidth - 1 - blurOfs.X);
     AClippedBounds.Bottom := min(bmpHeight, AClippedBounds.Bottom + maskHeight - 1 - blurOfs.Y);
-    if not IntersectRect(AClippedBounds, AClippedBounds, AWantedBounds) then
+    AClippedBounds.Intersect(AWantedBounds);
+
+    if AClippedBounds.IsEmpty then
     begin
       result := false;
       exit;
@@ -150,9 +152,9 @@ var
 
 var
   bounds: TRect;
-  yb, xb: NativeInt;
-  mindy, maxdy, n, nStart, nCount, nDiffStart, nDiffCount: NativeInt;
-  bmpX,bmpXBase,bmpYBase: NativeInt;
+  yb, xb: Int32or64;
+  mindy, maxdy, n, nStart, nCount, nDiffStart, nDiffCount: Int32or64;
+  bmpX,bmpXBase,bmpYBase: Int32or64;
   pdest : PByte;
   psrc : PByte;
   srcPixSize,destPixSize: integer;

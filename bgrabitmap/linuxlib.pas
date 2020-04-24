@@ -49,7 +49,7 @@ unit linuxlib;
 interface
 
 uses
-  Classes, SysUtils;
+  BGRAClasses, SysUtils;
 
 function FindLinuxLibrary(ALinkerName: string; AMinimumVersion: integer = 0): string;
 

@@ -1,13 +1,13 @@
 
 var
-  blurRowY,blurRowX: packed array of NativeUInt;
-  iRadiusX,iRadiusY: NativeInt;
-  weightFactor: NativeUInt;
+  blurRowY,blurRowX: packed array of UInt32or64;
+  iRadiusX,iRadiusY: Int32or64;
+  weightFactor: UInt32or64;
 
   { Compute weights of pixels in a row }
   procedure ComputeBlurRow;
   var
-    i: NativeInt;
+    i: Int32or64;
     ofs: single;
   begin
     SetLength(blurRowX, 2*iRadiusX+1);
@@ -29,11 +29,11 @@ var
 
 var
   srcDelta,srcPixSize,
-  verticalWeightShift, horizontalWeightShift: NativeInt;
-  ys1,ys2: NativeInt;
+  verticalWeightShift, horizontalWeightShift: Int32or64;
+  ys1,ys2: Int32or64;
 
   { Compute blur result in a vertical direction }
-  procedure ComputeVerticalRow(psrc: PByte; var sums: TRowSum; pw: PNativeUInt; count: NativeInt);
+  procedure ComputeVerticalRow(psrc: PByte; var sums: TRowSum; pw: PNativeUInt; count: Int32or64);
   begin
     while count > 0 do
     with sums do
@@ -48,16 +48,16 @@ var
 var
   psum, psumEnd: PRowSum;
   sums: packed array of TRowSum;
-  sumStartIndex: NativeInt;
+  sumStartIndex: Int32or64;
   total: TRowSum;
   extendedTotal: TExtendedRowSum;
-  yb,xb,xs,x,xEnd: NativeInt;
+  yb,xb,xs,x,xEnd: Int32or64;
   pw: PNativeUInt;
   psrc, pdest: PByte;
-  bmpWidth,bmpHeight : NativeInt;
+  bmpWidth,bmpHeight : Int32or64;
   accumulationFactor: double;
   bounds: TRect;
-  highSum: NativeInt;
+  highSum: Int32or64;
   tempDest: TCustomUniversalBitmap;
   destPixSize: Integer;
 
@@ -81,12 +81,13 @@ begin
   if (ADestination.Width <> bmp.Width) or (ADestination.Height <> bmp.Height) then
     raise exception.Create('Dimension mismatch');
   bounds := bmp.GetImageBounds;
-  if IsRectEmpty(bounds) then exit;
+  if bounds.IsEmpty then exit;
   bounds.Left   := max(0, bounds.Left - iRadiusX);
   bounds.Top    := max(0, bounds.Top - iRadiusY);
   bounds.Right  := min(bmp.Width, bounds.Right + iRadiusX);
   bounds.Bottom := min(bmp.Height, bounds.Bottom + iRadiusY);
-  if not IntersectRect(bounds,bounds,ABounds) then exit;
+  bounds.Intersect(ABounds);
+  if bounds.IsEmpty then exit;
 
   if radiusX*radiusY >= 100 then
   begin
@@ -101,20 +102,21 @@ begin
   end;
 
   accumulationFactor := (iRadiusY+2)*(iRadiusY+1) div 2 + (iRadiusY+1)*iRadiusY div 2;
-  accumulationFactor *= sqr(weightFactor);
+  accumulationFactor := accumulationFactor * sqr(weightFactor);
   verticalWeightShift := 0;
   while accumulationFactor > (high(TRegularRowValue) shr BitMargin) + 1 do
   begin
     inc(verticalWeightShift);
-    accumulationFactor *= 0.5;
+    accumulationFactor := accumulationFactor * 0.5;
   end;
   horizontalWeightShift:= 0;
-  accumulationFactor *= ((iRadiusX+2)*(iRadiusX+1) div 2 + (iRadiusX+1)*iRadiusX div 2);
-  accumulationFactor *= sqr(weightFactor);
+  accumulationFactor := accumulationFactor *
+         ((iRadiusX+2)*(iRadiusX+1) div 2 + (iRadiusX+1)*iRadiusX div 2) *
+         sqr(weightFactor);
   while accumulationFactor > (high(TRegularRowValue) shr BitMargin) + 1 do
   begin
     inc(horizontalWeightShift);
-    accumulationFactor *= 0.5;
+    accumulationFactor := accumulationFactor * 0.5;
   end;
   ComputeBlurRow;
   //current vertical sums

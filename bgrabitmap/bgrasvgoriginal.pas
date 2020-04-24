@@ -5,7 +5,7 @@ unit BGRASVGOriginal;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRABitmap, BGRASVG, BGRATransform, BGRALayerOriginal;
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRABitmap, BGRASVG, BGRATransform, BGRALayerOriginal;
 
 type
   TBGRALayerSVGOriginal = class;

@@ -5,7 +5,7 @@ unit UniversalDrawer;
 interface
 
 uses
-  Classes, SysUtils, FPImage, BGRABitmapTypes, BGRAGraphics, BGRAPen, BGRAArrow;
+  BGRAClasses, SysUtils, FPImage, BGRABitmapTypes, BGRAGraphics, BGRAPen, BGRAArrow;
 
 type
 

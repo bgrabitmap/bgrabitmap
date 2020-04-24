@@ -24,7 +24,7 @@ uses
   BGRANoGUIBitmap, BGRASceneTypes, BGRARenderer3D, BGRAWriteBmpMioMap, 
   BGRASpriteGL, BGRAOpenGLType, BGRAOpenGL, BGRACanvasGL, BGRAPhoxo, 
   BGRAFilterScanner, BGRAFilterType, BGRAFilterBlur, BGRAMultiFileType, 
-  BGRAWinResource, BGRAUnicode;
+  BGRAWinResource, BGRAUnicode, BGRAClasses;
 
 implementation
 

@@ -31,20 +31,21 @@ unit BGRABitmapTypes;
 interface
 
 uses
-  Classes, Types, BGRAGraphics,
-  FPImage, FPImgCanv{$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
+  BGRAClasses, BGRAGraphics,
+  FPImage{$IFDEF BGRABITMAP_USE_FPCANVAS}, FPImgCanv{$ENDIF}
+  {$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
   BGRAMultiFileType;
 
 
 const
-  BGRABitmapVersion = 10080100;
+  BGRABitmapVersion = 10090000;
 
   function BGRABitmapVersionStr: string;
 
 type
   TMultiFileContainer = BGRAMultiFileType.TMultiFileContainer;
-  Int32or64 = {$IFDEF CPU64}Int64{$ELSE}LongInt{$ENDIF};
-  UInt32or64 = {$IFDEF CPU64}UInt64{$ELSE}LongWord{$ENDIF};
+  Int32or64 = BGRAClasses.Int32or64;
+  UInt32or64 = BGRAClasses.UInt32or64;
   HDC = {$IFDEF BGRABITMAP_USE_LCL}LCLType.HDC{$ELSE}PtrUInt{$ENDIF};
 
 {=== Miscellaneous types ===}
@@ -240,8 +241,8 @@ const
 {$DEFINE INCLUDE_INTERFACE}
 {$i csscolorconst.inc}
 
-{$DEFINE INCLUDE_SCANNER_INTERFACE }
-{$I bgracustombitmap.inc}
+{$DEFINE INCLUDE_INTERFACE}
+{$I bgrascanner.inc}
 
 {$DEFINE INCLUDE_INTERFACE}
 {$I unibitmap.inc}
@@ -287,9 +288,9 @@ type
     fqSystemClearType,
     {** Garanties a high quality antialiasing. }
     fqFineAntialiasing,
-    {** Fine antialiasing with ClearType in assuming an LCD display in red/green/blue order }
+    {** Fine antialiasing with ClearType assuming an LCD display in red/green/blue order }
     fqFineClearTypeRGB,
-    {** Fine antialiasing with ClearType in assuming an LCD display in blue/green/red order }
+    {** Fine antialiasing with ClearType assuming an LCD display in blue/green/red order }
     fqFineClearTypeBGR);
 
   {* Measurements of a font }
@@ -392,11 +393,12 @@ type
     function TextSizeF(sUTF8: string): TPointF; overload; virtual;
     function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; overload; virtual; abstract;
     function TextSizeF(sUTF8: string; AMaxWidthF: single; ARightToLeft: boolean): TPointF; overload; virtual;
-
-    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
-    function TextFitInfoF(sUTF8: string; AMaxWidthF: single): integer; virtual;
     function TextSizeAngle(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TSize; virtual;
     function TextSizeAngleF(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TPointF; virtual;
+
+    {** Returns the number of Unicode characters that fit into the specified size }
+    function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
+    function TextFitInfoF(sUTF8: string; AMaxWidthF: single): integer; virtual;
 
     {** Draws the UTF8 encoded string, with color ''c''.
         If align is taLeftJustify, (''x'',''y'') is the top-left corner.
@@ -584,7 +586,7 @@ uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
 
 function BGRABitmapVersionStr: string;
 var numbers: TStringList;
-  i,remaining: cardinal;
+  i,remaining: LongWord;
 begin
   numbers := TStringList.Create;
   remaining := BGRABitmapVersion;
@@ -614,6 +616,9 @@ end;
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I bgracustombitmap.inc}
+
+{$DEFINE INCLUDE_IMPLEMENTATION}
+{$I bgrascanner.inc}
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I bgrapixel.inc}
@@ -709,7 +714,7 @@ procedure BGRADefaultWordBreakHandler(var ABefore, AAfter: string);
 const spacingChars = [' '];
   wordBreakChars = [' ',#9,'-','?','!'];
 var p, charLen: integer;
-  u: Cardinal;
+  u: LongWord;
 begin
   if (AAfter <> '') and (ABefore <> '') and not (AAfter[1] in spacingChars) and not (ABefore[length(ABefore)] in wordBreakChars) then
   begin
@@ -1038,11 +1043,11 @@ var
   procedure DetectFromStream;
   var
     {%H-}magic: packed array[0..7] of byte;
-    {%H-}dwords: packed array[0..9] of DWORD;
+    {%H-}dwords: packed array[0..9] of LongWord;
     magicAsText, moreMagic: string;
 
     streamStartPos, maxFileSize: Int64;
-    expectedFileSize: DWord;
+    expectedFileSize: LongWord;
 
     procedure DetectTarga;
     var
@@ -1068,7 +1073,7 @@ var
 
     procedure DetectLazPaint;
     var
-      w,h: dword;
+      w,h: LongWord;
       i: integer;
     begin
       if (copy(magicAsText,1,8) = 'LazPaint') then //with header
@@ -1368,7 +1373,7 @@ type
     code: pchar;
   end;
 
-{$IF defined(BGRABITMAP_USE_FPGUI) or defined(BGRABITMAP_DONT_USE_LCL)}{$IFDEF MSWINDOWS}
+{$IFNDEF BGRABITMAP_USE_LCL}{$IFDEF MSWINDOWS}
 const
   RT_BITMAP = MAKEINTRESOURCE(2);
   RT_RCDATA = MAKEINTRESOURCE(10);

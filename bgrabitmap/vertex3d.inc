@@ -66,7 +66,7 @@ type
     FTexCoord: TPointF;
     FCoordPool: TBGRACoordPool3D;
     FCoordPoolIndex: integer;
-    FCustomFlags: DWord;
+    FCustomFlags: LongWord;
     FObject3D: TBGRAObject3D;
     function GetCoordData: PBGRACoordData3D;
     procedure Init(AObject3D: TBGRAObject3D; ACoordPool: TBGRACoordPool3D; ASceneCoord: TPoint3D_128);
@@ -86,7 +86,7 @@ type
     function GetViewCoord: TPoint3D;
     function GetViewCoord_128: TPoint3D_128;
     function GetUsage: integer;
-    function GetCustomFlags: DWord;
+    function GetCustomFlags: LongWord;
     procedure SetColor(const AValue: TBGRAPixel);
     procedure SetLight(const AValue: Single);
     procedure SetViewNormal(const AValue: TPoint3D);
@@ -95,7 +95,7 @@ type
     procedure SetCustomNormal_128(AValue: TPoint3D_128);
     procedure NormalizeViewNormal;
     procedure AddViewNormal(const AValue: TPoint3D_128);
-    procedure SetCustomFlags(AValue: DWord);
+    procedure SetCustomFlags(AValue: LongWord);
     procedure SetSceneCoord(const AValue: TPoint3D);
     procedure SetSceneCoord_128(const AValue: TPoint3D_128);
     procedure SetTexCoord(const AValue: TPointF);
@@ -333,7 +333,7 @@ begin
   result := frefcount;
 end;
 
-function TBGRAVertex3D.GetCustomFlags: DWord;
+function TBGRAVertex3D.GetCustomFlags: LongWord;
 begin
   result := FCustomFlags;
 end;
@@ -449,7 +449,7 @@ begin
       Add3D_Aligned(viewNormal, AValue);
 end;
 
-procedure TBGRAVertex3D.SetCustomFlags(AValue: DWord);
+procedure TBGRAVertex3D.SetCustomFlags(AValue: LongWord);
 begin
   FCustomFlags:= AValue;
 end;

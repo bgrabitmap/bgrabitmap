@@ -5,7 +5,7 @@ unit BGRAFilterScanner;
 interface
 
 uses
-  Classes, BGRABitmapTypes, BGRAFilterType;
+  BGRAClasses, BGRABitmapTypes, BGRAFilterType;
 
 type
   { TBGRAFilterScannerGrayscale }
@@ -128,16 +128,16 @@ end;
 function TBGRAEmbossHightlightScanner.DoFilter3X3(PTop, PMiddle,
   PBottom: PBGRAPixel): TBGRAPixel;
 var
-  sum: NativeInt;
+  sum: Int32or64;
   slope,h: byte;
   highlight: TBGRAPixel;
 begin
-  sum := NativeInt((PByte(PTop)+FChannelOffset)^) +
-         NativeInt((PByte(PTop+1)+FChannelOffset)^) +
-         NativeInt((PByte(PMiddle)+FChannelOffset)^) -
-         NativeInt((PByte(PMiddle+2)+FChannelOffset)^) -
-         NativeInt((PByte(PBottom+1)+FChannelOffset)^) -
-         NativeInt((PByte(PBottom+2)+FChannelOffset)^);
+  sum := Int32or64((PByte(PTop)+FChannelOffset)^) +
+         Int32or64((PByte(PTop+1)+FChannelOffset)^) +
+         Int32or64((PByte(PMiddle)+FChannelOffset)^) -
+         Int32or64((PByte(PMiddle+2)+FChannelOffset)^) -
+         Int32or64((PByte(PBottom+1)+FChannelOffset)^) -
+         Int32or64((PByte(PBottom+2)+FChannelOffset)^);
   sum := 128 - sum div 3;
   if sum > 255 then
     slope := 255
@@ -197,7 +197,7 @@ var MiddleX: Integer;
 begin
   if Buffers[1] = nil then
   begin
-    FillDWord(ADest^, ACount, DWord(FDestinationBorderColor));
+    FillDWord(ADest^, ACount, LongWord(FDestinationBorderColor));
     exit;
   end;
   MiddleX := BufferX+1;
@@ -343,9 +343,9 @@ end;
 
 function TBGRASharpenScanner.DoFilter3X3(PTop, PMiddle, PBottom: PBGRAPixel): TBGRAPixel;
 var
-  sumR, sumG, sumB, sumA, nbA: NativeUInt;
+  sumR, sumG, sumB, sumA, nbA: UInt32or64;
   refPixel: TBGRAPixel;
-  rgbDivShr1: NativeUint;
+  rgbDivShr1: UInt32or64;
 begin
   if FAmount = 0 then
   begin
@@ -426,7 +426,7 @@ end;
 
 function TBGRAContourScanner.DoFilter3X3(PTop, PMiddle, PBottom: PBGRAPixel): TBGRAPixel;
 var
-  sum: NativeInt;
+  sum: Int32or64;
   slope: byte;
 begin
   if FGammaCorrection then
@@ -636,7 +636,7 @@ const RedMask = 255 shl TBGRAPixel_RedShift;
       BlueMask64 = BlueMask or (BlueMask shl 32);
       GreenAndAlphaMask64 = GreenAndAlphaMask or (GreenAndAlphaMask shl 32);
 var
-  temp: longword;
+  temp: LongWord;
   temp64: QWord;
   oddN: boolean;
 begin
@@ -669,14 +669,14 @@ begin
   begin
     if TBGRAPixel_RedShift > TBGRAPixel_BlueShift then
     begin
-      temp := PDWord(ASource)^;
-      PDWord(ADest)^ := ((temp and BlueMask) shl (TBGRAPixel_RedShift-TBGRAPixel_BlueShift)) or
+      temp := PLongWord(ASource)^;
+      PLongWord(ADest)^ := ((temp and BlueMask) shl (TBGRAPixel_RedShift-TBGRAPixel_BlueShift)) or
             ((temp and RedMask) shr (TBGRAPixel_RedShift-TBGRAPixel_BlueShift)) or
             (temp and GreenAndAlphaMask);
     end else
     begin
-      temp := PDWord(ASource)^;
-      PDWord(ADest)^ := ((temp and BlueMask) shr (TBGRAPixel_BlueShift-TBGRAPixel_RedShift)) or
+      temp := PLongWord(ASource)^;
+      PLongWord(ADest)^ := ((temp and BlueMask) shr (TBGRAPixel_BlueShift-TBGRAPixel_RedShift)) or
             ((temp and RedMask) shl (TBGRAPixel_BlueShift-TBGRAPixel_RedShift)) or
             (temp and GreenAndAlphaMask);
     end;
@@ -708,7 +708,7 @@ begin
       while ACount > 0 do
       begin
         if ADest^.alpha <> 0 then
-          DWord(ADest^) := DWord(ADest^) xor ($ffffffff and not ($ff shl TBGRAPixel_AlphaShift));
+          LongWord(ADest^) := LongWord(ADest^) xor ($ffffffff and not ($ff shl TBGRAPixel_AlphaShift));
         Inc(ADest);
         dec(ACount);
       end;
@@ -735,7 +735,7 @@ begin
         if ASource^.alpha = 0 then
           ADest^ := BGRAPixelTransparent
         else
-          DWord(ADest^) := DWord(ASource^) xor ($ffffffff and not ($ff shl TBGRAPixel_AlphaShift));
+          LongWord(ADest^) := LongWord(ASource^) xor ($ffffffff and not ($ff shl TBGRAPixel_AlphaShift));
         inc(ASource);
         Inc(ADest);
         dec(ACount);

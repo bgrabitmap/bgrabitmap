@@ -5,7 +5,7 @@ unit UUnitTest;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRABitmapTypes;
 
 implementation
 

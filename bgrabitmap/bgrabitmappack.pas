@@ -29,7 +29,7 @@ uses
   BGRAUnicode, BGRATextBidi, BGRALayerOriginal, BGRASVGOriginal, 
   BGRAGradientOriginal, BGRAUnicodeText, UniversalDrawer, LinearRGBABitmap, 
   XYZABitmap, BGRAWriteTiff, WordXYZABitmap, ExpandedBitmap, libwebp, 
-  linuxlib, BGRAReadWebP, BGRAWriteWebP;
+  linuxlib, BGRAReadWebP, BGRAWriteWebP, BGRAClasses;
 
 implementation
 

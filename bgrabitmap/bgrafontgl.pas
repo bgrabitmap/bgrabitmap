@@ -5,8 +5,8 @@ unit BGRAFontGL;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRAOpenGLType, BGRABitmapTypes,
-  AvgLvlTree;
+  BGRAClasses, SysUtils, BGRAGraphics, BGRAOpenGLType, BGRABitmapTypes,
+  Avl_Tree;
 
 type
   { TRenderedGlyph }
@@ -62,7 +62,7 @@ type
 
   TBGLRenderedFont = class(TBGLCustomFont,IBGLRenderedFont)
   private
-    FGlyphs: TAvgLvlTree;
+    FGlyphs: TAVLTree;
 
     FName: string;
     FColor: TBGRAPixel;
@@ -77,8 +77,7 @@ type
     FClipped: boolean;
     FWordBreakHandler: TWordBreakHandler;
 
-    function CompareGlyph({%H-}Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
-    function FindGlyph(AIdentifier: string): TAvgLvlTreeNode;
+    function FindGlyph(AIdentifier: string): TAVLTreeNode;
     function GetBackgroundColor: TBGRAPixel;
     function GetColor: TBGRAPixel;
     function GetFontEmHeight: integer;
@@ -166,16 +165,16 @@ begin
   FTexture.GradientColors := false;
 end;
 
-{ TBGLRenderedFont }
-
-function TBGLRenderedFont.CompareGlyph(Tree: TAvgLvlTree; Data1, Data2: Pointer): integer;
+function CompareGlyphNode(Data1, Data2: Pointer): integer;
 begin
   result := CompareStr(TRenderedGlyph(Data1).Identifier,TRenderedGlyph(Data2).Identifier);
 end;
 
-function TBGLRenderedFont.FindGlyph(AIdentifier: string): TAvgLvlTreeNode;
+{ TBGLRenderedFont }
+
+function TBGLRenderedFont.FindGlyph(AIdentifier: string): TAVLTreeNode;
 var Comp: integer;
-  Node: TAvgLvlTreeNode;
+  Node: TAVLTreeNode;
 begin
   Node:=FGlyphs.Root;
   while (Node<>nil) do begin
@@ -242,12 +241,12 @@ begin
   pstr := @Text[1];
   left := length(Text);
   case AHorizontalAlign of
-  taCenter: x -= round(TextWidth(Text)/2);
-  taRightJustify: x -= TextWidth(Text);
+  taCenter: DecF(x, round(TextWidth(Text)/2));
+  taRightJustify: DecF(x, TextWidth(Text));
   end;
   case AVerticalAlign of
-  tlCenter: y -= round(TextHeight(Text)/2);
-  tlBottom: y -= TextHeight(Text)*Scale;
+  tlCenter: DecF(y, round(TextHeight(Text)/2));
+  tlBottom: DecF(y, TextHeight(Text)*Scale);
   end;
   while left > 0 do
   begin
@@ -264,7 +263,7 @@ begin
         g.Draw(x,y,Scale,FGradTopLeft,FGradTopRight,FGradBottomRight,FGradBottomLeft)
       else
         g.Draw(x,y,Scale,AColor);
-      x += (g.AdvancePx + StepX)  * Scale;
+      IncF(x, (g.AdvancePx + StepX)  * Scale);
     end;
   end;
 end;
@@ -303,12 +302,12 @@ procedure TBGLRenderedFont.DoTextRect(X, Y, Width, Height: Single;
       CurX := X;
       LineWidth := 0;
       for i := 0 to words.Count-1 do
-        LineWidth += TextWidth(words[i]);
+        IncF(LineWidth, TextWidth(words[i]));
 
       for i := 0 to words.Count-1 do
       begin
         DoTextOut(CurX+round((Width-LineWidth)/(words.Count-1)*i),LineY,words[i],AColor,taLeftJustify,tlTop);
-        CurX += TextWidth(words[i]);
+        IncF(CurX, TextWidth(words[i]));
       end;
       words.Free;
     end else
@@ -352,13 +351,13 @@ begin
   for i := 0 to lines.Count-1 do
   begin
     DoDrawTextLine(CurY,TextWidth(lines[i]),lines[i],Justify and (i<>originalNbLines-1));
-    CurY += lineHeight;
+    IncF(CurY, lineHeight);
   end;
   lines.Free;
 end;
 
 function TBGLRenderedFont.GetGlyph(AIdentifier: string): TRenderedGlyph;
-var Node: TAvgLvlTreeNode;
+var Node: TAVLTreeNode;
 begin
   Node := FindGlyph(AIdentifier);
   if Node = nil then
@@ -401,7 +400,7 @@ begin
 end;
 
 procedure TBGLRenderedFont.SetGlyph(AIdentifier: string; AValue: TRenderedGlyph);
-var Node: TAvgLvlTreeNode;
+var Node: TAVLTreeNode;
 begin
   if AValue.Identifier <> AIdentifier then
     raise exception.Create('Identifier mismatch');
@@ -510,8 +509,8 @@ begin
       g := GetGlyph(nextchar);
       if g <> nil then
       begin
-        if not firstChar then totalWidth += StepX*Scale;
-        totalWidth += g.AdvancePx*Scale;
+        if not firstChar then IncF(totalWidth, StepX*Scale);
+        IncF(totalWidth, g.AdvancePx*Scale);
         if not firstChar and (totalWidth > AMaxWidth) then
         begin
           ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
@@ -621,7 +620,7 @@ begin
   FUseGradientColor:= false;
   FClipped:= false;
 
-  FGlyphs := TAvgLvlTree.CreateObjectCompare(@CompareGlyph);
+  FGlyphs := TAVLTree.Create(@CompareGlyphNode);
   FWordBreakHandler:= nil;
 end;
 
@@ -659,8 +658,8 @@ begin
       if firstChar then
         firstchar := false
       else
-        result += StepX * Scale;
-      result += g.AdvancePx * Scale;
+        IncF(result, StepX * Scale);
+      IncF(result, g.AdvancePx * Scale);
     end;
   end;
 end;

@@ -111,7 +111,7 @@ const
   {** Sets the intensity quickly, by fading towards black if ''lightness'' is
       less than 32768, and multiplying all components if ''lightness'' is more
       than 32768. In case of saturation, it fades towards white }
-  function ApplyIntensityFast(color: TBGRAPixel; lightness: longword): TBGRAPixel;
+  function ApplyIntensityFast(color: TBGRAPixel; lightness: LongWord): TBGRAPixel;
   {** Combines two lightnesses together. A value of 32768 is neutral. The
       result may exceed 65535 }
   function CombineLightness(lightness1,lightness2: Int32or64): Int32or64;
@@ -134,7 +134,7 @@ const
   function ColorToBGRA(color: TColor; opacity: byte): TBGRAPixel; overload;
   {** Converts a pixel into a TColor value, discarding the alpha value }
   function BGRAToColor(c: TBGRAPixel): TColor;
-  function FastRoundDiv257(valueWord: cardinal): byte; inline;
+  function FastRoundDiv257(valueWord: LongWord): byte; inline;
   {** Converts a ''TFPColor'' value into a pixel. Note that even if
       ''TFPColor'' have 16-bit values, they are not considered as
       gamma expanded }
@@ -296,7 +296,7 @@ end;
 
 function BGRA(red, green, blue, alpha: byte): TBGRAPixel;
 begin
-  DWord(result) := (red shl TBGRAPixel_RedShift) or
+  LongWord(result) := (red shl TBGRAPixel_RedShift) or
                    (green shl TBGRAPixel_GreenShift) or
                    (blue shl TBGRAPixel_BlueShift) or
                    (alpha shl TBGRAPixel_AlphaShift);
@@ -304,7 +304,7 @@ end;
 
 function BGRA(red, green, blue: byte): TBGRAPixel; overload;
 begin
-  DWord(result) := (red shl TBGRAPixel_RedShift) or
+  LongWord(result) := (red shl TBGRAPixel_RedShift) or
                    (green shl TBGRAPixel_GreenShift) or
                    (blue shl TBGRAPixel_BlueShift) or
                    (255 shl TBGRAPixel_AlphaShift);
@@ -375,9 +375,9 @@ begin
   end;
 end;
 
-function ApplyIntensityFast(color: TBGRAPixel; lightness: longword): TBGRAPixel;
+function ApplyIntensityFast(color: TBGRAPixel; lightness: LongWord): TBGRAPixel;
 var
-    maxValue,invMaxValue,r,g,b: longword;
+    maxValue,invMaxValue,r,g,b: LongWord;
     lightness256: byte;
 begin
   if lightness <= 32768 then
@@ -404,7 +404,7 @@ begin
                      color.alpha)
     else
     begin
-      invMaxValue := (longword(2147483647)+longword(maxValue-1)) div maxValue;
+      invMaxValue := (LongWord(2147483647)+LongWord(maxValue-1)) div maxValue;
       maxValue := (maxValue-65535) shr 1;
       r := r*invMaxValue shr 15 + maxValue;
       g := g*invMaxValue shr 15 + maxValue;
@@ -493,7 +493,7 @@ end;
 
 { Merge linearly two colors of same importance }
 function MergeBGRA(c1, c2: TBGRAPixel): TBGRAPixel;
-var c12: cardinal;
+var c12: LongWord;
 begin
   if (c1.alpha = 0) then
     Result := c2
@@ -611,9 +611,9 @@ begin
   Result := RGBToColor(c.red, c.green, c.blue);
 end;
 
-function FastRoundDiv257(valueWord: cardinal): byte; inline;
+function FastRoundDiv257(valueWord: LongWord): byte; inline;
 begin
-  result := cardinal(valueWord + 127 - (valueWord shr 8)) shr 8;
+  result := LongWord(valueWord + 127 - (valueWord shr 8)) shr 8;
 end;
 
 { Conversion from TFPColor to TBGRAPixel assuming TFPColor
@@ -678,7 +678,7 @@ end;
 
 function MergeBGRA(const colors: array of TBGRAPixel): TBGRAPixel;
 var
-  sumR,sumG,sumB,sumA: NativeUInt;
+  sumR,sumG,sumB,sumA: UInt32or64;
   i: integer;
 begin
   if length(colors)<=0 then
@@ -703,7 +703,7 @@ begin
     result.red := (sumR + sumA shr 1) div sumA;
     result.green := (sumG + sumA shr 1) div sumA;
     result.blue := (sumB + sumA shr 1) div sumA;
-    result.alpha := sumA div longword(length(colors));
+    result.alpha := sumA div LongWord(length(colors));
   end
   else
     result := BGRAPixelTransparent;

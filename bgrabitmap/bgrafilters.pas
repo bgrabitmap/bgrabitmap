@@ -9,7 +9,7 @@ interface
   a result. }
 
 uses
-  Classes, BGRABitmapTypes, BGRAFilterType, BGRAFilterBlur;
+  BGRAClasses, BGRABitmapTypes, BGRAFilterType, BGRAFilterBlur;
 
 type
   TFilterTask = BGRAFilterType.TFilterTask;
@@ -121,7 +121,7 @@ function FilterPixelate(bmp: TBGRACustomBitmap; pixelSize: integer; useResample:
 
 implementation
 
-uses Math, BGRATransform, Types, SysUtils, BGRAFilterScanner;
+uses Math, BGRATransform, SysUtils, BGRAFilterScanner;
 
 /////////////////////// PIXELWISE FILTERS ////////////////////////////////
 
@@ -137,7 +137,7 @@ procedure TGrayscaleTask.DoExecute;
 var
   yb: LongInt;
 begin
-  if IsRectEmpty(FBounds) then exit;
+  if FBounds.IsEmpty then exit;
   for yb := FBounds.Top to FBounds.bottom - 1 do
   begin
     if GetShouldStop(yb) then break;
@@ -181,8 +181,8 @@ var scanner: TBGRAFilterScannerNormalize;
   remain: TRect;
 begin
   Result := bmp.NewBitmap(bmp.Width, bmp.Height);
-  remain := EmptyRect;
-  if not IntersectRect(remain,ABounds,rect(0,0,bmp.Width,bmp.Height)) then exit;
+  remain := TRect.Intersect(ABounds, rect(0,0,bmp.Width,bmp.Height));
+  if remain.IsEmpty then exit;
   scanner := TBGRAFilterScannerNormalize.Create(bmp,Point(0,0),remain,eachChannel);
   result.FillRect(remain,scanner,dmSet);
   scanner.Free;
@@ -198,7 +198,7 @@ function FilterSharpen(bmp: TBGRACustomBitmap; ABounds: TRect; AAmount: integer 
 var scanner: TBGRAFilterScanner;
 begin
   Result := bmp.NewBitmap(bmp.Width, bmp.Height);
-  if IsRectEmpty(ABounds) then exit;
+  if ABounds.IsEmpty then exit;
   scanner := TBGRASharpenScanner.Create(bmp,ABounds,AAmount);
   result.FillRect(ABounds,scanner,dmSet);
   scanner.Free;
@@ -231,10 +231,10 @@ end;
   in the specified direction. }
 function FilterEmboss(bmp: TBGRACustomBitmap; angle: single; ABounds: TRect; AStrength: integer; AOptions: TEmbossOptions): TBGRACustomBitmap;
 var
-  yb, xb: NativeInt;
+  yb, xb: Int32or64;
   dx, dy: single;
-  idx, idy: NativeInt;
-  x256,y256: NativeInt;
+  idx, idy: Int32or64;
+  x256,y256: Int32or64;
   cMiddle: TBGRAPixel;
   hMiddle: THSLAPixel;
 
@@ -243,8 +243,8 @@ var
 
   bounds: TRect;
   psrc: PBGRAPixel;
-  redDiff,greenDiff,blueDiff: NativeUInt;
-  diff: NativeInt;
+  redDiff,greenDiff,blueDiff: UInt32or64;
+  diff: Int32or64;
 begin
   //compute pixel position and weight
   dx   := cos(angle * Pi / 180);
@@ -255,11 +255,11 @@ begin
   y256 := trunc((dy-idy)*256);
 
   Result := bmp.NewBitmap(bmp.Width, bmp.Height);
-  if IsRectEmpty(ABounds) then exit;
+  if ABounds.IsEmpty then exit;
 
   bounds := bmp.GetImageBounds;
-
-  if not IntersectRect(bounds, bounds, ABounds) then exit;
+  bounds.Intersect(ABounds);
+  if bounds.IsEmpty then exit;
   bounds.Left   := max(0, bounds.Left - 1);
   bounds.Top    := max(0, bounds.Top - 1);
   bounds.Right  := min(bmp.Width, bounds.Right + 1);
@@ -301,9 +301,9 @@ begin
       end else
       begin
         {$push}{$hints off}{$r-}
-        redDiff := NativeUInt(max(0, 65536 + (refPixel.red * refPixel.alpha - cMiddle.red * cMiddle.alpha) * AStrength div 64)) shr 9;
-        greenDiff := NativeUInt(max(0, 65536 + (refPixel.green * refPixel.alpha - cMiddle.green * cMiddle.alpha) * AStrength div 64)) shr 9;
-        blueDiff := NativeUInt(max(0, 65536 + (refPixel.blue * refPixel.alpha - cMiddle.blue * cMiddle.alpha) * AStrength div 64)) shr 9;
+        redDiff := UInt32or64(max(0, 65536 + (refPixel.red * refPixel.alpha - cMiddle.red * cMiddle.alpha) * AStrength div 64)) shr 9;
+        greenDiff := UInt32or64(max(0, 65536 + (refPixel.green * refPixel.alpha - cMiddle.green * cMiddle.alpha) * AStrength div 64)) shr 9;
+        blueDiff := UInt32or64(max(0, 65536 + (refPixel.blue * refPixel.alpha - cMiddle.blue * cMiddle.alpha) * AStrength div 64)) shr 9;
         {$pop}
         if (redDiff <> 128) or (greenDiff <> 128) or (blueDiff <> 128) then
         begin
@@ -312,7 +312,7 @@ begin
           tempPixel.blue := min(255, blueDiff);
           if eoTransparent in AOptions then
           begin
-            tempPixel.alpha := min(255,abs(NativeInt(redDiff-128))+abs(NativeInt(greenDiff-128))+abs(NativeInt(blueDiff-128)));
+            tempPixel.alpha := min(255,abs(Int32or64(redDiff-128))+abs(Int32or64(greenDiff-128))+abs(Int32or64(blueDiff-128)));
             pdest^ := tempPixel;
           end else
           begin
@@ -852,7 +852,7 @@ begin
 
       diff := diag1.sd - diag2.sd;
       if abs(diff) < 3 then
-        diff -= (diag1.b - diag2.b) * (3 - abs(diff)) / 2;
+        DecF(diff, (diag1.b - diag2.b) * (3 - abs(diff)) / 2);
       //which diagonal to highlight?
       if abs(diff) < 0.2 then
         diff := 0;

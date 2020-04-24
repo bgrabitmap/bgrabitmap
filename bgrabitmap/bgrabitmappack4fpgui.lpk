@@ -33,8 +33,8 @@
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="10" Minor="8" Release="1"/>
-    <Files Count="97">
+    <Version Major="10" Minor="9"/>
+    <Files Count="100">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -423,6 +423,18 @@
         <Filename Value="bezier.inc"/>
         <Type Value="Include"/>
       </Item97>
+      <Item98>
+        <Filename Value="unibitmap.inc"/>
+        <Type Value="Include"/>
+      </Item98>
+      <Item99>
+        <Filename Value="bgraclasses.pas"/>
+        <UnitName Value="BGRAClasses"/>
+      </Item99>
+      <Item100>
+        <Filename Value="bgrascanner.inc"/>
+        <Type Value="Include"/>
+      </Item100>
     </Files>
     <RequiredPkgs Count="3">
       <Item1>
@@ -441,7 +453,6 @@
     </UsageOptions>
     <PublishOptions>
       <Version Value="2"/>
-      <IgnoreBinaries Value="False"/>
     </PublishOptions>
     <CustomOptions Items="ExternHelp" Version="2">
       <_ExternHelp Items="Count"/>

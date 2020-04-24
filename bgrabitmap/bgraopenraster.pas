@@ -5,7 +5,7 @@ unit BGRAOpenRaster;
 interface
 
 uses
-  Classes, SysUtils, BGRALayers, zipper, DOM, BGRABitmap, FPImage;
+  BGRAClasses, SysUtils, BGRALayers, zipper, DOM, BGRABitmap, FPImage;
 
 const
   OpenRasterMimeType = 'image/openraster'; //do not change, it's part of the file format

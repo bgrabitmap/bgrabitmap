@@ -5,8 +5,8 @@ unit BGRAOpenGLType;
 interface
 
 uses
-  Types, BGRAGraphics, BGRABitmap, BGRABitmapTypes,
-  FPimage, Classes, SysUtils, BGRATransform,
+  BGRAGraphics, BGRABitmap, BGRABitmapTypes,
+  FPimage, BGRAClasses, SysUtils, BGRATransform,
   BGRASSE, BGRAMatrix3D;
 
 type
@@ -179,7 +179,7 @@ type
     procedure SetResampleFilter(AValue: TOpenGLResampleFilter);
     procedure SetGradientColors(ATopLeft, ATopRight, ABottomRight, ABottomLeft: TBGRAPixel);
     procedure SetUseGradientColors(AValue: boolean);
-    procedure Update(ARGBAData: PDWord; AllocatedWidth, AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean = true);
+    procedure Update(ARGBAData: PLongWord; AllocatedWidth, AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean = true);
     procedure ToggleFlipX;
     procedure ToggleFlipY;
     procedure ToggleMask;
@@ -318,8 +318,8 @@ type
     FBlendMode: TOpenGLBlendMode;
 
     function GetOpenGLMaxTexSize: integer; virtual; abstract;
-    function CreateOpenGLTexture(ARGBAData: PDWord; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer; RGBAOrder: boolean): TBGLTextureHandle; virtual; abstract;
-    procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PDWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); virtual; abstract;
+    function CreateOpenGLTexture(ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer; RGBAOrder: boolean): TBGLTextureHandle; virtual; abstract;
+    procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); virtual; abstract;
     class function SupportsBGRAOrder: boolean; virtual;
     procedure SetOpenGLTextureSize(ATexture: TBGLTextureHandle; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer); virtual; abstract;
     procedure ComputeOpenGLFramesCoord(ATexture: TBGLTextureHandle; FramesX: Integer=1; FramesY: Integer=1); virtual; abstract;
@@ -347,13 +347,13 @@ type
     procedure FreeMemoryOnDestroy; virtual;
 
     procedure InitEmpty;
-    procedure InitFromData(ARGBAData: PDWord; AllocatedWidth,AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean);
+    procedure InitFromData(ARGBAData: PLongWord; AllocatedWidth,AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean);
     procedure InitFromStream(AStream: TStream);
   public
     destructor Destroy; override;
     constructor Create; overload;
     constructor Create(ATexture: TBGLTextureHandle; AWidth,AHeight: integer); overload;
-    constructor Create(ARGBAData: PDWord; AllocatedWidth,AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean = true); overload;
+    constructor Create(ARGBAData: PLongWord; AllocatedWidth,AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean = true); overload;
     constructor Create(AFPImage: TFPCustomImage); overload;
     constructor Create(ABitmap: TBitmap); overload;
     constructor Create(AWidth, AHeight: integer; Color: TColor); overload;
@@ -368,7 +368,7 @@ type
     function FilterBlurRadial({%H-}ARadius: single; {%H-}ABlurType: TRadialBlurType): IBGLTexture; virtual;
 
     procedure SetFrameSize(x,y: integer);
-    procedure Update(ARGBAData: PDWord; AllocatedWidth, AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean = true);
+    procedure Update(ARGBAData: PLongWord; AllocatedWidth, AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean = true);
     procedure SetFrame(AIndex: integer);
     procedure SetGradientColors(ATopLeft, ATopRight, ABottomRight, ABottomLeft: TBGRAPixel);
     procedure FreeMemory;
@@ -660,7 +660,7 @@ begin
   raise exception.Create('Not implemented');
 end;
 
-procedure TBGLCustomTexture.Update(ARGBAData: PDWord; AllocatedWidth,
+procedure TBGLCustomTexture.Update(ARGBAData: PLongWord; AllocatedWidth,
   AllocatedHeight, ActualWidth, ActualHeight: integer; RGBAOrder: boolean);
 begin
   UpdateOpenGLTexture(FOpenGLTexture, ARGBAData, AllocatedWidth, AllocatedHeight, ActualWidth,ActualHeight,RGBAOrder);
@@ -756,7 +756,7 @@ begin
   Init(GetEmptyTexture,0,0,False);
 end;
 
-procedure TBGLCustomTexture.InitFromData(ARGBAData: PDWord;
+procedure TBGLCustomTexture.InitFromData(ARGBAData: PLongWord;
   AllocatedWidth, AllocatedHeight, ActualWidth, ActualHeight: integer;
   RGBAOrder: boolean);
 var tex: TBGLTextureHandle;
@@ -782,7 +782,7 @@ begin
   try
     bmp := BGLBitmapFactory.Create(AStream);
     if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then bmp.SwapRedBlue;
-    InitFromData(PDWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height,TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
+    InitFromData(PLongWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height,TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
   except
     InitEmpty;
   end;
@@ -806,7 +806,7 @@ begin
   Init(ATexture, AWidth,AHeight, False);
 end;
 
-constructor TBGLCustomTexture.Create(ARGBAData: PDWord; AllocatedWidth,
+constructor TBGLCustomTexture.Create(ARGBAData: PLongWord; AllocatedWidth,
   AllocatedHeight, ActualWidth, ActualHeight: integer; RGBAOrder: boolean);
 begin
   InitFromData(ARGBAData,AllocatedWidth,AllocatedHeight,ActualWidth,ActualHeight,RGBAOrder);
@@ -823,7 +823,7 @@ begin
     begin
       if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then SwapRedBlue;
       if LineOrder = riloBottomToTop then VerticalFlip;
-      InitFromData(PDWord(Data), Width,Height, Width,Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
+      InitFromData(PLongWord(Data), Width,Height, Width,Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
       if LineOrder = riloBottomToTop then VerticalFlip;
       if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then SwapRedBlue;
     end;
@@ -831,7 +831,7 @@ begin
   begin
     bmp := BGLBitmapFactory.Create(AFPImage);
     if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then bmp.SwapRedBlue;
-    InitFromData(PDWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
+    InitFromData(PLongWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
     bmp.Free;
   end;
 end;
@@ -841,7 +841,7 @@ var bmp: TBGLCustomBitmap;
 begin
   bmp := BGLBitmapFactory.Create(ABitmap);
   if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then bmp.SwapRedBlue;
-  InitFromData(PDWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
+  InitFromData(PLongWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
   bmp.Free;
 end;
 
@@ -850,7 +850,7 @@ var bmp: TBGLCustomBitmap;
 begin
   bmp := BGLBitmapFactory.Create(AWidth,AHeight,Color);
   if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then bmp.SwapRedBlue;
-  InitFromData(PDWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
+  InitFromData(PLongWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
   bmp.Free;
 end;
 
@@ -860,7 +860,7 @@ var bmp: TBGLCustomBitmap;
 begin
   bmp := BGLBitmapFactory.Create(AWidth,AHeight,Color);
   if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then bmp.SwapRedBlue;
-  InitFromData(PDWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
+  InitFromData(PLongWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
   bmp.Free;
 end;
 
@@ -871,7 +871,7 @@ begin
   try
     bmp := BGLBitmapFactory.Create(AFilenameUTF8, True);
     if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then bmp.SwapRedBlue;
-    InitFromData(PDWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
+    InitFromData(PLongWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder or not SupportsBGRAOrder);
   except
     InitEmpty;
     NotifyErrorLoadingFile(AFilenameUTF8);
@@ -900,7 +900,7 @@ begin
       temp := nil;
     end;
     if not TBGRAPixel_RGBAOrder and not SupportsBGRAOrder then bmp.SwapRedBlue;
-    InitFromData(PDWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder);
+    InitFromData(PLongWord(bmp.Data), bmp.AllocatedWidth,bmp.AllocatedHeight, bmp.Width,bmp.Height, TBGRAPixel_RGBAOrder);
   except
     InitEmpty;
     NotifyErrorLoadingFile(AFilenameUTF8);
@@ -969,12 +969,12 @@ procedure TBGLCustomTexture.StretchDraw(x, y, w, h: single;
   AHorizAlign: TAlignment; AVertAlign: TTextLayout; AColor: TBGRAPixel);
 begin
   case AHorizAlign of
-  taCenter: x -= w*0.5;
-  taRightJustify: x -= w-1;
+  taCenter: DecF(x, w*0.5);
+  taRightJustify: DecF(x, w-1);
   end;
   case AVertAlign of
-  tlCenter: y -= h*0.5;
-  tlBottom: y -= h;
+  tlCenter: DecF(y, h*0.5);
+  tlBottom: DecF(y, h);
   end;
   DoStretchDraw(x,y,w,h,AColor);
 end;
@@ -1028,8 +1028,8 @@ begin
   rotationCenter := PointF(imageCenter.x*w/FWidth, imageCenter.y*h/FHeight);
   if not ARestoreOffsetAfterRotation then
   begin
-    x -= rotationCenter.x;
-    y -= rotationCenter.y;
+    DecF(x, rotationCenter.x);
+    DecF(y, rotationCenter.y);
   end;
   DoStretchDrawAngle(x,y,w,h,angleDeg,rotationCenter+PointF(x,y),AColor);
 end;
@@ -1564,9 +1564,9 @@ begin
       FTextureInvalidated := false;
       if not TBGRAPixel_RGBAOrder and not BGLTextureFactory.SupportsBGRAOrder then SwapRedBlueWithoutInvalidate(Rect(0,0,Width,Height));
       if FTexture = nil then
-        FTexture := BGLTextureFactory.Create(PDWord(self.Data), AllocatedWidth,AllocatedHeight, Width,Height, TBGRAPixel_RGBAOrder or not BGLTextureFactory.SupportsBGRAOrder)
+        FTexture := BGLTextureFactory.Create(PLongWord(self.Data), AllocatedWidth,AllocatedHeight, Width,Height, TBGRAPixel_RGBAOrder or not BGLTextureFactory.SupportsBGRAOrder)
       else
-        FTexture.Update(PDWord(self.Data), AllocatedWidth,AllocatedHeight, Width,Height, TBGRAPixel_RGBAOrder or not BGLTextureFactory.SupportsBGRAOrder);
+        FTexture.Update(PLongWord(self.Data), AllocatedWidth,AllocatedHeight, Width,Height, TBGRAPixel_RGBAOrder or not BGLTextureFactory.SupportsBGRAOrder);
       if not TBGRAPixel_RGBAOrder and not BGLTextureFactory.SupportsBGRAOrder then SwapRedBlueWithoutInvalidate(Rect(0,0,Width,Height));
     end;
     result := FTexture;
@@ -1589,7 +1589,7 @@ begin
 end;
 
 procedure TBGLCustomBitmap.SwapRedBlueWithoutInvalidate(ARect: TRect);
-var y: NativeInt;
+var y: Int32or64;
     p: PBGRAPixel;
 begin
   if not CheckClippedRectBounds(ARect.Left,ARect.Top,ARect.Right,ARect.Bottom) then exit;
@@ -1692,8 +1692,7 @@ end;
 procedure TBGLCustomBitmap.SetClipRect(const AValue: TRect);
 var r: TRect;
 begin
-  r := AValue;
-  IntersectRect(r, r,FActualRect);
+  r := TRect.Intersect(AValue, FActualRect);
   inherited SetClipRect(r);
 end;
 

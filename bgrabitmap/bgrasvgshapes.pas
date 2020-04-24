@@ -5,7 +5,7 @@ unit BGRASVGShapes;
 interface
 
 uses
-  Classes, SysUtils, BGRAUnits, laz2_DOM, BGRAPath, BGRABitmapTypes,
+  BGRAClasses, SysUtils, BGRAUnits, DOM, BGRAPath, BGRABitmapTypes,
   BGRACanvas2D, BGRASVGType;
 
 type
@@ -50,7 +50,7 @@ type
                 const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
       property GradientElement: TSVGGradient read GetGradientElement;
   end;       
-  
+
   { TSVGLine }
 
   TSVGLine = class(TSVGElement)
@@ -764,7 +764,7 @@ function CreateSVGElementFromNode(AElement: TDOMElement; AUnits: TCSSUnitConvert
 
 implementation
 
-uses BGRATransform, BGRAGraphics;
+uses BGRATransform, BGRAGraphics, BGRAUTF8;
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
 var tag: string;
@@ -1176,14 +1176,14 @@ begin
     if FContent.IsSVGElement[i] then
     begin
       if FContent.Element[i] is TSVGTRef then
-        result += GetTRefContent(TSVGTRef(FContent.Element[i]))
+        AppendStr(result, GetTRefContent(TSVGTRef(FContent.Element[i])) )
       else
       if FContent.Element[i] is TSVGText then
-        result += TSVGText(FContent.Element[i]).SimpleText;
+        AppendStr(result, TSVGText(FContent.Element[i]).SimpleText);
     end else
     begin
       if FContent.ElementDOMNode[i] is TDOMText then
-        result += TDOMText(FContent.ElementDOMNode[i]).Data;
+        AppendStr(result, UTF16ToUTF8(TDOMText(FContent.ElementDOMNode[i]).Data));
     end;
   FInGetSimpleText := false;
 end;
@@ -1343,8 +1343,8 @@ begin
 
   adx := Units.ConvertWidth(dx,AUnit);
   ady := Units.ConvertHeight(dy,AUnit);
-  if length(adx)>0 then APosition.x += adx[0].value;
-  if length(ady)>0 then APosition.y += ady[0].value;
+  if length(adx)>0 then IncF(APosition.x, adx[0].value);
+  if length(ady)>0 then IncF(APosition.y, ady[0].value);
 
   i := AStartPart;
   while i <= AEndPart do
@@ -1416,7 +1416,7 @@ begin
   end;
 
   ts := ACanvas2d.measureText(AText);
-  if dir = stdRtl then APosition.x -= ts.width;
+  if dir = stdRtl then DecF(APosition.x, ts.width);
 
   ABounds := RectF(APosition.x,APosition.y,APosition.x+ts.width,APosition.y+ts.height);
   if ADraw then
@@ -1437,7 +1437,7 @@ begin
     end;
   end;
 
-  if dir = stdLtr then APosition.x += ts.width;
+  if dir = stdLtr then IncF(APosition.x, ts.width);
 end;
 
 procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
@@ -1462,9 +1462,9 @@ var
 
     for j := AStartPart to AEndPart do
     begin
-      if not isEmptyPointF(textParts[j].AbsoluteCoord) then textParts[j].AbsoluteCoord.x += ofs;
-      if not isEmptyPointF(textParts[j].PartStartCoord) then textParts[j].PartStartCoord.x += ofs;
-      if not isEmptyPointF(textParts[j].PartEndCoord) then textParts[j].PartEndCoord.x += ofs;
+      if not isEmptyPointF(textParts[j].AbsoluteCoord) then IncF(textParts[j].AbsoluteCoord.x, ofs);
+      if not isEmptyPointF(textParts[j].PartStartCoord) then IncF(textParts[j].PartStartCoord.x, ofs);
+      if not isEmptyPointF(textParts[j].PartEndCoord) then IncF(textParts[j].PartEndCoord.x, ofs);
       if not IsEmptyRectF(textParts[j].Bounds) then textParts[j].Bounds.Offset(ofs,0);
     end;
   end;
@@ -1513,7 +1513,7 @@ begin
   wasSpaceBeforePartIdx:= -1;
   fullText := '';
   for k := 0 to high(ATextParts) do
-    fullText += ATextParts[k].Text;
+    AppendStr(fullText, ATextParts[k].Text);
 
   setlength(cleanedText, length(fullText));
   j := 0;
@@ -1626,7 +1626,7 @@ begin
     begin
       node := Content.ElementDOMNode[i];
       if node is TDOMText then
-        AppendPart(TDOMText(node).Data);
+        AppendPart(UTF16ToUTF8(TDOMText(node).Data));
     end;
   end;
   setlength(result, idxOut);
@@ -2729,9 +2729,9 @@ begin
   s:= '';
   for i := 0 to high(AValue) do
   begin
-    if s <> '' then s += ' ';
+    if s <> '' then AppendStr(s, ' ');
     with AValue[i] do
-      s += TCSSUnitConverter.formatValue(x)+' '+TCSSUnitConverter.formatValue(y);
+      AppendStr(s, TCSSUnitConverter.formatValue(x)+' '+TCSSUnitConverter.formatValue(y));
   end;
   points := s;
   ComputeBoundingBox(AValue);

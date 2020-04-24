@@ -25,7 +25,7 @@ unit BGRATextFX;
 interface
 
 uses
-  Classes, SysUtils, Graphics, Types, BGRABitmapTypes, BGRAPhongTypes, BGRAText,
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAPhongTypes, BGRAText,
   BGRACustomTextFX, BGRAVectorize;
 
 type
@@ -33,7 +33,7 @@ type
 
   { TBGRATextEffectFontRenderer }
 
-  TBGRATextEffectFontRenderer = class(TCustomLCLFontRenderer)
+  TBGRATextEffectFontRenderer = class(TBGRASystemFontRenderer)
   private
     function GetShaderLightPosition: TPoint;
     function GetShaderLightPositionF: TPointF;
@@ -48,8 +48,8 @@ type
     function ShaderActuallyActive: boolean;
     function OutlineActuallyVisible: boolean;
     procedure Init;
-    function VectorizedFontNeeded: boolean;
-    procedure InternalTextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
+    function VectorizedFontNeeded(AOrientation: integer): boolean;
+    procedure InternalTextOutAngle(ADest: TBGRACustomBitmap; x, y: single; AOrientation: integer; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false); override;
   public
     ShaderActive: boolean;
@@ -63,11 +63,13 @@ type
     OutlineColor: TBGRAPixel;
     OutlineWidth: single;
     OutlineVisible,OuterOutlineOnly: boolean;
+    OutlineJoin: TPenJoinStyle;
     OutlineTexture: IBGRAScanner;
     constructor Create; overload;
     constructor Create(AShader: TCustomPhongShading; AShaderOwner: boolean); overload;
     destructor Destroy; override;
     function TextSize(sUTF8: string): TSize; overload; override;
+    function TextSizeAngle(sUTF8: string; orientationTenthDegCCW: integer): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; overload; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     property Shader: TCustomPhongShading read FShader;
@@ -100,7 +102,7 @@ procedure BGRATextOutImproveReadability(bmp: TBGRACustomBitmap; AFont: TFont; xf
 
 implementation
 
-uses BGRAGradientScanner, GraphType, Math, BGRAGrayscaleMask, BGRAPath, BGRATransform,
+uses BGRAGradientScanner, Math, BGRAGrayscaleMask, BGRAPath, BGRATransform,
   BGRAPolygon, BGRAPen;
 
 procedure BGRATextOutImproveReadability(bmp: TBGRACustomBitmap; AFont: TFont; xf,yf: single; text: string; color: TBGRAPixel; tex: IBGRAScanner; align: TAlignment; mode : TBGRATextOutImproveReadabilityMode);
@@ -113,7 +115,7 @@ var
   lines: array[0..3] of integer;
   parts: array[0..3] of TGrayscaleMask;
   n,nbLines: integer;
-  alphaMax: NativeUint;
+  alphaMax: UInt32or64;
   ptrPart: TBGRACustomBitmap;
   pmask: PByte;
   fx: TBGRATextEffect;
@@ -213,19 +215,19 @@ begin
 
       if yb < 2 then
       begin
-        newCenter += parts[yb].Height;
-        prevCenter += lines[yb]-fromy;
+        IncF(newCenter, parts[yb].Height);
+        IncF(prevCenter, lines[yb]-fromy);
       end else
       if yb = 2 then
       begin
-        newCenter += parts[yb].Height/2;
-        prevCenter += (lines[yb]-fromy)/2;
+        IncF(newCenter, parts[yb].Height/2);
+        IncF(prevCenter, (lines[yb]-fromy)/2);
       end;
     end else
       parts[yb] := nil;
   end;
 
-  prevCenter /= FontAntialiasingLevel;
+  prevCenter := prevCenter / FontAntialiasingLevel;
   diffCenter := prevCenter-newCenter;
   y := round( yf + diffCenter );
 
@@ -352,6 +354,7 @@ begin
   FVectorizedRenderer.OutlineWidth := OutlineWidth;
   FVectorizedRenderer.OutlineTexture := OutlineTexture;
   FVectorizedRenderer.OuterOutlineOnly := OuterOutlineOnly;
+  FVectorizedRenderer.OutlineJoin := OutlineJoin;
   result := FVectorizedRenderer;
 end;
 
@@ -396,10 +399,11 @@ begin
   OutlineVisible := True;
   OutlineWidth:= DefaultOutlineWidth;
   OuterOutlineOnly:= false;
+  OutlineJoin := pjsMiter;
   FVectorizedRenderer := TBGRAVectorizedFontRenderer.Create;
 end;
 
-function TBGRATextEffectFontRenderer.VectorizedFontNeeded: boolean;
+function TBGRATextEffectFontRenderer.VectorizedFontNeeded(AOrientation: integer): boolean;
   function IsBigFont: boolean;
   var textsz: TSize;
   begin
@@ -411,16 +415,17 @@ var bAntialiasing, bSpecialOutline, bOriented, bEffectVectorizedSupported: boole
 begin
   bAntialiasing := FontQuality in [fqFineAntialiasing,fqFineClearTypeRGB,fqFineClearTypeBGR];
   bSpecialOutline:= OutlineActuallyVisible and (abs(OutlineWidth) <> DefaultOutlineWidth);
-  bOriented := FontOrientation <> 0;
+  bOriented := AOrientation <> 0;
   bEffectVectorizedSupported := OutlineActuallyVisible or ShadowActuallyVisible or ShaderActuallyActive;
   result := bSpecialOutline or
             (bAntialiasing and IsBigFont) or
             (bOriented and bEffectVectorizedSupported);
 end;
 
-procedure TBGRATextEffectFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap;
-  x, y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
-  align: TAlignment;  AShowPrefix: boolean = false; ARightToLeft: boolean = false);
+procedure TBGRATextEffectFontRenderer.InternalTextOutAngle(
+  ADest: TBGRACustomBitmap; x, y: single; AOrientation: integer; sUTF8: string; 
+  c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment;  
+  AShowPrefix: boolean = false; ARightToLeft: boolean = false);
 
   procedure DrawFX(fx: TBGRATextEffect; x,y: single; outline: boolean);
     procedure DoOutline;
@@ -466,11 +471,13 @@ procedure TBGRATextEffectFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap;
     boundsF: TRectF;
     b: TRect;
     fx: TBGRATextEffect;
+    oldShaderLightPos: TPoint;
+    h: integer;
   begin
     p := TBGRAPath.Create;
     try
       p.translate(x-0.5,y-0.5);
-      p.rotateDeg(-FFont.Orientation/10);
+      p.rotateDeg(-AOrientation/10);
       VectorizedFontRenderer.CopyTextPathTo(p,0,0,sUTF8,align,ARightToLeft);
       if abs(OutlineWidth) < 3 then
         w := abs(OutlineWidth)*2/3
@@ -481,16 +488,16 @@ procedure TBGRATextEffectFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap;
       else
       begin
         boundsF := p.GetBounds;
-        boundsF.Left -= 1;
-        boundsF.Top -= 1;
-        boundsF.Right += 1;
-        boundsF.Bottom += 1;
+        DecF(boundsF.Left, 1);
+        DecF(boundsF.Top, 1);
+        IncF(boundsF.Right, 1);
+        IncF(boundsF.Bottom, 1);
         if ShadowActuallyVisible then
         begin
-          boundsF.Left -= ShadowRadius;
-          boundsF.Top -= ShadowRadius;
-          boundsF.Right += ShadowRadius;
-          boundsF.Bottom += ShadowRadius;
+          DecF(boundsF.Left, ShadowRadius);
+          DecF(boundsF.Top, ShadowRadius);
+          IncF(boundsF.Right, ShadowRadius);
+          IncF(boundsF.Bottom, ShadowRadius);
         end;
         boundsF := TRectF.Intersect(boundsF, RectF(0,0,ADest.Width,ADest.Height));
       end;
@@ -510,10 +517,15 @@ procedure TBGRATextEffectFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap;
               if ShaderActuallyActive then
               begin
                 shaded := ADest.NewBitmap(mask.Width,mask.Height);
+                oldShaderLightPos := Shader.LightPosition;
+                Shader.LightPosition := Point(Shader.LightPosition.X - b.Left,
+                                              Shader.LightPosition.Y - b.Top); 
+                h := VectorizedFontRenderer.TextSize('Hg').cy;
                 if texture <> nil then
-                  fx.DrawShaded(shaded, 0,0, Shader, round(fx.TextSize.cy*0.05), texture, taLeftJustify)
+                  fx.DrawShaded(shaded, 0,0, Shader, round(h*0.05), texture, taLeftJustify)
                 else
-                  fx.DrawShaded(shaded, 0,0, Shader, round(fx.TextSize.cy*0.05), c, taLeftJustify);
+                  fx.DrawShaded(shaded, 0,0, Shader, round(h*0.05), c, taLeftJustify);
+                Shader.LightPosition := oldShaderLightPos;
                 shaded.AlphaFill(255);
                 shaded.ScanOffset := Point(-b.Left,-b.Top);
               end;
@@ -561,24 +573,26 @@ procedure TBGRATextEffectFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap;
 
 var fx: TBGRATextEffect;
 begin
-  if VectorizedFontNeeded then
+  if VectorizedFontNeeded(AOrientation) then
   begin
     if ShaderActuallyActive or ShadowActuallyVisible then
       ComplexVectorized else
     begin
       if texture<>nil then
-        VectorizedFontRenderer.TextOutAngle(ADest,x,y,FFont.Orientation,sUTF8,texture,align,ARightToLeft)
+        VectorizedFontRenderer.TextOutAngle(ADest,x,y,AOrientation,sUTF8,texture,align,ARightToLeft)
       else
-        VectorizedFontRenderer.TextOutAngle(ADest,x,y,FFont.Orientation,sUTF8,c,align,ARightToLeft);
+        VectorizedFontRenderer.TextOutAngle(ADest,x,y,AOrientation,sUTF8,c,align,ARightToLeft);
     end;
   end else
-  if (FFont.Orientation = 0) and (ShaderActuallyActive or ShadowActuallyVisible or OutlineActuallyVisible) then
+  if (AOrientation = 0) and (ShaderActuallyActive or ShadowActuallyVisible or OutlineActuallyVisible) then
   begin
-    fx := TBGRATextEffect.Create(sUTF8, FFont, FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB], x-floor(x),y-floor(y));
+    fx := TBGRATextEffect.Create(sUTF8, FFont, 
+       FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB], 
+       x-floor(x), y-floor(y));
     DrawFX(fx, x,y, true);
     fx.Free;
   end else
-    inherited InternalTextOut(ADest,x,y,sUTF8,c,texture,align,AShowPrefix,ARightToLeft);
+    inherited InternalTextOutAngle(ADest,x,y,AOrientation,sUTF8,c,texture,align,AShowPrefix,ARightToLeft);
 end;
 
 constructor TBGRATextEffectFontRenderer.Create;
@@ -607,16 +621,25 @@ end;
 
 function TBGRATextEffectFontRenderer.TextSize(sUTF8: string): TSize;
 begin
-  if VectorizedFontNeeded then
+  if VectorizedFontNeeded(0) then
     result := VectorizedFontRenderer.TextSize(sUTF8)
   else
     result := inherited TextSize(sUTF8);
 end;
 
+function TBGRATextEffectFontRenderer.TextSizeAngle(sUTF8: string; 
+  orientationTenthDegCCW: integer): TSize; 
+begin
+  if VectorizedFontNeeded(orientationTenthDegCCW) then
+    result := VectorizedFontRenderer.TextSizeAngle(sUTF8, orientationTenthDegCCW)
+  else
+    result := inherited TextSizeAngle(sUTF8, orientationTenthDegCCW); 
+end;
+
 function TBGRATextEffectFontRenderer.TextSize(sUTF8: string;
   AMaxWidth: integer; ARightToLeft: boolean): TSize;
 begin
-  if VectorizedFontNeeded then
+  if VectorizedFontNeeded(FontOrientation) then
     result := VectorizedFontRenderer.TextSize(sUTF8, AMaxWidth, ARightToLeft)
   else
     result := inherited TextSize(sUTF8, AMaxWidth, ARightToLeft);
@@ -625,7 +648,7 @@ end;
 function TBGRATextEffectFontRenderer.TextFitInfo(sUTF8: string;
   AMaxWidth: integer): integer;
 begin
-  if VectorizedFontNeeded then
+  if VectorizedFontNeeded(FontOrientation) then
     result := VectorizedFontRenderer.TextFitInfo(sUTF8, AMaxWidth)
   else
     result := inherited TextFitInfo(sUTF8, AMaxWidth)
@@ -694,6 +717,7 @@ end;
 procedure TBGRATextEffect.Init(AText: string; Font: TFont; Antialiasing: boolean; SubOffsetX,SubOffsetY: single; GrainX, GrainY: Integer);
 const FXAntialiasingLevel = FontAntialiasingLevel;
 var temp: TBGRACustomBitmap;
+	tempBmp: TBitmap;
     size: TSize;
     p: PBGRAPixel;
     n,v,maxAlpha: integer;
@@ -780,13 +804,30 @@ begin
     SizeY := SizeY+ (GrainY-1);
     dec(SizeY, SizeY mod GrainY);
   end;
-  temp := BGRABitmapFactory.Create(sizeX, sizeY+2*OnePixel,clBlack);
-  temp.Canvas.Font := Font;
-  temp.Canvas.Font.Height := Font.Height*OnePixel;
-  temp.Canvas.Font.Color := clWhite;
-  temp.Canvas.Font.Quality := FontDefaultQuality;
-  temp.Canvas.Brush.Style := bsClear;
-  temp.Canvas.TextOut(-FOffset.X+iSubX, -FOffset.Y+iSubY, AText);
+  if RenderTextOnBitmap then
+  begin
+    tempBmp := TBitmap.Create;
+    tempBmp.Width := sizeX;
+    tempBmp.Height := sizeY+2*OnePixel;
+    BitmapFillRect(tempBmp, rect(0,0,tempBmp.Width,tempBmp.Height), clBlack);
+    tempBmp.Canvas.Font := Font;
+    tempBmp.Canvas.Font.Orientation := 0;
+    tempBmp.Canvas.Font.Height := Font.Height*OnePixel;
+    tempBmp.Canvas.Font.Color := clWhite;
+    tempBmp.Canvas.Font.Quality := FontDefaultQuality;
+    BitmapTextOut(tempBmp, Point(-FOffset.X+iSubX, -FOffset.Y+iSubY), AText);
+    temp := BGRABitmapFactory.Create(tempBmp);
+    tempBmp.Free;
+  end else
+  begin
+    temp := BGRABitmapFactory.Create(sizeX, sizeY+2*OnePixel,clBlack);
+    temp.Canvas.Font := Font;
+    temp.Canvas.Font.Orientation := 0;
+    temp.Canvas.Font.Height := Font.Height*OnePixel;
+    temp.Canvas.Font.Color := clWhite;
+    temp.Canvas.Font.Quality := FontDefaultQuality;
+    BitmapTextOut(temp.Bitmap, Point(-FOffset.X+iSubX, -FOffset.Y+iSubY), AText);
+  end;
 
   if Antialiasing then
   begin

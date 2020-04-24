@@ -5,7 +5,7 @@ unit BGRAColorQuantization;
 interface
 
 uses
-  Classes, SysUtils, BGRAPalette, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRAPalette, BGRABitmapTypes;
 
 type
   TBGRAColorBox = class;
@@ -240,7 +240,7 @@ function GetDimensionValue(APixel: TBGRAPixel; ADimension: TColorDimension): UIn
 var v: UInt32;
 begin
   case ADimension of
-  cdFast: result := DWord(APixel);
+  cdFast: result := LongWord(APixel);
   cdRed: result := GammaExpansionTab[APixel.red] shl RedShift;
   cdGreen: result := GammaExpansionTab[APixel.green] shl GreenShift;
   cdBlue: result := GammaExpansionTab[APixel.blue];
@@ -468,13 +468,13 @@ end;
 function IsDWordGreater(p1, p2: PBGRAPixel
   ): boolean;
 begin
-  result := DWord(p1^) > DWord(p2^);
+  result := LongWord(p1^) > LongWord(p2^);
 end;
 
 function IsDWordGreaterThanValue(p: PBGRAPixel;
   v: UInt32): boolean;
 begin
-  result := DWord(p^) >= v;
+  result := LongWord(p^) >= v;
 end;
 
 function GetPixelStrictComparer(ADimension: TColorDimension
@@ -548,8 +548,8 @@ end;
 
 function TBGRAApproxPaletteViaLargerPalette.SlowFindNearestColorIndex(
   AValue: TBGRAPixel): integer;
-var diff,curDiff: NativeInt;
-  i: NativeInt;
+var diff,curDiff: Int32or64;
+  i: Int32or64;
 begin
   if AValue.alpha = 0 then
   begin
@@ -660,7 +660,7 @@ end;
 procedure TBGRAApproxPalette.Init(const AColors: ArrayOfTBGRAPixel);
 var
   weightedColors: ArrayOfWeightedColor;
-  i: NativeInt;
+  i: Int32or64;
 begin
   setlength(weightedColors, length(AColors));
   for i := 0 to high(weightedColors) do
@@ -708,7 +708,7 @@ end;
 function TBGRAApproxPalette.IndexOfColor(AValue: TBGRAPixel): integer;
 begin
   result := FTree.ApproximateColorIndex(AValue);
-  if (result <> -1) and not (DWord(FColors[result].Color) = DWord(AValue)) then result := -1;
+  if (result <> -1) and not (LongWord(FColors[result].Color) = LongWord(AValue)) then result := -1;
 end;
 
 function TBGRAApproxPalette.FindNearestColor(AValue: TBGRAPixel): TBGRAPixel;
@@ -723,7 +723,7 @@ end;
 
 function TBGRAApproxPalette.GetAsArrayOfColor: ArrayOfTBGRAPixel;
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   setlength(result, length(FColors));
   for i := 0 to high(result) do
@@ -732,7 +732,7 @@ end;
 
 function TBGRAApproxPalette.GetAsArrayOfWeightedColor: ArrayOfWeightedColor;
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   if Assigned(FTree) then
     result := FTree.GetAsArrayOfWeightedColors
@@ -777,11 +777,11 @@ procedure TBGRAColorQuantizer.NormalizeArrayOfColors(
   AAlphaBounds: TDimensionMinMax; AUniform: boolean);
 var
   curRedBounds, curGreenBounds, curBlueBounds, curAlphaBounds: TDimensionMinMax;
-  RedSub,RedMul,RedDiv,RedAdd: NativeUInt;
-  GreenSub,GreenMul,GreenDiv,GreenAdd: NativeUInt;
-  BlueSub,BlueMul,BlueDiv,BlueAdd: NativeUInt;
-  AlphaSub,AlphaMul,AlphaDiv,AlphaAdd: NativeUInt;
-  i: NativeInt;
+  RedSub,RedMul,RedDiv,RedAdd: UInt32or64;
+  GreenSub,GreenMul,GreenDiv,GreenAdd: UInt32or64;
+  BlueSub,BlueMul,BlueDiv,BlueAdd: UInt32or64;
+  AlphaSub,AlphaMul,AlphaDiv,AlphaAdd: UInt32or64;
+  i: Int32or64;
   colorBounds: TDimensionMinMax;
 begin
   if length(AColors)=0 then exit;
@@ -841,9 +841,9 @@ procedure TBGRAColorQuantizer.NormalizeArrayOfColors(
   AColors: ArrayOfTBGRAPixel; AColorBounds, AAlphaBounds: TDimensionMinMax);
 var
   curColorBounds, curAlphaBounds: TDimensionMinMax;
-  ColorSub,ColorMul,ColorDiv,ColorAdd: NativeUInt;
-  AlphaSub,AlphaMul,AlphaDiv,AlphaAdd: NativeUInt;
-  i: NativeInt;
+  ColorSub,ColorMul,ColorDiv,ColorAdd: UInt32or64;
+  AlphaSub,AlphaMul,AlphaDiv,AlphaAdd: UInt32or64;
+  i: Int32or64;
 begin
   if length(AColors)=0 then exit;
   curColorBounds.SetAsPoint(GammaExpansionTab[AColors[0].red]);
@@ -1116,7 +1116,7 @@ end;
 
 procedure TBGRAColorTree.InternalComputeLeavesColor(
   ALeafColor: TBGRALeafColorMode; var AStartIndex: integer);
-var nbMin,nbMax: NativeInt;
+var nbMin,nbMax: Int32or64;
   c: TColorDimension;
   extremumColor: TBGRAPixel;
   extremumColorRelevant: Boolean;
@@ -1546,11 +1546,11 @@ begin
   with FColors[n].Color do
   begin
     cura := (alpha / 255)*FColors[n].Weight;
-    a     += cura;
-    r     += GammaExpansionTab[red] * cura;
-    g     += GammaExpansionTab[green] * cura;
-    b     += GammaExpansionTab[blue] * cura;
-    w     += FColors[n].Weight;
+    IncF(a, cura);
+    IncF(r, GammaExpansionTab[red] * cura);
+    IncF(g, GammaExpansionTab[green] * cura);
+    IncF(b, GammaExpansionTab[blue] * cura);
+    Inc(w, FColors[n].Weight);
   end;
   if w = 0 then
     Result := BGRAPixelTransparent
@@ -1620,11 +1620,11 @@ begin
   with FColors[n].Color do
   begin
     cura := (alpha / 255)*FColors[n].Weight;
-    a     += cura;
-    r     += red * cura;
-    g     += green * cura;
-    b     += blue * cura;
-    w     += FColors[n].Weight;
+    IncF(a, cura);
+    IncF(r, red * cura);
+    IncF(g, green * cura);
+    IncF(b, blue * cura);
+    Inc(w, FColors[n].Weight);
     if w >= wantedWeight then break;
   end;
   if w = 0 then
@@ -1705,11 +1705,11 @@ begin
   with FColors[n].Color do
   begin
     cura := (alpha / 255)*FColors[n].Weight;
-    a     += cura;
-    r     += red * cura;
-    g     += green * cura;
-    b     += blue * cura;
-    w     += FColors[n].Weight;
+    IncF(a, cura);
+    IncF(r, red * cura);
+    IncF(g, green * cura);
+    IncF(b, blue * cura);
+    Inc(w, FColors[n].Weight);
     if w >= wantedWeight then break;
   end;
   if w = 0 then
@@ -1729,7 +1729,7 @@ end;
 
 procedure TBGRAColorBox.Init(AColors: ArrayOfWeightedColor; AOwner: boolean);
 var
-  i,idx: NativeInt;
+  i,idx: Int32or64;
   FirstColor: boolean;
   c: TColorDimension;
 begin
@@ -1880,7 +1880,7 @@ constructor TBGRAColorBox.Create(ADimensions: TColorDimensions; AColors: PBGRAPi
 var i,j,prev,idx: integer;
   p: PBGRAPixel;
   skip: boolean;
-  alphaMask: DWord;
+  alphaMask: LongWord;
   transpIndex: integer;
 begin
   if AAlpha <> acFullChannelInPalette then
@@ -1925,7 +1925,7 @@ begin
           break
         else
         with FColors[j] do
-        if DWord(Color)=DWord(p^) or alphaMask then
+        if LongWord(Color)=LongWord(p^) or alphaMask then
         begin
           skip := true;
           inc(Weight);
@@ -1951,7 +1951,7 @@ begin
     prev := 0;
     for i := 1 to high(FColors) do
     begin
-      if DWord(FColors[i].Color)=DWord(FColors[prev].Color) then
+      if LongWord(FColors[i].Color)=LongWord(FColors[prev].Color) then
         inc(FColors[prev].Weight, FColors[i].Weight)
       else
       begin
@@ -1979,9 +1979,9 @@ end;
 
 function TBGRAColorBox.MedianCut(ADimension: TColorDimension; out SuperiorMiddle: UInt32
   ): TBGRAColorBox;
-var idxSplit: NativeInt;
+var idxSplit: Int32or64;
   secondArray: ArrayOfWeightedColor;
-  i: NativeInt;
+  i: Int32or64;
 begin
   result := nil;
   SuperiorMiddle := 0;
@@ -2003,7 +2003,7 @@ end;
 
 function TBGRAColorBox.Duplicate: TBGRAColorBox;
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   result := TBGRAColorBox.Create(FDimensions, FBounds);
   result.FTotalWeight := FTotalWeight;

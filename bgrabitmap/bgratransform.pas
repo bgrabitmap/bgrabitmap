@@ -7,7 +7,7 @@ interface
 { This unit contains bitmap transformations as classes and the TAffineMatrix record and functions. }
 
 uses
-  Classes, SysUtils, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRABitmapTypes;
 
 type
   { Contains an affine matrix, i.e. a matrix to transform linearly and translate TPointF coordinates }
@@ -424,7 +424,7 @@ end;
 
 operator*(M: TAffineMatrix; A: array of TPointF): ArrayOfTPointF;
 var
-  i: NativeInt;
+  i: Int32or64;
   ofs: TPointF;
 begin
   setlength(result, length(A));
@@ -607,7 +607,7 @@ begin
     if (len > 0) then
     begin
       fact := 1 / len * arcsin(len) / (Pi / 2);
-      xn    *= fact;
+      xn := xn * fact;
     end;
     result := FScanAtFunc(xn * FRadiusX + FCenterX, y);
   end
@@ -639,8 +639,8 @@ begin
     if (len > 0) then
     begin
       fact := 1 / len * arcsin(len) / (Pi / 2);
-      xn    *= fact;
-      yn    *= fact;
+      xn := xn * fact;
+      yn := yn * fact;
     end;
     result := FScanAtFunc(xn * FRadiusX + FCenter.X, yn * FRadiusY + FCenter.Y);
   end
@@ -897,7 +897,7 @@ end;
 
 procedure TBGRAAffineScannerTransform.MultiplyBy(AMatrix: TAffineMatrix);
 begin
-  FMatrix *= AMatrix;
+  FMatrix := FMatrix * AMatrix;
 end;
 
 procedure TBGRAAffineScannerTransform.Fit(Origin, HAxis, VAxis: TPointF);
@@ -1022,7 +1022,7 @@ end;
 procedure TBGRAQuadLinearScanner.Init(ASource: IBGRAScanner;
   const APoints: array of TPointF; ATextureInterpolation: boolean);
 var
-  i: NativeInt;
+  i: Int32or64;
   v: TPointF;
   len: single;
 begin
@@ -1078,7 +1078,7 @@ end;
 procedure TBGRAQuadLinearScanner.ScanPutPixels(pdest: PBGRAPixel; count: integer;
   mode: TDrawMode);
 var
-  n: NativeInt;
+  n: Int32or64;
   p: PBGRAPixel;
 begin
   if mode = dmSet then
@@ -1129,7 +1129,7 @@ var u1,u2,v1,v2,x,y: double;
 begin
   x := FCurXF;
   y := FCurYF;
-  FCurXF += 1;
+  IncF(FCurXF, 1);
   if (Y = FPoints[0].y) and (FVectors[0].y = 0) then
   begin
     if FVectors[0].x = 0 then
@@ -1312,7 +1312,7 @@ function TBGRAQuadLinearScanner.ScanVert0: TBGRAPixel;
 var u: single;
   isPad: boolean;
 begin
-  FCurXF += 1;
+  IncF(FCurXF, 1);
   if ScanVertVStep0 = EmptySingle then
   begin
     result := BGRAPixelTransparent;
@@ -1325,8 +1325,8 @@ begin
     u := (FCurYF-(FPoints[0].y*(1-ScanVertV0) + FPoints[3].y*ScanVertV0))/ScanVertDenom0;
     GetTexColorAt(u,ScanVertV0,result,isPad);
   end;
-  ScanVertV0 += ScanVertVStep0;
-  ScanVertDenom0 += ScanVertDenomStep0;
+  IncF(ScanVertV0, ScanVertVStep0);
+  IncF(ScanVertDenom0, ScanVertDenomStep0);
 end;
 
 procedure TBGRAQuadLinearScanner.PrepareScanPara;
@@ -1344,7 +1344,7 @@ var
   u,v,denom: Single;
   isPad: boolean;
 begin
-  FCurXF += 1;
+  IncF(FCurXF, 1);
 
   if ScanParaBB = 0 then
     result := BGRAPixelTransparent
@@ -1363,13 +1363,13 @@ begin
 
   if FCoeffs[3].y <> 0 then
   begin
-    ScanParaBB += FCoeffs[3].y;
+    IncF(ScanParaBB, FCoeffs[3].y);
     if ScanParaBB <> 0 then
       ScanParaBBInv := 1/ScanParaBB
     else
       ScanParaBBInv := 1;
   end;
-  ScanParaCC += FCoeffs[1].y;
+  IncF(ScanParaCC, FCoeffs[1].y);
 end;
 
 procedure TBGRAQuadLinearScanner.GetTexColorAt(u,v: Single; out AColor: TBGRAPixel; out AIsPadding: boolean);
@@ -1462,11 +1462,11 @@ const PrecisionShift = {$IFDEF CPU64}24{$ELSE}12{$ENDIF};
       Precision = 1 shl PrecisionShift;
 var p: PBGRAPixel;
   n: integer;
-  posXPrecision, posYPrecision: NativeInt;
-  deltaXPrecision,deltaYPrecision: NativeInt;
-  ix,iy,shrMask,w,h: NativeInt;
+  posXPrecision, posYPrecision: Int32or64;
+  deltaXPrecision,deltaYPrecision: Int32or64;
+  ix,iy,shrMask,w,h: Int32or64;
   py0: PByte;
-  deltaRow: NativeInt;
+  deltaRow: Int32or64;
 begin
   w := FBitmap.Width;
   h := FBitmap.Height;
@@ -1475,7 +1475,7 @@ begin
   if GlobalOpacity = 0 then
   begin
     if mode = dmSet then
-      FillDWord(pdest^, count, DWord(BGRAPixelTransparent));
+      FillDWord(pdest^, count, LongWord(BGRAPixelTransparent));
     FCur.Offset(FMatrix[1,1]*count, FMatrix[2,1]*count);
     exit;
   end;
@@ -1998,16 +1998,16 @@ begin
    result.x := m * ScanNumX;
    result.y := m * scanNumY;
   end;
-  ScanDenom += w0;
-  ScanNumX += sx;
-  scanNumY += shy;
+  IncF(ScanDenom, w0);
+  IncF(ScanNumX, sx);
+  IncF(scanNumY, shy);
 end;
 
 procedure TPerspectiveTransform.ScanSkip(ACount: integer);
 begin
-  ScanDenom += w0*ACount;
-  ScanNumX += sx*ACount;
-  scanNumY += shy*ACount;
+  IncF(ScanDenom, w0*ACount);
+  IncF(ScanNumX, sx*ACount);
+  IncF(scanNumY, shy*ACount);
 end;
 
 { TBGRATwirlScanner }

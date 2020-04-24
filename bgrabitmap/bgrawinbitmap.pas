@@ -28,7 +28,7 @@ unit BGRAWinBitmap;
 interface
 
 uses
-  Classes, SysUtils, BGRALCLBitmap, Windows, Graphics, GraphType;
+  BGRAClasses, SysUtils, BGRALCLBitmap, Windows, Graphics, GraphType;
 
 type
   { TBGRAWinBitmap }
@@ -154,7 +154,7 @@ end;
 procedure TBGRAWinBitmap.Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean);
 begin
   if self = nil then exit;
-  Draw(ACanvas, Classes.Rect(x,y,x+Width,y+Height), Opaque);
+  Draw(ACanvas, BGRAClasses.Rect(x,y,x+Width,y+Height), Opaque);
 end;
 
 procedure TBGRAWinBitmap.Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean);
@@ -268,8 +268,8 @@ end;
 
 procedure TBGRAWinBitmap.GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer);
 begin
-  self.Canvas.CopyRect(Classes.rect(0, 0, Width, Height), CanvasSource,
-    Classes.rect(X, Y, X + Width, Y + Height));
+  self.Canvas.CopyRect(BGRAClasses.rect(0, 0, Width, Height), CanvasSource,
+    BGRAClasses.rect(X, Y, X + Width, Y + Height));
 end;
 
 end.

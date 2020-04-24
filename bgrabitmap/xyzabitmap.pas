@@ -5,7 +5,7 @@ unit XYZABitmap;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, UniversalDrawer;
+  BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
 

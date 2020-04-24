@@ -5,7 +5,7 @@ unit BGLVirtualScreen;
 interface
 
 uses
-  Classes, SysUtils, LResources, Forms, Controls, Graphics, Dialogs,
+  Classes, BGRAClasses, SysUtils, LResources, Forms, Controls, Graphics, Dialogs,
   ExtCtrls, BGRABitmapTypes, BGRAOpenGL, OpenGLContext, BGRACanvasGL,
   BGRASpriteGL;
 
@@ -151,8 +151,6 @@ procedure Register;
 
 implementation
 
-uses Types;
-
 procedure Register;
 begin
   {$I bglvirtualscreen_icon.lrs}
@@ -249,9 +247,9 @@ begin
     BGLViewPort(ClientWidth,ClientHeight)
   else
   if Color = clDefault then
-    BGLViewPort(ClientWidth,ClientHeight,ColorToBGRA(ColorToRGB(clWindow)))
+    BGLViewPort(ClientWidth,ClientHeight,ColorToBGRA(clWindow))
   else
-    BGLViewPort(ClientWidth,ClientHeight,ColorToBGRA(ColorToRGB(Color)));
+    BGLViewPort(ClientWidth,ClientHeight,ColorToBGRA(Color));
 
   RedrawContent(ctx);
   inherited DoOnPaint;
@@ -282,12 +280,12 @@ begin
 
       if knownFPS > 0 then
       begin
-        FSmoothedElapseAccumulator += 1000/knownFPS;
+        IncF(FSmoothedElapseAccumulator, 1000/knownFPS);
       end else
-        FSmoothedElapseAccumulator += FrameDiffTimeInMSecs;
+        IncF(FSmoothedElapseAccumulator, FrameDiffTimeInMSecs);
 
       FOnElapse(self, ctx, Trunc(FSmoothedElapseAccumulator));
-      FSmoothedElapseAccumulator -= Trunc(FSmoothedElapseAccumulator);
+      DecF(FSmoothedElapseAccumulator, Trunc(FSmoothedElapseAccumulator));
     end else
       FOnElapse(self, ctx, FrameDiffTimeInMSecs);
   end;
@@ -378,7 +376,7 @@ begin
   if (BevelOuter <> bvNone) and (w > 0) then
     ctx.Canvas.Frame3d(ARect, w, BevelOuter); // Note: Frame3D inflates ARect
 
-  InflateRect(ARect, -BorderWidth, -BorderWidth);
+  ARect.Inflate(-BorderWidth, -BorderWidth);
 
   // if BevelInner is set then skip the BorderWidth and draw a frame with BevelWidth
   if (BevelInner <> bvNone) and (w > 0) then

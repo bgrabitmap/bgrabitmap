@@ -5,7 +5,7 @@ unit BGRALazResource;
 interface
 
 uses
-  Classes, SysUtils, BGRAMultiFileType;
+  BGRAClasses, SysUtils, BGRAMultiFileType;
 
 type
   { TLazResourceEntry }

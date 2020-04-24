@@ -92,7 +92,7 @@ procedure SaveToStreamAsAdobeSwatchExchange(APalette: TBGRAPalette; AStream: TSt
   end;
   procedure WriteSingle(AValue: Single);
   begin
-    DWord(AValue) := BEtoN(DWord(AValue));
+    LongWord(AValue) := BEtoN(LongWord(AValue));
     AStream.WriteBuffer(AValue,sizeof(AValue));
   end;
   procedure WriteBlock(ABlockType: Int16; AContentLength: Int32); overload;
@@ -338,7 +338,7 @@ function LoadFromStreamAsAdobeSwatchExchange(APalette: TBGRAPalette; AStream: TS
     {$PUSH}{$HINTS OFF}
     AStream.Read(Result, sizeof(result));
     {$POP}
-    DWord(Result) := BEtoN(DWord(Result));
+    LongWord(Result) := BEtoN(LongWord(Result));
   end;
   function DblToByte(AValue: double): byte;
   begin
@@ -579,8 +579,7 @@ begin
   end;
 end;
 
-function BGRARegisteredPaletteFormatFilter(AAllSupportedDescription: string
-  ): string;
+function BGRARegisteredPaletteFormatFilter(AAllSupportedDescription: string): string;
 var allExt: TStringList;
   allDesc: string;
   i: Integer;
@@ -593,8 +592,8 @@ begin
   with PaletteFormats[i] do
   begin
     if allExt.IndexOf(ext) = -1 then allExt.Add(ext);
-    if length(result)>0 then result += '|';
-    result += description + ' (*'+ext+')|*'+ext;
+    if length(result)>0 then AppendStr(result, '|');
+    AppendStr(result, description + ' (*'+ext+')|*'+ext);
   end;
   if allExt.Count > 0 then
   begin
@@ -602,16 +601,16 @@ begin
     for i := 0 to allExt.count-1 do
     begin
       if i > 0 then
-        allDesc += '; ';
-      allDesc += '*' + allExt[i];
+        AppendStr(allDesc, '; ');
+      AppendStr(allDesc, '*' + allExt[i]);
     end;
-    allDesc += ')';
-    allDesc += '|';
+    AppendStr(allDesc, ')');
+    AppendStr(allDesc, '|');
     for i := 0 to allExt.count-1 do
     begin
       if i > 0 then
-        allDesc += '; ';
-      allDesc += '*' + allExt[i];
+        AppendStr(allDesc, '; ');
+      AppendStr(allDesc, '*' + allExt[i]);
     end;
     result := allDesc + '|' + result;
   end;

@@ -5,7 +5,7 @@ unit BGRAScene3D;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAColorInt,
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAColorInt,
   BGRASSE, BGRAMatrix3D,
   BGRASceneTypes, BGRARenderer3D;
 
@@ -906,9 +906,9 @@ begin
 end;
 
 procedure TBGRAScene3D.LoadMaterialsFromFile(AFilename: string);
-var source: TFileStream;
+var source: TFileStreamUTF8;
 begin
-  source := TFileStream.Create(AFilename,fmOpenRead,fmShareDenyWrite);
+  source := TFileStreamUTF8.Create(SysToUTF8(AFilename),fmOpenRead,fmShareDenyWrite);
   try
     LoadMaterialsFromStream(source);
   finally
@@ -1066,11 +1066,11 @@ var
   i: Integer;
 begin
   FProjection.Zoom := Zoom;
-  FProjection.Zoom.X *= ScaleX;
-  FProjection.Zoom.Y *= ScaleY;
+  FProjection.Zoom.X := FProjection.Zoom.X * ScaleX;
+  FProjection.Zoom.Y := FProjection.Zoom.Y * ScaleY;
   FProjection.Center := ViewCenter;
-  FProjection.Center.X *= ScaleX;
-  FProjection.Center.Y *= ScaleY;
+  FProjection.Center.X := FProjection.Center.X * ScaleX;
+  FProjection.Center.Y := FProjection.Center.Y * ScaleY;
   for i := 0 to FObjectCount-1 do
     FObjects[i].ComputeWithMatrix(Camera.Matrix, FProjection);
 end;

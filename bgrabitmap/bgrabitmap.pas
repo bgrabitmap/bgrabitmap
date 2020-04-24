@@ -47,7 +47,7 @@ interface
   to the platform }
 
 uses
-  Classes, SysUtils,
+  BGRAClasses, SysUtils,
 {$IFDEF BGRABITMAP_USE_FPGUI}
     BGRAfpGUIBitmap,
 {$ELSE}
@@ -65,7 +65,7 @@ uses
 		BGRAQtBitmap,
 			{$ELSE}
               {$IFDEF DARWIN}
-        BGRAMacBitmap,
+                BGRAMacBitmap,
               {$ELSE}
 		BGRALCLBitmap,
               {$ENDIF}
@@ -74,7 +74,11 @@ uses
 		{$ENDIF}
 	  {$ENDIF}
 	{$ELSE}
-	  BGRANoGuiBitmap,
+	  {$IFDEF BGRABITMAP_USE_MSEGUI}
+            BGRAMSEguiBitmap,
+          {$ELSE}
+            BGRANoGuiBitmap,
+          {$ENDIF}
 	{$ENDIF}
 {$ENDIF}
   BGRAGraphics;
@@ -106,7 +110,11 @@ type
         {$ENDIF}
       {$ENDIF}
     {$ELSE}
-      TBGRABitmap = class(TBGRANoGUIBitmap);
+      {$IFDEF BGRABITMAP_USE_MSEGUI}
+        TBGRABitmap = class(TBGRAMSEguiBitmap);
+      {$ELSE}
+        TBGRABitmap = class(TBGRANoGUIBitmap);
+      {$ENDIF}
     {$ENDIF}
 {$ENDIF}
 

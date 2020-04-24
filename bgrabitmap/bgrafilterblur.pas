@@ -5,7 +5,7 @@ unit BGRAFilterBlur;
 interface
 
 uses
-  Classes, BGRABitmapTypes, BGRAFilterType;
+  BGRAClasses, BGRABitmapTypes, BGRAFilterType;
 
 type
   { TCustomBlurTask }
@@ -60,7 +60,7 @@ procedure FilterBlurRadial(bmp: TCustomUniversalBitmap; ABounds: TRect; radiusX,
 
 implementation
 
-uses Types, Math, SysUtils, BGRAGrayscaleMask,
+uses Math, SysUtils, BGRAGrayscaleMask,
   BGRAGradientScanner;
 
 type
@@ -157,7 +157,7 @@ const
   factMainX = 16;
   factMainY = 16;
 type
-  TAccumulator = Cardinal;
+  TAccumulator = LongWord;
 {$i blurbox.inc}
 
 procedure FilterBlurBoxRGBA64(ASource: TCustomUniversalBitmap; ABounds: TRect; ARadiusX,ARadiusY: single;
@@ -168,6 +168,7 @@ const
   factMainY = 16;
 type
   TAccumulator = UInt64;
+{$DEFINE PARAM_USE_INC64}
 {$i blurbox.inc}
 
 procedure FilterBlurBoxByte(ASource: TCustomUniversalBitmap; ABounds: TRect; ARadiusX,ARadiusY: single;
@@ -177,7 +178,7 @@ const
   factMainX = 16;
   factMainY = 16;
 type
-  TAccumulator = Cardinal;
+  TAccumulator = LongWord;
 {$DEFINE PARAM_BYTEMASK}
 {$i blurbox.inc}
 
@@ -190,6 +191,7 @@ const
 type
   TAccumulator = UInt64;
 {$DEFINE PARAM_BYTEMASK}
+{$DEFINE PARAM_USE_INC64}
 {$i blurbox.inc}
 
 procedure FilterBlurBox(ASource: TCustomUniversalBitmap; ABounds: TRect; ARadiusX,ARadiusY: single;
@@ -199,7 +201,7 @@ const
     factMainY = 16;
 var
   totalSum: UInt64;
-  factExtraX,factExtraY: NativeUInt;
+  factExtraX,factExtraY: UInt32or64;
   {$IFNDEF CPU64}need64: Boolean;{$ENDIF}
 begin
   if ADestination.Colorspace <> ASource.Colorspace then
@@ -208,13 +210,13 @@ begin
   totalSum := (2*ceil(ARadiusX)+1)*(2*ceil(ARadiusY)+1);
   factExtraX := trunc(frac(ARadiusX+0.5/factMainX)*factMainX);
   factExtraY := trunc(frac(ARadiusY+0.5/factMainY)*factMainY);
-  if factExtraX > 0 then totalSum *= factMainX;
-  if factExtraY > 0 then totalSum *= factMainY;
+  if factExtraX > 0 then totalSum := totalSum * factMainX;
+  if factExtraY > 0 then totalSum := totalSum * factMainY;
 
   if ASource.Colorspace = TBGRAPixelColorspace then
   begin
     {$IFNDEF CPU64}
-    need64 := totalSum > high(Cardinal) div (256*256);
+    need64 := totalSum > high(LongWord) div (256*256);
     if not need64 then
      FilterBlurBoxRGBA(ASource, ABounds, ARadiusX,ARadiusY, ADestination, ACheckShouldStop) else
     {$ENDIF}
@@ -223,7 +225,7 @@ begin
   else if ASource.Colorspace = TByteMaskColorspace then
   begin
     {$IFNDEF CPU64}
-    need64 := totalSum > high(Cardinal) div 256;
+    need64 := totalSum > high(LongWord) div 256;
     if not need64 then
      FilterBlurBoxByte(ASource, ABounds, ARadiusX,ARadiusY, ADestination, ACheckShouldStop) else
     {$ENDIF}
@@ -243,7 +245,7 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
   const BitMargin = 16;
   type
     PRowSum = ^TRowSum;
-    TRegularRowValue = NativeUInt;
+    TRegularRowValue = UInt32or64;
     TRowSum = record
       sumR,sumG,sumB,rgbDiv,sumA,aDiv: TRegularRowValue;
     end;
@@ -252,15 +254,20 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
       sumR,sumG,sumB,rgbDiv,sumA,aDiv: TExtendedRowValue;
     end;
 
-  procedure AccumulatePixel(psrc: Pointer; w: NativeUInt; var sums: TRowSum; verticalWeightShift: NativeInt); inline;
+  procedure IncExt(var ADest: TExtendedRowValue; ADelta: TExtendedRowValue);
+  begin
+    ADest := ADest + ADelta;
+  end;
+
+  procedure AccumulatePixel(psrc: Pointer; w: UInt32or64; var sums: TRowSum; verticalWeightShift: Int32or64); inline;
   var
-    c: DWord;
+    c: LongWord;
   begin
     with sums do
     begin
-      c := PDWord(psrc)^;
+      c := PLongWord(psrc)^;
       Inc(aDiv, w);
-      w *= ((c shr TBGRAPixel_AlphaShift) and $ff);
+      w := w * ((c shr TBGRAPixel_AlphaShift) and $ff);
       inc(sumA, w);
       w := w shr verticalWeightShift;
       inc(rgbDiv, w);
@@ -272,22 +279,22 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
     end;
   end;
 
-  procedure AccumulateExtended(var ex: TExtendedRowSum; psum: PRowSum; w: NativeUInt); inline;
+  procedure AccumulateExtended(var ex: TExtendedRowSum; psum: PRowSum; w: UInt32or64); inline;
   begin
     with psum^ do
     begin
-      ex.sumA += TExtendedRowValue(sumA)*w;
-      ex.aDiv += TExtendedRowValue(aDiv)*w;
-      ex.sumR += TExtendedRowValue(sumR)*w;
-      ex.sumG += TExtendedRowValue(sumG)*w;
-      ex.sumB += TExtendedRowValue(sumB)*w;
-      ex.rgbDiv += TExtendedRowValue(rgbDiv)*w;
+      IncExt(ex.sumA, TExtendedRowValue(sumA)*w);
+      IncExt(ex.aDiv, TExtendedRowValue(aDiv)*w);
+      IncExt(ex.sumR, TExtendedRowValue(sumR)*w);
+      IncExt(ex.sumG, TExtendedRowValue(sumG)*w);
+      IncExt(ex.sumB, TExtendedRowValue(sumB)*w);
+      IncExt(ex.rgbDiv, TExtendedRowValue(rgbDiv)*w);
     end;
   end;
 
-  procedure AccumulateShr(var total: TRowSum; psum: PRowSum; w: NativeUInt; horizontalWeightShift: NativeInt); inline;
+  procedure AccumulateShr(var total: TRowSum; psum: PRowSum; w: UInt32or64; horizontalWeightShift: Int32or64); inline;
   var
-    addDiv2: NativeInt;
+    addDiv2: Int32or64;
   begin
     with psum^ do
     begin
@@ -301,7 +308,7 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
     end;
   end;
 
-  procedure AccumulateNormal(var total: TRowSum; psum: PRowSum; w: NativeUInt); inline;
+  procedure AccumulateNormal(var total: TRowSum; psum: PRowSum; w: UInt32or64); inline;
   begin
     with psum^ do
     begin
@@ -337,7 +344,7 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
     if v > 255 then PBGRAPixel(pdest)^.blue := 255 else PBGRAPixel(pdest)^.blue := v;
     {$ELSE}
     rgbDivShr1:= sum.rgbDiv shr 1;
-    PDWord(pdest)^ := (((sum.sumA+sum.aDiv shr 1) div sum.aDiv) shl TBGRAPixel_AlphaShift)
+    PLongWord(pdest)^ := (((sum.sumA+sum.aDiv shr 1) div sum.aDiv) shl TBGRAPixel_AlphaShift)
     or (((sum.sumR+rgbDivShr1) div sum.rgbDiv) shl TBGRAPixel_RedShift)
     or (((sum.sumG+rgbDivShr1) div sum.rgbDiv) shl TBGRAPixel_GreenShift)
     or (((sum.sumB+rgbDivShr1) div sum.rgbDiv) shl TBGRAPixel_BlueShift);
@@ -363,7 +370,7 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
   end;
 
   procedure ComputeAverage(const sum: TRowSum; pdest: pointer); inline;
-  var rgbDivShr1: NativeUInt;
+  var rgbDivShr1: UInt32or64;
   begin
     if (sum.aDiv = 0) or (sum.rgbDiv = 0) then
     begin
@@ -371,7 +378,7 @@ procedure FilterBlurFastRGBA(bmp: TCustomUniversalBitmap; ABounds: TRect;
       exit;
     end;
     rgbDivShr1:= sum.rgbDiv shr 1;
-    PDWord(pdest)^ := (((sum.sumA+sum.aDiv shr 1) div sum.aDiv) shl TBGRAPixel_AlphaShift)
+    PLongWord(pdest)^ := (((sum.sumA+sum.aDiv shr 1) div sum.aDiv) shl TBGRAPixel_AlphaShift)
     or (((sum.sumR+rgbDivShr1) div sum.rgbDiv) shl TBGRAPixel_RedShift)
     or (((sum.sumG+rgbDivShr1) div sum.rgbDiv) shl TBGRAPixel_GreenShift)
     or (((sum.sumB+rgbDivShr1) div sum.rgbDiv) shl TBGRAPixel_BlueShift);
@@ -385,7 +392,7 @@ radiusX,radiusY: single; ADestination: TCustomUniversalBitmap; ACheckShouldStop:
   const BitMargin = 8;
   type
     PRowSum = ^TRowSum;
-    TRegularRowValue = NativeUInt;
+    TRegularRowValue = UInt32or64;
     TRowSum = record
       sumA,aDiv: TRegularRowValue;
     end;
@@ -394,7 +401,12 @@ radiusX,radiusY: single; ADestination: TCustomUniversalBitmap; ACheckShouldStop:
       sumA,aDiv: TExtendedRowValue;
     end;
 
-  procedure AccumulatePixel(psrc: Pointer; w: NativeUInt; var sums: TRowSum; verticalWeightShift: NativeInt); inline;
+  procedure IncExt(var ADest: TExtendedRowValue; ADelta: TExtendedRowValue);
+  begin
+    ADest := ADest + ADelta;
+  end;
+
+  procedure AccumulatePixel(psrc: Pointer; w: UInt32or64; var sums: TRowSum; verticalWeightShift: Int32or64); inline;
   begin
     with sums do
     begin
@@ -403,18 +415,18 @@ radiusX,radiusY: single; ADestination: TCustomUniversalBitmap; ACheckShouldStop:
     end;
   end;
 
-  procedure AccumulateExtended(var ex: TExtendedRowSum; psum: PRowSum; w: NativeUInt); inline;
+  procedure AccumulateExtended(var ex: TExtendedRowSum; psum: PRowSum; w: UInt32or64); inline;
   begin
     with psum^ do
     begin
-      ex.sumA += TExtendedRowValue(sumA)*w;
-      ex.aDiv += TExtendedRowValue(aDiv)*w;
+      IncExt(ex.sumA, TExtendedRowValue(sumA)*w);
+      IncExt(ex.aDiv, TExtendedRowValue(aDiv)*w);
     end;
   end;
 
-  procedure AccumulateShr(var total: TRowSum; psum: PRowSum; w: NativeUInt; horizontalWeightShift: NativeInt); inline;
+  procedure AccumulateShr(var total: TRowSum; psum: PRowSum; w: UInt32or64; horizontalWeightShift: Int32or64); inline;
   var
-    addDiv2: NativeInt;
+    addDiv2: Int32or64;
   begin
     with psum^ do
     begin
@@ -424,7 +436,7 @@ radiusX,radiusY: single; ADestination: TCustomUniversalBitmap; ACheckShouldStop:
     end;
   end;
 
-  procedure AccumulateNormal(var total: TRowSum; psum: PRowSum; w: NativeUInt); inline;
+  procedure AccumulateNormal(var total: TRowSum; psum: PRowSum; w: UInt32or64); inline;
   begin
     with psum^ do
     begin
@@ -494,7 +506,7 @@ var
   blurShape: TGrayscaleMask;
   n: Int32or64;
   p: PByte;
-  shift, addRound: cardinal;
+  shift, addRound: LongWord;
   grad: TBGRAGradientScanner;
   minRadius,maxRadius: single;
   oldClip: TRect;
@@ -670,7 +682,7 @@ procedure FilterBlurMask64(bmp: TCustomUniversalBitmap;
   blurMask: TCustomUniversalBitmap; ABounds: TRect; ADestination: TCustomUniversalBitmap; ACheckShouldStop: TCheckShouldStopFunc); forward;
 
 //make sure value is in the range 0..255
-function clampByte(value: NativeInt): NativeUInt; inline;
+function clampByte(value: Int32or64): UInt32or64; inline;
 begin
   if value <= 0 then result := 0 else
   if value >= 255 then result := 255 else
@@ -739,7 +751,7 @@ end;
 
 type
   TBlurClearSumProc = procedure(AData: Pointer);
-  TBlurAccumulateProc = procedure(AData: Pointer; pPix: pointer; maskAlpha: NativeInt);
+  TBlurAccumulateProc = procedure(AData: Pointer; pPix: pointer; maskAlpha: Int32or64);
   TBlurComputeAverageProc = procedure(AData: Pointer; pPix: pointer);
 
 procedure FilterBlurGeneric(bmp: TCustomUniversalBitmap; blurMask: TCustomUniversalBitmap;
@@ -753,7 +765,7 @@ procedure FilterBlurGeneric(bmp: TCustomUniversalBitmap; blurMask: TCustomUniver
 type
   TFilterBlurSmallMaskWithShift_Sum = record
       sumR, sumG, sumB,
-      sumA, Adiv, RGBdiv : NativeInt;
+      sumA, Adiv, RGBdiv : Int32or64;
       maskShift: integer;
     end;
 
@@ -771,7 +783,7 @@ begin
 end;
 
 procedure FilterBlurSmallMaskWithShift_ComputeAverage(AData: pointer; pPix: pointer);
-var temp,rgbDivShr1: NativeInt;
+var temp,rgbDivShr1: Int32or64;
 begin
   with TFilterBlurSmallMaskWithShift_Sum(AData^) do
   if (Adiv <= 0) or (RGBdiv <= 0) then
@@ -791,22 +803,22 @@ begin
   end;
 end;
 
-procedure FilterBlurSmallMaskWithShift_AccumulateSum(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+procedure FilterBlurSmallMaskWithShift_AccumulateSum(AData: pointer; pPix: pointer; maskAlpha: Int32or64);
 var
-  pixMaskAlpha: NativeInt;
+  pixMaskAlpha: Int32or64;
   tempPixel: TBGRAPixel;
 begin
   with TFilterBlurSmallMaskWithShift_Sum(AData^) do
   begin
     tempPixel := PBGRAPixel(pPix)^;
     pixMaskAlpha := maskAlpha * tempPixel.alpha;
-    sumA    += pixMaskAlpha;
-    Adiv    += maskAlpha;
-    pixMaskAlpha := (cardinal(pixMaskAlpha)+$80000000) shr maskShift - ($80000000 shr maskShift);
-    RGBdiv  += pixMaskAlpha;
-    sumR    += NativeInt(tempPixel.red) * pixMaskAlpha;
-    sumG    += NativeInt(tempPixel.green) * pixMaskAlpha;
-    sumB    += NativeInt(tempPixel.blue) * pixMaskAlpha;
+    inc(sumA, pixMaskAlpha);
+    inc(Adiv, maskAlpha);
+    pixMaskAlpha := (LongWord(pixMaskAlpha)+$80000000) shr maskShift - ($80000000 shr maskShift);
+    inc(RGBdiv, pixMaskAlpha);
+    inc(sumR, Int32or64(tempPixel.red) * pixMaskAlpha);
+    inc(sumG, Int32or64(tempPixel.green) * pixMaskAlpha);
+    inc(sumB, Int32or64(tempPixel.blue) * pixMaskAlpha);
   end;
 end;
 
@@ -872,7 +884,7 @@ begin
   end;
 end;
 
-procedure FilterBlurSmallMask_AccumulateSumRGBA(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+procedure FilterBlurSmallMask_AccumulateSumRGBA(AData: pointer; pPix: pointer; maskAlpha: Int32or64);
 var
   pixMaskAlpha: integer;
   tempPixel: TBGRAPixel;
@@ -881,20 +893,20 @@ begin
   begin
     tempPixel := PBGRAPixel(pPix)^;
     pixMaskAlpha := integer(maskAlpha) * tempPixel.alpha;
-    sumA    += pixMaskAlpha;
-    Adiv    += maskAlpha;
-    sumR    += integer(tempPixel.red) * pixMaskAlpha;
-    sumG    += integer(tempPixel.green) * pixMaskAlpha;
-    sumB    += integer(tempPixel.blue) * pixMaskAlpha;
+    inc(sumA, pixMaskAlpha);
+    inc(Adiv, maskAlpha);
+    inc(sumR, integer(tempPixel.red) * pixMaskAlpha);
+    inc(sumG, integer(tempPixel.green) * pixMaskAlpha);
+    inc(sumB, integer(tempPixel.blue) * pixMaskAlpha);
   end;
 end;
 
-procedure FilterBlurSmallMask_AccumulateSumByte(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+procedure FilterBlurSmallMask_AccumulateSumByte(AData: pointer; pPix: pointer; maskAlpha: Int32or64);
 begin
   with TFilterBlurSmallMask_Sum(AData^) do
   begin
-    sumA    += maskAlpha * PByte(pPix)^;
-    Adiv    += maskAlpha;
+    inc(sumA, maskAlpha * PByte(pPix)^);
+    inc(Adiv, maskAlpha);
   end;
 end;
 
@@ -989,29 +1001,29 @@ begin
   end;
 end;
 
-procedure FilterBlurMask64_AccumulateSumRGBA(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+procedure FilterBlurMask64_AccumulateSumRGBA(AData: pointer; pPix: pointer; maskAlpha: Int32or64);
 var
-  pixMaskAlpha: NativeInt;
+  pixMaskAlpha: Int32or64;
   tempPixel: TBGRAPixel;
 begin
   with TFilterBlurMask64_Sum(AData^) do
   begin
     tempPixel := PBGRAPixel(pPix)^;
     pixMaskAlpha := maskAlpha * tempPixel.alpha;
-    sumA    += pixMaskAlpha;
-    Adiv    += maskAlpha;
-    sumR    += tempPixel.red * pixMaskAlpha;
-    sumG    += tempPixel.green * pixMaskAlpha;
-    sumB    += tempPixel.blue * pixMaskAlpha;
+    Inc64(sumA, pixMaskAlpha);
+    Inc64(Adiv, maskAlpha);
+    Inc64(sumR, tempPixel.red * pixMaskAlpha);
+    Inc64(sumG, tempPixel.green * pixMaskAlpha);
+    Inc64(sumB, tempPixel.blue * pixMaskAlpha);
   end;
 end;
 
-procedure FilterBlurMask64_AccumulateSumByte(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+procedure FilterBlurMask64_AccumulateSumByte(AData: pointer; pPix: pointer; maskAlpha: Int32or64);
 begin
   with TFilterBlurMask64_Sum(AData^) do
   begin
-    sumA    += maskAlpha * PByte(pPix)^;
-    Adiv    += maskAlpha;
+    Inc64(sumA, maskAlpha * PByte(pPix)^);
+    Inc64(Adiv, maskAlpha);
   end;
 end;
 
@@ -1075,20 +1087,20 @@ begin
   end;
 end;
 
-procedure FilterBlurBigMask_AccumulateSum(AData: pointer; pPix: pointer; maskAlpha: NativeInt);
+procedure FilterBlurBigMask_AccumulateSum(AData: pointer; pPix: pointer; maskAlpha: Int32or64);
 var
-  pixMaskAlpha: NativeInt;
+  pixMaskAlpha: Int32or64;
   tempPixel: TBGRAPixel;
 begin
   with TFilterBlurBigMask_Sum(AData^) do
   begin
     tempPixel := PBGRAPixel(pPix)^;
     pixMaskAlpha := maskAlpha * tempPixel.alpha;
-    sumA    += pixMaskAlpha;
-    Adiv    += maskAlpha;
-    sumR    += tempPixel.red * pixMaskAlpha;
-    sumG    += tempPixel.green * pixMaskAlpha;
-    sumB    += tempPixel.blue * pixMaskAlpha;
+    IncF(sumA, pixMaskAlpha);
+    IncF(Adiv, maskAlpha);
+    IncF(sumR, tempPixel.red * pixMaskAlpha);
+    IncF(sumG, tempPixel.green * pixMaskAlpha);
+    IncF(sumB, tempPixel.blue * pixMaskAlpha);
   end;
 end;
 

@@ -1,99 +1,7 @@
-{=== TBGRACustomBitmap and IBGRAScanner ===}
-{$IFDEF INCLUDE_SCANNER_INTERFACE}
-{$UNDEF INCLUDE_SCANNER_INTERFACE}
-type
-  TBGRACustomBitmap = class;
-
-{==== IBGRAScanner ====}
-  {* Interface for a scanner. A scanner is like an image, but its content
-     has no limit and it can be calculated on the fly. It is like a
-     infinite readonly image.
-   *
-   * Note: it must not implement reference counting even if it is an interface
-   *
-   * ''TBGRACustomBitmap'' implements this interface and the content is repeated
-     horizontally and vertically. There are also various classes
-     in ''BGRAGradientScanner'' unit that generate gradients on the fly and
-     in ''BGRATransform'' unit that provide geometrical transformations of images }
-  IBGRAScanner = interface
-    {** Move to the position (''X'',''Y'') for the next call to ''ScanNextPixel'' }
-    procedure ScanMoveTo(X,Y: Integer);
-    {** Scan the pixel at the current location and increments ''X'' }
-    function ScanNextPixel: TBGRAPixel;
-    function ScanNextExpandedPixel: TExpandedPixel;
-    {** Scan at any location using floating point coordinates }
-    function ScanAt(X,Y: Single): TBGRAPixel;
-    function ScanAtExpanded(X,Y: Single): TExpandedPixel;
-    {** Scan at any location using integer coordinates }
-    function ScanAtInteger(X,Y: integer): TBGRAPixel;
-    function ScanAtIntegerExpanded(X,Y: integer): TExpandedPixel;
-    {** Copy a row of pixels from ''X'' to ''X''+''count''-1 to a specified destination
-        ''pdest''. ''mode'' indicates how to combine with existing data }
-    procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode);
-    procedure ScanSkipPixels(ACount: integer);
-    {** Returns True if the function ''ScanPutPixels'' is available. Otherwise
-        you need to call ''ScanNextPixel'' and combine pixels for example
-        with ''SetPixel'' }
-    function IsScanPutPixelsDefined: boolean;
-    {** Returns the corresponding OpenGL texture. The value is ''nil'' if no texture is associated. **}
-    function GetTextureGL: IUnknown;
-    function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload;
-    function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload;
-    function ProvidesScanline(ARect: TRect): boolean;
-    function GetScanlineAt(X,Y: integer): PBGRAPixel;
-    function GetScanCustomColorspace: TColorspaceAny;
-    procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer);
-    procedure ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer);
-    function ScanAtIntegerMask(X,Y: integer): TByteMask;
-    function ScanAtMask(X,Y: Single): TByteMask;
-  end;
-
-  {** A type of function of a scanner that returns the content at floating point coordinates }
-  TScanAtFunction = function (X,Y: Single): TBGRAPixel of object;
-  {** A type of function of a scanner that returns the content at integer coordinates }
-  TScanAtIntegerFunction = function (X,Y: Integer): TBGRAPixel of object;
-  {** A type of function of a scanner that returns the next pixel }
-  TScanNextPixelFunction = function: TBGRAPixel of object;
-
-  { TBGRACustomScanner }
-  {* Base class for implementing ''IBGRAScanner'' interface }
-  TBGRACustomScanner = class(IBGRAScanner)
-  private
-    FCurX,FCurY: integer;
-    FOwnCur: boolean;
-    FChunk: packed array[0..3] of TExpandedPixel;
-  public
-    function ScanAtInteger(X,Y: integer): TBGRAPixel; virtual;
-    function ScanAtIntegerExpanded(X,Y: integer): TExpandedPixel; virtual;
-    procedure ScanMoveTo(X,Y: Integer); virtual;
-    function ScanNextPixel: TBGRAPixel; virtual;
-    function ScanNextExpandedPixel: TExpandedPixel; virtual;
-    function ScanAt(X,Y: Single): TBGRAPixel; virtual; abstract;
-    function ScanAtExpanded(X,Y: Single): TExpandedPixel; virtual;
-    procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode); virtual;
-    procedure ScanSkipPixels(ACount: integer); virtual;
-    function IsScanPutPixelsDefined: boolean; virtual;
-    function GetTextureGL: IUnknown; virtual;
-    function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; virtual;
-    function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; virtual;
-    function ProvidesScanline({%H-}ARect: TRect): boolean; virtual;
-    function GetScanlineAt({%H-}X,{%H-}Y: integer): PBGRAPixel; virtual;
-    function GetScanCustomColorspace: TColorspaceAny; virtual;
-    procedure ScanNextCustomChunk(var ACount: integer; out APixels: Pointer); virtual;
-    procedure ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer); virtual;
-    function ScanAtIntegerMask(X,Y: integer): TByteMask; virtual;
-    function ScanAtMask(X,Y: Single): TByteMask; virtual;
-  protected
-    function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-    function _AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-    function _Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-  end;
-{$ENDIF}
-
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
 type
-{==== TBGRACustomBitmap ====}
+{=== TBGRACustomBitmap ===}
 
   { TBGRACustomBitmap }
   {* This is the base class for ''TBGRABitmap''. It is the direct parent of
@@ -111,7 +19,7 @@ type
      function GetAveragePixel: TBGRAPixel; virtual; abstract;
 
      //FreePascal drawing routines
-     function GetCanvasFP: TFPImageCanvas; virtual; abstract;
+     {$IFDEF BGRABITMAP_USE_FPCANVAS}function GetCanvasFP: TFPImageCanvas; virtual; abstract;{$ENDIF}
      function GetCanvasDrawModeFP: TDrawMode; virtual; abstract;
      procedure SetCanvasDrawModeFP(const AValue: TDrawMode); virtual; abstract;
 
@@ -156,7 +64,8 @@ type
      property AveragePixel: TBGRAPixel Read GetAveragePixel;
 
      {** Canvas compatible with FreePascal }
-     property CanvasFP: TFPImageCanvas read GetCanvasFP;
+     {$IFDEF BGRABITMAP_USE_FPCANVAS}property CanvasFP: TFPImageCanvas read GetCanvasFP;{$ENDIF}
+
      {** Draw mode to used when image is access using FreePascal functions
          and ''Colors'' property }
      property CanvasDrawModeFP: TDrawMode read GetCanvasDrawModeFP write SetCanvasDrawModeFP;
@@ -493,6 +402,7 @@ type
      function TextSize(sUTF8: string; AMaxWidth: integer): TSize; overload; virtual; abstract;
      function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; overload; virtual; abstract;
      function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
+     function TextSizeMultiline(sUTF8: string; AMaxWidth: single = EmptySingle; AParagraphSpacing: single = 0): TSize; virtual; abstract;
 
      { Draw the UTF8 encoded string, (x,y) being the top-left corner by default. The color c or texture is used to fill the text.
        The value of FontOrientation is taken into account, so that the text may be rotated. }
@@ -508,8 +418,10 @@ type
      procedure TextOut(x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
 
      { Overrides the font orientation with the parameter orientationTenthDegCCW }
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
+     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
 
@@ -716,16 +628,15 @@ function InternalGetImageBoundsWithin(ASourceBitmap: TBGRACustomBitmap; ASourceT
 var
   minx, miny, maxx, maxy: integer;
   xb, xb2, yb: integer;
-  p:      PDWord;
-  colorMask, colorZeros: DWord;
+  p:      PLongWord;
+  colorMask, colorZeros: LongWord;
   actualRect: TRect;
   pixelBuffer: TBGRAPixelBuffer;
 begin
   pixelBuffer := nil;
   if ASourceBitmap <> nil then
   begin
-    actualRect := EmptyRect;
-    IntersectRect(actualRect,ARect,rect(0,0,ASourceBitmap.Width,ASourceBitmap.Height))
+    actualRect := TRect.Intersect(ARect, rect(0,0,ASourceBitmap.Width,ASourceBitmap.Height));
   end
   else if ASourceTexture <> nil then
   begin
@@ -745,30 +656,30 @@ begin
   colorZeros := 0;
   if cBlue in Channels then
   begin
-    colorMask := colorMask or longword(BGRA(0,0,255,0));
-    colorZeros:= colorZeros or longword(BGRA(0,0,ANothingValue,0));
+    colorMask := colorMask or LongWord(BGRA(0,0,255,0));
+    colorZeros:= colorZeros or LongWord(BGRA(0,0,ANothingValue,0));
   end;
   if cGreen in Channels then
   begin
-    colorMask := colorMask or longword(BGRA(0,255,0,0));
-    colorZeros:= colorZeros or longword(BGRA(0,ANothingValue,0,0));
+    colorMask := colorMask or LongWord(BGRA(0,255,0,0));
+    colorZeros:= colorZeros or LongWord(BGRA(0,ANothingValue,0,0));
   end;
   if cRed in Channels then
   begin
-    colorMask := colorMask or longword(BGRA(255,0,0,0));
-    colorZeros:= colorZeros or longword(BGRA(ANothingValue,0,0,0));
+    colorMask := colorMask or LongWord(BGRA(255,0,0,0));
+    colorZeros:= colorZeros or LongWord(BGRA(ANothingValue,0,0,0));
   end;
   if cAlpha in Channels then
   begin
-    colorMask := colorMask or longword(BGRA(0,0,0,255));
-    colorZeros:= colorZeros or longword(BGRA(0,0,0,ANothingValue));
+    colorMask := colorMask or LongWord(BGRA(0,0,0,255));
+    colorZeros:= colorZeros or LongWord(BGRA(0,0,0,ANothingValue));
   end;
   colorMask := NtoLE(colorMask);
   colorZeros := NtoLE(colorZeros);
   for yb := actualRect.Top to actualRect.Bottom-1 do
   begin
     if ASourceBitmap <> nil then
-      p := PDWord(ASourceBitmap.ScanLine[yb])+actualRect.Left
+      p := PLongWord(ASourceBitmap.ScanLine[yb])+actualRect.Left
     else
     begin
       p := @pixelBuffer[0];
@@ -819,179 +730,6 @@ begin
     Result.bottom := maxy + 1;
   end;
 end;
-
-{ TBGRACustomScanner }
-{ The abstract class record the position so that a derived class
-  need only to redefine ScanAt }
-
-function TBGRACustomScanner.ScanAtInteger(X, Y: integer): TBGRAPixel;
-begin
-  result := ScanAt(X,Y);
-end;
-
-function TBGRACustomScanner.ScanAtIntegerExpanded(X, Y: integer
-  ): TExpandedPixel;
-begin
-  result := GammaExpansion(ScanAtInteger(X,Y));
-end;
-
-procedure TBGRACustomScanner.ScanMoveTo(X, Y: Integer);
-begin
-  FCurX := X;
-  FCurY := Y;
-  FOwnCur := true;
-end;
-
-{ Call ScanAt to determine pixel value }
-function TBGRACustomScanner.ScanNextPixel: TBGRAPixel;
-begin
-  result := ScanAt(FCurX,FCurY);
-  Inc(FCurX);
-end;
-
-function TBGRACustomScanner.ScanNextExpandedPixel: TExpandedPixel;
-begin
-  result := GammaExpansion(ScanNextPixel);
-end;
-
-function TBGRACustomScanner.ScanAtExpanded(X, Y: Single): TExpandedPixel;
-begin
-  result := GammaExpansion(ScanAt(X,Y));
-end;
-
-{$hints off}
-procedure TBGRACustomScanner.ScanPutPixels(pdest: PBGRAPixel; count: integer;
-  mode: TDrawMode);
-begin
-  //do nothing
-end;
-
-procedure TBGRACustomScanner.ScanSkipPixels(ACount: integer);
-begin
-  if FOwnCur then inc(FCurX, ACount)
-  else
-  begin
-    while ACount > 0 do
-    begin
-      ScanNextPixel;
-      dec(ACount);
-    end;
-  end;
-end;
-
-{$hints on}
-
-function TBGRACustomScanner.IsScanPutPixelsDefined: boolean;
-begin
-  result := false;
-end;
-
-function TBGRACustomScanner.GetTextureGL: IUnknown;
-begin
-  result := nil;
-end;
-
-function TBGRACustomScanner.GetImageBoundsWithin(const ARect: TRect;
-  Channel: TChannel; ANothingValue: Byte): TRect;
-begin
-  result := InternalGetImageBoundsWithin(nil,self,ARect,[Channel],ANothingValue);
-end;
-
-function TBGRACustomScanner.GetImageBoundsWithin(const ARect: TRect;
-  Channels: TChannels; ANothingValue: Byte): TRect;
-begin
-  result := InternalGetImageBoundsWithin(nil,self,ARect,Channels,ANothingValue);
-end;
-
-function TBGRACustomScanner.ProvidesScanline(ARect: TRect): boolean;
-begin
-  result := false;
-end;
-
-function TBGRACustomScanner.GetScanlineAt(X, Y: integer): PBGRAPixel;
-begin
-  result := nil;
-end;
-
-function TBGRACustomScanner.GetScanCustomColorspace: TColorspaceAny;
-begin
-  result := TExpandedPixelColorspace;
-end;
-
-procedure TBGRACustomScanner.ScanNextCustomChunk(var ACount: integer; out
-  APixels: Pointer);
-var
-  i: Integer;
-  p: PExpandedPixel;
-begin
-  if ACount > length(FChunk) then ACount := length(FChunk);
-  p := @FChunk[low(FChunk)];
-  APixels := p;
-  for i := ACount-1 downto 0 do
-  begin
-    p^ := ScanNextExpandedPixel;
-    inc(p);
-  end;
-end;
-
-procedure TBGRACustomScanner.ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer);
-var
-  cs: TColorspaceAny;
-  pPixels: Pointer;
-begin
-  cs := GetScanCustomColorspace;
-  if cs = TBGRAPixelColorspace then
-  begin
-    ScanNextCustomChunk(ACount, pPixels);
-    AMask := @PBGRAPixel(pPixels)^.green;
-    AStride := sizeof(TBGRAPixel);
-  end else
-  if cs = TByteMaskColorspace then
-  begin
-    ScanNextCustomChunk(ACount, pPixels);
-    AMask := PByteMask(pPixels);
-    AStride := sizeof(TByteMask);
-  end else
-    raise exception.Create('This scanner does not provide a mask.');
-end;
-
-function TBGRACustomScanner.ScanAtIntegerMask(X,Y: integer): TByteMask;
-begin
-  if GetScanCustomColorspace = TBGRAPixelColorspace then
-    result := ScanAtInteger(X,Y).green
-  else
-    result := ScanAtMask(X,Y);
-end;
-
-function TBGRACustomScanner.ScanAtMask(X,Y: Single): TByteMask;
-begin
-  if GetScanCustomColorspace = TBGRAPixelColorspace then
-    result := ScanAt(X,Y).green
-  else
-    raise exception.Create('This scanner does not provide a mask.');
-end;
-
-{ Interface gateway }
-function TBGRACustomScanner.QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-begin
-  if GetInterface(iid, obj) then
-    Result := S_OK
-  else
-    Result := longint(E_NOINTERFACE);
-end;
-
-{ There is no automatic reference counting, but it is compulsory to define these functions }
-function TBGRACustomScanner._AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-begin
-  result := 0;
-end;
-
-function TBGRACustomScanner._Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
-begin
-  result := 0;
-end;
-
-{********************** End of TBGRACustomScanner **************************}
 
 { TBGRACustomBitmap }
 
@@ -1339,10 +1077,10 @@ procedure TBGRACustomBitmap.RectangleWithin(x1, y1, x2, y2: single;
 begin
   if not APixelCenteredCoordinates then
   begin
-    x1 -= 0.5;
-    y1 -= 0.5;
-    x2 -= 0.5;
-    y2 -= 0.5;
+    DecF(x1, 0.5);
+    DecF(y1, 0.5);
+    DecF(x2, 0.5);
+    DecF(y2, 0.5);
   end;
   RectangleAntialias(x1+w*0.5,y1+w*0.5,x2-w*0.5,y2-w*0.5, ABorderColor, w, AFillColor);
 end;
@@ -1465,10 +1203,22 @@ begin
 end;
 
 procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
+  orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel);
+begin
+  TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,c,taLeftJustify);
+end;
+
+procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
   orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel;
   align: TAlignment);
 begin
   TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,c,align, GetFontRightToLeftFor(sUTF8));
+end;
+
+procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
+  orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner);
+begin
+  TextOutAngle(x,y, orientationTenthDegCCW, sUTF8,texture,taLeftJustify);
 end;
 
 procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
@@ -1605,12 +1355,12 @@ begin
   ratio := min(ARect.Width/Source.Width, ARect.Height/Source.Height);
   imgRect := RectWithSize(ARect.Left,ARect.Top, round(Source.Width*ratio), round(Source.Height*ratio));
   case AHorizAlign of
-    taCenter: OffsetRect(imgRect, (ARect.Width-imgRect.Width) div 2, 0);
-    taRightJustify: OffsetRect(imgRect, ARect.Width-imgRect.Width, 0);
+    taCenter: imgRect.Offset((ARect.Width-imgRect.Width) div 2, 0);
+    taRightJustify: imgRect.Offset(ARect.Width-imgRect.Width, 0);
   end;
   case AVertAlign of
-    tlCenter: OffsetRect(imgRect, 0,(ARect.Height-imgRect.Height) div 2);
-    tlBottom: OffsetRect(imgRect, 0,ARect.Height-imgRect.Height);
+    tlCenter: imgRect.Offset(0,(ARect.Height-imgRect.Height) div 2);
+    tlBottom: imgRect.Offset(0,ARect.Height-imgRect.Height);
   end;
   StretchPutImage(imgRect, Source, mode, AOpacity);
 end;
@@ -1636,7 +1386,8 @@ begin
 
   oldClip := ClipRect;
   newClip := rect(x,y,x+w,y+h);
-  if not IntersectRect(newClip,newClip,oldClip) then exit;
+  newClip.Intersect(oldClip);
+  if newClip.IsEmpty then exit;
 
   ClipRect := newClip;
 
@@ -1816,10 +1567,10 @@ var
   { Compute rotated coordinates }
   function Coord(relX,relY: single): TPointF;
   begin
-    relX -= imageCenterX;
-    relY -= imageCenterY;
-    result.x := relX*cosa-relY*sina+x;
-    result.y := relY*cosa+relX*sina+y;
+    DecF(relX, imageCenterX);
+    DecF(relY, imageCenterY);
+    result.x := relX*cosa - relY*sina+ x;
+    result.y := relY*cosa + relX*sina+ y;
     if ARestoreOffsetAfterRotation then
       result.Offset(imageCenterX,imageCenterY);
   end;
@@ -1843,10 +1594,10 @@ var
   { Compute rotated coordinates }
   function Coord(relX,relY: single): TPointF;
   begin
-    relX -= imageCenterX;
-    relY -= imageCenterY;
-    result.x := relX*cosa-relY*sina+x;
-    result.y := relY*cosa+relX*sina+y;
+    DecF(relX, imageCenterX);
+    DecF(relY, imageCenterY);
+    result.x := relX*cosa - relY*sina + x;
+    result.y := relY*cosa + relX*sina + y;
     if ARestoreOffsetAfterRotation then
       result.Offset(imageCenterX,imageCenterY);
   end;

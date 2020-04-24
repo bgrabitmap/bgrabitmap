@@ -121,7 +121,7 @@ type
     fancy_upscaling: Integer;
 
     // Input buffer.
-    data_size: Cardinal;
+    data_size: LongWord;
     data: PByte;
 
     // If true, in-loop filtering will not be performed even if present in the
@@ -194,7 +194,7 @@ type
   // Signature for output function. Should return 1 if writing was successful.
   // data/data_size is the segment of data to write, and 'picture' is for
   // reference (and so one can make use of picture->custom_ptr).
-  TWebPWriterFunction = function(const data: PByte; data_size: Cardinal;
+  TWebPWriterFunction = function(const data: PByte; data_size: LongWord;
     const picture: PWebPPicture): Integer; cdecl;
 
   TWebPPicture = record
@@ -242,25 +242,25 @@ WebPGetDecoderVersion: function(): Integer; cdecl;
 // This function will also validate the header and return 0 in
 // case of formatting error.
 // Pointers *width/*height can be passed NULL if deemed irrelevant.
-WebPGetInfo: function(const data: PByte; data_size: Cardinal;
+WebPGetInfo: function(const data: PByte; data_size: LongWord;
   width, height: PInteger): Integer; cdecl;
 
 // Decodes WEBP images pointed to by *data and returns RGB samples, along
 // with the dimensions in *width and *height.
 // The returned pointer should be deleted calling free().
 // Returns NULL in case of error.
-WebPDecodeRGB: function(const data: PByte; data_size: Cardinal;
+WebPDecodeRGB: function(const data: PByte; data_size: LongWord;
   width, height: PInteger): PByte; cdecl;
 
 // Same as WebPDecodeRGB, but returning RGBA data.
-WebPDecodeRGBA: function(const data: PByte; data_size: Cardinal;
+WebPDecodeRGBA: function(const data: PByte; data_size: LongWord;
   width, height: PInteger): PByte; cdecl;
 
 // This variant decode to BGR instead of RGB.
-WebPDecodeBGR: function(const data: PByte; data_size: Cardinal;
+WebPDecodeBGR: function(const data: PByte; data_size: LongWord;
   width, height: PInteger): PByte; cdecl;
 // This variant decodes to BGRA instead of RGBA.
-WebPDecodeBGRA: function(const data: PByte; data_size: Cardinal;
+WebPDecodeBGRA: function(const data: PByte; data_size: LongWord;
   width, height: PInteger): PByte; cdecl;
 
 // Decode WEBP images stored in *data in Y'UV format(*). The pointer returned is
@@ -272,7 +272,7 @@ WebPDecodeBGRA: function(const data: PByte; data_size: Cardinal;
 // have a common stride returned as '*uv_stride'.
 // Return NULL in case of error.
 // (*) Also named Y'CbCr. See: http://en.wikipedia.org/wiki/YCbCr
-WebPDecodeYUV: function(const data: PByte; data_size: Cardinal; width, height: PInteger;
+WebPDecodeYUV: function(const data: PByte; data_size: LongWord; width, height: PInteger;
   var u, v: PByte; stride, uv_stride: PInteger): PByte; cdecl;
 
 // Releases memory returned by the WebPDecode*() functions above.
@@ -286,17 +286,17 @@ WebPFree: procedure(const data: PByte); cdecl;
 // The parameter 'output_stride' specifies the distance (in bytes)
 // between scanlines. Hence, output_buffer_size is expected to be at least
 // output_stride x picture-height.
-WebPDecodeRGBInto: function(const data: PByte; data_size: Cardinal;
+WebPDecodeRGBInto: function(const data: PByte; data_size: LongWord;
   output_buffer: PByte; output_buffer_size, output_stride: Integer): PByte; cdecl;
 
-WebPDecodeRGBAInto: function(const data: PByte; data_size: Cardinal;
+WebPDecodeRGBAInto: function(const data: PByte; data_size: LongWord;
   output_buffer: PByte; output_buffer_size, output_stride: Integer): PByte; cdecl;
 
 // BGR variants
-WebPDecodeBGRInto: function(const data: PByte; data_size: Cardinal;
+WebPDecodeBGRInto: function(const data: PByte; data_size: LongWord;
   output_buffer: PByte; output_buffer_size, output_stride: Integer): PByte; cdecl;
 
-WebPDecodeBGRAInto: function(const data: PByte; data_size: Cardinal;
+WebPDecodeBGRAInto: function(const data: PByte; data_size: LongWord;
   output_buffer: PByte; output_buffer_size, output_stride: Integer): PByte; cdecl;
 
 // WebPDecodeYUVInto() is a variant of WebPDecodeYUV() that operates directly
@@ -306,7 +306,7 @@ WebPDecodeBGRAInto: function(const data: PByte; data_size: Cardinal;
 // 'u_size' and 'v_size' respectively.
 // Pointer to the luma plane ('*luma') is returned or NULL if an error occurred
 // during decoding (or because some buffers were found to be too small).
-WebPDecodeYUVInto: function(const data: PByte; data_size: Cardinal;
+WebPDecodeYUVInto: function(const data: PByte; data_size: LongWord;
                            luma: PByte; luma_size, luma_stride: Integer;
                            u: PByte; u_size, u_stride: Integer;
                            v: PByte; v_size, v_stride: Integer): PByte; cdecl;
@@ -364,7 +364,7 @@ WebPIDelete: procedure(const idec: PWebPIDecoder); cdecl;
 // the image is successfully decoded. Returns VP8_STATUS_SUSPENDED when more
 // data is expected. Returns error in other cases.
 WebPIAppend: function(const idec: PWebPIDecoder; const data: PByte;
-  data_size: Cardinal): TVP8StatusCode; cdecl;
+  data_size: LongWord): TVP8StatusCode; cdecl;
 
 // A variant of the above function to be used when data buffer contains
 // partial data from the beginning. In this case data buffer is not copied
@@ -372,7 +372,7 @@ WebPIAppend: function(const idec: PWebPIDecoder; const data: PByte;
 // Note that the value of the 'data' pointer can change between calls to
 // WebPIUpdate, for instance when the data buffer is resized to fit larger data.
 WebPIUpdate: function(const idec: PWebPIDecoder; const data: PByte;
-  data_size: Cardinal): TVP8StatusCode; cdecl;
+  data_size: LongWord): TVP8StatusCode; cdecl;
 
 // Returns the RGB image decoded so far. Returns NULL if output params are not
 // initialized yet. *last_y is the index of last decoded row in raster scan
@@ -405,16 +405,16 @@ WebPGetEncoderVersion: function(): Integer; cdecl;
 // larger output).
 
 WebPEncodeRGB: function(const rgb: PByte; width, height, stride: Integer;
-  quality_factor: single; var output: PByte): Cardinal; cdecl;
+  quality_factor: single; var output: PByte): LongWord; cdecl;
 
 WebPEncodeBGR: function(const bgr: PByte; width, height, stride: Integer;
-  quality_factor: Single; var output: PByte): Cardinal; cdecl;
+  quality_factor: Single; var output: PByte): LongWord; cdecl;
 
 WebPEncodeRGBA: function(const rgba: PByte; width, height, stride: Integer;
-  quality_factor: Single; var output: PByte): Cardinal; cdecl;
+  quality_factor: Single; var output: PByte): LongWord; cdecl;
 
 WebPEncodeBGRA: function(const bgra: PByte; width, height, stride: Integer;
-  quality_factor: Single; var output: PByte): Cardinal; cdecl;
+  quality_factor: Single; var output: PByte): LongWord; cdecl;
 
 // These functions are the equivalent of the above, but compressing in a
 // lossless manner. Files are usually larger than lossy format, but will
@@ -425,16 +425,16 @@ WebPEncodeBGRA: function(const bgra: PByte; width, height, stride: Integer;
 // use WebPEncode() and set WebPConfig::exact to 1.
 
 WebPEncodeLosslessRGB: function(const rgb: PByte; width, height, stride: Integer;
-  var output: PByte): Cardinal; cdecl;
+  var output: PByte): LongWord; cdecl;
 
 WebPEncodeLosslessBGR: function(const bgr: PByte; width, height, stride: Integer;
-  var output: PByte): Cardinal; cdecl;
+  var output: PByte): LongWord; cdecl;
 
 WebPEncodeLosslessRGBA: function(const rgba: PByte; width, height, stride: Integer;
-  var output: PByte): Cardinal; cdecl;
+  var output: PByte): LongWord; cdecl;
 
 WebPEncodeLosslessBGRA: function(const bgra: PByte; width, height, stride: Integer;
-  var output: PByte): Cardinal; cdecl;
+  var output: PByte): LongWord; cdecl;
 
 // Should always be called, to initialize a fresh WebPConfig structure before
 // modification. Returns 0 in case of version mismatch. WebPConfigInit() must
@@ -515,7 +515,7 @@ WebPPictureInitInternal: function(const picture: PWebPPicture; version: Integer)
 
 var
   LibWebPHandle: TLibHandle = dynlibs.NilHandle; // this will hold our handle for the lib; it functions nicely as a mutli-lib prevention unit as well...
-  LibWebPRefCount : cardinal = 0;  // Reference counter
+  LibWebPRefCount : LongWord = 0;  // Reference counter
 
 function LibWebPLoaded : boolean; inline;
 Function LibWebPLoad(const libfilename:string = ''): boolean; // load the lib

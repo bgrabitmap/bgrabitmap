@@ -1,20 +1,21 @@
 unit BGRAText;
 
 {$mode objfpc}{$H+}
+{$i bgrabitmap.inc}
 
 interface
 
 {$IFDEF LINUX}
-  {$DEFINE LCL_RENDERER_IS_FINE}
-  {$DEFINE LCL_CLEARTYPE_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_CLEARTYPE_RENDERER_IS_FINE}
   {$DEFINE RENDER_TEXT_ON_TBITMAP}
 {$ENDIF}
 {$IFDEF FREEBSD}
-  {$DEFINE LCL_RENDERER_IS_FINE}
-  {$DEFINE LCL_CLEARTYPE_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_CLEARTYPE_RENDERER_IS_FINE}
 {$ENDIF}
 {$IFDEF DARWIN}
-  {$DEFINE LCL_RENDERER_IS_FINE}
+  {$DEFINE SYSTEM_RENDERER_IS_FINE}
   {$DEFINE RENDER_TEXT_ON_TBITMAP}
 {$ENDIF}
 {$IFDEF WINDOWS}
@@ -22,14 +23,18 @@ interface
     {$DEFINE FIX_FONT_VERTICAL_OFFSET}
   {$ENDIF}
 {$ENDIF}
+{$IFDEF BGRABITMAP_USE_MSEGUI}
+  {$DEFINE RENDER_TEXT_ON_TBITMAP}
+{$ENDIF}
 
 {
   Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
 
-  This unit provides basic text rendering functions using LCL.
+  This unit provides basic text rendering functions using system renderer 
+  (LCL or MSEgui).
 
-  Text functions use a temporary bitmap where the operating system text drawing is used.
-  Then it is scaled down (if antialiasing is activated), and colored.
+  Text functions use a temporary bitmap where the operating system text drawing 
+  is used. Then it is scaled down (if antialiasing is activated) and colored.
 
   These routines are rather slow, so you may use other font renderers
   like TBGRATextEffectFontRenderer in BGRATextFX if you want to use LCL fonts,
@@ -37,26 +42,32 @@ interface
   in BGRAFreeType. }
 
 uses
-  Classes, Types, SysUtils, BGRAGraphics, BGRABitmapTypes, InterfaceBase, BGRAPen, BGRAGrayscaleMask,
-  LCLVersion;
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAPen, BGRAGrayscaleMask
+  {$IFDEF LCL},InterfaceBase, LCLVersion{$ENDIF};
+
+const
+  RenderTextOnBitmap = {$IFDEF RENDER_TEXT_ON_TBITMAP}true{$ELSE}false{$ENDIF};
 
 type
   TWordBreakHandler = BGRABitmapTypes.TWordBreakHandler;
 
-  { TCustomLCLFontRenderer }
+  { TBGRASystemFontRenderer }
 
-  TCustomLCLFontRenderer = class(TBGRACustomFontRenderer)
+  TBGRASystemFontRenderer = class(TBGRACustomFontRenderer)
   protected
     FFont: TFont;             //font parameters
     FWordBreakHandler: TWordBreakHandler;
     FOwnUnderline: boolean;
     procedure UpdateFont; virtual;
     function InternalTextSize(sUTF8: string; AShowPrefix: boolean): TSize;
+    function InternalTextSizeAngle(sUTF8: string; AShowPrefix: boolean; AOrientation: integer): TSize; virtual;
     procedure InternalTextWordBreak(ADest: TBGRACustomBitmap; ATextUTF8: string;
                                     x, y, AMaxWidth: integer; AColor: TBGRAPixel; ATexture: IBGRAScanner;
                                     AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
     procedure InternalTextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel; ATexture: IBGRAScanner);
     procedure InternalTextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
+                              align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false); 
+    procedure InternalTextOutAngle(ADest: TBGRACustomBitmap; x, y: single; AOrientation: integer; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false); virtual;
     procedure InternalTextOutEllipse(ADest: TBGRACustomBitmap; x, y, availableWidth: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
@@ -67,7 +78,7 @@ type
     function InternalGetFontPixelMetric: TFontPixelMetric;
     procedure DefaultWorkBreakHandler(var ABeforeUTF8, AAfterUTF8: string);
   public
-    OverrideUnderlineDecoration: boolean; // draw unerline according to computed font pixel metric instead of using LCL rendering of underline
+    OverrideUnderlineDecoration: boolean; // draw unerline according to computed font pixel metric instead of using system rendering of underline
     procedure SplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string);
     function GetFontPixelMetric: TFontPixelMetric; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; override;
@@ -82,20 +93,20 @@ type
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); overload; override;
     procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; AColor: TBGRAPixel; AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean = false); overload;
     procedure TextWordBreak(ADest: TBGRACustomBitmap; AText: string; x, y, AMaxWidth: integer; ATexture: IBGRAScanner; AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean = false); overload;
-    function TextSize(sUTF8: string): TSize; override;
+    function TextSize(sUTF8: string): TSize; overload; override;
     function TextSizeAngle(sUTF8: string; orientationTenthDegCCW: integer): TSize; override;
-    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; override;
+    function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; overload; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
     constructor Create;
     destructor Destroy; override;
     property OnWordBreak: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
   end;
 
-  { TLCLFontRenderer }
-
-  TLCLFontRenderer = class(TCustomLCLFontRenderer)
-
-  end;
+{$IFDEF BGRABITMAP_USE_MSEGUI}
+  TMSEFontRenderer = class(TBGRASystemFontRenderer);
+{$ELSE}
+  TLCLFontRenderer = class(TBGRASystemFontRenderer);
+{$ENDIF}
 
 function CleanTextOutString(s: string): string; //this works with UTF8 strings as well
 function RemoveLineEnding(var s: string; indexByte: integer): boolean; //this works with UTF8 strings however the index is the byte index
@@ -112,9 +123,14 @@ procedure BGRATextRect(bmp: TBGRACustomBitmap; Font: TFont; Quality: TBGRAFontQu
   sUTF8: string; style: TTextStyle; c: TBGRAPixel; tex: IBGRAScanner; CustomAntialiasingLevel: Integer = 0);
 
 function BGRATextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
+function BGRATextSizeAngle(Font: TFont; AOrientation: integer; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
 function BGRATextFitInfo(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
+function BGRATextFitInfoAngle(Font: TFont; AOrientation: integer; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
 function BGRAOriginalTextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: integer): TSize;
+function BGRAOriginalTextSizeAngle(Font: TFont; AOrientation: integer; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
 function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer;
+                                out actualAntialiasingLevel: integer; out extraVerticalMarginDueToRotation: integer): TSize;
+function BGRAOriginalTextSizeExAngle(Font: TFont; AOrientation: integer; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer;
                                 out actualAntialiasingLevel: integer; out extraVerticalMarginDueToRotation: integer): TSize;
 
 function BGRATextUnderline(ATopLeft: TPointF; AWidth: Single; AMetrics: TFontPixelMetric): ArrayOfTPointF; overload;
@@ -125,32 +141,47 @@ function BGRATextStrikeOut(ATopLeft: TPointF; AWidth: Single; ABaseline, AEmHeig
 function GetFontHeightSign: integer;
 function FontEmHeightSign: integer;
 function FontFullHeightSign: integer;
-function LCLFontAvailable: boolean;
+function SystemFontAvailable: boolean;
 function GetFineClearTypeAuto: TBGRAFontQuality;
-function FixLCLFontFullHeight({%H-}AFontName: string; AFontHeight: integer): integer;
+function FixSystemFontFullHeight({%H-}AFontName: string; AFontHeight: integer): integer;
+
+{$IFDEF LCL}
+function LCLFontAvailable: boolean;
+function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
+{$ENDIF}
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TGrayscaleMask; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
 procedure BGRAFillClearTypeMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner = nil; RGBOrder: boolean=true);
 procedure BGRAFillClearTypeRGBMask(dest: TBGRACustomBitmap; x,y: integer; mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner = nil; KeepRGBOrder: boolean=true);
 
-const FontAntialiasingLevel = {$IFDEF LCL_RENDERER_IS_FINE}3{$ELSE}6{$ENDIF};
+const FontAntialiasingLevel = {$IFDEF SYSTEM_RENDERER_IS_FINE}3{$ELSE}6{$ENDIF};
 const FontDefaultQuality = fqAntialiased;
-const IsLclFontRendererFine = {$IFDEF LCL_RENDERER_IS_FINE}true{$ELSE}false{$ENDIF};
+const IsLclFontRendererFine = {$IFDEF SYSTEM_RENDERER_IS_FINE}true{$ELSE}false{$ENDIF};
 
 function GetLCLFontPixelMetric(AFont: TFont): TFontPixelMetric;
 
 var
   BGRATextOutImproveReadabilityProc : procedure (bmp: TBGRACustomBitmap; AFont: TFont; xf,yf: single; text: string; color: TBGRAPixel; tex: IBGRAScanner; align: TAlignment; mode : TBGRATextOutImproveReadabilityMode);
 
+procedure BitmapTextOut(ABitmap: TBitmap; ACoord: TPoint; AText: string);
+procedure BitmapTextOutAngle(ABitmap: TBitmap; ACoord: TPoint; AText: string; AOrientation: integer);
+procedure BitmapTextRect(ABitmap: TBitmap; ARect: TRect; ACoord: TPoint; 
+  AText: string; const AStyle: TTextStyle);
+function BitmapTextExtent(ABitmap: TBitmap; AText: string): TSize;
+function BitmapTextExtentAngle(ABitmap: TBitmap; AText: string; AOrientation: integer): TSize;
+function BitmapTextFitInfo(ABitmap: TBitmap; AText: string; AMaxWidth: integer): integer;
+function BitmapTextFitInfoAngle(ABitmap: TBitmap; AText: string; AMaxWidth: integer; AOrientation: integer): integer;
+procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
+
 implementation
 
-uses GraphType, Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
-     {$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF};
+uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
+     {$IFDEF LCL}{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
 
 const MaxPixelMetricCount = 100;
 
 var
-  LCLFontDisabledValue: boolean;
+  SystemFontDisabledValue: boolean;
   TempBmp: TBitmap;
   fqFineClearTypeComputed: boolean;
   fqFineClearTypeValue: TBGRAFontQuality;
@@ -165,6 +196,59 @@ var
                           metric: TFontPixelMetric;
                         end;
   FontPixelMetricCount: integer;
+  
+{$IFDEF BGRABITMAP_USE_MSEGUI}
+{$i bgramsegui_text.inc}
+{$ELSE}
+procedure BitmapTextOut(ABitmap: TBitmap; ACoord: TPoint; AText: string);
+begin
+  ABitmap.Canvas.Brush.Style := bsClear;
+  ABitmap.Canvas.TextOut(ACoord.X, ACoord.Y, AText);
+end;
+
+procedure BitmapTextOutAngle(ABitmap: TBitmap; ACoord: TPoint; AText: string; AOrientation: integer);
+begin
+  ABitmap.Canvas.Font.Orientation := AOrientation;
+  BitmapTextOut(ABitmap, ACoord, AText);
+end;
+
+procedure BitmapTextRect(ABitmap: TBitmap; ARect: TRect; ACoord: TPoint; 
+  AText: string; const AStyle: TTextStyle);
+begin
+  ABitmap.Canvas.Brush.Style := bsClear;
+  ABitmap.Canvas.TextRect(ARect, ACoord.X, ACoord.Y, AText, AStyle);
+end;
+
+function BitmapTextExtent(ABitmap: TBitmap; AText: string): TSize;
+begin
+  result := ABitmap.Canvas.TextExtent(AText);
+end;
+
+function BitmapTextExtentAngle(ABitmap: TBitmap; AText: string; AOrientation: integer): TSize;
+begin
+  ABitmap.Canvas.Font.Orientation := AOrientation;
+  result := BitmapTextExtent(ABitmap, AText);
+end;
+
+function BitmapTextFitInfo(ABitmap: TBitmap; AText: string; AMaxWidth: integer): integer;
+begin
+  result := ABitmap.Canvas.TextFitInfo(AText, AMaxWidth);
+end;
+
+function BitmapTextFitInfoAngle(ABitmap: TBitmap; AText: string; AMaxWidth: integer; AOrientation: integer): integer;
+begin
+  ABitmap.Canvas.Font.Orientation := AOrientation;
+  result := BitmapTextFitInfo(ABitmap, AText, AMaxWidth);
+end;
+
+procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
+begin
+  ABitmap.Canvas.Brush.Style := bsSolid;
+  ABitmap.Canvas.Brush.Color := AColor;
+  ABitmap.Canvas.Pen.Style := psClear;
+  ABitmap.Canvas.FillRect(ARect);
+end;
+{$ENDIF}
 
 procedure ComputeFontVerticalBounds(text: string; font: TFont; out top, bottom, totalHeight: integer);
 var
@@ -176,7 +260,7 @@ var
   mask: TBGRACustomBitmap;
   size: TSize;
 begin
-  if not LCLFontAvailable then
+  if not SystemFontAvailable then
   begin
     top := 0;
     bottom := 0;
@@ -189,8 +273,7 @@ begin
   mask.Canvas.Font.Quality := fqAntialiased;
   mask.Canvas.Font.Color := clWhite;
   mask.Canvas.Font.Style := font.style * [fsBold,fsItalic];
-  mask.Canvas.Brush.Style := bsClear;
-  mask.Canvas.TextOut(0,0,text);
+  BitmapTextOut(mask.Bitmap, Point(0,0), text);
   top := -1;
   bottom := -1;
   totalHeight:= mask.Height;
@@ -396,7 +479,7 @@ function GetFontHeightSign: integer;
 var
   HeightP1, HeightM1: integer;
 begin
-  if LCLFontDisabledValue then
+  if SystemFontDisabledValue then
   begin
     result := DefaultFontHeightSign;
     exit;
@@ -408,21 +491,23 @@ begin
     exit;
   end;
 
-  if WidgetSet.LCLPlatform = lpNoGUI then
+  if {$IFDEF LCL}WidgetSet.LCLPlatform = lpNoGUI{$ELSE}False{$ENDIF} then
   begin
-    LCLFontDisabledValue:= True;
+    SystemFontDisabledValue:= True;
     result := -1;
     exit;
   end;
 
   try
     if tempBmp = nil then tempBmp := TBitmap.Create;
+    tempBmp.Width := 30;
+    tempBmp.Height := 30;
     tempBmp.Canvas.Font.Name := 'Arial';
     tempBmp.Canvas.Font.Style := [];
     tempBmp.Canvas.Font.Height := 20;
-    HeightP1  := tempBmp.Canvas.TextExtent('Hg').cy;
+    HeightP1  := BitmapTextExtent(tempBmp, 'Hg').cy;
     tempBmp.Canvas.Font.Height := -20;
-    HeightM1  := tempBmp.Canvas.TextExtent('Hg').cy;
+    HeightM1  := BitmapTextExtent(tempBmp, 'Hg').cy;
 
     if HeightP1 > HeightM1 then
       FontHeightSignValue := 1
@@ -431,7 +516,7 @@ begin
   except
     on ex: Exception do
     begin
-      LCLFontDisabledValue := True;
+      SystemFontDisabledValue := True;
       result := -1;
       exit;
     end;
@@ -452,18 +537,21 @@ begin
     exit;
   end;
   result := fqFineAntialiasing;
-  if not LCLFontDisabledValue and not (WidgetSet.LCLPlatform = lpNoGUI) then
+  if not SystemFontDisabledValue and not ({$IFDEF LCL}WidgetSet.LCLPlatform = lpNoGUI{$ELSE}False{$ENDIF}) then
   begin
     lclBmp := TBitmap.Create;
-    lclBmp.Canvas.FillRect(0,0,lclBmp.Width,lclBmp.Height);
+    lclBmp.Width := 1;
+    lclBmp.Height := 1;
     lclBmp.Canvas.Font.Height := -50;
     lclBmp.Canvas.Font.Quality := fqCleartype;
-    with lclBmp.Canvas.TextExtent('/') do
+    lclBmp.Canvas.Font.Color := clBlack;
+    with BitmapTextExtent(lclBmp, '/') do
     begin
       lclBmp.Width := cx;
       lclBmp.Height := cy;
     end;
-    lclBmp.Canvas.TextOut(0,0,'/');
+    BitmapFillRect(lclBmp, rect(0,0,lclBmp.Width,lclBmp.Height), clWhite);
+    BitmapTextOut(lclBmp, Point(0,0), '/');
     bgra:= BGRABitmapFactory.Create(lclBmp);
     x:= bgra.Width div 2;
     for y := 0 to bgra.Height-1 do
@@ -491,7 +579,7 @@ var LCLFontFullHeightRatio : array of record
                         end;
 {$ENDIF}
 
-function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
+function FixSystemFontFullHeight(AFontName: string; AFontHeight: integer): integer;
 {$IFNDEF WINDOWS}
 const TestHeight = 200;
 var
@@ -536,6 +624,18 @@ begin
 end;
 {$ENDIF}
 
+{$IFDEF LCL}
+function LCLFontAvailable: boolean;
+begin
+  result := SystemFontAvailable;
+end;
+
+function FixLCLFontFullHeight(AFontName: string; AFontHeight: integer): integer;
+begin
+  result := FixSystemFontFullHeight(AFontName, AFontHeight);
+end;
+{$ENDIF}
+
 function FontEmHeightSign: integer;
 begin
   result := GetFontHeightSign;
@@ -546,10 +646,10 @@ begin
   result := -FontEmHeightSign;
 end;
 
-function LCLFontAvailable: boolean;
+function SystemFontAvailable: boolean;
 begin
   if not FontHeightSignComputed then GetFontHeightSign;
-  result := not LCLFontDisabledValue;
+  result := not SystemFontDisabledValue;
 end;
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,
@@ -571,12 +671,23 @@ begin
   BGRABlend.BGRAFillClearTypeRGBMask(dest,x,y,mask,color,texture,KeepRGBOrder);
 end;
 
-function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer;
-  out actualAntialiasingLevel: integer; out extraVerticalMarginDueToRotation: integer): TSize;
+function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality; 
+  sUTF8: string; CustomAntialiasingLevel: Integer; 
+  out actualAntialiasingLevel: integer; 
+  out extraVerticalMarginDueToRotation: integer): TSize;
+begin
+  result := BGRAOriginalTextSizeExAngle(Font, Font.Orientation, Quality, sUTF8,
+    CustomAntialiasingLevel, actualAntialiasingLevel, extraVerticalMarginDueToRotation);  
+end;                               
+
+function BGRAOriginalTextSizeExAngle(Font: TFont; AOrientation: integer; 
+  Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer;
+  out actualAntialiasingLevel: integer; 
+  out extraVerticalMarginDueToRotation: integer): TSize;
 begin
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   extraVerticalMarginDueToRotation := 0;
-  if not LCLFontAvailable then
+  if not SystemFontAvailable then
     result := Size(0,0)
   else
   begin
@@ -591,31 +702,39 @@ begin
         tempBmp.Canvas.Font.Height := Font.Height;
         actualAntialiasingLevel:= 1;
       end;
-      result := tempBmp.Canvas.TextExtent(sUTF8);
+      result := BitmapTextExtentAngle(tempBmp, sUTF8, AOrientation);
       if Font.Orientation <> 0 then
       begin
         tempBmp.Canvas.Font.Orientation:= 0;
-        extraVerticalMarginDueToRotation := result.cy - tempBmp.Canvas.TextHeight(sUTF8);
+        extraVerticalMarginDueToRotation := result.cy - 
+          BitmapTextExtentAngle(tempBmp, sUTF8, AOrientation).cy;
       end;
     except
       on ex: exception do
       begin
         result := Size(0,0);
-        LCLFontDisabledValue := True;
+        SystemFontDisabledValue := True;
       end;
     end;
 
   end;
 end;
 
-function BGRATextFitInfo(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string;
+function BGRATextFitInfo(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; 
+  CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
+begin
+  result := BGRATextFitInfoAngle(Font, Font.Orientation, Quality, sUTF8,
+    CustomAntialiasingLevel, AMaxWidth);
+end;
+
+function BGRATextFitInfoAngle(Font: TFont; AOrientation: integer; Quality: TBGRAFontQuality; sUTF8: string;
   CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
 var
-  actualAntialiasingLevel{$IF lcl_fullversion < 1070000}, len1{$ENDIF}: Integer;
+  actualAntialiasingLevel{$IFDEF LCL}{$IF lcl_fullversion < 1070000}, len1{$ENDIF}{$ENDIF}: Integer;
 begin
   if (AMaxWidth = 0) or (length(sUTF8)=0) then exit(0);
   actualAntialiasingLevel:= CustomAntialiasingLevel;
-  if not LCLFontAvailable then
+  if not SystemFontAvailable then
     result := 0
   else
   begin
@@ -630,26 +749,38 @@ begin
         tempBmp.Canvas.Font.Height := Font.Height;
         actualAntialiasingLevel:= 1;
       end;
-      {$IF lcl_fullversion < 1070000}
-      len1 := tempBmp.Canvas.TextWidth(copy(sUTF8,1,UTF8CharacterLength(@sUTF8[1])));
+      {$IFDEF LCL}{$IF lcl_fullversion < 1070000}
+      len1 := BitmapTextExtentAngle(tempBmp, 
+                copy(sUTF8,1,UTF8CharacterLength(@sUTF8[1])),
+                AOrientation).cx;
       if len1 > AMaxWidth*actualAntialiasingLevel then exit(0);
-      {$ENDIF}
-      result := tempBmp.Canvas.TextFitInfo(sUTF8, AMaxWidth*actualAntialiasingLevel);
+      {$ENDIF}{$ENDIF}
+      result := BitmapTextFitInfoAngle(tempBmp, sUTF8, 
+        AMaxWidth*actualAntialiasingLevel, AOrientation);
     except
       on ex: exception do
       begin
         result := 0;
-        LCLFontDisabledValue := True;
+        SystemFontDisabledValue := True;
       end;
     end;
 
   end;
 end;
 
-function BGRAOriginalTextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
+function BGRAOriginalTextSize(Font: TFont; Quality: TBGRAFontQuality; 
+  sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
+begin
+  result := BGRAOriginalTextSizeAngle(Font, Font.Orientation, Quality, sUTF8, 
+                                      CustomAntialiasingLevel);
+end;
+
+function BGRAOriginalTextSizeAngle(Font: TFont; AOrientation: integer;
+  Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
 var actualAntialiasingLevel, extraMargin: integer;
 begin
-  result := BGRAOriginalTextSizeEx(Font, Quality, sUTF8, CustomAntialiasingLevel, actualAntialiasingLevel, extraMargin);
+  result := BGRAOriginalTextSizeExAngle(Font, AOrientation, Quality, sUTF8, 
+    CustomAntialiasingLevel, actualAntialiasingLevel, extraMargin);
   {$IFDEF FIX_FONT_VERTICAL_OFFSET}
   if extraMargin > 0 then dec(result.cy, extraMargin);
   {$ENDIF}
@@ -657,10 +788,15 @@ end;
 
 function BGRATextSize(Font: TFont; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
 begin
-  {$IFDEF LCL_RENDERER_IS_FINE}
+  result := BGRATextSizeAngle(Font, Font.Orientation, Quality, sUTF8, CustomAntialiasingLevel);
+end;
+
+function BGRATextSizeAngle(Font: TFont; AOrientation: integer; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
+begin
+  {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if Quality = fqFineAntialiasing then Quality:= fqSystem;
   {$ENDIF}
-  result := BGRAOriginalTextSize(Font, Quality, sUTF8, CustomAntialiasingLevel);
+  result := BGRAOriginalTextSizeAngle(Font, AOrientation, Quality, sUTF8, CustomAntialiasingLevel);
   if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
   begin
     result.cx := ceil(Result.cx/CustomAntialiasingLevel);
@@ -700,7 +836,7 @@ procedure FilterOriginalText(Quality: TBGRAFontQuality; CustomAntialiasingLevel:
   out grayscaleMask: TGrayscaleMask);
 var
   n: integer;
-  maxAlpha: NativeUint;
+  maxAlpha: UInt32or64;
   pb: PByte;
   multiplyX: integer;
   resampled: TBGRACustomBitmap;
@@ -801,7 +937,7 @@ var
   style: TTextStyle;
   noPrefix: string;
 begin
-  if not LCLFontAvailable then exit;
+  if not SystemFontAvailable then exit;
 
   if CustomAntialiasingLevel = 0 then
     CustomAntialiasingLevel:= FontAntialiasingLevel;
@@ -812,12 +948,12 @@ begin
     exit;
   end;
 
-  {$IFDEF LCL_RENDERER_IS_FINE}
+  {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if (Quality in [fqFineAntialiasing, fqFineClearTypeRGB, fqFineClearTypeBGR]) and
      (BGRATextSize(Font, fqSystem, 'Hg', 1).cy >= 13) then
   begin
     if Quality = fqFineAntialiasing then Quality := fqSystem;
-    {$IFDEF LCL_CLEARTYPE_RENDERER_IS_FINE}
+    {$IFDEF SYSTEM_CLEARTYPE_RENDERER_IS_FINE}
     if Quality = GetFineClearTypeAuto then Quality := fqSystemClearType;
     {$ENDIF}
   end;
@@ -840,8 +976,8 @@ begin
 
   case align of
     taLeftJustify: ;
-    taCenter: xf -= size.cx/2/sizeFactor;
-    taRightJustify: xf -= size.cx/sizeFactor;
+    taCenter: DecF(xf, size.cx/2/sizeFactor);
+    taRightJustify: DecF(xf, size.cx/sizeFactor);
   end;
 
   xMarginF := size.cy/sizeFactor;
@@ -889,7 +1025,7 @@ var
   end;
 
 begin
-  if not LCLFontAvailable then exit;
+  if not SystemFontAvailable then exit;
 
   if CustomAntialiasingLevel = 0 then
     CustomAntialiasingLevel:= FontAntialiasingLevel;
@@ -904,9 +1040,8 @@ begin
   end;
   TempFont := TFont.Create;
   TempFont.Assign(Font);
-  TempFont.Orientation := orientationTenthDegCCW;
   TempFont.Height := Font.Height;
-  size := BGRAOriginalTextSizeEx(TempFont,Quality,sUTF8,CustomAntialiasingLevel,sizeFactor, extraVerticalMargin);
+  size := BGRAOriginalTextSizeExAngle(TempFont,orientationTenthDegCCW,Quality,sUTF8,CustomAntialiasingLevel,sizeFactor, extraVerticalMargin);
   if (size.cx = 0) or (size.cy = 0) then
   begin
     tempFont.Free;
@@ -958,8 +1093,7 @@ begin
   tempLCL := TBitmap.Create;
   tempLCL.Width := rotBounds.Right-rotBounds.Left;
   tempLCL.Height := rotBounds.Bottom-rotBounds.Top;
-  tempLCL.Canvas.Brush.Color := clBlack;
-  tempLCL.Canvas.FillRect(0,0,tempLCL.Width,tempLCL.Height);
+  BitmapFillRect(tempLCL, Rect(0,0,tempLCL.Width,tempLCL.Height), clBlack);
   with tempLCL do begin
   {$ELSE}
   temp := BGRABitmapFactory.Create(rotBounds.Right-rotBounds.Left,rotBounds.Bottom-rotBounds.Top, BGRABlack);
@@ -967,10 +1101,10 @@ begin
   {$ENDIF}
     Canvas.Font := Font;
     Canvas.Font.Color := clWhite;
-    Canvas.Font.Orientation := orientationTenthDegCCW;
     Canvas.Font.Height := round(Font.Height*sizeFactor);
-    Canvas.Brush.Style := bsClear;
-    Canvas.TextOut(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY, sUTF8);
+    BitmapTextOutAngle({$IFDEF RENDER_TEXT_ON_TBITMAP}tempLCL{$ELSE}temp.Bitmap{$ENDIF}, 
+      Point(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY), sUTF8,
+      orientationTenthDegCCW);
   end;
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
@@ -996,7 +1130,7 @@ var
   tempLCL: TBitmap;
   {$ENDIF}
 begin
-  if not LCLFontAvailable then exit;
+  if not SystemFontAvailable then exit;
 
   if CustomAntialiasingLevel = 0 then
     CustomAntialiasingLevel:= FontAntialiasingLevel;
@@ -1016,12 +1150,12 @@ begin
   if (tx <= 0) or (ty <= 0) then
     exit;
 
-  {$IFDEF LCL_RENDERER_IS_FINE}
+  {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if (Quality in [fqFineAntialiasing, fqFineClearTypeRGB, fqFineClearTypeBGR]) and
      (BGRATextSize(Font, fqSystem, 'Hg', 1).cy >= 13) then
   begin
     if Quality = fqFineAntialiasing then Quality := fqSystem;
-    {$IFDEF LCL_CLEARTYPE_RENDERER_IS_FINE}
+    {$IFDEF SYSTEM_CLEARTYPE_RENDERER_IS_FINE}
     if Quality = GetFineClearTypeAuto then Quality := fqSystemClearType;
     {$ENDIF}
   end;
@@ -1036,8 +1170,7 @@ begin
   tempLCL := TBitmap.Create;
   tempLCL.Width := tx*sizeFactor;
   tempLCL.Height := ty*sizeFactor;
-  tempLCL.Canvas.Brush.Color := clBlack;
-  tempLCL.Canvas.FillRect(0,0,tempLCL.Width,tempLCL.Height);
+  BitmapFillRect(tempLCL, Rect(0,0,tempLCL.Width,tempLCL.Height), clBlack);
   with tempLCL do begin
   {$ELSE}
   temp := BGRABitmapFactory.Create(tx*sizeFactor, ty*sizeFactor, BGRABlack);
@@ -1048,10 +1181,10 @@ begin
     if Quality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB] then Canvas.Font.Height := Font.Height*CustomAntialiasingLevel
        else Canvas.Font.Height := Font.Height;
     Canvas.Font.Color := clWhite;
-    Canvas.Brush.Style := bsClear;
-    Canvas.TextRect(rect(lim.Left-ARect.Left, lim.Top-ARect.Top,
-                         (ARect.Right-ARect.Left)*sizeFactor, (ARect.Bottom-ARect.Top)*sizeFactor),
-                         round((xf - lim.Left)*sizeFactor), round((yf - lim.Top)*sizeFactor), sUTF8, style);
+    BitmapTextRect({$IFDEF RENDER_TEXT_ON_TBITMAP}tempLCL{$ELSE}temp.Bitmap{$ENDIF}, rect(lim.Left-ARect.Left, lim.Top-ARect.Top,
+         (ARect.Right-ARect.Left)*sizeFactor, (ARect.Bottom-ARect.Top)*sizeFactor),
+         Point(round((xf - lim.Left)*sizeFactor), round((yf - lim.Top)*sizeFactor)), 
+         sUTF8, style);
   end;
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
@@ -1064,10 +1197,10 @@ begin
   grayscale.Free;
 end;
 
-{ TCustomLCLFontRenderer }
+{ TBGRASystemFontRenderer }
 
 { Update font properties to internal TFont object }
-procedure TCustomLCLFontRenderer.UpdateFont;
+procedure TBGRASystemFontRenderer.UpdateFont;
 var fixedHeight: integer;
   fs: TFontStyles;
 begin
@@ -1085,28 +1218,37 @@ begin
   if FFont.Style <> fs then
     FFont.Style := fs;
   if FontEmHeight < 0 then
-    fixedHeight := FixLCLFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
+    fixedHeight := FixSystemFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
   else
     fixedHeight := FontEmHeight * FontEmHeightSign;
   if FFont.Height <> fixedHeight then
     FFont.Height := fixedHeight;
-  if FFont.Orientation <> FontOrientation then
-    FFont.Orientation := FontOrientation;
   if FontQuality = fqSystemClearType then
     FFont.Quality := fqCleartype
   else
     FFont.Quality := FontDefaultQuality;
 end;
 
-function TCustomLCLFontRenderer.InternalTextSize(sUTF8: string; AShowPrefix: boolean): TSize;
+function TBGRASystemFontRenderer.InternalTextSize(sUTF8: string; 
+  AShowPrefix: boolean): TSize;
 begin
-  if AShowPrefix then sUTF8 := RemovePrefix(sUTF8);
-  result := BGRAText.BGRATextSize(FFont,FontQuality,sUTF8,FontAntialiasingLevel);
-  if (result.cy >= 24) and (FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB]) then
-    result := BGRAText.BGRATextSize(FFont,FontQuality,sUTF8,4);
+  result := InternalTextSizeAngle(sUTF8, AShowPrefix, FontOrientation);
 end;
 
-procedure TCustomLCLFontRenderer.SplitText(var ATextUTF8: string;
+function TBGRASystemFontRenderer.InternalTextSizeAngle(sUTF8: string; 
+  AShowPrefix: boolean; AOrientation: integer): TSize;
+begin
+  if AShowPrefix then sUTF8 := RemovePrefix(sUTF8);
+  result := BGRAText.BGRATextSizeAngle(FFont, AOrientation, FontQuality,
+                                       sUTF8, FontAntialiasingLevel);
+  if (result.cy >= 24) 
+   and (FontQuality in[fqFineAntialiasing,fqFineClearTypeBGR,fqFineClearTypeRGB]) 
+   and (FontAntialiasingLevel > 4) then
+    result := BGRAText.BGRATextSizeAngle(FFont, AOrientation, FontQuality,
+                                         sUTF8, 4);
+end;
+
+procedure TBGRASystemFontRenderer.SplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string);
 var WordBreakHandler: TWordBreakHandler;
 begin
@@ -1119,61 +1261,57 @@ begin
   InternalSplitText(ATextUTF8, AMaxWidth, ARemainsUTF8, WordBreakHandler);
 end;
 
-function TCustomLCLFontRenderer.GetFontPixelMetric: TFontPixelMetric;
+function TBGRASystemFontRenderer.GetFontPixelMetric: TFontPixelMetric;
 begin
   UpdateFont;
   result := InternalGetFontPixelMetric;
 end;
 
-procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
+procedure TBGRASystemFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
   sUTF8: string; c: TBGRAPixel; align: TAlignment);
 begin
   UpdateFont;
-  FFont.Orientation:= orientationTenthDegCCW;
-  InternalTextOut(ADest,x,y,sUTF8,c,nil,align);
+  InternalTextOutAngle(ADest,x,y,orientationTenthDegCCW,sUTF8,c,nil,align,false,false);
 end;
 
-procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel;
   align: TAlignment; ARightToLeft: boolean);
 begin
   UpdateFont;
-  FFont.Orientation:= orientationTenthDegCCW;
-  InternalTextOut(ADest,x,y,sUTF8,c,nil,align,false,ARightToLeft);
+  InternalTextOutAngle(ADest,x,y,orientationTenthDegCCW,sUTF8,c,nil,align,false,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
+procedure TBGRASystemFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;
   sUTF8: string; texture: IBGRAScanner; align: TAlignment);
 begin
   UpdateFont;
-  FFont.Orientation:= orientationTenthDegCCW;
-  InternalTextOut(ADest,x,y,sUTF8,BGRAPixelTransparent,texture,align,false);
+  InternalTextOutAngle(ADest,x,y,orientationTenthDegCCW,sUTF8,BGRAPixelTransparent,texture,align,false,false);
 end;
 
-procedure TCustomLCLFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientationTenthDegCCW: integer; sUTF8: string;
   texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean);
 begin
   UpdateFont;
-  FFont.Orientation:= orientationTenthDegCCW;
-  InternalTextOut(ADest,x,y,sUTF8,BGRAPixelTransparent,texture,align,false,ARightToLeft);
+  InternalTextOutAngle(ADest,x,y,orientationTenthDegCCW,sUTF8,BGRAPixelTransparent,texture,align,false,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string;
+procedure TBGRASystemFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string;
   texture: IBGRAScanner; align: TAlignment);
 begin
   UpdateFont;
   InternalTextOut(ADest, x,y, sUTF8, BGRAPixelTransparent,texture, align);
 end;
 
-procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel;
+procedure TBGRASystemFontRenderer.TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel;
   align: TAlignment);
 begin
   UpdateFont;
   InternalTextOut(ADest, x,y, sUTF8, c,nil, align);
 end;
 
-procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
   y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment;
   ARightToLeft: boolean);
 begin
@@ -1182,7 +1320,7 @@ begin
                 False, ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
   y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment;
   ARightToLeft: boolean);
 begin
@@ -1190,21 +1328,21 @@ begin
   InternalTextOut(ADest, x,y, sUTF8, c,nil, align, false, ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string;
+procedure TBGRASystemFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string;
   style: TTextStyle; c: TBGRAPixel);
 begin
   UpdateFont;
   InternalTextRect(ADest,ARect,x,y,sUTF8,style,c,nil);
 end;
 
-procedure TCustomLCLFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string;
+procedure TBGRASystemFontRenderer.TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string;
   style: TTextStyle; texture: IBGRAScanner);
 begin
   UpdateFont;
   InternalTextRect(ADest,ARect,x,y,sUTF8,style,BGRAPixelTransparent,texture);
 end;
 
-procedure TCustomLCLFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
+procedure TBGRASystemFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
   AText: string; x, y, AMaxWidth: integer; AColor: TBGRAPixel;
   AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
 begin
@@ -1212,7 +1350,7 @@ begin
   InternalTextWordBreak(ADest,AText,x,y,AMaxWidth,AColor,nil,AHorizAlign,AVertAlign,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
+procedure TBGRASystemFontRenderer.TextWordBreak(ADest: TBGRACustomBitmap;
   AText: string; x, y, AMaxWidth: integer; ATexture: IBGRAScanner;
   AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
 begin
@@ -1220,7 +1358,7 @@ begin
   InternalTextWordBreak(ADest,AText,x,y,AMaxWidth,BGRAPixelTransparent,ATexture,AHorizAlign,AVertAlign,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.InternalTextWordBreak(
+procedure TBGRASystemFontRenderer.InternalTextWordBreak(
   ADest: TBGRACustomBitmap; ATextUTF8: string; x, y, AMaxWidth: integer;
   AColor: TBGRAPixel; ATexture: IBGRAScanner; AHorizAlign: TAlignment;
   AVertAlign: TTextLayout; ARightToLeft: boolean);
@@ -1281,8 +1419,8 @@ begin
     if not lineEndingBreak then
       // append following direction to part
       case GetFirstStrongBidiClassUTF8(remains) of
-        ubcLeftToRight: if ARightToLeft then part += UnicodeCharToUTF8($200E);
-        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then part += UnicodeCharToUTF8($200F);
+        ubcLeftToRight: if ARightToLeft then AppendStr(part, UnicodeCharToUTF8($200E));
+        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then AppendStr(part, UnicodeCharToUTF8($200F));
       end;
     lines.Add(part);
     // prefix next part with previous direction
@@ -1309,10 +1447,11 @@ begin
   lines.Free;
 end;
 
-procedure TCustomLCLFontRenderer.InternalTextRect(ADest: TBGRACustomBitmap;
+procedure TBGRASystemFontRenderer.InternalTextRect(ADest: TBGRACustomBitmap;
   ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel;
   ATexture: IBGRAScanner);
 var
+  oldOrientation: integer;
   previousClip, intersected: TRect;
   lines: TStringList;
   iStart,i,h: integer;
@@ -1322,11 +1461,10 @@ begin
   previousClip := ADest.ClipRect;
   if style.Clipping then
   begin
-    intersected := rect(0,0,0,0);
-    if not IntersectRect(intersected, previousClip, ARect) then exit;
+    intersected := TRect.Intersect(previousClip, ARect);
+    if intersected.IsEmpty then exit;
     ADest.ClipRect := intersected;
   end;
-  FFont.Orientation := 0;
   if style.SystemFont then FFont.Name := 'default';
 
   if not (style.Alignment in[taCenter,taRightJustify]) then ARect.Left := x;
@@ -1342,6 +1480,8 @@ begin
   if style.Alignment = taCenter then X := (ARect.Left+ARect.Right) div 2 else
   if style.Alignment = taRightJustify then X := ARect.Right else
     X := ARect.Left;
+  oldOrientation := FontOrientation;
+  FontOrientation := 0;
   if style.Wordbreak then
   begin
     if style.ShowPrefix then sUTF8 := RemovePrefix(sUTF8); //prefix not handled
@@ -1406,12 +1546,21 @@ begin
 
   end;
 
+  FontOrientation := oldOrientation;
   if style.Clipping then
     ADest.ClipRect := previousClip;
 end;
 
-procedure TCustomLCLFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap; x,
+procedure TBGRASystemFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap; x,
   y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
+  align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
+begin
+  InternalTextOutAngle(ADest, x,y, FontOrientation, sUTF8, c, texture,
+    align, ASHowPrefix, ARightToLeft);
+end;
+
+procedure TBGRASystemFontRenderer.InternalTextOutAngle(ADest: TBGRACustomBitmap; x,
+  y: single; AOrientation: integer; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
   align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
 var mode : TBGRATextOutImproveReadabilityMode;
   s: TSize;
@@ -1430,7 +1579,10 @@ begin
       end;
   end;
   {$ENDIF}
-  if Assigned(BGRATextOutImproveReadabilityProc) and (FontQuality in[{$IFNDEF LCL_RENDERER_IS_FINE}fqFineAntialiasing,{$ENDIF}fqFineClearTypeBGR,fqFineClearTypeRGB]) and (FFont.Orientation mod 3600 = 0) then
+  if Assigned(BGRATextOutImproveReadabilityProc) and 
+   (FontQuality in[{$IFNDEF SYSTEM_RENDERER_IS_FINE}fqFineAntialiasing,{$ENDIF}
+                   fqFineClearTypeBGR,fqFineClearTypeRGB]) and 
+   (AOrientation mod 3600 = 0) then
   begin
     case FontQuality of
       fqFineClearTypeBGR: mode := irClearTypeBGR;
@@ -1441,15 +1593,23 @@ begin
     if AShowPrefix then sUTF8 := RemovePrefix(sUTF8); //prefix not handled
     BGRATextOutImproveReadabilityProc(ADest,FFont,x,y,sUTF8,c,texture,align,mode);
   end else
-    BGRAText.BGRATextOut(ADest,FFont,FontQuality,x,y,sUTF8,c,texture,align,
-        0,AShowPrefix,ARightToLeft);
+  begin
+    if AOrientation = 0 then
+      BGRAText.BGRATextOut(ADest,FFont,FontQuality,x,y,sUTF8,c,texture,align,
+        0,AShowPrefix,ARightToLeft)
+    else
+      BGRAText.BGRATextOutAngle(ADest,FFont,FontQuality,x,y,AOrientation,
+        sUTF8,c,texture,align,0);
+  end;
   if FOwnUnderline then
   begin
-    s := InternalTextSize(sUTF8, AShowPrefix);
+    s := InternalTextSizeAngle(sUTF8, AShowPrefix, AOrientation);
     pts := BGRATextUnderline(PointF(x,y),s.cx,InternalGetFontPixelMetric);
-    if FFont.Orientation mod 3600 <> 0 then
+    if AOrientation mod 3600 <> 0 then
     begin
-      m := AffineMatrixTranslation(x,y)*AffineMatrixRotationDeg(-FFont.Orientation/10)*AffineMatrixTranslation(-x,-y);
+      m := AffineMatrixTranslation(x,y)*
+           AffineMatrixRotationDeg(-AOrientation/10)*
+           AffineMatrixTranslation(-x,-y);
       for i := 0 to high(pts) do
         pts[i] := m*pts[i];
     end;
@@ -1460,7 +1620,7 @@ begin
   end;
 end;
 
-procedure TCustomLCLFontRenderer.InternalTextOutEllipse(
+procedure TBGRASystemFontRenderer.InternalTextOutEllipse(
   ADest: TBGRACustomBitmap; x, y, availableWidth: single; sUTF8: string;
   c: TBGRAPixel; texture: IBGRAScanner; align: TAlignment;
   AShowPrefix: boolean; ARightToLeft: boolean);
@@ -1470,16 +1630,16 @@ begin
   if InternalTextSize(sUTF8,AShowPrefix).cx > availableWidth then
   begin
     InternalSplitText(sUTF8, round(availableWidth - InternalTextSize('...',AShowPrefix).cx), remain, nil);
-    sUTF8 += '...';
+    AppendStr(sUTF8, '...');
   end;
   InternalTextOut(ADest,x,y,sUTF8,c,texture,align,AShowPrefix,ARightToLeft);
 end;
 
-procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
+procedure TBGRASystemFontRenderer.InternalSplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string; out ALineEndingBreak: boolean; AWordBreak: TWordBreakHandler);
 var p,skipCount, charLen: integer;
   zeroWidth: boolean;
-  u: Cardinal;
+  u: LongWord;
 begin
   ALineEndingBreak:= false;
   if ATextUTF8= '' then
@@ -1526,14 +1686,14 @@ begin
   if Assigned(AWordBreak) then AWordBreak(ATextUTF8,ARemainsUTF8);
 end;
 
-procedure TCustomLCLFontRenderer.InternalSplitText(var ATextUTF8: string;
+procedure TBGRASystemFontRenderer.InternalSplitText(var ATextUTF8: string;
   AMaxWidth: integer; out ARemainsUTF8: string; AWordBreak: TWordBreakHandler);
 var lineEndingBreak: boolean;
 begin
   InternalSplitText(ATextUTF8,AMaxWidth,ARemainsUTF8,lineEndingBreak,AWordBreak);
 end;
 
-function TCustomLCLFontRenderer.InternalGetFontPixelMetric: TFontPixelMetric;
+function TBGRASystemFontRenderer.InternalGetFontPixelMetric: TFontPixelMetric;
 var fxFont: TFont;
 begin
   if FontQuality in[fqSystem,fqSystemClearType] then
@@ -1553,13 +1713,13 @@ begin
   end;
 end;
 
-procedure TCustomLCLFontRenderer.DefaultWorkBreakHandler(var ABeforeUTF8,
+procedure TBGRASystemFontRenderer.DefaultWorkBreakHandler(var ABeforeUTF8,
   AAfterUTF8: string);
 begin
   BGRADefaultWordBreakHandler(ABeforeUTF8,AAfterUTF8);
 end;
 
-function TCustomLCLFontRenderer.TextSize(sUTF8: string): TSize;
+function TBGRASystemFontRenderer.TextSize(sUTF8: string): TSize;
 var oldOrientation: integer;
 begin
   oldOrientation:= FontOrientation;
@@ -1569,7 +1729,7 @@ begin
   FontOrientation:= oldOrientation;
 end;
 
-function TCustomLCLFontRenderer.TextSizeAngle(sUTF8: string;
+function TBGRASystemFontRenderer.TextSizeAngle(sUTF8: string;
   orientationTenthDegCCW: integer): TSize;
 var oldOrientation: integer;
 begin
@@ -1580,7 +1740,7 @@ begin
   FontOrientation:= oldOrientation;
 end;
 
-function TCustomLCLFontRenderer.TextSize(sUTF8: string;
+function TBGRASystemFontRenderer.TextSize(sUTF8: string;
   AMaxWidth: integer; ARightToLeft: boolean): TSize;
 var
   remains: string;
@@ -1625,19 +1785,19 @@ begin
   end;
 end;
 
-function TCustomLCLFontRenderer.TextFitInfo(sUTF8: string; AMaxWidth: integer
+function TBGRASystemFontRenderer.TextFitInfo(sUTF8: string; AMaxWidth: integer
   ): integer;
 begin
   UpdateFont;
   result := BGRATextFitInfo(FFont, FontQuality, sUTF8, FontAntialiasingLevel, AMaxWidth);
 end;
 
-constructor TCustomLCLFontRenderer.Create;
+constructor TBGRASystemFontRenderer.Create;
 begin
   FFont := TFont.Create;
 end;
 
-destructor TCustomLCLFontRenderer.Destroy;
+destructor TBGRASystemFontRenderer.Destroy;
 begin
   FFont.Free;
   inherited Destroy;

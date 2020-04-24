@@ -127,7 +127,7 @@ function BGLFont(AName: string; AEmHeight: integer; AColor: TBGRAPixel; AOutline
 function BGLFont(AName: string; AEmHeight: integer; ARenderer: TBGRACustomFontRenderer; ARendererOwned: boolean = true): IBGLRenderedFont; overload;
 
 function BGLTexture(ATexture: TBGLTextureHandle; AWidth,AHeight: integer): IBGLTexture; overload;
-function BGLTexture(ARGBAData: PDWord; AllocatedWidth,AllocatedHeight, ActualWidth,ActualHeight: integer): IBGLTexture; overload;
+function BGLTexture(ARGBAData: PLongWord; AllocatedWidth,AllocatedHeight, ActualWidth,ActualHeight: integer): IBGLTexture; overload;
 function BGLTexture(AFPImage: TFPCustomImage): IBGLTexture; overload;
 function BGLTexture(ABitmap: TBitmap): IBGLTexture; overload;
 function BGLTexture(AWidth, AHeight: integer; Color: TColor): IBGLTexture; overload;
@@ -192,8 +192,8 @@ type
     function GetFlags: LongWord; virtual;
 
     function GetOpenGLMaxTexSize: integer; override;
-    function CreateOpenGLTexture(ARGBAData: PDWord; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer; RGBAOrder: boolean): TBGLTextureHandle; override;
-    procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PDWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); override;
+    function CreateOpenGLTexture(ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer; RGBAOrder: boolean): TBGLTextureHandle; override;
+    procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); override;
     procedure SetOpenGLTextureSize(ATexture: TBGLTextureHandle; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer); override;
     procedure ComputeOpenGLFramesCoord(ATexture: TBGLTextureHandle; FramesX: Integer=1; FramesY: Integer=1); override;
     function GetOpenGLFrameCount(ATexture: TBGLTextureHandle): integer; override;
@@ -416,7 +416,7 @@ begin
   result := TBGLTexture.Create(ATexture, AWidth,AHeight);
 end;
 
-function BGLTexture(ARGBAData: PDWord; AllocatedWidth, AllocatedHeight,
+function BGLTexture(ARGBAData: PLongWord; AllocatedWidth, AllocatedHeight,
   ActualWidth, ActualHeight: integer): IBGLTexture;
 begin
   result := TBGLTexture.Create(ARGBAData, AllocatedWidth,AllocatedHeight,ActualWidth,ActualHeight);
@@ -1215,7 +1215,7 @@ begin
 end;
 
 procedure TBGLTexture.UpdateOpenGLTexture(ATexture: TBGLTextureHandle;
-  ARGBAData: PDWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,
+  ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,
   AActualHeight: integer; RGBAOrder: boolean);
 begin
   batch2d_Flush;
@@ -1245,7 +1245,7 @@ begin
   result := oglMaxTexSize;
 end;
 
-function TBGLTexture.CreateOpenGLTexture(ARGBAData: PDWord; AAllocatedWidth,
+function TBGLTexture.CreateOpenGLTexture(ARGBAData: PLongWord; AAllocatedWidth,
   AAllocatedHeight, AActualWidth, AActualHeight: integer;
   RGBAOrder: boolean): TBGLTextureHandle;
 var tex: zglPTexture;

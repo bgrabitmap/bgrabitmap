@@ -5,7 +5,7 @@ unit BGRAFillInfo;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRABitmapTypes;
 
 const
   AntialiasPrecision = 16;
@@ -370,7 +370,7 @@ begin
 end;
 
 procedure AddDensity(dest: PDensity; start,count: integer; value: word);
-var valueValue: longword;
+var valueValue: LongWord;
     lastAdd: integer;
 begin
   if count=0 then exit;

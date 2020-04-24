@@ -5,48 +5,25 @@
 const
   {* Value indicating that there is nothing in the single-precision floating point value.
      It is also used as a separator in lists }
-  EmptySingle: single = -3.402823e38;
+  EmptySingle = single(-3.402823e38);
 
 type
+  TPoint = BGRAClasses.TPoint;
+  TSize = BGRAClasses.TSize;
+  
   {* Pointer to a ''TPointF'' structure }
-  PPointF = ^TPointF;
+  PPointF = ^BGRAClasses.TPointF;
   {* Contains a point with single-precision floating point coordinates }
-  {$if FPC_FULLVERSION>=030001}
-  TPointF = Types.TPointF;
-  {$else}
-  TPointF = packed record x, y: single;
-  end;
-  {$endif}
-
+  TPointF = BGRAClasses.TPointF;
   {* Contains an array of points with single-precision floating point coordinates }
   ArrayOfTPointF = array of TPointF;
 
   {* An affine matrix contains three 2D vectors: the image of x, the image of y and the translation }
   TAffineMatrix = array[1..2,1..3] of single;
+  TRectF = BGRAClasses.TRectF;
 
-  {$if FPC_FULLVERSION>=030001}
-  TRectF = Types.TRectF;
-  {$else}
-  {$define BGRA_DEFINE_TRECTF}
-  { TRectF }
-
-  TRectF =
-  {$ifndef FPC_REQUIRES_PROPER_ALIGNMENT}
-  packed
-  {$endif FPC_REQUIRES_PROPER_ALIGNMENT}
-  record
-  private
-    function GetHeight: single;
-    function GetWidth: Single;
-  public
-    property Width: Single read GetWidth;
-    property Height: single read GetHeight;
-    procedure Offset (const dx,dy : Single);
-    case Integer of
-     0: (Left, Top, Right, Bottom: Single);
-     1: (TopLeft, BottomRight: TPointF);
-  end;
-
+{$if FPC_FULLVERSION<030001}
+  {$define BGRA_DEFINE_TRECTHELPER}
   { TRectHelper }
 
   TRectHelper = record helper for TRect
@@ -74,8 +51,11 @@ type
   end;
 
 operator=(const ARect1,ARect2: TRect): boolean;
+{$endif}
 
+{$if (FPC_FULLVERSION<030001) or defined(BGRABITMAP_USE_MSEGUI)}
 type
+  {$define BGRA_DEFINE_TSIZEHELPER}
   { TSizeHelper }
 
   TSizeHelper = record helper for TSize
@@ -86,8 +66,7 @@ type
     property Width: integer read GetWidth;
     property Height: integer read GetHeight;
   end;
-
-  {$endif}
+{$ENDIF}
 
 const
   EmptyPoint : TPoint = (X: -2147483648; Y: -2147483648);
@@ -674,25 +653,7 @@ type
 {$IFDEF INCLUDE_IMPLEMENTATION}
 {$UNDEF INCLUDE_IMPLEMENTATION}
 
-{$IFDEF BGRA_DEFINE_TRECTF}
-{ TRectF }
-
-function TRectF.GetHeight: single;
-begin
-  result := Bottom-Top;
-end;
-
-function TRectF.GetWidth: Single;
-begin
-  result := Right-Left;
-end;
-
-procedure TRectF.Offset(const dx, dy: Single);
-begin
-  left:=left+dx; right:=right+dx;
-  bottom:=bottom+dy; top:=top+dy;
-end;
-
+{$IFDEF BGRA_DEFINE_TRECTHELPER}
 { TRectHelper }
 
 function TRectHelper.GetHeight: integer;
@@ -738,13 +699,16 @@ end;
 
 procedure TRectHelper.Intersect(R: TRect);
 begin
-  IntersectRect(self, self, R);
+  self := TRect.Intersect(self, R);
 end;
 
 class function TRectHelper.Intersect(R1: TRect; R2: TRect): TRect;
 begin
-  result := EmptyRect;
-  IntersectRect(result, R1, R2);
+  if R1.Left >= R2.Left then result.Left := R1.Left else result.Left := R2.Left;
+  if R1.Top >= R2.Top then result.Top := R1.Top else result.Top := R2.Top;
+  if R1.Right <= R2.Right then result.Right := R1.Right else result.Right := R2.Right;
+  if R1.Bottom <= R2.Bottom then result.Bottom := R1.Bottom else result.Bottom := R2.Bottom;
+  if result.IsEmpty then fillchar(result, sizeof(result), 0);
 end;
 
 function TRectHelper.IntersectsWith(R: TRect): Boolean;
@@ -754,22 +718,32 @@ end;
 
 class function TRectHelper.Union(R1, R2: TRect): TRect;
 begin
-  UnionRect(Result, R1, R2);
+  if R1.Left <= R2.Left then result.Left := R1.Left else result.Left := R2.Left;
+  if R1.Top <= R2.Top then result.Top := R1.Top else result.Top := R2.Top;
+  if R1.Right >= R2.Right then result.Right := R1.Right else result.Right := R2.Right;
+  if R1.Bottom >= R2.Bottom then result.Bottom := R1.Bottom else result.Bottom := R2.Bottom;
+  if result.IsEmpty then fillchar(result, sizeof(result), 0);
 end;
 
 procedure TRectHelper.Union(R: TRect);
 begin
-  UnionRect(self, self, R);
+  self := TRect.Union(self, R);
 end;
 
 procedure TRectHelper.Offset(DX, DY: Longint);
 begin
-  OffsetRect(self, DX,DY);
+  Inc(Left, DX);
+  Inc(Top, DY);
+  Inc(Right, DX);
+  Inc(Bottom, DY);
 end;
 
 procedure TRectHelper.Inflate(DX, DY: Longint);
 begin
-  InflateRect(self, DX,DY);
+  Dec(Left, DX);
+  Dec(Top, DY);
+  Inc(Right, DX);
+  Inc(Bottom, DY);
 end;
 
 function TRectHelper.Contains(const APoint: TPoint): boolean;
@@ -788,7 +762,9 @@ begin
   result:= (ARect1.Left = ARect2.Left) and (ARect1.Top = ARect2.Top) and
            (ARect1.Right = ARect2.Right) and (ARect1.Bottom = ARect2.Bottom);
 end;
+{$ENDIF}
 
+{$ifdef BGRA_DEFINE_TSIZEHELPER}
 { TSizeHelper }
 
 function TSizeHelper.GetHeight: integer;
@@ -800,7 +776,6 @@ function TSizeHelper.GetWidth: integer;
 begin
   result := cx;
 end;
-
 {$ENDIF}
 
 function IsEmptyPoint(const APoint: TPoint): boolean;
@@ -810,36 +785,38 @@ end;
 
 procedure TPointFHelper.Offset(const apt: TPointF);
 begin
-  self.x += apt.x;
-  self.y += apt.y;
+  if isEmptyPointF(self) then exit;
+  IncF(self.x, apt.x);
+  IncF(self.y, apt.y);
 end;
 
 procedure TPointFHelper.Offset(const apt: TPoint);
 begin
-  self.x += apt.x;
-  self.y += apt.y;
+  if isEmptyPointF(self) then exit;
+  IncF(self.x, apt.x);
+  IncF(self.y, apt.y);
 end;
 
 procedure TPointFHelper.Offset(dx, dy: longint);
 begin
   if isEmptyPointF(self) then exit;
-  self.x += dx;
-  self.y += dy;
+  IncF(self.x, dx);
+  IncF(self.y, dy);
 end;
 
 procedure TPointFHelper.Offset(dx, dy: single);
 begin
   if isEmptyPointF(self) then exit;
-  self.x += dx;
-  self.y += dy;
+  IncF(self.x, dx);
+  IncF(self.y, dy);
 end;
 
 procedure TPointFHelper.Scale(AScale: single);
 begin
   if not isEmptyPointF(self) then
   begin
-    self.x *= AScale;
-    self.y *= AScale;
+    self.x := self.x * AScale;
+    self.y := self.y * AScale;
   end;
 end;
 
@@ -1109,7 +1086,7 @@ end;
 function TBGRACustomGradient.GetColorAtF(position: single): TBGRAPixel;
 begin
   if position = EmptySingle then exit(BGRAPixelTransparent);
-  position *= 65536;
+  position := position * 65536;
   if position < low(integer) then
     result := GetColorAt(low(Integer))
   else if position > high(integer) then
@@ -1121,7 +1098,7 @@ end;
 function TBGRACustomGradient.GetExpandedColorAtF(position: single): TExpandedPixel;
 begin
   if position = EmptySingle then exit(BGRAPixelTransparent);
-  position *= 65536;
+  position := position * 65536;
   if position < low(integer) then
     result := GetExpandedColorAt(low(Integer))
   else if position > high(integer) then
@@ -1297,16 +1274,16 @@ end;
 
 procedure TPoint3D.Offset(const point3D: TPoint3D);
 begin
-  self.x += point3d.x;
-  self.y += point3d.y;
-  self.z += point3d.z;
+  IncF(self.x, point3d.x);
+  IncF(self.y, point3d.y);
+  IncF(self.z, point3d.z);
 end;
 
 procedure TPoint3D.Scale(AScale: single);
 begin
-  self.x *= AScale;
-  self.y *= AScale;
-  self.z *= AScale;
+  self.x := self.x * AScale;
+  self.y := self.y * AScale;
+  self.z := self.z * AScale;
 end;
 
 function Point3D(x, y, z: single): TPoint3D;
@@ -1322,9 +1299,9 @@ begin
   len := v*v;
   if len = 0 then exit;
   len := sqrt(len);
-  v.x /= len;
-  v.y /= len;
-  v.z /= len;
+  v.x := v.x / len;
+  v.y := v.y / len;
+  v.z := v.z / len;
 end;
 
 function VectLen3D(const v: TPoint3D): single;
@@ -1479,13 +1456,13 @@ end;
 
 function PolylineLen(const pts: array of TPointF; AClosed: boolean): single;
 var
-  i: NativeInt;
+  i: Int32or64;
 begin
   result := 0;
   for i := 0 to high(pts)-1 do
-    result += VectLen(pts[i+1]-pts[i]);
+    IncF(result, VectLen(pts[i+1] - pts[i]) );
   if AClosed then
-    result += VectLen(pts[0]-pts[high(pts)]);
+    incF(result, VectLen(pts[0] - pts[high(pts)]) );
 end;
 
 { Check if a PointF structure is empty or should be treated as a list separator }

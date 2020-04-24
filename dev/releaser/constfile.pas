@@ -110,7 +110,7 @@ end;
 function TConstFile.TryVersion(out AValue: TVersion): boolean;
 var
   valueStart,valueLen,errPos: integer;
-  verValue: cardinal;
+  verValue: LongWord;
 begin
   AValue.Major:= 0;
   AValue.Minor:= 0;

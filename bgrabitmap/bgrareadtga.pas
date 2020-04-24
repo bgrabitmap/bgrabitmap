@@ -23,7 +23,7 @@ unit BGRAReadTGA;
 
 interface
 
-uses FPReadTGA, FPimage, Classes;
+uses FPReadTGA, FPimage, BGRAClasses;
 
 type
   { TBGRAReaderTarga }
@@ -93,7 +93,7 @@ end;
 Procedure TBGRAReaderTarga.WriteScanLine(Row : Integer; Img : TFPCustomImage);
 Var
   Col : Integer;
-  Value   : NativeUint;
+  Value   : UInt32or64;
   P   : PByte;
   PDest: PBGRAPixel;
 

@@ -33,9 +33,9 @@ end;
 {$hints off}
 function ByteAddInline(a, b: byte): byte;
 var
-  temp: longword;
+  temp: LongWord;
 begin
-  temp := longword(GammaExpansionTab[a]) + longword(GammaExpansionTab[b]);
+  temp := LongWord(GammaExpansionTab[a]) + LongWord(GammaExpansionTab[b]);
   if temp > 65535 then
     temp := 65535;
   Result := GammaCompressionTab[temp];
@@ -236,7 +236,7 @@ end;
 {$hints off}
 function ByteNonLinearReflectInline(a, b: byte): byte; inline;
 var
-  temp: longword;
+  temp: LongWord;
   wa,wb: word;
 begin
   if b = 255 then
@@ -530,7 +530,7 @@ begin
   aw := GammaExpansionTab[a];
   bw := GammaExpansionTab[b];
   {$HINTS OFF}
-  Result := GammaCompressionTab[aw+bw-(longword(aw)*longword(bw) shr 15)];
+  Result := GammaCompressionTab[aw+bw-(LongWord(aw)*LongWord(bw) shr 15)];
   {$HINTS ON}
 end;
 
@@ -950,9 +950,9 @@ begin
   begin
     dec(b, 128);
     if a <= 64 then
-      result := a + ((b+b)   * NativeUInt(a*7 - ((a shl 2)*(a shl 2 + 256)*NativeUInt(256 - a) shr 16)) shr 8)
+      result := a + ((b+b)   * UInt32or64(a*7 - ((a shl 2)*(a shl 2 + 256)*UInt32or64(256 - a) shr 16)) shr 8)
     else
-      result := a + ((b+b+1) * NativeUInt(ByteSqrt(a)-a) shr 8);
+      result := a + ((b+b+1) * UInt32or64(ByteSqrt(a)-a) shr 8);
   end;
 end;
 

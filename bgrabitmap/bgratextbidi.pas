@@ -6,7 +6,7 @@ unit BGRATextBidi;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmapTypes, BGRAUTF8, BGRAUnicode, BGRATransform,
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAUTF8, BGRAUnicode, BGRATransform,
   BGRAUnicodeText;
 
 type
@@ -48,6 +48,7 @@ type
     function GetBrokenLineStartCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineUntransformedStartCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineStartIndex(AIndex: integer): integer;
+    function GetBrokenLineUsedWidth(AIndex: integer): single;
     function GetCharCount: integer;
     function GetFontBidiMode: TFontBidiMode;
     function GetMatrix: TAffineMatrix;
@@ -69,7 +70,8 @@ type
     function GetPartStartIndex(AIndex: integer): integer;
     function GetText: string;
     function GetTotalTextHeight: single;
-    function GetUnicodeChar(APosition0: integer): cardinal;
+    function GetUnicodeChar(APosition0: integer): LongWord;
+    function GetUsedWidth: single;
     function GetUTF8Char(APosition0: integer): string4;
     procedure SetAvailableHeight(AValue: single);
     procedure SetAvailableWidth(AValue: single);
@@ -97,6 +99,7 @@ type
                    startIndex, endIndex: integer;
                    bidiLevel: byte;
                    rectF: TRectF;
+                   usedWidth: single;
                    firstPartIndex, lastPartIndexPlusOne: integer;
                  end;
     FBrokenLineCount: integer;
@@ -189,13 +192,14 @@ type
 
     property CharCount: integer read GetCharCount;
     property UTF8Char[APosition0: integer]: string4 read GetUTF8Char;
-    property UnicodeChar[APosition0: integer]: cardinal read GetUnicodeChar;
+    property UnicodeChar[APosition0: integer]: LongWord read GetUnicodeChar;
 
     property BrokenLineCount: integer read GetBrokenLineCount;
     property BrokenLineParagraphIndex[AIndex: integer]: integer read GetBrokenLineParagraphIndex;
     property BrokenLineStartIndex[AIndex: integer]: integer read GetBrokenLineStartIndex;
     property BrokenLineEndIndex[AIndex: integer]: integer read GetBrokenLineEndIndex;
     property BrokenLineRectF[AIndex: integer]: TRectF read GetBrokenLineRectF;
+    property BrokenLineUsedWidth[AIndex: integer]: single read GetBrokenLineUsedWidth;
     property BrokenLineAffineBox[AIndex: integer]: TAffineBox read GetBrokenLineAffineBox;
     property BrokenLineRightToLeft[AIndex: integer]: boolean read GetBrokenLineRightToLeft;
     property BrokenLineStartCaret[AIndex: integer]: TBidiCaretPos read GetBrokenLineStartCaret;
@@ -226,6 +230,7 @@ type
     property ParagraphRightToLeft[AIndex: integer]: boolean read GetParagraphRightToLeft;
     property ParagraphCount: integer read GetParagraphCount;
 
+    property UsedWidth: single read GetUsedWidth;
     property TotalTextHeight: single read GetTotalTextHeight;
 
     property Matrix: TAffineMatrix read GetMatrix;
@@ -291,7 +296,8 @@ end;
 function TBidiLayoutTree.GetCumulatedBidiPos: single;
 begin
   result := BidiPos;
-  if Assigned(Parent) then result += TBidiLayoutTree(Parent).CumulatedBidiPos;
+  if Assigned(Parent) then
+    IncF(result, TBidiLayoutTree(Parent).CumulatedBidiPos);
 end;
 
 function TBidiLayoutTree.GetMaxWidth: single;
@@ -529,6 +535,14 @@ begin
   result := FBrokenLine[AIndex].startIndex;
 end;
 
+function TBidiTextLayout.GetBrokenLineUsedWidth(AIndex: integer): single;
+begin
+  NeedLayout;
+  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
+    raise ERangeError.Create('Invalid index');
+  result := FBrokenLine[AIndex].usedWidth;
+end;
+
 function TBidiTextLayout.GetCharCount: integer;
 begin
   result := FAnalysis.CharCount;
@@ -668,9 +682,18 @@ begin
   result := FParagraph[ParagraphCount-1].rectF.Bottom - FParagraph[0].rectF.Top;
 end;
 
-function TBidiTextLayout.GetUnicodeChar(APosition0: integer): cardinal;
+function TBidiTextLayout.GetUnicodeChar(APosition0: integer): LongWord;
 begin
   result := FAnalysis.UnicodeChar[APosition0];
+end;
+
+function TBidiTextLayout.GetUsedWidth: single;
+var
+  i: Integer;
+begin
+  result := 0;
+  for i := 0 to BrokenLineCount-1 do
+    result := max(result, BrokenLineUsedWidth[i]);
 end;
 
 function TBidiTextLayout.GetUTF8Char(APosition0: integer): string4;
@@ -887,7 +910,7 @@ var
   pEnd: Pointer;
   add, hasStrong: boolean;
   charLen: Integer;
-  u: Cardinal;
+  u: LongWord;
   curBidi: TUnicodeBidiClass;
   isSpacing: boolean;
 begin
@@ -1082,6 +1105,7 @@ var lineHeight, baseLine, tabPixelSize: single;
     FBrokenLine[FBrokenLineCount].endIndex:= ACharEnd;
     FBrokenLine[FBrokenLineCount].bidiLevel := ABidiLevel;
     FBrokenLine[FBrokenLineCount].firstPartIndex:= FPartCount;
+    FBrokenLine[FBrokenLineCount].usedWidth:= AWidth;
     if FAvailableWidth <> EmptySingle then
       FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,FAvailableWidth,pos.y+AHeight)
     else
@@ -1093,7 +1117,7 @@ var lineHeight, baseLine, tabPixelSize: single;
         FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,AWidth,pos.y+AHeight);
       end;
     end;
-    FBrokenLineCount += 1;
+    inc(FBrokenLineCount);
 
     if FAvailableWidth = EmptySingle then
     begin
@@ -1153,7 +1177,7 @@ begin
       FParagraph[paraIndex].rectF.Left := EmptySingle;
       FParagraph[paraIndex].rectF.Right := EmptySingle;
     end;
-    pos.y += paraSpacingAbove;
+    IncF(pos.y, paraSpacingAbove);
     paraRTL := ParagraphRightToLeft[paraIndex];
 
     if FAvailableWidth <> EmptySingle then
@@ -1230,7 +1254,7 @@ begin
                 PointF(0,0), '', FBrokenLineCount-1);
 
         FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
-        pos.y += FLineHeight;
+        IncF(pos.y, FLineHeight);
       end else
       //break lines
       while subStart < lineEnd do
@@ -1331,7 +1355,7 @@ begin
                 tabSection[tabSectionCount-1].endIndex:= splitIndex;
               end;
 
-              curBidiPos += nextTree.Width;
+              IncF(curBidiPos, nextTree.Width);
               if nextTree.Height > lineHeight then lineHeight := nextTree.Height;
 
               tabSectionStart := splitIndex;
@@ -1340,7 +1364,7 @@ begin
             break;
           end else
           begin
-            curBidiPos += nextTree.Width;
+            IncF(curBidiPos, nextTree.Width);
             if nextTree.Height > lineHeight then lineHeight := nextTree.Height;
             tabSectionStart := splitIndex;
           end;
@@ -1401,10 +1425,10 @@ begin
         end;
         FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
 
-        pos.y += lineHeight;
+        IncF(pos.y, lineHeight);
       end;
     end;
-    pos.y += paraSpacingBelow;
+    IncF(pos.y, paraSpacingBelow);
     FParagraph[paraIndex].rectF.Bottom := pos.y;
   end;
   ClearTabSections;
@@ -1609,7 +1633,7 @@ end;
 function TBidiTextLayout.GetCharIndexAt(APosition: TPointF): integer;
 var
   brokenLineIndex,j, fit: Integer;
-  u,u2: cardinal;
+  u,u2: LongWord;
   axis, origin: TPointF;
   len, w, curW, newW: Single;
   str: String;
@@ -2242,14 +2266,14 @@ begin
       dy := 0;
     if odd(root.BidiLevel) then
     begin
-      APos.x -= root.Width;
+      DecF(APos.x, root.Width);
       AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
               RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, brokenLineIndex);
     end else
     begin
       AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
               RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, brokenLineIndex);
-      APos.x += root.Width;
+      IncF(APos.x, root.Width);
     end;
   end else
   begin
@@ -2261,22 +2285,22 @@ begin
         if odd(branch.BidiLevel) then
         begin
           AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
-          APos.x -= branch.Width;
+          DecF(APos.x, branch.Width);
         end else
         begin
-          APos.x -= branch.Width;
+          DecF(APos.x, branch.Width);
           AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
         end;
       end else
       begin
         if odd(branch.BidiLevel) then
         begin
-          APos.x += branch.Width;
+          IncF(APos.x, branch.Width);
           AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
         end else
         begin
           AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
-          APos.x += branch.Width;
+          IncF(APos.x, branch.Width);
         end;
       end;
     end;

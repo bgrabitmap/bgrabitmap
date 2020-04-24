@@ -7,7 +7,7 @@ unit BGRAReadPCX;
 
 interface
 
-uses FPImage, Classes, SysUtils, FPReadPCX;
+uses FPImage, BGRAClasses, SysUtils, FPReadPCX;
 
 type
 
@@ -34,8 +34,8 @@ uses BGRABitmapTypes;
 procedure TBGRAReaderPCX.ReadScanLine(Row: integer; Stream: TStream);
 var
   P: PByte;
-  B: NativeUint;
-  bytes, Count: NativeUInt;
+  B: UInt32or64;
+  bytes, Count: UInt32or64;
 begin
   if FLineSize <= 0 then exit;
   P     := FScanLine;

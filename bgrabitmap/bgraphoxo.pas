@@ -5,7 +5,7 @@ unit BGRAPhoxo;
 interface
 
 uses
-  BGRABitmapTypes, FPImage, BGRALayers, BGRABitmap, Classes, SysUtils, BMPcomn;
+  BGRABitmapTypes, FPImage, BGRALayers, BGRABitmap, BGRAClasses, SysUtils, BMPcomn;
 
 const
   PhoxoHeaderMagic : packed array[1..4] of char = 'oXo ';
@@ -20,20 +20,20 @@ const
 type
   TPhoxoHeader = packed record
     magic: packed array[1..4] of char;
-    version: longword;
+    version: LongWord;
   end;
 
   TPhoxoBlockHeader = packed record
-    blockType : longword;
-    blockSize : longword;
+    blockType : LongWord;
+    blockSize : LongWord;
   end;
 
   TPhoxoLayerHeader = packed record
-    layerVisible: longword;
-    layerLimited: longword;
-    opacityPercent: longword;
+    layerVisible: LongWord;
+    layerLimited: LongWord;
+    opacityPercent: LongWord;
     bmpHeader: TBitMapInfoHeader;
-    redMask,greenMask,blueMask: longword;
+    redMask,greenMask,blueMask: LongWord;
   end;
 
   { TBGRAPhoxoDocument }
@@ -87,7 +87,7 @@ procedure RegisterPhoxoFormat;
 
 implementation
 
-uses BGRAUTF8, LazUTF8;
+uses BGRAUTF8;
 
 var AlreadyRegistered: boolean;
 
@@ -193,9 +193,9 @@ procedure TBGRAPhoxoDocument.AddLayerFromPhoxoData(
   const ABlockHeader: TPhoxoBlockHeader; ABlockData: PByte);
 var
   layerHeader: TPhoxoLayerHeader;
-  rawImageSize: longword;
-  rowStride: longword;
-  remaining: longword;
+  rawImageSize: LongWord;
+  rowStride: LongWord;
+  remaining: LongWord;
   bmp: TBGRABitmap;
   layerIndex,y,x: integer;
   pSrc: PByte;
@@ -404,7 +404,7 @@ procedure TBGRAPhoxoDocument.InternalSaveToStream(AStream: TStream);
     AStream.WriteBuffer(fileHeader, sizeof(fileHeader));
   end;
 
-  procedure WriteBlockHeader(blockType: longword; blockSize: longword);
+  procedure WriteBlockHeader(blockType: LongWord; blockSize: LongWord);
   var blockHeader: TPhoxoBlockHeader;
   begin
     blockHeader.blockType := NtoLE(blockType);
@@ -423,7 +423,7 @@ procedure TBGRAPhoxoDocument.InternalSaveToStream(AStream: TStream);
       pCaption: PWord;
 
       layerHeader: TPhoxoLayerHeader;
-      rowStride: longword;
+      rowStride: LongWord;
 
       temp,pdest: PByte;
       i,x,y: integer;

@@ -5,7 +5,7 @@ unit BGRALCLBitmap;
 interface
 
 uses
-  Classes, SysUtils, Graphics, GraphType, BGRABitmapTypes, BGRADefaultBitmap;
+  BGRAClasses, SysUtils, Graphics, GraphType, BGRABitmapTypes, BGRADefaultBitmap;
 
 type
   { TBGRALCLBitmap }
@@ -53,14 +53,41 @@ type
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
   end;
 
+type
+
+  { TBitmapTracker }
+
+  TBitmapTracker = class(TBitmap)
+  protected
+    FUser: TBGRADefaultBitmap;
+    procedure Changed(Sender: TObject); override;
+  public
+    constructor Create(AUser: TBGRADefaultBitmap); overload;
+  end;
+
 implementation
 
-uses Types, BGRAText, LCLType, LCLIntf, FPimage;
+uses BGRAText, LCLType, LCLIntf, FPimage;
+
+{ TBitmapTracker }
+
+constructor TBitmapTracker.Create(AUser: TBGRADefaultBitmap);
+begin
+  FUser := AUser;
+  inherited Create;
+end;
+
+procedure TBitmapTracker.Changed(Sender: TObject);
+begin
+  if FUser <> nil then
+    FUser.NotifyBitmapChange;
+  inherited Changed(Sender);
+end;
 
 type
-  TCopyPixelProc = procedure (psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
+  TCopyPixelProc = procedure (psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
 
-procedure ApplyMask1bit(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; {%H-}sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
+procedure ApplyMask1bit(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; {%H-}sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
 var currentBit: byte;
 begin
   currentBit := 1;
@@ -78,7 +105,7 @@ begin
   end;
 end;
 
-procedure ApplyMask1bitRev(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; {%H-}sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
+procedure ApplyMask1bitRev(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; {%H-}sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
 var currentBit: byte;
 begin
   currentBit := 128;
@@ -96,7 +123,7 @@ begin
   end;
 end;
 
-procedure CopyFromBW_SetAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; {%H-}sourcePixelSize: PtrInt; defaultOpacity: byte);
+procedure CopyFromBW_SetAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; {%H-}sourcePixelSize: PtrInt; defaultOpacity: byte);
 var currentBit: byte;
 begin
   currentBit := 1;
@@ -118,7 +145,7 @@ begin
   end;
 end;
 
-procedure CopyFromBW_SetAlphaBitRev(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; {%H-}sourcePixelSize: PtrInt; defaultOpacity: byte);
+procedure CopyFromBW_SetAlphaBitRev(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; {%H-}sourcePixelSize: PtrInt; defaultOpacity: byte);
 var currentBit: byte;
 begin
   currentBit := 128;
@@ -140,7 +167,7 @@ begin
   end;
 end;
 
-procedure CopyFrom24Bit(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
+procedure CopyFrom24Bit(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
 begin
   while count > 0 do
   begin
@@ -153,7 +180,7 @@ begin
   end;
 end;
 
-procedure CopyFrom24Bit_SwapRedBlue(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
+procedure CopyFrom24Bit_SwapRedBlue(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
 begin
   while count > 0 do
   begin
@@ -167,11 +194,11 @@ begin
   end;
 end;
 
-procedure CopyFromARGB_KeepAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
+procedure CopyFromARGB_KeepAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
 begin
   while count > 0 do
   begin
-    PDWord(pdest)^ := ((PByte(psrc)+3)^ shl TBGRAPixel_BlueShift) or
+    PLongWord(pdest)^ := ((PByte(psrc)+3)^ shl TBGRAPixel_BlueShift) or
                       ((PByte(psrc)+2)^ shl TBGRAPixel_GreenShift) or
                       ((PByte(psrc)+1)^ shl TBGRAPixel_RedShift) or
                       (PByte(psrc)^ shl TBGRAPixel_AlphaShift);
@@ -181,11 +208,11 @@ begin
   end;
 end;
 
-procedure CopyFromARGB_SetAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
+procedure CopyFromARGB_SetAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
 begin
   while count > 0 do
   begin
-    PDWord(pdest)^ := ((PByte(psrc)+3)^ shl TBGRAPixel_BlueShift) or
+    PLongWord(pdest)^ := ((PByte(psrc)+3)^ shl TBGRAPixel_BlueShift) or
                       ((PByte(psrc)+2)^ shl TBGRAPixel_GreenShift) or
                       ((PByte(psrc)+1)^ shl TBGRAPixel_RedShift) or
                       (DefaultOpacity shl TBGRAPixel_AlphaShift);
@@ -195,15 +222,15 @@ begin
   end;
 end;
 
-procedure CopyFromARGB_ReplaceZeroAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
+procedure CopyFromARGB_ReplaceZeroAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
 const ARGB_ColorMask = {$IFDEF ENDIAN_LITTLE}$FFFFFF00{$ELSE}$00FFFFFF{$ENDIF};
       ARGB_RedShift = {$IFDEF ENDIAN_LITTLE}8{$ELSE}16{$ENDIF};
       ARGB_GreenShift = {$IFDEF ENDIAN_LITTLE}16{$ELSE}8{$ENDIF};
       ARGB_BlueShift = {$IFDEF ENDIAN_LITTLE}24{$ELSE}0{$ENDIF};
 var
-  sourceval: NativeUint;
-  alphaValue: NativeUint;
-  OpacityOrMask: NativeUint;
+  sourceval: UInt32or64;
+  alphaValue: UInt32or64;
+  OpacityOrMask: UInt32or64;
 begin
   OpacityOrMask := DefaultOpacity shl TBGRAPixel_AlphaShift;
   while count > 0 do
@@ -212,13 +239,13 @@ begin
     alphaValue := {$IFDEF ENDIAN_LITTLE}sourceval and $ff{$ELSE}sourceval shr 24{$ENDIF};
     if (alphaValue = 0) and ((sourceval and ARGB_ColorMask) <> 0) then //if not black but transparent
     begin
-      PDWord(pdest)^ := (((sourceval shr ARGB_BlueShift) and $ff) shl TBGRAPixel_BlueShift) or
+      PLongWord(pdest)^ := (((sourceval shr ARGB_BlueShift) and $ff) shl TBGRAPixel_BlueShift) or
                         (((sourceval shr ARGB_GreenShift) and $ff) shl TBGRAPixel_GreenShift) or
                         (((sourceval shr ARGB_RedShift) and $ff) shl TBGRAPixel_RedShift) or
                         OpacityOrMask;
     end else
     begin
-      PDWord(pdest)^ := (((sourceval shr ARGB_BlueShift) and $ff) shl TBGRAPixel_BlueShift) or
+      PLongWord(pdest)^ := (((sourceval shr ARGB_BlueShift) and $ff) shl TBGRAPixel_BlueShift) or
                         (((sourceval shr ARGB_GreenShift) and $ff) shl TBGRAPixel_GreenShift) or
                         (((sourceval shr ARGB_RedShift) and $ff) shl TBGRAPixel_RedShift) or
                         (alphaValue shl TBGRAPixel_AlphaShift);
@@ -236,7 +263,7 @@ const
   BGRA_BlueMask = 255 shl TBGRAPixel_BlueShift;
   BGRA_ColorMask = BGRA_RedMask or BGRA_GreenMask or BGRA_BlueMask;
 
-procedure CopyFrom32Bit_KeepAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
+procedure CopyFrom32Bit_KeepAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
 begin
   if sourcePixelSize = 4 then
     move(psrc^,pdest^,count*sizeof(TBGRAPixel))
@@ -244,7 +271,7 @@ begin
   begin
     while count > 0 do
     begin
-      PDWord(pdest)^ := PDWord(psrc)^;
+      PLongWord(pdest)^ := PLongWord(psrc)^;
       dec(count);
       inc(pdest);
       inc(psrc, sourcePixelSize);
@@ -252,13 +279,13 @@ begin
   end;
 end;
 
-procedure CopyFrom32Bit_SwapRedBlue_KeepAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
-var srcValue: NativeUInt;
+procedure CopyFrom32Bit_SwapRedBlue_KeepAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
+var srcValue: UInt32or64;
 begin
   while count > 0 do
   begin
-    srcValue := PDWord(psrc)^;
-    PDWord(pdest)^ := (srcValue and not (BGRA_RedMask or BGRA_BlueMask))
+    srcValue := PLongWord(psrc)^;
+    PLongWord(pdest)^ := (srcValue and not (BGRA_RedMask or BGRA_BlueMask))
                    or (((srcValue and BGRA_RedMask) shr TBGRAPixel_RedShift) shl TBGRAPixel_BlueShift)
                    or (((srcValue and BGRA_BlueMask) shr TBGRAPixel_BlueShift) shl TBGRAPixel_RedShift);
     dec(count);
@@ -267,21 +294,21 @@ begin
   end;
 end;
 
-procedure CopyFrom32Bit_SetAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
+procedure CopyFrom32Bit_SetAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
 var
-  OpacityOrMask: NativeUInt;
+  OpacityOrMask: UInt32or64;
 begin
   OpacityOrMask := DefaultOpacity shl TBGRAPixel_AlphaShift;
   while count > 0 do
   begin
-    PDWord(pdest)^ := (PDWord(psrc)^ and not BGRA_AlphaMask) or OpacityOrMask;
+    PLongWord(pdest)^ := (PLongWord(psrc)^ and not BGRA_AlphaMask) or OpacityOrMask;
     inc(psrc, sourcePixelSize);
     inc(pdest);
     dec(count);
   end;
 end;
 
-procedure CopyFrom32Bit_SwapRedBlue_SetAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
+procedure CopyFrom32Bit_SwapRedBlue_SetAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
 begin
   while count > 0 do
   begin
@@ -295,9 +322,9 @@ begin
   end;
 end;
 
-procedure CopyFrom32Bit_ReplaceZeroAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
-var sourceval: NativeUInt;
-  OpacityOrMask : NativeUInt;
+procedure CopyFrom32Bit_ReplaceZeroAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
+var sourceval: UInt32or64;
+  OpacityOrMask : UInt32or64;
 begin
   OpacityOrMask := DefaultOpacity shl TBGRAPixel_AlphaShift;
   while count > 0 do
@@ -313,9 +340,9 @@ begin
   end;
 end;
 
-procedure CopyFrom32Bit_SwapRedBlue_ReplaceZeroAlpha(psrc: PByte; pdest: PBGRAPixel; count: NativeInt; sourcePixelSize: PtrInt; defaultOpacity: byte);
-var sourceval: NativeUInt;
-  OpacityOrMask : NativeUInt;
+procedure CopyFrom32Bit_SwapRedBlue_ReplaceZeroAlpha(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
+var sourceval: UInt32or64;
+  OpacityOrMask : UInt32or64;
 begin
   OpacityOrMask := DefaultOpacity shl TBGRAPixel_AlphaShift;
   while count > 0 do
@@ -344,7 +371,7 @@ var
   psource_delta, pdest_delta: integer;
 begin
   if (ALineOrder = ADestination.LineOrder) and
-    (ABytesPerLine = (ABitsPerPixel shr 3) * cardinal(ADestination.Width)) then
+    (ABytesPerLine = (ABitsPerPixel shr 3) * LongWord(ADestination.Width)) then
     ACopyProc(AData, ADestination.Data, ADestination.NbPixels, ABitsPerPixel shr 3, ADefaultOpacity)
   else
   begin
@@ -411,8 +438,8 @@ var
   end;
 
 begin
-  if (ARawImage.Description.Width <> cardinal(ADestination.Width)) or
-    (ARawImage.Description.Height <> cardinal(ADestination.Height)) then
+  if (ARawImage.Description.Width <> LongWord(ADestination.Width)) or
+    (ARawImage.Description.Height <> LongWord(ADestination.Height)) then
     raise Exception.Create('Bitmap size is inconsistant');
 
   if (ADestination.Height=0) or (ADestination.Width=0) then
@@ -654,8 +681,8 @@ begin
   bmp.PixelFormat := pf24bit;
   bmp.Width := ADestination.Width;
   bmp.Height := ADestination.Height;
-  bmp.Canvas.CopyRect(Classes.rect(0, 0, ADestination.Width, ADestination.Height), CanvasSource,
-    Classes.rect(x, y, x + ADestination.Width, y + ADestination.Height));
+  bmp.Canvas.CopyRect(rect(0, 0, ADestination.Width, ADestination.Height), CanvasSource,
+    rect(x, y, x + ADestination.Width, y + ADestination.Height));
   LoadFromRawImageImplementation(ADestination, bmp.RawImage, 255, True, False);
   bmp.Free;
   ADestination.InvalidateBitmap;
@@ -692,7 +719,6 @@ begin
   end;
 
   FBitmap.Canvas.AntialiasingMode := amOff;
-  FBitmapModified := False;
 end;
 
 function TBGRALCLPtrBitmap.CreatePtrBitmap(AWidth, AHeight: integer;
@@ -784,8 +810,6 @@ begin
   end;
 
   FBitmap.Canvas.AntialiasingMode := amOff;
-  FBitmapModified := False;
-  FAlphaCorrectionNeeded:= false;
 end;
 
 function TBGRALCLBitmap.CreatePtrBitmap(AWidth, AHeight: integer;
@@ -882,7 +906,7 @@ begin
     p := ScanLine[y];
     for x := 0 to Width-1 do
     begin
-      if (p^.alpha = 0) and (PDWord(p)^<>0) then
+      if (p^.alpha = 0) and (PLongWord(p)^<>0) then
       begin
         NeedXorMask;
         XorMask.SetPixel(x,y, p^);

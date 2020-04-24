@@ -5,7 +5,7 @@ unit BGRASliceScaling;
 interface
 
 uses
-  Classes, SysUtils, BGRAGraphics, BGRABitmap, BGRABitmapTypes, IniFiles;
+  BGRAClasses, SysUtils, BGRAGraphics, BGRABitmap, BGRABitmapTypes, IniFiles;
 
 type
   TMargins = record
@@ -150,7 +150,7 @@ type
 
 implementation
 
-uses BGRAUTF8, Types;
+uses BGRAUTF8;
 
 function Margins(ATop, ARight, ABottom, ALeft: integer): TMargins;
 begin
@@ -366,8 +366,8 @@ begin
   for p := low(TSliceRepeatPosition) to high(TSliceRepeatPosition) do
     if SliceRepeat[p] then
     begin
-      if result <> '' then result += '+';
-      result += SliceRepeatPositionStr[p];
+      if result <> '' then AppendStr(result, '+');
+      AppendStr(result, SliceRepeatPositionStr[p]);
     end;
 end;
 
@@ -485,7 +485,7 @@ begin
     Result[spBottomRight] := rect(Width - Right, Height - Bottom, Width, Height);
   end;
   for pos := low(TSlicePosition) to high(TSlicePosition) do
-    OffsetRect(Result[pos], ARect.Left, ARect.Top);
+    Result[pos].Offset(ARect.Left, ARect.Top);
 end;
 
 procedure TBGRASliceScaling.SliceScalingDraw(ADest: TBGRABitmap;

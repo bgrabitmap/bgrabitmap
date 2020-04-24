@@ -5,7 +5,7 @@ unit BGRAGradientOriginal;
 interface
 
 uses
-  Classes, SysUtils, BGRALayerOriginal, BGRABitmap, BGRABitmapTypes, BGRAGradientScanner;
+  BGRAClasses, SysUtils, BGRALayerOriginal, BGRABitmap, BGRABitmapTypes, BGRAGradientScanner;
 
 type
   TBGRAColorInterpolation = BGRAGradientScanner.TBGRAColorInterpolation;

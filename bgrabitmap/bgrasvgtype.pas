@@ -6,8 +6,8 @@ unit BGRASVGType;
 interface
 
 uses
-  Classes, SysUtils, BGRATransform, BGRABitmapTypes, BGRAUnits,
-  laz2_DOM, BGRACanvas2D, fgl, BGRAGraphics;
+  BGRAClasses, SysUtils, BGRATransform, BGRABitmapTypes, BGRAUnits,
+  DOM, BGRACanvas2D, fgl, BGRAGraphics;
 
 type
   ArrayOfFloat = array of single;
@@ -467,7 +467,7 @@ begin
     if FUnits.DpiScaleX = 0 then
       result.value := 0
     else
-      result.value /= FUnits.DpiScaleX;
+      result.value := result.value / FUnits.DpiScaleX;
 end;
 
 function TSVGCustomElement.GetArrayOfHorizAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
@@ -481,7 +481,7 @@ begin
       if FUnits.DpiScaleX = 0 then
         result[i].value := 0
       else
-        result[i].value /= FUnits.DpiScaleX;
+        result[i].value := result[i].value / FUnits.DpiScaleX;
   end;
 end;
 
@@ -690,7 +690,7 @@ begin
     if FUnits.DpiScaleY = 0 then
       result.value := 0
     else
-      result.value /= FUnits.DpiScaleY;
+      result.value := result.value / FUnits.DpiScaleY;
 end;
 
 function TSVGCustomElement.GetVerticalAttributeOrStyleWithUnit(AName: string;
@@ -711,7 +711,7 @@ begin
       if FUnits.DpiScaleY = 0 then
         result[i].value := 0
       else
-        result[i].value /= FUnits.DpiScaleY;
+        result[i].value := result[i].value / FUnits.DpiScaleY;
   end;
 end;
 
@@ -736,9 +736,9 @@ begin
       delete(ruleset, length(ruleset), 1);
     if length(ruleset)>0 then
     begin
-      if ruleset[length(ruleset)] <> ';' then ruleset += '; ';
+      if ruleset[length(ruleset)] <> ';' then AppendStr(ruleset, '; ');
     end;
-    ruleset += AName+': '+AValue;
+    AppendStr(ruleset, AName+': '+AValue);
   end;
   SetAttribute('style', ruleset);
 end;
@@ -764,7 +764,7 @@ begin
     if FUnits.DpiScaleX = 0 then
       result := 0
     else
-      result /= FUnits.DpiScaleX;
+      result := result / FUnits.DpiScaleX;
   end;
 end;
 
@@ -783,7 +783,7 @@ begin
       if FUnits.DpiScaleX = 0 then
         result.value := 0
       else
-        result.value /= FUnits.DpiScaleX;
+        result.value := result.value / FUnits.DpiScaleX;
   end;
 end;
 
@@ -840,7 +840,7 @@ begin
         if FUnits.DpiScaleX = 0 then
           result[i].value := 0
         else
-          result[i].value /= FUnits.DpiScaleX;
+          result[i].value := result[i].value / FUnits.DpiScaleX;
     end;
 end;
 
@@ -861,7 +861,7 @@ begin
       if FUnits.DpiScaleY = 0 then
         result[i].value := 0
       else
-        result[i].value /= FUnits.DpiScaleY;
+        result[i].value := result[i].value / FUnits.DpiScaleY;
   end;
 end;
 
@@ -879,7 +879,7 @@ begin
     if FUnits.DpiScaleY = 0 then
       result := 0
     else
-      result /= FUnits.DpiScaleY;
+      result := result / FUnits.DpiScaleY;
   end;
 end;
 
@@ -897,7 +897,7 @@ begin
       if FUnits.DpiScaleY = 0 then
         result.value := 0
       else
-        result.value /= FUnits.DpiScaleY;
+        result.value := result.value / FUnits.DpiScaleY;
   end;
 end;
 
@@ -1136,16 +1136,17 @@ begin
   begin
     result := '';
     case HorizAlign of
-    taCenter: result += 'xMid';
-    taRightJustify: result += 'xMax';
-    else result += 'xMin';
+    taCenter: AppendStr(result, 'xMid');
+    taRightJustify: AppendStr(result, 'xMax');
+    else AppendStr(result, 'xMin');
     end;
     case VertAlign of
-    tlCenter: result += 'YMid';
-    tlBottom: result += 'YMax';
-    else result += 'YMin';
+    tlCenter: AppendStr(result, 'YMid');
+    tlBottom: AppendStr(result, 'YMax');
+    else AppendStr(result, 'YMin');
     end;
-    if Slice then result += ' slice' else result += ' meet';
+    if Slice then AppendStr(result, ' slice')
+    else AppendStr(result, ' meet');
   end;
 end;
 
@@ -1276,14 +1277,14 @@ begin
       m[1,3] := ParseFloat;
       SkipSymbol(',');
       m[2,3] := ParseFloat;
-      result *= m;
+      result := result * m;
     end else
     if compareText(kind,'translate')=0 then
     begin
       tx := ParseFloat;
       SkipSymbol(',');
       ty := ParseFloat;
-      result *= AffineMatrixTranslation(tx,ty);
+      result := result * AffineMatrixTranslation(tx,ty);
     end else
     if compareText(kind,'scale')=0 then
     begin
@@ -1292,7 +1293,7 @@ begin
       ClearError;
       ty := ParseFloat;
       if NumberError then ty := tx;
-      result *= AffineMatrixScale(tx,ty);
+      result := result * AffineMatrixScale(tx,ty);
     end else
     if compareText(kind,'rotate')=0 then
     begin
@@ -1301,18 +1302,19 @@ begin
       tx := ParseFloat;
       SkipSymbol(',');
       ty := ParseFloat;
-      result *= AffineMatrixTranslation(tx,ty)*AffineMatrixRotationDeg(angle)*
+      result := result * AffineMatrixTranslation(tx,ty)*
+                AffineMatrixRotationDeg(angle)*
                 AffineMatrixTranslation(-tx,-ty);
     end else
     if compareText(kind,'skewx')=0 then
     begin
       angle := ParseFloat;
-      result *= AffineMatrixSkewXDeg(angle);
+      result := result * AffineMatrixSkewXDeg(angle);
     end else
     if compareText(kind,'skewy')=0 then
     begin
       angle := ParseFloat;
-      result *= AffineMatrixSkewYDeg(angle);
+      result := result * AffineMatrixSkewYDeg(angle);
     end;
     SkipUpToSymbol(')');
   end;
@@ -1774,8 +1776,8 @@ begin
   s:= '';
   for i := 0 to high(AValue) do
   begin
-    if s <> '' then s += ' ';
-    s += TCSSUnitConverter.formatValue(AValue[i])+' ';
+    if s <> '' then AppendStr(s, ' ');
+    AppendStr(s, TCSSUnitConverter.formatValue(AValue[i])+' ');
   end;
   strokeDashArray := s;
 end;
@@ -1849,7 +1851,7 @@ begin
   if (Length(a) <> 0) and (lw > 0) then
   begin
     for i := 0 to high(a) do
-      a[i] /= lw;
+      a[i] := a[i] / lw;
     ACanvas2d.lineStyle(a);
   end
   else

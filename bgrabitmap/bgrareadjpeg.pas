@@ -5,7 +5,7 @@ unit BGRAReadJpeg;
 interface
 
 uses
-  Classes, SysUtils, FPReadJPEG;
+  BGRAClasses, SysUtils, FPReadJPEG;
 
 type
   TJPEGScale = FPReadJPEG.TJPEGScale;
