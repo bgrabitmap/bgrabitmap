@@ -394,7 +394,19 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
     CloseFile(tOut);
   end;
 
+  function ListCompareBinary(List: TStringList; Index1, Index2: Integer): Integer;
+  var
+    s1,s2: String;
+  begin
+    s1 := List[Index1];
+    s2 := List[Index2];
+    if s1 < s2 then result := -1
+    else if s1 > s2 then result := 1
+    else result := 0;
+  end;
+
   procedure UTF8RecompositionFunction;
+  type TDecompositionKind = (dMultichar, dInitial, dMedial, dFinal, dIsolated);
   var tOut, tIn: TextFile;
     line, decomposed, kind, decomposedUTF8: string;
     cells: TStringList;
@@ -403,14 +415,25 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
     hasNSM: Boolean;
     correspList: TStringList;
     i: Integer;
+    typedKind: TDecompositionKind;
+
+    function RemoveUptoTab(AText: string): string;
+    var
+      idxTab: SizeInt;
+    begin
+      idxTab := pos(#9, AText);
+      result := copy(AText, idxTab+1, length(AText)-idxTab);
+    end;
+
   begin
     writeln('Parsing decomposition data...');
     AssignFile(tOut, 'UTF8Recomposition.generated.pas');
     Rewrite(tOut);
     writeln(tOut, 'type');
     writeln(tOut, '  TUTF8Decomposition = record');
-    writeln(tOut, '    u: LongWord;');
-    writeln(tOut, '    re, de: string;');
+    writeln(tOut, '    u: LongWord;    //recomposed Unicode character');
+    writeln(tOut, '    re, de: string; //recomposed, decomposed UTF8');
+    writeln(tOut, '    ar: boolean;    //arabic presentation');
     writeln(tOut, '  end;');
     writeln(tOut, 'const');
     correspList := TStringList.Create;
@@ -433,12 +456,17 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
         if decomposed = '' then continue;
         mergedU := StrtoInt('$'+cells[0]);
         if GetUnicodeBidiClass(mergedU) = ubcNonSpacingMark then continue;
+        typedKind := dMultichar;
         if decomposed[1] = '<' then
         begin
           posClose := pos('>', decomposed);
           if posClose = 0 then continue;
           kind := copy(decomposed,1,posClose);
           delete(decomposed, 1, posClose);
+          if kind = '<initial>' then typedKind := dInitial else
+          if kind = '<medial>' then typedKind := dMedial else
+          if kind = '<final>' then typedKind := dFinal else
+          if kind = '<isolated>' then typedKind := dIsolated else
           if kind <> '<compat>' then continue;
           decomposed := trim(decomposed);
         end;
@@ -453,25 +481,31 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
           AppendStr(decomposedUTF8, UnicodeCharToUTF8(nextU));
           delete(decomposed, 1, posSpace);
         end;
-        if hasNSM or
+        case typedKind of
+        dInitial: decomposedUTF8 := UTF8Ligature(decomposedUTF8, true, true, false);
+        dMedial: decomposedUTF8 := UTF8Ligature(decomposedUTF8, true, true, true);
+        dFinal: decomposedUTF8 := UTF8Ligature(decomposedUTF8, true, false, true);
+        end;
+        if hasNSM or (typedKind <> dMultichar) or
             (copy(decomposedUTF8,1,1) = 'f') or
-            (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH) or
-            (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_ABOVE) or
-            (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_BELOW) or
-            (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_MADDA_ABOVE) then
-          correspList.Add('(u:$'+inttohex(mergedU,4)+'; re:''' + UnicodeCharToUTF8(mergedU) + '''; de:''' + decomposedUTF8 + ''')');
+            (copy(decomposedUTF8,1,length(UTF8_ARABIC_LAM)) = UTF8_ARABIC_LAM) then
+          correspList.Add(UnicodeCharToUTF8(mergedU)+#9+'(u:$'+inttohex(mergedU,4)+
+             '; re:''' + UnicodeCharToUTF8(mergedU) + '''; de:''' + decomposedUTF8 +
+             '''; ar:' + BoolToStr(typedKind <> dMultichar, 'true','false') + ')');
       end;
     end;
     cells.Free;
 
     CloseFile(tIn);
 
+    correspList.CustomSort(@ListCompareBinary);
+
     writeln(tOut, '  UTF8Decomposition : array[0..', correspList.Count, '] of TUTF8Decomposition = (');
     for i := 0 to correspList.Count-1 do
       if i <> correspList.Count-1 then
-        writeln(tOut, '  ', correspList[i], ',')
+        writeln(tOut, '  ', RemoveUptoTab(correspList[i]), ',')
       else
-        writeln(tOut, '  ', correspList[i]);
+        writeln(tOut, '  ', RemoveUptoTab(correspList[i]));
     writeln(tOut, '  );');
     correspList.Free;
     CloseFile(tOut);
