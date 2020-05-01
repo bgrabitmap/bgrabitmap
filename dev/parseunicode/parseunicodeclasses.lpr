@@ -1,6 +1,6 @@
 program parseunicodeclasses;
 
-uses Classes, sysutils;
+uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
 
   function ArrayOfCodeToCase(ACodes: array of integer; AIndent: string): string;
   var
@@ -392,10 +392,94 @@ uses Classes, sysutils;
     ParseArabicLigature;
 
     CloseFile(tOut);
-    writeln('Done.');
+  end;
+
+  procedure UTF8RecompositionFunction;
+  var tOut, tIn: TextFile;
+    line, decomposed, kind, decomposedUTF8: string;
+    cells: TStringList;
+    mergedU,nextU: longword;
+    posClose, posSpace: SizeInt;
+    hasNSM: Boolean;
+    correspList: TStringList;
+    i: Integer;
+  begin
+    writeln('Parsing decomposition data...');
+    AssignFile(tOut, 'UTF8Recomposition.generated.pas');
+    Rewrite(tOut);
+    writeln(tOut, 'type');
+    writeln(tOut, '  TUTF8Decomposition = record');
+    writeln(tOut, '    u: LongWord;');
+    writeln(tOut, '    re, de: string;');
+    writeln(tOut, '  end;');
+    writeln(tOut, 'const');
+    correspList := TStringList.Create;
+
+    assignfile(tIn, 'UnicodeData.txt');
+    reset(tIn);
+
+    cells := TStringList.Create;
+    cells.Delimiter := ';';
+    cells.QuoteChar := '"';
+    cells.StrictDelimiter := true;
+    while not Eof(tIn) do
+    begin
+      readln(tIn, line);
+      if (line = '') or (line[1]='#') then continue;
+      cells.DelimitedText:= line;
+      if cells.Count >= 6 then
+      begin
+        decomposed := trim(cells[5]);
+        if decomposed = '' then continue;
+        mergedU := StrtoInt('$'+cells[0]);
+        if GetUnicodeBidiClass(mergedU) = ubcNonSpacingMark then continue;
+        if decomposed[1] = '<' then
+        begin
+          posClose := pos('>', decomposed);
+          if posClose = 0 then continue;
+          kind := copy(decomposed,1,posClose);
+          delete(decomposed, 1, posClose);
+          if kind <> '<compat>' then continue;
+          decomposed := trim(decomposed);
+        end;
+        decomposedUTF8 := '';
+        hasNSM := false;
+        while decomposed <> '' do
+        begin
+          posSpace := pos(' ',decomposed);
+          if posSpace = 0 then posSpace := length(decomposed)+1;
+          nextU := strToInt('$'+copy(decomposed,1,posSpace-1));
+          if GetUnicodeBidiClass(nextU) = ubcNonSpacingMark then hasNSM := true;
+          AppendStr(decomposedUTF8, UnicodeCharToUTF8(nextU));
+          delete(decomposed, 1, posSpace);
+        end;
+        if hasNSM or
+            (copy(decomposedUTF8,1,1) = 'f') or
+            (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH) or
+            (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_ABOVE) or
+            (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_BELOW) or
+            (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_MADDA_ABOVE) then
+          correspList.Add('(u:$'+inttohex(mergedU,4)+'; re:''' + UnicodeCharToUTF8(mergedU) + '''; de:''' + decomposedUTF8 + ''')');
+      end;
+    end;
+    cells.Free;
+
+    CloseFile(tIn);
+
+    writeln(tOut, '  UTF8Decomposition : array[0..', correspList.Count, '] of TUTF8Decomposition = (');
+    for i := 0 to correspList.Count-1 do
+      if i <> correspList.Count-1 then
+        writeln(tOut, '  ', correspList[i], ',')
+      else
+        writeln(tOut, '  ', correspList[i]);
+    writeln(tOut, '  );');
+    correspList.Free;
+    CloseFile(tOut);
   end;
 
 begin
   GenerateUnicodeFunctions;
+  UTF8RecompositionFunction;
+  writeln('Done.');
 end.
 
