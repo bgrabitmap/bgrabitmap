@@ -20,6 +20,7 @@ type
 
   TFillShapeInfo = class(TBGRACustomFillInfo)
     protected
+      FPointInsideInter : ArrayOfTIntersectionInfo;
       //compute intersections. the array must be big enough
       procedure ComputeIntersection(cury: single; var inter: ArrayOfTIntersectionInfo; var nbInter: integer); virtual;
       //sort from left to right
@@ -31,6 +32,8 @@ type
       function NbMaxIntersection: integer; virtual;
 
     public
+      destructor Destroy; override;
+
       //returns true if the same segment number can be curved
       function SegmentsCurved: boolean; override;
 
@@ -494,29 +497,34 @@ end;
 function TFillShapeInfo.IsPointInside(x, y: single; windingMode: boolean
   ): boolean;
 var
-    inter : ArrayOfTIntersectionInfo;
-    i,nbInter: integer;
+  i,nbInter: integer;
 begin
-  inter := CreateIntersectionArray;
-  ComputeAndSort(y,inter,nbInter,windingMode);
+  if FPointInsideInter = nil then
+    FPointInsideInter := CreateIntersectionArray;
+  ComputeAndSort(y,FPointInsideInter,nbInter,windingMode);
   i := 0;
   while i+1 < nbInter do
   begin
-    if (inter[i].interX < x) and (inter[i+1].interX > x) then
+    if (FPointInsideInter[i].interX < x) and (FPointInsideInter[i+1].interX > x) then
     begin
       result := true;
-      FreeIntersectionArray(inter);
+      FreeIntersectionArray(FPointInsideInter);
       exit;
     end;
     inc(i,2);
   end;
   result := false;
-  FreeIntersectionArray(inter);
 end;
 
 function TFillShapeInfo.NbMaxIntersection: integer;
 begin
   Result := 0;
+end;
+
+destructor TFillShapeInfo.Destroy;
+begin
+  FreeIntersectionArray(FPointInsideInter);
+  inherited Destroy;
 end;
 
 function TFillShapeInfo.SegmentsCurved: boolean;
