@@ -1038,7 +1038,7 @@ function CreatePerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: Single
       inc(p);
     end;
     small.ResampleFilter := ResampleFilter;
-    resampled := small.Resample(dest.Width,dest.Height) as TBGRABitmap;
+    resampled := small.Resample(dest.Width,dest.Height);
     dest.BlendImage(0,0,resampled,boAdditive);
     resampled.Free;
     small.Free;
@@ -1053,11 +1053,11 @@ begin
   for i := 0 to 5 do
     AddNoise(round(AWidth / HorizontalPeriod / (32 shr i)),round(AHeight / VerticalPeriod / (32 shr i)), round(exp(ln((128 shr i)/128)*Exponent)*128),result);
 
-  temp := result.FilterNormalize(False) as TBGRABitmap;
+  temp := result.FilterNormalize(False);
   result.Free;
   result := temp;
 
-  temp := result.FilterBlurRadial(1,rbNormal) as TBGRABitmap;
+  temp := result.FilterBlurRadial(1,rbNormal);
   result.Free;
   result := temp;
 end;
@@ -1081,9 +1081,9 @@ function CreateCyclicPerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: 
       p^.alpha := 255;
       inc(p);
     end;
-    cycled := small.GetPart(rect(-2,-2,small.Width+2,small.Height+2)) as TBGRABitmap;
+    cycled := small.GetPart(rect(-2,-2,small.Width+2,small.Height+2));
     cycled.ResampleFilter := ResampleFilter;
-    resampled := cycled.Resample(round((cycled.Width-1)*(dest.Width/frequencyH)),round((cycled.Height-1)*(dest.Height/frequencyV))) as TBGRABitmap;
+    resampled := cycled.Resample(round((cycled.Width-1)*(dest.Width/frequencyH)),round((cycled.Height-1)*(dest.Height/frequencyV)));
     dest.BlendImage(round(-2*(dest.Width/frequencyH)),round(-2*(dest.Height/frequencyV)),resampled,boAdditive);
     resampled.Free;
     cycled.Free;
@@ -1099,11 +1099,11 @@ begin
   for i := 0 to 5 do
     AddNoise(round(AWidth / HorizontalPeriod / (32 shr i)),round(AHeight / VerticalPeriod / (32 shr i)), round(exp(ln((128 shr i)/128)*Exponent)*128),result);
 
-  temp := result.FilterNormalize(False) as TBGRABitmap;
+  temp := result.FilterNormalize(False);
   result.Free;
   result := temp;
 
-  temp := result.FilterBlurRadial(1,rbNormal) as TBGRABitmap;
+  temp := result.FilterBlurRadial(1,rbNormal);
   result.Free;
   result := temp;
 end;

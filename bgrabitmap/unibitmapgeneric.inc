@@ -20,8 +20,8 @@ type
     //typed functions
 
     {** Creates an image of dimensions ''AWidth'' and ''AHeight'' and fills it with ''Color'' }
-    constructor Create(AWidth, AHeight: integer; const AColor: TPixel);
-    function NewBitmap(AWidth, AHeight: integer; const AColor: TPixel): TCustomUniversalBitmap; overload;
+    constructor Create(AWidth, AHeight: integer; const AColor: TPixel); virtual;
+    function NewBitmap(AWidth, AHeight: integer; const AColor: TPixel): TCustomUniversalBitmap; overload; virtual;
 
     function Equals(comp: TCustomUniversalBitmap): boolean; overload;
     function Equals(const comp: TPixel): boolean; overload;
@@ -31,7 +31,7 @@ type
     class procedure IdleBrush(out ABrush: TUniversalBrush); virtual;
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TPixel;
-            AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TCustomUniversalBitmap;
+            AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TCustomUniversalBitmap; virtual;
 
     procedure SetPixel(x,y: int32or64; const AColor: TPixel); overload; virtual;
     function GetPixel(x,y: int32or64): TPixel; inline;

@@ -30,7 +30,7 @@ implementation
 procedure TTest7.DrawPacman(x, y: integer; angle: single);
 var temp: TBGRABitmap;
 begin
-   temp := pacman.FilterRotate(pointF((pacman.width-1)/2,(pacman.height-1)/2),angle) as TBGRABitmap;
+   temp := pacman.FilterRotate(pointF((pacman.width-1)/2,(pacman.height-1)/2),angle);
    virtualScreen.PutImage(x-temp.width div 2,y-temp.height div 2,temp,dmDrawWithTransparency);
    temp.Free;
 end;
@@ -44,7 +44,7 @@ begin
   background := nil;
   pacman := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'pac_d1.bmp');
   pacman.ReplaceColor(pacman.GetPixel(0,0),BGRAPixelTransparent);
-  temp := pacman.FilterSmartZoom3(moMediumSmooth) as TBGRABitmap;
+  temp := pacman.FilterSmartZoom3(moMediumSmooth);
   pacman.Free;
   pacman := temp;
   time := 0;

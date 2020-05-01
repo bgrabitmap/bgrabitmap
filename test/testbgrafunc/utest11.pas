@@ -62,7 +62,7 @@ begin
   begin
     virtualScreen.Fill(BGRABlack);
     virtualScreen.DrawPolyLineAntialias(virtualScreen.ComputeOpenedSpline(pts,ssCrossing),BGRAWhite,(width+height)/80,True);
-    filtered := virtualScreen.FilterEmbossHighlight(True) as TBGRABitmap;
+    filtered := virtualScreen.FilterEmbossHighlight(True);
     virtualScreen.Fill(clBtnFace);
     virtualScreen.PutImage(0,0,filtered,dmDrawWithTransparency);
     filtered.Free;
@@ -73,7 +73,7 @@ begin
     virtualScreen.DrawPolyLineAntialias(virtualScreen.ComputeOpenedSpline(pts,ssCrossing),BGRA(0,0,0,128),(width+height)/80,True);
     if ffilter = 'Contour' then
     begin
-      filtered := virtualScreen.FilterContour as TBGRABitmap;
+      filtered := virtualScreen.FilterContour;
       filtered.Draw(Canvas,Left,Top,True);
       filtered.Free;
     end else

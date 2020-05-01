@@ -234,7 +234,7 @@ var copy: TBGRABitmap;
   srcIdx,idx: integer;
 begin
   srcIdx := PInt32(Params^[0])^;
-  copy := GetBitmap(srcIdx).Duplicate as TBGRABitmap;
+  copy := GetBitmap(srcIdx).Duplicate;
   idx := NewBitmapEntry;
   bitmaps[idx].Bitmap := copy;
   bitmaps[idx].Invalidated := false;

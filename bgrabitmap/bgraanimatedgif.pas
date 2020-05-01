@@ -364,7 +364,7 @@ procedure TBGRAAnimatedGif.SetFrameImage(AIndex: integer; AValue: TBGRABitmap);
 var ACopy: TBGRABitmap;
 begin
   CheckFrameIndex(AIndex);
-  ACopy := AValue.Duplicate as TBGRABitmap;
+  ACopy := AValue.Duplicate;
   FImages[AIndex].Image.FreeReference;
   FImages[AIndex].Image := ACopy;
 end;
@@ -579,7 +579,7 @@ begin
     if (AIndex > 0) and (FrameDisposeMode[AIndex-1] <> dmErase) then
     begin
       CurrentImage := AIndex;
-      nextImage := MemBitmap.Duplicate as TBGRABitmap;
+      nextImage := MemBitmap.Duplicate;
       FrameImagePos[AIndex] := Point(0,0);
       FrameImage[AIndex] := nextImage;
       FrameHasLocalPalette[AIndex] := true;
@@ -614,7 +614,7 @@ begin
     ((AIndex < Count-1) and (FrameDisposeMode[AIndex] <> dmErase)) then
   begin
     CurrentImage := AIndex+1;
-    nextImage := MemBitmap.Duplicate as TBGRABitmap;
+    nextImage := MemBitmap.Duplicate;
     FrameImagePos[AIndex+1] := Point(0,0);
     FrameImage[AIndex+1] := nextImage;
     FrameHasLocalPalette[AIndex+1] := true;

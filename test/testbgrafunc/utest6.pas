@@ -36,7 +36,7 @@ begin
    if width <= 0 then width := 1;
    height := (round(image.height*pzoomfactor)+1) and not 1; //even size for centering
    if height <= 0 then height := 1;
-   temp := image.Resample(width,height,mode) as TBGRABitmap;
+   temp := image.Resample(width,height,mode);
    virtualScreen.PutImage(x-width div 2,y-height div 2,temp,dmDrawWithTransparency);
    temp.Free;
 end;

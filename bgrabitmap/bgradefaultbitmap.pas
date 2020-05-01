@@ -36,7 +36,7 @@ uses
   SysUtils, BGRAClasses, FPImage, BGRAGraphics, BGRABitmapTypes,
   {$IFDEF BGRABITMAP_USE_FPCANVAS}FPImgCanv,{$ENDIF}
   BGRACanvas, BGRACanvas2D, BGRATransform, BGRATextBidi,
-  UniversalDrawer;
+  UniversalDrawer, BGRAGrayscaleMask;
 
 type
   TBGRAPtrBitmap = class;
@@ -174,6 +174,7 @@ type
 
     procedure InternalArc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; ABorderColor: TBGRAPixel; w: single;
       AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil); override;
+    function InternalNew: TBGRADefaultBitmap; override;
 
   public
     {** Provides a canvas with opacity and antialiasing }
@@ -213,44 +214,48 @@ type
     procedure ClearTransparentPixels; override;
 
     {------------------------- Quasi-constructors -----------------------------}
+
+    {** Can only be called from an existing instance of ''TBGRABitmap''.
+        Creates a new instance with dimensions 0 x 0. }
+    function NewBitmap: TBGRADefaultBitmap; overload; override;
+
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with dimensions ''AWidth'' and ''AHeight'',
         containing transparent pixels. }
-    function NewBitmap(AWidth, AHeight: integer): TBGRACustomBitmap; overload; override;
+    function NewBitmap(AWidth, AHeight: integer): TBGRADefaultBitmap; overload; override;
 
     {* Example:
        <syntaxhighlight>
      * var bmp1, bmp2: TBGRABitmap;
      * begin
      *   bmp1 := TBGRABitmap.Create(100,100);
-     *   bmp2 := bmp1.NewBitmap(100,100) as TBGRABitmap;
+     *   bmp2 := bmp1.NewBitmap(100,100);
      *   ...
      * end;</syntaxhighlight>
        See tutorial 2 on [[BGRABitmap_tutorial_2|how to load and display an image]].
      * See reference on [[TBGRACustomBitmap_and_IBGRAScanner#Load_and_save_files|loading and saving files]] }
 
-    function NewBitmap: TBGRACustomBitmap; overload; override;
-
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with dimensions ''AWidth'' and ''AHeight'',
         and fills it with Color }
-    function NewBitmap(AWidth, AHeight: integer; Color: TBGRAPixel): TBGRACustomBitmap; overload; override;
+    function NewBitmap(AWidth, AHeight: integer; const Color: TBGRAPixel): TBGRADefaultBitmap; overload; override;
+    function NewBitmap(AWidth, AHeight: integer; AColor: Pointer): TBGRADefaultBitmap; overload; override;
 
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with by loading its content
         from the file ''Filename''. The encoding of the string
         is the default one for the operating system }
-    function NewBitmap(Filename: string): TBGRACustomBitmap; overload; override;
+    function NewBitmap(Filename: string): TBGRADefaultBitmap; overload; override;
 
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates a new instance with by loading its content
         from the file ''Filename'' }
-    function NewBitmap(Filename: string; AIsUtf8: boolean): TBGRACustomBitmap; overload; override;
-    function NewBitmap(Filename: string; AIsUtf8: boolean; AOptions: TBGRALoadingOptions): TBGRACustomBitmap; overload; override;
+    function NewBitmap(Filename: string; AIsUtf8: boolean): TBGRADefaultBitmap; overload; override;
+    function NewBitmap(Filename: string; AIsUtf8: boolean; AOptions: TBGRALoadingOptions): TBGRADefaultBitmap; overload; override;
 
     {** Can only be called from an existing instance of ''TBGRABitmap''.
         Creates an image by copying the content of a ''TFPCustomImage'' }
-    function NewBitmap(AFPImage: TFPCustomImage): TBGRACustomBitmap; overload; override;
+    function NewBitmap(AFPImage: TFPCustomImage): TBGRADefaultBitmap; overload; override;
 
     {** Assign the content of the specified ''Source''. It can be a ''TBGRACustomBitmap'' or
         a ''TFPCustomImage'' }
@@ -585,7 +590,7 @@ type
     function MakeBitmapCopy(BackgroundColor: TColor): TBitmap; override;
 
     function Resample(newWidth, newHeight: integer;
-      mode: TResampleMode = rmFineResample): TBGRACustomBitmap; override;
+      mode: TResampleMode = rmFineResample): TBGRADefaultBitmap; override;
     procedure Negative; override;
     procedure NegativeRect(ABounds: TRect); override;
     procedure LinearNegative; override;
@@ -598,35 +603,36 @@ type
     procedure SwapRedBlue(ARect: TRect); override;
     procedure GrayscaleToAlpha; override;
     procedure AlphaToGrayscale; override;
-    function GetMaskFromAlpha: TBGRACustomBitmap; override;
+    function GetMaskFromAlpha: TBGRADefaultBitmap; override;
+    function GetGrayscaleMaskFromAlpha: TGrayscaleMask;
     procedure ConvertToLinearRGB; override;
     procedure ConvertFromLinearRGB; override;
     procedure DrawCheckers(ARect: TRect; AColorEven,AColorOdd: TBGRAPixel); override;
 
     {Filters}
-    function FilterSmartZoom3(Option: TMedianOption): TBGRACustomBitmap; override;
-    function FilterMedian(Option: TMedianOption): TBGRACustomBitmap; override;
-    function FilterSmooth: TBGRACustomBitmap; override;
-    function FilterSharpen(Amount: single = 1): TBGRACustomBitmap; overload; override;
-    function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRACustomBitmap; overload; override;
-    function FilterContour: TBGRACustomBitmap; override;
-    function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRACustomBitmap; override;
-    function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; override;
-    function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload; override;
-    function FilterEmbossHighlight(FillSelection: boolean): TBGRACustomBitmap; overload; override;
-    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel): TBGRACustomBitmap; overload; override;
-    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; var Offset: TPoint): TBGRACustomBitmap; overload; override;
-    function FilterGrayscale: TBGRACustomBitmap; overload; override;
-    function FilterGrayscale(ABounds: TRect): TBGRACustomBitmap; overload; override;
-    function FilterNormalize(eachChannel: boolean = True): TBGRACustomBitmap; overload; override;
-    function FilterNormalize(ABounds: TRect; eachChannel: boolean = True): TBGRACustomBitmap; overload; override;
-    function FilterRotate(origin: TPointF; angle: single; correctBlur: boolean = false): TBGRACustomBitmap; override;
-    function FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean = false): TBGRACustomBitmap; override;
-    function FilterSphere: TBGRACustomBitmap; override;
-    function FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRACustomBitmap; overload; override;
-    function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRACustomBitmap; overload; override;
-    function FilterCylinder: TBGRACustomBitmap; override;
-    function FilterPlane: TBGRACustomBitmap; override;
+    function FilterSmartZoom3(Option: TMedianOption): TBGRADefaultBitmap; override;
+    function FilterMedian(Option: TMedianOption): TBGRADefaultBitmap; override;
+    function FilterSmooth: TBGRADefaultBitmap; override;
+    function FilterSharpen(Amount: single = 1): TBGRADefaultBitmap; overload; override;
+    function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRADefaultBitmap; overload; override;
+    function FilterContour: TBGRADefaultBitmap; override;
+    function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRADefaultBitmap; override;
+    function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRADefaultBitmap; overload; override;
+    function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRADefaultBitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean): TBGRADefaultBitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel): TBGRADefaultBitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; var Offset: TPoint): TBGRADefaultBitmap; overload; override;
+    function FilterGrayscale: TBGRADefaultBitmap; overload; override;
+    function FilterGrayscale(ABounds: TRect): TBGRADefaultBitmap; overload; override;
+    function FilterNormalize(eachChannel: boolean = True): TBGRADefaultBitmap; overload; override;
+    function FilterNormalize(ABounds: TRect; eachChannel: boolean = True): TBGRADefaultBitmap; overload; override;
+    function FilterRotate(origin: TPointF; angle: single; correctBlur: boolean = false): TBGRADefaultBitmap; override;
+    function FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean = false): TBGRADefaultBitmap; override;
+    function FilterSphere: TBGRADefaultBitmap; override;
+    function FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRADefaultBitmap; overload; override;
+    function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRADefaultBitmap; overload; override;
+    function FilterCylinder: TBGRADefaultBitmap; override;
+    function FilterPlane: TBGRADefaultBitmap; override;
   end;
 
   { TBGRAPtrBitmap }
@@ -885,79 +891,70 @@ begin
     result := AffineMatrixRotationDeg(-ACustomOrientation*0.1)*result;
 end;
 
+{ Creates a new bitmap with dimensions 0 x 0 }
+function TBGRADefaultBitmap.NewBitmap: TBGRADefaultBitmap;
+begin
+  Result := inherited NewBitmap as TBGRADefaultBitmap;
+end;
+
 { Creates a new bitmap with dimensions AWidth and AHeight and filled with
   transparent pixels. Internally, it uses the same type so that if you
   use an optimized version, you get a new bitmap with the same optimizations }
-function TBGRADefaultBitmap.NewBitmap(AWidth, AHeight: integer): TBGRACustomBitmap;
-var
-  BGRAClass: TBGRABitmapAny;
+function TBGRADefaultBitmap.NewBitmap(AWidth, AHeight: integer): TBGRADefaultBitmap;
 begin
-  BGRAClass := TBGRABitmapAny(self.ClassType);
-  if BGRAClass = TBGRAPtrBitmap then
-    BGRAClass := TBGRADefaultBitmap;
-  Result      := BGRAClass.Create(AWidth, AHeight);
-end;
-
-function TBGRADefaultBitmap.NewBitmap: TBGRACustomBitmap;
-var
-  BGRAClass: TBGRABitmapAny;
-begin
-  BGRAClass := TBGRABitmapAny(self.ClassType);
-  if BGRAClass = TBGRAPtrBitmap then
-    BGRAClass := TBGRADefaultBitmap;
-  Result      := BGRAClass.Create(0, 0);
+  result := inherited NewBitmap(AWidth, AHeight)  as TBGRADefaultBitmap;
 end;
 
 { Can only be called from an existing instance of TBGRABitmap.
   Creates a new instance with dimensions AWidth and AHeight,
   and fills it with Color. }
 function TBGRADefaultBitmap.NewBitmap(AWidth, AHeight: integer;
-  Color: TBGRAPixel): TBGRACustomBitmap;
-var
-  BGRAClass: TBGRABitmapAny;
+  const Color: TBGRAPixel): TBGRADefaultBitmap;
 begin
-  BGRAClass := TBGRABitmapAny(self.ClassType);
-  if BGRAClass = TBGRAPtrBitmap then
-    BGRAClass := TBGRADefaultBitmap;
-  Result      := BGRAClass.Create(AWidth, AHeight, Color);
+  result := inherited NewBitmap(AWidth, AHeight, Color) as TBGRADefaultBitmap;
+end;
+
+function TBGRADefaultBitmap.NewBitmap(AWidth, AHeight: integer; AColor: Pointer): TBGRADefaultBitmap;
+begin
+  result := inherited NewBitmap(AWidth, AHeight, AColor) as TBGRADefaultBitmap;
 end;
 
 { Creates a new bitmap and loads it contents from a file.
   The encoding of the string is the default one for the operating system.
   It is recommended to use the next function and UTF8 encoding }
-function TBGRADefaultBitmap.NewBitmap(Filename: string): TBGRACustomBitmap;
+function TBGRADefaultBitmap.NewBitmap(Filename: string): TBGRADefaultBitmap;
 var
   BGRAClass: TBGRABitmapAny;
 begin
   BGRAClass := TBGRABitmapAny(self.ClassType);
-  Result    := BGRAClass.Create(Filename);
+  Result    := BGRAClass.Create(Filename) as TBGRADefaultBitmap;
 end;
 
 { Creates a new bitmap and loads it contents from a file.
   It is recommended to use UTF8 encoding }
-function TBGRADefaultBitmap.NewBitmap(Filename: string; AIsUtf8: boolean): TBGRACustomBitmap;
+function TBGRADefaultBitmap.NewBitmap(Filename: string; AIsUtf8: boolean): TBGRADefaultBitmap;
 var
   BGRAClass: TBGRABitmapAny;
 begin
   BGRAClass := TBGRABitmapAny(self.ClassType);
-  Result    := BGRAClass.Create(Filename,AIsUtf8);
+  Result    := BGRAClass.Create(Filename,AIsUtf8) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.NewBitmap(Filename: string; AIsUtf8: boolean;
-  AOptions: TBGRALoadingOptions): TBGRACustomBitmap;
+  AOptions: TBGRALoadingOptions): TBGRADefaultBitmap;
 var
   BGRAClass: TBGRABitmapAny;
 begin
   BGRAClass := TBGRABitmapAny(self.ClassType);
-  Result    := BGRAClass.Create(Filename,AIsUtf8,AOptions);
+  Result    := BGRAClass.Create(Filename,AIsUtf8,AOptions) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.NewBitmap(AFPImage: TFPCustomImage): TBGRACustomBitmap;
+function TBGRADefaultBitmap.NewBitmap(AFPImage: TFPCustomImage): TBGRADefaultBitmap;
 var
   BGRAClass: TBGRABitmapAny;
 begin
   BGRAClass := TBGRABitmapAny(self.ClassType);
-  Result    := BGRAClass.Create(AFPImage);
+  Result    := BGRAClass.Create(AFPImage) as TBGRADefaultBitmap;
 end;
 
 {----------------------- TFPCustomImage override ------------------------------}
@@ -2061,6 +2058,16 @@ begin
   multi.Antialiasing := true;
   multi.Draw(self);
   multi.Free;
+end;
+
+function TBGRADefaultBitmap.InternalNew: TBGRADefaultBitmap;
+var
+  BGRAClass: TBGRABitmapAny;
+begin
+  BGRAClass := TBGRABitmapAny(self.ClassType);
+  if BGRAClass = TBGRAPtrBitmap then
+    BGRAClass := TBGRADefaultBitmap;
+  Result      := BGRAClass.Create(0, 0) as TBGRADefaultBitmap;
 end;
 
 class function TBGRADefaultBitmap.IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean;
@@ -3893,128 +3900,128 @@ end;
 {----------------------------- Filters -----------------------------------------}
 { Call the appropriate function }
 
-function TBGRADefaultBitmap.FilterSmartZoom3(Option: TMedianOption): TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterSmartZoom3(Option: TMedianOption): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterSmartZoom3(self, Option);
+  Result := BGRAFilters.FilterSmartZoom3(self, Option) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterMedian(Option: TMedianOption): TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterMedian(Option: TMedianOption): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterMedian(self, option);
+  Result := BGRAFilters.FilterMedian(self, option) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterSmooth: TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterSmooth: TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterBlurRadial(self, 3, rbPrecise);
+  Result := BGRAFilters.FilterBlurRadial(self, 3, rbPrecise) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterSphere: TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterSphere: TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterSphere(self);
+  Result := BGRAFilters.FilterSphere(self) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterTwirl(self, ACenter, ARadius, ATurn, AExponent);
+  Result := BGRAFilters.FilterTwirl(self, ACenter, ARadius, ATurn, AExponent) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterTwirl(ABounds: TRect; ACenter: TPoint;
-  ARadius: Single; ATurn: Single; AExponent: Single): TBGRACustomBitmap;
+  ARadius: Single; ATurn: Single; AExponent: Single): TBGRADefaultBitmap;
 begin
-  result := BGRAFilters.FilterTwirl(self, ABounds, ACenter, ARadius, ATurn, AExponent);
+  result := BGRAFilters.FilterTwirl(self, ABounds, ACenter, ARadius, ATurn, AExponent) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterCylinder: TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterCylinder: TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterCylinder(self);
+  Result := BGRAFilters.FilterCylinder(self) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterPlane: TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterPlane: TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterPlane(self);
+  Result := BGRAFilters.FilterPlane(self) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterSharpen(Amount: single = 1): TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterSharpen(Amount: single = 1): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterSharpen(self,round(Amount*256));
+  Result := BGRAFilters.FilterSharpen(self,round(Amount*256)) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterSharpen(ABounds: TRect; Amount: single
-  ): TBGRACustomBitmap;
+  ): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterSharpen(self,ABounds,round(Amount*256));
+  Result := BGRAFilters.FilterSharpen(self,ABounds,round(Amount*256)) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterContour: TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterContour: TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterContour(self);
+  Result := BGRAFilters.FilterContour(self) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterPixelate(pixelSize: integer;
-  useResample: boolean; filter: TResampleFilter): TBGRACustomBitmap;
+  useResample: boolean; filter: TResampleFilter): TBGRADefaultBitmap;
 begin
-  Result:= BGRAFilters.FilterPixelate(self, pixelSize, useResample, filter);
+  Result:= BGRAFilters.FilterPixelate(self, pixelSize, useResample, filter) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterEmboss(angle: single;
-  AStrength: integer; AOptions: TEmbossOptions): TBGRACustomBitmap;
+  AStrength: integer; AOptions: TEmbossOptions): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterEmboss(self, angle, AStrength, AOptions);
+  Result := BGRAFilters.FilterEmboss(self, angle, AStrength, AOptions) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterEmboss(angle: single; ABounds: TRect;
-  AStrength: integer; AOptions: TEmbossOptions): TBGRACustomBitmap;
+  AStrength: integer; AOptions: TEmbossOptions): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterEmboss(self, angle, ABounds, AStrength, AOptions);
+  Result := BGRAFilters.FilterEmboss(self, angle, ABounds, AStrength, AOptions) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean):
-TBGRACustomBitmap;
+TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterEmbossHighlight(self, FillSelection, BGRAPixelTransparent);
+  Result := BGRAFilters.FilterEmbossHighlight(self, FillSelection, BGRAPixelTransparent) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean;
-  BorderColor: TBGRAPixel): TBGRACustomBitmap;
+  BorderColor: TBGRAPixel): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterEmbossHighlight(self, FillSelection, BorderColor);
+  Result := BGRAFilters.FilterEmbossHighlight(self, FillSelection, BorderColor) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean;
-  BorderColor: TBGRAPixel; var Offset: TPoint): TBGRACustomBitmap;
+  BorderColor: TBGRAPixel; var Offset: TPoint): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterEmbossHighlightOffset(self, FillSelection, BorderColor, Offset);
+  Result := BGRAFilters.FilterEmbossHighlightOffset(self, FillSelection, BorderColor, Offset) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterGrayscale: TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterGrayscale: TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterGrayscale(self);
+  Result := BGRAFilters.FilterGrayscale(self) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterGrayscale(ABounds: TRect): TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterGrayscale(ABounds: TRect): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterGrayscale(self, ABounds);
+  Result := BGRAFilters.FilterGrayscale(self, ABounds) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterNormalize(eachChannel: boolean = True):
-TBGRACustomBitmap;
+TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterNormalize(self, eachChannel);
+  Result := BGRAFilters.FilterNormalize(self, eachChannel) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean): TBGRACustomBitmap;
+function TBGRADefaultBitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterNormalize(self, ABounds, eachChannel);
+  Result := BGRAFilters.FilterNormalize(self, ABounds, eachChannel) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterRotate(origin: TPointF;
-  angle: single; correctBlur: boolean): TBGRACustomBitmap;
+  angle: single; correctBlur: boolean): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterRotate(self, origin, angle, correctBlur);
+  Result := BGRAFilters.FilterRotate(self, origin, angle, correctBlur) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterAffine(AMatrix: TAffineMatrix;
-  correctBlur: boolean): TBGRACustomBitmap;
+  correctBlur: boolean): TBGRADefaultBitmap;
 begin
   Result := NewBitmap(Width,Height);
   Result.PutImageAffine(AMatrix,self,255,correctBlur);
@@ -4136,11 +4143,11 @@ begin
 end;
 
 function TBGRADefaultBitmap.Resample(newWidth, newHeight: integer;
-  mode: TResampleMode): TBGRACustomBitmap;
+  mode: TResampleMode): TBGRADefaultBitmap;
 begin
   case mode of
-    rmFineResample: Result  := FineResample(newWidth, newHeight);
-    rmSimpleStretch: Result := SimpleStretch(newWidth, newHeight);
+    rmFineResample: Result  := FineResample(newWidth, newHeight) as TBGRADefaultBitmap;
+    rmSimpleStretch: Result := SimpleStretch(newWidth, newHeight) as TBGRADefaultBitmap;
     else
       Result := nil;
   end;
@@ -4261,11 +4268,11 @@ begin
   InvalidateBitmap;
 end;
 
-function TBGRADefaultBitmap.GetMaskFromAlpha: TBGRACustomBitmap;
+function TBGRADefaultBitmap.GetMaskFromAlpha: TBGRADefaultBitmap;
 var y,x: integer;
   psrc, pdest: PBGRAPixel;
 begin
-  result := BGRABitmapFactory.Create(Width,Height);
+  result := BGRABitmapFactory.Create(Width,Height) as TBGRADefaultBitmap;
   for y := 0 to self.Height-1 do
   begin
     psrc := self.ScanLine[y];
@@ -4273,6 +4280,27 @@ begin
     for x := 0 to self.Width-1 do
     begin
       pdest^ := BGRA(psrc^.alpha,psrc^.alpha,psrc^.alpha);
+      inc(psrc);
+      inc(pdest);
+    end;
+  end;
+end;
+
+function TBGRADefaultBitmap.GetGrayscaleMaskFromAlpha: TGrayscaleMask;
+var
+  psrc: PBGRAPixel;
+  pdest: PByte;
+  y, x: Integer;
+begin
+  result := TGrayscaleMask.Create;
+  result.SetSize(Width,Height);
+  for y := 0 to self.Height-1 do
+  begin
+    psrc := self.ScanLine[y];
+    pdest := result.ScanLine[y];
+    for x := 0 to self.Width-1 do
+    begin
+      pdest^ := psrc^.alpha;
       inc(psrc);
       inc(pdest);
     end;

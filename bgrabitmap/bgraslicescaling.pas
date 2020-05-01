@@ -537,8 +537,7 @@ begin
           not SliceRepeat[srpMiddleVertical]) then
         begin
           SliceBitmap[pos].ResampleFilter := ResampleFilter;
-          tempBGRA := SliceBitmap[pos].Resample(right - left, bottom -
-            top, FResampleMode) as TBGRABitmap;
+          tempBGRA := SliceBitmap[pos].Resample(right - left, bottom - top, FResampleMode);
           ADest.PutImage(left, top, tempBGRA, FDrawMode);
           tempBGRA.Free;
         end
@@ -547,10 +546,10 @@ begin
           SliceBitmap[pos].ResampleFilter := ResampleFilter;
           if not SliceRepeat[srpMiddleHorizontal] then
             tempBGRA := SliceBitmap[pos].Resample(
-              right - left, SliceBitmap[pos].Height, FResampleMode) as TBGRABitmap
+              right - left, SliceBitmap[pos].Height, FResampleMode)
           else
             tempBGRA := SliceBitmap[pos].Resample(
-              SliceBitmap[pos].Width, bottom - top, FResampleMode) as TBGRABitmap;
+              SliceBitmap[pos].Width, bottom - top, FResampleMode);
           tempBGRA.ScanOffset := point(-left, -top);
           ADest.FillRect(left, top, right, bottom, tempBGRA, FDrawMode);
           tempBGRA.Free;

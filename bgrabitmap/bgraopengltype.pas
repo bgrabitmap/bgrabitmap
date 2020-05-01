@@ -262,18 +262,18 @@ type
     procedure NotifyOpenGLContextNotCreatedYet; virtual;
     function GetTextureGL: IUnknown; override;
     procedure SwapRedBlueWithoutInvalidate(ARect: TRect);
+    procedure SetClipRect(const AValue: TRect); override;
   public
     procedure InvalidateBitmap; override;
     procedure Fill(const c: TBGRAPixel); override;
     procedure NoClip; override;
     destructor Destroy; override;
     procedure SwapRedBlue; overload; override;
-    function Resample(newWidth, newHeight: integer; mode: TResampleMode=rmFineResample): TBGRACustomBitmap; override;
+    function Resample(newWidth, newHeight: integer; mode: TResampleMode=rmFineResample): TBGLCustomBitmap; override;
     procedure ApplyGlobalOpacity(alpha: byte); overload; override;
     procedure ReplaceColor(before, after: TColor); overload; override;
     procedure ReplaceColor(const ABefore, AAfter: TBGRAPixel); overload; override;
     procedure ReplaceTransparent(const AAfter: TBGRAPixel); overload; override;
-    procedure SetClipRect(const AValue: TRect); override;
     procedure SetSize(AWidth, AHeight: integer); override;
     property Width: integer read FActualWidth;
     property Height: integer read FActualHeight;
@@ -1641,7 +1641,7 @@ begin
 end;
 
 function TBGLCustomBitmap.Resample(newWidth, newHeight: integer;
-  mode: TResampleMode): TBGRACustomBitmap;
+  mode: TResampleMode): TBGLCustomBitmap;
 var temp,resampled: TBGRACustomBitmap;
 begin
   temp := TBGRABitmap.Create(FActualWidth,FActualHeight);
@@ -1649,7 +1649,7 @@ begin
   temp.ResampleFilter := ResampleFilter;
   resampled := temp.Resample(NewWidth,NewHeight,mode);
   temp.Free;
-  Result:= NewBitmap(resampled);
+  Result:= NewBitmap(resampled) as TBGLCustomBitmap;
   resampled.Free;
 end;
 

@@ -392,7 +392,7 @@ end;
 
 constructor TBGRAImageOriginalDiff.Create(AFromOriginal: TBGRALayerImageOriginal);
 begin
-  FImageBefore := AFromOriginal.FImage.NewReference as TBGRABitmap;
+  FImageBefore := AFromOriginal.FImage.NewReference;
   if Assigned(AFromOriginal.FJpegStream) then
   begin
     FJpegStreamBefore := TMemoryStream.Create;
@@ -406,7 +406,7 @@ procedure TBGRAImageOriginalDiff.ComputeDiff(
   AToOriginal: TBGRALayerImageOriginal);
 begin
   if Assigned(FImageAfter) then FImageAfter.FreeReference;
-  FImageAfter := AToOriginal.FImage.NewReference as TBGRABitmap;
+  FImageAfter := AToOriginal.FImage.NewReference;
   FreeAndNil(FJpegStreamAfter);
   if Assigned(AToOriginal.FJpegStream) then
   begin
@@ -423,7 +423,7 @@ var
 begin
   orig := AOriginal as TBGRALayerImageOriginal;
   orig.FImage.FreeReference;
-  orig.FImage := FImageAfter.NewReference as TBGRABitmap;
+  orig.FImage := FImageAfter.NewReference;
   FreeAndNil(orig.FJpegStream);
   if Assigned(FJpegStreamAfter) then
   begin
@@ -440,7 +440,7 @@ var
 begin
   orig := AOriginal as TBGRALayerImageOriginal;
   orig.FImage.FreeReference;
-  orig.FImage := FImageBefore.NewReference as TBGRABitmap;
+  orig.FImage := FImageBefore.NewReference;
   FreeAndNil(orig.FJpegStream);
   if Assigned(FJpegStreamBefore) then
   begin
@@ -465,7 +465,7 @@ begin
   if next.FContentVersionAfter < FContentVersionAfter then
     raise exception.Create('Cannot append diff made before this one.');
   FImageAfter.FreeReference;
-  FImageAfter := next.FImageAfter.NewReference as TBGRABitmap;
+  FImageAfter := next.FImageAfter.NewReference;
   FreeAndNil(FJpegStreamAfter);
   if Assigned(next.FJpegStreamAfter) then
   begin
@@ -2039,7 +2039,7 @@ end;
 function TBGRALayerImageOriginal.GetImageCopy: TBGRABitmap;
 begin
   if FImage = nil then result := nil
-  else result := FImage.Duplicate as TBGRABitmap;
+  else result := FImage.Duplicate;
 end;
 
 class function TBGRALayerImageOriginal.StorageClassName: RawByteString;

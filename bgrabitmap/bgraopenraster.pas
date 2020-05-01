@@ -592,7 +592,7 @@ begin
     //avoid png bug with black color
     if not mustFreeBmp then
     begin
-      bmp := bmp.Duplicate as TBGRABitmap;
+      bmp := bmp.Duplicate;
       mustFreeBmp := true;
     end;
     p := bmp.data;

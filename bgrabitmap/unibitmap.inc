@@ -167,26 +167,28 @@ type
                        ALineOrder: TRawImageLineOrder); overload;
 
     procedure Assign(Source: TPersistent); override;
-    function NewBitmap: TCustomUniversalBitmap;
+    function NewBitmap: TCustomUniversalBitmap; overload; virtual;
+    function NewBitmap(AWidth, AHeight: integer): TCustomUniversalBitmap; overload; virtual;
+    function NewBitmap(AWidth, AHeight: integer; AColor: Pointer): TCustomUniversalBitmap; overload; virtual;
 
     {** Adds a reference (this reference count is not the same as
         the reference count of an interface, it changes only by
         explicit calls }
-    function NewReference: TCustomUniversalBitmap;
+    function NewReference: TCustomUniversalBitmap; virtual;
     {** Free a reference. When the resulting reference count gets
         to zero, the image is freed. The initial reference count
         is equal to 1 }
     procedure FreeReference;
     {** Returns an object with a reference count equal to 1. Duplicate
         this bitmap if necessary }
-    function GetUnique: TCustomUniversalBitmap;
-    function Duplicate(ACopyProperties: boolean=false): TCustomUniversalBitmap;
+    function GetUnique: TCustomUniversalBitmap; virtual;
+    function Duplicate(ACopyProperties: boolean=false): TCustomUniversalBitmap; virtual;
     procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); virtual;
     {** Get a part of the image with repetition in both directions. It means
       that if the bounds are within the image, the result is just that part
       of the image, but if the bounds are bigger than the image, the image
       is tiled. }
-    function GetPart(const ARect: TRect): TCustomUniversalBitmap;
+    function GetPart(const ARect: TRect): TCustomUniversalBitmap; virtual;
 
     procedure InvalidateBitmap; virtual;         //call if you modify with Scanline
     procedure LoadFromBitmapIfNeeded; virtual;   //call to ensure that data is up to date
@@ -439,11 +441,11 @@ type
     procedure RotateUDInplace(ARect: TRect); overload; virtual;
 
     { Return a new bitmap rotated in a clock wise direction. }
-    function RotateCW: TCustomUniversalBitmap;
+    function RotateCW: TCustomUniversalBitmap; virtual;
     { Return a new bitmap rotated in a counter clock wise direction. }
-    function RotateCCW: TCustomUniversalBitmap;
+    function RotateCCW: TCustomUniversalBitmap; virtual;
     { Return a new bitmap rotated 180° (upside down). }
-    function RotateUD: TCustomUniversalBitmap;
+    function RotateUD: TCustomUniversalBitmap; virtual;
 
     {** Width of the image in pixels }
     property Width: integer Read GetWidth;
@@ -673,14 +675,14 @@ type
 
   public
     //filters
-    function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload;
-    function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload;
-    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload;
-    function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload;
-    function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap; overload;
-    function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap; overload;
-    function FilterCustomBlur(mask: TCustomUniversalBitmap): TCustomUniversalBitmap; overload;
-    function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap): TCustomUniversalBitmap; overload;
+    function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap; overload; virtual;
+    function FilterCustomBlur(mask: TCustomUniversalBitmap): TCustomUniversalBitmap; overload; virtual;
+    function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap): TCustomUniversalBitmap; overload; virtual;
 
   end;
 
@@ -2404,6 +2406,25 @@ end;
 function TCustomUniversalBitmap.NewBitmap: TCustomUniversalBitmap;
 begin
   result := InternalNew;
+end;
+
+function TCustomUniversalBitmap.NewBitmap(AWidth, AHeight: integer): TCustomUniversalBitmap;
+var
+  c: array[0..23] of byte;
+begin
+  AssignTransparentPixel(c);
+  result := NewBitmap(AWidth, AHeight, @c);
+end;
+
+function TCustomUniversalBitmap.NewBitmap(AWidth, AHeight: integer;
+  AColor: Pointer): TCustomUniversalBitmap;
+var
+  b: TUniversalBrush;
+begin
+  result := InternalNew;
+  result.SetSize(AWidth,AHeight);
+  SolidBrushIndirect(b, AColor, dmSet);
+  result.Fill(b);
 end;
 
 function TCustomUniversalBitmap.NewReference: TCustomUniversalBitmap;

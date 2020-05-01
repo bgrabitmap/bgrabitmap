@@ -86,7 +86,7 @@ begin
     FreeAndNil(backgroundImg);
 
   if backgroundImg = nil then
-    backgroundImg := backgroundTile.GetPart(rect(0,0,Width,Height)) as TBGRABitmap;
+    backgroundImg := backgroundTile.GetPart(rect(0,0,Width,Height));
 end;
 
 function TTestPacRect.AddTranspRectTo(filename: string): TBGRABitmap;
