@@ -406,9 +406,31 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
   end;
 
   procedure UTF8RecompositionFunction;
+  const
+    CombineLeftOnly = '093F,094E,' + {DEVANAGARI}
+      '09BF,09C7,09C8,' + {BENGALI}
+      '0A3F,' + {GURMUKHI}
+      '0ABF,' + {GUJARATI}
+      '0B47,0B48,0B4B,0B4C,' + {ORIYA}
+      '0BC6,0BC7,0BC8,' + {TAMIL}
+      '0D46,0D47,0D48,' + {MALAYALAM}
+      '0DD9,0DDA,0DDB,0DDC,0DDD,0DDE,' + {SINHALA}
+      '1031,103C,1084,' + {MYANMAR}
+      '17BE,17C1,17C2,17C3,' + {KHMER}
+      '1A19,' + {BUGINESE}
+      '1B3E,1B3F,' + {BALINESE}
+      '302E,302F,' + {HANGUL}
+      'A9BA,A9BB,A9BF,' + {JAVANESE}
+      'AA2F,AA30,AA34,'; {CHAM}
+    CombineLeftAndRight = '09CB,09CC,' + {BENGALI}
+      '0BCA,0BCB,0BCC,' + {TAMIL}
+      '0D4A,0D4B,0D4C,' + {MALAYALAM}
+      '17BF,17C0,17C4,17C5,' + {KHMER}
+      '1B3D,1B40,1B41,'; {BALINESE}
+
   type TDecompositionKind = (dMultichar, dInitial, dMedial, dFinal, dIsolated);
   var tOut, tIn: TextFile;
-    line, decomposed, kind, decomposedUTF8: string;
+    line, decomposed, kind, decomposedUTF8, thousandStr: string;
     cells: TStringList;
     mergedU,nextU: longword;
     posClose, posSpace: SizeInt;
@@ -416,6 +438,8 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
     correspList: TStringList;
     i: Integer;
     typedKind: TDecompositionKind;
+    combineLeftList, combineRightList, combineLeftAndRightList: TStringList;
+    combineThousands: TStringList;
 
     function RemoveUptoTab(AText: string): string;
     var
@@ -425,18 +449,81 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
       result := copy(AText, idxTab+1, length(AText)-idxTab);
     end;
 
+    procedure AddCaseUnicodeCombineLayout(AIndent: string; AThousand: longword);
+
+      function MakeCodeList(AList: TStringList): boolean;
+      var
+        s: String;
+        i: integer;
+        prevCode,curCode: LongWord;
+        inRange: boolean;
+      begin
+        result := false;
+        s := AIndent;
+        prevCode := 0;
+        inRange := false;
+        for i := 0 to AList.Count-1 do
+        begin
+          val('$' + AList[i], curCode);
+          if curCode shr 12 <> AThousand then continue;
+          if s <> AIndent then
+          begin
+            if not inRange and (curCode = prevCode+1) then
+            begin
+              AppendStr(s, '..');
+              inRange := true;
+            end else
+            if inRange then
+            begin
+              if curCode <> prevCode+1 then
+              begin
+                AppendStr(s, '$' + AList[i-1]);
+                inRange := false;
+              end;
+            end;
+          end;
+          if not inRange then
+          begin
+            if s <> AIndent then
+              AppendStr(s, ', ');
+            if length(s) >= 72 then
+            begin
+              writeln(tOut, s);
+              result := true;
+              s := AIndent;
+            end;
+            AppendStr(s, '$' + AList[i]);
+          end;
+          prevCode := curCode;
+        end;
+        if inRange then AppendStr(s, '$' + IntToHex(prevCode, 4));
+        if s <> AIndent then
+        begin
+          write(tOut, s);
+          result := true;
+        end;
+      end;
+
+    begin
+      writeln(tOut, AIndent, 'case u of');
+      if MakeCodeList(combineLeftList) then
+        writeln(tOut, ': exit(uclLeft);');
+      if MakeCodeList(combineRightList) then
+        writeln(tOut, ': exit(uclRight);');
+      if MakeCodeList(combineLeftAndRightList) then
+        writeln(tOut, ': exit(uclLeftAndRight);');
+      writeln(tOut, AIndent, 'end;');
+    end;
+
   begin
     writeln('Parsing decomposition data...');
     AssignFile(tOut, 'UTF8Recomposition.generated.pas');
     Rewrite(tOut);
-    writeln(tOut, 'type');
-    writeln(tOut, '  TUTF8Decomposition = record');
-    writeln(tOut, '    u: LongWord;    //recomposed Unicode character');
-    writeln(tOut, '    re, de: string; //recomposed, decomposed UTF8');
-    writeln(tOut, '    ar: boolean;    //arabic presentation');
-    writeln(tOut, '  end;');
-    writeln(tOut, 'const');
     correspList := TStringList.Create;
+    combineLeftList := TStringList.Create;
+    combineRightList := TStringList.Create;
+    combineLeftAndRightList := TStringList.Create;
+    combineThousands := TStringList.Create;
 
     assignfile(tIn, 'UnicodeData.txt');
     reset(tIn);
@@ -452,10 +539,18 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
       cells.DelimitedText:= line;
       if cells.Count >= 6 then
       begin
-        decomposed := trim(cells[5]);
-        if decomposed = '' then continue;
         mergedU := StrtoInt('$'+cells[0]);
         if GetUnicodeBidiClass(mergedU) = ubcNonSpacingMark then continue;
+        if cells[2] = 'Mc' then
+        begin
+          thousandStr := '$'+IntToHex(mergedU shr 12, 2);
+          if combineThousands.IndexOf(thousandStr) = -1 then combineThousands.Add(thousandStr);
+          if pos(cells[0]+',', CombineLeftOnly) <> 0 then combineLeftList.Add(cells[0])
+          else if pos(cells[0]+',', CombineLeftAndRight) <> 0 then combineLeftAndRightList.Add(cells[0])
+          else combineRightList.Add(cells[0]);
+        end;
+        decomposed := trim(cells[5]);
+        if decomposed = '' then continue;
         typedKind := dMultichar;
         if decomposed[1] = '<' then
         begin
@@ -500,6 +595,13 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
 
     correspList.CustomSort(@ListCompareBinary);
 
+    writeln(tOut, 'type');
+    writeln(tOut, '  TUTF8Decomposition = record');
+    writeln(tOut, '    u: LongWord;    //recomposed Unicode character');
+    writeln(tOut, '    re, de: string; //recomposed, decomposed UTF8');
+    writeln(tOut, '    ar: boolean;    //arabic presentation');
+    writeln(tOut, '  end;');
+    writeln(tOut, 'const');
     writeln(tOut, '  UTF8Decomposition : array[0..', correspList.Count, '] of TUTF8Decomposition = (');
     for i := 0 to correspList.Count-1 do
       if i <> correspList.Count-1 then
@@ -507,6 +609,20 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
       else
         writeln(tOut, '  ', RemoveUptoTab(correspList[i]));
     writeln(tOut, '  );');
+    writeln(tout);
+
+    writeln(tOut, 'type TUnicodeCombiningLayout = (uclNone, uclLeft, uclRight, uclLeftAndRight);');
+    writeln(tOut, 'function GetUnicodeCombiningLayout(u: LongWord): TUnicodeCombiningLayout;');
+    writeln(tOut, 'begin');
+    writeln(tOut, '  case u shr 24 of');
+    for i := 0 to combineThousands.Count-1 do
+    begin
+      writeln(tOut, '  ',combineThousands[i],':');
+      AddCaseUnicodeCombineLayout('    ', StrToInt(combineThousands[i]));
+    end;
+    writeln(tOut, '  end;');
+    writeln(tOut, '  result := uclNone;');
+    writeln(tOut, 'end;');
     correspList.Free;
     CloseFile(tOut);
   end;
