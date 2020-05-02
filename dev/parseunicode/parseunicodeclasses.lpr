@@ -434,9 +434,9 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
     cells: TStringList;
     mergedU,nextU: longword;
     posClose, posSpace: SizeInt;
-    hasNSM: Boolean;
+    hasNSM, isLa: Boolean;
     correspList: TStringList;
-    i: Integer;
+    i, decomposedLen: Integer;
     typedKind: TDecompositionKind;
     combineLeftList, combineRightList, combineLeftAndRightList: TStringList;
     combineThousands: TStringList;
@@ -562,10 +562,14 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
           if kind = '<medial>' then typedKind := dMedial else
           if kind = '<final>' then typedKind := dFinal else
           if kind = '<isolated>' then typedKind := dIsolated else
-          if kind <> '<compat>' then continue;
+          if (kind = '<compat>') and (mergedU >= $FB00) and (mergedU <= $FB04) then
+            typedKind := dMultichar
+          else
+            continue;
           decomposed := trim(decomposed);
         end;
         decomposedUTF8 := '';
+        decomposedLen := 0;
         hasNSM := false;
         while decomposed <> '' do
         begin
@@ -575,18 +579,24 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
           if GetUnicodeBidiClass(nextU) = ubcNonSpacingMark then hasNSM := true;
           AppendStr(decomposedUTF8, UnicodeCharToUTF8(nextU));
           delete(decomposed, 1, posSpace);
+          inc(decomposedLen);
         end;
+        isLa := (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH) or
+                (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_BELOW) or
+                (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_ABOVE) or
+                (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_MADDA_ABOVE);
         case typedKind of
         dInitial: decomposedUTF8 := UTF8Ligature(decomposedUTF8, true, true, false);
         dMedial: decomposedUTF8 := UTF8Ligature(decomposedUTF8, true, true, true);
         dFinal: decomposedUTF8 := UTF8Ligature(decomposedUTF8, true, false, true);
         end;
-        if hasNSM or (typedKind <> dMultichar) or
-            (copy(decomposedUTF8,1,1) = 'f') or
-            (copy(decomposedUTF8,1,length(UTF8_ARABIC_LAM)) = UTF8_ARABIC_LAM) then
+        if ((typedKind = dMultichar) and (decomposedLen > 1)
+             and (hasNSM or (copy(decomposedUTF8,1,1) = 'f'))) or
+           ((typedKind <> dMultichar) and ((decomposedLen = 1) or isLa)) then
           correspList.Add(UnicodeCharToUTF8(mergedU)+#9+'(u:$'+inttohex(mergedU,4)+
              '; re:''' + UnicodeCharToUTF8(mergedU) + '''; de:''' + decomposedUTF8 +
-             '''; ar:' + BoolToStr(typedKind <> dMultichar, 'true','false') + ')');
+             '''; ar:' + BoolToStr(typedKind in [dInitial, dMedial, dFinal, dIsolated], 'true','false') +
+             ')');
       end;
     end;
     cells.Free;
