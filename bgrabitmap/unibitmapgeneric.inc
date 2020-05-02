@@ -52,6 +52,7 @@ type
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word); overload; virtual;
+    procedure DrawPixelF(x,y: single; const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     {** Replaces the content of the pixels at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color }
     procedure SetHorizLine(x, y, x2: int32or64; const AColor: TPixel); virtual;
@@ -580,6 +581,15 @@ var
 begin
   SolidBrush(b, AColor, ADrawMode);
   DrawPixel(x,y, b,AAlpha);
+end;
+
+procedure TGenericUniversalBitmap.DrawPixelF(x, y: single;
+  const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b, AColor, ADrawMode);
+  DrawPixelF(x,y, b,AAlpha);
 end;
 
 procedure TGenericUniversalBitmap.SetHorizLine(x, y, x2: int32or64;

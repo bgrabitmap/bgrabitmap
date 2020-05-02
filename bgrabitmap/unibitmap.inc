@@ -313,14 +313,18 @@ type
     procedure GetPixelCycleIndirect(x,y: int32or64; AColor: pointer); virtual;
     procedure DrawPixel(x,y: Int32or64; const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
+    procedure DrawPixelF(x,y: single; const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
+    procedure DrawPixelF(x,y: single; ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     {** Erase the content of the pixel by reducing the value of the
         alpha channel. ''alpha'' specifies how much to decrease.
         If the resulting alpha reaches zero, the content
         is replaced by the transparent pixel }
     procedure ErasePixel(x, y: int32or64; alpha: byte); virtual;
+    procedure ErasePixelF(x, y: single; alpha: byte); virtual;
     {** Sets the alpha value at (''x'',''y''). If ''alpha'' = 0, the
         pixel is replaced by the transparent pixel }
     procedure AlphaPixel(x, y: int32or64; alpha: byte); virtual;
+    procedure AlphaPixelF(x, y: single; alpha: byte); virtual;
     procedure HorizLine(x, y, x2: int32or64; const ABrush: TUniversalBrush; AAlpha: Word = 65535); virtual;
     {** Draws an horizontal line at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified scanner
@@ -2973,7 +2977,7 @@ var
   ctx: TUniBrushContext;
 begin
   if ABrush.Colorspace <> Colorspace then RaiseInvalidBrushColorspace;
-  if not PtInClipRect(x,y) then exit;
+  if not PtInClipRect(x,y) or (AAlpha = 0) then exit;
   LoadFromBitmapIfNeeded;
   pScan := GetPixelAddress(x,y);
   ABrush.MoveTo(@ctx, pScan,x,y);
@@ -2990,6 +2994,36 @@ begin
   DrawPixel(x,y, b, AAlpha);
 end;
 
+procedure TCustomUniversalBitmap.DrawPixelF(x, y: single;
+  const ABrush: TUniversalBrush; AAlpha: Word);
+var
+  ix, iy: integer;
+  fracX, fracY: longword;
+  aFracX, aFracY: word;
+begin
+  if ABrush.Colorspace <> Colorspace then RaiseInvalidBrushColorspace;
+  ix := floor(x); fracX := round((x-ix)*65536);
+  if fracX = 65536 then begin fracX := 0; inc(ix); end;
+  iy := floor(y); fracY := round((y-iy)*65536);
+  if fracY = 65536 then begin fracY := 0; inc(iy); end;
+  if (ix >= Width) or (iy >= Height) then exit;
+  if (ix < -integer(fracX <> 0)) or (iy < -integer(fracy <> 0)) then exit;
+  aFracX := (AAlpha*fracX+32768) shr 16;
+  DrawPixel(ix,iy, ABrush, ((not aFracX)*longword(65536-fracY)+32768) shr 16);
+  DrawPixel(ix+1,iy, ABrush, (aFracX*longword(65536-fracY)+32768) shr 16);
+  DrawPixel(ix,iy+1, ABrush, ((not aFracX)*fracY+32768) shr 16);
+  DrawPixel(ix+1,iy+1, ABrush, (aFracX*fracY+32768) shr 16);
+end;
+
+procedure TCustomUniversalBitmap.DrawPixelF(x, y: single;
+  ATexture: IBGRAScanner; AMode: TDrawMode; AAlpha: Word);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture, AMode);
+  DrawPixelF(x,y, b, AAlpha);
+end;
+
 procedure TCustomUniversalBitmap.ErasePixel(x, y: int32or64; alpha: byte);
 var
   b: TUniversalBrush;
@@ -2999,12 +3033,29 @@ begin
   DrawPixel(x,y, b);
 end;
 
+procedure TCustomUniversalBitmap.ErasePixelF(x, y: single; alpha: byte);
+var
+  b: TUniversalBrush;
+begin
+  if alpha = 0 then exit;
+  EraseBrush(b, alpha+(alpha shl 8));
+  DrawPixelF(x,y, b);
+end;
+
 procedure TCustomUniversalBitmap.AlphaPixel(x, y: int32or64; alpha: byte);
 var
   b: TUniversalBrush;
 begin
   AlphaBrush(b, alpha+(alpha shl 8));
   DrawPixel(x,y, b);
+end;
+
+procedure TCustomUniversalBitmap.AlphaPixelF(x, y: single; alpha: byte);
+var
+  b: TUniversalBrush;
+begin
+  AlphaBrush(b, alpha+(alpha shl 8));
+  DrawPixelF(x,y, b);
 end;
 
 procedure TCustomUniversalBitmap.HorizLine(x, y, x2: int32or64;
