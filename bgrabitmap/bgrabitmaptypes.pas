@@ -293,6 +293,11 @@ type
     {** Fine antialiasing with ClearType assuming an LCD display in blue/green/red order }
     fqFineClearTypeBGR);
 
+  TGetFineClearTypeAutoFunc = function(): TBGRAFontQuality;
+var
+  fqFineClearType : TGetFineClearTypeAutoFunc;
+
+type
   {* Measurements of a font }
   TFontPixelMetric = record
     {** The values have been computed }
@@ -800,6 +805,11 @@ begin
       result := f;
       exit;
     end;
+end;
+
+function GetFineClearTypeAuto: TBGRAFontQuality;
+begin
+  result := fqFineClearTypeRGB;
 end;
 
 { TBGRACustomFontRenderer }
@@ -1487,6 +1497,8 @@ initialization
 
   {$DEFINE INCLUDE_INIT}
   {$I csscolorconst.inc}
+
+  fqFineClearType := @GetFineClearTypeAuto;
   
   DefaultBGRAImageWriter[ifJpeg] := TFPWriterJPEG;
   DefaultBGRAImageWriter[ifBmp] := TFPWriterBMP;
