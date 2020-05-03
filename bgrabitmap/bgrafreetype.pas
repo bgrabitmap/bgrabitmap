@@ -54,6 +54,7 @@ type
     procedure Init;
     procedure TextOutAnglePatch(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string;
               c: TBGRAPixel; tex: IBGRAScanner; align: TAlignment);
+    procedure InternalTextOut(ADest: TBGRACustomBitmap; x, y: single; s: string; c: TBGRAPixel; align: TAlignment);
   public
     FontHinted: boolean;
 
@@ -277,23 +278,24 @@ var
   angleDeg: single;
   OldOrientation: integer;
   filter: TResampleFilter;
-  OldFontQuality: TBGRAFontQuality;
 begin
   OldOrientation := FontOrientation;
   FontOrientation:= 0;
-  OldFontQuality := FontQuality;
-
-  if FontQuality in[fqFineClearTypeRGB,fqFineClearTypeBGR] then FontQuality:= fqFineAntialiasing
-  else if FontQuality = fqSystemClearType then FontQuality:= fqSystem;
+  UpdateFont;
+  FFont.ClearType := false;
 
   temp := BGRABitmapFactory.Create;
   with TextSize(s) do
     temp.SetSize(cx,cy);
   temp.FillTransparent;
   if tex<>nil then
-    TextOut(temp,0,0, s, tex, taLeftJustify)
+  begin
+    FDrawer.Texture := tex;
+    InternalTextOut(temp,0,0, s, BGRAWhite, taLeftJustify);
+    FDrawer.Texture := nil;
+  end
   else
-    TextOut(temp,0,0, s, c, taLeftJustify);
+    InternalTextOut(temp,0,0, s, c, taLeftJustify);
 
   orientation:= orientation mod 3600;
   if orientation < 0 then inc(orientation, 3600);
@@ -312,7 +314,20 @@ begin
   temp.Free;
 
   FontOrientation:= OldOrientation;
-  FontQuality:= OldFontQuality;
+end;
+
+procedure TBGRAFreeTypeFontRenderer.InternalTextOut(ADest: TBGRACustomBitmap;
+  x, y: single; s: string; c: TBGRAPixel; align: TAlignment);
+var
+  ftaAlign: TFreeTypeAlignments;
+begin
+  ftaAlign:= [ftaTop];
+  case align of
+  taLeftJustify: include(ftaAlign, ftaLeft);
+  taCenter: include(ftaAlign, ftaCenter);
+  taRightJustify: include(ftaAlign, ftaRight);
+  end;
+  GetDrawer(ADest).DrawText(s,FFont,x,y,BGRAToFPColor(c),ftaAlign);
 end;
 
 constructor TBGRAFreeTypeFontRenderer.Create;
@@ -354,35 +369,6 @@ procedure TBGRAFreeTypeFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment);
 begin
   TextOutAnglePatch(ADest, x,y, orientation, s, c, nil, align);
-{procedure TForm1.TextOutAnglePatch(ADest: TBGRABitmap;
-  x, y: single; orientationTenthDegCCW: integer;
-  s: string; c: TBGRAPixel; AAlign: TAlignment; AResampleFilter: TResampleFilter);
-const orientationToDeg = -0.1;
-var
-  temp: TBGRABitmap;
-  coord: TPointF;
-  angleDeg: single;
-begin
-  temp := TBGRABitmap.Create;
-  ADest.CopyPropertiesTo(temp);
-  temp.FontOrientation := 0;
-  with temp.TextSize(s) do
-    temp.SetSize(cx,cy);
-  temp.FillTransparent;
-+
-  temp.TextOut(0,0, s, c);
-
-  angleDeg := orientationTenthDegCCW * orientationToDeg;
-  coord := PointF(x,y);
-  case AAlign of
-  taRightJustify: coord.Offset( AffineMatrixRotationDeg(angleDeg)*PointF(-temp.Width,0) );
-  taCenter: coord.Offset( AffineMatrixRotationDeg(angleDeg)*PointF(-0.5*temp.Width,0) );
-  end;
-
-  ADest.PutImageAngle(coord.x,coord.y, temp, angleDeg, rfBox);
-  temp.Free;
-end;           }
-
 end;
 
 procedure TBGRAFreeTypeFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
@@ -395,24 +381,26 @@ end;
 procedure TBGRAFreeTypeFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
   y: single; s: string; texture: IBGRAScanner; align: TAlignment);
 begin
-  FDrawer.Texture := texture;
-  TextOut(ADest,x,y,s,BGRAWhite,align);
-  FDrawer.Texture := nil;
+  if FontOrientation mod 3600 <> 0 then
+    TextOutAngle(ADest, x,y, FontOrientation, s, texture, align)
+  else
+  begin
+    FDrawer.Texture := texture;
+    TextOut(ADest,x,y,s,BGRAWhite,align);
+    FDrawer.Texture := nil;
+  end;
 end;
 
 procedure TBGRAFreeTypeFontRenderer.TextOut(ADest: TBGRACustomBitmap; x,
   y: single; s: string; c: TBGRAPixel; align: TAlignment);
-var
-  ftaAlign: TFreeTypeAlignments;
 begin
-  UpdateFont;
-  ftaAlign:= [ftaTop];
-  case align of
-  taLeftJustify: include(ftaAlign, ftaLeft);
-  taCenter: include(ftaAlign, ftaCenter);
-  taRightJustify: include(ftaAlign, ftaRight);
+  if FontOrientation mod 3600 <> 0 then
+    TextOutAngle(ADest, x,y, FontOrientation, s, c, align)
+  else
+  begin
+    UpdateFont;
+    InternalTextOut(ADest, x,y, s, c, align);
   end;
-  GetDrawer(ADest).DrawText(s,FFont,x,y,BGRAToFPColor(c),ftaAlign);
 end;
 
 procedure TBGRAFreeTypeFontRenderer.TextRect(ADest: TBGRACustomBitmap;
