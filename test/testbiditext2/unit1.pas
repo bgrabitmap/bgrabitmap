@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   StdCtrls, Spin, ComCtrls, BGRAVirtualScreen, BGRABitmap, BGRABitmapTypes,
-  BGRATextBidi;
+  BGRATextBidi, BGRAFreeType, EasyLazFreeType, LazFreeTypeFontCollection;
 
 const
   CaretBlinkTimeMs = 500;
@@ -17,6 +17,8 @@ type
 
   TForm1 = class(TForm)
     BGRAVirtualScreen1: TBGRAVirtualScreen;
+    CheckBox_ClearType: TCheckBox;
+    CheckBox_FreeType: TCheckBox;
     ImageList1: TImageList;
     Label1: TLabel;
     Label2: TLabel;
@@ -29,13 +31,16 @@ type
     ToolButtonCenterAlign: TToolButton;
     ToolButtonRightAlign: TToolButton;
     procedure BGRAVirtualScreen1MouseDown(Sender: TObject;
-      Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+      Button: TMouseButton; {%H-}Shift: TShiftState; X, Y: Integer);
     procedure BGRAVirtualScreen1MouseMove(Sender: TObject; Shift: TShiftState;
       X, Y: Integer);
     procedure BGRAVirtualScreen1Redraw(Sender: TObject; Bitmap: TBGRABitmap);
+    procedure CheckBox_ClearTypeChange(Sender: TObject);
+    procedure CheckBox_FreeTypeChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormKeyUp(Sender: TObject; var Key: Word; {%H-}Shift: TShiftState);
     procedure FormKeyPress(Sender: TObject; var Key: char);
     procedure SpinEdit_AngleChange(Sender: TObject);
     procedure SpinEdit_FontSizeChange(Sender: TObject);
@@ -44,11 +49,6 @@ type
     procedure ToolButtonLeftAlignClick(Sender: TObject);
     procedure ToolButtonRightAlignClick(Sender: TObject);
   private
-    function GetSelLastClick: integer;
-    procedure SetSelLastClick(AValue: integer);
-    procedure SetSelLength(AValue: integer);
-    procedure SetSelStart(AValue: integer);
-  public
     FFontRenderer: TBGRACustomFontRenderer;
     FTextLayout: TBidiTextLayout;
     FBlinkCaretTime: TDateTime;
@@ -57,6 +57,15 @@ type
     FSelFirstClick,FSelLastClick: integer;
     FCurFirstParagraph,FCurLastParagraph: integer;
     FTestText: string;
+    FInUnicode: boolean;
+    FUnicodeValue: LongWord;
+    function GetLayoutReady: boolean;
+    function GetSelLastClick: integer;
+    procedure SetSelLastClick(AValue: integer);
+    procedure SetSelLength(AValue: integer);
+    procedure SetSelStart(AValue: integer);
+    procedure FlushUnicode;
+  public
     procedure UpdateCurrentParagraph;
     procedure UpdateSelectionFromFirstLastClick;
     procedure SetCurrentParagraphAlign(AAlign: TAlignment);
@@ -66,6 +75,7 @@ type
     property SelStart: integer read FSelStart write SetSelStart;
     property SelLength: integer read FSelLength write SetSelLength;
     property SelLastClick: integer read GetSelLastClick write SetSelLastClick;
+    property LayoutReady: boolean read GetLayoutReady;
   end;
 
 var
@@ -100,11 +110,18 @@ begin
   FCurFirstParagraph:= -1;
   FCurLastParagraph:= -1;
 
+  BGRAVirtualScreen1.OnKeyDown:= @FormKeyDown;
+  BGRAVirtualScreen1.OnKeyUp:= @FormKeyUp;
+  BGRAVirtualScreen1.OnKeyPress:= @FormKeyPress;
+  BGRAVirtualScreen1.Cursor := crIBeam;
+
+  SpinEdit_FontSize.Value := round(SpinEdit_FontSize.Value * Screen.PixelsPerInch / 96);
   FTestText := 'تحتوي العربية على 28 حرفاً مكتوباً. ويرى بعض اللغويين أنه يجب إضافة حرف الهمزة إلى حروف العربية، ليصبح عدد الحروف 29. تُكتب العربية من اليمين إلى اليسار - ومثلها اللغة الفارسية والعبرية على عكس كثير من اللغات العالمية - ومن أعلى الصفحة إلى أسفلها.'+LineEnding+
              'Arabic reversed "' + UTF8OverrideDirection('صباح الخير',false)+'". '+ LineEnding +
-             #9'The French language (French: français, pronounced "Fronce-eh") is a Romance language that was first spoken in France.'+LineEnding+
-             'Glorious is reversed as '+ UTF8OverrideDirection('"glorious"',True) + '. ' +
+             #9'Le français est une langue indo-européenne de la famille des langues romanes. Le français s''est formé en France (variété de la « langue d''oïl », qui est la langue de la partie septentrionale du pays).'+LineEnding+
+             'Glorious finds itself reversed as '+ UTF8OverrideDirection('"glorious"',True) + '. ' +
                '"Hello!" is '+ UTF8EmbedDirection('"مرحبا!"',True) + ' in arabic.' + LineEnding +
+             'देवनागरी एक भारतीय लिपि है जिसमें अनेक भारतीय भाषाएँ तथा कई विदेशी भाषाएँ लिखी जाती हैं। यह बायें से दायें लिखी जाती है।' + LineEnding +
              '对于汉语的分支语言，学界主要有两种观点，一种观点将汉语定义为语言，并将官话、贛語、闽语、粤语、客家语、吴语、湘语七大语言定义为一级方言.'+LineEnding+
              'עִבְרִית היא שפה שמית, ממשפחת השפות האפרו-אסיאתיות, הידועה כשפתם של היהודים ושל השומרונים, אשר ניב מודרני שלה (עברית ישראלית) משמש כשפה הרשמית והעיקרית של מדינת ישראל.';
 
@@ -135,14 +152,45 @@ procedure TForm1.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState)
 var
   idxPara, newPos: Integer;
 begin
-  if FTextLayout = nil then exit;
+  if not LayoutReady then exit;
 
+  if (Key = VK_U) and ([ssCtrl,ssShift] <= Shift) then
+  begin
+    FlushUnicode;
+    FInUnicode := true;
+    FUnicodeValue:= 0;
+    Key := 0;
+  end else
+  if FInUnicode then
+  begin
+    case Key of
+      VK_DELETE: begin
+          FUnicodeValue := FUnicodeValue shr 4;
+        end;
+      VK_0..VK_9: begin
+          FUnicodeValue := (FUnicodeValue shl 4) + (Key - VK_0);
+        end;
+      VK_NUMPAD0..VK_NUMPAD9: begin
+          FUnicodeValue := (FUnicodeValue shl 4) + (Key - VK_NUMPAD0);
+        end;
+      VK_A..VK_F: begin
+          FUnicodeValue := (FUnicodeValue shl 4) + (Key - VK_A + 10);
+        end;
+    else
+      FlushUnicode;
+    end;
+    if (FUnicodeValue >= $10FFF0) or
+       (FUnicodeValue >= $11000) then
+      FlushUnicode;
+    Key := 0;
+  end else
   if KEY = VK_DELETE then
   begin
     if SelLength > 0 then DeleteSelection
     else
     begin
       FTextLayout.DeleteText(SelStart, 1);
+      SelStart := SelStart + FTextLayout.IncludeNonSpacingChars(SelStart, 0);
       ShowCaret;
     end;
     Key := 0;
@@ -236,11 +284,20 @@ begin
   end;
 end;
 
+procedure TForm1.FormKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if FInUnicode then
+  begin
+    if (Key = VK_CONTROL) or (Key = VK_SHIFT) then
+      FlushUnicode;
+  end;
+end;
+
 procedure TForm1.FormKeyPress(Sender: TObject; var Key: char);
 var
   delCount: Integer;
 begin
-  if FTextLayout = nil then exit;
+  if not LayoutReady then exit;
 
   if Key = #8 then
   begin
@@ -251,6 +308,7 @@ begin
       begin
         delCount := FTextLayout.DeleteTextBefore(SelStart, 1);
         SelStart := SelStart - delCount;
+        SelStart := SelStart + FTextLayout.IncludeNonSpacingChars(SelStart, 0);
       end;
     end;
   end
@@ -276,9 +334,7 @@ end;
 
 procedure TForm1.TimerBlinkCaretTimer(Sender: TObject);
 begin
-  TimerBlinkCaret.Enabled := false;
   BGRAVirtualScreen1.DiscardBitmap;
-  TimerBlinkCaret.Enabled := true;
 end;
 
 procedure TForm1.ToolButtonCenterAlignClick(Sender: TObject);
@@ -294,6 +350,11 @@ end;
 procedure TForm1.ToolButtonRightAlignClick(Sender: TObject);
 begin
   SetCurrentParagraphAlign(taRightJustify);
+end;
+
+function TForm1.GetLayoutReady: boolean;
+begin
+  result := Assigned(FTextLayout) and Assigned(FFontRenderer);
 end;
 
 function TForm1.GetSelLastClick: integer;
@@ -332,10 +393,17 @@ begin
   ShowCaret;
 end;
 
+procedure TForm1.FlushUnicode;
+begin
+  if not FInUnicode then exit;
+  FInUnicode := false;
+  InsertText(UnicodeCharToUTF8(FUnicodeValue));
+end;
+
 procedure TForm1.UpdateCurrentParagraph;
 var curAlign: TAlignment;
 begin
-  if FTextLayout = nil then exit;
+  if not LayoutReady then exit;
 
   FCurFirstParagraph:= FTextLayout.GetParagraphAt(SelStart);
   FCurLastParagraph:= FTextLayout.GetParagraphAt(SelStart+SelLength);
@@ -372,7 +440,7 @@ procedure TForm1.SetCurrentParagraphAlign(AAlign: TAlignment);
 var
   i: Integer;
 begin
-  if (FTextLayout <> nil) and (FCurFirstParagraph <> -1) then
+  if LayoutReady and (FCurFirstParagraph <> -1) then
   begin
     for i := FCurFirstParagraph to FCurLastParagraph do
       case AALign of
@@ -394,6 +462,7 @@ begin
   if SelLength <> 0 then
   begin
     FTextLayout.DeleteText(SelStart, SelLength);
+    SelStart := SelStart + FTextLayout.IncludeNonSpacingChars(SelStart, 0);
     SelLength:= 0;
     ShowCaret;
   end;
@@ -403,10 +472,11 @@ procedure TForm1.InsertText(AText: string);
 var
   insertCount: Integer;
 begin
-  if FTextLayout = nil then exit;
+  if not LayoutReady then exit;
   DeleteSelection;
   insertCount := FTextLayout.InsertText(AText, SelStart);
   SelStart := SelStart + insertCount;
+  SelStart := SelStart + FTextLayout.IncludeNonSpacingChars(SelStart, 0);
   ShowCaret;
 end;
 
@@ -426,9 +496,30 @@ var
 begin
   if FFontRenderer = nil then
   begin
-    FFontRenderer := TLCLFontRenderer.Create;
-    FFontRenderer.FontName := 'default';
-    FFontRenderer.FontQuality:= fqSystemClearType;
+    if CheckBox_FreeType.Checked then
+    begin
+      FFontRenderer := TBGRAFreeTypeFontRenderer.Create;
+      FFontRenderer.FontName := 'Liberation Serif';
+    end else
+    begin
+      FFontRenderer := TLCLFontRenderer.Create;
+      FFontRenderer.FontName := {$IFDEF LINUX}'Liberation Serif'{$ELSE}'default'{$ENDIF};
+    End;
+  end;
+  if CheckBox_ClearType.Checked then
+  begin
+    //force ClearType to RGB if disabled on the system
+    if fqFineClearType() = fqFineAntialiasing then
+      FFontRenderer.FontQuality:= fqFineClearTypeRGB
+    else
+      FFontRenderer.FontQuality:= fqSystemClearType;
+  end
+  else
+  begin
+    if CheckBox_FreeType.Checked then
+      FFontRenderer.FontQuality:= fqFineAntialiasing
+    else
+      FFontRenderer.FontQuality:= fqSystem;
   end;
   FFontRenderer.FontEmHeight:= SpinEdit_FontSize.Value;
   FFontRenderer.FontOrientation := SpinEdit_Angle.Value*10;
@@ -438,7 +529,9 @@ begin
     FTextLayout:= TBidiTextLayout.Create(FFontRenderer, FTestText);
     FTextLayout.ParagraphSpacingBelow:= 0.25;
     FTextLayout.ParagraphSpacingAbove:= 0.25;
-  end;
+  end else
+    FTextLayout.FontRenderer := FFontRenderer;
+
   FTextLayout.SetLayout(rectF(4,4,Bitmap.Width-4,Bitmap.Height-4));
 
   caretColor := BGRA(0,0,255);
@@ -451,7 +544,7 @@ begin
     FBlinkCaretState:= not FBlinkCaretState;
   end;
 
-  if FBlinkCaretState and (SelLength = 0) then
+  if FBlinkCaretState and (SelLength = 0) and BGRAVirtualScreen1.Focused then
     FTextLayout.DrawCaret(Bitmap, SelStart, BGRA(caretColor.red,caretColor.green,caretColor.blue,140), BGRA(caretColor.red,caretColor.green,caretColor.blue,100));
 
   FTextLayout.DrawSelection(Bitmap, SelStart, SelStart+SelLength, selectionColor, BGRA(0,0,192),1);
@@ -462,6 +555,22 @@ begin
     FTextLayout.DrawCaret(Bitmap, SelStart, BGRA(caretColor.red,caretColor.green,caretColor.blue,140), BGRA(caretColor.red,caretColor.green,caretColor.blue,100));
 
   UpdateCurrentParagraph;
+  //let some time for events
+  TimerBlinkCaret.Enabled := false;
+  TimerBlinkCaret.Enabled := true;
+end;
+
+procedure TForm1.CheckBox_ClearTypeChange(Sender: TObject);
+begin
+  if Assigned(FTextLayout) then FTextLayout.InvalidateLayout;
+  BGRAVirtualScreen1.DiscardBitmap;
+end;
+
+procedure TForm1.CheckBox_FreeTypeChange(Sender: TObject);
+begin
+  if Assigned(FTextLayout) then FTextLayout.InvalidateLayout;
+  FreeAndNil(FFontRenderer);
+  BGRAVirtualScreen1.DiscardBitmap;
 end;
 
 procedure TForm1.BGRAVirtualScreen1MouseDown(Sender: TObject;
@@ -469,6 +578,7 @@ procedure TForm1.BGRAVirtualScreen1MouseDown(Sender: TObject;
 var
   index: Integer;
 begin
+  BGRAVirtualScreen1.SetFocus;
   if Button = mbLeft then
   begin
     index := FTextLayout.GetCharIndexAt(PointF(X,Y));
@@ -490,6 +600,15 @@ begin
     UpdateSelectionFromFirstLastClick;
   end;
 end;
+
+initialization
+
+  EasyLazFreeType.FontCollection := TFreeTypeFontCollection.Create;
+  EasyLazFreeType.FontCollection.AddFolder(GetCurrentDir);
+
+finalization
+
+  FreeAndNil(EasyLazFreeType.FontCollection);
 
 end.
 
