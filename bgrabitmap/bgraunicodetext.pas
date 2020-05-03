@@ -106,8 +106,8 @@ type
     function InsertText(ATextUTF8: string; APosition: integer): integer;
     function DeleteText(APosition, ACount: integer): integer;
     function DeleteTextBefore(APosition, ACount: integer): integer;
-    function IncludeNonSpacingChars(APosition, ACount: integer): integer;
-    function IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
+    function IncludeNonSpacingChars(APosition, ACount: integer; AIncludeCombiningMarks: boolean = true): integer;
+    function IncludeNonSpacingCharsBefore(APosition, ACount: integer; AIncludeCombiningMarks: boolean = true): integer;
     function CreateBidiTree(ABidiTreeFactory: TBidiTreeAny; AData: pointer; AStartIndex, AEndIndex: integer;
                             AEmbeddingBidiLevel: integer): TBidiTree;
 
@@ -439,26 +439,30 @@ end;
 
 function TUnicodeAnalysis.DeleteTextBefore(APosition, ACount: integer): integer;
 begin
-  ACount := IncludeNonSpacingCharsBefore(APosition, ACount);
+  ACount := IncludeNonSpacingCharsBefore(APosition, ACount, False);
   if ACount = 0 then exit(0);
   InternalDeleteText(APosition-ACount, ACount);
   result := ACount;
 end;
 
-function TUnicodeAnalysis.IncludeNonSpacingChars(APosition, ACount: integer): integer;
+function TUnicodeAnalysis.IncludeNonSpacingChars(APosition, ACount: integer; AIncludeCombiningMarks: boolean): integer;
 begin
   if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
   if APosition+ACount > CharCount then raise exception.Create('Exceed end of text');
-  if ACount = 0 then exit(0);
 
   //keep Cr/Lf pair together and non spacing marks after last char together
   while (APosition+ACount < CharCount) and
-    not BidiInfo[APosition+ACount].IsMulticharStart do inc(ACount);
+    not (BidiInfo[APosition+ACount].IsMulticharStart
+         or (not AIncludeCombiningMarks and
+               (BidiInfo[APosition+ACount].IsCombiningLeft
+                or BidiInfo[APosition+ACount].IsCombiningRight)
+            )
+        ) do inc(ACount);
 
   result := ACount;
 end;
 
-function TUnicodeAnalysis.IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
+function TUnicodeAnalysis.IncludeNonSpacingCharsBefore(APosition, ACount: integer; AIncludeCombiningMarks: boolean): integer;
 begin
   if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
   if APosition-ACount < 0 then raise exception.Create('Exceed start of text');
@@ -466,7 +470,12 @@ begin
 
   //keep before non spacing marks until real char together
   while (APosition-ACount > 0) and
-    not BidiInfo[APosition-ACount].IsMulticharStart do inc(ACount);
+    not (BidiInfo[APosition-ACount].IsMulticharStart
+         or (not AIncludeCombiningMarks and
+               (BidiInfo[APosition-ACount].IsCombiningLeft
+                or BidiInfo[APosition-ACount].IsCombiningRight)
+            )
+        ) do inc(ACount);
 
   result := ACount;
 end;

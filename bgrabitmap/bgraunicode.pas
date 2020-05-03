@@ -18,6 +18,7 @@ type
                       ubcRightToLeft, ubcArabicLetter, ubcArabicNumber, ubcUnknown);
   TUnicodeJoiningType = (ujtNonJoining{U}, ujtTransparent{T}, ujtRightJoining{R}, ujtLeftJoining{L},
                          ujtDualJoining{D}, ujtJoinCausing{C});
+  TUnicodeCombiningLayout = (uclNone, uclLeft, uclRight, uclLeftAndRight);
 
 const
   ubcNeutral = [ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals];
@@ -29,9 +30,12 @@ const
   BIDI_FLAG_LIGATURE_RIGHT = 16;           //joins to the letter on the right (possible for joining type R and D)
   BIDI_FLAG_LIGATURE_LEFT = 32;            //joins to the letter on the left (possible for joining type L and D)
   BIDI_FLAG_LIGATURE_BOUNDARY = 64;        //zero-width joiner or non-joiner
-  BIDI_FLAG_RTL_SCRIPT = 128;              //script is written from right to left (arabic, N'Ko...)
-  BIDI_FLAG_NON_SPACING_MARK = 256;        //it is a non-spacing mark
-  BIDI_FLAG_MULTICHAR_START = 512;         //start of a multichar (letter + non spacing marks, non spacing marks)
+  BIDI_FLAG_LIGATURE_TRANSPARENT = 128;    //does not affect ligature
+  BIDI_FLAG_RTL_SCRIPT = 256;              //script is written from right to left (arabic, N'Ko...)
+  BIDI_FLAG_NON_SPACING_MARK = 512;        //it is a non-spacing mark
+  BIDI_FLAG_COMBINING_LEFT = 1024;         //this letter is to be combined to the left of previous letter
+  BIDI_FLAG_COMBINING_RIGHT = 2048;        //this letter is to be combined to the right of previous letter
+  BIDI_FLAG_MULTICHAR_START = 4096;        //start of a multichar (letter + non spacing marks, non spacing marks)
 
 type
   PUnicodeBidiInfo = ^TUnicodeBidiInfo;
@@ -47,7 +51,10 @@ type
     function GetHasLigatureLeft: boolean;
     function GetHasLigatureRight: boolean;
     function GetImplicitEndOfParagraph: boolean;
+    function GetIsCombiningLeft: boolean;
+    function GetIsCombiningRight: boolean;
     function GetLigatureBoundary: boolean;
+    function GetLigatureTransparent: boolean;
     function GetMulticharStart: boolean;
     function GetNonSpacingMark: boolean;
     function GetRemoved: boolean;
@@ -67,9 +74,12 @@ type
     property HasLigatureRight: boolean read GetHasLigatureRight;
     property HasLigatureLeft: boolean read GetHasLigatureLeft;
     property IsLigatureBoundary: boolean read GetLigatureBoundary;
+    property IsLigatureTransparent: boolean read GetLigatureTransparent;
     property IsDiscardable: boolean read GetDiscardable;
     property IsRightToLeftScript: boolean read GetRightToLeftScript;
     property IsNonSpacingMark: boolean read GetNonSpacingMark;
+    property IsCombiningLeft: boolean read GetIsCombiningLeft;
+    property IsCombiningRight: boolean read GetIsCombiningRight;
     property IsMulticharStart: boolean read GetMulticharStart;
   end;
 
@@ -136,6 +146,7 @@ type //bracket matching
 function GetUnicodeBidiClass(u: LongWord): TUnicodeBidiClass;
 function GetUnicodeBracketInfo(u: LongWord): TUnicodeBracketInfo;
 function GetUnicodeJoiningType(u: LongWord): TUnicodeJoiningType;
+function GetUnicodeCombiningLayout(u: LongWord): TUnicodeCombiningLayout;
 function IsZeroWidthUnicode(u: LongWord): boolean;
 function IsUnicodeMirrored(u: LongWord): boolean;
 function IsUnicodeParagraphSeparator(u: LongWord): boolean;
@@ -613,6 +624,68 @@ begin
   end;
 end;
 
+function GetUnicodeCombiningLayout(u: LongWord): TUnicodeCombiningLayout;
+begin
+  case u shr 24 of
+  $00:
+    case u of
+    $093F, $094E, $09BF, $09C7..$09C8, $0A3F, $0ABF, $0B47..$0B48, $0B4B..$0B4C,
+    $0BC6..$0BC8, $0D46..$0D48, $0DD9..$0DDE: exit(uclLeft);
+    $0903, $093B, $093E, $0940, $0949..$094C, $094F, $0982..$0983, $09BE,
+    $09C0, $09D7, $0A03, $0A3E, $0A40, $0A83, $0ABE, $0AC0, $0AC9, $0ACB..$0ACC,
+    $0B02..$0B03, $0B3E, $0B40, $0B57, $0BBE..$0BBF, $0BC1..$0BC2, $0BD7,
+    $0C01..$0C03, $0C41..$0C44, $0C82..$0C83, $0CBE, $0CC0..$0CC4, $0CC7..$0CC8,
+    $0CCA..$0CCB, $0CD5..$0CD6, $0D02..$0D03, $0D3E..$0D40, $0D57, $0D82..$0D83,
+    $0DCF..$0DD1, $0DD8, $0DDF, $0DF2..$0DF3, $0F3E..$0F3F, $0F7F: exit(uclRight);
+    $09CB..$09CC, $0BCA..$0BCC, $0D4A..$0D4C: exit(uclLeftAndRight);
+    end;
+  $01:
+    case u of
+    $1031, $103C, $1084, $17BE, $17C1..$17C3, $1A19, $1B3E..$1B3F: exit(uclLeft);
+    $102B..$102C, $1038, $103B, $1056..$1057, $1062..$1064, $1067..$106D,
+    $1083, $1087..$108C, $108F, $109A..$109C, $17B6, $17C7..$17C8, $1923..$1926,
+    $1929..$192B, $1930..$1931, $1933..$1938, $1A1A, $1A55, $1A57, $1A61,
+    $1A63..$1A64, $1A6D..$1A72, $1B04, $1B35, $1B3B, $1B43..$1B44, $1B82,
+    $1BA1, $1BA6..$1BA7, $1BAA, $1BE7, $1BEA..$1BEC, $1BEE, $1BF2..$1BF3,
+    $1C24..$1C2B, $1C34..$1C35, $1CE1, $1CF7: exit(uclRight);
+    $17BF..$17C0, $17C4..$17C5, $1B3D, $1B40..$1B41: exit(uclLeftAndRight);
+    end;
+  $03:
+    case u of
+    $302E..$302F: exit(uclLeft);
+    end;
+  $0A:
+    case u of
+    $A9BA..$A9BB, $A9BF, $AA2F..$AA30, $AA34: exit(uclLeft);
+    $A823..$A824, $A827, $A880..$A881, $A8B4..$A8C3, $A952..$A953, $A983,
+    $A9B4..$A9B5, $A9BE, $A9C0, $AA33, $AA4D, $AA7B, $AA7D, $AAEB, $AAEE..$AAEF,
+    $AAF5, $ABE3..$ABE4, $ABE6..$ABE7, $ABE9..$ABEA, $ABEC: exit(uclRight);
+    end;
+  $11:
+    case u of
+    $11000, $11002, $11082, $110B0..$110B2, $110B7..$110B8, $1112C, $11145..$11146,
+    $11182, $111B3..$111B5, $111BF..$111C0, $1122C..$1122E, $11232..$11233,
+    $11235, $112E0..$112E2, $11302..$11303, $1133E..$1133F, $11341..$11344,
+    $11347..$11348, $1134B..$1134D, $11357, $11362..$11363, $11435..$11437,
+    $11440..$11441, $11445, $114B0..$114B2, $114B9, $114BB..$114BE, $114C1,
+    $115AF..$115B1, $115B8..$115BB, $115BE, $11630..$11632, $1163B..$1163C,
+    $1163E, $116AC, $116AE..$116AF, $116B6, $11720..$11721, $11726, $1182C..$1182E,
+    $11838, $119D1..$119D3, $119DC..$119DF, $119E4, $11A39, $11A57..$11A58,
+    $11A97, $11C2F, $11C3E, $11CA9, $11CB1, $11CB4, $11D8A..$11D8E, $11D93..$11D94,
+    $11D96, $11EF5..$11EF6: exit(uclRight);
+    end;
+  $16:
+    case u of
+    $16F51..$16F87: exit(uclRight);
+    end;
+  $1D:
+    case u of
+    $1D165..$1D166, $1D16D..$1D172: exit(uclRight);
+    end;
+  end;
+  result := uclNone;
+end;
+
 function IsZeroWidthUnicode(u: LongWord): boolean;
 begin
   case u of
@@ -690,9 +763,24 @@ begin
   result := (Flags and BIDI_FLAG_IMPLICIT_END_OF_PARAGRAPH) <> 0;
 end;
 
+function TUnicodeBidiInfo.GetIsCombiningLeft: boolean;
+begin
+  result := (Flags and BIDI_FLAG_COMBINING_LEFT) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetIsCombiningRight: boolean;
+begin
+  result := (Flags and BIDI_FLAG_COMBINING_RIGHT) <> 0;
+end;
+
 function TUnicodeBidiInfo.GetLigatureBoundary: boolean;
 begin
   result := (Flags and BIDI_FLAG_LIGATURE_BOUNDARY) <> 0;
+end;
+
+function TUnicodeBidiInfo.GetLigatureTransparent: boolean;
+begin
+  result := (Flags and BIDI_FLAG_LIGATURE_TRANSPARENT) <> 0;
 end;
 
 function TUnicodeBidiInfo.GetMulticharStart: boolean;
@@ -1511,11 +1599,20 @@ begin
         result[i].Flags := result[i].Flags OR BIDI_FLAG_LIGATURE_BOUNDARY;
       end;
       case a[i].bidiClass of
+      ubcLeftToRight: begin
+          case GetUnicodeCombiningLayout(u[i]) of
+          uclLeft: result[i].Flags := result[i].Flags OR BIDI_FLAG_COMBINING_LEFT;
+          uclRight: result[i].Flags := result[i].Flags OR BIDI_FLAG_COMBINING_RIGHT;
+          uclLeftAndRight: result[i].Flags := result[i].Flags
+                                OR BIDI_FLAG_COMBINING_LEFT OR BIDI_FLAG_COMBINING_RIGHT;
+          end;
+        end;
       ubcArabicLetter,ubcArabicNumber,ubcRightToLeft:
         result[i].Flags := result[i].Flags OR BIDI_FLAG_RTL_SCRIPT;
       ubcNonSpacingMark: result[i].Flags := result[i].Flags OR BIDI_FLAG_NON_SPACING_MARK;
       end;
-      if (a[i].bidiClass <> ubcNonSpacingMark) or
+      if (result[i].Flags and (BIDI_FLAG_NON_SPACING_MARK or BIDI_FLAG_COMBINING_LEFT
+                               or BIDI_FLAG_COMBINING_RIGHT) = 0) or
         (i = 0) or (a[i-1].bidiClass in [ubcSegmentSeparator, ubcParagraphSeparator]) then
         result[i].Flags := result[i].Flags OR BIDI_FLAG_MULTICHAR_START;
     end;

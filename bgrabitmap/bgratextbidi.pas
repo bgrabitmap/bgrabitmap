@@ -185,8 +185,8 @@ type
     function DeleteTextBefore(APosition, ACount: integer): integer;
     function CopyText(APosition, ACount: integer): string;
     function CopyTextBefore(APosition, ACount: integer): string;
-    function IncludeNonSpacingChars(APosition, ACount: integer): integer;
-    function IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
+    function IncludeNonSpacingChars(APosition, ACount: integer; AIncludeCombiningMarks: boolean = true): integer;
+    function IncludeNonSpacingCharsBefore(APosition, ACount: integer; AIncludeCombiningMarks: boolean = true): integer;
     function FindTextAbove(AFromPosition: integer): integer;
     function FindTextBelow(AFromPosition: integer): integer;
 
@@ -850,7 +850,7 @@ begin
   s := FAnalysis.CopyTextUTF8(AStartIndex, ASplitIndex-AStartIndex);
   checkIndex := ASplitIndex-1;
   while (checkIndex > AStartIndex) and
-    (GetUnicodeJoiningType(GetUnicodeChar(checkIndex))=ujtTransparent) do dec(checkIndex);
+    FAnalysis.BidiInfo[checkIndex].IsLigatureTransparent do dec(checkIndex);
   if (ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureLeft) or
      (not ARightToLeft and FAnalysis.BidiInfo[checkIndex].HasLigatureRight) then
     s := s+UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
@@ -861,11 +861,40 @@ function TBidiTextLayout.TextFitInfoBidiOverride(sUTF8: string; AWidth: single;
   ARightToLeft: boolean): integer;
 var
   over: Boolean;
+  i: Integer;
+  p, pStart, pEnd: PChar;
+  u: LongWord;
 begin
+  if sUTF8 = '' then exit(0);
   over := AddOverrideIfNecessary(sUTF8, ARightToLeft);
 
   result := FRenderer.TextFitInfoF(sUTF8, AWidth);
   if over then dec(result);
+
+  //check that position is not a combining mark
+  pEnd := @sUTF8[length(sUTF8)];
+  pStart := @sUTF8[1];
+  if over then inc(pStart, UTF8CharacterLength(pStart));
+  p := @sUTF8[1];
+  for i := 1 to result do
+  begin
+    inc(p, UTF8CharacterLength(p));
+    if p > pEnd then break;
+  end;
+  if p <= pEnd then
+  begin
+    while (result > 0) and (p > pStart) do
+    begin
+      u := UTF8CodepointToUnicode(p, UTF8CharacterLength(p));
+      if GetUnicodeCombiningLayout(u) <> uclNone then
+      begin
+        dec(p);
+        while (p >= pStart) and (p^ in[#$80..#$BF]) do dec(p);
+        dec(result);
+      end else
+        break;
+    end;
+  end;
 end;
 
 function TBidiTextLayout.GetFontFullHeight: single;
@@ -2104,14 +2133,14 @@ begin
   result := FAnalysis.CopyTextUTF8(APosition-ACount, ACount);
 end;
 
-function TBidiTextLayout.IncludeNonSpacingChars(APosition, ACount: integer): integer;
+function TBidiTextLayout.IncludeNonSpacingChars(APosition, ACount: integer; AIncludeCombiningMarks: boolean): integer;
 begin
-  result := FAnalysis.IncludeNonSpacingChars(APosition,ACount);
+  result := FAnalysis.IncludeNonSpacingChars(APosition,ACount,AIncludeCombiningMarks);
 end;
 
-function TBidiTextLayout.IncludeNonSpacingCharsBefore(APosition, ACount: integer): integer;
+function TBidiTextLayout.IncludeNonSpacingCharsBefore(APosition, ACount: integer; AIncludeCombiningMarks: boolean): integer;
 begin
-  result := FAnalysis.IncludeNonSpacingCharsBefore(APosition,ACount);
+  result := FAnalysis.IncludeNonSpacingCharsBefore(APosition,ACount,AIncludeCombiningMarks);
 end;
 
 function TBidiTextLayout.FindTextAbove(AFromPosition: integer): integer;

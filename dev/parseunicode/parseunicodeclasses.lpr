@@ -517,8 +517,6 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
 
   begin
     writeln('Parsing decomposition data...');
-    AssignFile(tOut, 'UTF8Recomposition.generated.pas');
-    Rewrite(tOut);
     correspList := TStringList.Create;
     combineLeftList := TStringList.Create;
     combineRightList := TStringList.Create;
@@ -605,6 +603,8 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
 
     correspList.CustomSort(@ListCompareBinary);
 
+    AssignFile(tOut, 'UTF8Recomposition.generated.pas');
+    Rewrite(tOut);
     writeln(tOut, 'type');
     writeln(tOut, '  TUTF8Decomposition = record');
     writeln(tOut, '    u: LongWord;    //recomposed Unicode character');
@@ -620,8 +620,10 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
         writeln(tOut, '  ', RemoveUptoTab(correspList[i]));
     writeln(tOut, '  );');
     writeln(tout);
+    CloseFile(tOut);
 
-    writeln(tOut, 'type TUnicodeCombiningLayout = (uclNone, uclLeft, uclRight, uclLeftAndRight);');
+    AssignFile(tOut, 'UnicodeFunctions.generated.pas');
+    Append(tOut);
     writeln(tOut, 'function GetUnicodeCombiningLayout(u: LongWord): TUnicodeCombiningLayout;');
     writeln(tOut, 'begin');
     writeln(tOut, '  case u shr 24 of');
@@ -633,6 +635,7 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
     writeln(tOut, '  end;');
     writeln(tOut, '  result := uclNone;');
     writeln(tOut, 'end;');
+    Writeln(tOut);
     correspList.Free;
     CloseFile(tOut);
   end;
