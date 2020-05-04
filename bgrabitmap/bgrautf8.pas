@@ -14,6 +14,8 @@ const
   UTF8_ARABIC_ALEPH_HAMZA_ABOVE = 'أ';
   UTF8_ARABIC_ALEPH_MADDA_ABOVE = 'آ';
   UTF8_ARABIC_LAM = 'ل';
+  UTF8_ZERO_WIDTH_NON_JOINER = '‌';
+  UTF8_ZERO_WIDTH_JOINER = '‍';
 
 {$IFDEF BGRABITMAP_USE_LCL}
 type
@@ -65,6 +67,8 @@ procedure FindCloseUTF8(var F: TSearchrec);
 
 type
   string4 = string[4];
+  TUnicodeArray = packed array of LongWord;
+  TIntegerArray = array of integer;
 
 function UTF8CharacterLength(p: PChar): integer;
 function UTF8Length(const s: string): PtrInt; overload;
@@ -74,6 +78,7 @@ function UTF8ReverseString(const s: string): string;
 function UTF8CodepointToUnicode(p: PChar; ACodePointLen: integer): LongWord;
 function UTF8ToUTF16(const S: AnsiString): UnicodeString;
 function UTF16ToUTF8(const S: UnicodeString): AnsiString;
+procedure UTF8ToUnicodeArray(const sUTF8: string; out u: TUnicodeArray; out ofs: TIntegerArray);
 
 type
   TBidiUTF8Info = packed record
@@ -1157,11 +1162,7 @@ begin
   result := s;
 end;
 
-type
-  TUnicodeArray = packed array of LongWord;
-  TIntegerArray = array of integer;
-
-procedure UTF8ToUnicode(const sUTF8: string; out u: TUnicodeArray; out ofs: TIntegerArray);
+procedure UTF8ToUnicodeArray(const sUTF8: string; out u: TUnicodeArray; out ofs: TIntegerArray);
 var
   index,len,charLen: integer;
   p,pStart,pEnd: PChar;
@@ -1210,7 +1211,7 @@ begin
     result := nil
   else
   begin
-    UTF8ToUnicode(sUTF8, u, ofs);
+    UTF8ToUnicodeArray(sUTF8, u, ofs);
     a := AnalyzeBidiUnicode(@u[0], length(u), ABaseDirection);
     setlength(result, length(u));
     for i := 0 to high(result) do
@@ -1288,10 +1289,10 @@ begin
   result := sUTF8;
   if (ALigatureRight and ARightToLeft) or
      (ALigatureLeft and not ARightToLeft) then
-     result := UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER) + result;
+     result := UTF8_ZERO_WIDTH_JOINER + result;
   if (ALigatureLeft and ARightToLeft) or
      (ALigatureRight and not ARightToLeft) then
-     result := result + UnicodeCharToUTF8(UNICODE_ZERO_WIDTH_JOINER);
+     result := result + UTF8_ZERO_WIDTH_JOINER;
 end;
 
 //little endian stream functions

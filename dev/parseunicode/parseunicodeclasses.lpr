@@ -422,7 +422,12 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
       '17BF,17C0,17C4,17C5,' + {KHMER}
       '1B3D,1B40,1B41,'; {BALINESE}
 
-  type TDecompositionKind = (dMultichar, dInitial, dMedial, dFinal, dIsolated);
+  type TDecompositionKind = string;
+  const dMultichar = 'arNone';
+        dInitial = 'arInitial';
+        dMedial = 'arMedial';
+        dFinal = 'arFinal';
+        dIsolated = 'arIsolated';
   var tOut, tIn: TextFile;
     line, decomposed, kind, decomposedUTF8, thousandStr: string;
     cells: TStringList;
@@ -577,18 +582,13 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
                 (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_BELOW) or
                 (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_ABOVE) or
                 (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_MADDA_ABOVE);
-        case typedKind of
-        dInitial: decomposedUTF8 := UTF8Ligature(decomposedUTF8, true, true, false);
-        dMedial: decomposedUTF8 := UTF8Ligature(decomposedUTF8, true, true, true);
-        dFinal: decomposedUTF8 := UTF8Ligature(decomposedUTF8, true, false, true);
-        end;
         if ((typedKind = dMultichar) and (decomposedLen > 1)
              and (hasNSM or (copy(decomposedUTF8,1,1) = 'f'))) or
            ((typedKind <> dMultichar) and ((decomposedLen = 1) or isLa)) then
           correspList.Add(decomposedUTF8+#9+'('+
              'de:''' + decomposedUTF8 + '''; ' +
              're:''' + UnicodeCharToUTF8(mergedU) + '''; ' +
-             'ar:' + BoolToStr(typedKind in [dInitial, dMedial, dFinal, dIsolated], 'true','false') +
+             'join:' + typedKind +
              ')');
       end;
     end;
@@ -601,9 +601,10 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
     AssignFile(tOut, 'utf8decomposition.inc');
     Rewrite(tOut);
     writeln(tOut, 'type');
+    writeln(tOut, '  TArabicJoin = (arNone, arInitial, arMedial, arFinal, arIsolated);');
     writeln(tOut, '  TUTF8Decomposition = record');
     writeln(tOut, '    de, re: string; //decomposed, recomposed UTF8');
-    writeln(tOut, '    ar: boolean;    //arabic presentation');
+    writeln(tOut, '    join: TArabicJoin;');
     writeln(tOut, '  end;');
     writeln(tOut, 'const');
     writeln(tOut, '  UTF8Decomposition : array[0..', correspList.Count-1, '] of TUTF8Decomposition = (');

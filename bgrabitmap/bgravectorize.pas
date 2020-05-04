@@ -1665,6 +1665,7 @@ begin
   if FStyle=AValue then Exit;
   FStyle:=AValue;
   UpdateFont;
+  SubstituteBidiBracket:= fsItalic in AValue;
 end;
 
 function TBGRAVectorizedFont.GetFontEmHeightRatio: single;
