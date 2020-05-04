@@ -395,14 +395,8 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
   end;
 
   function ListCompareBinary(List: TStringList; Index1, Index2: Integer): Integer;
-  var
-    s1,s2: String;
   begin
-    s1 := List[Index1];
-    s2 := List[Index2];
-    if s1 < s2 then result := -1
-    else if s1 > s2 then result := 1
-    else result := 0;
+    result := CompareStr(List[Index1], List[Index2]);
   end;
 
   procedure UTF8RecompositionFunction;
@@ -591,9 +585,10 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
         if ((typedKind = dMultichar) and (decomposedLen > 1)
              and (hasNSM or (copy(decomposedUTF8,1,1) = 'f'))) or
            ((typedKind <> dMultichar) and ((decomposedLen = 1) or isLa)) then
-          correspList.Add(UnicodeCharToUTF8(mergedU)+#9+'(u:$'+inttohex(mergedU,4)+
-             '; re:''' + UnicodeCharToUTF8(mergedU) + '''; de:''' + decomposedUTF8 +
-             '''; ar:' + BoolToStr(typedKind in [dInitial, dMedial, dFinal, dIsolated], 'true','false') +
+          correspList.Add(decomposedUTF8+#9+'('+
+             'de:''' + decomposedUTF8 + '''; ' +
+             're:''' + UnicodeCharToUTF8(mergedU) + '''; ' +
+             'ar:' + BoolToStr(typedKind in [dInitial, dMedial, dFinal, dIsolated], 'true','false') +
              ')');
       end;
     end;
@@ -603,16 +598,15 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
 
     correspList.CustomSort(@ListCompareBinary);
 
-    AssignFile(tOut, 'UTF8Recomposition.generated.pas');
+    AssignFile(tOut, 'utf8decomposition.inc');
     Rewrite(tOut);
     writeln(tOut, 'type');
     writeln(tOut, '  TUTF8Decomposition = record');
-    writeln(tOut, '    u: LongWord;    //recomposed Unicode character');
-    writeln(tOut, '    re, de: string; //recomposed, decomposed UTF8');
+    writeln(tOut, '    de, re: string; //decomposed, recomposed UTF8');
     writeln(tOut, '    ar: boolean;    //arabic presentation');
     writeln(tOut, '  end;');
     writeln(tOut, 'const');
-    writeln(tOut, '  UTF8Decomposition : array[0..', correspList.Count, '] of TUTF8Decomposition = (');
+    writeln(tOut, '  UTF8Decomposition : array[0..', correspList.Count-1, '] of TUTF8Decomposition = (');
     for i := 0 to correspList.Count-1 do
       if i <> correspList.Count-1 then
         writeln(tOut, '  ', RemoveUptoTab(correspList[i]), ',')
