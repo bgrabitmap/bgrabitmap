@@ -1,6 +1,51 @@
 program parseunicodeclasses;
 
-uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
+uses Classes, sysutils, BGRAUTF8, BGRAUnicode, fgl;
+
+type
+  TIntegerList = specialize TFPGList<Integer>;
+
+var
+  UnicodeData: array of record
+    Code: LongInt;
+    Name, Category, BidiCategory, Decomposition: string;
+    Mirrored: boolean;
+    OldName: string;
+  end;
+  UnicodeCount: integer;
+
+  procedure LoadUnicodeData;
+  var
+    lines, cells: TStringList;
+    i: Integer;
+  begin
+    lines := TStringList.Create;
+    lines.LoadFromFile('UnicodeData.txt');
+    setlength(UnicodeData, lines.Count);
+    UnicodeCount := 0;
+    cells := TStringList.Create;
+    cells.Delimiter := ';';
+    cells.QuoteChar := '"';
+    cells.StrictDelimiter := true;
+    for i := 0 to lines.Count-1 do
+    begin
+      cells.DelimitedText := lines[i];
+      if cells.Count >= 11 then
+      with UnicodeData[UnicodeCount] do
+      begin
+        Code := StrToInt('$'+cells[0]);
+        Name := cells[1];
+        Category := cells[2];
+        BidiCategory := cells[4];
+        Decomposition:= cells[5];
+        Mirrored := (cells[9] = 'Y');
+        OldName := cells[10];
+        inc(UnicodeCount);
+      end;
+    end;
+    SetLength(UnicodeData, unicodeCount);
+    lines.Free;
+  end;
 
   function ArrayOfCodeToCase(ACodes: array of integer; AIndent: string): string;
   var
@@ -51,11 +96,9 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
   procedure GenerateUnicodeFunctions;
   const Indent = '      ';
   var
-    tOut: TextFile;
+    tIn, tOut: TextFile;
 
     procedure ParseUnicodeData;
-    var
-      unicodeData: TStringList;
 
       procedure IncludeClasses(AClasses: TStrings; AMinCode, AMaxCode: integer);
       var
@@ -92,45 +135,35 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
 
       var
         newBidi: string;
-        cells: TStringList;
         curCode: LongInt;
         i: integer;
 
       begin
         writeln('Parsing unicode data for classes ', AClasses.DelimitedText,'...');
-        cells := TStringList.Create;
-        cells.Delimiter := ';';
-        cells.QuoteChar := '"';
-        cells.StrictDelimiter := true;
         codes := nil;
         codeCount := 0;
         curBidi := '?';
-        for i := 0 to unicodeData.Count-1 do
+        for i := 0 to UnicodeCount-1 do
         begin
-          cells.DelimitedText := unicodeData[i];
-          if cells.Count >= 5 then
+          newBidi := UnicodeData[i].BidiCategory;
+          if AClasses.IndexOf(newBidi)<>-1 then
           begin
-            newBidi := cells[4];
-            if AClasses.IndexOf(newBidi)<>-1 then
+            if newBidi <> curBidi then
             begin
-              if newBidi <> curBidi then
-              begin
-                FlushCase;
-                curBidi := newBidi;
-              end;
-              curCode := StrToInt('$'+cells[0]);
-              if (curCode >= AMinCode) and (curCode <= AMaxCode) then
-              begin
-                if codeCount >= length(codes) then
-                  setlength(codes, codeCount*2 + 8);
-                codes[codeCount] := curCode;
-                inc(codeCount);
-              end;
+              FlushCase;
+              curBidi := newBidi;
+            end;
+            curCode := UnicodeData[i].Code;
+            if (curCode >= AMinCode) and (curCode <= AMaxCode) then
+            begin
+              if codeCount >= length(codes) then
+                setlength(codes, codeCount*2 + 8);
+              codes[codeCount] := curCode;
+              inc(codeCount);
             end;
           end;
         end;
         FlushCase;
-        cells.Free;
       end;
 
     var c: TStringList;
@@ -166,34 +199,24 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
 
       procedure ParseUnicodeMirrored;
       var
-        codes: array of integer;
+        codes: array of LongInt;
         codeCount, i: integer;
-        cells: TStringList;
         curCode: integer;
       begin
         writeln('Parsing unicode data for mirorred characters...');
         codes := nil;
         codeCount := 0;
-        cells := TStringList.Create;
-        cells.Delimiter := ';';
-        cells.QuoteChar := '"';
-        cells.StrictDelimiter := true;
-        for i := 0 to unicodeData.Count-1 do
+        for i := 0 to UnicodeCount-1 do
         begin
-          cells.DelimitedText := unicodeData[i];
-          if cells.Count >= 10 then
+          if UnicodeData[i].Mirrored then
           begin
-            if cells[9]='Y' then
-            begin
-              curCode := StrToInt('$'+cells[0]);
-              if codeCount >= length(codes) then
-                setlength(codes, codeCount*2 + 8);
-              codes[codeCount] := curCode;
-              inc(codeCount);
-            end;
+            curCode := UnicodeData[i].Code;
+            if codeCount >= length(codes) then
+              setlength(codes, codeCount*2 + 8);
+            codes[codeCount] := curCode;
+            inc(codeCount);
           end;
         end;
-        cells.Free;
 
         Writeln(tOut,'function IsUnicodeMirrored(u: LongWord): boolean;');
         writeln(tout,'begin');
@@ -206,9 +229,6 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
       end;
 
     begin
-      unicodeData := TStringList.Create;
-      unicodeData.LoadFromFile('UnicodeData.txt');
-
       Writeln(tOut,'function GetUnicodeBidiClass(u: LongWord): TUnicodeBidiClass;');
       FormatSettings.ShortDateFormat := 'yyyy/mm/dd';
       Writeln(tOut,'begin //generated '+DateToStr(Date));
@@ -220,25 +240,37 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
       Include($00000, $003FF);
       writeln(tOut,'    $00400..$007FF:');
       Include($00400, $007FF);
-      writeln(tOut,'    $00800..$00FFF:');
-      Include($00800, $00FFF);
-      writeln(tOut,'    $01000..$01FFF:');
-      Include($01000, $01FFF);
+      writeln(tOut,'    $00800..$00BFF:');
+      Include($00800, $00BFF);
+      writeln(tOut,'    $00C00..$00FFF:');
+      Include($00C00, $00FFF);
+      writeln(tOut,'    $01000..$017FF:');
+      Include($01000, $017FF);
+      writeln(tOut,'    $01800..$01FFF:');
+      Include($01800, $01FFF);
+      writeln(tOut,'    $02000..$02FFF:');
+      Include($02000, $02FFF);
       writeln(tOut,'    else');
-      Include($02000, $07FFF);
+      Include($03000, $07FFF);
       writeln(tOut,'    end;');
-      writeln(tOut,'  $08000..$0FFFF:');
-      Include($08000, $0FFFF);
+      writeln(tOut,'  $08000..$0BFFF:');
+      Include($08000, $0BFFF);
+      writeln(tOut,'  $0C000..$0FFFF:');
+      Include($0C000, $0FFFF);
       writeln(tOut,'  else');
       writeln(tOut,'    case u of');
-      writeln(tOut,'    $10000..$10FFF:');
-      Include($10000, $10FFF);
+      writeln(tOut,'    $10000..$107FF:');
+      Include($10000, $107FF);
+      writeln(tOut,'    $10800..$10FFF:');
+      Include($10800, $10FFF);
       writeln(tOut,'    $11000..$117FF:');
       Include($11000, $117FF);
       writeln(tOut,'    $11800..$17FFF:');
       Include($11800, $17FFF);
-      writeln(tOut,'    $18000..$FFFFF:');
-      Include($18000, $FFFFF);
+      writeln(tOut,'    $18000..$1DFFF:');
+      Include($18000, $1DFFF);
+      writeln(tOut,'    $1E000..$FFFFF:');
+      Include($1E000, $FFFFF);
       writeln(tOut,'    else result := ubcUnknown;');
       writeln(tOut,'    end');
       writeln(tOut,'  end');
@@ -248,8 +280,6 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
       writeln(tout);
 
       ParseUnicodeMirrored;
-
-      unicodeData.Free;
     end;
 
     procedure ParseBidiBrackets;
@@ -305,57 +335,96 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
     procedure ParseArabicLigature;
     var
       line: string;
-      tIn: TextFile;
       cells: TStringList;
       chars: TStringList;
       u: LongWord;
+      j: Integer;
 
-      procedure AddJoiningType(joinType: string; joinTypeEnum: string);
+      procedure AddJoiningType(joinType: string; joinTypeEnum: string; AIndent: string; AMinIndex,AMaxIndex: integer);
       var
         i,nb: Integer;
         charsList: array of integer;
       begin
         nb := 0;
-        for i := 0 to chars.Count-1 do
+        for i := AMinIndex to AMaxIndex do
           if chars.ValueFromIndex[i]=joinType then inc(nb);
         if nb = 0 then exit;
         setlength(charsList, nb);
         nb := 0;
-        for i := 0 to chars.Count-1 do
+        for i := AMinIndex to AMaxIndex do
           if chars.ValueFromIndex[i]=joinType then
           begin
             charsList[nb] := StrToInt('$'+chars.Names[i]);
             inc(nb);
           end;
-        writeln(tOut,ArrayOfCodeToCase(charsList, '  ')+'result := '+joinTypeEnum+';');
+        writeln(tOut,ArrayOfCodeToCase(charsList, AIndent)+'result := '+joinTypeEnum+';');
+      end;
+
+      procedure AddJoiningTypeRange(AMinIndex,AMaxIndex: integer; AIndent: string; AForceCase: boolean = false);
+      const MaxGaps = 45;
+      var
+        mid, i, gaps, halfGaps: Integer;
+      begin
+        gaps := 0;
+        for i := AMinIndex+1 to AMaxIndex do
+          if (StrToInt('$'+chars.Names[i])-StrToInt('$'+chars.Names[i-1]) > 1) or
+            (chars.ValueFromIndex[i] <> chars.ValueFromIndex[i-1]) then inc(gaps);
+        if (gaps > MaxGaps) and not AForceCase then
+        begin
+          halfGaps := 0;
+          mid := (AMinIndex+AMaxIndex) div 2;
+          for i := AMinIndex+1 to AMaxIndex do
+            if (StrToInt('$'+chars.Names[i])-StrToInt('$'+chars.Names[i-1]) > 1) or
+              (chars.ValueFromIndex[i] <> chars.ValueFromIndex[i-1]) then
+            begin
+              inc(halfGaps);
+              if halfGaps >= gaps shr 1 then
+              begin
+                mid := i;
+                break;
+              end;
+            end;
+          if gaps <= MaxGaps*2.5 then
+          begin
+            writeln(tOut,AIndent, 'if u <= $', chars.Names[mid],' then');
+            AddJoiningTypeRange(AMinIndex, mid, AIndent+'  ', true);
+            writeln(tOut,AIndent, 'else');
+            AddJoiningTypeRange(mid+1, AMaxIndex, AIndent+'  ', true);
+          end else
+          begin
+            writeln(tOut,AIndent, 'if u <= $', chars.Names[mid],' then begin');
+            AddJoiningTypeRange(AMinIndex, mid, AIndent+'  ');
+            writeln(tOut,AIndent, 'end else begin');
+            AddJoiningTypeRange(mid+1, AMaxIndex, AIndent+'  ');
+            writeln(tOut,AIndent, 'end');
+          end;
+        end else
+        begin
+          writeln(tOut,AIndent, 'case u of');
+          AddJoiningType('T', 'ujtTransparent', AIndent, AMinIndex, AMaxIndex);
+          AddJoiningType('R', 'ujtRightJoining', AIndent, AMinIndex, AMaxIndex);
+          AddJoiningType('L', 'ujtLeftJoining', AIndent, AMinIndex, AMaxIndex);
+          AddJoiningType('D', 'ujtDualJoining', AIndent, AMinIndex, AMaxIndex);
+          AddJoiningType('C', 'ujtJoinCausing', AIndent, AMinIndex, AMaxIndex);
+          writeln(tOut,AIndent, 'end');
+        end;
       end;
 
     begin
-      Writeln(tOut,'function GetUnicodeJoiningType(u: LongWord): TUnicodeJoiningType;');
-      Writeln(tOut,'begin');
-      Writeln(tOut,'  case u of');
       writeln('Parsing arabic ligature data...');
-      assignfile(tIn, 'UnicodeData.txt');
-      reset(tin);
       chars := TStringList.Create;
+      for j := 0 to UnicodeCount-1 do
+      begin
+        if (UnicodeData[j].Category = 'Mn') or (UnicodeData[j].Category = 'Me')
+          or (UnicodeData[j].Category = 'Cf') then
+            chars.Values[IntToHex(UnicodeData[j].Code,6)] := 'T';
+      end;
+      assignfile(tIn, 'ArabicShaping.txt');
+      reset(tIn);
       cells := TStringList.Create;
       cells.Delimiter := ';';
       cells.QuoteChar := '"';
       cells.StrictDelimiter := true;
-      while not eof(tIn) do
-      begin
-        readln(tIn, line);
-        cells.DelimitedText:= line;
-        if cells.Count >= 6 then
-        begin
-          u := StrToInt('$'+cells[0]);
-          if (cells[2] = 'Mn') or (cells[2] = 'Me') or (cells[2] = 'Cf') then
-            chars.Values[IntToHex(u,6)] := 'T';
-        end;
-      end;
-      CloseFile(tIn);
-      assignfile(tIn, 'ArabicShaping.txt');
-      reset(tIn);
       while not eof(tIn) do
       begin
         readln(tIn, line);
@@ -364,21 +433,24 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
         if cells.Count >= 4 then
         begin
           u := StrToInt('$'+cells[0]);
-          chars.Values[IntToHex(u,6)] := trim(cells[2]);
+          if trim(cells[2]) = 'U' then
+          begin
+            j := chars.IndexOfName(IntToHex(u,6));
+            if j <> -1 then
+              chars.Delete(j);
+          end
+          else
+            chars.Values[IntToHex(u,6)] := trim(cells[2]);
         end;
       end;
       closefile(tIn);
       cells.Free;
       chars.Sort;
-      AddJoiningType('U', 'ujtNonJoining');
-      AddJoiningType('T', 'ujtTransparent');
-      AddJoiningType('R', 'ujtRightJoining');
-      AddJoiningType('L', 'ujtLeftJoining');
-      AddJoiningType('D', 'ujtDualJoining');
-      AddJoiningType('C', 'ujtJoinCausing');
+      Writeln(tOut,'function GetUnicodeJoiningType(u: LongWord): TUnicodeJoiningType;');
+      Writeln(tOut,'begin');
+      writeln(tOut,'  result := ujtNonJoining;');
+      AddJoiningTypeRange(0, chars.Count-1, '  ');
       chars.Free;
-      Writeln(tOut,'  else result := ujtNonJoining;');
-      Writeln(tOut,'  end;');
       Writeln(tOut,'end;');
       Writeln(tOut);
     end;
@@ -428,17 +500,17 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
         dMedial = 'arMedial';
         dFinal = 'arFinal';
         dIsolated = 'arIsolated';
-  var tOut, tIn: TextFile;
-    line, decomposed, kind, decomposedUTF8, thousandStr: string;
-    cells: TStringList;
+  var tOut: TextFile;
+    decomposed, kind, decomposedUTF8: string;
+    thousands: integer;
     mergedU,nextU: longword;
     posClose, posSpace: SizeInt;
     hasNSM, isLa: Boolean;
     correspList: TStringList;
-    i, decomposedLen: Integer;
+    i, decomposedLen, j: Integer;
     typedKind: TDecompositionKind;
-    combineLeftList, combineRightList, combineLeftAndRightList: TStringList;
-    combineThousands: TStringList;
+    combineLeftList, combineRightList, combineLeftAndRightList: TIntegerList;
+    combineThousands: TIntegerList;
 
     function RemoveUptoTab(AText: string): string;
     var
@@ -450,7 +522,7 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
 
     procedure AddCaseUnicodeCombineLayout(AIndent: string; AThousand: longword);
 
-      function MakeCodeList(AList: TStringList): boolean;
+      function MakeCodeList(AList: TIntegerList): boolean;
       var
         s: String;
         i: integer;
@@ -463,7 +535,7 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
         inRange := false;
         for i := 0 to AList.Count-1 do
         begin
-          val('$' + AList[i], curCode);
+          curCode := AList[i];
           if curCode shr 12 <> AThousand then continue;
           if s <> AIndent then
           begin
@@ -476,7 +548,7 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
             begin
               if curCode <> prevCode+1 then
               begin
-                AppendStr(s, '$' + AList[i-1]);
+                AppendStr(s, '$' + IntToHex(prevCode,4));
                 inRange := false;
               end;
             end;
@@ -491,7 +563,7 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
               result := true;
               s := AIndent;
             end;
-            AppendStr(s, '$' + AList[i]);
+            AppendStr(s, '$' + IntToHex(curCode,4));
           end;
           prevCode := curCode;
         end;
@@ -517,84 +589,68 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
   begin
     writeln('Parsing decomposition data...');
     correspList := TStringList.Create;
-    combineLeftList := TStringList.Create;
-    combineRightList := TStringList.Create;
-    combineLeftAndRightList := TStringList.Create;
-    combineThousands := TStringList.Create;
+    combineLeftList := TIntegerList.Create;
+    combineRightList := TIntegerList.Create;
+    combineLeftAndRightList := TIntegerList.Create;
+    combineThousands := TIntegerList.Create;
 
-    assignfile(tIn, 'UnicodeData.txt');
-    reset(tIn);
-
-    cells := TStringList.Create;
-    cells.Delimiter := ';';
-    cells.QuoteChar := '"';
-    cells.StrictDelimiter := true;
-    while not Eof(tIn) do
+    for j := 0 to UnicodeCount-1 do
     begin
-      readln(tIn, line);
-      if (line = '') or (line[1]='#') then continue;
-      cells.DelimitedText:= line;
-      if cells.Count >= 6 then
+      mergedU := UnicodeData[j].Code;
+      if GetUnicodeBidiClass(mergedU) = ubcNonSpacingMark then continue;
+      if UnicodeData[j].Category = 'Mc' then
       begin
-        mergedU := StrtoInt('$'+cells[0]);
-        if GetUnicodeBidiClass(mergedU) = ubcNonSpacingMark then continue;
-        if cells[2] = 'Mc' then
-        begin
-          thousandStr := '$'+IntToHex(mergedU shr 12, 2);
-          if combineThousands.IndexOf(thousandStr) = -1 then combineThousands.Add(thousandStr);
-          if pos(cells[0]+',', CombineLeftOnly) <> 0 then combineLeftList.Add(cells[0])
-          else if pos(cells[0]+',', CombineLeftAndRight) <> 0 then combineLeftAndRightList.Add(cells[0])
-          else combineRightList.Add(cells[0]);
-        end;
-        decomposed := trim(cells[5]);
-        if decomposed = '' then continue;
-        typedKind := dMultichar;
-        if decomposed[1] = '<' then
-        begin
-          posClose := pos('>', decomposed);
-          if posClose = 0 then continue;
-          kind := copy(decomposed,1,posClose);
-          delete(decomposed, 1, posClose);
-          if kind = '<initial>' then typedKind := dInitial else
-          if kind = '<medial>' then typedKind := dMedial else
-          if kind = '<final>' then typedKind := dFinal else
-          if kind = '<isolated>' then typedKind := dIsolated else
-          if (kind = '<compat>') and (mergedU >= $FB00) and (mergedU <= $FB04) then
-            typedKind := dMultichar
-          else
-            continue;
-          decomposed := trim(decomposed);
-        end;
-        decomposedUTF8 := '';
-        decomposedLen := 0;
-        hasNSM := false;
-        while decomposed <> '' do
-        begin
-          posSpace := pos(' ',decomposed);
-          if posSpace = 0 then posSpace := length(decomposed)+1;
-          nextU := strToInt('$'+copy(decomposed,1,posSpace-1));
-          if GetUnicodeBidiClass(nextU) = ubcNonSpacingMark then hasNSM := true;
-          AppendStr(decomposedUTF8, UnicodeCharToUTF8(nextU));
-          delete(decomposed, 1, posSpace);
-          inc(decomposedLen);
-        end;
-        isLa := (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH) or
-                (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_BELOW) or
-                (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_ABOVE) or
-                (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_MADDA_ABOVE);
-        if ((typedKind = dMultichar) and (decomposedLen > 1)
-             and (hasNSM or (copy(decomposedUTF8,1,1) = 'f'))) or
-           ((typedKind <> dMultichar) and ((decomposedLen = 1) or isLa)) then
-          correspList.Add(decomposedUTF8+#9+'('+
-             'de:''' + decomposedUTF8 + '''; ' +
-             're:''' + UnicodeCharToUTF8(mergedU) + '''; ' +
-             'join:' + typedKind +
-             ')');
+        thousands := mergedU shr 12;
+        if combineThousands.IndexOf(thousands) = -1 then combineThousands.Add(thousands);
+        if pos(IntToHex(mergedU,4)+',', CombineLeftOnly) <> 0 then combineLeftList.Add(mergedU)
+        else if pos(IntToHex(mergedU,4)+',', CombineLeftAndRight) <> 0 then combineLeftAndRightList.Add(mergedU)
+        else combineRightList.Add(mergedU);
       end;
+      decomposed := UnicodeData[j].Decomposition;
+      if decomposed = '' then continue;
+      typedKind := dMultichar;
+      if decomposed[1] = '<' then
+      begin
+        posClose := pos('>', decomposed);
+        if posClose = 0 then continue;
+        kind := copy(decomposed,1,posClose);
+        delete(decomposed, 1, posClose);
+        if kind = '<initial>' then typedKind := dInitial else
+        if kind = '<medial>' then typedKind := dMedial else
+        if kind = '<final>' then typedKind := dFinal else
+        if kind = '<isolated>' then typedKind := dIsolated else
+        if (kind = '<compat>') and (mergedU >= $FB00) and (mergedU <= $FB04) then
+          typedKind := dMultichar
+        else
+          continue;
+        decomposed := trim(decomposed);
+      end;
+      decomposedUTF8 := '';
+      decomposedLen := 0;
+      hasNSM := false;
+      while decomposed <> '' do
+      begin
+        posSpace := pos(' ',decomposed);
+        if posSpace = 0 then posSpace := length(decomposed)+1;
+        nextU := strToInt('$'+copy(decomposed,1,posSpace-1));
+        if GetUnicodeBidiClass(nextU) = ubcNonSpacingMark then hasNSM := true;
+        AppendStr(decomposedUTF8, UnicodeCharToUTF8(nextU));
+        delete(decomposed, 1, posSpace);
+        inc(decomposedLen);
+      end;
+      isLa := (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH) or
+              (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_BELOW) or
+              (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_HAMZA_ABOVE) or
+              (decomposedUTF8 = UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH_MADDA_ABOVE);
+      if ((typedKind = dMultichar) and (decomposedLen > 1)
+           and (hasNSM or (copy(decomposedUTF8,1,1) = 'f'))) or
+         ((typedKind <> dMultichar) and ((decomposedLen = 1) or isLa)) then
+        correspList.Add(decomposedUTF8+#9+'('+
+           'de:''' + decomposedUTF8 + '''; ' +
+           're:''' + UnicodeCharToUTF8(mergedU) + '''; ' +
+           'join:' + typedKind +
+           ')');
     end;
-    cells.Free;
-
-    CloseFile(tIn);
 
     correspList.CustomSort(@ListCompareBinary);
 
@@ -624,8 +680,8 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
     writeln(tOut, '  case u shr 24 of');
     for i := 0 to combineThousands.Count-1 do
     begin
-      writeln(tOut, '  ',combineThousands[i],':');
-      AddCaseUnicodeCombineLayout('    ', StrToInt(combineThousands[i]));
+      writeln(tOut, '  $',IntToHex(combineThousands[i],2),':');
+      AddCaseUnicodeCombineLayout('    ', combineThousands[i]);
     end;
     writeln(tOut, '  end;');
     writeln(tOut, '  result := uclNone;');
@@ -636,6 +692,7 @@ uses Classes, sysutils, BGRAUTF8, BGRAUnicode;
   end;
 
 begin
+  LoadUnicodeData;
   GenerateUnicodeFunctions;
   UTF8RecompositionFunction;
   writeln('Done.');
