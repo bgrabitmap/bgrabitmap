@@ -732,8 +732,7 @@ begin
       charLen := UTF8CharacterLength(@ABefore[p]);
       if p+charLen > length(ABefore)+1 then charLen := length(ABefore)+1-p;
       u := UTF8CodepointToUnicode(@ABefore[p],charLen);
-      if (GetUnicodeBidiClass(u) = ubcNonSpacingMark) or
-         (GetUnicodeCombiningLayout(u) <> uclNone) then
+      if (GetUnicodeBidiClassEx(u) in[ubcNonSpacingMark, ubcCombiningLeftToRight]) then
         inc(p,charLen)
       else
         break;

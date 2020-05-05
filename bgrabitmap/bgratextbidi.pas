@@ -886,7 +886,7 @@ begin
     while (result > 0) and (p > pStart) do
     begin
       u := UTF8CodepointToUnicode(p, UTF8CharacterLength(p));
-      if GetUnicodeCombiningLayout(u) <> uclNone then
+      if GetUnicodeBidiClassEx(u) = ubcCombiningLeftToRight then
       begin
         dec(p);
         while (p >= pStart) and (p^ in[#$80..#$BF]) do dec(p);

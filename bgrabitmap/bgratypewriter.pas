@@ -1162,23 +1162,20 @@ begin
     flags := [];
     if merged then include(flags, gcfMerged);
     if curRTL then include(flags, gcfRightToLeft);
-    if curRTL and (UTF8Length(glyphId)=1) then
+    if curRTL and charInfo[curStart].bidiInfo^.IsMirrored and (UTF8Length(glyphId)=1) then
     begin
       u := UTF8CodepointToUnicode(pchar(glyphId), length(glyphId));
-      if IsUnicodeMirrored(u) then
+      if SubstituteBidiBracket then
       begin
-        if SubstituteBidiBracket then
-        begin
-          bracketInfo := GetUnicodeBracketInfo(u);
-          if bracketInfo.OpeningBracket = u then
-            glyphId := UnicodeCharToUTF8(bracketInfo.ClosingBracket)
-          else if bracketInfo.ClosingBracket = u then
-            glyphId := UnicodeCharToUTF8(bracketInfo.OpeningBracket)
-          else
-            include(flags, gcfMirrored);
-        end else
+        bracketInfo := GetUnicodeBracketInfo(u);
+        if bracketInfo.OpeningBracket = u then
+          glyphId := UnicodeCharToUTF8(bracketInfo.ClosingBracket)
+        else if bracketInfo.ClosingBracket = u then
+          glyphId := UnicodeCharToUTF8(bracketInfo.OpeningBracket)
+        else
           include(flags, gcfMirrored);
-      end;
+      end else
+        include(flags, gcfMirrored);
     end;
     g := GetGlyph(glyphId);
     if g <> nil then
