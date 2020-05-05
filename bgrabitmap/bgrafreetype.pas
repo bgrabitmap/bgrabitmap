@@ -402,6 +402,7 @@ end;
 
 procedure TFreeTypeTypeWriter.DrawText(ADrawer: TBGRAFreeTypeDrawer;
   ATextUTF8: string; X, Y: Single; AColor: TBGRAPixel; AAlign: TBGRATypeWriterAlignment);
+const GlyphBoxFixed = false;
 var
   i,j : Integer;
   ptGlyph: TPointF;
@@ -410,7 +411,57 @@ var
   ftGlyph: TFreeTypeGlyph;
   glyphBounds: TRect;
   ofsX, ofsY: Single;
-  aboveOfs, belowOfs, xRef: Single;
+  aboveOfs, belowOfs, xRef, xRefBelow: Single;
+  justBelow, justAbove: boolean;
+
+  function RetrieveMarkGlyph(AMark: LongWord): boolean;
+  begin
+    glyphIndex := FFont.CharIndex[AMark];
+    if glyphIndex <> 0 then
+    begin
+      ftGlyph := FFont.Glyph[glyphIndex];
+      glyphBounds := ftGlyph.Bounds;
+      result := true;
+    end
+    else result := false;
+  end;
+
+  procedure DoJustAbove(const ALetterBounds: TRect);
+  begin
+    if justAbove then
+    begin
+      if GlyphBoxFixed then
+      begin
+        DecF(aboveOfs, ALetterBounds.Top - glyphBounds.Bottom);
+        incF(aboveOfs, FFont.SizeInPixels/12);
+      end else
+        DecF(aboveOfs, ALetterBounds.Top + FFont.Ascent/3);
+      justAbove := false;
+    end;
+  end;
+
+  procedure DoJustBelow(const ALetterBounds: TRect);
+  begin
+    if justBelow then
+    begin
+      if GlyphBoxFixed then
+      begin
+        incF(belowOfs, ALetterBounds.Bottom - glyphBounds.Top);
+        incF(belowOfs, FFont.SizeInPixels/12);
+      end else
+        incF(belowOfs, ALetterBounds.Bottom);
+      justBelow := false;
+    end;
+  end;
+
+  function GetMarkOffsetY: single;
+  begin
+    if GlyphBoxFixed then
+      result := glyphBounds.Height + FFont.SizeInPixels/20
+    else
+      result := FFont.SizeInPixels/4;
+  end;
+
 begin
   di := GetDisplayInfo(ATextUTF8, x, y, AAlign);
   for i := 0 to high(di) do
@@ -428,26 +479,33 @@ begin
       begin
         if Marks <> nil then
         begin
+          justAbove := false;
           if (Recomposed = 'ﻁ') or (Recomposed = 'ﻂ') or (Recomposed = 'ﻃ') or (Recomposed = 'ﻄ') or
              (Recomposed = 'ﻅ') or (Recomposed = 'ﻆ') or (Recomposed = 'ﻇ') or (Recomposed = 'ﻈ') then
           begin
             aboveOfs := 0;
             xRef := ptGlyph.X + Width*3/4;
+            xRefBelow := xRef;
           end else
           if (Recomposed = 'ﻝ') or (Recomposed = 'ﻞ') or (Recomposed = 'ﻚ') or (Recomposed = 'ﻙ') then
           begin
             aboveOfs := 0;
             xRef := ptGlyph.X + Width/2;
+            xRefBelow := xRef;
           end else
           if (Recomposed = 'ﻵ') or (Recomposed = 'ﻶ') or (Recomposed = 'ﻷ') or (Recomposed = 'ﻸ') or
              (Recomposed = 'ﻹ') or (Recomposed = 'ﻺ') or (Recomposed = 'ﻻ') or (Recomposed = 'ﻼ') then
           begin
-            aboveOfs := -(Bounds.Top + FFont.Ascent/3) - FFont.SizeInPixels/6;
+            justAbove := true;
+            aboveOfs := - FFont.SizeInPixels/10;
             xRef := ptGlyph.X + Width/6;
+            xRefBelow := ptGlyph.X + Width/4;
           end else
           begin
-            aboveOfs := -(Bounds.Top + FFont.Ascent/3);
+            justAbove := true;
+            aboveOfs := 0;
             xRef := ptGlyph.X + Width/2;
+            xRefBelow := xRef;
           end;
           if (Recomposed = 'ﻅ') or (Recomposed = 'ﻆ') or (Recomposed = 'ﻇ') or (Recomposed = 'ﻈ') or
            (Recomposed = 'ﻚ') or (Recomposed = 'ﻙ') then
@@ -458,28 +516,30 @@ begin
              (Recomposed = 'ﭖ') or (Recomposed = 'ﭗ') or (Recomposed = 'ﭚ') or (Recomposed = 'ﭛ') or
              (Recomposed = 'ٮ') then
           begin
-            DecF(aboveOfs, FFont.SizeInPixels/12);
+            DecF(aboveOfs, FFont.SizeInPixels/16);
           end;
 
-          belowOfs := Bounds.Bottom;
+          belowOfs := 0;
+          justBelow := true;
           for j := 0 to high(Marks) do
           if IsArabicMarkAbove(Marks[j]) or IsArabicMarkBelow(Marks[j]) then
           begin
-            glyphIndex := FFont.CharIndex[Marks[j]];
-            if glyphIndex <> 0 then
+            if RetrieveMarkGlyph(Marks[j]) then
             begin
-              ftGlyph := FFont.Glyph[glyphIndex];
-              glyphBounds := ftGlyph.Bounds;
               ofsX := -(glyphBounds.Left + glyphBounds.Right)/2;
               if IsArabicMarkAbove(Marks[j]) then
               begin
+                DoJustAbove(Bounds);
                 ofsY := -aboveOfs;
-                IncF(aboveOfs, FFont.SizeInPixels/4);
+                IncF(aboveOfs, GetMarkOffsetY);
               end else
               if IsArabicMarkBelow(Marks[j]) then
               begin
+                if justBelow then incF(ofsX, xRefBelow - xRef);
+                DoJustBelow(Bounds);
+                incF(ofsX, xRefBelow - xRef);
                 ofsY := belowOfs;
-                IncF(belowOfs, FFont.SizeInPixels/4);
+                IncF(belowOfs, GetMarkOffsetY);
               end;
               ADrawer.DrawGlyph(glyphIndex, FFont,
                   xRef + ofsX, ptGlyph.y + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
@@ -488,27 +548,30 @@ begin
         end;
         if InnerMarks <> nil then
         begin
-          xRef := ptGlyph.X + Width*2/3;
-          aboveOfs := -(Bounds.Top + FFont.Ascent/3);
-          belowOfs := Bounds.Bottom;
+          xRef := ptGlyph.X + Width*3/4;
+          xRefBelow := xRef;
+          aboveOfs := 0;
+          justAbove := true;
+          belowOfs := 0;
+          justBelow := true;
           for j := 0 to high(InnerMarks) do
           if IsArabicMarkAbove(InnerMarks[j]) or IsArabicMarkBelow(InnerMarks[j]) then
           begin
-            glyphIndex := FFont.CharIndex[InnerMarks[j]];
-            if glyphIndex <> 0 then
+            if RetrieveMarkGlyph(InnerMarks[j]) then
             begin
-              ftGlyph := FFont.Glyph[glyphIndex];
-              glyphBounds := ftGlyph.Bounds;
               ofsX := -(glyphBounds.Left + glyphBounds.Right)/2;
               if IsArabicMarkAbove(InnerMarks[j]) then
               begin
+                DoJustAbove(Bounds);
                 ofsY := -aboveOfs;
-                IncF(aboveOfs, FFont.SizeInPixels/4);
+                IncF(aboveOfs, GetMarkOffsetY);
               end else
               if IsArabicMarkBelow(InnerMarks[j]) then
               begin
+                if justBelow then incF(ofsX, xRefBelow - xRef);
+                DoJustBelow(Bounds);
                 ofsY := belowOfs;
-                IncF(belowOfs, FFont.SizeInPixels/4);
+                IncF(belowOfs, GetMarkOffsetY);
               end;
               ADrawer.DrawGlyph(glyphIndex, FFont,
                   xRef + ofsX, ptGlyph.y + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
