@@ -160,6 +160,53 @@ const
   ArabicMarkBelow: array[0..3] of LongWord =
     ($061A, $064D, $0650, $08F2);
 
+type
+  TMarkFallback = record
+    NonSpacing: LongWord;
+    Spacing: LongWord;
+    Moved: boolean;
+  end;
+
+const
+  MarkFallback: array[0..30] of TMarkFallback = (
+  (NonSpacing: $300; Spacing: $2CA; Moved: false),
+  (NonSpacing: $301; Spacing: $B4; Moved: false),
+  (NonSpacing: $302; Spacing: $5E; Moved: false),
+  (NonSpacing: $303; Spacing: $2DC; Moved: false),
+  (NonSpacing: $304; Spacing: $AF; Moved: false),
+  (NonSpacing: $305; Spacing: $203E; Moved: false),
+  (NonSpacing: $306; Spacing: $2D8; Moved: false),
+  (NonSpacing: $307; Spacing: $2D9; Moved: false),
+  (NonSpacing: $308; Spacing: $A8; Moved: false),
+  (NonSpacing: $30A; Spacing: $2DA; Moved: false),
+  (NonSpacing: $30B; Spacing: $2DD; Moved: false),
+  (NonSpacing: $30E; Spacing: $22; Moved: false),
+  (NonSpacing: $313; Spacing: $1FBD; Moved: false),
+  (NonSpacing: $314; Spacing: $1FFE; Moved: false),
+  (NonSpacing: $316; Spacing: $2CA; Moved: true),
+  (NonSpacing: $317; Spacing: $B4; Moved: true),
+  (NonSpacing: $320; Spacing: $AF; Moved: true),
+  (NonSpacing: $324; Spacing: $A8; Moved: true),
+  (NonSpacing: $325; Spacing: $2DA; Moved: true),
+  (NonSpacing: $327; Spacing: $B8; Moved: false),
+  (NonSpacing: $328; Spacing: $2DB; Moved: false),
+  (NonSpacing: $32D; Spacing: $5E; Moved: true),
+  (NonSpacing: $32E; Spacing: $2D8; Moved: true),
+  (NonSpacing: $330; Spacing: $2DC; Moved: true),
+  (NonSpacing: $331; Spacing: $AF; Moved: true),
+  (NonSpacing: $332; Spacing: $203E; Moved: true),
+  (NonSpacing: $333; Spacing: $2017; Moved: false),
+  (NonSpacing: $33F; Spacing: $2017; Moved: true),
+  (NonSpacing: $342; Spacing: $1FC0; Moved: false),
+  (NonSpacing: $340; Spacing: $2CA; Moved: false),
+  (NonSpacing: $341; Spacing: $B4; Moved: false),
+  (NonSpacing: $342; Spacing: $2DC; Moved: false),
+  (NonSpacing: $343; Spacing: $1FBD; Moved: false),
+  (NonSpacing: $345; Spacing: $37A; Moved: false),
+  (NonSpacing: $348; Spacing: $22; Moved: true),
+  (NonSpacing: $3099; Spacing: $309B; Moved: false),
+  (NonSpacing: $309A; Spacing: $309C; Moved: false));
+
 function IsArabicMarkAbove(u: LongWord): boolean;
 var
   i: Integer;
@@ -178,10 +225,28 @@ begin
   result := false;
 end;
 
-procedure RecomposeUTF8(ADecomposed: string; out ARecomposed: string; out AMarks, AInnerMarks: string);
+procedure RecomposeUTF8(AFont: TFreeTypeFont; ADecomposed: string; out ARecomposed: string; out AMarks, AInnerMarks: string);
 var
   joinBefore, joinAfter: boolean;
   lookFor: string;
+
+  function FindChars(AText: string): boolean;
+  var
+    p, charLen: Integer;
+    u: LongWord;
+  begin
+    if AFont = nil then exit(true);
+
+    p := 1;
+    while p <= length(AText) do
+    begin
+      charLen := UTF8CharacterLength(@AText[p]);
+      u := UTF8CodepointToUnicode(@AText[p], charLen);
+      if AFont.CharIndex[u] = 0 then exit(false);
+      inc(p, charLen);
+    end;
+    result := true;
+  end;
 
   function RecomposeRec(AMin,AMax: integer): boolean;
 
@@ -196,6 +261,7 @@ var
           if UTF8Decomposition[i].join <> arNone then
             if (joinBefore xor (UTF8Decomposition[i].join in[arMedial,arFinal])) or
                (joinAfter xor (UTF8Decomposition[i].join in[arInitial,arMedial])) then continue;
+          if not FindChars(UTF8Decomposition[i].re) then continue;
           ARecomposed := UTF8Decomposition[i].re;
           result := true;
           exit;
@@ -207,6 +273,7 @@ var
           if UTF8Decomposition[i].join <> arNone then
             if (joinBefore xor (UTF8Decomposition[i].join in[arMedial,arFinal])) or
                (joinAfter xor (UTF8Decomposition[i].join in[arInitial,arMedial])) then continue;
+          if not FindChars(UTF8Decomposition[i].re) then continue;
           newExtra := copy(ARecomposed, length(ARecomposed)+1-extra, extra);
           if GetFirstStrongBidiClassUTF8(newExtra) <> ubcUnknown then continue;
           AMarks := newExtra + AMarks;
@@ -317,9 +384,11 @@ type
 
   TBGRAFreeTypeGlyph = class(TBGRAGlyph)
   public
+    Font: TFreeTypeFont;
     Recomposed: string;
     Marks, InnerMarks: TUnicodeArray;
     Bounds: TRect;
+    constructor Create(AFont: TFreeTypeFont; AIdentifier: string);
     constructor Create(AIdentifier: string); override;
   end;
 
@@ -337,7 +406,7 @@ type
 
 { TFreeTypeGlyph }
 
-constructor TBGRAFreeTypeGlyph.Create(AIdentifier: string);
+constructor TBGRAFreeTypeGlyph.Create(AFont: TFreeTypeFont; AIdentifier: string);
 var
   marksStr, innerMarksStr: string;
   ofs: TIntegerArray;
@@ -438,11 +507,17 @@ var
 
 begin
   inherited Create(AIdentifier);
-  RecomposeUTF8(AIdentifier, Recomposed, marksStr, innerMarksStr);
+  Font := AFont;
+  RecomposeUTF8(Font, AIdentifier, Recomposed, marksStr, innerMarksStr);
   UTF8ToUnicodeArray(marksStr, Marks, ofs);
   SortMarks(Marks);
   UTF8ToUnicodeArray(innerMarksStr, InnerMarks, ofs);
   SortMarks(InnerMarks);
+end;
+
+constructor TBGRAFreeTypeGlyph.Create(AIdentifier: string);
+begin
+  Create(nil, AIdentifier);
 end;
 
 { TFreeTypeTypeWriter }
@@ -457,7 +532,7 @@ begin
   Result:= inherited GetGlyph(AIdentifier);
   if result = nil then
   begin
-    g := TBGRAFreeTypeGlyph.Create(AIdentifier);
+    g := TBGRAFreeTypeGlyph.Create(FFont, AIdentifier);
     g.Width := FFont.TextWidth(g.Recomposed);
     g.Height := FFont.LineFullHeight;
     SetGlyph(AIdentifier, g);
@@ -498,8 +573,19 @@ var
   justBelow, justAbove: boolean;
 
   function RetrieveMarkGlyph(AMark: LongWord): boolean;
+  var k: integer;
   begin
     markGlyphIndex := FFont.CharIndex[AMark];
+    if markGlyphIndex = 0 then
+    begin
+      for k := 0 to high(MarkFallback) do
+        if (MarkFallback[k].NonSpacing = AMark) and
+           (not MarkFallback[k].Moved or GlyphBoxFixed) then
+        begin
+          markGlyphIndex := FFont.CharIndex[MarkFallback[k].Spacing];
+          break;
+        end;
+    end;
     if markGlyphIndex <> 0 then
     begin
       markFreetypeGlyph := FFont.Glyph[markGlyphIndex];
@@ -543,12 +629,19 @@ var
     end;
   end;
 
-  function GetMarkOffsetY: single;
+  function GetMarkOffsetY(AMark: LongWord): single;
   begin
-    if GlyphBoxFixed then
-      result := markGlyphBounds.Height + FFont.SizeInPixels/20
-    else
-      result := FFont.SizeInPixels/4;
+    if (AMark = $304) or (AMark= $305)  or (AMark= $33F) or
+       (AMark = $320) or (AMark = $331) or (AMark = $332) or (AMark = $333) then
+    begin
+      result := FFont.SizeInPixels/8;
+    end else
+    begin
+      if GlyphBoxFixed then
+        result := markGlyphBounds.Height + FFont.SizeInPixels/20
+      else
+        result := FFont.SizeInPixels/4;
+    end;
   end;
 
   procedure DrawMark(AMark: LongWord; const ALetterBounds: TRect);
@@ -562,7 +655,7 @@ var
         DoJustAbove(ALetterBounds);
         ofsX := -(markGlyphBounds.Left + markGlyphBounds.Right)/2;
         ofsY := -aboveOfs;
-        IncF(aboveOfs, GetMarkOffsetY);
+        IncF(aboveOfs, GetMarkOffsetY(AMark));
         ADrawer.DrawGlyph(markGlyphIndex, FFont,
             xRef + ofsX, ptGlyph.y + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
       end else
@@ -572,7 +665,7 @@ var
         DoJustBelow(ALetterBounds);
         ofsX := -(markGlyphBounds.Left + markGlyphBounds.Right)/2;
         ofsY := belowOfs;
-        IncF(belowOfs, GetMarkOffsetY);
+        IncF(belowOfs, GetMarkOffsetY(AMark));
         ADrawer.DrawGlyph(markGlyphIndex, FFont,
             xRefBelow + ofsX, ptGlyph.y + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
       end else
