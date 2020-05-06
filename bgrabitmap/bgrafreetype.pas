@@ -150,7 +150,7 @@ implementation
 
 uses BGRABlend, Math, BGRATransform, BGRAUnicode, BGRAUTF8;
 
-{$i utf8decomposition.inc}
+{$i generatedutf8.inc}
 
 const
   ArabicMarkAbove: array[0..45] of LongWord =
@@ -954,7 +954,6 @@ end;
 function TBGRAFreeTypeFontRenderer.TextSizeF(sUTF8: string; AMaxWidthF: single;
   ARightToLeft: boolean): TPointF;
 var
-  remains: string;
   w,h: single;
   charCount, byteCount: integer;
 begin

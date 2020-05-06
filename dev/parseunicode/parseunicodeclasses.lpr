@@ -8,7 +8,9 @@ type
 var
   UnicodeData: array of record
     Code: LongInt;
-    Name, Category, BidiCategory, Decomposition: string;
+    Name, Category: string;
+    CombiningClass: byte;
+    BidiClass, Decomposition: string;
     Mirrored: boolean;
     OldName: string;
   end;
@@ -36,7 +38,8 @@ var
         Code := StrToInt('$'+cells[0]);
         Name := cells[1];
         Category := cells[2];
-        BidiCategory := cells[4];
+        CombiningClass:= StrToInt(cells[3]);
+        BidiClass := cells[4];
         Decomposition:= cells[5];
         Mirrored := (cells[9] = 'Y');
         OldName := cells[10];
@@ -93,77 +96,111 @@ var
     result += ': ';
   end;
 
+  function ArrayOfCodeToCase(ACodes: TIntegerList; AIndent: string): string;
+  var a: array of integer;
+    i: Integer;
+  begin
+    setlengtH(a, ACodes.Count);
+    for i := 0 to high(a) do
+      a[i] := ACodes[i];
+    result := ArrayOfCodeToCase(a, AIndent);
+  end;
+
   procedure GenerateUnicodeFunctions;
   const Indent = '      ';
   var
     tIn, tOut: TextFile;
 
-    procedure ParseUnicodeData;
+    procedure ParseBidiClasses;
 
       procedure IncludeClasses(AClasses: TStrings; AMinCode, AMaxCode: integer);
+      const
+        MaxGapsPerClass = 20;
       var
-        curBidi: string;
-        codes: array of integer;
-        codeCount: integer;
+        codes: array[TUnicodeBidiClass] of TIntegerList;
+        gaps: array[TUnicodeBidiClass] of integer;
 
-        procedure FlushCase;
+        procedure FlushCase(curBidi: TUnicodeBidiClass);
         var
           caseStr: string;
         begin
-          if codeCount = 0 then exit;
-
-          caseStr := ArrayOfCodeToCase(slice(codes, codeCount), Indent);
+          if codes[curBidi].Count = 0 then exit;
+          caseStr := ArrayOfCodeToCase(codes[curBidi], Indent);
 
           case curBidi of
-          'CS': WriteLn(tOut,caseStr+'result := ubcCommonSeparator;');
-          'L': WriteLn(tOut,caseStr+'result := ubcLeftToRight;');
-          'EN': WriteLn(tOut,caseStr+'result := ubcEuropeanNumber;');
-          'ES': WriteLn(tOut,caseStr+'result := ubcEuropeanNumberSeparator;');
-          'ET': WriteLn(tOut,caseStr+'result := ubcEuropeanNumberTerminator;');
-          'R': WriteLn(tOut,caseStr+'result := ubcRightToLeft;');
-          'AL': WriteLn(tOut,caseStr+'result := ubcArabicLetter;');
-          'AN': WriteLn(tOut,caseStr+'result := ubcArabicNumber;');
-          'NSM': WriteLn(tOut,caseStr+'result := ubcNonSpacingMark;');
-          'BN': WriteLn(tOut,caseStr+'result := ubcBoundaryNeutral;');
-          'B': WriteLn(tOut,caseStr+'result := ubcParagraphSeparator;');
-          'S': WriteLn(tOut,caseStr+'result := ubcSegmentSeparator;');
-          'WS': WriteLn(tOut,caseStr+'result := ubcWhiteSpace;');
-          'ON': WriteLn(tOut,caseStr+'result := ubcOtherNeutrals;');
+          ubcCommonSeparator: WriteLn(tOut,caseStr+'result := ubcCommonSeparator;');
+          ubcLeftToRight: WriteLn(tOut,caseStr+'result := ubcLeftToRight;');
+          ubcCombiningLeftToRight: WriteLn(tOut,caseStr+'result := ubcCombiningLeftToRight;');
+          ubcEuropeanNumber: WriteLn(tOut,caseStr+'result := ubcEuropeanNumber;');
+          ubcEuropeanNumberSeparator: WriteLn(tOut,caseStr+'result := ubcEuropeanNumberSeparator;');
+          ubcEuropeanNumberTerminator: WriteLn(tOut,caseStr+'result := ubcEuropeanNumberTerminator;');
+          ubcRightToLeft: WriteLn(tOut,caseStr+'result := ubcRightToLeft;');
+          ubcArabicLetter: WriteLn(tOut,caseStr+'result := ubcArabicLetter;');
+          ubcArabicNumber: WriteLn(tOut,caseStr+'result := ubcArabicNumber;');
+          ubcNonSpacingMark: WriteLn(tOut,caseStr+'result := ubcNonSpacingMark;');
+          ubcBoundaryNeutral: WriteLn(tOut,caseStr+'result := ubcBoundaryNeutral;');
+          ubcParagraphSeparator: WriteLn(tOut,caseStr+'result := ubcParagraphSeparator;');
+          ubcSegmentSeparator: WriteLn(tOut,caseStr+'result := ubcSegmentSeparator;');
+          ubcWhiteSpace: WriteLn(tOut,caseStr+'result := ubcWhiteSpace;');
+          ubcMirroredNeutral: WriteLn(tOut,caseStr+'result := ubcMirroredNeutral;');
+          ubcOtherNeutrals: WriteLn(tOut,caseStr+'result := ubcOtherNeutrals;');
+          else raise exception.Create('Unknown bidi class');
           end;
-          codeCount:= 0;
+          codes[curBidi].Clear;
+          gaps[curBidi] := 0;
         end;
 
       var
-        newBidi: string;
+        newBidi: TUnicodeBidiClass;
         curCode: LongInt;
         i: integer;
 
       begin
         writeln('Parsing unicode data for classes ', AClasses.DelimitedText,'...');
-        codes := nil;
-        codeCount := 0;
-        curBidi := '?';
+        for newBidi := low(TUnicodeBidiClass) to high(TUnicodeBidiClass) do
+        begin
+          codes[newBidi] := TIntegerList.Create;
+          gaps[newBidi] := 0;
+        end;
         for i := 0 to UnicodeCount-1 do
         begin
-          newBidi := UnicodeData[i].BidiCategory;
-          if AClasses.IndexOf(newBidi)<>-1 then
+          case UnicodeData[i].BidiClass of
+          'CS': newBidi := ubcCommonSeparator;
+          'L': newBidi := ubcLeftToRight;
+          'EN': newBidi := ubcEuropeanNumber;
+          'ES': newBidi := ubcEuropeanNumberSeparator;
+          'ET': newBidi := ubcEuropeanNumberTerminator;
+          'R': newBidi := ubcRightToLeft;
+          'AL': newBidi := ubcArabicLetter;
+          'AN': newBidi := ubcArabicNumber;
+          'NSM': newBidi := ubcNonSpacingMark;
+          'BN': newBidi := ubcBoundaryNeutral;
+          'B': newBidi := ubcParagraphSeparator;
+          'S': newBidi := ubcSegmentSeparator;
+          'WS': newBidi := ubcWhiteSpace;
+          'ON': newBidi := ubcOtherNeutrals;
+          else continue;
+          end;
+          if (newBidi = ubcLeftToRight) and (UnicodeData[i].Category = 'Mc') then newBidi := ubcCombiningLeftToRight
+          else if (newBidi = ubcOtherNeutrals) and UnicodeData[i].Mirrored then newBidi := ubcMirroredNeutral;
+          if AClasses.IndexOf(UnicodeData[i].BidiClass)<>-1 then
           begin
-            if newBidi <> curBidi then
-            begin
-              FlushCase;
-              curBidi := newBidi;
-            end;
             curCode := UnicodeData[i].Code;
             if (curCode >= AMinCode) and (curCode <= AMaxCode) then
             begin
-              if codeCount >= length(codes) then
-                setlength(codes, codeCount*2 + 8);
-              codes[codeCount] := curCode;
-              inc(codeCount);
+              if (codes[newBidi].Count > 0) and (codes[newBidi].Last+1 <> curCode) then
+                inc(gaps[newBidi]);
+              codes[newBidi].Add(curCode);
+              if gaps[newBidi] > MaxGapsPerClass then
+                FlushCase(newBidi);
             end;
           end;
         end;
-        FlushCase;
+        for newBidi := low(TUnicodeBidiClass) to high(TUnicodeBidiClass) do
+        begin
+          FlushCase(newBidi);
+          codes[newBidi].Free;
+        end;
       end;
 
     var c: TStringList;
@@ -179,7 +216,7 @@ var
         IncludeClasses(c, AMinCode,AMaxCode);
         c.CommaText := 'WS';
         IncludeClasses(c, AMinCode,AMaxCode);
-        c.CommaText := 'L,R,AL';
+        c.CommaText := 'L,CL,R,AL';
         IncludeClasses(c, AMinCode,AMaxCode);
         c.CommaText := 'EN';
         IncludeClasses(c, AMinCode,AMaxCode);
@@ -191,47 +228,15 @@ var
         IncludeClasses(c, AMinCode,AMaxCode);
         c.CommaText := 'CS,NSM';
         IncludeClasses(c, AMinCode,AMaxCode);
-        c.CommaText := 'ON';
+        c.CommaText := 'ON,MN';
         IncludeClasses(c, AMinCode,AMaxCode);
         writeln(tout,Indent+'else result := ubcUnknown;');
         writeln(tout,Indent+'end;');
       end;
 
-      procedure ParseUnicodeMirrored;
-      var
-        codes: array of LongInt;
-        codeCount, i: integer;
-        curCode: integer;
-      begin
-        writeln('Parsing unicode data for mirorred characters...');
-        codes := nil;
-        codeCount := 0;
-        for i := 0 to UnicodeCount-1 do
-        begin
-          if UnicodeData[i].Mirrored then
-          begin
-            curCode := UnicodeData[i].Code;
-            if codeCount >= length(codes) then
-              setlength(codes, codeCount*2 + 8);
-            codes[codeCount] := curCode;
-            inc(codeCount);
-          end;
-        end;
-
-        Writeln(tOut,'function IsUnicodeMirrored(u: LongWord): boolean;');
-        writeln(tout,'begin');
-        writeln(tout,'  case u of');
-        writeln(tout, ArrayOfCodeToCase(Slice(codes, codeCount), '  '), 'result:= true;');
-        writeln(tout,'  else result := false;');
-        writeln(tout,'  end;');
-        writeln(tout,'end;');
-        writeln(tout);
-      end;
-
     begin
-      Writeln(tOut,'function GetUnicodeBidiClass(u: LongWord): TUnicodeBidiClass;');
-      FormatSettings.ShortDateFormat := 'yyyy/mm/dd';
-      Writeln(tOut,'begin //generated '+DateToStr(Date));
+      Writeln(tOut,'function GetUnicodeBidiClassEx(u: LongWord): TUnicodeBidiClass;');
+      Writeln(tOut,'begin');
       c := TStringList.Create;
       writeln(tOut,'  case u of');
       writeln(tOut,'  $00000..$07FFF:');
@@ -278,8 +283,6 @@ var
 
       writeln(tout,'end;');
       writeln(tout);
-
-      ParseUnicodeMirrored;
     end;
 
     procedure ParseBidiBrackets;
@@ -287,11 +290,6 @@ var
       line: string;
       tIn: TextFile;
     begin
-      Writeln(tOut,'type');
-      writeln(tout,'  TUnicodeBracketInfo = record');
-      writeln(tout,'    IsBracket: boolean;');
-      writeln(tout,'    OpeningBracket,ClosingBracket: LongWord;');
-      writeln(tout,'  end;');
       Writeln(tOut,'function GetUnicodeBracketInfo(u: LongWord): TUnicodeBracketInfo;');
       Writeln(tOut,'  procedure Bracket(AOpening,AClosing: LongWord);');
       Writeln(tOut,'  begin');
@@ -455,14 +453,91 @@ var
       Writeln(tOut);
     end;
 
-  begin
-    AssignFile(tOut, 'UnicodeFunctions.generated.pas');
-    Rewrite(tOut);
+    procedure ParseCombiningClasses;
+    const
+      CombineLeftOnly = '093F,094E,' + {DEVANAGARI}
+        '09BF,09C7,09C8,' + {BENGALI}
+        '0A3F,' + {GURMUKHI}
+        '0ABF,' + {GUJARATI}
+        '0B47,0B48,0B4B,0B4C,' + {ORIYA}
+        '0BC6,0BC7,0BC8,' + {TAMIL}
+        '0D46,0D47,0D48,' + {MALAYALAM}
+        '0DD9,0DDA,0DDB,0DDC,0DDD,0DDE,' + {SINHALA}
+        '1031,103C,1084,' + {MYANMAR}
+        '17BE,17C1,17C2,17C3,' + {KHMER}
+        '1A19,' + {BUGINESE}
+        '1B3E,1B3F,' + {BALINESE}
+        '302E,302F,' + {HANGUL}
+        'A9BA,A9BB,A9BF,' + {JAVANESE}
+        'AA2F,AA30,AA34,'; {CHAM}
+      CombineLeftAndRight = '09CB,09CC,' + {BENGALI}
+        '0BCA,0BCB,0BCC,' + {TAMIL}
+        '0D4A,0D4B,0D4C,' + {MALAYALAM}
+        '17BF,17C0,17C4,17C5,' + {KHMER}
+        '1B3D,1B40,1B41,'; {BALINESE}
 
-    ParseUnicodeData;
+    var
+      i: Integer;
+      infos: TStringList;
+      u: LongInt;
+      c: byte;
+      s: String;
+
+      procedure FlushLine;
+      begin
+        writeln(tOut, s);
+        s := '   ';
+      end;
+
+    begin
+      infos := TStringList.Create;
+      for i := 0 to UnicodeCount-1 do
+      begin
+        u := UnicodeData[i].Code;
+        if (UnicodeData[i].BidiClass = 'NSM') or
+           (UnicodeData[i].Category = 'Mc') then
+        begin
+          c := UnicodeData[i].CombiningClass;
+          if (c = 0) and (UnicodeData[i].Category = 'Mc') then
+          begin
+            if pos(IntToHex(u,4)+',', CombineLeftOnly) <> 0 then c := 224
+            else if pos(IntToHex(u,4)+',', CombineLeftAndRight) <> 0 then c := 0
+            else c := 226;
+          end;
+          infos.Add('(u:$'+IntToHex(u,2)+'; c:'+IntToStr(c)+')');
+        end;
+      end;
+      writeln(tOut,'type');
+      writeln(tOut,'  TUnicodeCombiningInfo = record');
+      writeln(tOut,'    u: LongWord;');
+      writeln(tOut,'    c: Byte;');
+      writeln(tOut,'  end;');
+      writeln(tOut,'const');
+      writeln(tOut,'  UnicodeCombiningInfos: array[0..',infos.count-1,'] of TUnicodeCombiningInfo =');
+      s := '  (';
+      for i := 0 to infos.Count-1 do
+      begin
+        if length(s) + length(infos[i]) + 2 > 80 then FlushLine;
+        AppendStr(s, ' ' + infos[i]);
+        if i < infos.Count-1 then AppendStr(s, ',');
+      end;
+      if s <> '   ' then FlushLine;
+      writeln(tOut,'  );');
+      writeln(tOut);
+      infos.Free;
+    end;
+
+  begin
+    AssignFile(tOut, 'generatedunicode.inc');
+    Rewrite(tOut);
+    writeln(tOut,'{ This file is generated by dev/parseunicode/parseunicodeclasses program }');
+    FormatSettings.ShortDateFormat := 'yyyy/mm/dd';
+    Writeln(tOut,'{ Generation date: '+DateToStr(Date)+ ' }');
+    Writeln(tOut);
+    ParseBidiClasses;
     ParseBidiBrackets;
     ParseArabicLigature;
-
+    ParseCombiningClasses;
     CloseFile(tOut);
   end;
 
@@ -471,29 +546,7 @@ var
     result := CompareStr(List[Index1], List[Index2]);
   end;
 
-  procedure UTF8RecompositionFunction;
-  const
-    CombineLeftOnly = '093F,094E,' + {DEVANAGARI}
-      '09BF,09C7,09C8,' + {BENGALI}
-      '0A3F,' + {GURMUKHI}
-      '0ABF,' + {GUJARATI}
-      '0B47,0B48,0B4B,0B4C,' + {ORIYA}
-      '0BC6,0BC7,0BC8,' + {TAMIL}
-      '0D46,0D47,0D48,' + {MALAYALAM}
-      '0DD9,0DDA,0DDB,0DDC,0DDD,0DDE,' + {SINHALA}
-      '1031,103C,1084,' + {MYANMAR}
-      '17BE,17C1,17C2,17C3,' + {KHMER}
-      '1A19,' + {BUGINESE}
-      '1B3E,1B3F,' + {BALINESE}
-      '302E,302F,' + {HANGUL}
-      'A9BA,A9BB,A9BF,' + {JAVANESE}
-      'AA2F,AA30,AA34,'; {CHAM}
-    CombineLeftAndRight = '09CB,09CC,' + {BENGALI}
-      '0BCA,0BCB,0BCC,' + {TAMIL}
-      '0D4A,0D4B,0D4C,' + {MALAYALAM}
-      '17BF,17C0,17C4,17C5,' + {KHMER}
-      '1B3D,1B40,1B41,'; {BALINESE}
-
+  procedure ParseUTF8Decomposition;
   type TDecompositionKind = string;
   const dMultichar = 'arNone';
         dInitial = 'arInitial';
@@ -502,15 +555,12 @@ var
         dIsolated = 'arIsolated';
   var tOut: TextFile;
     decomposed, kind, decomposedUTF8: string;
-    thousands: integer;
     mergedU,nextU: longword;
     posClose, posSpace: SizeInt;
     hasNSM, isLa: Boolean;
     correspList: TStringList;
     i, decomposedLen, j: Integer;
     typedKind: TDecompositionKind;
-    combineLeftList, combineRightList, combineLeftAndRightList: TIntegerList;
-    combineThousands: TIntegerList;
 
     function RemoveUptoTab(AText: string): string;
     var
@@ -520,92 +570,13 @@ var
       result := copy(AText, idxTab+1, length(AText)-idxTab);
     end;
 
-    procedure AddCaseUnicodeCombineLayout(AIndent: string; AThousand: longword);
-
-      function MakeCodeList(AList: TIntegerList): boolean;
-      var
-        s: String;
-        i: integer;
-        prevCode,curCode: LongWord;
-        inRange: boolean;
-      begin
-        result := false;
-        s := AIndent;
-        prevCode := 0;
-        inRange := false;
-        for i := 0 to AList.Count-1 do
-        begin
-          curCode := AList[i];
-          if curCode shr 12 <> AThousand then continue;
-          if s <> AIndent then
-          begin
-            if not inRange and (curCode = prevCode+1) then
-            begin
-              AppendStr(s, '..');
-              inRange := true;
-            end else
-            if inRange then
-            begin
-              if curCode <> prevCode+1 then
-              begin
-                AppendStr(s, '$' + IntToHex(prevCode,4));
-                inRange := false;
-              end;
-            end;
-          end;
-          if not inRange then
-          begin
-            if s <> AIndent then
-              AppendStr(s, ', ');
-            if length(s) >= 72 then
-            begin
-              writeln(tOut, s);
-              result := true;
-              s := AIndent;
-            end;
-            AppendStr(s, '$' + IntToHex(curCode,4));
-          end;
-          prevCode := curCode;
-        end;
-        if inRange then AppendStr(s, '$' + IntToHex(prevCode, 4));
-        if s <> AIndent then
-        begin
-          write(tOut, s);
-          result := true;
-        end;
-      end;
-
-    begin
-      writeln(tOut, AIndent, 'case u of');
-      if MakeCodeList(combineLeftList) then
-        writeln(tOut, ': exit(uclLeft);');
-      if MakeCodeList(combineRightList) then
-        writeln(tOut, ': exit(uclRight);');
-      if MakeCodeList(combineLeftAndRightList) then
-        writeln(tOut, ': exit(uclLeftAndRight);');
-      writeln(tOut, AIndent, 'end;');
-    end;
-
   begin
     writeln('Parsing decomposition data...');
     correspList := TStringList.Create;
-    combineLeftList := TIntegerList.Create;
-    combineRightList := TIntegerList.Create;
-    combineLeftAndRightList := TIntegerList.Create;
-    combineThousands := TIntegerList.Create;
-
     for j := 0 to UnicodeCount-1 do
     begin
       mergedU := UnicodeData[j].Code;
       if GetUnicodeBidiClass(mergedU) = ubcNonSpacingMark then continue;
-      if UnicodeData[j].Category = 'Mc' then
-      begin
-        thousands := mergedU shr 12;
-        if combineThousands.IndexOf(thousands) = -1 then combineThousands.Add(thousands);
-        if pos(IntToHex(mergedU,4)+',', CombineLeftOnly) <> 0 then combineLeftList.Add(mergedU)
-        else if pos(IntToHex(mergedU,4)+',', CombineLeftAndRight) <> 0 then combineLeftAndRightList.Add(mergedU)
-        else combineRightList.Add(mergedU);
-      end;
       decomposed := UnicodeData[j].Decomposition;
       if decomposed = '' then continue;
       typedKind := dMultichar;
@@ -652,9 +623,7 @@ var
            ')');
     end;
 
-    correspList.CustomSort(@ListCompareBinary);
-
-    AssignFile(tOut, 'utf8decomposition.inc');
+    AssignFile(tOut, 'generatedutf8.inc');
     Rewrite(tOut);
     writeln(tOut, 'type');
     writeln(tOut, '  TArabicJoin = (arNone, arInitial, arMedial, arFinal, arIsolated);');
@@ -664,37 +633,22 @@ var
     writeln(tOut, '  end;');
     writeln(tOut, 'const');
     writeln(tOut, '  UTF8Decomposition : array[0..', correspList.Count-1, '] of TUTF8Decomposition = (');
+    correspList.CustomSort(@ListCompareBinary);
     for i := 0 to correspList.Count-1 do
       if i <> correspList.Count-1 then
         writeln(tOut, '  ', RemoveUptoTab(correspList[i]), ',')
       else
         writeln(tOut, '  ', RemoveUptoTab(correspList[i]));
+    correspList.Free;
     writeln(tOut, '  );');
     writeln(tout);
-    CloseFile(tOut);
-
-    AssignFile(tOut, 'UnicodeFunctions.generated.pas');
-    Append(tOut);
-    writeln(tOut, 'function GetUnicodeCombiningLayout(u: LongWord): TUnicodeCombiningLayout;');
-    writeln(tOut, 'begin');
-    writeln(tOut, '  case u shr 24 of');
-    for i := 0 to combineThousands.Count-1 do
-    begin
-      writeln(tOut, '  $',IntToHex(combineThousands[i],2),':');
-      AddCaseUnicodeCombineLayout('    ', combineThousands[i]);
-    end;
-    writeln(tOut, '  end;');
-    writeln(tOut, '  result := uclNone;');
-    writeln(tOut, 'end;');
-    Writeln(tOut);
-    correspList.Free;
     CloseFile(tOut);
   end;
 
 begin
   LoadUnicodeData;
   GenerateUnicodeFunctions;
-  UTF8RecompositionFunction;
+  ParseUTF8Decomposition;
   writeln('Done.');
 end.
 
