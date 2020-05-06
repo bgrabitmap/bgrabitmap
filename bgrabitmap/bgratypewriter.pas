@@ -91,7 +91,7 @@ type
   TBGRAGlyphDisplayInfo = record
     Glyph: TBGRAGlyph;
     Matrix: TAffineMatrix;
-    Mirrored: boolean;
+    Mirrored, RTL: WordBool;
   end;
 
   TBGRATextDisplayInfo = array of TBGRAGlyphDisplayInfo;
@@ -636,6 +636,7 @@ begin
 
     Info[InfoIndex].Glyph := AGlyph;
     Info[InfoIndex].Mirrored:= gcfMirrored in AFlags;
+    Info[InfoIndex].RTL := gcfRightToLeft in AFlags;
     Info[InfoIndex].Matrix := m2;
 
     Matrix := Matrix*AffineMatrixTranslation(AGlyph.Width,0);

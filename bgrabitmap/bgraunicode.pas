@@ -128,6 +128,7 @@ const
   UNICODE_ZERO_WIDTH_NON_JOINER = $200C;
   UNICODE_ZERO_WIDTH_NO_BREAK_SPACE = $FEFF;   //byte order mark
   UNICODE_ZERO_WIDTH_JOINER = $200D;
+  UNICODE_COMBINING_GRAPHEME_JOINER = $034F;
 
   //arabic letters
   UNICODE_ARABIC_TATWEEL = $0640;    //horizontal line that makes a ligature with most letters
@@ -165,7 +166,7 @@ function IsUnicodeParagraphSeparator(u: LongWord): boolean;
 function IsUnicodeCrLf(u: LongWord): boolean;
 function IsUnicodeSpace(u: LongWord): boolean;
 function IsUnicodeIsolateOrFormatting(u: LongWord): boolean;
-
+function IsModifierCombiningMark(u: LongWord): boolean;
 
 { Analyze unicode and return bidi levels for each character.
   baseDirection can be either UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE or UNICODE_FIRST_STRONG_ISOLATE }
@@ -245,6 +246,14 @@ begin
   UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE, UNICODE_FIRST_STRONG_ISOLATE,
   UNICODE_LEFT_TO_RIGHT_EMBEDDING, UNICODE_RIGHT_TO_LEFT_EMBEDDING,
   UNICODE_LEFT_TO_RIGHT_OVERRIDE, UNICODE_RIGHT_TO_LEFT_OVERRIDE: exit(true)
+  else exit(false);
+  end;
+end;
+
+function IsModifierCombiningMark(u: LongWord): boolean;
+begin
+  case u of
+  $0654,$0655,$0658,$06DC,$06E3,$06E7,$06E8,$08D3,$08F3: exit(true);
   else exit(false);
   end;
 end;
