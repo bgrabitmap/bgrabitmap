@@ -168,7 +168,7 @@ type
   end;
 
 const
-  MarkFallback: array[0..30] of TMarkFallback = (
+  MarkFallback: array[0..36] of TMarkFallback = (
   (NonSpacing: $300; Spacing: $2CA; Moved: false),
   (NonSpacing: $301; Spacing: $B4; Moved: false),
   (NonSpacing: $302; Spacing: $5E; Moved: false),
