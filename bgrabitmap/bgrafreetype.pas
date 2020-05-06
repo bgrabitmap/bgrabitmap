@@ -941,6 +941,7 @@ begin
       FFont.SizeInPixels := FontEmHeightF
     else
       FFont.LineFullHeight := -FontEmHeightF;
+    FLastFontSize := newSize;
   end;
   case FontQuality of
     fqSystem:
