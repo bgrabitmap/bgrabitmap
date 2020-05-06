@@ -1,6 +1,7 @@
 unit BGRAFreeType;
 
 {$mode objfpc}{$H+}
+{$DEFINE LAZFREETYPE_GLYPH_BOX_FIXED}
 
 {
   Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
@@ -151,83 +152,6 @@ implementation
 uses BGRABlend, Math, BGRATransform, BGRAUnicode, BGRAUTF8;
 
 {$i generatedutf8.inc}
-
-const
-  ArabicMarkAbove: array[0..10] of LongWord =
-    ($0618, $0619, $064B, $064C, $064E, $064F,
-     $0651, $0652, $0670, $08F0, $08F1);
-
-  ArabicMarkBelow: array[0..3] of LongWord =
-    ($061A, $064D, $0650, $08F2);
-
-type
-  TMarkFallback = record
-    NonSpacing: LongWord;
-    Spacing: LongWord;
-    Moved: boolean;
-  end;
-
-const
-  MarkFallback: array[0..40] of TMarkFallback = (
-  (NonSpacing: $300; Spacing: $2CA; Moved: false),
-  (NonSpacing: $301; Spacing: $B4; Moved: false),
-  (NonSpacing: $302; Spacing: $5E; Moved: false),
-  (NonSpacing: $303; Spacing: $2DC; Moved: false),
-  (NonSpacing: $304; Spacing: $AF; Moved: false),
-  (NonSpacing: $305; Spacing: $203E; Moved: false),
-  (NonSpacing: $306; Spacing: $2D8; Moved: false),
-  (NonSpacing: $307; Spacing: $2D9; Moved: false),
-  (NonSpacing: $308; Spacing: $A8; Moved: false),
-  (NonSpacing: $30A; Spacing: $2DA; Moved: false),
-  (NonSpacing: $30B; Spacing: $2DD; Moved: false),
-  (NonSpacing: $30E; Spacing: $22; Moved: false),
-  (NonSpacing: $313; Spacing: $1FBD; Moved: false),
-  (NonSpacing: $314; Spacing: $1FFE; Moved: false),
-  (NonSpacing: $316; Spacing: $2CA; Moved: true),
-  (NonSpacing: $317; Spacing: $B4; Moved: true),
-  (NonSpacing: $320; Spacing: $AF; Moved: true),
-  (NonSpacing: $324; Spacing: $A8; Moved: true),
-  (NonSpacing: $325; Spacing: $2DA; Moved: true),
-  (NonSpacing: $327; Spacing: $B8; Moved: false),
-  (NonSpacing: $328; Spacing: $2DB; Moved: false),
-  (NonSpacing: $32D; Spacing: $5E; Moved: true),
-  (NonSpacing: $32E; Spacing: $2D8; Moved: true),
-  (NonSpacing: $330; Spacing: $2DC; Moved: true),
-  (NonSpacing: $331; Spacing: $AF; Moved: true),
-  (NonSpacing: $332; Spacing: $203E; Moved: true),
-  (NonSpacing: $333; Spacing: $2017; Moved: false),
-  (NonSpacing: $336; Spacing: $2013; Moved: false),
-  (NonSpacing: $337; Spacing: $2F; Moved: false),
-  (NonSpacing: $338; Spacing: $2F; Moved: false),
-  (NonSpacing: $33F; Spacing: $2017; Moved: true),
-  (NonSpacing: $340; Spacing: $2CA; Moved: false),
-  (NonSpacing: $341; Spacing: $B4; Moved: false),
-  (NonSpacing: $342; Spacing: $1FC0; Moved: false),
-  (NonSpacing: $343; Spacing: $1FBD; Moved: false),
-  (NonSpacing: $345; Spacing: $37A; Moved: false),
-  (NonSpacing: $348; Spacing: $22; Moved: true),
-  (NonSpacing: $35E; Spacing: $203E; Moved: false),
-  (NonSpacing: $35F; Spacing: $5F; Moved: false),
-  (NonSpacing: $3099; Spacing: $309B; Moved: false),
-  (NonSpacing: $309A; Spacing: $309C; Moved: false));
-
-function IsArabicMarkAbove(u: LongWord): boolean;
-var
-  i: Integer;
-begin
-  for i := 0 to high(ArabicMarkAbove) do
-    if ArabicMarkAbove[i] = u then exit(true);
-  result := false;
-end;
-
-function IsArabicMarkBelow(u: LongWord): boolean;
-var
-  i: Integer;
-begin
-  for i := 0 to high(ArabicMarkBelow) do
-    if ArabicMarkBelow[i] = u then exit(true);
-  result := false;
-end;
 
 procedure RecomposeUTF8(AFont: TFreeTypeFont; ADecomposed: string; out ARecomposed: string; out AMarks, AInnerMarks: string);
 var
@@ -385,16 +309,30 @@ begin
 end;
 
 type
+  TMarkGlyph = record
+    FreeTypeGlyph: TFreeTypeGlyph;
+    Index: integer;
+    Bounds: TRect;
+    CombiningClass: Byte;
+  end;
+
   { TBGRAFreeTypeGlyph }
 
   TBGRAFreeTypeGlyph = class(TBGRAGlyph)
+  protected
+    FFont: TFreeTypeFont;
+    FCentralText: string;
+    FCentralTextWidth: Single;
+    FMarks, FInnerMarks: TUnicodeArray;
+    FBounds: TRect;
+    function RetrieveMarkGlyph(AMark: LongWord; out AMarkGlyph: TMarkGlyph; AAllowTranslate: boolean): boolean;
+    procedure DrawNonSpacingMarks(ADrawer: TBGRAFreeTypeDrawer; ALeft, ATop: single; RTL: boolean; AColor: TBGRAPixel);
+    procedure DrawCentralGlyph(ADrawer: TBGRAFreeTypeDrawer; ALeft, ATop: single; AColor: TBGRAPixel);
+    procedure DrawCombiningMarks(ADrawer: TBGRAFreeTypeDrawer; ALeft, ATop: single; AColor: TBGRAPixel; out ACentralLeft: single);
   public
-    Font: TFreeTypeFont;
-    Recomposed: string;
-    Marks, InnerMarks: TUnicodeArray;
-    Bounds: TRect;
     constructor Create(AFont: TFreeTypeFont; AIdentifier: string);
-    constructor Create(AIdentifier: string); override;
+    constructor Create({%H-}AIdentifier: string); override;
+    procedure Draw(ADrawer: TBGRAFreeTypeDrawer; ALeft, ATop: single; RTL: boolean; AColor: TBGRAPixel);
   end;
 
   { TFreeTypeTypeWriter }
@@ -513,14 +451,14 @@ constructor TBGRAFreeTypeGlyph.Create(AFont: TFreeTypeFont; AIdentifier: string)
     var
       i, j: Integer;
     begin
-      for i := high(Marks) downto 0 do
-        if Marks[i] = AFrom then
+      for i := high(FMarks) downto 0 do
+        if FMarks[i] = AFrom then
         begin
-          Marks[i] := ATo1;
-          setlength(Marks, length(Marks)+1);
-          for j := high(Marks) downto i+2 do
-            Marks[j] := Marks[j-1];
-          Marks[i+1] := ATo2;
+          FMarks[i] := ATo1;
+          setlength(FMarks, length(FMarks)+1);
+          for j := high(FMarks) downto i+2 do
+            FMarks[j] := FMarks[j-1];
+          FMarks[i+1] := ATo2;
         end;
     end;
 
@@ -551,38 +489,360 @@ var
   i: Integer;
 begin
   inherited Create(AIdentifier);
-  Font := AFont;
-  RecomposeUTF8(Font, AIdentifier, Recomposed, marksStr, innerMarksStr);
-  UTF8ToUnicodeArray(marksStr, Marks, ofs);
-  SortMarks(Marks);
-  UTF8ToUnicodeArray(innerMarksStr, InnerMarks, ofs);
-  SortMarks(InnerMarks);
+  FFont := AFont;
+  RecomposeUTF8(FFont, AIdentifier, FCentralText, marksStr, innerMarksStr);
+  UTF8ToUnicodeArray(marksStr, FMarks, ofs);
+  SortMarks(FMarks);
+  UTF8ToUnicodeArray(innerMarksStr, FInnerMarks, ofs);
+  SortMarks(FInnerMarks);
   SplitMarks;
-  Width := AFont.TextWidth(Recomposed);
-  for i := 0 to high(Marks) do
-  if GetUnicodeBidiClassEx(Marks[i]) = ubcCombiningLeftToRight then
+  FCentralTextWidth := AFont.TextWidth(FCentralText);
+  Width := FCentralTextWidth;
+  for i := 0 to high(FMarks) do
+  if GetUnicodeBidiClassEx(FMarks[i]) = ubcCombiningLeftToRight then
   begin
-    glyphIndex := AFont.CharIndex[Marks[i]];
+    glyphIndex := AFont.CharIndex[FMarks[i]];
     if glyphIndex <> 0 then
       Width += AFont.Glyph[glyphIndex].Advance;
   end;
   Height := AFont.LineFullHeight;
-  Bounds := EmptyRect;
-  if length(Recomposed) <> 0 then
+  FBounds := EmptyRect;
+  if length(FCentralText) <> 0 then
   begin
-    u := UTF8CodepointToUnicode(@Recomposed[1], UTF8CharacterLength(@Recomposed[1]));
+    u := UTF8CodepointToUnicode(@FCentralText[1], UTF8CharacterLength(@FCentralText[1]));
     glyphIndex := AFont.CharIndex[u];
     if glyphIndex <> 0 then
     begin
       ftGlyph := AFont.Glyph[glyphIndex];
-      Bounds := ftGlyph.Bounds;
+      FBounds := ftGlyph.Bounds;
     end;
   end;
 end;
 
 constructor TBGRAFreeTypeGlyph.Create(AIdentifier: string);
 begin
-  Create(nil, AIdentifier);
+  raise exception.Create('Requires a font');
+end;
+
+function TBGRAFreeTypeGlyph.RetrieveMarkGlyph(AMark: LongWord; out AMarkGlyph: TMarkGlyph; AAllowTranslate: boolean): boolean;
+  const
+    ArabicMarkAbove: array[0..10] of LongWord =
+      ($0618, $0619, $064B, $064C, $064E, $064F,
+       $0651, $0652, $0670, $08F0, $08F1);
+
+    ArabicMarkBelow: array[0..3] of LongWord =
+      ($061A, $064D, $0650, $08F2);
+
+  type
+    TMarkFallback = record
+      NonSpacing: LongWord;
+      Spacing: LongWord;
+      Moved: boolean;
+    end;
+
+  const
+    MarkFallback: array[0..40] of TMarkFallback = (
+    (NonSpacing: $300; Spacing: $2CA; Moved: false),
+    (NonSpacing: $301; Spacing: $B4; Moved: false),
+    (NonSpacing: $302; Spacing: $5E; Moved: false),
+    (NonSpacing: $303; Spacing: $2DC; Moved: false),
+    (NonSpacing: $304; Spacing: $AF; Moved: false),
+    (NonSpacing: $305; Spacing: $203E; Moved: false),
+    (NonSpacing: $306; Spacing: $2D8; Moved: false),
+    (NonSpacing: $307; Spacing: $2D9; Moved: false),
+    (NonSpacing: $308; Spacing: $A8; Moved: false),
+    (NonSpacing: $30A; Spacing: $2DA; Moved: false),
+    (NonSpacing: $30B; Spacing: $2DD; Moved: false),
+    (NonSpacing: $30E; Spacing: $22; Moved: false),
+    (NonSpacing: $313; Spacing: $1FBD; Moved: false),
+    (NonSpacing: $314; Spacing: $1FFE; Moved: false),
+    (NonSpacing: $316; Spacing: $2CA; Moved: true),
+    (NonSpacing: $317; Spacing: $B4; Moved: true),
+    (NonSpacing: $320; Spacing: $AF; Moved: true),
+    (NonSpacing: $324; Spacing: $A8; Moved: true),
+    (NonSpacing: $325; Spacing: $2DA; Moved: true),
+    (NonSpacing: $327; Spacing: $B8; Moved: false),
+    (NonSpacing: $328; Spacing: $2DB; Moved: false),
+    (NonSpacing: $32D; Spacing: $5E; Moved: true),
+    (NonSpacing: $32E; Spacing: $2D8; Moved: true),
+    (NonSpacing: $330; Spacing: $2DC; Moved: true),
+    (NonSpacing: $331; Spacing: $AF; Moved: true),
+    (NonSpacing: $332; Spacing: $203E; Moved: true),
+    (NonSpacing: $333; Spacing: $2017; Moved: false),
+    (NonSpacing: $336; Spacing: $2013; Moved: false),
+    (NonSpacing: $337; Spacing: $2F; Moved: false),
+    (NonSpacing: $338; Spacing: $2F; Moved: false),
+    (NonSpacing: $33F; Spacing: $2017; Moved: true),
+    (NonSpacing: $340; Spacing: $2CA; Moved: false),
+    (NonSpacing: $341; Spacing: $B4; Moved: false),
+    (NonSpacing: $342; Spacing: $1FC0; Moved: false),
+    (NonSpacing: $343; Spacing: $1FBD; Moved: false),
+    (NonSpacing: $345; Spacing: $37A; Moved: false),
+    (NonSpacing: $348; Spacing: $22; Moved: true),
+    (NonSpacing: $35E; Spacing: $203E; Moved: false),
+    (NonSpacing: $35F; Spacing: $5F; Moved: false),
+    (NonSpacing: $3099; Spacing: $309B; Moved: false),
+    (NonSpacing: $309A; Spacing: $309C; Moved: false));
+
+  function IsArabicMarkAbove(u: LongWord): boolean;
+  var
+    i: Integer;
+  begin
+    for i := 0 to high(ArabicMarkAbove) do
+      if ArabicMarkAbove[i] = u then exit(true);
+    result := false;
+  end;
+
+  function IsArabicMarkBelow(u: LongWord): boolean;
+  var
+    i: Integer;
+  begin
+    for i := 0 to high(ArabicMarkBelow) do
+      if ArabicMarkBelow[i] = u then exit(true);
+    result := false;
+  end;
+
+var k: integer;
+begin
+  AMarkGlyph.Index := FFont.CharIndex[AMark];
+  if AMarkGlyph.Index = 0 then
+  begin
+    for k := 0 to high(MarkFallback) do
+      if (MarkFallback[k].NonSpacing = AMark) and
+         (not MarkFallback[k].Moved or AAllowTranslate) then
+      begin
+        AMarkGlyph.Index := FFont.CharIndex[MarkFallback[k].Spacing];
+        if AMarkGlyph.Index = 0 then
+        begin
+          if MarkFallback[k].Spacing = $1FBD then AMarkGlyph.Index:= FFont.CharIndex[$27] else
+          if MarkFallback[k].Spacing = $1FC0 then AMarkGlyph.Index:= FFont.CharIndex[$2DC] else
+          if MarkFallback[k].Spacing = $2CA then AMarkGlyph.Index:= FFont.CharIndex[$60];
+        end;
+        break;
+      end;
+  end;
+  if AMarkGlyph.Index <> 0 then
+  begin
+    AMarkGlyph.FreeTypeGlyph := FFont.Glyph[AMarkGlyph.Index];
+    AMarkGlyph.Bounds := AMarkGlyph.FreeTypeGlyph.Bounds;
+    AMarkGlyph.CombiningClass := GetUnicodeCombiningClass(AMark);
+    if AMarkGlyph.CombiningClass in[27..35] then
+    begin
+      if IsArabicMarkAbove(AMark) then AMarkGlyph.CombiningClass := 230 else
+      if IsArabicMarkBelow(AMark) then AMarkGlyph.CombiningClass := 220;
+    end;
+    result := true;
+  end
+  else result := false;
+end;
+
+procedure TBGRAFreeTypeGlyph.DrawNonSpacingMarks(ADrawer: TBGRAFreeTypeDrawer;
+  ALeft, ATop: single; RTL: boolean; AColor: TBGRAPixel);
+var
+  markGlyph: TMarkGlyph;
+  aboveOfs, belowOfs, xRef, xRefBelow, xAfter: Single;
+  justBelow, justAbove: boolean;
+
+  procedure DoJustAbove(const ALetterBounds: TRect);
+  begin
+    if justAbove then
+    begin
+      {$IFDEF LAZFREETYPE_GLYPH_BOX_FIXED}
+        DecF(aboveOfs, ALetterBounds.Top - markGlyph.Bounds.Bottom);
+        incF(aboveOfs, FFont.SizeInPixels/12);
+      {$ELSE}
+        DecF(aboveOfs, ALetterBounds.Top + FFont.Ascent/3);
+      {$ENDIF}
+      justAbove := false;
+    end;
+  end;
+
+  procedure DoJustBelow(const ALetterBounds: TRect);
+  begin
+    if justBelow then
+    begin
+      {$IFDEF LAZFREETYPE_GLYPH_BOX_FIXED}
+        incF(belowOfs, ALetterBounds.Bottom - markGlyph.Bounds.Top);
+        incF(belowOfs, FFont.SizeInPixels/12);
+      {$ELSE}
+        incF(belowOfs, ALetterBounds.Bottom);
+      {$ENDIF}
+      justBelow := false;
+    end;
+  end;
+
+  function GetMarkOffsetY(AMark: LongWord): single;
+  begin
+    if (AMark = $304) or (AMark= $305)  or (AMark= $33F) or
+       (AMark = $320) or (AMark = $331) or (AMark = $332) or (AMark = $333) then
+    begin
+      result := FFont.SizeInPixels/8;
+    end else
+    begin
+      {$IFDEF LAZFREETYPE_GLYPH_BOX_FIXED}
+        result := markGlyph.Bounds.Height + FFont.SizeInPixels/20
+      {$ELSE}
+        result := FFont.SizeInPixels/4;
+      {$ENDIF}
+    end;
+  end;
+
+  procedure DrawMark(AMark: LongWord; const ALetterBounds: TRect);
+  var
+    ofsX, ofsY: Single;
+  begin
+    if GetUnicodeBidiClassEx(AMark) <> ubcNonSpacingMark then exit;
+    if RetrieveMarkGlyph(AMark, markGlyph, {$IFDEF LAZFREETYPE_GLYPH_BOX_FIXED}true{$ELSE}false{$ENDIF}) then
+    begin
+      if markGlyph.CombiningClass = 230 then
+      begin
+        DoJustAbove(ALetterBounds);
+        ofsX := -(markGlyph.Bounds.Left + markGlyph.Bounds.Right)/2;
+        ofsY := -aboveOfs;
+        IncF(aboveOfs, GetMarkOffsetY(AMark));
+        ADrawer.DrawGlyph(markGlyph.Index, FFont,
+            xRef + ofsX, ATop + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
+      end else
+      if markGlyph.CombiningClass in[220,240] then
+      begin
+        if justBelow then incF(ofsX, xRefBelow - xRef);
+        DoJustBelow(ALetterBounds);
+        ofsX := -(markGlyph.Bounds.Left + markGlyph.Bounds.Right)/2;
+        ofsY := belowOfs;
+        IncF(belowOfs, GetMarkOffsetY(AMark));
+        ADrawer.DrawGlyph(markGlyph.Index, FFont,
+            xRefBelow + ofsX, ATop + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
+      end else
+      if markGlyph.CombiningClass = 1 then //overlay
+      begin
+        ofsX := -(markGlyph.Bounds.Left + markGlyph.Bounds.Right)/2;
+        ADrawer.DrawGlyph(markGlyph.Index, FFont,
+            xRef + ofsX, ATop, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
+      end else
+        ADrawer.DrawGlyph(markGlyph.Index, FFont,
+            xAfter, ATop, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
+    end;
+  end;
+
+var
+  j: integer;
+begin
+  if RTL then xAfter := ALeft else xAfter := ALeft + FCentralTextWidth;
+
+  if FMarks <> nil then
+  begin
+    justAbove := false;
+    if (FCentralText = 'ﻁ') or (FCentralText = 'ﻂ') or (FCentralText = 'ﻃ') or (FCentralText = 'ﻄ') or
+       (FCentralText = 'ﻅ') or (FCentralText = 'ﻆ') or (FCentralText = 'ﻇ') or (FCentralText = 'ﻈ') then
+    begin
+      aboveOfs := 0;
+      xRef := ALeft + Width*3/4;
+      xRefBelow := xRef;
+    end else
+    if (FCentralText = 'ﻝ') or (FCentralText = 'ﻞ') or (FCentralText = 'ﻚ') or (FCentralText = 'ﻙ') then
+    begin
+      aboveOfs := 0;
+      xRef := ALeft + Width/2;
+      xRefBelow := xRef;
+    end else
+    if (FCentralText = 'ﻵ') or (FCentralText = 'ﻶ') or (FCentralText = 'ﻷ') or (FCentralText = 'ﻸ') or
+       (FCentralText = 'ﻹ') or (FCentralText = 'ﻺ') or (FCentralText = 'ﻻ') or (FCentralText = 'ﻼ') then
+    begin
+      justAbove := true;
+      aboveOfs := - FFont.SizeInPixels/10;
+      xRef := ALeft + Width/6;
+      xRefBelow := ALeft + Width/4;
+    end else
+    begin
+      justAbove := true;
+      aboveOfs := 0;
+      xRef := ALeft + Width/2;
+      xRefBelow := xRef;
+    end;
+    if (FCentralText = 'ﻅ') or (FCentralText = 'ﻆ') or (FCentralText = 'ﻇ') or (FCentralText = 'ﻈ') or
+     (FCentralText = 'ﻚ') or (FCentralText = 'ﻙ') then
+    begin
+      IncF(aboveOfs, FFont.SizeInPixels/12);
+    end;
+    if (FCentralText = 'ﺏ') or (FCentralText = 'ﺐ') or (FCentralText = 'ﭒ') or (FCentralText = 'ﭓ') or
+       (FCentralText = 'ﭖ') or (FCentralText = 'ﭗ') or (FCentralText = 'ﭚ') or (FCentralText = 'ﭛ') or
+       (FCentralText = 'ٮ') then
+    begin
+      DecF(aboveOfs, FFont.SizeInPixels/16);
+    end;
+
+    belowOfs := 0;
+    justBelow := true;
+    for j := 0 to high(FMarks) do
+      DrawMark(FMarks[j], FBounds);
+  end;
+  if FInnerMarks <> nil then
+  begin
+    xRef := ALeft + Width*3/4;
+    xRefBelow := xRef;
+    aboveOfs := 0;
+    justAbove := true;
+    belowOfs := 0;
+    justBelow := true;
+    for j := 0 to high(FInnerMarks) do
+      DrawMark(FInnerMarks[j], FBounds);
+  end;
+end;
+
+procedure TBGRAFreeTypeGlyph.DrawCentralGlyph(ADrawer: TBGRAFreeTypeDrawer; ALeft, ATop: single; AColor: TBGRAPixel);
+begin
+  ADrawer.DrawText(FCentralText, FFont, ALeft, ATop, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
+end;
+
+procedure TBGRAFreeTypeGlyph.DrawCombiningMarks(ADrawer: TBGRAFreeTypeDrawer; ALeft, ATop: single; AColor: TBGRAPixel; out ACentralLeft: single);
+var
+  xRight: Single;
+
+  procedure DrawCombiningMark(AMark: LongWord);
+  var
+    markGlyph: TMarkGlyph;
+  begin
+    if GetUnicodeBidiClassEx(AMark) <> ubcCombiningLeftToRight then exit;
+    if RetrieveMarkGlyph(AMark, markGlyph, false) then
+    begin
+      if markGlyph.CombiningClass = 224 then
+      begin
+        ADrawer.DrawGlyph(markGlyph.Index, FFont, ALeft, ATop,
+                          BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
+        IncF(ALeft, markGlyph.FreeTypeGlyph.Advance);
+        IncF(xRight, markGlyph.FreeTypeGlyph.Advance);
+      end else
+      if markGlyph.CombiningClass in[226,9] then
+      begin
+        ADrawer.DrawGlyph(markGlyph.Index, FFont, xRight, ATop,
+                          BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
+        IncF(xRight, markGlyph.FreeTypeGlyph.Advance);
+      end else
+      begin
+        ADrawer.DrawGlyph(markGlyph.Index, FFont, ALeft, ATop,
+                          BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
+        IncF(ALeft, markGlyph.FreeTypeGlyph.Advance/2);
+        IncF(xRight, markGlyph.FreeTypeGlyph.Advance);
+      end;
+    end;
+  end;
+
+var
+  j: Integer;
+begin
+  xRight := ALeft + FCentralTextWidth;
+  for j := 0 to high(FMarks) do
+    DrawCombiningMark(FMarks[j]);
+  ACentralLeft:= ALeft;
+end;
+
+procedure TBGRAFreeTypeGlyph.Draw(ADrawer: TBGRAFreeTypeDrawer; ALeft, ATop: single; RTL: boolean; AColor: TBGRAPixel);
+var
+  xLeft: single;
+begin
+  DrawCombiningMarks(ADrawer, ALeft, ATop, AColor, xLeft);
+  DrawCentralGlyph(ADrawer, xLeft, ATop, AColor);
+  DrawNonSpacingMarks(ADrawer, ALeft, ATop, RTL, AColor);
 end;
 
 { TFreeTypeTypeWriter }
@@ -609,239 +869,18 @@ end;
 
 procedure TFreeTypeTypeWriter.DrawText(ADrawer: TBGRAFreeTypeDrawer;
   ATextUTF8: string; X, Y: Single; AColor: TBGRAPixel; AAlign: TBGRATypeWriterAlignment);
-const GlyphBoxFixed = true;
 var
-  i,j : Integer;
+  i : Integer;
   ptGlyph: TPointF;
   di: TBGRATextDisplayInfo;
-  markGlyphIndex: LongInt;
-  markFreetypeGlyph: TFreeTypeGlyph;
-  markGlyphBounds: TRect;
-  markCombining: byte;
-  aboveOfs, belowOfs, xRef, xRefBelow, xAfter, xLeft, xRight: Single;
-  justBelow, justAbove: boolean;
-
-  function RetrieveMarkGlyph(AMark: LongWord): boolean;
-  var k: integer;
-  begin
-    markGlyphIndex := FFont.CharIndex[AMark];
-    if markGlyphIndex = 0 then
-    begin
-      for k := 0 to high(MarkFallback) do
-        if (MarkFallback[k].NonSpacing = AMark) and
-           (not MarkFallback[k].Moved or GlyphBoxFixed) then
-        begin
-          markGlyphIndex := FFont.CharIndex[MarkFallback[k].Spacing];
-          if (markGlyphIndex = 0) and (MarkFallback[k].Spacing = $1FBD) then
-            markGlyphIndex := FFont.CharIndex[$27] else
-          if (markGlyphIndex = 0) and (MarkFallback[k].Spacing = $1FC0) then
-            markGlyphIndex := FFont.CharIndex[$2DC] else
-          if (markGlyphIndex = 0) and (MarkFallback[k].Spacing = $2CA) then
-              markGlyphIndex := FFont.CharIndex[$60];
-          break;
-        end;
-    end;
-    if markGlyphIndex <> 0 then
-    begin
-      markFreetypeGlyph := FFont.Glyph[markGlyphIndex];
-      markGlyphBounds := markFreetypeGlyph.Bounds;
-      markCombining := GetUnicodeCombiningClass(AMark);
-      if markCombining in[27..35] then
-      begin
-        if IsArabicMarkAbove(AMark) then markCombining := 230 else
-        if IsArabicMarkBelow(AMark) then markCombining := 220;
-      end;
-      result := true;
-    end
-    else result := false;
-  end;
-
-  procedure DoJustAbove(const ALetterBounds: TRect);
-  begin
-    if justAbove then
-    begin
-      if GlyphBoxFixed then
-      begin
-        DecF(aboveOfs, ALetterBounds.Top - markGlyphBounds.Bottom);
-        incF(aboveOfs, FFont.SizeInPixels/12);
-      end else
-        DecF(aboveOfs, ALetterBounds.Top + FFont.Ascent/3);
-      justAbove := false;
-    end;
-  end;
-
-  procedure DoJustBelow(const ALetterBounds: TRect);
-  begin
-    if justBelow then
-    begin
-      if GlyphBoxFixed then
-      begin
-        incF(belowOfs, ALetterBounds.Bottom - markGlyphBounds.Top);
-        incF(belowOfs, FFont.SizeInPixels/12);
-      end else
-        incF(belowOfs, ALetterBounds.Bottom);
-      justBelow := false;
-    end;
-  end;
-
-  function GetMarkOffsetY(AMark: LongWord): single;
-  begin
-    if (AMark = $304) or (AMark= $305)  or (AMark= $33F) or
-       (AMark = $320) or (AMark = $331) or (AMark = $332) or (AMark = $333) then
-    begin
-      result := FFont.SizeInPixels/8;
-    end else
-    begin
-      if GlyphBoxFixed then
-        result := markGlyphBounds.Height + FFont.SizeInPixels/20
-      else
-        result := FFont.SizeInPixels/4;
-    end;
-  end;
-
-  procedure DrawMark(AMark: LongWord; const ALetterBounds: TRect);
-  var
-    ofsX, ofsY: Single;
-  begin
-    if GetUnicodeBidiClassEx(AMark) <> ubcNonSpacingMark then exit;
-    if RetrieveMarkGlyph(AMark) then
-    begin
-      if markCombining = 230 then
-      begin
-        DoJustAbove(ALetterBounds);
-        ofsX := -(markGlyphBounds.Left + markGlyphBounds.Right)/2;
-        ofsY := -aboveOfs;
-        IncF(aboveOfs, GetMarkOffsetY(AMark));
-        ADrawer.DrawGlyph(markGlyphIndex, FFont,
-            xRef + ofsX, ptGlyph.y + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-      end else
-      if markCombining in[220,240] then
-      begin
-        if justBelow then incF(ofsX, xRefBelow - xRef);
-        DoJustBelow(ALetterBounds);
-        ofsX := -(markGlyphBounds.Left + markGlyphBounds.Right)/2;
-        ofsY := belowOfs;
-        IncF(belowOfs, GetMarkOffsetY(AMark));
-        ADrawer.DrawGlyph(markGlyphIndex, FFont,
-            xRefBelow + ofsX, ptGlyph.y + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-      end else
-      if markCombining = 1 then //overlay
-      begin
-        ofsX := -(markGlyphBounds.Left + markGlyphBounds.Right)/2;
-        ADrawer.DrawGlyph(markGlyphIndex, FFont,
-            xRef + ofsX, ptGlyph.y, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-      end else
-        ADrawer.DrawGlyph(markGlyphIndex, FFont,
-            xAfter, ptGlyph.y, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-    end;
-  end;
-
-  procedure DrawCombiningMark(AMark: LongWord);
-  begin
-    if GetUnicodeBidiClassEx(AMark) <> ubcCombiningLeftToRight then exit;
-    if RetrieveMarkGlyph(AMark) then
-    begin
-      if markCombining = 224 then
-      begin
-        ADrawer.DrawGlyph(markGlyphIndex, FFont, xLeft, ptGlyph.y,
-                          BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-        IncF(xLeft, markFreetypeGlyph.Advance);
-        IncF(xRight, markFreetypeGlyph.Advance);
-      end else
-      if markCombining in[226,9] then
-      begin
-        ADrawer.DrawGlyph(markGlyphIndex, FFont, xRight, ptGlyph.y,
-                          BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-        IncF(xRight, markFreetypeGlyph.Advance);
-      end else
-      begin
-        ADrawer.DrawGlyph(markGlyphIndex, FFont, xLeft, ptGlyph.y,
-                          BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-        IncF(xLeft, markFreetypeGlyph.Advance/2);
-        IncF(xRight, markFreetypeGlyph.Advance);
-      end;
-    end;
-  end;
-
 begin
   di := GetDisplayInfo(ATextUTF8, x, y, AAlign);
   for i := 0 to high(di) do
   begin
     if di[i].Mirrored then
       ptGlyph := di[i].Matrix * PointF(di[i].Glyph.Width, 0)
-    else
-      ptGlyph := di[i].Matrix * PointF(0, 0);
-    with TBGRAFreeTypeGlyph(di[i].Glyph) do
-    begin
-      xLeft := ptGlyph.x;
-      xRight := ptGlyph.x + FFont.TextWidth(Recomposed);
-      for j := 0 to high(Marks) do
-        DrawCombiningMark(Marks[j]);
-
-      ADrawer.DrawText(Recomposed, FFont,
-          xLeft, ptGlyph.y, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-
-      if di[i].RTL then xAfter := xLeft else xAfter := xRight;
-
-      if Marks <> nil then
-      begin
-        justAbove := false;
-        if (Recomposed = 'ﻁ') or (Recomposed = 'ﻂ') or (Recomposed = 'ﻃ') or (Recomposed = 'ﻄ') or
-           (Recomposed = 'ﻅ') or (Recomposed = 'ﻆ') or (Recomposed = 'ﻇ') or (Recomposed = 'ﻈ') then
-        begin
-          aboveOfs := 0;
-          xRef := xLeft + Width*3/4;
-          xRefBelow := xRef;
-        end else
-        if (Recomposed = 'ﻝ') or (Recomposed = 'ﻞ') or (Recomposed = 'ﻚ') or (Recomposed = 'ﻙ') then
-        begin
-          aboveOfs := 0;
-          xRef := xLeft + Width/2;
-          xRefBelow := xRef;
-        end else
-        if (Recomposed = 'ﻵ') or (Recomposed = 'ﻶ') or (Recomposed = 'ﻷ') or (Recomposed = 'ﻸ') or
-           (Recomposed = 'ﻹ') or (Recomposed = 'ﻺ') or (Recomposed = 'ﻻ') or (Recomposed = 'ﻼ') then
-        begin
-          justAbove := true;
-          aboveOfs := - FFont.SizeInPixels/10;
-          xRef := xLeft + Width/6;
-          xRefBelow := xLeft + Width/4;
-        end else
-        begin
-          justAbove := true;
-          aboveOfs := 0;
-          xRef := xLeft + Width/2;
-          xRefBelow := xRef;
-        end;
-        if (Recomposed = 'ﻅ') or (Recomposed = 'ﻆ') or (Recomposed = 'ﻇ') or (Recomposed = 'ﻈ') or
-         (Recomposed = 'ﻚ') or (Recomposed = 'ﻙ') then
-        begin
-          IncF(aboveOfs, FFont.SizeInPixels/12);
-        end;
-        if (Recomposed = 'ﺏ') or (Recomposed = 'ﺐ') or (Recomposed = 'ﭒ') or (Recomposed = 'ﭓ') or
-           (Recomposed = 'ﭖ') or (Recomposed = 'ﭗ') or (Recomposed = 'ﭚ') or (Recomposed = 'ﭛ') or
-           (Recomposed = 'ٮ') then
-        begin
-          DecF(aboveOfs, FFont.SizeInPixels/16);
-        end;
-
-        belowOfs := 0;
-        justBelow := true;
-        for j := 0 to high(Marks) do
-          DrawMark(Marks[j], Bounds);
-      end;
-      if InnerMarks <> nil then
-      begin
-        xRef := xLeft + Width*3/4;
-        xRefBelow := xRef;
-        aboveOfs := 0;
-        justAbove := true;
-        belowOfs := 0;
-        justBelow := true;
-        for j := 0 to high(InnerMarks) do
-          DrawMark(InnerMarks[j], Bounds);
-      end;
-    end;
+      else ptGlyph := di[i].Matrix * PointF(0, 0);
+    TBGRAFreeTypeGlyph(di[i].Glyph).Draw(ADrawer, ptGlyph.x, ptGlyph.y, di[i].RTL, AColor);
   end;
 end;
 
