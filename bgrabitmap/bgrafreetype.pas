@@ -168,7 +168,7 @@ type
   end;
 
 const
-  MarkFallback: array[0..36] of TMarkFallback = (
+  MarkFallback: array[0..40] of TMarkFallback = (
   (NonSpacing: $300; Spacing: $2CA; Moved: false),
   (NonSpacing: $301; Spacing: $B4; Moved: false),
   (NonSpacing: $302; Spacing: $5E; Moved: false),
@@ -196,14 +196,18 @@ const
   (NonSpacing: $331; Spacing: $AF; Moved: true),
   (NonSpacing: $332; Spacing: $203E; Moved: true),
   (NonSpacing: $333; Spacing: $2017; Moved: false),
+  (NonSpacing: $336; Spacing: $2013; Moved: false),
+  (NonSpacing: $337; Spacing: $2F; Moved: false),
+  (NonSpacing: $338; Spacing: $2F; Moved: false),
   (NonSpacing: $33F; Spacing: $2017; Moved: true),
-  (NonSpacing: $342; Spacing: $1FC0; Moved: false),
   (NonSpacing: $340; Spacing: $2CA; Moved: false),
   (NonSpacing: $341; Spacing: $B4; Moved: false),
-  (NonSpacing: $342; Spacing: $2DC; Moved: false),
+  (NonSpacing: $342; Spacing: $1FC0; Moved: false),
   (NonSpacing: $343; Spacing: $1FBD; Moved: false),
   (NonSpacing: $345; Spacing: $37A; Moved: false),
   (NonSpacing: $348; Spacing: $22; Moved: true),
+  (NonSpacing: $35E; Spacing: $203E; Moved: false),
+  (NonSpacing: $35F; Spacing: $5F; Moved: false),
   (NonSpacing: $3099; Spacing: $309B; Moved: false),
   (NonSpacing: $309A; Spacing: $309C; Moved: false));
 
@@ -628,6 +632,12 @@ var
            (not MarkFallback[k].Moved or GlyphBoxFixed) then
         begin
           markGlyphIndex := FFont.CharIndex[MarkFallback[k].Spacing];
+          if (markGlyphIndex = 0) and (MarkFallback[k].Spacing = $1FBD) then
+            markGlyphIndex := FFont.CharIndex[$27] else
+          if (markGlyphIndex = 0) and (MarkFallback[k].Spacing = $1FC0) then
+            markGlyphIndex := FFont.CharIndex[$2DC] else
+          if (markGlyphIndex = 0) and (MarkFallback[k].Spacing = $2CA) then
+              markGlyphIndex := FFont.CharIndex[$60];
           break;
         end;
     end;
@@ -714,6 +724,12 @@ var
         IncF(belowOfs, GetMarkOffsetY(AMark));
         ADrawer.DrawGlyph(markGlyphIndex, FFont,
             xRefBelow + ofsX, ptGlyph.y + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
+      end else
+      if markCombining = 1 then //overlay
+      begin
+        ofsX := -(markGlyphBounds.Left + markGlyphBounds.Right)/2;
+        ADrawer.DrawGlyph(markGlyphIndex, FFont,
+            xRef + ofsX, ptGlyph.y, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
       end else
         ADrawer.DrawGlyph(markGlyphIndex, FFont,
             xAfter, ptGlyph.y, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
