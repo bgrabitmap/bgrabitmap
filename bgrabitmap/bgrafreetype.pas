@@ -650,7 +650,7 @@ var
   begin
     if RetrieveMarkGlyph(AMark) then
     begin
-      if markCombining in[228,230,232] then
+      if markCombining = 230 then
       begin
         DoJustAbove(ALetterBounds);
         ofsX := -(markGlyphBounds.Left + markGlyphBounds.Right)/2;
@@ -659,7 +659,7 @@ var
         ADrawer.DrawGlyph(markGlyphIndex, FFont,
             xRef + ofsX, ptGlyph.y + ofsY, BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
       end else
-      if markCombining in[218,220,222,240] then
+      if markCombining in[220,240] then
       begin
         if justBelow then incF(ofsX, xRefBelow - xRef);
         DoJustBelow(ALetterBounds);
