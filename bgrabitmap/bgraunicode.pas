@@ -711,6 +711,8 @@ var
       if prevJoiningTypeBidilevel <> result[curIndex].BidiLevel then
         prevJoiningType := ujtNonJoining;
       joiningType := GetUnicodeJoiningType(u[curIndex]);
+      if joiningType = ujtTransparent then
+        result[curIndex].Flags:= result[curIndex].Flags or BIDI_FLAG_LIGATURE_TRANSPARENT;
       if result[curIndex].IsRightToLeft then
       begin
         if (joiningType in[ujtRightJoining,ujtDualJoining])
