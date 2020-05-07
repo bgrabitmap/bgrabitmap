@@ -1588,7 +1588,7 @@ end;
 
 function TBidiTextLayout.GetUntransformedCaret(ACharIndex: integer): TBidiCaretPos;
 var
-  i, blIndex: Integer;
+  i, blIndex, lastPartIndex: Integer;
   w: Single;
 begin
   NeedLayout;
@@ -1612,40 +1612,48 @@ begin
 
   blIndex := GetBrokenLineAt(ACharIndex);
   if blIndex <> -1 then
-  for i := FBrokenLine[blIndex].firstPartIndex to FBrokenLine[blIndex].lastPartIndexPlusOne-1 do
-    if ACharIndex <= FPart[i].startIndex then
-    begin
-      result := GetUntransformedPartStartCaret(i);
-      exit;
-    end else
-    if (ACharIndex > FPart[i].startIndex) and (ACharIndex <= FPart[i].endIndex) then
-    begin
-      if (i < FPartCount-1) and (ACharIndex = FPart[i+1].startIndex) then
+  begin
+    lastPartIndex := FBrokenLine[blIndex].lastPartIndexPlusOne-1;
+    for i := FBrokenLine[blIndex].firstPartIndex to lastPartIndex do
+      if ACharIndex <= FPart[i].startIndex then
       begin
-        result := GetUntransformedPartStartCaret(i+1);
+        result := GetUntransformedPartStartCaret(i);
         exit;
       end else
+      if (ACharIndex > FPart[i].startIndex) and (ACharIndex <= FPart[i].endIndex) then
       begin
-        if ACharIndex = FPart[i].endIndex then
+        if (i < FPartCount-1) and (ACharIndex = FPart[i+1].startIndex) then
         begin
-          result := GetUntransformedPartEndCaret(i);
+          result := GetUntransformedPartStartCaret(i+1);
           exit;
         end else
         begin
-          w := TextSizeBidiOverrideSplit(FPart[i].startIndex, FPart[i].endIndex, odd(FPart[i].bidiLevel), ACharIndex).x;
+          if ACharIndex = FPart[i].endIndex then
+          begin
+            result := GetUntransformedPartEndCaret(i);
+            exit;
+          end else
+          begin
+            w := TextSizeBidiOverrideSplit(FPart[i].startIndex, FPart[i].endIndex, odd(FPart[i].bidiLevel), ACharIndex).x;
 
-          if Odd(FPart[i].bidiLevel) then
-            result.Top := PointF(FPart[i].rectF.Right - w, FPart[i].rectF.Top)
-          else result.Top := PointF(FPart[i].rectF.Left + w, FPart[i].rectF.Top);
-          result.Bottom := result.Top + PointF(0,FPart[i].rectF.Height);
+            if Odd(FPart[i].bidiLevel) then
+              result.Top := PointF(FPart[i].rectF.Right - w, FPart[i].rectF.Top)
+            else result.Top := PointF(FPart[i].rectF.Left + w, FPart[i].rectF.Top);
+            result.Bottom := result.Top + PointF(0,FPart[i].rectF.Height);
 
-          result.RightToLeft := odd(FPart[i].bidiLevel);
-          result.PreviousRightToLeft := result.RightToLeft;
-          result.PartIndex := i;
+            result.RightToLeft := odd(FPart[i].bidiLevel);
+            result.PreviousRightToLeft := result.RightToLeft;
+            result.PartIndex := i;
+          end;
+          exit;
         end;
+      end else
+      if i = lastPartIndex then
+      begin
+        result := GetUntransformedPartEndCaret(i);
         exit;
       end;
-    end;
+  end;
 
   if ACharIndex = 0 then
   begin
