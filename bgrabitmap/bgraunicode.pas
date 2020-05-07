@@ -18,7 +18,7 @@ type
                       ubcRightToLeft, ubcArabicLetter, ubcArabicNumber,
                       ubcUnknown,
                       ubcCombiningLeftToRight,   //ubcLeftToRight in Mc category
-                      ubcMirroredNeutral);       //ubcOtherNeutral with Mirrored property
+                      ubcMirroredNeutral);       //ubcOtherNeutrals with Mirrored property
   TUnicodeJoiningType = (ujtNonJoining{U}, ujtTransparent{T}, ujtRightJoining{R}, ujtLeftJoining{L},
                          ujtDualJoining{D}, ujtJoinCausing{C});
 
@@ -566,7 +566,7 @@ var
       curIndex := startIndex;
       while curIndex <> afterEndIndex do
       begin
-        if not (a[curIndex].bidiClass in [ubcLeftToRight,ubcRightToLeft]) then
+        if a[curIndex].bidiClass = ubcOtherNeutrals then
         begin
           curBracket := GetUnicodeBracketInfo(u[curIndex]);
           if curBracket.IsBracket then
