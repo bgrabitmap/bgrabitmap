@@ -710,7 +710,9 @@ var
     begin
       if prevJoiningTypeBidilevel <> result[curIndex].BidiLevel then
         prevJoiningType := ujtNonJoining;
-      joiningType := GetUnicodeJoiningType(u[curIndex]);
+      if result[curIndex].IsNonSpacingMark then
+        joiningType := ujtTransparent //NSM are always joining-transparent
+        else joiningType := GetUnicodeJoiningType(u[curIndex]);
       if joiningType = ujtTransparent then
         result[curIndex].Flags:= result[curIndex].Flags or BIDI_FLAG_LIGATURE_TRANSPARENT;
       if result[curIndex].IsRightToLeft then
