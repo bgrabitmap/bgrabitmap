@@ -503,7 +503,11 @@ begin
   begin
     glyphIndex := AFont.CharIndex[FMarks[i]];
     if glyphIndex <> 0 then
-      Width += AFont.Glyph[glyphIndex].Advance;
+    begin
+      if AFont.ClearType then
+        Width += AFont.Glyph[glyphIndex].Advance/3
+        else Width += AFont.Glyph[glyphIndex].Advance;
+    end;
   end;
   Height := AFont.LineFullHeight;
   FBounds := EmptyRect;
@@ -797,6 +801,7 @@ end;
 procedure TBGRAFreeTypeGlyph.DrawCombiningMarks(ADrawer: TBGRAFreeTypeDrawer; ALeft, ATop: single; AColor: TBGRAPixel; out ACentralLeft: single);
 var
   xRight: Single;
+  widthFactor: single;
 
   procedure DrawCombiningMark(AMark: LongWord);
   var
@@ -809,20 +814,20 @@ var
       begin
         ADrawer.DrawGlyph(markGlyph.Index, FFont, ALeft, ATop,
                           BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-        IncF(ALeft, markGlyph.FreeTypeGlyph.Advance);
-        IncF(xRight, markGlyph.FreeTypeGlyph.Advance);
+        IncF(ALeft, markGlyph.FreeTypeGlyph.Advance*widthFactor);
+        IncF(xRight, markGlyph.FreeTypeGlyph.Advance*widthFactor);
       end else
       if markGlyph.CombiningClass in[226,9] then
       begin
         ADrawer.DrawGlyph(markGlyph.Index, FFont, xRight, ATop,
                           BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-        IncF(xRight, markGlyph.FreeTypeGlyph.Advance);
+        IncF(xRight, markGlyph.FreeTypeGlyph.Advance*widthFactor);
       end else
       begin
         ADrawer.DrawGlyph(markGlyph.Index, FFont, ALeft, ATop,
                           BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
-        IncF(ALeft, markGlyph.FreeTypeGlyph.Advance/2);
-        IncF(xRight, markGlyph.FreeTypeGlyph.Advance);
+        IncF(ALeft, markGlyph.FreeTypeGlyph.Advance/2*widthFactor);
+        IncF(xRight, markGlyph.FreeTypeGlyph.Advance*widthFactor);
       end;
     end;
   end;
@@ -830,6 +835,9 @@ var
 var
   j: Integer;
 begin
+  if FFont.ClearType then
+    widthFactor := 1/3
+    else widthFactor:= 1;
   xRight := ALeft + FCentralTextWidth;
   for j := 0 to high(FMarks) do
     DrawCombiningMark(FMarks[j]);
