@@ -842,7 +842,7 @@ var
 begin
   DrawCombiningMarks(ADrawer, ALeft, ATop, AColor, xLeft);
   DrawCentralGlyph(ADrawer, xLeft, ATop, AColor);
-  DrawNonSpacingMarks(ADrawer, ALeft, ATop, RTL, AColor);
+  DrawNonSpacingMarks(ADrawer, xLeft, ATop, RTL, AColor);
 end;
 
 { TFreeTypeTypeWriter }
