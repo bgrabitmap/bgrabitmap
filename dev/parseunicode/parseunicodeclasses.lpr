@@ -554,13 +554,15 @@ var
         dFinal = 'arFinal';
         dIsolated = 'arIsolated';
   var tOut: TextFile;
-    decomposed, kind, decomposedUTF8: string;
-    mergedU,nextU: longword;
+    decomposed, kind, decomposedUTF8, s: string;
+    mergedU,nextU, fallbackU: longword;
     posClose, posSpace: SizeInt;
     hasNSM, isLa: Boolean;
     correspList: TStringList;
+    kerningFallback: TStringList;
     i, decomposedLen, j: Integer;
     typedKind: TDecompositionKind;
+    hasMarkLeft, hasMarkRight: boolean;
 
     function RemoveUptoTab(AText: string): string;
     var
@@ -573,6 +575,7 @@ var
   begin
     writeln('Parsing decomposition data...');
     correspList := TStringList.Create;
+    kerningFallback := TStringList.Create;
     for j := 0 to UnicodeCount-1 do
     begin
       mergedU := UnicodeData[j].Code;
@@ -598,6 +601,8 @@ var
       end;
       decomposedUTF8 := '';
       decomposedLen := 0;
+      hasMarkLeft := false;
+      hasMarkRight := false;
       hasNSM := false;
       while decomposed <> '' do
       begin
@@ -605,6 +610,10 @@ var
         if posSpace = 0 then posSpace := length(decomposed)+1;
         nextU := strToInt('$'+copy(decomposed,1,posSpace-1));
         if GetUnicodeBidiClass(nextU) = ubcNonSpacingMark then hasNSM := true;
+        case GetUnicodeCombiningClass(nextU) of
+        200,208,212,218,224,228: hasMarkLeft := true;
+        204,210,216,222,226,232: hasMarkRight := true;
+        end;
         AppendStr(decomposedUTF8, UnicodeCharToUTF8(nextU));
         delete(decomposed, 1, posSpace);
         inc(decomposedLen);
@@ -621,6 +630,18 @@ var
            're:''' + UnicodeCharToUTF8(mergedU) + '''; ' +
            'join:' + typedKind +
            ')');
+      if (typedKind = dMultichar) and (decomposedUTF8 <> '') and not hasMarkLeft and not hasMarkRight and
+         ((decomposedUTF8[1] in ['A'..'Z']) or (copy(decomposedUTF8,1,length('Æ')) = 'Æ') or
+         (copy(decomposedUTF8,1,length('Ç')) = 'Ç') or
+         (copy(decomposedUTF8,1,length('Г')) = 'Г') or
+         (copy(decomposedUTF8,1,length('Ѵ')) = 'Ѵ') or
+         (copy(decomposedUTF8,1,length('Ω')) = 'Ω') or
+         (copy(decomposedUTF8,1,length('Ө')) = 'Ө')) then
+      begin
+        fallbackU := UTF8CodepointToUnicode(@decomposedUTF8[1], UTF8CharacterLength(@decomposedUTF8[1]));
+        if fallbackU <> 32 then
+          kerningFallback.Add('(u:$' + inttohex(mergedU,2)+'; fb:$'+ inttohex(fallbackU,2)+')');
+      end;
     end;
 
     AssignFile(tOut, 'generatedutf8.inc');
@@ -642,6 +663,35 @@ var
     correspList.Free;
     writeln(tOut, '  );');
     writeln(tout);
+    CloseFile(tOut);
+
+    AssignFile(tOut, 'kerningfallback.inc');
+    Rewrite(tOut);
+    writeln(tOut, 'type');
+    writeln(tOut, '  TKerningFallbackInfo = record');
+    writeln(tOut, '    u: integer;      //composed charcode');
+    writeln(tOut, '    fb: integer;     //fallback code');
+    writeln(tOut, '  end;');
+    writeln(tOut, 'const');
+    writeln(tOut, '  KerningFallbackInfo : array[0..', kerningFallback.Count-1, '] of TKerningFallbackInfo = (');
+    s := '';
+    for i := 0 to kerningFallback.Count-1 do
+    begin
+      if i <> kerningFallback.Count-1 then
+        AppendStr(s, kerningFallback[i] + ', ')
+      else
+        AppendStr(s, kerningFallback[i]);
+      if length(s) > 70 then
+      begin
+        writeln(tOut, '  ', s);
+        s := '';
+      end;
+    end;
+    if s <> '' then
+      writeln(tOut, '  ', s);
+    writeln(tOut, '  );');
+    writeln(tout);
+    kerningFallback.Free;
     CloseFile(tOut);
   end;
 
