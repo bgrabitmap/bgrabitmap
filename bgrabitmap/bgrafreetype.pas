@@ -810,14 +810,14 @@ var
     if GetUnicodeBidiClassEx(AMark) <> ubcCombiningLeftToRight then exit;
     if RetrieveMarkGlyph(AMark, markGlyph, false) then
     begin
-      if markGlyph.CombiningClass = 224 then
+      if markGlyph.CombiningClass in[208,224] then
       begin
         ADrawer.DrawGlyph(markGlyph.Index, FFont, ALeft, ATop,
                           BGRAToFPColor(AColor), [ftaTop,ftaLeft]);
         IncF(ALeft, markGlyph.FreeTypeGlyph.Advance*widthFactor);
         IncF(xRight, markGlyph.FreeTypeGlyph.Advance*widthFactor);
       end else
-      if markGlyph.CombiningClass in[226,9] then
+      if markGlyph.CombiningClass in[210,226,9] then
       begin
         ADrawer.DrawGlyph(markGlyph.Index, FFont, xRight, ATop,
                           BGRAToFPColor(AColor), [ftaTop,ftaLeft]);

@@ -500,9 +500,9 @@ var
           c := UnicodeData[i].CombiningClass;
           if (c = 0) and (UnicodeData[i].Category = 'Mc') then
           begin
-            if pos(IntToHex(u,4)+',', CombineLeftOnly) <> 0 then c := 224
+            if pos(IntToHex(u,4)+',', CombineLeftOnly) <> 0 then c := 208
             else if pos(IntToHex(u,4)+',', CombineLeftAndRight) <> 0 then c := 0
-            else c := 226;
+            else c := 210;
           end;
           infos.Add('(u:$'+IntToHex(u,2)+'; c:'+IntToStr(c)+')');
         end;
