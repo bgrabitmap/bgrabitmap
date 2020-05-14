@@ -65,7 +65,7 @@ begin
   if virtualscreen = nil then
   begin
     virtualscreen := TBGRABitmap.Create(Width,Height);
-    background := backgroundTile.GetPart(rect(0,0,Width,Height)) as TBGRABitmap;
+    background := backgroundTile.GetPart(rect(0,0,Width,Height));
   end;
 
   virtualScreen.PutImage(0,0,background,dmSet);

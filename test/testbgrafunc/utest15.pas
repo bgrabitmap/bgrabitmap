@@ -120,7 +120,7 @@ begin
     inc(p);
   end;
 
-  temp := colorMap.FilterBlurRadial(2,rbCorona) as TBGRABitmap;
+  temp := colorMap.FilterBlurRadial(2,rbCorona);
   colorMap.Free;
   colorMap := temp;
 end;

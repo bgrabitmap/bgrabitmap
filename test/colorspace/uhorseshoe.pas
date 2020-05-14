@@ -84,16 +84,15 @@ implementation
 uses XYZABitmap;
 
 const
-  OptimalReflectStep = 200;
+  OptimalReflectStep = 250;
   OptimalReflectArraySize = OptimalReflectStep;
   OptimalReflectBorderStep = OptimalReflectStep div 10;
 
 var
   OptimalReflectXYZ: array[0..OptimalReflectArraySize,0..OptimalReflectArraySize] of record
                        min,max: single;
-                       defined: boolean;
                      end;
-  optimalXYZMin,optimalXYZMax: TXYZA;
+{  optimalXYZMin,optimalXYZMax: TXYZA; }
 {  labMin,labMax: TLabA;
   lchMin,lchMax: TLChA;}
 
@@ -110,10 +109,9 @@ begin
      (xyz.Z >= 0) and (xyz.Z <= 1) then
   begin
     xyz.X := sqrt(xyz.X);
-    xyz.Y := sqrt(xyz.Y);
     xyz.Z := sqrt(xyz.Z);
     with OptimalReflectXYZ[round(xyz.X*OptimalReflectStep),round(xyz.Z*OptimalReflectStep)] do
-      if defined and (xyz.Y >= min) and (xyz.Y <= max) then exit(true);
+      if (min <> EmptySingle) and (xyz.Y >= min) and (xyz.Y <= max) then exit(true);
   end;
   result := false;
 end;
@@ -123,12 +121,12 @@ procedure AddOptimalReflect(xyz: TXYZA);
   lab: TLabA;
   lch: TLChA; }
 begin
-  if xyz.X < optimalXYZMin.X then optimalXYZMin.X := xyz.X;
+{  if xyz.X < optimalXYZMin.X then optimalXYZMin.X := xyz.X;
   if xyz.Y < optimalXYZMin.Y then optimalXYZMin.Y := xyz.Y;
   if xyz.Z < optimalXYZMin.Z then optimalXYZMin.Z := xyz.Z;
   if xyz.X > optimalXYZMax.X then optimalXYZMax.X := xyz.X;
   if xyz.Y > optimalXYZMax.Y then optimalXYZMax.Y := xyz.Y;
-  if xyz.Z > optimalXYZMax.Z then optimalXYZMax.Z := xyz.Z;
+  if xyz.Z > optimalXYZMax.Z then optimalXYZMax.Z := xyz.Z;  }
 {  lab := xyz.ToLabA(ReferenceWhite2E);
   if lab.L < labMin.L then labMin.L := lab.L;
   if lab.a < labMin.a then labMin.a := lab.a;
@@ -150,17 +148,15 @@ begin
      (xyz.Z >= 0) and (xyz.Z <= 1) then
   begin
     xyz.X := sqrt(xyz.X);
-    xyz.Y := sqrt(xyz.Y);
     xyz.Z := sqrt(xyz.Z);
 
     with OptimalReflectXYZ[round(xyz.X*OptimalReflectStep),
       round(xyz.Z*OptimalReflectStep)] do
     begin
-      if not defined then
+      if min = EmptySingle then
       begin
         min := xyz.Y;
         max := xyz.Y;
-        defined := true;
       end else
       begin
         if xyz.Y < min then min := xyz.Y;
@@ -693,13 +689,16 @@ begin
   freemem(rowData, rowDataSize);
 end;
 
-var i,j,k,l,m: integer;
+var i,j,k,l,m,jMod: integer;
   xyz, xyzMax, xyzMain: TXYZA;
-  f1,f2: single;
+  spectralLocusNormalizedSum: array[low(SpectralLocus)..high(SpectralLocus)] of TXYZA;
 
 initialization
 
   //writeln('Computing reflective color bounds...');
+  for i := 0 to OptimalReflectArraySize do
+    for j := 0 to OptimalReflectArraySize do
+      OptimalReflectXYZ[i,j].min := EmptySingle;
   xyzMax.X := 0;
   xyzMax.Y := 0;
   xyzMax.Z := 0;
@@ -709,8 +708,12 @@ initialization
     xyzMax.Y += SpectralLocus[i].Y;
     xyzMax.Z += SpectralLocus[i].Z;
   end;
-  optimalXYZMin := CSSSilver;
-  optimalXYZMax := CSSSilver;
+  for i := 0 to high(SpectralLocus) do
+    spectralLocusNormalizedSum[i] := TXYZA.New(SpectralLocus[i].X/xyzMax.X/OptimalReflectBorderStep,
+      SpectralLocus[i].Y/xyzMax.Y/OptimalReflectBorderStep,
+      SpectralLocus[i].Z/xyzMax.Z/OptimalReflectBorderStep);
+  {optimalXYZMin := CSSSilver;
+  optimalXYZMax := CSSSilver;}
   {labMin := CSSSilver;
   labMax := CSSSilver;
   lchMin := CSSSilver;
@@ -719,55 +722,58 @@ initialization
 
   for i := 0 to high(SpectralLocus) do
   begin
+    xyzMain.X := 0;
+    xyzMain.Y := 0;
+    xyzMain.Z := 0;
+    jMod := i;
     for k := 1 to length(SpectralLocus) do
     begin
-      xyzMain.X := 0;
-      xyzMain.Y := 0;
-      xyzMain.Z := 0;
-      for j := 1 to k-2 do
+      if k = 1 then
       begin
-        with SpectralLocus[(i+j) mod length(SpectralLocus)] do
+        xyz := xyzMain;
+        for l := 1 to OptimalReflectBorderStep*8 do
         begin
-          xyzMain.X += X;
-          xyzMain.Y += Y;
-          xyzMain.Z += Z;
-        end;
-      end;
-      for l := 1 to OptimalReflectBorderStep do
-        for m := 1 to OptimalReflectBorderStep do
-        begin
-          xyz := xyzMain;
-          f1 := l/OptimalReflectBorderStep;
-          f2 := m/OptimalReflectBorderStep;
-          if k=1 then
-            with SpectralLocus[i] do
-            begin
-              xyz.X += f1*f2*X;
-              xyz.Y += f1*f2*Y;
-              xyz.Z += f1*f2*Z;
-            end
-          else
+          with spectralLocusNormalizedSum[i] do
           begin
-            with SpectralLocus[i] do
-            begin
-              xyz.X += f1*X;
-              xyz.Y += f1*Y;
-              xyz.Z += f1*Z;
-            end;
-            with SpectralLocus[(i+k-1) mod length(SpectralLocus)] do
-            begin
-              xyz.X += f2*X;
-              xyz.Y += f2*Y;
-              xyz.Z += f2*Z;
-            end
+            xyz.X += X*0.125;
+            xyz.Y += Y*0.125;
+            xyz.Z += Z*0.125;
           end;
-
-          xyz.X /= xyzMax.X;
-          xyz.Y /= xyzMax.Y;
-          xyz.Z /= xyzMax.Z;
-
           AddOptimalReflect(xyz);
         end;
+      end else
+      for l := 1 to OptimalReflectBorderStep do
+      begin
+        xyz := xyzMain;
+        with spectralLocusNormalizedSum[i] do
+        begin
+          xyz.X += l*X;
+          xyz.Y += l*Y;
+          xyz.Z += l*Z;
+        end;
+        for m := 1 to OptimalReflectBorderStep do
+        begin
+          with spectralLocusNormalizedSum[jMod] do
+          begin
+            xyz.X += X;
+            xyz.Y += Y;
+            xyz.Z += Z;
+          end;
+          AddOptimalReflect(xyz);
+        end;
+      end;
+
+      if k >= 2 then
+      begin
+        with spectralLocusNormalizedSum[jMod] do
+        begin
+          xyzMain.X += X*OptimalReflectBorderStep;
+          xyzMain.Y += Y*OptimalReflectBorderStep;
+          xyzMain.Z += Z*OptimalReflectBorderStep;
+        end;
+      end;
+      inc(jMod);
+      if jMod = length(SpectralLocus) then jMod := 0;
     end;
   end;
 

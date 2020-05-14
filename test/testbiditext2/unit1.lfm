@@ -1,89 +1,94 @@
 object Form1: TForm1
   Left = 383
-  Height = 432
-  Top = 288
-  Width = 708
+  Height = 648
+  Top = 191
+  Width = 1062
   Caption = 'BGRA Text Editor'
-  ClientHeight = 432
-  ClientWidth = 708
-  KeyPreview = True
+  ClientHeight = 648
+  ClientWidth = 1062
+  DesignTimePPI = 144
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  OnKeyDown = FormKeyDown
-  OnKeyPress = FormKeyPress
-  LCLVersion = '1.8.0.6'
+  LCLVersion = '2.0.8.0'
   object BGRAVirtualScreen1: TBGRAVirtualScreen
     Left = 0
-    Height = 394
-    Top = 38
-    Width = 708
+    Height = 591
+    Top = 57
+    Width = 1062
     OnRedraw = BGRAVirtualScreen1Redraw
     Align = alClient
     Alignment = taLeftJustify
     BorderWidth = 1
     BorderStyle = bsSingle
     Color = clWhite
-    Font.Height = 12
+    Font.Height = 18
     ParentColor = False
     ParentFont = False
     TabOrder = 0
+    TabStop = True
     OnMouseDown = BGRAVirtualScreen1MouseDown
     OnMouseMove = BGRAVirtualScreen1MouseMove
   end
   object Panel1: TPanel
     Left = 0
-    Height = 38
+    Height = 57
     Top = 0
-    Width = 708
+    Width = 1062
     Align = alTop
-    ClientHeight = 38
-    ClientWidth = 708
+    ClientHeight = 57
+    ClientWidth = 1062
+    ParentFont = False
     TabOrder = 1
     object SpinEdit_Angle: TSpinEdit
-      Left = 256
-      Height = 27
-      Top = 5
-      Width = 58
+      Left = 424
+      Height = 36
+      Top = 8
+      Width = 87
       MaxValue = 180
       MinValue = -180
       OnChange = SpinEdit_AngleChange
+      ParentFont = False
       TabOrder = 0
     end
     object SpinEdit_FontSize: TSpinEdit
-      Left = 64
-      Height = 27
-      Top = 5
-      Width = 58
+      Left = 120
+      Height = 36
+      Top = 8
+      Width = 87
       MaxValue = 50
       MinValue = 1
       OnChange = SpinEdit_FontSizeChange
+      ParentFont = False
       TabOrder = 1
       Value = 15
     end
     object Label1: TLabel
-      Left = 216
-      Height = 17
-      Top = 10
-      Width = 32
+      Left = 352
+      Height = 24
+      Top = 15
+      Width = 58
       Caption = 'Angle'
       ParentColor = False
+      ParentFont = False
     end
     object Label2: TLabel
-      Left = 8
-      Height = 17
-      Top = 10
-      Width = 49
+      Left = 12
+      Height = 24
+      Top = 15
+      Width = 89
       Caption = 'Font size'
       ParentColor = False
+      ParentFont = False
     end
     object ToolBar1: TToolBar
-      Left = 128
-      Height = 27
-      Top = 6
-      Width = 80
+      Left = 216
+      Height = 40
+      Top = 9
+      Width = 120
       Align = alNone
       Caption = 'ToolBar1'
       Images = ImageList1
+      ParentFont = False
       TabOrder = 2
       object ToolButtonLeftAlign: TToolButton
         Left = 1
@@ -93,30 +98,48 @@ object Form1: TForm1
         OnClick = ToolButtonLeftAlignClick
       end
       object ToolButtonCenterAlign: TToolButton
-        Left = 24
+        Left = 36
         Top = 2
         Caption = 'Center'
         ImageIndex = 1
         OnClick = ToolButtonCenterAlignClick
       end
       object ToolButtonRightAlign: TToolButton
-        Left = 47
+        Left = 71
         Top = 2
         Caption = 'Right alignment'
         ImageIndex = 2
         OnClick = ToolButtonRightAlignClick
       end
     end
+    object CheckBox_FreeType: TCheckBox
+      Left = 528
+      Height = 28
+      Top = 13
+      Width = 158
+      Caption = 'Use FreeType'
+      OnChange = CheckBox_FreeTypeChange
+      TabOrder = 3
+    end
+    object CheckBox_ClearType: TCheckBox
+      Left = 712
+      Height = 28
+      Top = 13
+      Width = 199
+      Caption = 'Enable ClearType'
+      OnChange = CheckBox_ClearTypeChange
+      TabOrder = 4
+    end
   end
   object TimerBlinkCaret: TTimer
     Interval = 500
     OnTimer = TimerBlinkCaretTimer
-    left = 240
-    top = 248
+    left = 360
+    top = 372
   end
   object ImageList1: TImageList
-    left = 344
-    top = 248
+    left = 516
+    top = 372
     Bitmap = {
       4C69030000001000000010000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

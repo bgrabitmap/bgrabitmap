@@ -1806,6 +1806,7 @@ end;
 initialization
 
   tempBmp := nil;
+  fqFineClearType := @GetFineClearTypeAuto;
 
 finalization
 

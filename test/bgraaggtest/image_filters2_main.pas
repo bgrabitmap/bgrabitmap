@@ -85,10 +85,10 @@ begin
   stopwatch.Clear;
   stopwatch.Start;
   if noFilter then
-    resampled := image.Resample(tx,ty,rmSimpleStretch) as TBGRABitmap else
+    resampled := image.Resample(tx,ty,rmSimpleStretch) else
   begin
      image.ResampleFilter := filter;
-     resampled := image.Resample(tx,ty) as TBGRABitmap;
+     resampled := image.Resample(tx,ty);
   end;
   stopwatch.stop;
   Label_Ms.Caption := IntToStr(round(stopwatch.Elapsed*1000))+' ms';

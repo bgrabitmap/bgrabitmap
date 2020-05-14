@@ -45,10 +45,11 @@ begin
     FreeAndNil(virtualScreen);
 
   if virtualscreen = nil then
+  begin
     virtualscreen := TBGRABitmap.Create(Width,Height);
-
-  //draw background opaque in BGRA bitmap
-  virtualscreen.PutImage(0,0,backgroundImg,dmSet);
+    //draw background opaque in BGRA bitmap
+    virtualscreen.PutImage(0,0,backgroundImg,dmSet);
+  end;
 
   //draw sprites transparent in BGRA bitmap
   for i := 0 to high(pacLoc) do
@@ -56,6 +57,12 @@ begin
 
   //draw virtualscreen opaque on canvas
   virtualscreen.Draw(Canvas,Left,Top,True);
+
+  //erase sprites
+  for i := 0 to high(pacLoc) do
+    virtualscreen.FillRect(RectWithSize(pacLoc[i].x,pacLoc[i].y,
+                          pacImg[numPacImg].Width,pacImg[numPacImg].Height),
+                          backgroundImg,dmSet);
 end;
 
 end.

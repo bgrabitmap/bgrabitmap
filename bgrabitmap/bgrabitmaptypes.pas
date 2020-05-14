@@ -38,7 +38,7 @@ uses
 
 
 const
-  BGRABitmapVersion = 10090000;
+  BGRABitmapVersion = 11000000;
 
   function BGRABitmapVersionStr: string;
 
@@ -293,6 +293,11 @@ type
     {** Fine antialiasing with ClearType assuming an LCD display in blue/green/red order }
     fqFineClearTypeBGR);
 
+  TGetFineClearTypeAutoFunc = function(): TBGRAFontQuality;
+var
+  fqFineClearType : TGetFineClearTypeAutoFunc;
+
+type
   {* Measurements of a font }
   TFontPixelMetric = record
     {** The values have been computed }
@@ -727,7 +732,7 @@ begin
       charLen := UTF8CharacterLength(@ABefore[p]);
       if p+charLen > length(ABefore)+1 then charLen := length(ABefore)+1-p;
       u := UTF8CodepointToUnicode(@ABefore[p],charLen);
-      if GetUnicodeBidiClass(u) = ubcNonSpacingMark then
+      if (GetUnicodeBidiClassEx(u) in[ubcNonSpacingMark, ubcCombiningLeftToRight]) then
         inc(p,charLen)
       else
         break;
@@ -799,6 +804,11 @@ begin
       result := f;
       exit;
     end;
+end;
+
+function GetFineClearTypeAuto: TBGRAFontQuality;
+begin
+  result := fqFineClearTypeRGB;
 end;
 
 { TBGRACustomFontRenderer }
@@ -1486,6 +1496,8 @@ initialization
 
   {$DEFINE INCLUDE_INIT}
   {$I csscolorconst.inc}
+
+  fqFineClearType := @GetFineClearTypeAuto;
   
   DefaultBGRAImageWriter[ifJpeg] := TFPWriterJPEG;
   DefaultBGRAImageWriter[ifBmp] := TFPWriterBMP;

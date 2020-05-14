@@ -64,7 +64,7 @@ begin
 
   if masked = nil then
   begin
-    masked := backgroundImg.Duplicate as TBGRABitmap;
+    masked := backgroundImg.Duplicate;
     masked.PutImage(virtualScreen.Width div 2,virtualScreen.Height div 2, pacman, dmDrawWithTransparency);
   end;
 

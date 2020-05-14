@@ -1382,7 +1382,7 @@ begin
     FLayers[FNbLayers].Owner := false;
   end else
   begin
-    FLayers[FNbLayers].Source := Source.Duplicate as TBGRABitmap;
+    FLayers[FNbLayers].Source := Source.Duplicate;
     FLayers[FNbLayers].Owner := true;
   end;
   result := FNbLayers;
@@ -2140,7 +2140,7 @@ end;
 
 function TBGRALayeredBitmap.GetLayerBitmapCopy(layer: integer): TBGRABitmap;
 begin
-  result := GetLayerBitmapDirectly(layer).Duplicate as TBGRABitmap;
+  result := GetLayerBitmapDirectly(layer).Duplicate;
 end;
 
 function TBGRALayeredBitmap.GetLayerIndexFromId(AIdentifier: integer): integer;
@@ -2178,7 +2178,7 @@ begin
   begin
     if Assigned(OnActionProgress) then OnActionProgress(self, round(i*100/NbLayers));
     newOfs:= m*PointF(FLayers[i].x,FLayers[i].y+FLayers[i].Source.Height);
-    newBmp := FLayers[i].Source.RotateCW as TBGRABitmap;
+    newBmp := FLayers[i].Source.RotateCW;
     if FLayers[i].Owner then FreeAndNil(FLayers[i].Source);
     FLayers[i].Source := newBmp;
     FLayers[i].Owner := true;
@@ -2201,7 +2201,7 @@ begin
   begin
     if Assigned(OnActionProgress) then OnActionProgress(self, round(i*100/NbLayers));
     newOfs:= m*PointF(FLayers[i].x+FLayers[i].Source.Width,FLayers[i].y);
-    newBmp := FLayers[i].Source.RotateCCW as TBGRABitmap;
+    newBmp := FLayers[i].Source.RotateCCW;
     if FLayers[i].Owner then FreeAndNil(FLayers[i].Source);
     FLayers[i].Source := newBmp;
     FLayers[i].Owner := true;
@@ -2233,7 +2233,7 @@ begin
     FLayers[ALayerIndex].Source.RotateUDInplace
   else
   begin
-    FLayers[ALayerIndex].Source := FLayers[ALayerIndex].Source.RotateUD as TBGRABitmap;
+    FLayers[ALayerIndex].Source := FLayers[ALayerIndex].Source.RotateUD;
     FLayers[ALayerIndex].Owner := true;
   end;
   FLayers[ALayerIndex].x := Width-FLayers[ALayerIndex].x-FLayers[ALayerIndex].Source.Width;
@@ -2262,7 +2262,7 @@ begin
     FLayers[ALayerIndex].Source.HorizontalFlip
   else
   begin
-    FLayers[ALayerIndex].Source := FLayers[ALayerIndex].Source.Duplicate(True) as TBGRABitmap;
+    FLayers[ALayerIndex].Source := FLayers[ALayerIndex].Source.Duplicate(True);
     FLayers[ALayerIndex].Source.HorizontalFlip;
     FLayers[ALayerIndex].Owner := true;
   end;
@@ -2291,7 +2291,7 @@ begin
     FLayers[ALayerIndex].Source.VerticalFlip
   else
   begin
-    FLayers[ALayerIndex].Source := FLayers[ALayerIndex].Source.Duplicate(True) as TBGRABitmap;
+    FLayers[ALayerIndex].Source := FLayers[ALayerIndex].Source.Duplicate(True);
     FLayers[ALayerIndex].Source.VerticalFlip;
     FLayers[ALayerIndex].Owner := true;
   end;
@@ -2328,7 +2328,7 @@ begin
         oldFilter := LayerBitmap[i].ResampleFilter;
         LayerBitmap[i].ResampleFilter := AFineResampleFilter;
         resampled := LayerBitmap[i].Resample(max(1,round(LayerBitmap[i].Width*AWidth/prevWidth)),
-          max(1,round(LayerBitmap[i].Height*AHeight/prevHeight)), AResampleMode) as TBGRABitmap;
+          max(1,round(LayerBitmap[i].Height*AHeight/prevHeight)), AResampleMode);
         LayerBitmap[i].ResampleFilter := oldFilter;
         SetLayerBitmap(i, resampled, True);
       end;
@@ -2367,7 +2367,7 @@ begin
   if Assigned(result) then
   begin
     if FLayers[layer].Owner then FLayers[layer].Owner := false
-    else result := result.Duplicate as TBGRABitmap;
+    else result := result.Duplicate;
   end;
 end;
 

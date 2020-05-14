@@ -764,7 +764,10 @@ begin
   pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
   for rx := 0 to ScanlineLength[CurrentPass]-1 do
     begin
-    pdest^ := FBGRAConvertColor(CalcColor(ScanLine));
+    c := CalcColor(ScanLine);
+    if c = TransparentDataValue then
+      pdest^ := BGRAPixelTransparent
+      else pdest^ := FBGRAConvertColor(c);
     Inc(pdest, deltaX);
     end
 end;

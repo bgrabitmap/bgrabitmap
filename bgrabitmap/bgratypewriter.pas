@@ -91,7 +91,7 @@ type
   TBGRAGlyphDisplayInfo = record
     Glyph: TBGRAGlyph;
     Matrix: TAffineMatrix;
-    Mirrored: boolean;
+    Mirrored, RTL: WordBool;
   end;
 
   TBGRATextDisplayInfo = array of TBGRAGlyphDisplayInfo;
@@ -158,11 +158,12 @@ type
     procedure BrowseGlyphs(ATextUTF8: string; ACallback: TBrowseGlyphCallback; AData: pointer; ADisplayOrder: boolean);
     procedure BrowseAllGlyphs(ACallback: TBrowseGlyphCallback; AData: pointer);
     function FindKerning(AIdLeft, AIdRight: string): TAVLTreeNode;
-    function GetKerningOffset(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single;
+    function GetKerningOffset(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single; virtual;
     function ComputeKerning(AIdLeft, AIdRight: string): single; virtual;
   public
     OutlineMode: TBGRATypeWriterOutlineMode;
     DrawGlyphsSimultaneously : boolean;
+    SubstituteBidiBracket: boolean;
     LigatureWithF: boolean;
     constructor Create;
     function GetTextSizeBeforeTransform(ATextUTF8 :string): TPointF;
@@ -635,6 +636,7 @@ begin
 
     Info[InfoIndex].Glyph := AGlyph;
     Info[InfoIndex].Mirrored:= gcfMirrored in AFlags;
+    Info[InfoIndex].RTL := gcfRightToLeft in AFlags;
     Info[InfoIndex].Matrix := m2;
 
     Matrix := Matrix*AffineMatrixTranslation(AGlyph.Width,0);
@@ -1102,6 +1104,7 @@ var
   i,charDestPos,charLen: integer;
   prevGlyphId: string;
   prevRTL: boolean;
+  bracketInfo: TUnicodeBracketInfo;
 begin
   if ATextUTF8 = '' then exit;
 
@@ -1157,17 +1160,27 @@ begin
       end;
     end;
     glyphId := UTF8Ligature(glyphId, curRTLScript, curLigatureLeft, curLigatureRight);
+    flags := [];
+    if merged then include(flags, gcfMerged);
+    if curRTL then include(flags, gcfRightToLeft);
+    if curRTL and charInfo[curStart].bidiInfo^.IsMirrored and (UTF8Length(glyphId)=1) then
+    begin
+      u := UTF8CodepointToUnicode(pchar(glyphId), length(glyphId));
+      if SubstituteBidiBracket then
+      begin
+        bracketInfo := GetUnicodeBracketInfo(u);
+        if bracketInfo.OpeningBracket = u then
+          glyphId := UnicodeCharToUTF8(bracketInfo.ClosingBracket)
+        else if bracketInfo.ClosingBracket = u then
+          glyphId := UnicodeCharToUTF8(bracketInfo.OpeningBracket)
+        else
+          include(flags, gcfMirrored);
+      end else
+        include(flags, gcfMirrored);
+    end;
     g := GetGlyph(glyphId);
     if g <> nil then
     begin
-      flags := [];
-      if merged then include(flags, gcfMerged);
-      if curRTL then include(flags, gcfRightToLeft);
-      if curRTL and (UTF8Length(glyphId)=1) then
-      begin
-        u := UTF8CodepointToUnicode(pchar(glyphId), length(glyphId));
-        if IsUnicodeMirrored(u) then include(flags, gcfMirrored);
-      end;
       if (prevGlyphId <> '') and (curRTL = prevRTL) then include(flags, gcfKerning);
       ACallback(nextchar, g, flags, AData, shouldContinue);
       prevGlyphId := glyphId;

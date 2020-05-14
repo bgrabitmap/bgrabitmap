@@ -20,8 +20,8 @@ type
     //typed functions
 
     {** Creates an image of dimensions ''AWidth'' and ''AHeight'' and fills it with ''Color'' }
-    constructor Create(AWidth, AHeight: integer; const AColor: TPixel);
-    function NewBitmap(AWidth, AHeight: integer; const AColor: TPixel): TCustomUniversalBitmap; overload;
+    constructor Create(AWidth, AHeight: integer; const AColor: TPixel); virtual;
+    function NewBitmap(AWidth, AHeight: integer; const AColor: TPixel): TCustomUniversalBitmap; overload; virtual;
 
     function Equals(comp: TCustomUniversalBitmap): boolean; overload;
     function Equals(const comp: TPixel): boolean; overload;
@@ -31,7 +31,7 @@ type
     class procedure IdleBrush(out ABrush: TUniversalBrush); virtual;
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TPixel;
-            AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TCustomUniversalBitmap;
+            AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TCustomUniversalBitmap; virtual;
 
     procedure SetPixel(x,y: int32or64; const AColor: TPixel); overload; virtual;
     function GetPixel(x,y: int32or64): TPixel; inline;
@@ -52,6 +52,7 @@ type
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word); overload; virtual;
+    procedure DrawPixelF(x,y: single; const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     {** Replaces the content of the pixels at line ''y'' and
         at columns ''x'' to ''x2'' included, using specified color }
     procedure SetHorizLine(x, y, x2: int32or64; const AColor: TPixel); virtual;
@@ -580,6 +581,15 @@ var
 begin
   SolidBrush(b, AColor, ADrawMode);
   DrawPixel(x,y, b,AAlpha);
+end;
+
+procedure TGenericUniversalBitmap.DrawPixelF(x, y: single;
+  const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b, AColor, ADrawMode);
+  DrawPixelF(x,y, b,AAlpha);
 end;
 
 procedure TGenericUniversalBitmap.SetHorizLine(x, y, x2: int32or64;
