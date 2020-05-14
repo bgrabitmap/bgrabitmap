@@ -1,7 +1,6 @@
 unit BGRAFreeType;
 
 {$mode objfpc}{$H+}
-{$DEFINE LAZFREETYPE_GLYPH_BOX_FIXED}
 
 {
   Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
@@ -30,7 +29,12 @@ interface
 
 uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, EasyLazFreeType, FPimage,
-  BGRACustomTextFX, BGRAPhongTypes, BGRATypewriter;
+  BGRACustomTextFX, BGRAPhongTypes, BGRATypewriter, LazVersion;
+
+{$IF laz_fullversion >= 2000900}
+  {$DEFINE LAZFREETYPE_GLYPH_BOX_FIXED}
+  {$DEFINE LAZFREETYPE_PROVIDE_KERNING}
+{$ENDIF}
 
 type
   TBGRAFreeTypeDrawer = class;
@@ -341,6 +345,8 @@ type
   protected
     FFont: TFreeTypeFont;
     function GetGlyph(AIdentifier: string): TBGRAGlyph; override;
+    function GetKerningOffset(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single; override;
+    function ComputeKerning(AIdLeft, AIdRight: string): single; override;
   public
     constructor Create(AFont: TFreeTypeFont);
     procedure DrawText(ADrawer: TBGRAFreeTypeDrawer; ATextUTF8: string; X,Y: Single;
@@ -867,6 +873,36 @@ begin
     result := g;
   end;
 end;
+
+function TFreeTypeTypeWriter.GetKerningOffset(AIdBefore, AIdAfter: string;
+  ARightToLeft: boolean): single;
+var
+  temp: String;
+begin
+  //don't store kerning as it is stored in TFreeTypeFont font object
+  if ARightToLeft then
+  begin
+    temp := AIdBefore;
+    AIdBefore := AIdAfter;
+    AIdAfter := temp;
+  end;
+  result := ComputeKerning(AIdBefore, AIdAfter);
+end;
+
+function TFreeTypeTypeWriter.ComputeKerning(AIdLeft, AIdRight: string): single;
+{$IFDEF LAZFREETYPE_PROVIDE_KERNING}
+var
+  uLeft, uRight: LongWord;
+begin
+  if (AIdLeft = '') or (AIdRight = '') then exit(0);
+  uLeft := UTF8CodepointToUnicode(@AIdLeft[1], UTF8CharacterLength(@AIdLeft[1]));
+  uRight := UTF8CodepointToUnicode(@AIdRight[1], UTF8CharacterLength(@AIdRight[1]));
+  Result:= FFont.CharKerning[uLeft, uRight].Kerning.x;
+end;
+{$ELSE}
+begin
+  result := 0;
+end;{$ENDIF}
 
 constructor TFreeTypeTypeWriter.Create(AFont: TFreeTypeFont);
 begin

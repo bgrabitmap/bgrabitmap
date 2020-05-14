@@ -158,7 +158,7 @@ type
     procedure BrowseGlyphs(ATextUTF8: string; ACallback: TBrowseGlyphCallback; AData: pointer; ADisplayOrder: boolean);
     procedure BrowseAllGlyphs(ACallback: TBrowseGlyphCallback; AData: pointer);
     function FindKerning(AIdLeft, AIdRight: string): TAVLTreeNode;
-    function GetKerningOffset(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single;
+    function GetKerningOffset(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single; virtual;
     function ComputeKerning(AIdLeft, AIdRight: string): single; virtual;
   public
     OutlineMode: TBGRATypeWriterOutlineMode;
