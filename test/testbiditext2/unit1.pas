@@ -117,7 +117,7 @@ begin
 
   SpinEdit_FontSize.Value := round(SpinEdit_FontSize.Value * Screen.PixelsPerInch / 96);
   FTestText := 'تحتوي العربية على 28 حرفاً مكتوباً. ويرى بعض اللغويين أنه يجب إضافة حرف الهمزة إلى حروف العربية، ليصبح عدد الحروف 29. تُكتب العربية من اليمين إلى اليسار - ومثلها اللغة الفارسية والعبرية على عكس كثير من اللغات العالمية - ومن أعلى الصفحة إلى أسفلها.'+LineEnding+
-             'Arabic reversed "' + UTF8OverrideDirection('صباح الخير',false)+'". '+ LineEnding +
+             'Arabic reversed "' + UTF8OverrideDirection('صباح الخير',false)+'". Arabic marks: "لاٍُ لٍُإ بًٍّ  ةُِ ںْ رُ ٮَ  بٔ".'+ LineEnding +
              #9'Le français est une langue indo-européenne de la famille des langues romanes. Le français s''est formé en France (variété de la « langue d''oïl », qui est la langue de la partie septentrionale du pays).'+LineEnding+
              'Glorious finds itself reversed as '+ UTF8OverrideDirection('"glorious"',True) + '. ' +
                '"Hello!" is '+ UTF8EmbedDirection('"مرحبا!"',True) + ' in arabic.' + LineEnding +
@@ -503,7 +503,7 @@ begin
     end else
     begin
       FFontRenderer := TLCLFontRenderer.Create;
-      FFontRenderer.FontName := {$IFDEF LINUX}'Liberation Serif'{$ELSE}'default'{$ENDIF};
+      FFontRenderer.FontName := {$IFDEF LINUX}'Liberation Serif'{$ELSE}'serif'{$ENDIF};
     End;
   end;
   if CheckBox_ClearType.Checked then
