@@ -38,7 +38,7 @@ uses
 
 
 const
-  BGRABitmapVersion = 10090000;
+  BGRABitmapVersion = 11000000;
 
   function BGRABitmapVersionStr: string;
 
