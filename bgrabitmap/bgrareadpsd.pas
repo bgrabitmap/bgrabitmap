@@ -1,15 +1,9 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 {
-    This original file was part of the Free Pascal run time library.
+    The original file was part of the Free Pascal run time library.
     Copyright (c) 2008 by the Free Pascal development team
 
-    Psd reader for fpImage.
-
-    See the file COPYING.FPC, included in this distribution,
-    for details about the copyright.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    Psd reader for fpImage modified by circular.
 
  **********************************************************************
 

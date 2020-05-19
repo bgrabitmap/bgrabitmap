@@ -1,7 +1,7 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 unit BGRAUnicode;
 { Implementation of Unicode bidi algorithm }
 { Author: circular }
-{ License: modified LGPL }
 
 {$mode objfpc}{$H+}
 {$modeswitch advancedrecords}

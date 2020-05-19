@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 const //horseshoe shape of visible colors at 2° (illuminant E)
   SpectralLocus: array[0..94] of TSpectralLocusPoint =
  ((W:360; X:0.0001299; Y:0.000003917; Z:0.0006061),

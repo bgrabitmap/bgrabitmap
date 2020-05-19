@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 {************************* blend over ***************************}
 
 procedure FastBlendPixelsWithOpacity(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);

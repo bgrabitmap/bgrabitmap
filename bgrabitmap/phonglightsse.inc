@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
     {$asmmode intel}
     asm
       {$ifdef cpux86_64}

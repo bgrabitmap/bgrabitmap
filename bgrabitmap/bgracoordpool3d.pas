@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 unit BGRACoordPool3D;
 
 {$mode objfpc}{$H+}

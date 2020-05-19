@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 program testunicodealgo;
 
 uses BGRAUTF8, Classes, sysUtils;

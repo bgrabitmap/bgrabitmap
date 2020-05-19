@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 { This unit provides some optimisations of TFPReaderPCX: decompression using a read buffer.
   It also fixes the progress message and the InternalCheck. }
 
