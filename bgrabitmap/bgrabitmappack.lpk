@@ -30,7 +30,7 @@
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
     <Version Major="11"/>
-    <Files Count="141">
+    <Files Count="142">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -594,9 +594,13 @@
         <Type Value="Include"/>
       </Item140>
       <Item141>
-        <Filename Value="utf8decomposition.inc"/>
-        <Type Value="Binary"/>
+        <Filename Value="generatedutf8.inc"/>
+        <Type Value="Include"/>
       </Item141>
+      <Item142>
+        <Filename Value="generatedunicode.inc"/>
+        <Type Value="Include"/>
+      </Item142>
     </Files>
     <RequiredPkgs Count="2">
       <Item1>
