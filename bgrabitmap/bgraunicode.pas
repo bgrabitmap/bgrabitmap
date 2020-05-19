@@ -1143,8 +1143,8 @@ begin
       ubcCombiningLeftToRight:
         begin
           case GetUnicodeCombiningClass(u[i]) of
-          224: result[i].Flags := result[i].Flags OR BIDI_FLAG_COMBINING_LEFT;
-          226, 9: result[i].Flags := result[i].Flags OR BIDI_FLAG_COMBINING_RIGHT;
+          208, 224: result[i].Flags := result[i].Flags OR BIDI_FLAG_COMBINING_LEFT;
+          210, 226, 9: result[i].Flags := result[i].Flags OR BIDI_FLAG_COMBINING_RIGHT;
           0: result[i].Flags := result[i].Flags OR BIDI_FLAG_COMBINING_LEFT OR BIDI_FLAG_COMBINING_RIGHT;
           end;
           a[i].bidiClass := ubcLeftToRight;
