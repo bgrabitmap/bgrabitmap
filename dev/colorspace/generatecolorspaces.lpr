@@ -1,4 +1,4 @@
-program UnitMaker;
+program generatecolorspaces;
 
 uses UnitMakerUnit;
 

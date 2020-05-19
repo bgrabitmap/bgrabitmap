@@ -10,7 +10,7 @@
       </Flags>
       <SessionStorage Value="InProjectDir"/>
       <MainUnit Value="0"/>
-      <Title Value="UnitMaker"/>
+      <Title Value="generatecolorspaces"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -33,7 +33,7 @@
     </RequiredPackages>
     <Units Count="3">
       <Unit0>
-        <Filename Value="UnitMaker.lpr"/>
+        <Filename Value="generatecolorspaces.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
@@ -51,7 +51,7 @@
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="UnitMaker"/>
+      <Filename Value="generatecolorspaces"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
