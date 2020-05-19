@@ -31,21 +31,16 @@
         <PackageName Value="BGRABitmapPack"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="3">
+    <Units Count="2">
       <Unit0>
         <Filename Value="generatecolorspaces.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
-        <Filename Value="bgracolors.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="BGRAColors"/>
-      </Unit1>
-      <Unit2>
         <Filename Value="unitmakerunit.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UnitMakerUnit"/>
-      </Unit2>
+      </Unit1>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
