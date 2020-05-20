@@ -213,7 +213,7 @@ var
         i: integer;
 
       begin
-        writeln('Parsing unicode data for classes ', AClasses.DelimitedText,'...');
+        write(' ', AClasses.DelimitedText);
         for newBidi := low(TUnicodeBidiClass) to high(TUnicodeBidiClass) do
         begin
           codes[newBidi] := TIntegerList.Create;
@@ -264,6 +264,7 @@ var
 
       procedure Include(AMinCode,AMaxCode: integer);
       begin
+        write('Classes from ',IntToHex(AMinCode,2),' to ',IntToHex(AMaxCode,2),':');
         Writeln(tOut,Indent+'case u of');
         c.CommaText := 'BN';
         IncludeClasses(c, AMinCode,AMaxCode);
@@ -289,6 +290,7 @@ var
         IncludeClasses(c, AMinCode,AMaxCode);
         writeln(tout,Indent+'else result := ubcUnknown;');
         writeln(tout,Indent+'end;');
+        writeln;
       end;
 
     begin
