@@ -1,50 +1,59 @@
 all: generate compile
 
-TargetCPU=$$(arch)
-TargetOS=linux
-FPCVer=$$(fpc -h | head -n 1 | awk '{print $$5;}')
-LibSubDir=$(TargetCPU)-$(TargetOS)/$(FPCVer)
+init:
+ifeq ($(OS),Windows_NT)     # true for Windows_NT or later
+  COPY := batch\copyfile
+  REMOVE := batch\remove
+  REMOVEDIR := batch\removedir
+  THEN := &
+  RUN :=
+else
+  COPY := cp
+  REMOVE := rm -f
+  REMOVEDIR := rm -rf
+  THEN := ;
+  RUN := ./
+  RUN := $(strip $(RUN))
+endif
 
-clean: clean_bgrabitmap clean_generate
+clean: init clean_bgrabitmap clean_generate
 
 clean_bgrabitmap:
-	rm -f "bgrabitmap/generatedcolorspace.inc"
-	rm -f "bgrabitmap/generatedunicode.inc"
-	rm -f "bgrabitmap/generatedutf8.inc"
-	rm -rf "bgrabitmap/lib/$(LibSubDir)"
-	rm -rf "bgrabitmap/lib4nogui/$(LibSubDir)"
-	rm -rf "bgrabitmap/backup"
+	$(REMOVE) "bgrabitmap/generatedcolorspace.inc"
+	$(REMOVE) "bgrabitmap/generatedunicode.inc"
+	$(REMOVE) "bgrabitmap/generatedutf8.inc"
+	$(REMOVEDIR) "bgrabitmap/lib"
+	$(REMOVEDIR) "bgrabitmap/lib4nogui"
+	$(REMOVEDIR) "bgrabitmap/backup"
 
 clean_generate:
-	rm -f "dev/colorspace/generatecolorspaces"
-	rm -f "dev/colorspace/generatedcolorspace.inc"
-	rm -rf "dev/colorspace/lib"
-	rm -rf "dev/colorspace/backup"
-	rm -f "dev/parseunicode/parseunicodeclasses"
-	rm -f "dev/parseunicode/generatedunicode.inc"
-	rm -f "dev/parseunicode/generatedutf8.inc"
-	rm -f "dev/parseunicode/generatedkerningfallback.inc"
-	rm -rf "dev/parseunicode/lib"
-	rm -rf "dev/parseunicode/backup"
+	$(REMOVE) "dev/colorspace/generatecolorspaces"
+	$(REMOVE) "dev/colorspace/generatedcolorspace.inc"
+	$(REMOVEDIR) "dev/colorspace/lib"
+	$(REMOVEDIR) "dev/colorspace/backup"
+	$(REMOVE) "dev/parseunicode/parseunicodeclasses"
+	$(REMOVE) "dev/parseunicode/generatedunicode.inc"
+	$(REMOVE) "dev/parseunicode/generatedutf8.inc"
+	$(REMOVE) "dev/parseunicode/generatedkerningfallback.inc"
+	$(REMOVEDIR) "dev/parseunicode/lib"
+	$(REMOVEDIR) "dev/parseunicode/backup"
 
-generate: bgrabitmap/generatedcolorspace.inc bgrabitmap/generatedunicode.inc
+generate: init bgrabitmap/generatedcolorspace.inc bgrabitmap/generatedunicode.inc
 
 bgrabitmap/generatedcolorspace.inc: dev/colorspace/generatecolorspaces
-	cd dev/colorspace; ./generatecolorspaces
-	cp dev/colorspace/generatedcolorspace.inc bgrabitmap/generatedcolorspace.inc
+	cd dev $(THEN) cd colorspace $(THEN) $(RUN)generatecolorspaces
+	$(COPY) dev/colorspace/generatedcolorspace.inc bgrabitmap/generatedcolorspace.inc
 dev/colorspace/generatecolorspaces: dev/colorspace/generatecolorspaces.lpr dev/colorspace/unitmakerunit.pas
 	lazbuild dev/colorspace/generatecolorspaces.lpi
 
 bgrabitmap/generatedunicode.inc: dev/parseunicode/parseunicodeclasses dev/parseunicode/ArabicShaping.txt dev/parseunicode/BidiBrackets.txt dev/parseunicode/BidiMirroring.txt dev/parseunicode/UnicodeData.txt
-	cd dev/parseunicode; ./parseunicodeclasses
-	cp dev/parseunicode/generatedunicode.inc bgrabitmap/generatedunicode.inc
-	cp dev/parseunicode/generatedutf8.inc bgrabitmap/generatedutf8.inc
+	cd dev $(THEN) cd parseunicode $(THEN) $(RUN)parseunicodeclasses
+	$(COPY) dev/parseunicode/generatedunicode.inc bgrabitmap/generatedunicode.inc
+	$(COPY) dev/parseunicode/generatedutf8.inc bgrabitmap/generatedutf8.inc
 dev/parseunicode/parseunicodeclasses: dev/parseunicode/parseunicodeclasses.lpr
 	lazbuild dev/parseunicode/parseunicodeclasses.lpi
 
-compile: force bgrabitmappack bgrabitmappack4nogui
-force:
-	#lazbuild will check what to rebuild
+compile: init bgrabitmappack bgrabitmappack4nogui
 bgrabitmappack: bgrabitmap/bgrabitmappack.lpk
 	lazbuild bgrabitmap/bgrabitmappack.lpk
 bgrabitmappack4nogui: bgrabitmap/bgrabitmappack4nogui.lpk
