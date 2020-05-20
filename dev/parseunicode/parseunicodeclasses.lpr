@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 program parseunicodeclasses;
 
-uses Classes, sysutils, BGRAUTF8, BGRAUnicode, fgl;
+uses Classes, sysutils, fgl, LazUTF8;
 
 type
   TIntegerList = specialize TFPGList<Integer>;
@@ -49,6 +49,54 @@ var
     end;
     SetLength(UnicodeData, unicodeCount);
     lines.Free;
+  end;
+
+  function IndexOfUnicode(u: LongInt): integer;
+  var
+    low, high, mid: Integer;
+  begin
+    low := 0;
+    high := UnicodeCount-1;
+    while low < high do
+    begin
+      mid := (low+high) div 2;
+      if u > UnicodeData[mid].Code then
+        low := mid+1
+      else
+        high := mid;
+    end;
+    if UnicodeData[low].Code = u then
+      result := low
+    else
+      result := -1;
+  end;
+
+  function GetUnicodeBidiClass(u: LongInt): string;
+  var
+    idx: Integer;
+  begin
+    idx := IndexOfUnicode(u);
+    if idx = -1 then
+      result := ''
+      else result := UnicodeData[idx].BidiClass;
+  end;
+
+  function GetUnicodeCombiningClass(u: LongInt): byte;
+  var
+    idx: Integer;
+  begin
+    idx := IndexOfUnicode(u);
+    if idx = -1 then
+      result := 0
+      else result := UnicodeData[idx].CombiningClass;
+  end;
+
+  function UnicodeCharToUTF8(u: LongInt): string;
+  begin
+    if u >= 0 then
+      result := UnicodeToUTF8(cardinal(u))
+    else
+      result := '';
   end;
 
   function ArrayOfCodeToCase(ACodes: array of integer; AIndent: string): string;
@@ -113,6 +161,14 @@ var
     tIn, tOut: TextFile;
 
     procedure ParseBidiClasses;
+    type
+      TUnicodeBidiClass = (ubcBoundaryNeutral, ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals,
+                          ubcCommonSeparator, ubcNonSpacingMark,
+                          ubcLeftToRight, ubcEuropeanNumber, ubcEuropeanNumberSeparator, ubcEuropeanNumberTerminator,
+                          ubcRightToLeft, ubcArabicLetter, ubcArabicNumber,
+                          ubcUnknown,
+                          ubcCombiningLeftToRight,   //ubcLeftToRight in Mc category
+                          ubcMirroredNeutral);       //ubcOtherNeutrals with Mirrored property
 
       procedure IncludeClasses(AClasses: TStrings; AMinCode, AMaxCode: integer);
       const
@@ -336,7 +392,7 @@ var
       line: string;
       cells: TStringList;
       chars: TStringList;
-      u: LongWord;
+      u: LongInt;
       j: Integer;
 
       procedure AddJoiningType(joinType: string; joinTypeEnum: string; AIndent: string; AMinIndex,AMaxIndex: integer);
@@ -552,9 +608,15 @@ var
         dMedial = 'arMedial';
         dFinal = 'arFinal';
         dIsolated = 'arIsolated';
+  const UTF8_ARABIC_ALEPH = 'ا';
+        UTF8_ARABIC_ALEPH_HAMZA_BELOW = 'إ';
+        UTF8_ARABIC_ALEPH_HAMZA_ABOVE = 'أ';
+        UTF8_ARABIC_ALEPH_MADDA_ABOVE = 'آ';
+        UTF8_ARABIC_LAM = 'ل';
   var tOut: TextFile;
     decomposed, kind, decomposedUTF8, s: string;
-    mergedU,nextU, fallbackU: longword;
+    decomposedFirstChar: LongInt;
+    mergedU,nextU, fallbackU: LongInt;
     posClose, posSpace: SizeInt;
     hasNSM, isLa: Boolean;
     correspList: TStringList;
@@ -578,7 +640,7 @@ var
     for j := 0 to UnicodeCount-1 do
     begin
       mergedU := UnicodeData[j].Code;
-      if GetUnicodeBidiClass(mergedU) = ubcNonSpacingMark then continue;
+      if UnicodeData[j].BidiClass = 'NSM' then continue;
       decomposed := UnicodeData[j].Decomposition;
       if decomposed = '' then continue;
       typedKind := dMultichar;
@@ -600,6 +662,7 @@ var
       end;
       decomposedUTF8 := '';
       decomposedLen := 0;
+      decomposedFirstChar:= 0;
       hasMarkLeft := false;
       hasMarkRight := false;
       hasNSM := false;
@@ -608,11 +671,12 @@ var
         posSpace := pos(' ',decomposed);
         if posSpace = 0 then posSpace := length(decomposed)+1;
         nextU := strToInt('$'+copy(decomposed,1,posSpace-1));
-        if GetUnicodeBidiClass(nextU) = ubcNonSpacingMark then hasNSM := true;
+        if GetUnicodeBidiClass(nextU) = 'NSM' then hasNSM := true;
         case GetUnicodeCombiningClass(nextU) of
         200,208,212,218,224,228: hasMarkLeft := true;
         204,210,216,222,226,232: hasMarkRight := true;
         end;
+        if decomposedLen = 0 then decomposedFirstChar:= nextU;
         AppendStr(decomposedUTF8, UnicodeCharToUTF8(nextU));
         delete(decomposed, 1, posSpace);
         inc(decomposedLen);
@@ -637,7 +701,7 @@ var
          (copy(decomposedUTF8,1,length('Ω')) = 'Ω') or
          (copy(decomposedUTF8,1,length('Ө')) = 'Ө')) then
       begin
-        fallbackU := UTF8CodepointToUnicode(@decomposedUTF8[1], UTF8CharacterLength(@decomposedUTF8[1]));
+        fallbackU := decomposedFirstChar;
         if fallbackU <> 32 then
           kerningFallback.Add('(u:$' + inttohex(mergedU,2)+'; fb:$'+ inttohex(fallbackU,2)+')');
       end;
