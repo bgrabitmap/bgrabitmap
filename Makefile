@@ -1,5 +1,11 @@
 all: generate compile
 
+install: not_installable
+uninstall: not_installable
+
+not_installable:
+	echo "The library cannot be installed on the system but statically linked to another Lazarus package or application."
+
 init:
 ifeq ($(OS),Windows_NT)     # true for Windows_NT or later
   COPY := batch\copyfile
