@@ -8,9 +8,9 @@ not_installable:
 
 init:
 ifeq ($(OS),Windows_NT)     # true for Windows_NT or later
-  COPY := batch\copyfile
-  REMOVE := batch\remove
-  REMOVEDIR := batch\removedir
+  COPY := winmake\copyfile
+  REMOVE := winmake\remove
+  REMOVEDIR := winmake\removedir
   THEN := &
   RUN :=
 else
