@@ -40,22 +40,20 @@ clean_generate:
 
 generate: init bgrabitmap/generatedcolorspace.inc bgrabitmap/generatedunicode.inc
 
-bgrabitmap/generatedcolorspace.inc: dev/colorspace/generatecolorspaces
+bgrabitmap/generatedcolorspace.inc: dev/colorspace/generatecolorspaces.lpr dev/colorspace/unitmakerunit.pas
+	lazbuild dev/colorspace/generatecolorspaces.lpi
 	cd dev $(THEN) cd colorspace $(THEN) $(RUN)generatecolorspaces
 	$(COPY) dev/colorspace/generatedcolorspace.inc bgrabitmap/generatedcolorspace.inc
-dev/colorspace/generatecolorspaces: dev/colorspace/generatecolorspaces.lpr dev/colorspace/unitmakerunit.pas
-	lazbuild dev/colorspace/generatecolorspaces.lpi
 
-bgrabitmap/generatedunicode.inc: dev/parseunicode/parseunicodeclasses dev/parseunicode/ArabicShaping.txt dev/parseunicode/BidiBrackets.txt dev/parseunicode/BidiMirroring.txt dev/parseunicode/UnicodeData.txt
+bgrabitmap/generatedunicode.inc: dev/parseunicode/parseunicodeclasses.lpr dev/parseunicode/ArabicShaping.txt dev/parseunicode/BidiBrackets.txt dev/parseunicode/BidiMirroring.txt dev/parseunicode/UnicodeData.txt
+	lazbuild dev/parseunicode/parseunicodeclasses.lpi
 	cd dev $(THEN) cd parseunicode $(THEN) $(RUN)parseunicodeclasses
 	$(COPY) dev/parseunicode/generatedunicode.inc bgrabitmap/generatedunicode.inc
 	$(COPY) dev/parseunicode/generatedutf8.inc bgrabitmap/generatedutf8.inc
-dev/parseunicode/parseunicodeclasses: dev/parseunicode/parseunicodeclasses.lpr
-	lazbuild dev/parseunicode/parseunicodeclasses.lpi
 
-compile: init bgrabitmappack bgrabitmappack4nogui
-bgrabitmappack: bgrabitmap/bgrabitmappack.lpk
+compile: init BGRABitmapPack BGRABitmapPack4NoGUI
+BGRABitmapPack: bgrabitmap/bgrabitmappack.lpk
 	lazbuild bgrabitmap/bgrabitmappack.lpk
-bgrabitmappack4nogui: bgrabitmap/bgrabitmappack4nogui.lpk
+BGRABitmapPack4NoGUI: bgrabitmap/bgrabitmappack4nogui.lpk
 	lazbuild bgrabitmap/bgrabitmappack4nogui.lpk
 
