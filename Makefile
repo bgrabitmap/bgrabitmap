@@ -1,12 +1,3 @@
-all: generate compile
-
-install: not_installable
-uninstall: not_installable
-
-not_installable:
-	echo "The library cannot be installed on the system but statically linked to another Lazarus package or application."
-
-init:
 ifeq ($(OS),Windows_NT)     # true for Windows_NT or later
   COPY := winmake\copyfile
   REMOVE := winmake\remove
@@ -22,7 +13,15 @@ else
   RUN := $(strip $(RUN))
 endif
 
-clean: init clean_bgrabitmap clean_generate
+all: generate compile
+
+install: not_installable
+uninstall: not_installable
+
+not_installable:
+	echo "The library cannot be installed on the system but statically linked to another Lazarus package or application."
+
+clean: clean_bgrabitmap clean_generate
 
 clean_bgrabitmap:
 	$(REMOVE) "bgrabitmap/generatedcolorspace.inc"
@@ -44,7 +43,7 @@ clean_generate:
 	$(REMOVEDIR) "dev/parseunicode/lib"
 	$(REMOVEDIR) "dev/parseunicode/backup"
 
-generate: init bgrabitmap/generatedcolorspace.inc bgrabitmap/generatedunicode.inc
+generate: bgrabitmap/generatedcolorspace.inc bgrabitmap/generatedunicode.inc
 
 bgrabitmap/generatedcolorspace.inc: dev/colorspace/generatecolorspaces.lpr dev/colorspace/unitmakerunit.pas
 	lazbuild dev/colorspace/generatecolorspaces.lpi
@@ -57,9 +56,11 @@ bgrabitmap/generatedunicode.inc: dev/parseunicode/parseunicodeclasses.lpr dev/pa
 	$(COPY) dev/parseunicode/generatedunicode.inc bgrabitmap/generatedunicode.inc
 	$(COPY) dev/parseunicode/generatedutf8.inc bgrabitmap/generatedutf8.inc
 
-compile: init BGRABitmapPack BGRABitmapPack4NoGUI
-BGRABitmapPack: bgrabitmap/bgrabitmappack.lpk
+compile: BGRABitmapPack BGRABitmapPack4NoGUI
+lazbuild:
+	#lazbuild will determine what to recompile
+BGRABitmapPack: lazbuild bgrabitmap/bgrabitmappack.lpk
 	lazbuild bgrabitmap/bgrabitmappack.lpk
-BGRABitmapPack4NoGUI: bgrabitmap/bgrabitmappack4nogui.lpk
+BGRABitmapPack4NoGUI: lazbuild bgrabitmap/bgrabitmappack4nogui.lpk
 	lazbuild bgrabitmap/bgrabitmappack4nogui.lpk
 
