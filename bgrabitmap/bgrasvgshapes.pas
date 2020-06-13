@@ -675,6 +675,8 @@ type
   protected
     procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
+  public
+    class function GetDOMTag: string; override;
   end;
   
   { TSVGStyle }
@@ -2402,6 +2404,11 @@ begin
   Units.CurrentFontEmHeight:= fs;
   FContent.Draw(ACanvas2d, AUnit);
   Units.CurrentFontEmHeight:= prevFontEmHeight;
+end;
+
+class function TSVGGroup.GetDOMTag: string;
+begin
+  Result:= 'g';
 end;
 
 { TSVGStyle }  
