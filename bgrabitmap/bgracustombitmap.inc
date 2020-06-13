@@ -499,6 +499,7 @@ type
      procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); overload; virtual; abstract;
      procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); overload; virtual; abstract;
      procedure DrawPart(ARect: TRect; ACanvas: TCanvas; x, y: integer; Opaque: boolean); virtual;
+     procedure DrawPart(ARect: TRect; ACanvas: TCanvas; ATargetRect: TRect; Opaque: boolean); virtual;
      function GetPtrBitmap(Top,Bottom: Integer): TBGRACustomBitmap; virtual; abstract;
      function MakeBitmapCopy(BackgroundColor: TColor): TBitmap; virtual; abstract;
 
@@ -1352,6 +1353,24 @@ begin
     if partial <> nil then
     begin
       partial.Draw(ACanvas, x, y, Opaque);
+      partial.Free;
+    end;
+  end;
+end;
+
+procedure TBGRACustomBitmap.DrawPart(ARect: TRect; ACanvas: TCanvas;
+  ATargetRect: TRect; Opaque: boolean);
+var
+  partial: TBGRACustomBitmap;
+begin
+  if (ARect.Left = 0) and (ARect.Top = 0) and (ARect.Right = Width) and (ARect.Bottom = Height) then
+    Draw(ACanvas, ATargetRect, Opaque)
+  else
+  begin
+    partial := GetPart(ARect);
+    if partial <> nil then
+    begin
+      partial.Draw(ACanvas, ATargetRect, Opaque);
       partial.Free;
     end;
   end;
