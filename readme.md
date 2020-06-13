@@ -11,3 +11,4 @@ Files:
     On Windows, you need to make sure that make.exe from FPC and lazutils.exe from Lazarus tools are in the PATH.
 - update_BGRABitmap.json: package information for OPM in Lazarus
 
+![BGRA Controls](https://raw.githubusercontent.com/bgrabitmap/bgrabitmap/master/bgrabitmap.jpg)
