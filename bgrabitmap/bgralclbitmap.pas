@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 unit BGRALCLBitmap;
 
 {$mode objfpc}{$H+}

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 {
  /**************************************************************************\
                              bgradefaultbitmap.pas
@@ -6,20 +7,6 @@
                  It should NOT be added to the 'uses' clause.
                  Some operations may be slow, so there are
                  accelerated versions for some routines.
-
- ****************************************************************************
- *                                                                          *
- *  This file is part of BGRABitmap library which is distributed under the  *
- *  modified LGPL.                                                          *
- *                                                                          *
- *  See the file COPYING.modifiedLGPL.txt, included in this distribution,   *
- *  for details about the copyright.                                        *
- *                                                                          *
- *  This program is distributed in the hope that it will be useful,         *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of          *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    *
- *                                                                          *
- ****************************************************************************
 }
 
 unit BGRADefaultBitmap;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 procedure FastBlendPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
 begin
   while Count > 0 do

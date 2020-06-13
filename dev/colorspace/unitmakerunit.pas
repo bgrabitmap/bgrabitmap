@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 unit UnitMakerUnit;
 
 {$mode objfpc}{$H+}
@@ -5,7 +6,7 @@ unit UnitMakerUnit;
 interface
 
 uses
-  Classes, SysUtils, typinfo, rttiutils, BGRABitmapTypes;
+  Classes, SysUtils, typinfo, rttiutils;
 
 { Table of working colorspaces (where blending could be done)
 
@@ -1070,6 +1071,7 @@ var
   end;
 
 begin
+  writeln('Generating colorspaces...');
   SetLength(PairsList, 0);
 
   //direct conversions (using single predefined function)
@@ -1146,7 +1148,7 @@ begin
   intsl.SaveToFile('generatedcolorspace.inc');
   intsl.Free;
   impsl.Free;
-  WriteLn('Finish.');
+  WriteLn('Done generating colorspaces.');
 end;
 
 end.

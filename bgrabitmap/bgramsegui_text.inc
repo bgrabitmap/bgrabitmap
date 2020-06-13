@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 procedure BitmapTextOut(ABitmap: TBitmap; ACoord: TPoint; AText: string);
 var sUTF16: UnicodeString;
 begin 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 unit BGRAFreeType;
 
 {$mode objfpc}{$H+}
@@ -31,7 +32,7 @@ uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, EasyLazFreeType, FPimage,
   BGRACustomTextFX, BGRAPhongTypes, BGRATypewriter, LazVersion;
 
-{$IF laz_fullversion >= 2000900}
+{$IF laz_fullversion >= 2010000}
   {$DEFINE LAZFREETYPE_GLYPH_BOX_FIXED}
   {$DEFINE LAZFREETYPE_PROVIDE_KERNING}
 {$ENDIF}

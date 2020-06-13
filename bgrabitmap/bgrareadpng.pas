@@ -1,18 +1,9 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 {
-    The original file before tweaking is:
-
-    $Id: fpreadpng.pp,v 1.10 2003/10/19 21:09:51 luk Exp $
-    This file is part of the Free Pascal run time library.
+    This file is originally part of the Free Pascal run time library.
     Copyright (c) 2003 by the Free Pascal development team
 
-    PNG reader implementation
-
-    See the file COPYING.FPC, included in this distribution,
-    for details about the copyright.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    PNG reader implementation modified by circular.
 
  **********************************************************************
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
       {$IFDEF PARAM_USESSE} {$asmmode intel}
       asm
          xorps xmm4,xmm4

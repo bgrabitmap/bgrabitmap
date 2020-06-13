@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
       begin
         for k := 0 to NbShapeRows-1 do
         with shapeRow[shapeRowsList[k]],shapes[shapeRowsList[k]] do

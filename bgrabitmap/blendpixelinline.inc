@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 function ByteLinearMultiplyInline(a, b: byte): byte;
 begin
   Result := (a * b) shr 8;

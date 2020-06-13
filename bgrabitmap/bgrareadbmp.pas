@@ -1,16 +1,10 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 {*****************************************************************************}
 {
     This original file was part of the Free Pascal's "Free Components Library".
     Copyright (c) 2003 by Mazen NEIFER of the Free Pascal development team
 
-    BMP reader implementation.
-
-    See the file COPYING.FPC, included in this distribution,
-    for details about the copyright.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    BMP reader implementation modified by circular.
 }
 {*****************************************************************************}
 { 08/2005 by Giulio Bernardi:

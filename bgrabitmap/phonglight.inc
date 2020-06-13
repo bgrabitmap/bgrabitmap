@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 {$i bgrasse.inc}
 var
   {%H-}dist2,LdotN,NdotH,lightEnergy,diffuse : single;
