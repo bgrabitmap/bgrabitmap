@@ -470,7 +470,6 @@ type
      procedure Fill(c: TBGRAPixel; start, Count: integer); overload; virtual; abstract;
      procedure DrawPixels(c: TBGRAPixel; start, Count: integer); virtual; abstract;
      procedure AlphaFill(alpha: byte; start, Count: integer); overload; virtual; abstract;
-     procedure DrawCheckers(ARect: TRect; AColorEven,AColorOdd: TBGRAPixel); virtual; abstract;
      procedure ReplaceColor(before, after: TColor); overload; virtual; abstract;
      procedure ReplaceColor(ARect: TRect; before, after: TColor); overload; virtual; abstract;
      procedure FloodFill(X, Y: integer; Color: TBGRAPixel;

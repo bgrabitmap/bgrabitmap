@@ -594,7 +594,6 @@ type
     function GetGrayscaleMaskFromAlpha: TGrayscaleMask;
     procedure ConvertToLinearRGB; override;
     procedure ConvertFromLinearRGB; override;
-    procedure DrawCheckers(ARect: TRect; AColorEven,AColorOdd: TBGRAPixel); override;
 
     {Filters}
     function FilterSmartZoom3(Option: TMedianOption): TBGRADefaultBitmap; override;
@@ -4320,57 +4319,6 @@ begin
     p^.blue := GammaCompressionTab[p^.blue shl 8 + p^.blue];
     inc(p);
   end;
-end;
-
-procedure TBGRADefaultBitmap.DrawCheckers(ARect: TRect; AColorEven,
-  AColorOdd: TBGRAPixel);
-const tx = 8; ty = 8; //must be a power of 2
-      xMask = tx*2-1;
-var xcount,patY,w,n,patY1,patY2m1,patX,patX1: Int32or64;
-    pdest: PBGRAPixel;
-    delta: PtrInt;
-    actualRect: TRect;
-begin
-  actualRect := TRect.Intersect(ARect, ClipRect);
-  if actualRect.IsEmpty then exit;
-  w := actualRect.Right-actualRect.Left;
-  delta := self.Width;
-  if self.LineOrder = riloBottomToTop then delta := -delta;
-  delta := (delta-w)*SizeOf(TBGRAPixel);
-  pdest := self.ScanLine[actualRect.Top]+actualRect.left;
-  patY1 := actualRect.Top - ARect.Top;
-  patY2m1 := actualRect.Bottom - ARect.Top-1;
-  patX1 := (actualRect.Left - ARect.Left) and xMask;
-  for patY := patY1 to patY2m1 do
-  begin
-    xcount := w;
-    if patY and ty = 0 then
-       patX := patX1
-    else
-       patX := (patX1+tx) and xMask;
-    while xcount > 0 do
-    begin
-      if patX and tx = 0 then
-      begin
-        n := 8-patX;
-        if n > xcount then n := xcount;
-        FillDWord(pdest^,n,LongWord(AColorEven));
-        dec(xcount,n);
-        inc(pdest,n);
-        patX := tx;
-      end else
-      begin
-        n := 16-patX;
-        if n > xcount then n := xcount;
-        FillDWord(pdest^,n,LongWord(AColorOdd));
-        dec(xcount,n);
-        inc(pdest,n);
-        patX := 0;
-      end;
-    end;
-    inc(pbyte(pdest),delta);
-  end;
-  self.InvalidateBitmap;
 end;
 
 { Make a copy of the transparent bitmap to a TBitmap with a background color
