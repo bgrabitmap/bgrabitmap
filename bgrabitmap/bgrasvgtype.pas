@@ -1663,7 +1663,7 @@ procedure TSVGElement.SetFillColor(AValue: TBGRAPixel);
 begin
   fillOpacity:= AValue.alpha/255;
   AValue.alpha:= 255;
-  fill := BGRAToStr(AValue, CSSColors);
+  fill := BGRAToStr(AValue, CSSColors, 0, true);
 end;
 
 procedure TSVGElement.SetFillOpacity(AValue: single);
@@ -1730,7 +1730,7 @@ procedure TSVGElement.SetStrokeColor(AValue: TBGRAPixel);
 begin
   strokeOpacity:= AValue.alpha/255;
   AValue.alpha:= 255;
-  stroke := BGRAToStr(AValue, CSSColors);
+  stroke := BGRAToStr(AValue, CSSColors, 0, true);
 end;
 
 procedure TSVGElement.SetStrokeLineCap(AValue: string);
