@@ -2842,8 +2842,8 @@ begin
   delta := self.RowSize;
   if self.LineOrder = riloBottomToTop then delta := -delta;
   pdest := self.GetPixelAddress(actualRect.left, actualRect.Top);
-  patY := (actualRect.Top - ARect.Top) mod AGridHeight;
-  patX1 := (actualRect.Left - ARect.Left) mod AGridWidth;
+  patY := (actualRect.Top - ARect.Top) mod (AGridHeight shl 1);
+  patX1 := (actualRect.Left - ARect.Left) mod (AGridWidth shl 1);
   patX1b := (patX1+AGridWidth) mod (AGridWidth shl 1);
   for yb := actualRect.Top to actualRect.Bottom-1 do
   begin
