@@ -95,6 +95,7 @@ const
   //maximum nesting level of isolates and bidi-formatting blocks (char bidi level can actually be higher due to char properties)
   UNICODE_MAX_BIDI_DEPTH = 125;
 
+  UNICODE_NO_BREAK_SPACE = $A0;
   UNICODE_LINE_SEPARATOR = $2028;      //equivalent of <br>
   UNICODE_PARAGRAPH_SEPARATOR = $2029; //equivalent of </p>
   UNICODE_NEXT_LINE = $0085;           //equivalent of CRLF
