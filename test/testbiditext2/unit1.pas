@@ -114,8 +114,8 @@ begin
   BGRAVirtualScreen1.OnKeyUp:= @FormKeyUp;
   BGRAVirtualScreen1.OnKeyPress:= @FormKeyPress;
   BGRAVirtualScreen1.Cursor := crIBeam;
+  BGRAVirtualScreen1.BitmapAutoScale:= false;
 
-  SpinEdit_FontSize.Value := round(SpinEdit_FontSize.Value * Screen.PixelsPerInch / 96);
   FTestText := 'تحتوي العربية على 28 حرفاً مكتوباً. ويرى بعض اللغويين أنه يجب إضافة حرف الهمزة إلى حروف العربية، ليصبح عدد الحروف 29. تُكتب العربية من اليمين إلى اليسار - ومثلها اللغة الفارسية والعبرية على عكس كثير من اللغات العالمية - ومن أعلى الصفحة إلى أسفلها.'+LineEnding+
              'Arabic reversed "' + UTF8OverrideDirection('صباح الخير',false)+'". Arabic marks: "لاٍُ لٍُإ بًٍّ  ةُِ ںْ رُ ٮَ  بٔ".'+ LineEnding +
              #9'Le français est une langue indo-européenne de la famille des langues romanes. Le français s''est formé en France (variété de la « langue d''oïl », qui est la langue de la partie septentrionale du pays).'+LineEnding+
@@ -491,9 +491,11 @@ end;
 
 procedure TForm1.BGRAVirtualScreen1Redraw(Sender: TObject; Bitmap: TBGRABitmap);
 var
+  zoom: single;
   caretColor, selectionColor: TBGRAPixel;
   newTime: TDateTime;
 begin
+  zoom := BGRAVirtualScreen1.BitmapScale * Screen.PixelsPerInch / 96;
   if FFontRenderer = nil then
   begin
     if CheckBox_FreeType.Checked then
@@ -521,7 +523,7 @@ begin
     else
       FFontRenderer.FontQuality:= fqSystem;
   end;
-  FFontRenderer.FontEmHeight:= SpinEdit_FontSize.Value;
+  FFontRenderer.FontEmHeightF:= SpinEdit_FontSize.Value * zoom;
   FFontRenderer.FontOrientation := SpinEdit_Angle.Value*10;
 
   if FTextLayout = nil then
@@ -532,7 +534,7 @@ begin
   end else
     FTextLayout.FontRenderer := FFontRenderer;
 
-  FTextLayout.SetLayout(rectF(4,4,Bitmap.Width-4,Bitmap.Height-4));
+  FTextLayout.SetLayout(rectF(4*zoom,4*zoom,Bitmap.Width-4*zoom,Bitmap.Height-4*zoom));
 
   caretColor := BGRA(0,0,255);
   selectionColor := BGRA(0,0,255,128);
@@ -581,7 +583,7 @@ begin
   BGRAVirtualScreen1.SetFocus;
   if Button = mbLeft then
   begin
-    index := FTextLayout.GetCharIndexAt(PointF(X,Y));
+    index := FTextLayout.GetCharIndexAt(PointF(X, Y) * BGRAVirtualScreen1.BitmapScale);
     FSelFirstClick:= index;
     FSelLastClick:= index;
     UpdateSelectionFromFirstLastClick;
@@ -595,7 +597,7 @@ var
 begin
   if (FSelFirstClick <> -1) and (ssLeft in Shift) then
   begin
-    index := FTextLayout.GetCharIndexAt(PointF(X,Y));
+    index := FTextLayout.GetCharIndexAt(PointF(X,Y) * BGRAVirtualScreen1.BitmapScale);
     FSelLastClick:= index;
     UpdateSelectionFromFirstLastClick;
   end;
