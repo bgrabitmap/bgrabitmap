@@ -2,6 +2,7 @@
 unit BGRAUnicodeText;
 
 {$mode objfpc}{$H+}
+{ $DEFINE DEBUG}
 
 interface
 
@@ -13,6 +14,7 @@ type
   TInsertCharEvent = procedure(ASender: TObject; AParagraphIndex: integer; ACharStart, ACharCount: integer) of object;
   TParagraphEvent = procedure(ASender: TObject; AParagraphIndex: integer) of object;
   TParagraphSplitEvent = procedure(ASender: TObject; AParagraphIndex: integer; ACharIndex: integer) of object;
+  TAnalysisChangedEvent = procedure(ASender: TObject; AParagraphIndex: integer; ACharStart, ACharCount: integer) of object;
 
   { TBidiTree }
 
@@ -26,6 +28,7 @@ type
     FIsLeaf: boolean;
     function GetBranch(AIndex: integer): TBidiTree;
     function GetCount: integer;
+    function GetIsRightToLeft: boolean;
   public
     constructor Create(AData: pointer; AStartIndex, AEndIndex: integer; ABidiLevel: byte; AIsLeaf: boolean); virtual;
     destructor Destroy; override;
@@ -36,6 +39,7 @@ type
     property StartIndex: integer read FStartIndex;
     property EndIndex: integer read FEndIndex;
     property BidiLevel: byte read FBidiLevel;
+    property IsRightToLeft: boolean read GetIsRightToLeft;
     property Parent: TBidiTree read FParent;
     property IsLeaf: boolean read FIsLeaf;
     property Count: integer read GetCount;
@@ -49,12 +53,14 @@ type
 
   TUnicodeAnalysis = class
   private
+    FOnAnalysisChanged: TAnalysisChangedEvent;
     FOnBidiModeChanged: TNotifyEvent;
     FOnCharDeleted: TDeleteCharEvent;
     FOnCharInserted: TInsertCharEvent;
     FOnParagraphMergedWithNext: TParagraphEvent;
     FOnParagraphDeleted: TParagraphEvent;
     FOnParagraphSplit: TParagraphSplitEvent;
+    function GetParagraphRightToLeft(AIndex: integer): boolean;
   protected
     FText: string;
     FCharCount: integer;
@@ -95,7 +101,7 @@ type
       const ANewBidi: TBidiUTF8Array; ANewTextUTF8: string): integer;
     procedure InternalMergeParagraphWithNext(AParagraphIndex: integer);
     procedure InternalSplitParagraph(AParagraphIndex: integer);
-    procedure InternalUpdateBidiIsolate(ABidiStart, ABidiCount: integer);
+    procedure InternalUpdateBidiIsolate(AParagraphIndex: integer; ABidiStart, ABidiCount: integer);
     procedure InternalUpdateUnbrokenLines(AParagraphIndex: integer);
     procedure CreateBidiTreeRec(ABidiTreeFactory: TBidiTreeAny; AData: pointer; ABidiTree: TBidiTree);
     procedure CheckCharRange(AStartIndex, AEndIndex: integer; AMinIndex, AMaxIndex: integer);
@@ -127,6 +133,7 @@ type
     property ParagraphStartIndex[AIndex: integer]: integer read GetParagraphStartIndex;
     property ParagraphEndIndex[AIndex: integer]: integer read GetParagraphEndIndex;
     property ParagraphEndIndexBeforeParagraphSeparator[AIndex: integer]: integer read GetParagraphEndIndexBeforeParagraphSeparator;
+    property ParagraphRightToLeft[AIndex: integer]: boolean read GetParagraphRightToLeft;
     property BidiMode: TFontBidiMode read FBidiMode write SetBidiMode;
     property OnBidiModeChanged: TNotifyEvent read FOnBidiModeChanged write FOnBidiModeChanged;
     property OnCharDeleted: TDeleteCharEvent read FOnCharDeleted write FOnCharDeleted;
@@ -134,6 +141,7 @@ type
     property OnParagraphDeleted: TParagraphEvent read FOnParagraphDeleted write FOnParagraphDeleted;
     property OnParagraphMergedWithNext: TParagraphEvent read FOnParagraphMergedWithNext write FOnParagraphMergedWithNext;
     property OnParagraphSplit: TParagraphSplitEvent read FOnParagraphSplit write FOnParagraphSplit;
+    property OnAnalysisChanged: TAnalysisChangedEvent read FOnAnalysisChanged write FOnAnalysisChanged;
   end;
 
 implementation
@@ -148,6 +156,11 @@ begin
     result:= FBranches.Count
   else
     result := 0;
+end;
+
+function TBidiTree.GetIsRightToLeft: boolean;
+begin
+  result := odd(BidiLevel);
 end;
 
 function TBidiTree.GetBranch(AIndex: integer): TBidiTree;
@@ -221,7 +234,7 @@ end;
 
 function TUnicodeAnalysis.GetParagraphFirstUnbrokenLine(AIndex: integer): integer;
 begin
-  if (AIndex < 0) or (AIndex >= ParagraphCount) then raise exception.Create('Paragraph index out of bounds');
+  if (AIndex < 0) or (AIndex >= ParagraphCount) then raise ERangeError.Create('Paragraph index out of bounds');
   result := FParagraph[AIndex].firstUnbrokenLineIndex;
 end;
 
@@ -235,14 +248,14 @@ begin
   begin
     bidiStart := ParagraphStartIndex[i];
     bidiCount := ParagraphEndIndex[i]-bidiStart;
-    InternalUpdateBidiIsolate(bidiStart,bidiCount);
+    InternalUpdateBidiIsolate(i, bidiStart, bidiCount);
   end;
   if Assigned(FOnBidiModeChanged) then FOnBidiModeChanged(self);
 end;
 
 function TUnicodeAnalysis.GetParagraphEndIndex(AIndex: integer): integer;
 begin
-  if (AIndex < 0) or (AIndex >= ParagraphCount) then raise exception.Create('Paragraph index out of bounds');
+  if (AIndex < 0) or (AIndex >= ParagraphCount) then raise ERangeError.Create('Paragraph index out of bounds');
   result := FUnbrokenLine[FParagraph[AIndex+1].firstUnbrokenLineIndex].startIndex;
 
 end;
@@ -267,7 +280,7 @@ end;
 
 function TUnicodeAnalysis.GetParagraphStartIndex(AIndex: integer): integer;
 begin
-  if (AIndex < 0) or (AIndex >= ParagraphCount) then raise exception.Create('Paragraph index out of bounds');
+  if (AIndex < 0) or (AIndex >= ParagraphCount) then raise ERangeError.Create('Paragraph index out of bounds');
   result := FUnbrokenLine[FParagraph[AIndex].firstUnbrokenLineIndex].startIndex;
 end;
 
@@ -291,7 +304,7 @@ end;
 
 function TUnicodeAnalysis.GetParagraphLastUnbrokenLinePlusOne(AIndex: integer): integer;
 begin
-  if (AIndex < 0) or (AIndex >= ParagraphCount) then raise exception.Create('Paragraph index out of bounds');
+  if (AIndex < 0) or (AIndex >= ParagraphCount) then raise ERangeError.Create('Paragraph index out of bounds');
   result := FParagraph[AIndex+1].firstUnbrokenLineIndex;
 end;
 
@@ -299,6 +312,21 @@ function TUnicodeAnalysis.GetUnbrokenLineEndIndex(AIndex: integer): integer;
 begin
   if (AIndex < 0) or (AIndex >= UnbrokenLineCount) then raise exception.Create('Unbroken line index out of bounds');
   result := FUnbrokenLine[AIndex+1].startIndex;
+end;
+
+function TUnicodeAnalysis.GetParagraphRightToLeft(AIndex: integer): boolean;
+var
+  firstUnbroken, startIndex: Integer;
+begin
+  if (AIndex < 0) or (AIndex >= ParagraphCount) then
+    raise ERangeError.Create('Paragraph index out of bounds');
+
+  firstUnbroken := ParagraphFirstUnbrokenLine[AIndex];
+  startIndex := UnbrokenLineStartIndex[firstUnbroken];
+  if startIndex < CharCount then
+    result := odd(BidiInfo[startIndex].ParagraphBidiLevel)
+  else
+    result := BidiMode = fbmRightToLeft;
 end;
 
 procedure TUnicodeAnalysis.Analyze;
@@ -386,7 +414,9 @@ end;
 
 function TUnicodeAnalysis.CopyTextUTF8(AStartIndex, ACount: integer): string;
 begin
-  if (AStartIndex < 0) or (AStartIndex+ACount > CharCount) then raise exception.Create('Char range out of bounds');
+  if (AStartIndex < 0) or (AStartIndex+ACount > CharCount) then
+    raise exception.Create('Char range out of bounds [' + inttostr(AStartIndex) + '..' +
+            inttostr(AStartIndex+ACount) + '] out of [0..' + inttostr(CharCount) + ']');
   result := copy(FText, FBidi[AStartIndex].Offset+1, FBidi[AStartIndex+ACount].Offset-FBidi[AStartIndex].Offset)
 end;
 
@@ -589,11 +619,12 @@ end;
 
 function TUnicodeAnalysis.GetUnicodeChar(APosition0: integer): LongWord;
 var p : PChar;
-  charLen: Integer;
+  charLen, startOfs: Integer;
 begin
   if (APosition0 < 0) or (APosition0 >= CharCount) then raise ERangeError.Create('Char position out of bounds');
-  p := @FText[FBidi[APosition0].Offset+1];
-  charLen := UTF8CharacterLength(p);
+  startOfs := FBidi[APosition0].Offset;
+  p := @FText[startOfs+1];
+  charLen := FBidi[APosition0+1].Offset - startOfs;
   result := UTF8CodepointToUnicode(p, charLen);
 end;
 
@@ -631,7 +662,7 @@ begin
       InternalDeleteWithinParagraph(i, delStart, min(APosition+ACount,ParagraphEndIndex[i])-delStart, True);
     end;
   end;
-  CheckTextAnalysis;
+  {$IFDEF DEBUG}CheckTextAnalysis;{$ENDIF}
 end;
 
 procedure TUnicodeAnalysis.InternalDeleteParagraph(AParagraphIndex: integer);
@@ -640,7 +671,7 @@ var
   bidiStart, bidiCount, i: LongInt;
 begin
   if (AParagraphIndex < 0) or (AParagraphIndex >= ParagraphCount) then
-    raise exception.Create('Paragraph index out of bounds');
+    raise ERangeError.Create('Paragraph index out of bounds');
 
   unbrokenStart := FParagraph[AParagraphIndex].firstUnbrokenLineIndex;
   unbrokenEnd := FParagraph[AParagraphIndex+1].firstUnbrokenLineIndex;
@@ -678,7 +709,7 @@ var
   i: integer;
 begin
   if (AParagraphIndex < 0) or (AParagraphIndex >= ParagraphCount) then
-    raise exception.Create('Paragraph index out of bounds');
+    raise ERangeError.Create('Paragraph index out of bounds');
 
   InternalDeleteBidiAndUTF8(APosition, ACount);
 
@@ -689,10 +720,10 @@ begin
   bidiStart := ParagraphStartIndex[AParagraphIndex];
   bidiCount := ParagraphEndIndex[AParagraphIndex]-bidiStart;
 
-  if AUpdateBidi then InternalUpdateBidiIsolate(bidiStart, bidiCount);
+  if AUpdateBidi then InternalUpdateBidiIsolate(AParagraphIndex, bidiStart, bidiCount);
   InternalUpdateUnbrokenLines(AParagraphIndex);
 
-  if Assigned(FOnCharDeleted) then FOnCharDeleted(self, AParagraphIndex, bidiStart, bidiCount);
+  if Assigned(FOnCharDeleted) then FOnCharDeleted(self, AParagraphIndex, APosition, ACount);
 end;
 
 procedure TUnicodeAnalysis.InternalMergeParagraphWithNext(AParagraphIndex: integer);
@@ -702,7 +733,7 @@ var
   unbrokenEnd: Integer;
 begin
   if (AParagraphIndex < 0) or (AParagraphIndex >= ParagraphCount-1) then
-    raise exception.Create('Paragraph index out of bounds');
+    raise ERangeError.Create('Paragraph index out of bounds');
 
   indexBeforeSep := ParagraphEndIndexBeforeParagraphSeparator[AParagraphIndex];
   hasParaSep := indexBeforeSep<>ParagraphEndIndex[AParagraphIndex];
@@ -711,6 +742,8 @@ begin
   bidiStart := indexBeforeSep;
   bidiCount := ParagraphEndIndex[AParagraphIndex]-bidiStart;
   InternalDeleteBidiAndUTF8(bidiStart, bidiCount);
+  if Assigned(FOnCharDeleted) then
+    FOnCharDeleted(self, AParagraphIndex, bidiStart, bidiCount);
 
   unbrokenEnd := FParagraph[AParagraphIndex+1].firstUnbrokenLineIndex;
   for i := unbrokenEnd to high(FUnbrokenLine)-1 do
@@ -732,7 +765,7 @@ begin
 
   bidiStart := ParagraphStartIndex[AParagraphIndex];
   bidiCount := ParagraphEndIndex[AParagraphIndex]-bidiStart;
-  InternalUpdateBidiIsolate(bidiStart, bidiCount);
+  InternalUpdateBidiIsolate(AParagraphIndex, bidiStart, bidiCount);
 
   if Assigned(FOnParagraphMergedWithNext) then
     FOnParagraphMergedWithNext(self, AParagraphIndex);
@@ -764,10 +797,11 @@ begin
   dec(FCharCount, ABidiCount);
 end;
 
-procedure TUnicodeAnalysis.InternalUpdateBidiIsolate(ABidiStart, ABidiCount: integer);
+procedure TUnicodeAnalysis.InternalUpdateBidiIsolate(AParagraphIndex: integer; ABidiStart, ABidiCount: integer);
 var
   utf8Start, utf8Count, bidiEnd, i: Integer;
   newBidi: TBidiUTF8Array;
+  startDiff,endDiff: integer;
 begin
   if ABidiCount = 0 then exit;
   if ABidiCount < 0 then raise exception.Create('Bidi count must be positive');
@@ -785,11 +819,18 @@ begin
   else
     newBidi:= AnalyzeBidiUTF8(copy(FText, utf8Start, utf8Count));
 
+  startDiff := maxLongint;
+  endDiff := -maxLongint;
   for i := 0 to min(ABidiCount, length(newBidi))-1 do
+  if FBidi[ABidiStart+i].BidiInfo <> newBidi[i].BidiInfo then
   begin
+    if i < startDiff then startDiff := i;
+    if i > endDiff then endDiff := i;
     FBidi[ABidiStart+i] := newBidi[i];
     inc(FBidi[ABidiStart+i].Offset, utf8Start-1);
   end;
+  if Assigned(OnAnalysisChanged) and (endDiff >= startDiff) then
+    OnAnalysisChanged(self, AParagraphIndex, startDiff, endDiff);
 end;
 
 procedure TUnicodeAnalysis.InternalUpdateUnbrokenLines(AParagraphIndex: integer);
@@ -799,7 +840,7 @@ var
   bidiStart, bidiEnd, i: LongInt;
 begin
   if (AParagraphIndex < 0) or (AParagraphIndex >= ParagraphCount) then
-    raise exception.Create('Paragraph index out of bounds');
+    raise ERangeError.Create('Paragraph index out of bounds');
 
   bidiStart := ParagraphStartIndex[AParagraphIndex];
   if AParagraphIndex = ParagraphCount-1 then
@@ -853,7 +894,7 @@ function TUnicodeAnalysis.InternalInsertText(APosition: integer;
   const ANewBidi: TBidiUTF8Array; ANewTextUTF8: string): integer;
 var
   utf8Start, utf8Count,
-  prevCharCount, bidiStart, bidiCount,
+  prevCharCount, bidiCount, paraBidiStart, paraBidiCount,
   i, unbrokenEnd, paraIndex: integer;
 begin
   if (APosition < 0) or (APosition>CharCount) then
@@ -885,16 +926,16 @@ begin
   for i := unbrokenEnd to high(FUnbrokenLine) do
     inc(FUnbrokenLine[i].startIndex, bidiCount);
 
-  bidiStart := ParagraphStartIndex[paraIndex];
-  bidiCount := ParagraphEndIndex[paraIndex]-bidiStart;
-  InternalUpdateBidiIsolate(bidiStart, bidiCount);
+  paraBidiStart := ParagraphStartIndex[paraIndex];
+  paraBidiCount := ParagraphEndIndex[paraIndex]-paraBidiStart;
+  InternalUpdateBidiIsolate(paraIndex, paraBidiStart, paraBidiCount);
 
   InternalUpdateUnbrokenLines(paraIndex);
   if Assigned(FOnCharInserted) then
     FOnCharInserted(self, paraIndex, APosition, bidiCount);
 
   InternalSplitParagraph(paraIndex);
-  CheckTextAnalysis;
+  {$IFDEF DEBUG}CheckTextAnalysis;{$ENDIF}
   result := CharCount-prevCharCount;
 end;
 

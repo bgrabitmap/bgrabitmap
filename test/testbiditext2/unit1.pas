@@ -51,6 +51,7 @@ type
   private
     FFontRenderer: TBGRACustomFontRenderer;
     FTextLayout: TBidiTextLayout;
+    FRenderedParagraphs: array of TBGRABitmap;
     FBlinkCaretTime: TDateTime;
     FBlinkCaretState: boolean;
     FSelStart,FSelLength: integer;
@@ -61,6 +62,12 @@ type
     FUnicodeValue: LongWord;
     function GetLayoutReady: boolean;
     function GetSelLastClick: integer;
+    procedure LayoutParagraphChanged(ASender: TObject; AParagraphIndex: integer);
+    procedure LayoutParagraphDeleted(ASender: TObject; AParagraphIndex: integer);
+    procedure LayoutParagraphMergedWithNext(ASender: TObject;
+      AParagraphIndex: integer);
+    procedure LayoutParagraphSplit(ASender: TObject; AParagraphIndex: integer;
+      ACharIndex: integer);
     procedure SetSelLastClick(AValue: integer);
     procedure SetSelLength(AValue: integer);
     procedure SetSelStart(AValue: integer);
@@ -83,7 +90,7 @@ var
 
 implementation
 
-uses BGRAText, LCLType, BGRAUTF8, Clipbrd, LCLIntf;
+uses BGRAText, LCLType, BGRAUTF8, Clipbrd, LCLIntf, math;
 
 {$R *.lfm}
 
@@ -365,6 +372,49 @@ begin
     result := FSelLastClick;
 end;
 
+procedure TForm1.LayoutParagraphChanged(ASender: TObject;
+  AParagraphIndex: integer);
+begin
+  if (AParagraphIndex >= 0) and (AParagraphIndex <= high(FRenderedParagraphs)) then
+    FreeAndNil(FRenderedParagraphs[AParagraphIndex]);
+end;
+
+procedure TForm1.LayoutParagraphDeleted(ASender: TObject;
+  AParagraphIndex: integer);
+var
+  i: Integer;
+begin
+  if (AParagraphIndex >= 0) and (AParagraphIndex <= high(FRenderedParagraphs)) then
+  begin
+    FreeAndNil(FRenderedParagraphs[AParagraphIndex]);
+    for i := AParagraphIndex to high(FRenderedParagraphs)-1 do
+      FRenderedParagraphs[i] := FRenderedParagraphs[i+1];
+    setlength(FRenderedParagraphs, length(FRenderedParagraphs)-1);
+  end;
+end;
+
+procedure TForm1.LayoutParagraphMergedWithNext(ASender: TObject;
+  AParagraphIndex: integer);
+begin
+  LayoutParagraphDeleted(ASender, AParagraphIndex+1);
+  LayoutParagraphChanged(ASender, AParagraphIndex);
+end;
+
+procedure TForm1.LayoutParagraphSplit(ASender: TObject;
+  AParagraphIndex: integer; ACharIndex: integer);
+var
+  i: Integer;
+begin
+  if (AParagraphIndex >= 0) and (AParagraphIndex <= high(FRenderedParagraphs)) then
+  begin
+    LayoutParagraphChanged(ASender, AParagraphIndex);
+    setlength(FRenderedParagraphs, length(FRenderedParagraphs)+1);
+    for i := high(FRenderedParagraphs) downto AParagraphIndex+1 do
+      FRenderedParagraphs[i] := FRenderedParagraphs[i-1];
+    FRenderedParagraphs[AParagraphIndex] := nil;
+  end;
+end;
+
 procedure TForm1.SetSelLastClick(AValue: integer);
 begin
   if FSelFirstClick = -1 then
@@ -494,6 +544,8 @@ var
   zoom: single;
   caretColor, selectionColor: TBGRAPixel;
   newTime: TDateTime;
+  oldTopLeft: TPointF;
+  i: Integer;
 begin
   zoom := BGRAVirtualScreen1.BitmapScale * Screen.PixelsPerInch / 96;
   if FFontRenderer = nil then
@@ -531,6 +583,11 @@ begin
     FTextLayout:= TBidiTextLayout.Create(FFontRenderer, FTestText);
     FTextLayout.ParagraphSpacingBelow:= 0.25;
     FTextLayout.ParagraphSpacingAbove:= 0.25;
+    FTextLayout.OnParagraphChanged:=@LayoutParagraphChanged;
+    FTextLayout.OnParagraphDeleted:=@LayoutParagraphDeleted;
+    FTextLayout.OnParagraphMergedWithNext:=@LayoutParagraphMergedWithNext;
+    FTextLayout.OnParagraphSplit:=@LayoutParagraphSplit;
+    FTextLayout.OnParagraphVerticalTrimChanged:=@LayoutParagraphChanged;
   end else
     FTextLayout.FontRenderer := FFontRenderer;
 
@@ -549,9 +606,25 @@ begin
   if FBlinkCaretState and (SelLength = 0) and BGRAVirtualScreen1.Focused then
     FTextLayout.DrawCaret(Bitmap, SelStart, BGRA(caretColor.red,caretColor.green,caretColor.blue,140), BGRA(caretColor.red,caretColor.green,caretColor.blue,100));
 
+  for i := FTextLayout.ParagraphCount to high(FRenderedParagraphs) do
+    FreeAndNil(FRenderedParagraphs[i]);
+  setlength(FRenderedParagraphs, FTextLayout.ParagraphCount);
+  oldTopLeft := FTextLayout.TopLeft;
+  for i := 0 to FTextLayout.ParagraphCount-1 do
+  begin
+    if FRenderedParagraphs[i] = nil then
+    begin
+      FRenderedParagraphs[i] := TBGRABitmap.Create(Bitmap.Width,
+        ceil(FTextLayout.ParagraphRectF[i].Height), BGRAVirtualScreen1.Color);
+      FTextLayout.TopLeft := oldTopLeft + PointF(0, -FTextLayout.ParagraphRectF[i].Top);
+      FTextLayout.DrawParagraphs(FRenderedParagraphs[i], i, i+1);
+    end;
+    Bitmap.PutImage(0, round(FTextLayout.ParagraphRectF[i].Top), FRenderedParagraphs[i], dmSet);
+  end;
+  FTextLayout.TopLeft := oldTopLeft;
+
   FTextLayout.DrawSelection(Bitmap, SelStart, SelStart+SelLength, selectionColor, BGRA(0,0,192),1);
 
-  FTextLayout.DrawText(Bitmap);
 
   if FBlinkCaretState and (SelLength = 0) then
     FTextLayout.DrawCaret(Bitmap, SelStart, BGRA(caretColor.red,caretColor.green,caretColor.blue,140), BGRA(caretColor.red,caretColor.green,caretColor.blue,100));

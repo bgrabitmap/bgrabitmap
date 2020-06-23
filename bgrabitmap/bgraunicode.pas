@@ -68,6 +68,7 @@ type
   public
     ParagraphBidiLevel, BidiLevel: byte;
     Flags: Word;
+    class operator =(const AInfo1, AInfo2: TUnicodeBidiInfo): boolean;
     property IsRemoved: boolean read GetRemoved;
     property IsRightToLeft: boolean read GetRightToLeft;
     property IsParagraphRightToLeft: boolean read GetParagraphRightToLeft;
@@ -349,6 +350,14 @@ end;
 function TUnicodeBidiInfo.GetRightToLeftScript: boolean;
 begin
   result := (Flags and BIDI_FLAG_RTL_SCRIPT) <> 0;
+end;
+
+class operator TUnicodeBidiInfo.=(const AInfo1, AInfo2: TUnicodeBidiInfo
+  ): boolean;
+begin
+  result := (AInfo1.BidiLevel = AInfo2.BidiLevel) and
+    (AInfo1.Flags = AInfo2.Flags) and
+    (AInfo1.ParagraphBidiLevel = AInfo2.ParagraphBidiLevel);
 end;
 
 function AnalyzeBidiUnicode(u: PLongWord; ALength: integer; baseDirection: LongWord): TUnicodeBidiArray;
