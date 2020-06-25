@@ -1,95 +1,75 @@
 object Form1: TForm1
-  Left = 383
-  Height = 648
-  Top = 191
-  Width = 1062
+  Left = 345
+  Height = 415
+  Top = 177
+  Width = 722
   Caption = 'BGRA Text Editor'
-  ClientHeight = 648
-  ClientWidth = 1062
-  DesignTimePPI = 144
+  ClientHeight = 415
+  ClientWidth = 722
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   LCLVersion = '2.0.8.0'
   object BGRAVirtualScreen1: TBGRAVirtualScreen
     Left = 0
-    Height = 591
-    Top = 57
-    Width = 1062
+    Height = 383
+    Top = 32
+    Width = 704
     OnRedraw = BGRAVirtualScreen1Redraw
     Align = alClient
     Alignment = taLeftJustify
     BorderWidth = 1
     BorderStyle = bsSingle
     Color = clWhite
-    Font.Height = 18
+    Font.Height = 12
     ParentColor = False
     ParentFont = False
     TabOrder = 0
     TabStop = True
     OnMouseDown = BGRAVirtualScreen1MouseDown
     OnMouseMove = BGRAVirtualScreen1MouseMove
+    OnMouseWheel = BGRAVirtualScreen1MouseWheel
   end
   object Panel1: TPanel
     Left = 0
-    Height = 57
+    Height = 32
     Top = 0
-    Width = 1062
+    Width = 722
     Align = alTop
-    ClientHeight = 57
-    ClientWidth = 1062
+    ClientHeight = 32
+    ClientWidth = 722
     ParentFont = False
     TabOrder = 1
-    object SpinEdit_Angle: TSpinEdit
-      Left = 424
-      Height = 36
-      Top = 8
-      Width = 87
-      MaxValue = 180
-      MinValue = -180
-      OnChange = SpinEdit_AngleChange
-      ParentFont = False
-      TabOrder = 0
-    end
     object SpinEdit_FontSize: TSpinEdit
-      Left = 120
-      Height = 36
-      Top = 8
-      Width = 87
+      Left = 80
+      Height = 21
+      Top = 5
+      Width = 58
       MaxValue = 50
       MinValue = 1
       OnChange = SpinEdit_FontSizeChange
       ParentFont = False
-      TabOrder = 1
+      TabOrder = 0
       Value = 15
     end
-    object Label1: TLabel
-      Left = 352
-      Height = 24
-      Top = 15
-      Width = 58
-      Caption = 'Angle'
-      ParentColor = False
-      ParentFont = False
-    end
     object Label2: TLabel
-      Left = 12
-      Height = 24
-      Top = 15
-      Width = 89
+      Left = 8
+      Height = 16
+      Top = 7
+      Width = 55
       Caption = 'Font size'
       ParentColor = False
       ParentFont = False
     end
     object ToolBar1: TToolBar
-      Left = 216
-      Height = 40
-      Top = 9
-      Width = 120
+      Left = 144
+      Height = 27
+      Top = 1
+      Width = 80
       Align = alNone
       Caption = 'ToolBar1'
       Images = ImageList1
       ParentFont = False
-      TabOrder = 2
+      TabOrder = 1
       object ToolButtonLeftAlign: TToolButton
         Left = 1
         Top = 2
@@ -98,14 +78,14 @@ object Form1: TForm1
         OnClick = ToolButtonLeftAlignClick
       end
       object ToolButtonCenterAlign: TToolButton
-        Left = 36
+        Left = 24
         Top = 2
         Caption = 'Center'
         ImageIndex = 1
         OnClick = ToolButtonCenterAlignClick
       end
       object ToolButtonRightAlign: TToolButton
-        Left = 71
+        Left = 47
         Top = 2
         Caption = 'Right alignment'
         ImageIndex = 2
@@ -113,33 +93,46 @@ object Form1: TForm1
       end
     end
     object CheckBox_FreeType: TCheckBox
-      Left = 528
-      Height = 28
-      Top = 13
-      Width = 158
+      Left = 240
+      Height = 18
+      Top = 5
+      Width = 99
       Caption = 'Use FreeType'
       OnChange = CheckBox_FreeTypeChange
-      TabOrder = 3
+      ParentFont = False
+      TabOrder = 2
     end
     object CheckBox_ClearType: TCheckBox
-      Left = 712
-      Height = 28
-      Top = 13
-      Width = 199
+      Left = 352
+      Height = 18
+      Top = 5
+      Width = 120
       Caption = 'Enable ClearType'
       OnChange = CheckBox_ClearTypeChange
-      TabOrder = 4
+      ParentFont = False
+      TabOrder = 3
     end
+  end
+  object ScrollBar1: TScrollBar
+    Left = 704
+    Height = 383
+    Top = 32
+    Width = 18
+    Align = alRight
+    Kind = sbVertical
+    PageSize = 0
+    TabOrder = 2
+    OnChange = ScrollBar1Change
   end
   object TimerBlinkCaret: TTimer
     Interval = 500
     OnTimer = TimerBlinkCaretTimer
-    left = 360
-    top = 372
+    left = 240
+    top = 248
   end
   object ImageList1: TImageList
-    left = 516
-    top = 372
+    left = 344
+    top = 248
     Bitmap = {
       4C69030000001000000010000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

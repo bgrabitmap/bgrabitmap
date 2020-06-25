@@ -7,12 +7,16 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   StdCtrls, Spin, ComCtrls, BGRAVirtualScreen, BGRABitmap, BGRABitmapTypes,
-  BGRATextBidi, BGRAFreeType, EasyLazFreeType, LazFreeTypeFontCollection;
+  BGRATextBidi, BGRAFreeType, EasyLazFreeType, LazFreeTypeFontCollection,
+  fgl, Types;
 
 const
   CaretBlinkTimeMs = 500;
+  ssShortcut = {$IFDEF DARWIN}ssMeta{$ELSE}ssCtrl{$ENDIF};
 
 type
+  TRenderedBrokenLineList = specialize TFPGObjectList<TBGRABitmap>;
+
   { TForm1 }
 
   TForm1 = class(TForm)
@@ -20,10 +24,9 @@ type
     CheckBox_ClearType: TCheckBox;
     CheckBox_FreeType: TCheckBox;
     ImageList1: TImageList;
-    Label1: TLabel;
     Label2: TLabel;
     Panel1: TPanel;
-    SpinEdit_Angle: TSpinEdit;
+    ScrollBar1: TScrollBar;
     SpinEdit_FontSize: TSpinEdit;
     TimerBlinkCaret: TTimer;
     ToolBar1: TToolBar;
@@ -34,6 +37,8 @@ type
       Button: TMouseButton; {%H-}Shift: TShiftState; X, Y: Integer);
     procedure BGRAVirtualScreen1MouseMove(Sender: TObject; Shift: TShiftState;
       X, Y: Integer);
+    procedure BGRAVirtualScreen1MouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure BGRAVirtualScreen1Redraw(Sender: TObject; Bitmap: TBGRABitmap);
     procedure CheckBox_ClearTypeChange(Sender: TObject);
     procedure CheckBox_FreeTypeChange(Sender: TObject);
@@ -42,7 +47,7 @@ type
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure FormKeyUp(Sender: TObject; var Key: Word; {%H-}Shift: TShiftState);
     procedure FormKeyPress(Sender: TObject; var Key: char);
-    procedure SpinEdit_AngleChange(Sender: TObject);
+    procedure ScrollBar1Change(Sender: TObject);
     procedure SpinEdit_FontSizeChange(Sender: TObject);
     procedure TimerBlinkCaretTimer(Sender: TObject);
     procedure ToolButtonCenterAlignClick(Sender: TObject);
@@ -51,7 +56,7 @@ type
   private
     FFontRenderer: TBGRACustomFontRenderer;
     FTextLayout: TBidiTextLayout;
-    FRenderedParagraphs: array of TBGRABitmap;
+    FRenderedParagraphs: array of TRenderedBrokenLineList;
     FBlinkCaretTime: TDateTime;
     FBlinkCaretState: boolean;
     FSelStart,FSelLength: integer;
@@ -62,16 +67,21 @@ type
     FUnicodeValue: LongWord;
     function GetLayoutReady: boolean;
     function GetSelLastClick: integer;
-    procedure LayoutParagraphChanged(ASender: TObject; AParagraphIndex: integer);
-    procedure LayoutParagraphDeleted(ASender: TObject; AParagraphIndex: integer);
+    procedure LayoutBrokenLinesChanged({%H}ASender: TObject;
+      AParagraphIndex: integer; ASubBrokenStart, ASubBrokenChangedCountBefore,
+      ASubBrokenChangedCountAfter: integer; ASubBrokenTotalCountBefore,
+      {%H}ASubBrokenTotalCountAfter: integer);
+    procedure LayoutParagraphDeleted({%H}ASender: TObject; AParagraphIndex: integer);
     procedure LayoutParagraphMergedWithNext(ASender: TObject;
       AParagraphIndex: integer);
-    procedure LayoutParagraphSplit(ASender: TObject; AParagraphIndex: integer;
-      ACharIndex: integer);
+    procedure LayoutParagraphSplit({%H}ASender: TObject; AParagraphIndex: integer;
+      ASubBrokenIndex, {%H-}ACharIndex: integer);
     procedure SetSelLastClick(AValue: integer);
     procedure SetSelLength(AValue: integer);
     procedure SetSelStart(AValue: integer);
     procedure FlushUnicode;
+    procedure DiscardRenderedBrokenLines;
+    procedure LayoutCompletelyChanged;
   public
     procedure UpdateCurrentParagraph;
     procedure UpdateSelectionFromFirstLastClick;
@@ -136,6 +146,7 @@ end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  DiscardRenderedBrokenLines;
   FTextLayout.Free;
   FFontRenderer.Free;
 end;
@@ -263,13 +274,13 @@ begin
     InsertText(#9);
     Key := 0;
   end else
-  If (Key = VK_C) and (ssCtrl in Shift) then
+  If (Key = VK_C) and (ssShortcut in Shift) then
   begin
     if SelLength> 0 then
       SetClipboardAsText(FTextLayout.CopyText(SelStart, SelLength));
     Key := 0;
   end else
-  If (Key = VK_X) and (ssCtrl in Shift) then
+  If (Key = VK_X) and (ssShortcut in Shift) then
   begin
     if SelLength > 0 then
     begin
@@ -278,12 +289,12 @@ begin
     end;
     Key := 0;
   end else
-  If (Key = VK_V) and (ssCtrl in Shift) then
+  If (Key = VK_V) and (ssShortcut in Shift) then
   begin
     InsertText(Clipboard.AsText);
     Key := 0;
   end else
-  If (Key = VK_A) and (ssCtrl in Shift) then
+  If (Key = VK_A) and (ssShortcut in Shift) then
   begin
     SelStart:= 0;
     SelLength:= FTextLayout.CharCount;
@@ -327,16 +338,14 @@ begin
   Key := #0
 end;
 
-procedure TForm1.SpinEdit_AngleChange(Sender: TObject);
+procedure TForm1.ScrollBar1Change(Sender: TObject);
 begin
-  if Assigned(FTextLayout) then FTextLayout.InvalidateLayout;
   BGRAVirtualScreen1.DiscardBitmap;
 end;
 
 procedure TForm1.SpinEdit_FontSizeChange(Sender: TObject);
 begin
-  if Assigned(FTextLayout) then FTextLayout.InvalidateLayout;
-  BGRAVirtualScreen1.DiscardBitmap;
+  LayoutCompletelyChanged;
 end;
 
 procedure TForm1.TimerBlinkCaretTimer(Sender: TObject);
@@ -372,11 +381,39 @@ begin
     result := FSelLastClick;
 end;
 
-procedure TForm1.LayoutParagraphChanged(ASender: TObject;
-  AParagraphIndex: integer);
+procedure TForm1.LayoutBrokenLinesChanged(ASender: TObject;
+  AParagraphIndex: integer; ASubBrokenStart, ASubBrokenChangedCountBefore,
+  ASubBrokenChangedCountAfter: integer; ASubBrokenTotalCountBefore,
+  ASubBrokenTotalCountAfter: integer);
+var
+  i: Integer;
 begin
-  if (AParagraphIndex >= 0) and (AParagraphIndex <= high(FRenderedParagraphs)) then
-    FreeAndNil(FRenderedParagraphs[AParagraphIndex]);
+  if (AParagraphIndex < 0) or (AParagraphIndex > high(FRenderedParagraphs)) or
+    (FRenderedParagraphs[AParagraphIndex] = nil) then exit;
+  if ASubBrokenTotalCountBefore <> FRenderedParagraphs[AParagraphIndex].Count then
+    FreeAndNil(FRenderedParagraphs[AParagraphIndex])
+  else
+  begin
+    for i := 0 to ASubBrokenChangedCountBefore-1 do
+      FRenderedParagraphs[AParagraphIndex].Delete(ASubBrokenStart);
+    for i := 0 to ASubBrokenChangedCountAfter-1 do
+      FRenderedParagraphs[AParagraphIndex].Insert(ASubBrokenStart, nil);
+  end;
+end;
+
+procedure TForm1.DiscardRenderedBrokenLines;
+var
+  i: Integer;
+begin
+  for i := 0 to high(FRenderedParagraphs) do
+    FreeAndNil(FRenderedParagraphs[i]);
+end;
+
+procedure TForm1.LayoutCompletelyChanged;
+begin
+  if Assigned(FTextLayout) then FTextLayout.InvalidateLayout;
+  DiscardRenderedBrokenLines;
+  BGRAVirtualScreen1.DiscardBitmap;
 end;
 
 procedure TForm1.LayoutParagraphDeleted(ASender: TObject;
@@ -395,23 +432,38 @@ end;
 
 procedure TForm1.LayoutParagraphMergedWithNext(ASender: TObject;
   AParagraphIndex: integer);
+var
+  i, insertIndex: Integer;
+  renderedBrokenLine: TBGRABitmap;
 begin
+  insertIndex := FRenderedParagraphs[AParagraphIndex].Count;
+  for i := FRenderedParagraphs[AParagraphIndex+1].Count-1 downto 0 do
+  begin
+    renderedBrokenLine := FRenderedParagraphs[AParagraphIndex+1].Items[i];
+    FRenderedParagraphs[AParagraphIndex].Insert(insertIndex, renderedBrokenLine);
+    FRenderedParagraphs[AParagraphIndex+1].Extract(renderedBrokenLine);
+  end;
   LayoutParagraphDeleted(ASender, AParagraphIndex+1);
-  LayoutParagraphChanged(ASender, AParagraphIndex);
 end;
 
 procedure TForm1.LayoutParagraphSplit(ASender: TObject;
-  AParagraphIndex: integer; ACharIndex: integer);
+  AParagraphIndex: integer; ASubBrokenIndex, ACharIndex: integer);
 var
-  i: Integer;
+  i, j: Integer;
+  renderedBrokenLine: TBGRABitmap;
 begin
   if (AParagraphIndex >= 0) and (AParagraphIndex <= high(FRenderedParagraphs)) then
   begin
-    LayoutParagraphChanged(ASender, AParagraphIndex);
     setlength(FRenderedParagraphs, length(FRenderedParagraphs)+1);
-    for i := high(FRenderedParagraphs) downto AParagraphIndex+1 do
+    for i := high(FRenderedParagraphs) downto AParagraphIndex+2 do
       FRenderedParagraphs[i] := FRenderedParagraphs[i-1];
-    FRenderedParagraphs[AParagraphIndex] := nil;
+    FRenderedParagraphs[AParagraphIndex+1] := TRenderedBrokenLineList.Create;
+    for j := FRenderedParagraphs[AParagraphIndex].Count-1 downto ASubBrokenIndex+1 do
+    begin
+      renderedBrokenLine := FRenderedParagraphs[AParagraphIndex].Items[j];
+      FRenderedParagraphs[AParagraphIndex+1].Insert(0, renderedBrokenLine);
+      FRenderedParagraphs[AParagraphIndex].Extract(renderedBrokenLine);
+    end;
   end;
 end;
 
@@ -489,19 +541,27 @@ end;
 procedure TForm1.SetCurrentParagraphAlign(AAlign: TAlignment);
 var
   i: Integer;
+  newAlign: TBidiTextAlignment;
 begin
   if LayoutReady and (FCurFirstParagraph <> -1) then
   begin
     for i := FCurFirstParagraph to FCurLastParagraph do
+    begin
       case AALign of
-        taCenter: FTextLayout.ParagraphAlignment[i] := btaCenter;
         taLeftJustify: if FTextLayout.ParagraphRightToLeft[i] then
-                         FTextLayout.ParagraphAlignment[i] := btaOpposite
-                         else FTextLayout.ParagraphAlignment[i] := btaNatural;
+                         newAlign := btaOpposite
+                         else newAlign := btaNatural;
         taRightJustify: if FTextLayout.ParagraphRightToLeft[i] then
-                         FTextLayout.ParagraphAlignment[i] := btaNatural
-                         else FTextLayout.ParagraphAlignment[i] := btaOpposite;
+                         newAlign := btaNatural
+                         else newAlign := btaOpposite;
+        else {taCenter:} newAlign := btaCenter;
       end;
+      if FTextLayout.ParagraphAlignment[i] <> newAlign then
+      begin
+        FTextLayout.ParagraphAlignment[i] := newAlign;
+        FreeAndNil(FRenderedParagraphs[i]);
+      end;
+    end;
 
     BGRAVirtualScreen1.DiscardBitmap;
   end;
@@ -541,11 +601,14 @@ end;
 
 procedure TForm1.BGRAVirtualScreen1Redraw(Sender: TObject; Bitmap: TBGRABitmap);
 var
-  zoom: single;
+  zoom, prevAvailWidth: single;
   caretColor, selectionColor: TBGRAPixel;
   newTime: TDateTime;
   oldTopLeft: TPointF;
   i: Integer;
+  startBroken, endBroken, j, countBroken: LongInt;
+  renderedBroken: TBGRABitmap;
+  renderRect: TRect;
 begin
   zoom := BGRAVirtualScreen1.BitmapScale * Screen.PixelsPerInch / 96;
   if FFontRenderer = nil then
@@ -576,22 +639,34 @@ begin
       FFontRenderer.FontQuality:= fqSystem;
   end;
   FFontRenderer.FontEmHeightF:= SpinEdit_FontSize.Value * zoom;
-  FFontRenderer.FontOrientation := SpinEdit_Angle.Value*10;
 
   if FTextLayout = nil then
   begin
     FTextLayout:= TBidiTextLayout.Create(FFontRenderer, FTestText);
     FTextLayout.ParagraphSpacingBelow:= 0.25;
     FTextLayout.ParagraphSpacingAbove:= 0.25;
-    FTextLayout.OnParagraphChanged:=@LayoutParagraphChanged;
     FTextLayout.OnParagraphDeleted:=@LayoutParagraphDeleted;
     FTextLayout.OnParagraphMergedWithNext:=@LayoutParagraphMergedWithNext;
     FTextLayout.OnParagraphSplit:=@LayoutParagraphSplit;
-    FTextLayout.OnParagraphVerticalTrimChanged:=@LayoutParagraphChanged;
+    FTextLayout.OnBrokenLinesChanged:=@LayoutBrokenLinesChanged;
   end else
     FTextLayout.FontRenderer := FFontRenderer;
 
-  FTextLayout.SetLayout(rectF(4*zoom,4*zoom,Bitmap.Width-4*zoom,Bitmap.Height-4*zoom));
+  prevAvailWidth := FTextLayout.AvailableWidth;
+  FTextLayout.AvailableWidth := Bitmap.Width - 8*zoom;
+  FTextLayout.TopLeft := PointF(4*zoom,4*zoom);
+  if prevAvailWidth <> FTextLayout.AvailableWidth then
+    DiscardRenderedBrokenLines;
+  FTextLayout.ComputeLayoutIfNeeded;
+
+  oldTopLeft := FTextLayout.TopLeft;
+  ScrollBar1.Min:= 0;
+  ScrollBar1.Max:= round(FTextLayout.TotalTextHeight + 8*zoom);
+  ScrollBar1.PageSize:= Bitmap.Height;
+  ScrollBar1.LargeChange:= Bitmap.Height*2 div 3;
+  ScrollBar1.SmallChange:= round(FTextLayout.LineHeight);
+  if ScrollBar1.Position > max(0, ScrollBar1.Max - ScrollBar1.PageSize) then
+    ScrollBar1.Position := max(0, ScrollBar1.Max - ScrollBar1.PageSize);
 
   caretColor := BGRA(0,0,255);
   selectionColor := BGRA(0,0,255,128);
@@ -603,33 +678,57 @@ begin
     FBlinkCaretState:= not FBlinkCaretState;
   end;
 
+  FTextLayout.TopLeft := oldTopLeft + PointF(0, -ScrollBar1.Position);
   if FBlinkCaretState and (SelLength = 0) and BGRAVirtualScreen1.Focused then
     FTextLayout.DrawCaret(Bitmap, SelStart, BGRA(caretColor.red,caretColor.green,caretColor.blue,140), BGRA(caretColor.red,caretColor.green,caretColor.blue,100));
 
   for i := FTextLayout.ParagraphCount to high(FRenderedParagraphs) do
     FreeAndNil(FRenderedParagraphs[i]);
   setlength(FRenderedParagraphs, FTextLayout.ParagraphCount);
-  oldTopLeft := FTextLayout.TopLeft;
+
   for i := 0 to FTextLayout.ParagraphCount-1 do
   begin
     if FRenderedParagraphs[i] = nil then
+      FRenderedParagraphs[i] := TRenderedBrokenLineList.Create;
+    startBroken := FTextLayout.ParagraphStartBrokenLine[i];
+    endBroken := FTextLayout.ParagraphEndBrokenLine[i];
+    for j := startBroken to endBroken - 1 do
     begin
-      FRenderedParagraphs[i] := TBGRABitmap.Create(Bitmap.Width,
-        ceil(FTextLayout.ParagraphRectF[i].Height), BGRAVirtualScreen1.Color);
-      FTextLayout.TopLeft := oldTopLeft + PointF(0, -FTextLayout.ParagraphRectF[i].Top);
-      FTextLayout.DrawParagraphs(FRenderedParagraphs[i], i, i+1);
+      if j - startBroken >= FRenderedParagraphs[i].Count then
+        FRenderedParagraphs[i].Add(nil);
+      if j - startBroken < FRenderedParagraphs[i].Count then
+      begin
+        renderRect := RectWithSize(0, round(oldTopLeft.y + FTextLayout.BrokenLineRectF[j].Top) - ScrollBar1.Position,
+                                   Bitmap.Width, ceil(FTextLayout.BrokenLineRectF[j].Height));
+        if renderRect.IntersectsWith(Bitmap.ClipRect) then
+        begin
+          if FRenderedParagraphs[i].Items[j - startBroken] = nil then
+          begin
+            renderedBroken := TBGRABitmap.Create(Bitmap.Width,
+            ceil(FTextLayout.BrokenLineRectF[j].Height), BGRAVirtualScreen1.Color);
+            FTextLayout.TopLeft := PointF(oldTopLeft.x, -FTextLayout.BrokenLineRectF[j].Top);
+            FTextLayout.DrawBrokenLines(renderedBroken, j, j+1);
+            FRenderedParagraphs[i].Items[j - startBroken] := renderedBroken;
+          end;
+          Bitmap.PutImage(renderRect.Left, renderRect.Top,
+            FRenderedParagraphs[i].Items[j - startBroken], dmSet);
+        end else
+          FRenderedParagraphs[i].Items[j - startBroken] := nil;
+      end;
     end;
-    Bitmap.PutImage(0, round(FTextLayout.ParagraphRectF[i].Top), FRenderedParagraphs[i], dmSet);
+    countBroken := endBroken - startBroken;
+    while FRenderedParagraphs[i].Count > countBroken do
+      FRenderedParagraphs[i].Delete(countBroken);
   end;
-  FTextLayout.TopLeft := oldTopLeft;
+  FTextLayout.TopLeft := oldTopLeft + PointF(0, -ScrollBar1.Position);
 
   FTextLayout.DrawSelection(Bitmap, SelStart, SelStart+SelLength, selectionColor, BGRA(0,0,192),1);
-
 
   if FBlinkCaretState and (SelLength = 0) then
     FTextLayout.DrawCaret(Bitmap, SelStart, BGRA(caretColor.red,caretColor.green,caretColor.blue,140), BGRA(caretColor.red,caretColor.green,caretColor.blue,100));
 
   UpdateCurrentParagraph;
+  FTextLayout.TopLeft := oldTopLeft;
   //let some time for events
   TimerBlinkCaret.Enabled := false;
   TimerBlinkCaret.Enabled := true;
@@ -637,15 +736,13 @@ end;
 
 procedure TForm1.CheckBox_ClearTypeChange(Sender: TObject);
 begin
-  if Assigned(FTextLayout) then FTextLayout.InvalidateLayout;
-  BGRAVirtualScreen1.DiscardBitmap;
+  LayoutCompletelyChanged;
 end;
 
 procedure TForm1.CheckBox_FreeTypeChange(Sender: TObject);
 begin
-  if Assigned(FTextLayout) then FTextLayout.InvalidateLayout;
+  LayoutCompletelyChanged;
   FreeAndNil(FFontRenderer);
-  BGRAVirtualScreen1.DiscardBitmap;
 end;
 
 procedure TForm1.BGRAVirtualScreen1MouseDown(Sender: TObject;
@@ -656,7 +753,8 @@ begin
   BGRAVirtualScreen1.SetFocus;
   if Button = mbLeft then
   begin
-    index := FTextLayout.GetCharIndexAt(PointF(X, Y) * BGRAVirtualScreen1.BitmapScale);
+    index := FTextLayout.GetCharIndexAt(PointF(X, Y) * BGRAVirtualScreen1.BitmapScale
+               + PointF(0,ScrollBar1.Position));
     FSelFirstClick:= index;
     FSelLastClick:= index;
     UpdateSelectionFromFirstLastClick;
@@ -670,16 +768,25 @@ var
 begin
   if (FSelFirstClick <> -1) and (ssLeft in Shift) then
   begin
-    index := FTextLayout.GetCharIndexAt(PointF(X,Y) * BGRAVirtualScreen1.BitmapScale);
+    index := FTextLayout.GetCharIndexAt(PointF(X,Y) * BGRAVirtualScreen1.BitmapScale
+               + PointF(0,ScrollBar1.Position));
     FSelLastClick:= index;
     UpdateSelectionFromFirstLastClick;
   end;
 end;
 
+procedure TForm1.BGRAVirtualScreen1MouseWheel(Sender: TObject;
+  Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint;
+  var Handled: Boolean);
+begin
+  ScrollBar1.Position := ScrollBar1.Position - (WheelDelta * ScrollBar1.SmallChange div 120);
+end;
+
 initialization
 
   EasyLazFreeType.FontCollection := TFreeTypeFontCollection.Create;
-  EasyLazFreeType.FontCollection.AddFolder(GetCurrentDir);
+  EasyLazFreeType.FontCollection.AddFolder(ExtractFilePath(Application.ExeName)
+     {$IFDEF DARWIN} + '../../../' {$ENDIF});
 
 finalization
 
