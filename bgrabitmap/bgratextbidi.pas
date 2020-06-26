@@ -42,7 +42,6 @@ type
          modified: bytebool;
          rectF: TRectF;
          posCorrection: TPointF;
-         sUTF8: string;
          function IsRightToLeft: boolean;
        end;
 
@@ -202,7 +201,7 @@ type
     procedure TextPathBidiOverride(ADest: IBGRAPath; x, y: single; sUTF8: string; ARightToLeft: boolean);
     function AddOverrideIfNecessary(var sUTF8: string; ARightToLeft: boolean): boolean;
 
-    procedure AddPart(AStartIndex, AEndIndex: integer; ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ASUTF8: string; ABrokenLineIndex: integer; ABrokenLine: PBrokenLineInfo);
+    procedure AddPart(AStartIndex, AEndIndex: integer; ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ABrokenLineIndex: integer; ABrokenLine: PBrokenLineInfo);
     function GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
     function GetPartEndCaret(APartIndex: integer): TBidiCaretPos;
     function GetUntransformedPartStartCaret(APartIndex: integer): TBidiCaretPos;
@@ -1504,7 +1503,7 @@ begin
 end;
 
 procedure TBidiTextLayout.AddPart(AStartIndex, AEndIndex: integer;
-  ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ASUTF8: string;
+  ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF;
   ABrokenLineIndex: integer; ABrokenLine: PBrokenLineInfo);
 begin
   if ABrokenLine^.partCount >= length(ABrokenLine^.parts) then
@@ -1517,7 +1516,6 @@ begin
     bidiLevel := ABidiLevel;
     rectF := ARectF;
     posCorrection := APosCorrection;
-    sUTF8:= ASUTF8;
     brokenLineIndex:= ABrokenLineIndex;
     modified := false;
   end;
@@ -2111,7 +2109,7 @@ begin
         AddPart(subStart, lineEnd, paraBidiLevel,
                 RectF(pos.x, curBroken^.rectF.Top,
                       pos.x, curBroken^.rectF.Bottom),
-                PointF(0,0), '', brokenIndex, curBroken);
+                PointF(0,0), brokenIndex, curBroken);
 
         DoneBrokenLine;
       end else
@@ -2271,7 +2269,7 @@ begin
             else
               r := RectF(pos.x+tabSection[j].bidiPos, pos.y, pos.x+endBidiPos, pos.y+curLineHeight);
 
-            AddPart(tabSection[j].startIndex, tabSection[j].endIndex, paraBidiLevel, r, PointF(0,0), #9, brokenIndex, curBroken);
+            AddPart(tabSection[j].startIndex, tabSection[j].endIndex, paraBidiLevel, r, PointF(0,0), brokenIndex, curBroken);
           end
           else
           begin
@@ -2396,7 +2394,9 @@ begin
     b := (Matrix*TAffineBox.AffineBox(part^.rectF)).RectBounds;
     if not b.IntersectsWith(ADest.ClipRect) then continue;
     pos := Matrix*(part^.rectF.TopLeft + part^.posCorrection);
-    TextOutBidiOverride(ADest, pos.x, pos.y, part^.sUTF8, part^.IsRightToLeft);
+    TextOutBidiOverride(ADest, pos.x, pos.y,
+      FAnalysis.CopyTextUTF8(part^.startIndex, part^.endIndex - part^.startIndex),
+      part^.IsRightToLeft);
   end;
 end;
 
@@ -2412,7 +2412,9 @@ begin
   while (enumPart.PartIndex < ALastPartPlus1) and enumPart.GetNext do begin
     part := enumPart.PartInfo;
     pos := Matrix*(part^.rectF.TopLeft + part^.posCorrection);
-    TextPathBidiOverride(ADest, pos.x, pos.y, part^.sUTF8, part^.IsRightToLeft);
+    TextPathBidiOverride(ADest, pos.x, pos.y,
+    FAnalysis.CopyTextUTF8(part^.startIndex, part^.endIndex - part^.startIndex),
+    part^.IsRightToLeft);
   end;
 end;
 
@@ -3307,11 +3309,11 @@ begin
     begin
       DecF(APos.x, root.Width);
       AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
-              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, ABrokenLineIndex, ABrokenLine);
+              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), ABrokenLineIndex, ABrokenLine);
     end else
     begin
       AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
-              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, ABrokenLineIndex, ABrokenLine);
+              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), ABrokenLineIndex, ABrokenLine);
       IncF(APos.x, root.Width);
     end;
   end else
