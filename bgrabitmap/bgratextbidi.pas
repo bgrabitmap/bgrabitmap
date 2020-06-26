@@ -1068,11 +1068,19 @@ end;
 
 procedure TBidiTextLayout.SetParagraphAlignment(AIndex: integer;
   AValue: TBidiTextAlignment);
+var
+  brokenCount: Integer;
 begin
   if (AIndex < 0) or (AIndex >= ParagraphCount) then
     raise ERangeError.Create('Paragraph index out of bounds');
   FParagraph[AIndex].alignment := AValue;
   InvalidateParagraphLayout(AIndex);
+  if Assigned(FOnBrokenLinesChanged) then
+  begin
+    brokenCount := FParagraph[AIndex].brokenLineCount;
+    FOnBrokenLinesChanged(self, AIndex, 0, brokenCount, brokenCount,
+      brokenCount, brokenCount);
+  end;
 end;
 
 procedure TBidiTextLayout.SetParagraphSpacingAbove(AValue: single);

@@ -556,11 +556,7 @@ begin
                          else newAlign := btaOpposite;
         else {taCenter:} newAlign := btaCenter;
       end;
-      if FTextLayout.ParagraphAlignment[i] <> newAlign then
-      begin
-        FTextLayout.ParagraphAlignment[i] := newAlign;
-        FreeAndNil(FRenderedParagraphs[i]);
-      end;
+      FTextLayout.ParagraphAlignment[i] := newAlign;
     end;
 
     BGRAVirtualScreen1.DiscardBitmap;
