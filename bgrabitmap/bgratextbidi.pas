@@ -108,6 +108,7 @@ type
   private
     FAvailableHeight: single;
     FAvailableWidth: single;
+    FClipMargin: integer;
     FOnBrokenLinesChanged: TBrokenLinesChangedEvent;
     FOnParagraphChanged: TParagraphEvent;
     FOnParagraphDeleted: TParagraphEvent;
@@ -352,6 +353,7 @@ type
     property MatrixInverse: TAffineMatrix read GetMatrixInverse;
     property TextUTF8: string read GetText;
     property WordBreakHandler: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
+    property ClipMargin: integer read FClipMargin write FClipMargin; // how many pixels can the text go outside of its box
 
     property FontRenderer: TBGRACustomFontRenderer read FRenderer write SetFontRenderer;
     property FontBidiMode: TFontBidiMode read GetFontBidiMode write SetFontBidiMode;
@@ -2386,12 +2388,18 @@ var
   b: TRect;
   pos: TPointF;
   enumPart: TPartEnumerator;
+  r: TRectF;
 begin
   NeedLayout;
   enumPart := GetPartEnumerator(AFirstPart);
   while enumPart.GetNext and (enumPart.PartIndex < ALastPartPlus1) do begin
     part := enumPart.PartInfo;
-    b := (Matrix*TAffineBox.AffineBox(part^.rectF)).RectBounds;
+    r := part^.rectF;
+    DecF(r.Left, LineHeight/2 + FClipMargin);
+    DecF(r.Top, FClipMargin);
+    IncF(r.Right, LineHeight/2 + FClipMargin);
+    IncF(r.Bottom, FClipMargin);
+    b := (Matrix*TAffineBox.AffineBox(r)).RectBounds;
     if not b.IntersectsWith(ADest.ClipRect) then continue;
     pos := Matrix*(part^.rectF.TopLeft + part^.posCorrection);
     TextOutBidiOverride(ADest, pos.x, pos.y,
@@ -3361,6 +3369,7 @@ begin
   FParagraphSpacingAbove:= 0;
   FParagraphSpacingBelow:= 0;
   FMatrix := AffineMatrixIdentity;
+  FClipMargin := 0;
   FColor := BGRABlack;
   FTexture := nil;
   FWordBreakHandler:= nil;
