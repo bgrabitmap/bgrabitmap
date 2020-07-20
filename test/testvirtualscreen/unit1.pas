@@ -8,9 +8,6 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   StdCtrls, Spin, BGRAVirtualScreen, BGRABitmap, BGRABitmapTypes;
 
-const
-  ballRadius = 20;
-
 type
 
   { TForm1 }
@@ -28,9 +25,12 @@ type
     procedure FormCreate(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
+    FInit: boolean;
     procedure InitBalls(ACount: integer);
+    procedure Init;
     function GetBallRect(AIndex: integer): TRect;
   public
+    ballRadius: integer;
     background: TBGRABitmap;
     balls: array of record
           ballPos: TPoint;
@@ -54,6 +54,7 @@ procedure TForm1.VirtualScreenRedraw(Sender: TObject; Bitmap: TBGRABitmap);
 var
   i: Integer;
 begin
+  Init;
   Bitmap.FillRect(rect(0,0,Bitmap.Width,Bitmap.Height), background, dmSet);
   for i := 0 to high(balls) do
     with balls[i] do
@@ -72,16 +73,16 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  initBalls(SpinEdit1.Value);
-  background := CreateCyclicPerlinNoiseMap(256,256);
+  VirtualScreen.BitmapAutoScale:= false;
 end;
 
 procedure TForm1.Timer1Timer(Sender: TObject);
-var r: TRect;
+var
   i: Integer;
   rects: array of TRect;
   nbRects: integer;
 begin
+  if not FInit then exit;
   Timer1.Enabled:= false;
   setlength(rects, length(balls)*2);
   nbRects := 0;
@@ -96,22 +97,22 @@ begin
     inc(ballSpeed.Y);
     inc(ballPos.X, ballSpeed.x);
     inc(ballPos.Y, ballSpeed.y);
-    if BallPos.Y >= VirtualScreen.Height-ballRadius then
+    if BallPos.Y >= VirtualScreen.BitmapHeight-ballRadius then
     begin
-      ballPos.Y := VirtualScreen.Height-ballRadius;
+      ballPos.Y := VirtualScreen.BitmapHeight-ballRadius;
       ballSpeed.Y := -abs(ballSpeed.Y);
 
-      if (BallPos.X < -ballRadius) or (BallPos.X > VirtualScreen.Width+ballRadius) then
+      if (BallPos.X < -ballRadius) or (BallPos.X > VirtualScreen.BitmapWidth+ballRadius) then
       begin
-        ballPos := Point(random(VirtualScreen.Width), - ballRadius);
+        ballPos := Point(random(VirtualScreen.BitmapWidth), - ballRadius);
         ballSpeed.Y := 0;
         Continue;
       end;
     end else
     begin
-      if BallPos.X+ballRadius >= VirtualScreen.Width then
+      if BallPos.X+ballRadius >= VirtualScreen.BitmapWidth then
       begin
-        BallPos.X := VirtualScreen.Width-ballRadius;
+        BallPos.X := VirtualScreen.BitmapWidth-ballRadius;
         ballSpeed.X := -abs(ballSpeed.x);
       end else
       if BallPos.X <= ballRadius then
@@ -142,11 +143,23 @@ begin
   for i := 0 to high(balls) do
   with balls[i] do
   begin
-    ballPos := Point(random(VirtualScreen.Width), (i*VirtualScreen.Height div length(balls)) - ballRadius);
+    ballPos := Point(random(VirtualScreen.BitmapWidth), (i*VirtualScreen.BitmapHeight div length(balls)) - ballRadius);
     ballSpeed := Point(random(5)-2, 0);
     ballColor := BGRA(random(256),random(256),random(256));
     if ballColor.Lightness > 48000 then ballColor.Lightness:= 48000;
   end;
+end;
+
+procedure TForm1.Init;
+var
+  scale: Double;
+begin
+  if FInit then exit;
+  FInit := true;
+  scale := VirtualScreen.BitmapScale*Screen.PixelsPerInch/96;
+  ballRadius := round(20*scale);
+  initBalls(SpinEdit1.Value);
+  background := CreateCyclicPerlinNoiseMap(round(256*scale),round(256*scale));
 end;
 
 function TForm1.GetBallRect(AIndex: integer): TRect;

@@ -306,6 +306,7 @@ type
     procedure AlphaFillRect(ALeft, ATop, ARight, ABottom: integer; alpha: byte); virtual;
     procedure AlphaFillRect(const ARect: TRect; alpha: byte); virtual;
     procedure ApplyGlobalOpacity(ARect: TRect; alpha: byte); overload; virtual;
+    procedure DrawCheckers(ARect: TRect; const ABrushEven,ABrushOdd: TUniversalBrush; AGridWidth: integer = 8; AGridHeight: integer = 8); overload; virtual;
 
     {** Returns the address of a pixel. /!\ Does not check if the coordinates are valid. }
     function GetPixelAddress(x,y: integer): PByte; virtual;
@@ -2825,6 +2826,66 @@ end;
 procedure TCustomUniversalBitmap.ApplyGlobalOpacity(ARect: TRect; alpha: byte);
 begin
   EraseRect(ARect, 255-alpha);
+end;
+
+procedure TCustomUniversalBitmap.DrawCheckers(ARect: TRect; const ABrushEven,
+  ABrushOdd: TUniversalBrush; AGridWidth: integer; AGridHeight: integer);
+var xcount,patY,yb,w,n,patX,patX1,patX1b: Int32or64;
+    pdest: PByte;
+    delta: PtrInt;
+    actualRect: TRect;
+    ctxEven,ctxOdd: TUniBrushContext;
+begin
+  actualRect := TRect.Intersect(ARect, ClipRect);
+  if actualRect.IsEmpty then exit;
+  w := actualRect.Right-actualRect.Left;
+  delta := self.RowSize;
+  if self.LineOrder = riloBottomToTop then delta := -delta;
+  pdest := self.GetPixelAddress(actualRect.left, actualRect.Top);
+  patY := (actualRect.Top - ARect.Top) mod (AGridHeight shl 1);
+  patX1 := (actualRect.Left - ARect.Left) mod (AGridWidth shl 1);
+  patX1b := (patX1+AGridWidth) mod (AGridWidth shl 1);
+  for yb := actualRect.Top to actualRect.Bottom-1 do
+  begin
+    if patY < AGridHeight then
+      patX := patX1
+      else patX := patX1b;
+    ABrushEven.MoveTo(@ctxEven, pdest, actualRect.Left,yb);
+    ABrushOdd.MoveTo(@ctxOdd, pdest, actualRect.Left,yb);
+    xcount := w;
+    if patX >= AGridWidth then
+    begin
+      n := (AGridWidth shl 1) - patX;
+      if n > xcount then n := xcount;
+      ABrushEven.PutNextPixels(@ctxEven, $ffff, n);
+      ABrushOdd.PutNextPixels(@ctxOdd, 0, n);
+      dec(xcount,n);
+      patX := 0;
+    end;
+    while xcount > 0 do
+    begin
+      n := AGridWidth - patX;
+      if n > xcount then n := xcount;
+      ABrushOdd.PutNextPixels(@ctxOdd, $ffff, n);
+      ABrushOdd.PutNextPixels(@ctxEven, 0, n);
+      dec(xcount, n);
+      patX := AGridWidth;
+
+      if xcount > 0 then
+      begin
+        n := (AGridWidth shl 1) - patX;
+        if n > xcount then n := xcount;
+        ABrushEven.PutNextPixels(@ctxEven, $ffff, n);
+        ABrushOdd.PutNextPixels(@ctxOdd, 0, n);
+        dec(xcount, n);
+        patX := 0;
+      end;
+    end;
+    inc(pbyte(pdest), delta);
+    inc(patY);
+    if patY = AGridHeight shl 1 then patY := 0;
+  end;
+  self.InvalidateBitmap;
 end;
 
 procedure TCustomUniversalBitmap.FillRect(ALeft, ATop, ARight, ABottom: integer;

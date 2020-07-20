@@ -32,8 +32,11 @@ uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, EasyLazFreeType, FPimage,
   BGRACustomTextFX, BGRAPhongTypes, BGRATypewriter, LazVersion;
 
-{$IF laz_fullversion >= 2010000}
+{$IF laz_fullversion >= 2001000}
   {$DEFINE LAZFREETYPE_GLYPH_BOX_FIXED}
+{$ENDIF}
+
+{$IF laz_fullversion >= 2010000}
   {$DEFINE LAZFREETYPE_PROVIDE_KERNING}
 {$ENDIF}
 
@@ -347,7 +350,7 @@ type
     FFont: TFreeTypeFont;
     function GetGlyph(AIdentifier: string): TBGRAGlyph; override;
     function GetKerningOffset(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single; override;
-    function ComputeKerning(AIdLeft, AIdRight: string): single; override;
+    function ComputeKerning({%H-}AIdLeft, {%H-}AIdRight: string): single; override;
   public
     constructor Create(AFont: TFreeTypeFont);
     procedure DrawText(ADrawer: TBGRAFreeTypeDrawer; ATextUTF8: string; X,Y: Single;

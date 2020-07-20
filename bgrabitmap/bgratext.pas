@@ -217,11 +217,17 @@ procedure BitmapTextRect(ABitmap: TBitmap; ARect: TRect; ACoord: TPoint;
   AText: string; const AStyle: TTextStyle);
 begin
   ABitmap.Canvas.Brush.Style := bsClear;
+  {$IFDEF DARWIN}
+  if AStyle.RightToLeft then AText := UTF8EmbedDirection(AText, true);
+  {$ENDIF}
   ABitmap.Canvas.TextRect(ARect, ACoord.X, ACoord.Y, AText, AStyle);
 end;
 
 function BitmapTextExtent(ABitmap: TBitmap; AText: string): TSize;
 begin
+  {$IFDEF DARWIN}
+  AText := StringReplace(AText, ' ', UTF8_NO_BREAK_SPACE, [rfReplaceAll]);
+  {$ENDIF}
   result := ABitmap.Canvas.TextExtent(AText);
 end;
 
@@ -233,6 +239,9 @@ end;
 
 function BitmapTextFitInfo(ABitmap: TBitmap; AText: string; AMaxWidth: integer): integer;
 begin
+  {$IFDEF DARWIN}
+  AText := StringReplace(AText, ' ', UTF8_NO_BREAK_SPACE, [rfReplaceAll]);
+  {$ENDIF}
   result := ABitmap.Canvas.TextFitInfo(AText, AMaxWidth);
 end;
 
@@ -1420,16 +1429,16 @@ begin
     if not lineEndingBreak then
       // append following direction to part
       case GetFirstStrongBidiClassUTF8(remains) of
-        ubcLeftToRight: if ARightToLeft then AppendStr(part, UnicodeCharToUTF8($200E));
-        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then AppendStr(part, UnicodeCharToUTF8($200F));
+        ubcLeftToRight: if ARightToLeft then AppendStr(part, UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_MARK));
+        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then AppendStr(part, UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_MARK));
       end;
     lines.Add(part);
     // prefix next part with previous direction
     nextText := remains;
     if not lineEndingBreak then
       case GetLastStrongBidiClassUTF8(curText) of
-        ubcLeftToRight: if ARightToLeft then nextText := UnicodeCharToUTF8($200E) + nextText;
-        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then nextText := UnicodeCharToUTF8($200F) + nextText;
+        ubcLeftToRight: if ARightToLeft then nextText := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_MARK) + nextText;
+        ubcRightToLeft,ubcArabicLetter: if not ARightToLeft then nextText := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_MARK) + nextText;
       end;
     curText := nextText;
   until remains = '';
@@ -1570,13 +1579,13 @@ var mode : TBGRATextOutImproveReadabilityMode;
   i: Integer;
 begin
   if sUTF8='' then exit;
-  {$IFDEF LINUX}
+  {$IF defined(LINUX) or defined(DARWIN)}
   //help LCL detect the correct direction
   case GetFirstStrongBidiClassUTF8(sUTF8) of
-    ubcRightToLeft, ubcArabicLetter: if not ARightToLeft then sUTF8 := UnicodeCharToUTF8($200E) + sUTF8;
+    ubcRightToLeft, ubcArabicLetter: if not ARightToLeft then sUTF8 := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_MARK) + sUTF8;
     else
       begin //suppose left-to-right
-        if ARightToLeft then sUTF8 := UnicodeCharToUTF8($200F) + sUTF8;
+        if ARightToLeft then sUTF8 := UnicodeCharToUTF8(UNICODE_RIGHT_TO_LEFT_MARK) + sUTF8;
       end;
   end;
   {$ENDIF}
@@ -1653,6 +1662,11 @@ begin
     ARemainsUTF8:= ATextUTF8;
     ATextUTF8 := '';
     ALineEndingBreak:= true;
+    exit;
+  end;
+  if InternalTextSize(ATextUTF8, false).cx <= AMaxWidth then
+  begin
+    ARemainsUTF8 := '';
     exit;
   end;
 

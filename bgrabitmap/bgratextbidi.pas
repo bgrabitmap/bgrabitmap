@@ -11,6 +11,11 @@ uses
   BGRAUnicodeText;
 
 type
+  TBrokenLinesChangedEvent = procedure(ASender: TObject; AParagraphIndex: integer;
+    ASubBrokenStart, ASubBrokenChangedCountBefore, ASubBrokenChangedCountAfter: integer;
+    ASubBrokenTotalCountBefore, ASubBrokenTotalCountAfter: integer) of object;
+  TParagraphLayoutSplitEvent = procedure(ASender: TObject; AParagraphIndex: integer;
+      ASubBrokenIndex, ACharIndex: integer) of object;
 
   { TBidiCaretPos }
 
@@ -26,12 +31,91 @@ type
     procedure Transform(AMatrix: TAffineMatrix);
   end;
 
+  PPartInfo = ^TPartInfo;
+
+  { TPartInfo }
+
+  TPartInfo = record
+         brokenLineIndex: integer;
+         startIndex, endIndex: integer;
+         bidiLevel: byte;
+         modified: bytebool;
+         rectF: TRectF;
+         posCorrection: TPointF;
+         function IsRightToLeft: boolean;
+       end;
+
+  PBrokenLineInfo = ^TBrokenLineInfo;
+
+  { TBrokenLineInfo }
+
+  TBrokenLineInfo = record
+                unbrokenLineIndex: integer;
+                startIndex, endIndex: integer;
+                bidiLevel: byte;
+                rectF: TRectF;
+                usedWidth: single;
+                firstPartIndex: integer;
+                parts: array of TPartInfo;
+                partCount: integer;
+                function IsRightToLeft: boolean;
+              end;
+
+  PParagraphInfo = ^TParagraphInfo;
+  TParagraphInfo = record
+    alignment: TBidiTextAlignment;
+    layoutComputed, overflow: boolean;
+    rectF: TRectF;
+    firstBrokenLineIndex: integer;
+    firstPartIndex: integer;
+    brokenLines: array of TBrokenLineInfo;
+    brokenLineCount: integer;
+  end;
+
+  TBidiTextLayout = class;
+
+  { TPartEnumerator }
+
+  TPartEnumerator = record
+  private
+    FJustCreated: boolean;
+    FParagraphIndex: integer;
+    FBrokenLineIndex: integer;
+    FPartIndex: integer;
+    FLayout: TBidiTextLayout;
+    FSubBrokenIndex: integer;
+    FSubBrokenCount: integer;
+    FCurBroken: PBrokenLineInfo;
+    FSubPartIndex: integer;
+    FSubPartCount: integer;
+    FEndPartIndex: integer;
+    function GetPartInfo: PPartInfo;
+    procedure Update;
+  public
+    class function New(ALayout: TBidiTextLayout; AParagraphIndex: integer;
+      ASubBrokenIndex: integer; ASubPartIndex: integer; AEndPartIndex: integer): TPartEnumerator; static;
+    function GetNext: boolean;
+    property Layout: TBidiTextLayout read FLayout;
+    property ParagraphIndex: integer read FParagraphIndex;
+    property BrokenLineIndex: integer read FBrokenLineIndex;
+    property PartIndex: integer read FPartIndex;
+    property PartInfo: PPartInfo read GetPartInfo;
+    property BrokenLineInfo: PBrokenLineInfo read FCurBroken;
+  end;
+
   { TBidiTextLayout }
 
   TBidiTextLayout = class
   private
     FAvailableHeight: single;
     FAvailableWidth: single;
+    FClipMargin: integer;
+    FOnBrokenLinesChanged: TBrokenLinesChangedEvent;
+    FOnParagraphChanged: TParagraphEvent;
+    FOnParagraphDeleted: TParagraphEvent;
+    FOnParagraphMergedWithNext: TParagraphEvent;
+    FOnParagraphSplit: TParagraphLayoutSplitEvent;
+    FOnParagraphVerticalTrimChanged: TParagraphEvent;
     FParagraphSpacingAbove: single;
     FParagraphSpacingBelow: single;
     FTopLeft: TPointF;
@@ -41,9 +125,13 @@ type
     function GetBrokenLineAffineBox(AIndex: integer): TAffineBox;
     function GetBrokenLineCount: integer;
     function GetBrokenLineEndCaret(AIndex: integer): TBidiCaretPos;
+    function GetBrokenLineEndPart(AIndex: integer): integer;
+    function GetBrokenLineStartPart(AIndex: integer): integer;
     function GetBrokenLineUntransformedEndCaret(AIndex: integer): TBidiCaretPos;
     function GetBrokenLineEndIndex(AIndex: integer): integer;
     function GetBrokenLineParagraphIndex(AIndex: integer): integer;
+    function GetBrokenLineUnbrokenIndex(AIndex: integer): integer;
+    function GetBrokenLineInfo(AIndex: integer): PBrokenLineInfo;
     function GetBrokenLineRectF(AIndex: integer): TRectF;
     function GetBrokenLineRightToLeft(AIndex: integer): boolean;
     function GetBrokenLineStartCaret(AIndex: integer): TBidiCaretPos;
@@ -52,19 +140,29 @@ type
     function GetBrokenLineUsedWidth(AIndex: integer): single;
     function GetCharCount: integer;
     function GetFontBidiMode: TFontBidiMode;
+    function GetLayoutComputed: boolean;
+    function GetLineHeight: single;
     function GetMatrix: TAffineMatrix;
     function GetMatrixInverse: TAffineMatrix;
     function GetParagraphAffineBox(AIndex: integer): TAffineBox;
     function GetParagraphAlignment(AIndex: integer): TBidiTextAlignment;
     function GetParagraphCount: integer;
+    function GetParagraphEndBrokenLine(AIndex: integer): integer;
     function GetParagraphEndIndex(AIndex: integer): integer;
     function GetParagraphEndIndexBeforeParagraphSeparator(AIndex: integer): integer;
+    function GetParagraphEndPart(AIndex: integer): integer;
+    function GetParagraphInfo(AIndex: integer): PParagraphInfo;
     function GetParagraphRectF(AIndex: integer): TRectF;
     function GetParagraphRightToLeft(AIndex: integer): boolean;
+    function GetParagraphStartBrokenLine(AIndex: integer): integer;
     function GetParagraphStartIndex(AIndex: integer): integer;
+    function GetParagraphStartPart(AIndex: integer): integer;
     function GetPartAffineBox(AIndex: integer): TAffineBox;
     function GetPartBrokenLineIndex(AIndex: integer): integer;
     function GetPartCount: integer;
+    function GetPartEnumerator(AFirstPart: integer): TPartEnumerator;
+    function GetPartEnumerator(AFirstPart, ALastPartPlus1: integer): TPartEnumerator;
+    function GetPartInfo(AIndex: integer): PPartInfo;
     function GetPartEndIndex(AIndex: integer): integer;
     function GetPartRectF(AIndex: integer): TRectF;
     function GetPartRightToLeft(AIndex: integer): boolean;
@@ -89,32 +187,10 @@ type
     FRenderer: TBGRACustomFontRenderer;
     FLineHeight: single;
 
-    FParagraph: array of record
-      rectF: TRectF;
-      alignment: TBidiTextAlignment;
-      firstBrokenLineIndex: integer;
-    end;
+    FParagraph: array of TParagraphInfo;
+    FComputedBrokenLineCount: integer;
+    FComputedPartCount: integer;
 
-    FBrokenLine: array of record
-                   unbrokenLineIndex: integer;
-                   startIndex, endIndex: integer;
-                   bidiLevel: byte;
-                   rectF: TRectF;
-                   usedWidth: single;
-                   firstPartIndex, lastPartIndexPlusOne: integer;
-                 end;
-    FBrokenLineCount: integer;
-
-    FPart: array of record
-             startIndex, endIndex: integer;
-             bidiLevel: byte;
-             rectF: TRectF;
-             posCorrection: TPointF;
-             sUTF8: string;
-             brokenLineIndex: integer;
-           end;
-    FPartCount: integer;
-    FLayoutComputed: boolean;
     FColor: TBGRAPixel;
     FTexture: IBGRAScanner;
 
@@ -128,31 +204,46 @@ type
     procedure TextPathBidiOverride(ADest: IBGRAPath; x, y: single; sUTF8: string; ARightToLeft: boolean);
     function AddOverrideIfNecessary(var sUTF8: string; ARightToLeft: boolean): boolean;
 
-    procedure AddPart(AStartIndex, AEndIndex: integer; ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ASUTF8: string; ABrokenLineIndex: integer);
+    procedure AddPart(AStartIndex, AEndIndex: integer; ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ABrokenLineIndex: integer; ABrokenLine: PBrokenLineInfo);
     function GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
     function GetPartEndCaret(APartIndex: integer): TBidiCaretPos;
     function GetUntransformedPartStartCaret(APartIndex: integer): TBidiCaretPos;
+    function GetUntransformedPartStartCaret(APartIndex: integer; APrevPart, APart: PPartInfo): TBidiCaretPos;
     function GetUntransformedPartEndCaret(APartIndex: integer): TBidiCaretPos;
+    function GetUntransformedPartEndCaret(APartIndex: integer; APart: PPartInfo): TBidiCaretPos;
     function GetUntransformedParagraphAt(APosition: TPointF): integer; overload;
 
     function GetSameLevelString(startIndex,endIndex: integer): string; overload;
     function GetSameLevelString(startIndex,endIndex: integer; out nonDiscardedCount: integer): string; overload;
     function ComputeBidiTree(AMaxWidth: single; startIndex, endIndex: integer; bidiLevel: byte): TBidiTree;
-    procedure AddPartsFromTree(APos: TPointF; ATree: TBidiTree; fullHeight, baseLine: single; brokenLineIndex: integer);
+    procedure AddPartsFromTree(APos: TPointF; ATree: TBidiTree; fullHeight, baseLine: single; ABrokenLineIndex: integer; ABrokenLine: PBrokenLineInfo);
     procedure Init(ATextUTF8: string; ABidiMode: TFontBidiMode); virtual;
     procedure ComputeLayout; virtual;
+    procedure CheckTextLayout;
     procedure NeedLayout;
-    procedure InvalidateParagraphLayout({%H-}AParagraphIndex: integer);
+    procedure InvalidateParagraphLayout(AParagraphIndex: integer);
+    procedure InternalInvalidateParagraphLayout(AParagraphIndex: integer);
+    procedure OffsetParagraph(AParagraphIndex: integer; ADeltaY: single; ADeltaBroken, ADeltaPart: integer);
+    procedure OffsetParagraphCharIndex(AParagraphIndex: integer; ADeltaChar: integer);
+    procedure TrimParagraphLayoutVertically(AParagraphIndex: integer);
     procedure InternalDrawText(ADest: TBGRACustomBitmap);
-    procedure InternalPathText(ADest: IBGRAPath);
+    procedure InternalPathText(ADest: IBGRAPath); overload;
+    procedure InternalPathText(ADest: IBGRAPath; AClipRect: TRect); overload;
+    procedure InternalDrawTextParts(ADest: TBGRACustomBitmap; AFirstPart, ALastPartPlus1: integer);
+    procedure InternalPathTextParts(ADest: IBGRAPath; AFirstPart, ALastPartPlus1: integer); overload;
+    procedure InternalPathTextParts(ADest: IBGRAPath; AClipRect: TRect; AFirstPart, ALastPartPlus1: integer); overload;
+    procedure InternalRangeError;
 
     //unicode analysis events
     procedure BidiModeChanged({%H-}ASender: TObject);
     procedure CharDeleted({%H-}ASender: TObject; AParagraphIndex: integer; {%H-}ACharStart, {%H-}ACharCount: integer);
     procedure CharInserted({%H-}ASender: TObject; AParagraphIndex: integer; {%H-}ACharStart, {%H-}ACharCount: integer);
+    procedure AnalysisChanged({%H-}ASender: TObject; AParagraphIndex: integer; {%H-}ACharStart, {%H-}ACharCount: integer);
     procedure ParagraphDeleted({%H-}ASender: TObject; AParagraphIndex: integer);
     procedure ParagraphMergedWithNext({%H-}ASender: TObject; AParagraphIndex: integer);
     procedure ParagraphSplit({%H-}ASender: TObject; AParagraphIndex: integer; {%H-}ACharIndex: integer);
+    procedure InternalParagraphDeleted(AParagraphIndex: integer);
+    property LayoutComputed: boolean read GetLayoutComputed;
   public
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string); overload;
     constructor Create(AFontRenderer: TBGRACustomFontRenderer; sUTF8: string; ARightToLeft: boolean); overload;
@@ -160,11 +251,29 @@ type
     destructor Destroy; override;
     procedure SetLayout(ARect: TRectF);
     procedure InvalidateLayout;
+    procedure ComputeLayoutIfNeeded;
 
     procedure DrawText(ADest: TBGRACustomBitmap); overload;
     procedure DrawText(ADest: TBGRACustomBitmap; AColor: TBGRAPixel); overload;
     procedure DrawText(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner); overload;
     procedure PathText(ADest: IBGRAPath);
+    procedure PathText(ADest: IBGRAPath; AClipRect: TRect);
+    procedure DrawTextParts(ADest: TBGRACustomBitmap; AFirstPart, ALastPartPlus1: integer); overload;
+    procedure DrawTextParts(ADest: TBGRACustomBitmap; AColor: TBGRAPixel; AFirstPart, ALastPartPlus1: integer); overload;
+    procedure DrawTextParts(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner; AFirstPart, ALastPartPlus1: integer); overload;
+    procedure PathTextParts(ADest: IBGRAPath; AFirstPart, ALastPartPlus1: integer); overload;
+    procedure PathTextParts(ADest: IBGRAPath; AClipRect: TRect; AFirstPart, ALastPartPlus1: integer); overload;
+    procedure DrawParagraphs(ADest: TBGRACustomBitmap; AFirstPara, ALastParaPlus1: integer); overload;
+    procedure DrawParagraphs(ADest: TBGRACustomBitmap; AColor: TBGRAPixel; AFirstPara, ALastParaPlus1: integer); overload;
+    procedure DrawParagraphs(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner; AFirstPara, ALastParaPlus1: integer); overload;
+    procedure PathParagraphs(ADest: IBGRAPath; AFirstPara, ALastParaPlus1: integer); overload;
+    procedure PathParagraphs(ADest: IBGRAPath; AClipRect: TRect; AFirstPara, ALastParaPlus1: integer); overload;
+    procedure DrawBrokenLines(ADest: TBGRACustomBitmap; AFirstBroken, ALastBrokenPlus1: integer); overload;
+    procedure DrawBrokenLines(ADest: TBGRACustomBitmap; AColor: TBGRAPixel; AFirstBroken, ALastBrokenPlus1: integer); overload;
+    procedure DrawBrokenLines(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner; AFirstBroken, ALastBrokenPlus1: integer); overload;
+    procedure PathBrokenLines(ADest: IBGRAPath; AFirstBroken, ALastBrokenPlus1: integer); overload;
+    procedure PathBrokenLines(ADest: IBGRAPath; AClipRect: TRect; AFirstBroken, ALastBrokenPlus1: integer); overload;
+
     procedure DrawCaret(ADest: TBGRACustomBitmap; ACharIndex: integer; AMainColor, ASecondaryColor: TBGRAPixel);
     procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer;
                             AFillColor: TBGRAPixel; ABorderColor: TBGRAPixel; APenWidth: single); overload;
@@ -197,14 +306,18 @@ type
 
     property BrokenLineCount: integer read GetBrokenLineCount;
     property BrokenLineParagraphIndex[AIndex: integer]: integer read GetBrokenLineParagraphIndex;
+    property BrokenLineUnbrokenIndex[AIndex: integer]: integer read GetBrokenLineUnbrokenIndex;
     property BrokenLineStartIndex[AIndex: integer]: integer read GetBrokenLineStartIndex;
     property BrokenLineEndIndex[AIndex: integer]: integer read GetBrokenLineEndIndex;
+    property BrokenLineStartPart[AIndex: integer]: integer read GetBrokenLineStartPart;
+    property BrokenLineEndPart[AIndex: integer]: integer read GetBrokenLineEndPart;
     property BrokenLineRectF[AIndex: integer]: TRectF read GetBrokenLineRectF;
     property BrokenLineUsedWidth[AIndex: integer]: single read GetBrokenLineUsedWidth;
     property BrokenLineAffineBox[AIndex: integer]: TAffineBox read GetBrokenLineAffineBox;
     property BrokenLineRightToLeft[AIndex: integer]: boolean read GetBrokenLineRightToLeft;
     property BrokenLineStartCaret[AIndex: integer]: TBidiCaretPos read GetBrokenLineStartCaret;
     property BrokenLineEndCaret[AIndex: integer]: TBidiCaretPos read GetBrokenLineEndCaret;
+    property OnBrokenLinesChanged: TBrokenLinesChangedEvent read FOnBrokenLinesChanged write FOnBrokenLinesChanged;
 
     property PartCount: integer read GetPartCount;
     property PartStartIndex[AIndex: integer]: integer read GetPartStartIndex;
@@ -229,15 +342,26 @@ type
     property ParagraphEndIndex[AIndex: integer]: integer read GetParagraphEndIndex;
     property ParagraphEndIndexBeforeParagraphSeparator[AIndex: integer]: integer read GetParagraphEndIndexBeforeParagraphSeparator;
     property ParagraphRightToLeft[AIndex: integer]: boolean read GetParagraphRightToLeft;
+    property ParagraphStartPart[AIndex: integer]: integer read GetParagraphStartPart;
+    property ParagraphEndPart[AIndex: integer]: integer read GetParagraphEndPart;
+    property ParagraphStartBrokenLine[AIndex: integer]: integer read GetParagraphStartBrokenLine;
+    property ParagraphEndBrokenLine[AIndex: integer]: integer read GetParagraphEndBrokenLine;
     property ParagraphCount: integer read GetParagraphCount;
+    property OnParagraphDeleted : TParagraphEvent read FOnParagraphDeleted write FOnParagraphDeleted;
+    property OnParagraphMergedWithNext: TParagraphEvent read FOnParagraphMergedWithNext write FOnParagraphMergedWithNext;
+    property OnParagraphSplit: TParagraphLayoutSplitEvent read FOnParagraphSplit write FOnParagraphSplit;
+    property OnParagraphChanged: TParagraphEvent read FOnParagraphChanged write FOnParagraphChanged;
+    property OnParagraphVerticalTrimChanged: TParagraphEvent read FOnParagraphVerticalTrimChanged write FOnParagraphVerticalTrimChanged;
 
     property UsedWidth: single read GetUsedWidth;
     property TotalTextHeight: single read GetTotalTextHeight;
+    property LineHeight: single read GetLineHeight;
 
     property Matrix: TAffineMatrix read GetMatrix;
     property MatrixInverse: TAffineMatrix read GetMatrixInverse;
     property TextUTF8: string read GetText;
     property WordBreakHandler: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
+    property ClipMargin: integer read FClipMargin write FClipMargin; // how many pixels can the text go outside of its box
 
     property FontRenderer: TBGRACustomFontRenderer read FRenderer write SetFontRenderer;
     property FontBidiMode: TFontBidiMode read GetFontBidiMode write SetFontBidiMode;
@@ -281,6 +405,117 @@ type
 implementation
 
 uses math;
+
+{ TPartEnumerator }
+
+function TPartEnumerator.GetPartInfo: PPartInfo;
+begin
+  if FSubPartIndex < FSubPartCount then
+    result := @FCurBroken^.parts[FSubPartIndex]
+  else
+    result := nil;
+end;
+
+procedure TPartEnumerator.Update;
+begin
+  with FLayout.FParagraph[FParagraphIndex] do
+  begin
+    FSubBrokenCount:= brokenLineCount;
+    FBrokenLineIndex:= FSubBrokenIndex + firstBrokenLineIndex;
+    if FSubBrokenIndex < brokenLineCount then
+    begin
+      FCurBroken := @brokenLines[FSubBrokenIndex];
+      with FCurBroken^ do
+      begin
+        FSubPartCount:= partCount;
+        FPartIndex:= FSubPartIndex + firstPartIndex;
+      end;
+    end else
+    begin
+      FCurBroken := nil;
+      FSubPartCount:= 0;
+      if brokenLineCount > 0 then
+        FPartIndex := brokenLines[brokenLineCount-1].firstPartIndex +
+                      brokenLines[brokenLineCount-1].partCount
+      else
+        FPartIndex := firstPartIndex;
+    end;
+  end;
+end;
+
+class function TPartEnumerator.New(ALayout: TBidiTextLayout;
+  AParagraphIndex: integer; ASubBrokenIndex: integer; ASubPartIndex: integer;
+  AEndPartIndex: integer): TPartEnumerator;
+begin
+  result.FLayout := ALayout;
+  result.FParagraphIndex:= AParagraphIndex;
+  result.FSubBrokenIndex:= ASubBrokenIndex;
+  result.FSubPartIndex:= ASubPartIndex;
+  result.Update;
+  result.FJustCreated:= true;
+  result.FEndPartIndex:= AEndPartIndex;
+end;
+
+function TPartEnumerator.GetNext: boolean;
+begin
+  if FPartIndex >= FEndPartIndex then exit(false);
+  if FJustCreated then
+  begin
+    FJustCreated := false;
+    result := (FSubPartIndex < FSubPartCount) and (FPartIndex < FEndPartIndex);
+    exit;
+  end;
+  if FSubPartIndex + 1 >= FSubPartCount then
+  begin
+    if FSubBrokenIndex + 1 >= FSubBrokenCount then
+    begin
+      if (FParagraphIndex + 1 >= FLayout.ParagraphCount) or
+         (FLayout.FParagraph[FParagraphIndex + 1].brokenLineCount = 0) then
+        exit(false) else
+      begin
+        inc(FPartIndex);
+        inc(FParagraphIndex);
+        FSubBrokenIndex:= 0;
+        FSubPartIndex:= 0;
+        Update;
+      end;
+    end else
+    begin
+      inc(FPartIndex);
+      inc(FSubBrokenIndex);
+      inc(FBrokenLineIndex);
+      FSubPartIndex:= 0;
+      with FLayout.FParagraph[FParagraphIndex] do
+      begin
+        FCurBroken := @brokenLines[FSubBrokenIndex];
+        with FCurBroken^ do
+        begin
+          FSubPartCount:= partCount;
+          FPartIndex:= FSubPartIndex + firstPartIndex;
+        end;
+      end;
+    end;
+  end else
+  begin
+    inc(FPartIndex);
+    inc(FSubPartIndex);
+  end;
+  result := FPartIndex < FEndPartIndex;
+end;
+
+{ TPartInfo }
+
+function TPartInfo.IsRightToLeft: boolean;
+begin
+  result := odd(bidiLevel);
+end;
+
+{ TBrokenLineInfo }
+
+function TBrokenLineInfo.IsRightToLeft: boolean;
+begin
+  result := odd(bidiLevel);
+end;
 
 { TBidiLayoutTree }
 
@@ -344,7 +579,7 @@ begin
   if IsLeaf then
   begin
     FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonDiscardedCount);
-    FSize := Layout.TextSizeBidiOverride(FTextUTF8, odd(BidiLevel));
+    FSize := Layout.TextSizeBidiOverride(FTextUTF8, IsRightToLeft);
     //writeln('Created leaf ', round(FSize.x), ' of level ',BidiLevel);
   end
   else
@@ -377,7 +612,7 @@ begin
   if IsLeaf then
   begin
     FTextUTF8:= Layout.GetSameLevelString(StartIndex,EndIndex, FNonDiscardedCount);
-    FSize := Layout.TextSizeBidiOverride(FTextUTF8, odd(BidiLevel));
+    FSize := Layout.TextSizeBidiOverride(FTextUTF8, IsRightToLeft);
     //writeln('Shortened leaf ', round(FSize.x));
   end else
     UpdateBranchSize;
@@ -400,7 +635,7 @@ begin
   remain := MaxWidth - CumulatedBidiPos;
   if Width > remain then
   begin
-    fitInfo := Layout.TextFitInfoBidiOverride(FTextUTF8, remain, odd(BidiLevel));
+    fitInfo := Layout.TextFitInfoBidiOverride(FTextUTF8, remain, IsRightToLeft);
     if fitInfo < FNonDiscardedCount then
     begin
       //writeln('Splitting leaf ',round(Width), ' (max ',round(remain),')');
@@ -441,7 +676,7 @@ end;
 function TBidiTextLayout.GetBrokenLineCount: integer;
 begin
   NeedLayout;
-  result := FBrokenLineCount;
+  result := FComputedBrokenLineCount;
 end;
 
 function TBidiTextLayout.GetBrokenLineEndCaret(AIndex: integer): TBidiCaretPos;
@@ -450,19 +685,29 @@ begin
   result.Transform(Matrix);
 end;
 
+function TBidiTextLayout.GetBrokenLineEndPart(AIndex: integer): integer;
+begin
+  with GetBrokenLineInfo(AIndex)^ do
+    result := firstPartIndex + partCount;
+end;
+
+function TBidiTextLayout.GetBrokenLineStartPart(AIndex: integer): integer;
+begin
+  result := GetBrokenLineInfo(AIndex)^.firstPartIndex;
+end;
+
 function TBidiTextLayout.GetBrokenLineUntransformedEndCaret(AIndex: integer): TBidiCaretPos;
 begin
-  NeedLayout;
-  with BrokenLineRectF[AIndex] do
+  with GetBrokenLineInfo(AIndex)^ do
   begin
-    result.Top.y := Top;
+    result.Top.y := rectF.Top;
     if BrokenLineRightToLeft[AIndex] then
-      result.Top.x := Left
+      result.Top.x := rectF.Left
     else
-      result.Top.x := Right;
-    result.Bottom.y := Bottom;
+      result.Top.x := rectF.Right;
+    result.Bottom.y := rectF.Bottom;
     result.Bottom.x := result.Top.x;
-    result.RightToLeft := odd(FBrokenLine[AIndex].bidiLevel);
+    result.RightToLeft := IsRightToLeft;
     result.PartIndex:= -1;
     result.PreviousTop := EmptyPointF;
     result.PreviousBottom := EmptyPointF;
@@ -472,34 +717,59 @@ end;
 
 function TBidiTextLayout.GetBrokenLineEndIndex(AIndex: integer): integer;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
-    raise ERangeError.Create('Invalid index');
-  result := FBrokenLine[AIndex].endIndex;
+  result := GetBrokenLineInfo(AIndex)^.endIndex;
 end;
 
 function TBidiTextLayout.GetBrokenLineParagraphIndex(AIndex: integer): integer;
+var
+  ub: Integer;
+begin
+  ub := GetBrokenLineInfo(AIndex)^.unbrokenLineIndex;
+  result := FAnalysis.UnbrokenLineParagraphIndex[ub];
+end;
+
+function TBidiTextLayout.GetBrokenLineUnbrokenIndex(AIndex: integer): integer;
+begin
+  result := GetBrokenLineInfo(AIndex)^.unbrokenLineIndex;
+end;
+
+function TBidiTextLayout.GetBrokenLineInfo(AIndex: integer): PBrokenLineInfo;
+var
+  minParaIndex, maxParaIndex, midParaIndex: integer;
 begin
   NeedLayout;
-  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
+  if (AIndex < 0) or (AIndex >= FComputedBrokenLineCount) then
     raise ERangeError.Create('Invalid index');
-  result := FAnalysis.UnbrokenLineParagraphIndex[FBrokenLine[AIndex].unbrokenLineIndex];
+  minParaIndex := 0;
+  maxParaIndex := ParagraphCount-1;
+  result := nil;
+  repeat
+    if minParaIndex > maxParaIndex then
+      InternalRangeError else
+    if minParaIndex = maxParaIndex then
+    begin
+      result := @FParagraph[minParaIndex].brokenLines
+                  [AIndex - FParagraph[minParaIndex].firstBrokenLineIndex];
+      exit;
+    end else
+    begin
+      midParaIndex := (minParaIndex + maxParaIndex + 1) shr 1;
+      if AIndex < FParagraph[midParaIndex].firstBrokenLineIndex then
+        maxParaIndex := midParaIndex-1
+      else
+        minParaIndex := midParaIndex;
+    end;
+  until false;
 end;
 
 function TBidiTextLayout.GetBrokenLineRectF(AIndex: integer): TRectF;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
-    raise ERangeError.Create('Invalid index');
-  result := FBrokenLine[AIndex].rectF;
+  result := GetBrokenLineInfo(AIndex)^.rectF;
 end;
 
 function TBidiTextLayout.GetBrokenLineRightToLeft(AIndex: integer): boolean;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
-    raise ERangeError.Create('Invalid index');
-  result := odd(FBrokenLine[AIndex].bidiLevel);
+  result := GetBrokenLineInfo(AIndex)^.IsRightToLeft;
 end;
 
 function TBidiTextLayout.GetBrokenLineStartCaret(AIndex: integer): TBidiCaretPos;
@@ -511,16 +781,16 @@ end;
 function TBidiTextLayout.GetBrokenLineUntransformedStartCaret(AIndex: integer): TBidiCaretPos;
 begin
   NeedLayout;
-  with BrokenLineRectF[AIndex] do
+  with GetBrokenLineInfo(AIndex)^ do
   begin
-    result.Top.y := Top;
+    result.Top.y := rectF.Top;
     if BrokenLineRightToLeft[AIndex] then
-      result.Top.x := Right
+      result.Top.x := rectF.Right
     else
-      result.Top.x := Left;
-    result.Bottom.y := Bottom;
+      result.Top.x := rectF.Left;
+    result.Bottom.y := rectF.Bottom;
     result.Bottom.x := result.Top.x;
-    result.RightToLeft := odd(FBrokenLine[AIndex].bidiLevel);
+    result.RightToLeft := IsRightToLeft;
     result.PartIndex:= -1;
     result.PreviousTop := EmptyPointF;
     result.PreviousBottom := EmptyPointF;
@@ -530,18 +800,12 @@ end;
 
 function TBidiTextLayout.GetBrokenLineStartIndex(AIndex: integer): integer;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
-    raise ERangeError.Create('Invalid index');
-  result := FBrokenLine[AIndex].startIndex;
+  result := GetBrokenLineInfo(AIndex)^.startIndex;
 end;
 
 function TBidiTextLayout.GetBrokenLineUsedWidth(AIndex: integer): single;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FBrokenLineCount) then
-    raise ERangeError.Create('Invalid index');
-  result := FBrokenLine[AIndex].usedWidth;
+  result := GetBrokenLineInfo(AIndex)^.usedWidth;
 end;
 
 function TBidiTextLayout.GetCharCount: integer;
@@ -552,6 +816,21 @@ end;
 function TBidiTextLayout.GetFontBidiMode: TFontBidiMode;
 begin
   result := FAnalysis.BidiMode;
+end;
+
+function TBidiTextLayout.GetLayoutComputed: boolean;
+var
+  i: Integer;
+begin
+  for i := 0 to ParagraphCount-1 do
+    if not FParagraph[i].layoutComputed then exit(false);
+  result := true;
+end;
+
+function TBidiTextLayout.GetLineHeight: single;
+begin
+  NeedLayout;
+  result := FLineHeight;
 end;
 
 function TBidiTextLayout.GetMatrix: TAffineMatrix;
@@ -573,6 +852,7 @@ end;
 
 function TBidiTextLayout.GetParagraphAlignment(AIndex: integer): TBidiTextAlignment;
 begin
+  //layout not needed
   if (AIndex < 0) or (AIndex >= ParagraphCount) then
     raise ERangeError.Create('Invalid index');
   result := FParagraph[AIndex].alignment;
@@ -581,6 +861,14 @@ end;
 function TBidiTextLayout.GetParagraphCount: integer;
 begin
   result := FAnalysis.ParagraphCount;
+end;
+
+function TBidiTextLayout.GetParagraphEndBrokenLine(AIndex: integer): integer;
+begin
+  if AIndex = ParagraphCount-1 then
+    result := BrokenLineCount
+  else
+    result := GetParagraphInfo(AIndex+1)^.firstBrokenLineIndex;
 end;
 
 function TBidiTextLayout.GetParagraphEndIndex(AIndex: integer): integer;
@@ -593,32 +881,45 @@ begin
   result := FAnalysis.ParagraphEndIndexBeforeParagraphSeparator[AIndex];
 end;
 
-function TBidiTextLayout.GetParagraphRectF(AIndex: integer): TRectF;
+function TBidiTextLayout.GetParagraphEndPart(AIndex: integer): integer;
+begin
+  if AIndex = ParagraphCount-1 then
+    result := PartCount
+  else
+    result := GetParagraphInfo(AIndex+1)^.firstPartIndex;
+end;
+
+function TBidiTextLayout.GetParagraphInfo(AIndex: integer): PParagraphInfo;
 begin
   NeedLayout;
   if (AIndex < 0) or (AIndex >= ParagraphCount) then
     raise ERangeError.Create('Paragraph index out of bounds');
-  result := FParagraph[AIndex].rectF;
+  result := @FParagraph[AIndex];
+end;
+
+function TBidiTextLayout.GetParagraphRectF(AIndex: integer): TRectF;
+begin
+  result := GetParagraphInfo(AIndex)^.rectF;
 end;
 
 function TBidiTextLayout.GetParagraphRightToLeft(AIndex: integer): boolean;
-var
-  firstUnbroken, startIndex: Integer;
 begin
-  if (AIndex < 0) or (AIndex >= ParagraphCount) then
-    raise ERangeError.Create('Paragraph index out of bounds');
+  result := FAnalysis.ParagraphRightToLeft[AIndex];
+end;
 
-  firstUnbroken := FAnalysis.ParagraphFirstUnbrokenLine[AIndex];
-  startIndex := FAnalysis.UnbrokenLineStartIndex[firstUnbroken];
-  if startIndex < CharCount then
-    result := odd(FAnalysis.BidiInfo[startIndex].ParagraphBidiLevel)
-  else
-    result := FontBidiMode = fbmRightToLeft;
+function TBidiTextLayout.GetParagraphStartBrokenLine(AIndex: integer): integer;
+begin
+  result := GetParagraphInfo(AIndex)^.firstBrokenLineIndex;
 end;
 
 function TBidiTextLayout.GetParagraphStartIndex(AIndex: integer): integer;
 begin
   result := FAnalysis.ParagraphStartIndex[AIndex];
+end;
+
+function TBidiTextLayout.GetParagraphStartPart(AIndex: integer): integer;
+begin
+  result := GetParagraphInfo(AIndex)^.firstPartIndex;
 end;
 
 function TBidiTextLayout.GetPartAffineBox(AIndex: integer): TAffineBox;
@@ -628,48 +929,100 @@ end;
 
 function TBidiTextLayout.GetPartBrokenLineIndex(AIndex: integer): integer;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FPartCount) then
-    raise ERangeError.Create('Invalid index');
-  result := FPart[AIndex].brokenLineIndex;
+  result := GetPartInfo(AIndex)^.brokenLineIndex;
 end;
 
 function TBidiTextLayout.GetPartCount: integer;
 begin
   NeedLayout;
-  result := FPartCount;
+  result := FComputedPartCount;
+end;
+
+function TBidiTextLayout.GetPartEnumerator(AFirstPart: integer): TPartEnumerator;
+begin
+  result := GetPartEnumerator(AFirstPart, FComputedPartCount);
+end;
+
+function TBidiTextLayout.GetPartEnumerator(AFirstPart, ALastPartPlus1: integer): TPartEnumerator;
+var
+  minParaIndex,maxParaIndex,midParaIndex: integer;
+  minBrokenIndex, maxBrokenIndex, midBrokenIndex: Integer;
+begin
+  if (AFirstPart < 0) or (AFirstPart > FComputedPartCount) or
+     (ALastPartPlus1 < 0) or (ALastPartPlus1 > FComputedPartCount)  then
+    raise ERangeError.Create('Invalid start index');
+  minParaIndex:= 0;
+  maxParaIndex:= ParagraphCount - 1;
+  repeat
+    if minParaIndex > maxParaIndex then
+      InternalRangeError else
+    if minParaIndex = maxParaIndex then
+    with FParagraph[minParaIndex] do
+    begin
+      if brokenLineCount = 0 then
+      begin
+        result := TPartEnumerator.New(self, minParaIndex, 0, 0, ALastPartPlus1);
+        exit;
+      end;
+      minBrokenIndex := 0;
+      maxBrokenIndex := brokenLineCount-1;
+      repeat
+        if minBrokenIndex > maxBrokenIndex then
+          InternalRangeError else
+        if minBrokenIndex = maxBrokenIndex then
+        begin
+          result := TPartEnumerator.New(self, minParaIndex, minBrokenIndex,
+                      AFirstPart - brokenLines[minBrokenIndex].firstPartIndex,
+                      ALastPartPlus1);
+          exit;
+        end else
+        begin
+          midBrokenIndex := (minBrokenIndex + maxBrokenIndex + 1) shr 1;
+          if AFirstPart < brokenLines[midBrokenIndex].firstPartIndex then
+            maxBrokenIndex := midBrokenIndex-1
+          else
+            minBrokenIndex := midBrokenIndex;
+        end;
+      until false;
+    end else
+    begin
+      midParaIndex := (minParaIndex + maxParaIndex + 1) shr 1;
+      if AFirstPart < FParagraph[midParaIndex].firstPartIndex then
+        maxParaIndex := midParaIndex-1
+      else
+        minParaIndex := midParaIndex;
+    end;
+  until false;
+end;
+
+
+function TBidiTextLayout.GetPartInfo(AIndex: integer): PPartInfo;
+var
+  partEnum: TPartEnumerator;
+begin
+  partEnum := GetPartEnumerator(AIndex);
+  if not partEnum.GetNext then raise ERangeError.Create('Invalid index');
+  result := partEnum.PartInfo;
 end;
 
 function TBidiTextLayout.GetPartEndIndex(AIndex: integer): integer;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FPartCount) then
-    raise ERangeError.Create('Invalid index');
-  result := FPart[AIndex].endIndex;
+  result := GetPartInfo(AIndex)^.endIndex;
 end;
 
 function TBidiTextLayout.GetPartRectF(AIndex: integer): TRectF;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FPartCount) then
-    raise ERangeError.Create('Invalid index');
-  result := FPart[AIndex].rectF;
+  result := GetPartInfo(AIndex)^.rectF;
 end;
 
 function TBidiTextLayout.GetPartRightToLeft(AIndex: integer): boolean;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FPartCount) then
-    raise ERangeError.Create('Invalid index');
-  result := odd(FPart[AIndex].bidiLevel);
+  result := GetPartInfo(AIndex)^.IsRightToLeft;
 end;
 
 function TBidiTextLayout.GetPartStartIndex(AIndex: integer): integer;
 begin
-  NeedLayout;
-  if (AIndex < 0) or (AIndex >= FPartCount) then
-    raise ERangeError.Create('Invalid index');
-  result := FPart[AIndex].startIndex;
+  result := GetPartInfo(AIndex)^.startIndex;
 end;
 
 function TBidiTextLayout.GetText: string;
@@ -703,10 +1056,13 @@ begin
 end;
 
 procedure TBidiTextLayout.SetAvailableHeight(AValue: single);
+var
+  i: Integer;
 begin
   if FAvailableHeight=AValue then Exit;
   FAvailableHeight:=AValue;
-  InvalidateLayout;
+  for i := 0 to ParagraphCount-1 do
+    TrimParagraphLayoutVertically(i);
 end;
 
 procedure TBidiTextLayout.SetAvailableWidth(AValue: single);
@@ -730,11 +1086,19 @@ end;
 
 procedure TBidiTextLayout.SetParagraphAlignment(AIndex: integer;
   AValue: TBidiTextAlignment);
+var
+  brokenCount: Integer;
 begin
   if (AIndex < 0) or (AIndex >= ParagraphCount) then
     raise ERangeError.Create('Paragraph index out of bounds');
   FParagraph[AIndex].alignment := AValue;
   InvalidateParagraphLayout(AIndex);
+  if Assigned(FOnBrokenLinesChanged) then
+  begin
+    brokenCount := FParagraph[AIndex].brokenLineCount;
+    FOnBrokenLinesChanged(self, AIndex, 0, brokenCount, brokenCount,
+      brokenCount, brokenCount);
+  end;
 end;
 
 procedure TBidiTextLayout.SetParagraphSpacingAbove(AValue: single);
@@ -762,7 +1126,7 @@ procedure TBidiTextLayout.SetTopLeft(AValue: TPointF);
 begin
   if FTopLeft=AValue then Exit;
   FTopLeft:=AValue;
-  if FLayoutComputed then ComputeMatrix;
+  if LayoutComputed then ComputeMatrix;
 end;
 
 procedure TBidiTextLayout.ComputeMatrix;
@@ -778,8 +1142,69 @@ end;
 
 procedure TBidiTextLayout.CharDeleted(ASender: TObject;
   AParagraphIndex: integer; ACharStart, ACharCount: integer);
+var
+  i, charEnd, j, partIndex: Integer;
+  curPart: PPartInfo;
 begin
   InvalidateParagraphLayout(AParagraphIndex);
+  charEnd := ACharStart + ACharCount;
+  with FParagraph[AParagraphIndex] do
+  begin
+    for j := 0 to brokenLineCount-1 do
+    with brokenLines[j] do
+    begin
+      // is broken line affected ?
+      if (startIndex < charEnd) and (endIndex > ACharStart) then
+      begin
+        for partIndex := 0 to partCount-1 do
+        begin
+          curPart := @parts[partIndex];
+          // is part affected ?
+          if (curPart^.startIndex < charEnd)
+            or (curPart^.endIndex > ACharStart) then
+          begin
+            curPart^.modified := true;
+            // is part completely deleted ?
+            if (curPart^.startIndex >= ACharStart) and
+               (curPart^.endIndex <= charEnd) then
+            begin
+              curPart^.startIndex := ACharStart;
+              curPart^.endIndex := ACharStart;
+            end else
+            begin
+              // part partially deleted
+              if curPart^.startIndex < ACharStart then
+                curPart^.endIndex := ACharStart
+              else if curPart^.endIndex > charEnd then
+              begin
+                curPart^.startIndex := charEnd - ACharCount;
+                dec(curPart^.endIndex, ACharCount);
+              end;
+            end;
+          end else
+          if curPart^.startIndex >= charEnd then // part located after deletion
+          begin
+            dec(curPart^.startIndex, ACharCount);
+            dec(curPart^.endIndex, ACharCount);
+          end;
+        end;
+        dec(endIndex, ACharCount);
+      end else
+      if startIndex >= charEnd then // broken line located after deletion
+      begin
+        dec(startIndex, ACharCount);
+        dec(endIndex, ACharCount);
+        for partIndex := 0 to partCount-1 do
+        begin
+          curPart := @parts[partIndex];
+          dec(curPart^.startIndex, ACharCount);
+          dec(curPart^.endIndex, ACharCount);
+        end;
+      end;
+    end;
+  end;
+  for i := AParagraphIndex + 1 to high(FParagraph) do
+    OffsetParagraphCharIndex(i, -ACharCount);
 end;
 
 function TBidiTextLayout.TextSizeBidiOverride(sUTF8: string;
@@ -792,19 +1217,131 @@ end;
 procedure TBidiTextLayout.ParagraphSplit(ASender: TObject;
   AParagraphIndex: integer; ACharIndex: integer);
 var
-  i: Integer;
+  i, j, subBrokenIndex, brokenMoveCount: Integer;
+  curPara, nextPara: PParagraphInfo;
 begin
   if (AParagraphIndex < 0) or (AParagraphIndex > high(FParagraph)) then
     raise exception.Create('Paragrah index out of bounds (0 <= '+inttostr(AParagraphIndex)+' <= '+inttostr(high(FParagraph))+')');
-  setlength(FParagraph, length(FParagraph)+1);
-  for i := high(FParagraph) downto AParagraphIndex+1 do
-    FParagraph[i] := FParagraph[i-1];
-  FParagraph[AParagraphIndex+1].rectF := EmptyRectF;
 
-  InvalidateLayout;
+  setlength(FParagraph, length(FParagraph)+1);
+  for i := high(FParagraph) downto AParagraphIndex+2 do
+    FParagraph[i] := FParagraph[i-1];
+
+  curPara := @FParagraph[AParagraphIndex];
+  nextPara := @FParagraph[AParagraphIndex+1];
+
+  subBrokenIndex := curPara^.brokenLineCount;
+  for j := 0 to curPara^.brokenLineCount-1 do
+    if (curPara^.brokenLines[j].startIndex <= ACharIndex) and
+       (curPara^.brokenLines[j].endIndex > ACharIndex) then
+    begin
+      subBrokenIndex := j;
+      break;
+    end else
+    if (curPara^.brokenLines[j].startIndex > ACharIndex) then
+    begin
+      subBrokenIndex := max(j-1, 0);
+      break;
+    end;
+  brokenMoveCount := curPara^.brokenLineCount - (subBrokenIndex + 1);
+  if brokenMoveCount < 0 then brokenMoveCount := 0;
+
+  nextPara^.alignment := curPara^.alignment;
+  nextPara^.layoutComputed := false;
+  nextPara^.overflow := curPara^.overflow;
+  nextPara^.rectF := EmptyRectF;
+  nextPara^.firstBrokenLineIndex:= curPara^.firstBrokenLineIndex + curPara^.brokenLineCount - brokenMoveCount;
+  if brokenMoveCount > 0 then
+    nextPara^.firstPartIndex := curPara^.brokenLines[curPara^.brokenLineCount - brokenMoveCount].firstPartIndex
+  else
+  begin
+    if curPara^.brokenLineCount > 0 then
+      with curPara^.brokenLines[curPara^.brokenLineCount - 1] do
+        nextPara^.firstPartIndex := firstPartIndex + partCount
+        else nextPara^.firstPartIndex := curPara^.firstPartIndex;
+  end;
+  nextPara^.brokenLineCount:= brokenMoveCount;
+  setlength(nextPara^.brokenLines, brokenMoveCount);
+  for j := 0 to brokenMoveCount - 1 do
+    nextPara^.brokenLines[j] := curPara^.brokenLines[curPara^.brokenLineCount - brokenMoveCount + j];
+  dec(curPara^.brokenLineCount, brokenMoveCount);
+  InternalInvalidateParagraphLayout(AParagraphIndex);
+  InternalInvalidateParagraphLayout(AParagraphIndex+1);
+  if Assigned(FOnParagraphSplit) then
+    FOnParagraphSplit(self, AParagraphIndex, subBrokenIndex, ACharIndex);
+end;
+
+procedure TBidiTextLayout.InternalParagraphDeleted(AParagraphIndex: integer);
+var
+  i, deltaBroken, deltaPart: Integer;
+  deltaY: Single;
+begin
+  if (AParagraphIndex < 0) or (AParagraphIndex >= ParagraphCount) then exit;
+  deltaY := -FParagraph[AParagraphIndex].rectF.Height;
+  deltaBroken := -FParagraph[AParagraphIndex].brokenLineCount;
+  deltaPart := 0;
+  for i := 0 to FParagraph[AParagraphIndex].brokenLineCount-1 do
+    dec(deltaPart, FParagraph[AParagraphIndex].brokenLines[i].partCount);
+
+  for i := AParagraphIndex to high(FParagraph)-1 do
+  begin
+    FParagraph[i] := FParagraph[i+1];
+    OffsetParagraph(i, deltaY, deltaBroken, deltaPart);
+  end;
+  setlength(FParagraph, length(FParagraph)-1);
+  inc(FComputedBrokenLineCount, deltaBroken);
+  inc(FComputedPartCount, deltaPart);
 end;
 
 procedure TBidiTextLayout.CharInserted(ASender: TObject;
+  AParagraphIndex: integer; ACharStart, ACharCount: integer);
+var
+  i, j, partIndex: Integer;
+begin
+  InvalidateParagraphLayout(AParagraphIndex);
+  with FParagraph[AParagraphIndex] do
+  begin
+    for j := 0 to brokenLineCount-1 do
+    with brokenLines[j] do
+    begin
+      // is broken line affected
+      if (ACharStart >= startIndex) and (ACharStart < endIndex) then
+      begin
+        for partIndex := 0 to partCount-1 do
+          with parts[partIndex] do
+          begin
+            // is part affected
+            if (ACharStart > startIndex) and (ACharStart < endIndex) then
+            begin
+              modified := true;
+              inc(endIndex, ACharCount);
+            end else
+            if (ACharStart <= startIndex) then // part located after insertion
+            begin
+              inc(startIndex, ACharCount);
+              inc(endIndex, ACharCount);
+            end;
+          end;
+        inc(endIndex, ACharCount);
+      end else
+      if (ACharStart <= StartIndex) then // broken line located after insertion
+      begin
+        inc(startIndex, ACharCount);
+        inc(endIndex, ACharCount);
+        for partIndex := 0 to partCount-1 do
+          with parts[partIndex] do
+          begin
+            inc(startIndex, ACharCount);
+            inc(endIndex, ACharCount);
+          end;
+      end;
+    end;
+  end;
+  for i := AParagraphIndex + 1 to high(FParagraph) do
+    OffsetParagraphCharIndex(i, ACharCount);
+end;
+
+procedure TBidiTextLayout.AnalysisChanged(ASender: TObject;
   AParagraphIndex: integer; ACharStart, ACharCount: integer);
 begin
   InvalidateParagraphLayout(AParagraphIndex);
@@ -813,26 +1350,36 @@ end;
 procedure TBidiTextLayout.ParagraphMergedWithNext(ASender: TObject;
   AParagraphIndex: integer);
 var
-  i: Integer;
+  i, mergedBrokenLineCount, prevBrokenLineCount: Integer;
+  curPara: PParagraphInfo;
 begin
-  for i := AParagraphIndex+1 to high(FParagraph)-1 do
+  if (AParagraphIndex < 0) or (AParagraphIndex >= high(FParagraph)) then
+    InternalRangeError;
+  curPara := @FParagraph[AParagraphIndex];
+  prevBrokenLineCount := curPara^.brokenLineCount;
+  mergedBrokenLineCount := prevBrokenLineCount + FParagraph[AParagraphIndex+1].brokenLineCount;
+  if length(curPara^.brokenLines) < mergedBrokenLineCount then
+    setlength(curPara^.brokenLines, mergedBrokenLineCount);
+  for i := 0 to FParagraph[AParagraphIndex+1].brokenLineCount-1 do
+    curPara^.brokenLines[prevBrokenLineCount + i] :=
+      FParagraph[AParagraphIndex+1].brokenLines[i];
+  curPara^.brokenLineCount := mergedBrokenLineCount;
+  curPara^.rectF.Bottom:= FParagraph[AParagraphIndex+1].rectF.Bottom;
+  curPara^.overflow := curPara^.overflow or FParagraph[AParagraphIndex+1].overflow;
+  for i := AParagraphIndex + 1 to high(FParagraph)-1 do
     FParagraph[i] := FParagraph[i+1];
-  setlength(FParagraph, length(FParagraph)-1);
-
-  InvalidateParagraphLayout(AParagraphIndex);
-  InvalidateParagraphLayout(AParagraphIndex+1);
+  setlength(FParagraph, length(FParagraph) - 1);
+  InternalInvalidateParagraphLayout(AParagraphIndex);
+  if Assigned(FOnParagraphMergedWithNext) then
+    FOnParagraphMergedWithNext(self, AParagraphIndex);
 end;
 
 procedure TBidiTextLayout.ParagraphDeleted(ASender: TObject;
   AParagraphIndex: integer);
-var
-  i: Integer;
 begin
-  for i := AParagraphIndex to high(FParagraph)-1 do
-    FParagraph[i] := FParagraph[i+1];
-  setlength(FParagraph, length(FParagraph)-1);
-
-  InvalidateLayout;
+  InternalParagraphDeleted(AParagraphIndex);
+  If Assigned(FOnParagraphDeleted) then
+    FOnParagraphDeleted(self, AParagraphIndex);
 end;
 
 function TBidiTextLayout.TextSizeBidiOverrideSplit(AStartIndex, AEndIndex: integer;
@@ -984,23 +1531,23 @@ begin
 end;
 
 procedure TBidiTextLayout.AddPart(AStartIndex, AEndIndex: integer;
-  ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ASUTF8: string;
-  ABrokenLineIndex: integer);
+  ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF;
+  ABrokenLineIndex: integer; ABrokenLine: PBrokenLineInfo);
 begin
-  if FPartCount >= length(FPart) then
-    setlength(FPart, length(FPart)*2+8);
+  if ABrokenLine^.partCount >= length(ABrokenLine^.parts) then
+    setlength(ABrokenLine^.parts, length(ABrokenLine^.parts)*2+8);
 
-  with FPart[FPartCount] do
+  with ABrokenLine^.parts[ABrokenLine^.partCount] do
   begin
     startIndex:= AStartIndex;
     endIndex:= AEndIndex;
     bidiLevel := ABidiLevel;
     rectF := ARectF;
     posCorrection := APosCorrection;
-    sUTF8:= ASUTF8;
     brokenLineIndex:= ABrokenLineIndex;
+    modified := false;
   end;
-  inc(FPartCount)
+  inc(ABrokenLine^.partCount)
 end;
 
 function TBidiTextLayout.GetSameLevelString(startIndex, endIndex: integer): string;
@@ -1061,13 +1608,128 @@ begin
 end;
 
 procedure TBidiTextLayout.InvalidateLayout;
+var
+  i: Integer;
 begin
-  FLayoutComputed:= false;
+  for i := 0 to ParagraphCount-1 do
+    InvalidateParagraphLayout(i);
+end;
+
+procedure TBidiTextLayout.ComputeLayoutIfNeeded;
+begin
+  if not LayoutComputed then ComputeLayout;
 end;
 
 procedure TBidiTextLayout.InvalidateParagraphLayout(AParagraphIndex: integer);
 begin
-  InvalidateLayout;
+  InternalInvalidateParagraphLayout(AParagraphIndex);
+  if Assigned(FOnParagraphChanged) then
+    FOnParagraphChanged(self, AParagraphIndex);
+end;
+
+procedure TBidiTextLayout.InternalInvalidateParagraphLayout(
+  AParagraphIndex: integer);
+begin
+  if (AParagraphIndex >= 0) and (AParagraphIndex <= high(FParagraph)) then
+    FParagraph[AParagraphIndex].layoutComputed := false;
+end;
+
+procedure TBidiTextLayout.OffsetParagraph(AParagraphIndex: integer;
+  ADeltaY: single; ADeltaBroken, ADeltaPart: integer);
+var subBrokenIndex: integer;
+  curBroken: PBrokenLineInfo;
+  partIndex: integer;
+begin
+  if (ADeltaY = 0) and (ADeltaBroken = 0) and (ADeltaPart = 0) then exit;
+  with FParagraph[AParagraphIndex] do
+  begin
+    rectF.Offset(0, ADeltaY);
+    inc(firstBrokenLineIndex, ADeltaBroken);
+    inc(firstPartIndex, ADeltaPart);
+    for subBrokenIndex := 0 to brokenLineCount-1 do
+    begin
+      curBroken := @brokenLines[subBrokenIndex];
+      curBroken^.rectF.Offset(0, ADeltaY);
+      inc(curBroken^.firstPartIndex, ADeltaPart);
+      for partIndex := 0 to curBroken^.partCount-1 do
+      with curBroken^.parts[partIndex] do
+      begin
+        inc(brokenLineIndex, ADeltaBroken);
+        rectF.Offset(0, ADeltaY);
+      end;
+    end;
+    if ADeltaY <> 0 then
+      TrimParagraphLayoutVertically(AParagraphIndex);
+  end;
+end;
+
+procedure TBidiTextLayout.OffsetParagraphCharIndex(AParagraphIndex: integer;
+  ADeltaChar: integer);
+var
+  j, k: Integer;
+begin
+  with FParagraph[AParagraphIndex] do
+  begin
+    for j := 0 to brokenLineCount-1 do
+    with brokenLines[j] do
+    begin
+      inc(startIndex, ADeltaChar);
+      inc(endIndex, ADeltaChar);
+      for k := 0 to partCount-1 do
+      begin
+        inc(parts[k].startIndex, ADeltaChar);
+        inc(parts[k].endIndex, ADeltaChar);
+      end;
+    end;
+  end;
+end;
+
+procedure TBidiTextLayout.TrimParagraphLayoutVertically(AParagraphIndex: integer);
+var
+  subBrokenIndex, nextDeltaBroken, nextDeltaPart, i: Integer;
+begin
+  if (AvailableHeight = EmptySingle) or (AParagraphIndex < 0) or
+    (AParagraphIndex > high(FParagraph)) then exit;
+  with FParagraph[AParagraphIndex] do
+  begin
+    if not layoutComputed then exit;
+    if overflow and (rectF.Bottom < AvailableHeight) then
+    begin
+      layoutComputed:= false;
+      if Assigned(FOnParagraphVerticalTrimChanged) then
+        FOnParagraphVerticalTrimChanged(self, AParagraphIndex);
+    end else
+    if (rectF.Bottom > AvailableHeight) then
+    begin
+      for subBrokenIndex := 0 to brokenLineCount-1 do
+      begin
+        //there must be at least one broken line in the text
+        if (AParagraphIndex = 0) and (subBrokenIndex = 0) then continue;
+        if brokenLines[subBrokenIndex].rectF.Top >= AvailableHeight then
+        begin
+          nextDeltaBroken := 0;
+          nextDeltaPart := 0;
+          for i := subBrokenIndex to brokenLineCount-1 do
+          begin
+            dec(nextDeltaBroken);
+            dec(nextDeltaPart, brokenLines[i].partCount);
+          end;
+          brokenLineCount := subBrokenIndex;
+          for i := AParagraphIndex+1 to ParagraphCount-1 do
+            OffsetParagraph(i, 0, nextDeltaBroken, nextDeltaPart);
+          inc(FComputedPartCount, nextDeltaPart);
+          inc(FComputedBrokenLineCount, nextDeltaBroken);
+          overflow := true;
+          if subBrokenIndex > 0 then
+            rectF.Bottom := brokenLines[subBrokenIndex-1].rectF.Bottom + ParagraphSpacingBelow*FLineHeight
+            else rectF.Bottom := rectF.Top + ParagraphSpacingAbove*FLineHeight;
+          if Assigned(FOnParagraphVerticalTrimChanged) then
+            FOnParagraphVerticalTrimChanged(self, AParagraphIndex);
+          break;
+        end;
+      end;
+    end;
+  end;
 end;
 
 procedure TBidiTextLayout.DrawText(ADest: TBGRACustomBitmap);
@@ -1095,9 +1757,122 @@ begin
   InternalPathText(ADest);
 end;
 
+procedure TBidiTextLayout.PathText(ADest: IBGRAPath; AClipRect: TRect);
+begin
+  InternalPathText(ADest, AClipRect);
+end;
+
+procedure TBidiTextLayout.DrawTextParts(ADest: TBGRACustomBitmap; AFirstPart,
+  ALastPartPlus1: integer);
+begin
+  DrawTextParts(ADest, BGRABlack, AFirstPart, ALastPartPlus1);
+end;
+
+procedure TBidiTextLayout.DrawTextParts(ADest: TBGRACustomBitmap;
+  AColor: TBGRAPixel; AFirstPart, ALastPartPlus1: integer);
+begin
+  FColor := AColor;
+  InternalDrawTextParts(ADest, AFirstPart, ALastPartPlus1);
+end;
+
+procedure TBidiTextLayout.DrawTextParts(ADest: TBGRACustomBitmap;
+  ATexture: IBGRAScanner; AFirstPart, ALastPartPlus1: integer);
+begin
+  FColor := BGRAWhite;
+  FTexture := ATexture;
+  InternalDrawTextParts(ADest, AFirstPart, ALastPartPlus1);
+  FTexture := nil;
+end;
+
+procedure TBidiTextLayout.PathTextParts(ADest: IBGRAPath; AFirstPart,
+  ALastPartPlus1: integer);
+begin
+  InternalPathTextParts(ADest, AFirstPart, ALastPartPlus1);
+end;
+
+procedure TBidiTextLayout.PathTextParts(ADest: IBGRAPath; AClipRect: TRect;
+  AFirstPart, ALastPartPlus1: integer);
+begin
+  InternalPathTextParts(ADest, AClipRect, AFirstPart, ALastPartPlus1);
+end;
+
+procedure TBidiTextLayout.DrawParagraphs(ADest: TBGRACustomBitmap;
+  AFirstPara, ALastParaPlus1: integer);
+begin
+  if ALastParaPlus1 <= AFirstPara then exit;
+  DrawTextParts(ADest, ParagraphStartPart[AFirstPara], ParagraphEndPart[ALastParaPlus1-1]);
+end;
+
+procedure TBidiTextLayout.DrawParagraphs(ADest: TBGRACustomBitmap;
+  AColor: TBGRAPixel; AFirstPara, ALastParaPlus1: integer);
+begin
+  if ALastParaPlus1 <= AFirstPara then exit;
+  DrawTextParts(ADest, AColor, ParagraphStartPart[AFirstPara], ParagraphEndPart[ALastParaPlus1-1]);
+end;
+
+procedure TBidiTextLayout.DrawParagraphs(ADest: TBGRACustomBitmap;
+  ATexture: IBGRAScanner; AFirstPara, ALastParaPlus1: integer);
+begin
+  if ALastParaPlus1 <= AFirstPara then exit;
+  DrawTextParts(ADest, ATexture, ParagraphStartPart[AFirstPara], ParagraphEndPart[ALastParaPlus1-1]);
+end;
+
+procedure TBidiTextLayout.PathParagraphs(ADest: IBGRAPath; AFirstPara,
+  ALastParaPlus1: integer);
+begin
+  if ALastParaPlus1 <= AFirstPara then exit;
+  PathTextParts(ADest, ParagraphStartPart[AFirstPara], ParagraphEndPart[ALastParaPlus1-1]);
+end;
+
+procedure TBidiTextLayout.PathParagraphs(ADest: IBGRAPath; AClipRect: TRect;
+  AFirstPara, ALastParaPlus1: integer);
+begin
+  if ALastParaPlus1 <= AFirstPara then exit;
+  PathTextParts(ADest, AClipRect, ParagraphStartPart[AFirstPara], ParagraphEndPart[ALastParaPlus1-1]);
+end;
+
+procedure TBidiTextLayout.DrawBrokenLines(ADest: TBGRACustomBitmap;
+  AFirstBroken, ALastBrokenPlus1: integer);
+begin
+  if ALastBrokenPlus1 <= AFirstBroken then exit;
+  DrawTextParts(ADest, BrokenLineStartPart[AFirstBroken], BrokenLineEndPart[ALastBrokenPlus1-1]);
+end;
+
+procedure TBidiTextLayout.DrawBrokenLines(ADest: TBGRACustomBitmap;
+  AColor: TBGRAPixel; AFirstBroken, ALastBrokenPlus1: integer);
+begin
+  if ALastBrokenPlus1 <= AFirstBroken then exit;
+  DrawTextParts(ADest, AColor, BrokenLineStartPart[AFirstBroken], BrokenLineEndPart[ALastBrokenPlus1-1]);
+
+end;
+
+procedure TBidiTextLayout.DrawBrokenLines(ADest: TBGRACustomBitmap;
+  ATexture: IBGRAScanner; AFirstBroken, ALastBrokenPlus1: integer);
+begin
+  if ALastBrokenPlus1 <= AFirstBroken then exit;
+  DrawTextParts(ADest, ATexture, BrokenLineStartPart[AFirstBroken], BrokenLineEndPart[ALastBrokenPlus1-1]);
+end;
+
+procedure TBidiTextLayout.PathBrokenLines(ADest: IBGRAPath; AFirstBroken,
+  ALastBrokenPlus1: integer);
+begin
+  if ALastBrokenPlus1 <= AFirstBroken then exit;
+  PathTextParts(ADest, BrokenLineStartPart[AFirstBroken], BrokenLineEndPart[ALastBrokenPlus1-1]);
+end;
+
+procedure TBidiTextLayout.PathBrokenLines(ADest: IBGRAPath; AClipRect: TRect;
+  AFirstBroken, ALastBrokenPlus1: integer);
+begin
+  if ALastBrokenPlus1 <= AFirstBroken then exit;
+  PathTextParts(ADest, AClipRect, BrokenLineStartPart[AFirstBroken], BrokenLineEndPart[ALastBrokenPlus1-1]);
+end;
+
 procedure TBidiTextLayout.ComputeLayout;
-var lineHeight, baseLine, tabPixelSize: single;
+var curLineHeight, baseLine, tabPixelSize: single;
   paraIndex, ubIndex, i,j, nextTabIndex, splitIndex: Integer;
+  curPara: PParagraphInfo;
+  brokenIndex, partIndex: integer;
+  curBroken: PBrokenLineInfo;
   lineStart, subStart, lineEnd: integer;
   paraSpacingAbove, paraSpacingBelow, correctedBaseLine: single;
   paraRTL, needNewLine: boolean;
@@ -1115,6 +1890,8 @@ var lineHeight, baseLine, tabPixelSize: single;
   r: TRectF;
   u: LongWord;
   nextTree: TBidiLayoutTree;
+  oldBrokenLines: array of TBrokenLineInfo;
+  oldBrokenLineCount: integer;
 
   procedure AddTabSection(startIndex,endIndex: integer; tree: TBidiLayoutTree);
   begin
@@ -1126,43 +1903,54 @@ var lineHeight, baseLine, tabPixelSize: single;
     inc(tabSectionCount);
   end;
 
-  procedure AddBrokenLine(ACharStart: integer; ACharEnd: integer; ABidiLevel: byte; AWidth, AHeight: single);
+  procedure StartBrokenLine(ACharStart: integer; ACharEnd: integer; ABidiLevel: byte; AWidth, AHeight: single);
   begin
-    if FBrokenLineCount >= length(FBrokenLine) then
-      setlength(FBrokenLine, length(FBrokenLine)*2+4);
-    FBrokenLine[FBrokenLineCount].unbrokenLineIndex := ubIndex;
-    FBrokenLine[FBrokenLineCount].startIndex:= ACharStart;
-    FBrokenLine[FBrokenLineCount].endIndex:= ACharEnd;
-    FBrokenLine[FBrokenLineCount].bidiLevel := ABidiLevel;
-    FBrokenLine[FBrokenLineCount].firstPartIndex:= FPartCount;
-    FBrokenLine[FBrokenLineCount].usedWidth:= AWidth;
+    if curPara^.brokenLineCount >= length(curPara^.brokenLines) then
+      setlength(curPara^.brokenLines, length(curPara^.brokenLines)*2+4);
+
+    curBroken := @curPara^.brokenLines[curPara^.brokenLineCount];
+    curBroken^.unbrokenLineIndex := ubIndex;
+    curBroken^.startIndex:= ACharStart;
+    curBroken^.endIndex:= ACharEnd;
+    curBroken^.bidiLevel := ABidiLevel;
+    curBroken^.firstPartIndex:= partIndex+1;
+    curBroken^.usedWidth:= AWidth;
+
     if FAvailableWidth <> EmptySingle then
-      FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,FAvailableWidth,pos.y+AHeight)
+      curBroken^.rectF := RectF(0,pos.y,FAvailableWidth,pos.y+AHeight)
     else
     begin
       case alignment of
-      taRightJustify: FBrokenLine[FBrokenLineCount].rectF := RectF(-AWidth,pos.y,0,pos.y+AHeight);
-      taCenter: FBrokenLine[FBrokenLineCount].rectF := RectF(-AWidth*0.5,pos.y,AWidth*0.5,pos.y+AHeight);
+      taRightJustify: curBroken^.rectF := RectF(-AWidth,pos.y,0,pos.y+AHeight);
+      taCenter: curBroken^.rectF := RectF(-AWidth*0.5,pos.y,AWidth*0.5,pos.y+AHeight);
       else {taLeftJustify}
-        FBrokenLine[FBrokenLineCount].rectF := RectF(0,pos.y,AWidth,pos.y+AHeight);
+        curBroken^.rectF := RectF(0,pos.y,AWidth,pos.y+AHeight);
       end;
     end;
-    inc(FBrokenLineCount);
 
     if FAvailableWidth = EmptySingle then
     begin
       if FParagraph[paraIndex].rectF.Left = EmptySingle then
       begin
-        FParagraph[paraIndex].rectF.Left := FBrokenLine[FBrokenLineCount-1].rectF.left;
-        FParagraph[paraIndex].rectF.Right := FBrokenLine[FBrokenLineCount-1].rectF.Right;
+        FParagraph[paraIndex].rectF.Left := curBroken^.rectF.left;
+        FParagraph[paraIndex].rectF.Right := curBroken^.rectF.Right;
       end else
       begin
-        if FParagraph[paraIndex].rectF.Left < FBrokenLine[FBrokenLineCount-1].rectF.left then
-          FParagraph[paraIndex].rectF.Left := FBrokenLine[FBrokenLineCount-1].rectF.left;
-        if FParagraph[paraIndex].rectF.Right > FBrokenLine[FBrokenLineCount-1].rectF.Right then
-          FParagraph[paraIndex].rectF.Right := FBrokenLine[FBrokenLineCount-1].rectF.Right;
+        if FParagraph[paraIndex].rectF.Left < curBroken^.rectF.left then
+          FParagraph[paraIndex].rectF.Left := curBroken^.rectF.left;
+        if FParagraph[paraIndex].rectF.Right > curBroken^.rectF.Right then
+          FParagraph[paraIndex].rectF.Right := curBroken^.rectF.Right;
       end;
     end;
+
+    inc(curPara^.brokenLineCount);
+    inc(brokenIndex);
+  end;
+
+  procedure DoneBrokenLine;
+  begin
+    inc(partIndex, curBroken^.partCount);
+    IncF(pos.y, curBroken^.rectF.Height);
   end;
 
   procedure ClearTabSections;
@@ -1174,18 +1962,115 @@ var lineHeight, baseLine, tabPixelSize: single;
       FreeAndNil(tabSection[i].tree);
   end;
 
+  procedure UpdateQuickSearch;
+  begin
+    FComputedPartCount:= partIndex + 1;
+    FComputedBrokenLineCount:= brokenIndex + 1;
+  end;
+
+  procedure Finished;
+  begin
+    ClearTabSections;
+    UpdateQuickSearch;
+    CheckTextLayout;
+  end;
+
+  procedure StartParagraph(AParagraphIndex: integer);
+  begin
+    curPara := @FParagraph[AParagraphIndex];
+    curPara^.overflow := false;
+    curPara^.firstBrokenLineIndex:= brokenIndex + 1;
+    curPara^.firstPartIndex := partIndex + 1;
+
+    oldBrokenLineCount:= curPara^.brokenLineCount;
+    oldBrokenLines:= curPara^.brokenLines;
+    curPara^.brokenLines := nil;
+    curPara^.brokenLineCount:= 0;
+
+    curPara^.rectF.Top := pos.y;
+    curPara^.rectF.Bottom := pos.y;
+    if FAvailableWidth <> EmptySingle then
+    begin
+      curPara^.rectF.Left := 0;
+      curPara^.rectF.Right := FAvailableWidth;
+    end else
+    begin
+      curPara^.rectF.Left := EmptySingle;
+      curPara^.rectF.Right := EmptySingle;
+    end;
+    paraRTL := ParagraphRightToLeft[AParagraphIndex];
+    if FAvailableWidth <> EmptySingle then
+      alignment := BidiTextAlignmentToAlignment(curPara^.alignment, paraRTL)
+    else
+      alignment := taLeftJustify;
+  end;
+
+  procedure DoneParagraph(AParagraphIndex: integer);
+  var
+    firstBrokenIndex, lastBrokenIndexFromEnd: Integer;
+    newBroken, oldBroken: PBrokenLineInfo;
+
+    function BrokenDifferent: boolean;
+    var
+      i: integer;
+      oldPart, newPart: PPartInfo;
+    begin
+      if (oldBroken^.startIndex <> newBroken^.startIndex) or
+         (oldBroken^.endIndex <> newBroken^.endIndex) or
+         (oldBroken^.bidiLevel <> newBroken^.bidiLevel) or
+         (oldBroken^.partCount <> newBroken^.partCount) then exit(true);
+      for i := 0 to oldBroken^.partCount-1 do
+      begin
+        oldPart := @oldBroken^.parts[i];
+        newPart := @newBroken^.parts[i];
+        if oldPart^.modified then exit(true);
+        if (oldPart^.startIndex <> newPart^.startIndex) or
+           (oldPart^.endIndex <> newPart^.endIndex) or
+           (oldPart^.bidiLevel <> newPart^.bidiLevel) then exit(true);
+      end;
+      result := false;
+    end;
+  begin
+    curPara^.layoutComputed := true;
+    if Assigned(FOnBrokenLinesChanged) then
+    begin
+      firstBrokenIndex := 0;
+      while (firstBrokenIndex < oldBrokenLineCount) and
+        (firstBrokenIndex < curPara^.brokenLineCount) do
+      begin
+        oldBroken := @oldBrokenLines[firstBrokenIndex];
+        newBroken := @curPara^.brokenLines[firstBrokenIndex];
+        if BrokenDifferent then break;
+        inc(firstBrokenIndex);
+      end;
+      lastBrokenIndexFromEnd := 0;
+      while (oldBrokenLineCount - lastBrokenIndexFromEnd - 1 > firstBrokenIndex) and
+            (curPara^.brokenLineCount - lastBrokenIndexFromEnd - 1 > firstBrokenIndex) do
+      begin
+        oldBroken := @oldBrokenLines[oldBrokenLineCount - lastBrokenIndexFromEnd - 1];
+        newBroken := @curPara^.brokenLines[curPara^.brokenLineCount - lastBrokenIndexFromEnd - 1];
+        if BrokenDifferent then break;
+        inc(lastBrokenIndexFromEnd);
+      end;
+      if Assigned(FOnBrokenLinesChanged) and
+        ((curPara^.brokenLineCount <> oldBrokenLineCount) or
+        (firstBrokenIndex < oldBrokenLineCount)) then
+      begin
+        FOnBrokenLinesChanged(self, AParagraphIndex, firstBrokenIndex,
+          oldBrokenLineCount - lastBrokenIndexFromEnd - firstBrokenIndex,
+          curPara^.brokenLineCount - lastBrokenIndexFromEnd - firstBrokenIndex,
+          oldBrokenLineCount, curPara^.brokenLineCount);
+      end;
+    end;
+  end;
+
 begin
   FLineHeight:= GetFontFullHeight;
   baseLine := GetFontBaseline;
   ComputeMatrix;
-  FPartCount := 0;
-  FBrokenLineCount := 0;
 
-  FLayoutComputed:= true;
-
-  paraSpacingAbove := ParagraphSpacingAbove*FLineHeight;
-  paraSpacingBelow := ParagraphSpacingBelow*FLineHeight;
-  pos := PointF(0,0);
+  paraSpacingAbove := ParagraphSpacingAbove * FLineHeight;
+  paraSpacingBelow := ParagraphSpacingBelow * FLineHeight;
   if FAvailableWidth <> EmptySingle then
     availWidth0 := FAvailableWidth
   else
@@ -1193,51 +2078,47 @@ begin
 
   tabPixelSize := TabSize*TextSizeBidiOverride(' ',False).x;
   tabSection := nil;
+  pos := PointF(0,0);
+  brokenIndex := -1;
+  curBroken:= nil;
+  partIndex := -1;
 
   for paraIndex := 0 to ParagraphCount-1 do
   begin
-    FParagraph[paraIndex].rectF.Top := pos.y;
-    FParagraph[paraIndex].rectF.Bottom := pos.y;
-    if FAvailableWidth <> EmptySingle then
+    curPara := @FParagraph[paraIndex];
+    if curPara^.layoutComputed then
     begin
-      FParagraph[paraIndex].rectF.Left := 0;
-      FParagraph[paraIndex].rectF.Right := FAvailableWidth;
-    end else
-    begin
-      FParagraph[paraIndex].rectF.Left := EmptySingle;
-      FParagraph[paraIndex].rectF.Right := EmptySingle;
+      OffsetParagraph(paraIndex, pos.y - curPara^.rectF.Top,
+                          brokenIndex+1 - curPara^.firstBrokenLineIndex,
+                          partIndex+1 - curPara^.firstPartIndex);
+      if curPara^.layoutComputed then
+      begin
+        pos.y := FParagraph[paraIndex].rectF.Bottom;
+        inc(brokenIndex, curPara^.brokenLineCount);
+        for i := 0 to curPara^.brokenLineCount-1 do
+          inc(partIndex, curPara^.brokenLines[i].partCount);
+        continue;
+      end;
     end;
+
+    StartParagraph(paraIndex);
     IncF(pos.y, paraSpacingAbove);
-    paraRTL := ParagraphRightToLeft[paraIndex];
-
-    if FAvailableWidth <> EmptySingle then
-      alignment := BidiTextAlignmentToAlignment(FParagraph[paraIndex].alignment, paraRTL)
-    else
-      alignment := taLeftJustify;
-
-    FParagraph[paraIndex].firstBrokenLineIndex:= FBrokenLineCount;
+    curPara^.rectF.Bottom:= pos.y;
 
     for ubIndex := FAnalysis.ParagraphFirstUnbrokenLine[paraIndex] to FAnalysis.ParagraphLastUnbrokenLinePlusOne[paraIndex]-1 do
     begin
-      if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then
+      if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) and
+         (ubIndex <> 0) {there must be at least one broken line} then
       begin
-        FParagraph[paraIndex].rectF.Bottom := pos.y;
-        ClearTabSections;
+        curPara^.overflow:= true;
+        DoneParagraph(paraIndex);
         for i := paraIndex+1 to high(FParagraph) do
         begin
-          FParagraph[i].rectF.Top := pos.y;
-          FParagraph[i].rectF.Bottom := pos.y;
-          if FAvailableWidth <> EmptySingle then
-          begin
-            FParagraph[i].rectF.Left := 0;
-            FParagraph[i].rectF.Right := FAvailableWidth;
-          end else
-          begin
-            FParagraph[i].rectF.Left := EmptySingle;
-            FParagraph[i].rectF.Right := EmptySingle;
-          end;
-          FParagraph[i].firstBrokenLineIndex:= FBrokenLineCount;
+          StartParagraph(i);
+          curPara^.overflow:= true;
+          DoneParagraph(i);
         end;
+        Finished;
         exit;
       end;
 
@@ -1270,7 +2151,7 @@ begin
       //empty paragraph
       if subStart = lineEnd then
       begin
-        AddBrokenLine(subStart, lineEnd, paraBidiLevel, 0, FLineHeight);
+        StartBrokenLine(subStart, lineEnd, paraBidiLevel, 0, FLineHeight);
 
         case alignment of
         taRightJustify: pos.x := availWidth0;
@@ -1279,12 +2160,11 @@ begin
           pos.x := 0;
         end;
         AddPart(subStart, lineEnd, paraBidiLevel,
-                RectF(pos.x,FBrokenLine[FBrokenLineCount-1].rectF.Top,
-                      pos.x,FBrokenLine[FBrokenLineCount-1].rectF.Bottom),
-                PointF(0,0), '', FBrokenLineCount-1);
+                RectF(pos.x, curBroken^.rectF.Top,
+                      pos.x, curBroken^.rectF.Bottom),
+                PointF(0,0), brokenIndex, curBroken);
 
-        FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
-        IncF(pos.y, FLineHeight);
+        DoneBrokenLine;
       end else
       //break lines
       while subStart < lineEnd do
@@ -1294,7 +2174,7 @@ begin
         curBidiPos := 0;
         tabSectionStart := subStart;
         tabSectionCount := 0;
-        lineHeight := FLineHeight;
+        curLineHeight := FLineHeight;
 
         while tabSectionStart < lineEnd do
         begin
@@ -1386,7 +2266,7 @@ begin
               end;
 
               IncF(curBidiPos, nextTree.Width);
-              if nextTree.Height > lineHeight then lineHeight := nextTree.Height;
+              if nextTree.Height > curLineHeight then curLineHeight := nextTree.Height;
 
               tabSectionStart := splitIndex;
               while (tabSectionStart < nextTabIndex) and IsUnicodeSpace(FAnalysis.UnicodeChar[tabSectionStart]) do inc(tabSectionStart);
@@ -1395,13 +2275,13 @@ begin
           end else
           begin
             IncF(curBidiPos, nextTree.Width);
-            if nextTree.Height > lineHeight then lineHeight := nextTree.Height;
+            if nextTree.Height > curLineHeight then curLineHeight := nextTree.Height;
             tabSectionStart := splitIndex;
           end;
         end;
 
         // add broken line info
-        AddBrokenLine(subStart, splitIndex, paraBidiLevel, curBidiPos, lineHeight);
+        StartBrokenLine(subStart, splitIndex, paraBidiLevel, curBidiPos, curLineHeight);
 
         subStart := tabSectionStart;
 
@@ -1424,7 +2304,7 @@ begin
         end;
 
         if FLineHeight <> 0 then
-          correctedBaseLine := baseLine*lineHeight/FLineHeight
+          correctedBaseLine := baseLine*curLineHeight/FLineHeight
         else
           correctedBaseLine:= 0;
 
@@ -1438,62 +2318,200 @@ begin
               endBidiPos:= tabSection[j+1].bidiPos;
 
             if paraRTL then
-              r := RectF(pos.x-endBidiPos, pos.y, pos.x-tabSection[j].bidiPos, pos.y+lineHeight)
+              r := RectF(pos.x-endBidiPos, pos.y, pos.x-tabSection[j].bidiPos, pos.y+curLineHeight)
             else
-              r := RectF(pos.x+tabSection[j].bidiPos, pos.y, pos.x+endBidiPos, pos.y+lineHeight);
+              r := RectF(pos.x+tabSection[j].bidiPos, pos.y, pos.x+endBidiPos, pos.y+curLineHeight);
 
-            AddPart(tabSection[j].startIndex, tabSection[j].endIndex, paraBidiLevel, r, PointF(0,0), #9, FBrokenLineCount-1);
-
+            AddPart(tabSection[j].startIndex, tabSection[j].endIndex, paraBidiLevel, r, PointF(0,0), brokenIndex, curBroken);
           end
           else
           begin
             if paraRTL then
-              AddPartsFromTree(pos - PointF(tabSection[j].bidiPos,0), tabSection[j].tree, lineHeight, correctedBaseLine, FBrokenLineCount-1)
+              AddPartsFromTree(pos - PointF(tabSection[j].bidiPos,0), tabSection[j].tree, curLineHeight, correctedBaseLine, brokenIndex, curBroken)
             else
-              AddPartsFromTree(pos + PointF(tabSection[j].bidiPos,0), tabSection[j].tree, lineHeight, correctedBaseLine, FBrokenLineCount-1)
+              AddPartsFromTree(pos + PointF(tabSection[j].bidiPos,0), tabSection[j].tree, curLineHeight, correctedBaseLine, brokenIndex, curBroken)
           end;
         end;
-        FBrokenLine[FBrokenLineCount-1].lastPartIndexPlusOne:= FPartCount;
 
-        IncF(pos.y, lineHeight);
+        DoneBrokenLine;
+        if (FAvailableHeight <> EmptySingle) and (pos.y >= FAvailableHeight) then
+        begin
+          curPara^.overflow := true;
+          break;
+        end;
       end;
     end;
     IncF(pos.y, paraSpacingBelow);
-    FParagraph[paraIndex].rectF.Bottom := pos.y;
+    curPara^.rectF.Bottom := pos.y;
+    DoneParagraph(paraIndex);
   end;
-  ClearTabSections;
+  Finished;
+end;
+
+procedure TBidiTextLayout.CheckTextLayout;
+var
+  i, charIndex, partIndex, j, k, curBrokenLineEndIndex: Integer;
+begin
+  charIndex := 0;
+  partIndex := 0;
+  if length(FParagraph) <> ParagraphCount then
+    raise exception.Create('Number of paragraph mismatch ' + inttostr(length(FParagraph)) +
+    '/' + inttostr(ParagraphCount));
+  for i := 0 to ParagraphCount-1 do
+  begin
+    if not FParagraph[i].layoutComputed then
+      raise exception.Create('Layout not computed for paragraph ' + inttostr(i));
+    if i > 0 then
+    begin
+      if FParagraph[i].firstBrokenLineIndex < FParagraph[i-1].firstBrokenLineIndex then
+        raise exception.Create('Broken index is not ascending');
+      if FParagraph[i].firstBrokenLineIndex <> FParagraph[i-1].firstBrokenLineIndex
+         + FParagraph[i-1].brokenLineCount then
+        raise exception.Create('Expecting at least one broken line');
+      if FParagraph[i].firstPartIndex < FParagraph[i-1].firstPartIndex then
+        raise exception.Create('Part index is not ascending');
+      if FParagraph[i].firstPartIndex <> partIndex then
+        raise exception.Create('Part index is not consistent between paragraphs');
+    end else
+    begin
+      if FParagraph[i].firstPartIndex <> 0 then
+        raise exception.Create('First part index is expected to be 0');
+      if FParagraph[i].firstBrokenLineIndex <> 0 then
+        raise exception.Create('First broken index is expected to be 0');
+      if (FParagraph[i].brokenLineCount > 0) and
+         (FParagraph[i].brokenLines[0].firstPartIndex <> FParagraph[i].firstPartIndex) then
+        raise exception.Create('Inconsistent part index between paragraph and first broken line');
+    end;
+    with FParagraph[i] do
+      for j := 0 to brokenLineCount-1 do
+      begin
+        if brokenLines[j].firstPartIndex <> partIndex then
+          raise exception.Create('Inconsistent first part index of broken line (' +
+           inttostr(brokenLines[j].firstPartIndex) + ' expecting ' +
+           inttostr(partIndex) + ' for broken line ' +
+           inttostr(firstBrokenLineIndex + j) + ')');
+        inc(partIndex, brokenLines[j].partCount);
+        if brokenLines[j].startIndex < charIndex then
+          raise exception.Create('Inconsistent first char index of broken line (' +
+           inttostr(brokenLines[j].startIndex) + ' expecting at least ' +
+           inttostr(charIndex) + ' for broken line ' +
+           inttostr(firstBrokenLineIndex + j) + ' and paragraph ' + inttostr(i) + ')');
+        with brokenLines[j] do
+        begin
+          curBrokenLineEndIndex := endIndex;
+          for k := 0 to partCount-1 do
+          with parts[k] do
+          begin
+            if startIndex < charIndex then
+              raise exception.Create('Inconsistent first char index of part');
+            if endIndex > curBrokenLineEndIndex then
+              raise exception.Create('Last char index of part out of broken line range');
+            charIndex := endIndex;
+          end;
+        end;
+        charIndex := brokenLines[j].endIndex;
+      end;
+  end;
+  if charIndex > CharCount then
+    raise exception.Create('Last char index of broken line out of bounds (' +
+      inttostr(charIndex)+' > '+inttostr(CharCount) + ')');
 end;
 
 procedure TBidiTextLayout.NeedLayout;
 begin
-  if not FLayoutComputed then ComputeLayout;
+  if not LayoutComputed then ComputeLayout;
 end;
 
 procedure TBidiTextLayout.InternalDrawText(ADest: TBGRACustomBitmap);
-var
-  i: Integer;
-  b: TRect;
 begin
-  NeedLayout;
-  for i := 0 to FPartCount-1 do
-  begin
-    b := PartAffineBox[i].RectBounds;
-    if not b.IntersectsWith(ADest.ClipRect) then continue;
-    with (Matrix*(FPart[i].rectF.TopLeft + FPart[i].posCorrection)) do
-      TextOutBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
-  end;
+  InternalDrawTextParts(ADest, 0, PartCount);
 end;
 
 procedure TBidiTextLayout.InternalPathText(ADest: IBGRAPath);
+begin
+  InternalPathTextParts(ADest, 0, PartCount);
+end;
+
+procedure TBidiTextLayout.InternalPathText(ADest: IBGRAPath; AClipRect: TRect);
+begin
+  InternalPathTextParts(ADest, AClipRect, 0, PartCount);
+end;
+
+procedure TBidiTextLayout.InternalDrawTextParts(ADest: TBGRACustomBitmap;
+  AFirstPart, ALastPartPlus1: integer);
 var
-  i: Integer;
+  part: PPartInfo;
+  enumPart: TPartEnumerator;
+  r: TRectF;
+  b: TRect;
+  pos: TPointF;
 begin
   NeedLayout;
-  for i := 0 to FPartCount-1 do
-  begin
-    with (Matrix*(FPart[i].rectF.TopLeft + FPart[i].posCorrection)) do
-      TextPathBidiOverride(ADest, x,y, FPart[i].sUTF8, odd(FPart[i].bidiLevel));
+  enumPart := GetPartEnumerator(AFirstPart, ALastPartPlus1);
+  while enumPart.GetNext do begin
+    part := enumPart.PartInfo;
+    r := part^.rectF;
+    DecF(r.Left, LineHeight/2 + FClipMargin);
+    DecF(r.Top, FClipMargin);
+    IncF(r.Right, LineHeight/2 + FClipMargin);
+    IncF(r.Bottom, FClipMargin);
+    b := (Matrix*TAffineBox.AffineBox(r)).RectBounds;
+    if not b.IntersectsWith(ADest.ClipRect) then continue;
+    pos := Matrix*(part^.rectF.TopLeft + part^.posCorrection);
+    TextOutBidiOverride(ADest, pos.x, pos.y,
+      FAnalysis.CopyTextUTF8(part^.startIndex, part^.endIndex - part^.startIndex),
+      part^.IsRightToLeft);
   end;
+end;
+
+procedure TBidiTextLayout.InternalPathTextParts(ADest: IBGRAPath; AFirstPart,
+  ALastPartPlus1: integer);
+var
+  part: PPartInfo;
+  pos: TPointF;
+  enumPart: TPartEnumerator;
+begin
+  NeedLayout;
+  enumPart := GetPartEnumerator(AFirstPart, ALastPartPlus1);
+  while enumPart.GetNext do begin
+    part := enumPart.PartInfo;
+    pos := Matrix*(part^.rectF.TopLeft + part^.posCorrection);
+    TextPathBidiOverride(ADest, pos.x, pos.y,
+    FAnalysis.CopyTextUTF8(part^.startIndex, part^.endIndex - part^.startIndex),
+    part^.IsRightToLeft);
+  end;
+end;
+
+procedure TBidiTextLayout.InternalPathTextParts(ADest: IBGRAPath;
+  AClipRect: TRect; AFirstPart, ALastPartPlus1: integer);
+var
+  part: PPartInfo;
+  enumPart: TPartEnumerator;
+  r: TRectF;
+  b: TRect;
+  pos: TPointF;
+begin
+  NeedLayout;
+  enumPart := GetPartEnumerator(AFirstPart, ALastPartPlus1);
+  while enumPart.GetNext do begin
+    part := enumPart.PartInfo;
+    r := part^.rectF;
+    DecF(r.Left, LineHeight/2 + FClipMargin);
+    DecF(r.Top, FClipMargin);
+    IncF(r.Right, LineHeight/2 + FClipMargin);
+    IncF(r.Bottom, FClipMargin);
+    b := (Matrix*TAffineBox.AffineBox(r)).RectBounds;
+    if not b.IntersectsWith(AClipRect) then continue;
+    pos := Matrix*(part^.rectF.TopLeft + part^.posCorrection);
+    TextPathBidiOverride(ADest, pos.x, pos.y,
+    FAnalysis.CopyTextUTF8(part^.startIndex, part^.endIndex - part^.startIndex),
+    part^.IsRightToLeft);
+  end;
+end;
+
+procedure TBidiTextLayout.InternalRangeError;
+begin
+  raise ERangeError.Create('Internal error');
 end;
 
 procedure TBidiTextLayout.DrawCaret(ADest: TBGRACustomBitmap;
@@ -1591,13 +2609,15 @@ function TBidiTextLayout.GetUntransformedCaret(ACharIndex: integer): TBidiCaretP
 var
   i, blIndex, lastPartIndex: Integer;
   w: Single;
+  bl: PBrokenLineInfo;
+  part: PPartInfo;
 begin
   NeedLayout;
 
   if (ACharIndex < 0) or (ACharIndex > CharCount) then
     raise ERangeError.Create('Invalid index');
 
-  if (PartCount > 0) and (ACharIndex >= FPart[PartCount-1].endIndex) then
+  if (PartCount > 0) and (ACharIndex >= PartEndIndex[PartCount-1]) then
   begin
     result := GetUntransformedPartEndCaret(PartCount-1);
     exit;
@@ -1612,37 +2632,40 @@ begin
   result.PreviousRightToLeft := false;
 
   blIndex := GetBrokenLineAt(ACharIndex);
+  bl := GetBrokenLineInfo(blIndex);
   if blIndex <> -1 then
   begin
-    lastPartIndex := FBrokenLine[blIndex].lastPartIndexPlusOne-1;
-    for i := FBrokenLine[blIndex].firstPartIndex to lastPartIndex do
-      if ACharIndex <= FPart[i].startIndex then
+    lastPartIndex := bl^.firstPartIndex + bl^.partCount - 1;
+    for i := bl^.firstPartIndex to lastPartIndex do
+    begin
+      part := @bl^.parts[i - bl^.firstPartIndex];
+      if ACharIndex <= part^.startIndex then
       begin
         result := GetUntransformedPartStartCaret(i);
         exit;
       end else
-      if (ACharIndex > FPart[i].startIndex) and (ACharIndex <= FPart[i].endIndex) then
+      if (ACharIndex > part^.startIndex) and (ACharIndex <= part^.endIndex) then
       begin
-        if (i < FPartCount-1) and (ACharIndex = FPart[i+1].startIndex) then
+        if (i < FComputedPartCount-1) and (ACharIndex = part^.startIndex) then
         begin
           result := GetUntransformedPartStartCaret(i+1);
           exit;
         end else
         begin
-          if ACharIndex = FPart[i].endIndex then
+          if ACharIndex = part^.endIndex then
           begin
             result := GetUntransformedPartEndCaret(i);
             exit;
           end else
           begin
-            w := TextSizeBidiOverrideSplit(FPart[i].startIndex, FPart[i].endIndex, odd(FPart[i].bidiLevel), ACharIndex).x;
+            w := TextSizeBidiOverrideSplit(part^.startIndex, part^.endIndex, part^.IsRightToLeft, ACharIndex).x;
 
-            if Odd(FPart[i].bidiLevel) then
-              result.Top := PointF(FPart[i].rectF.Right - w, FPart[i].rectF.Top)
-            else result.Top := PointF(FPart[i].rectF.Left + w, FPart[i].rectF.Top);
-            result.Bottom := result.Top + PointF(0,FPart[i].rectF.Height);
+            if part^.IsRightToLeft then
+              result.Top := PointF(part^.rectF.Right - w, part^.rectF.Top)
+            else result.Top := PointF(part^.rectF.Left + w, part^.rectF.Top);
+            result.Bottom := result.Top + PointF(0, part^.rectF.Height);
 
-            result.RightToLeft := odd(FPart[i].bidiLevel);
+            result.RightToLeft := part^.IsRightToLeft;
             result.PreviousRightToLeft := result.RightToLeft;
             result.PartIndex := i;
           end;
@@ -1654,6 +2677,7 @@ begin
         result := GetUntransformedPartEndCaret(i);
         exit;
       end;
+    end;
   end;
 
   if ACharIndex = 0 then
@@ -1670,105 +2694,109 @@ end;
 
 function TBidiTextLayout.GetCharIndexAt(APosition: TPointF): integer;
 var
-  brokenLineIndex,j, fit: Integer;
+  brokenIndex,j, fit: Integer;
   u,u2: LongWord;
   axis, origin: TPointF;
   len, w, curW, newW: Single;
   str: String;
-  curIndex, newIndex, paraIndex, brokenStart, brokenEnd: integer;
+  curIndex, newIndex, paraIndex: integer;
   untransformedPos: TPointF;
+  para: PParagraphInfo;
+  curBroken: PBrokenLineInfo;
+  part: PPartInfo;
+  ab: TAffineBox;
 begin
   NeedLayout;
   untransformedPos := FMatrixInverse*APosition;
   paraIndex := GetUntransformedParagraphAt(untransformedPos);
+  para := @FParagraph[paraIndex];
 
-  if untransformedPos.Y < FParagraph[paraIndex].rectF.Top then
+  if untransformedPos.Y < para^.rectF.Top then
     exit(ParagraphStartIndex[paraIndex]);
 
-  if untransformedPos.Y >= FParagraph[paraIndex].rectF.Bottom then
+  if untransformedPos.Y >= para^.rectF.Bottom then
     exit(ParagraphEndIndex[paraIndex]);
 
-  brokenStart := FParagraph[paraIndex].firstBrokenLineIndex;
-  if paraIndex = ParagraphCount-1 then
-    brokenEnd := BrokenLineCount
-  else
-    brokenEnd := FParagraph[paraIndex+1].firstBrokenLineIndex;
-
-  for brokenLineIndex := brokenStart to brokenEnd-1 do
-    if untransformedPos.Y < FBrokenLine[brokenLineIndex].rectF.Bottom then
+  for brokenIndex := 0 to para^.brokenLineCount-1 do
+  begin
+    curBroken := @para^.brokenLines[brokenIndex];
+    if untransformedPos.Y < curBroken^.rectF.Bottom then
     begin
-      if untransformedPos.Y < FBrokenLine[brokenLineIndex].rectF.Top then
-        exit(FBrokenLine[brokenLineIndex].startIndex);
+      if untransformedPos.Y < curBroken^.rectF.Top then
+        exit(curBroken^.startIndex);
 
-      j := FBrokenLine[brokenLineIndex].firstPartIndex;
-      if j < FBrokenLine[brokenLineIndex].lastPartIndexPlusOne then
+      //before part
+      if curBroken^.partCount > 0 then
       begin
-        if (BrokenLineRightToLeft[brokenLineIndex] and (untransformedPos.x >= PartRectF[j].Right)) or
-           (not BrokenLineRightToLeft[brokenLineIndex] and (untransformedPos.x < PartRectF[j].Left)) then
-          exit(FBrokenLine[brokenLineIndex].startIndex)
+        if (curBroken^.IsRightToLeft and (untransformedPos.x >= curBroken^.parts[0].rectF.Right)) or
+           (not curBroken^.IsRightToLeft and (untransformedPos.x < curBroken^.parts[0].rectF.Left)) then
+          exit(curBroken^.startIndex)
       end;
 
-      for j := FBrokenLine[brokenLineIndex].firstPartIndex to FBrokenLine[brokenLineIndex].lastPartIndexPlusOne-1 do
-        if (PartBrokenLineIndex[j] = brokenLineIndex) and PartAffineBox[j].Contains(APosition) then
+      for j := 0 to curBroken^.partCount-1 do
+      begin
+        part := @curBroken^.parts[j];
+        ab := Matrix*TAffineBox.AffineBox(part^.rectF);
+        if ab.Contains(APosition) then
         begin
-          with PartAffineBox[j] do
+          if part^.IsRightToLeft then
           begin
-            if PartRightToLeft[j] then
-            begin
-              axis := TopLeft-TopRight;
-              origin := TopRight;
-            end else
-            begin
-              axis := TopRight-TopLeft;
-              origin := TopLeft;
-            end;
-            len := VectLen(axis);
-            if len > 0 then
-            begin
-              w := ((APosition-origin)*axis)/len;
-              //if there is just one char, it is the whole part
-              if PartEndIndex[j] = PartStartIndex[j]+1 then
-              begin
-                if w > 0.5*len then
-                  exit(PartEndIndex[j])
-                else
-                  exit(PartStartIndex[j]);
-              end;
-
-              str := FAnalysis.CopyTextUTF8(PartStartIndex[j], PartEndIndex[j]-PartStartIndex[j]);
-              fit := TextFitInfoBidiOverride(str, w, PartRightToLeft[j]);
-              curIndex := PartStartIndex[j]+fit;
-              if curIndex > PartEndIndex[j] then curIndex:= PartEndIndex[j];
-              if curIndex = 0 then curW := 0
-              else curW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], curIndex).x;
-              while (curW < w) and (curIndex < PartEndIndex[j]) do
-              begin
-                newIndex := curIndex+1;
-                while (newIndex < PartEndIndex[j]) and not FAnalysis.BidiInfo[newIndex].IsMulticharStart do inc(newIndex);
-                newW := TextSizeBidiOverrideSplit(PartStartIndex[j], PartEndIndex[j], PartRightToLeft[j], newIndex).x;
-                if newW >= w then
-                begin
-                  if (curW+newW)*0.5 + 1 < w then curIndex := newIndex;
-                  break;
-                end else
-                begin
-                  curW := newW;
-                  curIndex := newIndex;
-                end;
-              end;
-              exit(curIndex);
-            end;
+            axis := ab.TopLeft - ab.TopRight;
+            origin := ab.TopRight;
+          end else
+          begin
+            axis := ab.TopRight - ab.TopLeft;
+            origin := ab.TopLeft;
           end;
-          exit(PartStartIndex[j]);
+          len := VectLen(axis);
+          if len > 0 then
+          begin
+            w := ((APosition-origin)*axis)/len;
+            //if there is just one char, it is the whole part
+            if part^.endIndex = part^.startIndex + 1 then
+            begin
+              if w > 0.5*len then
+                exit(part^.endIndex)
+              else
+                exit(part^.startIndex);
+            end;
+
+            str := FAnalysis.CopyTextUTF8(part^.startIndex, part^.endIndex - part^.startIndex);
+            fit := TextFitInfoBidiOverride(str, w, part^.IsRightToLeft);
+            curIndex := part^.startIndex+fit;
+            if curIndex > part^.endIndex then curIndex:= part^.endIndex;
+            if curIndex = 0 then curW := 0
+            else curW := TextSizeBidiOverrideSplit(part^.startIndex, part^.endIndex, part^.IsRightToLeft, curIndex).x;
+            while (curW < w) and (curIndex < part^.endIndex) do
+            begin
+              newIndex := curIndex+1;
+              while (newIndex < part^.endIndex) and not FAnalysis.BidiInfo[newIndex].IsMulticharStart do inc(newIndex);
+              newW := TextSizeBidiOverrideSplit(part^.startIndex, part^.endIndex, part^.IsRightToLeft, newIndex).x;
+              if newW >= w then
+              begin
+                if (curW+newW)*0.5 + 1 < w then curIndex := newIndex;
+                break;
+              end else
+              begin
+                curW := newW;
+                curIndex := newIndex;
+              end;
+            end;
+            exit(curIndex);
+          end;
+          exit(part^.startIndex);
         end;
-      result := BrokenLineEndIndex[brokenLineIndex];
-      if result > BrokenLineStartIndex[brokenLineIndex] then
+      end;
+
+      //after part
+      result := curBroken^.endIndex;
+      if result > curBroken^.startIndex then
       begin
         u := GetUnicodeChar(result-1);
         if IsUnicodeParagraphSeparator(u) or (u = UNICODE_LINE_SEPARATOR) then
         begin
           dec(result);
-          if (result > BrokenLineStartIndex[brokenLineIndex]) and (u = 13) or (u = 10) then
+          if (result > curBroken^.startIndex) and (u = 13) or (u = 10) then
           begin
             u2 := GetUnicodeChar(result-1);
             if (u2 <> u) and ((u2 = 13) or (u2 = 10)) then dec(result);
@@ -1777,6 +2805,7 @@ begin
       end;
       exit;
     end;
+  end;
 
   exit(ParagraphEndIndexBeforeParagraphSeparator[paraIndex]);
 end;
@@ -1914,84 +2943,109 @@ var
     end;
 
   var
-    i: Integer;
     curPartStartCaret, curPartEndCaret,
     lineStartCaret, lineEndCaret, curPartCaret: TBidiCaretPos;
-    brokenLineIndex, paraIndex: integer;
+    curBrokenIndex, curParaIndex, prevParaIndex, j,
+      brokenLineLastPartIndexPlus1, curPartIndex: integer;
     r: TRectF;
+    partEnum: TPartEnumerator;
+    prevPart, curPart: PPartInfo;
+    curBroken: PBrokenLineInfo;
 
   begin
     horizResult := nil;
+    partEnum := GetPartEnumerator(startCaret.PartIndex, endCaret.PartIndex + 1);
+    curPart := nil;
+    curParaIndex := -1;
 
-    i := startCaret.PartIndex;
-    while i <= endCaret.PartIndex do
+    if partEnum.GetNext then
+    while true do
     begin
+      prevParaIndex := curParaIndex;
+      prevPart := curPart;
+      curParaIndex := partEnum.ParagraphIndex;
+      curPart := partEnum.PartInfo;
+      curPartIndex := partEnum.PartIndex;
+      curBroken := partEnum.BrokenLineInfo;
+      curBrokenIndex := partEnum.BrokenLineIndex;
+
       //space between paragraph
-      if (i > startCaret.PartIndex) and (ParagraphSpacingAbove+ParagraphSpacingBelow <> 0) then
+      if (curPartIndex > startCaret.PartIndex) and (ParagraphSpacingAbove+ParagraphSpacingBelow <> 0) then
       begin
-        paraIndex := BrokenLineParagraphIndex[PartBrokenLineIndex[i]];
-        if (paraIndex > 0) and (BrokenLineParagraphIndex[PartBrokenLineIndex[i-1]] = paraIndex-1) then
+        if (curParaIndex > 0) and (prevParaIndex = curParaIndex-1) then
         begin
           FlushHorizResult;
 
-          r := RectF(ParagraphRectF[paraIndex-1].Left, ParagraphRectF[paraIndex-1].Bottom - ParagraphSpacingBelow*FLineHeight,
-                       ParagraphRectF[paraIndex-1].Right, ParagraphRectF[paraIndex-1].Bottom);
+          r := RectF(ParagraphRectF[curParaIndex-1].Left, ParagraphRectF[curParaIndex-1].Bottom - ParagraphSpacingBelow*FLineHeight,
+                       ParagraphRectF[curParaIndex-1].Right, ParagraphRectF[curParaIndex-1].Bottom);
           AppendVertResult(TAffineBox.AffineBox(r), False);
 
-          r := RectF(ParagraphRectF[paraIndex].Left, ParagraphRectF[paraIndex].Top,
-                       ParagraphRectF[paraIndex].Right, ParagraphRectF[paraIndex].Top + ParagraphSpacingAbove*FLineHeight);
+          r := RectF(ParagraphRectF[curParaIndex].Left, ParagraphRectF[curParaIndex].Top,
+                       ParagraphRectF[curParaIndex].Right, ParagraphRectF[curParaIndex].Top + ParagraphSpacingAbove*FLineHeight);
           AppendVertResult(TAffineBox.AffineBox(r), False);
         end;
       end;
 
-      brokenLineIndex := PartBrokenLineIndex[i];
       //whole broken line selected
-      if (i = FBrokenLine[brokenLineIndex].firstPartIndex) and
-         ((i > startCaret.PartIndex) or (AStartIndex = PartStartIndex[i])) and
-         (endCaret.PartIndex >= FBrokenLine[brokenLineIndex].lastPartIndexPlusOne) then
+      brokenLineLastPartIndexPlus1 := curBroken^.firstPartIndex + curBroken^.partCount;
+      if (curPartIndex = curBroken^.firstPartIndex) and
+         ((curPartIndex > startCaret.PartIndex) or (AStartIndex = curPart^.startIndex)) and
+         (endCaret.PartIndex >= brokenLineLastPartIndexPlus1) then
       begin
         FlushHorizResult;
 
-        lineStartCaret := GetBrokenLineUntransformedStartCaret(brokenLineIndex);
-        lineEndCaret := GetBrokenLineUntransformedEndCaret(brokenLineIndex);
-        AppendVertResult(TAffineBox.AffineBox(lineStartCaret.Top,lineEndCaret.Top,lineStartCaret.Bottom), BrokenLineRightToLeft[brokenLineIndex]);
+        lineStartCaret := GetBrokenLineUntransformedStartCaret(curBrokenIndex);
+        lineEndCaret := GetBrokenLineUntransformedEndCaret(curBrokenIndex);
+        AppendVertResult(TAffineBox.AffineBox(lineStartCaret.Top,lineEndCaret.Top,lineStartCaret.Bottom), BrokenLineRightToLeft[curBrokenIndex]);
 
-        i := FBrokenLine[brokenLineIndex].lastPartIndexPlusOne;
+        //skip broken line
+        for j := curPartIndex to brokenLineLastPartIndexPlus1-2 do
+          partEnum.GetNext;
+        if not partEnum.GetNext then break;
       end else
       begin
+        if curPartIndex > startCaret.PartIndex then
+          curPartStartCaret := GetUntransformedPartStartCaret(curPartIndex, prevPart, curPart)
+          else curPartStartCaret := startCaret;
+
+        if curPartIndex < endCaret.PartIndex then
+          curPartEndCaret := GetUntransformedPartEndCaret(curPartIndex, curPart)
+          else curPartEndCaret := endCaret;
+
         //start of lines
-        if (i > startCaret.PartIndex) and (PartBrokenLineIndex[i-1] <> brokenLineIndex) then
+        if (curPartIndex > startCaret.PartIndex) and (prevPart^.brokenLineIndex <> curBrokenIndex) then
         begin
           FlushHorizResult;
 
-          lineStartCaret := GetBrokenLineUntransformedStartCaret(brokenLineIndex);
-          if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
-            AppendHorizResult(lineStartCaret.Top,GetUntransformedPartStartCaret(i).Top,GetUntransformedPartStartCaret(i).Bottom,lineStartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex])
+          lineStartCaret := GetBrokenLineUntransformedStartCaret(curBrokenIndex);
+          if curBroken^.IsRightToLeft = curPart^.IsRightToLeft then
+            AppendHorizResult(lineStartCaret.Top, curPartStartCaret.Top,
+                          curPartStartCaret.Bottom, lineStartCaret.Bottom,
+                          BrokenLineRightToLeft[curBrokenIndex])
           else
-            AppendHorizResult(lineStartCaret.Top,GetUntransformedPartEndCaret(i).Top,GetUntransformedPartEndCaret(i).Bottom,lineStartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex]);
+            AppendHorizResult(lineStartCaret.Top, curPartEndCaret.Top,
+                          curPartEndCaret.Bottom, lineStartCaret.Bottom,
+                          curBroken^.IsRightToLeft);
         end;
 
         //text parts
-        if i > startCaret.PartIndex then curPartStartCaret := GetUntransformedPartStartCaret(i)
-        else curPartStartCaret := startCaret;
-
-        if i < endCaret.PartIndex then curPartEndCaret := GetUntransformedPartEndCaret(i)
-        else curPartEndCaret := endCaret;
-
-        AppendHorizResult(curPartStartCaret.Top,curPartEndCaret.Top,curPartEndCaret.Bottom,curPartStartCaret.Bottom, PartRightToLeft[i]);
+        AppendHorizResult(curPartStartCaret.Top, curPartEndCaret.Top,
+                          curPartEndCaret.Bottom, curPartStartCaret.Bottom,
+                          curPart^.IsRightToLeft);
 
         //end of lines
-        if (i < endCaret.PartIndex) and (PartBrokenLineIndex[i+1] <> PartBrokenLineIndex[i]) then
-        begin
-          lineEndCaret := GetBrokenLineUntransformedEndCaret(brokenLineIndex);
-          if BrokenLineRightToLeft[brokenLineIndex] = PartRightToLeft[i] then
-            curPartCaret := GetUntransformedPartEndCaret(i)
-          else
-            curPartCaret := GetUntransformedPartStartCaret(i);
-          AppendHorizResult(curPartCaret.Top,lineEndCaret.Top,lineEndCaret.Bottom,curPartCaret.Bottom, BrokenLineRightToLeft[brokenLineIndex])
-        end;
+        if not partEnum.GetNext then break;
 
-        inc(i);
+        if (partEnum.BrokenLineIndex <> curBrokenIndex) then
+        begin
+          lineEndCaret := GetBrokenLineUntransformedEndCaret(curBrokenIndex);
+          if curBroken^.IsRightToLeft = curPart^.IsRightToLeft then
+            curPartCaret := GetUntransformedPartEndCaret(curPartIndex)
+          else
+            curPartCaret := GetUntransformedPartStartCaret(curPartIndex);
+          AppendHorizResult(curPartCaret.Top, lineEndCaret.Top,
+            lineEndCaret.Bottom, curPartCaret.Bottom, curBroken^.IsRightToLeft)
+        end;
       end;
 
     end;
@@ -2081,33 +3135,43 @@ begin
 end;
 
 function TBidiTextLayout.GetBrokenLineAt(ACharIndex: integer): integer;
-  procedure FindRec(AFirstBrokenLineIndex, ALastBrokenLineIndex: integer);
-  var
-    midIndex: Integer;
-  begin
-    if ALastBrokenLineIndex<AFirstBrokenLineIndex then
-    begin
-      result := -1;
-      exit;
-    end;
-    midIndex := (AFirstBrokenLineIndex+ALastBrokenLineIndex) shr 1;
-    if (ACharIndex < FBrokenLine[midIndex].startIndex) then
-      FindRec(AFirstBrokenLineIndex, midIndex-1)
-    else if (midIndex < FBrokenLineCount-1) and (ACharIndex >= FBrokenLine[midIndex+1].startIndex) then
-      FindRec(midIndex+1, ALastBrokenLineIndex)
-    else
-    begin
-      result := midIndex;
-      exit;
-    end;
-  end;
-
+var
+  paraMinIndex, paraMaxIndex, paraMidIndex, brokenMinIndex,
+    brokenMaxIndex, brokenMidIndex: Integer;
 begin
   if (ACharIndex < 0) or (ACharIndex > CharCount) then raise exception.Create('Position out of bounds');
-  if (BrokenLineCount > 0) and (ACharIndex = FBrokenLine[BrokenLineCount-1].endIndex) then
-    result := BrokenLineCount-1
-  else
-    FindRec(0, BrokenLineCount-1);
+  paraMinIndex := 0;
+  paraMaxIndex := ParagraphCount-1;
+  repeat
+    if paraMinIndex > paraMaxIndex then
+      InternalRangeError else
+    if paraMinIndex = paraMaxIndex then
+    with FParagraph[paraMinIndex] do
+    begin
+      brokenMinIndex := 0;
+      brokenMaxIndex := brokenLineCount-1;
+      repeat
+        if brokenMinIndex > brokenMaxIndex then InternalRangeError else
+        if brokenMinIndex = brokenMaxIndex then
+        begin
+          result := brokenMinIndex + firstBrokenLineIndex;
+          exit;
+        end else
+        begin
+          brokenMidIndex := (brokenMinIndex + brokenMaxIndex + 1) shr 1;
+          if ACharIndex < brokenLines[brokenMidIndex].startIndex then
+            brokenMaxIndex := brokenMidIndex-1
+            else brokenMinIndex := brokenMidIndex;
+        end;
+      until false;
+    end else
+    begin
+      paraMidIndex := (paraMinIndex + paraMaxIndex + 1) shr 1;
+      if ACharIndex < ParagraphStartIndex[paraMidIndex] then
+        paraMaxIndex := paraMidIndex-1
+        else paraMinIndex := paraMidIndex;
+    end;
+  until false;
 end;
 
 function TBidiTextLayout.InsertText(ATextUTF8: string; APosition: integer): integer;
@@ -2199,30 +3263,52 @@ begin
 end;
 
 function TBidiTextLayout.GetUntransformedPartStartCaret(APartIndex: integer): TBidiCaretPos;
+var
+  prevPart, part: PPartInfo;
+  partEnum: TPartEnumerator;
 begin
   if (APartIndex < 0) or (APartIndex > PartCount) then
     raise ERangeError.Create('Invalid index');
 
+  if APartIndex > 0 then
+  begin
+    partEnum := GetPartEnumerator(APartIndex - 1);
+    if not partEnum.GetNext then InternalRangeError;
+    prevPart := partEnum.PartInfo;
+    if not partEnum.GetNext then InternalRangeError;
+    part := partEnum.PartInfo;
+  end else
+  begin
+    prevPart := nil;
+    part := GetPartInfo(APartIndex);
+  end;
+
+  result := GetUntransformedPartStartCaret(APartIndex, prevPart, part);
+end;
+
+function TBidiTextLayout.GetUntransformedPartStartCaret(APartIndex: integer;
+  APrevPart, APart: PPartInfo): TBidiCaretPos;
+begin
   result.PartIndex := APartIndex;
 
-  if Odd(FPart[APartIndex].bidiLevel) then
-    result.Top := PointF(FPart[APartIndex].rectF.Right, FPart[APartIndex].rectF.Top)
+  if APart^.IsRightToLeft then
+    result.Top := PointF(APart^.rectF.Right, APart^.rectF.Top)
   else
-    result.Top := PointF(FPart[APartIndex].rectF.Left, FPart[APartIndex].rectF.Top);
-  result.Bottom := result.Top + PointF(0, FPart[APartIndex].rectF.Height);
+    result.Top := PointF(APart^.rectF.Left, APart^.rectF.Top);
+  result.Bottom := result.Top + PointF(0, APart^.rectF.Height);
 
-  result.RightToLeft := odd(FPart[APartIndex].bidiLevel);
+  result.RightToLeft := APart^.IsRightToLeft;
 
-  if (APartIndex > 0) and (FPart[APartIndex-1].endIndex = FPart[APartIndex].startIndex) and
-    (FBrokenLine[FPart[APartIndex-1].brokenLineIndex].unbrokenLineIndex =
-     FBrokenLine[FPart[APartIndex].brokenLineIndex].unbrokenLineIndex) then
+  if (APartIndex > 0) and (APrevPart^.endIndex = APart^.startIndex) and
+    (BrokenLineUnbrokenIndex[APrevPart^.brokenLineIndex] =
+     BrokenLineUnbrokenIndex[APart^.brokenLineIndex]) then
   begin
-    if Odd(FPart[APartIndex-1].bidiLevel) then
-      result.PreviousTop := PointF(FPart[APartIndex-1].rectF.Left, FPart[APartIndex-1].rectF.Top)
+    if APrevPart^.IsRightToLeft then
+      result.PreviousTop := PointF(APrevPart^.rectF.Left, APrevPart^.rectF.Top)
     else
-      result.PreviousTop := PointF(FPart[APartIndex-1].rectF.Right, FPart[APartIndex-1].rectF.Top);
-    result.PreviousBottom := result.PreviousTop + PointF(0, FPart[APartIndex-1].rectF.Height);
-    result.PreviousRightToLeft := odd(FPart[APartIndex-1].bidiLevel);
+      result.PreviousTop := PointF(APrevPart^.rectF.Right, APrevPart^.rectF.Top);
+    result.PreviousBottom := result.PreviousTop + PointF(0, APrevPart^.rectF.Height);
+    result.PreviousRightToLeft := APrevPart^.IsRightToLeft;
   end else
   begin
     result.PreviousTop := EmptyPointF;
@@ -2232,18 +3318,24 @@ begin
 end;
 
 function TBidiTextLayout.GetUntransformedPartEndCaret(APartIndex: integer): TBidiCaretPos;
+var
+  part: PPartInfo;
 begin
-  if (APartIndex < 0) or (APartIndex > PartCount) then
-    raise ERangeError.Create('Invalid index');
+  part := GetPartInfo(APartIndex);
+  result := GetUntransformedPartEndCaret(APartIndex, part);
+end;
 
+function TBidiTextLayout.GetUntransformedPartEndCaret(APartIndex: integer;
+  APart: PPartInfo): TBidiCaretPos;
+begin
   result.PartIndex := APartIndex;
 
-  if Odd(FPart[APartIndex].bidiLevel) then
-    result.Top := PointF(FPart[APartIndex].rectF.Left, FPart[APartIndex].rectF.Top)
+  if APart^.IsRightToLeft then
+    result.Top := PointF(APart^.rectF.Left, APart^.rectF.Top)
   else
-    result.Top := PointF(FPart[APartIndex].rectF.Right, FPart[APartIndex].rectF.Top);
-  result.Bottom := result.Top + PointF(0, FPart[APartIndex].rectF.Height);
-  result.RightToLeft := odd(FPart[APartIndex].bidiLevel);
+    result.Top := PointF(APart^.rectF.Right, APart^.rectF.Top);
+  result.Bottom := result.Top + PointF(0, APart^.rectF.Height);
+  result.RightToLeft := APart^.IsRightToLeft;
 
   result.PreviousTop := EmptyPointF;
   result.PreviousBottom := EmptyPointF;
@@ -2256,7 +3348,7 @@ function TBidiTextLayout.GetUntransformedParagraphAt(APosition: TPointF): intege
   var
     midIndex: Integer;
   begin
-    midIndex := (AFirstParaIndex+ALastParaIndex) shr 1;
+    midIndex := (AFirstParaIndex + ALastParaIndex) shr 1;
     if APosition.y < FParagraph[midIndex].rectF.Top then
     begin
       if midIndex <= AFirstParaIndex then
@@ -2284,11 +3376,12 @@ function TBidiTextLayout.GetUntransformedParagraphAt(APosition: TPointF): intege
 
 begin
   NeedLayout;
+  result := 0;
   FindRec(0, ParagraphCount-1);
 end;
 
 procedure TBidiTextLayout.AddPartsFromTree(APos: TPointF; ATree: TBidiTree;
-  fullHeight, baseLine: single; brokenLineIndex: integer);
+  fullHeight, baseLine: single; ABrokenLineIndex: integer; ABrokenLine: PBrokenLineInfo);
 var
   i: Integer;
   root, branch: TBidiLayoutTree;
@@ -2306,11 +3399,11 @@ begin
     begin
       DecF(APos.x, root.Width);
       AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
-              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, brokenLineIndex);
+              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), ABrokenLineIndex, ABrokenLine);
     end else
     begin
       AddPart(root.StartIndex, root.EndIndex, root.BidiLevel,
-              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), root.FTextUTF8, brokenLineIndex);
+              RectF(APos.x, APos.y, APos.x+root.Width, APos.y+fullHeight), PointF(0,dy), ABrokenLineIndex, ABrokenLine);
       IncF(APos.x, root.Width);
     end;
   end else
@@ -2322,22 +3415,22 @@ begin
       begin
         if odd(branch.BidiLevel) then
         begin
-          AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
+          AddPartsFromTree(APos, branch, fullHeight, baseLine, ABrokenLineIndex, ABrokenLine);
           DecF(APos.x, branch.Width);
         end else
         begin
           DecF(APos.x, branch.Width);
-          AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
+          AddPartsFromTree(APos, branch, fullHeight, baseLine, ABrokenLineIndex, ABrokenLine);
         end;
       end else
       begin
         if odd(branch.BidiLevel) then
         begin
           IncF(APos.x, branch.Width);
-          AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
+          AddPartsFromTree(APos, branch, fullHeight, baseLine, ABrokenLineIndex, ABrokenLine);
         end else
         begin
-          AddPartsFromTree(APos, branch, fullHeight, baseLine, brokenLineIndex);
+          AddPartsFromTree(APos, branch, fullHeight, baseLine, ABrokenLineIndex, ABrokenLine);
           IncF(APos.x, branch.Width);
         end;
       end;
@@ -2349,8 +3442,8 @@ procedure TBidiTextLayout.Init(ATextUTF8: string; ABidiMode: TFontBidiMode);
 var
   i: Integer;
 begin
-  FBrokenLineCount:= 0;
-  FPartCount:= 0;
+  FComputedBrokenLineCount:= 0;
+  FComputedPartCount:= 0;
   FTopLeft := PointF(0,0);
   FAvailableWidth:= EmptySingle;
   FAvailableHeight:= EmptySingle;
@@ -2358,7 +3451,7 @@ begin
   FParagraphSpacingAbove:= 0;
   FParagraphSpacingBelow:= 0;
   FMatrix := AffineMatrixIdentity;
-  FLayoutComputed:= false;
+  FClipMargin := 0;
   FColor := BGRABlack;
   FTexture := nil;
   FWordBreakHandler:= nil;
@@ -2369,11 +3462,13 @@ begin
   FAnalysis.OnParagraphMergedWithNext:=@ParagraphMergedWithNext;
   FAnalysis.OnCharInserted:=@CharInserted;
   FAnalysis.OnParagraphSplit:=@ParagraphSplit;
+  FAnalysis.OnAnalysisChanged:= @AnalysisChanged;
   SetLength(FParagraph, FAnalysis.ParagraphCount);
   for i := 0 to high(FParagraph) do
   begin
     FParagraph[i].rectF := EmptyRectF;
     FParagraph[i].alignment:= btaNatural;
+    FParagraph[i].layoutComputed := false;
   end;
 end;
 

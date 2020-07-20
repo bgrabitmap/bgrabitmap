@@ -50,6 +50,7 @@ type
     procedure ReplaceTransparent(ARect: TRect; const AAfter: TPixel); overload; virtual;
     procedure FillRect(ALeft, ATop, ARight, ABottom: integer; const AColor: TPixel; ADrawMode: TDrawMode = dmSet; AAlpha: Word = 65535); overload; virtual;
     procedure FillRect(const ARect: TRect; const AColor: TPixel; ADrawMode: TDrawMode = dmSet; AAlpha: Word = 65535); overload; virtual;
+    procedure DrawCheckers(ARect: TRect; const AColorEven,AColorOdd: TPixel; AGridWidth: integer = 8; AGridHeight: integer = 8; ADrawMode: TDrawMode = dmSet); virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word); overload; virtual;
@@ -555,6 +556,16 @@ var
 begin
   SolidBrush(b, AColor, ADrawMode);
   FillRect(ARect, b,AAlpha);
+end;
+
+procedure TGenericUniversalBitmap.DrawCheckers(ARect: TRect; const AColorEven,
+  AColorOdd: TPixel; AGridWidth: integer; AGridHeight: integer; ADrawMode: TDrawMode);
+var
+  bEven, bOdd: TUniversalBrush;
+begin
+  SolidBrush(bEven, AColorEven, ADrawMode);
+  SolidBrush(bOdd, AColorOdd, ADrawMode);
+  DrawCheckers(ARect, bEven, bOdd, AGridWidth, AGridHeight);
 end;
 
 procedure TGenericUniversalBitmap.DrawPixel(x, y: Int32or64;

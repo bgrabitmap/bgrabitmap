@@ -68,6 +68,7 @@ type
   public
     ParagraphBidiLevel, BidiLevel: byte;
     Flags: Word;
+    class operator =(const AInfo1, AInfo2: TUnicodeBidiInfo): boolean;
     property IsRemoved: boolean read GetRemoved;
     property IsRightToLeft: boolean read GetRightToLeft;
     property IsParagraphRightToLeft: boolean read GetParagraphRightToLeft;
@@ -95,6 +96,7 @@ const
   //maximum nesting level of isolates and bidi-formatting blocks (char bidi level can actually be higher due to char properties)
   UNICODE_MAX_BIDI_DEPTH = 125;
 
+  UNICODE_NO_BREAK_SPACE = $A0;
   UNICODE_LINE_SEPARATOR = $2028;      //equivalent of <br>
   UNICODE_PARAGRAPH_SEPARATOR = $2029; //equivalent of </p>
   UNICODE_NEXT_LINE = $0085;           //equivalent of CRLF
@@ -348,6 +350,14 @@ end;
 function TUnicodeBidiInfo.GetRightToLeftScript: boolean;
 begin
   result := (Flags and BIDI_FLAG_RTL_SCRIPT) <> 0;
+end;
+
+class operator TUnicodeBidiInfo.=(const AInfo1, AInfo2: TUnicodeBidiInfo
+  ): boolean;
+begin
+  result := (AInfo1.BidiLevel = AInfo2.BidiLevel) and
+    (AInfo1.Flags = AInfo2.Flags) and
+    (AInfo1.ParagraphBidiLevel = AInfo2.ParagraphBidiLevel);
 end;
 
 function AnalyzeBidiUnicode(u: PLongWord; ALength: integer; baseDirection: LongWord): TUnicodeBidiArray;
