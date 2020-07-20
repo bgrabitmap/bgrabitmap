@@ -88,11 +88,12 @@ type
     FCurBroken: PBrokenLineInfo;
     FSubPartIndex: integer;
     FSubPartCount: integer;
+    FEndPartIndex: integer;
     function GetPartInfo: PPartInfo;
     procedure Update;
   public
     class function New(ALayout: TBidiTextLayout; AParagraphIndex: integer;
-      ASubBrokenIndex: integer; ASubPartIndex: integer): TPartEnumerator; static;
+      ASubBrokenIndex: integer; ASubPartIndex: integer; AEndPartIndex: integer): TPartEnumerator; static;
     function GetNext: boolean;
     property Layout: TBidiTextLayout read FLayout;
     property ParagraphIndex: integer read FParagraphIndex;
@@ -159,7 +160,8 @@ type
     function GetPartAffineBox(AIndex: integer): TAffineBox;
     function GetPartBrokenLineIndex(AIndex: integer): integer;
     function GetPartCount: integer;
-    function GetPartEnumerator(AIndex: integer): TPartEnumerator;
+    function GetPartEnumerator(AFirstPart: integer): TPartEnumerator;
+    function GetPartEnumerator(AFirstPart, ALastPartPlus1: integer): TPartEnumerator;
     function GetPartInfo(AIndex: integer): PPartInfo;
     function GetPartEndIndex(AIndex: integer): integer;
     function GetPartRectF(AIndex: integer): TRectF;
@@ -225,9 +227,11 @@ type
     procedure OffsetParagraphCharIndex(AParagraphIndex: integer; ADeltaChar: integer);
     procedure TrimParagraphLayoutVertically(AParagraphIndex: integer);
     procedure InternalDrawText(ADest: TBGRACustomBitmap);
-    procedure InternalPathText(ADest: IBGRAPath);
+    procedure InternalPathText(ADest: IBGRAPath); overload;
+    procedure InternalPathText(ADest: IBGRAPath; AClipRect: TRect); overload;
     procedure InternalDrawTextParts(ADest: TBGRACustomBitmap; AFirstPart, ALastPartPlus1: integer);
-    procedure InternalPathTextParts(ADest: IBGRAPath; AFirstPart, ALastPartPlus1: integer);
+    procedure InternalPathTextParts(ADest: IBGRAPath; AFirstPart, ALastPartPlus1: integer); overload;
+    procedure InternalPathTextParts(ADest: IBGRAPath; AClipRect: TRect; AFirstPart, ALastPartPlus1: integer); overload;
     procedure InternalRangeError;
 
     //unicode analysis events
@@ -253,18 +257,22 @@ type
     procedure DrawText(ADest: TBGRACustomBitmap; AColor: TBGRAPixel); overload;
     procedure DrawText(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner); overload;
     procedure PathText(ADest: IBGRAPath);
+    procedure PathText(ADest: IBGRAPath; AClipRect: TRect);
     procedure DrawTextParts(ADest: TBGRACustomBitmap; AFirstPart, ALastPartPlus1: integer); overload;
     procedure DrawTextParts(ADest: TBGRACustomBitmap; AColor: TBGRAPixel; AFirstPart, ALastPartPlus1: integer); overload;
     procedure DrawTextParts(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner; AFirstPart, ALastPartPlus1: integer); overload;
-    procedure PathTextParts(ADest: IBGRAPath; AFirstPart, ALastPartPlus1: integer);
+    procedure PathTextParts(ADest: IBGRAPath; AFirstPart, ALastPartPlus1: integer); overload;
+    procedure PathTextParts(ADest: IBGRAPath; AClipRect: TRect; AFirstPart, ALastPartPlus1: integer); overload;
     procedure DrawParagraphs(ADest: TBGRACustomBitmap; AFirstPara, ALastParaPlus1: integer); overload;
     procedure DrawParagraphs(ADest: TBGRACustomBitmap; AColor: TBGRAPixel; AFirstPara, ALastParaPlus1: integer); overload;
     procedure DrawParagraphs(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner; AFirstPara, ALastParaPlus1: integer); overload;
-    procedure PathParagraphs(ADest: IBGRAPath; AFirstPara, ALastParaPlus1: integer);
+    procedure PathParagraphs(ADest: IBGRAPath; AFirstPara, ALastParaPlus1: integer); overload;
+    procedure PathParagraphs(ADest: IBGRAPath; AClipRect: TRect; AFirstPara, ALastParaPlus1: integer); overload;
     procedure DrawBrokenLines(ADest: TBGRACustomBitmap; AFirstBroken, ALastBrokenPlus1: integer); overload;
     procedure DrawBrokenLines(ADest: TBGRACustomBitmap; AColor: TBGRAPixel; AFirstBroken, ALastBrokenPlus1: integer); overload;
     procedure DrawBrokenLines(ADest: TBGRACustomBitmap; ATexture: IBGRAScanner; AFirstBroken, ALastBrokenPlus1: integer); overload;
-    procedure PathBrokenLines(ADest: IBGRAPath; AFirstBroken, ALastBrokenPlus1: integer);
+    procedure PathBrokenLines(ADest: IBGRAPath; AFirstBroken, ALastBrokenPlus1: integer); overload;
+    procedure PathBrokenLines(ADest: IBGRAPath; AClipRect: TRect; AFirstBroken, ALastBrokenPlus1: integer); overload;
 
     procedure DrawCaret(ADest: TBGRACustomBitmap; ACharIndex: integer; AMainColor, ASecondaryColor: TBGRAPixel);
     procedure DrawSelection(ADest: TBGRACustomBitmap; AStartIndex, AEndIndex: integer;
@@ -436,7 +444,8 @@ begin
 end;
 
 class function TPartEnumerator.New(ALayout: TBidiTextLayout;
-  AParagraphIndex: integer; ASubBrokenIndex: integer; ASubPartIndex: integer): TPartEnumerator;
+  AParagraphIndex: integer; ASubBrokenIndex: integer; ASubPartIndex: integer;
+  AEndPartIndex: integer): TPartEnumerator;
 begin
   result.FLayout := ALayout;
   result.FParagraphIndex:= AParagraphIndex;
@@ -444,14 +453,16 @@ begin
   result.FSubPartIndex:= ASubPartIndex;
   result.Update;
   result.FJustCreated:= true;
+  result.FEndPartIndex:= AEndPartIndex;
 end;
 
 function TPartEnumerator.GetNext: boolean;
 begin
+  if FPartIndex >= FEndPartIndex then exit(false);
   if FJustCreated then
   begin
     FJustCreated := false;
-    result := (FSubPartIndex < FSubPartCount);
+    result := (FSubPartIndex < FSubPartCount) and (FPartIndex < FEndPartIndex);
     exit;
   end;
   if FSubPartIndex + 1 >= FSubPartCount then
@@ -489,7 +500,7 @@ begin
     inc(FPartIndex);
     inc(FSubPartIndex);
   end;
-  result := true;
+  result := FPartIndex < FEndPartIndex;
 end;
 
 { TPartInfo }
@@ -927,13 +938,19 @@ begin
   result := FComputedPartCount;
 end;
 
-function TBidiTextLayout.GetPartEnumerator(AIndex: integer): TPartEnumerator;
+function TBidiTextLayout.GetPartEnumerator(AFirstPart: integer): TPartEnumerator;
+begin
+  result := GetPartEnumerator(AFirstPart, FComputedPartCount);
+end;
+
+function TBidiTextLayout.GetPartEnumerator(AFirstPart, ALastPartPlus1: integer): TPartEnumerator;
 var
   minParaIndex,maxParaIndex,midParaIndex: integer;
   minBrokenIndex, maxBrokenIndex, midBrokenIndex: Integer;
 begin
-  if (AIndex < 0) or (AIndex > FComputedPartCount) then
-    raise ERangeError.Create('Invalid index');
+  if (AFirstPart < 0) or (AFirstPart > FComputedPartCount) or
+     (ALastPartPlus1 < 0) or (ALastPartPlus1 > FComputedPartCount)  then
+    raise ERangeError.Create('Invalid start index');
   minParaIndex:= 0;
   maxParaIndex:= ParagraphCount - 1;
   repeat
@@ -944,7 +961,7 @@ begin
     begin
       if brokenLineCount = 0 then
       begin
-        result := TPartEnumerator.New(self, minParaIndex, 0, 0);
+        result := TPartEnumerator.New(self, minParaIndex, 0, 0, ALastPartPlus1);
         exit;
       end;
       minBrokenIndex := 0;
@@ -955,12 +972,13 @@ begin
         if minBrokenIndex = maxBrokenIndex then
         begin
           result := TPartEnumerator.New(self, minParaIndex, minBrokenIndex,
-                      AIndex - brokenLines[minBrokenIndex].firstPartIndex);
+                      AFirstPart - brokenLines[minBrokenIndex].firstPartIndex,
+                      ALastPartPlus1);
           exit;
         end else
         begin
           midBrokenIndex := (minBrokenIndex + maxBrokenIndex + 1) shr 1;
-          if AIndex < brokenLines[midBrokenIndex].firstPartIndex then
+          if AFirstPart < brokenLines[midBrokenIndex].firstPartIndex then
             maxBrokenIndex := midBrokenIndex-1
           else
             minBrokenIndex := midBrokenIndex;
@@ -969,7 +987,7 @@ begin
     end else
     begin
       midParaIndex := (minParaIndex + maxParaIndex + 1) shr 1;
-      if AIndex < FParagraph[midParaIndex].firstPartIndex then
+      if AFirstPart < FParagraph[midParaIndex].firstPartIndex then
         maxParaIndex := midParaIndex-1
       else
         minParaIndex := midParaIndex;
@@ -1739,6 +1757,11 @@ begin
   InternalPathText(ADest);
 end;
 
+procedure TBidiTextLayout.PathText(ADest: IBGRAPath; AClipRect: TRect);
+begin
+  InternalPathText(ADest, AClipRect);
+end;
+
 procedure TBidiTextLayout.DrawTextParts(ADest: TBGRACustomBitmap; AFirstPart,
   ALastPartPlus1: integer);
 begin
@@ -1765,6 +1788,12 @@ procedure TBidiTextLayout.PathTextParts(ADest: IBGRAPath; AFirstPart,
   ALastPartPlus1: integer);
 begin
   InternalPathTextParts(ADest, AFirstPart, ALastPartPlus1);
+end;
+
+procedure TBidiTextLayout.PathTextParts(ADest: IBGRAPath; AClipRect: TRect;
+  AFirstPart, ALastPartPlus1: integer);
+begin
+  InternalPathTextParts(ADest, AClipRect, AFirstPart, ALastPartPlus1);
 end;
 
 procedure TBidiTextLayout.DrawParagraphs(ADest: TBGRACustomBitmap;
@@ -1795,6 +1824,13 @@ begin
   PathTextParts(ADest, ParagraphStartPart[AFirstPara], ParagraphEndPart[ALastParaPlus1-1]);
 end;
 
+procedure TBidiTextLayout.PathParagraphs(ADest: IBGRAPath; AClipRect: TRect;
+  AFirstPara, ALastParaPlus1: integer);
+begin
+  if ALastParaPlus1 <= AFirstPara then exit;
+  PathTextParts(ADest, AClipRect, ParagraphStartPart[AFirstPara], ParagraphEndPart[ALastParaPlus1-1]);
+end;
+
 procedure TBidiTextLayout.DrawBrokenLines(ADest: TBGRACustomBitmap;
   AFirstBroken, ALastBrokenPlus1: integer);
 begin
@@ -1822,6 +1858,13 @@ procedure TBidiTextLayout.PathBrokenLines(ADest: IBGRAPath; AFirstBroken,
 begin
   if ALastBrokenPlus1 <= AFirstBroken then exit;
   PathTextParts(ADest, BrokenLineStartPart[AFirstBroken], BrokenLineEndPart[ALastBrokenPlus1-1]);
+end;
+
+procedure TBidiTextLayout.PathBrokenLines(ADest: IBGRAPath; AClipRect: TRect;
+  AFirstBroken, ALastBrokenPlus1: integer);
+begin
+  if ALastBrokenPlus1 <= AFirstBroken then exit;
+  PathTextParts(ADest, AClipRect, BrokenLineStartPart[AFirstBroken], BrokenLineEndPart[ALastBrokenPlus1-1]);
 end;
 
 procedure TBidiTextLayout.ComputeLayout;
@@ -2389,18 +2432,23 @@ begin
   InternalPathTextParts(ADest, 0, PartCount);
 end;
 
+procedure TBidiTextLayout.InternalPathText(ADest: IBGRAPath; AClipRect: TRect);
+begin
+  InternalPathTextParts(ADest, AClipRect, 0, PartCount);
+end;
+
 procedure TBidiTextLayout.InternalDrawTextParts(ADest: TBGRACustomBitmap;
   AFirstPart, ALastPartPlus1: integer);
 var
   part: PPartInfo;
-  b: TRect;
-  pos: TPointF;
   enumPart: TPartEnumerator;
   r: TRectF;
+  b: TRect;
+  pos: TPointF;
 begin
   NeedLayout;
-  enumPart := GetPartEnumerator(AFirstPart);
-  while enumPart.GetNext and (enumPart.PartIndex < ALastPartPlus1) do begin
+  enumPart := GetPartEnumerator(AFirstPart, ALastPartPlus1);
+  while enumPart.GetNext do begin
     part := enumPart.PartInfo;
     r := part^.rectF;
     DecF(r.Left, LineHeight/2 + FClipMargin);
@@ -2424,9 +2472,36 @@ var
   enumPart: TPartEnumerator;
 begin
   NeedLayout;
-  enumPart := GetPartEnumerator(AFirstPart);
-  while (enumPart.PartIndex < ALastPartPlus1) and enumPart.GetNext do begin
+  enumPart := GetPartEnumerator(AFirstPart, ALastPartPlus1);
+  while enumPart.GetNext do begin
     part := enumPart.PartInfo;
+    pos := Matrix*(part^.rectF.TopLeft + part^.posCorrection);
+    TextPathBidiOverride(ADest, pos.x, pos.y,
+    FAnalysis.CopyTextUTF8(part^.startIndex, part^.endIndex - part^.startIndex),
+    part^.IsRightToLeft);
+  end;
+end;
+
+procedure TBidiTextLayout.InternalPathTextParts(ADest: IBGRAPath;
+  AClipRect: TRect; AFirstPart, ALastPartPlus1: integer);
+var
+  part: PPartInfo;
+  enumPart: TPartEnumerator;
+  r: TRectF;
+  b: TRect;
+  pos: TPointF;
+begin
+  NeedLayout;
+  enumPart := GetPartEnumerator(AFirstPart, ALastPartPlus1);
+  while enumPart.GetNext do begin
+    part := enumPart.PartInfo;
+    r := part^.rectF;
+    DecF(r.Left, LineHeight/2 + FClipMargin);
+    DecF(r.Top, FClipMargin);
+    IncF(r.Right, LineHeight/2 + FClipMargin);
+    IncF(r.Bottom, FClipMargin);
+    b := (Matrix*TAffineBox.AffineBox(r)).RectBounds;
+    if not b.IntersectsWith(AClipRect) then continue;
     pos := Matrix*(part^.rectF.TopLeft + part^.posCorrection);
     TextPathBidiOverride(ADest, pos.x, pos.y,
     FAnalysis.CopyTextUTF8(part^.startIndex, part^.endIndex - part^.startIndex),
@@ -2879,12 +2954,12 @@ var
 
   begin
     horizResult := nil;
-    partEnum := GetPartEnumerator(startCaret.PartIndex);
+    partEnum := GetPartEnumerator(startCaret.PartIndex, endCaret.PartIndex + 1);
     curPart := nil;
     curParaIndex := -1;
 
     if partEnum.GetNext then
-    while partEnum.PartIndex <= endCaret.PartIndex do
+    while true do
     begin
       prevParaIndex := curParaIndex;
       prevPart := curPart;
@@ -2961,8 +3036,7 @@ var
         //end of lines
         if not partEnum.GetNext then break;
 
-        if (curPartIndex < endCaret.PartIndex) and
-           (partEnum.BrokenLineIndex <> curBrokenIndex) then
+        if (partEnum.BrokenLineIndex <> curBrokenIndex) then
         begin
           lineEndCaret := GetBrokenLineUntransformedEndCaret(curBrokenIndex);
           if curBroken^.IsRightToLeft = curPart^.IsRightToLeft then
