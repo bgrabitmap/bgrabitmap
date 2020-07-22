@@ -45,7 +45,7 @@ begin
   Name := 'Smart zoom x3 and rotate';
   virtualScreen := nil;
   background := nil;
-  pacman := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'pac_d1.bmp');
+  pacman := TBGRABitmap.Create(ResourceDir+'pac_d1.bmp');
   pacman.ReplaceColor(pacman.GetPixel(0,0),BGRAPixelTransparent);
   temp := pacman.FilterSmartZoom3(moMediumSmooth);
   pacman.Free;

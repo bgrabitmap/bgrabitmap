@@ -10,7 +10,6 @@ uses
 
 const
   FrameDurationMs = 15;
-  ResourceDir = '..'+PathDelim;
 
 type
   TTux = class;
@@ -94,6 +93,9 @@ type
     constructor Create(ATexture: IBGLTexture; AX,AY: Single; AFrame: integer);
     procedure OnInit; override;
   end;
+
+var
+  ResourceDir : string;
 
 implementation
 

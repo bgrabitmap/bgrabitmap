@@ -75,6 +75,8 @@ begin
   ClientHeight := 600;
   Constraints.MaxWidth := Width;
 
+  ResourceDir := {$IFDEF DARWIN}ExtractFilePath(Application.ExeName)+'../../../../'{$ELSE}
+                 '..'+PathDelim{$ENDIF};
   GameContext1 := TGameContext.Create(False);
   GameContext2 := nil;
   { Textures are loaded in the LoadTextures event }

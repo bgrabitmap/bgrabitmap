@@ -35,7 +35,7 @@ begin
   inherited Create;
   Name := 'BGRACanvas test (with aliasing on the left, with anti-aliasing on the right)';
   virtualScreen := nil;
-  pacman := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'pac_d1.bmp');
+  pacman := TBGRABitmap.Create(ResourceDir+'pac_d1.bmp');
   pacman.ReplaceColor(pacman.GetPixel(0,0),BGRAPixelTransparent);
   time := 0;
 end;

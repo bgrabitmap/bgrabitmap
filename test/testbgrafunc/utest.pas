@@ -15,6 +15,9 @@ type
     procedure OnTimer(Width,Height: Integer; ElapsedSec: Double); virtual; abstract;
   end;
 
+var
+  ResourceDir: string;
+
 implementation
 
 end.

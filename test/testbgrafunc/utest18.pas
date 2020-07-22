@@ -35,9 +35,9 @@ constructor TTest18.Create;
 begin
   inherited Create;
   Name := 'Affine image transformation';
-  texture := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'pac_d1.bmp');
+  texture := TBGRABitmap.Create(ResourceDir+'pac_d1.bmp');
   texture.ReplaceColor(texture.GetPixel(0,0),BGRAPixelTransparent);
-  backgroundTile := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'diamondback.png');
+  backgroundTile := TBGRABitmap.Create(ResourceDir+'diamondback.png');
   randomize;
   virtualScreen := nil;
   background := nil;

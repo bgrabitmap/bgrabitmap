@@ -24,7 +24,7 @@ type
 
 implementation
 
-uses math;
+uses math, utest;
 
 { TTest9 }
 
@@ -34,7 +34,7 @@ begin
   Name := 'Simple mask, ellipse and radial gradient';
   virtualScreen := nil;
   masked := nil;
-  pacman := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'pac_d1.bmp');
+  pacman := TBGRABitmap.Create(ResourceDir+'pac_d1.bmp');
   pacman.ReplaceColor(pacman.GetPixel(0,0),BGRAPixelTransparent);
   time := 0;
 end;

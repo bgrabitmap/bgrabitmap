@@ -32,7 +32,7 @@ constructor TTest23.Create;
 begin
   inherited Create;
   Name := 'Multi-polygon antialiasing';
-  backgroundTile := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'diamondback.png');
+  backgroundTile := TBGRABitmap.Create(ResourceDir+'diamondback.png');
   virtualScreen := nil;
   background := nil;
   scene := TCubeScene3D.Create();

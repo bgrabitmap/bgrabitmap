@@ -57,7 +57,7 @@ begin
     scene.SetCubeTexture(texture);
   end;
 
-  backgroundTile := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'diamondback.png');
+  backgroundTile := TBGRABitmap.Create(ResourceDir+'diamondback.png');
   randomize;
   virtualScreen := nil;
   background := nil;

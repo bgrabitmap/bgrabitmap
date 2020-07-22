@@ -29,7 +29,7 @@ begin
   inherited Create;
   randomize;
   Name := 'Fast clipping (rectangle)';
-  pac := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'pac_d2.bmp');
+  pac := TBGRABitmap.Create(ResourceDir+'pac_d2.bmp');
   pac.ReplaceColor(pac.GetPixel(0,0),BGRAPixelTransparent);
 end;
 
