@@ -2575,8 +2575,8 @@ var lWidth,lHeight,y: integer;
 begin
   lWidth := 0;
   lHeight := 0;
-  AStream.Read({%H-}lWidth,sizeof(lWidth));
-  AStream.Read({%H-}lHeight,sizeof(lHeight));
+  AStream.Read(lWidth,sizeof(lWidth));
+  AStream.Read(lHeight,sizeof(lHeight));
   lWidth := LEtoN(lWidth);
   lHeight := LEtoN(lHeight);
   SetSize(lWidth,lHeight);
