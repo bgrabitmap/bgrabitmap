@@ -292,6 +292,7 @@ type
     procedure SetSingleArray(AName: utf8string; AValue: ArrayOfSingle);
     procedure SetColor(AName: UTF8String; AValue: TBGRAPixel);
     function GetDelimiter: char;
+    function GetEmpty: boolean; virtual; abstract;
   public
     constructor Create;
     function Duplicate: TBGRACustomOriginalStorage; virtual; abstract;
@@ -302,9 +303,11 @@ type
     function OpenObject(AName: utf8string): TBGRACustomOriginalStorage; virtual; abstract;
     function ObjectExists(AName: utf8string): boolean; virtual; abstract;
     procedure EnumerateObjects(AList: TStringList); virtual; abstract;
+    procedure EnumerateFiles(AList: TStringList); virtual; abstract;
     procedure RemoveFile(AName: utf8string); virtual; abstract;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; virtual; abstract;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean; AOwnStream: boolean = false); virtual; abstract;
+    function FileExists(AName: UTF8String): boolean; virtual; abstract;
     property RawString[AName: utf8string]: RawByteString read GetRawString write SetRawString;
     property Int[AName: utf8string]: integer read GetInteger write SetInteger;
     property IntDef[AName: utf8string; ADefault: integer]: integer read GetIntegerDef;
@@ -318,6 +321,7 @@ type
     property AffineMatrix[AName: utf8string]: TAffineMatrix read GetAffineMatrix write SetAffineMatrix;
     property Color[AName: UTF8String]: TBGRAPixel read GetColor write SetColor;
     property ColorArray[AName: UTF8String]: ArrayOfTBGRAPixel read GetColorArray write SetColorArray;
+    property Empty: boolean read GetEmpty;
   end;
 
   { TBGRAMemOriginalStorage }
@@ -328,6 +332,7 @@ type
     FMemDirOwned: boolean;
     function GetRawString(AName: utf8string): RawByteString; override;
     procedure SetRawString(AName: utf8string; AValue: RawByteString); override;
+    function GetEmpty: boolean; override;
   public
     destructor Destroy; override;
     constructor Create;
@@ -341,9 +346,11 @@ type
     function OpenObject(AName: utf8string): TBGRACustomOriginalStorage; override;
     function ObjectExists(AName: utf8string): boolean; override;
     procedure EnumerateObjects(AList: TStringList); override;
+    procedure EnumerateFiles(AList: TStringList); override;
     procedure RemoveFile(AName: utf8string); override;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; override;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean; AOwnStream: boolean = false); override;
+    function FileExists(AName: UTF8String): boolean; override;
     procedure SaveToStream(AStream: TStream);
     procedure LoadFromStream(AStream: TStream);
     procedure LoadFromResource(AFilename: string);
@@ -1233,6 +1240,11 @@ begin
     FMemDir.RawString[idx] := AValue;
 end;
 
+function TBGRAMemOriginalStorage.GetEmpty: boolean;
+begin
+  result := FMemDir.Count = 0;
+end;
+
 destructor TBGRAMemOriginalStorage.Destroy;
 begin
   if FMemDirOwned then FreeAndNil(FMemDir);
@@ -1345,6 +1357,15 @@ begin
       AList.Add(FMemDir.Entry[i].Name);
 end;
 
+procedure TBGRAMemOriginalStorage.EnumerateFiles(AList: TStringList);
+var
+  i: Integer;
+begin
+  for i := 0 to FMemDir.Count-1 do
+    if not FMemDir.IsDirectory[i] then
+      AList.Add(FMemDir.Entry[i].Name);
+end;
+
 procedure TBGRAMemOriginalStorage.RemoveFile(AName: utf8string);
 var
   idx: Integer;
@@ -1362,7 +1383,7 @@ var
   entryId: Integer;
 begin
   entryId := FMemDir.IndexOf(EntryFilename(AName));
-  if entryId <> -1 then
+  if (entryId <> -1) and not FMemDir.IsDirectory[entryId] then
   begin
     with FMemDir.Entry[entryId] do
       result := CopyTo(ADest) = FileSize
@@ -1377,6 +1398,14 @@ var
 begin
   idxEntry := FMemDir.Add(EntryFilename(AName), ASource, true, AOwnStream);
   if ACompress then FMemDir.IsEntryCompressed[idxEntry] := true;
+end;
+
+function TBGRAMemOriginalStorage.FileExists(AName: UTF8String): boolean;
+var
+  entryId: Integer;
+begin
+  entryId := FMemDir.IndexOf(EntryFilename(AName));
+  result := (entryId <> -1) and not FMemDir.IsDirectory[entryId];
 end;
 
 procedure TBGRAMemOriginalStorage.SaveToStream(AStream: TStream);
