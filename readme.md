@@ -1,4 +1,5 @@
 List of directories:
+- bglcontrols: controls providing OpenGL surface with BGRABitmap
 - bgrabitmap: contains BGRABitmap library
 - dev: tools used to make BGRABitmap
 - libwebp: contains the Dll of LibWebP for Windows
