@@ -428,6 +428,9 @@ procedure RegisterSavingHandler(AStart: TOnLayeredBitmapSaveStartProc; AProgress
 procedure UnregisterSavingHandler(AStart: TOnLayeredBitmapSaveStartProc; AProgress: TOnLayeredBitmapSaveProgressProc;
      ADone: TOnLayeredBitmapSavedProc);
 
+const
+  RenderTempSubDirectory = 'temp';
+
 implementation
 
 uses BGRAUTF8, BGRABlend, BGRAMultiFileType, math;
@@ -1862,7 +1865,7 @@ end;
 procedure TBGRALayeredBitmap.NotifySaving;
 var
   i, id, ErrPos: Integer;
-  layersDir: TMemDirectory;
+  layersDir, renderDir: TMemDirectory;
 begin
   inherited NotifySaving;
 
@@ -1879,6 +1882,8 @@ begin
     for i := layersDir.Count-1 downto 0 do
     if layersDir.IsDirectory[i] then
     begin
+      renderDir := layersDir.Directory[i].FindPath(RenderSubDirectory);
+      if Assigned(renderDir) then renderDir.Delete(RenderTempSubDirectory,'');
       val(layersDir.Entry[i].Name, id, errPos);
       if (errPos <> 0) or (GetLayerIndexFromId(id)=-1) then
         layersDir.Delete(i);
