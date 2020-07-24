@@ -138,6 +138,7 @@ type
     class function AffineBox(ARectF: TRectF): TAffineBox; overload; static;
     procedure Offset(AOfsX, AOfsY: single); overload;
     procedure Offset(AOfs: TPointF); overload;
+    procedure Inflate(AHoriz, AVert: single); //inflates along axes
     function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
     property RectBoundsF: TRectF read GetRectBoundsF;
@@ -1032,6 +1033,24 @@ end;
 procedure TAffineBox.Offset(AOfs: TPointF);
 begin
   Offset(AOfs.X,AOfs.Y);
+end;
+
+procedure TAffineBox.Inflate(AHoriz, AVert: single);
+var
+  u, v, ofs_horiz, ofs_vert: TPointF;
+  lenU, lenV: Single;
+begin
+  u := TopRight-TopLeft;
+  v := BottomLeft-TopLeft;
+  lenU := VectLen(u);
+  if lenU > 0 then u := u*(1/lenU);
+  lenV := VectLen(v);
+  if lenV > 0 then v := v*(1/lenU);
+  ofs_horiz := u*AHoriz;
+  ofs_vert := v*AVert;
+  TopLeft := TopLeft - ofs_horiz - ofs_vert;
+  TopRight := TopRight + ofs_horiz - ofs_vert;
+  BottomLeft := BottomLeft - ofs_horiz + ofs_vert;
 end;
 
 function TAffineBox.Contains(APoint: TPointF): boolean;
