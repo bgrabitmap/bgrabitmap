@@ -1045,7 +1045,7 @@ begin
   lenU := VectLen(u);
   if lenU > 0 then u := u*(1/lenU);
   lenV := VectLen(v);
-  if lenV > 0 then v := v*(1/lenU);
+  if lenV > 0 then v := v*(1/lenV);
   ofs_horiz := u*AHoriz;
   ofs_vert := v*AVert;
   TopLeft := TopLeft - ofs_horiz - ofs_vert;
