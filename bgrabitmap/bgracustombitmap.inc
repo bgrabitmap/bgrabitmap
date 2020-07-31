@@ -578,7 +578,7 @@ type
      function FilterSmooth: TBGRACustomBitmap; virtual; abstract;
      function FilterSharpen(Amount: single = 1): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterContour: TBGRACustomBitmap; virtual; abstract;
+     function FilterContour(AGammaCorrection: boolean = false): TBGRACustomBitmap; virtual; abstract;
      function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRACustomBitmap; virtual; abstract;
      function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
      function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;

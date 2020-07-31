@@ -133,7 +133,7 @@ type
     function FilterSmooth: TBGRABitmap; override;
     function FilterSharpen(Amount: single = 1): TBGRABitmap; overload; override;
     function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRABitmap; overload; override;
-    function FilterContour: TBGRABitmap; override;
+    function FilterContour(AGammaCorrection: boolean = false): TBGRABitmap; override;
     function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRABitmap; override;
     function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGRABitmap; overload; override;
     function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGRABitmap; overload; override;
@@ -346,9 +346,9 @@ begin
   Result:=inherited FilterSharpen(ABounds, Amount) as TBGRABitmap;
 end;
 
-function TBGRABitmap.FilterContour: TBGRABitmap;
+function TBGRABitmap.FilterContour(AGammaCorrection: boolean = false): TBGRABitmap;
 begin
-  Result:=inherited FilterContour as TBGRABitmap;
+  Result:=inherited FilterContour(AGammaCorrection) as TBGRABitmap;
 end;
 
 function TBGRABitmap.FilterPixelate(pixelSize: integer; useResample: boolean;

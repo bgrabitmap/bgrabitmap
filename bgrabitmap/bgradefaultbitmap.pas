@@ -601,7 +601,7 @@ type
     function FilterSmooth: TBGRADefaultBitmap; override;
     function FilterSharpen(Amount: single = 1): TBGRADefaultBitmap; overload; override;
     function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRADefaultBitmap; overload; override;
-    function FilterContour: TBGRADefaultBitmap; override;
+    function FilterContour(AGammaCorrection: boolean = false): TBGRADefaultBitmap; override;
     function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRADefaultBitmap; override;
     function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRADefaultBitmap; overload; override;
     function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRADefaultBitmap; overload; override;
@@ -3938,9 +3938,9 @@ begin
   Result := BGRAFilters.FilterSharpen(self,ABounds,round(Amount*256)) as TBGRADefaultBitmap;
 end;
 
-function TBGRADefaultBitmap.FilterContour: TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterContour(AGammaCorrection: boolean = false): TBGRADefaultBitmap;
 begin
-  Result := BGRAFilters.FilterContour(self) as TBGRADefaultBitmap;
+  Result := BGRAFilters.FilterContour(self, AGammaCorrection) as TBGRADefaultBitmap;
 end;
 
 function TBGRADefaultBitmap.FilterPixelate(pixelSize: integer;
