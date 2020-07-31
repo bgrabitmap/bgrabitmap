@@ -6,7 +6,7 @@ unit BGRAGrayscaleMask;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRABitmapTypes, {%H-}UniversalDrawer;
+  BGRAClasses, BGRAGraphics, SysUtils, BGRABitmapTypes, BGRAResample, {%H-}UniversalDrawer;
 
 type
   { TGrayscaleMask }
@@ -17,11 +17,21 @@ type
   protected
      function InternalNew: TCustomUniversalBitmap; override;
      procedure AssignTransparentPixel(out ADest); override;
+     function InternalGetPixelCycle256(ix,iy: int32or64; iFactX,iFactY: int32or64): TByteMask;
+     function InternalGetPixel256(ix,iy: int32or64; iFactX,iFactY: int32or64; smoothBorder: boolean): TByteMask;
+     procedure Init; override;
   public
+     ScanInterpolationFilter: TResampleFilter;
+
      constructor Create(AWidth,AHeight: Integer; AValue: byte); overload;
      constructor Create(ABitmap: TBGRACustomBitmap; AChannel: TChannel); overload;
      constructor CreateDownSample(ABitmap: TBGRACustomBitmap; AWidth,AHeight: integer);
+     constructor CreateDownSample(ABitmap: TGrayscaleMask; AWidth,AHeight: integer);
+     constructor CreateDownSample(ABitmap: TBGRACustomBitmap; AWidth,AHeight: integer; ASourceRect: TRect);
+     constructor CreateDownSample(ABitmap: TGrayscaleMask; AWidth,AHeight: integer; ASourceRect: TRect);
+     procedure CopyFrom(ABitmap: TGrayscaleMask);
      procedure CopyFrom(ABitmap: TBGRACustomBitmap; AChannel: TChannel);
+     procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); override;
      function GetImageBounds: TRect; overload; override;
      function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; override;
      function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload; override;
@@ -34,21 +44,61 @@ type
      class procedure EraseBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
      class procedure AlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
 
-     procedure Draw(ABitmap: TBGRACustomBitmap; X,Y: Integer);
+     procedure Draw(ABitmap: TBGRACustomBitmap; X,Y: Integer; AGammaCorrection: boolean = false);
      procedure DrawAsAlpha(ABitmap: TBGRACustomBitmap; X,Y: Integer; const c: TBGRAPixel); overload;
      procedure DrawAsAlpha(ABitmap: TBGRACustomBitmap; X,Y: Integer; texture: IBGRAScanner); overload;
-     function GetPixel(X,Y: integer): byte;
+     function GetPixel(X,Y: integer): byte; overload;
      procedure SetPixel(X,Y: integer; AValue: byte);
      property ScanLine[Y: Integer]: PByte read GetScanLine;
      property Data: PByte read FDataByte;
 
+     function GetPixel(x, y: single; AResampleFilter: TResampleFilter = rfLinear; smoothBorder: boolean = true): TByteMask; overload;
+     function GetPixel256(x, y, fracX256,fracY256: int32or64; AResampleFilter: TResampleFilter = rfLinear; smoothBorder: boolean = true): TByteMask;
+
      procedure ScanNextMaskChunk(var ACount: integer; out AMask: PByteMask; out AStride: integer); override;
      function ScanAtIntegerMask(X,Y: integer): TByteMask; override;
      function ScanAtMask(X,Y: Single): TByteMask; override;
+     function ScanAtInteger(X, Y: integer): TBGRAPixel; override;
+     function ScanAt(X, Y: Single): TBGRAPixel; override;
+
+     {inplace filters}
+     procedure Negative;
+     procedure NegativeRect(ABounds: TRect);
+     procedure InplaceNormalize; overload;
+     procedure InplaceNormalize(ABounds: TRect); overload;
+
+     //return type helpers
+     function NewBitmap: TGrayscaleMask; overload; override;
+     function NewBitmap(AWidth, AHeight: integer): TGrayscaleMask; overload; override;
+     function NewBitmap(AWidth, AHeight: integer; const Color: TByteMask): TGrayscaleMask; overload; override;
+     function NewBitmap(AWidth, AHeight: integer; AColor: Pointer): TGrayscaleMask; overload; override;
+     function NewReference: TGrayscaleMask; override;
+     function GetUnique: TGrayscaleMask; override;
+     function Duplicate(DuplicateProperties: Boolean = False): TGrayscaleMask; overload; override;
+     function GetPart(const ARect: TRect): TGrayscaleMask; override;
+     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TByteMask;
+                 AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TGrayscaleMask; override;
+     function RotateCW: TGrayscaleMask; override;
+     function RotateCCW: TGrayscaleMask; override;
+     function RotateUD: TGrayscaleMask; override;
+     function FilterContour(ABorderValue: byte = 0): TGrayscaleMask;
+     function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TGrayscaleMask; overload; override;
+     function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TGrayscaleMask; overload; override;
+     function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TGrayscaleMask; overload; override;
+     function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TGrayscaleMask; overload; override;
+     function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TGrayscaleMask; overload; override;
+     function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean): TGrayscaleMask; overload; override;
+     function FilterCustomBlur(mask: TCustomUniversalBitmap): TGrayscaleMask; overload; override;
+     function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap): TGrayscaleMask; overload; override;
+     function FilterSphere: TGrayscaleMask;
+     function FilterCylinder: TGrayscaleMask;
   end;
 
 procedure DownSamplePutImageGrayscale(sourceData: PByte; sourcePixelSize: Int32or64; sourceRowDelta: Int32or64; sourceWidth, sourceHeight: Int32or64; dest: TGrayscaleMask; ADestRect: TRect); overload;
 procedure DownSamplePutImageGrayscale(source: TBGRACustomBitmap; dest: TGrayscaleMask; ADestRect: TRect); overload;
+procedure DownSamplePutImageGrayscale(source: TGrayscaleMask; dest: TGrayscaleMask; ADestRect: TRect); overload;
+procedure DownSamplePutImageGrayscale(source: TBGRACustomBitmap; dest: TGrayscaleMask; ADestRect: TRect; ASourceRect: TRect); overload;
+procedure DownSamplePutImageGrayscale(source: TGrayscaleMask; dest: TGrayscaleMask; ADestRect: TRect; ASourceRect: TRect); overload;
 
 procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,
   y: integer; xThird: integer; mask: TGrayscaleMask; color: TBGRAPixel;
@@ -56,12 +106,13 @@ procedure BGRAFillClearTypeGrayscaleMask(dest: TBGRACustomBitmap; x,
 
 const
   ByteMaskBlack : TByteMask = (gray:0);
+  ByteMaskWhite : TByteMask = (gray:255);
 
 operator = (const c1, c2: TByteMask): boolean; inline;
 
 implementation
 
-uses BGRABlend;
+uses BGRABlend, BGRATransform;
 
 operator = (const c1, c2: TByteMask): boolean;
 begin
@@ -394,19 +445,114 @@ begin
   TByteMask(ADest).gray := 0;
 end;
 
+function TGrayscaleMask.InternalGetPixelCycle256(ix, iy: int32or64; iFactX,
+  iFactY: int32or64): TByteMask;
+var
+  ixMod2: int32or64;
+  pUpLeft, pUpRight, pDownLeft, pDownRight: PByteMask;
+  scan: PByteMask;
+begin
+  scan := GetScanlineFast(iy);
+
+  pUpLeft := (scan + ix);
+  ixMod2 := ix+1;
+  if ixMod2=Width then ixMod2 := 0;
+  pUpRight := (scan + ixMod2);
+
+  Inc(iy);
+  if iy = Height then iy := 0;
+  scan := GetScanlineFast(iy);
+  pDownLeft := (scan + ix);
+  pDownRight := (scan + ixMod2);
+
+  InterpolateBilinearMask(pUpLeft, pUpRight, pDownLeft,
+          pDownRight, iFactX, iFactY, @result);
+end;
+
+function TGrayscaleMask.InternalGetPixel256(ix, iy: int32or64; iFactX,
+  iFactY: int32or64; smoothBorder: boolean): TByteMask;
+var
+  pUpLeft, pUpRight, pDownLeft, pDownRight: PByteMask;
+  scan: PByteMask;
+begin
+  if (iy >= 0) and (iy < FHeight) then
+  begin
+    scan := GetScanlineFast(iy);
+
+    if (ix >= 0) and (ix < FWidth) then
+      pUpLeft := scan+ix
+    else if smoothBorder then
+      pUpLeft := @ByteMaskBlack
+    else
+      pUpLeft := nil;
+
+    if (ix+1 >= 0) and (ix+1 < FWidth) then
+      pUpRight := scan+(ix+1)
+    else if smoothBorder then
+      pUpRight := @ByteMaskBlack
+    else
+      pUpRight := nil;
+  end else
+  if smoothBorder then
+  begin
+    pUpLeft := @ByteMaskBlack;
+    pUpRight := @ByteMaskBlack;
+  end else
+  begin
+    pUpLeft := nil;
+    pUpRight := nil;
+  end;
+
+  if (iy+1 >= 0) and (iy+1 < FHeight) then
+  begin
+    scan := GetScanlineFast(iy+1);
+
+    if (ix >= 0) and (ix < FWidth) then
+      pDownLeft := scan+ix
+    else if smoothBorder then
+      pDownLeft := @ByteMaskBlack
+    else
+      pDownLeft := nil;
+
+    if (ix+1 >= 0) and (ix+1 < FWidth) then
+      pDownRight := scan+(ix+1)
+    else if smoothBorder then
+      pDownRight := @ByteMaskBlack
+    else
+      pDownRight := nil;
+  end else
+  if smoothBorder then
+  begin
+    pDownLeft := @ByteMaskBlack;
+    pDownRight := @ByteMaskBlack;
+  end else
+  begin
+    pDownLeft := nil;
+    pDownRight := nil;
+  end;
+
+  InterpolateBilinearMask(pUpLeft, pUpRight, pDownLeft,
+          pDownRight, iFactX, iFactY, @result);
+end;
+
+procedure TGrayscaleMask.Init;
+begin
+  inherited Init;
+  ScanInterpolationFilter := rfLinear;
+end;
+
 function TGrayscaleMask.GetScanLine(Y: Integer): PByte;
 begin
   result := PByte(GetScanLineByte(y));
 end;
 
-procedure TGrayscaleMask.CopyFrom(ABitmap: TBGRACustomBitmap; AChannel: TChannel
-  );
+procedure TGrayscaleMask.CopyFrom(ABitmap: TBGRACustomBitmap; AChannel: TChannel);
 var psrc: PByte;
   pdest: PByte;
   x,y: integer;
   ofs: Int32or64;
 begin
-  SetSize(ABitmap.Width,ABitmap.Height);
+  SetSize(ABitmap.Width, ABitmap.Height);
   if NbPixels > 0 then
   begin
     pdest := DataByte;
@@ -421,6 +567,15 @@ begin
         inc(psrc,sizeof(TBGRAPixel));
       end;
     end;
+  end;
+end;
+
+procedure TGrayscaleMask.CopyPropertiesTo(ABitmap: TCustomUniversalBitmap);
+begin
+  inherited CopyPropertiesTo(ABitmap);
+  if ABitmap is TGrayscaleMask then
+  begin
+    TGrayscaleMask(ABitmap).ScanInterpolationFilter:= self.ScanInterpolationFilter;
   end;
 end;
 
@@ -581,6 +736,18 @@ end;
 constructor TGrayscaleMask.CreateDownSample(ABitmap: TBGRACustomBitmap; AWidth,
   AHeight: integer);
 begin
+  CreateDownSample(ABitmap, AWidth, AHeight, rect(0,0,ABitmap.Width,ABitmap.Height));
+end;
+
+constructor TGrayscaleMask.CreateDownSample(ABitmap: TGrayscaleMask; AWidth,
+  AHeight: integer);
+begin
+  CreateDownSample(ABitmap, AWidth, AHeight, rect(0,0,ABitmap.Width,ABitmap.Height));
+end;
+
+constructor TGrayscaleMask.CreateDownSample(ABitmap: TBGRACustomBitmap; AWidth,
+  AHeight: integer; ASourceRect: TRect);
+begin
   inherited Create(0,0);
   if (AWidth = ABitmap.Width) and (AHeight = ABitmap.Height) then
     CopyFrom(ABitmap,cGreen)
@@ -590,11 +757,34 @@ begin
       raise exception.Create('Original size smaller');
     SetSize(AWidth,AHeight);
     if NbPixels > 0 then
-      DownSamplePutImageGrayscale(ABitmap, self, rect(0,0,FWidth,FHeight));
+      DownSamplePutImageGrayscale(ABitmap, self, rect(0,0,FWidth,FHeight), ASourceRect);
   end;
 end;
 
-procedure TGrayscaleMask.Draw(ABitmap: TBGRACustomBitmap; X, Y: Integer);
+constructor TGrayscaleMask.CreateDownSample(ABitmap: TGrayscaleMask; AWidth,
+  AHeight: integer; ASourceRect: TRect);
+begin
+  inherited Create(0,0);
+  if (AWidth = ABitmap.Width) and (AHeight = ABitmap.Height) then
+    CopyFrom(ABitmap)
+  else
+  begin
+    if (ABitmap.Width < AWidth) or (ABitmap.Height < AHeight) then
+      raise exception.Create('Original size smaller');
+    SetSize(AWidth,AHeight);
+    if NbPixels > 0 then
+      DownSamplePutImageGrayscale(ABitmap, self, rect(0,0,FWidth,FHeight), ASourceRect);
+  end;
+end;
+
+procedure TGrayscaleMask.CopyFrom(ABitmap: TGrayscaleMask);
+begin
+  SetSize(ABitmap.Width, ABitmap.Height);
+  if NbPixels > 0 then
+    move(ABitmap.Data^, Data^, NbPixels);
+end;
+
+procedure TGrayscaleMask.Draw(ABitmap: TBGRACustomBitmap; X, Y: Integer; AGammaCorrection: boolean = false);
 var
   yb, minxb, minyb, maxxb, maxyb, ignoreleft, copycount,
   i, delta_source, delta_dest: integer;
@@ -618,12 +808,24 @@ begin
   Dec(delta_dest, copycount);
   for yb := minyb to maxyb do
   begin
-    for i := copycount -1 downto 0 do
+    if AGammaCorrection then
     begin
-      value := psource^;
-      pdest^ := BGRA(value,value,value,255);
-      inc(psource);
-      inc(pdest);
+      for i := copycount -1 downto 0 do
+      begin
+        value := GammaCompressionTab[psource^ + (psource^ shl 8)];
+        pdest^ := BGRA(value,value,value,255);
+        inc(psource);
+        inc(pdest);
+      end;
+    end else
+    begin
+      for i := copycount -1 downto 0 do
+      begin
+        value := psource^;
+        pdest^ := BGRA(value,value,value,255);
+        inc(psource);
+        inc(pdest);
+      end;
     end;
     Inc(psource, delta_source);
     Inc(pdest, delta_dest);
@@ -655,6 +857,56 @@ begin
   (ScanLineByte[Y]+X)^ := AValue;
 end;
 
+function TGrayscaleMask.GetPixel(x, y: single;
+  AResampleFilter: TResampleFilter; smoothBorder: boolean): TByteMask;
+var
+  ix, iy: Int32or64;
+  iFactX,iFactY: Int32or64;
+begin
+  ix := round(x*256);
+  if (ix<= -256) or (ix>=Width shl 8) then
+  begin
+    result := ByteMaskBlack;
+    exit;
+  end;
+  iy := round(y*256);
+  if (iy<= -256) or (iy>=Height shl 8) then
+  begin
+    result := ByteMaskBlack;
+    exit;
+  end;
+
+  iFactX := ix and 255; //distance from integer coordinate
+  iFactY := iy and 255;
+  if ix<0 then ix := -1 else ix := ix shr 8;
+  if iy<0 then iy := -1 else iy := iy shr 8;
+
+  //if the coordinate is integer, then call standard GetPixel function
+  if (iFactX = 0) and (iFactY = 0) then
+  begin
+    Result := (GetScanlineFast(iy)+ix)^;
+    exit;
+  end;
+
+  result := InternalGetPixel256(ix,iy, FineInterpolation256(iFactX, AResampleFilter),
+              FineInterpolation256(iFactY, AResampleFilter), smoothBorder);
+end;
+
+function TGrayscaleMask.GetPixel256(x, y, fracX256, fracY256: int32or64;
+  AResampleFilter: TResampleFilter; smoothBorder: boolean): TByteMask;
+begin
+  if (fracX256 = 0) and (fracY256 = 0) then
+    result := GetPixel(x,y)
+  else if AResampleFilter = rfBox then
+  begin
+    if fracX256 >= 128 then inc(x);
+    if fracY256 >= 128 then inc(y);
+    result := GetPixel(x,y);
+  end else
+    result := InternalGetPixel256(x,y, FineInterpolation256(fracX256,AResampleFilter),
+                FineInterpolation256(fracY256,AResampleFilter), smoothBorder);
+end;
+
 procedure TGrayscaleMask.ScanNextMaskChunk(var ACount: integer; out
   AMask: PByteMask; out AStride: integer);
 var
@@ -675,8 +927,381 @@ begin
 end;
 
 function TGrayscaleMask.ScanAtMask(X, Y: Single): TByteMask;
+var
+  ix, iy: Int32or64;
+  iFactX,iFactY: Int32or64;
 begin
-  Result:= ScanAtInteger(round(X),round(Y));
+  if (FScanWidth = 0) or (FScanHeight = 0) then
+  begin
+    result := BGRAPixelTransparent;
+    exit;
+  end;
+  LoadFromBitmapIfNeeded;
+  ix := round(x*256);
+  iy := round(y*256);
+  if ScanInterpolationFilter = rfBox then
+  begin
+    ix := PositiveMod((ix+128)+(ScanOffset.X shl 8), FScanWidth shl 8) shr 8;
+    iy := PositiveMod((iy+128)+(ScanOffset.Y shl 8), FScanHeight shl 8) shr 8;
+    result := (GetScanlineFast(iy)+ix)^;
+    exit;
+  end;
+  iFactX := ix and 255;
+  iFactY := iy and 255;
+  ix := PositiveMod(ix+(ScanOffset.X shl 8), FScanWidth shl 8) shr 8;
+  iy := PositiveMod(iy+(ScanOffset.Y shl 8), FScanHeight shl 8) shr 8;
+  if (iFactX = 0) and (iFactY = 0) then
+  begin
+    result := (GetScanlineFast(iy)+ix)^;
+    exit;
+  end;
+  if ScanInterpolationFilter <> rfLinear then
+  begin
+    iFactX := FineInterpolation256( iFactX, ScanInterpolationFilter );
+    iFactY := FineInterpolation256( iFactY, ScanInterpolationFilter );
+  end;
+  result := InternalGetPixelCycle256(ix,iy, iFactX,iFactY);
+end;
+
+function TGrayscaleMask.ScanAtInteger(X, Y: integer): TBGRAPixel;
+begin
+  Result:= MaskToBGRA(ScanAtIntegerMask(X, Y));
+end;
+
+function TGrayscaleMask.ScanAt(X, Y: Single): TBGRAPixel;
+begin
+  Result:= MaskToBGRA(ScanAtMask(X, Y));
+end;
+
+procedure TGrayscaleMask.Negative;
+begin
+  NegativeRect(rect(0, 0, Width, Height));
+end;
+
+procedure TGrayscaleMask.NegativeRect(ABounds: TRect);
+var
+  yb, w, xb: LongInt;
+  p: PByte;
+begin
+  ABounds.Intersect(ClipRect);
+  w := ABounds.Width;
+  for yb := ABounds.Top to ABounds.Bottom-1 do
+  begin
+    p := GetPixelAddress(ABounds.Left, yb);
+    for xb := w-1 downto 0 do
+    begin
+      p^ := not p^;
+      inc(p);
+    end;
+  end;
+end;
+
+procedure TGrayscaleMask.InplaceNormalize;
+begin
+  InplaceNormalize(rect(0, 0, Width, Height));
+end;
+
+procedure TGrayscaleMask.InplaceNormalize(ABounds: TRect);
+var
+  yb, w, xb: LongInt;
+  p: PByte;
+  minVal, maxVal, spread: byte;
+begin
+  ABounds.Intersect(ClipRect);
+  if ABounds.IsEmpty then exit;
+  minVal := 255;
+  maxVal := 0;
+  w := ABounds.Width;
+  for yb := ABounds.Top to ABounds.Bottom-1 do
+  begin
+    p := GetPixelAddress(ABounds.Left, yb);
+    for xb := w-1 downto 0 do
+    begin
+      if p^ < minVal then minVal := p^;
+      if p^ > maxVal then maxVal := p^;
+      inc(p);
+    end;
+  end;
+  if (minVal > 0) or (maxVal < 255) then
+  begin
+    if minVal = maxVal then
+    begin
+      if (minVal > 0) and (minVal < 255) then
+        FillRect(ABounds, TByteMask.New(255));
+    end else
+    begin
+      spread := maxVal - minVal;
+      for yb := ABounds.Top to ABounds.Bottom-1 do
+      begin
+        p := GetPixelAddress(ABounds.Left, yb);
+        for xb := w-1 downto 0 do
+        begin
+          p^ := (p^ - minVal) * 255 div spread;
+          inc(p);
+        end;
+      end;
+    end;
+  end;
+end;
+
+function TGrayscaleMask.NewBitmap: TGrayscaleMask;
+begin
+  Result:=inherited NewBitmap as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.NewBitmap(AWidth, AHeight: integer): TGrayscaleMask;
+begin
+  Result:=inherited NewBitmap(AWidth, AHeight) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.NewBitmap(AWidth, AHeight: integer;
+  const Color: TByteMask): TGrayscaleMask;
+begin
+  Result:=inherited NewBitmap(AWidth, AHeight, Color) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.NewBitmap(AWidth, AHeight: integer; AColor: Pointer
+  ): TGrayscaleMask;
+begin
+  Result:=inherited NewBitmap(AWidth, AHeight, AColor) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.NewReference: TGrayscaleMask;
+begin
+  Result:=inherited NewReference as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.GetUnique: TGrayscaleMask;
+begin
+  Result:=inherited GetUnique as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.Duplicate(DuplicateProperties: Boolean): TGrayscaleMask;
+begin
+  Result:=inherited Duplicate(DuplicateProperties) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.GetPart(const ARect: TRect): TGrayscaleMask;
+begin
+  Result:=inherited GetPart(ARect) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.CreateBrushTexture(ABrushStyle: TBrushStyle;
+  APatternColor, ABackgroundColor: TByteMask; AWidth: integer;
+  AHeight: integer; APenWidth: single): TGrayscaleMask;
+begin
+  Result:=inherited CreateBrushTexture(ABrushStyle, APatternColor,
+    ABackgroundColor, AWidth, AHeight, APenWidth) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.RotateCW: TGrayscaleMask;
+begin
+  Result:=inherited RotateCW as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.RotateCCW: TGrayscaleMask;
+begin
+  Result:=inherited RotateCCW as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.RotateUD: TGrayscaleMask;
+begin
+  Result:=inherited RotateUD as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.FilterContour(ABorderValue: byte = 0): TGrayscaleMask;
+var
+  pDest: PByte;
+
+  procedure ComputeDiff(x: integer; pPrevRow, pCurRow, pNextRow: PByte); inline;
+  var diff: Integer;
+  begin
+    diff := (abs((pCurRow+x+1)^ - (pCurRow+x-1)^) +
+            abs((pPrevRow+x-1)^ - (pNextRow+x+1)^) +
+            abs((pPrevRow+x)^ - (pNextRow+x)^) +
+            abs((pPrevRow+x+1)^ - (pNextRow+x-1)^)) div 3;
+    if diff > 255 then
+      (pDest+x)^ := 0
+      else (pDest+x)^ := not Byte(diff);
+  end;
+
+  procedure ComputeDiffLeft(x: integer; pPrevRow, pCurRow, pNextRow: PByte); inline;
+  var diff: Integer;
+  begin
+    diff := (abs((pCurRow+x+1)^ - ABorderValue) +
+            abs(ABorderValue - (pNextRow+x+1)^) +
+            abs((pPrevRow+x)^ - (pNextRow+x)^) +
+            abs((pPrevRow+x+1)^ - ABorderValue)) div 3;
+    if diff > 255 then
+      (pDest+x)^ := 0
+      else (pDest+x)^ := not Byte(diff);
+  end;
+
+  procedure ComputeDiffRight(x: integer; pPrevRow, pCurRow, pNextRow: PByte); inline;
+  var diff: Integer;
+  begin
+    diff := (abs(ABorderValue - (pCurRow+x-1)^) +
+            abs((pPrevRow+x-1)^ - ABorderValue) +
+            abs((pPrevRow+x)^ - (pNextRow+x)^) +
+            abs(ABorderValue - (pNextRow+x-1)^)) div 3;
+    if diff > 255 then
+      (pDest+x)^ := 0
+      else (pDest+x)^ := not Byte(diff);
+  end;
+
+  procedure ComputeDiffLeftRight(x: integer; pPrevRow, pCurRow, pNextRow: PByte); inline;
+  var diff: Integer;
+  begin
+    diff := abs((pPrevRow+x)^ - (pNextRow+x)^) div 3;
+    if diff > 255 then
+      (pDest+x)^ := 0
+      else (pDest+x)^ := not Byte(diff);
+  end;
+
+var
+  pPrevRow, pCurRow, pNextRow, pBorder: PByte;
+  border: packed array of byte;
+  yb, xb: Integer;
+
+begin
+  if NbPixels = 0 then exit;
+  result := TGrayscaleMask.Create;
+  result.SetSize(Width, Height);
+  setlength(border, Width);
+  for xb := 0 to Width-1 do
+    border[xb] := ABorderValue;
+  pBorder := @border[0];
+  pPrevRow := nil;
+  pCurRow := nil;
+  pNextRow := ScanLine[0];
+  for yb := 0 to Height-1 do
+  begin
+    pPrevRow := pCurRow;
+    pCurRow := pNextRow;
+    if yb < Height-1 then
+      pNextRow := ScanLine[yb+1]
+      else pNextRow := nil;
+    pDest := result.ScanLine[yb];
+
+    if pPrevRow = nil then
+    begin
+      if pNextRow = nil then
+      begin
+        if Width = 1 then
+          ComputeDiffLeftRight(0, pBorder, pCurRow, pBorder) else
+        begin
+          ComputeDiffLeft(0, pBorder, pCurRow, pBorder);
+          for xb := 1 to Width-2 do
+            ComputeDiff(xb, pBorder, pCurRow, pBorder);
+          ComputeDiffRight(Width-1, pBorder, pCurRow, pBorder);
+        end;
+      end else
+      begin
+        if Width = 1 then
+          ComputeDiffLeftRight(0, pBorder, pCurRow, pNextRow) else
+        begin
+          ComputeDiffLeft(0, pBorder, pCurRow, pNextRow);
+          for xb := 1 to Width-2 do
+            ComputeDiff(xb, pBorder, pCurRow, pNextRow);
+          ComputeDiffRight(Width-1, pBorder, pCurRow, pNextRow);
+        end;
+      end;
+    end else
+    if pNextRow = nil then
+    begin
+      if Width = 1 then
+        ComputeDiffLeftRight(0, pPrevRow, pCurRow, pBorder) else
+      begin
+        ComputeDiffLeft(0, pPrevRow, pCurRow, pBorder);
+        for xb := 1 to Width-2 do
+          ComputeDiff(xb, pPrevRow, pCurRow, pBorder);
+        ComputeDiffRight(Width-1, pPrevRow, pCurRow, pBorder);
+      end;
+    end else
+    begin
+      if Width = 1 then
+        ComputeDiffLeftRight(0, pPrevRow, pCurRow, pNextRow) else
+      begin
+        ComputeDiffLeft(0, pPrevRow, pCurRow, pNextRow);
+        for xb := 1 to Width-2 do
+          ComputeDiff(xb, pPrevRow, pCurRow, pNextRow);
+        ComputeDiffRight(Width-1, pPrevRow, pCurRow, pNextRow);
+      end;
+    end;
+  end;
+end;
+
+function TGrayscaleMask.FilterBlurRadial(radius: single;
+  blurType: TRadialBlurType): TGrayscaleMask;
+begin
+  Result:=inherited FilterBlurRadial(radius, blurType) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.FilterBlurRadial(const ABounds: TRect; radius: single;
+  blurType: TRadialBlurType): TGrayscaleMask;
+begin
+  Result:=inherited FilterBlurRadial(ABounds, radius, blurType) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.FilterBlurRadial(radiusX, radiusY: single;
+  blurType: TRadialBlurType): TGrayscaleMask;
+begin
+  Result:=inherited FilterBlurRadial(radiusX, radiusY, blurType) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.FilterBlurRadial(const ABounds: TRect; radiusX,
+  radiusY: single; blurType: TRadialBlurType): TGrayscaleMask;
+begin
+  Result:=inherited FilterBlurRadial(ABounds, radiusX, radiusY, blurType) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.FilterBlurMotion(distance: single; angle: single;
+  oriented: boolean): TGrayscaleMask;
+begin
+  Result:=inherited FilterBlurMotion(distance, angle, oriented) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.FilterBlurMotion(const ABounds: TRect;
+  distance: single; angle: single; oriented: boolean): TGrayscaleMask;
+begin
+  Result:=inherited FilterBlurMotion(ABounds, distance, angle, oriented) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.FilterCustomBlur(mask: TCustomUniversalBitmap
+  ): TGrayscaleMask;
+begin
+  Result:=inherited FilterCustomBlur(mask) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.FilterCustomBlur(const ABounds: TRect;
+  mask: TCustomUniversalBitmap): TGrayscaleMask;
+begin
+  Result:=inherited FilterCustomBlur(ABounds, mask) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.FilterSphere: TGrayscaleMask;
+var
+  cx, cy: single;
+  scanner: TBGRASphereDeformationScanner;
+begin
+  Result := NewBitmap(Width, Height);
+  cx     := Width / 2 - 0.5;
+  cy     := Height / 2 - 0.5;
+  scanner := TBGRASphereDeformationScanner.Create(self, PointF(cx,cy), Width/2, Height/2);
+  result.FillEllipseAntialias(cx, cy, Width/2-0.5, Height/2-0.5, scanner);
+  scanner.Free;
+end;
+
+function TGrayscaleMask.FilterCylinder: TGrayscaleMask;
+var
+  cx: single;
+  scanner: TBGRAVerticalCylinderDeformationScanner;
+begin
+  Result := NewBitmap(Width, Height);
+  cx     := Width / 2 - 0.5;
+  scanner := TBGRAVerticalCylinderDeformationScanner.Create(self, cx, Width/2);
+  result.Fill(scanner, dmSet);
+  scanner.Free;
 end;
 
 procedure DownSamplePutImageGrayscale(sourceData: PByte;
@@ -789,13 +1414,36 @@ end;
 
 procedure DownSamplePutImageGrayscale(source: TBGRACustomBitmap;
   dest: TGrayscaleMask; ADestRect: TRect);
+begin
+  DownSamplePutImageGrayscale(source, dest, ADestRect, rect(0,0,source.Width,source.Height));
+end;
+
+procedure DownSamplePutImageGrayscale(source: TGrayscaleMask; dest: TGrayscaleMask; ADestRect: TRect); overload;
+begin
+  DownSamplePutImageGrayscale(source, dest, ADestRect, rect(0,0,source.Width,source.Height));
+end;
+
+procedure DownSamplePutImageGrayscale(source: TBGRACustomBitmap;
+  dest: TGrayscaleMask; ADestRect: TRect; ASourceRect: TRect);
 var delta: Int32or64;
 begin
   delta := source.Width*sizeof(TBGRAPixel);
   if source.LineOrder = riloBottomToTop then
     delta := -delta;
-  DownSamplePutImageGrayscale(PByte(source.ScanLine[0])+TBGRAPixel_GreenByteOffset,
-       sizeof(TBGRAPixel),delta,source.Width,source.Height,dest,ADestRect);
+  DownSamplePutImageGrayscale(
+       source.GetPixelAddress(ASourceRect.Left, ASourceRect.Top) + TBGRAPixel_GreenByteOffset,
+       sizeof(TBGRAPixel), delta, ASourceRect.Width, ASourceRect.Height, dest, ADestRect);
+end;
+
+procedure DownSamplePutImageGrayscale(source: TGrayscaleMask;
+  dest: TGrayscaleMask; ADestRect: TRect; ASourceRect: TRect);
+var delta: Int32or64;
+begin
+  delta := source.Width;
+  if source.LineOrder = riloBottomToTop then
+    delta := -delta;
+  DownSamplePutImageGrayscale(source.GetPixelAddress(ASourceRect.Left, ASourceRect.Top), 1,
+    delta, ASourceRect.Width, ASourceRect.Height, dest, ADestRect);
 end;
 
 end.

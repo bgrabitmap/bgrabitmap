@@ -31,6 +31,8 @@ procedure DrawExpandedPixelInlineNoAlphaCheck(dest: PBGRAPixel; const ec: TExpan
 procedure ClearTypeDrawPixel(pdest: PBGRAPixel; Cr, Cg, Cb: byte; Color: TBGRAPixel); inline;
 procedure InterpolateBilinear(pUpLeft,pUpRight,pDownLeft,pDownRight: PBGRAPixel;
                 iFactX,iFactY: Integer; ADest: PBGRAPixel);
+procedure InterpolateBilinearMask(pUpLeft,pUpRight,pDownLeft,pDownRight: PByteMask;
+                iFactX,iFactY: Integer; ADest: PByteMask);
 
 procedure CopyPixelsWithOpacity(dest,src: PBGRAPixel; opacity: byte; Count: integer); inline;
 function ApplyOpacity(opacity1,opacity2: byte): byte; inline;
@@ -1470,6 +1472,31 @@ begin
       alpha := (aSum + 128) shr 8
     else
       alpha := (aSum + aDiv shr 1) div aDiv;
+  end;
+end;
+
+procedure InterpolateBilinearMask(pUpLeft, pUpRight, pDownLeft,
+  pDownRight: PByteMask; iFactX, iFactY: Integer; ADest: PByteMask);
+var
+  w1,w2,w3,w4,sum: LongWord;
+begin
+  w4 := (iFactX*iFactY+127) shr 8;
+  w3 := iFactY-w4;
+  {$PUSH}{$HINTS OFF}
+  w1 := (256-iFactX)-w3;
+  {$POP}
+  w2 := iFactX-w4;
+
+  if (pUpLeft <> nil) and (pUpRight <> nil) and (pDownLeft <> nil) and (pDownRight <> nil) then
+    ADest^.gray := (pUpLeft^.gray*w1 + pUpRight^.gray*w2 + pDownLeft^.gray*w3 + pDownRight^.gray*w4 + 128) shr 8
+  else
+  begin
+    sum := 0;
+    if pUpLeft <> nil then inc(sum, pUpLeft^.gray*w1);
+    if pUpRight <> nil then inc(sum, pUpRight^.gray*w2);
+    if pDownLeft <> nil then inc(sum, pDownLeft^.gray*w3);
+    if pDownRight <> nil then inc(sum, pDownRight^.gray*w4);
+    ADest^.gray := (sum + 128) shr 8;
   end;
 end;
 
