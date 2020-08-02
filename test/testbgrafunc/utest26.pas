@@ -34,7 +34,7 @@ constructor TTest26.Create;
 begin
   inherited Create;
   Name := 'Gradient shapes (antialiased or not)';
-  backgroundTile := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'diamondback.png');
+  backgroundTile := TBGRABitmap.Create(ResourceDir+'diamondback.png');
   randomize;
   virtualScreen := nil;
 end;

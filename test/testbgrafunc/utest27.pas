@@ -41,7 +41,7 @@ begin
                   else Name += ' shading';
       liAlwaysHighQuality: Name += ' high-quality shading';
     end;
-  backgroundTile := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'diamondback.png');
+  backgroundTile := TBGRABitmap.Create(ResourceDir+'diamondback.png');
   virtualScreen := nil;
   background := nil;
   scene := TToreScene3D.Create();

@@ -5,7 +5,7 @@ unit utest11;
 interface
 
 uses
-  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRABitmapTypes;
+  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRABitmapTypes, BGRAGrayscaleMask;
 
 const
   nbPoints = 6;
@@ -16,6 +16,7 @@ type
   TTest11 = class(TTest)
   protected
     virtualScreen: TBGRABitmap;
+    mask: TGrayscaleMask;
     pts: array of TPointF;
     dirs: array of TPointF;
     FFilter: string;
@@ -49,11 +50,14 @@ end;
 
 procedure TTest11.OnPaint(Canvas: TCanvas; Left,Top,Width, Height: Integer);
 var filtered: TBGRABitmap;
+  filteredMask: TGrayscaleMask;
 begin
   if pts = nil then exit;
 
   if (virtualscreen <> nil) and ((virtualscreen.width <> width) or (virtualscreen.Height <> height)) then
-  FreeAndNil(virtualScreen);
+    FreeAndNil(virtualScreen);
+  if (mask <> nil) and ((mask.width <> width) or (mask.Height <> height)) then
+    FreeAndNil(mask);
 
   if virtualscreen = nil then
     virtualscreen := TBGRABitmap.Create(Width,Height);
@@ -63,24 +67,28 @@ begin
     virtualScreen.Fill(BGRABlack);
     virtualScreen.DrawPolyLineAntialias(virtualScreen.ComputeOpenedSpline(pts,ssCrossing),BGRAWhite,(width+height)/80,True);
     filtered := virtualScreen.FilterEmbossHighlight(True);
-    virtualScreen.Fill(clBtnFace);
+    virtualScreen.Fill(clForm);
     virtualScreen.PutImage(0,0,filtered,dmDrawWithTransparency);
     filtered.Free;
+    virtualscreen.Draw(Canvas,Left,Top,True);
+  end else
+  if ffilter = 'Contour' then
+  begin
+    if mask = nil then
+      mask := TGrayscaleMask.Create(virtualScreen.Width, virtualScreen.Height);
+    mask.Fill(ByteMaskBlack);
+    mask.DrawPolyLineAntialias(virtualScreen.ComputeOpenedSpline(pts,ssCrossing),
+      ByteMaskWhite, (width+height)/80, True);
+    filteredMask := mask.FilterContour;
+    filteredMask.Draw(virtualScreen, 0, 0, true);
+    filteredMask.Free;
     virtualscreen.Draw(Canvas,Left,Top,True);
   end else
   begin
     virtualScreen.Fill(BGRAWhite);
     virtualScreen.DrawPolyLineAntialias(virtualScreen.ComputeOpenedSpline(pts,ssCrossing),BGRA(0,0,0,128),(width+height)/80,True);
-    if ffilter = 'Contour' then
-    begin
-      filtered := virtualScreen.FilterContour;
-      filtered.Draw(Canvas,Left,Top,True);
-      filtered.Free;
-    end else
-    begin
-      virtualScreen.DrawPolyLineAntialias(pts,BGRA(0,0,0,128),(width+height)/800,True);
-      virtualscreen.Draw(Canvas,Left,Top,True);
-    end;
+    virtualScreen.DrawPolyLineAntialias(pts,BGRA(0,0,0,128),(width+height)/800,True);
+    virtualscreen.Draw(Canvas,Left,Top,True);
   end;
 end;
 

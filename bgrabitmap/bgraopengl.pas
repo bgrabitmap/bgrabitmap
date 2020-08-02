@@ -115,7 +115,7 @@ type
     function FilterSmooth: TBGLBitmap; override;
     function FilterSharpen(Amount: single = 1): TBGLBitmap; overload; override;
     function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGLBitmap; overload; override;
-    function FilterContour: TBGLBitmap; override;
+    function FilterContour(AGammaCorrection: boolean = false): TBGLBitmap; override;
     function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGLBitmap; override;
     function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGLBitmap; overload; override;
     function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGLBitmap; overload; override;
@@ -1842,9 +1842,9 @@ begin
   Result:=inherited FilterSharpen(ABounds, Amount) as TBGLBitmap;
 end;
 
-function TBGLBitmap.FilterContour: TBGLBitmap;
+function TBGLBitmap.FilterContour(AGammaCorrection: boolean = false): TBGLBitmap;
 begin
-  Result:=inherited FilterContour as TBGLBitmap;
+  Result:=inherited FilterContour(AGammaCorrection) as TBGLBitmap;
 end;
 
 function TBGLBitmap.FilterPixelate(pixelSize: integer; useResample: boolean;

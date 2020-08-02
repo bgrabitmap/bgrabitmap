@@ -27,3 +27,4 @@ test/colorspace/HorseShoe
 .DS_Store
 
 *.bak1
+*.app

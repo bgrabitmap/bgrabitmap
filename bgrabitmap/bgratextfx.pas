@@ -117,7 +117,6 @@ var
   parts: array[0..3] of TGrayscaleMask;
   n,nbLines: integer;
   alphaMax: UInt32or64;
-  ptrPart: TBGRACustomBitmap;
   pmask: PByte;
   fx: TBGRATextEffect;
   FxFont: TFont;
@@ -197,12 +196,16 @@ begin
 
     if lines[yb] > fromy then
     begin
-      ptrPart := fx.TextMask.GetPtrBitmap(fromy,lines[yb]);
       if useClearType then
-        parts[yb] := TGrayscaleMask.CreateDownSample(ptrPart,round(ptrPart.Width/FontAntialiasingLevel*3),round(ptrPart.Height/FontAntialiasingLevel))
+        parts[yb] := TGrayscaleMask.CreateDownSample(fx.TextMask,
+                       round(fx.TextMask.Width / FontAntialiasingLevel * 3),
+                       round((lines[yb] - fromy) / FontAntialiasingLevel),
+                       rect(0, fromy, fx.TextMask.Width, lines[yb]) )
       else
-        parts[yb] := TGrayscaleMask.CreateDownSample(ptrPart,round(ptrPart.Width/FontAntialiasingLevel),round(ptrPart.Height/FontAntialiasingLevel));
-      ptrPart.Free;
+        parts[yb] := TGrayscaleMask.CreateDownSample(fx.TextMask,
+                       round(fx.TextMask.Width / FontAntialiasingLevel),
+                       round((lines[yb] - fromy) / FontAntialiasingLevel),
+                       rect(0, fromy, fx.TextMask.Width, lines[yb]) );
 
       if alphaMax < 255 then
       begin
@@ -661,6 +664,7 @@ procedure TBGRATextEffect.InitImproveReadability(AText: string; Font: TFont;
   SubOffsetX, SubOffsetY: single);
 var size: TSize;
   overhang: integer;
+  temp: TBGRACustomBitmap;
 begin
   FShadowQuality:= rbFast;
   if SubOffsetX < 0 then SubOffsetX := 0;
@@ -673,8 +677,11 @@ begin
   inc(size.cy, 2 + ceil(SubOffsetY) );
 
   FOffset := Point(-overhang,-1); //include overhang
-  FTextMask := BGRABitmapFactory.Create(size.cx,size.cy,BGRABlack);
-  BGRATextOutImproveReadability(FTextMask, Font, overhang+SubOffsetX,1+SubOffsetY, AText, BGRAWhite, nil, taLeftJustify, irMask);
+  temp := BGRABitmapFactory.Create(size.cx, size.cy, BGRABlack);
+  BGRATextOutImproveReadability(temp, Font, overhang+SubOffsetX,1+SubOffsetY, AText, BGRAWhite, nil, taLeftJustify, irMask);
+  FTextMask := TGrayscaleMask.Create;
+  FTextMask.CopyFrom(temp, cGreen);
+  temp.Free;
 end;
 
 constructor TBGRATextEffect.Create(AText: string; Font: TFont;
@@ -720,7 +727,7 @@ const FXAntialiasingLevel = FontAntialiasingLevel;
 var temp: TBGRACustomBitmap;
 	tempBmp: TBitmap;
     size: TSize;
-    p: PBGRAPixel;
+    p: PByte;
     n,v,maxAlpha: integer;
     alpha: byte;
     sizeX,sizeY: integer;
@@ -836,13 +843,15 @@ begin
     FTextSize.cy := round(FTextSize.cy/FXAntialiasingLevel);
     FOffset := Point(round(FOffset.X/FXAntialiasingLevel),round(FOffset.Y/FXAntialiasingLevel));
 
-    FTextMask := temp.Resample(round(temp.width/FXAntialiasingLevel),round(temp.Height/FXAntialiasingLevel),rmSimpleStretch);
+    FTextMask := TGrayscaleMask.CreateDownSample(temp, round(temp.width/FXAntialiasingLevel),
+                   round(temp.Height/FXAntialiasingLevel));
+    temp.Free;
 
     maxAlpha := 0;
     p := FTextMask.Data;
     for n := FTextMask.NbPixels - 1 downto 0 do
     begin
-      alpha    := P^.green;
+      alpha    := P^;
       if alpha > maxAlpha then maxAlpha := alpha;
       Inc(p);
     end;
@@ -851,26 +860,19 @@ begin
       p := FTextMask.Data;
       for n := FTextMask.NbPixels - 1 downto 0 do
       begin
-        v:= integer(p^.green * 255) div maxAlpha;
-        p^.red := v;
-        p^.green := v;
-        p^.blue := v;
+        p^:= integer(p^ * 255) div maxAlpha;
         Inc(p);
       end;
     end;
-    temp.Free;
   end
   else
   begin
-    FTextMask := temp;
+    FTextMask := TGrayscaleMask.Create(temp, cGreen);
+    temp.Free;
+
     p := FTextMask.data;
     for n := FTextMask.NbPixels-1 downto 0 do
-    begin
-      alpha := GammaExpansionTab[P^.green] shr 8;
-      p^.green := alpha;
-      p^.red := alpha;
-      p^.blue := alpha;
-    end;
+      p^ := GammaExpansionTab[p^] shr 8;
   end;
 end;
 

@@ -42,11 +42,11 @@ begin
   Name := 'Global opacity applied to pacman, background scrolling and twirl';
   virtualScreen := nil;
   twirled := nil;
-  pacman := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'pac_d1.bmp');
+  pacman := TBGRABitmap.Create(ResourceDir+'pac_d1.bmp');
   pacman.ReplaceColor(pacman.GetPixel(0,0),BGRAPixelTransparent);
   time := Pi/4;
 
-  backgroundTile := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'diamondback.png');
+  backgroundTile := TBGRABitmap.Create(ResourceDir+'diamondback.png');
 end;
 
 destructor TTest8.Destroy;

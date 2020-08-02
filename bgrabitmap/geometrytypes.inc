@@ -101,8 +101,9 @@ type
     class function Intersect(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
     class function Union(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
     class function Union(const R1: TRectF; const R2: TRectF; ADiscardEmpty: boolean): TRectF; overload; static;
-    function Union(const r: TRectF):TRectF;
-    function Union(const r: TRectF; ADiscardEmpty: boolean):TRectF;
+    function Union(const r: TRectF):TRectF; overload;
+    function Union(const r: TRectF; ADiscardEmpty: boolean):TRectF; overload;
+    procedure Include(const APoint: TPointF);
     function IntersectsWith(const r: TRectF): boolean;
     function IsEmpty: boolean;
   end;
@@ -138,6 +139,7 @@ type
     class function AffineBox(ARectF: TRectF): TAffineBox; overload; static;
     procedure Offset(AOfsX, AOfsY: single); overload;
     procedure Offset(AOfs: TPointF); overload;
+    procedure Inflate(AHoriz, AVert: single); //inflates along axes
     function Contains(APoint: TPointF): boolean;
     property RectBounds: TRect read GetRectBounds;
     property RectBoundsF: TRectF read GetRectBoundsF;
@@ -909,6 +911,20 @@ begin
   result := TRectF.Union(self, r, ADiscardEmpty);
 end;
 
+procedure TRectFHelper.Include(const APoint: TPointF);
+begin
+  if APoint.x <> EmptySingle then
+  begin
+    if APoint.x < Left then Left := APoint.x else
+    if APoint.x > Right then Right := APoint.x;
+  end;
+  if APoint.y <> EmptySingle then
+  begin
+    if APoint.y < Top then Top := APoint.y else
+    if APoint.y > Bottom then Bottom := APoint.y;
+  end;
+end;
+
 function TRectFHelper.IntersectsWith(const r: TRectF): boolean;
 begin
   result:= not TRectF.Intersect(self, r).IsEmpty;
@@ -1032,6 +1048,24 @@ end;
 procedure TAffineBox.Offset(AOfs: TPointF);
 begin
   Offset(AOfs.X,AOfs.Y);
+end;
+
+procedure TAffineBox.Inflate(AHoriz, AVert: single);
+var
+  u, v, ofs_horiz, ofs_vert: TPointF;
+  lenU, lenV: Single;
+begin
+  u := TopRight-TopLeft;
+  v := BottomLeft-TopLeft;
+  lenU := VectLen(u);
+  if lenU > 0 then u := u*(1/lenU);
+  lenV := VectLen(v);
+  if lenV > 0 then v := v*(1/lenV);
+  ofs_horiz := u*AHoriz;
+  ofs_vert := v*AVert;
+  TopLeft := TopLeft - ofs_horiz - ofs_vert;
+  TopRight := TopRight + ofs_horiz - ofs_vert;
+  BottomLeft := BottomLeft - ofs_horiz + ofs_vert;
 end;
 
 function TAffineBox.Contains(APoint: TPointF): boolean;

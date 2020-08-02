@@ -6,7 +6,7 @@ unit BGRACustomTextFX;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAPhongTypes;
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRAPhongTypes, BGRAGrayscaleMask;
 
 const DefaultOutlineWidth = 3;
 
@@ -25,19 +25,22 @@ type
     procedure SetShadowQuality(AValue: TRadialBlurType);
   protected
     FShadowQuality: TRadialBlurType;
-    FTextMask: TBGRACustomBitmap;
+    FTextMask: TGrayscaleMask;
     FShadowRadius: integer;
-    FOutlineMask, FShadowMask, FShadingMask : TBGRACustomBitmap;
+    FOutlineMask, FShadowMask : TGrayscaleMask;
+    FShadingMask: TBGRACustomBitmap;
     FShadingAltitude: integer;
     FShadingRounded: boolean;
     FTextSize: TSize;
     FOffset: TPoint;
-    function DrawMaskMulticolored(ADest: TBGRACustomBitmap; AMask: TBGRACustomBitmap; X,Y: Integer; const AColors: array of TBGRAPixel): TRect;
-    function DrawMask(ADest: TBGRACustomBitmap; AMask: TBGRACustomBitmap; X,Y: Integer; AColor: TBGRAPixel): TRect; overload;
-    function DrawMask(ADest: TBGRACustomBitmap; AMask: TBGRACustomBitmap; X,Y: Integer; ATexture: IBGRAScanner): TRect; overload;
+    function DrawMaskMulticolored(ADest: TBGRACustomBitmap; AMask: TCustomUniversalBitmap; X,Y: Integer; const AColors: array of TBGRAPixel): TRect;
+    function DrawMask(ADest: TBGRACustomBitmap; AMask: TCustomUniversalBitmap; X,Y: Integer; AColor: TBGRAPixel): TRect; overload;
+    function DrawMask(ADest: TBGRACustomBitmap; AMask: TCustomUniversalBitmap; X,Y: Integer; ATexture: IBGRAScanner): TRect; overload;
     function InternalDrawShaded(ADest: TBGRACustomBitmap; X,Y: integer; Shader: TCustomPhongShading; Altitude: integer; AColor: TBGRAPixel; ATexture: IBGRAScanner; ARounded: Boolean): TRect;
+    procedure Init(AMask: TGrayscaleMask; AMaskOwner: boolean; AWidth,AHeight: integer; AOffset: TPoint);
   public
     constructor Create(AMask: TBGRACustomBitmap; AMaskOwner: boolean; AWidth,AHeight: integer; AOffset: TPoint);
+    constructor Create(AMask: TGrayscaleMask; AMaskOwner: boolean; AWidth,AHeight: integer; AOffset: TPoint);
     procedure ApplySphere;
     procedure ApplyVerticalCylinder;
     procedure ApplyHorizontalCylinder;
@@ -60,7 +63,7 @@ type
     function DrawShadow(ADest: TBGRACustomBitmap; X,Y,Radius: integer; AColor: TBGRAPixel): TRect; overload;
     function DrawShadow(ADest: TBGRACustomBitmap; X,Y,Radius: integer; AColor: TBGRAPixel; AAlign: TAlignment): TRect; overload;
     destructor Destroy; override;
-    property TextMask: TBGRACustomBitmap read FTextMask;
+    property TextMask: TGrayscaleMask read FTextMask;
     property TextMaskOffset: TPoint read FOffset;
     property Width: integer read GetTextWidth; deprecated;
     property Height: integer read GetTextHeight; deprecated;
@@ -79,20 +82,26 @@ implementation
 
 uses Math, BGRAGradientScanner;
 
-procedure BGRACustomReplace(var Destination: TBGRACustomBitmap; Temp: TObject);
+procedure BGRACustomReplace(var Destination: TBGRACustomBitmap; Temp: TObject); overload;
 begin
   Destination.Free;
   Destination := Temp as TBGRACustomBitmap;
+end;
+
+procedure BGRACustomReplace(var Destination: TGrayscaleMask; Temp: TObject); overload;
+begin
+  Destination.Free;
+  Destination := Temp as TGrayscaleMask;
 end;
 
 { TBGRACustomTextEffect }
 
 function TBGRACustomTextEffect.GetBounds: TRect;
 begin
-  if TextMask = nil then
+  if FTextMask = nil then
     result := EmptyRect else
   with TextMaskOffset do
-    result := rect(X,Y,X+TextMask.Width,Y+TextMask.Height);
+    result := rect(X,Y,X+FTextMask.Width,Y+FTextMask.Height);
 end;
 
 function TBGRACustomTextEffect.GetMaskHeight: integer;
@@ -141,12 +150,12 @@ begin
 end;
 
 function TBGRACustomTextEffect.DrawMaskMulticolored(ADest: TBGRACustomBitmap;
-  AMask: TBGRACustomBitmap; X, Y: Integer; const AColors: array of TBGRAPixel
+  AMask: TCustomUniversalBitmap; X, Y: Integer; const AColors: array of TBGRAPixel
   ): TRect;
 var
   scan: TBGRASolidColorMaskScanner;
   xb,yb,startX,numColor: integer;
-  p0,p: PBGRAPixel;
+  p0,p: PByte;
   emptyCol, nextCol: boolean;
 begin
   if (AMask = nil) or (length(AColors)=0) then
@@ -162,7 +171,7 @@ begin
   scan := TBGRASolidColorMaskScanner.Create(AMask,Point(-X,-Y),AColors[0]);
   numColor := 0;
   startX := -1;
-  p0 := AMask.data;
+  p0 := AMask.DataByte;
   for xb := 0 to AMask.Width-1 do
   begin
     p := p0;
@@ -172,7 +181,7 @@ begin
       emptyCol := true;
       for yb := AMask.Height-1 downto 0 do
       begin
-        if (p^<>BGRABlack) then
+        if (p^ <> 0) then
         begin
           emptyCol := false;
           break;
@@ -203,10 +212,10 @@ begin
       nextCol := true;
       for yb := AMask.Height-1 downto 0 do
       begin
-        if (p^<>BGRABlack) then
+        if (p^ <> 0) then
         begin
           emptyCol := false;
-          if ((p-1)^<>BGRABlack) then
+          if ((p-1)^ <> 0) then
           begin
             nextCol := false;
             break;
@@ -235,7 +244,7 @@ begin
 end;
 
 function TBGRACustomTextEffect.DrawMask(ADest: TBGRACustomBitmap;
-  AMask: TBGRACustomBitmap; X, Y: Integer; AColor: TBGRAPixel): TRect;
+  AMask: TCustomUniversalBitmap; X, Y: Integer; AColor: TBGRAPixel): TRect;
 var
   scan: TBGRACustomScanner;
 begin
@@ -251,7 +260,7 @@ begin
 end;
 
 function TBGRACustomTextEffect.DrawMask(ADest: TBGRACustomBitmap;
-  AMask: TBGRACustomBitmap; X, Y: Integer; ATexture: IBGRAScanner): TRect;
+  AMask: TCustomUniversalBitmap; X, Y: Integer; ATexture: IBGRAScanner): TRect;
 var
   scan: TBGRACustomScanner;
 begin
@@ -270,7 +279,8 @@ function TBGRACustomTextEffect.InternalDrawShaded(ADest: TBGRACustomBitmap; X,
   Y: integer; Shader: TCustomPhongShading; Altitude: integer;
   AColor: TBGRAPixel; ATexture: IBGRAScanner; ARounded: Boolean): TRect;
 var
-  WithMargin,Map: TBGRACustomBitmap;
+  WithMargin,GrayMap: TGrayscaleMask;
+  HeightMap: TBGRACustomBitmap;
   p: PBGRAPixel;
   n,maxv: integer;
   v,blurRadius: single;
@@ -295,16 +305,20 @@ begin
 
     iBlurRadius := ceil(blurRadius);
 
-    WithMargin := BGRABitmapFactory.Create(FTextMask.Width+iBlurRadius*2, FTextMask.Height+iBlurRadius*2,BGRABlack);
-    WithMargin.PutImage(iBlurRadius,iBlurRadius,FTextMask,dmSet);
+    WithMargin := TGrayscaleMask.Create(FTextMask.Width+iBlurRadius*2, FTextMask.Height+iBlurRadius*2,BGRABlack);
+    WithMargin.PutImage(iBlurRadius, iBlurRadius, FTextMask, dmSet);
     if (iBlurRadius <> blurRadius) and (blurRadius < 3) then
-      Map := WithMargin.FilterBlurRadial(round(blurRadius*10),rbPrecise)
+      GrayMap := WithMargin.FilterBlurRadial(round(blurRadius*10), rbPrecise)
     else
-      Map := WithMargin.FilterBlurRadial(iBlurRadius,rbFast);
+      GrayMap := WithMargin.FilterBlurRadial(iBlurRadius, rbFast);
+    HeightMap := BGRABitmapFactory.Create;
+    HeightMap.SetSize(GrayMap.Width, GrayMap.Height);
+    GrayMap.Draw(HeightMap, 0, 0);
+    GrayMap.Free;
 
-    p := Map.Data;
+    p := HeightMap.Data;
     maxv := 0;
-    for n := Map.NbPixels-1 downto 0 do
+    for n := HeightMap.NbPixels-1 downto 0 do
     begin
       if p^.green > maxv then
         maxv := p^.green;
@@ -313,8 +327,8 @@ begin
 
     if maxv > 0 then
     begin
-      p := Map.Data;
-      for n := Map.NbPixels-1 downto 0 do
+      p := HeightMap.Data;
+      for n := HeightMap.NbPixels-1 downto 0 do
       begin
         v := p^.green/maxv;
         if ARounded then
@@ -328,10 +342,11 @@ begin
       end;
     end;
 
-    Map.ApplyMask(WithMargin);
+    HeightMap.ApplyMask(WithMargin);
     WithMargin.Free;
-    BGRACustomReplace(Map, Map.GetPart(rect(iBlurRadius,iBlurRadius,Map.Width-iBlurRadius,Map.Height-iBlurRadius)));
-    FShadingMask := Map;
+    BGRACustomReplace(HeightMap, HeightMap.GetPart( rect(iBlurRadius, iBlurRadius,
+                                 HeightMap.Width-iBlurRadius, HeightMap.Height-iBlurRadius) ) );
+    FShadingMask := HeightMap;
   end;
 
   inc(X, FOffset.X);
@@ -341,6 +356,18 @@ begin
   else
     Shader.Draw(ADest,FShadingMask,Altitude,X,Y, AColor);
   result := rect(X,Y, X+FShadingMask.Width,Y+FShadingMask.Height);
+end;
+
+procedure TBGRACustomTextEffect.Init(AMask: TGrayscaleMask;
+  AMaskOwner: boolean; AWidth, AHeight: integer; AOffset: TPoint);
+begin
+  FTextSize := Size(AWidth,AHeight);
+  FOffset := AOffset;
+  if not AMaskOwner then
+    FTextMask := AMask.Duplicate
+  else
+    FTextMask := AMask;
+  FShadowQuality:= rbFast;
 end;
 
 function TBGRACustomTextEffect.Draw(ADest: TBGRACustomBitmap; X, Y: integer;
@@ -405,27 +432,27 @@ end;
 
 constructor TBGRACustomTextEffect.Create(AMask: TBGRACustomBitmap; AMaskOwner: boolean; AWidth,
   AHeight: integer; AOffset: TPoint);
+var
+  grayMask: TGrayscaleMask;
 begin
-  FTextSize := Size(AWidth,AHeight);
-  FOffset := AOffset;
-  if not AMaskOwner then
-    FTextMask := AMask.Duplicate()
-  else
-    FTextMask := AMask;
-  FShadowQuality:= rbFast;
+  grayMask := TGrayscaleMask.Create(AMask, cGreen);
+  if AMaskOwner then AMask.Free;
+  Init(grayMask, true, AWidth, AHeight, AOffset);
+end;
+
+constructor TBGRACustomTextEffect.Create(AMask: TGrayscaleMask;
+  AMaskOwner: boolean; AWidth, AHeight: integer; AOffset: TPoint);
+begin
+  Init(AMask, AMaskOwner, AWidth, AHeight, AOffset);
 end;
 
 procedure TBGRACustomTextEffect.ApplySphere;
-var sphere: TBGRACustomBitmap;
 begin
   if FTextMask = nil then exit;
   FreeAndNil(FOutlineMask);
   FreeAndNil(FShadowMask);
   FShadowRadius := 0;
-  sphere := FTextMask.FilterSphere;
-  FTextMask.Fill(BGRABlack);
-  FTextMask.PutImage(0,0,sphere,dmDrawWithTransparency);
-  sphere.Free;
+  BGRACustomReplace(FTextMask, FTextMask.FilterSphere);
 end;
 
 procedure TBGRACustomTextEffect.ApplyVerticalCylinder;
@@ -434,7 +461,7 @@ begin
   FreeAndNil(FOutlineMask);
   FreeAndNil(FShadowMask);
   FShadowRadius := 0;
-  BGRACustomReplace(FTextMask,FTextMask.FilterCylinder);
+  BGRACustomReplace(FTextMask, FTextMask.FilterCylinder);
 end;
 
 procedure TBGRACustomTextEffect.ApplyHorizontalCylinder;
@@ -487,7 +514,7 @@ begin
   if FOutlineMask = nil then
   begin
     FOutlineMask := FTextMask.FilterContour;
-    FOutlineMask.LinearNegative;
+    FOutlineMask.Negative;
   end;
   result := DrawMask(ADest,FOutlineMask,X+FOffset.X,Y+FOffset.Y,AColor);
 end;
@@ -503,7 +530,7 @@ begin
   if FOutlineMask = nil then
   begin
     FOutlineMask := FTextMask.FilterContour;
-    FOutlineMask.LinearNegative;
+    FOutlineMask.Negative;
   end;
   result := DrawMask(ADest,FOutlineMask,X+FOffset.X,Y+FOffset.Y,ATexture);
 end;
@@ -540,7 +567,7 @@ begin
   begin
     FShadowRadius := Radius;
     FreeAndNil(FShadowMask);
-    FShadowMask := BGRABitmapFactory.Create(FTextMask.Width+Radius*2,FTextMask.Height+Radius*2,BGRABlack);
+    FShadowMask := TGrayscaleMask.Create(FTextMask.Width+Radius*2,FTextMask.Height+Radius*2, 0);
     FShadowMask.PutImage(Radius,Radius,FTextMask,dmSet);
     BGRACustomReplace(FShadowMask, FShadowMask.FilterBlurRadial(Radius,ShadowQuality));
   end;
@@ -563,7 +590,7 @@ end;
 destructor TBGRACustomTextEffect.Destroy;
 begin
   FShadowMask.free;
-  textMask.Free;
+  FTextMask.Free;
   FOutlineMask.Free;
   FShadingMask.Free;
   inherited Destroy;

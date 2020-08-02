@@ -47,7 +47,7 @@ function FilterSharpen(bmp: TBGRACustomBitmap; AAmount: integer = 256): TBGRACus
 function FilterSharpen(bmp: TBGRACustomBitmap; ABounds: TRect; AAmount: integer = 256): TBGRACustomBitmap; overload;
 
 { Compute a contour, as if the image was drawn with a 2 pixels-wide black pencil }
-function FilterContour(bmp: TBGRACustomBitmap): TBGRACustomBitmap;
+function FilterContour(bmp: TBGRACustomBitmap; AGammaCorrection: boolean = false): TBGRACustomBitmap;
 
 { Emboss filter compute a color difference in the angle direction }
 function FilterEmboss(bmp: TBGRACustomBitmap; angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRACustomBitmap; overload;
@@ -214,11 +214,11 @@ end;
 { Filter contour computes for each pixel
   the grayscale difference with surrounding pixels (in intensity and alpha)
   and draw black pixels when there is a difference }
-function FilterContour(bmp: TBGRACustomBitmap): TBGRACustomBitmap;
+function FilterContour(bmp: TBGRACustomBitmap; AGammaCorrection: boolean = false): TBGRACustomBitmap;
 var scanner: TBGRAContourScanner;
 begin
   result := bmp.NewBitmap(bmp.Width, bmp.Height);
-  scanner := TBGRAContourScanner.Create(bmp,rect(0,0,bmp.width,bmp.height));
+  scanner := TBGRAContourScanner.Create(bmp,rect(0,0,bmp.width,bmp.height),AGammaCorrection);
   result.Fill(scanner);
   scanner.Free;
 end;

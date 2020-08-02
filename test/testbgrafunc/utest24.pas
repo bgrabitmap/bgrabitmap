@@ -32,7 +32,7 @@ constructor TTest24.Create;
 begin
   inherited Create;
   Name := 'Multi-polygon antialiasing with perspective mapping';
-  backgroundTile := TBGRABitmap.Create('..'+pathdelim+'img'+pathdelim+'diamondback.png');
+  backgroundTile := TBGRABitmap.Create(ResourceDir+'diamondback.png');
   texture := CreateMarbleTexture(256,256);
   texture.ScanInterpolationFilter:= rfLinear;
   virtualScreen := nil;

@@ -2573,8 +2573,10 @@ end;
 procedure TCustomUniversalBitmap.Deserialize(AStream: TStream);
 var lWidth,lHeight,y: integer;
 begin
-  AStream.Read({%H-}lWidth,sizeof(lWidth));
-  AStream.Read({%H-}lHeight,sizeof(lHeight));
+  lWidth := 0;
+  lHeight := 0;
+  AStream.Read(lWidth,sizeof(lWidth));
+  AStream.Read(lHeight,sizeof(lHeight));
   lWidth := LEtoN(lWidth);
   lHeight := LEtoN(lHeight);
   SetSize(lWidth,lHeight);

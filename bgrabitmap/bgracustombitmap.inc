@@ -497,8 +497,8 @@ type
      procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); virtual; abstract;
      procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); overload; virtual; abstract;
      procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); overload; virtual; abstract;
-     procedure DrawPart(ARect: TRect; ACanvas: TCanvas; x, y: integer; Opaque: boolean); virtual;
-     procedure DrawPart(ARect: TRect; ACanvas: TCanvas; ATargetRect: TRect; Opaque: boolean); virtual;
+     procedure DrawPart(ARect: TRect; ACanvas: TCanvas; x, y: integer; Opaque: boolean); overload; virtual;
+     procedure DrawPart(ARect: TRect; ACanvas: TCanvas; ATargetRect: TRect; Opaque: boolean); overload; virtual;
      function GetPtrBitmap(Top,Bottom: Integer): TBGRACustomBitmap; virtual; abstract;
      function MakeBitmapCopy(BackgroundColor: TColor): TBitmap; virtual; abstract;
 
@@ -578,7 +578,7 @@ type
      function FilterSmooth: TBGRACustomBitmap; virtual; abstract;
      function FilterSharpen(Amount: single = 1): TBGRACustomBitmap; overload; virtual; abstract;
      function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRACustomBitmap; overload; virtual; abstract;
-     function FilterContour: TBGRACustomBitmap; virtual; abstract;
+     function FilterContour(AGammaCorrection: boolean = false): TBGRACustomBitmap; virtual; abstract;
      function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRACustomBitmap; virtual; abstract;
      function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;
      function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGRACustomBitmap; overload; override;

@@ -100,6 +100,9 @@ end;
 procedure TFMain.FormCreate(Sender: TObject);
 begin
   CurrentTest := nil;
+  ResourceDir:= {$IFDEF DARWIN}ExtractFilePath(Application.ExeName)+'../../../../'{$ELSE}
+                '..'+pathdelim{$ENDIF}+'img'+pathdelim;
+
   SetNumTest(1);
   stopwatch := TEpikTimer.Create(Application);
   timeMeasure := TEpikTimer.Create(Application);
