@@ -101,8 +101,9 @@ type
     class function Intersect(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
     class function Union(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
     class function Union(const R1: TRectF; const R2: TRectF; ADiscardEmpty: boolean): TRectF; overload; static;
-    function Union(const r: TRectF):TRectF;
-    function Union(const r: TRectF; ADiscardEmpty: boolean):TRectF;
+    function Union(const r: TRectF):TRectF; overload;
+    function Union(const r: TRectF; ADiscardEmpty: boolean):TRectF; overload;
+    procedure Include(const APoint: TPointF);
     function IntersectsWith(const r: TRectF): boolean;
     function IsEmpty: boolean;
   end;
@@ -908,6 +909,20 @@ end;
 function TRectFHelper.Union(const r: TRectF; ADiscardEmpty: boolean): TRectF;
 begin
   result := TRectF.Union(self, r, ADiscardEmpty);
+end;
+
+procedure TRectFHelper.Include(const APoint: TPointF);
+begin
+  if APoint.x <> EmptySingle then
+  begin
+    if APoint.x < Left then Left := APoint.x else
+    if APoint.x > Right then Right := APoint.x;
+  end;
+  if APoint.y <> EmptySingle then
+  begin
+    if APoint.y < Top then Top := APoint.y else
+    if APoint.y > Bottom then Bottom := APoint.y;
+  end;
 end;
 
 function TRectFHelper.IntersectsWith(const r: TRectF): boolean;
