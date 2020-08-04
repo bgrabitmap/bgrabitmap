@@ -539,10 +539,8 @@ type
        mode: TResampleMode = rmFineResample): TBGRACustomBitmap; virtual; abstract;
 
      //masks
-     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; color: TBGRAPixel); overload; virtual;
-     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; texture: IBGRAScanner); overload; virtual;
-     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); overload; virtual; abstract;
-     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte = 255); overload; virtual; abstract;
+     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; ADrawMode: TDrawMode); overload; override;
+     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte); overload; virtual; abstract;
      procedure EraseMask(x,y: integer; AMask: TBGRACustomBitmap; alpha: byte=255); virtual; abstract;
      procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); overload; virtual; abstract;
      procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); overload; virtual; abstract;
@@ -1315,18 +1313,6 @@ begin
   FillRect(ClipRect, texture, mode);
 end;
 
-procedure TBGRACustomBitmap.FillMask(x, y: integer; AMask: TCustomUniversalBitmap;
-  color: TBGRAPixel);
-begin
-  FillMask(x,y, AMask, color, dmDrawWithTransparency);
-end;
-
-procedure TBGRACustomBitmap.FillMask(x, y: integer; AMask: TCustomUniversalBitmap;
-  texture: IBGRAScanner);
-begin
-  FillMask(x,y, AMask, texture, dmDrawWithTransparency);
-end;
-
 procedure TBGRACustomBitmap.FloodFill(X, Y: integer; Color: TBGRAPixel;
   mode: TFloodfillMode; Tolerance: byte);
 begin
@@ -1653,6 +1639,12 @@ begin
   cosa := cos(-angle*Pi/180);
   sina := -sin(-angle*Pi/180);
   result := GetImageAffineBounds(Coord(0,0),Coord(source.Width,0),Coord(0,source.Height),source);
+end;
+
+procedure TBGRACustomBitmap.FillMask(x, y: integer;
+  AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; ADrawMode: TDrawMode);
+begin
+  FillMask(x, y, AMask, ATexture, ADrawMode, 255);
 end;
 
 procedure TBGRACustomBitmap.VerticalFlip(ARect: TRect);

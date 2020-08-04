@@ -527,8 +527,8 @@ type
     procedure Fill(c: TBGRAPixel; start, Count: integer); overload; override;
     procedure DrawPixels(c: TBGRAPixel; start, Count: integer); override;
     procedure AlphaFill(alpha: byte; start, Count: integer); overload; override;
-    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); override;
-    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte = 255); override;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; const AColor: TBGRAPixel; ADrawMode: TDrawMode); overload; override;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte); overload; override;
     procedure EraseMask(x,y: integer; AMask: TBGRACustomBitmap; alpha: byte=255); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); override;
@@ -3062,24 +3062,24 @@ begin
 end;
 
 procedure TBGRADefaultBitmap.FillMask(x, y: integer; AMask: TCustomUniversalBitmap;
-  color: TBGRAPixel; ADrawMode: TDrawMode);
+  const AColor: TBGRAPixel; ADrawMode: TDrawMode);
 var
   scan: TBGRACustomScanner;
 begin
-  if (AMask = nil) or (color.alpha = 0) then exit;
-  scan := TBGRASolidColorMaskScanner.Create(AMask,Point(-X,-Y),color);
-  self.FillRect(X,Y,X+AMask.Width,Y+AMask.Height,scan,ADrawMode);
+  if (AMask = nil) or (AColor.alpha = 0) then exit;
+  scan := TBGRASolidColorMaskScanner.Create(AMask, Point(-X,-Y), AColor);
+  self.FillRect(X,Y, X+AMask.Width,Y+AMask.Height, scan, ADrawMode);
   scan.Free;
 end;
 
 procedure TBGRADefaultBitmap.FillMask(x, y: integer; AMask: TCustomUniversalBitmap;
-  texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte);
+  ATexture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte);
 var
   scan: TBGRACustomScanner;
 begin
   if AMask = nil then exit;
-  scan := TBGRATextureMaskScanner.Create(AMask,Point(-X,-Y),texture, AOpacity);
-  self.FillRect(X,Y,X+AMask.Width,Y+AMask.Height,scan,ADrawMode);
+  scan := TBGRATextureMaskScanner.Create(AMask, Point(-X,-Y), ATexture, AOpacity);
+  self.FillRect(X,Y, X+AMask.Width,Y+AMask.Height, scan, ADrawMode);
   scan.Free;
 end;
 

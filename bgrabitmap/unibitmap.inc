@@ -293,6 +293,10 @@ type
     procedure ApplyMask(mask: TCustomUniversalBitmap; ARect: TRect; AAlpha: Word = 65535); overload;
     procedure ApplyMask(mask: TCustomUniversalBitmap; ARect: TRect; AMaskRectTopLeft: TPoint; AAlpha: Word = 65535); overload; virtual;
     procedure ApplyGlobalOpacity(alpha: byte); overload; virtual;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; const ABrush: TUniversalBrush); overload; virtual;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner); overload; virtual;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; AMode: TDrawMode); overload; virtual;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; AMode: TDrawMode; AScanOffset: TPoint); overload; virtual;
 
     {** Fills completely a rectangle, without any border }
     procedure FillRect(ALeft, ATop, ARight, ABottom: integer; const ABrush: TUniversalBrush; AAlpha: Word = 65535); overload; virtual;
@@ -2823,6 +2827,83 @@ end;
 procedure TCustomUniversalBitmap.ApplyGlobalOpacity(alpha: byte);
 begin
   ApplyGlobalOpacity(ClipRect, alpha);
+end;
+
+procedure TCustomUniversalBitmap.FillMask(x, y: integer;
+  AMask: TCustomUniversalBitmap; const ABrush: TUniversalBrush);
+var
+  yb, remain: integer;
+  pScan: PByte;
+  delta: PtrInt;
+  ctx: TUniBrushContext;
+  r: TRect;
+  chunkCount, maskStride: integer;
+  maskSrc: PByteMask;
+  curVal: byte;
+  brushCount: integer;
+begin
+  if ABrush.Colorspace <> Colorspace then RaiseInvalidBrushColorspace;
+  r := RectWithSize(x,y,AMask.Width,AMask.Height);
+
+  if not CheckClippedRectBounds(r.Left,r.Top,r.Right,r.Bottom)
+    or ABrush.DoesNothing then exit;
+
+  LoadFromBitmapIfNeeded;
+  pScan := GetPixelAddress(r.Left, r.Top);
+  if LineOrder = riloBottomToTop then
+    delta := -RowSize
+    else delta := RowSize;
+
+  for yb := r.Top to r.Bottom-1 do
+  begin
+    ABrush.MoveTo(@ctx, pScan, r.Left, yb);
+    AMask.ScanMoveTo(r.Left - x, yb - y);
+    remain := r.Width;
+    while remain > 0 do
+    begin
+      chunkCount := remain;
+      AMask.ScanNextMaskChunk(chunkCount, maskSrc, maskStride);
+      dec(remain, chunkCount);
+      while chunkCount > 0 do
+      begin
+        curVal := maskSrc^.gray;
+        inc(maskSrc, maskStride);
+        dec(chunkCount);
+        brushCount := 1;
+        while (chunkCount > 0) and (maskSrc^.gray = curVal) do
+        begin
+          inc(maskSrc, maskStride);
+          dec(chunkCount);
+          inc(brushCount);
+        end;
+        ABrush.PutNextPixels(@ctx, curVal + (curVal shl 8), brushCount);
+      end;
+    end;
+    inc(pScan, delta);
+  end;
+  InvalidateBitmap;
+end;
+
+procedure TCustomUniversalBitmap.FillMask(x, y: integer;
+  AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner);
+begin
+  FillMask(x,y, AMask, ATexture, dmDrawWithTransparency);
+end;
+
+procedure TCustomUniversalBitmap.FillMask(x, y: integer;
+  AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; AMode: TDrawMode);
+begin
+  FillMask(x,y, AMask, ATexture, AMode, Point(0,0));
+end;
+
+procedure TCustomUniversalBitmap.FillMask(x, y: integer;
+  AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; AMode: TDrawMode;
+  AScanOffset: TPoint);
+var
+  b: TUniversalBrush;
+begin
+  ScannerBrush(b, ATexture, AMode, AScanOffset.X, AScanOffset.Y);
+  FillMask(x,y, AMask, b);
 end;
 
 procedure TCustomUniversalBitmap.ApplyGlobalOpacity(ARect: TRect; alpha: byte);
