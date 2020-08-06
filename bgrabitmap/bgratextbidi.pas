@@ -2111,6 +2111,7 @@ begin
          (ubIndex <> 0) {there must be at least one broken line} then
       begin
         curPara^.overflow:= true;
+        curPara^.rectF.Bottom := pos.y;
         DoneParagraph(paraIndex);
         for i := paraIndex+1 to high(FParagraph) do
         begin
