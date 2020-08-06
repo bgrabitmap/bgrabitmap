@@ -655,6 +655,25 @@ type
     procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override;
   end;
 
+  { TBGRAMemoryStreamBitmap }
+
+  TBGRAMemoryStreamBitmap = class(TBGRAPtrBitmap)
+  private
+    function GetOwnStream: boolean;
+    procedure SetOwnStream(AValue: boolean);
+  protected
+    FStream: TMemoryStream;
+    FStreamOffset: IntPtr;
+    FOwnStream: boolean;
+  public
+    constructor Create(AWidth, AHeight: integer; AStream: TMemoryStream; AStreamOffset: IntPtr; AOwnStream: boolean);
+    constructor Create(AWidth, AHeight: integer); override;
+    constructor Create(AWidth, AHeight: integer; AColor: TBGRAPixel);
+    destructor Destroy; override;
+    property OwnStream: boolean read GetOwnStream write SetOwnStream;
+    property Stream: TMemoryStream read FStream;
+  end;
+
 var
   DefaultTextStyle: TTextStyle;
 
@@ -669,6 +688,48 @@ uses Math, BGRAUTF8, BGRABlend, BGRAFilters, BGRAGradientScanner,
   BGRAPath, FPReadPcx, FPWritePcx, FPReadXPM, FPWriteXPM,
   BGRAReadBMP, BGRAReadJpeg,
   BGRADithering, BGRAFilterScanner;
+
+{ TBGRAMemoryStreamBitmap }
+
+function TBGRAMemoryStreamBitmap.GetOwnStream: boolean;
+begin
+  result := FOwnStream;
+end;
+
+procedure TBGRAMemoryStreamBitmap.SetOwnStream(AValue: boolean);
+begin
+  FOwnStream:= AValue;
+end;
+
+constructor TBGRAMemoryStreamBitmap.Create(AWidth, AHeight: integer;
+  AStream: TMemoryStream; AStreamOffset: IntPtr; AOwnStream: boolean);
+begin
+  inherited Create(AWidth, AHeight, PByte(AStream.Memory) + AStreamOffset);
+  FStream := AStream;
+  FStreamOffset:= AStreamOffset;
+end;
+
+constructor TBGRAMemoryStreamBitmap.Create(AWidth, AHeight: integer);
+begin
+  Create(AWidth, AHeight, BGRAPixelTransparent);
+end;
+
+constructor TBGRAMemoryStreamBitmap.Create(AWidth, AHeight: integer;
+  AColor: TBGRAPixel);
+begin
+  inherited Create(AWidth, AHeight);
+  FStream := TMemoryStream.Create;
+  FStreamOffset:= 0;
+  FStream.Size := RowSize * Height;
+  SetDataPtr(PByte(FStream.Memory) + FStreamOffset);
+  Fill(AColor, dmSet);
+end;
+
+destructor TBGRAMemoryStreamBitmap.Destroy;
+begin
+  if FOwnStream then FStream.Free;
+  inherited Destroy;
+end;
 
 { TBGRADefaultBitmap }
 
