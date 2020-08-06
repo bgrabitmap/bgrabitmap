@@ -305,7 +305,9 @@ type
     procedure EnumerateObjects(AList: TStringList); virtual; abstract;
     procedure EnumerateFiles(AList: TStringList); virtual; abstract;
     procedure RemoveFile(AName: utf8string); virtual; abstract;
+    function GetFileStream(AName: UTF8String): TStream; virtual; abstract;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; virtual; abstract;
+    function ReadBitmap(AName: UTF8String; ADest: TCustomUniversalBitmap): boolean; virtual; abstract;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean; AOwnStream: boolean = false); virtual; abstract;
     function FileExists(AName: UTF8String): boolean; virtual; abstract;
     property RawString[AName: utf8string]: RawByteString read GetRawString write SetRawString;
@@ -348,6 +350,8 @@ type
     procedure EnumerateObjects(AList: TStringList); override;
     procedure EnumerateFiles(AList: TStringList); override;
     procedure RemoveFile(AName: utf8string); override;
+    function GetFileStream(AName: UTF8String): TStream; override;
+    function ReadBitmap(AName: UTF8String; ADest: TCustomUniversalBitmap): boolean; override;
     function ReadFile(AName: UTF8String; ADest: TStream): boolean; override;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean; AOwnStream: boolean = false); override;
     function FileExists(AName: UTF8String): boolean; override;
@@ -1376,6 +1380,60 @@ begin
     raise exception.Create('This name refers to an object and not a file')
   else
     FMemDir.Delete(idx);
+end;
+
+function TBGRAMemOriginalStorage.GetFileStream(AName: UTF8String): TStream;
+var
+  entryId: Integer;
+begin
+  entryId := FMemDir.IndexOf(EntryFilename(AName));
+  if (entryId <> -1) and not FMemDir.IsDirectory[entryId] then
+  begin
+    with FMemDir.Entry[entryId] do
+      result := GetStream;
+  end
+  else
+    result := nil;
+end;
+
+function TBGRAMemOriginalStorage.ReadBitmap(AName: UTF8String;
+  ADest: TCustomUniversalBitmap): boolean;
+var
+  entryId: Integer;
+  stream: TStream;
+begin
+  entryId := FMemDir.IndexOf(EntryFilename(AName));
+  if (entryId <> -1) and not FMemDir.IsDirectory[entryId] then
+  begin
+    if FMemDir.IsEntryCompressed[entryId] then
+    begin
+      stream := TMemoryStream.Create;
+      try
+        with FMemDir.Entry[entryId] do
+        begin
+          if CopyTo(stream) <> FileSize then
+            result := false
+          else
+          begin
+            stream.Position:= 0;
+            ADest.LoadFromStream(stream);
+            result := true;
+          end;
+        end;
+      finally
+        stream.Free;
+      end;
+    end else
+    with FMemDir.Entry[entryId] do
+    begin
+      stream := GetStream;
+      stream.Position:= 0;
+      ADest.LoadFromStream(stream);
+      result := true;
+    end;
+  end
+  else
+    result := false;
 end;
 
 function TBGRAMemOriginalStorage.ReadFile(AName: UTF8String; ADest: TStream): boolean;

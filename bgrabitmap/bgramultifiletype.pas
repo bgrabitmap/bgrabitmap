@@ -48,6 +48,7 @@ type
   public
     constructor Create(AContainer: TMultiFileContainer);
     function CopyTo({%H-}ADestination: TStream): int64; virtual;
+    function GetStream: TStream; virtual;
     function CompareNameAndExtension(AName: utf8string; AExtension: utf8string; ACaseSensitive: boolean = true): integer;
     property Name: utf8string read GetName write SetName;
     property Extension: utf8string read GetExtension;
@@ -196,6 +197,11 @@ end;
 function TMultiFileEntry.CopyTo(ADestination: TStream): int64;
 begin
   result := 0;
+end;
+
+function TMultiFileEntry.GetStream: TStream;
+begin
+  result := nil;
 end;
 
 function TMultiFileEntry.CompareNameAndExtension(AName: utf8string;

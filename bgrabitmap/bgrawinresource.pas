@@ -80,6 +80,7 @@ type
     procedure SetLanguageId(AValue: integer);
   public
     constructor Create(AContainer: TMultiFileContainer; ATypeNameOrId: TNameOrId; AEntryNameOrId: TNameOrId; const AResourceInfo: TResourceInfo);
+    function GetStream: TStream; override;
     property Id: integer read GetId write SetId;
     property TypeName: utf8string read GetTypeName;
     property TypeId: integer read GetTypeId;
@@ -99,6 +100,7 @@ type
     constructor Create(AContainer: TMultiFileContainer; ATypeNameOrId: TNameOrId; AEntryNameOrId: TNameOrId; const AResourceInfo: TResourceInfo; ADataStream: TStream);
     destructor Destroy; override;
     function CopyTo(ADestination: TStream): int64; override;
+    function GetStream: TStream; override;
   end;
 
   { TBitmapResourceEntry }
@@ -617,6 +619,11 @@ begin
     result := 0;
 end;
 
+function TUnformattedResourceEntry.GetStream: TStream;
+begin
+  Result:= FDataStream;
+end;
+
 { TResourceInfo }
 
 procedure TResourceInfo.SwapIfNecessary;
@@ -841,6 +848,12 @@ begin
   FTypeNameOrId := ATypeNameOrId;
   FEntryNameOrId := AEntryNameOrId;
   FResourceInfo := AResourceInfo;
+end;
+
+function TCustomResourceEntry.GetStream: TStream;
+begin
+  result := nil;
+  raise exception.Create('Stream not available');
 end;
 
 procedure TCustomResourceEntry.SetId(AValue: integer);

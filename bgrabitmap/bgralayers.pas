@@ -1864,7 +1864,7 @@ end;
 
 procedure TBGRALayeredBitmap.NotifySaving;
 var
-  i, id, ErrPos: Integer;
+  i, j, id, ErrPos: Integer;
   layersDir, renderDir: TMemDirectory;
 begin
   inherited NotifySaving;
@@ -1875,7 +1875,7 @@ begin
     if Assigned(FOriginals[i].Instance) then
       StoreOriginal(FOriginals[i].Instance);
 
-  //remove invalid layer references
+  //check layer storage
   if MemDirectory.IndexOf(LayersDirectory,'')<>-1 then
   begin
     layersDir := MemDirectory.Directory[MemDirectory.AddDirectory(LayersDirectory)];
@@ -1883,7 +1883,21 @@ begin
     if layersDir.IsDirectory[i] then
     begin
       renderDir := layersDir.Directory[i].FindPath(RenderSubDirectory);
-      if Assigned(renderDir) then renderDir.Delete(RenderTempSubDirectory,'');
+
+      if Assigned(renderDir) then
+      begin
+        //discard temporary files
+        renderDir.Delete(RenderTempSubDirectory,'');
+
+        //compress significant files
+        for j := 0 to renderDir.Count-1 do
+        begin
+          if renderDir.Entry[j].FileSize > 128 then
+            renderDir.IsEntryCompressed[j] := true;
+        end;
+      end;
+
+      //remove invalid layer references
       val(layersDir.Entry[i].Name, id, errPos);
       if (errPos <> 0) or (GetLayerIndexFromId(id)=-1) then
         layersDir.Delete(i);
@@ -1906,6 +1920,7 @@ var
   rAll, rNewBounds, rInterRender: TRect;
   newSource: TBGRABitmap;
   layerDir, renderDir: TMemDirectory;
+  j: integer;
 
   procedure FreeSource;
   begin
@@ -1925,6 +1940,9 @@ begin
     Unfreeze(layer);
     layerDir := GetLayerDirectory(layer, true);
     renderDir := layerDir.Directory[layerDir.AddDirectory(RenderSubDirectory)];
+    //uncompress files for faster access
+    for j := 0 to renderDir.Count-1 do
+      renderDir.IsEntryCompressed[j] := false;
     orig.RenderStorage := TBGRAMemOriginalStorage.Create(renderDir);
 
     rAll := rect(0,0,Width,Height);
