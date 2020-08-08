@@ -155,7 +155,8 @@ begin
 
  with FileListBox1 do
  begin
-  Directory:= 'svg'+PathDelim;
+  Directory:= {$IFDEF DARWIN}ExtractFilePath(Application.ExeName)+'../../../'+{$ENDIF}
+              'svg'+PathDelim;
   Mask:= '*.svg';
  end;
 
