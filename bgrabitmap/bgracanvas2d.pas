@@ -1213,7 +1213,7 @@ var
   tempScan: TBGRACustomScanner;
   m: TAffineMatrix;
   s: TSize;
-  surfaceBounds, shadowBounds: TRect;
+  sourceBounds, usedSourceBounds, surfaceBounds, shadowBounds: TRect;
   rf: TResampleFilter;
   pad: TSize;
   p: PBGRAPixel;
@@ -1251,7 +1251,8 @@ begin
 
       pad := Size(round(h/3), round(h/3));
       m := m*AffineMatrixTranslation(-pad.cx,-pad.cy);
-      surfaceBounds := surface.GetImageAffineBounds(m, BGRAClasses.Rect(0,0,s.cx+pad.cx*2,s.cy+pad.cy*2));
+      sourceBounds := BGRAClasses.Rect(0,0,s.cx+pad.cx*2,s.cy+pad.cy*2);
+      surfaceBounds := surface.GetImageAffineBounds(m, sourceBounds);
       if hasShadow then
       begin
         shadowBounds := surfaceBounds;
@@ -1264,11 +1265,16 @@ begin
           surfaceBounds.Union(shadowBounds);
         end;
       end;
-      if not surfaceBounds.IsEmpty then
+      if not surfaceBounds.IsEmpty and IsAffineMatrixInversible(m) then
       begin
-        bmp.SetSize(s.cx+pad.cx*2,s.cy+pad.cy*2);
+        usedSourceBounds := (AffineMatrixInverse(m) *
+                             TAffineBox.AffineBox(RectF(surfaceBounds))).RectBounds;
+        usedSourceBounds.Inflate(1,1);
+        sourceBounds.Intersect(usedSourceBounds);
+        m := m * AffineMatrixTranslation(sourceBounds.Left, sourceBounds.Top);
+        bmp.SetSize(sourceBounds.Width, sourceBounds.Height);
         bmp.Fill(BGRABlack);
-        bmp.TextOut(pad.cx,pad.cy,Text,BGRAWhite);
+        bmp.TextOut(pad.cx - sourceBounds.Left,pad.cy - sourceBounds.Top, Text, BGRAWhite);
         if self.antialiasing then bmp.ConvertToLinearRGB else
         begin
           p := bmp.Data;
