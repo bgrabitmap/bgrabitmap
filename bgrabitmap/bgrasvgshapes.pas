@@ -1415,7 +1415,7 @@ begin
   dir := textDirection;
   case dir of
    stdRtl: ACanvas2d.direction:= fbmRightToLeft;
-   else {stdRtl} ACanvas2d.direction:= fbmLeftToRight;
+   else {stdLtr} ACanvas2d.direction:= fbmLeftToRight;
   end;
 
   ts := ACanvas2d.measureText(AText);

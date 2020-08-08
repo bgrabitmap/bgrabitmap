@@ -48,6 +48,8 @@ type
     procedure ReplaceColor(ARect: TRect; const ABefore, AAfter: TPixel); overload; virtual;
     procedure ReplaceTransparent(const AAfter: TBGRAPixel); overload; virtual;
     procedure ReplaceTransparent(ARect: TRect; const AAfter: TPixel); overload; virtual;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; const AColor: TPixel); overload; virtual;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; const AColor: TPixel; ADrawMode: TDrawMode); overload; virtual;
     procedure FillRect(ALeft, ATop, ARight, ABottom: integer; const AColor: TPixel; ADrawMode: TDrawMode = dmSet; AAlpha: Word = 65535); overload; virtual;
     procedure FillRect(const ARect: TRect; const AColor: TPixel; ADrawMode: TDrawMode = dmSet; AAlpha: Word = 65535); overload; virtual;
     procedure DrawCheckers(ARect: TRect; const AColorEven,AColorOdd: TPixel; AGridWidth: integer = 8; AGridHeight: integer = 8; ADrawMode: TDrawMode = dmSet); virtual;
@@ -538,6 +540,21 @@ var before: TPixel;
 begin
   AssignTransparentPixel(before);
   ReplaceColor(ARect, before, AAfter);
+end;
+
+procedure TGenericUniversalBitmap.FillMask(x, y: integer;
+  AMask: TCustomUniversalBitmap; const AColor: TPixel);
+begin
+  FillMask(x,y, AMask, AColor, dmDrawWithTransparency);
+end;
+
+procedure TGenericUniversalBitmap.FillMask(x, y: integer;
+  AMask: TCustomUniversalBitmap; const AColor: TPixel; ADrawMode: TDrawMode);
+var
+  b: TUniversalBrush;
+begin
+  SolidBrush(b, AColor, ADrawMode);
+  FillMask(x,y, AMask, b);
 end;
 
 procedure TGenericUniversalBitmap.FillRect(ALeft, ATop, ARight,

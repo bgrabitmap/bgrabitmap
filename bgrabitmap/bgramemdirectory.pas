@@ -45,6 +45,7 @@ type
     function InternalCopyTo({%H-}ADestination: TStream): int64;
   public
     function CopyTo({%H-}ADestination: TStream): int64; override;
+    function GetStream: TStream; override;
     constructor Create(AContainer: TMultiFileContainer; AFilename: TEntryFilename; AUncompressedStream: TStream; AOwnStream: boolean); overload;
     constructor CreateDirectory(AContainer: TMultiFileContainer; AFilename: TEntryFilename);
     constructor CreateFromData(AContainer: TMultiFileContainer; AFilename: TEntryFilename; AStream: TStream; AOwnStream: boolean; AUncompressedSize: int64; AFlags: Word);
@@ -601,6 +602,14 @@ function TMemDirectoryEntry.CopyTo(ADestination: TStream): int64;
 begin
   if IsDirectory then exit(0);
   result := InternalCopyTo(ADestination);
+end;
+
+function TMemDirectoryEntry.GetStream: TStream;
+begin
+  if IsCompressed then
+    raise exception.Create('Stream cannot be accessed directly because it is compressed')
+  else
+    result := FStream;
 end;
 
 constructor TMemDirectoryEntry.Create(AContainer: TMultiFileContainer; AFilename: TEntryFilename;

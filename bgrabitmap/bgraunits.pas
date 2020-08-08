@@ -193,7 +193,7 @@ begin
   if sourceUnit = cuPixel then
   begin
     if dpi = 0 then result := 0
-    else result := xy*(InchFactor[sourceUnit]/(dpi*100));
+    else result := xy*(InchFactor[destUnit]/(dpi*100));
   end else
   if destUnit = cuPixel then
   begin

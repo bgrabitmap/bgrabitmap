@@ -29,8 +29,8 @@ type
      constructor CreateDownSample(ABitmap: TGrayscaleMask; AWidth,AHeight: integer);
      constructor CreateDownSample(ABitmap: TBGRACustomBitmap; AWidth,AHeight: integer; ASourceRect: TRect);
      constructor CreateDownSample(ABitmap: TGrayscaleMask; AWidth,AHeight: integer; ASourceRect: TRect);
-     procedure CopyFrom(ABitmap: TGrayscaleMask);
-     procedure CopyFrom(ABitmap: TBGRACustomBitmap; AChannel: TChannel);
+     procedure CopyFrom(ABitmap: TGrayscaleMask); overload;
+     procedure CopyFrom(ABitmap: TBGRACustomBitmap; AChannel: TChannel); overload;
      procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); override;
      function GetImageBounds: TRect; overload; override;
      function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload; override;

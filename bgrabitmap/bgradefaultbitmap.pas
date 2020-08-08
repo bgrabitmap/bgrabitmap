@@ -527,8 +527,8 @@ type
     procedure Fill(c: TBGRAPixel; start, Count: integer); overload; override;
     procedure DrawPixels(c: TBGRAPixel; start, Count: integer); override;
     procedure AlphaFill(alpha: byte; start, Count: integer); overload; override;
-    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; color: TBGRAPixel; ADrawMode: TDrawMode); override;
-    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte = 255); override;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; const AColor: TBGRAPixel; ADrawMode: TDrawMode); overload; override;
+    procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte); overload; override;
     procedure EraseMask(x,y: integer; AMask: TBGRACustomBitmap; alpha: byte=255); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; color: TBGRAPixel; ARGBOrder: boolean = true); override;
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); override;
@@ -655,6 +655,25 @@ type
     procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override;
   end;
 
+  { TBGRAMemoryStreamBitmap }
+
+  TBGRAMemoryStreamBitmap = class(TBGRAPtrBitmap)
+  private
+    function GetOwnStream: boolean;
+    procedure SetOwnStream(AValue: boolean);
+  protected
+    FStream: TMemoryStream;
+    FStreamOffset: IntPtr;
+    FOwnStream: boolean;
+  public
+    constructor Create(AWidth, AHeight: integer; AStream: TMemoryStream; AStreamOffset: IntPtr; AOwnStream: boolean);
+    constructor Create(AWidth, AHeight: integer); override;
+    constructor Create(AWidth, AHeight: integer; AColor: TBGRAPixel);
+    destructor Destroy; override;
+    property OwnStream: boolean read GetOwnStream write SetOwnStream;
+    property Stream: TMemoryStream read FStream;
+  end;
+
 var
   DefaultTextStyle: TTextStyle;
 
@@ -669,6 +688,48 @@ uses Math, BGRAUTF8, BGRABlend, BGRAFilters, BGRAGradientScanner,
   BGRAPath, FPReadPcx, FPWritePcx, FPReadXPM, FPWriteXPM,
   BGRAReadBMP, BGRAReadJpeg,
   BGRADithering, BGRAFilterScanner;
+
+{ TBGRAMemoryStreamBitmap }
+
+function TBGRAMemoryStreamBitmap.GetOwnStream: boolean;
+begin
+  result := FOwnStream;
+end;
+
+procedure TBGRAMemoryStreamBitmap.SetOwnStream(AValue: boolean);
+begin
+  FOwnStream:= AValue;
+end;
+
+constructor TBGRAMemoryStreamBitmap.Create(AWidth, AHeight: integer;
+  AStream: TMemoryStream; AStreamOffset: IntPtr; AOwnStream: boolean);
+begin
+  inherited Create(AWidth, AHeight, PByte(AStream.Memory) + AStreamOffset);
+  FStream := AStream;
+  FStreamOffset:= AStreamOffset;
+end;
+
+constructor TBGRAMemoryStreamBitmap.Create(AWidth, AHeight: integer);
+begin
+  Create(AWidth, AHeight, BGRAPixelTransparent);
+end;
+
+constructor TBGRAMemoryStreamBitmap.Create(AWidth, AHeight: integer;
+  AColor: TBGRAPixel);
+begin
+  inherited Create(AWidth, AHeight);
+  FStream := TMemoryStream.Create;
+  FStreamOffset:= 0;
+  FStream.Size := RowSize * Height;
+  SetDataPtr(PByte(FStream.Memory) + FStreamOffset);
+  Fill(AColor, dmSet);
+end;
+
+destructor TBGRAMemoryStreamBitmap.Destroy;
+begin
+  if FOwnStream then FStream.Free;
+  inherited Destroy;
+end;
 
 { TBGRADefaultBitmap }
 
@@ -3062,24 +3123,24 @@ begin
 end;
 
 procedure TBGRADefaultBitmap.FillMask(x, y: integer; AMask: TCustomUniversalBitmap;
-  color: TBGRAPixel; ADrawMode: TDrawMode);
+  const AColor: TBGRAPixel; ADrawMode: TDrawMode);
 var
   scan: TBGRACustomScanner;
 begin
-  if (AMask = nil) or (color.alpha = 0) then exit;
-  scan := TBGRASolidColorMaskScanner.Create(AMask,Point(-X,-Y),color);
-  self.FillRect(X,Y,X+AMask.Width,Y+AMask.Height,scan,ADrawMode);
+  if (AMask = nil) or (AColor.alpha = 0) then exit;
+  scan := TBGRASolidColorMaskScanner.Create(AMask, Point(-X,-Y), AColor);
+  self.FillRect(X,Y, X+AMask.Width,Y+AMask.Height, scan, ADrawMode);
   scan.Free;
 end;
 
 procedure TBGRADefaultBitmap.FillMask(x, y: integer; AMask: TCustomUniversalBitmap;
-  texture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte);
+  ATexture: IBGRAScanner; ADrawMode: TDrawMode; AOpacity: byte);
 var
   scan: TBGRACustomScanner;
 begin
   if AMask = nil then exit;
-  scan := TBGRATextureMaskScanner.Create(AMask,Point(-X,-Y),texture, AOpacity);
-  self.FillRect(X,Y,X+AMask.Width,Y+AMask.Height,scan,ADrawMode);
+  scan := TBGRATextureMaskScanner.Create(AMask, Point(-X,-Y), ATexture, AOpacity);
+  self.FillRect(X,Y, X+AMask.Width,Y+AMask.Height, scan, ADrawMode);
   scan.Free;
 end;
 
