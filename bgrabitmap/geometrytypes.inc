@@ -114,6 +114,7 @@ const
 
   function RectF(Left, Top, Right, Bottom: Single): TRectF;
   function RectF(const ATopLeft,ABottomRight: TPointF): TRectF;
+  function RectF(const ARect: TRect): TRectF;
   function RectWithSizeF(left,top,width,height: Single): TRectF;
   function IsEmptyRectF(const ARect:TRectF): boolean;
 
@@ -1403,6 +1404,14 @@ function RectF(const ATopLeft, ABottomRight: TPointF): TRectF;
 begin
   result.TopLeft:= ATopLeft;
   result.BottomRight:= ABottomRight;
+end;
+
+function RectF(const ARect: TRect): TRectF;
+begin
+  result.Left := ARect.Left;
+  result.Top := ARect.Top;
+  result.Right := ARect.Right;
+  result.Bottom := ARect.Bottom;
 end;
 
 function RectWithSizeF(left, top, width, height: Single): TRectF;
