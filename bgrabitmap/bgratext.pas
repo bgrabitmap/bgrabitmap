@@ -183,7 +183,6 @@ const MaxPixelMetricCount = 100;
 
 var
   SystemFontDisabledValue: boolean;
-  TempBmp: TBitmap;
   fqFineClearTypeComputed: boolean;
   fqFineClearTypeValue: TBGRAFontQuality;
   FontHeightSignComputed: boolean;
@@ -488,6 +487,7 @@ end;
 function GetFontHeightSign: integer;
 var
   HeightP1, HeightM1: integer;
+  tempBmp: TBitmap;
 begin
   if SystemFontDisabledValue then
   begin
@@ -508,8 +508,9 @@ begin
     exit;
   end;
 
+  tempBmp := nil;
   try
-    if tempBmp = nil then tempBmp := TBitmap.Create;
+    tempBmp := TBitmap.Create;
     tempBmp.Width := 30;
     tempBmp.Height := 30;
     tempBmp.Canvas.Font.Name := 'Arial';
@@ -523,16 +524,17 @@ begin
       FontHeightSignValue := 1
     else
       FontHeightSignValue := -1;
+
+    FontHeightSignComputed := true;
+    result := FontHeightSignValue;
   except
     on ex: Exception do
     begin
       SystemFontDisabledValue := True;
       result := -1;
-      exit;
     end;
   end;
-  FontHeightSignComputed := true;
-  result := FontHeightSignValue;
+  tempBmp.Free;
 end;
 
 function GetFineClearTypeAuto: TBGRAFontQuality;
@@ -694,6 +696,8 @@ function BGRAOriginalTextSizeExAngle(Font: TFont; AOrientation: integer;
   Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer;
   out actualAntialiasingLevel: integer; 
   out extraVerticalMarginDueToRotation: integer): TSize;
+var
+  tempBmp: TBitmap;
 begin
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   extraVerticalMarginDueToRotation := 0;
@@ -701,8 +705,9 @@ begin
     result := Size(0,0)
   else
   begin
+    tempBmp := nil;
     try
-      if tempBmp = nil then tempBmp := TBitmap.Create;
+      tempBmp := TBitmap.Create;
       tempBmp.Canvas.Font := Font;
       if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
       begin
@@ -726,7 +731,7 @@ begin
         SystemFontDisabledValue := True;
       end;
     end;
-
+    tempBmp.Free;
   end;
 end;
 
@@ -741,6 +746,7 @@ function BGRATextFitInfoAngle(Font: TFont; AOrientation: integer; Quality: TBGRA
   CustomAntialiasingLevel: Integer; AMaxWidth: integer): integer;
 var
   actualAntialiasingLevel{$IFDEF LCL}{$IF lcl_fullversion < 1070000}, len1{$ENDIF}{$ENDIF}: Integer;
+  tempBmp: TBitmap;
 begin
   if (AMaxWidth = 0) or (length(sUTF8)=0) then exit(0);
   actualAntialiasingLevel:= CustomAntialiasingLevel;
@@ -748,8 +754,9 @@ begin
     result := 0
   else
   begin
+    tempBmp := nil;
     try
-      if tempBmp = nil then tempBmp := TBitmap.Create;
+      tempBmp := TBitmap.Create;
       tempBmp.Canvas.Font := Font;
       if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
       begin
@@ -774,7 +781,7 @@ begin
         SystemFontDisabledValue := True;
       end;
     end;
-
+    tempBmp.Free;
   end;
 end;
 
@@ -1820,12 +1827,7 @@ end;
 
 initialization
 
-  tempBmp := nil;
   fqFineClearType := @GetFineClearTypeAuto;
-
-finalization
-
-  tempBmp.Free;
 
 end.
 
