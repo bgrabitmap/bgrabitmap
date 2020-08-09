@@ -268,6 +268,7 @@ type
   protected
     FFormats: TFormatSettings;
     function GetBool(AName: utf8string): boolean;
+    function GetBoolDef(AName: utf8string; ADefault: boolean): boolean;
     function GetColorArray(AName: UTF8String): ArrayOfTBGRAPixel;
     function GetInteger(AName: utf8string): integer;
     function GetIntegerDef(AName: utf8string; ADefault: integer): integer;
@@ -314,6 +315,7 @@ type
     property Int[AName: utf8string]: integer read GetInteger write SetInteger;
     property IntDef[AName: utf8string; ADefault: integer]: integer read GetIntegerDef;
     property Bool[AName: utf8string]: boolean read GetBool write SetBool;
+    property BoolDef[AName: utf8string; ADefault: boolean]: boolean read GetBoolDef;
     property Float[AName: utf8string]: single read GetSingle write SetSingle;
     property FloatArray[AName: utf8string]: ArrayOfSingle read GetSingleArray write SetSingleArray;
     property FloatDef[AName: utf8string; ADefault: single]: single read GetSingleDef;
@@ -1579,11 +1581,17 @@ begin
   RectangleF[AName] := rF;
 end;
 
+function TBGRACustomOriginalStorage.GetBoolDef(AName: utf8string;
+  ADefault: boolean): boolean;
+begin
+  if RawString[AName] = 'true' then result := true
+  else if RawString[AName] = 'false' then result := false
+  else result := ADefault;
+end;
+
 function TBGRACustomOriginalStorage.GetBool(AName: utf8string): boolean;
 begin
-  if RawString[AName] = 'true' then
-    result := true
-    else result := false;
+  result := GetBoolDef(AName, false);
 end;
 
 function TBGRACustomOriginalStorage.GetSingleArray(AName: utf8string): ArrayOfSingle;
