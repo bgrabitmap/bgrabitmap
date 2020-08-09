@@ -1581,7 +1581,9 @@ end;
 
 function TBGRACustomOriginalStorage.GetBool(AName: utf8string): boolean;
 begin
-  result := StrToBool(RawString[AName]);
+  if RawString[AName] = 'true' then
+    result := true
+    else result := false;
 end;
 
 function TBGRACustomOriginalStorage.GetSingleArray(AName: utf8string): ArrayOfSingle;
