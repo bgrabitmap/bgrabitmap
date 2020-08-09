@@ -534,9 +534,9 @@ type
     procedure FillClearTypeMask(x,y: integer; xThird: integer; AMask: TBGRACustomBitmap; texture: IBGRAScanner; ARGBOrder: boolean = true); override;
     procedure ReplaceColor(before, after: TColor); overload; override;
     procedure ReplaceColor(ABounds: TRect; before, after: TColor); overload; override;
-    procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; Color: TBGRAPixel;
+    procedure ParallelFloodFill(X, Y: integer; Dest: TCustomUniversalBitmap; Color: TBGRAPixel;
       mode: TFloodfillMode; Tolerance: byte = 0; DestOfsX: integer = 0; DestOfsY: integer = 0); overload; override;
-    procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; const Brush: TUniversalBrush;
+    procedure ParallelFloodFill(X, Y: integer; Dest: TCustomUniversalBitmap; const Brush: TUniversalBrush;
       Progressive: boolean; ToleranceW: Word = $00ff; DestOfsX: integer = 0; DestOfsY: integer = 0); overload; override;
     procedure GradientFill(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
       gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
@@ -3259,17 +3259,17 @@ begin
 end;
 
 procedure TBGRADefaultBitmap.ParallelFloodFill(X, Y: integer;
-  Dest: TBGRACustomBitmap; Color: TBGRAPixel; mode: TFloodfillMode;
+  Dest: TCustomUniversalBitmap; Color: TBGRAPixel; mode: TFloodfillMode;
   Tolerance: byte; DestOfsX: integer; DestOfsY: integer);
 var
   b: TUniversalBrush;
 begin
   case mode of
-    fmSet: SolidBrush(b, Color, dmSet);
-    fmDrawWithTransparency: SolidBrush(b, Color, dmDrawWithTransparency);
-    fmLinearBlend: SolidBrush(b, Color, dmLinearBlend);
-    fmXor: SolidBrush(b, Color, dmXor);
-    fmProgressive: SolidBrush(b, Color, dmDrawWithTransparency);
+    fmSet: Dest.SolidBrushBGRA(b, Color, dmSet);
+    fmDrawWithTransparency: Dest.SolidBrushBGRA(b, Color, dmDrawWithTransparency);
+    fmLinearBlend: Dest.SolidBrushBGRA(b, Color, dmLinearBlend);
+    fmXor: Dest.SolidBrushBGRA(b, Color, dmXor);
+    fmProgressive: Dest.SolidBrushBGRA(b, Color, dmDrawWithTransparency);
   end;
   ParallelFloodFill(X,Y, Dest, b, mode=fmProgressive, (Tolerance shl 8)+$ff, DestOfsX, DestOfsY);
 end;
@@ -3288,7 +3288,7 @@ end;
   The first direction to be checked is horizontal, then
   it checks pixels on the line above and on the line below. }
 procedure TBGRADefaultBitmap.ParallelFloodFill(X, Y: integer;
-  Dest: TBGRACustomBitmap; const Brush: TUniversalBrush; Progressive: boolean;
+  Dest: TCustomUniversalBitmap; const Brush: TUniversalBrush; Progressive: boolean;
   ToleranceW: Word; DestOfsX: integer; DestOfsY: integer);
 var
   S: TBGRAPixel;
@@ -3362,6 +3362,8 @@ var
 
 begin
   if Brush.DoesNothing then exit;
+  if Progressive and not (dest is TBGRACustomBitmap) then
+    raise exception.Create('Progressive mode only available on TBGRACustomBitmap and derived classes');
   if PtInClipRect(X,Y) then
   begin
     S := GetPixel(X, Y);
@@ -3390,7 +3392,7 @@ begin
 
       SetVisited(SX, Y, EX);
       if Progressive then
-        dest.HorizLineDiff(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Brush, S, ToleranceW)
+        TBGRACustomBitmap(dest).HorizLineDiff(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Brush, S, ToleranceW)
       else
         dest.HorizLine(SX+DestOfsX, Y+DestOfsY, EX+DestOfsX, Brush);
 

@@ -476,9 +476,9 @@ type
        mode: TFloodfillMode; Tolerance: byte = 0); overload; virtual;
      procedure FloodFill(X, Y: integer; const Brush: TUniversalBrush;
        Progressive: boolean; ToleranceW: Word = $00ff); overload; virtual;
-     procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; Color: TBGRAPixel;
+     procedure ParallelFloodFill(X, Y: integer; Dest: TCustomUniversalBitmap; Color: TBGRAPixel;
        mode: TFloodfillMode; Tolerance: byte = 0; DestOfsX: integer = 0; DestOfsY: integer = 0); overload; virtual; abstract;
-     procedure ParallelFloodFill(X, Y: integer; Dest: TBGRACustomBitmap; const Brush: TUniversalBrush;
+     procedure ParallelFloodFill(X, Y: integer; Dest: TCustomUniversalBitmap; const Brush: TUniversalBrush;
        Progressive: boolean; ToleranceW: Word = $00ff; DestOfsX: integer = 0; DestOfsY: integer = 0); overload; virtual; abstract;
      procedure GradientFill(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
        gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
