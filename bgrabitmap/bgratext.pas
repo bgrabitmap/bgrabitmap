@@ -1396,7 +1396,8 @@ begin
   else
     WordBreakHandler := @DefaultWorkBreakHandler;
 
-  if ContainsBidiIsolateOrFormattingUTF8(ATextUTF8) then
+  if ContainsBidiIsolateOrFormattingUTF8(ATextUTF8) or
+    (pos(UTF8_LINE_SEPARATOR, ATextUTF8) <> 0) then
   begin
     bidiLayout := TBidiTextLayout.Create(self, ATextUTF8, ARightToLeft);
     bidiLayout.WordBreakHandler:= WordBreakHandler;

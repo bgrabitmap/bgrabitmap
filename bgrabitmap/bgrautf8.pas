@@ -18,6 +18,9 @@ const
   UTF8_NO_BREAK_SPACE = ' ';
   UTF8_ZERO_WIDTH_NON_JOINER = '‌';
   UTF8_ZERO_WIDTH_JOINER = '‍';
+  UTF8_LINE_SEPARATOR = #$E2#$80#$A8;       //equivalent of <br>
+  UTF8_PARAGRAPH_SEPARATOR = #$E2#$80#$A9;  //equivalent of </p>
+  UTF8_NEXT_LINE = #$C2#$85;                //equivalent of CRLF
 
 {$IFDEF BGRABITMAP_USE_LCL}
 type

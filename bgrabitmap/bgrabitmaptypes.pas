@@ -684,7 +684,18 @@ begin //we can ignore UTF8 character length because #13 and #10 are always 1 byt
       end
         else
           delete(s,indexByte,1);
-    end;
+    end else
+    if (s[indexByte] = #$C2) and (length(s) >= indexByte+1) and (s[indexByte+1] = #$85) then
+    begin
+      result := true;
+      delete(s,indexByte,2);
+    end else
+    if (s[indexByte] = #$E2) and (length(s) >= indexByte+2) and (s[indexByte+1] = #$80) and
+       (s[indexByte+2] in[#$A8,#$A9]) then
+    begin
+      result := true;
+      delete(s,indexByte,3);
+    end
   end;
 end;
 
