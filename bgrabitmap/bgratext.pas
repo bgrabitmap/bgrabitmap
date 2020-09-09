@@ -1673,6 +1673,16 @@ begin
   end;
   if InternalTextSize(ATextUTF8, false).cx <= AMaxWidth then
   begin
+    for p := 1 to length(ATextUTF8) do
+    begin
+      if RemoveLineEnding(ATextUTF8,p) then
+      begin
+        ARemainsUTF8:= copy(ATextUTF8,p,length(ATextUTF8)-p+1);
+        ATextUTF8 := copy(ATextUTF8,1,p-1);
+        ALineEndingBreak:= true;
+        exit;
+      end;
+    end;
     ARemainsUTF8 := '';
     exit;
   end;
