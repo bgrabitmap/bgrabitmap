@@ -34,7 +34,7 @@ function GetXwdThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor:
 function GetXPixMapThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
 function GetBmpMioMapThumbnail(AStream: TStream; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean; ADest: TBGRABitmap= nil): TBGRABitmap;
 
-procedure DrawThumbnailCheckers(bmp: TBGRABitmap; ARect: TRect; AIconCheckers: boolean = false);
+procedure DrawThumbnailCheckers(bmp: TBGRABitmap; ARect: TRect; AIconCheckers: boolean = false; AScale: single = 1);
 
 var
   ImageCheckersColor1,ImageCheckersColor2  : TBGRAPixel;
@@ -46,12 +46,12 @@ uses base64, BGRAUTF8,
      DOM, XMLRead, BGRAReadJPEG, BGRAReadPng, BGRAReadGif, BGRAReadBMP,
      BGRAReadPSD, BGRAReadIco, UnzipperExt, BGRAReadLzp;
 
-procedure DrawThumbnailCheckers(bmp: TBGRABitmap; ARect: TRect; AIconCheckers: boolean);
+procedure DrawThumbnailCheckers(bmp: TBGRABitmap; ARect: TRect; AIconCheckers: boolean; AScale: single = 1);
 begin
   if AIconCheckers then
-    bmp.DrawCheckers(ARect, IconCheckersColor1, IconCheckersColor2)
+    bmp.DrawCheckers(ARect, IconCheckersColor1, IconCheckersColor2, round(8*AScale), round(8*AScale))
   else
-    bmp.DrawCheckers(ARect, ImageCheckersColor1, ImageCheckersColor2);
+    bmp.DrawCheckers(ARect, ImageCheckersColor1, ImageCheckersColor2, round(8*AScale), round(8*AScale));
 end;
 
 function InternalGetBitmapThumbnail(ABitmap: TBGRACustomBitmap; AWidth, AHeight: integer; ABackColor: TBGRAPixel; ACheckers: boolean;
