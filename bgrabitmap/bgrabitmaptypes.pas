@@ -438,7 +438,7 @@ type
 {** Removes line ending and tab characters from a string (for a function
     like ''TextOut'' that does not handle this). this works with UTF8 strings
     as well }
-function CleanTextOutString(s: string): string;
+function CleanTextOutString(const s: string): string;
 {** Remove the line ending at the specified position or return False.
     This works with UTF8 strings however the index is the byte index }
 function RemoveLineEnding(var s: string; indexByte: integer): boolean;
@@ -648,7 +648,7 @@ begin
   end;
 end;
 
-function CleanTextOutString(s: string): string;
+function CleanTextOutString(const s: string): string;
 var idxIn, idxOut: integer;
 begin
   setlength(result, length(s));
