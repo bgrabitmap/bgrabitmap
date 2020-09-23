@@ -418,6 +418,8 @@ type
      procedure TextOut(x, y: single; const sUTF8: string; texture: IBGRAScanner; ARightToLeft: boolean); overload; virtual;
      procedure TextOut(x, y: single; const sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
      procedure TextOut(x, y: single; const sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
+     procedure TextOut(x, y: single; const sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
+     procedure TextOut(x, y: single; const sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
 
      { Overrides the font orientation with the parameter orientationTenthDegCCW }
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; c: TBGRAPixel); overload; virtual;

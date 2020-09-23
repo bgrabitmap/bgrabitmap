@@ -157,6 +157,7 @@ type
     function InternalGetPixelCycle256(ix,iy: int32or64; iFactX,iFactY: int32or64): TBGRAPixel;
     function InternalGetPixel256(ix,iy: int32or64; iFactX,iFactY: int32or64; smoothBorder: boolean): TBGRAPixel;
     procedure InternalTextOutCurved(ACursor: TBGRACustomPathCursor; sUTF8: string; AColor: TBGRAPixel; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single);
+    procedure InternalTextOutLetterSpacing(x,y: single; sUTF8: string; AColor: TBGRAPixel; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single);
     procedure InternalCrossFade(ARect: TRect; Source1, Source2: IBGRAScanner; AFadePos: byte; AFadeMask: IBGRAScanner; mode: TDrawMode = dmDrawWithTransparency);
 
     procedure InternalArc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; ABorderColor: TBGRAPixel; w: single;
@@ -468,6 +469,9 @@ type
     { Same as above functions, except that the text is filled using texture.
       The value of FontOrientation is taken into account, so that the text may be rotated. }
     procedure TextOut(x, y: single; const sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; override;
+
+    procedure TextOut(x, y: single; const sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; override;
+    procedure TextOut(x, y: single; const sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; override;
 
     { Same as above, except that the orientation is specified, overriding the value of the property FontOrientation. }
     procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
@@ -1943,6 +1947,66 @@ begin
   end;
 end;
 
+procedure TBGRADefaultBitmap.InternalTextOutLetterSpacing(x, y: single;
+  sUTF8: string; AColor: TBGRAPixel; ATexture: IBGRAScanner;
+  AAlign: TAlignment; ALetterSpacing: single);
+var
+  glyphCursor: TGlyphCursorUtf8;
+  currentGlyph: TGlyphUtf8;
+  currentGlyphUtf8: string;
+  currentGlyphWidth: single;
+  angle, textLen: single;
+  m: TAffineMatrix;
+  ofs: TPointF;
+
+  procedure NextGlyph;
+  begin
+    currentGlyph := glyphCursor.GetNextGlyph;
+    if currentGlyph.MirroredGlyphUtf8 <> '' then
+      currentGlyphUtf8:= currentGlyph.MirroredGlyphUtf8
+      else currentGlyphUtf8 := currentGlyph.GlyphUtf8;
+    currentGlyphWidth := TextSize(currentGlyphUtf8).cx;
+  end;
+
+begin
+  if (ATexture = nil) and (AColor.alpha = 0) then exit;
+  sUTF8 := CleanTextOutString(sUTF8);
+  if sUTF8 = '' then exit;
+  glyphCursor := TGlyphCursorUtf8.New(sUTF8, FontBidiMode);
+
+  ofs := PointF(0, 0);
+  if AAlign<> taLeftJustify then
+  begin
+    textLen := -ALetterSpacing;
+    while not glyphCursor.EndOfString do
+    begin
+      NextGlyph;
+      IncF(textLen, ALetterSpacing + currentGlyphWidth);
+    end;
+    case AAlign of
+      taCenter: DecF(ofs.x, 0.5*textLen);
+      taRightJustify: DecF(ofs.x, textLen);
+    end;
+    glyphCursor.Rewind;
+  end;
+  m := AffineMatrixRotationDeg(-FontOrientation*0.1);
+  ofs := m*ofs;
+  incF(x, ofs.x);
+  incF(y, ofs.y);
+
+  while not glyphCursor.EndOfString do
+  begin
+    NextGlyph;
+    if ATexture = nil then
+      TextOut(x,y, currentGlyphUtf8, AColor, taLeftJustify, currentGlyph.RightToLeft)
+    else
+      TextOut(x,y, currentGlyphUtf8, ATexture, taLeftJustify, currentGlyph.RightToLeft);
+    ofs := m*PointF(currentGlyphWidth + ALetterSpacing, 0);
+    incF(x, ofs.x);
+    incF(y, ofs.y);
+  end;
+end;
+
 procedure TBGRADefaultBitmap.InternalCrossFade(ARect: TRect; Source1,
   Source2: IBGRAScanner; AFadePos: byte; AFadeMask: IBGRAScanner; mode: TDrawMode);
 var xb,yb: Int32or64;
@@ -2825,6 +2889,18 @@ procedure TBGRADefaultBitmap.TextOut(x, y: single; const sUTF8: string;
   texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean);
 begin
   FontRenderer.TextOut(self,x,y,CleanTextOutString(sUTF8),texture,align, ARightToLeft);
+end;
+
+procedure TBGRADefaultBitmap.TextOut(x, y: single; const sUTF8: string;
+  AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single);
+begin
+  InternalTextOutLetterSpacing(x, y, sUTF8, AColor, nil, AAlign, ALetterSpacing);
+end;
+
+procedure TBGRADefaultBitmap.TextOut(x, y: single; const sUTF8: string;
+  ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single);
+begin
+  InternalTextOutLetterSpacing(x, y, sUTF8, BGRAPixelTransparent, ATexture, AAlign, ALetterSpacing);
 end;
 
 procedure TBGRADefaultBitmap.TextOut(x, y: single; const sUTF8: string;
