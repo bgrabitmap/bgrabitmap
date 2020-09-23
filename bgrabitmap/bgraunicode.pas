@@ -21,6 +21,7 @@ type
                       ubcMirroredNeutral);       //ubcOtherNeutrals with Mirrored property
   TUnicodeJoiningType = (ujtNonJoining{U}, ujtTransparent{T}, ujtRightJoining{R}, ujtLeftJoining{L},
                          ujtDualJoining{D}, ujtJoinCausing{C});
+  TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
 
 const
   ubcNeutral = [ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals];
@@ -173,6 +174,7 @@ function IsModifierCombiningMark(u: LongWord): boolean;
 { Analyze unicode and return bidi levels for each character.
   baseDirection can be either UNICODE_LEFT_TO_RIGHT_ISOLATE, UNICODE_RIGHT_TO_LEFT_ISOLATE or UNICODE_FIRST_STRONG_ISOLATE }
 function AnalyzeBidiUnicode(u: PLongWord; ALength: integer; baseDirection: LongWord): TUnicodeBidiArray;
+function AnalyzeBidiUnicode(u: PLongWord; ALength: integer; ABidiMode: TFontBidiMode): TUnicodeBidiArray;
 
 { Determine diplay order, provided the display surface is horizontally infinite }
 function GetUnicodeDisplayOrder(const AInfo: TUnicodeBidiArray): TUnicodeDisplayOrder; overload;
@@ -1179,6 +1181,17 @@ begin
         result[i].Flags := result[i].Flags OR BIDI_FLAG_MULTICHAR_START;
     end;
     SplitParagraphs;
+  end;
+end;
+
+function AnalyzeBidiUnicode(u: PLongWord; ALength: integer;
+  ABidiMode: TFontBidiMode): TUnicodeBidiArray;
+begin
+  case ABidiMode of
+    fbmLeftToRight: result := AnalyzeBidiUnicode(u, ALength, UNICODE_LEFT_TO_RIGHT_ISOLATE);
+    fbmRightToLeft: result := AnalyzeBidiUnicode(u, ALength, UNICODE_RIGHT_TO_LEFT_ISOLATE);
+  else
+    {fbmAuto} result := AnalyzeBidiUnicode(u, ALength, UNICODE_FIRST_STRONG_ISOLATE);
   end;
 end;
 

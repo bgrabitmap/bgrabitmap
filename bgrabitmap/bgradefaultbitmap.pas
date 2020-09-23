@@ -1972,12 +1972,7 @@ begin
   if (ATexture = nil) and (AColor.alpha = 0) then exit;
   sUTF8 := CleanTextOutString(sUTF8);
   if sUTF8 = '' then exit;
-  case FontBidiMode of
-    fbmAuto: bidiArray := AnalyzeBidiUTF8(sUTF8);
-    fbmLeftToRight: bidiArray := AnalyzeBidiUTF8(sUTF8, false);
-    fbmRightToLeft: bidiArray := AnalyzeBidiUTF8(sUTF8, true);
-    else bidiArray := nil;
-  end;
+  bidiArray := AnalyzeBidiUTF8(sUTF8, FontBidiMode);
   if bidiArray = nil then exit;
   displayOrder := GetUTF8DisplayOrder(bidiArray);
 

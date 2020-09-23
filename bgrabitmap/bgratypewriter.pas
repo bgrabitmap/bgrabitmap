@@ -1109,8 +1109,7 @@ var
 begin
   if ATextUTF8 = '' then exit;
 
-  if BidiMode = fbmAuto then bidiArray := AnalyzeBidiUTF8(ATextUTF8)
-  else bidiArray := AnalyzeBidiUTF8(ATextUTF8, BidiMode = fbmRightToLeft);
+  bidiArray := AnalyzeBidiUTF8(ATextUTF8, BidiMode);
   if ADisplayOrder then OrderedCharInfo else UnorderedCharInfo;
 
   cur := 0;

@@ -100,8 +100,9 @@ function GetLastStrongBidiClassUTF8(const sUTF8: string): TUnicodeBidiClass;
 function IsRightToLeftUTF8(const sUTF8: string): boolean;
 function IsZeroWidthUTF8(const sUTF8: string): boolean;
 function AddParagraphBidiUTF8(s: string; ARightToLeft: boolean): string;
-function AnalyzeBidiUTF8(const sUTF8: string; ARightToLeft: boolean): TBidiUTF8Array; overload;
 function AnalyzeBidiUTF8(const sUTF8: string): TBidiUTF8Array; overload;
+function AnalyzeBidiUTF8(const sUTF8: string; ABidiMode: TFontBidiMode): TBidiUTF8Array; overload;
+function AnalyzeBidiUTF8(const sUTF8: string; ARightToLeft: boolean): TBidiUTF8Array; overload;
 function GetUTF8DisplayOrder(const ABidi: TBidiUTF8Array): TUnicodeDisplayOrder;
 function ContainsBidiIsolateOrFormattingUTF8(const sUTF8: string): boolean;
 
@@ -1205,7 +1206,7 @@ begin
   end;
 end;
 
-function AnalyzeBidiUTF8(const sUTF8: string; ABaseDirection: LongWord): TBidiUTF8Array;
+function AnalyzeBidiUTF8(const sUTF8: string; ABidiMode: TFontBidiMode): TBidiUTF8Array;
 var
   u: TUnicodeArray;
   ofs: TIntegerArray;
@@ -1217,7 +1218,7 @@ begin
   else
   begin
     UTF8ToUnicodeArray(sUTF8, u, ofs);
-    a := AnalyzeBidiUnicode(@u[0], length(u), ABaseDirection);
+    a := AnalyzeBidiUnicode(@u[0], length(u), ABidiMode);
     setlength(result, length(u));
     for i := 0 to high(result) do
     begin
@@ -1230,14 +1231,13 @@ end;
 function AnalyzeBidiUTF8(const sUTF8: string; ARightToLeft: boolean): TBidiUTF8Array;
 begin
   if ARightToLeft then
-    result := AnalyzeBidiUTF8(sUTF8, UNICODE_RIGHT_TO_LEFT_ISOLATE)
-  else
-    result := AnalyzeBidiUTF8(sUTF8, UNICODE_LEFT_TO_RIGHT_ISOLATE);
+    result := AnalyzeBidiUTF8(sUTF8, fbmRightToLeft)
+    else result := AnalyzeBidiUTF8(sUTF8, fbmLeftToRight);
 end;
 
 function AnalyzeBidiUTF8(const sUTF8: string): TBidiUTF8Array;
 begin
-  result := AnalyzeBidiUTF8(sUTF8, UNICODE_FIRST_STRONG_ISOLATE)
+  result := AnalyzeBidiUTF8(sUTF8, fbmAuto)
 end;
 
 function GetUTF8DisplayOrder(const ABidi: TBidiUTF8Array): TUnicodeDisplayOrder;

@@ -18,7 +18,7 @@ unit BGRABitmapTypes;
 interface
 
 uses
-  BGRAClasses, BGRAGraphics,
+  BGRAClasses, BGRAGraphics, BGRAUnicode,
   FPImage{$IFDEF BGRABITMAP_USE_FPCANVAS}, FPImgCanv{$ENDIF}
   {$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
   BGRAMultiFileType;
@@ -133,8 +133,13 @@ type
   TBGRALoadingOptions = set of TBGRALoadingOption;
 
   TTextLayout = BGRAGraphics.TTextLayout;
-  TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
+  TFontBidiMode = BGRAUnicode.TFontBidiMode;
   TBidiTextAlignment = (btaNatural, btaOpposite, btaLeftJustify, btaRightJustify, btaCenter);
+
+const
+  fbmAuto = BGRAUnicode.fbmAuto;
+  fbmLeftToRight = BGRAUnicode.fbmLeftToRight;
+  fbmRightToLeft = BGRAUnicode.fbmRightToLeft;
 
   function AlignmentToBidiTextAlignment(AAlign: TAlignment; ARightToLeft: boolean): TBidiTextAlignment; overload;
   function AlignmentToBidiTextAlignment(AAlign: TAlignment): TBidiTextAlignment; overload;
@@ -571,7 +576,7 @@ var
 
 implementation
 
-uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
+uses Math, SysUtils, BGRAUTF8,
   FPReadXwd, FPReadXPM,
   FPWriteJPEG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM;
