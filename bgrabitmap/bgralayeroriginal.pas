@@ -611,10 +611,14 @@ function TBGRAOriginalEditor.RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AA
 const alpha = 192;
 var filler: TBGRAMultishapeFiller;
   c: TBGRAPixel;
+  penScale: Single;
+  oldClip: TRect;
 begin
   result := GetRenderPointBounds(ACoord, AHighlighted);
   if not isEmptyPointF(ACoord) then
   begin
+    oldClip := ADest.ClipRect;
+    ADest.ClipRect := result;
     if AAlternateColor then c := BGRA(255,128,128,alpha)
       else if AHighlighted then c := BGRA(96,170,255,alpha)
       else c := BGRA(255,255,255,alpha);
@@ -623,24 +627,30 @@ begin
                   c, BGRAPixelTransparent,
                   gtRadial, PointF(ACoord.x,ACoord.y), PointF(result.right,ACoord.y),
                   dmDrawWithTransparency);
+    penScale := FPointSize / 6;
+    if penScale < 1 then penScale := 1;
     filler := TBGRAMultishapeFiller.Create;
-    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 4, BGRA(0,0,0,alpha));
-    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 1, c);
+    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 3.5*penScale, BGRA(0,0,0,alpha));
+    filler.AddEllipseBorder(ACoord.x,ACoord.y, FPointSize-2,FPointSize-2, 1*penScale, c);
     filler.PolygonOrder:= poLastOnTop;
     filler.Draw(ADest);
     filler.Free;
+    ADest.ClipRect := oldClip;
   end;
 end;
 
 function TBGRAOriginalEditor.GetRenderPointBounds(ACoord: TPointF; AHighlighted: boolean): TRect;
 var
-  r: Single;
+  r, penScale: Single;
 begin
   if isEmptyPointF(ACoord) then
     result := EmptyRect
   else
   begin
-    if AHighlighted then r := FPointSize*2 else r := FPointSize;
+    penScale := FPointSize / 6;
+    if penScale < 1 then penScale := 1;
+    r := FPointSize + (penScale-1)*4;
+    if AHighlighted then r := max(r, FPointSize*2);
     result := rect(floor(ACoord.x - r + 0.5), floor(ACoord.y - r + 0.5),
                    ceil(ACoord.x + r + 0.5), ceil(ACoord.y + r + 0.5));
   end;
@@ -653,16 +663,19 @@ var
   pts, ptsContour: ArrayOfTPointF;
   i: Integer;
   rF: TRectF;
+  penScale: Single;
 begin
   if isEmptyPointF(AOrigin) or isEmptyPointF(AEndCoord) then
     result := EmptyRect
   else
   begin
+    penScale := FPointSize / 6;
+    if penScale < 1 then penScale := 1;
     ADest.Pen.Arrow.EndAsClassic;
-    ADest.Pen.Arrow.EndSize := PointF(FPointSize,FPointSize);
-    pts := ADest.ComputeWidePolyline([AOrigin,AEndCoord],1);
+    ADest.Pen.Arrow.EndSize := PointF(FPointSize/penScale,FPointSize/penScale);
+    pts := ADest.ComputeWidePolyline([AOrigin,AEndCoord],1*penScale);
     ADest.Pen.Arrow.EndAsNone;
-    ptsContour := ADest.ComputeWidePolygon(pts, 2);
+    ptsContour := ADest.ComputeWidePolygon(pts, 2*penScale);
     ADest.FillPolyAntialias(ptsContour, BGRA(0,0,0,alpha));
     ADest.FillPolyAntialias(pts, BGRA(255,255,255,alpha));
     rF := RectF(AOrigin,AEndCoord);
@@ -679,14 +692,20 @@ begin
 end;
 
 function TBGRAOriginalEditor.GetRenderArrowBounds(AOrigin, AEndCoord: TPointF): TRect;
+var
+  penScale, margin: Single;
 begin
   if isEmptyPointF(AOrigin) or isEmptyPointF(AEndCoord) then
     result := EmptyRect
   else
   begin
-    result := Rect(floor(AOrigin.x+0.5-1.5),floor(AOrigin.y+0.5-1.5),ceil(AOrigin.x+0.5+1.5),ceil(AOrigin.y+0.5+1.5));
-    result.Union( rect(floor(AEndCoord.x+0.5-FPointSize-1.5), floor(AEndCoord.y+0.5-FPointSize-1.5),
-                      ceil(AEndCoord.x+0.5+FPointSize+1.5), ceil(AEndCoord.y+0.5+FPointSize+1.5)) );
+    penScale := FPointSize / 6;
+    if penScale < 1 then penScale := 1;
+    margin := penScale * 1.5;
+    result := Rect(floor(AOrigin.x+0.5-margin),floor(AOrigin.y+0.5-margin),
+      ceil(AOrigin.x+0.5+margin),ceil(AOrigin.y+0.5+margin));
+    result.Union( rect(floor(AEndCoord.x+0.5-FPointSize-margin), floor(AEndCoord.y+0.5-FPointSize-margin),
+                      ceil(AEndCoord.x+0.5+FPointSize+margin), ceil(AEndCoord.y+0.5+FPointSize+margin)) );
   end;
 end;
 
