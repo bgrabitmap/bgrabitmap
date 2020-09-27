@@ -618,7 +618,7 @@ begin
   if not isEmptyPointF(ACoord) then
   begin
     oldClip := ADest.ClipRect;
-    ADest.ClipRect := result;
+    ADest.IntersectClip(result);
     if AAlternateColor then c := BGRA(255,128,128,alpha)
       else if AHighlighted then c := BGRA(96,170,255,alpha)
       else c := BGRA(255,255,255,alpha);
