@@ -39,6 +39,7 @@ procedure DrawThumbnailCheckers(bmp: TBGRABitmap; ARect: TRect; AIconCheckers: b
 var
   ImageCheckersColor1,ImageCheckersColor2  : TBGRAPixel;
   IconCheckersColor1,IconCheckersColor2  : TBGRAPixel;
+  CheckersScale: single = 1;
 
 implementation
 
@@ -81,7 +82,7 @@ begin
       if hIcon = 0 then hIcon := 1;
       xIcon:= (result.Width-wIcon) div 2;
       yIcon:= (result.Height-hIcon) div 2;
-      if ACheckers then DrawThumbnailCheckers(result,Rect(xIcon,yIcon,xIcon+wIcon,yIcon+hIcon),ADarkCheckers);
+      if ACheckers then DrawThumbnailCheckers(result,Rect(xIcon,yIcon,xIcon+wIcon,yIcon+hIcon),ADarkCheckers,CheckersScale);
       if AShowHotSpot and (wIcon > 0) and (hIcon > 0) then
       begin
         hotspot := Point(xIcon+ABitmap.HotSpot.X*wIcon div ABitmap.Width,yIcon+ABitmap.HotSpot.Y*hIcon div ABitmap.Height);
