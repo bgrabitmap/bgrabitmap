@@ -159,6 +159,7 @@ type
                                             var ADiff: TBGRAOriginalDiff) of object;
   TEmbeddedOriginalEditingChangeEvent = procedure (ASender: TObject; AOriginal: TBGRALayerCustomOriginal) of object;
   TLayeredActionProgressEvent = procedure(ASender: TObject; AProgressPercent: integer) of object;
+  TEmbeddedOriginalLoadErrorEvent = procedure (ASender: TObject; AError: string; var ARaise: boolean) of object;
 
   TBGRALayerInfo = record
     UniqueId: integer;
@@ -186,6 +187,7 @@ type
     FOnEditorFocusChanged: TNotifyEvent;
     FEditorFocused: boolean;
     FOnActionProgress: TLayeredActionProgressEvent;
+    FOnOriginalLoadError: TEmbeddedOriginalLoadErrorEvent;
     FOriginalChange: TEmbeddedOriginalChangeEvent;
     FOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent;
     FWidth,FHeight: integer;
@@ -381,6 +383,7 @@ type
     property OriginalClass[AIndex: integer]: TBGRALayerOriginalAny read GetOriginalByIndexClass;
     property OnOriginalChange: TEmbeddedOriginalChangeEvent read FOriginalChange write FOriginalChange;
     property OnOriginalEditingChange: TEmbeddedOriginalEditingChangeEvent read FOriginalEditingChange write FOriginalEditingChange;
+    property OnOriginalLoadError: TEmbeddedOriginalLoadErrorEvent read FOnOriginalLoadError write FOnOriginalLoadError;
     property EditorFocused: boolean read FEditorFocused write SetEditorFocused;
     property OnEditorFocusChanged: TNotifyEvent read FOnEditorFocusChanged write FOnEditorFocusChanged;
     property OriginalEditor: TBGRAOriginalEditor read GetOriginalEditor;
@@ -764,6 +767,7 @@ var
   c: TBGRALayerOriginalAny;
   guid: TGuid;
   storage: TBGRAMemOriginalStorage;
+  raiseError: Boolean;
 begin
   if (AIndex < 0) or (AIndex >= OriginalCount) then
     raise ERangeError.Create('Index out of bounds');
@@ -784,19 +788,24 @@ begin
     result.Guid := guid;
     storage := TBGRAMemOriginalStorage.Create(dir);
     try
-      result.LoadFromStorage(storage);
-      FOriginals[AIndex] := BGRALayerOriginalEntry(result);
-      result.OnChange:= @OriginalChange;
-      result.OnEditingChange:= @OriginalEditingChange;
-    except
-      on ex: exception do
-      begin
-        FreeAndNil(result);
+      try
+        result.LoadFromStorage(storage);
+      finally
+        FOriginals[AIndex] := BGRALayerOriginalEntry(result);
+        result.OnChange:= @OriginalChange;
+        result.OnEditingChange:= @OriginalEditingChange;
         storage.Free;
-        raise exception.Create(ex.Message);
+      end;
+    except
+      on ex: Exception do
+      begin
+        raiseError := true;
+        if Assigned(FOnOriginalLoadError) then
+          FOnOriginalLoadError(self, ex.Message, raiseError);
+        if raiseError then
+          raise ex;
       end;
     end;
-    storage.Free;
   end;
 end;
 
@@ -1703,6 +1712,7 @@ var
   origClass: TBGRALayerOriginalAny;
   orig: TBGRALayerCustomOriginal;
   dir, subdir: TMemDirectory;
+  raiseError: Boolean;
 begin
   result := -1;
   origClassName := AStorage.RawString['class'];
@@ -1730,7 +1740,11 @@ begin
     except on ex:exception do
       begin
         orig.Free;
-        raise exception.Create('Error loading original. '+ ex.Message);
+        raiseError := true;
+        if Assigned(FOnOriginalLoadError) then
+          FOnOriginalLoadError(self, ex.Message, raiseError);
+        if raiseError then
+          raise ex;
       end;
     end;
   end;

@@ -7,7 +7,7 @@ unit BGRAUTF8;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRAUnicode{$IFDEF BGRABITMAP_USE_LCL}, lazutf8classes{$ENDIF};
+  BGRAClasses, SysUtils, math, BGRAUnicode{$IFDEF BGRABITMAP_USE_LCL}, lazutf8classes{$ENDIF};
 
 const
   UTF8_ARABIC_ALEPH = 'ا';
@@ -18,6 +18,9 @@ const
   UTF8_NO_BREAK_SPACE = ' ';
   UTF8_ZERO_WIDTH_NON_JOINER = '‌';
   UTF8_ZERO_WIDTH_JOINER = '‍';
+  UTF8_LINE_SEPARATOR = #$E2#$80#$A8;       //equivalent of <br>
+  UTF8_PARAGRAPH_SEPARATOR = #$E2#$80#$A9;  //equivalent of </p>
+  UTF8_NEXT_LINE = #$C2#$85;                //equivalent of CRLF
 
 {$IFDEF BGRABITMAP_USE_LCL}
 type
@@ -97,14 +100,40 @@ function GetLastStrongBidiClassUTF8(const sUTF8: string): TUnicodeBidiClass;
 function IsRightToLeftUTF8(const sUTF8: string): boolean;
 function IsZeroWidthUTF8(const sUTF8: string): boolean;
 function AddParagraphBidiUTF8(s: string; ARightToLeft: boolean): string;
-function AnalyzeBidiUTF8(const sUTF8: string; ARightToLeft: boolean): TBidiUTF8Array; overload;
 function AnalyzeBidiUTF8(const sUTF8: string): TBidiUTF8Array; overload;
+function AnalyzeBidiUTF8(const sUTF8: string; ABidiMode: TFontBidiMode): TBidiUTF8Array; overload;
+function AnalyzeBidiUTF8(const sUTF8: string; ARightToLeft: boolean): TBidiUTF8Array; overload;
 function GetUTF8DisplayOrder(const ABidi: TBidiUTF8Array): TUnicodeDisplayOrder;
 function ContainsBidiIsolateOrFormattingUTF8(const sUTF8: string): boolean;
 
 function UTF8OverrideDirection(const sUTF8: string; ARightToLeft: boolean): string;
 function UTF8EmbedDirection(const sUTF8: string; ARightToLeft: boolean): string;
 function UTF8Ligature(const sUTF8: string; ARightToLeft: boolean; ALigatureLeft, ALigatureRight: boolean): string;
+
+type
+  TGlyphUtf8 = record
+    GlyphUtf8, MirroredGlyphUtf8: string;
+    RightToLeft, Mirrored, Merged: boolean;
+  end;
+
+  { TGlyphCursorUtf8 }
+
+  TGlyphCursorUtf8 = record
+  private
+    sUTF8: string;
+    currentChar: string;
+    currentBidiInfo: TUnicodeBidiInfo;
+    bidiArray: TBidiUTF8Array;
+    displayOrder: TUnicodeDisplayOrder;
+    displayIndex: Integer;
+    procedure NextMultichar;
+    procedure PeekMultichar;
+  public
+    class function New(const textUTF8: string; ABidiMode: TFontBidiMode): TGlyphCursorUtf8; static;
+    function GetNextGlyph: TGlyphUtf8;
+    procedure Rewind;
+    function EndOfString: boolean;
+  end;
 
 //little endian stream functions
 function LEReadInt64(Stream: TStream): int64;
@@ -1202,7 +1231,7 @@ begin
   end;
 end;
 
-function AnalyzeBidiUTF8(const sUTF8: string; ABaseDirection: LongWord): TBidiUTF8Array;
+function AnalyzeBidiUTF8(const sUTF8: string; ABidiMode: TFontBidiMode): TBidiUTF8Array;
 var
   u: TUnicodeArray;
   ofs: TIntegerArray;
@@ -1214,7 +1243,7 @@ begin
   else
   begin
     UTF8ToUnicodeArray(sUTF8, u, ofs);
-    a := AnalyzeBidiUnicode(@u[0], length(u), ABaseDirection);
+    a := AnalyzeBidiUnicode(@u[0], length(u), ABidiMode);
     setlength(result, length(u));
     for i := 0 to high(result) do
     begin
@@ -1227,14 +1256,13 @@ end;
 function AnalyzeBidiUTF8(const sUTF8: string; ARightToLeft: boolean): TBidiUTF8Array;
 begin
   if ARightToLeft then
-    result := AnalyzeBidiUTF8(sUTF8, UNICODE_RIGHT_TO_LEFT_ISOLATE)
-  else
-    result := AnalyzeBidiUTF8(sUTF8, UNICODE_LEFT_TO_RIGHT_ISOLATE);
+    result := AnalyzeBidiUTF8(sUTF8, fbmRightToLeft)
+    else result := AnalyzeBidiUTF8(sUTF8, fbmLeftToRight);
 end;
 
 function AnalyzeBidiUTF8(const sUTF8: string): TBidiUTF8Array;
 begin
-  result := AnalyzeBidiUTF8(sUTF8, UNICODE_FIRST_STRONG_ISOLATE)
+  result := AnalyzeBidiUTF8(sUTF8, fbmAuto)
 end;
 
 function GetUTF8DisplayOrder(const ABidi: TBidiUTF8Array): TUnicodeDisplayOrder;
@@ -1350,6 +1378,110 @@ var
 begin
   ValueAsDWord := NtoLE(ValueAsDWord);
   stream.Write(ValueAsDWord, sizeof(AValue));
+end;
+
+{ TGlyphCursorUtf8 }
+
+class function TGlyphCursorUtf8.New(const textUTF8: string; ABidiMode: TFontBidiMode): TGlyphCursorUtf8;
+begin
+  result.sUTF8 := textUTF8;
+  result.bidiArray := AnalyzeBidiUTF8(result.sUTF8, ABidiMode);
+  result.displayOrder := GetUTF8DisplayOrder(result.bidiArray);
+  result.Rewind;
+end;
+
+function TGlyphCursorUtf8.GetNextGlyph: TGlyphUtf8;
+var
+  rtlScript, ligatureLeft, ligatureRight: Boolean;
+  u: LongWord;
+  bracketInfo: TUnicodeBracketInfo;
+begin
+  if EndOfString then
+  begin
+    result.GlyphUtf8:= '';
+    result.RightToLeft:= false;
+    result.Mirrored:= false;
+    result.MirroredGlyphUtf8:= '';
+    exit;
+  end;
+  PeekMultichar;
+  NextMultichar;
+  result.GlyphUtf8 := currentChar;
+  result.RightToLeft := currentBidiInfo.IsRightToLeft;
+  result.Mirrored := currentBidiInfo.IsMirrored;
+  result.MirroredGlyphUtf8:= '';
+  result.Merged:= false;
+  if result.Mirrored then
+  begin
+    u := UTF8CodepointToUnicode(pchar(currentChar),
+      min(UTF8CharacterLength(pchar(currentChar)), length(currentChar)));
+    bracketInfo := GetUnicodeBracketInfo(u);
+    if bracketInfo.OpeningBracket = u then
+      result.MirroredGlyphUtf8 := UnicodeCharToUTF8(bracketInfo.ClosingBracket)
+    else if bracketInfo.ClosingBracket = u then
+      result.MirroredGlyphUtf8 := UnicodeCharToUTF8(bracketInfo.OpeningBracket);
+  end else
+  begin
+    rtlScript := currentBidiInfo.IsRightToLeftScript;
+    ligatureRight := currentBidiInfo.HasLigatureRight;
+    ligatureLeft := currentBidiInfo.HasLigatureLeft;
+    if (currentChar.StartsWith(UTF8_ARABIC_ALEPH) or
+       currentChar.StartsWith(UTF8_ARABIC_ALEPH_HAMZA_BELOW) or
+       currentChar.StartsWith(UTF8_ARABIC_ALEPH_HAMZA_ABOVE) or
+       currentChar.StartsWith(UTF8_ARABIC_ALEPH_MADDA_ABOVE)) and
+      not EndOfString then
+    begin
+      PeekMultichar;
+      if currentChar.StartsWith(UTF8_ARABIC_LAM) then
+      begin
+        result.GlyphUtf8 := currentChar + result.GlyphUtf8;
+        result.Merged := true;
+        ligatureRight := currentBidiInfo.HasLigatureRight;
+        NextMultichar;
+      end;
+    end;
+    result.GlyphUtf8 := UTF8Ligature(result.GlyphUtf8, rtlScript, ligatureLeft, ligatureRight);
+  end;
+end;
+
+procedure TGlyphCursorUtf8.Rewind;
+begin
+  displayIndex := 0;
+  while (displayIndex < length(displayOrder))
+    and not bidiArray[displayOrder[displayIndex]].BidiInfo.IsMulticharStart do
+      inc(displayIndex);
+end;
+
+procedure TGlyphCursorUtf8.NextMultichar;
+begin
+  inc(displayIndex);
+  while (displayIndex < length(displayOrder))
+    and not bidiArray[displayOrder[displayIndex]].BidiInfo.IsMulticharStart do
+      inc(displayIndex);
+end;
+
+procedure TGlyphCursorUtf8.PeekMultichar;
+var
+  startIndex, nextIndex, charLen, startOffset: Integer;
+begin
+  startIndex := displayOrder[displayIndex];
+  startOffset := bidiArray[startIndex].Offset;
+  currentBidiInfo := bidiArray[startIndex].BidiInfo;
+  nextIndex := startIndex+1;
+  while (nextIndex < length(bidiArray))
+    and not bidiArray[nextIndex].BidiInfo.IsMulticharStart do
+      inc(nextIndex);
+  if nextIndex >= length(bidiArray) then
+    charLen := length(sUTF8) - startOffset
+  else
+    charLen := bidiArray[nextIndex].Offset - startOffset;
+  setlength(currentChar, charLen);
+  if charLen > 0 then move(sUTF8[startOffset+1], currentChar[1], charLen);
+end;
+
+function TGlyphCursorUtf8.EndOfString: boolean;
+begin
+  result := displayIndex >= length(displayOrder);
 end;
 
 end.

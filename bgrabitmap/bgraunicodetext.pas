@@ -334,10 +334,7 @@ var
   lineIndex, i: Integer;
   curParaIndex: integer;
 begin
-  if FBidiMode <> fbmAuto then
-    FBidi:= AnalyzeBidiUTF8(FText, FBidiMode = fbmRightToLeft)
-  else
-    FBidi:= AnalyzeBidiUTF8(FText);
+  FBidi:= AnalyzeBidiUTF8(FText, FBidiMode);
   FCharCount := length(FBidi);
 
   FUnbrokenLineCount := 1;
@@ -453,10 +450,7 @@ begin
   if (APosition < 0) or (APosition > CharCount) then raise exception.Create('Position out of bounds');
   if length(ATextUTF8)=0 then exit(0);
 
-  if FBidiMode <> fbmAuto then
-    newBidi:= AnalyzeBidiUTF8(ATextUTF8, FBidiMode = fbmRightToLeft)
-  else
-    newBidi:= AnalyzeBidiUTF8(ATextUTF8);
+  newBidi:= AnalyzeBidiUTF8(ATextUTF8, FBidiMode);
   result:= InternalInsertText(APosition, newBidi, ATextUTF8);
 end;
 
@@ -814,10 +808,7 @@ begin
   else
     utf8Count := FBidi[bidiEnd].Offset - (utf8Start-1);
 
-  if FBidiMode <> fbmAuto then
-    newBidi:= AnalyzeBidiUTF8(copy(FText, utf8Start, utf8Count), FBidiMode = fbmRightToLeft)
-  else
-    newBidi:= AnalyzeBidiUTF8(copy(FText, utf8Start, utf8Count));
+  newBidi:= AnalyzeBidiUTF8(copy(FText, utf8Start, utf8Count), FBidiMode);
 
   startDiff := maxLongint;
   endDiff := -maxLongint;

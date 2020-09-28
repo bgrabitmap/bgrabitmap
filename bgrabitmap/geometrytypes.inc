@@ -104,6 +104,7 @@ type
     function Union(const r: TRectF):TRectF; overload;
     function Union(const r: TRectF; ADiscardEmpty: boolean):TRectF; overload;
     procedure Include(const APoint: TPointF);
+    function Contains(const APoint: TPointF; AIncludeBottomRight: boolean = false): boolean;
     function IntersectsWith(const r: TRectF): boolean;
     function IsEmpty: boolean;
   end;
@@ -924,6 +925,16 @@ begin
     if APoint.y < Top then Top := APoint.y else
     if APoint.y > Bottom then Bottom := APoint.y;
   end;
+end;
+
+function TRectFHelper.Contains(const APoint: TPointF;
+  AIncludeBottomRight: boolean): boolean;
+begin
+  if isEmptyPointF(APoint) then result := false else
+  if (APoint.x < Left) or (APoint.y < Top) then result := false else
+  if AIncludeBottomRight and ((APoint.x > Right) or (APoint.y > Bottom)) then result := false else
+  if not AIncludeBottomRight and ((APoint.x >= Right) or (APoint.y >= Bottom)) then result := false
+  else result := true;
 end;
 
 function TRectFHelper.IntersectsWith(const r: TRectF): boolean;

@@ -66,7 +66,7 @@ begin
     y += h;
     virtualScreen.HorizLine(0,y,virtualScreen.Width,BGRA(255,255,255),dmDrawWithTransparency);
     virtualScreen.FontVerticalAnchor := textanchor;
-    virtualScreen.TextOut(h,y, FontVerticalAnchorToStr[textanchor], BGRABlack);
+    virtualScreen.TextOut(virtualScreen.Width/2,y, FontVerticalAnchorToStr[textanchor], BGRABlack, taCenter, h/3);
     y += h;
     if textanchor >= high(TFontVerticalAnchor) then break;
     textanchor:= succ(textanchor);

@@ -727,6 +727,7 @@ begin
   result.fontEmHeight := fontEmHeight;
   result.fontStyle := fontStyle;
   result.textDirection:= textDirection;
+  result.textBaseline:= textBaseline;
 
   result.lineWidth := lineWidth;
   result.penStroker.LineCap := penStroker.LineCap;

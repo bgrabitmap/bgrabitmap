@@ -25,7 +25,7 @@ type
 
 implementation
 
-uses BGRAPath, BGRAVectorize, BGRAGradientScanner;
+uses BGRAPath, BGRAVectorize, BGRAGradientScanner, BGRAUTF8;
 
 { TTest32 }
 
@@ -138,7 +138,7 @@ begin
     direction := 1;
   end;
   cursor1.Position := position*cursor1.PathLength;
-  virtualScreen.TextOutCurved(cursor1, 'Curved text', BGRABlack, taLeftJustify, virtualScreen.FontFullHeight/8);
+  virtualScreen.TextOutCurved(cursor1, 'Curved text '+UTF8_ARABIC_LAM+UTF8_ARABIC_ALEPH, BGRABlack, taLeftJustify, virtualScreen.FontFullHeight/8);
   if cursor1.Position = cursor1.PathLength then direction := -1;
   cursor1.Free;
 

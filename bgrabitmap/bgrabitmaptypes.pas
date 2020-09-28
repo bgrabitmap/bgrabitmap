@@ -18,14 +18,14 @@ unit BGRABitmapTypes;
 interface
 
 uses
-  BGRAClasses, BGRAGraphics,
+  BGRAClasses, BGRAGraphics, BGRAUnicode,
   FPImage{$IFDEF BGRABITMAP_USE_FPCANVAS}, FPImgCanv{$ENDIF}
   {$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
   BGRAMultiFileType;
 
 
 const
-  BGRABitmapVersion = 11020200;
+  BGRABitmapVersion = 11020300;
 
   function BGRABitmapVersionStr: string;
 
@@ -133,8 +133,13 @@ type
   TBGRALoadingOptions = set of TBGRALoadingOption;
 
   TTextLayout = BGRAGraphics.TTextLayout;
-  TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
+  TFontBidiMode = BGRAUnicode.TFontBidiMode;
   TBidiTextAlignment = (btaNatural, btaOpposite, btaLeftJustify, btaRightJustify, btaCenter);
+
+const
+  fbmAuto = BGRAUnicode.fbmAuto;
+  fbmLeftToRight = BGRAUnicode.fbmLeftToRight;
+  fbmRightToLeft = BGRAUnicode.fbmRightToLeft;
 
   function AlignmentToBidiTextAlignment(AAlign: TAlignment; ARightToLeft: boolean): TBidiTextAlignment; overload;
   function AlignmentToBidiTextAlignment(AAlign: TAlignment): TBidiTextAlignment; overload;
@@ -438,7 +443,7 @@ type
 {** Removes line ending and tab characters from a string (for a function
     like ''TextOut'' that does not handle this). this works with UTF8 strings
     as well }
-function CleanTextOutString(s: string): string;
+function CleanTextOutString(const s: string): string;
 {** Remove the line ending at the specified position or return False.
     This works with UTF8 strings however the index is the byte index }
 function RemoveLineEnding(var s: string; indexByte: integer): boolean;
@@ -571,7 +576,7 @@ var
 
 implementation
 
-uses Math, SysUtils, BGRAUTF8, BGRAUnicode,
+uses Math, SysUtils, BGRAUTF8,
   FPReadXwd, FPReadXPM,
   FPWriteJPEG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM;
@@ -648,7 +653,7 @@ begin
   end;
 end;
 
-function CleanTextOutString(s: string): string;
+function CleanTextOutString(const s: string): string;
 var idxIn, idxOut: integer;
 begin
   setlength(result, length(s));
@@ -684,7 +689,18 @@ begin //we can ignore UTF8 character length because #13 and #10 are always 1 byt
       end
         else
           delete(s,indexByte,1);
-    end;
+    end else
+    if (s[indexByte] = #$C2) and (length(s) >= indexByte+1) and (s[indexByte+1] = #$85) then
+    begin
+      result := true;
+      delete(s,indexByte,2);
+    end else
+    if (s[indexByte] = #$E2) and (length(s) >= indexByte+2) and (s[indexByte+1] = #$80) and
+       (s[indexByte+2] in[#$A8,#$A9]) then
+    begin
+      result := true;
+      delete(s,indexByte,3);
+    end
   end;
 end;
 
