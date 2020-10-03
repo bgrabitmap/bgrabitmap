@@ -287,7 +287,7 @@ type
     procedure SetPointF(AName: utf8string; AValue: TPointF);
     procedure SetRectF(AName: utf8string; AValue: TRectF);
     procedure SetRect(AName: utf8string; AValue: TRect);
-    procedure SetAffineMatrix(AName: utf8string; AValue: TAffineMatrix);
+    procedure SetAffineMatrix(AName: utf8string; const AValue: TAffineMatrix);
     procedure SetRawString(AName: utf8string; AValue: RawByteString); virtual; abstract;
     procedure SetSingle(AName: utf8string; AValue: single);
     procedure SetSingleArray(AName: utf8string; AValue: ArrayOfSingle);
@@ -311,6 +311,9 @@ type
     function ReadBitmap(AName: UTF8String; ADest: TCustomUniversalBitmap): boolean; virtual; abstract;
     procedure WriteFile(AName: UTF8String; ASource: TStream; ACompress: boolean; AOwnStream: boolean = false); virtual; abstract;
     function FileExists(AName: UTF8String): boolean; virtual; abstract;
+    function FloatEquals(AName: utf8string; AValue: single): boolean;
+    function PointFEquals(AName: utf8string; const AValue: TPointF): boolean;
+    function AffineMatrixEquals(AName: utf8string; const AValue: TAffineMatrix): boolean;
     property RawString[AName: utf8string]: RawByteString read GetRawString write SetRawString;
     property Int[AName: utf8string]: integer read GetInteger write SetInteger;
     property IntDef[AName: utf8string; ADefault: integer]: integer read GetIntegerDef;
@@ -1575,7 +1578,7 @@ begin
 end;
 
 procedure TBGRACustomOriginalStorage.SetAffineMatrix(AName: utf8string;
-  AValue: TAffineMatrix);
+  const AValue: TAffineMatrix);
 var
   stream: TMemoryStream;
 begin
@@ -1745,6 +1748,42 @@ constructor TBGRACustomOriginalStorage.Create;
 begin
   FFormats := DefaultFormatSettings;
   FFormats.DecimalSeparator := '.';
+end;
+
+function TBGRACustomOriginalStorage.FloatEquals(AName: utf8string;
+  AValue: single): boolean;
+var
+  curValue: Single;
+begin
+  curValue := Float[AName];
+  if curValue = EmptySingle then
+    result := (AValue = EmptySingle) else
+  if AValue = EmptySingle then
+    result := false else
+    result := (FloatToStrF(AValue, ffGeneral,7,3, FFormats) =
+              FloatToStrF(curValue, ffGeneral,7,3, FFormats));
+end;
+
+function TBGRACustomOriginalStorage.PointFEquals(AName: utf8string;
+  const AValue: TPointF): boolean;
+var
+  curValue: TPointF;
+begin
+  curValue := PointF[AName];
+  if isEmptyPointF(curValue) then
+    result := isEmptyPointF(AValue) else
+  if isEmptyPointF(AValue) then
+    result := False else
+    result := (FloatToStrF(AValue.x, ffGeneral,7,3, FFormats) =
+              FloatToStrF(curValue.x, ffGeneral,7,3, FFormats)) and
+              (FloatToStrF(AValue.y, ffGeneral,7,3, FFormats) =
+              FloatToStrF(curValue.y, ffGeneral,7,3, FFormats));
+end;
+
+function TBGRACustomOriginalStorage.AffineMatrixEquals(AName: utf8string;
+  const AValue: TAffineMatrix): boolean;
+begin
+  result := (AffineMatrix[AName] = AValue);
 end;
 
 { TBGRALayerCustomOriginal }
