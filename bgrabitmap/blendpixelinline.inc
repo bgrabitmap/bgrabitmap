@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
 function ByteLinearMultiplyInline(a, b: byte): byte;
 begin
-  Result := (a * b) shr 8;
+  if b = 255 then exit(a) else
+  begin
+    if b >= 128 then inc(b);
+    Result := (a * b) shr 8;
+  end;
 end;
 
 procedure LinearMultiplyPixelInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
@@ -196,9 +200,12 @@ var
 begin
   if b = 0 then
     Result := 255
+  else if b = 255 then
+    exit(a)
   else
   begin
-    temp := (a shl 8) div b;
+    if b >= 128 then inc(b);
+    temp := ((a shl 8) + (b shr 1)) div b;
     if temp > 255 then
       Result := 255
     else
