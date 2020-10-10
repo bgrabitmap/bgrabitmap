@@ -706,8 +706,13 @@ end;
 procedure TBGRAOpenRasterDocument.ZipToStream(AStream: TStream);
 var zip: TZipper;
   i: integer;
+  tempFile: String;
 begin
   zip := TZipper.Create;
+  tempFile := ChangeFileExt(GetTempFileName, '');
+  if ExtractFileExt(tempFile) = '.tmp' then
+    tempFile := ChangeFileExt(tempFile, '');
+  zip.FileName:= tempFile;
   try
     for i := 0 to high(FFiles) do
     begin
