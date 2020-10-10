@@ -234,6 +234,14 @@ begin
       begin
         png.Position:= 0;
         result := GetPngThumbnail(png,AWidth,AHeight,ABackColor,ACheckers,ADest);
+      end else
+      begin
+        png.Clear;
+        if unzip.UnzipFileToStream('mergedimage.png', png, False) then
+        begin
+          png.Position:= 0;
+          result := GetPngThumbnail(png,AWidth,AHeight,ABackColor,ACheckers,ADest);
+        end;
       end;
     finally
       png.Free;
