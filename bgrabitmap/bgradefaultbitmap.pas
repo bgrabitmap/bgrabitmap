@@ -2057,13 +2057,15 @@ begin
 
   if (ABorderColor.alpha = 0) and (AFillColor.alpha = 0) then exit;
 
-  if abs(StartAngleRad-EndAngleRad) >= 2*PI - 1e-6 then
+  if (abs(StartAngleRad-EndAngleRad) >= 2*PI - 1e-6) or (StartAngleRad = EndAngleRad) then
   begin
-    if aoPie in AOptions then
+    if (aoPie in AOptions) or not (PenStyle in [psSolid, psClear]) then
       EndAngleRad:= StartAngleRad+2*PI
     else
+    begin
       EllipseAntialias(cx,cy,rx,ry,ABorderColor,w,AFillColor);
-    exit;
+      exit;
+    end;
   end;
 
   if EndAngleRad < StartAngleRad then
@@ -2077,6 +2079,7 @@ begin
   if aoPie in AOptions then pts := ConcatPointsF([PointsF([PointF(cx,cy)]),pts]);
 
   multi := TBGRAMultishapeFiller.Create;
+  multi.FillMode := fmWinding;
   multi.PolygonOrder := poLastOnTop;
   if AFillColor.alpha <> 0 then
   begin

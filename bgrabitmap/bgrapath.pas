@@ -782,8 +782,15 @@ end;
 
 function ComputeArcRad(x, y, rx, ry: single; startRadCCW, endRadCCW: single;
   quality: single): ArrayOfTPointF;
+var
+  start65536, end65536: Int64;
 begin
-  result := ComputeArc65536(x,y,rx,ry,round(startRadCCW*32768/Pi) and $ffff,round(endRadCCW*32768/Pi) and $ffff,quality);
+  start65536 := round(startRadCCW*32768/Pi);
+  end65536 := round(endRadCCW*32768/Pi);
+  //if arc is very small but non zero, it is not a circle
+  if (start65536 = end65536) and (startRadCCW <> endRadCCW) then
+    setlength(result,2) else
+    result := ComputeArc65536(x,y,rx,ry,start65536 and $ffff,end65536 and $ffff,quality);
   result[0] := PointF(x+cos(startRadCCW)*rx,y-sin(startRadCCW)*ry);
   result[high(result)] := PointF(x+cos(endRadCCW)*rx,y-sin(endRadCCW)*ry);
 end;
