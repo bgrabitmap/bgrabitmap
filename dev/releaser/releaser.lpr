@@ -25,6 +25,8 @@ type
     procedure WriteHelp; virtual;
   end;
 
+  TIfState = (isNone, isSkipTrue, isDoTrue, isSkipFalse, isDoFalse);
+
 { TReleaserApp }
 
 procedure TReleaserApp.DoRun;
@@ -109,6 +111,33 @@ var
   factory: TReleaserObjectFactory;
   i, lineNumber, j: Integer;
   newVerStr, logicDir, newDir: string;
+  ifStack: array of TIfState;
+  skipCommand: boolean;
+
+  function PeekIfStack: TIfState;
+  begin
+    if ifStack = nil then
+      result := isNone
+      else result := ifStack[high(ifStack)];
+  end;
+
+  procedure PokeIfStack(AValue: TIfState);
+  begin
+    if ifStack <> nil then
+      ifStack[high(ifStack)] := AValue;
+  end;
+
+  procedure PopIfStack;
+  begin
+    if ifStack <> nil then
+      setlength(ifStack, length(ifStack)-1);
+  end;
+
+  procedure PushIfStack(AValue: TIfState);
+  begin
+    setlength(ifStack, length(ifStack)+1);
+    ifStack[high(ifStack)] := AValue;
+  end;
 
 begin
   AFilename := ExpandFileName(AFilename);
@@ -118,6 +147,7 @@ begin
   line := TStringList.Create;
   objs := TReleaserObjectList.Create;
   lineNumber := 0;
+  ifStack := nil;
   try
     while not eof(t) do
     begin
@@ -128,7 +158,25 @@ begin
       begin
         cmd := line[0];
         line.Delete(0);
+
+        skipCommand := false;
+        if (cmd = 'end') and (PeekIfStack <> isNone) then
+        begin
+          PopIfStack;
+          skipCommand:= true;
+        end;
+        if (cmd = 'else') and (PeekIfStack in[isDoTrue,isSkipTrue]) then
+        begin
+          if PeekIfStack = isDoTrue then
+            PokeIfStack(isSkipFalse)
+            else PokeIfStack(isDoFalse);
+          skipCommand:= true;
+        end;
+
+        if not skipCommand and (PeekIfStack in[isSkipTrue,isSkipFalse]) then
+          skipCommand:= true;
         factory := nil;
+        if not skipCommand then
         case LowerCase(cmd) of
         'cd': begin
             if line.Count <> 1 then raise exception.Create('Expecting directory');
@@ -146,6 +194,21 @@ begin
         'echo': for i := 0 to line.Count-1 do writeln(line[i]);
         'text': factory := TTextLine;
         'copy': factory := TCopyFile;
+        'if': begin
+                if line.Count = 0 then
+                  raise exception.Create('Expecting condition');
+                if line[0] = 'exists' then
+                begin
+                  if line.Count <> 2 then
+                    raise exception.Create('Expecting 1 parameter');
+                  if FileExists(line[1]) or DirectoryExists(line[1]) then
+                    PushIfStack(isDoTrue)
+                    else PushIfStack(isSkipTrue);
+                end else
+                  raise exception.Create('Unknown condition "'+line[0]);
+
+            end;
+        'else', 'end': raise exception.Create('Unexpected branching "'+cmd+'"');
         else
           raise exception.Create('Unknown command "'+cmd+'"');
         end;
