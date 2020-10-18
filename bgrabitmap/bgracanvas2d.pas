@@ -1339,8 +1339,20 @@ begin
 end;
 
 procedure TBGRACanvas2D.lineStyle(const AValue: array of single);
+var a: array of single;
+  i: Integer;
 begin
-  currentState.penStroker.CustomPenStyle := DuplicatePenStyle(AValue);
+  if odd(length(AValue)) then
+  begin
+    setlength(a, length(AValue)*2);
+    for i := 0 to high(AValue) do
+    begin
+      a[i] := AValue[i];
+      a[i + length(AValue)] := AValue[i];
+    end;
+  end else
+    a := DuplicatePenStyle(AValue);
+  currentState.penStroker.CustomPenStyle := a;
 end;
 
 procedure TBGRACanvas2D.lineStyle(AStyle: TPenStyle);
