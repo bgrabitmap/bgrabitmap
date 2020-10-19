@@ -2059,7 +2059,7 @@ begin
 
   if (abs(StartAngleRad-EndAngleRad) >= 2*PI - 1e-6) or (StartAngleRad = EndAngleRad) then
   begin
-    if (aoPie in AOptions) or not (PenStyle in [psSolid, psClear]) then
+    if (aoPie in AOptions) or ((PenStyle <> psSolid) and (PenStyle <> psClear)) then
       EndAngleRad:= StartAngleRad+2*PI
     else
     begin
