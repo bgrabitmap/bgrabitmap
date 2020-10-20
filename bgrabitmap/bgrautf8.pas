@@ -584,8 +584,8 @@ type
     trNullDest       - Pointer to destination string is nil
     trDestExhausted  - Destination buffer size is not big enough to hold
                      converted string
-    trInvalidChar    - Invalid source char has occured
-    trUnfinishedChar - Unfinished source char has occured
+    trInvalidChar    - Invalid source char has occurred
+    trUnfinishedChar - Unfinished source char has occurred
 
   Converts the specified UTF-8 encoded string to UTF-16 encoded (system endian)
  ------------------------------------------------------------------------------}

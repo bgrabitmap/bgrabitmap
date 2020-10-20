@@ -441,7 +441,7 @@ var
 begin
   if (ARawImage.Description.Width <> LongWord(ADestination.Width)) or
     (ARawImage.Description.Height <> LongWord(ADestination.Height)) then
-    raise Exception.Create('Bitmap size is inconsistant');
+    raise Exception.Create('Bitmap size is inconsistent');
 
   if (ADestination.Height=0) or (ADestination.Width=0) then
   begin

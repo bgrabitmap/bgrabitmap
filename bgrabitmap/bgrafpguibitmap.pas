@@ -133,7 +133,7 @@ var
 begin
   if (ARawImage.Width <> Width) or
     (ARawImage.Height <> Height) then
-    raise Exception.Create('Bitmap size is inconsistant');
+    raise Exception.Create('Bitmap size is inconsistent');
 
   lineSize := Width*sizeof(TBGRAPixel);
   for y := 0 to Height-1 do
