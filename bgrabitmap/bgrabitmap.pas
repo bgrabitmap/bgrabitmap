@@ -48,7 +48,7 @@ uses
 		  {$IFDEF LCLgtk2}
 		BGRAGtkBitmap,
 		  {$ELSE}
-			{$IFDEF LCLqt}
+			{$IF defined(LCLqt) or defined(LCLqt5)}
 		BGRAQtBitmap,
 			{$ELSE}
               {$IFDEF DARWIN}
@@ -87,7 +87,7 @@ type
 
         TBGRABitmap = class(TBGRAGtkBitmap)
           {$ELSE}
-            {$IFDEF LCLqt}
+            {$IF defined(LCLqt) or defined(LCLqt5)}
         TBGRABitmap = class(TBGRAQtBitmap)
             {$ELSE}
               {$IFDEF DARWIN}

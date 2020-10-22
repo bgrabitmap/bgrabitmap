@@ -38,7 +38,7 @@ implementation
 
 uses LCLType,
   LCLIntf, IntfGraphics,
-  qtobjects, qt4,
+  qtobjects, {$ifdef LCLqt5}qt5{$else}qt4{$endif},
   FPImage;
 
 procedure TBGRAQtBitmap.SlowDrawTransparent(ABitmap: TBGRACustomBitmap;
