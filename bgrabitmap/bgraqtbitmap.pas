@@ -71,7 +71,7 @@ begin
   bmp := TBGRAQtBitmap.Create(AWidth,AHeight);
   try
     if ALineOrder = riloTopToBottom then psrc := AData
-    else psrc := PBGRAPixel(AData) + (AWidth*AHeight);
+    else psrc := PBGRAPixel(AData) + (AWidth*(AHeight-1));
     for y := 0 to AHeight-1 do
     begin
       pdest := bmp.ScanLine[y];
@@ -81,6 +81,8 @@ begin
         pdest^.green:= psrc^.green;
         pdest^.blue := psrc^.blue;
         pdest^.alpha := 255;
+        inc(psrc);
+        inc(pdest);
       end;
       if ALineOrder = riloBottomToTop then dec(psrc, 2*AWidth);
     end;
