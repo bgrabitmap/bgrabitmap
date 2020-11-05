@@ -1,7 +1,7 @@
 This is the file COPYING.modifiedLGPL, it applies to all units of the
 BGRABitmap library.
 
-These files are distributed under the Library GNU General Public License
+These files are distributed under the GNU Lesser General Public License
 (see the file COPYING.LGPL) with the following modification:
 
 As a special exception, the copyright holders of this library give you
