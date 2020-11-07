@@ -572,6 +572,8 @@ type
     class function IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean; override;
 
     procedure StretchPutImage(ARect: TRect; Source: TBGRACustomBitmap; mode: TDrawMode; AOpacity: byte = 255); override;
+    procedure BlendRect(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AIgnoreDestAlpha: boolean = false); override;
+    procedure BlendRectOver(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false; AIgnoreDestAlpha: boolean = false); override;
     procedure BlendImage(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation); overload; override;
     procedure BlendImage(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation); overload; override;
     procedure BlendImageOver(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; override;
@@ -3950,6 +3952,126 @@ begin
      BGRAResample.StretchPutImage(Source, ARect.Right-ARect.Left, ARect.Bottom-ARect.Top, self, ARect.left,ARect.Top, mode, AOpacity, noTransition);
     if (mode in [dmDrawWithTransparency,dmFastBlend,dmSetExceptTransparent]) and Assigned(TBGRADefaultBitmap(Source).XorMask) then
       BGRAResample.StretchPutImage(TBGRADefaultBitmap(Source).XorMask, ARect.Right-ARect.Left, ARect.Bottom-ARect.Top, self, ARect.left,ARect.Top, dmXor, AOpacity, noTransition);
+  end;
+end;
+
+procedure TBGRADefaultBitmap.BlendRect(ADest: TRect; AColor: TBGRAPixel;
+  AOperation: TBlendOperation; AIgnoreDestAlpha: boolean);
+const BufSize = 8;
+var srcBuf, destBuf: packed array[0..BufSize-1] of TBGRAPixel;
+  i, yb, remain: Integer;
+  p: PBGRAPixel;
+begin
+  if not CheckClippedRectBounds(ADest.Left, ADest.Top, ADest.Right, ADest.Bottom) then exit;
+  for i := 0 to BufSize-1 do
+    srcBuf[i] := AColor;
+  if AIgnoreDestAlpha then
+  begin
+    for yb := ADest.Top to ADest.Bottom-1 do
+    begin
+      remain := ADest.Width;
+      p := PBGRAPixel(GetPixelAddress(ADest.Left, yb));
+      while remain > BufSize do
+      begin
+        move(p^, {%H-}destBuf, sizeof(destBuf));
+        BlendPixels(@destBuf, @srcBuf, AOperation, BufSize);
+        for i := 0 to BufSize-1 do
+        begin
+          p^.red := destBuf[i].red;
+          p^.green := destBuf[i].green;
+          p^.blue := destBuf[i].blue;
+          inc(p);
+        end;
+        dec(remain, BufSize);
+      end;
+      if remain > 0 then
+      begin
+        move(p^, {%H-}destBuf, remain*sizeof(TBGRAPixel));
+        BlendPixels(@destBuf, @srcBuf, AOperation, remain);
+        for i := 0 to remain-1 do
+        begin
+          p^.red := destBuf[i].red;
+          p^.green := destBuf[i].green;
+          p^.blue := destBuf[i].blue;
+          inc(p);
+        end;
+      end;
+    end;
+  end else
+  begin
+    for yb := ADest.Top to ADest.Bottom-1 do
+    begin
+      remain := ADest.Width;
+      p := PBGRAPixel(GetPixelAddress(ADest.Left, yb));
+      while remain > BufSize do
+      begin
+        BlendPixels(p, @srcBuf, AOperation, BufSize);
+        inc(p, BufSize);
+        dec(remain, BufSize);
+      end;
+      if remain > 0 then
+        BlendPixels(p, @srcBuf, AOperation, remain);
+    end;
+  end;
+end;
+
+procedure TBGRADefaultBitmap.BlendRectOver(ADest: TRect; AColor: TBGRAPixel;
+  AOperation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean; AIgnoreDestAlpha: boolean);
+const BufSize = 8;
+var srcBuf, destBuf: packed array[0..BufSize-1] of TBGRAPixel;
+  i, yb, remain: Integer;
+  p: PBGRAPixel;
+begin
+  if not CheckClippedRectBounds(ADest.Left, ADest.Top, ADest.Right, ADest.Bottom) then exit;
+  for i := 0 to BufSize-1 do
+    srcBuf[i] := AColor;
+  if AIgnoreDestAlpha then
+  begin
+    for yb := ADest.Top to ADest.Bottom-1 do
+    begin
+      remain := ADest.Width;
+      p := PBGRAPixel(GetPixelAddress(ADest.Left, yb));
+      while remain > BufSize do
+      begin
+        move(p^, {%H-}destBuf, sizeof(destBuf));
+        BlendPixelsOver(@destBuf, @srcBuf, AOperation, BufSize, AOpacity, ALinearBlend);
+        for i := 0 to BufSize-1 do
+        begin
+          p^.red := destBuf[i].red;
+          p^.green := destBuf[i].green;
+          p^.blue := destBuf[i].blue;
+          inc(p);
+        end;
+        dec(remain, BufSize);
+      end;
+      if remain > 0 then
+      begin
+        move(p^, {%H-}destBuf, remain*sizeof(TBGRAPixel));
+        BlendPixelsOver(@destBuf, @srcBuf, AOperation, remain, AOpacity, ALinearBlend);
+        for i := 0 to remain-1 do
+        begin
+          p^.red := destBuf[i].red;
+          p^.green := destBuf[i].green;
+          p^.blue := destBuf[i].blue;
+          inc(p);
+        end;
+      end;
+    end;
+  end else
+  begin
+    for yb := ADest.Top to ADest.Bottom-1 do
+    begin
+      remain := ADest.Width;
+      p := PBGRAPixel(GetPixelAddress(ADest.Left, yb));
+      while remain > BufSize do
+      begin
+        BlendPixelsOver(p, @srcBuf, AOperation, BufSize, AOpacity, ALinearBlend);
+        inc(p, BufSize);
+        dec(remain, BufSize);
+      end;
+      if remain > 0 then
+        BlendPixelsOver(p, @srcBuf, AOperation, remain, AOpacity, ALinearBlend);
+    end;
   end;
 end;
 

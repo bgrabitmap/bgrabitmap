@@ -534,6 +534,10 @@ type
      procedure ComputeImageAngleAxes(x,y,w,h,angle: single; imageCenterX,imageCenterY: single; ARestoreOffsetAfterRotation: boolean;
        out Origin,HAxis,VAxis: TPointF);
      function GetImageAngleBounds(x,y: single; Source: TBGRACustomBitmap; angle: single; imageCenterX: single = 0; imageCenterY: single = 0; ARestoreOffsetAfterRotation: boolean = false): TRect;
+     procedure Blend(AColor: TBGRAPixel; AOperation: TBlendOperation; AIgnoreDestAlpha: boolean = false); virtual;
+     procedure BlendOver(AColor: TBGRAPixel; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false; AIgnoreDestAlpha: boolean = false); virtual;
+     procedure BlendRect(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AIgnoreDestAlpha: boolean = false); virtual; abstract;
+     procedure BlendRectOver(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false; AIgnoreDestAlpha: boolean = false); virtual; abstract;
      procedure BlendImage(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation); overload; virtual; abstract;
      procedure BlendImage(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation); overload; virtual; abstract;
      procedure BlendImageOver(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
@@ -1657,6 +1661,18 @@ begin
   cosa := cos(-angle*Pi/180);
   sina := -sin(-angle*Pi/180);
   result := GetImageAffineBounds(Coord(0,0),Coord(source.Width,0),Coord(0,source.Height),source);
+end;
+
+procedure TBGRACustomBitmap.Blend(AColor: TBGRAPixel;
+  AOperation: TBlendOperation; AIgnoreDestAlpha: boolean);
+begin
+  BlendRect(ClipRect, AColor, AOperation, AIgnoreDestAlpha);
+end;
+
+procedure TBGRACustomBitmap.BlendOver(AColor: TBGRAPixel;
+  AOperation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean; AIgnoreDestAlpha: boolean);
+begin
+  BlendRectOver(ClipRect, AColor, AOperation, AOpacity, ALinearBlend, AIgnoreDestAlpha);
 end;
 
 procedure TBGRACustomBitmap.FillMask(x, y: integer;
