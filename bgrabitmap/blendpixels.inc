@@ -351,6 +351,94 @@ begin
         end;
 end;
 
+procedure LinearHuePixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          LinearHueInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearColorPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          LinearColorInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearLightnessPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          LinearLightnessInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearSaturationPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          LinearSaturationInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedHuePixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          CorrectedHueInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedColorPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          CorrectedColorInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedLightnessPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          CorrectedLightnessInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedSaturationPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          CorrectedSaturationInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
 type
   TBlendPixelsProc = procedure(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
 
@@ -361,7 +449,8 @@ const
       @GlowPixels, @ReflectPixels, @LinearOverlayPixels, @OverlayPixels, @DarkenPixels, @LinearMultiplyPixels, @ColorBurnPixels,
       @DifferencePixels, @LinearDifferencePixels, @ExclusionPixels, @LinearExclusionPixels, @SubtractPixels, @LinearSubtractPixels,
       @SubtractInversePixels, @LinearSubtractInversePixels, @NegationPixels, @LinearNegationPixels, @BlendXorPixels, @SvgSoftLightPixels,
-      @BlendMaskPixels, @LinearMultiplySaturationPixels);
+      @BlendMaskPixels, @LinearMultiplySaturationPixels, @LinearHuePixels, @LinearColorPixels, @LinearLightnessPixels, @LinearSaturationPixels,
+      @CorrectedHuePixels, @CorrectedColorPixels, @CorrectedLightnessPixels, @CorrectedSaturationPixels);
 
 procedure BlendPixels(pdest: PBGRAPixel; psrc: PBGRAPixel;
   blendOp: TBlendOperation; Count: integer);

@@ -1108,3 +1108,205 @@ begin
     end;
   end;
 end;
+
+procedure LinearHueInline(dest: PBGRAPixel; c: TBGRAPixel);
+var
+  destalpha: byte;
+  srcHSLA, destHSLA: TStdHSLA;
+begin
+  destalpha   := dest^.alpha;
+  if destalpha = 0 then
+  begin
+    dest^ := c
+  end else
+  begin
+    srcHSLA := c.ToStdHSLA;
+    destHSLA := dest^.ToStdHSLA;
+
+    destHSLA.hue := srcHSLA.hue;
+    destHSLA.alpha:= srcHSLA.alpha;
+    dest^ := destHSLA;
+
+    if destalpha <> 255 then
+    begin
+      dest^.red   := (dest^.red * destalpha + c.red * (not destalpha)) shr 8;
+      dest^.green := (dest^.green * destalpha + c.green * (not destalpha)) shr 8;
+      dest^.blue  := (dest^.blue * destalpha + c.blue * (not destalpha)) shr 8;
+    end;
+  end;
+end;
+
+procedure LinearColorInline(dest: PBGRAPixel; c: TBGRAPixel);
+var
+  destalpha: byte;
+  srcHSLA, destHSLA: TStdHSLA;
+begin
+  destalpha   := dest^.alpha;
+  if destalpha = 0 then
+  begin
+    dest^ := c
+  end else
+  begin
+    srcHSLA := c.ToStdHSLA;
+    destHSLA := dest^.ToStdHSLA;
+    srcHSLA.lightness := destHSLA.lightness;
+    dest^ := srcHSLA;
+
+    if destalpha <> 255 then
+    begin
+      dest^.red   := (dest^.red * destalpha + c.red * (not destalpha)) shr 8;
+      dest^.green := (dest^.green * destalpha + c.green * (not destalpha)) shr 8;
+      dest^.blue  := (dest^.blue * destalpha + c.blue * (not destalpha)) shr 8;
+    end;
+  end;
+end;
+
+procedure LinearLightnessInline(dest: PBGRAPixel; c: TBGRAPixel);
+var
+  destalpha: byte;
+  destHSLA: TStdHSLA;
+begin
+  destalpha   := dest^.alpha;
+  if destalpha = 0 then
+  begin
+    dest^ := c
+  end else
+  begin
+    destHSLA := dest^.ToStdHSLA;
+    destHSLA.lightness := c.ToStdHSLA.lightness;
+    dest^ := destHSLA;
+    dest^.alpha := c.alpha;
+
+    if destalpha <> 255 then
+    begin
+      dest^.red   := (dest^.red * destalpha + c.red * (not destalpha)) shr 8;
+      dest^.green := (dest^.green * destalpha + c.green * (not destalpha)) shr 8;
+      dest^.blue  := (dest^.blue * destalpha + c.blue * (not destalpha)) shr 8;
+    end;
+  end;
+end;
+
+procedure LinearSaturationInline(dest: PBGRAPixel; c: TBGRAPixel);
+var
+  destalpha: byte;
+  destHSLA: TStdHSLA;
+begin
+  destalpha   := dest^.alpha;
+  if destalpha = 0 then
+  begin
+    dest^ := c
+  end else
+  begin
+    destHSLA := dest^.ToStdHSLA;
+    if destHSLA.saturation <> 0 then
+    begin
+      destHSLA.saturation:= c.ToStdHSLA.saturation;
+      dest^ := destHSLA;
+    end;
+    dest^.alpha := c.alpha;
+
+    if destalpha <> 255 then
+    begin
+      dest^.red   := (dest^.red * destalpha + c.red * (not destalpha)) shr 8;
+      dest^.green := (dest^.green * destalpha + c.green * (not destalpha)) shr 8;
+      dest^.blue  := (dest^.blue * destalpha + c.blue * (not destalpha)) shr 8;
+    end;
+  end;
+end;
+
+procedure CorrectedHueInline(dest: PBGRAPixel; c: TBGRAPixel);
+var
+  destalpha: byte;
+  srcGSBA, destGSBA: TGSBAPixel;
+begin
+  destalpha   := dest^.alpha;
+  if destalpha = 0 then
+  begin
+    dest^ := c
+  end else
+  begin
+    srcGSBA := c.ToGSBAPixel;
+    destGSBA := dest^.ToGSBAPixel;
+    destGSBA.hue := srcGSBA.hue;
+    destGSBA.alpha:= srcGSBA.alpha;
+    dest^ := destGSBA;
+
+    if destalpha <> 255 then
+    begin
+      dest^.red   := (dest^.red * destalpha + c.red * (not destalpha)) shr 8;
+      dest^.green := (dest^.green * destalpha + c.green * (not destalpha)) shr 8;
+      dest^.blue  := (dest^.blue * destalpha + c.blue * (not destalpha)) shr 8;
+    end;
+  end;
+end;
+
+procedure CorrectedColorInline(dest: PBGRAPixel; c: TBGRAPixel);
+var
+  destalpha: byte;
+begin
+  destalpha   := dest^.alpha;
+  if destalpha = 0 then
+  begin
+    dest^ := c
+  end else
+  begin
+    dest^ := SetLightness(c, dest^.Lightness);
+
+    if destalpha <> 255 then
+    begin
+      dest^.red   := (dest^.red * destalpha + c.red * (not destalpha)) shr 8;
+      dest^.green := (dest^.green * destalpha + c.green * (not destalpha)) shr 8;
+      dest^.blue  := (dest^.blue * destalpha + c.blue * (not destalpha)) shr 8;
+    end;
+  end;
+end;
+
+procedure CorrectedLightnessInline(dest: PBGRAPixel; c: TBGRAPixel);
+var
+  destalpha: byte;
+begin
+  destalpha   := dest^.alpha;
+  if destalpha = 0 then
+  begin
+    dest^ := c
+  end else
+  begin
+    dest^ := SetLightness(dest^, c.Lightness);
+    dest^.alpha := c.alpha;
+
+    if destalpha <> 255 then
+    begin
+      dest^.red   := (dest^.red * destalpha + c.red * (not destalpha)) shr 8;
+      dest^.green := (dest^.green * destalpha + c.green * (not destalpha)) shr 8;
+      dest^.blue  := (dest^.blue * destalpha + c.blue * (not destalpha)) shr 8;
+    end;
+  end;
+end;
+
+procedure CorrectedSaturationInline(dest: PBGRAPixel; c: TBGRAPixel);
+var
+  destalpha: byte;
+  destGSBA: TGSBAPixel;
+begin
+  destalpha   := dest^.alpha;
+  if destalpha = 0 then
+  begin
+    dest^ := c
+  end else
+  begin
+    destGSBA := dest^.ToGSBAPixel;
+    if destGSBA.saturation <> 0 then
+    begin
+      destGSBA.saturation:= c.ToGSBAPixel.saturation;
+      dest^ := destGSBA;
+    end;
+    dest^.alpha := c.alpha;
+
+    if destalpha <> 255 then
+    begin
+      dest^.red   := (dest^.red * destalpha + c.red * (not destalpha)) shr 8;
+      dest^.green := (dest^.green * destalpha + c.green * (not destalpha)) shr 8;
+      dest^.blue  := (dest^.blue * destalpha + c.blue * (not destalpha)) shr 8;
+    end;
+  end;
+end;

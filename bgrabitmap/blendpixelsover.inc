@@ -844,6 +844,118 @@ begin
         end;
 end;
 
+procedure LinearHueLinearOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearHueInline(@temp, psrc^);
+          FastBlendPixelInline(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearColorLinearOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearColorInline(@temp, psrc^);
+          FastBlendPixelInline(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearLightnessLinearOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearLightnessInline(@temp, psrc^);
+          FastBlendPixelInline(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearSaturationLinearOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearSaturationInline(@temp, psrc^);
+          FastBlendPixelInline(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedHueLinearOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          CorrectedHueInline(@temp, psrc^);
+          FastBlendPixelInline(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedColorLinearOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          CorrectedColorInline(@temp, psrc^);
+          FastBlendPixelInline(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedLightnessLinearOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          CorrectedLightnessInline(@temp, psrc^);
+          FastBlendPixelInline(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedSaturationLinearOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          CorrectedSaturationInline(@temp, psrc^);
+          FastBlendPixelInline(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
 procedure LinearMultiplySaturationDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
 var temp: TBGRAPixel;
 begin
@@ -851,6 +963,118 @@ begin
         begin
           temp := pdest^;
           LinearMultiplySaturationInline(@temp, psrc^);
+          DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearHueDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearHueInline(@temp, psrc^);
+          DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearColorDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearColorInline(@temp, psrc^);
+          DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearLightnessDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearLightnessInline(@temp, psrc^);
+          DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearSaturationDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          LinearSaturationInline(@temp, psrc^);
+          DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedHueDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          CorrectedHueInline(@temp, psrc^);
+          DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedColorDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          CorrectedColorInline(@temp, psrc^);
+          DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedLightnessDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          CorrectedLightnessInline(@temp, psrc^);
+          DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedSaturationDrawOver(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer; Opacity: byte);
+var temp: TBGRAPixel;
+begin
+  while Count > 0 do
+        begin
+          temp := pdest^;
+          CorrectedSaturationInline(@temp, psrc^);
           DrawPixelInlineWithAlphaCheck(pdest, temp, opacity);
           Inc(pdest);
           Inc(psrc);
@@ -870,13 +1094,15 @@ const
       @GlowPixelsDrawOver, @ReflectPixelsDrawOver, @LinearOverlayPixelsDrawOver, @OverlayPixelsDrawOver, @DarkenPixelsDrawOver, @LinearMultiplyPixelsDrawOver, @ColorBurnPixelsDrawOver,
       @DifferencePixelsDrawOver, @LinearDifferencePixelsDrawOver, @ExclusionPixelsDrawOver, @LinearExclusionPixelsDrawOver, @SubtractPixelsDrawOver, @LinearSubtractPixelsDrawOver,
       @SubtractInversePixelsDrawOver, @LinearSubtractInversePixelsDrawOver, @NegationPixelsDrawOver, @LinearNegationPixelsDrawOver, @BlendXorPixelsDrawOver, @SvgSoftLightPixelsDrawOver,
-      @MaskPixelsDrawOver, @LinearMultiplySaturationDrawOver),
+      @MaskPixelsDrawOver, @LinearMultiplySaturationDrawOver, @LinearHueDrawOver, @LinearColorDrawOver, @LinearLightnessDrawOver, @LinearSaturationDrawOver,
+      @CorrectedHueDrawOver, @CorrectedColorDrawOver, @CorrectedLightnessDrawOver, @CorrectedSaturationDrawOver),
       (@FastBlendPixelsWithOpacity, @FastBlendPixelsWithOpacity,
       @LightenPixelsLinearOver, @ScreenPixelsLinearOver, @AddPixelsLinearOver, @LinearAddPixelsLinearOver, @ColorDodgePixelsLinearOver, @DividePixelsLinearOver, @NiceGlowPixelsLinearOver, @SoftLightPixelsLinearOver, @HardLightPixelsLinearOver,
       @GlowPixelsLinearOver, @ReflectPixelsLinearOver, @LinearOverlayPixelsLinearOver, @OverlayPixelsLinearOver, @DarkenPixelsLinearOver, @LinearMultiplyPixelsLinearOver, @ColorBurnPixelsLinearOver,
       @DifferencePixelsLinearOver, @LinearDifferencePixelsLinearOver, @ExclusionPixelsLinearOver, @LinearExclusionPixelsLinearOver, @SubtractPixelsLinearOver, @LinearSubtractPixelsLinearOver,
       @SubtractInversePixelsLinearOver, @LinearSubtractInversePixelsLinearOver, @NegationPixelsLinearOver, @LinearNegationPixelsLinearOver, @BlendXorPixelsLinearOver, @SvgSoftLightPixelsLinearOver,
-      @MaskPixelsDrawOver, @LinearMultiplySaturationLinearOver));
+      @MaskPixelsDrawOver, @LinearMultiplySaturationLinearOver, @CorrectedHueLinearOver, @LinearColorLinearOver, @LinearLightnessLinearOver, @LinearSaturationLinearOver,
+      @CorrectedHueLinearOver, @CorrectedColorLinearOver, @CorrectedLightnessLinearOver, @CorrectedSaturationLinearOver));
 
 {************************* calling procedure ***************************}
 

@@ -215,8 +215,10 @@ type
     boSvgSoftLight,
     {** Apply mask **}
     boMask,
-    {** Multiply saturation (standard HSL colorspace) }
-    boLinearMultiplySaturation
+    {** Standard HSL colorspace }
+    boLinearMultiplySaturation, boLinearHue, boLinearColor, boLinearLightness, boLinearSaturation,
+    {** Corrected HSL colorspace (GSB) }
+    boCorrectedHue, boCorrectedColor, boCorrectedLightness, boCorrectedSaturation
     );
 
 const
@@ -234,7 +236,9 @@ const
      'Lighten', 'Screen', 'Additive', 'LinearAdd', 'ColorDodge', 'Divide', 'NiceGlow', 'SoftLight', 'HardLight',
      'Glow', 'Reflect', 'Overlay', 'DarkOverlay', 'Darken', 'Multiply', 'ColorBurn',
      'Difference', 'LinearDifference', 'Exclusion', 'LinearExclusion', 'Subtract', 'LinearSubtract', 'SubtractInverse', 'LinearSubtractInverse',
-     'Negation', 'LinearNegation', 'Xor', 'SvgSoftLight', 'Mask', 'LinearMultiplySaturation');
+     'Negation', 'LinearNegation', 'Xor', 'SvgSoftLight', 'Mask', 'LinearMultiplySaturation',
+     'LinearHue', 'LinearColor', 'LinearLightness', 'LinearSaturation',
+     'CorrectedHue', 'CorrectedColor', 'CorrectedLightness', 'CorrectedSaturation');
 
   {** Returns the blend mode expressed by the string }
   function StrToBlendOperation(str: string): TBlendOperation;

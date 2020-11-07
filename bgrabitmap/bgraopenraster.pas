@@ -357,6 +357,22 @@ begin
               BlendOperation[idx] := boMask else
             if opstr = 'bgra:linear-multiply-saturation' then
               BlendOperation[idx] := boLinearMultiplySaturation else
+            if opstr = 'svg:hue' then
+              BlendOperation[idx] := boCorrectedHue else
+            if opstr = 'svg:color' then
+              BlendOperation[idx] := boCorrectedColor else
+            if opstr = 'svg:luminosity' then
+              BlendOperation[idx] := boCorrectedLightness else
+            if opstr = 'svg:saturation' then
+              BlendOperation[idx] := boCorrectedSaturation else
+            if opstr = 'krita:hue-hsl' then
+              BlendOperation[idx] := boLinearHue else
+            if opstr = 'krita:color-hsl' then
+              BlendOperation[idx] := boLinearColor else
+            if opstr = 'krita:lightness' then
+              BlendOperation[idx] := boLinearLightness else
+            if opstr = 'krita:saturation-hsl' then
+              BlendOperation[idx] := boLinearSaturation else
             begin
               //messagedlg('Unknown blend operation : ' + attr.NodeValue,mtInformation,[mbOk],0);
               BlendOperation[idx] := boTransparent;
@@ -452,6 +468,14 @@ begin
         boSvgSoftLight: strval := 'svg:soft-light';
         boMask: strval := 'bgra:mask';
         boLinearMultiplySaturation: strval := 'bgra:linear-multiply-saturation';
+        boCorrectedHue: strval := 'svg:hue';
+        boCorrectedColor: strval := 'svg:color';
+        boCorrectedLightness: strval := 'svg:luminosity';
+        boCorrectedSaturation: strval := 'svg:saturation';
+        boLinearHue: strval := 'krita:hue_hsl';
+        boLinearColor: strval := 'krita:color_hsl';
+        boLinearLightness: strval := 'krita:lightness';
+        boLinearSaturation: strval := 'krita:saturation_hsl';
         else strval := 'svg:src-over';
       end;
       layerNode.SetAttribute('composite-op',widestring(strval));
