@@ -6,7 +6,8 @@ unit BGRAOpenRaster;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRALayers, zipper, DOM, BGRABitmap, FPImage;
+  BGRAClasses, SysUtils, BGRALayers, zipper, DOM, BGRABitmap, BGRALayerOriginal,
+  FPImage;
 
 const
   OpenRasterMimeType = 'image/openraster'; //do not change, it's part of the file format
@@ -33,7 +34,8 @@ type
     function GetMemoryStream(AFilename: string): TMemoryStream;
     procedure SetMemoryStream(AFilename: string; AStream: TMemoryStream);
     function AddLayerFromMemoryStream(ALayerFilename: string): integer;
-    function CopyLayerToMemoryStream(ALayerIndex: integer; ALayerFilename: string): boolean;
+    function CopyRasterLayerToMemoryStream(ALayerIndex: integer; ALayerFilename: string): boolean;
+    function CopySVGLayerToMemoryStream(ALayerIndex: integer; ALayerFilename: string): boolean;
     function CopyBitmapToMemoryStream(ABitmap: TBGRABitmap; AFilename: string): boolean;
     procedure SetMemoryStreamAsString(AFilename: string; AContent: string);
     function GetMemoryStreamAsString(AFilename: string): string;
@@ -437,10 +439,21 @@ begin
 end;
 
 procedure TBGRAOpenRasterDocument.PrepareZipToSave;
+
+  function IsIntegerTranslation(m: TAffineMatrix; out ofs: TPoint): boolean;
+  begin
+    ofs := Point(round(m[1,3]), round(m[2,3]));
+    result := IsAffineMatrixTranslation(m) and
+             (abs(round(m[1,3]) - ofs.x) < 1e-4) and
+             (abs(round(m[2,3]) - ofs.y) < 1e-4);
+  end;
+
 var i: integer;
     imageNode,stackNode,layerNode: TDOMElement;
     layerFilename,strval: string;
     stackStream: TMemoryStream;
+    ofs: TPoint;
+    fileAdded: Boolean;
 begin
   ClearFiles;
   MimeType := OpenRasterMimeType;
@@ -463,8 +476,19 @@ begin
   for i := NbLayers-1 downto 0 do
   begin
     OnLayeredBitmapSaveProgress(round((NbLayers-1-i) * 100 / NbLayers));
-    layerFilename := 'data/layer'+inttostr(i)+'.png';
-    if CopyLayerToMemoryStream(i, layerFilename) then
+    if (LayerOriginalClass[i] = TBGRALayerSVGOriginal) and
+       IsIntegerTranslation(LayerOriginalMatrix[i], ofs) then
+    begin
+      layerFilename := 'data/layer'+inttostr(i)+'.svg';
+      fileAdded := CopySVGLayerToMemoryStream(i, layerFilename);
+    end else
+    begin
+      layerFilename := 'data/layer'+inttostr(i)+'.png';
+      ofs := LayerOffset[i];
+      fileAdded := CopyRasterLayerToMemoryStream(i, layerFilename);
+    end;
+
+    if fileAdded then
     begin
       layerNode := StackXML.CreateElement('layer');
       stackNode.AppendChild(layerNode);
@@ -477,8 +501,8 @@ begin
         layerNode.SetAttribute('visibility','visible')
       else
         layerNode.SetAttribute('visibility','hidden');
-      layerNode.SetAttribute('x',widestring(inttostr(LayerOffset[i].x)));
-      layerNode.SetAttribute('y',widestring(inttostr(LayerOffset[i].y)));
+      layerNode.SetAttribute('x',widestring(inttostr(ofs.x)));
+      layerNode.SetAttribute('y',widestring(inttostr(ofs.y)));
       strval := '';
       case BlendOperation[i] of
         boLighten: strval := 'svg:lighten';
@@ -643,7 +667,7 @@ begin
   LayerName[result] := ExtractFileName(ALayerFilename);
 end;
 
-function TBGRAOpenRasterDocument.CopyLayerToMemoryStream(ALayerIndex: integer;
+function TBGRAOpenRasterDocument.CopyRasterLayerToMemoryStream(ALayerIndex: integer;
   ALayerFilename: string): boolean;
 var
   bmp: TBGRABitmap;
@@ -661,6 +685,27 @@ begin
 
   result := CopyBitmapToMemoryStream(bmp,ALayerFilename);
   if mustFreeBmp then bmp.Free;
+end;
+
+function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
+  ALayerIndex: integer; ALayerFilename: string): boolean;
+var memStream: TMemoryStream;
+  orig: TBGRALayerCustomOriginal;
+begin
+  result := false;
+  orig := LayerOriginal[ALayerIndex];
+  if (orig = nil) or not (orig is TBGRALayerSVGOriginal) then exit;
+  memStream := TMemoryStream.Create;
+  try
+    TBGRALayerSVGOriginal(orig).SaveSVGToStream(memStream);
+    SetMemoryStream(ALayerFilename,memstream);
+    result := true;
+  except
+    on ex: Exception do
+    begin
+      memStream.Free;
+    end;
+  end;
 end;
 
 function TBGRAOpenRasterDocument.CopyBitmapToMemoryStream(ABitmap: TBGRABitmap;
