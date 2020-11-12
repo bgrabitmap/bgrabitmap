@@ -436,6 +436,7 @@ begin
       layerNode.SetAttribute('name', UTF8Decode(LayerName[i]));
       str(LayerOpacity[i]/255:0:3,strval);
       layerNode.SetAttribute('opacity',widestring(strval));
+      layerNode.SetAttribute('isolation', 'isolate');
       layerNode.SetAttribute('src',widestring(layerFilename));
       if LayerVisible[i] then
         layerNode.SetAttribute('visibility','visible')
