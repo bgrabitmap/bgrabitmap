@@ -793,6 +793,7 @@ end;
 procedure TBGRASVG.SetHeight(AValue: TFloatWithCSSUnit);
 begin
   Attribute['height'] := TCSSUnitConverter.formatValue(AValue);
+  Units.Recompute;
 end;
 
 procedure TBGRASVG.SetHeightAsCm(AValue: single);
@@ -836,6 +837,7 @@ end;
 procedure TBGRASVG.SetWidth(AValue: TFloatWithCSSUnit);
 begin
   Attribute['width'] := TCSSUnitConverter.formatValue(AValue);
+  Units.Recompute;
 end;
 
 procedure TBGRASVG.SetWidthAsCm(AValue: single);
