@@ -850,7 +850,7 @@ begin
     end;
     BGRAReplace(thumbnail, thumbnail.Resample(w,h));
   end;
-  CopyBitmapToMemoryStream(thumbnail,'Thumbnails\thumbnail.png');
+  CopyBitmapToMemoryStream(thumbnail,'Thumbnails/thumbnail.png');
   thumbnail.Free;
 end;
 
