@@ -6,7 +6,8 @@ unit BGRASVGOriginal;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRABitmapTypes, BGRABitmap, BGRASVG, BGRATransform, BGRALayerOriginal;
+  BGRAClasses, SysUtils, BGRABitmapTypes, BGRABitmap, BGRASVG, BGRATransform,
+  BGRALayerOriginal, BGRAUnits;
 
 type
   TBGRALayerSVGOriginal = class;
@@ -299,9 +300,20 @@ begin
 end;
 
 procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream);
+const
+  fixedUnits = [cuPixel, cuCentimeter, cuMillimeter,
+              cuInch, cuPica, cuPoint];
+var
+  w, h: single;
 begin
   BeginUpdate;
   FSVG.LoadFromStream(AStream);
+  w := FSVG.WidthAsCm;
+  h := FSVG.HeightAsCm;
+  if not (FSVG.Width.CSSUnit in fixedUnits) then
+    FSVG.Width := FloatWithCSSUnit(w, cuCentimeter);
+  if not (FSVG.Height.CSSUnit in fixedUnits) then
+    FSVG.Height := FloatWithCSSUnit(h, cuCentimeter);
   Inc(FContentVersion);
   EndUpdate;
 end;
