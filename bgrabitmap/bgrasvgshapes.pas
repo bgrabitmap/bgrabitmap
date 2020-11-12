@@ -678,6 +678,23 @@ type
   public
     class function GetDOMTag: string; override;
   end;
+
+  { TSVGLink }
+
+  TSVGLink = class(TSVGGroup)
+  private
+    function GetTarget: string;
+    function GetXlinkHref: string;
+    function GetXlinkTitle: string;
+    procedure SetTarget(AValue: string);
+    procedure SetXlinkHref(AValue: string);
+    procedure SetXlinkTitle(AValue: string);
+  public
+    class function GetDOMTag: string; override;
+    property XlinkHref: string read GetXlinkHref write SetXlinkHref;
+    property XlinkTitle: string read GetXlinkTitle write SetXlinkTitle;
+    property Target: string read GetTarget write SetTarget;
+  end;
   
   { TSVGStyle }
 
@@ -823,6 +840,8 @@ begin
     result := TSVGDefine else 
   if tag='g' then
     result := TSVGGroup else
+  if tag='a' then
+    result := TSVGLink else
   if tag='style' then 
     result := TSVGStyle else
     result := TSVGElement;
@@ -836,6 +855,43 @@ begin
   result := factory.Create(AElement,AUnits,ADataLink);
   
   ADataLink.Link(result);
+end;
+
+{ TSVGLink }
+
+function TSVGLink.GetTarget: string;
+begin
+  result := Attribute['target'];
+end;
+
+function TSVGLink.GetXlinkHref: string;
+begin
+  result := Attribute['xlink:href'];
+end;
+
+function TSVGLink.GetXlinkTitle: string;
+begin
+  result := Attribute['xlink:title'];
+end;
+
+procedure TSVGLink.SetTarget(AValue: string);
+begin
+  Attribute['target'] := AValue;
+end;
+
+procedure TSVGLink.SetXlinkHref(AValue: string);
+begin
+  Attribute['xlink:href'] := AValue;
+end;
+
+procedure TSVGLink.SetXlinkTitle(AValue: string);
+begin
+  Attribute['xlink:title'] := AValue;
+end;
+
+class function TSVGLink.GetDOMTag: string;
+begin
+  Result:= 'a';
 end;
 
 { TSVGElementWithContent }
@@ -3138,8 +3194,6 @@ end;
 function TSVGGradient.GetHRef: string;
 begin
   result := Attribute['xlink:href'];
-  if result = '' then
-    result := Attribute['href'];//(Note: specific for svg 2)
 end;
 
 procedure TSVGGradient.SetGradientTransform(AValue: string);

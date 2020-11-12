@@ -620,7 +620,11 @@ function TSVGCustomElement.GetAttributeFromElement(ANode: TDOMElement;
   AName: string; ACanInherit: boolean): string;
 begin
   repeat
-    result := Trim(ANode.GetAttribute(AName));
+    if ((AName = 'xlink:href') or (AName = 'xlink:title')) and
+       not ANode.hasAttribute(AName) and ANode.hasAttribute(AName.Substring(6)) then
+      result := Trim(ANode.GetAttribute(AName.Substring(6)))
+      else result := Trim(ANode.GetAttribute(AName));
+
     if result = 'inherit' then result := '';
     if (result = '') and ACanInherit and
       (ANode.ParentNode is TDOMElement) then
@@ -919,7 +923,11 @@ end;
 
 procedure TSVGCustomElement.SetAttribute(AName: string; AValue: string);
 begin
-  FDomElem.SetAttribute(AName,AValue);
+  if ((AName = 'xlink:href') or (AName = 'xlink:title')) and
+     not FDomElem.hasAttribute(AName) and FDomElem.hasAttribute(AName.Substring(6)) then
+    FDomElem.SetAttribute(AName.Substring(6), AValue)
+  else
+    FDomElem.SetAttribute(AName,AValue);
 end;
 
 procedure TSVGCustomElement.SetAttributeWithUnit(AName: string;
