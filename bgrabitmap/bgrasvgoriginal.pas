@@ -300,20 +300,15 @@ begin
 end;
 
 procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream);
-const
-  fixedUnits = [cuPixel, cuCentimeter, cuMillimeter,
-              cuInch, cuPica, cuPoint];
 var
   w, h: single;
 begin
   BeginUpdate;
   FSVG.LoadFromStream(AStream);
-  w := FSVG.WidthAsCm;
-  h := FSVG.HeightAsCm;
-  if not (FSVG.Width.CSSUnit in fixedUnits) then
-    FSVG.Width := FloatWithCSSUnit(w, cuCentimeter);
-  if not (FSVG.Height.CSSUnit in fixedUnits) then
-    FSVG.Height := FloatWithCSSUnit(h, cuCentimeter);
+  w := FSVG.WidthAsPixel;
+  h := FSVG.HeightAsPixel;
+  FSVG.Width := FloatWithCSSUnit(w, cuPixel);
+  FSVG.Height := FloatWithCSSUnit(h, cuPixel);
   Inc(FContentVersion);
   EndUpdate;
 end;
