@@ -648,8 +648,6 @@ function TBGRAOpenRasterDocument.CopyLayerToMemoryStream(ALayerIndex: integer;
 var
   bmp: TBGRABitmap;
   mustFreeBmp: boolean;
-  p: PBGRAPixel;
-  n: integer;
 begin
   result := false;
   bmp := LayerBitmap[ALayerIndex];
@@ -659,22 +657,6 @@ begin
     bmp := GetLayerBitmapCopy(ALayerIndex);
     if bmp = nil then exit;
     mustFreeBmp:= true;
-  end;
-  if bmp.HasTransparentPixels then
-  begin
-    //avoid png bug with black color
-    if not mustFreeBmp then
-    begin
-      bmp := bmp.Duplicate;
-      mustFreeBmp := true;
-    end;
-    p := bmp.data;
-    for n := bmp.NbPixels-1 downto 0 do
-    begin
-      if (p^.alpha <> 0) and (p^.red = 0) and (p^.green = 0) and (p^.blue = 0) then
-        p^.blue := 1;
-      inc(p);
-    end;
   end;
 
   result := CopyBitmapToMemoryStream(bmp,ALayerFilename);
