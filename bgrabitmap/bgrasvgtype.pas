@@ -1585,7 +1585,7 @@ end;
 
 function TSVGElement.GetStrokeDashArray: string;
 begin
-  result := AttributeDef['stroke-dasharray','none']; 
+  result := AttributeOrStyleDef['stroke-dasharray','none']; 
 end;
 
 function TSVGElement.GetStrokeDashArrayF: ArrayOfFloat;
@@ -1617,7 +1617,8 @@ end;
 
 function TSVGElement.GetStrokeDashOffset: TFloatWithCSSUnit;
 begin
-  result := OrthoAttributeWithUnit['stroke-dashoffset'];
+  result := OrthoAttributeOrStyleWithUnit['stroke-dashoffset',
+              FloatWithCSSUnit(0,cuCustom)];
 end;
 
 function TSVGElement.GetStyleFromStyleSheet(const AName, ADefault: string): string;
@@ -1767,6 +1768,7 @@ end;
 procedure TSVGElement.SetStrokeDashArray(AValue: string);
 begin
   Attribute['stroke-dasharray'] := AValue;
+  RemoveStyle('stroke-dasharray');
 end;
 
 procedure TSVGElement.SetStrokeDashArrayF(AValue: ArrayOfFloat);
@@ -1786,6 +1788,7 @@ end;
 procedure TSVGElement.SetStrokeDashOffset(AValue: TFloatWithCSSUnit);
 begin
   OrthoAttributeWithUnit['stroke-dashoffset'] := AValue;
+  RemoveStyle('stroke-dashoffset');
 end;      
 
 procedure TSVGElement.SetTransform(AValue: string);
