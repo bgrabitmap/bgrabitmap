@@ -90,7 +90,7 @@ procedure RegisterOpenRasterFormat;
 implementation
 
 uses XMLRead, XMLWrite, BGRABitmapTypes, zstream, BGRAUTF8,
-  UnzipperExt;
+  UnzipperExt, BGRASVGOriginal, BGRATransform;
 
 const
   MergedImageFilename = 'mergedimage.png';
@@ -363,7 +363,11 @@ var
               end;
             end;
           end;
-          LayerOffset[idx] := point(x,y);
+          if LayerOriginalGuid[idx] <> GUID_NULL then
+          begin
+            LayerOriginalMatrix[idx] := AffineMatrixTranslation(x,y);
+            RenderLayerFromOriginal(idx);
+          end else LayerOffset[idx] := point(x,y);
           if (gammastr = 'yes') or (gammastr = 'on') then
           begin
             case BlendOperation[idx] of
@@ -604,22 +608,38 @@ end;
 function TBGRAOpenRasterDocument.AddLayerFromMemoryStream(ALayerFilename: string): integer;
 var stream: TMemoryStream;
   bmp: TBGRABitmap;
+  orig: TBGRALayerSVGOriginal;
 begin
   stream := GetMemoryStream(ALayerFilename);
   if stream = nil then raise Exception.Create('Layer not found');
 
-  bmp := TBGRABitmap.Create;
-  try
-    bmp.LoadFromStream(stream);
-  except
-    on ex: exception do
-    begin
-      bmp.Free;
-      raise exception.Create('Layer format error');
+  if SuggestImageFormat(ALayerFilename) = ifSvg then
+  begin
+    orig := TBGRALayerSVGOriginal.Create;
+    try
+      orig.LoadSVGFromStream(stream);
+    except
+      on ex:exception do
+      begin
+        orig.Free;
+        raise exception.Create('SVG layer format error');
+      end;
     end;
+    result := AddLayerFromOwnedOriginal(orig);
+  end else
+  begin
+    bmp := TBGRABitmap.Create;
+    try
+      bmp.LoadFromStream(stream);
+    except
+      on ex: exception do
+      begin
+        bmp.Free;
+        raise exception.Create('Raster layer format error');
+      end;
+    end;
+    result := AddOwnedLayer(bmp);
   end;
-
-  result := AddOwnedLayer(bmp);
   LayerName[result] := ExtractFileName(ALayerFilename);
 end;
 
