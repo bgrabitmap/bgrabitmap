@@ -89,7 +89,7 @@ procedure RegisterOpenRasterFormat;
 
 implementation
 
-uses XMLRead, XMLWrite, FPReadPNG, BGRABitmapTypes, zstream, BGRAUTF8,
+uses XMLRead, XMLWrite, BGRABitmapTypes, zstream, BGRAUTF8,
   UnzipperExt;
 
 const
@@ -604,24 +604,20 @@ end;
 function TBGRAOpenRasterDocument.AddLayerFromMemoryStream(ALayerFilename: string): integer;
 var stream: TMemoryStream;
   bmp: TBGRABitmap;
-  png: TFPReaderPNG;
 begin
   stream := GetMemoryStream(ALayerFilename);
   if stream = nil then raise Exception.Create('Layer not found');
 
-  png := TFPReaderPNG.Create;
   bmp := TBGRABitmap.Create;
   try
-    bmp.LoadFromStream(stream,png);
+    bmp.LoadFromStream(stream);
   except
     on ex: exception do
     begin
-      png.Free;
       bmp.Free;
       raise exception.Create('Layer format error');
     end;
   end;
-  png.Free;
 
   result := AddOwnedLayer(bmp);
   LayerName[result] := ExtractFileName(ALayerFilename);
