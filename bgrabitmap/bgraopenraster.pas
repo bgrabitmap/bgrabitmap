@@ -211,14 +211,184 @@ end;
 { TBGRAOpenRasterDocument }
 
 procedure TBGRAOpenRasterDocument.AnalyzeZip;
+
+  function CountLayersRec(stackNode: TDOMNode): integer;
+  var i: integer;
+    layerNode: TDOMNode;
+  begin
+    result := 0;
+    for i := stackNode.ChildNodes.Length-1 downto 0 do
+    begin
+      layerNode:= stackNode.ChildNodes[i];
+      if (layerNode.NodeName = 'layer') and Assigned(layerNode.Attributes) then
+        inc(result) else
+      if (layerNode.NodeName = 'stack') then
+        inc(result, CountLayersRec(layerNode));
+    end;
+  end;
+
+var
+  totalLayerCount, doneLayerCount: integer;
+
+  procedure AddLayersRec(stackNode: TDOMNode);
+  var i,j : integer;
+    layerNode, attr: TDOMNode;
+    idx,x,y: integer;
+    float: double;
+    errPos: integer;
+    opstr : string;
+    gammastr: string;
+  begin
+    for i := stackNode.ChildNodes.Length-1 downto 0 do
+    begin
+      OnLayeredBitmapLoadProgress(doneLayerCount*100 div totalLayerCount);
+      layerNode:= stackNode.ChildNodes[i];
+      if layerNode.NodeName = 'stack' then
+        AddLayersRec(layerNode) else
+      if (layerNode.NodeName = 'layer') and Assigned(layerNode.Attributes) then
+      begin
+        attr := layerNode.Attributes.GetNamedItem('src');
+        idx := AddLayerFromMemoryStream(UTF8Encode(attr.NodeValue));
+        if idx <> -1 then
+        begin
+          x := 0;
+          y := 0;
+          gammastr := '';
+          for j := 0 to layerNode.Attributes.Length-1 do
+          begin
+            attr := layerNode.Attributes[j];
+            if lowercase(attr.NodeName) = 'opacity' then
+            begin
+              val(attr.NodeValue, float, errPos);
+              if errPos = 0 then
+              begin
+                if float < 0 then float := 0;
+                if float > 1 then float := 1;
+                LayerOpacity[idx] := round(float*255);
+              end;
+            end else
+            if lowercase(attr.NodeName) = 'gamma-correction' then
+              gammastr := string(attr.NodeValue) else
+            if lowercase(attr.NodeName) = 'visibility' then
+              LayerVisible[idx] := (attr.NodeValue = 'visible') or (attr.NodeValue = 'yes') or (attr.NodeValue = '1') else
+            if (lowercase(attr.NodeName) = 'x') or (lowercase(attr.NodeName) = 'y') then
+            begin
+              val(attr.NodeValue, float, errPos);
+              if errPos = 0 then
+              begin
+                if float < -(MaxInt shr 1) then float := -(MaxInt shr 1);
+                if float > (MaxInt shr 1) then float := (MaxInt shr 1);
+                if (lowercase(attr.NodeName) = 'x') then x := round(float);
+                if (lowercase(attr.NodeName) = 'y') then y := round(float);
+              end;
+            end else
+            if lowercase(attr.NodeName) = 'name' then
+              LayerName[idx] := UTF8Encode(attr.NodeValue) else
+            if lowercase(attr.NodeName) = 'composite-op' then
+            begin
+              opstr := StringReplace(lowercase(string(attr.NodeValue)),'_','-',[rfReplaceAll]);
+              if (pos(':',opstr) = 0) and (opstr <> 'xor') then opstr := 'svg:'+opstr;
+              //parse composite op
+              if (opstr = 'svg:src-over') or (opstr = 'krita:dissolve') then
+                BlendOperation[idx] := boTransparent else
+              if opstr = 'svg:lighten' then
+                BlendOperation[idx] := boLighten else
+              if opstr = 'svg:screen' then
+                BlendOperation[idx] := boScreen else
+              if opstr = 'svg:color-dodge' then
+                BlendOperation[idx] := boColorDodge else
+              if (opstr = 'svg:color-burn') or (opstr = 'krita:gamma_dark'){approx} then
+                BlendOperation[idx] := boColorBurn else
+              if opstr = 'svg:darken' then
+                BlendOperation[idx] := boDarken else
+              if (opstr = 'svg:plus') or (opstr = 'svg:add') or (opstr = 'krita:linear_dodge') then
+                BlendOperation[idx] := boLinearAdd else
+              if (opstr = 'svg:multiply') or (opstr = 'krita:bumpmap') then
+                BlendOperation[idx] := boMultiply else
+              if opstr = 'svg:overlay' then
+                BlendOperation[idx] := boOverlay else
+              if opstr = 'svg:soft-light' then
+                BlendOperation[idx] := boSvgSoftLight else
+              if opstr = 'svg:hard-light' then
+                BlendOperation[idx] := boHardLight else
+              if opstr = 'svg:difference' then
+                BlendOperation[idx] := boLinearDifference else
+              if (opstr = 'krita:inverse-subtract') or (opstr = 'krita:linear-burn') then
+                BlendOperation[idx] := boLinearSubtractInverse else
+              if opstr = 'krita:subtract' then
+                BlendOperation[idx] := boLinearSubtract else
+              if (opstr = 'svg:difference') or
+                (opstr = 'krita:equivalence') then
+                BlendOperation[idx] := boLinearDifference else
+              if (opstr = 'svg:exclusion') or
+                (opstr = 'krita:exclusion') then
+                BlendOperation[idx] := boLinearExclusion else
+              if opstr = 'krita:divide' then
+                BlendOperation[idx] := boDivide else
+              if opstr = 'bgra:soft-light' then
+                BlendOperation[idx] := boSoftLight else
+              if opstr = 'bgra:nice-glow' then
+                BlendOperation[idx] := boNiceGlow else
+              if opstr = 'bgra:glow' then
+                BlendOperation[idx] := boGlow else
+              if opstr = 'bgra:reflect' then
+                BlendOperation[idx] := boReflect else
+              if opstr = 'bgra:negation' then
+                BlendOperation[idx] := boLinearNegation else
+              if (opstr = 'bgra:xor') or (opstr = 'xor') then
+                BlendOperation[idx] := boXor else
+              if opstr = 'bgra:mask' then
+                BlendOperation[idx] := boMask else
+              if opstr = 'bgra:linear-multiply-saturation' then
+                BlendOperation[idx] := boLinearMultiplySaturation else
+              if opstr = 'svg:hue' then
+                BlendOperation[idx] := boCorrectedHue else
+              if opstr = 'svg:color' then
+                BlendOperation[idx] := boCorrectedColor else
+              if opstr = 'svg:luminosity' then
+                BlendOperation[idx] := boCorrectedLightness else
+              if opstr = 'svg:saturation' then
+                BlendOperation[idx] := boCorrectedSaturation else
+              if opstr = 'krita:hue-hsl' then
+                BlendOperation[idx] := boLinearHue else
+              if opstr = 'krita:color-hsl' then
+                BlendOperation[idx] := boLinearColor else
+              if opstr = 'krita:lightness' then
+                BlendOperation[idx] := boLinearLightness else
+              if opstr = 'krita:saturation-hsl' then
+                BlendOperation[idx] := boLinearSaturation else
+              begin
+                //messagedlg('Unknown blend operation : ' + attr.NodeValue,mtInformation,[mbOk],0);
+                BlendOperation[idx] := boTransparent;
+              end;
+            end;
+          end;
+          LayerOffset[idx] := point(x,y);
+          if (gammastr = 'yes') or (gammastr = 'on') then
+          begin
+            case BlendOperation[idx] of
+              boLinearAdd: BlendOperation[idx] := boAdditive;
+              boOverlay: BlendOperation[idx] := boDarkOverlay;
+              boLinearDifference: BlendOperation[idx] := boDifference;
+              boLinearExclusion: BlendOperation[idx] := boExclusion;
+              boLinearSubtract: BlendOperation[idx] := boSubtract;
+              boLinearSubtractInverse: BlendOperation[idx] := boSubtractInverse;
+              boLinearNegation: BlendOperation[idx] := boNegation;
+            end;
+          end else
+          if (gammastr = 'no') or (gammastr = 'off') then
+            if BlendOperation[idx] = boTransparent then
+              BlendOperation[idx] := boLinearBlend; //explicit linear blending
+        end;
+        inc(doneLayerCount);
+      end;
+    end;
+  end;
+
 var StackStream: TMemoryStream;
-  imageNode, stackNode, layerNode, attr, srcAttr: TDOMNode;
-  i,j,w,h,idx: integer;
-  x,y: integer;
-  float: double;
-  errPos: integer;
-  opstr : string;
-  gammastr: string;
+  imageNode, stackNode, attr: TDOMNode;
+  i,w,h: integer;
+
 begin
   inherited Clear;
 
@@ -257,148 +427,9 @@ begin
   if stackNode = nil then
     raise Exception.Create('Stack node not found');
 
-  for i := stackNode.ChildNodes.Length-1 downto 0 do
-  begin
-    OnLayeredBitmapLoadProgress((stackNode.ChildNodes.Length-i)*100 div stackNode.ChildNodes.Length);
-    layerNode:= stackNode.ChildNodes[i];
-    if (layerNode.NodeName = 'layer') and Assigned(layerNode.Attributes) then
-    begin
-      srcAttr := layerNode.Attributes.GetNamedItem('src');
-      idx := AddLayerFromMemoryStream(UTF8Encode(srcAttr.NodeValue));
-      if idx <> -1 then
-      begin
-        x := 0;
-        y := 0;
-        gammastr := '';
-        for j := 0 to layerNode.Attributes.Length-1 do
-        begin
-          attr := layerNode.Attributes[j];
-          if lowercase(attr.NodeName) = 'opacity' then
-          begin
-            val(attr.NodeValue, float, errPos);
-            if errPos = 0 then
-            begin
-              if float < 0 then float := 0;
-              if float > 1 then float := 1;
-              LayerOpacity[idx] := round(float*255);
-            end;
-          end else
-          if lowercase(attr.NodeName) = 'gamma-correction' then
-            gammastr := string(attr.NodeValue) else
-          if lowercase(attr.NodeName) = 'visibility' then
-            LayerVisible[idx] := (attr.NodeValue = 'visible') or (attr.NodeValue = 'yes') or (attr.NodeValue = '1') else
-          if (lowercase(attr.NodeName) = 'x') or (lowercase(attr.NodeName) = 'y') then
-          begin
-            val(attr.NodeValue, float, errPos);
-            if errPos = 0 then
-            begin
-              if float < -(MaxInt shr 1) then float := -(MaxInt shr 1);
-              if float > (MaxInt shr 1) then float := (MaxInt shr 1);
-              if (lowercase(attr.NodeName) = 'x') then x := round(float);
-              if (lowercase(attr.NodeName) = 'y') then y := round(float);
-            end;
-          end else
-          if lowercase(attr.NodeName) = 'name' then
-            LayerName[idx] := UTF8Encode(attr.NodeValue) else
-          if lowercase(attr.NodeName) = 'composite-op' then
-          begin
-            opstr := StringReplace(lowercase(string(attr.NodeValue)),'_','-',[rfReplaceAll]);
-            if (pos(':',opstr) = 0) and (opstr <> 'xor') then opstr := 'svg:'+opstr;
-            //parse composite op
-            if (opstr = 'svg:src-over') or (opstr = 'krita:dissolve') then
-              BlendOperation[idx] := boTransparent else
-            if opstr = 'svg:lighten' then
-              BlendOperation[idx] := boLighten else
-            if opstr = 'svg:screen' then
-              BlendOperation[idx] := boScreen else
-            if opstr = 'svg:color-dodge' then
-              BlendOperation[idx] := boColorDodge else
-            if (opstr = 'svg:color-burn') or (opstr = 'krita:gamma_dark'){approx} then
-              BlendOperation[idx] := boColorBurn else
-            if opstr = 'svg:darken' then
-              BlendOperation[idx] := boDarken else
-            if (opstr = 'svg:plus') or (opstr = 'svg:add') or (opstr = 'krita:linear_dodge') then
-              BlendOperation[idx] := boLinearAdd else
-            if (opstr = 'svg:multiply') or (opstr = 'krita:bumpmap') then
-              BlendOperation[idx] := boMultiply else
-            if opstr = 'svg:overlay' then
-              BlendOperation[idx] := boOverlay else
-            if opstr = 'svg:soft-light' then
-              BlendOperation[idx] := boSvgSoftLight else
-            if opstr = 'svg:hard-light' then
-              BlendOperation[idx] := boHardLight else
-            if opstr = 'svg:difference' then
-              BlendOperation[idx] := boLinearDifference else
-            if (opstr = 'krita:inverse-subtract') or (opstr = 'krita:linear-burn') then
-              BlendOperation[idx] := boLinearSubtractInverse else
-            if opstr = 'krita:subtract' then
-              BlendOperation[idx] := boLinearSubtract else
-            if (opstr = 'svg:difference') or
-              (opstr = 'krita:equivalence') then
-              BlendOperation[idx] := boLinearDifference else
-            if (opstr = 'svg:exclusion') or
-              (opstr = 'krita:exclusion') then
-              BlendOperation[idx] := boLinearExclusion else
-            if opstr = 'krita:divide' then
-              BlendOperation[idx] := boDivide else
-            if opstr = 'bgra:soft-light' then
-              BlendOperation[idx] := boSoftLight else
-            if opstr = 'bgra:nice-glow' then
-              BlendOperation[idx] := boNiceGlow else
-            if opstr = 'bgra:glow' then
-              BlendOperation[idx] := boGlow else
-            if opstr = 'bgra:reflect' then
-              BlendOperation[idx] := boReflect else
-            if opstr = 'bgra:negation' then
-              BlendOperation[idx] := boLinearNegation else
-            if (opstr = 'bgra:xor') or (opstr = 'xor') then
-              BlendOperation[idx] := boXor else
-            if opstr = 'bgra:mask' then
-              BlendOperation[idx] := boMask else
-            if opstr = 'bgra:linear-multiply-saturation' then
-              BlendOperation[idx] := boLinearMultiplySaturation else
-            if opstr = 'svg:hue' then
-              BlendOperation[idx] := boCorrectedHue else
-            if opstr = 'svg:color' then
-              BlendOperation[idx] := boCorrectedColor else
-            if opstr = 'svg:luminosity' then
-              BlendOperation[idx] := boCorrectedLightness else
-            if opstr = 'svg:saturation' then
-              BlendOperation[idx] := boCorrectedSaturation else
-            if opstr = 'krita:hue-hsl' then
-              BlendOperation[idx] := boLinearHue else
-            if opstr = 'krita:color-hsl' then
-              BlendOperation[idx] := boLinearColor else
-            if opstr = 'krita:lightness' then
-              BlendOperation[idx] := boLinearLightness else
-            if opstr = 'krita:saturation-hsl' then
-              BlendOperation[idx] := boLinearSaturation else
-            begin
-              //messagedlg('Unknown blend operation : ' + attr.NodeValue,mtInformation,[mbOk],0);
-              BlendOperation[idx] := boTransparent;
-            end;
-          end;
-        end;
-        LayerOffset[idx] := point(x,y);
-        if (gammastr = 'yes') or (gammastr = 'on') then
-        begin
-          case BlendOperation[idx] of
-            boLinearAdd: BlendOperation[idx] := boAdditive;
-            boOverlay: BlendOperation[idx] := boDarkOverlay;
-            boLinearDifference: BlendOperation[idx] := boDifference;
-            boLinearExclusion: BlendOperation[idx] := boExclusion;
-            boLinearSubtract: BlendOperation[idx] := boSubtract;
-            boLinearSubtractInverse: BlendOperation[idx] := boSubtractInverse;
-            boLinearNegation: BlendOperation[idx] := boNegation;
-          end;
-        end else
-        if (gammastr = 'no') or (gammastr = 'off') then
-          if BlendOperation[idx] = boTransparent then
-            BlendOperation[idx] := boLinearBlend; //explicit linear blending
-      end;
-    end;
-  end;
-
+  totalLayerCount := CountLayersRec(stackNode);
+  doneLayerCount := 0;
+  AddLayersRec(stackNode);
 end;
 
 procedure TBGRAOpenRasterDocument.PrepareZipToSave;
