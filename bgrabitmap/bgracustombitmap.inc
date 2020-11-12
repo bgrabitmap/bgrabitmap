@@ -536,8 +536,10 @@ type
      function GetImageAngleBounds(x,y: single; Source: TBGRACustomBitmap; angle: single; imageCenterX: single = 0; imageCenterY: single = 0; ARestoreOffsetAfterRotation: boolean = false): TRect;
      procedure Blend(AColor: TBGRAPixel; AOperation: TBlendOperation; AIgnoreDestAlpha: boolean = false); virtual;
      procedure BlendOver(AColor: TBGRAPixel; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false; AIgnoreDestAlpha: boolean = false); virtual;
-     procedure BlendRect(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AIgnoreDestAlpha: boolean = false); virtual; abstract;
-     procedure BlendRectOver(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false; AIgnoreDestAlpha: boolean = false); virtual; abstract;
+     procedure BlendRect(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AIgnoreDestAlpha: boolean = false); overload;
+     procedure BlendRect(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AExcludeChannels: TChannels); overload; virtual; abstract;
+     procedure BlendRectOver(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false; AIgnoreDestAlpha: boolean = false); overload;
+     procedure BlendRectOver(ADest: TRect; AColor: TBGRAPixel; AOperation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean; AExcludeChannels: TChannels); overload; virtual; abstract;
      procedure BlendImage(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation); overload; virtual; abstract;
      procedure BlendImage(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation); overload; virtual; abstract;
      procedure BlendImageOver(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
@@ -1673,6 +1675,23 @@ procedure TBGRACustomBitmap.BlendOver(AColor: TBGRAPixel;
   AOperation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean; AIgnoreDestAlpha: boolean);
 begin
   BlendRectOver(ClipRect, AColor, AOperation, AOpacity, ALinearBlend, AIgnoreDestAlpha);
+end;
+
+procedure TBGRACustomBitmap.BlendRect(ADest: TRect; AColor: TBGRAPixel;
+  AOperation: TBlendOperation; AIgnoreDestAlpha: boolean);
+begin
+  if AIgnoreDestAlpha then
+    BlendRect(ADest, AColor, AOperation, [cAlpha])
+    else BlendRect(ADest, AColor, AOperation, []);
+end;
+
+procedure TBGRACustomBitmap.BlendRectOver(ADest: TRect; AColor: TBGRAPixel;
+  AOperation: TBlendOperation; AOpacity: byte; ALinearBlend: boolean;
+  AIgnoreDestAlpha: boolean);
+begin
+  if AIgnoreDestAlpha then
+    BlendRectOver(ADest, AColor, AOperation, AOpacity, ALinearBlend,[cAlpha])
+    else BlendRectOver(ADest, AColor, AOperation, AOpacity, ALinearBlend, []);
 end;
 
 procedure TBGRACustomBitmap.FillMask(x, y: integer;

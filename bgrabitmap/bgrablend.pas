@@ -77,11 +77,12 @@ procedure ScannerPutPixels(scan: IBGRAScanner; pdest: PBGRAPixel; count: integer
 
 { Perform advanced blending operation }
 procedure BlendPixels(pdest: PBGRAPixel; psrc: PBGRAPixel;
-  blendOp: TBlendOperation; Count: integer);
+  blendOp: TBlendOperation; Count: integer; excludeChannels: TChannels = []);
 
 { Perform blending operation and merge over destination }
 procedure BlendPixelsOver(pdest: PBGRAPixel; psrc: PBGRAPixel;
-  blendOp: TBlendOperation; Count: integer; opacity: byte; linearBlend: boolean = false);
+  blendOp: TBlendOperation; Count: integer; opacity: byte; linearBlend: boolean = false;
+  excludeChannels: TChannels = []);
 
 //layer blend modes
 //- http://www.pegtop.net/delphi/articles/blendmodes/

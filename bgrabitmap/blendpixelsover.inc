@@ -1107,8 +1107,48 @@ const
 {************************* calling procedure ***************************}
 
 procedure BlendPixelsOver(pdest: PBGRAPixel; psrc: PBGRAPixel;
-  blendOp: TBlendOperation; Count: integer; opacity: byte; linearBlend: boolean);
+  blendOp: TBlendOperation; Count: integer; opacity: byte; linearBlend: boolean; excludeChannels: TChannels = []);
+const BufSize = 8;
+var
+  destBuf: array[0..BufSize-1] of TBGRAPixel;
+  i: PtrInt;
+  blendProc: TBlendPixelsOverProc;
 begin
-  BlendPixelsOverProc[linearblend, blendOp](pdest,psrc,count,opacity);
+  if (excludeChannels = [cRed,cGreen,cBlue,cAlpha]) or
+     ((blendOp = boMask) and (cAlpha in excludeChannels)) or
+     (opacity = 0) then exit;
+
+  blendProc := BlendPixelsOverProc[linearblend, blendOp];
+  if excludeChannels = [] then
+    blendProc(pdest, psrc, count, opacity) else
+  begin
+    while Count >= BufSize do
+    begin
+      move(pdest^, {%H-}destBuf, sizeof(destBuf));
+      blendProc(@destBuf, psrc, BufSize, opacity);
+      for i := 0 to BufSize-1 do
+      begin
+        if not (cRed in excludeChannels) then pdest^.red := destBuf[i].red;
+        if not (cGreen in excludeChannels) then pdest^.green := destBuf[i].green;
+        if not (cBlue in excludeChannels) then pdest^.blue := destBuf[i].blue;
+        if not (cAlpha in excludeChannels) then pdest^.alpha := destBuf[i].alpha;
+        inc(pdest);
+      end;
+      dec(count, BufSize);
+    end;
+    if count > 0 then
+    begin
+      move(pdest^, {%H-}destBuf, count*sizeof(TBGRAPixel));
+      blendProc(@destBuf, psrc, count, opacity);
+      for i := 0 to count-1 do
+      begin
+        if not (cRed in excludeChannels) then pdest^.red := destBuf[i].red;
+        if not (cGreen in excludeChannels) then pdest^.green := destBuf[i].green;
+        if not (cBlue in excludeChannels) then pdest^.blue := destBuf[i].blue;
+        if not (cAlpha in excludeChannels) then pdest^.alpha := destBuf[i].alpha;
+        inc(pdest);
+      end;
+    end;
+  end;
 end;
 
