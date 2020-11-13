@@ -581,30 +581,26 @@ end;
 
 function TBGRASVG.GetComputedHeight: TFloatWithCSSUnit;
 var
-  h: TFloatWithCSSUnit;
+  vb: TSVGViewBox;
+  origUnit: TCSSUnit;
 begin
-  h := Height;
-  if h.CSSUnit = cuPercent then
-  with ContainerHeight do
-  begin
-    h.value := value * h.value/100;
-    h.CSSUnit := CSSUnit;
-  end;
-  result := h;
+  vb := ViewBox;
+  result := FloatWithCSSUnit(vb.size.y, cuCustom);
+  origUnit := Width.CSSUnit;
+  if origUnit in [cuPixel,cuCentimeter,cuMillimeter,cuInch,cuPica,cuPoint] then
+    result := Units.ConvertHeight(result, origUnit);
 end;
 
 function TBGRASVG.GetComputedWidth: TFloatWithCSSUnit;
 var
-  w: TFloatWithCSSUnit;
+  vb: TSVGViewBox;
+  origUnit: TCSSUnit;
 begin
-  w := Width;
-  if w.CSSUnit = cuPercent then
-  with ContainerWidth do
-  begin
-    w.value := value * w.value/100;
-    w.CSSUnit := CSSUnit;
-  end;
-  result := w;
+  vb := ViewBox;
+  result := FloatWithCSSUnit(vb.size.x, cuCustom);
+  origUnit := Width.CSSUnit;
+  if origUnit in [cuPixel,cuCentimeter,cuMillimeter,cuInch,cuPica,cuPoint] then
+    result := Units.ConvertWidth(result, origUnit);
 end;
 
 function TBGRASVG.GetContainerHeight: TFloatWithCSSUnit;

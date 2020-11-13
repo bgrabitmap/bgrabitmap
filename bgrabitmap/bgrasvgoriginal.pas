@@ -53,7 +53,8 @@ type
     procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); override;
     procedure LoadFromStream(AStream: TStream); override;
     procedure SaveSVGToStream(AStream: TStream);
-    procedure LoadSVGFromStream(AStream: TStream);
+    procedure LoadSVGFromStream(AStream: TStream; AContainerWidth: integer = 640;
+      AContainerHeight: integer = 480);
     class function StorageClassName: RawByteString; override;
     property Width: single read GetSvgWidth;
     property Height: single read GetSvgHeight;
@@ -165,12 +166,12 @@ end;
 
 function TBGRALayerSVGOriginal.GetSvgHeight: single;
 begin
-  result := FSVG.ViewSizeInUnit[cuPixel].y;
+  result := FSVG.HeightAsPixel;
 end;
 
 function TBGRALayerSVGOriginal.GetSvgWidth: single;
 begin
-  result := FSVG.ViewSizeInUnit[cuPixel].x;
+  result := FSVG.WidthAsPixel;
 end;
 
 procedure TBGRALayerSVGOriginal.SetDPI(AValue: single);
@@ -299,12 +300,14 @@ begin
   FSVG.SaveToStream(AStream);
 end;
 
-procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream);
+procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream; AContainerWidth: integer; AContainerHeight: integer);
 var
   w, h: single;
 begin
   BeginUpdate;
   FSVG.LoadFromStream(AStream);
+  FSVG.Units.ContainerWidth := FloatWithCSSUnit(AContainerWidth, cuPixel);
+  FSVG.Units.ContainerHeight := FloatWithCSSUnit(AContainerHeight, cuPixel);
   w := FSVG.WidthAsPixel;
   h := FSVG.HeightAsPixel;
   FSVG.Width := FloatWithCSSUnit(w, cuPixel);
