@@ -804,6 +804,7 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
       for i := 0 to rootElems.Count-1 do
         g.Content.BringElement(TObject(rootElems[i]), newSvg.Content);
       g.matrix[cuPixel] := m;
+      g.DOMElement.SetAttribute('xmlns:bgra', 'https://wiki.freepascal.org/LazPaint_SVG_format');
       g.DOMElement.SetAttribute('bgra:originalViewBox', origViewBox.ToString);
       newSvg.WidthAsPixel:= newBounds.Width;
       newSvg.HeightAsPixel:= newBounds.Height;
