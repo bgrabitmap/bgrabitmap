@@ -94,6 +94,8 @@ type
     function GetHeightAsCm: single;
     function GetHeightAsInch: single;
     function GetHeightAsPixel: single;
+    function GetLayer(AIndex: integer): TSVGGroup;
+    function GetLayerCount: integer;
     function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
     function GetUnits: TSVGUnits;
     function GetUTF8String: utf8string;
@@ -189,6 +191,8 @@ type
     property Content: TSVGContent read FContent;
     property DataLink: TSVGDataLink read FDataLink;//(for test or internal info)
     property preserveAspectRatio: TSVGPreserveAspectRatio read GetPreserveAspectRatio write SetPreserveAspectRatio;
+    property Layer[AIndex: integer]: TSVGGroup read GetLayer;
+    property LayerCount: integer read GetLayerCount;
   end;
 
   { TFPReaderSVG }
@@ -651,6 +655,35 @@ end;
 function TBGRASVG.GetHeightAsPixel: single;
 begin
   result := FUnits.ConvertHeight(ComputedHeight,cuPixel).value;
+end;
+
+function TBGRASVG.GetLayer(AIndex: integer): TSVGGroup;
+var
+  i: Integer;
+begin
+  result := nil;
+  for i := 0 to Content.ElementCount-1 do
+  begin
+    if (Content.ElementObject[i] is TSVGGroup) and
+       TSVGGroup(Content.Element[i]).IsLayer then
+    begin
+      if AIndex = 0 then exit(TSVGGroup(Content.Element[i]));
+      dec(AIndex);
+    end;
+  end;
+end;
+
+function TBGRASVG.GetLayerCount: integer;
+var
+  i: Integer;
+begin
+  result := 0;
+  for i := 0 to Content.ElementCount-1 do
+  begin
+    if (Content.ElementObject[i] is TSVGGroup) and
+       TSVGGroup(Content.Element[i]).IsLayer then
+      inc(result);
+  end;
 end;
 
 function TBGRASVG.GetPreserveAspectRatio: TSVGPreserveAspectRatio;

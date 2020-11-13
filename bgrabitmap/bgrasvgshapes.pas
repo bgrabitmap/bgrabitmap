@@ -671,12 +671,18 @@ type
   TSVGGroup = class(TSVGElementWithContent)
   private
     function GetFontSize: TFloatWithCSSUnit;
+    function GetIsLayer: boolean;
+    function GetName: string;
     procedure SetFontSize(AValue: TFloatWithCSSUnit);
+    procedure SetIsLayer(AValue: boolean);
+    procedure SetName(AValue: string);
   protected
     procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
   public
     class function GetDOMTag: string; override;
+    property IsLayer: boolean read GetIsLayer write SetIsLayer;
+    property Name: string read GetName write SetName;
   end;
 
   { TSVGLink }
@@ -756,7 +762,8 @@ type
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
       function AppendElement(ASVGType: TSVGFactory): TSVGElement; overload;
-      procedure AppendElement(AElement: TObject; AFromContent: TSVGContent); overload;
+      procedure BringElement(AElement: TObject; AFromContent: TSVGContent); overload;
+      procedure CopyElement(AElement: TObject);
       procedure RemoveElement(AElement: TObject);
       function AppendDOMText(AText: string): TDOMText;
       function AppendLine(x1,y1,x2,y2: single; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
@@ -2451,9 +2458,32 @@ begin
   result:= GetVerticalAttributeOrStyleWithUnit('font-size',Units.CurrentFontEmHeight,false);
 end;
 
+function TSVGGroup.GetIsLayer: boolean;
+begin
+  result := (Attribute['inkscape:groupmode'] = 'layer')
+end;
+
+function TSVGGroup.GetName: string;
+begin
+  result := Attribute['inkscape:label'];
+end;
+
 procedure TSVGGroup.SetFontSize(AValue: TFloatWithCSSUnit);
 begin
   VerticalAttributeWithUnit['font-size'] := AValue;
+end;
+
+procedure TSVGGroup.SetIsLayer(AValue: boolean);
+begin
+  if AValue = GetIsLayer then exit;
+  if AValue then
+    Attribute['inkscape:groupmode'] := 'layer'
+    else Attribute['inkscape:groupmode'] := '';
+end;
+
+procedure TSVGGroup.SetName(AValue: string);
+begin
+  Attribute['inkscape:label'] := AValue;
 end;
 
 procedure TSVGGroup.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
@@ -3601,7 +3631,7 @@ begin
   AppendElement(result);
 end;
 
-procedure TSVGContent.AppendElement(AElement: TObject;
+procedure TSVGContent.BringElement(AElement: TObject;
   AFromContent: TSVGContent);
 var
   idx: Integer;
@@ -3610,6 +3640,23 @@ begin
   if idx = -1 then raise exception.Create('Cannot find element in content');
   AFromContent.ExtractElementAt(idx);
   AppendElement(AElement);
+end;
+
+procedure TSVGContent.CopyElement(AElement: TObject);
+var
+  nodeCopy: TDOMNode;
+  objCopy: TObject;
+begin
+  if AElement is TSVGElement then
+    nodeCopy := TSVGElement(AElement).DOMElement.CloneNode(true, FDoc)
+  else if AElement is TDOMNode then
+    nodeCopy := TDOMNode(AElement).CloneNode(true, FDoc)
+  else
+    raise exception.Create('Unexpected element type');
+
+  FDomElem.AppendChild(nodeCopy);
+  objCopy := TryCreateElementFromNode(nodeCopy);
+  if Assigned(objCopy) then FElements.Add(objCopy);
 end;
 
 procedure TSVGContent.RemoveElement(AElement: TObject);

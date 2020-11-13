@@ -670,7 +670,7 @@ begin
       for i := 0 to g.Content.ElementCount-1 do
         elemToMove.Add(g.Content.ElementObject[i]);
       for i := 0 to elemToMove.Count-1 do
-        svg.Content.AppendElement(TObject(elemToMove[i]), g.Content);
+        svg.Content.BringElement(TObject(elemToMove[i]), g.Content);
       elemToMove.Free;
       svg.Content.RemoveElement(g);
       svg.ViewBox := origViewBox;
@@ -802,7 +802,7 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
         rootElems.Add(newSvg.Content.ElementObject[i]);
       g := newSvg.Content.AppendGroup;
       for i := 0 to rootElems.Count-1 do
-        g.Content.AppendElement(TObject(rootElems[i]), newSvg.Content);
+        g.Content.BringElement(TObject(rootElems[i]), newSvg.Content);
       g.matrix[cuPixel] := m;
       g.DOMElement.SetAttribute('bgra:originalViewBox', origViewBox.ToString);
       newSvg.WidthAsPixel:= newBounds.Width;

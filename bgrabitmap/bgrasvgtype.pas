@@ -245,6 +245,7 @@ type
     function GetIsFillNone: boolean;
     function GetIsStrokeNone: boolean;
     function GetMatrix(AUnit: TCSSUnit): TAffineMatrix;
+    function GetMixBlendMode: TBlendOperation;
     function GetOpacity: single;
     function GetStroke: string;
     function GetStrokeColor: TBGRAPixel;
@@ -259,11 +260,13 @@ type
     function GetTransform: string;
     function GetID: string;
     function GetClassAttr: string;
+    function GetVisible: boolean;
     procedure SetFill(AValue: string);
     procedure SetFillColor(AValue: TBGRAPixel);
     procedure SetFillOpacity(AValue: single);
     procedure SetFillRule(AValue: string);
     procedure SetMatrix(AUnit: TCSSUnit; const AValue: TAffineMatrix);
+    procedure SetMixBlendMode(AValue: TBlendOperation);
     procedure SetOpacity(AValue: single);
     procedure SetStroke(AValue: string);
     procedure SetStrokeColor(AValue: TBGRAPixel);
@@ -281,6 +284,7 @@ type
     function FindStyleElementInternal(const classStr: string;
       out attributesStr: string): integer;
     procedure FindStyleElement;
+    procedure SetVisible(AValue: boolean);
   protected
     FDataLink: TSVGDataLink;
     procedure Init(ADocument: TDOMDocument; ATag: string; AUnits: TCSSUnitConverter); overload;
@@ -324,7 +328,9 @@ type
     property fillColor: TBGRAPixel read GetFillColor write SetFillColor;
     property fillOpacity: single read GetFillOpacity write SetFillOpacity;
     property fillRule: string read GetFillRule write SetFillRule;
+    property mixBlendMode: TBlendOperation read GetMixBlendMode write SetMixBlendMode;
     property opacity: single read GetOpacity write SetOpacity;
+    property Visible: boolean read GetVisible write SetVisible;
 
     property Attribute[AName: string]: string read GetAttribute write SetAttribute;
     property AttributeDef[AName,ADefault: string]: string read GetAttribute;
@@ -1538,6 +1544,49 @@ begin
   parser.Free;
 end;
 
+function TSVGElement.GetMixBlendMode: TBlendOperation;
+var
+  opstr: String;
+begin
+  opstr := AttributeOrStyle['mix-blend-mode'];
+  if opstr = 'lighten' then
+    result := boLighten else
+  if opstr = 'screen' then
+    result := boScreen else
+  if opstr = 'color-dodge' then
+    result := boColorDodge else
+  if opstr = 'color-burn' then
+    result := boColorBurn else
+  if opstr = 'darken' then
+    result := boDarken else
+  if (opstr = 'plus') or (opstr = 'add') then
+    result := boLinearAdd else
+  if opstr = 'multiply' then
+    result := boMultiply else
+  if opstr = 'overlay' then
+    result := boOverlay else
+  if opstr = 'soft-light' then
+    result := boSvgSoftLight else
+  if opstr = 'hard-light' then
+    result := boHardLight else
+  if opstr = 'difference' then
+    result := boLinearDifference else
+  if opstr = 'difference' then
+    result := boLinearDifference else
+  if opstr = 'exclusion' then
+    result := boLinearExclusion else
+  if opstr = 'hue' then
+    result := boCorrectedHue else
+  if opstr = 'color' then
+    result := boCorrectedColor else
+  if opstr = 'luminosity' then
+    result := boCorrectedLightness else
+  if opstr = 'saturation' then
+    result := boCorrectedSaturation
+  else
+    result := boTransparent;
+end;
+
 function TSVGElement.GetOpacity: single;
 var errPos: integer;
 begin
@@ -1662,6 +1711,11 @@ begin
   result := Attribute['class'];
 end;
 
+function TSVGElement.GetVisible: boolean;
+begin
+  result := (AttributeOrStyle['display'] <> 'none');
+end;
+
 procedure TSVGElement.SetFill(AValue: string);
 begin
   Attribute['fill'] := AValue;
@@ -1721,6 +1775,34 @@ begin
                      Units.formatValue(m[1,2])+' '+Units.formatValue(m[2,2])+' ' +
                      Units.formatValue(m[1,3])+' '+Units.formatValue(m[2,3]));
   end;
+end;
+
+procedure TSVGElement.SetMixBlendMode(AValue: TBlendOperation);
+var
+  opstr: String;
+begin
+  case AValue of
+  boLighten: opstr := 'lighten';
+  boScreen: opstr := 'screen';
+  boColorDodge: opstr := 'color-dodge';
+  boColorBurn: opstr := 'color-burn';
+  boDarken: opstr := 'darken';
+  boLinearAdd: opstr := 'add';
+  boMultiply: opstr := 'multiply';
+  boOverlay: opstr := 'overlay';
+  boSvgSoftLight: opstr := 'soft-light';
+  boHardLight: opstr := 'hard-light';
+  boLinearDifference: opstr := 'difference';
+  boLinearExclusion: opstr := 'exclusion';
+  boCorrectedHue: opstr := 'hue';
+  boCorrectedColor: opstr := 'color';
+  boCorrectedLightness: opstr := 'luminosity';
+  boCorrectedSaturation: opstr := 'saturation';
+  else {boTransparent}
+    opstr := '';
+  end;
+  Style['mix-blend-mode'] := opstr;
+  FDomElem.RemoveAttribute('mix-blend-mode');
 end;
 
 procedure TSVGElement.SetOpacity(AValue: single);
@@ -1911,6 +1993,7 @@ end;
 procedure TSVGElement.Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var prevMatrix: TAffineMatrix;
 begin
+  if not Visible then exit;
   prevMatrix := ACanvas2d.matrix;
   ACanvas2d.transform(matrix[AUnit]);
   InternalDraw(ACanvas2d,AUnit);
@@ -2017,7 +2100,14 @@ begin
         AddStyle(s,fid);
     end;
   end;
-end;     
+end;
+
+procedure TSVGElement.SetVisible(AValue: boolean);
+begin
+  if AValue <> Visible then
+    Style['display'] := 'inline';
+  FDomElem.RemoveAttribute('display');
+end;
 
 end.
 
