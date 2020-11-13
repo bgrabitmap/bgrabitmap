@@ -83,6 +83,7 @@ type
     procedure Offset(dx,dy : longint); overload;
     procedure Offset(dx,dy : single); overload;
     procedure Scale(AScale: single);
+    procedure Normalize;
 
     function Ceiling: TPoint;
     function Truncate: TPoint;
@@ -822,6 +823,14 @@ begin
     self.x := self.x * AScale;
     self.y := self.y * AScale;
   end;
+end;
+
+procedure TPointFHelper.Normalize;
+var
+  len: Single;
+begin
+  len := Length;
+  if len > 0 then self := self*(1/len);
 end;
 
 function TPointFHelper.Ceiling: TPoint;

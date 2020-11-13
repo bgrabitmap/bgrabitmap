@@ -739,8 +739,10 @@ type
       function GetDOMNode(AElement: TObject): TDOMNode;
       function GetElementDOMNode(AIndex: integer): TDOMNode;
       procedure AppendElement(AElement: TObject); overload;
+      function ExtractElementAt(AIndex: integer): TObject;
       procedure InsertElementBefore(AElement: TSVGElement; ASuccessor: TSVGElement);
       function GetElement(AIndex: integer): TSVGElement;
+      function GetElementObject(AIndex: integer): TObject;
       function GetIsSVGElement(AIndex: integer): boolean;
       function GetElementCount: integer;
       function GetUnits: TCSSUnitConverter;
@@ -754,6 +756,8 @@ type
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
       function AppendElement(ASVGType: TSVGFactory): TSVGElement; overload;
+      procedure AppendElement(AElement: TObject; AFromContent: TSVGContent); overload;
+      procedure RemoveElement(AElement: TObject);
       function AppendDOMText(AText: string): TDOMText;
       function AppendLine(x1,y1,x2,y2: single; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
       function AppendLine(p1,p2: TPointF; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
@@ -771,8 +775,11 @@ type
       function AppendText(origin: TPointF; AText: string; AUnit: TCSSUnit = cuCustom): TSVGText; overload;
       function AppendRoundRect(x,y,width,height,rx,ry: single; AUnit: TCSSUnit = cuCustom): TSVGRectangle; overload;
       function AppendRoundRect(origin,size,radius: TPointF; AUnit: TCSSUnit = cuCustom): TSVGRectangle; overload;
+      function AppendGroup: TSVGGroup;
+      function IndexOfElement(AElement: TObject): integer;
       property ElementCount: integer read GetElementCount;
       property Element[AIndex: integer]: TSVGElement read GetElement;
+      property ElementObject[AIndex: integer]: TObject read GetElementObject;
       property ElementDOMNode[AIndex: integer]: TDOMNode read GetElementDOMNode;
       property IsSVGElement[AIndex: integer]: boolean read GetIsSVGElement;
       property Units: TCSSUnitConverter read GetUnits;
@@ -3443,6 +3450,11 @@ begin
   result := TObject(FElements.Items[AIndex]) as TSVGElement;
 end;
 
+function TSVGContent.GetElementObject(AIndex: integer): TObject;
+begin
+  result := TObject(FElements.Items[AIndex]);
+end;
+
 function TSVGContent.GetElementCount: integer;
 begin
   result := FElements.Count;
@@ -3485,6 +3497,20 @@ procedure TSVGContent.AppendElement(AElement: TObject);
 begin
   FDomElem.AppendChild(GetDOMNode(AElement));
   FElements.Add(AElement);
+end;
+
+function TSVGContent.ExtractElementAt(AIndex: integer): TObject;
+begin
+  result := ElementObject[AIndex];
+  if result is TSVGElement then
+  begin
+    FElements.Delete(AIndex);
+    FDomElem.RemoveChild(TSVGElement(result).DOMElement);
+  end else
+  if result is TDOMNode then
+    FDomElem.RemoveChild(TDOMNode(result))
+  else
+    raise exception.Create('Unexpected element type');
 end;
 
 procedure TSVGContent.InsertElementBefore(AElement: TSVGElement;
@@ -3573,6 +3599,37 @@ function TSVGContent.AppendElement(ASVGType: TSVGFactory): TSVGElement;
 begin
   result := ASVGType.Create(FDoc,Units,FDataLink);
   AppendElement(result);
+end;
+
+procedure TSVGContent.AppendElement(AElement: TObject;
+  AFromContent: TSVGContent);
+var
+  idx: Integer;
+begin
+  idx := AFromContent.IndexOfElement(AElement);
+  if idx = -1 then raise exception.Create('Cannot find element in content');
+  AFromContent.ExtractElementAt(idx);
+  AppendElement(AElement);
+end;
+
+procedure TSVGContent.RemoveElement(AElement: TObject);
+var
+  idx: Integer;
+begin
+  idx := IndexOfElement(AElement);
+  if idx = -1 then exit;
+  if AElement is TSVGElement then
+  begin
+    ExtractElementAt(idx);
+    TSVGElement(AElement).DOMElement.Free;
+    AElement.Free;
+  end else
+  if AElement is TDOMNode then
+  begin
+    ExtractElementAt(idx);
+    TDOMNode(AElement).Free;
+  end else
+    raise exception.Create('Unexpected element type');
 end;
 
 function TSVGContent.AppendDOMText(AText: string): TDOMText;
@@ -3762,6 +3819,17 @@ function TSVGContent.AppendRoundRect(origin, size, radius: TPointF;
   AUnit: TCSSUnit): TSVGRectangle;
 begin
   result := AppendRoundRect(origin.x,origin.y,size.x,size.y,radius.x,radius.y,AUnit);
+end;
+
+function TSVGContent.AppendGroup: TSVGGroup;
+begin
+  result := TSVGGroup.Create(FDoc, Units, FDataLink);
+  AppendElement(result);
+end;
+
+function TSVGContent.IndexOfElement(AElement: TObject): integer;
+begin
+  result := FElements.IndexOf(AElement);
 end;
 
 end.
