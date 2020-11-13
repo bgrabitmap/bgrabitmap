@@ -40,11 +40,12 @@ type
     procedure SetDPI(AValue: single);
   protected
     FSVG: TBGRASVG;
+    FPresentationMatrix: TAffineMatrix;
     FDiff: TBGRASVGOriginalDiff;
     FContentVersion: integer;
     procedure BeginUpdate;
     procedure EndUpdate;
-    procedure EnsureSVGSizeInPixels(AContainerWidth, AContainerHeight: integer);
+    procedure ComputePresentation(AContainerWidth, AContainerHeight: integer);
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -198,16 +199,25 @@ begin
   FDiff := nil;
 end;
 
-procedure TBGRALayerSVGOriginal.EnsureSVGSizeInPixels(AContainerWidth, AContainerHeight: integer);
+procedure TBGRALayerSVGOriginal.ComputePresentation(AContainerWidth, AContainerHeight: integer);
 var
-  w, h: single;
+  compWidth, compHeight: TFloatWithCSSUnit;
+  presentationRect: TRectF;
+  sx, sy, visualWidth, visualHeight: Single;
 begin
   FSVG.Units.ContainerWidth := FloatWithCSSUnit(AContainerWidth, cuPixel);
   FSVG.Units.ContainerHeight := FloatWithCSSUnit(AContainerHeight, cuPixel);
-  w := FSVG.WidthAsPixel;
-  h := FSVG.HeightAsPixel;
-  FSVG.Width := FloatWithCSSUnit(w, cuPixel);
-  FSVG.Height := FloatWithCSSUnit(h, cuPixel);
+  compWidth := FSVG.ComputedWidth;
+  compHeight := FSVG.ComputedHeight;
+  FSVG.Width := compWidth;
+  FSVG.Height := compHeight;
+  presentationRect := FSVG.GetStretchRectF(0, 0, FSVG.WidthAsPixel, FSVG.HeightAsPixel);
+  visualWidth := FSVG.Units.ConvertWidth(FSVG.VisualWidth, cuPixel).value;
+  visualHeight := FSVG.Units.ConvertWidth(FSVG.VisualHeight, cuPixel).value;
+  if FSVG.WidthAsPixel > 0 then sx := presentationRect.Width/visualWidth else sx := 1;
+  if FSVG.HeightAsPixel > 0 then sy := presentationRect.Height/visualHeight else sy := 1;
+  FPresentationMatrix := AffineMatrixTranslation(presentationRect.Left, presentationRect.Top)
+                       * AffineMatrixScale(sx, sy);
 end;
 
 constructor TBGRALayerSVGOriginal.Create;
@@ -232,7 +242,7 @@ begin
   if Assigned(FSVG) then
   begin
     c2D := TBGRACanvas2D.Create(ADest);
-    c2D.transform(AMatrix);
+    c2D.transform(AMatrix*FPresentationMatrix);
     if ADraft then c2D.antialiasing := false;
     FSVG.Draw(c2D,0,0);
     c2D.Free;
@@ -249,7 +259,8 @@ begin
   begin
     min := FSVG.ViewMinInUnit[cuPixel];
     size := FSVG.ViewSizeInUnit[cuPixel];
-    aff := AMatrix*TAffineBox.AffineBox(min,PointF(min.x+size.x,min.y),PointF(min.x,min.y+size.y));
+    aff := AMatrix * FPresentationMatrix
+          * TAffineBox.AffineBox(min,PointF(min.x+size.x,min.y),PointF(min.x,min.y+size.y));
     result := aff.RectBounds;
   end else
     result := EmptyRect;
@@ -322,7 +333,7 @@ begin
   BeginUpdate;
   FSVG.Free;
   FSVG := ASVG;
-  EnsureSVGSizeInPixels(AContainerWidth, AContainerHeight);
+  ComputePresentation(AContainerWidth, AContainerHeight);
   Inc(FContentVersion);
   EndUpdate;
 end;
@@ -331,7 +342,7 @@ procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream; AContainerWi
 begin
   BeginUpdate;
   FSVG.LoadFromStream(AStream);
-  EnsureSVGSizeInPixels(AContainerWidth, AContainerHeight);
+  ComputePresentation(AContainerWidth, AContainerHeight);
   Inc(FContentVersion);
   EndUpdate;
 end;
