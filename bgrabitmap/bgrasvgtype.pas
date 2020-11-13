@@ -1773,7 +1773,7 @@ begin
     end;
     transform := trim(s+' matrix('+Units.formatValue(m[1,1])+' '+Units.formatValue(m[2,1])+' '+
                      Units.formatValue(m[1,2])+' '+Units.formatValue(m[2,2])+' ' +
-                     Units.formatValue(m[1,3])+' '+Units.formatValue(m[2,3]));
+                     Units.formatValue(m[1,3])+' '+Units.formatValue(m[2,3])+')');
   end;
 end;
 
