@@ -64,6 +64,7 @@ type
     function ConvertWidth(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): ArrayOfTFloatWithCSSUnit; overload;
     function ConvertHeight(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): ArrayOfTFloatWithCSSUnit; overload;
     function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TPointF; virtual;
+    function GetConversionMatrix(AFromUnit, AToUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TAffineMatrix;
     class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload; static;
     class function parseValue(AValue: string; ADefault: single): single; overload; static;
     class function parseArrayOfNumbers(AValue: string): ArrayOfTSVGNumber; overload; static;
@@ -83,6 +84,8 @@ type
   end;
 
 implementation
+
+uses BGRATransform;
 
 var
   formats: TFormatSettings;
@@ -289,6 +292,15 @@ function TCSSUnitConverter.ConvertCoord(pt: TPointF; sourceUnit,
 begin
   result.x := ConvertWidth(pt.x, sourceUnit, destUnit, containerWidth);
   result.y := ConvertHeight(pt.y, sourceUnit, destUnit, containerHeight);
+end;
+
+function TCSSUnitConverter.GetConversionMatrix(AFromUnit, AToUnit: TCSSUnit;
+  containerWidth: single; containerHeight: single): TAffineMatrix;
+var
+  ptUnit: TPointF;
+begin
+  ptUnit := ConvertCoord(PointF(1, 1), AFromUnit, AToUnit, containerWidth, containerHeight);
+  result := AffineMatrixScale(ptUnit.x, ptUnit.y);
 end;
 
 class function TCSSUnitConverter.parseValue(AValue: string;

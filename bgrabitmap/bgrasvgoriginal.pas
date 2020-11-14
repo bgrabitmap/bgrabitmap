@@ -202,8 +202,6 @@ end;
 procedure TBGRALayerSVGOriginal.ComputePresentation(AContainerWidth, AContainerHeight: integer);
 var
   compWidth, compHeight: TFloatWithCSSUnit;
-  presentationRect: TRectF;
-  sx, sy, visualWidth, visualHeight: Single;
 begin
   FSVG.Units.ContainerWidth := FloatWithCSSUnit(AContainerWidth, cuPixel);
   FSVG.Units.ContainerHeight := FloatWithCSSUnit(AContainerHeight, cuPixel);
@@ -211,13 +209,7 @@ begin
   compHeight := FSVG.ComputedHeight;
   FSVG.Width := compWidth;
   FSVG.Height := compHeight;
-  presentationRect := FSVG.GetStretchRectF(0, 0, FSVG.WidthAsPixel, FSVG.HeightAsPixel);
-  visualWidth := FSVG.Units.ConvertWidth(FSVG.VisualWidth, cuPixel).value;
-  visualHeight := FSVG.Units.ConvertWidth(FSVG.VisualHeight, cuPixel).value;
-  if FSVG.WidthAsPixel > 0 then sx := presentationRect.Width/visualWidth else sx := 1;
-  if FSVG.HeightAsPixel > 0 then sy := presentationRect.Height/visualHeight else sy := 1;
-  FPresentationMatrix := AffineMatrixTranslation(presentationRect.Left, presentationRect.Top)
-                       * AffineMatrixScale(sx, sy);
+  FPresentationMatrix := FSVG.PresentationMatrix[cuPixel];
 end;
 
 constructor TBGRALayerSVGOriginal.Create;

@@ -99,6 +99,7 @@ type
     function GetLayer(AIndex: integer): TSVGGroup;
     function GetLayerCount: integer;
     function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
+    function GetPresentationMatrix(AUnit: TCSSUnit): TAffineMatrix;
     function GetUnits: TSVGUnits;
     function GetUTF8String: utf8string;
     function GetViewBox: TSVGViewBox; overload;
@@ -196,6 +197,7 @@ type
     property Content: TSVGContent read FContent;
     property DataLink: TSVGDataLink read FDataLink;//(for test or internal info)
     property preserveAspectRatio: TSVGPreserveAspectRatio read GetPreserveAspectRatio write SetPreserveAspectRatio;
+    property PresentationMatrix[AUnit: TCSSUnit]: TAffineMatrix read GetPresentationMatrix;
     property Layer[AIndex: integer]: TSVGGroup read GetLayer;
     property LayerCount: integer read GetLayerCount;
   end;
@@ -224,7 +226,7 @@ procedure RegisterSvgFormat;
 
 implementation
 
-uses XMLRead, XMLWrite, BGRAUTF8, math, xmltextreader, URIParser;
+uses XMLRead, XMLWrite, BGRAUTF8, math, xmltextreader, URIParser, BGRATransform;
 
 const SvgNamespace = 'http://www.w3.org/2000/svg';
 
@@ -705,6 +707,22 @@ end;
 function TBGRASVG.GetPreserveAspectRatio: TSVGPreserveAspectRatio;
 begin
   result := TSVGPreserveAspectRatio.Parse(Attribute['preserveAspectRatio','xMidYMid']);
+end;
+
+function TBGRASVG.GetPresentationMatrix(AUnit: TCSSUnit): TAffineMatrix;
+var
+  w, h, sx, sy, visualW, visualH: single;
+  presentationRect: TRectF;
+begin
+  w := Units.ConvertWidth(ComputedWidth, AUnit).value;
+  h := Units.ConvertWidth(ComputedHeight, AUnit).value;
+  presentationRect := GetStretchRectF(0, 0, w, h);
+  visualW := Units.ConvertWidth(VisualWidth, AUnit).value;
+  visualH := Units.ConvertWidth(VisualHeight, AUnit).value;
+  if w > 0 then sx := presentationRect.Width/visualW else sx := 1;
+  if h > 0 then sy := presentationRect.Height/visualH else sy := 1;
+  result := AffineMatrixTranslation(presentationRect.Left, presentationRect.Top)
+            * AffineMatrixScale(sx, sy);
 end;
 
 function TBGRASVG.GetUnits: TSVGUnits;
