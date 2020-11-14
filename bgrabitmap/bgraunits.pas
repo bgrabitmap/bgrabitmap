@@ -38,6 +38,10 @@ type
 
   TCSSUnitConverter = class
   protected
+    FViewBoxHeight: TFloatWithCSSUnit;
+    FViewBoxWidth: TFloatWithCSSUnit;
+    FViewBoxHeightInUnit: array[TCSSUnit] of single;
+    FViewBoxWidthInUnit: array[TCSSUnit] of single;
     FCurrentFontEmHeight: TFloatWithCSSUnit;
     function GetRootFontEmHeight: TFloatWithCSSUnit;
     function GetDefaultUnitHeight: TFloatWithCSSUnit; virtual;
@@ -50,21 +54,31 @@ type
     function GetDpiScaleY: single; virtual;
     function GetFontEmHeight: TFloatWithCSSUnit; virtual;
     function GetFontXHeight: TFloatWithCSSUnit; virtual;
+    procedure SetViewBoxHeight(AValue: TFloatWithCSSUnit);
+    procedure SetViewBoxWidth(AValue: TFloatWithCSSUnit);
     property FontEmHeight: TFloatWithCSSUnit read GetFontEmHeight;
     property FontXHeight: TFloatWithCSSUnit read GetFontXHeight;
     property DefaultUnitWidth: TFloatWithCSSUnit read GetDefaultUnitWidth;
     property DefaultUnitHeight: TFloatWithCSSUnit read GetDefaultUnitHeight;
   public
     constructor Create;
+    function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit): single; overload;
+    function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit): single; overload;
+    function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit): TFloatWithCSSUnit; overload;
+    function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit): TFloatWithCSSUnit; overload;
+    function ConvertWidth(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit): ArrayOfTFloatWithCSSUnit; overload;
+    function ConvertHeight(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit): ArrayOfTFloatWithCSSUnit; overload;
+    function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit): TPointF; overload;
+    function GetConversionMatrix(AFromUnit, AToUnit: TCSSUnit): TAffineMatrix; overload;
     function Convert(xy: single; sourceUnit, destUnit: TCSSUnit; dpi: single; containerSize: single = 0): single;
-    function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0): single; overload;
-    function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit; containerHeight: single = 0): single; overload;
-    function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): TFloatWithCSSUnit; overload;
-    function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): TFloatWithCSSUnit; overload;
-    function ConvertWidth(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single = 0): ArrayOfTFloatWithCSSUnit; overload;
-    function ConvertHeight(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single = 0): ArrayOfTFloatWithCSSUnit; overload;
-    function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TPointF; virtual;
-    function GetConversionMatrix(AFromUnit, AToUnit: TCSSUnit; containerWidth: single = 0; containerHeight: single = 0): TAffineMatrix;
+    function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit; containerWidth: single): single; overload;
+    function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit; containerHeight: single): single; overload;
+    function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single): TFloatWithCSSUnit; overload;
+    function ConvertHeight(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single): TFloatWithCSSUnit; overload;
+    function ConvertWidth(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single): ArrayOfTFloatWithCSSUnit; overload;
+    function ConvertHeight(AValue: ArrayOfTFloatWithCSSUnit; destUnit: TCSSUnit; containerHeight: single): ArrayOfTFloatWithCSSUnit; overload;
+    function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit; containerWidth: single; containerHeight: single): TPointF; overload;
+    function GetConversionMatrix(AFromUnit, AToUnit: TCSSUnit; containerWidth: single; containerHeight: single): TAffineMatrix; overload;
     class function parseValue(AValue: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload; static;
     class function parseValue(AValue: string; ADefault: single): single; overload; static;
     class function parseArrayOfNumbers(AValue: string): ArrayOfTSVGNumber; overload; static;
@@ -73,6 +87,8 @@ type
     class function formatValue(AValue: single; APrecision: integer = 7): string; overload; static;
     class function formatValue(AValue: ArrayOfTSVGNumber; APrecision: integer = 7): string; overload; static;
     class function formatValue(AValue: ArrayOfTFloatWithCSSUnit; APrecision: integer = 7): string; overload; static;
+    property ViewBoxWidth: TFloatWithCSSUnit read FViewBoxWidth write SetViewBoxWidth;
+    property ViewBoxHeight: TFloatWithCSSUnit read FViewBoxHeight write SetViewBoxHeight;
     property DpiX: single read GetDpiX;
     property DpiY: single read GetDpiY;
     property DpiScaled: boolean read GetDPIScaled;
@@ -103,6 +119,28 @@ begin
 end;
 
 { TCSSUnitConverter }
+
+procedure TCSSUnitConverter.SetViewBoxHeight(AValue: TFloatWithCSSUnit);
+var
+  u: TCSSUnit;
+begin
+  if (FViewBoxHeight.value=AValue.value) and
+    (FViewBoxHeight.CSSUnit=AValue.CSSUnit) then Exit;
+  FViewBoxHeight:=AValue;
+  for u := low(TCSSUnit) to high(TCSSUnit) do
+    FViewBoxHeightInUnit[u] := ConvertHeight(FViewBoxHeight, u, 0).value;
+end;
+
+procedure TCSSUnitConverter.SetViewBoxWidth(AValue: TFloatWithCSSUnit);
+var
+  u: TCSSUnit;
+begin
+  if (FViewBoxWidth.value=AValue.value) and
+    (FViewBoxWidth.CSSUnit=AValue.CSSUnit) then Exit;
+  FViewBoxWidth:=AValue;
+  for u := low(TCSSUnit) to high(TCSSUnit) do
+    FViewBoxWidthInUnit[u] := ConvertWidth(FViewBoxWidth, u, 0).value;
+end;
 
 function TCSSUnitConverter.GetRootFontEmHeight: TFloatWithCSSUnit;
 begin
@@ -467,7 +505,58 @@ constructor TCSSUnitConverter.Create;
 begin
   inherited;
   FCurrentFontEmHeight:= GetRootFontEmHeight;
-end;  
+  ViewBoxWidth := FloatWithCSSUnit(0, cuPixel);
+  ViewBoxHeight := FloatWithCSSUnit(0, cuPixel);
+end;
+
+function TCSSUnitConverter.ConvertWidth(x: single; sourceUnit,
+  destUnit: TCSSUnit): single;
+begin
+  result := ConvertWidth(x, sourceUnit, destUnit, FViewBoxWidthInUnit[destUnit]);
+end;
+
+function TCSSUnitConverter.ConvertHeight(y: single; sourceUnit,
+  destUnit: TCSSUnit): single;
+begin
+  result := ConvertHeight(y, sourceUnit, destUnit, FViewBoxHeightInUnit[destUnit]);
+end;
+
+function TCSSUnitConverter.ConvertWidth(AValue: TFloatWithCSSUnit;
+  destUnit: TCSSUnit): TFloatWithCSSUnit;
+begin
+  result := ConvertWidth(AValue, destUnit, FViewBoxWidthInUnit[destUnit]);
+end;
+
+function TCSSUnitConverter.ConvertHeight(AValue: TFloatWithCSSUnit;
+  destUnit: TCSSUnit): TFloatWithCSSUnit;
+begin
+  result := ConvertHeight(AValue, destUnit, FViewBoxHeightInUnit[destUnit]);
+end;
+
+function TCSSUnitConverter.ConvertWidth(AValue: ArrayOfTFloatWithCSSUnit;
+  destUnit: TCSSUnit): ArrayOfTFloatWithCSSUnit;
+begin
+  result := ConvertWidth(AValue, destUnit, FViewBoxWidthInUnit[destUnit]);
+end;
+
+function TCSSUnitConverter.ConvertHeight(AValue: ArrayOfTFloatWithCSSUnit;
+  destUnit: TCSSUnit): ArrayOfTFloatWithCSSUnit;
+begin
+  result := ConvertHeight(AValue, destUnit, FViewBoxHeightInUnit[destUnit]);
+end;
+
+function TCSSUnitConverter.ConvertCoord(pt: TPointF; sourceUnit,
+  destUnit: TCSSUnit): TPointF;
+begin
+  result := ConvertCoord(pt, sourceUnit, destUnit,
+    FViewBoxWidthInUnit[destUnit], FViewBoxHeightInUnit[destUnit]);
+end;
+
+function TCSSUnitConverter.GetConversionMatrix(AFromUnit, AToUnit: TCSSUnit): TAffineMatrix;
+begin
+  result := GetConversionMatrix(AFromUnit, AToUnit,
+    FViewBoxWidthInUnit[AToUnit], FViewBoxHeightInUnit[AToUnit]);
+end;
 
 initialization
 

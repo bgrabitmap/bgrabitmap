@@ -478,7 +478,7 @@ function TSVGCustomElement.GetHorizAttributeOrStyleWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeOrStyleWithUnit(AName,ADefault);
-  if result.CSSUnit <> cuCustom then
+  if not (result.CSSUnit in[cuCustom, cuPercent]) then
     if FUnits.DpiScaleX = 0 then
       result.value := 0
     else
@@ -492,7 +492,7 @@ begin
   result := GetArrayOfAttributeOrStyleWithUnit(AName);
   for i := low(result) to high(result) do
   begin
-    if result[i].CSSUnit <> cuCustom then
+    if not (result[i].CSSUnit in[cuCustom, cuPercent]) then
       if FUnits.DpiScaleX = 0 then
         result[i].value := 0
       else
@@ -705,7 +705,7 @@ function TSVGCustomElement.GetVerticalAttributeOrStyleWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit; ACanInherit: boolean): TFloatWithCSSUnit;
 begin
   result := GetAttributeOrStyleWithUnit(AName,ADefault,ACanInherit);
-  if result.CSSUnit <> cuCustom then
+  if not (result.CSSUnit in[cuCustom, cuPercent]) then
     if FUnits.DpiScaleY = 0 then
       result.value := 0
     else
@@ -726,7 +726,7 @@ begin
   result := GetArrayOfAttributeOrStyleWithUnit(AName);
   for i := low(result) to high(result) do
   begin
-    if result[i].CSSUnit <> cuCustom then
+    if not (result[i].CSSUnit in[cuCustom, cuPercent]) then
       if FUnits.DpiScaleY = 0 then
         result[i].value := 0
       else
@@ -798,7 +798,7 @@ begin
   result := GetAttributeWithUnit(AName,ADefault);
   if result.value <> EmptySingle then
   begin
-    if result.CSSUnit <> cuCustom then
+    if not (result.CSSUnit in[cuCustom, cuPercent]) then
       if FUnits.DpiScaleX = 0 then
         result.value := 0
       else
@@ -855,7 +855,7 @@ begin
   for i := low(result) to high(result) do
     if result[i].value <> EmptySingle then
     begin
-      if result[i].CSSUnit <> cuCustom then
+      if not (result[i].CSSUnit in[cuCustom, cuPercent]) then
         if FUnits.DpiScaleX = 0 then
           result[i].value := 0
         else
@@ -876,7 +876,7 @@ begin
   result := GetArrayOfAttributeWithUnit(AName,ACanInherit);
   for i := low(result) to high(result) do
   begin
-    if result[i].CSSUnit <> cuCustom then
+    if not (result[i].CSSUnit in[cuCustom, cuPercent]) then
       if FUnits.DpiScaleY = 0 then
         result[i].value := 0
       else
@@ -912,7 +912,7 @@ begin
   result := GetAttributeWithUnit(AName,ADefault);
   if result.value <> EmptySingle then
   begin
-    if result.CSSUnit <> cuCustom then
+    if not (result.CSSUnit in[cuCustom, cuPercent]) then
       if FUnits.DpiScaleY = 0 then
         result.value := 0
       else
@@ -985,7 +985,7 @@ begin
     setlength(tmp,length(AValue));
     try
      for i := low(AValue) to high(AValue) do
-      if AValue[i].CSSUnit <> cuCustom then
+      if not (AValue[i].CSSUnit in[cuCustom, cuPercent]) then
        tmp[i]:= FloatWithCSSUnit(AValue[i].value*FUnits.DpiScaleX,AValue[i].CSSUnit)
       else
        tmp[i]:= AValue[i];
@@ -1023,7 +1023,7 @@ begin
   if FUnits.DpiScaled then
     SetAttribute(AName, TCSSUnitConverter.formatValue(FUnits.ConvertHeight(AValue,cuCustom)))
   else
-  if AValue.CSSUnit <> cuCustom then
+  if not (AValue.CSSUnit in[cuCustom, cuPercent]) then
     SetAttributeWithUnit(AName, FloatWithCSSUnit(AValue.value*FUnits.DpiScaleY,AValue.CSSUnit))
   else
     SetAttributeWithUnit(AName, AValue);
@@ -1043,7 +1043,7 @@ begin
     setlength(tmp,length(AValue));
     try
      for i := low(AValue) to high(AValue) do
-      if AValue[i].CSSUnit <> cuCustom then
+      if not (AValue[i].CSSUnit in[cuCustom, cuPercent]) then
        tmp[i]:= FloatWithCSSUnit(AValue[i].value*FUnits.DpiScaleY,AValue[i].CSSUnit)
       else
        tmp[i]:= AValue[i];

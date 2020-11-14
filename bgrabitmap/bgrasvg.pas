@@ -455,6 +455,9 @@ begin
       FDpiScaleY := CustomDpiY/DpiY;
     end;
 
+  ViewBoxWidth := FProportionalViewSize.width;
+  ViewBoxHeight := FProportionalViewSize.height;
+
   if Assigned(FOnRecompute) then FOnRecompute(self);
 end;
 
