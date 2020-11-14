@@ -451,14 +451,18 @@ type
 
   TSVGImage = class(TSVGElement)
     private
+      function GetBitmap: TBGRACustomBitmap;
       function GetExternalResourcesRequired: boolean;
+      function GetImageRendering: TSVGImageRendering;
       function GetX: TFloatWithCSSUnit;
       function GetY: TFloatWithCSSUnit;
       function GetWidth: TFloatWithCSSUnit;
       function GetHeight: TFloatWithCSSUnit;
       function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
       function GetXlinkHref: string;
+      procedure SetBitmap(AValue: TBGRACustomBitmap);
       procedure SetExternalResourcesRequired(AValue: boolean);
+      procedure SetImageRendering(AValue: TSVGImageRendering);
       procedure SetX(AValue: TFloatWithCSSUnit);
       procedure SetY(AValue: TFloatWithCSSUnit);
       procedure SetWidth(AValue: TFloatWithCSSUnit);
@@ -466,8 +470,14 @@ type
       procedure SetPreserveAspectRatio(AValue: TSVGPreserveAspectRatio);
       procedure SetXlinkHref(AValue: string);
     protected
+      FBitmap: TBGRACustomBitmap;
       procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter;
+        ADataLink: TSVGDataLink); overload; override;
+      constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
+        ADataLink: TSVGDataLink); overload; override;
+      destructor Destroy; override;
       class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
@@ -475,9 +485,11 @@ type
       property y: TFloatWithCSSUnit read GetY write SetY;
       property width: TFloatWithCSSUnit read GetWidth write SetWidth;
       property height: TFloatWithCSSUnit read GetHeight write SetHeight;
+      property imageRendering: TSVGImageRendering read GetImageRendering write SetImageRendering;
       property preserveAspectRatio: TSVGPreserveAspectRatio
        read GetPreserveAspectRatio write SetPreserveAspectRatio;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
+      property Bitmap: TBGRACustomBitmap read GetBitmap write SetBitmap;
   end;   
   
   { TSVGPattern }
@@ -798,7 +810,7 @@ function CreateSVGElementFromNode(AElement: TDOMElement; AUnits: TCSSUnitConvert
 
 implementation
 
-uses BGRATransform, BGRAGraphics, BGRAUTF8;
+uses BGRATransform, BGRAGraphics, BGRAUTF8, base64;
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
 var tag: string;
@@ -2064,12 +2076,68 @@ end;
 
 { TSVGImage }
 
+function TSVGImage.GetBitmap: TBGRACustomBitmap;
+var
+  s: String;
+  posDelim: SizeInt;
+  stream64: TStringStream;
+  decoder: TBase64DecodingStream;
+  byteStream: TMemoryStream;
+begin
+  if FBitmap = nil then
+  begin
+    FBitmap := BGRABitmapFactory.Create;
+    s := xlinkHref;
+    if copy(s,1,5) = 'data:' then
+    begin
+      posDelim := pos(';', s);
+      if posDelim > 0 then
+      begin
+        if copy(s, posDelim+1, 7) = 'base64,' then
+        begin
+          byteStream := TMemoryStream.Create;
+          try
+            stream64 := TStringStream.Create(s);
+            try
+              stream64.Position:= posDelim+7;
+              decoder := TBase64DecodingStream.Create(stream64);
+              try
+                byteStream.CopyFrom(decoder, decoder.Size);
+                byteStream.Position:= 0;
+              finally
+                decoder.Free;
+              end;
+            finally
+              stream64.Free;
+            end;
+            FBitmap.LoadFromStream(byteStream);
+          finally
+            byteStream.Free;
+          end;
+        end;
+      end;
+    end;
+  end;
+  result := FBitmap;
+end;
+
 function TSVGImage.GetExternalResourcesRequired: boolean;
 begin
   if Attribute['externalResourcesRequired'] = 'true' then
     result := true
   else
     result := false;
+end;
+
+function TSVGImage.GetImageRendering: TSVGImageRendering;
+var s: string;
+begin
+  s := AttributeOrStyle['image-rendering'];
+  if (s = 'smooth') or (s = 'optimizeQuality') then result := sirSmooth
+  else if s = 'high-quality' then result := sirHighQuality
+  else if s = 'crisp-edges' then result := sirCrispEdges
+  else if (s = 'pixelated') or (s = 'optimizeSpeed') then result := sirPixelated
+  else result := sirAuto;
 end;
 
 function TSVGImage.GetX: TFloatWithCSSUnit;
@@ -2102,12 +2170,61 @@ begin
   result := Attribute['xlink:href',''];
 end;
 
+procedure TSVGImage.SetBitmap(AValue: TBGRACustomBitmap);
+var
+  s: TStringStream;
+  byteStream: TMemoryStream;
+  encoder: TBase64EncodingStream;
+begin
+  if AValue = FBitmap then exit;
+  FreeAndNil(FBitmap);
+  FBitmap := AValue;
+  if FBitmap = nil then
+  begin
+    FDomElem.RemoveAttribute('xlink:href');
+    FDomElem.RemoveAttribute('href');
+    exit;
+  end;
+  s := TStringStream.Create('data:image/png;base64,');
+  try
+    s.Position:= s.Size;
+    byteStream := TMemoryStream.Create;
+    try
+      FBitmap.SaveToStreamAsPng(byteStream);
+      byteStream.Position:= 0;
+      encoder := TBase64EncodingStream.Create(byteStream);
+      try
+        encoder.CopyFrom(byteStream, byteStream.Size);
+      finally
+        encoder.Free;
+      end;
+    finally
+      byteStream.Free;
+    end;
+    xlinkHref:= s.DataString;
+  finally
+    s.Free;
+  end;
+end;
+
 procedure TSVGImage.SetExternalResourcesRequired(AValue: boolean);
 begin
   if AValue then
     Attribute['ExternalResourcesRequired'] := 'true'
   else
     Attribute['ExternalResourcesRequired'] := 'false';
+end;
+
+procedure TSVGImage.SetImageRendering(AValue: TSVGImageRendering);
+var s: string;
+begin
+  case AValue of
+  sirSmooth: s := 'smooth';
+  sirHighQuality: s := 'high-quality';
+  sirCrispEdges: s := 'crisp-edges';
+  sirPixelated: s := 'pixelated';
+  else {sirAuto} s := 'auto';
+  end;
 end;
 
 procedure TSVGImage.SetX(AValue: TFloatWithCSSUnit);
@@ -2137,12 +2254,77 @@ end;
 
 procedure TSVGImage.SetXlinkHref(AValue: string);
 begin
+  if xlinkHref = AValue then exit;
   Attribute['xlink:href'] := AValue;
+  FreeAndNil(FBitmap);
 end;
 
 procedure TSVGImage.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  aspect: TSVGPreserveAspectRatio;
+  coord: TPointF;
+  w, h: single;
+  ratioBitmap: single;
+  ratioPresentation: Single;
+  visualW, visualH: single;
+  filter: TResampleFilter;
 begin
-  //todo
+  coord := PointF(Units.ConvertWidth(x, AUnit).value,
+                  Units.ConvertHeight(y, AUnit).value);
+  w := Units.ConvertWidth(width, AUnit).value;
+  h := Units.ConvertHeight(height, AUnit).value;
+  if (w = 0) or (h = 0) or Bitmap.Empty then exit;
+  case imageRendering of
+  sirAuto, sirCrispEdges: filter := rfHalfCosine;
+  sirPixelated: filter := rfBox;
+  else filter := rfLinear;
+  end;
+  aspect := preserveAspectRatio;
+  if not aspect.Preserve then
+    ACanvas2d.drawImage(Bitmap, coord.x, coord.y, w, h, filter)
+  else
+  begin
+    ratioBitmap := Bitmap.Width/Bitmap.Height;
+    ratioPresentation := w/h;
+    if (ratioBitmap >= ratioPresentation) xor aspect.Slice then
+    begin
+      visualW := w;
+      visualH := visualW / ratioBitmap;
+    end else
+    begin
+      visualH := h;
+      visualW := visualH * ratioBitmap;
+    end;
+    case aspect.HorizAlign of
+    taRightJustify: DecF(coord.x, visualW);
+    taCenter: DecF(coord.x, visualW/2);
+    end;
+    case aspect.VertAlign of
+    tlBottom: decF(coord.y, visualH);
+    tlCenter: decF(coord.y, visualH/2);
+    end;
+    ACanvas2d.drawImage(FBitmap, coord.x, coord.y, visualW, visualH, filter);
+  end;
+end;
+
+constructor TSVGImage.Create(ADocument: TDOMDocument;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, ADataLink);
+  FBitmap:= nil;
+end;
+
+constructor TSVGImage.Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
+  ADataLink: TSVGDataLink);
+begin
+  inherited Create(AElement, AUnits, ADataLink);
+  FBitmap:= nil;
+end;
+
+destructor TSVGImage.Destroy;
+begin
+  FBitmap.Free;
+  inherited Destroy;
 end;
 
 class function TSVGImage.GetDOMTag: string;

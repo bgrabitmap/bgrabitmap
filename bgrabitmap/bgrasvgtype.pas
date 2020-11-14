@@ -54,6 +54,14 @@ type
      souObjectBoundingBox
    );
 
+  TSVGImageRendering = (
+    sirAuto,
+    sirSmooth,
+    sirHighQuality,
+    sirCrispEdges,
+    sirPixelated
+  );
+
   TSVGRenderingIntent = (
      sriAuto,
      sriPerceptual,

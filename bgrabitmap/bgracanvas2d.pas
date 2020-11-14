@@ -293,8 +293,8 @@ type
     function isPointInPath(x,y: single): boolean; overload;
     function isPointInPath(pt: TPointF): boolean; overload;
 
-    procedure drawImage(image: TBGRACustomBitmap; dx,dy: single); overload;
-    procedure drawImage(image: TBGRACustomBitmap; dx,dy,dw,dh: single); overload;
+    procedure drawImage(image: TBGRACustomBitmap; dx,dy: single; AFilter: TResampleFilter = rfLinear); overload;
+    procedure drawImage(image: TBGRACustomBitmap; dx,dy,dw,dh: single; AFilter: TResampleFilter = rfLinear); overload;
 
     function getLineStyle: TBGRAPenStyle;
     procedure lineStyle(const AValue: array of single); overload;
@@ -2685,18 +2685,18 @@ begin
   end;
 end;
 
-procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy: single);
+procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy: single; AFilter: TResampleFilter);
 begin
   Surface.PutImageAffine(ApplyTransform(PointF(dx,dy))+PointF(0.5,0.5),
     ApplyTransform(PointF(dx+image.width,dy))+PointF(0.5,0.5),
-    ApplyTransform(PointF(dx,dy+image.height))+PointF(0.5,0.5), image, currentState.globalAlpha);
+    ApplyTransform(PointF(dx,dy+image.height))+PointF(0.5,0.5), image, AFilter, GetDrawMode, currentState.globalAlpha);
 end;
 
-procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy, dw, dh: single);
+procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy, dw, dh: single; AFilter: TResampleFilter);
 begin
   Surface.PutImageAffine(ApplyTransform(PointF(dx,dy))+PointF(0.5,0.5),
     ApplyTransform(PointF(dx+dw,dy))+PointF(0.5,0.5),
-    ApplyTransform(PointF(dx,dy+dh))+PointF(0.5,0.5), image, currentState.globalAlpha);
+    ApplyTransform(PointF(dx,dy+dh))+PointF(0.5,0.5), image, AFilter, GetDrawMode, currentState.globalAlpha);
 end;
 
 end.
