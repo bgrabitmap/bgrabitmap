@@ -7,7 +7,7 @@ interface
 
 uses
   BGRAClasses, SysUtils, BGRABitmapTypes, BGRABitmap, BGRASVG, BGRATransform,
-  BGRALayerOriginal, BGRAUnits;
+  BGRALayerOriginal, BGRAUnits, BGRALayers;
 
 type
   TBGRALayerSVGOriginal = class;
@@ -66,9 +66,27 @@ type
     property DPI: single read GetDPI write SetDPI;
   end;
 
+  { TBGRALayeredSVG }
+
+  TBGRALayeredSVG = class(TBGRALayeredBitmap)
+    protected
+      function GetMimeType: string; override;
+      procedure InternalLoadFromStream(AStream: TStream);
+      procedure InternalSaveToStream(AStream: TStream);
+    public
+      ContainerWidth, ContainerHeight, DPI: integer;
+      DefaultLayerName: string;
+      constructor Create; overload; override;
+      constructor Create(AWidth, AHeight: integer); overload; override;
+      procedure LoadFromStream(AStream: TStream); override;
+      procedure LoadFromFile(const filenameUTF8: string); override;
+      procedure SaveToStream(AStream: TStream); override;
+      procedure SaveToFile(const filenameUTF8: string); override;
+  end;
+
 implementation
 
-uses BGRACanvas2D, BGRAMemDirectory;
+uses BGRACanvas2D, BGRAMemDirectory, BGRAUTF8, BGRASVGShapes, math;
 
 { TBGRASVGOriginalDiff }
 
@@ -364,9 +382,151 @@ begin
   result := 'svg';
 end;
 
+{ TBGRALayeredSVG }
+
+function TBGRALayeredSVG.GetMimeType: string;
+begin
+  Result:= 'image/svg+xml';
+end;
+
+procedure TBGRALayeredSVG.InternalLoadFromStream(AStream: TStream);
+var
+  svg, svgLayer: TBGRASVG;
+  visualWidth, visualHeight: single;
+  svgOrig: TBGRALayerSVGOriginal;
+  idx, i, j: Integer;
+  layer: TSVGGroup;
+begin
+  svg := TBGRASVG.Create;
+  try
+    svg.LoadFromStream(AStream);
+    svg.DefaultDpi:= DPI;
+    svg.Units.ContainerWidth := FloatWithCSSUnit(ContainerWidth, cuPixel);
+    svg.Units.ContainerHeight := FloatWithCSSUnit(ContainerHeight, cuPixel);
+    visualWidth := svg.Units.ConvertWidth(svg.VisualWidth, cuPixel).value;
+    visualHeight := svg.Units.ConvertHeight(svg.VisualHeight, cuPixel).value;
+    svg.WidthAsPixel:= visualWidth;
+    svg.HeightAsPixel:= visualHeight;
+    Clear;
+    SetSize(floor(svg.WidthAsPixel + 0.95),floor(svg.HeightAsPixel + 0.95));
+    if svg.LayerCount > 0 then
+    begin
+      for i := 0 to svg.LayerCount-1 do
+      begin
+        layer := svg.Layer[i];
+        svgLayer := TBGRASVG.Create(svg.WidthAsPixel, svg.HeightAsPixel, cuPixel);
+        try
+          svgLayer.ViewBox := svg.ViewBox;
+          for j := 0 to svg.Content.IndexOfElement(layer)-1 do
+            if svg.Content.ElementObject[j] is TSVGDefine then
+              svgLayer.Content.CopyElement(svg.Content.ElementObject[j]);
+          for j := 0 to layer.Content.ElementCount-1 do
+            svgLayer.Content.CopyElement(layer.Content.ElementObject[j]);
+          svgOrig := TBGRALayerSVGOriginal.Create;
+          svgOrig.SetSVG(svgLayer, Width, Height);
+          svgLayer := nil;
+          idx := AddLayerFromOwnedOriginal(svgOrig);
+          LayerName[idx] := layer.Name;
+          LayerVisible[idx] := layer.Visible;
+          LayerOpacity[idx] := min(255,max(0,round(layer.opacity*255)));
+          BlendOperation[idx] := layer.mixBlendMode;
+          LayerOriginalMatrix[idx] := layer.matrix[cuPixel];
+          RenderLayerFromOriginal(idx);
+        finally
+          svgLayer.Free;
+        end;
+      end;
+    end else
+    begin
+      svgOrig := TBGRALayerSVGOriginal.Create;
+      svgOrig.SetSVG(svg, ContainerWidth, ContainerHeight);
+      svg := nil;
+      idx := AddLayerFromOwnedOriginal(svgOrig);
+      LayerName[idx] := DefaultLayerName+'1';
+      RenderLayerFromOriginal(idx);
+    end;
+  finally
+    svg.Free;
+  end;
+end;
+
+procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
+begin
+  raise exception.Create('Not implemented');
+end;
+
+constructor TBGRALayeredSVG.Create;
+begin
+  inherited Create;
+  ContainerWidth:= 640;
+  ContainerHeight:= 480;
+  DefaultLayerName := 'Layer';
+  DPI := 96;
+end;
+
+constructor TBGRALayeredSVG.Create(AWidth, AHeight: integer);
+begin
+  inherited Create(AWidth, AHeight);
+  ContainerWidth:= 640;
+  ContainerHeight:= 480;
+  DefaultLayerName := 'Layer';
+end;
+
+procedure TBGRALayeredSVG.LoadFromStream(AStream: TStream);
+begin
+  OnLayeredBitmapLoadFromStreamStart;
+  try
+    InternalLoadFromStream(AStream);
+  finally
+    OnLayeredBitmapLoaded;
+  end;
+end;
+
+procedure TBGRALayeredSVG.LoadFromFile(const filenameUTF8: string);
+var AStream: TFileStreamUTF8;
+begin
+  AStream := TFileStreamUTF8.Create(filenameUTF8,fmOpenRead or fmShareDenyWrite);
+  OnLayeredBitmapLoadStart(filenameUTF8);
+  try
+    LoadFromStream(AStream);
+  finally
+    OnLayeredBitmapLoaded;
+    AStream.Free;
+  end;
+end;
+
+procedure TBGRALayeredSVG.SaveToStream(AStream: TStream);
+begin
+  OnLayeredBitmapSaveToStreamStart;
+  try
+    InternalSaveToStream(AStream);
+  finally
+    OnLayeredBitmapSaved;
+  end;
+end;
+
+procedure TBGRALayeredSVG.SaveToFile(const filenameUTF8: string);
+var AStream: TFileStreamUTF8;
+begin
+  AStream := TFileStreamUTF8.Create(filenameUTF8,fmCreate);
+  OnLayeredBitmapSaveStart(filenameUTF8);
+  try
+    InternalSaveToStream(AStream);
+  finally
+    OnLayeredBitmapSaved;
+    AStream.Free;
+  end;
+end;
+
+procedure RegisterLayeredSvgFormat;
+begin
+  RegisterLayeredBitmapReader('svg', TBGRALayeredSVG);
+end;
+
 initialization
 
   RegisterLayerOriginal(TBGRALayerSVGOriginal);
+  RegisterLayeredSvgFormat;
 
 end.
 

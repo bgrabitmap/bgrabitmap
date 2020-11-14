@@ -550,7 +550,7 @@ begin
   AStream := TFileStreamUTF8.Create(filenameUTF8,fmOpenRead or fmShareDenyWrite);
   OnLayeredBitmapLoadStart(filenameUTF8);
   try
-    LoadFromStream(AStream);
+    InternalLoadFromStream(AStream);
   finally
     OnLayeredBitmapLoaded;
     AStream.Free;
