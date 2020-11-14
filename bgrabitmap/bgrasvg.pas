@@ -856,7 +856,7 @@ end;
 
 procedure TBGRASVG.SetHeight(AValue: TFloatWithCSSUnit);
 begin
-  if AValue.CSSUnit = cuPixel then AValue.CSSUnit := cuNone;
+  if AValue.CSSUnit = cuPixel then AValue.CSSUnit := cuCustom;
   Attribute['height'] := TCSSUnitConverter.formatValue(AValue);
   Units.Recompute;
 end;
@@ -901,7 +901,7 @@ end;
 
 procedure TBGRASVG.SetWidth(AValue: TFloatWithCSSUnit);
 begin
-  if AValue.CSSUnit = cuPixel then AValue.CSSUnit := cuNone;
+  if AValue.CSSUnit = cuPixel then AValue.CSSUnit := cuCustom;
   Attribute['width'] := TCSSUnitConverter.formatValue(AValue);
   Units.Recompute;
 end;
