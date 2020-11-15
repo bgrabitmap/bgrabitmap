@@ -72,8 +72,8 @@ type
     last_image: TImage;
     prof: TProfiler;
 
-    procedure Test(var ms: TMemoryStream; kzoom: Single = 1);
-    procedure Test(path: String);
+    procedure Test(var ms: TMemoryStream; kzoom: Single = 1; AFillCode: boolean = false);
+    procedure Test(path: String; kzoom: Single = 1; AFillCode: boolean = false);
 
   public
 
@@ -92,7 +92,7 @@ uses
 const
  s_file_overwrite = 'Existing file: do you want to overwrite it?';
 
-procedure TForm1.Test(var ms: TMemoryStream; kzoom: Single = 1);
+procedure TForm1.Test(var ms: TMemoryStream; kzoom: Single = 1; AFillCode: boolean = false);
 Var
  v: Double;
  s: String;
@@ -119,18 +119,20 @@ begin
 
   prof.BeginMeasure;
   svg.StretchDraw(bmp.Canvas2D, 0,0,bmp.Width,bmp.Height);
-  //svg.Draw(bmp.Canvas2D, 0,0, cuPixel);
   v:= prof.EndMeasure;
   s:= s + prof.FormatTime(' | draw: ',v);
 
   Image1.Picture.Bitmap.Assign(bmp);
   PanProf.Caption:= s;
+
+  if AFillCode then
+    Memo1.Text:= svg.AsUTF8String;
  finally
   bmp.Free;
  end;
 end;
 
-procedure TForm1.Test(path: String);
+procedure TForm1.Test(path: String; kzoom: Single = 1;  AFillCode: boolean = false);
 Var
  ms: TMemoryStream;
 begin
@@ -140,7 +142,7 @@ begin
   ms.Position:= 0;
 
   path:= ExtractFileName(path);
-  Test(ms);
+  Test(ms, kzoom, AFillCode);
  finally
   ms.Free;
  end;
@@ -310,13 +312,7 @@ begin
  if FileListBox1.ItemIndex <> -1 then
  begin
   path:= FileListBox1.FileName;
-  Test(path);
-  //(svg source)
-  try
-   Memo1.Lines.LoadFromFile(path);
-  except
-   Memo1.Clear;
-  end;
+  Test(path, Screen.PixelsPerInch / 96 * GetCanvasScaleFactor, true);
   //(view correct result)
   path:= ChangeFileExt(path,'.png');
   png_find:= False;
