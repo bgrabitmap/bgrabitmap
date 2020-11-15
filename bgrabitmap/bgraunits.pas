@@ -62,6 +62,8 @@ type
     property DefaultUnitHeight: TFloatWithCSSUnit read GetDefaultUnitHeight;
   public
     constructor Create;
+    function ConvertOrtho(xy: single; sourceUnit, destUnit: TCSSUnit): single; overload;
+    function ConvertOrtho(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit): TFloatWithCSSUnit; overload;
     function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit): single; overload;
     function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit): single; overload;
     function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit): TFloatWithCSSUnit; overload;
@@ -71,6 +73,7 @@ type
     function ConvertCoord(pt: TPointF; sourceUnit, destUnit: TCSSUnit): TPointF; overload;
     function GetConversionMatrix(AFromUnit, AToUnit: TCSSUnit): TAffineMatrix; overload;
     function Convert(xy: single; sourceUnit, destUnit: TCSSUnit; dpi: single; containerSize: single = 0): single;
+    function ConvertOrtho(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single; containerHeight: single): TFloatWithCSSUnit; overload;
     function ConvertWidth(x: single; sourceUnit, destUnit: TCSSUnit; containerWidth: single): single; overload;
     function ConvertHeight(y: single; sourceUnit, destUnit: TCSSUnit; containerHeight: single): single; overload;
     function ConvertWidth(AValue: TFloatWithCSSUnit; destUnit: TCSSUnit; containerWidth: single): TFloatWithCSSUnit; overload;
@@ -249,6 +252,14 @@ begin
     else
       result := xy*(destFactor/sourceFactor);
   end;
+end;
+
+function TCSSUnitConverter.ConvertOrtho(AValue: TFloatWithCSSUnit;
+  destUnit: TCSSUnit; containerWidth: single; containerHeight: single): TFloatWithCSSUnit;
+begin
+  result.value := (ConvertWidth(AValue.value, AValue.CSSUnit, destUnit, containerWidth) +
+                   ConvertHeight(AValue.value, AValue.CSSUnit, destUnit, containerHeight)) / 2;
+  result.CSSUnit:= destUnit;
 end;
 
 function TCSSUnitConverter.ConvertWidth(x: single; sourceUnit,
@@ -507,6 +518,21 @@ begin
   FCurrentFontEmHeight:= GetRootFontEmHeight;
   ViewBoxWidth := FloatWithCSSUnit(0, cuPixel);
   ViewBoxHeight := FloatWithCSSUnit(0, cuPixel);
+end;
+
+function TCSSUnitConverter.ConvertOrtho(xy: single; sourceUnit,
+  destUnit: TCSSUnit): single;
+begin
+  result := (ConvertWidth(xy, sourceUnit, destUnit) +
+    ConvertHeight(xy, sourceUnit, destUnit)) / 2;
+end;
+
+function TCSSUnitConverter.ConvertOrtho(AValue: TFloatWithCSSUnit;
+  destUnit: TCSSUnit): TFloatWithCSSUnit;
+begin
+  result.value := (ConvertWidth(AValue.value, AValue.CSSUnit, destUnit) +
+                   ConvertHeight(AValue.value, AValue.CSSUnit, destUnit)) / 2;
+  result.CSSUnit:= destUnit;
 end;
 
 function TCSSUnitConverter.ConvertWidth(x: single; sourceUnit,

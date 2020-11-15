@@ -20,6 +20,7 @@ type
   public
     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
     constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+    procedure ConvertToUnit(AUnit: TCSSUnit); override;
     destructor Destroy; override;
     procedure Recompute; override;
     property Content: TSVGContent read FContent;
@@ -68,6 +69,7 @@ type
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property x1: TFloatWithCSSUnit read GetX1 write SetX1;
       property y1: TFloatWithCSSUnit read GetY1 write SetY1;
       property x2: TFloatWithCSSUnit read GetX2 write SetX2;
@@ -94,6 +96,7 @@ type
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property x: TFloatWithCSSUnit read GetX write SetX;
       property y: TFloatWithCSSUnit read GetY write SetY;
       property width: TFloatWithCSSUnit read GetWidth write SetWidth;
@@ -116,6 +119,7 @@ type
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property r: TFloatWithCSSUnit read GetR write SetR;
@@ -137,6 +141,7 @@ type
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property rx: TFloatWithCSSUnit read GetRX write SetRX;
@@ -207,6 +212,7 @@ type
       constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property Content: TSVGContent read FContent;
   end;
 
@@ -216,19 +222,20 @@ type
     private
       function GetX: ArrayOfTFloatWithCSSUnit;
       function GetY: ArrayOfTFloatWithCSSUnit;
-      function GetDx: ArrayOfTFloatWithCSSUnit;
-      function GetDy: ArrayOfTFloatWithCSSUnit;
+      function GetDX: ArrayOfTFloatWithCSSUnit;
+      function GetDY: ArrayOfTFloatWithCSSUnit;
       function GetRotate: ArrayOfTSVGNumber;
       procedure SetX(AValue: ArrayOfTFloatWithCSSUnit);
       procedure SetY(AValue: ArrayOfTFloatWithCSSUnit);
-      procedure SetDx(AValue: ArrayOfTFloatWithCSSUnit);
-      procedure SetDy(AValue: ArrayOfTFloatWithCSSUnit);
+      procedure SetDX(AValue: ArrayOfTFloatWithCSSUnit);
+      procedure SetDY(AValue: ArrayOfTFloatWithCSSUnit);
       procedure SetRotate(AValue: ArrayOfTSVGNumber);
     public
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property x: ArrayOfTFloatWithCSSUnit read GetX write SetX;
       property y: ArrayOfTFloatWithCSSUnit read GetY write SetY;
-      property dX: ArrayOfTFloatWithCSSUnit read GetDx write SetDx;
-      property dY: ArrayOfTFloatWithCSSUnit read GetDy write SetDy;
+      property dx: ArrayOfTFloatWithCSSUnit read GetDX write SetDX;
+      property dy: ArrayOfTFloatWithCSSUnit read GetDY write SetDY;
       property rotate: ArrayOfTSVGNumber read GetRotate write SetRotate;
   end;
 
@@ -301,6 +308,7 @@ type
       function GetAllText: ArrayOfTextParts;
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
       property lengthAdjust: TSVGLengthAdjust read GetLengthAdjust write SetLengthAdjust;
       property SimpleText: string read GetSimpleText write SetSimpleText;
@@ -338,6 +346,7 @@ type
       procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property startOffset: TFloatWithCSSUnit read GetStartOffset write SetStartOffset;
       property method: TSVGTextPathMethod read GetMethod write SetMethod;
       property spacing: TSVGTextPathSpacing read GetSpacing write SetSpacing;
@@ -401,8 +410,8 @@ type
       class function GetDOMTag: string; override;
       property x: TSVGNumber read GetX write SetX;
       property y: TSVGNumber read GetY write SetY;
-      property dX: TSVGNumber read GetDx write SetDx;
-      property dY: TSVGNumber read GetDy write SetDy;
+      property dx: TSVGNumber read GetDx write SetDx;
+      property dy: TSVGNumber read GetDy write SetDy;
       property glyphRef: string read GetGlyphRef write SetGlyphRef;
       property format: string read GetFormat write SetFormat;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
@@ -479,6 +488,7 @@ type
         ADataLink: TSVGDataLink); overload; override;
       destructor Destroy; override;
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property x: TFloatWithCSSUnit read GetX write SetX;
@@ -541,6 +551,7 @@ type
       procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property viewBox: TSVGViewBox read GetViewBox write SetViewBox;
@@ -576,6 +587,7 @@ type
       procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property x: TFloatWithCSSUnit read GetX write SetX;
@@ -597,6 +609,7 @@ type
       function GetGradientTransform: string;
       function GetGradientUnits: TSVGObjectUnits;
       function GetHRef: string;
+      procedure SetGradientMatrix(AUnit: TCSSUnit; AValue: TAffineMatrix);
       procedure SetGradientTransform(AValue: string);
       procedure SetGradientUnits(AValue: TSVGObjectUnits);
       procedure SetHRef(AValue: string);
@@ -611,7 +624,7 @@ type
       property hRef: string read GetHRef write SetHRef;
       property gradientUnits: TSVGObjectUnits read GetGradientUnits write SetGradientUnits;
       property gradientTransform: string read GetGradientTransform write SetGradientTransform;
-      property gradientMatrix[AUnit: TCSSUnit]: TAffineMatrix read GetGradientMatrix;
+      property gradientMatrix[AUnit: TCSSUnit]: TAffineMatrix read GetGradientMatrix write SetGradientMatrix;
   end;        
 
   { TSVGGradientLinear }
@@ -630,6 +643,7 @@ type
       procedure SetY2(AValue: TFloatWithCSSUnit);
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property x1: TFloatWithCSSUnit read GetX1 write SetX1;
       property y1: TFloatWithCSSUnit read GetY1 write SetY1;
       property x2: TFloatWithCSSUnit read GetX2 write SetX2;
@@ -654,6 +668,7 @@ type
       procedure SetFR(AValue: TFloatWithCSSUnit);
     public
       class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property r: TFloatWithCSSUnit read GetR write SetR;
@@ -693,6 +708,7 @@ type
     property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
   public
     class function GetDOMTag: string; override;
+    procedure ConvertToUnit(AUnit: TCSSUnit); override;
     property IsLayer: boolean read GetIsLayer write SetIsLayer;
     property Name: string read GetName write SetName;
   end;
@@ -716,33 +732,36 @@ type
   
   { TSVGStyle }
 
-  TSVGStyleItem = record
-    name,
-    attribute: string;
+  TSVGRuleset = record
+    selector,
+    declarations: string;
   end;
-  ArrayOfTSVGStyleItem = array of TSVGStyleItem;
+  ArrayOfTSVGStyleItem = packed array of TSVGRuleset;
 
   TSVGStyle = class(TSVGElement)
    private
-     FStyles: ArrayOfTSVGStyleItem;
+     FRulesets: ArrayOfTSVGStyleItem;
+     function GetRulesetCount: integer;
      procedure Parse(const s: String);
-     function IsValidID(const sid: integer): boolean;
-     function GetStyle(const sid: integer): TSVGStyleItem;
-     procedure SetStyle(const sid: integer; sr: TSVGStyleItem);
-     function Find(sr: TSVGStyleItem): integer; overload;
+     function IsValidRulesetIndex(const AIndex: integer): boolean;
+     function GetRuleset(const AIndex: integer): TSVGRuleset;
+     procedure SetRuleset(const AIndex: integer; sr: TSVGRuleset);
+     function Find(ARuleset: TSVGRuleset): integer; overload;
    protected
      procedure Initialize; override;
    public
      class function GetDOMTag: string; override;
      constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
      destructor Destroy; override;
+     procedure ConvertToUnit(AUnit: TCSSUnit); override;
      function Count: Integer;
      function Find(const AName: string): integer; overload;
-     function Add(sr: TSVGStyleItem): integer;
-     procedure Remove(sr: TSVGStyleItem);
+     function Add(ARuleset: TSVGRuleset): integer;
+     procedure Remove(ARuleset: TSVGRuleset);
      procedure Clear;
      procedure ReParse;
-     property Styles[sid: integer]: TSVGStyleItem read GetStyle write SetStyle;
+     property Ruleset[AIndex: integer]: TSVGRuleset read GetRuleset write SetRuleset;
+     property RulesetCount: integer read GetRulesetCount;
   end;                  
 
   { TSVGContent }
@@ -770,6 +789,7 @@ type
         ADataLink: TSVGDataLink);
       destructor Destroy; override;
       procedure Clear;
+      procedure ConvertToUnit(AUnit: TCSSUnit);
       procedure Recompute;
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
@@ -936,6 +956,12 @@ begin
   FContent := TSVGContent.Create(AElement,AUnits,ADataLink);
 end;
 
+procedure TSVGElementWithContent.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  Content.ConvertToUnit(AUnit);
+end;
+
 destructor TSVGElementWithContent.Destroy;
 begin
   FreeAndNil(FContent);
@@ -1100,12 +1126,12 @@ begin
     ACanvas2d.matrix := m;
   end else
   begin
-    c.x:= Units.ConvertWidth(g.cx,AUnit,w).value;
-    c.y:= Units.ConvertHeight(g.cy,AUnit,h).value;
-    r:= abs(Units.ConvertWidth(g.r,AUnit,w).value);
-    f.x:= Units.ConvertWidth(g.fx,AUnit,w).value;
-    f.y:= Units.ConvertHeight(g.fy,AUnit,h).value;
-    fr:= abs(Units.ConvertWidth(g.fr,AUnit,w).value);
+    c.x:= Units.ConvertWidth(g.cx, AUnit, w).value;
+    c.y:= Units.ConvertHeight(g.cy, AUnit, h).value;
+    r:= abs(Units.ConvertOrtho(g.r, AUnit, w, h).value);
+    f.x:= Units.ConvertWidth(g.fx, AUnit, w).value;
+    f.y:= Units.ConvertHeight(g.fy, AUnit, h).value;
+    fr:= abs(Units.ConvertOrtho(g.fr, AUnit, w, h).value);
 
     m := ACanvas2d.matrix;
     ACanvas2d.transform(g.gradientMatrix[AUnit]);
@@ -1160,6 +1186,12 @@ begin
   inherited Destroy;
 end;
 
+procedure TSVGTextElementWithContent.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  Content.ConvertToUnit(AUnit);
+end;
+
 { TSVGTextPositioning }
 
 function TSVGTextPositioning.GetX: ArrayOfTFloatWithCSSUnit;
@@ -1210,6 +1242,15 @@ end;
 procedure TSVGTextPositioning.SetRotate(AValue: ArrayOfTSVGNumber);
 begin
   ArrayOfAttributeNumber['rotate'] := AValue;
+end;
+
+procedure TSVGTextPositioning.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('x') then x := Units.ConvertWidth(x, AUnit);
+  if HasAttribute('y') then y := Units.ConvertHeight(y, AUnit);
+  if HasAttribute('dx') then dx := Units.ConvertWidth(dx, AUnit);
+  if HasAttribute('dy') then dy := Units.ConvertHeight(dy, AUnit);
 end;
 
 { TSVGText }
@@ -1401,7 +1442,7 @@ procedure TSVGText.InternalDrawOrCompute(ACanvas2d: TBGRACanvas2D;
   var APosition: TPointF; var ATextParts: ArrayOfTextParts;
   ALevel: integer; AStartPart, AEndPart: integer);
 var
-  prevFontEmHeight, fs: TFloatWithCSSUnit;
+  prevFontSize: TFloatWithCSSUnit;
   ax, ay, adx, ady: ArrayOfTFloatWithCSSUnit;
   i, subStartPart, subEndPart, subLevel: integer;
   subElem: TSVGText;
@@ -1409,11 +1450,7 @@ var
 begin
   if AStartPart > AEndPart then exit;
 
-  prevFontEmHeight := Units.CurrentFontEmHeight;
-  fs := fontSize;
-  if fs.CSSUnit in [cuFontEmHeight,cuFontXHeight] then
-    fs := Units.ConvertHeight(fontSize,AUnit);
-  Units.CurrentFontEmHeight:= fs;
+  prevFontSize := EnterFontSize;
 
   if not ADraw then
   begin
@@ -1473,7 +1510,7 @@ begin
     end;
   end;
 
-  Units.CurrentFontEmHeight := prevFontEmHeight;
+  ExitFontSize(prevFontSize);
 end;
 
 procedure TSVGText.InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D;
@@ -1484,8 +1521,11 @@ var
   fs: TFontStyles;
   dir: TSVGTextDirection;
   deco: String;
+  fh: TFloatWithCSSUnit;
 begin
-  ACanvas2d.fontEmHeight := Units.ConvertHeight(Units.CurrentFontEmHeight, AUnit).value;
+  fh := Units.CurrentFontEmHeight;
+  ScaleAttribute(fh, Units.DpiScaleY, true);
+  ACanvas2d.fontEmHeight := Units.ConvertHeight(fh, AUnit).value;
   ACanvas2d.fontName := fontFamily;
   fs := [];
   if fontBold then include(fs, fsBold);
@@ -1722,6 +1762,18 @@ begin
   Result:= 'text';
 end;
 
+procedure TSVGText.ConvertToUnit(AUnit: TCSSUnit);
+var
+  prevFontSize: TFloatWithCSSUnit;
+begin
+  prevFontSize := EnterFontSize;
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('textLength') then textLength := Units.ConvertWidth(textLength, AUnit);
+  if HasAttribute('font-size') then
+    SetVerticalAttributeWithUnit('font-size', Units.ConvertHeight(GetVerticalAttributeWithUnit('font-size'), AUnit));
+  ExitFontSize(prevFontSize);
+end;
+
 { TSVGTSpan }
 
 class function TSVGTSpan.GetDOMTag: string;
@@ -1817,6 +1869,12 @@ end;
 class function TSVGTextPath.GetDOMTag: string;
 begin
   Result:= 'textpath';
+end;
+
+procedure TSVGTextPath.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('startOffset') then startOffset := Units.ConvertWidth(startOffset, AUnit);
 end;
 
 { TSVGAltGlyph }
@@ -2332,6 +2390,15 @@ begin
   Result:= 'image';
 end;
 
+procedure TSVGImage.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('x') then x := Units.ConvertWidth(x, AUnit);
+  if HasAttribute('y') then y := Units.ConvertHeight(y, AUnit);
+  if HasAttribute('width') then width := Units.ConvertWidth(width, AUnit);
+  if HasAttribute('height') then height := Units.ConvertHeight(height, AUnit);
+end;
+
 { TSVGPattern }
 
 function TSVGPattern.GetPatternUnits: TSVGObjectUnits;
@@ -2533,6 +2600,15 @@ begin
   Result:= 'marker';
 end;
 
+procedure TSVGMarker.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('refX') then refX := Units.ConvertWidth(refX, AUnit);
+  if HasAttribute('refY') then refY := Units.ConvertHeight(refY, AUnit);
+  if HasAttribute('markerWidth') then markerWidth := Units.ConvertWidth(markerWidth, AUnit);
+  if HasAttribute('markerHeight') then markerHeight := Units.ConvertHeight(markerHeight, AUnit);
+end;
+
 { TSVGMask }
 
 function TSVGMask.GetExternalResourcesRequired: boolean;
@@ -2633,6 +2709,15 @@ begin
   Result:= 'mask';
 end;
 
+procedure TSVGMask.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('x') then x := Units.ConvertWidth(x, AUnit);
+  if HasAttribute('y') then y := Units.ConvertHeight(y, AUnit);
+  if HasAttribute('width') then width := Units.ConvertWidth(width, AUnit);
+  if HasAttribute('height') then height := Units.ConvertHeight(height, AUnit);
+end;
+
 { TSVGGroup }
 
 function TSVGGroup.GetFontSize: TFloatWithCSSUnit;
@@ -2670,20 +2755,27 @@ end;
 
 procedure TSVGGroup.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
-  prevFontEmHeight, fs: TFloatWithCSSUnit;
+  prevFontSize: TFloatWithCSSUnit;
 begin
-  prevFontEmHeight := Units.CurrentFontEmHeight;
-  fs := fontSize;
-  if fs.CSSUnit in [cuFontEmHeight,cuFontXHeight] then
-    fs := Units.ConvertHeight(fontSize,AUnit);
-  Units.CurrentFontEmHeight:= fs;
+  prevFontSize := EnterFontSize;
   FContent.Draw(ACanvas2d, AUnit);
-  Units.CurrentFontEmHeight:= prevFontEmHeight;
+  ExitFontSize(prevFontSize);
 end;
 
 class function TSVGGroup.GetDOMTag: string;
 begin
   Result:= 'g';
+end;
+
+procedure TSVGGroup.ConvertToUnit(AUnit: TCSSUnit);
+var
+  prevFontSize: TFloatWithCSSUnit;
+begin
+  if HasAttribute('font-size') then
+    SetVerticalAttributeWithUnit('font-size', Units.ConvertHeight(GetVerticalAttributeWithUnit('font-size'), AUnit));
+  prevFontSize := EnterFontSize;
+  inherited ConvertToUnit(AUnit);
+  ExitFontSize(prevFontSize);
 end;
 
 { TSVGStyle }  
@@ -2712,9 +2804,51 @@ begin
   inherited Destroy;
 end;
 
+procedure TSVGStyle.ConvertToUnit(AUnit: TCSSUnit);
+var
+  declarations: String;
+
+  function GetPropertyValue(AName: string; out AValue: TFloatWithCSSUnit): boolean;
+  var valueStr: string;
+  begin
+    valueStr := GetPropertyFromStyleDeclarationBlock(declarations, AName, '');
+    if valueStr <> '' then
+    begin
+      AValue := Units.parseValue(valueStr, FloatWithCSSUnit(0, cuCustom));
+      result := true;
+    end else
+    begin
+      AValue := FloatWithCSSUnit(0, cuCustom);
+      result := false;
+    end;
+  end;
+
+  procedure SetPropertyValue(AName: string; AValue: TFloatWithCSSUnit);
+  begin
+    UpdateStyleDeclarationBlock(declarations, AName, Units.formatValue(AValue));
+  end;
+
+var
+  i: Integer;
+  value: TFloatWithCSSUnit;
+begin
+  inherited ConvertToUnit(AUnit);
+  for i := 0 to RulesetCount-1 do
+  begin
+    declarations := Ruleset[i].declarations;
+    if GetPropertyValue('stroke-width', value) then
+      SetPropertyValue('stroke-width', Units.ConvertOrtho(value, AUnit));
+    if GetPropertyValue('stroke-dash-offset', value) then
+      SetPropertyValue('stroke-dash-offset', Units.ConvertOrtho(value, AUnit));
+    if GetPropertyValue('font-size', value) then
+      SetPropertyValue('font-size', Units.ConvertHeight(value, AUnit));
+    FRulesets[i].declarations := declarations;
+  end;
+end;
+
 procedure TSVGStyle.Parse(const s: String);
 
-  function IsValidAttribute(const sa: string): boolean;
+  function IsValidDeclarationBlock(const sa: string): boolean;
   var
     i: integer;
   begin
@@ -2726,11 +2860,11 @@ procedure TSVGStyle.Parse(const s: String);
   end;
 
 const
-  EmptyRec: TSVGStyleItem = (name: ''; attribute: '');
+  EmptyRuleset: TSVGRuleset = (selector: ''; declarations: '');
 var
   i,l,pg: integer;
   st: String;
-  rec: TSVGStyleItem;
+  rec: TSVGRuleset;
 begin
   (*
     Example of internal style block
@@ -2742,7 +2876,7 @@ begin
   l:= 0;
   pg:= 0;
   st:= '';
-  rec:= EmptyRec;
+  rec:= EmptyRuleset;
   for i:= 1 to Length(s) do
   begin
     if s[i] = '{' then
@@ -2750,7 +2884,7 @@ begin
       Inc(pg);
       if (pg = 1) and (Length(st) <> 0) then
       begin
-       rec.name:= Trim(st);
+       rec.selector:= Trim(st);
        st:= '';
       end;
     end
@@ -2759,13 +2893,13 @@ begin
       Dec(pg);
       if (pg = 0) and (Length(st) <> 0) then
       begin
-        if IsValidAttribute(st) then
+        if IsValidDeclarationBlock(st) then
         begin
-          rec.attribute:= Trim(st);
+          rec.declarations:= Trim(st);
           Inc(l);
-          SetLength(FStyles,l);
-          FStyles[l-1]:= rec;
-          rec:= EmptyRec;
+          SetLength(FRulesets,l);
+          FRulesets[l-1]:= rec;
+          rec:= EmptyRuleset;
         end;
         st:= '';
       end;
@@ -2775,40 +2909,45 @@ begin
   end;
 end;
 
-function TSVGStyle.IsValidID(const sid: integer): boolean;
+function TSVGStyle.GetRulesetCount: integer;
 begin
-  result:= (sid >= 0) and (sid < Length(FStyles));
+  result := Length(FRulesets);
 end;
 
-function TSVGStyle.GetStyle(const sid: integer): TSVGStyleItem;
+function TSVGStyle.IsValidRulesetIndex(const AIndex: integer): boolean;
 begin
-  if IsValidID(sid) then
-    result:= FStyles[sid]
+  result:= (AIndex >= 0) and (AIndex < Length(FRulesets));
+end;
+
+function TSVGStyle.GetRuleset(const AIndex: integer): TSVGRuleset;
+begin
+  if IsValidRulesetIndex(AIndex) then
+    result:= FRulesets[AIndex]
   else
     raise exception.Create(rsInvalidIndex);
 end;
 
-procedure TSVGStyle.SetStyle(const sid: integer; sr: TSVGStyleItem);
+procedure TSVGStyle.SetRuleset(const AIndex: integer; sr: TSVGRuleset);
 begin
-  if IsValidID(sid) then
-    FStyles[sid]:= sr
+  if IsValidRulesetIndex(AIndex) then
+    FRulesets[AIndex]:= sr
   else
     raise exception.Create(rsInvalidIndex);
 end;
 
 function TSVGStyle.Count: Integer;
 begin
-  result:= Length(FStyles);
+  result:= Length(FRulesets);
 end;
 
-function TSVGStyle.Find(sr: TSVGStyleItem): integer;
+function TSVGStyle.Find(ARuleset: TSVGRuleset): integer;
 var
   i: integer;
 begin
-  for i:= 0 to Length(FStyles)-1 do
-    with FStyles[i] do
-      if (name = sr.name) and
-         (attribute = sr.attribute) then
+  for i:= 0 to Length(FRulesets)-1 do
+    with FRulesets[i] do
+      if (selector = ARuleset.selector) and
+         (declarations = ARuleset.declarations) then
       begin
         result:= i;
         Exit;
@@ -2820,9 +2959,9 @@ function TSVGStyle.Find(const AName: string): integer;
 var
   i: integer;
 begin
-  for i:= 0 to Length(FStyles)-1 do
-    with FStyles[i] do
-      if name = AName then
+  for i:= 0 to Length(FRulesets)-1 do
+    with FRulesets[i] do
+      if selector = AName then
       begin
         result:= i;
         Exit;
@@ -2830,33 +2969,33 @@ begin
   result:= -1;
 end;
 
-function TSVGStyle.Add(sr: TSVGStyleItem): integer;
+function TSVGStyle.Add(ARuleset: TSVGRuleset): integer;
 var
   l: integer;
 begin
-  l:= Length(FStyles);
-  SetLength(FStyles,l+1);
-  FStyles[l]:= sr;
+  l:= Length(FRulesets);
+  SetLength(FRulesets,l+1);
+  FRulesets[l]:= ARuleset;
   result:= l;
 end;
 
-procedure TSVGStyle.Remove(sr: TSVGStyleItem);
+procedure TSVGStyle.Remove(ARuleset: TSVGRuleset);
 var
   l,p: integer;
 begin
-  p:= Find(sr);
-  l:= Length(FStyles);
+  p:= Find(ARuleset);
+  l:= Length(FRulesets);
   if p <> -1 then
   begin
-    Finalize(FStyles[p]);
-    System.Move(FStyles[p+1], FStyles[p], (l-p)*SizeOf(TSVGStyleItem));
-    SetLength(FStyles,l-1);
+    Finalize(FRulesets[p]);
+    System.Move(FRulesets[p+1], FRulesets[p], (l-p)*SizeOf(TSVGRuleset));
+    SetLength(FRulesets,l-1);
   end;
 end;
 
 procedure TSVGStyle.Clear;
 begin
-  SetLength(FStyles,0);
+  SetLength(FRulesets,0);
 end;
 
 procedure TSVGStyle.ReParse;
@@ -2929,6 +3068,17 @@ end;
 class function TSVGRectangle.GetDOMTag: string;
 begin
   Result:= 'rect';
+end;
+
+procedure TSVGRectangle.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('x') then x := Units.ConvertWidth(x, AUnit);
+  if HasAttribute('y') then y := Units.ConvertHeight(y, AUnit);
+  if HasAttribute('rx') then rx := Units.ConvertWidth(rx, AUnit);
+  if HasAttribute('ry') then ry := Units.ConvertHeight(ry, AUnit);
+  if HasAttribute('width') then width := Units.ConvertWidth(width, AUnit);
+  if HasAttribute('height') then height := Units.ConvertHeight(height, AUnit);
 end;
 
 procedure TSVGRectangle.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
@@ -3286,6 +3436,15 @@ begin
   Result:= 'ellipse';
 end;
 
+procedure TSVGEllipse.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('cx') then cx := Units.ConvertWidth(cx, AUnit);
+  if HasAttribute('cy') then cy := Units.ConvertHeight(cy, AUnit);
+  if HasAttribute('rx') then rx := Units.ConvertWidth(rx, AUnit);
+  if HasAttribute('ry') then ry := Units.ConvertHeight(ry, AUnit);
+end;
+
 { TSVGCircle }
 
 function TSVGCircle.GetCX: TFloatWithCSSUnit;
@@ -3326,7 +3485,7 @@ begin
   begin
     vcx:= Units.ConvertWidth(cx,AUnit).value;
     vcy:= Units.ConvertHeight(cy,AUnit).value;
-    vr:= Units.ConvertWidth(r,AUnit).value;
+    vr:= Units.ConvertOrtho(r,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.circle(vcx,vcy,vr);
     if Assigned(GradientElement) then
@@ -3347,6 +3506,14 @@ end;
 class function TSVGCircle.GetDOMTag: string;
 begin
   Result:= 'circle';
+end;
+
+procedure TSVGCircle.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('cx') then cx := Units.ConvertWidth(cx, AUnit);
+  if HasAttribute('cy') then cy := Units.ConvertHeight(cy, AUnit);
+  if HasAttribute('r') then r := Units.ConvertOrtho(r, AUnit);
 end;
 
 { TSVGLine }
@@ -3408,11 +3575,27 @@ begin
   Result:= 'line';
 end;
 
+procedure TSVGLine.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('x1') then x1 := Units.ConvertWidth(x1, AUnit);
+  if HasAttribute('y1') then y1 := Units.ConvertHeight(y1, AUnit);
+  if HasAttribute('x2') then x2 := Units.ConvertWidth(x2, AUnit);
+  if HasAttribute('y2') then y2 := Units.ConvertHeight(y2, AUnit);
+end;
+
 { TSVGGradient } //##
 
 function TSVGGradient.GetHRef: string;
 begin
   result := Attribute['xlink:href'];
+end;
+
+procedure TSVGGradient.SetGradientMatrix(AUnit: TCSSUnit; AValue: TAffineMatrix);
+begin
+  if not IsAffineMatrixIdentity(AValue) then
+    gradientTransform := MatrixToTransform(AValue, AUnit)
+    else FDomElem.RemoveAttribute('gradientTransform');
 end;
 
 procedure TSVGGradient.SetGradientTransform(AValue: string);
@@ -3434,20 +3617,8 @@ begin
 end;
 
 function TSVGGradient.GetGradientMatrix(AUnit: TCSSUnit): TAffineMatrix;
-var parser: TSVGParser;
-  s: string;
 begin
-  s := gradientTransform;
-  if s = '' then
-  begin
-    result := AffineMatrixIdentity;
-    exit;
-  end;
-  parser := TSVGParser.Create(s);
-  result := parser.ParseTransform;
-  parser.Free;
-  result[1,3] := Units.ConvertWidth(result[1,3],cuCustom,AUnit);
-  result[2,3] := Units.ConvertHeight(result[2,3],cuCustom,AUnit);
+  result := TransformToMatrix(gradientTransform, AUnit);
 end;
 
 procedure TSVGGradient.SetGradientUnits(AValue: TSVGObjectUnits);
@@ -3477,7 +3648,7 @@ var
   invalidDef: TFloatWithCSSUnit;
 begin
   invalidDef:= FloatWithCSSUnit(EmptySingle,cuPercent);
-  //find valid inherited attribute (start from "self": item[0])
+  //find valid inherited Attribute (start from "self": item[0])
   for i:= 0 to InheritedGradients.Count-1 do
   begin
     el:= TSVGGradient( InheritedGradients[i] );
@@ -3571,6 +3742,18 @@ begin
   Result:= 'linearGradient';
 end;
 
+procedure TSVGLinearGradient.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if gradientUnits = souUserSpaceOnUse then
+  begin
+    if HasAttribute('x1') then x1 := Units.ConvertWidth(HorizAttributeWithUnit['x1'], AUnit);
+    if HasAttribute('y1') then y1 := Units.ConvertHeight(VerticalAttributeWithUnit['y1'], AUnit);
+    if HasAttribute('x2') then x2 := Units.ConvertWidth(HorizAttributeWithUnit['x2'], AUnit);
+    if HasAttribute('y2') then y2 := Units.ConvertHeight(VerticalAttributeWithUnit['y2'], AUnit);
+  end;
+end;
+
 { TSVGRadialGradient }
 
 function TSVGRadialGradient.GetCX: TFloatWithCSSUnit;
@@ -3630,12 +3813,26 @@ end;
 
 procedure TSVGRadialGradient.SetFR(AValue: TFloatWithCSSUnit);
 begin
-  HorizAttributeWithUnit['fr'] := AValue;
+  OrthoAttributeWithUnit['fr'] := AValue;
 end;
 
 class function TSVGRadialGradient.GetDOMTag: string;
 begin
   Result:= 'radialGradient';
+end;
+
+procedure TSVGRadialGradient.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if gradientUnits = souUserSpaceOnUse then
+  begin
+    if HasAttribute('cx') then cx := Units.ConvertWidth(HorizAttributeWithUnit['cx'], AUnit);
+    if HasAttribute('cy') then cy := Units.ConvertHeight(VerticalAttributeWithUnit['cy'], AUnit);
+    if HasAttribute('fx') then fx := Units.ConvertWidth(HorizAttributeWithUnit['fx'], AUnit);
+    if HasAttribute('fy') then fy := Units.ConvertHeight(VerticalAttributeWithUnit['fy'], AUnit);
+    if HasAttribute('r') then r := Units.ConvertOrtho(OrthoAttributeWithUnit['r'], AUnit);
+    if HasAttribute('fr') then fr := Units.ConvertOrtho(OrthoAttributeWithUnit['fr'], AUnit);
+  end;
 end;
 
 { TSVGStopGradient }
@@ -3775,6 +3972,14 @@ begin
     if IsSVGElement[i] then Element[i].Free;
   while Assigned(FDomElem.FirstChild) do
     FDomElem.RemoveChild(FDomElem.FirstChild);
+end;
+
+procedure TSVGContent.ConvertToUnit(AUnit: TCSSUnit);
+var i: integer;
+begin
+  for i := 0 to ElementCount-1 do
+    if IsSVGElement[i] then
+      Element[i].ConvertToUnit(AUnit);
 end;
 
 procedure TSVGContent.Recompute;

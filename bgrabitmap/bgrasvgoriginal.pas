@@ -45,7 +45,7 @@ type
     FContentVersion: integer;
     procedure BeginUpdate;
     procedure EndUpdate;
-    procedure ComputePresentation(AContainerWidth, AContainerHeight: integer);
+    procedure ComputePresentation(AContainerWidth, AContainerHeight: integer; AScaleDPI: single);
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -56,9 +56,9 @@ type
     procedure LoadFromStream(AStream: TStream); override;
     procedure SaveSVGToStream(AStream: TStream);
     procedure SetSVG(ASVG: TBGRASVG; AContainerWidth: integer = 640;
-      AContainerHeight: integer = 480);
+      AContainerHeight: integer = 480; AScaleDPI: single = 1);
     procedure LoadSVGFromStream(AStream: TStream; AContainerWidth: integer = 640;
-      AContainerHeight: integer = 480);
+      AContainerHeight: integer = 480; AScaleDPI: single = 1);
     function GetSVGCopy: TBGRASVG;
     class function StorageClassName: RawByteString; override;
     property Width: single read GetSvgWidth;
@@ -86,7 +86,7 @@ type
 
 implementation
 
-uses BGRACanvas2D, BGRAMemDirectory, BGRAUTF8, BGRASVGShapes, math;
+uses BGRACanvas2D, BGRAMemDirectory, BGRAUTF8, BGRASVGShapes, math, BGRASVGType;
 
 { TBGRASVGOriginalDiff }
 
@@ -217,16 +217,18 @@ begin
   FDiff := nil;
 end;
 
-procedure TBGRALayerSVGOriginal.ComputePresentation(AContainerWidth, AContainerHeight: integer);
+procedure TBGRALayerSVGOriginal.ComputePresentation(AContainerWidth, AContainerHeight: integer;
+  AScaleDPI: single);
 var
-  compWidth, compHeight: TFloatWithCSSUnit;
+  compWidth, compHeight: single;
 begin
-  FSVG.Units.ContainerWidth := FloatWithCSSUnit(AContainerWidth, cuPixel);
-  FSVG.Units.ContainerHeight := FloatWithCSSUnit(AContainerHeight, cuPixel);
-  compWidth := FSVG.ComputedWidth;
-  compHeight := FSVG.ComputedHeight;
-  FSVG.Width := compWidth;
-  FSVG.Height := compHeight;
+  FSVG.Units.ContainerWidth := FloatWithCSSUnit(AContainerWidth / AScaleDPI, cuPixel);
+  FSVG.Units.ContainerHeight := FloatWithCSSUnit(AContainerHeight / AScaleDPI, cuPixel);
+  compWidth := FSVG.WidthAsPixel;
+  compHeight := FSVG.HeightAsPixel;
+  FSVG.ConvertToUnit(cuCustom);
+  FSVG.WidthAsPixel := compWidth * AScaleDPI;
+  FSVG.HeightAsPixel := compHeight * AScaleDPI;
   FPresentationMatrix := FSVG.PresentationMatrix[cuPixel];
 end;
 
@@ -338,21 +340,22 @@ begin
 end;
 
 procedure TBGRALayerSVGOriginal.SetSVG(ASVG: TBGRASVG; AContainerWidth: integer;
-      AContainerHeight: integer);
+      AContainerHeight: integer; AScaleDPI: single);
 begin
   BeginUpdate;
   FSVG.Free;
   FSVG := ASVG;
-  ComputePresentation(AContainerWidth, AContainerHeight);
+  ComputePresentation(AContainerWidth, AContainerHeight, AScaleDPI);
   Inc(FContentVersion);
   EndUpdate;
 end;
 
-procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream; AContainerWidth: integer; AContainerHeight: integer);
+procedure TBGRALayerSVGOriginal.LoadSVGFromStream(AStream: TStream; AContainerWidth: integer;
+      AContainerHeight: integer; AScaleDPI: single);
 begin
   BeginUpdate;
   FSVG.LoadFromStream(AStream);
-  ComputePresentation(AContainerWidth, AContainerHeight);
+  ComputePresentation(AContainerWidth, AContainerHeight, AScaleDPI);
   Inc(FContentVersion);
   EndUpdate;
 end;
@@ -368,6 +371,7 @@ begin
     FSVG.SaveToStream(stream);
     stream.Position:= 0;
     svg := TBGRASVG.Create;
+    svg.DefaultDpi:= DPI;
     svg.LoadFromStream(stream);
     result := svg;
     svg := nil;
@@ -396,25 +400,38 @@ var
   svgOrig: TBGRALayerSVGOriginal;
   idx, i, j: Integer;
   layer: TSVGGroup;
+  prefix: String;
 begin
   svg := TBGRASVG.Create;
   try
     svg.LoadFromStream(AStream);
-    svg.DefaultDpi:= DPI;
-    svg.Units.ContainerWidth := FloatWithCSSUnit(ContainerWidth, cuPixel);
-    svg.Units.ContainerHeight := FloatWithCSSUnit(ContainerHeight, cuPixel);
-    visualWidth := svg.Units.ConvertWidth(svg.VisualWidth, cuPixel).value;
-    visualHeight := svg.Units.ConvertHeight(svg.VisualHeight, cuPixel).value;
-    svg.WidthAsPixel:= visualWidth;
-    svg.HeightAsPixel:= visualHeight;
+    svg.Units.ContainerWidth := FloatWithCSSUnit(ContainerWidth / DPI * 96, cuPixel);
+    svg.Units.ContainerHeight := FloatWithCSSUnit(ContainerHeight / DPI * 96, cuPixel);
+    if not svg.preserveAspectRatio.Preserve then
+    begin
+      visualWidth := svg.WidthAsPixel;
+      visualHeight := svg.HeightAsPixel;
+    end else
+    begin
+      visualWidth := svg.VisualWidthAsPixel;
+      visualHeight := svg.VisualHeightAsPixel;
+    end;
+    visualWidth := visualWidth * DPI / 96;
+    visualHeight := visualHeight * DPI / 96;
+    svg.ConvertToUnit(cuCustom);
+    svg.WidthAsPixel := visualWidth;
+    svg.HeightAsPixel := visualHeight;
     Clear;
-    SetSize(floor(svg.WidthAsPixel + 0.95),floor(svg.HeightAsPixel + 0.95));
+    SetSize(floor(visualWidth + 0.95),floor(visualHeight + 0.95));
     if svg.LayerCount > 0 then
     begin
       for i := 0 to svg.LayerCount-1 do
       begin
         layer := svg.Layer[i];
-        svgLayer := TBGRASVG.Create(svg.WidthAsPixel, svg.HeightAsPixel, cuPixel);
+        svgLayer := TBGRASVG.Create;
+        svgLayer.WidthAsPixel := visualWidth;
+        svgLayer.HeightAsPixel := visualHeight;
+        svgLayer.DefaultDpi:= svg.DefaultDpi;
         for j := 0 to svg.NamespaceCount-1 do
         begin
           prefix := svg.NamespacePrefix[j];

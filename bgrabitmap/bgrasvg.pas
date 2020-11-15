@@ -40,9 +40,9 @@ type
     FViewBox: TSVGViewBox;
     FOriginalViewSize, FProportionalViewSize: TSVGSize;
 
-    FDefaultUnitHeight, FDefaultUnitWidth: TFloatWithCSSUnit;
+    FCustomUnitHeight, FCustomUnitWidth: TFloatWithCSSUnit;
     FDefaultDpi: PSingle;
-    FUseDefaultDPI: boolean;
+    FCustomUnitUseDefaultDPI: boolean;
     FDpiScaleX,FDpiScaleY: single;
     FContainerHeight: TFloatWithCSSUnit;
     FContainerWidth: TFloatWithCSSUnit;
@@ -83,6 +83,7 @@ type
   TBGRASVG = class(TSVGCustomElement)
   private
     function GetVisualHeight: TFloatWithCSSUnit;
+    function GetVisualHeightAsPixel: single;
     function GetVisualWidth: TFloatWithCSSUnit;
     function GetComputedHeight: TFloatWithCSSUnit;
     function GetComputedWidth: TFloatWithCSSUnit;
@@ -107,6 +108,7 @@ type
     procedure GetViewBoxIndirect(AUnit: TCSSUnit; out AViewBox: TSVGViewBox);
     function GetViewMin(AUnit: TCSSUnit): TPointF;
     function GetViewSize(AUnit: TCSSUnit): TPointF;
+    function GetVisualWidthAsPixel: single;
     function GetWidth: TFloatWithCSSUnit;
     function GetWidthAsCm: single;
     function GetWidthAsInch: single;
@@ -166,6 +168,7 @@ type
     function GetStretchRectF(x,y,w,h: single): TRectF; overload;
     function FindElementById(AID: string): TSVGElement; overload;
     function FindElementById(AID: string; AClass: TSVGFactory): TSVGElement; overload;
+    procedure ConvertToUnit(AUnit: TCSSUnit); override; //except Width, Height, ContainerWidth, ContainerHeight
     property AsUTF8String: utf8string read GetUTF8String write SetUTF8String;
     property Units: TSVGUnits read GetUnits;
     property FontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
@@ -190,6 +193,8 @@ type
     property ViewSizeInUnit[AUnit: TCSSUnit]: TPointF read GetViewSize;
     property VisualWidth: TFloatWithCSSUnit read GetVisualWidth;
     property VisualHeight: TFloatWithCSSUnit read GetVisualHeight;
+    property VisualWidthAsPixel: single read GetVisualWidthAsPixel;
+    property VisualHeightAsPixel: single read GetVisualHeightAsPixel;
     property Attribute[AName: string]: string read GetAttribute write SetAttribute;
     property AttributeDef[AName: string; ADefault: string]: string read GetAttribute;
     property DefaultDpi: single read FDefaultDpi write SetDefaultDpi; //this is not saved in the SVG file
@@ -247,7 +252,7 @@ end;
 procedure TFPReaderSVG.InternalRead(Stream: TStream; Img: TFPCustomImage);
 var
   svg: TBGRASVG;
-  vmin,vsize: TPointF;
+  vsize: TPointF;
   bgra: TBGRACustomBitmap;
   c2d: TBGRACanvas2D;
   y, x: Integer;
@@ -261,14 +266,13 @@ begin
       bgra := TBGRACustomBitmap(Img)
     else
       bgra := BGRABitmapFactory.Create;
-    vsize := svg.GetViewSize(cuPixel);
+    if svg.preserveAspectRatio.Preserve then
+      vsize := svg.GetViewSize(cuPixel)
+      else vsize := PointF(svg.WidthAsPixel, svg.HeightAsPixel);
     bgra.SetSize(ceil(vsize.x*scale),ceil(vsize.y*scale));
     bgra.FillTransparent;
-    vmin := svg.GetViewMin(cuPixel);
     c2d := TBGRACanvas2D.Create(bgra);
-    c2d.scale(Scale);
-    c2d.translate(-vmin.x,-vmin.y);
-    svg.Draw(c2d,0,0);
+    svg.StretchDraw(c2d, 0,0,bgra.Width,bgra.Height, true);
     c2d.Free;
     if bgra<>Img then
     begin
@@ -317,7 +321,7 @@ function TFPReaderSVG.GetBitmapDraft(AStream: TStream; AMaxWidth,
   AMaxHeight: integer; out AOriginalWidth, AOriginalHeight: integer): TBGRACustomBitmap;
 var
   svg: TBGRASVG;
-  vmin,vsize: TPointF;
+  vsize: TPointF;
   c2d: TBGRACanvas2D;
   ratio: Single;
 begin
@@ -325,7 +329,9 @@ begin
   result := nil;
   try
     svg.DefaultDpi:= RenderDpi;
-    vsize := svg.GetViewSize(cuPixel);
+    if svg.preserveAspectRatio.Preserve then
+      vsize := svg.GetViewSize(cuPixel)
+      else vsize := PointF(svg.WidthAsPixel, svg.HeightAsPixel);
     AOriginalWidth:= ceil(vsize.x);
     AOriginalHeight:= ceil(vsize.y);
     if (vsize.x = 0) or (vsize.y = 0) then exit;
@@ -333,11 +339,8 @@ begin
     result := BGRABitmapFactory.Create(ceil(vsize.x*ratio),ceil(vsize.y*ratio));
     if ratio <> 0 then
     begin
-      vmin := svg.GetViewMin(cuPixel);
       c2d := TBGRACanvas2D.Create(result);
-      c2d.scale(ratio);
-      c2d.translate(-vmin.x,-vmin.y);
-      svg.Draw(c2d,0,0);
+      svg.StretchDraw(c2d, 0,0,result.width,result.height);
       c2d.Free;
     end;
   finally
@@ -424,35 +427,35 @@ begin
 
   if (FViewBox.size.x <= 0) and (FViewBox.size.y <= 0) then
     begin
-      FDefaultUnitWidth.value:= 1/FDefaultDpi^;
-      FDefaultUnitWidth.CSSUnit := cuInch;
-      FDefaultUnitHeight.value:= 1/FDefaultDpi^;
-      FDefaultUnitHeight.CSSUnit := cuInch;
-      FUseDefaultDPI := true;
+      FCustomUnitWidth.value:= 1/FDefaultDpi^;
+      FCustomUnitWidth.CSSUnit := cuInch;
+      FCustomUnitHeight.value:= 1/FDefaultDpi^;
+      FCustomUnitHeight.CSSUnit := cuInch;
       FDpiScaleX := 1;
       FDpiScaleY := 1;
+      FCustomUnitUseDefaultDPI := true;
       FViewBox.min := PointF(0,0);
       FViewBox.size.x := ConvertWidth(FProportionalViewSize.width,cuCustom).value;
       FViewBox.size.y := ConvertHeight(FProportionalViewSize.height,cuCustom).value;
     end else
     begin
-      FDefaultUnitWidth.value := FProportionalViewSize.width.value/FViewBox.size.x;
-      FDefaultUnitWidth.CSSUnit := FProportionalViewSize.width.CSSUnit;
-      if FDefaultUnitWidth.CSSUnit = cuCustom then
+      FCustomUnitWidth.value := FProportionalViewSize.width.value/FViewBox.size.x;
+      FCustomUnitWidth.CSSUnit := FProportionalViewSize.width.CSSUnit;
+      if FCustomUnitWidth.CSSUnit = cuCustom then
         begin
-          FDefaultUnitWidth.value := FDefaultUnitWidth.value / FDefaultDpi^;
-          FDefaultUnitWidth.CSSUnit := cuInch;
+          FCustomUnitWidth.value := FCustomUnitWidth.value / FDefaultDpi^;
+          FCustomUnitWidth.CSSUnit := cuInch;
         end;
-      FDefaultUnitHeight.value := FProportionalViewSize.height.value/FViewBox.size.y;
-      FDefaultUnitHeight.CSSUnit := FProportionalViewSize.height.CSSUnit;
-      if FDefaultUnitHeight.CSSUnit = cuCustom then
+      FCustomUnitHeight.value := FProportionalViewSize.height.value/FViewBox.size.y;
+      FCustomUnitHeight.CSSUnit := FProportionalViewSize.height.CSSUnit;
+      if FCustomUnitHeight.CSSUnit = cuCustom then
         begin
-          FDefaultUnitHeight.value := FDefaultUnitHeight.value / FDefaultDpi^;
-          FDefaultUnitHeight.CSSUnit := cuInch;
+          FCustomUnitHeight.value := FCustomUnitHeight.value / FDefaultDpi^;
+          FCustomUnitHeight.CSSUnit := cuInch;
         end;
-      FUseDefaultDPI := false;
       FDpiScaleX := CustomDpiX/DpiX;
       FDpiScaleY := CustomDpiY/DpiY;
+      FCustomUnitUseDefaultDPI := (FDpiScaleX = 1) and (FDpiScaleY = 1);
     end;
 
   ViewBoxWidth := FProportionalViewSize.width;
@@ -509,7 +512,7 @@ end;
 
 function TSVGUnits.GetDPIScaled: boolean;
 begin
-  Result:= not FUseDefaultDPI;
+  Result:= not FCustomUnitUseDefaultDPI;
 end;
 
 procedure TSVGUnits.SetDefaultDpiAndOrigin;
@@ -529,12 +532,12 @@ end;
 
 function TSVGUnits.GetDefaultUnitHeight: TFloatWithCSSUnit;
 begin
-  result := FDefaultUnitHeight;
+  result := FCustomUnitHeight;
 end;
 
 function TSVGUnits.GetDefaultUnitWidth: TFloatWithCSSUnit;
 begin
-  result := FDefaultUnitWidth;
+  result := FCustomUnitWidth;
 end;
 
 function TSVGUnits.GetDpiX: single;
@@ -613,6 +616,11 @@ begin
   origUnit := Width.CSSUnit;
   if origUnit in [cuPixel,cuCentimeter,cuMillimeter,cuInch,cuPica,cuPoint] then
     result := Units.ConvertHeight(result, origUnit);
+end;
+
+function TBGRASVG.GetVisualHeightAsPixel: single;
+begin
+  result := Units.ConvertHeight(VisualHeight, cuPixel).value;
 end;
 
 function TBGRASVG.GetVisualWidth: TFloatWithCSSUnit;
@@ -777,6 +785,11 @@ var
 begin
   GetViewBoxIndirect(AUnit,vb);
   result:= vb.size;
+end;
+
+function TBGRASVG.GetVisualWidthAsPixel: single;
+begin
+  result := Units.ConvertWidth(VisualWidth, cuPixel).value;
 end;
 
 function TBGRASVG.GetWidth: TFloatWithCSSUnit;
@@ -1141,21 +1154,16 @@ end;
 
 procedure TBGRASVG.Draw(ACanvas2d: TBGRACanvas2D; x, y: single; AUnit: TCSSUnit);
 var prevLinearBlend: boolean;
-  fs, prevFontEmHeight: TFloatWithCSSUnit;
+  prevFontSize: TFloatWithCSSUnit;
 begin
   prevLinearBlend:= ACanvas2d.linearBlend;
   acanvas2d.linearBlend := true;
   ACanvas2d.save;
   ACanvas2d.translate(x,y);
   ACanvas2d.strokeMatrix := ACanvas2d.matrix;
-  prevFontEmHeight := Units.CurrentFontEmHeight;
-  Units.CurrentFontEmHeight := Units.RootFontEmHeight;
-  fs := fontSize;
-  if fs.CSSUnit in [cuFontEmHeight,cuFontXHeight] then
-    fs := Units.ConvertHeight(fontSize,AUnit);
-  Units.CurrentFontEmHeight:= fs;
+  prevFontSize := EnterFontSize(true);
   Content.Draw(ACanvas2d,AUnit);
-  Units.CurrentFontEmHeight := prevFontEmHeight;
+  ExitFontSize(prevFontSize);
   ACanvas2d.restore;
   ACanvas2d.linearBlend := prevLinearBlend;
 end;
@@ -1265,6 +1273,22 @@ end;
 function TBGRASVG.FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
 begin
   result := DataLink.FindElementById(AId, AClass);
+end;
+
+procedure TBGRASVG.ConvertToUnit(AUnit: TCSSUnit);
+var
+  prevFontSize: TFloatWithCSSUnit;
+begin
+  prevFontSize := Units.CurrentFontEmHeight;
+  Units.CurrentFontEmHeight := Units.RootFontEmHeight;
+  if HasAttribute('font-size') then
+    SetVerticalAttributeWithUnit('font-size', Units.ConvertHeight(GetVerticalAttributeWithUnit('font-size'), AUnit));
+  Units.CurrentFontEmHeight := prevFontSize;
+
+  prevFontSize := EnterFontSize(true);
+  inherited ConvertToUnit(AUnit);
+  Content.ConvertToUnit(AUnit);
+  ExitFontSize(prevFontSize);
 end;
 
 initialization

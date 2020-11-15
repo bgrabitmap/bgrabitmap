@@ -1227,7 +1227,7 @@ begin
     h := max(hx,hy);
     if self.antialiasing then h := round(h);
     if h<=0 then continue;
-    m := FontMatrix*AffineMatrixScale(hx/sqr(h),hy/sqr(h));
+    m := FontMatrix*AffineMatrixScale(1/h, 1/h);
     if pixelCenteredCoordinates then m := AffineMatrixTranslation(0.5,0.5)*m;
     bmp := BGRABitmapFactory.Create;
     try

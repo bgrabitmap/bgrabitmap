@@ -11,6 +11,7 @@ uses
 
 const
   OpenRasterMimeType = 'image/openraster'; //do not change, it's part of the file format
+  OpenRasterSVGDefaultDPI = 90;
 
 type
 
@@ -637,6 +638,7 @@ begin
   if SuggestImageFormat(ALayerFilename) = ifSvg then
   begin
     svg := TBGRASVG.Create;
+    svg.DefaultDpi:= OpenRasterSVGDefaultDPI;
     try
       svg.LoadFromStream(stream);
     except
@@ -729,13 +731,19 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
              (abs(round(m[2,3]) - ofs.y) < 1e-4);
   end;
 
-  procedure StoreSVGFromOriginal(AOrig: TBGRALayerSVGOriginal);
+  procedure StoreSVG(ASVG: TBGRASVG);
   var
     memStream: TMemoryStream;
+    w, h: Single;
   begin
     memStream := TMemoryStream.Create;
     try
-      AOrig.SaveSVGToStream(memStream);
+      w := ASVG.WidthAsPixel;
+      h := ASVG.HeightAsPixel;
+      ASVG.ConvertToUnit(cuCustom);
+      ASVG.WidthAsPixel := w;
+      ASVG.HeightAsPixel := h;
+      ASVG.SaveToStream(memStream);
       SetMemoryStream(ALayerFilename,memstream);
       result := true;
     except
@@ -746,19 +754,27 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
     end;
   end;
 
-  procedure StoreSVG(ASVG: TBGRASVG);
+  procedure StoreSVGFromOriginal(AOrig: TBGRALayerSVGOriginal);
   var
     memStream: TMemoryStream;
+    svg: TBGRASVG;
   begin
+    svg := nil;
     memStream := TMemoryStream.Create;
     try
-      ASVG.SaveToStream(memStream);
-      SetMemoryStream(ALayerFilename,memstream);
+      AOrig.SaveSVGToStream(memStream);
+      svg := TBGRASVG.Create;
+      svg.DefaultDpi:= AOrig.DPI;
+      memStream.Position:= 0;
+      svg.LoadFromStream(memStream);
+      StoreSVG(svg);
       result := true;
     except
       on ex: Exception do
       begin
         memStream.Free;
+        svg.Free;
+        raise exception.Create(ex.Message);
       end;
     end;
   end;

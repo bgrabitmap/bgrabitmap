@@ -83,7 +83,7 @@ type
 
   TFindStyleState = (fssNotSearched,
                      fssNotFound,
-                     fssFind);
+                     fssFound);
   TStyleAttribute = record
      attr  : string;
      pos   : integer;
@@ -208,11 +208,15 @@ type
     function GetNamespacePrefix(AIndex: integer): string;
     function GetNamespaceURI(APrefix: string): string;
 
-    class function GetPropertyFromStyleDeclaration(AText: string;
+    class function GetPropertyFromStyleDeclarationBlock(ABlock: string;
       AProperty: string; ADefault: string): string;
     class procedure LocateStyleDeclaration(AText: string; AProperty: string;
       out AStartPos, AColonPos, AValueLength: integer);
+    class procedure UpdateStyleDeclarationBlock(var ABlock: string; AProperty: string; AValue: string);
+    class function RemovePropertyFromDeclarationBlock(var ABlock: string; AProperty: string): boolean;
     function GetInlineStyle(const AName,ADefault: string): string;
+    function GetInlineStyleWithUnit(const AName: string): TFloatWithCSSUnit; overload;
+    function GetInlineStyleWithUnit(const AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
     function GetStyleFromStyleSheet(const {%H-}AName,ADefault: string): string; virtual;
     function GetStyle(const AName,ADefault: string): string; overload;
     function GetStyle(const AName: string): string; overload;
@@ -235,19 +239,32 @@ type
     procedure SetOrthoAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
     procedure SetArrayOfOrthoAttributeWithUnit(AName: string; AValue: ArrayOfTFloatWithCSSUnit);
 
+    procedure ScaleAttribute(var AValue: TFloatWithCSSUnit; AScale: single; AGet: boolean);
+    procedure ScaleAttribute(var AValue: single; AScale: single; AGet: boolean);
+    procedure ScaleAttributeArray(var AValue: ArrayOfTFloatWithCSSUnit; AScale: single; AGet: boolean);
+
     procedure SetNamespaceURI(APrefix: string; AValue: string);
 
-    procedure SetStyle(AName: string; AValue: string);
+    procedure SetInlineStyle(AName: string; AValue: string); overload;
+    procedure SetInlineStyle(AName: string; AValue: TFloatWithCSSUnit); overload;
   public
     procedure RemoveStyle(const AName: string);
     function HasAttribute(AName: string): boolean;
+    function HasInlineStyle(AName: string): boolean;
+
+    procedure ConvertToUnit(AUnit: TCSSUnit); virtual;
+    function EnterFontSize(AIsRoot: boolean = false): TFloatWithCSSUnit; virtual;
+    procedure ExitFontSize(APrevFontSize: TFloatWithCSSUnit); virtual;
+
+    function MatrixToTransform(m: TAffineMatrix; AFromUnit: TCSSUnit): string;
+    function TransformToMatrix(ATransform: string; AToUnit: TCSSUnit): TAffineMatrix;
 
     procedure RemoveNamespace(APrefix: string);
     property NamespaceURI[APrefix: string]: string read GetNamespaceURI write SetNamespaceURI;
     property NamespacePrefix[AIndex: integer]: string read GetNamespacePrefix;
     property NamespaceCount: integer read GetNamespaceCount;
 
-    property Style[AName: string]: string read GetStyle write SetStyle;
+    property Style[AName: string]: string read GetStyle write SetInlineStyle;
     property StyleDef[AName,ADefault: string]: string read GetStyle;
   end;
 
@@ -255,8 +272,8 @@ type
 
   TSVGElement = class(TSVGCustomElement)
   private
-    findStyleState: TFindStyleState;
-    styleAttributes: ArrayOfTStyleAttribute;
+    FImportStyleState: TFindStyleState;
+    FImportedStyles: ArrayOfTStyleAttribute;
     function GetFill: string;
     function GetFillColor: TBGRAPixel;
     function GetFillOpacity: single;
@@ -302,7 +319,7 @@ type
     procedure SetClassAttr(AValue: string);
     function FindStyleElementInternal(const classStr: string;
       out attributesStr: string): integer;
-    procedure FindStyleElement;
+    procedure ImportStyles;
     procedure SetVisible(AValue: boolean);
   protected
     FDataLink: TSVGDataLink;
@@ -318,6 +335,7 @@ type
     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
     class function GetDOMTag: string; virtual;
     destructor Destroy; override;
+    procedure ConvertToUnit(AUnit: TCSSUnit); override;
     procedure Recompute; virtual;
     procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
     procedure fillNone;
@@ -499,7 +517,7 @@ begin
             else break;
 
             styleDecl := curNode.GetAttribute('style');
-            result := GetPropertyFromStyleDeclaration(styleDecl, AName, '');
+            result := GetPropertyFromStyleDeclarationBlock(styleDecl, AName, '');
             if result <> '' then exit;
             result := GetAttributeFromElement(curNode, AName, false);
             if (result = 'currentColor') and (AName <> 'color') then
@@ -531,39 +549,26 @@ function TSVGCustomElement.GetHorizAttributeOrStyleWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeOrStyleWithUnit(AName,ADefault);
-  if not (result.CSSUnit in[cuCustom, cuPercent]) then
-    if FUnits.DpiScaleX = 0 then
-      result.value := 0
-    else
-      result.value := result.value / FUnits.DpiScaleX;
+  ScaleAttribute(result, FUnits.DpiScaleX, true);
 end;
 
 function TSVGCustomElement.GetArrayOfHorizAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
-var
-  i: integer;
 begin
   result := GetArrayOfAttributeOrStyleWithUnit(AName);
-  for i := low(result) to high(result) do
-  begin
-    if not (result[i].CSSUnit in[cuCustom, cuPercent]) then
-      if FUnits.DpiScaleX = 0 then
-        result[i].value := 0
-      else
-        result[i].value := result[i].value / FUnits.DpiScaleX;
-  end;
+  ScaleAttributeArray(result, FUnits.DpiScaleX, true);
 end;
 
 function TSVGCustomElement.GetOrthoAttributeOrStyleWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
-  result := GetHorizAttributeOrStyleWithUnit(AName,ADefault);
-  //value will be inconsistent if scaling is inconsistent
+  result := GetAttributeOrStyleWithUnit(AName,ADefault);
+  ScaleAttribute(result, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, true);
 end;
 
 function TSVGCustomElement.GetArrayOfOrthoAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 begin
-  result := GetArrayOfHorizAttributeOrStyleWithUnit(AName);
-  //value will be inconsistent if scaling is inconsistent
+  result := GetArrayOfAttributeOrStyleWithUnit(AName);
+  ScaleAttributeArray(result, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, true);
 end;
 
 class procedure TSVGCustomElement.LocateStyleDeclaration(AText: string; AProperty: string; out AStartPos,
@@ -626,14 +631,56 @@ begin
   end;
 end;
 
-class function TSVGCustomElement.GetPropertyFromStyleDeclaration(AText: string;
+class procedure TSVGCustomElement.UpdateStyleDeclarationBlock(var ABlock: string;
+  AProperty: string; AValue: string);
+var
+  startPos, colonPos, valueLength: integer;
+begin
+  if pos(';',AValue)<>0 then
+    raise exception.Create('Invalid character in value');
+  if pos(':',AProperty)<>0 then
+    raise exception.Create('Invalid character in name');
+  LocateStyleDeclaration(ABlock, AProperty, startPos,colonPos, valueLength);
+  if valueLength <> -1 then
+  begin
+    delete(ABlock, colonPos+1, valueLength);
+    insert(' '+Trim(AValue), ABlock, colonPos+1);
+  end else
+  begin
+    while (length(ABlock) > 0) and (ABlock[length(ABlock)] in[' ',#9,#10,#12,#13]) do
+      delete(ABlock, length(ABlock), 1);
+    if length(ABlock)>0 then
+    begin
+      if ABlock[length(ABlock)] <> ';' then AppendStr(ABlock, '; ');
+    end;
+    AppendStr(ABlock, AProperty+': '+AValue);
+  end;
+end;
+
+class function TSVGCustomElement.RemovePropertyFromDeclarationBlock(
+  var ABlock: string; AProperty: string): boolean;
+var
+  startPos, colonPos, valueLength: integer;
+begin
+  LocateStyleDeclaration(ABlock, AProperty, startPos,colonPos, valueLength);
+  if valueLength <> -1 then
+  begin
+    delete(ABlock, startPos, colonPos+valueLength-startPos);
+    while (length(ABlock)>=startPos) and (ABlock[startPos] in[' ',#9,#10,#12,#13]) do delete(ABlock,startPos,1);
+    if (length(ABlock)>=startPos) and (ABlock[startPos] = ';') then delete(ABlock,startPos,1);
+    result := true;
+  end else
+    result := false;
+end;
+
+class function TSVGCustomElement.GetPropertyFromStyleDeclarationBlock(ABlock: string;
   AProperty: string; ADefault: string): string;
 var
   startPos, colonPos, valueLength: integer;
 begin
-  LocateStyleDeclaration(AText, AProperty, startPos,colonPos, valueLength);
+  LocateStyleDeclaration(ABlock, AProperty, startPos,colonPos, valueLength);
   if valueLength <> -1 then
-    result := trim(copy(AText, colonPos+1, valueLength))
+    result := trim(copy(ABlock, colonPos+1, valueLength))
   else
     result := ADefault;
 end;
@@ -644,7 +691,18 @@ var
   styleDecl: String;
 begin
   styleDecl := GetAttribute('style','',False);
-  result := GetPropertyFromStyleDeclaration(styleDecl, AName, ADefault);
+  result := GetPropertyFromStyleDeclarationBlock(styleDecl, AName, ADefault);
+end;
+
+function TSVGCustomElement.GetInlineStyleWithUnit(const AName: string): TFloatWithCSSUnit;
+begin
+  result := GetInlineStyleWithUnit(AName, FloatWithCSSUnit(0, cuCustom));
+end;
+
+function TSVGCustomElement.GetInlineStyleWithUnit(const AName: string;
+  ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
+begin
+  result := TCSSUnitConverter.parseValue(GetInlineStyle(AName, ''), ADefault);
 end;
 
 function TSVGCustomElement.GetStyleFromStyleSheet(const AName, ADefault: string): string;
@@ -671,7 +729,7 @@ begin
     else break;
 
     styleDecl := curNode.GetAttribute('style');
-    result := GetPropertyFromStyleDeclaration(styleDecl, AName, '');
+    result := GetPropertyFromStyleDeclarationBlock(styleDecl, AName, '');
     if result <> '' then exit;
   end;
 
@@ -758,11 +816,7 @@ function TSVGCustomElement.GetVerticalAttributeOrStyleWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit; ACanInherit: boolean): TFloatWithCSSUnit;
 begin
   result := GetAttributeOrStyleWithUnit(AName,ADefault,ACanInherit);
-  if not (result.CSSUnit in[cuCustom, cuPercent]) then
-    if FUnits.DpiScaleY = 0 then
-      result.value := 0
-    else
-      result.value := result.value / FUnits.DpiScaleY;
+  ScaleAttribute(result, FUnits.DpiScaleY, true);
 end;
 
 function TSVGCustomElement.GetVerticalAttributeOrStyleWithUnit(AName: string;
@@ -773,53 +827,31 @@ end;
 
 function TSVGCustomElement.GetArrayOfVerticalAttributeOrStyleWithUnit(
   AName: string): ArrayOfTFloatWithCSSUnit;
-var
-  i: integer;
 begin
   result := GetArrayOfAttributeOrStyleWithUnit(AName);
-  for i := low(result) to high(result) do
-  begin
-    if not (result[i].CSSUnit in[cuCustom, cuPercent]) then
-      if FUnits.DpiScaleY = 0 then
-        result[i].value := 0
-      else
-        result[i].value := result[i].value / FUnits.DpiScaleY;
-  end;
+  ScaleAttributeArray(result, FUnits.DpiScaleY, true);
 end;
 
-procedure TSVGCustomElement.SetStyle(AName: string; AValue: string);
+procedure TSVGCustomElement.SetInlineStyle(AName: string; AValue: string);
 var
-  startPos, colonPos, valueLength: integer;
-  ruleset: string;
+  declarationBlock: string;
 begin
-  if pos(';',AValue)<>0 then
-    raise exception.Create('Invalid character in value');
-  if pos(':',AName)<>0 then
-    raise exception.Create('Invalid character in name');
-  ruleset := GetAttribute('style','',false);
-  LocateStyleDeclaration(ruleset, AName, startPos,colonPos, valueLength);
-  if valueLength <> -1 then
-  begin
-    delete(ruleset, colonPos+1, valueLength);
-    insert(' '+Trim(AValue), ruleset, colonPos+1);
-  end else
-  begin
-    while (length(ruleset) > 0) and (ruleset[length(ruleset)] in[' ',#9,#10,#12,#13]) do
-      delete(ruleset, length(ruleset), 1);
-    if length(ruleset)>0 then
-    begin
-      if ruleset[length(ruleset)] <> ';' then AppendStr(ruleset, '; ');
-    end;
-    AppendStr(ruleset, AName+': '+AValue);
-  end;
-  SetAttribute('style', ruleset);
+  declarationBlock := GetAttribute('style','',false);
+  UpdateStyleDeclarationBlock(declarationBlock, AName, AValue);
+  SetAttribute('style', declarationBlock);
+end;
+
+procedure TSVGCustomElement.SetInlineStyle(AName: string;
+  AValue: TFloatWithCSSUnit);
+begin
+  SetInlineStyle(AName, FUnits.formatValue(AValue));
 end;
 
 function TSVGCustomElement.GetOrthoAttributeWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
-  result := GetHorizAttributeWithUnit(AName,ADefault);
-  //value will be inconsistent if scaling is inconsistent
+  result := GetAttributeWithUnit(AName,ADefault);
+  ScaleAttribute(result, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, true);
 end;
 
 function TSVGCustomElement.GetOrthoAttributeWithUnit(AName: string): TFloatWithCSSUnit;
@@ -829,15 +861,12 @@ end;
 
 function TSVGCustomElement.GetHorizAttribute(AName: string;
   ADefault: TSVGNumber): TSVGNumber;
+var value: TFloatWithCSSUnit;
 begin
-  result := GetAttributeNumber(AName,ADefault);
-  if result <> EmptySingle then
-  begin
-    if FUnits.DpiScaleX = 0 then
-      result := 0
-    else
-      result := result / FUnits.DpiScaleX;
-  end;
+  value.value := GetAttributeNumber(AName,ADefault);
+  value.CSSUnit := cuPixel;
+  ScaleAttribute(value, FUnits.DpiScaleX, true);
+  result := value.value;
 end;
 
 function TSVGCustomElement.GetHorizAttribute(AName: string): TSVGNumber;
@@ -849,14 +878,7 @@ function TSVGCustomElement.GetHorizAttributeWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeWithUnit(AName,ADefault);
-  if result.value <> EmptySingle then
-  begin
-    if not (result.CSSUnit in[cuCustom, cuPercent]) then
-      if FUnits.DpiScaleX = 0 then
-        result.value := 0
-      else
-        result.value := result.value / FUnits.DpiScaleX;
-  end;
+  ScaleAttribute(result, FUnits.DpiScaleX, true);
 end;
 
 function TSVGCustomElement.GetHorizAttributeWithUnit(AName: string): TFloatWithCSSUnit;
@@ -890,30 +912,19 @@ end;
 function TSVGCustomElement.GetArrayOfOrthoAttributeWithUnit(AName: string;
   ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
 begin
-  result := GetArrayOfHorizAttributeWithUnit(AName, ACanInherit);
-  //value will be inconsistent if scaling is inconsistent
+  result := GetArrayOfAttributeWithUnit(AName, ACanInherit);
+  ScaleAttributeArray(result, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, true);
 end;
 
 function TSVGCustomElement.GetArrayOfOrthoAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 begin
-  result := GetArrayOfHorizAttributeWithUnit(AName);
-  //value will be inconsistent if scaling is inconsistent
+  result := GetArrayOfOrthoAttributeWithUnit(AName, true);
 end;
 
 function TSVGCustomElement.GetArrayOfHorizAttributeWithUnit(AName: string; ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
-var
-  i: integer;
 begin
   result := GetArrayOfAttributeWithUnit(AName,ACanInherit);
-  for i := low(result) to high(result) do
-    if result[i].value <> EmptySingle then
-    begin
-      if not (result[i].CSSUnit in[cuCustom, cuPercent]) then
-        if FUnits.DpiScaleX = 0 then
-          result[i].value := 0
-        else
-          result[i].value := result[i].value / FUnits.DpiScaleX;
-    end;
+  ScaleAttributeArray(result, FUnits.DpiScaleX, true);
 end;
 
 function TSVGCustomElement.GetArrayOfHorizAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
@@ -923,18 +934,9 @@ end;
 
 function TSVGCustomElement.GetArrayOfVerticalAttributeWithUnit(AName: string;
   ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
-var
-  i: integer;
 begin
   result := GetArrayOfAttributeWithUnit(AName,ACanInherit);
-  for i := low(result) to high(result) do
-  begin
-    if not (result[i].CSSUnit in[cuCustom, cuPercent]) then
-      if FUnits.DpiScaleY = 0 then
-        result[i].value := 0
-      else
-        result[i].value := result[i].value / FUnits.DpiScaleY;
-  end;
+  ScaleAttributeArray(result, FUnits.DpiScaleY, true);
 end;
 
 function TSVGCustomElement.GetArrayOfAttributeNumber(AName: string;
@@ -946,13 +948,7 @@ end;
 function TSVGCustomElement.GetVerticalAttribute(AName: string; ADefault: TSVGNumber): TSVGNumber;
 begin
   result := GetAttributeNumber(AName,ADefault);
-  if result <> EmptySingle then
-  begin
-    if FUnits.DpiScaleY = 0 then
-      result := 0
-    else
-      result := result / FUnits.DpiScaleY;
-  end;
+  ScaleAttribute(result, FUnits.DpiScaleY, true);
 end;
 
 function TSVGCustomElement.GetVerticalAttribute(AName: string): TSVGNumber;
@@ -963,14 +959,7 @@ end;
 function TSVGCustomElement.GetVerticalAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeWithUnit(AName,ADefault);
-  if result.value <> EmptySingle then
-  begin
-    if not (result.CSSUnit in[cuCustom, cuPercent]) then
-      if FUnits.DpiScaleY = 0 then
-        result.value := 0
-      else
-        result.value := result.value / FUnits.DpiScaleY;
-  end;
+  ScaleAttribute(result, FUnits.DpiScaleY, true);
 end;
 
 function TSVGCustomElement.GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit;
@@ -1006,56 +995,29 @@ end;
 procedure TSVGCustomElement.SetHorizAttribute(AName: string;
   AValue: TSVGNumber);
 begin
-  if FUnits.DpiScaled then
-    SetAttribute(AName, AValue)
-  else
-    SetAttribute(AName, AValue*FUnits.DpiScaleX)
+  ScaleAttribute(AValue, FUnits.DpiScaleX, false);
+  SetAttribute(AName, AValue);
 end;
 
 procedure TSVGCustomElement.SetHorizAttributeWithUnit(AName: string;
   AValue: TFloatWithCSSUnit);
 begin
-  if FUnits.DpiScaled then
-    SetAttribute(AName, TCSSUnitConverter.formatValue(FUnits.ConvertWidth(AValue,cuCustom)))
-  else
-  if AValue.CSSUnit <> cuCustom then
-    SetAttributeWithUnit(AName, FloatWithCSSUnit(AValue.value*FUnits.DpiScaleX,AValue.CSSUnit))
-  else
-    SetAttributeWithUnit(AName, AValue);
+  ScaleAttribute(AValue, FUnits.DpiScaleX, false);
+  SetAttributeWithUnit(AName, AValue);
 end;
 
 procedure TSVGCustomElement.SetArrayOfHorizAttributeWithUnit(AName: string;
   AValue: ArrayOfTFloatWithCSSUnit);
-var
-  i: integer;
-  tmp: ArrayOfTFloatWithCSSUnit;
 begin
-  if FUnits.DpiScaled then
-    SetAttribute(AName, TCSSUnitConverter.formatValue(FUnits.ConvertWidth(AValue,cuCustom)))
-  else
-  begin
-    //(not change input data)
-    setlength(tmp,length(AValue));
-    try
-     for i := low(AValue) to high(AValue) do
-      if not (AValue[i].CSSUnit in[cuCustom, cuPercent]) then
-       tmp[i]:= FloatWithCSSUnit(AValue[i].value*FUnits.DpiScaleX,AValue[i].CSSUnit)
-      else
-       tmp[i]:= AValue[i];
-     SetArrayOfAttributeWithUnit(AName, tmp);
-    finally
-     setlength(tmp,0);
-    end;
-  end;
+  ScaleAttributeArray(AValue, FUnits.DpiScaleX, false);
+  SetAttribute(AName, TCSSUnitConverter.formatValue(AValue));
 end;
 
 procedure TSVGCustomElement.SetVerticalAttribute(AName: string;
   AValue: TSVGNumber);
 begin
-  if FUnits.DpiScaled then
-    SetAttribute(AName, AValue)
-  else
-    SetAttribute(AName, AValue*FUnits.DpiScaleY);
+  ScaleAttribute(AValue, FUnits.DpiScaleY, false);
+  SetAttribute(AName, AValue)
 end;
 
 procedure TSVGCustomElement.SetArrayOfAttributeNumber(AName: string;
@@ -1073,82 +1035,81 @@ end;
 procedure TSVGCustomElement.SetVerticalAttributeWithUnit(AName: string;
   AValue: TFloatWithCSSUnit);
 begin
-  if FUnits.DpiScaled then
-    SetAttribute(AName, TCSSUnitConverter.formatValue(FUnits.ConvertHeight(AValue,cuCustom)))
-  else
-  if not (AValue.CSSUnit in[cuCustom, cuPercent]) then
-    SetAttributeWithUnit(AName, FloatWithCSSUnit(AValue.value*FUnits.DpiScaleY,AValue.CSSUnit))
-  else
-    SetAttributeWithUnit(AName, AValue);
+  ScaleAttribute(AValue, FUnits.DpiScaleY, false);
+  SetAttributeWithUnit(AName, AValue);
 end;
 
 procedure TSVGCustomElement.SetArrayOfVerticalAttributeWithUnit(AName: string;
   AValue: ArrayOfTFloatWithCSSUnit);
-var
-  i: integer;
-  tmp: ArrayOfTFloatWithCSSUnit;
 begin
-  if FUnits.DpiScaled then
-    SetAttribute(AName, TCSSUnitConverter.formatValue(FUnits.ConvertHeight(AValue,cuCustom)))
-  else
-  begin
-    //(not change input data)
-    setlength(tmp,length(AValue));
-    try
-     for i := low(AValue) to high(AValue) do
-      if not (AValue[i].CSSUnit in[cuCustom, cuPercent]) then
-       tmp[i]:= FloatWithCSSUnit(AValue[i].value*FUnits.DpiScaleY,AValue[i].CSSUnit)
-      else
-       tmp[i]:= AValue[i];
-     SetArrayOfAttributeWithUnit(AName, tmp);
-    finally
-     setlength(tmp,0);
-    end;
-  end;
+  ScaleAttributeArray(AValue, FUnits.DpiScaleY, false);
+  SetAttribute(AName, TCSSUnitConverter.formatValue(AValue));
 end;
 
 procedure TSVGCustomElement.SetOrthoAttributeWithUnit(AName: string;
   AValue: TFloatWithCSSUnit);
 begin
-  if (AValue.CSSUnit <> cuCustom) and (FUnits.DpiScaleX<>FUnits.DpiScaleY) then
-    raise exception.Create('Impossible to set value with inconsistent scaling');
-  if FUnits.DpiScaled then
-    SetAttribute(AName, TCSSUnitConverter.formatValue(FUnits.ConvertWidth(AValue,cuCustom)))
-  else
-    SetHorizAttributeWithUnit(AName,AValue);
+  ScaleAttribute(AValue, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, false);
+  SetAttribute(AName, TCSSUnitConverter.formatValue(AValue));
 end;
 
 procedure TSVGCustomElement.SetArrayOfOrthoAttributeWithUnit(AName: string;
   AValue: ArrayOfTFloatWithCSSUnit);
-var
-  b: boolean;
-  i: integer;
 begin
-  b:= FUnits.DpiScaleX <> FUnits.DpiScaleY;
-  for i := low(AValue) to high(AValue) do
-    if (AValue[i].CSSUnit <> cuCustom) and b then
-      raise exception.Create('Impossible to set value with inconsistent scaling');
+  ScaleAttributeArray(AValue, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, false);
+  SetAttribute(AName, TCSSUnitConverter.formatValue(AValue));
+end;
 
-  if FUnits.DpiScaled then
-    SetAttribute(AName, TCSSUnitConverter.formatValue(FUnits.ConvertWidth(AValue,cuCustom)))
-  else
-    SetArrayOfHorizAttributeWithUnit(AName,AValue);
+procedure TSVGCustomElement.ScaleAttribute(var AValue: TFloatWithCSSUnit;
+  AScale: single; AGet: boolean);
+begin
+  if FUnits.DpiScaled and not (AValue.CSSUnit in[cuCustom, cuPercent]) and (AScale <> 0) then
+  begin
+    if AGet then
+      AValue.value := AValue.value / AScale
+      else AValue.value := AValue.value * AScale;
+  end;
+end;
+
+procedure TSVGCustomElement.ScaleAttribute(var AValue: single; AScale: single;
+  AGet: boolean);
+var temp: TFloatWithCSSUnit;
+begin
+  temp.value := AValue;
+  temp.CSSUnit:= cuPixel;
+  ScaleAttribute(temp, AScale, AGet);
+  AValue := temp.value;
+end;
+
+procedure TSVGCustomElement.ScaleAttributeArray(
+  var AValue: ArrayOfTFloatWithCSSUnit; AScale: single; AGet: boolean);
+var
+  i: Integer;
+  temp: ArrayOfTFloatWithCSSUnit;
+begin
+  if FUnits.DpiScaled and (AScale <> 0) then
+  begin
+    setlength(temp, length(AValue));
+    for i := 0 to high(temp) do
+    if not (AValue[i].CSSUnit in[cuCustom, cuPercent]) then
+    begin
+      if AGet then
+        temp[i].value := AValue[i].value / AScale
+        else temp[i].value := AValue[i].value * AScale;
+      temp[i].CSSUnit:= AValue[i].CSSUnit;
+    end else
+      temp[i] := AValue[i];
+    AValue := temp;
+  end;
 end;
 
 procedure TSVGCustomElement.RemoveStyle(const AName: string);
 var
-  startPos, colonPos, valueLength: integer;
-  ruleset: string;
+  declarationBlock: string;
 begin
-  ruleset := GetAttribute('style','',false);
-  LocateStyleDeclaration(ruleset, AName, startPos,colonPos, valueLength);
-  if valueLength <> -1 then
-  begin
-    delete(ruleset, startPos, colonPos+valueLength-startPos);
-    while (length(ruleset)>=startPos) and (ruleset[startPos] in[' ',#9,#10,#12,#13]) do delete(ruleset,startPos,1);
-    if (length(ruleset)>=startPos) and (ruleset[startPos] = ';') then delete(ruleset,startPos,1);
-    SetAttribute('style', ruleset);
-  end;
+  declarationBlock := GetAttribute('style','',false);
+  if RemovePropertyFromDeclarationBlock(declarationBlock, AName) then
+    SetAttribute('style', declarationBlock);
 end;
 
 function TSVGCustomElement.HasAttribute(AName: string): boolean;
@@ -1156,9 +1117,87 @@ begin
   result := FDomElem.hasAttribute(AName);
 end;
 
+function TSVGCustomElement.HasInlineStyle(AName: string): boolean;
+begin
+  result := trim(GetInlineStyle(AName, '')) <> '';  //an empty declaration is illegal
+end;
+
+procedure TSVGCustomElement.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  if HasInlineStyle('stroke-width') then
+    SetInlineStyle('stroke-width', FUnits.ConvertWidth(GetInlineStyleWithUnit('stroke-width'), AUnit));
+  if HasInlineStyle('stroke-dash-offset') then
+    SetInlineStyle('stroke-dash-offset', FUnits.ConvertWidth(GetInlineStyleWithUnit('stroke-dash-offset'), AUnit));
+  if HasInlineStyle('font-size') then
+    SetInlineStyle('font-size', FUnits.ConvertHeight(GetInlineStyleWithUnit('font-size'), AUnit));
+end;
+
+function TSVGCustomElement.EnterFontSize(AIsRoot: boolean): TFloatWithCSSUnit;
+var
+  fs: TFloatWithCSSUnit;
+begin
+  result := FUnits.CurrentFontEmHeight;
+  if AIsRoot then FUnits.CurrentFontEmHeight := FUnits.RootFontEmHeight;
+  fs := GetAttributeOrStyleWithUnit('font-size', FUnits.CurrentFontEmHeight, false);
+  if fs.CSSUnit in [cuFontEmHeight,cuFontXHeight] then
+    fs := FUnits.ConvertHeight(fs, cuCustom);
+  FUnits.CurrentFontEmHeight:= fs;
+end;
+
+procedure TSVGCustomElement.ExitFontSize(APrevFontSize: TFloatWithCSSUnit);
+begin
+  FUnits.CurrentFontEmHeight := APrevFontSize;
+end;
+
 procedure TSVGCustomElement.RemoveNamespace(APrefix: string);
 begin
   NamespaceURI['APrefix'] := '';
+end;
+
+function TSVGCustomElement.MatrixToTransform(m: TAffineMatrix;
+  AFromUnit: TCSSUnit): string;
+var s: string;
+    translateStr: string;
+begin
+  translateStr := 'translate('+FUnits.formatValue(FUnits.ConvertWidth(m[1,3],AFromUnit,cuCustom))+' '+
+      FUnits.formatValue(FUnits.ConvertHeight(m[2,3],AFromUnit,cuCustom))+')';
+  if IsAffineMatrixTranslation(m) then
+  begin
+    if IsAffineMatrixIdentity(m) then
+      result := ''
+      else result := translateStr;
+  end else
+  begin
+    if (m[1,3] <> 0) or (m[2,3] <> 0) then
+    begin
+      s := translateStr;
+      m[1,3] := 0;
+      m[2,3] := 0;
+    end else
+      s := '';
+    if IsAffineMatrixScale(m) then
+      result := trim(s+' scale('+FUnits.formatValue(m[1,1])+' '+FUnits.formatValue(m[2,2])+')')
+    else
+      result := trim(s+' matrix('+FUnits.formatValue(m[1,1])+' '+FUnits.formatValue(m[2,1])+' '+
+                     FUnits.formatValue(m[1,2])+' '+FUnits.formatValue(m[2,2])+' ' +
+                     FUnits.formatValue(m[1,3])+' '+FUnits.formatValue(m[2,3])+')');
+  end;
+end;
+
+function TSVGCustomElement.TransformToMatrix(ATransform: string;
+  AToUnit: TCSSUnit): TAffineMatrix;
+var parser: TSVGParser;
+begin
+  if Trim(ATransform) = '' then
+  begin
+    result := AffineMatrixIdentity;
+    exit;
+  end;
+  parser := TSVGParser.Create(ATransform);
+  result := parser.ParseTransform;
+  result[1,3] := FUnits.ConvertWidth(result[1,3], cuCustom, AToUnit);
+  result[2,3] := FUnits.ConvertHeight(result[2,3], cuCustom, AToUnit);
+  parser.Free;
 end;
 
 { TSVGViewBox }
@@ -1594,20 +1633,8 @@ begin
 end;
 
 function TSVGElement.GetMatrix(AUnit: TCSSUnit): TAffineMatrix;
-var parser: TSVGParser;
-    s: string;
 begin
-  s := transform;
-  if s='' then
-  begin
-    result := AffineMatrixIdentity;
-    exit;
-  end;
-  parser := TSVGParser.Create(s);
-  result := parser.ParseTransform;
-  result[1,3] := Units.ConvertWidth(result[1,3],cuCustom,AUnit);
-  result[2,3] := Units.ConvertHeight(result[2,3],cuCustom,AUnit);
-  parser.Free;
+ result := TransformToMatrix(transform, AUnit);
 end;
 
 function TSVGElement.GetMixBlendMode: TBlendOperation;
@@ -1748,14 +1775,11 @@ function TSVGElement.GetStyleFromStyleSheet(const AName, ADefault: string): stri
 var
   i: Integer;
 begin
-  //if "not search"..search
-  if findStyleState = fssNotSearched then
-    FindStyleElement;
-  //if "find"..use
-  if findStyleState <> fssNotFound then
-    for i:= Length(styleAttributes)-1 downto 0 do
+  if FImportStyleState = fssNotSearched then ImportStyles;
+  if FImportStyleState <> fssNotFound then
+    for i:= Length(FImportedStyles)-1 downto 0 do
     begin
-      result:= GetPropertyFromStyleDeclaration(styleAttributes[i].attr, AName, '');
+      result:= GetPropertyFromStyleDeclarationBlock(FImportedStyles[i].attr, AName, '');
       if result <> '' then exit;
     end;
   result := inherited GetStyleFromStyleSheet(AName, ADefault);
@@ -1808,39 +1832,10 @@ begin
 end;
 
 procedure TSVGElement.SetMatrix(AUnit: TCSSUnit; const AValue: TAffineMatrix);
-var m: TAffineMatrix;
-    s: string;
-    translateStr: string;
 begin
-  translateStr := 'translate('+Units.formatValue(Units.ConvertWidth(AValue[1,3],AUnit,cuCustom))+' '+
-      Units.formatValue(Units.ConvertHeight(AValue[2,3],AUnit,cuCustom))+')';
-  if IsAffineMatrixTranslation(AValue) then
-  begin
-    if IsAffineMatrixIdentity(AValue) then
-    begin
-      transformNone;
-      exit;
-    end;
-    transform := translateStr;
-  end else
-  begin
-    m := AValue;
-    if (m[1,3] <> 0) or (m[2,3] <> 0) then
-    begin
-      s := translateStr;
-      m[1,3] := 0;
-      m[2,3] := 0;
-    end else
-      s := '';
-    if IsAffineMatrixScale(AValue) then
-    begin
-      transform := trim(s+' scale('+Units.formatValue(m[1,1])+' '+Units.formatValue(m[2,2])+')');
-      exit;
-    end;
-    transform := trim(s+' matrix('+Units.formatValue(m[1,1])+' '+Units.formatValue(m[2,1])+' '+
-                     Units.formatValue(m[1,2])+' '+Units.formatValue(m[2,2])+' ' +
-                     Units.formatValue(m[1,3])+' '+Units.formatValue(m[2,3])+')');
-  end;
+  if not IsAffineMatrixIdentity(AValue) then
+    transform := MatrixToTransform(AValue, AUnit)
+    else transformNone;
 end;
 
 procedure TSVGElement.SetMixBlendMode(AValue: TBlendOperation);
@@ -2020,8 +2015,8 @@ end;
 
 procedure TSVGElement.Initialize;
 begin
-  SetLength(styleAttributes,0);
-  findStyleState   := fssNotSearched;
+  SetLength(FImportedStyles,0);
+  FImportStyleState   := fssNotSearched;
 end;
 
 constructor TSVGElement.Create(AElement: TDOMElement;
@@ -2047,8 +2042,18 @@ end;
 
 destructor TSVGElement.Destroy;
 begin
-  SetLength(styleAttributes,0);
+  SetLength(FImportedStyles,0);
   inherited Destroy;
+end;
+
+procedure TSVGElement.ConvertToUnit(AUnit: TCSSUnit);
+begin
+ inherited ConvertToUnit(AUnit);
+ FImportStyleState:= fssNotSearched;
+ if HasAttribute('stroke-width') then
+   SetAttributeWithUnit('stroke-width', Units.ConvertWidth(GetAttributeWithUnit('stroke-width'), AUnit));
+ if HasAttribute('stroke-dash-offset') then
+   SetAttributeWithUnit('stroke-dash-offset', Units.ConvertWidth(GetAttributeWithUnit('stroke-dash-offset'), AUnit));
 end;
 
 procedure TSVGElement.Recompute;
@@ -2101,23 +2106,23 @@ begin
       result:= (Styles[i] as TSVGStyle).Find(classStr);
       if result <> -1 then
       begin
-        attributesStr:= (Styles[i] as TSVGStyle).Styles[result].attribute;
+        attributesStr:= (Styles[i] as TSVGStyle).Ruleset[result].declarations;
         Exit;
       end;
     end;
   result:= -1;
 end;
 
-procedure TSVGElement.FindStyleElement;
+procedure TSVGElement.ImportStyles;
 
   procedure AddStyle(const s: string; const id: integer);
   var
     l: integer;
   begin
-    findStyleState:= fssFind;
-    l:= Length(styleAttributes);
-    SetLength(styleAttributes,l+1);
-    with styleAttributes[l] do
+    FImportStyleState:= fssFound;
+    l:= Length(FImportedStyles);
+    SetLength(FImportedStyles,l+1);
+    with FImportedStyles[l] do
     begin
      attr:= s;
      pos:= id;
@@ -2128,8 +2133,8 @@ var
   fid: integer;
   tag,styleC,s: string;
 begin
-  findStyleState:= fssNotFound;
-  SetLength(styleAttributes,0);
+  FImportStyleState:= fssNotFound;
+  SetLength(FImportedStyles,0);
   tag:= FDomElem.TagName;
   styleC:= classAttr;
   (*
@@ -2142,8 +2147,8 @@ begin
     and circle declare:
     <circle class = "style1" cx="160" cy="160" r="35" stroke="black" />
 
-    styleAttributes[0] = 'fill:blue; fill-opacity: 0.4;'
-    styleAttributes[1] = 'fill:yellow;'
+    FImportedStyles[0] = 'fill:blue; fill-opacity: 0.4;'
+    FImportedStyles[1] = 'fill:yellow;'
 
     fill-opacity for "style1" = 0.4 not default 1!
   *)
