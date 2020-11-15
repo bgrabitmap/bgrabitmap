@@ -155,8 +155,8 @@ type
     function GetDOMElement: TDOMElement; virtual;
 
     function GetAttributeFromElement(ANode: TDOMElement; AName: string; ACanInherit: boolean): string;
-    function GetAttribute(AName,ADefault: string; ACanInherit: boolean): string; overload;
-    function GetAttribute(AName,ADefault: string): string; overload;
+    function GetAttribute(AName: string; ADefault: string; ACanInherit: boolean): string; overload;
+    function GetAttribute(AName: string; ADefault: string): string; overload;
     function GetAttribute(AName: string): string; overload;
     function GetAttributeNumber(AName: string; ADefault: TSVGNumber): TSVGNumber; overload;
     function GetArrayOfAttributeNumber(AName: string): ArrayOfTSVGNumber;
@@ -204,6 +204,10 @@ type
     function GetVerticalAttributeOrStyleWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit; overload;
     function GetArrayOfVerticalAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 
+    function GetNamespaceCount: integer;
+    function GetNamespacePrefix(AIndex: integer): string;
+    function GetNamespaceURI(APrefix: string): string;
+
     class function GetPropertyFromStyleDeclaration(AText: string;
       AProperty: string; ADefault: string): string;
     class procedure LocateStyleDeclaration(AText: string; AProperty: string;
@@ -231,10 +235,17 @@ type
     procedure SetOrthoAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
     procedure SetArrayOfOrthoAttributeWithUnit(AName: string; AValue: ArrayOfTFloatWithCSSUnit);
 
+    procedure SetNamespaceURI(APrefix: string; AValue: string);
+
     procedure SetStyle(AName: string; AValue: string);
   public
     procedure RemoveStyle(const AName: string);
     function HasAttribute(AName: string): boolean;
+
+    procedure RemoveNamespace(APrefix: string);
+    property NamespaceURI[APrefix: string]: string read GetNamespaceURI write SetNamespaceURI;
+    property NamespacePrefix[AIndex: integer]: string read GetNamespacePrefix;
+    property NamespaceCount: integer read GetNamespaceCount;
 
     property Style[AName: string]: string read GetStyle write SetStyle;
     property StyleDef[AName,ADefault: string]: string read GetStyle;
@@ -409,6 +420,48 @@ implementation
 uses BGRASVGShapes;
 
 { TSVGCustomElement }
+
+function TSVGCustomElement.GetNamespaceCount: integer;
+var
+  i: Integer;
+  name: string;
+begin
+  result := 0;
+  for i := 0 to FDomElem.Attributes.Length-1 do
+  begin
+    name := FDomElem.Attributes.Item[i].NodeName;
+    if name.StartsWith('xmlns:') then inc(result);
+  end;
+end;
+
+function TSVGCustomElement.GetNamespacePrefix(AIndex: integer): string;
+var
+  i: Integer;
+  name: string;
+begin
+  if AIndex < 0 then exit('');
+  result := '';
+  for i := 0 to FDomElem.Attributes.Length-1 do
+  begin
+    name := FDomElem.Attributes.Item[i].NodeName;
+    if name.StartsWith('xmlns:') then
+    begin
+      if AIndex > 0 then dec(AIndex)
+      else exit(name.Substring(6));
+    end;
+  end;
+end;
+
+function TSVGCustomElement.GetNamespaceURI(APrefix: string): string;
+begin
+  result := GetAttribute('xmlns:' + APrefix);
+end;
+
+procedure TSVGCustomElement.SetNamespaceURI(APrefix: string; AValue: string);
+begin
+  if AValue = '' then FDomElem.RemoveAttribute('xmlns:' + APrefix)
+  else SetAttribute('xmlns:' + APrefix, AValue);
+end;
 
 function TSVGCustomElement.GetDOMElement: TDOMElement;
 begin
@@ -648,7 +701,7 @@ begin
   until ANode = nil;
 end;
 
-function TSVGCustomElement.GetAttribute(AName, ADefault: string;
+function TSVGCustomElement.GetAttribute(AName: string; ADefault: string;
   ACanInherit: boolean): string;
 begin
   result := GetAttributeFromElement(FDomElem, AName, ACanInherit);
@@ -657,7 +710,7 @@ begin
     result := GetAttribute('color', ADefault, ACanInherit);
 end;
 
-function TSVGCustomElement.GetAttribute(AName, ADefault: string): string;
+function TSVGCustomElement.GetAttribute(AName: string; ADefault: string): string;
 begin
   result := GetAttribute(AName, ADefault, False);
 end;
@@ -1101,6 +1154,11 @@ end;
 function TSVGCustomElement.HasAttribute(AName: string): boolean;
 begin
   result := FDomElem.hasAttribute(AName);
+end;
+
+procedure TSVGCustomElement.RemoveNamespace(APrefix: string);
+begin
+  NamespaceURI['APrefix'] := '';
 end;
 
 { TSVGViewBox }
