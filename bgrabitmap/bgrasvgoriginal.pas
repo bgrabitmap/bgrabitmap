@@ -86,7 +86,8 @@ type
 
 implementation
 
-uses BGRACanvas2D, BGRAMemDirectory, BGRAUTF8, BGRASVGShapes, math, BGRASVGType;
+uses BGRACanvas2D, BGRAMemDirectory, BGRAUTF8, BGRASVGShapes, math, BGRASVGType,
+  BGRAVectorize;
 
 { TBGRASVGOriginalDiff }
 
@@ -255,6 +256,7 @@ begin
   begin
     c2D := TBGRACanvas2D.Create(ADest);
     c2D.transform(AMatrix*FPresentationMatrix);
+    c2D.fontRenderer := TBGRAVectorizedFontRenderer.Create;
     if ADraft then c2D.antialiasing := false;
     FSVG.Draw(c2D,0,0);
     c2D.Free;
