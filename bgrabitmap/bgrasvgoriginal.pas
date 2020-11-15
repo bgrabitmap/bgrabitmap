@@ -415,6 +415,11 @@ begin
       begin
         layer := svg.Layer[i];
         svgLayer := TBGRASVG.Create(svg.WidthAsPixel, svg.HeightAsPixel, cuPixel);
+        for j := 0 to svg.NamespaceCount-1 do
+        begin
+          prefix := svg.NamespacePrefix[j];
+          svgLayer.NamespaceURI[prefix] := svg.NamespaceURI[prefix];
+        end;
         try
           svgLayer.ViewBox := svg.ViewBox;
           for j := 0 to svg.Content.IndexOfElement(layer)-1 do
