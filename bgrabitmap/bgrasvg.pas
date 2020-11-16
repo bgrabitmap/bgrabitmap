@@ -163,8 +163,9 @@ type
     procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; destDpi: TPointF); overload;
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; x,y,w,h: single; useSvgAspectRatio: boolean = false); overload;
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; r: TRectF; useSvgAspectRatio: boolean = false); overload;
-    procedure StretchDraw(ACanvas2d: TBGRACanvas2D; AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y,w,h: single); overload;
-    function GetStretchRectF(AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y,w,h: single): TRectF; overload;
+    procedure StretchDraw(ACanvas2d: TBGRACanvas2D; AHorizAlign: TAlignment;
+      AVertAlign: TTextLayout; x,y,w,h: single; ASlice: boolean = false); overload;
+    function GetStretchRectF(AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y,w,h: single; ASlice: boolean = false): TRectF; overload;
     function GetStretchRectF(x,y,w,h: single): TRectF; overload;
     function FindElementById(AID: string): TSVGElement; overload;
     function FindElementById(AID: string; AClass: TSVGFactory): TSVGElement; overload;
@@ -1213,7 +1214,8 @@ begin
 end;
 
 procedure TBGRASVG.StretchDraw(ACanvas2d: TBGRACanvas2D;
-  AHorizAlign: TAlignment; AVertAlign: TTextLayout; x, y, w, h: single);
+  AHorizAlign: TAlignment; AVertAlign: TTextLayout; x, y, w, h: single;
+  ASlice: boolean);
 var r: TRectF;
 begin
   r := GetStretchRectF(AHorizAlign,AVertAlign, x, y, w, h);
@@ -1227,42 +1229,15 @@ begin
 end;
 
 function TBGRASVG.GetStretchRectF(AHorizAlign: TAlignment;
-  AVertAlign: TTextLayout; x, y, w, h: single): TRectF;
-var ratio,stretchRatio,zoom: single;
-  sx,sy,sw,sh: single;
-  size: TSVGSize;
+  AVertAlign: TTextLayout; x, y, w, h: single; ASlice: boolean): TRectF;
+var
+  aspect: TSVGPreserveAspectRatio;
 begin
-  //determine global ratio according to viewSize
-  size := Units.OriginalViewSize;
-  size.width := Units.ConvertWidth(size.Width,cuPixel);
-  size.height := Units.ConvertHeight(size.height,cuPixel);
-  if (h = 0) or (w = 0) or (size.width.value = 0) or (size.height.value = 0) then
-  begin
-    result := RectF(x,y,w,h);
-    exit;
-  end;
-  ratio := size.width.value/size.height.value;
-  stretchRatio := w/h;
-  if ratio > stretchRatio then
-    zoom := w / size.width.value
-  else
-    zoom := h / size.height.value;
-
-  sx := x;
-  sy := y;
-  sw := size.width.value*zoom;
-  sh := size.height.value*zoom;
-
-  case AHorizAlign of
-    taCenter: IncF(sx, (w - sw)/2);
-    taRightJustify: IncF(sx, w - sw);
-  end;
-  case AVertAlign of
-    tlCenter: IncF(sy, (h - sh)/2);
-    tlBottom: IncF(sy, h - sh);
-  end;
-
-  result := Units.GetStretchRectF(RectF(sx,sy,sx+sw,sy+sh), preserveAspectRatio);
+  aspect.HorizAlign:= AHorizAlign;
+  aspect.VertAlign:= AVertAlign;
+  aspect.Preserve:= true;
+  aspect.Slice:= ASlice;
+  result := Units.GetStretchRectF(RectWithSizeF(x, y, w, h), aspect);
 end;
 
 function TBGRASVG.FindElementById(AID: string): TSVGElement;
