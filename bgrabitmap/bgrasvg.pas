@@ -165,6 +165,8 @@ type
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; r: TRectF; useSvgAspectRatio: boolean = false); overload;
     procedure StretchDraw(ACanvas2d: TBGRACanvas2D; AHorizAlign: TAlignment;
       AVertAlign: TTextLayout; x,y,w,h: single; ASlice: boolean = false); overload;
+    procedure StretchDraw(ACanvas2d: TBGRACanvas2D; AHorizAlign: TAlignment;
+      AVertAlign: TTextLayout; r: TRectF; ASlice: boolean = false); overload;
     function GetStretchRectF(AHorizAlign: TAlignment; AVertAlign: TTextLayout; x,y,w,h: single; ASlice: boolean = false): TRectF; overload;
     function GetStretchRectF(x,y,w,h: single): TRectF; overload;
     function FindElementById(AID: string): TSVGElement; overload;
@@ -1210,7 +1212,7 @@ end;
 
 procedure TBGRASVG.StretchDraw(ACanvas2d: TBGRACanvas2D; r: TRectF; useSvgAspectRatio: boolean);
 begin
-  StretchDraw(ACanvas2d, r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top, useSvgAspectRatio);
+  StretchDraw(ACanvas2d, r.Left, r.Top, r.Width, r.Height, useSvgAspectRatio);
 end;
 
 procedure TBGRASVG.StretchDraw(ACanvas2d: TBGRACanvas2D;
@@ -1219,7 +1221,13 @@ procedure TBGRASVG.StretchDraw(ACanvas2d: TBGRACanvas2D;
 var r: TRectF;
 begin
   r := GetStretchRectF(AHorizAlign,AVertAlign, x, y, w, h);
-  StretchDraw(ACanvas2d, r.Left,r.Top,r.Right-r.Left,r.Bottom-r.Top);
+  StretchDraw(ACanvas2d, r);
+end;
+
+procedure TBGRASVG.StretchDraw(ACanvas2d: TBGRACanvas2D;
+  AHorizAlign: TAlignment; AVertAlign: TTextLayout; r: TRectF; ASlice: boolean);
+begin
+  StretchDraw(ACanvas2d, AHorizAlign, AVertAlign, r.Left, r.Top, r.Width, r.Height, ASlice);
 end;
 
 function TBGRASVG.GetStretchRectF(x,y,w,h: single): TRectF;
