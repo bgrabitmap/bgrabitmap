@@ -403,6 +403,7 @@ var
   idx, i, j: Integer;
   layer: TSVGGroup;
   prefix: String;
+  originalViewBox: TSVGViewBox;
 begin
   svg := TBGRASVG.Create;
   try
@@ -433,6 +434,13 @@ begin
         end;
         try
           svgLayer.ViewBox := svg.ViewBox;
+          if layer.DOMElement.hasAttribute('bgra:originalViewBox') then
+          begin
+            originalViewBox := TSVGViewBox.Parse(layer.DOMElement.GetAttribute('bgra:originalViewBox'));
+            svgLayer.WidthAsPixel := originalViewBox.size.x;
+            svgLayer.HeightAsPixel := originalViewBox.size.y;
+            svgLayer.ViewBox := originalViewBox;
+          end;
           for j := 0 to svg.Content.IndexOfElement(layer)-1 do
             if svg.Content.ElementObject[j] is TSVGDefine then
               svgLayer.Content.CopyElement(svg.Content.ElementObject[j]);
@@ -476,7 +484,8 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
     img.matrix[cuCustom] := AffineMatrixLinear(AMatrix);
   end;
 
-  procedure StoreLayer(ALayerIndex: integer; ASVG: TBGRASVG; ADest: TSVGContent; out AMatrix: TAffineMatrix);
+  procedure StoreLayer(ALayerIndex: integer; ASVG: TBGRASVG; ADestElem: TSVGCustomElement;
+        ADest: TSVGContent; out AMatrix: TAffineMatrix);
   var
     c: TBGRALayerOriginalAny;
     bmp: TBGRABitmap;
@@ -484,6 +493,7 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
     minCoord: TPointF;
     i: Integer;
     prefix: String;
+    origViewBox: TSVGViewBox;
   begin
     AMatrix := AffineMatrixIdentity;
     if LayerOriginalKnown[ALayerIndex] then
@@ -493,11 +503,18 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
     if c = TBGRALayerSVGOriginal then
     begin
       layerSvg := (LayerOriginal[ALayerIndex] as TBGRALayerSVGOriginal).GetSVGCopy;
+      origViewBox := layerSvg.ViewBox;
       try
         minCoord := layerSvg.ViewMinInUnit[cuCustom];
         AMatrix:= LayerOriginalMatrix[ALayerIndex] * layerSvg.PresentationMatrix[cuPixel, true] *
           AffineMatrixTranslation(-minCoord.X, -minCoord.Y);
         layerSvg.ConvertToUnit(cuCustom);
+        if ADestElem is TSVGGroup then
+        with TSVGGroup(ADestElem) do
+        begin
+          DOMElement.SetAttribute('xmlns:bgra', 'https://wiki.freepascal.org/LazPaint_SVG_format');
+          DOMElement.SetAttribute('bgra:originalViewBox', origViewBox.ToString);
+        end;
         for i := 0 to layerSvg.Content.ElementCount-1 do
           ADest.CopyElement(layerSvg.Content.ElementObject[i]);
         for i := 0 to layerSvg.NamespaceCount-1 do
@@ -536,7 +553,7 @@ begin
     if (NbLayers = 1) and (LayerOpacity[0] = 255) and LayerVisible[0] and
        ((LayerOriginalGuid[0] = GUID_NULL) or IsAffineMatrixIdentity(LayerOriginalMatrix[0])) then
     begin
-      StoreLayer(0, svg, svg.Content, m);
+      StoreLayer(0, svg, svg, svg.Content, m);
     end else
     begin
       svg.NamespaceURI['inkscape'] := 'http://www.inkscape.org/namespaces/inkscape';
@@ -548,7 +565,7 @@ begin
         g.opacity:= LayerOpacity[i]/255;
         g.Visible:= LayerVisible[i];
         g.mixBlendMode:= BlendOperation[i];
-        StoreLayer(i, svg, g.Content, m);
+        StoreLayer(i, svg, g, g.Content, m);
         g.matrix[cuPixel] := m;
       end;
     end;
