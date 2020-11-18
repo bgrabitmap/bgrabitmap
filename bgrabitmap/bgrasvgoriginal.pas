@@ -64,6 +64,7 @@ type
     property Width: single read GetSvgWidth;
     property Height: single read GetSvgHeight;
     property DPI: single read GetDPI write SetDPI;
+    property PresentationMatrix: TAffineMatrix read FPresentationMatrix;
   end;
 
   { TBGRALayeredSVG }
@@ -229,7 +230,7 @@ begin
   compHeight := FSVG.HeightAsPixel;
   FSVG.WidthAsPixel := compWidth * AScaleDPI;
   FSVG.HeightAsPixel := compHeight * AScaleDPI;
-  FPresentationMatrix := FSVG.PresentationMatrix[cuPixel];
+  FPresentationMatrix := FSVG.PresentationMatrix[cuPixel, true];
 end;
 
 constructor TBGRALayerSVGOriginal.Create;
@@ -257,7 +258,7 @@ begin
     c2D.transform(AMatrix*FPresentationMatrix);
     c2D.fontRenderer := TBGRAVectorizedFontRenderer.Create;
     if ADraft then c2D.antialiasing := false;
-    FSVG.Draw(c2D,0,0);
+    FSVG.Draw(c2D, 0, 0, cuPixel, False);
     c2D.Free;
   end;
 end;
@@ -270,7 +271,8 @@ var
 begin
   if Assigned(FSVG) then
   begin
-    r := FSVG.GetStretchRectF(0, 0, FSVG.VisualWidthAsPixel, FSVG.VisualHeightAsPixel);
+    with FSVG.ViewBox do
+      r := FSVG.GetStretchRectF(0, 0, size.x, size.y);
     aff := AMatrix * FPresentationMatrix * TAffineBox.AffineBox(r);
     result := aff.RectBounds;
   end else
@@ -294,7 +296,7 @@ begin
       FreeAndNil(FSVG);
       FSVG := TBGRASVG.Create;
     end;
-    FPresentationMatrix := FSVG.PresentationMatrix[cuPixel];
+    FPresentationMatrix := FSVG.PresentationMatrix[cuPixel, true];
     FContentVersion:= AStorage.Int['content-version'];
   finally
     svgStream.Free;

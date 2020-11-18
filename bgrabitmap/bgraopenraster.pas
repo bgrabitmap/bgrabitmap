@@ -796,8 +796,8 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
     rootElems := TList.Create;
     try
       origViewBox := newSvg.ViewBox;
-      box := newSvg.PresentationMatrix[cuPixel] * TAffineBox.AffineBox(PointF(0,0),
-        PointF(newSvg.WidthAsPixel,0), PointF(0,newSvg.HeightAsPixel));
+      box := newSvg.PresentationMatrix[cuPixel, false] * TAffineBox.AffineBox(PointF(0,0),
+        PointF(newSvg.VisualWidthAsPixel,0), PointF(0,newSvg.VisualHeightAsPixel));
       transfBox := LayerOriginalMatrix[ALayerIndex] * box;
       newBounds := RectF(transfBox.RectBounds);
       AOffset := Point(round(newBounds.Left), round(newBounds.Top));

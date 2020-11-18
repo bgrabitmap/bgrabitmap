@@ -84,7 +84,7 @@ type
     function GetLayer(AIndex: integer): TSVGGroup;
     function GetLayerCount: integer;
     function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
-    function GetPresentationMatrix(AUnit: TCSSUnit): TAffineMatrix;
+    function GetPresentationMatrix(AUnit: TCSSUnit; AScale: boolean): TAffineMatrix;
     function GetUnits: TSVGUnits;
     function GetUTF8String: utf8string;
     function GetViewBox: TSVGViewBox; overload;
@@ -126,7 +126,7 @@ type
     FDataLink: TSVGDataLink;
     procedure Init(ACreateEmpty: boolean);
     function GetViewBoxAlignment(AHorizAlign: TAlignment; AVertAlign: TTextLayout; AUnit: TCSSUnit): TPointF;
-    function GetViewBoxScale(ATargetUnit: TCSSUnit): TPointF;
+    function GetViewBoxScale: TPointF;
     procedure UnitsRecompute(Sender: TObject);
     procedure SetAttribute(AName: string; AValue: string); override;
   public
@@ -190,7 +190,7 @@ type
     property Content: TSVGContent read FContent;
     property DataLink: TSVGDataLink read FDataLink;//(for test or internal info)
     property preserveAspectRatio: TSVGPreserveAspectRatio read GetPreserveAspectRatio write SetPreserveAspectRatio;
-    property PresentationMatrix[AUnit: TCSSUnit]: TAffineMatrix read GetPresentationMatrix;
+    property PresentationMatrix[AUnit: TCSSUnit; AScale: boolean]: TAffineMatrix read GetPresentationMatrix;
     property Layer[AIndex: integer]: TSVGGroup read GetLayer;
     property LayerCount: integer read GetLayerCount;
   end;
@@ -609,7 +609,7 @@ begin
   result := Units.PreserveAspectRatio;
 end;
 
-function TBGRASVG.GetPresentationMatrix(AUnit: TCSSUnit): TAffineMatrix;
+function TBGRASVG.GetPresentationMatrix(AUnit: TCSSUnit; AScale: boolean): TAffineMatrix;
 var
   w, h: single;
   presentationRect: TRectF;
@@ -618,6 +618,9 @@ begin
   h := Units.ConvertWidth(ComputedHeight, AUnit).value;
   presentationRect := GetStretchRectF(0, 0, w, h);
   result := AffineMatrixTranslation(presentationRect.Left, presentationRect.Top);
+  if AScale then
+    with GetViewBoxScale do
+      result := result * AffineMatrixScale(x, y);
 end;
 
 function TBGRASVG.GetUnits: TSVGUnits;
@@ -859,7 +862,7 @@ begin
   end;
 end;
 
-function TBGRASVG.GetViewBoxScale(ATargetUnit: TCSSUnit): TPointF;
+function TBGRASVG.GetViewBoxScale: TPointF;
 var
   svs: TSVGSize;
   vb: TSVGViewBox;
@@ -1010,7 +1013,7 @@ var prevMatrix: TAffineMatrix;
 begin
   prevMatrix := ACanvas2d.matrix;
   ACanvas2d.translate(x,y);
-  with GetViewBoxScale(AUnit) do ACanvas2d.scale(x, y);
+  with GetViewBoxScale do ACanvas2d.scale(x, y);
   with GetViewBoxAlignment(AHorizAlign,AVertAlign,cuPixel) do ACanvas2d.translate(x,y);
   Draw(ACanvas2d, 0,0, AUnit);
   ACanvas2d.matrix := prevMatrix;
@@ -1028,7 +1031,7 @@ begin
   ACanvas2d.save;
   ACanvas2d.translate(x,y);
   ACanvas2d.scale(destDpi.x/Units.DpiX,destDpi.y/Units.DpiY);
-  with GetViewBoxScale(cuPixel) do ACanvas2d.scale(x, y);
+  with GetViewBoxScale do ACanvas2d.scale(x, y);
   with GetViewBoxAlignment(AHorizAlign,AVertAlign, cuPixel) do ACanvas2d.translate(x,y);
   Draw(ACanvas2d, 0,0, cuPixel);
   ACanvas2d.restore;
@@ -1043,7 +1046,7 @@ begin
   ACanvas2d.save;
   ACanvas2d.translate(x,y);
   if AScale then
-    with GetViewBoxScale(AUnit) do ACanvas2d.scale(x, y);
+    with GetViewBoxScale do ACanvas2d.scale(x, y);
   ACanvas2d.strokeMatrix := ACanvas2d.matrix;
   prevFontSize := EnterFontSize(true);
   Content.Draw(ACanvas2d,AUnit);
@@ -1063,7 +1066,7 @@ begin
   ACanvas2d.translate(x,y);
   ACanvas2d.scale(destDpi.x/Units.DpiX,destDpi.y/Units.DpiY);
   if AScale then
-    with GetViewBoxScale(cuPixel) do ACanvas2d.scale(x, y);
+    with GetViewBoxScale do ACanvas2d.scale(x, y);
   Draw(ACanvas2d, 0,0, cuPixel);
   ACanvas2d.restore;
 end;
