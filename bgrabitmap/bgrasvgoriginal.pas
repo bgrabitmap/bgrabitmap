@@ -297,6 +297,7 @@ begin
       FreeAndNil(FSVG);
       FSVG := TBGRASVG.Create;
     end;
+    FPresentationMatrix := FSVG.PresentationMatrix[cuPixel];
     FContentVersion:= AStorage.Int['content-version'];
   finally
     svgStream.Free;
