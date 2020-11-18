@@ -469,7 +469,6 @@ type
       function GetHeight: TFloatWithCSSUnit;
       function GetPreserveAspectRatio: TSVGPreserveAspectRatio;
       function GetXlinkHref: string;
-      procedure SetBitmap(AValue: TBGRACustomBitmap);
       procedure SetExternalResourcesRequired(AValue: boolean);
       procedure SetImageRendering(AValue: TSVGImageRendering);
       procedure SetX(AValue: TFloatWithCSSUnit);
@@ -489,6 +488,7 @@ type
       destructor Destroy; override;
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
+      procedure SetBitmap(AValue: TBGRACustomBitmap; AOwned: boolean);
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property x: TFloatWithCSSUnit read GetX write SetX;
@@ -499,7 +499,7 @@ type
       property preserveAspectRatio: TSVGPreserveAspectRatio
        read GetPreserveAspectRatio write SetPreserveAspectRatio;
       property xlinkHref: string read GetXlinkHref write SetXlinkHref;
-      property Bitmap: TBGRACustomBitmap read GetBitmap write SetBitmap;
+      property Bitmap: TBGRACustomBitmap read GetBitmap;
   end;   
   
   { TSVGPattern }
@@ -810,6 +810,8 @@ type
       function AppendPolygon(const points: array of TPointF; AUnit: TCSSUnit = cuCustom): TSVGPolypoints; overload;
       function AppendRect(x,y,width,height: single; AUnit: TCSSUnit = cuCustom): TSVGRectangle; overload;
       function AppendRect(origin,size: TPointF; AUnit: TCSSUnit = cuCustom): TSVGRectangle; overload;
+      function AppendImage(x,y,width,height: single; ABitmap: TBGRACustomBitmap; ABitmapOwned: boolean; AUnit: TCSSUnit = cuCustom): TSVGImage; overload;
+      function AppendImage(origin,size: TPointF; ABitmap: TBGRACustomBitmap; ABitmapOwned: boolean; AUnit: TCSSUnit = cuCustom): TSVGImage; overload;
       function AppendText(x,y: single; AText: string; AUnit: TCSSUnit = cuCustom): TSVGText; overload;
       function AppendText(origin: TPointF; AText: string; AUnit: TCSSUnit = cuCustom): TSVGText; overload;
       function AppendRoundRect(x,y,width,height,rx,ry: single; AUnit: TCSSUnit = cuCustom): TSVGRectangle; overload;
@@ -2227,7 +2229,7 @@ begin
   result := Attribute['xlink:href',''];
 end;
 
-procedure TSVGImage.SetBitmap(AValue: TBGRACustomBitmap);
+procedure TSVGImage.SetBitmap(AValue: TBGRACustomBitmap; AOwned: boolean);
 var
   s: TStringStream;
   byteStream: TMemoryStream;
@@ -2235,7 +2237,9 @@ var
 begin
   if AValue = FBitmap then exit;
   FreeAndNil(FBitmap);
-  FBitmap := AValue;
+  if AOwned then
+    FBitmap := AValue
+    else FBitmap := AValue.Duplicate;
   if FBitmap = nil then
   begin
     FDomElem.RemoveAttribute('xlink:href');
@@ -4187,6 +4191,23 @@ function TSVGContent.AppendRect(origin, size: TPointF; AUnit: TCSSUnit
   ): TSVGRectangle;
 begin
   result := AppendRect(origin.x,origin.y,size.x,size.y,AUnit);
+end;
+
+function TSVGContent.AppendImage(x, y, width, height: single; ABitmap: TBGRACustomBitmap;
+  ABitmapOwned: boolean; AUnit: TCSSUnit): TSVGImage;
+begin
+  result := TSVGImage.Create(FDoc,Units,FDataLink);
+  result.x := FloatWithCSSUnit(x, AUnit);
+  result.y := FloatWithCSSUnit(y, AUnit);
+  result.width := FloatWithCSSUnit(width, AUnit);
+  result.height := FloatWithCSSUnit(height, AUnit);
+  result.SetBitmap(ABitmap, ABitmapOwned);
+end;
+
+function TSVGContent.AppendImage(origin, size: TPointF; ABitmap: TBGRACustomBitmap;
+  ABitmapOwned: boolean; AUnit: TCSSUnit): TSVGImage;
+begin
+  result := AppendImage(origin.x,origin.y,size.x,size.y,ABitmap,ABitmapOwned,AUnit);
 end;
 
 function TSVGContent.AppendText(x, y: single; AText: string; AUnit: TCSSUnit

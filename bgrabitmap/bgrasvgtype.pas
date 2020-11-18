@@ -256,6 +256,7 @@ type
     function TransformToMatrix(ATransform: string; AToUnit: TCSSUnit): TAffineMatrix;
 
     procedure RemoveNamespace(APrefix: string);
+    function NeedNamespace(APrefix: string): boolean;
     property NamespaceURI[APrefix: string]: string read GetNamespaceURI write SetNamespaceURI;
     property NamespacePrefix[AIndex: integer]: string read GetNamespacePrefix;
     property NamespaceCount: integer read GetNamespaceCount;
@@ -1083,6 +1084,31 @@ end;
 procedure TSVGCustomElement.RemoveNamespace(APrefix: string);
 begin
   NamespaceURI['APrefix'] := '';
+end;
+
+function TSVGCustomElement.NeedNamespace(APrefix: string): boolean;
+var
+  prefixColon: DOMString;
+
+  function NeedNamespaceRec(ANode: TDOMElement): boolean;
+  var
+    i: Integer;
+  begin
+    for i := 0 to ANode.Attributes.Length-1 do
+      if copy(ANode.Attributes[i].NodeName, 1, length(prefixColon)) = prefixColon then
+        exit(true);
+
+    for i := 0 to ANode.ChildNodes.Length-1 do
+      if (ANode.ChildNodes[i] is TDOMElement) and
+         NeedNamespaceRec(ANode.ChildNodes[i] as TDOMElement) then
+        exit(true);
+
+    result := false;
+  end;
+
+begin
+  prefixColon := APrefix+':';
+  result := NeedNamespaceRec(FDomElem);
 end;
 
 function TSVGCustomElement.MatrixToTransform(m: TAffineMatrix;
