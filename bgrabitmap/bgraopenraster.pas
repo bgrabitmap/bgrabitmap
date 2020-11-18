@@ -740,6 +740,7 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
     try
       w := ASVG.WidthAsPixel;
       h := ASVG.HeightAsPixel;
+      //ensure we are not using units affected by DPI
       ASVG.ConvertToUnit(cuCustom);
       ASVG.WidthAsPixel := w;
       ASVG.HeightAsPixel := h;

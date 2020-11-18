@@ -46,12 +46,8 @@ type
     function GetRootFontEmHeight: TFloatWithCSSUnit;
     function GetDefaultUnitHeight: TFloatWithCSSUnit; virtual;
     function GetDefaultUnitWidth: TFloatWithCSSUnit; virtual;
-    function GetDpiScaleTransform: string;
     function GetDpiX: single; virtual;
     function GetDpiY: single; virtual;
-    function GetDPIScaled: boolean; virtual;
-    function GetDpiScaleX: single; virtual;
-    function GetDpiScaleY: single; virtual;
     function GetFontEmHeight: TFloatWithCSSUnit; virtual;
     function GetFontXHeight: TFloatWithCSSUnit; virtual;
     procedure SetViewBoxHeight(AValue: TFloatWithCSSUnit);
@@ -94,10 +90,6 @@ type
     property ViewBoxHeight: TFloatWithCSSUnit read FViewBoxHeight write SetViewBoxHeight;
     property DpiX: single read GetDpiX;
     property DpiY: single read GetDpiY;
-    property DpiScaled: boolean read GetDPIScaled;
-    property DpiScaleX: single read GetDpiScaleX;
-    property DpiScaleY: single read GetDpiScaleY;
-    property DpiScaleTransform: string read GetDpiScaleTransform;
     property CurrentFontEmHeight: TFloatWithCSSUnit read FCurrentFontEmHeight write FCurrentFontEmHeight;
     property RootFontEmHeight: TFloatWithCSSUnit read GetRootFontEmHeight;
   end;
@@ -150,16 +142,6 @@ begin
   result := FloatWithCSSUnit(12, cuPoint);
 end; 
 
-function TCSSUnitConverter.GetDpiScaleX: single;
-begin
-  result := 1;
-end;
-
-function TCSSUnitConverter.GetDpiScaleY: single;
-begin
-  result := 1;
-end;
-
 function TCSSUnitConverter.GetFontEmHeight: TFloatWithCSSUnit;
 begin
   result := FCurrentFontEmHeight;
@@ -169,17 +151,6 @@ function TCSSUnitConverter.GetFontXHeight: TFloatWithCSSUnit;
 begin
   result := FCurrentFontEmHeight;
   result.value := result.value * 0.5; //approximation
-end;
-
-function TCSSUnitConverter.GetDPIScaled: boolean;
-begin
-  result := false;
-end;
-
-function TCSSUnitConverter.GetDpiScaleTransform: string;
-begin
-  result := 'scale('+formatValue(DpiScaleX)+','+
-           formatValue(DpiScaleY)+')';
 end;
 
 function TCSSUnitConverter.GetDefaultUnitHeight: TFloatWithCSSUnit;

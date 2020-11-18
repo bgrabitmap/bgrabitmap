@@ -1524,7 +1524,6 @@ var
   fh: TFloatWithCSSUnit;
 begin
   fh := Units.CurrentFontEmHeight;
-  ScaleAttribute(fh, Units.DpiScaleY, true);
   ACanvas2d.fontEmHeight := Units.ConvertHeight(fh, AUnit).value;
   ACanvas2d.fontName := fontFamily;
   fs := [];
@@ -4092,22 +4091,11 @@ end;
 function TSVGContent.AppendCircle(cx, cy, r: single; AUnit: TCSSUnit
   ): TSVGCircle;
 begin
-  if (AUnit <> cuCustom) and (Units.DpiScaleX <> Units.DpiScaleY) then
-  begin
-    result := TSVGCircle.Create(FDoc,Units,FDataLink);
-    result.cx := FloatWithCSSUnit(Units.Convert(cx,AUnit,cuCustom,Units.DpiX),cuCustom);
-    result.cy := FloatWithCSSUnit(Units.Convert(cy,AUnit,cuCustom,Units.DpiY),cuCustom);
-    result.r := FloatWithCSSUnit(Units.Convert(r,AUnit,cuCustom,Units.DpiX),cuCustom);
-    result.transform:= Units.DpiScaleTransform;
-    AppendElement(result);
-  end else
-  begin
-    result := TSVGCircle.Create(FDoc,Units,FDataLink);
-    result.cx := FloatWithCSSUnit(cx,AUnit);
-    result.cy := FloatWithCSSUnit(cy,AUnit);
-    result.r := FloatWithCSSUnit(r,AUnit);
-    AppendElement(result);
-  end;
+  result := TSVGCircle.Create(FDoc,Units,FDataLink);
+  result.cx := FloatWithCSSUnit(cx,AUnit);
+  result.cy := FloatWithCSSUnit(cy,AUnit);
+  result.r := FloatWithCSSUnit(r,AUnit);
+  AppendElement(result);
 end;
 
 function TSVGContent.AppendCircle(c: TPointF; r: single; AUnit: TCSSUnit
@@ -4150,20 +4138,10 @@ end;
 
 function TSVGContent.AppendPath(path: TBGRAPath; AUnit: TCSSUnit): TSVGPath;
 begin
-  if (AUnit <> cuCustom) and (Units.DpiScaleX <> Units.DpiScaleY) then
-  begin
-    result := TSVGPath.Create(FDoc,Units,FDataLink);
-    result.path.scale(Units.Convert(1,AUnit,cuCustom,Units.DpiX));
-    path.copyTo(result.path);
-    result.transform := Units.DpiScaleTransform;
-    AppendElement(result);
-  end else
-  begin
-    result := TSVGPath.Create(FDoc,Units,FDataLink);
-    result.path.scale(Units.ConvertWidth(1,AUnit,cuCustom));
-    path.copyTo(result.path);
-    AppendElement(result);
-  end;
+  result := TSVGPath.Create(FDoc,Units,FDataLink);
+  result.path.scale(Units.ConvertWidth(1,AUnit,cuCustom));
+  path.copyTo(result.path);
+  AppendElement(result);
 end;
 
 function TSVGContent.AppendPolygon(const points: array of single;

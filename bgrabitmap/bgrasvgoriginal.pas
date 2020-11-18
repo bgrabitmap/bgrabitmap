@@ -74,7 +74,7 @@ type
       procedure InternalLoadFromStream(AStream: TStream);
       procedure InternalSaveToStream(AStream: TStream);
     public
-      ContainerWidth, ContainerHeight, DPI: integer;
+      ContainerWidth, ContainerHeight, DefaultSvgDPI, DPI: integer;
       DefaultLayerName: string;
       constructor Create; overload; override;
       constructor Create(AWidth, AHeight: integer); overload; override;
@@ -227,7 +227,6 @@ begin
   FSVG.Units.ContainerHeight := FloatWithCSSUnit(AContainerHeight / AScaleDPI, cuPixel);
   compWidth := FSVG.WidthAsPixel;
   compHeight := FSVG.HeightAsPixel;
-  FSVG.ConvertToUnit(cuCustom);
   FSVG.WidthAsPixel := compWidth * AScaleDPI;
   FSVG.HeightAsPixel := compHeight * AScaleDPI;
   FPresentationMatrix := FSVG.PresentationMatrix[cuPixel];
@@ -267,14 +266,12 @@ function TBGRALayerSVGOriginal.GetRenderBounds(ADestRect: TRect;
   AMatrix: TAffineMatrix): TRect;
 var
   aff: TAffineBox;
-  min, size: TPointF;
+  r: TRectF;
 begin
   if Assigned(FSVG) then
   begin
-    min := FSVG.ViewMinInUnit[cuPixel];
-    size := FSVG.ViewSizeInUnit[cuPixel];
-    aff := AMatrix * FPresentationMatrix
-          * TAffineBox.AffineBox(min,PointF(min.x+size.x,min.y),PointF(min.x,min.y+size.y));
+    r := FSVG.GetStretchRectF(0, 0, FSVG.VisualWidthAsPixel, FSVG.VisualHeightAsPixel);
+    aff := AMatrix * FPresentationMatrix * TAffineBox.AffineBox(r);
     result := aff.RectBounds;
   end else
     result := EmptyRect;
@@ -407,21 +404,13 @@ var
 begin
   svg := TBGRASVG.Create;
   try
+    svg.DefaultDpi := DefaultSvgDPI;
     svg.LoadFromStream(AStream);
-    svg.Units.ContainerWidth := FloatWithCSSUnit(ContainerWidth / DPI * 96, cuPixel);
-    svg.Units.ContainerHeight := FloatWithCSSUnit(ContainerHeight / DPI * 96, cuPixel);
-    if not svg.preserveAspectRatio.Preserve then
-    begin
-      visualWidth := svg.WidthAsPixel;
-      visualHeight := svg.HeightAsPixel;
-    end else
-    begin
-      visualWidth := svg.VisualWidthAsPixel;
-      visualHeight := svg.VisualHeightAsPixel;
-    end;
-    visualWidth := visualWidth * DPI / 96;
-    visualHeight := visualHeight * DPI / 96;
-    svg.ConvertToUnit(cuCustom);
+    svg.Units.ContainerWidth := FloatWithCSSUnit(ContainerWidth / DPI * svg.DefaultDpi, cuPixel);
+    svg.Units.ContainerHeight := FloatWithCSSUnit(ContainerHeight / DPI * svg.DefaultDpi, cuPixel);
+    //keep only viewbox
+    visualWidth := svg.VisualWidthAsPixel * DPI / svg.DefaultDpi;
+    visualHeight := svg.VisualHeightAsPixel * DPI / svg.DefaultDpi;
     svg.WidthAsPixel := visualWidth;
     svg.HeightAsPixel := visualHeight;
     Clear;
@@ -432,9 +421,9 @@ begin
       begin
         layer := svg.Layer[i];
         svgLayer := TBGRASVG.Create;
+        svgLayer.DefaultDpi:= svg.DefaultDpi;
         svgLayer.WidthAsPixel := visualWidth;
         svgLayer.HeightAsPixel := visualHeight;
-        svgLayer.DefaultDpi:= svg.DefaultDpi;
         for j := 0 to svg.NamespaceCount-1 do
         begin
           prefix := svg.NamespacePrefix[j];
@@ -448,7 +437,7 @@ begin
           for j := 0 to layer.Content.ElementCount-1 do
             svgLayer.Content.CopyElement(layer.Content.ElementObject[j]);
           svgOrig := TBGRALayerSVGOriginal.Create;
-          svgOrig.SetSVG(svgLayer, Width, Height);
+          svgOrig.SetSVG(svgLayer);
           svgLayer := nil;
           idx := AddLayerFromOwnedOriginal(svgOrig);
           LayerName[idx] := layer.Name;
@@ -464,7 +453,7 @@ begin
     end else
     begin
       svgOrig := TBGRALayerSVGOriginal.Create;
-      svgOrig.SetSVG(svg, ContainerWidth, ContainerHeight);
+      svgOrig.SetSVG(svg);
       svg := nil;
       idx := AddLayerFromOwnedOriginal(svgOrig);
       LayerName[idx] := DefaultLayerName+'1';
@@ -487,6 +476,7 @@ begin
   ContainerHeight:= 480;
   DefaultLayerName := 'Layer';
   DPI := 96;
+  DefaultSvgDPI:= 96;
 end;
 
 constructor TBGRALayeredSVG.Create(AWidth, AHeight: integer);

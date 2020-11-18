@@ -239,10 +239,6 @@ type
     procedure SetOrthoAttributeWithUnit(AName: string; AValue: TFloatWithCSSUnit);
     procedure SetArrayOfOrthoAttributeWithUnit(AName: string; AValue: ArrayOfTFloatWithCSSUnit);
 
-    procedure ScaleAttribute(var AValue: TFloatWithCSSUnit; AScale: single; AGet: boolean);
-    procedure ScaleAttribute(var AValue: single; AScale: single; AGet: boolean);
-    procedure ScaleAttributeArray(var AValue: ArrayOfTFloatWithCSSUnit; AScale: single; AGet: boolean);
-
     procedure SetNamespaceURI(APrefix: string; AValue: string);
 
     procedure SetInlineStyle(AName: string; AValue: string); overload;
@@ -549,26 +545,22 @@ function TSVGCustomElement.GetHorizAttributeOrStyleWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeOrStyleWithUnit(AName,ADefault);
-  ScaleAttribute(result, FUnits.DpiScaleX, true);
 end;
 
 function TSVGCustomElement.GetArrayOfHorizAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 begin
   result := GetArrayOfAttributeOrStyleWithUnit(AName);
-  ScaleAttributeArray(result, FUnits.DpiScaleX, true);
 end;
 
 function TSVGCustomElement.GetOrthoAttributeOrStyleWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeOrStyleWithUnit(AName,ADefault);
-  ScaleAttribute(result, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, true);
 end;
 
 function TSVGCustomElement.GetArrayOfOrthoAttributeOrStyleWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
 begin
   result := GetArrayOfAttributeOrStyleWithUnit(AName);
-  ScaleAttributeArray(result, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, true);
 end;
 
 class procedure TSVGCustomElement.LocateStyleDeclaration(AText: string; AProperty: string; out AStartPos,
@@ -816,7 +808,6 @@ function TSVGCustomElement.GetVerticalAttributeOrStyleWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit; ACanInherit: boolean): TFloatWithCSSUnit;
 begin
   result := GetAttributeOrStyleWithUnit(AName,ADefault,ACanInherit);
-  ScaleAttribute(result, FUnits.DpiScaleY, true);
 end;
 
 function TSVGCustomElement.GetVerticalAttributeOrStyleWithUnit(AName: string;
@@ -829,7 +820,6 @@ function TSVGCustomElement.GetArrayOfVerticalAttributeOrStyleWithUnit(
   AName: string): ArrayOfTFloatWithCSSUnit;
 begin
   result := GetArrayOfAttributeOrStyleWithUnit(AName);
-  ScaleAttributeArray(result, FUnits.DpiScaleY, true);
 end;
 
 procedure TSVGCustomElement.SetInlineStyle(AName: string; AValue: string);
@@ -851,7 +841,6 @@ function TSVGCustomElement.GetOrthoAttributeWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeWithUnit(AName,ADefault);
-  ScaleAttribute(result, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, true);
 end;
 
 function TSVGCustomElement.GetOrthoAttributeWithUnit(AName: string): TFloatWithCSSUnit;
@@ -865,7 +854,6 @@ var value: TFloatWithCSSUnit;
 begin
   value.value := GetAttributeNumber(AName,ADefault);
   value.CSSUnit := cuPixel;
-  ScaleAttribute(value, FUnits.DpiScaleX, true);
   result := value.value;
 end;
 
@@ -878,7 +866,6 @@ function TSVGCustomElement.GetHorizAttributeWithUnit(AName: string;
   ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeWithUnit(AName,ADefault);
-  ScaleAttribute(result, FUnits.DpiScaleX, true);
 end;
 
 function TSVGCustomElement.GetHorizAttributeWithUnit(AName: string): TFloatWithCSSUnit;
@@ -913,7 +900,6 @@ function TSVGCustomElement.GetArrayOfOrthoAttributeWithUnit(AName: string;
   ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
 begin
   result := GetArrayOfAttributeWithUnit(AName, ACanInherit);
-  ScaleAttributeArray(result, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, true);
 end;
 
 function TSVGCustomElement.GetArrayOfOrthoAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
@@ -924,7 +910,6 @@ end;
 function TSVGCustomElement.GetArrayOfHorizAttributeWithUnit(AName: string; ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
 begin
   result := GetArrayOfAttributeWithUnit(AName,ACanInherit);
-  ScaleAttributeArray(result, FUnits.DpiScaleX, true);
 end;
 
 function TSVGCustomElement.GetArrayOfHorizAttributeWithUnit(AName: string): ArrayOfTFloatWithCSSUnit;
@@ -936,7 +921,6 @@ function TSVGCustomElement.GetArrayOfVerticalAttributeWithUnit(AName: string;
   ACanInherit: boolean): ArrayOfTFloatWithCSSUnit;
 begin
   result := GetArrayOfAttributeWithUnit(AName,ACanInherit);
-  ScaleAttributeArray(result, FUnits.DpiScaleY, true);
 end;
 
 function TSVGCustomElement.GetArrayOfAttributeNumber(AName: string;
@@ -948,7 +932,6 @@ end;
 function TSVGCustomElement.GetVerticalAttribute(AName: string; ADefault: TSVGNumber): TSVGNumber;
 begin
   result := GetAttributeNumber(AName,ADefault);
-  ScaleAttribute(result, FUnits.DpiScaleY, true);
 end;
 
 function TSVGCustomElement.GetVerticalAttribute(AName: string): TSVGNumber;
@@ -959,7 +942,6 @@ end;
 function TSVGCustomElement.GetVerticalAttributeWithUnit(AName: string; ADefault: TFloatWithCSSUnit): TFloatWithCSSUnit;
 begin
   result := GetAttributeWithUnit(AName,ADefault);
-  ScaleAttribute(result, FUnits.DpiScaleY, true);
 end;
 
 function TSVGCustomElement.GetVerticalAttributeWithUnit(AName: string): TFloatWithCSSUnit;
@@ -995,28 +977,24 @@ end;
 procedure TSVGCustomElement.SetHorizAttribute(AName: string;
   AValue: TSVGNumber);
 begin
-  ScaleAttribute(AValue, FUnits.DpiScaleX, false);
   SetAttribute(AName, AValue);
 end;
 
 procedure TSVGCustomElement.SetHorizAttributeWithUnit(AName: string;
   AValue: TFloatWithCSSUnit);
 begin
-  ScaleAttribute(AValue, FUnits.DpiScaleX, false);
   SetAttributeWithUnit(AName, AValue);
 end;
 
 procedure TSVGCustomElement.SetArrayOfHorizAttributeWithUnit(AName: string;
   AValue: ArrayOfTFloatWithCSSUnit);
 begin
-  ScaleAttributeArray(AValue, FUnits.DpiScaleX, false);
   SetAttribute(AName, TCSSUnitConverter.formatValue(AValue));
 end;
 
 procedure TSVGCustomElement.SetVerticalAttribute(AName: string;
   AValue: TSVGNumber);
 begin
-  ScaleAttribute(AValue, FUnits.DpiScaleY, false);
   SetAttribute(AName, AValue)
 end;
 
@@ -1035,72 +1013,25 @@ end;
 procedure TSVGCustomElement.SetVerticalAttributeWithUnit(AName: string;
   AValue: TFloatWithCSSUnit);
 begin
-  ScaleAttribute(AValue, FUnits.DpiScaleY, false);
   SetAttributeWithUnit(AName, AValue);
 end;
 
 procedure TSVGCustomElement.SetArrayOfVerticalAttributeWithUnit(AName: string;
   AValue: ArrayOfTFloatWithCSSUnit);
 begin
-  ScaleAttributeArray(AValue, FUnits.DpiScaleY, false);
   SetAttribute(AName, TCSSUnitConverter.formatValue(AValue));
 end;
 
 procedure TSVGCustomElement.SetOrthoAttributeWithUnit(AName: string;
   AValue: TFloatWithCSSUnit);
 begin
-  ScaleAttribute(AValue, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, false);
   SetAttribute(AName, TCSSUnitConverter.formatValue(AValue));
 end;
 
 procedure TSVGCustomElement.SetArrayOfOrthoAttributeWithUnit(AName: string;
   AValue: ArrayOfTFloatWithCSSUnit);
 begin
-  ScaleAttributeArray(AValue, (FUnits.DpiScaleX + FUnits.DpiScaleY) / 2, false);
   SetAttribute(AName, TCSSUnitConverter.formatValue(AValue));
-end;
-
-procedure TSVGCustomElement.ScaleAttribute(var AValue: TFloatWithCSSUnit;
-  AScale: single; AGet: boolean);
-begin
-  if FUnits.DpiScaled and not (AValue.CSSUnit in[cuCustom, cuPercent]) and (AScale <> 0) then
-  begin
-    if AGet then
-      AValue.value := AValue.value / AScale
-      else AValue.value := AValue.value * AScale;
-  end;
-end;
-
-procedure TSVGCustomElement.ScaleAttribute(var AValue: single; AScale: single;
-  AGet: boolean);
-var temp: TFloatWithCSSUnit;
-begin
-  temp.value := AValue;
-  temp.CSSUnit:= cuPixel;
-  ScaleAttribute(temp, AScale, AGet);
-  AValue := temp.value;
-end;
-
-procedure TSVGCustomElement.ScaleAttributeArray(
-  var AValue: ArrayOfTFloatWithCSSUnit; AScale: single; AGet: boolean);
-var
-  i: Integer;
-  temp: ArrayOfTFloatWithCSSUnit;
-begin
-  if FUnits.DpiScaled and (AScale <> 0) then
-  begin
-    setlength(temp, length(AValue));
-    for i := 0 to high(temp) do
-    if not (AValue[i].CSSUnit in[cuCustom, cuPercent]) then
-    begin
-      if AGet then
-        temp[i].value := AValue[i].value / AScale
-        else temp[i].value := AValue[i].value * AScale;
-      temp[i].CSSUnit:= AValue[i].CSSUnit;
-    end else
-      temp[i] := AValue[i];
-    AValue := temp;
-  end;
 end;
 
 procedure TSVGCustomElement.RemoveStyle(const AName: string);
