@@ -467,8 +467,95 @@ begin
 end;
 
 procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
+
+  procedure StoreLayerBitmap(ABitmap: TBGRABitmap; AOwned: boolean; const AMatrix: TAffineMatrix; AContent: TSVGContent);
+  var
+    img: TSVGImage;
+  begin
+    img := AContent.AppendImage(AMatrix[1,3], AMatrix[2, 3], ABitmap.Width, ABitmap.Height, ABitmap, AOwned);
+    img.matrix[cuCustom] := AffineMatrixLinear(AMatrix);
+  end;
+
+  procedure StoreLayer(ALayerIndex: integer; ASVG: TBGRASVG; ADest: TSVGContent; out AMatrix: TAffineMatrix);
+  var
+    c: TBGRALayerOriginalAny;
+    bmp: TBGRABitmap;
+    layerSvg: TBGRASVG;
+    minCoord: TPointF;
+    i: Integer;
+    prefix: String;
+  begin
+    AMatrix := AffineMatrixIdentity;
+    if LayerOriginalKnown[ALayerIndex] then
+      c:= LayerOriginalClass[ALayerIndex]
+      else c := nil;
+
+    if c = TBGRALayerSVGOriginal then
+    begin
+      layerSvg := (LayerOriginal[ALayerIndex] as TBGRALayerSVGOriginal).GetSVGCopy;
+      try
+        minCoord := layerSvg.ViewMinInUnit[cuCustom];
+        AMatrix:= LayerOriginalMatrix[ALayerIndex] * layerSvg.PresentationMatrix[cuPixel, true] *
+          AffineMatrixTranslation(-minCoord.X, -minCoord.Y);
+        layerSvg.ConvertToUnit(cuCustom);
+        for i := 0 to layerSvg.Content.ElementCount-1 do
+          ADest.CopyElement(layerSvg.Content.ElementObject[i]);
+        for i := 0 to layerSvg.NamespaceCount-1 do
+        begin
+          prefix := layerSvg.NamespacePrefix[i];
+          ASVG.NamespaceURI[prefix] := layerSvg.NamespaceURI[prefix];
+        end;
+      finally
+        layerSvg.Free;
+      end;
+    end else
+    if c = TBGRALayerImageOriginal then
+    begin
+      bmp := (LayerOriginal[ALayerIndex] as TBGRALayerImageOriginal).GetImageCopy;
+      StoreLayerBitmap(bmp, true, LayerOriginalMatrix[ALayerIndex], ADest);
+    end else
+      StoreLayerBitmap(LayerBitmap[ALayerIndex], false,
+        AffineMatrixTranslation(LayerOffset[ALayerIndex].X, LayerOffset[ALayerIndex].Y),
+        ADest);
+  end;
+
+var
+  svg: TBGRASVG;
+  vb : TSVGViewBox;
+  i: Integer;
+  g: TSVGGroup;
+  m: TAffineMatrix;
 begin
-  raise exception.Create('Not implemented');
+  svg := TBGRASVG.Create;
+  try
+    svg.WidthAsPixel := Width;
+    svg.HeightAsPixel := Height;
+    vb.min := PointF(0, 0);
+    vb.size := PointF(Width, Height);
+    svg.ViewBox := vb;
+    if (NbLayers = 1) and (LayerOpacity[0] = 255) and LayerVisible[0] and
+       ((LayerOriginalGuid[0] = GUID_NULL) or IsAffineMatrixIdentity(LayerOriginalMatrix[0])) then
+    begin
+      StoreLayer(0, svg, svg.Content, m);
+    end else
+    begin
+      svg.NamespaceURI['inkscape'] := 'http://www.inkscape.org/namespaces/inkscape';
+      for i := 0 to NbLayers-1 do
+      begin
+        g := svg.Content.AppendGroup;
+        g.IsLayer := true;
+        g.Name:= LayerName[i];
+        g.opacity:= LayerOpacity[i]/255;
+        g.Visible:= LayerVisible[i];
+        g.mixBlendMode:= BlendOperation[i];
+        StoreLayer(i, svg, g.Content, m);
+        g.matrix[cuPixel] := m;
+      end;
+    end;
+    svg.SaveToStream(AStream);
+  finally
+    svg.Free;
+  end;
 end;
 
 constructor TBGRALayeredSVG.Create;
@@ -538,6 +625,7 @@ end;
 procedure RegisterLayeredSvgFormat;
 begin
   RegisterLayeredBitmapReader('svg', TBGRALayeredSVG);
+  RegisterLayeredBitmapWriter('svg', TBGRALayeredSVG);
 end;
 
 initialization
