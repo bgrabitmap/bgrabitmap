@@ -408,11 +408,9 @@ begin
     svg.LoadFromStream(AStream);
     svg.Units.ContainerWidth := FloatWithCSSUnit(ContainerWidth / DPI * svg.DefaultDpi, cuPixel);
     svg.Units.ContainerHeight := FloatWithCSSUnit(ContainerHeight / DPI * svg.DefaultDpi, cuPixel);
-    //keep only viewbox
-    visualWidth := svg.VisualWidthAsPixel * DPI / svg.DefaultDpi;
-    visualHeight := svg.VisualHeightAsPixel * DPI / svg.DefaultDpi;
-    svg.WidthAsPixel := visualWidth;
-    svg.HeightAsPixel := visualHeight;
+    svg.CropToViewBox(DPI / svg.DefaultDpi);
+    visualWidth := svg.WidthAsPixel;
+    visualHeight := svg.HeightAsPixel;
     Clear;
     SetSize(floor(visualWidth + 0.95),floor(visualHeight + 0.95));
     if svg.LayerCount > 0 then

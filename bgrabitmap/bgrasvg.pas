@@ -137,6 +137,7 @@ type
     constructor CreateFromString(AUTF8String: string);
     destructor Destroy; override;
     function Duplicate: TBGRASVG;
+    procedure CropToViewBox(AScale: single = 1);
     procedure LoadFromFile(AFilenameUTF8: string);
     procedure LoadFromStream(AStream: TStream; AURI: UnicodeString = 'stream:');
     procedure LoadFromResource(AFilename: string);
@@ -942,6 +943,16 @@ begin
     svg.Free;
     stream.Free
   end;
+end;
+
+procedure TBGRASVG.CropToViewBox(AScale: single);
+var w,h: single;
+begin
+  w:= VisualWidthAsPixel * AScale;
+  h:= VisualHeightAsPixel * AScale;
+  ViewBox := Units.ViewBox;   // make sure viewbox is explicit
+  WidthAsPixel:= w;
+  HeightAsPixel:= h;
 end;
 
 procedure TBGRASVG.LoadFromFile(AFilenameUTF8: string);
