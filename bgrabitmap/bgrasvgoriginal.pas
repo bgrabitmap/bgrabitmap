@@ -274,7 +274,7 @@ begin
   if Assigned(FSVG) then
   begin
     with FSVG.ViewBox do
-      r := FSVG.GetStretchRectF(0, 0, size.x, size.y);
+      r := RectWithSizeF(min.x, min.y, size.x, size.y);
     aff := AMatrix * FPresentationMatrix * TAffineBox.AffineBox(r);
     result := aff.RectBounds;
   end else
