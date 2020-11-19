@@ -7,7 +7,7 @@ interface
 
 uses
   BGRAClasses, SysUtils, BGRAUnits, DOM, BGRAPath, BGRABitmapTypes,
-  BGRACanvas2D, BGRASVGType;
+  BGRACanvas2D, BGRASVGType, BGRAGraphics;
 
 type
   TSVGContent = class;
@@ -270,6 +270,7 @@ type
       function GetFontItalic: boolean;
       function GetFontSize: TFloatWithCSSUnit;
       function GetFontStyle: string;
+      function GetFontStyleLCL: TFontStyles;
       function GetFontWeight: string;
       function GetSimpleText: string;
       function GetTextAnchor: TSVGTextAnchor;
@@ -282,6 +283,7 @@ type
       procedure SetFontItalic(AValue: boolean);
       procedure SetFontSize(AValue: TFloatWithCSSUnit);
       procedure SetFontStyle(AValue: string);
+      procedure SetFontStyleLCL(AValue: TFontStyles);
       procedure SetFontWeight(AValue: string);
       procedure SetSimpleText(AValue: string);
       procedure SetTextAnchor(AValue: TSVGTextAnchor);
@@ -316,6 +318,7 @@ type
       property fontFamily: string read GetFontFamily write SetFontFamily;
       property fontWeight: string read GetFontWeight write SetFontWeight;
       property fontStyle: string read GetFontStyle write SetFontStyle;
+      property fontStyleLCL: TFontStyles read GetFontStyleLCL write SetFontStyleLCL;
       property textDecoration: string read GetTextDecoration write SetTextDecoration;
       property fontBold: boolean read GetFontBold write SetFontBold;
       property fontItalic: boolean read GetFontItalic write SetFontItalic;
@@ -814,6 +817,7 @@ type
       function AppendImage(origin,size: TPointF; ABitmap: TBGRACustomBitmap; ABitmapOwned: boolean; AUnit: TCSSUnit = cuCustom): TSVGImage; overload;
       function AppendText(x,y: single; AText: string; AUnit: TCSSUnit = cuCustom): TSVGText; overload;
       function AppendText(origin: TPointF; AText: string; AUnit: TCSSUnit = cuCustom): TSVGText; overload;
+      function AppendTextSpan(AText: string): TSVGTSpan;
       function AppendRoundRect(x,y,width,height,rx,ry: single; AUnit: TCSSUnit = cuCustom): TSVGRectangle; overload;
       function AppendRoundRect(origin,size,radius: TPointF; AUnit: TCSSUnit = cuCustom): TSVGRectangle; overload;
       function AppendGroup: TSVGGroup;
@@ -832,7 +836,7 @@ function CreateSVGElementFromNode(AElement: TDOMElement; AUnits: TCSSUnitConvert
 
 implementation
 
-uses BGRATransform, BGRAGraphics, BGRAUTF8, base64;
+uses BGRATransform, BGRAUTF8, base64;
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
 var tag: string;
@@ -1288,6 +1292,18 @@ begin
   result := AttributeOrStyleDef['font-style','normal'];
 end;
 
+function TSVGText.GetFontStyleLCL: TFontStyles;
+var
+  s: String;
+begin
+  result := [];
+  if fontBold then include(result, fsBold);
+  if fontItalic then include(result, fsItalic);
+  s := ' '+textDecoration+' ';
+  if pos('underline',s) <> 0 then include(result, fsUnderline);
+  if pos('line-through',s) <> 0 then include(result, fsStrikeOut);
+end;
+
 function TSVGText.GetFontWeight: string;
 begin
   result := AttributeOrStyleDef['font-weight','normal'];
@@ -1381,6 +1397,18 @@ begin
   RemoveStyle('font-style');
 end;
 
+procedure TSVGText.SetFontStyleLCL(AValue: TFontStyles);
+var
+  s: String;
+begin
+  fontItalic:= fsItalic in AValue;
+  fontBold:= fsBold in AValue;
+  s := '';
+  if fsUnderline in AValue then AppendStr(s, 'underline ');
+  if fsStrikeOut in AValue then AppendStr(s, 'line-through ');
+  textDecoration:= trim(s);
+end;
+
 procedure TSVGText.SetFontWeight(AValue: string);
 begin
   Attribute['font-weight'] := AValue;
@@ -1407,6 +1435,7 @@ end;
 procedure TSVGText.SetSimpleText(AValue: string);
 begin
   Content.Clear;
+  if AValue = '' then exit;
   Content.appendDOMText(AValue);
 end;
 
@@ -4225,7 +4254,8 @@ begin
   finally
     setlength(a,0);
   end;
-  result.SimpleText:= AText;
+  if AText <> '' then
+    result.SimpleText:= AText;
   AppendElement(result);
 end;
 
@@ -4233,6 +4263,13 @@ function TSVGContent.AppendText(origin: TPointF; AText: string; AUnit: TCSSUnit
   ): TSVGText;
 begin
   result := AppendText(origin.x,origin.y,AText,AUnit);
+end;
+
+function TSVGContent.AppendTextSpan(AText: string): TSVGTSpan;
+begin
+  result := TSVGTSpan.Create(FDoc,Units,FDataLink);
+  result.SimpleText:= AText;
+  AppendElement(result);
 end;
 
 function TSVGContent.AppendRoundRect(x, y, width, height, rx, ry: single;

@@ -283,7 +283,9 @@ type
     function GetStroke: string;
     function GetStrokeColor: TBGRAPixel;
     function GetStrokeLineCap: string;
+    function GetStrokeLineCapLCL: TPenEndCap;
     function GetStrokeLineJoin: string;
+    function GetStrokeLineJoinLCL: TPenJoinStyle;
     function GetStrokeMiterLimit: single;
     function GetStrokeOpacity: single;
     function GetStrokeWidth: TFloatWithCSSUnit;
@@ -304,7 +306,9 @@ type
     procedure SetStroke(AValue: string);
     procedure SetStrokeColor(AValue: TBGRAPixel);
     procedure SetStrokeLineCap(AValue: string);
+    procedure SetStrokeLineCapLCL(AValue: TPenEndCap);
     procedure SetStrokeLineJoin(AValue: string);
+    procedure SetStrokeLineJoinLCL(AValue: TPenJoinStyle);
     procedure SetStrokeMiterLimit(AValue: single);
     procedure SetStrokeOpacity(AValue: single);
     procedure SetStrokeWidth(AValue: TFloatWithCSSUnit);
@@ -337,6 +341,7 @@ type
     procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
     procedure fillNone;
     procedure strokeNone;
+    procedure strokeDashArrayNone;
     procedure transformNone;
     function fillMode: TSVGFillMode;
     property DataLink: TSVGDataLink read FDataLink write FDataLink;
@@ -354,7 +359,9 @@ type
     property strokeOpacity: single read GetStrokeOpacity write SetStrokeOpacity;
     property strokeMiterLimit: single read GetStrokeMiterLimit write SetStrokeMiterLimit;
     property strokeLineJoin: string read GetStrokeLineJoin write SetStrokeLineJoin;
+    property strokeLineJoinLCL: TPenJoinStyle read GetStrokeLineJoinLCL write SetStrokeLineJoinLCL;
     property strokeLineCap: string read GetStrokeLineCap write SetStrokeLineCap;
+    property strokeLineCapLCL: TPenEndCap read GetStrokeLineCapLCL write SetStrokeLineCapLCL;
     property strokeDashArray: string read GetStrokeDashArray write SetStrokeDashArray;
     property strokeDashArrayF: ArrayOfFloat read GetStrokeDashArrayF write SetStrokeDashArrayF;
     property strokeDashOffset: TFloatWithCSSUnit read GetStrokeDashOffset write SetStrokeDashOffset;
@@ -1663,9 +1670,29 @@ begin
   result := AttributeOrStyleDef['stroke-linecap','butt'];
 end;
 
+function TSVGElement.GetStrokeLineCapLCL: TPenEndCap;
+var
+  s: String;
+begin
+  s := strokeLineCap;
+  if s = 'round' then result := pecRound
+  else if s = 'square' then result := pecSquare
+  else result := pecFlat;
+end;
+
 function TSVGElement.GetStrokeLineJoin: string;
 begin
   result := AttributeOrStyleDef['stroke-linejoin','miter'];
+end;
+
+function TSVGElement.GetStrokeLineJoinLCL: TPenJoinStyle;
+var
+  s: String;
+begin
+  s := strokeLineJoin;
+  if s = 'bevel' then result := pjsBevel
+  else if s = 'miter' then result := pjsMiter
+  else result := pjsRound;
 end;
 
 function TSVGElement.GetStrokeMiterLimit: single;
@@ -1773,7 +1800,7 @@ procedure TSVGElement.SetFillColor(AValue: TBGRAPixel);
 begin
   fillOpacity:= AValue.alpha/255;
   AValue.alpha:= 255;
-  fill := BGRAToStr(AValue, CSSColors, 0, true);
+  fill := LowerCase(BGRAToStr(AValue, CSSColors, 0, true, true));
 end;
 
 procedure TSVGElement.SetFillOpacity(AValue: single);
@@ -1839,7 +1866,7 @@ procedure TSVGElement.SetStrokeColor(AValue: TBGRAPixel);
 begin
   strokeOpacity:= AValue.alpha/255;
   AValue.alpha:= 255;
-  stroke := BGRAToStr(AValue, CSSColors, 0, true);
+  stroke := Lowercase(BGRAToStr(AValue, CSSColors, 0, true, true));
 end;
 
 procedure TSVGElement.SetStrokeLineCap(AValue: string);
@@ -1848,10 +1875,28 @@ begin
   RemoveStyle('stroke-linecap');
 end;
 
+procedure TSVGElement.SetStrokeLineCapLCL(AValue: TPenEndCap);
+begin
+  case AValue of
+  pecRound: strokeLineCap:= 'round';
+  pecSquare: strokeLineCap:= 'square';
+  else strokeLineCap:= 'butt';
+  end;
+end;
+
 procedure TSVGElement.SetStrokeLineJoin(AValue: string);
 begin
   Attribute['stroke-linejoin'] := AValue;
   RemoveStyle('stroke-linejoin');
+end;
+
+procedure TSVGElement.SetStrokeLineJoinLCL(AValue: TPenJoinStyle);
+begin
+ case AValue of
+ pjsBevel: strokeLineJoin:= 'bevel';
+ pjsMiter: strokeLineJoin:= 'miter';
+ else strokeLineJoin:= 'round';
+ end;
 end;
 
 procedure TSVGElement.SetStrokeMiterLimit(AValue: single);
@@ -1884,6 +1929,11 @@ var
   s: string;
   i: integer;
 begin
+  if length(AValue) = 0 then
+  begin
+    strokeDashArrayNone;
+    exit;
+  end;
   s:= '';
   for i := 0 to high(AValue) do
   begin
@@ -2036,6 +2086,11 @@ end;
 procedure TSVGElement.strokeNone;
 begin
   stroke := 'none';
+end;
+
+procedure TSVGElement.strokeDashArrayNone;
+begin
+  strokeDashArray := 'none';
 end;
 
 procedure TSVGElement.transformNone;
