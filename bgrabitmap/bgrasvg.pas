@@ -136,6 +136,7 @@ type
     constructor Create(AStream: TStream); overload;
     constructor CreateFromString(AUTF8String: string);
     destructor Destroy; override;
+    function Duplicate: TBGRASVG;
     procedure LoadFromFile(AFilenameUTF8: string);
     procedure LoadFromStream(AStream: TStream; AURI: UnicodeString = 'stream:');
     procedure LoadFromResource(AFilename: string);
@@ -920,6 +921,27 @@ begin
   FDomElem:= nil;
   FreeAndNil(FXml);
   inherited Destroy;
+end;
+
+function TBGRASVG.Duplicate: TBGRASVG;
+var
+  stream: TMemoryStream;
+  svg: TBGRASVG;
+begin
+  stream := TMemoryStream.Create;
+  svg := nil;
+  try
+    SaveToStream(stream);
+    stream.Position:= 0;
+    svg := TBGRASVG.Create;
+    svg.DefaultDpi:= DefaultDpi;
+    svg.LoadFromStream(stream);
+    result := svg;
+    svg := nil;
+  finally
+    svg.Free;
+    stream.Free
+  end;
 end;
 
 procedure TBGRASVG.LoadFromFile(AFilenameUTF8: string);

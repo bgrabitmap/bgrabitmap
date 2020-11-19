@@ -61,6 +61,8 @@ type
       AContainerHeight: integer = 480; AScaleDPI: single = 1);
     function GetSVGCopy: TBGRASVG;
     class function StorageClassName: RawByteString; override;
+    class function CanConvertToSVG: boolean; override;
+    function ConvertToSVG: TBGRASVG; override;
     property Width: single read GetSvgWidth;
     property Height: single read GetSvgHeight;
     property DPI: single read GetDPI write SetDPI;
@@ -363,29 +365,23 @@ begin
 end;
 
 function TBGRALayerSVGOriginal.GetSVGCopy: TBGRASVG;
-var
-  stream: TMemoryStream;
-  svg: TBGRASVG;
 begin
-  stream := TMemoryStream.Create;
-  svg := nil;
-  try
-    FSVG.SaveToStream(stream);
-    stream.Position:= 0;
-    svg := TBGRASVG.Create;
-    svg.DefaultDpi:= DPI;
-    svg.LoadFromStream(stream);
-    result := svg;
-    svg := nil;
-  finally
-    svg.Free;
-    stream.Free
-  end;
+  result := FSVG.Duplicate;
 end;
 
 class function TBGRALayerSVGOriginal.StorageClassName: RawByteString;
 begin
   result := 'svg';
+end;
+
+class function TBGRALayerSVGOriginal.CanConvertToSVG: boolean;
+begin
+  Result:= true;
+end;
+
+function TBGRALayerSVGOriginal.ConvertToSVG: TBGRASVG;
+begin
+  Result:= GetSVGCopy;
 end;
 
 { TBGRALayeredSVG }

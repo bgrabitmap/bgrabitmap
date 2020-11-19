@@ -7,7 +7,7 @@ interface
 
 uses
   BGRAClasses, SysUtils, BGRALayers, zipper, DOM, BGRABitmap, BGRALayerOriginal,
-  BGRASVGShapes, FPImage;
+  BGRASVGShapes, FPImage, BGRASVG;
 
 const
   OpenRasterMimeType = 'image/openraster'; //do not change, it's part of the file format
@@ -36,7 +36,7 @@ type
     procedure SetMemoryStream(AFilename: string; AStream: TMemoryStream);
     function AddLayerFromMemoryStream(ALayerFilename: string): integer;
     function CopyRasterLayerToMemoryStream(ALayerIndex: integer; ALayerFilename: string): boolean;
-    function CopySVGLayerToMemoryStream(ALayerIndex: integer; ALayerFilename: string; out AOffset: TPoint): boolean;
+    procedure CopySVGToMemoryStream(ASVG: TBGRASVG; ASVGMatrix: TAffineMatrix; AOutFilename: string; out AOffset: TPoint);
     function CopyBitmapToMemoryStream(ABitmap: TBGRABitmap; AFilename: string): boolean;
     procedure SetMemoryStreamAsString(AFilename: string; AContent: string);
     function GetMemoryStreamAsString(AFilename: string): string;
@@ -93,7 +93,7 @@ procedure RegisterOpenRasterFormat;
 implementation
 
 uses XMLRead, XMLWrite, BGRABitmapTypes, zstream, BGRAUTF8,
-  UnzipperExt, BGRASVGOriginal, BGRATransform, BGRASVG, BGRASVGType, math;
+  UnzipperExt, BGRASVGOriginal, BGRATransform, BGRASVGType, math;
 
 const
   MergedImageFilename = 'mergedimage.png';
@@ -447,6 +447,7 @@ var i: integer;
     stackStream: TMemoryStream;
     ofs: TPoint;
     fileAdded: Boolean;
+    svg: TBGRASVG;
 begin
   ClearFiles;
   MimeType := OpenRasterMimeType;
@@ -469,10 +470,18 @@ begin
   for i := NbLayers-1 downto 0 do
   begin
     OnLayeredBitmapSaveProgress(round((NbLayers-1-i) * 100 / NbLayers));
-    if LayerOriginalClass[i] = TBGRALayerSVGOriginal then
+    if (LayerOriginalGuid[i] <> GUID_NULL) and LayerOriginalKnown[i] and
+       LayerOriginalClass[i].CanConvertToSVG then
     begin
       layerFilename := 'data/layer'+inttostr(i)+'.svg';
-      fileAdded := CopySVGLayerToMemoryStream(i, layerFilename, ofs);
+      svg := LayerOriginal[i].ConvertToSVG as TBGRASVG;
+      try
+        CopySVGToMemoryStream(svg, LayerOriginalMatrix[i],
+                     layerFilename, ofs);
+        fileAdded := true;
+      finally
+        svg.Free;
+      end;
     end else
     begin
       layerFilename := 'data/layer'+inttostr(i)+'.png';
@@ -719,8 +728,8 @@ begin
   if mustFreeBmp then bmp.Free;
 end;
 
-function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
-  ALayerIndex: integer; ALayerFilename: string; out AOffset: TPoint): boolean;
+procedure TBGRAOpenRasterDocument.CopySVGToMemoryStream(
+  ASVG: TBGRASVG; ASVGMatrix: TAffineMatrix; AOutFilename: string; out AOffset: TPoint);
 
   function IsIntegerTranslation(m: TAffineMatrix; out ofs: TPoint): boolean;
   begin
@@ -744,42 +753,17 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
       ASVG.WidthAsPixel := w;
       ASVG.HeightAsPixel := h;
       ASVG.SaveToStream(memStream);
-      SetMemoryStream(ALayerFilename,memstream);
-      result := true;
+      SetMemoryStream(AOutFilename,memstream);
     except
       on ex: Exception do
       begin
         memStream.Free;
-      end;
-    end;
-  end;
-
-  procedure StoreSVGFromOriginal(AOrig: TBGRALayerSVGOriginal);
-  var
-    memStream: TMemoryStream;
-    svg: TBGRASVG;
-  begin
-    svg := nil;
-    memStream := TMemoryStream.Create;
-    try
-      AOrig.SaveSVGToStream(memStream);
-      svg := TBGRASVG.Create;
-      svg.DefaultDpi:= AOrig.DPI;
-      memStream.Position:= 0;
-      svg.LoadFromStream(memStream);
-      StoreSVG(svg);
-      result := true;
-    except
-      on ex: Exception do
-      begin
-        memStream.Free;
-        svg.Free;
         raise exception.Create(ex.Message);
       end;
     end;
   end;
 
-  procedure StoreTransformedSVG(AOrig: TBGRALayerSVGOriginal; out AOffset: TPoint);
+  procedure StoreTransformedSVG(out AOffset: TPoint);
   var
     box, transfBox: TAffineBox;
     newSvg: TBGRASVG;
@@ -790,8 +774,8 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
     newViewBox, origViewBox: TSVGViewBox;
     presentMatrix: TAffineMatrix;
   begin
-    newSvg := AOrig.GetSVGCopy;
-    presentMatrix := LayerOriginalMatrix[ALayerIndex] * newSvg.PresentationMatrix[cuPixel, true];
+    newSvg := ASVG.Duplicate;
+    presentMatrix := ASVGMatrix * newSvg.PresentationMatrix[cuPixel, true];
     rootElems := TList.Create;
     try
       origViewBox := newSvg.ViewBox;
@@ -826,13 +810,9 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
 var
   orig: TBGRALayerCustomOriginal;
 begin
-  result := false;
-  orig := LayerOriginal[ALayerIndex];
-  if (orig = nil) or not (orig is TBGRALayerSVGOriginal) then exit;
-
-  if IsIntegerTranslation(LayerOriginalMatrix[ALayerIndex], AOffset) then
-    StoreSVGFromOriginal(TBGRALayerSVGOriginal(orig))
-    else StoreTransformedSVG(TBGRALayerSVGOriginal(orig), AOffset);
+  if IsIntegerTranslation(ASVGMatrix, AOffset) then
+    StoreSVG(ASVG)
+    else StoreTransformedSVG(AOffset);
 end;
 
 function TBGRAOpenRasterDocument.CopyBitmapToMemoryStream(ABitmap: TBGRABitmap;

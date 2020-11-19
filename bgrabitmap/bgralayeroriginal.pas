@@ -202,6 +202,8 @@ type
     procedure SaveToStream(AStream: TStream); virtual;
     function CreateEditor: TBGRAOriginalEditor; virtual;
     class function StorageClassName: RawByteString; virtual; abstract;
+    class function CanConvertToSVG: boolean; virtual;
+    function ConvertToSVG: TObject; virtual;
     function Duplicate: TBGRALayerCustomOriginal; virtual;
     property Guid: TGuid read GetGuid write SetGuid;
     property OnChange: TOriginalChangeEvent read FOnChange write SetOnChange;
@@ -1939,6 +1941,16 @@ end;
 function TBGRALayerCustomOriginal.CreateEditor: TBGRAOriginalEditor;
 begin
   result := TBGRAOriginalEditor.Create;
+end;
+
+class function TBGRALayerCustomOriginal.CanConvertToSVG: boolean;
+begin
+  result := false;
+end;
+
+function TBGRALayerCustomOriginal.ConvertToSVG: TObject;
+begin
+  raise exception.Create('Not implemented');
 end;
 
 function TBGRALayerCustomOriginal.Duplicate: TBGRALayerCustomOriginal;
