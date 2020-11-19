@@ -628,7 +628,6 @@ var stream: TMemoryStream;
   g: TSVGGroup;
   i, svgElemCount: Integer;
   origViewBox: TSVGViewBox;
-  origSize: TPointF;
   elemToMove: TList;
   m: TAffineMatrix;
 begin
@@ -663,7 +662,7 @@ begin
     begin
       m := g.matrix[cuPixel];
       origViewBox := TSVGViewBox.Parse(g.DOMElement.GetAttribute('bgra:originalViewBox'));
-      origSize := svg.Units.ConvertCoord(origViewBox.size, cuCustom, cuPixel, Width, Height);
+      g.DOMElement.RemoveAttribute('bgra:originalViewBox');
       for i := svg.Content.ElementCount-1 downto 0 do
         if svg.Content.ElementObject[i] <> g then
           svg.Content.RemoveElement(svg.Content.ElementObject[i]);
@@ -675,8 +674,8 @@ begin
       elemToMove.Free;
       svg.Content.RemoveElement(g);
       svg.ViewBox := origViewBox;
-      svg.WidthAsPixel:= origSize.x;
-      svg.HeightAsPixel:= origSize.y;
+      svg.WidthAsPixel:= origViewBox.size.x;
+      svg.HeightAsPixel:= origViewBox.size.y;
     end else
       m := AffineMatrixIdentity;
     orig := TBGRALayerSVGOriginal.Create;
@@ -785,41 +784,31 @@ function TBGRAOpenRasterDocument.CopySVGLayerToMemoryStream(
     box, transfBox: TAffineBox;
     newSvg: TBGRASVG;
     newBounds, newBoundsCustom: TRectF;
-    u, v: TPointF;
     rootElems: TList;
     i: Integer;
     g: TSVGGroup;
     newViewBox, origViewBox: TSVGViewBox;
-    m: TAffineMatrix;
+    presentMatrix: TAffineMatrix;
   begin
     newSvg := AOrig.GetSVGCopy;
+    presentMatrix := LayerOriginalMatrix[ALayerIndex] * newSvg.PresentationMatrix[cuPixel, true];
     rootElems := TList.Create;
     try
       origViewBox := newSvg.ViewBox;
-      box := newSvg.PresentationMatrix[cuPixel, false] * TAffineBox.AffineBox(PointF(0,0),
-        PointF(newSvg.VisualWidthAsPixel,0), PointF(0,newSvg.VisualHeightAsPixel));
-      transfBox := LayerOriginalMatrix[ALayerIndex] * box;
+      box := TAffineBox.AffineBox(PointF(0,0),
+               PointF(newSvg.ViewBox.size.x,0), PointF(0,newSvg.ViewBox.size.y));
+      transfBox := presentMatrix * box;
       newBounds := RectF(transfBox.RectBounds);
       AOffset := Point(round(newBounds.Left), round(newBounds.Top));
-      transfBox := AffineMatrixTranslation(-AOffset.X, -AOffset.Y) * transfBox;
-      newBounds.Offset(-AOffset.X, -AOffset.Y);
-      newBoundsCustom.Left := newSvg.Units.ConvertWidth(newBounds.Left, cuPixel, cuCustom);
-      newBoundsCustom.Top := newSvg.Units.ConvertHeight(newBounds.Top, cuPixel, cuCustom);
-      newBoundsCustom.Right := newSvg.Units.ConvertWidth(newBounds.Right, cuPixel, cuCustom);
-      newBoundsCustom.Bottom := newSvg.Units.ConvertHeight(newBounds.Bottom, cuPixel, cuCustom);
-      u := transfBox.TopRight - transfBox.TopLeft;
-      v := transfBox.BottomLeft - transfBox.TopLeft;
-      u.Normalize;
-      v.Normalize;
-      if box.Width > 0 then u *= (transfBox.Width / box.Width);
-      if box.Height > 0 then v *= (transfBox.Height / box.Height);
-      m := AffineMatrix(u, v, transfBox.TopLeft);
+      newBoundsCustom := newBounds;
+      newBoundsCustom.Offset(-AOffset.X, -AOffset.Y);
+      presentMatrix := AffineMatrixTranslation(-AOffset.X, -AOffset.Y) * presentMatrix;
       for i := 0 to newSvg.Content.ElementCount-1 do
         rootElems.Add(newSvg.Content.ElementObject[i]);
       g := newSvg.Content.AppendGroup;
       for i := 0 to rootElems.Count-1 do
         g.Content.BringElement(TObject(rootElems[i]), newSvg.Content);
-      g.matrix[cuPixel] := m;
+      g.matrix[cuPixel] := presentMatrix;
       g.DOMElement.SetAttribute('xmlns:bgra', 'https://wiki.freepascal.org/LazPaint_SVG_format');
       g.DOMElement.SetAttribute('bgra:originalViewBox', origViewBox.ToString);
       newSvg.WidthAsPixel:= newBounds.Width;
