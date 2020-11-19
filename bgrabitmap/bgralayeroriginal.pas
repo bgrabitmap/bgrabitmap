@@ -203,7 +203,7 @@ type
     function CreateEditor: TBGRAOriginalEditor; virtual;
     class function StorageClassName: RawByteString; virtual; abstract;
     class function CanConvertToSVG: boolean; virtual;
-    function ConvertToSVG: TObject; virtual;
+    function ConvertToSVG(out AOffset: TPoint): TObject; virtual;
     function Duplicate: TBGRALayerCustomOriginal; virtual;
     property Guid: TGuid read GetGuid write SetGuid;
     property OnChange: TOriginalChangeEvent read FOnChange write SetOnChange;
@@ -1948,8 +1948,9 @@ begin
   result := false;
 end;
 
-function TBGRALayerCustomOriginal.ConvertToSVG: TObject;
+function TBGRALayerCustomOriginal.ConvertToSVG(out AOffset: TPoint): TObject;
 begin
+  AOffset := Point(0,0);
   raise exception.Create('Not implemented');
 end;
 

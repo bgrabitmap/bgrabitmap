@@ -62,7 +62,7 @@ type
     function GetSVGCopy: TBGRASVG;
     class function StorageClassName: RawByteString; override;
     class function CanConvertToSVG: boolean; override;
-    function ConvertToSVG: TBGRASVG; override;
+    function ConvertToSVG(out AOffset: TPoint): TBGRASVG; override;
     property Width: single read GetSvgWidth;
     property Height: single read GetSvgHeight;
     property DPI: single read GetDPI write SetDPI;
@@ -379,8 +379,9 @@ begin
   Result:= true;
 end;
 
-function TBGRALayerSVGOriginal.ConvertToSVG: TBGRASVG;
+function TBGRALayerSVGOriginal.ConvertToSVG(out AOffset: TPoint): TBGRASVG;
 begin
+  AOffset := Point(0,0);
   Result:= GetSVGCopy;
 end;
 
@@ -490,20 +491,23 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
     i: Integer;
     prefix: String;
     origViewBox: TSVGViewBox;
+    wantedOfs: TPoint;
   begin
     AMatrix := AffineMatrixIdentity;
     if LayerOriginalKnown[ALayerIndex] then
       c:= LayerOriginalClass[ALayerIndex]
       else c := nil;
 
-    if c = TBGRALayerSVGOriginal then
+    if Assigned(c) and c.CanConvertToSVG then
     begin
-      layerSvg := (LayerOriginal[ALayerIndex] as TBGRALayerSVGOriginal).GetSVGCopy;
+      layerSvg := LayerOriginal[ALayerIndex].ConvertToSVG(wantedOfs) as TBGRASVG;
       origViewBox := layerSvg.ViewBox;
       try
         minCoord := layerSvg.ViewMinInUnit[cuCustom];
-        AMatrix:= LayerOriginalMatrix[ALayerIndex] * layerSvg.PresentationMatrix[cuPixel, true] *
-          AffineMatrixTranslation(-minCoord.X, -minCoord.Y);
+        AMatrix:= LayerOriginalMatrix[ALayerIndex]
+          * AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y)
+          * layerSvg.PresentationMatrix[cuPixel, true]
+          * AffineMatrixTranslation(-minCoord.X, -minCoord.Y);
         layerSvg.ConvertToUnit(cuCustom);
         if ADestElem is TSVGGroup then
         with TSVGGroup(ADestElem) do

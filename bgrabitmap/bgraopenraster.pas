@@ -445,7 +445,7 @@ var i: integer;
     imageNode,stackNode,layerNode: TDOMElement;
     layerFilename,strval: string;
     stackStream: TMemoryStream;
-    ofs: TPoint;
+    ofs, wantedOfs: TPoint;
     fileAdded: Boolean;
     svg: TBGRASVG;
 begin
@@ -474,9 +474,10 @@ begin
        LayerOriginalClass[i].CanConvertToSVG then
     begin
       layerFilename := 'data/layer'+inttostr(i)+'.svg';
-      svg := LayerOriginal[i].ConvertToSVG as TBGRASVG;
+      svg := LayerOriginal[i].ConvertToSVG(wantedOfs) as TBGRASVG;
       try
-        CopySVGToMemoryStream(svg, LayerOriginalMatrix[i],
+        CopySVGToMemoryStream(svg, LayerOriginalMatrix[i]
+          * AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y),
                      layerFilename, ofs);
         fileAdded := true;
       finally
