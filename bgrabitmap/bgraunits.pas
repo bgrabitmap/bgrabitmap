@@ -243,6 +243,10 @@ begin
   begin
     result := x*ConvertWidth(value,CSSUnit, destUnit, containerWidth)
   end
+  else if sourceUnit = cuPercent then
+  begin
+    result := x/100*containerWidth;
+  end
   else if destUnit = cuCustom then
   with ConvertWidth(DefaultUnitWidth,sourceUnit) do
   begin
@@ -261,6 +265,10 @@ begin
   with DefaultUnitHeight do
   begin
     result := y*ConvertHeight(value,CSSUnit, destUnit, containerHeight)
+  end
+  else if sourceUnit = cuPercent then
+  begin
+    result := y/100*containerHeight;
   end
   else if destUnit = cuCustom then
   with ConvertHeight(DefaultUnitHeight,sourceUnit) do
