@@ -609,14 +609,18 @@ type
 
   TSVGGradient = class(TSVGElementWithContent)
     private
+      function GetColorInterpolation: TSVGColorInterpolation;
       function GetGradientMatrix(AUnit: TCSSUnit): TAffineMatrix;
       function GetGradientTransform: string;
       function GetGradientUnits: TSVGObjectUnits;
       function GetHRef: string;
+      function GetSpreadMethod: TSVGSpreadMethod;
+      procedure SetColorInterpolation(AValue: TSVGColorInterpolation);
       procedure SetGradientMatrix(AUnit: TCSSUnit; AValue: TAffineMatrix);
       procedure SetGradientTransform(AValue: string);
       procedure SetGradientUnits(AValue: TSVGObjectUnits);
       procedure SetHRef(AValue: string);
+      procedure SetSpreadMethod(AValue: TSVGSpreadMethod);
     protected
       InheritedGradients: TSVGElementList;//(for HRef)
       procedure Initialize; override;
@@ -629,6 +633,8 @@ type
       property gradientUnits: TSVGObjectUnits read GetGradientUnits write SetGradientUnits;
       property gradientTransform: string read GetGradientTransform write SetGradientTransform;
       property gradientMatrix[AUnit: TCSSUnit]: TAffineMatrix read GetGradientMatrix write SetGradientMatrix;
+      property spreadMethod: TSVGSpreadMethod read GetSpreadMethod write SetSpreadMethod;
+      property colorInterpolation: TSVGColorInterpolation read GetColorInterpolation write SetColorInterpolation;
   end;        
 
   { TSVGGradientLinear }
@@ -686,15 +692,23 @@ type
   TSVGStopGradient = class(TSVGElement)
     private
       function GetOffset: TFloatWithCSSUnit;
+      function GetStopColor: TBGRAPixel;
+      function GetStopOpacity: single;
       procedure SetOffset(AValue: TFloatWithCSSUnit);
+      procedure SetStopColor(AValue: TBGRAPixel);
+      procedure SetStopOpacity(AValue: single);
     public
       class function GetDOMTag: string; override;
-      property Offset: TFloatWithCSSUnit read GetOffset write SetOffset;
+      property offset: TFloatWithCSSUnit read GetOffset write SetOffset;
+      property stopColor: TBGRAPixel read GetStopColor write SetStopColor;
+      property stopOpacity: single read GetStopOpacity write SetStopOpacity;
   end;
 
   { TSVGDefine }
 
   TSVGDefine = class(TSVGElementWithContent)
+    public
+    class function GetDOMTag: string; override;
   end; 
 
   { TSVGGroup }
@@ -802,6 +816,12 @@ type
       procedure CopyElement(AElement: TObject);
       procedure RemoveElement(AElement: TObject);
       function AppendDOMText(AText: string): TDOMText;
+      function AppendDefine: TSVGDefine;
+      function AppendLinearGradient(x1,y1,x2,y2: single; AIsPercent: boolean): TSVGLinearGradient; overload;
+      function AppendLinearGradient(x1,y1,x2,y2: single; AUnit: TCSSUnit): TSVGLinearGradient; overload;
+      function AppendRadialGradient(cx,cy,r,fx,fy,fr: single; AIsPercent: boolean): TSVGRadialGradient; overload;
+      function AppendRadialGradient(cx,cy,r,fx,fy,fr: single; AUnit: TCSSUnit): TSVGRadialGradient; overload;
+      function AppendStop(AColor: TBGRAPixel; AOffset: single; AIsPercent: boolean): TSVGStopGradient;
       function AppendLine(x1,y1,x2,y2: single; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
       function AppendLine(p1,p2: TPointF; AUnit: TCSSUnit = cuCustom): TSVGLine; overload;
       function AppendCircle(cx,cy,r: single; AUnit: TCSSUnit = cuCustom): TSVGCircle; overload;
@@ -910,6 +930,13 @@ begin
   result := factory.Create(AElement,AUnits,ADataLink);
   
   ADataLink.Link(result);
+end;
+
+{ TSVGDefine }
+
+class function TSVGDefine.GetDOMTag: string;
+begin
+  Result:= 'defs';
 end;
 
 { TSVGLink }
@@ -1034,7 +1061,6 @@ procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D)
   function AddStopElementFrom(el: TSVGElement): integer;
   var
     i: integer;
-    col: TBGRAPixel;
   begin
     result:= 0;
     with (el as TSVGGradient).Content do
@@ -1042,9 +1068,7 @@ procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D)
         if IsSVGElement[i] and (Element[i] is TSVGStopGradient) then
           with TSVGStopGradient(Element[i]) do
           begin
-            col:= StrToBGRA( AttributeOrStyleDef['stop-color','black'] );
-            col.alpha:= Round( Units.parseValue(AttributeOrStyleDef['stop-opacity','1'],1) * col.alpha );
-            canvas.addColorStop(EvaluatePercentage(offset)/100, col);
+            canvas.addColorStop(EvaluatePercentage(offset)/100, stopColor);
             Inc(result);
           end;
   end;
@@ -3116,7 +3140,13 @@ begin
   if HasAttribute('y') then y := Units.ConvertHeight(y, AUnit);
   if HasAttribute('rx') then rx := Units.ConvertWidth(rx, AUnit);
   if HasAttribute('ry') then ry := Units.ConvertHeight(ry, AUnit);
-  if HasAttribute('width') then width := Units.ConvertWidth(width, AUnit);
+  if HasAttribute('width') then
+  begin
+    writeln('converting width ',DOMElement.GetAttribute('width'));
+    width := Units.ConvertWidth(width, AUnit);
+    writeln(' to ',DOMElement.GetAttribute('width'));
+
+  end;
   if HasAttribute('height') then height := Units.ConvertHeight(height, AUnit);
 end;
 
@@ -3630,6 +3660,23 @@ begin
   result := Attribute['xlink:href'];
 end;
 
+function TSVGGradient.GetSpreadMethod: TSVGSpreadMethod;
+var
+  s: String;
+begin
+  s := Attribute['spreadMethod'];
+  if s = 'reflect' then result := ssmReflect
+  else if s = 'repeat' then result := ssmRepeat
+  else result := ssmPad;
+end;
+
+procedure TSVGGradient.SetColorInterpolation(AValue: TSVGColorInterpolation);
+begin
+  if AValue = sciLinearRGB then
+    Attribute['color-interpolation'] := 'linearRGB'
+    else Attribute['color-interpolation'] := 'sRGB';
+end;
+
 procedure TSVGGradient.SetGradientMatrix(AUnit: TCSSUnit; AValue: TAffineMatrix);
 begin
   if not IsAffineMatrixIdentity(AValue) then
@@ -3655,6 +3702,13 @@ begin
   result := Attribute['gradientTransform'];
 end;
 
+function TSVGGradient.GetColorInterpolation: TSVGColorInterpolation;
+begin
+  if Attribute['color-interpolation'] = 'linearRGB' then
+    result := sciLinearRGB
+    else result := sciStdRGB;
+end;
+
 function TSVGGradient.GetGradientMatrix(AUnit: TCSSUnit): TAffineMatrix;
 begin
   result := TransformToMatrix(gradientTransform, AUnit);
@@ -3671,6 +3725,18 @@ end;
 procedure TSVGGradient.SetHRef(AValue: string);
 begin
   Attribute['xlink:href'] := AValue;
+end;
+
+procedure TSVGGradient.SetSpreadMethod(AValue: TSVGSpreadMethod);
+var
+  s: String;
+begin
+  case AValue of
+    ssmReflect: s := 'reflect';
+    ssmRepeat: s := 'repeat';
+    else s := 'pad';
+  end;
+  Attribute['spreadMethod'] := s;
 end;
 
 procedure TSVGGradient.Initialize;
@@ -3881,9 +3947,39 @@ begin
   result := AttributeWithUnit['offset'];
 end;
 
+function TSVGStopGradient.GetStopColor: TBGRAPixel;
+begin
+  result := StrToBGRA(AttributeOrStyleDef['stop-color','black']);
+  result.alpha := round(result.alpha*stopOpacity);
+  if result.alpha = 0 then result := BGRAPixelTransparent;
+end;
+
+function TSVGStopGradient.GetStopOpacity: single;
+var errPos: integer;
+begin
+  val(AttributeOrStyleDef['stop-opacity','1'], result, errPos);
+  if errPos <> 0 then result := 1 else
+    if result < 0 then result := 0 else
+      if result > 1 then result := 1;
+end;
+
 procedure TSVGStopGradient.SetOffset(AValue: TFloatWithCSSUnit);
 begin
   AttributeWithUnit['offset'] := AValue;
+end;
+
+procedure TSVGStopGradient.SetStopColor(AValue: TBGRAPixel);
+begin
+  stopOpacity:= AValue.alpha/255;
+  AValue.alpha:= 255;
+  Attribute['stop-color'] := Lowercase(BGRAToStr(AValue, CSSColors, 0, true, true));
+  RemoveStyle('stop-color');
+end;
+
+procedure TSVGStopGradient.SetStopOpacity(AValue: single);
+begin
+  Attribute['stop-opacity'] := Units.formatValue(AValue);
+  RemoveStyle('stop-opacity');
 end;
 
 class function TSVGStopGradient.GetDOMTag: string;
@@ -4109,6 +4205,80 @@ function TSVGContent.AppendDOMText(AText: string): TDOMText;
 begin
   result := TDOMText.Create(FDomElem.OwnerDocument);
   result.Data:= AText;
+  AppendElement(result);
+end;
+
+function TSVGContent.AppendDefine: TSVGDefine;
+begin
+  result := TSVGDefine.Create(FDoc,Units,FDataLink);
+  AppendElement(result);
+end;
+
+function TSVGContent.AppendLinearGradient(x1, y1, x2, y2: single; AIsPercent: boolean): TSVGLinearGradient;
+var
+  u: TCSSUnit;
+begin
+  result := TSVGLinearGradient.Create(FDoc,Units,FDataLink);
+  result.gradientUnits:= souObjectBoundingBox;
+  if AIsPercent then u := cuPercent else u := cuCustom;
+  result.x1 := FloatWithCSSUnit(x1, u);
+  result.x2 := FloatWithCSSUnit(x2, u);
+  result.y1 := FloatWithCSSUnit(y1, u);
+  result.y2 := FloatWithCSSUnit(y2, u);
+  AppendElement(result);
+end;
+
+function TSVGContent.AppendLinearGradient(x1, y1, x2, y2: single;
+  AUnit: TCSSUnit): TSVGLinearGradient;
+begin
+  result := TSVGLinearGradient.Create(FDoc,Units,FDataLink);
+  result.gradientUnits:= souUserSpaceOnUse;
+  result.x1 := FloatWithCSSUnit(x1, AUnit);
+  result.x2 := FloatWithCSSUnit(x2, AUnit);
+  result.y1 := FloatWithCSSUnit(y1, AUnit);
+  result.y2 := FloatWithCSSUnit(y2, AUnit);
+  AppendElement(result);
+end;
+
+function TSVGContent.AppendRadialGradient(cx, cy, r, fx, fy, fr: single;
+  AIsPercent: boolean): TSVGRadialGradient;
+var
+  u: TCSSUnit;
+begin
+  result := TSVGRadialGradient.Create(FDoc,Units,FDataLink);
+  result.gradientUnits:= souObjectBoundingBox;
+  if AIsPercent then u := cuPercent else u := cuCustom;
+  result.cx := FloatWithCSSUnit(cx, u);
+  result.cy := FloatWithCSSUnit(cy, u);
+  result.r := FloatWithCSSUnit(r, u);
+  result.fx := FloatWithCSSUnit(fx, u);
+  result.fy := FloatWithCSSUnit(fy, u);
+  result.fr := FloatWithCSSUnit(fr, u);
+  AppendElement(result);
+end;
+
+function TSVGContent.AppendRadialGradient(cx, cy, r, fx, fy, fr: single;
+  AUnit: TCSSUnit): TSVGRadialGradient;
+begin
+  result := TSVGRadialGradient.Create(FDoc,Units,FDataLink);
+  result.gradientUnits:= souUserSpaceOnUse;
+  result.cx := FloatWithCSSUnit(cx, AUnit);
+  result.cy := FloatWithCSSUnit(cy, AUnit);
+  result.r := FloatWithCSSUnit(r, AUnit);
+  result.fx := FloatWithCSSUnit(fx, AUnit);
+  result.fy := FloatWithCSSUnit(fy, AUnit);
+  result.fr := FloatWithCSSUnit(fr, AUnit);
+  AppendElement(result);
+end;
+
+function TSVGContent.AppendStop(AColor: TBGRAPixel; AOffset: single;
+  AIsPercent: boolean): TSVGStopGradient;
+begin
+  result := TSVGStopGradient.Create(FDoc,Units,FDataLink);
+  if AIsPercent then
+    result.Offset := FloatWithCSSUnit(AOffset, cuPercent)
+    else result.Offset := FloatWithCSSUnit(AOffset, cuCustom);
+  result.stopColor := AColor;
   AppendElement(result);
 end;
 

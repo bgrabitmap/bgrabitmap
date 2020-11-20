@@ -54,6 +54,17 @@ type
      souObjectBoundingBox
    );
 
+  TSVGSpreadMethod = (
+     ssmPad,
+     ssmReflect,
+     ssmRepeat
+  );
+
+  TSVGColorInterpolation = (
+     sciStdRGB,
+     sciLinearRGB
+  );
+
   TSVGImageRendering = (
     sirAuto,
     sirSmooth,
