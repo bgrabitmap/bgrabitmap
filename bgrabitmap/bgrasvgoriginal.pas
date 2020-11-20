@@ -401,6 +401,7 @@ var
   layer: TSVGGroup;
   prefix: String;
   originalViewBox: TSVGViewBox;
+  m: TAffineMatrix;
 begin
   svg := TBGRASVG.Create;
   try
@@ -435,7 +436,9 @@ begin
             svgLayer.WidthAsPixel := originalViewBox.size.x;
             svgLayer.HeightAsPixel := originalViewBox.size.y;
             svgLayer.ViewBox := originalViewBox;
-          end;
+            m := layer.matrix[cuPixel] * AffineMatrixTranslation(originalViewBox.min.x, originalViewBox.min.y);
+          end else
+            m := layer.matrix[cuPixel];
           for j := 0 to svg.Content.IndexOfElement(layer)-1 do
             if svg.Content.ElementObject[j] is TSVGDefine then
               svgLayer.Content.CopyElement(svg.Content.ElementObject[j]);
@@ -449,7 +452,7 @@ begin
           LayerVisible[idx] := layer.Visible;
           LayerOpacity[idx] := min(255,max(0,round(layer.opacity*255)));
           BlendOperation[idx] := layer.mixBlendMode;
-          LayerOriginalMatrix[idx] := layer.matrix[cuPixel];
+          LayerOriginalMatrix[idx] := m;
           RenderLayerFromOriginal(idx);
         finally
           svgLayer.Free;
