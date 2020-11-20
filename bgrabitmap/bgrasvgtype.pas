@@ -1844,7 +1844,11 @@ begin
   boCorrectedLightness: opstr := 'luminosity';
   boCorrectedSaturation: opstr := 'saturation';
   else {boTransparent}
-    opstr := '';
+    begin
+      RemoveStyle('mix-blend-mode');
+      FDomElem.RemoveAttribute('mix-blend-mode');
+      exit;
+    end;
   end;
   Style['mix-blend-mode'] := opstr;
   FDomElem.RemoveAttribute('mix-blend-mode');
