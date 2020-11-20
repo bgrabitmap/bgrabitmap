@@ -1062,6 +1062,17 @@ procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D)
   var
     i: integer;
   begin
+    if el is TSVGGradient then
+    begin
+      if el.HasAttribute('color-interpolation') then
+        canvas.gammaCorrection:= TSVGGradient(el).colorInterpolation = sciLinearRGB;
+      if el.HasAttribute('spreadMethod') then
+        case TSVGGradient(el).spreadMethod of
+          ssmReflect: canvas.repetition := grReflect;
+          ssmRepeat: canvas.repetition := grRepeat;
+          else canvas.repetition:= grPad;
+        end;
+    end;
     result:= 0;
     with (el as TSVGGradient).Content do
       for i:= 0 to ElementCount-1 do

@@ -34,7 +34,10 @@ type
     procedure setColors(ACustomGradient: TBGRACustomGradient);
     function GetGammaCorrection: boolean;
     procedure SetGammaCorrection(AValue: boolean);
+    function GetRepetition: TBGRAGradientRepetition;
+    procedure SetRepetition(AValue: TBGRAGradientRepetition);
     property gammaCorrection: boolean read GetGammaCorrection write SetGammaCorrection;
+    property repetition: TBGRAGradientRepetition read GetRepetition write SetRepetition;
   end;
 
   { TBGRACanvasTextureProvider2D }
@@ -363,6 +366,7 @@ type
     nbColorStops: integer;
     FCustomGradient: TBGRACustomGradient;
     FGammaCorrection: boolean;
+    FRepetition: TBGRAGradientRepetition;
   protected
     scanner: TBGRAGradientScanner;
     procedure CreateScanner; virtual; abstract;
@@ -371,6 +375,8 @@ type
     procedure GetBGRAGradient(out ABGRAGradient: TBGRACustomGradient; out AOwned: boolean);
     function GetGammaCorrection: boolean;
     procedure SetGammaCorrection(AValue: boolean);
+    function GetRepetition: TBGRAGradientRepetition;
+    procedure SetRepetition(AValue: TBGRAGradientRepetition);
   public
     constructor Create;
     function getTexture: IBGRAScanner; override;
@@ -382,6 +388,7 @@ type
     property texture: IBGRAScanner read GetTexture;
     property colorStopCount: integer read nbColorStops;
     property gammaCorrection: boolean read GetGammaCorrection write SetGammaCorrection;
+    property repetition: TBGRAGradientRepetition read GetRepetition write SetRepetition;
   end;
 
   { TBGRACanvasLinearGradient2D }
@@ -587,6 +594,18 @@ begin
   FGammaCorrection:= false;
 end;
 
+function TBGRACanvasGradient2D.GetRepetition: TBGRAGradientRepetition;
+begin
+  result := FRepetition;
+end;
+
+procedure TBGRACanvasGradient2D.SetRepetition(
+  AValue: TBGRAGradientRepetition);
+begin
+  FRepetition := AValue;
+  FreeAndNil(scanner);
+end;
+
 function TBGRACanvasGradient2D.getColorArray: TGradientArrayOfColors;
 var
   i: Integer;
@@ -613,12 +632,12 @@ begin
     if (colorStopCount = 2) and (colorStops[0].position = 0) and (colorStops[1].position = 1) then
     begin
       if FGammaCorrection then
-        ABGRAGradient := TBGRASimpleGradientWithGammaCorrection.Create(colorStops[0].color, colorStops[1].color)
+        ABGRAGradient := TBGRASimpleGradientWithGammaCorrection.Create(colorStops[0].color, colorStops[1].color, FRepetition)
       else
-        ABGRAGradient := TBGRASimpleGradientWithoutGammaCorrection.Create(colorStops[0].color, colorStops[1].color);
+        ABGRAGradient := TBGRASimpleGradientWithoutGammaCorrection.Create(colorStops[0].color, colorStops[1].color, FRepetition);
     end
     else
-      ABGRAGradient := TBGRAMultiGradient.Create(getColorArray,getPositionArray,FGammaCorrection,False);
+      ABGRAGradient := TBGRAMultiGradient.Create(getColorArray,getPositionArray,FGammaCorrection, FRepetition = grRepeat);
     AOwned := true;
   end else
   begin
