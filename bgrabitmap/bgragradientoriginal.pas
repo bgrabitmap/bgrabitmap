@@ -537,11 +537,13 @@ var
   end;
 
 var j: integer;
+  m: TAffineMatrix;
 
 begin
-  tOrigin := AMatrix * Origin;
-  tXAxis := AMatrix * XAxis;
-  tYAxis := AMatrix * YAxis;
+  m := AffineMatrixTranslation(0.5, 0.5) * AMatrix;
+  tOrigin := m * Origin;
+  tXAxis := m * XAxis;
+  tYAxis := m * YAxis;
   AOffset:= Point(0, 0);
   svg := TBGRASVG.Create(640, 480, cuPixel);  // potentially infinite
   result := svg;
