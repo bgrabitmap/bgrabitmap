@@ -2705,17 +2705,25 @@ begin
 end;
 
 procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy: single; AFilter: TResampleFilter);
+var
+  m: TAffineMatrix;
 begin
-  Surface.PutImageAffine(ApplyTransform(PointF(dx,dy))+PointF(0.5,0.5),
-    ApplyTransform(PointF(dx+image.width,dy))+PointF(0.5,0.5),
-    ApplyTransform(PointF(dx,dy+image.height))+PointF(0.5,0.5), image, AFilter, GetDrawMode, currentState.globalAlpha);
+  if (image.Width = 0) or (image.Height = 0) then exit;
+  m := matrix*AffineMatrixTranslation(dx, dy);
+  if pixelCenteredCoordinates then
+    m := AffineMatrixTranslation(0.5, 0.5)*m;
+  Surface.PutImageAffine(m, image, AFilter, GetDrawMode, currentState.globalAlpha, false);
 end;
 
 procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy, dw, dh: single; AFilter: TResampleFilter);
+var
+  m: TAffineMatrix;
 begin
-  Surface.PutImageAffine(ApplyTransform(PointF(dx,dy))+PointF(0.5,0.5),
-    ApplyTransform(PointF(dx+dw,dy))+PointF(0.5,0.5),
-    ApplyTransform(PointF(dx,dy+dh))+PointF(0.5,0.5), image, AFilter, GetDrawMode, currentState.globalAlpha);
+  if (image.Width = 0) or (image.Height = 0) then exit;
+  m := matrix*AffineMatrixTranslation(dx, dy)*AffineMatrixScale(dw/image.Width,dh/image.Height);
+  if pixelCenteredCoordinates then
+    m := AffineMatrixTranslation(0.5, 0.5)*m;
+  Surface.PutImageAffine(m, image, AFilter, GetDrawMode, currentState.globalAlpha, false);
 end;
 
 end.
