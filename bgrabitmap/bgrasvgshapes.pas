@@ -859,7 +859,7 @@ function CreateSVGElementFromNode(AElement: TDOMElement; AUnits: TCSSUnitConvert
 
 implementation
 
-uses BGRATransform, BGRAUTF8, base64;
+uses BGRATransform, BGRAUTF8, base64, BGRAGradientScanner;
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
 var tag: string;
@@ -2226,7 +2226,7 @@ begin
             stream64 := TStringStream.Create(s);
             try
               stream64.Position:= posDelim+7;
-              decoder := TBase64DecodingStream.Create(stream64);
+              decoder := TBase64DecodingStream.Create(stream64, bdmMIME);
               try
                 byteStream.CopyFrom(decoder, decoder.Size);
                 byteStream.Position:= 0;
@@ -2236,7 +2236,15 @@ begin
             finally
               stream64.Free;
             end;
-            FBitmap.LoadFromStream(byteStream);
+            try
+              FBitmap.LoadFromStream(byteStream);
+            except
+              on ex: exception do
+              begin
+                //image discarded if error
+                FBitmap.SetSize(0, 0);
+              end;
+            end;
           finally
             byteStream.Free;
           end;
@@ -2332,6 +2340,7 @@ begin
     s.Position:= s.Size;
     AStream.Position := 0;
     encoder.CopyFrom(AStream, AStream.Size);
+    encoder.Flush;
     xlinkHref:= s.DataString;
   finally
     encoder.Free;
