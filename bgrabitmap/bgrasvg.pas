@@ -1037,6 +1037,8 @@ end;
 procedure TBGRASVG.SaveToStream(AStream: TStream);
 begin
   if Attribute['xmlns'] = '' then Attribute['xmlns'] := SvgNamespace;
+  if (NamespaceURI['xlink'] = '') and NeedNamespace('xlink') then
+    NamespaceURI['xlink'] := 'http://www.w3.org/1999/xlink';
   WriteXMLFile(FXml, AStream);
 end;
 

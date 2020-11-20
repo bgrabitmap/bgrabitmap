@@ -249,6 +249,7 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
+    function ConvertToSVG(out AOffset: TPoint): TObject; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); override;
     function GetRenderBounds({%H-}ADestRect: TRect; AMatrix: TAffineMatrix): TRect; override;
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
@@ -260,6 +261,7 @@ type
     procedure AssignImage(AImage: TBGRACustomBitmap);
     function GetImageCopy: TBGRABitmap;
     class function StorageClassName: RawByteString; override;
+    class function CanConvertToSVG: boolean; override;
     property Width: integer read GetImageWidth;
     property Height: integer read GetImageHeight;
   end;
@@ -373,7 +375,7 @@ function FindLayerOriginalClass(AStorageClassName: string): TBGRALayerOriginalAn
 
 implementation
 
-uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, BGRAGraphics;
+uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, BGRAGraphics, BGRASVG, BGRASVGShapes;
 
 {$IFDEF BGRABITMAP_USE_LCL}
 function LCLKeyToSpecialKey(AKey: Word; AShift: TShiftState): TSpecialKey;
@@ -2069,6 +2071,19 @@ begin
   inherited Destroy;
 end;
 
+function TBGRALayerImageOriginal.ConvertToSVG(out AOffset: TPoint): TObject;
+var
+  svg: TBGRASVG;
+begin
+  svg := TBGRASVG.Create(Width, Height, cuPixel);
+  Result:= svg;
+  AOffset := Point(0,0);
+  if Assigned(FJpegStream) then
+    svg.Content.AppendImage(0,0,Width,Height,FJpegStream,'image/jpeg') else
+  if Assigned(FImage) then
+    svg.Content.AppendImage(0,0,Width,Height,FImage,false);
+end;
+
 procedure TBGRALayerImageOriginal.Render(ADest: TBGRABitmap;
   AMatrix: TAffineMatrix; ADraft: boolean);
 var resampleFilter: TResampleFilter;
@@ -2214,6 +2229,11 @@ end;
 class function TBGRALayerImageOriginal.StorageClassName: RawByteString;
 begin
   result := 'image';
+end;
+
+class function TBGRALayerImageOriginal.CanConvertToSVG: boolean;
+begin
+  Result:= true;
 end;
 
 initialization

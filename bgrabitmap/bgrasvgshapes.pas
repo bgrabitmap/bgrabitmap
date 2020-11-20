@@ -491,7 +491,8 @@ type
       destructor Destroy; override;
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
-      procedure SetBitmap(AValue: TBGRACustomBitmap; AOwned: boolean);
+      procedure SetBitmap(AValue: TBGRACustomBitmap; AOwned: boolean); overload;
+      procedure SetBitmap(AStream: TStream; AMimeType: string); overload;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
       property x: TFloatWithCSSUnit read GetX write SetX;
@@ -815,6 +816,8 @@ type
       function AppendRect(origin,size: TPointF; AUnit: TCSSUnit = cuCustom): TSVGRectangle; overload;
       function AppendImage(x,y,width,height: single; ABitmap: TBGRACustomBitmap; ABitmapOwned: boolean; AUnit: TCSSUnit = cuCustom): TSVGImage; overload;
       function AppendImage(origin,size: TPointF; ABitmap: TBGRACustomBitmap; ABitmapOwned: boolean; AUnit: TCSSUnit = cuCustom): TSVGImage; overload;
+      function AppendImage(x,y,width,height: single; ABitmapStream: TStream; AMimeType: string; AUnit: TCSSUnit = cuCustom): TSVGImage; overload;
+      function AppendImage(origin,size: TPointF; ABitmapStream: TStream; AMimeType: string; AUnit: TCSSUnit = cuCustom): TSVGImage; overload;
       function AppendText(x,y: single; AText: string; AUnit: TCSSUnit = cuCustom): TSVGText; overload;
       function AppendText(origin: TPointF; AText: string; AUnit: TCSSUnit = cuCustom): TSVGText; overload;
       function AppendTextSpan(AText: string): TSVGTSpan;
@@ -2260,9 +2263,7 @@ end;
 
 procedure TSVGImage.SetBitmap(AValue: TBGRACustomBitmap; AOwned: boolean);
 var
-  s: TStringStream;
   byteStream: TMemoryStream;
-  encoder: TBase64EncodingStream;
 begin
   if AValue = FBitmap then exit;
   FreeAndNil(FBitmap);
@@ -2275,24 +2276,30 @@ begin
     FDomElem.RemoveAttribute('href');
     exit;
   end;
-  s := TStringStream.Create('data:image/png;base64,');
+  byteStream := TMemoryStream.Create;
   try
+    FBitmap.SaveToStreamAsPng(byteStream);
+    SetBitmap(byteStream, 'image/png');
+  finally
+    byteStream.Free;
+  end;
+end;
+
+procedure TSVGImage.SetBitmap(AStream: TStream; AMimeType: string);
+var
+  s: TStringStream;
+  encoder: TBase64EncodingStream;
+begin
+  s := TStringStream.Create('data:'+AMimeType+';base64,');
+  encoder := nil;
+  try
+    encoder := TBase64EncodingStream.Create(s);
     s.Position:= s.Size;
-    byteStream := TMemoryStream.Create;
-    try
-      FBitmap.SaveToStreamAsPng(byteStream);
-      byteStream.Position:= 0;
-      encoder := TBase64EncodingStream.Create(byteStream);
-      try
-        encoder.CopyFrom(byteStream, byteStream.Size);
-      finally
-        encoder.Free;
-      end;
-    finally
-      byteStream.Free;
-    end;
+    AStream.Position := 0;
+    encoder.CopyFrom(AStream, AStream.Size);
     xlinkHref:= s.DataString;
   finally
+    encoder.Free;
     s.Free;
   end;
 end;
@@ -2386,12 +2393,12 @@ begin
       visualW := visualH * ratioBitmap;
     end;
     case aspect.HorizAlign of
-    taRightJustify: DecF(coord.x, visualW);
-    taCenter: DecF(coord.x, visualW/2);
+    taRightJustify: IncF(coord.x, w - visualW);
+    taCenter: IncF(coord.x, (w - visualW)/2);
     end;
     case aspect.VertAlign of
-    tlBottom: decF(coord.y, visualH);
-    tlCenter: decF(coord.y, visualH/2);
+    tlBottom: IncF(coord.y, h - visualH);
+    tlCenter: IncF(coord.y, (h - visualH)/2);
     end;
     ACanvas2d.drawImage(FBitmap, coord.x, coord.y, visualW, visualH, filter);
   end;
@@ -4231,12 +4238,31 @@ begin
   result.width := FloatWithCSSUnit(width, AUnit);
   result.height := FloatWithCSSUnit(height, AUnit);
   result.SetBitmap(ABitmap, ABitmapOwned);
+  AppendElement(result);
 end;
 
 function TSVGContent.AppendImage(origin, size: TPointF; ABitmap: TBGRACustomBitmap;
   ABitmapOwned: boolean; AUnit: TCSSUnit): TSVGImage;
 begin
   result := AppendImage(origin.x,origin.y,size.x,size.y,ABitmap,ABitmapOwned,AUnit);
+end;
+
+function TSVGContent.AppendImage(x, y, width, height: single;
+  ABitmapStream: TStream; AMimeType: string; AUnit: TCSSUnit): TSVGImage;
+begin
+  result := TSVGImage.Create(FDoc,Units,FDataLink);
+  result.x := FloatWithCSSUnit(x, AUnit);
+  result.y := FloatWithCSSUnit(y, AUnit);
+  result.width := FloatWithCSSUnit(width, AUnit);
+  result.height := FloatWithCSSUnit(height, AUnit);
+  result.SetBitmap(ABitmapStream, AMimeType);
+  AppendElement(result);
+end;
+
+function TSVGContent.AppendImage(origin, size: TPointF; ABitmapStream: TStream;
+  AMimeType: string; AUnit: TCSSUnit): TSVGImage;
+begin
+  result := AppendImage(origin.x,origin.y,size.x,size.y,ABitmapStream,AMimeType,AUnit);
 end;
 
 function TSVGContent.AppendText(x, y: single; AText: string; AUnit: TCSSUnit
