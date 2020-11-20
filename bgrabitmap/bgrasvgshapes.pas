@@ -3140,13 +3140,7 @@ begin
   if HasAttribute('y') then y := Units.ConvertHeight(y, AUnit);
   if HasAttribute('rx') then rx := Units.ConvertWidth(rx, AUnit);
   if HasAttribute('ry') then ry := Units.ConvertHeight(ry, AUnit);
-  if HasAttribute('width') then
-  begin
-    writeln('converting width ',DOMElement.GetAttribute('width'));
-    width := Units.ConvertWidth(width, AUnit);
-    writeln(' to ',DOMElement.GetAttribute('width'));
-
-  end;
+  if HasAttribute('width') then width := Units.ConvertWidth(width, AUnit);
   if HasAttribute('height') then height := Units.ConvertHeight(height, AUnit);
 end;
 
