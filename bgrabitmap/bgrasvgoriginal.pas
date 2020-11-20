@@ -62,7 +62,7 @@ type
     function GetSVGCopy: TBGRASVG;
     class function StorageClassName: RawByteString; override;
     class function CanConvertToSVG: boolean; override;
-    function ConvertToSVG(out AOffset: TPoint): TBGRASVG; override;
+    function ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TBGRASVG; override;
     property Width: single read GetSvgWidth;
     property Height: single read GetSvgHeight;
     property DPI: single read GetDPI write SetDPI;
@@ -260,7 +260,7 @@ begin
     c2D.transform(AMatrix*FPresentationMatrix);
     c2D.fontRenderer := TBGRAVectorizedFontRenderer.Create;
     if ADraft then c2D.antialiasing := false;
-    FSVG.Draw(c2D, 0, 0, cuPixel, False);
+    FSVG.Draw(c2D, taLeftJustify, tlTop, 0, 0, cuPixel);
     c2D.Free;
   end;
 end;
@@ -274,7 +274,7 @@ begin
   if Assigned(FSVG) then
   begin
     with FSVG.ViewBox do
-      r := RectWithSizeF(min.x, min.y, size.x, size.y);
+      r := RectF(0, 0, size.x, size.y);
     aff := AMatrix * FPresentationMatrix * TAffineBox.AffineBox(r);
     result := aff.RectBounds;
   end else
@@ -379,8 +379,10 @@ begin
   Result:= true;
 end;
 
-function TBGRALayerSVGOriginal.ConvertToSVG(out AOffset: TPoint): TBGRASVG;
+function TBGRALayerSVGOriginal.ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TBGRASVG;
 begin
+  if not IsAffineMatrixIdentity(AMatrix) then
+    raise exception.Create('Matrix not valid for SVG original');
   AOffset := Point(0,0);
   Result:= GetSVGCopy;
 end;
@@ -501,14 +503,25 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
 
     if Assigned(c) and c.CanConvertToSVG then
     begin
-      layerSvg := LayerOriginal[ALayerIndex].ConvertToSVG(wantedOfs) as TBGRASVG;
-      origViewBox := layerSvg.ViewBox;
-      try
-        minCoord := layerSvg.ViewMinInUnit[cuCustom];
+      if LayerOriginal[ALayerIndex].IsInfiniteSurface then
+      begin
+        layerSvg := LayerOriginal[ALayerIndex].ConvertToSVG(LayerOriginalMatrix[ALayerIndex],
+          wantedOfs) as TBGRASVG;
+        layerSvg.WidthAsPixel:= Self.Width;
+        layerSvg.HeightAsPixel:= Self.Height;
+        AMatrix := AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y);
+      end else
+      begin
+        layerSvg := LayerOriginal[ALayerIndex].ConvertToSVG(AffineMatrixIdentity,
+          wantedOfs) as TBGRASVG;
         AMatrix:= LayerOriginalMatrix[ALayerIndex]
           * AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y)
           * layerSvg.PresentationMatrix[cuPixel, true]
-          * AffineMatrixTranslation(-minCoord.X, -minCoord.Y);
+      end;
+      origViewBox := layerSvg.ViewBox;
+      try
+        minCoord := layerSvg.ViewMinInUnit[cuCustom];
+        AMatrix:= AMatrix * AffineMatrixTranslation(-minCoord.X, -minCoord.Y);
         layerSvg.ConvertToUnit(cuCustom);
         if ADestElem is TSVGGroup then
         with TSVGGroup(ADestElem) do
@@ -552,7 +565,7 @@ begin
     vb.size := PointF(Width, Height);
     svg.ViewBox := vb;
     if (NbLayers = 1) and (LayerOpacity[0] = 255) and LayerVisible[0] and
-       ((LayerOriginalGuid[0] = GUID_NULL) or IsAffineMatrixIdentity(LayerOriginalMatrix[0])) then
+       (LayerOriginalGuid[0] = GUID_NULL) then
     begin
       StoreLayer(0, svg, svg, svg.Content, m);
     end else

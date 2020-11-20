@@ -448,6 +448,7 @@ var i: integer;
     ofs, wantedOfs: TPoint;
     fileAdded: Boolean;
     svg: TBGRASVG;
+    m: TAffineMatrix;
 begin
   ClearFiles;
   MimeType := OpenRasterMimeType;
@@ -474,11 +475,20 @@ begin
        LayerOriginalClass[i].CanConvertToSVG then
     begin
       layerFilename := 'data/layer'+inttostr(i)+'.svg';
-      svg := LayerOriginal[i].ConvertToSVG(wantedOfs) as TBGRASVG;
+      if LayerOriginal[i].IsInfiniteSurface then
+      begin
+        svg := LayerOriginal[i].ConvertToSVG(LayerOriginalMatrix[i], wantedOfs) as TBGRASVG;
+        m := AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y);
+        svg.WidthAsPixel := self.Width;
+        svg.HeightAsPixel := self.Height;
+      end else
+      begin
+        svg := LayerOriginal[i].ConvertToSVG(AffineMatrixIdentity, wantedOfs) as TBGRASVG;
+        m := LayerOriginalMatrix[i]
+          * AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y);
+      end;
       try
-        CopySVGToMemoryStream(svg, LayerOriginalMatrix[i]
-          * AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y),
-                     layerFilename, ofs);
+        CopySVGToMemoryStream(svg, m, layerFilename, ofs);
         fileAdded := true;
       finally
         svg.Free;
@@ -808,8 +818,6 @@ procedure TBGRAOpenRasterDocument.CopySVGToMemoryStream(
     end;
   end;
 
-var
-  orig: TBGRALayerCustomOriginal;
 begin
   if IsIntegerTranslation(ASVGMatrix, AOffset) then
     StoreSVG(ASVG)

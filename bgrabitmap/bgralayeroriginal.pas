@@ -203,7 +203,8 @@ type
     function CreateEditor: TBGRAOriginalEditor; virtual;
     class function StorageClassName: RawByteString; virtual; abstract;
     class function CanConvertToSVG: boolean; virtual;
-    function ConvertToSVG(out AOffset: TPoint): TObject; virtual;
+    function IsInfiniteSurface: boolean; virtual;
+    function ConvertToSVG(const {%H-}AMatrix: TAffineMatrix; out AOffset: TPoint): TObject; virtual;
     function Duplicate: TBGRALayerCustomOriginal; virtual;
     property Guid: TGuid read GetGuid write SetGuid;
     property OnChange: TOriginalChangeEvent read FOnChange write SetOnChange;
@@ -249,7 +250,7 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
-    function ConvertToSVG(out AOffset: TPoint): TObject; override;
+    function ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TObject; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); override;
     function GetRenderBounds({%H-}ADestRect: TRect; AMatrix: TAffineMatrix): TRect; override;
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
@@ -1950,7 +1951,12 @@ begin
   result := false;
 end;
 
-function TBGRALayerCustomOriginal.ConvertToSVG(out AOffset: TPoint): TObject;
+function TBGRALayerCustomOriginal.IsInfiniteSurface: boolean;
+begin
+  result := false;
+end;
+
+function TBGRALayerCustomOriginal.ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TObject;
 begin
   AOffset := Point(0,0);
   raise exception.Create('Not implemented');
@@ -2071,17 +2077,19 @@ begin
   inherited Destroy;
 end;
 
-function TBGRALayerImageOriginal.ConvertToSVG(out AOffset: TPoint): TObject;
+function TBGRALayerImageOriginal.ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TObject;
 var
   svg: TBGRASVG;
+  img: TSVGImage;
 begin
   svg := TBGRASVG.Create(Width, Height, cuPixel);
   Result:= svg;
   AOffset := Point(0,0);
   if Assigned(FJpegStream) then
-    svg.Content.AppendImage(0,0,Width,Height,FJpegStream,'image/jpeg') else
+    img := svg.Content.AppendImage(0,0,Width,Height,FJpegStream,'image/jpeg') else
   if Assigned(FImage) then
-    svg.Content.AppendImage(0,0,Width,Height,FImage,false);
+    img := svg.Content.AppendImage(0,0,Width,Height,FImage,false);
+  img.matrix[cuCustom] := AMatrix;
 end;
 
 procedure TBGRALayerImageOriginal.Render(ADest: TBGRABitmap;

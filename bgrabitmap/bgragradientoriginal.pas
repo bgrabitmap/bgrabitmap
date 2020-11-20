@@ -6,7 +6,8 @@ unit BGRAGradientOriginal;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRALayerOriginal, BGRABitmap, BGRABitmapTypes, BGRAGradientScanner;
+  BGRAClasses, SysUtils, BGRALayerOriginal, BGRABitmap, BGRABitmapTypes, BGRAGradientScanner,
+  BGRASVG, BGRASVGShapes, BGRASVGType;
 
 type
   TBGRAColorInterpolation = BGRAGradientScanner.TBGRAColorInterpolation;
@@ -73,6 +74,8 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
+    function ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TObject; override;
+    function IsInfiniteSurface: boolean; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); overload; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean; ADrawMode: TDrawMode); overload;
     function CreateScanner(AMatrix: TAffineMatrix; ADraft: boolean = false): TBGRACustomScanner;
@@ -81,6 +84,7 @@ type
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
     procedure SaveToStorage(AStorage: TBGRACustomOriginalStorage); override;
     class function StorageClassName: RawByteString; override;
+    class function CanConvertToSVG: boolean; override;
     property ComputedYAxis: TPointF read GetComputedYAxis;
     property ComputedRadius: single read GetComputedRadius;
     property ComputedFocalPoint: TPointF read GetComputedFocalPoint;
@@ -485,6 +489,120 @@ begin
   inherited Destroy;
 end;
 
+function TBGRALayerGradientOriginal.ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TObject;
+const ApproxCount = 16;
+  MaxReflectRepeatCount = 8;
+var
+  svg: TBGRASVG;
+  def: TSVGDefine;
+  grad: TSVGGradient;
+  rFactor: Single;
+  colors: TBGRASimpleGradient;
+  r: TSVGRectangle;
+  tOrigin, tXAxis, tYAxis, reflectedXAxis, repeatedXAxis: TPointF;
+  gt: TGradientType;
+
+  procedure AddColorStops(AOffset, AFactor: single; AIncludeStart: boolean);
+  var i, i0: integer;
+  begin
+    if (Repetition <> grSine) and (ColorInterpolation in [ciStdRGB, ciLinearRGB])  then
+    begin
+      if AFactor >= 0 then
+      begin
+        if AIncludeStart then
+          grad.Content.AppendStop(StartColor, AOffset, false);
+        grad.Content.AppendStop(EndColor, AOffset + AFactor*1, false);
+      end else
+      begin
+        grad.Content.AppendStop(EndColor, AOffset + AFactor*1, false);
+        if AIncludeStart then
+          grad.Content.AppendStop(StartColor, AOffset, false);
+      end;
+    end else
+    begin
+      colors := TBGRASimpleGradient.CreateAny(ColorInterpolation, StartColor,EndColor, Repetition);
+      try
+        if AIncludeStart then i0 := 0 else i0 := 1;
+        if AFactor >= 0 then
+        begin
+          for i := i0 to ApproxCount do
+            grad.Content.AppendStop(colors.GetColorAtF(i/ApproxCount), AOffset + AFactor*i/ApproxCount, false);
+        end else
+          for i := ApproxCount downto i0 do
+            grad.Content.AppendStop(colors.GetColorAtF(i/ApproxCount), AOffset + AFactor*i/ApproxCount, false);
+      finally
+        colors.Free;
+      end;
+    end;
+  end;
+
+var j: integer;
+
+begin
+  tOrigin := AMatrix * Origin;
+  tXAxis := AMatrix * XAxis;
+  tYAxis := AMatrix * YAxis;
+  AOffset:= Point(0, 0);
+  svg := TBGRASVG.Create(640, 480, cuPixel);  // potentially infinite
+  result := svg;
+  def := svg.Content.AppendDefine;
+  gt := GradientType;
+  if (GradientType = gtReflected) and (Repetition = grReflect) then
+    gt := gtLinear; // same as linear in this case
+  case gt of
+  gtLinear:
+      grad := def.Content.AppendLinearGradient(tOrigin.X,tOrigin.Y,tXAxis.X,tXAxis.Y,cuCustom);
+  gtReflected:
+  begin
+    if Repetition <> grPad then j := MaxReflectRepeatCount else j := 1;
+    reflectedXAxis := tOrigin - j*(tXAxis - tOrigin);
+    repeatedXAxis := tOrigin + j*(tXAxis - tOrigin);
+    grad := def.Content.AppendLinearGradient(reflectedXAxis.X,reflectedXAxis.Y,
+      repeatedXAxis.X,repeatedXAxis.Y,cuCustom);
+  end;
+  gtDiamond, gtRadial: // diamond approximated by radial
+    begin
+      if not isEmptyPointF(tYAxis) then
+        rFactor := (VectLen(tXAxis - tOrigin)  + VectLen(tYAxis - tOrigin)) / 2
+        else rFactor := VectLen(tXAxis - tOrigin);
+      grad := def.Content.AppendRadialGradient(tOrigin.X,tOrigin.Y,rFactor*Radius,
+        FocalPoint.X,FocalPoint.Y,FocalRadius*rFactor, cuCustom);
+    end;
+  gtAngular: exit; // not implemented
+  end;
+  case Repetition of
+  grPad: grad.spreadMethod := ssmPad;
+  grReflect: grad.spreadMethod := ssmReflect;
+  grRepeat, grSine: grad.spreadMethod := ssmRepeat;
+  end;
+  if gt = gtReflected then
+  begin
+    if Repetition <> grPad then
+    begin
+      for j := -MaxReflectRepeatCount+1 to 0 do
+        AddColorStops(0.5 + j/MaxReflectRepeatCount*0.5, -0.5/MaxReflectRepeatCount, true);
+      for j := 0 to MaxReflectRepeatCount-1 do
+        AddColorStops(0.5 + j*0.5/MaxReflectRepeatCount, 0.5/MaxReflectRepeatCount, j > 0);
+    end else
+    begin
+      AddColorStops(0.5, -0.5, true);
+      AddColorStops(0.5, 0.5, false);
+    end;
+  end else
+    AddColorStops(0, 1, true);
+  if ColorInterpolation = ciStdRGB then
+    grad.colorInterpolation := sciStdRGB
+    else grad.colorInterpolation := sciLinearRGB;
+  r := svg.Content.AppendRect(0, 0, 100, 100, cuPercent);
+  grad.ID := 'grad1';
+  r.fill:= 'url(#grad1)';
+end;
+
+function TBGRALayerGradientOriginal.IsInfiniteSurface: boolean;
+begin
+  Result:= true;
+end;
+
 procedure TBGRALayerGradientOriginal.Render(ADest: TBGRABitmap;
   AMatrix: TAffineMatrix; ADraft: boolean);
 begin
@@ -683,6 +801,11 @@ end;
 class function TBGRALayerGradientOriginal.StorageClassName: RawByteString;
 begin
   result := 'gradient';
+end;
+
+class function TBGRALayerGradientOriginal.CanConvertToSVG: boolean;
+begin
+  Result:= true;
 end;
 
 procedure TBGRALayerGradientOriginal.Transform(AMatrix: TAffineMatrix);
