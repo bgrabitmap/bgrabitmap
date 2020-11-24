@@ -32,25 +32,28 @@ type
 
   TSVGElementWithGradient = class(TSVGElement)
     private
-      FGradientElement: TSVGGradient;
-      FGradientElementDefined: boolean;
-      FCanvasGradient: IBGRACanvasGradient2D;
+      FFillGradientElement, FStrokeGradientElement: TSVGGradient;
+      FGradientElementsDefined: boolean;
+      FFillCanvasGradient, FStrokeCanvasGradient: IBGRACanvasGradient2D;
       function EvaluatePercentage(fu: TFloatWithCSSUnit): single; { fu is a percentage of a number [0.0..1.0] }
-      function GetGradientElement: TSVGGradient;
+      function GetFillGradientElement: TSVGGradient;
+      function GetStrokeGradientElement: TSVGGradient;
       procedure ResetGradient;
-      function FindGradientElement: boolean;
+      procedure FindGradientElements;
     protected
       procedure Initialize; override;
-      procedure AddStopElements(canvas: IBGRACanvasGradient2D);
-      procedure CreateCanvasLinearGradient(ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient;
-        const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
-      procedure CreateCanvasRadialGradient(ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient;
-        const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
+      procedure AddStopElements(ASVGGradient: TSVGGradient; canvas: IBGRACanvasGradient2D);
+      function CreateCanvasLinearGradient(ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient;
+        const origin: TPointF; const w,h: single; AUnit: TCSSUnit): IBGRACanvasGradient2D;
+      function CreateCanvasRadialGradient(ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient;
+        const origin: TPointF; const w,h: single; AUnit: TCSSUnit): IBGRACanvasGradient2D;
       procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
       procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
                 const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
-      property GradientElement: TSVGGradient read GetGradientElement;
+      property FillGradientElement: TSVGGradient read GetFillGradientElement;
+      property StrokeGradientElement: TSVGGradient read GetStrokeGradientElement;
   end;       
 
   { TSVGLine }
@@ -1021,15 +1024,22 @@ end;
 
 procedure TSVGElementWithGradient.ResetGradient;
 begin
-  FGradientElementDefined := false;
-  FGradientElement        := nil;
-  FCanvasGradient         := nil;
+  FGradientElementsDefined := false;
+  FFillGradientElement     := nil;
+  FStrokeGradientElement   := nil;
+  FFillCanvasGradient      := nil;
+  FStrokeCanvasGradient    := nil;
 end;
 
-function TSVGElementWithGradient.FindGradientElement: boolean;
+procedure TSVGElementWithGradient.FindGradientElements;
 begin
-  FGradientElement := TSVGGradient(FDataLink.FindElementByRef(fill, TSVGGradient));
-  Result := Assigned(FGradientElement);
+  FFillGradientElement := TSVGGradient(FDataLink.FindElementByRef(fill, TSVGGradient));
+  FStrokeGradientElement := TSVGGradient(FDataLink.FindElementByRef(stroke, TSVGGradient));
+  if FFillGradientElement <> nil then
+    FFillGradientElement.ScanInheritedGradients;
+  if FStrokeGradientElement <> nil then
+    FStrokeGradientElement.ScanInheritedGradients;
+  FGradientElementsDefined:= true;
 end;
 
 function TSVGElementWithGradient.EvaluatePercentage(fu: TFloatWithCSSUnit): single;
@@ -1045,19 +1055,21 @@ begin
   end;
 end;
 
-function TSVGElementWithGradient.GetGradientElement: TSVGGradient;
+function TSVGElementWithGradient.GetFillGradientElement: TSVGGradient;
 begin
-  if not FGradientElementDefined then
-  begin
-    FindGradientElement;
-    FGradientElementDefined:= true;
-    if FGradientElement <> nil then
-      FGradientElement.ScanInheritedGradients;
-  end;
-  result := FGradientElement;
+  if not FGradientElementsDefined then
+    FindGradientElements;
+  result := FFillGradientElement;
 end;
 
-procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D);
+function TSVGElementWithGradient.GetStrokeGradientElement: TSVGGradient;
+begin
+  if not FGradientElementsDefined then
+    FindGradientElements;
+  result := FStrokeGradientElement;
+end;
+
+procedure TSVGElementWithGradient.AddStopElements(ASVGGradient: TSVGGradient; canvas: IBGRACanvasGradient2D);
 
   function AddStopElementFrom(el: TSVGElement): integer;
   var
@@ -1088,15 +1100,15 @@ procedure TSVGElementWithGradient.AddStopElements(canvas: IBGRACanvasGradient2D)
 var
   i: integer;
 begin
-  if not Assigned(GradientElement) then exit;
-  with GradientElement.InheritedGradients do
+  if not Assigned(ASVGGradient) then exit;
+  with ASVGGradient.InheritedGradients do
     for i:= 0 to Count-1 do
       AddStopElementFrom(Items[i]);
 end;
 
-procedure TSVGElementWithGradient.CreateCanvasLinearGradient(
+function TSVGElementWithGradient.CreateCanvasLinearGradient(
   ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient;
-  const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
+  const origin: TPointF; const w,h: single; AUnit: TCSSUnit): IBGRACanvasGradient2D;
 var p1,p2: TPointF;
   g: TSVGLinearGradient;
   m: TAffineMatrix;
@@ -1112,7 +1124,7 @@ begin
     ACanvas2d.translate(origin.x,origin.y);
     ACanvas2d.scale(w,h);
     ACanvas2d.transform(g.gradientMatrix[cuCustom]);
-    FCanvasGradient:= ACanvas2d.createLinearGradient(p1,p2);
+    result:= ACanvas2d.createLinearGradient(p1,p2);
     ACanvas2d.matrix := m;
   end else
   begin
@@ -1122,16 +1134,16 @@ begin
     p2.y:= Units.ConvertHeight(g.y2,AUnit,h).value;
     m := ACanvas2d.matrix;
     ACanvas2d.transform(g.gradientMatrix[AUnit]);
-    FCanvasGradient:= ACanvas2d.createLinearGradient(p1,p2);
+    result:= ACanvas2d.createLinearGradient(p1,p2);
     ACanvas2d.matrix := m;
   end;
 
-  AddStopElements(FCanvasGradient);
+  AddStopElements(ASVGGradient, result);
 end;
 
-procedure TSVGElementWithGradient.CreateCanvasRadialGradient(
+function TSVGElementWithGradient.CreateCanvasRadialGradient(
   ACanvas2d: TBGRACanvas2D; ASVGGradient: TSVGGradient; const origin: TPointF;
-  const w, h: single; AUnit: TCSSUnit);
+  const w, h: single; AUnit: TCSSUnit): IBGRACanvasGradient2D;
 var c,f: TPointF;
   r,fr: single;
   g: TSVGRadialGradient;
@@ -1148,8 +1160,8 @@ var c,f: TPointF;
       u.Scale( (r/d)*0.99999 );
       f := c+u;
     end;
-    FCanvasGradient:= ACanvas2d.createRadialGradient(c,r,f,fr,true);
-    AddStopElements(FCanvasGradient);
+    result:= ACanvas2d.createRadialGradient(c,r,f,fr,true);
+    AddStopElements(ASVGGradient, result);
   end;
 
 begin
@@ -1188,25 +1200,35 @@ end;
 procedure TSVGElementWithGradient.InitializeGradient(ACanvas2d: TBGRACanvas2D;
   const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
 begin
-  if GradientElement <> nil then
+  if FillGradientElement <> nil then
   begin
-    if GradientElement is TSVGLinearGradient then
-      CreateCanvasLinearGradient(ACanvas2d, GradientElement, origin, w,h, AUnit)
-    else
-    if GradientElement is TSVGRadialGradient then
-      CreateCanvasRadialGradient(ACanvas2d, GradientElement, origin, w,h, AUnit);
+    if FillGradientElement is TSVGLinearGradient then
+      FFillCanvasGradient := CreateCanvasLinearGradient(ACanvas2d, FillGradientElement, origin, w,h, AUnit)
+    else if FillGradientElement is TSVGRadialGradient then
+      FFillCanvasGradient := CreateCanvasRadialGradient(ACanvas2d, FillGradientElement, origin, w,h, AUnit);
+  end;
+  if StrokeGradientElement <> nil then
+  begin
+    if StrokeGradientElement is TSVGLinearGradient then
+      FStrokeCanvasGradient := CreateCanvasLinearGradient(ACanvas2d, StrokeGradientElement, origin, w,h, AUnit)
+    else if StrokeGradientElement is TSVGRadialGradient then
+      FStrokeCanvasGradient := CreateCanvasRadialGradient(ACanvas2d, StrokeGradientElement, origin, w,h, AUnit);
   end;
 end; 
 
 procedure TSVGElementWithGradient.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
-  if FCanvasGradient = nil then
-    inherited ApplyFillStyle(ACanvas2D,AUnit)
-  else
-  begin
-    ACanvas2D.fillStyle(FCanvasGradient);
-    ACanvas2D.fillMode:= TFillMode(fillMode);
-  end;
+  inherited ApplyFillStyle(ACanvas2D,AUnit);
+  if Assigned(FFillCanvasGradient) then
+    ACanvas2D.fillStyle(FFillCanvasGradient);
+end;
+
+procedure TSVGElementWithGradient.ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D;
+  AUnit: TCSSUnit);
+begin
+  inherited ApplyStrokeStyle(ACanvas2D,AUnit);
+  if Assigned(FStrokeCanvasGradient) then
+    ACanvas2D.strokeStyle(FStrokeCanvasGradient);
 end;
 
 { TSVGTextElementWithContent }
@@ -1665,8 +1687,7 @@ begin
   if ADraw then
   begin
     ACanvas2d.beginPath;
-    if Assigned(GradientElement) then
-      InitializeGradient(ACanvas2d, AAllTextBounds.TopLeft, AAllTextBounds.Width,AAllTextBounds.Height,AUnit);
+    InitializeGradient(ACanvas2d, AAllTextBounds.TopLeft, AAllTextBounds.Width,AAllTextBounds.Height,AUnit);
     if hasRotation then
     begin
       curPos := APosition;
@@ -3263,8 +3284,7 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.roundRect(vx,vy, vw,vh,
        Units.ConvertWidth(rx,AUnit).value,Units.ConvertHeight(ry,AUnit).value);
-    if Assigned(GradientElement) then
-      InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh,AUnit);
+    InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh,AUnit);
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
@@ -3509,7 +3529,7 @@ begin
   end else
   begin
     ACanvas2d.path(path);
-    if Assigned(GradientElement) then
+    if Assigned(FillGradientElement) or Assigned(StrokeGradientElement) then
       with boundingBoxF do
         InitializeGradient(ACanvas2d,
           PointF(Left,Top),abs(Right-Left),abs(Bottom-Top),AUnit);
@@ -3585,8 +3605,7 @@ begin
     vry:= Units.ConvertHeight(ry,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.ellipse(vcx,vcy,vrx,vry);
-    if Assigned(GradientElement) then
-      InitializeGradient(ACanvas2d, PointF(vcx-vrx,vcy-vry),vrx*2,vry*2,AUnit);      
+    InitializeGradient(ACanvas2d, PointF(vcx-vrx,vcy-vry),vrx*2,vry*2,AUnit);
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
@@ -3657,8 +3676,7 @@ begin
     vr:= Units.ConvertOrtho(r,AUnit).value;
     ACanvas2d.beginPath;
     ACanvas2d.circle(vcx,vcy,vr);
-    if Assigned(GradientElement) then
-      InitializeGradient(ACanvas2d, PointF(vcx-vr,vcy-vr),vr*2,vr*2,AUnit);
+    InitializeGradient(ACanvas2d, PointF(vcx-vr,vcy-vr),vr*2,vr*2,AUnit);
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
