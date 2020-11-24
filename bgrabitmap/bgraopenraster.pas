@@ -680,8 +680,11 @@ begin
     if (svgElemCount = 1) and Assigned(g) and
        g.DOMElement.hasAttribute('bgra:originalViewBox') then
     begin
-      m := g.matrix[cuPixel];
+      svg.ContainerWidthAsPixel:= Width;
+      svg.ContainerHeightAsPixel:= Height;
       origViewBox := TSVGViewBox.Parse(g.DOMElement.GetAttribute('bgra:originalViewBox'));
+      m := svg.GetStretchPresentationMatrix(cuPixel) * g.matrix[cuPixel] *
+        AffineMatrixTranslation(origViewBox.min.x, origViewBox.min.y);
       g.DOMElement.RemoveAttribute('bgra:originalViewBox');
       for i := svg.Content.ElementCount-1 downto 0 do
         if svg.Content.ElementObject[i] <> g then
@@ -778,7 +781,7 @@ procedure TBGRAOpenRasterDocument.CopySVGToMemoryStream(
   var
     box, transfBox: TAffineBox;
     newSvg: TBGRASVG;
-    newBounds, newBoundsCustom: TRectF;
+    newBounds: TRectF;
     rootElems: TList;
     i: Integer;
     g: TSVGGroup;
@@ -786,17 +789,16 @@ procedure TBGRAOpenRasterDocument.CopySVGToMemoryStream(
     presentMatrix: TAffineMatrix;
   begin
     newSvg := ASVG.Duplicate;
-    presentMatrix := ASVGMatrix * newSvg.PresentationMatrix[cuPixel, true];
+    presentMatrix := ASVGMatrix * newSvg.GetStretchPresentationMatrix(cuPixel);
     rootElems := TList.Create;
     try
       origViewBox := newSvg.ViewBox;
-      box := TAffineBox.AffineBox(PointF(0,0),
-               PointF(newSvg.ViewBox.size.x,0), PointF(0,newSvg.ViewBox.size.y));
+      with origViewBox do
+        box := TAffineBox.AffineBox(RectWithSizeF(min.x, min.y, size.x, size.y));
       transfBox := presentMatrix * box;
       newBounds := RectF(transfBox.RectBounds);
       AOffset := Point(round(newBounds.Left), round(newBounds.Top));
-      newBoundsCustom := newBounds;
-      newBoundsCustom.Offset(-AOffset.X, -AOffset.Y);
+      newBounds.Offset(-AOffset.X, -AOffset.Y);
       presentMatrix := AffineMatrixTranslation(-AOffset.X, -AOffset.Y) * presentMatrix;
       for i := 0 to newSvg.Content.ElementCount-1 do
         rootElems.Add(newSvg.Content.ElementObject[i]);
@@ -808,8 +810,8 @@ procedure TBGRAOpenRasterDocument.CopySVGToMemoryStream(
       g.DOMElement.SetAttribute('bgra:originalViewBox', origViewBox.ToString);
       newSvg.WidthAsPixel:= newBounds.Width;
       newSvg.HeightAsPixel:= newBounds.Height;
-      newViewBox.min := newBoundsCustom.TopLeft;
-      newViewBox.size := newBoundsCustom.BottomRight - newBoundsCustom.TopLeft;
+      newViewBox.min := newBounds.TopLeft;
+      newViewBox.size := PointF(newBounds.Width, newBounds.Height);
       newSvg.ViewBox := newViewBox;
       StoreSVG(newSvg);
     finally

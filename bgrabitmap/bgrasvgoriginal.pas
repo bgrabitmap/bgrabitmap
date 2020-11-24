@@ -232,7 +232,7 @@ begin
   compHeight := FSVG.HeightAsPixel;
   FSVG.WidthAsPixel := compWidth * AScaleDPI;
   FSVG.HeightAsPixel := compHeight * AScaleDPI;
-  FPresentationMatrix := FSVG.PresentationMatrix[cuPixel, true];
+  FPresentationMatrix := FSVG.GetStretchPresentationMatrix(cuPixel);
 end;
 
 constructor TBGRALayerSVGOriginal.Create;
@@ -260,7 +260,7 @@ begin
     c2D.transform(AMatrix*FPresentationMatrix);
     c2D.fontRenderer := TBGRAVectorizedFontRenderer.Create;
     if ADraft then c2D.antialiasing := false;
-    FSVG.Draw(c2D, taLeftJustify, tlTop, 0, 0, cuPixel);
+    FSVG.Draw(c2D, 0, 0, cuPixel);
     c2D.Free;
   end;
 end;
@@ -274,7 +274,7 @@ begin
   if Assigned(FSVG) then
   begin
     with FSVG.ViewBox do
-      r := RectF(0, 0, size.x, size.y);
+      r := RectWithSizeF(min.x, min.y, size.x, size.y);
     aff := AMatrix * FPresentationMatrix * TAffineBox.AffineBox(r);
     result := aff.RectBounds;
   end else
@@ -298,7 +298,7 @@ begin
       FreeAndNil(FSVG);
       FSVG := TBGRASVG.Create;
     end;
-    FPresentationMatrix := FSVG.PresentationMatrix[cuPixel, true];
+    FPresentationMatrix := FSVG.GetStretchPresentationMatrix(cuPixel);
     FContentVersion:= AStorage.Int['content-version'];
   finally
     svgStream.Free;
@@ -476,25 +476,42 @@ end;
 
 procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
 
-  procedure StoreLayerBitmap(ABitmap: TBGRABitmap; AOwned: boolean; const AMatrix: TAffineMatrix; AContent: TSVGContent);
+  procedure StoreLayerBitmap(ABitmap: TBGRABitmap; AOwned: boolean; const AMatrix: TAffineMatrix;
+        ADestElem: TSVGCustomElement; AContent: TSVGContent);
   var
     img: TSVGImage;
+    ab: TAffineBox;
+    vb: TSVGViewBox;
   begin
+    ab := AMatrix * TAffineBox.AffineBox(PointF(0, 0), PointF(ABitmap.Width, 0), PointF(0, ABitmap.Height));
+
     img := AContent.AppendImage(AMatrix[1,3], AMatrix[2, 3], ABitmap.Width, ABitmap.Height, ABitmap, AOwned);
     img.matrix[cuCustom] := AffineMatrixLinear(AMatrix);
+
+    if ADestElem is TSVGGroup then
+    with TSVGGroup(ADestElem) do
+    begin
+      with ab.RectBounds do
+      begin
+        vb.min := PointF(Left, Top);
+        vb.size := PointF(Width, Height);
+      end;
+      DOMElement.SetAttribute('xmlns:bgra', 'https://wiki.freepascal.org/LazPaint_SVG_format');
+      DOMElement.SetAttribute('bgra:originalViewBox', vb.ToString);
+    end;
   end;
 
   procedure StoreLayer(ALayerIndex: integer; ASVG: TBGRASVG; ADestElem: TSVGCustomElement;
         ADest: TSVGContent; out AMatrix: TAffineMatrix);
   var
     c: TBGRALayerOriginalAny;
-    bmp: TBGRABitmap;
+    bmp, part: TBGRABitmap;
     layerSvg: TBGRASVG;
-    minCoord: TPointF;
     i: Integer;
     prefix: String;
     origViewBox: TSVGViewBox;
     wantedOfs: TPoint;
+    r: TRect;
   begin
     AMatrix := AffineMatrixIdentity;
     if LayerOriginalKnown[ALayerIndex] then
@@ -516,12 +533,10 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
           wantedOfs) as TBGRASVG;
         AMatrix:= LayerOriginalMatrix[ALayerIndex]
           * AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y)
-          * layerSvg.PresentationMatrix[cuPixel, true]
+          * layerSvg.GetStretchPresentationMatrix(cuPixel);
       end;
       origViewBox := layerSvg.ViewBox;
       try
-        minCoord := layerSvg.ViewMinInUnit[cuCustom];
-        AMatrix:= AMatrix * AffineMatrixTranslation(-minCoord.X, -minCoord.Y);
         layerSvg.ConvertToUnit(cuCustom);
         if ADestElem is TSVGGroup then
         with TSVGGroup(ADestElem) do
@@ -540,14 +555,20 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
         layerSvg.Free;
       end;
     end else
-    if c = TBGRALayerImageOriginal then
     begin
-      bmp := (LayerOriginal[ALayerIndex] as TBGRALayerImageOriginal).GetImageCopy;
-      StoreLayerBitmap(bmp, true, LayerOriginalMatrix[ALayerIndex], ADest);
-    end else
-      StoreLayerBitmap(LayerBitmap[ALayerIndex], false,
-        AffineMatrixTranslation(LayerOffset[ALayerIndex].X, LayerOffset[ALayerIndex].Y),
-        ADest);
+      r := LayerBitmap[ALayerIndex].GetImageBounds;
+      if (r.Left = 0) and (r.Top = 0) and (r.Width = LayerBitmap[ALayerIndex].Width) and
+        (r.Height = LayerBitmap[ALayerIndex].Height) then
+        StoreLayerBitmap(LayerBitmap[ALayerIndex], false,
+          AffineMatrixTranslation(LayerOffset[ALayerIndex].X, LayerOffset[ALayerIndex].Y), ADestElem, ADest)
+      else
+      begin
+        part := LayerBitmap[ALayerIndex].GetPart(r);
+        StoreLayerBitmap(part, true,
+          AffineMatrixTranslation(LayerOffset[ALayerIndex].X + r.Left,
+          LayerOffset[ALayerIndex].Y + r.Top), ADestElem, ADest)
+      end;
+    end;
   end;
 
 var
