@@ -4102,7 +4102,6 @@ function TSVGStopGradient.GetStopColor: TBGRAPixel;
 begin
   result := StrToBGRA(AttributeOrStyleDef['stop-color','black']);
   result.alpha := round(result.alpha*stopOpacity);
-  if result.alpha = 0 then result := BGRAPixelTransparent;
 end;
 
 function TSVGStopGradient.GetStopOpacity: single;
