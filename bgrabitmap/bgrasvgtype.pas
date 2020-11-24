@@ -125,6 +125,8 @@ type
   end;
 
   TSVGRecomputeEvent = procedure(Sender: TObject) of object;
+  TSVGLinkEvent = procedure(Sender: TObject; AElement: TSVGElement; ALink: boolean) of object;
+  TSVGLinkListeners = specialize TFPGList<TSVGLinkEvent>;
   
   { TSVGDataLink }
 
@@ -133,10 +135,12 @@ type
      FElements: TSVGElementDictionary;
      FStyles: TSVGElementList;
      FParent: TSVGDataLink;
+     FLinkListeners: TSVGLinkListeners;
      function GetElement(AIndex: integer): TSVGElement;
      function GetStyle(AIndex: integer): TSVGElement;
      function IsValidIndex(const AIndex: integer; list: TSVGElementList): boolean;
      function FindTo(el: TSVGElement; list: TSVGElementList): integer;
+     procedure NotifyLink(AElement: TSVGElement; ALink: boolean);
    public
      constructor Create(AParent: TSVGDataLink);
      destructor Destroy; override;
@@ -153,6 +157,7 @@ type
      function Link(el: TSVGElement): integer;
      procedure Unlink(el: TSVGElement);
      procedure UnlinkAll;
+     procedure RegisterLinkListener(AHandler: TSVGLinkEvent; ARegister: boolean);
 
      property Styles[ID: integer]: TSVGElement read GetStyle;
      property Elements[AIndex: integer]: TSVGElement read GetElement;
@@ -284,6 +289,7 @@ type
   private
     FImportStyleState: TFindStyleState;
     FImportedStyles: ArrayOfTStyleAttribute;
+    function GetClipPath: string;
     function GetFill: string;
     function GetFillColor: TBGRAPixel;
     function GetFillOpacity: single;
@@ -309,15 +315,13 @@ type
     function GetID: string;
     function GetClassAttr: string;
     function GetVisible: boolean;
-    procedure SetDatalink(AValue: TSVGDataLink);
-    procedure SetFill(AValue: string);
+    procedure SetClipPath(AValue: string);
     procedure SetFillColor(AValue: TBGRAPixel);
     procedure SetFillOpacity(AValue: single);
     procedure SetFillRule(AValue: string);
     procedure SetMatrix(AUnit: TCSSUnit; const AValue: TAffineMatrix);
     procedure SetMixBlendMode(AValue: TBlendOperation);
     procedure SetOpacity(AValue: single);
-    procedure SetStroke(AValue: string);
     procedure SetStrokeColor(AValue: TBGRAPixel);
     procedure SetStrokeLineCap(AValue: string);
     procedure SetStrokeLineCapLCL(AValue: TPenEndCap);
@@ -344,12 +348,17 @@ type
     function GetStyleFromStyleSheet(const AName,ADefault: string): string; override;
     procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
     procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); virtual;
+    procedure SetDatalink(AValue: TSVGDataLink); virtual;
+    procedure SetFill(AValue: string); virtual;
+    procedure SetStroke(AValue: string); virtual;
     procedure Initialize; virtual;
   public
     constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
     class function GetDOMTag: string; virtual;
     destructor Destroy; override;
+    procedure ListIdentifiers(AResult: TStringList); virtual;
+    procedure RenameIdentifiers(AFrom, ATo: TStringList); virtual;
     procedure ConvertToUnit(AUnit: TCSSUnit); override;
     procedure Recompute; virtual;
     procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
@@ -385,6 +394,7 @@ type
     property fillRule: string read GetFillRule write SetFillRule;
     property mixBlendMode: TBlendOperation read GetMixBlendMode write SetMixBlendMode;
     property opacity: single read GetOpacity write SetOpacity;
+    property clipPath: string read GetClipPath write SetClipPath;
     property Visible: boolean read GetVisible write SetVisible;
 
     property Attribute[AName: string]: string read GetAttribute write SetAttribute;
@@ -1443,10 +1453,12 @@ begin
   FElements.Sorted := true;
   FStyles:= TSVGElementList.Create;
   FParent := AParent;
+  FLinkListeners := TSVGLinkListeners.Create;
 end;
 
 destructor TSVGDataLink.Destroy;
 begin
+  FreeAndNil(FLinkListeners);
   FreeAndNil(FElements);
   FreeAndNil(FStyles);
   inherited Destroy;
@@ -1474,6 +1486,19 @@ end;
 function TSVGDataLink.FindTo(el: TSVGElement; list: TSVGElementList): integer;
 begin
   result := list.IndexOf(el);
+end;
+
+procedure TSVGDataLink.NotifyLink(AElement: TSVGElement; ALink: boolean);
+var
+  i: Integer;
+  temp: array of TSVGLinkEvent;
+begin
+  // make copy because listeners might change the list
+  SetLength(temp, FLinkListeners.Count);
+  for i:= 0 to high(temp) do
+    temp[i] := FLinkListeners.Items[i];
+  for i := 0 to high(temp) do
+    temp[i](self, AElement, true);
 end;
 
 function TSVGDataLink.FindElement(el: TSVGElement): integer;
@@ -1522,24 +1547,36 @@ begin
 
   if el is TSVGStyle then
     FStyles.Add(el);
+
+  NotifyLink(el, true);
 end;
 
 procedure TSVGDataLink.Unlink(el: TSVGElement);
 var
   index: integer;
 begin
-  if el is TSVGStyle then
-   FStyles.Remove(el);
-
   index:= FindElement(el);
-  if index <> -1 then
-    FElements.Delete(index);
+  if index = -1 then exit;
+
+  if el is TSVGStyle then
+    FStyles.Remove(el);
+
+  FElements.Delete(index);
+  NotifyLink(el, false);
 end;
 
 procedure TSVGDataLink.UnlinkAll;
 begin
   FStyles.Clear;
   FElements.Clear;
+end;
+
+procedure TSVGDataLink.RegisterLinkListener(AHandler: TSVGLinkEvent;
+  ARegister: boolean);
+begin
+  if ARegister then
+    FLinkListeners.Add(AHandler)
+    else FLinkListeners.Remove(AHandler);
 end;
 
 function TSVGDataLink.FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
@@ -1576,6 +1613,11 @@ begin
 end;
 
 { TSVGElement }
+
+function TSVGElement.GetClipPath: string;
+begin
+  result := AttributeOrStyle['clip-path'];
+end;
 
 function TSVGElement.GetFill: string;
 begin
@@ -1814,6 +1856,12 @@ begin
   if Assigned(FDataLink) then FDataLink.Unlink(self);
   FDataLink := AValue;
   if Assigned(FDataLink) then FDataLink.Link(self);
+end;
+
+procedure TSVGElement.SetClipPath(AValue: string);
+begin
+  Attribute['clip-path'] := AValue;
+  RemoveStyle('clip-path');
 end;
 
 procedure TSVGElement.SetFill(AValue: string);
@@ -2087,6 +2135,43 @@ begin
   SetLength(FImportedStyles,0);
   if Assigned(FDataLink) then FDataLink.Unlink(self);
   inherited Destroy;
+end;
+
+procedure TSVGElement.ListIdentifiers(AResult: TStringList);
+var
+  myId: String;
+begin
+  myId := Id;
+  if (myId <> '') and (AResult.IndexOf(myId) = -1) then
+    AResult.Add(myId);
+end;
+
+procedure TSVGElement.RenameIdentifiers(AFrom, ATo: TStringList);
+var
+  idx: Integer;
+  strokeDone, fillDone, clipDone, HrefDone: boolean;
+  before, after: String;
+begin
+  if AFrom.Count <> ATo.Count then raise exception.Create('Identifier list size mismatch');
+  idx := AFrom.IndexOf(Id);
+  if idx <> -1 then Id := ATo[idx];
+  strokeDone := false;
+  fillDone:= false;
+  clipDone:= false;
+  HrefDone:= false;
+  for idx := 0 to AFrom.Count-1 do
+  begin
+    before := 'url(#' + AFrom[idx] + ')';
+    after := 'url(#' + ATo[idx] + ')';
+    if not strokeDone and (stroke = before) then
+    begin stroke := after; strokeDone := true; end;
+    if not fillDone and (fill = before) then
+    begin fill := after; fillDone := true; end;
+    if not clipDone and (clipPath = before) then
+    begin clipPath := after; clipDone := true; end;
+    if not hrefDone and (Attribute['xlink:href'] = before) then
+    begin Attribute['xlink:href'] := after; hrefDone := true; end;
+  end;
 end;
 
 procedure TSVGElement.ConvertToUnit(AUnit: TCSSUnit);

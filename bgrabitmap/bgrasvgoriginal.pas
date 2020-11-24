@@ -574,11 +574,14 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
 var
   svg: TBGRASVG;
   vb : TSVGViewBox;
-  i: Integer;
+  i,j: Integer;
   g: TSVGGroup;
   m: TAffineMatrix;
+  identifiers, newIdentifiers: TStringList;
 begin
   svg := TBGRASVG.Create;
+  identifiers := nil;
+  newIdentifiers := nil;
   try
     svg.WidthAsPixel := Width;
     svg.HeightAsPixel := Height;
@@ -592,6 +595,8 @@ begin
     end else
     begin
       svg.NamespaceURI['inkscape'] := 'http://www.inkscape.org/namespaces/inkscape';
+      identifiers := TStringList.Create;
+      newIdentifiers := TStringList.Create;
       for i := 0 to NbLayers-1 do
       begin
         g := svg.Content.AppendGroup;
@@ -602,10 +607,18 @@ begin
         g.mixBlendMode:= BlendOperation[i];
         StoreLayer(i, svg, g, g.Content, m);
         g.matrix[cuPixel] := m;
+        identifiers.Clear;
+        g.ListIdentifiers(identifiers);
+        newIdentifiers.Clear;
+        for j := 0 to identifiers.Count-1 do
+          newIdentifiers.Add('layer'+inttostr(i+1)+'-'+identifiers[j]);
+        g.RenameIdentifiers(identifiers, newIdentifiers);
       end;
     end;
     svg.SaveToStream(AStream);
   finally
+    newIdentifiers.Free;
+    identifiers.Free;
     svg.Free;
   end;
 end;

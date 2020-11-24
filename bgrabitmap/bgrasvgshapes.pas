@@ -17,9 +17,13 @@ type
   TSVGElementWithContent = class(TSVGElement)
   protected
     FContent: TSVGContent;
+    FSubDatalink: TSVGDataLink;
+    class function OwnDatalink: boolean; virtual;
   public
     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
     constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+    procedure ListIdentifiers(AResult: TStringList); override;
+    procedure RenameIdentifiers(AFrom, ATo: TStringList); override;
     procedure ConvertToUnit(AUnit: TCSSUnit); override;
     destructor Destroy; override;
     procedure Recompute; override;
@@ -35,10 +39,12 @@ type
       FFillGradientElement, FStrokeGradientElement: TSVGGradient;
       FGradientElementsDefined: boolean;
       FFillCanvasGradient, FStrokeCanvasGradient: IBGRACanvasGradient2D;
+      procedure DatalinkOnLink(Sender: TObject; AElement: TSVGElement;
+        ALink: boolean);
       function EvaluatePercentage(fu: TFloatWithCSSUnit): single; { fu is a percentage of a number [0.0..1.0] }
       function GetFillGradientElement: TSVGGradient;
       function GetStrokeGradientElement: TSVGGradient;
-      procedure ResetGradient;
+      procedure ResetGradients;
       procedure FindGradientElements;
     protected
       procedure Initialize; override;
@@ -49,7 +55,11 @@ type
         const origin: TPointF; const w,h: single; AUnit: TCSSUnit): IBGRACanvasGradient2D;
       procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      procedure SetDatalink(AValue: TSVGDataLink); override;
+      procedure SetFill(AValue: string); override;
+      procedure SetStroke(AValue: string); override;
     public
+      destructor Destroy; override;
       procedure InitializeGradient(ACanvas2d: TBGRACanvas2D;
                 const origin: TPointF; const w,h: single; AUnit: TCSSUnit);
       property FillGradientElement: TSVGGradient read GetFillGradientElement;
@@ -721,7 +731,6 @@ type
 
   TSVGGroup = class(TSVGElementWithContent)
   private
-    FOwnDatalink: boolean;
     function GetFontSize: TFloatWithCSSUnit;
     function GetIsLayer: boolean;
     function GetName: string;
@@ -730,11 +739,9 @@ type
     procedure SetName(AValue: string);
   protected
     procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    class function OwnDatalink: boolean; override;
     property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
   public
-    constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
-    constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
-    destructor Destroy; override;
     class function GetDOMTag: string; override;
     procedure ConvertToUnit(AUnit: TCSSUnit); override;
     property IsLayer: boolean read GetIsLayer write SetIsLayer;
@@ -986,18 +993,49 @@ end;
 
 { TSVGElementWithContent }
 
+class function TSVGElementWithContent.OwnDatalink: boolean;
+begin
+  result := false;
+end;
+
 constructor TSVGElementWithContent.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
-  FContent := TSVGContent.Create(FDomElem,AUnits,ADataLink);
+  if OwnDatalink then
+    FSubDataLink := TSVGDataLink.Create(ADataLink)
+    else FSubDatalink := ADataLink;
+  FContent := TSVGContent.Create(FDomElem,AUnits,FSubDataLink);
 end;
 
 constructor TSVGElementWithContent.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(AElement,AUnits,ADataLink);
+  if OwnDatalink then
+    FSubDataLink := TSVGDataLink.Create(ADataLink)
+    else FSubDatalink := ADataLink;
+  FContent := TSVGContent.Create(AElement,AUnits,FSubDataLink);
+end;
+
+procedure TSVGElementWithContent.ListIdentifiers(AResult: TStringList);
+var
+  i: Integer;
+begin
+  inherited ListIdentifiers(AResult);
+  for i := 0 to Content.ElementCount-1 do
+    if Content.IsSVGElement[i] then
+      Content.Element[i].ListIdentifiers(AResult);
+end;
+
+procedure TSVGElementWithContent.RenameIdentifiers(AFrom, ATo: TStringList);
+var
+  i: Integer;
+begin
+  inherited RenameIdentifiers(AFrom, ATo);
+  for i := 0 to Content.ElementCount-1 do
+    if Content.IsSVGElement[i] then
+       Content.Element[i].RenameIdentifiers(AFrom, ATo);
 end;
 
 procedure TSVGElementWithContent.ConvertToUnit(AUnit: TCSSUnit);
@@ -1009,6 +1047,7 @@ end;
 destructor TSVGElementWithContent.Destroy;
 begin
   FreeAndNil(FContent);
+  if OwnDatalink then FreeAndNil(FSubDatalink);
   inherited Destroy;
 end;
 
@@ -1023,12 +1062,17 @@ end;
 procedure TSVGElementWithGradient.Initialize;
 begin
   inherited Initialize;
-  ResetGradient;
+  ResetGradients;
 end;
 
-procedure TSVGElementWithGradient.ResetGradient;
+procedure TSVGElementWithGradient.ResetGradients;
 begin
-  FGradientElementsDefined := false;
+  if FGradientElementsDefined then
+  begin
+    if Assigned(DataLink) then
+      DataLink.RegisterLinkListener(@DatalinkOnLink, false);
+    FGradientElementsDefined := false;
+  end;
   FFillGradientElement     := nil;
   FStrokeGradientElement   := nil;
   FFillCanvasGradient      := nil;
@@ -1041,6 +1085,7 @@ begin
   begin
     FFillGradientElement := TSVGGradient(FDataLink.FindElementByRef(fill, TSVGGradient));
     FStrokeGradientElement := TSVGGradient(FDataLink.FindElementByRef(stroke, TSVGGradient));
+    FDatalink.RegisterLinkListener(@DatalinkOnLink, true);
   end else
   begin
     FFillGradientElement := nil;
@@ -1063,6 +1108,16 @@ begin
     else if Result > 1 then
       Result:= 1;
     Result:= Result * 100;
+  end;
+end;
+
+procedure TSVGElementWithGradient.DatalinkOnLink(Sender: TObject;
+  AElement: TSVGElement; ALink: boolean);
+begin
+  if not ALink then
+  begin
+    if (AElement = FFillGradientElement) or (AElement = FStrokeGradientElement) then
+      ResetGradients;
   end;
 end;
 
@@ -1240,6 +1295,30 @@ begin
   inherited ApplyStrokeStyle(ACanvas2D,AUnit);
   if Assigned(FStrokeCanvasGradient) then
     ACanvas2D.strokeStyle(FStrokeCanvasGradient);
+end;
+
+procedure TSVGElementWithGradient.SetDatalink(AValue: TSVGDataLink);
+begin
+  ResetGradients;
+  inherited SetDatalink(AValue);
+end;
+
+procedure TSVGElementWithGradient.SetFill(AValue: string);
+begin
+  ResetGradients;
+  inherited SetFill(AValue);
+end;
+
+procedure TSVGElementWithGradient.SetStroke(AValue: string);
+begin
+  ResetGradients;
+  inherited SetStroke(AValue);
+end;
+
+destructor TSVGElementWithGradient.Destroy;
+begin
+  ResetGradients;
+  inherited Destroy;
 end;
 
 { TSVGTextElementWithContent }
@@ -2005,7 +2084,7 @@ end;
 
 function TSVGTRef.GetXlinkHref: string;
 begin
-  result := Attribute['xlink:href',''];
+  result := Attribute['xlink:href'];
 end;
 
 procedure TSVGTRef.SetXlinkHref(AValue: string);
@@ -2049,7 +2128,7 @@ end;
 
 function TSVGTextPath.GetXlinkHref: string;
 begin
-  result := Attribute['xlink:href',''];
+  result := Attribute['xlink:href'];
 end;
 
 procedure TSVGTextPath.SetStartOffset(AValue: TFloatWithCSSUnit);
@@ -2111,7 +2190,7 @@ end;
 
 function TSVGAltGlyph.GetXlinkHref: string;
 begin
-  result := Attribute['xlink:href',''];
+  result := Attribute['xlink:href'];
 end;
 
 procedure TSVGAltGlyph.SetGlyphRef(AValue: string);
@@ -2187,7 +2266,7 @@ end;
 
 function TSVGGlyphRef.GetXlinkHref: string;
 begin
-  result := Attribute['xlink:href',''];
+  result := Attribute['xlink:href'];
 end;
 
 procedure TSVGGlyphRef.SetX(AValue: TSVGNumber);
@@ -2310,7 +2389,7 @@ end;
 
 function TSVGColorProfile.GetXlinkHref: string;
 begin
-  result := Attribute['xlink:href',''];
+  result := Attribute['xlink:href'];
 end;
 
 procedure TSVGColorProfile.SetLocal(AValue: string);
@@ -2453,7 +2532,7 @@ end;
 
 function TSVGImage.GetXlinkHref: string;
 begin
-  result := Attribute['xlink:href',''];
+  result := Attribute['xlink:href'];
 end;
 
 procedure TSVGImage.SetBitmap(AValue: TBGRACustomBitmap; AOwned: boolean);
@@ -2997,24 +3076,9 @@ begin
   ExitFontSize(prevFontSize);
 end;
 
-constructor TSVGGroup.Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
-  ADataLink: TSVGDataLink);
+class function TSVGGroup.OwnDatalink: boolean;
 begin
-  inherited Create(AElement, AUnits, TSVGDataLink.Create(ADataLink));
-  FOwnDatalink := true;
-end;
-
-constructor TSVGGroup.Create(ADocument: TDOMDocument;
-  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
-begin
-  inherited Create(ADocument, AUnits, TSVGDataLink.Create(ADataLink));
-  FOwnDatalink := true;
-end;
-
-destructor TSVGGroup.Destroy;
-begin
-  inherited Destroy;
-  if FOwnDatalink then FDatalink.Free;
+  Result:= true;
 end;
 
 class function TSVGGroup.GetDOMTag: string;
@@ -4293,6 +4357,7 @@ var
 begin
   for i := 0 to ElementCount-1 do
     if IsSVGElement[i] then Element[i].Free;
+  FElements.Clear;
   while Assigned(FDomElem.FirstChild) do
     FDomElem.RemoveChild(FDomElem.FirstChild);
 end;
