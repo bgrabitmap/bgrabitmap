@@ -1933,6 +1933,7 @@ begin
       if svgElem is TSVGText then
       begin
         rotations := rotate;
+        if posUnicode = 0 then inheritedRotation:= AInheritedRotation else
         if posUnicode-1 >= length(rotations) then
         begin
           if rotations <> nil then
