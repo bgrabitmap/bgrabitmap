@@ -938,8 +938,6 @@ var
 begin
   factory := GetSVGFactory(AElement.TagName);
   result := factory.Create(AElement,AUnits,ADataLink);
-  
-  ADataLink.Link(result);
 end;
 
 { TSVGDefine }
@@ -1039,8 +1037,15 @@ end;
 
 procedure TSVGElementWithGradient.FindGradientElements;
 begin
-  FFillGradientElement := TSVGGradient(FDataLink.FindElementByRef(fill, TSVGGradient));
-  FStrokeGradientElement := TSVGGradient(FDataLink.FindElementByRef(stroke, TSVGGradient));
+  if Assigned(FDataLink) then
+  begin
+    FFillGradientElement := TSVGGradient(FDataLink.FindElementByRef(fill, TSVGGradient));
+    FStrokeGradientElement := TSVGGradient(FDataLink.FindElementByRef(stroke, TSVGGradient));
+  end else
+  begin
+    FFillGradientElement := nil;
+    FStrokeGradientElement := nil;
+  end;
   if FFillGradientElement <> nil then
     FFillGradientElement.ScanInheritedGradients;
   if FStrokeGradientElement <> nil then
@@ -1885,7 +1890,9 @@ function TSVGText.GetTRefContent(AElement: TSVGTRef): string;
 var
   refText: TSVGText;
 begin
-  refText := TSVGText(FDataLink.FindElementByRef(AElement.xlinkHref, TSVGText));
+  if Assigned(FDataLink) then
+    refText := TSVGText(FDataLink.FindElementByRef(AElement.xlinkHref, TSVGText))
+    else refText := nil;
   if Assigned(refText) then result := refText.SimpleText else result := '';
 end;
 
@@ -3968,6 +3975,7 @@ begin
 
   InheritedGradients.Clear;
   InheritedGradients.Add(Self);//(important)
+  if FDataLink = nil then exit;
   el:= Self;
   while el.hRef <> '' do
   begin
@@ -4217,7 +4225,7 @@ begin
   FDomElem.AppendChild(GetDOMNode(AElement));
   FElements.Add(AElement);
   if AElement is TSVGElement then
-    FDataLink.Link(TSVGElement(AElement));
+    TSVGElement(AElement).DataLink := FDataLink;
 end;
 
 function TSVGContent.ExtractElementAt(AIndex: integer): TObject;
@@ -4225,7 +4233,7 @@ begin
   result := ElementObject[AIndex];
   if result is TSVGElement then
   begin
-    FDataLink.Unlink(TSVGElement(result));
+    TSVGElement(result).DataLink := nil;
     FElements.Delete(AIndex);
     FDomElem.RemoveChild(TSVGElement(result).DOMElement);
   end else
@@ -4244,7 +4252,7 @@ begin
   begin
     FElements.Insert(idx,AElement);
     FDomElem.InsertBefore(GetDOMNode(AElement), GetDOMNode(ASuccessor));
-    FDataLink.Link(AElement);
+    AElement.DataLink := FDataLink;
   end
   else
     AppendElement(AElement);
@@ -4274,11 +4282,7 @@ var i:integer;
 begin
   for i := 0 to ElementCount-1 do
     if not (ElementObject[i] is TDOMNode) then
-    begin
-      if ElementObject[i] is TSVGElement then
-        FDataLink.Unlink(TSVGElement(ElementObject[i]));
       ElementObject[i].Free;
-    end;
   FreeAndNil(FElements);
   inherited Destroy;
 end;

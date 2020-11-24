@@ -309,6 +309,7 @@ type
     function GetID: string;
     function GetClassAttr: string;
     function GetVisible: boolean;
+    procedure SetDatalink(AValue: TSVGDataLink);
     procedure SetFill(AValue: string);
     procedure SetFillColor(AValue: TBGRAPixel);
     procedure SetFillOpacity(AValue: single);
@@ -357,7 +358,7 @@ type
     procedure strokeDashArrayNone;
     procedure transformNone;
     function fillMode: TSVGFillMode;
-    property DataLink: TSVGDataLink read FDataLink write FDataLink;
+    property DataLink: TSVGDataLink read FDataLink write SetDataLink;
     property DOMElement: TDOMElement read GetDOMElement;
     property Units: TCSSUnitConverter read FUnits;
     property ID: string read GetID write SetID;
@@ -1808,6 +1809,13 @@ begin
   result := (AttributeOrStyle['display'] <> 'none');
 end;
 
+procedure TSVGElement.SetDatalink(AValue: TSVGDataLink);
+begin
+  if Assigned(FDataLink) then FDataLink.Unlink(self);
+  FDataLink := AValue;
+  if Assigned(FDataLink) then FDataLink.Link(self);
+end;
+
 procedure TSVGElement.SetFill(AValue: string);
 begin
   Attribute['fill'] := AValue;
@@ -1978,10 +1986,13 @@ end;
 
 procedure TSVGElement.SetID(AValue: string);
 begin
+  if AValue = ID then exit;
+  if Assigned(DataLink) then DataLink.Unlink(self);
   if Attribute['xml:id']<>'' then
     Attribute['xml:id'] := AValue
   else
     Attribute['id'] := AValue;
+  if Assigned(DataLink) then DataLink.Link(self);
 end;
 
 procedure TSVGElement.SetClassAttr(AValue: string);
@@ -1997,6 +2008,7 @@ begin
 
   FDomElem := ADocument.CreateElement(ATag);
   FUnits := AUnits;
+  if Assigned(FDataLink) then FDataLink.Link(self);
 end;
 
 procedure TSVGElement.Init(AElement: TDOMElement;
@@ -2004,6 +2016,7 @@ procedure TSVGElement.Init(AElement: TDOMElement;
 begin
   FDomElem := AElement;
   FUnits := AUnits;
+  if Assigned(FDataLink) then FDataLink.Link(self);
 end;
 
 procedure TSVGElement.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
@@ -2072,6 +2085,7 @@ end;
 destructor TSVGElement.Destroy;
 begin
   SetLength(FImportedStyles,0);
+  if Assigned(FDataLink) then FDataLink.Unlink(self);
   inherited Destroy;
 end;
 
