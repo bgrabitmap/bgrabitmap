@@ -721,6 +721,7 @@ type
 
   TSVGGroup = class(TSVGElementWithContent)
   private
+    FOwnDatalink: boolean;
     function GetFontSize: TFloatWithCSSUnit;
     function GetIsLayer: boolean;
     function GetName: string;
@@ -731,6 +732,9 @@ type
     procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
   public
+    constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
+    constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
+    destructor Destroy; override;
     class function GetDOMTag: string; override;
     procedure ConvertToUnit(AUnit: TCSSUnit); override;
     property IsLayer: boolean read GetIsLayer write SetIsLayer;
@@ -2986,6 +2990,26 @@ begin
   ExitFontSize(prevFontSize);
 end;
 
+constructor TSVGGroup.Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
+  ADataLink: TSVGDataLink);
+begin
+  inherited Create(AElement, AUnits, TSVGDataLink.Create(ADataLink));
+  FOwnDatalink := true;
+end;
+
+constructor TSVGGroup.Create(ADocument: TDOMDocument;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  inherited Create(ADocument, AUnits, TSVGDataLink.Create(ADataLink));
+  FOwnDatalink := true;
+end;
+
+destructor TSVGGroup.Destroy;
+begin
+  inherited Destroy;
+  if FOwnDatalink then FDatalink.Free;
+end;
+
 class function TSVGGroup.GetDOMTag: string;
 begin
   Result:= 'g';
@@ -4192,6 +4216,8 @@ procedure TSVGContent.AppendElement(AElement: TObject);
 begin
   FDomElem.AppendChild(GetDOMNode(AElement));
   FElements.Add(AElement);
+  if AElement is TSVGElement then
+    FDataLink.Link(TSVGElement(AElement));
 end;
 
 function TSVGContent.ExtractElementAt(AIndex: integer): TObject;
@@ -4199,6 +4225,7 @@ begin
   result := ElementObject[AIndex];
   if result is TSVGElement then
   begin
+    FDataLink.Unlink(TSVGElement(result));
     FElements.Delete(AIndex);
     FDomElem.RemoveChild(TSVGElement(result).DOMElement);
   end else
@@ -4217,6 +4244,7 @@ begin
   begin
     FElements.Insert(idx,AElement);
     FDomElem.InsertBefore(GetDOMNode(AElement), GetDOMNode(ASuccessor));
+    FDataLink.Link(AElement);
   end
   else
     AppendElement(AElement);
@@ -4245,7 +4273,12 @@ destructor TSVGContent.Destroy;
 var i:integer;
 begin
   for i := 0 to ElementCount-1 do
-    if not (TObject(FElements[i]) is TDOMNode) then TObject(FElements[i]).Free;
+    if not (ElementObject[i] is TDOMNode) then
+    begin
+      if ElementObject[i] is TSVGElement then
+        FDataLink.Unlink(TSVGElement(ElementObject[i]));
+      ElementObject[i].Free;
+    end;
   FreeAndNil(FElements);
   inherited Destroy;
 end;

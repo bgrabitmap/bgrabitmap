@@ -132,17 +132,20 @@ type
    private
      FElements: TSVGElementDictionary;
      FStyles: TSVGElementList;
+     FParent: TSVGDataLink;
      function GetElement(AIndex: integer): TSVGElement;
      function GetStyle(AIndex: integer): TSVGElement;
      function IsValidIndex(const AIndex: integer; list: TSVGElementList): boolean;
      function FindTo(el: TSVGElement; list: TSVGElementList): integer;
    public
-     constructor Create;
+     constructor Create(AParent: TSVGDataLink);
      destructor Destroy; override;
 
      function ElementCount: integer;
      function StyleCount: integer;
      function FindElement(el: TSVGElement): integer;
+     function FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
+     function FindElementByRef(ARef: string; AClass: TSVGFactory): TSVGElement;
      function FindStyle(el: TSVGElement): integer;
      function IsLinkElement(el: TSVGElement): boolean;
      function IsLinkStyle(el: TSVGElement): boolean;
@@ -152,9 +155,8 @@ type
      procedure UnlinkAll;
 
      property Styles[ID: integer]: TSVGElement read GetStyle;
-     function FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
-     function FindElementByRef(ARef: string; AClass: TSVGFactory): TSVGElement;
      property Elements[AIndex: integer]: TSVGElement read GetElement;
+     property Parent: TSVGDataLink read FParent;
    end;
 
   { TSVGCustomElement }
@@ -1434,11 +1436,12 @@ end;
 
 { TSVGDataLink }
 
-constructor TSVGDataLink.Create;
+constructor TSVGDataLink.Create(AParent: TSVGDataLink);
 begin
   FElements:= TSVGElementDictionary.Create;
   FElements.Sorted := true;
   FStyles:= TSVGElementList.Create;
+  FParent := AParent;
 end;
 
 destructor TSVGDataLink.Destroy;
@@ -1544,7 +1547,11 @@ var
 begin
  index := FElements.IndexOf(AId);
  if index = -1 then
-   result := nil
+ begin
+   if Assigned(Parent) then
+     result := Parent.FindElementById(AID, AClass)
+     else result := nil
+ end
  else
  begin
    result := FElements.Data[index];

@@ -918,7 +918,7 @@ begin
     FDomElem := FXml.CreateElement('svg');
     FUnits := TSVGUnits.Create(FDomElem,@FDefaultDpi);
     Units.OnRecompute:= @UnitsRecompute;
-    FDataLink := TSVGDataLink.Create;
+    FDataLink := TSVGDataLink.Create(nil);
     FContent := TSVGContent.Create(FDomElem,FUnits,FDataLink);
     FXml.AppendChild(FDomElem);
   end;
@@ -998,8 +998,8 @@ end;
 
 destructor TBGRASVG.Destroy;
 begin
-  FreeAndNil(FDataLink);
   FreeAndNil(FContent);
+  FreeAndNil(FDataLink);
   FreeAndNil(FUnits);
   FDomElem:= nil;
   FreeAndNil(FXml);
@@ -1081,15 +1081,15 @@ begin
     xml.Free;
     raise exception.Create('Root node not found');
   end;
-  FreeAndNil(FDataLink);
   FreeAndNil(FContent);
+  FreeAndNil(FDataLink);
   FreeAndNil(FUnits);
   FreeAndNil(FXml);
   FXml := xml;
   FDomElem := root as TDOMElement;
   FUnits := TSVGUnits.Create(FDomElem,@FDefaultDpi);
   Units.OnRecompute:= @UnitsRecompute;
-  FDataLink := TSVGDataLink.Create;
+  FDataLink := TSVGDataLink.Create(nil);
   FContent := TSVGContent.Create(FDomElem,FUnits,FDataLink);
 end;
 
