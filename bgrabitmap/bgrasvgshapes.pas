@@ -258,6 +258,7 @@ type
     AbsoluteCoord: TPointF;
     PartStartCoord, PartEndCoord: TPointF;
     Bounds: TRectF;
+    PosUnicode: integer;
   end;
 
   { TSVGText }
@@ -302,7 +303,7 @@ type
                                       var ATextParts: ArrayOfTextParts; ALevel: integer;
                                       AStartPart, AEndPart: integer); overload;
       procedure InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
-                                      AText: string; ADraw: boolean; AAllTextBounds: TRectF;
+                                      AText: string; APosUnicode: integer; ADraw: boolean; AAllTextBounds: TRectF;
                                       var APosition: TPointF; out ABounds: TRectF);
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure CleanText(var ATextParts: ArrayOfTextParts);
@@ -1563,7 +1564,8 @@ begin
         APosition := ATextParts[i].PartStartCoord;
 
       if ATextParts[i].Text <>'' then
-        InternalDrawOrComputePart(ACanvas2d, AUnit, ATextParts[i].Text, ADraw, AAllTextBounds, APosition, partBounds)
+        InternalDrawOrComputePart(ACanvas2d, AUnit, ATextParts[i].Text, ATextParts[i].PosUnicode,
+          ADraw, AAllTextBounds, APosition, partBounds)
       else
         partBounds := EmptyRectF;
 
@@ -1583,7 +1585,7 @@ begin
 end;
 
 procedure TSVGText.InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D;
-  AUnit: TCSSUnit; AText: string; ADraw: boolean; AAllTextBounds: TRectF;
+  AUnit: TCSSUnit; AText: string; APosUnicode: integer; ADraw: boolean; AAllTextBounds: TRectF;
   var APosition: TPointF; out ABounds: TRectF);
 var
   ts: TCanvas2dTextSize;
@@ -1591,6 +1593,15 @@ var
   dir: TSVGTextDirection;
   deco: String;
   fh: TFloatWithCSSUnit;
+  rotations: ArrayOfTSVGNumber;
+  glyphSizes: array of single;
+  hasRotation: Boolean;
+  cursor: TGlyphCursorUtf8;
+  glyph: TGlyphUtf8;
+  posGlyph: integer;
+  curPos: TPointF;
+  curRotation, firstRotation: single;
+  posUnicode, i: integer;
 begin
   fh := Units.CurrentFontEmHeight;
   ACanvas2d.fontEmHeight := Units.ConvertHeight(fh, AUnit).value;
@@ -1607,8 +1618,47 @@ begin
    stdRtl: ACanvas2d.direction:= fbmRightToLeft;
    else {stdLtr} ACanvas2d.direction:= fbmLeftToRight;
   end;
+  ACanvas2d.textBaseline:= 'alphabetic';
 
-  ts := ACanvas2d.measureText(AText);
+  rotations := rotate;
+  if (length(rotations) <> 0) and
+     (APosUnicode >= length(rotations)) then
+  begin
+    firstRotation := rotations[high(rotations)];
+    hasRotation:= true;
+  end else
+  begin
+    firstRotation:= 0;
+    hasRotation:= false;
+  end;
+  for i := APosUnicode to APosUnicode + UTF8Length(AText) - 1 do
+    if i >= length(rotations) then break else
+    if rotations[i] <> 0 then hasRotation := true;
+
+  if hasRotation then
+  begin
+    ts.width:= 0;
+    ts.height := 0;
+    cursor := TGlyphCursorUtf8.New(AText, ACanvas2d.direction);
+    setlength(glyphSizes, length(AText)); //more than enough
+    posGlyph := 0;
+    repeat
+      glyph := cursor.GetNextGlyph;
+      if glyph.Empty then break;
+      with ACanvas2d.measureText(glyph.GlyphUtf8) do
+      begin
+        incF(ts.Width, width);
+        if height > ts.Height then ts.Height := height;
+        glyphSizes[posGlyph] := width;
+      end;
+      inc(posGlyph);
+    until false;
+  end else
+  begin
+    ts := ACanvas2d.measureText(AText);
+    glyphSizes := nil;
+  end;
+
   if dir = stdRtl then DecF(APosition.x, ts.width);
 
   ABounds := RectF(APosition.x,APosition.y,APosition.x+ts.width,APosition.y+ts.height);
@@ -1617,7 +1667,39 @@ begin
     ACanvas2d.beginPath;
     if Assigned(GradientElement) then
       InitializeGradient(ACanvas2d, AAllTextBounds.TopLeft, AAllTextBounds.Width,AAllTextBounds.Height,AUnit);
-    ACanvas2d.text(AText,APosition.x,APosition.y);
+    if hasRotation then
+    begin
+      curPos := APosition;
+      curRotation := firstRotation;
+      posGlyph := 0;
+      cursor := TGlyphCursorUtf8.New(AText, ACanvas2d.direction);
+      repeat
+        glyph := cursor.GetNextGlyph;
+        if glyph.Empty then break;
+        posUnicode := APosUnicode + UTF8Length(copy(AText, 1, glyph.ByteOffset));
+        if posUnicode < length(rotations) then
+          curRotation := rotations[posUnicode];
+        ACanvas2d.save;
+        ACanvas2d.translate(curPos.x, curPos.y);
+        ACanvas2d.rotate(curRotation*Pi/180);
+        if glyph.Mirrored then
+        begin
+          if glyph.MirroredGlyphUtf8 <> '' then
+            ACanvas2d.text(glyph.GlyphUtf8, 0, 0) else
+          begin
+            ACanvas2d.translate(glyphSizes[posGlyph], 0);
+            ACanvas2d.scale(-1,0);
+            ACanvas2d.text(glyph.GlyphUtf8, 0, 0);
+          end;
+        end else
+          ACanvas2d.text(glyph.GlyphUtf8, 0, 0);
+        ACanvas2d.restore;
+        IncF(curPos.x, glyphSizes[posGlyph]);
+        inc(posUnicode);
+        inc(posGlyph);
+      until false;
+    end else
+      ACanvas2d.text(AText,APosition.x,APosition.y);
     if not isFillNone then
     begin
       ApplyFillStyle(ACanvas2D,AUnit);
@@ -1769,6 +1851,7 @@ var
   svgElem: TSVGElement;
   subParts: ArrayOfTextParts;
   node: TDOMNode;
+  posUnicode: integer;
 
   procedure AppendPart(AText: string);
   begin
@@ -1781,14 +1864,17 @@ var
     result[idxOut].AbsoluteCoord := EmptyPointF;
     result[idxOut].PartStartCoord := EmptyPointF;
     result[idxOut].Bounds := EmptyRectF;
+    result[idxOut].PosUnicode := posUnicode;
     inc(curLen, length(AText));
     inc(idxOut);
+    inc(posUnicode, UTF8Length(AText));
   end;
 
 begin
   setlength(result, Content.ElementCount+1);
   idxOut := 0;
   curLen := 0;
+  posUnicode := 0;
   AppendPart(''); //needed when there is a sub part to know the base element
   for i := 0 to Content.ElementCount-1 do
   begin

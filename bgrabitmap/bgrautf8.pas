@@ -111,9 +111,17 @@ function UTF8EmbedDirection(const sUTF8: string; ARightToLeft: boolean): string;
 function UTF8Ligature(const sUTF8: string; ARightToLeft: boolean; ALigatureLeft, ALigatureRight: boolean): string;
 
 type
+
+  { TGlyphUtf8 }
+
   TGlyphUtf8 = record
+  private
+    function GetEmpty: boolean;
+  public
     GlyphUtf8, MirroredGlyphUtf8: string;
     RightToLeft, Mirrored, Merged: boolean;
+    ByteOffset: integer;
+    property Empty: boolean read GetEmpty;
   end;
 
   { TGlyphCursorUtf8 }
@@ -122,6 +130,7 @@ type
   private
     sUTF8: string;
     currentChar: string;
+    currentOffset: integer;
     currentBidiInfo: TUnicodeBidiInfo;
     bidiArray: TBidiUTF8Array;
     displayOrder: TUnicodeDisplayOrder;
@@ -1380,6 +1389,13 @@ begin
   stream.Write(ValueAsDWord, sizeof(AValue));
 end;
 
+{ TGlyphUtf8 }
+
+function TGlyphUtf8.GetEmpty: boolean;
+begin
+  result := GlyphUtf8 = '';
+end;
+
 { TGlyphCursorUtf8 }
 
 class function TGlyphCursorUtf8.New(const textUTF8: string; ABidiMode: TFontBidiMode): TGlyphCursorUtf8;
@@ -1410,6 +1426,7 @@ begin
   result.RightToLeft := currentBidiInfo.IsRightToLeft;
   result.Mirrored := currentBidiInfo.IsMirrored;
   result.MirroredGlyphUtf8:= '';
+  result.ByteOffset := currentOffset;
   result.Merged:= false;
   if result.Mirrored then
   begin
@@ -1477,6 +1494,7 @@ begin
     charLen := bidiArray[nextIndex].Offset - startOffset;
   setlength(currentChar, charLen);
   if charLen > 0 then move(sUTF8[startOffset+1], currentChar[1], charLen);
+  currentOffset := startOffset;
 end;
 
 function TGlyphCursorUtf8.EndOfString: boolean;
