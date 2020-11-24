@@ -120,7 +120,7 @@ type
   public
     GlyphUtf8, MirroredGlyphUtf8: string;
     RightToLeft, Mirrored, Merged: boolean;
-    ByteOffset: integer;
+    ByteOffset, ByteSize: integer;
     property Empty: boolean read GetEmpty;
   end;
 
@@ -1427,6 +1427,7 @@ begin
   result.Mirrored := currentBidiInfo.IsMirrored;
   result.MirroredGlyphUtf8:= '';
   result.ByteOffset := currentOffset;
+  result.ByteSize := length(currentChar);
   result.Merged:= false;
   if result.Mirrored then
   begin
@@ -1452,6 +1453,8 @@ begin
       if currentChar.StartsWith(UTF8_ARABIC_LAM) then
       begin
         result.GlyphUtf8 := currentChar + result.GlyphUtf8;
+        result.ByteOffset:= Min(result.ByteOffset, currentOffset);
+        inc(result.ByteSize, length(currentChar));
         result.Merged := true;
         ligatureRight := currentBidiInfo.HasLigatureRight;
         NextMultichar;

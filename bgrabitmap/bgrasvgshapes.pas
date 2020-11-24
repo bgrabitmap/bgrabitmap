@@ -262,6 +262,7 @@ type
     PartStartCoord, PartEndCoord: TPointF;
     Bounds: TRectF;
     PosUnicode: integer;
+    InheritedRotation: single;
   end;
 
   { TSVGText }
@@ -306,12 +307,13 @@ type
                                       var ATextParts: ArrayOfTextParts; ALevel: integer;
                                       AStartPart, AEndPart: integer); overload;
       procedure InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit;
-                                      AText: string; APosUnicode: integer; ADraw: boolean; AAllTextBounds: TRectF;
-                                      var APosition: TPointF; out ABounds: TRectF);
+                              AText: string; APosUnicode: integer; AInheritedRotation: single;
+                              ADraw: boolean; AAllTextBounds: TRectF;
+                              var APosition: TPointF; out ABounds: TRectF);
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure CleanText(var ATextParts: ArrayOfTextParts);
       function GetTRefContent(AElement: TSVGTRef): string;
-      function GetAllText: ArrayOfTextParts;
+      function GetAllText(AInheritedRotation: single): ArrayOfTextParts;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
@@ -1587,7 +1589,7 @@ begin
 
       if ATextParts[i].Text <>'' then
         InternalDrawOrComputePart(ACanvas2d, AUnit, ATextParts[i].Text, ATextParts[i].PosUnicode,
-          ADraw, AAllTextBounds, APosition, partBounds)
+          ATextParts[i].InheritedRotation, ADraw, AAllTextBounds, APosition, partBounds)
       else
         partBounds := EmptyRectF;
 
@@ -1607,8 +1609,8 @@ begin
 end;
 
 procedure TSVGText.InternalDrawOrComputePart(ACanvas2d: TBGRACanvas2D;
-  AUnit: TCSSUnit; AText: string; APosUnicode: integer; ADraw: boolean; AAllTextBounds: TRectF;
-  var APosition: TPointF; out ABounds: TRectF);
+  AUnit: TCSSUnit; AText: string; APosUnicode: integer; AInheritedRotation: single;
+  ADraw: boolean; AAllTextBounds: TRectF; var APosition: TPointF; out ABounds: TRectF);
 var
   ts: TCanvas2dTextSize;
   fs: TFontStyles;
@@ -1617,13 +1619,14 @@ var
   fh: TFloatWithCSSUnit;
   rotations: ArrayOfTSVGNumber;
   glyphSizes: array of single;
-  hasRotation: Boolean;
+  glyphByGlyph: Boolean;
   cursor: TGlyphCursorUtf8;
   glyph: TGlyphUtf8;
   posGlyph: integer;
   curPos: TPointF;
   curRotation, firstRotation: single;
   posUnicode, i: integer;
+  adx, ady, ax, ay: ArrayOfTFloatWithCSSUnit;
 begin
   fh := Units.CurrentFontEmHeight;
   ACanvas2d.fontEmHeight := Units.ConvertHeight(fh, AUnit).value;
@@ -1647,17 +1650,27 @@ begin
      (APosUnicode >= length(rotations)) then
   begin
     firstRotation := rotations[high(rotations)];
-    hasRotation:= true;
+    glyphByGlyph:= true;
   end else
   begin
-    firstRotation:= 0;
-    hasRotation:= false;
+    firstRotation:= AInheritedRotation;
+    glyphByGlyph:= firstRotation <> 0;
   end;
   for i := APosUnicode to APosUnicode + UTF8Length(AText) - 1 do
     if i >= length(rotations) then break else
-    if rotations[i] <> 0 then hasRotation := true;
+    if rotations[i] <> 0 then glyphByGlyph := true;
+  ax := x;
+  ay := y;
+  adx := dx;
+  ady := dy;
+  for i := APosUnicode + 1 to APosUnicode + UTF8Length(AText) - 1 do
+  begin
+    if (i < length(ax)) or (i < length(ay)) then glyphByGlyph:= true;
+    if (i < length(adx)) and (adx[i].value <> 0) then glyphByGlyph := true;
+    if (i < length(ady)) and (ady[i].value <> 0) then glyphByGlyph := true;
+  end;
 
-  if hasRotation then
+  if glyphByGlyph then
   begin
     ts.width:= 0;
     ts.height := 0;
@@ -1688,7 +1701,7 @@ begin
   begin
     ACanvas2d.beginPath;
     InitializeGradient(ACanvas2d, AAllTextBounds.TopLeft, AAllTextBounds.Width,AAllTextBounds.Height,AUnit);
-    if hasRotation then
+    if glyphByGlyph then
     begin
       curPos := APosition;
       curRotation := firstRotation;
@@ -1716,7 +1729,13 @@ begin
           ACanvas2d.text(glyph.GlyphUtf8, 0, 0);
         ACanvas2d.restore;
         IncF(curPos.x, glyphSizes[posGlyph]);
-        inc(posUnicode);
+        for i := 1 to UTF8Length(copy(AText, glyph.ByteOffset+1, glyph.ByteSize)) do
+        begin
+          if posUnicode + i < length(ax) then curPos.x := Units.ConvertWidth(ax[posUnicode + i], AUnit).value;
+          if posUnicode + i < length(ay) then curPos.y := Units.ConvertHeight(ay[posUnicode + i], AUnit).value;
+          if posUnicode + i < length(adx) then incF(curPos.x, Units.ConvertWidth(adx[posUnicode + i], AUnit).value);
+          if posUnicode + i < length(ady) then incF(curPos.y, Units.ConvertHeight(ady[posUnicode + i], AUnit).value);
+        end;
         inc(posGlyph);
       until false;
     end else
@@ -1769,7 +1788,7 @@ var
   i, absStartIndex: Integer;
   pos: TPointF;
 begin
-  textParts := GetAllText;
+  textParts := GetAllText(0);
   CleanText(textParts);
   if length(textParts)>0 then
   begin
@@ -1866,12 +1885,9 @@ begin
   if Assigned(refText) then result := refText.SimpleText else result := '';
 end;
 
-function TSVGText.GetAllText: ArrayOfTextParts;
+function TSVGText.GetAllText(AInheritedRotation: single): ArrayOfTextParts;
 var
-  i,j,idxOut,curLen: Integer;
-  svgElem: TSVGElement;
-  subParts: ArrayOfTextParts;
-  node: TDOMNode;
+  idxOut,curLen: Integer;
   posUnicode: integer;
 
   procedure AppendPart(AText: string);
@@ -1886,10 +1902,19 @@ var
     result[idxOut].PartStartCoord := EmptyPointF;
     result[idxOut].Bounds := EmptyRectF;
     result[idxOut].PosUnicode := posUnicode;
+    result[idxOut].InheritedRotation:= AInheritedRotation;
     inc(curLen, length(AText));
     inc(idxOut);
     inc(posUnicode, UTF8Length(AText));
   end;
+
+var
+  i,j: integer;
+  svgElem: TSVGElement;
+  subParts: ArrayOfTextParts;
+  node: TDOMNode;
+  rotations: ArrayOfTSVGNumber;
+  inheritedRotation: TSVGNumber;
 
 begin
   setlength(result, Content.ElementCount+1);
@@ -1907,7 +1932,15 @@ begin
       else
       if svgElem is TSVGText then
       begin
-        subParts := TSVGText(svgElem).GetAllText;
+        rotations := rotate;
+        if posUnicode-1 >= length(rotations) then
+        begin
+          if rotations <> nil then
+            inheritedRotation:= rotations[high(rotations)]
+            else inheritedRotation := 0;
+        end else
+          inheritedRotation := rotations[posUnicode-1];
+        subParts := TSVGText(svgElem).GetAllText(inheritedRotation);
         if length(subParts) > 0 then
         begin
           setlength(result, length(result)+length(subParts)-1);
