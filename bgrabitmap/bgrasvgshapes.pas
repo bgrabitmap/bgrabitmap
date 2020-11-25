@@ -4373,7 +4373,7 @@ end;
 destructor TSVGContent.Destroy;
 var i:integer;
 begin
-  for i := 0 to ElementCount-1 do
+  for i := ElementCount-1 downto 0 do
     if not (ElementObject[i] is TDOMNode) then
       ElementObject[i].Free;
   FreeAndNil(FElements);
