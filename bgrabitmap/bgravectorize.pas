@@ -75,6 +75,7 @@ type
     constructor Create(ADirectoryUTF8: string); overload;
     function GetFontPixelMetric: TFontPixelMetric; override;
     function GetFontPixelMetricF: TFontPixelMetricF; override;
+    function FontExists(AName: string): boolean; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
@@ -220,7 +221,7 @@ type
 
 implementation
 
-uses BGRAUTF8;
+uses BGRAUTF8{$IFDEF LCL}, Forms{$ENDIF};
 
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; ARect: TRect; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean; ADiagonalFillPercent: single; AIntermediateDiagonals: boolean): ArrayOfTPointF;
@@ -1153,7 +1154,10 @@ begin
     FVectorizedFont.UnderlineDecoration := fsUnderline in FontStyle;
     FVectorizedFont.Directory := FDirectoryUTF8;
     if not FVectorizedFont.FontFound and SystemFontAvailable then
+    begin
       FVectorizedFont.VectorizeLCL := True;
+      FVectorizedFont.Name := TBGRASystemFontRenderer.PatchSystemFontName(FontName);
+    end;
     Setlength(FVectorizedFontArray,length(FVectorizedFontArray)+1);
     FVectorizedFontArray[high(FVectorizedFontArray)].FontName := FontName;
     FVectorizedFontArray[high(FVectorizedFontArray)].FontStyle := FontStyle;
@@ -1380,6 +1384,19 @@ begin
   result.Lineheight := fpm.Lineheight*factor;
   result.DescentLine := fpm.DescentLine*factor;
   result.xLine := fpm.xLine*factor;
+end;
+
+function TBGRAVectorizedFontRenderer.FontExists(AName: string): boolean;
+var
+  i: Integer;
+begin
+  {$IFDEF LCL}
+  for i := 0 to Screen.Fonts.Count-1 do
+    if CompareText(Screen.Fonts[i], AName) = 0 then exit(true);
+  result := false;
+  {$ELSE}
+  result := true;
+  {$ENDIF}
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
@@ -1720,7 +1737,7 @@ begin
   if FFont <> nil then
   begin
     ClearGlyphs;
-    FFont.Name := FName;
+    FFont.Name := TBGRASystemFontRenderer.PatchSystemFontName(FName);
     FFont.Style := FStyle;
     FFont.Height := FixSystemFontFullHeight(FFont.Name, FontFullHeightSign * FResolution);
     FFont.Quality := fqNonAntialiased;

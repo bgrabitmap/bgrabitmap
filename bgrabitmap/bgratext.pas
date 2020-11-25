@@ -82,6 +82,8 @@ type
     OverrideUnderlineDecoration: boolean; // draw unerline according to computed font pixel metric instead of using system rendering of underline
     procedure SplitText(var ATextUTF8: string; AMaxWidth: integer; out ARemainsUTF8: string);
     function GetFontPixelMetric: TFontPixelMetric; override;
+    function FontExists(AName: string): boolean; override;
+    class function PatchSystemFontName(AName: string): string;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; override;
@@ -177,7 +179,7 @@ procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
 implementation
 
 uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
-     {$IFDEF LCL}{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
+     {$IFDEF LCL}, Forms{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
 
 const MaxPixelMetricCount = 100;
 
@@ -1220,12 +1222,14 @@ end;
 procedure TBGRASystemFontRenderer.UpdateFont;
 var fixedHeight: integer;
   fs: TFontStyles;
+  patchedName: String;
 begin
-  if FFont.Name <> FontName then
-    FFont.Name := FontName;
+  patchedName := PatchSystemFontName(FontName);
+  if FFont.Name <> patchedName then
+    FFont.Name := patchedName;
   fs := FontStyle;
-  if (OverrideUnderlineDecoration or (CompareText(Trim(FontName),'FreeSans')=0) or
-     (CompareText(Trim(FontName),'FreeMono')=0) or (CompareText(Trim(FontName),'FreeSerif')=0))
+  if (OverrideUnderlineDecoration or (CompareText(Trim(patchedName),'FreeSans')=0) or
+     (CompareText(Trim(patchedName),'FreeMono')=0) or (CompareText(Trim(patchedName),'FreeSerif')=0))
      and (fsUnderline in fs) then
   begin
     Exclude(fs, fsUnderline);
@@ -1235,7 +1239,7 @@ begin
   if FFont.Style <> fs then
     FFont.Style := fs;
   if FontEmHeight < 0 then
-    fixedHeight := FixSystemFontFullHeight(FontName, FontEmHeight * FontEmHeightSign)
+    fixedHeight := FixSystemFontFullHeight(patchedName, FontEmHeight * FontEmHeightSign)
   else
     fixedHeight := FontEmHeight * FontEmHeightSign;
   if FFont.Height <> fixedHeight then
@@ -1282,6 +1286,28 @@ function TBGRASystemFontRenderer.GetFontPixelMetric: TFontPixelMetric;
 begin
   UpdateFont;
   result := InternalGetFontPixelMetric;
+end;
+
+function TBGRASystemFontRenderer.FontExists(AName: string): boolean;
+var
+  i: Integer;
+begin
+  {$IFDEF LCL}
+  for i := 0 to Screen.Fonts.Count-1 do
+    if CompareText(Screen.Fonts[i], AName) = 0 then exit(true);
+  result := false;
+  {$ELSE}
+  result := true;
+  {$ENDIF}
+end;
+
+class function TBGRASystemFontRenderer.PatchSystemFontName(AName: string): string;
+begin
+  if AName = 'serif' then
+    result := {$IFDEF DARWIN}'Times'{$ELSE}'serif'{$ENDIF}
+  else if AName = 'monospace' then
+    result := {$IFDEF DARWIN}'Courier'{$ELSE}{$IFDEF LINUX}'DejaVu Sans Mono'{$ELSE}'monospace'{$ENDIF}{$ENDIF}
+  else result := AName;
 end;
 
 procedure TBGRASystemFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer;

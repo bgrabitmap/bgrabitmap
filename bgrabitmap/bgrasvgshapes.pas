@@ -283,6 +283,7 @@ type
       FInGetSimpleText: boolean;
       function GetFontBold: boolean;
       function GetFontFamily: string;
+      function GetFontFamilyList: ArrayOfString;
       function GetFontItalic: boolean;
       function GetFontSize: TFloatWithCSSUnit;
       function GetFontStyle: string;
@@ -296,6 +297,7 @@ type
       function GetLengthAdjust: TSVGLengthAdjust;
       procedure SetFontBold(AValue: boolean);
       procedure SetFontFamily(AValue: string);
+      procedure SetFontFamilyList(AValue: ArrayOfString);
       procedure SetFontItalic(AValue: boolean);
       procedure SetFontSize(AValue: TFloatWithCSSUnit);
       procedure SetFontStyle(AValue: string);
@@ -333,6 +335,7 @@ type
       property SimpleText: string read GetSimpleText write SetSimpleText;
       property fontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
       property fontFamily: string read GetFontFamily write SetFontFamily;
+      property fontFamilyList: ArrayOfString read GetFontFamilyList write SetFontFamilyList;
       property fontWeight: string read GetFontWeight write SetFontWeight;
       property fontStyle: string read GetFontStyle write SetFontStyle;
       property fontStyleLCL: TFontStyles read GetFontStyleLCL write SetFontStyleLCL;
@@ -1439,7 +1442,12 @@ end;
 
 function TSVGText.GetFontFamily: string;
 begin
-  result := AttributeOrStyleDef['font-family','Arial'];
+  result := AttributeOrStyleDef['font-family', 'sans-serif'];
+end;
+
+function TSVGText.GetFontFamilyList: ArrayOfString;
+begin
+  result := TBGRACanvas2D.StrToFontNameList(AttributeOrStyle['font-family']);
 end;
 
 function TSVGText.GetFontItalic: boolean;
@@ -1546,6 +1554,11 @@ procedure TSVGText.SetFontFamily(AValue: string);
 begin
   Attribute['font-family'] := AValue;
   RemoveStyle('font-family');
+end;
+
+procedure TSVGText.SetFontFamilyList(AValue: ArrayOfString);
+begin
+  fontFamily := TBGRACanvas2D.FontNameListToStr(AValue);
 end;
 
 procedure TSVGText.SetFontItalic(AValue: boolean);

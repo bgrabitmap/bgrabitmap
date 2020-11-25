@@ -12,6 +12,7 @@ uses
 
 type
   ArrayOfFloat = array of single;
+  ArrayOfString = array of string;
   
   TSVGElement = class;
   TSVGElementList = specialize TFPGList<TSVGElement>;

@@ -85,6 +85,7 @@ type
 
     constructor Create; overload;
     constructor Create(AShader: TCustomPhongShading; AShaderOwner: boolean); overload;
+    function FontExists(AName: string): boolean; override;
     function GetFontPixelMetric: TFontPixelMetric; override;
     function GetFontPixelMetricF: TFontPixelMetricF; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
@@ -1158,6 +1159,20 @@ begin
   Init;
   FShader := AShader;
   FShaderOwner := AShaderOwner;
+end;
+
+function TBGRAFreeTypeFontRenderer.FontExists(AName: string): boolean;
+var
+  enum: IFreeTypeFamilyEnumerator;
+begin
+  if Assigned(Collection) then
+  begin
+    enum := Collection.FamilyEnumerator;
+    while enum.MoveNext do
+      if CompareText(enum.Current.FamilyName, AName) = 0 then exit(true);
+    result := false;
+  end else
+    result := true;
 end;
 
 function TBGRAFreeTypeFontRenderer.GetFontPixelMetric: TFontPixelMetric;
