@@ -38,7 +38,7 @@ type
   TSVGElementWithGradient = class(TSVGElement)
     private
       FFillGradientElement, FStrokeGradientElement: TSVGGradient;
-      FGradientElementsDefined: boolean;
+      FGradientElementsDefined, FRegisteredToDatalink: boolean;
       FFillCanvasGradient, FStrokeCanvasGradient: IBGRACanvasGradient2D;
       procedure DatalinkOnLink(Sender: TObject; AElement: TSVGElement;
         ALink: boolean);
@@ -1081,6 +1081,7 @@ end;
 procedure TSVGElementWithGradient.Initialize;
 begin
   inherited Initialize;
+  FRegisteredToDatalink:= false;
   ResetGradients;
 end;
 
@@ -1088,8 +1089,11 @@ procedure TSVGElementWithGradient.ResetGradients;
 begin
   if FGradientElementsDefined then
   begin
-    if Assigned(DataLink) then
+    if Assigned(DataLink) and FRegisteredToDatalink then
+    begin
       DataLink.RegisterLinkListener(@DatalinkOnLink, false);
+      FRegisteredToDatalink := false;
+    end;
     FGradientElementsDefined := false;
   end;
   FFillGradientElement     := nil;
@@ -1099,12 +1103,24 @@ begin
 end;
 
 procedure TSVGElementWithGradient.FindGradientElements;
+var
+  fillNotFound, strokeNotFound: boolean;
 begin
   if Assigned(FDataLink) then
   begin
-    FFillGradientElement := TSVGGradient(FDataLink.FindElementByRef(fill, TSVGGradient));
-    FStrokeGradientElement := TSVGGradient(FDataLink.FindElementByRef(stroke, TSVGGradient));
-    FDatalink.RegisterLinkListener(@DatalinkOnLink, true);
+    if FRegisteredToDatalink then
+    begin
+      FDataLink.RegisterLinkListener(@DatalinkOnLink, false);
+      FRegisteredToDatalink := false;
+    end;
+    FFillGradientElement := TSVGGradient(FDataLink.FindElementByRef(fill, true, TSVGGradient, fillNotFound));
+    FStrokeGradientElement := TSVGGradient(FDataLink.FindElementByRef(stroke, true, TSVGGradient, strokeNotFound));
+    if Assigned(FFillGradientElement) or fillNotFound or
+       Assigned(FStrokeGradientElement) or strokeNotFound then
+    begin
+      FDatalink.RegisterLinkListener(@DatalinkOnLink, true);
+      FRegisteredToDatalink := true;
+    end;
   end else
   begin
     FFillGradientElement := nil;
@@ -1137,7 +1153,10 @@ begin
   begin
     if (AElement = FFillGradientElement) or (AElement = FStrokeGradientElement) then
       ResetGradients;
-  end;
+  end else
+  if ALink then
+    if FGradientElementsDefined and ((FFillGradientElement = nil) or (FStrokeGradientElement = nil)) then
+      ResetGradients;
 end;
 
 function TSVGElementWithGradient.GetFillGradientElement: TSVGGradient;

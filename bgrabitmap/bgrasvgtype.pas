@@ -153,6 +153,7 @@ type
      function FindElement(el: TSVGElement): integer;
      function FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
      function FindElementByRef(ARef: string; AClass: TSVGFactory): TSVGElement;
+     function FindElementByRef(ARef: string; ANeedUrl: boolean; AClass: TSVGFactory; out ANotFound: boolean): TSVGElement;
      function FindStyle(el: TSVGElement): integer;
      function IsLinkElement(el: TSVGElement): boolean;
      function IsLinkStyle(el: TSVGElement): boolean;
@@ -1637,13 +1638,30 @@ begin
 end;
 
 function TSVGDataLink.FindElementByRef(ARef: string; AClass: TSVGFactory): TSVGElement;
+var
+  notFound: boolean;
+begin
+  result := FindElementByRef(ARef, false, AClass, notFound);
+end;
+
+function TSVGDataLink.FindElementByRef(ARef: string; ANeedUrl: boolean; AClass: TSVGFactory;
+  out ANotFound: boolean): TSVGElement;
 begin
   if StringStartsWith(ARef,'url(#') then
-    result := FindElementById(System.Copy(ARef,6,Length(ARef)-6), AClass)
-  else if StringStartsWith(ARef,'#') then
-    result := FindElementById(System.Copy(ARef,2,Length(ARef)-1), AClass)
+  begin
+    result := FindElementById(System.Copy(ARef,6,Length(ARef)-6), AClass);
+    ANotFound := (result = nil);
+  end
+  else if not ANeedUrl and StringStartsWith(ARef,'#') then
+  begin
+    result := FindElementById(System.Copy(ARef,2,Length(ARef)-1), AClass);
+    ANotFound := (result = nil);
+  end
   else
+  begin
+    ANotFound := false;
     exit(nil);
+  end;
 end;
 
 { TSVGElement }
