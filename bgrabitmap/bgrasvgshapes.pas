@@ -19,6 +19,7 @@ type
     FContent: TSVGContent;
     FSubDatalink: TSVGDataLink;
     class function OwnDatalink: boolean; virtual;
+    procedure SetDatalink(AValue: TSVGDataLink); override;
   public
     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
     constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
@@ -996,6 +997,21 @@ end;
 class function TSVGElementWithContent.OwnDatalink: boolean;
 begin
   result := false;
+end;
+
+procedure TSVGElementWithContent.SetDatalink(AValue: TSVGDataLink);
+var
+  i: Integer;
+begin
+  inherited SetDatalink(AValue);
+  if not OwnDatalink then
+  begin
+    for i := 0 to FContent.ElementCount-1 do
+      if FContent.IsSVGElement[i] then
+        FContent.Element[i].DataLink := AValue;
+    FContent.FDataLink := AValue;
+  end else
+    FSubDatalink.Parent := AValue;
 end;
 
 constructor TSVGElementWithContent.Create(ADocument: TDOMDocument;

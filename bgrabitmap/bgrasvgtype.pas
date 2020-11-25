@@ -135,12 +135,14 @@ type
      FElements: TSVGElementDictionary;
      FStyles: TSVGElementList;
      FParent: TSVGDataLink;
+     FChildren: TList;
      FLinkListeners: TSVGLinkListeners;
      function GetElement(AIndex: integer): TSVGElement;
      function GetStyle(AIndex: integer): TSVGElement;
      function IsValidIndex(const AIndex: integer; list: TSVGElementList): boolean;
      function FindTo(el: TSVGElement; list: TSVGElementList): integer;
      procedure NotifyLink(AElement: TSVGElement; ALink: boolean);
+     procedure SetParent(AValue: TSVGDataLink);
    public
      constructor Create(AParent: TSVGDataLink);
      destructor Destroy; override;
@@ -161,7 +163,7 @@ type
 
      property Styles[ID: integer]: TSVGElement read GetStyle;
      property Elements[AIndex: integer]: TSVGElement read GetElement;
-     property Parent: TSVGDataLink read FParent;
+     property Parent: TSVGDataLink read FParent write SetParent;
    end;
 
   { TSVGCustomElement }
@@ -1453,11 +1455,19 @@ begin
   FElements.Sorted := true;
   FStyles:= TSVGElementList.Create;
   FParent := AParent;
+  if Assigned(FParent) then FParent.FChildren.Add(self);
   FLinkListeners := TSVGLinkListeners.Create;
+  FChildren := TList.Create;
 end;
 
 destructor TSVGDataLink.Destroy;
+var
+  i: Integer;
 begin
+  for i := FChildren.Count-1 downto 0 do
+    TSVGDatalink(FChildren[i]).Parent := nil;
+  Parent := nil;
+  FreeAndNil(FChildren);
   FreeAndNil(FLinkListeners);
   FreeAndNil(FElements);
   FreeAndNil(FStyles);
@@ -1498,7 +1508,30 @@ begin
   for i:= 0 to high(temp) do
     temp[i] := FLinkListeners.Items[i];
   for i := 0 to high(temp) do
-    temp[i](self, AElement, true);
+    temp[i](self, AElement, ALink);
+  // children datalinks may use the element
+  for i := FChildren.Count-1 downto 0 do
+    TSVGDataLink(FChildren[i]).NotifyLink(AElement, ALink);
+end;
+
+procedure TSVGDataLink.SetParent(AValue: TSVGDataLink);
+  // notify link change for all elements and parent elements
+  procedure NotifyLinkRec(ADatalink: TSVGDataLink; ALink: boolean);
+  var
+    i: Integer;
+  begin
+    if ADatalink = nil then exit;
+    for i := 0 to ADatalink.ElementCount-1 do
+      NotifyLink(ADatalink.Elements[i], ALink);
+    NotifyLinkRec(ADatalink.Parent, ALink);
+  end;
+begin
+  if FParent=AValue then Exit;
+  NotifyLinkRec(FParent, False);
+  if Assigned(FParent) then FParent.FChildren.Remove(self);
+  FParent:=AValue;
+  if Assigned(FParent) then FParent.FChildren.Add(self);
+  NotifyLinkRec(FParent, True);
 end;
 
 function TSVGDataLink.FindElement(el: TSVGElement): integer;
