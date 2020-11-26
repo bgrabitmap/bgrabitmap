@@ -1876,16 +1876,7 @@ begin
       until false;
     end else
       ACanvas2d.text(AText,APosition.x,APosition.y);
-    if not isFillNone then
-    begin
-      ApplyFillStyle(ACanvas2D,AUnit);
-      ACanvas2d.fill;
-    end;
-    if not isStrokeNone then
-    begin
-      ApplyStrokeStyle(ACanvas2D,AUnit);
-      ACanvas2d.stroke;
-    end;
+    Paint(ACanvas2D, AUnit);
   end;
 
   if dir = stdLtr then IncF(APosition.x, ts.width);
@@ -3462,16 +3453,7 @@ begin
     ACanvas2d.roundRect(vx,vy, vw,vh,
        Units.ConvertWidth(rx,AUnit).value,Units.ConvertHeight(ry,AUnit).value);
     InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh,AUnit);
-    if not isFillNone then
-    begin
-      ApplyFillStyle(ACanvas2D,AUnit);
-      ACanvas2d.fill;
-    end;
-    if not isStrokeNone then
-    begin
-      ApplyStrokeStyle(ACanvas2D,AUnit);
-      ACanvas2d.stroke;
-    end;
+    Paint(ACanvas2D,AUnit);
   end;
 end;
 
@@ -3602,17 +3584,7 @@ begin
     with boundingBoxF do
       InitializeGradient(ACanvas2d,
         PointF(Left,Top),abs(Right-Left),abs(Bottom-Top),AUnit);
-    
-    if not isFillNone then
-    begin
-      ApplyFillStyle(ACanvas2D,AUnit);
-      ACanvas2d.fill;
-    end;
-    if not isStrokeNone then
-    begin
-      ApplyStrokeStyle(ACanvas2D,AUnit);
-      ACanvas2d.stroke;
-    end;
+    Paint(ACanvas2D, AUnit);
   end;
 end;
 
@@ -3710,16 +3682,7 @@ begin
       with boundingBoxF do
         InitializeGradient(ACanvas2d,
           PointF(Left,Top),abs(Right-Left),abs(Bottom-Top),AUnit);
-    if not isFillNone then
-    begin
-      ApplyFillStyle(ACanvas2D,AUnit);
-      ACanvas2d.fill;
-    end;
-    if not isStrokeNone then
-    begin
-      ApplyStrokeStyle(ACanvas2D,AUnit);
-      ACanvas2d.stroke;
-    end;
+    Paint(ACanvas2D, AUnit);
   end;
 end;
 
@@ -3783,16 +3746,7 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.ellipse(vcx,vcy,vrx,vry);
     InitializeGradient(ACanvas2d, PointF(vcx-vrx,vcy-vry),vrx*2,vry*2,AUnit);
-    if not isFillNone then
-    begin
-      ApplyFillStyle(ACanvas2D,AUnit);
-      ACanvas2d.fill;
-    end;
-    if not isStrokeNone then
-    begin
-      ApplyStrokeStyle(ACanvas2D,AUnit);
-      ACanvas2d.stroke;
-    end;
+    Paint(ACanvas2D, AUnit);
   end;
 end;
 
@@ -3854,16 +3808,7 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.circle(vcx,vcy,vr);
     InitializeGradient(ACanvas2d, PointF(vcx-vr,vcy-vr),vr*2,vr*2,AUnit);
-    if not isFillNone then
-    begin
-      ApplyFillStyle(ACanvas2D,AUnit);
-      ACanvas2d.fill;
-    end;
-    if not isStrokeNone then
-    begin
-      ApplyStrokeStyle(ACanvas2D,AUnit);
-      ACanvas2d.stroke;
-    end;
+    Paint(ACanvas2d, AUnit);
   end;
 end;
 

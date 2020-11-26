@@ -24,6 +24,15 @@ type
      sfmNonZero = Ord(fmWinding)
    );
 
+  TSVGPaintOrder = (
+     spoFillStrokeMarkers,
+     spoFillMarkersStroke,
+     spoStrokeFillMarkers,
+     spoStrokeMarkersFill,
+     spoMarkersFillStroke,
+     spoMarkersStrokeFill
+  );
+
   TSVGLengthAdjust = (
      slaSpacing,
      slaSpacingAndGlyphs
@@ -303,6 +312,7 @@ type
     function GetMatrix(AUnit: TCSSUnit): TAffineMatrix;
     function GetMixBlendMode: TBlendOperation;
     function GetOpacity: single;
+    function GetPaintOrder: TSVGPaintOrder;
     function GetStroke: string;
     function GetStrokeColor: TBGRAPixel;
     function GetStrokeLineCap: string;
@@ -326,6 +336,7 @@ type
     procedure SetMatrix(AUnit: TCSSUnit; const AValue: TAffineMatrix);
     procedure SetMixBlendMode(AValue: TBlendOperation);
     procedure SetOpacity(AValue: single);
+    procedure SetPaintOrder(AValue: TSVGPaintOrder);
     procedure SetStrokeColor(AValue: TBGRAPixel);
     procedure SetStrokeLineCap(AValue: string);
     procedure SetStrokeLineCapLCL(AValue: TPenEndCap);
@@ -356,6 +367,7 @@ type
     procedure SetFill(AValue: string); virtual;
     procedure SetStroke(AValue: string); virtual;
     procedure Initialize; virtual;
+    procedure Paint(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
   public
     constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
@@ -396,6 +408,7 @@ type
     property fillColor: TBGRAPixel read GetFillColor write SetFillColor;
     property fillOpacity: single read GetFillOpacity write SetFillOpacity;
     property fillRule: string read GetFillRule write SetFillRule;
+    property paintOrder: TSVGPaintOrder read GetPaintOrder write SetPaintOrder;
     property mixBlendMode: TBlendOperation read GetMixBlendMode write SetMixBlendMode;
     property opacity: single read GetOpacity write SetOpacity;
     property clipPath: string read GetClipPath write SetClipPath;
@@ -1766,6 +1779,47 @@ begin
       if result > 1 then result := 1;
 end;
 
+function TSVGElement.GetPaintOrder: TSVGPaintOrder;
+var
+  parser: TSVGParser;
+
+  function GetNext: integer;
+  var
+    id: String;
+  begin
+    id := parser.ParseId;
+    if id = 'fill' then exit(0)
+    else if id = 'stroke' then exit(1)
+    else if id = 'markers' then exit(2)
+    else if id = '' then exit(-1)
+    else result := GetNext;
+  end;
+
+var
+  s: string;
+begin
+  s := AttributeOrStyle['paint-order', 'normal'];
+  if s = 'normal' then exit(spoFillStrokeMarkers);
+  parser := TSVGParser.Create(s);
+  case GetNext of
+  0: case GetNext of
+     2: result := spoFillMarkersStroke;
+     else result := spoFillStrokeMarkers;
+     end;
+  1: case GetNext of
+     2: result := spoStrokeMarkersFill;
+     else result := spoStrokeFillMarkers;
+     end;
+  2: case GetNext of
+     1: result := spoMarkersStrokeFill;
+     else result := spoMarkersFillStroke;
+     end;
+  else
+    result := spoFillStrokeMarkers;
+  end;
+  parser.Free;
+end;
+
 function TSVGElement.GetStroke: string;
 begin
   result := AttributeOrStyleDef['stroke','none'];
@@ -1986,6 +2040,22 @@ begin
   RemoveStyle('opacity');
 end;
 
+procedure TSVGElement.SetPaintOrder(AValue: TSVGPaintOrder);
+var
+  s: String;
+begin
+  case AValue of
+    spoFillStrokeMarkers: s := 'normal';
+    spoFillMarkersStroke: s := 'fill markers';
+    spoStrokeFillMarkers: s := 'stroke';
+    spoStrokeMarkersFill: s := 'stroke markers';
+    spoMarkersFillStroke: s := 'markers';
+    spoMarkersStrokeFill: s := 'markers stroke';
+  end;
+  Attribute['paint-order'] := s;
+  RemoveStyle('paint-order');
+end;
+
 procedure TSVGElement.SetStroke(AValue: string);
 begin
   Attribute['stroke'] := AValue;
@@ -2159,6 +2229,35 @@ procedure TSVGElement.Initialize;
 begin
   SetLength(FImportedStyles,0);
   FImportStyleState   := fssNotSearched;
+end;
+
+procedure TSVGElement.Paint(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+  procedure DoFill;
+  begin
+    if not isFillNone then
+    begin
+      ApplyFillStyle(ACanvas2D,AUnit);
+      ACanvas2d.fill;
+    end;
+  end;
+  procedure DoStroke;
+  begin
+    if not isStrokeNone then
+    begin
+      ApplyStrokeStyle(ACanvas2D,AUnit);
+      ACanvas2d.stroke;
+    end;
+  end;
+begin
+  if paintOrder in [spoFillStrokeMarkers, spoFillMarkersStroke, spoMarkersFillStroke] then
+  begin
+    DoFill;
+    DoStroke;
+  end else
+  begin
+    DoStroke;
+    DoFill;
+  end;
 end;
 
 constructor TSVGElement.Create(AElement: TDOMElement;
