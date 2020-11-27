@@ -25,7 +25,7 @@ uses
 
 
 const
-  BGRABitmapVersion = 11020500;
+  BGRABitmapVersion = 11030000;
 
   function BGRABitmapVersionStr: string;
 
@@ -383,6 +383,7 @@ type
     {** Returns measurement for the current font in pixels }
     function GetFontPixelMetric: TFontPixelMetric; virtual; abstract;
     function GetFontPixelMetricF: TFontPixelMetricF; virtual;
+    function FontExists(AName: string): boolean; virtual; abstract;
 
     {** Returns the total size of the string provided using the current font.
         Orientation is not taken into account, so that the width is along the text }

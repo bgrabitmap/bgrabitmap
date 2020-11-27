@@ -6,10 +6,12 @@ unit BGRAOpenRaster;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRALayers, zipper, DOM, BGRABitmap, FPImage;
+  BGRAClasses, SysUtils, BGRALayers, zipper, DOM, BGRABitmap, BGRALayerOriginal,
+  BGRASVGShapes, FPImage, BGRASVG;
 
 const
   OpenRasterMimeType = 'image/openraster'; //do not change, it's part of the file format
+  OpenRasterSVGDefaultDPI = 90;
 
 type
 
@@ -33,7 +35,8 @@ type
     function GetMemoryStream(AFilename: string): TMemoryStream;
     procedure SetMemoryStream(AFilename: string; AStream: TMemoryStream);
     function AddLayerFromMemoryStream(ALayerFilename: string): integer;
-    function CopyLayerToMemoryStream(ALayerIndex: integer; ALayerFilename: string): boolean;
+    function CopyRasterLayerToMemoryStream(ALayerIndex: integer; ALayerFilename: string): boolean;
+    procedure CopySVGToMemoryStream(ASVG: TBGRASVG; ASVGMatrix: TAffineMatrix; AOutFilename: string; out AOffset: TPoint);
     function CopyBitmapToMemoryStream(ABitmap: TBGRABitmap; AFilename: string): boolean;
     procedure SetMemoryStreamAsString(AFilename: string; AContent: string);
     function GetMemoryStreamAsString(AFilename: string): string;
@@ -89,8 +92,8 @@ procedure RegisterOpenRasterFormat;
 
 implementation
 
-uses XMLRead, XMLWrite, FPReadPNG, BGRABitmapTypes, zstream, BGRAUTF8,
-  UnzipperExt;
+uses XMLRead, XMLWrite, BGRABitmapTypes, zstream, BGRAUTF8,
+  UnzipperExt, BGRASVGOriginal, BGRATransform, BGRASVGType, math;
 
 const
   MergedImageFilename = 'mergedimage.png';
@@ -211,14 +214,188 @@ end;
 { TBGRAOpenRasterDocument }
 
 procedure TBGRAOpenRasterDocument.AnalyzeZip;
+
+  function CountLayersRec(stackNode: TDOMNode): integer;
+  var i: integer;
+    layerNode: TDOMNode;
+  begin
+    result := 0;
+    for i := stackNode.ChildNodes.Length-1 downto 0 do
+    begin
+      layerNode:= stackNode.ChildNodes[i];
+      if (layerNode.NodeName = 'layer') and Assigned(layerNode.Attributes) then
+        inc(result) else
+      if (layerNode.NodeName = 'stack') then
+        inc(result, CountLayersRec(layerNode));
+    end;
+  end;
+
+var
+  totalLayerCount, doneLayerCount: integer;
+
+  procedure AddLayersRec(stackNode: TDOMNode);
+  var i,j : integer;
+    layerNode, attr: TDOMNode;
+    idx,x,y: integer;
+    float: double;
+    errPos: integer;
+    opstr : string;
+    gammastr: string;
+  begin
+    for i := stackNode.ChildNodes.Length-1 downto 0 do
+    begin
+      OnLayeredBitmapLoadProgress(doneLayerCount*100 div totalLayerCount);
+      layerNode:= stackNode.ChildNodes[i];
+      if layerNode.NodeName = 'stack' then
+        AddLayersRec(layerNode) else
+      if (layerNode.NodeName = 'layer') and Assigned(layerNode.Attributes) then
+      begin
+        attr := layerNode.Attributes.GetNamedItem('src');
+        idx := AddLayerFromMemoryStream(UTF8Encode(attr.NodeValue));
+        if idx <> -1 then
+        begin
+          x := 0;
+          y := 0;
+          gammastr := '';
+          for j := 0 to layerNode.Attributes.Length-1 do
+          begin
+            attr := layerNode.Attributes[j];
+            if lowercase(attr.NodeName) = 'opacity' then
+            begin
+              val(attr.NodeValue, float, errPos);
+              if errPos = 0 then
+              begin
+                if float < 0 then float := 0;
+                if float > 1 then float := 1;
+                LayerOpacity[idx] := round(float*255);
+              end;
+            end else
+            if lowercase(attr.NodeName) = 'gamma-correction' then
+              gammastr := string(attr.NodeValue) else
+            if lowercase(attr.NodeName) = 'visibility' then
+              LayerVisible[idx] := (attr.NodeValue = 'visible') or (attr.NodeValue = 'yes') or (attr.NodeValue = '1') else
+            if (lowercase(attr.NodeName) = 'x') or (lowercase(attr.NodeName) = 'y') then
+            begin
+              val(attr.NodeValue, float, errPos);
+              if errPos = 0 then
+              begin
+                if float < -(MaxInt shr 1) then float := -(MaxInt shr 1);
+                if float > (MaxInt shr 1) then float := (MaxInt shr 1);
+                if (lowercase(attr.NodeName) = 'x') then x := round(float);
+                if (lowercase(attr.NodeName) = 'y') then y := round(float);
+              end;
+            end else
+            if lowercase(attr.NodeName) = 'name' then
+              LayerName[idx] := UTF8Encode(attr.NodeValue) else
+            if lowercase(attr.NodeName) = 'composite-op' then
+            begin
+              opstr := StringReplace(lowercase(string(attr.NodeValue)),'_','-',[rfReplaceAll]);
+              if (pos(':',opstr) = 0) and (opstr <> 'xor') then opstr := 'svg:'+opstr;
+              //parse composite op
+              if (opstr = 'svg:src-over') or (opstr = 'krita:dissolve') then
+                BlendOperation[idx] := boTransparent else
+              if opstr = 'svg:lighten' then
+                BlendOperation[idx] := boLighten else
+              if opstr = 'svg:screen' then
+                BlendOperation[idx] := boScreen else
+              if opstr = 'svg:color-dodge' then
+                BlendOperation[idx] := boColorDodge else
+              if (opstr = 'svg:color-burn') or (opstr = 'krita:gamma_dark'){approx} then
+                BlendOperation[idx] := boColorBurn else
+              if opstr = 'svg:darken' then
+                BlendOperation[idx] := boDarken else
+              if (opstr = 'svg:plus') or (opstr = 'svg:add') or (opstr = 'krita:linear_dodge') then
+                BlendOperation[idx] := boLinearAdd else
+              if (opstr = 'svg:multiply') or (opstr = 'krita:bumpmap') then
+                BlendOperation[idx] := boMultiply else
+              if opstr = 'svg:overlay' then
+                BlendOperation[idx] := boOverlay else
+              if opstr = 'svg:soft-light' then
+                BlendOperation[idx] := boSvgSoftLight else
+              if opstr = 'svg:hard-light' then
+                BlendOperation[idx] := boHardLight else
+              if opstr = 'svg:difference' then
+                BlendOperation[idx] := boLinearDifference else
+              if (opstr = 'krita:inverse-subtract') or (opstr = 'krita:linear-burn') then
+                BlendOperation[idx] := boLinearSubtractInverse else
+              if opstr = 'krita:subtract' then
+                BlendOperation[idx] := boLinearSubtract else
+              if (opstr = 'svg:difference') or
+                (opstr = 'krita:equivalence') then
+                BlendOperation[idx] := boLinearDifference else
+              if (opstr = 'svg:exclusion') or
+                (opstr = 'krita:exclusion') then
+                BlendOperation[idx] := boLinearExclusion else
+              if opstr = 'krita:divide' then
+                BlendOperation[idx] := boDivide else
+              if opstr = 'bgra:soft-light' then
+                BlendOperation[idx] := boSoftLight else
+              if opstr = 'bgra:nice-glow' then
+                BlendOperation[idx] := boNiceGlow else
+              if opstr = 'bgra:glow' then
+                BlendOperation[idx] := boGlow else
+              if opstr = 'bgra:reflect' then
+                BlendOperation[idx] := boReflect else
+              if opstr = 'bgra:negation' then
+                BlendOperation[idx] := boLinearNegation else
+              if (opstr = 'bgra:xor') or (opstr = 'xor') then
+                BlendOperation[idx] := boXor else
+              if opstr = 'bgra:mask' then
+                BlendOperation[idx] := boMask else
+              if opstr = 'bgra:linear-multiply-saturation' then
+                BlendOperation[idx] := boLinearMultiplySaturation else
+              if opstr = 'svg:hue' then
+                BlendOperation[idx] := boCorrectedHue else
+              if opstr = 'svg:color' then
+                BlendOperation[idx] := boCorrectedColor else
+              if opstr = 'svg:luminosity' then
+                BlendOperation[idx] := boCorrectedLightness else
+              if opstr = 'svg:saturation' then
+                BlendOperation[idx] := boCorrectedSaturation else
+              if opstr = 'krita:hue-hsl' then
+                BlendOperation[idx] := boLinearHue else
+              if opstr = 'krita:color-hsl' then
+                BlendOperation[idx] := boLinearColor else
+              if opstr = 'krita:lightness' then
+                BlendOperation[idx] := boLinearLightness else
+              if opstr = 'krita:saturation-hsl' then
+                BlendOperation[idx] := boLinearSaturation else
+              begin
+                //messagedlg('Unknown blend operation : ' + attr.NodeValue,mtInformation,[mbOk],0);
+                BlendOperation[idx] := boTransparent;
+              end;
+            end;
+          end;
+          if LayerOriginalGuid[idx] <> GUID_NULL then
+          begin
+            LayerOriginalMatrix[idx] := AffineMatrixTranslation(x,y)*LayerOriginalMatrix[idx];
+            RenderLayerFromOriginal(idx);
+          end else LayerOffset[idx] := point(x,y);
+          if (gammastr = 'yes') or (gammastr = 'on') then
+          begin
+            case BlendOperation[idx] of
+              boLinearAdd: BlendOperation[idx] := boAdditive;
+              boOverlay: BlendOperation[idx] := boDarkOverlay;
+              boLinearDifference: BlendOperation[idx] := boDifference;
+              boLinearExclusion: BlendOperation[idx] := boExclusion;
+              boLinearSubtract: BlendOperation[idx] := boSubtract;
+              boLinearSubtractInverse: BlendOperation[idx] := boSubtractInverse;
+              boLinearNegation: BlendOperation[idx] := boNegation;
+            end;
+          end else
+          if (gammastr = 'no') or (gammastr = 'off') then
+            if BlendOperation[idx] = boTransparent then
+              BlendOperation[idx] := boLinearBlend; //explicit linear blending
+        end;
+        inc(doneLayerCount);
+      end;
+    end;
+  end;
+
 var StackStream: TMemoryStream;
-  imageNode, stackNode, layerNode, attr, srcAttr: TDOMNode;
-  i,j,w,h,idx: integer;
-  x,y: integer;
-  float: double;
-  errPos: integer;
-  opstr : string;
-  gammastr: string;
+  imageNode, stackNode, attr: TDOMNode;
+  i,w,h: integer;
+
 begin
   inherited Clear;
 
@@ -257,139 +434,21 @@ begin
   if stackNode = nil then
     raise Exception.Create('Stack node not found');
 
-  for i := stackNode.ChildNodes.Length-1 downto 0 do
-  begin
-    OnLayeredBitmapLoadProgress((stackNode.ChildNodes.Length-i)*100 div stackNode.ChildNodes.Length);
-    layerNode:= stackNode.ChildNodes[i];
-    if (layerNode.NodeName = 'layer') and Assigned(layerNode.Attributes) then
-    begin
-      srcAttr := layerNode.Attributes.GetNamedItem('src');
-      idx := AddLayerFromMemoryStream(UTF8Encode(srcAttr.NodeValue));
-      if idx <> -1 then
-      begin
-        x := 0;
-        y := 0;
-        gammastr := '';
-        for j := 0 to layerNode.Attributes.Length-1 do
-        begin
-          attr := layerNode.Attributes[j];
-          if lowercase(attr.NodeName) = 'opacity' then
-          begin
-            val(attr.NodeValue, float, errPos);
-            if errPos = 0 then
-            begin
-              if float < 0 then float := 0;
-              if float > 1 then float := 1;
-              LayerOpacity[idx] := round(float*255);
-            end;
-          end else
-          if lowercase(attr.NodeName) = 'gamma-correction' then
-            gammastr := string(attr.NodeValue) else
-          if lowercase(attr.NodeName) = 'visibility' then
-            LayerVisible[idx] := (attr.NodeValue = 'visible') or (attr.NodeValue = 'yes') or (attr.NodeValue = '1') else
-          if (lowercase(attr.NodeName) = 'x') or (lowercase(attr.NodeName) = 'y') then
-          begin
-            val(attr.NodeValue, float, errPos);
-            if errPos = 0 then
-            begin
-              if float < -(MaxInt shr 1) then float := -(MaxInt shr 1);
-              if float > (MaxInt shr 1) then float := (MaxInt shr 1);
-              if (lowercase(attr.NodeName) = 'x') then x := round(float);
-              if (lowercase(attr.NodeName) = 'y') then y := round(float);
-            end;
-          end else
-          if lowercase(attr.NodeName) = 'name' then
-            LayerName[idx] := UTF8Encode(attr.NodeValue) else
-          if lowercase(attr.NodeName) = 'composite-op' then
-          begin
-            opstr := StringReplace(lowercase(string(attr.NodeValue)),'_','-',[rfReplaceAll]);
-            if (pos(':',opstr) = 0) and (opstr <> 'xor') then opstr := 'svg:'+opstr;
-            //parse composite op
-            if (opstr = 'svg:src-over') or (opstr = 'krita:dissolve') then
-              BlendOperation[idx] := boTransparent else
-            if opstr = 'svg:lighten' then
-              BlendOperation[idx] := boLighten else
-            if opstr = 'svg:screen' then
-              BlendOperation[idx] := boScreen else
-            if opstr = 'svg:color-dodge' then
-              BlendOperation[idx] := boColorDodge else
-            if (opstr = 'svg:color-burn') or (opstr = 'krita:gamma_dark'){approx} then
-              BlendOperation[idx] := boColorBurn else
-            if opstr = 'svg:darken' then
-              BlendOperation[idx] := boDarken else
-            if (opstr = 'svg:plus') or (opstr = 'svg:add') or (opstr = 'krita:linear_dodge') then
-              BlendOperation[idx] := boLinearAdd else
-            if (opstr = 'svg:multiply') or (opstr = 'krita:bumpmap') then
-              BlendOperation[idx] := boMultiply else
-            if opstr = 'svg:overlay' then
-              BlendOperation[idx] := boOverlay else
-            if opstr = 'svg:soft-light' then
-              BlendOperation[idx] := boSvgSoftLight else
-            if opstr = 'svg:hard-light' then
-              BlendOperation[idx] := boHardLight else
-            if opstr = 'svg:difference' then
-              BlendOperation[idx] := boLinearDifference else
-            if (opstr = 'krita:inverse-subtract') or (opstr = 'krita:linear-burn') then
-              BlendOperation[idx] := boLinearSubtractInverse else
-            if opstr = 'krita:subtract' then
-              BlendOperation[idx] := boLinearSubtract else
-            if (opstr = 'svg:difference') or
-              (opstr = 'krita:equivalence') then
-              BlendOperation[idx] := boLinearDifference else
-            if (opstr = 'svg:exclusion') or
-              (opstr = 'krita:exclusion') then
-              BlendOperation[idx] := boLinearExclusion else
-            if opstr = 'krita:divide' then
-              BlendOperation[idx] := boDivide else
-            if opstr = 'bgra:soft-light' then
-              BlendOperation[idx] := boSoftLight else
-            if opstr = 'bgra:nice-glow' then
-              BlendOperation[idx] := boNiceGlow else
-            if opstr = 'bgra:glow' then
-              BlendOperation[idx] := boGlow else
-            if opstr = 'bgra:reflect' then
-              BlendOperation[idx] := boReflect else
-            if opstr = 'bgra:negation' then
-              BlendOperation[idx] := boLinearNegation else
-            if (opstr = 'bgra:xor') or (opstr = 'xor') then
-              BlendOperation[idx] := boXor else
-            if opstr = 'bgra:mask' then
-              BlendOperation[idx] := boMask else
-            if opstr = 'bgra:linear-multiply-saturation' then
-              BlendOperation[idx] := boLinearMultiplySaturation else
-            begin
-              //messagedlg('Unknown blend operation : ' + attr.NodeValue,mtInformation,[mbOk],0);
-              BlendOperation[idx] := boTransparent;
-            end;
-          end;
-        end;
-        LayerOffset[idx] := point(x,y);
-        if (gammastr = 'yes') or (gammastr = 'on') then
-        begin
-          case BlendOperation[idx] of
-            boLinearAdd: BlendOperation[idx] := boAdditive;
-            boOverlay: BlendOperation[idx] := boDarkOverlay;
-            boLinearDifference: BlendOperation[idx] := boDifference;
-            boLinearExclusion: BlendOperation[idx] := boExclusion;
-            boLinearSubtract: BlendOperation[idx] := boSubtract;
-            boLinearSubtractInverse: BlendOperation[idx] := boSubtractInverse;
-            boLinearNegation: BlendOperation[idx] := boNegation;
-          end;
-        end else
-        if (gammastr = 'no') or (gammastr = 'off') then
-          if BlendOperation[idx] = boTransparent then
-            BlendOperation[idx] := boLinearBlend; //explicit linear blending
-      end;
-    end;
-  end;
-
+  totalLayerCount := CountLayersRec(stackNode);
+  doneLayerCount := 0;
+  AddLayersRec(stackNode);
 end;
 
 procedure TBGRAOpenRasterDocument.PrepareZipToSave;
+
 var i: integer;
     imageNode,stackNode,layerNode: TDOMElement;
     layerFilename,strval: string;
     stackStream: TMemoryStream;
+    ofs, wantedOfs: TPoint;
+    fileAdded: Boolean;
+    svg: TBGRASVG;
+    m: TAffineMatrix;
 begin
   ClearFiles;
   MimeType := OpenRasterMimeType;
@@ -412,8 +471,36 @@ begin
   for i := NbLayers-1 downto 0 do
   begin
     OnLayeredBitmapSaveProgress(round((NbLayers-1-i) * 100 / NbLayers));
-    layerFilename := 'data/layer'+inttostr(i)+'.png';
-    if CopyLayerToMemoryStream(i, layerFilename) then
+    if (LayerOriginalGuid[i] <> GUID_NULL) and LayerOriginalKnown[i] and
+       LayerOriginalClass[i].CanConvertToSVG then
+    begin
+      layerFilename := 'data/layer'+inttostr(i)+'.svg';
+      if LayerOriginal[i].IsInfiniteSurface then
+      begin
+        svg := LayerOriginal[i].ConvertToSVG(LayerOriginalMatrix[i], wantedOfs) as TBGRASVG;
+        m := AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y);
+        svg.WidthAsPixel := self.Width;
+        svg.HeightAsPixel := self.Height;
+      end else
+      begin
+        svg := LayerOriginal[i].ConvertToSVG(AffineMatrixIdentity, wantedOfs) as TBGRASVG;
+        m := LayerOriginalMatrix[i]
+          * AffineMatrixTranslation(wantedOfs.X, wantedOfs.Y);
+      end;
+      try
+        CopySVGToMemoryStream(svg, m, layerFilename, ofs);
+        fileAdded := true;
+      finally
+        svg.Free;
+      end;
+    end else
+    begin
+      layerFilename := 'data/layer'+inttostr(i)+'.png';
+      ofs := LayerOffset[i];
+      fileAdded := CopyRasterLayerToMemoryStream(i, layerFilename);
+    end;
+
+    if fileAdded then
     begin
       layerNode := StackXML.CreateElement('layer');
       stackNode.AppendChild(layerNode);
@@ -425,8 +512,8 @@ begin
         layerNode.SetAttribute('visibility','visible')
       else
         layerNode.SetAttribute('visibility','hidden');
-      layerNode.SetAttribute('x',widestring(inttostr(LayerOffset[i].x)));
-      layerNode.SetAttribute('y',widestring(inttostr(LayerOffset[i].y)));
+      layerNode.SetAttribute('x',widestring(inttostr(ofs.x)));
+      layerNode.SetAttribute('y',widestring(inttostr(ofs.y)));
       strval := '';
       case BlendOperation[i] of
         boLighten: strval := 'svg:lighten';
@@ -452,6 +539,14 @@ begin
         boSvgSoftLight: strval := 'svg:soft-light';
         boMask: strval := 'bgra:mask';
         boLinearMultiplySaturation: strval := 'bgra:linear-multiply-saturation';
+        boCorrectedHue: strval := 'svg:hue';
+        boCorrectedColor: strval := 'svg:color';
+        boCorrectedLightness: strval := 'svg:luminosity';
+        boCorrectedSaturation: strval := 'svg:saturation';
+        boLinearHue: strval := 'krita:hue_hsl';
+        boLinearColor: strval := 'krita:color_hsl';
+        boLinearLightness: strval := 'krita:lightness';
+        boLinearSaturation: strval := 'krita:saturation_hsl';
         else strval := 'svg:src-over';
       end;
       layerNode.SetAttribute('composite-op',widestring(strval));
@@ -476,7 +571,7 @@ begin
   AStream := TFileStreamUTF8.Create(filenameUTF8,fmOpenRead or fmShareDenyWrite);
   OnLayeredBitmapLoadStart(filenameUTF8);
   try
-    LoadFromStream(AStream);
+    InternalLoadFromStream(AStream);
   finally
     OnLayeredBitmapLoaded;
     AStream.Free;
@@ -548,36 +643,90 @@ end;
 function TBGRAOpenRasterDocument.AddLayerFromMemoryStream(ALayerFilename: string): integer;
 var stream: TMemoryStream;
   bmp: TBGRABitmap;
-  png: TFPReaderPNG;
+  orig: TBGRALayerSVGOriginal;
+  svg: TBGRASVG;
+  g: TSVGGroup;
+  i, svgElemCount: Integer;
+  origViewBox: TSVGViewBox;
+  elemToMove: TList;
+  m: TAffineMatrix;
 begin
   stream := GetMemoryStream(ALayerFilename);
   if stream = nil then raise Exception.Create('Layer not found');
 
-  png := TFPReaderPNG.Create;
-  bmp := TBGRABitmap.Create;
-  try
-    bmp.LoadFromStream(stream,png);
-  except
-    on ex: exception do
-    begin
-      png.Free;
-      bmp.Free;
-      raise exception.Create('Layer format error');
+  if SuggestImageFormat(ALayerFilename) = ifSvg then
+  begin
+    svg := TBGRASVG.Create;
+    svg.DefaultDpi:= OpenRasterSVGDefaultDPI;
+    try
+      svg.LoadFromStream(stream);
+    except
+      on ex:exception do
+      begin
+        svg.Free;
+        raise exception.Create('SVG layer format error');
+      end;
     end;
-  end;
-  png.Free;
+    g := nil;
+    svgElemCount := 0;
+    for i := 0 to svg.Content.ElementCount-1 do
+      if svg.Content.IsSVGElement[i] then
+      begin
+        inc(svgElemCount);
+        if svg.Content.ElementObject[i] is TSVGGroup then
+          g := TSVGGroup(svg.Content.ElementObject[i]);
+      end;
 
-  result := AddOwnedLayer(bmp);
+    if (svgElemCount = 1) and Assigned(g) and
+       g.DOMElement.hasAttribute('bgra:originalViewBox') then
+    begin
+      svg.ContainerWidthAsPixel:= Width;
+      svg.ContainerHeightAsPixel:= Height;
+      origViewBox := TSVGViewBox.Parse(g.DOMElement.GetAttribute('bgra:originalViewBox'));
+      m := svg.GetStretchPresentationMatrix(cuPixel) * g.matrix[cuPixel] *
+        AffineMatrixTranslation(origViewBox.min.x, origViewBox.min.y);
+      g.DOMElement.RemoveAttribute('bgra:originalViewBox');
+      for i := svg.Content.ElementCount-1 downto 0 do
+        if svg.Content.ElementObject[i] <> g then
+          svg.Content.RemoveElement(svg.Content.ElementObject[i]);
+      elemToMove := TList.Create;
+      for i := 0 to g.Content.ElementCount-1 do
+        elemToMove.Add(g.Content.ElementObject[i]);
+      for i := 0 to elemToMove.Count-1 do
+        svg.Content.BringElement(TObject(elemToMove[i]), g.Content);
+      elemToMove.Free;
+      svg.Content.RemoveElement(g);
+      svg.ViewBox := origViewBox;
+      svg.WidthAsPixel:= origViewBox.size.x;
+      svg.HeightAsPixel:= origViewBox.size.y;
+    end else
+      m := AffineMatrixIdentity;
+    orig := TBGRALayerSVGOriginal.Create;
+    orig.SetSVG(svg, Width, Height);
+    result := AddLayerFromOwnedOriginal(orig);
+    LayerOriginalMatrix[result] := m;
+  end else
+  begin
+    bmp := TBGRABitmap.Create;
+    try
+      bmp.LoadFromStream(stream);
+    except
+      on ex: exception do
+      begin
+        bmp.Free;
+        raise exception.Create('Raster layer format error');
+      end;
+    end;
+    result := AddOwnedLayer(bmp);
+  end;
   LayerName[result] := ExtractFileName(ALayerFilename);
 end;
 
-function TBGRAOpenRasterDocument.CopyLayerToMemoryStream(ALayerIndex: integer;
+function TBGRAOpenRasterDocument.CopyRasterLayerToMemoryStream(ALayerIndex: integer;
   ALayerFilename: string): boolean;
 var
   bmp: TBGRABitmap;
   mustFreeBmp: boolean;
-  p: PBGRAPixel;
-  n: integer;
 begin
   result := false;
   bmp := LayerBitmap[ALayerIndex];
@@ -588,25 +737,93 @@ begin
     if bmp = nil then exit;
     mustFreeBmp:= true;
   end;
-  if bmp.HasTransparentPixels then
-  begin
-    //avoid png bug with black color
-    if not mustFreeBmp then
-    begin
-      bmp := bmp.Duplicate;
-      mustFreeBmp := true;
-    end;
-    p := bmp.data;
-    for n := bmp.NbPixels-1 downto 0 do
-    begin
-      if (p^.alpha <> 0) and (p^.red = 0) and (p^.green = 0) and (p^.blue = 0) then
-        p^.blue := 1;
-      inc(p);
-    end;
-  end;
 
   result := CopyBitmapToMemoryStream(bmp,ALayerFilename);
   if mustFreeBmp then bmp.Free;
+end;
+
+procedure TBGRAOpenRasterDocument.CopySVGToMemoryStream(
+  ASVG: TBGRASVG; ASVGMatrix: TAffineMatrix; AOutFilename: string; out AOffset: TPoint);
+
+  function IsIntegerTranslation(m: TAffineMatrix; out ofs: TPoint): boolean;
+  begin
+    ofs := Point(round(m[1,3]), round(m[2,3]));
+    result := IsAffineMatrixTranslation(m) and
+             (abs(round(m[1,3]) - ofs.x) < 1e-4) and
+             (abs(round(m[2,3]) - ofs.y) < 1e-4);
+  end;
+
+  procedure StoreSVG(ASVG: TBGRASVG);
+  var
+    memStream: TMemoryStream;
+    w, h: Single;
+  begin
+    memStream := TMemoryStream.Create;
+    try
+      w := ASVG.WidthAsPixel;
+      h := ASVG.HeightAsPixel;
+      //ensure we are not using units affected by DPI
+      ASVG.ConvertToUnit(cuCustom);
+      ASVG.WidthAsPixel := w;
+      ASVG.HeightAsPixel := h;
+      ASVG.SaveToStream(memStream);
+      SetMemoryStream(AOutFilename,memstream);
+    except
+      on ex: Exception do
+      begin
+        memStream.Free;
+        raise exception.Create(ex.Message);
+      end;
+    end;
+  end;
+
+  procedure StoreTransformedSVG(out AOffset: TPoint);
+  var
+    box, transfBox: TAffineBox;
+    newSvg: TBGRASVG;
+    newBounds: TRectF;
+    rootElems: TList;
+    i: Integer;
+    g: TSVGGroup;
+    newViewBox, origViewBox: TSVGViewBox;
+    presentMatrix: TAffineMatrix;
+  begin
+    newSvg := ASVG.Duplicate;
+    presentMatrix := ASVGMatrix * newSvg.GetStretchPresentationMatrix(cuPixel);
+    rootElems := TList.Create;
+    try
+      origViewBox := newSvg.ViewBox;
+      with origViewBox do
+        box := TAffineBox.AffineBox(RectWithSizeF(min.x, min.y, size.x, size.y));
+      transfBox := presentMatrix * box;
+      newBounds := RectF(transfBox.RectBounds);
+      AOffset := Point(round(newBounds.Left), round(newBounds.Top));
+      newBounds.Offset(-AOffset.X, -AOffset.Y);
+      presentMatrix := AffineMatrixTranslation(-AOffset.X, -AOffset.Y) * presentMatrix;
+      for i := 0 to newSvg.Content.ElementCount-1 do
+        rootElems.Add(newSvg.Content.ElementObject[i]);
+      g := newSvg.Content.AppendGroup;
+      for i := 0 to rootElems.Count-1 do
+        g.Content.BringElement(TObject(rootElems[i]), newSvg.Content);
+      g.matrix[cuPixel] := presentMatrix;
+      g.DOMElement.SetAttribute('xmlns:bgra', 'https://wiki.freepascal.org/LazPaint_SVG_format');
+      g.DOMElement.SetAttribute('bgra:originalViewBox', origViewBox.ToString);
+      newSvg.WidthAsPixel:= newBounds.Width;
+      newSvg.HeightAsPixel:= newBounds.Height;
+      newViewBox.min := newBounds.TopLeft;
+      newViewBox.size := PointF(newBounds.Width, newBounds.Height);
+      newSvg.ViewBox := newViewBox;
+      StoreSVG(newSvg);
+    finally
+      rootElems.Free;
+      newSvg.Free;
+    end;
+  end;
+
+begin
+  if IsIntegerTranslation(ASVGMatrix, AOffset) then
+    StoreSVG(ASVG)
+    else StoreTransformedSVG(AOffset);
 end;
 
 function TBGRAOpenRasterDocument.CopyBitmapToMemoryStream(ABitmap: TBGRABitmap;
@@ -751,7 +968,7 @@ begin
     end;
     BGRAReplace(thumbnail, thumbnail.Resample(w,h));
   end;
-  CopyBitmapToMemoryStream(thumbnail,'Thumbnails\thumbnail.png');
+  CopyBitmapToMemoryStream(thumbnail,'Thumbnails/thumbnail.png');
   thumbnail.Free;
 end;
 

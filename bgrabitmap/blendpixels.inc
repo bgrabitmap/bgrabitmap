@@ -351,6 +351,94 @@ begin
         end;
 end;
 
+procedure LinearHuePixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          LinearHueInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearColorPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          LinearColorInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearLightnessPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          LinearLightnessInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure LinearSaturationPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          LinearSaturationInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedHuePixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          CorrectedHueInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedColorPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          CorrectedColorInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedLightnessPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          CorrectedLightnessInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
+procedure CorrectedSaturationPixels(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
+begin
+  while Count > 0 do
+        begin
+          CorrectedSaturationInline(pdest, psrc^);
+          Inc(pdest);
+          Inc(psrc);
+          Dec(Count);
+        end;
+end;
+
 type
   TBlendPixelsProc = procedure(pdest: PBGRAPixel; psrc: PBGRAPixel; Count: integer);
 
@@ -361,11 +449,49 @@ const
       @GlowPixels, @ReflectPixels, @LinearOverlayPixels, @OverlayPixels, @DarkenPixels, @LinearMultiplyPixels, @ColorBurnPixels,
       @DifferencePixels, @LinearDifferencePixels, @ExclusionPixels, @LinearExclusionPixels, @SubtractPixels, @LinearSubtractPixels,
       @SubtractInversePixels, @LinearSubtractInversePixels, @NegationPixels, @LinearNegationPixels, @BlendXorPixels, @SvgSoftLightPixels,
-      @BlendMaskPixels, @LinearMultiplySaturationPixels);
+      @BlendMaskPixels, @LinearMultiplySaturationPixels, @LinearHuePixels, @LinearColorPixels, @LinearLightnessPixels, @LinearSaturationPixels,
+      @CorrectedHuePixels, @CorrectedColorPixels, @CorrectedLightnessPixels, @CorrectedSaturationPixels);
 
 procedure BlendPixels(pdest: PBGRAPixel; psrc: PBGRAPixel;
-  blendOp: TBlendOperation; Count: integer);
+  blendOp: TBlendOperation; Count: integer; excludeChannels: TChannels = []);
+const BufSize = 8;
+var
+  destBuf: array[0..BufSize-1] of TBGRAPixel;
+  i: PtrInt;
 begin
-  BlendPixelsProc[blendOp](pdest,psrc,count);
+  if (excludeChannels = [cRed,cGreen,cBlue,cAlpha]) or
+     ((blendOp = boMask) and (cAlpha in excludeChannels)) then exit;
+
+  if excludeChannels = [] then
+    BlendPixelsProc[blendOp](pdest, psrc, count) else
+  begin
+    while Count >= BufSize do
+    begin
+      move(pdest^, {%H-}destBuf, sizeof(destBuf));
+      BlendPixelsProc[blendOp](@destBuf, psrc, BufSize);
+      for i := 0 to BufSize-1 do
+      begin
+        if not (cRed in excludeChannels) then pdest^.red := destBuf[i].red;
+        if not (cGreen in excludeChannels) then pdest^.green := destBuf[i].green;
+        if not (cBlue in excludeChannels) then pdest^.blue := destBuf[i].blue;
+        if not (cAlpha in excludeChannels) then pdest^.alpha := destBuf[i].alpha;
+        inc(pdest);
+      end;
+      dec(count, BufSize);
+    end;
+    if count > 0 then
+    begin
+      move(pdest^, {%H-}destBuf, count*sizeof(TBGRAPixel));
+      BlendPixelsProc[blendOp](@destBuf, psrc, count);
+      for i := 0 to count-1 do
+      begin
+        if not (cRed in excludeChannels) then pdest^.red := destBuf[i].red;
+        if not (cGreen in excludeChannels) then pdest^.green := destBuf[i].green;
+        if not (cBlue in excludeChannels) then pdest^.blue := destBuf[i].blue;
+        if not (cAlpha in excludeChannels) then pdest^.alpha := destBuf[i].alpha;
+        inc(pdest);
+      end;
+    end;
+  end;
 end;
 

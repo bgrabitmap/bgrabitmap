@@ -77,11 +77,12 @@ procedure ScannerPutPixels(scan: IBGRAScanner; pdest: PBGRAPixel; count: integer
 
 { Perform advanced blending operation }
 procedure BlendPixels(pdest: PBGRAPixel; psrc: PBGRAPixel;
-  blendOp: TBlendOperation; Count: integer);
+  blendOp: TBlendOperation; Count: integer; excludeChannels: TChannels = []);
 
 { Perform blending operation and merge over destination }
 procedure BlendPixelsOver(pdest: PBGRAPixel; psrc: PBGRAPixel;
-  blendOp: TBlendOperation; Count: integer; opacity: byte; linearBlend: boolean = false);
+  blendOp: TBlendOperation; Count: integer; opacity: byte; linearBlend: boolean = false;
+  excludeChannels: TChannels = []);
 
 //layer blend modes
 //- http://www.pegtop.net/delphi/articles/blendmodes/
@@ -118,6 +119,14 @@ procedure HardLightPixelInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
 procedure BlendXorPixelInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
 procedure BlendMaskPixelInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
 procedure LinearMultiplySaturationInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+procedure LinearHueInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+procedure LinearColorInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+procedure LinearLightnessInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+procedure LinearSaturationInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+procedure CorrectedHueInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+procedure CorrectedColorInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+procedure CorrectedLightnessInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
+procedure CorrectedSaturationInline(dest: PBGRAPixel; c: TBGRAPixel); inline;
 procedure BGRAFillClearTypeMask(dest: TBGRACustomBitmap; x,y: integer; xThird: integer; mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner; RGBOrder: boolean);
 procedure BGRAFillClearTypeRGBMask(dest: TBGRACustomBitmap; x, y: integer;
   mask: TBGRACustomBitmap; color: TBGRAPixel; texture: IBGRAScanner;

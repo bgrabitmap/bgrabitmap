@@ -1970,6 +1970,7 @@ begin
     rInterRender := TRect.Intersect(ARenderBounds, rNewBounds);
     if (FLayers[layer].x = rNewBounds.Left) and
       (FLayers[layer].y = rNewBounds.Top) and
+      Assigned(FLayers[layer].Source) and
       (FLayers[layer].Source.Width = rNewBounds.Width) and
       (FLayers[layer].Source.Height = rNewBounds.Height) then
     begin

@@ -1222,8 +1222,14 @@ begin
           VectLen(PointF(FStrokeMatrix[1,2],FStrokeMatrix[2,2])));
   if FStrokeZoom > 0 then
     FStrokeMatrix := FStrokeMatrix * AffineMatrixScale(1/FStrokeZoom,1/FStrokeZoom);
+  if IsAffineMatrixInversible(FStrokeMatrix) then
+    FStrokeMatrixInverse := AffineMatrixInverse(FStrokeMatrix)
+  else
+  begin
+    FStrokeMatrixInverse := AffineMatrixIdentity;
+    FStrokeMatrix := AffineMatrixIdentity;
+  end;
   FStrokeMatrixIdentity := IsAffineMatrixIdentity(FStrokeMatrix);
-  FStrokeMatrixInverse := AffineMatrixInverse(FStrokeMatrix);
 end;
 
 procedure TBGRAPenStroker.SetPenStyle(AValue: TPenStyle);

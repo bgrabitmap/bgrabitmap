@@ -120,6 +120,7 @@ type
     FSliceScalingArray: TSliceScalingArray;
     FBitmapOwned: boolean;
     FBitmap: TBGRABitmap;
+    function GetCount: integer;
     procedure SetFSliceScalingArray(AValue: TSliceScalingArray);
   public
     constructor Create(ABitmap: TBGRABitmap;
@@ -145,6 +146,7 @@ type
     procedure Draw(ItemNumber: integer; ABitmap: TBGRABitmap;
       ALeft, ATop, AWidth, AHeight: integer; DrawGrid: boolean = False); overload;
   public
+    property Count: integer read GetCount;
     property SliceScalingArray: TSliceScalingArray
       read FSliceScalingArray write SetFSliceScalingArray;
   end;
@@ -168,6 +170,11 @@ begin
   if FSliceScalingArray = AValue then
     Exit;
   FSliceScalingArray := AValue;
+end;
+
+function TBGRAMultiSliceScaling.GetCount: integer;
+begin
+  result := length(FSliceScalingArray);
 end;
 
 constructor TBGRAMultiSliceScaling.Create(ABitmap: TBGRABitmap;
@@ -295,12 +302,14 @@ end;
 procedure TBGRAMultiSliceScaling.Draw(ItemNumber: integer; ABitmap: TBGRABitmap;
   ARect: TRect; DrawGrid: boolean);
 begin
+  if (ItemNumber < 0) or (ItemNumber >= Count) then exit;
   FSliceScalingArray[ItemNumber].Draw(ABitmap, ARect, DrawGrid);
 end;
 
 procedure TBGRAMultiSliceScaling.Draw(ItemNumber: integer; ABitmap: TBGRABitmap;
   ALeft, ATop, AWidth, AHeight: integer; DrawGrid: boolean);
 begin
+  if (ItemNumber < 0) or (ItemNumber >= Count) then exit;
   FSliceScalingArray[ItemNumber].Draw(ABitmap, ALeft, ATop, AWidth, AHeight, DrawGrid);
 end;
 

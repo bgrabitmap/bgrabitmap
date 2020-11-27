@@ -202,6 +202,9 @@ type
     procedure SaveToStream(AStream: TStream); virtual;
     function CreateEditor: TBGRAOriginalEditor; virtual;
     class function StorageClassName: RawByteString; virtual; abstract;
+    class function CanConvertToSVG: boolean; virtual;
+    function IsInfiniteSurface: boolean; virtual;
+    function ConvertToSVG(const {%H-}AMatrix: TAffineMatrix; out AOffset: TPoint): TObject; virtual;
     function Duplicate: TBGRALayerCustomOriginal; virtual;
     property Guid: TGuid read GetGuid write SetGuid;
     property OnChange: TOriginalChangeEvent read FOnChange write SetOnChange;
@@ -247,6 +250,7 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
+    function ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TObject; override;
     procedure Render(ADest: TBGRABitmap; AMatrix: TAffineMatrix; ADraft: boolean); override;
     function GetRenderBounds({%H-}ADestRect: TRect; AMatrix: TAffineMatrix): TRect; override;
     procedure LoadFromStorage(AStorage: TBGRACustomOriginalStorage); override;
@@ -258,6 +262,7 @@ type
     procedure AssignImage(AImage: TBGRACustomBitmap);
     function GetImageCopy: TBGRABitmap;
     class function StorageClassName: RawByteString; override;
+    class function CanConvertToSVG: boolean; override;
     property Width: integer read GetImageWidth;
     property Height: integer read GetImageHeight;
   end;
@@ -371,7 +376,7 @@ function FindLayerOriginalClass(AStorageClassName: string): TBGRALayerOriginalAn
 
 implementation
 
-uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, BGRAGraphics;
+uses BGRAPolygon, math, BGRAMultiFileType, BGRAUTF8, BGRAGraphics, BGRASVG, BGRASVGShapes;
 
 {$IFDEF BGRABITMAP_USE_LCL}
 function LCLKeyToSpecialKey(AKey: Word; AShift: TShiftState): TSpecialKey;
@@ -1941,6 +1946,22 @@ begin
   result := TBGRAOriginalEditor.Create;
 end;
 
+class function TBGRALayerCustomOriginal.CanConvertToSVG: boolean;
+begin
+  result := false;
+end;
+
+function TBGRALayerCustomOriginal.IsInfiniteSurface: boolean;
+begin
+  result := false;
+end;
+
+function TBGRALayerCustomOriginal.ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TObject;
+begin
+  AOffset := Point(0,0);
+  raise exception.Create('Not implemented');
+end;
+
 function TBGRALayerCustomOriginal.Duplicate: TBGRALayerCustomOriginal;
 var
   storage: TBGRAMemOriginalStorage;
@@ -2054,6 +2075,21 @@ begin
   FJpegStream.Free;
   FDiff.Free;
   inherited Destroy;
+end;
+
+function TBGRALayerImageOriginal.ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TObject;
+var
+  svg: TBGRASVG;
+  img: TSVGImage;
+begin
+  svg := TBGRASVG.Create(Width, Height, cuPixel);
+  Result:= svg;
+  AOffset := Point(0,0);
+  if Assigned(FJpegStream) then
+    img := svg.Content.AppendImage(0,0,Width,Height,FJpegStream,'image/jpeg') else
+  if Assigned(FImage) then
+    img := svg.Content.AppendImage(0,0,Width,Height,FImage,false);
+  img.matrix[cuCustom] := AMatrix;
 end;
 
 procedure TBGRALayerImageOriginal.Render(ADest: TBGRABitmap;
@@ -2201,6 +2237,11 @@ end;
 class function TBGRALayerImageOriginal.StorageClassName: RawByteString;
 begin
   result := 'image';
+end;
+
+class function TBGRALayerImageOriginal.CanConvertToSVG: boolean;
+begin
+  Result:= true;
 end;
 
 initialization

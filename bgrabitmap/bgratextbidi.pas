@@ -202,7 +202,6 @@ type
     function GetFontOrientation: single;
     procedure TextOutBidiOverride(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; ARightToLeft: boolean);
     procedure TextPathBidiOverride(ADest: IBGRAPath; x, y: single; sUTF8: string; ARightToLeft: boolean);
-    function AddOverrideIfNecessary(var sUTF8: string; ARightToLeft: boolean): boolean;
 
     procedure AddPart(AStartIndex, AEndIndex: integer; ABidiLevel: byte; ARectF: TRectF; APosCorrection: TPointF; ABrokenLineIndex: integer; ABrokenLine: PBrokenLineInfo);
     function GetPartStartCaret(APartIndex: integer): TBidiCaretPos;
@@ -252,6 +251,8 @@ type
     procedure SetLayout(ARect: TRectF);
     procedure InvalidateLayout;
     procedure ComputeLayoutIfNeeded;
+    function AddOverrideIfNecessary(var sUTF8: string; ARightToLeft: boolean): boolean;
+    function GetTextPart(APartIndex: integer; AAddOverrideIfNecessary: boolean): string;
 
     procedure DrawText(ADest: TBGRACustomBitmap); overload;
     procedure DrawText(ADest: TBGRACustomBitmap; AColor: TBGRAPixel); overload;
@@ -1528,6 +1529,15 @@ begin
     exit(true);
   end
   else exit(false);
+end;
+
+function TBidiTextLayout.GetTextPart(APartIndex: integer;
+  AAddOverrideIfNecessary: boolean): string;
+begin
+  result := FAnalysis.CopyTextUTF8(PartStartIndex[APartIndex],
+    PartEndIndex[APartIndex] - PartStartIndex[APartIndex]);
+  if AAddOverrideIfNecessary then
+    AddOverrideIfNecessary(result, PartRightToLeft[APartIndex]);
 end;
 
 procedure TBidiTextLayout.AddPart(AStartIndex, AEndIndex: integer;
