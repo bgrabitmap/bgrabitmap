@@ -713,6 +713,7 @@ begin
   inherited Create(AWidth, AHeight, PByte(AStream.Memory) + AStreamOffset);
   FStream := AStream;
   FStreamOffset:= AStreamOffset;
+  FOwnStream := AOwnStream;
 end;
 
 constructor TBGRAMemoryStreamBitmap.Create(AWidth, AHeight: integer);
@@ -727,6 +728,7 @@ begin
   FStream := TMemoryStream.Create;
   FStreamOffset:= 0;
   FStream.Size := RowSize * Height;
+  FOwnStream := true;
   SetDataPtr(PByte(FStream.Memory) + FStreamOffset);
   Fill(AColor, dmSet);
 end;
