@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
     {$IFDEF PARAM_USESSE} {$asmmode intel}
       minVal := 0;
       maxVal := 65535;

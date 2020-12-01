@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
 procedure IncAcc(var ADest: TAccumulator; ADelta: TAccumulator); inline;
 begin
   {$IFDEF PARAM_USE_INC64}

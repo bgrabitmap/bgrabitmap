@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
 {
     The original file was part of the Free Pascal run time library.
     Copyright (c) 2008 by the Free Pascal development team
