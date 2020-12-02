@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
 {
  /**************************************************************************\
                                 bgrabitmaptypes.pas
@@ -25,7 +25,7 @@ uses
 
 
 const
-  BGRABitmapVersion = 11030000;
+  BGRABitmapVersion = 11030100;
 
   function BGRABitmapVersionStr: string;
 

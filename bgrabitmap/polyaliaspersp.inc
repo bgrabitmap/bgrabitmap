@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-only (modified to allow linking)
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
 {*****************************************TEXTURE WITHOUT SHADING *********************************}
 {with shading: second part of this file}
 
