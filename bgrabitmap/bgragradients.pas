@@ -1070,6 +1070,7 @@ function CreateCyclicPerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: 
   var small,cycled,resampled: TBGRABitmap;
       p: PBGRAPixel;
       i: Integer;
+      x, y: Int64;
   begin
     if (frequencyH = 0) or (frequencyV = 0) then exit;
     small := TBGRABitmap.Create(frequencyH,frequencyV);
@@ -1085,7 +1086,9 @@ function CreateCyclicPerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: 
     cycled := small.GetPart(rect(-2,-2,small.Width+2,small.Height+2));
     cycled.ResampleFilter := ResampleFilter;
     resampled := cycled.Resample(round((cycled.Width-1)*(dest.Width/frequencyH)),round((cycled.Height-1)*(dest.Height/frequencyV)));
-    dest.BlendImage(round(-2*(dest.Width/frequencyH)),round(-2*(dest.Height/frequencyV)),resampled,boAdditive);
+    x := round(-2*(dest.Width/frequencyH));
+    y := round(-2*(dest.Height/frequencyV));
+    dest.BlendImage(x,y,resampled,boAdditive);
     resampled.Free;
     cycled.Free;
     small.Free;
