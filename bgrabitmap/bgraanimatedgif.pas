@@ -608,6 +608,7 @@ begin
     DisposeMode := ADisposeMode;
   end;
   inc(FTotalAnimationTime, ADelayMs);
+  if AIndex <= FCurrentImage then inc(FCurrentImage);
 end;
 
 function TBGRAAnimatedGif.AddFullFrame(AImage: TFPCustomImage;
@@ -662,6 +663,7 @@ procedure TBGRAAnimatedGif.DeleteFrame(AIndex: integer;
 var
   nextImage: TBGRABitmap;
   i: Integer;
+  prevCurrentImage: integer;
 begin
   CheckFrameIndex(AIndex);
 
@@ -670,12 +672,14 @@ begin
   if AEnsureNextFrameDoesNotChange and
     ((AIndex < Count-1) and (FrameDisposeMode[AIndex] <> dmErase)) then
   begin
+    prevCurrentImage := CurrentImage;
     CurrentImage := AIndex+1;
     nextImage := MemBitmap.Duplicate;
     FrameImagePos[AIndex+1] := Point(0,0);
     FrameImage[AIndex+1] := nextImage;
     FrameHasLocalPalette[AIndex+1] := true;
     FreeAndNil(nextImage);
+    CurrentImage := prevCurrentImage;
   end;
 
   dec(FTotalAnimationTime, FImages[AIndex].DelayMs);
@@ -685,6 +689,9 @@ begin
     FImages[i] := FImages[i+1];
   SetLength(FImages, Count-1);
 
+  if AIndex < CurrentImage then
+    CurrentImage := CurrentImage-1
+  else
   if (CurrentImage >= Count) then
   begin
     CurrentImage := 0;
