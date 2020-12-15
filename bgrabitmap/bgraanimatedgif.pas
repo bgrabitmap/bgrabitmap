@@ -8,7 +8,7 @@ interface
 
 uses
   BGRAClasses, SysUtils, BGRAGraphics, FPImage, BGRABitmap, BGRABitmapTypes,
-  BGRAPalette, BGRAGifFormat;
+  BGRAPalette, BGRAGifFormat{$IFDEF BGRABITMAP_USE_LCL}, ExtCtrls{$ENDIF};
 
 type
   TDisposeMode = BGRAGifFormat.TDisposeMode;
@@ -38,6 +38,10 @@ type
     FInternalVirtualScreen, FRestoreImage: TBGRABitmap;
     FImageChanged: boolean;
 
+    {$IFDEF BGRABITMAP_USE_LCL}
+    FTimer: TTimer;
+    {$ENDIF}
+
     procedure CheckFrameIndex(AIndex: integer);
     function GetAverageDelayMs: integer;
     function GetCount: integer;
@@ -47,6 +51,9 @@ type
     function GetFrameImage(AIndex: integer): TBGRABitmap;
     function GetFrameImagePos(AIndex: integer): TPoint;
     function GetTimeUntilNextImage: integer;
+    {$IFDEF BGRABITMAP_USE_LCL}
+    procedure OnTimer(Sender: TObject);
+    {$ENDIF}
     procedure Render(StretchWidth, StretchHeight: integer);
     procedure SetAspectRatio(AValue: single);
     procedure SetBackgroundColor(AValue: TColor);
@@ -78,6 +85,7 @@ type
     procedure SetTransparent({%H-}Value: boolean); override;
     procedure SetWidth({%H-}Value: integer); override;
     procedure ClearViewer; virtual;
+    procedure Changed(Sender: TObject); override;
 
   public
     EraseColor:     TColor;
@@ -471,6 +479,24 @@ begin
   end;
 end;
 
+{$IFDEF BGRABITMAP_USE_LCL}
+procedure TBGRAAnimatedGif.OnTimer(Sender: TObject);
+var
+  waitMs: Integer;
+begin
+  waitMs := TimeUntilNextImageMs;
+  if waitMs <= 0 then
+  begin
+    Changed(self);
+  end else
+  begin
+    FTimer.Enabled := false;
+    FTimer.Interval:= waitMs+5;
+    FTimer.Enabled := true;
+  end;
+end;
+{$ENDIF}
+
 constructor TBGRAAnimatedGif.Create(filenameUTF8: string);
 begin
   inherited Create;
@@ -660,7 +686,10 @@ begin
   SetLength(FImages, Count-1);
 
   if (CurrentImage >= Count) then
+  begin
     CurrentImage := 0;
+    Changed(self);
+  end;
 end;
 
 procedure TBGRAAnimatedGif.LoadFromStream(Stream: TStream);
@@ -691,6 +720,8 @@ begin
     FImages[i] := data.Images[i];
     inc(FTotalAnimationTime, FImages[i].DelayMs);
   end;
+
+  Changed(self);
 end;
 
 procedure TBGRAAnimatedGif.LoadFromResource(AFilename: string);
@@ -750,6 +781,15 @@ begin
   FImageChanged := False;
 
   FPreviousVirtualScreen := TBGRABitmap(FStretchedVirtualScreen.Duplicate);
+
+  {$IFDEF BGRABITMAP_USE_LCL}
+  FTimer.Enabled := false;
+  if Count > 1 then
+  begin
+    FTimer.Interval := TimeUntilNextImageMs + 5;
+    FTimer.Enabled := true;
+  end;
+  {$ENDIF}
 end;
 
 function TBGRAAnimatedGif.GetEmpty: boolean;
@@ -810,6 +850,14 @@ begin
   FPreviousDisposeMode := dmNone;
 end;
 
+procedure TBGRAAnimatedGif.Changed(Sender: TObject);
+begin
+  {$IFDEF BGRABITMAP_USE_LCL}
+  FTimer.Enabled := false;
+  {$ENDIF}
+  inherited Changed(Sender);
+end;
+
 procedure TBGRAAnimatedGif.SaveBackgroundOnce(Canvas: TCanvas; ARect: TRect);
 begin
   if (FBackgroundImage <> nil) and
@@ -834,15 +882,20 @@ end;
 
 procedure TBGRAAnimatedGif.Clear;
 var
-  i: integer;
+  i, prevCount: integer;
 begin
   inherited Clear;
+
+  prevCount := Count;
 
   for i := 0 to Count - 1 do
     FImages[i].Image.FreeReference;
   FImages := nil;
   LoopDone := 0;
   LoopCount := 0;
+
+  if prevCount <> 0 then
+    Changed(self);
 end;
 
 destructor TBGRAAnimatedGif.Destroy;
@@ -1146,6 +1199,11 @@ begin
   BackgroundMode := gbmSaveBackgroundOnce;
   LoopCount := 0;
   LoopDone := 0;
+  {$IFDEF BGRABITMAP_USE_LCL}
+  FTimer := TTimer.Create(nil);
+  FTimer.Enabled := false;
+  FTimer.OnTimer:=@OnTimer;
+  {$ENDIF}
 end;
 
 function TBGRAAnimatedGif.GetBitmap: TBitmap;
