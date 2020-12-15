@@ -115,6 +115,7 @@ type
     procedure ReplaceFullFrame(AIndex: integer;
                               AImage: TFPCustomImage; ADelayMs: integer;
                               AHasLocalPalette: boolean = true);
+    procedure OptimizeFrames;
 
     {TGraphic}
     procedure LoadFromStream(Stream: TStream); overload; override;
@@ -647,6 +648,92 @@ begin
   DeleteFrame(AIndex, True);
   if AIndex > 0 then FrameDisposeMode[AIndex-1] := dmErase;
   InsertFrame(AIndex, AImage, 0,0, ADelayMs, dmErase, AHasLocalPalette);
+end;
+
+procedure TBGRAAnimatedGif.OptimizeFrames;
+var
+  prevCurImage, i, y, x: Integer;
+  prevFrame, curFrame, changeFrame: TBGRABitmap;
+  scanPrev, scanNext: PBGRAPixel;
+  transparentAppear: Boolean;
+  rChange: TRect;
+begin
+  if Count <= 1 then exit;
+  prevCurImage := CurrentImage;
+  CurrentImage := 0;
+  prevFrame := MemBitmap.Duplicate;
+  for i := 1 to Count-1 do
+  begin
+    CurrentImage := i;
+    curFrame := MemBitmap.Duplicate;
+    //necessary only if transparent pixels appear
+    if FrameDisposeMode[i-1] = dmErase then
+    begin
+      transparentAppear := false;
+      for y := 0 to Height-1 do
+      begin
+        scanPrev := prevFrame.ScanLine[y];
+        scanNext := curFrame.ScanLine[y];
+        for x := 0 to Width-1 do
+        begin
+          if (scanNext^.alpha < 255) and (scanPrev^ <> scanNext^) then
+          begin
+            transparentAppear:= true;
+            break;
+          end;
+          inc(scanPrev);
+          inc(scanNext);
+        end;
+      end;
+      if not transparentAppear then
+        FrameDisposeMode[i-1] := dmKeep;
+    end;
+
+    if FrameDisposeMode[i-1] = dmKeep then
+    begin
+      changeFrame := curFrame.Duplicate;
+      for y := 0 to Height-1 do
+      begin
+        scanPrev := prevFrame.ScanLine[y];
+        scanNext := changeFrame.ScanLine[y];
+        for x := 0 to Width-1 do
+        begin
+          if scanPrev^ = scanNext^ then
+            scanNext^ := BGRAPixelTransparent;
+          inc(scanPrev);
+          inc(scanNext);
+        end;
+      end;
+      rChange := changeFrame.GetImageBounds;
+      FImages[i].Image.FreeReference;
+      if rChange.IsEmpty then
+        FImages[i].Image := TBGRABitmap.Create
+      else
+        FImages[i].Image := changeFrame.GetPart(rChange);
+      FImages[i].Position := rChange.TopLeft;
+      changeFrame.Free;
+    end else
+    if FrameDisposeMode[i-1] = dmErase then
+    begin
+      rChange := curFrame.GetImageBounds;
+      if rChange <> RectWithSize(FImages[i].Position.x, FImages[i].Position.y,
+         FImages[i].Image.Width, FImages[i].Image.Height) then
+      begin
+        FImages[i].Image.FreeReference;
+        if rChange.IsEmpty then
+          FImages[i].Image := TBGRABitmap.Create
+        else
+          FImages[i].Image := curFrame.GetPart(rChange);
+        FImages[i].Position := rChange.TopLeft;
+      end;
+    end;
+
+    prevFrame.Free;
+    prevFrame := curFrame;
+    curFrame := nil;
+  end;
+  prevFrame.Free;
+  CurrentImage := prevCurImage;
 end;
 
 procedure TBGRAAnimatedGif.DeleteFrame(AIndex: integer;
