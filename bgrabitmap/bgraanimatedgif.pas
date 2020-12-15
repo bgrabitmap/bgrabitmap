@@ -86,6 +86,7 @@ type
     procedure SetWidth({%H-}Value: integer); override;
     procedure ClearViewer; virtual;
     procedure Changed(Sender: TObject); override;
+    procedure EnsureNextFrameRec(AIndex: integer);
 
   public
     EraseColor:     TColor;
@@ -623,7 +624,6 @@ end;
 
 procedure TBGRAAnimatedGif.InsertFullFrame(AIndex: integer;
   AImage: TFPCustomImage; ADelayMs: integer; AHasLocalPalette: boolean);
-var nextImage: TBGRABitmap;
 begin
   if (AIndex < 0) or (AIndex > Count) then
     raise ERangeError.Create('Index out of bounds');
@@ -634,17 +634,8 @@ begin
   begin
     //if previous image did not clear up, ensure that
     //next image will stay the same
-    if (AIndex > 0) and (FrameDisposeMode[AIndex-1] <> dmErase) then
-    begin
-      CurrentImage := AIndex;
-      nextImage := MemBitmap.Duplicate;
-      FrameImagePos[AIndex] := Point(0,0);
-      FrameImage[AIndex] := nextImage;
-      FrameHasLocalPalette[AIndex] := true;
-      FreeAndNil(nextImage);
-
-      FrameDisposeMode[AIndex-1] := dmErase;
-    end;
+    if AIndex > 0 then
+      EnsureNextFrameRec(AIndex-1);
 
     InsertFrame(AIndex, AImage, 0,0, ADelayMs, dmErase, AHasLocalPalette);
   end;
@@ -661,26 +652,14 @@ end;
 procedure TBGRAAnimatedGif.DeleteFrame(AIndex: integer;
   AEnsureNextFrameDoesNotChange: boolean);
 var
-  nextImage: TBGRABitmap;
   i: Integer;
-  prevCurrentImage: integer;
 begin
   CheckFrameIndex(AIndex);
 
   //if this frame did not clear up, ensure that
   //next image will stay the same
-  if AEnsureNextFrameDoesNotChange and
-    ((AIndex < Count-1) and (FrameDisposeMode[AIndex] <> dmErase)) then
-  begin
-    prevCurrentImage := CurrentImage;
-    CurrentImage := AIndex+1;
-    nextImage := MemBitmap.Duplicate;
-    FrameImagePos[AIndex+1] := Point(0,0);
-    FrameImage[AIndex+1] := nextImage;
-    FrameHasLocalPalette[AIndex+1] := true;
-    FreeAndNil(nextImage);
-    CurrentImage := prevCurrentImage;
-  end;
+  if AEnsureNextFrameDoesNotChange then
+    EnsureNextFrameRec(AIndex);
 
   dec(FTotalAnimationTime, FImages[AIndex].DelayMs);
 
@@ -863,6 +842,26 @@ begin
   FTimer.Enabled := false;
   {$ENDIF}
   inherited Changed(Sender);
+end;
+
+procedure TBGRAAnimatedGif.EnsureNextFrameRec(AIndex: integer);
+var
+  nextImage: TBGRABitmap;
+  prevCurrentImage: integer;
+begin
+  if (AIndex < Count-1) and (FrameDisposeMode[AIndex] <> dmErase) then
+  begin
+    prevCurrentImage := CurrentImage;
+    CurrentImage := AIndex+1;
+    nextImage := MemBitmap.Duplicate;
+    FrameImagePos[AIndex+1] := Point(0,0);
+    FrameImage[AIndex+1] := nextImage;
+    FrameHasLocalPalette[AIndex+1] := true;
+    FreeAndNil(nextImage);
+    EnsureNextFrameRec(AIndex+1);
+    FrameDisposeMode[AIndex] := dmErase;
+    CurrentImage := prevCurrentImage;
+  end;
 end;
 
 procedure TBGRAAnimatedGif.SaveBackgroundOnce(Canvas: TCanvas; ARect: TRect);
