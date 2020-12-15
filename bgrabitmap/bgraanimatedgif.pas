@@ -90,6 +90,7 @@ type
     constructor Create(stream: TStream; AMaxImageCount: integer); overload;
     constructor Create; overload; override;
     function Duplicate: TBGRAAnimatedGif;
+    procedure Assign(ASource: TPersistent); override;
     function AddFrame(AImage: TFPCustomImage; X,Y: integer; ADelayMs: integer;
       ADisposeMode: TDisposeMode = dmErase; AHasLocalPalette: boolean = false) : integer;
     procedure InsertFrame(AIndex: integer; AImage: TFPCustomImage; X,Y: integer; ADelayMs: integer;
@@ -512,6 +513,35 @@ begin
   Result.FWidth  := FWidth;
   Result.FHeight := FHeight;
   Result.FBackgroundColor := FBackgroundColor;
+end;
+
+procedure TBGRAAnimatedGif.Assign(ASource: TPersistent);
+var data: TGIFData;
+  i: integer;
+  src: TBGRAAnimatedGif;
+begin
+  if ASource is TBGRAAnimatedGif then
+  begin
+    src := TBGRAAnimatedGif(ASource);
+    ClearViewer;
+    Clear;
+    FWidth  := src.Width;
+    FHeight := src.Height;
+    FBackgroundColor := src.BackgroundColor;
+    FAspectRatio:= src.AspectRatio;
+    LoopDone := 0;
+    LoopCount := src.LoopCount;
+
+    SetLength(FImages, src.Count);
+    FTotalAnimationTime:= 0;
+    for i := 0 to src.Count-1 do
+    begin
+      FImages[i] := src.FImages[i];
+      FImages[i].Image := FImages[i].Image.Duplicate;
+      inc(FTotalAnimationTime, FImages[i].DelayMs);
+    end;
+  end else
+    inherited Assign(ASource);
 end;
 
 function TBGRAAnimatedGif.AddFrame(AImage: TFPCustomImage; X, Y: integer;
