@@ -544,14 +544,13 @@ begin
 end;
 
 procedure TBGRAAnimatedGif.Assign(ASource: TPersistent);
-var data: TGIFData;
+var
   i: integer;
   src: TBGRAAnimatedGif;
 begin
   if ASource is TBGRAAnimatedGif then
   begin
     src := TBGRAAnimatedGif(ASource);
-    ClearViewer;
     Clear;
     FWidth  := src.Width;
     FHeight := src.Height;
@@ -777,7 +776,6 @@ var data: TGIFData;
 begin
   data := GIFLoadFromStream(Stream, AMaxImageCount);
 
-  ClearViewer;
   Clear;
   FWidth  := data.Width;
   FHeight := data.Height;
@@ -986,6 +984,7 @@ begin
   FImages := nil;
   LoopDone := 0;
   LoopCount := 0;
+  ClearViewer;
 
   if prevCount <> 0 then
     Changed(self);
