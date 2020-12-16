@@ -87,6 +87,7 @@ type
     procedure ClearViewer; virtual;
     procedure Changed(Sender: TObject); override;
     procedure EnsureNextFrameRec(AIndex: integer);
+    procedure AssignTo(Dest: TPersistent); override;
 
   public
     EraseColor:     TColor;
@@ -547,6 +548,7 @@ procedure TBGRAAnimatedGif.Assign(ASource: TPersistent);
 var
   i: integer;
   src: TBGRAAnimatedGif;
+  img: TFPCustomImage;
 begin
   if ASource is TBGRAAnimatedGif then
   begin
@@ -567,6 +569,13 @@ begin
       FImages[i].Image := FImages[i].Image.Duplicate;
       inc(FTotalAnimationTime, FImages[i].DelayMs);
     end;
+  end else
+  if ASource is TFPCustomImage then
+  begin
+    Clear;
+    img := TFPCustomImage(ASource);
+    SetSize(img.Width, img.Height);
+    AddFrame(img, 0, 0, 100, dmKeep, False);
   end else
     inherited Assign(ASource);
 end;
@@ -947,6 +956,33 @@ begin
     FrameDisposeMode[AIndex] := dmErase;
     CurrentImage := prevCurrentImage;
   end;
+end;
+
+procedure TBGRAAnimatedGif.AssignTo(Dest: TPersistent);
+var
+  img: TFPCustomImage;
+  p: PBGRAPixel;
+  yb, xb: Integer;
+begin
+  if Dest is TBitmap then
+    Dest.Assign(Bitmap)
+  else if Dest is TBGRACustomBitmap then
+    Dest.Assign(MemBitmap)
+  else if Dest is TFPCustomImage then
+  begin
+    img := TFPCustomImage(Dest);
+    img.SetSize(Width, Height);
+    for yb := 0 to Height-1 do
+    begin
+      p := MemBitmap.ScanLine[yb];
+      for xb := 0 to Width-1 do
+      begin
+        img.Colors[xb,yb] := p^.ToFPColor;
+        inc(p);
+      end;
+    end;
+  end else
+    inherited AssignTo(Dest);
 end;
 
 procedure TBGRAAnimatedGif.SaveBackgroundOnce(Canvas: TCanvas; ARect: TRect);
