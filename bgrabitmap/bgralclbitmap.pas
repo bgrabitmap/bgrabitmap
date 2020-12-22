@@ -944,6 +944,13 @@ var
   p: PBGRAPixel;
   bmpHandle, maskHandle: HBitmap;
 begin
+  {$IFDEF LINUX}
+  if (BackgroundColor = clNone) and not HasSemiTransparentPixels then
+  begin
+    BackgroundColor := clSilver;
+    AMasked := true;
+  end;
+  {$ENDIF}
   if BackgroundColor = clNone then
   begin
     result := TBitmap.Create;
