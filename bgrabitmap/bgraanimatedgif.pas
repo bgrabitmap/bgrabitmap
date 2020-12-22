@@ -961,9 +961,24 @@ end;
 procedure TBGRAAnimatedGif.AssignTo(Dest: TPersistent);
 
   procedure AssignToBitmap;
+  {$IFDEF WINDOWS}
+  var
+    stream: TStream;
+  begin
+    stream := TMemoryStream.Create;
+    try
+      Bitmap.SaveToStream(stream);
+      stream.Position:= 0;
+      TBitmap(Dest).LoadFromStream(stream);
+    finally
+      stream.Free;
+    end;
+  end;
+  {$ELSE}
   var
     copy: TBitmap;
   begin
+
     copy := MemBitmap.MakeBitmapCopy(clSilver, true);
     try
       TBitmap(Dest).Assign(copy);
@@ -971,6 +986,7 @@ procedure TBGRAAnimatedGif.AssignTo(Dest: TPersistent);
       copy.Free;
     end;
   end;
+  {$ENDIF}
 
   procedure AssignToFPImage;
   var
