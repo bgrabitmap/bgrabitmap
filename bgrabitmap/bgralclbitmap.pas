@@ -955,7 +955,7 @@ begin
         p := ScanLine[y];
         for x := 0 to Width-1 do
         begin
-          if p^.alpha < 128 then
+          if p^.alpha >= 128 then
             maskImg.Colors[x,y] := colBlack
           else
             maskImg.Colors[x,y] := colWhite;
