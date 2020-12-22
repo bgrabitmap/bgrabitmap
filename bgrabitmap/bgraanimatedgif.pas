@@ -959,29 +959,48 @@ begin
 end;
 
 procedure TBGRAAnimatedGif.AssignTo(Dest: TPersistent);
-var
-  img: TFPCustomImage;
-  p: PBGRAPixel;
-  yb, xb: Integer;
-begin
-  if Dest is TBitmap then
-    Dest.Assign(Bitmap)
-  else if Dest is TBGRACustomBitmap then
-    Dest.Assign(MemBitmap)
-  else if Dest is TFPCustomImage then
+
+  procedure AssignToBitmap;
+  var
+    copy: TBitmap;
   begin
+    copy := MemBitmap.MakeBitmapCopy(clSilver, true);
+    try
+      TBitmap(Dest).Assign(copy);
+    finally
+      copy.Free;
+    end;
+  end;
+
+  procedure AssignToFPImage;
+  var
+    img: TFPCustomImage;
+    p: PBGRAPixel;
+    yb, xb: Integer;
+    bgra: TBGRABitmap;
+  begin
+    bgra := MemBitmap;
     img := TFPCustomImage(Dest);
-    img.SetSize(Width, Height);
-    for yb := 0 to Height-1 do
+    img.SetSize(bgra.Width, bgra.Height);
+    for yb := 0 to bgra.Height-1 do
     begin
-      p := MemBitmap.ScanLine[yb];
-      for xb := 0 to Width-1 do
+      p := bgra.ScanLine[yb];
+      for xb := 0 to bgra.Width-1 do
       begin
         img.Colors[xb,yb] := p^.ToFPColor;
         inc(p);
       end;
     end;
-  end else
+  end;
+
+begin
+  if Dest is TBitmap then
+    AssignToBitmap
+  else if Dest is TBGRACustomBitmap then
+    Dest.Assign(MemBitmap)
+  else if Dest is TFPCustomImage then
+    AssignToFPImage
+  else
     inherited AssignTo(Dest);
 end;
 

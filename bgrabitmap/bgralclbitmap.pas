@@ -30,6 +30,7 @@ type
     procedure DataDrawOpaque(ACanvas: TCanvas; ARect: TRect; AData: Pointer;
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); override;
+    function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean = False): TBitmap; override;
     procedure LoadFromDevice({%H-}DC: HDC); override;
     procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override;
     procedure TakeScreenshotOfPrimaryMonitor; override;
@@ -68,7 +69,7 @@ type
 
 implementation
 
-uses BGRAText, LCLType, LCLIntf, FPimage;
+uses BGRAText, LCLType, LCLIntf, FPimage, IntfGraphics;
 
 { TBitmapTracker }
 
@@ -934,6 +935,40 @@ procedure TBGRALCLBitmap.GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer
 begin
   DiscardBitmapChange;
   GetImageFromCanvasImplementation(self,CanvasSource,x,y);
+end;
+
+function TBGRALCLBitmap.MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean): TBitmap;
+var
+  maskImg: TLazIntfImage;
+  y, x: Integer;
+  p: PBGRAPixel;
+  bmpHandle, maskHandle: HBitmap;
+begin
+  Result:=inherited MakeBitmapCopy(BackgroundColor, AMasked);
+  if AMasked and HasTransparentPixels then
+  begin
+    maskImg := TLazIntfImage.Create(Width, Height, [riqfMono]);
+    try
+      maskImg.CreateData;
+      for y := 0 to Height-1 do
+      begin
+        p := ScanLine[y];
+        for x := 0 to Width-1 do
+        begin
+          if p^.alpha < 128 then
+            maskImg.Colors[x,y] := colBlack
+          else
+            maskImg.Colors[x,y] := colWhite;
+          inc(p);
+        end;
+      end;
+      maskImg.CreateBitmaps(bmpHandle, maskHandle, true);
+      result.Masked := true;
+      result.MaskHandle:= bmpHandle;
+    finally
+      maskImg.Free;
+    end;
+  end;
 end;
 
 procedure TBGRALCLBitmap.LoadFromDevice(DC: HDC);
