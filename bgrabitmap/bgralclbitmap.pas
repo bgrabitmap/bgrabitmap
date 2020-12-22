@@ -31,6 +31,7 @@ type
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); override;
     function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean = False): TBitmap; override;
+    procedure AssignToBitmap(ADestination: TBitmap);
     procedure LoadFromDevice({%H-}DC: HDC); override;
     procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override;
     procedure TakeScreenshotOfPrimaryMonitor; override;
@@ -930,8 +931,7 @@ begin
   DataDrawOpaqueImplementation(ACanvas, ARect, AData, ALineOrder, AWidth, AHeight);
 end;
 
-procedure TBGRALCLBitmap.GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer
-  );
+procedure TBGRALCLBitmap.GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer);
 begin
   DiscardBitmapChange;
   GetImageFromCanvasImplementation(self,CanvasSource,x,y);
@@ -944,30 +944,51 @@ var
   p: PBGRAPixel;
   bmpHandle, maskHandle: HBitmap;
 begin
-  Result:=inherited MakeBitmapCopy(BackgroundColor, AMasked);
-  if AMasked and HasTransparentPixels then
+  if BackgroundColor = clNone then
   begin
-    maskImg := TLazIntfImage.Create(Width, Height, [riqfMono]);
-    try
-      maskImg.CreateData;
-      for y := 0 to Height-1 do
-      begin
-        p := ScanLine[y];
-        for x := 0 to Width-1 do
+    result := TBitmap.Create;
+    AssignToBitmap(result);
+  end else
+  begin
+    Result:=inherited MakeBitmapCopy(BackgroundColor, AMasked);
+    if AMasked and HasTransparentPixels then
+    begin
+      maskImg := TLazIntfImage.Create(Width, Height, [riqfMono]);
+      try
+        maskImg.CreateData;
+        for y := 0 to Height-1 do
         begin
-          if p^.alpha >= 128 then
-            maskImg.Colors[x,y] := colBlack
-          else
-            maskImg.Colors[x,y] := colWhite;
-          inc(p);
+          p := ScanLine[y];
+          for x := 0 to Width-1 do
+          begin
+            if p^.alpha >= 128 then
+              maskImg.Colors[x,y] := colBlack
+            else
+              maskImg.Colors[x,y] := colWhite;
+            inc(p);
+          end;
         end;
+        maskImg.CreateBitmaps(bmpHandle, maskHandle, true);
+        result.Masked := true;
+        result.MaskHandle:= bmpHandle;
+      finally
+        maskImg.Free;
       end;
-      maskImg.CreateBitmaps(bmpHandle, maskHandle, true);
-      result.Masked := true;
-      result.MaskHandle:= bmpHandle;
-    finally
-      maskImg.Free;
     end;
+  end;
+end;
+
+procedure TBGRALCLBitmap.AssignToBitmap(ADestination: TBitmap);
+var
+  stream: TStream;
+begin
+  stream := TMemoryStream.Create;
+  try
+    Bitmap.SaveToStream(stream);
+    stream.Position:= 0;
+    ADestination.LoadFromStream(stream);
+  finally
+    stream.Free;
   end;
 end;
 

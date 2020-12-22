@@ -138,6 +138,7 @@ type
     procedure Show(Canvas: TCanvas; ARect: TRect); overload;
     procedure Update(Canvas: TCanvas; ARect: TRect); overload;
     procedure Hide(Canvas: TCanvas; ARect: TRect); overload;
+    function MakeBitmapCopy(ABackground: TColor = clNone): TBitmap;
 
     property BackgroundColor: TColor Read FBackgroundColor write SetBackgroundColor;
     property Count: integer Read GetCount;
@@ -962,23 +963,13 @@ procedure TBGRAAnimatedGif.AssignTo(Dest: TPersistent);
 
   procedure AssignToBitmap;
   {$IFDEF WINDOWS}
-  var
-    stream: TStream;
   begin
-    stream := TMemoryStream.Create;
-    try
-      Bitmap.SaveToStream(stream);
-      stream.Position:= 0;
-      TBitmap(Dest).LoadFromStream(stream);
-    finally
-      stream.Free;
-    end;
+    MemBitmap.AssignToBitmap(TBitmap(Dest));
   end;
   {$ELSE}
   var
     copy: TBitmap;
   begin
-
     copy := MemBitmap.MakeBitmapCopy(clSilver, true);
     try
       TBitmap(Dest).Assign(copy);
@@ -1288,6 +1279,11 @@ begin
       end;
     end;
   end;
+end;
+
+function TBGRAAnimatedGif.MakeBitmapCopy(ABackground: TColor): TBitmap;
+begin
+  result := MemBitmap.MakeBitmapCopy(ABackground);
 end;
 
 procedure TBGRAAnimatedGif.UpdateEraseBackground(Canvas: TCanvas;
