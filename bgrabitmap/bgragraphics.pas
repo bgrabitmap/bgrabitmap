@@ -334,12 +334,21 @@ type
   TFontQuality = (fqDefault, fqDraft, fqProof, fqNonAntialiased, fqAntialiased, fqCleartype, fqCleartypeNatural);
   {$ENDIF}
 
+{$IFDEF BGRABITMAP_USE_FPCANVAS}
+{$DEFINE INCLUDE_INTERFACE}
+{$i bgrafpcanvas.inc}
+{$ENDIF}
+
+type
   {$IFNDEF TCanvas}
   { TCanvas }
   {* A surface on which to draw }
   TCanvas = class
+  private
+    procedure SetFont(AValue: TFont);
   protected
     FCanvas: TGUICanvas;
+    FFont: TFont;
   public
     constructor Create(ACanvas: TGUICanvas);
     {** Draw an image with top-left corner at (''x'',''y'') }
@@ -347,6 +356,7 @@ type
     {** Draw and stretch an image within the rectangle ''ARect'' }
     procedure StretchDraw(ARect: TRect; AImage: TGraphic);
     property GUICanvas: TGUICanvas read FCanvas;
+    property Font: TFont read FFont write SetFont;
   end;
   {$ENDIF}
 
@@ -363,6 +373,7 @@ type
     procedure SetHeight(Value: Integer); virtual; abstract;
     procedure SetWidth(Value: Integer); virtual; abstract;
     function GetMimeType: string; virtual;
+    procedure Changed(Sender: TObject); virtual;
   public
     constructor Create; virtual;
     {** Load the content from a given file }
@@ -406,7 +417,6 @@ type
   protected
     FRawImage: TRawImage;
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
-    procedure Changed(Sender: TObject); virtual;
     function GetHeight: Integer; override;
     function GetWidth: Integer; override;
     procedure SetHeight(Value: Integer); override;
@@ -418,6 +428,7 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
+    procedure Assign(Source: TPersistent); override;
     procedure LoadFromStream({%H-}Stream: TStream); override;
     procedure SaveToStream({%H-}Stream: TStream); override;
     {** Width of the bitmap in pixels }
@@ -437,11 +448,6 @@ type
 function MulDiv(nNumber, nNumerator, nDenominator: Integer): Integer;
 {* Round the number using math convention }
 function MathRound(AValue: ValReal): Int64; inline;
-
-{$IFDEF BGRABITMAP_USE_FPCANVAS}
-{$DEFINE INCLUDE_INTERFACE}
-{$i bgrafpcanvas.inc}
-{$ENDIF}
 
 implementation
 
@@ -536,6 +542,11 @@ begin
   result := '';
 end;
 
+procedure TGraphic.Changed(Sender: TObject);
+begin
+  //nothing
+end;
+
 constructor TGraphic.Create;
 begin
   //nothing
@@ -578,9 +589,16 @@ end;
 {$IFNDEF TCanvas}
 { TCanvas }
 
+procedure TCanvas.SetFont(AValue: TFont);
+begin
+  if FFont=AValue then Exit;
+  FFont.Assign(AValue);
+end;
+
 constructor TCanvas.Create(ACanvas: TGUICanvas);
 begin
   FCanvas := ACanvas;
+  FFont := TFont.Create;
 end;
 
 procedure TCanvas.Draw(x, y: integer; AImage: TGraphic);
@@ -649,11 +667,6 @@ begin
   Result:= 'image/bmp';
 end;
 
-procedure TBitmap.Changed(Sender: TObject);
-begin
-  //nothing
-end;
-
 procedure TBitmap.LoadFromStream(Stream: TStream);
 begin
   raise exception.Create('Not implemented');
@@ -711,6 +724,19 @@ begin
   FRawImage.Free;
   inherited Destroy;
 end;
+
+procedure TBitmap.Assign(Source: TPersistent);
+var
+  src: TBitmap;
+begin
+  if Source is TBitmap then
+  begin
+    src := TBitmap(Source);
+    RawImage.Assign(src.RawImage);
+  end else
+    inherited Assign(Source);
+end;
+
 {$ENDIF}
 
 {$IFDEF BGRABITMAP_USE_FPCANVAS}

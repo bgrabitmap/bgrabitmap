@@ -29,6 +29,7 @@ type
     procedure NotAvailable;
   public
     destructor Destroy; override;
+    procedure AssignToBitmap(ADestination: TBitmap);
     class procedure AddFreeTypeFontFolder(ADirectory: string; AUTF8: boolean = false); static;
     class procedure AddFreeTypeFontFile(AFilename: string; AUTF8: boolean = false); static;
     procedure Draw(ACanvas: TCanvas; x, y: integer; {%H-}Opaque: boolean=True); override;
@@ -97,6 +98,11 @@ destructor TBGRANoGUIBitmap.Destroy;
 begin
   FreeAndNil(FPseudoCanvas);
   inherited Destroy;
+end;
+
+procedure TBGRANoGUIBitmap.AssignToBitmap(ADestination: TBitmap);
+begin
+  ADestination.RawImage.Assign(self);
 end;
 
 class procedure TBGRANoGUIBitmap.AddFreeTypeFontFolder(ADirectory: string; AUTF8: boolean);
