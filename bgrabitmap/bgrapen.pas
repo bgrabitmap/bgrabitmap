@@ -717,7 +717,11 @@ begin
       (abs(pts[0].y-pts[nbPts-1].y)<=oneOver512) then dec(nbPts);
   if (plCycle in options) and (nbPts > 2) then
   begin
-    if (pts[nbPts-1] <> pts[0]) then
+    if (abs(pts[0].x-pts[nbPts-1].x)<=oneOver512) and
+       (abs(pts[0].y-pts[nbPts-1].y)<=oneOver512) then
+    begin
+      pts[nbPts-1] := pts[0];
+    end else
     begin
       pts[nbPts] := pts[0];
       inc(nbPts);
