@@ -314,8 +314,8 @@ type
         of the hole in the opposite order }
     fmWinding);
 
-type
   {$IFNDEF TFontStyle}
+type
   {* Available font styles }
   TFontStyle = (
     {** Font is bold }
@@ -330,6 +330,7 @@ type
   TFontStyles = set of TFontStyle;
   {$ENDIF}
   {$IFNDEF TFontQuality}
+type
   {* Quality to use when font is rendered by the system }
   TFontQuality = (fqDefault, fqDraft, fqProof, fqNonAntialiased, fqAntialiased, fqCleartype, fqCleartypeNatural);
   {$ENDIF}
