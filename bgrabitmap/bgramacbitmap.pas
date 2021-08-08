@@ -6,7 +6,8 @@ unit BGRAMacBitmap;
 interface
 
 uses
-  BGRAClasses, SysUtils, BGRALCLBitmap, BGRAGraphics, BGRABitmapTypes;
+  BGRAClasses, SysUtils, BGRALCLBitmap, BGRAGraphics, BGRABitmapTypes,
+  BGRADefaultBitmap;
 
 type
 
@@ -15,6 +16,7 @@ type
   TBGRAMacBitmap = class(TBGRALCLBitmap)
      procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
        ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
+     function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean=False): TBitmap; override;
   end;
 
 implementation
@@ -78,6 +80,46 @@ procedure TBGRAMacBitmap.DataDrawOpaque(ACanvas: TCanvas; Rect: TRect;
   AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer);
 begin
   DataDrawOpaqueImplementation(ACanvas, Rect, AData, ALineOrder, AWidth, AHeight);
+end;
+
+function TBGRAMacBitmap.MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean): TBitmap;
+var
+  temp: TBGRADefaultBitmap;
+  x, y: Integer;
+  psrc, pdest: PBGRAPixel;
+begin
+  if not AMasked or not HasTransparentPixels then
+     Result:=inherited MakeBitmapCopy(BackgroundColor, AMasked)
+  else
+  begin
+    if not HasSemiTransparentPixels then
+    begin
+      result := TBitmap.Create;
+      result.Assign(Bitmap);
+    end else
+    begin
+      temp := NewBitmap(Width, Height, ColorToBGRA(BackgroundColor));
+      try
+        temp.PutImage(0, 0, self, dmDrawWithTransparency);
+        for y := 0 to Height-1 do
+        begin
+          psrc := ScanLine[y];
+          pdest := temp.ScanLine[y];
+          for x := 0 to Width-1 do
+          begin
+            if psrc^.alpha < 128 then
+               pdest^ := BGRAPixelTransparent;
+            inc(psrc);
+            inc(pdest);
+          end;
+        end;
+        result := TBitmap.Create;
+        result.Assign(temp.Bitmap);
+      finally
+        temp.Free;
+      end;
+    end;
+  end;
 end;
 
 end.

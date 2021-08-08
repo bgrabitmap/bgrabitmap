@@ -580,7 +580,7 @@ type
     procedure BlendImageOver(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; override;
 
     function GetPtrBitmap(Top,Bottom: Integer): TBGRACustomBitmap; override;
-    function MakeBitmapCopy(BackgroundColor: TColor): TBitmap; override;
+    function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean = False): TBitmap; override;
 
     function Resample(newWidth, newHeight: integer;
       mode: TResampleMode = rmFineResample): TBGRADefaultBitmap; override;
@@ -4448,13 +4448,18 @@ end;
 
 { Make a copy of the transparent bitmap to a TBitmap with a background color
   instead of transparency }
-function TBGRADefaultBitmap.MakeBitmapCopy(BackgroundColor: TColor): TBitmap;
+function TBGRADefaultBitmap.MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean): TBitmap;
 var
   opaqueCopy: TBGRACustomBitmap;
 begin
   Result     := TBitmap.Create;
   Result.Width := Width;
   Result.Height := Height;
+  if not HasTransparentPixels then
+  begin
+    Draw(Result.Canvas, 0,0);
+    exit;
+  end;
   opaqueCopy := NewBitmap(Width, Height);
   opaqueCopy.Fill(BackgroundColor);
   opaqueCopy.PutImage(0, 0, self, dmDrawWithTransparency);

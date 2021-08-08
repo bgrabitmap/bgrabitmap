@@ -199,9 +199,9 @@ var
                         end;
   FontPixelMetricCount: integer;
   
-{$IFDEF BGRABITMAP_USE_MSEGUI}
+{$IF defined(BGRABITMAP_USE_MSEGUI)}
 {$i bgramsegui_text.inc}
-{$ELSE}
+{$ELSEIF defined(BGRABITMAP_USE_LCL)}
 procedure BitmapTextOut(ABitmap: TBitmap; ACoord: TPoint; AText: string);
 begin
   ABitmap.Canvas.Brush.Style := bsClear;
@@ -259,6 +259,31 @@ begin
   ABitmap.Canvas.Pen.Style := psClear;
   ABitmap.Canvas.FillRect(ARect);
 end;
+{$ELSE}
+procedure BitmapTextOut(ABitmap: TBitmap; ACoord: TPoint; AText: string);
+begin raise exception.Create('Not implemented') end;
+
+procedure BitmapTextOutAngle(ABitmap: TBitmap; ACoord: TPoint; AText: string; AOrientation: integer);
+begin raise exception.Create('Not implemented') end;
+
+procedure BitmapTextRect(ABitmap: TBitmap; ARect: TRect; ACoord: TPoint;
+  AText: string; const AStyle: TTextStyle);
+begin raise exception.Create('Not implemented') end;
+
+function BitmapTextExtent(ABitmap: TBitmap; AText: string): TSize;
+begin raise exception.Create('Not implemented') end;
+
+function BitmapTextExtentAngle(ABitmap: TBitmap; AText: string; AOrientation: integer): TSize;
+begin raise exception.Create('Not implemented') end;
+
+function BitmapTextFitInfo(ABitmap: TBitmap; AText: string; AMaxWidth: integer): integer;
+begin raise exception.Create('Not implemented') end;
+
+function BitmapTextFitInfoAngle(ABitmap: TBitmap; AText: string; AMaxWidth: integer; AOrientation: integer): integer;
+begin raise exception.Create('Not implemented') end;
+
+procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
+begin raise exception.Create('Not implemented') end;
 {$ENDIF}
 
 procedure ComputeFontVerticalBounds(text: string; font: TFont; out top, bottom, totalHeight: integer);
