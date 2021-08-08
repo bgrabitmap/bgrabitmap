@@ -1,0 +1,31 @@
+object mainfo: tmainfo
+  bounds_x = 634
+  bounds_y = 219
+  bounds_cx = 420
+  bounds_cy = 420
+  bounds_cxmin = 120
+  bounds_cymin = 120
+  container.frame.localprops = []
+  container.frame.localprops1 = []
+  container.bounds = (
+    0
+    0
+    420
+    420
+  )
+  caption = 'Fractal Tree by Lainz'
+  windowopacity = -Inf
+  moduleclassname = 'tmainform'
+  object tpaintbox1: tpaintbox
+    optionswidget = [ow_mousefocus, ow_tabfocus, ow_arrowfocus, ow_mousewheel, ow_destroywidgets]
+    color = -1610612712
+    frame.localprops = []
+    frame.localprops1 = []
+    onpaint = tpaintbox1_onpaint
+    bounds_x = -6
+    bounds_y = 2
+    bounds_cx = 424
+    bounds_cy = 416
+    anchors = [an_left, an_top, an_right, an_bottom]
+  end
+end
