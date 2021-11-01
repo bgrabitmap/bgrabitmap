@@ -58,6 +58,18 @@ implementation
 
 uses process;
 
+function FindBinPath(AFilename: string): string;
+const
+  BinPaths: array[0..5] of string =
+  ('/usr/local/sbin','/usr/local/bin','/usr/sbin','/usr/bin','/sbin','/bin');
+var i: integer;
+begin
+  for i := 0 to high(BinPaths) do
+    If FileExists(BinPaths[i] + '/' + AFilename) then
+      exit(BinPaths[i] + '/' + AFilename);
+  exit(AFilename);
+end;
+
 function FindLinuxLibrary(ALinkerName: string; AMinimumVersion: integer): string;
 const
   OpenBracket = ' (';
@@ -71,7 +83,7 @@ var
 begin
   result := '';
   maxVersionInt := AMinimumVersion-1;
-  RunCommand('ldconfig', ['-p'], dataText, []);
+  RunCommand(FindBinPath('ldconfig'), ['-p'], dataText, []);
   dataList := TStringList.Create;
   dataList.Text := dataText;
   flagList := TStringList.Create;
