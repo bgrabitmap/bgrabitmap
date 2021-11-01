@@ -1044,16 +1044,22 @@ procedure TBGRALCLBitmap.TakeScreenshotOfPrimaryMonitor;
 var primaryDC: THandle;
 begin
   primaryDC := LCLIntf.GetDC(0);
-  LoadFromDevice(primaryDC);
-  LCLIntf.ReleaseDC(0, primaryDC);
+  try
+    LoadFromDevice(primaryDC);
+  finally
+    LCLIntf.ReleaseDC(0, primaryDC);
+  end;
 end;
 
 procedure TBGRALCLBitmap.TakeScreenshot(ARect: TRect);
 var primaryDC: THandle;
 begin
   primaryDC := LCLIntf.GetDC(0);
-  LoadFromDevice(primaryDC, ARect);
-  LCLIntf.ReleaseDC(0, primaryDC);
+  try
+    LoadFromDevice(primaryDC, ARect);
+  finally
+    LCLIntf.ReleaseDC(0, primaryDC);
+  end;
 end;
 
 end.
