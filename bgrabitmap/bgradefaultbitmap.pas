@@ -179,8 +179,10 @@ type
 
     {** Creates an image by copying the content of a ''TFPCustomImage'' }
     constructor Create(AFPImage: TFPCustomImage); overload; override;
-    {** Creates an image by copying the content of a ''TBitmap'' }
-    constructor Create(ABitmap: TBitmap; AUseTransparent: boolean = true); overload; override;
+    {** Creates an image by copying the content of a ''TBitmap'', apply transparent color if specified and bitmap is masked }
+    constructor Create(ABitmap: TBitmap); overload; override;
+    {** Creates an image by copying the content of a ''TBitmap'', enforce/disable use of transparent color }
+    constructor Create(ABitmap: TBitmap; AUseTransparent: boolean); overload; override;
 
     {** Creates an image by loading its content from the file ''AFilename''.
         The encoding of the string is the default one for the operating system.
@@ -1032,6 +1034,12 @@ begin
   Assign(AFPImage);
 end;
 
+constructor TBGRADefaultBitmap.Create(ABitmap: TBitmap);
+begin
+  inherited Create;
+  Assign(ABitmap, ABitmap.Masked and (ABitmap.TransparentMode = tmFixed));
+end;
+
 { Creates an image of dimensions AWidth and AHeight and filled with transparent pixels. }
 constructor TBGRADefaultBitmap.Create(ABitmap: TBitmap; AUseTransparent: boolean);
 begin
@@ -1189,7 +1197,7 @@ var
   transpColor: TBGRAPixel;
 begin
   Assign(Source);
-  if AUseTransparent and TBitmap(Source).Transparent then
+  if AUseTransparent then
   begin
     if TBitmap(Source).TransparentMode = tmFixed then
       transpColor := ColorToBGRA(TBitmap(Source).TransparentColor)

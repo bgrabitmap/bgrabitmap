@@ -217,7 +217,8 @@ type
 
   public
      constructor Create(AFPImage: TFPCustomImage); overload; virtual; abstract;
-     constructor Create(ABitmap: TBitmap; AUseTransparent: boolean = true); overload; virtual; abstract;
+     constructor Create(ABitmap: TBitmap); overload; virtual; abstract;
+     constructor Create(ABitmap: TBitmap; AUseTransparent: boolean); overload; virtual; abstract;
      constructor Create(AFilename: string); overload; virtual; abstract;
      constructor Create(AFilename: string; AIsUtf8Filename: boolean); overload; virtual; abstract;
      constructor Create(AFilename: string; AIsUtf8Filename: boolean; AOptions: TBGRALoadingOptions); overload; virtual; abstract;
