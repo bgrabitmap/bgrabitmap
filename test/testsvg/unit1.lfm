@@ -4,17 +4,17 @@ object Form1: TForm1
   Top = 32
   Width = 1265
   Caption = 'SVG Test'
-  ClientHeight = 905
+  ClientHeight = 930
   ClientWidth = 1265
   Menu = MainMenu1
   OnClose = FormClose
   OnCreate = FormCreate
   OnShow = FormShow
   Position = poDesktopCenter
-  LCLVersion = '2.0.0.4'
+  LCLVersion = '2.2.0.1'
   object PageControl1: TPageControl
     Left = 0
-    Height = 866
+    Height = 891
     Top = 0
     Width = 1265
     ActivePage = TabSheet1
@@ -24,27 +24,27 @@ object Form1: TForm1
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Main'
-      ClientHeight = 833
-      ClientWidth = 1257
+      ClientHeight = 861
+      ClientWidth = 1259
       ParentFont = False
       object Panel1: TPanel
         Left = 0
         Height = 532
         Top = 0
-        Width = 1257
+        Width = 1259
         Align = alTop
         BevelInner = bvLowered
         BevelOuter = bvLowered
         BorderStyle = bsSingle
-        ClientHeight = 528
-        ClientWidth = 1253
+        ClientHeight = 530
+        ClientWidth = 1257
         Color = clSilver
         ParentColor = False
         ParentFont = False
         TabOrder = 0
         object Image1: TImage
           Left = 2
-          Height = 524
+          Height = 526
           Hint = '(svg rendering)'
           Top = 2
           Width = 632
@@ -58,9 +58,9 @@ object Form1: TForm1
         end
         object Image2: TImage
           Left = 639
-          Height = 524
+          Height = 526
           Top = 2
-          Width = 612
+          Width = 616
           Align = alClient
           Center = True
           OnMouseUp = Image1MouseUp
@@ -71,24 +71,24 @@ object Form1: TForm1
         end
         object Splitter4: TSplitter
           Left = 634
-          Height = 524
+          Height = 526
           Top = 2
           Width = 5
         end
       end
       object Panel3: TPanel
         Left = 0
-        Height = 296
+        Height = 324
         Top = 537
-        Width = 1257
+        Width = 1259
         Align = alClient
-        ClientHeight = 296
-        ClientWidth = 1257
+        ClientHeight = 324
+        ClientWidth = 1259
         ParentFont = False
         TabOrder = 1
         object FileListBox1: TFileListBox
           Left = 1
-          Height = 294
+          Height = 322
           Top = 1
           Width = 634
           Align = alLeft
@@ -105,10 +105,10 @@ object Form1: TForm1
         end
         object Memo1: TMemo
           Left = 640
-          Height = 294
+          Height = 322
           Hint = '(Double click for on/off "change mode")'
           Top = 1
-          Width = 616
+          Width = 618
           Align = alClient
           Font.CharSet = ANSI_CHARSET
           Font.Color = clMaroon
@@ -127,7 +127,7 @@ object Form1: TForm1
         end
         object Splitter3: TSplitter
           Left = 635
-          Height = 294
+          Height = 322
           Top = 1
           Width = 5
         end
@@ -137,7 +137,7 @@ object Form1: TForm1
         Left = 0
         Height = 5
         Top = 532
-        Width = 1257
+        Width = 1259
         Align = alTop
         Beveled = True
         ResizeAnchor = akTop
@@ -147,7 +147,7 @@ object Form1: TForm1
   object Panel2: TPanel
     Left = 0
     Height = 39
-    Top = 866
+    Top = 891
     Width = 1265
     Align = alBottom
     BevelInner = bvLowered
@@ -159,7 +159,7 @@ object Form1: TForm1
       Left = 2
       Height = 35
       Top = 2
-      Width = 1261
+      Width = 1110
       Align = alClient
       Caption = '0.0s'
       Font.CharSet = ANSI_CHARSET
@@ -172,11 +172,21 @@ object Form1: TForm1
       ParentFont = False
       TabOrder = 0
     end
+    object CheckBox_ReplaceStrokeAndFill: TCheckBox
+      Left = 1112
+      Height = 35
+      Top = 2
+      Width = 151
+      Align = alRight
+      Caption = 'Replace stroke and fill'
+      OnChange = CheckBox_ReplaceStrokeAndFillChange
+      TabOrder = 1
+    end
   end
   object PopupMenu1: TPopupMenu
     OnPopup = PopupMenu1Popup
-    left = 88
-    top = 56
+    Left = 88
+    Top = 56
     object MenuItem1: TMenuItem
       Tag = 100
       Caption = 'Execute Mod Test'
@@ -215,20 +225,20 @@ object Form1: TForm1
     end
   end
   object PopupMenu2: TPopupMenu
-    left = 184
-    top = 56
+    Left = 184
+    Top = 56
     object MenuItem2: TMenuItem
       Caption = 'Save To...'
       OnClick = MenuItem2Click
     end
   end
   object SaveDialog1: TSaveDialog
-    left = 280
-    top = 56
+    Left = 280
+    Top = 56
   end
   object MainMenu1: TMainMenu
-    left = 88
-    top = 144
+    Left = 88
+    Top = 144
     object MenuItem7: TMenuItem
       Caption = 'File'
       object MenuItem8: TMenuItem

@@ -23,6 +23,8 @@ type
   public
     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
     constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
+    procedure IterateElements(ACallback: TIterateElementCallback; AData: pointer;
+      ARecursive: boolean); override;
     procedure ListIdentifiers(AResult: TStringList); override;
     procedure RenameIdentifiers(AFrom, ATo: TStringList); override;
     procedure ConvertToUnit(AUnit: TCSSUnit); override;
@@ -226,6 +228,8 @@ type
       constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
+      procedure IterateElements(ACallback: TIterateElementCallback; AData: pointer;
+        ARecursive: boolean); override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property Content: TSVGContent read FContent;
   end;
@@ -829,6 +833,7 @@ type
       destructor Destroy; override;
       procedure Clear;
       procedure ConvertToUnit(AUnit: TCSSUnit);
+      procedure IterateElements(ACallback: TIterateElementCallback; AData: pointer; ARecursive: boolean);
       procedure Recompute;
       procedure Draw(ACanvas2d: TBGRACanvas2D; x,y: single; AUnit: TCSSUnit); overload;
       procedure Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); overload;
@@ -1035,6 +1040,12 @@ begin
     FSubDataLink := TSVGDataLink.Create(ADataLink)
     else FSubDatalink := ADataLink;
   FContent := TSVGContent.Create(AElement,AUnits,FSubDataLink);
+end;
+
+procedure TSVGElementWithContent.IterateElements(
+  ACallback: TIterateElementCallback; AData: pointer; ARecursive: boolean);
+begin
+  Content.IterateElements(ACallback, AData, ARecursive);
 end;
 
 procedure TSVGElementWithContent.ListIdentifiers(AResult: TStringList);
@@ -1379,6 +1390,12 @@ destructor TSVGTextElementWithContent.Destroy;
 begin
   FreeAndNil(FContent);
   inherited Destroy;
+end;
+
+procedure TSVGTextElementWithContent.IterateElements(
+  ACallback: TIterateElementCallback; AData: pointer; ARecursive: boolean);
+begin
+  Content.IterateElements(ACallback, AData, ARecursive);
 end;
 
 procedure TSVGTextElementWithContent.ConvertToUnit(AUnit: TCSSUnit);
@@ -4361,6 +4378,20 @@ begin
   for i := 0 to ElementCount-1 do
     if IsSVGElement[i] then
       Element[i].ConvertToUnit(AUnit);
+end;
+
+procedure TSVGContent.IterateElements(ACallback: TIterateElementCallback;
+  AData: pointer; ARecursive: boolean);
+var rec: boolean;
+  i: Integer;
+begin
+  for i := 0 to ElementCount-1 do
+    if IsSVGElement[i] then
+    begin
+      rec := ARecursive;
+      ACallback(Element[i], AData, rec);
+      if rec then Element[i].IterateElements(ACallback, AData, true);
+    end;
 end;
 
 procedure TSVGContent.Recompute;

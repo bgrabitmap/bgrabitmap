@@ -232,6 +232,8 @@ type
     function GetStretchPresentationMatrix(AUnit: TCSSUnit): TAffineMatrix; overload;
     function FindElementById(AID: string): TSVGElement; overload;
     function FindElementById(AID: string; AClass: TSVGFactory): TSVGElement; overload;
+    procedure IterateElements(ACallback: TIterateElementCallback; AData: pointer;
+      ARecursive: boolean); override;
     procedure ConvertToUnit(AUnit: TCSSUnit); override; //except Width, Height, ContainerWidth, ContainerHeight
     property AsUTF8String: utf8string read GetUTF8String write SetUTF8String;
     property Units: TSVGUnits read GetUnits;
@@ -1319,6 +1321,12 @@ end;
 function TBGRASVG.FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
 begin
   result := DataLink.FindElementById(AId, AClass);
+end;
+
+procedure TBGRASVG.IterateElements(ACallback: TIterateElementCallback;
+  AData: pointer; ARecursive: boolean);
+begin
+  Content.IterateElements(ACallback, AData, ARecursive);
 end;
 
 procedure TBGRASVG.ConvertToUnit(AUnit: TCSSUnit);

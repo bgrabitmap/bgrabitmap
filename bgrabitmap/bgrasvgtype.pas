@@ -18,6 +18,7 @@ type
   TSVGElementList = specialize TFPGList<TSVGElement>;
   TSVGElementDictionary = specialize TFPGMap<string,TSVGElement>;
   TSVGFactory = class of TSVGElement;
+  TIterateElementCallback = procedure(AElement: TSVGElement; AData: pointer; var ARecursive: boolean) of object;
   
   TSVGFillMode = (
      sfmEvenOdd = Ord(fmAlternate),
@@ -279,6 +280,7 @@ type
     function HasAttribute(AName: string): boolean;
     function HasInlineStyle(AName: string): boolean;
 
+    procedure IterateElements(ACallback: TIterateElementCallback; AData: pointer; ARecursive: boolean); virtual;
     procedure ConvertToUnit(AUnit: TCSSUnit); virtual;
     function EnterFontSize(AIsRoot: boolean = false): TFloatWithCSSUnit; virtual;
     procedure ExitFontSize(APrevFontSize: TFloatWithCSSUnit); virtual;
@@ -1100,6 +1102,12 @@ end;
 function TSVGCustomElement.HasInlineStyle(AName: string): boolean;
 begin
   result := trim(GetInlineStyle(AName, '')) <> '';  //an empty declaration is illegal
+end;
+
+procedure TSVGCustomElement.IterateElements(ACallback: TIterateElementCallback;
+  AData: pointer; ARecursive: boolean);
+begin
+  // no content by default
 end;
 
 procedure TSVGCustomElement.ConvertToUnit(AUnit: TCSSUnit);
