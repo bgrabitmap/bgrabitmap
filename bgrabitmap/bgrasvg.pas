@@ -799,7 +799,7 @@ end;
 
 procedure TBGRASVG.SetColor(AValue: TBGRAPixel);
 begin
-  SetAttribute('color', BGRAToStr(AValue, CSSColors, 0, true, true));
+  SetAttribute('color', LowerCase(BGRAToStr(AValue, CSSColors, 0, true, true)));
   RemoveStyle('color');
 end;
 
