@@ -120,7 +120,10 @@ type
     {** Scalable Vector Graphic, vectorial, read-only as raster }
     ifSvg,
     {** Lossless or lossy compression using V8 algorithm (need libwebp library) }
-    ifWebP);
+    ifWebP,
+    {** Lossless or lossy compression using Avif algorithm (need libavif library) }
+    ifAvif
+    );
 
   {* Options when loading an image }
   TBGRALoadingOption = (
@@ -1235,6 +1238,21 @@ var
         inc(scores[ifWebP], 2);
     end;
 
+    if CompareMem(@magic[4], pansichar('ftyp'), 4) then  // maybe AVIF.
+    begin
+      AStream.Position:= streamStartPos+8;
+      setlength(moreMagic, 4);
+      if (AStream.Read(moreMagic[1],4) = 4) then
+      begin
+        if CompareMem(@moreMagic[1], pansichar('avif'), 4) then
+          inc(scores[ifAvif], 2)
+        else if CompareMem(@moreMagic[1], pansichar('avis'), 4) then
+          inc(scores[ifAvif], 2)
+        else if CompareMem(@moreMagic[1], pansichar('mif1'), 4) then
+          inc(scores[ifAvif], 2);
+      end;
+    end;
+
     AStream.Position := streamStartPos;
   end;
 
@@ -1296,7 +1314,8 @@ begin
   if (ext = '.oxo') then result := ifPhoxo else
   if (ext = '.svg') then result := ifSvg else
   if (ext = '.pbm') or (ext = '.pgm') or (ext = '.ppm') then result := ifPortableAnyMap else
-  if (ext = '.webp') then result := ifWebP;
+  if (ext = '.webp') then result := ifWebP else
+  if (ext = '.avif') then result := ifAvif;
 end;
 
 function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
@@ -1322,6 +1341,7 @@ begin
     ifSvg: result := 'svg';
     ifPortableAnyMap: result := 'ppm';
     ifWebP: result := 'webp';
+    ifAvif: result := 'avif';
     else result := '?';
   end;
 end;
