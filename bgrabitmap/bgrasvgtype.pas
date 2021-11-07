@@ -706,7 +706,7 @@ begin
   LocateStyleDeclaration(ABlock, AProperty, startPos,colonPos, valueLength);
   if valueLength <> -1 then
   begin
-    delete(ABlock, startPos, colonPos+valueLength-startPos);
+    delete(ABlock, startPos, colonPos+valueLength-startPos+1);
     while (length(ABlock)>=startPos) and (ABlock[startPos] in[' ',#9,#10,#12,#13]) do delete(ABlock,startPos,1);
     if (length(ABlock)>=startPos) and (ABlock[startPos] = ';') then delete(ABlock,startPos,1);
     result := true;
