@@ -29,10 +29,11 @@ unit avifbgra;
 interface
 
 uses
-  Classes, SysUtils, bgrabitmap;
+  Classes, SysUtils, bgrabitmap,libavif;
 
 type
   EAvifException = class(Exception);
+  avifPixelFormat = libavif.avifPixelFormat;
 
 const
   AVIF_DEFAULT_QUALITY = 30;
@@ -41,18 +42,18 @@ procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRABitmap);
 procedure AvifLoadFromFile(const AFilename: string; aBitmap: TBGRABitmap);
 procedure AvifLoadFromFileNative(const AFilename: string; aBitmap: TBGRABitmap);
 procedure AvifLoadFromMemory(AData: Pointer; ASize: cardinal; aBitmap: TBGRABitmap);
-//100 LOSSLESS
-function AvifSaveToStream(aBitmap: TBGRABitmap; AStream: TStream; aQuality0to100: integer = 30;aSpeed0to10:integer=6): cardinal;
-function AvifSaveToFile(aBitmap: TBGRABitmap; const AFilename: string; aQuality0to100: integer = 30;aSpeed0to10:integer=6): cardinal;
+//a Quality0to100=100 LOSSLESS
+function AvifSaveToStream(aBitmap: TBGRABitmap; AStream: TStream; aQuality0to100: integer = 30;aSpeed0to10:integer=AVIF_SPEED_DEFAULT;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false): NativeUInt;
+function AvifSaveToFile(aBitmap: TBGRABitmap; const AFilename: string; aQuality0to100: integer = 30;aSpeed0to10:integer=AVIF_SPEED_DEFAULT;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false): NativeUInt;
 //returns size of the resulting bitmap.
-function AvifSaveToMemory(aBitmap: TBGRABitmap; AData: Pointer; ASize: cardinal; aQuality0to100: integer = 30;aSpeed0to10:integer=6): cardinal;
+function AvifSaveToMemory(aBitmap: TBGRABitmap; AData: Pointer; ASize: cardinal; aQuality0to100: integer = 30;aSpeed0to10:integer=AVIF_SPEED_DEFAULT;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false): NativeUInt;
 //aBuffer  12 first bytes of file.
 function AvifValidateHeaderSignature(aBuffer: Pointer): boolean;
 
 implementation
 
 uses
-  libavif, Math, BGRABitmapTypes;
+  Math, BGRABitmapTypes;
 
 type
   PavifIOStreamReader = ^avifIOStreamReader;
@@ -295,7 +296,7 @@ end;
 //https://github.com/AOMediaCodec/libavif/issues/545
 //https://gitmemory.com/issue/AOMediaCodec/libavif/545/802934788
 // aQuality0to100   0 worst quality, 100 best quality ( lossless ).
-procedure AvifEncode(aBitmap: TBGRABitmap; aQuality0to100: integer; aSpeed0to10:integer; var avifOutput: avifRWData);
+procedure AvifEncode(aBitmap: TBGRABitmap; aQuality0to100: integer; aSpeed0to10:integer; var avifOutput: avifRWData;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false);
 var
   encoder: PavifEncoder;
   wrgb: avifRGBImage;
@@ -313,7 +314,7 @@ begin
     if aQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
       image := avifImageCreate(aBitmap.Width, aBitmap.Height, 8, AVIF_PIXEL_FORMAT_YUV444)
     else
-      image := avifImageCreate(aBitmap.Width, aBitmap.Height, 8, AVIF_PIXEL_FORMAT_YUV420{AVIF_PIXEL_FORMAT_YUV444});
+      image := avifImageCreate(aBitmap.Width, aBitmap.Height, 8, aPixelFormat{AVIF_PIXEL_FORMAT_YUV420}{AVIF_PIXEL_FORMAT_YUV444});
 
     // these values dictate what goes into the final AVIF
     // Configure image here: (see avif/avif.h)
@@ -344,7 +345,10 @@ begin
     else
       wrgb.format := AVIF_RGB_FORMAT_BGRA;
     {$pop}
-    wrgb.ignoreAlpha := 0;
+    if aIgnoreAlpha then
+      wrgb.ignoreAlpha := AVIF_TRUE
+    else
+      wrgb.ignoreAlpha := AVIF_FALSE;
     wrgb.pixels := aBitmap.DataByte;
     wrgb.rowBytes := aBitmap.Width * 4;
     if aQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
@@ -369,7 +373,8 @@ begin
     // * timescale
 
     aQuality0to100:=clamp(aQuality0to100,0,100);
-    aSpeed0to10:=clamp(aSpeed0to10,AVIF_SPEED_SLOWEST,AVIF_SPEED_FASTEST);
+    if aSpeed0to10<>AVIF_SPEED_DEFAULT then
+      aSpeed0to10:=clamp(aSpeed0to10,AVIF_SPEED_SLOWEST,AVIF_SPEED_FASTEST);
 
     encoder^.maxThreads := 2;
     encoder^.speed := aSpeed0to10;
@@ -429,19 +434,19 @@ begin
   end;
 end;
 
-function AvifSaveToFile(aBitmap: TBGRABitmap; const AFilename: string; aQuality0to100: integer;aSpeed0to10:integer=6): cardinal;
+function AvifSaveToFile(aBitmap: TBGRABitmap; const AFilename: string; aQuality0to100: integer;aSpeed0to10:integer;aPixelFormat:avifPixelFormat;aIgnoreAlpha:boolean): NativeUInt;
 var
   Stream: TFileStream;
 begin
   Stream := TFileStream.Create(AFileName, fmCreate);
   try
-    Result := AvifSaveToStream(aBitmap, Stream, aQuality0to100, aSpeed0to10);
+    Result := AvifSaveToStream(aBitmap, Stream, aQuality0to100, aSpeed0to10,aPixelFormat,aIgnoreAlpha);
   finally
     Stream.Free;
   end;
 end;
 
-function AvifSaveToStream(aBitmap: TBGRABitmap; AStream: TStream; aQuality0to100: integer;aSpeed0to10:integer): cardinal;
+function AvifSaveToStream(aBitmap: TBGRABitmap; AStream: TStream; aQuality0to100: integer;aSpeed0to10:integer;aPixelFormat:avifPixelFormat;aIgnoreAlpha:boolean): NativeUInt;
 var
   avifOutput: avifRWData;
   p:PByte;
@@ -451,7 +456,7 @@ const
 begin
   try
     avifOutput := AVIF_DATA_EMPTY;
-    AvifEncode(aBitmap, aQuality0to100,aSpeed0to10, avifOutput);
+    AvifEncode(aBitmap, aQuality0to100,aSpeed0to10, avifOutput,aPixelFormat,aIgnoreAlpha);
     Result := avifOutput.size;
     if avifOutput.Data <> nil then
     begin
@@ -477,13 +482,13 @@ begin
 end;
 
 //returns the size of the resulting bitmap.
-function AvifSaveToMemory(aBitmap: TBGRABitmap; AData: Pointer; ASize: cardinal; aQuality0to100: integer;aSpeed0to10:integer=6): cardinal;
+function AvifSaveToMemory(aBitmap: TBGRABitmap; AData: Pointer; ASize: cardinal; aQuality0to100: integer;aSpeed0to10:integer;aPixelFormat:avifPixelFormat;aIgnoreAlpha:boolean): NativeUInt;
 var
   avifOutput: avifRWData;
 begin
   try
     avifOutput := AVIF_DATA_EMPTY;
-    AvifEncode(aBitmap, aQuality0to100, aSpeed0to10, avifOutput);
+    AvifEncode(aBitmap, aQuality0to100, aSpeed0to10, avifOutput,aPixelFormat,aIgnoreAlpha);
     Result := avifOutput.size;
     if avifOutput.Data <> nil then
       Move(avifOutput.Data^, aData^, min(ASize, avifOutput.size));

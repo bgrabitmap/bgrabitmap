@@ -6,7 +6,7 @@ unit BGRAWriteAvif;
 interface
 
 uses
-  BGRAClasses, SysUtils, FPimage;
+  BGRAClasses, SysUtils, FPimage, avifbgra;
 
 type
   { TBGRAWriterAvif }
@@ -16,6 +16,8 @@ type
     FLossless: boolean;
     FQualityPercent: Single;
     FSpeed: integer;
+    FPixelFormat:avifPixelFormat;
+    FIgnoreAlpha:boolean;
     procedure InternalWrite(Stream: TStream; Img: TFPCustomImage); override;
   public
     constructor Create; override;
@@ -23,11 +25,13 @@ type
     { If Lossless is set to True, the QualityPercent property is ignored }
     property Lossless: boolean read FLossless write FLossless;
     property Speed: integer read FSpeed write FSpeed;
+    property PixelFormat: avifPixelFormat read FPixelFormat write FPixelFormat;
+    property IgnoreAlpha: boolean read FIgnoreAlpha write FIgnoreAlpha;
   end;
 
 implementation
 
-uses avifbgra,libavif{$ifdef linux}, linuxlib{$endif}, BGRABitmapTypes, BGRABitmap;
+uses libavif{$ifdef linux}, linuxlib{$endif}, BGRABitmapTypes, BGRABitmap;
 
 var
   MyLibAvifLoaded: boolean;
@@ -56,7 +60,7 @@ begin
     quality:=Trunc(QualityPercent);
     if LossLess then
       quality:=100;
-    outsize:=avifSaveToStream(TBGRABitmap(saveFrom),Stream,quality,Speed);
+    outsize:=avifSaveToStream(TBGRABitmap(saveFrom),Stream,quality,Speed,PixelFormat,IgnoreAlpha);
     if outSize = 0 then
       raise exception.Create('Error encoding WebP');
   finally
@@ -72,7 +76,9 @@ begin
 // FLossless:= False;
   FQualityPercent := 100;
   FLossless:= True;
-  FSpeed:=6;
+  FSpeed:=AVIF_SPEED_DEFAULT;
+  FPixelFormat:=AVIF_PIXEL_FORMAT_YUV420;
+  FIgnoreAlpha:=false;
 end;
 
 initialization
