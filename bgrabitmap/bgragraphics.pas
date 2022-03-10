@@ -412,6 +412,7 @@ type
     FTransparentColor: TColor;
     FTransparentMode: TTransparentMode;
     function GetCanvas: TCanvas;
+    function GetMasked: boolean;
     function GetRawImage: TRawImage;
     procedure SetTransparentColor(AValue: TColor);
     procedure SetTransparentMode(AValue: TTransparentMode);
@@ -438,6 +439,7 @@ type
     property Height: integer read GetHeight write SetHeight;
     property RawImage: TRawImage read GetRawImage;
     property Canvas: TCanvas read GetCanvas;
+    property Masked: boolean read GetMasked;
     property TransparentColor: TColor read FTransparentColor
              write SetTransparentColor default clDefault;
     property TransparentMode: TTransparentMode read FTransparentMode
@@ -712,6 +714,11 @@ function TBitmap.GetCanvas: TCanvas;
 begin
   result := nil;
   raise exception.Create('Canvas not available');
+end;
+
+function TBitmap.GetMasked: boolean;
+begin
+  result := false;
 end;
 
 constructor TBitmap.Create;

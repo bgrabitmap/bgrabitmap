@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="4">
+  <Package Version="5">
     <PathDelim Value="\"/>
     <Name Value="BGRABitmapPack4fpGUI"/>
     <Author Value="Circular"/>
@@ -456,17 +456,21 @@
         <Type Value="Include"/>
       </Item105>
     </Files>
-    <RequiredPkgs Count="3">
+    <CompatibilityMode Value="True"/>
+    <RequiredPkgs Count="4">
       <Item1>
-        <PackageName Value="LazUtils"/>
+        <PackageName Value="freetypelaz"/>
       </Item1>
       <Item2>
-        <PackageName Value="fpgui_toolkit"/>
+        <PackageName Value="LazUtils"/>
       </Item2>
       <Item3>
+        <PackageName Value="fpgui_toolkit"/>
+      </Item3>
+      <Item4>
         <PackageName Value="FCL"/>
         <MinVersion Major="1" Valid="True"/>
-      </Item3>
+      </Item4>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>
