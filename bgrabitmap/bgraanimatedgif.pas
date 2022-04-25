@@ -1054,6 +1054,10 @@ end;
 
 destructor TBGRAAnimatedGif.Destroy;
 begin
+  {$IFDEF BGRABITMAP_USE_LCL}
+  FTimer.Enabled := false;
+  FTimer.Free;
+  {$ENDIF}
   Clear;
 
   if FStretchedVirtualScreen <> nil then
