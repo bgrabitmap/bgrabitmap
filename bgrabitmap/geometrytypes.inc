@@ -1048,6 +1048,8 @@ end;
 
 class function TAffineBox.AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
 begin
+  if isEmptyPointF(ATopLeft) or isEmptyPointF(ATopRight) or isEmptyPointF(ABottomLeft) then
+     raise exception.Create('Unexpected empty point');
   result.TopLeft := ATopLeft;
   result.TopRight := ATopRight;
   result.BottomLeft := ABottomLeft;
@@ -1055,6 +1057,8 @@ end;
 
 class function TAffineBox.AffineBox(ARectF: TRectF): TAffineBox;
 begin
+  if isEmptyPointF(ARectF.TopLeft) or isEmptyPointF(ARectF.BottomRight) then
+     raise exception.Create('Unexpected empty point');
   result.TopLeft := ARectF.TopLeft;
   result.TopRight := PointF(ARectF.Right, ARectF.Top);
   result.BottomLeft := PointF(ARectF.Left, ARectF.Bottom);
