@@ -2390,18 +2390,24 @@ function TSVGElement.FindStyleElementInternal(const classStr: string;
   out attributesStr: string): integer;
 var
   i: integer;
+  data: TSVGDataLink;
 begin
   attributesStr:= '';
-  with FDataLink do
-    for i:= 0 to StyleCount-1 do
-    begin
-      result:= (Styles[i] as TSVGStyle).Find(classStr);
-      if result <> -1 then
+  data := FDataLink;
+  while data <> nil do
+  begin
+    with data do
+      for i:= 0 to StyleCount-1 do
       begin
-        attributesStr:= (Styles[i] as TSVGStyle).Ruleset[result].declarations;
-        Exit;
+        result:= (Styles[i] as TSVGStyle).Find(classStr);
+        if result <> -1 then
+        begin
+          attributesStr:= (Styles[i] as TSVGStyle).Ruleset[result].declarations;
+          Exit;
+        end;
       end;
-    end;
+    data := data.Parent;
+  end;
   result:= -1;
 end;
 
@@ -2423,12 +2429,11 @@ procedure TSVGElement.ImportStyles;
 
 var
   fid: integer;
-  tag,styleC,s: string;
+  tag,styleC,s,c: string;
 begin
   FImportStyleState:= fssNotFound;
   SetLength(FImportedStyles,0);
   tag:= FDomElem.TagName;
-  styleC:= classAttr;
   (*
     if style element is:
     <style>
@@ -2449,16 +2454,18 @@ begin
   fid:= FindStyleElementInternal(tag,s);
   if fid <> -1 then
     AddStyle(s,fid);
+  styleC:= classAttr.Trim;
   if styleC <> '' then
+  for c in styleC.Trim.Split([' ']) do
   begin
     //Find as: "[tag].[class]" example "circle.style1"
-    fid:= FindStyleElementInternal(tag+'.'+styleC,s);
+    fid:= FindStyleElementInternal(tag+'.'+c,s);
     if fid <> -1 then
       AddStyle(s,fid)
     else
     begin
       //Find as: ".[class]" example ".style1"
-      fid:= FindStyleElementInternal('.'+styleC,s);
+      fid:= FindStyleElementInternal('.'+c,s);
       if fid <> -1 then
         AddStyle(s,fid);
     end;
