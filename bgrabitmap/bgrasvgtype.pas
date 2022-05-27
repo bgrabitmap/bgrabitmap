@@ -362,6 +362,7 @@ type
     procedure Init(ADocument: TDOMDocument; ATag: string; AUnits: TCSSUnitConverter); overload;
     procedure Init(AElement: TDOMElement; AUnits: TCSSUnitConverter); overload;
     procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
+    procedure InternalCopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
     function GetStyleFromStyleSheet(const AName,ADefault: string): string; override;
     procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
     procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); virtual;
@@ -380,6 +381,7 @@ type
     procedure ConvertToUnit(AUnit: TCSSUnit); override;
     procedure Recompute; virtual;
     procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
+    procedure CopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
     procedure fillNone;
     procedure strokeNone;
     procedure strokeDashArrayNone;
@@ -1689,7 +1691,7 @@ end;
 
 function TSVGElement.GetClipPath: string;
 begin
-  result := AttributeOrStyle['clip-path'];
+  result := GetAttributeOrStyle('clip-path', '', false);
 end;
 
 function TSVGElement.GetFill: string;
@@ -2202,6 +2204,11 @@ begin
   //nothing
 end;
 
+procedure TSVGElement.InternalCopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
+begin
+ //nothing
+end;
+
 procedure TSVGElement.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
   ACanvas2D.fillStyle(fillColor);
@@ -2350,11 +2357,39 @@ end;
 
 procedure TSVGElement.Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var prevMatrix: TAffineMatrix;
+  clipUrl: string;
+  clipElem: TSVGClipPath;
+  clipFound: boolean;
 begin
   if not Visible then exit;
   prevMatrix := ACanvas2d.matrix;
   ACanvas2d.transform(matrix[AUnit]);
+  clipUrl := clipPath;
+  if clipUrl <> '' then
+  begin
+    clipElem := TSVGClipPath(DataLink.FindElementByRef(clipUrl, true, TSVGClipPath, clipFound));
+    if clipElem <> nil then
+    begin
+      ACanvas2d.save;
+      ACanvas2d.beginPath;
+      clipElem.CopyPathTo(ACanvas2d, AUnit);
+      ACanvas2d.clip;
+    end;
+  end
+  else
+    clipElem := nil;
   InternalDraw(ACanvas2d,AUnit);
+  if clipElem <> nil then ACanvas2d.restore;
+  ACanvas2d.matrix := prevMatrix;
+end;
+
+procedure TSVGElement.CopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
+var prevMatrix: TAffineMatrix;
+begin
+  if not Visible then exit;
+  prevMatrix := ACanvas2d.matrix;
+  ACanvas2d.transform(matrix[AUnit]);
+  InternalCopyPathTo(ACanvas2d,AUnit);
   ACanvas2d.matrix := prevMatrix;
 end;
 
