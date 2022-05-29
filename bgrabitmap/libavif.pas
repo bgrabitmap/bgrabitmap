@@ -123,14 +123,14 @@ interface
   const
 
 // THE LAST VERSION PREBUILD IN MSYS2*/
-{$define COMPATIBLE_OLD092}
+{..$define COMPATIBLE_OLD092}
 {$ifndef COMPATIBLE_OLD092}
-    AVIF_VERSION_MAJOR = 0;
-    AVIF_VERSION_MINOR = 9;    
-    AVIF_VERSION_PATCH = 3;    
+    AVIF_VERSION_MAJOR = 10;
+    AVIF_VERSION_MINOR = 1;
+    AVIF_VERSION_PATCH = 1;
     AVIF_VERSION_DEVEL = 1;    
     //AVIF_VERSION= ((AVIF_VERSION_MAJOR * 1000000) + (AVIF_VERSION_MINOR * 10000) + (AVIF_VERSION_PATCH * 100) + AVIF_VERSION_DEVEL)
-    AVIF_VERSION = 90301;  //90000+300+1
+    AVIF_VERSION = 100101;  //100000+100+1
 {$else}
 AVIF_VERSION_MAJOR = 0;
 AVIF_VERSION_MINOR = 9;
@@ -206,7 +206,8 @@ type
         AVIF_RESULT_INVALID_IMAGE_GRID,AVIF_RESULT_INVALID_CODEC_SPECIFIC_OPTION,
         AVIF_RESULT_TRUNCATED_DATA,AVIF_RESULT_IO_NOT_SET,
         AVIF_RESULT_IO_ERROR,AVIF_RESULT_WAITING_ON_IO,
-        AVIF_RESULT_INVALID_ARGUMENT,AVIF_RESULT_NOT_IMPLEMENTED
+        AVIF_RESULT_INVALID_ARGUMENT,AVIF_RESULT_NOT_IMPLEMENTED,
+        AVIF_RESULT_OUT_OF_MEMORY
         );
 
     {$IFDEF LD}var{$ELSE}function{$ENDIF} avifResultToString{$IFDEF LD}: function{$ENDIF}(AResult:avifResult):PAnsiChar;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
@@ -230,13 +231,14 @@ type
 //#define AVIF_DATA_EMPTY { NULL, 0 }
 const AVIF_DATA_EMPTY:avifRWData=(data:nil;size:0);
 
+  // The avifRWData input must be zero-initialized before being manipulated with these functions.
   {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifRWDataRealloc{$IFDEF LD}: procedure{$ENDIF}(raw:PavifRWData;newSize:size_type);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
   {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifRWDataSet{$IFDEF LD}: procedure{$ENDIF}(raw:PavifRWData; const data:PByte;len:size_type);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
   {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifRWDataFree{$IFDEF LD}: procedure{$ENDIF}(raw:PavifRWData);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { --------------------------------------------------------------------------- }
     { avifPixelFormat }
-    { No pixels are present }
+    { No YUV pixels are present. Alpha plane can still be present.}
 type
       PavifPixelFormat = ^avifPixelFormat;
       avifPixelFormat = (AVIF_PIXEL_FORMAT_NONE := 0,AVIF_PIXEL_FORMAT_YUV444,
@@ -350,6 +352,10 @@ type
     { populated with a NULL-terminated, freeform error string explaining the most recent error in }
     { more detail. It will be cleared at the beginning of every non-const API call. }
 
+    { Note: If an error string contains the "[Strict]" prefix, it means that you encountered an }
+    { error that only occurs during strict decoding. If you disable strict mode, you will no }
+    { longer encounter this error. }
+
       PavifDiagnostics = ^avifDiagnostics;
       avifDiagnostics = record
           error : array[0..(AVIF_DIAGNOSTICS_ERROR_BUFFER_SIZE)-1] of char;
@@ -462,7 +468,9 @@ type
           yuvPlanes : array[0..(AVIF_PLANE_COUNT_YUV)-1] of PUInt8;
           yuvRowBytes : array[0..(AVIF_PLANE_COUNT_YUV)-1] of UInt32;
           imageOwnsYUVPlanes : avifBool;
+          {$ifdef COMPATIBLE_OLD092}
           alphaRange : avifRange;
+          {$ENDIF}
           alphaPlane : PUInt8;
           alphaRowBytes : UInt32;
           imageOwnsAlphaPlane : avifBool;
@@ -498,6 +506,10 @@ type
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageCreate{$IFDEF LD}: function{$ENDIF}(width:integer;height:integer;depth:integer;yuvFormat:avifPixelFormat):PavifImage;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageCreateEmpty{$IFDEF LD}: function{$ENDIF}:PavifImage;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // helper for making an image to decode into
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifImageCopy{$IFDEF LD}: procedure{$ENDIF}(dstImage:PavifImage;srcImage:PavifImage;planes:avifPlanesFlags);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // deep copy
+
+//AVIF_API avifResult avifImageSetViewRect(avifImage * dstImage, const avifImage * srcImage, const avifCropRect * rect); // shallow copy, no metadata
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageSetViewRect{$IFDEF LD}:function{$ENDIF}(dstImage:PavifImage;srcImage:PavifImage;const rect:PavifCropRect):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}// shallow copy, no metadata
+
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifImageDestroy{$IFDEF LD}: procedure{$ENDIF}(image:PavifImage);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifImageSetProfileICC{$IFDEF LD}: procedure{$ENDIF}(image:PavifImage;icc:PByte;iccSize:size_type);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
     { Warning: If the Exif payload is set and invalid, avifEncoderWrite() may return AVIF_RESULT_INVALID_EXIF_PAYLOAD }
@@ -584,6 +596,9 @@ type
     { RGB, treating the alpha bits as if they were all 1. }
           ignoreAlpha : avifBool;
           alphaPremultiplied : avifBool;     { indicates if RGB value is pre-multiplied by alpha. Default: false }
+          {$ifndef COMPATIBLE_OLD092}
+          isFloat:avifBool; // indicates if RGBA values are in half float (f16) format. Valid only when depth == 16. Default: false
+          {$endif}
           pixels : PUInt8;
           rowBytes : UInt32;
         end;
@@ -841,6 +856,12 @@ type
     { image sequence, inspect avifDecoder.progressiveState. }
 {$ifndef COMPATIBLE_OLD092}
           allowProgressive : avifBool;
+    { If this is false, avifDecoderNextImage() will start decoding a frame only after there are}
+    { enough input bytes to decode all of that frame. If this is true, avifDecoder will decode each}
+    { subimage or grid cell as soon as possible. The benefits are: grid images may be partially}
+    { displayed before being entirely available, and the overall decoding may finish earlier.}
+    { WARNING: Experimental feature.}
+          allowIncremental : avifBool ;
     { Enable any of these to avoid reading and surfacing specific data to the decoded avifImage. }
     { These can be useful if your avifIO implementation heavily uses AVIF_RESULT_WAITING_ON_IO for }
     { streaming data, as some of these payloads are (unfortunately) packed at the end of the file, }
@@ -976,6 +997,17 @@ io : PavifIO; //CHANGED ORDER IN NEW VERSION.
  
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImageTiming{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; frameIndex:UInt32;outTiming:PavifImageTiming):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
+
+// When avifDecoderNextImage() or avifDecoderNthImage() returns AVIF_RESULT_WAITING_ON_IO, this
+// function can be called next to retrieve the number of top rows that can be immediately accessed
+// from the luma plane of decoder->image, and alpha if any. The corresponding rows from the chroma planes,
+// if any, can also be accessed (half rounded up if subsampled, same number of rows otherwise).
+// decoder->allowIncremental must be set to true.
+// Returns decoder->image->height when the last call to avifDecoderNextImage() or avifDecoderNthImage()
+// returned AVIF_RESULT_OK. Returns 0 in all other cases.
+// WARNING: Experimental feature.
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderDecodedRowCount{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder):UInt32;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+
     { --------------------------------------------------------------------------- }
     { avifExtent }
 type
@@ -1073,6 +1105,8 @@ type
 { * avifEncoderAddImageGrid() [exactly once, AVIF_ADD_IMAGE_FLAG_SINGLE is assumed] }
 { * avifEncoderFinish() }
 { * avifEncoderDestroy() }
+
+// durationInTimescales is ignored if AVIF_ADD_IMAGE_FLAG_SINGLE is set in addImageFlags.
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifEncoderAddImage{$IFDEF LD}: function{$ENDIF}(encoder:PavifEncoder; image:PavifImage;durationInTimescales:UInt64;addImageFlags:avifAddImageFlags):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifEncoderAddImageGrid{$IFDEF LD}: function{$ENDIF}(encoder:PavifEncoder;
                                             gridCols:UInt32;
@@ -1213,6 +1247,10 @@ begin
       Pointer(avifRWDataRealloc):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifRWDataRealloc'));
       Pointer(avifRWDataSet):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifRWDataSet'));
       Pointer(avifVersion):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifVersion'));
+      {$ifndef COMPATIBLE_OLD092}
+      Pointer(avifImageSetViewRect):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifImageSetViewRect'));
+      Pointer(avifDecoderDecodedRowCount):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifDecoderDecodedRowCount'));
+      {$endif}
     end;
     Result := LibAvifLoaded;
     LibAvifRefCount:=1;
