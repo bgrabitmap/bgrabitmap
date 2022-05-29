@@ -81,6 +81,13 @@ var
   versionInt, errPos, i: integer;
   maxVersionInt: integer;
 begin
+  versionStr := copy(ExtractFileExt(ALinkerName), 2);
+  val(versionStr, versionInt, errPos);
+  if errPos = 0 then
+  begin
+    if AMinimumVersion = 0 then AMinimumVersion := versionInt;
+    ALinkerName := ChangeFileExt(ALinkerName,'');
+  end;
   result := '';
   maxVersionInt := AMinimumVersion-1;
   RunCommand(FindBinPath('ldconfig'), ['-p'], dataText, []);

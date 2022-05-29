@@ -30,7 +30,7 @@
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
     <Version Major="11" Minor="4"/>
-    <Files Count="146">
+    <Files Count="147">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -617,6 +617,10 @@
         <Filename Value="bgrareadavif.pas"/>
         <UnitName Value="BGRAReadAvif"/>
       </Item146>
+      <Item147>
+        <Filename Value="darwinlib.pas"/>
+        <UnitName Value="darwinlib"/>
+      </Item147>
     </Files>
     <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="2">
