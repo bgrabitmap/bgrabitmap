@@ -150,6 +150,8 @@ begin
   if io = nil then
     exit(AVIF_RESULT_IO_ERROR);
   avifDecoderSetIO(decoder, io);
+  if decoder^.io = nil then
+    raise EAvifException.Create('Failed to set input. Could be due to incompatible version of AVIF library.');
   exit(AVIF_RESULT_OK);
 end;
 
@@ -165,7 +167,7 @@ begin
   if avifDecoderNextImage(decoder) = AVIF_RESULT_OK then
   begin
     if decoder^.image = nil then
-      raise EAvifException.Create('Avif Error: no image data');
+      raise EAvifException.Create('No image data recieved from AVIF library.');
     //fillchar(wrgb, sizeof(wrgb), 0);
     wrgb:=Default(avifRGBImage);
     avifRGBImageSetDefaults(@wrgb, decoder^.image);
