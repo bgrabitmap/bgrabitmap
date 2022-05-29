@@ -1,31 +1,22 @@
-{FreePascal wrappper for libavif dynamic library}
-{This License applies only to this wrapper and not the libavif itself}
-{For the latest libavif visit https://github.com/AOMediaCodec/libavif   }
-{* Author: Domingo Galmes <dgalmesp@gmail.com>  01-11-2021
-******************************************************************************
-* Copyright (c) 2021 Domingo Galmés
-*
-* Permission is hereby granted, free of charge, to any person obtaining a
-* copy of this software and associated documentation files (the "Software"),
-* to deal in the Software without restriction, including without limitation
-* the rights to use, copy, modify, merge, publish, distribute, sublicense,
-* and/or sell copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included
-* in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-* OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO COORD SHALL
-* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-* DEALINGS IN THE SOFTWARE.
-*****************************************************************************}
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
+// Copyright 2019 Joe Drago. All rights reserved (originally as BSD-2-Clause)
+
+{ FreePascal wrappper for libavif dynamic library                       }
+{ For the latest libavif visit https://github.com/AOMediaCodec/libavif  }
+{ Author: Domingo Galmes <dgalmesp@gmail.com>  01-11-2021               }
 
 unit libavif;
+
 interface
+
+var
+ AVIF_VERSION, AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH : integer;
+
+const
+  AVIF_VERSION_0_8_4 = 00080400;
+  AVIF_VERSION_0_9_2 = 00090200;
+  AVIF_VERSION_0_9_3 = 00090300;
+  AVIF_VERSION_0_10_0 = 00100000;
 
 {
   For windows there are prebuild dlls in
@@ -77,9 +68,9 @@ interface
       {$elseif defined(Win64)}
         'libavif.dll'
       {$elseif defined(Darwin)}
-        'libavif.0.dylib'
+        'libavif.9.dylib'
       {$elseif defined(Unix)}
-        'libavif.so.0'
+        'libavif.so.9'      // version 0.8.4 in Debian bullseye
       {$else}
         ''
       {$endif};
@@ -95,8 +86,6 @@ interface
 {$ENDIF}
 
 
-  { Copyright 2019 Joe Drago. All rights reserved. }
-  { SPDX-License-Identifier: BSD-2-Clause }
 { C++ extern C conditionnal removed }
   { --------------------------------------------------------------------------- }
   { Export macros }
@@ -114,31 +103,6 @@ interface
   { For static build, AVIF_API is always defined as nothing. }
 
   { --------------------------------------------------------------------------- }
-  { Constants }
-  { AVIF_VERSION_DEVEL should always be 0 for official releases / version tags, }
-  { and non-zero during development of the next release. This should allow for }
-  { downstream projects to do greater-than preprocessor checks on AVIF_VERSION }
-  { to leverage in-development code without breaking their stable builds. }
-
-  const
-
-// THE LAST VERSION PREBUILD IN MSYS2*/
-{$define COMPATIBLE_OLD092}
-{$ifndef COMPATIBLE_OLD092}
-    AVIF_VERSION_MAJOR = 0;
-    AVIF_VERSION_MINOR = 9;    
-    AVIF_VERSION_PATCH = 3;    
-    AVIF_VERSION_DEVEL = 1;    
-    //AVIF_VERSION= ((AVIF_VERSION_MAJOR * 1000000) + (AVIF_VERSION_MINOR * 10000) + (AVIF_VERSION_PATCH * 100) + AVIF_VERSION_DEVEL)
-    AVIF_VERSION = 90301;  //90000+300+1
-{$else}
-AVIF_VERSION_MAJOR = 0;
-AVIF_VERSION_MINOR = 9;
-AVIF_VERSION_PATCH = 2;
-AVIF_VERSION_DEVEL = 0;
-//AVIF_VERSION= ((AVIF_VERSION_MAJOR * 1000000) + (AVIF_VERSION_MINOR * 10000) + (AVIF_VERSION_PATCH * 100) + AVIF_VERSION_DEVEL)
-AVIF_VERSION = 90200;  //90000+300+1
-{$endif}
 
     type
       PavifBool = ^avifBool;
@@ -821,109 +785,170 @@ type
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifProgressiveStateToString{$IFDEF LD}: function{$ENDIF}( progressiveState:avifProgressiveState):PAnsiChar;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
 type
-      PavifDecoder = ^avifDecoder;
-      avifDecoder = record
-    { -------------------------------------------------------------------------------------------- }
-  
-    { Inputs }
-	
-    { Defaults to AVIF_CODEC_CHOICE_AUTO: Preference determined by order in availableCodecs table (avif.c) }	  
+      avifDecoder0_8_4 = record
+    { Inputs ------------------------------------------------------------------------------------- }
+    { Defaults to AVIF_CODEC_CHOICE_AUTO: Preference determined by order in availableCodecs table (avif.c) }
           codecChoice : avifCodecChoice;
-    { Defaults to 1. -- NOTE: Please see the "Understanding maxThreads" comment block above }		  
+    { Defaults to 1. -- NOTE: Please see the "Understanding maxThreads" comment block above }
           maxThreads : longint;
     { avifs can have multiple sets of images in them. This specifies which to decode. }
-    { Set this via avifDecoderSetSource(). }		  
+    { Set this via avifDecoderSetSource(). }
+          requestedSource : avifDecoderSource;
+    { Outputs ------------------------------------------------------------------------------------ }
+          image : PavifImage;
+    { Counts and timing for the current image in an image sequence. Uninteresting for single image files. }
+          imageIndex : longint;      { 0-based }
+          imageCount : longint;      { Always 1 for non-progressive, non-sequence AVIFs. }
+          imageTiming : avifImageTiming;      { }
+          timescale : UInt64;      { timescale of the media (Hz) }
+          duration : double;      { in seconds (durationInTimescales / timescale) }
+          durationInTimescales : UInt64;    { duration in "timescales" }
+          alphaPresent : avifBool;
+          ignoreExif : avifBool;
+          ignoreXMP : avifBool;
+          { stats from the most recent read, possibly 0s if reading an image sequence }
+          ioStats : avifIOStats;
+          { Use one of the avifDecoderSetIO*() functions to set this }
+          io : PavifIO;
+          { Internals used by the decoder }
+          data : PavifDecoderData;
+      end;
+
+      avifDecoder0_9_2 = record
+    { Inputs ------------------------------------------------------------------------------------- }
+    { Defaults to AVIF_CODEC_CHOICE_AUTO: Preference determined by order in availableCodecs table (avif.c) }
+          codecChoice : avifCodecChoice;
+    { Defaults to 1. -- NOTE: Please see the "Understanding maxThreads" comment block above }
+          maxThreads : longint;
+    { avifs can have multiple sets of images in them. This specifies which to decode. }
+    { Set this via avifDecoderSetSource(). }
+          requestedSource : avifDecoderSource;
+    { Outputs ------------------------------------------------------------------------------------ }
+          image : PavifImage;
+    { Counts and timing for the current image in an image sequence. Uninteresting for single image files. }
+          imageIndex : longint;      { 0-based }
+          imageCount : longint;      { Always 1 for non-progressive, non-sequence AVIFs. }
+          imageTiming : avifImageTiming;      { }
+          timescale : UInt64;      { timescale of the media (Hz) }
+          duration : double;      { in seconds (durationInTimescales / timescale) }
+          durationInTimescales : UInt64;    { duration in "timescales" }
+          alphaPresent : avifBool;
+          ignoreExif : avifBool;
+          ignoreXMP : avifBool;
+          imageCountLimit : UInt32;
+          strictFlags : avifStrictFlags;
+          { stats from the most recent read, possibly 0s if reading an image sequence }
+          ioStats : avifIOStats;
+          { Use one of the avifDecoderSetIO*() functions to set this }
+          io : PavifIO;
+          { Additional diagnostics (such as detailed error state) }
+          diag : avifDiagnostics;
+          { Internals used by the decoder }
+          data : PavifDecoderData;
+      end;
+
+      avifDecoder0_9_3 = record
+    { Inputs ------------------------------------------------------------------------------------- }
+    { Defaults to AVIF_CODEC_CHOICE_AUTO: Preference determined by order in availableCodecs table (avif.c) }
+          codecChoice : avifCodecChoice;
+    { Defaults to 1. -- NOTE: Please see the "Understanding maxThreads" comment block above }
+          maxThreads : longint;
+    { avifs can have multiple sets of images in them. This specifies which to decode. }
+    { Set this via avifDecoderSetSource(). }
           requestedSource : avifDecoderSource;
     { If this is true and a progressive AVIF is decoded, avifDecoder will behave as if the AVIF is }
     { an image sequence, in that it will set imageCount to the number of progressive frames }
     { available, and avifDecoderNextImage()/avifDecoderNthImage() will allow for specific layers }
     { of a progressive image to be decoded. To distinguish between a progressive AVIF and an AVIF }
     { image sequence, inspect avifDecoder.progressiveState. }
-{$ifndef COMPATIBLE_OLD092}
           allowProgressive : avifBool;
     { Enable any of these to avoid reading and surfacing specific data to the decoded avifImage. }
     { These can be useful if your avifIO implementation heavily uses AVIF_RESULT_WAITING_ON_IO for }
     { streaming data, as some of these payloads are (unfortunately) packed at the end of the file, }
     { which will cause avifDecoderParse() to return AVIF_RESULT_WAITING_ON_IO until it finds them. }
-    { If you don't actually leverage this data, it is best to ignore it here. }		  
-         ignoreExif : avifBool;
-         ignoreXMP : avifBool;
+    { If you don't actually leverage this data, it is best to ignore it here. }
+          ignoreExif : avifBool;
+          ignoreXMP : avifBool;
     { This represents the maximum size of a image (in pixel count) that libavif and the underlying }
     { AV1 decoder should attempt to decode. It defaults to AVIF_DEFAULT_IMAGE_SIZE_LIMIT, and can be }
     { set to a smaller value. The value 0 is reserved. }
-    { Note: Only some underlying AV1 codecs support a configurable size limit (such as dav1d). }		  
-         imageSizeLimit : UInt32;
+    { Note: Only some underlying AV1 codecs support a configurable size limit (such as dav1d). }
+          imageSizeLimit : UInt32;
     { This provides an upper bound on how many images the decoder is willing to attempt to decode, }
     { to provide a bit of protection from malicious or malformed AVIFs citing millions upon }
     { millions of frames, only to be invalid later. The default is AVIF_DEFAULT_IMAGE_COUNT_LIMIT }
-    { (see comment above), and setting this to 0 disables the limit. }		  
-         imageCountLimit : UInt32;
-    { Strict flags. Defaults to AVIF_STRICT_ENABLED. See avifStrictFlag definitions above. }  
+    { (see comment above), and setting this to 0 disables the limit. }
+          imageCountLimit : UInt32;
+    { Strict flags. Defaults to AVIF_STRICT_ENABLED. See avifStrictFlag definitions above. }
           strictFlags : avifStrictFlags;
-{$endif}
-    { -------------------------------------------------------------------------------------------- }
-    { Outputs }
-		  
-    { All decoded image data; owned by the decoder. All information in this image is incrementally }
-    { added and updated as avifDecoder*() functions are called. After a successful call to }
-    { avifDecoderParse(), all values in decoder->image (other than the planes/rowBytes themselves) }
-    { will be pre-populated with all information found in the outer AVIF container, prior to any }
-    { AV1 decoding. If the contents of the inner AV1 payload disagree with the outer container, }
-    { these values may change after calls to avifDecoderRead*(),avifDecoderNextImage(), or }
-    { avifDecoderNthImage(). }
-    { }
-    { The YUV and A contents of this image are likely owned by the decoder, so be sure to copy any }
-    { data inside of this image before advancing to the next image or reusing the decoder. It is }
-    { legal to call avifImageYUVToRGB() on this in between calls to avifDecoderNextImage(), but use }
-    { avifImageCopy() if you want to make a complete, permanent copy of this image's YUV content or }
-    { metadata. }		  
+    { Outputs ------------------------------------------------------------------------------------ }
           image : PavifImage;
-    { Counts and timing for the current image in an image sequence. Uninteresting for single image files. }	  
+    { Counts and timing for the current image in an image sequence. Uninteresting for single image files. }
           imageIndex : longint;      { 0-based }
           imageCount : longint;      { Always 1 for non-progressive, non-sequence AVIFs. }
-{$ifndef COMPATIBLE_OLD092}
           progressiveState : avifProgressiveState;      { See avifProgressiveState declaration }
-{$endif}
           imageTiming : avifImageTiming;      { }
           timescale : UInt64;      { timescale of the media (Hz) }
           duration : double;      { in seconds (durationInTimescales / timescale) }
           durationInTimescales : UInt64;    { duration in "timescales" }
-    { This is true when avifDecoderParse() detects an alpha plane. Use this to find out if alpha is }
-    { present after a successful call to avifDecoderParse(), but prior to any call to }
-    { avifDecoderNextImage() or avifDecoderNthImage(), as decoder->image->alphaPlane won't exist yet. }		  
           alphaPresent : avifBool;
-{$ifdef COMPATIBLE_OLD092}
-ignoreExif : avifBool;     //CHANGED ORDER IN NEW VERSION.
-ignoreXMP : avifBool;       //CHANGED ORDER IN NEW VERSION.
-imageCountLimit : UInt32;   //CHANGED ORDER IN NEW VERSION.
-strictFlags : avifStrictFlags;//CHANGED ORDER IN NEW VERSION.
-{$endif}
-    { stats from the most recent read, possibly 0s if reading an image sequence }		  		  
+    { stats from the most recent read, possibly 0s if reading an image sequence }
           ioStats : avifIOStats;
     { Additional diagnostics (such as detailed error state) }
-{$ifdef COMPATIBLE_OLD092}
-io : PavifIO; //CHANGED ORDER IN NEW VERSION.
-{$endif}
-
           diag : avifDiagnostics;
-    { -------------------------------------------------------------------------------------------- }
-    { Internals }
     { Use one of the avifDecoderSetIO*() functions to set this }
-{$ifndef COMPATIBLE_OLD092}
           io : PavifIO;
-{$endif}
-    { Internals used by the decoder }		  
+    { Internals used by the decoder }
           data : PavifDecoderData;
         end;
-		
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderCreate{$IFDEF LD}: function{$ENDIF}:PavifDecoder;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDecoderDestroy{$IFDEF LD}: procedure{$ENDIF}(decoder:PavifDecoder);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+
+      avifDecoder0_10_0 = record
+    { Inputs ------------------------------------------------------------------------------------- }
+          codecChoice : avifCodecChoice;
+          maxThreads : longint;
+          requestedSource : avifDecoderSource;
+          allowProgressive : avifBool;
+    { If this is false, avifDecoderNextImage() will start decoding a frame only after there are     }
+    { enough input bytes to decode all of that frame. If this is true, avifDecoder will decode each }
+    { subimage or grid cell as soon as possible. The benefits are: grid images may be partially     }
+    { displayed before being entirely available, and the overall decoding may finish earlier.       }
+    { WARNING: Experimental feature. }
+          allowIncremental : avifBool;
+          ignoreExif : avifBool;
+          ignoreXMP : avifBool;
+          imageSizeLimit : UInt32;
+          imageCountLimit : UInt32;
+    { Strict flags. Defaults to AVIF_STRICT_ENABLED. See avifStrictFlag definitions above. }
+          strictFlags : avifStrictFlags;
+    { Outputs ------------------------------------------------------------------------------------ }
+          image : PavifImage;
+    { Counts and timing for the current image in an image sequence. Uninteresting for single image files. }
+          imageIndex : longint;      { 0-based }
+          imageCount : longint;      { Always 1 for non-progressive, non-sequence AVIFs. }
+          progressiveState : avifProgressiveState;      { See avifProgressiveState declaration }
+          imageTiming : avifImageTiming;      { }
+          timescale : UInt64;      { timescale of the media (Hz) }
+          duration : double;      { in seconds (durationInTimescales / timescale) }
+          durationInTimescales : UInt64;    { duration in "timescales" }
+          alphaPresent : avifBool;
+    { stats from the most recent read, possibly 0s if reading an image sequence }
+          ioStats : avifIOStats;
+    { Additional diagnostics (such as detailed error state) }
+          diag : avifDiagnostics;
+    { Use one of the avifDecoderSetIO*() functions to set this }
+          io : PavifIO;
+    { Internals used by the decoder }
+          data : PavifDecoderData;
+        end;
+
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderCreate{$IFDEF LD}: function{$ENDIF}:pointer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDecoderDestroy{$IFDEF LD}: procedure{$ENDIF}(decoder:pointer);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { Simple interfaces to decode a single image, independent of the decoder afterwards (decoder may be destroyed). }
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderRead{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;image:PavifImage):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // call avifDecoderSetIO*() first
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReadMemory{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; image:PavifImage;data:PByte;size:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReadFile{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;image:PavifImage;filename:PAnsiChar):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderRead{$IFDEF LD}: function{$ENDIF}(decoder:pointer;image:PavifImage):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // call avifDecoderSetIO*() first
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReadMemory{$IFDEF LD}: function{$ENDIF}(decoder:pointer; image:PavifImage;data:PByte;size:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReadFile{$IFDEF LD}: function{$ENDIF}(decoder:pointer;image:PavifImage;filename:PAnsiChar):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { Multi-function alternative to avifDecoderRead() for image sequences and gaining direct access }
     { to the decoder's YUV buffers (for performance's sake). Data passed into avifDecoderParse() is NOT }
@@ -948,33 +973,33 @@ io : PavifIO; //CHANGED ORDER IN NEW VERSION.
     { items in a file containing both, but switch between sources without having to }
     { Parse again. Normally AVIF_DECODER_SOURCE_AUTO is enough for the common path. }
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetSource{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;source:avifDecoderSource):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetSource{$IFDEF LD}: function{$ENDIF}(decoder:pointer;source:avifDecoderSource):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { Note: When avifDecoderSetIO() is called, whether 'decoder' takes ownership of 'io' depends on }
     { whether io->destroy is set. avifDecoderDestroy(decoder) calls avifIODestroy(io), which calls }
     { io->destroy(io) if io->destroy is set. Therefore, if io->destroy is not set, then }
     { avifDecoderDestroy(decoder) has no effects on 'io'. }
 
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDecoderSetIO{$IFDEF LD}: procedure{$ENDIF}(decoder:PavifDecoder;io:PavifIO);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetIOMemory{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; data:PByte;size:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetIOFile{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;filename:PAnsiChar):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderParse{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNextImage{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImage{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;frameIndex: UInt32):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReset{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDecoderSetIO{$IFDEF LD}: procedure{$ENDIF}(decoder:pointer;io:PavifIO);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetIOMemory{$IFDEF LD}: function{$ENDIF}(decoder:pointer; data:PByte;size:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetIOFile{$IFDEF LD}: function{$ENDIF}(decoder:pointer;filename:PAnsiChar):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderParse{$IFDEF LD}: function{$ENDIF}(decoder:pointer):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNextImage{$IFDEF LD}: function{$ENDIF}(decoder:pointer):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImage{$IFDEF LD}: function{$ENDIF}(decoder:pointer;frameIndex: UInt32):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReset{$IFDEF LD}: function{$ENDIF}(decoder:pointer):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { Keyframe information }
     { frameIndex - 0-based, matching avifDecoder->imageIndex, bound by avifDecoder->imageCount }
     { "nearest" keyframe means the keyframe prior to this frame index (returns frameIndex if it is a keyframe) }
     { These functions may be used after a successful call (AVIF_RESULT_OK) to avifDecoderParse(). }
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderIsKeyframe{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; frameindex:UInt32):avifBool;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNearestKeyframe{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; frameIndex:UInt32):UInt32;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderIsKeyframe{$IFDEF LD}: function{$ENDIF}(decoder:pointer; frameindex:UInt32):avifBool;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNearestKeyframe{$IFDEF LD}: function{$ENDIF}(decoder:pointer; frameIndex:UInt32):UInt32;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
  
     { Timing helper - This does not change the current image or invoke the codec (safe to call repeatedly) }
     { This function may be used after a successful call (AVIF_RESULT_OK) to avifDecoderParse(). }
  
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImageTiming{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; frameIndex:UInt32;outTiming:PavifImageTiming):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImageTiming{$IFDEF LD}: function{$ENDIF}(decoder:pointer; frameIndex:UInt32;outTiming:PavifImageTiming):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { --------------------------------------------------------------------------- }
     { avifExtent }
@@ -1000,7 +1025,7 @@ type
     { }
     { This function may be used after a successful call (AVIF_RESULT_OK) to avifDecoderParse(). }
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImageMaxExtent{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; frameIndex:UInt32;outExtend:PavifExtent):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImageMaxExtent{$IFDEF LD}: function{$ENDIF}(decoder:pointer; frameIndex:UInt32;outExtend:PavifExtent):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 type
     { --------------------------------------------------------------------------- }
     { avifEncoder }
@@ -1103,7 +1128,7 @@ implementation
 {$IFDEF LOAD_DYNAMICALLY}
 
 uses
-    SysUtils, DynLibs{$ifdef linux}, linuxlib{$endif}{$ifdef darwin}, darwinlib{$endif};
+    SysUtils, Classes, DynLibs{$ifdef linux}, linuxlib{$endif}{$ifdef darwin}, darwinlib{$endif};
 var
   LibAvifHandle: TLibHandle = dynlibs.NilHandle; // this will hold our handle for the lib; it functions nicely as a mutli-lib prevention unit as well...
   LibAvifRefCount : LongWord = 0;  // Reference counter
@@ -1111,7 +1136,22 @@ var
 
 function LibAvifLoaded: boolean;
 begin
- Result := (LibAvifHandle <> dynlibs.NilHandle);
+  Result := (LibAvifHandle <> dynlibs.NilHandle);
+end;
+
+procedure LibAvifRetreiveVersion;
+var version: TStringList;
+begin
+  version := TStringList.Create;
+  version.Delimiter:= '.';
+  version.DelimitedText:= string(avifVersion());
+  AVIF_VERSION_MAJOR := StrToInt(version[0]);
+  if version.Count >= 2 then AVIF_VERSION_MINOR := StrToInt(version[1]) else
+    AVIF_VERSION_MINOR := 0;
+  if version.Count >= 3 then AVIF_VERSION_PATCH := StrToInt(version[2]) else
+    AVIF_VERSION_PATCH := 0;
+  AVIF_VERSION := AVIF_VERSION_MAJOR * 1000000 + AVIF_VERSION_MINOR * 10000 + AVIF_VERSION_PATCH * 100;
+  version.Free;
 end;
 
 Function LibAvifLoad (const libfilename:string) :boolean;
@@ -1213,6 +1253,7 @@ begin
       Pointer(avifRWDataRealloc):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifRWDataRealloc'));
       Pointer(avifRWDataSet):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifRWDataSet'));
       Pointer(avifVersion):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifVersion'));
+      LibAvifRetreiveVersion;
     end;
     Result := LibAvifLoaded;
     LibAvifRefCount:=1;

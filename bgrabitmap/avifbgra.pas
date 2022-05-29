@@ -1,26 +1,6 @@
-{  Encode/Decode avif images from/to BGRABitmap. }
-{* Author: Domingo Galmes <dgalmesp@gmail.com>  01-11-2021
-******************************************************************************
-* Copyright (c) 2021 Domingo Galmés
-*
-* Permission is hereby granted, free of charge, to any person obtaining a
-* copy of this software and associated documentation files (the "Software"),
-* to deal in the Software without restriction, including without limitation
-* the rights to use, copy, modify, merge, publish, distribute, sublicense,
-* and/or sell copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included
-* in all copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-* OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO COORD SHALL
-* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-* DEALINGS IN THE SOFTWARE.
-*****************************************************************************}
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
+{ Encode/Decode avif images from/to BGRABitmap. }
+{ Author: Domingo Galmes <dgalmesp@gmail.com>  01-11-2021 }
 
 unit avifbgra;
 
@@ -142,23 +122,47 @@ begin
 end;
 
 
-function avifDecoderSetIOStream(decoder: PavifDecoder; aStream: TStream): avifResult; cdecl;
+function avifDecoderSetIOStream(decoder: pointer; aStream: TStream): avifResult; cdecl;
 var
   io: PavifIO;
+  setIo: pointer;
 begin
   io := avifIOCreateStreamReader(aStream);
   if io = nil then
     exit(AVIF_RESULT_IO_ERROR);
   avifDecoderSetIO(decoder, io);
-  if decoder^.io = nil then
+
+  if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
+     setIo := avifDecoder0_10_0(decoder^).io
+  else if AVIF_VERSION >= AVIF_VERSION_0_9_3 then
+     setIo := avifDecoder0_9_3(decoder^).io
+  else if AVIF_VERSION >= AVIF_VERSION_0_9_2 then
+     setIo := avifDecoder0_9_2(decoder^).io
+  else
+     setIo := avifDecoder0_8_4(decoder^).io;
+
+  if setIo = nil then
     raise EAvifException.Create('Failed to set input. Could be due to incompatible version of AVIF library.');
   exit(AVIF_RESULT_OK);
 end;
 
-procedure AvifDecode(decoder: PavifDecoder; aBitmap: TBGRACustomBitmap);
+procedure AvifDecode(decoder: pointer; aBitmap: TBGRACustomBitmap);
 var
   res: avifResult;
   wrgb: avifRGBImage;
+
+function decoderImage: PavifImage;
+begin
+  if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
+     result := avifDecoder0_10_0(decoder^).image
+  else if AVIF_VERSION >= AVIF_VERSION_0_9_3 then
+     result := avifDecoder0_9_3(decoder^).image
+  else if AVIF_VERSION >= AVIF_VERSION_0_9_2 then
+     result := avifDecoder0_9_2(decoder^).image
+  else
+     result := avifDecoder0_8_4(decoder^).image;
+end;
+
 begin
   res := avifDecoderParse(decoder);
   if res <> AVIF_RESULT_OK then
@@ -166,11 +170,11 @@ begin
   //  Memo1.Lines.Add(Format('Parsed AVIF: %ux%u (%ubpc)', [decoder^.image^.Width, decoder^.image^.Height, decoder^.image^.depth]));
   if avifDecoderNextImage(decoder) = AVIF_RESULT_OK then
   begin
-    if decoder^.image = nil then
+    if decoderImage = nil then
       raise EAvifException.Create('No image data recieved from AVIF library.');
     //fillchar(wrgb, sizeof(wrgb), 0);
     wrgb:=Default(avifRGBImage);
-    avifRGBImageSetDefaults(@wrgb, decoder^.image);
+    avifRGBImageSetDefaults(@wrgb, decoderImage);
     //aBitmap.LineOrder:=riloTopToBottom;
     aBitmap.SetSize(wrgb.Width, wrgb.Height);
     wrgb.pixels := PUint8(aBitmap.databyte);
@@ -188,12 +192,12 @@ begin
     //  decoder^.image^.imir.mode:=0;
     //end;
     //decoder^.image^.imir.axis:=0; //vertical mirror
-    res := avifImageYUVToRGB(decoder^.image, @wrgb);
+    res := avifImageYUVToRGB(decoderImage, @wrgb);
     if res <> AVIF_RESULT_OK then
       raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
     if (aBitmap.LineOrder <> riloTopToBottom) and not
-      (((longword(decoder^.image^.transformFlags) and longword(AVIF_TRANSFORM_IMIR))) = longword(AVIF_TRANSFORM_IMIR)) and
-      (decoder^.image^.imir.mode = 0) then
+      (((longword(decoderImage^.transformFlags) and longword(AVIF_TRANSFORM_IMIR))) = longword(AVIF_TRANSFORM_IMIR)) and
+      (decoderImage^.imir.mode = 0) then
       aBitmap.VerticalFlip;
     aBitmap.InvalidateBitmap;
   end
@@ -203,7 +207,7 @@ end;
 
 procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRACustomBitmap);
 var
-  decoder: PavifDecoder;
+  decoder: pointer;
   res: avifResult;
 begin
   decoder := avifDecoderCreate();
@@ -238,7 +242,7 @@ end;
 
 procedure AvifLoadFromFileNative(const AFilename: string; aBitmap: TBGRACustomBitmap);
 var
-  decoder: PavifDecoder;
+  decoder: pointer;
   res: avifResult;
 begin
   decoder := avifDecoderCreate();
@@ -261,7 +265,7 @@ end;
 
 procedure AvifLoadFromMemory(AData: Pointer; ASize: cardinal; aBitmap: TBGRACustomBitmap);
 var
-  decoder: PavifDecoder;
+  decoder: pointer;
   res: avifResult;
 begin
   decoder := avifDecoderCreate();
