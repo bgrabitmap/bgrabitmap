@@ -20,7 +20,7 @@ type
 
 implementation
 
-uses avifbgra,libavif{$ifdef linux}, linuxlib{$endif}, BGRABitmapTypes, BGRABitmap;
+uses avifbgra,libavif, BGRABitmapTypes, BGRABitmap;
 
 var
   MyLibAvifLoaded: boolean;
@@ -29,7 +29,7 @@ procedure NeedLibAvif;
 begin
   if not MyLibAvifLoaded then
   begin
-    if not LibAvifLoad({$ifdef linux}FindLinuxLibrary('libavif.so', 0){$else}LibAvifFilename{$endif}) then
+    if not LibAvifLoad then
       raise exception.Create('Cannot find libavif library ('+LibAvifFilename+')');
     MyLibAvifLoaded:= true;
   end;
@@ -50,7 +50,7 @@ begin
     if Img is TBGRACustomBitmap then
       loadInto := TBGRACustomBitmap(Img)
     else
-      loadInto := BGRABitmapFactory.Create(w,h);
+      loadInto := BGRABitmapFactory.Create(Img.Width,Img.Height);
     avifLoadFromStream(Str,TBGRABitmap(loadInto));
     //if loadInto.LineOrder = riloBottomToTop then loadInto.VerticalFlip;
     if Img <> loadInto then

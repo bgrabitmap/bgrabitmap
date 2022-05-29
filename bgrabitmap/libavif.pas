@@ -1103,7 +1103,7 @@ implementation
 {$IFDEF LOAD_DYNAMICALLY}
 
 uses
-    SysUtils, DynLibs;
+    SysUtils, DynLibs{$ifdef linux}, linuxlib{$endif}{$ifdef darwin}, darwinlib{$endif};
 var
   LibAvifHandle: TLibHandle = dynlibs.NilHandle; // this will hold our handle for the lib; it functions nicely as a mutli-lib prevention unit as well...
   LibAvifRefCount : LongWord = 0;  // Reference counter
@@ -1125,23 +1125,20 @@ begin
    result:=true {is it already there ?}
   end else
   begin {go & load the library}
-    if Length(libfilename) = 0 then
+    if libfilename <> '' then
     begin
-      thelib := LibAvifFilename;
-      if thelib = '' then exit(false);
-      //thelib := ExtractFilePath(ParamStr(0)) + DirectorySeparator + thelib;
-    end
-    else
       thelib := libfilename;
-    LibAvifHandle := DynLibs.SafeLoadLibrary(thelib); // obtain the handle we want
-    {$IFDEF WINDOWS}
-    // second try on Windows
-    if LibAvifHandle = DynLibs.NilHandle then
+      if Pos(DirectorySeparator, thelib)=0 then
+        thelib := ExtractFilePath(ParamStr(0)) + DirectorySeparator + thelib;
+      LibAvifHandle := DynLibs.SafeLoadLibrary(libfilename); // obtain the handle we want
+    end else
     begin
+      {$ifdef linux}thelib := FindLinuxLibrary(LibAvifFilename);{$else}
+      {$ifdef darwin}thelib := FindDarwinLibrary(LibAvifFilename);{$else}
       thelib := ExtractFilePath(ParamStr(0)) + DirectorySeparator + LibAvifFilename;
+      {$endif}{$endif}
       LibAvifHandle := DynLibs.SafeLoadLibrary(thelib); // obtain the handle we want
     end;
-    {$ENDIF}
     if LibAvifHandle <> DynLibs.NilHandle then
     begin {now we tie the functions to the VARs from above}
       Pointer(avifAlloc):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifAlloc'));

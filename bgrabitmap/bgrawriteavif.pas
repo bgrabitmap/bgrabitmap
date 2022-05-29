@@ -31,7 +31,7 @@ type
 
 implementation
 
-uses libavif{$ifdef linux}, linuxlib{$endif}, BGRABitmapTypes, BGRABitmap;
+uses libavif, BGRABitmapTypes, BGRABitmap;
 
 var
   MyLibAvifLoaded: boolean;
@@ -40,7 +40,7 @@ procedure NeedLibAvif;
 begin
   if not MyLibAvifLoaded then
   begin
-    if not LibAvifLoad({$ifdef linux}FindLinuxLibrary('libavif.so', 0){$else}LibAvifFilename{$endif}) then
+    if not LibAvifLoad then
       raise exception.Create('Cannot find libavif library ('+LibAvifFilename+')');
     MyLibAvifLoaded:= true;
   end;
@@ -71,9 +71,6 @@ end;
 constructor TBGRAWriterAvif.Create;
 begin
   inherited Create;
-//TODO: I thing that better default values are
-// FQualityPercent := 60;
-// FLossless:= False;
   FQualityPercent := 100;
   FLossless:= True;
   FSpeed:=AVIF_SPEED_DEFAULT;

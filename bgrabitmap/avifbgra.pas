@@ -29,7 +29,7 @@ unit avifbgra;
 interface
 
 uses
-  Classes, SysUtils, bgrabitmap,libavif;
+  Classes, SysUtils, BGRABitmapTypes, libavif;
 
 type
   EAvifException = class(Exception);
@@ -38,22 +38,22 @@ type
 const
   AVIF_DEFAULT_QUALITY = 30;
 
-procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRABitmap);
-procedure AvifLoadFromFile(const AFilename: string; aBitmap: TBGRABitmap);
-procedure AvifLoadFromFileNative(const AFilename: string; aBitmap: TBGRABitmap);
-procedure AvifLoadFromMemory(AData: Pointer; ASize: cardinal; aBitmap: TBGRABitmap);
+procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRACustomBitmap);
+procedure AvifLoadFromFile(const AFilename: string; aBitmap: TBGRACustomBitmap);
+procedure AvifLoadFromFileNative(const AFilename: string; aBitmap: TBGRACustomBitmap);
+procedure AvifLoadFromMemory(AData: Pointer; ASize: cardinal; aBitmap: TBGRACustomBitmap);
 //a Quality0to100=100 LOSSLESS
-function AvifSaveToStream(aBitmap: TBGRABitmap; AStream: TStream; aQuality0to100: integer = 30;aSpeed0to10:integer=AVIF_SPEED_DEFAULT;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false): NativeUInt;
-function AvifSaveToFile(aBitmap: TBGRABitmap; const AFilename: string; aQuality0to100: integer = 30;aSpeed0to10:integer=AVIF_SPEED_DEFAULT;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false): NativeUInt;
+function AvifSaveToStream(aBitmap: TBGRACustomBitmap; AStream: TStream; aQuality0to100: integer = 30;aSpeed0to10:integer=AVIF_SPEED_DEFAULT;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false): NativeUInt;
+function AvifSaveToFile(aBitmap: TBGRACustomBitmap; const AFilename: string; aQuality0to100: integer = 30;aSpeed0to10:integer=AVIF_SPEED_DEFAULT;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false): NativeUInt;
 //returns size of the resulting bitmap.
-function AvifSaveToMemory(aBitmap: TBGRABitmap; AData: Pointer; ASize: cardinal; aQuality0to100: integer = 30;aSpeed0to10:integer=AVIF_SPEED_DEFAULT;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false): NativeUInt;
+function AvifSaveToMemory(aBitmap: TBGRACustomBitmap; AData: Pointer; ASize: cardinal; aQuality0to100: integer = 30;aSpeed0to10:integer=AVIF_SPEED_DEFAULT;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false): NativeUInt;
 //aBuffer  12 first bytes of file.
 function AvifValidateHeaderSignature(aBuffer: Pointer): boolean;
 
 implementation
 
 uses
-  Math, BGRABitmapTypes;
+  Math;
 
 type
   PavifIOStreamReader = ^avifIOStreamReader;
@@ -153,7 +153,7 @@ begin
   exit(AVIF_RESULT_OK);
 end;
 
-procedure AvifDecode(decoder: PavifDecoder; aBitmap: TBGRABitmap);
+procedure AvifDecode(decoder: PavifDecoder; aBitmap: TBGRACustomBitmap);
 var
   res: avifResult;
   wrgb: avifRGBImage;
@@ -164,6 +164,8 @@ begin
   //  Memo1.Lines.Add(Format('Parsed AVIF: %ux%u (%ubpc)', [decoder^.image^.Width, decoder^.image^.Height, decoder^.image^.depth]));
   if avifDecoderNextImage(decoder) = AVIF_RESULT_OK then
   begin
+    if decoder^.image = nil then
+      raise EAvifException.Create('Avif Error: no image data');
     //fillchar(wrgb, sizeof(wrgb), 0);
     wrgb:=Default(avifRGBImage);
     avifRGBImageSetDefaults(@wrgb, decoder^.image);
@@ -197,7 +199,7 @@ begin
     raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
 end;
 
-procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRABitmap);
+procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRACustomBitmap);
 var
   decoder: PavifDecoder;
   res: avifResult;
@@ -220,7 +222,7 @@ begin
   end;
 end;
 
-procedure AvifLoadFromFile(const AFilename: string; aBitmap: TBGRABitmap);
+procedure AvifLoadFromFile(const AFilename: string; aBitmap: TBGRACustomBitmap);
 var
   Stream: TFileStream;
 begin
@@ -232,7 +234,7 @@ begin
   end;
 end;
 
-procedure AvifLoadFromFileNative(const AFilename: string; aBitmap: TBGRABitmap);
+procedure AvifLoadFromFileNative(const AFilename: string; aBitmap: TBGRACustomBitmap);
 var
   decoder: PavifDecoder;
   res: avifResult;
@@ -255,7 +257,7 @@ begin
   end;
 end;
 
-procedure AvifLoadFromMemory(AData: Pointer; ASize: cardinal; aBitmap: TBGRABitmap);
+procedure AvifLoadFromMemory(AData: Pointer; ASize: cardinal; aBitmap: TBGRACustomBitmap);
 var
   decoder: PavifDecoder;
   res: avifResult;
@@ -296,7 +298,7 @@ end;
 //https://github.com/AOMediaCodec/libavif/issues/545
 //https://gitmemory.com/issue/AOMediaCodec/libavif/545/802934788
 // aQuality0to100   0 worst quality, 100 best quality ( lossless ).
-procedure AvifEncode(aBitmap: TBGRABitmap; aQuality0to100: integer; aSpeed0to10:integer; var avifOutput: avifRWData;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false);
+procedure AvifEncode(aBitmap: TBGRACustomBitmap; aQuality0to100: integer; aSpeed0to10:integer; var avifOutput: avifRWData;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false);
 var
   encoder: PavifEncoder;
   wrgb: avifRGBImage;
@@ -434,7 +436,7 @@ begin
   end;
 end;
 
-function AvifSaveToFile(aBitmap: TBGRABitmap; const AFilename: string; aQuality0to100: integer;aSpeed0to10:integer;aPixelFormat:avifPixelFormat;aIgnoreAlpha:boolean): NativeUInt;
+function AvifSaveToFile(aBitmap: TBGRACustomBitmap; const AFilename: string; aQuality0to100: integer;aSpeed0to10:integer;aPixelFormat:avifPixelFormat;aIgnoreAlpha:boolean): NativeUInt;
 var
   Stream: TFileStream;
 begin
@@ -446,7 +448,7 @@ begin
   end;
 end;
 
-function AvifSaveToStream(aBitmap: TBGRABitmap; AStream: TStream; aQuality0to100: integer;aSpeed0to10:integer;aPixelFormat:avifPixelFormat;aIgnoreAlpha:boolean): NativeUInt;
+function AvifSaveToStream(aBitmap: TBGRACustomBitmap; AStream: TStream; aQuality0to100: integer;aSpeed0to10:integer;aPixelFormat:avifPixelFormat;aIgnoreAlpha:boolean): NativeUInt;
 var
   avifOutput: avifRWData;
   p:PByte;
@@ -482,7 +484,7 @@ begin
 end;
 
 //returns the size of the resulting bitmap.
-function AvifSaveToMemory(aBitmap: TBGRABitmap; AData: Pointer; ASize: cardinal; aQuality0to100: integer;aSpeed0to10:integer;aPixelFormat:avifPixelFormat;aIgnoreAlpha:boolean): NativeUInt;
+function AvifSaveToMemory(aBitmap: TBGRACustomBitmap; AData: Pointer; ASize: cardinal; aQuality0to100: integer;aSpeed0to10:integer;aPixelFormat:avifPixelFormat;aIgnoreAlpha:boolean): NativeUInt;
 var
   avifOutput: avifRWData;
 begin
