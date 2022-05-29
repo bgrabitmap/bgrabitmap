@@ -536,8 +536,8 @@ type
 
         );
     
-      PavifRGBImage = ^avifRGBImage;
-      avifRGBImage = record
+      PavifRGBImage = pointer;
+      avifRGBImage0_8_4 = record
           width : UInt32;      { must match associated avifImage }
           height : UInt32;    { must match associated avifImage }
           depth : UInt32;    { legal depths [8, 10, 12, 16]. if depth>8, pixels must be UInt16 internally }
@@ -551,6 +551,22 @@ type
           pixels : PUInt8;
           rowBytes : UInt32;
         end;
+
+      avifRGBImage0_10_0 = record
+          width : UInt32;      { must match associated avifImage }
+          height : UInt32;    { must match associated avifImage }
+          depth : UInt32;    { legal depths [8, 10, 12, 16]. if depth>8, pixels must be UInt16 internally }
+          format : avifRGBFormat;  { all channels are always full range }
+          chromaUpsampling : avifChromaUpsampling;     { Defaults to AVIF_CHROMA_UPSAMPLING_AUTOMATIC: How to upsample non-4:4:4 UV (ignored for 444) when converting to RGB. }
+    { Unused when converting to YUV. avifRGBImageSetDefaults() prefers quality over speed. }
+    { Used for XRGB formats, treats formats containing alpha (such as ARGB) as if they were }
+    { RGB, treating the alpha bits as if they were all 1. }
+          ignoreAlpha : avifBool;
+          alphaPremultiplied : avifBool;     { indicates if RGB value is pre-multiplied by alpha. Default: false }
+          pixels : PUInt8;
+          rowBytes : UInt32;
+        end;
+
     { Sets rgb->width, rgb->height, and rgb->depth to image->width, image->height, and image->depth. }
     { Sets rgb->pixels to NULL and rgb->rowBytes to 0. Sets the other fields of 'rgb' to default }
     { values. }
@@ -785,6 +801,7 @@ type
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifProgressiveStateToString{$IFDEF LD}: function{$ENDIF}( progressiveState:avifProgressiveState):PAnsiChar;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
 type
+      PavifDecoder = pointer;
       avifDecoder0_8_4 = record
     { Inputs ------------------------------------------------------------------------------------- }
     { Defaults to AVIF_CODEC_CHOICE_AUTO: Preference determined by order in availableCodecs table (avif.c) }
@@ -941,14 +958,14 @@ type
           data : PavifDecoderData;
         end;
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderCreate{$IFDEF LD}: function{$ENDIF}:pointer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDecoderDestroy{$IFDEF LD}: procedure{$ENDIF}(decoder:pointer);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderCreate{$IFDEF LD}: function{$ENDIF}:PavifDecoder;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDecoderDestroy{$IFDEF LD}: procedure{$ENDIF}(decoder:PavifDecoder);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { Simple interfaces to decode a single image, independent of the decoder afterwards (decoder may be destroyed). }
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderRead{$IFDEF LD}: function{$ENDIF}(decoder:pointer;image:PavifImage):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // call avifDecoderSetIO*() first
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReadMemory{$IFDEF LD}: function{$ENDIF}(decoder:pointer; image:PavifImage;data:PByte;size:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReadFile{$IFDEF LD}: function{$ENDIF}(decoder:pointer;image:PavifImage;filename:PAnsiChar):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderRead{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;image:PavifImage):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // call avifDecoderSetIO*() first
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReadMemory{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; image:PavifImage;data:PByte;size:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReadFile{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;image:PavifImage;filename:PAnsiChar):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { Multi-function alternative to avifDecoderRead() for image sequences and gaining direct access }
     { to the decoder's YUV buffers (for performance's sake). Data passed into avifDecoderParse() is NOT }
@@ -973,33 +990,33 @@ type
     { items in a file containing both, but switch between sources without having to }
     { Parse again. Normally AVIF_DECODER_SOURCE_AUTO is enough for the common path. }
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetSource{$IFDEF LD}: function{$ENDIF}(decoder:pointer;source:avifDecoderSource):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetSource{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;source:avifDecoderSource):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { Note: When avifDecoderSetIO() is called, whether 'decoder' takes ownership of 'io' depends on }
     { whether io->destroy is set. avifDecoderDestroy(decoder) calls avifIODestroy(io), which calls }
     { io->destroy(io) if io->destroy is set. Therefore, if io->destroy is not set, then }
     { avifDecoderDestroy(decoder) has no effects on 'io'. }
 
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDecoderSetIO{$IFDEF LD}: procedure{$ENDIF}(decoder:pointer;io:PavifIO);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetIOMemory{$IFDEF LD}: function{$ENDIF}(decoder:pointer; data:PByte;size:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetIOFile{$IFDEF LD}: function{$ENDIF}(decoder:pointer;filename:PAnsiChar):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderParse{$IFDEF LD}: function{$ENDIF}(decoder:pointer):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNextImage{$IFDEF LD}: function{$ENDIF}(decoder:pointer):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImage{$IFDEF LD}: function{$ENDIF}(decoder:pointer;frameIndex: UInt32):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReset{$IFDEF LD}: function{$ENDIF}(decoder:pointer):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDecoderSetIO{$IFDEF LD}: procedure{$ENDIF}(decoder:PavifDecoder;io:PavifIO);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetIOMemory{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; data:PByte;size:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderSetIOFile{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;filename:PAnsiChar):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderParse{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNextImage{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImage{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder;frameIndex: UInt32):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderReset{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { Keyframe information }
     { frameIndex - 0-based, matching avifDecoder->imageIndex, bound by avifDecoder->imageCount }
     { "nearest" keyframe means the keyframe prior to this frame index (returns frameIndex if it is a keyframe) }
     { These functions may be used after a successful call (AVIF_RESULT_OK) to avifDecoderParse(). }
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderIsKeyframe{$IFDEF LD}: function{$ENDIF}(decoder:pointer; frameindex:UInt32):avifBool;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNearestKeyframe{$IFDEF LD}: function{$ENDIF}(decoder:pointer; frameIndex:UInt32):UInt32;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderIsKeyframe{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; frameindex:UInt32):avifBool;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNearestKeyframe{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; frameIndex:UInt32):UInt32;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
  
     { Timing helper - This does not change the current image or invoke the codec (safe to call repeatedly) }
     { This function may be used after a successful call (AVIF_RESULT_OK) to avifDecoderParse(). }
  
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImageTiming{$IFDEF LD}: function{$ENDIF}(decoder:pointer; frameIndex:UInt32;outTiming:PavifImageTiming):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImageTiming{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; frameIndex:UInt32;outTiming:PavifImageTiming):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { --------------------------------------------------------------------------- }
     { avifExtent }
@@ -1025,7 +1042,7 @@ type
     { }
     { This function may be used after a successful call (AVIF_RESULT_OK) to avifDecoderParse(). }
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImageMaxExtent{$IFDEF LD}: function{$ENDIF}(decoder:pointer; frameIndex:UInt32;outExtend:PavifExtent):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderNthImageMaxExtent{$IFDEF LD}: function{$ENDIF}(decoder:PavifDecoder; frameIndex:UInt32;outExtend:PavifExtent):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 type
     { --------------------------------------------------------------------------- }
     { avifEncoder }

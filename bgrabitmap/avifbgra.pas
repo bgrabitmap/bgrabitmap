@@ -122,10 +122,10 @@ begin
 end;
 
 
-function avifDecoderSetIOStream(decoder: pointer; aStream: TStream): avifResult; cdecl;
+function avifDecoderSetIOStream(decoder: PavifDecoder; aStream: TStream): avifResult; cdecl;
 var
   io: PavifIO;
-  setIo: pointer;
+  setIo: PavifIO;
 begin
   io := avifIOCreateStreamReader(aStream);
   if io = nil then
@@ -146,10 +146,12 @@ begin
   exit(AVIF_RESULT_OK);
 end;
 
-procedure AvifDecode(decoder: pointer; aBitmap: TBGRACustomBitmap);
+procedure AvifDecode(decoder: PavifDecoder; aBitmap: TBGRACustomBitmap);
 var
   res: avifResult;
-  wrgb: avifRGBImage;
+  wrgb0_8: avifRGBImage0_8_4;
+  wrgb0_10: avifRGBImage0_10_0;
+  prgb: PavifRGBImage;
 
 function decoderImage: PavifImage;
 begin
@@ -172,27 +174,46 @@ begin
   begin
     if decoderImage = nil then
       raise EAvifException.Create('No image data recieved from AVIF library.');
-    //fillchar(wrgb, sizeof(wrgb), 0);
-    wrgb:=Default(avifRGBImage);
-    avifRGBImageSetDefaults(@wrgb, decoderImage);
-    //aBitmap.LineOrder:=riloTopToBottom;
-    aBitmap.SetSize(wrgb.Width, wrgb.Height);
-    wrgb.pixels := PUint8(aBitmap.databyte);
-    wrgb.depth := 8;
-    {$push}{$warn 6018 off} //unreachable code
-    if TBGRAPixel_RGBAOrder then
-      wrgb.format := AVIF_RGB_FORMAT_RGBA
-    else
-      wrgb.format := AVIF_RGB_FORMAT_BGRA;
-    {$pop}
-    wrgb.rowBytes := wrgb.Width * 4;
+    if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
+    begin
+      wrgb0_10:=Default(avifRGBImage0_10_0);
+      prgb:= @wrgb0_10;
+      avifRGBImageSetDefaults(prgb, decoderImage);
+      //aBitmap.LineOrder:=riloTopToBottom;
+      aBitmap.SetSize(wrgb0_10.Width, wrgb0_10.Height);
+      wrgb0_10.pixels := PUint8(aBitmap.databyte);
+      wrgb0_10.depth := 8;
+      {$push}{$warn 6018 off} //unreachable code
+      if TBGRAPixel_RGBAOrder then
+        wrgb0_10.format := AVIF_RGB_FORMAT_RGBA
+      else
+        wrgb0_10.format := AVIF_RGB_FORMAT_BGRA;
+      {$pop}
+      wrgb0_10.rowBytes := wrgb0_10.Width * 4;
+    end else
+    begin
+      wrgb0_8:=Default(avifRGBImage0_8_4);
+      prgb:= @wrgb0_8;
+      avifRGBImageSetDefaults(prgb, decoderImage);
+      //aBitmap.LineOrder:=riloTopToBottom;
+      aBitmap.SetSize(wrgb0_8.Width, wrgb0_8.Height);
+      wrgb0_8.pixels := PUint8(aBitmap.databyte);
+      wrgb0_8.depth := 8;
+      {$push}{$warn 6018 off} //unreachable code
+      if TBGRAPixel_RGBAOrder then
+        wrgb0_8.format := AVIF_RGB_FORMAT_RGBA
+      else
+        wrgb0_8.format := AVIF_RGB_FORMAT_BGRA;
+      {$pop}
+      wrgb0_8.rowBytes := wrgb0_8.Width * 4;
+    end;
     //if aBitmap.LineOrder<>riloTopToBottom then
     //begin
     //  decoder^.image^.transformFlags:=decoder^.image^.transformFlags + Uint32(AVIF_TRANSFORM_IMIR);
     //  decoder^.image^.imir.mode:=0;
     //end;
     //decoder^.image^.imir.axis:=0; //vertical mirror
-    res := avifImageYUVToRGB(decoderImage, @wrgb);
+    res := avifImageYUVToRGB(decoderImage, prgb);
     if res <> AVIF_RESULT_OK then
       raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
     if (aBitmap.LineOrder <> riloTopToBottom) and not
@@ -207,7 +228,7 @@ end;
 
 procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRACustomBitmap);
 var
-  decoder: pointer;
+  decoder: PavifDecoder;
   res: avifResult;
 begin
   decoder := avifDecoderCreate();
@@ -242,7 +263,7 @@ end;
 
 procedure AvifLoadFromFileNative(const AFilename: string; aBitmap: TBGRACustomBitmap);
 var
-  decoder: pointer;
+  decoder: PavifDecoder;
   res: avifResult;
 begin
   decoder := avifDecoderCreate();
@@ -265,7 +286,7 @@ end;
 
 procedure AvifLoadFromMemory(AData: Pointer; ASize: cardinal; aBitmap: TBGRACustomBitmap);
 var
-  decoder: pointer;
+  decoder: PavifDecoder;
   res: avifResult;
 begin
   decoder := avifDecoderCreate();
@@ -307,7 +328,9 @@ end;
 procedure AvifEncode(aBitmap: TBGRACustomBitmap; aQuality0to100: integer; aSpeed0to10:integer; var avifOutput: avifRWData;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false);
 var
   encoder: PavifEncoder;
-  wrgb: avifRGBImage;
+  wrgb0_8: avifRGBImage0_8_4;
+  wrgb0_10: avifRGBImage0_10_0;
+  prgb: PavifRGBImage;
   image: PavifImage;
   convertResult, addImageResult, finishResult: avifResult;
   alpha_quantizer, min_quantizer, max_quantizer: integer;
@@ -317,7 +340,6 @@ const
 begin
   encoder := nil;
   //FillChar(wrgb, sizeof(wrgb), 0);
-  wrgb:=Default(avifRGBImage);
   try
     if aQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
       image := avifImageCreate(aBitmap.Width, aBitmap.Height, 8, AVIF_PIXEL_FORMAT_YUV444)
@@ -340,31 +362,56 @@ begin
     image^.transferCharacteristics := AVIF_TRANSFER_CHARACTERISTICS_SRGB;
     image^.matrixCoefficients := AVIF_MATRIX_COEFFICIENTS_BT601;
 
-    // If you have RGB(A) data you want to encode, use this path
-    avifRGBImageSetDefaults(@wrgb, image);
     // Override RGB(A)->YUV(A) defaults here: depth, format, chromaUpsampling, ignoreAlpha, alphaPremultiplied, libYUVUsage, etc
     // Alternative: set rgb.pixels and rgb.rowBytes yourself, which should match your chosen rgb.format
     // Be sure to use uint16_t* instead of uint8_t* for rgb.pixels/rgb.rowBytes if (rgb.depth > 8)
-    wrgb.Width := aBitmap.Width;
-    wrgb.Height := aBitmap.Height;
-    {$push}{$warn 6018 off} //unreachable code
-    if TBGRAPixel_RGBAOrder then
-      wrgb.format := AVIF_RGB_FORMAT_RGBA
-    else
-      wrgb.format := AVIF_RGB_FORMAT_BGRA;
-    {$pop}
-    if aIgnoreAlpha then
-      wrgb.ignoreAlpha := AVIF_TRUE
-    else
-      wrgb.ignoreAlpha := AVIF_FALSE;
-    wrgb.pixels := aBitmap.DataByte;
-    wrgb.rowBytes := aBitmap.Width * 4;
+    if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
+    begin
+      wrgb0_10:=Default(avifRGBImage0_10_0);
+      prgb:= @wrgb0_10;
+      // If you have RGB(A) data you want to encode, use this path
+      avifRGBImageSetDefaults(prgb, image);
+      wrgb0_10.Width := aBitmap.Width;
+      wrgb0_10.Height := aBitmap.Height;
+      {$push}{$warn 6018 off} //unreachable code
+      if TBGRAPixel_RGBAOrder then
+        wrgb0_10.format := AVIF_RGB_FORMAT_RGBA
+      else
+        wrgb0_10.format := AVIF_RGB_FORMAT_BGRA;
+      {$pop}
+      if aIgnoreAlpha then
+        wrgb0_10.ignoreAlpha := AVIF_TRUE
+      else
+        wrgb0_10.ignoreAlpha := AVIF_FALSE;
+      wrgb0_10.pixels := aBitmap.DataByte;
+      wrgb0_10.rowBytes := aBitmap.Width * 4;
+    end else
+    begin
+      wrgb0_8:=Default(avifRGBImage0_8_4);
+      prgb:= @wrgb0_8;
+      // If you have RGB(A) data you want to encode, use this path
+      avifRGBImageSetDefaults(prgb, image);
+      wrgb0_8.Width := aBitmap.Width;
+      wrgb0_8.Height := aBitmap.Height;
+      {$push}{$warn 6018 off} //unreachable code
+      if TBGRAPixel_RGBAOrder then
+        wrgb0_8.format := AVIF_RGB_FORMAT_RGBA
+      else
+        wrgb0_8.format := AVIF_RGB_FORMAT_BGRA;
+      {$pop}
+      if aIgnoreAlpha then
+        wrgb0_8.ignoreAlpha := AVIF_TRUE
+      else
+        wrgb0_8.ignoreAlpha := AVIF_FALSE;
+      wrgb0_8.pixels := aBitmap.DataByte;
+      wrgb0_8.rowBytes := aBitmap.Width * 4;
+    end;
     if aQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
     begin
       image^.yuvRange := AVIF_RANGE_FULL;
       image^.matrixCoefficients := AVIF_MATRIX_COEFFICIENTS_IDENTITY; // this is key for lossless
     end;
-    convertResult := avifImageRGBToYUV(image, @wrgb);
+    convertResult := avifImageRGBToYUV(image, prgb);
     if convertResult <> AVIF_RESULT_OK then
       raise EAvifException.Create('Failed to convert to YUV(A): ' + avifResultToString(convertResult));
     encoder := avifEncoderCreate();
