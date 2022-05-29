@@ -1072,7 +1072,7 @@ var
 
 begin
   writeln('Generating colorspaces...');
-  SetLength(PairsList, 0);
+  PairsList := nil;
 
   //direct conversions (using single predefined function)
   //TExpandedPixel is the first bridge between colorspaces

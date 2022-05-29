@@ -285,7 +285,7 @@ begin
     raise Exception.Create('Xml header size error');
   Stream.Position:= Stream.Position + XmlHeaderSize;
      {$hints off}
-  stream.ReadBuffer(CompressionFormat, sizeof(CompressionFormat));
+  stream.ReadBuffer({%H-}CompressionFormat, sizeof(CompressionFormat));
      {$hints on}
   CompressionFormat := LEToN(CompressionFormat);
   Content := TDotNetDeserialization.Create;
@@ -328,7 +328,7 @@ begin
     for j := 0 to nbbytes - 1 do
     begin
         {$hints off}
-      LayerData[i].ReadBuffer(b, 1);
+      LayerData[i].ReadBuffer({%H-}b, 1);
         {$hints on}
       AppendStr(Result, IntToHex(b, 2) + ' ');
     end;
@@ -357,7 +357,7 @@ begin
   Layers   := nil;
   for i := 0 to high(LayerData) do
     LayerData[i].Free;
-  setLength(LayerData, 0);
+  LayerData := nil;
 end;
 
 function TPaintDotNetFile.GetWidth: integer;
@@ -478,7 +478,7 @@ var
 
 begin
   {$hints off}
-  src.ReadBuffer(CompressionFlag, 1);
+  src.ReadBuffer({%H-}CompressionFlag, 1);
   {$hints on}
   if CompressionFlag = 1 then
     dest.CopyFrom(src, uncompressedSize)
@@ -512,7 +512,7 @@ begin
       dest.CopyFrom(chunks[i], chunks[i].size);
       chunks[i].Free;
     end;
-    setlength(chunks, 0);
+    chunks := nil;
   end
   else
     raise Exception('Unknown compression flag (' + IntToStr(CompressionFlag) + ')');
