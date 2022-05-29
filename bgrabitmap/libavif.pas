@@ -17,6 +17,7 @@ const
   AVIF_VERSION_0_9_2 = 00090200;
   AVIF_VERSION_0_9_3 = 00090300;
   AVIF_VERSION_0_10_0 = 00100000;
+  AVIF_VERSION_0_10_1 = 00100100;
 
 {
   For windows there are prebuild dlls in
@@ -563,6 +564,22 @@ type
     { RGB, treating the alpha bits as if they were all 1. }
           ignoreAlpha : avifBool;
           alphaPremultiplied : avifBool;     { indicates if RGB value is pre-multiplied by alpha. Default: false }
+          pixels : PUInt8;
+          rowBytes : UInt32;
+        end;
+
+      avifRGBImage0_10_1 = record
+          width : UInt32;      { must match associated avifImage }
+          height : UInt32;    { must match associated avifImage }
+          depth : UInt32;    { legal depths [8, 10, 12, 16]. if depth>8, pixels must be UInt16 internally }
+          format : avifRGBFormat;  { all channels are always full range }
+          chromaUpsampling : avifChromaUpsampling;     { Defaults to AVIF_CHROMA_UPSAMPLING_AUTOMATIC: How to upsample non-4:4:4 UV (ignored for 444) when converting to RGB. }
+    { Unused when converting to YUV. avifRGBImageSetDefaults() prefers quality over speed. }
+    { Used for XRGB formats, treats formats containing alpha (such as ARGB) as if they were }
+    { RGB, treating the alpha bits as if they were all 1. }
+          ignoreAlpha : avifBool;
+          alphaPremultiplied : avifBool;     { indicates if RGB value is pre-multiplied by alpha. Default: false }
+          isFloat : avifBool;
           pixels : PUInt8;
           rowBytes : UInt32;
         end;
