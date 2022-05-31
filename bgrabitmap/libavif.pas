@@ -567,6 +567,7 @@ type
           isFloat : avifBool;
           pixels : PUInt8;
           rowBytes : UInt32;
+          padding: packed array[0..63] of byte;  // to prevent buffer overflow with future changes
         end;
 
     { Sets rgb->width, rgb->height, and rgb->depth to image->width, image->height, and image->depth. }
