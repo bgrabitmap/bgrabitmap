@@ -151,7 +151,6 @@ var
   res: avifResult;
   wrgb0_8: avifRGBImage0_8_4;
   wrgb0_10: avifRGBImage0_10_0;
-  wrgb0_10_1: avifRGBImage0_10_1;
   prgb: PavifRGBImage;
 
 function decoderImage: PavifImage;
@@ -175,23 +174,6 @@ begin
   begin
     if decoderImage = nil then
       raise EAvifException.Create('No image data recieved from AVIF library.');
-    if AVIF_VERSION >= AVIF_VERSION_0_10_1 then
-    begin
-      wrgb0_10_1:=Default(avifRGBImage0_10_1);
-      prgb:= @wrgb0_10_1;
-      avifRGBImageSetDefaults(prgb, decoderImage);
-      //aBitmap.LineOrder:=riloTopToBottom;
-      aBitmap.SetSize(wrgb0_10_1.Width, wrgb0_10_1.Height);
-      wrgb0_10_1.pixels := PUint8(aBitmap.databyte);
-      wrgb0_10_1.depth := 8;
-      {$push}{$warn 6018 off} //unreachable code
-      if TBGRAPixel_RGBAOrder then
-        wrgb0_10_1.format := AVIF_RGB_FORMAT_RGBA
-      else
-        wrgb0_10_1.format := AVIF_RGB_FORMAT_BGRA;
-      {$pop}
-      wrgb0_10_1.rowBytes := wrgb0_10_1.Width * 4;
-    end else
     if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
     begin
       wrgb0_10:=Default(avifRGBImage0_10_0);
@@ -348,7 +330,6 @@ var
   encoder: PavifEncoder;
   wrgb0_8: avifRGBImage0_8_4;
   wrgb0_10: avifRGBImage0_10_0;
-  wrgb0_10_1:avifRGBImage0_10_1;
   prgb: PavifRGBImage;
   image: PavifImage;
   convertResult, addImageResult, finishResult: avifResult;
@@ -384,27 +365,6 @@ begin
     // Override RGB(A)->YUV(A) defaults here: depth, format, chromaUpsampling, ignoreAlpha, alphaPremultiplied, libYUVUsage, etc
     // Alternative: set rgb.pixels and rgb.rowBytes yourself, which should match your chosen rgb.format
     // Be sure to use uint16_t* instead of uint8_t* for rgb.pixels/rgb.rowBytes if (rgb.depth > 8)
-    if AVIF_VERSION >= AVIF_VERSION_0_10_1 then
-    begin
-      wrgb0_10_1:=Default(avifRGBImage0_10_1);
-      prgb:= @wrgb0_10_1;
-      // If you have RGB(A) data you want to encode, use this path
-      avifRGBImageSetDefaults(prgb, image);
-      wrgb0_10_1.Width := aBitmap.Width;
-      wrgb0_10_1.Height := aBitmap.Height;
-      {$push}{$warn 6018 off} //unreachable code
-      if TBGRAPixel_RGBAOrder then
-        wrgb0_10_1.format := AVIF_RGB_FORMAT_RGBA
-      else
-        wrgb0_10_1.format := AVIF_RGB_FORMAT_BGRA;
-      {$pop}
-      if aIgnoreAlpha then
-        wrgb0_10_1.ignoreAlpha := AVIF_TRUE
-      else
-        wrgb0_10_1.ignoreAlpha := AVIF_FALSE;
-      wrgb0_10_1.pixels := aBitmap.DataByte;
-      wrgb0_10_1.rowBytes := aBitmap.Width * 4;
-    end else
     if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
     begin
       wrgb0_10:=Default(avifRGBImage0_10_0);
