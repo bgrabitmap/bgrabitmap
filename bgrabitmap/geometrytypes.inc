@@ -399,6 +399,7 @@ type
       specifies that if the points are aligned, it should still be considered as convex }
   function IsConvex(const pts: array of TPointF; IgnoreAlign: boolean = true): boolean;
   function IsClockwise(const pts: array of TPointF): boolean;
+  function IsMostlyClockwise(const pts: array of TPointF): boolean;
   {** Checks if the quad formed by the 4 given points intersects itself }
   function DoesQuadIntersect(pt1,pt2,pt3,pt4: TPointF): boolean;
   {** Checks if two segment intersect }
@@ -1047,6 +1048,8 @@ end;
 
 class function TAffineBox.AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox;
 begin
+  if isEmptyPointF(ATopLeft) or isEmptyPointF(ATopRight) or isEmptyPointF(ABottomLeft) then
+     raise exception.Create('Unexpected empty point');
   result.TopLeft := ATopLeft;
   result.TopRight := ATopRight;
   result.BottomLeft := ABottomLeft;
@@ -1054,6 +1057,8 @@ end;
 
 class function TAffineBox.AffineBox(ARectF: TRectF): TAffineBox;
 begin
+  if isEmptyPointF(ARectF.TopLeft) or isEmptyPointF(ARectF.BottomRight) then
+     raise exception.Create('Unexpected empty point');
   result.TopLeft := ARectF.TopLeft;
   result.TopRight := PointF(ARectF.Right, ARectF.Top);
   result.BottomLeft := PointF(ARectF.Left, ARectF.Bottom);
@@ -1672,6 +1677,17 @@ begin
     end;
   end;
   result := true;
+end;
+
+function IsMostlyClockwise(const pts: array of TPointF): boolean;
+var
+  i: Integer;
+  sum: double;
+begin
+  sum := 0;
+  for i := 0 to high(pts) do
+    sum += (pts[(i+1) mod length(pts)].x-pts[i].x)*(pts[(i+1) mod length(pts)].y+pts[i].y);
+  result := sum <= 0;
 end;
 
 { Check if a quaduadrilateral intersects itself }

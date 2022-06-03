@@ -1928,10 +1928,9 @@ begin
 end;
 
 procedure TBGRACanvas2D.save;
-var cur: TBGRACanvasState2D;
 begin
-  cur := currentState.Duplicate;
-  StateStack.Add(cur);
+  StateStack.Add(currentState);
+  currentState := currentState.Duplicate;
 end;
 
 procedure TBGRACanvas2D.restore;

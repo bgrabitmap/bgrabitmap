@@ -136,6 +136,7 @@ type
 
   TBGRASVG = class(TSVGCustomElement)
   private
+    function GetColor: TBGRAPixel;
     function GetComputedHeight: TFloatWithCSSUnit;
     function GetComputedWidth: TFloatWithCSSUnit;
     function GetContainerHeight: TFloatWithCSSUnit;
@@ -166,6 +167,7 @@ type
     function GetWidthAsInch: single;
     function GetWidthAsPixel: single;
     function GetZoomable: boolean;
+    procedure SetColor(AValue: TBGRAPixel);
     procedure SetContainerHeight(AValue: TFloatWithCSSUnit);
     procedure SetContainerHeightAsPixel(AValue: single);
     procedure SetContainerWidth(AValue: TFloatWithCSSUnit);
@@ -230,10 +232,13 @@ type
     function GetStretchPresentationMatrix(AUnit: TCSSUnit): TAffineMatrix; overload;
     function FindElementById(AID: string): TSVGElement; overload;
     function FindElementById(AID: string; AClass: TSVGFactory): TSVGElement; overload;
+    procedure IterateElements(ACallback: TIterateElementCallback; AData: pointer;
+      ARecursive: boolean); override;
     procedure ConvertToUnit(AUnit: TCSSUnit); override; //except Width, Height, ContainerWidth, ContainerHeight
     property AsUTF8String: utf8string read GetUTF8String write SetUTF8String;
     property Units: TSVGUnits read GetUnits;
     property FontSize: TFloatWithCSSUnit read GetFontSize write SetFontSize;
+    property Color: TBGRAPixel read GetColor write SetColor;
     property Width: TFloatWithCSSUnit read GetWidth write SetWidth;
     property Height: TFloatWithCSSUnit read GetHeight write SetHeight;
     property ComputedWidth: TFloatWithCSSUnit read GetComputedWidth;
@@ -576,6 +581,11 @@ end;
 
 { TBGRASVG }
 
+function TBGRASVG.GetColor: TBGRAPixel;
+begin
+  result := StrToBGRA(GetAttributeOrStyle('color', 'black'));
+end;
+
 function TBGRASVG.GetComputedHeight: TFloatWithCSSUnit;
 begin
   result := Units.ViewPortSize.height;
@@ -789,6 +799,12 @@ begin
   result := AttributeDef['zoomAndPan','magnify']<>'disable';
 end;
 
+procedure TBGRASVG.SetColor(AValue: TBGRAPixel);
+begin
+  SetAttribute('color', LowerCase(BGRAToStr(AValue, CSSColors, 0, true, true)));
+  RemoveStyle('color');
+end;
+
 procedure TBGRASVG.SetContainerHeight(AValue: TFloatWithCSSUnit);
 begin
   if AValue.CSSUnit = cuPercent then raise exception.Create('Container width cannot be expressed as percentage');
@@ -832,6 +848,7 @@ end;
 procedure TBGRASVG.SetFontSize(AValue: TFloatWithCSSUnit);
 begin
   SetVerticalAttributeWithUnit('font-size', AValue);
+  RemoveStyle('font-size');
 end;
 
 procedure TBGRASVG.SetHeight(AValue: TFloatWithCSSUnit);
@@ -1304,6 +1321,12 @@ end;
 function TBGRASVG.FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
 begin
   result := DataLink.FindElementById(AId, AClass);
+end;
+
+procedure TBGRASVG.IterateElements(ACallback: TIterateElementCallback;
+  AData: pointer; ARecursive: boolean);
+begin
+  Content.IterateElements(ACallback, AData, ARecursive);
 end;
 
 procedure TBGRASVG.ConvertToUnit(AUnit: TCSSUnit);

@@ -18,6 +18,7 @@ type
   TSVGElementList = specialize TFPGList<TSVGElement>;
   TSVGElementDictionary = specialize TFPGMap<string,TSVGElement>;
   TSVGFactory = class of TSVGElement;
+  TIterateElementCallback = procedure(AElement: TSVGElement; AData: pointer; var ARecursive: boolean) of object;
   
   TSVGFillMode = (
      sfmEvenOdd = Ord(fmAlternate),
@@ -279,6 +280,7 @@ type
     function HasAttribute(AName: string): boolean;
     function HasInlineStyle(AName: string): boolean;
 
+    procedure IterateElements(ACallback: TIterateElementCallback; AData: pointer; ARecursive: boolean); virtual;
     procedure ConvertToUnit(AUnit: TCSSUnit); virtual;
     function EnterFontSize(AIsRoot: boolean = false): TFloatWithCSSUnit; virtual;
     procedure ExitFontSize(APrevFontSize: TFloatWithCSSUnit); virtual;
@@ -360,6 +362,7 @@ type
     procedure Init(ADocument: TDOMDocument; ATag: string; AUnits: TCSSUnitConverter); overload;
     procedure Init(AElement: TDOMElement; AUnits: TCSSUnitConverter); overload;
     procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
+    procedure InternalCopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
     function GetStyleFromStyleSheet(const AName,ADefault: string): string; override;
     procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
     procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); virtual;
@@ -378,6 +381,7 @@ type
     procedure ConvertToUnit(AUnit: TCSSUnit); override;
     procedure Recompute; virtual;
     procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
+    procedure CopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
     procedure fillNone;
     procedure strokeNone;
     procedure strokeDashArrayNone;
@@ -706,7 +710,7 @@ begin
   LocateStyleDeclaration(ABlock, AProperty, startPos,colonPos, valueLength);
   if valueLength <> -1 then
   begin
-    delete(ABlock, startPos, colonPos+valueLength-startPos);
+    delete(ABlock, startPos, colonPos+valueLength-startPos+1);
     while (length(ABlock)>=startPos) and (ABlock[startPos] in[' ',#9,#10,#12,#13]) do delete(ABlock,startPos,1);
     if (length(ABlock)>=startPos) and (ABlock[startPos] = ';') then delete(ABlock,startPos,1);
     result := true;
@@ -1100,6 +1104,12 @@ end;
 function TSVGCustomElement.HasInlineStyle(AName: string): boolean;
 begin
   result := trim(GetInlineStyle(AName, '')) <> '';  //an empty declaration is illegal
+end;
+
+procedure TSVGCustomElement.IterateElements(ACallback: TIterateElementCallback;
+  AData: pointer; ARecursive: boolean);
+begin
+  // no content by default
 end;
 
 procedure TSVGCustomElement.ConvertToUnit(AUnit: TCSSUnit);
@@ -1681,7 +1691,7 @@ end;
 
 function TSVGElement.GetClipPath: string;
 begin
-  result := AttributeOrStyle['clip-path'];
+  result := GetAttributeOrStyle('clip-path', '', false);
 end;
 
 function TSVGElement.GetFill: string;
@@ -2194,6 +2204,11 @@ begin
   //nothing
 end;
 
+procedure TSVGElement.InternalCopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
+begin
+ //nothing
+end;
+
 procedure TSVGElement.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
   ACanvas2D.fillStyle(fillColor);
@@ -2342,11 +2357,39 @@ end;
 
 procedure TSVGElement.Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var prevMatrix: TAffineMatrix;
+  clipUrl: string;
+  clipElem: TSVGClipPath;
+  clipFound: boolean;
 begin
   if not Visible then exit;
   prevMatrix := ACanvas2d.matrix;
   ACanvas2d.transform(matrix[AUnit]);
+  clipUrl := clipPath;
+  if clipUrl <> '' then
+  begin
+    clipElem := TSVGClipPath(DataLink.FindElementByRef(clipUrl, true, TSVGClipPath, clipFound));
+    if clipElem <> nil then
+    begin
+      ACanvas2d.save;
+      ACanvas2d.beginPath;
+      clipElem.CopyPathTo(ACanvas2d, AUnit);
+      ACanvas2d.clip;
+    end;
+  end
+  else
+    clipElem := nil;
   InternalDraw(ACanvas2d,AUnit);
+  if clipElem <> nil then ACanvas2d.restore;
+  ACanvas2d.matrix := prevMatrix;
+end;
+
+procedure TSVGElement.CopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
+var prevMatrix: TAffineMatrix;
+begin
+  if not Visible then exit;
+  prevMatrix := ACanvas2d.matrix;
+  ACanvas2d.transform(matrix[AUnit]);
+  InternalCopyPathTo(ACanvas2d,AUnit);
   ACanvas2d.matrix := prevMatrix;
 end;
 
@@ -2382,18 +2425,24 @@ function TSVGElement.FindStyleElementInternal(const classStr: string;
   out attributesStr: string): integer;
 var
   i: integer;
+  data: TSVGDataLink;
 begin
   attributesStr:= '';
-  with FDataLink do
-    for i:= 0 to StyleCount-1 do
-    begin
-      result:= (Styles[i] as TSVGStyle).Find(classStr);
-      if result <> -1 then
+  data := FDataLink;
+  while data <> nil do
+  begin
+    with data do
+      for i:= 0 to StyleCount-1 do
       begin
-        attributesStr:= (Styles[i] as TSVGStyle).Ruleset[result].declarations;
-        Exit;
+        result:= (Styles[i] as TSVGStyle).Find(classStr);
+        if result <> -1 then
+        begin
+          attributesStr:= (Styles[i] as TSVGStyle).Ruleset[result].declarations;
+          Exit;
+        end;
       end;
-    end;
+    data := data.Parent;
+  end;
   result:= -1;
 end;
 
@@ -2415,12 +2464,11 @@ procedure TSVGElement.ImportStyles;
 
 var
   fid: integer;
-  tag,styleC,s: string;
+  tag,styleC,s,c: string;
 begin
   FImportStyleState:= fssNotFound;
   SetLength(FImportedStyles,0);
   tag:= FDomElem.TagName;
-  styleC:= classAttr;
   (*
     if style element is:
     <style>
@@ -2441,16 +2489,18 @@ begin
   fid:= FindStyleElementInternal(tag,s);
   if fid <> -1 then
     AddStyle(s,fid);
+  styleC:= classAttr.Trim;
   if styleC <> '' then
+  for c in styleC.Trim.Split([' ']) do
   begin
     //Find as: "[tag].[class]" example "circle.style1"
-    fid:= FindStyleElementInternal(tag+'.'+styleC,s);
+    fid:= FindStyleElementInternal(tag+'.'+c,s);
     if fid <> -1 then
       AddStyle(s,fid)
     else
     begin
       //Find as: ".[class]" example ".style1"
-      fid:= FindStyleElementInternal('.'+styleC,s);
+      fid:= FindStyleElementInternal('.'+c,s);
       if fid <> -1 then
         AddStyle(s,fid);
     end;

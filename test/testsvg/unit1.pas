@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
   StdCtrls, FileCtrl, Menus, ComCtrls, Types,
 
-  BGRABitmapTypes, BGRABitmap, BGRASVG, BGRAUnits,
+  BGRABitmapTypes, BGRABitmap, BGRASVG, BGRASVGType, BGRASVGShapes, BGRAUnits,
 
   UProfiler;
 
@@ -17,6 +17,7 @@ type
   { TForm1 }
 
   TForm1 = class(TForm)
+    CheckBox_ReplaceStrokeAndFill: TCheckBox;
     FileListBox1: TFileListBox;
     Image1: TImage;
     Image2: TImage;
@@ -48,6 +49,7 @@ type
     Splitter3: TSplitter;
     Splitter4: TSplitter;
     TabSheet1: TTabSheet;
+    procedure CheckBox_ReplaceStrokeAndFillChange(Sender: TObject);
     procedure FileListBox1Change(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
@@ -72,6 +74,9 @@ type
     last_image: TImage;
     prof: TProfiler;
 
+    procedure ChangeFill(AElement: TSVGElement; AData: pointer;
+      var ARecursive: boolean);
+    procedure ReloadFile;
     procedure Test(var ms: TMemoryStream; kzoom: Single = 1; AFillCode: boolean = false);
     procedure Test(path: String; kzoom: Single = 1; AFillCode: boolean = false);
 
@@ -118,6 +123,8 @@ begin
   s:= s + prof.FormatTime(' | bmp: ',v);
 
   prof.BeginMeasure;
+  if CheckBox_ReplaceStrokeAndFill.Checked then
+     svg.IterateElements(@ChangeFill, nil, true);
   svg.StretchDraw(bmp.Canvas2D, 0,0,bmp.Width,bmp.Height);
   v:= prof.EndMeasure;
   s:= s + prof.FormatTime(' | draw: ',v);
@@ -129,6 +136,49 @@ begin
     Memo1.Text:= svg.AsUTF8String;
  finally
   bmp.Free;
+ end;
+end;
+
+procedure TForm1.ChangeFill(AElement: TSVGElement; AData: pointer;
+  var ARecursive: boolean);
+begin
+  if AElement is TSVGDefine then
+    ARecursive:= false
+  else
+  begin
+   if not AElement.isFillNone then AElement.fillColor := CSSSkyBlue;
+   if not AElement.isStrokeNone then AElement.strokeColor := CSSOrange;
+  end;
+end;
+
+procedure TForm1.ReloadFile;
+Var
+ png_find: Boolean;
+ path: String;
+begin
+ if FileListBox1.ItemIndex <> -1 then
+ begin
+  path:= FileListBox1.FileName;
+  Test(path, Screen.PixelsPerInch / 96 * GetCanvasScaleFactor, true);
+  //(view correct result)
+  path:= ChangeFileExt(path,'.png');
+  png_find:= False;
+  if FileExists(path) then
+   try
+    with Image2.Picture do
+    begin
+     LoadFromFile(path);
+     Image2.Hint:= '(anteprime: png '+
+                   IntToStr(Width)+'x'+IntToStr(Height)+')';
+    end;
+    png_find:= True;
+   except
+   end;
+  if not png_find then
+  begin
+   Image2.Hint:= '';
+   Image2.Picture:= nil;
+  end;
  end;
 end;
 
@@ -305,34 +355,13 @@ begin
 end;
 
 procedure TForm1.FileListBox1Change(Sender: TObject);
-Var
- png_find: Boolean;
- path: String;
 begin
- if FileListBox1.ItemIndex <> -1 then
- begin
-  path:= FileListBox1.FileName;
-  Test(path, Screen.PixelsPerInch / 96 * GetCanvasScaleFactor, true);
-  //(view correct result)
-  path:= ChangeFileExt(path,'.png');
-  png_find:= False;
-  if FileExists(path) then
-   try
-    with Image2.Picture do
-    begin
-     LoadFromFile(path);
-     Image2.Hint:= '(anteprime: png '+
-                   IntToStr(Width)+'x'+IntToStr(Height)+')';
-    end;
-    png_find:= True;
-   except
-   end;
-  if not png_find then
-  begin
-   Image2.Hint:= '';
-   Image2.Picture:= nil;
-  end;
- end;
+  ReloadFile;
+end;
+
+procedure TForm1.CheckBox_ReplaceStrokeAndFillChange(Sender: TObject);
+begin
+  ReloadFile;
 end;
 
 end.

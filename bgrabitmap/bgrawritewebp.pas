@@ -26,7 +26,7 @@ type
 
 implementation
 
-uses libwebp{$ifdef linux}, linuxlib{$endif}, BGRABitmapTypes;
+uses libwebp, BGRABitmapTypes;
 
 var
   MyLibWebPLoaded: boolean;
@@ -35,7 +35,7 @@ procedure NeedLibWebP;
 begin
   if not MyLibWebPLoaded then
   begin
-    if not LibWebPLoad({$ifdef linux}FindLinuxLibrary('libwebp.so', 6){$endif}) then
+    if not LibWebPLoad then
       raise exception.Create('Cannot find libwebp library ('+LibWebPFilename+')');
     MyLibWebPLoaded:= true;
   end;

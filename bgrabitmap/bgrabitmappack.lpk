@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="4">
+  <Package Version="5">
     <PathDelim Value="\"/>
     <Name Value="BGRABitmapPack"/>
     <Author Value="Circular"/>
@@ -29,8 +29,8 @@
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="11" Minor="4"/>
-    <Files Count="142">
+    <Version Major="11" Minor="5"/>
+    <Files Count="147">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -601,7 +601,28 @@
         <Filename Value="generatedunicode.inc"/>
         <Type Value="Include"/>
       </Item142>
+      <Item143>
+        <Filename Value="avifbgra.pas"/>
+        <UnitName Value="avifbgra"/>
+      </Item143>
+      <Item144>
+        <Filename Value="libavif.pas"/>
+        <UnitName Value="libavif"/>
+      </Item144>
+      <Item145>
+        <Filename Value="bgrawriteavif.pas"/>
+        <UnitName Value="BGRAWriteAvif"/>
+      </Item145>
+      <Item146>
+        <Filename Value="bgrareadavif.pas"/>
+        <UnitName Value="BGRAReadAvif"/>
+      </Item146>
+      <Item147>
+        <Filename Value="darwinlib.pas"/>
+        <UnitName Value="darwinlib"/>
+      </Item147>
     </Files>
+    <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="2">
       <Item1>
         <PackageName Value="LCL"/>

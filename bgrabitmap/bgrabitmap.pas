@@ -193,7 +193,7 @@ implementation
 uses BGRAReadBMP, BGRAReadBmpMioMap, BGRAReadGif,
   BGRAReadIco, BGRAReadJpeg, BGRAReadLzp, BGRAReadPCX,
   BGRAReadPng, BGRAWritePNG, BGRAReadPSD, BGRAReadTGA, BGRAReadXPM,
-  BGRAWriteLzp, BGRAReadWebP, BGRAWriteWebP;
+  BGRAWriteLzp, BGRAReadWebP, BGRAWriteWebP, BGRAReadAVIF, BGRAWriteAVIF;
 
 var
   tempBmp: TBGRABitmap;

@@ -74,6 +74,7 @@ type
 
   protected
     FImages: TGifSubImageArray;
+    FDestroying: boolean;
 
     {TGraphic}
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
@@ -934,7 +935,7 @@ end;
 procedure TBGRAAnimatedGif.Changed(Sender: TObject);
 begin
   {$IFDEF BGRABITMAP_USE_LCL}
-  FTimer.Enabled := false;
+  if Assigned(FTimer) then FTimer.Enabled := false;
   {$ENDIF}
   inherited Changed(Sender);
 end;
@@ -1048,12 +1049,17 @@ begin
   LoopCount := 0;
   ClearViewer;
 
-  if prevCount <> 0 then
+  if not FDestroying and (prevCount <> 0) then
     Changed(self);
 end;
 
 destructor TBGRAAnimatedGif.Destroy;
 begin
+  FDestroying := true;
+  {$IFDEF BGRABITMAP_USE_LCL}
+  FTimer.Enabled := false;
+  FreeAndNil(FTimer);
+  {$ENDIF}
   Clear;
 
   if FStretchedVirtualScreen <> nil then
@@ -1355,6 +1361,7 @@ end;
 
 procedure TBGRAAnimatedGif.Init;
 begin
+  FDestroying := false;
   BackgroundMode := gbmSaveBackgroundOnce;
   LoopCount := 0;
   LoopDone := 0;

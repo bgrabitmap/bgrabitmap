@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
-  <Package Version="4">
+  <Package Version="5">
     <PathDelim Value="\"/>
     <Name Value="BGRABitmapPack4fpGUI"/>
     <Author Value="Circular"/>
@@ -33,7 +33,7 @@
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="11" Minor="4"/>
+    <Version Major="11" Minor="5"/>
     <Files Count="105">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
@@ -456,9 +456,10 @@
         <Type Value="Include"/>
       </Item105>
     </Files>
+    <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="3">
       <Item1>
-        <PackageName Value="LazUtils"/>
+        <PackageName Value="freetypelaz"/>
       </Item1>
       <Item2>
         <PackageName Value="fpgui_toolkit"/>
