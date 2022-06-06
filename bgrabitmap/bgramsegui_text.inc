@@ -10,14 +10,12 @@ end;
 procedure BitmapTextOutAngle(ABitmap: TBitmap; ACoord: TPoint; AText: string; AOrientation: integer);
 var sUTF16: UnicodeString;
   angleRad: single;
-  ofs, center: TPointF;
+  ofs: TPointF;
 begin
   angleRad := AOrientation*Pi/1800;
   ofs := PointF(ACoord.X, ACoord.Y) +
          PointF(sin(angleRad), cos(angleRad))*(ABitmap.Canvas.Font.GlyphHeight-1);
   sUTF16 := UTF8ToUTF16(AText);
-  center := PointF(ABitmap.Canvas.GetStringWidth(sUTF16)/2, 
-                   ABitmap.Canvas.Font.Height/2);
   ABitmap.Canvas.DrawString(sUTF16, Point(round(ofs.X), round(ofs.Y)), 
                             nil, false, angleRad);
 end;
