@@ -19,8 +19,8 @@ order16=0
 order17=0
 order18=0
 [projectoptions]
-projectdir=/home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree
-projectfilename=/home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/fractal_tree.prj
+projectdir=/home/fred/bgrabitmap/test/test4ideu/fractal_tree
+projectfilename=/home/fred/bgrabitmap/test/test4ideu/fractal_tree/fractal_tree.prj
 options=114
  [projectoptionsfo.toolshortcuts]
  dropdowncolwidths=3
@@ -415,7 +415,7 @@ modulenames=1
 moduletypes=1
  TMAINFO
 modulefiles=1
- /home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/main.mfm
+ /home/fred/bgrabitmap/test/test4ideu/fractal_tree/main.mfm
 befcommandon=0
 makeoptionson=7
  63
@@ -731,7 +731,7 @@ findoptions=1
 editpos=3
  0,69
  0,-1073741823
- 0,0
+ 0,-1073741823
 bookmarks0=0
 bookmarks1=0
 bookmarks2=0
@@ -748,7 +748,7 @@ ismoduletexts=3
  0
  0
 modules=1
- /home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/main.mfm
+ /home/fred/bgrabitmap/test/test4ideu/fractal_tree/main.mfm
 moduleoptions=1
  0
 visiblemodules=1
@@ -756,14 +756,10 @@ visiblemodules=1
 nomenumodules=1
  0
 [sourcefo.files_tab]
-order=3
- 0
- 2
- 1
 firsttab=0
 index=0
 [layout]
-windowlayout=552
+windowlayout=549
  [mainfo.basedock]
  splitdir=2
  useroptions=268450944
@@ -777,8 +773,8 @@ windowlayout=552
  ny=0
  ncx=0
  ncy=0
- x=34
- y=45
+ x=53
+ y=29
  cx=1231
  cy=621
  rcx=0
@@ -897,7 +893,7 @@ windowlayout=552
  [projecttreefo]
  splitdir=0
  useroptions=268484715
- stackedunder=mainfo
+ stackedunder=confdebuggerfo
  parent=
  mdistate=3
  nx=0
@@ -912,7 +908,7 @@ windowlayout=552
  rcy=0
  wsize=0
  active=0
- visible=1
+ visible=0
  [projecttreefo.grid]
  propcolwidthref=28
  width0=141
@@ -1228,8 +1224,9 @@ windowlayout=552
  [debuggerfo.edit_compiler]
  value=Pascal
  [debuggerfo.file_history]
- value=/home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/main.pas
- history=2
+ value=/home/fred/bgrabitmap/test/test4ideu/fractal_tree/main.pas
+ history=3
+  /home/fred/bgrabitmap/test/test4ideu/fractal_tree/main.pas
   /home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/main.pas
   ${PROJECTDIR}/main.pas
  [debuggerfo.project_options]
@@ -1253,10 +1250,6 @@ windowlayout=552
  rcx=0
  rcy=0
  [sourcefo.files_tab]
- order=3
-  0
-  2
-  1
  firsttab=0
  index=0
  [confideufo.usedefaulteditoroptions]
