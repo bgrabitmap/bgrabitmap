@@ -728,23 +728,18 @@ hintheight=0
 finddtext=
 findhistory=0
 findoptions=1
-editpos=3
+editpos=2
  0,69
- 0,-1073741823
- 0,-1073741823
+ 0,0
 bookmarks0=0
 bookmarks1=0
-bookmarks2=0
-sourcefiles=3
+sourcefiles=2
  ${PROJECTDIR}/main.pas
  ${PROJECTDIR}/fractal_tree.pas
- ${PROJECTDIR}/fractal_tree.pas
-relpaths=3
+relpaths=2
  main.pas
  fractal_tree.pas
- fractal_tree.pas
-ismoduletexts=3
- 0
+ismoduletexts=2
  0
  0
 modules=1
@@ -759,7 +754,7 @@ nomenumodules=1
 firsttab=0
 index=0
 [layout]
-windowlayout=549
+windowlayout=550
  [mainfo.basedock]
  splitdir=2
  useroptions=268450944
@@ -893,7 +888,7 @@ windowlayout=549
  [projecttreefo]
  splitdir=0
  useroptions=268484715
- stackedunder=confdebuggerfo
+ stackedunder=conflangfo
  parent=
  mdistate=3
  nx=0
@@ -981,7 +976,7 @@ windowlayout=549
  [breakpointsfo]
  splitdir=0
  useroptions=268451947
- stackedunder=conflangfo
+ stackedunder=projecttreefo
  parent=
  mdistate=0
  nx=0
@@ -1224,8 +1219,9 @@ windowlayout=549
  [debuggerfo.edit_compiler]
  value=Pascal
  [debuggerfo.file_history]
- value=/home/fred/bgrabitmap/test/test4ideu/fractal_tree/main.pas
- history=3
+ value=/home/fred/bgrabitmap/test/test4ideu/fractal_tree/fractal_tree.pas
+ history=4
+  /home/fred/bgrabitmap/test/test4ideu/fractal_tree/fractal_tree.pas
   /home/fred/bgrabitmap/test/test4ideu/fractal_tree/main.pas
   /home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/main.pas
   ${PROJECTDIR}/main.pas
