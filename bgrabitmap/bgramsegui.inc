@@ -142,11 +142,13 @@ type
 
   TBitmapHelper = class helper for TBitmap
   private
+    function GetMasked: boolean;
     function GetTransparent: boolean;
     function GetTransparentMode: TTransparentMode;
     function GetTransparentColor: TColor;
   public
     class function Create: TBitmap; overload;
+    property Masked: boolean read GetMasked;
     property Transparent: boolean read GetTransparent;
     property TransparentMode: TTransparentMode read GetTransparentMode;
     property TransparentColor: TColor read GetTransparentColor;
@@ -262,6 +264,14 @@ end;
 class function TBitmapHelper.Create: TBitmap;
 begin
   result := TBitmap.Create(bmk_rgb);
+end;
+
+function TBitmapHelper.GetMasked: boolean;
+begin
+  if self is TMaskedBitmap then
+    result := TMaskedBitmap(self).masked
+  else
+    result := false;
 end;
 
 function TBitmapHelper.GetTransparent: boolean;

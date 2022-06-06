@@ -1314,8 +1314,10 @@ begin
 end;
 
 function TBGRASystemFontRenderer.FontExists(AName: string): boolean;
+{$IFDEF LCL}
 var
   i: Integer;
+{$ENDIF}
 begin
   {$IFDEF LCL}
   for i := 0 to Screen.Fonts.Count-1 do
