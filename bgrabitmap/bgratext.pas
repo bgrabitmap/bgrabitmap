@@ -735,6 +735,10 @@ begin
     tempBmp := nil;
     try
       tempBmp := TBitmap.Create;
+      {$IFDEF BGRABITMAP_USE_MSEGUI}
+      tempBmp.Width := 1;
+      tempBmp.Height := 1;
+      {$ENDIF}
       tempBmp.Canvas.Font := Font;
       if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
       begin
