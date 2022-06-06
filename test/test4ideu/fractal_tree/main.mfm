@@ -1,7 +1,7 @@
 object mainfo: tmainfo
-  bounds_x = 634
+  bounds_x = 595
   bounds_y = 219
-  bounds_cx = 420
+  bounds_cx = 459
   bounds_cy = 420
   bounds_cxmin = 120
   bounds_cymin = 120
@@ -10,7 +10,7 @@ object mainfo: tmainfo
   container.bounds = (
     0
     0
-    420
+    459
     420
   )
   caption = 'Fractal Tree by Lainz'
@@ -22,10 +22,10 @@ object mainfo: tmainfo
     frame.localprops = []
     frame.localprops1 = []
     onpaint = tpaintbox1_onpaint
-    bounds_x = -6
-    bounds_y = 2
-    bounds_cx = 424
-    bounds_cy = 416
-    anchors = [an_left, an_top, an_right, an_bottom]
+    bounds_x = 0
+    bounds_y = 0
+    bounds_cx = 459
+    bounds_cy = 420
+    anchors = []
   end
 end

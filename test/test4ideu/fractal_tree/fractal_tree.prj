@@ -17,9 +17,10 @@ order14=0
 order15=0
 order16=0
 order17=0
+order18=0
 [projectoptions]
-projectdir=/C:/pascal/fractal_tree_mse/fractal_tree
-projectfilename=/C:/pascal/fractal_tree_mse/fractal_tree/fractal_tree.prj
+projectdir=/home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree
+projectfilename=/home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/fractal_tree.prj
 options=114
  [projectoptionsfo.toolshortcuts]
  dropdowncolwidths=3
@@ -58,7 +59,7 @@ options=114
  sorted=0
  col=-1073741823
  row=-1073741823
- rowheight=16
+ rowheight=17
  [projectoptionsfo.newfile]
  firsttab=0
  index=2
@@ -80,7 +81,7 @@ options=114
  sortdescend6=0
  [projectoptionsfo.macrosplitter]
  x=0
- y=174
+ y=173
  xprop=1
  yprop=0.34307992202729
  [projectoptionsfo.macrogrid]
@@ -107,7 +108,7 @@ options=114
  value=
  [projectoptionsfo.makegroupbox]
  firsttab=0
- index=3
+ index=2
  [projectoptionsfo.exceptionsgrid]
  propcolwidthref=761
  width0=47
@@ -128,7 +129,7 @@ options=114
  index=0
  [projectoptionsfo.setting_tab]
  firsttab=0
- index=2
+ index=0
  [projectoptionsfo]
  stackedunder=
  x=151
@@ -150,110 +151,15 @@ settings=14
  wsize=0
  active=1
  visible=1
-sourcefilemasks=3
- "*.pas" "*.dpr" "*.lpr" "*.pp" "*.inc"
- "*.c" "*.cc" "*.h"
- "*.mfm"
-syntaxdeffiles=3
- ${SYNTAXDEFDIR}pascal.sdef
- ${SYNTAXDEFDIR}cpp.sdef
- ${SYNTAXDEFDIR}objecttext.sdef
-filemasknames=3
- Source
- Forms
- All Files
-filemasks=3
- "*.pp" "*.pas" "*.inc" "*.dpr" "*.lpr"
- *.mfm
- *
-codetemplatedirs=1
- ${TEMPLATEDIR}
-showgrid=1
-snaptogrid=1
-moveonfirstclick=1
-noformdesignerdocking=0
-componenthints=1
-gridsizex=8
-gridsizey=8
-autoindent=1
-blockindent=1
-linenumberson=0
-rightmarginon=1
-rightmarginchars=80
-scrollheight=0
-tabstops=4
-spacetabs=0
-showtabs=0
-tabindent=0
-editfontname=mseide_source
-editfontheight=0
-editfontwidth=0
-editfontextraspace=0
-editfontcolor=-1879048183
-editbkcolor=-1879048186
-statementcolor=14745599
-pairmarkcolor=-2147483642
-pairmaxrowcount=100
-editfontantialiased=1
-editmarkbrackets=1
-editmarkpairwords=0
-backupfilecount=0
-encoding=1
-eolstyle=1
-trimtrailingwhitespace=0
-debugcommand=${DEBUGGER}
-debugoptions=
-debugtarget=
-runcommand=
-xtermcommand=xterm -S${PTSN}/${PTSH}
-remoteconnection=
-uploadcommand=
-gdbprocessor=Auto
-gdbservercommand=
-gdbservercommandattach=
-beforeconnect=
-afterconnect=
-beforeload=
-afterload=
-beforerun=
-sourcebase=
-sourcedirs=4
- ${MSEDIR}lib/addon/*/
- ${MSEDIR}lib/common/kernel/$TARGETOSDIR/
- ${MSEDIR}lib/common/*/
- ./
-defines=0
-progparameters=
-progworkingdirectory=
-envvarnames=0
-envvarvalues=0
-defineson=0
-stoponexception=0
-valuehints=1
-activateonbreak=1
-raiseonbreak=1
-showconsole=0
-externalconsole=0
-settty=1
-gdbdownload=0
-downloadalways=0
-restartgdbbeforeload=0
-startupbkpt=0
-startupbkpton=0
-gdbsimulator=0
-gdbserverstartonce=0
-gdbloadtimeout=
-gdbserverwait=0
-nogdbserverexit=0
-gdbservertty=0
-exceptclassnames=1
- EconvertError
-exceptignore=1
- 0
-nodebugbeginend=0
-fpcgdbworkaround=1
+colordialog=5
+ [colordialogfo]
+ x=140
+ y=234
+ cx=338
+ cy=298
 mainfile=${PROJECTNAME}.pas
 targetfile=${PROJECTNAME}${EXEEXT}
+messageoutputfile=
 makecommand=${COMPILER}
 makedir=
 unitdirs=7
@@ -263,7 +169,7 @@ unitdirs=7
  ${MSELIBDIR}kernel/$TARGETOSDIR/
  ${MSELIBDIR}kernel/
  ${MSELIBDIR}*/
- ${BGRABITMAPDIR}
+ /home/fred/Downloads/bgrabitmap-dev-bgrabitmap/bgrabitmap
 unitpref=-Fu
 incpref=-Fi
 libpref=-Fl
@@ -279,7 +185,6 @@ makeoptions=7
  -FUunits
  -dclass_bridge
  -dBGRABITMAP_USE_MSEGUI
-reversepathorder=0
 makeoptpurpose=7
  
  
@@ -288,46 +193,152 @@ makeoptpurpose=7
  
  
  
-befcommandon=0
-makeoptionson=7
- 63
- 27
- 34
- 36
- 4095
- 4095
- 4095
-aftcommandon=0
-unitdirson=7
- 987135
- 65599
- 196671
- 65599
- 196671
- 65599
- 987135
-uid=0
-macroon=0
-macronames=0
-macrovalues=0
-groupcomments=10
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-fontalias=0
+compilerused=29
+ ${COMPILER} (Default)
+ Pascal 1
+ Pascal 2
+ Pascal 3
+ Pascal 4
+ Pascal 5
+ Pascal 6
+ Pascal 7
+ Pascal 8
+ C 1
+ C 2
+ C 3
+ C 4
+ C 5
+ C 6
+ C 7
+ C 8
+ Java 1
+ Java 2
+ Java 3
+ Java 4
+ Python 1
+ Python 2
+ Python 3
+ Python 4
+ Other 1
+ Other 2
+ Other 3
+ Other 4
+debuggerused=6
+ ${DEBUGGER} (Default)
+ Debugger 1
+ Debugger 2
+ Debugger 3
+ Debugger 4
+ None
+exeused=15
+ ${EXEEXT} (Default)
+ No Extension
+ .exe
+ .com
+ .bin
+ .prog
+ .pyc
+ .class
+ .java
+ .so
+ .dll
+ .lib
+ .o
+ .res
+ .inf
+codetemplatedirs=1
+ ${TEMPLATEDIR}
+toolmenus=0
+toolfiles=0
+toolparams=0
 fontnames=0
-fontancestors=0
-fontoptions=0
-fontheights=0
-fontwidths=0
-fontxscales=0
+scriptbeforecopy=
+scriptaftercopy=
+newprojectfiles=4
+ ${TEMPLATEDIR}default/project.pas
+ ${TEMPLATEDIR}default/main.pas
+ ${TEMPLATEDIR}default/main.mfm
+ ${TEMPLATEDIR}default/main_mfm.pas
+newprojectfilesdest=4
+ ${%PROJECTNAME%}.pas
+ 
+ 
+ 
+newfinames=3
+ Программа
+ Модуль
+ Текстовый файл
+newfifilters=3
+ "*.pas" "*.pp"
+ "*.pas" "*.pp"
+ 
+newfiexts=3
+ pas
+ pas
+ 
+newfisources=3
+ ${TEMPLATEDIR}default/program.pas
+ ${TEMPLATEDIR}default/unit.pas
+ 
+newfonames=11
+ Главная форма
+ Простая форма
+ Пристыкуемая форма
+ Модуль данных
+ Встраиваемая форма
+ Форма с прокруткой
+ Форма с табами
+ Панель закрепления
+ Отчёт
+ Форма со сценариями
+ Наследуемая форма
+newfonamebases=11
+ form
+ form
+ form
+ module
+ form
+ form
+ form
+ form
+ report
+ script
+ form
+newfosources=11
+ ${TEMPLATEDIR}default/mainform.pas
+ ${TEMPLATEDIR}default/simpleform.pas
+ ${TEMPLATEDIR}default/dockingform.pas
+ ${TEMPLATEDIR}default/datamodule.pas
+ ${TEMPLATEDIR}default/subform.pas
+ ${TEMPLATEDIR}default/scrollboxform.pas
+ ${TEMPLATEDIR}default/tabform.pas
+ ${TEMPLATEDIR}default/dockpanelform.pas
+ ${TEMPLATEDIR}default/report.pas
+ ${TEMPLATEDIR}default/pascform.pas
+ ${TEMPLATEDIR}default/inheritedform.pas
+newfoforms=11
+ ${TEMPLATEDIR}default/mainform.mfm
+ ${TEMPLATEDIR}default/simpleform.mfm
+ ${TEMPLATEDIR}default/dockingform.mfm
+ ${TEMPLATEDIR}default/datamodule.mfm
+ ${TEMPLATEDIR}default/subform.mfm
+ ${TEMPLATEDIR}default/scrollboxform.mfm
+ ${TEMPLATEDIR}default/tabform.mfm
+ ${TEMPLATEDIR}default/dockpanelform.mfm
+ ${TEMPLATEDIR}default/report.mfm
+ ${TEMPLATEDIR}default/pascform.mfm
+ ${TEMPLATEDIR}default/inheritedform.mfm
+forcezorder=0
+stripmessageesc=0
+copymessages=0
+closemessages=0
+enablepurpose=0
+enablesource=1
+checkmethods=1
+colorerror=-1610612717
+colorwarning=-1610612712
+colornote=-1610612716
+colorhint=15134207
 usercolors=30
  0
  0
@@ -392,94 +403,135 @@ usercolorcomment=30
  
 formatmacronames=0
 formatmacrovalues=0
-scriptbeforecopy=
-scriptaftercopy=
-newprojectfiles=4
- ${TEMPLATEDIR}default/project.pas
- ${TEMPLATEDIR}default/main.pas
- ${TEMPLATEDIR}default/main.mfm
- ${TEMPLATEDIR}default/main_mfm.pas
-newprojectfilesdest=4
- ${%PROJECTNAME%}.pas
+settingsfile=
+settingseditor=0
+settingsdebugger=0
+settingsstorage=0
+settingsprojecttree=0
+settingsautoload=0
+settingsautosave=0
+modulenames=1
+ MAINFO
+moduletypes=1
+ TMAINFO
+modulefiles=1
+ /home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/main.mfm
+befcommandon=0
+makeoptionson=7
+ 63
+ 27
+ 34
+ 36
+ 4095
+ 4095
+ 4095
+compilerusedon=29
+ 4095
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+debuggerusedon=6
+ 4095
+ 0
+ 0
+ 0
+ 0
+ 0
+exeusedon=15
+ 4095
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+ 0
+comment_M=
+comment_B=
+comment_1=
+comment_2=
+comment_3=
+comment_4=
+comment_5=
+comment_6=
+comment_7=
+comment_8=
+comment_9=
+comment_0=
+project_name=
+project_creator=
+project_copyright=
+project_license=
+project_time=
+project_date=06:38:25 PM 06/06/2022
+project_comment=
+aftcommandon=0
+unitdirson=7
+ 987135
+ 65599
+ 196671
+ 65599
+ 196671
+ 65599
+ 987135
+macroon=0
+macronames=0
+macrovalues=0
+macrogroup=0
+groupcomments=10
  
  
  
-newfinames=3
- Программа
- Модуль
- Текстовый файл
-newfifilters=3
- "*.pas" "*.pp"
- "*.pas" "*.pp"
  
-newfiexts=3
- pas
- pas
  
-newfisources=3
- ${TEMPLATEDIR}default/program.pas
- ${TEMPLATEDIR}default/unit.pas
  
-newfonames=11
- Главная форма
- Простая форма
- Пристыкуемая форма
- Модуль данных
- Встраиваемая форма
- Форма с прокруткой
- Форма с табами
- Панель закрепления
- Отчёт
- Форма со сценариями
- Наследуемая форма
-newfonamebases=11
- form
- form
- form
- module
- form
- form
- form
- form
- report
- script
- form
-newfoformsuffixes=11
- fo
- fo
- fo
- mo
- fo
- fo
- fo
- fo
- re
- sc
- fo
-newfosources=11
- ${TEMPLATEDIR}default/mainform.pas
- ${TEMPLATEDIR}default/simpleform.pas
- ${TEMPLATEDIR}default/dockingform.pas
- ${TEMPLATEDIR}default/datamodule.pas
- ${TEMPLATEDIR}default/subform.pas
- ${TEMPLATEDIR}default/scrollboxform.pas
- ${TEMPLATEDIR}default/tabform.pas
- ${TEMPLATEDIR}default/dockpanelform.pas
- ${TEMPLATEDIR}default/report.pas
- ${TEMPLATEDIR}default/pascform.pas
- ${TEMPLATEDIR}default/inheritedform.pas
-newfoforms=11
- ${TEMPLATEDIR}default/mainform.mfm
- ${TEMPLATEDIR}default/simpleform.mfm
- ${TEMPLATEDIR}default/dockingform.mfm
- ${TEMPLATEDIR}default/datamodule.mfm
- ${TEMPLATEDIR}default/subform.mfm
- ${TEMPLATEDIR}default/scrollboxform.mfm
- ${TEMPLATEDIR}default/tabform.mfm
- ${TEMPLATEDIR}default/dockpanelform.mfm
- ${TEMPLATEDIR}default/report.mfm
- ${TEMPLATEDIR}default/pascform.mfm
- ${TEMPLATEDIR}default/inheritedform.mfm
+ 
+ 
+ 
+ 
+toolsave=0
+toolhide=0
+toolparse=0
+toolmessages=0
+toolshortcuts=0
+fontalias=0
+fontancestors=0
+fontheights=0
+fontwidths=0
+fontoptions=0
+fontxscales=0
 expandprojectfilemacros=4
  1
  1
@@ -502,46 +554,109 @@ newinheritedforms=11
  0
  0
  1
-toolmenus=0
-toolfiles=0
-toolparams=0
-toolsave=0
-toolhide=0
-toolparse=0
-toolmessages=0
-toolshortcuts=0
-settingsfile=
-settingsautoload=0
-settingsautosave=0
-settingseditor=0
-settingsdebugger=0
-settingsmake=1
-settingsmacros=0
-settingsfontalias=0
-settingsusercolors=0
-settingsformatmacros=0
-settingstemplates=0
-settingstools=0
-settingsstorage=0
-settingscomponentstore=0
-settingsprojecttree=0
-settingslayout=0
-messageoutputfile=
-modulenames=1
- MAINFO
-moduletypes=1
- TMAINFO
-modulefiles=1
- /C:/pascal/fractal_tree_mse/fractal_tree/main.mfm
-macrogroup=0
-forcezorder=0
-stripmessageesc=0
-copymessages=0
-closemessages=0
-checkmethods=1
-colorerror=-1610612712
-colorwarning=-1610612717
-colornote=-1610612716
+uid=0
+sourcefilemasks=3
+ "*.pas" "*.dpr" "*.lpr" "*.pp" "*.inc"
+ "*.c" "*.cc" "*.h"
+ "*.mfm"
+syntaxdeffiles=3
+ ${SYNTAXDEFDIR}pascal.sdef
+ ${SYNTAXDEFDIR}cpp.sdef
+ ${SYNTAXDEFDIR}objecttext.sdef
+filemasknames=3
+ Source
+ Forms
+ All Files
+filemasks=3
+ "*.pp" "*.pas" "*.inc" "*.dpr" "*.lpr"
+ *.mfm
+ *
+showgrid=1
+snaptogrid=1
+moveonfirstclick=1
+noformdesignerdocking=0
+componenthints=1
+gridsizex=8
+gridsizey=8
+autoindent=1
+blockindent=1
+linenumberson=1
+rightmarginon=1
+rightmarginchars=80
+scrollheight=0
+tabstops=4
+spacetabs=0
+showtabs=0
+tabindent=0
+editfontname=mseide_source
+editfontheight=0
+editfontwidth=0
+editfontextraspace=0
+editfontcolor=-1879048183
+editbkcolor=-1879048186
+statementcolor=14745599
+pairmarkcolor=-2147483642
+editfontantialiased=1
+editmarkbrackets=1
+editmarkpairwords=0
+fpgdesigner=1
+backupfilecount=0
+encoding=1
+eolstyle=1
+trimtrailingwhitespace=0
+codetemplatedirs=1
+ ${TEMPLATEDIR}
+debugcommand=${DEBUGGER}
+debugoptions=
+debugtarget=
+runcommand=
+xtermcommand=xterm -S${PTSN}/${PTSH}
+remoteconnection=
+uploadcommand=
+gdbprocessor=Auto
+gdbservercommand=
+gdbservercommandattach=
+beforeconnect=
+afterconnect=
+beforeload=
+afterload=
+beforerun=
+sourcebase=
+sourcedirs=4
+ ${MSEDIR}lib/addon/*/
+ ${MSEDIR}lib/common/kernel/$TARGETOSDIR/
+ ${MSEDIR}lib/common/*/
+ ./
+defines=0
+progparameters=
+progworkingdirectory=
+envvarnames=0
+envvarvalues=0
+defineson=0
+stoponexception=0
+valuehints=1
+activateonbreak=1
+raiseonbreak=1
+showconsole=0
+externalconsole=0
+settty=1
+gdbdownload=0
+downloadalways=0
+restartgdbbeforeload=0
+startupbkpt=0
+startupbkpton=0
+gdbsimulator=0
+gdbserverstartonce=0
+gdbloadtimeout=
+gdbserverwait=0
+nogdbserverexit=0
+gdbservertty=0
+exceptclassnames=1
+ EconvertError
+exceptignore=1
+ 0
+nodebugbeginend=0
+fpcgdbworkaround=1
 sigsettings=27
  1,1,T,F
  3,3,T,F
@@ -571,18 +686,6 @@ sigsettings=27
  29,29,F,F
  30,30,T,F
 defaultmake=1
-units=
- (
- a=0,8229,6,Pascal Units
- )
-cmodules=
- (
- a=0,8229,6,C Modules
- )
-files=
- (
- a=0,8229,6,Text Files
- )
 [breakpoints]
 on=0
 path=0
@@ -593,8 +696,20 @@ ignore=0
 condition=0
 panels=1
  panel1
+units=
+ (
+ a=0,8228,6,Pascal Units
+ )
+cmodules=
+ (
+ a=0,8228,6,C Modules
+ )
+files=
+ (
+ a=0,8228,6,Text Files
+ )
 [componentstore]
-storedir=/C:/pascal/fractal_tree_mse/fractal_tree/apps/ide/compstore/
+storedir=/home/fred/mseide-msegui/apps/ide/compstore/
 filename=
 [components]
 [selecteditpage]
@@ -613,60 +728,42 @@ hintheight=0
 finddtext=
 findhistory=0
 findoptions=1
-editpos=2
- 0,25
+editpos=3
+ 0,69
  0,-1073741823
+ 0,0
 bookmarks0=0
 bookmarks1=0
-sourcefiles=2
- /C:/pascal/fractal_tree_mse/fractal_tree/main.pas
+bookmarks2=0
+sourcefiles=3
+ ${PROJECTDIR}/main.pas
  ${PROJECTDIR}/fractal_tree.pas
-relpaths=2
+ ${PROJECTDIR}/fractal_tree.pas
+relpaths=3
  main.pas
  fractal_tree.pas
-ismoduletexts=2
+ fractal_tree.pas
+ismoduletexts=3
+ 0
  0
  0
 modules=1
- /C:/pascal/fractal_tree_mse/fractal_tree/main.mfm
+ /home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/main.mfm
 moduleoptions=1
  0
 visiblemodules=1
- -1
+ 0
 nomenumodules=1
  0
-[sourcefo.tabwidget]
-tabsize=60
+[sourcefo.files_tab]
+order=3
+ 0
+ 2
+ 1
 firsttab=0
 index=0
 [layout]
-windowlayout=555
- [mainfo.openform]
- filenames=0
- filecolwidth=0
- x=0
- y=0
- cx=0
- cy=0
- filehistory=0
- filefilterindex=0
- filefilter=
- [mainfo.projectfiledia]
- filecolwidth=174
- x=0
- y=0
- cx=0
- cy=0
- [mainfo.openfile]
- filenames=0
- filecolwidth=0
- x=0
- y=0
- cx=0
- cy=0
- filehistory=0
- filefilterindex=0
- filefilter=
+windowlayout=552
  [mainfo.basedock]
  splitdir=2
  useroptions=268450944
@@ -680,15 +777,25 @@ windowlayout=555
  ny=0
  ncx=0
  ncy=0
- x=569
- y=359
- cx=1224
+ x=34
+ y=45
+ cx=1231
  cy=621
  rcx=0
  rcy=0
  wsize=0
  active=1
  visible=1
+ [findmessagefo.findtext]
+ value=
+ history=3
+  not inlined
+  linux
+  used
+ [findmessagefo.casesensitive]
+ value=0
+ [findmessagefo.copytoclip]
+ value=0
  [targetconsolefo]
  splitdir=0
  useroptions=268451945
@@ -698,8 +805,8 @@ windowlayout=555
  ny=0
  ncx=0
  ncy=0
- x=493
- y=171
+ x=495
+ y=172
  cx=497
  cy=314
  rcx=0
@@ -716,10 +823,10 @@ windowlayout=555
  ny=0
  ncx=0
  ncy=0
- x=444
- y=431
- cx=418
- cy=126
+ x=362
+ y=177
+ cx=355
+ cy=107
  rcx=0
  rcy=0
  wsize=0
@@ -728,7 +835,7 @@ windowlayout=555
  [memoryfo]
  splitdir=0
  useroptions=268451963
- stackedunder=cpuc86_64fo
+ stackedunder=dialogfilesfo
  parent=
  mdistate=0
  nx=0
@@ -755,7 +862,7 @@ windowlayout=555
  [disassfo]
  splitdir=0
  useroptions=268451947
- stackedunder=findinfilefo
+ stackedunder=
  parent=
  mdistate=0
  nx=0
@@ -771,17 +878,10 @@ windowlayout=555
  wsize=0
  active=0
  visible=0
- [findmessagefo.findtext]
- value=
- history=0
- [findmessagefo.casesensitive]
- value=0
- [findmessagefo.copytoclip]
- value=0
  [findinfilefo]
  splitdir=0
  useroptions=268451947
- stackedunder=symbolfo
+ stackedunder=
  parent=
  mdistate=0
  nx=0
@@ -797,28 +897,31 @@ windowlayout=555
  [projecttreefo]
  splitdir=0
  useroptions=268484715
- parent=mainfo.panel1.container
- visible=1
- mdistate=0
+ stackedunder=mainfo
+ parent=
+ mdistate=3
  nx=0
  ny=0
  ncx=0
  ncy=0
- x=0
- y=0
- cx=205
- cy=442
+ x=24
+ y=95
+ cx=181
+ cy=449
  rcx=0
  rcy=0
+ wsize=0
+ active=0
+ visible=1
  [projecttreefo.grid]
- propcolwidthref=88
- width0=117
+ propcolwidthref=28
+ width0=141
  sortdescend0=0
- width1=82
+ width1=26
  sortdescend1=0
  sorted=0
  col=1
- row=-1073741823
+ row=0
  rowheight=16
  [stackfo]
  splitdir=0
@@ -829,10 +932,10 @@ windowlayout=555
  ny=0
  ncx=0
  ncy=0
- x=423
- y=321
- cx=344
- cy=155
+ x=337
+ y=280
+ cx=427
+ cy=144
  rcx=0
  rcy=0
  wsize=0
@@ -882,7 +985,7 @@ windowlayout=555
  [breakpointsfo]
  splitdir=0
  useroptions=268451947
- stackedunder=memoryfo
+ stackedunder=conflangfo
  parent=
  mdistate=0
  nx=0
@@ -900,35 +1003,16 @@ windowlayout=555
  visible=0
  [breakpointsfo.bkptson]
  value=1
- [objectinspectorfo]
- splitdir=0
- useroptions=268451947
- stackedunder=findmessagefo
- parent=
- mdistate=3
- nx=0
- ny=0
- ncx=0
- ncy=0
- x=185
- y=360
- cx=254
- cy=248
- rcx=0
- rcy=0
- wsize=0
- active=0
- visible=0
  [objectinspectorfo.grid]
- propcolwidthref=244
- width0=108
+ propcolwidthref=321
+ width0=77
  sortdescend0=0
- width1=130
+ width1=238
  sortdescend1=0
  [symbolfo]
  splitdir=0
  useroptions=268451963
- stackedunder=componentstorefo
+ stackedunder=
  parent=
  mdistate=0
  nx=0
@@ -984,8 +1068,8 @@ windowlayout=555
  y=0
  cx=247
  cy=44
- rcx=1262
- rcy=583
+ rcx=1129
+ rcy=679
  [watchfo.grid]
  propcolwidthref=121
  values0=0
@@ -1007,7 +1091,7 @@ windowlayout=555
  value=1
  [messagefo]
  splitdir=0
- useroptions=268517483
+ useroptions=268550251
  parent=mainfo.basedock
  visible=1
  mdistate=0
@@ -1016,15 +1100,15 @@ windowlayout=555
  ncx=0
  ncy=0
  x=0
- y=496
- cx=1214
- cy=91
+ y=512
+ cx=1219
+ cy=88
  rcx=0
  rcy=0
  [componentstorefo]
  splitdir=0
  useroptions=268460155
- stackedunder=_mse_mainfo_mse_
+ stackedunder=
  parent=
  mdistate=0
  nx=0
@@ -1045,7 +1129,7 @@ windowlayout=555
  width0=111
  sortdescend0=0
  sortdescend1=0
- width2=103
+ width2=160
  sortdescend2=0
  width3=185
  sortdescend3=0
@@ -1087,27 +1171,27 @@ windowlayout=555
  [componentpalettefo]
  splitdir=0
  useroptions=268460139
- stackedunder=objectinspectorfo
+ stackedunder=
  parent=
- mdistate=3
+ mdistate=0
  nx=0
  ny=0
  ncx=0
  ncy=0
- x=240
- y=139
- cx=956
- cy=77
+ x=428
+ y=66
+ cx=440
+ cy=129
  rcx=0
  rcy=0
  wsize=0
  active=0
  visible=0
  [componentpalettefo.componentpages]
- activetab=0
+ activetab=1
  [debuggerfo]
  splitdir=0
- useroptions=268460139
+ useroptions=24683
  parent=mainfo.basedock
  visible=1
  mdistate=0
@@ -1117,13 +1201,44 @@ windowlayout=555
  ncy=0
  x=0
  y=0
- cx=1214
- cy=48
+ cx=1219
+ cy=54
  rcx=0
  rcy=0
+ [debuggerfo.basedock]
+ splitdir=2
+ useroptions=268582019
+ parent=debuggerfo.container
+ visible=1
+ mdistate=0
+ nx=0
+ ny=0
+ ncx=1219
+ ncy=62
+ x=0
+ y=0
+ cx=1219
+ cy=62
+ rcx=0
+ rcy=0
+ [debuggerfo.edit_options]
+ value=1
+ [debuggerfo.edit_compilernum]
+ value=0
+ [debuggerfo.edit_compiler]
+ value=Pascal
+ [debuggerfo.file_history]
+ value=/home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/main.pas
+ history=2
+  /home/fred/Downloads/bgrabitmap-dev-bgrabitmapnew/test/test4ideu/fractal_tree/main.pas
+  ${PROJECTDIR}/main.pas
+ [debuggerfo.project_options]
+ value=1
+ [debuggerfo.hints]
+ value=0
  [sourcefo]
  splitdir=0
- useroptions=268451945
+ useroptions=16489
  parent=mainfo.panel1.container
  visible=1
  mdistate=0
@@ -1131,21 +1246,26 @@ windowlayout=555
  ny=0
  ncx=0
  ncy=0
- x=208
+ x=0
  y=0
- cx=1006
- cy=442
+ cx=1219
+ cy=452
  rcx=0
  rcy=0
- [actionsmo.watchesonact]
- checked=1
- [actionsmo.bluedotsonact]
- checked=1
+ [sourcefo.files_tab]
+ order=3
+  0
+  2
+  1
+ firsttab=0
+ index=0
+ [confideufo.usedefaulteditoroptions]
+ value=0
  [cpuc86_64fo]
  irqoff=0
  splitdir=0
  useroptions=268451947
- stackedunder=disassfo
+ stackedunder=objectinspectorfo
  parent=
  mdistate=0
  nx=0
@@ -1163,7 +1283,7 @@ windowlayout=555
  visible=0
  [mainfo.panel1]
  splitdir=1
- useroptions=302087659
+ useroptions=302022123
  parent=mainfo.basedock
  visible=1
  mdistate=0
@@ -1172,30 +1292,30 @@ windowlayout=555
  ncx=0
  ncy=0
  x=0
- y=51
- cx=1214
- cy=442
+ y=57
+ cx=1219
+ cy=452
  rcx=0
  rcy=0
  [_mse_mainfo_mse_]
  splitdir=0
  useroptions=268451963
- stackedunder=mainfo
+ stackedunder=
  parent=
  mdistate=3
  nx=0
  ny=0
  ncx=0
  ncy=0
- x=634
+ x=595
  y=219
- cx=430
+ cx=469
  cy=420
  rcx=0
  rcy=0
  wsize=0
  active=0
- visible=1
+ visible=0
 [targetconsole]
 finddtext=
 findhistory=0
