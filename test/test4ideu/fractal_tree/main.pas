@@ -25,7 +25,7 @@ var
 implementation
 
 uses
- BGRABitmap, BGRABitmapTypes, bgragraphics, main_mfm;
+ BGRABitmap, BGRABitmapTypes, BGRAGraphics, BGRAClasses, BGRAUTF8, main_mfm;
 
 procedure drawTree(x1, y1, angle, depth, multiplier: single; bgra : tbgrabitmap);
 var
@@ -48,18 +48,26 @@ begin
 end;       
   
 procedure tmainfo.tpaintbox1_onpaint(const sender: twidget; const acanvas: tcanvas);
+const SampleText = 'HellÔ green tree';
 var
   bmp : tbgrabitmap;
   multiplier : single;
 begin
-   bmp := tbgrabitmap.create(sender.bounds_cx, sender.bounds_cy);
+  bmp := tbgrabitmap.create(sender.bounds_cx, sender.bounds_cy);
   
-   multiplier := sender.bounds_cy / 50;
+  multiplier := sender.bounds_cy / 50;
  
   bmp.GradientFill(0, 0, bmp.Width, bmp.Height, cl_dkgreen, BGRA(0,125,0), 
   gtLinear, PointF(0,0), PointF(0, bmp.Height), dmSet);
 
-  drawTree(bmp.Width div 2, bmp.Height, -91, 9, multiplier, bmp);      
+  drawTree(bmp.Width div 2, bmp.Height, -91, 9, multiplier, bmp); 
+  
+  bmp.FontFullHeight := 30;
+  bmp.TextOut(20, 20, SampleText, BGRAWhite);
+  bmp.HorizLine(20, 20, 20 + bmp.TextSize(SampleText).cx-1, BGRAWhite);
+  bmp.HorizLine(20, 20 + bmp.FontFullHeight, 20 + bmp.TextSize(SampleText).cx-1, BGRAWhite);
+  
+  bmp.Rectangle(0, 0, bmp.Width, bmp.Height, CSSYellow);
 
   bmp.draw(acanvas, 0, 0, false);
   bmp.free;
