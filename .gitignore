@@ -28,3 +28,5 @@ test/colorspace/HorseShoe
 
 *.bak1
 *.app
+
+test/test4ideu/fractal_tree/units/

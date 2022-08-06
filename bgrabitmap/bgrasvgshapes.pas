@@ -1101,6 +1101,7 @@ procedure TSVGElementWithGradient.Initialize;
 begin
   inherited Initialize;
   FRegisteredToDatalink:= false;
+  FGradientElementsDefined:= false;
   ResetGradients;
 end;
 
