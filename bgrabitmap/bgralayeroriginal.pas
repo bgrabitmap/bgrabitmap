@@ -8,7 +8,7 @@ interface
 
 uses
   BGRAClasses, SysUtils, BGRABitmap, BGRABitmapTypes, BGRATransform, BGRAMemDirectory, fgl
-  {$IFDEF BGRABITMAP_USE_LCL},LCLType{$ENDIF};
+  {$IFDEF BGRABITMAP_USE_LCL},LCLType, LCLIntf{$ENDIF};
 
 type
   PRectF = BGRABitmapTypes.PRectF;
@@ -107,6 +107,10 @@ type
     FCurHoverPoint: integer;
     FHoverPointHandlers: THoverPointHandlers;
     FClickPointHandlers: TClickPointHandlers;
+    FLastClickTime: TDateTime;
+    FLastClickPos: TPointF;
+    FDoubleClickTime: TDateTime;
+    FConsecutiveClickCount: integer;
     function RenderPoint(ADest: TBGRABitmap; ACoord: TPointF; AAlternateColor: boolean; AHighlighted: boolean): TRect; virtual;
     function GetRenderPointBounds(ACoord: TPointF; AHighlighted: boolean): TRect; virtual;
     function RenderArrow(ADest: TBGRABitmap; AOrigin, AEndCoord: TPointF): TRect; virtual;
@@ -154,6 +158,7 @@ type
     property PointHighlighted[AIndex: integer]: boolean read GetPointHighlighted write SetPointHighlighted;
     property OnFocusChanged: TNotifyEvent read FOnFocusChanged write FOnFocusChanged;
     property IsMovingPoint: boolean read GetIsMovingPoint;
+    property ConsecutiveClickCount: integer read FConsecutiveClickCount;
   end;
 
   TBGRACustomOriginalStorage = class;
@@ -825,6 +830,11 @@ begin
   FCurHoverPoint:= -1;
   FHoverPointHandlers := THoverPointHandlers.Create;
   FClickPointHandlers := TClickPointHandlers.Create;
+  FLastClickTime := Now;
+  FLastClickPos := EmptyPointF;
+  FDoubleClickTime := {$IFDEF BGRABITMAP_USE_LCL}GetDoubleClickTime()
+                      {$ELSE}500{$ENDIF}/(86400*1000);
+  FConsecutiveClickCount := 0;
 end;
 
 destructor TBGRAOriginalEditor.Destroy;
@@ -1006,7 +1016,18 @@ procedure TBGRAOriginalEditor.MouseDown(RightButton: boolean;
 var
   i, clickedPoint: Integer;
   subShift: TShiftState;
+  curTime: TDateTime;
+  curPos: TPointF;
 begin
+  curTime := Now;
+  curPos := PointF(ViewX,ViewY);
+  if (curTime - FLastClickTime < FDoubleClickTime) and
+     not IsEmptyPointF(FLastClickPos) and
+     (VectLen(curPos - FLastClickPos) <= PointSize/2) then
+       inc(FConsecutiveClickCount)
+       else FConsecutiveClickCount:= 1;
+  FLastClickPos := curPos;
+  FLastClickTime:= curTime;
   AHandled:= false;
   FPrevMousePos:= ViewCoordToOriginal(PointF(ViewX,ViewY));
   if FPointMoving = -1 then
