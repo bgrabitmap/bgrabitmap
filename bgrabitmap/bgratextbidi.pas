@@ -283,7 +283,7 @@ type
 
     function GetCaret(ACharIndex: integer): TBidiCaretPos;
     function GetUntransformedCaret(ACharIndex: integer): TBidiCaretPos;
-    function GetCharIndexAt(APosition: TPointF): integer;
+    function GetCharIndexAt(APosition: TPointF; ABetweenGlyphs: boolean = true): integer;
     function GetTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = true; AVerticalClip: boolean = false): ArrayOfTPointF;
     function GetUntransformedTextEnveloppe(AStartIndex, AEndIndex: integer; APixelCenteredCoordinates: boolean = true; AMergeBoxes: boolean = true; AVerticalClip: boolean = false): ArrayOfTPointF;
     function GetParagraphAt(ACharIndex: Integer): integer; overload;
@@ -2703,7 +2703,7 @@ begin
   end;
 end;
 
-function TBidiTextLayout.GetCharIndexAt(APosition: TPointF): integer;
+function TBidiTextLayout.GetCharIndexAt(APosition: TPointF; ABetweenGlyphs: boolean): integer;
 var
   brokenIndex,j, fit: Integer;
   u,u2: LongWord;
@@ -2766,9 +2766,13 @@ begin
             //if there is just one char, it is the whole part
             if part^.endIndex = part^.startIndex + 1 then
             begin
-              if w > 0.5*len then
-                exit(part^.endIndex)
-              else
+              if ABetweenGlyphs then
+              begin
+                if w > 0.5*len then
+                  exit(part^.endIndex)
+                else
+                  exit(part^.startIndex);
+              end else
                 exit(part^.startIndex);
             end;
 
@@ -2785,7 +2789,7 @@ begin
               newW := TextSizeBidiOverrideSplit(part^.startIndex, part^.endIndex, part^.IsRightToLeft, newIndex).x;
               if newW >= w then
               begin
-                if (curW+newW)*0.5 + 1 < w then curIndex := newIndex;
+                if ABetweenGlyphs and ((curW+newW)*0.5 + 1 < w) then curIndex := newIndex;
                 break;
               end else
               begin
