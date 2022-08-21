@@ -14,9 +14,11 @@ type
   { TBGRAMacBitmap }
 
   TBGRAMacBitmap = class(TBGRALCLBitmap)
-     procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
-       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
-     function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean=False): TBitmap; override;
+    procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
+      ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
+    function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean=False): TBitmap; override;
+    procedure TakeScreenshotOfPrimaryMonitor; override;
+    procedure TakeScreenshot(ARect: TRect); override;
   end;
 
 implementation
@@ -120,6 +122,28 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TBGRAMacBitmap.TakeScreenshotOfPrimaryMonitor;
+var primaryDC: THandle;
+begin
+  primaryDC := LCLIntf.GetDC(0);
+  try
+    LoadFromDevice(primaryDC, rect(0,0,2560,1440));
+  finally
+    LCLIntf.ReleaseDC(0, primaryDC);
+  end;
+end;
+
+procedure TBGRAMacBitmap.TakeScreenshot(ARect: TRect);
+var all: TBGRAMacBitmap;
+begin
+  all := TBGRAMacBitmap.Create;
+  all.TakeScreenshotOfPrimaryMonitor;
+  SetSize(ARect.Width, ARect.Height);
+  FillTransparent;
+  PutImage(-ARect.Left, -ARect.Top, all, dmSet);
+  all.Free;
 end;
 
 end.
