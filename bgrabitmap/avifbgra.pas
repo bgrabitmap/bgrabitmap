@@ -44,7 +44,337 @@ type
     Stream: TStream;
   end;
 
+  TAvifImageBase = class
+  public
+    procedure Init(aImagePtr: Pointer); virtual; abstract;
+    function GetTransformFlags: longword; virtual; abstract;
+    function GetImirMode: uint8; virtual; abstract;
+    procedure SetColorPrimaries(AColorPrimaries: avifColorPrimaries); virtual; abstract;
+    procedure SetTransferCharacteristics(ATC: avifTransferCharacteristics); virtual; abstract;
+    procedure SetMatrixCoefficients(AMC: avifMatrixCoefficients); virtual; abstract;
+    procedure SetYuvRange(AYR: avifRange); virtual; abstract;
+    procedure SetTransformFlags(ATF: avifTransformFlags); virtual; abstract;
+    procedure SetImirMode(AIM: uint8); virtual; abstract;
+  end;
 
+  generic TAvifImage<T> = class(TAvifImageBase)
+  protected
+    FImage: T;
+  public
+    constructor Create(aImagePtr: Pointer = nil);
+    procedure Init(aImagePtr: Pointer); override;
+    function GetTransformFlags: longword; override;
+    function GetImirMode: uint8; override;
+    procedure SetColorPrimaries(AColorPrimaries: avifColorPrimaries); override;
+    procedure SetTransferCharacteristics(ATC: avifTransferCharacteristics); override;
+    procedure SetMatrixCoefficients(AMC: avifMatrixCoefficients); override;
+    procedure SetYuvRange(AYR: avifRange); override;
+    procedure SetTransformFlags(ATF: avifTransformFlags); override;
+    procedure SetImirMode(AIM: uint8); override;
+  end;
+
+  TDecoderBase = class
+  public
+    procedure Init(aDecoderPtr: Pointer); virtual; abstract;
+    function GetImage: PavifImage; virtual; abstract;
+    function GetIo:PavifIO; virtual; abstract;
+    function GetDecoder:PavifDecoder; virtual; abstract;
+  end;
+
+  generic TDecoder<T> = class(TDecoderBase)
+  protected
+    FDecoder: T;
+  public
+    constructor Create(aDecoderPtr: Pointer = nil);
+    procedure Init(aDecoderPtr: Pointer); override;
+    function GetImage: PavifImage; override;
+    function GetIo:PavifIO; override;
+    function GetDecoder:PavifDecoder; override;
+  end;
+
+  TEncoderBase = class
+  public
+    procedure Init(aEncoderPtr: Pointer); virtual; abstract;
+    procedure SetMaxThreads(AMT: integer); virtual; abstract;
+    procedure SetSpeed(ASpeed: integer); virtual; abstract;
+    procedure SetMinQuantizer(AMinQ: integer); virtual; abstract;
+    procedure SetMaxQuantizer(AMQ: integer); virtual; abstract;
+    procedure SetMinQuantizerAlpha(AMinQ: integer); virtual; abstract;
+    procedure SetMaxQuantizerAlpha(AMQ: integer); virtual; abstract;
+    procedure SetCodecChoice(AMQ: avifCodecChoice); virtual; abstract;
+  end;
+
+  generic TEncoder<T> = class(TEncoderBase)
+  protected
+    FEncoder: T;
+  public
+    constructor Create(aEncoderPtr: Pointer = nil);
+    procedure Init(aEncoderPtr: Pointer); override;
+    procedure SetMaxThreads(AMT: integer); override;
+    procedure SetSpeed(ASpeed: integer); override;
+    procedure SetMinQuantizer(AMinQ: integer); override;
+    procedure SetMaxQuantizer(AMQ: integer); override;
+    procedure SetMinQuantizerAlpha(AMinQ: integer); override;
+    procedure SetMaxQuantizerAlpha(AMQ: integer); override;
+    procedure SetCodecChoice(ACC: avifCodecChoice); override;
+  end;
+
+  TAvifRGBImageBase = class
+  public
+    function GetRgbImage: PavifRGBImage; virtual; abstract;
+    function GetWidth:UInt32; virtual; abstract;
+    function GetHeight:UInt32; virtual; abstract;
+    procedure SetWidth(aWidth:UInt32); virtual; abstract;
+    procedure SetHeight(aHeight:UInt32); virtual; abstract;
+    procedure SetPixels(aPixels: PUInt8); virtual; abstract;
+    procedure SetDepth(aDepth:UInt32); virtual; abstract;
+    procedure SetFormat(aFormat:avifRGBFormat); virtual; abstract;
+    procedure SetRowBytes(aRowBytes : UInt32); virtual; abstract;
+    procedure SetIgnoreAlpha(AIgnoreAlpha : avifBool); virtual; abstract;
+  end;
+
+  TAvifRGBImageField = record
+    case integer of
+      0: (rgb0_8: avifRGBImage0_8_4);
+      1: (rgb0_10: avifRGBImage0_10_0);
+      2: (rgb0_11: avifRGBImage0_11_0);
+  end;
+
+  { TAvifRGBImage }
+
+  generic TAvifRGBImage<T> = class(TAvifRGBImageBase)
+  protected
+    wrgb: TAvifRGBImageField;
+    FImage: T;
+  public
+    constructor Create;
+    function GetRgbImage: PavifRGBImage; override;
+    function GetWidth:UInt32; override;
+    function GetHeight:UInt32; override;
+    procedure SetWidth(aWidth:UInt32); override;
+    procedure SetHeight(aHeight:UInt32); override;
+    procedure SetPixels(aPixels: PUInt8); override;
+    procedure SetDepth(aDepth:UInt32); override;
+    procedure SetFormat(aFormat:avifRGBFormat); override;
+    procedure SetRowBytes(aRowBytes : UInt32); override;
+    procedure SetIgnoreAlpha(AIgnoreAlpha : avifBool); override;
+  end;
+
+function TAvifImageFactory(aImagePtr: Pointer): TAvifImageBase;
+begin
+  if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
+    Result := specialize TAvifImage<PavifImage0_11_0>.Create(aImagePtr)
+  else
+    Result := specialize TAvifImage<PavifImage0_8_4>.Create(aImagePtr);
+end;
+
+function TDecoderFactory(aDecoderPtr: Pointer): TDecoderBase;
+begin
+  if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
+     result := specialize TDecoder<PAvifDecoder0_11_0>.Create(aDecoderPtr)
+  else if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
+     result := specialize TDecoder<PAvifDecoder0_10_0>.Create(aDecoderPtr)
+  else if AVIF_VERSION >= AVIF_VERSION_0_9_3 then
+     result := specialize TDecoder<PAvifDecoder0_9_3>.Create(aDecoderPtr)
+  else if AVIF_VERSION >= AVIF_VERSION_0_9_2 then
+     result := specialize TDecoder<PAvifDecoder0_9_2>.Create(aDecoderPtr)
+  else
+     result := specialize TDecoder<PAvifDecoder0_8_4>.Create(aDecoderPtr);
+end;
+
+function TEncoderFactory(aEncoderPtr: Pointer): TEncoderBase;
+begin
+  if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
+    result:=specialize TEncoder<PAvifEncoder0_11_0>.Create(aEncoderPtr)
+  else
+    result:=specialize TEncoder<PAvifEncoder>.Create(aEncoderPtr);
+end;
+
+function TAvifRGBImageFactory(): TAvifRGBImageBase;
+begin
+  if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
+    result:=specialize TAvifRGBImage<PavifRGBImage0_11_0>.Create
+  else if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
+    result:=specialize TAvifRGBImage<PavifRGBImage0_10_0>.Create
+  else
+    result:=specialize TAvifRGBImage<PavifRGBImage0_8_4>.Create;
+end;
+
+constructor TDecoder.Create(aDecoderPtr:Pointer);
+begin
+  Init(aDecoderPtr);
+end;
+
+procedure TDecoder.Init(aDecoderPtr:Pointer);
+begin
+  FDecoder:=T(aDecoderPtr);
+end;
+
+function TDecoder.GetImage:PavifImage;
+begin
+  result := FDecoder^.image;
+end;
+
+function TDecoder.GetIo:PavifIO;
+begin
+  result := FDecoder^.io;
+end;
+
+function TDecoder.GetDecoder:PavifDecoder;
+begin
+  result := FDecoder;
+end;
+
+constructor TAvifRGBImage.Create;
+begin
+  wrgb := Default(TAvifRGBImageField);
+  FImage:= T(@wrgb);
+end;
+
+function TAvifRGBImage.GetRgbImage: Pointer;
+begin
+  result := FImage;
+end;
+
+function TAvifRGBImage.GetWidth:UInt32;
+begin
+  result := FImage^.width;
+end;
+
+function TAvifRGBImage.GetHeight:UInt32;
+begin
+  result := FImage^.height;
+end;
+
+procedure TAvifRGBImage.SetWidth(aWidth:UInt32);
+begin
+  FImage^.width:=aWidth;
+end;
+
+procedure TAvifRGBImage.SetHeight(aHeight:UInt32);
+begin
+  FImage^.height:=aHeight;
+end;
+
+procedure TAvifRGBImage.SetPixels(aPixels:PUInt8);
+begin
+  FImage^.pixels:=aPixels;
+end;
+
+procedure TAvifRGBImage.SetDepth(aDepth:UInt32);
+begin
+  FImage^.depth:=aDepth;
+end;
+
+procedure TAvifRGBImage.SetFormat(aFormat:avifRGBFormat);
+begin
+  FImage^.format:=aFormat;
+end;
+
+procedure TAvifRGBImage.SetRowBytes(aRowBytes:UInt32);
+begin
+  FImage^.rowBytes:=aRowBytes;
+end;
+
+procedure TAvifRGBImage.SetIgnoreAlpha(AIgnoreAlpha:avifBool);
+begin
+  FImage^.ignoreAlpha:=aIgnoreAlpha;
+end;
+
+constructor TEncoder.Create(aEncoderPtr: Pointer);
+begin
+  Init(aEncoderPtr);
+end;
+
+procedure TEncoder.Init(aEncoderPtr: Pointer);
+begin
+  FEncoder := T(aEncoderPtr);
+end;
+
+procedure TEncoder.SetMaxThreads(AMT: integer);
+begin
+  FEncoder^.maxThreads := AMT;
+end;
+
+procedure TEncoder.SetSpeed(ASpeed: integer);
+begin
+  FEncoder^.speed := ASpeed;
+end;
+
+procedure TEncoder.SetMinQuantizer(AMinQ: integer);
+begin
+  FEncoder^.minQuantizer := AMinQ;
+end;
+
+procedure TEncoder.SetMaxQuantizer(AMQ: integer);
+begin
+  FEncoder^.maxQuantizer := AMQ;
+end;
+
+procedure TEncoder.SetMinQuantizerAlpha(AMinQ: integer);
+begin
+  FEncoder^.minQuantizerAlpha := AMinQ;
+end;
+
+procedure TEncoder.SetMaxQuantizerAlpha(AMQ: integer);
+begin
+  FEncoder^.maxQuantizerAlpha := AMQ;
+end;
+
+procedure TEncoder.SetCodecChoice(ACC: avifCodecChoice);
+begin
+  FEncoder^.codecChoice := ACC;
+end;
+
+constructor TAvifImage.Create(aImagePtr: Pointer);
+begin
+  Init(aImagePtr);
+end;
+
+procedure TAvifImage.Init(aImagePtr: Pointer);
+begin
+  FImage := T(aImagePtr);
+end;
+
+function TAvifImage.GetTransformFlags: longword;
+begin
+  Result := FImage^.transformFlags;
+end;
+
+function TAvifImage.GetImirMode: uint8;
+begin
+  Result := FImage^.imir.mode;
+end;
+
+procedure TAvifImage.SetColorPrimaries(AColorPrimaries: avifColorPrimaries);
+begin
+  FImage^.colorPrimaries := AColorPrimaries;
+end;
+
+procedure TAvifImage.SetTransferCharacteristics(ATC: avifTransferCharacteristics);
+begin
+  FImage^.transferCharacteristics := ATC;
+end;
+
+procedure TAvifImage.SetMatrixCoefficients(AMC: avifMatrixCoefficients);
+begin
+  FImage^.matrixCoefficients := AMC;
+end;
+
+procedure TAvifImage.SetYuvRange(AYR: avifRange);
+begin
+  FImage^.yuvRange := AYR;
+end;
+
+procedure TAvifImage.SetTransformFlags(ATF: avifTransformFlags);
+begin
+  FImage^.transformFlags := ATF;
+end;
+
+procedure TAvifImage.SetImirMode(AIM: uint8);
+begin
+  FImage^.imir.mode := AIM;
+end;
 
 //aBuffer  12 first bytes of file.
 function AvifValidateHeaderSignature(aBuffer: Pointer): boolean;
@@ -60,7 +390,6 @@ begin
   end;
   Result := False;
 end;
-
 
 function avifIOStreamReaderRead(io: PavifIO; readFlags: uint32; offset: uint64; size: size_type; output: PavifROData): avifResult; cdecl;
 var
@@ -121,106 +450,69 @@ begin
   exit(PavifIO(reader));
 end;
 
-
-function avifDecoderSetIOStream(decoder: PavifDecoder; aStream: TStream): avifResult; cdecl;
+function avifDecoderSetIOStream(decoderWrap: TDecoderBase; aStream: TStream): avifResult; cdecl;
 var
   io: PavifIO;
-  setIo: PavifIO;
 begin
   io := avifIOCreateStreamReader(aStream);
   if io = nil then
     exit(AVIF_RESULT_IO_ERROR);
-  avifDecoderSetIO(decoder, io);
-
-  if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
-     setIo := avifDecoder0_10_0(decoder^).io
-  else if AVIF_VERSION >= AVIF_VERSION_0_9_3 then
-     setIo := avifDecoder0_9_3(decoder^).io
-  else if AVIF_VERSION >= AVIF_VERSION_0_9_2 then
-     setIo := avifDecoder0_9_2(decoder^).io
-  else
-     setIo := avifDecoder0_8_4(decoder^).io;
-
-  if setIo = nil then
+  avifDecoderSetIO(decoderWrap.GetDecoder, io);
+  if decoderWrap.GetIo = nil then
     raise EAvifException.Create('Failed to set input. Could be due to incompatible version of AVIF library.');
   exit(AVIF_RESULT_OK);
 end;
 
-procedure AvifDecode(decoder: PavifDecoder; aBitmap: TBGRACustomBitmap);
+procedure AvifDecode(decoderWrap: TDecoderBase; aBitmap: TBGRACustomBitmap);
 var
   res: avifResult;
-  wrgb0_8: avifRGBImage0_8_4;
-  wrgb0_10: avifRGBImage0_10_0;
-  prgb: PavifRGBImage;
-
-function decoderImage: PavifImage;
+  imageWrap: TAvifImageBase;
+  rgbImageWrap: TAvifRgbImageBase;
 begin
-  if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
-     result := avifDecoder0_10_0(decoder^).image
-  else if AVIF_VERSION >= AVIF_VERSION_0_9_3 then
-     result := avifDecoder0_9_3(decoder^).image
-  else if AVIF_VERSION >= AVIF_VERSION_0_9_2 then
-     result := avifDecoder0_9_2(decoder^).image
-  else
-     result := avifDecoder0_8_4(decoder^).image;
-end;
-
-begin
-  res := avifDecoderParse(decoder);
+  res := avifDecoderParse(decoderWrap.GetDecoder);
   if res <> AVIF_RESULT_OK then
     raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
   //  Memo1.Lines.Add(Format('Parsed AVIF: %ux%u (%ubpc)', [decoder^.image^.Width, decoder^.image^.Height, decoder^.image^.depth]));
-  if avifDecoderNextImage(decoder) = AVIF_RESULT_OK then
+  if avifDecoderNextImage(decoderWrap.GetDecoder) = AVIF_RESULT_OK then
   begin
-    if decoderImage = nil then
+    if decoderWrap.GetImage = nil then
       raise EAvifException.Create('No image data recieved from AVIF library.');
-    if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
-    begin
-      wrgb0_10:=Default(avifRGBImage0_10_0);
-      prgb:= @wrgb0_10;
-      avifRGBImageSetDefaults(prgb, decoderImage);
+
+    imageWrap:=nil;
+    rgbImageWrap:=nil;
+    try
+      rgbImageWrap:=TAvifRgbImageFactory();
+      imageWrap:=TAvifImageFactory(decoderWrap.GetImage);
+      avifRGBImageSetDefaults(rgbImageWrap.GetRgbImage, decoderWrap.GetImage);
       //aBitmap.LineOrder:=riloTopToBottom;
-      aBitmap.SetSize(wrgb0_10.Width, wrgb0_10.Height);
-      wrgb0_10.pixels := PUint8(aBitmap.databyte);
-      wrgb0_10.depth := 8;
-      {$push}{$warn 6018 off} //unreachable code
+      aBitmap.SetSize(rgbImageWrap.GetWidth, rgbImageWrap.GetHeight);
+      rgbImageWrap.SetPixels(PUint8(aBitmap.databyte));
+      rgbImageWrap.SetDepth(8);
+      {$push}{$warn 6018 off}//unreachable code
       if TBGRAPixel_RGBAOrder then
-        wrgb0_10.format := AVIF_RGB_FORMAT_RGBA
+        rgbImageWrap.SetFormat(AVIF_RGB_FORMAT_RGBA)
       else
-        wrgb0_10.format := AVIF_RGB_FORMAT_BGRA;
+        rgbImageWrap.SetFormat(AVIF_RGB_FORMAT_BGRA);
       {$pop}
-      wrgb0_10.rowBytes := wrgb0_10.Width * 4;
-    end else
-    begin
-      wrgb0_8:=Default(avifRGBImage0_8_4);
-      prgb:= @wrgb0_8;
-      avifRGBImageSetDefaults(prgb, decoderImage);
-      //aBitmap.LineOrder:=riloTopToBottom;
-      aBitmap.SetSize(wrgb0_8.Width, wrgb0_8.Height);
-      wrgb0_8.pixels := PUint8(aBitmap.databyte);
-      wrgb0_8.depth := 8;
-      {$push}{$warn 6018 off} //unreachable code
-      if TBGRAPixel_RGBAOrder then
-        wrgb0_8.format := AVIF_RGB_FORMAT_RGBA
-      else
-        wrgb0_8.format := AVIF_RGB_FORMAT_BGRA;
-      {$pop}
-      wrgb0_8.rowBytes := wrgb0_8.Width * 4;
+      rgbImageWrap.SetRowBytes(rgbImageWrap.GetWidth * 4);
+      //if aBitmap.LineOrder<>riloTopToBottom then
+      //begin
+      //  decoder^.image^.transformFlags:=decoder^.image^.transformFlags + Uint32(AVIF_TRANSFORM_IMIR);
+      //  decoder^.image^.imir.mode:=0;
+      //end;
+      //decoder^.image^.imir.axis:=0; //vertical mirror
+      res := avifImageYUVToRGB(decoderWrap.GetImage, rgbImageWrap.GetRgbImage);
+      if res <> AVIF_RESULT_OK then
+        raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
+      if (aBitmap.LineOrder <> riloTopToBottom) and not
+        (( imageWrap.GetTransformFlags and longword(AVIF_TRANSFORM_IMIR) ) = longword(AVIF_TRANSFORM_IMIR) ) and
+        (imageWrap.GetImirMode = 0) then
+        aBitmap.VerticalFlip;
+      aBitmap.InvalidateBitmap;
+    finally
+      imageWrap.Free;
+      rgbImageWrap.Free;
     end;
-    //if aBitmap.LineOrder<>riloTopToBottom then
-    //begin
-    //  decoder^.image^.transformFlags:=decoder^.image^.transformFlags + Uint32(AVIF_TRANSFORM_IMIR);
-    //  decoder^.image^.imir.mode:=0;
-    //end;
-    //decoder^.image^.imir.axis:=0; //vertical mirror
-    res := avifImageYUVToRGB(decoderImage, prgb);
-    if res <> AVIF_RESULT_OK then
-      raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
-    if (aBitmap.LineOrder <> riloTopToBottom) and not
-      (((longword(decoderImage^.transformFlags) and longword(AVIF_TRANSFORM_IMIR))) = longword(AVIF_TRANSFORM_IMIR)) and
-      (decoderImage^.imir.mode = 0) then
-      aBitmap.VerticalFlip;
-    aBitmap.InvalidateBitmap;
   end
   else
     raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
@@ -230,8 +522,11 @@ procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRACustomBitmap);
 var
   decoder: PavifDecoder;
   res: avifResult;
+  decoderWrap: TDecoderBase;
 begin
+  decoderWrap:=nil;
   decoder := avifDecoderCreate();
+  decoderWrap:=TDecoderFactory(decoder);
   try
     // Override decoder defaults here (codecChoice, requestedSource, ignoreExif, ignoreXMP, etc)
     //decoder^.maxThreads := 1;
@@ -239,13 +534,14 @@ begin
     // decoder^.imageSizeLimit := AVIF_DEFAULT_IMAGE_SIZE_LIMIT;
     // decoder^.strictFlags := UInt32( AVIF_STRICT_ENABLED);
     // decoder^.allowProgressive := AVIF_FALSE;
-    res := avifDecoderSetIOStream(decoder, aStream);
+    res := avifDecoderSetIOStream(decoderWrap, aStream);
     if res = AVIF_RESULT_OK then
-      AvifDecode(decoder, aBitmap)
+      AvifDecode(decoderWrap, aBitmap)
     else
       raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
   finally
     avifDecoderDestroy(decoder);
+    decoderWrap.Free;
   end;
 end;
 
@@ -265,8 +561,11 @@ procedure AvifLoadFromFileNative(const AFilename: string; aBitmap: TBGRACustomBi
 var
   decoder: PavifDecoder;
   res: avifResult;
+  decoderWrap: TDecoderBase;
 begin
+  decoderWrap := nil;
   decoder := avifDecoderCreate();
+  decoderWrap:=TDecoderFactory(decoder);
   try
     // Override decoder defaults here (codecChoice, requestedSource, ignoreExif, ignoreXMP, etc)
     //decoder^.maxThreads := 1;
@@ -276,11 +575,12 @@ begin
     // decoder^.allowProgressive := AVIF_FALSE;
     res := avifDecoderSetIOFile(decoder, pansichar(AFilename));
     if res = AVIF_RESULT_OK then
-      AvifDecode(decoder, aBitmap)
+      AvifDecode(decoderWrap, aBitmap)
     else
       raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
   finally
     avifDecoderDestroy(decoder);
+    decoderWrap.Free;
   end;
 end;
 
@@ -288,8 +588,11 @@ procedure AvifLoadFromMemory(AData: Pointer; ASize: cardinal; aBitmap: TBGRACust
 var
   decoder: PavifDecoder;
   res: avifResult;
+  decoderWrap: TDecoderBase;
 begin
+  decoderWrap := nil;
   decoder := avifDecoderCreate();
+  decoderWrap:=TDecoderFactory(decoder);
   try
     // Override decoder defaults here (codecChoice, requestedSource, ignoreExif, ignoreXMP, etc)
     //decoder^.maxThreads := 1;
@@ -299,11 +602,12 @@ begin
     // decoder^.allowProgressive := AVIF_FALSE;
     res := avifDecoderSetIOMemory(decoder, AData, ASize);
     if res = AVIF_RESULT_OK then
-      AvifDecode(decoder, aBitmap)
+      AvifDecode(decoderWrap, aBitmap)
     else
       raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
   finally
     avifDecoderDestroy(decoder);
+    decoderWrap.Free;
   end;
 end;
 
@@ -328,24 +632,24 @@ end;
 procedure AvifEncode(aBitmap: TBGRACustomBitmap; aQuality0to100: integer; aSpeed0to10:integer; var avifOutput: avifRWData;aPixelFormat:avifPixelFormat=AVIF_PIXEL_FORMAT_YUV420;aIgnoreAlpha:boolean=false);
 var
   encoder: PavifEncoder;
-  wrgb0_8: avifRGBImage0_8_4;
-  wrgb0_10: avifRGBImage0_10_0;
-  prgb: PavifRGBImage;
   image: PavifImage;
+  imageWrap:TAvifImageBase;
+  encoderWrap:TEncoderBase;
   convertResult, addImageResult, finishResult: avifResult;
   alpha_quantizer, min_quantizer, max_quantizer: integer;
   quality: integer;
+  rgbImageWrap:TAvifRgbImageBase;
 const
   LOSS_LESS_IMAGE_QUALITY = 100;
 begin
   encoder := nil;
-  //FillChar(wrgb, sizeof(wrgb), 0);
+  rgbImageWrap:=nil;
   try
     if aQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
       image := avifImageCreate(aBitmap.Width, aBitmap.Height, 8, AVIF_PIXEL_FORMAT_YUV444)
     else
       image := avifImageCreate(aBitmap.Width, aBitmap.Height, 8, aPixelFormat{AVIF_PIXEL_FORMAT_YUV420}{AVIF_PIXEL_FORMAT_YUV444});
-
+    imageWrap := TAvifImageFactory(image);
     // these values dictate what goes into the final AVIF
     // Configure image here: (see avif/avif.h)
     // * colorPrimaries
@@ -358,63 +662,42 @@ begin
     // * alphaRange
     // * alphaPremultiplied
     // * transforms (transformFlags, pasp, clap, irot, imir)
-    image^.colorPrimaries := AVIF_COLOR_PRIMARIES_BT709;
-    image^.transferCharacteristics := AVIF_TRANSFER_CHARACTERISTICS_SRGB;
-    image^.matrixCoefficients := AVIF_MATRIX_COEFFICIENTS_BT601;
+    imageWrap.SetColorPrimaries(AVIF_COLOR_PRIMARIES_BT709);
+    imageWrap.SetTransferCharacteristics(AVIF_TRANSFER_CHARACTERISTICS_SRGB);
+    imageWrap.SetMatrixCoefficients(AVIF_MATRIX_COEFFICIENTS_BT601);
 
     // Override RGB(A)->YUV(A) defaults here: depth, format, chromaUpsampling, ignoreAlpha, alphaPremultiplied, libYUVUsage, etc
     // Alternative: set rgb.pixels and rgb.rowBytes yourself, which should match your chosen rgb.format
     // Be sure to use uint16_t* instead of uint8_t* for rgb.pixels/rgb.rowBytes if (rgb.depth > 8)
-    if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
-    begin
-      wrgb0_10:=Default(avifRGBImage0_10_0);
-      prgb:= @wrgb0_10;
-      // If you have RGB(A) data you want to encode, use this path
-      avifRGBImageSetDefaults(prgb, image);
-      wrgb0_10.Width := aBitmap.Width;
-      wrgb0_10.Height := aBitmap.Height;
-      {$push}{$warn 6018 off} //unreachable code
-      if TBGRAPixel_RGBAOrder then
-        wrgb0_10.format := AVIF_RGB_FORMAT_RGBA
-      else
-        wrgb0_10.format := AVIF_RGB_FORMAT_BGRA;
-      {$pop}
-      if aIgnoreAlpha then
-        wrgb0_10.ignoreAlpha := AVIF_TRUE
-      else
-        wrgb0_10.ignoreAlpha := AVIF_FALSE;
-      wrgb0_10.pixels := aBitmap.DataByte;
-      wrgb0_10.rowBytes := aBitmap.Width * 4;
-    end else
-    begin
-      wrgb0_8:=Default(avifRGBImage0_8_4);
-      prgb:= @wrgb0_8;
-      // If you have RGB(A) data you want to encode, use this path
-      avifRGBImageSetDefaults(prgb, image);
-      wrgb0_8.Width := aBitmap.Width;
-      wrgb0_8.Height := aBitmap.Height;
-      {$push}{$warn 6018 off} //unreachable code
-      if TBGRAPixel_RGBAOrder then
-        wrgb0_8.format := AVIF_RGB_FORMAT_RGBA
-      else
-        wrgb0_8.format := AVIF_RGB_FORMAT_BGRA;
-      {$pop}
-      if aIgnoreAlpha then
-        wrgb0_8.ignoreAlpha := AVIF_TRUE
-      else
-        wrgb0_8.ignoreAlpha := AVIF_FALSE;
-      wrgb0_8.pixels := aBitmap.DataByte;
-      wrgb0_8.rowBytes := aBitmap.Width * 4;
-    end;
+    rgbImageWrap:=TAvifRgbImageFactory();
+    imageWrap:=TAvifImageFactory(image);
+    // If you have RGB(A) data you want to encode, use this path
+    avifRGBImageSetDefaults(rgbImageWrap.GetRgbImage, image);
+    rgbImageWrap.SetWidth(aBitmap.Width);
+    rgbImageWrap.SetHeight(aBitmap.Height);
+    {$push}{$warn 6018 off}//unreachable code
+    if TBGRAPixel_RGBAOrder then
+      rgbImageWrap.SetFormat(AVIF_RGB_FORMAT_RGBA)
+    else
+      rgbImageWrap.SetFormat(AVIF_RGB_FORMAT_BGRA);
+    {$pop}
+    if aIgnoreAlpha then
+      rgbImageWrap.SetIgnoreAlpha(AVIF_TRUE)
+    else
+      rgbImageWrap.SetIgnoreAlpha(AVIF_FALSE);
+    rgbImageWrap.SetPixels(aBitmap.DataByte);
+    rgbImageWrap.SetRowBytes(aBitmap.Width * 4);
     if aQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
     begin
-      image^.yuvRange := AVIF_RANGE_FULL;
-      image^.matrixCoefficients := AVIF_MATRIX_COEFFICIENTS_IDENTITY; // this is key for lossless
+      imageWrap.SetYuvRange(AVIF_RANGE_FULL);
+      imageWrap.SetMatrixCoefficients(AVIF_MATRIX_COEFFICIENTS_IDENTITY); // this is key for lossless
     end;
-    convertResult := avifImageRGBToYUV(image, prgb);
+    convertResult := avifImageRGBToYUV(image, rgbImageWrap.GetRgbImage);
     if convertResult <> AVIF_RESULT_OK then
       raise EAvifException.Create('Failed to convert to YUV(A): ' + avifResultToString(convertResult));
     encoder := avifEncoderCreate();
+    encoderWrap := TEncoderFactory(encoder);
+
     // Configure your encoder here (see avif/avif.h):
     // * maxThreads
     // * minQuantizer
@@ -431,20 +714,20 @@ begin
     if aSpeed0to10<>AVIF_SPEED_DEFAULT then
       aSpeed0to10:=clamp(aSpeed0to10,AVIF_SPEED_SLOWEST,AVIF_SPEED_FASTEST);
 
-    encoder^.maxThreads := 2;
-    encoder^.speed := aSpeed0to10;
+    encoderWrap.SetMaxThreads(2);
+    encoderWrap.SetSpeed(aSpeed0to10);
     if aQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
     begin
       // Set defaults, and warn later on if anything looks incorrect
       //input.requestedFormat = AVIF_PIXEL_FORMAT_YUV444; // don't subsample when using AVIF_MATRIX_COEFFICIENTS_IDENTITY
-      encoder^.minQuantizer := AVIF_QUANTIZER_LOSSLESS;
-      encoder^.maxQuantizer := AVIF_QUANTIZER_LOSSLESS;
-      encoder^.minQuantizerAlpha := AVIF_QUANTIZER_LOSSLESS;
-      encoder^.maxQuantizerAlpha := AVIF_QUANTIZER_LOSSLESS;
-      encoder^.codecChoice := AVIF_CODEC_CHOICE_AOM;              // rav1e doesn't support lossless transform yet:
+      encoderWrap.SetMinQuantizer(AVIF_QUANTIZER_LOSSLESS);
+      encoderWrap.SetMaxQuantizer(AVIF_QUANTIZER_LOSSLESS);
+      encoderWrap.SetMinQuantizerAlpha(AVIF_QUANTIZER_LOSSLESS);
+      encoderWrap.SetMaxQuantizerAlpha(AVIF_QUANTIZER_LOSSLESS);
+      encoderWrap.SetCodecChoice(AVIF_CODEC_CHOICE_AOM);              // rav1e doesn't support lossless transform yet:
       // https://github.com/xiph/rav1e/issues/151
-      image^.yuvRange := AVIF_RANGE_FULL; // avoid limited range
-      image^.matrixCoefficients := AVIF_MATRIX_COEFFICIENTS_IDENTITY; // this is key for lossless
+      imageWrap.SetYuvRange(AVIF_RANGE_FULL); // avoid limited range
+      imageWrap.SetMatrixCoefficients(AVIF_MATRIX_COEFFICIENTS_IDENTITY); // this is key for lossless
     end
     else
     begin
@@ -459,16 +742,16 @@ begin
         if (max_quantizer > 40) then
           alpha_quantizer := max_quantizer - 40;
       end;
-      encoder^.minQuantizer := min_quantizer;
-      encoder^.maxQuantizer := max_quantizer;
-      encoder^.minQuantizerAlpha := 0;
-      encoder^.maxQuantizerAlpha := alpha_quantizer;
+      encoderWrap.SetMinQuantizer(min_quantizer);
+      encoderWrap.SetMaxQuantizer(max_quantizer);
+      encoderWrap.SetMinQuantizerAlpha(0);
+      encoderWrap.SetMaxQuantizerAlpha(alpha_quantizer);
     end;
 
     if aBitmap.LineOrder <> riloTopToBottom then   //vertical mirror.
     begin
-      image^.transformFlags := image^.transformFlags + uint32(AVIF_TRANSFORM_IMIR);
-      image^.imir.mode := 0;
+      imageWrap.SetTransformFlags(imageWrap.GetTransformFlags + uint32(AVIF_TRANSFORM_IMIR));
+      imageWrap.SetImirMode( 0 );
     end;
 
     // Call avifEncoderAddImage() for each image in your sequence
@@ -486,6 +769,9 @@ begin
       avifImageDestroy(image);
     if encoder <> nil then
       avifEncoderDestroy(encoder);
+    imageWrap.Free;
+    encoderWrap.Free;
+    rgbImageWrap.Free;
   end;
 end;
 

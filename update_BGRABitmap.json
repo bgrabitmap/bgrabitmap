@@ -10,12 +10,12 @@
       "ForceNotify" : false,
       "InternalVersion" : 1,
       "Name" : "bgrabitmappack.lpk",
-      "Version" : "11.5.2.0"
+      "Version" : "11.5.3.0"
     }
   ],
   "UpdatePackageData" : {
     "DisableInOPM" : false,
-    "DownloadZipURL" : "https://github.com/bgrabitmap/bgrabitmap/archive/v11.5.2.zip",
+    "DownloadZipURL" : "https://github.com/bgrabitmap/bgrabitmap/archive/v11.5.3.zip",
     "Name" : "bgrabitmap-master"
   }
 }
