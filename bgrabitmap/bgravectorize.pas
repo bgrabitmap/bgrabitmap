@@ -2315,13 +2315,37 @@ begin
   Result:= (inherited CustomHeaderSize) + 4+length(FName)+4 + sizeof(single) + 4 + 5*4;
 end;
 
+const
+  FS_BOLD = 1;
+  FS_ITALIC = 2;
+  FS_UNDERLINE = 4;
+  FS_STRIKE_OUT = 8;
+
+function IntToFontStyles(AFlags: integer): TFontStyles;
+begin
+  Result:= [];
+  if (AFlags and FS_BOLD)<>0 then Include(Result, fsBold);
+  if (AFlags and FS_ITALIC)<>0 then Include(Result, fsItalic);
+  if (AFlags and FS_UNDERLINE)<>0 then Include(Result, fsUnderline);
+  if (AFlags and FS_STRIKE_OUT)<>0 then Include(Result, fsStrikeOut);
+end;
+
+function FontStylesToInt(AStyles: TFontStyles): Integer;
+begin
+  Result := 0;
+  If fsBold in AStyles then Inc(Result, FS_BOLD);
+  If fsItalic in AStyles then Inc(Result, FS_ITALIC);
+  If fsUnderline in AStyles then Inc(Result, FS_UNDERLINE);
+  If fsStrikeOut in AStyles then Inc(Result, FS_STRIKE_OUT);
+end;
+
 procedure TBGRAVectorizedFont.WriteCustomHeader(AStream: TStream);
 var metric: TFontPixelMetric;
 begin
   inherited WriteCustomHeader(AStream);
   LEWriteLongint(AStream, length(FName));
   AStream.Write(FName[1],length(FName));
-  LEWriteLongint(AStream, integer(FStyle));
+  LEWriteLongint(AStream, FontStylesToInt(FStyle));
   LEWriteSingle(AStream, FontEmHeightRatio);
   LEWriteLongint(AStream, Resolution);
   metric := FontPixelMetric;
@@ -2360,7 +2384,7 @@ begin
   lNameLength := LEReadLongint(AStream);
   setlength(result.Name, lNameLength);
   AStream.Read(result.Name[1],length(result.Name));
-  result.Style := TFontStyles(LEReadLongint(AStream));
+  result.Style := IntToFontStyles(LEReadLongint(AStream));
   result.EmHeightRatio:= LEReadSingle(AStream);
   result.Resolution := LEReadLongint(AStream);
   result.PixelMetric.Baseline := LEReadLongint(AStream);
