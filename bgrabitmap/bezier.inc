@@ -1451,10 +1451,10 @@ begin
     exit;
   end;
   u := pointF(Point[end1].x - Point[start1].x, Point[end1].y - Point[start1].y);
-  lu := sqrt(u*u);
+  lu := VectLen(u);
   if lu <> 0 then u.Scale(1/lu);
   v := pointF(Point[end2].x - Point[start2].x, Point[end2].y - Point[start2].y);
-  lv := sqrt(v*v);
+  lv := VectLen(v);
   if lv <> 0 then v.Scale(1/lv);
 
   result := u*v > FMinimumDotProduct;

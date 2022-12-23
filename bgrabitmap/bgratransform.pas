@@ -1037,7 +1037,7 @@ begin
   begin
     FPoints[i] := APoints[i];
     v := APoints[(i+1) mod 4] - APoints[i];
-    len := sqrt(v*v);
+    len := VectLen(v);
     if len > 0 then FInvLengths[i] := 1/len
       else FInvLengths[i] := 0;
     FVectors[i] := v*FInvLengths[i];

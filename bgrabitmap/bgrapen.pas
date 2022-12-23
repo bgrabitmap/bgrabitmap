@@ -368,8 +368,8 @@ begin
       betweenDash := true;
   for i := 0 to nb-2 do
   begin
-    len := (sqrt(sqr(leftPts[i+1].x-leftPts[i].x) + sqr(leftPts[i+1].y-leftPts[i].y))+
-           sqrt(sqr(rightPts[i+1].x-rightPts[i].x) + sqr(rightPts[i+1].y-rightPts[i].y)))/(2*width);
+    len := (VectLen(leftPts[i+1].x-leftPts[i].x, leftPts[i+1].y-leftPts[i].y)+
+           VectLen(rightPts[i+1].x-rightPts[i].x, rightPts[i+1].y-rightPts[i].y))/(2*width);
     lenDone := 0;
     while lenDone < len do
     begin
@@ -496,7 +496,7 @@ var
       exit;
     end;
     da := a2-a1;
-    precision := round( sqrt( sqr(pt2.x-pt1.x)+sqr(pt2.y-pt1.y) ) ) +2;
+    precision := round( VectLen( pt2.x-pt1.x, pt2.y-pt1.y) ) +2;
     setlength(result,precision);
     for i := 0 to precision-1 do
       result[i] := origin + PointF( cos(a1+i/(precision-1)*da)*hw,
@@ -887,12 +887,12 @@ begin
         maxDiff := borders[i+1].len;
       if penstyle <> nil then
         if maxDiff > 2*width then maxDiff := 2*width;
-      maxDiff := sqrt(sqr(maxDiff)+sqr(hw));
+      maxDiff := VectLen(maxDiff, hw);
 
       //leftside join
       leftInter := IntersectLine( borders[i].leftSide, borders[i+1].leftSide );
       diff := leftInter-pts[i+1];
-      len := sqrt(diff*diff);
+      len := VectLen(diff);
       if (len > maxMiter) and (turn >= 0) then //if miter too far
       begin
         diff.Scale(1/len);

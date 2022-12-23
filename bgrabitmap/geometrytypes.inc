@@ -181,10 +181,10 @@ type
   {** Multiplies both ''x'' and ''y'' by ''factor''. It scales the vector represented by (''x'',''y'') }
   operator * (factor: single; const pt1: TPointF): TPointF; inline;
   {** Returns the length of the vector (''dx'',''dy'') }
-  function VectLen(dx,dy: single): single; overload;
+  function VectLen(const dx,dy: single): single; overload; inline;
   {** Returns the length of the vector represented by (''x'',''y'') }
-  function VectLen(v: TPointF): single; overload;
-  function VectDet(v1,v2: TPointF): double; inline;
+  function VectLen(const v: TPointF): single; overload;
+  function VectDet(const v1,v2: TPointF): double; inline;
 
 type
   TFaceCulling = (fcNone, fcKeepCW, fcKeepCCW);
@@ -1504,20 +1504,20 @@ begin
   end;
 end;
 
-function VectLen(v: TPointF): single;
+function VectLen(const v: TPointF): single;
 begin
   if isEmptyPointF(v) then
     result := EmptySingle
   else
-    result := sqrt(v*v);
+    result := sqrt(sqr(v.x) + sqr(v.y));
 end;
 
-function VectDet(v1, v2: TPointF): double;
+function VectDet(const v1, v2: TPointF): double;
 begin
   result := v1.x*v2.y - v1.y*v2.x;
 end;
 
-function VectLen(dx, dy: single): single;
+function VectLen(const dx, dy: single): single;
 begin
   result := sqrt(dx*dx+dy*dy);
 end;
