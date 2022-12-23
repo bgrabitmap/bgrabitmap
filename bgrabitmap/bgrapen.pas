@@ -842,7 +842,7 @@ begin
     HasLittleBorder := false;
 
     //determine u-turn
-    turn := borders[i].leftSide.dir * borders[i+1].leftSide.dir;
+    turn := borders[i].leftSide.dir ** borders[i+1].leftSide.dir;
     if turn < -0.99999 then
     begin
       if joinstyle <> pjsRound then

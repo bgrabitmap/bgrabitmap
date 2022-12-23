@@ -383,7 +383,7 @@ var
       lv := VectLen(v);
       if lv <> 0 then v.Scale(1/lv);
 
-      result := u*v > 0.999;
+      result := u**v > 0.999;
     end;
 
     function angle45(prev,cur,next: integer): boolean;
@@ -403,7 +403,7 @@ var
       lv := VectLen(v);
       if lv <> 0 then v.Scale(1/lv);
 
-      dp := u*v;
+      dp := u**v;
       result := (dp > 0.70) and (dp < 0.72);
     end;
 

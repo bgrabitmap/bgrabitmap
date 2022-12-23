@@ -521,13 +521,13 @@ var a,b: single;
   v: TPointF;
 begin
   v := self.p2-self.p1;
-  a := (self.p1-2*self.c+self.p2)*v;
+  a := (self.p1-2*self.c+self.p2)**v;
   if a = 0 then //no solution
   begin
     result := -1;
     exit;
   end;
-  b := (self.c-self.p1)*v;
+  b := (self.c-self.p1)**v;
   result := -b/a;
 end;
 
@@ -562,14 +562,14 @@ var a,b: TPointF;
 begin
   a := p1 - 2*c + p2;
   b := 2*(c - p1);
-  A_ := 4*(a*a);
-  B_ := b*b;
+  A_ := 4*(a**a);
+  B_ := b**b;
   if (A_ = 0) or (B_ = 0) then
   begin
     result := VectLen(p2-p1);
     exit;
   end;
-  AB_ := 4*(a*b);
+  AB_ := 4*(a**b);
 
   A_2 := sqrt(A_);
   B_2 := 2*sqrt(B_);
@@ -783,7 +783,7 @@ var
         u := rightPoint-leftPoint;
         lenU := VectLen(u);
         if lenU>0 then u.Scale(1/lenU);
-        deviation := abs((middlePoint-leftPoint)*PointF(u.y,-u.x));
+        deviation := abs((middlePoint-leftPoint)**PointF(u.y,-u.x));
         if deviation > AAcceptedDeviation then
         begin
           ComputeRec(left, leftPoint, middle, middlePoint);
@@ -1457,7 +1457,7 @@ begin
   lv := VectLen(v);
   if lv <> 0 then v.Scale(1/lv);
 
-  result := u*v > FMinimumDotProduct;
+  result := u**v > FMinimumDotProduct;
 end;
 
 {$ENDIF}
