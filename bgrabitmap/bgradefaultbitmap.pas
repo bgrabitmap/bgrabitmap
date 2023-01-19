@@ -1915,7 +1915,7 @@ var
   currentGlyph: TGlyphUtf8;
   currentGlyphUtf8: string;
   currentGlyphWidth: single;
-  angle, textLen: single;
+  angleRad, textLen: single;
 
   procedure NextGlyph;
   begin
@@ -1953,13 +1953,13 @@ begin
     ACursor.MoveForward(currentGlyphWidth);
     ACursor.MoveBackward(currentGlyphWidth, false);
     ACursor.MoveForward(currentGlyphWidth*0.5);
-    with ACursor.CurrentTangent do angle := arctan2(y,x);
+    with ACursor.CurrentTangent do angleRad := arctan2(y,x);
     with ACursor.CurrentCoordinate do
     begin
       if ATexture = nil then
-        TextOutAngle(x,y, system.round(-angle*1800/Pi), currentGlyphUtf8, AColor, taCenter)
+        TextOutAngle(x,y, system.round(-angleRad*(1800/Pi)), currentGlyphUtf8, AColor, taCenter)
       else
-        TextOutAngle(x,y, system.round(-angle*1800/Pi), currentGlyphUtf8, ATexture, taCenter);
+        TextOutAngle(x,y, system.round(-angleRad*(1800/Pi)), currentGlyphUtf8, ATexture, taCenter);
     end;
     ACursor.MoveForward(currentGlyphWidth*0.5 + ALetterSpacing);
   end;
