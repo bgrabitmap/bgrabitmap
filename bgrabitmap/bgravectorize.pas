@@ -76,6 +76,7 @@ type
     function GetFontPixelMetric: TFontPixelMetric; override;
     function GetFontPixelMetricF: TFontPixelMetricF; override;
     function FontExists(AName: string): boolean; override;
+    function TextVisible(const AColor: TBGRAPixel): boolean; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
@@ -1397,6 +1398,11 @@ begin
   {$ELSE}
   result := true;
   {$ENDIF}
+end;
+
+function TBGRAVectorizedFontRenderer.TextVisible(const AColor: TBGRAPixel): boolean;
+begin
+  Result:=inherited TextVisible(AColor) or OutlineActuallyVisible;
 end;
 
 procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,

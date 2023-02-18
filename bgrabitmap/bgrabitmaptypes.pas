@@ -389,6 +389,9 @@ type
     function GetFontPixelMetricF: TFontPixelMetricF; virtual;
     function FontExists(AName: string): boolean; virtual; abstract;
 
+    {** Checks if any text would be visible using the specified color }
+    function TextVisible(const AColor: TBGRAPixel): boolean; virtual;
+
     {** Returns the total size of the string provided using the current font.
         Orientation is not taken into account, so that the width is along the text }
     function TextSize(sUTF8: string): TSize; overload; virtual; abstract;
@@ -842,6 +845,11 @@ begin
     result.DescentLine := DescentLine;
     result.Lineheight := LineHeight;
   end;
+end;
+
+function TBGRACustomFontRenderer.TextVisible(const AColor: TBGRAPixel): boolean;
+begin
+  result := AColor.alpha <> 0;
 end;
 
 function TBGRACustomFontRenderer.TextSizeF(sUTF8: string): TPointF;

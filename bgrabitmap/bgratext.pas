@@ -1073,7 +1073,7 @@ var
   end;
 
 begin
-  if not SystemFontAvailable then exit;
+  if not SystemFontAvailable or ((c.alpha = 0) and (tex = nil)) then exit;
 
   if CustomAntialiasingLevel = 0 then
     CustomAntialiasingLevel:= FontAntialiasingLevel;
@@ -1178,7 +1178,7 @@ var
   tempLCL: TBitmap;
   {$ENDIF}
 begin
-  if not SystemFontAvailable then exit;
+  if not SystemFontAvailable or ((c.alpha = 0) and (tex = nil)) then exit;
 
   if CustomAntialiasingLevel = 0 then
     CustomAntialiasingLevel:= FontAntialiasingLevel;

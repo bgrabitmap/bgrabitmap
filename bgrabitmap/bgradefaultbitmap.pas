@@ -1937,7 +1937,7 @@ var
   end;
 
 begin
-  if (ATexture = nil) and (AColor.alpha = 0) then exit;
+  if (ATexture = nil) and not FontRenderer.TextVisible(AColor) then exit;
   sUTF8 := CleanTextOutString(sUTF8);
   if sUTF8 = '' then exit;
   glyphCursor := TGlyphCursorUtf8.New(sUTF8, FontBidiMode);
@@ -2006,7 +2006,7 @@ var
   end;
 
 begin
-  if (ATexture = nil) and (AColor.alpha = 0) then exit;
+  if (ATexture = nil) and not FontRenderer.TextVisible(AColor) then exit;
   sUTF8 := CleanTextOutString(sUTF8);
   if sUTF8 = '' then exit;
   glyphCursor := TGlyphCursorUtf8.New(sUTF8, FontBidiMode);

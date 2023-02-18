@@ -86,6 +86,7 @@ type
     constructor Create; overload;
     constructor Create(AShader: TCustomPhongShading; AShaderOwner: boolean); overload;
     function FontExists(AName: string): boolean; override;
+    function TextVisible(const AColor: TBGRAPixel): boolean; override;
     function GetFontPixelMetric: TFontPixelMetric; override;
     function GetFontPixelMetricF: TFontPixelMetricF; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
@@ -1173,6 +1174,12 @@ begin
     result := false;
   end else
     result := true;
+end;
+
+function TBGRAFreeTypeFontRenderer.TextVisible(const AColor: TBGRAPixel): boolean;
+begin
+  Result:=inherited TextVisible(AColor) or
+    (((OutlineTexture <> nil) or (OutlineColor.alpha <> 0)) and OutlineVisible);
 end;
 
 function TBGRAFreeTypeFontRenderer.GetFontPixelMetric: TFontPixelMetric;
