@@ -1915,7 +1915,7 @@ var
   currentGlyph: TGlyphUtf8;
   currentGlyphUtf8: string;
   currentGlyphWidth: single;
-  angleRad, textLen: single;
+  angleRad, textLen, skipped: single;
 
   procedure NextGlyph;
   begin
@@ -1924,6 +1924,16 @@ var
       currentGlyphUtf8:= currentGlyph.MirroredGlyphUtf8
       else currentGlyphUtf8 := currentGlyph.GlyphUtf8;
     currentGlyphWidth := TextSize(currentGlyphUtf8).cx;
+  end;
+
+  function SkipStartGlyphs(AInitialPosition:single):single;
+  begin
+    result := -ALetterSpacing;
+    while result<AInitialPosition do
+    begin
+      NextGlyph;
+      IncF(result, ALetterSpacing + currentGlyphWidth);
+    end;
   end;
 
 begin
@@ -1940,16 +1950,29 @@ begin
       NextGlyph;
       IncF(textLen, ALetterSpacing + currentGlyphWidth);
     end;
-    case AAlign of
-      taCenter: ACursor.MoveBackward(textLen*0.5);
-      taRightJustify: ACursor.MoveBackward(textLen);
-    end;
     glyphCursor.Rewind;
+    skipped:=0;
+    case AAlign of
+      taCenter:
+        begin
+          if textLen>ACursor.PathLength then
+            skipped:=SkipStartGlyphs(0.5 * (textLen-ACursor.PathLength));
+          ACursor.MoveBackward((textLen-skipped)*0.5);
+        end;
+      taRightJustify:
+        begin
+          if textLen>ACursor.PathLength then
+            skipped:=SkipStartGlyphs(textLen-ACursor.PathLength);
+          ACursor.MoveBackward(textLen-skipped);
+        end;
+    end;
   end;
 
   while not glyphCursor.EndOfString do
   begin
     NextGlyph;
+    if (ACursor.Position+currentGlyphWidth)>ACursor.PathLength then
+      break;
     ACursor.MoveForward(currentGlyphWidth);
     ACursor.MoveBackward(currentGlyphWidth, false);
     ACursor.MoveForward(currentGlyphWidth*0.5);
