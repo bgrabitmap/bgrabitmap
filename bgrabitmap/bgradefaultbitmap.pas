@@ -1928,11 +1928,11 @@ var
 
   function SkipStartGlyphs(AInitialPosition:single):single;
   begin
-    result := -ALetterSpacing;
-    while result<AInitialPosition do
+    result := 0;
+    while (result + 1e-6 < AInitialPosition) and not glyphCursor.EndOfString do
     begin
       NextGlyph;
-      IncF(result, ALetterSpacing + currentGlyphWidth);
+      IncF(result, currentGlyphWidth + ALetterSpacing);
     end;
   end;
 
@@ -1955,14 +1955,12 @@ begin
     case AAlign of
       taCenter:
         begin
-          if textLen>ACursor.PathLength then
-            skipped:=SkipStartGlyphs(0.5 * (textLen-ACursor.PathLength));
+          skipped:=SkipStartGlyphs(0.5 * (textLen-ACursor.PathLength));
           ACursor.MoveBackward((textLen-skipped)*0.5);
         end;
       taRightJustify:
         begin
-          if textLen>ACursor.PathLength then
-            skipped:=SkipStartGlyphs(textLen-ACursor.PathLength);
+          skipped:=SkipStartGlyphs(textLen-ACursor.PathLength);
           ACursor.MoveBackward(textLen-skipped);
         end;
     end;
@@ -1971,9 +1969,7 @@ begin
   while not glyphCursor.EndOfString do
   begin
     NextGlyph;
-    if (ACursor.Position+currentGlyphWidth)>ACursor.PathLength then
-      break;
-    ACursor.MoveForward(currentGlyphWidth);
+    if ACursor.MoveForward(currentGlyphWidth) <> currentGlyphWidth then break;
     ACursor.MoveBackward(currentGlyphWidth, false);
     ACursor.MoveForward(currentGlyphWidth*0.5);
     with ACursor.CurrentTangent do angleRad := arctan2(y,x);
