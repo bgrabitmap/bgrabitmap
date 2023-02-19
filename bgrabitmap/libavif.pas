@@ -1369,7 +1369,8 @@ begin
       {$ifdef darwin}thelib := FindDarwinLibrary(LibAvifFilename);{$else}
       thelib := ExtractFilePath(ParamStr(0)) + DirectorySeparator + LibAvifFilename;
       {$endif}{$endif}
-      LibAvifHandle := DynLibs.SafeLoadLibrary(thelib); // obtain the handle we want
+      if thelib <> '' then
+        LibAvifHandle := DynLibs.SafeLoadLibrary(thelib); // obtain the handle we want
     end;
     if LibAvifHandle <> DynLibs.NilHandle then
     begin {now we tie the functions to the VARs from above}
