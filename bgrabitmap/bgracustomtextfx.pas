@@ -163,7 +163,7 @@ begin
     result := EmptyRect;
     exit;
   end;
-  if (length(AColors)=0) then
+  if (length(AColors)=1) then
   begin
     result := DrawMask(ADest,AMask,X,Y,AColors[0]);
     exit;
@@ -248,7 +248,7 @@ function TBGRACustomTextEffect.DrawMask(ADest: TBGRACustomBitmap;
 var
   scan: TBGRACustomScanner;
 begin
-  if AMask = nil then
+  if (AMask = nil) or (AColor.alpha = 0) then
   begin
     result := EmptyRect;
     exit;
@@ -264,7 +264,7 @@ function TBGRACustomTextEffect.DrawMask(ADest: TBGRACustomBitmap;
 var
   scan: TBGRACustomScanner;
 begin
-  if AMask = nil then
+  if (AMask = nil) or (ATexture = nil) then
   begin
     result := EmptyRect;
     exit;
@@ -558,6 +558,7 @@ end;
 function TBGRACustomTextEffect.DrawShadow(ADest: TBGRACustomBitmap; X, Y,
   Radius: integer; AColor: TBGRAPixel): TRect;
 begin
+  if AColor.alpha = 0 then exit;
   if (Radius <= 0) or (FTextMask = nil) or (FTextMask.Width = 0) or (FTextMask.Height = 0) then
   begin
     result := Draw(ADest,X,Y,AColor);
