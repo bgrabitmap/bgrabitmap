@@ -23,48 +23,50 @@ object Form1: TForm1
     Align = alBottom
     ClientHeight = 51
     ClientWidth = 647
+    Color = clForm
+    ParentColor = False
     TabOrder = 0
     object CheckBox_Closed: TCheckBox
       Left = 400
-      Height = 22
+      Height = 19
       Top = 24
-      Width = 62
+      Width = 56
       Caption = 'Closed'
       OnChange = CheckBox_Change
       TabOrder = 0
     end
     object Radio_Inside: TRadioButton
       Left = 88
-      Height = 22
+      Height = 19
       Top = 4
-      Width = 58
+      Width = 51
       Caption = 'Inside'
       OnChange = Radio_Change
       TabOrder = 1
     end
     object Radio_Crossing: TRadioButton
       Left = 192
-      Height = 22
+      Height = 19
       Top = 4
-      Width = 73
+      Width = 66
       Caption = 'Crossing'
       OnChange = Radio_Change
       TabOrder = 2
     end
     object Radio_Outside: TRadioButton
       Left = 192
-      Height = 22
+      Height = 19
       Top = 24
-      Width = 67
+      Width = 61
       Caption = 'Outside'
       OnChange = Radio_Change
       TabOrder = 3
     end
     object Radio_Rounded: TRadioButton
       Left = 280
-      Height = 22
+      Height = 19
       Top = 4
-      Width = 73
+      Width = 68
       Caption = 'Rounded'
       Checked = True
       OnChange = Radio_Change
@@ -73,36 +75,36 @@ object Form1: TForm1
     end
     object Radio_VertexToSide: TRadioButton
       Left = 280
-      Height = 22
+      Height = 19
       Top = 24
-      Width = 100
+      Width = 91
       Caption = 'Vertex to side'
       OnChange = Radio_Change
       TabOrder = 6
     end
     object Radio_Bezier2: TRadioButton
       Left = 8
-      Height = 22
+      Height = 19
       Top = 4
-      Width = 67
+      Width = 57
       Caption = 'Bezier2'
       OnChange = Radio_Change
       TabOrder = 7
     end
     object Radio_Bezier3: TRadioButton
       Left = 8
-      Height = 22
+      Height = 19
       Top = 24
-      Width = 67
+      Width = 57
       Caption = 'Bezier3'
       OnChange = Radio_Change
       TabOrder = 8
     end
     object CheckBox_CanJump: TCheckBox
       Left = 400
-      Height = 22
+      Height = 19
       Top = 4
-      Width = 77
+      Width = 72
       Caption = 'Can jump'
       Checked = True
       State = cbChecked
@@ -110,9 +112,9 @@ object Form1: TForm1
     end
     object Radio_EasyBezier: TRadioButton
       Left = 88
-      Height = 22
+      Height = 19
       Top = 24
-      Width = 89
+      Width = 77
       Caption = 'Easy Bezier'
       OnChange = Radio_Change
       TabOrder = 5
@@ -121,7 +123,7 @@ object Form1: TForm1
   object Timer1: TTimer
     Interval = 40
     OnTimer = Timer1Timer
-    left = 97
-    top = 184
+    Left = 97
+    Top = 184
   end
 end
