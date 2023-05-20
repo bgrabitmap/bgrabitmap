@@ -2273,7 +2273,7 @@ procedure TCustomUniversalBitmap.ReallocData;
 begin
   ReAllocMem(FDataByte, FHeight * FRowSize);
   if (FNbPixels > 0) and (FDataByte = nil) then
-    raise SysUtils.OutOfMemoryError;
+    SysUtils.OutOfMemoryError;
   InvalidateBitmap;
   FScanPtr:= nil;
 end;
