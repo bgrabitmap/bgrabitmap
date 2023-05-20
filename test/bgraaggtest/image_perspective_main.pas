@@ -55,11 +55,11 @@ implementation
 
 {$R *.lfm}
 
-procedure NicePoint(bmp: TBGRABitmap; x, y: single);
+procedure NicePoint(bmp: TBGRABitmap; x, y: single; scale: single = 1);
 begin
-    bmp.EllipseAntialias(x,y,4,4,BGRA(0,0,0,192),1);
-    bmp.EllipseAntialias(x,y,3,3,BGRA(255,255,255,192),1);
-    bmp.EllipseAntialias(x,y,2,2,BGRA(0,0,0,192),1);
+    bmp.EllipseAntialias(x,y,4*scale,4*scale,BGRA(0,0,0,192),scale);
+    bmp.EllipseAntialias(x,y,3*scale,3*scale,BGRA(255,255,255,192),scale);
+    bmp.EllipseAntialias(x,y,2*scale,2*scale,BGRA(0,0,0,192),scale);
 end;
 
 { TForm1 }
@@ -67,7 +67,8 @@ end;
 procedure TForm1.FormPaint(Sender: TObject);
 var bmp: TBGRABitmap;
     tx,ty,i: Integer;
-    texPos: array of TPointF;
+    texPos, scaledPts: array of TPointF;
+    scale: double;
 begin
   tx := ClientWidth;
   ty := clientHeight;
@@ -81,7 +82,13 @@ begin
   if Radio_InterpCosine.Checked then
     image.ScanInterpolationFilter := rfCosine;
 
-  bmp := TBGRABitmap.Create(tx,ty,BGRAWhite);
+  If Radio_Affine.Checked or Radio_AffineAntialias.Checked then
+    pts[2] := pts[1]+(pts[3]-pts[0]);
+
+  scale := GetCanvasScaleFactor;
+  bmp := TBGRABitmap.Create(round(tx*scale),round(ty*scale),BGRAWhite);
+  setLength({%H-}scaledPts, length(pts));
+  for i := 0 to high(pts) do scaledPts[i] := scale*pts[i];
 
   stopwatch.clear;
   stopwatch.start;
@@ -91,39 +98,39 @@ begin
   if Radio_Perspective.Checked or Radio_PerspectiveAntialias.Checked then
   begin
     if Radio_PerspectiveAntialias.Checked then
-      bmp.FillQuadPerspectiveMappingAntialias(pts[0],pts[1],pts[2],pts[3], image,
+      bmp.FillQuadPerspectiveMappingAntialias(scaledPts[0],scaledPts[1],scaledPts[2],scaledPts[3], image,
                 texPos[0],texPos[1],texPos[2],texPos[3])
     else
-      bmp.FillQuadPerspectiveMapping(pts[0],pts[1],pts[2],pts[3], image,
+      bmp.FillQuadPerspectiveMapping(scaledPts[0],scaledPts[1],scaledPts[2],scaledPts[3], image,
               texPos[0],texPos[1],texPos[2],texPos[3]);
   end else
   if Radio_LinearAntialias.Checked then
   begin
-    bmp.FillQuadLinearMappingAntialias(pts[0],pts[1],pts[2],pts[3], image,
+    bmp.FillQuadLinearMappingAntialias(scaledPts[0],scaledPts[1],scaledPts[2],scaledPts[3], image,
         texPos[0],texPos[1],texPos[2],texPos[3]);
   end
   else if Radio_Linear.Checked then
   begin
-    bmp.FillQuadLinearMapping(pts[0],pts[1],pts[2],pts[3], image,
+    bmp.FillQuadLinearMapping(scaledPts[0],scaledPts[1],scaledPts[2],scaledPts[3], image,
         texPos[0],texPos[1],texPos[2],texPos[3], true, fcNone, false);
   end
   else if Radio_Affine.Checked then
   begin
-    pts[2] := pts[1]+(pts[3]-pts[0]);
-    bmp.FillQuadAffineMapping(pts[0],pts[1],pts[3],image);
-  end else if Radio_AffineAntialias.checked then
+    bmp.FillQuadAffineMapping(scaledPts[0],scaledPts[1],scaledPts[3],image);
+  end
+  else if Radio_AffineAntialias.checked then
   begin
-    pts[2] := pts[1]+(pts[3]-pts[0]);
-    bmp.FillQuadAffineMappingAntialias(pts[0],pts[1],pts[3],image);
+    bmp.FillQuadAffineMappingAntialias(scaledPts[0],scaledPts[1],scaledPts[3],image);
   end;
 
   stopwatch.stop;
-  //bmp.DrawPolygonAntialias(pts,BGRA(0,0,0,64),1);
+  //bmp.DrawPolygonAntialias(scaledPts,BGRA(0,0,0,64),scale);
+  bmp.FontHeight:= round(bmp.FontHeight*scale);
   bmp.textOut(0,0,inttostr(round(stopwatch.Elapsed*1000))+' ms',BGRABlack);
 
   for i := 0 to 3 do
-    NicePoint(bmp,pts[i].x,pts[i].y);
-  bmp.Draw(Canvas,0,0);
+    NicePoint(bmp,scaledPts[i].x,scaledPts[i].y, scale);
+  bmp.Draw(Canvas,rect(0,0,tx,ty));
 
   bmp.free;
 end;
@@ -139,13 +146,16 @@ begin
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
+var
+  appPath: String;
 begin
   pts[0] := PointF(50,50);
   pts[1] := PointF(clientwidth-150,50);
   pts[2] := PointF(clientwidth-150,clientheight-150);
   pts[3] := PointF(120,clientheight-200);
   MovingPointIndex := -1;
-  image := TBGRABitmap.Create('spheres.png');
+  appPath := ExtractFilePath(ParamStr(0));
+  image := TBGRABitmap.Create(appPath+'spheres.png');
   stopwatch := TEpikTimer.Create(Self);
 end;
 
