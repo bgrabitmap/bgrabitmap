@@ -1493,20 +1493,20 @@ var
   w1,w2,num: single;
   h,d1,d2,delta: double;
 begin
-  w1 := p*FFocalDirection;
+  w1 := p**FFocalDirection;
   w2 := FFocalDistance-w1;
   if (w1 < maxW1) and (w2 < maxW2) then
   begin
     //vertical position and distances
-    h := sqr(p*FFocalNormal);
+    h := sqr(p**FFocalNormal);
     d1 := sqr(w1)+h;
     d2 := sqr(w2)+h;
     //finding t
-    delta := sqr(FFocalRadius)*d1 + 2*FRadius*FFocalRadius*(p*(FRelativeFocal-p))+
+    delta := sqr(FFocalRadius)*d1 + 2*FRadius*FFocalRadius*(p**(FRelativeFocal-p))+
              sqr(FRadius)*d2 - sqr(VectDet(p,FRelativeFocal));
     if delta >= 0 then
     begin
-      num := -FFocalRadius*(FRadius-FFocalRadius)-(FRelativeFocal*(FRelativeFocal-p));
+      num := -FFocalRadius*(FRadius-FFocalRadius)-(FRelativeFocal**(FRelativeFocal-p));
       result := (num+FRadialDeltaSign*sqrt(delta))/FRadialDenominator;
     end else
       result := EmptySingle;

@@ -1915,7 +1915,7 @@ var
   currentGlyph: TGlyphUtf8;
   currentGlyphUtf8: string;
   currentGlyphWidth: single;
-  angle, textLen: single;
+  angleRad, textLen, skipped: single;
 
   procedure NextGlyph;
   begin
@@ -1926,8 +1926,18 @@ var
     currentGlyphWidth := TextSize(currentGlyphUtf8).cx;
   end;
 
+  function SkipStartGlyphs(AInitialPosition:single):single;
+  begin
+    result := 0;
+    while (result + 1e-6 < AInitialPosition) and not glyphCursor.EndOfString do
+    begin
+      NextGlyph;
+      IncF(result, currentGlyphWidth + ALetterSpacing);
+    end;
+  end;
+
 begin
-  if (ATexture = nil) and (AColor.alpha = 0) then exit;
+  if (ATexture = nil) and not FontRenderer.TextVisible(AColor) then exit;
   sUTF8 := CleanTextOutString(sUTF8);
   if sUTF8 = '' then exit;
   glyphCursor := TGlyphCursorUtf8.New(sUTF8, FontBidiMode);
@@ -1940,26 +1950,35 @@ begin
       NextGlyph;
       IncF(textLen, ALetterSpacing + currentGlyphWidth);
     end;
-    case AAlign of
-      taCenter: ACursor.MoveBackward(textLen*0.5);
-      taRightJustify: ACursor.MoveBackward(textLen);
-    end;
     glyphCursor.Rewind;
+    skipped:=0;
+    case AAlign of
+      taCenter:
+        begin
+          skipped:=SkipStartGlyphs(0.5 * (textLen-ACursor.PathLength));
+          ACursor.MoveBackward((textLen-skipped)*0.5);
+        end;
+      taRightJustify:
+        begin
+          skipped:=SkipStartGlyphs(textLen-ACursor.PathLength);
+          ACursor.MoveBackward(textLen-skipped);
+        end;
+    end;
   end;
 
   while not glyphCursor.EndOfString do
   begin
     NextGlyph;
-    ACursor.MoveForward(currentGlyphWidth);
+    if ACursor.MoveForward(currentGlyphWidth) <> currentGlyphWidth then break;
     ACursor.MoveBackward(currentGlyphWidth, false);
     ACursor.MoveForward(currentGlyphWidth*0.5);
-    with ACursor.CurrentTangent do angle := arctan2(y,x);
+    with ACursor.CurrentTangent do angleRad := arctan2(y,x);
     with ACursor.CurrentCoordinate do
     begin
       if ATexture = nil then
-        TextOutAngle(x,y, system.round(-angle*1800/Pi), currentGlyphUtf8, AColor, taCenter)
+        TextOutAngle(x,y, system.round(-angleRad*(1800/Pi)), currentGlyphUtf8, AColor, taCenter)
       else
-        TextOutAngle(x,y, system.round(-angle*1800/Pi), currentGlyphUtf8, ATexture, taCenter);
+        TextOutAngle(x,y, system.round(-angleRad*(1800/Pi)), currentGlyphUtf8, ATexture, taCenter);
     end;
     ACursor.MoveForward(currentGlyphWidth*0.5 + ALetterSpacing);
   end;
@@ -1987,7 +2006,7 @@ var
   end;
 
 begin
-  if (ATexture = nil) and (AColor.alpha = 0) then exit;
+  if (ATexture = nil) and not FontRenderer.TextVisible(AColor) then exit;
   sUTF8 := CleanTextOutString(sUTF8);
   if sUTF8 = '' then exit;
   glyphCursor := TGlyphCursorUtf8.New(sUTF8, FontBidiMode);

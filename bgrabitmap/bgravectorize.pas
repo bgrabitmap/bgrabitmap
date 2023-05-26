@@ -76,6 +76,7 @@ type
     function GetFontPixelMetric: TFontPixelMetric; override;
     function GetFontPixelMetricF: TFontPixelMetricF; override;
     function FontExists(AName: string): boolean; override;
+    function TextVisible(const AColor: TBGRAPixel): boolean; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; override;
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientation: integer; s: string; texture: IBGRAScanner; align: TAlignment); overload; override;
@@ -377,13 +378,13 @@ var
         exit;
       end;
       u := pointF(points[end1].coord.x - points[start1].coord.x, points[end1].coord.y - points[start1].coord.y);
-      lu := sqrt(u*u);
+      lu := VectLen(u);
       if lu <> 0 then u.Scale(1/lu);
       v := pointF(points[end2].coord.x - points[start2].coord.x, points[end2].coord.y - points[start2].coord.y);
-      lv := sqrt(v*v);
+      lv := VectLen(v);
       if lv <> 0 then v.Scale(1/lv);
 
-      result := u*v > 0.999;
+      result := u**v > 0.999;
     end;
 
     function angle45(prev,cur,next: integer): boolean;
@@ -397,13 +398,13 @@ var
         exit;
       end;
       u := pointF(points[next].coord.x - points[cur].coord.x, points[next].coord.y - points[cur].coord.y);
-      lu := sqrt(u*u);
+      lu := VectLen(u);
       if lu <> 0 then u.Scale(1/lu);
       v := pointF(points[cur].coord.x - points[prev].coord.x, points[cur].coord.y - points[prev].coord.y);
-      lv := sqrt(v*v);
+      lv := VectLen(v);
       if lv <> 0 then v.Scale(1/lv);
 
-      dp := u*v;
+      dp := u**v;
       result := (dp > 0.70) and (dp < 0.72);
     end;
 
@@ -1399,6 +1400,11 @@ begin
   {$ENDIF}
 end;
 
+function TBGRAVectorizedFontRenderer.TextVisible(const AColor: TBGRAPixel): boolean;
+begin
+  Result:=inherited TextVisible(AColor) or OutlineActuallyVisible;
+end;
+
 procedure TBGRAVectorizedFontRenderer.TextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; orientation: integer; s: string; c: TBGRAPixel; align: TAlignment);
 begin
@@ -2315,13 +2321,37 @@ begin
   Result:= (inherited CustomHeaderSize) + 4+length(FName)+4 + sizeof(single) + 4 + 5*4;
 end;
 
+const
+  FS_BOLD = 1;
+  FS_ITALIC = 2;
+  FS_UNDERLINE = 4;
+  FS_STRIKE_OUT = 8;
+
+function IntToFontStyles(AFlags: integer): TFontStyles;
+begin
+  Result:= [];
+  if (AFlags and FS_BOLD)<>0 then Include(Result, fsBold);
+  if (AFlags and FS_ITALIC)<>0 then Include(Result, fsItalic);
+  if (AFlags and FS_UNDERLINE)<>0 then Include(Result, fsUnderline);
+  if (AFlags and FS_STRIKE_OUT)<>0 then Include(Result, fsStrikeOut);
+end;
+
+function FontStylesToInt(AStyles: TFontStyles): Integer;
+begin
+  Result := 0;
+  If fsBold in AStyles then Inc(Result, FS_BOLD);
+  If fsItalic in AStyles then Inc(Result, FS_ITALIC);
+  If fsUnderline in AStyles then Inc(Result, FS_UNDERLINE);
+  If fsStrikeOut in AStyles then Inc(Result, FS_STRIKE_OUT);
+end;
+
 procedure TBGRAVectorizedFont.WriteCustomHeader(AStream: TStream);
 var metric: TFontPixelMetric;
 begin
   inherited WriteCustomHeader(AStream);
   LEWriteLongint(AStream, length(FName));
   AStream.Write(FName[1],length(FName));
-  LEWriteLongint(AStream, integer(FStyle));
+  LEWriteLongint(AStream, FontStylesToInt(FStyle));
   LEWriteSingle(AStream, FontEmHeightRatio);
   LEWriteLongint(AStream, Resolution);
   metric := FontPixelMetric;
@@ -2360,7 +2390,7 @@ begin
   lNameLength := LEReadLongint(AStream);
   setlength(result.Name, lNameLength);
   AStream.Read(result.Name[1],length(result.Name));
-  result.Style := TFontStyles(LEReadLongint(AStream));
+  result.Style := IntToFontStyles(LEReadLongint(AStream));
   result.EmHeightRatio:= LEReadSingle(AStream);
   result.Resolution := LEReadLongint(AStream);
   result.PixelMetric.Baseline := LEReadLongint(AStream);

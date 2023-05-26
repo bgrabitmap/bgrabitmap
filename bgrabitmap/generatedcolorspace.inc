@@ -2681,19 +2681,21 @@ begin result := sizeof(TColor) end;
 class function TColorColorspace.GetChannel(AColor: Pointer; AIndex: integer): single;
 begin
   case AIndex of
-  0: result := TColor(AColor^).red;
-  1: result := TColor(AColor^).green;
-  2: result := TColor(AColor^).blue;
+  0: result := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}(TColor(AColor^) shr 16) and $ff{$ELSE}TColor(AColor^) and $ff{$ENDIF};
+  1: result := (TColor(AColor^) shr 8) and $ff;
+  2: result := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}TColor(AColor^) and $ff{$ELSE}(TColor(AColor^) shr 16) and $ff{$ENDIF};
   else raise ERangeError.Create('Index out of bounds');
   end;
 end;
 
 class procedure TColorColorspace.SetChannel(AColor: Pointer; AIndex: integer; AValue: single);
+var channelValue: byte;
 begin
+  channelValue := Round(Clamp(AValue,0,255));
   case AIndex of
-  0: TColor(AColor^).red := Round(Clamp(AValue,0,255));
-  1: TColor(AColor^).green := Round(Clamp(AValue,0,255));
-  2: TColor(AColor^).blue := Round(Clamp(AValue,0,255));
+  0: TColor(AColor^) := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}(LongWord(AColor^) and $00ffff) or (channelValue shl 16){$ELSE}(LongWord(AColor^) and $ffff00) or channelValue{$ENDIF};
+  1: TColor(AColor^) := (LongWord(AColor^) and $ff00ff) or (channelValue shl 8);
+  2: TColor(AColor^) := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}(LongWord(AColor^) and $ffff00) or channelValue{$ELSE}(LongWord(AColor^) and $00ffff) or (channelValue shl 16){$ENDIF};
   else raise ERangeError.Create('Index out of bounds');
   end;
 end;

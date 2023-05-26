@@ -34,6 +34,7 @@ type
   public
     { public declarations }
     pts: array[0..2] of TPointF;
+    formLoaded: boolean;
     MovingPointIndex: integer;
     MovingOrigin: TPointF;
   end; 
@@ -101,8 +102,11 @@ end;
 
 procedure TForm1.SpinEdit_GammaChange(Sender: TObject);
 begin
-  BGRASetGamma(SpinEdit_Gamma.Value);
-  Invalidate;
+  if formLoaded then
+  begin
+    BGRASetGamma(SpinEdit_Gamma.Value);
+    Invalidate;
+  end;
 end;
 
 procedure TForm1.TrackBar_PixelSizeChange(Sender: TObject);
@@ -124,6 +128,7 @@ begin
   Label_PixelSizeValue.Caption := '= ' + IntToStr(TrackBar_PixelSize.Position);
   MovingPointIndex := -1;
   SpinEdit_Gamma.Value := BGRAGetGamma;
+  formLoaded := true;
 end;
 
 procedure TForm1.FormMouseDown(Sender: TObject; Button: TMouseButton;

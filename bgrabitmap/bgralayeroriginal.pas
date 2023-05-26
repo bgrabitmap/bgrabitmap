@@ -1116,7 +1116,7 @@ begin
   if FPoints[i].RightButton = ARightButton then
   begin
     v := Matrix*FPoints[i].Coord - transfCoord;
-    newDist := v*v;
+    newDist := v**v;
     if newDist <= curDist then
     begin
       curDist:= newDist;
@@ -1133,7 +1133,7 @@ begin
   if FPoints[i].RightButton <> ARightButton then
   begin
     v := Matrix*FPoints[i].Coord - transfCoord;
-    newDist := v*v;
+    newDist := v**v;
     if newDist <= curDist then
     begin
       curDist:= newDist;

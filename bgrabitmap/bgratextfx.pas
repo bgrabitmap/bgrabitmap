@@ -69,6 +69,7 @@ type
     constructor Create; overload;
     constructor Create(AShader: TCustomPhongShading; AShaderOwner: boolean); overload;
     destructor Destroy; override;
+    function TextVisible(const AColor: TBGRAPixel): boolean; override;
     function TextSize(sUTF8: string): TSize; overload; override;
     function TextSizeAngle(sUTF8: string; orientationTenthDegCCW: integer): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; overload; override;
@@ -621,6 +622,12 @@ begin
   if FShaderOwner then FShader.Free;
   FVectorizedRenderer.Free;
   inherited Destroy;
+end;
+
+function TBGRATextEffectFontRenderer.TextVisible(const AColor: TBGRAPixel): boolean;
+begin
+  Result:= inherited TextVisible(AColor) or OutlineActuallyVisible
+    or ShadowActuallyVisible;
 end;
 
 function TBGRATextEffectFontRenderer.TextSize(sUTF8: string): TSize;

@@ -2762,7 +2762,7 @@ begin
           len := VectLen(axis);
           if len > 0 then
           begin
-            w := ((APosition-origin)*axis)/len;
+            w := ((APosition-origin)**axis)/len;
             //if there is just one char, it is the whole part
             if part^.endIndex = part^.startIndex + 1 then
             begin

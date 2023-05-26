@@ -507,7 +507,7 @@ begin
     u1 := ASourceVector*(1/prevScale);
     v1 := PointF(-u1.y,u1.x);
     w := ATargetVector*(1/newScale);
-    u2 := PointF(w*u1, w*v1);
+    u2 := PointF(w**u1, w**v1);
     v2 := PointF(-u2.y,u2.x);
     result := AffineMatrix(scale*u2,scale*v2,PointF(0,0));
   end;
@@ -577,7 +577,7 @@ end;
 
 function IsAffineMatrixOrthogonal(M: TAffineMatrix): boolean;
 begin
-  result := PointF(M[1,1],M[2,1])*PointF(M[1,2],M[2,2]) = 0;
+  result := PointF(M[1,1],M[2,1])**PointF(M[1,2],M[2,2]) = 0;
 end;
 
 function IsAffineMatrixScaledRotation(M: TAffineMatrix): boolean;
@@ -1037,7 +1037,7 @@ begin
   begin
     FPoints[i] := APoints[i];
     v := APoints[(i+1) mod 4] - APoints[i];
-    len := sqrt(v*v);
+    len := VectLen(v);
     if len > 0 then FInvLengths[i] := 1/len
       else FInvLengths[i] := 0;
     FVectors[i] := v*FInvLengths[i];
@@ -1204,9 +1204,9 @@ begin
       mergeC1 := true;
       v1 := (-bb+det)*inv2aa;
       if v1 = 0 then
-        u1 := (FVectors[0]*FInvLengths[0])*(PointF(x,y)-FPoints[0])
+        u1 := (FVectors[0]*FInvLengths[0])**(PointF(x,y)-FPoints[0])
       else if v1 = 1 then
-        u1 := 1 - (FVectors[2]*FInvLengths[2])*(PointF(x,y)-FPoints[2])
+        u1 := 1 - (FVectors[2]*FInvLengths[2])**(PointF(x,y)-FPoints[2])
       else
       begin
         denom := FCoeffs[1].x+FCoeffs[3].x*v1;
@@ -1231,9 +1231,9 @@ begin
       mergeC2 := true;
       v2 := (-bb-det)*inv2aa;
       if v2 = 0 then
-        u2 := (FVectors[0]*FInvLengths[0])*(PointF(x,y)-FPoints[0])
+        u2 := (FVectors[0]*FInvLengths[0])**(PointF(x,y)-FPoints[0])
       else if v2 = 1 then
-        u2 := 1 - (FVectors[2]*FInvLengths[2])*(PointF(x,y)-FPoints[2])
+        u2 := 1 - (FVectors[2]*FInvLengths[2])**(PointF(x,y)-FPoints[2])
       else
       begin
         denom := FCoeffs[1].x+FCoeffs[3].x*v2;

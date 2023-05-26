@@ -202,8 +202,8 @@ begin
       result := false
     else
     begin
-      focalCoord := PointF((FocalPoint - Origin)*u/sqr(xLen),
-                           (FocalPoint - Origin)*v/sqr(yLen));
+      focalCoord := PointF((FocalPoint - Origin)**u/sqr(xLen),
+                           (FocalPoint - Origin)**v/sqr(yLen));
       focalLen := VectLen(focalCoord);
       if (focalLen + ComputedFocalRadius + 0.01 >= ComputedRadius) and not
         (ComputedFocalRadius > focalLen + ComputedRadius + 0.01) then
@@ -428,7 +428,7 @@ begin
   if refLen = 0 then exit;
 
   u := (FOrigin-FXAxis)*(1/refLen);
-  FFocalRadius := u * (ANewCoord-focalOrig) / refLen - 0.1;
+  FFocalRadius := u ** (ANewCoord-focalOrig) / refLen - 0.1;
   if FFocalRadius < 0 then FFocalRadius:= 0;
   EndUpdate;
 end;
@@ -591,15 +591,15 @@ begin
       if radialScale = 0 then
         grad := ADefs.Content.AppendRadialGradient(tOrigin.X,tOrigin.Y,0,
           tOrigin.X,tOrigin.Y,0, cuCustom)
-      else if (lenU = lenV) and (u*v = 0) then
+      else if (lenU = lenV) and (u**v = 0) then
         grad := ADefs.Content.AppendRadialGradient(tOrigin.X,tOrigin.Y,radialScale*ComputedRadius,
           tFocalPoint.X,tFocalPoint.Y,radialScale*ComputedFocalRadius, cuCustom)
       else
       begin
         if lenU = 0 then lenU := 1;
         if lenV = 0 then lenV := 1;
-        fp := PointF((tFocalPoint - tOrigin) * u / sqr(lenU),
-          (tFocalPoint - tOrigin)*v / sqr(lenV));
+        fp := PointF((tFocalPoint - tOrigin) ** u / sqr(lenU),
+          (tFocalPoint - tOrigin)**v / sqr(lenV));
         tFocalPoint := tOrigin + (fp.x * radialScale / lenU) * u + (fp.y * radialScale / lenV) * v;
         grad := ADefs.Content.AppendRadialGradient(tOrigin.X,tOrigin.Y,radialScale*ComputedRadius,
           tFocalPoint.X,tFocalPoint.Y,radialScale*ComputedFocalRadius, cuCustom);
