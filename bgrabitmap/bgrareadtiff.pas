@@ -1934,6 +1934,29 @@ var
     inc(DestStride, dx1*PtrInt(TCustomUniversalBitmap(CurFPImg).Colorspace.GetSize));
   end;
 
+  procedure ReadDPIValues;
+  var
+     curVal: Double;
+
+  begin
+    if (CurFPImg is TCustomUniversalBitmap) then
+     begin
+        if (IFD.ResolutionUnit=3) //Resolution is in Cm
+        then begin
+                  IFD.ResolutionUnit :=2; //Convert to Dot Per Inch
+                  curVal :=(IFD.XResolution.Numerator/IFD.XResolution.Denominator)/2.54;
+                  IFD.XResolution.Numerator :=Trunc(curVal*1000);
+                  IFD.XResolution.Denominator :=1000;
+                  curVal :=(IFD.YResolution.Numerator/IFD.YResolution.Denominator)/2.54;
+                  IFD.YResolution.Numerator :=Trunc(curVal*1000);
+                  IFD.YResolution.Denominator :=1000;
+             end;
+
+        TCustomUniversalBitmap(CurFPImg).ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator;
+        TCustomUniversalBitmap(CurFPImg).ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator;
+     end;
+  end;
+
 begin
   if (IFD.ImageWidth=0) or (IFD.ImageHeight=0) then
     exit;
@@ -2015,6 +2038,9 @@ begin
     end;
     CurFPImg:=IFD.Img;
     if CurFPImg=nil then exit;
+
+    //DPI
+    ReadDPIValues;
 
     SetFPImgExtras(CurFPImg, IFD);
 

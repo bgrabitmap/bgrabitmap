@@ -112,6 +112,10 @@ type
         antialiased shapes }
     FAntialiasingDrawMode: TDrawMode;
 
+    //DPI
+    FResolutionX,
+    FResolutionY : Double;
+
     procedure Init; virtual;
     procedure ReallocData; virtual;
     procedure FreeData; virtual;
@@ -511,6 +515,8 @@ type
     {** Current reference white used for color conversion }
     property ReferenceWhite: PXYZReferenceWhite read FReferenceWhite write FReferenceWhite;
 
+    property ResolutionX: Double read FResolutionX write FResolutionX;
+    property ResolutionY: Double read FResolutionY write FResolutionY;
 
     {==== Pen style ====}
   protected
@@ -2393,6 +2399,8 @@ var pdest: PByte;
 begin
   if Source is TCustomUniversalBitmap then
   begin
+    ResolutionX :=TCustomUniversalBitmap(Source).ResolutionX;
+    ResolutionY :=TCustomUniversalBitmap(Source).ResolutionY;
     SetSize(TCustomUniversalBitmap(Source).Width, TCustomUniversalBitmap(Source).Height);
     PutImage(0, 0, TCustomUniversalBitmap(Source), dmSet);
   end else
@@ -2480,6 +2488,8 @@ begin
   ABitmap.FillMode := FillMode;
   ABitmap.ClipRect := ClipRect;
   ABitmap.ScanOffset := ScanOffset;
+  ABitmap.ResolutionX:= ResolutionX;
+  ABitmap.ResolutionY:= ResolutionY;
 end;
 
 function TCustomUniversalBitmap.GetPart(const ARect: TRect): TCustomUniversalBitmap;

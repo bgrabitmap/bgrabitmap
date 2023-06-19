@@ -531,6 +531,23 @@ var
     end;
   end;
 
+  procedure WriteDPIValues;
+  begin
+    if (Img is TCustomUniversalBitmap) then
+    begin
+        IFD.ResolutionUnit :=2;
+        IFD.XResolution.Numerator :=Trunc(TCustomUniversalBitmap(Img).ResolutionX*1000);
+        IFD.XResolution.Denominator :=1000;
+        IFD.YResolution.Numerator :=Trunc(TCustomUniversalBitmap(Img).ResolutionY*1000);
+        IFD.YResolution.Denominator :=1000;
+
+        Img.Extra[TiffResolutionUnit]:='2';
+        Img.Extra[TiffXResolution]:=TiffRationalToStr(IFD.XResolution);
+        Img.Extra[TiffYResolution]:=TiffRationalToStr(IFD.YResolution);
+     end;
+  end;
+
+
 begin
   ChunkOffsets:=nil;
   Chunk:=nil;
@@ -554,6 +571,9 @@ begin
 
     if not (IFD.PhotoMetricInterpretation in [0,1,2,8,9]) then
       TiffError('PhotoMetricInterpretation="'+Img.Extra[TiffPhotoMetric]+'" not supported');
+
+    //DPI
+    WriteDPIValues;
 
     GrayBits:=0;
     RedBits:=0;
