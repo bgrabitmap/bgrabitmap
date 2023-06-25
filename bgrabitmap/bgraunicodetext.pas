@@ -890,7 +890,7 @@ var
 begin
   if (APosition < 0) or (APosition>CharCount) then
     raise exception.Create('Position out of bounds');
-  if length(ANewBidi)=0 then exit;
+  if length(ANewBidi)=0 then exit(0);
 
   prevCharCount:= CharCount;
   paraIndex := GetParagraphAt(APosition);

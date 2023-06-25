@@ -1289,6 +1289,7 @@ var c,f: TPointF;
   end;
 
 begin
+  result := nil;
   g := ASVGGradient as TSVGRadialGradient;
   if g.gradientUnits = souObjectBoundingBox then
   begin
@@ -3637,7 +3638,6 @@ var
   prevMatrix: TAffineMatrix;
   pts: ArrayOfTPointF;
 begin
-  if length(pts) = 0 then exit;
   if AUnit <> cuCustom then
   begin
     prevMatrix := ACanvas2d.matrix;
@@ -3648,6 +3648,7 @@ begin
   end else
   begin
     pts := pointsF;
+    if length(pts) = 0 then exit;
     ACanvas2d.moveTo(pts[0]);
     ACanvas2d.polylineTo(pts);
   end;

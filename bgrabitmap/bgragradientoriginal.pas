@@ -572,7 +572,7 @@ begin
     gt := gtLinear; // same as linear in this case
   case gt of
   gtLinear:
-      grad := ADefs.Content.AppendLinearGradient(tOrigin.X,tOrigin.Y,tXAxis.X,tXAxis.Y,cuCustom);
+    grad := ADefs.Content.AppendLinearGradient(tOrigin.X,tOrigin.Y,tXAxis.X,tXAxis.Y,cuCustom);
   gtReflected:
   begin
     if Repetition <> grPad then j := MaxReflectRepeatCount else j := 1;
@@ -609,6 +609,8 @@ begin
       end;
     end;
   gtAngular: exit(nil); // not implemented
+  else
+    raise Exception.Create('Unknown gradient type');
   end;
   case Repetition of
   grPad: grad.spreadMethod := ssmPad;

@@ -454,7 +454,7 @@ begin
     cy := r.top;
     rx := 0;
     ry := 0;
-    exit;
+    exit(false);
   end;
   SwapRect(r);
   cx := (r.left+r.right-1)*0.5;

@@ -1114,6 +1114,7 @@ var
 
 begin
   start := 0;
+  results := nil;
   nbResults := 0;
   nbTotalPts := 0;
   for i := 0 to high(linepts) do

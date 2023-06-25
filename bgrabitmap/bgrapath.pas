@@ -2075,6 +2075,8 @@ begin
         else
           result := ComputeClosedSpline(pts, SplineStyle, AAcceptedDeviation);
       end;
+    else
+      result := nil;
   end;
 end;
 

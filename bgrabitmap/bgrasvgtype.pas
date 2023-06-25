@@ -2061,6 +2061,8 @@ begin
     spoStrokeMarkersFill: s := 'stroke markers';
     spoMarkersFillStroke: s := 'markers';
     spoMarkersStrokeFill: s := 'markers stroke';
+  else
+    raise exception.Create('Unknown paint order');
   end;
   Attribute['paint-order'] := s;
   RemoveStyle('paint-order');
