@@ -7,7 +7,14 @@ unit BGRAUTF8;
 interface
 
 uses
-  BGRAClasses, SysUtils, math, BGRAUnicode{$IFDEF BGRABITMAP_USE_LCL}, classes{$ENDIF};
+  LazVersion, BGRAClasses, SysUtils, math, BGRAUnicode
+  {$IFDEF BGRABITMAP_USE_LCL},
+    {$IFDEF BGRABITMAP_USE_LCL22}
+      classes
+    {$ELSE}
+      LazUTF8Classes
+    {$ENDIF}
+  {$ENDIF};
 
 const
   UTF8_ARABIC_ALEPH = 'ا';
