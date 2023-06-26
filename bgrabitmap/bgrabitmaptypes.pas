@@ -1391,7 +1391,7 @@ begin
   end else
   if AFormat = ifBmp then
   begin
-    result := TFPWriterBMP.Create;
+    result := DefaultBGRAImageWriter[AFormat].Create;
     if AHasTransparentPixels then
       TFPWriterBMP(result).BitsPerPixel := 32 else
       TFPWriterBMP(result).BitsPerPixel := 24;
@@ -1531,8 +1531,6 @@ initialization
 
   fqFineClearType := @GetFineClearTypeAuto;
   
-  DefaultBGRAImageWriter[ifJpeg] := TFPWriterJPEG;
-  DefaultBGRAImageWriter[ifBmp] := TFPWriterBMP;
   DefaultBGRAImageWriter[ifPcx] := TFPWriterPCX;
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
   DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;

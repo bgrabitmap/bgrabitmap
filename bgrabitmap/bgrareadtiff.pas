@@ -32,6 +32,12 @@
    Separate mask (deprecated)
 
 }
+{*****************************************************************************}
+{
+  2023-06  - Massimo Magnano
+           - added Resolution support
+}
+{*****************************************************************************}
 unit BGRAReadTiff;
 
 {$mode objfpc}{$H+}
@@ -142,6 +148,9 @@ procedure DecompressLZW(Buffer: Pointer; Count: PtrInt;
 function DecompressDeflate(Compressed: PByte; CompressedCount: LongWord;
   out Decompressed: PByte; var DecompressedCount: LongWord;
   ErrorMsg: PAnsiString = nil): boolean;
+
+function TifResolutionUnitToResolutionUnit(ATifResolutionUnit: DWord): TResolutionUnit;
+function ResolutionUnitToTifResolutionUnit(AResolutionUnit: TResolutionUnit): DWord;
 
 implementation
 
@@ -1934,26 +1943,14 @@ var
     inc(DestStride, dx1*PtrInt(TCustomUniversalBitmap(CurFPImg).Colorspace.GetSize));
   end;
 
-  procedure ReadDPIValues;
-  var
-     curVal: Double;
-
+  procedure ReadResolutionValues;
   begin
     if (CurFPImg is TCustomUniversalBitmap) then
-     begin
-        if (IFD.ResolutionUnit=3) //Resolution is in Cm
-        then begin
-                  IFD.ResolutionUnit :=2; //Convert to Dot Per Inch
-                  curVal :=(IFD.XResolution.Numerator/IFD.XResolution.Denominator)/2.54;
-                  IFD.XResolution.Numerator :=Trunc(curVal*1000);
-                  IFD.XResolution.Denominator :=1000;
-                  curVal :=(IFD.YResolution.Numerator/IFD.YResolution.Denominator)/2.54;
-                  IFD.YResolution.Numerator :=Trunc(curVal*1000);
-                  IFD.YResolution.Denominator :=1000;
-             end;
-
-        TCustomUniversalBitmap(CurFPImg).ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator;
-        TCustomUniversalBitmap(CurFPImg).ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator;
+    with TCustomUniversalBitmap(CurFPImg) do
+    begin
+        ResolutionUnit :=TifResolutionUnitToResolutionUnit(IFD.ResolutionUnit);
+        ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator;
+        ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator;
      end;
   end;
 
@@ -2039,8 +2036,8 @@ begin
     CurFPImg:=IFD.Img;
     if CurFPImg=nil then exit;
 
-    //DPI
-    ReadDPIValues;
+    //Resolution
+    ReadResolutionValues;
 
     SetFPImgExtras(CurFPImg, IFD);
 
@@ -2880,6 +2877,24 @@ begin
     exit;
   end;
   Result:=true;
+end;
+
+function TifResolutionUnitToResolutionUnit(ATifResolutionUnit: DWord): TResolutionUnit;
+begin
+  Case ATifResolutionUnit of
+  2: Result :=ruInch;
+  3: Result :=ruCentimeter;
+  else Result :=ruNone;
+  end;
+end;
+
+function ResolutionUnitToTifResolutionUnit(AResolutionUnit: TResolutionUnit): DWord;
+begin
+  Case AResolutionUnit of
+  ruInch: Result :=2;
+  ruCentimeter: Result :=3;
+  else Result :=1;
+  end;
 end;
 
 initialization
