@@ -25,6 +25,12 @@
    endian - currently using system endianess
    orientation with rotation
 }
+{*****************************************************************************}
+{
+  2023-06  - Massimo Magnano
+           - added Resolution support
+}
+{*****************************************************************************}
 unit BGRAWriteTiff;
 
 {$mode objfpc}{$H+}
@@ -32,8 +38,8 @@ unit BGRAWriteTiff;
 interface
 
 uses
-  Math, BGRAClasses, SysUtils, zbase, zdeflate, FPimage, FPTiffCmn,
-  BGRABitmapTypes;
+  Math, SysUtils, BGRAClasses, BGRABitmapTypes, BGRAReadTiff, zbase, zdeflate,
+  FPimage, FPTiffCmn;
 
 type
 
@@ -531,6 +537,24 @@ var
     end;
   end;
 
+  procedure WriteResolutionValues;
+  begin
+    if (Img is TCustomUniversalBitmap) then
+    with TCustomUniversalBitmap(Img) do
+    begin
+        IFD.ResolutionUnit :=ResolutionUnitToTifResolutionUnit(ResolutionUnit);
+        IFD.XResolution.Numerator :=Trunc(ResolutionX*1000);
+        IFD.XResolution.Denominator :=1000;
+        IFD.YResolution.Numerator :=Trunc(ResolutionY*1000);
+        IFD.YResolution.Denominator :=1000;
+
+        Img.Extra[TiffResolutionUnit]:=IntToStr(IFD.ResolutionUnit);
+        Img.Extra[TiffXResolution]:=TiffRationalToStr(IFD.XResolution);
+        Img.Extra[TiffYResolution]:=TiffRationalToStr(IFD.YResolution);
+     end;
+  end;
+
+
 begin
   ChunkOffsets:=nil;
   Chunk:=nil;
@@ -554,6 +578,9 @@ begin
 
     if not (IFD.PhotoMetricInterpretation in [0,1,2,8,9]) then
       TiffError('PhotoMetricInterpretation="'+Img.Extra[TiffPhotoMetric]+'" not supported');
+
+    //Resolution
+    WriteResolutionValues;
 
     GrayBits:=0;
     RedBits:=0;
