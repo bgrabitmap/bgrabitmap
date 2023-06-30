@@ -30,7 +30,8 @@ uses
   BGRAGradientOriginal, BGRAUnicodeText, UniversalDrawer, LinearRGBABitmap, 
   XYZABitmap, BGRAWriteTiff, WordXYZABitmap, ExpandedBitmap, libwebp, 
   linuxlib, BGRAReadWebP, BGRAWriteWebP, BGRAClasses, avifbgra, libavif, 
-  BGRAWriteAvif, BGRAReadAvif, darwinlib, BGRAWriteJpeg, BGRAWriteBMP;
+  BGRAWriteAvif, BGRAReadAvif, darwinlib, BGRAWriteJpeg, BGRAWriteBMP, 
+  BGRAWritePCX;
 
 implementation
 

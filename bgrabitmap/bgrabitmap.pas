@@ -191,7 +191,7 @@ procedure BGRAReplace(var Destination: TBGRABitmap; Temp: TObject);
 implementation
 
 uses BGRAReadBMP, BGRAWriteBMP, BGRAReadBmpMioMap, BGRAReadGif,
-  BGRAReadIco, BGRAReadJpeg, BGRAWriteJpeg, BGRAReadLzp, BGRAReadPCX,
+  BGRAReadIco, BGRAReadJpeg, BGRAWriteJpeg, BGRAReadLzp, BGRAReadPCX, BGRAWritePCX,
   BGRAReadPng, BGRAWritePNG, BGRAReadPSD, BGRAReadTGA, BGRAReadXPM,
   BGRAWriteLzp, BGRAReadWebP, BGRAWriteWebP, BGRAReadAVIF, BGRAWriteAVIF,
   BGRAReadTiff, BGRAWriteTiff;

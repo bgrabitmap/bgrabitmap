@@ -56,8 +56,8 @@ implementation
 function density_unitToResolutionUnit(Adensity_unit: UINT8): TResolutionUnit;
 begin
   Case Adensity_unit of
-  1: Result :=ruInch;
-  2: Result :=ruCentimeter;
+  1: Result :=ruPixelsPerInch;
+  2: Result :=ruPixelsPerCentimeter;
   else Result :=ruNone;
   end;
 end;
@@ -65,8 +65,8 @@ end;
 function ResolutionUnitTodensity_unit(AResolutionUnit: TResolutionUnit): UINT8;
 begin
   Case AResolutionUnit of
-  ruInch: Result :=1;
-  ruCentimeter: Result :=2;
+  ruPixelsPerInch: Result :=1;
+  ruPixelsPerCentimeter: Result :=2;
   else Result :=0;
   end;
 end;

@@ -2882,8 +2882,8 @@ end;
 function TifResolutionUnitToResolutionUnit(ATifResolutionUnit: DWord): TResolutionUnit;
 begin
   Case ATifResolutionUnit of
-  2: Result :=ruInch;
-  3: Result :=ruCentimeter;
+  2: Result :=ruPixelsPerInch;
+  3: Result :=ruPixelsPerCentimeter;
   else Result :=ruNone;
   end;
 end;
@@ -2891,8 +2891,8 @@ end;
 function ResolutionUnitToTifResolutionUnit(AResolutionUnit: TResolutionUnit): DWord;
 begin
   Case AResolutionUnit of
-  ruInch: Result :=2;
-  ruCentimeter: Result :=3;
+  ruPixelsPerInch: Result :=2;
+  ruPixelsPerCentimeter: Result :=3;
   else Result :=1;
   end;
 end;

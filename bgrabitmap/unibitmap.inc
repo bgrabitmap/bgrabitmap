@@ -77,7 +77,7 @@ type
   end;
 
   { TCustomUniversalBitmap }
-  TResolutionUnit = (ruNone, ruInch, ruCentimeter);
+  TResolutionUnit = (ruNone, ruPixelsPerInch, ruPixelsPerCentimeter);
 
 
   TCustomUniversalBitmap = class(TFPCustomImage, IBGRAScanner)
@@ -2126,12 +2126,12 @@ begin
   if (AResolutionUnit<>FResolutionUnit) then
   begin
     Case AResolutionUnit of
-    ruInch : if (FResolutionUnit=ruCentimeter) then //Old Resolution is in Cm
+    ruPixelsPerInch : if (FResolutionUnit=ruPixelsPerCentimeter) then //Old Resolution is in Cm
              begin
                FResolutionX :=FResolutionX*2.54;
                FResolutionY :=FResolutionY*2.54;
              end;
-    ruCentimeter: if (FResolutionUnit=ruInch) then //Old Resolution is in Inch
+    ruPixelsPerCentimeter: if (FResolutionUnit=ruPixelsPerInch) then //Old Resolution is in Inch
                   begin
                     FResolutionX :=FResolutionX/2.54;
                     FResolutionY :=FResolutionY/2.54;

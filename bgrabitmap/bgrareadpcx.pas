@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 { This unit provides some optimisations of TFPReaderPCX: decompression using a read buffer.
   It also fixes the progress message and the InternalCheck. }
+{*****************************************************************************}
+{
+  2023-06  - Massimo Magnano
+           - added Resolution support
+}
+{*****************************************************************************}
 
 unit BGRAReadPCX;
 
@@ -20,6 +26,7 @@ type
     FBufferPos, FBufferSize: integer;
     FBufferStream: TStream;
     function InternalCheck(Stream: TStream): boolean; override;
+    procedure ReadResolutionValues(Img: TFPCustomImage);
     procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
     procedure ReadScanLine({%H-}Row: integer; Stream: TStream); override;
     procedure WriteScanLine(Row: integer; Img: TFPCustomImage); override;
@@ -72,6 +79,17 @@ begin
     Stream.ReadBuffer(FScanLine^, FLineSize);
 end;
 
+procedure TBGRAReaderPCX.ReadResolutionValues(Img: TFPCustomImage);
+begin
+  if (Img is TCustomUniversalBitmap) then
+  with TCustomUniversalBitmap(Img) do
+  begin
+    ResolutionUnit:=ruPixelsPerInch;
+    ResolutionX :=Header.HRes;
+    ResolutionY :=Header.VRes;
+  end;
+end;
+
 procedure TBGRAReaderPCX.InternalRead(Stream: TStream; Img: TFPCustomImage);
 var
   H, Row:   integer;
@@ -83,6 +101,7 @@ begin
   Progress(psStarting, 0, False, emptyRect, '', continue);
   Stream.Read(Header, SizeOf(Header));
   AnalyzeHeader(Img);
+  ReadResolutionValues(Img);
   case BytesPerPixel of
     1: CreateBWPalette(Img);
     4: CreatePalette16(Img);
@@ -222,7 +241,6 @@ begin
 end;
 
 initialization
-
   DefaultBGRAImageReader[ifPcx] := TBGRAReaderPCX;
 
 end.
