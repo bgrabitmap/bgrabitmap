@@ -585,7 +585,7 @@ var
 implementation
 
 uses Math, SysUtils, BGRAUTF8,
-  FPReadXwd, FPReadXPM,
+  FPReadXwd, FPReadXPM, FPReadPcx,
   FPWriteJPEG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM;
 
@@ -1531,7 +1531,6 @@ initialization
 
   fqFineClearType := @GetFineClearTypeAuto;
   
-  DefaultBGRAImageWriter[ifPcx] := TFPWriterPCX;
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
   DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;
   DefaultBGRAImageWriter[ifPortableAnyMap] := TFPWriterPNM;

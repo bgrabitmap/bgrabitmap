@@ -28,7 +28,7 @@ begin
   if (Img is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(Img) do
   begin
-    ResolutionUnit :=ruCentimeter;
+    ResolutionUnit :=ruPixelsPerCentimeter;
     Self.XPelsPerMeter :=Trunc(ResolutionX*100);
     Self.YPelsPerMeter :=Trunc(ResolutionY*100);
   end;

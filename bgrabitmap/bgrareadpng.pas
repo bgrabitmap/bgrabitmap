@@ -13,6 +13,12 @@
   - some fixes of hints and of initializations
   - vertical shrink option with MinifyHeight, OriginalHeight and VerticalShrinkFactor (useful for thumbnails)
  }
+{*****************************************************************************}
+{
+  2023-06  - Massimo Magnano
+           - added Resolution support
+}
+{*****************************************************************************}
 {$mode objfpc}{$h+}
 unit BGRAReadPng;
 
@@ -27,6 +33,12 @@ Type
   TConvertColorProc = function (const CD:TColorData) : TFPColor of object;
   TBGRAConvertColorProc = function (const CD:TColorData) : TBGRAPixel of object;
   THandleScanLineProc = procedure (const y : integer; const ScanLine : PByteArray) of object;
+
+  TPNGPhysicalDimensions = packed record
+    X_Pixels, Y_Pixels :DWord;
+    Unit_Specifier :Byte;
+  end;
+  PPNGPhysicalDimensions=^TPNGPhysicalDimensions;
 
   { TBGRAReaderPNG }
 
@@ -98,6 +110,8 @@ Type
       procedure HandleAlpha; virtual;
       procedure HandleStdRGB; virtual;
       procedure HandleGamma; virtual;
+      procedure PredefinedResolutionValues; virtual;
+      procedure ReadResolutionValues; virtual;
       function CalcX (relX:integer) : integer;
       function CalcY (relY:integer) : integer;
       function CalcColor(const ScanLine : PByteArray): TColorData;
@@ -359,6 +373,33 @@ begin
   invGammaInt := BEtoN(PLongword(chunk.data)^);
   FGammaCorrection:= invGammaInt/45455;  { 1/2.2 is default }
   FGammaCorrectionTableComputed:= false;
+end;
+
+procedure TBGRAReaderPNG.PredefinedResolutionValues;
+begin
+  if (TheImage is TCustomUniversalBitmap) then
+  with TCustomUniversalBitmap(TheImage) do
+  begin
+    //According with Standard: If the pHYs chunk is not present, pixels are assumed to be square
+    ResolutionUnit :=ruNone;
+    ResolutionX :=1;
+    ResolutionY :=1;
+  end;
+end;
+
+procedure TBGRAReaderPNG.ReadResolutionValues;
+begin
+  if (TheImage is TCustomUniversalBitmap) then
+  with TCustomUniversalBitmap(TheImage) do
+  begin
+    if (chunk.alength<>sizeof(TPNGPhysicalDimensions))
+    then raise Exception.Create('ctpHYs Chunk Size not Valid for TPNGPhysicalDimensions');
+    if (PPNGPhysicalDimensions(chunk.data)^.Unit_Specifier = 1)
+    then ResolutionUnit :=ruPixelsPerCentimeter
+    else ResolutionUnit :=ruNone;
+    ResolutionX :=BEtoN(PPNGPhysicalDimensions(chunk.data)^.X_Pixels)/100;
+    ResolutionY :=BEtoN(PPNGPhysicalDimensions(chunk.data)^.Y_Pixels)/100;
+  end;
 end;
 
 procedure TBGRAReaderPNG.HandlePalette;
@@ -1351,6 +1392,7 @@ begin
     cttRNS : HandleAlpha;
     ctsRGB : HandleStdRGB;
     ctgAMA : HandleGamma;
+    ctpHYs : ReadResolutionValues;
     else HandleUnknown;
   end;
 end;
@@ -1389,6 +1431,9 @@ begin
   end;
   ZData := TMemoryStream.Create;
   try
+    //Resolution: If the pHYs chunk is not present, pixels are assumed to be square
+    PredefinedResolutionValues;
+
     EndOfFile := false;
     while not EndOfFile do
       begin

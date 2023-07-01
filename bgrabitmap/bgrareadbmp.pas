@@ -933,14 +933,11 @@ begin
 end;
 
 procedure TBGRAReaderBMP.ReadResolutionValues(Img: TFPCustomImage);
-var
-   test:Single;
-
 begin
   if (Img is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(Img) do
   begin
-    ResolutionUnit:=ruCentimeter;
+    ResolutionUnit:=ruPixelsPerCentimeter;
     ResolutionX :=BFI.XPelsPerMeter/100;
     ResolutionY :=BFI.YPelsPerMeter/100;
   end;
