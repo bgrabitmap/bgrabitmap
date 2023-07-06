@@ -694,7 +694,7 @@ implementation
 
 uses Math, BGRAUTF8, BGRABlend, BGRAFilters, BGRAGradientScanner,
   BGRAResample, BGRAPolygon, BGRAPolygonAliased,
-  BGRAPath, FPReadPcx, FPWritePcx, FPReadXPM, FPWriteXPM,
+  BGRAPath, BGRAReadPcx, BGRAWritePcx, FPReadXPM, FPWriteXPM,
   BGRAReadBMP, BGRAReadJpeg,
   BGRADithering, BGRAFilterScanner;
 

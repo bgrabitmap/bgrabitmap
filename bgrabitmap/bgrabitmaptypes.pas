@@ -585,7 +585,7 @@ var
 implementation
 
 uses Math, SysUtils, BGRAUTF8,
-  FPReadXwd, FPReadXPM,
+  FPReadXwd, FPReadXPM, FPReadPcx,
   FPWriteJPEG, FPWriteBMP, FPWritePCX,
   FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM;
 
@@ -1391,7 +1391,7 @@ begin
   end else
   if AFormat = ifBmp then
   begin
-    result := TFPWriterBMP.Create;
+    result := DefaultBGRAImageWriter[AFormat].Create;
     if AHasTransparentPixels then
       TFPWriterBMP(result).BitsPerPixel := 32 else
       TFPWriterBMP(result).BitsPerPixel := 24;
@@ -1531,9 +1531,6 @@ initialization
 
   fqFineClearType := @GetFineClearTypeAuto;
   
-  DefaultBGRAImageWriter[ifJpeg] := TFPWriterJPEG;
-  DefaultBGRAImageWriter[ifBmp] := TFPWriterBMP;
-  DefaultBGRAImageWriter[ifPcx] := TFPWriterPCX;
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
   DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;
   DefaultBGRAImageWriter[ifPortableAnyMap] := TFPWriterPNM;

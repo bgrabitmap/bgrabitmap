@@ -20,8 +20,11 @@
   01/2017 by circular:
    - support for OS/2 1.x format
    - support for headerless files
-}
 
+  2023-06  - Massimo Magnano
+           - added Resolution support
+}
+{*****************************************************************************}
 {$mode objfpc}
 {$h+}
 
@@ -96,6 +99,9 @@ type
       procedure ReadMaskLine({%H-}Row : Integer; Stream : TStream); virtual;
       procedure SkipMaskLine({%H-}Row : Integer; Stream : TStream); virtual;
       procedure WriteMaskLine(Row : Integer; Img : TFPCustomImage); virtual;
+
+      procedure ReadResolutionValues(Img: TFPCustomImage); virtual;
+
       // required by TFPCustomImageReader
       procedure InternalRead  (Stream:TStream; Img:TFPCustomImage); override;
       function  InternalCheck (Stream:TStream) : boolean; override;
@@ -550,6 +556,8 @@ begin
       WriteScanlineProc := @WriteScanLineBGRA else
         WriteScanlineProc := @WriteScanLine;
 
+    ReadResolutionValues(Img);
+
     ImageVerticalLoop(Stream, Img, @ReadScanLine, @SkipScanLine, WriteScanlineProc,
                       @MainProgressProc, shouldContinue);
 
@@ -921,6 +929,17 @@ begin
       bit := $80;
       inc(maskPos);
     end;
+  end;
+end;
+
+procedure TBGRAReaderBMP.ReadResolutionValues(Img: TFPCustomImage);
+begin
+  if (Img is TCustomUniversalBitmap) then
+  with TCustomUniversalBitmap(Img) do
+  begin
+    ResolutionUnit:=ruPixelsPerCentimeter;
+    ResolutionX :=BFI.XPelsPerMeter/100;
+    ResolutionY :=BFI.YPelsPerMeter/100;
   end;
 end;
 

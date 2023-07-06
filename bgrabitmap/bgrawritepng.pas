@@ -10,6 +10,12 @@
  Fix for images with grayscale and alpha,
  and for images with transparent pixels
  }
+{*****************************************************************************}
+{
+  2023-06  - Massimo Magnano
+           - added Resolution support
+}
+{*****************************************************************************}
 unit BGRAWritePNG;
 
 {$mode objfpc}{$H+}
@@ -70,6 +76,7 @@ type
       procedure SetUseAlpha(AValue: boolean); override;
       procedure WriteIHDR; virtual;
       procedure WritePLTE; virtual;
+      procedure WriteResolutionValues; virtual;
       procedure WritetRNS; virtual;
       procedure WriteIDAT; virtual;
       procedure WriteTexts; virtual;
@@ -115,6 +122,8 @@ type
   end;
 
 implementation
+
+uses BGRAReadPNG;
 
 constructor TBGRAWriterPNG.create;
 begin
@@ -697,6 +706,40 @@ begin
   WriteChunk;
 end;
 
+procedure TBGRAWriterPNG.WriteResolutionValues;
+begin
+  if (TheImage is TCustomUniversalBitmap) then
+  with TCustomUniversalBitmap(TheImage) do
+  begin
+       SetChunkLength(sizeof(TPNGPhysicalDimensions));
+       SetChunkType(ctpHYs);
+
+       with PPNGPhysicalDimensions(ChunkDataBuffer)^ do
+       begin
+         if (ResolutionUnit=ruPixelsPerInch)
+         then ResolutionUnit :=ruPixelsPerCentimeter;
+         if (ResolutionUnit=ruPixelsPerCentimeter)
+         then begin
+                Unit_Specifier:=1;
+                X_Pixels :=Trunc(ResolutionX*100);
+                Y_Pixels :=Trunc(ResolutionY*100);
+              end
+         else begin
+                Unit_Specifier:=0;
+                X_Pixels :=Trunc(ResolutionX);
+                Y_Pixels :=Trunc(ResolutionY);
+            end;
+
+         {$IFDEF ENDIAN_LITTLE}
+         X_Pixels :=swap(X_Pixels);
+         Y_Pixels :=swap(Y_Pixels);
+         {$ENDIF}
+       end;
+
+       WriteChunk;
+  end;
+end;
+
 procedure TBGRAWriterPNG.InitWriteIDAT;
 begin
   FDatalineLength := TheImage.Width*ByteWidth;
@@ -941,6 +984,9 @@ begin
   WriteIHDR;
   if Fheader.colorType = 3 then
     WritePLTE;
+
+  WriteResolutionValues;
+
   if FUsetRNS then
     WritetRNS;
   WriteIDAT;
