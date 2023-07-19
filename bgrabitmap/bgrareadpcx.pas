@@ -81,6 +81,7 @@ end;
 
 procedure TBGRAReaderPCX.ReadResolutionValues(Img: TFPCustomImage);
 begin
+  {$IF FPC_FULLVERSION<30301}
   if (Img is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(Img) do
   begin
@@ -88,6 +89,11 @@ begin
     ResolutionX :=Header.HRes;
     ResolutionY :=Header.VRes;
   end;
+  {$ELSE}
+  Img.ResolutionUnit:=ruPixelsPerInch;
+  Img.ResolutionX :=Header.HRes;
+  Img.ResolutionY :=Header.VRes;
+  {$ENDIF}
 end;
 
 procedure TBGRAReaderPCX.InternalRead(Stream: TStream; Img: TFPCustomImage);

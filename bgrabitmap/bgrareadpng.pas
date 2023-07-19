@@ -389,8 +389,12 @@ end;
 
 procedure TBGRAReaderPNG.ReadResolutionValues;
 begin
+  {$IF FPC_FULLVERSION<30301}
   if (TheImage is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(TheImage) do
+  {$ELSE}
+  with TheImage do
+  {$ENDIF}
   begin
     if (chunk.alength<>sizeof(TPNGPhysicalDimensions))
     then raise Exception.Create('ctpHYs Chunk Size not Valid for TPNGPhysicalDimensions');

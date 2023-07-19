@@ -77,8 +77,10 @@ type
   end;
 
   { TCustomUniversalBitmap }
-  TResolutionUnit = (ruNone, ruPixelsPerInch, ruPixelsPerCentimeter);
 
+  {$IF FPC_FULLVERSION<30301}
+  TResolutionUnit = (ruNone, ruPixelsPerInch, ruPixelsPerCentimeter);
+  {$ENDIF}
 
   TCustomUniversalBitmap = class(TFPCustomImage, IBGRAScanner)
   private
@@ -114,6 +116,7 @@ type
         antialiased shapes }
     FAntialiasingDrawMode: TDrawMode;
 
+    {$IF FPC_FULLVERSION<30301}
     //Resolution
     FResolutionUnit: TResolutionUnit;
     FResolutionX,
@@ -122,6 +125,7 @@ type
     procedure SetResolutionUnit(AResolutionUnit: TResolutionUnit);
     function GetResolutionWidth: Single; virtual;
     function GetResolutionHeight: Single; virtual;
+    {$ENDIF}
 
     procedure Init; virtual;
     procedure ReallocData; virtual;
@@ -522,12 +526,14 @@ type
     {** Current reference white used for color conversion }
     property ReferenceWhite: PXYZReferenceWhite read FReferenceWhite write FReferenceWhite;
 
+    {$IF FPC_FULLVERSION<30301}
     //Resolution
     property ResolutionUnit: TResolutionUnit read FResolutionUnit write SetResolutionUnit;
     property ResolutionX: Single read FResolutionX write FResolutionX;
     property ResolutionY: Single read FResolutionY write FResolutionY;
     property ResolutionWidth: Single read GetResolutionWidth;
     property ResolutionHeight: Single read GetResolutionHeight;
+    {$ENDIF}
 
     {==== Pen style ====}
   protected
@@ -2121,6 +2127,7 @@ begin
   FLineOrder:= AValue;
 end;
 
+{$IF FPC_FULLVERSION<30301}
 procedure TCustomUniversalBitmap.SetResolutionUnit(AResolutionUnit: TResolutionUnit);
 begin
   if (AResolutionUnit<>FResolutionUnit) then
@@ -2162,6 +2169,7 @@ begin
          then Result :=FHeight/FResolutionY;
        end;
 end;
+{$ENDIF}
 
 procedure TCustomUniversalBitmap.Init;
 begin
@@ -2460,6 +2468,11 @@ begin
   end else
   if Source is TFPCustomImage then
   begin
+    {$IF FPC_FULLVERSION>=30301}
+    ResolutionUnit :=TFPCustomImage(Source).ResolutionUnit;
+    ResolutionX :=TFPCustomImage(Source).ResolutionX;
+    ResolutionY :=TFPCustomImage(Source).ResolutionY;
+    {$ENDIF}
     SetSize(TFPCustomImage(Source).Width, TFPCustomImage(Source).Height);
     for y := 0 to TFPCustomImage(Source).Height-1 do
     begin

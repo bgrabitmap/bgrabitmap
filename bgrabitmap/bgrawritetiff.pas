@@ -38,7 +38,7 @@ unit BGRAWriteTiff;
 interface
 
 uses
-  Math, SysUtils, BGRAClasses, BGRABitmapTypes, BGRAReadTiff, zbase, zdeflate,
+  Math, SysUtils, BGRAClasses, BGRABitmapTypes, zbase, zdeflate,
   FPimage, FPTiffCmn;
 
 type
@@ -123,6 +123,8 @@ function CompressDeflate(InputData: PByte; InputCount: LongWord;
   ErrorMsg: PAnsiString = nil): boolean;
 
 implementation
+
+uses BGRAReadTiff;
 
 function CompareTiffWriteEntries(Entry1, Entry2: Pointer): integer;
 begin
@@ -539,19 +541,23 @@ var
 
   procedure WriteResolutionValues;
   begin
+    {$IF FPC_FULLVERSION<30301}
     if (Img is TCustomUniversalBitmap) then
     with TCustomUniversalBitmap(Img) do
+    {$ELSE}
+    with Img do
+    {$ENDIF}
     begin
         IFD.ResolutionUnit :=ResolutionUnitToTifResolutionUnit(ResolutionUnit);
         IFD.XResolution.Numerator :=Trunc(ResolutionX*1000);
         IFD.XResolution.Denominator :=1000;
         IFD.YResolution.Numerator :=Trunc(ResolutionY*1000);
         IFD.YResolution.Denominator :=1000;
-
-        Img.Extra[TiffResolutionUnit]:=IntToStr(IFD.ResolutionUnit);
-        Img.Extra[TiffXResolution]:=TiffRationalToStr(IFD.XResolution);
-        Img.Extra[TiffYResolution]:=TiffRationalToStr(IFD.YResolution);
      end;
+
+    Img.Extra[TiffResolutionUnit]:=IntToStr(IFD.ResolutionUnit);
+    Img.Extra[TiffXResolution]:=TiffRationalToStr(IFD.XResolution);
+    Img.Extra[TiffYResolution]:=TiffRationalToStr(IFD.YResolution);
   end;
 
 

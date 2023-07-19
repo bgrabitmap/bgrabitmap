@@ -7,7 +7,7 @@ unit BGRAUTF8;
 interface
 
 uses
-  BGRAClasses, SysUtils, math, BGRAUnicode{$IFDEF BGRABITMAP_USE_LCL}, lazutf8classes{$ENDIF};
+  BGRAClasses, SysUtils, math, BGRAUnicode{$IFDEF BGRABITMAP_USE_LCL}, classes{$ENDIF};
 
 const
   UTF8_ARABIC_ALEPH = 'ا';
@@ -24,8 +24,8 @@ const
 
 {$IFDEF BGRABITMAP_USE_LCL}
 type
-  TFileStreamUTF8 = lazutf8classes.TFileStreamUTF8;
-  TStringListUTF8 = lazutf8classes.TStringListUTF8;
+  TFileStreamUTF8 = TFileStream;
+  TStringListUTF8 = TStringList;
 {$ELSE}
 type
   TFileStreamUTF8 = class(THandleStream)
@@ -161,12 +161,12 @@ uses LazFileUtils, LazUtf8;
 
 procedure LoadStringsFromFileUTF8(List: TStrings; const FileName: string);
 begin
-  lazutf8classes.LoadStringsFromFileUTF8(List,FileName);
+  List.LoadFromFile(FileName);
 end;
 
 procedure SaveStringsToFileUTF8(List: TStrings; const FileName: string);
 begin
-  lazutf8classes.SaveStringsToFileUTF8(List,FileName);
+  List.SaveToFile(Filename);
 end;
 
 function UTF8ToSys(const s: string): string;
@@ -242,7 +242,7 @@ end;
 
 function UTF8CharacterLength(p: PChar): integer;
 begin
-  result := LazUtf8.UTF8CharacterLength(p);
+  result := LazUtf8.UTF8CodepointSize(p);
 end;
 
 function UTF8Length(const s: string): PtrInt;
