@@ -259,7 +259,7 @@ var diff : byte;
     p := PreviousLine(index);
     Diff := (l + p) div 2;
   end;
-  procedure FilterPaeth;
+  procedure FilterPath;
   var dl, dp, dlp : word; // index for previous and distances for:
       l, p, lp : byte;  // r:predictor, Left, Previous, LeftPrevious
       r : integer;
@@ -279,12 +279,12 @@ var diff : byte;
       diff := lp;
   end;
 begin
+  diff := 0;
   case LineFilter of
-    0 : diff := 0;
     1 : FilterSub;
     2 : FilterUp;
     3 : FilterAverage;
-    4 : FilterPaeth;
+    4 : FilterPath;
   end;
   if diff > b then
     result := (b + $100 - diff)

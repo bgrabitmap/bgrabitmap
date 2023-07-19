@@ -579,7 +579,10 @@ begin
   else if QuickTest then
     exit
   else
+  begin
     TiffError('expected II or MM');
+    exit; // indicate that flow stops
+  end;
   FReverseEndian:={$ifdef FPC_BIG_ENDIAN}not{$endif} BigEndian;
   {$ifdef FPC_Debug_Image}
   if Debug then

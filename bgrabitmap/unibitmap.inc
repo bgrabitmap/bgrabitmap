@@ -2304,7 +2304,7 @@ begin
   ct := Colorspace.GetColorTransparency(AColor);
   if (ADrawMode in[dmLinearBlend,dmDrawWithTransparency]) and
    (ct = ctSemiTransparent) then
-     raise exception.Create('Semi-tranparent drawing not handled by default brush')
+     raise exception.Create('Semi-transparent drawing not handled by default brush')
   else if ADrawMode = dmXor then
      raise exception.Create('Xor mode not handled by default brush');
 

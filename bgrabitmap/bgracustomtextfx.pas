@@ -558,7 +558,7 @@ end;
 function TBGRACustomTextEffect.DrawShadow(ADest: TBGRACustomBitmap; X, Y,
   Radius: integer; AColor: TBGRAPixel): TRect;
 begin
-  if AColor.alpha = 0 then exit;
+  if AColor.alpha = 0 then exit(EmptyRect);
   if (Radius <= 0) or (FTextMask = nil) or (FTextMask.Width = 0) or (FTextMask.Height = 0) then
   begin
     result := Draw(ADest,X,Y,AColor);

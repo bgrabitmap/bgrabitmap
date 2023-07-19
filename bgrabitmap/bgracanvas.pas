@@ -1035,7 +1035,9 @@ begin
     if (aoClosePath in Options) or (aoPie in Options) then
       penPts := FBitmap.ComputeWidePolygon(arcPts,w)
       else penPts := FBitmap.ComputeWidePolyline(arcPts,w);
-  end;
+  end
+  else
+    penPts := nil;
 
   if hasPen and (Pen.ActualDrawMode <> dmDrawWithTransparency) then
   begin
