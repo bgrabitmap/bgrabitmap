@@ -13,6 +13,8 @@
     2023-06  - Massimo Magnano
              - added Read of Image Resources Section
              - added Resolution support
+    2023-07  - Massimo Magnano
+             - code fixes for reading palettes
 
 }
 unit BGRAReadPSD;
@@ -22,99 +24,128 @@ unit BGRAReadPSD;
 interface
 
 uses
-  BGRAClasses, BGRABitmapTypes, SysUtils, FPimage, FPReadPSD;
+  BGRAClasses, BGRABitmapTypes, SysUtils, FPimage, FPReadPSD
+  {$IF FPC_FULLVERSION>=30301}
+   , PSDcomn
+  {$ENDIF}
+  ;
 
+{$IF FPC_FULLVERSION<30301}
 const
+  { Image color modes  }
+  PSD_BITMAP = 0;       { Bitmap image  }
+  PSD_GRAYSCALE = 1;	{ Greyscale image  }
+  PSD_INDEXED = 2;	{ Indexed image  }
+  PSD_RGB = 3;	        { RGB image  }
+  PSD_CMYK = 4;	        { CMYK  }
+  PSD_MULTICHANNEL = 7;	{ Multichannel image }
+  PSD_DUOTONE = 8;	{ Duotone image }
+  PSD_LAB = 9;	        { L*a*b image  }
+
+  { Image color spaces  }
+  PSD_CS_RGB = 0;	{ RGB  }
+  PSD_CS_HSB = 1;	{ Hue, Saturation, Brightness  }
+  PSD_CS_CMYK = 2;	{ CMYK  }
+  PSD_CS_PANTONE = 3;	{ Pantone matching system (Lab) }
+  PSD_CS_FOCOLTONE = 4;	{ Focoltone color system (CMYK) }
+  PSD_CS_TRUMATCH = 5;	{ Trumatch color (CMYK) }
+  PSD_CS_TOYO = 6;	{ Toyo 88 colorfinder 1050 (Lab) }
+  PSD_CS_LAB = 7;	{ L*a*b }
+  PSD_CS_GRAYSCALE = 8;	{ Grey scale  }
+  PSD_CS_HKS = 10;	{ HKS colors (CMYK) }
+  PSD_CS_DIC = 11;	{ DIC color guide (Lab) }
+  PSD_CS_ANPA = 3000;	{ Anpa color (Lab) }
+
   { Image Resource IDs  }
   PSD_ResourceSectionSignature ='8BIM';
 
-  PSD_PS2_IMAGE_INFO = $03e8;  { Obsolete - ps 2.0 image info  }
-  PSD_MAC_PRINT_INFO = $03e9;  { Optional - Mac print manager print info record  }
-  PSD_PS2_COLOR_TAB = $03eb;  { Obsolete - ps 2.0 indexed color table  }
-  PSD_RESN_INFO = $03ed;  { ResolutionInfo structure  }
-  PSD_ALPHA_NAMES = $03ee;  { Alpha channel names  }
-  PSD_DISPLAY_INFO = $03ef;  { Superceded by PSD_DISPLAY_INFO_NEW for ps CS3 and higher - DisplayInfo structure  }
-  PSD_CAPTION = $03f0;  { Optional - Caption string  }
-  PSD_BORDER_INFO = $03f1;  { Border info  }
-  PSD_BACKGROUND_COL = $03f2;  { Background color  }
-  PSD_PRINT_FLAGS = $03f3;  { Print flags  }
-  PSD_GREY_HALFTONE = $03f4;  { Greyscale and multichannel halftoning info  }
-  PSD_COLOR_HALFTONE = $03f5;  { Color halftoning info  }
-  PSD_DUOTONE_HALFTONE = $03f6;  { Duotone halftoning info  }
-  PSD_GREY_XFER = $03f7;  { Greyscale and multichannel transfer functions  }
-  PSD_COLOR_XFER = $03f8;  { Color transfer functions  }
-  PSD_DUOTONE_XFER = $03f9;  { Duotone transfer functions  }
-  PSD_DUOTONE_INFO = $03fa;  { Duotone image information  }
-  PSD_EFFECTIVE_BW = $03fb;  { Effective black & white values for dot range  }
-  PSD_OBSOLETE_01 = $03fc;  { Obsolete  }
-  PSD_EPS_OPT = $03fd;  { EPS options  }
-  PSD_QUICK_MASK = $03fe;  { Quick mask info  }
-  PSD_OBSOLETE_02 = $03ff;  { Obsolete  }
-  PSD_LAYER_STATE = $0400;  { Layer state info  }
-  PSD_WORKING_PATH = $0401;  { Working path (not saved)  }
-  PSD_LAYER_GROUP = $0402;  { Layers group info  }
-  PSD_OBSOLETE_03 = $0403;  { Obsolete  }
-  PSD_IPTC_NAA_DATA = $0404;  { IPTC-NAA record (IMV4.pdf)  }
-  PSD_IMAGE_MODE_RAW = $0405;  { Image mode for raw format files  }
-  PSD_JPEG_QUAL = $0406;  { JPEG quality  }
-  PSD_GRID_GUIDE = $0408;  { Grid & guide info  }
-  PSD_THUMB_RES = $0409;  { Thumbnail resource  }
-  PSD_COPYRIGHT_FLG = $040a;  { Copyright flag  }
-  PSD_URL = $040b;  { URL string  }
-  PSD_THUMB_RES2 = $040c;  { Thumbnail resource  }
-  PSD_GLOBAL_ANGLE = $040d;  { Superceded by PSD_NEW_COLOR_SAMPLER for ps CS3 and higher - Global angle  }
-  PSD_COLOR_SAMPLER = $040e;  { Superceded by PSD_NEW_COLOR_SAMPLER for ps CS3 and higher - Color samplers resource  }
-  PSD_ICC_PROFILE = $040f;  { ICC Profile  }
-  PSD_WATERMARK = $0410;  { Watermark  }
-  PSD_ICC_UNTAGGED = $0411;  { Do not use ICC profile flag  }
+  PSD_PS2_IMAGE_INFO = $03e8;   { Obsolete - ps 2.0 image info  }
+  PSD_MAC_PRINT_INFO = $03e9;   { Optional - Mac print manager print info record  }
+  PSD_PS2_COLOR_TAB = $03eb;    { Obsolete - ps 2.0 indexed color table  }
+  PSD_RESN_INFO = $03ed;        { ResolutionInfo structure  }
+  PSD_ALPHA_NAMES = $03ee;      { Alpha channel names  }
+  PSD_DISPLAY_INFO = $03ef;     { Superceded by PSD_DISPLAY_INFO_NEW for ps CS3 and higher - DisplayInfo structure  }
+  PSD_CAPTION = $03f0;          { Optional - Caption string  }
+  PSD_BORDER_INFO = $03f1;      { Border info  }
+  PSD_BACKGROUND_COL = $03f2;   { Background color  }
+  PSD_PRINT_FLAGS = $03f3;      { Print flags  }
+  PSD_GREY_HALFTONE = $03f4;    { Greyscale and multichannel halftoning info  }
+  PSD_COLOR_HALFTONE = $03f5;   { Color halftoning info  }
+  PSD_DUOTONE_HALFTONE = $03f6; { Duotone halftoning info  }
+  PSD_GREY_XFER = $03f7;        { Greyscale and multichannel transfer functions  }
+  PSD_COLOR_XFER = $03f8;       { Color transfer functions  }
+  PSD_DUOTONE_XFER = $03f9;     { Duotone transfer functions  }
+  PSD_DUOTONE_INFO = $03fa;     { Duotone image information  }
+  PSD_EFFECTIVE_BW = $03fb;     { Effective black & white values for dot range  }
+  PSD_OBSOLETE_01 = $03fc;      { Obsolete  }
+  PSD_EPS_OPT = $03fd;          { EPS options  }
+  PSD_QUICK_MASK = $03fe;       { Quick mask info  }
+  PSD_OBSOLETE_02 = $03ff;      { Obsolete  }
+  PSD_LAYER_STATE = $0400;      { Layer state info  }
+  PSD_WORKING_PATH = $0401;     { Working path (not saved)  }
+  PSD_LAYER_GROUP = $0402;      { Layers group info  }
+  PSD_OBSOLETE_03 = $0403;      { Obsolete  }
+  PSD_IPTC_NAA_DATA = $0404;    { IPTC-NAA record (IMV4.pdf)  }
+  PSD_IMAGE_MODE_RAW = $0405;   { Image mode for raw format files  }
+  PSD_JPEG_QUAL = $0406;        { JPEG quality  }
+  PSD_GRID_GUIDE = $0408;       { Grid & guide info  }
+  PSD_THUMB_RES = $0409;        { Thumbnail resource  }
+  PSD_COPYRIGHT_FLG = $040a;    { Copyright flag  }
+  PSD_URL = $040b;              { URL string  }
+  PSD_THUMB_RES2 = $040c;       { Thumbnail resource  }
+  PSD_GLOBAL_ANGLE = $040d;     { Superceded by PSD_NEW_COLOR_SAMPLER for ps CS3 and higher - Global angle  }
+  PSD_COLOR_SAMPLER = $040e;    { Superceded by PSD_NEW_COLOR_SAMPLER for ps CS3 and higher - Color samplers resource  }
+  PSD_ICC_PROFILE = $040f;      { ICC Profile  }
+  PSD_WATERMARK = $0410;        { Watermark  }
+  PSD_ICC_UNTAGGED = $0411;     { Do not use ICC profile flag  }
   PSD_EFFECTS_VISIBLE = $0412;  { Show / hide all effects layers  }
-  PSD_SPOT_HALFTONE = $0413;  { Spot halftone  }
-  PSD_DOC_IDS = $0414;  { Document specific IDs  }
+  PSD_SPOT_HALFTONE = $0413;    { Spot halftone  }
+  PSD_DOC_IDS = $0414;          { Document specific IDs  }
   PSD_ALPHA_NAMES_UNI = $0415;  { Unicode alpha names  }
   PSD_IDX_COL_TAB_CNT = $0416;  { Indexed color table count  }
   PSD_IDX_TRANSPARENT = $0417;  { Index of transparent color (if any)  }
-  PSD_GLOBAL_ALT = $0419;  { Global altitude  }
-  PSD_SLICES = $041a;  { Slices  }
-  PSD_WORKFLOW_URL_UNI = $041b;  { Workflow URL - Unicode string  }
-  PSD_JUMP_TO_XPEP = $041c;  { Jump to XPEP (?)  }
-  PSD_ALPHA_ID = $041d;  { Alpha IDs  }
-  PSD_URL_LIST_UNI = $041e;  { URL list - unicode  }
-  PSD_VERSION_INFO = $0421;  { Version info  }
-  PSD_EXIF_DATA = $0422;  { Exif data block 1  }
-  PSD_EXIF_DATA_3 = $0423;  { Exif data block 3 (?)  }
-  PSD_XMP_DATA = $0424;  { XMP data block  }
-  PSD_CAPTION_DIGEST = $0425;  { Caption digest  }
-  PSD_PRINT_SCALE = $0426;  { Print scale  }
-  PSD_PIXEL_AR = $0428;  { Pixel aspect ratio  }
-  PSD_LAYER_COMPS = $0429;  { Layer comps  }
-  PSD_ALT_DUOTONE_COLOR = $042A;  { Alternative Duotone colors  }
-  PSD_ALT_SPOT_COLOR = $042B;  { Alternative Spot colors  }
+  PSD_GLOBAL_ALT = $0419;       { Global altitude  }
+  PSD_SLICES = $041a;           { Slices  }
+  PSD_WORKFLOW_URL_UNI = $041b; { Workflow URL - Unicode string  }
+  PSD_JUMP_TO_XPEP = $041c;     { Jump to XPEP (?)  }
+  PSD_ALPHA_ID = $041d;         { Alpha IDs  }
+  PSD_URL_LIST_UNI = $041e;     { URL list - unicode  }
+  PSD_VERSION_INFO = $0421;     { Version info  }
+  PSD_EXIF_DATA = $0422;        { Exif data block 1  }
+  PSD_EXIF_DATA_3 = $0423;      { Exif data block 3 (?)  }
+  PSD_XMP_DATA = $0424;         { XMP data block  }
+  PSD_CAPTION_DIGEST = $0425;   { Caption digest  }
+  PSD_PRINT_SCALE = $0426;      { Print scale  }
+  PSD_PIXEL_AR = $0428;         { Pixel aspect ratio  }
+  PSD_LAYER_COMPS = $0429;      { Layer comps  }
+  PSD_ALT_DUOTONE_COLOR = $042A;{ Alternative Duotone colors  }
+  PSD_ALT_SPOT_COLOR = $042B;   { Alternative Spot colors  }
   PSD_LAYER_SELECT_ID = $042D;  { Layer selection ID  }
   PSD_HDR_TONING_INFO = $042E;  { HDR toning information  }
-  PSD_PRINT_INFO_SCALE = $042F;  { Print scale  }
-  PSD_LAYER_GROUP_E_ID = $0430;  { Layer group(s) enabled ID  }
-  PSD_COLOR_SAMPLER_NEW = $0431;  { Color sampler resource for ps CS3 and higher PSD files  }
-  PSD_MEASURE_SCALE = $0432;  { Measurement scale  }
-  PSD_TIMELINE_INFO = $0433;  { Timeline information  }
-  PSD_SHEET_DISCLOSE = $0434;  { Sheet discloser  }
-  PSD_DISPLAY_INFO_NEW = $0435;  { DisplayInfo structure for ps CS3 and higher PSD files  }
-  PSD_ONION_SKINS = $0436;  { Onion skins  }
-  PSD_COUNT_INFO = $0438;  { Count information }
-  PSD_PRINT_INFO = $043A;  { Print information added in ps CS5 }
-  PSD_PRINT_STYLE = $043B;  { Print style  }
+  PSD_PRINT_INFO_SCALE = $042F; { Print scale  }
+  PSD_LAYER_GROUP_E_ID = $0430; { Layer group(s) enabled ID  }
+  PSD_COLOR_SAMPLER_NEW = $0431;{ Color sampler resource for ps CS3 and higher PSD files  }
+  PSD_MEASURE_SCALE = $0432;    { Measurement scale  }
+  PSD_TIMELINE_INFO = $0433;    { Timeline information  }
+  PSD_SHEET_DISCLOSE = $0434;   { Sheet discloser  }
+  PSD_DISPLAY_INFO_NEW = $0435; { DisplayInfo structure for ps CS3 and higher PSD files  }
+  PSD_ONION_SKINS = $0436;      { Onion skins  }
+  PSD_COUNT_INFO = $0438;       { Count information }
+  PSD_PRINT_INFO = $043A;       { Print information added in ps CS5 }
+  PSD_PRINT_STYLE = $043B;      { Print style  }
   PSD_MAC_NSPRINTINFO = $043C;  { Mac NSPrintInfo }
-  PSD_WIN_DEVMODE = $043D;  { Windows DEVMODE  }
-  PSD_AUTO_SAVE_PATH = $043E;  { Auto save file path  }
-  PSD_AUTO_SAVE_FORMAT = $043F;  { Auto save format  }
+  PSD_WIN_DEVMODE = $043D;      { Windows DEVMODE  }
+  PSD_AUTO_SAVE_PATH = $043E;   { Auto save file path  }
+  PSD_AUTO_SAVE_FORMAT = $043F; { Auto save format  }
   PSD_PATH_INFO_FIRST = $07d0;  { First path info block  }
-  PSD_PATH_INFO_LAST = $0bb6;  { Last path info block  }
-  PSD_CLIPPING_PATH = $0bb7;  { Name of clipping path  }
-  PSD_PLUGIN_R_FIRST = $0FA0;  { First plugin resource  }
-  PSD_PLUGIN_R_LAST = $1387;  { Last plugin resource  }
+  PSD_PATH_INFO_LAST = $0bb6;   { Last path info block  }
+  PSD_CLIPPING_PATH = $0bb7;    { Name of clipping path  }
+  PSD_PLUGIN_R_FIRST = $0FA0;   { First plugin resource  }
+  PSD_PLUGIN_R_LAST = $1387;    { Last plugin resource  }
   PSD_IMAGEREADY_VARS = $1B58;  { Imageready variables  }
   PSD_IMAGEREADY_DATA = $1B59;  { Imageready data sets  }
-  PSD_LIGHTROOM_WORK = $1F40;  { Lightroom workflow  }
-  PSD_PRINT_FLAGS_2 = $2710;  { Print flags  }
+  PSD_LIGHTROOM_WORK = $1F40;   { Lightroom workflow  }
+  PSD_PRINT_FLAGS_2 = $2710;    { Print flags  }
 
   { Display resolution units  }
   PSD_RES_INCH = 1; { Pixels / inch  }
@@ -127,11 +158,13 @@ const
   PSD_UNIT_PICA = 4;  { pica    ( 6 pica   =   1 inch)  }
   PSD_UNIT_COLUMN = 5;{ columns ( column defined in ps prefs, default = 2.5 inches)  }
 
-
+{$ENDIF}
 
 type
   { TBGRAReaderPSD }
 
+  {$IF FPC_FULLVERSION<30301}
+  { Image Resource Blocks }
   TPSDResourceBlock = packed record
     Types : array[0..3] of Char;   // Always "8BIM"
     ID:word;                       // see previous Image Resource IDs constants
@@ -145,6 +178,7 @@ type
     Data:Byte;
   end;
   PPSDResourceBlockData =^TPSDResourceBlockData;
+  {$ENDIF}
 
   TBGRAReaderPSD = class(TFPReaderPSD)
   private
@@ -155,11 +189,12 @@ type
         StreamOffset: Int64;
         Size: PtrInt;
       end;
-    FImage:TFPCustomImage;
     FOutputHeight: integer;
     function ReadPalette(Stream: TStream): boolean;
     procedure AnalyzeHeader;
-    procedure ReadResourceBlockData(blockID:Word; blockName:ShortString; Size:LongWord; Data:Pointer); virtual;
+
+    procedure ReadResourceBlockData(Img: TFPCustomImage; blockID:Word;
+                                    blockName:ShortString; Size:LongWord; Data:Pointer);{$IF FPC_FULLVERSION<30301}virtual;{$ELSE}override;{$ENDIF}
     procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
     function ReadScanLine(Stream: TStream; AInputSize: PtrInt; AChannel: integer): boolean; overload;
     procedure WriteScanLine(Img: TFPCustomImage; Row: integer); overload;
@@ -171,8 +206,10 @@ type
     property OutputHeight: integer read FOutputHeight;
   end;
 
+{$IF FPC_FULLVERSION<30301}
 function PSDResolutionUnitToResolutionUnit(APSDResolutionUnit: Word): TResolutionUnit;
 function ResolutionUnitToPSdResolutionUnit(AResolutionUnit: TResolutionUnit): Word;
+{$ENDIF}
 
 implementation
 
@@ -230,6 +267,7 @@ begin
   result := LabToRGB(L,(Lab.a-128)/127,(Lab.b-128)/127);
 end;
 
+{$IF FPC_FULLVERSION<30301}
 function PSDResolutionUnitToResolutionUnit(APSDResolutionUnit: Word): TResolutionUnit;
 begin
   Case APSDResolutionUnit of
@@ -247,41 +285,63 @@ begin
   else Result :=0;
   end;
 end;
+{$ENDIF}
 
 { TBGRAReaderPSD }
 
 function TBGRAReaderPSD.ReadPalette(Stream: TStream): boolean;
 Var
-  I : Integer;
-  c : TFPColor;
-  OldPos: Integer;
   BufSize:Longint;
-  {%H-}PalBuf: array[0..767] of Byte;
-  ContProgress: Boolean;
+
+  procedure ReadPaletteFromStream;
+  var
+    i : Integer;
+    c : TFPColor;
+    {%H-}PalBuf: array[0..767] of Byte;
+    ContProgress: Boolean;
+
+  begin
+    Stream.Read({%H-}PalBuf, BufSize);
+    ContProgress:=true;
+    Progress(FPimage.psRunning, 0, False, Rect(0,0,0,0), '', ContProgress);
+    if not ContProgress then exit;
+    for i:=0 to BufSize div 3 do
+    begin
+      with c do
+      begin
+        Red:=PalBuf[I] shl 8;
+        Green:=PalBuf[I+(BufSize div 3)] shl 8;
+        Blue:=PalBuf[I+(BufSize div 3)* 2] shl 8;
+        Alpha:=alphaOpaque;
+      end;
+      FPalette.Add(c);
+    end;
+  end;
+
 begin
-  Result:=false;
-  ThePalette.count := 0;
-  OldPos := Stream.Position;
+  Result:=False;
   BufSize:=0;
   Stream.Read(BufSize, SizeOf(BufSize));
   BufSize:=BEtoN(BufSize);
-  Stream.Read({%H-}PalBuf, BufSize);
-  ContProgress:=true;
-  Progress(FPimage.psRunning, 0, False, Rect(0,0,0,0), '', ContProgress);
-  if not ContProgress then exit;
-  For I:=0 To BufSize div 3 Do
-  Begin
-    With c do
-    begin
-      Red:=PalBuf[I] shl 8;
-      Green:=PalBuf[I+(BufSize div 3)] shl 8;
-      Blue:=PalBuf[I+(BufSize div 3)* 2] shl 8;
-      Alpha:=alphaOpaque;
-    end;
-    ThePalette.Add(C);
-  End;
-  Stream.Position := OldPos;
-  Result:=true;
+
+  Case FHeader.Mode of
+  PSD_BITMAP :begin  // Bitmap (monochrome)
+                FPalette := TFPPalette.Create(0);
+                CreateBWPalette;
+              end;
+  PSD_GRAYSCALE,
+  PSD_DUOTONE:begin // Gray-scale or Duotone image
+                FPalette := TFPPalette.Create(0);
+                CreateGrayPalette;
+              end;
+  PSD_INDEXED:begin // Indexed color (palette color)
+                FPalette := TFPPalette.Create(0);
+                if (BufSize=0) then exit;
+                ReadPaletteFromStream;
+              end;
+  end;
+
+  Result:=True;
 end;
 
 procedure TBGRAReaderPSD.AnalyzeHeader;
@@ -309,16 +369,18 @@ begin
 end;
 
 //MaxM: in the near future we could make a list organized by ids (the blockname is always null) to hold the data of the blocks
-procedure TBGRAReaderPSD.ReadResourceBlockData(blockID:Word; blockName:ShortString; Size: LongWord; Data: Pointer);
+procedure TBGRAReaderPSD.ReadResourceBlockData(Img: TFPCustomImage; blockID:Word;
+  blockName:ShortString; Size: LongWord; Data: Pointer);
 var
   ResolutionInfo:TResolutionInfo;
   ResDWord: DWord;
 
 begin
+  {$IF FPC_FULLVERSION<30301}
   case blockID of
   PSD_RESN_INFO:begin
-          if (FImage is TCustomUniversalBitmap) then
-          with TCustomUniversalBitmap(FImage) do
+          if (Img is TCustomUniversalBitmap) then
+          with TCustomUniversalBitmap(Img) do
           begin
             ResolutionInfo :=TResolutionInfo(Data^);
             //MaxM: Do NOT Remove the Casts after BEToN
@@ -340,7 +402,11 @@ begin
           end;
         end;
   end;
+  {$ELSE}
+  inherited ReadResourceBlockData(Img, blockID, blockName, Size, Data);
+  {$ENDIF}
 end;
+
 
 procedure TBGRAReaderPSD.InternalRead(Stream: TStream; Img: TFPCustomImage);
 var
@@ -387,7 +453,7 @@ var
 
            Inc(Pointer(curBlockData), sizeof(TPSDResourceBlock));
 
-           if (curBlock^.NameLen>0) then //Maybe tested, in all my tests is always 0
+           if (curBlock^.NameLen>0) then //MaxM: Maybe tested, in all my tests is always 0
            begin
              Inc(Pointer(curBlockData), curBlock^.NameLen);
              if not(Odd(curBlock^.NameLen))
@@ -396,7 +462,7 @@ var
 
            dataSize :=BEtoN(DWord(curBlockData^.Size));
            Inc(Pointer(curBlockData), 4);
-           ReadResourceBlockData(blockID, blockName, dataSize, curBlockData);
+           ReadResourceBlockData(Img, blockID, blockName, dataSize, curBlockData);
            Inc(Pointer(curBlockData), dataSize);
          end
          else Inc(Pointer(curBlockData), 1); //skip padding or something went wrong, search for next '8BIM'
@@ -411,7 +477,6 @@ var
   end;
 
 begin
-  FImage :=Img;
   FScanLines:=nil;
   FPalette:=nil;
   try
@@ -424,20 +489,9 @@ begin
     Progress(FPimage.psRunning, 0, False, Rect(0,0,0,0), '', ContProgress);
     if not ContProgress then exit;
     AnalyzeHeader;
-    Case FHeader.Mode of
-        0:begin  // Bitmap (monochrome)
-            FPalette := TFPPalette.Create(0);
-            CreateBWPalette;
-          end;
-        1, 8:begin // Gray-scale
-            FPalette := TFPPalette.Create(0);
-            CreateGrayPalette;
-          end;
-        2:begin // Indexed color (palette color)
-            FPalette := TFPPalette.Create(0);
-            if not ReadPalette(stream) then exit;
-          end;
-    end;
+
+    //  color palette
+    ReadPalette(Stream);
 
     if Assigned(OnCreateImage) then
       OnCreateImage(Self,Img);
@@ -450,13 +504,6 @@ begin
       else
         FOutputHeight:= FHeight;
     Img.SetSize(FWidth,FOutputHeight);
-
-//MaxM: the original code is wrong as it should read the size of the palette (BufSize) anyway
-    //  color palette
-    BufSize:=0;
-    Stream.Read(BufSize, SizeOf(BufSize));
-    BufSize:=BEtoN(BufSize);
-    Stream.Seek(BufSize, soCurrent);
 
     // Image Resources Section
     ReadResourceBlocks;
@@ -552,6 +599,7 @@ begin
       ReAllocMem(FScanLines[channel],0);
   end;
   Progress(FPimage.psEnding, 100, false, Rect(0,0,FWidth,FHeight), '', ContProgress);
+
 end;
 
 function TBGRAReaderPSD.ReadScanLine(Stream: TStream; AInputSize: PtrInt;

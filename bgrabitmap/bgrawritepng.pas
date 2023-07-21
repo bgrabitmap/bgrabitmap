@@ -708,8 +708,12 @@ end;
 
 procedure TBGRAWriterPNG.WriteResolutionValues;
 begin
+  {$IF FPC_FULLVERSION<30301}
   if (TheImage is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(TheImage) do
+  {$ELSE}
+  with TheImage do
+  {$ENDIF}
   begin
        SetChunkLength(sizeof(TPNGPhysicalDimensions));
        SetChunkType(ctpHYs);
@@ -724,7 +728,7 @@ begin
                 X_Pixels :=Trunc(ResolutionX*100);
                 Y_Pixels :=Trunc(ResolutionY*100);
               end
-         else begin
+         else begin //ruNone
                 Unit_Specifier:=0;
                 X_Pixels :=Trunc(ResolutionX);
                 Y_Pixels :=Trunc(ResolutionY);

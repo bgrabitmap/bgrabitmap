@@ -1948,8 +1948,12 @@ var
 
   procedure ReadResolutionValues;
   begin
+    {$IF FPC_FULLVERSION<30301}
     if (CurFPImg is TCustomUniversalBitmap) then
     with TCustomUniversalBitmap(CurFPImg) do
+    {$ELSE}
+    with CurFPImg do
+    {$ENDIF}
     begin
         ResolutionUnit :=TifResolutionUnitToResolutionUnit(IFD.ResolutionUnit);
         ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator;

@@ -934,14 +934,18 @@ end;
 
 procedure TBGRAReaderBMP.ReadResolutionValues(Img: TFPCustomImage);
 begin
+  {$IF FPC_FULLVERSION<30301}
   if (Img is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(Img) do
+  {$ELSE}
+  with Img do
+  {$ENDIF}
   begin
     ResolutionUnit:=ruPixelsPerCentimeter;
     ResolutionX :=BFI.XPelsPerMeter/100;
     ResolutionY :=BFI.YPelsPerMeter/100;
   end;
-end;
+ end;
 
 function  TBGRAReaderBMP.InternalCheck (Stream:TStream) : boolean;
 begin
