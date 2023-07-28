@@ -50,7 +50,7 @@ interface
 
 uses
   Math, BGRAClasses, SysUtils, ctypes, zinflate, zbase, FPimage, FPTiffCmn,
-  BGRABitmapTypes {$IF FPC_FULLVERSION>=30301}, FPReadTiff{$ENDIF};
+  BGRABitmapTypes {$IF FPC_FULLVERSION>=30301}, FPColorSpace, FPReadTiff{$ENDIF};
 
 type
   {$IF FPC_FULLVERSION<30301}
@@ -1978,8 +1978,12 @@ var
     {$ENDIF}
     begin
         ResolutionUnit :=TifResolutionUnitToResolutionUnit(IFD.ResolutionUnit);
-        ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator;
-        ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator;
+        if (IFD.XResolution.Denominator>0)
+        then ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator
+        else ResolutionX :=IFD.XResolution.Numerator;
+        if (IFD.YResolution.Denominator>0)
+        then ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator
+        else ResolutionY :=IFD.YResolution.Numerator;
      end;
   end;
 
@@ -3107,11 +3111,13 @@ var
     GrayValue: Word;
     lab: TLabA;
     cmyk: TStdCMYK;
+    ycbcr: TYCbCr;
   begin
     if IFD.PhotoMetricInterpretation >= 8 then
     begin
       GetPixelAsLab(lab);
-      FPColorValue.FromLabA(lab);
+      //FPColorValue.FromLabA(lab);
+      FPColorValue :=lab.ToExpandedPixel.ToFPColor;
       exit;
     end;
 
@@ -3152,7 +3158,15 @@ var
         FPColorValue :=cmyk.ToExpandedPixel.ToFPColor(true); //MaxM: in Future we can use GammaCompression
       end;
 
-     //6: YCBCR: CCIR 601
+    6: // YCBCR: CCIR 601
+      begin
+        ycbcr :=TYCbCr.New(ChannelValues[0]/$ffff, ChannelValues[1]/$ffff, ChannelValues[2]/$ffff);
+
+        if IFD.YCbCr_LumaRed<>0
+        then FPColorValue :=ycbcr.ToLinearRGBA(IFD.YCbCr_LumaRed, IFD.YCbCr_LumaGreen, IFD.YCbCr_LumaBlue).ToExpandedPixel.ToFPColor(false)
+        else FPColorValue :=ycbcr.ToLinearRGBA(YCbCr_601).ToExpandedPixel.ToFPColor(false);
+      end;
+
     else
       TiffError('PhotometricInterpretation='+IntToStr(IFD.PhotoMetricInterpretation)+' not supported');
     end;
@@ -3214,8 +3228,12 @@ var
     {$ENDIF}
     begin
         ResolutionUnit :=TifResolutionUnitToResolutionUnit(IFD.ResolutionUnit);
-        ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator;
-        ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator;
+        if (IFD.XResolution.Denominator>0)
+        then ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator
+        else ResolutionX :=IFD.XResolution.Numerator;
+        if (IFD.YResolution.Denominator>0)
+        then ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator
+        else ResolutionY :=IFD.YResolution.Numerator;
      end;
   end;
 
@@ -3289,13 +3307,7 @@ begin
       PaletteCnt, PaletteValues);
 
     PaletteStride := PaletteCnt div 3;
-
-  (*  if BigTiff  //MaxM: WorkAround ReadNextXXBitData fail to get colors correctly
-    then begin
-           All8Bit:=False;
-           All16Bit:=False;
-         end
-    else*) CheckBitCount;
+    CheckBitCount;
 
     // create FPimage
     DoCreateImage(IFD);
