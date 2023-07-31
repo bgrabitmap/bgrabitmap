@@ -10,6 +10,12 @@ type
     W,Y: Single;
   end;
 
+  TYCbCrSTD = (YCbCr_601, YCbCr_709, YCbCr_2020, YCbCr_JPG);
+  TYCbCrSTD_Factor= packed record
+    a, b, c, d, e :single;
+  end;
+
+
 {$I spectraldata.inc}
 
 type

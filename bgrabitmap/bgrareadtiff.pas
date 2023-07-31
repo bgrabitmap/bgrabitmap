@@ -50,7 +50,7 @@ interface
 
 uses
   Math, BGRAClasses, SysUtils, ctypes, zinflate, zbase, FPimage, FPTiffCmn,
-  BGRABitmapTypes {$IF FPC_FULLVERSION>=30301}, FPColorSpace, FPReadTiff{$ENDIF};
+  BGRABitmapTypes {$IF FPC_FULLVERSION>=30301}, FPReadTiff{$ENDIF};
 
 type
   {$IF FPC_FULLVERSION<30301}

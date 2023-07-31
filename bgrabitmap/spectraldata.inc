@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-const //horseshoe shape of visible colors at 2° (illuminant E)
+const
+  //horseshoe shape of visible colors at 2° (illuminant E)
   SpectralLocus: array[0..94] of TSpectralLocusPoint =
  ((W:360; X:0.0001299; Y:0.000003917; Z:0.0006061),
   (W:365; X:0.0002321; Y:0.000006965; Z:0.001086),
@@ -97,7 +98,7 @@ const //horseshoe shape of visible colors at 2° (illuminant E)
   (W:825; X:1.776509E-06; Y:6.4153E-07; Z:0),
   (W:830; X:1.251141E-06; Y:4.5181E-07; Z:0));
 
-const //D65 illuminant
+  //D65 illuminant
   IlluminantSpectrumD65: array[0..94] of TIlluminantSpectrumPoint =
  ((W:360; Y:46.6383),
   (W:365; Y:49.3637),
@@ -194,4 +195,12 @@ const //D65 illuminant
   (W:820; Y:57.4406),
   (W:825; Y:58.8765),
   (W:830; Y:60.3125));
+
+  //YcbCr to From RGB Factors
+  YCbCrSTD_Factors : array [TYCbCrSTD] of TYCbCrSTD_Factor = (
+  (a:0.299; b:0.587; c:0.114; d:1.772; e:1.402),        //BT.601
+  (a:0.2126; b:0.7152; c:0.0722; d:1.8556; e:1.5748),   //BT.709
+  (a:0.2627; b:0.6780; c:0.0593; d:1.8814; e:1.4746),   //BT.2020
+  (a:0.299; b:0.587; c:0.114; d:1.772; e:1.402)         //JPG Same Factor of 601?
+  );
 
