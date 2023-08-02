@@ -108,7 +108,9 @@ function ExpandedPixelToByteMask(const AExpandedPixel: TExpandedPixel): TByteMas
 function MaskToBGRA(const AMask: TByteMask; AAlpha: byte = 255): TBGRAPixel;
 function ByteMaskToExpandedPixel(const AMask: TByteMask; AAlpha: byte = 255): TExpandedPixel;
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
+function StdRGBAToFPColor(const AStdRGBA: TStdRGBA): TFPColor;
 function BGRAPixelToStdRGBA(const ABGRAPixel: TBGRAPixel): TStdRGBA;
+function FPColorToStdRGBA(const AFPColor: TFPColor): TStdRGBA;
 function LinearRGBAToExpandedPixel(const ALinearRGBA: TLinearRGBA): TExpandedPixel;
 function ExpandedPixelToLinearRGBA(const AExpandedPixel: TExpandedPixel): TLinearRGBA;
 function ExpandedPixelToStdRGBA(const AExpandedPixel: TExpandedPixel): TStdRGBA;
@@ -539,6 +541,17 @@ begin
   end;
 end;
 
+function StdRGBAToFPColor(const AStdRGBA: TStdRGBA): TFPColor;
+begin
+  with AStdRGBA do
+  begin
+    result.red := ClampInt(round(red * 65535), 0, 65535);
+    result.green := ClampInt(round(green * 65535), 0, 65535);
+    result.blue := ClampInt(round(blue * 65535), 0, 65535);
+    result.alpha := ClampInt(round(alpha * 65535), 0, 65535);
+  end;
+end;
+
 function BGRAPixelToStdRGBA(const ABGRAPixel: TBGRAPixel): TStdRGBA;
 const oneOver255 = 1/255;
 begin
@@ -548,6 +561,18 @@ begin
     result.green := green * oneOver255;
     result.blue := blue * oneOver255;
     result.alpha := alpha * oneOver255;
+  end;
+end;
+
+function FPColorToStdRGBA(const AFPColor: TFPColor): TStdRGBA;
+const oneOver65535 = 1/65535;
+begin
+  with AFPColor do
+  begin
+    result.red := red * oneOver65535;
+    result.green := green * oneOver65535;
+    result.blue := blue * oneOver65535;
+    result.alpha := alpha * oneOver65535;
   end;
 end;
 

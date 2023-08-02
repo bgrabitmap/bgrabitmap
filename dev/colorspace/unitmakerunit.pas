@@ -711,6 +711,28 @@ var
       params.Free;
     end;
 
+    function TColorGetChannel(AColor: string; AChannel: integer): string;
+    begin
+      case AChannel of
+      0: result := '{$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}('+AColor+' shr 16) and $ff{$ELSE}'+AColor+' and $ff{$ENDIF}';
+      1: result := '('+AColor+' shr 8) and $ff';
+      2: result := '{$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}'+AColor+' and $ff{$ELSE}('+AColor+' shr 16) and $ff{$ENDIF}';
+      else
+        raise Exception.Create('Index out of bounds');
+      end;
+    end;
+
+    function TColorSetChannel(AColor: string; AChannel: integer; AValue: string): string;
+    begin
+      case AChannel of
+      0: result := '{$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}LongWord('+AColor+' and $00ffff) or ('+AValue+' shl 16){$ELSE}LongWord('+AColor+' and $ffff00) or '+AValue+'{$ENDIF}';
+      1: result := 'LongWord('+AColor+' and $ff00ff) or ('+AValue+' shl 8)';
+      2: result := '{$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}LongWord('+AColor+' and $ffff00) or '+AValue+'{$ELSE}LongWord('+AColor+' and $00ffff) or ('+AValue+' shl 16){$ENDIF}';
+      else
+        raise Exception.Create('Index out of bounds');
+      end;
+    end;
+
   var
     ov, ba: boolean;
     vsam, vsfm, body, vn2: TStringArray;
@@ -808,14 +830,27 @@ var
 
       setlength(body, length(VariablesNames)+3);
       body[0] := 'case AIndex of';
-      for i := 0 to high(VariablesNames) do
-        body[i+1] := inttostr(i)+': result := ' + ColorTypeName + '(AColor^).' + VariablesNames[i] + ';';
+      if Colorspace = csColor then
+      begin
+        for i := 0 to high(VariablesNames) do
+         body[i+1] := inttostr(i)+': result := ' + TColorGetChannel(ColorTypeName + '(AColor^)', i) + ';';
+      end
+      else
+        for i := 0 to high(VariablesNames) do
+          body[i+1] := inttostr(i)+': result := ' + ColorTypeName + '(AColor^).' + VariablesNames[i] + ';';
       body[high(body)-1] := 'else raise ERangeError.Create(''Index out of bounds'');';
       body[high(body)] := 'end;';
       AddProcedureImp('class function '+ColorTypeName+'Colorspace.GetChannel(AColor: Pointer; AIndex: integer): single;', body);
 
       setlength(body, length(VariablesNames)+3);
       body[0] := 'case AIndex of';
+      if Colorspace = csColor then
+      begin
+        for i := 0 to high(VariablesNames) do
+         body[i+1] := inttostr(i)+': ' + ColorTypeName + '(AColor^) := ' +
+                   TColorSetChannel(ColorTypeName + '(AColor^)', i, 'Byte(Round(Clamp(AValue,' + MinValues[i] + ',' +MaxValues[i] + ')))') + ';';
+      end
+      else
       for i := 0 to high(VariablesNames) do
       begin
         if not (ColorspaceInfo[Colorspace].ValueType in[cvtSingle,cvtDouble]) then
@@ -910,23 +945,23 @@ var
       begin
         Add('private');
         h := GetFunction(HelperName+'.GetRed', '', 'byte', false);
-        AddProcedureImp(h, 'result := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}(self shr 16) and $ff{$ELSE}self and $ff{$ENDIF};');
+        AddProcedureImp(h, 'result := ' + TColorGetChannel('self', 0) + ';');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetFunction(HelperName+'.GetGreen', '', 'byte', false);
-        AddProcedureImp(h, 'result := (self shr 8) and $ff;');
+        AddProcedureImp(h, 'result := ' + TColorGetChannel('self', 1) + ';');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetFunction(HelperName+'.GetBlue', '', 'byte', false);
-        AddProcedureImp(h, 'result := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}self and $ff{$ELSE}(self shr 16) and $ff{$ENDIF};');
+        AddProcedureImp(h, 'result := ' + TColorGetChannel('self', 2) + ';');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
 
         h := GetProcedure(HelperName+'.SetRed', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}LongWord(self and $00ffff) or (AValue shl 16){$ELSE}LongWord(self and $ffff00) or AValue{$ENDIF};');
+        AddProcedureImp(h, 'self := ' + TColorSetChannel('self', 0, 'AValue') + ';');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetProcedure(HelperName+'.SetGreen', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := LongWord(self and $ff00ff) or (AValue shl 8);');
+        AddProcedureImp(h, 'self := ' + TColorSetChannel('self', 1, 'AValue') + ';');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         h := GetProcedure(HelperName+'.SetBlue', 'AValue: byte', false);
-        AddProcedureImp(h, 'self := {$IFDEF TCOLOR_BLUE_IN_LOW_BYTE}LongWord(self and $ffff00) or AValue{$ELSE}LongWord(self and $00ffff) or (AValue shl 16){$ENDIF};');
+        AddProcedureImp(h, 'self := ' + TColorSetChannel('self', 2, 'AValue') + ';');
         Add('  ' + StringReplace(h, HelperName+'.', '', []));
         add('public');
       end;
@@ -1095,6 +1130,7 @@ begin
   AddColorPair(csStdHSLA, csStdHSVA);
   AddColorPair(csStdCMYKA, csStdRGBA);
   AddColorPair(csStdRGBA, csExpandedPixel, '','',true, 2);
+  AddColorPair(csStdRGBA, csFPColor);
 
  { AddColorPair(csWordMask, csExpandedPixel, 'ExpandedToWordMask', 'WordMaskToExpanded');
   AddColorPair(csByteMask, csWordMask, 'MaskWordToByte', 'MaskByteToWord');}
@@ -1145,7 +1181,7 @@ begin
   AddImp('{$ENDIF}');
   //Save
   intsl.AddStrings(impsl);
-  intsl.SaveToFile('generatedcolorspace.inc');
+  intsl.SaveToFile(ExtractFilePath(ParamStr(0))+'generatedcolorspace.inc');
   intsl.Free;
   impsl.Free;
   WriteLn('Done generating colorspaces.');
