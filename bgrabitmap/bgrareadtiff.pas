@@ -3163,8 +3163,8 @@ var
         ycbcr :=TYCbCr.New(ChannelValues[0]/$ffff, ChannelValues[1]/$ffff, ChannelValues[2]/$ffff);
 
         if IFD.YCbCr_LumaRed<>0
-        then FPColorValue :=ycbcr.ToLinearRGBA(IFD.YCbCr_LumaRed, IFD.YCbCr_LumaGreen, IFD.YCbCr_LumaBlue).ToExpandedPixel.ToFPColor(false)
-        else FPColorValue :=ycbcr.ToLinearRGBA(YCbCr_601).ToExpandedPixel.ToFPColor(false);
+        then FPColorValue :=ycbcr.ToStdRGBA(IFD.YCbCr_LumaRed, IFD.YCbCr_LumaGreen, IFD.YCbCr_LumaBlue).ToExpandedPixel.ToFPColor(false)
+        else FPColorValue :=ycbcr.ToStdRGBA(YCbCr_601).ToExpandedPixel.ToFPColor(false);
       end;
 
     else

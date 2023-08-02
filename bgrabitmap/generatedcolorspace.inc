@@ -557,6 +557,9 @@ type
     function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
+    {** SamplePrecision = 2^(YCbCrSamplePrecision-1) }
+    function ToYCbCr(const AStd:TYCbCrSTD=YCbCr_JPG; ASamplePrecision:Single=0.5): TYCbCr; overload;
+    function ToYCbCr(LumaRed:Single=0.299; LumaGreen:Single=0.587; LumaBlue:Single=0.114): TYCbCr; overload;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
     procedure FromFPColor(AValue: TFPColor);
@@ -871,9 +874,6 @@ type
     function ToWordXYZA(const AReferenceWhite: TXYZReferenceWhite): TWordXYZA;overload;
     function ToLabA: TLabA;
     function ToLChA: TLChA;
-    {** SamplePrecision = 2^(YCbCrSamplePrecision-1) }
-    function ToYCbCr(const AStd:TYCbCrSTD=YCbCr_JPG; ASamplePrecision:Single=0.5): TYCbCr; overload;
-    function ToYCbCr(LumaRed:Single=0.299; LumaGreen:Single=0.587; LumaBlue:Single=0.114): TYCbCr; overload;
     procedure FromColor(AValue: TColor);
     procedure FromBGRAPixel(AValue: TBGRAPixel);
     procedure FromFPColor(AValue: TFPColor);
@@ -1188,8 +1188,8 @@ type
 
   TYCbCrHelper = record helper for TYCbCr
     {** SamplePrecision = 2^(YCbCrSamplePrecision-1) }
-    function ToLinearRGBA(const AStd:TYCbCrSTD=YCbCr_JPG; ASamplePrecision:Single=0.5): TLinearRGBA; overload;
-    function ToLinearRGBA(LumaRed:Single=0.299; LumaGreen:Single=0.587; LumaBlue:Single=0.114): TLinearRGBA; overload;
+    function ToStdRGBA(const AStd:TYCbCrSTD=YCbCr_601; ASamplePrecision:Single=0.5): TStdRGBA; overload;
+    function ToStdRGBA(LumaRed:Single=0.299; LumaGreen:Single=0.587; LumaBlue:Single=0.114): TStdRGBA; overload;
   end;
 
 
@@ -4496,6 +4496,26 @@ begin Result := ExpandedPixelToLabA(StdRGBAToExpandedPixel(Self)) end;
 function TStdRGBAHelper.ToLChA: TLChA;
 begin Result := ExpandedPixelToLChA(StdRGBAToExpandedPixel(Self)) end;
 
+function TStdRGBAHelper.ToYCbCr(const AStd: TYCbCrSTD; ASamplePrecision: Single): TYCbCr;
+begin
+  with self, YCbCrSTD_Factors[AStd]  do
+  begin
+    result.Y := a * red + b * green + c * blue;
+    result.Cb := ((blue - result.Y) / d)+ASamplePrecision;
+    result.Cr := ((red - result.Y) / e)+ASamplePrecision;
+  end;
+end;
+
+function TStdRGBAHelper.ToYCbCr(LumaRed: Single; LumaGreen: Single; LumaBlue: Single): TYCbCr;
+begin
+  with self  do
+  begin
+    result.Y :=  ( LumaRed * red + LumaGreen * green + LumaBlue * blue );
+    result.Cb := ( blue - result.Y ) / ( 2 - 2 * LumaBlue );
+    result.Cr := ( red - result.Y ) / ( 2 - 2 * LumaRed );
+  end;
+end;
+
 procedure TStdRGBAHelper.FromColor(AValue: TColor);
 begin Self := ColorToStdRGBA(AValue) end;
 
@@ -5408,26 +5428,6 @@ begin Result := LinearRGBAToLabA(Self) end;
 function TLinearRGBAHelper.ToLChA: TLChA;
 begin Result := LinearRGBAToLChA(Self) end;
 
-function TLinearRGBAHelper.ToYCbCr(const AStd: TYCbCrSTD; ASamplePrecision: Single): TYCbCr;
-begin
-  with self, YCbCrSTD_Factors[AStd]  do
-  begin
-    result.Y := a * red + b * green + c * blue;
-    result.Cb := ((blue - result.Y) / d)+ASamplePrecision;
-    result.Cr := ((red - result.Y) / e)+ASamplePrecision;
-  end;
-end;
-
-function TLinearRGBAHelper.ToYCbCr(LumaRed: Single; LumaGreen: Single; LumaBlue: Single): TYCbCr;
-begin
-  with self  do
-  begin
-    result.Y :=  ( LumaRed * red + LumaGreen * green + LumaBlue * blue );
-    result.Cb := ( blue - result.Y ) / ( 2 - 2 * LumaBlue );
-    result.Cr := ( red - result.Y ) / ( 2 - 2 * LumaRed );
-  end;
-end;
-
 procedure TLinearRGBAHelper.FromColor(AValue: TColor);
 begin Self := ExpandedPixelToLinearRGBA(ColorToExpandedPixel(AValue)) end;
 
@@ -6296,7 +6296,7 @@ begin Self := LabAToLChA(AValue) end;
 
 { TYCbCrHelper }
 
-function TYCbCrHelper.ToLinearRGBA(const AStd: TYCbCrSTD; ASamplePrecision: Single): TLinearRGBA;
+function TYCbCrHelper.ToStdRGBA(const AStd: TYCbCrSTD; ASamplePrecision: Single): TStdRGBA;
 begin
   with self, YCbCrSTD_Factors[AStd]  do
   begin
@@ -6306,7 +6306,7 @@ begin
   end;
 end;
 
-function TYCbCrHelper.ToLinearRGBA(LumaRed: Single; LumaGreen: Single; LumaBlue: Single): TLinearRGBA;
+function TYCbCrHelper.ToStdRGBA(LumaRed: Single; LumaGreen: Single; LumaBlue: Single): TStdRGBA;
 begin
   with self  do
   begin
