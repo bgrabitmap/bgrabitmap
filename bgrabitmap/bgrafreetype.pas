@@ -143,15 +143,11 @@ type
     procedure DrawText(AText: string; AFont: TFreeTypeRenderableFont; x,y: single; AColor: TBGRAPixel; AAlign: TFreeTypeAlignments); overload;
     { If this code does not compile, you probably have an older version of Lazarus. To fix the problem,
       go into "bgrabitmap.inc" and comment the compiler directives }
-    {$IFDEF BGRABITMAP_USE_LCL12}
     procedure DrawTextWordBreak(AText: string; AFont: TFreeTypeRenderableFont; x, y, AMaxWidth: Single; AColor: TBGRAPixel; AAlign: TFreeTypeAlignments); overload;
     procedure DrawTextRect(AText: string; AFont: TFreeTypeRenderableFont; X1,Y1,X2,Y2: Single; AColor: TBGRAPixel; AAlign: TFreeTypeAlignments); overload;
-    {$ENDIF}
-    {$IFDEF BGRABITMAP_USE_LCL15}
     procedure DrawGlyph(AGlyph: integer; AFont: TFreeTypeRenderableFont; x,y: single; AColor: TFPColor); overload; override;
     procedure DrawGlyph(AGlyph: integer; AFont: TFreeTypeRenderableFont; x,y: single; AColor: TBGRAPixel); overload;
     procedure DrawGlyph(AGlyph: integer; AFont: TFreeTypeRenderableFont; x,y: single; AColor: TBGRAPixel; AAlign: TFreeTypeAlignments); overload;
-    {$ENDIF}
     function CreateTextEffect(AText: string; AFont: TFreeTypeRenderableFont): TBGRACustomTextEffect;
     destructor Destroy; override;
   end;
@@ -1010,12 +1006,7 @@ begin
     if (filename <> FFont.Name) or (fts <> FFont.Style) then
     begin
       twChange := true;
-      {$IFDEF BGRABITMAP_USE_LCL12}
       FFont.SetNameAndStyle(filename,fts);
-      {$ELSE}
-      FFont.Name := filename;
-      FFont.Style := fts;
-      {$ENDIF}
     end;
   except
     on ex: exception do
@@ -1065,10 +1056,8 @@ begin
     twChange := true;
     FFont.Hinted := FontHinted;
   end;
-  {$IFDEF BGRABITMAP_USE_LCL12}
-    FFont.StrikeOutDecoration := fsStrikeOut in FontStyle;
-    FFont.UnderlineDecoration := fsUnderline in FontStyle;
-  {$ENDIF}
+  FFont.StrikeOutDecoration := fsStrikeOut in FontStyle;
+  FFont.UnderlineDecoration := fsUnderline in FontStyle;
   if twChange then FreeAndNil(FTypeWriter);
 end;
 
@@ -1263,18 +1252,14 @@ begin
     include(align, ftaLeft);
   end;
   case style.Layout of
-  {$IFDEF BGRABITMAP_USE_LCL12}
-    tlCenter: begin ARect.Top := y; include(align, ftaVerticalCenter); end;
-  {$ENDIF}
+  tlCenter: begin ARect.Top := y; include(align, ftaVerticalCenter); end;
   tlBottom: begin ARect.top := y; include(align, ftaBottom); end;
   else include(align, ftaTop);
   end;
   try
-    {$IFDEF BGRABITMAP_USE_LCL12}
-      if style.Wordbreak then
-        GetDrawer(ADest).DrawTextRect(s, FFont, ARect.Left,ARect.Top,ARect.Right,ARect.Bottom,BGRAToFPColor(c),align)
-      else
-    {$ENDIF}
+    if style.Wordbreak then
+      GetDrawer(ADest).DrawTextRect(s, FFont, ARect.Left,ARect.Top,ARect.Right,ARect.Bottom,BGRAToFPColor(c),align)
+    else
     begin
       case style.Layout of
       tlCenter: y := (ARect.Top+ARect.Bottom) div 2;
@@ -1527,7 +1512,6 @@ begin
   DrawText(AText, AFont, x,y, BGRAToFPColor(AColor), AAlign);
 end;
 
-{$IFDEF BGRABITMAP_USE_LCL12}
 procedure TBGRAFreeTypeDrawer.DrawTextWordBreak(AText: string;
   AFont: TFreeTypeRenderableFont; x, y, AMaxWidth: Single; AColor: TBGRAPixel;
   AAlign: TFreeTypeAlignments);
@@ -1541,9 +1525,7 @@ procedure TBGRAFreeTypeDrawer.DrawTextRect(AText: string;
 begin
   DrawTextRect(AText,AFont,X1,Y1,X2,Y2,BGRAToFPColor(AColor),AAlign);
 end;
-{$ENDIF}
 
-{$IFDEF BGRABITMAP_USE_LCL15}
 procedure TBGRAFreeTypeDrawer.DrawGlyph(AGlyph: integer;
   AFont: TFreeTypeRenderableFont; x, y: single; AColor: TFPColor);
 var f: TFreeTypeFont;
@@ -1569,7 +1551,6 @@ procedure TBGRAFreeTypeDrawer.DrawGlyph(AGlyph: integer;
 begin
   DrawGlyph(AGlyph, AFont, x,y, BGRAToFPColor(AColor), AAlign);
 end;
-{$ENDIF}
 
 function TBGRAFreeTypeDrawer.CreateTextEffect(AText: string;
   AFont: TFreeTypeRenderableFont): TBGRACustomTextEffect;
