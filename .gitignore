@@ -30,3 +30,5 @@ test/colorspace/HorseShoe
 *.app
 
 test/test4ideu/fractal_tree/units/
+
+dev/colorspace/generatecolorspaces

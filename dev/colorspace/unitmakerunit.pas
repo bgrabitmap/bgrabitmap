@@ -23,10 +23,11 @@ XYZ           |                  WordXYZA        XYZA
 type
   TColorspaceEnum = (csColor, csBGRAPixel, csFPColor, csStdRGBA, //sRGB
     csAdobeRGBA,
-    csStdHSLA, csStdHSVA, csStdCMYKA,              //based on sRGB
-    csByteMask, {csWordMask,}                        //linear grayscale
+    csStdHSLA, csStdHSVA, csStdCMYK,               //based on sRGB
+    csByteMask, {csWordMask,}                      //linear grayscale
     csExpandedPixel, csLinearRGBA,                 //linear RGB
     csHSLAPixel, csGSBAPixel,                      //based on linear RGB
+    csYCbCr601, csYCbCr601JPEG, csYCbCr709, csYCbCr709JPEG,  //based on sRGB
     csXYZA, csWordXYZA,                            //CIE XYZ
     csLabA, csLChA);                               //based on XYZ
 
@@ -85,6 +86,16 @@ const
    VariableNames: 'hue,saturation,lightness,alpha';      FullNames: 'Hue,Saturation,Lightness,Alpha'; MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: false; HasImaginary: false),
    (Name: 'GSBAPixel';     Declaration: 'record helper'; Colorspace: 'GSB';         HasAlpha: true;   NeedRefWhite: false;  ValueType: cvtWord;    BasicHelper: true;
    VariableNames: 'hue,saturation,lightness,alpha';      FullNames: 'Hue,Saturation,Brightness,Alpha';MinMax: '0,0,0,0,65535,65535,65535,65535';  IsBridge: false; HasImaginary: false),
+
+   (Name: 'YCbCr601';      Declaration: 'packed record'; Colorspace: 'YCbCr BT.601';HasAlpha: false;       NeedRefWhite: false;  ValueType: cvtSingle; BasicHelper: false;
+   VariableNames: 'Y,Cb,Cr';                             FullNames: 'Luma,BlueDiff,RedDiff';               MinMax: '16,16,16,235,240,240';             IsBridge: false; HasImaginary: true),
+   (Name: 'YCbCr601JPEG';  Declaration: 'packed record'; Colorspace: 'YCbCr BT.601 JPEG';HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtSingle; BasicHelper: false;
+   VariableNames: 'Y,Cb,Cr';                             FullNames: 'Luma,BlueDiff,RedDiff';               MinMax: '0,0.5,0.5,255,255.5,255.5';        IsBridge: false; HasImaginary: true),
+
+   (Name: 'YCbCr709';      Declaration: 'packed record'; Colorspace: 'YCbCr BT.709';HasAlpha: false;       NeedRefWhite: false;  ValueType: cvtSingle; BasicHelper: false;
+   VariableNames: 'Y,Cb,Cr';                             FullNames: 'Luma,BlueDiff,RedDiff';               MinMax: '16,16,16,235,240,240';             IsBridge: false; HasImaginary: true),
+   (Name: 'YCbCr709JPEG';  Declaration: 'packed record'; Colorspace: 'YCbCr BT.709 JPEG';HasAlpha: false;  NeedRefWhite: false;  ValueType: cvtSingle; BasicHelper: false;
+   VariableNames: 'Y,Cb,Cr';                             FullNames: 'Luma,BlueDiff,RedDiff';               MinMax: '0,0.5,0.5,255,255.5,255.5';        IsBridge: false; HasImaginary: true),
 
    (Name: 'XYZA';          Declaration: 'packed record'; Colorspace: 'CIE XYZ';     HasAlpha: true;   NeedRefWhite: true;   ValueType: cvtSingle;  BasicHelper: false;
    VariableNames: 'X,Y,Z,alpha';                         FullNames: 'X,Y,Z,Alpha';                    MinMax: '0,0,0,0,1,1,1,1';                  IsBridge: false; HasImaginary: true),
@@ -541,7 +552,7 @@ var
         vn := GetVariablesNames(c2);
         avn := vn[Length(vn) - 1];
         if not avn.StartsWith('[') then avn := '.'+avn;
-        ls := ls + LineEnding + '  ' + 'Result' + avn + ' := AAlpha;';
+        ls := ls + LineEnding + '  ' + 'if Result' + avn + ' <> 0 then Result' + avn + ' := AAlpha;';
         h := GetFunction(functionName,
                          'const A' + ColorspaceInfo[c1].Name + ': T' + ColorspaceInfo[c1].Name + ';const AAlpha' + ': ' + ChannelValueTypeName[ColorspaceInfo[c2].ValueType] + '=' + vmax,
                          'T' + ColorspaceInfo[c2].Name, needRefPoint);
@@ -575,7 +586,7 @@ var
           vn := GetVariablesNames(c2);
           avn := vn[Length(vn) - 1];
           if not avn.StartsWith('[') then avn := '.' + avn;
-          ls := ls + #13#10 + '  ' + 'Result' + avn + ' := AAlpha;';
+          ls := ls + #13#10 + '  ' + 'if Result' + avn + ' <> 0 then Result' + avn + ' := AAlpha;';
         end
         else
           h := GetFunction(functionName,
@@ -1004,7 +1015,7 @@ var
           else
           begin
             vn2 := Split(ColorspaceInfo[cs].VariableNames);
-            AddProcedureImp(h, [GetConvertProcedureImp(cs, ''), 'result.'+vn2[high(vn2)]+' := AAlpha;']);
+            AddProcedureImp(h, [GetConvertProcedureImp(cs, ''), 'if result.'+vn2[high(vn2)]+' <> 0 then result.'+vn2[high(vn2)]+' := AAlpha;']);
           end;
         end;
 
@@ -1128,9 +1139,13 @@ begin
   AddColorPair(csStdHSLA, csStdRGBA);
   AddColorPair(csStdHSVA, csStdRGBA);
   AddColorPair(csStdHSLA, csStdHSVA);
-  AddColorPair(csStdCMYKA, csStdRGBA);
+  AddColorPair(csStdCMYK, csStdRGBA);
   AddColorPair(csStdRGBA, csExpandedPixel, '','',true, 2);
   AddColorPair(csStdRGBA, csFPColor);
+  AddColorPair(csStdRGBA, csYCbCr601);
+  AddColorPair(csStdRGBA, csYCbCr601JPEG);
+  AddColorPair(csStdRGBA, csYCbCr709);
+  AddColorPair(csStdRGBA, csYCbCr709JPEG);
 
  { AddColorPair(csWordMask, csExpandedPixel, 'ExpandedToWordMask', 'WordMaskToExpanded');
   AddColorPair(csByteMask, csWordMask, 'MaskWordToByte', 'MaskByteToWord');}

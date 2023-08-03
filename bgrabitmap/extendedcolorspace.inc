@@ -9,6 +9,12 @@ type
   TIlluminantSpectrumPoint = record
     W,Y: Single;
   end;
+  // YCbCr colorspaces based on sRGB colorspace
+  // (with some minor variations in the definition of the primary colors)
+  TYCbCrStdColorspace = (ITUR601, ITUR601JPEG, ITUR709, ITUR709JPEG, SMPTE240M);
+  TYCbCrStdParameters = packed record
+    LumaRed, LumaGreen, LumaBlue, MinY, ScaleY, MidC, ScaleC: single;
+  end;
 
 {$I spectraldata.inc}
 
@@ -97,6 +103,8 @@ var
 {$DEFINE INCLUDE_INTERFACE}
 {$I generatedcolorspace.inc}
 
+procedure HandleLinearRGBAOverflow(var result: TLinearRGBA; LumaRed, LumaGreen, LumaBlue: single); inline;
+
 function BGRAToMask(const ABGRAPixel: TBGRAPixel): TByteMask;
 function ExpandedPixelToByteMask(const AExpandedPixel: TExpandedPixel): TByteMask;
 function MaskToBGRA(const AMask: TByteMask; AAlpha: byte = 255): TBGRAPixel;
@@ -135,6 +143,17 @@ function StdHSLAToStdHSVA(const AStdHSLA: TStdHSLA): TStdHSVA;
 function StdHSVAToStdHSLA(const AStdHSVA: TStdHSVA): TStdHSLA;
 function StdRGBAToStdCMYK(const AStdRGBA: TStdRGBA): TStdCMYK;
 function StdCMYKToStdRGBA(const AStdCMYK: TStdCMYK; AAlpha: Single = 1): TStdRGBA;
+procedure StdRGBToYCbCr(const R, G, B: single; const AParameters: TYCbCrStdParameters; out Y, Cb, Cr: Single); inline;
+procedure YCbCrToStdRGB(const Y, Cb, Cr: Single; const AParameters: TYCbCrStdParameters; out R, G, B: Single); inline;
+function StdRGBAToYCbCr601(const AStdRGBA: TStdRGBA): TYCbCr601;
+function YCbCr601ToStdRGBA(const AYCbCr: TYCbCr601; AAlpha: Single = 1): TStdRGBA;
+function StdRGBAToYCbCr709(const AStdRGBA: TStdRGBA): TYCbCr709;
+function YCbCr709ToStdRGBA(const AYCbCr: TYCbCr709; AAlpha: Single = 1): TStdRGBA;
+function StdRGBAToYCbCr601JPEG(const AStdRGBA: TStdRGBA): TYCbCr601JPEG;
+function YCbCr601JPEGToStdRGBA(const AYCbCr: TYCbCr601JPEG; AAlpha: Single = 1): TStdRGBA;
+function StdRGBAToYCbCr709JPEG(const AStdRGBA: TStdRGBA): TYCbCr709JPEG;
+function YCbCr709JPEGToStdRGBA(const AYCbCr: TYCbCr709JPEG; AAlpha: Single = 1): TStdRGBA;
+
 function LabAToLChA(const ALabA: TLabA): TLChA;
 function LChAToLabA(const ALChA: TLChA): TLabA;
 function AdobeRGBAToXYZA(const ASource: TAdobeRGBA): TXYZA; overload;
@@ -709,7 +728,6 @@ end;
 function XYZAToLinearRGBA(const AXYZA: TXYZA;
   const AReferenceWhite: TXYZReferenceWhite): TLinearRGBA;
 var
-  minVal, lightVal, maxVal: single;
   ad: TXYZA;
 begin
   ad := AXYZA;
@@ -732,6 +750,14 @@ begin
       result.blue := X * 0.0556434 + Y * (-0.2040259) + Z * 1.0572252;
     end;
   end;
+  Result.alpha := AXYZA.alpha;
+  HandleLinearRGBAOverflow(result, 0.299, 0.587, 0.114);
+end;
+
+procedure HandleLinearRGBAOverflow(var result: TLinearRGBA; LumaRed, LumaGreen, LumaBlue: single); inline;
+var
+  minVal, lightVal, maxVal: single;
+begin
   if ( (XYZToRGBOverflowMin = xroClipToTarget) and ((result.red < 0) or
        (result.green < 0) or (result.blue < 0)) ) or
      ( (XYZToRGBOverflowMax = xroClipToTarget) and ((result.red > 1) or
@@ -748,7 +774,7 @@ begin
         minVal := min(min(result.red,result.green),result.blue);
         if minVal<0 then
         begin
-          lightVal := result.red*0.299+result.green*0.587+result.blue*0.114;
+          lightVal := result.red*LumaRed+result.green*LumaGreen+result.blue*LumaBlue;
           if lightVal <= 0 then
           begin
             result.red := 0;
@@ -787,7 +813,6 @@ begin
     if result.green < 0 then result.green := 0;
     if result.blue < 0 then result.blue := 0;
   end;
-  Result.alpha := AXYZA.alpha;
 end;
 
 function ExpandedPixelToWordXYZA(const AExpandedPixel: TExpandedPixel): TWordXYZA; overload;
@@ -1145,6 +1170,98 @@ begin
     result.green := (1 - M) * (1 - K);
     result.blue := (1 - Y) * (1 - K);
     result.alpha := AAlpha;
+  end;
+end;
+
+procedure StdRGBToYCbCr(const R, G, B: single;
+  const AParameters: TYCbCrStdParameters; out Y, Cb, Cr: Single);
+var UnscaledY: Single;
+begin
+  with AParameters do
+  begin
+    UnscaledY := LumaRed * R + LumaGreen * G + LumaBlue * B;
+    Cb := MidC + (B - UnscaledY) / (1 - LumaBlue) * ScaleC;
+    Cr := MidC + (R - UnscaledY) / (1 - LumaRed) * ScaleC;
+    Y := MinY + UnscaledY * ScaleY;
+  end;
+end;
+
+procedure YCbCrToStdRGB(const Y, Cb, Cr: Single;
+  const AParameters: TYCbCrStdParameters; out R, G, B: Single);
+var UnscaledY, PbLuma, PrLuma: Single;
+begin
+  with AParameters do
+  begin
+    UnscaledY := (Y - MinY) / ScaleY;
+    PbLuma := (Cb - MidC) / ScaleC * (1 - LumaBlue);
+    PrLuma := (Cr - MidC) / ScaleC * (1 - LumaRed);
+    B := UnscaledY + PbLuma;
+    R := UnscaledY + PrLuma;
+    G := UnscaledY - (LumaBlue * PbLuma + LumaRed * PrLuma) / LumaGreen;
+  end;
+end;
+
+function StdRGBAToYCbCr601(const AStdRGBA: TStdRGBA): TYCbCr601;
+begin
+  With AStdRGBA, result do StdRGBToYCbCr(red, green, blue, YCbCrStdParameters[ITUR601], Y, Cb, Cr);
+end;
+
+function YCbCr601ToStdRGBA(const AYCbCr: TYCbCr601; AAlpha: Single): TStdRGBA;
+begin
+  With AYCbCr, result do
+  begin
+    YCbCrToStdRGB(Y, Cb, Cr, YCbCrStdParameters[ITUR601], red, green, blue);
+    alpha:= AAlpha;
+    with YCbCrStdParameters[ITUR601] do
+      HandleLinearRGBAOverflow(PLinearRGBA(@result)^, LumaRed, LumaGreen, LumaBlue);
+  end;
+end;
+
+function StdRGBAToYCbCr709(const AStdRGBA: TStdRGBA): TYCbCr709;
+begin
+  With AStdRGBA, result do StdRGBToYCbCr(red, green, blue, YCbCrStdParameters[ITUR709], Y, Cb, Cr);
+end;
+
+function YCbCr709ToStdRGBA(const AYCbCr: TYCbCr709; AAlpha: Single): TStdRGBA;
+begin
+  With AYCbCr, result do
+  begin
+    YCbCrToStdRGB(Y, Cb, Cr, YCbCrStdParameters[ITUR709], red, green, blue);
+    alpha:= AAlpha;
+    with YCbCrStdParameters[ITUR709] do
+      HandleLinearRGBAOverflow(PLinearRGBA(@result)^, LumaRed, LumaGreen, LumaBlue);
+  end;
+end;
+
+function StdRGBAToYCbCr601JPEG(const AStdRGBA: TStdRGBA): TYCbCr601JPEG;
+begin
+  With AStdRGBA, result do StdRGBToYCbCr(red, green, blue, YCbCrStdParameters[ITUR601JPEG], Y, Cb, Cr);
+end;
+
+function YCbCr601JPEGToStdRGBA(const AYCbCr: TYCbCr601JPEG; AAlpha: Single): TStdRGBA;
+begin
+  With AYCbCr, result do
+  begin
+    YCbCrToStdRGB(Y, Cb, Cr, YCbCrStdParameters[ITUR601JPEG], red, green, blue);
+    alpha:= AAlpha;
+    with YCbCrStdParameters[ITUR601JPEG] do
+      HandleLinearRGBAOverflow(PLinearRGBA(@result)^, LumaRed, LumaGreen, LumaBlue);
+  end;
+end;
+
+function StdRGBAToYCbCr709JPEG(const AStdRGBA: TStdRGBA): TYCbCr709JPEG;
+begin
+  With AStdRGBA, result do StdRGBToYCbCr(red, green, blue, YCbCrStdParameters[ITUR709JPEG], Y, Cb, Cr);
+end;
+
+function YCbCr709JPEGToStdRGBA(const AYCbCr: TYCbCr709JPEG; AAlpha: Single): TStdRGBA;
+begin
+  With AYCbCr, result do
+  begin
+    YCbCrToStdRGB(Y, Cb, Cr, YCbCrStdParameters[ITUR709JPEG], red, green, blue);
+    alpha:= AAlpha;
+    with YCbCrStdParameters[ITUR709JPEG] do
+      HandleLinearRGBAOverflow(PLinearRGBA(@result)^, LumaRed, LumaGreen, LumaBlue);
   end;
 end;
 

@@ -195,3 +195,12 @@ const //D65 illuminant
   (W:825; Y:58.8765),
   (W:830; Y:60.3125));
 
+const
+  //YCbCr parameters for conversion from and to sRGB
+  YCbCrStdParameters : array[TYCbCrStdColorspace] of TYCbCrStdParameters = (
+  (LumaRed:0.299; LumaGreen:0.587; LumaBlue:0.114; MinY: 16; ScaleY: 219; MidC: 128; ScaleC: 112),      //ITU-R BT.601
+  (LumaRed:0.299; LumaGreen:0.587; LumaBlue:0.114; MinY: 0; ScaleY: 255; MidC: 128; ScaleC: 127.5),     //ITU-R BT.601 adapted for JPEG
+  (LumaRed:0.2126; LumaGreen:0.7152; LumaBlue:0.0722; MinY: 16; ScaleY: 219; MidC: 128; ScaleC: 112),   //ITU-R BT.709
+  (LumaRed:0.2126; LumaGreen:0.7152; LumaBlue:0.0722; MinY: 0; ScaleY: 255; MidC: 128; ScaleC: 127.5),  //ITU-R BT.709 adapted for JPEG
+  (LumaRed:0.212; LumaGreen:0.701; LumaBlue:0.087; MinY: 16; ScaleY: 219; MidC: 128; ScaleC: 112)       //SMPTE 240M
+  );

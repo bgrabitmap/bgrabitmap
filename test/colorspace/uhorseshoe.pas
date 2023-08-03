@@ -424,6 +424,12 @@ begin
     cbXAxis.ItemIndex:= colorspace.IndexOfChannel('X');
     cbYAxis.ItemIndex:= colorspace.IndexOfChannel('Z');
   end else
+  if (colorspace = TYCbCr601Colorspace) or (colorspace = TYCbCr601JPEGColorspace) or
+   (colorspace = TYCbCr709Colorspace) or (colorspace = TYCbCr709JPEGColorspace) then
+  begin
+    cbXAxis.ItemIndex:= colorspace.IndexOfChannel('BlueDiff');
+    cbYAxis.ItemIndex:= colorspace.IndexOfChannel('RedDiff');
+  end else
   if colorspace = TLabAColorspace then
   begin
     cbXAxis.ItemIndex:= colorspace.IndexOfChannel('a');
