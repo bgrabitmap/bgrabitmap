@@ -32,3 +32,5 @@ test/colorspace/HorseShoe
 test/test4ideu/fractal_tree/units/
 
 dev/colorspace/generatecolorspaces
+
+dev/colorspace/generatedcolorspace.inc
