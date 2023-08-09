@@ -24,11 +24,9 @@
   {$DEFINE BGRABITMAP_USE_FPCANVAS}
 {$ENDIF}
 
-{ Extensions of LCL to be used. Add // at the beginning of the line
-  to comment them if the functions are not available }
-{$DEFINE BGRABITMAP_USE_LCL12} { Use functions of Lazarus 1.2 }
-{$DEFINE BGRABITMAP_USE_LCL15} { Use functions of Lazarus 1.5 }
-
 {$MODESWITCH ADVANCEDRECORDS}
 {$MODESWITCH TypeHelpers}
 
+{$IFNDEF BGRABITMAP_DONT_USE_LAZFREETYPE}
+  {$DEFINE BGRABITMAP_USE_LAZFREETYPE}
+{$ENDIF}

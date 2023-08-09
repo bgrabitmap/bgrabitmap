@@ -837,6 +837,7 @@ function BGRAToColorF(const a: array of TBGRAPixel; AGammaExpansion: boolean
 var
   i: Int32or64;
 begin
+  result := nil;
   setlength(result, length(a));
   for i := 0 to high(a) do
     result[i] := BGRAToColorF(a[i],AGammaExpansion);

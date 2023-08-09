@@ -1164,8 +1164,8 @@ var
   yb, xb: Integer;
 
 begin
-  if NbPixels = 0 then exit;
   result := TGrayscaleMask.Create;
+  if NbPixels = 0 then exit;
   result.SetSize(Width, Height);
   setlength(border, Width);
   for xb := 0 to Width-1 do

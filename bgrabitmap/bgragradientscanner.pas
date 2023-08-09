@@ -459,6 +459,8 @@ begin
     ciLinearHSLNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoNegativeDirection]);
     ciGSBPositive: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoPositiveDirection, hgoHueCorrection, hgoLightnessCorrection]);
     ciGSBNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoNegativeDirection, hgoHueCorrection, hgoLightnessCorrection]);
+    else
+      raise Exception.Create('Unknown color interpolation');
   end;
   result.Repetition := ARepetition;
 end;
@@ -473,6 +475,8 @@ begin
     ciLinearHSLNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoNegativeDirection]);
     ciGSBPositive: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoPositiveDirection, hgoHueCorrection, hgoLightnessCorrection]);
     ciGSBNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoNegativeDirection, hgoHueCorrection, hgoLightnessCorrection]);
+    else
+      raise Exception.Create('Unknown color interpolation');
   end;
   result.Repetition := ARepetition;
 end;

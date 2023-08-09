@@ -5,9 +5,11 @@ unit BGRAfpGUIBitmap;
 
 interface
 
+{$i bgrabitmap.inc}
+
 uses
   SysUtils, BGRAClasses, BGRAGraphics, BGRABitmapTypes, BGRADefaultBitmap,
-  BGRAFreeType, EasyLazFreeType, LazFreeTypeFontCollection,
+  {$IFDEF BGRABITMAP_USE_LAZFREETYPE}BGRAFreeType, EasyLazFreeType, LazFreeTypeFontCollection,{$ENDIF}
   BGRACanvas;
 
 type
@@ -122,7 +124,11 @@ end;
 
 function TBGRAfpGUIBitmap.CreateDefaultFontRenderer: TBGRACustomFontRenderer;
 begin
+  {$IFDEF BGRABITMAP_USE_LAZFREETYPE}
   result := TBGRAFreeTypeFontRenderer.Create;
+  {$ELSE}
+  raise Exception.Create('LazFreeType not available');
+  {$ENDIF}
 end;
 
 function TBGRAfpGUIBitmap.LoadFromRawImage(ARawImage: TRawImage;
@@ -188,14 +194,18 @@ end;
 
 class procedure TBGRAfpGUIBitmap.AddFreeTypeFontFolder(ADirectory: string; AUTF8: boolean);
 begin
+  {$IFDEF BGRABITMAP_USE_LAZFREETYPE}
   if AUTF8 then ADirectory:= Utf8ToAnsi(ADirectory);
   EasyLazFreeType.FontCollection.AddFolder(ADirectory);
+  {$ENDIF}
 end;
 
 class procedure TBGRAfpGUIBitmap.AddFreeTypeFontFile(AFilename: string; AUTF8: boolean);
 begin
+  {$IFDEF BGRABITMAP_USE_LAZFREETYPE}
   if AUTF8 then AFilename:= Utf8ToAnsi(AFilename);
   EasyLazFreeType.FontCollection.AddFile(AFilename);
+  {$ENDIF}
 end;
 
 procedure TBGRAfpGUIBitmap.Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean);

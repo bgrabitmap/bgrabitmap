@@ -2107,10 +2107,15 @@ begin
   Result:= svg;
   AOffset := Point(0,0);
   if Assigned(FJpegStream) then
-    img := svg.Content.AppendImage(0,0,Width,Height,FJpegStream,'image/jpeg') else
+  begin
+    img := svg.Content.AppendImage(0,0,Width,Height,FJpegStream,'image/jpeg');
+    img.matrix[cuCustom] := AMatrix;
+  end else
   if Assigned(FImage) then
+  begin
     img := svg.Content.AppendImage(0,0,Width,Height,FImage,false);
-  img.matrix[cuCustom] := AMatrix;
+    img.matrix[cuCustom] := AMatrix;
+  end;
 end;
 
 procedure TBGRALayerImageOriginal.Render(ADest: TBGRABitmap;

@@ -250,6 +250,7 @@ begin
   a:=p2-p1+3*(c1-c2);
   b:=3*(p1+c2)-6*c1;
   c:=3*(c1-p1);
+  result := nil;
   if AIncludeFirstPoint then
   begin
     setlength(result,nb);
@@ -490,6 +491,7 @@ begin
   nb := ComputeBezierCurvePrecision(p1,c,c,p2, AAcceptedDeviation);
   if nb <= 1 then nb := 2;
   pA := p2+p1-2*c; pB := 2*(c-p1);
+  result := nil;
   if AIncludeFirstPoint then
   begin
     setlength(result,nb);
@@ -930,6 +932,7 @@ var a,delta,sqrtDelta,den,invDen: single;
   end;
 
 begin
+  result := nil;
   setlength(result, 6);
   posCount := 0;
 

@@ -15,6 +15,7 @@ type
   TPackageFile = class(TReleaserObject)
   private
     FFilename: string;
+    FLineEnding: string;
     FXml: TXmlDocument;
     FChanged: boolean;
     function GetName: string;
@@ -67,6 +68,7 @@ begin
   inherited Create(AParameters, ALogicDir);
   ExpectParamCount(1);
   FFilename:= ExpandFileName(ReplaceVariables(Param[0]));
+  FLineEnding:= DetectLineEnding(FFilename);
   stream := TFileStream.Create(FFilename, fmOpenRead);
   try
     ReadXMLFile(FXml,stream);
@@ -127,11 +129,19 @@ begin
 end;
 
 procedure TPackageFile.Save;
+var textStream: TStringStream;
+  t: TextFile;
 begin
   if FChanged then
   begin
     writeln('Updating package ', Name,'...');
-    WriteXMLFile(FXml, FFilename);
+    textStream := TStringStream.Create;
+    WriteXMLFile(FXml, textStream);
+    AssignFile(t, FFilename);
+    Rewrite(t);
+    Write(t, StringReplace(textStream.DataString, LineEnding, FLineEnding, [rfReplaceAll]));
+    CloseFile(t);
+    textStream.Free;
   end;
 end;
 

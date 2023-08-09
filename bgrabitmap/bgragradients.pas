@@ -223,7 +223,9 @@ begin
   else if ADir = gdHorizontal then begin
     ARect1.Right:=Round(ARect1.Right * AValue);
     ARect2.Left:=ARect1.Right;
-  end;
+  end
+  else
+    raise exception.Create('Unknown gradient direction');
   if ADirection1 = gdVertical then begin
     APoint1:=PointF(ARect1.Left,ARect1.Top);
     APoint2:=PointF(ARect1.Left,ARect1.Bottom);
@@ -231,7 +233,9 @@ begin
   else if ADirection1 = gdHorizontal then begin
     APoint1:=PointF(ARect1.Left,ARect1.Top);
     APoint2:=PointF(ARect1.Right,ARect1.Top);
-  end;
+  end
+  else
+    raise exception.Create('Unknown gradient direction');
   if ADirection2 = gdVertical then begin
     APoint3:=PointF(ARect2.Left,ARect2.Top);
     APoint4:=PointF(ARect2.Left,ARect2.Bottom);
@@ -239,7 +243,9 @@ begin
   else if ADirection2 = gdHorizontal then begin
     APoint3:=PointF(ARect2.Left,ARect2.Top);
     APoint4:=PointF(ARect2.Right,ARect2.Top);
-  end;
+  end
+  else
+    raise exception.Create('Unknown gradient direction');
 
   if AValue <> 0 then
     ABitmap.GradientFill(ARect1.Left,ARect1.Top,ARect1.Right,ARect1.Bottom,

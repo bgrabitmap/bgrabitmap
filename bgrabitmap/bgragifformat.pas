@@ -908,6 +908,7 @@ var
         result := true;
         exit;
       end;
+    result := false;
   end;
 
   function IndexOfGlobalColor(AColor: TBGRAPixel): integer;

@@ -32,6 +32,12 @@
    Separate mask (deprecated)
 
 }
+{*****************************************************************************}
+{
+  2023-06  - Massimo Magnano
+           - added Resolution support
+}
+{*****************************************************************************}
 unit BGRAReadTiff;
 
 {$mode objfpc}{$H+}
@@ -142,6 +148,9 @@ procedure DecompressLZW(Buffer: Pointer; Count: PtrInt;
 function DecompressDeflate(Compressed: PByte; CompressedCount: LongWord;
   out Decompressed: PByte; var DecompressedCount: LongWord;
   ErrorMsg: PAnsiString = nil): boolean;
+
+function TifResolutionUnitToResolutionUnit(ATifResolutionUnit: DWord): TResolutionUnit;
+function ResolutionUnitToTifResolutionUnit(AResolutionUnit: TResolutionUnit): DWord;
 
 implementation
 
@@ -570,7 +579,10 @@ begin
   else if QuickTest then
     exit
   else
+  begin
     TiffError('expected II or MM');
+    exit; // indicate that flow stops
+  end;
   FReverseEndian:={$ifdef FPC_BIG_ENDIAN}not{$endif} BigEndian;
   {$ifdef FPC_Debug_Image}
   if Debug then
@@ -1934,6 +1946,21 @@ var
     inc(DestStride, dx1*PtrInt(TCustomUniversalBitmap(CurFPImg).Colorspace.GetSize));
   end;
 
+  procedure ReadResolutionValues;
+  begin
+    {$IF FPC_FULLVERSION<30301}
+    if (CurFPImg is TCustomUniversalBitmap) then
+    with TCustomUniversalBitmap(CurFPImg) do
+    {$ELSE}
+    with CurFPImg do
+    {$ENDIF}
+    begin
+        ResolutionUnit :=TifResolutionUnitToResolutionUnit(IFD.ResolutionUnit);
+        ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator;
+        ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator;
+     end;
+  end;
+
 begin
   if (IFD.ImageWidth=0) or (IFD.ImageHeight=0) then
     exit;
@@ -2015,6 +2042,9 @@ begin
     end;
     CurFPImg:=IFD.Img;
     if CurFPImg=nil then exit;
+
+    //Resolution
+    ReadResolutionValues;
 
     SetFPImgExtras(CurFPImg, IFD);
 
@@ -2854,6 +2884,24 @@ begin
     exit;
   end;
   Result:=true;
+end;
+
+function TifResolutionUnitToResolutionUnit(ATifResolutionUnit: DWord): TResolutionUnit;
+begin
+  Case ATifResolutionUnit of
+  2: Result :=ruPixelsPerInch;
+  3: Result :=ruPixelsPerCentimeter;
+  else Result :=ruNone;
+  end;
+end;
+
+function ResolutionUnitToTifResolutionUnit(AResolutionUnit: TResolutionUnit): DWord;
+begin
+  Case AResolutionUnit of
+  ruPixelsPerInch: Result :=2;
+  ruPixelsPerCentimeter: Result :=3;
+  else Result :=1;
+  end;
 end;
 
 initialization
