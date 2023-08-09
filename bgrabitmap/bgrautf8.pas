@@ -7,7 +7,10 @@ unit BGRAUTF8;
 interface
 
 uses
-  BGRAClasses, SysUtils, math, BGRAUnicode{$IFDEF BGRABITMAP_USE_LCL}, classes{$ENDIF};
+  BGRAClasses, SysUtils, math, BGRAUnicode
+  {$IFDEF BGRABITMAP_USE_LCL}, {$if FPC_FULLVERSION > 030200}classes
+  {$ELSE}LazUTF8Classes{$ENDIF}
+  {$ENDIF};
 
 const
   UTF8_ARABIC_ALEPH = 'ا';
@@ -24,8 +27,8 @@ const
 
 {$IFDEF BGRABITMAP_USE_LCL}
 type
-  TFileStreamUTF8 = TFileStream;
-  TStringListUTF8 = TStringList;
+  TFileStreamUTF8 = {$if FPC_FULLVERSION > 030200}TFileStream{$ELSE}LazUTF8Classes.TFileStreamUTF8{$ENDIF};
+  TStringListUTF8 = {$if FPC_FULLVERSION > 030200}TStringList{$ELSE}LazUTF8Classes.TStringListUTF8{$ENDIF};
 {$ELSE}
 type
   TFileStreamUTF8 = class(THandleStream)
