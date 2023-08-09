@@ -50,6 +50,7 @@ type
   TReleaserObjectList = specialize TFPGObjectList<TReleaserObject>;
 
 function AdaptPathDelim(APath: string): string;
+function DetectLineEnding(AFilename: string): string;
 
 implementation
 
@@ -103,6 +104,30 @@ begin
     result := StringReplace(APath, '\', PathDelim, [rfReplaceAll]);
   if PathDelim <> '/' then
     result := StringReplace(APath, '/', PathDelim, [rfReplaceAll]);
+end;
+
+function DetectLineEnding(AFilename: string): string;
+var t: TextFile;
+  c, c2: char;
+begin
+  result := LineEnding;
+  AssignFile(t, AFilename);
+  Reset(t);
+  repeat
+    read(t, c);
+    if c in[#13,#10] then
+    begin
+      result := c;
+      if not eof(t) then
+      begin
+        read(t, c2);
+        if (c2 in [#13,#10]) and (c2 <> c) then
+          result += c2;
+      end;
+      break;
+    end;
+  until eof(t);
+  CloseFile(t);
 end;
 
 { TReleaserObject }

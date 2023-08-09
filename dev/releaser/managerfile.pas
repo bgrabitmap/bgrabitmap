@@ -20,6 +20,7 @@ type
     FPackages: TPackageFileList;
     FRoot: TJSONObject;
     FNew, FChanged: boolean;
+    FLineEnding: string;
     procedure SetArchive(AValue: TArchiveUrl);
     function GetPackageUpdateList: TJSONArray;
     function GetDataNode: TJSONObject;
@@ -100,6 +101,7 @@ begin
   FFilename:= ExpandFileName(ReplaceVariables(Param[0]));
   if FileExists(FFilename) then
   begin
+    FLineEnding:= DetectLineEnding(FFilename);
     FNew := false;
     stream := TFileStream.Create(FFilename, fmOpenRead);
     try
@@ -248,7 +250,7 @@ begin
       writeln('Updating manager file...');
     assignfile(t, FFilename);
     rewrite(t);
-    write(t, FRoot.FormatJSON);
+    write(t, StringReplace(FRoot.FormatJSON, LineEnding, FLineEnding, [rfReplaceAll]));
     closefile(t);
   end else
     writeln('Manager file unchanged');
