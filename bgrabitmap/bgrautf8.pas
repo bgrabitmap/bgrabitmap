@@ -242,7 +242,8 @@ end;
 
 function UTF8CharacterLength(p: PChar): integer;
 begin
-  result := LazUtf8.UTF8CodepointSize(p);
+  result := LazUtf8.{$IF FPC_FULLVERSION>030004}UTF8CodepointSize{$ELSE}
+    UTF8CharacterLength{$ENDIF}(p);
 end;
 
 function UTF8Length(const s: string): PtrInt;
