@@ -1162,6 +1162,12 @@ begin
   begin
     DiscardBitmapChange;
     SetSize(TBGRACustomBitmap(Source).Width, TBGRACustomBitmap(Source).Height);
+
+    //Resolution
+    ResolutionUnit:=TBGRACustomBitmap(Source).ResolutionUnit;
+    ResolutionX:=TBGRACustomBitmap(Source).ResolutionX;
+    ResolutionY:=TBGRACustomBitmap(Source).ResolutionY;
+
     PutImage(0, 0, TBGRACustomBitmap(Source), dmSet);
     if Source is TBGRADefaultBitmap then
     begin
@@ -1180,6 +1186,14 @@ begin
   begin
     DiscardBitmapChange;
     SetSize(TFPCustomImage(Source).Width, TFPCustomImage(Source).Height);
+
+    {$IF FPC_FULLVERSION>=30301}
+    //Resolution
+    ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
+    ResolutionX:=TFPCustomImage(Source).ResolutionX;
+    ResolutionY:=TFPCustomImage(Source).ResolutionY;
+    {$ENDIF}
+
     for y := 0 to TFPCustomImage(Source).Height-1 do
     begin
       pdest := ScanLine[y];
