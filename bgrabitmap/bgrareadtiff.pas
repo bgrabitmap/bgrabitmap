@@ -22,9 +22,8 @@
 
  ToDo:
    Compression: FAX, Jpeg...
-   Color format: YCbCr, ITU L*a*b*
+   Color format: ITU L*a*b*
    PlanarConfiguration: 2 (one chunk for each channel)
-   bigtiff 64bit offsets
    XMP tag 700
    ICC profile tag 34675
 
@@ -36,6 +35,9 @@
 {
   2023-06  - Massimo Magnano
            - added Resolution support
+       07  - added BigTif (only from fpc 3.3.1),
+             solved Read 16 bit data with predictor fails
+             conditional compilation for 3.3.1 (now the class is derived from TFPReaderTiff)
 }
 {*****************************************************************************}
 unit BGRAReadTiff;
@@ -48,9 +50,10 @@ interface
 
 uses
   Math, BGRAClasses, SysUtils, ctypes, zinflate, zbase, FPimage, FPTiffCmn,
-  BGRABitmapTypes;
+  BGRABitmapTypes {$IF FPC_FULLVERSION>=30301}, FPReadTiff{$ENDIF};
 
 type
+  {$IF FPC_FULLVERSION<30301}
   TBGRAReaderTiff = class;
 
   TTiffCreateCompatibleImgEvent = procedure(Sender: TBGRAReaderTiff;
@@ -151,9 +154,19 @@ function DecompressDeflate(Compressed: PByte; CompressedCount: LongWord;
 
 function TifResolutionUnitToResolutionUnit(ATifResolutionUnit: DWord): TResolutionUnit;
 function ResolutionUnitToTifResolutionUnit(AResolutionUnit: TResolutionUnit): DWord;
+{$ELSE}
+  { TBGRAReaderTiff }
+
+  TBGRAReaderTiff = class(TFPReaderTiff)
+  public
+     procedure LoadImageFromStream(IFD: TTiffIFD); override;
+  end;
+
+{$ENDIF}
 
 implementation
 
+{$IF FPC_FULLVERSION<30301}
 function CMYKToFPColor(C,M,Y,K: Word): TFPColor;
 var R, G, B : LongWord;
 begin
@@ -308,6 +321,17 @@ begin
       IFD.GreenBits:=SampleBits[1]; //magenta
       IFD.BlueBits:=SampleBits[2];   //yellow
       IFD.GrayBits:=SampleBits[3];  //black
+      PremultipliedAlpha:= false;
+    end;
+  6:
+    begin
+      if RegularSampleCnt<>3 then
+        TiffError('YCbCr images expect 3 samples per pixel, but found '+
+          IntToStr(SampleCnt));
+
+      IFD.GrayBits:=SampleBits[0];   //Y
+      IFD.BlueBits:=SampleBits[1];   //Cb
+      IFD.RedBits:=SampleBits[2];    //Cr
       PremultipliedAlpha:= false;
     end;
   8,9:
@@ -1724,7 +1748,9 @@ var
         for Channel := 0 to SampleCnt-1 do
         begin
           {$PUSH}{$Q-}
-          Inc(ChannelValues[Channel],Swap(Word(Run^)));
+          //Inc(ChannelValues[Channel],Swap(Word(Run^)));   original
+          LastChannelValues[Channel] := LastChannelValues[Channel]+Swap(Word(Run^));
+          ChannelValues[Channel] :=LastChannelValues[Channel];
           {$POP}
           inc(Run, 2);
         end;
@@ -1743,7 +1769,9 @@ var
         for Channel := 0 to SampleCnt-1 do
         begin
           {$PUSH}{$Q-}
-          Inc(ChannelValues[Channel],Word(Run^));
+          //Inc(ChannelValues[Channel],Word(Run^)); original
+          LastChannelValues[Channel] := (LastChannelValues[Channel]+Word(Run^));
+          ChannelValues[Channel] :=LastChannelValues[Channel];
           {$POP}
           inc(Run, 2);
         end;
@@ -1852,6 +1880,8 @@ var
   var PaletteIndex: LongWord;
     GrayValue: Word;
     lab: TLabA;
+    cmyk: TStdCMYK;
+    ycbcr :TYCbCr601;
   begin
     if IFD.PhotoMetricInterpretation >= 8 then
     begin
@@ -1892,9 +1922,18 @@ var
     //4 Mask/holdout mask (obsolete by TIFF 6.0 specification)
 
     5: // CMYK plus optional alpha
-      FPColorValue:=CMYKToFPColor(ChannelValues[0],ChannelValues[1],ChannelValues[2],ChannelValues[3]);
+      begin
+        //FPColorValue:=CMYKToFPColor(ChannelValues[0],ChannelValues[1],ChannelValues[2],ChannelValues[3]); test the differences
+        cmyk :=TStdCMYK.New(ChannelValues[0]/$ffff, ChannelValues[1]/$ffff, ChannelValues[2]/$ffff, ChannelValues[3]/$ffff);
+        FPColorValue :=cmyk.ToExpandedPixel.ToFPColor(true); //MaxM: in Future we can use GammaCompression
+      end;
 
-     //6: YCBCR: CCIR 601
+    6: // YCBCR: CCIR 601
+      begin
+        ycbcr :=TYCbCr601.New(ChannelValues[0]/$ffff, ChannelValues[1]/$ffff, ChannelValues[2]/$ffff);
+        FPColorValue :=ycbcr.ToFPColor;
+      end;
+
     else
       TiffError('PhotometricInterpretation='+IntToStr(IFD.PhotoMetricInterpretation)+' not supported');
     end;
@@ -1956,8 +1995,12 @@ var
     {$ENDIF}
     begin
         ResolutionUnit :=TifResolutionUnitToResolutionUnit(IFD.ResolutionUnit);
-        ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator;
-        ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator;
+        if (IFD.XResolution.Denominator>0)
+        then ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator
+        else ResolutionX :=IFD.XResolution.Numerator;
+        if (IFD.YResolution.Denominator>0)
+        then ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator
+        else ResolutionY :=IFD.YResolution.Numerator;
      end;
   end;
 
@@ -2903,6 +2946,729 @@ begin
   else Result :=1;
   end;
 end;
+
+{$ELSE}
+
+procedure TBGRAReaderTiff.LoadImageFromStream(IFD: TTiffIFD);
+var
+  SampleCnt: SizeUInt;
+  SampleBits: PWord;
+  ChannelValues, LastChannelValues: array of word;
+  All8Bit, All16Bit: boolean;
+
+  procedure CheckBitCount;
+  var
+    Channel: LongWord;
+  begin
+    All8Bit := true;
+    All16Bit := true;
+    for Channel := 0 to SampleCnt-1 do
+    begin
+      if SampleBits[Channel] <> 8 then All8Bit:= false;
+      if SampleBits[Channel] <> 16 then All16Bit:= false;
+    end;
+  end;
+
+var
+  PaletteCnt,PaletteStride: SizeUInt;
+  PaletteValues: PWord;
+
+  AlphaChannel: integer;
+  PremultipliedAlpha: boolean;
+
+  procedure InitColor;
+  var Channel: LongWord;
+  begin
+    SetLength(ChannelValues, SampleCnt);
+    SetLength(LastChannelValues, SampleCnt);
+    for Channel := 0 to SampleCnt-1 do
+      LastChannelValues[Channel] := 0;
+  end;
+
+  procedure ReadNext16BitData(var Run: Pointer);
+  var Channel: PtrUInt;
+  begin
+    if ReverseEndian then
+    begin
+      if IFD.Predictor=2 then
+      begin
+        for Channel := 0 to SampleCnt-1 do
+        begin
+          {$PUSH}{$Q-}
+          //Inc(ChannelValues[Channel],Swap(Word(Run^)));   original
+          LastChannelValues[Channel] := LastChannelValues[Channel]+Swap(Word(Run^));
+          ChannelValues[Channel] :=LastChannelValues[Channel];
+          {$POP}
+          inc(Run, 2);
+        end;
+      end else
+      begin
+        for Channel := 0 to SampleCnt-1 do
+        begin
+          ChannelValues[Channel] := Swap(Word(Run^));
+          inc(Run, 2);
+        end;
+      end;
+    end else
+    begin
+      if IFD.Predictor=2 then
+      begin
+        for Channel := 0 to SampleCnt-1 do
+        begin
+          {$PUSH}{$Q-}
+          //Inc(ChannelValues[Channel],Word(Run^)); original
+          LastChannelValues[Channel] := (LastChannelValues[Channel]+Word(Run^));
+          ChannelValues[Channel] :=LastChannelValues[Channel];
+          {$POP}
+          inc(Run, 2);
+        end;
+      end else
+      begin
+        for Channel := 0 to SampleCnt-1 do
+        begin
+          ChannelValues[Channel] := Word(Run^);
+          inc(Run, 2);
+        end;
+      end;
+    end;
+  end;
+
+  procedure ReadNext8BitData(var Run: Pointer);
+  var Channel: PtrUInt;
+  begin
+    if IFD.Predictor=2 then
+    begin
+      for Channel := 0 to SampleCnt-1 do
+      begin
+        {$PUSH}{$Q-}
+        LastChannelValues[Channel] := (LastChannelValues[Channel]+Byte(Run^)) and $ff;
+        ChannelValues[Channel] := LastChannelValues[Channel]+(LastChannelValues[Channel] shl 8);
+        {$POP}
+        inc(Run);
+      end;
+    end else
+    begin
+      for Channel := 0 to SampleCnt-1 do
+      begin
+        ChannelValues[Channel] := Byte(Run^)+(Byte(Run^) shl 8);
+        inc(Run);
+      end;
+    end;
+  end;
+
+  procedure ReadNextPixelData(var Run: Pointer; var BitPos: byte);
+  var Channel: LongWord;
+  begin
+    for Channel := 0 to SampleCnt-1 do
+      ReadImgValue(SampleBits[Channel], Run,BitPos,IFD.FillOrder,
+                   IFD.Predictor,LastChannelValues[Channel],
+                   ChannelValues[Channel]);
+  end;
+
+  procedure GetPixelAsLab(out lab: TLabA);
+  begin
+    lab.L := 0;
+    lab.a := 0;
+    lab.b := 0;
+    lab.alpha := 1;
+
+    case IFD.PhotoMetricInterpretation of
+    8: begin
+         case IFD.GrayBits of
+           8,16: lab.L := ChannelValues[0]*(100/65535);
+           0:begin
+               lab.L := ChannelValues[0]*(100/65535);
+               case IFD.RedBits of
+                 16: lab.a := SmallInt(ChannelValues[1])/256;
+                 8: lab.a := ShortInt(ChannelValues[1] shr 8);
+               end;
+               case IFD.BlueBits of
+                 16: lab.b := SmallInt(ChannelValues[2])/256;
+                 8: lab.b := ShortInt(ChannelValues[2] shr 8);
+               end;
+             end;
+         end;
+       end;
+    9: begin
+         case IFD.GrayBits of
+           16: lab.L := ChannelValues[0]*(100/65280);
+           8: lab.L := ChannelValues[0]*(100/65535);
+           0:begin
+               case IFD.GreenBits of
+                 16: lab.L := ChannelValues[0]*(100/65280);
+                 8: lab.L := ChannelValues[0]*(100/65535);
+               end;
+               case IFD.RedBits of
+                 16: lab.a := (ChannelValues[1]-32768)/256;
+                 8: lab.a := (ChannelValues[1] shr 8)-128;
+               end;
+               case IFD.BlueBits of
+                 16: lab.b := (ChannelValues[2]-32768)/256;
+                 8: lab.b := (ChannelValues[2] shr 8)-128;
+               end;
+             end;
+         end;
+       end;
+     //10: ITULAB: ITU L*a*b*
+     //32844: LOGL: CIE Log2(L)
+     //32845: LOGLUV: CIE Log2(L) (u',v')
+    else
+      TiffError('PhotometricInterpretation='+IntToStr(IFD.PhotoMetricInterpretation)+' not supported');
+    end;
+
+    if AlphaChannel >= 0 then
+      lab.alpha:= ChannelValues[AlphaChannel]/65535;
+  end;
+
+var
+  FPColorValue: TFPColor;
+
+  procedure GetPixelAsFPColor;
+  var PaletteIndex: LongWord;
+    GrayValue: Word;
+    lab: TLabA;
+    cmyk: TStdCMYK;
+    ycbcr: TYCbCr601;
+  begin
+    if IFD.PhotoMetricInterpretation >= 8 then
+    begin
+      GetPixelAsLab(lab);
+      //FPColorValue.FromLabA(lab);
+      FPColorValue :=lab.ToExpandedPixel.ToFPColor;
+      exit;
+    end;
+
+    case IFD.PhotoMetricInterpretation of
+    0,1: // 0:bilevel grayscale 0 is white; 1:0 is black
+      begin
+        GrayValue := ChannelValues[0];
+        if IFD.PhotoMetricInterpretation=0 then
+          GrayValue:=$ffff-GrayValue;
+        FPColorValue.red  := GrayValue;
+        FPColorValue.green:= GrayValue;
+        FPColorValue.blue := GrayValue;
+        FPColorValue.alpha := alphaOpaque;
+      end;
+
+    2: // RGB(A)
+      begin
+        FPColorValue.red  := ChannelValues[0];
+        FPColorValue.green:= ChannelValues[1];
+        FPColorValue.blue := ChannelValues[2];
+        FPColorValue.alpha := alphaOpaque;
+      end;
+
+    3: //3 Palette/color map indexed
+      begin
+        PaletteIndex := ChannelValues[0] shr (16 - SampleBits[0]);
+        FPColorValue.red  := PaletteValues[PaletteIndex];
+        FPColorValue.green:= PaletteValues[PaletteIndex+PaletteStride];
+        FPColorValue.blue := PaletteValues[PaletteIndex+2*PaletteStride];
+        FPColorValue.alpha := alphaOpaque;
+      end;
+
+    //4 Mask/holdout mask (obsolete by TIFF 6.0 specification)
+
+    5: // CMYK plus optional alpha
+      begin
+        cmyk :=TStdCMYK.New(ChannelValues[0]/$ffff, ChannelValues[1]/$ffff, ChannelValues[2]/$ffff, ChannelValues[3]/$ffff);
+        FPColorValue :=cmyk.ToExpandedPixel.ToFPColor(true); //Use of GammaCompression or direct?
+        //FPColorValue :=cmyk.ToFPColor;
+      end;
+
+    6: // YCBCR: CCIR 601
+      begin
+        ycbcr :=TYCbCr601.New(ChannelValues[0]/$ffff, ChannelValues[1]/$ffff, ChannelValues[2]/$ffff);
+
+        if IFD.YCbCr_LumaRed<>0
+        then FPColorValue :=YCbCr601ToStdRGBA(ycbcr, IFD.YCbCr_LumaRed, IFD.YCbCr_LumaGreen, IFD.YCbCr_LumaBlue, 1).ToFPColor
+        else FPColorValue :=ycbcr.ToFPColor;
+      end;
+
+    else
+      TiffError('PhotometricInterpretation='+IntToStr(IFD.PhotoMetricInterpretation)+' not supported');
+    end;
+
+    if AlphaChannel >= 0 then
+    begin
+      FPColorValue.alpha:= ChannelValues[AlphaChannel];
+      if PremultipliedAlpha and (FPColorValue.alpha <> alphaOpaque) and (FPColorValue.alpha <> 0) then
+      begin
+        FPColorValue.red := (FPColorValue.red * alphaOpaque + FPColorValue.alpha div 2) div FPColorValue.alpha;
+        FPColorValue.green := (FPColorValue.green * alphaOpaque + FPColorValue.alpha div 2) div FPColorValue.alpha;
+        FPColorValue.blue := (FPColorValue.blue * alphaOpaque + FPColorValue.alpha div 2) div FPColorValue.alpha;
+      end;
+    end;
+  end;
+
+var
+  ChunkOffsets: Pointer;
+  ChunkByteCounts: PDWord;
+  Chunk: PByte;
+  ChunkCount: DWord;
+  ChunkIndex: DWord;
+  CurCount: SizeUInt;
+  CurOffset: SizeUInt;
+  CurByteCnt: PtrInt;
+  Run: PByte;
+  BitPos: Byte;
+  x, y, cx, cy, dx1,dy1, dx2,dy2, sx, sy: integer;
+  SampleBitsPerPixel: DWord;
+  CurFPImg: TFPCustomImage;
+  aContinue, ConvertFromLab: Boolean;
+  ExpectedChunkLength: PtrInt;
+  ChunkType: TTiffChunkType;
+  TilesAcross, TilesDown: DWord;
+  ChunkLeft, ChunkTop, ChunkWidth, ChunkHeight: DWord;
+  ChunkBytesPerLine: DWord;
+
+  LabArray: array of TLabA;
+  ConversionFromLab: TBridgedConversion;
+  DestStride: PtrInt;
+  PDest: PByte;
+  CurPixelValue: TBGRAPixel;
+
+  procedure ComputeDestStride;
+  begin
+    DestStride := dy1*TCustomUniversalBitmap(CurFPImg).RowSize;
+    if TCustomUniversalBitmap(CurFPImg).LineOrder = riloBottomToTop then
+      DestStride := -DestStride;
+    inc(DestStride, dx1*PtrInt(TCustomUniversalBitmap(CurFPImg).Colorspace.GetSize));
+  end;
+
+  procedure ReadResolutionValues;
+  begin
+    {$IF FPC_FULLVERSION<30301}
+    if (CurFPImg is TCustomUniversalBitmap) then
+    with TCustomUniversalBitmap(CurFPImg) do
+    {$ELSE}
+    with CurFPImg do
+    {$ENDIF}
+    begin
+        ResolutionUnit :=TifResolutionUnitToResolutionUnit(IFD.ResolutionUnit);
+        if (IFD.XResolution.Denominator>0)
+        then ResolutionX :=IFD.XResolution.Numerator/IFD.XResolution.Denominator
+        else ResolutionX :=IFD.XResolution.Numerator;
+        if (IFD.YResolution.Denominator>0)
+        then ResolutionY :=IFD.YResolution.Numerator/IFD.YResolution.Denominator
+        else ResolutionY :=IFD.YResolution.Numerator;
+     end;
+  end;
+
+begin
+  if (IFD.ImageWidth=0) or (IFD.ImageHeight=0) then
+    exit;
+
+  if IFD.PhotoMetricInterpretation=High(IFD.PhotoMetricInterpretation) then
+    TiffError('missing PhotometricInterpretation');
+  if IFD.BitsPerSample=0 then
+    TiffError('missing BitsPerSample');
+  if IFD.TileWidth>0 then begin
+    ChunkType:=tctTile;
+    if IFD.TileLength=0 then
+      TiffError('missing TileLength');
+    if IFD.TileOffsets=0 then
+      TiffError('missing TileOffsets');
+    if IFD.TileByteCounts=0 then
+      TiffError('missing TileByteCounts');
+  end else begin
+    ChunkType:=tctStrip;
+    if IFD.RowsPerStrip=0 then
+      TiffError('missing RowsPerStrip');
+    if IFD.StripOffsets=0 then
+      TiffError('missing StripOffsets');
+    if IFD.StripByteCounts=0 then
+      TiffError('missing StripByteCounts');
+  end;
+
+  if IFD.PlanarConfiguration > 1 then
+     TiffError('Planar configuration not handled');
+
+  {$ifdef FPC_Debug_Image}
+  if Debug then
+    writeln('TBGRAReaderTiff.LoadImageFromStream reading ...');
+  {$endif}
+
+  ChunkOffsets:=nil;
+  ChunkByteCounts:=nil;
+  Chunk:=nil;
+  SampleBits:=nil;
+  try
+    // read chunk starts and sizes
+    if ChunkType=tctTile then begin
+      TilesAcross:=(IFD.ImageWidth+IFD.TileWidth-1) div IFD.TileWidth;
+      TilesDown:=(IFD.ImageHeight+IFD.TileLength-1) div IFD.TileLength;
+      {$ifdef FPC_Debug_Image}
+      if Debug then
+        writeln('TBGRAReaderTiff.LoadImageFromStream TilesAcross=',TilesAcross,' TilesDown=',TilesDown);
+      {$endif}
+      ChunkCount := TilesAcross * TilesDown;
+      ReadShortOrLongValues(IFD.TileOffsets,ChunkOffsets,CurCount);
+      if CurCount<ChunkCount then
+        TiffError('number of TileCounts is wrong');
+      ReadShortOrLongValues(IFD.TileByteCounts,ChunkByteCounts,CurCount);
+      if CurCount<ChunkCount then
+        TiffError('number of TileByteCounts is wrong');
+    end else begin //strip
+      ChunkCount:=((IFD.ImageHeight-1) div IFD.RowsPerStrip)+1;
+      ReadShortOrLongValues(IFD.StripOffsets,ChunkOffsets,CurCount);
+      if CurCount<ChunkCount then
+        TiffError('number of StripOffsets is wrong');
+      ReadShortOrLongValues(IFD.StripByteCounts,ChunkByteCounts,CurCount);
+      if CurCount<ChunkCount then
+        TiffError('number of StripByteCounts is wrong');
+    end;
+
+    // read image sample structure
+    ReadImageSampleProperties(IFD, AlphaChannel, PremultipliedAlpha,
+      SampleCnt, SampleBits, SampleBitsPerPixel,
+      PaletteCnt, PaletteValues);
+
+    PaletteStride := PaletteCnt div 3;
+    CheckBitCount;
+
+    // create FPimage
+    DoCreateImage(IFD);
+    if IFD.Img=nil then
+    begin
+      IFD.Img := BGRABitmapFactory.Create;
+      IFD.FreeImg := true;
+    end;
+    CurFPImg:=IFD.Img;
+    if CurFPImg=nil then exit;
+
+    //Resolution
+    ReadResolutionValues;
+
+    SetFPImgExtras(CurFPImg, IFD);
+
+    case IFD.Orientation of
+    0,1..4: CurFPImg.SetSize(IFD.ImageWidth,IFD.ImageHeight);
+    5..8: CurFPImg.SetSize(IFD.ImageHeight,IFD.ImageWidth);
+    end;
+
+    {$ifdef FPC_Debug_Image}
+    if Debug then
+      writeln('TBGRAReaderTiff.LoadImageFromStream SampleBitsPerPixel=',SampleBitsPerPixel);
+    {$endif}
+
+    LabArray := nil;
+    if (IFD.PhotoMetricInterpretation >= 8) and
+       (CurFPImg is TCustomUniversalBitmap) then
+    begin
+      ConvertFromLab := true;
+      ConversionFromLab := TLabAColorspace.GetBridgedConversion(TCustomUniversalBitmap(CurFPImg).Colorspace)
+    end else
+      ConvertFromLab := false;
+
+    // read chunks
+    for ChunkIndex:=0 to ChunkCount-1 do begin
+      if BigTiff
+      then CurOffset:=PSizeUInt(ChunkOffsets)[ChunkIndex]
+      else CurOffset:=PDWord(ChunkOffsets)[ChunkIndex];
+
+      CurByteCnt:=ChunkByteCounts[ChunkIndex];
+
+      //writeln('TBGRAReaderTiff.LoadImageFromStream CurOffset=',CurOffset,' CurByteCnt=',CurByteCnt);
+      if CurByteCnt<=0 then continue;
+      ReAllocMem(Chunk,CurByteCnt);
+      SetStreamPos(CurOffset);
+      ReadBuffer(Chunk^,CurByteCnt);
+
+      // decompress
+      if ChunkType=tctTile then
+        ExpectedChunkLength:=(SampleBitsPerPixel*IFD.TileWidth+7) div 8*IFD.TileLength
+      else
+        ExpectedChunkLength:=((SampleBitsPerPixel*IFD.ImageWidth+7) div 8)*IFD.RowsPerStrip;
+      case IFD.Compression of
+      TiffCompressionNone: ;
+      TiffCompressionPackBits: DecodePackBits(Chunk,CurByteCnt);
+      TiffCompressionLZW: DecodeLZW(Chunk,CurByteCnt);
+      TiffCompressionDeflateAdobe,
+      TiffCompressionDeflateZLib: DecodeDeflate(Chunk,CurByteCnt,ExpectedChunkLength);
+      else
+        TiffError('compression '+TiffCompressionName(IFD.Compression)+' not supported yet');
+      end;
+      if CurByteCnt<=0 then continue;
+
+      // compute current chunk area
+      if ChunkType=tctTile then begin
+        ChunkLeft:=(ChunkIndex mod TilesAcross)*IFD.TileWidth;
+        ChunkTop:=(ChunkIndex div TilesAcross)*IFD.TileLength;
+        ChunkWidth:=Min(IFD.TileWidth,IFD.ImageWidth-ChunkLeft);
+        ChunkHeight:=Min(IFD.TileLength,IFD.ImageHeight-ChunkTop);
+        ChunkBytesPerLine:=(SampleBitsPerPixel*ChunkWidth+7) div 8;
+        ExpectedChunkLength:=ChunkBytesPerLine*ChunkHeight;
+        if CurByteCnt<ExpectedChunkLength then begin
+          //writeln('TBGRAReaderTiff.LoadImageFromStream SampleBitsPerPixel=',SampleBitsPerPixel,' IFD.ImageWidth=',IFD.ImageWidth,' IFD.ImageHeight=',IFD.ImageHeight,' y=',y,' IFD.TileWidth=',IFD.TileWidth,' IFD.TileLength=',IFD.TileLength,' ExpectedChunkLength=',ExpectedChunkLength,' CurByteCnt=',CurByteCnt);
+          TiffError('TBGRAReaderTiff.LoadImageFromStream Tile too short ByteCnt='+IntToStr(CurByteCnt)+' ChunkWidth='+IntToStr(ChunkWidth)+' ChunkHeight='+IntToStr(ChunkHeight)+' expected='+IntToStr(ExpectedChunkLength));
+        end else if CurByteCnt>ExpectedChunkLength then begin
+          // boundary tiles have padding
+          ChunkBytesPerLine:=(SampleBitsPerPixel*IFD.TileWidth+7) div 8;
+        end;
+      end else begin //tctStrip
+        ChunkLeft:=0;
+        ChunkTop:=IFD.RowsPerStrip*ChunkIndex;
+        ChunkWidth:=IFD.ImageWidth;
+        ChunkHeight:=Min(IFD.RowsPerStrip,IFD.ImageHeight-ChunkTop);
+        ChunkBytesPerLine:=(SampleBitsPerPixel*ChunkWidth+7) div 8;
+        ExpectedChunkLength:=ChunkBytesPerLine*ChunkHeight;
+        //writeln('TBGRAReaderTiff.LoadImageFromStream SampleBitsPerPixel=',SampleBitsPerPixel,' IFD.ImageWidth=',IFD.ImageWidth,' IFD.ImageHeight=',IFD.ImageHeight,' y=',y,' IFD.RowsPerStrip=',IFD.RowsPerStrip,' ExpectedChunkLength=',ExpectedChunkLength,' CurByteCnt=',CurByteCnt);
+        if CurByteCnt<ExpectedChunkLength then
+          TiffError('TBGRAReaderTiff.LoadImageFromStream Strip too short ByteCnt='+IntToStr(CurByteCnt)+' ChunkWidth='+IntToStr(ChunkWidth)+' ChunkHeight='+IntToStr(ChunkHeight)+' expected='+IntToStr(ExpectedChunkLength));
+      end;
+
+      // progress
+      aContinue:=true;
+      Progress(psRunning, 0, false, Rect(0,0,IFD.ImageWidth,ChunkTop), '', aContinue);
+      if not aContinue then break;
+
+      // Orientation
+      if IFD.Orientation in [1..4] then begin
+        sx:=ChunkLeft; sy:=ChunkTop;
+        dy1 := 0; dx2 := 0;
+        case IFD.Orientation of
+        1: begin dx1:=1; dy2:=1; end;// 0,0 is left, top
+        2: begin sx:=IFD.ImageWidth-sx-1; dx1:=-1; dy2:=1; end;// 0,0 is right, top
+        3: begin sx:=IFD.ImageWidth-sx-1; dx1:=-1; sy:=IFD.ImageHeight-sy-1; dy2:=-1; end;// 0,0 is right, bottom
+        4: begin dx1:=1; sy:=IFD.ImageHeight-sy-1; dy2:=-1; end;// 0,0 is left, bottom
+        end;
+      end else begin
+        // rotated
+        sx:=ChunkTop; sy:=ChunkLeft;
+        dx1 := 0; dy2 := 0;
+        case IFD.Orientation of
+        5: begin dy1:=1; dx2:=1; end;// 0,0 is top, left (rotated)
+        6: begin dy1:=1; sx:=IFD.ImageWidth-sx-1; dx2:=-1; end;// 0,0 is top, right (rotated)
+        7: begin sy:=IFD.ImageHeight-sy-1; dy1:=-1; sx:=IFD.ImageHeight-sx-1; dx2:=-1; end;// 0,0 is bottom, right (rotated)
+        8: begin sy:=IFD.ImageHeight-sy-1; dy1:=-1; dx2:=1; end;// 0,0 is bottom, left (rotated)
+        end;
+      end;
+
+      //writeln('TBGRAReaderTiff.LoadImageFromStream Chunk ',ChunkIndex,' ChunkLeft=',ChunkLeft,' ChunkTop=',ChunkTop,' IFD.ImageWidth=',IFD.ImageWidth,' IFD.ImageHeight=',IFD.ImageHeight,' ChunkWidth=',ChunkWidth,' ChunkHeight=',ChunkHeight,' PaddingRight=',PaddingRight);
+      for cy:=0 to ChunkHeight-1 do begin
+        Run:=Chunk+ChunkBytesPerLine*cy;
+        BitPos := 0;
+        InitColor;
+        //writeln('TBGRAReaderTiff.LoadImageFromStream (x,y)=(',sx,',',sy,')');
+
+        if ConvertFromLab then
+        begin
+          if length(LabArray)<ChunkWidth then setlength(LabArray, ChunkWidth);
+
+          if All16Bit then
+          begin
+            for cx:=0 to ChunkWidth-1 do begin
+              ReadNext16BitData(Run);
+              GetPixelAsLab(LabArray[cx]);
+            end;
+          end else
+          if All8Bit then
+          begin
+            for cx:=0 to ChunkWidth-1 do begin
+              ReadNext8BitData(Run);
+              GetPixelAsLab(LabArray[cx]);
+            end;
+          end else
+          begin
+            for cx:=0 to ChunkWidth-1 do begin
+              ReadNextPixelData(Run,BitPos);
+              GetPixelAsLab(LabArray[cx]);
+            end;
+          end;
+
+          ComputeDestStride;
+          ConversionFromLab.Convert(@LabArray[0], TCustomUniversalBitmap(CurFPImg).GetPixelAddress(sx,sy),
+                                    ChunkWidth, sizeof(TLabA), DestStride, nil);
+        end else
+        begin
+          x:= sx;
+          y:= sy;
+          if All16Bit then
+          begin
+            if (CurFPImg is TBGRACustomBitmap) and (IFD.Predictor <> 2) then
+            begin
+              ComputeDestStride;
+              PDest := TBGRACustomBitmap(CurFPImg).GetPixelAddress(sx,sy);
+              if (IFD.PhotoMetricInterpretation = 0) and (SampleCnt = 1) then
+              begin
+                for cx:=0 to ChunkWidth-1 do begin
+                  PBGRAPixel(PDest)^.red:= FastRoundDiv257(not (PWord(Run)^));
+                  PBGRAPixel(PDest)^.green:= PBGRAPixel(PDest)^.red;
+                  PBGRAPixel(PDest)^.blue:= PBGRAPixel(PDest)^.red;
+                  PBGRAPixel(PDest)^.alpha:= 255;
+                  inc(Run, 2);
+                  inc(PDest, DestStride);
+                end;
+              end else
+              if (IFD.PhotoMetricInterpretation = 1) and (SampleCnt = 1) then
+              begin
+                for cx:=0 to ChunkWidth-1 do begin
+                  PBGRAPixel(PDest)^.red:= FastRoundDiv257(PWord(Run)^);
+                  PBGRAPixel(PDest)^.green:= PBGRAPixel(PDest)^.red;
+                  PBGRAPixel(PDest)^.blue:= PBGRAPixel(PDest)^.red;
+                  PBGRAPixel(PDest)^.alpha:= 255;
+                  inc(Run, 2);
+                  inc(PDest, DestStride);
+                end;
+              end else
+              if (IFD.PhotoMetricInterpretation = 2) and (SampleCnt = 3) then
+              begin
+                for cx:=0 to ChunkWidth-1 do begin
+                  PBGRAPixel(PDest)^.red:= FastRoundDiv257(PWord(Run)^);
+                  PBGRAPixel(PDest)^.green:= FastRoundDiv257(PWord(Run+2)^);
+                  PBGRAPixel(PDest)^.blue:= FastRoundDiv257(PWord(Run+4)^);
+                  PBGRAPixel(PDest)^.alpha:= 255;
+                  inc(Run, 6);
+                  inc(PDest, DestStride);
+                end;
+              end else
+              for cx:=0 to ChunkWidth-1 do begin
+                 ReadNext16BitData(Run);
+                 GetPixelAsFPColor;
+                 PBGRAPixel(PDest)^.red:= FastRoundDiv257(FPColorValue.red);
+                 PBGRAPixel(PDest)^.green:= FastRoundDiv257(FPColorValue.green);
+                 PBGRAPixel(PDest)^.blue:= FastRoundDiv257(FPColorValue.blue);
+                 PBGRAPixel(PDest)^.alpha:= FastRoundDiv257(FPColorValue.alpha);
+                 inc(PDest, DestStride);
+               end;
+            end else
+              for cx:=0 to ChunkWidth-1 do begin
+                ReadNext16BitData(Run);
+                GetPixelAsFPColor;
+                CurFPImg.Colors[x,y]:= FPColorValue;
+                // next column
+                inc(x,dx1);
+                inc(y,dy1);
+              end;
+          end else
+          if All8Bit then
+          begin
+            if CurFPImg is TBGRACustomBitmap then
+            begin
+              ComputeDestStride;
+              PDest := TBGRACustomBitmap(CurFPImg).GetPixelAddress(sx,sy);
+              if (IFD.PhotoMetricInterpretation = 0) and (SampleCnt = 1) then
+              begin
+                if IFD.Predictor = 2 then
+                begin
+                  CurPixelValue := BGRAPixelTransparent;
+                  for cx:=0 to ChunkWidth-1 do begin
+                    {$PUSH}{$R-}inc(CurPixelValue.green, run^);{$POP}
+                    PBGRAPixel(PDest)^.red:= not CurPixelValue.green;
+                    PBGRAPixel(PDest)^.green:= not CurPixelValue.green;
+                    PBGRAPixel(PDest)^.blue:= not CurPixelValue.green;
+                    PBGRAPixel(PDest)^.alpha:= 255;
+                    inc(Run);
+                    inc(PDest, DestStride);
+                  end;
+                end else
+                for cx:=0 to ChunkWidth-1 do begin
+                  PBGRAPixel(PDest)^.red:= not (Run^);
+                  PBGRAPixel(PDest)^.green:= not (Run^);
+                  PBGRAPixel(PDest)^.blue:= not (Run^);
+                  PBGRAPixel(PDest)^.alpha:= 255;
+                  inc(Run);
+                  inc(PDest, DestStride);
+                end;
+              end else
+              if (IFD.PhotoMetricInterpretation = 1) and (SampleCnt = 1) then
+              begin
+                if IFD.Predictor = 2 then
+                begin
+                  CurPixelValue := BGRAPixelTransparent;
+                  for cx:=0 to ChunkWidth-1 do begin
+                    {$PUSH}{$R-}inc(CurPixelValue.green, run^);{$POP}
+                    PBGRAPixel(PDest)^.red:= CurPixelValue.green;
+                    PBGRAPixel(PDest)^.green:= CurPixelValue.green;
+                    PBGRAPixel(PDest)^.blue:= CurPixelValue.green;
+                    PBGRAPixel(PDest)^.alpha:= 255;
+                    inc(Run);
+                    inc(PDest, DestStride);
+                  end;
+                end else
+                for cx:=0 to ChunkWidth-1 do begin
+                  PBGRAPixel(PDest)^.red:= Run^;
+                  PBGRAPixel(PDest)^.green:= Run^;
+                  PBGRAPixel(PDest)^.blue:= Run^;
+                  PBGRAPixel(PDest)^.alpha:= 255;
+                  inc(Run);
+                  inc(PDest, DestStride);
+                end;
+              end else
+              if (IFD.PhotoMetricInterpretation = 2) and (SampleCnt = 3) then
+              begin
+                if IFD.Predictor = 2 then
+                begin
+                  CurPixelValue := BGRAPixelTransparent;
+                  for cx:=0 to ChunkWidth-1 do begin
+                    {$PUSH}{$R-}inc(CurPixelValue.red, run^);{$POP}
+                    {$PUSH}{$R-}inc(CurPixelValue.green, (run+1)^);{$POP}
+                    {$PUSH}{$R-}inc(CurPixelValue.blue, (run+2)^);{$POP}
+                    PBGRAPixel(PDest)^.red:= CurPixelValue.red;
+                    PBGRAPixel(PDest)^.green:= CurPixelValue.green;
+                    PBGRAPixel(PDest)^.blue:= CurPixelValue.blue;
+                    PBGRAPixel(PDest)^.alpha:= 255;
+                    inc(Run,3);
+                    inc(PDest, DestStride);
+                  end;
+                end else
+                for cx:=0 to ChunkWidth-1 do begin
+                  PBGRAPixel(PDest)^.red:= Run^;
+                  PBGRAPixel(PDest)^.green:= (Run+1)^;
+                  PBGRAPixel(PDest)^.blue:= (Run+2)^;
+                  PBGRAPixel(PDest)^.alpha:= 255;
+                  inc(Run,3);
+                  inc(PDest, DestStride);
+                end;
+              end else
+              for cx:=0 to ChunkWidth-1 do begin
+                 ReadNext8BitData(Run);
+                 GetPixelAsFPColor;
+                 PBGRAPixel(PDest)^.red:= FPColorValue.red shr 8;
+                 PBGRAPixel(PDest)^.green:= FPColorValue.green shr 8;
+                 PBGRAPixel(PDest)^.blue:= FPColorValue.blue shr 8;
+                 PBGRAPixel(PDest)^.alpha:= FPColorValue.alpha shr 8;
+                 inc(PDest, DestStride);
+               end;
+            end else
+              for cx:=0 to ChunkWidth-1 do begin
+                ReadNext8BitData(Run);
+                GetPixelAsFPColor;
+                CurFPImg.Colors[x,y]:= FPColorValue;
+                // next column
+                inc(x,dx1);
+                inc(y,dy1);
+              end;
+          end else
+          begin
+            for cx:=0 to ChunkWidth-1 do begin
+              ReadNextPixelData(Run,BitPos);
+              GetPixelAsFPColor;
+              CurFPImg.Colors[x,y]:= FPColorValue;
+              // next column
+              inc(x,dx1);
+              inc(y,dy1);
+            end;
+          end;
+        end;
+
+        // next line
+        inc(sx,dx2);
+        inc(sy,dy2);
+      end;
+      // next chunk
+    end;
+  finally
+    ReAllocMem(SampleBits,0);
+    ReAllocMem(ChunkOffsets,0);
+    ReAllocMem(ChunkByteCounts,0);
+    ReAllocMem(Chunk,0);
+    ReAllocMem(PaletteValues,0);
+  end;
+end;
+
+{$ENDIF}
 
 initialization
   DefaultBGRAImageReader[ifTiff] := TBGRAReaderTiff;

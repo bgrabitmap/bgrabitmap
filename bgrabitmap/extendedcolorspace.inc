@@ -146,7 +146,8 @@ function StdCMYKToStdRGBA(const AStdCMYK: TStdCMYK; AAlpha: Single = 1): TStdRGB
 procedure StdRGBToYCbCr(const R, G, B: single; const AParameters: TYCbCrStdParameters; out Y, Cb, Cr: Single); inline;
 procedure YCbCrToStdRGB(const Y, Cb, Cr: Single; const AParameters: TYCbCrStdParameters; out R, G, B: Single); inline;
 function StdRGBAToYCbCr601(const AStdRGBA: TStdRGBA): TYCbCr601;
-function YCbCr601ToStdRGBA(const AYCbCr: TYCbCr601; AAlpha: Single = 1): TStdRGBA;
+function YCbCr601ToStdRGBA(const AYCbCr: TYCbCr601; AAlpha: Single = 1): TStdRGBA; overload;
+function YCbCr601ToStdRGBA(const AYCbCr: TYCbCr601; ALumaRed, ALumaGreen, ALumaBlue, AAlpha: Single): TStdRGBA; overload;
 function StdRGBAToYCbCr709(const AStdRGBA: TStdRGBA): TYCbCr709;
 function YCbCr709ToStdRGBA(const AYCbCr: TYCbCr709; AAlpha: Single = 1): TStdRGBA;
 function StdRGBAToYCbCr601JPEG(const AStdRGBA: TStdRGBA): TYCbCr601JPEG;
@@ -1211,6 +1212,25 @@ begin
   With AYCbCr, result do
   begin
     YCbCrToStdRGB(Y, Cb, Cr, YCbCrStdParameters[ITUR601], red, green, blue);
+    alpha:= AAlpha;
+    with YCbCrStdParameters[ITUR601] do
+      HandleLinearRGBAOverflow(PLinearRGBA(@result)^, LumaRed, LumaGreen, LumaBlue);
+  end;
+end;
+
+function YCbCr601ToStdRGBA(const AYCbCr: TYCbCr601; ALumaRed, ALumaGreen, ALumaBlue, AAlpha: Single): TStdRGBA;
+var
+   userParams :TYCbCrStdParameters;
+
+begin
+  userParams :=YCbCrStdParameters[ITUR601];
+  userParams.LumaRed:=ALumaRed;
+  userParams.LumaGreen:=ALumaGreen;
+  userParams.LumaBlue:=ALumaBlue;
+
+  With AYCbCr, result do
+  begin
+    YCbCrToStdRGB(Y, Cb, Cr, userParams, red, green, blue);
     alpha:= AAlpha;
     with YCbCrStdParameters[ITUR601] do
       HandleLinearRGBAOverflow(PLinearRGBA(@result)^, LumaRed, LumaGreen, LumaBlue);
