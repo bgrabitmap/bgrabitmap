@@ -1080,9 +1080,6 @@ function TCustomUniversalBitmap.InternalDuplicate(ACopyProperties: boolean): TCu
 begin
   LoadFromBitmapIfNeeded;
   result := InternalNew;
-  result.ResolutionUnit:=Self.ResolutionUnit; { #note -oMaxM : Maybe done in InternalNew? }
-  result.ResolutionX:=Self.ResolutionX;
-  result.ResolutionY:=Self.ResolutionY;
   result.SetSize(FWidth,FHeight);
   Move(FDataByte^, result.FDataByte^, FRowSize*FHeight);
   result.InvalidateBitmap;
