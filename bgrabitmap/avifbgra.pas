@@ -138,6 +138,7 @@ type
       0: (rgb0_8: avifRGBImage0_8_4);
       1: (rgb0_10: avifRGBImage0_10_0);
       2: (rgb0_11: avifRGBImage0_11_0);
+      3: (rgb1_00: avifRGBImage1_0_0);
   end;
 
   { TAvifRGBImage }
@@ -162,7 +163,9 @@ type
 
 function TAvifImageFactory(aImagePtr: Pointer): TAvifImageBase;
 begin
-  if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
+  if AVIF_VERSION >= AVIF_VERSION_1_0_0 then
+    Result := specialize TAvifImage<PavifImage1_0_0>.Create(aImagePtr)
+  else if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
     Result := specialize TAvifImage<PavifImage0_11_0>.Create(aImagePtr)
   else
     Result := specialize TAvifImage<PavifImage0_8_4>.Create(aImagePtr);
@@ -170,7 +173,9 @@ end;
 
 function TDecoderFactory(aDecoderPtr: Pointer): TDecoderBase;
 begin
-  if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
+  if AVIF_VERSION >= AVIF_VERSION_1_0_0 then
+     result := specialize TDecoder<PAvifDecoder1_0_0>.Create(aDecoderPtr)
+  else if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
      result := specialize TDecoder<PAvifDecoder0_11_0>.Create(aDecoderPtr)
   else if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
      result := specialize TDecoder<PAvifDecoder0_10_0>.Create(aDecoderPtr)
@@ -184,7 +189,9 @@ end;
 
 function TEncoderFactory(aEncoderPtr: Pointer): TEncoderBase;
 begin
-  if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
+  if AVIF_VERSION >= AVIF_VERSION_1_0_0 then
+    result:=specialize TEncoder<PAvifEncoder1_0_0>.Create(aEncoderPtr)
+  else if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
     result:=specialize TEncoder<PAvifEncoder0_11_0>.Create(aEncoderPtr)
   else
     result:=specialize TEncoder<PAvifEncoder>.Create(aEncoderPtr);
@@ -192,7 +199,9 @@ end;
 
 function TAvifRGBImageFactory(): TAvifRGBImageBase;
 begin
-  if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
+  if AVIF_VERSION >= AVIF_VERSION_1_0_0 then
+    result:=specialize TAvifRGBImage<PavifRGBImage1_0_0>.Create
+  else if AVIF_VERSION >= AVIF_VERSION_0_11_0 then
     result:=specialize TAvifRGBImage<PavifRGBImage0_11_0>.Create
   else if AVIF_VERSION >= AVIF_VERSION_0_10_0 then
     result:=specialize TAvifRGBImage<PavifRGBImage0_10_0>.Create

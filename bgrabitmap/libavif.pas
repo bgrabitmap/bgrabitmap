@@ -19,6 +19,10 @@ const
   AVIF_VERSION_0_10_0 = 00100000;
   AVIF_VERSION_0_10_1 = 00100100;
   AVIF_VERSION_0_11_0 = 00110000;
+  AVIF_VERSION_1_0_0 =  01000000;
+
+  // include functions not supported in prior versions.
+  {.$define ONLY_USE_VERSION_EQUAL_OR_GREATHER_THAN_1}
 
 {
   For windows there are prebuild dlls in
@@ -79,6 +83,7 @@ const
 
     type
       size_type = NativeUInt;
+      PSize_type = ^size_type;
       float = single;
 
 {$IFDEF FPC}
@@ -120,7 +125,12 @@ const
     { A reasonable default for maximum image dimension (width or height). }
       AVIF_DEFAULT_IMAGE_DIMENSION_LIMIT = 32768;
     { a 12 hour AVIF image sequence, running at 60 fps (a basic sanity check as this is quite ridiculous) }
-      AVIF_DEFAULT_IMAGE_COUNT_LIMIT = (12*3600)*60;      
+      AVIF_DEFAULT_IMAGE_COUNT_LIMIT = (12*3600)*60;
+      AVIF_QUALITY_DEFAULT = -1;
+      AVIF_QUALITY_LOSSLESS = 100;
+      AVIF_QUALITY_WORST = 0;
+      AVIF_QUALITY_BEST = 100;
+
       AVIF_QUANTIZER_LOSSLESS = 0;      
       AVIF_QUANTIZER_BEST_QUALITY = 0;      
       AVIF_QUANTIZER_WORST_QUALITY = 63;      
@@ -132,6 +142,16 @@ const
     type
       TAvifArrayOf256AnsiChar = array[0..255] of AnsiChar;
       TAvifArrayOf8Float= array[0..7] of float;
+    const
+      // This value is used to indicate that an animated AVIF file has to be repeated infinitely.
+      AVIF_REPETITION_COUNT_INFINITE = -1;
+      // This value is used if an animated AVIF file does not have repetitions specified using an EditList box. Applications can choose
+      // to handle this case however they want.
+      AVIF_REPETITION_COUNT_UNKNOWN= -2;
+
+      // The number of spatial layers in AV1, with spatial_id = 0..3.
+      AVIF_MAX_AV1_LAYER_COUNT= 4;
+    type
 
       PavifPlanesFlag = ^avifPlanesFlag;
       avifPlanesFlag = (AVIF_PLANES_YUV := 1 shl 0,AVIF_PLANES_A := 1 shl 1,
@@ -143,7 +163,9 @@ const
     { yuvPlanes }
     { These can be used as the index for the yuvPlanes and yuvRowBytes arrays in avifImage.}
       avifChannelIndex = (AVIF_CHAN_Y := 0,
-        AVIF_CHAN_U := 1,AVIF_CHAN_V := 2
+        AVIF_CHAN_U := 1,AVIF_CHAN_V := 2,
+        // This may not be used in yuvPlanes and yuvRowBytes, but is available for use with avifImagePlane().
+        AVIF_CHAN_A = 3
         );
     { --------------------------------------------------------------------------- }
     { Version }
@@ -151,6 +173,9 @@ const
     {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifCodecVersions{$IFDEF LD}: procedure{$ENDIF}(var outBuffer:TAvifArrayOf256AnsiChar);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
     {$IFDEF LD}var{$ELSE}function{$ENDIF} avifLibYUVVersion{$IFDEF LD}: function{$ENDIF}:cardinal;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // returns 0 if libavif wasn't compiled with libyuv support
     { Memory management }
+    // NOTE: On memory allocation failure, the current implementation of avifAlloc() calls abort(),
+    // but in a future release it may return NULL. To be future-proof, callers should check for a NULL
+    // return value.
     {$IFDEF LD}var{$ELSE}function{$ENDIF} avifAlloc{$IFDEF LD}: function{$ENDIF}(size:size_type):pointer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
     {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifFree{$IFDEF LD}: procedure{$ENDIF}(p:Pointer);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
     { --------------------------------------------------------------------------- }
@@ -178,6 +203,8 @@ type
         AVIF_RESULT_OUT_OF_MEMORY,
         AVIF_RESULT_CANNOT_CHANGE_SETTING, // a setting that can't change is changed during encoding
         AVIF_RESULT_INCOMPATIBLE_IMAGE     // the image is incompatible with already encoded images
+        // Kept for backward compatibility; please use the symbols above instead.
+        //AVIF_RESULT_NO_AV1_ITEMS_FOUND = AVIF_RESULT_MISSING_IMAGE_ITEM
         );
 
     {$IFDEF LD}var{$ELSE}function{$ENDIF} avifResultToString{$IFDEF LD}: function{$ENDIF}(AResult:avifResult):PAnsiChar;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
@@ -202,9 +229,21 @@ type
 const AVIF_DATA_EMPTY:avifRWData=(data:nil;size:0);
 
   { The avifRWData input must be zero-initialized before being manipulated with these functions. }
-  {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifRWDataRealloc{$IFDEF LD}: procedure{$ENDIF}(raw:PavifRWData;newSize:size_type);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-  {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifRWDataSet{$IFDEF LD}: procedure{$ENDIF}(raw:PavifRWData; const data:PByte;len:size_type);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+  // If AVIF_RESULT_OUT_OF_MEMORY is returned, raw is left unchanged.
+  {$IFDEF LD}var{$ELSE}function{$ENDIF} avifRWDataRealloc{$IFDEF LD}: function{$ENDIF}(raw:PavifRWData;newSize:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+  {$IFDEF LD}var{$ELSE}function{$ENDIF} avifRWDataSet{$IFDEF LD}: function{$ENDIF}(raw:PavifRWData; const data:PByte;len:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
   {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifRWDataFree{$IFDEF LD}: procedure{$ENDIF}(raw:PavifRWData);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+
+  // Metadata
+
+{$ifdef ONLY_USE_VERSION_EQUAL_OR_GREATHER_THAN_1}
+  // Validates the first bytes of the Exif payload and finds the TIFF header offset (up to UINT32_MAX).
+  {$IFDEF LD}var{$ELSE}function{$ENDIF} avifGetExifTiffHeaderOffset{$IFDEF LD}: function{$ENDIF}(exif:PUint8;exifSize:size_type;offset:PSize_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+
+  // Returns the offset to the Exif 8-bit orientation value and AVIF_RESULT_OK, or an error.
+  // If the offset is set to exifSize, there was no parsing error but no orientation tag was found.
+  {$IFDEF LD}var{$ELSE}function{$ENDIF} avifGetExifOrientationOffset{$IFDEF LD}: function{$ENDIF}(exif:PUint8;exifSize:size_type;offset:PSize_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$endif}
 
     { --------------------------------------------------------------------------- }
     { avifPixelFormat }
@@ -228,6 +267,13 @@ type
           chromaShiftX : longint;
           chromaShiftY : longint;
         end;
+
+      // Returns the avifPixelFormatInfo depending on the avifPixelFormat.
+      // When monochrome is AVIF_TRUE, chromaShiftX and chromaShiftY are set to 1 according to the AV1 specification but they should be ignored.
+      //
+      // Note: This function implements the second table on page 119 of the AV1 specification version 1.0.0 with Errata 1.
+      // For monochrome 4:0:0, subsampling_x and subsampling are specified as 1 to allow
+      // an AV1 implementation that only supports profile 0 to hardcode subsampling_x and subsampling_y to 1.
   {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifGetPixelFormatInfo{$IFDEF LD}: procedure{$ENDIF}(format: avifPixelFormat;info:PavifPixelFormatInfo);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
     { --------------------------------------------------------------------------- }
     { avifChromaSamplePosition }
@@ -244,7 +290,7 @@ type
       avifRange = (AVIF_RANGE_LIMITED := 0,AVIF_RANGE_FULL := 1
         );
     { --------------------------------------------------------------------------- }
-    { CICP enums - https://www.itu.int/rec/T-REC-H.273-201612-I/en }
+    { // CICP enums - https://www.itu.int/rec/T-REC-H.273-201612-S/en }
 
 
     { This is actually reserved, but libavif uses it as a sentinel value. }
@@ -271,8 +317,8 @@ type
     { AVIF_COLOR_PRIMARIES_* }
     { outPrimaries: rX, rY, gX, gY, bX, bY, wX, wY }
 
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifColorPrimariesGetValues{$IFDEF LD}: procedure{$ENDIF}(acp:avifColorPrimaries;var outPrimaries:TAvifArrayOf8Float);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifColorPrimariesFind{$IFDEF LD}: function{$ENDIF}(var inPrimaries:TAvifArrayOf8Float;outName:PPAnsiChar):avifColorPrimaries;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+  {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifColorPrimariesGetValues{$IFDEF LD}: procedure{$ENDIF}(acp:avifColorPrimaries;var outPrimaries:TAvifArrayOf8Float);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+  {$IFDEF LD}var{$ELSE}function{$ENDIF} avifColorPrimariesFind{$IFDEF LD}: function{$ENDIF}(var inPrimaries:TAvifArrayOf8Float;outName:PPAnsiChar):avifColorPrimaries;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
 const
     // This is actually reserved, but libavif uses it as a sentinel value.
@@ -295,10 +341,18 @@ const
     AVIF_TRANSFER_CHARACTERISTICS_SMPTE2084 = 16; // PQ
     AVIF_TRANSFER_CHARACTERISTICS_SMPTE428 = 17;
     AVIF_TRANSFER_CHARACTERISTICS_HLG = 18;
-type
 
+type
       PavifTransferCharacteristics = ^avifTransferCharacteristics;
       avifTransferCharacteristics = UInt16;
+
+{$ifdef ONLY_USE_VERSION_EQUAL_OR_GREATHER_THAN_1}
+      // If the given transfer characteristics can be expressed with a simple gamma value, sets 'gamma'
+      // to that value and returns AVIF_RESULT_OK. Returns an error otherwise.
+  {$IFDEF LD}var{$ELSE}function{$ENDIF} avifTransferCharacteristicsGetGamma{$IFDEF LD}: function{$ENDIF}(atc:avifTransferCharacteristics; gamma:PSingle):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+  {$IFDEF LD}var{$ELSE}function{$ENDIF} avifTransferCharacteristicsFindByGamma{$IFDEF LD}: function{$ENDIF}(gamma:single):avifTransferCharacteristics;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$endif}
+
     { AVIF_TRANSFER_CHARACTERISTICS_* }
 const 
     AVIF_MATRIX_COEFFICIENTS_IDENTITY = 0;
@@ -315,6 +369,11 @@ const
     AVIF_MATRIX_COEFFICIENTS_CHROMA_DERIVED_NCL = 12;
     AVIF_MATRIX_COEFFICIENTS_CHROMA_DERIVED_CL = 13;
     AVIF_MATRIX_COEFFICIENTS_ICTCP = 14;
+//    #if defined(AVIF_ENABLE_EXPERIMENTAL_YCGCO_R)
+        AVIF_MATRIX_COEFFICIENTS_YCGCO_RE = 15;
+        AVIF_MATRIX_COEFFICIENTS_YCGCO_RO = 16;
+//    #endif
+    AVIF_MATRIX_COEFFICIENTS_LAST =17;
 
 type
       PavifMatrixCoefficients = ^avifMatrixCoefficients;
@@ -334,8 +393,16 @@ type
 
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDiagnosticsClearError{$IFDEF LD}: procedure{$ENDIF}(diag:PavifDiagnostics );cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
     { --------------------------------------------------------------------------- }
-    { Optional transformation structs }
 type
+      // Fraction utility
+
+      avifFraction = record
+        n:Int32;
+        d:Int32;
+      end;
+
+    { Optional transformation structs }
+
       PavifTransformFlag = ^avifTransformFlag;
       avifTransformFlag = (AVIF_TRANSFORM_NONE := 0,AVIF_TRANSFORM_PASP := 1 shl 0,
         AVIF_TRANSFORM_CLAP := 1 shl 1,AVIF_TRANSFORM_IROT := 1 shl 2,
@@ -375,27 +442,25 @@ type
     { angle * 90 specifies the angle (in anti-clockwise direction) in units of degrees. } 
           angle : UInt8;      { legal values: [0-3] }
         end;
-    { 'imir' from ISO/IEC 23008-12:2017 6.5.12 (Draft Amendment 2): }
+    { 'imir' from ISO/IEC 23008-12:2022 6.5.12: }
     { }
-    {     'mode' specifies how the mirroring is performed: }
+    {     'axis' specifies how the mirroring is performed: }
     { }
     {     0 indicates that the top and bottom parts of the image are exchanged; }
     {     1 specifies that the left and right parts are exchanged. }
     { }
     {     NOTE In Exif, orientation tag can be used to signal mirroring operations. Exif }
-    {     orientation tag 4 corresponds to mode = 0 of ImageMirror, and Exif orientation tag 2 }
-    {     corresponds to mode = 1 accordingly. }
+    {     orientation tag 4 corresponds to axis = 0 of ImageMirror, and Exif orientation tag 2 }
+    {     corresponds to axis = 1 accordingly. }
     { }
     { Legal values: [0, 1] }
     { }
-    { NOTE: As of HEIF Draft Amendment 2, the name of this variable has changed from 'axis' to 'mode' as }
-    {       the logic behind it has been *inverted*. Please use the wording above describing the legal }
-    {       values for 'mode' and update any code that previously may have used `axis` to use }
-    {       the *opposite* value (0 now means top-to-bottom, where it used to mean left-to-right). }
 
       PavifImageMirror = ^avifImageMirror;
       avifImageMirror = record
-          mode : UInt8;
+          case boolean of
+          true: (axis : UInt8);
+          false: (mode : UInt8); // old field name changed in version 1.
         end;
     { --------------------------------------------------------------------------- }
     { avifCropRect - Helper struct/functions to work with avifCleanApertureBox }
@@ -422,10 +487,90 @@ type
                                                       imageH:UInt32; 
                                                       yuvFormat:avifPixelFormat;
                                                       diag:PavifDiagnostics):avifBool;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+// avifContentLightLevelInformationBox
+type
+  avifContentLightLevelInformationBox=record
+
+    // 'clli' from ISO/IEC 23000-22:2019 (MIAF) 7.4.4.2.2. The SEI message semantics written above
+    //  each entry were originally described in ISO/IEC 23008-2.
+
+    // max_content_light_level, when not equal to 0, indicates an upper bound on the maximum light
+    // level among all individual samples in a 4:4:4 representation of red, green, and blue colour
+    // primary intensities (in the linear light domain) for the pictures of the CLVS, in units of
+    // candelas per square metre. When equal to 0, no such upper bound is indicated by
+    // max_content_light_level.
+    maxCLL:UInt16;
+
+    // max_pic_average_light_level, when not equal to 0, indicates an upper bound on the maximum
+    // average light level among the samples in a 4:4:4 representation of red, green, and blue
+    // colour primary intensities (in the linear light domain) for any individual picture of the
+    // CLVS, in units of candelas per square metre. When equal to 0, no such upper bound is
+    // indicated by max_pic_average_light_level.
+    maxPALL:UInt16;
+  end;
+
 
     { --------------------------------------------------------------------------- }
     { avifImage }
-type
+    // NOTE: The avifImage struct may be extended in a future release. Code outside the libavif library
+    // must allocate avifImage by calling the avifImageCreate() or avifImageCreateEmpty() function.
+    PavifImage1_0_0 = ^avifImage1_0_0;
+    PPavifImage1_0_0 = ^PavifImage1_0_0;
+    avifImage1_0_0 = record
+  { Image information }
+        width : UInt32;
+        height : UInt32;
+        depth : UInt32;      { all planes must share this depth; if depth>8, all planes are UInt16 internally }
+        yuvFormat : avifPixelFormat;
+        yuvRange : avifRange;
+        yuvChromaSamplePosition : avifChromaSamplePosition;
+        yuvPlanes : array[0..(AVIF_PLANE_COUNT_YUV)-1] of PUInt8;
+        yuvRowBytes : array[0..(AVIF_PLANE_COUNT_YUV)-1] of UInt32;
+        imageOwnsYUVPlanes : avifBool;
+        alphaPlane : PUInt8;
+        alphaRowBytes : UInt32;
+        imageOwnsAlphaPlane : avifBool;
+        alphaPremultiplied : avifBool;
+  { ICC Profile }
+        icc : avifRWData;
+  { CICP information: }
+  { These are stored in the AV1 payload and used to signal YUV conversion. Additionally, if an }
+  { ICC profile is not specified, these will be stored in the AVIF container's `colr` box with }
+  { a type of `nclx`. If your system supports ICC profiles, be sure to check for the existence }
+  { of one (avifImage.icc) before relying on the values listed here! }
+
+        colorPrimaries : avifColorPrimaries;
+        transferCharacteristics : avifTransferCharacteristics;
+        matrixCoefficients : avifMatrixCoefficients;
+        // CLLI information:
+        // Content Light Level Information. Used to represent maximum and average light level of an
+        // image. Useful for tone mapping HDR images, especially when using transfer characteristics
+        // SMPTE2084 (PQ). The default value of (0, 0) means the content light level information is
+        // unknown or unavailable, and will cause libavif to avoid writing a clli box for it.
+        clli:avifContentLightLevelInformationBox;
+
+  { Transformations - These metadata values are encoded/decoded when transformFlags are set }
+  { appropriately, but do not impact/adjust the actual pixel buffers used (images won't be }
+  { pre-cropped or mirrored upon decode). Basic explanations from the standards are offered in }
+  { comments above, but for detailed explanations, please refer to the HEIF standard (ISO/IEC }
+  { 23008-12:2017) and the BMFF standard (ISO/IEC 14496-12:2015). }
+  { }
+  { To encode any of these boxes, set the values in the associated box, then enable the flag in }
+  { transformFlags. On decode, only honor the values in boxes with the associated transform flag set. }
+        transformFlags : avifTransformFlags;
+        pasp : avifPixelAspectRatioBox;
+        clap : avifCleanApertureBox;
+        irot : avifImageRotation;
+        imir : avifImageMirror;
+        { Metadata - set with avifImageSetMetadata*() before write, check .size>0 for existence after read }
+        exif : avifRWData;
+        xmp : avifRWData;
+       // Version 1.0.0 ends here. Add any new members after this line.
+
+      end;
+
+
+
       PavifImage0_11_0 = ^avifImage0_11_0;
       PPavifImage0_11_0 = ^PavifImage0_11_0;
       avifImage0_11_0 = record
@@ -520,18 +665,20 @@ type
           exif : avifRWData;
           xmp : avifRWData;
         end;
+
+// avifImageCreate() and avifImageCreateEmpty() return nil (NULL) if arguments are invalid or if a memory allocation failed.
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageCreate{$IFDEF LD}: function{$ENDIF}(width:uint32;height:uint32;depth:uint32;yuvFormat:avifPixelFormat):PavifImage;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageCreateEmpty{$IFDEF LD}: function{$ENDIF}:PavifImage;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // helper for making an image to decode into
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageCopy{$IFDEF LD}: function{$ENDIF}(dstImage:PavifImage;srcImage:PavifImage;planes:avifPlanesFlags):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // deep copy
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifImageDestroy{$IFDEF LD}: procedure{$ENDIF}(image:PavifImage);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifImageSetProfileICC{$IFDEF LD}: procedure{$ENDIF}(image:PavifImage;icc:PByte;iccSize:size_type);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageSetProfileICC{$IFDEF LD}: function{$ENDIF}(image:PavifImage;icc:PByte;iccSize:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 { Sets Exif metadata. Attempts to parse the Exif metadata for Exif orientation. Sets
 image->transformFlags, image->irot and image->imir if the Exif metadata is parsed successfully,
 otherwise leaves image->transformFlags, image->irot and image->imir unchanged.
 Warning: If the Exif payload is set and invalid, avifEncoderWrite() may return AVIF_RESULT_INVALID_EXIF_PAYLOAD. }
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifImageSetMetadataExif{$IFDEF LD}: procedure{$ENDIF}(image:PavifImage;exif:PByte;exifSize:size_type);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageSetMetadataExif{$IFDEF LD}: function{$ENDIF}(image:PavifImage;exif:PByte;exifSize:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {Sets XMP metadata. }
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifImageSetMetadataXMP{$IFDEF LD}: procedure{$ENDIF}(image:PavifImage;xmp:PByte;xmpSize:size_type);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageSetMetadataXMP{$IFDEF LD}: function{$ENDIF}(image:PavifImage;xmp:PByte;xmpSize:size_type):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageAllocatePlanes{$IFDEF LD}: function{$ENDIF}(image:PavifImage;planes:avifPlanesFlags):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF} // Ignores any pre-existing planes
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifImageFreePlanes{$IFDEF LD}: procedure{$ENDIF}(image:PavifImage;planes:avifPlanesFlags);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}     // Ignores already-freed planes
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifImageStealPlanes{$IFDEF LD}: procedure{$ENDIF}(dstImage:PavifImage;srcImage:PavifImage;planes:avifPlanesFlags);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
@@ -616,7 +763,8 @@ type
         AVIF_CHROMA_DOWNSAMPLING_AVERAGE = 3,      // Uses averaging filter
         AVIF_CHROMA_DOWNSAMPLING_SHARP_YUV = 4     // Uses sharp yuv filter (libsharpyuv), available for 4:2:0 only, ignored for 4:2:2
       );
-
+      // NOTE: avifRGBImage must be initialized with avifRGBImageSetDefaults() (preferred) or memset()
+      // before use.
       PavifRGBImage = pointer;
       PavifRGBImage0_8_4 = ^avifRGBImage0_8_4;
       avifRGBImage0_8_4 = record
@@ -673,6 +821,31 @@ type
           padding: packed array[0..63] of byte;  // to prevent buffer overflow with future changes
         end;
 
+      PavifRGBImage1_0_0 = ^avifRGBImage1_0_0;
+      avifRGBImage1_0_0 = record
+          width : UInt32;      { must match associated avifImage }
+          height : UInt32;    { must match associated avifImage }
+          depth : UInt32;    { legal depths [8, 10, 12, 16]. if depth>8, pixels must be UInt16 internally }
+          format : avifRGBFormat;  { all channels are always full range }
+          chromaUpsampling : avifChromaUpsampling; // How to upsample from 4:2:0 or 4:2:2 UV when converting to RGB (ignored for 4:4:4 and 4:0:0).
+                                             // Ignored when converting to YUV. Defaults to AVIF_CHROMA_UPSAMPLING_AUTOMATIC.
+          chromaDownsampling: avifChromaDownsampling; // How to downsample to 4:2:0 or 4:2:2 UV when converting from RGB (ignored for 4:4:4 and 4:0:0).
+                                                 // Ignored when converting to RGB. Defaults to AVIF_CHROMA_DOWNSAMPLING_AUTOMATIC.
+          avoidLibYUV: avifBool;   { If AVIF_FALSE and libyuv conversion between RGB and YUV (including upsampling or downsampling if any) }
+                            { is available for the avifImage/avifRGBImage combination, then libyuv is used. Default is AVIF_FALSE. }
+          ignoreAlpha : avifBool;  { Used for XRGB formats, treats formats containing alpha (such as ARGB) as if they were RGB, treating }
+                                   { the alpha bits as if they were all 1. }
+          alphaPremultiplied : avifBool;     { indicates if RGB value is pre-multiplied by alpha. Default: false }
+          isFloat : avifBool;    { indicates if RGBA values are in half float (f16) format. Valid only when depth == 16. Default: false  }
+          maxThreads:Integer; // Number of threads to be used for the YUV to RGB conversion. Note that this value is ignored for RGB to YUV
+                              // conversion. Setting this to zero has the same effect as setting it to one. Negative values are invalid.
+                              // Default: 1.
+
+          pixels : PUInt8;
+          rowBytes : UInt32;
+          padding: packed array[0..63] of byte;  // to prevent buffer overflow with future changes
+        end;
+
     { Sets rgb->width, rgb->height, and rgb->depth to image->width, image->height, and image->depth. }
     { Sets rgb->pixels to NULL and rgb->rowBytes to 0. Sets the other fields of 'rgb' to default }
     { values. }
@@ -681,7 +854,7 @@ type
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifRGBImagePixelSize{$IFDEF LD}: function{$ENDIF}(rgb:PavifRGBImage):UInt32;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { Convenience functions. If you supply your own pixels/rowBytes, you do not need to use these. }
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifRGBImageAllocatePixels{$IFDEF LD}: procedure{$ENDIF}(rgb:PavifRGBImage);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifRGBImageAllocatePixels{$IFDEF LD}: function{$ENDIF}(rgb:PavifRGBImage):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifRGBImageFreePixels{$IFDEF LD}: procedure{$ENDIF}(rgb:PavifRGBImage);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { The main conversion functions }
@@ -699,10 +872,10 @@ type
     { --------------------------------------------------------------------------- }
     { YUV Utils }
 
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifFullToLimitedY{$IFDEF LD}: function{$ENDIF}(depth:integer;v:integer):integer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifFullToLimitedUV{$IFDEF LD}: function{$ENDIF}(depth:integer;v:integer):integer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifLimitedToFullY{$IFDEF LD}: function{$ENDIF}(depth:integer;v:integer):integer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
-{$IFDEF LD}var{$ELSE}function{$ENDIF} avifLimitedToFullUV{$IFDEF LD}: function{$ENDIF}(depth:integer;v:integer):integer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifFullToLimitedY{$IFDEF LD}: function{$ENDIF}(depth:UInt32;v:integer):integer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifFullToLimitedUV{$IFDEF LD}: function{$ENDIF}(depth:UInt32;v:integer):integer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifLimitedToFullY{$IFDEF LD}: function{$ENDIF}(depth:UInt32;v:integer):integer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifLimitedToFullUV{$IFDEF LD}: function{$ENDIF}(depth:UInt32;v:integer):integer;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
     { --------------------------------------------------------------------------- }
     { Codec selection }
@@ -712,7 +885,8 @@ type
         AVIF_CODEC_CHOICE_DAV1D,     { Decode only }
 		AVIF_CODEC_CHOICE_LIBGAV1,     { Decode only }
         AVIF_CODEC_CHOICE_RAV1E,    { Encode only }
-		AVIF_CODEC_CHOICE_SVT    { Encode only }
+		AVIF_CODEC_CHOICE_SVT,    { Encode only }
+    AVIF_CODEC_CHOICE_AVM      // Experimental (AV2)
       );
 
       PavifCodecFlag = ^avifCodecFlag;
@@ -826,7 +1000,9 @@ type
 
       PavifIOStats = ^avifIOStats;
       avifIOStats = record
+          // Size in bytes of the AV1 image item or track data containing color samples.
           colorOBUSize : size_type;
+          // Size in bytes of the AV1 image item or track data containing alpha samples.
           alphaOBUSize : size_type;
         end;
       PavifDecoderData = ^avifDecoderData;
@@ -885,6 +1061,8 @@ type
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifProgressiveStateToString{$IFDEF LD}: function{$ENDIF}( progressiveState:avifProgressiveState):PAnsiChar;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
 type
+      // NOTE: The avifDecoder struct may be extended in a future release. Code outside the libavif
+      // library must allocate avifDecoder by calling the avifDecoderCreate() function.
       PavifDecoder = pointer;
       PavifDecoder0_8_4 = ^avifDecoder0_8_4;
       avifDecoder0_8_4 = record
@@ -1100,6 +1278,69 @@ type
           data : PavifDecoderData;
         end;
 
+      PavifDecoder1_0_0 = ^avifDecoder1_0_0;
+      avifDecoder1_0_0 = record
+    { Inputs ------------------------------------------------------------------------------------- }
+          codecChoice : avifCodecChoice;
+          maxThreads : longint;
+          requestedSource : avifDecoderSource;
+          allowProgressive : avifBool;
+    { If this is false, avifDecoderNextImage() will start decoding a frame only after there are     }
+    { enough input bytes to decode all of that frame. If this is true, avifDecoder will decode each }
+    { subimage or grid cell as soon as possible. The benefits are: grid images may be partially     }
+    { displayed before being entirely available, and the overall decoding may finish earlier.       }
+    { Must be set before calling avifDecoderNextImage() or avifDecoderNthImage(). }
+    { WARNING: Experimental feature. }
+          allowIncremental : avifBool;
+          ignoreExif : avifBool;
+          ignoreXMP : avifBool;
+          // This represents the maximum size of an image (in pixel count) that libavif and the underlying
+          // AV1 decoder should attempt to decode. It defaults to AVIF_DEFAULT_IMAGE_SIZE_LIMIT, and can
+          // be set to a smaller value. The value 0 is reserved.
+          // Note: Only some underlying AV1 codecs support a configurable size limit (such as dav1d).
+          imageSizeLimit : UInt32;
+          // This represents the maximum dimension of an image (width or height) that libavif should
+          // attempt to decode. It defaults to AVIF_DEFAULT_IMAGE_DIMENSION_LIMIT. Set it to 0 to ignore
+          // the limit.
+          imageDimensionLimit: UInt32;
+          // This provides an upper bound on how many images the decoder is willing to attempt to decode,
+          // to provide a bit of protection from malicious or malformed AVIFs citing millions upon
+          // millions of frames, only to be invalid later. The default is AVIF_DEFAULT_IMAGE_COUNT_LIMIT
+          // (see comment above), and setting this to 0 disables the limit.
+          imageCountLimit : UInt32;
+    { Strict flags. Defaults to AVIF_STRICT_ENABLED. See avifStrictFlag definitions above. }
+          strictFlags : avifStrictFlags;
+    { Outputs ------------------------------------------------------------------------------------ }
+          image : PavifImage;
+    { Counts and timing for the current image in an image sequence. Uninteresting for single image files. }
+          imageIndex : longint;      { 0-based }
+          imageCount : longint;      { Always 1 for non-progressive, non-sequence AVIFs. }
+          progressiveState : avifProgressiveState;      { See avifProgressiveState declaration }
+          imageTiming : avifImageTiming;      { }
+          timescale : UInt64;      { timescale of the media (Hz) }
+          duration : double;  // duration of a single playback of the image sequence in seconds
+                                           // (durationInTimescales / timescale)
+          durationInTimescales : UInt64;   // duration of a single playback of the image sequence in "timescales"
+          repetitionCount: integer;                   // number of times the sequence has to be repeated. This can also be one of
+                                                  // AVIF_REPETITION_COUNT_INFINITE or AVIF_REPETITION_COUNT_UNKNOWN. Essentially, if
+                                                  // repetitionCount is a non-negative integer `n`, then the image sequence should be
+                                                  // played back `n + 1` times.
+    // This is true when avifDecoderParse() detects an alpha plane. Use this to find out if alpha is
+    // present after a successful call to avifDecoderParse(), but prior to any call to
+    // avifDecoderNextImage() or avifDecoderNthImage(), as decoder->image->alphaPlane won't exist yet.
+          alphaPresent : avifBool;
+    { stats from the most recent read, possibly 0s if reading an image sequence }
+          ioStats : avifIOStats;
+    { Additional diagnostics (such as detailed error state) }
+          diag : avifDiagnostics;
+    { Use one of the avifDecoderSetIO*() functions to set this }
+          io : PavifIO;
+    { Internals used by the decoder }
+          data : PavifDecoderData;
+
+    // Version 1.0.0 ends here. Add any new members after this line.
+        end;
+
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifDecoderCreate{$IFDEF LD}: function{$ENDIF}:PavifDecoder;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifDecoderDestroy{$IFDEF LD}: procedure{$ENDIF}(decoder:PavifDecoder);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
@@ -1198,11 +1439,25 @@ type
           {undefined structure}
         end;
 
+      avifScalingMode = record
+         horizontal:avifFraction;
+         vertical:avifFraction;
+      end;
+
     { Notes: }
+    // * The avifEncoder struct may be extended in a future release. Code outside the libavif library
+    //   must allocate avifEncoder by calling the avifEncoderCreate() function.
     { * If avifEncoderWrite() returns AVIF_RESULT_OK, output must be freed with avifRWDataFree() }
     { * If (maxThreads < 2), multithreading is disabled }
     {   * NOTE: Please see the "Understanding maxThreads" comment block above }
-    { * Quality range: [AVIF_QUANTIZER_BEST_QUALITY - AVIF_QUANTIZER_WORST_QUALITY] }
+    // * Quality range: [AVIF_QUALITY_WORST - AVIF_QUALITY_BEST]
+    // * Quantizer range: [AVIF_QUANTIZER_BEST_QUALITY - AVIF_QUANTIZER_WORST_QUALITY]
+    // * In older versions of libavif, the avifEncoder struct doesn't have the quality and qualityAlpha
+    //   fields. For backward compatibility, if the quality field is not set, the default value of
+    //   quality is based on the average of minQuantizer and maxQuantizer. Similarly the default value
+    //   of qualityAlpha is based on the average of minQuantizerAlpha and maxQuantizerAlpha. New code
+    //   should set quality and qualityAlpha and leave minQuantizer, maxQuantizer, minQuantizerAlpha,
+    //   and maxQuantizerAlpha initialized to their default values.
     { * To enable tiling, set tileRowsLog2 > 0 and/or tileColsLog2 > 0. }
     {   Tiling values range [0-6], where the value indicates a request for 2^n tiles in that dimension. }
     {   If autoTiling is set to AVIF_TRUE, libavif ignores tileRowsLog2 and tileColsLog2 and }
@@ -1211,6 +1466,8 @@ type
     {   image in less bytes. AVIF_SPEED_DEFAULT means "Leave the AV1 codec to its default speed settings"./ }
     {   If avifEncoder uses rav1e, the speed value is directly passed through (0-10). If libaom is used, }
     {   a combination of settings are tweaked to simulate this speed range. }
+    // * Extra layer count: [0 - (AVIF_MAX_AV1_LAYER_COUNT-1)]. Non-zero value indicates a layered
+    //   (progressive) image.
     { * Some encoder settings can be changed after encoding starts. Changes will take effect in the next }
     {   call to avifEncoderAddImage(). }
       PavifEncoder = ^avifEncoder;
@@ -1263,33 +1520,83 @@ type
           csOptions : PavifCodecSpecificOptions;
         end;
 
+      PavifEncoder1_0_0 = ^avifEncoder1_0_0;
+      avifEncoder1_0_0 = record
+    { Defaults to AVIF_CODEC_CHOICE_AUTO: Preference determined by order in availableCodecs table (avif.c) }
+          codecChoice : avifCodecChoice;
+    { settings (see Notes above) }
+          maxThreads : longint;
+          speed : longint;
+          keyframeInterval : longint;     // Any set of |keyframeInterval| consecutive frames will have at least one keyframe. When it is 0,
+                              // there is no such r estriction.
+          timescale : UInt64;      { timescale of the media (Hz) }
+          repetitionCount: longint;      // Number of times the image sequence should be repeated. This can also be set to
+                                    // AVIF_REPETITION_COUNT_INFINITE for infinite repetitions.  Only applicable for image sequences.
+                                    // Essentially, if repetitionCount is a non-negative integer `n`, then the image sequence should be
+                                    // played back `n + 1` times. Defaults to AVIF_REPETITION_COUNT_INFINITE.
+          extraLayerCount:UInt32; // EXPERIMENTAL: Non-zero value encodes layered image.
 
+          // changeable encoder settings
+          quality: longint;
+          qualityAlpha: longint;
+          minQuantizer : longint;
+          maxQuantizer : longint;
+          minQuantizerAlpha : longint;
+          maxQuantizerAlpha : longint;
+          tileRowsLog2 : longint;
+          tileColsLog2 : longint;
+          autoTiling : avifBool;
+          scalingMode:avifScalingMode;
+    { stats from the most recent write }
+          ioStats : avifIOStats;
+    { Additional diagnostics (such as detailed error state) }
+          diag : avifDiagnostics;
+    { Internals used by the encoder }
+          data : PavifEncoderData;
+          csOptions : PavifCodecSpecificOptions;
+
+       // Version 1.0.0 ends here. Add any new members after this line.
+        end;
+
+// avifEncoderCreate() returns NULL if a memory allocation failed.
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifEncoderCreate{$IFDEF LD}: function{$ENDIF}:PavifEncoder;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifEncoderWrite{$IFDEF LD}: function{$ENDIF}(encoder:PavifEncoder;image:PavifImage;output:PavifRWData):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifEncoderDestroy{$IFDEF LD}: procedure{$ENDIF}(encoder:PavifEncoder);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 type
     { Force this frame to be a keyframe (sync frame). }
-    { Use this flag when encoding a single image. Signals "still_picture" to AV1 encoders, which }
-    { tweaks various compression rules. This is enabled automatically when using the }
-    { avifEncoderWrite() single-image encode path. }
+      // Use this flag when encoding a single frame, single layer image.
+      // Signals "still_picture" to AV1 encoders, which tweaks various compression rules.
+      // This is enabled automatically when using the avifEncoderWrite() single-image encode path.
       PavifAddImageFlag = ^avifAddImageFlag;
       avifAddImageFlag = (AVIF_ADD_IMAGE_FLAG_NONE := 0,AVIF_ADD_IMAGE_FLAG_FORCE_KEYFRAME := 1 shl 0,
         AVIF_ADD_IMAGE_FLAG_SINGLE := 1 shl 1);
 
       PavifAddImageFlags = ^avifAddImageFlags;
       avifAddImageFlags = UInt32;
-{ Multi-function alternative to avifEncoderWrite() for image sequences. }
+{ Multi-function alternative to avifEncoderWrite() for advanced features. }
 { }
 { Usage / function call order is: }
 { * avifEncoderCreate() }
-{ * Set encoder->timescale (Hz) correctly }
-{ * avifEncoderAddImage() ... [repeatedly; at least once] }
-{   OR }
-{ * avifEncoderAddImageGrid() [exactly once, AVIF_ADD_IMAGE_FLAG_SINGLE is assumed] }
-{ * avifEncoderFinish() }
+// - Still image:
+//   * avifEncoderAddImage() [exactly once]
+// - Still image grid:
+//   * avifEncoderAddImageGrid() [exactly once, AVIF_ADD_IMAGE_FLAG_SINGLE is assumed]
+// - Image sequence:
+//   * Set encoder->timescale (Hz) correctly
+//   * avifEncoderAddImage() ... [repeatedly; at least once]
+// - Still layered image:
+//   * Set encoder->extraLayerCount correctly
+//   * avifEncoderAddImage() ... [exactly encoder->extraLayerCount+1 times]
+// - Still layered grid:
+//   * Set encoder->extraLayerCount correctly
+//   * avifEncoderAddImageGrid() ... [exactly encoder->extraLayerCount+1 times]
 { * avifEncoderDestroy() }
 
-{ durationInTimescales is ignored if AVIF_ADD_IMAGE_FLAG_SINGLE is set in addImageFlags.}
+// The image passed to avifEncoderAddImage() or avifEncoderAddImageGrid() is encoded during the
+// call (which may be slow) and can be freed after the function returns.
+
+// durationInTimescales is ignored if AVIF_ADD_IMAGE_FLAG_SINGLE is set in addImageFlags,
+// or if we are encoding a layered image.
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifEncoderAddImage{$IFDEF LD}: function{$ENDIF}(encoder:PavifEncoder; image:PavifImage;durationInTimescales:UInt64;addImageFlags:avifAddImageFlags):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifEncoderAddImageGrid{$IFDEF LD}: function{$ENDIF}(encoder:PavifEncoder;
                                             gridCols:UInt32;
@@ -1304,10 +1611,21 @@ type
 { key must be non-NULL, but passing a NULL value will delete the pending key, if it exists. }
 { Setting an incorrect or unknown option for the current codec will cause errors of type }
 { AVIF_RESULT_INVALID_CODEC_SPECIFIC_OPTION from avifEncoderWrite() or avifEncoderAddImage(). }
-{$IFDEF LD}var{$ELSE}procedure{$ENDIF} avifEncoderSetCodecSpecificOption{$IFDEF LD}: procedure{$ENDIF}(encoder:PavifEncoder;key:PAnsiChar;value:PAnsiChar);cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+{$IFDEF LD}var{$ELSE}function{$ENDIF} avifEncoderSetCodecSpecificOption{$IFDEF LD}: function{$ENDIF}(encoder:PavifEncoder;key:PAnsiChar;value:PAnsiChar):avifResult;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
 { Helpers }
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifImageUsesU16{$IFDEF LD}: function{$ENDIF}(image:PavifImage):avifBool;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
+
+//TODO:
+{
+AVIF_API avifBool avifImageIsOpaque(const avifImage * image);
+// channel can be an avifChannelIndex.
+AVIF_API uint8_t * avifImagePlane(const avifImage * image, int channel);
+AVIF_API uint32_t avifImagePlaneRowBytes(const avifImage * image, int channel);
+AVIF_API uint32_t avifImagePlaneWidth(const avifImage * image, int channel);
+AVIF_API uint32_t avifImagePlaneHeight(const avifImage * image, int channel);
+}
+
 { Returns AVIF_TRUE if input begins with a valid FileTypeBox (ftyp) that supports }
 { either the brand 'avif' or 'avis' (or both), without performing any allocations. }
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifPeekCompatibleFileType{$IFDEF LD}: function{$ENDIF}(input:PavifROData):avifBool ;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
@@ -1446,6 +1764,12 @@ begin
       Pointer(avifRWDataRealloc):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifRWDataRealloc'));
       Pointer(avifRWDataSet):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifRWDataSet'));
       Pointer(avifVersion):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifVersion'));
+      {$ifdef ONLY_USE_VERSION_EQUAL_OR_GREATHER_THAN_1}
+        Pointer(avifGetExifTiffHeaderOffset):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifGetExifTiffHeaderOffset'));
+        Pointer(avifGetExifOrientationOffset):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifGetExifOrientationOffset'));
+        Pointer(avifTransferCharacteristicsGetGamma):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifTransferCharacteristicsGetGamma'));
+        Pointer(avifTransferCharacteristicsFindByGamma):=DynLibs.GetProcedureAddress(LibAvifHandle,PAnsiChar('avifTransferCharacteristicsFindByGamma'));
+      {$endif}
       LibAvifRetreiveVersion;
     end;
     Result := LibAvifLoaded;
