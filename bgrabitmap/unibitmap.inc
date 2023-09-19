@@ -2570,6 +2570,9 @@ begin
   sy := ARect.Height;
   if (sx = 0) or (sy = 0) then exit(nil);
   result := InternalNew;
+  result.ResolutionUnit:=Self.ResolutionUnit; { #note -oMaxM : Maybe done in InternalNew? }
+  result.ResolutionX:=Self.ResolutionX;
+  result.ResolutionY:=Self.ResolutionY;
   result.SetSize(sx,sy);
   if (FWidth = 0) or (FHeight = 0) then
   begin
@@ -4020,6 +4023,9 @@ var
 begin
   LoadFromBitmapIfNeeded;
   result := InternalNew;
+  result.ResolutionUnit:=Self.ResolutionUnit; { #note -oMaxM : Maybe done in InternalNew? }
+  result.ResolutionX:=Self.ResolutionX;
+  result.ResolutionY:=Self.ResolutionY;
   result.SetSize(Height, Width);
   if Result.LineOrder = riloTopToBottom then
     delta := Result.RowSize
@@ -4041,6 +4047,9 @@ var
 begin
   LoadFromBitmapIfNeeded;
   result := InternalNew;
+  result.ResolutionUnit:=Self.ResolutionUnit; { #note -oMaxM : Maybe done in InternalNew? }
+  result.ResolutionX:=Self.ResolutionX;
+  result.ResolutionY:=Self.ResolutionY;
   result.SetSize(Height, Width);
   if Result.LineOrder = riloTopToBottom then
     delta := Result.RowSize
@@ -4061,6 +4070,9 @@ var
 begin
   LoadFromBitmapIfNeeded;
   result := InternalNew;
+  result.ResolutionUnit:=Self.ResolutionUnit; { #note -oMaxM : Maybe done in InternalNew? }
+  result.ResolutionX:=Self.ResolutionX;
+  result.ResolutionY:=Self.ResolutionY;
   result.SetSize(Width, Height);
   for yb := 0 to Height-1 do
   begin

@@ -2,7 +2,7 @@
 unit BGRAColorInt;
 
 {$mode objfpc}{$H+}
-{$ifdef CPUI386}
+{$if defined(CPUI386) and not defined(openbsd)}
   {$define BGRACOLORINT_USEASM}
 {$endif}
 {$ifdef DARWIN}

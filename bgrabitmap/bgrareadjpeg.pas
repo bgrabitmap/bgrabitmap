@@ -12,8 +12,10 @@ unit BGRAReadJpeg;
 interface
 
 uses
-  BGRAClasses, BGRABitmapTypes, Classes, Types, SysUtils, FPReadJPEG, FPImage,
-  JPEGLib, JdAPImin, JDataSrc, JdAPIstd, JmoreCfg;
+  {$IF FPC_FULLVERSION<30301}
+   JPEGLib, JdAPImin, JDataSrc, JdAPIstd, JmoreCfg,
+  {$ENDIF}
+  BGRABitmapTypes, Classes, SysUtils, FPReadJPEG, FPImage;
 
 type
   TJPEGScale = FPReadJPEG.TJPEGScale;
