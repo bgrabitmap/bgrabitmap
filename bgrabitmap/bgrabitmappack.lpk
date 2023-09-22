@@ -25,7 +25,7 @@
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
     <Version Major="11" Minor="5" Release="6"/>
-    <Files Count="150">
+    <Files Count="151">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -628,6 +628,10 @@
         <Filename Value="bgrawritepcx.pas"/>
         <UnitName Value="BGRAWritePCX"/>
       </Item150>
+      <Item151>
+        <Filename Value="bgrapapers.pas"/>
+        <UnitName Value="BGRAPapers"/>
+      </Item151>
     </Files>
     <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="2">
