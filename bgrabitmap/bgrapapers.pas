@@ -1,4 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+{ ====================================================
+  BGRAPapers Unit
+
+  2023 Massimo Magnano
+
+  List of paper sizes in inches and cm
+}
 unit BGRAPapers;
 
 {$mode objfpc}{$H+}
@@ -59,17 +66,57 @@ const
   (name:'C9'; w:1.6; h:2.2), (name:'C10'; w:1.1; h:1.6)
   );
 
-  PaperSizes_Names: array of String[10]=('A', 'B', 'C');
+  Photo_cm: TPaperSizes=(
+  (name:''; w:7; h:10),
+  (name:''; w:9; h:12), (name:''; w:9; h:13),
+  (name:''; w:10; h:10), (name:''; w:10; h:15),
+  (name:''; w:13; h:13), (name:''; w:13; h:18),
+  (name:''; w:15; h:20), (name:''; w:15; h:21),
+  (name:''; w:20; h:20), (name:''; w:20; h:24), (name:''; w:20; h:25), (name:''; w:20; h:30),
+  (name:''; w:30; h:30), (name:''; w:30; h:40), (name:''; w:30; h:45),
+  (name:''; w:40; h:40), (name:''; w:40; h:50), (name:''; w:40; h:60)
+  );
+
+  PaperSizes_Names: array of String[10]=('ISO A', 'ISO B', 'ISO C', 'Photo');
 
 var
   PaperSizes_cm :array of TPaperSizes;
   PaperSizes_inch :array of TPaperSizes;
 
+function Sizes_InchToCm(const APapers:TPaperSizes):TPaperSizes;
+function Sizes_CmToInch(const APapers:TPaperSizes):TPaperSizes;
+
 implementation
 
+function Sizes_InchToCm(const APapers: TPaperSizes): TPaperSizes;
+var
+   i:Integer;
+
+begin
+  Result :=Copy(APapers, 0, Length(APapers));
+  for i:=Low(Result) to High(Result) do
+  begin
+    Result[i].w :=Result[i].w*2.54;
+    Result[i].h :=Result[i].h*2.54;
+  end;
+end;
+
+function Sizes_CmToInch(const APapers: TPaperSizes): TPaperSizes;
+var
+   i:Integer;
+
+begin
+  Result :=Copy(APapers, 0, Length(APapers));
+  for i:=Low(Result) to High(Result) do
+  begin
+    Result[i].w :=Result[i].w/2.54;
+    Result[i].h :=Result[i].h/2.54;
+  end;
+end;
+
 initialization
-   PaperSizes_cm :=[Paper_A_cm, Paper_B_cm, Paper_C_cm];
-   PaperSizes_inch :=[Paper_A_inch, Paper_B_inch, Paper_C_inch];
+   PaperSizes_cm :=[Paper_A_cm, Paper_B_cm, Paper_C_cm, Photo_cm];
+   PaperSizes_inch :=[Paper_A_inch, Paper_B_inch, Paper_C_inch, Sizes_CmToInch(Photo_cm)];
 
 end.
 
