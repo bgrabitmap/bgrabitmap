@@ -84,28 +84,28 @@ operator*(const color1, color2: TColorInt65536): TColorInt65536;
     //ecx = @result
 
     mov eax, [ebx] //r
-    imul [esi]
+    imul dword ptr [esi]
     shl edx, 16
     shr eax, 16
     or edx, eax
     mov [ecx], edx
 
     mov eax, [ebx+4] //g
-    imul [esi+4]
+    imul dword ptr [esi+4]
     shl edx, 16
     shr eax, 16
     or edx, eax
     mov [ecx+4], edx
 
     mov eax, [ebx+8] //b
-    imul [esi+8]
+    imul dword ptr [esi+8]
     shl edx, 16
     shr eax, 16
     or edx, eax
     mov [ecx+8], edx
 
     mov eax, [ebx+12] //a
-    imul [esi+12]
+    imul dword ptr [esi+12]
     shl edx, 16
     shr eax, 16
     or edx, eax
@@ -217,7 +217,7 @@ function BGRAToColorIntMultiply(const color1: TBGRAPixel;
     mov edx, eax
     shr edx, 7
     add eax, edx
-    imul [esi]
+    imul dword ptr [esi]
     shl edx, 24
     shr eax, 8
     or edx, eax
@@ -229,7 +229,7 @@ function BGRAToColorIntMultiply(const color1: TBGRAPixel;
     mov edx, eax
     shr edx, 7
     add eax, edx
-    imul [esi+4]
+    imul dword ptr [esi+4]
     shl edx, 24
     shr eax, 8
     or edx, eax
@@ -241,7 +241,7 @@ function BGRAToColorIntMultiply(const color1: TBGRAPixel;
     mov edx, eax
     shr edx, 7
     add eax, edx
-    imul [esi+8]
+    imul dword ptr [esi+8]
     shl edx, 24
     shr eax, 8
     or edx, eax
@@ -253,7 +253,7 @@ function BGRAToColorIntMultiply(const color1: TBGRAPixel;
     mov edx, eax
     shr edx, 7
     add eax, edx
-    imul [esi+12]
+    imul dword ptr [esi+12]
     shl edx, 24
     shr eax, 8
     or edx, eax
