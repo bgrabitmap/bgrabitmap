@@ -42,6 +42,7 @@ type
       FFillGradientElement, FStrokeGradientElement: TSVGGradient;
       FGradientElementsDefined, FRegisteredToDatalink: boolean;
       FFillCanvasGradient, FStrokeCanvasGradient: IBGRACanvasGradient2D;
+      FResettingGradient: boolean;
       procedure DatalinkOnLink(Sender: TObject; AElement: TSVGElement;
         ALink: boolean);
       function EvaluatePercentage(fu: TFloatWithCSSUnit): single; { fu is a percentage of a number [0.0..1.0] }
@@ -1102,17 +1103,21 @@ begin
   inherited Initialize;
   FRegisteredToDatalink:= false;
   FGradientElementsDefined:= false;
+  FResettingGradient := false;
   ResetGradients;
 end;
 
 procedure TSVGElementWithGradient.ResetGradients;
 begin
+  if FResettingGradient then exit;
   if FGradientElementsDefined then
   begin
     if Assigned(DataLink) and FRegisteredToDatalink then
     begin
+      FResettingGradient := true;
       DataLink.RegisterLinkListener(@DatalinkOnLink, false);
       FRegisteredToDatalink := false;
+      FResettingGradient := false;
     end;
     FGradientElementsDefined := false;
   end;
