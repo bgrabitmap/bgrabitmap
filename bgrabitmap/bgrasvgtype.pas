@@ -1533,7 +1533,10 @@ begin
   for i:= 0 to high(temp) do
     temp[i] := FLinkListeners.Items[i];
   for i := 0 to high(temp) do
-    temp[i](self, AElement, ALink);
+  begin
+    if FLinkListeners.IndexOf(temp[i]) <> -1 then
+      temp[i](self, AElement, ALink);
+  end;
   // children datalinks may use the element
   for i := FChildren.Count-1 downto 0 do
     TSVGDataLink(FChildren[i]).NotifyLink(AElement, ALink);
