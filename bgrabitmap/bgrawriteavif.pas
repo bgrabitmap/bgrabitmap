@@ -15,6 +15,8 @@ type
   protected
     FLossless: boolean;
     FQualityPercent: Single;
+    FQualityAlphaPercent: Single;
+    FCodec: avifCodecChoice;
     FSpeed: integer;
     FPixelFormat:avifPixelFormat;
     FIgnoreAlpha:boolean;
@@ -27,6 +29,8 @@ type
     property Speed: integer read FSpeed write FSpeed;
     property PixelFormat: avifPixelFormat read FPixelFormat write FPixelFormat;
     property IgnoreAlpha: boolean read FIgnoreAlpha write FIgnoreAlpha;
+    property QualityAlphaPercent: Single read FQualityAlphaPercent write FQualityAlphaPercent;
+    property Codec: avifCodecChoice read FCodec write FCodec;
   end;
 
 implementation
@@ -53,16 +57,24 @@ var
   saveFrom: TBGRACustomBitmap;
   outSize: LongWord;
   quality:integer;
+  qualityAlpha:integer;
 begin
   NeedLibAvif;
   saveFrom := BGRABitmapFactory.Create(Img);
   try
     quality:=Trunc(QualityPercent);
+    qualityAlpha:=Trunc(QualityAlphaPercent);
     if LossLess then
+    begin
       quality:=100;
-    outsize:=avifSaveToStream(TBGRABitmap(saveFrom),Stream,quality,Speed,PixelFormat,IgnoreAlpha);
+      qualityAlpha:=100;
+    end;
+    if (FCodec<>AVIF_CODEC_CHOICE_AUTO) or (qualityAlpha <> 100) then
+      outsize:=avifSaveToStream(TBGRABitmap(saveFrom),Stream,IgnoreAlpha,quality,qualityAlpha,PixelFormat,FCodec,Speed)
+    else
+      outsize:=avifSaveToStream(TBGRABitmap(saveFrom),Stream,quality,Speed,PixelFormat,IgnoreAlpha);
     if outSize = 0 then
-      raise exception.Create('Error encoding WebP');
+      raise exception.Create('Error encoding Avif');
   finally
     saveFrom.Free;
   end;
@@ -72,10 +84,12 @@ constructor TBGRAWriterAvif.Create;
 begin
   inherited Create;
   FQualityPercent := 100;
+  FQualityAlphaPercent := 100;
   FLossless:= True;
   FSpeed:=AVIF_SPEED_DEFAULT;
   FPixelFormat:=AVIF_PIXEL_FORMAT_YUV420;
   FIgnoreAlpha:=false;
+  FCodec := AVIF_CODEC_CHOICE_AUTO;
 end;
 
 initialization
