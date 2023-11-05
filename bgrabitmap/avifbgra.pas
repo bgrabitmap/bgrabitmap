@@ -80,16 +80,8 @@ type
     FImagesCount: uint32;
     procedure EncoderFinish;
     procedure SetMaxThreads(AMT: integer);
-    procedure SetMinQuantizer(AMinQ: integer);
-    procedure SetMaxQuantizer(AMaxQ: integer);
-    procedure SetMinQuantizerAlpha(AMinQ: integer);
-    procedure SetMaxQuantizerAlpha(AMaxQ: integer);
     procedure SetIgnoreAlpha(AValue: boolean);
     function GetMaxThreads: integer;
-    function GetMinQuantizer: integer;
-    function GetMaxQuantizer: integer;
-    function GetMinQuantizerAlpha: integer;
-    function GetMaxQuantizerAlpha: integer;
   public
     constructor Create(AQuality0to100: integer = DEFAULT_QUALITY; ASpeed0to10: integer = AVIF_SPEED_DEFAULT; APixelFormat: avifPixelFormat = AVIF_PIXEL_FORMAT_YUV420;
       AIgnoreAlpha: boolean = False;ACodec:avifCodecChoice=AVIF_CODEC_CHOICE_AUTO); virtual; overload;
@@ -101,17 +93,13 @@ type
     function SaveToMemory(AData: Pointer; ASize: NativeUInt): NativeUInt;
     function GetOutputSize: NativeUInt;
     procedure SetEncoder(ACodec: avifCodecChoice);
-    procedure SetTimeScale(ATimeScale: uint64);
+    procedure SetTimescale(ATimescale: uint64);
     procedure SetQuality(AValue: integer);
     procedure SetQualityAlpha(AValue: integer);
     property InitOk: boolean read FInitOk;
     property OnlyOneImage: boolean read FOnlyOneImage write FOnlyOneImage;
     property MaxThreads: integer read GetMaxThreads write SetMaxThreads;
-    property MinQuantizer: integer read GetMinQuantizer write SetMinQuantizer;
-    property MaxQuantizer: integer read GetMaxQuantizer write SetMaxQuantizer;
-    property MinQuantizerAlpha: integer read GetMinQuantizerAlpha write SetMinQuantizerAlpha;
-    property MaxQuantizerAlpha: integer read GetMaxQuantizerAlpha write SetMaxQuantizerAlpha;
-    property TimeScale: uint64 read FTimeScale write SetTimeScale;
+    property Timescale: uint64 read FTimescale write SetTimescale;
     property IgnoreAlpha: boolean read FIgnoreAlpha write SetIgnoreAlpha;
   end;
 
@@ -225,7 +213,7 @@ type
     procedure SetMinQuantizerAlpha(AMinQ: integer); virtual; abstract;
     procedure SetMaxQuantizerAlpha(AMQ: integer); virtual; abstract;
     procedure SetCodecChoice(AMQ: avifCodecChoice); virtual; abstract;
-    procedure SetTimeScale(aValue:UInt64); virtual; abstract;
+    procedure SetTimescale(aValue:UInt64); virtual; abstract;
     function GetMaxThreads: integer; virtual; abstract;
     function GetMinQuantizer: integer; virtual; abstract;
     function GetMaxQuantizer: integer; virtual; abstract;
@@ -246,7 +234,7 @@ type
     procedure SetMinQuantizerAlpha(AMinQ: integer); override;
     procedure SetMaxQuantizerAlpha(AMQ: integer); override;
     procedure SetCodecChoice(ACC: avifCodecChoice); override;
-    procedure SetTimeScale(aValue:UInt64); override;
+    procedure SetTimescale(aValue:UInt64); override;
     function GetMaxThreads: integer; override;
     function GetMinQuantizer: integer; override;
     function GetMaxQuantizer: integer; override;
@@ -512,7 +500,7 @@ begin
   FEncoder^.codecChoice := ACC;
 end;
 
-procedure TEncoder.SetTimeScale(aValue: UInt64);
+procedure TEncoder.SetTimescale(aValue: UInt64);
 begin
   FEncoder^.timescale:=aValue;
 end;
@@ -684,6 +672,7 @@ var
   res: avifResult;
   imageWrap: TAvifImageBase;
   rgbImageWrap: TAvifRgbImageBase;
+  sourceLineOrder: TRawImageLineOrder;
 begin
   imageWrap:=nil;
   rgbImageWrap:=nil;
@@ -712,9 +701,11 @@ begin
 
     if res <> AVIF_RESULT_OK then
       raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
-    if (aBitmap.LineOrder <> riloTopToBottom) and not
-      (( imageWrap.GetTransformFlags and longword(AVIF_TRANSFORM_IMIR) ) = longword(AVIF_TRANSFORM_IMIR) ) and
-      (imageWrap.GetImirMode = 0) then
+    if ( (imageWrap.GetTransformFlags and longword(AVIF_TRANSFORM_IMIR)) <> 0) and
+       (imageWrap.GetImirMode = 0) then
+      sourceLineOrder := riloBottomToTop
+    else sourceLineOrder := riloTopToBottom;
+    if aBitmap.LineOrder <> sourceLineOrder then
       aBitmap.VerticalFlip;
     aBitmap.InvalidateBitmap;
   finally
@@ -1114,7 +1105,7 @@ begin
   FPixelFormat := APixelFormat;
   FIgnoreAlpha := AIgnoreAlpha;
   FTimescale := DEFAULT_TIMESCALE;
-  lEncoderWrap.SetTimeScale(FTimescale);
+  lEncoderWrap.SetTimescale(FTimescale);
 
   // Configure your encoder here (see avif/avif.h):
   // * maxThreads
@@ -1134,34 +1125,52 @@ begin
 
   lEncoderWrap.SetMaxThreads(2);
   lEncoderWrap.SetSpeed(ASpeed0to10);
-  if FQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
+  if AVIF_VERSION >= AVIF_VERSION_1_0_0 then
   begin
-    // Set defaults, and warn later on if anything looks incorrect
-    //input.requestedFormat = AVIF_PIXEL_FORMAT_YUV444; // don't subsample when using AVIF_MATRIX_COEFFICIENTS_IDENTITY
-    lEncoderWrap.SetMinQuantizer(AVIF_QUANTIZER_LOSSLESS);
-    lEncoderWrap.SetMaxQuantizer(AVIF_QUANTIZER_LOSSLESS);
-    lEncoderWrap.SetMinQuantizerAlpha(AVIF_QUANTIZER_LOSSLESS);
-    lEncoderWrap.SetMaxQuantizerAlpha(AVIF_QUANTIZER_LOSSLESS);
-    lEncoderWrap.SetCodecChoice(AVIF_CODEC_CHOICE_AOM);              // rav1e doesn't support lossless transform yet:
+    if FQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
+    begin
+      PavifEncoder1_0_0(FEncoder)^.quality := LOSS_LESS_IMAGE_QUALITY;
+      PavifEncoder1_0_0(FEncoder)^.qualityAlpha := LOSS_LESS_IMAGE_QUALITY;
+      lEncoderWrap.SetCodecChoice(AVIF_CODEC_CHOICE_AOM);              // rav1e doesn't support lossless transform yet:
+    end
+    else
+    begin
+      PavifEncoder1_0_0(FEncoder)^.quality := FQuality0to100;
+      PavifEncoder1_0_0(FEncoder)^.qualityAlpha := DEFAULT_QUALITY_ALPHA;
+      lEncoderWrap.SetCodecChoice(ACodec);
+    end;
   end
   else
   begin
-    // CONVERT 0..100  TO 63..0
-    quality := Trunc(interpolate(AQuality0to100, 0, 100, AVIF_QUANTIZER_WORST_QUALITY, AVIF_QUANTIZER_BEST_QUALITY));
-    max_quantizer := quality;
-    min_quantizer := 0;
-    alpha_quantizer := 0;
-    if (max_quantizer > 20) then
+    if FQuality0to100 = LOSS_LESS_IMAGE_QUALITY then
     begin
-      min_quantizer := max_quantizer - 20;
-      if (max_quantizer > 40) then
-        alpha_quantizer := max_quantizer - 40;
+      // Set defaults, and warn later on if anything looks incorrect
+      //input.requestedFormat = AVIF_PIXEL_FORMAT_YUV444; // don't subsample when using AVIF_MATRIX_COEFFICIENTS_IDENTITY
+      lEncoderWrap.SetMinQuantizer(AVIF_QUANTIZER_LOSSLESS);
+      lEncoderWrap.SetMaxQuantizer(AVIF_QUANTIZER_LOSSLESS);
+      lEncoderWrap.SetMinQuantizerAlpha(AVIF_QUANTIZER_LOSSLESS);
+      lEncoderWrap.SetMaxQuantizerAlpha(AVIF_QUANTIZER_LOSSLESS);
+      lEncoderWrap.SetCodecChoice(AVIF_CODEC_CHOICE_AOM);              // rav1e doesn't support lossless transform yet:
+    end
+    else
+    begin
+      // CONVERT 0..100  TO 63..0
+      quality := Trunc(interpolate(AQuality0to100, 0, 100, AVIF_QUANTIZER_WORST_QUALITY, AVIF_QUANTIZER_BEST_QUALITY));
+      max_quantizer := quality;
+      min_quantizer := 0;
+      alpha_quantizer := 0;
+      if (max_quantizer > 20) then
+      begin
+        min_quantizer := max_quantizer - 20;
+        if (max_quantizer > 40) then
+          alpha_quantizer := max_quantizer - 40;
+      end;
+      lEncoderWrap.SetMinQuantizer(min_quantizer);
+      lEncoderWrap.SetMaxQuantizer(max_quantizer);
+      lEncoderWrap.SetMinQuantizerAlpha(0);
+      lEncoderWrap.SetMaxQuantizerAlpha(alpha_quantizer);
+      lEncoderWrap.SetCodecChoice(ACodec);
     end;
-    lEncoderWrap.SetMinQuantizer(min_quantizer);
-    lEncoderWrap.SetMaxQuantizer(max_quantizer);
-    lEncoderWrap.SetMinQuantizerAlpha(0);
-    lEncoderWrap.SetMaxQuantizerAlpha(alpha_quantizer);
-    //lEncoderWrap.SetCodecChoice(aCodec);
   end;
   FInitOk := True;
 end;
@@ -1200,37 +1209,6 @@ begin
   lEncoderWrap.SetMaxThreads(AMT);
 end;
 
-procedure TAvifWriter.SetMinQuantizer(AMinQ: integer);
-var
-  lEncoderWrap:TEncoderBase;
-begin
-  lEncoderWrap := TEncoderBase(FEncoderWrap);
-  lEncoderWrap.SetMinQuantizer(AMinQ);
-end;
-
-procedure TAvifWriter.SetMaxQuantizer(AMaxQ: integer);
-var
-  lEncoderWrap:TEncoderBase;
-begin
-  lEncoderWrap := TEncoderBase(FEncoderWrap);
-  lEncoderWrap.SetMaxQuantizer(AMaxQ);
-end;
-
-procedure TAvifWriter.SetMinQuantizerAlpha(AMinQ: integer);
-var
-  lEncoderWrap:TEncoderBase;
-begin
-  lEncoderWrap := TEncoderBase(FEncoderWrap);
-  lEncoderWrap.SetMinQuantizerAlpha(AMinQ);
-end;
-
-procedure TAvifWriter.SetMaxQuantizerAlpha(AMaxQ: integer);
-var
-  lEncoderWrap:TEncoderBase;
-begin
-  lEncoderWrap := TEncoderBase(FEncoderWrap);
-  lEncoderWrap.SetMaxQuantizerAlpha(AMaxQ);
-end;
 
 procedure TAvifWriter.SetIgnoreAlpha(AValue: boolean);
 begin
@@ -1243,38 +1221,6 @@ var
 begin
   lEncoderWrap := TEncoderBase(FEncoderWrap);
   result:=lEncoderWrap.GetMaxThreads;
-end;
-
-function TAvifWriter.GetMinQuantizer: integer;
-var
-  lEncoderWrap:TEncoderBase;
-begin
-  lEncoderWrap := TEncoderBase(FEncoderWrap);
-  result:=lEncoderWrap.GetMinQuantizer;
-end;
-
-function TAvifWriter.GetMaxQuantizer: integer;
-var
-  lEncoderWrap:TEncoderBase;
-begin
-  lEncoderWrap := TEncoderBase(FEncoderWrap);
-  result:=lEncoderWrap.GetMaxQuantizer;
-end;
-
-function TAvifWriter.GetMinQuantizerAlpha: integer;
-var
-  lEncoderWrap:TEncoderBase;
-begin
-  lEncoderWrap := TEncoderBase(FEncoderWrap);
-  result:=lEncoderWrap.GetMinQuantizerAlpha;
-end;
-
-function TAvifWriter.GetMaxQuantizerAlpha: integer;
-var
-  lEncoderWrap:TEncoderBase;
-begin
-  lEncoderWrap := TEncoderBase(FEncoderWrap);
-  result:=lEncoderWrap.GetMaxQuantizerAlpha;
 end;
 
 destructor TAvifWriter.Destroy;
@@ -1365,11 +1311,11 @@ begin
     if convertResult <> AVIF_RESULT_OK then
       raise EAvifException.Create('Failed to convert to YUV(A): ' + avifResultToString(convertResult));
 
-    if FTimesCale <> 0 then
+    if FTimescale <> 0 then
       durationTimescales := Trunc(((ADurationMs / 1000) * FTimescale) + 0.5)
     else
       durationTimescales := 1;
-    if durationTimesCales < 1 then
+    if durationTimescales < 1 then
       durationTimescales := 1;
 
     imageFlags := uint32(AVIF_ADD_IMAGE_FLAG_NONE);
@@ -1459,15 +1405,16 @@ begin
   lEncoderWrap.SetCodecChoice(ACodec);
 end;
 
-procedure TAvifWriter.SetTimeScale(ATimeScale: uint64);
+procedure TAvifWriter.SetTimescale(ATimescale: uint64);
 begin
-  FTimeScale := ATimeScale;
-  TEncoderBase(FEncoderWrap).SetTimeScale(FTimescale);
+  FTimescale := ATimescale;
+  TEncoderBase(FEncoderWrap).SetTimescale(FTimescale);
 end;
 
 procedure TAvifWriter.SetQuality(AValue: integer);
 var
   QV:integer;
+  lEncoderWrap: TEncoderBase;
 begin
   if AVIF_VERSION >= AVIF_VERSION_1_0_0 then
     PavifEncoder1_0_0(FEncoder)^.quality:=clamp(AValue,AVIF_QUALITY_WORST,AVIF_QUALITY_BEST)
@@ -1475,14 +1422,16 @@ begin
   begin
     //0..100 -> 63..0
     QV:=Trunc(Interpolate(AValue,AVIF_QUALITY_WORST,AVIF_QUALITY_BEST,AVIF_QUANTIZER_WORST_QUALITY,AVIF_QUANTIZER_BEST_QUALITY));
-    SetMinQuantizer(QV);
-    SetMaxQuantizer(QV);
+    lEncoderWrap := TEncoderBase(FEncoderWrap);
+    lEncoderWrap.SetMinQuantizer(QV);
+    lEncoderWrap.SetMaxQuantizer(QV);
   end;
 end;
 
 procedure TAvifWriter.SetQualityAlpha(AValue: integer);
 var
   QV:integer;
+  lEncoderWrap: TEncoderBase;
 begin
   if AVIF_VERSION >= AVIF_VERSION_1_0_0 then
     PavifEncoder1_0_0(FEncoder)^.qualityAlpha:=clamp(AValue,AVIF_QUALITY_WORST,AVIF_QUALITY_BEST)
@@ -1490,8 +1439,9 @@ begin
   begin
     //0..100 -> 63..0
     QV:=Trunc(Interpolate(AValue,AVIF_QUALITY_WORST,AVIF_QUALITY_BEST,AVIF_QUANTIZER_WORST_QUALITY,AVIF_QUANTIZER_BEST_QUALITY));
-    SetMinQuantizerAlpha(QV);
-    SetMaxQuantizerAlpha(QV);
+    lEncoderWrap := TEncoderBase(FEncoderWrap);
+    lEncoderWrap.SetMinQuantizerAlpha(QV);
+    lEncoderWrap.SetMaxQuantizerAlpha(QV);
   end;
 end;
 
