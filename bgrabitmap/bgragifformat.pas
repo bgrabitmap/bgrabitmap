@@ -14,7 +14,9 @@ type
   TDisposeMode = (dmNone,        //undefined value
                   dmKeep,        //keep the changes done by the frame
                   dmErase,       //clear everything after the frame
-                  dmRestore);    //restore to how it was before the frame
+                  dmRestore,     //restore to how it was before the frame
+                  dmEraseArea    //clear the rectangular area changed by the frame (not used by GIF files)
+                  );
 
   //one image in the array
   TGifSubImage = record
@@ -23,6 +25,7 @@ type
     DelayMs:    integer;         //time in milliseconds to wait before going to next frame
     DisposeMode: TDisposeMode;   //what do do when going to next frame
     HasLocalPalette: boolean;    //the image has its own palette
+    DrawMode: TDrawMode;         //always dmSetExceptTransparent for GIF files
   end;
   TGifSubImageArray = array of TGifSubImage;
 
@@ -716,6 +719,7 @@ var
     result.Images[NbImages].DelayMs    := DelayMs;
     result.Images[NbImages].DisposeMode := disposeMode;
     result.Images[NbImages].HasLocalPalette := localPalette <> nil;
+    result.Images[NbImages].DrawMode:= dmSetExceptTransparent;
     Inc(NbImages);
 
     Interlaced := GIFImageDescriptor.flags and GIFImageDescriptor_InterlacedFlag =
@@ -1090,6 +1094,7 @@ var
     var
       ext: TGIFGraphicControlExtensionWithHeader;
       transpIndex: integer;
+      disposeMode: TDisposeMode;
     begin
       fillchar({%H-}ext, sizeof(ext), 0);
       try
@@ -1098,6 +1103,8 @@ var
         ext.BlockSize := sizeof(ext.GraphicControl);
         ext.GraphicControl.DelayHundredthSec := (AData.Images[AFrame].DelayMs+5) div 10;
         ext.GraphicControl.TransparentColorIndex := 0;
+        disposeMode := AData.Images[AFrame].DisposeMode;
+        if disposeMode = dmEraseArea then disposeMode := dmErase;
         ext.GraphicControl.flags := integer(AData.Images[AFrame].DisposeMode) shl GIFGraphicControlExtension_DisposeModeShift;
         ext.BlockTerminator := GIFBlockTerminator;
         with AData.Images[AFrame].Position do

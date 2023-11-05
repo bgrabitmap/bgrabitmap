@@ -1305,7 +1305,7 @@ begin
   ext := UTF8LowerCase(ext);
 
   if (ext = '.jpg') or (ext = '.jpeg') then result := ifJpeg else
-  if (ext = '.png') then result := ifPng else
+  if (ext = '.png') or (ext = '.apng') then result := ifPng else
   if (ext = '.gif') then result := ifGif else
   if (ext = '.pcx') then result := ifPcx else
   if (ext = '.bmp') then result := ifBmp else
