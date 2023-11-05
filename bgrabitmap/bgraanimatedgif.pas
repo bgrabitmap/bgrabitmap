@@ -1,6 +1,17 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 unit BGRAAnimatedGif;
 
+{ This class can read and write both animated GIF and animated PNG files.
+
+  There are some differences in the dispose modes and draw modes so some files
+  cannot be directly saved from one format to the other:
+  - dispose mode dmErase is only in GIF and dispose mode dmEraseArea is only in PNG
+  - draw mode in GIF is only dmSetExceptTransparent and draw mode in PNG is dmSet or dmDrawWithTransparency
+
+  PNG format is not limited to 256 colors, so there is no need for quantization even if it possible.
+  When PNG has a palette, it applies to all frames, whereas for GIF, there can be a palette for each frame.
+}
+
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}
 
@@ -177,7 +188,7 @@ type
     property FrameImagePos[AIndex: integer]: TPoint read GetFrameImagePos write SetFrameImagePos;
     property FrameDelayMs[AIndex: integer]: integer read GetFrameDelayMs write SetFrameDelayMs;
     property FrameDisposeMode[AIndex: integer]: TDisposeMode read GetFrameDisposeMode write SetFrameDisposeMode;
-    property FrameDrawMode[AIndex: integer]: TDrawMode read GetFrameDrawMode write SetFrameDrawMode;
+    property FrameDrawMode[AIndex: integer]: TDrawMode read GetFrameDrawMode write SetFrameDrawMode; // linear blend only in PNG
     property AspectRatio: single read FAspectRatio write SetAspectRatio;
     property TotalAnimationTimeMs: Int64 read FTotalAnimationTime;
     property AverageDelayMs: integer read GetAverageDelayMs;

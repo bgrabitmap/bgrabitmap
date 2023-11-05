@@ -13,9 +13,9 @@ type
   //what to do when finishing a frame and starting the next one
   TDisposeMode = (dmNone,        //undefined value
                   dmKeep,        //keep the changes done by the frame
-                  dmErase,       //clear everything after the frame
+                  dmErase,       //clear everything after the frame (used by GIF but not available in PNG)
                   dmRestore,     //restore to how it was before the frame
-                  dmEraseArea    //clear the rectangular area changed by the frame (not used by GIF files)
+                  dmEraseArea    //clear the rectangular area changed by the frame (not used by GIF but by PNG)
                   );
 
   //one image in the array
