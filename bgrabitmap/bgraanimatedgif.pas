@@ -27,8 +27,11 @@ type
   TGifSubImageArray = BGRAGifFormat.TGifSubImageArray;
 
   //how to deal with the background under the GIF animation
-  TGifBackgroundMode = (gbmSimplePaint, gbmEraseBackground,
-    gbmSaveBackgroundOnce, gbmUpdateBackgroundContinuously);
+  TGifBackgroundMode = (
+    gbmSimplePaint,                   // frames are rendered without clearing the backgroud
+    gbmEraseBackground,               // pixels in the GIF that become transparent are filled with EraseColor
+    gbmSaveBackgroundOnce,            // background is saved once before drawing the first frame
+    gbmUpdateBackgroundContinuously); // background is updated continuously to handle overlapping animations
 
   { TBGRAAnimatedGif }
 

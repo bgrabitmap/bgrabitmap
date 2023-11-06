@@ -10,20 +10,26 @@ uses
 
 type
 
-  { TAnimationPanel }
+  { TGifAnimationPanel }
 
-  TAnimationPanel = class(TPanel)
+  TGifAnimationPanel = class(TPanel)
   private
+    FOnRenderFrame: TNotifyEvent;
     procedure SetImage(AValue: TBGRAAnimatedGif);
+    procedure SetOnRenderFrame(AValue: TNotifyEvent);
   protected
     FImage: TBGRAAnimatedGif;
     FFirstPaint, FAnimatePaint: boolean;
+    FTimer: TTimer;
     procedure Paint; override;
+    procedure EraseBackground(DC: HDC); override;
+    procedure ImageChanged(Sender: TObject);
+    procedure TimerTimer(Sender: TObject);
   public
     constructor Create(TheOwner: TComponent); override;
-    procedure EraseBackground(DC: HDC); override;
-    procedure Animate;
-    property Image: TBGRAAnimatedGif read FImage write SetImage;
+    destructor Destroy; override;
+    property Image: TBGRAAnimatedGif read FImage;
+    property OnRenderFrame: TNotifyEvent read FOnRenderFrame write SetOnRenderFrame;
   end;
 
   { TForm1 }
@@ -40,16 +46,14 @@ type
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
     procedure FormDropFiles(Sender: TObject; const FileNames: array of string);
-    procedure Timer1Timer(Sender: TObject);
-  private
+  protected
     { private declarations }
+    procedure GifAnimationPanelRenderFrame(Sender: TObject);
   public
     { public declarations }
-    image: TBGRAAnimatedGif;
     filename, error: string;
-    animationPanel: TAnimationPanel;
+    animationPanel: TGifAnimationPanel;
     procedure LoadImage(AFilename: string);
     procedure FillMemo;
   end;
@@ -61,36 +65,41 @@ implementation
 
 {$R *.lfm}
 
-{ TAnimationPanel }
+{ TGifAnimationPanel }
 
-constructor TAnimationPanel.Create(TheOwner: TComponent);
+constructor TGifAnimationPanel.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
-  FImage := nil;
   FFirstPaint:= true;
   FAnimatePaint:= false;
+  BevelInner:= bvNone;
+  BevelOuter:= bvNone;
+  FImage := TBGRAAnimatedGif.Create;
+  FImage.OnChange := @ImageChanged;
+  FTimer := TTimer.Create(self);
+  FTimer.Enabled := false;
+  FTimer.OnTimer := @TimerTimer;
 end;
 
-procedure TAnimationPanel.EraseBackground(DC: HDC);
+destructor TGifAnimationPanel.Destroy;
 begin
-  // keep background
+  inherited Destroy;
 end;
 
-procedure TAnimationPanel.Animate;
+procedure TGifAnimationPanel.SetImage(AValue: TBGRAAnimatedGif);
 begin
-  FAnimatePaint := true;
-  Invalidate;
+  FImage.Free;
 end;
 
-procedure TAnimationPanel.SetImage(AValue: TBGRAAnimatedGif);
+procedure TGifAnimationPanel.SetOnRenderFrame(AValue: TNotifyEvent);
 begin
-  if FImage=AValue then Exit;
-  FImage:=AValue;
-  FFirstPaint:= true;
-  Invalidate;
+  if FOnRenderFrame=AValue then Exit;
+  FOnRenderFrame:=AValue;
 end;
 
-procedure TAnimationPanel.Paint;
+procedure TGifAnimationPanel.Paint;
+var
+  waitTime: Integer;
 begin
   inherited Paint;
 
@@ -98,6 +107,8 @@ begin
   begin
     Canvas.Brush.Assign(Brush);
     Canvas.FillRect(ClientRect);
+    image.BackgroundMode := gbmEraseBackground;
+    image.EraseColor:= Color;
     if Assigned(FImage) and (FImage.Count > 0) then
       FImage.Show(Canvas, ClientRect);
   end else
@@ -106,18 +117,45 @@ begin
       FImage.Update(Canvas, ClientRect);
   end;
   FAnimatePaint := false;
+  FFirstPaint := false;
+  if Assigned(FOnRenderFrame) then
+    FOnRenderFrame(self);
+  if Assigned(FImage) and (FImage.Count > 1) then
+  begin
+    waitTime := Image.TimeUntilNextImageMs;
+    if waitTime < 15 then waitTime := 15;
+    FTimer.Interval := waitTime;
+    FTimer.Enabled := true;
+  end;
+end;
+
+procedure TGifAnimationPanel.EraseBackground(DC: HDC);
+begin
+  // don't erase background
+end;
+
+procedure TGifAnimationPanel.ImageChanged(Sender: TObject);
+begin
+  FTimer.Enabled:= false;
+  Invalidate;
+end;
+
+procedure TGifAnimationPanel.TimerTimer(Sender: TObject);
+begin
+  FTimer.Enabled := false;
+  FAnimatePaint := true;
+  Refresh;
 end;
 
 { TForm1 }
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  image := TBGRAAnimatedGif.Create;
-  animationPanel := TAnimationPanel.Create(self);
+  animationPanel := TGifAnimationPanel.Create(self);
+  animationPanel.OnRenderFrame := @GifAnimationPanelRenderFrame;
   animationPanel.Left := 4;
   animationPanel.Top := 4;
   animationPanel.Color:= self.Color;
-  animationPanel.Image := image;
   InsertControl(animationPanel, 0);
   LoadImage(ConcatPaths([ExtractFilePath(Application.ExeName), 'waterdrops.gif']));
   FillMemo;
@@ -132,7 +170,7 @@ procedure TForm1.Button2Click(Sender: TObject);
 begin
   try
     if SaveDialog1.Execute then
-      image.SaveToFile(SaveDialog1.FileName);
+      animationPanel.Image.SaveToFile(SaveDialog1.FileName);
   except
     on ex: exception do
     begin
@@ -142,64 +180,57 @@ begin
   end;
 end;
 
-procedure TForm1.FormDestroy(Sender: TObject);
-begin
-  image.Free;
-end;
-
 procedure TForm1.FormDropFiles(Sender: TObject; const FileNames: array of string);
 begin
   LoadImage(FileNames[0]);
 end;
 
-procedure TForm1.Timer1Timer(Sender: TObject);
+procedure TForm1.GifAnimationPanelRenderFrame(Sender: TObject);
 begin
-  if Visible then
-  begin
-    animationPanel.Animate;
-    Label1.Caption := 'Frame: ' + inttostr(image.CurrentImage);
-  end;
+  Label1.Caption := 'Frame: ' + inttostr(animationPanel.image.CurrentImage) +
+                    ', Wait: ' + inttostr(animationPanel.Image.TimeUntilNextImageMs);
 end;
 
 procedure TForm1.LoadImage(AFilename: string);
 begin
-  Timer1.Enabled := false;
   filename := AFilename;
   try
     if not FileExists(filename) then
     begin
-      image.Clear;
+      animationPanel.Image.Clear;
       error := 'Not found';
     end else
     begin
-      image.LoadFromFile(filename);
+      animationPanel.Image.LoadFromFile(filename);
       error := 'Ok';
     end;
   except
     on ex:Exception do
       error := ex.Message;
   end;
-  animationPanel.Width := image.Width;
-  animationPanel.Height := image.Height;
+  animationPanel.Width := animationPanel.Image.Width;
+  animationPanel.Height := animationPanel.Image.Height;
   FillMemo;
-  Timer1.Enabled := true;
 end;
 
 procedure TForm1.FillMemo;
 var s: string;
   i: Integer;
 begin
-  s := error + LineEnding +
-       ExtractFileName(filename) + LineEnding +
-       inttostr(image.Width)+'x'+inttostr(image.height) + LineEnding +
-       inttostr(image.Count)+' frames' + LineEnding;
-  if image.LoopCount = 0 then
-    s += 'infinite loop' + LineEnding
-  else
-    s += inttostr(image.LoopCount)+' loops' + LineEnding;
-  for i := 0 to image.Count-1 do
-    s += '#' + inttostr(i)+': '+inttostr(image.FrameDelayMs[i])+' ms, '+
-         inttostr(image.FrameImage[i].Width)+'x'+inttostr(image.FrameImage[i].Height) + LineEnding;
+  with animationPanel do
+  begin
+    s := error + LineEnding +
+         ExtractFileName(filename) + LineEnding +
+         inttostr(image.Width)+'x'+inttostr(image.height) + LineEnding +
+         inttostr(image.Count)+' frames' + LineEnding;
+    if image.LoopCount = 0 then
+      s += 'infinite loop' + LineEnding
+    else
+      s += inttostr(image.LoopCount)+' loops' + LineEnding;
+    for i := 0 to image.Count-1 do
+      s += '#' + inttostr(i)+': '+inttostr(image.FrameDelayMs[i])+' ms, '+
+           inttostr(image.FrameImage[i].Width)+'x'+inttostr(image.FrameImage[i].Height) + LineEnding;
+  end;
   Memo1.Text := s;
 end;
 
