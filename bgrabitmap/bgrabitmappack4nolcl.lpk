@@ -8,7 +8,7 @@
       <Version Value="11"/>
       <PathDelim Value="\"/>
       <SearchPaths>
-        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)-$(LCLWidgetType)-$(FPCVer)"/>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)-nolcl-$(FPCVer)"/>
       </SearchPaths>
       <Parsing>
         <SyntaxOptions>
@@ -22,6 +22,9 @@
         </Optimizations>
       </CodeGeneration>
       <Other>
+        <ConfigFile>
+          <WriteConfigFilePath Value="$(PkgOutDir)\fpclaz.cfg"/>
+        </ConfigFile>
         <CustomOptions Value="-dBGRABITMAP_DONT_USE_LAZFREETYPE"/>
       </Other>
     </CompilerOptions>
