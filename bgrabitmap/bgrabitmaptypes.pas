@@ -563,6 +563,8 @@ var
       specifies if alpha channel must be supported }
   function CreateBGRAImageWriter(AFormat: TBGRAImageFormat; AHasTransparentPixels: boolean): TFPCustomImageWriter;
 
+  function ResourceFile(AFilename: string): string;
+
 {$DEFINE INCLUDE_INTERFACE}
 {$I bgracustombitmap.inc}
 
@@ -1402,6 +1404,35 @@ begin
     TFPWriterXPM(result).ColorCharSize := 2;
   end else
     result := DefaultBGRAImageWriter[AFormat].Create;
+end;
+
+function ResourceFile(AFilename: string): string;
+{$IFDEF DARWIN}
+const
+  PackagePathEnd = '.app/Contents/MacOS/';
+{$ENDIF}
+var
+  binPath, nextToBinary, packageName, packagePath: String;
+begin
+  binPath := ExtractFilePath(ParamStr(0));
+  if not FileExistsUTF8(AFilename) then
+  begin
+    nextToBinary := ConcatPaths([binPath, AFilename]);
+    {$IFDEF DARWIN}
+    if not FileExistsUTF8(nextToBinary) and binPath.EndsWith(PackagePathEnd) then
+    begin
+      packageName := copy(binPath, 1, length(binPath) - length(PackagePathEnd) + 4);
+      result := ConcatPaths([packageName, 'Contents', 'Resources', AFilename]);
+      if not FileExistsUTF8(result) then
+      begin
+        packagePath := copy(packageName, 1, packageName.LastIndexOf(PathDelim));
+        result := ConcatPaths([packagePath, AFilename]);
+      end;
+    end else
+    {$ENDIF}
+      result := nextToBinary;
+  end else
+    result := AFilename;
 end;
 
 operator =(const AGuid1, AGuid2: TGuid): boolean;
