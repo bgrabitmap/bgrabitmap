@@ -1689,7 +1689,7 @@ begin
   if lEncoder.HasQuality then
   begin
     lEncoder.SetQuality(Quality);
-    lEncoder.SetQuality(QualityAlpha);
+    lEncoder.SetQualityAlpha(QualityAlpha);
   end
   else
   begin
