@@ -1,18 +1,87 @@
 object Form1: TForm1
-  Left = 241
-  Height = 240
-  Top = 150
-  Width = 320
+  Left = 125
+  Height = 350
+  Top = 127
+  Width = 505
+  AllowDropFiles = True
   Caption = 'Form1'
+  ClientHeight = 350
+  ClientWidth = 505
   Color = clSkyBlue
+  Position = poScreenCenter
+  LCLVersion = '3.99.0.0'
   OnCreate = FormCreate
-  OnDestroy = FormDestroy
-  OnPaint = FormPaint
-  LCLVersion = '2.0.0.4'
+  OnDropFiles = FormDropFiles
+  object Panel1: TPanel
+    Left = 305
+    Height = 350
+    Top = 0
+    Width = 200
+    Align = alRight
+    Caption = 'Panel1'
+    ClientHeight = 350
+    ClientWidth = 200
+    Color = clBtnFace
+    ParentBackground = False
+    ParentColor = False
+    TabOrder = 0
+    object Memo1: TMemo
+      Left = 8
+      Height = 251
+      Top = 32
+      Width = 184
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      Lines.Strings = (
+        'Memo1'
+      )
+      ScrollBars = ssVertical
+      TabOrder = 0
+    end
+    object Label1: TLabel
+      Left = 8
+      Height = 16
+      Top = 288
+      Width = 39
+      Anchors = [akLeft, akBottom]
+      Caption = 'Label1'
+    end
+    object Button1: TButton
+      Left = 10
+      Height = 25
+      Top = 312
+      Width = 75
+      Anchors = [akLeft, akBottom]
+      Caption = 'Refresh'
+      TabOrder = 1
+      OnClick = Button1Click
+    end
+    object Button2: TButton
+      Left = 112
+      Height = 25
+      Top = 312
+      Width = 75
+      Anchors = [akLeft, akBottom]
+      Caption = 'Save as...'
+      TabOrder = 2
+      OnClick = Button2Click
+    end
+    object Label2: TLabel
+      Left = 10
+      Height = 16
+      Top = 8
+      Width = 179
+      Caption = 'Drag and drop a GIF or a PNG'
+    end
+  end
   object Timer1: TTimer
     Interval = 15
-    OnTimer = Timer1Timer
-    left = 111
-    top = 44
+    Left = 136
+    Top = 128
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = '.gif'
+    Filter = 'Animated GIF|*.gif|Animated PNG|*.png'
+    Left = 392
+    Top = 184
   end
 end

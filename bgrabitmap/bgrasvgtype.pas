@@ -137,7 +137,13 @@ type
 
   TSVGRecomputeEvent = procedure(Sender: TObject) of object;
   TSVGLinkEvent = procedure(Sender: TObject; AElement: TSVGElement; ALink: boolean) of object;
-  TSVGLinkListeners = specialize TFPGList<TSVGLinkEvent>;
+
+  { TSVGLinkListeners }
+
+  TSVGLinkListeners = class(specialize TFPGList<TSVGLinkEvent>)
+    function IndexOf(const Item: TSVGLinkEvent): Integer;
+    function Remove(const Item: TSVGLinkEvent): Integer;
+  end;
   
   { TSVGDataLink }
 
@@ -485,6 +491,26 @@ type
 implementation
 
 uses BGRASVGShapes;
+
+{ TSVGLinkListeners }
+
+function TSVGLinkListeners.IndexOf(const Item: TSVGLinkEvent): Integer;
+begin
+  Result := 0;
+  while (Result < FCount) and not
+        ((TMethod(PT(FList)[Result]).Code = TMethod(Item).Code)
+        and (TMethod(PT(FList)[Result]).Data = TMethod(Item).Data)) do
+    Inc(Result);
+  if Result = FCount then
+    Result := -1;
+end;
+
+function TSVGLinkListeners.Remove(const Item: TSVGLinkEvent): Integer;
+begin
+  Result := IndexOf(Item);
+  if Result >= 0 then
+    Delete(Result);
+end;
 
 { TSVGCustomElement }
 
@@ -1533,7 +1559,10 @@ begin
   for i:= 0 to high(temp) do
     temp[i] := FLinkListeners.Items[i];
   for i := 0 to high(temp) do
-    temp[i](self, AElement, ALink);
+  begin
+    if FLinkListeners.IndexOf(temp[i]) <> -1 then
+      temp[i](self, AElement, ALink);
+  end;
   // children datalinks may use the element
   for i := FChildren.Count-1 downto 0 do
     TSVGDataLink(FChildren[i]).NotifyLink(AElement, ALink);

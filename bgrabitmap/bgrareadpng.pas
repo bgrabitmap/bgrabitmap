@@ -25,54 +25,63 @@ unit BGRAReadPng;
 interface
 
 uses
-  SysUtils,BGRAClasses, FPImage, FPImgCmn, PNGComn, ZStream, BGRABitmapTypes;
+  SysUtils, BGRAClasses, FPImage, FPImgCmn, BGRAPNGComn, ZStream, BGRABitmapTypes, fgl;
 
 Type
-
   TSetPixelProc = procedure (x,y:integer; const CD : TColordata) of object;
   TConvertColorProc = function (const CD:TColorData) : TFPColor of object;
   TBGRAConvertColorProc = function (const CD:TColorData) : TBGRAPixel of object;
   THandleScanLineProc = procedure (const y : integer; const ScanLine : PByteArray) of object;
 
-  TPNGPhysicalDimensions = packed record
-    X_Pixels, Y_Pixels :DWord;
-    Unit_Specifier :Byte;
+  { TPNGFrame }
+
+  TPNGFrame = class
+    FrameControl: TFrameControlChunk;
+    FrameData: TMemoryStream;
+    constructor Create;
+    destructor Destroy; override;
   end;
-  PPNGPhysicalDimensions=^TPNGPhysicalDimensions;
+  TPNGFrameList = specialize TFPGObjectList<TPNGFrame>;
 
   { TBGRAReaderPNG }
 
   TBGRAReaderPNG = class (TBGRAImageReader)
     private
       FHeader : THeaderChunk;
-      ZData : TMemoryStream;  // holds compressed data until all blocks are read
-      Decompress : TDeCompressionStream; // decompresses the data
-      FPltte : boolean;     // if palette is used
-      FCountScanlines : EightLong; //Number of scanlines to process for each pass
-      FScanLineLength : EightLong; //Length of scanline for each pass
+      FTargetImage: TFPCustomImage;   // target image being decompressed
+      FMainImageData: TMemoryStream;  // holds compressed data until all blocks are read
+      FMainImageFrameIndex: integer;  // index of the frame containing the main image or -1
+      FFrames : TPNGFrameList;
+      FFrameCount: integer;
+      FLoopCount: integer;
+      FIndexed : boolean;             // if palette is used
+      FCountScanlines : EightLong; // Number of scanlines to process for each pass
+      FScanLineLength : EightLong; // Length of scanline for each pass
       FCurrentPass : byte;
       ByteWidth : byte;          // number of bytes to read for pixel information
-      BitsUsed : EightLong; // bitmasks to use to split a byte into smaller parts
-      BitShift : byte;  // shift right to do of the bits extracted with BitsUsed for 1 element
-      CountBitsUsed : byte;  // number of bit groups (1 pixel) per byte (when bytewidth = 1)
-      //CFmt : TColorFormat; // format of the colors to convert from
+      BitsUsed : EightLong;      // bitmasks to use to split a byte into smaller parts
+      BitShift : byte;           // shift right to do of the bits extracted with BitsUsed for 1 element
+      CountBitsUsed : byte;      // number of bit groups (1 pixel) per byte (when bytewidth = 1)
       StartX,StartY, DeltaX,DeltaY, StartPass,EndPass : integer;  // number and format of passes
       FPalette : TFPPalette;
       FSetPixel : TSetPixelProc;
       FConvertColor : TConvertColorProc;
       FBGRAConvertColor : TBGRAConvertColorProc;
       FHandleScanLine: THandleScanLineProc;
+      FMinifyHeight: integer;
       FVerticalShrinkMask: LongWord;
       FVerticalShrinkShr: Integer;
       FGammaCorrection: single;
       FGammaCorrectionTable: packed array of word;
       FGammaCorrectionTableComputed: boolean;
+      FResolutionUnit: TResolutionUnit;
+      FResolutionX, FResolutionY : single;
+      function GetFrameControl(AIndex: Integer): TFrameControlChunk;
       function GetOriginalHeight: integer;
       function GetOriginalWidth: integer;
       function GetVerticalShrinkFactor: integer;
       function ReadChunk: boolean;
-      procedure HandleData;
-      procedure HandleUnknown;
+      procedure InvalidChunkLength;
       function ColorGray1 (const CD:TColorData) : TFPColor;
       function ColorGray2 (const CD:TColorData) : TFPColor;
       function ColorGray4 (const CD:TColorData) : TFPColor;
@@ -105,20 +114,30 @@ Type
       UsingBitGroup : byte;
       DataIndex : LongWord;
       DataBytes : TColorData;
+
       procedure HandleChunk; virtual;
       procedure HandlePalette; virtual;
       procedure HandleAlpha; virtual;
+      procedure HandlePhysicalDimensions; virtual;
       procedure HandleStdRGB; virtual;
       procedure HandleGamma; virtual;
+      procedure HandleData; virtual;
+      procedure HandleUnknown; virtual;
+
+      procedure HandleAnimationControl; virtual;
+      procedure HandleFrameControl; virtual;
+      procedure HandleFrameData; virtual;
+
       procedure PredefinedResolutionValues; virtual;
-      procedure ReadResolutionValues; virtual;
-      function CalcX (relX:integer) : integer;
-      function CalcY (relY:integer) : integer;
+      procedure AssignPalette;
+      procedure AssignResolutionValues;
+      procedure DoLoadImage(AImage: TFPCustomImage; AData: TStream; AWidth, AHeight: integer); virtual;
+
+      procedure DoDecompress(ACompressedData: TStream; AWidth, AHeight: integer); virtual;
       function CalcColor(const ScanLine : PByteArray): TColorData;
       procedure HandleScanLine (const y : integer; const ScanLine : PByteArray); virtual;
       procedure BGRAHandleScanLine(const y: integer; const ScanLine: PByteArray);
       procedure BGRAHandleScanLineTr(const y: integer; const ScanLine: PByteArray);
-      procedure DoDecompress; virtual;
       procedure SetPalettePixel (x,y:integer; const CD : TColordata);
       procedure SetPalColPixel (x,y:integer; const CD : TColordata);
       procedure SetColorPixel (x,y:integer; const CD : TColordata);
@@ -126,25 +145,38 @@ Type
       procedure SetBGRAColorPixel (x,y:integer; const CD : TColordata);
       procedure SetBGRAColorTrPixel (x,y:integer; const CD : TColordata);
       function DecideSetPixel : TSetPixelProc; virtual;
+      property ConvertColor : TConvertColorProc read FConvertColor;
+
       procedure InternalRead  ({%H-}Str:TStream; Img:TFPCustomImage); override;
       function  InternalCheck (Str:TStream) : boolean; override;
-      //property ColorFormat : TColorformat read CFmt;
-      property ConvertColor : TConvertColorProc read FConvertColor;
-      property CurrentPass : byte read FCurrentPass;
-      property Pltte : boolean read FPltte;
-      property ThePalette : TFPPalette read FPalette;
+
       property Header : THeaderChunk read FHeader;
+      property CurrentPass : byte read FCurrentPass;
       property CountScanlines : EightLong read FCountScanlines;
       property ScanLineLength : EightLong read FScanLineLength;
     public
-      MinifyHeight: integer;
-      constructor create; override;
-      destructor destroy; override;
-      property VerticalShrinkFactor: integer read GetVerticalShrinkFactor;
+      constructor Create; override;
+      destructor Destroy; override;
+      function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
+      function GetBitmapDraft(AStream: TStream; {%H-}AMaxWidth, AMaxHeight: integer;
+        out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; override;
+      procedure LoadFrame(AIndex: integer; AImage: TFPCustomImage);
+
+      // image format
       property OriginalWidth: integer read GetOriginalWidth;
       property OriginalHeight: integer read GetOriginalHeight;
-      function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
-      function GetBitmapDraft(AStream: TStream; {%H-}AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; override;
+      property Indexed : boolean read FIndexed;
+      property ThePalette : TFPPalette read FPalette;
+
+      // thumbnail reduction
+      property MinifyHeight: integer read FMinifyHeight write FMinifyHeight;
+      property VerticalShrinkFactor: integer read GetVerticalShrinkFactor;
+
+      // animation
+      property FrameCount : integer read FFrameCount;
+      property LoopCount : integer read FLoopCount;
+      property FrameControl[AIndex: Integer]: TFrameControlChunk read GetFrameControl;
+      property MainImageFrameIndex: integer read FMainImageFrameIndex;
   end;
 
 implementation
@@ -159,19 +191,40 @@ const StartPoints : array[0..7, 0..1] of word =
       BitsUsed2Depth : EightLong = ($C0,$30,$0C,$03,0,0,0,0);
       BitsUsed4Depth : EightLong = ($F0,$0F,0,0,0,0,0,0);
 
-constructor TBGRAReaderPNG.create;
+{ TPNGFrame }
+
+constructor TPNGFrame.Create;
+begin
+  FrameData := nil;
+end;
+
+destructor TPNGFrame.Destroy;
+begin
+  inherited Destroy;
+  FrameData.Free;
+end;
+
+constructor TBGRAReaderPNG.Create;
 begin
   inherited;
   chunk.acapacity := 0;
   chunk.data := nil;
+  FMainImageData := nil;
+  FMainImageFrameIndex := -1;
   UseTransparent := False;
+  FFrames := TPNGFrameList.Create;
+  FFrameCount := 0;
+  FLoopCount := 0;
+  FTargetImage := nil;
 end;
 
-destructor TBGRAReaderPNG.destroy;
+destructor TBGRAReaderPNG.Destroy;
 begin
   with chunk do
     if acapacity > 0 then
       freemem (data);
+  FFrames.Free;
+  FPalette.Free;
   inherited;
 end;
 
@@ -183,10 +236,10 @@ var
   {%H-}HeaderChunk : THeaderChunk;
 begin
   {$PUSH}{$HINTS OFF}fillchar({%H-}result, sizeof({%H-}result), 0);{$POP}
-  if AStream.Read({%H-}FileHeader, sizeof(FileHeader))<> sizeof(FileHeader) then exit;
-  if QWord(FileHeader) <> QWord(PNGComn.Signature) then exit;
-  if AStream.Read({%H-}ChunkHeader, sizeof(ChunkHeader))<> sizeof(ChunkHeader) then exit;
-  if ChunkHeader.CType <> ChunkTypes[ctIHDR] then exit;
+  if (AStream.Read({%H-}FileHeader, sizeof(FileHeader)) <> sizeof(FileHeader))
+    or not CheckSignature(FileHeader) then exit;
+  if AStream.Read({%H-}ChunkHeader, sizeof(ChunkHeader)) <> sizeof(ChunkHeader) then exit;
+  if ChunkHeader.CType <> GetChunkCode(ctIHDR) then exit;
   if BEtoN(ChunkHeader.CLength) < headerChunkSize then exit;
   if AStream.Read({%H-}HeaderChunk, headerChunkSize) <> headerChunkSize then exit;
   result.width:= BEtoN(HeaderChunk.Width);
@@ -216,19 +269,28 @@ begin
   try
     png.MinifyHeight := AMaxHeight;
     result.LoadFromStream(AStream, png);
-    AOriginalWidth:= result.Width;
+    AOriginalWidth:= png.OriginalWidth;
     AOriginalHeight:= png.OriginalHeight;
   finally
     png.Free;
   end;
 end;
 
+procedure TBGRAReaderPNG.LoadFrame(AIndex: integer; AImage: TFPCustomImage);
+begin
+  with FFrames[AIndex] do
+    DoLoadImage(AImage, FrameData, FrameControl.Width, FrameControl.Height);
+end;
+
 function TBGRAReaderPNG.ReadChunk: boolean;
 var {%H-}ChunkHeader : TChunkHeader;
     readCRC : LongWord;
     l : LongWord;
+    readCount: integer;
 begin
-  TheStream.Read ({%H-}ChunkHeader,sizeof(ChunkHeader));
+  readCount := TheStream.Read ({%H-}ChunkHeader,sizeof(ChunkHeader));
+  if readCount <> sizeof(TChunkHeader) then
+    raise PNGImageException.Create('Unexpected end of stream when reading next chunk');
   with chunk do
     begin
     // chunk header
@@ -241,11 +303,9 @@ begin
       {$ENDIF}
       ReadType := CType;
       end;
-    aType := low(TChunkTypes);
-    while (aType < high(TChunkTypes)) and (ChunkTypes[aType] <> ReadType) do
-      inc (aType);
+    aType := GetChunkType(ReadType);
     if alength > MaxChunkLength then
-      raise PNGImageException.Create ('Invalid chunklength');
+      raise PNGImageException.Create ('Length exceed maximum for ' + GetChunkCode(aType) + ' chunk');
     if alength > acapacity then
       begin
       if acapacity > 0 then
@@ -255,26 +315,28 @@ begin
       end;
     l := TheStream.read (data^, alength);
     if l <> alength then
-      raise PNGImageException.Create ('Chunk length exceeds stream length');
+      raise PNGImageException.Create ('Length exceeds stream length for ' + GetChunkCode(aType) + ' chunk');
     readCRC := 0;
     TheStream.Read (readCRC, sizeof(ReadCRC));
-    l := CalculateCRC (All1Bits, ReadType, sizeOf(ReadType));
-    l := CalculateCRC (l, data^, alength);
+    l := CalculateChunkCRC(ReadType, data, alength);
     {$IFDEF ENDIAN_LITTLE}
-    l := swap(l xor All1Bits);
-    {$ELSE}
-    l := l xor All1Bits;
+    l := swap(l);
     {$ENDIF}
     if ReadCRC <> l then
       begin
         //if chunk is essential, then raise an error
         if ReadType[0] = upcase(ReadType[0]) then
-          raise PNGImageException.Create ('CRC check failed')
+          raise PNGImageException.Create ('CRC check failed for ' + GetChunkCode(aType) + ' chunk')
         else
           result := false;
       end
       else result := true;
     end;
+end;
+
+procedure TBGRAReaderPNG.InvalidChunkLength;
+begin
+  raise PNGImageException.Create('Invalid length for ' + GetChunkCode(chunk.atype) + ' chunk');
 end;
 
 function TBGRAReaderPNG.GetVerticalShrinkFactor: integer;
@@ -287,18 +349,42 @@ begin
   result := Header.height;
 end;
 
+function TBGRAReaderPNG.GetFrameControl(AIndex: Integer): TFrameControlChunk;
+begin
+  if not Assigned(FFrames) then
+    raise PNGImageException.Create('This PNG is not animated');
+  result := FFrames[AIndex].FrameControl;
+end;
+
 function TBGRAReaderPNG.GetOriginalWidth: integer;
 begin
   result := header.Width;
 end;
 
 procedure TBGRAReaderPNG.HandleData;
-var OldSize : LongWord;
+var
+  frame: TPNGFrame;
 begin
-  OldSize := ZData.size;
-  ZData.Size := OldSize;
-  ZData.Size := ZData.Size + Chunk.aLength;
-  ZData.Write (chunk.Data^, chunk.aLength);
+  if not Assigned(FMainImageData) then
+  begin
+    FMainImageData := TMemoryStream.Create;
+
+    // main image can also be a frame in the animation
+    if (FFrames.Count > 0) and not Assigned(FFrames.Last.FrameData) then
+    begin
+      frame := FFrames.Last;
+      if (frame.FrameControl.Width <> Header.Width) or
+         (frame.FrameControl.Height <> Header.Height) or
+         (frame.FrameControl.OffsetX <> 0) or
+         (frame.FrameControl.OffsetY <> 0) then
+        raise PNGImageException.Create('Main frame must match the image dimensions');
+
+      frame.FrameData := FMainImageData;
+      FMainImageFrameIndex := FFrames.Count - 1;
+    end else
+      FMainImageFrameIndex := -1;
+  end;
+  FMainImageData.WriteBuffer(chunk.Data^, chunk.aLength);
 end;
 
 procedure TBGRAReaderPNG.HandleAlpha;
@@ -375,34 +461,100 @@ begin
   FGammaCorrectionTableComputed:= false;
 end;
 
-procedure TBGRAReaderPNG.PredefinedResolutionValues;
+procedure TBGRAReaderPNG.HandleAnimationControl;
 begin
-  if (TheImage is TCustomUniversalBitmap) then
-  with TCustomUniversalBitmap(TheImage) do
+  if chunk.alength < sizeof(TAnimationControlChunk) then
+    InvalidChunkLength;
+  with PAnimationControlChunk(chunk.data)^ do
   begin
-    //According with Standard: If the pHYs chunk is not present, pixels are assumed to be square
-    ResolutionUnit :=ruNone;
-    ResolutionX :=1;
-    ResolutionY :=1;
+    FFrameCount:= BEtoN(FrameCount);
+    if FFrameCount < 1 then raise PNGImageException.Create('Invalid frame count');
+    FLoopCount:= BEtoN(RepeatCount);
+    if FLoopCount < 0 then raise PNGImageException.Create('Invalid loop count');
   end;
 end;
 
-procedure TBGRAReaderPNG.ReadResolutionValues;
+procedure TBGRAReaderPNG.HandleFrameControl;
+var
+  frame: TPNGFrame;
+begin
+  if FFrameCount = 0 then exit; // ignore if animation not specified
+
+  if FFrames.Count >= FFrameCount then
+    raise PNGImageException.Create('Actual frame count exceed defined count');
+  if Chunk.alength < sizeof(TFrameControlChunk) then
+    InvalidChunkLength;
+
+  frame := TPNGFrame.Create;
+  frame.FrameControl := PFrameControlChunk(Chunk.data)^;
+  frame.FrameControl.Width:= BEtoN(frame.FrameControl.Width);
+  frame.FrameControl.Height:= BEtoN(frame.FrameControl.Height);
+  frame.FrameControl.OffsetX:= BEtoN(frame.FrameControl.OffsetX);
+  frame.FrameControl.OffsetY:= BEtoN(frame.FrameControl.OffsetY);
+  frame.FrameControl.DelayNum:= BEtoN(frame.FrameControl.DelayNum);
+  frame.FrameControl.DelayDenom:= BEtoN(frame.FrameControl.DelayDenom);
+  if frame.FrameControl.DelayDenom = 0 then
+    frame.FrameControl.DelayDenom:= 100;
+  FFrames.Add(frame);
+end;
+
+procedure TBGRAReaderPNG.HandleFrameData;
+var
+  frame: TPNGFrame;
+begin
+  if FFrameCount = 0 then exit; // ignore if animation not specified
+
+  if FFrames.Count = 0 then
+    raise PNGImageException.Create('Missing Frame Control chunk');
+  if Chunk.alength < sizeof(TFrameDataChunk) then
+    InvalidChunkLength;
+
+  frame := FFrames.Last;
+  if not Assigned(frame.FrameData) then
+    frame.FrameData := TMemoryStream.Create;
+  frame.FrameData.WriteBuffer((PByte(chunk.data) + sizeof(TFrameDataChunk))^,
+                              chunk.alength - sizeof(TFrameDataChunk));
+end;
+
+procedure TBGRAReaderPNG.PredefinedResolutionValues;
+begin
+  //According to Standard: If the pHYs chunk is not present, pixels are assumed to be square
+  FResolutionUnit :=ruNone;
+  FResolutionX :=1;
+  FResolutionY :=1;
+end;
+
+procedure TBGRAReaderPNG.HandlePhysicalDimensions;
+begin
+  if (chunk.alength<>sizeof(TPNGPhysicalDimensions))
+  then InvalidChunkLength;
+
+  if (PPNGPhysicalDimensions(chunk.data)^.Unit_Specifier = 1)
+  then FResolutionUnit :=ruPixelsPerCentimeter
+  else FResolutionUnit :=ruNone;
+
+  FResolutionX :=BEtoN(PPNGPhysicalDimensions(chunk.data)^.X_Pixels)/100;
+  FResolutionY :=BEtoN(PPNGPhysicalDimensions(chunk.data)^.Y_Pixels)/100;
+end;
+
+procedure TBGRAReaderPNG.AssignPalette;
+begin
+  if Assigned(FPalette) and FTargetImage.UsePalette then
+    FTargetImage.Palette.Copy(FPalette);
+end;
+
+procedure TBGRAReaderPNG.AssignResolutionValues;
 begin
   {$IF FPC_FULLVERSION<30301}
-  if (TheImage is TCustomUniversalBitmap) then
-  with TCustomUniversalBitmap(TheImage) do
+  if (FTargetImage is TCustomUniversalBitmap) then
+  with TCustomUniversalBitmap(FTargetImage) do
   {$ELSE}
-  with TheImage do
+  with FTargetImage do
   {$ENDIF}
   begin
-    if (chunk.alength<>sizeof(TPNGPhysicalDimensions))
-    then raise Exception.Create('ctpHYs Chunk Size not Valid for TPNGPhysicalDimensions');
-    if (PPNGPhysicalDimensions(chunk.data)^.Unit_Specifier = 1)
-    then ResolutionUnit :=ruPixelsPerCentimeter
-    else ResolutionUnit :=ruNone;
-    ResolutionX :=BEtoN(PPNGPhysicalDimensions(chunk.data)^.X_Pixels)/100;
-    ResolutionY :=BEtoN(PPNGPhysicalDimensions(chunk.data)^.Y_Pixels)/100;
+    ResolutionUnit := FResolutionUnit;
+    ResolutionX:= FResolutionX;
+    ResolutionY:= FResolutionY;
   end;
 end;
 
@@ -413,18 +565,17 @@ var r : LongWord;
 begin
   if header.colortype = 3 then
     with chunk do
-      begin
-      if TheImage.UsePalette then
-        FPalette := TheImage.Palette
-      else
-        FPalette := TFPPalette.Create(0);
+    begin
+      if assigned(FPalette) then
+        raise PNGImageException.Create('Palette specified multiple times');
+      FPalette := TFPPalette.Create(0);
       c.Alpha := AlphaOpaque;
       if (aLength mod 3) > 0 then
-        raise PNGImageException.Create ('Impossible length for PLTE-chunk');
+        InvalidChunkLength;
       r := 0;
       ThePalette.count := 0;
       while r < alength do
-        begin
+      begin
         t := data^[r];
         c.red := t + (t shl 8);
         inc (r);
@@ -436,18 +587,18 @@ begin
         inc (r);
         ApplyGammaCorrection(c);
         ThePalette.Add (c);
-        end;
       end;
+    end;
 end;
 
 procedure TBGRAReaderPNG.SetPalettePixel (x,y:integer; const CD : TColordata);
 begin  // both PNG and Img have palette
-  TheImage.Pixels[x,y] := CD;
+  FTargetImage.Pixels[x,y] := CD;
 end;
 
 procedure TBGRAReaderPNG.SetPalColPixel (x,y:integer; const CD : TColordata);
 begin  // PNG with palette, Img without
-  TheImage.Colors[x,y] := ThePalette[CD];
+  FTargetImage.Colors[x,y] := ThePalette[CD];
 end;
 
 procedure TBGRAReaderPNG.SetColorPixel (x,y:integer; const CD : TColordata);
@@ -456,7 +607,7 @@ begin  // both PNG and Img work without palette, and no transparency colordata
   // c := ConvertColor (CD,CFmt);
   c := ConvertColor (CD);
   ApplyGammaCorrection(c);
-  TheImage.Colors[x,y] := c;
+  FTargetImage.Colors[x,y] := c;
 end;
 
 procedure TBGRAReaderPNG.SetColorTrPixel (x,y:integer; const CD : TColordata);
@@ -467,61 +618,51 @@ begin  // both PNG and Img work without palette, and there is a transparency col
   ApplyGammaCorrection(c);
   if TransparentDataValue = CD then
     c.alpha := alphaTransparent;
-  TheImage.Colors[x,y] := c;
+  FTargetImage.Colors[x,y] := c;
 end;
 
 procedure TBGRAReaderPNG.SetBGRAColorPixel(x, y: integer; const CD: TColordata);
 var c: TBGRAPixel;
 begin
   c := FBGRAConvertColor(CD);
-  if c.alpha = 0 then TBGRACustomBitmap(TheImage).SetPixel(x,y,BGRAPixelTransparent)
-  else TBGRACustomBitmap(TheImage).SetPixel(x,y,c);
+  if c.alpha = 0 then TBGRACustomBitmap(FTargetImage).SetPixel(x,y,BGRAPixelTransparent)
+  else TBGRACustomBitmap(FTargetImage).SetPixel(x,y,c);
 end;
 
 procedure TBGRAReaderPNG.SetBGRAColorTrPixel(x, y: integer; const CD: TColordata);
 var c: TBGRAPixel;
 begin
   if TransparentDataValue = CD then
-    TBGRACustomBitmap(TheImage).SetPixel(x,y,BGRAPixelTransparent) else
+    TBGRACustomBitmap(FTargetImage).SetPixel(x,y,BGRAPixelTransparent) else
   begin
     c := FBGRAConvertColor(CD);
-    if c.alpha = 0 then TBGRACustomBitmap(TheImage).SetPixel(x,y,BGRAPixelTransparent)
-    else TBGRACustomBitmap(TheImage).SetPixel(x,y,c);
+    if c.alpha = 0 then TBGRACustomBitmap(FTargetImage).SetPixel(x,y,BGRAPixelTransparent)
+    else TBGRACustomBitmap(FTargetImage).SetPixel(x,y,c);
   end;
 end;
 
 function TBGRAReaderPNG.DecideSetPixel : TSetPixelProc;
 begin
-  if Pltte then
-    if TheImage.UsePalette then
+  if Indexed then
+    if FTargetImage.UsePalette then
       result := @SetPalettePixel
     else
       result := @SetPalColPixel
   else
     if UseTransparent then
     begin
-      if TheImage is TBGRACustomBitmap then
+      if FTargetImage is TBGRACustomBitmap then
         result := @SetBGRAColorTrPixel
       else
         result := @SetColorTrPixel
     end
     else
     begin
-      if TheImage is TBGRACustomBitmap then
+      if FTargetImage is TBGRACustomBitmap then
         result := @SetBGRAColorPixel
       else
         result := @SetColorPixel
     end;
-end;
-
-function TBGRAReaderPNG.CalcX (relX:integer) : integer;
-begin
-  result := StartX + (relX * deltaX);
-end;
-
-function TBGRAReaderPNG.CalcY (relY:integer) : integer;
-begin
-  result := StartY + (relY * deltaY);
 end;
 
 function TBGRAReaderPNG.CalcColor(const ScanLine : PByteArray): TColorData;
@@ -639,7 +780,7 @@ begin
     case ByteWidth of
       1: if BitsUsed[0] = $ff then
          begin
-           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+           pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
            for rx := 0 to ScanlineLength[CurrentPass]-1 do
            begin
              pdest^ := FBGRAConvertColor(ScanLine^[DataIndex]);
@@ -650,7 +791,7 @@ begin
            exit;
          end;
       2: begin
-           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+           pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
            for rx := 0 to ScanlineLength[CurrentPass]-1 do
            begin
              pdest^ := FBGRAConvertColor(
@@ -666,7 +807,7 @@ begin
            exit;
          end;
       3: begin
-           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+           pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
            for rx := 0 to ScanlineLength[CurrentPass]-1 do
            begin
              pdest^.red := ScanLine^[DataIndex];
@@ -679,7 +820,7 @@ begin
            exit;
          end;
       4: begin
-           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+           pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
            for rx := 0 to ScanlineLength[CurrentPass]-1 do
            begin
              pdest^ := FBGRAConvertColor(
@@ -697,7 +838,7 @@ begin
     end;
   {$POP}
 
-  pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+  pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
   for rx := 0 to ScanlineLength[CurrentPass]-1 do
     begin
     pdest^ := FBGRAConvertColor(CalcColor(ScanLine));
@@ -717,7 +858,7 @@ begin
     case ByteWidth of
       1: if BitsUsed[0] = $ff then
          begin
-           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+           pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
            for rx := 0 to ScanlineLength[CurrentPass]-1 do
            begin
              c := ScanLine^[DataIndex];
@@ -733,7 +874,7 @@ begin
            exit;
          end;
       2: begin
-           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+           pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
            for rx := 0 to ScanlineLength[CurrentPass]-1 do
            begin
              c :=
@@ -754,7 +895,7 @@ begin
            exit;
          end;
       4: begin
-           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+           pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
            for rx := 0 to ScanlineLength[CurrentPass]-1 do
            begin
              c :=
@@ -775,7 +916,7 @@ begin
            exit;
          end;
       8: begin
-           pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+           pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
            for rx := 0 to ScanlineLength[CurrentPass]-1 do
            begin
              c :=
@@ -797,7 +938,7 @@ begin
          end;
     end;
 
-  pdest := TBGRACustomBitmap(TheImage).ScanLine[y]+StartX;
+  pdest := TBGRACustomBitmap(FTargetImage).ScanLine[y]+StartX;
   for rx := 0 to ScanlineLength[CurrentPass]-1 do
     begin
     c := CalcColor(ScanLine);
@@ -806,6 +947,22 @@ begin
       else pdest^ := FBGRAConvertColor(c);
     Inc(pdest, deltaX);
     end
+end;
+
+procedure TBGRAReaderPNG.DoLoadImage(AImage: TFPCustomImage; AData: TStream; AWidth, AHeight: integer);
+var
+  outputHeight: Integer;
+begin
+  if not Assigned(AData) then
+    raise PNGImageException.Create('Image data not present');
+  FTargetImage := AImage;
+  outputHeight := (AHeight + FVerticalShrinkMask) shr FVerticalShrinkShr;
+  FTargetImage.SetSize(AWidth, outputHeight);
+  AssignResolutionValues;
+  AssignPalette;
+  AData.position:= 0;
+  DoDecompress(AData, AWidth, AHeight);
+  FTargetImage := nil;
 end;
 
 function TBGRAReaderPNG.ColorGray1(const CD: TColorData): TFPColor;
@@ -1077,7 +1234,9 @@ begin
   result := BGRA(CD shr 8 and $FF,(CD shr 24) and $FF,(CD shr 40) and $FF, CD shr 56);
 end;
 
-procedure TBGRAReaderPNG.DoDecompress;
+procedure TBGRAReaderPNG.DoDecompress(ACompressedData: TStream; AWidth, AHeight: integer);
+var
+  decompressStream : TDeCompressionStream; // decompresses the data
 
   procedure initVars;
   var r,d : integer;
@@ -1088,8 +1247,8 @@ procedure TBGRAReaderPNG.DoDecompress;
         begin
         StartPass := 0;
         EndPass := 0;
-        FCountScanlines[0] := Height;
-        FScanLineLength[0] := Width;
+        FCountScanlines[0] := AHeight;
+        FScanLineLength[0] := AWidth;
         end
       else
         begin
@@ -1097,18 +1256,18 @@ procedure TBGRAReaderPNG.DoDecompress;
         EndPass := 7;
         for r := 1 to 7 do
           begin
-          d := Height div delta[r,1];
-          if (height mod delta[r,1]) > startpoints[r,1] then
+          d := AHeight div delta[r,1];
+          if (AHeight mod delta[r,1]) > startpoints[r,1] then
             inc (d);
           FCountScanlines[r] := d;
-          d := width div delta[r,0];
-          if (width mod delta[r,0]) > startpoints[r,0] then
+          d := AWidth div delta[r,0];
+          if (AWidth mod delta[r,0]) > startpoints[r,0] then
             inc (d);
           FScanLineLength[r] := d;
           end;
         end;
-      Fpltte := (ColorType = 3);
-      case colortype of
+      FIndexed := (ColorType = 3);
+      case ColorType of
         0 : case Bitdepth of
               1  : begin
                    FConvertColor := @ColorGray1; //CFmt := cfMono;
@@ -1319,7 +1478,7 @@ procedure TBGRAReaderPNG.DoDecompress;
       switchLine, currentLine, previousLine : pByteArray;
   begin
     FSetPixel := DecideSetPixel;
-    if not Pltte and (TheImage is TBGRACustomBitmap) and
+    if not Indexed and (FTargetImage is TBGRACustomBitmap) and
       not CheckGammaCorrection then
     begin
       if UseTransparent then
@@ -1356,8 +1515,8 @@ procedure TBGRAReaderPNG.DoDecompress;
             previousLine := switchLine;
             Y := StartY + (ry * deltaY);
             lf := 0;
-            Decompress.Read (lf, sizeof(lf));
-            Decompress.Read (currentLine^, l);
+            decompressStream.Read (lf, sizeof(lf));
+            decompressStream.Read (currentLine^, l);
 
             case lf of
               1: FilterSub(PByte(currentLine), l, ByteWidth);
@@ -1382,12 +1541,23 @@ procedure TBGRAReaderPNG.DoDecompress;
   end;
 
 begin
-  InitVars;
-  DeCode;
+  decompressStream := TDecompressionStream.Create (ACompressedData);
+  try
+    InitVars;
+    DeCode;
+  finally
+    decompressStream.Free;
+  end;
 end;
 
 procedure TBGRAReaderPNG.HandleChunk;
 begin
+  if IsAnimatedChunkType(chunk.AType) then
+  case TAnimatedChunkTypes(chunk.AType) of
+    ctacTL: HandleAnimationControl;
+    ctfcTL: HandleFrameControl;
+    ctfdAT: HandleFrameData;
+  end else
   case chunk.AType of
     ctIHDR : raise PNGImageException.Create ('Second IHDR chunk found');
     ctPLTE : HandlePalette;
@@ -1396,7 +1566,7 @@ begin
     cttRNS : HandleAlpha;
     ctsRGB : HandleStdRGB;
     ctgAMA : HandleGamma;
-    ctpHYs : ReadResolutionValues;
+    ctpHYs : HandlePhysicalDimensions;
     else HandleUnknown;
   end;
 end;
@@ -1418,8 +1588,6 @@ begin
   begin
     FVerticalShrinkShr := 0;
     FVerticalShrinkMask := 0;
-    FGammaCorrection := 1;
-    FGammaCorrectionTableComputed:= false;
     outputHeight := Height;
     if MinifyHeight <> 0 then
       begin
@@ -1429,50 +1597,49 @@ begin
             Inc(FVerticalShrinkShr);
           end;
         FVerticalShrinkMask:= (1 shl FVerticalShrinkShr)-1;
-        outputHeight := (Height+FVerticalShrinkMask) shr FVerticalShrinkShr;
       end;
-    Img.SetSize (Width, outputHeight);
   end;
-  ZData := TMemoryStream.Create;
-  try
-    //Resolution: If the pHYs chunk is not present, pixels are assumed to be square
-    PredefinedResolutionValues;
 
+  FreeAndNil(FPalette);
+  FFrames.Clear;
+  FMainImageFrameIndex := -1;
+  FGammaCorrection := 1;
+  FGammaCorrectionTableComputed:= false;
+  //Resolution: If the pHYs chunk is not present, pixels are assumed to be square
+  PredefinedResolutionValues;
+
+  try
     EndOfFile := false;
     while not EndOfFile do
       begin
       if ReadChunk then
         HandleChunk;
       end;
-    ZData.position:=0;
-    Decompress := TDecompressionStream.Create (ZData);
-    try
-      DoDecompress;
-    finally
-      Decompress.Free;
-    end;
+
+    if Assigned(FMainImageData) then
+      DoLoadImage(TheImage, FMainImageData, Header.Width, Header.Height)
+    else
+      raise PNGImageException.Create('Missing image data');
+
+    // if not all frames are found, update the frame count accordingly
+    if FFrames.Count < FFrameCount then
+      FFrameCount := FFrames.Count;
   finally
-    ZData.Free;
-    if not img.UsePalette and assigned(FPalette) then
-      begin
-      FPalette.Free;
-      end;
+    if FMainImageFrameIndex = -1 then
+      FreeAndNil(FMainImageData);
   end;
 end;
 
 function  TBGRAReaderPNG.InternalCheck (Str:TStream) : boolean;
-var {%H-}SigCheck : array[0..7] of byte;
+var {%H-}SigCheck : TPNGSignature;
     r : integer;
 begin
   try
     // Check Signature
     if Str.Read({%H-}SigCheck, SizeOf(SigCheck)) <> SizeOf(SigCheck) then
       raise PNGImageException.Create('This is not PNG-data');
-    for r := 0 to 7 do
-    begin
-      If SigCheck[r] <> Signature[r] then
+    if not CheckSignature(SigCheck) then
         raise PNGImageException.Create('This is not PNG-data');
-    end;
     // Check IHDR
     ReadChunk;
     if chunk.aType <> ctIHDR then

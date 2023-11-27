@@ -2,14 +2,13 @@
 <CONFIG>
   <Package Version="5">
     <PathDelim Value="\"/>
-    <Name Value="BGRABitmapPack4fpGUI"/>
+    <Name Value="BGRABitmapPack4Android"/>
     <Author Value="Circular"/>
     <CompilerOptions>
       <Version Value="11"/>
       <PathDelim Value="\"/>
       <SearchPaths>
-        <OtherUnitFiles Value="fpgui"/>
-        <UnitOutputDirectory Value="lib4fpgui\$(TargetCPU)-$(TargetOS)\$(FPCVer)"/>
+        <UnitOutputDirectory Value="lib4nogui\$(TargetCPU)-$(TargetOS)\$(FPCVer)"/>
       </SearchPaths>
       <Parsing>
         <SyntaxOptions>
@@ -28,13 +27,16 @@
         </Debugging>
       </Linking>
       <Other>
-        <CustomOptions Value="-dBGRABITMAP_USE_FPGUI"/>
+        <CustomOptions Value="-dBGRABITMAP_DONT_USE_LCL -dBGRABITMAP_DONT_USE_LAZFREETYPE"/>
+        <OtherDefines Count="1">
+          <Define0 Value="$DEFINE BGRABITMAP_DONT_USE_LCL"/>
+        </OtherDefines>
       </Other>
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
     <Version Major="11" Minor="5" Release="7"/>
-    <Files Count="105">
+    <Files Count="106">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -332,142 +334,143 @@
         <UnitName Value="BGRAUTF8"/>
       </Item74>
       <Item75>
-        <Filename Value="bgrafpguibitmap.pas"/>
-        <UnitName Value="BGRAfpGUIBitmap"/>
-      </Item75>
-      <Item76>
         <Filename Value="bgratypewriter.pas"/>
         <UnitName Value="BGRATypewriter"/>
-      </Item76>
-      <Item77>
+      </Item75>
+      <Item76>
         <Filename Value="bgrasvg.pas"/>
         <UnitName Value="BGRASVG"/>
-      </Item77>
-      <Item78>
+      </Item76>
+      <Item77>
         <Filename Value="bgrasvgshapes.pas"/>
         <UnitName Value="BGRASVGShapes"/>
-      </Item78>
-      <Item79>
+      </Item77>
+      <Item78>
         <Filename Value="bgrasvgtype.pas"/>
         <UnitName Value="BGRASVGType"/>
-      </Item79>
-      <Item80>
+      </Item78>
+      <Item79>
         <Filename Value="bgrapalette.pas"/>
         <UnitName Value="BGRAPalette"/>
-      </Item80>
-      <Item81>
+      </Item79>
+      <Item80>
         <Filename Value="bgracolorquantization.pas"/>
         <UnitName Value="BGRAColorQuantization"/>
-      </Item81>
-      <Item82>
+      </Item80>
+      <Item81>
         <Filename Value="bgradithering.pas"/>
         <UnitName Value="BGRADithering"/>
-      </Item82>
-      <Item83>
-        <Filename Value="bgrafreetype.pas"/>
-        <UnitName Value="BGRAFreeType"/>
-      </Item83>
-      <Item84>
+      </Item81>
+      <Item82>
         <Filename Value="bgracustomtextfx.pas"/>
         <UnitName Value="BGRACustomTextFX"/>
-      </Item84>
-      <Item85>
+      </Item82>
+      <Item83>
         <Filename Value="bgrawritepng.pas"/>
         <UnitName Value="BGRAWritePNG"/>
-      </Item85>
-      <Item86>
+      </Item83>
+      <Item84>
         <Filename Value="bgragifformat.pas"/>
         <UnitName Value="BGRAGifFormat"/>
-      </Item86>
-      <Item87>
+      </Item84>
+      <Item85>
+        <Filename Value="bgranoguibitmap.pas"/>
+        <UnitName Value="BGRANoGUIBitmap"/>
+      </Item85>
+      <Item86>
         <Filename Value="bgrascenetypes.pas"/>
         <UnitName Value="BGRASceneTypes"/>
-      </Item87>
-      <Item88>
+      </Item86>
+      <Item87>
         <Filename Value="bgrarenderer3d.pas"/>
         <UnitName Value="BGRARenderer3D"/>
-      </Item88>
-      <Item89>
+      </Item87>
+      <Item88>
         <Filename Value="bgrawritebmpmiomap.pas"/>
         <UnitName Value="BGRAWriteBmpMioMap"/>
+      </Item88>
+      <Item89>
+        <Filename Value="bgraspritegl.pas"/>
+        <UnitName Value="BGRASpriteGL"/>
       </Item89>
       <Item90>
-        <Filename Value="bgraphoxo.pas"/>
-        <UnitName Value="BGRAPhoxo"/>
+        <Filename Value="bgraopengltype.pas"/>
+        <UnitName Value="BGRAOpenGLType"/>
       </Item90>
       <Item91>
-        <Filename Value="bgrafilterscanner.pas"/>
-        <UnitName Value="BGRAFilterScanner"/>
+        <Filename Value="bgracanvasgl.pas"/>
+        <UnitName Value="BGRACanvasGL"/>
       </Item91>
       <Item92>
-        <Filename Value="bgrafiltertype.pas"/>
-        <UnitName Value="BGRAFilterType"/>
+        <Filename Value="bgraphoxo.pas"/>
+        <UnitName Value="BGRAPhoxo"/>
       </Item92>
       <Item93>
-        <Filename Value="bgrafilterblur.pas"/>
-        <UnitName Value="BGRAFilterBlur"/>
+        <Filename Value="bgrafilterscanner.pas"/>
+        <UnitName Value="BGRAFilterScanner"/>
       </Item93>
       <Item94>
-        <Filename Value="bgramultifiletype.pas"/>
-        <UnitName Value="BGRAMultiFileType"/>
+        <Filename Value="bgrafiltertype.pas"/>
+        <UnitName Value="BGRAFilterType"/>
       </Item94>
       <Item95>
-        <Filename Value="bgrawinresource.pas"/>
-        <UnitName Value="BGRAWinResource"/>
+        <Filename Value="bgrafilterblur.pas"/>
+        <UnitName Value="BGRAFilterBlur"/>
       </Item95>
       <Item96>
-        <Filename Value="bgraunicode.pas"/>
-        <UnitName Value="BGRAUnicode"/>
+        <Filename Value="bgramultifiletype.pas"/>
+        <UnitName Value="BGRAMultiFileType"/>
       </Item96>
       <Item97>
-        <Filename Value="bezier.inc"/>
-        <Type Value="Include"/>
+        <Filename Value="bgrawinresource.pas"/>
+        <UnitName Value="BGRAWinResource"/>
       </Item97>
       <Item98>
-        <Filename Value="unibitmap.inc"/>
-        <Type Value="Include"/>
+        <Filename Value="bgraunicode.pas"/>
+        <UnitName Value="BGRAUnicode"/>
       </Item98>
       <Item99>
-        <Filename Value="bgraclasses.pas"/>
-        <UnitName Value="BGRAClasses"/>
+        <Filename Value="bezier.inc"/>
+        <Type Value="Include"/>
       </Item99>
       <Item100>
-        <Filename Value="bgrascanner.inc"/>
-        <Type Value="Include"/>
+        <Filename Value="bgraclasses.pas"/>
+        <UnitName Value="BGRAClasses"/>
       </Item100>
       <Item101>
-        <Filename Value="generatedunicode.inc"/>
+        <Filename Value="bgrascanner.inc"/>
         <Type Value="Include"/>
       </Item101>
       <Item102>
-        <Filename Value="generatedutf8.inc"/>
+        <Filename Value="bgrapixel.inc"/>
         <Type Value="Include"/>
       </Item102>
       <Item103>
-        <Filename Value="bgrapixel.inc"/>
+        <Filename Value="extendedcolorspace.inc"/>
         <Type Value="Include"/>
       </Item103>
       <Item104>
-        <Filename Value="extendedcolorspace.inc"/>
+        <Filename Value="generatedcolorspace.inc"/>
         <Type Value="Include"/>
       </Item104>
       <Item105>
-        <Filename Value="generatedcolorspace.inc"/>
+        <Filename Value="generatedunicode.inc"/>
         <Type Value="Include"/>
       </Item105>
+      <Item106>
+        <Filename Value="generatedutf8.inc"/>
+        <Type Value="Include"/>
+      </Item106>
     </Files>
     <CompatibilityMode Value="True"/>
-    <RequiredPkgs Count="3">
+    <RequiredPkgs Count="2">
       <Item1>
         <PackageName Value="freetypelaz"/>
       </Item1>
       <Item2>
-        <PackageName Value="fpgui_toolkit"/>
-      </Item2>
-      <Item3>
         <PackageName Value="FCL"/>
         <MinVersion Major="1" Valid="True"/>
-      </Item3>
+      </Item2>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>

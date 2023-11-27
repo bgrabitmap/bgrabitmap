@@ -880,25 +880,27 @@ type
     { --------------------------------------------------------------------------- }
     { Codec selection }
 type
-      PavifCodecChoice = ^avifCodecChoice;
-      avifCodecChoice = (AVIF_CODEC_CHOICE_AUTO := 0,AVIF_CODEC_CHOICE_AOM,
-        AVIF_CODEC_CHOICE_DAV1D,     { Decode only }
-		AVIF_CODEC_CHOICE_LIBGAV1,     { Decode only }
-        AVIF_CODEC_CHOICE_RAV1E,    { Encode only }
-		AVIF_CODEC_CHOICE_SVT,    { Encode only }
-    AVIF_CODEC_CHOICE_AVM      // Experimental (AV2)
+    PavifCodecChoice = ^avifCodecChoice;
+    avifCodecChoice = (
+      AVIF_CODEC_CHOICE_AUTO := 0,
+      AVIF_CODEC_CHOICE_AOM,       { Encode and decode }
+      AVIF_CODEC_CHOICE_DAV1D,     { Decode only }
+      AVIF_CODEC_CHOICE_LIBGAV1,   { Decode only }
+      AVIF_CODEC_CHOICE_RAV1E,     { Encode only }
+      AVIF_CODEC_CHOICE_SVT,       { Encode only }
+      AVIF_CODEC_CHOICE_AVM        { Experimental (AV2) }
+    );
+
+    PavifCodecFlag = ^avifCodecFlag;
+    avifCodecFlag = (
+        AVIF_CODEC_FLAG_CAN_DECODE := 1 shl 0,
+        AVIF_CODEC_FLAG_CAN_ENCODE := 1 shl 1
       );
 
-      PavifCodecFlag = ^avifCodecFlag;
-      avifCodecFlag = (
-	  AVIF_CODEC_FLAG_CAN_DECODE := 1 shl 0,
-	  AVIF_CODEC_FLAG_CAN_ENCODE := 1 shl 1
-        );
+    PavifCodecFlags = ^avifCodecFlags;
+    avifCodecFlags = UInt32;
 
-      PavifCodecFlags = ^avifCodecFlags;
-      avifCodecFlags = UInt32;
-    { If this returns NULL, the codec choice/flag combination is unavailable }
-
+{ If this returns NULL, the codec choice/flag combination is unavailable }
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifCodecName{$IFDEF LD}: function{$ENDIF}(choice:avifCodecChoice;requiredFlags:avifCodecFlags):PAnsiChar;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}
 
 {$IFDEF LD}var{$ELSE}function{$ENDIF} avifCodecChoiceFromName{$IFDEF LD}: function{$ENDIF}(name:PAnsiChar):avifCodecChoice;cdecl;{$IFNDEF LD}external LibAvifFilename;{$ENDIF}

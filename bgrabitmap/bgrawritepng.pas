@@ -23,13 +23,14 @@ unit BGRAWritePNG;
 interface
 
 
-uses sysutils, BGRAClasses, FPImage, FPImgCmn, PNGcomn, ZStream, BGRABitmapTypes;
+uses sysutils, BGRAClasses, FPImage, FPImgCmn, BGRAPNGComn, ZStream, BGRABitmapTypes;
 
 type
-  THeaderChunk = packed record
-    Width, height : LongWord;
-    BitDepth, ColorType, Compression, Filter, Interlace : byte;
+  TPNGFrameToWrite = record
+    FrameControl: TFrameControlChunk;
+    Image: TFPCustomImage;
   end;
+  TPNGArrayOfFrameToWrite = array of TPNGFrameToWrite;
 
   TGetPixelFunc = function (x,y : LongWord) : TColorData of object;
   TGetPixelBGRAFunc = function (p: PBGRAPixel) : TColorData of object;
@@ -40,8 +41,16 @@ type
 
   TBGRAWriterPNG = class (TBGRACustomWriterPNG)
     private
-      FUsetRNS, FCompressedText, FWordSized, FIndexed,
+      FCompressedText, FWordSized, FIndexed,
       FUseAlpha, FGrayScale : boolean;
+      FCustomPalette: TFPPalette;
+
+      FSourceImage: TFPCustomImage;
+      FAnimation: array of TPNGFrameToWrite;
+      FAnimationChunkCount: Longword;
+      FRepeatCount: integer;
+
+      FUsetRNS: boolean;
       FByteWidth : byte;
       FChunk : TChunk;
       CFmt : TColorFormat; // format of the colors to convert from
@@ -65,10 +74,10 @@ type
       function GetColorPixelBGRA (p: PBGRAPixel) : TColorData;
       function GetPalettePixelBGRA (p: PBGRAPixel) : TColorData;
       function GetColPalPixelBGRA (p: PBGRAPixel) : TColorData;
-      procedure InitWriteIDAT;
-      procedure Gatherdata;
-      procedure WriteCompressedData;
-      procedure FinalWriteIDAT;
+      procedure InitWriteImageData;
+      procedure GatherData;
+      procedure WriteCompressedData(AImageDataChunkCode: TChunkCode);
+      procedure FinalWriteImageData;
     protected
       property Header : THeaderChunk read FHeader;
       procedure InternalWrite ({%H-}Str:TStream; {%H-}Img:TFPCustomImage); override;
@@ -78,8 +87,12 @@ type
       procedure WritePLTE; virtual;
       procedure WriteResolutionValues; virtual;
       procedure WritetRNS; virtual;
+      procedure WriteImageData(AImage: TFPCustomImage; AImageDataChunkCode: TChunkCode); virtual;
       procedure WriteIDAT; virtual;
+      procedure WritefdAT(AIndex: integer); virtual;
       procedure WriteTexts; virtual;
+      procedure WriteacTL; virtual;
+      procedure WritefcTL(AIndex: integer); virtual;
       procedure WriteIEND; virtual;
       function CurrentLine (x:LongWord) : byte; inline;
       function PrevSample (x:LongWord): byte; inline;
@@ -112,10 +125,15 @@ type
       property byteWidth : byte read FByteWidth;
       property DatalineLength : LongWord read FDatalineLength;
     public
-      constructor create; override;
-      destructor destroy; override;
+      constructor Create; override;
+      destructor Destroy; override;
+      procedure AnimationWrite(AStream: TStream;
+        AImage:TFPCustomImage;  // default image (may be as well in the animation)
+        AAnimation: TPNGArrayOfFrameToWrite;
+        ARepeatCount: integer = 0); // loop count (0 for infinite loop)
       property GrayScale : boolean read FGrayscale write FGrayScale;
       property Indexed : boolean read FIndexed write FIndexed;
+      property CustomPalette: TFPPalette read FCustomPalette write FCustomPalette;
       property CompressedText : boolean read FCompressedText write FCompressedText;
       property WordSized : boolean read FWordSized write FWordSized;
       property CompressionLevel : TCompressionLevel read FCompressionLevel write FCompressionLevel;
@@ -125,26 +143,47 @@ implementation
 
 uses BGRAReadPNG;
 
-constructor TBGRAWriterPNG.create;
+constructor TBGRAWriterPNG.Create;
 begin
   inherited;
   Fchunk.acapacity := 0;
   Fchunk.data := nil;
   FGrayScale := False;
   FIndexed := False;
+  FCustomPalette := nil;
+  FAnimation := nil;
+  FRepeatCount := -1;
   FCompressedText := True;
   FWordSized := False;
   FUseAlpha := True;
   FCompressionLevel:=clDefault;
 end;
 
-destructor TBGRAWriterPNG.destroy;
+destructor TBGRAWriterPNG.Destroy;
 begin
   if OwnsPalette then FreeAndNil(FPalette);
   with Fchunk do
     if acapacity > 0 then
       freemem (data);
   inherited;
+end;
+
+procedure TBGRAWriterPNG.AnimationWrite(AStream: TStream;
+  AImage: TFPCustomImage; AAnimation: TPNGArrayOfFrameToWrite;
+  ARepeatCount: integer);
+begin
+  if Indexed and not Assigned(FCustomPalette) then
+    raise FPImageException.Create('Palette must be specified for indexed color');
+  if ARepeatCount < 0 then
+    raise FPImageException.Create('Repeat count must be positive');
+  FAnimation := AAnimation;
+  FRepeatCount:= ARepeatCount;
+  try
+    ImageWrite(AStream, AImage);
+  finally
+    FAnimation := nil;
+    FRepeatCount:= -1;
+  end;
 end;
 
 procedure TBGRAWriterPNG.WriteChunk;
@@ -160,22 +199,20 @@ begin
     {$ENDIF}
 	if (ReadType = '') then
       if atype <> ctUnknown then
-        chead.CType := ChunkTypes[aType]
+        chead.CType := GetChunkCode(aType)
       else
         raise PNGImageException.create ('Doesn''t have a chunktype to write')
     else
       chead.CType := ReadType;
-    c := CalculateCRC (All1Bits, ReadType, sizeOf(ReadType));
-    c := CalculateCRC (c, data^, alength);
+    c := CalculateChunkCRC (ReadType, data, alength);
     {$IFDEF ENDIAN_LITTLE}
-    crc := swap(c xor All1Bits);
-    {$ELSE}
-    crc := c xor All1Bits;
+    crc := swap(c);
     {$ENDIF}
     with TheStream do
       begin
       Write (chead, sizeof(chead));
-      Write (data^[0], alength);
+      if alength > 0 then
+        Write (data^[0], alength);
       Write (crc, sizeof(crc));
       end;
     end;
@@ -201,7 +238,7 @@ begin
   with Fchunk do
     begin
     aType := ct;
-    ReadType := ChunkTypes[ct];
+    ReadType := GetChunkCode(ct);
     end;
 end;
 
@@ -210,9 +247,7 @@ begin
   with FChunk do
     begin
     ReadType := ct;
-    aType := low(TChunkTypes);
-    while (aType < high(TChunkTypes)) and (ChunkTypes[aType] <> ct) do
-      inc (aType);
+    aType := GetChunkType(ct);
     end;
 end;
 
@@ -319,13 +354,13 @@ var c : integer;
   var none, half : boolean;
       maxTransparentAlpha: word;
 
-    procedure CountFromPalettedImage;
+    procedure CountFromPalettedImage(AImage: TFPCustomImage);
     var
       p : integer;
       a : word;
       c : TFPColor;
     begin
-      with TheImage.Palette do
+      with AImage.Palette do
         begin
         p := count-1;
         FTransparentColor.alpha := alphaOpaque;
@@ -341,7 +376,6 @@ var c : integer;
           end;
 
         //check transparent color is used consistently
-        FTransparentColorOk := true;
         p := count-1;
         while (p >= 0) do
           begin
@@ -367,13 +401,13 @@ var c : integer;
         end;
     end;
 
-    procedure CountFromRGBImage;
+    procedure CountFromRGBImage(AImage: TFPCustomImage);
     var
       a : word;
       c : TFPColor;
       x,y : longint;  // checks on < 0
     begin
-      with TheImage do
+      with AImage do
         begin
         x := width-1;
         y := height-1;
@@ -395,7 +429,6 @@ var c : integer;
           end;
 
         //check transparent color is used consistently
-        FTransparentColorOk := true;
         x := width-1;
         y := height-1;
         while (y >= 0) do
@@ -427,17 +460,28 @@ var c : integer;
         end;
     end;
 
+  var i: integer;
   begin
-    FTransparentColorOk := false;
+    FTransparentColorOk := true;
     if FWordSized then maxTransparentAlpha := 0
     else maxTransparentAlpha := $00ff;
     half := false;
     none := false;
-    with TheImage do
-      if UsePalette then
-        CountFromPalettedImage
-      else
-        CountFromRGBImage;
+    if TheImage.UsePalette then
+      CountFromPalettedImage(TheImage)
+    else
+      CountFromRGBImage(TheImage);
+
+    for i := 0 to high(FAnimation) do
+    begin
+      if FAnimation[i].Image <> TheImage then
+      begin
+        if FAnimation[i].Image.UsePalette then
+          CountFromPalettedImage(FAnimation[i].Image)
+        else
+          CountFromRGBImage(FAnimation[i].Image);
+      end;
+    end;
 
     if half then
       result := 3
@@ -525,14 +569,23 @@ begin
     if FIndexed then
       begin
       if OwnsPalette then FreeAndNil(FPalette);
-      OwnsPalette := not TheImage.UsePalette;
-      if OwnsPalette then
-        begin
-        FPalette := TFPPalette.Create (16);
-        FPalette.Build (TheImage);
-        end
-      else
-        FPalette := TheImage.Palette;
+      if Assigned(FCustomPalette) then
+      begin
+        OwnsPalette:= false;
+        FPalette := FCustomPalette;
+      end else
+      begin
+        if Assigned(FAnimation) then
+          raise FPImageException.Create('Palette must be specified for indexed color');
+        OwnsPalette := not TheImage.UsePalette;
+        if OwnsPalette then
+          begin
+          FPalette := TFPPalette.Create (16);
+          FPalette.Build (TheImage);
+          end
+        else
+          FPalette := TheImage.Palette;
+      end;
       if ThePalette.count > 256 then
         raise PNGImageException.Create ('Too many colors to use indexed PNG color type');
       ColorType := 3;
@@ -560,9 +613,11 @@ begin
 end;
 
 procedure TBGRAWriterPNG.WriteIHDR;
+var signature: TPNGSignature;
 begin
   // signature for PNG
-  TheStream.writeBuffer(Signature,sizeof(Signature));
+  signature := GetSignature;
+  TheStream.writeBuffer(signature, sizeof(signature));
   // Determine all settings for filling the header
   fillchar(fheader,sizeof(fheader),#0);
   DetermineHeader (FHeader);
@@ -635,17 +690,17 @@ end;
 
 function TBGRAWriterPNG.GetColorPixel (x,y:LongWord) : TColorData;
 begin
-  result := FFmtColor (TheImage[x,y]);
+  result := FFmtColor (FSourceImage[x,y]);
 end;
 
 function TBGRAWriterPNG.GetPalettePixel (x,y:LongWord) : TColorData;
 begin
-  result := TheImage.Pixels[x,y];
+  result := FSourceImage.Pixels[x,y];
 end;
 
 function TBGRAWriterPNG.GetColPalPixel (x,y:LongWord) : TColorData;
 begin
-  result := ThePalette.IndexOf (TheImage.Colors[x,y]);
+  result := ThePalette.IndexOf (FSourceImage.Colors[x,y]);
 end;
 
 function TBGRAWriterPNG.GetColorPixelBGRA(p: PBGRAPixel): TColorData;
@@ -655,7 +710,7 @@ end;
 
 function TBGRAWriterPNG.GetPalettePixelBGRA(p: PBGRAPixel): TColorData;
 begin
-  result := TheImage.Palette.IndexOf(p^.ToFPColor);
+  result := FSourceImage.Palette.IndexOf(p^.ToFPColor);
 end;
 
 function TBGRAWriterPNG.GetColPalPixelBGRA(p: PBGRAPixel): TColorData;
@@ -666,7 +721,7 @@ end;
 function TBGRAWriterPNG.DecideGetPixel : TGetPixelFunc;
 begin
   case Fheader.colortype of
-    3 : if TheImage.UsePalette then
+    3 : if (FAnimation = nil) and TheImage.UsePalette then
           result := @GetPalettePixel
           else result := @GetColPalPixel;
     else  result := @GetColorPixel;
@@ -676,7 +731,7 @@ end;
 function TBGRAWriterPNG.DecideGetPixelBGRA: TGetPixelBGRAFunc;
 begin
   case Fheader.colortype of
-    3 : if TheImage.UsePalette then
+    3 : if (FAnimation = nil) and TheImage.UsePalette then
           result := @GetPalettePixelBGRA
           else result := @GetColPalPixelBGRA;
     else  result := @GetColorPixelBGRA;
@@ -715,38 +770,39 @@ begin
   with TheImage do
   {$ENDIF}
   begin
-       SetChunkLength(sizeof(TPNGPhysicalDimensions));
-       SetChunkType(ctpHYs);
+     if (ResolutionX = 0) or (ResolutionY = 0) then exit;
+     SetChunkLength(sizeof(TPNGPhysicalDimensions));
+     SetChunkType(ctpHYs);
 
-       with PPNGPhysicalDimensions(ChunkDataBuffer)^ do
-       begin
-         if (ResolutionUnit=ruPixelsPerInch)
-         then ResolutionUnit :=ruPixelsPerCentimeter;
-         if (ResolutionUnit=ruPixelsPerCentimeter)
-         then begin
-                Unit_Specifier:=1;
-                X_Pixels :=Trunc(ResolutionX*100);
-                Y_Pixels :=Trunc(ResolutionY*100);
-              end
-         else begin //ruNone
-                Unit_Specifier:=0;
-                X_Pixels :=Trunc(ResolutionX);
-                Y_Pixels :=Trunc(ResolutionY);
-            end;
+     with PPNGPhysicalDimensions(ChunkDataBuffer)^ do
+     begin
+       if (ResolutionUnit=ruPixelsPerInch)
+       then ResolutionUnit :=ruPixelsPerCentimeter;
+       if (ResolutionUnit=ruPixelsPerCentimeter)
+       then begin
+              Unit_Specifier:=1;
+              X_Pixels :=Trunc(ResolutionX*100);
+              Y_Pixels :=Trunc(ResolutionY*100);
+            end
+       else begin //ruNone
+              Unit_Specifier:=0;
+              X_Pixels :=Trunc(ResolutionX);
+              Y_Pixels :=Trunc(ResolutionY);
+          end;
 
-         {$IFDEF ENDIAN_LITTLE}
-         X_Pixels :=swap(X_Pixels);
-         Y_Pixels :=swap(Y_Pixels);
-         {$ENDIF}
-       end;
+       {$IFDEF ENDIAN_LITTLE}
+       X_Pixels :=swap(X_Pixels);
+       Y_Pixels :=swap(Y_Pixels);
+       {$ENDIF}
+     end;
 
-       WriteChunk;
+     WriteChunk;
   end;
 end;
 
-procedure TBGRAWriterPNG.InitWriteIDAT;
+procedure TBGRAWriterPNG.InitWriteImageData;
 begin
-  FDatalineLength := TheImage.Width*ByteWidth;
+  FDatalineLength := FSourceImage.Width*ByteWidth;
   GetMem (FPreviousLine, FDatalineLength);
   GetMem (FCurrentLine, FDatalineLength);
   fillchar (FCurrentLine^,FDatalineLength,0);
@@ -756,7 +812,7 @@ begin
   FGetPixelBGRA := DecideGetPixelBGRA;
 end;
 
-procedure TBGRAWriterPNG.FinalWriteIDAT;
+procedure TBGRAWriterPNG.FinalWriteImageData;
 begin
   ZData.Free;
   FreeMem (FPreviousLine);
@@ -776,19 +832,19 @@ var x : integer;
     p : PBGRAPixel;
 begin
   index := 0;
-  if TheImage is TBGRACustomBitmap then
+  if FSourceImage is TBGRACustomBitmap then
   begin
-    p := TBGRACustomBitmap(TheImage).ScanLine[y];
+    p := TBGRACustomBitmap(FSourceImage).ScanLine[y];
     if FHeader.BitDepth <> 16 then
       case FByteWidth of
-        1: for x := pred(TheImage.Width) downto 0 do
+        1: for x := pred(FSourceImage.Width) downto 0 do
            begin
              cd := FGetPixelBGRA(p);
              ScanLine^[index] := cd;
              inc (index);
              inc(p);
            end;
-        2: for x := pred(TheImage.Width) downto 0 do
+        2: for x := pred(FSourceImage.Width) downto 0 do
            begin
              cd := FGetPixelBGRA(p);
              ScanLine^[index] := cd and $ff;
@@ -796,7 +852,7 @@ begin
              inc (index,2);
              inc(p);
            end;
-        3: for x := pred(TheImage.Width) downto 0 do
+        3: for x := pred(FSourceImage.Width) downto 0 do
            begin
              ScanLine^[index] := p^.red;
              ScanLine^[index+1] := p^.green;
@@ -804,7 +860,7 @@ begin
              inc (index,3);
              inc(p);
            end;
-        4: for x := pred(TheImage.Width) downto 0 do
+        4: for x := pred(FSourceImage.Width) downto 0 do
            begin
              ScanLine^[index] := p^.red;
              ScanLine^[index+1] := p^.green;
@@ -815,7 +871,7 @@ begin
            end;
         else raise exception.Create('Unexpected byte width');
       end else
-      for x := pred(TheImage.Width) downto 0 do
+      for x := pred(FSourceImage.Width) downto 0 do
       begin
         cd := FGetPixelBGRA(p);
         {$IFDEF ENDIAN_BIG}
@@ -838,7 +894,7 @@ begin
       end;
   end
   else
-  for x := 0 to pred(TheImage.Width) do
+  for x := 0 to pred(FSourceImage.Width) do
     begin
     cd := FGetPixel (x,y);
     {$IFDEF ENDIAN_BIG}
@@ -864,7 +920,7 @@ procedure TBGRAWriterPNG.Gatherdata;
 var x,y : integer;
     lf : byte;
 begin
-  for y := 0 to pred(TheImage.height) do
+  for y := 0 to pred(FSourceImage.height) do
     begin
     FSwitchLine := FCurrentLine;
     FCurrentLine := FPreviousLine;
@@ -879,31 +935,51 @@ begin
     end;
 end;
 
-procedure TBGRAWriterPNG.WriteCompressedData;
+procedure TBGRAWriterPNG.WriteCompressedData(AImageDataChunkCode: TChunkCode);
 var l : LongWord;
 begin
   Compressor.Free;  // Close compression and finish the writing in ZData
   l := ZData.position;
   ZData.position := 0;
   SetChunkLength(l);
-  SetChunkType (ctIDAT);
+  SetChunkType (AImageDataChunkCode);
   ZData.Read (ChunkdataBuffer^, l);
   WriteChunk;
 end;
 
+procedure TBGRAWriterPNG.WriteImageData(AImage: TFPCustomImage;
+  AImageDataChunkCode: TChunkCode);
+var sequenceNumber: DWord;
+begin
+  FSourceImage := AImage;
+  InitWriteImageData;
+  if AImageDataChunkCode = AnimatedChunkTypes[ctfdAT] then
+  begin
+    sequenceNumber := NtoBE(FAnimationChunkCount);
+    inc(FAnimationChunkCount);
+    ZData.WriteBuffer(sequenceNumber, sizeOf(sequenceNumber));
+  end;
+  GatherData;
+  WriteCompressedData(AImageDataChunkCode);
+  FinalWriteImageData;
+  FSourceImage := nil;
+end;
+
 procedure TBGRAWriterPNG.WriteIDAT;
 begin
-  InitWriteIDAT;
-  GatherData;
-  WriteCompressedData;
-  FinalWriteIDAT;
+  WriteImageData(TheImage, GetChunkCode(ctIDAT));
+end;
+
+procedure TBGRAWriterPNG.WritefdAT(AIndex: integer);
+begin
+  WriteImageData(FAnimation[AIndex].Image, AnimatedChunkTypes[ctfdAT]);
 end;
 
 procedure TBGRAWriterPNG.WritetRNS;
   procedure PaletteAlpha;
   var r : integer;
   begin
-    with TheImage.palette do
+    with ThePalette do
       begin
       // search last palette entry with transparency
       r := count;
@@ -976,6 +1052,39 @@ procedure TBGRAWriterPNG.WriteTexts;
 begin
 end;
 
+procedure TBGRAWriterPNG.WriteacTL;
+var animControl: TAnimationControlChunk;
+begin
+  animControl.FrameCount := NtoBE(longword(length(FAnimation)));
+  if FRepeatCount >= 0 then
+    animControl.RepeatCount := NtoBE(longword(FRepeatCount))
+  else
+    animControl.RepeatCount := 0;
+  SetChunkType(AnimatedChunkTypes[ctacTL]);
+  SetChunkLength(sizeof(TAnimationControlChunk));
+  move (animControl, ChunkDataBuffer^, sizeof(TAnimationControlChunk));
+  WriteChunk;
+end;
+
+procedure TBGRAWriterPNG.WritefcTL(AIndex: integer);
+var
+  frameControl: TFrameControlChunk;
+begin
+  frameControl := FAnimation[AIndex].FrameControl;
+  frameControl.SequenceNumber:= NtoBE(FAnimationChunkCount);
+  inc(FAnimationChunkCount);
+  frameControl.Width:= NtoBE(frameControl.Width);
+  frameControl.Height:= NtoBE(frameControl.Height);
+  frameControl.OffsetX:= NtoBE(frameControl.OffsetX);
+  frameControl.OffsetY:= NtoBE(frameControl.OffsetY);
+  frameControl.DelayNum:= NtoBE(frameControl.DelayNum);
+  frameControl.DelayDenom:= NtoBE(frameControl.DelayDenom);
+  SetChunkType(AnimatedChunkTypes[ctfcTL]);
+  SetChunkLength(sizeof(TFrameControlChunk));
+  move (frameControl, ChunkDataBuffer^, sizeof(TFrameControlChunk));
+  WriteChunk;
+end;
+
 procedure TBGRAWriterPNG.WriteIEND;
 begin
   SetChunkLength(0);
@@ -984,17 +1093,39 @@ begin
 end;
 
 procedure TBGRAWriterPNG.InternalWrite (Str:TStream; Img:TFPCustomImage);
+var mainImageIndex, i: integer;
 begin
   WriteIHDR;
   if Fheader.colorType = 3 then
     WritePLTE;
-
-  WriteResolutionValues;
-
   if FUsetRNS then
     WritetRNS;
-  WriteIDAT;
+  WriteResolutionValues;
   WriteTexts;
+
+  FAnimationChunkCount := 0;
+  mainImageIndex := -1;
+  for i := 0 to high(FAnimation) do
+    if FAnimation[i].Image = Img then
+      mainImageIndex := i;
+
+  if length(FAnimation) > 0 then
+    WriteacTL;
+
+  if mainImageIndex = -1 then
+    WriteIDAT;
+
+  if length(FAnimation) > 0 then
+  begin
+    for i := 0 to high(FAnimation) do
+    begin
+      WritefcTL(i);
+      if i = mainImageIndex then
+        WriteIDAT
+      else
+        WritefdAT(i)
+    end;
+  end;
   WriteIEND;
 end;
 

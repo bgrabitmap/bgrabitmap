@@ -141,6 +141,7 @@ type
     constructor Create(AColors: ArrayOfWeightedColor); override;
     function GetAsArrayOfWeightedColor: ArrayOfWeightedColor; override;
     function IncColor(AValue: TBGRAPixel; out NewWeight: UInt32): boolean;
+    procedure IncColors(ABitmap: TBGRACustomBitmap); overload; virtual;
     function DecColor(AValue: TBGRAPixel; out NewWeight: UInt32): boolean;
     property Weight[AIndex: Integer]: UInt32 read GetWeightByIndex;
   end;
@@ -862,6 +863,21 @@ begin
     NewWeight := PBGRAWeightedPaletteEntry(Entry)^.Weight;
     AddLastColor(Entry);
     result := true;
+  end;
+end;
+
+procedure TBGRAWeightedPalette.IncColors(ABitmap: TBGRACustomBitmap);
+var p: PBGRAPixel;
+  n: integer;
+  w: UInt32;
+begin
+  n := ABitmap.NbPixels;
+  p := ABitmap.Data;
+  while n > 0 do
+  begin
+    IncColor(p^, w);
+    inc(p);
+    dec(n);
   end;
 end;
 
