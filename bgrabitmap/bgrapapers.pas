@@ -16,7 +16,7 @@ uses Types, Graphics;
 
 type
   TPaperSize = packed record
-    name:String[10];
+    name:String[16];
     w, h:Single;
   end;
 
@@ -66,6 +66,41 @@ const
   (name:'C9'; w:1.6; h:2.2), (name:'C10'; w:1.1; h:1.6)
   );
 
+  Paper_DIN_476_cm: TPaperSizes=((name:'2A0'; w:118.9; h:168.2), (name:'4A0'; w:168.2; h:237.8));
+  Paper_DIN_476_inch: TPaperSizes=((name:'2A0'; w:46.8; h:66.2), (name:'4A0'; w:66.2; h:93.6));
+
+  Paper_JIS_cm: TPaperSizes=(
+  (name:'B0'; w:103.0; h:145.6), (name:'B1'; w:72.8; h:103.0), (name:'B2'; w:51.5; h:72.8),
+  (name:'B3'; w:36.4; h:51.5), (name:'B4'; w:25.7; h:36.4), (name:'B5'; w:18.2; h:25.7),
+  (name:'B6'; w:12.8; h:18.2), (name:'B7'; w:9.1; h:12.8), (name:'B8'; w:6.4; h:9.1),
+  (name:'B9'; w:4.5; h:6.4), (name:'B10'; w:3.2; h:4.5), (name:'B11'; w:2.2; h:3.2), (name:'B12'; w:1.6; h:2.2)
+  );
+
+  Paper_JIS_inch: TPaperSizes=(
+  (name:'B0'; w:40.6; h:57.3), (name:'B1'; w:28.7; h:40.6), (name:'B2'; w:20.3; h:28.7),
+  (name:'B3'; w:14.3; h:20.3), (name:'B4'; w:10.1; h:14.3), (name:'B5'; w:7.2; h:10.1),
+  (name:'B6'; w:5.0; h:7.2), (name:'B7'; w:3.6; h:5.0), (name:'B8'; w:2.5; h:3.6),
+  (name:'B9'; w:1.8; h:2.5), (name:'B10'; w:1.3; h:1.8), (name:'B11'; w:0.9; h:1.3), (name:'B12'; w:0.6; h:0.9)
+  );
+
+  Paper_Shiroku_ban_cm: TPaperSizes=((name:'B4'; w:26.4; h:37.9), (name:'B5'; w:18.9; h:26.2), (name:'B6'; w:12.7; h:18.8));
+  Paper_Shiroku_ban_inch: TPaperSizes=((name:'B4'; w:10.4; h:14.9), (name:'B5'; w:7.4; h:10.3), (name:'B6'; w:5.0; h:7.4));
+
+  Paper_Kiku_cm: TPaperSizes=((name:'B4'; w:22.7; h:30.6), (name:'B5'; w:15.1; h:22.7));
+  Paper_Kiku_inch: TPaperSizes=((name:'B4'; w:8.9; h:12.0), (name:'B5'; w:5.9; h:8.9));
+
+  Paper_US_cm: TPaperSizes=(
+  (name:'Half Letter'; w:21.6; h:14.0), (name:'Letter'; w:21.6; h:27.9), (name:'Government Legal'; w:21.6; h:33.0),
+  (name:'Legal'; w:21.6; h:35.6), (name:'Ledger'; w:43.2; h:27.9), (name:'Tabloid'; w:27.9; h:43.2),
+  (name:'Junior Legal'; w:20.3; h:12.7)
+  );
+
+  Paper_US_inch: TPaperSizes=(
+  (name:'Half Letter'; w:8.5; h:5.5), (name:'Letter'; w:8.5; h:11.0), (name:'Government Legal'; w:8.5; h:13.0),
+  (name:'Legal'; w:8.5; h:14.0), (name:'Ledger'; w:17.0; h:11.0), (name:'Tabloid'; w:11.0; h:17.0),
+  (name:'Junior Legal'; w:8.0; h:5.0)
+  );
+
   Photo_cm: TPaperSizes=(
   (name:''; w:7; h:10),
   (name:''; w:9; h:12), (name:''; w:9; h:13),
@@ -77,7 +112,7 @@ const
   (name:''; w:40; h:40), (name:''; w:40; h:50), (name:''; w:40; h:60)
   );
 
-  PaperSizes_Names: array of String[10]=('ISO A', 'ISO B', 'ISO C', 'Photo');
+  PaperSizes_Names: array of String[16]=('ISO A', 'ISO B', 'ISO C', 'DIN 476', 'JIS', 'US', 'Photo');
 
 var
   PaperSizes_cm :array of TPaperSizes;
@@ -115,8 +150,10 @@ begin
 end;
 
 initialization
-   PaperSizes_cm :=[Paper_A_cm, Paper_B_cm, Paper_C_cm, Photo_cm];
-   PaperSizes_inch :=[Paper_A_inch, Paper_B_inch, Paper_C_inch, Sizes_CmToInch(Photo_cm)];
+   PaperSizes_cm :=[Paper_A_cm, Paper_B_cm, Paper_C_cm, Paper_DIN_476_cm,
+                    Paper_JIS_cm, Paper_US_cm, Photo_cm];
+   PaperSizes_inch :=[Paper_A_inch, Paper_B_inch, Paper_C_inch, Paper_DIN_476_inch,
+                      Paper_JIS_inch, Paper_US_inch, Sizes_CmToInch(Photo_cm)];
 
 end.
 
