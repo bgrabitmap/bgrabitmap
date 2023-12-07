@@ -28,6 +28,7 @@ type
     function GetCanvas: TCanvas; override;
   public
     procedure Assign(ASource: TPersistent); override;
+    procedure AssignToBitmap(ADestination: TBitmap);
     destructor Destroy; override;
     procedure GetImageFromCanvas({%H-}CanvasSource: TCanvas; {%H-}x, {%H-}y: integer); override; //not available
     procedure DataDrawTransparent({%H-}ACanvas: TCanvas; {%H-}Rect: TRect; {%H-}AData: Pointer;
@@ -165,6 +166,11 @@ begin
     InvalidateBitmap;
   end else
     inherited Assign(ASource);
+end;
+
+procedure TBGRAMSEguiBitmap.AssignToBitmap(ADestination: TBitmap);
+begin
+  ADestination.Assign(Bitmap);
 end;
 
 procedure TBGRAMSEguiBitmap.DoLoadFromBitmap; 
