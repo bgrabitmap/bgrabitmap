@@ -197,6 +197,15 @@ type
     property AverageDelayMs: integer read GetAverageDelayMs;
   end;
 
+  { TBGRAAnimatedPng }
+
+  TBGRAAnimatedPng = class(TBGRAAnimatedGif)
+    // this class only changes default format used,
+    // everything is implemented in TBGRAAnimatedGif
+    procedure SaveToStream(Stream: TStream); override; overload; // PNG format by default
+    class function GetFileExtensions: string; override;
+  end;
+
   { TBGRAReaderGIF }
 
   TBGRAReaderGIF = class(TFPCustomImageReader)
@@ -1795,6 +1804,18 @@ begin
   Result := FStretchedVirtualScreen;
 end;
 
+{ TBGRAAnimatedPng }
+
+procedure TBGRAAnimatedPng.SaveToStream(Stream: TStream);
+begin
+  SaveToStream(Stream, ifPng);
+end;
+
+class function TBGRAAnimatedPng.GetFileExtensions: string;
+begin
+  Result:= 'apng';
+end;
+
 { TBGRAReaderGIF }
 
 procedure TBGRAReaderGIF.InternalRead(Str: TStream; Img: TFPCustomImage);
@@ -1878,7 +1899,7 @@ initialization
   {$IFDEF BGRABITMAP_USE_LCL}
   //Lazarus Picture
   TPicture.RegisterFileFormat('gif', 'Animated GIF', TBGRAAnimatedGif);
-  TPicture.RegisterFileFormat('png', 'Animated PNG', TBGRAAnimatedGif);
+  TPicture.RegisterFileFormat('apng', 'Animated PNG', TBGRAAnimatedPng);
   {$ENDIF}
 end.
 
