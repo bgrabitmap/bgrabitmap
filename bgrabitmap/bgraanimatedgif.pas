@@ -888,12 +888,22 @@ begin
 end;
 
 procedure TBGRAAnimatedGif.SaveToStream(Stream: TStream; AFormat: TBGRAImageFormat);
+var temp: TMemoryStream; // needed because stream position is set to zero
 begin
   case AFormat of
     ifGif: SaveToStream(Stream, BGRAColorQuantizerFactory, daFloydSteinberg, AFormat);
     ifPng: SaveToStreamAsPng(Stream);
   else
-    MemBitmap.SaveToStreamAs(Stream, AFormat);
+    begin
+      temp := TMemoryStream.Create;
+      try
+        MemBitmap.SaveToStreamAs(temp, AFormat);
+        temp.Position := 0;
+        Stream.CopyFrom(temp, temp.Size);
+      finally
+        temp.Free;
+      end;
+    end;
   end;
 end;
 
@@ -1250,11 +1260,13 @@ var
   framesToWrite: TPNGArrayOfFrameToWrite;
   fc: TFrameControlChunk;
   i: integer;
+  temp: TMemoryStream; // needed because stream position is set to zero
 begin
   CheckSavable(ifPng);
 
   writer := TBGRAWriterPNG.Create;
   mainImageWithMargin := nil;
+  temp := TMemoryStream.Create;
   try
     // check if transparency will be used
     writer.UseAlpha:= false;
@@ -1308,8 +1320,11 @@ begin
       framesToWrite[i].Image := curImage;
     end;
 
-    writer.AnimationWrite(Stream, framesToWrite[0].Image, framesToWrite);
+    writer.AnimationWrite(temp, framesToWrite[0].Image, framesToWrite);
+    temp.Position := 0;
+    Stream.CopyFrom(temp, temp.Size);
   finally
+    temp.Free;
     mainImageWithMargin.Free;
     writer.Free;
   end;
