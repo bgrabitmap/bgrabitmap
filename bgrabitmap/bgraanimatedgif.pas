@@ -1059,7 +1059,7 @@ procedure TBGRAAnimatedGif.AssignTo(Dest: TPersistent);
   var
     copy: TBitmap;
   begin
-    copy := MemBitmap.MakeBitmapCopy(clSilver, true);
+    copy := MemBitmap.MakeBitmapCopy(CSSSilver, true);
     try
       TBitmap(Dest).Assign(copy);
     finally
