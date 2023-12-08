@@ -197,6 +197,15 @@ type
     property AverageDelayMs: integer read GetAverageDelayMs;
   end;
 
+  { TBGRAAnimatedPng }
+
+  TBGRAAnimatedPng = class(TBGRAAnimatedGif)
+    // this class only changes default format used,
+    // everything is implemented in TBGRAAnimatedGif
+    procedure SaveToStream(Stream: TStream); override; overload; // PNG format by default
+    class function GetFileExtensions: string; override;
+  end;
+
   { TBGRAReaderGIF }
 
   TBGRAReaderGIF = class(TFPCustomImageReader)
@@ -879,12 +888,22 @@ begin
 end;
 
 procedure TBGRAAnimatedGif.SaveToStream(Stream: TStream; AFormat: TBGRAImageFormat);
+var temp: TMemoryStream; // needed because stream position is set to zero
 begin
   case AFormat of
     ifGif: SaveToStream(Stream, BGRAColorQuantizerFactory, daFloydSteinberg, AFormat);
     ifPng: SaveToStreamAsPng(Stream);
   else
-    MemBitmap.SaveToStreamAs(Stream, AFormat);
+    begin
+      temp := TMemoryStream.Create;
+      try
+        MemBitmap.SaveToStreamAs(temp, AFormat);
+        temp.Position := 0;
+        Stream.CopyFrom(temp, temp.Size);
+      finally
+        temp.Free;
+      end;
+    end;
   end;
 end;
 
@@ -1040,7 +1059,7 @@ procedure TBGRAAnimatedGif.AssignTo(Dest: TPersistent);
   var
     copy: TBitmap;
   begin
-    copy := MemBitmap.MakeBitmapCopy(clSilver, true);
+    copy := MemBitmap.MakeBitmapCopy(CSSSilver, true);
     try
       TBitmap(Dest).Assign(copy);
     finally
@@ -1241,11 +1260,13 @@ var
   framesToWrite: TPNGArrayOfFrameToWrite;
   fc: TFrameControlChunk;
   i: integer;
+  temp: TMemoryStream; // needed because stream position is set to zero
 begin
   CheckSavable(ifPng);
 
   writer := TBGRAWriterPNG.Create;
   mainImageWithMargin := nil;
+  temp := TMemoryStream.Create;
   try
     // check if transparency will be used
     writer.UseAlpha:= false;
@@ -1299,8 +1320,11 @@ begin
       framesToWrite[i].Image := curImage;
     end;
 
-    writer.AnimationWrite(Stream, framesToWrite[0].Image, framesToWrite);
+    writer.AnimationWrite(temp, framesToWrite[0].Image, framesToWrite);
+    temp.Position := 0;
+    Stream.CopyFrom(temp, temp.Size);
   finally
+    temp.Free;
     mainImageWithMargin.Free;
     writer.Free;
   end;
@@ -1795,6 +1819,18 @@ begin
   Result := FStretchedVirtualScreen;
 end;
 
+{ TBGRAAnimatedPng }
+
+procedure TBGRAAnimatedPng.SaveToStream(Stream: TStream);
+begin
+  SaveToStream(Stream, ifPng);
+end;
+
+class function TBGRAAnimatedPng.GetFileExtensions: string;
+begin
+  Result:= 'apng';
+end;
+
 { TBGRAReaderGIF }
 
 procedure TBGRAReaderGIF.InternalRead(Str: TStream; Img: TFPCustomImage);
@@ -1878,7 +1914,7 @@ initialization
   {$IFDEF BGRABITMAP_USE_LCL}
   //Lazarus Picture
   TPicture.RegisterFileFormat('gif', 'Animated GIF', TBGRAAnimatedGif);
-  TPicture.RegisterFileFormat('png', 'Animated PNG', TBGRAAnimatedGif);
+  TPicture.RegisterFileFormat('apng', 'Animated PNG', TBGRAAnimatedPng);
   {$ENDIF}
 end.
 
