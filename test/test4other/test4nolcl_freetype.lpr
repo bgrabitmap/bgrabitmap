@@ -56,9 +56,12 @@ begin
 end;
 
 constructor TTestBGRANoLCL.Create(TheOwner: TComponent);
+var
+  fs: TFileStream;
 begin
   inherited Create(TheOwner);
-  TBGRABitmap.AddFreeTypeFontFolder(ExtractFilePath(ExeName));
+  fs:= TFileStream.Create(ExtractFilePath(ExeName)+'arial.ttf', fmOpenRead);
+  TBGRABitmap.AddFreeTypeFontStream(fs, true);
   StopOnException:=True;
 end;
 
