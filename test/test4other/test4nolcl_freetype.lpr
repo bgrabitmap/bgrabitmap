@@ -1,4 +1,4 @@
-program test4nolcl_freetype;
+program test4nolcl;
 
 {$mode objfpc}{$H+}
 
@@ -29,6 +29,12 @@ begin
   bmp.CustomPenStyle := BGRAPenStyle(2,1);
   bmp.FillEllipseLinearColorAntialias(bmp.Width/2,bmp.Height/2,bmp.Width/2-5,bmp.Height/2-5, BGRAPixelTransparent, BGRAWhite);
   bmp.EllipseAntialias(bmp.Width/2,bmp.Height/2,bmp.Width/2-5,bmp.Height/2-5,CSSRed,5);
+  if bmp.Height div 10 < 10 then
+    bmp.FontHeight := 10
+  else
+    bmp.FontHeight := bmp.Height div 10;
+  with bmp.FontPixelMetric do
+    bmp.TextOut(bmp.Width/2,bmp.Height/2 - (CapLine+Baseline)/2,'Hello world', BGRABlack, taCenter);
   bmp.Canvas.Pen.Color := clBlue;
   bmp.Canvas.MoveTo(0,0);
   bmp.Canvas.LineTo(bmp.Width,bmp.Height);
@@ -52,6 +58,7 @@ end;
 constructor TTestBGRANoLCL.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
+  TBGRABitmap.AddFreeTypeFontFolder(ExtractFilePath(ExeName));
   StopOnException:=True;
 end;
 
@@ -67,7 +74,7 @@ var
 
 begin
   Application:=TTestBGRANoLCL.Create(nil);
-  Application.Title:='TestBGRANoLCL';
+  Application.Title:='TestBGRANoLCL_FreeType';
   Application.Run;
   Application.Free;
 end.

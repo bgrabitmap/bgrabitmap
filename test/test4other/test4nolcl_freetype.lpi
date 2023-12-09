@@ -9,7 +9,7 @@
         <MainUnitHasScaledStatement Value="False"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="TestBGRANoLCL"/>
+      <Title Value="TestBGRANoLCL_FreeType"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
       <Icon Value="0"/>
@@ -26,12 +26,12 @@
     </RunParams>
     <RequiredPackages>
       <Item>
-        <PackageName Value="BGRABitmapPack4NoLCL"/>
+        <PackageName Value="BGRABitmapPack4NoLCL_FreeType"/>
       </Item>
     </RequiredPackages>
     <Units>
       <Unit>
-        <Filename Value="test4nolcl.lpr"/>
+        <Filename Value="test4nolcl_freetype.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit>
     </Units>
@@ -39,7 +39,7 @@
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="test4nolcl"/>
+      <Filename Value="test4nolcl_freetype"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
@@ -49,6 +49,7 @@
       <ConfigFile>
         <WriteConfigFilePath Value=""/>
       </ConfigFile>
+      <CustomOptions Value="-dBGRABITMAP_DONT_USE_LCL"/>
     </Other>
   </CompilerOptions>
   <Debugging>

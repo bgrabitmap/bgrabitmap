@@ -2,13 +2,13 @@
 <CONFIG>
   <Package Version="5">
     <PathDelim Value="\"/>
-    <Name Value="BGRABitmapPack4Android"/>
+    <Name Value="BGRABitmapPack4Android_FreeType"/>
     <Author Value="Circular"/>
     <CompilerOptions>
       <Version Value="11"/>
       <PathDelim Value="\"/>
       <SearchPaths>
-        <UnitOutputDirectory Value="lib4android\$(TargetCPU)-$(TargetOS)\$(FPCVer)"/>
+        <UnitOutputDirectory Value="lib4android+freetype\$(TargetCPU)-$(TargetOS)\$(FPCVer)"/>
       </SearchPaths>
       <Parsing>
         <SyntaxOptions>
@@ -30,13 +30,13 @@
         <ConfigFile>
           <WriteConfigFilePath Value="$(PkgOutDir)\fpclaz.cfg"/>
         </ConfigFile>
-        <CustomOptions Value="-dBGRABITMAP_DONT_USE_LCL -dBGRABITMAP_DONT_USE_LAZFREETYPE"/>
+        <CustomOptions Value="-dBGRABITMAP_DONT_USE_LCL"/>
       </Other>
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
     <Version Major="11" Minor="5" Release="8"/>
-    <Files Count="106">
+    <Files Count="107">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -461,13 +461,20 @@
         <Filename Value="generatedutf8.inc"/>
         <Type Value="Include"/>
       </Item106>
+      <Item107>
+        <Filename Value="bgrafreetype.pas"/>
+        <UnitName Value="BGRAFreeType"/>
+      </Item107>
     </Files>
     <CompatibilityMode Value="True"/>
-    <RequiredPkgs Count="1">
+    <RequiredPkgs Count="2">
       <Item1>
+        <PackageName Value="freetypelaz"/>
+      </Item1>
+      <Item2>
         <PackageName Value="FCL"/>
         <MinVersion Major="1" Valid="True"/>
-      </Item1>
+      </Item2>
     </RequiredPkgs>
     <UsageOptions>
       <UnitPath Value="$(PkgOutDir)"/>
