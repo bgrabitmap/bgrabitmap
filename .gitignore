@@ -29,3 +29,7 @@ dev/colorspace/generatedcolorspace.inc
 test/test4other/test4nolcl
 
 test/test4other/test4nolcl_freetype
+
+bgrabitmap/doc/
+
+dev/makedoc/pmakedoc

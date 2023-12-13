@@ -21,6 +21,7 @@ type
     SelectDirectoryDialog1: TSelectDirectoryDialog;
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     { private declarations }
   public
@@ -34,16 +35,16 @@ implementation
 
 {$R *.lfm}
 
-uses LazUTF8, FileUtil, LazFileUtils;
+uses LazUTF8, FileUtil, LazFileUtils, RegExpr;
 
 const
-  BoldKeywords : array[1..52] of string = ('var','procedure','function','and',
+  BoldKeywords : array[1..53] of string = ('var','procedure','function','and',
     'or','xor','not','if','then','case','begin','end','of',
     'exit','new','class','is','const','div','do','downto','to','else','for',
     'in','mod','nil','object','record','repeat','self','shl','shr','string',
     'unit','until','uses','while','array','interface', 'out', 'constructor',
     'property','read','write','default', 'packed', 'operator', 'inline',
-    'overload', 'virtual', 'abstract');
+    'overload', 'virtual', 'abstract', 'helper');
 
 { TForm1 }
 
@@ -101,6 +102,17 @@ begin
       end else
         inc(i);
   end;
+end;
+
+procedure AdaptMarkdown(var s: string);
+var r: TRegExpr;
+begin
+  r := TRegExpr.Create('([^A-Z0-9]|^)_([A-Z0-9]+([_.][A-Z0-9]+)*)_([^A-Z0-9]|$)'); r.ModifierI:= true;
+  s := r.Replace(s, '$1''''$2''''$4', true);
+  r.Free;
+  r := TRegExpr.Create('\*\*([A-Z0-9]+([_.][A-Z0-9]+)*)\*\*'); r.ModifierI:= true;
+  s := r.Replace(s, '''''''$1''''''', true);
+  r.Free;
 end;
 
 function MakeDocFor(AFilename: string): string;
@@ -247,6 +259,8 @@ begin
           else
             description += trim(copy(s,comStart,comEnd-comStart));
 
+        AdaptMarkdown(description);
+
         while pos('[#',description) <> 0 do
         begin
           idxColor := pos('[#',description);
@@ -290,11 +304,16 @@ end;
 procedure TForm1.Button2Click(Sender: TObject);
 var sr: TSearchRec;
   output,ext: string;
-  path,fileoutput: string;
+  basePath,path,fileoutput: string;
 begin
   memo1.Text := 'Analyzing...';
   memo1.Update;
-  path := AppendPathDelim(EPath.Text);
+  basePath := ExtractFilePath(ParamStr(0));
+  {$IFDEF DARWIN}
+  if basePath.EndsWith('/MacOS/') then
+    basePath := ExpandFileNameUTF8(basePath+'../../../');
+  {$ENDIF}
+  path := ExpandFileNameUTF8(AppendPathDelim(EPath.Text), basePath);
   if FindFirstUTF8(path+'*.*', faAnyFile, sr) = 0 then
     begin
       output := '';
@@ -318,6 +337,11 @@ begin
     end
   else
     Memo1.Text := 'Nothing to do';
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  EPath.Text := StringReplace(EPath.Text, '/', PathDelim, [rfReplaceAll]);
 end;
 
 end.
