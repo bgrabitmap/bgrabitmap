@@ -38,13 +38,13 @@ implementation
 uses LazUTF8, FileUtil, LazFileUtils, RegExpr;
 
 const
-  BoldKeywords : array[1..53] of string = ('var','procedure','function','and',
+  BoldKeywords : array[1..56] of string = ('var','procedure','function','and',
     'or','xor','not','if','then','case','begin','end','of',
     'exit','new','class','is','const','div','do','downto','to','else','for',
     'in','mod','nil','object','record','repeat','self','shl','shr','string',
     'unit','until','uses','while','array','interface', 'out', 'constructor',
     'property','read','write','default', 'packed', 'operator', 'inline',
-    'overload', 'virtual', 'abstract', 'helper');
+    'overload', 'virtual', 'abstract', 'helper', 'ifdef', 'endif', 'set');
 
 { TForm1 }
 
@@ -64,6 +64,7 @@ var
   found, first: boolean;
 begin
   i := 1;
+  s := StringReplace(s, '''', '&apos;', [rfReplaceAll]);
   first := true;
   while i <= length(s) do
   begin
@@ -113,6 +114,14 @@ begin
   r := TRegExpr.Create('\*\*([A-Z0-9]+([_.][A-Z0-9]+)*)\*\*'); r.ModifierI:= true;
   s := r.Replace(s, '''''''$1''''''', true);
   r.Free;
+  r := TRegExpr.Create('([^\\]|^)\[([^\]]+)\]\(https://wiki.freepascal.org/(\w+)\)'); r.ModifierI:= true;
+  s := r.Replace(s, '$1[[$3|$2]]', true);
+  r.Free;
+  r := TRegExpr.Create('([^\\]|^)\[([^\]]+)\]\(([-\w:/.]+)\)'); r.ModifierI:= true;
+  s := r.Replace(s, '$1[$3 $2]', true);
+  r.Free;
+  s := StringReplace(s, '\[', '[', [rfReplaceAll]);
+  s := StringReplace(s, '{$H-}', '', [rfReplaceAll]);
 end;
 
 function MakeDocFor(AFilename: string): string;
