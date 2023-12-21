@@ -78,7 +78,7 @@ type
 
   { TCustomUniversalBitmap }
 
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
   TResolutionUnit = (ruNone, ruPixelsPerInch, ruPixelsPerCentimeter);
   {$ENDIF}
 
@@ -116,7 +116,7 @@ type
         antialiased shapes }
     FAntialiasingDrawMode: TDrawMode;
 
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     //Resolution
     FResolutionUnit: TResolutionUnit;
     FResolutionX,
@@ -526,7 +526,7 @@ type
     {** Current reference white used for color conversion }
     property ReferenceWhite: PXYZReferenceWhite read FReferenceWhite write FReferenceWhite;
 
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     //Resolution
     property ResolutionUnit: TResolutionUnit read FResolutionUnit write SetResolutionUnit;
     property ResolutionX: Single read FResolutionX write FResolutionX;
@@ -2127,7 +2127,7 @@ begin
   FLineOrder:= AValue;
 end;
 
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
 procedure TCustomUniversalBitmap.SetResolutionUnit(AResolutionUnit: TResolutionUnit);
 begin
   if (AResolutionUnit<>FResolutionUnit) then
@@ -2468,7 +2468,7 @@ begin
   end else
   if Source is TFPCustomImage then
   begin
-    {$IF FPC_FULLVERSION>=30301}
+    {$IF FPC_FULLVERSION>=30203}
     ResolutionUnit :=TFPCustomImage(Source).ResolutionUnit;
     ResolutionX :=TFPCustomImage(Source).ResolutionX;
     ResolutionY :=TFPCustomImage(Source).ResolutionY;
