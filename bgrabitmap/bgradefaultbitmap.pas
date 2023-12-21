@@ -1187,7 +1187,7 @@ begin
     DiscardBitmapChange;
     SetSize(TFPCustomImage(Source).Width, TFPCustomImage(Source).Height);
 
-    {$IF FPC_FULLVERSION>=30301}
+    {$IF FPC_FULLVERSION>=30203}
     //Resolution
     ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
     ResolutionX:=TFPCustomImage(Source).ResolutionX;

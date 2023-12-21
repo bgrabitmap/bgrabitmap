@@ -541,7 +541,7 @@ var
 
   procedure WriteResolutionValues;
   begin
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     if (Img is TCustomUniversalBitmap) then
     with TCustomUniversalBitmap(Img) do
     {$ELSE}

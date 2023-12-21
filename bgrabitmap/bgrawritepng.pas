@@ -763,7 +763,7 @@ end;
 
 procedure TBGRAWriterPNG.WriteResolutionValues;
 begin
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
   if (TheImage is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(TheImage) do
   {$ELSE}

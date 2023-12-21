@@ -1987,7 +1987,7 @@ var
 
   procedure ReadResolutionValues;
   begin
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     if (CurFPImg is TCustomUniversalBitmap) then
     with TCustomUniversalBitmap(CurFPImg) do
     {$ELSE}
@@ -3238,7 +3238,7 @@ var
 
   procedure ReadResolutionValues;
   begin
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     if (CurFPImg is TCustomUniversalBitmap) then
     with TCustomUniversalBitmap(CurFPImg) do
     {$ELSE}
