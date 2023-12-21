@@ -25,12 +25,12 @@ interface
 
 uses
   BGRAClasses, BGRABitmapTypes, SysUtils, FPimage, FPReadPSD
-  {$IF FPC_FULLVERSION>=30301}
+  {$IF FPC_FULLVERSION>=30203}
    , PSDcomn
   {$ENDIF}
   ;
 
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
 const
   { Image color modes  }
   PSD_BITMAP = 0;       { Bitmap image  }
@@ -163,7 +163,7 @@ const
 type
   { TBGRAReaderPSD }
 
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
   { Image Resource Blocks }
   TPSDResourceBlock = packed record
     Types : array[0..3] of Char;   // Always "8BIM"
@@ -194,7 +194,7 @@ type
     procedure AnalyzeHeader;
 
     procedure ReadResourceBlockData(Img: TFPCustomImage; blockID:Word;
-                                    blockName:ShortString; Size:LongWord; Data:Pointer);{$IF FPC_FULLVERSION<30301}virtual;{$ELSE}override;{$ENDIF}
+                                    blockName:ShortString; Size:LongWord; Data:Pointer);{$IF FPC_FULLVERSION<30203}virtual;{$ELSE}override;{$ENDIF}
     procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
     function ReadScanLine(Stream: TStream; AInputSize: PtrInt; AChannel: integer): boolean; overload;
     procedure WriteScanLine(Img: TFPCustomImage; Row: integer); overload;
@@ -206,7 +206,7 @@ type
     property OutputHeight: integer read FOutputHeight;
   end;
 
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
 function PSDResolutionUnitToResolutionUnit(APSDResolutionUnit: Word): TResolutionUnit;
 function ResolutionUnitToPSdResolutionUnit(AResolutionUnit: TResolutionUnit): Word;
 {$ENDIF}
@@ -267,7 +267,7 @@ begin
   result := LabToRGB(L,(Lab.a-128)/127,(Lab.b-128)/127);
 end;
 
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
 function PSDResolutionUnitToResolutionUnit(APSDResolutionUnit: Word): TResolutionUnit;
 begin
   Case APSDResolutionUnit of
@@ -376,7 +376,7 @@ var
   ResDWord: DWord;
 
 begin
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
   case blockID of
   PSD_RESN_INFO:begin
           if (Img is TCustomUniversalBitmap) then
