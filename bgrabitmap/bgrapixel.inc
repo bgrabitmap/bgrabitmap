@@ -91,16 +91,16 @@ const
   TBGRAPixel_BlueByteOffset = 2;
   {$ELSE}
   {** Order of the channels (when BGRA) }
-  const TBGRAPixel_RGBAOrder = False;
+  TBGRAPixel_RGBAOrder = False;
   {** Offset of the blue channel (when BGRA) }
-  const TBGRAPixel_BlueByteOffset = 0;
+  TBGRAPixel_BlueByteOffset = 0;
   {** Offset of the green channel (when BGRA) }
-  const TBGRAPixel_GreenByteOffset = 1;
+  TBGRAPixel_GreenByteOffset = 1;
   {** Offset of the blue channel (when BGRA) }
-  const TBGRAPixel_RedByteOffset = 2;
+  TBGRAPixel_RedByteOffset = 2;
   {$ENDIF}
   {** Offset of the alpha channel }
-  const TBGRAPixel_AlphaByteOffset = 3;
+  TBGRAPixel_AlphaByteOffset = 3;
   {$IFDEF ENDIAN_LITTLE}
   TBGRAPixel_RedShift = TBGRAPixel_RedByteOffset*8;
   TBGRAPixel_GreenShift = TBGRAPixel_GreenByteOffset*8;
