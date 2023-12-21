@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
-
-{=== Bézier curves ===}
+{=== Geometry types ===}
+{==== Bézier curves ====}
 
 type
   {* Definition of a Bézier curve of order 3. It has two control points _c1_ and _c2_.
@@ -81,23 +81,24 @@ type
   ArrayOfSingle = array of single;
 
   {* Quasi-standard rational quadratic Bezier curve, defined by three points and a number:
-      p1 = starting point,
-      c = control point,
-      p2 = ending point,
-      weight = weight for the control point.
+     - _p1_: starting point
+     - _c_: control point
+     - _p2_: ending point
+     - _weight_: weight for the control point
 
-    The curve is defined with the function (t in [0;1]):
-      f: t -> ((1-t)^2*p1 + 2*t*(1-t)*weight*c + t^2*p2) / (1-t)^2 + 2*t*(1-t)*weight + t^2)
+    The curve is defined with the function (t in [0; 1]):
+
+    - f: t --> ((1-t)^2 * _p1_ + 2 * t * (1-t) * _weight_ * _c_ + t^2*_p2_) / (1-t)^2 + 2 * t * (1-t) * _weight_ + t^2)
 
     The curve is an arc of:
-       - ellipse when  weight in ]-1;1[,
-       - parabola when weight = 1 (classical quadratic Bezier curve),
-       - hyperbola when weight > 1.
+       - ellipse when _weight_ in ]-1; 1[
+       - parabola when _weight_ = 1 (classical quadratic Bezier curve)
+       - hyperbola when _weight_ > 1
 
     A negative weight give the complementary curve for its positive counterpart.
-    So when weight <= -1 the curve is discontinuous:
-      - infinite branches of parabola when weight = -1,
-      - infinite branches of hyperbola and symetric hyperbola when weight < -1.
+    So when _weight_ <= -1 the curve is discontinuous:
+      - infinite branches of parabola when _weight_ = -1
+      - infinite branches of hyperbola and symetric hyperbola when _weight_ < -1
 
     To transform a rational quadratic Bezier curve with an affin transformation, you
     only have to transform the three points and leave the weight as it is. }

@@ -1,16 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+{ Classes to read and write animated GIF and animated PNG files. }
 unit BGRAAnimatedGif;
-
-{ This class can read and write both animated GIF and animated PNG files.
-
-  There are some differences in the dispose modes and draw modes so some files
-  cannot be directly saved from one format to the other:
-  - dispose mode dmErase is only in GIF and dispose mode dmEraseArea is only in PNG
-  - draw mode in GIF is only dmSetExceptTransparent and draw mode in PNG is dmSet or dmDrawWithTransparency
-
-  PNG format is not limited to 256 colors, so there is no need for quantization even if it possible.
-  When PNG has a palette, it applies to all frames, whereas for GIF, there can be a palette for each frame.
-}
 
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}
@@ -26,15 +16,20 @@ type
   TGifSubImage = BGRAGifFormat.TGifSubImage;
   TGifSubImageArray = BGRAGifFormat.TGifSubImageArray;
 
-  //how to deal with the background under the GIF animation
+  {* How to deal with the background under the GIF animation }
   TGifBackgroundMode = (
     gbmSimplePaint,                   // frames are rendered without clearing the backgroud
     gbmEraseBackground,               // pixels in the GIF that become transparent are filled with EraseColor
     gbmSaveBackgroundOnce,            // background is saved once before drawing the first frame
     gbmUpdateBackgroundContinuously); // background is updated continuously to handle overlapping animations
 
-  { TBGRAAnimatedGif }
+  {** String constants for TGifBackgroundMode }
+  const GifBackgroundModeStr: array[TGifBackgroundMode] of string =
+    ('gbmSimplePaint', 'gbmEraseBackground', 'gbmSaveBackgroundOnce',
+    'gbmUpdateBackgroundContinuously');
 
+type
+  {* Class to read/write animated GIF, supports animated PNG as well when specified }
   TBGRAAnimatedGif = class(TGraphic)
   private
     FAspectRatio: single;
@@ -140,10 +135,11 @@ type
       ADrawMode: TDrawMode = dmSetExceptTransparent; AOwned: boolean = false);
     procedure DeleteFrame(AIndex: integer; AEnsureNextFrameDoesNotChange: boolean);
 
-    //add a frame that replaces completely the previous one
+    {** Add a frame that replaces completely the previous one }
     function AddFullFrame(AImage: TFPCustomImage; ADelayMs: integer;
                           AHasLocalPalette: boolean = true;
                           ADrawMode: TDrawMode = dmSetExceptTransparent; AOwned: boolean = false): integer;
+    {** Insert at the specified _AIndex_ a frame that replaces completely the previous one }
     procedure InsertFullFrame(AIndex: integer;
                               AImage: TFPCustomImage; ADelayMs: integer;
                               AHasLocalPalette: boolean = true;
@@ -158,7 +154,15 @@ type
     procedure LoadFromStream(Stream: TStream); overload; override;
     procedure LoadFromStream(Stream: TStream; AMaxImageCount: integer); overload;
     procedure LoadFromResource(AFilename: string);
-    procedure SaveToStream(Stream: TStream); override; overload; // GIF format by default
+    {** Save to a stream using GIF format }
+    procedure SaveToStream(Stream: TStream); override; overload;
+    {** There are some differences in the dispose modes and draw modes so some files
+        cannot be directly saved from one format to the other:
+        - dispose mode dmErase is only in GIF and dispose mode dmEraseArea is only in PNG,
+        - draw mode in GIF is only dmSetExceptTransparent and draw mode in PNG is dmSet or dmDrawWithTransparency.
+
+        PNG format is not limited to 256 colors, so there is no need for quantization even if it possible.
+        When PNG has a palette, it applies to all frames, whereas for GIF, there can be a palette for each frame. }
     procedure SaveToStream(Stream: TStream; AFormat: TBGRAImageFormat); overload;
     procedure LoadFromFile(const AFilenameUTF8: string); override;
     procedure SaveToFile(const AFilenameUTF8: string); override;
@@ -197,34 +201,26 @@ type
     property AverageDelayMs: integer read GetAverageDelayMs;
   end;
 
-  { TBGRAAnimatedPng }
-
+  {* Class to read/write animated PNG, supports animated GIF as well when specified.
+     this class only changes default format used, everything is implemented in TBGRAAnimatedGif }
   TBGRAAnimatedPng = class(TBGRAAnimatedGif)
-    // this class only changes default format used,
-    // everything is implemented in TBGRAAnimatedGif
-    procedure SaveToStream(Stream: TStream); override; overload; // PNG format by default
+    {** Save to a stream using PNG format }
+    procedure SaveToStream(Stream: TStream); override; overload;
     class function GetFileExtensions: string; override;
   end;
 
-  { TBGRAReaderGIF }
-
+  {* Static GIF reader }
   TBGRAReaderGIF = class(TFPCustomImageReader)
   protected
     procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;
     function InternalCheck(Str: TStream): boolean; override;
   end;
 
-  { TBGRAWriterGIF }
-
+  {* Static GIF writer }
   TBGRAWriterGIF = class(TFPCustomImageWriter)
   protected
     procedure InternalWrite(Str: TStream; Img: TFPCustomImage); override;
   end;
-
-const
-  GifBackgroundModeStr: array[TGifBackgroundMode] of string =
-    ('gbmSimplePaint', 'gbmEraseBackground', 'gbmSaveBackgroundOnce',
-    'gbmUpdateBackgroundContinuously');
 
 implementation
 

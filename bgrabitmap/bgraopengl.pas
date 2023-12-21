@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ OpenGL rendering (bitmap and various other classes). }
 unit BGRAOpenGL;
 
 {$mode objfpc}{$H+}

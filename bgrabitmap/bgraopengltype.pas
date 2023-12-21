@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Basic types used with OpenGL }
 unit BGRAOpenGLType;
 
 {$mode objfpc}{$H+}

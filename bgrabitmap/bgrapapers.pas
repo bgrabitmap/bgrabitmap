@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{ ====================================================
-  BGRAPapers Unit
+{ 2023 Massimo Magnano }
 
-  2023 Massimo Magnano
-
-  List of paper sizes in inches and cm
-}
+{ List of paper sizes in inches and cm }
 unit BGRAPapers;
 
 {$mode objfpc}{$H+}

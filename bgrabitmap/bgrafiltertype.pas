@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Generic classes for tasks. Those are computations that can be stopped externally via
+  a callback function, thus allowing cancellation. }
 unit BGRAFilterType;
 
 {$mode objfpc}{$H+}

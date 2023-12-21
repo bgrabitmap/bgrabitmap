@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Computation of arrow paths (that are appended to lines drawn with TBGRABitmap
+  when configured using that arrow properties) }
 unit BGRAArrow;
 
 {$mode objfpc}{$H+}

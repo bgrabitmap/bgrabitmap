@@ -3,6 +3,7 @@ unit BGRAPath;
 
 {$mode objfpc}{$H+}
 
+{ Implements path and path cursor }
 interface
 
 //todo: tangent interpolation

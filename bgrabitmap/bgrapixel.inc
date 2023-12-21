@@ -24,8 +24,8 @@ type
     {$ENDIF}
   {$ENDIF}
 
-  {* Each pixel is a sequence of 4 bytes containing blue, green, red and alpha channel.
-     Values range from 0 to 255, color is in sRGB colorspace. The alpha value of 0
+  {* Each pixel is a sequence of 4 bytes containing _blue_, _green_, _red_ and _alpha_ channel.
+     Values range from 0 to 255, color is in sRGB colorspace. The _alpha_ value of 0
      is transparent and 255 is opaque. In the bitmap data, when the pixel is fully transparent,
 	 the RGB values are supposed to be set to zero. }
   TBGRAPixel = packed record
@@ -40,10 +40,10 @@ type
     procedure SetClassLightness(AValue: word);
   public
     {$IFDEF BGRABITMAP_RGBAPIXEL}
-    {** Fields if ordered RGBA ordered }
+    {** Channels if ordered RGBA ordered }
     red, green, blue, alpha: byte;
     {$ELSE}
-    {** Fields if ordered BGRA ordered }
+    {** Channels if ordered BGRA ordered }
     blue, green, red, alpha: byte;
     {$ENDIF}
     {** Sets the pixel with given RGB values }

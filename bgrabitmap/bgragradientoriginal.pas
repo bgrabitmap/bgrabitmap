@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Original that renders a gradient. Originals can be used in a layered image }
 unit BGRAGradientOriginal;
 
 {$mode objfpc}{$H+}

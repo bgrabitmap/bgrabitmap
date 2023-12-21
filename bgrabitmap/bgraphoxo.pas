@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Phoxo layered image format, with .oXo extension. }
 unit BGRAPhoxo;
 
 {$mode objfpc}{$H+}

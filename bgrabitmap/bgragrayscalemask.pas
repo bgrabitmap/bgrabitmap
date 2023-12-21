@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Image with 8-bit grayscale format that can be used as a mask }
 unit BGRAGrayscaleMask;
 
 {$mode objfpc}{$H+}

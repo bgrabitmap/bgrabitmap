@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implements the dithering algorithms }
 unit BGRADithering;
 
 {$mode objfpc}{$H+}

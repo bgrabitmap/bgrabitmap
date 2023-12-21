@@ -271,7 +271,7 @@ type
     procedure FromGSBAPixel(const AValue: THSLAPixel; AGammaCompression: boolean = true); overload;
   end;
 
-  {* Helper for basic conversions of THSALPixel }
+  {* Helper for basic conversions of THSLAPixel }
   THSLAPixelBasicHelper = record helper for THSLAPixel
     {** Converts to TColor (non linear 8-bit, without alpha) }
     function ToColor: TColor;

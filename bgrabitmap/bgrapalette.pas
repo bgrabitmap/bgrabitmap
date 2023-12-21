@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Palette of colors for various purposes, loading/saving into various formats }
 unit BGRAPalette;
 
 {$mode objfpc}{$H+}

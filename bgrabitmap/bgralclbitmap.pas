@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Common implementation of BGRABitmap based on LCL (Lazarus Component Library) }
 unit BGRALCLBitmap;
 
 {$mode objfpc}{$H+}
@@ -9,8 +11,7 @@ uses
   BGRAClasses, SysUtils, Graphics, GraphType, BGRABitmapTypes, BGRADefaultBitmap;
 
 type
-  { TBGRALCLBitmap }
-
+  {* Implementation of 32-RGBA bitmap based on LCL (Lazarus Component Library) }
   TBGRALCLBitmap = class(TBGRADefaultBitmap)
   protected
     function LoadFromRawImage(ARawImage: TRawImage; DefaultOpacity: byte;
@@ -21,6 +22,7 @@ type
     function CreatePtrBitmap(AWidth, AHeight: integer; AData: PBGRAPixel
       ): TBGRAPtrBitmap; override;
     procedure AssignRasterImage(ARaster: TRasterImage); virtual;
+    {** Determines the Xor mask from the alpha values of the bitmap }
     procedure ExtractXorMask;
   public
     procedure Assign(Source: TPersistent); override;
@@ -31,6 +33,7 @@ type
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); override;
     function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean = False): TBitmap; override;
+    {** Assign image to a TBitmap }
     procedure AssignToBitmap(ADestination: TBitmap);
     procedure LoadFromDevice({%H-}DC: HDC); override;
     procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override;
@@ -38,8 +41,7 @@ type
     procedure TakeScreenshot({%H-}ARect: TRect); override;
   end;
 
-  { TBGRALCLPtrBitmap }
-
+  {* Implementation of pointer to 32-RGBA data based on LCL (Lazarus Component Library) }
   TBGRALCLPtrBitmap = class(TBGRAPtrBitmap)
 
     procedure RebuildBitmap; override;

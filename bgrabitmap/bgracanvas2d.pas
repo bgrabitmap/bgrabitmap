@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Equivalent to HTML Canvas (supports affine transformation, gradients and clipping). }
 unit BGRACanvas2D;
 
 { To do :
 
-  draw text with a different precision if the matrix is scaled
-  drawImage(in image, in double sx, in double sy, in double sw, in double sh, in double dx, in double dy, in double dw, in double dh)
-  -> using FillPoly with texture coordinates
+  partial image
+    drawImage(in image, in double sx, in double sy, in double sw, in double sh, in double dx, in double dy, in double dw, in double dh)
+    -> using FillPoly with texture coordinates
   linear gradient any transformation
   clearPath clipping
-  createRadialGradient
   globalCompositeOperation
   image data functions
 }

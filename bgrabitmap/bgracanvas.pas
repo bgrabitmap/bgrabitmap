@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Equivalent of LCL Canvas but with transparency and gamma correction,
+  using drawing functions of BGRABitmap. }
 unit BGRACanvas;
 
 {$mode objfpc}{$H+}

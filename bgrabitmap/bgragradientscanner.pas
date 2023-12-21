@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Scanners that generate gradients. This allows to use gradients as textures }
 unit BGRAGradientScanner;
 
 {$mode objfpc}{$H+}
 
 interface
-
-{ This unit contains scanners that generate gradients }
 
 uses
   SysUtils, BGRABitmapTypes, BGRATransform;

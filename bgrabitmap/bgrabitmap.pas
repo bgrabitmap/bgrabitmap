@@ -1,29 +1,20 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{
- /**************************************************************************\
-                                bgrabitmap.pas
-                                --------------
-                 Free easy-to-use memory bitmap 32-bit,
-                 8-bit for each channel, transparency.
-                 Channels can be in the following orders:
-                 - B G R A (recommended for Windows, required for fpGUI)
-                 - R G B A (recommended for Gtk and MacOS)
 
-                 - Drawing primitives
-                 - Resample
-                 - Reference counter
-                 - Drawing on LCL canvas
-                 - Loading and saving images
+{ Free easy-to-use memory bitmap 32-bit, 8-bit for each channel, transparency.
+  To use, add BGRABitmap and BGRABitmapTypes to the **uses** clause.
 
-                 Note : line order can change, so if you access
-                 directly to bitmap data, check LineOrder value
-                 or use Scanline to compute position.
-
-
-       --> Include BGRABitmap and BGRABitmapTypes in the 'uses' clause.
+  Channels can be in the following orders:
+  - B G R A (recommended for Windows, required for fpGUI)
+  - R G B A (recommended for Gtk and MacOS)
 }
-
 unit BGRABitmap;
+
+{ Provides:
+  - Drawing primitives
+  - Resample
+  - Reference counter
+  - Drawing on LCL canvas
+  - Loading and saving images }
 
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}
@@ -72,27 +63,31 @@ uses
 
 type
 {$IFDEF BGRABITMAP_USE_FPGUI}
+  {* Import version for fpGUI }
   TBGRABitmap = class(TBGRAfpGUIBitmap)
 {$ELSE}
     {$IFDEF BGRABITMAP_USE_LCL}
       {$IFDEF LCLwin32}
+        {* Import version for Windows }
         TBGRABitmap = class(TBGRAWinBitmap)
       {$ELSE}
         {$IFDEF LCLgtk}
+        {* Import version for Linux GTK }
         TBGRABitmap = class(TBGRAGtkBitmap)
         {$ELSE}
           {$IFDEF LCLgtk2}
-
-        { TBGRABitmap }
-
+        {* Import version for Linux GTK2 }
         TBGRABitmap = class(TBGRAGtkBitmap)
           {$ELSE}
             {$IF defined(LCLqt) or defined(LCLqt5)}
+        {* Import version for Qt }
         TBGRABitmap = class(TBGRAQtBitmap)
             {$ELSE}
               {$IFDEF DARWIN}
+        {* Import version for MacOS }
         TBGRABitmap = class(TBGRAMacBitmap)
               {$ELSE}
+        {* Import version for other systems }{ Cross-platform 32-bit RGBA image compatible with Lazarus Component Library }
         TBGRABitmap = class(TBGRALCLBitmap)
               {$ENDIF}
             {$ENDIF}
@@ -101,8 +96,10 @@ type
       {$ENDIF}
     {$ELSE}
       {$IFDEF BGRABITMAP_USE_MSEGUI}
+        {* Import version for MSEgui }
         TBGRABitmap = class(TBGRAMSEguiBitmap)
       {$ELSE}
+        {* Import version without a GUI }{ Standalone cross-platform 32-bit RGBA image }
         TBGRABitmap = class(TBGRANoGUIBitmap)
       {$ENDIF}
     {$ENDIF}
@@ -161,15 +158,15 @@ type
     function FilterPlane: TBGRABitmap; override;
   end;
 
-// draw a bitmap from pure data
+{* Draw a bitmap from pure data }
 procedure BGRABitmapDraw(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
   VerticalFlip: boolean; AWidth, AHeight: integer; Opaque: boolean);
   
-{ Replace the content of the variable Destination with the variable
-  Temp and frees previous object contained in Destination.
+{* Replace the content of the variable Destination with the variable
+  _Temp_ and frees previous object contained in _Destination_.
   
   This function is useful as a shortcut for :
- 
+  ```pascal
   var
     temp: TBGRABitmap;
   begin
@@ -178,13 +175,15 @@ procedure BGRABitmapDraw(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
     someBmp.Free;
     someBmp := temp;
   end;
+  ```
   
   which becomes :
-  
+  ```pascal
   begin
     ...
     BGRAReplace(someBmp, someBmp.Filter... );
   end;
+  ```
 }
 procedure BGRAReplace(var Destination: TBGRABitmap; Temp: TObject);
 

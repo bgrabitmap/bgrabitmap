@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{ This unit defines basic types for BGRABitmap and it generally needs to be included in the **uses** clause,
-  along with the BGRABitmap unit. If you are using LCL types, add also BGRAGraphics unit rather than Graphics unit. }
 
+{ Basic types for BGRABitmap, generally needed in the **uses** clause,
+  along with the BGRABitmap unit. }
 unit BGRABitmapTypes;
+
+{ If you are using LCL types, add also BGRAGraphics unit rather than Graphics unit. }
 
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}
@@ -24,13 +26,8 @@ uses
   function BGRABitmapVersionStr: string;
 
 type
-  {* Generic definition of a multifile container }
   TMultiFileContainer = BGRAMultiFileType.TMultiFileContainer;
-
-  {* Signed integer value of at least 32 bits }
   Int32or64 = BGRAClasses.Int32or64;
-
-  {* Unsigned integer value of at least 32 bits }
   UInt32or64 = BGRAClasses.UInt32or64;
 
   {* Device context handle (using LCL if available) }
@@ -468,7 +465,7 @@ type
         so that the width is along the text }
     function TextSizeF(sUTF8: string; AMaxWidthF: single; ARightToLeft: boolean): TPointF; overload; virtual;
     {** Returns the total size of the string provided using the current font,
-        with the given orientation, along the text }
+        with the given orientation in tenth of degrees CCW, along the text }
     function TextSizeAngle(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TSize; virtual;
     {** Returns the total floating-point size of the string provided using the current font,
         with the given orientation, along the text }
@@ -494,7 +491,8 @@ type
     {** Same as above but with given RTL mode }
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); overload; virtual;
 
-    {** Same as above, except that the orientation is specified, overriding the value of the property _FontOrientation_ }
+    {** Same as above, except that the orientation is specified in tenth of degrees CCW,
+        overriding the value of the property _FontOrientation_ }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual; abstract;
     {** Same as above but with given RTL mode }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); overload; virtual;

@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Generic class to hold a shape to be filled as well as the implementation
+  for basic shapes }
 unit BGRAFillInfo;
 
 {$mode objfpc}{$H+}
