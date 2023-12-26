@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implements the writer for BMP MioMap (iGO) image format }
 unit BGRAWriteBmpMioMap;
 
 {$mode objfpc}{$H+}
@@ -9,9 +11,7 @@ uses
   BGRAClasses, SysUtils, FPimage, BGRABitmapTypes, BGRAReadBmpMioMap;
 
 type
-
-  { TBGRAWriterBmpMioMap }
-
+  {* Extends the TFPCustomImageWriter to write the BMP MioMap (iGO) image format }
   TBGRAWriterBmpMioMap = class (TFPCustomImageWriter)
   protected
     FHeader: TMioHeader;
@@ -41,7 +41,9 @@ type
     procedure ReadScanline(Img: TFPCustomImage; Y: integer; ADest: PBGRAPixel);
     procedure InternalWrite(Str: TStream; Img: TFPCustomImage); override;
   public
+    {** Creates the writer }
     constructor Create; override;
+    {** Maximum size for data chunks (by default 254 but this can be increased) }
     property MaxChunkSize: Word read FMaxChunkSize write FMaxChunkSize;
   end;
 

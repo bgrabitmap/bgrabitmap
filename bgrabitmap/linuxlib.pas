@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ This unit allows to find the implementation of a library from its
+  "linker name" whatever its version. }
 unit linuxlib;
 
 {$mode objfpc}{$H+}
 
-{ This unit allows to find the implementation of a library from its
-  "linker name" whatever its version. Note that between different versions,
-  there may be incompatibilities (in the signature of the functions or the
-  record types). So make sure the functions you are calling are stable or
-  check the version of the library once its loaded using one of its functions.
-
-
-  Linker name
+{ Linker name
   -----------
   The linker name normally can only be used when compiling a program.
   It ends up with .so and does not have any version number. There isn't
@@ -52,6 +48,12 @@ interface
 uses
   BGRAClasses, SysUtils;
 
+{* Retrieves the full path of a library on Linux.
+
+  Note that between different versions, there may be incompatibilities
+  (in the signature of the functions or the record types).
+  So make sure the functions you are calling are stable or
+  check the version of the library once its loaded using one of its functions. }
 function FindLinuxLibrary(ALinkerName: string; AMinimumVersion: integer = 0): string;
 
 implementation

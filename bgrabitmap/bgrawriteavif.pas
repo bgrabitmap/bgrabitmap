@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implements the writer for the AVIF format (relies on external libavif library) }
 unit BGRAWriteAvif;
 
 {$mode objfpc}{$H+}
@@ -9,8 +11,7 @@ uses
   BGRAClasses, SysUtils, FPimage, avifbgra;
 
 type
-  { TBGRAWriterAvif }
-
+  {* Extends the TFPCustomImageWriter to write the AVIF image format }
   TBGRAWriterAvif = class(TFPCustomImageWriter)
   protected
     FLossless: boolean;

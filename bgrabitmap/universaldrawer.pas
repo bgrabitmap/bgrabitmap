@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Base implementation for drawing on a universal bitmap }
 unit UniversalDrawer;
 
 {$mode objfpc}{$H+}
@@ -9,9 +11,8 @@ uses
   BGRAClasses, SysUtils, FPImage, BGRABitmapTypes, BGRAGraphics, BGRAPen, BGRAArrow;
 
 type
-
-  { TUniversalDrawer }
-
+  {* Extends the generic class TCustomUniversalDrawer with an implementation that
+     is colorspace agnostic }
   TUniversalDrawer = class(TCustomUniversalDrawer)
 
     class function GetMaxColorChannelDepth(ADest: TCustomUniversalBitmap): byte;

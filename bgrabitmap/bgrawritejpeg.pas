@@ -5,6 +5,7 @@
            - added Resolution support
 }
 {*****************************************************************************}
+{ Imports the writer for the JPEG image format }
 unit BGRAWriteJpeg;
 
 {$mode objfpc}{$H+}
@@ -17,10 +18,9 @@ uses
   {$IF FPC_FULLVERSION<30203}, JPEGLib, JcAPIstd, JcAPImin, JDataDst, JcParam, JError{$ENDIF};
 
 type
-  { TBGRAWriterJPEG }
-
   TFPJPEGCompressionQuality = 1..100;   // 100 = best quality, 25 = pretty awful
 
+  {* Extends the TFPCustomImageWriter to write the JPEG image format (imports TFPWriterJPEG) }
   TBGRAWriterJPEG = class(TFPWriterJPEG)
   protected
     {$IF FPC_FULLVERSION<30203}

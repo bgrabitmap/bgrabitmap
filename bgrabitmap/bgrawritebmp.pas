@@ -5,6 +5,7 @@
            - added Resolution support
 }
 {*****************************************************************************}
+{ Imports the writer for the BMP image format }
 unit BGRAWriteBMP;
 {$mode objfpc}
 {$h+}
@@ -14,7 +15,7 @@ interface
 uses SysUtils, Classes, FPImage, FPWriteBMP, BGRABitmapTypes;
 
 type
-
+  {* Extends the TFPCustomImageWriter to write the BMP image format (imports TFPWriterBMP) }
   TBGRAWriterBMP = class (TFPWriterBMP)
   protected
     {$IF FPC_FULLVERSION<30203}
