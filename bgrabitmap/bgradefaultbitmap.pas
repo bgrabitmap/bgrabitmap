@@ -677,7 +677,7 @@ type
   public
     constructor Create(AWidth, AHeight: integer; AStream: TMemoryStream; AStreamOffset: IntPtr; AOwnStream: boolean);
     constructor Create(AWidth, AHeight: integer); override;
-    constructor Create(AWidth, AHeight: integer; AColor: TBGRAPixel);
+    constructor Create(AWidth, AHeight: integer; const AColor: TBGRAPixel); override;
     destructor Destroy; override;
     property OwnStream: boolean read GetOwnStream write SetOwnStream;
     property Stream: TMemoryStream read FStream;
@@ -725,7 +725,7 @@ begin
 end;
 
 constructor TBGRAMemoryStreamBitmap.Create(AWidth, AHeight: integer;
-  AColor: TBGRAPixel);
+  const AColor: TBGRAPixel);
 begin
   inherited Create(AWidth, AHeight);
   FStream := TMemoryStream.Create;

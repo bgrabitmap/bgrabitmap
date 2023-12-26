@@ -12,8 +12,10 @@ unit BGRAWriteJpeg;
 interface
 
 uses
-  Classes, SysUtils, FPImage, JPEGLib, FPReadJPEG, FPWriteJPEG, BGRAReadJPeg,
-  JcAPIstd, JcAPImin, JDataDst, JcParam, JError;
+  Classes, SysUtils, FPImage
+
+  {$IF FPC_FULLVERSION<30203}, JPEGLib, FPReadJPEG, FPWriteJPEG,
+  JcAPIstd, JcAPImin, JDataDst, JcParam, JError{$ENDIF};
 
 type
   { TBGRAWriterJPEG }
@@ -22,7 +24,7 @@ type
 
   TBGRAWriterJPEG = class(TFPWriterJPEG)
   protected
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     ACompressInfo: jpeg_compress_struct;
     FError: jpeg_error_mgr;
     FProgressMgr: TFPJPEGProgressManager;
@@ -36,7 +38,16 @@ implementation
 
 uses BGRABitmapTypes;
 
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
+function ResolutionUnitTodensity_unit(AResolutionUnit: TResolutionUnit): UINT8;
+begin
+  Case AResolutionUnit of
+  ruPixelsPerInch: Result :=1;
+  ruPixelsPerCentimeter: Result :=2;
+  else Result :=0;
+  end;
+end;
+
 procedure JPEGError(CurInfo: j_common_ptr);
 begin
   if CurInfo=nil then exit;
@@ -214,7 +225,7 @@ end;
 {$ENDIF}
 
 initialization
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
   with jpeg_std_error do begin
     error_exit:=@JPEGError;
     emit_message:=@EmitMessage;

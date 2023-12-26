@@ -47,11 +47,6 @@ type
     function InternalCheck(Str: TStream): boolean; override;
   end;
 
-{$IF FPC_FULLVERSION<30203}
-function density_unitToResolutionUnit(Adensity_unit: UINT8): TResolutionUnit;
-function ResolutionUnitTodensity_unit(AResolutionUnit: TResolutionUnit): UINT8;
-{$ENDIF}
-
 implementation
 
 {$IF FPC_FULLVERSION<30203}
@@ -61,15 +56,6 @@ begin
   1: Result :=ruPixelsPerInch;
   2: Result :=ruPixelsPerCentimeter;
   else Result :=ruNone;
-  end;
-end;
-
-function ResolutionUnitTodensity_unit(AResolutionUnit: TResolutionUnit): UINT8;
-begin
-  Case AResolutionUnit of
-  ruPixelsPerInch: Result :=1;
-  ruPixelsPerCentimeter: Result :=2;
-  else Result :=0;
   end;
 end;
 
