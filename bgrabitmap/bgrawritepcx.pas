@@ -14,21 +14,22 @@ interface
 uses Classes, SysUtils, FPImage, FPWritePCX, BGRABitmapTypes;
 
 type
-
   TBGRAWriterPCX = class(TFPWriterPCX)
   protected
+    {$IF FPC_FULLVERSION<30203}
     function SaveHeader(Stream: TStream; Img: TFPCustomImage): boolean; override;
+    {$ENDIF}
   end;
 
 implementation
 
+{$IF FPC_FULLVERSION<30203}
 uses pcxcomn;
 
 function TBGRAWriterPCX.SaveHeader(Stream: TStream; Img: TFPCustomImage): boolean;
 var
   Header: TPCXHeader;
 begin
-  {$IF FPC_FULLVERSION<30301}
   //Code copied from FPWriterPCX because FillChar may not be done
   Result := False;
   FillChar(Header, SizeOf(Header), 0);
@@ -65,10 +66,8 @@ begin
   end;
   Stream.WriteBuffer(Header, SizeOf(Header));
   Result := True;
-  {$ELSE}
-  Result :=Inherited SaveHeader(Stream, Img);
-  {$ENDIF}
 end;
+{$ENDIF}
 
 initialization
   if ImageHandlers.ImageWriter['PCX Format']=nil
