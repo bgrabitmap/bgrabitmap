@@ -12,10 +12,9 @@ unit BGRAWriteJpeg;
 interface
 
 uses
-  Classes, SysUtils, FPImage
+  Classes, SysUtils, FPImage, FPReadJPEG, FPWriteJPEG
 
-  {$IF FPC_FULLVERSION<30203}, JPEGLib, FPReadJPEG, FPWriteJPEG,
-  JcAPIstd, JcAPImin, JDataDst, JcParam, JError{$ENDIF};
+  {$IF FPC_FULLVERSION<30203}, JPEGLib, JcAPIstd, JcAPImin, JDataDst, JcParam, JError{$ENDIF};
 
 type
   { TBGRAWriterJPEG }
