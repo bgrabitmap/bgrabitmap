@@ -77,21 +77,21 @@ type
      function NewReference: TGrayscaleMask; override;
      function GetUnique: TGrayscaleMask; override;
      function Duplicate(DuplicateProperties: Boolean = False): TGrayscaleMask; overload; override;
-     function GetPart(const ARect: TRect): TGrayscaleMask; override;
+     function GetPart(const ARect: TRect; CopyProperties: Boolean=False): TGrayscaleMask; override;
      function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TByteMask;
                  AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TGrayscaleMask; override;
-     function RotateCW: TGrayscaleMask; override;
-     function RotateCCW: TGrayscaleMask; override;
-     function RotateUD: TGrayscaleMask; override;
+     function RotateCW(ACopyProperties: Boolean=False): TGrayscaleMask; override;
+     function RotateCCW(ACopyProperties: Boolean=False): TGrayscaleMask; override;
+     function RotateUD(ACopyProperties: Boolean=False): TGrayscaleMask; override;
      function FilterContour(ABorderValue: byte = 0): TGrayscaleMask;
-     function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TGrayscaleMask; overload; override;
-     function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TGrayscaleMask; overload; override;
-     function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TGrayscaleMask; overload; override;
-     function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TGrayscaleMask; overload; override;
-     function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TGrayscaleMask; overload; override;
-     function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean): TGrayscaleMask; overload; override;
-     function FilterCustomBlur(mask: TCustomUniversalBitmap): TGrayscaleMask; overload; override;
-     function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap): TGrayscaleMask; overload; override;
+     function FilterBlurRadial(radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
+     function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
+     function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
+     function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
+     function FilterBlurMotion(distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
+     function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
+     function FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
+     function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
      function FilterSphere: TGrayscaleMask;
      function FilterCylinder: TGrayscaleMask;
   end;
@@ -1083,9 +1083,9 @@ begin
   Result:=inherited Duplicate(DuplicateProperties) as TGrayscaleMask;
 end;
 
-function TGrayscaleMask.GetPart(const ARect: TRect): TGrayscaleMask;
+function TGrayscaleMask.GetPart(const ARect: TRect; CopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited GetPart(ARect) as TGrayscaleMask;
+  Result:=inherited GetPart(ARect, CopyProperties) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.CreateBrushTexture(ABrushStyle: TBrushStyle;
@@ -1096,19 +1096,19 @@ begin
     ABackgroundColor, AWidth, AHeight, APenWidth) as TGrayscaleMask;
 end;
 
-function TGrayscaleMask.RotateCW: TGrayscaleMask;
+function TGrayscaleMask.RotateCW(ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited RotateCW as TGrayscaleMask;
+  Result:=inherited RotateCW(ACopyProperties) as TGrayscaleMask;
 end;
 
-function TGrayscaleMask.RotateCCW: TGrayscaleMask;
+function TGrayscaleMask.RotateCCW(ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited RotateCCW as TGrayscaleMask;
+  Result:=inherited RotateCCW(ACopyProperties) as TGrayscaleMask;
 end;
 
-function TGrayscaleMask.RotateUD: TGrayscaleMask;
+function TGrayscaleMask.RotateUD(ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited RotateUD as TGrayscaleMask;
+  Result:=inherited RotateUD(ACopyProperties) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.FilterContour(ABorderValue: byte = 0): TGrayscaleMask;
@@ -1234,51 +1234,50 @@ begin
 end;
 
 function TGrayscaleMask.FilterBlurRadial(radius: single;
-  blurType: TRadialBlurType): TGrayscaleMask;
+  blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited FilterBlurRadial(radius, blurType) as TGrayscaleMask;
+  Result:=inherited FilterBlurRadial(radius, blurType, ACopyProperties) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.FilterBlurRadial(const ABounds: TRect; radius: single;
-  blurType: TRadialBlurType): TGrayscaleMask;
+  blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited FilterBlurRadial(ABounds, radius, blurType) as TGrayscaleMask;
+  Result:=inherited FilterBlurRadial(ABounds, radius, blurType, ACopyProperties) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.FilterBlurRadial(radiusX, radiusY: single;
-  blurType: TRadialBlurType): TGrayscaleMask;
+  blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited FilterBlurRadial(radiusX, radiusY, blurType) as TGrayscaleMask;
+  Result:=inherited FilterBlurRadial(radiusX, radiusY, blurType, ACopyProperties) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.FilterBlurRadial(const ABounds: TRect; radiusX,
-  radiusY: single; blurType: TRadialBlurType): TGrayscaleMask;
+  radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited FilterBlurRadial(ABounds, radiusX, radiusY, blurType) as TGrayscaleMask;
+  Result:=inherited FilterBlurRadial(ABounds, radiusX, radiusY, blurType, ACopyProperties) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.FilterBlurMotion(distance: single; angle: single;
-  oriented: boolean): TGrayscaleMask;
+  oriented: boolean; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited FilterBlurMotion(distance, angle, oriented) as TGrayscaleMask;
+  Result:=inherited FilterBlurMotion(distance, angle, oriented, ACopyProperties) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.FilterBlurMotion(const ABounds: TRect;
-  distance: single; angle: single; oriented: boolean): TGrayscaleMask;
+  distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited FilterBlurMotion(ABounds, distance, angle, oriented) as TGrayscaleMask;
+  Result:=inherited FilterBlurMotion(ABounds, distance, angle, oriented, ACopyProperties) as TGrayscaleMask;
 end;
 
-function TGrayscaleMask.FilterCustomBlur(mask: TCustomUniversalBitmap
-  ): TGrayscaleMask;
+function TGrayscaleMask.FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited FilterCustomBlur(mask) as TGrayscaleMask;
+  Result:=inherited FilterCustomBlur(mask, ACopyProperties) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.FilterCustomBlur(const ABounds: TRect;
-  mask: TCustomUniversalBitmap): TGrayscaleMask;
+  mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
-  Result:=inherited FilterCustomBlur(ABounds, mask) as TGrayscaleMask;
+  Result:=inherited FilterCustomBlur(ABounds, mask, ACopyProperties) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.FilterSphere: TGrayscaleMask;
