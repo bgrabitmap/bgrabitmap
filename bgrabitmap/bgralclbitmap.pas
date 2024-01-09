@@ -12,6 +12,9 @@ uses
 
 type
   {* Implementation of 32-RGBA bitmap based on LCL (Lazarus Component Library) }
+
+  { TBGRALCLBitmap }
+
   TBGRALCLBitmap = class(TBGRADefaultBitmap)
   protected
     function LoadFromRawImage(ARawImage: TRawImage; DefaultOpacity: byte;
@@ -19,13 +22,14 @@ type
     function CreateDefaultFontRenderer: TBGRACustomFontRenderer; override;
     procedure DoLoadFromBitmap; override;
     procedure RebuildBitmap; override;
-    function CreatePtrBitmap(AWidth, AHeight: integer; AData: PBGRAPixel
-      ): TBGRAPtrBitmap; override;
+    function CreatePtrBitmap(AWidth, AHeight: integer; AData: PBGRAPixel): TBGRAPtrBitmap; override;
     procedure AssignRasterImage(ARaster: TRasterImage); virtual;
     {** Determines the Xor mask from the alpha values of the bitmap }
     procedure ExtractXorMask;
   public
     procedure Assign(Source: TPersistent); override;
+    procedure Assign(Source: TPersistent; ACopyProperties: Boolean); overload; override;
+
     procedure LoadFromResource(AFilename: string; AOptions: TBGRALoadingOptions); overload; override;
     procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
       AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
@@ -874,11 +878,16 @@ end;
 
 procedure TBGRALCLBitmap.Assign(Source: TPersistent);
 begin
+  Assign(Source, False);
+end;
+
+procedure TBGRALCLBitmap.Assign(Source: TPersistent; ACopyProperties: Boolean);
+begin
   if Source is TRasterImage then
   begin
     AssignRasterImage(TRasterImage(Source));
   end else
-    inherited Assign(Source);
+    inherited Assign(Source, ACopyProperties);
 
   if Source is TCursorImage then
   begin

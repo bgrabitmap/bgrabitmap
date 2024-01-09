@@ -216,7 +216,7 @@ type
      property FontRenderer: TBGRACustomFontRenderer read GetFontRenderer write SetFontRenderer;
 
   public
-     constructor Create(AFPImage: TFPCustomImage); overload; virtual; abstract;
+     constructor Create(AFPImage: TFPCustomImage; ACopyProperties: Boolean=False); overload; virtual; abstract;
      constructor Create(ABitmap: TBitmap); overload; virtual; abstract;
      constructor Create(ABitmap: TBitmap; AUseTransparent: boolean); overload; virtual; abstract;
      constructor Create(AFilename: string); overload; virtual; abstract;

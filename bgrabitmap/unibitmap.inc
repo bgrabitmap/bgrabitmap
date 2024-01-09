@@ -183,13 +183,15 @@ type
                        ALineOrder: TRawImageLineOrder); overload;
 
     procedure Assign(Source: TPersistent); override;
+    procedure Assign(Source: TPersistent; ACopyProperties: Boolean); virtual; overload;
+
     function NewBitmap: TCustomUniversalBitmap; overload; virtual;
     function NewBitmap(AWidth, AHeight: integer): TCustomUniversalBitmap; overload; virtual;
     function NewBitmap(AWidth, AHeight: integer; AColor: Pointer): TCustomUniversalBitmap; overload; virtual;
 
     {** Adds a reference (this reference count is not the same as
         the reference count of an interface, it changes only by
-        explicit calls }
+        explicit calls) }
     function NewReference: TCustomUniversalBitmap; virtual;
     {** Free a reference. When the resulting reference count gets
         to zero, the image is freed. The initial reference count
@@ -2459,26 +2461,44 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.Assign(Source: TPersistent);
+begin
+  Assign(Source, False);
+end;
+
+procedure TCustomUniversalBitmap.Assign(Source: TPersistent; ACopyProperties: Boolean);
 var pdest: PByte;
   x,y: Int32or64;
   col: TFPColor;
 begin
   if Source is TCustomUniversalBitmap then
   begin
-    ResolutionUnit :=TCustomUniversalBitmap(Source).ResolutionUnit;
-    ResolutionX :=TCustomUniversalBitmap(Source).ResolutionX;
-    ResolutionY :=TCustomUniversalBitmap(Source).ResolutionY;
     SetSize(TCustomUniversalBitmap(Source).Width, TCustomUniversalBitmap(Source).Height);
+
+    if ACopyProperties then TCustomUniversalBitmap(Source).CopyPropertiesTo(Self);
+
     PutImage(0, 0, TCustomUniversalBitmap(Source), dmSet);
   end else
   if Source is TFPCustomImage then
   begin
-    {$IF FPC_FULLVERSION>=30203}
-    ResolutionUnit :=TFPCustomImage(Source).ResolutionUnit;
-    ResolutionX :=TFPCustomImage(Source).ResolutionX;
-    ResolutionY :=TFPCustomImage(Source).ResolutionY;
-    {$ENDIF}
     SetSize(TFPCustomImage(Source).Width, TFPCustomImage(Source).Height);
+
+    if ACopyProperties then
+    begin
+      {$IF FPC_FULLVERSION>=30203}
+      //Resolution
+      ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
+      ResolutionX:=TFPCustomImage(Source).ResolutionX;
+      ResolutionY:=TFPCustomImage(Source).ResolutionY;
+      {$ENDIF}
+      // Copy palette if needed.
+      UsePalette := TFPCustomImage(Source).UsePalette;
+      if UsePalette then
+      begin
+        Palette.Count:=0;
+        Palette.Merge(TFPCustomImage(Source).Palette);
+      end;
+    end;
+
     for y := 0 to TFPCustomImage(Source).Height-1 do
     begin
       pdest := GetPixelAddress(0,y);
@@ -2554,8 +2574,7 @@ begin
   result := InternalDuplicate(ACopyProperties);
 end;
 
-procedure TCustomUniversalBitmap.CopyPropertiesTo(
-  ABitmap: TCustomUniversalBitmap);
+procedure TCustomUniversalBitmap.CopyPropertiesTo(ABitmap: TCustomUniversalBitmap);
 begin
   ABitmap.FillMode := FillMode;
   ABitmap.ClipRect := ClipRect;
@@ -2563,6 +2582,7 @@ begin
   ABitmap.ResolutionUnit := ResolutionUnit;
   ABitmap.ResolutionX := ResolutionX;
   ABitmap.ResolutionY := ResolutionY;
+  { #todo 2 -oMaxM : In the future we will also copy the information about the original readed bitformat (Issue #231) }
   // Copy palette if needed.
   ABitmap.UsePalette := UsePalette;
   if ABitmap.UsePalette then

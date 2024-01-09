@@ -178,7 +178,7 @@ type
     {------------------------- Constructors from TBGRACustomBitmap-------------}
 
     {** Creates an image by copying the content of a ''TFPCustomImage'' }
-    constructor Create(AFPImage: TFPCustomImage); overload; override;
+    constructor Create(AFPImage: TFPCustomImage; ACopyProperties: Boolean=False); overload; override;
     {** Creates an image by copying the content of a ''TBitmap'', apply transparent color if specified and bitmap is masked }
     constructor Create(ABitmap: TBitmap); overload; override;
     {** Creates an image by copying the content of a ''TBitmap'', enforce/disable use of transparent color }
@@ -250,6 +250,7 @@ type
     {** Assign the content of the specified ''Source''. It can be a ''TBGRACustomBitmap'' or
         a ''TFPCustomImage'' }
     procedure Assign(Source: TPersistent); overload; override;
+    procedure Assign(Source: TPersistent; ACopyProperties: Boolean); overload; override;
     procedure AssignWithFixedTransparent(Source: TBitmap); overload;
     procedure Assign(Source: TBitmap; AUseTransparentColor: boolean); overload;
 
@@ -1029,10 +1030,10 @@ end;
 
 {---------------------- Constructors ---------------------------------}
 
-constructor TBGRADefaultBitmap.Create(AFPImage: TFPCustomImage);
+constructor TBGRADefaultBitmap.Create(AFPImage: TFPCustomImage; ACopyProperties: Boolean=False);
 begin
   inherited Create;
-  Assign(AFPImage);
+  Assign(AFPImage, ACopyProperties);
 end;
 
 constructor TBGRADefaultBitmap.Create(ABitmap: TBitmap);
@@ -1155,6 +1156,11 @@ begin
 end;
 
 procedure TBGRADefaultBitmap.Assign(Source: TPersistent);
+begin
+  Assign(Source, False);
+end;
+
+procedure TBGRADefaultBitmap.Assign(Source: TPersistent; ACopyProperties: Boolean);
 var pdest: PBGRAPixel;
   x,y: Int32or64;
 begin
@@ -1163,10 +1169,7 @@ begin
     DiscardBitmapChange;
     SetSize(TBGRACustomBitmap(Source).Width, TBGRACustomBitmap(Source).Height);
 
-    //Resolution
-    ResolutionUnit:=TBGRACustomBitmap(Source).ResolutionUnit;
-    ResolutionX:=TBGRACustomBitmap(Source).ResolutionX;
-    ResolutionY:=TBGRACustomBitmap(Source).ResolutionY;
+    if ACopyProperties then TBGRACustomBitmap(Source).CopyPropertiesTo(Self);
 
     PutImage(0, 0, TBGRACustomBitmap(Source), dmSet);
     if Source is TBGRADefaultBitmap then
@@ -1187,12 +1190,22 @@ begin
     DiscardBitmapChange;
     SetSize(TFPCustomImage(Source).Width, TFPCustomImage(Source).Height);
 
-    {$IF FPC_FULLVERSION>=30203}
-    //Resolution
-    ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
-    ResolutionX:=TFPCustomImage(Source).ResolutionX;
-    ResolutionY:=TFPCustomImage(Source).ResolutionY;
-    {$ENDIF}
+    if ACopyProperties then
+    begin
+      {$IF FPC_FULLVERSION>=30203}
+      //Resolution
+      ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
+      ResolutionX:=TFPCustomImage(Source).ResolutionX;
+      ResolutionY:=TFPCustomImage(Source).ResolutionY;
+      {$ENDIF}
+      // Copy palette if needed.
+      UsePalette := TFPCustomImage(Source).UsePalette;
+      if UsePalette then
+      begin
+        Palette.Count:=0;
+        Palette.Merge(TFPCustomImage(Source).Palette);
+      end;
+    end;
 
     for y := 0 to TFPCustomImage(Source).Height-1 do
     begin
@@ -1204,7 +1217,7 @@ begin
       end;
     end;
   end else
-    inherited Assign(Source);
+    inherited Assign(Source, ACopyProperties);
 end;
 
 procedure TBGRADefaultBitmap.AssignWithFixedTransparent(Source: TBitmap);
