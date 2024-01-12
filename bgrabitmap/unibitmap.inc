@@ -127,6 +127,8 @@ type
     function GetResolutionHeight: Single; virtual;
     {$ENDIF}
 
+    //ReadWriteConfig: TBGRAReadWriteConfig;
+
     procedure Init; virtual;
     procedure ReallocData; virtual;
     procedure FreeData; virtual;
