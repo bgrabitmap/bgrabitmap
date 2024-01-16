@@ -27,7 +27,12 @@ type
     #note -oMaxM :
     Derived from TPersistent so we can directly store published properties in a Stream/XML }
   TBGRAReadWriteConfig = class(TPersistent)
+  protected
+    function InternalNew: TBGRAReadWriteConfig; virtual;
 
+  public
+    procedure Assign(Source: TPersistent); override;
+    function Duplicate: TBGRAReadWriteConfig; virtual;
   end;
   TBGRAReadWriteConfigClass = class of TBGRAReadWriteConfig;
 
@@ -45,6 +50,24 @@ type
   end;
 
 implementation
+
+{ TBGRAReadWriteConfig }
+
+function TBGRAReadWriteConfig.InternalNew: TBGRAReadWriteConfig;
+begin
+  Result :=TBGRAReadWriteConfig.Create;
+end;
+
+procedure TBGRAReadWriteConfig.Assign(Source: TPersistent);
+begin
+  { #todo -oMaxM : Copy Properties from Source }
+end;
+
+function TBGRAReadWriteConfig.Duplicate: TBGRAReadWriteConfig;
+begin
+  Result :=InternalNew;
+  Result.Assign(Self);
+end;
 
 end.
 
