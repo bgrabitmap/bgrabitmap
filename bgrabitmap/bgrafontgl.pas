@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Font rendering in OpenGL with caching of textures for each glyph. Textures
+  are built using a TBGRACustomFontRenderer }
 unit BGRAFontGL;
 
 {$mode objfpc}{$H+}

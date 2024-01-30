@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-unit BGRABlend;
 
-{ This unit contains pixel blending functions. They take a destination adress as parameter,
-  and draw pixels at this address with different blending modes. These functions are used
-  by many functions in BGRABitmap library to do the low level drawing. }
+{ Pixel blending functions for 32-bit BGRA/RGBA.
+
+  They take a destination adress as parameter,
+  and draw pixels at this address with different blending modes.
+  These functions are used by many functions/classes in BGRABitmap library. }
+unit BGRABlend;
 
 {$mode objfpc}{$H+}
 

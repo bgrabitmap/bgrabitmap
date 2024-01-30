@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Pools of coordinates, to be transformed using SSE instructions, if available }
 unit BGRACoordPool3D;
 
 {$mode objfpc}{$H+}

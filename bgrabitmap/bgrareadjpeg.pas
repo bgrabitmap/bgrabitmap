@@ -12,7 +12,7 @@ unit BGRAReadJpeg;
 interface
 
 uses
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
    JPEGLib, JdAPImin, JDataSrc, JdAPIstd, JmoreCfg,
   {$ENDIF}
   BGRABitmapTypes, Classes, SysUtils, FPReadJPEG, FPImage;
@@ -36,7 +36,7 @@ type
   TBGRAReaderJpeg = class(TFPReaderJPEG)
     constructor Create; override;
   protected
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     CompressInfo: jpeg_decompress_struct;
     FError: jpeg_error_mgr;
 
@@ -47,29 +47,15 @@ type
     function InternalCheck(Str: TStream): boolean; override;
   end;
 
-{$IF FPC_FULLVERSION<30301}
-function density_unitToResolutionUnit(Adensity_unit: UINT8): TResolutionUnit;
-function ResolutionUnitTodensity_unit(AResolutionUnit: TResolutionUnit): UINT8;
-{$ENDIF}
-
 implementation
 
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
 function density_unitToResolutionUnit(Adensity_unit: UINT8): TResolutionUnit;
 begin
   Case Adensity_unit of
   1: Result :=ruPixelsPerInch;
   2: Result :=ruPixelsPerCentimeter;
   else Result :=ruNone;
-  end;
-end;
-
-function ResolutionUnitTodensity_unit(AResolutionUnit: TResolutionUnit): UINT8;
-begin
-  Case AResolutionUnit of
-  ruPixelsPerInch: Result :=1;
-  ruPixelsPerCentimeter: Result :=2;
-  else Result :=0;
   end;
 end;
 
@@ -85,7 +71,7 @@ begin
   Performance := jpBestQuality;
 end;
 
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
 procedure TBGRAReaderJpeg.ReadResolutionValues(Img: TFPCustomImage);
 begin
   if (Img is TCustomUniversalBitmap) then
@@ -134,7 +120,7 @@ begin
   if (magic[0] = $ff) and (magic[1] = $d8) and (magic[2] = $ff) and (magic[3] >= $c0) then result := true;
 end;
 
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
 procedure JPEGError(CurInfo: j_common_ptr);
 begin
   if CurInfo=nil then exit;
@@ -169,7 +155,7 @@ end;
 {$ENDIF}
 
 initialization
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
   with jpeg_std_error do begin
     error_exit:=@JPEGError;
     emit_message:=@EmitMessage;

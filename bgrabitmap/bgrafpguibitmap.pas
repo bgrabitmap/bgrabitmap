@@ -38,6 +38,7 @@ type
     procedure AssignToBitmap(ADestination: TBitmap);
     class procedure AddFreeTypeFontFolder(ADirectory: string; AUTF8: boolean = false); static;
     class procedure AddFreeTypeFontFile(AFilename: string; AUTF8: boolean = false); static;
+    class procedure AddFreeTypeFontStream(AStream: TStream; AOwned: boolean); static;
     procedure Draw(ACanvas: TCanvas; x, y: integer; {%H-}Opaque: boolean=True); override;
     procedure Draw(ACanvas: TCanvas; Rect: TRect; {%H-}Opaque: boolean=True); override;
     procedure Draw(ACanvas: TGUICanvas; x, y: integer; {%H-}Opaque: boolean=True); overload;
@@ -205,6 +206,15 @@ begin
   {$IFDEF BGRABITMAP_USE_LAZFREETYPE}
   if AUTF8 then AFilename:= Utf8ToAnsi(AFilename);
   EasyLazFreeType.FontCollection.AddFile(AFilename);
+  {$ENDIF}
+end;
+
+class procedure TBGRAfpGUIBitmap.AddFreeTypeFontStream(AStream: TStream; AOwned: boolean);
+begin
+  {$IFDEF BGRABITMAP_USE_LAZFREETYPE}
+  EasyLazFreeType.FontCollection.AddStream(AStream, AOwned);
+  {$ELSE}
+  if AOwned then AStream.Free;
   {$ENDIF}
 end;
 

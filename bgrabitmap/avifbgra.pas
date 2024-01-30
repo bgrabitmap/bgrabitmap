@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{ Encode/Decode avif images from/to BGRABitmap. }
-{ Author: Domingo Galmes <dgalmesp@gmail.com>  01-11-2021 }
 
+{ Easy to use classes and functions to read/write images in AVIF format.
+  Note that it requires libavif library. }
 unit avifbgra;
+
+{ Author: Domingo Galmes <dgalmesp@gmail.com>  01-11-2021 }
 
 {$mode ObjFPC}{$H+}
 

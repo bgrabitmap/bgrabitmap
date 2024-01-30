@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Colors stored as integers with maximum value 65536 but allowing overflow }
 unit BGRAColorInt;
 
 {$mode objfpc}{$H+}

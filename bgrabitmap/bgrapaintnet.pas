@@ -1,30 +1,28 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Paint.NET image format files.
+
+  The unit registers a TFPCustomImageReader so that it can be read by any
+  image reading function of FreePascal, and also registers a reader for BGRALayers }
 unit BGRAPaintNet;
 
 {$mode objfpc}{$H+}
 
 interface
 
-{ This unit reads Paint.NET files. It needs BGRADNetDeserial to deserialize binary .Net objects.
-
-  A Paint.NET image consists in three parts :
-  - Xml header
-  - Binary serialized information (contains layer information)
-  - Compressed data (pixel data)
-
-  The class TPaintDotNetFile do not read the Xml header. ComputeFlatImage builds the resulting image
-  by using blending operations to merge layers.
-
-  The unit registers a TFPCustomImageReader so that it can be read by any image reading function of FreePascal,
-  and also registers a reader for BGRALayers }
-
 uses
   BGRAClasses, SysUtils, BGRADNetDeserial, FPImage, BGRABitmapTypes, BGRABitmap, BGRALayers;
 
 type
 
-  { TPaintDotNetFile }
+  { A Paint.NET image consists in three parts :
+  - Xml header
+  - Binary serialized information (contains layer information)
+  - Compressed data (pixel data)
 
+  The class TPaintDotNetFile do not read the Xml header.
+  ComputeFlatImage builds the resulting image
+  by using blending operations to merge layers. }
   TPaintDotNetFile = class(TBGRACustomLayeredBitmap)
   public
     procedure LoadFromFile(const filenameUTF8: string); override;

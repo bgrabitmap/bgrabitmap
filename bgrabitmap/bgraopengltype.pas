@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Basic types used with OpenGL }
 unit BGRAOpenGLType;
 
 {$mode objfpc}{$H+}
@@ -270,7 +272,7 @@ type
     procedure NoClip; override;
     destructor Destroy; override;
     procedure SwapRedBlue; overload; override;
-    function Resample(newWidth, newHeight: integer; mode: TResampleMode=rmFineResample): TBGLCustomBitmap; override;
+    function Resample(newWidth, newHeight: integer; mode: TResampleMode=rmFineResample; ACopyProperties: Boolean=False): TBGLCustomBitmap; override;
     procedure ApplyGlobalOpacity(alpha: byte); overload; override;
     procedure ReplaceColor(before, after: TColor); overload; override;
     procedure ReplaceColor(const ABefore, AAfter: TBGRAPixel); overload; override;
@@ -1642,7 +1644,7 @@ begin
 end;
 
 function TBGLCustomBitmap.Resample(newWidth, newHeight: integer;
-  mode: TResampleMode): TBGLCustomBitmap;
+  mode: TResampleMode; ACopyProperties: Boolean=False): TBGLCustomBitmap;
 var temp,resampled: TBGRACustomBitmap;
 begin
   temp := TBGRABitmap.Create(FActualWidth,FActualHeight);
@@ -1652,6 +1654,7 @@ begin
   temp.Free;
   Result:= NewBitmap(resampled) as TBGLCustomBitmap;
   resampled.Free;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
 procedure TBGLCustomBitmap.ApplyGlobalOpacity(alpha: byte);

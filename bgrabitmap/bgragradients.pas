@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Helper functions for gradients and shadows, as well as Phong shading }
 unit BGRAGradients;
 
 {$mode objfpc}{$H+}

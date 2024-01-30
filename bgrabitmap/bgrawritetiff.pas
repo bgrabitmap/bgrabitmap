@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 {
-    The original file is part of the Free Pascal run time library.
+    The original file FPReadTiff is part of the Free Pascal run time library.
     Copyright (c) 2012 by the Free Pascal development team
 
     Tiff writer for fpImage modified by circular.
@@ -31,6 +31,8 @@
            - added Resolution support
 }
 {*****************************************************************************}
+
+{ Implements the writer for the TIFF image format }
 unit BGRAWriteTiff;
 
 {$mode objfpc}{$H+}
@@ -42,9 +44,6 @@ uses
   FPimage, FPTiffCmn;
 
 type
-
-  { TTiffWriterEntry }
-
   TTiffWriterEntry = class
   public
     Tag: Word;
@@ -62,8 +61,6 @@ type
   end;
   PTiffWriterChunk = ^TTiffWriterChunk;
 
-  { TTiffWriterChunkOffsets }
-
   TTiffWriterChunkOffsets = class(TTiffWriterEntry)
   public
     Chunks: PTiffWriterChunk;
@@ -73,8 +70,7 @@ type
     procedure SetCount(NewCount: LongWord);
   end;
 
-  { TBGRAWriterTiff }
-
+  {* Extends the TFPCustomImageWriter to write the TIFF image format }
   TBGRAWriterTiff = class(TFPCustomImageWriter)
   private
     FPremultiplyRGB: boolean;
@@ -541,7 +537,7 @@ var
 
   procedure WriteResolutionValues;
   begin
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     if (Img is TCustomUniversalBitmap) then
     with TCustomUniversalBitmap(Img) do
     {$ELSE}

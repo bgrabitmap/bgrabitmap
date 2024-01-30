@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Generic definition of a file containing multiple items }
 unit BGRAMultiFileType;
 
 {$mode objfpc}{$H+}
@@ -58,8 +60,7 @@ type
 
   TMultiFileEntryList = specialize TFPGList<TMultiFileEntry>;
 
-  { TMultiFileContainer }
-
+  {* Generic definition of a multifile container }
   TMultiFileContainer = class(TPersistent)
   private
     FEntries: TMultiFileEntryList;

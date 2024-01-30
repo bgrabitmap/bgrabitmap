@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Matrix transformations in 3D }
 unit BGRAMatrix3D;
 
 {$mode objfpc}{$H+}

@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Supplies a bitmap with TXYZA pixel format, [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space))
+  with floating point values. }
 unit XYZABitmap;
 
 {$mode objfpc}{$H+}
@@ -9,9 +12,8 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-
-  { TXYZABitmap }
-
+  {* Extends TGenericUniversalBitmap for TXYZA pixel format, [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space))
+     with floating point values. }
   TXYZABitmap = class(specialize TGenericUniversalBitmap<TXYZA,TXYZAColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;
@@ -24,6 +26,7 @@ type
                               AOffsetX: integer = 0; AOffsetY: integer = 0); override;
     class procedure EraseBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
     class procedure AlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
+    {** Replaces imaginary colors by the _AAfter_ }
     procedure ReplaceImaginary(const AAfter: TXYZA);
   end;
 

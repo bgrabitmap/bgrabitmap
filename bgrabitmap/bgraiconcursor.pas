@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Reading/writing of icon/cursor files (contain multiple scaled versions of the same image) }
 unit BGRAIconCursor;
 
 {$mode objfpc}{$H+}

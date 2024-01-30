@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ 3D rendering of TCustomRenderer3D scences in OpenGL }
 unit BGRAOpenGL3D;
 
 {$mode objfpc}{$H+}

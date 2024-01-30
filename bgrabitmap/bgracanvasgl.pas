@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Canvas that can be used with OpenGL (2D, 3D and lighting shader) }
 unit BGRACanvasGL;
 
 {$mode objfpc}{$H+}

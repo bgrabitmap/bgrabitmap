@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Type and structure definitions for LazPaint image format }
 unit BGRALzpCommon;
 
 {$mode objfpc}{$H+}

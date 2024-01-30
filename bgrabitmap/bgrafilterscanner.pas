@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Provide scanners that act as filters. This allows to use them directly as texture
+  rather than rendering first the whole filtered image }
 unit BGRAFilterScanner;
 
 {$mode objfpc}{$H+}

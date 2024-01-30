@@ -2,6 +2,7 @@ unit BGRAPNGComn;
 
 {$mode objfpc}{$H+}
 
+{ Common types for PNG format. This extents PNGComn unit for animated PNG. }
 interface
 
 uses

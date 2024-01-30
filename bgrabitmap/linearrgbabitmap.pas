@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Supplies a bitmap with TLinearRGBA pixel format, that is linear RGB
+  with floating point values. }
 unit LinearRGBABitmap;
 
 {$mode objfpc}{$H+}
@@ -9,9 +12,8 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-
-  { TLinearRGBABitmap }
-
+  {* Extends TGenericUniversalBitmap for TLinearRGBA pixel format, that is linear RGB
+     with floating point values. }
   TLinearRGBABitmap = class(specialize TGenericUniversalBitmap<TLinearRGBA,TLinearRGBAColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Various blur tasks implemented with software (using regular CPU) }
 unit BGRAFilterBlur;
 
 {$mode objfpc}{$H+}

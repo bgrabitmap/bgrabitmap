@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Phoxo layered image format, with .oXo extension. }
 unit BGRAPhoxo;
 
 {$mode objfpc}{$H+}
@@ -295,7 +297,7 @@ end;
 procedure TBGRAPhoxoDocument.InternalLoadFromStream(AStream: TStream);
 var blockHeader: TPhoxoBlockHeader;
     blockData: PByte;
-    wCaption: widestring;
+    wCaption: UnicodeString;
     i: Integer;
 begin
   if not CheckFormat(AStream,False) then
@@ -420,7 +422,7 @@ procedure TBGRAPhoxoDocument.InternalSaveToStream(AStream: TStream);
   end;
 
   procedure WriteLayer(index: integer);
-  var wCaption: widestring;
+  var wCaption: UnicodeString;
       pCaption: PWord;
 
       layerHeader: TPhoxoLayerHeader;

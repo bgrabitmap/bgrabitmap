@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Structure and algorithms to read/write GIF files }
 unit BGRAGifFormat;
 
 {$mode objfpc}{$H+}

@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Color quantization i.e. the reduction to a palette using dithering or not,
+  provided by TBGRAColorQuantizer class. }
 unit BGRAColorQuantization;
 
 {$mode objfpc}{$H+}

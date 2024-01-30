@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Common implementation of BGRABitmap based on LCL (Lazarus Component Library) }
 unit BGRALCLBitmap;
 
 {$mode objfpc}{$H+}
@@ -9,6 +11,8 @@ uses
   BGRAClasses, SysUtils, Graphics, GraphType, BGRABitmapTypes, BGRADefaultBitmap;
 
 type
+  {* Implementation of 32-RGBA bitmap based on LCL (Lazarus Component Library) }
+
   { TBGRALCLBitmap }
 
   TBGRALCLBitmap = class(TBGRADefaultBitmap)
@@ -18,12 +22,14 @@ type
     function CreateDefaultFontRenderer: TBGRACustomFontRenderer; override;
     procedure DoLoadFromBitmap; override;
     procedure RebuildBitmap; override;
-    function CreatePtrBitmap(AWidth, AHeight: integer; AData: PBGRAPixel
-      ): TBGRAPtrBitmap; override;
+    function CreatePtrBitmap(AWidth, AHeight: integer; AData: PBGRAPixel): TBGRAPtrBitmap; override;
     procedure AssignRasterImage(ARaster: TRasterImage); virtual;
+    {** Determines the Xor mask from the alpha values of the bitmap }
     procedure ExtractXorMask;
   public
     procedure Assign(Source: TPersistent); override;
+    procedure Assign(Source: TPersistent; ACopyProperties: Boolean); overload; override;
+
     procedure LoadFromResource(AFilename: string; AOptions: TBGRALoadingOptions); overload; override;
     procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
       AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
@@ -31,6 +37,7 @@ type
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;
     procedure GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer); override;
     function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean = False): TBitmap; override;
+    {** Assign image to a TBitmap }
     procedure AssignToBitmap(ADestination: TBitmap);
     procedure LoadFromDevice({%H-}DC: HDC); override;
     procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override;
@@ -38,8 +45,7 @@ type
     procedure TakeScreenshot({%H-}ARect: TRect); override;
   end;
 
-  { TBGRALCLPtrBitmap }
-
+  {* Implementation of pointer to 32-RGBA data based on LCL (Lazarus Component Library) }
   TBGRALCLPtrBitmap = class(TBGRAPtrBitmap)
 
     procedure RebuildBitmap; override;
@@ -872,11 +878,16 @@ end;
 
 procedure TBGRALCLBitmap.Assign(Source: TPersistent);
 begin
+  Assign(Source, False);
+end;
+
+procedure TBGRALCLBitmap.Assign(Source: TPersistent; ACopyProperties: Boolean);
+begin
   if Source is TRasterImage then
   begin
     AssignRasterImage(TRasterImage(Source));
   end else
-    inherited Assign(Source);
+    inherited Assign(Source, ACopyProperties);
 
   if Source is TCursorImage then
   begin

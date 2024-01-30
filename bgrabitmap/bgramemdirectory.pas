@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Directory structure stored in memory (can be serialized) }
 unit BGRAMemDirectory;
 
 {$mode objfpc}{$H+}

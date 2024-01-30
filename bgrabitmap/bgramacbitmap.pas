@@ -3,6 +3,7 @@ unit BGRAMacBitmap;
 
 {$mode objfpc}{$H+}
 
+{ Implementation of BGRABitmap for Mac OS }
 interface
 
 uses
@@ -10,9 +11,7 @@ uses
   BGRADefaultBitmap;
 
 type
-
-  { TBGRAMacBitmap }
-
+  {* Implementation of 32-bit RGBA bitmap for Mac OS }
   TBGRAMacBitmap = class(TBGRALCLBitmap)
     procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;

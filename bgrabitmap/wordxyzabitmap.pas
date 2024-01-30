@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Supplies a bitmap with TWordXYZA pixel format, [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space))
+  with word values (16-bit per channel). }
 unit WordXYZABitmap;
 
 {$mode objfpc}{$H+}
@@ -9,9 +12,8 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-
-  { TWordXYZABitmap }
-
+  {* Extends TGenericUniversalBitmap for TWordXYZA pixel format, [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space))
+     with word values (16-bit per channel). }
   TWordXYZABitmap = class(specialize TGenericUniversalBitmap<TWordXYZA,TWordXYZAColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;
@@ -24,6 +26,7 @@ type
                               AOffsetX: integer = 0; AOffsetY: integer = 0); override;
     class procedure EraseBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
     class procedure AlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
+    {** Replaces imaginary colors by the _AAfter_ }
     procedure ReplaceImaginary(const AAfter: TWordXYZA);
   end;
 

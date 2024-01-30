@@ -1,16 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{
- /**************************************************************************\
-                                bgrabitmaptypes.pas
-                                -------------------
-                   This unit defines basic types and it must be
-                   included in the 'uses' clause.
 
-       --> Include BGRABitmap and BGRABitmapTypes in the 'uses' clause.
-	       If you are using LCL types, add also BGRAGraphics unit.
-}
-
+{ Basic types for BGRABitmap, generally needed in the **uses** clause,
+  along with the BGRABitmap unit. }
 unit BGRABitmapTypes;
+
+{ If you are using LCL types, add also BGRAGraphics unit rather than Graphics unit. }
 
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}
@@ -23,19 +17,21 @@ uses
   {$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
   BGRAMultiFileType;
 
+{=== Miscellaneous types ===}
 
-const
-  BGRABitmapVersion = 11050800;
+  {* Current version expressed as an integer with each part multiplied by 100 }
+  const BGRABitmapVersion = 11050800;
 
+  {* String representation of the version, numbers separated by dots }
   function BGRABitmapVersionStr: string;
 
 type
   TMultiFileContainer = BGRAMultiFileType.TMultiFileContainer;
   Int32or64 = BGRAClasses.Int32or64;
   UInt32or64 = BGRAClasses.UInt32or64;
-  HDC = {$IFDEF BGRABITMAP_USE_LCL}LCLType.HDC{$ELSE}PtrUInt{$ENDIF};
 
-{=== Miscellaneous types ===}
+  {* Device context handle (using LCL if available) }
+  HDC = {$IFDEF BGRABITMAP_USE_LCL}LCLType.HDC{$ELSE}PtrUInt{$ENDIF};
 
 type
   {* Options when doing a floodfill (also called bucket fill) }
@@ -62,17 +58,28 @@ type
     rbDisk,
     {** Pixel are considered when they are at a certain distance }
     rbCorona,
-    {** Gaussian-like, but 10 times smaller than ''rbNormal'' }
+    {** Gaussian-like, but 10 times smaller than _rbNormal_ }
     rbPrecise,
     {** Gaussian-like but simplified to be computed faster }
     rbFast,
     {** Box blur, pixel importance does not decrease progressively
         and the pixels are included when they are in a square.
-        This is much faster than ''rbFast'' however you may get
+        This is much faster than _rbFast_ however you may get
         square shapes in the resulting image }
     rbBox);
 
-  TEmbossOption = (eoTransparent, eoPreserveHue);
+  {** String constants to represent TRadialBlurType values }
+  const RadialBlurTypeToStr: array[TRadialBlurType] of string =
+  ('Normal','Disk','Corona','Precise','Fast','Box');
+
+type
+  {* Possible options when applying emboss filter }
+  TEmbossOption = (
+    {** Transparent output except when there borders were detected }
+    eoTransparent,
+    {** Preserve the original hue }
+    eoPreserveHue);
+  {** Sets of emboss options }
   TEmbossOptions = set of TEmbossOption;
 
   {* List of image formats }
@@ -81,9 +88,10 @@ type
     ifUnknown,
     {** JPEG format, opaque, lossy compression }
     ifJpeg,
-    {** PNG format, transparency, lossless compression }
+    {** PNG format, transparency, lossless compression. Can be animated (see BGRAAnimatedGif) }
     ifPng,
-    {** GIF format, single transparent color, lossless in theory but only low number of colors allowed }
+    {** GIF format, single transparent color, lossless in theory but only low number of colors allowed.
+        Can be animated (see BGRAAnimatedGif) }
     ifGif,
     {** BMP format, transparency, no compression. Note that transparency is
         not supported by all BMP readers so it is recommended to avoid
@@ -125,8 +133,30 @@ type
     ifAvif
     );
 
+var
+  {** List of stream readers for images }
+  DefaultBGRAImageReader: array[TBGRAImageFormat] of TFPCustomImageReaderClass;
+  {** List of stream writers for images }
+  DefaultBGRAImageWriter: array[TBGRAImageFormat] of TFPCustomImageWriterClass;
 
-  {* Options when loading an image }
+  {** Detect the file format of a given file }
+  function DetectFileFormat(AFilenameUTF8: string): TBGRAImageFormat;
+  {** Detect the file format of a given stream. _ASuggestedExtensionUTF8_ can
+      be provided to guess the format }
+  function DetectFileFormat(AStream: TStream; ASuggestedExtensionUTF8: string = ''): TBGRAImageFormat;
+  {** Returns the file format that is most likely to be stored in the
+      given filename (according to its extension) }
+  function SuggestImageFormat(AFilenameOrExtensionUTF8: string): TBGRAImageFormat;
+  {** Returns a likely image extension for the format }
+  function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
+  {** Create an image reader for the given format }
+  function CreateBGRAImageReader(AFormat: TBGRAImageFormat): TFPCustomImageReader;
+  {** Create an image writer for the given format. _AHasTransparentPixels_
+      specifies if alpha channel must be supported }
+  function CreateBGRAImageWriter(AFormat: TBGRAImageFormat; AHasTransparentPixels: boolean): TFPCustomImageWriter;
+
+type
+  {* Possible options when loading an image }
   TBGRALoadingOption = (
      {** Do not clear RGB channels when alpha is zero (not recommended) }
      loKeepTransparentRGB,
@@ -134,31 +164,54 @@ type
      loBmpAutoOpaque,
      {** Load JPEG quickly however with a lower quality }
      loJpegQuick);
+  {** Set of options when loading }
   TBGRALoadingOptions = set of TBGRALoadingOption;
 
+  {* Text layout (vertical position) }
   TTextLayout = BGRAGraphics.TTextLayout;
-  TFontBidiMode = BGRAUnicode.TFontBidiMode;
-  TBidiTextAlignment = (btaNatural, btaOpposite, btaLeftJustify, btaRightJustify, btaCenter);
 
 const
-  fbmAuto = BGRAUnicode.fbmAuto;
-  fbmLeftToRight = BGRAUnicode.fbmLeftToRight;
-  fbmRightToLeft = BGRAUnicode.fbmRightToLeft;
-
-  function AlignmentToBidiTextAlignment(AAlign: TAlignment; ARightToLeft: boolean): TBidiTextAlignment; overload;
-  function AlignmentToBidiTextAlignment(AAlign: TAlignment): TBidiTextAlignment; overload;
-  function BidiTextAlignmentToAlignment(ABidiAlign: TBidiTextAlignment; ARightToLeft: boolean): TAlignment;
-
-const
-  RadialBlurTypeToStr: array[TRadialBlurType] of string =
-  ('Normal','Disk','Corona','Precise','Fast','Box');
-
-
+  {** Text aligned to the top }
   tlTop = BGRAGraphics.tlTop;
+  {** Text aligned vertically to the center }
   tlCenter = BGRAGraphics.tlCenter;
+  {** Text aligned to the bottom }
   tlBottom = BGRAGraphics.tlBottom;
 
-  // checks the bounds of an image in the given clipping rectangle
+type
+  {* Bidi-mode preference (right-to-left or left-to-right) }
+  TFontBidiMode = BGRAUnicode.TFontBidiMode;
+
+const
+  {** Automatic bidi-mode, depending on first letter type }
+  fbmAuto = BGRAUnicode.fbmAuto;
+  {** Always left-to-right (but can embed another direction) }
+  fbmLeftToRight = BGRAUnicode.fbmLeftToRight;
+  {** Always right-to-left (but can embed another direction) }
+  fbmRightToLeft = BGRAUnicode.fbmRightToLeft;
+
+type
+  {* Alignment relative to the bidi-mode }
+  TBidiTextAlignment = (
+    {** Natural alignment: left-aligned for left-to-right and right-aligned for right-to-left text }
+    btaNatural,
+    {** Opposite of natural alignment }
+    btaOpposite,
+    {** Always left-aligned }
+    btaLeftJustify,
+    {** Always right-aligned }
+    btaRightJustify,
+    {** Centered }
+    btaCenter);
+
+  {** Converts an alignment to a bidi alignement relative to a bidi-mode }
+  function AlignmentToBidiTextAlignment(AAlign: TAlignment; ARightToLeft: boolean): TBidiTextAlignment; overload;
+  {** Converts an alignment to a bidi alignement independent of bidi-mode }
+  function AlignmentToBidiTextAlignment(AAlign: TAlignment): TBidiTextAlignment; overload;
+  {** Converts a bidi alignment to a classic alignement according to bidi-mode }
+  function BidiTextAlignmentToAlignment(ABidiAlign: TBidiTextAlignment; ARightToLeft: boolean): TAlignment;
+
+  {* Checks the bounds of an image in the given clipping rectangle }
   function CheckPutImageBounds(x, y, tx, ty: integer; out minxb, minyb, maxxb, maxyb, ignoreleft: integer; const cliprect: TRect): boolean;
 
 {==== Imported from GraphType ====}
@@ -182,16 +235,16 @@ const
     riboBitsInOrder = GraphType.riboBitsInOrder;   // Bit 0 is pixel 0
     riboReversedBits = GraphType.riboReversedBits; // Bit 0 is pixel 7 (Bit 1 is pixel 6, ...)
 
-    riboLSBFirst = GraphType.riboLSBFirst; // least significant byte first (little endian)
-    riboMSBFirst = GraphType.riboMSBFirst; // most significant byte first (big endian)
+    riboLSBFirst = GraphType.riboLSBFirst;         // least significant byte first (little endian)
+    riboMSBFirst = GraphType.riboMSBFirst;         // most significant byte first (big endian)
 
-    fsSurface = GraphType.fsSurface; //type is defined as Graphics.TFillStyle
-    fsBorder = GraphType.fsBorder;
+    fsSurface = GraphType.fsSurface;  // fill till the color (it fills all except this color)
+    fsBorder = GraphType.fsBorder;    // fill this color (it fills only connected pixels of this color)
 
-    bvNone = GraphType.bvNone;
-    bvLowered = GraphType.bvLowered;
-    bvRaised = GraphType.bvRaised;
-    bvSpace = GraphType.bvSpace;
+    bvNone = GraphType.bvNone;        // no bevel
+    bvLowered = GraphType.bvLowered;  // bevel for lowered surface
+    bvRaised = GraphType.bvRaised;    // bevel for raised surface
+    bvSpace = GraphType.bvSpace;      // spacing
 {$ELSE}
   type
     {* Order of the lines in an image }
@@ -248,7 +301,7 @@ const
 
 {==== Integer math ====}
 
-  {* Computes the value modulo cycle, and if the ''value'' is negative, the result
+  {* Computes the value modulo cycle, and if the _value_ is negative, the result
      is still positive }
   function PositiveMod(value, cycle: Int32or64): Int32or64; inline; overload;
 
@@ -258,7 +311,7 @@ const
     32768 instead of 1. The input has a period of 65536, so you can supply any integer
     without applying a modulo. }
 
-  { Compute all values now }
+  { * Compute all sin values now }
   procedure PrecalcSin65536;
 
   {* Returns an integer approximation of the sine. Value ranges from 0 to 65535,
@@ -280,7 +333,7 @@ type
         not be smoothed. }
     fqSystem,
     {** Use the system capabilities to render with ClearType. This quality is
-        of course better than fqSystem however it may not be perfect.}
+        of course better than _fqSystem_ however it may not be perfect.}
     fqSystemClearType,
     {** Garanties a high quality antialiasing. }
     fqFineAntialiasing,
@@ -289,8 +342,10 @@ type
     {** Fine antialiasing with ClearType assuming an LCD display in blue/green/red order }
     fqFineClearTypeBGR);
 
+  {** Function type to detect the adequate ClearType mode }
   TGetFineClearTypeAutoFunc = function(): TBGRAFontQuality;
 var
+  {** Provide function to detect the adequate ClearType mode }
   fqFineClearType : TGetFineClearTypeAutoFunc;
 
 type
@@ -358,14 +413,15 @@ type
   {* How a typewriter must render its content on a Canvas2d }
   TBGRATypeWriterOutlineMode = (twoPath, twoFill, twoStroke, twoFillOverStroke, twoStrokeOverFill, twoFillThenStroke, twoStrokeThenFill);
 
-  { TBGRACustomFontRenderer }
   {* Abstract class for all font renderers }
   TBGRACustomFontRenderer = class
   protected
     {** Specifies the height of the font without taking into account additional line spacing.
         A negative value means that it is the full height instead }
     FFontEmHeightF: single;
+    {** Retrieves the em-height of the font }
     function GetFontEmHeight: integer;
+    {** Sets the font height as em-height }
     procedure SetFontEmHeight(AValue: integer);
   public
     {** Specifies the font to use. Unless the font renderer accept otherwise,
@@ -374,11 +430,11 @@ type
 
     {** Specifies the set of styles to be applied to the font.
         These can be fsBold, fsItalic, fsStrikeOut, fsUnderline.
-        So the value [fsBold,fsItalic] means that the font must be bold and italic }
+        So the value \[fsBold, fsItalic] means that the font must be bold and italic }
     FontStyle: TFontStyles;
 
     {** Specifies the quality of rendering. Default value is fqSystem }
-    FontQuality : TBGRAFontQuality;
+    FontQuality: TBGRAFontQuality;
 
     {** Specifies the rotation of the text, for functions that support text rotation.
         It is expressed in tenth of degrees, positive values going counter-clockwise }
@@ -386,80 +442,113 @@ type
 
     {** Returns measurement for the current font in pixels }
     function GetFontPixelMetric: TFontPixelMetric; virtual; abstract;
+    {** Returns measurement for the current font in fractional pixels }
     function GetFontPixelMetricF: TFontPixelMetricF; virtual;
+    {** Checks whether a font exists }
     function FontExists(AName: string): boolean; virtual; abstract;
 
     {** Checks if any text would be visible using the specified color }
     function TextVisible(const AColor: TBGRAPixel): boolean; virtual;
 
     {** Returns the total size of the string provided using the current font.
-        Orientation is not taken into account, so that the width is along the text }
+        Orientation is not taken into account, so that the width is horizontal }
     function TextSize(sUTF8: string): TSize; overload; virtual; abstract;
+    {** Returns the total floating point size of the string provided using the current font.
+        Orientation is not taken into account, so that the width is horizontal }
     function TextSizeF(sUTF8: string): TPointF; overload; virtual;
+    {** Returns the total size of the string provided given a maximum width and RTL mode,
+        using the current font. Orientation is not taken into account,
+        so that the width is along the text }
     function TextSize(sUTF8: string; AMaxWidth: integer; ARightToLeft: boolean): TSize; overload; virtual; abstract;
+    {** Returns the total floating point size of the string provided given a maximum width and RTL mode,
+        using the current font. Orientation is not taken into account,
+        so that the width is along the text }
     function TextSizeF(sUTF8: string; AMaxWidthF: single; ARightToLeft: boolean): TPointF; overload; virtual;
+    {** Returns the total size of the string provided using the current font,
+        with the given orientation in tenth of degrees CCW, along the text }
     function TextSizeAngle(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TSize; virtual;
+    {** Returns the total floating-point size of the string provided using the current font,
+        with the given orientation, along the text }
     function TextSizeAngleF(sUTF8: string; {%H-}orientationTenthDegCCW: integer): TPointF; virtual;
 
     {** Returns the number of Unicode characters that fit into the specified size }
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; virtual; abstract;
+    {** Returns the number of Unicode characters that fit into the specified floating-point size }
     function TextFitInfoF(sUTF8: string; AMaxWidthF: single): integer; virtual;
 
-    {** Draws the UTF8 encoded string, with color ''c''.
-        If align is taLeftJustify, (''x'',''y'') is the top-left corner.
-        If align is taCenter, (''x'',''y'') is at the top and middle of the text.
-        If align is taRightJustify, (''x'',''y'') is the top-right corner.
-        The value of ''FontOrientation'' is taken into account, so that the text may be rotated }
+    {** Draws the UTF8 encoded string, with color _c_.
+        If align is taLeftJustify, (_x_, _y_) is the top-left corner.
+        If align is taCenter, (_x_, _y_) is at the top and middle of the text.
+        If align is taRightJustify, (_x_, _y_) is the top-right corner.
+        The value of _FontOrientation_ is taken into account, so that the text may be rotated }
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual; abstract;
+    {** Same as above but with given RTL mode }
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); overload; virtual;
 
     {** Same as above functions, except that the text is filled using texture.
-        The value of ''FontOrientation'' is taken into account, so that the text may be rotated }
+        The value of _FontOrientation_ is taken into account, so that the text may be rotated }
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual; abstract;
+    {** Same as above but with given RTL mode }
     procedure TextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); overload; virtual;
 
-    {** Same as above, except that the orientation is specified, overriding the value of the property ''FontOrientation'' }
+    {** Same as above, except that the orientation is specified in tenth of degrees CCW,
+        overriding the value of the property _FontOrientation_ }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual; abstract;
+    {** Same as above but with given RTL mode }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; c: TBGRAPixel; align: TAlignment; {%H-}ARightToLeft: boolean); overload; virtual;
-    {** Same as above, except that the orientation is specified, overriding the value of the property ''FontOrientation'' }
+    {** Same as above, except that the orientation is specified, overriding the value of the property _FontOrientation_ }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual; abstract;
+    {** Same as above but with given RTL mode }
     procedure TextOutAngle(ADest: TBGRACustomBitmap; x, y: single; orientationTenthDegCCW: integer; sUTF8: string; texture: IBGRAScanner; align: TAlignment; {%H-}ARightToLeft: boolean); overload; virtual;
 
-    {** Draw the UTF8 encoded string at the coordinate (''x'',''y''), clipped inside the rectangle ''ARect''.
+    {** Draw the UTF8 encoded string at the coordinate (_x_, _y_), clipped inside the rectangle _ARect_.
         Additional style information is provided by the style parameter.
-        The color ''c'' is used to fill the text. No rotation is applied. }
+        The color _c_ is used to fill the text. No rotation is applied. }
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel); overload; virtual; abstract;
 
-    {** Same as above except a ''texture'' is used to fill the text }
+    {** Same as above except a _texture_ is used to fill the text }
     procedure TextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; texture: IBGRAScanner); overload; virtual; abstract;
 
-    {** Copy the path for the UTF8 encoded string into ''ADest''.
-        If ''align'' is ''taLeftJustify'', (''x'',''y'') is the top-left corner.
-        If ''align'' is ''taCenter'', (''x'',''y'') is at the top and middle of the text.
-        If ''align'' is ''taRightJustify'', (''x'',''y'') is the top-right corner. }
+    {** Copy the path for the UTF8 encoded string into _ADest_.
+        If _align_ is _taLeftJustify_, (_x_, _y_) is the top-left corner.
+        If _align_ is _taCenter_, (_x_, _y_) is at the top and middle of the text.
+        If _align_ is _taRightJustify_, (_x_, _y_) is the top-right corner. }
     procedure CopyTextPathTo({%H-}ADest: IBGRAPath; {%H-}x, {%H-}y: single; {%H-}s: string; {%H-}align: TAlignment); virtual; //optional
+    {** Same as above but with given RTL mode }
     procedure CopyTextPathTo({%H-}ADest: IBGRAPath; {%H-}x, {%H-}y: single; {%H-}s: string; {%H-}align: TAlignment; {%H-}ARightToLeft: boolean); virtual; //optional
+    {** Check whether the renderer can produce text path }
     function HandlesTextPath: boolean; virtual;
 
+    {** Font em-height as an integer }
     property FontEmHeight: integer read GetFontEmHeight write SetFontEmHeight;
+    {** Font em-height as a single-precision floating point value }
     property FontEmHeightF: single read FFontEmHeightF write FFontEmHeightF;
   end;
 
-  {* Output mode for the improved renderer for readability. This is used by the font renderer based on LCL in ''BGRAText'' }
-  TBGRATextOutImproveReadabilityMode = (irMask, irNormal, irClearTypeRGB, irClearTypeBGR);
+  {* Output mode for the improved renderer for readability.
+     This is used by the font renderer based on LCL in BGRAText }
+  TBGRATextOutImproveReadabilityMode = (
+    {** Render the grayscale mask }
+    irMask,
+    {** Render normally with provided the color or texture }
+    irNormal,
+    {** Render with ClearType for RGB ordered display }
+    irClearTypeRGB,
+    {** Render with ClearType for BGR ordered display }
+    irClearTypeBGR);
 
-{** Removes line ending and tab characters from a string (for a function
-    like ''TextOut'' that does not handle this). this works with UTF8 strings
+{* Removes line ending and tab characters from a string (for a function
+    like _TextOut_ that does not handle this). this works with UTF8 strings
     as well }
 function CleanTextOutString(const s: string): string;
-{** Remove the line ending at the specified position or return False.
+{* Remove the line ending at the specified position or return False.
     This works with UTF8 strings however the index is the byte index }
 function RemoveLineEnding(var s: string; indexByte: integer): boolean;
-{** Remove the line ending at the specified position or return False.
+{* Remove the line ending at the specified position or return False.
     The index is the character index, that may be different from the
     byte index }
 function RemoveLineEndingUTF8(var sUTF8: string; indexUTF8: integer): boolean;
-{** Default word break handler }
+{* Default word break handler }
 procedure BGRADefaultWordBreakHandler(var ABefore, AAfter: string);
 
 {==== Images and resampling ====}
@@ -476,13 +565,13 @@ type
         (pixel-centered coordinates) }
     rmFineResample);
 
-  {* List of resample filter to be used with ''rmFineResample'' }
+  {* List of resample filter to be used with _rmFineResample_ }
   TResampleFilter = (
     {** Equivalent of simple stretch with high quality and pixel-centered coordinates }
     rfBox,
     {** Linear interpolation giving slow transition between pixels }
     rfLinear,
-    {** Mix of ''rfLinear'' and ''rfCosine'' giving medium speed stransition between pixels }
+    {** Mix of _rfLinear_ and _rfCosine_ giving medium speed stransition between pixels }
     rfHalfCosine,
     {** Cosine-like interpolation giving fast transition between pixels }
     rfCosine,
@@ -531,48 +620,26 @@ type
     function GetBitmapDraft(AStream: TStream; AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual; abstract;
   end;
 
-  { TBGRACustomWriterPNG }
-
+  {* Generic definition for a PNG writer with alpha option }
   TBGRACustomWriterPNG = class(TFPCustomImageWriter)
   protected
+    {** Gets whether or not to use the alpha channel }
     function GetUseAlpha: boolean; virtual; abstract;
+    {** Sets whether or not to use the alpha channel }
     procedure SetUseAlpha(AValue: boolean); virtual; abstract;
   public
+    {** Whether or not to use the alpha channel }
     property UseAlpha : boolean read GetUseAlpha write SetUseAlpha;
   end;
-
-var
-  {** List of stream readers for images }
-  DefaultBGRAImageReader: array[TBGRAImageFormat] of TFPCustomImageReaderClass;
-  {** List of stream writers for images }
-  DefaultBGRAImageWriter: array[TBGRAImageFormat] of TFPCustomImageWriterClass;
-
-  {** Detect the file format of a given file }
-  function DetectFileFormat(AFilenameUTF8: string): TBGRAImageFormat;
-  {** Detect the file format of a given stream. ''ASuggestedExtensionUTF8'' can
-      be provided to guess the format }
-  function DetectFileFormat(AStream: TStream; ASuggestedExtensionUTF8: string = ''): TBGRAImageFormat;
-  {** Returns the file format that is most likely to be stored in the
-      given filename (according to its extension) }
-  function SuggestImageFormat(AFilenameOrExtensionUTF8: string): TBGRAImageFormat;
-  {** Returns a likely image extension for the format }
-  function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
-  {** Create an image reader for the given format }
-  function CreateBGRAImageReader(AFormat: TBGRAImageFormat): TFPCustomImageReader;
-  {** Create an image writer for the given format. ''AHasTransparentPixels''
-      specifies if alpha channel must be supported }
-  function CreateBGRAImageWriter(AFormat: TBGRAImageFormat; AHasTransparentPixels: boolean): TFPCustomImageWriter;
-
-  function ResourceFile(AFilename: string): string;
 
 {$DEFINE INCLUDE_INTERFACE}
 {$I bgracustombitmap.inc}
 
+{* Check whether to GUID are equal }
 operator =(const AGuid1, AGuid2: TGuid): boolean;
 
 type
-  { TBGRAResourceManager }
-
+  {* Generic class for embedded resource management }
   TBGRAResourceManager = class
   protected
     function GetWinResourceType(AExtension: string): pchar;
@@ -581,8 +648,13 @@ type
     function IsWinResource(AFilename: string): boolean; virtual;
   end;
 
-var
-  BGRAResource : TBGRAResourceManager;
+  {** Provides a resource manager }
+  var BGRAResource : TBGRAResourceManager;
+
+{* Return the full path for a resource file on the disk. On Windows and Linux, it
+   can be next to the binary but on MacOS, it can be outside of the application bundle
+   when debugging }
+function ResourceFile(AFilename: string): string;
 
 implementation
 

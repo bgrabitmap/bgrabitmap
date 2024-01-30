@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Basic Pascal types regardless of the framework (LCL, no LCL, MSEgui).
+  To be used instead of _Classes_ and _Types_ in unit clause. }
 unit BGRAClasses;
+
+{=== Types imported from Classes ===}
 
 {$mode objfpc}{$H+}
 {$modeswitch advancedrecords}
@@ -10,7 +15,9 @@ uses
   {$IFDEF BGRABITMAP_USE_MSEGUI}Types, Classes, mclasses, msegraphutils, mseguiglob{$ELSE}Types, Classes{$ENDIF};
 
 type
+  {* Signed integer value of at least 32 bits }
   Int32or64 = {$IFDEF CPU64}Int64{$ELSE}LongInt{$ENDIF};
+  {* Unsigned integer value of at least 32 bits }
   UInt32or64 = {$IFDEF CPU64}UInt64{$ELSE}LongWord{$ENDIF};
 
   //types always imported from Classes

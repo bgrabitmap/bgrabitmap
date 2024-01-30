@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Layered image, each layer being a TBGRABitmap or rendered from an original.
+  It can handle SVG format, gradients and blend modes. }
 unit BGRALayers;
 
 {$mode objfpc}{$H+}

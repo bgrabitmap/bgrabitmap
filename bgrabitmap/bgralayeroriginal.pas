@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Generic classes to implement originals, to be used in layered images as renderers }
 unit BGRALayerOriginal;
 
 {$mode objfpc}{$H+}

@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Read .Net serialized classes with BinaryFormatter of
+  namespace System.Runtime.Serialization.Formatters.Binary.
+  This unit is used by BGRAPaintNet to read Paint.NET images. }
 unit BGRADNetDeserial;
+
+{ Serialization is a process by which objects in memory are saved according
+  to their structure. }
 
 {$mode objfpc}{$H+}
 
 interface
-
-{ This unit allow to read .Net serialized classes with BinaryFormatter of
-  namespace System.Runtime.Serialization.Formatters.Binary.
-
-  Serialization is a process by which objects in memory are saved according
-  to their structure.
-
-  This unit is used by BGRAPaintNet to read Paint.NET images. }
 
 uses
   BGRAClasses, SysUtils;

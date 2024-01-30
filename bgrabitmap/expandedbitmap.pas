@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Supplies a bitmap with TExpandedPixel pixel format, that is linear RGB
+  with word values (16-bit per channel). }
 unit ExpandedBitmap;
 
 {$mode objfpc}{$H+}
@@ -9,9 +12,8 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-
-  { TExpandedBitmap }
-
+  {* Extends TGenericUniversalBitmap for TLinearRGBA pixel format, linear RGB
+     with word values (16-bit per channel). }
   TExpandedBitmap = class(specialize TGenericUniversalBitmap<TExpandedPixel,TExpandedPixelColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;

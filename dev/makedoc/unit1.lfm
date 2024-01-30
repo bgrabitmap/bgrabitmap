@@ -1,34 +1,35 @@
 object Form1: TForm1
-  Left = 428
-  Height = 240
-  Top = 272
-  Width = 390
+  Left = 379
+  Height = 331
+  Top = 219
+  Width = 536
   Caption = 'Form1'
-  ClientHeight = 240
-  ClientWidth = 390
-  LCLVersion = '1.8.2.0'
+  ClientHeight = 331
+  ClientWidth = 536
+  LCLVersion = '3.99.0.0'
+  OnCreate = FormCreate
   object EPath: TEdit
     Left = 8
-    Height = 27
+    Height = 22
     Top = 30
-    Width = 374
+    Width = 520
     Anchors = [akTop, akLeft, akRight]
     TabOrder = 0
-    Text = 'c:\pascal\lazpaintsvn\bgrabitmap'
+    Text = '../../bgrabitmap'
   end
   object Label1: TLabel
     Left = 9
-    Height = 17
+    Height = 16
     Top = 9
-    Width = 81
+    Width = 89
     Caption = 'Path of library:'
     ParentColor = False
   end
   object Memo1: TMemo
     Left = 8
-    Height = 144
+    Height = 235
     Top = 88
-    Width = 372
+    Width = 518
     Anchors = [akTop, akLeft, akRight, akBottom]
     ScrollBars = ssBoth
     TabOrder = 1
@@ -39,8 +40,8 @@ object Form1: TForm1
     Top = 56
     Width = 96
     Caption = 'Browse...'
-    OnClick = Button1Click
     TabOrder = 2
+    OnClick = Button1Click
   end
   object Button2: TButton
     Left = 112
@@ -48,11 +49,11 @@ object Form1: TForm1
     Top = 56
     Width = 96
     Caption = 'Make doc'
-    OnClick = Button2Click
     TabOrder = 3
+    OnClick = Button2Click
   end
   object SelectDirectoryDialog1: TSelectDirectoryDialog
-    left = 300
-    top = 9
+    Left = 300
+    Top = 9
   end
 end

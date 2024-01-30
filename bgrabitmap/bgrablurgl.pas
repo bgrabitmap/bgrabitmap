@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Blur effect using OpenGL shaders }
 unit BGRABlurGL;
 
 {$mode objfpc}{$H+}

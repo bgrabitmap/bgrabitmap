@@ -178,7 +178,7 @@ type
     {------------------------- Constructors from TBGRACustomBitmap-------------}
 
     {** Creates an image by copying the content of a ''TFPCustomImage'' }
-    constructor Create(AFPImage: TFPCustomImage); overload; override;
+    constructor Create(AFPImage: TFPCustomImage; ACopyProperties: Boolean=False); overload; override;
     {** Creates an image by copying the content of a ''TBitmap'', apply transparent color if specified and bitmap is masked }
     constructor Create(ABitmap: TBitmap); overload; override;
     {** Creates an image by copying the content of a ''TBitmap'', enforce/disable use of transparent color }
@@ -250,6 +250,7 @@ type
     {** Assign the content of the specified ''Source''. It can be a ''TBGRACustomBitmap'' or
         a ''TFPCustomImage'' }
     procedure Assign(Source: TPersistent); overload; override;
+    procedure Assign(Source: TPersistent; ACopyProperties: Boolean); overload; override;
     procedure AssignWithFixedTransparent(Source: TBitmap); overload;
     procedure Assign(Source: TBitmap; AUseTransparentColor: boolean); overload;
 
@@ -586,7 +587,7 @@ type
     function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean = False): TBitmap; override;
 
     function Resample(newWidth, newHeight: integer;
-      mode: TResampleMode = rmFineResample): TBGRADefaultBitmap; override;
+      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
     procedure Negative; override;
     procedure NegativeRect(ABounds: TRect); override;
     procedure LinearNegative; override;
@@ -605,29 +606,29 @@ type
     procedure ConvertFromLinearRGB; override;
 
     {Filters}
-    function FilterSmartZoom3(Option: TMedianOption): TBGRADefaultBitmap; override;
-    function FilterMedian(Option: TMedianOption): TBGRADefaultBitmap; override;
-    function FilterSmooth: TBGRADefaultBitmap; override;
-    function FilterSharpen(Amount: single = 1): TBGRADefaultBitmap; overload; override;
-    function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRADefaultBitmap; overload; override;
-    function FilterContour(AGammaCorrection: boolean = false): TBGRADefaultBitmap; override;
-    function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRADefaultBitmap; override;
-    function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRADefaultBitmap; overload; override;
-    function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRADefaultBitmap; overload; override;
-    function FilterEmbossHighlight(FillSelection: boolean): TBGRADefaultBitmap; overload; override;
-    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel): TBGRADefaultBitmap; overload; override;
-    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; var Offset: TPoint): TBGRADefaultBitmap; overload; override;
-    function FilterGrayscale: TBGRADefaultBitmap; overload; override;
-    function FilterGrayscale(ABounds: TRect): TBGRADefaultBitmap; overload; override;
-    function FilterNormalize(eachChannel: boolean = True): TBGRADefaultBitmap; overload; override;
-    function FilterNormalize(ABounds: TRect; eachChannel: boolean = True): TBGRADefaultBitmap; overload; override;
-    function FilterRotate(origin: TPointF; angle: single; correctBlur: boolean = false): TBGRADefaultBitmap; override;
-    function FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean = false): TBGRADefaultBitmap; override;
-    function FilterSphere: TBGRADefaultBitmap; override;
-    function FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRADefaultBitmap; overload; override;
-    function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRADefaultBitmap; overload; override;
-    function FilterCylinder: TBGRADefaultBitmap; override;
-    function FilterPlane: TBGRADefaultBitmap; override;
+    function FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    function FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    function FilterSmooth(ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    function FilterSharpen(Amount: single = 1; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterSharpen(ABounds: TRect; Amount: single = 1; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterContour(AGammaCorrection: boolean = false; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; var Offset: TPoint; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterGrayscale(ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterGrayscale(ABounds: TRect; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterNormalize(eachChannel: boolean = True; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterNormalize(ABounds: TRect; eachChannel: boolean = True; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterRotate(origin: TPointF; angle: single; correctBlur: boolean = false; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    function FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean = false; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    function FilterSphere(ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    function FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function FilterCylinder(ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    function FilterPlane(ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
   end;
 
   { TBGRAPtrBitmap }
@@ -677,7 +678,7 @@ type
   public
     constructor Create(AWidth, AHeight: integer; AStream: TMemoryStream; AStreamOffset: IntPtr; AOwnStream: boolean);
     constructor Create(AWidth, AHeight: integer); override;
-    constructor Create(AWidth, AHeight: integer; AColor: TBGRAPixel);
+    constructor Create(AWidth, AHeight: integer; const AColor: TBGRAPixel); override;
     destructor Destroy; override;
     property OwnStream: boolean read GetOwnStream write SetOwnStream;
     property Stream: TMemoryStream read FStream;
@@ -725,7 +726,7 @@ begin
 end;
 
 constructor TBGRAMemoryStreamBitmap.Create(AWidth, AHeight: integer;
-  AColor: TBGRAPixel);
+  const AColor: TBGRAPixel);
 begin
   inherited Create(AWidth, AHeight);
   FStream := TMemoryStream.Create;
@@ -1029,10 +1030,10 @@ end;
 
 {---------------------- Constructors ---------------------------------}
 
-constructor TBGRADefaultBitmap.Create(AFPImage: TFPCustomImage);
+constructor TBGRADefaultBitmap.Create(AFPImage: TFPCustomImage; ACopyProperties: Boolean=False);
 begin
   inherited Create;
-  Assign(AFPImage);
+  Assign(AFPImage, ACopyProperties);
 end;
 
 constructor TBGRADefaultBitmap.Create(ABitmap: TBitmap);
@@ -1155,6 +1156,11 @@ begin
 end;
 
 procedure TBGRADefaultBitmap.Assign(Source: TPersistent);
+begin
+  Assign(Source, False);
+end;
+
+procedure TBGRADefaultBitmap.Assign(Source: TPersistent; ACopyProperties: Boolean);
 var pdest: PBGRAPixel;
   x,y: Int32or64;
 begin
@@ -1163,10 +1169,7 @@ begin
     DiscardBitmapChange;
     SetSize(TBGRACustomBitmap(Source).Width, TBGRACustomBitmap(Source).Height);
 
-    //Resolution
-    ResolutionUnit:=TBGRACustomBitmap(Source).ResolutionUnit;
-    ResolutionX:=TBGRACustomBitmap(Source).ResolutionX;
-    ResolutionY:=TBGRACustomBitmap(Source).ResolutionY;
+    if ACopyProperties then TBGRACustomBitmap(Source).CopyPropertiesTo(Self);
 
     PutImage(0, 0, TBGRACustomBitmap(Source), dmSet);
     if Source is TBGRADefaultBitmap then
@@ -1187,12 +1190,22 @@ begin
     DiscardBitmapChange;
     SetSize(TFPCustomImage(Source).Width, TFPCustomImage(Source).Height);
 
-    {$IF FPC_FULLVERSION>=30301}
-    //Resolution
-    ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
-    ResolutionX:=TFPCustomImage(Source).ResolutionX;
-    ResolutionY:=TFPCustomImage(Source).ResolutionY;
-    {$ENDIF}
+    if ACopyProperties then
+    begin
+      {$IF FPC_FULLVERSION>=30203}
+      //Resolution
+      ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
+      ResolutionX:=TFPCustomImage(Source).ResolutionX;
+      ResolutionY:=TFPCustomImage(Source).ResolutionY;
+      {$ENDIF}
+      // Copy palette if needed.
+      UsePalette := TFPCustomImage(Source).UsePalette;
+      if UsePalette then
+      begin
+        Palette.Count:=0;
+        Palette.Merge(TFPCustomImage(Source).Palette);
+      end;
+    end;
 
     for y := 0 to TFPCustomImage(Source).Height-1 do
     begin
@@ -1204,7 +1217,7 @@ begin
       end;
     end;
   end else
-    inherited Assign(Source);
+    inherited Assign(Source, ACopyProperties);
 end;
 
 procedure TBGRADefaultBitmap.AssignWithFixedTransparent(Source: TBitmap);
@@ -4058,130 +4071,150 @@ end;
 {----------------------------- Filters -----------------------------------------}
 { Call the appropriate function }
 
-function TBGRADefaultBitmap.FilterSmartZoom3(Option: TMedianOption): TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterSmartZoom3(self, Option) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterMedian(Option: TMedianOption): TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterMedian(self, option) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterSmooth: TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterSmooth(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterBlurRadial(self, 3, rbPrecise) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterSphere: TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterSphere(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterSphere(self) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterTwirl(self, ACenter, ARadius, ATurn, AExponent) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
 function TBGRADefaultBitmap.FilterTwirl(ABounds: TRect; ACenter: TPoint;
-  ARadius: Single; ATurn: Single; AExponent: Single): TBGRADefaultBitmap;
+  ARadius: Single; ATurn: Single; AExponent: Single; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
-  result := BGRAFilters.FilterTwirl(self, ABounds, ACenter, ARadius, ATurn, AExponent) as TBGRADefaultBitmap;
+  Result := BGRAFilters.FilterTwirl(self, ABounds, ACenter, ARadius, ATurn, AExponent) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterCylinder: TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterCylinder(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterCylinder(self) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterPlane: TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterPlane(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterPlane(self) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterSharpen(Amount: single = 1): TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterSharpen(Amount: single = 1; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterSharpen(self,round(Amount*256)) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterSharpen(ABounds: TRect; Amount: single
-  ): TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterSharpen(ABounds: TRect; Amount: single; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterSharpen(self,ABounds,round(Amount*256)) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterContour(AGammaCorrection: boolean = false): TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterContour(AGammaCorrection: boolean = false; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterContour(self, AGammaCorrection) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
 function TBGRADefaultBitmap.FilterPixelate(pixelSize: integer;
-  useResample: boolean; filter: TResampleFilter): TBGRADefaultBitmap;
+  useResample: boolean; filter: TResampleFilter; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result:= BGRAFilters.FilterPixelate(self, pixelSize, useResample, filter) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
 function TBGRADefaultBitmap.FilterEmboss(angle: single;
-  AStrength: integer; AOptions: TEmbossOptions): TBGRADefaultBitmap;
+  AStrength: integer; AOptions: TEmbossOptions; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmboss(self, angle, AStrength, AOptions) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
 function TBGRADefaultBitmap.FilterEmboss(angle: single; ABounds: TRect;
-  AStrength: integer; AOptions: TEmbossOptions): TBGRADefaultBitmap;
+  AStrength: integer; AOptions: TEmbossOptions; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmboss(self, angle, ABounds, AStrength, AOptions) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean):
-TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmbossHighlight(self, FillSelection, BGRAPixelTransparent) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
 function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean;
-  BorderColor: TBGRAPixel): TBGRADefaultBitmap;
+  BorderColor: TBGRAPixel; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmbossHighlight(self, FillSelection, BorderColor) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
 function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean;
-  BorderColor: TBGRAPixel; var Offset: TPoint): TBGRADefaultBitmap;
+  BorderColor: TBGRAPixel; var Offset: TPoint; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmbossHighlightOffset(self, FillSelection, BorderColor, Offset) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterGrayscale: TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterGrayscale(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterGrayscale(self) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterGrayscale(ABounds: TRect): TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterGrayscale(ABounds: TRect; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterGrayscale(self, ABounds) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterNormalize(eachChannel: boolean = True):
-TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterNormalize(eachChannel: boolean = True; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterNormalize(self, eachChannel) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean): TBGRADefaultBitmap;
+function TBGRADefaultBitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterNormalize(self, ABounds, eachChannel) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
 function TBGRADefaultBitmap.FilterRotate(origin: TPointF;
-  angle: single; correctBlur: boolean): TBGRADefaultBitmap;
+  angle: single; correctBlur: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterRotate(self, origin, angle, correctBlur) as TBGRADefaultBitmap;
+  if ACopyProperties then CopyPropertiesTo(Result);
 end;
 
 function TBGRADefaultBitmap.FilterAffine(AMatrix: TAffineMatrix;
-  correctBlur: boolean): TBGRADefaultBitmap;
+  correctBlur: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := NewBitmap(Width,Height);
+  if ACopyProperties then CopyPropertiesTo(Result);
   Result.PutImageAffine(AMatrix,self,255,correctBlur);
 end;
 
@@ -4301,7 +4334,7 @@ begin
 end;
 
 function TBGRADefaultBitmap.Resample(newWidth, newHeight: integer;
-  mode: TResampleMode): TBGRADefaultBitmap;
+  mode: TResampleMode; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   case mode of
     rmFineResample: Result  := FineResample(newWidth, newHeight) as TBGRADefaultBitmap;
@@ -4309,6 +4342,7 @@ begin
     else
       Result := nil;
   end;
+  if ACopyProperties and (Result<>nil) then CopyPropertiesTo(Result);
 end;
 
 {-------------------------------- Data functions ------------------------}
