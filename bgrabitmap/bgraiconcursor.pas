@@ -61,6 +61,7 @@ type
     procedure LoadFromStream(AStream: TStream); override;
     procedure SaveToStream(ADestination: TStream); override;
     function GetBitmap(AIndex: integer): TBGRACustomBitmap;
+    function GetBestFitIndex(AWidth,AHeight: integer): integer;
     function GetBestFitBitmap(AWidth,AHeight: integer): TBGRACustomBitmap;
     function IndexOf(AWidth,AHeight,ABitDepth: integer): integer; overload;
     property FileType: TBGRAImageFormat read FFileType write SetFileType;
@@ -800,7 +801,7 @@ begin
   result := TBGRAIconCursorEntry(Entry[AIndex]).GetBitmap;
 end;
 
-function TBGRAIconCursor.GetBestFitBitmap(AWidth, AHeight: integer): TBGRACustomBitmap;
+function TBGRAIconCursor.GetBestFitIndex(AWidth, AHeight: integer): integer;
 var bestIndex: integer;
   bestSizeDiff: integer;
   bestBPP: integer;
@@ -820,6 +821,13 @@ begin
       bestBPP:= BitDepth[i];
     end;
   end;
+  exit(bestIndex);
+end;
+
+function TBGRAIconCursor.GetBestFitBitmap(AWidth, AHeight: integer): TBGRACustomBitmap;
+var bestIndex: integer;
+begin
+  bestIndex := GetBestFitIndex(AWidth, AHeight);
   if bestIndex = -1 then
     raise Exception.Create('No bitmap found')
   else
