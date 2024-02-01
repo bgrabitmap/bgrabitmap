@@ -13,6 +13,7 @@ unit libwebp;
 
 {$ALIGN ON}
 {$MINENUMSIZE 4}
+{$mode objfpc}
 
 interface
 
