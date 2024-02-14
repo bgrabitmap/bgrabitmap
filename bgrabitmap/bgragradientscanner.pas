@@ -11,7 +11,9 @@ uses
   SysUtils, BGRABitmapTypes, BGRATransform;
 
 type
-  TBGRAColorInterpolation = (ciStdRGB, ciLinearRGB, ciLinearHSLPositive, ciLinearHSLNegative, ciGSBPositive, ciGSBNegative);
+  TBGRAColorInterpolation = (ciStdRGB, ciLinearRGB,
+    ciLinearHSLPositive, ciLinearHSLNegative, ciLinearHSLAuto,
+    ciGSBPositive, ciGSBNegative, ciGSBAuto);
   TBGRAGradientRepetition = (grPad, grRepeat, grReflect, grSine);
 
   { TBGRASimpleGradient }
@@ -61,8 +63,11 @@ type
   end;
 
   THueGradientOption = (hgoRepeat, hgoReflect,                       //repetition
-                        hgoPositiveDirection, hgoNegativeDirection,  //hue orientation
-                        hgoHueCorrection, hgoLightnessCorrection);   //color interpolation
+                        hgoPositiveDirection, hgoNegativeDirection,
+                        hgoDirectionAuto,                            //hue orientation
+                        hgoHueCorrection, hgoLightnessCorrection,
+                        hgoGuessNonSaturatedHue                      //color interpolation
+                        );
   THueGradientOptions = set of THueGradientOption;
 
   { TBGRAHueGradient }
@@ -73,7 +78,7 @@ type
     hue1,hue2: LongWord;
     FOptions: THueGradientOptions;
     procedure Init(c1,c2: THSLAPixel; AOptions: THueGradientOptions);
-    function InterpolateToHSLA(position: word): THSLAPixel;
+    function InterpolateColor(position: word): THSLAPixel;
   protected
     function InterpolateToBGRA(position: word): TBGRAPixel; override;
     function InterpolateToExpanded(position: word): TExpandedPixel; override;
@@ -82,32 +87,82 @@ type
     constructor Create(Color1,Color2: TExpandedPixel; options: THueGradientOptions); overload;
     constructor Create(Color1,Color2: THSLAPixel; options: THueGradientOptions); overload;
     constructor Create(AHue1,AHue2: Word; Saturation,Lightness: Word; options: THueGradientOptions); overload;
-    function GetMonochrome: boolean; override;
+    function GetAverageColor: TBGRAPixel; override;
+    function GetAverageExpandedColor: TExpandedPixel; override;
   end;
 
   TGradientInterpolationFunction = function(t: single): single of object;
 
-  { TBGRAMultiGradient }
+  { TBGRACustomMultiGradient }
 
-  TBGRAMultiGradient = class(TBGRACustomGradient)
+  TBGRACustomMultiGradient = class(TBGRACustomGradient)
   private
+    function GetColorCount: integer;
+  protected
     FColors: array of TBGRAPixel;
     FPositions: array of integer;
     FPositionsF: array of single;
     FEColors: array of TExpandedPixel;
-    FCycle: Boolean;
+    FRepetition: TBGRAGradientRepetition;
     FInterpolationFunction: TGradientInterpolationFunction;
-    procedure Init(Colors: array of TBGRAPixel; Positions0To1: array of single; AGammaCorrection, ACycle: boolean);
+    procedure Init(Colors: array of TBGRAPixel; Positions0To1: array of single);
+    procedure Init(Colors: array of TExpandedPixel; Positions0To1: array of single);
   public
-    GammaCorrection: boolean;
+    class function CreateAny(Colors: array of TBGRAPixel; Positions0To1: array of single;
+      AInterpolation: TBGRAColorInterpolation; ARepetition: TBGRAGradientRepetition = grPad): TBGRACustomMultiGradient;
+    class function CreateAny(Colors: array of TEXpandedPixel; Positions0To1: array of single;
+      AInterpolation: TBGRAColorInterpolation; ARepetition: TBGRAGradientRepetition = grPad): TBGRACustomMultiGradient;
     function CosineInterpolation(t: single): single;
     function HalfCosineInterpolation(t: single): single;
+    function GetMonochrome: boolean; override;
+    property InterpolationFunction: TGradientInterpolationFunction read FInterpolationFunction write FInterpolationFunction;
+    property Repetition: TBGRAGradientRepetition read FRepetition write FRepetition;
+    property ColorCount: integer read GetColorCount;
+  end;
+
+  { TBGRAMultiGradient }
+
+  TBGRAMultiGradient = class(TBGRACustomMultiGradient)
+  protected
+    procedure Init(Colors: array of TBGRAPixel; Positions0To1: array of single; AGammaCorrection, ACycle: boolean);
+    procedure Init(Colors: array of TExpandedPixel; Positions0To1: array of single; AGammaCorrection, ACycle: boolean);
+  public
+    GammaCorrection: boolean;
     constructor Create(Colors: array of TBGRAPixel; Positions0To1: array of single; AGammaCorrection: boolean; ACycle: boolean = false);
+    constructor Create(Colors: array of TBGRAPixel; Positions0To1: array of single; AGammaCorrection: boolean; ARepetition: TBGRAGradientRepetition);
+    constructor Create(Colors: array of TBGRAPixel; AGammaCorrection: boolean; ACycle: boolean = false);
+    constructor Create(Colors: array of TBGRAPixel; AGammaCorrection: boolean; ARepetition: TBGRAGradientRepetition);
+    constructor Create(Colors: array of TExpandedPixel; ARepetition: TBGRAGradientRepetition);
+    constructor Create(Colors: array of TExpandedPixel; Positions0To1: array of single; ARepetition: TBGRAGradientRepetition);
     function GetColorAt(position: integer): TBGRAPixel; override;
     function GetExpandedColorAt(position: integer): TExpandedPixel; override;
     function GetAverageColor: TBGRAPixel; override;
-    function GetMonochrome: boolean; override;
-    property InterpolationFunction: TGradientInterpolationFunction read FInterpolationFunction write FInterpolationFunction;
+    function GetAverageExpandedColor: TExpandedPixel; override;
+  end;
+
+  { TBGRAHueMultiGradient }
+
+  TBGRAHueMultiGradient = class(TBGRACustomMultiGradient)
+  private
+    FHueColors: array of THSLAPixel;
+    FHueGradients: array of TBGRAHueGradient;
+    procedure InitHueGradients(AOptions: THueGradientOptions);
+    procedure InitHueGradients(AInterpolation: TBGRAColorInterpolation);
+    procedure FreeHueGradients;
+  public
+    constructor Create(Colors: array of TBGRAPixel; Positions0To1: array of single;
+      options: THueGradientOptions);
+    constructor Create(Colors: array of TExpandedPixel; Positions0To1: array of single;
+      options: THueGradientOptions);
+    constructor Create(Colors: array of TBGRAPixel; Positions0To1: array of single;
+      AInterpolation: TBGRAColorInterpolation; ARepetition: TBGRAGradientRepetition = grPad);
+    constructor Create(Colors: array of TExpandedPixel; Positions0To1: array of single;
+      AInterpolation: TBGRAColorInterpolation; ARepetition: TBGRAGradientRepetition = grPad);
+    destructor Destroy; override;
+    function GetColorAt(position: integer): TBGRAPixel; override;
+    function GetExpandedColorAt(position: integer): TExpandedPixel; override;
+    function GetAverageColor: TBGRAPixel; override;
+    function GetAverageExpandedColor: TExpandedPixel; override;
   end;
 
   { TBGRABufferedGradient }
@@ -348,6 +403,110 @@ implementation
 
 uses BGRABlend, Math;
 
+function ApplyCycleToPosition(const APosition: integer;
+                   ARepetition: TBGRAGradientRepetition): Word;
+var temp: integer;
+begin
+  case ARepetition of
+  grSine: begin
+    temp := Sin65536(APosition and $ffff);
+    if temp > 65535 then
+      result := 65535
+    else
+      result := temp;
+  end;
+  grRepeat: result := APosition and $ffff;
+  grReflect:
+    begin
+      temp := APosition and $1ffff;
+      if temp >= $10000 then
+        result := $1ffff - temp
+      else
+        result := temp;
+    end;
+  else
+    begin
+      if APosition <= 0 then
+        result := 0 else
+      if APosition >= 65536 then
+        result := 65535
+      else
+        result := APosition;
+    end;
+  end;
+end;
+
+function ApplyCycleToPosition(const APosition: integer;
+                   ARepetition: TBGRAGradientRepetition;
+                   AMinPos, AMaxPos: integer): integer;
+const TwoPi = 6.283185307179586476925286766559;
+var delta: integer;
+begin
+  if (AMinPos = 0) and (AMaxPos = 65536) then
+    exit(ApplyCycleToPosition(APosition, ARepetition));
+  delta := AMaxPos - AMinPos;
+  case ARepetition of
+  grSine:
+    result :=
+      AMinPos +
+      round((sin((APosition - AMinPos) / delta * TwoPi) + 1) * delta * 0.5);
+  grRepeat:
+    begin
+      result := (APosition - AMinPos) mod delta;
+      if result < 0 then result += delta;
+      result += AMinPos;
+    end;
+  grReflect:
+    begin
+      result := (APosition - AMinPos) mod (delta+delta);
+      if result < 0 then result += delta+delta;
+      if result >= delta then result := delta+delta-1 - result;
+      result += AMinPos;
+    end;
+  else
+    begin
+      if APosition <= AMinPos then
+        result := AMinPos else
+      if APosition >= AMaxPos then
+        result := AMaxPos
+      else
+        result := APosition;
+    end;
+  end;
+end;
+
+function ApplyCycleToPositionF(const APositionF: single;
+                   ARepetition: TBGRAGradientRepetition): Word;
+var temp: integer;
+begin
+  case ARepetition of
+  grSine: begin
+    temp := Sin65536(round(APositionF*65536) and $ffff);
+    if temp > 65535 then
+      result := 65535
+    else
+      result := temp;
+  end;
+  grRepeat: result := trunc(frac(APositionF)*65536);
+  grReflect:
+    begin
+      if (frac(APositionF*0.5) >= 0.5) xor (APositionF < 0) then
+        result := round(frac(APositionF)*65535)
+      else
+        result := 65535 - round(frac(APositionF)*65535);
+    end;
+  else
+    begin
+      if APositionF <= 0 then
+        result := 0 else
+      if APositionF >= 1 then
+        result := 65535
+      else
+        result := round(APositionF*65535);
+    end;
+  end;
+end;
+
 { TBGRABufferedGradient }
 
 constructor TBGRABufferedGradient.Create(AGradient: TBGRACustomGradient;
@@ -455,10 +614,15 @@ begin
   case AInterpolation of
     ciStdRGB: result := TBGRASimpleGradientWithoutGammaCorrection.Create(AColor1,AColor2);
     ciLinearRGB: result := TBGRASimpleGradientWithGammaCorrection.Create(AColor1,AColor2);
+    ciLinearHSLAuto: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoDirectionAuto]);
     ciLinearHSLPositive: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoPositiveDirection]);
     ciLinearHSLNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoNegativeDirection]);
-    ciGSBPositive: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoPositiveDirection, hgoHueCorrection, hgoLightnessCorrection]);
-    ciGSBNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoNegativeDirection, hgoHueCorrection, hgoLightnessCorrection]);
+    ciGSBAuto: result := TBGRAHueGradient.Create(AColor1,AColor2,
+                           [hgoDirectionAuto, hgoHueCorrection, hgoLightnessCorrection]);
+    ciGSBPositive: result := TBGRAHueGradient.Create(AColor1,AColor2,
+                               [hgoPositiveDirection, hgoHueCorrection, hgoLightnessCorrection]);
+    ciGSBNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,
+                               [hgoNegativeDirection, hgoHueCorrection, hgoLightnessCorrection]);
     else
       raise Exception.Create('Unknown color interpolation');
   end;
@@ -471,10 +635,15 @@ begin
   case AInterpolation of
     ciStdRGB: result := TBGRASimpleGradientWithoutGammaCorrection.Create(AColor1,AColor2);
     ciLinearRGB: result := TBGRASimpleGradientWithGammaCorrection.Create(AColor1,AColor2);
+    ciLinearHSLAuto: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoDirectionAuto]);
     ciLinearHSLPositive: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoPositiveDirection]);
     ciLinearHSLNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoNegativeDirection]);
-    ciGSBPositive: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoPositiveDirection, hgoHueCorrection, hgoLightnessCorrection]);
-    ciGSBNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,[hgoNegativeDirection, hgoHueCorrection, hgoLightnessCorrection]);
+    ciGSBAuto: result := TBGRAHueGradient.Create(AColor1,AColor2,
+                               [hgoDirectionAuto, hgoHueCorrection, hgoLightnessCorrection]);
+    ciGSBPositive: result := TBGRAHueGradient.Create(AColor1,AColor2,
+                               [hgoPositiveDirection, hgoHueCorrection, hgoLightnessCorrection]);
+    ciGSBNegative: result := TBGRAHueGradient.Create(AColor1,AColor2,
+                               [hgoNegativeDirection, hgoHueCorrection, hgoLightnessCorrection]);
     else
       raise Exception.Create('Unknown color interpolation');
   end;
@@ -492,102 +661,60 @@ begin
 end;
 
 function TBGRASimpleGradient.GetColorAt(position: integer): TBGRAPixel;
+var
+  wordPos: Word;
 begin
-  case FRepetition of
-  grSine: begin
-            position := Sin65536(position and $ffff);
-            if position = 65536 then
-              result := FColor2
-            else
-              result := InterpolateToBGRA(position);
-          end;
-  grRepeat: result := InterpolateToBGRA(position and $ffff);
-  grReflect:
-    begin
-      position := position and $1ffff;
-      if position >= $10000 then
-      begin
-        if position = $10000 then
-          result := FColor2
-        else
-          result := InterpolateToBGRA($20000 - position);
-      end
-      else
-        result := InterpolateToBGRA(position);
-    end;
+  wordPos := ApplyCycleToPosition(position, FRepetition);
+  if wordPos = 0 then
+    result := FColor1
+  else if wordPos = 65535 then
+    result := FColor2
   else
-    begin
-      if position <= 0 then
-        result := FColor1 else
-      if position >= 65536 then
-        result := FColor2 else
-        result := InterpolateToBGRA(position);
-    end;
-  end;
+    result := InterpolateToBGRA(position);
 end;
 
 function TBGRASimpleGradient.GetColorAtF(position: single): TBGRAPixel;
+var
+  wordPos: Word;
 begin
   if position = EmptySingle then result := BGRAPixelTransparent else
-  if FRepetition <> grPad then
-    result := GetColorAt(round(frac(position*0.5)*131072)) else  //divided by 2 for reflected repetition
   begin
-    if position <= 0 then
-      result := FColor1 else
-    if position >= 1 then
-      result := FColor2 else
-      result := GetColorAt(round(position*65536));
+    wordPos := ApplyCycleToPositionF(position, FRepetition);
+    if wordPos = 0 then
+      result := FColor1
+    else if wordPos = 65535 then
+      result := FColor2
+    else
+      result := InterpolateToBGRA(wordPos);
   end;
 end;
 
-function TBGRASimpleGradient.GetExpandedColorAt(position: integer
-  ): TExpandedPixel;
+function TBGRASimpleGradient.GetExpandedColorAt(position: integer): TExpandedPixel;
+var
+  wordPos: Word;
 begin
-  case FRepetition of
-  grSine: begin
-            position := Sin65536(position and $ffff);
-            if position = 65536 then
-              result := ec2
-            else
-              result := InterpolateToExpanded(position);
-          end;
-  grRepeat: result := InterpolateToExpanded(position and $ffff);
-  grReflect:
-    begin
-      position := position and $1ffff;
-      if position >= $10000 then
-      begin
-        if position = $10000 then
-          result := ec2
-        else
-          result := InterpolateToExpanded($20000 - position);
-      end
-      else
-        result := InterpolateToExpanded(position);
-    end;
+  wordPos := ApplyCycleToPosition(position, FRepetition);
+  if wordPos = 0 then
+    result := ec1
+  else if wordPos = 65535 then
+    result := ec2
   else
-    begin
-      if position <= 0 then
-        result := ec1 else
-      if position >= 65536 then
-        result := ec2 else
-        result := InterpolateToExpanded(position);
-    end;
-  end;
+    result := InterpolateToExpanded(wordPos);
 end;
 
-function TBGRASimpleGradient.GetExpandedColorAtF(position: single
-  ): TExpandedPixel;
+function TBGRASimpleGradient.GetExpandedColorAtF(position: single): TExpandedPixel;
+var
+  wordPos: Word;
 begin
-  if position = EmptySingle then result := BGRAPixelTransparent else
-  if FRepetition <> grPad then
-    result := GetExpandedColorAt(round(frac(position*0.5)*131072)) else  //divided by 2 for reflected repetition
+  if position = EmptySingle then result := ExpandedPixelTransparent else
   begin
-    if position <= 0 then
-      result := ec1 else
-    if position >= 1 then
-      result := ec2 else
-      result := GetExpandedColorAt(round(position*65536));
+    wordPos := ApplyCycleToPositionF(position, FRepetition);
+    if wordPos = 0 then
+      result := ec1
+    else if wordPos = 65535 then
+      result := ec2
+    else
+      result := InterpolateToExpanded(wordPos);
   end;
 end;
 
@@ -648,8 +775,24 @@ end;
 { TBGRAHueGradient }
 
 procedure TBGRAHueGradient.Init(c1, c2: THSLAPixel; AOptions: THueGradientOptions);
+var hueGuessed: boolean;
 begin
   FOptions:= AOptions;
+  hueGuessed:= false;
+  if hgoGuessNonSaturatedHue in AOptions then
+  begin
+    if (c1.saturation = 0) and (c2.saturation <> 0) then
+    begin
+      c1.hue := c2.hue;
+      hueGuessed:= true;
+    end
+    else if (c2.saturation = 0) and (c1.saturation <> 0) then
+    begin
+      c2.hue := c1.hue;
+      hueGuessed:= true;
+    end;
+  end;
+
   if (hgoLightnessCorrection in AOptions) then
   begin
     hsla1 := ExpandedToGSBA(ec1);
@@ -668,17 +811,27 @@ begin
     hue1 := HtoG(c1.hue);
     hue2 := HtoG(c2.hue);
   end;
-  if (hgoPositiveDirection in AOptions) and not (hgoNegativeDirection in AOptions) then
+  if not hueGuessed then
   begin
-    if c2.hue <= c1.hue then inc(hue2, 65536);
-  end else
-  if not (hgoPositiveDirection in AOptions) and (hgoNegativeDirection in AOptions) then
-  begin
-    if c2.hue >= c1.hue then inc(hue1, 65536);
+    if (hgoPositiveDirection in AOptions) and not (hgoNegativeDirection in AOptions) then
+    begin
+      if c2.hue <= c1.hue then inc(hue2, 65536);
+    end else
+    if not (hgoPositiveDirection in AOptions) and (hgoNegativeDirection in AOptions) then
+    begin
+      if c2.hue >= c1.hue then inc(hue1, 65536);
+    end else
+    if hgoDirectionAuto in AOptions then
+    begin
+      if (c2.hue > c1.hue) and (c2.hue - c1.hue > 32768) then
+        inc(hue1, 65536)
+      else if (c2.hue < c1.hue) and (c1.hue - c2.hue > 32768) then
+        inc(hue2, 65536);
+    end;
   end;
 end;
 
-function TBGRAHueGradient.InterpolateToHSLA(position: word): THSLAPixel;
+function TBGRAHueGradient.InterpolateColor(position: word): THSLAPixel;
 var b,b2: LongWord;
 begin
   b      := position shr 2;
@@ -689,10 +842,12 @@ begin
   result.alpha := (hsla1.alpha * b2 + hsla2.alpha * b + 8191) shr 14;
   if hgoLightnessCorrection in FOptions then
   begin
+    // result is in GSBA colorspace
     if not (hgoHueCorrection in FOptions) then
       result.hue := HtoG(result.hue);
   end else
   begin
+    // result is in linear HSLA colorspace
     if hgoHueCorrection in FOptions then
       result.hue := GtoH(result.hue);
   end;
@@ -701,20 +856,21 @@ end;
 function TBGRAHueGradient.InterpolateToBGRA(position: word): TBGRAPixel;
 begin
   if hgoLightnessCorrection in FOptions then
-    result := GSBAToBGRA(InterpolateToHSLA(position))
+    result := GSBAToBGRA(InterpolateColor(position))
   else
-    result := HSLAToBGRA(InterpolateToHSLA(position));
+    result := HSLAToBGRA(InterpolateColor(position));
 end;
 
 function TBGRAHueGradient.InterpolateToExpanded(position: word): TExpandedPixel;
 begin
   if hgoLightnessCorrection in FOptions then
-    result := GSBAToExpanded(InterpolateToHSLA(position))
+    result := GSBAToExpanded(InterpolateColor(position))
   else
-    result := HSLAToExpanded(InterpolateToHSLA(position));
+    result := HSLAToExpanded(InterpolateColor(position));
 end;
 
-constructor TBGRAHueGradient.Create(Color1, Color2: TBGRAPixel;options: THueGradientOptions);
+constructor TBGRAHueGradient.Create(Color1, Color2: TBGRAPixel;
+  options: THueGradientOptions);
 begin
   if hgoReflect in options then
     inherited Create(Color1,Color2,grReflect)
@@ -757,15 +913,25 @@ begin
   Create(HSLA(AHue1,saturation,lightness), HSLA(AHue2,saturation,lightness), options);
 end;
 
-function TBGRAHueGradient.GetMonochrome: boolean;
+function TBGRAHueGradient.GetAverageColor: TBGRAPixel;
 begin
-  Result:= false;
+  Result:= GetAverageExpandedColor;
 end;
 
-{ TBGRAMultiGradient }
+function TBGRAHueGradient.GetAverageExpandedColor: TExpandedPixel;
+begin
+  Result:= MergeBGRA(MergeBGRA(ec1, ec2), InterpolateToExpanded(32768));
+end;
 
-procedure TBGRAMultiGradient.Init(Colors: array of TBGRAPixel;
-  Positions0To1: array of single; AGammaCorrection, ACycle: boolean);
+{ TBGRACustomMultiGradient }
+
+function TBGRACustomMultiGradient.GetColorCount: integer;
+begin
+  result := length(FColors);
+end;
+
+procedure TBGRACustomMultiGradient.Init(Colors: array of TBGRAPixel;
+  Positions0To1: array of single);
 var
   i: Integer;
 begin
@@ -784,19 +950,108 @@ begin
     FPositionsF[i]:= Positions0To1[i];
     FEColors[i]:= GammaExpansion(colors[i]);
   end;
-  GammaCorrection := AGammaCorrection;
-  FCycle := ACycle;
-  if FPositions[high(FPositions)] = FPositions[0] then FCycle := false;
 end;
 
-function TBGRAMultiGradient.CosineInterpolation(t: single): single;
+procedure TBGRACustomMultiGradient.Init(Colors: array of TExpandedPixel;
+  Positions0To1: array of single);
+var
+  i: Integer;
+begin
+  if length(Positions0To1) <> length(colors) then
+    raise Exception.Create('Dimension mismatch');
+  if length(Positions0To1) = 0 then
+    raise Exception.Create('Empty gradient');
+  setlength(FColors,length(Colors));
+  setlength(FPositions,length(Positions0To1));
+  setlength(FPositionsF,length(Positions0To1));
+  setlength(FEColors,length(Colors));
+  for i := 0 to high(colors) do
+  begin
+    FColors[i]:= GammaCompression(colors[i]);
+    FPositions[i]:= round(Positions0To1[i]*65536);
+    FPositionsF[i]:= Positions0To1[i];
+    FEColors[i]:= colors[i];
+  end;
+end;
+
+class function TBGRACustomMultiGradient.CreateAny(Colors: array of TBGRAPixel;
+  Positions0To1: array of single; AInterpolation: TBGRAColorInterpolation;
+  ARepetition: TBGRAGradientRepetition): TBGRACustomMultiGradient;
+begin
+  if AInterpolation in [ciStdRGB, ciLinearRGB] then
+    result := TBGRAMultiGradient.Create(Colors, Positions0To1,
+           AInterpolation = ciLinearRGB, ARepetition)
+  else
+    result := TBGRAHueMultiGradient.Create(Colors, Positions0To1,
+           AInterpolation, ARepetition);
+end;
+
+class function TBGRACustomMultiGradient.CreateAny(
+  Colors: array of TExpandedPixel; Positions0To1: array of single;
+  AInterpolation: TBGRAColorInterpolation; ARepetition: TBGRAGradientRepetition
+  ): TBGRACustomMultiGradient;
+var
+  temp: TBGRAMultiGradient;
+begin
+  if AInterpolation in [ciStdRGB, ciLinearRGB] then
+  begin
+    temp := TBGRAMultiGradient.Create(Colors, Positions0To1, ARepetition);
+    temp.GammaCorrection:= AInterpolation = ciLinearRGB;
+    result := temp;
+  end
+  else
+    result := TBGRAHueMultiGradient.Create(Colors, Positions0To1,
+           AInterpolation, ARepetition);
+end;
+
+function TBGRACustomMultiGradient.CosineInterpolation(t: single): single;
 begin
   result := (1-cos(t*Pi))*0.5;
 end;
 
-function TBGRAMultiGradient.HalfCosineInterpolation(t: single): single;
+function TBGRACustomMultiGradient.HalfCosineInterpolation(t: single): single;
 begin
   result := (1-cos(t*Pi))*0.25 + t*0.5;
+end;
+
+function TBGRACustomMultiGradient.GetMonochrome: boolean;
+var i: integer;
+begin
+  for i := 1 to high(FColors) do
+    if FColors[i] <> FColors[0] then
+    begin
+      result := false;
+      exit;
+    end;
+  Result:= true;
+end;
+
+{ TBGRAMultiGradient }
+
+procedure TBGRAMultiGradient.Init(Colors: array of TBGRAPixel;
+  Positions0To1: array of single; AGammaCorrection, ACycle: boolean);
+begin
+  inherited Init(Colors, Positions0To1);
+  GammaCorrection := AGammaCorrection;
+  if ACycle then
+    FRepetition := grRepeat
+  else
+    FRepetition := grPad;
+  if FPositions[high(FPositions)] = FPositions[0] then
+    FRepetition := grPad;
+end;
+
+procedure TBGRAMultiGradient.Init(Colors: array of TExpandedPixel;
+  Positions0To1: array of single; AGammaCorrection, ACycle: boolean);
+begin
+  inherited Init(Colors, Positions0To1);
+  GammaCorrection := AGammaCorrection;
+  if ACycle then
+    FRepetition := grRepeat
+  else
+    FRepetition := grPad;
+  if FPositions[high(FPositions)] = FPositions[0] then
+    FRepetition := grPad;
 end;
 
 constructor TBGRAMultiGradient.Create(Colors: array of TBGRAPixel;
@@ -805,13 +1060,64 @@ begin
   Init(Colors,Positions0To1,AGammaCorrection, ACycle);
 end;
 
+constructor TBGRAMultiGradient.Create(Colors: array of TBGRAPixel;
+  Positions0To1: array of single; AGammaCorrection: boolean;
+  ARepetition: TBGRAGradientRepetition);
+begin
+  Init(Colors,Positions0To1,AGammaCorrection, false);
+  Repetition:= ARepetition;
+end;
+
+constructor TBGRAMultiGradient.Create(Colors: array of TBGRAPixel;
+  AGammaCorrection: boolean; ACycle: boolean);
+var positions: array of single;
+  i: Integer;
+begin
+  positions := nil;
+  setlength(positions, length(colors));
+  positions[0] := 0;
+  for i := 1 to high(Colors) do
+    positions[i] := i / high(Colors);
+  Init(Colors, positions, AGammaCorrection, ACycle);
+end;
+
+constructor TBGRAMultiGradient.Create(Colors: array of TBGRAPixel;
+  AGammaCorrection: boolean; ARepetition: TBGRAGradientRepetition);
+begin
+  Create(Colors, AGammaCorrection, False);
+  Repetition:= ARepetition;
+end;
+
+constructor TBGRAMultiGradient.Create(Colors: array of TExpandedPixel;
+  ARepetition: TBGRAGradientRepetition);
+var positions: array of single;
+  i: Integer;
+begin
+  positions := nil;
+  setlength(positions, length(colors));
+  positions[0] := 0;
+  for i := 1 to high(Colors) do
+    positions[i] := i / high(Colors);
+  Init(Colors, positions, true, false);
+  Repetition:= ARepetition;
+end;
+
+constructor TBGRAMultiGradient.Create(Colors: array of TExpandedPixel;
+  Positions0To1: array of single; ARepetition: TBGRAGradientRepetition);
+begin
+  Init(Colors, Positions0To1, true, false);
+  Repetition:= ARepetition;
+end;
+
 function TBGRAMultiGradient.GetColorAt(position: integer): TBGRAPixel;
 var i: Int32or64;
     ec: TExpandedPixel;
     curPos,posDiff: Int32or64;
 begin
-  if FCycle then
-    position := (position-FPositions[0]) mod (FPositions[high(FPositions)] - FPositions[0]) + FPositions[0];
+  if FRepetition <> grPad then
+    position := ApplyCycleToPosition(position, FRepetition,
+                  FPositions[0], FPositions[high(FPositions)]);
+
   if position <= FPositions[0] then
     result := FColors[0] else
   if position >= FPositions[high(FPositions)] then
@@ -864,8 +1170,10 @@ var i: Int32or64;
     curPos,posDiff: Int32or64;
     rw,gw,bw: UInt32or64;
 begin
-  if FCycle then
-    position := (position-FPositions[0]) mod (FPositions[high(FPositions)] - FPositions[0]) + FPositions[0];
+  if FRepetition <> grPad then
+    position := ApplyCycleToPosition(position, FRepetition,
+                  FPositions[0], FPositions[high(FPositions)]);
+
   if position <= FPositions[0] then
     result := FEColors[0] else
   if position >= FPositions[high(FPositions)] then
@@ -923,6 +1231,8 @@ function TBGRAMultiGradient.GetAverageColor: TBGRAPixel;
 var sumR,sumG,sumB,sumA: integer;
   i: Integer;
 begin
+  if GammaCorrection then
+    exit(GetAverageExpandedColor);
   sumR := 0;
   sumG := 0;
   sumB := 0;
@@ -938,16 +1248,186 @@ begin
     sumB div length(FColors),sumA div length(FColors));
 end;
 
-function TBGRAMultiGradient.GetMonochrome: boolean;
-var i: integer;
+function TBGRAMultiGradient.GetAverageExpandedColor: TExpandedPixel;
+var sumR,sumG,sumB,sumA: int64;
+  i: Integer;
 begin
-  for i := 1 to high(FColors) do
-    if FColors[i] <> FColors[0] then
-    begin
-      result := false;
-      exit;
-    end;
-  Result:= true;
+  if not GammaCorrection then
+    exit(GetAverageColor);
+  sumR := 0;
+  sumG := 0;
+  sumB := 0;
+  sumA := 0;
+  for i := 0 to high(FColors) do
+  begin
+    inc(sumR, FEColors[i].red);
+    inc(sumG, FEColors[i].green);
+    inc(sumB, FEColors[i].blue);
+    inc(sumA, FEColors[i].alpha);
+  end;
+  result := TExpandedPixel.New(sumR div length(FColors),
+    sumG div length(FColors),
+    sumB div length(FColors),
+    sumA div length(FColors));
+end;
+
+{ TBGRAHueMultiGradient }
+
+procedure TBGRAHueMultiGradient.InitHueGradients(AOptions: THueGradientOptions);
+var
+  i: Integer;
+begin
+  setlength(FHueColors, ColorCount);
+  for i := 0 to high(FHueColors) do
+    FHueColors[i] := FEColors[i].ToHSLAPixel;
+  setlength(FHueGradients, ColorCount - 1);
+  for i := 0 to high(FHueGradients) do
+  begin
+    FHueGradients[i] := TBGRAHueGradient.Create(FEColors[i], FEColors[i+1],
+      AOptions - [hgoRepeat, hgoReflect]);
+  end;
+  if hgoRepeat in AOptions then
+    Repetition := grRepeat
+  else if hgoReflect in AOptions then
+    Repetition := grReflect;
+end;
+
+procedure TBGRAHueMultiGradient.InitHueGradients(
+  AInterpolation: TBGRAColorInterpolation);
+begin
+  case AInterpolation of
+    ciLinearHSLAuto: InitHueGradients([hgoDirectionAuto, hgoGuessNonSaturatedHue]);
+    ciLinearHSLPositive: InitHueGradients([hgoPositiveDirection, hgoGuessNonSaturatedHue]);
+    ciLinearHSLNegative: InitHueGradients([hgoNegativeDirection, hgoGuessNonSaturatedHue]);
+    ciGSBAuto: InitHueGradients([hgoDirectionAuto, hgoLightnessCorrection, hgoHueCorrection, hgoGuessNonSaturatedHue]);
+    ciGSBPositive: InitHueGradients([hgoPositiveDirection, hgoLightnessCorrection, hgoHueCorrection, hgoGuessNonSaturatedHue]);
+    ciGSBNegative: InitHueGradients([hgoNegativeDirection, hgoLightnessCorrection, hgoHueCorrection, hgoGuessNonSaturatedHue]);
+  else
+    {ciStdRGB, ciLinearRGB}
+    raise ERangeError.Create('Invalid color interpolation');
+  end;
+end;
+
+procedure TBGRAHueMultiGradient.FreeHueGradients;
+var
+  i: Integer;
+begin
+  for i := 0 to high(FHueGradients) do
+    FHueGradients[i].Free;
+  FHueGradients := nil;
+end;
+
+constructor TBGRAHueMultiGradient.Create(Colors: array of TBGRAPixel;
+  Positions0To1: array of single; options: THueGradientOptions);
+begin
+  Init(Colors, Positions0To1);
+  InitHueGradients(options);
+end;
+
+constructor TBGRAHueMultiGradient.Create(Colors: array of TEXpandedPixel;
+  Positions0To1: array of single; options: THueGradientOptions);
+begin
+  Init(Colors, Positions0To1);
+  InitHueGradients(options);
+end;
+
+constructor TBGRAHueMultiGradient.Create(Colors: array of TBGRAPixel;
+  Positions0To1: array of single; AInterpolation: TBGRAColorInterpolation;
+  ARepetition: TBGRAGradientRepetition);
+begin
+  Init(Colors, Positions0To1);
+  InitHueGradients(AInterpolation);
+  Repetition := ARepetition;
+end;
+
+constructor TBGRAHueMultiGradient.Create(Colors: array of TEXpandedPixel;
+  Positions0To1: array of single; AInterpolation: TBGRAColorInterpolation;
+  ARepetition: TBGRAGradientRepetition);
+begin
+  Init(Colors, Positions0To1);
+  InitHueGradients(AInterpolation);
+  Repetition := ARepetition;
+end;
+
+destructor TBGRAHueMultiGradient.Destroy;
+begin
+  FreeHueGradients;
+  inherited Destroy;
+end;
+
+function TBGRAHueMultiGradient.GetColorAt(position: integer): TBGRAPixel;
+var i: Int32or64;
+    curPos: Int32or64;
+begin
+  if FRepetition <> grPad then
+    position := ApplyCycleToPosition(position, FRepetition,
+                  FPositions[0], FPositions[high(FPositions)]);
+
+  if position <= FPositions[0] then
+    result := FColors[0] else
+  if position >= FPositions[high(FPositions)] then
+    result := FColors[high(FColors)] else
+  begin
+    i := 0;
+    while (i < high(FPositions)-1) and (position >= FPositions[i+1]) do
+      inc(i);
+
+    curPos := (position - FPositions[i]) * 65536
+           div (FPositions[i+1]-FPositions[i]);
+    result := FHueGradients[i].GetColorAt(curPos);
+  end;
+end;
+
+function TBGRAHueMultiGradient.GetExpandedColorAt(position: integer
+  ): TExpandedPixel;
+var i: Int32or64;
+    curPos: Int32or64;
+begin
+  if FRepetition <> grPad then
+    position := ApplyCycleToPosition(position, FRepetition,
+                  FPositions[0], FPositions[high(FPositions)]);
+
+  if position <= FPositions[0] then
+    result := FEColors[0] else
+  if position >= FPositions[high(FPositions)] then
+    result := FEColors[high(FColors)] else
+  begin
+    i := 0;
+    while (i < high(FPositions)-1) and (position >= FPositions[i+1]) do
+      inc(i);
+
+    curPos := (position - FPositions[i]) * 65536
+           div (FPositions[i+1]-FPositions[i]);
+    result := FHueGradients[i].GetExpandedColorAt(curPos);
+  end;
+end;
+
+function TBGRAHueMultiGradient.GetAverageColor: TBGRAPixel;
+begin
+  result := GetAverageExpandedColor;
+end;
+
+function TBGRAHueMultiGradient.GetAverageExpandedColor: TExpandedPixel;
+var sumR,sumG,sumB,sumA: int64;
+  i: Integer;
+  ec: TExpandedPixel;
+begin
+  sumR := 0;
+  sumG := 0;
+  sumB := 0;
+  sumA := 0;
+  for i := 0 to high(FHueGradients) do
+  begin
+    ec := FHueGradients[i].GetAverageExpandedColor;
+    inc(sumR, ec.red);
+    inc(sumG, ec.green);
+    inc(sumB, ec.blue);
+    inc(sumA, ec.alpha);
+  end;
+  result := TExpandedPixel.New(sumR div length(FHueGradients),
+    sumG div length(FHueGradients),
+    sumB div length(FHueGradients),
+    sumA div length(FHueGradients));
 end;
 
 { TBGRASimpleGradientWithGammaCorrection }

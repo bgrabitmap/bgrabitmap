@@ -36,8 +36,16 @@ type
 
   TBGRALayerGradientOriginal = class(TBGRALayerCustomOriginal)
   private
+    function GetColorByIndex(AIndex: integer): TBGRAPixel;
+    function GetColorCount: integer;
+    function GetColorPositionByIndex(AIndex: integer): single;
+    function GetEndColor: TBGRAPixel;
     function GetIsOpaque: boolean;
+    function GetStartColor: TBGRAPixel;
+    procedure SetColorByIndex(AIndex: integer; AValue: TBGRAPixel);
+    procedure SetColorCount(AValue: integer);
     procedure SetColorInterpolation(AValue: TBGRAColorInterpolation);
+    procedure SetColorPositionByIndex(AIndex: integer; AValue: single);
     procedure SetEndColor(AValue: TBGRAPixel);
     procedure SetFocalPoint(AValue: TPointF);
     procedure SetFocalRadius(AValue: Single);
@@ -49,7 +57,8 @@ type
     procedure SetXAxis(AValue: TPointF);
     procedure SetYAxis(AValue: TPointF);
   protected
-    FStartColor,FEndColor: TBGRAPixel;
+    FColors: array of TBGRAPixel;
+    FColorPositions: array of single;
     FGradientType: TGradientType;
     FOrigin,FXAxis,FYAxis,FFocalPoint: TPointF;
     FOriginBackup,FXAxisBackup, FYAxisBackup: TPointF;
@@ -99,8 +108,11 @@ type
     procedure ApplyOpacity(AOpacity: byte);
     function Equals(Obj: TObject): boolean; override;
 
-    property StartColor: TBGRAPixel read FStartColor write SetStartColor;
-    property EndColor: TBGRAPixel read FEndColor write SetEndColor;
+    property StartColor: TBGRAPixel read GetStartColor write SetStartColor;
+    property EndColor: TBGRAPixel read GetEndColor write SetEndColor;
+    property Color[AIndex: integer]: TBGRAPixel read GetColorByIndex write SetColorByIndex;
+    property ColorPosition[AIndex: integer]: single read GetColorPositionByIndex write SetColorPositionByIndex;
+    property ColorCount: integer read GetColorCount write SetColorCount;
     property AverageColor: TBGRAPixel read GetAverageColor;
     property GradientType: TGradientType read FGradientType write SetGradientType;   //default gtLinear
     property Origin: TPointF read FOrigin write SetOrigin;
@@ -187,6 +199,32 @@ begin
   result := MergeBGRAWithGammaCorrection(StartColor, 1, EndColor, 1);
 end;
 
+function TBGRALayerGradientOriginal.GetColorByIndex(AIndex: integer
+  ): TBGRAPixel;
+begin
+  if (AIndex < 0) or (AIndex >= ColorCount) then
+     raise ERangeError.Create('Index out of range');
+  result := FColors[AIndex];
+end;
+
+function TBGRALayerGradientOriginal.GetColorCount: integer;
+begin
+  result := length(FColors);
+end;
+
+function TBGRALayerGradientOriginal.GetColorPositionByIndex(AIndex: integer
+  ): single;
+begin
+  if (AIndex < 0) or (AIndex >= ColorCount) then
+     raise ERangeError.Create('Index out of range');
+  result := FColorPositions[AIndex];
+end;
+
+function TBGRALayerGradientOriginal.GetEndColor: TBGRAPixel;
+begin
+  result := FColors[high(FColors)];
+end;
+
 function TBGRALayerGradientOriginal.GetIsOpaque: boolean;
 var
   xLen, yLen, focalLen: Single;
@@ -214,6 +252,47 @@ begin
   end;
 end;
 
+function TBGRALayerGradientOriginal.GetStartColor: TBGRAPixel;
+begin
+  result := FColors[0];
+end;
+
+procedure TBGRALayerGradientOriginal.SetColorByIndex(AIndex: integer;
+  AValue: TBGRAPixel);
+begin
+  if (AIndex < 0) or (AIndex >= ColorCount) then
+     raise ERangeError.Create('Index out of range');
+  BeginUpdate;
+  FColors[AIndex] := AValue;
+  EndUpdate;
+end;
+
+procedure TBGRALayerGradientOriginal.SetColorCount(AValue: integer);
+var
+  prevCount, i: Integer;
+begin
+  if AValue < 2 then
+    raise ERangeError.Create('There must be at least 2 colors');
+  if AValue = ColorCount then exit;
+  prevCount := ColorCount;
+  BeginUpdate;
+  setlength(FColors, AValue);
+  setlength(FColorPositions, AValue);
+  if AValue > prevCount then
+  begin
+    for i := prevCount to AValue - 1 do
+    begin
+      FColors[i] := FColors[prevCount - 1];
+      FColorPositions[i] := FColorPositions[prevCount - 1];
+    end;
+  end else
+  if AValue < prevCount then
+  begin
+    FColorPositions[AValue-1] := 1;
+  end;
+  EndUpdate;
+end;
+
 procedure TBGRALayerGradientOriginal.SetColorInterpolation(
   AValue: TBGRAColorInterpolation);
 begin
@@ -223,11 +302,25 @@ begin
   EndUpdate;
 end;
 
+procedure TBGRALayerGradientOriginal.SetColorPositionByIndex(AIndex: integer;
+  AValue: single);
+begin
+  if (AIndex < 0) or (AIndex >= ColorCount) then
+     raise ERangeError.Create('Index out of range');
+  if (AIndex = 0) and (AValue <> 0) then
+     raise ERangeError.Create('First position must be 0');
+  if (AIndex = ColorCount-1) and (AValue <> 1) then
+     raise ERangeError.Create('Last position must be 1');
+  BeginUpdate;
+  FColorPositions[AIndex] := AValue;
+  EndUpdate;
+end;
+
 procedure TBGRALayerGradientOriginal.SetEndColor(AValue: TBGRAPixel);
 begin
-  if FEndColor.EqualsExactly(AValue) then Exit;
+  if EndColor.EqualsExactly(AValue) then Exit;
   BeginUpdate;
-  FEndColor:=AValue;
+  FColors[high(FColors)]:= AValue;
   EndUpdate;
 end;
 
@@ -283,9 +376,9 @@ end;
 
 procedure TBGRALayerGradientOriginal.SetStartColor(AValue: TBGRAPixel);
 begin
-  if FStartColor.EqualsExactly(AValue) then Exit;
+  if StartColor.EqualsExactly(AValue) then Exit;
   BeginUpdate;
-  FStartColor:=AValue;
+  FColors[0]:= AValue;
   EndUpdate;
 end;
 
@@ -473,8 +566,12 @@ end;
 constructor TBGRALayerGradientOriginal.Create;
 begin
   inherited Create;
-  FStartColor := BGRABlack;
-  FEndColor := BGRAWhite;
+  setLength(FColors, 2);
+  FColors[0] := BGRABlack;
+  FColors[1] := BGRAWhite;
+  setlength(FColorPositions, 2);
+  FColorPositions[0] := 0;
+  FColorPositions[1] := 1;
   FGradientType := gtLinear;
   FColorInterpolation:= ciStdRGB;
   FRepetition := grPad;
@@ -685,7 +782,13 @@ var
 begin
   if isEmptyPointF(FOrigin) or isEmptyPointF(FXAxis) then exit(nil);
 
-  colors := TBGRASimpleGradient.CreateAny(FColorInterpolation, FStartColor,FEndColor, FRepetition);
+  if ColorCount = 2 then
+    colors := TBGRASimpleGradient.CreateAny(FColorInterpolation,
+           StartColor, EndColor, FRepetition)
+  else
+    colors := TBGRAMultiGradient.CreateAny(FColors,
+           FColorPositions, FColorInterpolation,
+           FRepetition);
   if ADraft then
     colors := TBGRABufferedGradient.Create(colors, true, FRepetition = grPad, 1024);
 
@@ -743,12 +846,21 @@ end;
 procedure TBGRALayerGradientOriginal.LoadFromStorage(
   AStorage: TBGRACustomOriginalStorage);
 var
-  colorArray: ArrayOfTBGRAPixel;
+  i: Integer;
 begin
-  colorArray := AStorage.ColorArray['colors'];
+  FColors := AStorage.ColorArray['colors'];
+  FColorPositions := AStorage.FloatArray['color-positions'];
+  if FColorPositions = nil then
+  begin
+    setlength(FColorPositions, length(FColors));
+    if length(FColorPositions) > 1 then
+    begin
+      for i := 0 to high(FColorPositions) do
+        FColorPositions[i] := i / high(FColorPositions);
+    end else
+      FColorPositions[0] := 0;
+  end;
 
-  FStartColor := colorArray[0];
-  FEndColor := colorArray[high(colorArray)];
 
   case AStorage.RawString['gradient-type'] of
   'reflected': FGradientType := gtReflected;
@@ -768,8 +880,10 @@ begin
 
   case AStorage.RawString['color-interpolation'] of
   'RGB': FColorInterpolation:= ciLinearRGB;
+  'HSL': FColorInterpolation:= ciLinearHSLAuto;
   'HSL+': FColorInterpolation:= ciLinearHSLPositive;
   'HSL-': FColorInterpolation:= ciLinearHSLNegative;
+  'GSB': FColorInterpolation:= ciGSBAuto;
   'GSB+': FColorInterpolation:= ciGSBPositive;
   'GSB-': FColorInterpolation:= ciGSBNegative;
   else {'sRGB'} FColorInterpolation:= ciStdRGB;
@@ -787,12 +901,9 @@ procedure TBGRALayerGradientOriginal.SaveToStorage(
   AStorage: TBGRACustomOriginalStorage);
 var
   gtStr, ciStr: String;
-  colorArray: ArrayOfTBGRAPixel;
 begin
-  setlength(colorArray,2);
-  colorArray[0] := FStartColor;
-  colorArray[1] := FEndColor;
-  AStorage.ColorArray['colors'] := colorArray;
+  AStorage.ColorArray['colors'] := FColors;
+  AStorage.FloatArray['color-positions'] := FColorPositions;
 
   case FGradientType of
   gtReflected: gtStr := 'reflected';
@@ -824,8 +935,10 @@ begin
 
   case FColorInterpolation of
   ciLinearRGB: ciStr := 'RGB';
+  ciLinearHSLAuto: ciStr := 'HSL';
   ciLinearHSLPositive: ciStr := 'HSL+';
   ciLinearHSLNegative: ciStr := 'HSL-';
+  ciGSBAuto: ciStr := 'GSB';
   ciGSBPositive: ciStr := 'GSB+';
   ciGSBNegative: ciStr := 'GSB-';
   else {ciStdRGB} ciStr := 'sRGB';
