@@ -141,6 +141,11 @@ type
   { TSVGLinkListeners }
 
   TSVGLinkListeners = class(specialize TFPGList<TSVGLinkEvent>)
+    {$IF FPC_FULLVERSION >= 30301}
+    private
+      type PT = ^TSVGLinkEvent;
+    public
+    {$ENDIF}
     function IndexOf(const Item: TSVGLinkEvent): Integer;
     function Remove(const Item: TSVGLinkEvent): Integer;
   end;
