@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Storage of SVG as an original in a layered bitmap }
 unit BGRASVGOriginal;
 
 {$mode objfpc}{$H+}

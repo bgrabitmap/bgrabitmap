@@ -1,13 +1,13 @@
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Configuration and computation of pen style and width, as well as line caps and join styles }
 unit BGRAPen;
+{ A line consists in two points.
+  A polyline consists in one or more lines, defined by two points or more.
+  A poly-polyline consists in a series of polylines, defined by polyline points
+  separated by empty points (see EmptyPointF) }
 
 {$mode objfpc}{$H+}
-
-{ Configuration of pen style and width, as well as line caps and join styles and
-  encapsulation of path computation.
-
-  A line consists in two points.
-  A polyline consists in one or more lines, defined by two points or more.
-  A poly-polyline consists in a series of polylines, defined by polyline points separated by empty points (see EmptyPointF) }
 interface
 
 uses

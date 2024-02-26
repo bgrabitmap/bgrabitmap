@@ -13,6 +13,7 @@
 {$mode objfpc}
 {$h+}
 
+{ Targa reader implementation }
 unit BGRAReadTGA;
 
 interface

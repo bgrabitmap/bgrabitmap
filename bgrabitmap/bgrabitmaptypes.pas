@@ -167,27 +167,19 @@ type
   {** Set of options when loading }
   TBGRALoadingOptions = set of TBGRALoadingOption;
 
-  {* Text layout (vertical position) }
   TTextLayout = BGRAGraphics.TTextLayout;
 
 const
-  {** Text aligned to the top }
   tlTop = BGRAGraphics.tlTop;
-  {** Text aligned vertically to the center }
   tlCenter = BGRAGraphics.tlCenter;
-  {** Text aligned to the bottom }
   tlBottom = BGRAGraphics.tlBottom;
 
 type
-  {* Bidi-mode preference (right-to-left or left-to-right) }
   TFontBidiMode = BGRAUnicode.TFontBidiMode;
 
 const
-  {** Automatic bidi-mode, depending on first letter type }
   fbmAuto = BGRAUnicode.fbmAuto;
-  {** Always left-to-right (but can embed another direction) }
   fbmLeftToRight = BGRAUnicode.fbmLeftToRight;
-  {** Always right-to-left (but can embed another direction) }
   fbmRightToLeft = BGRAUnicode.fbmRightToLeft;
 
 type

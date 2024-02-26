@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ This unit contains polygon drawing functions and spline functions. }
 unit BGRAPolygon;
 
 {$mode objfpc}{$H+}
 
-{ This unit contains polygon drawing functions and spline functions.
-
-  Shapes are drawn using a TBGRACustomFillInfo object, which calculates the
+{ Shapes are drawn using a TBGRACustomFillInfo object, which calculates the
   intersection of an horizontal line and the polygon.
 
   Various shapes are handled :

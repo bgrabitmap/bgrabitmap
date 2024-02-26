@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Computation of slice scaling of images (to extended bitmap prototypes) }
 unit BGRASliceScaling;
 
 {$mode objfpc}{$H+}

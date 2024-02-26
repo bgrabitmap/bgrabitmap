@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of BGRABitmap for MSEgui }
 unit BGRAMSEguiBitmap;
+{ It should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 

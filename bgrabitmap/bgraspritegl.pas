@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Sprites to be rendered with OpenGL }
 unit BGRASpriteGL;
 
 {$mode objfpc}{$H+}

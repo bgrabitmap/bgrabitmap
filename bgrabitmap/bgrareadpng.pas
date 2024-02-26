@@ -20,6 +20,8 @@
 }
 {*****************************************************************************}
 {$mode objfpc}{$h+}
+
+{ PNG reader implementation }
 unit BGRAReadPng;
 
 interface

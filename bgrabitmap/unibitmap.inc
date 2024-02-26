@@ -3,8 +3,9 @@
 {$UNDEF INCLUDE_INTERFACE}
 
 type
-  { Working area to be provided to a brush }
+  {* Pointer to working area to be provided to a brush }
   PUniBrushContext = ^TUniBrushContext;
+  {* Working area to be provided to a brush }
   TUniBrushContext = record
     Dest: Pointer;                    //target pixels
     Ofs: TPoint;                      //offset within image (used with textured/gradient brush)
@@ -36,9 +37,9 @@ const
   //you can define your custom flags from 256 on
 
 type
-  { TUniversalBrush }
-
+  {* Pointer to a universal brush }
   PUniversalBrush = ^TUniversalBrush;
+  {* Unversal brush (can be initialized for any colorspace and mode) }
   TUniversalBrush = record
   private
     FColorspace: TColorspaceAny;
@@ -57,7 +58,9 @@ type
   end;
 
 type
+  {* Pointer to the default data structure for a solid brush }
   PDefaultSolidBrushIndirectFixedData = ^TDefaultSolidBrushIndirectFixedData;
+  {* Default data structure for a solid brush }
   TDefaultSolidBrushIndirectFixedData = packed record
     PixelSize: integer;
     Color: packed array[0..23] of byte;
@@ -69,6 +72,7 @@ procedure DefaultSolidBrushIndirectSetPixels(AFixedData: Pointer;
   AContextData: PUniBrushContext; {%H-}AAlpha: Word; ACount: integer);
 
 type
+  {* Data to be passed to the callback function of the path }
   TPathCallbackData = record
     BrushAddress: PUniversalBrush;
     Alpha: Word;
@@ -76,12 +80,11 @@ type
     PixelCenteredCoords: boolean;
   end;
 
-  { TCustomUniversalBitmap }
-
   {$IF FPC_FULLVERSION<30203}
   TResolutionUnit = (ruNone, ruPixelsPerInch, ruPixelsPerCentimeter);
   {$ENDIF}
 
+  {* Base class for the universal bitmap (of any colorspace) }
   TCustomUniversalBitmap = class(TFPCustomImage, IBGRAScanner)
   private
     procedure PathStrokeAliasedCallback(const APoints: array of TPointF;

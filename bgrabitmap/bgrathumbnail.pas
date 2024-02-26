@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Computation of thumbnails for all image formats }
 unit BGRAThumbnail;
 
 {$mode objfpc}{$H+}

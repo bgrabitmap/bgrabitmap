@@ -4,7 +4,6 @@
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
 type
-  {* Represents a point with X and Y integer  coordinates }
   TPoint = BGRAClasses.TPoint;
 
   {** A constant representing an empty point (with minimum possible integer values for X and Y)
@@ -21,7 +20,6 @@ function IsEmptyPoint(const APoint: TPoint): boolean;
 type
   {* Pointer to a TPointF structure }
   PPointF = ^BGRAClasses.TPointF;
-  {* Contains a point with single-precision floating point coordinates }
   TPointF = BGRAClasses.TPointF;
 
   {** Value indicating that there is an empty TPointF structure.
@@ -108,7 +106,6 @@ type
   {* An affine matrix contains three 2D vectors: the image of x, the image of y and the translation }
   TAffineMatrix = array[1..2,1..3] of single;
 
-  {* Represents a rectangle with single-precision floating point coordinates }
   TRectF = BGRAClasses.TRectF;
 
   {** A constant representing an empty rectangle with all coordinates set to 0 }
@@ -191,7 +188,6 @@ operator=(const ARect1,ARect2: TRect): boolean;
 {$endif}
 
 type
-  {* Constains a size with integer with and height }
   TSize = BGRAClasses.TSize;
 
 {$if (FPC_FULLVERSION<030001) or defined(BGRABITMAP_USE_MSEGUI)}

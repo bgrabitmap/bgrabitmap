@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of BGRABitmap without graphical user interface }
 unit BGRANoGUIBitmap;
+{ It should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}

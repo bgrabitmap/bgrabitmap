@@ -40,6 +40,8 @@
              conditional compilation for 3.3.1 (now the class is derived from TFPReaderTiff)
 }
 {*****************************************************************************}
+
+{ Tiff reader implementation }
 unit BGRAReadTiff;
 
 {$mode objfpc}{$H+}

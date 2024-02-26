@@ -1,14 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{
- /**************************************************************************\
-                             bgrawinbitmap.pas
-                             -----------------
-                 This unit should NOT be added to the 'uses' clause.
-                 It contains accelerations for Windows. Notably, it
-                 provides direct access to bitmap data.
-}
 
+{ Implementation of BGRABitmap for Windows.
+  Notably, it provides direct access to bitmap data. }
 unit BGRAWinBitmap;
+{ This unit should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 

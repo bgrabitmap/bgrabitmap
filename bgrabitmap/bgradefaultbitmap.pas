@@ -1,15 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{
- /**************************************************************************\
-                             bgradefaultbitmap.pas
-                             ---------------------
-                 This unit defines basic operations on bitmaps.
-                 It should NOT be added to the 'uses' clause.
-                 Some operations may be slow, so there are
-                 accelerated versions for some routines.
-}
 
+{ Implements basic operations on bitmaps (not optimized for a platform) }
 unit BGRADefaultBitmap;
+{ It should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}

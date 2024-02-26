@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ UTF8 related functions }
 unit BGRAUTF8;
 
 {$mode objfpc}{$H+}

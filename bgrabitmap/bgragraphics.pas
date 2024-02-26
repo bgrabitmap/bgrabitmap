@@ -70,6 +70,7 @@ const
 
 type
   TPen = Graphics.TPen;
+  {* Text layout (vertical position) }
   TTextLayout = Graphics.TTextLayout;
   TTextStyle = Graphics.TTextStyle;
 
@@ -78,8 +79,11 @@ type
   TBrushStyle = Graphics.TBrushStyle;
 
 const
+  {** Text aligned to the top }
   tlTop = Graphics.tlTop;
+  {** Text aligned vertically to the center }
   tlCenter = Graphics.tlCenter;
+  {** Text aligned to the bottom }
   tlBottom = Graphics.tlBottom;
 
   fsSurface = GraphType.fsSurface;

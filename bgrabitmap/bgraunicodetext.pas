@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Bidirectional Unicode text analysis }
 unit BGRAUnicodeText;
 
 {$mode objfpc}{$H+}

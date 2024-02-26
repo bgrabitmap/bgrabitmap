@@ -35,6 +35,8 @@ type
 
 const
   ChannelValueTypeName : array[TChannelValueType] of string = ('byte', 'word', 'longword', 'single', 'double');
+  ChannelValueTypeFriendlyName : array[TChannelValueType] of string = ('8-bit', '16-bit', '32-bit integer',
+                                  '32-bit floating point', '64-bit floating point');
   ChannelValueTypePrecision : array[TChannelValueType] of integer = (1, 2, 4, 2, 6);
   ChannelValueTypeBitDepth : array[TChannelValueType] of integer = (8, 16, 32, 28, 58);
   MAXWORD = $ffff;
@@ -768,7 +770,8 @@ var
 
     if AColorspaceOnly then
     begin
-      Add('{ '+ColorTypeName+'Colorspace }');
+      Add('{ ' + ColorspaceInfo[Colorspace].Colorspace + ' colorspace ('
+      + ChannelValueTypeFriendlyName[ColorspaceInfo[Colorspace].ValueType] + ' channels) }');
       Add('');
       Add(ColorTypeName+'Colorspace = class(TCustomColorspace)');
       Add('  class function GetChannelName(AIndex: integer): string; override;');
@@ -899,17 +902,18 @@ var
       begin
         typeDeclaration := 'record helper for ' + ColorTypeName
       end;
+      Add('{ Helper for ' + ColorTypeName + ' color }');
     end else
     begin
       HelperName := ColorTypeName;
       typeDeclaration := ColorspaceInfo[Colorspace].Declaration;
       ColorTypeDefined[Colorspace] := true;
+      Add('P'+ColorspaceName+' = ^'+ColorTypeName+';');
+      Add('{ ' + ColorspaceInfo[Colorspace].Colorspace + ' color ('
+      + ChannelValueTypeFriendlyName[ColorspaceInfo[Colorspace].ValueType] + ' channels) }');
     end;
 
-    Add('{ ' + HelperName + ' }');
     Add('');
-    if not IsHelperOnly(Colorspace) and not AHelperOnly then
-      Add('P'+ColorspaceName+' = ^'+ColorTypeName+';');
     Add(HelperName + ' = ' + typeDeclaration);
 
     AddImp('{ ' + HelperName + ' }');

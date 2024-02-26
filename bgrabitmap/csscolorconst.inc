@@ -80,6 +80,7 @@ var
   CSSDarkSlateGray, CSSBlack: TBGRAPixel;
 
 type
+  {* Definition of a single color in RGB colorspace }
   TBGRAColorDefinition = record
     Name: string;
     Color: TBGRAPixel;

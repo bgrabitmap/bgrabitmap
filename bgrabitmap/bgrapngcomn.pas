@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Common types for PNG format. This extents PNGComn unit for animated PNG. }
 unit BGRAPNGComn;
 
 {$mode objfpc}{$H+}
 
-{ Common types for PNG format. This extents PNGComn unit for animated PNG. }
 interface
 
 uses

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of Windows resource file format (RES) }
 unit BGRAWinResource;
 
 {$mode objfpc}{$H+}

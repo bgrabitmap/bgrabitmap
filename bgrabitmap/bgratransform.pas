@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Affine and bitmap transformations }
 unit BGRATransform;
 
 {$mode objfpc}
 
 interface
-
-{ This unit contains bitmap transformations as classes and the TAffineMatrix record and functions. }
 
 uses
   BGRAClasses, SysUtils, BGRABitmapTypes;

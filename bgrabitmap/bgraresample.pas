@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ This unit provides resampling functions, i.e. resizing of bitmaps with or
+  without interpolation filters. }
 unit BGRAResample;
 
 {$mode objfpc}{$H+}
 
 interface
 
-{ This unit provides resampling functions, i.e. resizing of bitmaps with or
-  without interpolation filters.
-
-  SimpleStretch does a boxed resample with limited antialiasing.
+{ SimpleStretch does a boxed resample with limited antialiasing.
 
   FineResample uses floating point coordinates to get an antialiased resample.
   It can use minimal interpolation (4 pixels when upsizing) for simple interpolation

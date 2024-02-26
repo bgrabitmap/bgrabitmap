@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implements path and path cursor }
 unit BGRAPath;
 
 {$mode objfpc}{$H+}
 
-{ Implements path and path cursor }
 interface
 
 //todo: tangent interpolation

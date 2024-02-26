@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Provides a reader for WebP format using libwebp }
 unit BGRAReadWebP;
 
 {$mode objfpc}{$H+}

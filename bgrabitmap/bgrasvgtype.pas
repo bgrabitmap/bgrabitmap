@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Base type definitions and implementation for SVG }
 unit BGRASVGType;
 
 {$mode objfpc}{$H+}

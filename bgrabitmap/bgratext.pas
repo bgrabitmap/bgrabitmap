@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Base implementation of system text rendering }
 unit BGRAText;
 
 {$mode objfpc}{$H+}

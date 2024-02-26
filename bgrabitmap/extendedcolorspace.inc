@@ -3,15 +3,24 @@
 {$UNDEF INCLUDE_INTERFACE}
 
 type
+  {* Definition of a point on the spectral locus in XYZ colorspace }
   TSpectralLocusPoint = record
-    W,X,Y,Z: Single;
+    {** Wavelength }
+    W: Single;
+    {** Coordinates in XYZ colorspace }
+    X,Y,Z: Single;
   end;
+  {* Definition of the illuminant lightness for a wavelength }
   TIlluminantSpectrumPoint = record
-    W,Y: Single;
+    {** Wavelength }
+    W: Single;
+    {** Y coordinate }
+    Y: Single;
   end;
-  // YCbCr colorspaces based on sRGB colorspace
-  // (with some minor variations in the definition of the primary colors)
+  {* YCbCr colorspaces based on sRGB colorspace
+     (with some minor variations in the definition of the primary colors) }
   TYCbCrStdColorspace = (ITUR601, ITUR601JPEG, ITUR709, ITUR709JPEG, SMPTE240M);
+  {* Parameters for a YCbCr colorspace }
   TYCbCrStdParameters = packed record
     LumaRed, LumaGreen, LumaBlue, MinY, ScaleY, MidC, ScaleC: single;
   end;
@@ -19,37 +28,63 @@ type
 {$I spectraldata.inc}
 
 type
+  {* Pointer to a reference white }
   PXYZReferenceWhite = ^TXYZReferenceWhite;
+  {* Definition of a reference white }
   TXYZReferenceWhite = packed record
+    {** Coordinates in XYZ colorspace (CIE 1931) }
     X, Y, Z: single;
+    {** Viewing angle }
     ObserverAngle: integer;
+    {** Name of illuminant }
     Illuminant: string;
+    {** Coordinates in LMS colorspace (cone responses) }
     L,M,S: single;
   end;
 
-  TCustomColorspace = class;
-  TColorspaceAny = class of TCustomColorspace;
-
+  {* Function signature to convert from one colorspace to another }
   TColorspaceConvertArrayProc = procedure(ASource: pointer; ADest: Pointer; ACount: integer;
                   ASourceStride:integer; ADestStride:integer; AReferenceWhite: PXYZReferenceWhite);
 
-  { TBridgedConversion }
-
+  {* Color conversion involving two steps }
   TBridgedConversion = record
     ConvertToBridge,FinalConvert: TColorspaceConvertArrayProc;
     procedure Convert(ASource: pointer; ADest: Pointer; ACount: integer;
               ASourceStride:integer; ADestStride:integer; AReferenceWhite: PXYZReferenceWhite); inline;
   end;
 
-  TColorTransparency = (ctFullyTransparent, ctSemiTransparent, ctFullyOpaque);
-  TColorspaceFlag = (cfFixedReferenceWhite,       // ex: sRGB, AdobeRGB fixed at D65
-                     cfMovableReferenceWhite,     // XYZ
-                     cfReferenceWhiteIndependent, // L*a*b*, LCh
-                     cfHasImaginaryColors);       // XYZ, L*a*b*, LCh
+  {* Color transparency }
+  TColorTransparency = (
+    {** Fully transparent }
+    ctFullyTransparent,
+    {** Semi-transparent (neither fully transparent nor opaque) }
+    ctSemiTransparent,
+    {** Fully opaque }
+    ctFullyOpaque);
+
+  {* Flag about a colorspace }
+  TColorspaceFlag = (
+    {** Reference white is fixed (relative to a certain illuminant).
+        Example: sRGB and AdobeRGB are fixed at D65 }
+    cfFixedReferenceWhite,
+    {** Reference white is not fixed, it can be changed. Example: XYZ }
+    cfMovableReferenceWhite,
+    {** Independent from reference white, it expresses subjective perception.
+        Example: L*a*b*, LCh }
+    cfReferenceWhiteIndependent,
+    {** Whether imaginary colors can be expressed (colors that cannot be
+        perceived in normal viewing conditions).
+        Example: XYZ, L*a*b*, LCh }
+    cfHasImaginaryColors);
+
+  {* Set of flags about a colorspace }
   TColorspaceFlags = set of TColorspaceFlag;
 
-  { TCustomColorspace }
+  TCustomColorspace = class;
+  {* Any colorspace class }
+  TColorspaceAny = class of TCustomColorspace;
 
+  {* Base class for a colorspace }
   TCustomColorspace = class
     class function GetChannelName(AIndex: integer): string; virtual; abstract;
     class function GetChannelCount: integer; virtual; abstract;
@@ -70,8 +105,7 @@ type
     class function GetFlags: TColorspaceFlags; virtual; abstract;
   end;
 
-  { ColorspaceCollection }
-
+  {* The collection of all colorspaces }
   ColorspaceCollection = class
   protected
     class var FColorspaces : array of TColorspaceAny;
@@ -97,7 +131,9 @@ type {* How to handle overflow when converting from XYZ }
     xroPreserveHue);
 
 var
+  {** How to handle overflow when values are below the minimum values in RGB colorspace }
   XYZToRGBOverflowMin : TColorspaceOverflow = xroSaturateEachChannel;
+  {** How to handle overflow when values are above the maximum values in RGB colorspace }
   XYZToRGBOverflowMax : TColorspaceOverflow = xroSaturateEachChannel;
 
 {$DEFINE INCLUDE_INTERFACE}

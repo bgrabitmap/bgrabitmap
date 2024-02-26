@@ -28,6 +28,7 @@
 {$mode objfpc}
 {$h+}
 
+{ BMP reader implementation }
 unit BGRAReadBMP;
 
 interface

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Provides readers for icons and cursors }
 unit BGRAReadIco;
 
 {$mode objfpc}{$H+}

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Provides reader for LazPaint image format }
 unit BGRAReadLzp;
 
 {$mode objfpc}{$H+}

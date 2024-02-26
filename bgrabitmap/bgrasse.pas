@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of SSE acceleration }
 unit BGRASSE;
 
 {$mode objfpc}{$H+}

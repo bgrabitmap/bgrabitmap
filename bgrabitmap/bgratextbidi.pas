@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of bidirectional text layout }
 unit BGRATextBidi;
 
 {$mode objfpc}{$H+}

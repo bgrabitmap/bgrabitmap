@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Definition of a 3D scene }
 unit BGRAScene3D;
 
 {$mode objfpc}{$H+}

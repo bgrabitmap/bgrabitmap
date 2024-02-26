@@ -5,6 +5,8 @@
            - added Resolution support
 }
 {*****************************************************************************}
+
+{ Provides reader for JPEG image format }
 unit BGRAReadJpeg;
 
 {$mode objfpc}{$H+}

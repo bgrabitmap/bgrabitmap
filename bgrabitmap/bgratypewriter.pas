@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Cached vectorial font renderer with affine transform }
 unit BGRATypewriter;
 
 {$mode objfpc}{$H+}

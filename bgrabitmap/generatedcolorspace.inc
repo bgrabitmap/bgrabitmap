@@ -4,136 +4,136 @@
 {$UNDEF INCLUDE_INTERFACE}
 type
 
-  { TStdRGBA }
-
   PStdRGBA = ^TStdRGBA;
+  { StdRGB color (32-bit floating point channels) }
+
   TStdRGBA = packed record
     red,green,blue,alpha: single;
     class function New(const ARed,AGreen,ABlue,AAlpha:single): TStdRGBA;overload;static;
     class function New(const ARed,AGreen,ABlue:single): TStdRGBA;overload;static;
   end;
 
-  { TAdobeRGBA }
-
   PAdobeRGBA = ^TAdobeRGBA;
+  { AdobeRGB color (8-bit channels) }
+
   TAdobeRGBA = packed record
     red,green,blue,alpha: byte;
     class function New(const ARed,AGreen,ABlue,AAlpha:byte): TAdobeRGBA;overload;static;
     class function New(const ARed,AGreen,ABlue:byte): TAdobeRGBA;overload;static;
   end;
 
-  { TStdHSLA }
-
   PStdHSLA = ^TStdHSLA;
+  { StdHSL color (32-bit floating point channels) }
+
   TStdHSLA = packed record
     hue,saturation,lightness,alpha: single;
     class function New(const AHue,ASaturation,ALightness,AAlpha:single): TStdHSLA;overload;static;
     class function New(const AHue,ASaturation,ALightness:single): TStdHSLA;overload;static;
   end;
 
-  { TStdHSVA }
-
   PStdHSVA = ^TStdHSVA;
+  { StdHSV color (32-bit floating point channels) }
+
   TStdHSVA = packed record
     hue,saturation,value,alpha: single;
     class function New(const AHue,ASaturation,AValue,AAlpha:single): TStdHSVA;overload;static;
     class function New(const AHue,ASaturation,AValue:single): TStdHSVA;overload;static;
   end;
 
-  { TStdCMYK }
-
   PStdCMYK = ^TStdCMYK;
+  { StdCMYK color (32-bit floating point channels) }
+
   TStdCMYK = packed record
     C,M,Y,K: single;
     class function New(const ACyan,AMagenta,AYellow,ABlack:single): TStdCMYK;static;
   end;
 
-  { TByteMask }
-
   PByteMask = ^TByteMask;
+  { Grayscale color (8-bit channels) }
+
   TByteMask = packed record
     gray: byte;
     class function New(const AGray:byte): TByteMask;static;
   end;
 
-  { TLinearRGBA }
-
   PLinearRGBA = ^TLinearRGBA;
+  { LinearRGB color (32-bit floating point channels) }
+
   TLinearRGBA = packed record
     red,green,blue,alpha: single;
     class function New(const ARed,AGreen,ABlue,AAlpha:single): TLinearRGBA;overload;static;
     class function New(const ARed,AGreen,ABlue:single): TLinearRGBA;overload;static;
   end;
 
-  { TYCbCr601 }
-
   PYCbCr601 = ^TYCbCr601;
+  { YCbCr BT.601 color (32-bit floating point channels) }
+
   TYCbCr601 = packed record
     Y,Cb,Cr: single;
     class function New(const ALuma,ABlueDiff,ARedDiff:single): TYCbCr601;static;
   end;
 
-  { TYCbCr601JPEG }
-
   PYCbCr601JPEG = ^TYCbCr601JPEG;
+  { YCbCr BT.601 JPEG color (32-bit floating point channels) }
+
   TYCbCr601JPEG = packed record
     Y,Cb,Cr: single;
     class function New(const ALuma,ABlueDiff,ARedDiff:single): TYCbCr601JPEG;static;
   end;
 
-  { TYCbCr709 }
-
   PYCbCr709 = ^TYCbCr709;
+  { YCbCr BT.709 color (32-bit floating point channels) }
+
   TYCbCr709 = packed record
     Y,Cb,Cr: single;
     class function New(const ALuma,ABlueDiff,ARedDiff:single): TYCbCr709;static;
   end;
 
-  { TYCbCr709JPEG }
-
   PYCbCr709JPEG = ^TYCbCr709JPEG;
+  { YCbCr BT.709 JPEG color (32-bit floating point channels) }
+
   TYCbCr709JPEG = packed record
     Y,Cb,Cr: single;
     class function New(const ALuma,ABlueDiff,ARedDiff:single): TYCbCr709JPEG;static;
   end;
 
-  { TXYZA }
-
   PXYZA = ^TXYZA;
+  { CIE XYZ color (32-bit floating point channels) }
+
   TXYZA = packed record
     X,Y,Z,alpha: single;
     class function New(const AX,AY,AZ,AAlpha:single): TXYZA;overload;static;
     class function New(const AX,AY,AZ:single): TXYZA;overload;static;
   end;
 
-  { TWordXYZA }
-
   PWordXYZA = ^TWordXYZA;
+  { CIE XYZ color (16-bit channels) }
+
   TWordXYZA = packed record
     X,Y,Z,alpha: word;
     class function New(const AX,AY,AZ,AAlpha:word): TWordXYZA;overload;static;
     class function New(const AX,AY,AZ:word): TWordXYZA;overload;static;
   end;
 
-  { TLabA }
-
   PLabA = ^TLabA;
+  { CIE Lab color (32-bit floating point channels) }
+
   TLabA = packed record
     L,a,b,alpha: single;
     class function New(const ALightness,Aa,Ab,AAlpha:single): TLabA;overload;static;
     class function New(const ALightness,Aa,Ab:single): TLabA;overload;static;
   end;
 
-  { TLChA }
-
   PLChA = ^TLChA;
+  { CIE LCh color (32-bit floating point channels) }
+
   TLChA = packed record
     L,C,h,alpha: single;
     class function New(const ALightness,AChroma,AHue,AAlpha:single): TLChA;overload;static;
     class function New(const ALightness,AChroma,AHue:single): TLChA;overload;static;
   end;
 
-  { TColorColorspace }
+  { StdRGB colorspace (8-bit channels) }
 
   TColorColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -150,7 +150,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TBGRAPixelColorspace }
+  { StdRGB colorspace (8-bit channels) }
 
   TBGRAPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -167,7 +167,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TFPColorColorspace }
+  { StdRGB colorspace (16-bit channels) }
 
   TFPColorColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -184,7 +184,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TStdRGBAColorspace }
+  { StdRGB colorspace (32-bit floating point channels) }
 
   TStdRGBAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -201,7 +201,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TAdobeRGBAColorspace }
+  { AdobeRGB colorspace (8-bit channels) }
 
   TAdobeRGBAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -218,7 +218,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TStdHSLAColorspace }
+  { StdHSL colorspace (32-bit floating point channels) }
 
   TStdHSLAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -235,7 +235,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TStdHSVAColorspace }
+  { StdHSV colorspace (32-bit floating point channels) }
 
   TStdHSVAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -252,7 +252,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TStdCMYKColorspace }
+  { StdCMYK colorspace (32-bit floating point channels) }
 
   TStdCMYKColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -269,7 +269,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TByteMaskColorspace }
+  { Grayscale colorspace (8-bit channels) }
 
   TByteMaskColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -286,7 +286,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TExpandedPixelColorspace }
+  { LinearRGB colorspace (16-bit channels) }
 
   TExpandedPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -303,7 +303,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TLinearRGBAColorspace }
+  { LinearRGB colorspace (32-bit floating point channels) }
 
   TLinearRGBAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -320,7 +320,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { THSLAPixelColorspace }
+  { HSL colorspace (16-bit channels) }
 
   THSLAPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -337,7 +337,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TGSBAPixelColorspace }
+  { GSB colorspace (16-bit channels) }
 
   TGSBAPixelColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -354,7 +354,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TYCbCr601Colorspace }
+  { YCbCr BT.601 colorspace (32-bit floating point channels) }
 
   TYCbCr601Colorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -371,7 +371,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TYCbCr601JPEGColorspace }
+  { YCbCr BT.601 JPEG colorspace (32-bit floating point channels) }
 
   TYCbCr601JPEGColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -388,7 +388,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TYCbCr709Colorspace }
+  { YCbCr BT.709 colorspace (32-bit floating point channels) }
 
   TYCbCr709Colorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -405,7 +405,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TYCbCr709JPEGColorspace }
+  { YCbCr BT.709 JPEG colorspace (32-bit floating point channels) }
 
   TYCbCr709JPEGColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -422,7 +422,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TXYZAColorspace }
+  { CIE XYZ colorspace (32-bit floating point channels) }
 
   TXYZAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -439,7 +439,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TWordXYZAColorspace }
+  { CIE XYZ colorspace (16-bit channels) }
 
   TWordXYZAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -456,7 +456,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TLabAColorspace }
+  { CIE Lab colorspace (32-bit floating point channels) }
 
   TLabAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -473,7 +473,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TLChAColorspace }
+  { CIE LCh colorspace (32-bit floating point channels) }
 
   TLChAColorspace = class(TCustomColorspace)
     class function GetChannelName(AIndex: integer): string; override;
@@ -490,7 +490,7 @@ type
     class function GetFlags: TColorspaceFlags; override;
   end;
 
-  { TColorHelper }
+  { Helper for TColor color }
 
   TColorHelper = type helper for TColor
     class function New(const ARed,AGreen,ABlue:byte): TColor;static;
@@ -566,7 +566,7 @@ type
     property blue: byte read GetBlue write SetBlue;
   end;
 
-  { TBGRAPixelHelper }
+  { Helper for TBGRAPixel color }
 
   TBGRAPixelHelper = record helper(TBGRAPixelBasicHelper) for TBGRAPixel
     class function New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;static;
@@ -608,7 +608,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TFPColorHelper }
+  { Helper for TFPColor color }
 
   TFPColorHelper = record helper(TFPColorBasicHelper) for TFPColor
     class function New(const ARed,AGreen,ABlue,AAlpha:word): TFPColor;overload;static;
@@ -650,7 +650,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TStdRGBAHelper }
+  { Helper for TStdRGBA color }
 
   TStdRGBAHelper = record helper for TStdRGBA
     class function Colorspace: TColorspaceAny; static;
@@ -700,7 +700,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TAdobeRGBAHelper }
+  { Helper for TAdobeRGBA color }
 
   TAdobeRGBAHelper = record helper for TAdobeRGBA
     class function Colorspace: TColorspaceAny; static;
@@ -750,7 +750,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TStdHSLAHelper }
+  { Helper for TStdHSLA color }
 
   TStdHSLAHelper = record helper for TStdHSLA
     class function Colorspace: TColorspaceAny; static;
@@ -800,7 +800,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TStdHSVAHelper }
+  { Helper for TStdHSVA color }
 
   TStdHSVAHelper = record helper for TStdHSVA
     class function Colorspace: TColorspaceAny; static;
@@ -850,7 +850,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TStdCMYKHelper }
+  { Helper for TStdCMYK color }
 
   TStdCMYKHelper = record helper for TStdCMYK
     class function Colorspace: TColorspaceAny; static;
@@ -914,7 +914,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TByteMaskHelper }
+  { Helper for TByteMask color }
 
   TByteMaskHelper = record helper for TByteMask
     class function Colorspace: TColorspaceAny; static;
@@ -978,7 +978,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TExpandedPixelHelper }
+  { Helper for TExpandedPixel color }
 
   TExpandedPixelHelper = record helper(TExpandedPixelBasicHelper) for TExpandedPixel
     class function New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;static;
@@ -1020,7 +1020,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TLinearRGBAHelper }
+  { Helper for TLinearRGBA color }
 
   TLinearRGBAHelper = record helper for TLinearRGBA
     class function Colorspace: TColorspaceAny; static;
@@ -1070,7 +1070,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { THSLAPixelHelper }
+  { Helper for THSLAPixel color }
 
   THSLAPixelHelper = record helper(THSLAPixelBasicHelper) for THSLAPixel
     class function New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;static;
@@ -1112,7 +1112,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TGSBAPixelHelper }
+  { Helper for TGSBAPixel color }
 
   TGSBAPixelHelper = record helper(TGSBAPixelBasicHelper) for TGSBAPixel
     class function New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;static;
@@ -1154,7 +1154,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TYCbCr601Helper }
+  { Helper for TYCbCr601 color }
 
   TYCbCr601Helper = record helper for TYCbCr601
     class function Colorspace: TColorspaceAny; static;
@@ -1218,7 +1218,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TYCbCr601JPEGHelper }
+  { Helper for TYCbCr601JPEG color }
 
   TYCbCr601JPEGHelper = record helper for TYCbCr601JPEG
     class function Colorspace: TColorspaceAny; static;
@@ -1282,7 +1282,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TYCbCr709Helper }
+  { Helper for TYCbCr709 color }
 
   TYCbCr709Helper = record helper for TYCbCr709
     class function Colorspace: TColorspaceAny; static;
@@ -1346,7 +1346,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TYCbCr709JPEGHelper }
+  { Helper for TYCbCr709JPEG color }
 
   TYCbCr709JPEGHelper = record helper for TYCbCr709JPEG
     class function Colorspace: TColorspaceAny; static;
@@ -1410,7 +1410,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TXYZAHelper }
+  { Helper for TXYZA color }
 
   TXYZAHelper = record helper for TXYZA
     class function Colorspace: TColorspaceAny; static;
@@ -1495,7 +1495,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
 
-  { TWordXYZAHelper }
+  { Helper for TWordXYZA color }
 
   TWordXYZAHelper = record helper for TWordXYZA
     class function Colorspace: TColorspaceAny; static;
@@ -1580,7 +1580,7 @@ type
     procedure FromLChA(AValue: TLChA; const AReferenceWhite: TXYZReferenceWhite); overload;
   end;
 
-  { TLabAHelper }
+  { Helper for TLabA color }
 
   TLabAHelper = record helper for TLabA
     class function Colorspace: TColorspaceAny; static;
@@ -1630,7 +1630,7 @@ type
     procedure FromLChA(AValue: TLChA);
   end;
 
-  { TLChAHelper }
+  { Helper for TLChA color }
 
   TLChAHelper = record helper for TLChA
     class function Colorspace: TColorspaceAny; static;

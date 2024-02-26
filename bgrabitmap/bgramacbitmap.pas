@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of BGRABitmap for Mac OS }
 unit BGRAMacBitmap;
+{ It should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 
-{ Implementation of BGRABitmap for Mac OS }
 interface
 
 uses

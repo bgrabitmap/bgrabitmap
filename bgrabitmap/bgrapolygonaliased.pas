@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ This unit provides fast aliased polygon routines. }
 unit BGRAPolygonAliased;
 
 {$mode objfpc}{$H+}
@@ -7,9 +9,7 @@ unit BGRAPolygonAliased;
 
 interface
 
-{ This unit provides fast aliased polygon routines.
-
-  To do aliased drawing, only one line is intersected with polygons for each output scanline.
+{ To do aliased drawing, only one line is intersected with polygons for each output scanline.
   Along with intersection coordinates, color and texture coordinates are computed using
   linear interpolation. Inverse values are used for projective transform. }
 

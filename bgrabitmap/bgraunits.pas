@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Definition of units of measure (distances) used in CSS }
 unit BGRAUnits;
 
 {$mode objfpc}{$H+}

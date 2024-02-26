@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{ This unit provides some optimisations of TFPReaderPCX: decompression using a read buffer.
-  It also fixes the progress message and the InternalCheck. }
+
 {*****************************************************************************}
 {
+  circlar :
+  - decompression is done using a read buffer.
+  - fix for the progress message and the InternalCheck.
+
   2023-06  - Massimo Magnano
            - added Resolution support
 }
 {*****************************************************************************}
 
+{ This unit provides some optimisations of TFPReaderPCX. }
 unit BGRAReadPCX;
 
 {$mode objfpc}{$H+}

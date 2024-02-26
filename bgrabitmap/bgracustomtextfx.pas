@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Computation of text effects based on a text mask }
 unit BGRACustomTextFX;
 
 {$mode objfpc}{$H+}

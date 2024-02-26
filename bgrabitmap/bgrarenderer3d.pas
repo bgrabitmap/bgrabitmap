@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Software renderer for 3D scenes }
 unit BGRARenderer3D;
 
 {$mode objfpc}{$H+}
