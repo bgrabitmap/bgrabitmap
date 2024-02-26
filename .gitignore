@@ -33,3 +33,6 @@ test/test4other/test4nolcl_freetype
 bgrabitmap/doc/
 
 dev/makedoc/pmakedoc
+
+pasdoc
+doc/web
