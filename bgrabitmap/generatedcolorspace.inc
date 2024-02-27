@@ -4,6 +4,7 @@
 {$UNDEF INCLUDE_INTERFACE}
 type
 
+  { Pointer to TStdRGBA color }
   PStdRGBA = ^TStdRGBA;
   { StdRGB color (32-bit floating point channels) }
 
@@ -13,6 +14,7 @@ type
     class function New(const ARed,AGreen,ABlue:single): TStdRGBA;overload;static;
   end;
 
+  { Pointer to TAdobeRGBA color }
   PAdobeRGBA = ^TAdobeRGBA;
   { AdobeRGB color (8-bit channels) }
 
@@ -22,6 +24,7 @@ type
     class function New(const ARed,AGreen,ABlue:byte): TAdobeRGBA;overload;static;
   end;
 
+  { Pointer to TStdHSLA color }
   PStdHSLA = ^TStdHSLA;
   { StdHSL color (32-bit floating point channels) }
 
@@ -31,6 +34,7 @@ type
     class function New(const AHue,ASaturation,ALightness:single): TStdHSLA;overload;static;
   end;
 
+  { Pointer to TStdHSVA color }
   PStdHSVA = ^TStdHSVA;
   { StdHSV color (32-bit floating point channels) }
 
@@ -40,6 +44,7 @@ type
     class function New(const AHue,ASaturation,AValue:single): TStdHSVA;overload;static;
   end;
 
+  { Pointer to TStdCMYK color }
   PStdCMYK = ^TStdCMYK;
   { StdCMYK color (32-bit floating point channels) }
 
@@ -48,6 +53,7 @@ type
     class function New(const ACyan,AMagenta,AYellow,ABlack:single): TStdCMYK;static;
   end;
 
+  { Pointer to TByteMask color }
   PByteMask = ^TByteMask;
   { Grayscale color (8-bit channels) }
 
@@ -56,6 +62,7 @@ type
     class function New(const AGray:byte): TByteMask;static;
   end;
 
+  { Pointer to TLinearRGBA color }
   PLinearRGBA = ^TLinearRGBA;
   { LinearRGB color (32-bit floating point channels) }
 
@@ -65,6 +72,7 @@ type
     class function New(const ARed,AGreen,ABlue:single): TLinearRGBA;overload;static;
   end;
 
+  { Pointer to TYCbCr601 color }
   PYCbCr601 = ^TYCbCr601;
   { YCbCr BT.601 color (32-bit floating point channels) }
 
@@ -73,6 +81,7 @@ type
     class function New(const ALuma,ABlueDiff,ARedDiff:single): TYCbCr601;static;
   end;
 
+  { Pointer to TYCbCr601JPEG color }
   PYCbCr601JPEG = ^TYCbCr601JPEG;
   { YCbCr BT.601 JPEG color (32-bit floating point channels) }
 
@@ -81,6 +90,7 @@ type
     class function New(const ALuma,ABlueDiff,ARedDiff:single): TYCbCr601JPEG;static;
   end;
 
+  { Pointer to TYCbCr709 color }
   PYCbCr709 = ^TYCbCr709;
   { YCbCr BT.709 color (32-bit floating point channels) }
 
@@ -89,6 +99,7 @@ type
     class function New(const ALuma,ABlueDiff,ARedDiff:single): TYCbCr709;static;
   end;
 
+  { Pointer to TYCbCr709JPEG color }
   PYCbCr709JPEG = ^TYCbCr709JPEG;
   { YCbCr BT.709 JPEG color (32-bit floating point channels) }
 
@@ -97,6 +108,7 @@ type
     class function New(const ALuma,ABlueDiff,ARedDiff:single): TYCbCr709JPEG;static;
   end;
 
+  { Pointer to TXYZA color }
   PXYZA = ^TXYZA;
   { CIE XYZ color (32-bit floating point channels) }
 
@@ -106,6 +118,7 @@ type
     class function New(const AX,AY,AZ:single): TXYZA;overload;static;
   end;
 
+  { Pointer to TWordXYZA color }
   PWordXYZA = ^TWordXYZA;
   { CIE XYZ color (16-bit channels) }
 
@@ -115,6 +128,7 @@ type
     class function New(const AX,AY,AZ:word): TWordXYZA;overload;static;
   end;
 
+  { Pointer to TLabA color }
   PLabA = ^TLabA;
   { CIE Lab color (32-bit floating point channels) }
 
@@ -124,6 +138,7 @@ type
     class function New(const ALightness,Aa,Ab:single): TLabA;overload;static;
   end;
 
+  { Pointer to TLChA color }
   PLChA = ^TLChA;
   { CIE LCh color (32-bit floating point channels) }
 
@@ -1680,395 +1695,785 @@ type
     procedure FromLabA(AValue: TLabA);
   end;
 
+{ Implicit conversion of a color from TColor to TStdRGBA }
 operator := (const AValue: TColor): TStdRGBA;
+{ Implicit conversion of a color from TColor to TAdobeRGBA }
 operator := (const AValue: TColor): TAdobeRGBA;
+{ Implicit conversion of a color from TColor to TStdHSLA }
 operator := (const AValue: TColor): TStdHSLA;
+{ Implicit conversion of a color from TColor to TStdHSVA }
 operator := (const AValue: TColor): TStdHSVA;
+{ Implicit conversion of a color from TColor to TStdCMYK }
 operator := (const AValue: TColor): TStdCMYK;
+{ Implicit conversion of a color from TColor to TByteMask }
 operator := (const AValue: TColor): TByteMask;
+{ Implicit conversion of a color from TColor to TLinearRGBA }
 operator := (const AValue: TColor): TLinearRGBA;
+{ Implicit conversion of a color from TColor to TYCbCr601 }
 operator := (const AValue: TColor): TYCbCr601;
+{ Implicit conversion of a color from TColor to TYCbCr601JPEG }
 operator := (const AValue: TColor): TYCbCr601JPEG;
+{ Implicit conversion of a color from TColor to TYCbCr709 }
 operator := (const AValue: TColor): TYCbCr709;
+{ Implicit conversion of a color from TColor to TYCbCr709JPEG }
 operator := (const AValue: TColor): TYCbCr709JPEG;
+{ Implicit conversion of a color from TColor to TXYZA }
 operator := (const AValue: TColor): TXYZA;
+{ Implicit conversion of a color from TColor to TWordXYZA }
 operator := (const AValue: TColor): TWordXYZA;
+{ Implicit conversion of a color from TColor to TLabA }
 operator := (const AValue: TColor): TLabA;
+{ Implicit conversion of a color from TColor to TLChA }
 operator := (const AValue: TColor): TLChA;
+{ Implicit conversion of a color from TBGRAPixel to TStdRGBA }
 operator := (const AValue: TBGRAPixel): TStdRGBA;
+{ Implicit conversion of a color from TBGRAPixel to TAdobeRGBA }
 operator := (const AValue: TBGRAPixel): TAdobeRGBA;
+{ Implicit conversion of a color from TBGRAPixel to TStdHSLA }
 operator := (const AValue: TBGRAPixel): TStdHSLA;
+{ Implicit conversion of a color from TBGRAPixel to TStdHSVA }
 operator := (const AValue: TBGRAPixel): TStdHSVA;
+{ Implicit conversion of a color from TBGRAPixel to TStdCMYK }
 operator := (const AValue: TBGRAPixel): TStdCMYK;
+{ Implicit conversion of a color from TBGRAPixel to TByteMask }
 operator := (const AValue: TBGRAPixel): TByteMask;
+{ Implicit conversion of a color from TBGRAPixel to TLinearRGBA }
 operator := (const AValue: TBGRAPixel): TLinearRGBA;
+{ Implicit conversion of a color from TBGRAPixel to TYCbCr601 }
 operator := (const AValue: TBGRAPixel): TYCbCr601;
+{ Implicit conversion of a color from TBGRAPixel to TYCbCr601JPEG }
 operator := (const AValue: TBGRAPixel): TYCbCr601JPEG;
+{ Implicit conversion of a color from TBGRAPixel to TYCbCr709 }
 operator := (const AValue: TBGRAPixel): TYCbCr709;
+{ Implicit conversion of a color from TBGRAPixel to TYCbCr709JPEG }
 operator := (const AValue: TBGRAPixel): TYCbCr709JPEG;
+{ Implicit conversion of a color from TBGRAPixel to TXYZA }
 operator := (const AValue: TBGRAPixel): TXYZA;
+{ Implicit conversion of a color from TBGRAPixel to TWordXYZA }
 operator := (const AValue: TBGRAPixel): TWordXYZA;
+{ Implicit conversion of a color from TBGRAPixel to TLabA }
 operator := (const AValue: TBGRAPixel): TLabA;
+{ Implicit conversion of a color from TBGRAPixel to TLChA }
 operator := (const AValue: TBGRAPixel): TLChA;
+{ Implicit conversion of a color from TFPColor to TStdRGBA }
 operator := (const AValue: TFPColor): TStdRGBA;
+{ Implicit conversion of a color from TFPColor to TAdobeRGBA }
 operator := (const AValue: TFPColor): TAdobeRGBA;
+{ Implicit conversion of a color from TFPColor to TStdHSLA }
 operator := (const AValue: TFPColor): TStdHSLA;
+{ Implicit conversion of a color from TFPColor to TStdHSVA }
 operator := (const AValue: TFPColor): TStdHSVA;
+{ Implicit conversion of a color from TFPColor to TStdCMYK }
 operator := (const AValue: TFPColor): TStdCMYK;
+{ Implicit conversion of a color from TFPColor to TByteMask }
 operator := (const AValue: TFPColor): TByteMask;
+{ Implicit conversion of a color from TFPColor to TLinearRGBA }
 operator := (const AValue: TFPColor): TLinearRGBA;
+{ Implicit conversion of a color from TFPColor to TYCbCr601 }
 operator := (const AValue: TFPColor): TYCbCr601;
+{ Implicit conversion of a color from TFPColor to TYCbCr601JPEG }
 operator := (const AValue: TFPColor): TYCbCr601JPEG;
+{ Implicit conversion of a color from TFPColor to TYCbCr709 }
 operator := (const AValue: TFPColor): TYCbCr709;
+{ Implicit conversion of a color from TFPColor to TYCbCr709JPEG }
 operator := (const AValue: TFPColor): TYCbCr709JPEG;
+{ Implicit conversion of a color from TFPColor to TXYZA }
 operator := (const AValue: TFPColor): TXYZA;
+{ Implicit conversion of a color from TFPColor to TWordXYZA }
 operator := (const AValue: TFPColor): TWordXYZA;
+{ Implicit conversion of a color from TFPColor to TLabA }
 operator := (const AValue: TFPColor): TLabA;
+{ Implicit conversion of a color from TFPColor to TLChA }
 operator := (const AValue: TFPColor): TLChA;
+{ Implicit conversion of a color from TStdRGBA to TColor }
 operator := (const AValue: TStdRGBA): TColor;
+{ Implicit conversion of a color from TStdRGBA to TBGRAPixel }
 operator := (const AValue: TStdRGBA): TBGRAPixel;
+{ Implicit conversion of a color from TStdRGBA to TFPColor }
 operator := (const AValue: TStdRGBA): TFPColor;
+{ Implicit conversion of a color from TStdRGBA to TAdobeRGBA }
 operator := (const AValue: TStdRGBA): TAdobeRGBA;
+{ Implicit conversion of a color from TStdRGBA to TStdHSLA }
 operator := (const AValue: TStdRGBA): TStdHSLA;
+{ Implicit conversion of a color from TStdRGBA to TStdHSVA }
 operator := (const AValue: TStdRGBA): TStdHSVA;
+{ Implicit conversion of a color from TStdRGBA to TStdCMYK }
 operator := (const AValue: TStdRGBA): TStdCMYK;
+{ Implicit conversion of a color from TStdRGBA to TByteMask }
 operator := (const AValue: TStdRGBA): TByteMask;
+{ Implicit conversion of a color from TStdRGBA to TExpandedPixel }
 operator := (const AValue: TStdRGBA): TExpandedPixel;
+{ Implicit conversion of a color from TStdRGBA to TLinearRGBA }
 operator := (const AValue: TStdRGBA): TLinearRGBA;
+{ Implicit conversion of a color from TStdRGBA to THSLAPixel }
 operator := (const AValue: TStdRGBA): THSLAPixel;
+{ Implicit conversion of a color from TStdRGBA to TGSBAPixel }
 operator := (const AValue: TStdRGBA): TGSBAPixel;
+{ Implicit conversion of a color from TStdRGBA to TYCbCr601 }
 operator := (const AValue: TStdRGBA): TYCbCr601;
+{ Implicit conversion of a color from TStdRGBA to TYCbCr601JPEG }
 operator := (const AValue: TStdRGBA): TYCbCr601JPEG;
+{ Implicit conversion of a color from TStdRGBA to TYCbCr709 }
 operator := (const AValue: TStdRGBA): TYCbCr709;
+{ Implicit conversion of a color from TStdRGBA to TYCbCr709JPEG }
 operator := (const AValue: TStdRGBA): TYCbCr709JPEG;
+{ Implicit conversion of a color from TStdRGBA to TXYZA }
 operator := (const AValue: TStdRGBA): TXYZA;
+{ Implicit conversion of a color from TStdRGBA to TWordXYZA }
 operator := (const AValue: TStdRGBA): TWordXYZA;
+{ Implicit conversion of a color from TStdRGBA to TLabA }
 operator := (const AValue: TStdRGBA): TLabA;
+{ Implicit conversion of a color from TStdRGBA to TLChA }
 operator := (const AValue: TStdRGBA): TLChA;
+{ Implicit conversion of a color from TAdobeRGBA to TColor }
 operator := (const AValue: TAdobeRGBA): TColor;
+{ Implicit conversion of a color from TAdobeRGBA to TBGRAPixel }
 operator := (const AValue: TAdobeRGBA): TBGRAPixel;
+{ Implicit conversion of a color from TAdobeRGBA to TFPColor }
 operator := (const AValue: TAdobeRGBA): TFPColor;
+{ Implicit conversion of a color from TAdobeRGBA to TStdRGBA }
 operator := (const AValue: TAdobeRGBA): TStdRGBA;
+{ Implicit conversion of a color from TAdobeRGBA to TStdHSLA }
 operator := (const AValue: TAdobeRGBA): TStdHSLA;
+{ Implicit conversion of a color from TAdobeRGBA to TStdHSVA }
 operator := (const AValue: TAdobeRGBA): TStdHSVA;
+{ Implicit conversion of a color from TAdobeRGBA to TStdCMYK }
 operator := (const AValue: TAdobeRGBA): TStdCMYK;
+{ Implicit conversion of a color from TAdobeRGBA to TByteMask }
 operator := (const AValue: TAdobeRGBA): TByteMask;
+{ Implicit conversion of a color from TAdobeRGBA to TExpandedPixel }
 operator := (const AValue: TAdobeRGBA): TExpandedPixel;
+{ Implicit conversion of a color from TAdobeRGBA to TLinearRGBA }
 operator := (const AValue: TAdobeRGBA): TLinearRGBA;
+{ Implicit conversion of a color from TAdobeRGBA to THSLAPixel }
 operator := (const AValue: TAdobeRGBA): THSLAPixel;
+{ Implicit conversion of a color from TAdobeRGBA to TGSBAPixel }
 operator := (const AValue: TAdobeRGBA): TGSBAPixel;
+{ Implicit conversion of a color from TAdobeRGBA to TYCbCr601 }
 operator := (const AValue: TAdobeRGBA): TYCbCr601;
+{ Implicit conversion of a color from TAdobeRGBA to TYCbCr601JPEG }
 operator := (const AValue: TAdobeRGBA): TYCbCr601JPEG;
+{ Implicit conversion of a color from TAdobeRGBA to TYCbCr709 }
 operator := (const AValue: TAdobeRGBA): TYCbCr709;
+{ Implicit conversion of a color from TAdobeRGBA to TYCbCr709JPEG }
 operator := (const AValue: TAdobeRGBA): TYCbCr709JPEG;
+{ Implicit conversion of a color from TAdobeRGBA to TXYZA }
 operator := (const AValue: TAdobeRGBA): TXYZA;
+{ Implicit conversion of a color from TAdobeRGBA to TWordXYZA }
 operator := (const AValue: TAdobeRGBA): TWordXYZA;
+{ Implicit conversion of a color from TAdobeRGBA to TLabA }
 operator := (const AValue: TAdobeRGBA): TLabA;
+{ Implicit conversion of a color from TAdobeRGBA to TLChA }
 operator := (const AValue: TAdobeRGBA): TLChA;
+{ Implicit conversion of a color from TStdHSLA to TColor }
 operator := (const AValue: TStdHSLA): TColor;
+{ Implicit conversion of a color from TStdHSLA to TBGRAPixel }
 operator := (const AValue: TStdHSLA): TBGRAPixel;
+{ Implicit conversion of a color from TStdHSLA to TFPColor }
 operator := (const AValue: TStdHSLA): TFPColor;
+{ Implicit conversion of a color from TStdHSLA to TStdRGBA }
 operator := (const AValue: TStdHSLA): TStdRGBA;
+{ Implicit conversion of a color from TStdHSLA to TAdobeRGBA }
 operator := (const AValue: TStdHSLA): TAdobeRGBA;
+{ Implicit conversion of a color from TStdHSLA to TStdHSVA }
 operator := (const AValue: TStdHSLA): TStdHSVA;
+{ Implicit conversion of a color from TStdHSLA to TStdCMYK }
 operator := (const AValue: TStdHSLA): TStdCMYK;
+{ Implicit conversion of a color from TStdHSLA to TByteMask }
 operator := (const AValue: TStdHSLA): TByteMask;
+{ Implicit conversion of a color from TStdHSLA to TExpandedPixel }
 operator := (const AValue: TStdHSLA): TExpandedPixel;
+{ Implicit conversion of a color from TStdHSLA to TLinearRGBA }
 operator := (const AValue: TStdHSLA): TLinearRGBA;
+{ Implicit conversion of a color from TStdHSLA to THSLAPixel }
 operator := (const AValue: TStdHSLA): THSLAPixel;
+{ Implicit conversion of a color from TStdHSLA to TGSBAPixel }
 operator := (const AValue: TStdHSLA): TGSBAPixel;
+{ Implicit conversion of a color from TStdHSLA to TYCbCr601 }
 operator := (const AValue: TStdHSLA): TYCbCr601;
+{ Implicit conversion of a color from TStdHSLA to TYCbCr601JPEG }
 operator := (const AValue: TStdHSLA): TYCbCr601JPEG;
+{ Implicit conversion of a color from TStdHSLA to TYCbCr709 }
 operator := (const AValue: TStdHSLA): TYCbCr709;
+{ Implicit conversion of a color from TStdHSLA to TYCbCr709JPEG }
 operator := (const AValue: TStdHSLA): TYCbCr709JPEG;
+{ Implicit conversion of a color from TStdHSLA to TXYZA }
 operator := (const AValue: TStdHSLA): TXYZA;
+{ Implicit conversion of a color from TStdHSLA to TWordXYZA }
 operator := (const AValue: TStdHSLA): TWordXYZA;
+{ Implicit conversion of a color from TStdHSLA to TLabA }
 operator := (const AValue: TStdHSLA): TLabA;
+{ Implicit conversion of a color from TStdHSLA to TLChA }
 operator := (const AValue: TStdHSLA): TLChA;
+{ Implicit conversion of a color from TStdHSVA to TColor }
 operator := (const AValue: TStdHSVA): TColor;
+{ Implicit conversion of a color from TStdHSVA to TBGRAPixel }
 operator := (const AValue: TStdHSVA): TBGRAPixel;
+{ Implicit conversion of a color from TStdHSVA to TFPColor }
 operator := (const AValue: TStdHSVA): TFPColor;
+{ Implicit conversion of a color from TStdHSVA to TStdRGBA }
 operator := (const AValue: TStdHSVA): TStdRGBA;
+{ Implicit conversion of a color from TStdHSVA to TAdobeRGBA }
 operator := (const AValue: TStdHSVA): TAdobeRGBA;
+{ Implicit conversion of a color from TStdHSVA to TStdHSLA }
 operator := (const AValue: TStdHSVA): TStdHSLA;
+{ Implicit conversion of a color from TStdHSVA to TStdCMYK }
 operator := (const AValue: TStdHSVA): TStdCMYK;
+{ Implicit conversion of a color from TStdHSVA to TByteMask }
 operator := (const AValue: TStdHSVA): TByteMask;
+{ Implicit conversion of a color from TStdHSVA to TExpandedPixel }
 operator := (const AValue: TStdHSVA): TExpandedPixel;
+{ Implicit conversion of a color from TStdHSVA to TLinearRGBA }
 operator := (const AValue: TStdHSVA): TLinearRGBA;
+{ Implicit conversion of a color from TStdHSVA to THSLAPixel }
 operator := (const AValue: TStdHSVA): THSLAPixel;
+{ Implicit conversion of a color from TStdHSVA to TGSBAPixel }
 operator := (const AValue: TStdHSVA): TGSBAPixel;
+{ Implicit conversion of a color from TStdHSVA to TYCbCr601 }
 operator := (const AValue: TStdHSVA): TYCbCr601;
+{ Implicit conversion of a color from TStdHSVA to TYCbCr601JPEG }
 operator := (const AValue: TStdHSVA): TYCbCr601JPEG;
+{ Implicit conversion of a color from TStdHSVA to TYCbCr709 }
 operator := (const AValue: TStdHSVA): TYCbCr709;
+{ Implicit conversion of a color from TStdHSVA to TYCbCr709JPEG }
 operator := (const AValue: TStdHSVA): TYCbCr709JPEG;
+{ Implicit conversion of a color from TStdHSVA to TXYZA }
 operator := (const AValue: TStdHSVA): TXYZA;
+{ Implicit conversion of a color from TStdHSVA to TWordXYZA }
 operator := (const AValue: TStdHSVA): TWordXYZA;
+{ Implicit conversion of a color from TStdHSVA to TLabA }
 operator := (const AValue: TStdHSVA): TLabA;
+{ Implicit conversion of a color from TStdHSVA to TLChA }
 operator := (const AValue: TStdHSVA): TLChA;
+{ Implicit conversion of a color from TStdCMYK to TColor }
 operator := (const AValue: TStdCMYK): TColor;
+{ Implicit conversion of a color from TStdCMYK to TBGRAPixel }
 operator := (const AValue: TStdCMYK): TBGRAPixel;
+{ Implicit conversion of a color from TStdCMYK to TFPColor }
 operator := (const AValue: TStdCMYK): TFPColor;
+{ Implicit conversion of a color from TStdCMYK to TStdRGBA }
 operator := (const AValue: TStdCMYK): TStdRGBA;
+{ Implicit conversion of a color from TStdCMYK to TAdobeRGBA }
 operator := (const AValue: TStdCMYK): TAdobeRGBA;
+{ Implicit conversion of a color from TStdCMYK to TStdHSLA }
 operator := (const AValue: TStdCMYK): TStdHSLA;
+{ Implicit conversion of a color from TStdCMYK to TStdHSVA }
 operator := (const AValue: TStdCMYK): TStdHSVA;
+{ Implicit conversion of a color from TStdCMYK to TByteMask }
 operator := (const AValue: TStdCMYK): TByteMask;
+{ Implicit conversion of a color from TStdCMYK to TExpandedPixel }
 operator := (const AValue: TStdCMYK): TExpandedPixel;
+{ Implicit conversion of a color from TStdCMYK to TLinearRGBA }
 operator := (const AValue: TStdCMYK): TLinearRGBA;
+{ Implicit conversion of a color from TStdCMYK to THSLAPixel }
 operator := (const AValue: TStdCMYK): THSLAPixel;
+{ Implicit conversion of a color from TStdCMYK to TGSBAPixel }
 operator := (const AValue: TStdCMYK): TGSBAPixel;
+{ Implicit conversion of a color from TStdCMYK to TYCbCr601 }
 operator := (const AValue: TStdCMYK): TYCbCr601;
+{ Implicit conversion of a color from TStdCMYK to TYCbCr601JPEG }
 operator := (const AValue: TStdCMYK): TYCbCr601JPEG;
+{ Implicit conversion of a color from TStdCMYK to TYCbCr709 }
 operator := (const AValue: TStdCMYK): TYCbCr709;
+{ Implicit conversion of a color from TStdCMYK to TYCbCr709JPEG }
 operator := (const AValue: TStdCMYK): TYCbCr709JPEG;
+{ Implicit conversion of a color from TStdCMYK to TXYZA }
 operator := (const AValue: TStdCMYK): TXYZA;
+{ Implicit conversion of a color from TStdCMYK to TWordXYZA }
 operator := (const AValue: TStdCMYK): TWordXYZA;
+{ Implicit conversion of a color from TStdCMYK to TLabA }
 operator := (const AValue: TStdCMYK): TLabA;
+{ Implicit conversion of a color from TStdCMYK to TLChA }
 operator := (const AValue: TStdCMYK): TLChA;
+{ Implicit conversion of a color from TByteMask to TColor }
 operator := (const AValue: TByteMask): TColor;
+{ Implicit conversion of a color from TByteMask to TBGRAPixel }
 operator := (const AValue: TByteMask): TBGRAPixel;
+{ Implicit conversion of a color from TByteMask to TFPColor }
 operator := (const AValue: TByteMask): TFPColor;
+{ Implicit conversion of a color from TByteMask to TStdRGBA }
 operator := (const AValue: TByteMask): TStdRGBA;
+{ Implicit conversion of a color from TByteMask to TAdobeRGBA }
 operator := (const AValue: TByteMask): TAdobeRGBA;
+{ Implicit conversion of a color from TByteMask to TStdHSLA }
 operator := (const AValue: TByteMask): TStdHSLA;
+{ Implicit conversion of a color from TByteMask to TStdHSVA }
 operator := (const AValue: TByteMask): TStdHSVA;
+{ Implicit conversion of a color from TByteMask to TStdCMYK }
 operator := (const AValue: TByteMask): TStdCMYK;
+{ Implicit conversion of a color from TByteMask to TExpandedPixel }
 operator := (const AValue: TByteMask): TExpandedPixel;
+{ Implicit conversion of a color from TByteMask to TLinearRGBA }
 operator := (const AValue: TByteMask): TLinearRGBA;
+{ Implicit conversion of a color from TByteMask to THSLAPixel }
 operator := (const AValue: TByteMask): THSLAPixel;
+{ Implicit conversion of a color from TByteMask to TGSBAPixel }
 operator := (const AValue: TByteMask): TGSBAPixel;
+{ Implicit conversion of a color from TByteMask to TYCbCr601 }
 operator := (const AValue: TByteMask): TYCbCr601;
+{ Implicit conversion of a color from TByteMask to TYCbCr601JPEG }
 operator := (const AValue: TByteMask): TYCbCr601JPEG;
+{ Implicit conversion of a color from TByteMask to TYCbCr709 }
 operator := (const AValue: TByteMask): TYCbCr709;
+{ Implicit conversion of a color from TByteMask to TYCbCr709JPEG }
 operator := (const AValue: TByteMask): TYCbCr709JPEG;
+{ Implicit conversion of a color from TByteMask to TXYZA }
 operator := (const AValue: TByteMask): TXYZA;
+{ Implicit conversion of a color from TByteMask to TWordXYZA }
 operator := (const AValue: TByteMask): TWordXYZA;
+{ Implicit conversion of a color from TByteMask to TLabA }
 operator := (const AValue: TByteMask): TLabA;
+{ Implicit conversion of a color from TByteMask to TLChA }
 operator := (const AValue: TByteMask): TLChA;
+{ Implicit conversion of a color from TExpandedPixel to TStdRGBA }
 operator := (const AValue: TExpandedPixel): TStdRGBA;
+{ Implicit conversion of a color from TExpandedPixel to TAdobeRGBA }
 operator := (const AValue: TExpandedPixel): TAdobeRGBA;
+{ Implicit conversion of a color from TExpandedPixel to TStdHSLA }
 operator := (const AValue: TExpandedPixel): TStdHSLA;
+{ Implicit conversion of a color from TExpandedPixel to TStdHSVA }
 operator := (const AValue: TExpandedPixel): TStdHSVA;
+{ Implicit conversion of a color from TExpandedPixel to TStdCMYK }
 operator := (const AValue: TExpandedPixel): TStdCMYK;
+{ Implicit conversion of a color from TExpandedPixel to TByteMask }
 operator := (const AValue: TExpandedPixel): TByteMask;
+{ Implicit conversion of a color from TExpandedPixel to TLinearRGBA }
 operator := (const AValue: TExpandedPixel): TLinearRGBA;
+{ Implicit conversion of a color from TExpandedPixel to TYCbCr601 }
 operator := (const AValue: TExpandedPixel): TYCbCr601;
+{ Implicit conversion of a color from TExpandedPixel to TYCbCr601JPEG }
 operator := (const AValue: TExpandedPixel): TYCbCr601JPEG;
+{ Implicit conversion of a color from TExpandedPixel to TYCbCr709 }
 operator := (const AValue: TExpandedPixel): TYCbCr709;
+{ Implicit conversion of a color from TExpandedPixel to TYCbCr709JPEG }
 operator := (const AValue: TExpandedPixel): TYCbCr709JPEG;
+{ Implicit conversion of a color from TExpandedPixel to TXYZA }
 operator := (const AValue: TExpandedPixel): TXYZA;
+{ Implicit conversion of a color from TExpandedPixel to TWordXYZA }
 operator := (const AValue: TExpandedPixel): TWordXYZA;
+{ Implicit conversion of a color from TExpandedPixel to TLabA }
 operator := (const AValue: TExpandedPixel): TLabA;
+{ Implicit conversion of a color from TExpandedPixel to TLChA }
 operator := (const AValue: TExpandedPixel): TLChA;
+{ Implicit conversion of a color from TLinearRGBA to TColor }
 operator := (const AValue: TLinearRGBA): TColor;
+{ Implicit conversion of a color from TLinearRGBA to TBGRAPixel }
 operator := (const AValue: TLinearRGBA): TBGRAPixel;
+{ Implicit conversion of a color from TLinearRGBA to TFPColor }
 operator := (const AValue: TLinearRGBA): TFPColor;
+{ Implicit conversion of a color from TLinearRGBA to TStdRGBA }
 operator := (const AValue: TLinearRGBA): TStdRGBA;
+{ Implicit conversion of a color from TLinearRGBA to TAdobeRGBA }
 operator := (const AValue: TLinearRGBA): TAdobeRGBA;
+{ Implicit conversion of a color from TLinearRGBA to TStdHSLA }
 operator := (const AValue: TLinearRGBA): TStdHSLA;
+{ Implicit conversion of a color from TLinearRGBA to TStdHSVA }
 operator := (const AValue: TLinearRGBA): TStdHSVA;
+{ Implicit conversion of a color from TLinearRGBA to TStdCMYK }
 operator := (const AValue: TLinearRGBA): TStdCMYK;
+{ Implicit conversion of a color from TLinearRGBA to TByteMask }
 operator := (const AValue: TLinearRGBA): TByteMask;
+{ Implicit conversion of a color from TLinearRGBA to TExpandedPixel }
 operator := (const AValue: TLinearRGBA): TExpandedPixel;
+{ Implicit conversion of a color from TLinearRGBA to THSLAPixel }
 operator := (const AValue: TLinearRGBA): THSLAPixel;
+{ Implicit conversion of a color from TLinearRGBA to TGSBAPixel }
 operator := (const AValue: TLinearRGBA): TGSBAPixel;
+{ Implicit conversion of a color from TLinearRGBA to TYCbCr601 }
 operator := (const AValue: TLinearRGBA): TYCbCr601;
+{ Implicit conversion of a color from TLinearRGBA to TYCbCr601JPEG }
 operator := (const AValue: TLinearRGBA): TYCbCr601JPEG;
+{ Implicit conversion of a color from TLinearRGBA to TYCbCr709 }
 operator := (const AValue: TLinearRGBA): TYCbCr709;
+{ Implicit conversion of a color from TLinearRGBA to TYCbCr709JPEG }
 operator := (const AValue: TLinearRGBA): TYCbCr709JPEG;
+{ Implicit conversion of a color from TLinearRGBA to TXYZA }
 operator := (const AValue: TLinearRGBA): TXYZA;
+{ Implicit conversion of a color from TLinearRGBA to TWordXYZA }
 operator := (const AValue: TLinearRGBA): TWordXYZA;
+{ Implicit conversion of a color from TLinearRGBA to TLabA }
 operator := (const AValue: TLinearRGBA): TLabA;
+{ Implicit conversion of a color from TLinearRGBA to TLChA }
 operator := (const AValue: TLinearRGBA): TLChA;
+{ Implicit conversion of a color from THSLAPixel to TStdRGBA }
 operator := (const AValue: THSLAPixel): TStdRGBA;
+{ Implicit conversion of a color from THSLAPixel to TAdobeRGBA }
 operator := (const AValue: THSLAPixel): TAdobeRGBA;
+{ Implicit conversion of a color from THSLAPixel to TStdHSLA }
 operator := (const AValue: THSLAPixel): TStdHSLA;
+{ Implicit conversion of a color from THSLAPixel to TStdHSVA }
 operator := (const AValue: THSLAPixel): TStdHSVA;
+{ Implicit conversion of a color from THSLAPixel to TStdCMYK }
 operator := (const AValue: THSLAPixel): TStdCMYK;
+{ Implicit conversion of a color from THSLAPixel to TByteMask }
 operator := (const AValue: THSLAPixel): TByteMask;
+{ Implicit conversion of a color from THSLAPixel to TLinearRGBA }
 operator := (const AValue: THSLAPixel): TLinearRGBA;
+{ Implicit conversion of a color from THSLAPixel to TYCbCr601 }
 operator := (const AValue: THSLAPixel): TYCbCr601;
+{ Implicit conversion of a color from THSLAPixel to TYCbCr601JPEG }
 operator := (const AValue: THSLAPixel): TYCbCr601JPEG;
+{ Implicit conversion of a color from THSLAPixel to TYCbCr709 }
 operator := (const AValue: THSLAPixel): TYCbCr709;
+{ Implicit conversion of a color from THSLAPixel to TYCbCr709JPEG }
 operator := (const AValue: THSLAPixel): TYCbCr709JPEG;
+{ Implicit conversion of a color from THSLAPixel to TXYZA }
 operator := (const AValue: THSLAPixel): TXYZA;
+{ Implicit conversion of a color from THSLAPixel to TWordXYZA }
 operator := (const AValue: THSLAPixel): TWordXYZA;
+{ Implicit conversion of a color from THSLAPixel to TLabA }
 operator := (const AValue: THSLAPixel): TLabA;
+{ Implicit conversion of a color from THSLAPixel to TLChA }
 operator := (const AValue: THSLAPixel): TLChA;
+{ Implicit conversion of a color from TGSBAPixel to TStdRGBA }
 operator := (const AValue: TGSBAPixel): TStdRGBA;
+{ Implicit conversion of a color from TGSBAPixel to TAdobeRGBA }
 operator := (const AValue: TGSBAPixel): TAdobeRGBA;
+{ Implicit conversion of a color from TGSBAPixel to TStdHSLA }
 operator := (const AValue: TGSBAPixel): TStdHSLA;
+{ Implicit conversion of a color from TGSBAPixel to TStdHSVA }
 operator := (const AValue: TGSBAPixel): TStdHSVA;
+{ Implicit conversion of a color from TGSBAPixel to TStdCMYK }
 operator := (const AValue: TGSBAPixel): TStdCMYK;
+{ Implicit conversion of a color from TGSBAPixel to TByteMask }
 operator := (const AValue: TGSBAPixel): TByteMask;
+{ Implicit conversion of a color from TGSBAPixel to TLinearRGBA }
 operator := (const AValue: TGSBAPixel): TLinearRGBA;
+{ Implicit conversion of a color from TGSBAPixel to TYCbCr601 }
 operator := (const AValue: TGSBAPixel): TYCbCr601;
+{ Implicit conversion of a color from TGSBAPixel to TYCbCr601JPEG }
 operator := (const AValue: TGSBAPixel): TYCbCr601JPEG;
+{ Implicit conversion of a color from TGSBAPixel to TYCbCr709 }
 operator := (const AValue: TGSBAPixel): TYCbCr709;
+{ Implicit conversion of a color from TGSBAPixel to TYCbCr709JPEG }
 operator := (const AValue: TGSBAPixel): TYCbCr709JPEG;
+{ Implicit conversion of a color from TGSBAPixel to TXYZA }
 operator := (const AValue: TGSBAPixel): TXYZA;
+{ Implicit conversion of a color from TGSBAPixel to TWordXYZA }
 operator := (const AValue: TGSBAPixel): TWordXYZA;
+{ Implicit conversion of a color from TGSBAPixel to TLabA }
 operator := (const AValue: TGSBAPixel): TLabA;
+{ Implicit conversion of a color from TGSBAPixel to TLChA }
 operator := (const AValue: TGSBAPixel): TLChA;
+{ Implicit conversion of a color from TYCbCr601 to TColor }
 operator := (const AValue: TYCbCr601): TColor;
+{ Implicit conversion of a color from TYCbCr601 to TBGRAPixel }
 operator := (const AValue: TYCbCr601): TBGRAPixel;
+{ Implicit conversion of a color from TYCbCr601 to TFPColor }
 operator := (const AValue: TYCbCr601): TFPColor;
+{ Implicit conversion of a color from TYCbCr601 to TStdRGBA }
 operator := (const AValue: TYCbCr601): TStdRGBA;
+{ Implicit conversion of a color from TYCbCr601 to TAdobeRGBA }
 operator := (const AValue: TYCbCr601): TAdobeRGBA;
+{ Implicit conversion of a color from TYCbCr601 to TStdHSLA }
 operator := (const AValue: TYCbCr601): TStdHSLA;
+{ Implicit conversion of a color from TYCbCr601 to TStdHSVA }
 operator := (const AValue: TYCbCr601): TStdHSVA;
+{ Implicit conversion of a color from TYCbCr601 to TStdCMYK }
 operator := (const AValue: TYCbCr601): TStdCMYK;
+{ Implicit conversion of a color from TYCbCr601 to TByteMask }
 operator := (const AValue: TYCbCr601): TByteMask;
+{ Implicit conversion of a color from TYCbCr601 to TExpandedPixel }
 operator := (const AValue: TYCbCr601): TExpandedPixel;
+{ Implicit conversion of a color from TYCbCr601 to TLinearRGBA }
 operator := (const AValue: TYCbCr601): TLinearRGBA;
+{ Implicit conversion of a color from TYCbCr601 to THSLAPixel }
 operator := (const AValue: TYCbCr601): THSLAPixel;
+{ Implicit conversion of a color from TYCbCr601 to TGSBAPixel }
 operator := (const AValue: TYCbCr601): TGSBAPixel;
+{ Implicit conversion of a color from TYCbCr601 to TYCbCr601JPEG }
 operator := (const AValue: TYCbCr601): TYCbCr601JPEG;
+{ Implicit conversion of a color from TYCbCr601 to TYCbCr709 }
 operator := (const AValue: TYCbCr601): TYCbCr709;
+{ Implicit conversion of a color from TYCbCr601 to TYCbCr709JPEG }
 operator := (const AValue: TYCbCr601): TYCbCr709JPEG;
+{ Implicit conversion of a color from TYCbCr601 to TXYZA }
 operator := (const AValue: TYCbCr601): TXYZA;
+{ Implicit conversion of a color from TYCbCr601 to TWordXYZA }
 operator := (const AValue: TYCbCr601): TWordXYZA;
+{ Implicit conversion of a color from TYCbCr601 to TLabA }
 operator := (const AValue: TYCbCr601): TLabA;
+{ Implicit conversion of a color from TYCbCr601 to TLChA }
 operator := (const AValue: TYCbCr601): TLChA;
+{ Implicit conversion of a color from TYCbCr601JPEG to TColor }
 operator := (const AValue: TYCbCr601JPEG): TColor;
+{ Implicit conversion of a color from TYCbCr601JPEG to TBGRAPixel }
 operator := (const AValue: TYCbCr601JPEG): TBGRAPixel;
+{ Implicit conversion of a color from TYCbCr601JPEG to TFPColor }
 operator := (const AValue: TYCbCr601JPEG): TFPColor;
+{ Implicit conversion of a color from TYCbCr601JPEG to TStdRGBA }
 operator := (const AValue: TYCbCr601JPEG): TStdRGBA;
+{ Implicit conversion of a color from TYCbCr601JPEG to TAdobeRGBA }
 operator := (const AValue: TYCbCr601JPEG): TAdobeRGBA;
+{ Implicit conversion of a color from TYCbCr601JPEG to TStdHSLA }
 operator := (const AValue: TYCbCr601JPEG): TStdHSLA;
+{ Implicit conversion of a color from TYCbCr601JPEG to TStdHSVA }
 operator := (const AValue: TYCbCr601JPEG): TStdHSVA;
+{ Implicit conversion of a color from TYCbCr601JPEG to TStdCMYK }
 operator := (const AValue: TYCbCr601JPEG): TStdCMYK;
+{ Implicit conversion of a color from TYCbCr601JPEG to TByteMask }
 operator := (const AValue: TYCbCr601JPEG): TByteMask;
+{ Implicit conversion of a color from TYCbCr601JPEG to TExpandedPixel }
 operator := (const AValue: TYCbCr601JPEG): TExpandedPixel;
+{ Implicit conversion of a color from TYCbCr601JPEG to TLinearRGBA }
 operator := (const AValue: TYCbCr601JPEG): TLinearRGBA;
+{ Implicit conversion of a color from TYCbCr601JPEG to THSLAPixel }
 operator := (const AValue: TYCbCr601JPEG): THSLAPixel;
+{ Implicit conversion of a color from TYCbCr601JPEG to TGSBAPixel }
 operator := (const AValue: TYCbCr601JPEG): TGSBAPixel;
+{ Implicit conversion of a color from TYCbCr601JPEG to TYCbCr601 }
 operator := (const AValue: TYCbCr601JPEG): TYCbCr601;
+{ Implicit conversion of a color from TYCbCr601JPEG to TYCbCr709 }
 operator := (const AValue: TYCbCr601JPEG): TYCbCr709;
+{ Implicit conversion of a color from TYCbCr601JPEG to TYCbCr709JPEG }
 operator := (const AValue: TYCbCr601JPEG): TYCbCr709JPEG;
+{ Implicit conversion of a color from TYCbCr601JPEG to TXYZA }
 operator := (const AValue: TYCbCr601JPEG): TXYZA;
+{ Implicit conversion of a color from TYCbCr601JPEG to TWordXYZA }
 operator := (const AValue: TYCbCr601JPEG): TWordXYZA;
+{ Implicit conversion of a color from TYCbCr601JPEG to TLabA }
 operator := (const AValue: TYCbCr601JPEG): TLabA;
+{ Implicit conversion of a color from TYCbCr601JPEG to TLChA }
 operator := (const AValue: TYCbCr601JPEG): TLChA;
+{ Implicit conversion of a color from TYCbCr709 to TColor }
 operator := (const AValue: TYCbCr709): TColor;
+{ Implicit conversion of a color from TYCbCr709 to TBGRAPixel }
 operator := (const AValue: TYCbCr709): TBGRAPixel;
+{ Implicit conversion of a color from TYCbCr709 to TFPColor }
 operator := (const AValue: TYCbCr709): TFPColor;
+{ Implicit conversion of a color from TYCbCr709 to TStdRGBA }
 operator := (const AValue: TYCbCr709): TStdRGBA;
+{ Implicit conversion of a color from TYCbCr709 to TAdobeRGBA }
 operator := (const AValue: TYCbCr709): TAdobeRGBA;
+{ Implicit conversion of a color from TYCbCr709 to TStdHSLA }
 operator := (const AValue: TYCbCr709): TStdHSLA;
+{ Implicit conversion of a color from TYCbCr709 to TStdHSVA }
 operator := (const AValue: TYCbCr709): TStdHSVA;
+{ Implicit conversion of a color from TYCbCr709 to TStdCMYK }
 operator := (const AValue: TYCbCr709): TStdCMYK;
+{ Implicit conversion of a color from TYCbCr709 to TByteMask }
 operator := (const AValue: TYCbCr709): TByteMask;
+{ Implicit conversion of a color from TYCbCr709 to TExpandedPixel }
 operator := (const AValue: TYCbCr709): TExpandedPixel;
+{ Implicit conversion of a color from TYCbCr709 to TLinearRGBA }
 operator := (const AValue: TYCbCr709): TLinearRGBA;
+{ Implicit conversion of a color from TYCbCr709 to THSLAPixel }
 operator := (const AValue: TYCbCr709): THSLAPixel;
+{ Implicit conversion of a color from TYCbCr709 to TGSBAPixel }
 operator := (const AValue: TYCbCr709): TGSBAPixel;
+{ Implicit conversion of a color from TYCbCr709 to TYCbCr601 }
 operator := (const AValue: TYCbCr709): TYCbCr601;
+{ Implicit conversion of a color from TYCbCr709 to TYCbCr601JPEG }
 operator := (const AValue: TYCbCr709): TYCbCr601JPEG;
+{ Implicit conversion of a color from TYCbCr709 to TYCbCr709JPEG }
 operator := (const AValue: TYCbCr709): TYCbCr709JPEG;
+{ Implicit conversion of a color from TYCbCr709 to TXYZA }
 operator := (const AValue: TYCbCr709): TXYZA;
+{ Implicit conversion of a color from TYCbCr709 to TWordXYZA }
 operator := (const AValue: TYCbCr709): TWordXYZA;
+{ Implicit conversion of a color from TYCbCr709 to TLabA }
 operator := (const AValue: TYCbCr709): TLabA;
+{ Implicit conversion of a color from TYCbCr709 to TLChA }
 operator := (const AValue: TYCbCr709): TLChA;
+{ Implicit conversion of a color from TYCbCr709JPEG to TColor }
 operator := (const AValue: TYCbCr709JPEG): TColor;
+{ Implicit conversion of a color from TYCbCr709JPEG to TBGRAPixel }
 operator := (const AValue: TYCbCr709JPEG): TBGRAPixel;
+{ Implicit conversion of a color from TYCbCr709JPEG to TFPColor }
 operator := (const AValue: TYCbCr709JPEG): TFPColor;
+{ Implicit conversion of a color from TYCbCr709JPEG to TStdRGBA }
 operator := (const AValue: TYCbCr709JPEG): TStdRGBA;
+{ Implicit conversion of a color from TYCbCr709JPEG to TAdobeRGBA }
 operator := (const AValue: TYCbCr709JPEG): TAdobeRGBA;
+{ Implicit conversion of a color from TYCbCr709JPEG to TStdHSLA }
 operator := (const AValue: TYCbCr709JPEG): TStdHSLA;
+{ Implicit conversion of a color from TYCbCr709JPEG to TStdHSVA }
 operator := (const AValue: TYCbCr709JPEG): TStdHSVA;
+{ Implicit conversion of a color from TYCbCr709JPEG to TStdCMYK }
 operator := (const AValue: TYCbCr709JPEG): TStdCMYK;
+{ Implicit conversion of a color from TYCbCr709JPEG to TByteMask }
 operator := (const AValue: TYCbCr709JPEG): TByteMask;
+{ Implicit conversion of a color from TYCbCr709JPEG to TExpandedPixel }
 operator := (const AValue: TYCbCr709JPEG): TExpandedPixel;
+{ Implicit conversion of a color from TYCbCr709JPEG to TLinearRGBA }
 operator := (const AValue: TYCbCr709JPEG): TLinearRGBA;
+{ Implicit conversion of a color from TYCbCr709JPEG to THSLAPixel }
 operator := (const AValue: TYCbCr709JPEG): THSLAPixel;
+{ Implicit conversion of a color from TYCbCr709JPEG to TGSBAPixel }
 operator := (const AValue: TYCbCr709JPEG): TGSBAPixel;
+{ Implicit conversion of a color from TYCbCr709JPEG to TYCbCr601 }
 operator := (const AValue: TYCbCr709JPEG): TYCbCr601;
+{ Implicit conversion of a color from TYCbCr709JPEG to TYCbCr601JPEG }
 operator := (const AValue: TYCbCr709JPEG): TYCbCr601JPEG;
+{ Implicit conversion of a color from TYCbCr709JPEG to TYCbCr709 }
 operator := (const AValue: TYCbCr709JPEG): TYCbCr709;
+{ Implicit conversion of a color from TYCbCr709JPEG to TXYZA }
 operator := (const AValue: TYCbCr709JPEG): TXYZA;
+{ Implicit conversion of a color from TYCbCr709JPEG to TWordXYZA }
 operator := (const AValue: TYCbCr709JPEG): TWordXYZA;
+{ Implicit conversion of a color from TYCbCr709JPEG to TLabA }
 operator := (const AValue: TYCbCr709JPEG): TLabA;
+{ Implicit conversion of a color from TYCbCr709JPEG to TLChA }
 operator := (const AValue: TYCbCr709JPEG): TLChA;
+{ Implicit conversion of a color from TXYZA to TColor }
 operator := (const AValue: TXYZA): TColor;
+{ Implicit conversion of a color from TXYZA to TBGRAPixel }
 operator := (const AValue: TXYZA): TBGRAPixel;
+{ Implicit conversion of a color from TXYZA to TFPColor }
 operator := (const AValue: TXYZA): TFPColor;
+{ Implicit conversion of a color from TXYZA to TStdRGBA }
 operator := (const AValue: TXYZA): TStdRGBA;
+{ Implicit conversion of a color from TXYZA to TAdobeRGBA }
 operator := (const AValue: TXYZA): TAdobeRGBA;
+{ Implicit conversion of a color from TXYZA to TStdHSLA }
 operator := (const AValue: TXYZA): TStdHSLA;
+{ Implicit conversion of a color from TXYZA to TStdHSVA }
 operator := (const AValue: TXYZA): TStdHSVA;
+{ Implicit conversion of a color from TXYZA to TStdCMYK }
 operator := (const AValue: TXYZA): TStdCMYK;
+{ Implicit conversion of a color from TXYZA to TByteMask }
 operator := (const AValue: TXYZA): TByteMask;
+{ Implicit conversion of a color from TXYZA to TExpandedPixel }
 operator := (const AValue: TXYZA): TExpandedPixel;
+{ Implicit conversion of a color from TXYZA to TLinearRGBA }
 operator := (const AValue: TXYZA): TLinearRGBA;
+{ Implicit conversion of a color from TXYZA to THSLAPixel }
 operator := (const AValue: TXYZA): THSLAPixel;
+{ Implicit conversion of a color from TXYZA to TGSBAPixel }
 operator := (const AValue: TXYZA): TGSBAPixel;
+{ Implicit conversion of a color from TXYZA to TYCbCr601 }
 operator := (const AValue: TXYZA): TYCbCr601;
+{ Implicit conversion of a color from TXYZA to TYCbCr601JPEG }
 operator := (const AValue: TXYZA): TYCbCr601JPEG;
+{ Implicit conversion of a color from TXYZA to TYCbCr709 }
 operator := (const AValue: TXYZA): TYCbCr709;
+{ Implicit conversion of a color from TXYZA to TYCbCr709JPEG }
 operator := (const AValue: TXYZA): TYCbCr709JPEG;
+{ Implicit conversion of a color from TXYZA to TWordXYZA }
 operator := (const AValue: TXYZA): TWordXYZA;
+{ Implicit conversion of a color from TXYZA to TLabA }
 operator := (const AValue: TXYZA): TLabA;
+{ Implicit conversion of a color from TXYZA to TLChA }
 operator := (const AValue: TXYZA): TLChA;
+{ Implicit conversion of a color from TWordXYZA to TColor }
 operator := (const AValue: TWordXYZA): TColor;
+{ Implicit conversion of a color from TWordXYZA to TBGRAPixel }
 operator := (const AValue: TWordXYZA): TBGRAPixel;
+{ Implicit conversion of a color from TWordXYZA to TFPColor }
 operator := (const AValue: TWordXYZA): TFPColor;
+{ Implicit conversion of a color from TWordXYZA to TStdRGBA }
 operator := (const AValue: TWordXYZA): TStdRGBA;
+{ Implicit conversion of a color from TWordXYZA to TAdobeRGBA }
 operator := (const AValue: TWordXYZA): TAdobeRGBA;
+{ Implicit conversion of a color from TWordXYZA to TStdHSLA }
 operator := (const AValue: TWordXYZA): TStdHSLA;
+{ Implicit conversion of a color from TWordXYZA to TStdHSVA }
 operator := (const AValue: TWordXYZA): TStdHSVA;
+{ Implicit conversion of a color from TWordXYZA to TStdCMYK }
 operator := (const AValue: TWordXYZA): TStdCMYK;
+{ Implicit conversion of a color from TWordXYZA to TByteMask }
 operator := (const AValue: TWordXYZA): TByteMask;
+{ Implicit conversion of a color from TWordXYZA to TExpandedPixel }
 operator := (const AValue: TWordXYZA): TExpandedPixel;
+{ Implicit conversion of a color from TWordXYZA to TLinearRGBA }
 operator := (const AValue: TWordXYZA): TLinearRGBA;
+{ Implicit conversion of a color from TWordXYZA to THSLAPixel }
 operator := (const AValue: TWordXYZA): THSLAPixel;
+{ Implicit conversion of a color from TWordXYZA to TGSBAPixel }
 operator := (const AValue: TWordXYZA): TGSBAPixel;
+{ Implicit conversion of a color from TWordXYZA to TYCbCr601 }
 operator := (const AValue: TWordXYZA): TYCbCr601;
+{ Implicit conversion of a color from TWordXYZA to TYCbCr601JPEG }
 operator := (const AValue: TWordXYZA): TYCbCr601JPEG;
+{ Implicit conversion of a color from TWordXYZA to TYCbCr709 }
 operator := (const AValue: TWordXYZA): TYCbCr709;
+{ Implicit conversion of a color from TWordXYZA to TYCbCr709JPEG }
 operator := (const AValue: TWordXYZA): TYCbCr709JPEG;
+{ Implicit conversion of a color from TWordXYZA to TXYZA }
 operator := (const AValue: TWordXYZA): TXYZA;
+{ Implicit conversion of a color from TWordXYZA to TLabA }
 operator := (const AValue: TWordXYZA): TLabA;
+{ Implicit conversion of a color from TWordXYZA to TLChA }
 operator := (const AValue: TWordXYZA): TLChA;
+{ Implicit conversion of a color from TLabA to TColor }
 operator := (const AValue: TLabA): TColor;
+{ Implicit conversion of a color from TLabA to TBGRAPixel }
 operator := (const AValue: TLabA): TBGRAPixel;
+{ Implicit conversion of a color from TLabA to TFPColor }
 operator := (const AValue: TLabA): TFPColor;
+{ Implicit conversion of a color from TLabA to TStdRGBA }
 operator := (const AValue: TLabA): TStdRGBA;
+{ Implicit conversion of a color from TLabA to TAdobeRGBA }
 operator := (const AValue: TLabA): TAdobeRGBA;
+{ Implicit conversion of a color from TLabA to TStdHSLA }
 operator := (const AValue: TLabA): TStdHSLA;
+{ Implicit conversion of a color from TLabA to TStdHSVA }
 operator := (const AValue: TLabA): TStdHSVA;
+{ Implicit conversion of a color from TLabA to TStdCMYK }
 operator := (const AValue: TLabA): TStdCMYK;
+{ Implicit conversion of a color from TLabA to TByteMask }
 operator := (const AValue: TLabA): TByteMask;
+{ Implicit conversion of a color from TLabA to TExpandedPixel }
 operator := (const AValue: TLabA): TExpandedPixel;
+{ Implicit conversion of a color from TLabA to TLinearRGBA }
 operator := (const AValue: TLabA): TLinearRGBA;
+{ Implicit conversion of a color from TLabA to THSLAPixel }
 operator := (const AValue: TLabA): THSLAPixel;
+{ Implicit conversion of a color from TLabA to TGSBAPixel }
 operator := (const AValue: TLabA): TGSBAPixel;
+{ Implicit conversion of a color from TLabA to TYCbCr601 }
 operator := (const AValue: TLabA): TYCbCr601;
+{ Implicit conversion of a color from TLabA to TYCbCr601JPEG }
 operator := (const AValue: TLabA): TYCbCr601JPEG;
+{ Implicit conversion of a color from TLabA to TYCbCr709 }
 operator := (const AValue: TLabA): TYCbCr709;
+{ Implicit conversion of a color from TLabA to TYCbCr709JPEG }
 operator := (const AValue: TLabA): TYCbCr709JPEG;
+{ Implicit conversion of a color from TLabA to TXYZA }
 operator := (const AValue: TLabA): TXYZA;
+{ Implicit conversion of a color from TLabA to TWordXYZA }
 operator := (const AValue: TLabA): TWordXYZA;
+{ Implicit conversion of a color from TLabA to TLChA }
 operator := (const AValue: TLabA): TLChA;
+{ Implicit conversion of a color from TLChA to TColor }
 operator := (const AValue: TLChA): TColor;
+{ Implicit conversion of a color from TLChA to TBGRAPixel }
 operator := (const AValue: TLChA): TBGRAPixel;
+{ Implicit conversion of a color from TLChA to TFPColor }
 operator := (const AValue: TLChA): TFPColor;
+{ Implicit conversion of a color from TLChA to TStdRGBA }
 operator := (const AValue: TLChA): TStdRGBA;
+{ Implicit conversion of a color from TLChA to TAdobeRGBA }
 operator := (const AValue: TLChA): TAdobeRGBA;
+{ Implicit conversion of a color from TLChA to TStdHSLA }
 operator := (const AValue: TLChA): TStdHSLA;
+{ Implicit conversion of a color from TLChA to TStdHSVA }
 operator := (const AValue: TLChA): TStdHSVA;
+{ Implicit conversion of a color from TLChA to TStdCMYK }
 operator := (const AValue: TLChA): TStdCMYK;
+{ Implicit conversion of a color from TLChA to TByteMask }
 operator := (const AValue: TLChA): TByteMask;
+{ Implicit conversion of a color from TLChA to TExpandedPixel }
 operator := (const AValue: TLChA): TExpandedPixel;
+{ Implicit conversion of a color from TLChA to TLinearRGBA }
 operator := (const AValue: TLChA): TLinearRGBA;
+{ Implicit conversion of a color from TLChA to THSLAPixel }
 operator := (const AValue: TLChA): THSLAPixel;
+{ Implicit conversion of a color from TLChA to TGSBAPixel }
 operator := (const AValue: TLChA): TGSBAPixel;
+{ Implicit conversion of a color from TLChA to TYCbCr601 }
 operator := (const AValue: TLChA): TYCbCr601;
+{ Implicit conversion of a color from TLChA to TYCbCr601JPEG }
 operator := (const AValue: TLChA): TYCbCr601JPEG;
+{ Implicit conversion of a color from TLChA to TYCbCr709 }
 operator := (const AValue: TLChA): TYCbCr709;
+{ Implicit conversion of a color from TLChA to TYCbCr709JPEG }
 operator := (const AValue: TLChA): TYCbCr709JPEG;
+{ Implicit conversion of a color from TLChA to TXYZA }
 operator := (const AValue: TLChA): TXYZA;
+{ Implicit conversion of a color from TLChA to TWordXYZA }
 operator := (const AValue: TLChA): TWordXYZA;
+{ Implicit conversion of a color from TLChA to TLabA }
 operator := (const AValue: TLChA): TLabA;
 {$ENDIF}
 {$IFDEF INCLUDE_IMPLEMENTATION}

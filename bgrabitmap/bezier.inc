@@ -80,32 +80,26 @@ type
   {** Array of single-precision floating point values }
   ArrayOfSingle = array of single;
 
-  {* Quasi-standard rational quadratic Bezier curve, defined by three points and a number:
-     - _p1_: starting point
-     - _c_: control point
-     - _p2_: ending point
-     - _weight_: weight for the control point
-
-    The curve is defined with the function (t in [0; 1]):
-
-    - f: t --> ((1-t)^2 * _p1_ + 2 * t * (1-t) * _weight_ * _c_ + t^2*_p2_) / (1-t)^2 + 2 * t * (1-t) * _weight_ + t^2)
-
-    The curve is an arc of:
+  {* Quasi-standard rational quadratic Bezier curve. It has one control point _c_ with a weight.
+    To transform a rational quadratic Bezier curve with an affin transformation, you
+    only have to transform the three points and leave the weight as it is. }
+  TRationalQuadraticBezierCurve = object
+    {** Starting point }
+    p1: TPointF;
+    {** Control point }
+    c: TPointF;
+    {** End point }
+    p2 : TPointF;
+    {** Weight of control point. The curve is an arc of:
        - ellipse when _weight_ in ]-1; 1[
        - parabola when _weight_ = 1 (classical quadratic Bezier curve)
        - hyperbola when _weight_ > 1
 
-    A negative weight give the complementary curve for its positive counterpart.
-    So when _weight_ <= -1 the curve is discontinuous:
+       A negative weight give the complementary curve for its positive counterpart.
+       So when _weight_ <= -1 the curve is discontinuous:
       - infinite branches of parabola when _weight_ = -1
       - infinite branches of hyperbola and symetric hyperbola when _weight_ < -1
-
-    To transform a rational quadratic Bezier curve with an affin transformation, you
-    only have to transform the three points and leave the weight as it is. }
-  TRationalQuadraticBezierCurve = object
-    {** Starting, control and ending points }
-    p1, c, p2 : TPointF;
-    {** Weight of control point }
+       }
     weight : single;
   private
     {** Checks whether the curve is infinitely long }
@@ -115,15 +109,19 @@ type
     {** Computes the points relevant to compute bounds }
     function GetBoundingPositions(AIncludeFirstAndLast: boolean; ASorted: boolean): ArrayOfSingle;
   public
-    {** Compute a point at the specified time }
+    {** Compute a point at the specified time (_t_ in [0; 1]). The curve is defined by:
+
+        p = ((1-t)^2 * _p1_ + 2 * t * (1-t) * _weight_ * _c_ + t^2*_p2_) / (1-t)^2 + 2 * t * (1-t) * _weight_ + t^2) }
     function ComputePointAt(t: single): TPointF;
-    {** Compute the length }
+    {** Compute the length of the curve }
     function ComputeLength(AAcceptedDeviation: single = 0.1): single;
     {** Computes the points of the curve }
     function ToPoints(AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF; overload;
-    {** Computes the points of the curve by providing where the infinite curve can stop }
+    {** Computes the points of the curve by providing where the infinite curve can stop.
+
+        }
     function ToPoints(AInfiniteBounds: TRectF; AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF; overload;
-    {** Compute the rectangular bounds }
+    {** Compute the rectangular bounds of the curve }
     function GetBounds: TRectF;
     {** Split into two curves }
     procedure Split(out ALeft, ARight: TRationalQuadraticBezierCurve);

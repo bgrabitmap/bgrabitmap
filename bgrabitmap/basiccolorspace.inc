@@ -234,13 +234,13 @@ type
     procedure FromGSBAPixel(const AValue: THSLAPixel); overload;
   end;
 
-{** Assigns TExpandedPixel to a TColor }
+{** Implicit conversion of color from TExpandedPixel to TColor }
 operator := (const AValue: TExpandedPixel): TColor;
-{** Assigns TColor to a TExpandedPixel }
+{** Implicit conversion of color from TColor to TExpandedPixel }
 operator := (const AValue: TColor): TExpandedPixel;
-{** Assigns TExpandedPixel to a TBGRAPixel }
+{** Implicit conversion of color from TExpandedPixel to TBGRAPixel }
 Operator := (const Source: TExpandedPixel): TBGRAPixel;
-{** Assigns TBGRAPixel to a TExpandedPixel }
+{** Implicit conversion of color from TBGRAPixel to TExpandedPixel }
 Operator := (const Source: TBGRAPixel): TExpandedPixel;
 
 type
@@ -295,17 +295,17 @@ type
     procedure FromFPColor(AValue: TFPColor; AGammaExpansion: boolean=true);
   end;
 
-{** Assigns THSLAPixel to TBGRAPixel }
+{** Implicit conversion of color from THSLAPixel to TBGRAPixel }
 Operator := (const Source: THSLAPixel): TBGRAPixel;
-{** Assigns TBGRAPixel to THSLAPixel }
+{** Implicit conversion of color from TBGRAPixel to THSLAPixel }
 Operator := (const Source: TBGRAPixel): THSLAPixel;
-{** Assigns THSLAPixel to TExpandedPixel }
+{** Implicit conversion of color from THSLAPixel to TExpandedPixel }
 Operator := (const Source: THSLAPixel): TExpandedPixel;
-{** Assigns TExpandedPixel to THSLAPixel }
+{** Implicit conversion of color from TExpandedPixel to THSLAPixel }
 Operator := (const Source: TExpandedPixel): THSLAPixel;
-{** Assigns THSLAPixel to TColor }
+{** Implicit conversion of color from THSLAPixel to TColor }
 operator := (const AValue: TColor): THSLAPixel;
-{** Assigns TColor to THSLAPixel }
+{** Implicit conversion of color from TColor to THSLAPixel }
 operator := (const AValue: THSLAPixel): TColor;
 
 type
@@ -333,17 +333,17 @@ type
     procedure FromFPColor(AValue: TFPColor; AGammaExpansion: boolean=true);
   end;
 
-{** Assigns TGSBAPixel to TBGRAPixel }
+{** Implicit conversion of color from TGSBAPixel to TBGRAPixel }
 Operator := (const Source: TGSBAPixel): TBGRAPixel;
-{** Assigns TBGRAPixel to TGSBAPixel }
+{** Implicit conversion of color from TBGRAPixel to TGSBAPixel }
 Operator := (const Source: TBGRAPixel): TGSBAPixel;
-{** Assigns TGSBAPixel to TExpandedPixel }
+{** Implicit conversion of color from TGSBAPixel to TExpandedPixel }
 Operator := (const Source: TGSBAPixel): TExpandedPixel;
-{** Assigns TExpandedPixel to TGSBAPixel }
+{** Implicit conversion of color from TExpandedPixel to TGSBAPixel }
 Operator := (const Source: TExpandedPixel): TGSBAPixel;
-{** Assigns TColor to TGSBAPixel }
+{** Implicit conversion of color from TColor to TGSBAPixel }
 operator := (const AValue: TColor): TGSBAPixel;
-{** Assigns TGSBAPixel to TColor}
+{** Implicit conversion of color from TGSBAPixel to TColor }
 operator := (const AValue: TGSBAPixel): TColor;
 {** Assigns TGSBAPixel to THSLAPixel without conversion,
     just copying for backward compatibility (use ToHSLAPixel instead for conversion) }

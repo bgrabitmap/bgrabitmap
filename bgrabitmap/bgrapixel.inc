@@ -102,9 +102,13 @@ const
   {** Offset of the alpha channel }
   TBGRAPixel_AlphaByteOffset = 3;
   {$IFDEF ENDIAN_LITTLE}
+  { Bit shift for the red channel }
   TBGRAPixel_RedShift = TBGRAPixel_RedByteOffset*8;
+  { Bit shift for the green channel }
   TBGRAPixel_GreenShift = TBGRAPixel_GreenByteOffset*8;
+  { Bit shift for the blue channel }
   TBGRAPixel_BlueShift = TBGRAPixel_BlueByteOffset*8;
+  { Bit shift for the alpha channel }
   TBGRAPixel_AlphaShift = TBGRAPixel_AlphaByteOffset*8;
   {$ELSE}
   TBGRAPixel_RedShift = 24 - TBGRAPixel_RedByteOffset*8;

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-const //horseshoe shape of visible colors at 2° (illuminant E)
+
+const
+  { Horseshoe shape of visible colors at 2° (illuminant E) }
   SpectralLocus: array[0..94] of TSpectralLocusPoint =
  ((W:360; X:0.0001299; Y:0.000003917; Z:0.0006061),
   (W:365; X:0.0002321; Y:0.000006965; Z:0.001086),
@@ -97,7 +99,7 @@ const //horseshoe shape of visible colors at 2° (illuminant E)
   (W:825; X:1.776509E-06; Y:6.4153E-07; Z:0),
   (W:830; X:1.251141E-06; Y:4.5181E-07; Z:0));
 
-const //D65 illuminant
+const //D65 illumination per wavelength
   IlluminantSpectrumD65: array[0..94] of TIlluminantSpectrumPoint =
  ((W:360; Y:46.6383),
   (W:365; Y:49.3637),

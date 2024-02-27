@@ -908,6 +908,7 @@ var
       HelperName := ColorTypeName;
       typeDeclaration := ColorspaceInfo[Colorspace].Declaration;
       ColorTypeDefined[Colorspace] := true;
+      Add('{ Pointer to ' + ColorTypeName + ' color }');
       Add('P'+ColorspaceName+' = ^'+ColorTypeName+';');
       Add('{ ' + ColorspaceInfo[Colorspace].Colorspace + ' color ('
       + ChannelValueTypeFriendlyName[ColorspaceInfo[Colorspace].ValueType] + ' channels) }');
@@ -1090,6 +1091,7 @@ var
     begin
       h := 'operator := (const AValue: T' + ColorspaceInfo[c1].Name + '): T' + ColorspaceInfo[c2].Name + ';';
       ls := 'Result := ' + GetConversionFunctionRec(c1,c2,'AValue') + ';';
+      Add('{ Implicit conversion of a color from T' + ColorspaceInfo[c1].Name + ' to T' + ColorspaceInfo[c2].Name + ' }');
       Add(h);
       AddProcedureImp(h, ls);
     end;

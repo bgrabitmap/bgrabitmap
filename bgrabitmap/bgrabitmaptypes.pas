@@ -221,22 +221,34 @@ type
     TGraphicsBevelCut = GraphType.TGraphicsBevelCut;
 
   const
-    riloTopToBottom = GraphType.riloTopToBottom;   // The first line (line 0) is the top line
-    riloBottomToTop = GraphType.riloBottomToTop;   // The first line (line 0) is the bottom line
+    { The first line (line 0) is the top line }
+    riloTopToBottom = GraphType.riloTopToBottom;
+    { The first line (line 0) is the bottom line }
+    riloBottomToTop = GraphType.riloBottomToTop;
 
-    riboBitsInOrder = GraphType.riboBitsInOrder;   // Bit 0 is pixel 0
-    riboReversedBits = GraphType.riboReversedBits; // Bit 0 is pixel 7 (Bit 1 is pixel 6, ...)
+    { Bit 0 is pixel 0 }
+    riboBitsInOrder = GraphType.riboBitsInOrder;
+    { Bit 0 is pixel 7 (Bit 1 is pixel 6, ...) }
+    riboReversedBits = GraphType.riboReversedBits;
 
-    riboLSBFirst = GraphType.riboLSBFirst;         // least significant byte first (little endian)
-    riboMSBFirst = GraphType.riboMSBFirst;         // most significant byte first (big endian)
+    { least significant byte first (little endian) }
+    riboLSBFirst = GraphType.riboLSBFirst;
+    { most significant byte first (big endian) }
+    riboMSBFirst = GraphType.riboMSBFirst;
 
-    fsSurface = GraphType.fsSurface;  // fill till the color (it fills all except this color)
-    fsBorder = GraphType.fsBorder;    // fill this color (it fills only connected pixels of this color)
+    { fill till the color (it fills all except this color) }
+    fsSurface = GraphType.fsSurface;
+    { fill this color (it fills only connected pixels of this color) }
+    fsBorder = GraphType.fsBorder;
 
-    bvNone = GraphType.bvNone;        // no bevel
-    bvLowered = GraphType.bvLowered;  // bevel for lowered surface
-    bvRaised = GraphType.bvRaised;    // bevel for raised surface
-    bvSpace = GraphType.bvSpace;      // spacing
+    { No bevel }
+    bvNone = GraphType.bvNone;
+    { Bevel for lowered surface }
+    bvLowered = GraphType.bvLowered;
+    { Bevel for raised surface }
+    bvRaised = GraphType.bvRaised;
+    { Spacing only }
+    bvSpace = GraphType.bvSpace;
 {$ELSE}
   type
     {* Order of the lines in an image }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{=== Geometry types ===}
+{=== Geometry types ===}{}
 
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
@@ -184,6 +184,7 @@ type
     property IsEmpty: boolean read GetIsEmpty;
   end;
 
+{ Check if two rectangles are equal (all coordinates are equal) }
 operator=(const ARect1,ARect2: TRect): boolean;
 {$endif}
 

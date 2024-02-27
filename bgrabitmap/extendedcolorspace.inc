@@ -139,22 +139,44 @@ var
 {$DEFINE INCLUDE_INTERFACE}
 {$I generatedcolorspace.inc}
 
+{ Handle overflow by bringing values to the range 0 to 1. The luma parameters indicate
+  the brightness of each RGB channel (typically green is brighter) }
 procedure HandleLinearRGBAOverflow(var result: TLinearRGBA; LumaRed, LumaGreen, LumaBlue: single); inline;
 
+{ Converts a color from TBGRAPixel to TByteMask (grayscale) taking into account gamma correction }
 function BGRAToMask(const ABGRAPixel: TBGRAPixel): TByteMask;
+{ Converts a TExpandedPixel color to a TByteMask (grayscale) }
 function ExpandedPixelToByteMask(const AExpandedPixel: TExpandedPixel): TByteMask;
+{ Converts a TByteMask to a TBGRAPixel using the specified alpha value }
 function MaskToBGRA(const AMask: TByteMask; AAlpha: byte = 255): TBGRAPixel;
+{ Converts a TByteMask to a TExpandedPixel using the specified 8-bit alpha value }
 function ByteMaskToExpandedPixel(const AMask: TByteMask; AAlpha: byte = 255): TExpandedPixel;
+
+{ Converts a TStdRGBA color to a TBGRAPixel (clamped to 0..255) }
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
+{ Converts a TStdRGBA color to a TFPColor (clamped to 0..65535) }
 function StdRGBAToFPColor(const AStdRGBA: TStdRGBA): TFPColor;
+{ Converts a TBGRAPixel color to a TSTdRGBA }
 function BGRAPixelToStdRGBA(const ABGRAPixel: TBGRAPixel): TStdRGBA;
+{ Converts a TFPColor color to a TStdRGBA }
 function FPColorToStdRGBA(const AFPColor: TFPColor): TStdRGBA;
+
+{ Converts a TLinearRGBA into a TExpandedPixel (clamped to 0..65535) }
 function LinearRGBAToExpandedPixel(const ALinearRGBA: TLinearRGBA): TExpandedPixel;
+{ Converts a TExpandedPixel to a TLinearRGBA }
 function ExpandedPixelToLinearRGBA(const AExpandedPixel: TExpandedPixel): TLinearRGBA;
+
+{ Converts a TExpandedPixel to a TStdRGBA (applying gamma compression) }
 function ExpandedPixelToStdRGBA(const AExpandedPixel: TExpandedPixel): TStdRGBA;
+{ Computes gamma compression of a 16-bit integer (linear value)
+  into a float value (non linear value) }
 function GammaCompressionWF(AValue: Word): single;
+{ Converts a TStdRGBA to a TExpandedPixel (applying gamma expansion) }
 function StdRGBAToExpandedPixel(const AStdRGBA: TStdRGBA): TExpandedPixel;
+{ Computes gamma expansion of a float (non linear value)
+  into a 16-bit integer (linear value) }
 function GammaExpansionFW(AValue: single): word;
+
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA): TXYZA; overload;
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA; const AReferenceWhite: TXYZReferenceWhite): TXYZA; overload;
 function XYZAToLinearRGBA(const AXYZA: TXYZA): TLinearRGBA; overload;
@@ -191,28 +213,51 @@ function YCbCr601JPEGToStdRGBA(const AYCbCr: TYCbCr601JPEG; AAlpha: Single = 1):
 function StdRGBAToYCbCr709JPEG(const AStdRGBA: TStdRGBA): TYCbCr709JPEG;
 function YCbCr709JPEGToStdRGBA(const AYCbCr: TYCbCr709JPEG; AAlpha: Single = 1): TStdRGBA;
 
+{ Converts color from TLabA to TLChA }
 function LabAToLChA(const ALabA: TLabA): TLChA;
+{ Converts color from TLChA to TLabA }
 function LChAToLabA(const ALChA: TLChA): TLabA;
+
+{ Converts color from TAdobeRGBA to TXYZA using current reference white }
 function AdobeRGBAToXYZA(const ASource: TAdobeRGBA): TXYZA; overload;
+{ Converts color from TAdobeRGBA to TXYZA with specifed reference white }
 function AdobeRGBAToXYZA(const ASource: TAdobeRGBA; const AReferenceWhite: TXYZReferenceWhite): TXYZA; overload;
+{ Converts color from TXYZA to TAdobeRGBA using current reference white }
 function XYZAToAdobeRGBA(const AXYZA: TXYZA): TAdobeRGBA; overload;
+{ Converts color from TXYZA to TAdobeRGBA using specifed reference white }
 function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA; overload;
+
+{ Computes reflected color in XYZ for a given wavelength range }
 function SpectrumRangeReflectToXYZA(reflectance,wavelen1,wavelen2,alpha: single): TXYZA;
+{ Determines cone stimulations (_L_, _M_, _S_) from XYZ coordinates }
 procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
+{ Determines XYZ coordinates from cone stimulations (_L_, _M_, _S_) }
 procedure LMSToXYZ(const L,M,S: Single; out X,Y,Z: single);
+{ Perform chromatic adaptation from one reference white to another (floating point channels) }
 procedure ChromaticAdaptXYZ(var X,Y,Z: single; const AFrom, ATo: TXYZReferenceWhite); inline;
+{ Perform chromatic adaptation from one reference white to another (16-bit integer channels) }
 procedure ChromaticAdaptWordXYZ(var X,Y,Z: word; const AFrom, ATo: TXYZReferenceWhite); inline;
 
+{* Use the reference white, specified by viewing angle and illumant, when converting colors }
 procedure SetReferenceWhite(AObserverAngle: integer; AIlluminant: string); overload;
+{* Use the specified reference white parameters when converting colors }
 procedure SetReferenceWhite(AReferenceWhite: TXYZReferenceWhite); overload;
+{* Retrieves a copy of the current reference white used for color conversions }
 function GetReferenceWhite: TXYZReferenceWhite; overload;
+{* Gets a pointer to the current reference white used for color conversions }
 function GetReferenceWhiteIndirect: PXYZReferenceWhite; overload;
+{* Gets the reference white parameters by its viewing angle and illuminant }
 function GetReferenceWhite(AObserverAngle: integer; AIlluminant: string): TXYZReferenceWhite; overload;
+{* Gets a pointer to the reference white parameters by its viewing angle and illuminant }
 function GetReferenceWhiteIndirect(AObserverAngle: integer; AIlluminant: string): PXYZReferenceWhite; overload;
 
+{* Add a new referene white given the description }
 procedure AddReferenceWhite(const AReferenceWhite: TXYZReferenceWhite); overload;
+{* Add a new referene white color for the given viewing angle and illuminant }
 procedure AddReferenceWhite(AObserverAngle: integer; AIlluminant: string; AX, AY, AZ: single); overload;
+{* Returns the number of reference white that have been defined }
 function GetReferenceWhiteCount: integer;
+{* Gets the reference white by its index }
 function GetReferenceWhiteByIndex(AIndex: integer): TXYZReferenceWhite;
 
 var
