@@ -8,7 +8,7 @@ unit BGRAPapers;
 
 interface
 
-uses Types, Graphics;
+uses Types;
 
 type
   TPaperSize = packed record
