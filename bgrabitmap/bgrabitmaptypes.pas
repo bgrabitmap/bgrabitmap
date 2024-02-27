@@ -1,10 +1,17 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Basic types for BGRABitmap, generally needed in the **uses** clause,
-  along with the BGRABitmap unit. }
-unit BGRABitmapTypes;
+{ @abstract(Basic types for BGRABitmap.)
 
-{ If you are using LCL types, add also BGRAGraphics unit rather than Graphics unit. }
+  This unit is generally needed in the **uses** clause,
+  along with the BGRABitmap unit.
+
+  It defines pixel types, image formats, text options, gemoetry types,
+  colors and base classes.
+
+  Whether you're using LCL types or not, add also BGRAGraphics unit rather
+  than Graphics unit to get the most portable types.
+}
+unit BGRABitmapTypes;
 
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}

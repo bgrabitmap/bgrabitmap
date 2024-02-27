@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Paint.NET image format files.
+{ @abstract(Paint.NET image format files.)
 
   The unit registers a TFPCustomImageReader so that it can be read by any
   image reading function of FreePascal, and also registers a reader for BGRALayers }
@@ -15,7 +15,9 @@ uses
 
 type
 
-  { A Paint.NET image consists in three parts :
+  { @abstract(Layered image reader for Paint.NET)
+
+  A Paint.NET image consists in three parts :
   - Xml header
   - Binary serialized information (contains layer information)
   - Compressed data (pixel data)

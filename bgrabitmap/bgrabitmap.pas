@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Free easy-to-use memory bitmap 32-bit, 8-bit for each channel, transparency.
+{ @abstract(Provides the 32-bit bitmap type adapted to your system.)
+
+  Free easy-to-use memory bitmap 32-bit, 8-bit for each channel, transparency.
   To use, add BGRABitmap and BGRABitmapTypes to the **uses** clause.
 
   Channels can be in the following orders:

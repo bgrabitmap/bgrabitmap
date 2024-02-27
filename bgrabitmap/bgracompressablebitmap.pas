@@ -11,7 +11,8 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, BGRABitmap, zstream;
 
 type
-   {* Class to compress and store the compressed image.
+   {* @abstract(Class to compress and store the compressed image.)
+
      To use it, create an instance with the bitmap you want
      to compress. You can then free the original bitmap because
      TBGRACompressableBitmap contains all information necessary

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Implements basic operations on bitmaps (not optimized for a platform) }
+{ @abstract(Implements basic operations on bitmaps (not optimized for a platform).)
+
+  It should NOT be added to the **uses** clause. }
 unit BGRADefaultBitmap;
-{ It should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}

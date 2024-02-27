@@ -5,6 +5,7 @@
            - Definition of Image format Reader/Writer Configuration Interface and Base Class
 
 }
+{ Format configuration interface for image readers/writers }
 unit BGRAReadWriteConfig;
 
 {$mode objfpc}
