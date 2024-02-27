@@ -108,6 +108,5 @@
 ../bgrabitmap/linearrgbabitmap.pas
 ../bgrabitmap/universaldrawer.pas
 ../bgrabitmap/unzipperext.pas
-../bgrabitmap/uunittest.pas
 ../bgrabitmap/wordxyzabitmap.pas
 ../bgrabitmap/xyzabitmap.pas
