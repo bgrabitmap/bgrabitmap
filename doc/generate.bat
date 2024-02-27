@@ -1,4 +1,5 @@
-mkdir web
+@echo off
+if not exist web mkdir web
 del web\*.html
-pasdoc @pasdoc.cfg ..\bgrabitmap\*.pas
+pasdoc @pasdoc.cfg
 pause
