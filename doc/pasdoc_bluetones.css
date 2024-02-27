@@ -141,7 +141,7 @@ td.itemname {white-space:nowrap; }
 td.itemunit {white-space:nowrap; }
 td.itemdesc { width:100%; }
 
-div.nodescription { color:red; }
+.nodescription, .inheritdescription { color: #c70; }
 dl.parameters dt {
   color:blue;
 }
