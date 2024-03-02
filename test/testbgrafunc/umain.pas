@@ -100,8 +100,11 @@ end;
 procedure TFMain.FormCreate(Sender: TObject);
 begin
   CurrentTest := nil;
-  ResourceDir:= {$IFDEF DARWIN}ExtractFilePath(Application.ExeName)+'../../../../'{$ELSE}
-                '..'+pathdelim{$ENDIF}+'img'+pathdelim;
+  {$IFDEF DARWIN}
+  ResourceDir := ExtractFilePath(Application.ExeName)+'../../../../'+'img'+pathdelim;
+  If not FileExists(ResourceDir+'pac_d1.bmp') then
+  {$ENDIF}
+  ResourceDir:= ExtractFilePath(Application.ExeName)+'..'+pathdelim+'img'+pathdelim;
 
   SetNumTest(1);
   stopwatch := TEpikTimer.Create(Application);

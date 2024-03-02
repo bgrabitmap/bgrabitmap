@@ -1133,9 +1133,9 @@ begin
       posF.Offset( -TopRight*(1/sizeFactor) );
   end;
   x := floor(posF.x);
-  deltaX := round((posF.x - x)*sizeFactor);
+  deltaX := HalfUp((posF.x - x)*sizeFactor);
   y := floor(posF.y);
-  deltaY := round((posF.y - y)*sizeFactor);
+  deltaY := HalfUp((posF.y - y)*sizeFactor);
   if deltaX <> 0 then inc(rotBounds.Right, sizeFactor);
   if deltaY <> 0 then inc(rotBounds.Bottom, sizeFactor);
 
@@ -1151,7 +1151,7 @@ begin
   {$ENDIF}
     Canvas.Font := Font;
     Canvas.Font.Color := clWhite;
-    Canvas.Font.Height := round(Font.Height*sizeFactor);
+    Canvas.Font.Height := Font.Height*sizeFactor;
     BitmapTextOutAngle({$IFDEF RENDER_TEXT_ON_TBITMAP}tempLCL{$ELSE}temp.Bitmap{$ENDIF}, 
       Point(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY), sUTF8,
       orientationTenthDegCCW);
@@ -1233,7 +1233,7 @@ begin
     Canvas.Font.Color := clWhite;
     BitmapTextRect({$IFDEF RENDER_TEXT_ON_TBITMAP}tempLCL{$ELSE}temp.Bitmap{$ENDIF}, rect(lim.Left-ARect.Left, lim.Top-ARect.Top,
          (ARect.Right-ARect.Left)*sizeFactor, (ARect.Bottom-ARect.Top)*sizeFactor),
-         Point(round((xf - lim.Left)*sizeFactor), round((yf - lim.Top)*sizeFactor)), 
+         Point(HalfUp((xf - lim.Left)*sizeFactor), HalfUp((yf - lim.Top)*sizeFactor)),
          sUTF8, style);
   end;
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
@@ -1513,8 +1513,8 @@ begin
   else if AVertAlign = tlBottom then lineShift := lines.Count
   else lineShift := 0;
 
-  dec(X, round(stepX*lineShift));
-  dec(Y, round(stepY*lineShift));
+  dec(X, HalfUp(stepX*lineShift));
+  dec(Y, HalfUp(stepY*lineShift));
   for i := 0 to lines.Count-1 do
   begin
     InternalTextOut(ADest,x,y,lines[i],AColor,ATexture,AHorizAlign,false,ARightToLeft);
@@ -1706,7 +1706,7 @@ begin
   if sUTF8='' then exit;
   if InternalTextSize(sUTF8,AShowPrefix).cx > availableWidth then
   begin
-    InternalSplitText(sUTF8, round(availableWidth - InternalTextSize('...',AShowPrefix).cx), remain, nil);
+    InternalSplitText(sUTF8, HalfUp(availableWidth - InternalTextSize('...',AShowPrefix).cx), remain, nil);
     AppendStr(sUTF8, '...');
   end;
   InternalTextOut(ADest,x,y,sUTF8,c,texture,align,AShowPrefix,ARightToLeft);
@@ -1796,11 +1796,11 @@ begin
     FxFont.Assign(FFont);
     FxFont.Height := fxFont.Height*FontAntialiasingLevel;
     Result:= GetLCLFontPixelMetric(FxFont);
-    if Result.Baseline <> -1 then Result.Baseline:= round((Result.Baseline-1)/FontAntialiasingLevel);
-    if Result.CapLine <> -1 then Result.CapLine:= round(Result.CapLine/FontAntialiasingLevel);
-    if Result.DescentLine <> -1 then Result.DescentLine:= round((Result.DescentLine-1)/FontAntialiasingLevel);
-    if Result.Lineheight <> -1 then Result.Lineheight:= round(Result.Lineheight/FontAntialiasingLevel);
-    if Result.xLine <> -1 then Result.xLine:= round(Result.xLine/FontAntialiasingLevel);
+    if Result.Baseline <> -1 then Result.Baseline:= HalfUp((Result.Baseline-1)/FontAntialiasingLevel);
+    if Result.CapLine <> -1 then Result.CapLine:= HalfUp(Result.CapLine/FontAntialiasingLevel);
+    if Result.DescentLine <> -1 then Result.DescentLine:= HalfUp((Result.DescentLine-1)/FontAntialiasingLevel);
+    if Result.Lineheight <> -1 then Result.Lineheight:= HalfUp(Result.Lineheight/FontAntialiasingLevel);
+    if Result.xLine <> -1 then Result.xLine:= HalfUp(Result.xLine/FontAntialiasingLevel);
     FxFont.Free;
   end;
 end;

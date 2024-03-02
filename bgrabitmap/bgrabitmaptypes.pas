@@ -336,6 +336,14 @@ type
      255 is equal to unity }
   function ByteSqrt(value: byte): byte; inline;
 
+  {* Rounds the number to the nearest integer. If the number is exactly halfway
+     between two integers, it rounds towards positive infinity. }
+  function HalfUp(value: single): integer;
+
+  {* Rounds the number to the nearest 64-bit integer. If the number is exactly halfway
+     between two integers, it rounds towards positive infinity. }
+  function HalfUp64(value: single): Int64;
+
 {==== Types provided for fonts ====}
 type
   {* Quality to be used to render text }
@@ -1126,6 +1134,16 @@ function ByteSqrt(value: byte): byte; inline;
 begin
   if byteSqrtTab = nil then PrecalcByteSqrt;
   result := ByteSqrtTab[value];
+end;
+
+function HalfUp(value: single): integer;
+begin
+  result := Floor(value + 0.5);
+end;
+
+function HalfUp64(value: single): Int64;
+begin
+  result := Floor64(value + 0.5);
 end;
 
 function DetectFileFormat(AFilenameUTF8: string): TBGRAImageFormat;

@@ -130,7 +130,7 @@ begin
   useClearType:= mode in[irClearTypeRGB,irClearTypeBGR];
   clearTypeRGBOrder := mode <> irClearTypeBGR;
   deltaX := xf-floor(xf);
-  x := round(floor(xf));
+  x := floor(xf);
 
   FxFont := TFont.Create;
   FxFont.Assign(AFont);
@@ -201,13 +201,13 @@ begin
     begin
       if useClearType then
         parts[yb] := TGrayscaleMask.CreateDownSample(fx.TextMask,
-                       round(fx.TextMask.Width / FontAntialiasingLevel * 3),
-                       round((lines[yb] - fromy) / FontAntialiasingLevel),
+                       HalfUp(fx.TextMask.Width / FontAntialiasingLevel * 3),
+                       HalfUp((lines[yb] - fromy) / FontAntialiasingLevel),
                        rect(0, fromy, fx.TextMask.Width, lines[yb]) )
       else
         parts[yb] := TGrayscaleMask.CreateDownSample(fx.TextMask,
-                       round(fx.TextMask.Width / FontAntialiasingLevel),
-                       round((lines[yb] - fromy) / FontAntialiasingLevel),
+                       HalfUp(fx.TextMask.Width / FontAntialiasingLevel),
+                       HalfUp((lines[yb] - fromy) / FontAntialiasingLevel),
                        rect(0, fromy, fx.TextMask.Width, lines[yb]) );
 
       if alphaMax < 255 then
@@ -236,25 +236,25 @@ begin
 
   prevCenter := prevCenter / FontAntialiasingLevel;
   diffCenter := prevCenter-newCenter;
-  y := round( yf + diffCenter );
+  y := HalfUp( yf + diffCenter );
 
   xThird := 0;
   if useClearType then
   begin
     case align of
-    taCenter: xThird:= xThird+round(((fx.TextMaskOffset.x-fx.TextWidth/2)/FontAntialiasingLevel+deltaX)*3);
-    taRightJustify: xThird:= xThird+round(((fx.TextMaskOffset.x-fx.TextWidth)/FontAntialiasingLevel+deltaX)*3);
-    else xThird:= xThird+round((fx.TextMaskOffset.x/FontAntialiasingLevel+deltaX)*3);
+    taCenter: xThird:= xThird+HalfUp(((fx.TextMaskOffset.x-fx.TextWidth/2)/FontAntialiasingLevel+deltaX)*3);
+    taRightJustify: xThird:= xThird+HalfUp(((fx.TextMaskOffset.x-fx.TextWidth)/FontAntialiasingLevel+deltaX)*3);
+    else xThird:= xThird+HalfUp((fx.TextMaskOffset.x/FontAntialiasingLevel+deltaX)*3);
     end;
   end else
   begin
     case align of
-    taCenter: x:= x+round((fx.TextMaskOffset.x-fx.TextWidth/2)/FontAntialiasingLevel);
-    taRightJustify: x:= x+round((fx.TextMaskOffset.x-fx.TextWidth)/FontAntialiasingLevel);
-    else x:= x+round(fx.TextMaskOffset.x/FontAntialiasingLevel);
+    taCenter: x:= x+HalfUp((fx.TextMaskOffset.x-fx.TextWidth/2)/FontAntialiasingLevel);
+    taRightJustify: x:= x+HalfUp((fx.TextMaskOffset.x-fx.TextWidth)/FontAntialiasingLevel);
+    else x:= x+HalfUp(fx.TextMaskOffset.x/FontAntialiasingLevel);
     end;
   end;
-  cury := y+round(fx.TextMaskOffset.y/FontAntialiasingLevel);
+  cury := y+HalfUp(fx.TextMaskOffset.y/FontAntialiasingLevel);
   for yb := 0 to nbLines-1 do
   if parts[yb] <> nil then
   begin
@@ -292,7 +292,7 @@ begin
 end;
 
 function TextShadow(AWidth,AHeight: Integer; AText: String; AFontHeight: Integer; ATextColor,AShadowColor: TBGRAPixel;
-  AOffSetX,AOffSetY: Integer; ARadius: Integer = 0; AFontStyle: TFontStyles = []; AFontName: String = 'Default'; AShowText: Boolean = True;
+  AOffsetX,AOffsetY: Integer; ARadius: Integer = 0; AFontStyle: TFontStyles = []; AFontName: String = 'Default'; AShowText: Boolean = True;
   AFontQuality: TBGRAFontQuality = fqFineAntialiasing): TBGRACustomBitmap;
 var
   bmpOut,bmpSdw: TBGRACustomBitmap; OutTxtSize: TSize; OutX,OutY: Integer;
@@ -305,8 +305,8 @@ begin
   bmpOut.FontQuality:= AFontQuality;
 
   OutTxtSize:= bmpOut.TextSize(AText);
-  OutX:= Round(AWidth/2) - Round(OutTxtSize.cx/2);
-  OutY:= Round(AHeight/2) - Round(OutTxtSize.cy/2);
+  OutX:= HalfUp(AWidth/2 - OutTxtSize.cx/2);
+  OutY:= HalfUp(AHeight/2 - OutTxtSize.cy/2);
 
   bmpSdw:= BGRABitmapFactory.Create(OutTxtSize.cx+2*ARadius,OutTxtSize.cy+2*ARadius);
   bmpSdw.FontAntialias:= True;
@@ -317,7 +317,7 @@ begin
 
   bmpSdw.TextOut(ARadius,ARadius,AText,AShadowColor);
   BGRAReplace(bmpSdw,bmpSdw.FilterBlurRadial(ARadius,rbFast));
-  bmpOut.PutImage(OutX+AOffSetX-ARadius,OutY+AOffSetY-ARadius,bmpSdw,dmDrawWithTransparency);
+  bmpOut.PutImage(OutX+AOffsetX-ARadius,OutY+AOffsetY-ARadius,bmpSdw,dmDrawWithTransparency);
   bmpSdw.Free;
 
   if AShowText = True then bmpOut.TextOut(OutX,OutY,AText,ATextColor);
@@ -440,30 +440,30 @@ procedure TBGRATextEffectFontRenderer.InternalTextOutAngle(
       if OutlineActuallyVisible then
       begin
         if OutlineTexture <> nil then
-          fx.DrawOutline(ADest,round(x),round(y), OutlineTexture, align)
+          fx.DrawOutline(ADest,HalfUp(x),HalfUp(y), OutlineTexture, align)
         else
-          fx.DrawOutline(ADest,round(x),round(y), OutlineColor, align);
+          fx.DrawOutline(ADest,HalfUp(x),HalfUp(y), OutlineColor, align);
       end;
     end;
   begin
     if ShadowActuallyVisible then
     begin
       fx.ShadowQuality := ShadowQuality;
-      fx.DrawShadow(ADest,round(x)+ShadowOffset.X,round(y)+ShadowOffset.Y,ShadowRadius,ShadowColor, align);
+      fx.DrawShadow(ADest,HalfUp(x)+ShadowOffset.X,HalfUp(y)+ShadowOffset.Y,ShadowRadius,ShadowColor, align);
     end;
     if outline and OuterOutlineOnly then DoOutline;
     if texture <> nil then
     begin
       if ShaderActuallyActive then
-        fx.DrawShaded(ADest,floor(x),floor(y), Shader, round(fx.TextSize.cy*0.05), texture, align)
+        fx.DrawShaded(ADest,HalfUp(x),HalfUp(y), Shader, HalfUp(fx.TextSize.cy*0.05), texture, align)
       else
-        fx.Draw(ADest,round(x),round(y), texture, align);
+        fx.Draw(ADest,HalfUp(x),HalfUp(y), texture, align);
     end else
     begin
       if ShaderActuallyActive then
-        fx.DrawShaded(ADest,floor(x),floor(y), Shader, round(fx.TextSize.cy*0.05), c, align)
+        fx.DrawShaded(ADest,HalfUp(x),HalfUp(y), Shader, HalfUp(fx.TextSize.cy*0.05), c, align)
       else
-        fx.Draw(ADest,round(x),round(y), c, align);
+        fx.Draw(ADest,HalfUp(x),HalfUp(y), c, align);
     end;
     if outline and not OuterOutlineOnly then DoOutline;
   end;
@@ -529,9 +529,9 @@ procedure TBGRATextEffectFontRenderer.InternalTextOutAngle(
                                               Shader.LightPosition.Y - b.Top); 
                 h := VectorizedFontRenderer.TextSize('Hg').cy;
                 if texture <> nil then
-                  fx.DrawShaded(shaded, 0,0, Shader, round(h*0.05), texture, taLeftJustify)
+                  fx.DrawShaded(shaded, 0,0, Shader, HalfUp(h*0.05), texture, taLeftJustify)
                 else
-                  fx.DrawShaded(shaded, 0,0, Shader, round(h*0.05), c, taLeftJustify);
+                  fx.DrawShaded(shaded, 0,0, Shader, HalfUp(h*0.05), c, taLeftJustify);
                 Shader.LightPosition := oldShaderLightPos;
                 shaded.AlphaFill(255);
                 shaded.ScanOffset := Point(-b.Left,-b.Top);
@@ -776,21 +776,21 @@ begin
 
   if Antialiasing then
   begin
-    sizeX := (sizeX + FXAntialiasingLevel-1);
+    inc(sizeX, FXAntialiasingLevel-1);
     dec(sizeX, sizeX mod FXAntialiasingLevel);
 
-    sizeY := (sizeY + FXAntialiasingLevel-1);
+    inc(sizeY, FXAntialiasingLevel-1);
     dec(sizeY, sizeY mod FXAntialiasingLevel);
 
     if SubOffsetX <> 0 then
     begin
       inc(sizeX, ceil(SubOffsetX*FXAntialiasingLevel) );
-      iSubX := round(SubOffsetX*FXAntialiasingLevel);
+      iSubX := HalfUp(SubOffsetX*FXAntialiasingLevel);
     end;
     if SubOffsetY <> 0 then
     begin
       inc(sizeY, ceil(SubOffsetY*FXAntialiasingLevel) );
-      iSubY := round(SubOffsetY*FXAntialiasingLevel);
+      iSubY := HalfUp(SubOffsetY*FXAntialiasingLevel);
     end;
 
     OnePixel := FXAntialiasingLevel;
@@ -800,12 +800,12 @@ begin
 
     if SubOffsetX <> 0 then
     begin
-      iSubX := round(SubOffsetX);
+      iSubX := HalfUp(SubOffsetX);
       inc(sizeX, iSubX);
     end;
     if SubOffsetY <> 0 then
     begin
-      iSubY := round(SubOffsetY);
+      iSubY := HalfUp(SubOffsetY);
       inc(sizeY, iSubY);
     end;
   end;
@@ -813,12 +813,12 @@ begin
 
   if GrainX > 0 then
   begin
-    SizeX := SizeX+ (GrainX-1);
+    inc(SizeX, GrainX-1);
     dec(SizeX, SizeX mod GrainX);
   end;
   if GrainY > 0 then
   begin
-    SizeY := SizeY+ (GrainY-1);
+    inc(SizeY, GrainY-1);
     dec(SizeY, SizeY mod GrainY);
   end;
   if RenderTextOnBitmap then
@@ -848,12 +848,12 @@ begin
 
   if Antialiasing then
   begin
-    FTextSize.cx := round(FTextSize.cx/FXAntialiasingLevel);
-    FTextSize.cy := round(FTextSize.cy/FXAntialiasingLevel);
-    FOffset := Point(round(FOffset.X/FXAntialiasingLevel),round(FOffset.Y/FXAntialiasingLevel));
+    FTextSize.cx := HalfUp(FTextSize.cx/FXAntialiasingLevel);
+    FTextSize.cy := HalfUp(FTextSize.cy/FXAntialiasingLevel);
+    FOffset := Point(HalfUp(FOffset.X/FXAntialiasingLevel),HalfUp(FOffset.Y/FXAntialiasingLevel));
 
-    FTextMask := TGrayscaleMask.CreateDownSample(temp, round(temp.width/FXAntialiasingLevel),
-                   round(temp.Height/FXAntialiasingLevel));
+    FTextMask := TGrayscaleMask.CreateDownSample(temp, HalfUp(temp.width/FXAntialiasingLevel),
+                   HalfUp(temp.Height/FXAntialiasingLevel));
     temp.Free;
 
     maxAlpha := 0;

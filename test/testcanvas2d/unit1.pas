@@ -96,6 +96,7 @@ begin
   mx := -1000;
   my := -1000;
   lastTime := Now;
+  VirtualScreen.Color := $d0d0d0;
 end;
 
 procedure TForm1.CheckBox_PixelCenteredChange(Sender: TObject);
