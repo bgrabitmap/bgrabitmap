@@ -7,6 +7,8 @@
 { FreePascal wrappper for libavif dynamic library                       }
 unit libavif;
 
+{$mode objfpc}
+
 interface
 
 var
