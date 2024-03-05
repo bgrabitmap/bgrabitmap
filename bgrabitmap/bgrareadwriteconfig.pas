@@ -34,12 +34,12 @@ type
   end;
   TBGRAReadWriteConfigClass = class of TBGRAReadWriteConfig;
 
-  { IBGRAReadWriteConfig }
-
-  { #note -oMaxM :
-    Every Reader/Writer should implement this interface,
-    so we can maintain the configuration between reading and writing }
+  { Interface to provide the reader/writer of the configuration }
   IBGRAReadWriteConfig = interface
+    { #note -oMaxM :
+      Every Reader/Writer should implement this interface,
+      so we can maintain the configuration between reading and writing }
+
     //Copy Configuration from the Reader/Writer Class to TBGRAReadWriteConfig
     function GetBGRAReadWriteConfig: TBGRAReadWriteConfig;
 

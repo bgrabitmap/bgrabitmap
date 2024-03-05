@@ -15,7 +15,7 @@ interface
 uses Classes, SysUtils, FPImage, FPWritePCX, BGRABitmapTypes;
 
 type
-  {* Extends the TFPCustomImageWriter to write the PCX image format (imports TFPWriterPCX) }
+  {* Extends the TFPWriterPCX to save resolution }
   TBGRAWriterPCX = class(TFPWriterPCX)
   protected
     {$IF FPC_FULLVERSION<30203}

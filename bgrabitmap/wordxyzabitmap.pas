@@ -20,7 +20,7 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-  {* Extends TGenericUniversalBitmap for TWordXYZA pixel format, [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space))
+  {* Bitmap with TWordXYZA pixel format, [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space))
      with word values (16-bit per channel). }
   TWordXYZABitmap = class(specialize TGenericUniversalBitmap<TWordXYZA,TWordXYZAColorspace>)
   protected

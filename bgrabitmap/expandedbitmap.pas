@@ -19,7 +19,7 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-  {* Extends TGenericUniversalBitmap for TExpandedPixel format, linear RGB
+  {* Bitmap with TExpandedPixel format, linear RGB
      with word values (16-bit per channel). }
   TExpandedBitmap = class(specialize TGenericUniversalBitmap<TExpandedPixel,TExpandedPixelColorspace>)
   protected

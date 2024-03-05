@@ -29,7 +29,7 @@ type
     Color: TColorF;
   end;
 
-  { Provides fill information for a polygon with linear gradient }
+  { Fill information for a polygon with linear gradient }
   TPolygonLinearColorGradientInfo = class(TOnePassFillPolyInfo)
   protected
     FColors: array of TColorF;
@@ -60,7 +60,7 @@ type
     coordInvZ: single;
   end;
 
-  { Provides fill information for a polygon with perspective gradient }
+  { Fill information for a polygon with perspective gradient }
   TPolygonPerspectiveColorGradientInfo = class(TOnePassFillPolyInfo)
   protected
     FColors: array of TColorF;
@@ -94,7 +94,7 @@ type
     lightness: word;
   end;
 
-  { Provides fill information for a polygon with linear texture mapping }
+  { Fill information for a polygon with linear texture mapping }
   TPolygonLinearTextureMappingInfo = class(TOnePassFillPolyInfo)
   protected
     FTexCoords: array of TPointF;
@@ -137,7 +137,7 @@ type
     Position3D, Normal3D: TPoint3D_128;
   end;
 
-  { Provides fill information for a polygon with perspective texture mapping with simple lighting }
+  { Fill information for a polygon with perspective texture mapping with simple lighting }
   TPolygonPerspectiveTextureMappingInfo = class(TOnePassFillPolyInfo)
   protected
     FTexCoords: array of TPointF;
@@ -152,7 +152,7 @@ type
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;
 
-  { Provides fill information for a polygon with perspective texture mapping with shading }
+  { Fill information for a polygon with perspective texture mapping with shading }
   TPolygonPerspectiveMappingShaderInfo = class(TOnePassFillPolyInfo)
   protected
     FTexCoords: array of TPointF;

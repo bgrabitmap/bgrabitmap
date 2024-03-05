@@ -146,7 +146,10 @@ type
   {* Function type for transforming Bezier curve points }
   TEasyBezierPointTransformFunc = function(APoint: PPointF; AData: Pointer): TPointF of object;
 
-  {* Object representing an easy-to-use Bezier curve, with configurable curve modes and transformation functions }
+  {* @abstract(Object representing an easy-to-use Bezier curve.)
+
+     Curve is configured with approximate points,
+     with configurable curve modes and transformation functions }
   TEasyBezierCurve = object
   private
     {** Retrieves the curve mode for a specified point index }

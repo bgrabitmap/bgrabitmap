@@ -236,7 +236,9 @@ type
   end;
 
 type
-  {* Object representing an affine box, defined by three corner points (top-left, top-tight, bottom-left) }
+  {* @abstract(Object representing an affine box.)
+
+     Box is defined by three corner points (top-left, top-tight, bottom-left). }
   TAffineBox = object
   private
     {** Retrieves the affine box as an array of points (polygon representation) }

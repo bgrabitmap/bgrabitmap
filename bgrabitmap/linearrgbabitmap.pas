@@ -19,8 +19,8 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-  {* Extends TGenericUniversalBitmap for TLinearRGBA pixel format, that is linear RGB
-     with floating point values. }
+  {* Bitmap with TLinearRGBA pixel format (linear RGB
+     with floating point values). }
   TLinearRGBABitmap = class(specialize TGenericUniversalBitmap<TLinearRGBA,TLinearRGBAColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;

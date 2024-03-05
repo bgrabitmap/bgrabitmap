@@ -20,7 +20,7 @@ uses
 type
   TFPJPEGCompressionQuality = 1..100;   // 100 = best quality, 25 = pretty awful
 
-  {* Extends the TFPCustomImageWriter to write the JPEG image format (imports TFPWriterJPEG) }
+  {* Extends the TFPWriterJPEG to save resolution }
   TBGRAWriterJPEG = class(TFPWriterJPEG)
   protected
     {$IF FPC_FULLVERSION<30203}

@@ -38,9 +38,7 @@ var UseSSE, UseSSE2, UseSSE3 : boolean;
 {$endif}
 
 type
-
-  { TPoint3D_128 }
-
+  { Point in 3D / 4D }
   TPoint3D_128 = packed record
                    x,y,z,t: single;
                    procedure Offset(const point3D_128: TPoint3D_128);

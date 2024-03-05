@@ -15,7 +15,7 @@ interface
 uses SysUtils, Classes, FPImage, FPWriteBMP, BGRABitmapTypes;
 
 type
-  {* Extends the TFPCustomImageWriter to write the BMP image format (imports TFPWriterBMP) }
+  {* Extends the TFPWriterBMP to save resolution }
   TBGRAWriterBMP = class (TFPWriterBMP)
   protected
     {$IF FPC_FULLVERSION<30203}

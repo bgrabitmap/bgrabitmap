@@ -28,7 +28,7 @@ type
     property Opacity: Byte read GetOpacity write SetOpacity;
   end;
 
-  { Pen property for TCanvasBGRA }
+  { Pen property for TBGRACanvas }
   TBGRAPen = class(TBGRAColoredObject)
   private
     FPenMode: TPenMode;
@@ -60,7 +60,7 @@ type
     property Invisible: boolean read GetInvisible;
   end;
 
-  { Brush property for TCanvasBGRA }
+  { Brush property for TBGRACanvas }
   TBGRABrush = class(TBGRAColoredObject)
   private
     function GetActualColor: TBGRAPixel;
@@ -89,7 +89,7 @@ type
     property Texture: IBGRAScanner read FTexture write SetTexture;
   end;
 
-  { Font property for TCanvasBGRA }
+  { Font property for TBGRACanvas }
   TBGRAFont = class(TBGRAColoredObject)
   private
     function GetAntialiasing: Boolean;

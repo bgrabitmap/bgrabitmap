@@ -24,7 +24,7 @@ type
   TBGRAPtrBitmap = class;
   {=== TBGRABitmap reference ===}
 
-  { @abstract(Base implementation for all TBGRABitmap classes.
+  { @abstract(Base implementation for all TBGRABitmap classes.)
 
     It implements most function to the exception from implementations specific to the
     widgetset.
