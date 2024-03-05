@@ -103,7 +103,6 @@
 ../bgrabitmap/bgrawritetiff.pas
 ../bgrabitmap/bgrawritewebp.pas
 ../bgrabitmap/expandedbitmap.pas
-../bgrabitmap/libavif.pas
 ../bgrabitmap/libwebp.pas
 ../bgrabitmap/linearrgbabitmap.pas
 ../bgrabitmap/universaldrawer.pas
