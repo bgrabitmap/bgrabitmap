@@ -181,6 +181,7 @@ type
   PPSDResourceBlockData =^TPSDResourceBlockData;
   {$ENDIF}
 
+  { Reader for Photoshop image format }
   TBGRAReaderPSD = class(TFPReaderPSD)
   private
     FCompressed: boolean;

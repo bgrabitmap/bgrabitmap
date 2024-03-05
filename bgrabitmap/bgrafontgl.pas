@@ -62,8 +62,7 @@ type
     property BackgroundColor: TBGRAPixel read GetBackgroundColor write SetBackgroundColor;
   end;
 
-  { TBGLRenderedFont }
-
+  { Implementation of font rendering by using a bitmap cache }
   TBGLRenderedFont = class(TBGLCustomFont,IBGLRenderedFont)
   private
     FGlyphs: TAVLTree;

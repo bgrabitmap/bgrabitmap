@@ -41,8 +41,7 @@ type
     property UseOpenGLBuiltInLighting: boolean read FUseBuiltIn write SetUseBuiltIn;
   end;
 
-  { TBGLRenderer3D }
-
+  { Renderer of 3D scenes using OpenGL }
   TBGLRenderer3D = class(TCustomRenderer3D)
   protected
     FCanvas: TBGLCustomCanvas;
@@ -78,8 +77,7 @@ type
     property Canvas: TBGLCustomCanvas read FCanvas;
   end;
 
-  { TBGLScene3D }
-
+  { 3D scene rendered with OpenGL }
   TBGLScene3D = class(TBGRAScene3D)
   protected
     function LoadBitmapFromFileUTF8(AFilenameUTF8: string): TBGRACustomBitmap; override;
@@ -197,8 +195,7 @@ type
     procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
-  { TBGLShader3D }
-
+  { Shader for 3D polygons }
   TBGLShader3D = class(TBGLCustomShader)
   protected
     FUsed: boolean;
@@ -253,8 +250,7 @@ uses SysUtils, BGRAColorInt;
 
 type
 
-  { TShaderWithTexture }
-
+  { Shader that fills with a texture }
   TShaderWithTexture = class(TBGLShader3D)
   private
     function GetTexture: integer;

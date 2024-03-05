@@ -55,7 +55,6 @@ type
   {** A type of function of a scanner that returns the next pixel }
   TScanNextPixelFunction = function: TBGRAPixel of object;
 
-  { TBGRACustomScanner }
   {* Base class for implementing IBGRAScanner interface }
   TBGRACustomScanner = class(IBGRAScanner)
   private

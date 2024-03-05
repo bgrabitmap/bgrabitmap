@@ -17,8 +17,7 @@ type
 
 /////////////////////// PIXELWISE FILTERS ////////////////////////////////
 type
-  { TGrayscaleTask }
-  { Grayscale converts colored pixel into grayscale with same luminosity }
+  { Grayscale task converts colored pixel into grayscale with same luminosity }
   TGrayscaleTask = class(TFilterTask)
   private
     FBounds: TRect;

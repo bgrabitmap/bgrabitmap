@@ -14,8 +14,7 @@ uses
   SysUtils, BGRABitmapTypes, BGRAGraphics;
 
 type
-  { TBGRAArrow }
-
+  { Implementation of arrow computation }
   TBGRAArrow = class(TBGRACustomArrow)
   private
     FLineCap: TPenEndCap;

@@ -445,8 +445,7 @@ type
 
   TBGRAMaterialTextureChangedEvent = procedure(ASender: TObject) of object;
 
-  { TBGRAMaterial3D }
-
+  { Material for the surface of a 3D object }
   TBGRAMaterial3D = class(TInterfacedObject, IBGRAMaterial3D)
   private
     FName: string;
@@ -585,8 +584,7 @@ type
     property HandlesFaceCulling: boolean read GetHandlesFaceCulling;
   end;
 
-  { TBGRALight3D }
-
+  { Light for a 3D scene }
   TBGRALight3D = class(TInterfacedObject,IBGRALight3D)
   protected
     FMinIntensity: single;

@@ -13,8 +13,7 @@ uses
   GraphType, BGRABitmapTypes;
 
 type
-  { TBGRAQtBitmap }
-
+  { Implementation of TBGRABitmap for Qt }
   TBGRAQtBitmap = class(TBGRALCLBitmap)
   private
     procedure SlowDrawTransparent(ABitmap: TBGRACustomBitmap;

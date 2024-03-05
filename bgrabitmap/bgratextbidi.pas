@@ -105,8 +105,7 @@ type
     property BrokenLineInfo: PBrokenLineInfo read FCurBroken;
   end;
 
-  { TBidiTextLayout }
-
+  { Computes, updates, and render text using Unicode bidirectional algorithm }
   TBidiTextLayout = class
   private
     FAvailableHeight: single;

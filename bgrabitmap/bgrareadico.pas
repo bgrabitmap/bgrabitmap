@@ -15,8 +15,7 @@ type
   {$IFDEF BGRABITMAP_USE_LCL}TCustomIconClass = class of TCustomIcon;{$ENDIF}
   TByteSet = set of byte;
 
-  { TBGRAReaderIcoOrCur }
-
+  { Image reader for ICO and CUR format }
   TBGRAReaderIcoOrCur = class(TFPCustomImageReader)
   protected
     procedure InternalRead({%H-}Str: TStream; {%H-}Img: TFPCustomImage); override;
@@ -27,14 +26,14 @@ type
     WantedWidth, WantedHeight : integer;
   end;
 
+  { Image reader for ICO format }
   TBGRAReaderIco = class(TBGRAReaderIcoOrCur)
   protected
     function ExpectedMagic: TByteSet; override;
     {$IFDEF BGRABITMAP_USE_LCL}function LazClass: TCustomIconClass; override;{$ENDIF}
   end;
 
-  { TBGRAReaderCur }
-
+  { Image reader for CUR format }
   TBGRAReaderCur = class(TBGRAReaderIcoOrCur)
   protected
     function ExpectedMagic: TByteSet; override;

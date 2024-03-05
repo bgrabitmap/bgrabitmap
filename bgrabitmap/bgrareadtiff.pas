@@ -67,8 +67,7 @@ type
     tcioNever
     );
 
-  { TBGRAReaderTiff }
-
+  { Reader for TIFF format }
   TBGRAReaderTiff = class(TFPCustomImageReader)
   private
     FCheckIFDOrder: TTiffCheckIFDOrder;
@@ -157,8 +156,7 @@ function DecompressDeflate(Compressed: PByte; CompressedCount: LongWord;
 function TifResolutionUnitToResolutionUnit(ATifResolutionUnit: DWord): TResolutionUnit;
 function ResolutionUnitToTifResolutionUnit(AResolutionUnit: TResolutionUnit): DWord;
 {$ELSE}
-  { TBGRAReaderTiff }
-
+  { Reader for TIFF format }
   TBGRAReaderTiff = class(TFPReaderTiff)
   public
      procedure LoadImageFromStream(IFD: TTiffIFD); override;

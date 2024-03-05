@@ -18,8 +18,9 @@ type
   TParagraphSplitEvent = procedure(ASender: TObject; AParagraphIndex: integer; ACharIndex: integer) of object;
   TAnalysisChangedEvent = procedure(ASender: TObject; AParagraphIndex: integer; ACharStart, ACharCount: integer) of object;
 
-  { TBidiTree }
+  { @abstract(Tree of Unicode bidirectional text.)
 
+    Runs can be embedded in each other up to a certain level. }
   TBidiTree = class
   private
     FParent: TBidiTree;
@@ -51,8 +52,7 @@ type
 
   TBidiTreeAny = class of TBidiTree;
 
-  { TUnicodeAnalysis }
-
+  { Analyze Unicode text to build a tree }
   TUnicodeAnalysis = class
   private
     FOnAnalysisChanged: TAnalysisChangedEvent;

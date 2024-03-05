@@ -14,8 +14,7 @@ uses
 type
   TBGRALayerSVGOriginal = class;
 
-  { TBGRASVGOriginalDiff }
-
+  { Difference of SVG original }
   TBGRASVGOriginalDiff = class(TBGRAOriginalDiff)
   protected
     FContentVersionBefore,FContentVersionAfter: integer;
@@ -32,8 +31,7 @@ type
     destructor Destroy; override;
   end;
 
-  { TBGRALayerSVGOriginal }
-
+  { Original for an SVG layer in a layered image }
   TBGRALayerSVGOriginal = class(TBGRALayerCustomOriginal)
   private
     function GetDPI: single;
@@ -71,8 +69,9 @@ type
     property PresentationMatrix: TAffineMatrix read FPresentationMatrix;
   end;
 
-  { TBGRALayeredSVG }
+  { @abstract(Layered SVG.)
 
+    A layered SVG is a regular SVG divided in groups representing layers. }
   TBGRALayeredSVG = class(TBGRALayeredBitmap)
     protected
       function GetMimeType: string; override;

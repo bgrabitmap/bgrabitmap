@@ -15,9 +15,7 @@ uses
   BGRACanvas;
 
 type
-
-  { TBGRANoGUIBitmap }
-
+  { Implementation of TBGRABitmap for no graphical interface }
   TBGRANoGUIBitmap = class(TBGRADefaultBitmap)
   private
     FPseudoCanvas: TBGRACanvas;

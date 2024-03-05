@@ -21,9 +21,7 @@ interface
 uses FPImage, BGRAClasses, SysUtils, FPReadPCX;
 
 type
-
-  { TBGRAReaderPCX }
-
+  { Reader for PCX image format }
   TBGRAReaderPCX = class(TFPReaderPCX)
   protected
     FBuffer: packed array of byte;

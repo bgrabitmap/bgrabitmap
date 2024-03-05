@@ -23,7 +23,7 @@ uses
 type
   TBGRATextEffect = class;
 
-  { Font renderer with shadow and outline effects.
+  { @abstract(Font renderer with shadow and outline effects.)
 
     To use it, create an instance of this class and assign it to a TBGRABitmap.FontRenderer property. Now functions
     to draw text like TBGRABitmap.TextOut will use the chosen renderer. To set the effects, keep a variable containing
@@ -79,6 +79,7 @@ type
     property VectorizedFontRenderer: TBGRAVectorizedFontRenderer read GetVectorizedRenderer;
   end;
 
+  { @abstract(Implementation of text effects using system rendering.) }
   TBGRATextEffect = class(TBGRACustomTextEffect)
   protected
     procedure InitImproveReadability(AText: string; Font: TFont; SubOffsetX,SubOffsetY: single);

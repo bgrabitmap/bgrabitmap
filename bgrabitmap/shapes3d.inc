@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 type
-
-  { TBGRASphere3D }
-
+  { Spherical object for a 3D scene }
   TBGRASphere3D = class(TBGRAObject3D)
     constructor Create(AScene: TBGRAScene3D; ARadius: single; HorizPrecision: integer = 8; VerticalPrecision : integer = 6; HalfSphere: boolean = false);
   end;

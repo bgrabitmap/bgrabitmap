@@ -11,8 +11,7 @@ uses
   BGRAClasses, BGRABitmapTypes, BGRAFilterType;
 
 type
-  { TCustomBlurTask }
-
+  { Blur task for custom filter }
   TCustomBlurTask = class(TFilterTask)
   private
     FBounds: TRect;
@@ -25,8 +24,7 @@ type
     procedure DoExecute; override;
   end;
 
-  { TRadialBlurTask }
-
+  { Blur task for radial blur }
   TRadialBlurTask = class(TFilterTask)
   private
     FBounds: TRect;
@@ -41,8 +39,7 @@ type
     procedure DoExecute; override;
   end;
 
-  { TMotionBlurTask }
-
+  { Blur task for motion blur }
   TMotionBlurTask = class(TFilterTask)
   private
     FBounds: TRect;
@@ -67,8 +64,7 @@ uses Math, SysUtils, BGRAGrayscaleMask,
   BGRAGradientScanner;
 
 type
-  { TBoxBlurTask }
-
+  { Blur task for box blur }
   TBoxBlurTask = class(TFilterTask)
   private
     FBounds: TRect;

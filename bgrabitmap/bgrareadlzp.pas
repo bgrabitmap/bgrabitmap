@@ -11,9 +11,7 @@ uses
   BGRAClasses, SysUtils, FPimage, BGRALzpCommon, BGRABitmapTypes, BGRABitmap;
 
 type
-
-  { TBGRAReaderLazPaint }
-
+  { Reader for LZP image format (flattened) }
   TBGRAReaderLazPaint = class(TFPCustomImageReader)
   private
     FHeight: integer;

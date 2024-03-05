@@ -61,8 +61,7 @@ type
   end;
 
 type
-  { TBGRAAvgLvlPalette }
-
+  { Abstract implementation of a BGRA palette using a binary tree to ensure average access time. }
   TBGRAAvgLvlPalette = class(TBGRACustomPalette)
   protected
     FTree: TAVLTree;
@@ -87,8 +86,7 @@ type
     function GetAsArrayOfWeightedColor: ArrayOfWeightedColor; override;
   end;
 
-  { TBGRAPalette }
-
+  { Palette of colors, roughly sorted by luminosity }
   TBGRAPalette = class(TBGRAAvgLvlPalette)
   protected
     function CreateEntry(AColor: TBGRAPixel): PBGRAPixel; virtual;
@@ -115,8 +113,7 @@ type
     function SuggestPaletteFormat(AFilenameUTF8: string): TBGRAPaletteFormat; virtual;
   end;
 
-  { TBGRAIndexedPalette }
-
+  { Indexed palette of colors }
   TBGRAIndexedPalette = class(TBGRAPalette)
   private
     FCurrentIndex: UInt32;
@@ -130,8 +127,10 @@ type
     procedure Clear; override;
   end;
 
-  { TBGRAWeightedPalette }
+  { @abstract(Palette of weighted colors.)
 
+    The weight is similar to a number of occurrences. It can be increased or decreased.
+  }
   TBGRAWeightedPalette = class(TBGRAPalette)
   private
   protected
@@ -148,8 +147,7 @@ type
     property Weight[AIndex: Integer]: UInt32 read GetWeightByIndex;
   end;
 
-  { TBGRAReferencePalette }
-
+  { Palette of colors indirectly specify by a pointer }
   TBGRAReferencePalette = class(TBGRAAvgLvlPalette)
   protected
     procedure FreeEntry({%H-}AEntry: PBGRAPixel); override;
@@ -158,8 +156,7 @@ type
     function RemoveColor(AValue: PBGRAPixel): boolean;
   end;
 
-  { TBGRACustomApproxPalette }
-
+  { Abstract palette that can find an approximate matching color }
   TBGRACustomApproxPalette = class(TBGRACustomPalette)
   private
     function FindNearestColorIgnoreAlpha(AValue: TBGRAPixel): TBGRAPixel; inline;
@@ -174,8 +171,7 @@ type
     property Weight[AIndex: Integer]: UInt32 read GetWeightByIndex;
   end;
 
-  { TBGRA16BitPalette }
-
+  { Palette containing all possible 16-bit colors. }
   TBGRA16BitPalette = class(TBGRACustomApproxPalette)
   protected
     function GetCount: integer; override;
@@ -189,8 +185,11 @@ type
     function FindNearestColorIndex(AValue: TBGRAPixel): integer; override;
   end;
 
-  { TBGRACustomColorQuantizer }
+  { @abstract(Abstract class for color quantization.)
 
+    Quantization is the process by which each color is reduced to an index into a palette.
+    Surrounding pixels can affect the approximate color, an effect called dithering.
+  }
   TBGRACustomColorQuantizer = class
   protected
     function GetDominantColor: TBGRAPixel; virtual;

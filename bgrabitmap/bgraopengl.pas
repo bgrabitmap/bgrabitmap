@@ -47,8 +47,9 @@ type
     property Height: integer read GetHeight;
   end;
 
-  { TBGLFrameBuffer }
+  { @abstract(Frame buffer in OpenGL.)
 
+    A frame buffer is a texture that can be used as a drawing surface in OpenGL. }
   TBGLFrameBuffer = class(TBGLCustomFrameBuffer)
   protected
     FHeight: integer;
@@ -89,8 +90,7 @@ const
   opTriangles = BGRAOpenGLType.opTriangles;
 
 type
-  { TBGLBitmap }
-
+  { RGBA bitmap that can be used with OpenGL by converting it into a texture }
   TBGLBitmap = class(TBGLCustomBitmap)
   protected
     function GetOpenGLMaxTexSize: integer; override;
@@ -247,8 +247,7 @@ const
   GL_PRIMARY_COLOR_ARB              = $8577;
 
 type
-  { TBGLTexture }
-
+  { Texture to use with OpenGL (stored in VRAM) }
   TBGLTexture = class(TBGLCustomTexture)
   protected
     FFlipX,FFlipY: Boolean;
@@ -297,8 +296,7 @@ type
     FramesCoord: array of array[0..3] of TPointF;
   end;
 
-  { TBGLCanvas }
-
+  { Canvas for OpenGL }
   TBGLCanvas = class(TBGLCustomCanvas)
   protected
     FMatrix: TAffineMatrix;
@@ -357,8 +355,7 @@ type
     function CreateFrameBuffer(AWidth, AHeight: integer): TBGLCustomFrameBuffer; override;
   end;
 
-  { TBGLLighting }
-
+  { Lighting for a TBGLCanvas }
   TBGLLighting = class(TBGLCustomLighting)
   protected
     FLightUsage: array[0..7] of boolean;

@@ -23,8 +23,7 @@ type
 type
   TMemDirectoryPath = specialize TFPGList<TEntryFilename>;
 
-  { TMemDirectoryEntry }
-
+  { Entry in a directory structure in memory }
   TMemDirectoryEntry = class(TMultiFileEntry)
   private
     FStream: TStream;
@@ -60,6 +59,7 @@ type
     property MemDirectory: TMemDirectory read FMemDirectory;
   end;
 
+  { Directory structure in memory }
   TMemDirectory = class(TMultiFileContainer)
   private
     FParentDirectory: TMemDirectory;

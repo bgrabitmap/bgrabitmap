@@ -11,9 +11,9 @@ uses
   BGRAClasses, SysUtils, FPImage;
 
 type
+  { @abstract(Reader for AVIF still image format.)
 
-  { TBGRAReaderAvif }
-
+    To read animations, use TAvifReader of AvifBGRA unit }
   TBGRAReaderAvif = class(TFPCustomImageReader)
   protected
     procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;

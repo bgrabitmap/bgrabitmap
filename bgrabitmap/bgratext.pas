@@ -54,8 +54,7 @@ const
 type
   TWordBreakHandler = BGRABitmapTypes.TWordBreakHandler;
 
-  { TBGRASystemFontRenderer }
-
+  { Font renderer using system rendering (LCL, mseGUI). }
   TBGRASystemFontRenderer = class(TBGRACustomFontRenderer)
   protected
     FFont: TFont;             //font parameters
@@ -108,8 +107,10 @@ type
   end;
 
 {$IFDEF BGRABITMAP_USE_MSEGUI}
+  { Font renderer using MSE calls to the operating system }
   TMSEFontRenderer = class(TBGRASystemFontRenderer);
 {$ELSE}
+  { Font renderer using LCL calls to the operating system }
   TLCLFontRenderer = class(TBGRASystemFontRenderer);
 {$ENDIF}
 

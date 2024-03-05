@@ -14,8 +14,7 @@ uses
 type
   TLzpCompression = BGRALzpCommon.TLzpCompression;
 
-  { TBGRALazPaintImage }
-
+  { Layered image in LazPaint (LZP) format }
   TBGRALazPaintImage = class(TBGRALayeredBitmap)
   private
     FSelectedLayerIndex: integer;
@@ -32,8 +31,9 @@ type
     property SelectedLayerIndex: integer read FSelectedLayerIndex write FSelectedLayerIndex;
   end;
 
-  { TBGRAWriterLazPaintWithLayers }
+  { @abstract(Writer for LazPaint (LZP) image format.)
 
+    Handles both flattened and layered images. }
   TBGRAWriterLazPaintWithLayers = class(TBGRAWriterLazPaint)
     protected
       FLayers: TBGRALayeredBitmap;
@@ -47,8 +47,9 @@ type
       property Compression: TLzpCompression read FCompression write FCompression;
   end;
 
-  { TBGRAReaderLazPaintWithLayers }
+  { @abstract(Reader for LazPaint (LZP) image format.)
 
+    Handles both flattened and layered images. }
   TBGRAReaderLazPaintWithLayers = class(TBGRAReaderLazPaint)
     protected
       FLayers: TBGRALayeredBitmap;

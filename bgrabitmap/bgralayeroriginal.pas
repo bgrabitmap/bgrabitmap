@@ -221,8 +221,7 @@ type
 
   TBGRALayerImageOriginal = class;
 
-  { TBGRAImageOriginalDiff }
-
+  { Difference in an image original }
   TBGRAImageOriginalDiff = class(TBGRAOriginalDiff)
   protected
     FContentVersionBefore,FContentVersionAfter: integer;
@@ -239,8 +238,7 @@ type
     function IsIdentity: boolean; override;
   end;
 
-  { TBGRALayerImageOriginal }
-
+  { Original of an image in a layered image (affined transformed) }
   TBGRALayerImageOriginal = class(TBGRALayerCustomOriginal)
   private
     function GetImageHeight: integer;
@@ -343,8 +341,7 @@ type
     property Empty: boolean read GetEmpty;
   end;
 
-  { TBGRAMemOriginalStorage }
-
+  { Storage available for an original }
   TBGRAMemOriginalStorage = class(TBGRACustomOriginalStorage)
   protected
     FMemDir: TMemDirectory;

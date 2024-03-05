@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 type
-  { TBGRAObject3D }
-
+  { Object in a 3D scene }
   TBGRAObject3D = class(TInterfacedObject,IBGRAObject3D)
   private
     FColor: TBGRAPixel;
@@ -57,8 +56,7 @@ type
     procedure Update;
   end;
 
-  { TBGRAVertex3D }
-
+  { Vertex in a 3D object }
   TBGRAVertex3D = class(TInterfacedObject,IBGRAVertex3D)
   private
     FColor: TBGRAPixel;
@@ -127,8 +125,7 @@ type
     function GetAsObject: TObject;
   end;
 
-  { TBGRANormal3D }
-
+  { Normal of a 3D surface }
   TBGRANormal3D = class(TInterfacedObject,IBGRANormal3D)
   private
     FPool: TBGRANormalPool3D;

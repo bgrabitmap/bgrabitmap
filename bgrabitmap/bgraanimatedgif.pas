@@ -201,8 +201,9 @@ type
     property AverageDelayMs: integer read GetAverageDelayMs;
   end;
 
-  {* Class to read/write animated PNG, supports animated GIF as well when specified.
-     this class only changes default format used, everything is implemented in TBGRAAnimatedGif }
+  {* @abstract(Class to read/write animated PNG, supports animated GIF as well when specified.)
+
+     This class only changes default format used, everything is implemented in TBGRAAnimatedGif }
   TBGRAAnimatedPng = class(TBGRAAnimatedGif)
     {** Save to a stream using PNG format }
     procedure SaveToStream(Stream: TStream); override; overload;

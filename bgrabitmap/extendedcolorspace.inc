@@ -105,9 +105,15 @@ type
     class function GetFlags: TColorspaceFlags; virtual; abstract;
   end;
 
-  {* The collection of all colorspaces }
+  {* @abstract(The collection of all colorspaces and conversions between them.)
+
+     Colorspaces are derived from TCustomColorspace type. Conversions are of TColorspaceConvertArrayProc type.
+
+     There may not be a direct conversion between two colorspaces. In this case, the conversion
+     is bridged with an intermediate colorspace.
+}
   ColorspaceCollection = class
-  protected
+  private
     class var FColorspaces : array of TColorspaceAny;
     class var FColorspaceCount: integer;
     class var FColorspaceConversions: array of array of TColorspaceConvertArrayProc;

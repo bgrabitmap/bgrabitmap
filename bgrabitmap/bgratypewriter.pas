@@ -50,8 +50,7 @@ const
   cmAngle = TEasyBezierCurveMode.cmAngle;
 
 type
-  { TBGRAPolygonalGlyph }
-
+  { Polygonal or curved glyph }
   TBGRAPolygonalGlyph = class(TBGRAGlyph)
   private
     function GetClosed: boolean;

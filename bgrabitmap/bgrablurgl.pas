@@ -11,9 +11,7 @@ uses
   BGRAClasses, BGRAOpenGL3D, BGRABitmapTypes, BGRACanvasGL, BGRAOpenGLType;
 
 type
-
-  { TBGLBlurShader }
-
+  { Shader computing a blurred image }
   TBGLBlurShader = class(TBGLShader3D)
   private
     function GetDirection: TPointF;

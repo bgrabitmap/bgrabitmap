@@ -39,8 +39,7 @@ type
   TBGRALayeredBitmapCheckStreamProc = function(AStream: TStream): boolean;
   TOriginalRenderStatus = (orsNone, orsDraft, orsPartialDraft, orsProof, orsPartialProof);
 
-  { TBGRACustomLayeredBitmap }
-
+  { Abstract class for storing a layered bitmap }
   TBGRACustomLayeredBitmap = class(TGraphic)
   private
     FFrozenRange: array of record
@@ -180,8 +179,7 @@ type
     OriginalInvalidatedBounds: TRectF;
   end;
 
-  { TBGRALayeredBitmap }
-
+  { Base implementation for a layered bitmap }
   TBGRALayeredBitmap = class(TBGRACustomLayeredBitmap)
   private
     FNbLayers: integer;

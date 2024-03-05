@@ -302,8 +302,7 @@ type
     property Lighting: TBGLCustomLighting read GetLighting;
   end;
 
-  { TBGLPath }
-
+  { Path with OpenGL rendering }
   TBGLPath = class(TBGRAPath)
   private
     procedure GLDrawProc(const APoints: array of TPointF; AClosed: boolean; AData: pointer);

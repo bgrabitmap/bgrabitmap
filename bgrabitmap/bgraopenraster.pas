@@ -16,9 +16,7 @@ const
   OpenRasterSVGDefaultDPI = 90;
 
 type
-
-  { TBGRAOpenRasterDocument }
-
+  { Layered image using OpenRaster format }
   TBGRAOpenRasterDocument = class(TBGRALayeredBitmap)
   private
     FFiles: array of record
@@ -69,8 +67,7 @@ type
     property StackXML : TXMLDocument read FStackXML;
   end;
 
-  { TFPReaderOpenRaster }
-
+  { Reader for ORA image format (flattened) }
   TFPReaderOpenRaster = class(TFPCustomImageReader)
     private
       FWidth,FHeight,FNbLayers: integer;
@@ -83,8 +80,7 @@ type
       property NbLayers: integer read FNbLayers;
   end;
 
-  { TFPWriterOpenRaster }
-
+  { Writer for ORA image format (flattened) }
   TFPWriterOpenRaster = class(TFPCustomImageWriter)
     protected
       procedure InternalWrite (Str:TStream; Img:TFPCustomImage); override;

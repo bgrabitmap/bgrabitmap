@@ -12,38 +12,31 @@ unit BGRAVectorize;
 
 interface
 
-{
-
-
-  - VectorizeMonochrome function vectorizes a back'n'white image
-  - TBGRAVectorizedFont allows to vectorize and to load vectorized font and draw them
-
-  TBGRAVectorizedFontRenderer class works like other font renderers, i.e., it can
-  be assigned to the FontRenderer property. You can use it in two different modes :
-  - if you supply a directory, it will look for *.glyphs files in it to load fonts
-  - if you don't supply a directory, fonts will be vectorized from LCL
-
-  Note that unless you want to supply your own glyphs files, you don't need
-  to use explicitely this renderer, because TBGRATextEffectFontRenderer will
-  make use of it if necessary, according to effects parameters used.
-}
-
 uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATypewriter,
   BGRATransform, BGRACanvas2D, BGRAText;
 
-//vectorize a monochrome bitmap
+{ Vectorize a monochrome bitmap (actually checking the green channel) }
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean = true; ADiagonalFillPercent: single = 66; AIntermediateDiagonals: boolean = true): ArrayOfTPointF;
+{ Vectorize a rectangular area in a monochrome bitmap (actually checking the green channel) }
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; ARect: TRect; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean = true; ADiagonalFillPercent: single = 66; AIntermediateDiagonals: boolean = true): ArrayOfTPointF;
 
 type
   TBGRAVectorizedFont = class;
 
-  //this is the class to assign to FontRenderer property of TBGRABitmap
-  { TBGRAVectorizedFontRenderer }
+  { @abstract(Font renderer using vectorized fonts and with effects.)
 
+    TBGRAVectorizedFontRenderer class works like other font renderers, i.e., it can
+    be assigned to the FontRenderer property. You can use it in two different modes :
+    - if you supply a directory, it will look for *.glyphs files in it to load fonts
+    - if you don't supply a directory, fonts will be vectorized from the system
+
+    If provides effect like TBGRATextEffectFontRenderer (outline and shadow) but that difference
+    is that the font is always vectorized whereas TBGRATextEffectFontRenderer will use bitmap
+    rendering when possible.
+  }
   TBGRAVectorizedFontRenderer = class(TBGRACustomFontRenderer)
   protected
     FVectorizedFontArray: array of record
@@ -127,8 +120,7 @@ type
     NbGlyphs: integer;
   end;
 
-  { TBGRAVectorizedFont }
-
+  { Allows to vectorize and to load vectorized font and draw them }
   TBGRAVectorizedFont = class(TBGRACustomTypeWriter)
   private
     FName : string;

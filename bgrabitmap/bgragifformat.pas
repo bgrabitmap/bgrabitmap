@@ -81,8 +81,7 @@ type
     Images: array of TGifSubImage;
   end;
 
-  { EColorQuantizerMissing }
-
+  { Exception raised when no color quantizer is available }
   EColorQuantizerMissing = class(Exception)
     constructor Create;
     constructor Create(AMessage: string);

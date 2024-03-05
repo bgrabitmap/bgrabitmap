@@ -23,11 +23,11 @@ uses
 type
   TBGRAPtrBitmap = class;
   {=== TBGRABitmap reference ===}
-  { TBGRADefaultBitmap }
-  {* This class is the base for all ''TBGRABitmap'' classes. It implements most
-     function to the exception from implementations specific to the
-     widgetset }{ in the doc, it is presented as
-  TBGRABitmap = class(TBGRACustomBitmap)
+
+  { @abstract(Base implementation for all TBGRABitmap classes.
+
+    It implements most function to the exception from implementations specific to the
+    widgetset.
   }
   TBGRADefaultBitmap = class(TBGRACustomBitmap)
   private
@@ -626,8 +626,7 @@ type
     function FilterPlane(ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
   end;
 
-  { TBGRAPtrBitmap }
-
+  { Bitmap relying on a pointer to RGBA pixel data }
   TBGRAPtrBitmap = class(TBGRADefaultBitmap)
   protected
     function GetLineOrder: TRawImageLineOrder; override;
@@ -660,8 +659,7 @@ type
     procedure LoadFromDevice({%H-}DC: HDC; {%H-}ARect: TRect); override;
   end;
 
-  { TBGRAMemoryStreamBitmap }
-
+  { Bitmap relying on a memory stream containing RGBA pixel data }
   TBGRAMemoryStreamBitmap = class(TBGRAPtrBitmap)
   private
     function GetOwnStream: boolean;

@@ -13,8 +13,7 @@ uses
 type
   TOutputPixelProc = procedure(X,Y: Int32or64; AColorIndex: Int32or64; AColor: TBGRAPixel) of object;
 
-  { TDitheringTask }
-
+  { Abstract dithering task }
   TDitheringTask = class(TFilterTask)
   protected
     FBounds: TRect;
@@ -42,22 +41,19 @@ type
     property DrawMode: TDrawMode read FDrawMode write SetDrawMode;
   end;
 
-  { TNearestColorTask }
-
+  { Task for trivial dithering consisting in finding the nearest color }
   TNearestColorTask = class(TDitheringTask)
   protected
     procedure DoExecute; override;
   end;
 
-  { TFloydSteinbergDitheringTask }
-
+  { Task for Floyd-Steinberg dithering }
   TFloydSteinbergDitheringTask = class(TDitheringTask)
   protected
     procedure DoExecute; override;
   end;
 
-  { TDitheringToIndexedImage }
-
+  { Handles dithering of an image }
   TDitheringToIndexedImage = class
   protected
     FBitOrder: TRawImageBitOrder;

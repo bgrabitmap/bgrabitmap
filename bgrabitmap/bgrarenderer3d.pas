@@ -58,8 +58,7 @@ type
     property OnlyDirectionalLights: boolean read FOnlyDirectionalLights;
   end;
 
-  { TBGRARenderer3D }
-
+  { Software renderer for 3D scenes }
   TBGRARenderer3D = class(TCustomRenderer3D)
   protected
     FColorGradientTempBmp: TBGRACustomBitmap;

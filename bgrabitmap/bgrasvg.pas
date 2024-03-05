@@ -94,8 +94,7 @@ const
 
 type
 
-  { TSVGUnits }
-
+  { Converter for units within an SVG document or group }
   TSVGUnits = class(TCSSUnitConverter)
   private
     FOnRecompute: TSVGRecomputeEvent;
@@ -134,8 +133,7 @@ type
     property OnRecompute: TSVGRecomputeEvent read FOnRecompute write SetOnRecompute;
   end;
 
-  { TBGRASVG }
-
+  { Reading, writing and rendering for an SVG document }
   TBGRASVG = class(TSVGCustomElement)
   private
     function GetColor: TBGRAPixel;
@@ -274,8 +272,7 @@ type
     property LayerCount: integer read GetLayerCount;
   end;
 
-  { TFPReaderSVG }
-
+  { Reader for SVG image format }
   TFPReaderSVG = class(TBGRAImageReader)
     private
       FRenderDpi: single;

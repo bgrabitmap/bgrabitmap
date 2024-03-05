@@ -20,8 +20,7 @@ type
   PDensity = ^TDensity;
 
 type
-  { TFillShapeInfo }
-
+  { Abstract class to provide fill information for any shape }
   TFillShapeInfo = class(TBGRACustomFillInfo)
     protected
       FPointInsideInter : ArrayOfTIntersectionInfo;
@@ -63,8 +62,7 @@ type
 
   end;
 
-  { TFillEllipseInfo }
-
+  { Provides fill information for an ellipse }
   TFillEllipseInfo = class(TFillShapeInfo)
   private
     FX, FY, FRX, FRY: single;
@@ -85,8 +83,7 @@ type
     property RadiusY: single read FRY;
   end;
 
-  { TFillBorderEllipseInfo }
-
+  { Provides fill information for the border of an ellipse }
   TFillBorderEllipseInfo = class(TFillShapeInfo)
   private
     FInnerBorder, FOuterBorder: TFillEllipseInfo;
@@ -104,8 +101,7 @@ type
     property OuterBorder: TFillEllipseInfo read FOuterBorder;
   end;
 
-  { TFillRoundRectangleInfo }
-
+  { Provides fill information for a round rectangle }
   TFillRoundRectangleInfo = class(TFillShapeInfo)
   private
     FX1, FY1, FX2, FY2, FRX, FRY: single;
@@ -127,8 +123,7 @@ type
     property RadiusY: single read FRY;
   end;
 
-  { TFillRectangleInfo }
-
+  { Provides fill information for rectangle }
   TFillRectangleInfo = class(TFillShapeInfo)
   private
     FX1, FY1, FX2, FY2: single;
@@ -146,8 +141,7 @@ type
     property BottomRight: TPointF read GetBottomRight;
   end;
 
-  { TFillBorderRoundRectInfo }
-
+  { Provides fill information for the border of a round rectangle }
   TFillBorderRoundRectInfo = class(TFillShapeInfo)
   protected
     FInnerBorder, FOuterBorder: TFillRoundRectangleInfo;
@@ -177,8 +171,7 @@ type
     true: (coord,coord2: TPointF);
   end;
 
-  { TCustomFillPolyInfo }
-
+  { Abstract class to provide fill information for a polygon }
   TCustomFillPolyInfo = class(TFillShapeInfo)
   private
     function GetNbPoints: integer;
@@ -210,8 +203,7 @@ type
     nbSegments: integer;
   end;
 
-  { TFillPolyInfo }
-
+  { Provides fill information for a polygon }
   TFillPolyInfo = class(TCustomFillPolyInfo)
   protected
     FSlices:   array of TPolySlice;
@@ -234,8 +226,7 @@ type
                 nextDrawing: POnePassRecord;
             end;
 
-  { TOnePassFillPolyInfo }
-
+  { Provides fill information for a polygon assuming that queries are always in increasying Y. }
   TOnePassFillPolyInfo = class(TCustomFillPolyInfo)
   private
     procedure InsertionSortByY;
@@ -256,8 +247,7 @@ type
     function GetSliceIndex: integer; override;
   end;
 
-  { TSimpleFillPolyInfo }
-
+  { Provides fill information for a simple polygons }
   TSimpleFillPolyInfo = class(TCustomFillPolyInfo)
   protected
     procedure ComputeIntersection(cury: single; var inter: ArrayOfTIntersectionInfo;

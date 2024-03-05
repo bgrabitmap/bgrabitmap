@@ -54,8 +54,7 @@ type
     property UsedCapacity: integer read FUsedCapacity;
   end;
 
-  { TBGRACoordPool3D }
-
+  { Array of 3D coordinates for batch computation }
   TBGRACoordPool3D = class(TBGRAGenericPool)
   private
     function GetCoordData(AIndex: integer): PBGRACoordData3D;
@@ -69,8 +68,7 @@ type
     property CoordData[AIndex: integer]: PBGRACoordData3D read GetCoordData;
   end;
 
-  { TBGRANormalPool3D }
-
+  { Array of 3D normals for batch computation }
   TBGRANormalPool3D = class(TBGRAGenericPool)
   private
     function GetNormalData(AIndex: integer): PBGRANormalData3D;

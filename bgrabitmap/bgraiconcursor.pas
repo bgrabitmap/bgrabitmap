@@ -15,8 +15,7 @@ uses
   BGRAClasses, SysUtils, BGRAMultiFileType, BGRABitmapTypes;
 
 type
-  { TBGRAIconCursorEntry }
-
+  { Image entry within an icon or cursor }
   TBGRAIconCursorEntry = class(TMultiFileEntry)
   protected
     FWidth,FHeight,FBitDepth: integer;
@@ -40,8 +39,7 @@ type
     property HotSpot: TPoint read FHotSpot write FHotSpot;
   end;
 
-  { TBGRAIconCursor }
-
+  { An icon or cursor, with multiple images, one for each size and depth }
   TBGRAIconCursor = class(TMultiFileContainer)
   private
     function GetBitDepthAt(AIndex: integer): integer;

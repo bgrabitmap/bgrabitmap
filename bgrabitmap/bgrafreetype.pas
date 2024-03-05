@@ -34,7 +34,10 @@ uses
 type
   TBGRAFreeTypeDrawer = class;
 
-  {* FreeType font renderer. To use, assign to FontRenderer property of TBGRABitmap.
+  {* @abstract(FreeType font renderer with effects.)
+
+     To use, assign to FontRenderer property of TBGRABitmap.
+
      To set the effects, keep a variable containing the TBGRAFreeTypeFontRenderer class and
      modify ShadowVisible and other effects parameters. The FontHinted property
      allows you to choose if the font is snapped to pixels to make it more readable. }
@@ -99,7 +102,8 @@ type
     property ShaderLightPositionF: TPointF read GetShaderLightPositionF write SetShaderLightPositionF;
   end;
 
-  {* Provides basic FreeType drawing by deriving the TFreeTypeDrawer type.
+  {* @abstract(Provides basic FreeType drawing by deriving the TFreeTypeDrawer type.)
+
      You can use it directly, but it is not recommended, because there are less
      text layout parameters. However, it is necessary if you want to create
      TBGRATextEffect objects using FreeType fonts. }

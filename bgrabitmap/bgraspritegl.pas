@@ -80,8 +80,7 @@ type
     property Handle  : Pointer read GetHandle;
   end;
 
-  { TBGLDefaultSprite }
-
+  { Default implementation for sprites with OpenGL }
   TBGLDefaultSprite = class(TBGLCustomSprite)
   protected
     FColor  : TBGRAPixel;
@@ -141,8 +140,7 @@ type
     property Sprite[AIndex: integer]: TBGLCustomSprite read GetSprite;
   end;
 
-  { TBGLDefaultSpriteEngine }
-
+  { Default implementation for a sprite rendering engine with OpenGL }
   TBGLDefaultSpriteEngine = class(TBGLCustomSpriteEngine)
   protected
     FSpriteRemoved: TBGLCustomSprite;

@@ -249,8 +249,7 @@ type
     property GradientColors: boolean read GetUseGradientColors write SetUseGradientColors;
   end;
 
-  { TBGLCustomBitmap }
-
+  { Abstract RGBA bitmap that can be used with OpenGL by converting it into a texture }
   TBGLCustomBitmap = class(TBGRABitmap)
   protected
     FActualWidth,FActualHeight,

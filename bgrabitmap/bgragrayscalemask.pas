@@ -19,8 +19,7 @@ uses
   BGRAClasses, BGRAGraphics, SysUtils, BGRABitmapTypes, BGRAResample, {%H-}UniversalDrawer;
 
 type
-  { TGrayscaleMask }
-
+  { 8-bit grayscale image }
   TGrayscaleMask = class(specialize TGenericUniversalBitmap<TByteMask,TByteMaskColorspace>)
   private
      function GetScanLine(Y: Integer): PByte; inline;

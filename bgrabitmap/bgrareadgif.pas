@@ -19,8 +19,9 @@ uses
 type
   PGifRGB = ^TGifRGB;
 
-  { TBGRAReaderGif }
+  { @abstract(Reader for GIF still image format.)
 
+    For animations, use TBGRAAnimatedGif class. }
   TBGRAReaderGif = class(TFPReaderGif)
   protected
     procedure ReadPaletteAtOnce(Stream: TStream; Size: integer);

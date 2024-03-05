@@ -5,10 +5,11 @@ type
 {=== TBGRACustomBitmap ===}
 
   { TBGRACustomBitmap }
-  {* This is the base class for ''TBGRABitmap''. It is the direct parent of
-     ''TBGRADefaultBitmap'' class, which is the parent of the diverse
-     implementations. A bitmap can be used as a scanner using the interface
-     ''IBGRAScanner'' }
+  {* @abstract(Base class for TBGRABitmap.)
+
+     It is the direct parent of TBGRADefaultBitmap class, which is the parent of the diverse
+     implementations. A bitmap can be used as a scanner using the IBGRAScanner interface.
+  }
   TBGRACustomBitmap = class(specialize TGenericUniversalBitmap<TBGRAPixel,TBGRAPixelColorspace>,IBGRAScanner)
   protected
     FXorMask: TBGRACustomBitmap;
