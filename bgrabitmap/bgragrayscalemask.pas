@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Image with 8-bit grayscale format that can be used as a mask }
+{ @abstract(Supplies a linear grayscale bitmap (8-bit per pixel) without transparency.)
+
+  Pixels are in TByteMask format, based on linear grayscale colorspace (TByteMaskColorspace).
+
+  A grayscale mask can be used to compute a shape, regardless of the colors. This is
+  useful for example for text rendering and for layer masking.
+
+  **Bitmap units**: BGRABitmap, ExpandedBitmap, BGRAGrayscaleMask, LinearRGBABitmap, WordXYZABitmap, XYZABitmap.
+}
 unit BGRAGrayscaleMask;
 
 {$mode objfpc}{$H+}

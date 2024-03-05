@@ -1,6 +1,20 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Base implementation of system text rendering }
+{ @abstract(Base implementation of system text rendering.)
+
+  This unit provides basic text rendering functions using system renderer
+  (LCL or MSEgui).
+
+  Text functions use a temporary bitmap where the operating system text drawing
+  is used. Then it is scaled down (if antialiasing is activated) and colored.
+
+  These routines are rather slow, so you may use other font renderers
+  like TBGRATextEffectFontRenderer in BGRATextFX if you want to use LCL fonts,
+  or, if you have TrueType fonts files, you may use TBGRAFreeTypeFontRenderer
+  in BGRAFreeType.
+
+  **Font rendering units** : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
+}
 unit BGRAText;
 
 {$mode objfpc}{$H+}
@@ -29,20 +43,6 @@ interface
 {$IFDEF BGRABITMAP_USE_MSEGUI}
   {$DEFINE RENDER_TEXT_ON_TBITMAP}
 {$ENDIF}
-
-{
-  Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
-
-  This unit provides basic text rendering functions using system renderer 
-  (LCL or MSEgui).
-
-  Text functions use a temporary bitmap where the operating system text drawing 
-  is used. Then it is scaled down (if antialiasing is activated) and colored.
-
-  These routines are rather slow, so you may use other font renderers
-  like TBGRATextEffectFontRenderer in BGRATextFX if you want to use LCL fonts,
-  or, if you have TrueType fonts files, you may use TBGRAFreeTypeFontRenderer
-  in BGRAFreeType. }
 
 uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAPen, BGRAGrayscaleMask

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Read .Net serialized classes with BinaryFormatter of
+{ @abstract(Read .Net serialized classes)
+
+  Serialization is a process by which objects in memory are saved according
+  to their structure. The .Net classes are saved with BinaryFormatter of
   namespace System.Runtime.Serialization.Formatters.Binary.
+
   This unit is used by BGRAPaintNet to read Paint.NET images. }
 unit BGRADNetDeserial;
-
-{ Serialization is a process by which objects in memory are saved according
-  to their structure. }
 
 {$mode objfpc}{$H+}
 

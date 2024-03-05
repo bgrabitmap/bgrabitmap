@@ -17,6 +17,7 @@
              - code fixes for reading palettes
 
 }
+{ Provides reader for Photoshop image format }
 unit BGRAReadPSD;
 
 {$mode objfpc}{$H+}

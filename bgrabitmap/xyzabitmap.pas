@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Supplies a bitmap with TXYZA pixel format, [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space))
-  with floating point values. }
+{ @abstract(Supplies a bitmap in XYZ colorspace with floating-point values (16-bit per channel)
+  and transparency.)
+
+  Pixels are in TXYZA format, based on
+  [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space) (TXYZAColorspace).
+
+  This format is generally used as an intermediary format.
+
+  **Bitmap units**: BGRABitmap, ExpandedBitmap, BGRAGrayscaleMask, LinearRGBABitmap, WordXYZABitmap, XYZABitmap.
+}
 unit XYZABitmap;
 
 {$mode objfpc}{$H+}
@@ -34,6 +42,9 @@ const
   XYZATransparent : TXYZA = (X:0; Y:0; Z:0; alpha:0);
 
 operator = (const c1, c2: TXYZA): boolean; inline;
+{ Checks that the color is real, meaning that it can be experienced. To be real a color
+  need to have positive values and be a possible stimulation of the cones. The latter
+  are not independant so for example the green cones cannot be stimulated alone. }
 function IsRealColor(xyza: TXYZA): boolean;
 
 implementation

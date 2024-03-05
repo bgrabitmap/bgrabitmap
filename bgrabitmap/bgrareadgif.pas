@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ This unit provides some optimisations of TFPReaderGif:
+{ @abstract(Provides reader for GIF format.)
+
+  This unit implements some optimisations of TFPReaderGif:
   decompression algorithm and direct pixel access of TBGRABitmap.
+
   Note: to read an animation use TBGRAAnimatedGif instead. }
 
 unit BGRAReadGif;

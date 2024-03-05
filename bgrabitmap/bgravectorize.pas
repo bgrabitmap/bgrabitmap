@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ This unit provides vectorizers for black'n'white images and text }
+{ @abstract(This unit provides vectorizers for black'n'white images and text.)
+
+  The TBGRAVectorizedFontRenderer class can be provided as a renderer to TBGRABitmap.
+
+  **Font rendering units** : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
+}
 unit BGRAVectorize;
 
 {$mode objfpc}{$H+}
@@ -8,7 +13,7 @@ unit BGRAVectorize;
 interface
 
 {
-  Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
+
 
   - VectorizeMonochrome function vectorizes a back'n'white image
   - TBGRAVectorizedFont allows to vectorize and to load vectorized font and draw them

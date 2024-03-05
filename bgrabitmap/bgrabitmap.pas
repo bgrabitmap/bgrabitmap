@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ @abstract(Provides the 32-bit bitmap type adapted to your system.)
+{ @abstract(Provides the 32-bit RGBA bitmap type adapted to your system.)
 
-  Free easy-to-use memory bitmap 32-bit, 8-bit for each channel, transparency.
-  To use, add BGRABitmap and BGRABitmapTypes to the **uses** clause.
+  Pixels are of TBGRAPixel type based on sRGB colorspace with transparency (TBGRAPixelColorspace).
+
+  To use, you generally need to add BGRABitmapTypes as well to the **uses** clause.
 
   Channels can be in the following orders:
   - B G R A (recommended for Windows, required for fpGUI)
   - R G B A (recommended for Gtk and MacOS)
+
+  **Bitmap units**: BGRABitmap, ExpandedBitmap, BGRAGrayscaleMask, LinearRGBABitmap, WordXYZABitmap, XYZABitmap.
 }
 unit BGRABitmap;
 

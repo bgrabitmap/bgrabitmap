@@ -11,7 +11,7 @@
 }
 {*****************************************************************************}
 
-{ This unit provides some optimisations of TFPReaderPCX. }
+{ Provides reader for PCX format }
 unit BGRAReadPCX;
 
 {$mode objfpc}{$H+}

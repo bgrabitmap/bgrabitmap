@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Font renderer of FreeType fonts, using the integrated FreeType font engine in Lazarus.
+{ @abstract(Font renderer of FreeType fonts using Lazarus renderer.)
 
-  Note that you need to provide the font files or streams to the font collection
-  of EasyLazFreeType unit. }
+  This unit provides a nice and fast rendering of text. There are some drawbacks to consider though:
+  - it needs font files or streams (to be provided to the font collection
+  of EasyLazFreeType unit)
+  - it has limited support for complex font behaviors like ligature.
+
+  This unit depend on freetypelaz package provided by Lazarus.
+
+  **Font rendering units** : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType.
+}
 unit BGRAFreeType;
-{ Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType. }
 
 {$mode objfpc}{$H+}
 

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Computation of arrow paths (that are appended to lines drawn with TBGRABitmap
-  when configured using that arrow properties) }
+{ @abstract(Computation of arrow paths.)
+
+  Arrows are appended to lines drawn with TBGRABitmap
+  when configured using arrow properties. }
 unit BGRAArrow;
 
 {$mode objfpc}{$H+}

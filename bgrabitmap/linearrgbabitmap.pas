@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Supplies a bitmap with TLinearRGBA pixel format, that is linear RGB
-  with floating point values. }
+{ @abstract(Supplies a bitmap in linear RGB with floating-point values and transparency.)
+
+  Pixels are in TLinearRGBA format, based on linear RGB colorspace (TLinearRGBAColorspace).
+
+  This allows for even more precise computation than TExpandedBitmap but it is slower and
+  uses more memory (16 bytes per pixel).
+
+  **Bitmap units**: BGRABitmap, ExpandedBitmap, BGRAGrayscaleMask, LinearRGBABitmap, WordXYZABitmap, XYZABitmap.
+}
 unit LinearRGBABitmap;
 
 {$mode objfpc}{$H+}

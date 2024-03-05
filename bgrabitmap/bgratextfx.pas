@@ -1,29 +1,18 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Text effects using system text rendering }
-unit BGRATextFX;
+{ @abstract(Text effects using system text rendering.)
 
-{$mode objfpc}{$H+}
+  The simplest way to render effects is to use TBGRATextEffectFontRenderer class.
 
-{
-  Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
-
-  This unit provide text effects. The simplest way to render effects is to use TBGRATextEffectFontRenderer class.
-  To do this, create an instance of this class and assign it to a TBGRABitmap.FontRenderer property. Now functions
-  to draw text like TBGRABitmap.TextOut will use the chosen renderer. To set the effects, keep a variable containing
-  the TBGRATextEffectFontRenderer class and modify ShadowVisible and other effects parameters.
-
-  The TBGRATextEffectFontRenderer class makes use of other classes depending on the situation. For example,
-  TBGRATextEffect, which is also in this unit, provides effects on a text mask. But the renderer also uses
-  BGRAVectorize unit in order to have big texts or to rotate them at will.
-
-  Note that you may need TBGRATextEffect if you want to have more control over text effects, especially
+  You may need TBGRATextEffect if you want to have more control over text effects, especially
   if you always draw the same text. Keeping the same TBGRATextEffect object will avoid creating the text
   mask over and over again.
 
-  TextShadow function is a simple function to compute an image containing a text with shadow.
-
+  **Font rendering units** : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
 }
+unit BGRATextFX;
+
+{$mode objfpc}{$H+}
 
 interface
 
@@ -34,8 +23,16 @@ uses
 type
   TBGRATextEffect = class;
 
-  { TBGRATextEffectFontRenderer }
+  { Font renderer with shadow and outline effects.
 
+    To use it, create an instance of this class and assign it to a TBGRABitmap.FontRenderer property. Now functions
+    to draw text like TBGRABitmap.TextOut will use the chosen renderer. To set the effects, keep a variable containing
+    the TBGRATextEffectFontRenderer instance and modify ShadowVisible and other effects parameters.
+
+    The TBGRATextEffectFontRenderer class makes use of other classes depending on the situation. For example,
+    TBGRATextEffect, which is also in this unit, provides effects on a text mask. But the renderer also uses
+    BGRAVectorize unit in order to have wide outlines, big texts or to rotate them at will.
+ }
   TBGRATextEffectFontRenderer = class(TBGRASystemFontRenderer)
   private
     function GetShaderLightPosition: TPoint;
@@ -82,8 +79,6 @@ type
     property VectorizedFontRenderer: TBGRAVectorizedFontRenderer read GetVectorizedRenderer;
   end;
 
-  { TBGRATextEffect }
-
   TBGRATextEffect = class(TBGRACustomTextEffect)
   protected
     procedure InitImproveReadability(AText: string; Font: TFont; SubOffsetX,SubOffsetY: single);
@@ -99,6 +94,8 @@ type
     constructor Create(AText: string; AFontName: string; AFullHeight: integer; AStyle: TFontStyles; Antialiasing: boolean; SubOffsetX,SubOffsetY: single); overload;
   end;
 
+
+{ Compute an image containing a text with shadow }
 function TextShadow(AWidth,AHeight: Integer; AText: String; AFontHeight: Integer; ATextColor,AShadowColor: TBGRAPixel;
     AOffSetX,AOffSetY: Integer; ARadius: Integer = 0; AFontStyle: TFontStyles = []; AFontName: String = 'Default'; AShowText: Boolean = True; AFontQuality: TBGRAFontQuality = fqFineAntialiasing): TBGRACustomBitmap;
 

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Search for libraries on MacOS }
-unit darwinlib;
+{ @abstract(Search for libraries on MacOS.)
 
-{$mode objfpc}{$H+}
-
-{ This unit allows to find the latest implementation of a library.
+  This unit allows to find the latest implementation of a library.
   Note that between different versions, there may be incompatibilities
   (in the signature of the functions or the record types). So make sure
   the functions you are calling are stable or check the version of the
   library once its loaded using one of its functions.
 }
+unit darwinlib;
+
+{$mode objfpc}{$H+}
 
 interface
 

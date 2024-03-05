@@ -13,7 +13,10 @@ uses
 const DefaultOutlineWidth = 3;
 
 type
-  { TBGRACustomTextEffect }
+  { @abstract(Computes text effects based on a grayscale mask.)
+
+    This class computes at the pixel level the following effects: drop shadow, outline
+    and multi-color text (on color per letter) }
 
   TBGRACustomTextEffect = class
   private

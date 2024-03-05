@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Reading/writing of icon/cursor files (contain multiple scaled versions of the same image) }
+{ @abstract(Reading/writing of icon/cursor files (with multiple sizes))
+
+  ICO and CUR files contain multiple scaled versions of the same image.
+  This unit allows to edit them. }
 unit BGRAIconCursor;
 
 {$mode objfpc}{$H+}

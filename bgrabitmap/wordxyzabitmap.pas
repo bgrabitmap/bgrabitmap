@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Supplies a bitmap with TWordXYZA pixel format, [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space))
-  with word values (16-bit per channel). }
+{ @abstract(Supplies a bitmap in XYZ colorspace with word values (16-bit per channel)
+  and transparency.)
+
+  Pixels are in TWordXYZA format, based on
+  [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space) (TWordXYZAColorspace).
+
+  This format is generally used as an intermediary format.
+
+  **Bitmap units**: BGRABitmap, ExpandedBitmap, BGRAGrayscaleMask, LinearRGBABitmap, WordXYZABitmap, XYZABitmap.
+}
 unit WordXYZABitmap;
 
 {$mode objfpc}{$H+}

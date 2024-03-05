@@ -2,7 +2,8 @@
 
 { @abstract(Implements basic operations on bitmaps (not optimized for a platform).)
 
-  It should NOT be added to the **uses** clause. }
+  It is not to be used directly nor added to the **uses** clause. Instead use
+  BGRABitmap or one of its variants. }
 unit BGRADefaultBitmap;
 
 {$mode objfpc}{$H+}
