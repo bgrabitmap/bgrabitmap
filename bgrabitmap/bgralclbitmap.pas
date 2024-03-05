@@ -12,9 +12,6 @@ uses
 
 type
   {* Implementation of 32-RGBA bitmap based on LCL (Lazarus Component Library) }
-
-  { TBGRALCLBitmap }
-
   TBGRALCLBitmap = class(TBGRADefaultBitmap)
   protected
     function LoadFromRawImage(ARawImage: TRawImage; DefaultOpacity: byte;
@@ -63,9 +60,7 @@ type
   end;
 
 type
-
-  { TBitmapTracker }
-
+  { Tracker of bitmap changes }
   TBitmapTracker = class(TBitmap)
   protected
     FUser: TBGRADefaultBitmap;

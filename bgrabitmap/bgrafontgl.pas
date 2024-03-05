@@ -13,8 +13,7 @@ uses
   Avl_Tree;
 
 type
-  { TRenderedGlyph }
-
+  { Glyph rendered as a texture }
   TRenderedGlyph = class
   private
     FIdentifier: UTF8String;

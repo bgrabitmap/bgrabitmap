@@ -57,7 +57,7 @@ type
     Name: string;
   end;
 
-  { TCustomSerializedObject }
+  { Abstract class for a serialized .NET object }
 
   TCustomSerializedObject = class
   protected
@@ -83,8 +83,7 @@ type
     function GetFieldIndex(Name: string): integer;
   end;
 
-  { TSerializedClass }
-
+  { Information about a serialized .NET class }
   TSerializedClass = class(TCustomSerializedObject)
   protected
     function GetFieldAsString(Index: LongWord): string; override;
@@ -98,8 +97,7 @@ type
     fields:  ArrayOfNameValue;
   end;
 
-  { TSerializedArray }
-
+  { Information about a serialized .NET array }
   TSerializedArray = class(TCustomSerializedObject)
   private
     data:       pointer;
@@ -125,8 +123,7 @@ type
     property ItemSize: LongWord read FItemSize;
   end;
 
-  { TSerializedValue }
-
+  { Information about a serialized .NET value }
   TSerializedValue = class(TSerializedArray)
   protected
     function GetIsReferenceType: boolean;
@@ -138,7 +135,7 @@ type
     property IsReferenceType: boolean read GetIsReferenceType;
   end;
 
-  { TDotNetDeserialization }
+  { Deseralize .NET objets from a stream }
   TDotNetDeserialization = class
     objectTypes: array of TSerializedType;
     assemblies:  array of TAssemblyReference;

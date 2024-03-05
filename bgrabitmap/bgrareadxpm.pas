@@ -11,9 +11,7 @@ uses
   BGRAClasses, SysUtils, FPReadXPM, FPimage;
 
 type
-
-  { TBGRAReaderXPM }
-
+  { Reader for XPM image format }
   TBGRAReaderXPM = class(TFPReaderXPM)
     protected
       procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;

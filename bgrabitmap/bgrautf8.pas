@@ -29,10 +29,13 @@ const
 
 {$IFDEF BGRABITMAP_USE_LCL}
 type
+  { File stream supporting UTF8 filenames }
   TFileStreamUTF8 = {$if FPC_FULLVERSION > 030200}TFileStream{$ELSE}LazUTF8Classes.TFileStreamUTF8{$ENDIF};
+  { String list supporting UTF8 filenames }
   TStringListUTF8 = {$if FPC_FULLVERSION > 030200}TStringList{$ELSE}LazUTF8Classes.TStringListUTF8{$ENDIF};
 {$ELSE}
 type
+  { File stream supporting UTF8 filenames }
   TFileStreamUTF8 = class(THandleStream)
   private
     FFileName: utf8string;
@@ -43,6 +46,7 @@ type
     property FileName: utf8string Read FFilename;
   end;
 
+  { String list supporting UTF8 filenames }
   TStringListUTF8 = class(TStringList)
   protected
     function DoCompareText(const s1,s2 : string) : PtrInt; override;

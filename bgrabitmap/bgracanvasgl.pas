@@ -16,12 +16,14 @@ type
   TBGLPath = class;
   TBGLCustomCanvas = class;
 
+  { Abstract shader for OpenGL }
   TBGLCustomShader = class
   protected
     procedure StartUse; virtual; abstract;
     procedure EndUse; virtual; abstract;
   end;
 
+  { Abstract array for OpenGL }
   TBGLCustomArray = class
   protected
     FBuffer: LongWord;
@@ -55,6 +57,7 @@ type
     property Owner: TObject read FOwner;
   end;
 
+  { Abstract array of elements specifed by index for OpenGL }
   TBGLCustomElementArray = class
   protected
     function GetCount: integer; virtual; abstract;
@@ -64,8 +67,7 @@ type
     property Count: integer read GetCount;
   end;
 
-  { TBGLCustomLighting }
-
+  { Abstract class for lighting with OpenGL }
   TBGLCustomLighting = class
   private
     FCurrentShader: TBGLCustomShader;
@@ -108,8 +110,7 @@ type
     property BuiltInLightingEnabled: boolean read GetBuiltInLightingEnabled write SetBuiltInLightingEnabled;
   end;
 
-  { TBGLCustomCanvas }
-
+  { Abstract canvas for OpenGL }
   TBGLCustomCanvas = class
   private
     FActiveFrameBuffer: TBGLCustomFrameBuffer;

@@ -16,8 +16,7 @@ type
     Box: TAffineBox;
   end;
 
-  { TBGRAGlyph }
-
+  { Abstract class for a glyph }
   TBGRAGlyph = class
   protected
     FIdentifier: string;
@@ -37,6 +36,7 @@ type
     class function LoadFromStream(AStream: TStream): TBGRAGlyph; static;
   end;
 
+  { Kerning info between two glyphs }
   TKerningInfo = class
     IdLeft, IdRight: string;
     KerningOffset: single;
@@ -122,8 +122,7 @@ type
     PrevGlyphId: string;
   end;
 
-  { TBGRACustomTypeWriter }
-
+  { Abstract class for font rendering using cached glyphs }
   TBGRACustomTypeWriter = class
   private
     FBidiMode: TFontBidiMode;

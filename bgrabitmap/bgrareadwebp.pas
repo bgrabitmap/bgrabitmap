@@ -17,8 +17,7 @@ type
     WebPCode: array[1..4] of char;
   end;
 
-  { TBGRAReaderWebP }
-
+  { Reader for WebP image format }
   TBGRAReaderWebP = class(TFPCustomImageReader)
   protected
     function ReadHeader(Str: TStream): TWebPHeader;

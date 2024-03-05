@@ -78,8 +78,7 @@ type
     property Padding: TRectF read GetPadding write SetPadding;
   end;
 
-  { TBGLCustomFont }
-
+  { Abstract class for font rendering with OpenGL }
   TBGLCustomFont = class(TInterfacedObject, IBGLFont)
   protected
     FScale, FStepX: single;
@@ -286,8 +285,7 @@ type
     property MaxTextureSize: integer read GetOpenGLMaxTexSize;
   end;
 
-  { TBGLCustomTexture }
-
+  { Abstract class for a texture in OpenGL (stored in VRAM) }
   TBGLCustomTexture = class(TInterfacedObject, IBGLTexture)
   private
     function GetFlipX: IBGLTexture;
@@ -432,8 +430,7 @@ type
     property GradientColors: boolean read GetUseGradientColors write SetUseGradientColors;
   end;
 
-  { TBGLCustomFrameBuffer }
-
+  { Abstract class for a frame buffer in OpenGL }
   TBGLCustomFrameBuffer = class
   protected
     FCanvas: pointer;

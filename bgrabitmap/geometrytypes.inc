@@ -715,7 +715,6 @@ type
   {* Type for specifying any derived class of TBGRACustomPath }
   TBGRAPathAny = class of TBGRACustomPath;
 
-  { TBGRACustomPathCursor }
   {* Class that contains a cursor to browse an existing path }
   TBGRACustomPathCursor = class
   protected
@@ -802,7 +801,6 @@ type
     poLastOnTop);
 
   PIntersectionInfo = ^TIntersectionInfo;
-  { TIntersectionInfo }
   {* Contains an intersection between an horizontal line and any shape. It
      is used when filling shapes }
   TIntersectionInfo = class

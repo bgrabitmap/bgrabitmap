@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 type
-  { TBGRADirectionalLight3D }
-
+  { Directional light for 3D scene }
   TBGRADirectionalLight3D = class(TBGRALight3D,IBGRADirectionalLight3D)
   protected
     FDirection, FBetweenDirectionAndObserver: TPoint3D_128;
@@ -16,8 +15,7 @@ type
     function IsDirectional: boolean; override;
   end;
 
-  { TBGRAPointLight3D }
-
+  { Point light for 3D scene }
   TBGRAPointLight3D = class(TBGRALight3D,IBGRAPointLight3D)
   protected
     FVertex: IBGRAVertex3D;

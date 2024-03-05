@@ -556,8 +556,7 @@ type
     TexCoords: array of TPointF;
   end;
 
-  { TCustomRenderer3D }
-
+  { Abstract class for 3D rendering }
   TCustomRenderer3D = class
   private
     FProjection: TProjection3D;

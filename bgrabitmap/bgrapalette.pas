@@ -40,8 +40,7 @@ type
 
   TBGRAPixelComparer = function (p1,p2 : PBGRAPixel): boolean;
 
-  { TBGRACustomPalette }
-
+  { Abstract class containing a palette }
   TBGRACustomPalette = class
   private
     function GetDominantColor: TBGRAPixel;

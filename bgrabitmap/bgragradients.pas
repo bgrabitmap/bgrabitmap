@@ -47,18 +47,18 @@ procedure DoubleGradientAlphaFill(ABitmap: TBGRABitmap; ARect: TRect; AStart1,AS
                                  ADirection1,ADirection2,ADir: TGradientDirection; AValue: Single); overload;
 
 {----------------------------------------------------------------------}
-{ Phong shading functions. Use a height map (grayscale image or a precise map filled with MapHeightToBGRA)
-  to determine orientation and position of the surface.
-
-  Phong shading consist in adding an ambiant light, a diffuse light (angle between light and object),
-  and a specular light (angle between light, object and observer, i.e. reflected light) }
-
 type
   TRectangleMapOption = (rmoNoLeftBorder,rmoNoTopBorder,rmoNoRightBorder,rmoNoBottomBorder,rmoLinearBorder);
   TRectangleMapOptions = set of TRectangleMapOption;
 
-  { TPhongShading }
+  { @abstract(Renders shape and height maps using Phong shading.)
 
+    Phong shading consist in adding an ambiant light, a diffuse light (angle between light and object),
+    and a specular light (angle between light, object and observer, i.e. reflected light).
+
+    Height maps are grayscale images or a precise bitmaps filled with MapHeightToBGRA. They are used
+    to determine orientation and position of the surface.
+  }
   TPhongShading = class(TCustomPhongShading)
   public
     LightSourceIntensity : Single; //global intensity of the light

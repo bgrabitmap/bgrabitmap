@@ -22,8 +22,7 @@ type
   TPenJoinStyle = BGRAGraphics.TPenJoinStyle;
   TPenEndCap = BGRAGraphics.TPenEndCap;
 
-  { TBGRAPenStroker }
-
+  { Class to hold pen stroker configuration and compute path }
   TBGRAPenStroker = class(TBGRACustomPenStroker)
     protected
       { Pen style can be defined by PenStyle property of by CustomPenStyle property.

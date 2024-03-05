@@ -35,8 +35,7 @@ Type
   TBGRAConvertColorProc = function (const CD:TColorData) : TBGRAPixel of object;
   THandleScanLineProc = procedure (const y : integer; const ScanLine : PByteArray) of object;
 
-  { TPNGFrame }
-
+  { Frame in an animated PNG }
   TPNGFrame = class
     FrameControl: TFrameControlChunk;
     FrameData: TMemoryStream;
@@ -45,8 +44,7 @@ Type
   end;
   TPNGFrameList = specialize TFPGObjectList<TPNGFrame>;
 
-  { TBGRAReaderPNG }
-
+  { Reader for PNG image format }
   TBGRAReaderPNG = class (TBGRAImageReader)
     private
       FHeader : THeaderChunk;

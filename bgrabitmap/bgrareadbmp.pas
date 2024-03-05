@@ -58,9 +58,7 @@ type
   TWriteScanlineProc = procedure(Row : Integer; Img : TFPCustomImage) of object;
   TProgressProc = procedure(Percent: integer; var ShouldContinue: boolean) of object;
 
-
-  { TBGRAReaderBMP }
-
+  { Reader for BMP format }
   TBGRAReaderBMP = class (TBGRAImageReader)
     Private
       DeltaX, DeltaY : integer; // Used for the never-used delta option in RLE

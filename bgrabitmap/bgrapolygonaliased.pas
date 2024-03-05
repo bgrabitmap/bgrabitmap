@@ -24,13 +24,12 @@ type
   PLinearColorInfo = ^TLinearColorInfo;
   ArrayOfTColorF = array of TColorF;
 
-  //add a color information to intersection info
+  { Intersection info for linear gradient }
   TLinearColorGradientIntersectionInfo = class(TIntersectionInfo)
     Color: TColorF;
   end;
 
-  { TPolygonLinearColorGradientInfo }
-
+  { Provides fill information for a polygon with linear gradient }
   TPolygonLinearColorGradientInfo = class(TOnePassFillPolyInfo)
   protected
     FColors: array of TColorF;
@@ -55,14 +54,13 @@ type
   end;
   PPerspectiveColorInfo = ^TPerspectiveColorInfo;
 
-  //add a color information to intersection info
+  { Intersection information for gradient with perspective gradient }
   TPerspectiveColorGradientIntersectionInfo = class(TIntersectionInfo)
     ColorDivZ: TColorF;
     coordInvZ: single;
   end;
 
-  { TPolygonPerspectiveColorGradientInfo }
-
+  { Provides fill information for a polygon with perspective gradient }
   TPolygonPerspectiveColorGradientInfo = class(TOnePassFillPolyInfo)
   protected
     FColors: array of TColorF;
@@ -90,14 +88,13 @@ type
   end;
   PLinearTextureInfo = ^TLinearTextureInfo;
 
-  //add a texture coordinate to intersection info
+  { Intersection information for linear texture mapping }
   TLinearTextureMappingIntersectionInfo = class(TIntersectionInfo)
     texCoord: TPointF;
     lightness: word;
   end;
 
-  { TPolygonLinearTextureMappingInfo }
-
+  { Provides fill information for a polygon with linear texture mapping }
   TPolygonLinearTextureMappingInfo = class(TOnePassFillPolyInfo)
   protected
     FTexCoords: array of TPointF;
@@ -132,7 +129,7 @@ type
   end;
   PPerspectiveTextureInfo = ^TPerspectiveTextureInfo;
 
-  //add a texture coordinate and depth to intersection info (stored as inverse)
+  { Intersection information for perspective texture mapping }
   TPerspectiveTextureMappingIntersectionInfo = class(TIntersectionInfo)
     texCoordDivByZ: TPointF;
     coordInvZ: single;
@@ -140,8 +137,7 @@ type
     Position3D, Normal3D: TPoint3D_128;
   end;
 
-  { TPolygonPerspectiveTextureMappingInfo }
-
+  { Provides fill information for a polygon with perspective texture mapping with simple lighting }
   TPolygonPerspectiveTextureMappingInfo = class(TOnePassFillPolyInfo)
   protected
     FTexCoords: array of TPointF;
@@ -156,8 +152,7 @@ type
     function CreateIntersectionInfo: TIntersectionInfo; override;
   end;
 
-  { TPolygonPerspectiveMappingShaderInfo }
-
+  { Provides fill information for a polygon with perspective texture mapping with shading }
   TPolygonPerspectiveMappingShaderInfo = class(TOnePassFillPolyInfo)
   protected
     FTexCoords: array of TPointF;

@@ -21,13 +21,10 @@ uses
   BGRAClasses;
 
 type
-  { TBGRAReadWriteConfig }
-
-  { Base Class that contain Reader/Writer Configuration Data
-
-    #note -oMaxM :
-    Derived from TPersistent so we can directly store published properties in a Stream/XML }
+  { Base Class that contain Reader/Writer Configuration Data }
   TBGRAReadWriteConfig = class(TPersistent)
+  { #note -oMaxM :
+    Derived from TPersistent so we can directly store published properties in a Stream/XML }
   protected
     function InternalNew: TBGRAReadWriteConfig; virtual;
 

@@ -16,8 +16,7 @@ uses BGRABitmapTypes,
 type
   TInt65536ShaderFunction3D = function (Context: PBasicLightingContext; Color: TBGRAPixel): TColorInt65536 of object;
 
-  { TBGRAShader3D }
-
+  { Shader for 3D software rendering }
   TBGRAShader3D = class
   protected
     FAmbiantLightness: integer;

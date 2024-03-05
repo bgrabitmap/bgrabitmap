@@ -733,8 +733,7 @@ type
 
   end;
 
-  { TCustomUniversalDrawer }
-
+  { Abstract class for a drawer on an universal bitmap }
   TCustomUniversalDrawer = class
 
     {==== Load and save files ====}

@@ -39,8 +39,7 @@ type
     redMask,greenMask,blueMask: LongWord;
   end;
 
-  { TBGRAPhoxoDocument }
-
+  { Layered image in Phoxo format }
   TBGRAPhoxoDocument = class(TBGRALayeredBitmap)
   private
     FDPIX,FDPIY: integer;
@@ -62,8 +61,7 @@ type
     property DPIY: integer read FDPIY;
   end;
 
-  { TBGRAReaderOXO }
-
+  { Reader for Phoxo image (flattened) }
   TBGRAReaderOXO = class(TFPCustomImageReader)
   private
     FWidth,FHeight,FNbLayers: integer;
@@ -79,8 +77,7 @@ type
     property DPIY: integer read FDPIY;
   end;
 
-  { TBGRAWriterOXO }
-
+  { Writer for Phoxo image (flattened) }
   TBGRAWriterOXO = class(TFPCustomImageWriter)
     protected
       procedure InternalWrite (Str:TStream; Img:TFPCustomImage); override;

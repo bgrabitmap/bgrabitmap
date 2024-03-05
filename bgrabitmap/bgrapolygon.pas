@@ -64,8 +64,7 @@ procedure FillPolyAntialias(bmp: TCustomUniversalBitmap; const points: array of 
 
 type
 
-  { TBGRAMultishapeFiller }
-
+  { Class that fills multiple shapes at once, joining them smoothly }
   TBGRAMultishapeFiller = class
   protected
     nbShapes: integer;

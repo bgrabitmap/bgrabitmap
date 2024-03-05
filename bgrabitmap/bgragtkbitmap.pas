@@ -13,8 +13,7 @@ uses
   GraphType;
 
 type
-  { TBGRAGtkBitmap }
-
+  { Implementation of TBGRABitmap for Gtk }
   TBGRAGtkBitmap = class(TBGRALCLBitmap)
   private
     FPixBuf: Pointer;

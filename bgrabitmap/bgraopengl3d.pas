@@ -21,8 +21,7 @@ type
 
   TBGLShader3D = class;
 
-  { TBGLLighting3D }
-
+  { Lighting for 3D scene }
   TBGLLighting3D = class
   private
     procedure SetUseBuiltIn(AValue: boolean);

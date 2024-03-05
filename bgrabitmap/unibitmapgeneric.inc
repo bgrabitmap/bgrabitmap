@@ -3,8 +3,7 @@
 {$UNDEF INCLUDE_INTERFACE}
 
 type
-  { TGenericUniversalBitmap }
-
+  { Abstract class for a bitmap in a specific colorspace }
   generic TGenericUniversalBitmap<TPixel,TColorspace> = class(TCustomUniversalBitmap)
   private
     type PPixel = ^TPixel;

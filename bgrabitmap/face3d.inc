@@ -12,8 +12,7 @@ type
        ActualTexCoord: TPointF;
      end;
 
-  { TBGRAFace3D }
-
+  { Face in a 3D object }
   TBGRAFace3D = class(TInterfacedObject,IBGRAFace3D)
   private
     FVertices: packed array of TBGRAFaceVertexDescription;

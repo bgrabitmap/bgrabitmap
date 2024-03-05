@@ -33,8 +33,7 @@ const
   jpBestSpeed = FPReadJPEG.jpBestSpeed;
 
 type
-  { TBGRAReaderJpeg }
-
+  { Reader for JPEG image format }
   TBGRAReaderJpeg = class(TFPReaderJPEG)
     constructor Create; override;
   protected

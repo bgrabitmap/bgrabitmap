@@ -30,8 +30,7 @@ type
     {36} filler1,filler2,filler3: LongWord;
   end; {48}
 
-  { TBGRAGenericPool }
-
+  { Array of 3D points for batch computation }
   TBGRAGenericPool = class
   private
     FFirstFree: integer;

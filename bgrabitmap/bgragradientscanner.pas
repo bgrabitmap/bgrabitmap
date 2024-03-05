@@ -11,13 +11,37 @@ uses
   SysUtils, BGRABitmapTypes, BGRATransform;
 
 type
-  TBGRAColorInterpolation = (ciStdRGB, ciLinearRGB,
-    ciLinearHSLPositive, ciLinearHSLNegative, ciLinearHSLAuto,
-    ciGSBPositive, ciGSBNegative, ciGSBAuto);
-  TBGRAGradientRepetition = (grPad, grRepeat, grReflect, grSine);
+  {* Color interpolation in gradients }
+  TBGRAColorInterpolation = (
+    {** Using sRGB colorspace }
+    ciStdRGB,
+    {** Using linear RGB colorspace }
+    ciLinearRGB,
+    {** Using HSL colorspace, rotating hue towards positive }
+    ciLinearHSLPositive,
+    {** Using HSL colorspace, rotating hue towards negative }
+    ciLinearHSLNegative,
+    {** Using HSL colorspace, rotating hue for shortest path }
+    ciLinearHSLAuto,
+    {** Using GSB colorspace, rotating hue towards positive }
+    ciGSBPositive,
+    {** Using GSB colorspace, rotating hue towards negative }
+    ciGSBNegative,
+    {** Using GSB colorspace, rotating hue for shortest path }
+    ciGSBAuto);
 
-  { TBGRASimpleGradient }
+  {* Gradient reptition option }
+  TBGRAGradientRepetition = (
+    {** Pad with the end colors }
+    grPad,
+    {** Repeat gradient by jumping from end to start }
+    grRepeat,
+    {** Repeat gradient using reflection }
+    grReflect,
+    {** Repeat gradient using the sine of the position }
+    grSine);
 
+  { Abstract simple RGBA gradient between two colors }
   TBGRASimpleGradient = class(TBGRACustomGradient)
   protected
     FColor1,FColor2: TBGRAPixel;
@@ -40,8 +64,7 @@ type
     property Repetition: TBGRAGradientRepetition read FRepetition write FRepetition;
   end;
 
-  { TBGRASimpleGradientWithoutGammaCorrection }
-
+  { Simple RGBA gradient between two colors without gamma correction }
   TBGRASimpleGradientWithoutGammaCorrection = class(TBGRASimpleGradient)
   protected
     function InterpolateToBGRA(position: word): TBGRAPixel; override;
@@ -51,8 +74,7 @@ type
     constructor Create(Color1,Color2: TExpandedPixel; ARepetition: TBGRAGradientRepetition = grPad); overload;
   end;
 
-  { TBGRASimpleGradientWithGammaCorrection }
-
+  { Simple RGBA gradient between two colors with gamma correction }
   TBGRASimpleGradientWithGammaCorrection = class(TBGRASimpleGradient)
   protected
     function InterpolateToBGRA(position: word): TBGRAPixel; override;
@@ -70,8 +92,7 @@ type
                         );
   THueGradientOptions = set of THueGradientOption;
 
-  { TBGRAHueGradient }
-
+  { Hue gradient between two colors }
   TBGRAHueGradient = class(TBGRASimpleGradient)
   private
     hsla1,hsla2: THSLAPixel;
@@ -93,8 +114,7 @@ type
 
   TGradientInterpolationFunction = function(t: single): single of object;
 
-  { TBGRACustomMultiGradient }
-
+  { Abstract class multi color stops gradient }
   TBGRACustomMultiGradient = class(TBGRACustomGradient)
   private
     function GetColorCount: integer;
@@ -120,8 +140,7 @@ type
     property ColorCount: integer read GetColorCount;
   end;
 
-  { TBGRAMultiGradient }
-
+  { Multi-gradient using RGBA interpolation }
   TBGRAMultiGradient = class(TBGRACustomMultiGradient)
   protected
     procedure Init(Colors: array of TBGRAPixel; Positions0To1: array of single; AGammaCorrection, ACycle: boolean);
@@ -140,8 +159,7 @@ type
     function GetAverageExpandedColor: TExpandedPixel; override;
   end;
 
-  { TBGRAHueMultiGradient }
-
+  { Multi-gradient using hue interpolation }
   TBGRAHueMultiGradient = class(TBGRACustomMultiGradient)
   private
     FHueColors: array of THSLAPixel;
@@ -165,8 +183,7 @@ type
     function GetAverageExpandedColor: TExpandedPixel; override;
   end;
 
-  { TBGRABufferedGradient }
-
+  { Buffered gradient to accelerate computation of complex gradients }
   TBGRABufferedGradient = class(TBGRACustomGradient)
   protected
     FGradient: TBGRACustomGradient;
@@ -196,8 +213,7 @@ type
   TBGRAGradientScannerInternalScanNextFunc = function():single of object;
   TBGRAGradientScannerInternalScanAtFunc = function(const p: TPointF):single of object;
 
-  { TBGRAGradientScanner }
-
+  { Scanner that renders a gradient }
   TBGRAGradientScanner = class(TBGRACustomScanner)
   protected
     FGradientType: TGradientType;
@@ -299,14 +315,12 @@ type
     property Sinus: boolean Read FSinus write SetSinus;
   end;
 
-  { TBGRAConstantScanner }
-
+  { Scanner of constant color }
   TBGRAConstantScanner = class(TBGRAGradientScanner)
     constructor Create(c: TBGRAPixel);
   end;
 
-  { TBGRARandomScanner }
-
+  { Scanner of random color }
   TBGRARandomScanner = class(TBGRACustomScanner)
   private
     FOpacity: byte;
@@ -319,8 +333,7 @@ type
     function ScanAt({%H-}X, {%H-}Y: Single): TBGRAPixel; override;
   end;
 
-  { TBGRAGradientTriangleScanner }
-
+  { Scanner of triangle scanner in linear RGBA colorspace }
   TBGRAGradientTriangleScanner= class(TBGRACustomScanner)
   protected
     FMatrix: TAffineMatrix;
@@ -336,8 +349,7 @@ type
     procedure ScanSkipPixels(ACount: integer); override;
   end;
 
-  { TBGRASolidColorMaskScanner }
-
+  { Scanner filling a mask with a solid color }
   TBGRASolidColorMaskScanner = class(TBGRACustomScanner)
   private
     FOffset: TPoint;
@@ -355,8 +367,7 @@ type
     property Color: TBGRAPixel read FSolidColor write FSolidColor;
   end;
 
-  { TBGRATextureMaskScanner }
-
+  { Scanner filling a mask with a texture }
   TBGRATextureMaskScanner = class(TBGRACustomScanner)
   private
     FOffset: TPoint;
@@ -377,8 +388,7 @@ type
     function ScanAt(X,Y: Single): TBGRAPixel; override;
   end;
 
-  { TBGRAOpacityScanner }
-
+  { Scanner applying an opacity }
   TBGRAOpacityScanner = class(TBGRACustomScanner)
   private
       FTexture: IBGRAScanner;

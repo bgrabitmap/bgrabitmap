@@ -167,8 +167,7 @@ function BGLFont({%H-}AName: string; {%H-}AEmHeight: integer; {%H-}AColor: TBGRA
 function BGLFont({%H-}AName: string; {%H-}AEmHeight: integer; ARenderer: TBGRACustomFontRenderer; ARendererOwned: boolean = true): IBGLRenderedFont; overload;
 
 type
-  { TBGLElementArray }
-
+  { Array of elements indicated by their index }
   TBGLElementArray = class(TBGLCustomElementArray)
   protected
     FElements: packed array of GLuint;
@@ -180,8 +179,7 @@ type
     destructor Destroy; override;
   end;
 
-  { TBGLArray }
-
+  { Array in OpenGL }
   TBGLArray = class(TBGLCustomArray)
   protected
     FBufferAddress: pointer;

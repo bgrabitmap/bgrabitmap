@@ -1608,9 +1608,7 @@ end;
 
 {$IFDEF BGRABITMAP_USE_LCL}
 type
-
-  { TLCLResourceManager }
-
+  { Resource manager handling Lazarus resources }
   TLCLResourceManager = class(TBGRAResourceManager)
   protected
     function FindLazarusResource(AFilename: string): TLResource;

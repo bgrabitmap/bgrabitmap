@@ -54,8 +54,7 @@ type
 
   TBGRAPath = class;
 
-  { TBGRAPathCursor }
-
+  { Cursor to determine position along a path }
   TBGRAPathCursor = class(TBGRACustomPathCursor)
   protected
     FPath: TBGRAPath;
@@ -120,8 +119,7 @@ type
     property AcceptedDeviation: single read FAcceptedDeviation;
   end;
 
-  { TBGRAPath }
-
+  { Path (in 2D) that allows to define custom shapes that can be drawn }
   TBGRAPath = class(TBGRACustomPath)
   protected
     FData: PByte;

@@ -36,8 +36,7 @@ const
          'em','ex','%');
 
 type
-  { TCSSUnitConverter }
-
+  { Converter for CSS units }
   TCSSUnitConverter = class
   protected
     FViewBoxHeight: TFloatWithCSSUnit;

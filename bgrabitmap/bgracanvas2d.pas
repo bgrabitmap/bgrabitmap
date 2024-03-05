@@ -43,14 +43,12 @@ type
     property repetition: TBGRAGradientRepetition read GetRepetition write SetRepetition;
   end;
 
-  { TBGRACanvasTextureProvider2D }
-
+  { @abstract(Provides a texture to a TCanvas2D.) }
   TBGRACanvasTextureProvider2D = class(TInterfacedObject,IBGRACanvasTextureProvider2D)
     function getTexture: IBGRAScanner; virtual; abstract;
   end;
 
-  { TBGRACanvasState2D }
-
+  { Saved state of a TCanvas2D }
   TBGRACanvasState2D = class
   private
     FClipMask: TGrayscaleMask;
@@ -92,8 +90,7 @@ type
     width,height: single;
   end;
 
-  { TBGRACanvas2D }
-
+  { Implementation of Canvas2d similar to HTML. }
   TBGRACanvas2D = class(IBGRAPath)
   private
     FSurface: TBGRACustomBitmap;
@@ -365,8 +362,7 @@ type
   TGradientArrayOfColors = array of TBGRAPixel;
   TGradientArrayOfPositions = array of single;
 
-  { TBGRACanvasGradient2D }
-
+  { Gradient for TCanvas2D }
   TBGRACanvasGradient2D = class(TBGRACanvasTextureProvider2D, IBGRACanvasGradient2D)
   private
     colorStops: array of TColorStop;
@@ -398,8 +394,7 @@ type
     property repetition: TBGRAGradientRepetition read GetRepetition write SetRepetition;
   end;
 
-  { TBGRACanvasLinearGradient2D }
-
+  { Linear gradient for TCanvas2D }
   TBGRACanvasLinearGradient2D = class(TBGRACanvasGradient2D)
   protected
     o1,o2: TPointF;
@@ -410,8 +405,7 @@ type
     constructor Create(p0,p1: TPointF; transform: TAffineMatrix);
   end;
 
-  { TBGRACanvasRadialGradient2D }
-
+  { Radial gradient for TCanvas2D }
   TBGRACanvasRadialGradient2D = class(TBGRACanvasGradient2D)
   protected
     c0,c1: TPointF;
@@ -424,8 +418,7 @@ type
     constructor Create(p0: TPointF; r0: single; p1: TPointF; r1: single; transform: TAffineMatrix; flipGradient: boolean=false);
   end;
 
-  { TBGRACanvasPattern2D }
-
+  { Brush texture for TCanvas2D }
   TBGRACanvasPattern2D = class(TBGRACanvasTextureProvider2D)
   protected
     scanner: TBGRACustomScanner;

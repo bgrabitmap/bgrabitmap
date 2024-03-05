@@ -16,8 +16,7 @@ type
   TBGRAGradientRepetition = BGRAGradientScanner.TBGRAGradientRepetition;
   TBGRALayerGradientOriginal = class;
 
-  { TBGRAGradientOriginalDiff }
-
+  { Difference in a gradient original }
   TBGRAGradientOriginalDiff = class(TBGRAOriginalDiff)
   protected
     FStorageBefore, FStorageAfter: TBGRAMemOriginalStorage;
@@ -32,8 +31,7 @@ type
     function IsIdentity: boolean; override;
   end;
 
-  { TBGRALayerGradientOriginal }
-
+  { Original for rendering a gradient }
   TBGRALayerGradientOriginal = class(TBGRALayerCustomOriginal)
   private
     function GetColorByIndex(AIndex: integer): TBGRAPixel;

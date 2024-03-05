@@ -23,8 +23,7 @@ type
 
   TPixelArray = array of TBGRAPixel;
 
-  { TBGRAReaderBmpMioMap }
-
+  { Reader for iGO bitmap format (MioMap) }
   TBGRAReaderBmpMioMap = class(TFPCustomImageReader)
   private
     function ReadHeader(Stream: TStream; out header: TMioHeader): boolean;

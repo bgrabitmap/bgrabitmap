@@ -12,8 +12,7 @@ uses
 
 type
 
-{ TCustomPhongShading }
-
+  { Abstract class for Phong shading }
  TCustomPhongShading = class
    protected
      FLightPosition3D: TPoint3D;

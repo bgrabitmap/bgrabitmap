@@ -86,7 +86,6 @@ type
     Color: TBGRAPixel;
   end;
 
-  { TBGRAColorList }
   {* Contains a fixed list of colors }
   TBGRAColorList = class
   protected

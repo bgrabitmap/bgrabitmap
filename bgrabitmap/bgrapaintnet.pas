@@ -56,8 +56,7 @@ type
     procedure LoadLayer(dest: TMemoryStream; src: TStream; uncompressedSize: int64);
   end;
 
-  { TFPReaderPaintDotNet }
-
+  { Reader for PDN files (flattened) }
   TFPReaderPaintDotNet = class(TFPCustomImageReader)
     private
       FWidth,FHeight,FNbLayers: integer;

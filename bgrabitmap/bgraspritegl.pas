@@ -12,8 +12,7 @@ uses
   BGRABitmapTypes;
 
 type
-  { TBGLCustomSprite }
-
+  { Abstract class for a sprite with OpenGL }
   TBGLCustomSprite = class
   protected
     FHandle: Pointer;
@@ -122,8 +121,7 @@ type
     procedure QueryDestroy; override;
   end;
 
-  { TBGLCustomSpriteEngine }
-
+  { Abstract class for a sprite engine }
   TBGLCustomSpriteEngine = class
   protected
     function GetSprite(AIndex: integer): TBGLCustomSprite; virtual; abstract;

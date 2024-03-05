@@ -17,8 +17,7 @@ uses
 
 type
 
-  { TBGRAfpGUIBitmap }
-
+  { Implementation of TBGRABitmap for fpGUI }
   TBGRAfpGUIBitmap = class(TBGRADefaultBitmap)
   private
     FPseudoCanvas: TBGRACanvas;

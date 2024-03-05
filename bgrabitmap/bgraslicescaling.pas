@@ -29,9 +29,7 @@ const
 function Margins(ATop, ARight, ABottom, ALeft: integer): TMargins;
 
 type
-
-  { TBGRASliceScaling }
-
+  { Class to configure and render slice scaling of a bitmap }
   TBGRASliceScaling = class
   private
     FSliceRectArray: TSliceRectArray;
@@ -115,8 +113,7 @@ type
   TSliceScalingDirection = (sdHorizontal, sdVertical);
   TBGRABitmapArray = array of TBGRABitmap;
 
-  { TBGRAMultiSliceScaling }
-
+  { Slice scaling of multiple bitmaps }
   TBGRAMultiSliceScaling = class
   private
     FSliceScalingArray: TSliceScalingArray;

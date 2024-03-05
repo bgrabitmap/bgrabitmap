@@ -75,9 +75,7 @@ const
   Point3D_128_Zero : TPoint3D_128 = (x:0; y:0; z:0; t:0);
 
 type
-
-  { TMemoryBlockAlign128 }
-
+  { Class to allocate memory that is aligned to 128 bits boundaries }
   TMemoryBlockAlign128 = class
   private
     FContainer: Pointer;

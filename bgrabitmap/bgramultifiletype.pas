@@ -38,8 +38,7 @@ function EntryFilename(AFilename: string): TEntryFilename; overload;
 type
   TMultiFileContainer = class;
 
-  { TMultiFileEntry }
-
+  { Entry in a multifile container }
   TMultiFileEntry = class
   protected
     FContainer: TMultiFileContainer;

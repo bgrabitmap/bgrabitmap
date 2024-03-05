@@ -13,8 +13,7 @@ uses
   BGRAClasses, SysUtils, BGRALCLBitmap, Windows, Graphics, GraphType;
 
 type
-  { TBGRAWinBitmap }
-
+  { Implementation of BGRABitmap for Windows }
   TBGRAWinBitmap = class(TBGRALCLBitmap)
   private
     procedure AlphaCorrectionNeeded;
@@ -46,8 +45,7 @@ implementation
 uses BGRADefaultBitmap, BGRABitmapTypes;
 
 type
-  { TWinBitmapTracker }
-
+  { Tracker for changes in the bitmap }
   TWinBitmapTracker = class(TBitmap)
   protected
     FUser: TBGRAWinBitmap;

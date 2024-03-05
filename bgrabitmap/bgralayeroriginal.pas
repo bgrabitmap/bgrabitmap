@@ -70,8 +70,7 @@ type
   THoverPointHandlers = specialize TFPGList<TOriginalHoverPointEvent>;
   TBGRAOriginalPolylineStyle = (opsNone, opsSolid, opsDash, opsDashWithShadow);
 
-  { TBGRAOriginalEditor }
-
+  { Graphical editor for an original }
   TBGRAOriginalEditor = class
   private
     FFocused: boolean;
@@ -166,6 +165,7 @@ type
   TBGRACustomOriginalStorage = class;
   ArrayOfSingle = array of single;
 
+  { Difference of an original in a layered bitmap }
   TBGRAOriginalDiff = class
     procedure Apply(AOriginal: TBGRALayerCustomOriginal); virtual; abstract;
     procedure Unapply(AOriginal: TBGRALayerCustomOriginal); virtual; abstract;
@@ -174,8 +174,7 @@ type
     function IsIdentity: boolean; virtual; abstract;
   end;
 
-  { TBGRALayerCustomOriginal }
-
+  { Abtract class for an original that renders a layer in a layered image }
   TBGRALayerCustomOriginal = class
   private
     FOnChange: TOriginalChangeEvent;
@@ -272,8 +271,7 @@ type
     property Height: integer read GetImageHeight;
   end;
 
-  { TBGRACustomOriginalStorage }
-
+  { Abstract original storage }
   TBGRACustomOriginalStorage = class
   protected
     FFormats: TFormatSettings;

@@ -140,8 +140,7 @@ type
   TSVGRecomputeEvent = procedure(Sender: TObject) of object;
   TSVGLinkEvent = procedure(Sender: TObject; AElement: TSVGElement; ALink: boolean) of object;
 
-  { TSVGLinkListeners }
-
+  { Listeners on link changes between SVG elements }
   TSVGLinkListeners = class(specialize TFPGList<TSVGLinkEvent>)
     {$IF FPC_FULLVERSION >= 30301}
     private
@@ -152,8 +151,7 @@ type
     function Remove(const Item: TSVGLinkEvent): Integer;
   end;
   
-  { TSVGDataLink }
-
+  { Class to listen to link changes between SVG elements }
   TSVGDataLink = class
    private
      FElements: TSVGElementDictionary;
@@ -191,8 +189,7 @@ type
      property Parent: TSVGDataLink read FParent write SetParent;
    end;
 
-  { TSVGCustomElement }
-
+  { Abstract SVG element }
   TSVGCustomElement = class
   protected
     FDomElem: TDOMElement;
@@ -311,8 +308,7 @@ type
     property StyleDef[AName,ADefault: string]: string read GetStyle;
   end;
 
-  { TSVGElement }
-
+  { SVG element on any type }
   TSVGElement = class(TSVGCustomElement)
   private
     FImportStyleState: TFindStyleState;
@@ -468,8 +464,7 @@ type
     property ArrayOfOrthoAttributeOrStyleWithUnit[AName: string]: ArrayOfTFloatWithCSSUnit read GetArrayOfOrthoAttributeOrStyleWithUnit;
   end;
 
-  { TSVGParser }
-
+  { Parser for SVG attributes }
   TSVGParser = class
   private
     function GetDone: boolean;

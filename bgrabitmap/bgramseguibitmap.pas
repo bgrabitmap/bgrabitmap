@@ -13,9 +13,7 @@ uses
   BGRAText, msebitmap;
 
 type
-
-  { TBGRAMSEguiBitmap }
-
+  { Implementation of TBGRABitmap for MSEgui }
   TBGRAMSEguiBitmap = class(TBGRADefaultBitmap)
   protected
     procedure CopyDataToBitmap(AData: Pointer; AWidth,AHeight: integer; ALineOrder: TRawImageLineOrder; ABitmap: TBitmap);
@@ -45,8 +43,7 @@ type
   end;
   
 type
-  { TBitmapTracker }
-
+  { Tracker of bitmap changes }
   TBitmapTracker = class(TMaskedBitmap)
   protected
     FUser: TBGRADefaultBitmap;

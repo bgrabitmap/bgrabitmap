@@ -44,6 +44,7 @@ uses
   FPimage, FPTiffCmn;
 
 type
+  { Entry in a TIFF file }
   TTiffWriterEntry = class
   public
     Tag: Word;
@@ -53,21 +54,6 @@ type
     DataPos: LongWord;
     Bytes: LongWord;
     destructor Destroy; override;
-  end;
-
-  TTiffWriterChunk = record
-    Data: Pointer;
-    Bytes: LongWord;
-  end;
-  PTiffWriterChunk = ^TTiffWriterChunk;
-
-  TTiffWriterChunkOffsets = class(TTiffWriterEntry)
-  public
-    Chunks: PTiffWriterChunk;
-    ChunkByteCounts: TTiffWriterEntry;
-    constructor Create(ChunkType: TTiffChunkType);
-    destructor Destroy; override;
-    procedure SetCount(NewCount: LongWord);
   end;
 
   {* Extends the TFPCustomImageWriter to write the TIFF image format }
@@ -121,6 +107,22 @@ function CompressDeflate(InputData: PByte; InputCount: LongWord;
 implementation
 
 uses BGRAReadTiff;
+
+type
+  TTiffWriterChunk = record
+    Data: Pointer;
+    Bytes: LongWord;
+  end;
+  PTiffWriterChunk = ^TTiffWriterChunk;
+
+  TTiffWriterChunkOffsets = class(TTiffWriterEntry)
+  public
+    Chunks: PTiffWriterChunk;
+    ChunkByteCounts: TTiffWriterEntry;
+    constructor Create(ChunkType: TTiffChunkType);
+    destructor Destroy; override;
+    procedure SetCount(NewCount: LongWord);
+  end;
 
 function CompareTiffWriteEntries(Entry1, Entry2: Pointer): integer;
 begin
