@@ -98,15 +98,13 @@ type
     destructor Destroy; override;
   end;
 
+  { Size of glyphs in text }
   TGlyphSizes = array of record
     Text, Glyph: String;
     Width,Height: single;
   end;
-  TGlyphSizesCallbackData = record
-    Sizes: TGlyphSizes;
-    Count: integer;
-  end;
 
+  { Header of a serialized vectorized font }
   TBGRAVectorizedFontHeader = record
     Name: string;
     Style: TFontStyles;
@@ -114,6 +112,7 @@ type
     Resolution: integer;
     PixelMetric: TFontPixelMetric;
   end;
+  { General information on glyph stream }
   TBGRAGlyphsInfo = record
     Name: string;
     Style: TFontStyles;
@@ -221,6 +220,12 @@ type
 implementation
 
 uses BGRAUTF8{$IFDEF LCL}, Forms{$ENDIF};
+
+type
+  TGlyphSizesCallbackData = record
+    Sizes: TGlyphSizes;
+    Count: integer;
+  end;
 
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; ARect: TRect; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean; ADiagonalFillPercent: single; AIntermediateDiagonals: boolean): ArrayOfTPointF;

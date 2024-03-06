@@ -34,8 +34,7 @@ const
   tlBottom = BGRAGraphics.tlBottom;
 
 type
-  { TBGLContext }
-
+  { Context for OpenGL surface }
   TBGLContext = object
   private
     function GetHeight: integer;

@@ -17,8 +17,7 @@ type
   TBGRACustomLayeredBitmap = class;
   TBGRACustomLayeredBitmapClass = class of TBGRACustomLayeredBitmap;
 
-  { TBGRALayerOriginalEntry }
-
+  { Entry for one original in a list of originals }
   TBGRALayerOriginalEntry = record
      Guid: TGuid;
      Instance: TBGRALayerCustomOriginal;
@@ -163,6 +162,7 @@ type
   TLayeredActionProgressEvent = procedure(ASender: TObject; AProgressPercent: integer) of object;
   TEmbeddedOriginalLoadErrorEvent = procedure (ASender: TObject; AError: string; var ARaise: boolean) of object;
 
+  { Information about one layer }
   TBGRALayerInfo = record
     UniqueId: integer;
     Name: string;

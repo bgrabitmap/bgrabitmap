@@ -21,16 +21,19 @@ const
   PhoxoBlock_EndOfFile = 255;
 
 type
+  { PhoXo file header }
   TPhoxoHeader = packed record
     magic: packed array[1..4] of char;
     version: LongWord;
   end;
 
+  { PhoXo block header }
   TPhoxoBlockHeader = packed record
     blockType : LongWord;
     blockSize : LongWord;
   end;
 
+  { PhoXo layer header }
   TPhoxoLayerHeader = packed record
     layerVisible: LongWord;
     layerLimited: LongWord;

@@ -11,6 +11,7 @@ uses
   BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform;
 
 type
+  { Array of boxes for each glyph in text }
   TGlyphBoxes = array of record
     Glyph: string;
     Box: TAffineBox;
@@ -34,12 +35,6 @@ type
     property Identifier: string read FIdentifier;
     procedure SaveToStream(AStream: TStream);
     class function LoadFromStream(AStream: TStream): TBGRAGlyph; static;
-  end;
-
-  { Kerning info between two glyphs }
-  TKerningInfo = class
-    IdLeft, IdRight: string;
-    KerningOffset: single;
   end;
 
   TGlyphPointCurveMode= TEasyBezierCurveMode;
@@ -85,42 +80,26 @@ type
     property PointCount: integer read GetPointCount;
   end;
 
+  { Header of typewriter stream }
   TBGRACustomTypeWriterHeader = record
     HeaderName: String;
     NbGlyphs: integer;
   end;
 
+  { Information on how to display a glyph }
   TBGRAGlyphDisplayInfo = record
     Glyph: TBGRAGlyph;
     Matrix: TAffineMatrix;
     Mirrored, RTL: WordBool;
   end;
 
+  { Information on how to display text }
   TBGRATextDisplayInfo = array of TBGRAGlyphDisplayInfo;
+
   TBrowseGlyphCallbackFlag = (gcfMirrored, gcfMerged, gcfRightToLeft, gcfKerning);
   TBrowseGlyphCallbackFlags = set of TBrowseGlyphCallbackFlag;
   TBrowseGlyphCallback = procedure(ATextUTF8: string; AGlyph: TBGRAGlyph;
     AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean) of object;
-
-  TTextFitInfoCallbackData = record
-    WidthAccumulator, MaxWidth: single;
-    CharCount: integer;
-    ByteCount: integer;
-    PrevGlyphId: string;
-  end;
-
-  TDisplayInfoCallbackData = record
-    Align: TBGRATypeWriterAlignment;
-    Matrix: TAffineMatrix;
-    Info: TBGRATextDisplayInfo;
-    InfoIndex: integer;
-    PrevGlyphId: string;
-  end;
-
-  TTextSizeCallbackData = record
-    Size: TPointF;
-    PrevGlyphId: string;
-  end;
 
   { Abstract class for font rendering using cached glyphs }
   TBGRACustomTypeWriter = class
@@ -191,6 +170,33 @@ function ComputeEasyBezier(APoints: array of TPointF; ACurveMode: array of TGlyp
 implementation
 
 uses BGRAUTF8, BGRAUnicode, math;
+
+type
+  TDisplayInfoCallbackData = record
+    Align: TBGRATypeWriterAlignment;
+    Matrix: TAffineMatrix;
+    Info: TBGRATextDisplayInfo;
+    InfoIndex: integer;
+    PrevGlyphId: string;
+  end;
+
+  TTextSizeCallbackData = record
+    Size: TPointF;
+    PrevGlyphId: string;
+  end;
+
+  TTextFitInfoCallbackData = record
+    WidthAccumulator, MaxWidth: single;
+    CharCount: integer;
+    ByteCount: integer;
+    PrevGlyphId: string;
+  end;
+
+  { Kerning info between two glyphs }
+  TKerningInfo = class
+    IdLeft, IdRight: string;
+    KerningOffset: single;
+  end;
 
 procedure LEWritePointF(Stream: TStream; AValue: TPointF);
 begin

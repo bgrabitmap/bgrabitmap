@@ -43,38 +43,30 @@ type
     AspectRatio64 : byte;     //0 if not specified, otherwise aspect ratio is (AspectRatio64 + 15) / 64
   end;
 
+  { Image descriptor of GIF frame }
   TGIFImageDescriptor = packed record
     x, y, Width, Height: word;
     flags: byte;
   end;
 
-  TGIFImageDescriptorWithHeader = packed record
-    ImageIntroducer: byte;
-    Image: TGIFImageDescriptor;
-  end;
-
+  { GIF extension block }
   TGIFExtensionBlock = packed record
     FunctionCode: byte;
   end;
 
+  { GIF graphic control extension }
   TGIFGraphicControlExtension = packed record
     flags: byte;
     DelayHundredthSec: word;
     TransparentColorIndex: byte;
   end;
 
-  TGIFGraphicControlExtensionWithHeader = packed record
-    ExtensionIntroducer: byte;
-    FunctionCode: byte;
-    BlockSize: byte;
-    GraphicControl: TGIFGraphicControlExtension;
-    BlockTerminator: byte;
-  end;
-
+  { 8-bit RGB values }
   TPackedRGBTriple = packed record
     r, g, b: byte;
   end;
 
+  { Data describing a GIF file }
   TGIFData = record
     Width, Height: integer;
     AspectRatio: single;
@@ -871,6 +863,22 @@ begin
   end;
   setlength(result.Images, NbImages);
 end;
+
+type
+  { Image descriptor with introducer }
+  TGIFImageDescriptorWithHeader = packed record
+    ImageIntroducer: byte;
+    Image: TGIFImageDescriptor;
+  end;
+
+  { GIF graphic control extension with its header }
+  TGIFGraphicControlExtensionWithHeader = packed record
+    ExtensionIntroducer: byte;
+    FunctionCode: byte;
+    BlockSize: byte;
+    GraphicControl: TGIFGraphicControlExtension;
+    BlockTerminator: byte;
+  end;
 
 procedure GIFSaveToStream(AData: TGifData; Stream: TStream; AQuantizerFactory: TBGRAColorQuantizerAny;
           ADitheringAlgorithm: TDitheringAlgorithm);

@@ -39,6 +39,7 @@ type
   TBMPTransparencyOption = (toAuto, toTransparent, toOpaque);
   TBitMapInfoHeader = BMPcomn.TBitMapInfoHeader;
   TBitMapFileHeader = BMPcomn.TBitMapFileHeader;
+  { Header for OS/2 bitmap format }
   TOS2BitmapHeader = packed record
     bcSize: LongWord;
     bcWidth: Word;
@@ -46,6 +47,7 @@ type
     bcPlanes: Word;
     bcBitCount: Word;
   end;
+  { Minimum header for BMP format (non OS/2) }
   TMinimumBitmapHeader = packed record
     Size:longint;
     Width:longint;

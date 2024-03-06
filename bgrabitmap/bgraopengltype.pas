@@ -28,8 +28,7 @@ const
 
 type
 
-  { IBGLFont }
-
+  { Interface for a font drawn on OpenGL canvas }
   IBGLFont = interface
     function GetClipped: boolean;
     function GetPadding: TRectF;
@@ -78,7 +77,7 @@ type
     property Padding: TRectF read GetPadding write SetPadding;
   end;
 
-  { Abstract class for font rendering with OpenGL }
+  { Abstract class for a font drawn on OpenGL canvas }
   TBGLCustomFont = class(TInterfacedObject, IBGLFont)
   protected
     FScale, FStepX: single;
@@ -157,8 +156,7 @@ type
     property Padding: TRectF read GetPadding write SetPadding;
   end;
 
-  { IBGLTexture }
-
+  { Interface for a texture in OpenGL (stored in VRAM) }
   IBGLTexture = interface ['{BF2FF051-EBC6-4102-8268-37A9D0297B92}']
     function GetFlipX: IBGLTexture;
     function GetFlipY: IBGLTexture;

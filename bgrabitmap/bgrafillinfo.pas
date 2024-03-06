@@ -218,6 +218,7 @@ type
   end;
 
   POnePassRecord = ^TOnePassRecord;
+  { Linked list of coordinates for one-pass drawing }
   TOnePassRecord = record
                 id: integer;
                 custom: PCustomPointRecord;

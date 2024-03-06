@@ -12,6 +12,7 @@ uses
 
 type
   PBGRACoordData3D = ^TBGRACoordData3D;
+  { 3D coordinate information (can be aligned for SSE) }
   TBGRACoordData3D = packed record
     {0} sceneCoord: TPoint3D_128;
     {16} viewCoord: TPoint3D_128;
@@ -23,6 +24,7 @@ type
   end; {80}
 
   PBGRANormalData3D = ^TBGRANormalData3D;
+  { 3D normal information (can be aligned for SSE) }
   TBGRANormalData3D = packed record
     {0} customNormal: TPoint3D_128;
     {16} viewNormal: TPoint3D_128;

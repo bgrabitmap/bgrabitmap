@@ -26,11 +26,13 @@ const
   palCustom : TBGRAPaletteFormat = 100;
 
 type
+  { Indexed color in palette }
   TBGRAIndexedPaletteEntry = packed record
     Color: TBGRAPixel;
     Index: UInt32;
   end;
   PBGRAIndexedPaletteEntry = ^TBGRAIndexedPaletteEntry;
+  { Weighted color in palette }
   TBGRAWeightedPaletteEntry = packed record
     Color: TBGRAPixel;
     Weight: UInt32;

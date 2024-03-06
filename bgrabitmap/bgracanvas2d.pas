@@ -25,11 +25,13 @@ uses
 type
   ArrayOfString = array of string;
 
+  { Interface for a texture/scanner for Tcanvas2D }
   IBGRACanvasTextureProvider2D = interface
     function getTexture: IBGRAScanner;
     property texture: IBGRAScanner read GetTexture;
   end;
 
+  { Interface for a gradient for TCanvas2D }
   IBGRACanvasGradient2D = interface(IBGRACanvasTextureProvider2D)
     procedure addColorStop(APosition: single; AColor: TBGRAPixel);
     procedure addColorStop(APosition: single; AColor: TColor);

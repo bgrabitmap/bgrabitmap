@@ -85,6 +85,7 @@ type
   end;
 
   PBasicLightingContext = ^TBasicLightingContext;
+  { Base context necessary to compute lighting (can be aligned for SSE) }
   TBasicLightingContext = packed record
     {0} Position, {16} Normal: TPoint3D_128;
     {32} PositionInvZ, {48} NormalInvZ: TPoint3D_128;

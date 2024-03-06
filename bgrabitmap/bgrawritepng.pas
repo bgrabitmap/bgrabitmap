@@ -27,6 +27,7 @@ interface
 uses sysutils, BGRAClasses, FPImage, FPImgCmn, BGRAPNGComn, ZStream, BGRABitmapTypes;
 
 type
+  { Information about frame to write in PNG }
   TPNGFrameToWrite = record
     FrameControl: TFrameControlChunk;
     Image: TFPCustomImage;

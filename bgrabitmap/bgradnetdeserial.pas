@@ -32,11 +32,13 @@ type
 
   TDotNetDeserialization = class;
 
+  { Array of name and values }
   ArrayOfNameValue = array of record
     Name: string;
     Value, valueType: string;
   end;
 
+  { Description of a .NET field }
   TFieldType = record
     category: TTypeCategory;
     primitiveType: TPrimitiveType;
@@ -44,6 +46,7 @@ type
     Name: string;
   end;
 
+  { Description of a .NET type }
   TSerializedType = record
     ClassName:   string;
     nbFields:    integer;
@@ -52,13 +55,13 @@ type
     refAssembly: LongWord;
   end;
 
+  { Reference to a .NET assembly }
   TAssemblyReference = record
     idAssembly: LongWord;
     Name: string;
   end;
 
   { Abstract class for a serialized .NET object }
-
   TCustomSerializedObject = class
   protected
     FContainer: TDotNetDeserialization;

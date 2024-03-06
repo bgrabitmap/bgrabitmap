@@ -624,7 +624,10 @@ type
   {* Callback function when filling a shape }
   TBGRAPathFillProc = procedure(const APoints: array of TPointF; AData: pointer) of object;
 
-  {* A path is the ability to define a contour with _moveTo_, _lineTo_...
+  {* @abstract(Interface for path functions.)
+
+     A path is the ability to define a contour with _moveTo_, _lineTo_...
+
      Even if it is an interface, it must not implement reference counting. }
   IBGRAPath = interface
     {** Closes the current path with a line to the starting point }

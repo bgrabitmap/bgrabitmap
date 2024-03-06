@@ -28,8 +28,7 @@ type
     property AdvancePx: integer read FAdvancePx;
   end;
 
-  { IBGLRenderedFont }
-
+  { Interface for font rendering with OpenGL }
   IBGLRenderedFont = interface(IBGLFont)
     function GetBackgroundColor: TBGRAPixel;
     function GetColor: TBGRAPixel;
