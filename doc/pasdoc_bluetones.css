@@ -42,7 +42,7 @@ body {
   width: 20em; /* must match .content margin-left */
   height: 100%;
   color: white;
-  background-color: #697690;
+  background-color: #3D9E8C;
   position: fixed;
   margin: 0;
   box-sizing: border-box; /* without this, you could not have padding here, it would overlap with .content, causing errors on narrow screens */
