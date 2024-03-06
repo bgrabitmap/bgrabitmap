@@ -1,245 +1,36 @@
-@image(../bgrabitmap.jpg) 
-
-@title(BGRABitmap API documentation)
+@title(BGRABitmap documentation)
 @shorttitle(BGRABitmap)
 
-@author(author)
-@created(1-12-2023)
+@image(../bgrabitmap.jpg) 
 
-@section(1 SecFirst BGRABitmap)
+@section(1 SecFirst Introduction)
 
-BGRABitmap is a package designed to modify and create images with transparency. Direct pixel access allows fast image processing. The library has been tested on Windows, Ubuntu and Mac.
+BGRABitmap is a package designed to modify and create images with transparency. Direct pixel access allows fast image processing. The library has been tested on Windows, Linux and Mac.
 
-@unorderedlist(
-  @item(@url(https://github.com/bgrabitmap/bgrabitmap BGRABitmap repository.))
-  @item(@url(https://github.com/bgrabitmap/bgrabitmap/releases Download releases.))
-)
+@section(1 Install How to install)
 
-You can also install BGRABitmap with Lazarus @url(http://wiki.lazarus.freepascal.org/Online\ Package\ Manager Online Package Manager).
+There are various ways to install.
 
-Also you can get a fresh installation of Lazarus and BGRABitmap with @url(http://wiki.lazarus.freepascal.org/fpcupdeluxe FPCUpDeluxe).
+- [Download source code](https://github.com/bgrabitmap/bgrabitmap/releases) and [configure your project](https://wiki.freepascal.org/BGRABitmap_tutorial_1).
+- Use [Online Package Manager](http://wiki.lazarus.freepascal.org/Online_Package_Manager) in Lazarus.
+- Get a fresh installation of Lazarus and BGRABitmap with [FPCUpDeluxe](http://wiki.lazarus.freepascal.org/fpcupdeluxe).
 
-You can read more about BGRABitmap in the @url(http://wiki.freepascal.org/BGRABitmap wiki). And also you can follow a tutorial http://wiki.freepascal.org/BGRABitmap_tutorial to learn how to use BGRABitmap.
+The source code can be browser on the [repository](https://github.com/bgrabitmap/bgrabitmap).
 
-Include BGRABitmap and BGRABitmapTypes in the 'uses' clause. If you are using LCL types, add also BGRAGraphics unit.
+@section(1 Start Quick start)
 
-TBGRACustomBitmap
+Include BGRABitmap and BGRABitmapTypes in the **uses** clause. If you are using LCL types, add also BGRAGraphics unit.
 
-TBGRADefaultBitmap
+Create TBGRABitmap instances for each image. This class derives from TBGRACustomBitmap.
 
-bgrabitmaptypes
+The **CanvasBGRA** property of type TBGRACanvas provides a canvas with opacity and [antialiasing](https://wiki.freepascal.org/BGRABitmap_tutorial_13).
 
-bgrabitmap
+The **Canvas2D** property of type TBGRACanvas2D provides a canvas with 2d transformation and [similar to HTML5](https://wiki.freepascal.org/BGRABitmap_tutorial_14).
 
-TBGRACanvas  Provides a canvas with opacity and antialiasing.
+@section(1 Resources More resources)
 
-https://wiki.freepascal.org/BGRABitmap_tutorial_13
+You can read more about BGRABitmap in the [wiki](http://wiki.freepascal.org/BGRABitmap). And also you can follow [tutorials](http://wiki.freepascal.org/BGRABitmap_tutorial) to learn how to use BGRABitmap.
 
-TBGRACanvas2D  Provides a canvas with 2d transformation and similar to HTML5.
+There is also an [image transitions tutorial](https://gilles-vasseur.developpez.com/tutoriels/transitions/bgra1/) in French.
 
-https://wiki.freepascal.org/BGRABitmap_tutorial_14
-
-Image transitions tutorial (in french language).
-@unorderedlist(
-@itemSpacing(Compact)
-@item(https://gilles-vasseur.developpez.com/tutoriels/transitions/bgra1/)
-@item(https://gilles-vasseur.developpez.com/tutoriels/transitions/bgra2/)
-@item(https://gilles-vasseur.developpez.com/tutoriels/transitions/bgra3/)
-@item(https://gilles-vasseur.developpez.com/tutoriels/transitions/bgra4/)
-@item(https://gilles-vasseur.developpez.com/tutoriels/transitions/bgra5/)
-@item(https://gilles-vasseur.developpez.com/tutoriels/transitions/bgra6/)
-@item(https://gilles-vasseur.developpez.com/tutoriels/transitions/bgra7/)
-)
-
-3rd paragraph. URLs are automatically recognized, like this:
-http://pasdoc.sourceforge.net/. You have to write the @@ twice
-(like @@@@) to get one @@ in the output. Also normal @@-tags work:
-@code(This is some code.)
-
-@section(1 Wiki Wiki)
-
-@url(http://wiki.freepascal.org/BGRABitmap wiki)
-
-@section(1 Tutorial Tutorial)
-
-@url(https://wiki.freepascal.org/BGRABitmap_tutorial)
-
-@section(1 Forum Forum)
-
-@url(https://forum.lazarus.freepascal.org/index.php/board,46.0.html)
-
-
-@section(1 Canvas2d Canvas2d)
-
-TBGRACanvas2D provides a canvas with 2d transformation and similar to HTML5.
-
-Here are some links to HTML5 canvas documentation that also applies to canvas2d.
-
-@url(https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
-
-@url(https://www.rgraph.net/canvas/reference/index.html)
-
-@url(https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas)
-
-@url(https://www.w3schools.com/tags/ref_canvas.asp)
-
-@url(https://bucephalus.org/text/CanvasHandbook/CanvasHandbook.html)
-
-
-Sample from circular 
-
-@url(https://forum.lazarus.freepascal.org/index.php/topic,65340.msg498899/topicseen.html)
-
-    @table(
-      @rowHead( @cell(bgrabitmap) @cell(javascript) )
-      @row( 
-	  
-	  @cell(@LongCode(#
-uses BGRABitmap, BGRABitmapTypes, BGRACanvas2D;
- 
-{$R *.lfm}
- 
-{ TForm1 }
- 
-procedure TForm1.FormPaint(Sender: TObject);
-var
-  bmp: TBGRABitmap;
-  ctx: TBGRACanvas2D;
-  gradient: IBGRACanvasGradient2D;
-begin
-  bmp := TBGRABitmap.Create(ClientWidth, ClientHeight, StrToBGRA('#E0E2E5'));
-  ctx := bmp.Canvas2d;
- 
-  // Draw the outer rounded rectangle
-  gradient := ctx.createLinearGradient(100, 20, 100, 180);
-  gradient.addColorStop(0, 'white');
-  gradient.addColorStop(1, '#7C878A');
-  ctx.fillStyle(gradient);
-  ctx.beginPath();
-  ctx.roundRect(20, 20, 160, 160, 20);
-  ctx.save();
-  ctx.shadowBlur := 10;
-  ctx.shadowColor('rgba(0,0,0, .8)');
-  ctx.shadowOffsetX := 0;
-  ctx.shadowOffsetY := 10;
-  ctx.fill();
-  ctx.restore();
- 
-  // Draw the blue circle with gradient
-  gradient := ctx.createLinearGradient(100, 30, 100, 170);
-  gradient.addColorStop(0, '#CAEBF5');
-  gradient.addColorStop(1, '#0F5369');
-  ctx.strokeStyle(gradient);
-  ctx.beginPath();
-  ctx.arc(100, 100, 70, 0, Pi * 2);
-  ctx.lineWidth := 10;
-  ctx.stroke();
- 
-  gradient := ctx.createLinearGradient(100, 50, 100, 150);
-  gradient.addColorStop(0, '#003C50');
-  gradient.addColorStop(1, '#53E6FF');
-  ctx.strokeStyle(gradient);
-  ctx.beginPath();
-  ctx.arc(100, 100, 60, 0, Pi * 2);
-  ctx.lineWidth := 10;
-  ctx.stroke();
- 
-  bmp.Draw(Canvas, 0,0, true);
-  bmp.Free;
-end;	  
- 
-	  #)) 
-	  
-	  @cell(
-	  @url(https://jsfiddle.net/qvcps6u2/)
-	  @LongCode(#
-var my_canvas = document.getElementById('canvas'),
-    ctx = my_canvas.getContext("2d");
-    
-ctx.fillStyle = "#E0E2E5";
-ctx.fillRect(0, 0, 200, 200);
-    
-// Draw the outer rounded rectangle
-var gradient = ctx.createLinearGradient(100, 20, 100, 180);
-gradient.addColorStop(0, "white");
-gradient.addColorStop(1, "#7C878A");
-ctx.fillStyle = gradient;
-ctx.beginPath();
-ctx.roundRect(20, 20, 160, 160, 20);
-ctx.save();
-ctx.shadowBlur = 10;
-ctx.shadowColor = "rgba(0,0,0, .6)";
-ctx.shadowOffsetX = 0;
-ctx.shadowOffsetY = 10;
-ctx.fill();
-ctx.restore();
-
-// Draw the blue circle with gradient
-gradient = ctx.createLinearGradient(100, 30, 100, 170);
-gradient.addColorStop(0, "#CAEBF5");
-gradient.addColorStop(1, "#0F5369");
-ctx.strokeStyle = gradient;
-ctx.beginPath();
-ctx.arc(100, 100, 70, 0, Math.PI * 2);
-ctx.lineWidth = 10;
-ctx.stroke();
-
-gradient = ctx.createLinearGradient(100, 50, 100, 150);
-gradient.addColorStop(0, "#003C50");
-gradient.addColorStop(1, "#53E6FF");
-ctx.strokeStyle = gradient;
-ctx.beginPath();
-ctx.arc(100, 100, 60, 0, Math.PI * 2);
-ctx.lineWidth = 10;
-ctx.stroke(); 
-	  #)) 
-	  
-	  )
-    ) 
-
-@image(blue_circular_bevel_js.png)
-
-Normal links work : @link(MyConstant).
-
-Blah.
-
-Blah.
-
-Blah.
-
-Blah.
-
-Blah.
-
-Blah.
-
-@anchor(SomeAnchor) Here is a paragraph with an anchor.
-It looks like a normal paragraph, but you can link to it
-with @@link(SomeAnchor).
-
-Blah.
-
-
-Blah.
-
-Blah.
-
-Blah.
-
-Blah.
-
-
-Sections with the same user-visible names are OK (example
-when this is useful is below):
-
-@section(1 SecStrings Routines dealing with strings)
-
-@section(2 SecStringsOverview Overview)
-
-@section(2 SecStringsExamples Examples)
-
-@section(1 SecIntegers Routines dealing with integers)
-
-@section(2 SecIntegersOverview Overview)
-
-@section(2 SecIntegersExamples Examples)
+Lazarus forum has a [category](https://forum.lazarus.freepascal.org/index.php/board,46.0.html) for BGRABitmap. To report bugs, please check [issues](https://github.com/bgrabitmap/bgrabitmap/issues) on GitHub.

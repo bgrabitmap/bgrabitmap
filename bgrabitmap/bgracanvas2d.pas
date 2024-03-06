@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 
-{ Equivalent to HTML Canvas (supports affine transformation, gradients and clipping). }
+{ @abstract(Equivalent to HTML Canvas (supports affine transformation, gradients and clipping).)
+
+  To use it, access Canvas2D property of a TBGRABitmap object or create an instance of TBGRACanvas2D.
+
+  Fonctions are similar to Javascript [CanvasRenderingContext2D](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D)}
 unit BGRACanvas2D;
 
 { To do :
@@ -93,7 +97,115 @@ type
     width,height: single;
   end;
 
-  { Implementation of Canvas2d similar to HTML. }
+  { @abstract(Implementation of [Canvas2d](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D) similar to HTML.)
+
+    Comparison between TBGRACanvas2D and Javascript HTML canvas:
+
+    @table(
+    @rowHead( @cell(BGRABitmap) @cell(JavaScript) )
+    @row(
+
+	@cell(@LongCode(#
+uses BGRABitmap, BGRABitmapTypes, BGRACanvas2D;
+
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  bmp: TBGRABitmap;
+  ctx: TBGRACanvas2D;
+  gradient: IBGRACanvasGradient2D;
+begin
+  bmp := TBGRABitmap.Create(ClientWidth, ClientHeight, StrToBGRA('#E0E2E5'));
+  ctx := bmp.Canvas2d;
+
+  // Draw the outer rounded rectangle
+  gradient := ctx.createLinearGradient(100, 20, 100, 180);
+  gradient.addColorStop(0, 'white');
+  gradient.addColorStop(1, '#7C878A');
+  ctx.fillStyle(gradient);
+  ctx.beginPath();
+  ctx.roundRect(20, 20, 160, 160, 20);
+  ctx.save();
+  ctx.shadowBlur := 10;
+  ctx.shadowColor('rgba(0,0,0, .8)');
+  ctx.shadowOffsetX := 0;
+  ctx.shadowOffsetY := 10;
+  ctx.fill();
+  ctx.restore();
+
+  // Draw the blue circle with gradient
+  gradient := ctx.createLinearGradient(100, 30, 100, 170);
+  gradient.addColorStop(0, '#CAEBF5');
+  gradient.addColorStop(1, '#0F5369');
+  ctx.strokeStyle(gradient);
+  ctx.beginPath();
+  ctx.arc(100, 100, 70, 0, Pi * 2);
+  ctx.lineWidth := 10;
+  ctx.stroke();
+
+  gradient := ctx.createLinearGradient(100, 50, 100, 150);
+  gradient.addColorStop(0, '#003C50');
+  gradient.addColorStop(1, '#53E6FF');
+  ctx.strokeStyle(gradient);
+  ctx.beginPath();
+  ctx.arc(100, 100, 60, 0, Pi * 2);
+  ctx.lineWidth := 10;
+  ctx.stroke();
+
+  bmp.Draw(Canvas, 0,0, true);
+  bmp.Free;
+end;
+
+	#))
+
+	@cell(
+	Try on [JSFiddle](https://jsfiddle.net/qvcps6u2/)
+	@LongCode(#
+var my_canvas = document.getElementById('canvas'),
+    ctx = my_canvas.getContext("2d");
+
+ctx.fillStyle = "#E0E2E5";
+ctx.fillRect(0, 0, 200, 200);
+
+// Draw the outer rounded rectangle
+var gradient = ctx.createLinearGradient(100, 20, 100, 180);
+gradient.addColorStop(0, "white");
+gradient.addColorStop(1, "#7C878A");
+ctx.fillStyle = gradient;
+ctx.beginPath();
+ctx.roundRect(20, 20, 160, 160, 20);
+ctx.save();
+ctx.shadowBlur = 10;
+ctx.shadowColor = "rgba(0,0,0, .6)";
+ctx.shadowOffsetX = 0;
+ctx.shadowOffsetY = 10;
+ctx.fill();
+ctx.restore();
+
+// Draw the blue circle with gradient
+gradient = ctx.createLinearGradient(100, 30, 100, 170);
+gradient.addColorStop(0, "#CAEBF5");
+gradient.addColorStop(1, "#0F5369");
+ctx.strokeStyle = gradient;
+ctx.beginPath();
+ctx.arc(100, 100, 70, 0, Math.PI * 2);
+ctx.lineWidth = 10;
+ctx.stroke();
+
+gradient = ctx.createLinearGradient(100, 50, 100, 150);
+gradient.addColorStop(0, "#003C50");
+gradient.addColorStop(1, "#53E6FF");
+ctx.strokeStyle = gradient;
+ctx.beginPath();
+ctx.arc(100, 100, 60, 0, Math.PI * 2);
+ctx.lineWidth = 10;
+ctx.stroke();
+	#))
+
+	)
+  )
+
+  @image(../doc/blue_circular_bevel_js.png)
+}
   TBGRACanvas2D = class(IBGRAPath)
   private
     FSurface: TBGRACustomBitmap;
