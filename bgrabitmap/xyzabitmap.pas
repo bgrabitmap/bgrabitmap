@@ -20,7 +20,7 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-  {* Bitmap with TXYZA pixel format, [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space))
+  {* Bitmap with TXYZA pixel format, [CIE 1931 XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space)
      with floating point values. }
   TXYZABitmap = class(specialize TGenericUniversalBitmap<TXYZA,TXYZAColorspace>)
   protected

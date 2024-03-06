@@ -11,8 +11,7 @@ uses
   BGRAClasses, SysUtils, FPImage, BGRABitmapTypes, BGRAGraphics, BGRAPen, BGRAArrow;
 
 type
-  {* Extends the generic class TCustomUniversalDrawer with an implementation that
-     is colorspace agnostic }
+  {* Drawer implementation that is colorspace agnostic }
   TUniversalDrawer = class(TCustomUniversalDrawer)
 
     class function GetMaxColorChannelDepth(ADest: TCustomUniversalBitmap): byte;

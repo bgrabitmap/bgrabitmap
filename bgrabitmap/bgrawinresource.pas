@@ -38,6 +38,7 @@ const
   ICON_OR_CURSOR_FILE_CURSOR_TYPE = 2;
 
 type
+  { Contain a name or integer identifier for a resource }
   TNameOrId = record
     Id: integer;
     Name: utf8string;

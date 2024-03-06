@@ -100,6 +100,7 @@ type
    );
 
   TSVGOrientAuto = (soaNone,soaAuto,soaAutoReverse);
+  { Orientation to use for a marker relative to path }
   TSVGOrient = record
     auto: TSVGOrientAuto;
     angle: TSVGNumber;
@@ -108,26 +109,26 @@ type
   TFindStyleState = (fssNotSearched,
                      fssNotFound,
                      fssFound);
+  { One or more CSS attributes }
   TStyleAttribute = record
      attr  : string;
      pos   : integer;
   end;
   ArrayOfTStyleAttribute = array of TStyleAttribute;
   
-  { TSVGViewBox }
-
+  { SVG bounding box for coordinates }
   TSVGViewBox = record
     min, size: TPointF;
     function ToString: string;
     class function Parse(AValue: string): TSVGViewBox; static;
     class function DefaultValue: TSVGViewBox; static;
   end;
+  { Size defined in CSS units }
   TSVGSize = record
     width, height: TFloatWithCSSUnit;
   end;
 
-  { TSVGPreserveAspectRatio }
-
+  { SVG parameter to specify aspect ratio and alignment }
   TSVGPreserveAspectRatio = record
      Preserve, Slice: boolean;
      HorizAlign: TAlignment;

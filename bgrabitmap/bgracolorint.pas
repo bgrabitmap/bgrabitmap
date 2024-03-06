@@ -17,6 +17,7 @@ uses
   BGRABitmapTypes;
 
 type
+  { RGBA color defined by integers from 0 to 65536 }
   TColorInt65536 = packed record
     r,g,b,a: integer;
   end;

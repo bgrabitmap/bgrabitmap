@@ -15,6 +15,7 @@ const
   MioMapTransparentColor = $F81F;
 
 type
+  { Header format for iGo bitmap }
   TMioHeader = packed record
     magic: packed array[1..2] of char;
     format: word;

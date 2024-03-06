@@ -43,7 +43,7 @@ type
     function KernelWidth: single; virtual; abstract;
   end;
 
-  { Mitchell kernel is a filter that provides smooth interpolation but less blurry than TCubicKernel }
+  { Filter that provides smooth interpolation but less blurry than TCubicKernel }
   TMitchellKernel = class(TWideKernelFilter)
     function Interpolation(t: single): single; override;
     function ShouldCheckRange: boolean; override;

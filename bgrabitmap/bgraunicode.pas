@@ -52,8 +52,7 @@ const
 type
   PUnicodeBidiInfo = ^TUnicodeBidiInfo;
 
-  { TUnicodeBidiInfo }
-
+  { Bidirectional layout information for one Unicode character }
   TUnicodeBidiInfo = packed record
   private
     function GetDiscardable: boolean;
@@ -154,7 +153,8 @@ const
   UNICODE_RIGHT_POINTING_ANGLE_BRACKET = $232A;
   UNICODE_RIGHT_ANGLE_BRACKET = $3009;
 
-type //bracket matching
+type
+  { Pair of matching brackets }
   TUnicodeBracketInfo = record
     IsBracket: boolean;
     OpeningBracket,ClosingBracket: LongWord;

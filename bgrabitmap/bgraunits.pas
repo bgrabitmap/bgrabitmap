@@ -18,6 +18,7 @@ type
               cuCentimeter, cuMillimeter,
               cuInch, cuPica, cuPoint,
               cuFontEmHeight, cuFontXHeight, cuPercent);
+  { Floating-point value expressed in a CSS unit }
   TFloatWithCSSUnit = record
     value: single;
     CSSUnit: TCSSUnit;

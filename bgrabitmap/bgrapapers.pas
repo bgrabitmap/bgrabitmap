@@ -11,6 +11,7 @@ interface
 uses Types;
 
 type
+  { Description of a paper size }
   TPaperSize = packed record
     name:String[16];
     w, h:Single;

@@ -88,6 +88,7 @@ type
     property clipMaskReadWrite: TGrayscaleMask read GetClipMaskReadWrite;
   end;
 
+  { Text measurement in TBGRACanvas2D }
   TCanvas2dTextSize = record
     width,height: single;
   end;

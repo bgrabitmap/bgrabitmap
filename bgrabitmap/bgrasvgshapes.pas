@@ -746,6 +746,7 @@ type
     property Target: string read GetTarget write SetTarget;
   end;
 
+  { Set of rules for a selector in CSS }
   TSVGRuleset = record
     selector,
     declarations: string;

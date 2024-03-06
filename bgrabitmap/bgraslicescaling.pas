@@ -11,6 +11,7 @@ uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmap, BGRABitmapTypes, IniFiles;
 
 type
+  { Margins where the bitmap is not stretched }
   TMargins = record
     top, right, bottom, left: integer;
   end;

@@ -17,8 +17,7 @@ type
   TBGRAApproxPalette = class;
   TBiggestLeafMethod = (blMix, blApparentInterval, blWeight);
 
-  { TDimensionMinMax }
-
+  { Range according to one dimension of a color }
   TDimensionMinMax = object
     Minimum: UInt32;
     Maximum: UInt32;

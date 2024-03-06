@@ -11,8 +11,7 @@ uses
   BGRAClasses, SysUtils, zipper;
 
 type
-  {* Extends the TUnZipper class to allow to define the input stream and to extract specific file
-     into a stream }
+  {* Unzipping class with custom input stream that can extract a specific file }
   TUnzipperStreamUtf8 = class(TUnZipper)
     private
       FCustomOutputStream: TStream;

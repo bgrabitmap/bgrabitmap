@@ -666,7 +666,7 @@ type
     function getCursor: TBGRACustomPathCursor;
   end;
 
-  {* Generic class representing a path, providing methods for creation, exploration and rendering }
+  {* Generic class representing a path, providing methods for creation and exploration }
   TBGRACustomPath = class(IBGRAPath)
     {** Constructor to create a custom path. Must be overridden in subclasses }
     constructor Create; virtual; abstract;

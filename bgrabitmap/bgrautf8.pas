@@ -95,10 +95,12 @@ function UTF16ToUTF8(const S: UnicodeString): AnsiString;
 procedure UTF8ToUnicodeArray(const sUTF8: string; out u: TUnicodeArray; out ofs: TIntegerArray);
 
 type
+  { Unicode layout information along with offset for each UTF8 character }
   TBidiUTF8Info = packed record
     Offset: Integer;
     BidiInfo: TUnicodeBidiInfo;
   end;
+  { Array of unicode layout for UTF8 text }
   TBidiUTF8Array = packed array of TBidiUTF8Info;
   TUnicodeDisplayOrder = BGRAUnicode.TUnicodeDisplayOrder;
   TUnicodeBidiInfo = BGRAUnicode.TUnicodeBidiInfo;
@@ -121,8 +123,7 @@ function UTF8Ligature(const sUTF8: string; ARightToLeft: boolean; ALigatureLeft,
 
 type
 
-  { TGlyphUtf8 }
-
+  { Information about one glyph in a UTF8 text }
   TGlyphUtf8 = record
   private
     function GetEmpty: boolean;
@@ -133,8 +134,7 @@ type
     property Empty: boolean read GetEmpty;
   end;
 
-  { TGlyphCursorUtf8 }
-
+  { Cursor to go through a UTF8 text glyph by glyph }
   TGlyphCursorUtf8 = record
   private
     sUTF8: string;

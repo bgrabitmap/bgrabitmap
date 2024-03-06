@@ -62,7 +62,9 @@ type
   end;
 
 type
-  { Abstract implementation of a BGRA palette using a binary tree to ensure average access time. }
+  { @abstract(Abstract implementation of a BGRA palette using a binary tree.)
+
+    It ensures relatively fast and average access time even with many entries. }
   TBGRAAvgLvlPalette = class(TBGRACustomPalette)
   protected
     FTree: TAVLTree;

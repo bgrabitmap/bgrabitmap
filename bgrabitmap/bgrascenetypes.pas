@@ -15,6 +15,7 @@ type
   TAntialiasingMode3D = (am3dNone, am3dMultishape, am3dResample);
   TPerspectiveMode3D = (pmLinearMapping, pmPerspectiveMapping, pmZBuffer);
 
+  { Options when rendering a 3D scene }
   TRenderingOptions = record
     LightingInterpolation: TLightingInterpolation3D;
     AntialiasingMode: TAntialiasingMode3D;
@@ -25,6 +26,7 @@ type
   end;
 
   PSceneLightingContext = ^TSceneLightingContext;
+  { Context when computing lighting }
   TSceneLightingContext = packed record
     basic: TBasicLightingContext;
     {128} diffuseColor, {144} specularColor: TColorInt65536;
@@ -40,6 +42,7 @@ type
     SaturationHighF: single;
   end;
 
+  { Bounds of a 3D box }
   TBox3D = record
     min,max: TPoint3D;
   end;
@@ -536,6 +539,7 @@ type
 
   end;
 
+  { Information about a face to render }
   TFaceRenderingDescription = record
     NormalsMode: TLightingNormal3D;
 

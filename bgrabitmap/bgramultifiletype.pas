@@ -12,9 +12,7 @@ uses
   BGRAClasses, SysUtils, fgl;
 
 type
-
-  { TEntryFilename }
-
+  { Filename for an entry in a multifile container }
   TEntryFilename = record
   private
     FExtension: utf8string;

@@ -19,8 +19,7 @@ type
   TParagraphLayoutSplitEvent = procedure(ASender: TObject; AParagraphIndex: integer;
       ASubBrokenIndex, ACharIndex: integer) of object;
 
-  { TBidiCaretPos }
-
+  { Position of carte in bidirectional text }
   TBidiCaretPos = record
     PartIndex: integer;
 
@@ -35,7 +34,7 @@ type
 
   PPartInfo = ^TPartInfo;
 
-  { TPartInfo }
+  { Information about a part of text (having same lavel and direction) }
 
   TPartInfo = record
          brokenLineIndex: integer;
@@ -49,8 +48,7 @@ type
 
   PBrokenLineInfo = ^TBrokenLineInfo;
 
-  { TBrokenLineInfo }
-
+  { Information about a broken line (limited by layout with or a separator) }
   TBrokenLineInfo = record
                 unbrokenLineIndex: integer;
                 startIndex, endIndex: integer;
@@ -64,6 +62,7 @@ type
               end;
 
   PParagraphInfo = ^TParagraphInfo;
+  { Information about a paragraph }
   TParagraphInfo = record
     alignment: TBidiTextAlignment;
     layoutComputed, overflow: boolean;
@@ -76,8 +75,7 @@ type
 
   TBidiTextLayout = class;
 
-  { TPartEnumerator }
-
+  { Enumerator for text parts }
   TPartEnumerator = record
   private
     FJustCreated: boolean;
@@ -369,8 +367,7 @@ type
     property FontBidiMode: TFontBidiMode read GetFontBidiMode write SetFontBidiMode;
   end;
 
-  { TBidiLayoutTree }
-
+  { Tree of bidirectional text with actual size computation }
   TBidiLayoutTree = class(TBidiTree)
   private
     FBidiPos: single;
@@ -399,6 +396,7 @@ type
     property Height: single read GetHeight;
   end;
 
+  { Parameters for TBidiLayoutTree }
   TBidiLayoutTreeData = record
     Layout: TBidiTextLayout;
     MaxWidth: single;

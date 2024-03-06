@@ -36,8 +36,7 @@ type
     property Handle: LongWord read FBuffer;
   end;
 
-  { TAttributeVariable }
-
+  { Attribute variable in shader (value defined per vertex) }
   TAttributeVariable = object
   protected
     FOwner: TObject;

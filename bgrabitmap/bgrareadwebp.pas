@@ -11,6 +11,7 @@ uses
   BGRAClasses, SysUtils, FPImage;
 
 type
+  { Header for WebP files }
   TWebPHeader = record
     RIFFCode: array[1..4] of char;
     FileSize: LongWord;

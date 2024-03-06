@@ -158,6 +158,7 @@ type
   end;
 
   PCustomPointRecord = ^TCustomPointRecord;
+  { Base record to describe a point in a polygon to be filled }
   TCustomPointRecord = record
     originalIndex: integer;
     slope: single;
@@ -194,6 +195,7 @@ type
     property NbPoints: integer read GetNbPoints;
   end;
 
+  { Horizontal strip of a polygon being filled }
   TPolySlice = record
     y1,y2: single;
     segments: array of record

@@ -174,6 +174,7 @@ type
   end;
   PPSDResourceBlock =^TPSDResourceBlock;
 
+  { Data block }
   TPSDResourceBlockData = packed record
     Size:LongWord;
     Data:Byte;
