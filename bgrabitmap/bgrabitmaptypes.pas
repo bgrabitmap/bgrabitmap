@@ -1405,7 +1405,7 @@ begin
   posDot := LastDelimiter('.', ext);
   if posDot <> 0 then ext := copy(ext,posDot,length(ext)-posDot+1)
   else ext := '.'+ext;
-  ext := UTF8LowerCase(ext);
+  ext := LowerCase(ext);
 
   if (ext = '.jpg') or (ext = '.jpeg') then result := ifJpeg else
   if (ext = '.png') or (ext = '.apng') then result := ifPng else
