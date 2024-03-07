@@ -67,7 +67,6 @@
 ../bgrabitmap/bgrareadtga.pas
 ../bgrabitmap/bgrareadtiff.pas
 ../bgrabitmap/bgrareadwebp.pas
-../bgrabitmap/bgrareadwriteconfig.pas
 ../bgrabitmap/bgrareadxpm.pas
 ../bgrabitmap/bgrarenderer3d.pas
 ../bgrabitmap/bgraresample.pas
