@@ -199,6 +199,7 @@ begin
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
+var baseDir: string;
 begin
  svg:= nil;
  last_image:= nil;
@@ -207,8 +208,12 @@ begin
 
  with FileListBox1 do
  begin
-  Directory:= {$IFDEF DARWIN}ExtractFilePath(Application.ExeName)+'../../../'+{$ENDIF}
-              'svg'+PathDelim;
+  baseDir := ExtractFilePath(Application.ExeName);
+  {$IFDEF DARWIN}
+  if not FileExists(baseDir+'testsvg') then
+    baseDir += '../../../';
+  {$ENDIF}
+  Directory := baseDir+'svg'+PathDelim;
   Mask:= '*.svg';
  end;
 
