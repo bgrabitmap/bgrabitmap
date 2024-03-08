@@ -145,10 +145,6 @@ var
 {$DEFINE INCLUDE_INTERFACE}
 {$I generatedcolorspace.inc}
 
-{ Handle overflow by bringing values to the range 0 to 1. The luma parameters indicate
-  the brightness of each RGB channel (typically green is brighter) }
-procedure HandleLinearRGBAOverflow(var result: TLinearRGBA; LumaRed, LumaGreen, LumaBlue: single); inline;
-
 { Converts a color from TBGRAPixel to TByteMask (grayscale) taking into account gamma correction }
 function BGRAToMask(const ABGRAPixel: TBGRAPixel): TByteMask;
 { Converts a TExpandedPixel color to a TByteMask (grayscale) }
@@ -167,6 +163,9 @@ function BGRAPixelToStdRGBA(const ABGRAPixel: TBGRAPixel): TStdRGBA;
 { Converts a TFPColor color to a TStdRGBA }
 function FPColorToStdRGBA(const AFPColor: TFPColor): TStdRGBA;
 
+{ Handle overflow by bringing values to the range 0 to 1. The luma parameters indicate
+  the brightness of each RGB channel (typically green is brighter) }
+procedure HandleLinearRGBAOverflow(var result: TLinearRGBA; LumaRed, LumaGreen, LumaBlue: single); inline;
 { Converts a TLinearRGBA into a TExpandedPixel (clamped to 0..65535) }
 function LinearRGBAToExpandedPixel(const ALinearRGBA: TLinearRGBA): TExpandedPixel;
 { Converts a TExpandedPixel to a TLinearRGBA }

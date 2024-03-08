@@ -721,6 +721,7 @@ type
     procedure PutImage(X, Y: integer; ASource: TCustomUniversalBitmap; AMode: TDrawMode; AOpacity: byte = 255); virtual;
 
   public
+    {$IFNDEF BGRABITMAP_CORE}
     //filters
     function FilterBlurRadial(radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
     function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
@@ -730,7 +731,7 @@ type
     function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
     function FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
     function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
-
+    {$ENDIF}
   end;
 
   { Abstract class for a drawer on an universal bitmap }
@@ -847,6 +848,7 @@ type
     class procedure FillEllipseAntialias(ADest: TCustomUniversalBitmap;
                     const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush); overload; virtual; abstract;
 
+    {$IFNDEF BGRABITMAP_CORE}
     //filters
     class procedure FilterBlurRadial(ASource: TCustomUniversalBitmap; const ABounds: TRect;
                               radiusX, radiusY: single; blurType: TRadialBlurType;
@@ -857,6 +859,7 @@ type
     class procedure FilterCustomBlur(ASource: TCustomUniversalBitmap; const ABounds: TRect;
                               mask: TCustomUniversalBitmap;
                               ADest: TCustomUniversalBitmap); virtual; abstract;
+    {$ENDIF}
 
   end;
   TUniversalDrawerAny = class of TCustomUniversalDrawer;
@@ -1768,25 +1771,25 @@ begin
   ASource.ScanOffset := oldOfs;
 end;
 
-function TCustomUniversalBitmap.FilterBlurRadial(radius: single;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurRadial(radius: single;
   blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   Result := FilterBlurRadial(rect(0,0,Width,Height), radius,radius, blurType, ACopyProperties);
-end;
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect;
   radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   Result := FilterBlurRadial(ABounds, radius,radius, blurType, ACopyProperties);
-end;
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurRadial(radiusX, radiusY: single;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurRadial(radiusX, radiusY: single;
   blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   Result := FilterBlurRadial(rect(0,0,Width,Height), radiusX,radiusY, blurType, ACopyProperties);
-end;
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect; radiusX,
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect; radiusX,
   radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
@@ -1794,15 +1797,15 @@ begin
   if ACopyProperties then CopyPropertiesTo(result);
   result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
   UniDrawerClass.FilterBlurRadial(self, ABounds, radiusX,radiusY, blurType, result);
-end;
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurMotion(distance: single;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurMotion(distance: single;
   angle: single; oriented: boolean; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   result := FilterBlurMotion(rect(0,0,Width,Height), distance, angle, oriented, ACopyProperties);
-end;
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurMotion(const ABounds: TRect;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurMotion(const ABounds: TRect;
   distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
@@ -1810,14 +1813,14 @@ begin
   if ACopyProperties then CopyPropertiesTo(result);
   result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
   UniDrawerClass.FilterBlurMotion(self, ABounds, distance, angle, oriented, result);
-end;
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   result := FilterCustomBlur(rect(0,0,Width,Height), mask, ACopyProperties);
-end;
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterCustomBlur(const ABounds: TRect;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterCustomBlur(const ABounds: TRect;
   mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
@@ -1825,7 +1828,7 @@ begin
   if ACopyProperties then CopyPropertiesTo(result);
   result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
   UniDrawerClass.FilterCustomBlur(self, ABounds, mask, result);
-end;
+end;{$ENDIF}
 
 procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
   const ABrush: TUniversalBrush; APenWidth: single);

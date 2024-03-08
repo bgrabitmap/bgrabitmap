@@ -17,8 +17,9 @@ interface
 uses
   SysUtils, BGRAClasses, FPImage, BGRAGraphics, BGRABitmapTypes,
   {$IFDEF BGRABITMAP_USE_FPCANVAS}FPImgCanv,{$ENDIF}
-  BGRACanvas, BGRACanvas2D, BGRATransform, BGRATextBidi,
-  UniversalDrawer, BGRAGrayscaleMask;
+  BGRATransform, UniversalDrawer
+  {$IFNDEF BGRABITMAP_CORE},
+  BGRAGrayscaleMask, BGRATextBidi, BGRACanvas, BGRACanvas2D{$ENDIF};
 
 type
   TBGRAPtrBitmap = class;
@@ -36,8 +37,8 @@ type
       coordinates if necessary and make them fit into the clipping rectangle }
     function CheckRectBounds(var x,y,x2,y2: integer; minsize: integer): boolean; inline;
     function CheckAntialiasRectBounds(var x,y,x2,y2: single; w: single): boolean;
-    function GetCanvasBGRA: TBGRACanvas;
-    function GetCanvas2D: TBGRACanvas2D;
+    {$IFNDEF BGRABITMAP_CORE}function GetCanvasBGRA: TBGRACanvas;{$ENDIF}
+    {$IFNDEF BGRABITMAP_CORE}function GetCanvas2D: TBGRACanvas2D;{$ENDIF}
     procedure GradientFillDithered(x, y, x2, y2: integer; c1, c2: TBGRAPixel;
       gtype: TGradientType; o1, o2: TPointF; mode: TDrawMode;
       gammaColorCorrection: boolean = True; Sinus: Boolean=False;
@@ -63,9 +64,9 @@ type
     FCanvasDrawModeFP: TDrawMode;
     FCanvasPixelProcFP: procedure(x, y: int32or64; const col: TBGRAPixel) of object;
 
-    //canvas-like with antialiasing and texturing
+    {$IFNDEF BGRABITMAP_CORE}//canvas-like with antialiasing and texturing
     FCanvasBGRA: TBGRACanvas;
-    FCanvas2D: TBGRACanvas2D;
+    FCanvas2D: TBGRACanvas2D;{$ENDIF}
 
     //drawing options
     FFontHeight: integer;
@@ -160,10 +161,10 @@ type
     function InternalNew: TBGRADefaultBitmap; override;
 
   public
-    {** Provides a canvas with opacity and antialiasing }
-    property CanvasBGRA: TBGRACanvas read GetCanvasBGRA;
-    {** Provides a canvas with 2d transformation and similar to HTML5. }
-    property Canvas2D: TBGRACanvas2D read GetCanvas2D;
+    {$IFNDEF BGRABITMAP_CORE}{** Provides a canvas with opacity and antialiasing }
+    property CanvasBGRA: TBGRACanvas read GetCanvasBGRA;{$ENDIF}
+    {$IFNDEF BGRABITMAP_CORE}{** Provides a canvas with 2d transformation and similar to HTML5. }
+    property Canvas2D: TBGRACanvas2D read GetCanvas2D;{$ENDIF}
     {** For more properties, see parent class [[TBGRACustomBitmap and IBGRAScanner#TBGRACustomBitmap|TBGRACustomBitmap]] }
 
     procedure SetSize(AWidth, AHeight: integer); override;
@@ -421,13 +422,17 @@ type
     procedure FillTriangleLinearColor(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); override;
     procedure FillTriangleLinearColorAntialias(pt1,pt2,pt3: TPointF; c1,c2,c3: TBGRAPixel); override;
     procedure FillTriangleLinearMapping(pt1,pt2,pt3: TPointF; texture: IBGRAScanner; tex1, tex2, tex3: TPointF; TextureInterpolation: Boolean= True); override;
-    procedure FillTriangleLinearMappingLightness(pt1,pt2,pt3: TPointF; texture: IBGRAScanner; tex1, tex2, tex3: TPointF; light1,light2,light3: word; TextureInterpolation: Boolean= True); override;
+    {$IFNDEF BGRABITMAP_CORE}procedure FillTriangleLinearMappingLightness(pt1,pt2,pt3: TPointF;
+      texture: IBGRAScanner; tex1, tex2, tex3: TPointF; light1,light2,light3:
+        word; TextureInterpolation: Boolean= True); override;{$ENDIF}
     procedure FillTriangleLinearMappingAntialias(pt1,pt2,pt3: TPointF; texture: IBGRAScanner; tex1, tex2, tex3: TPointF); override;
 
     procedure FillQuadLinearColor(pt1,pt2,pt3,pt4: TPointF; c1,c2,c3,c4: TBGRAPixel); override;
     procedure FillQuadLinearColorAntialias(pt1,pt2,pt3,pt4: TPointF; c1,c2,c3,c4: TBGRAPixel); override;
     procedure FillQuadLinearMapping(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; TextureInterpolation: Boolean= True; ACulling: TFaceCulling = fcNone; ACropToPolygon: boolean = true); override;
-    procedure FillQuadLinearMappingLightness(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; light1,light2,light3,light4: word; TextureInterpolation: Boolean= True); override;
+    {$IFNDEF BGRABITMAP_CORE}procedure FillQuadLinearMappingLightness(pt1,pt2,pt3,pt4: TPointF;
+        texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; light1,light2,light3,light4: word;
+          TextureInterpolation: Boolean= True); override;{$ENDIF}
     procedure FillQuadLinearMappingAntialias(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; ACulling: TFaceCulling = fcNone); override;
     procedure FillQuadPerspectiveMapping(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     procedure FillQuadPerspectiveMapping(pt1,pt2,pt3,pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; ACleanBorders: TRect; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
@@ -442,11 +447,13 @@ type
     procedure FillEllipseLinearColorAntialias(x, y, rx, ry: single; outercolor, innercolor: TBGRAPixel); overload; override;
     procedure FillEllipseLinearColorAntialias(AOrigin, AXAxis, AYAxis: TPointF; outercolor, innercolor: TBGRAPixel); overload; override;
 
+    {$IFNDEF BGRABITMAP_CORE}
     procedure FillPolyLinearMapping(const points: array of TPointF; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean); override;
     procedure FillPolyLinearMappingLightness(const points: array of TPointF; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean); override;
     procedure FillPolyLinearColor(const points: array of TPointF; AColors: array of TBGRAPixel); override;
     procedure FillPolyPerspectiveMapping(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean; zbuffer: psingle = nil); override;
     procedure FillPolyPerspectiveMappingLightness(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean; zbuffer: psingle = nil); override;
+    {$ENDIF}
 
     procedure ArrowStartAsNone; override;
     procedure ArrowStartAsClassic(AFlipped: boolean = false; ACut: boolean = false; ARelativePenWidth: single = 1); override;
@@ -479,8 +486,12 @@ type
     procedure TextOutCurved(ACursor: TBGRACustomPathCursor; const sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; override;
     procedure TextOutCurved(ACursor: TBGRACustomPathCursor; const sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; override;
 
-    procedure TextMultiline(ALeft,ATop,AWidth: single; const sUTF8: string; c: TBGRAPixel; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); overload; override;
-    procedure TextMultiline(ALeft,ATop,AWidth: single; const sUTF8: string; ATexture: IBGRAScanner; AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop; AParagraphSpacing: single = 0); overload; override;
+    {$IFNDEF BGRABITMAP_CORE}procedure TextMultiline(ALeft,ATop,AWidth: single; const sUTF8: string; c: TBGRAPixel;
+      AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop;
+      AParagraphSpacing: single = 0); overload; override;{$ENDIF}
+    {$IFNDEF BGRABITMAP_CORE}procedure TextMultiline(ALeft,ATop,AWidth: single; const sUTF8: string; ATexture: IBGRAScanner;
+      AAlign: TBidiTextAlignment = btaNatural; AVertAlign: TTextLayout = tlTop;
+      AParagraphSpacing: single = 0); overload; override;{$ENDIF}
 
     { Draw the UTF8 encoded string at the coordinate (x,y), clipped inside the rectangle ARect.
       Additional style information is provided by the style parameter.
@@ -489,9 +500,11 @@ type
     procedure TextRect(ARect: TRect; x, y: integer; const sUTF8: string; style: TTextStyle; texture: IBGRAScanner); overload; override;
 
     { Returns the total size of the string provided using the current font.
-      Orientation is not taken into account, so that the width is along the text. End of lines are stripped from the string. }
+      Orientation is not taken into account, so that the width is along the text.
+      End of lines are stripped from the string. }
     function TextSize(const sUTF8: string): TSize; override;
-    function TextSizeMultiline(const sUTF8: string; AMaxWidth: single = EmptySingle; AParagraphSpacing: single = 0): TSize; override;
+    {$IFNDEF BGRABITMAP_CORE}function TextSizeMultiline(const sUTF8: string;
+      AMaxWidth: single = EmptySingle; AParagraphSpacing: single = 0): TSize; override;{$ENDIF}
 
     { Returns the affine box of the string provided using the current font.
       Orientation is taken into account. End of lines are stripped from the string. }
@@ -596,11 +609,12 @@ type
     procedure GrayscaleToAlpha; override;
     procedure AlphaToGrayscale; override;
     function GetMaskFromAlpha: TBGRADefaultBitmap; override;
-    function GetGrayscaleMaskFromAlpha: TGrayscaleMask;
+    {$IFNDEF BGRABITMAP_CORE}function GetGrayscaleMaskFromAlpha: TGrayscaleMask;{$ENDIF}
     procedure ConvertToLinearRGB; override;
     procedure ConvertFromLinearRGB; override;
 
     {Filters}
+    {$IFNDEF BGRABITMAP_CORE}
     function FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
     function FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
     function FilterSmooth(ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
@@ -624,6 +638,7 @@ type
     function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
     function FilterCylinder(ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
     function FilterPlane(ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+    {$ENDIF}
   end;
 
   { Bitmap relying on a pointer to RGBA pixel data }
@@ -686,11 +701,13 @@ procedure BGRAGradientFill(bmp: TBGRACustomBitmap; x, y, x2, y2: integer;
 
 implementation
 
-uses Math, BGRAUTF8, BGRABlend, BGRAFilters, BGRAGradientScanner,
-  BGRAResample, BGRAPolygon, BGRAPolygonAliased,
-  BGRAPath, BGRAReadPcx, BGRAWritePcx, FPReadXPM, FPWriteXPM,
-  BGRAReadBMP, BGRAReadJpeg,
-  BGRADithering, BGRAFilterScanner;
+uses Math, BGRAUTF8, BGRABlend,
+  BGRAGradientScanner,
+  BGRAResample, BGRAPolygon, BGRAPath, BGRAFilterScanner
+  {$IFNDEF BGRABITMAP_CORE},
+  BGRAFilters, BGRAPolygonAliased, BGRADithering,
+  BGRAReadPcx, BGRAWritePcx, FPReadXPM, FPWriteXPM,
+  BGRAReadBMP, BGRAReadJpeg{$ENDIF};
 
 { TBGRAMemoryStreamBitmap }
 
@@ -1057,8 +1074,8 @@ begin
   DiscardXorMask;
   FFontRenderer.Free;
   {$IFDEF BGRABITMAP_USE_FPCANVAS}FCanvasFP.Free;{$ENDIF}
-  FCanvasBGRA.Free;
-  FCanvas2D.Free;
+  {$IFNDEF BGRABITMAP_CORE}FCanvasBGRA.Free;{$ENDIF}
+  {$IFNDEF BGRABITMAP_CORE}FCanvas2D.Free;{$ENDIF}
   FreeBitmap;
   inherited Destroy;
 end;
@@ -1687,7 +1704,8 @@ begin
   inherited Init;
   FBitmap    := nil;
   {$IFDEF BGRABITMAP_USE_FPCANVAS}FCanvasFP  := nil;{$ENDIF}
-  FCanvasBGRA := nil; 
+  {$IFNDEF BGRABITMAP_CORE}FCanvasBGRA := nil;{$ENDIF}
+  {$IFNDEF BGRABITMAP_CORE}FCanvas2D := nil;{$ENDIF}
   CanvasDrawModeFP := dmDrawWithTransparency;
   FCanvasOpacity := 255;
   FAlphaCorrectionNeeded := False;
@@ -2346,9 +2364,15 @@ end;
 
 procedure TBGRADefaultBitmap.FillTriangleLinearColor(pt1, pt2, pt3: TPointF;
   c1, c2, c3: TBGRAPixel);
+{$IFDEF BGRABITMAP_CORE}var
+  grad: TBGRAGradientTriangleScanner;
 begin
+  grad := TBGRAGradientTriangleScanner.Create(pt1,pt2,pt3, c1,c2,c3);
+  FillPoly([pt1,pt2,pt3],grad,dmDrawWithTransparency);
+  grad.Free;
+end;{$ELSE}begin
   FillPolyLinearColor([pt1,pt2,pt3],[c1,c2,c3]);
-end;
+end;{$ENDIF}
 
 procedure TBGRADefaultBitmap.FillTriangleLinearColorAntialias(pt1, pt2,
   pt3: TPointF; c1, c2, c3: TBGRAPixel);
@@ -2362,16 +2386,22 @@ end;
 
 procedure TBGRADefaultBitmap.FillTriangleLinearMapping(pt1, pt2, pt3: TPointF;
   texture: IBGRAScanner; tex1, tex2, tex3: TPointF; TextureInterpolation: Boolean= True);
+{$IFDEF BGRABITMAP_CORE}var
+  mapping: TBGRATriangleLinearMapping;
 begin
+  mapping := TBGRATriangleLinearMapping.Create(texture, pt1,pt2,pt3, tex1, tex2, tex3);
+  FillPoly([pt1,pt2,pt3],mapping,dmDrawWithTransparency);
+  mapping.Free;
+end;{$ELSE}begin
   FillPolyLinearMapping([pt1,pt2,pt3],texture,[tex1,tex2,tex3],TextureInterpolation);
-end;
+end;{$ENDIF}
 
-procedure TBGRADefaultBitmap.FillTriangleLinearMappingLightness(pt1, pt2,
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRADefaultBitmap.FillTriangleLinearMappingLightness(pt1, pt2,
   pt3: TPointF; texture: IBGRAScanner; tex1, tex2, tex3: TPointF; light1,
   light2, light3: word; TextureInterpolation: Boolean);
 begin
   FillPolyLinearMappingLightness([pt1,pt2,pt3],texture,[tex1,tex2,tex3],[light1,light2,light3],TextureInterpolation);
-end;
+end;{$ENDIF}
 
 procedure TBGRADefaultBitmap.FillTriangleLinearMappingAntialias(pt1, pt2,
   pt3: TPointF; texture: IBGRAScanner; tex1, tex2, tex3: TPointF);
@@ -2425,11 +2455,13 @@ var
   scan: TBGRAQuadLinearScanner;
   r: TRect;
 begin
+  {$IFNDEF BGRABITMAP_CORE}
   if ((abs(pt1.y-pt2.y)<1e-6) and (abs(pt3.y-pt4.y)<1e-6)) or
      ((abs(pt3.y-pt2.y)<1e-6) and (abs(pt1.y-pt4.y)<1e-6)) then
      FillPolyLinearMapping([pt1,pt2,pt3,pt4], texture,
             [tex1,tex2,tex3,tex4], TextureInterpolation)
   else
+  {$ENDIF}
   begin
     scan := TBGRAQuadLinearScanner.Create(texture,
          [tex1,tex2,tex3,tex4],
@@ -2452,7 +2484,7 @@ begin
   end;
 end;
 
-procedure TBGRADefaultBitmap.FillQuadLinearMappingLightness(pt1, pt2, pt3,
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRADefaultBitmap.FillQuadLinearMappingLightness(pt1, pt2, pt3,
   pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF; light1,
   light2, light3, light4: word; TextureInterpolation: Boolean);
 var
@@ -2467,7 +2499,7 @@ begin
   FillTriangleLinearMappingLightness(pt2,pt3,center, texture,tex2,tex3,centerTex, light2,light3,centerLight, TextureInterpolation);
   FillTriangleLinearMappingLightness(pt3,pt4,center, texture,tex3,tex4,centerTex, light3,light4,centerLight, TextureInterpolation);
   FillTriangleLinearMappingLightness(pt4,pt1,center, texture,tex4,tex1,centerTex, light4,light1,centerLight, TextureInterpolation);
-end;
+end;{$ENDIF}
 
 procedure TBGRADefaultBitmap.FillQuadLinearMappingAntialias(pt1, pt2, pt3,
   pt4: TPointF; texture: IBGRAScanner; tex1, tex2, tex3, tex4: TPointF;
@@ -2567,42 +2599,42 @@ begin
   affine.Free;
 end;
 
-procedure TBGRADefaultBitmap.FillPolyLinearMapping(const points: array of TPointF;
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRADefaultBitmap.FillPolyLinearMapping(const points: array of TPointF;
   texture: IBGRAScanner; texCoords: array of TPointF;
   TextureInterpolation: Boolean);
 begin
   PolygonLinearTextureMappingAliased(self,points,texture,texCoords,TextureInterpolation, FillMode = fmWinding);
-end;
+end;{$ENDIF}
 
-procedure TBGRADefaultBitmap.FillPolyLinearMappingLightness(
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRADefaultBitmap.FillPolyLinearMappingLightness(
   const points: array of TPointF; texture: IBGRAScanner;
   texCoords: array of TPointF; lightnesses: array of word;
   TextureInterpolation: Boolean);
 begin
   PolygonLinearTextureMappingAliasedWithLightness(self,points,texture,texCoords,TextureInterpolation,lightnesses,FillMode = fmWinding);
-end;
+end;{$ENDIF}
 
-procedure TBGRADefaultBitmap.FillPolyLinearColor(
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRADefaultBitmap.FillPolyLinearColor(
   const points: array of TPointF; AColors: array of TBGRAPixel);
 begin
   PolygonLinearColorGradientAliased(self,points,AColors, FillMode = fmWinding);
-end;
+end;{$ENDIF}
 
-procedure TBGRADefaultBitmap.FillPolyPerspectiveMapping(
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRADefaultBitmap.FillPolyPerspectiveMapping(
   const points: array of TPointF; const pointsZ: array of single;
   texture: IBGRAScanner; texCoords: array of TPointF;
   TextureInterpolation: Boolean; zbuffer: psingle);
 begin
   PolygonPerspectiveTextureMappingAliased(self,points,pointsZ,texture,texCoords,TextureInterpolation, FillMode = fmWinding, zbuffer);
-end;
+end;{$ENDIF}
 
-procedure TBGRADefaultBitmap.FillPolyPerspectiveMappingLightness(
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRADefaultBitmap.FillPolyPerspectiveMappingLightness(
   const points: array of TPointF; const pointsZ: array of single;
   texture: IBGRAScanner; texCoords: array of TPointF;
   lightnesses: array of word; TextureInterpolation: Boolean; zbuffer: psingle);
 begin
   PolygonPerspectiveTextureMappingAliasedWithLightness(self,points,pointsZ,texture,texCoords,TextureInterpolation,lightnesses, FillMode = fmWinding, zbuffer);
-end;
+end;{$ENDIF}
 
 procedure TBGRADefaultBitmap.DrawPath(APath: IBGRAPath;
   AStrokeColor: TBGRAPixel; AWidth: single; AFillColor: TBGRAPixel);
@@ -2862,14 +2894,18 @@ end;
 
 procedure TBGRADefaultBitmap.FillRect(x, y, x2, y2: integer;
   texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm);
-var dither: TDitheringTask;
 begin
   if not CheckClippedRectBounds(x,y,x2,y2) then exit;
-  dither := CreateDitheringTask(ditheringAlgorithm, texture, self, rect(x,y,x2,y2));
-  dither.ScanOffset := AScanOffset;
-  dither.DrawMode := mode;
-  dither.Execute;
-  dither.Free;
+  if ditheringAlgorithm = daNearestNeighbor then
+  begin
+    FillRect(x, y, x2, y2, texture, mode, ScanOffset, 65535);
+    exit;
+  end;
+  {$IFDEF BGRABITMAP_CORE}
+  raise Exception.Create('In core version of BGRABitmap, you need to use CreateDitheringTask doesn''t allow direct dithering fill');
+  {$ELSE}
+  DitheredFillRect(self, x, y, x2, y2, texture, mode, AScanOffset, ditheringAlgorithm);
+  {$ENDIF}
 end;
 
 {------------------------- Text functions ---------------------------------------}
@@ -2898,7 +2934,7 @@ begin
   InternalTextOutCurved(ACursor, sUTF8, BGRAPixelTransparent, ATexture, AAlign, ALetterSpacing);
 end;
 
-procedure TBGRADefaultBitmap.TextMultiline(ALeft, ATop, AWidth: single; const sUTF8: string;
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRADefaultBitmap.TextMultiline(ALeft, ATop, AWidth: single; const sUTF8: string;
   c: TBGRAPixel; AAlign: TBidiTextAlignment; AVertAlign: TTextLayout; AParagraphSpacing: single);
 var
   layout: TBidiTextLayout;
@@ -2919,9 +2955,9 @@ begin
   end;
   layout.DrawText(self, c);
   layout.Free;
-end;
+end;{$ENDIF}
 
-procedure TBGRADefaultBitmap.TextMultiline(ALeft, ATop, AWidth: single;
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRADefaultBitmap.TextMultiline(ALeft, ATop, AWidth: single;
   const sUTF8: string; ATexture: IBGRAScanner; AAlign: TBidiTextAlignment;
   AVertAlign: TTextLayout; AParagraphSpacing: single);
 var
@@ -2943,7 +2979,7 @@ begin
   end;
   layout.DrawText(self, ATexture);
   layout.Free;
-end;
+end;{$ENDIF}
 
 procedure TBGRADefaultBitmap.TextOut(x, y: single; const sUTF8: string;
   texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean);
@@ -2991,7 +3027,7 @@ begin
   result := FontRenderer.TextSize(CleanTextOutString(sUTF8));
 end;
 
-function TBGRADefaultBitmap.TextSizeMultiline(const sUTF8: string; AMaxWidth: single;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.TextSizeMultiline(const sUTF8: string; AMaxWidth: single;
   AParagraphSpacing: single): TSize;
 var
   layout: TBidiTextLayout;
@@ -3004,7 +3040,7 @@ begin
   layout.AvailableWidth := AMaxWidth;
   result := size(ceil(layout.UsedWidth), ceil(layout.TotalTextHeight));
   layout.Free;
-end;
+end;{$ENDIF}
 
 function TBGRADefaultBitmap.TextAffineBox(const sUTF8: string): TAffineBox;
 var size: TSize;
@@ -3778,19 +3814,19 @@ begin
   result := (x2 - x > w) and (y2 - y > w);
 end;
 
-function TBGRADefaultBitmap.GetCanvasBGRA: TBGRACanvas;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.GetCanvasBGRA: TBGRACanvas;
 begin
   if FCanvasBGRA = nil then
     FCanvasBGRA := TBGRACanvas.Create(self);
   result := FCanvasBGRA;
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.GetCanvas2D: TBGRACanvas2D;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.GetCanvas2D: TBGRACanvas2D;
 begin
   if FCanvas2D = nil then
     FCanvas2D := TBGRACanvas2D.Create(self);
   result := FCanvas2D;
-end;
+end;{$ENDIF}
 
 procedure TBGRADefaultBitmap.PutImage(X, Y: integer; ASource: TCustomUniversalBitmap;
   AMode: TDrawMode; AOpacity: byte);
@@ -4064,152 +4100,152 @@ end;
 {----------------------------- Filters -----------------------------------------}
 { Call the appropriate function }
 
-function TBGRADefaultBitmap.FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterSmartZoom3(self, Option) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterMedian(self, option) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterSmooth(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterSmooth(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterBlurRadial(self, 3, rbPrecise) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterSphere(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterSphere(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterSphere(self) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterTwirl(self, ACenter, ARadius, ATurn, AExponent) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterTwirl(ABounds: TRect; ACenter: TPoint;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterTwirl(ABounds: TRect; ACenter: TPoint;
   ARadius: Single; ATurn: Single; AExponent: Single; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterTwirl(self, ABounds, ACenter, ARadius, ATurn, AExponent) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterCylinder(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterCylinder(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterCylinder(self) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterPlane(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterPlane(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterPlane(self) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterSharpen(Amount: single = 1; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterSharpen(Amount: single = 1; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterSharpen(self,round(Amount*256)) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterSharpen(ABounds: TRect; Amount: single; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterSharpen(ABounds: TRect; Amount: single; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterSharpen(self,ABounds,round(Amount*256)) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterContour(AGammaCorrection: boolean = false; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterContour(AGammaCorrection: boolean = false; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterContour(self, AGammaCorrection) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterPixelate(pixelSize: integer;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterPixelate(pixelSize: integer;
   useResample: boolean; filter: TResampleFilter; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result:= BGRAFilters.FilterPixelate(self, pixelSize, useResample, filter) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterEmboss(angle: single;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterEmboss(angle: single;
   AStrength: integer; AOptions: TEmbossOptions; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmboss(self, angle, AStrength, AOptions) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterEmboss(angle: single; ABounds: TRect;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterEmboss(angle: single; ABounds: TRect;
   AStrength: integer; AOptions: TEmbossOptions; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmboss(self, angle, ABounds, AStrength, AOptions) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmbossHighlight(self, FillSelection, BGRAPixelTransparent) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean;
   BorderColor: TBGRAPixel; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmbossHighlight(self, FillSelection, BorderColor) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterEmbossHighlight(FillSelection: boolean;
   BorderColor: TBGRAPixel; var Offset: TPoint; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterEmbossHighlightOffset(self, FillSelection, BorderColor, Offset) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterGrayscale(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterGrayscale(ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterGrayscale(self) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterGrayscale(ABounds: TRect; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterGrayscale(ABounds: TRect; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterGrayscale(self, ABounds) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterNormalize(eachChannel: boolean = True; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterNormalize(eachChannel: boolean = True; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterNormalize(self, eachChannel) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterNormalize(self, ABounds, eachChannel) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterRotate(origin: TPointF;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterRotate(origin: TPointF;
   angle: single; correctBlur: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := BGRAFilters.FilterRotate(self, origin, angle, correctBlur) as TBGRADefaultBitmap;
   if ACopyProperties then CopyPropertiesTo(Result);
-end;
+end;{$ENDIF}
 
-function TBGRADefaultBitmap.FilterAffine(AMatrix: TAffineMatrix;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.FilterAffine(AMatrix: TAffineMatrix;
   correctBlur: boolean; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   Result := NewBitmap(Width,Height);
   if ACopyProperties then CopyPropertiesTo(Result);
   Result.PutImageAffine(AMatrix,self,255,correctBlur);
-end;
+end;{$ENDIF}
 
 function TBGRADefaultBitmap.GetHasTransparentPixels: boolean;
 var
@@ -4471,7 +4507,7 @@ begin
   end;
 end;
 
-function TBGRADefaultBitmap.GetGrayscaleMaskFromAlpha: TGrayscaleMask;
+{$IFNDEF BGRABITMAP_CORE}function TBGRADefaultBitmap.GetGrayscaleMaskFromAlpha: TGrayscaleMask;
 var
   psrc: PBGRAPixel;
   pdest: PByte;
@@ -4490,7 +4526,7 @@ begin
       inc(pdest);
     end;
   end;
-end;
+end;{$ENDIF}
 
 procedure TBGRADefaultBitmap.ConvertToLinearRGB;
 var p: PBGRAPixel;
