@@ -180,7 +180,7 @@ var
 
   function RecomposeRec(AMin,AMax: integer): boolean;
 
-    procedure TryExactMatch;
+    function TryExactMatch: boolean;
     var
       i, extra: Integer;
       newExtra: String;
@@ -218,7 +218,7 @@ var
   begin
     if AMax <= AMin+9 then
     begin
-      TryExactMatch;
+      result := TryExactMatch;
     end else
     begin
       i := (AMin+AMax) div 2;
@@ -230,7 +230,7 @@ var
         j := i;
         while (j < AMax) and UTF8Decomposition[j+1].de.StartsWith(lookFor, true) do inc(j);
         AMax := j;
-        TryExactMatch;
+        result := TryExactMatch;
       end else
       if CompareStr(lookFor, UTF8Decomposition[i].de) > 0 then
         result := RecomposeRec(i+1, AMax)

@@ -525,7 +525,7 @@ begin
   result := 0;
   for i := 0 to FDomElem.Attributes.Length-1 do
   begin
-    name := FDomElem.Attributes.Item[i].NodeName;
+    name := string(FDomElem.Attributes.Item[i].NodeName);
     if name.StartsWith('xmlns:') then inc(result);
   end;
 end;
@@ -539,7 +539,7 @@ begin
   result := '';
   for i := 0 to FDomElem.Attributes.Length-1 do
   begin
-    name := FDomElem.Attributes.Item[i].NodeName;
+    name := string(FDomElem.Attributes.Item[i].NodeName);
     if name.StartsWith('xmlns:') then
     begin
       if AIndex > 0 then dec(AIndex)
@@ -555,7 +555,7 @@ end;
 
 procedure TSVGCustomElement.SetNamespaceURI(APrefix: string; AValue: string);
 begin
-  if AValue = '' then FDomElem.RemoveAttribute('xmlns:' + APrefix)
+  if AValue = '' then FDomElem.RemoveAttribute(DOMString('xmlns:' + APrefix))
   else SetAttribute('xmlns:' + APrefix, AValue);
 end;
 
@@ -595,7 +595,7 @@ begin
             else break;
 
             styleDecl := curNode.GetAttribute('style');
-            result := GetPropertyFromStyleDeclarationBlock(styleDecl, AName, '');
+            result := GetPropertyFromStyleDeclarationBlock(string(styleDecl), AName, '');
             if result <> '' then exit;
             result := GetAttributeFromElement(curNode, AName, false);
             if (result = 'currentColor') and (AName <> 'color') then
@@ -803,7 +803,7 @@ begin
     else break;
 
     styleDecl := curNode.GetAttribute('style');
-    result := GetPropertyFromStyleDeclarationBlock(styleDecl, AName, '');
+    result := GetPropertyFromStyleDeclarationBlock(string(styleDecl), AName, '');
     if result <> '' then exit;
   end;
 
@@ -820,9 +820,9 @@ function TSVGCustomElement.GetAttributeFromElement(ANode: TDOMElement;
 begin
   repeat
     if ((AName = 'xlink:href') or (AName = 'xlink:title')) and
-       not ANode.hasAttribute(AName) and ANode.hasAttribute(AName.Substring(6)) then
-      result := Trim(ANode.GetAttribute(AName.Substring(6)))
-      else result := Trim(ANode.GetAttribute(AName));
+       not ANode.hasAttribute(DOMString(AName)) and ANode.hasAttribute(DOMString(AName.Substring(6))) then
+      result := string(Trim(ANode.GetAttribute(DOMString(AName.Substring(6)))))
+      else result := string(Trim(ANode.GetAttribute(DOMString(AName))));
 
     if result = 'inherit' then result := '';
     if (result = '') and ACanInherit and
@@ -1044,10 +1044,10 @@ end;
 procedure TSVGCustomElement.SetAttribute(AName: string; AValue: string);
 begin
   if ((AName = 'xlink:href') or (AName = 'xlink:title')) and
-     not FDomElem.hasAttribute(AName) and FDomElem.hasAttribute(AName.Substring(6)) then
-    FDomElem.SetAttribute(AName.Substring(6), AValue)
+     not FDomElem.hasAttribute(DOMString(AName)) and FDomElem.hasAttribute(DOMString(AName.Substring(6))) then
+    FDomElem.SetAttribute(DOMString(AName.Substring(6)), DOMString(AValue))
   else
-    FDomElem.SetAttribute(AName,AValue);
+    FDomElem.SetAttribute(DOMString(AName), DOMString(AValue));
 end;
 
 procedure TSVGCustomElement.SetAttributeWithUnit(AName: string;
@@ -1127,7 +1127,7 @@ end;
 
 function TSVGCustomElement.HasAttribute(AName: string): boolean;
 begin
-  result := FDomElem.hasAttribute(AName);
+  result := FDomElem.hasAttribute(DOMString(AName));
 end;
 
 function TSVGCustomElement.HasInlineStyle(AName: string): boolean;
@@ -1194,7 +1194,7 @@ var
   end;
 
 begin
-  prefixColon := APrefix+':';
+  prefixColon := DOMString(APrefix)+':';
   result := NeedNamespaceRec(FDomElem);
 end;
 
@@ -1834,7 +1834,7 @@ var
     else if id = 'stroke' then exit(1)
     else if id = 'markers' then exit(2)
     else if id = '' then exit(-1)
-    else result := GetNext;
+    else result := GetNext();
   end;
 
 var
@@ -1940,7 +1940,7 @@ begin
   s_array:= strokeDashArray;
   if s_array = 'none' then
   begin
-    setlength(Result,0);
+    result := nil;
     exit;
   end;
   parser:=TSVGParser.Create(s_array);
@@ -2220,7 +2220,7 @@ begin
   if ATag='' then
     raise exception.Create('Cannot create a generic element');
 
-  FDomElem := ADocument.CreateElement(ATag);
+  FDomElem := ADocument.CreateElement(DOMString(ATag));
   FUnits := AUnits;
   if Assigned(FDataLink) then FDataLink.Link(self);
 end;
@@ -2502,7 +2502,7 @@ var
 begin
   FImportStyleState:= fssNotFound;
   SetLength(FImportedStyles,0);
-  tag:= FDomElem.TagName;
+  tag:= string(FDomElem.TagName);
   (*
     if style element is:
     <style>

@@ -926,7 +926,7 @@ function CreateSVGElementFromNode(AElement: TDOMElement; AUnits: TCSSUnitConvert
 var
   factory: TSVGFactory;
 begin
-  factory := GetSVGFactory(AElement.TagName);
+  factory := GetSVGFactory(string(AElement.TagName));
   result := factory.Create(AElement,AUnits,ADataLink);
 end;
 
@@ -3139,7 +3139,7 @@ constructor TSVGStyle.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(AElement, AUnits, ADataLink);
-  Parse(AElement.TextContent);
+  Parse(string(AElement.TextContent));
 end;
 
 procedure TSVGStyle.Initialize;
@@ -3355,7 +3355,7 @@ end;
 
 procedure TSVGStyle.ReParse;
 begin
- Parse(FDomElem.TextContent);
+ Parse(string(FDomElem.TextContent));
 end;           
 
 { TSVGRectangle }
@@ -4554,7 +4554,7 @@ end;
 function TSVGContent.AppendDOMText(AText: string): TDOMText;
 begin
   result := TDOMText.Create(FDomElem.OwnerDocument);
-  result.Data:= AText;
+  result.Data:= DOMString(AText);
   AppendElement(result);
 end;
 

@@ -436,10 +436,10 @@ end;
 
 procedure TSVGUnits.Recompute;
 begin
-  FViewBox:= TSVGViewBox.Parse( FSvg.GetAttribute('viewBox') );
-  FPreserveAspectRatio := TSVGPreserveAspectRatio.Parse( FSvg.GetAttribute('preserveAspectRatio') );
-  FViewPortSize.width := parseValue(FSvg.GetAttribute('width'), FloatWithCSSUnit(FViewBox.size.x, cuPixel));
-  FViewPortSize.height := parseValue(FSvg.GetAttribute('height'), FloatWithCSSUnit(FViewBox.size.y, cuPixel));
+  FViewBox:= TSVGViewBox.Parse( string(FSvg.GetAttribute('viewBox')) );
+  FPreserveAspectRatio := TSVGPreserveAspectRatio.Parse( string(FSvg.GetAttribute('preserveAspectRatio')) );
+  FViewPortSize.width := parseValue(string(FSvg.GetAttribute('width')), FloatWithCSSUnit(FViewBox.size.x, cuPixel));
+  FViewPortSize.height := parseValue(string(FSvg.GetAttribute('height')), FloatWithCSSUnit(FViewBox.size.y, cuPixel));
 
   //view port defined as percentage of container
   if FViewPortSize.width.CSSUnit = cuPercent then
@@ -517,10 +517,10 @@ end;
 
 procedure TSVGUnits.SetViewBox(AValue: TSVGViewBox);
 begin
-  FSvg.SetAttribute('viewBox', formatValue(AValue.min.x)+' '+
+  FSvg.SetAttribute('viewBox', DOMString(formatValue(AValue.min.x)+' '+
     formatValue(AValue.min.y)+' '+
     formatValue(AValue.size.x)+' '+
-    formatValue(AValue.size.y));
+    formatValue(AValue.size.y)));
   Recompute;
 end;
 

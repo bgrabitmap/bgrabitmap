@@ -215,8 +215,8 @@ begin
 
   ABitmap := TBGRABitmap.Create(ARect.Right,ARect.Bottom);
 
-  if AValue <> 0 then ARect1:=ARect;
-  if AValue <> 1 then ARect2:=ARect;
+  ARect1:=ARect;
+  ARect2:=ARect;
 
   if ADir = gdVertical then begin
     ARect1.Bottom:=Round(ARect1.Bottom * AValue);
