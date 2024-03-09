@@ -57,6 +57,7 @@ procedure FilterBlurMotion(bmp: TCustomUniversalBitmap; ABounds: TRect; distance
   angle: single; oriented: boolean; ADestination: TCustomUniversalBitmap; ACheckShouldStop: TCheckShouldStopFunc);
 procedure FilterBlurRadial(bmp: TCustomUniversalBitmap; ABounds: TRect; radiusX,radiusY: single;
   blurType: TRadialBlurType; ADestination: TCustomUniversalBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+function FilterBlurRadial(ABitmap:TCustomUniversalBitmap; ARadiusX,ARadiusY: single; ABlurType: TRadialBlurType): TCustomUniversalBitmap;
 
 implementation
 
@@ -578,6 +579,13 @@ begin
   blurShape.EllipseAntialias(ceil(radiusX), ceil(radiusY), radiusX, radiusY, BGRAWhite, 1);
   FilterBlurCustom(bmp, ABounds, blurShape, ADestination, ACheckShouldStop);
   blurShape.Free;
+end;
+
+function FilterBlurRadial(ABitmap:TCustomUniversalBitmap; ARadiusX,ARadiusY: single; ABlurType: TRadialBlurType): TCustomUniversalBitmap;
+begin
+  result := ABitmap.NewBitmap(ABitmap.Width, ABitmap.Height);
+  FilterBlurRadial(ABitmap, BGRAClasses.Rect(0,0,ABitmap.Width,ABitmap.Height),
+    ARadiusX, ARadiusY, ABlurType, result, nil);
 end;
 
 procedure FilterBlurRadial(bmp: TCustomUniversalBitmap; ABounds: TRect; radiusX,radiusY: single;

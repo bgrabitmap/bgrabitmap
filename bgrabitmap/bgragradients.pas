@@ -182,7 +182,8 @@ function CreateCyclicPerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: 
 
 implementation
 
-uses Math, SysUtils{$IFDEF BGRABITMAP_USE_LCL}, BGRATextFX{$ENDIF}; {GraphType unit used by phongdraw.inc}
+uses Math, SysUtils{$IFDEF BGRABITMAP_USE_LCL}, BGRATextFX{$ENDIF},
+  BGRAFilterScanner, BGRAFilterBlur; {GraphType unit used by phongdraw.inc}
 
 {$IFDEF BGRABITMAP_USE_LCL}function TextShadow(AWidth, AHeight: Integer; AText: String;
   AFontHeight: Integer; ATextColor, AShadowColor: TBGRAPixel; AOffSetX,
@@ -1055,20 +1056,18 @@ function CreatePerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: Single
 
 var
   i: Integer;
-  temp: TBGRABitmap;
+  normalizeFilter: TBGRAFilterScannerNormalize;
 
 begin
   result := TBGRABitmap.Create(AWidth,AHeight);
   for i := 0 to 5 do
     AddNoise(round(AWidth / HorizontalPeriod / (32 shr i)),round(AHeight / VerticalPeriod / (32 shr i)), round(exp(ln((128 shr i)/128)*Exponent)*128),result);
 
-  temp := result.FilterNormalize(False);
-  result.Free;
-  result := temp;
+  normalizeFilter := TBGRAFilterScannerNormalize.Create(result, Point(0,0), rect(0,0,AWidth,AHeight), false);
+  result.Fill(normalizeFilter, dmSet);
+  normalizeFilter.Free;
 
-  temp := result.FilterBlurRadial(1,rbNormal);
-  result.Free;
-  result := temp;
+  BGRAReplace(result, BGRAFilterBlur.FilterBlurRadial(result, 1, 1, rbNormal));
 end;
 
 function CreateCyclicPerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: Single = 1;
@@ -1105,19 +1104,18 @@ function CreateCyclicPerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: 
 var
   i: Integer;
   temp: TBGRABitmap;
+  normalizeFilter: TBGRAFilterScannerNormalize;
 
 begin
   result := TBGRABitmap.Create(AWidth,AHeight);
   for i := 0 to 5 do
     AddNoise(round(AWidth / HorizontalPeriod / (32 shr i)),round(AHeight / VerticalPeriod / (32 shr i)), round(exp(ln((128 shr i)/128)*Exponent)*128),result);
 
-  temp := result.FilterNormalize(False);
-  result.Free;
-  result := temp;
+  normalizeFilter := TBGRAFilterScannerNormalize.Create(result, Point(0,0), rect(0,0,AWidth,AHeight), false);
+  result.Fill(normalizeFilter, dmSet);
+  normalizeFilter.Free;
 
-  temp := result.FilterBlurRadial(1,rbNormal);
-  result.Free;
-  result := temp;
+  BGRAReplace(result, BGRAFilterBlur.FilterBlurRadial(result, 1, 1, rbNormal));
 end;
 
 function CreateRoundRectanglePreciseMap(width, height, border: integer;

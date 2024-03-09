@@ -91,6 +91,7 @@ type
      function RotateCCW(ACopyProperties: Boolean=False): TGrayscaleMask; override;
      function RotateUD(ACopyProperties: Boolean=False): TGrayscaleMask; override;
      function FilterContour(ABorderValue: byte = 0): TGrayscaleMask;
+     {$IFNDEF BGRABITMAP_CORE}
      function FilterBlurRadial(radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
      function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
      function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
@@ -101,6 +102,7 @@ type
      function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TGrayscaleMask; overload; override;
      function FilterSphere: TGrayscaleMask;
      function FilterCylinder: TGrayscaleMask;
+     {$ENDIF}
   end;
 
 procedure DownSamplePutImageGrayscale(sourceData: PByte; sourcePixelSize: Int32or64; sourceRowDelta: Int32or64; sourceWidth, sourceHeight: Int32or64; dest: TGrayscaleMask; ADestRect: TRect); overload;
@@ -1240,54 +1242,54 @@ begin
   end;
 end;
 
-function TGrayscaleMask.FilterBlurRadial(radius: single;
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterBlurRadial(radius: single;
   blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
   Result:=inherited FilterBlurRadial(radius, blurType, ACopyProperties) as TGrayscaleMask;
-end;
+end;{$ENDIF}
 
-function TGrayscaleMask.FilterBlurRadial(const ABounds: TRect; radius: single;
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterBlurRadial(const ABounds: TRect; radius: single;
   blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
   Result:=inherited FilterBlurRadial(ABounds, radius, blurType, ACopyProperties) as TGrayscaleMask;
-end;
+end;{$ENDIF}
 
-function TGrayscaleMask.FilterBlurRadial(radiusX, radiusY: single;
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterBlurRadial(radiusX, radiusY: single;
   blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
   Result:=inherited FilterBlurRadial(radiusX, radiusY, blurType, ACopyProperties) as TGrayscaleMask;
-end;
+end;{$ENDIF}
 
-function TGrayscaleMask.FilterBlurRadial(const ABounds: TRect; radiusX,
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterBlurRadial(const ABounds: TRect; radiusX,
   radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
   Result:=inherited FilterBlurRadial(ABounds, radiusX, radiusY, blurType, ACopyProperties) as TGrayscaleMask;
-end;
+end;{$ENDIF}
 
-function TGrayscaleMask.FilterBlurMotion(distance: single; angle: single;
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterBlurMotion(distance: single; angle: single;
   oriented: boolean; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
   Result:=inherited FilterBlurMotion(distance, angle, oriented, ACopyProperties) as TGrayscaleMask;
-end;
+end;{$ENDIF}
 
-function TGrayscaleMask.FilterBlurMotion(const ABounds: TRect;
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterBlurMotion(const ABounds: TRect;
   distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
   Result:=inherited FilterBlurMotion(ABounds, distance, angle, oriented, ACopyProperties) as TGrayscaleMask;
-end;
+end;{$ENDIF}
 
-function TGrayscaleMask.FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TGrayscaleMask;
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
   Result:=inherited FilterCustomBlur(mask, ACopyProperties) as TGrayscaleMask;
-end;
+end;{$ENDIF}
 
-function TGrayscaleMask.FilterCustomBlur(const ABounds: TRect;
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterCustomBlur(const ABounds: TRect;
   mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TGrayscaleMask;
 begin
   Result:=inherited FilterCustomBlur(ABounds, mask, ACopyProperties) as TGrayscaleMask;
-end;
+end;{$ENDIF}
 
-function TGrayscaleMask.FilterSphere: TGrayscaleMask;
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterSphere: TGrayscaleMask;
 var
   cx, cy: single;
   scanner: TBGRASphereDeformationScanner;
@@ -1298,9 +1300,9 @@ begin
   scanner := TBGRASphereDeformationScanner.Create(self, PointF(cx,cy), Width/2, Height/2);
   result.FillEllipseAntialias(cx, cy, Width/2-0.5, Height/2-0.5, scanner);
   scanner.Free;
-end;
+end;{$ENDIF}
 
-function TGrayscaleMask.FilterCylinder: TGrayscaleMask;
+{$IFNDEF BGRABITMAP_CORE}function TGrayscaleMask.FilterCylinder: TGrayscaleMask;
 var
   cx: single;
   scanner: TBGRAVerticalCylinderDeformationScanner;
@@ -1310,7 +1312,7 @@ begin
   scanner := TBGRAVerticalCylinderDeformationScanner.Create(self, cx, Width/2);
   result.Fill(scanner, dmSet);
   scanner.Free;
-end;
+end;{$ENDIF}
 
 procedure DownSamplePutImageGrayscale(sourceData: PByte;
   sourcePixelSize: Int32or64; sourceRowDelta: Int32or64; sourceWidth,

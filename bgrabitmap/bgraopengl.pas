@@ -111,6 +111,7 @@ type
                 AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGLBitmap; override;
     function Resample(newWidth, newHeight: integer;
       mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGLBitmap; override;
+    {$IFNDEF BGRABITMAP_CORE}
     function FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGLBitmap; override;
     function FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGLBitmap; override;
     function FilterSmooth(ACopyProperties: Boolean=False): TBGLBitmap; override;
@@ -142,6 +143,7 @@ type
     function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3; ACopyProperties: Boolean=False): TBGLBitmap; overload; override;
     function FilterCylinder(ACopyProperties: Boolean=False): TBGLBitmap; override;
     function FilterPlane(ACopyProperties: Boolean=False): TBGLBitmap; override;
+    {$ENDIF}
   end;
 
 function BGLTexture(ARGBAData: PLongWord; AllocatedWidth,AllocatedHeight, ActualWidth,ActualHeight: integer): IBGLTexture; overload;
@@ -1812,174 +1814,174 @@ begin
   Result:=inherited Resample(newWidth, newHeight, mode, ACopyProperties) as TBGLBitmap;
 end;
 
-function TBGLBitmap.FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterSmartZoom3(Option, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterMedian(Option, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterSmooth(ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterSmooth(ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterSmooth(ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterSharpen(Amount: single; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterSharpen(Amount: single; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterSharpen(Amount, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterSharpen(ABounds: TRect; Amount: single; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterSharpen(ABounds: TRect; Amount: single; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterSharpen(ABounds, Amount, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterContour(AGammaCorrection: boolean = false; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterContour(AGammaCorrection: boolean = false; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterContour(AGammaCorrection, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterPixelate(pixelSize: integer; useResample: boolean;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterPixelate(pixelSize: integer; useResample: boolean;
   filter: TResampleFilter; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterPixelate(pixelSize, useResample, filter, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterBlurRadial(radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterBlurRadial(radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterBlurRadial(radius, blurType, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterBlurRadial(const ABounds: TRect; radius: single;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterBlurRadial(const ABounds: TRect; radius: single;
   blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterBlurRadial(ABounds, radius, blurType, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterBlurRadial(radiusX, radiusY: single;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterBlurRadial(radiusX, radiusY: single;
   blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterBlurRadial(radiusX, radiusY, blurType, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterBlurRadial(const ABounds: TRect; radiusX,
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterBlurRadial(const ABounds: TRect; radiusX,
   radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterBlurRadial(ABounds, radiusX, radiusY, blurType, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterBlurMotion(distance: single; angle: single;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterBlurMotion(distance: single; angle: single;
   oriented: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterBlurMotion(distance, angle, oriented, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterBlurMotion(const ABounds: TRect; distance: single;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterBlurMotion(const ABounds: TRect; distance: single;
   angle: single; oriented: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterBlurMotion(ABounds, distance, angle, oriented, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterCustomBlur(mask, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterCustomBlur(const ABounds: TRect;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterCustomBlur(const ABounds: TRect;
   mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterCustomBlur(ABounds, mask, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterEmboss(angle: single; AStrength: integer;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterEmboss(angle: single; AStrength: integer;
   AOptions: TEmbossOptions; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterEmboss(angle, AStrength, AOptions, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterEmboss(angle: single; ABounds: TRect;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterEmboss(angle: single; ABounds: TRect;
   AStrength: integer; AOptions: TEmbossOptions; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterEmboss(angle, ABounds, AStrength, AOptions, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterEmbossHighlight(FillSelection: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterEmbossHighlight(FillSelection: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterEmbossHighlight(FillSelection, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterEmbossHighlight(FillSelection: boolean;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterEmbossHighlight(FillSelection: boolean;
   BorderColor: TBGRAPixel; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterEmbossHighlight(FillSelection, BorderColor, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterEmbossHighlight(FillSelection: boolean;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterEmbossHighlight(FillSelection: boolean;
   BorderColor: TBGRAPixel; var Offset: TPoint; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterEmbossHighlight(FillSelection, BorderColor, Offset, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterGrayscale(ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterGrayscale(ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterGrayscale(ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterGrayscale(ABounds: TRect; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterGrayscale(ABounds: TRect; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterGrayscale(ABounds, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterNormalize(eachChannel: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterNormalize(eachChannel: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterNormalize(eachChannel, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterNormalize(ABounds, eachChannel, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterRotate(origin: TPointF; angle: single;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterRotate(origin: TPointF; angle: single;
   correctBlur: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterRotate(origin, angle, correctBlur, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterAffine(AMatrix, correctBlur, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterSphere(ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterSphere(ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterSphere(ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterTwirl(ACenter: TPoint; ARadius: Single;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterTwirl(ACenter: TPoint; ARadius: Single;
   ATurn: Single; AExponent: Single; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterTwirl(ACenter, ARadius, ATurn, AExponent, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterTwirl(ABounds: TRect; ACenter: TPoint;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterTwirl(ABounds: TRect; ACenter: TPoint;
   ARadius: Single; ATurn: Single; AExponent: Single; ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterTwirl(ABounds, ACenter, ARadius, ATurn, AExponent, ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterCylinder(ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterCylinder(ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterCylinder(ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
-function TBGLBitmap.FilterPlane(ACopyProperties: Boolean=False): TBGLBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGLBitmap.FilterPlane(ACopyProperties: Boolean=False): TBGLBitmap;
 begin
   Result:=inherited FilterPlane(ACopyProperties) as TBGLBitmap;
-end;
+end;{$ENDIF}
 
 initialization
 
