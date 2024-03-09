@@ -2310,6 +2310,8 @@ begin
     FFont := TFont.Create
   else
     FFont := nil;
+  if BGRABitmapFactory = nil then
+    raise Exception.Create('No bitmap factory available');
   FBuffer := BGRABitmapFactory.Create;
   FFullHeight := 20;
   FItalicSlope := 0;
