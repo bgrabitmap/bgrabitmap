@@ -384,7 +384,7 @@ begin
   self := SetLightness(self, AValue);
 end;
 
-class function TBGRAPixelHelper.New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;
+class function TBGRAPixel.New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;
 begin
   Result.red := ARed;
   Result.green := AGreen;
@@ -392,7 +392,7 @@ begin
   Result.alpha := AAlpha;
 end;
 
-class function TBGRAPixelHelper.New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;
+class function TBGRAPixel.New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;
 begin
   Result.red := ARed;
   Result.green := AGreen;
@@ -487,7 +487,7 @@ end;
 
 { TGSBAPixel }
 
-class function TGSBAPixelHelper.New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;
+class function TGSBAPixel.New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;
 begin
   Result.hue := AHue;
   Result.saturation := ASaturation;
@@ -495,7 +495,7 @@ begin
   Result.alpha := AAlpha;
 end;
 
-class function TGSBAPixelHelper.New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;
+class function TGSBAPixel.New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;
 begin
   Result.hue := AHue;
   Result.saturation := ASaturation;
@@ -505,7 +505,7 @@ end;
 
 { THSLAPixel }
 
-class function THSLAPixelHelper.New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;
+class function THSLAPixel.New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;
 begin
   Result.hue := AHue;
   Result.saturation := ASaturation;
@@ -513,7 +513,7 @@ begin
   Result.alpha := AAlpha;
 end;
 
-class function THSLAPixelHelper.New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;
+class function THSLAPixel.New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;
 begin
   Result.hue := AHue;
   Result.saturation := ASaturation;
