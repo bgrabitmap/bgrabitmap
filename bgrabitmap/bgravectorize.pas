@@ -2037,7 +2037,7 @@ begin
     case lineAlignment of
     twaMiddle: lineShift := 0.5;
     twaBottomLeft,twaBottomRight: lineShift := 1;
-    twaTopRight,twaTopLeft : lineShift := 0;
+    else {twaTopRight,twaTopLeft} lineShift := 0;
     end;
     pos.Offset(step*lineShift);
     repeat
@@ -2082,10 +2082,10 @@ begin
   if X2 <= X1 then exit;
   if AAlign in[twaTopLeft,twaTop,twaTopRight] then Y := Y1 else
   if AAlign in[twaLeft,twaMiddle,twaRight] then Y := (Y1+Y2)/2 else
-  if AAlign in[twaBottomLeft,twaBottom,twaBottomRight] then Y := Y2;
+  {twaBottomLeft,twaBottom,twaBottomRight} Y := Y2;
   if AAlign in[twaLeft,twaTopLeft,twaBottomLeft] then X := X1 else
   if AAlign in[twaTop,twaMiddle,twaBottom] then X := (X1+X2)/2 else
-  if AAlign in[twaRight,twaTopRight,twaBottomRight] then X := X2;
+  {twaRight,twaTopRight,twaBottomRight} X := X2;
   oldOrientation:= Orientation;
   Orientation:= 0;
   DrawTextWordBreak(ADest,ATextUTF8,X,Y,X2-X1,AAlign);
@@ -2183,10 +2183,10 @@ begin
   end;
   if AAlign in[twaTopLeft,twaTop,twaTopRight] then Y := Y1 else
   if AAlign in[twaLeft,twaMiddle,twaRight] then Y := (Y1+Y2)/2 else
-  if AAlign in[twaBottomLeft,twaBottom,twaBottomRight] then Y := Y2;
+  {twaBottomLeft,twaBottom,twaBottomRight} Y := Y2;
   if AAlign in[twaLeft,twaTopLeft,twaBottomLeft] then X := X1 else
   if AAlign in[twaTop,twaMiddle,twaBottom] then X := (X1+X2)/2 else
-  if AAlign in[twaRight,twaTopRight,twaBottomRight] then X := X2;
+  {twaRight,twaTopRight,twaBottomRight} X := X2;
   oldOrientation:= Orientation;
   Orientation:= 0;
   result := GetTextWordBreakGlyphBoxes(ATextUTF8,X,Y,X2-X1,AAlign);

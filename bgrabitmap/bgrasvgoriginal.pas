@@ -91,7 +91,7 @@ type
 implementation
 
 uses BGRACanvas2D, BGRAMemDirectory, BGRAUTF8, BGRASVGShapes, math, BGRASVGType,
-  BGRAVectorize;
+  BGRAVectorize, DOM;
 
 { TBGRASVGOriginalDiff }
 
@@ -435,7 +435,7 @@ begin
           svgLayer.ViewBox := svg.ViewBox;
           if layer.DOMElement.hasAttribute('bgra:originalViewBox') then
           begin
-            originalViewBox := TSVGViewBox.Parse(layer.DOMElement.GetAttribute('bgra:originalViewBox'));
+            originalViewBox := TSVGViewBox.Parse( string(layer.DOMElement.GetAttribute('bgra:originalViewBox')) );
             svgLayer.WidthAsPixel := originalViewBox.size.x;
             svgLayer.HeightAsPixel := originalViewBox.size.y;
             svgLayer.ViewBox := originalViewBox;
@@ -498,7 +498,7 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
         vb.size := PointF(Width, Height);
       end;
       DOMElement.SetAttribute('xmlns:bgra', 'https://wiki.freepascal.org/LazPaint_SVG_format');
-      DOMElement.SetAttribute('bgra:originalViewBox', vb.ToString);
+      DOMElement.SetAttribute('bgra:originalViewBox', DOMString(vb.ToString));
     end;
   end;
 
@@ -543,7 +543,7 @@ procedure TBGRALayeredSVG.InternalSaveToStream(AStream: TStream);
         with TSVGGroup(ADestElem) do
         begin
           DOMElement.SetAttribute('xmlns:bgra', 'https://wiki.freepascal.org/LazPaint_SVG_format');
-          DOMElement.SetAttribute('bgra:originalViewBox', origViewBox.ToString);
+          DOMElement.SetAttribute('bgra:originalViewBox', DOMString(origViewBox.ToString));
         end;
         for i := 0 to layerSvg.Content.ElementCount-1 do
           ADest.CopyElement(layerSvg.Content.ElementObject[i]);

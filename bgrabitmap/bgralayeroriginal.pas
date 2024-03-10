@@ -1977,6 +1977,7 @@ end;
 function TBGRALayerCustomOriginal.ConvertToSVG(const AMatrix: TAffineMatrix; out AOffset: TPoint): TObject;
 begin
   AOffset := Point(0,0);
+  result := nil;
   raise exception.Create('Not implemented');
 end;
 

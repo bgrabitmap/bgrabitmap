@@ -28,6 +28,8 @@ The **CanvasBGRA** property of type TBGRACanvas provides a canvas with opacity a
 
 The **Canvas2D** property of type TBGRACanvas2D provides a canvas with 2d transformation and [similar to HTML5](https://wiki.freepascal.org/BGRABitmap_tutorial_14).
 
+Here is a nice [introduction to BGRABitmap](https://msegui.net/tutoriels/bgrabitmap-lazarus/tutoriel.html) in French.
+
 @section(1 Resources More resources)
 
 You can read more about BGRABitmap in the [wiki](http://wiki.freepascal.org/BGRABitmap). And also you can follow [tutorials](http://wiki.freepascal.org/BGRABitmap_tutorial) to learn how to use BGRABitmap.
