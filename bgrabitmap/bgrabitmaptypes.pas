@@ -1465,7 +1465,7 @@ begin
       ifUnknown: raise exception.Create('The image format is unknown.');
       ifOpenRaster: raise exception.Create('You need to call BGRAOpenRaster.RegisterOpenRasterFormat to read this image.');
       ifPaintDotNet: raise exception.Create('You need to call BGRAPaintNet.RegisterPaintNetFormat to read this image.');
-      ifSvg: raise exception.Create('You need to call BGRA.RegisterSvgFormat to read this image.');
+      ifSvg: raise exception.Create('You need to call BGRASVG.RegisterSvgFormat to read this image.');
     else
       raise exception.Create('The image reader is not registered for this image format.');
     end;
