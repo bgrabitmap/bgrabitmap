@@ -523,7 +523,7 @@ end;
 
 { TExpandedPixel }
 
-class function TExpandedPixelHelper.New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;
+class function TExpandedPixel.New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;
 begin
   Result.red := ARed;
   Result.green := AGreen;
@@ -531,7 +531,7 @@ begin
   Result.alpha := AAlpha;
 end;
 
-class function TExpandedPixelHelper.New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;
+class function TExpandedPixel.New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;
 begin
   Result.red := ARed;
   Result.green := AGreen;
