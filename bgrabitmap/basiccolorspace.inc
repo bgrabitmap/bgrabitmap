@@ -33,6 +33,8 @@ type
   {* Stores a gamma expanded RGB color. Values range from 0 to 65535 and are linear. }
   TExpandedPixel = packed record
     red, green, blue, alpha: word;
+    class function New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;static;
+    class function New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;static;
   end;
   {** Array of TExpandedPixel to be used as a buffer }
   TExpandedPixelBuffer = packed array of TExpandedPixel;
@@ -121,6 +123,8 @@ type
     lightness: word;
     {** Opacity of the pixel. 0 is transparent and 65535 is opaque }
     alpha: word;
+    class function New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;static;
+    class function New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;static;
   end;
 
   {** Creates a pixel with given HSLA values, where A stands for alpha }
@@ -158,6 +162,8 @@ type
     lightness: word;
     {** Opacity of the pixel. 0 is transparent and 65535 is opaque }
     alpha: word;
+    class function New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;static;
+    class function New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;static;
   end;
 
   {** Converts a pixel from sRGB to correct HSL color space }
@@ -378,6 +384,22 @@ begin
   self := SetLightness(self, AValue);
 end;
 
+class function TBGRAPixelHelper.New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := AAlpha;
+end;
+
+class function TBGRAPixelHelper.New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := 255;
+end;
+
 procedure TBGRAPixel.FromRGB(ARed, AGreen, ABlue: Byte; AAlpha: Byte);
 begin
   red := ARed;
@@ -461,6 +483,60 @@ end;
 class operator TBGRAPixel.:=(Source: TColor): TBGRAPixel;
 begin
   result.FromColor(Source);
+end;
+
+{ TGSBAPixel }
+
+class function TGSBAPixelHelper.New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ABrightness;
+  Result.alpha := AAlpha;
+end;
+
+class function TGSBAPixelHelper.New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ABrightness;
+  Result.alpha := 65535;
+end;
+
+{ THSLAPixel }
+
+class function THSLAPixelHelper.New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ALightness;
+  Result.alpha := AAlpha;
+end;
+
+class function THSLAPixelHelper.New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ALightness;
+  Result.alpha := 65535;
+end;
+
+{ TExpandedPixel }
+
+class function TExpandedPixelHelper.New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := AAlpha;
+end;
+
+class function TExpandedPixelHelper.New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := 65535;
 end;
 
 { The gamma correction is approximated here by a power function }

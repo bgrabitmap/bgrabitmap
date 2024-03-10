@@ -584,8 +584,6 @@ type
   { Helper for TBGRAPixel color }
 
   TBGRAPixelHelper = record helper(TBGRAPixelBasicHelper) for TBGRAPixel
-    class function New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;static;
-    class function New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;static;
     class function Colorspace: TColorspaceAny; static;
     function ToStdRGBA: TStdRGBA;
     function ToAdobeRGBA: TAdobeRGBA;
@@ -996,8 +994,6 @@ type
   { Helper for TExpandedPixel color }
 
   TExpandedPixelHelper = record helper(TExpandedPixelBasicHelper) for TExpandedPixel
-    class function New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;static;
-    class function New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;static;
     class function Colorspace: TColorspaceAny; static;
     function ToStdRGBA: TStdRGBA;
     function ToAdobeRGBA: TAdobeRGBA;
@@ -1088,8 +1084,6 @@ type
   { Helper for THSLAPixel color }
 
   THSLAPixelHelper = record helper(THSLAPixelBasicHelper) for THSLAPixel
-    class function New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;static;
-    class function New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;static;
     class function Colorspace: TColorspaceAny; static;
     function ToStdRGBA: TStdRGBA;
     function ToAdobeRGBA: TAdobeRGBA;
@@ -1130,8 +1124,6 @@ type
   { Helper for TGSBAPixel color }
 
   TGSBAPixelHelper = record helper(TGSBAPixelBasicHelper) for TGSBAPixel
-    class function New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;static;
-    class function New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;static;
     class function Colorspace: TColorspaceAny; static;
     function ToStdRGBA: TStdRGBA;
     function ToAdobeRGBA: TAdobeRGBA;
@@ -6537,22 +6529,6 @@ begin Self := ExpandedPixelToColor(LChAToExpandedPixel(AValue)) end;
 
 { TBGRAPixelHelper }
 
-class function TBGRAPixelHelper.New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;
-begin
-  Result.red := ARed;
-  Result.green := AGreen;
-  Result.blue := ABlue;
-  Result.alpha := AAlpha;
-end;
-
-class function TBGRAPixelHelper.New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;
-begin
-  Result.red := ARed;
-  Result.green := AGreen;
-  Result.blue := ABlue;
-  Result.alpha := 255;
-end;
-
 class function TBGRAPixelHelper.Colorspace: TColorspaceAny; static;
 begin result := TBGRAPixelColorspace end;
 
@@ -7737,22 +7713,6 @@ begin Self := ExpandedPixelToByteMask(LChAToExpandedPixel(AValue)) end;
 
 { TExpandedPixelHelper }
 
-class function TExpandedPixelHelper.New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;
-begin
-  Result.red := ARed;
-  Result.green := AGreen;
-  Result.blue := ABlue;
-  Result.alpha := AAlpha;
-end;
-
-class function TExpandedPixelHelper.New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;
-begin
-  Result.red := ARed;
-  Result.green := AGreen;
-  Result.blue := ABlue;
-  Result.alpha := 65535;
-end;
-
 class function TExpandedPixelHelper.Colorspace: TColorspaceAny; static;
 begin result := TExpandedPixelColorspace end;
 
@@ -7997,22 +7957,6 @@ begin Self := LChAToLinearRGBA(AValue) end;
 
 { THSLAPixelHelper }
 
-class function THSLAPixelHelper.New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;
-begin
-  Result.hue := AHue;
-  Result.saturation := ASaturation;
-  Result.lightness := ALightness;
-  Result.alpha := AAlpha;
-end;
-
-class function THSLAPixelHelper.New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;
-begin
-  Result.hue := AHue;
-  Result.saturation := ASaturation;
-  Result.lightness := ALightness;
-  Result.alpha := 65535;
-end;
-
 class function THSLAPixelHelper.Colorspace: TColorspaceAny; static;
 begin result := THSLAPixelColorspace end;
 
@@ -8119,22 +8063,6 @@ procedure THSLAPixelHelper.FromLChA(AValue: TLChA);
 begin Self := ExpandedToHSLA(LChAToExpandedPixel(AValue)) end;
 
 { TGSBAPixelHelper }
-
-class function TGSBAPixelHelper.New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;
-begin
-  Result.hue := AHue;
-  Result.saturation := ASaturation;
-  Result.lightness := ABrightness;
-  Result.alpha := AAlpha;
-end;
-
-class function TGSBAPixelHelper.New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;
-begin
-  Result.hue := AHue;
-  Result.saturation := ASaturation;
-  Result.lightness := ABrightness;
-  Result.alpha := 65535;
-end;
 
 class function TGSBAPixelHelper.Colorspace: TColorspaceAny; static;
 begin result := TGSBAPixelColorspace end;
