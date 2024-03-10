@@ -931,8 +931,8 @@ end;
 function TGrayscaleMask.ScanAtIntegerMask(X, Y: integer): TByteMask;
 begin
   if (FScanWidth <> 0) and (FScanHeight <> 0) then
-    result := GetPixelAddress(PositiveMod(X+ScanOffset.X, FScanWidth),
-                             PositiveMod(Y+ScanOffset.Y, FScanHeight))^
+    result := PByteMask(GetPixelAddress(PositiveMod(X+ScanOffset.X, FScanWidth),
+                             PositiveMod(Y+ScanOffset.Y, FScanHeight)))^
   else
     result := ByteMaskBlack;
 end;
@@ -944,7 +944,7 @@ var
 begin
   if (FScanWidth = 0) or (FScanHeight = 0) then
   begin
-    result := BGRAPixelTransparent;
+    result := ByteMaskBlack;
     exit;
   end;
   LoadFromBitmapIfNeeded;
