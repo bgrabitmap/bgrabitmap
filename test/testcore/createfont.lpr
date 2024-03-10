@@ -9,7 +9,7 @@ begin
   f := TBGRAVectorizedFont.Create;
   f.Name:= 'Arial';
   f.FullHeight:= 30;
-  f.NeedGlyphAnsiRange;
+  f.NeedAsciiRange(true);
   f.SaveGlyphsToFile(ExtractFilePath(ParamStr(0))+'arial.glyphs');
   f.Free;
 end.
