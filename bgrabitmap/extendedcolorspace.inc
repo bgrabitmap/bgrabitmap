@@ -793,7 +793,7 @@ begin
       result.Y := red * 0.2225045 + green * 0.7168786 + blue * 0.0606169;
       result.Z := red * 0.0139322 + green * 0.0971045 + blue * 0.7141733;
     end;
-    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D50, AReferenceWhite);
   end else
   begin
     with ALinearRGBA do
@@ -802,7 +802,7 @@ begin
       result.Y := red * 0.2126729 + green * 0.7151522 + blue * 0.0721750;
       result.Z := red * 0.0193339 + green * 0.1191920 + blue * 0.9503041;
     end;
-    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D65, AReferenceWhite);
   end;
   Result.alpha := ALinearRGBA.alpha;
 end;
@@ -820,7 +820,7 @@ begin
   ad := AXYZA;
   if AReferenceWhite.Illuminant = 'D50' then
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D50);
     with ad do
     begin
       result.red := X * 3.1338561 + Y * (-1.6168667) + Z * (-0.4906146);
@@ -829,7 +829,7 @@ begin
     end;
   end else
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D65);
     with ad do
     begin
       result.red := X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314);
@@ -917,7 +917,7 @@ begin
       result.Y := ClampInt(round((red * 0.2225045 + green * 0.7168786 + blue * 0.0606169)*(50000/65535)),0,65535);
       result.Z := ClampInt(round((red * 0.0139322 + green * 0.0971045 + blue * 0.7141733)*(50000/65535)),0,65535);
     end;
-    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+    ChromaticAdaptWordXYZ(result.X,result.Y,result.Z, ReferenceWhite2D50, AReferenceWhite);
   end else
   begin
     with AExpandedPixel do
@@ -926,7 +926,7 @@ begin
       result.Y := ClampInt(round((red * 0.2126729 + green * 0.7151522 + blue * 0.0721750)*(50000/65535)),0,65535);
       result.Z := ClampInt(round((red * 0.0193339 + green * 0.1191920 + blue * 0.9503041)*(50000/65535)),0,65535);
     end;
-    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+    ChromaticAdaptWordXYZ(result.X,result.Y,result.Z, ReferenceWhite2D65, AReferenceWhite);
   end;
   Result.alpha := AExpandedPixel.alpha;
 end;
@@ -945,7 +945,7 @@ begin
   ad := AXYZA;
   if AReferenceWhite.Illuminant = 'D50' then
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    ChromaticAdaptWordXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D50);
     with ad do
     begin
       r := round((X * 3.1338561 + Y * (-1.6168667) + Z * (-0.4906146))*(65535/50000));
@@ -954,7 +954,7 @@ begin
     end;
   end else
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+      ChromaticAdaptWordXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D65);
     with ad do
     begin
       r := round((X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314))*(65535/50000));
@@ -1406,13 +1406,13 @@ begin
     result.X := R*0.6097559 + G*0.2052401 + B*0.1492240;
     result.Y := R*0.3111242 + G*0.6256560 + B*0.0632197;
     result.Z := R*0.0194811 + G*0.0608902 + B*0.7448387;
-    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D50, AReferenceWhite);
   end else
   begin
     result.X := R*0.5767309 + G*0.1855540 + B*0.1881852;
     result.Y := R*0.2973769 + G*0.6273491 + B*0.0752741;
     result.Z := R*0.0270343 + G*0.0706872 + B*0.9911085;
-    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D65, AReferenceWhite);
   end;
   result.alpha := ASource.alpha/255;
 end;
@@ -1429,7 +1429,7 @@ begin
   ad := AXYZA;
   if AReferenceWhite.Illuminant = 'D50' then
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D50);
     with ad do
     begin
       R := Clamp(1.9624274*X - 0.6105343*Y - 0.3413404*Z,0,1);
@@ -1438,7 +1438,7 @@ begin
     end;
   end else
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D65);
     with ad do
     begin
       R := Clamp(2.0413690*X - 0.5649464*Y - 0.3446944*Z,0,1);
@@ -1643,7 +1643,7 @@ begin
   result.X := result.X * fromRefWhite^.X/totalXYZ.X * reflectance;
   result.Y := result.Y * fromRefWhite^.Y/totalXYZ.Y * reflectance;
   result.Z := result.Z * fromRefWhite^.Z/totalXYZ.Z * reflectance;
-  result.ChromaticAdapt(fromRefWhite^, GetReferenceWhiteIndirect^);
+  ChromaticAdaptXYZ(result.X,result.Y,result.Z, fromRefWhite^, GetReferenceWhiteIndirect^);
 end;
 
 procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
