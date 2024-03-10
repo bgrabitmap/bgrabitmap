@@ -925,7 +925,7 @@ var
       Add('  ' + ColorspaceInfo[Colorspace].VariableNames + ': ' + ChannelValueTypeName[ColorspaceInfo[Colorspace].ValueType] + ';');
     end;
 
-    if not AHelperOnly or IsHelperOnly(Colorspace) then
+    if not AHelperOnly or (IsHelperOnly(Colorspace) and (Colorspace in [csColor, csFPColor])) then
     begin
       ov := ColorspaceInfo[Colorspace].HasAlpha;
 
