@@ -13,6 +13,7 @@ debug
 /bgrabitmap/lib4nogui
 /bgrabitmap/lib4fpgui
 /bgrabitmap/lib4android
+/bgrabitmap/lib4android+freetype
 test/testglyph/testglyph
 test/rationalbezier/rationalbezier
 test/testbiditext2/project1
