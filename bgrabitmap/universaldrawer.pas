@@ -150,8 +150,8 @@ implementation
 
 uses Math, BGRAPolygon, BGRAPath, BGRAFillInfo, BGRAUTF8, BGRAReadBMP, BGRAWritePNG, FPWritePNM
   {$IFNDEF BGRABITMAP_CORE},
-  BGRAReadJpeg, BGRAWriteTiff,
-  BGRAPolygonAliased, BGRAFilterBlur{$ENDIF};
+  BGRAReadJpeg,BGRAPolygonAliased, BGRAFilterBlur
+  {$ENDIF};
 
 { TUniversalDrawer }
 

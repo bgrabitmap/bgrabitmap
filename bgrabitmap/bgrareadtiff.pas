@@ -48,6 +48,10 @@ unit BGRAReadTiff;
 
 {$inline on}
 
+{$i bgrabitmap.inc}
+
+{$IFNDEF BGRABITMAP_EXTENDED_COLORSPACE}{$STOP This unit need extended colorspaces}{$ENDIF}
+
 interface
 
 uses

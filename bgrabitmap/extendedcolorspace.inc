@@ -2,6 +2,7 @@
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
 
+{$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}
 type
   {* Definition of a point on the spectral locus in XYZ colorspace }
   TSpectralLocusPoint = record
@@ -26,6 +27,7 @@ type
   end;
 
 {$I spectraldata.inc}
+{$ENDIF}
 
 type
   {* Pointer to a reference white }
@@ -154,6 +156,7 @@ function MaskToBGRA(const AMask: TByteMask; AAlpha: byte = 255): TBGRAPixel;
 { Converts a TByteMask to a TExpandedPixel using the specified 8-bit alpha value }
 function ByteMaskToExpandedPixel(const AMask: TByteMask; AAlpha: byte = 255): TExpandedPixel;
 
+{$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}
 { Converts a TStdRGBA color to a TBGRAPixel (clamped to 0..255) }
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 { Converts a TStdRGBA color to a TFPColor (clamped to 0..65535) }
@@ -234,6 +237,8 @@ function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenc
 
 { Computes reflected color in XYZ for a given wavelength range }
 function SpectrumRangeReflectToXYZA(reflectance,wavelen1,wavelen2,alpha: single): TXYZA;
+{$ENDIF}
+
 { Determines cone stimulations (_L_, _M_, _S_) from XYZ coordinates }
 procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
 { Determines XYZ coordinates from cone stimulations (_L_, _M_, _S_) }
@@ -630,6 +635,7 @@ begin
   result.alpha := AAlpha;
 end;
 
+{$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 begin
   with AStdRGBA do
@@ -1645,6 +1651,7 @@ begin
   result.Z := result.Z * fromRefWhite^.Z/totalXYZ.Z * reflectance;
   ChromaticAdaptXYZ(result.X,result.Y,result.Z, fromRefWhite^, GetReferenceWhiteIndirect^);
 end;
+{$ENDIF}
 
 procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
 begin
