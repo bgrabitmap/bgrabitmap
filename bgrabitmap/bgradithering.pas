@@ -118,6 +118,9 @@ function CreateDitheringTask(AAlgorithm: TDitheringAlgorithm; ASource: IBGRAScan
 
 function DitherImageTo16Bit(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap): TBGRACustomBitmap;
 
+procedure DitheredFillRect(ABitmap: TBGRACustomBitmap; x, y, x2, y2: integer;
+  texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm);
+
 implementation
 
 uses BGRABlend;
@@ -178,6 +181,20 @@ begin
   result := dither.Execute;
   dither.Free;
   palette16bit.Free;
+end;
+
+procedure DitheredFillRect(ABitmap: TBGRACustomBitmap; x, y, x2, y2: integer;
+  texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm);
+var dither: TDitheringTask;
+  bounds: TRect;
+begin
+  bounds := TRect.Intersect(rect(x,y,x2,y2), ABitmap.ClipRect);
+  if bounds.IsEmpty then exit;
+  dither := CreateDitheringTask(ditheringAlgorithm, texture, ABitmap, bounds);
+  dither.ScanOffset := AScanOffset;
+  dither.DrawMode := mode;
+  dither.Execute;
+  dither.Free;
 end;
 
 { TDitheringToIndexedImage }

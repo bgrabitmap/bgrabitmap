@@ -42,8 +42,6 @@ operator = (const c1, c2: TExpandedPixel): boolean; inline;
 
 implementation
 
-uses XYZABitmap;
-
 operator = (const c1, c2: TExpandedPixel): boolean;
 begin
   if (c1.alpha = 0) and (c2.alpha = 0) then

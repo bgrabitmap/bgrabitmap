@@ -2310,6 +2310,8 @@ begin
     FFont := TFont.Create
   else
     FFont := nil;
+  if BGRABitmapFactory = nil then
+    raise Exception.Create('No bitmap factory available');
   FBuffer := BGRABitmapFactory.Create;
   FFullHeight := 20;
   FItalicSlope := 0;
@@ -2421,7 +2423,7 @@ function TBGRAVectorizedFont.ComputeKerning(AIdLeft, AIdRight: string): single;
 var
   together: String;
 begin
-  if Resolution = 0 then exit(0);
+  if (Resolution = 0) or not VectorizeLCL then exit(0);
   if IsRightToLeftUTF8(AIdLeft) then
   begin
     if IsRightToLeftUTF8(AIdRight) then

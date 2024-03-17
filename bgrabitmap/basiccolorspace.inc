@@ -33,6 +33,8 @@ type
   {* Stores a gamma expanded RGB color. Values range from 0 to 65535 and are linear. }
   TExpandedPixel = packed record
     red, green, blue, alpha: word;
+    class function New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;static;
+    class function New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;static;
   end;
   {** Array of TExpandedPixel to be used as a buffer }
   TExpandedPixelBuffer = packed array of TExpandedPixel;
@@ -121,6 +123,8 @@ type
     lightness: word;
     {** Opacity of the pixel. 0 is transparent and 65535 is opaque }
     alpha: word;
+    class function New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;static;
+    class function New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;static;
   end;
 
   {** Creates a pixel with given HSLA values, where A stands for alpha }
@@ -158,6 +162,8 @@ type
     lightness: word;
     {** Opacity of the pixel. 0 is transparent and 65535 is opaque }
     alpha: word;
+    class function New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;static;
+    class function New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;static;
   end;
 
   {** Converts a pixel from sRGB to correct HSL color space }
@@ -351,6 +357,17 @@ Operator := (const Source: TGSBAPixel): THSLAPixel;
 {** Assigns THSLAPixel to TGSBAPixel,
     just copying for backward compatibility (use ToHSLAPixel instead for conversion) }
 Operator := (const Source: THSLAPixel): TGSBAPixel;
+
+{ Convert from sRGB the sHSV (byte, lossless). Hue is defined by the sextant and position. }
+procedure RGBToByteStdHSV(ARed, AGreen, ABlue: byte; out ASextant, APosition, ASaturation, AValue: byte);
+{ Convert from sHSV the sRGB (byte, lossless). Hue is defined by the sextant and position. }
+procedure ByteStdHSVToRGB(ASextant, APosition, ASaturation, AValue: byte; out ARed, AGreen, ABlue: byte);
+{ Convert from sRGB the sHSL (byte, lossless). Hue is defined by the sextant and position. }
+procedure RGBToByteStdHSL(ARed, AGreen, ABlue: byte; out ASextant, APosition, ASaturation, ALightness: byte);
+{ Convert from sHSL the sRGB (byte, lossless). Hue is defined by the sextant and position. }
+procedure ByteStdHSLToRGB(ASextant, APosition, ASaturation, ALightness: byte; out ARed, AGreen, ABlue: byte);
+{ Compute the lightness in sHSL (byte) }
+function GetByteStdLightness(ARed, AGreen, ABlue: byte): byte;
 {$ENDIF}
 
 
@@ -376,6 +393,22 @@ end;
 procedure TBGRAPixel.SetClassLightness(AValue: word);
 begin
   self := SetLightness(self, AValue);
+end;
+
+class function TBGRAPixel.New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := AAlpha;
+end;
+
+class function TBGRAPixel.New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := 255;
 end;
 
 procedure TBGRAPixel.FromRGB(ARed, AGreen, ABlue: Byte; AAlpha: Byte);
@@ -461,6 +494,60 @@ end;
 class operator TBGRAPixel.:=(Source: TColor): TBGRAPixel;
 begin
   result.FromColor(Source);
+end;
+
+{ TGSBAPixel }
+
+class function TGSBAPixel.New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ABrightness;
+  Result.alpha := AAlpha;
+end;
+
+class function TGSBAPixel.New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ABrightness;
+  Result.alpha := 65535;
+end;
+
+{ THSLAPixel }
+
+class function THSLAPixel.New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ALightness;
+  Result.alpha := AAlpha;
+end;
+
+class function THSLAPixel.New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ALightness;
+  Result.alpha := 65535;
+end;
+
+{ TExpandedPixel }
+
+class function TExpandedPixel.New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := AAlpha;
+end;
+
+class function TExpandedPixel.New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := 65535;
 end;
 
 { The gamma correction is approximated here by a power function }
@@ -1637,6 +1724,182 @@ begin Result := BGRAToHSLA(ColorToBGRA(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TColor;
 begin Result := BGRAToColor(HSLAToBGRA(AValue)) end;
+
+{ @abstract(Converts a color from RGB to Hue/Chroma/Value.)
+
+  - Hue is expressed as a Sextant from 0 to 5 and Position from 0 to 255.
+  - Chroma ranges from 0 to Value.
+  - Value ranges from 0 to 255.
+}
+procedure RGBToByteStdHCV(ARed, AGreen, ABlue: byte; out ASextant, APosition, AChroma, AValue: byte);
+var mini: Byte;
+begin
+  if (ARed = AGreen) and (AGreen = ABlue) then
+  begin
+    ASextant := 0;
+    APosition := 0;
+    AChroma := 0;
+    AValue := ARed;
+    exit;
+  end;
+  AValue := max(max(ARed, AGreen), ABlue);
+  mini := min(min(ARed, AGreen), ABlue);
+  AChroma := AValue - mini;
+  if ARed = AValue then
+  begin
+    if AGreen >= ABlue then
+    begin
+      ASextant := 0;
+      APosition := AGreen - mini;
+    end else
+    begin
+      ASextant := 5;
+      APosition := AValue - ABlue;
+    end;
+  end else
+  if AGreen = AValue then
+  begin
+    if ABlue >= ARed then
+    begin
+      ASextant := 2;
+      APosition := ABlue - mini;
+    end else
+    begin
+      ASextant := 1;
+      APosition := AValue - ARed;
+    end;
+  end else // ABlue = AValue
+  begin
+    if ARed >= AGreen then
+    begin
+      ASextant := 4;
+      APosition := ARed - mini;
+    end else
+    begin
+      ASextant := 3;
+      APosition := AValue - AGreen;
+    end;
+  end;
+  // normalize position
+  APosition := (APosition * 255 + (AChroma shr 1)) div AChroma;
+end;
+
+{ @abstract(Converts a color expressed as Hue/Chroma/Value into sRGB.)
+
+  - Hue is expressed as a Sextant from 0 to 5 and Position from 0 to 255.
+  - Chroma ranges from 0 to Value.
+  - Value ranges from 0 to 255.
+}
+procedure ByteStdHCVToRGB(ASextant, APosition, AChroma, AValue: byte; out ARed, AGreen, ABlue: byte);
+var
+  mini: Byte;
+begin
+  if AChroma = 0 then
+  begin
+    ARed := AValue;
+    AGreen := AValue;
+    ABlue := AValue;
+    exit;
+  end;
+  if AChroma > AValue then AChroma := AValue;
+  // denormalize position
+  APosition := (APosition * AChroma + 127) div 255;
+  mini := AValue - AChroma;
+  case ASextant of
+  0: begin
+    ARed := AValue;
+    AGreen := mini + APosition;
+    ABlue := mini;
+  end;
+  1: begin
+    ARed := AValue - APosition;
+    AGreen := AValue;
+    ABlue := mini;
+  end;
+  2: begin
+    ARed := mini;
+    AGreen := AValue;
+    ABlue := mini + APosition;
+  end;
+  3: begin
+    ARed := mini;
+    AGreen := AValue - APosition;
+    ABlue := AValue;
+  end;
+  4: begin
+    ARed := mini + APosition;
+    AGreen := mini;
+    ABlue := AValue;
+  end;
+  5: begin
+    ARed := AValue;
+    AGreen := mini;
+    ABlue := AValue - APosition;
+  end;
+  else
+    raise Exception.Create('Invalid sextant');
+  end;
+end;
+
+procedure RGBToByteStdHSL(ARed, AGreen, ABlue: byte; out ASextant, APosition,
+  ASaturation, ALightness: byte);
+var
+  value, chroma, maxChroma: byte;
+begin
+  RGBToByteStdHCV(ARed, AGreen, ABlue, ASextant, APosition, chroma, value);
+  ALightness := max(value - (chroma shr 1), 0);
+  // normalize chroma
+  if ALightness >= 128 then
+    maxChroma := (255 - ALightness) shl 1 + 1
+  else
+    maxChroma := ALightness shl 1;
+  if maxChroma = 0 then
+    ASaturation := 0
+  else
+    ASaturation := (chroma * 255 + (maxChroma shr 1)) div maxChroma;
+end;
+
+procedure ByteStdHSLToRGB(ASextant, APosition, ASaturation, ALightness: byte; out
+  ARed, AGreen, ABlue: byte);
+var value, chroma, maxChroma: byte;
+begin
+  // denormalize chroma
+  if ALightness >= 128 then
+    maxChroma := (255 - ALightness) shl 1 + 1
+  else
+    maxChroma := ALightness shl 1;
+  chroma := (ASaturation * maxChroma + 127) div 255;
+
+  value := min(ALightness + (chroma shr 1), 255);
+  ByteStdHCVToRGB(ASextant, APosition, chroma, value, ARed, AGreen, ABlue);
+end;
+
+procedure RGBToByteStdHSV(ARed, AGreen, ABlue: byte; out ASextant, APosition,
+  ASaturation, AValue: byte);
+var
+  chroma: byte;
+begin
+  RGBToByteStdHCV(ARed, AGreen, ABlue, ASextant, APosition, chroma, AValue);
+  // normalize chroma
+  if AValue = 0 then
+    ASaturation := 0
+  else
+    ASaturation := (chroma * 255 + (AValue shr 1)) div AValue;
+end;
+
+procedure ByteStdHSVToRGB(ASextant, APosition, ASaturation, AValue: byte; out
+  ARed, AGreen, ABlue: byte);
+var chroma: byte;
+begin
+  // denormalize chroma
+  chroma := (ASaturation * AValue + 127) div 255;
+  ByteStdHCVToRGB(ASextant, APosition, chroma, AValue, ARed, AGreen, ABlue);
+end;
+
+function GetByteStdLightness(ARed, AGreen, ABlue: byte): byte;
+begin
+  result := (max(max(ARed, AGreen), ABlue) + min(min(ARed, AGreen), ABlue) + 1) shr 1;
+end;
 
 { TGSBAPixelBasicHelper }
 

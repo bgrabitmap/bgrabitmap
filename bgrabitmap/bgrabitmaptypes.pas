@@ -21,8 +21,8 @@ interface
 uses
   BGRAClasses, BGRAGraphics, BGRAUnicode,
   FPImage{$IFDEF BGRABITMAP_USE_FPCANVAS}, FPImgCanv{$ENDIF}
-  {$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF},
-  BGRAMultiFileType;
+  {$IFDEF BGRABITMAP_USE_LCL}, LCLType, GraphType, LResources{$ENDIF}
+  {$IFNDEF BGRABITMAP_CORE}, BGRAMultiFileType{$ENDIF};
 
 {=== Miscellaneous types ===}
 
@@ -33,7 +33,7 @@ uses
   function BGRABitmapVersionStr: string;
 
 type
-  TMultiFileContainer = BGRAMultiFileType.TMultiFileContainer;
+  {$IFNDEF BGRABITMAP_CORE}TMultiFileContainer = BGRAMultiFileType.TMultiFileContainer;{$ENDIF}
   Int32or64 = BGRAClasses.Int32or64;
   UInt32or64 = BGRAClasses.UInt32or64;
 
@@ -677,10 +677,10 @@ function ResourceFile(AFilename: string): string;
 
 implementation
 
-uses Math, SysUtils, BGRAUTF8,
+uses Math, SysUtils, BGRAUTF8, FPWriteBMP, FPReadPNM, FPWritePNM, FPWriteXPM{$IFNDEF BGRABITMAP_CORE},
   FPReadXwd, FPReadXPM, FPReadPcx,
-  FPWriteJPEG, FPWriteBMP, FPWritePCX,
-  FPWriteTGA, FPWriteXPM, FPReadPNM, FPWritePNM;
+  FPWriteJPEG, FPWritePCX,
+  FPWriteTGA{$ENDIF};
 
 function BGRABitmapVersionStr: string;
 var numbers: TStringList;
@@ -1465,7 +1465,7 @@ begin
       ifUnknown: raise exception.Create('The image format is unknown.');
       ifOpenRaster: raise exception.Create('You need to call BGRAOpenRaster.RegisterOpenRasterFormat to read this image.');
       ifPaintDotNet: raise exception.Create('You need to call BGRAPaintNet.RegisterPaintNetFormat to read this image.');
-      ifSvg: raise exception.Create('You need to call BGRA.RegisterSvgFormat to read this image.');
+      ifSvg: raise exception.Create('You need to call BGRASVG.RegisterSvgFormat to read this image.');
     else
       raise exception.Create('The image reader is not registered for this image format.');
     end;
@@ -1660,7 +1660,8 @@ initialization
   {$I csscolorconst.inc}
 
   fqFineClearType := @GetFineClearTypeAuto;
-  
+
+  {$IFNDEF BGRABITMAP_CORE}
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
   DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;
   DefaultBGRAImageWriter[ifPortableAnyMap] := TFPWriterPNM;
@@ -1669,6 +1670,7 @@ initialization
   DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;
   DefaultBGRAImageReader[ifPortableAnyMap] := TFPReaderPNM;
   //the other readers are registered by their unit
+  {$ENDIF}
 
   {$IFDEF BGRABITMAP_USE_LCL}
   BGRAResource := TLCLResourceManager.Create;

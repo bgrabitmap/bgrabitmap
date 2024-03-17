@@ -46,6 +46,8 @@ type
     {** Channels if ordered BGRA ordered }
     blue, green, red, alpha: byte;
     {$ENDIF}
+    class function New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;static;
+    class function New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;static;
     {** Sets the pixel with given RGB values }
     procedure FromRGB(ARed,AGreen,ABlue: Byte; AAlpha: Byte = 255);
     {** Sets the pixel with given TColor }

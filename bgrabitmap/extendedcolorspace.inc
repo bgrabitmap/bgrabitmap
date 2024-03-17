@@ -2,6 +2,7 @@
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
 
+{$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}
 type
   {* Definition of a point on the spectral locus in XYZ colorspace }
   TSpectralLocusPoint = record
@@ -26,6 +27,7 @@ type
   end;
 
 {$I spectraldata.inc}
+{$ENDIF}
 
 type
   {* Pointer to a reference white }
@@ -145,10 +147,6 @@ var
 {$DEFINE INCLUDE_INTERFACE}
 {$I generatedcolorspace.inc}
 
-{ Handle overflow by bringing values to the range 0 to 1. The luma parameters indicate
-  the brightness of each RGB channel (typically green is brighter) }
-procedure HandleLinearRGBAOverflow(var result: TLinearRGBA; LumaRed, LumaGreen, LumaBlue: single); inline;
-
 { Converts a color from TBGRAPixel to TByteMask (grayscale) taking into account gamma correction }
 function BGRAToMask(const ABGRAPixel: TBGRAPixel): TByteMask;
 { Converts a TExpandedPixel color to a TByteMask (grayscale) }
@@ -158,6 +156,7 @@ function MaskToBGRA(const AMask: TByteMask; AAlpha: byte = 255): TBGRAPixel;
 { Converts a TByteMask to a TExpandedPixel using the specified 8-bit alpha value }
 function ByteMaskToExpandedPixel(const AMask: TByteMask; AAlpha: byte = 255): TExpandedPixel;
 
+{$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}
 { Converts a TStdRGBA color to a TBGRAPixel (clamped to 0..255) }
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 { Converts a TStdRGBA color to a TFPColor (clamped to 0..65535) }
@@ -167,6 +166,9 @@ function BGRAPixelToStdRGBA(const ABGRAPixel: TBGRAPixel): TStdRGBA;
 { Converts a TFPColor color to a TStdRGBA }
 function FPColorToStdRGBA(const AFPColor: TFPColor): TStdRGBA;
 
+{ Handle overflow by bringing values to the range 0 to 1. The luma parameters indicate
+  the brightness of each RGB channel (typically green is brighter) }
+procedure HandleLinearRGBAOverflow(var result: TLinearRGBA; LumaRed, LumaGreen, LumaBlue: single); inline;
 { Converts a TLinearRGBA into a TExpandedPixel (clamped to 0..65535) }
 function LinearRGBAToExpandedPixel(const ALinearRGBA: TLinearRGBA): TExpandedPixel;
 { Converts a TExpandedPixel to a TLinearRGBA }
@@ -235,6 +237,8 @@ function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenc
 
 { Computes reflected color in XYZ for a given wavelength range }
 function SpectrumRangeReflectToXYZA(reflectance,wavelen1,wavelen2,alpha: single): TXYZA;
+{$ENDIF}
+
 { Determines cone stimulations (_L_, _M_, _S_) from XYZ coordinates }
 procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
 { Determines XYZ coordinates from cone stimulations (_L_, _M_, _S_) }
@@ -631,6 +635,7 @@ begin
   result.alpha := AAlpha;
 end;
 
+{$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 begin
   with AStdRGBA do
@@ -794,7 +799,7 @@ begin
       result.Y := red * 0.2225045 + green * 0.7168786 + blue * 0.0606169;
       result.Z := red * 0.0139322 + green * 0.0971045 + blue * 0.7141733;
     end;
-    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D50, AReferenceWhite);
   end else
   begin
     with ALinearRGBA do
@@ -803,7 +808,7 @@ begin
       result.Y := red * 0.2126729 + green * 0.7151522 + blue * 0.0721750;
       result.Z := red * 0.0193339 + green * 0.1191920 + blue * 0.9503041;
     end;
-    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D65, AReferenceWhite);
   end;
   Result.alpha := ALinearRGBA.alpha;
 end;
@@ -821,7 +826,7 @@ begin
   ad := AXYZA;
   if AReferenceWhite.Illuminant = 'D50' then
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D50);
     with ad do
     begin
       result.red := X * 3.1338561 + Y * (-1.6168667) + Z * (-0.4906146);
@@ -830,7 +835,7 @@ begin
     end;
   end else
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D65);
     with ad do
     begin
       result.red := X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314);
@@ -918,7 +923,7 @@ begin
       result.Y := ClampInt(round((red * 0.2225045 + green * 0.7168786 + blue * 0.0606169)*(50000/65535)),0,65535);
       result.Z := ClampInt(round((red * 0.0139322 + green * 0.0971045 + blue * 0.7141733)*(50000/65535)),0,65535);
     end;
-    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+    ChromaticAdaptWordXYZ(result.X,result.Y,result.Z, ReferenceWhite2D50, AReferenceWhite);
   end else
   begin
     with AExpandedPixel do
@@ -927,7 +932,7 @@ begin
       result.Y := ClampInt(round((red * 0.2126729 + green * 0.7151522 + blue * 0.0721750)*(50000/65535)),0,65535);
       result.Z := ClampInt(round((red * 0.0193339 + green * 0.1191920 + blue * 0.9503041)*(50000/65535)),0,65535);
     end;
-    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+    ChromaticAdaptWordXYZ(result.X,result.Y,result.Z, ReferenceWhite2D65, AReferenceWhite);
   end;
   Result.alpha := AExpandedPixel.alpha;
 end;
@@ -946,7 +951,7 @@ begin
   ad := AXYZA;
   if AReferenceWhite.Illuminant = 'D50' then
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    ChromaticAdaptWordXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D50);
     with ad do
     begin
       r := round((X * 3.1338561 + Y * (-1.6168667) + Z * (-0.4906146))*(65535/50000));
@@ -955,7 +960,7 @@ begin
     end;
   end else
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+      ChromaticAdaptWordXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D65);
     with ad do
     begin
       r := round((X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314))*(65535/50000));
@@ -1407,13 +1412,13 @@ begin
     result.X := R*0.6097559 + G*0.2052401 + B*0.1492240;
     result.Y := R*0.3111242 + G*0.6256560 + B*0.0632197;
     result.Z := R*0.0194811 + G*0.0608902 + B*0.7448387;
-    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D50, AReferenceWhite);
   end else
   begin
     result.X := R*0.5767309 + G*0.1855540 + B*0.1881852;
     result.Y := R*0.2973769 + G*0.6273491 + B*0.0752741;
     result.Z := R*0.0270343 + G*0.0706872 + B*0.9911085;
-    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D65, AReferenceWhite);
   end;
   result.alpha := ASource.alpha/255;
 end;
@@ -1430,7 +1435,7 @@ begin
   ad := AXYZA;
   if AReferenceWhite.Illuminant = 'D50' then
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D50);
     with ad do
     begin
       R := Clamp(1.9624274*X - 0.6105343*Y - 0.3413404*Z,0,1);
@@ -1439,7 +1444,7 @@ begin
     end;
   end else
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D65);
     with ad do
     begin
       R := Clamp(2.0413690*X - 0.5649464*Y - 0.3446944*Z,0,1);
@@ -1644,8 +1649,9 @@ begin
   result.X := result.X * fromRefWhite^.X/totalXYZ.X * reflectance;
   result.Y := result.Y * fromRefWhite^.Y/totalXYZ.Y * reflectance;
   result.Z := result.Z * fromRefWhite^.Z/totalXYZ.Z * reflectance;
-  result.ChromaticAdapt(fromRefWhite^, GetReferenceWhiteIndirect^);
+  ChromaticAdaptXYZ(result.X,result.Y,result.Z, fromRefWhite^, GetReferenceWhiteIndirect^);
 end;
+{$ENDIF}
 
 procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
 begin

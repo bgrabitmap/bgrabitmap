@@ -105,7 +105,7 @@ procedure BGRATextOutImproveReadability(bmp: TBGRACustomBitmap; AFont: TFont; xf
 implementation
 
 uses BGRAGradientScanner, Math, BGRAGrayscaleMask, BGRAPath, BGRATransform,
-  BGRAPolygon, BGRAPen;
+  BGRAPolygon, BGRAPen, BGRAFilterBlur;
 
 procedure BGRATextOutImproveReadability(bmp: TBGRACustomBitmap; AFont: TFont; xf,yf: single; text: string; color: TBGRAPixel; tex: IBGRAScanner; align: TAlignment; mode : TBGRATextOutImproveReadabilityMode);
 var
@@ -314,7 +314,7 @@ begin
   bmpSdw.FontQuality:= AFontQuality;
 
   bmpSdw.TextOut(ARadius,ARadius,AText,AShadowColor);
-  BGRAReplace(bmpSdw,bmpSdw.FilterBlurRadial(ARadius,rbFast));
+  BGRAReplace(bmpSdw, BGRAFilterBlur.FilterBlurRadial(bmpSdw, ARadius, ARadius, rbFast));
   bmpOut.PutImage(OutX+AOffsetX-ARadius,OutY+AOffsetY-ARadius,bmpSdw,dmDrawWithTransparency);
   bmpSdw.Free;
 

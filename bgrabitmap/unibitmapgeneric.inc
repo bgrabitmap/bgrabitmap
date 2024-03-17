@@ -50,7 +50,7 @@ type
     procedure Fill(const AColor: TPixel; AMode : TDrawMode; AAlpha : Word = 65535); overload; virtual;
     procedure ReplaceColor(const ABefore, AAfter: TPixel); overload; virtual;
     procedure ReplaceColor(ARect: TRect; const ABefore, AAfter: TPixel); overload; virtual;
-    procedure ReplaceTransparent(const AAfter: TBGRAPixel); overload; virtual;
+    procedure ReplaceTransparent(const AAfter: TPixel); overload; virtual;
     procedure ReplaceTransparent(ARect: TRect; const AAfter: TPixel); overload; virtual;
     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; const AColor: TPixel); overload; virtual;
     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; const AColor: TPixel; ADrawMode: TDrawMode); overload; virtual;
@@ -533,7 +533,7 @@ begin
   InvalidateBitmap;
 end;
 
-procedure TGenericUniversalBitmap.ReplaceTransparent(const AAfter: TBGRAPixel);
+procedure TGenericUniversalBitmap.ReplaceTransparent(const AAfter: TPixel);
 var before: TPixel;
 begin
   AssignTransparentPixel(before);

@@ -466,7 +466,7 @@ ctx.stroke();
 
 implementation
 
-uses Math, BGRAFillInfo, BGRAPolygon, BGRABlend, FPWriteJPEG, FPWriteBMP, base64;
+uses Math, BGRAFillInfo, BGRAPolygon, BGRABlend, FPWriteJPEG, FPWriteBMP, base64, BGRAFilterBlur;
 
 type
   TColorStop = record
@@ -1837,14 +1837,14 @@ begin
     if shadowFastest then
     begin
       if shadowBlur*invSqrt2 >= 0.5 then
-        bmp := AMask.FilterBlurRadial(round(shadowBlur*invSqrt2),rbBox);
+        bmp := BGRAFilterBlur.FilterBlurRadial(AMask, shadowBlur*invSqrt2, shadowBlur*invSqrt2, rbBox);
     end
     else
     begin
       if (shadowBlur < 5) and (abs(shadowBlur-round(shadowBlur)) > 1e-6) then
-        bmp := AMask.FilterBlurRadial(round(shadowBlur*10),rbPrecise)
+        bmp := BGRAFilterBlur.FilterBlurRadial(AMask, shadowBlur*10, shadowBlur*10, rbPrecise)
       else
-        bmp := AMask.FilterBlurRadial(round(shadowBlur),rbFast);
+        bmp := BGRAFilterBlur.FilterBlurRadial(AMask, shadowBlur, shadowBlur, rbFast);
     end;
   end;
   if currentState.clipMaskReadOnly <> nil then

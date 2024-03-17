@@ -229,7 +229,7 @@ end;
 function TBGRACustomScanner.ScanAtIntegerMask(X,Y: integer): TByteMask;
 begin
   if GetScanCustomColorspace = TBGRAPixelColorspace then
-    result := ScanAtInteger(X,Y).green
+    result.gray := ScanAtInteger(X,Y).green
   else
     result := ScanAtMask(X,Y);
 end;
@@ -237,7 +237,7 @@ end;
 function TBGRACustomScanner.ScanAtMask(X,Y: Single): TByteMask;
 begin
   if GetScanCustomColorspace = TBGRAPixelColorspace then
-    result := ScanAt(X,Y).green
+    result.gray := ScanAt(X,Y).green
   else
     raise exception.Create('This scanner does not provide a mask.');
 end;
