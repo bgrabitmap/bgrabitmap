@@ -117,13 +117,15 @@ procedure TExample4.CreateScene;
 var obj: IBGRAObject3D;
     r: single;
     i: integer;
-    filename: string;
+    basePath, filename: string;
 begin
   Clear;
 
+  basePath := ExtractFilePath(Paramstr(0));
   filename := 'obj'+PathDelim+objList[numObj];
-  if not fileexists(filename) and fileexists('..'+PathDelim+'..'+PathDelim+filename) then
+  if not fileexists(basePath+filename) and fileexists(basePath+'..'+PathDelim+'..'+PathDelim+filename) then
     filename := '..'+PathDelim+'..'+PathDelim+filename;
+  filename := basePath+ filename;
   if not FileExists(filename) then
     begin
       message := 'File not found : '+ filename;
