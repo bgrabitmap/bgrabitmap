@@ -103,6 +103,9 @@ type
     procedure AssignExceptGeometry(AOther: TBGRALayerGradientOriginal);
     procedure FitGeometry(const ABox: TAffineBox);
     procedure SetColors(AStartColor, AEndColor: TBGRAPixel);
+    procedure SetColors(const AColors: array of TBGRAPixel; ASpreadColorsEqually: boolean = true);
+    procedure SetColors(const AColors: array of TBGRAPixel; const APositions: Array of single);
+    procedure AddColor(AColor: TBGRAPixel; APreviousColorPosition: single = EmptySingle);
     procedure ApplyOpacity(AOpacity: byte);
     function Equals(Obj: TObject): boolean; override;
 
@@ -1012,8 +1015,9 @@ end;
 procedure TBGRALayerGradientOriginal.SetColors(AStartColor,
   AEndColor: TBGRAPixel);
 begin
-  if (AStartColor = StartColor) and (AEndColor = EndColor) then exit;
+  if (AStartColor = StartColor) and (AEndColor = EndColor) and (ColorCount = 2) then exit;
   BeginUpdate;
+  ColorCount := 2;
   StartColor := AStartColor;
   EndColor := AEndColor;
   EndUpdate;
@@ -1051,6 +1055,65 @@ begin
               (Repetition = other.Repetition);
   end else
     Result:=inherited Equals(Obj);
+end;
+
+procedure TBGRALayerGradientOriginal.AddColor(AColor: TBGRAPixel; APreviousColorPosition: single);
+var
+  prevCount: Integer;
+begin
+  prevCount := ColorCount;
+  BeginUpdate;
+  setlength(FColors, prevCount+1);
+  setlength(FColorPositions, prevCount+1);
+  FColors[prevCount] := AColor;
+  FColorPositions[prevCount] := FColorPositions[prevCount - 1];
+  if APreviousColorPosition <> EmptySingle then
+  begin
+    FColorPositions[prevCount - 1] := APreviousColorPosition;
+    if FColorPositions[prevCount] < APreviousColorPosition then
+      FColorPositions[prevCount] := APreviousColorPosition;
+  end;
+  EndUpdate;
+end;
+
+procedure TBGRALayerGradientOriginal.SetColors(
+  const AColors: array of TBGRAPixel; ASpreadColorsEqually: boolean);
+var
+  i: Integer;
+begin
+  if length(AColors) < 2 then
+    exception.Create('At least two colors expected');
+  BeginUpdate;
+  ColorCount := length(AColors);
+  for i := 0 to high(AColors) do
+    FColors[i] := AColors[i];
+  if ASpreadColorsEqually then
+  begin
+    for i := 0 to high(AColors) do
+      FColorPositions[i] := i / (length(AColors) - 1);
+  end;
+  EndUpdate;
+end;
+
+procedure TBGRALayerGradientOriginal.SetColors(
+  const AColors: array of TBGRAPixel; const APositions: array of single);
+var
+  i: Integer;
+begin
+  if length(AColors) < 2 then
+    exception.Create('At least two colors expected');
+  if length(APositions) <> length(AColors) then
+    exception.Create('Too many color positions');
+  if (APositions[0] <> 0) or (APositions[high(APositions)] <> 1) then
+    exception.Create('Positions must start at 0 and end at 1');
+  BeginUpdate;
+  ColorCount := length(AColors);
+  for i := 0 to high(AColors) do
+  begin
+    FColors[i] := AColors[i];
+    FColorPositions[i] := APositions[i];
+  end;
+  EndUpdate;
 end;
 
 initialization

@@ -203,11 +203,11 @@ begin
 
   gradStream := TMemoryStream.Create;
   grad := TBGRALayerGradientOriginal.Create;
-  grad.StartColor := CSSSkyBlue;
-  grad.EndColor := CSSOrange;
+  grad.SetColors([CSSWhite, CSSSkyBlue, CSSOrange, CSSRed],
+                 [0, 0.2, 0.8, 1]);
   grad.GradientType:= gtLinear;
-  grad.Origin := PointF(FLayers.Width/2,100);
-  grad.XAxis := grad.origin+PointF(0,250);
+  grad.Origin := PointF(FLayers.Width/2,40);
+  grad.XAxis := grad.origin+PointF(0,400);
   grad.SaveToStream(gradStream);    //save original definition
   grad.Free;
 
