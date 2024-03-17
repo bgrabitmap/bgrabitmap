@@ -21,12 +21,12 @@ type
     ciLinearHSLPositive,
     {** Using HSL colorspace, rotating hue towards negative }
     ciLinearHSLNegative,
-    {** Using HSL colorspace, rotating hue for shortest path }
-    ciLinearHSLAuto,
     {** Using GSB colorspace, rotating hue towards positive }
     ciGSBPositive,
     {** Using GSB colorspace, rotating hue towards negative }
     ciGSBNegative,
+    {** Using HSL colorspace, rotating hue for shortest path }
+    ciLinearHSLAuto,
     {** Using GSB colorspace, rotating hue for shortest path }
     ciGSBAuto);
 
