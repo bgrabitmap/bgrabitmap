@@ -500,7 +500,7 @@ begin
   grRepeat: result := trunc(frac(APositionF)*65536);
   grReflect:
     begin
-      if (frac(APositionF*0.5) >= 0.5) xor (APositionF < 0) then
+      if (abs(frac(APositionF*0.5)) < 0.5) xor (APositionF < 0) then
         result := round(frac(APositionF)*65535)
       else
         result := 65535 - round(frac(APositionF)*65535);
@@ -680,7 +680,7 @@ begin
   else if wordPos = 65535 then
     result := FColor2
   else
-    result := InterpolateToBGRA(position);
+    result := InterpolateToBGRA(wordPos);
 end;
 
 function TBGRASimpleGradient.GetColorAtF(position: single): TBGRAPixel;
