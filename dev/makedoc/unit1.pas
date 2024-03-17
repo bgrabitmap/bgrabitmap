@@ -6,7 +6,8 @@ unit Unit1;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls,
+  fgl;
 
 type
 
@@ -21,6 +22,7 @@ type
     SelectDirectoryDialog1: TSelectDirectoryDialog;
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     { private declarations }
   public
@@ -34,16 +36,20 @@ implementation
 
 {$R *.lfm}
 
-uses LazUTF8, FileUtil, LazFileUtils;
+uses LazUTF8, FileUtil, LazFileUtils, RegExpr, StrUtils;
 
 const
-  BoldKeywords : array[1..52] of string = ('var','procedure','function','and',
+  BoldKeywords : array[1..58] of string = ('var','procedure','function','and',
     'or','xor','not','if','then','case','begin','end','of',
     'exit','new','class','is','const','div','do','downto','to','else','for',
     'in','mod','nil','object','record','repeat','self','shl','shr','string',
     'unit','until','uses','while','array','interface', 'out', 'constructor',
     'property','read','write','default', 'packed', 'operator', 'inline',
-    'overload', 'virtual', 'abstract');
+    'overload', 'virtual', 'abstract', 'helper', 'ifdef', 'endif', 'set',
+    'specialize', 'generic');
+
+type
+  TDocumentationPages = specialize TFPGMap<string, string>;
 
 { TForm1 }
 
@@ -63,6 +69,8 @@ var
   found, first: boolean;
 begin
   i := 1;
+  s := StringReplace(s, '''', '&apos;', [rfReplaceAll]);
+  s := StringReplace(s, '{%H-}', '', [rfReplaceAll]);
   first := true;
   while i <= length(s) do
   begin
@@ -93,9 +101,11 @@ begin
           begin
             delete(s, start, length(w));
             dec(i, length(w));
+            first := copy(s, start, 1) = ',';
             w := ''''''+w+'''''';
             insert(w, s, start);
             inc(i, length(w));
+            continue;
           end;
         first := false;
       end else
@@ -103,7 +113,39 @@ begin
   end;
 end;
 
-function MakeDocFor(AFilename: string): string;
+procedure AdaptMarkdown(var s: string);
+var r: TRegExpr;
+begin
+  r := TRegExpr.Create('([^A-Z0-9]|^)_([A-Z0-9]+([_.][A-Z0-9]+)*)_([^A-Z0-9]|$)'); r.ModifierI:= true;
+  s := r.Replace(s, '$1''''$2''''$4', true);
+  r.Free;
+
+  r := TRegExpr.Create('\*\*([A-Z0-9]+([_.][A-Z0-9]+)*)\*\*'); r.ModifierI:= true;
+  s := r.Replace(s, '''''''$1''''''', true);
+  r.Free;
+
+  r := TRegExpr.Create('([^\\]|^)\[([^\]]+)\]\(https://wiki.freepascal.org/(\w+)\)'); r.ModifierI:= true;
+  s := r.Replace(s, '$1[[$3|$2]]', true);
+  r.Free;
+
+  r := TRegExpr.Create('([^\\]|^)\[([^\]]+)\]\(([-\w:/.]+)\)'); r.ModifierI:= true;
+  s := r.Replace(s, '$1[$3 $2]', true);
+  r.Free;
+
+  r := TRegExpr.Create('```pascal([^`]+)```');
+  s := r.Replace(s, '<syntaxhighlight>$1</syntaxhighlight>', true);
+  r.Free;
+
+  r := TRegExpr.Create('\^([0-9]+)');
+  s := r.Replace(s, '<sup>$1</sup>', true);
+  r.Free;
+
+  s := StringReplace(s, '\[', '[', [rfReplaceAll]);
+  s := StringReplace(s, ' --> ', ' &rarr; ', [rfReplaceAll]);
+  s := StringReplace(s, ' <-- ', ' &larr; ', [rfReplaceAll]);
+end;
+
+procedure MakeDocFor(AFilename: string; APages: TDocumentationPages);
 var
   t: textfile;
   fileoutput,s,bgcolor: String;
@@ -111,7 +153,7 @@ var
   comStart,comEnd, idxColor: integer;
   oddRow,indented : boolean;
   docName, colorStr: string;
-  tableOpened: boolean;
+  tableOpened, inCode, bulletPoint, prevBulletPoint: boolean;
 
   procedure openTable;
   begin
@@ -133,45 +175,22 @@ var
   end;
 
   procedure flushOutput;
-  var u: textfile;
-    path,fullname: string;
-    outname,
-    currentContent: string;
+  var
+    docIndex: Integer;
   begin
     if fileoutput <> '' then
+    begin
+      closeTable;
+      if not APages.Find(docName, docIndex) then
       begin
-        closeTable;
-        path := ExtractFilePath(AFilename);
-        CreateDirUTF8(path+DirectorySeparator+'doc');
-        outname := 'doc'+DirectorySeparator+docName+'.txt';
-        fullname := path+outname;
-        fileoutput := '=== ' + docName + ' ===' + LineEnding
-                    + fileoutput;
-        if FileExistsUTF8(fullname) then
-          begin
-            currentContent := ReadFileToString(fullname);
-            if currentContent <> fileoutput then
-              begin
-                assignfile(u, UTF8ToSys(fullname));
-                rewrite(u);
-                write(u, fileoutput);
-                closefile(u);
-                result += outname + ' (updated)' + LineEnding;
-              end;
-          end else
-          begin
-            result += outname + ' (created)' + LineEnding;
-            assignfile(u, UTF8ToSys(fullname));
-            rewrite(u);
-            write(u, fileoutput);
-            closefile(u);
-          end;
-        fileoutput:= '';
+        docIndex := APages.Add(docName, '=== ' + docName + ' ===' + LineEnding);
       end;
+      APages.Data[docIndex] := APages.Data[docIndex] + fileoutput;
+      fileoutput:= '';
+    end;
   end;
 
 begin
-  result := '';
   docName := ExtractFileName(AFilename);
   fileoutput := '';
   tableOpened:= false;
@@ -207,6 +226,7 @@ begin
 
     comStart:= pos('{* ',s+' ');
     indented:= false;
+    inCode := false;
     if comStart <> 0 then
       comStart += 2
     else
@@ -223,38 +243,54 @@ begin
         description := '';
         comEnd := pos('}',s);
         if comEnd = 0 then
+        begin
+          prevBulletPoint := false;
+          description += trim(copy(s,comStart,length(s)-comStart+1));
+          while not eof(t) do
           begin
-            description += trim(copy(s,comStart,length(s)-comStart+1));
-            while not eof(t) do
+            readln(t,s);
+            bulletPoint := false;
+            s := trim(s);
+            if s.StartsWith('```') then inCode := not inCode;
+            if not inCode then
             begin
-              readln(t,s);
-              s := trim(s);
-              if (length(s) > 0) and (s[1]='*') then
-                begin
-                  delete(s,1,1);
-                  s := trim(s);
-                  s := '<br/>'+s;
-                end;
-              comEnd := pos('}',s);
-              if comEnd = 0 then
-                description += ' '+s else
-                begin
-                  description += ' '+trim(copy(s,1,comEnd-1));
-                  break;
-                end;
+              s := StringReplace(s, '<=', '&le;', [rfReplaceAll]);
+              s := StringReplace(s, '>=', '&ge;', [rfReplaceAll]);
             end;
-          end
-          else
-            description += trim(copy(s,comStart,comEnd-comStart));
+            if s = '' then description += '<p>'
+            else
+            begin
+              comEnd := pos('}',s);
+              if comEnd > 0 then s := trim(copy(s,1,comEnd-1));
+              if not inCode then
+              begin
+                if s.StartsWith('- ') then
+                begin
+                  description += IfThen(prevBulletPoint,'',LineEnding)+'* '+s.Substring(2)+LineEnding;
+                  bulletPoint := true;
+                end
+                else
+                  description += ' '+s;
+              end;
+              if comEnd > 0 then break
+              else if inCode then description += LineEnding;
+            end;
+            prevBulletPoint:= bulletPoint;
+          end;
+        end
+        else
+          description += trim(copy(s,comStart,comEnd-comStart));
+
+        AdaptMarkdown(description);
 
         while pos('[#',description) <> 0 do
         begin
           idxColor := pos('[#',description);
           colorStr := copy(description, idxColor, 9);
-          if (length(colorStr) = 9) and (colorStr[9] = ']') then
+          if (length(colorStr) = 9) and colorStr.EndsWith(']') then
             begin
               delete(description, idxColor, length(colorStr));
-              insert('<span style="width:8px; height: 8px; display: inline-block; border: 1px solid black; background: '+copy(colorStr,2,7)+';"></span>', description, idxColor);
+              insert('<span style="width:8px; height: 8px; display: inline-block; border: 1px solid black; background: '+copy(colorStr,2,length(colorStr)-2)+';"></span>', description, idxColor);
             end;
         end;
 
@@ -287,37 +323,85 @@ begin
   flushOutput;
 end;
 
+function ExportPages(APages: TDocumentationPages; APath: string): string;
+var
+  i: Integer;
+  u: textfile;
+  outname, fullname, currentContent, fileoutput: String;
+begin
+  result := '';
+  if APages.Count = 0 then exit;
+  CreateDirUTF8(APath+DirectorySeparator+'doc');
+  for i := 0 to APages.Count-1 do
+  begin
+    outname := 'doc'+DirectorySeparator+APages.Keys[i]+'.txt';
+    fullname := APath+outname;
+    fileoutput := APages.Data[i];
+    if FileExistsUTF8(fullname) then
+    begin
+      currentContent := ReadFileToString(fullname);
+      if currentContent <> fileoutput then
+      begin
+        assignfile(u, UTF8ToSys(fullname));
+        rewrite(u);
+        write(u, fileoutput);
+        closefile(u);
+        result += outname + ' (updated)' + LineEnding;
+      end else
+      begin
+        result += outname + ' (unchanged)' + LineEnding;
+      end;
+    end else
+    begin
+      result += outname + ' (created)' + LineEnding;
+      assignfile(u, UTF8ToSys(fullname));
+      rewrite(u);
+      write(u, fileoutput);
+      closefile(u);
+    end;
+  end;
+end;
+
 procedure TForm1.Button2Click(Sender: TObject);
 var sr: TSearchRec;
   output,ext: string;
-  path,fileoutput: string;
+  basePath,path: string;
+  pages: TDocumentationPages;
 begin
   memo1.Text := 'Analyzing...';
   memo1.Update;
-  path := AppendPathDelim(EPath.Text);
+  basePath := ExtractFilePath(ParamStr(0));
+  {$IFDEF DARWIN}
+  if basePath.EndsWith('/MacOS/') then
+    basePath := ExpandFileNameUTF8(basePath+'../../../');
+  {$ENDIF}
+  path := ExpandFileNameUTF8(AppendPathDelim(EPath.Text), basePath);
   if FindFirstUTF8(path+'*.*', faAnyFile, sr) = 0 then
-    begin
-      output := '';
-      repeat
-        if sr.Attr and (faDirectory or faVolumeId or faSymLink) <> 0 then continue;
-        ext := AnsiLowerCase(ExtractFileExt(sr.Name));
-        if (ext = '.pas') or (ext = '.inc') then
-          begin
-            fileoutput:= MakeDocFor(path+sr.Name);
-            if fileoutput <> '' then
-              begin
-                output += fileoutput;
-              end;
-          end;
-      until FindNextUTF8(sr) <> 0;
-      FindCloseUTF8(sr);
-      if output = '' then
-        Memo1.Text := 'No change'
-      else
-        Memo1.text := output;
-    end
+  begin
+    pages := TDocumentationPages.Create;
+    pages.Sorted:= true;
+    repeat
+      if sr.Attr and (faDirectory or faVolumeId or faSymLink) <> 0 then continue;
+      ext := AnsiLowerCase(ExtractFileExt(sr.Name));
+      if (ext = '.pas') or (ext = '.inc') then
+        MakeDocFor(path+sr.Name, pages);
+    until FindNextUTF8(sr) <> 0;
+    FindCloseUTF8(sr);
+
+    output := ExportPages(pages, path);
+    if output = '' then
+      Memo1.Text := 'No output'
+    else
+      Memo1.text := output;
+    pages.Free;
+  end
   else
     Memo1.Text := 'Nothing to do';
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  EPath.Text := StringReplace(EPath.Text, '/', PathDelim, [rfReplaceAll]);
 end;
 
 end.

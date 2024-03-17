@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implements the writer for LazPaint image format }
 unit BGRAWriteLzp;
 
 {$mode objfpc}{$H+}
@@ -9,8 +11,7 @@ uses
   BGRAClasses, SysUtils, FPimage, BGRALzpCommon, BGRABitmapTypes, BGRABitmap;
 
 type
-  { TBGRAWriterLazPaint }
-
+  {* Extends the TFPCustomImageWriter to write LazPaint image format }
   TBGRAWriterLazPaint = class(TFPCustomImageWriter)
   private
     function GetCompression: TLzpCompression;
@@ -19,15 +20,21 @@ type
     procedure SetIncludeThumbnail(AValue: boolean);
     function WriteThumbnail(Str: TStream; Img: TFPCustomImage): boolean;
   protected
+    { Flags for the compression options }
     CompressionMode: LongWord;
     procedure InternalWrite(Str: TStream; Img: TFPCustomImage); override;
     function InternalWriteLayers({%H-}Str: TStream; {%H-}Img: TFPCustomImage): boolean; virtual;
     function GetNbLayers: integer; virtual;
   public
+    {** Caption to store in the file }
     Caption: string;
+    {** Create the writer }
     constructor Create; override;
+    {** Static function to write LazPaint RLE image data into a stream }
     class procedure WriteRLEImage(Str: TStream; Img: TFPCustomImage; ACaption: string= ''); static;
+    {** Property to specify the compression to use }
     property Compression: TLzpCompression read GetCompression write SetCompression;
+    {** Specify to include a thumbnail or not }
     property IncludeThumbnail: boolean read GetIncludeThumbnail write SetIncludeThumbnail;
   end;
 

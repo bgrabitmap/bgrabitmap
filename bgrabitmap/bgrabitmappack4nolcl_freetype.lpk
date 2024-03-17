@@ -1,0 +1,650 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="5">
+    <PathDelim Value="\"/>
+    <Name Value="BGRABitmapPack4NoLCL_FreeType"/>
+    <Author Value="Circular"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)-nolcl+freetype-$(FPCVer)"/>
+      </SearchPaths>
+      <Parsing>
+        <SyntaxOptions>
+          <UseAnsiStrings Value="False"/>
+        </SyntaxOptions>
+      </Parsing>
+      <CodeGeneration>
+        <Optimizations>
+          <OptimizationLevel Value="0"/>
+          <VariablesInRegisters Value="True"/>
+        </Optimizations>
+      </CodeGeneration>
+      <Other>
+        <ConfigFile>
+          <WriteConfigFilePath Value="$(PkgOutDir)\fpclaz.cfg"/>
+        </ConfigFile>
+        <CustomOptions Value="-dBGRABITMAP_DONT_USE_LCL"/>
+      </Other>
+    </CompilerOptions>
+    <Description Value="Drawing routines with alpha blending and antialiasing"/>
+    <License Value="modified LGPL"/>
+    <Version Major="11" Minor="5" Release="5"/>
+    <Files Count="148">
+      <Item1>
+        <Filename Value="bgraanimatedgif.pas"/>
+        <UnitName Value="BGRAAnimatedGif"/>
+      </Item1>
+      <Item2>
+        <Filename Value="bgrabitmap.pas"/>
+        <UnitName Value="BGRABitmap"/>
+      </Item2>
+      <Item3>
+        <Filename Value="bgrabitmaptypes.pas"/>
+        <UnitName Value="BGRABitmapTypes"/>
+      </Item3>
+      <Item4>
+        <Filename Value="bgrablend.pas"/>
+        <UnitName Value="BGRABlend"/>
+      </Item4>
+      <Item5>
+        <Filename Value="bgracanvas.pas"/>
+        <UnitName Value="BGRACanvas"/>
+      </Item5>
+      <Item6>
+        <Filename Value="bgracanvas2d.pas"/>
+        <UnitName Value="BGRACanvas2D"/>
+      </Item6>
+      <Item7>
+        <Filename Value="bgracolorint.pas"/>
+        <UnitName Value="BGRAColorInt"/>
+      </Item7>
+      <Item8>
+        <Filename Value="bgracompressablebitmap.pas"/>
+        <UnitName Value="BGRACompressableBitmap"/>
+      </Item8>
+      <Item9>
+        <Filename Value="bgracoordpool3d.pas"/>
+        <UnitName Value="BGRACoordPool3D"/>
+      </Item9>
+      <Item10>
+        <Filename Value="bgradefaultbitmap.pas"/>
+        <UnitName Value="BGRADefaultBitmap"/>
+      </Item10>
+      <Item11>
+        <Filename Value="bgradnetdeserial.pas"/>
+        <UnitName Value="BGRADNetDeserial"/>
+      </Item11>
+      <Item12>
+        <Filename Value="bgrafillinfo.pas"/>
+        <UnitName Value="BGRAFillInfo"/>
+      </Item12>
+      <Item13>
+        <Filename Value="bgrafilters.pas"/>
+        <UnitName Value="BGRAFilters"/>
+      </Item13>
+      <Item14>
+        <Filename Value="bgragradients.pas"/>
+        <UnitName Value="BGRAGradients"/>
+      </Item14>
+      <Item15>
+        <Filename Value="bgragradientscanner.pas"/>
+        <UnitName Value="BGRAGradientScanner"/>
+      </Item15>
+      <Item16>
+        <Filename Value="bgralayers.pas"/>
+        <UnitName Value="BGRALayers"/>
+      </Item16>
+      <Item17>
+        <Filename Value="bgramatrix3d.pas"/>
+        <UnitName Value="BGRAMatrix3D"/>
+      </Item17>
+      <Item18>
+        <Filename Value="bgraopenraster.pas"/>
+        <UnitName Value="BGRAOpenRaster"/>
+      </Item18>
+      <Item19>
+        <Filename Value="bgrapaintnet.pas"/>
+        <UnitName Value="BGRAPaintNet"/>
+      </Item19>
+      <Item20>
+        <Filename Value="bgrapath.pas"/>
+        <UnitName Value="BGRAPath"/>
+      </Item20>
+      <Item21>
+        <Filename Value="bgrapen.pas"/>
+        <UnitName Value="BGRAPen"/>
+      </Item21>
+      <Item22>
+        <Filename Value="bgraphongtypes.pas"/>
+        <UnitName Value="BGRAPhongTypes"/>
+      </Item22>
+      <Item23>
+        <Filename Value="bgrapolygon.pas"/>
+        <UnitName Value="BGRAPolygon"/>
+      </Item23>
+      <Item24>
+        <Filename Value="bgrapolygonaliased.pas"/>
+        <UnitName Value="BGRAPolygonAliased"/>
+      </Item24>
+      <Item25>
+        <Filename Value="bgraresample.pas"/>
+        <UnitName Value="BGRAResample"/>
+      </Item25>
+      <Item26>
+        <Filename Value="bgrascene3d.pas"/>
+        <UnitName Value="BGRAScene3D"/>
+      </Item26>
+      <Item27>
+        <Filename Value="bgraslicescaling.pas"/>
+        <UnitName Value="BGRASliceScaling"/>
+      </Item27>
+      <Item28>
+        <Filename Value="bgrasse.pas"/>
+        <UnitName Value="BGRASSE"/>
+      </Item28>
+      <Item29>
+        <Filename Value="bgrastreamlayers.pas"/>
+        <UnitName Value="BGRAStreamLayers"/>
+      </Item29>
+      <Item30>
+        <Filename Value="bgratext.pas"/>
+        <UnitName Value="BGRAText"/>
+      </Item30>
+      <Item31>
+        <Filename Value="bgratextfx.pas"/>
+        <UnitName Value="BGRATextFX"/>
+      </Item31>
+      <Item32>
+        <Filename Value="bgratransform.pas"/>
+        <UnitName Value="BGRATransform"/>
+      </Item32>
+      <Item33>
+        <Filename Value="bgratypewriter.pas"/>
+        <UnitName Value="BGRATypewriter"/>
+      </Item33>
+      <Item34>
+        <Filename Value="bgravectorize.pas"/>
+        <UnitName Value="BGRAVectorize"/>
+      </Item34>
+      <Item35>
+        <Filename Value="blendpixelinline.inc"/>
+        <Type Value="Include"/>
+      </Item35>
+      <Item36>
+        <Filename Value="blendpixels.inc"/>
+        <Type Value="Include"/>
+      </Item36>
+      <Item37>
+        <Filename Value="blendpixelsover.inc"/>
+        <Type Value="Include"/>
+      </Item37>
+      <Item38>
+        <Filename Value="blurfast.inc"/>
+        <Type Value="Include"/>
+      </Item38>
+      <Item39>
+        <Filename Value="blurnormal.inc"/>
+        <Type Value="Include"/>
+      </Item39>
+      <Item40>
+        <Filename Value="csscolorconst.inc"/>
+        <Type Value="Include"/>
+      </Item40>
+      <Item41>
+        <Filename Value="lightingclasses3d.inc"/>
+        <Type Value="Include"/>
+      </Item41>
+      <Item42>
+        <Filename Value="lineartexscan.inc"/>
+        <Type Value="Include"/>
+      </Item42>
+      <Item43>
+        <Filename Value="lineartexscan2.inc"/>
+        <Type Value="Include"/>
+      </Item43>
+      <Item44>
+        <Filename Value="multishapeline.inc"/>
+        <Type Value="Include"/>
+      </Item44>
+      <Item45>
+        <Filename Value="perspectivecolorscan.inc"/>
+        <Type Value="Include"/>
+      </Item45>
+      <Item46>
+        <Filename Value="perspectivescan.inc"/>
+        <Type Value="Include"/>
+      </Item46>
+      <Item47>
+        <Filename Value="perspectivescan2.inc"/>
+        <Type Value="Include"/>
+      </Item47>
+      <Item48>
+        <Filename Value="phongdraw.inc"/>
+        <Type Value="Include"/>
+      </Item48>
+      <Item49>
+        <Filename Value="phongdrawsse.inc"/>
+        <Type Value="Include"/>
+      </Item49>
+      <Item50>
+        <Filename Value="phonglight.inc"/>
+        <Type Value="Include"/>
+      </Item50>
+      <Item51>
+        <Filename Value="phonglightsse.inc"/>
+        <Type Value="Include"/>
+      </Item51>
+      <Item52>
+        <Filename Value="polyaliaspersp.inc"/>
+        <Type Value="Include"/>
+      </Item52>
+      <Item53>
+        <Filename Value="shapes3d.inc"/>
+        <Type Value="Include"/>
+      </Item53>
+      <Item54>
+        <Filename Value="bgrasse.inc"/>
+        <Type Value="Include"/>
+        <AddToUsesPkgSection Value="True"/>
+        <UnitName Value="bgrasse"/>
+      </Item54>
+      <Item55>
+        <Filename Value="bgragrayscalemask.pas"/>
+        <UnitName Value="BGRAGrayscaleMask"/>
+      </Item55>
+      <Item56>
+        <Filename Value="bgrareadbmp.pas"/>
+        <UnitName Value="BGRAReadBMP"/>
+      </Item56>
+      <Item57>
+        <Filename Value="bgrareadgif.pas"/>
+        <UnitName Value="BGRAReadGif"/>
+      </Item57>
+      <Item58>
+        <Filename Value="bgrareadpcx.pas"/>
+        <UnitName Value="BGRAReadPCX"/>
+      </Item58>
+      <Item59>
+        <Filename Value="bgrareadpng.pas"/>
+        <UnitName Value="BGRAReadPng"/>
+      </Item59>
+      <Item60>
+        <Filename Value="bgrareadpsd.pas"/>
+        <UnitName Value="BGRAReadPSD"/>
+      </Item60>
+      <Item61>
+        <Filename Value="bgrathumbnail.pas"/>
+        <UnitName Value="BGRAThumbnail"/>
+      </Item61>
+      <Item62>
+        <Filename Value="bgrareadtga.pas"/>
+        <UnitName Value="BGRAReadTGA"/>
+      </Item62>
+      <Item63>
+        <Filename Value="bgrareadico.pas"/>
+        <UnitName Value="BGRAReadIco"/>
+      </Item63>
+      <Item64>
+        <Filename Value="bgrareadjpeg.pas"/>
+        <UnitName Value="BGRAReadJpeg"/>
+      </Item64>
+      <Item65>
+        <Filename Value="bgrareadlzp.pas"/>
+        <UnitName Value="BGRAReadLzp"/>
+      </Item65>
+      <Item66>
+        <Filename Value="unzipperext.pas"/>
+        <UnitName Value="UnzipperExt"/>
+      </Item66>
+      <Item67>
+        <Filename Value="bgralzpcommon.pas"/>
+        <UnitName Value="BGRALzpCommon"/>
+      </Item67>
+      <Item68>
+        <Filename Value="bgrawritelzp.pas"/>
+        <UnitName Value="BGRAWriteLzp"/>
+      </Item68>
+      <Item69>
+        <Filename Value="bgrareadxpm.pas"/>
+        <UnitName Value="BGRAReadXPM"/>
+      </Item69>
+      <Item70>
+        <Filename Value="bgrasvg.pas"/>
+        <UnitName Value="BGRASVG"/>
+      </Item70>
+      <Item71>
+        <Filename Value="bgraunits.pas"/>
+        <UnitName Value="BGRAUnits"/>
+      </Item71>
+      <Item72>
+        <Filename Value="bgrasvgshapes.pas"/>
+        <UnitName Value="BGRASVGShapes"/>
+      </Item72>
+      <Item73>
+        <Filename Value="bgrasvgtype.pas"/>
+        <UnitName Value="BGRASVGType"/>
+      </Item73>
+      <Item74>
+        <Filename Value="bgrareadbmpmiomap.pas"/>
+        <UnitName Value="BGRAReadBmpMioMap"/>
+      </Item74>
+      <Item75>
+        <Filename Value="bgraarrow.pas"/>
+        <UnitName Value="BGRAArrow"/>
+      </Item75>
+      <Item76>
+        <Filename Value="vertex3d.inc"/>
+        <Type Value="Include"/>
+      </Item76>
+      <Item77>
+        <Filename Value="face3d.inc"/>
+        <Type Value="Include"/>
+      </Item77>
+      <Item78>
+        <Filename Value="part3d.inc"/>
+        <Type Value="Include"/>
+      </Item78>
+      <Item79>
+        <Filename Value="object3d.inc"/>
+        <Type Value="Include"/>
+      </Item79>
+      <Item80>
+        <Filename Value="bgrapalette.pas"/>
+        <UnitName Value="BGRAPalette"/>
+      </Item80>
+      <Item81>
+        <Filename Value="bgracolorquantization.pas"/>
+        <UnitName Value="BGRAColorQuantization"/>
+      </Item81>
+      <Item82>
+        <Filename Value="bgradithering.pas"/>
+        <UnitName Value="BGRADithering"/>
+      </Item82>
+      <Item83>
+        <Filename Value="paletteformats.inc"/>
+        <Type Value="Include"/>
+      </Item83>
+      <Item84>
+        <Filename Value="bgrautf8.pas"/>
+        <UnitName Value="BGRAUTF8"/>
+      </Item84>
+      <Item85>
+        <Filename Value="bgrawritepng.pas"/>
+        <UnitName Value="BGRAWritePNG"/>
+      </Item85>
+      <Item86>
+        <Filename Value="bgragifformat.pas"/>
+        <UnitName Value="BGRAGifFormat"/>
+      </Item86>
+      <Item87>
+        <Filename Value="geometrytypes.inc"/>
+        <Type Value="Include"/>
+      </Item87>
+      <Item88>
+        <Filename Value="bgracustombitmap.inc"/>
+        <Type Value="Include"/>
+      </Item88>
+      <Item89>
+        <Filename Value="bgragraphics.pas"/>
+        <UnitName Value="BGRAGraphics"/>
+      </Item89>
+      <Item90>
+        <Filename Value="bgrascenetypes.pas"/>
+        <UnitName Value="BGRASceneTypes"/>
+      </Item90>
+      <Item91>
+        <Filename Value="bgrarenderer3d.pas"/>
+        <UnitName Value="BGRARenderer3D"/>
+      </Item91>
+      <Item92>
+        <Filename Value="bgrawritebmpmiomap.pas"/>
+        <UnitName Value="BGRAWriteBmpMioMap"/>
+      </Item92>
+      <Item93>
+        <Filename Value="bgraopengltype.pas"/>
+        <UnitName Value="BGRAOpenGLType"/>
+      </Item93>
+      <Item94>
+        <Filename Value="bgraspritegl.pas"/>
+        <UnitName Value="BGRASpriteGL"/>
+      </Item94>
+      <Item95>
+        <Filename Value="bgraopengl.pas"/>
+        <UnitName Value="BGRAOpenGL"/>
+      </Item95>
+      <Item96>
+        <Filename Value="bgracanvasgl.pas"/>
+        <UnitName Value="BGRACanvasGL"/>
+      </Item96>
+      <Item97>
+        <Filename Value="bgrafontgl.pas"/>
+        <UnitName Value="BGRAFontGL"/>
+      </Item97>
+      <Item98>
+        <Filename Value="bgraopengl3d.pas"/>
+        <UnitName Value="BGRAOpenGL3D"/>
+      </Item98>
+      <Item99>
+        <Filename Value="blurbox.inc"/>
+        <Type Value="Include"/>
+      </Item99>
+      <Item100>
+        <Filename Value="bgraphoxo.pas"/>
+        <UnitName Value="BGRAPhoxo"/>
+      </Item100>
+      <Item101>
+        <Filename Value="bgrafilterscanner.pas"/>
+        <UnitName Value="BGRAFilterScanner"/>
+      </Item101>
+      <Item102>
+        <Filename Value="bgrafiltertype.pas"/>
+        <UnitName Value="BGRAFilterType"/>
+      </Item102>
+      <Item103>
+        <Filename Value="bgrafilterblur.pas"/>
+        <UnitName Value="BGRAFilterBlur"/>
+      </Item103>
+      <Item104>
+        <Filename Value="bgramultifiletype.pas"/>
+        <UnitName Value="BGRAMultiFileType"/>
+      </Item104>
+      <Item105>
+        <Filename Value="bgrawinresource.pas"/>
+        <UnitName Value="BGRAWinResource"/>
+      </Item105>
+      <Item106>
+        <Filename Value="bgraiconcursor.pas"/>
+        <UnitName Value="BGRAIconCursor"/>
+      </Item106>
+      <Item107>
+        <Filename Value="bgrablurgl.pas"/>
+        <UnitName Value="BGRABlurGL"/>
+      </Item107>
+      <Item108>
+        <Filename Value="bgrareadtiff.pas"/>
+        <UnitName Value="BGRAReadTiff"/>
+      </Item108>
+      <Item109>
+        <Filename Value="bgralazpaint.pas"/>
+        <UnitName Value="BGRALazPaint"/>
+      </Item109>
+      <Item110>
+        <Filename Value="bgramemdirectory.pas"/>
+        <UnitName Value="BGRAMemDirectory"/>
+      </Item110>
+      <Item111>
+        <Filename Value="bgraunicode.pas"/>
+        <UnitName Value="BGRAUnicode"/>
+      </Item111>
+      <Item112>
+        <Filename Value="bgratextbidi.pas"/>
+        <UnitName Value="BGRATextBidi"/>
+      </Item112>
+      <Item113>
+        <Filename Value="bgralayeroriginal.pas"/>
+        <UnitName Value="BGRALayerOriginal"/>
+      </Item113>
+      <Item114>
+        <Filename Value="bgrasvgoriginal.pas"/>
+        <UnitName Value="BGRASVGOriginal"/>
+      </Item114>
+      <Item115>
+        <Filename Value="bgragradientoriginal.pas"/>
+        <UnitName Value="BGRAGradientOriginal"/>
+      </Item115>
+      <Item116>
+        <Filename Value="bgrapixel.inc"/>
+        <Type Value="Include"/>
+      </Item116>
+      <Item117>
+        <Filename Value="bezier.inc"/>
+        <Type Value="Include"/>
+      </Item117>
+      <Item118>
+        <Filename Value="bgraunicodetext.pas"/>
+        <UnitName Value="BGRAUnicodeText"/>
+      </Item118>
+      <Item119>
+        <Filename Value="generatedcolorspace.inc"/>
+        <Type Value="Include"/>
+      </Item119>
+      <Item120>
+        <Filename Value="extendedcolorspace.inc"/>
+        <Type Value="Include"/>
+      </Item120>
+      <Item121>
+        <Filename Value="basiccolorspace.inc"/>
+        <Type Value="Include"/>
+      </Item121>
+      <Item122>
+        <Filename Value="unibitmap.inc"/>
+        <Type Value="Include"/>
+      </Item122>
+      <Item123>
+        <Filename Value="universaldrawer.pas"/>
+        <UnitName Value="UniversalDrawer"/>
+      </Item123>
+      <Item124>
+        <Filename Value="unibitmapgeneric.inc"/>
+        <Type Value="Include"/>
+      </Item124>
+      <Item125>
+        <Filename Value="density256.inc"/>
+        <Type Value="Include"/>
+      </Item125>
+      <Item126>
+        <Filename Value="linearrgbabitmap.pas"/>
+        <UnitName Value="LinearRGBABitmap"/>
+      </Item126>
+      <Item127>
+        <Filename Value="xyzabitmap.pas"/>
+        <UnitName Value="XYZABitmap"/>
+      </Item127>
+      <Item128>
+        <Filename Value="bgrawritetiff.pas"/>
+        <UnitName Value="BGRAWriteTiff"/>
+      </Item128>
+      <Item129>
+        <Filename Value="wordxyzabitmap.pas"/>
+        <UnitName Value="WordXYZABitmap"/>
+      </Item129>
+      <Item130>
+        <Filename Value="expandedbitmap.pas"/>
+        <UnitName Value="ExpandedBitmap"/>
+      </Item130>
+      <Item131>
+        <Filename Value="spectraldata.inc"/>
+        <Type Value="Binary"/>
+      </Item131>
+      <Item132>
+        <Filename Value="libwebp.pas"/>
+        <UnitName Value="libwebp"/>
+      </Item132>
+      <Item133>
+        <Filename Value="linuxlib.pas"/>
+        <UnitName Value="linuxlib"/>
+      </Item133>
+      <Item134>
+        <Filename Value="bgrareadwebp.pas"/>
+        <UnitName Value="BGRAReadWebP"/>
+      </Item134>
+      <Item135>
+        <Filename Value="bgrawritewebp.pas"/>
+        <UnitName Value="BGRAWriteWebP"/>
+      </Item135>
+      <Item136>
+        <Filename Value="bgraclasses.pas"/>
+        <UnitName Value="BGRAClasses"/>
+      </Item136>
+      <Item137>
+        <Filename Value="bgrascanner.inc"/>
+        <Type Value="Include"/>
+      </Item137>
+      <Item138>
+        <Filename Value="generatedutf8.inc"/>
+        <Type Value="Include"/>
+      </Item138>
+      <Item139>
+        <Filename Value="generatedunicode.inc"/>
+        <Type Value="Include"/>
+      </Item139>
+      <Item140>
+        <Filename Value="avifbgra.pas"/>
+        <UnitName Value="avifbgra"/>
+      </Item140>
+      <Item141>
+        <Filename Value="libavif.pas"/>
+        <UnitName Value="libavif"/>
+      </Item141>
+      <Item142>
+        <Filename Value="bgrawriteavif.pas"/>
+        <UnitName Value="BGRAWriteAvif"/>
+      </Item142>
+      <Item143>
+        <Filename Value="bgrareadavif.pas"/>
+        <UnitName Value="BGRAReadAvif"/>
+      </Item143>
+      <Item144>
+        <Filename Value="darwinlib.pas"/>
+        <UnitName Value="darwinlib"/>
+      </Item144>
+      <Item145>
+        <Filename Value="bgrawritejpeg.pas"/>
+        <UnitName Value="BGRAWriteJpeg"/>
+      </Item145>
+      <Item146>
+        <Filename Value="bgrawritebmp.pas"/>
+        <UnitName Value="BGRAWriteBMP"/>
+      </Item146>
+      <Item147>
+        <Filename Value="bgrawritepcx.pas"/>
+        <UnitName Value="BGRAWritePCX"/>
+      </Item147>
+      <Item148>
+        <Filename Value="bgrafreetype.pas"/>
+        <UnitName Value="BGRAFreeType"/>
+      </Item148>
+    </Files>
+    <CompatibilityMode Value="True"/>
+    <RequiredPkgs Count="2">
+      <Item1>
+        <PackageName Value="freetypelaz"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="FCL"/>
+        <MinVersion Major="1" Valid="True"/>
+      </Item2>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+    <CustomOptions Items="ExternHelp" Version="2">
+      <_ExternHelp Items="Count"/>
+    </CustomOptions>
+  </Package>
+</CONFIG>

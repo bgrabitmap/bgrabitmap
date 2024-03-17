@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
+{=== Geometry types ===}
+{==== Bézier curves ====}
 
 type
-  { TCubicBezierCurve }
-  {* Definition of a Bézier curve of order 3. It has two control points ''c1'' and ''c2''. Those are not reached by the curve }
+  {* Definition of a Bézier curve of order 3. It has two control points _c1_ and _c2_.
+     Those are not reached by the curve in general. }
   TCubicBezierCurve = object
   private
+    {** Compute the points using the simple approach of computing for each time value }
     function SimpleComputePoints(AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF;
   public
     {** Starting point (reached) }
@@ -17,18 +20,20 @@ type
     c2: TPointF;
     {** Ending point (reached) }
     p2: TPointF;
-    {** Computes the point at time ''t'', varying from 0 to 1 }
+    {** Computes the point at time _t_, varying from 0 to 1 }
     function ComputePointAt(t: single): TPointF;
-    {** Split the curve in two such that ''ALeft.p2'' = ''ARight.p1'' }
+    {** Split the curve in two such that _ALeft.p2_ = _ARight.p1_ }
     procedure Split(out ALeft, ARight: TCubicBezierCurve);
-    {** Compute an approximation of the length of the curve. ''AAcceptedDeviation'' indicates the
+    {** Compute an approximation of the length of the curve. _AAcceptedDeviation_ indicates the
        maximum orthogonal distance that is ignored and approximated by a straight line. }
     function ComputeLength(AAcceptedDeviation: single = 0.1): single;
-    {** Computes a polygonal approximation of the curve. ''AAcceptedDeviation'' indicates the
+    {** Computes a polygonal approximation of the curve. _AAcceptedDeviation_ indicates the
        maximum orthogonal distance that is ignored and approximated by a straight line.
-       ''AIncludeFirstPoint'' indicates if the first point must be included in the array }
+       _AIncludeFirstPoint_ indicates if the first point must be included in the array }
     function ToPoints(AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF;
+    {** Copy the curve to the given path }
     procedure CopyToPath(ADest: IBGRAPath);
+    {** Computes the rectangular bounds }
     function GetBounds: TRectF;
   end;
 
@@ -36,11 +41,12 @@ type
   function BezierCurve(origin, control1, control2, destination: TPointF) : TCubicBezierCurve; overload;
 
 type
-  { TQuadraticBezierCurve }
   {* Definition of a Bézier curve of order 2. It has one control point }
   TQuadraticBezierCurve = object
   private
+    {** Compute the points using the simple approach of computing for each time value }
     function SimpleComputePoints(AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF;
+    {** Computes the position where the curve has its extremum }
     function ComputeExtremumPositionOutsideSegment: single;
   public
     {** Starting point (reached) }
@@ -49,17 +55,19 @@ type
     c: TPointF;
     {** Ending point (reached) }
     p2: TPointF;
-    {** Computes the point at time ''t'', varying from 0 to 1 }
+    {** Computes the point at time _t_, varying from 0 to 1 }
     function ComputePointAt(t: single): TPointF;
-    {** Split the curve in two such that ''ALeft.p2'' = ''ARight.p1'' }
+    {** Split the curve in two such that _ALeft.p2_ = _ARight.p1_ }
     procedure Split(out ALeft, ARight: TQuadraticBezierCurve);
-    {** Compute the '''exact''' length of the curve }
+    {** Compute the **exact** length of the curve }
     function ComputeLength: single;
-    {** Computes a polygonal approximation of the curve. ''AAcceptedDeviation'' indicates the
+    {** Computes a polygonal approximation of the curve. _AAcceptedDeviation_ indicates the
        maximum orthogonal distance that is ignored and approximated by a straight line.
-       ''AIncludeFirstPoint'' indicates if the first point must be included in the array }
+       _AIncludeFirstPoint_ indicates if the first point must be included in the array }
     function ToPoints(AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF;
+    {** Copy the curve to the given path }
     procedure CopyToPath(ADest: IBGRAPath);
+    {** Computes the rectangular bounds }
     function GetBounds: TRectF;
   end;
 
@@ -69,117 +77,179 @@ type
   function BezierCurve(origin, destination: TPointF) : TQuadraticBezierCurve; overload;
 
 type
-  { A quasi-standard rational quadratic Bezier curve is defined by three points and a number:
-      p1 = starting point
-      c = control point
-      p2 = ending point
-      weight = weight for the control point
-
-    The curve is defined with the function (t in [0;1]):
-      f: t -> ((1-t)^2*p1 + 2*t*(1-t)*weight*c + t^2*p2) / (1-t)^2 + 2*t*(1-t)*weight + t^2)
-
-    The curve is an arc of:
-       - ellipse when  weight in ]-1;1[
-       - parabola when weight = 1 (classical quadratic Bezier curve)
-       - hyperbola when weight > 1
-
-    A negative weight give the complementary curve for its positive counterpart.
-    So when weight <= -1 the curve is discontinuous:
-      - infinite branches of parabola when weight = -1
-      - infinite branches of hyperbola and symetric hyperbola when weight < -1
-
-    To transform a rational quadratic Bezier curve with an affin transformation, you
-    only have to transform the three points and leave the weight as it is. }
-
+  {** Array of single-precision floating point values }
   ArrayOfSingle = array of single;
 
-  { TRationalQuadraticBezierCurve }
-  {* Definition of a quasi-standard rational Bézier curve of order 2. It has one weighted control point }
+  {* Quasi-standard rational quadratic Bezier curve. It has one control point _c_ with a weight.
+    To transform a rational quadratic Bezier curve with an affin transformation, you
+    only have to transform the three points and leave the weight as it is. }
   TRationalQuadraticBezierCurve = object
-    //** Starting, control and ending points
-    p1, c, p2 : TPointF;
-    //** Weight of control point
+    {** Starting point }
+    p1: TPointF;
+    {** Control point }
+    c: TPointF;
+    {** End point }
+    p2 : TPointF;
+    {** Weight of control point. The curve is an arc of:
+       - ellipse when _weight_ in ]-1; 1[
+       - parabola when _weight_ = 1 (classical quadratic Bezier curve)
+       - hyperbola when _weight_ > 1
+
+       A negative weight give the complementary curve for its positive counterpart.
+       So when _weight_ <= -1 the curve is discontinuous:
+      - infinite branches of parabola when _weight_ = -1
+      - infinite branches of hyperbola and symetric hyperbola when _weight_ < -1
+       }
     weight : single;
   private
+    {** Checks whether the curve is infinitely long }
     function GetIsInfinite: boolean;
+    {** Compute points in the general case }
     function InternalComputePoints(AInfiniteBounds: TRectF; AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF;
+    {** Computes the points relevant to compute bounds }
     function GetBoundingPositions(AIncludeFirstAndLast: boolean; ASorted: boolean): ArrayOfSingle;
   public
+    {** Compute a point at the specified time (_t_ in [0; 1]). The curve is defined by:
+
+        p = ((1-t)^2 * _p1_ + 2 * t * (1-t) * _weight_ * _c_ + t^2*_p2_) / (1-t)^2 + 2 * t * (1-t) * _weight_ + t^2) }
     function ComputePointAt(t: single): TPointF;
+    {** Compute the length of the curve }
     function ComputeLength(AAcceptedDeviation: single = 0.1): single;
+    {** Computes the points of the curve }
     function ToPoints(AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF; overload;
+    {** Computes the points of the curve by providing where the infinite curve can stop.
+
+        }
     function ToPoints(AInfiniteBounds: TRectF; AAcceptedDeviation: single = 0.1; AIncludeFirstPoint: boolean = true): ArrayOfTPointF; overload;
+    {** Compute the rectangular bounds of the curve }
     function GetBounds: TRectF;
+    {** Split into two curves }
     procedure Split(out ALeft, ARight: TRationalQuadraticBezierCurve);
+    {** Is the curve infinitely long }
     property IsInfinite: boolean read GetIsInfinite;
   end;
 
+  {** Creates a rational Bézier curve }
   function BezierCurve(origin, control, destination: TPointF; Aweight:single) : TRationalQuadraticBezierCurve; overload;
 
 type
-  TEasyBezierCurveMode= (cmAuto, cmCurve, cmAngle);
+  {* Enumerates modes for handling curves in a Bezier curve sequence }
+  TEasyBezierCurveMode = (
+    {** Automatically determines whether to curve or form an angle based on the points' positions }
+    cmAuto,
+    {** Forces a curve at the point }
+    cmCurve,
+    {** Forces an angle at the point, meaning the point is reached and forms an angle instead of a curve }
+    cmAngle
+  );
+
+  {* Function type for transforming Bezier curve points }
   TEasyBezierPointTransformFunc = function(APoint: PPointF; AData: Pointer): TPointF of object;
 
-  { TEasyBezierCurve }
+  {* @abstract(Object representing an easy-to-use Bezier curve.)
 
+     Curve is configured with approximate points,
+     with configurable curve modes and transformation functions }
   TEasyBezierCurve = object
   private
+    {** Retrieves the curve mode for a specified point index }
     function GetCurveMode(AIndex: integer): TEasyBezierCurveMode;
+    {** Gets the starting point of the curve }
     function GetCurveStartPoint: TPointF;
+    {** Retrieves the point at a specified index }
     function GetPoint(AIndex: integer): TPointF;
+    {** Gets the total number of points in the curve }
     function GetPointCount: integer;
+    {** Sets whether the curve is closed }
     procedure SetClosed(AValue: boolean);
+    {** Sets the curve mode for a specified point index }
     procedure SetCurveMode(AIndex: integer; AValue: TEasyBezierCurveMode);
+    {** Sets the minimum dot product to form a curve instead of an angle }
     procedure SetMinimumDotProduct(AValue: single);
+    {** Sets the point at a specified index }
     procedure SetPoint(AIndex: integer; AValue: TPointF);
+
   protected
+    {** Computed Bézier control points }
     FCurves: array of record
       isCurvedToNext,isCurvedToPrevious: boolean;
       Center,ControlPoint,NextCenter: TPointF;
     end;
+    {** Whether the curve need to be recomputed }
     FInvalidated: boolean;
+    {** Definition of the curve by the user }
     FPoints: array of record
                Coord: TPointF;
                CurveMode: TEasyBezierCurveMode;
              end;
+    {** Minimum dot product to form a curve instead of an angle }
     FMinimumDotProduct: single;
+    {** Is the curve is closed }
     FClosed: boolean;
+    {** Checks whether two vectors have the minimum dot product to suggest a curve.
+        _start1_ and _end1_ are the indices for the first vector.
+        _start2_ and _end2_ for the second vector. }
     function MaybeCurve(start1, end1, start2, end2: integer): boolean;
+    {** Computes the control points for the classical quadratic curve }
     procedure ComputeQuadraticCurves;
+    {** Fonction to apply no transformation }
     function PointTransformNone(APoint: PPointF; {%H-}AData: Pointer): TPointF;
+    {** Fonction to apply an offset }
     function PointTransformOffset(APoint: PPointF; AData: Pointer): TPointF;
   public
+    {** Initializes the Bezier curve object }
     procedure Init;
+    {** Clears all points and resets the curve }
     procedure Clear;
+    {** Sets the points and curve mode for the entire curve }
     procedure SetPoints(APoints: array of TPointF; ACurveMode: TEasyBezierCurveMode); overload;
+    {** Sets the points and individual curve modes for each point }
     procedure SetPoints(APoints: array of TPointF; ACurveMode: array of TEasyBezierCurveMode); overload;
+    {** Sets a subset of points and a single curve mode for these points }
     procedure SetPoints(APoints: array of TPointF; ACurveMode: TEasyBezierCurveMode; AStart, ACount: integer); overload;
+    {** Sets a subset of points and individual curve modes for each of these points }
     procedure SetPoints(APoints: array of TPointF; ACurveMode: array of TEasyBezierCurveMode; AStart, ACount: integer); overload;
+    {** Copies the Bezier curve to a path object }
     procedure CopyToPath(ADest: IBGRAPath); overload;
+    {** Copies the Bezier curve to a path object with an offset and optional reversal }
     procedure CopyToPath(ADest: IBGRAPath; AOffset: TPointF; AReverse: boolean = false); overload;
+    {** Copies the Bezier curve to a path object with a custom transformation }
     procedure CopyToPath(ADest: IBGRAPath; ATransformFunc: TEasyBezierPointTransformFunc; ATransformData: Pointer; AReverse: boolean = false); overload;
+
+    {** Coordinates of the points }
     property Point[AIndex: integer]: TPointF read GetPoint write SetPoint;
+    {** Mode to use for each point }
     property CurveMode[AIndex: integer]: TEasyBezierCurveMode read GetCurveMode write SetCurveMode;
+    {** Number of points }
     property PointCount: integer read GetPointCount;
+    {** Minimum dot product to form a curve rather than an angle when using _cmAuto_ mode }
     property MinimumDotProduct: single read FMinimumDotProduct write SetMinimumDotProduct;
+    {** Gets or sets whether to close the curve }
     property Closed: boolean read FClosed write SetClosed;
+    {** Coordinates of the starting point }
     property CurveStartPoint: TPointF read GetCurveStartPoint;
+    {** Converts the Bezier curve into an array of points }
     function ToPoints: ArrayOfTPointF;
+    {** Computes the total length of the Bezier curve }
     function ComputeLength: single;
   end;
 
-const
-  EasyBezierDefaultMinimumDotProduct = 0.707;
+  {** Minimum dot product, corresponding to approximately 45 degrees, to form a curve instead of an angle }
+  const EasyBezierDefaultMinimumDotProduct = 0.707;
 
+  {* Create a TEasyBezierCurve object with only one curve mode }
   function EasyBezierCurve(APoints: array of TPointF; AClosed: boolean; ACurveMode: TEasyBezierCurveMode;
     AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve; overload;
 
+  {* Create a TEasyBezierCurve object with a curve mode for each point }
   function EasyBezierCurve(APoints: array of TPointF; AClosed: boolean; ACurveMode: array of TEasyBezierCurveMode;
     AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve; overload;
 
+  {* Create a TEasyBezierCurve object with a subsection of the array of points, with only one curve mode }
   function EasyBezierCurve(APoints: array of TPointF; AStart, ACount: integer; AClosed: boolean; ACurveMode: TEasyBezierCurveMode;
     AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve; overload;
 
+  {* Create a TEasyBezierCurve object with a subsection of the array of points, with a curve mode for each point }
   function EasyBezierCurve(APoints: array of TPointF; AStart, ACount: integer; AClosed: boolean; ACurveMode: array of TEasyBezierCurveMode;
     AMinimumDotProduct: single = EasyBezierDefaultMinimumDotProduct): TEasyBezierCurve; overload;
 

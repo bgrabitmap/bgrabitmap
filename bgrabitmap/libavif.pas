@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 // Copyright 2019 Joe Drago. All rights reserved (originally as BSD-2-Clause)
 
-{ FreePascal wrappper for libavif dynamic library                       }
 { For the latest libavif visit https://github.com/AOMediaCodec/libavif  }
-{ Author: Domingo Galmes <dgalmesp@gmail.com>  01-11-2021               }
+{ Author: Domingo Galmes <dgalmesp at gmail.com>  01-11-2021            }
 
+{ FreePascal wrappper for libavif dynamic library                       }
 unit libavif;
+
+{$mode objfpc}
 
 interface
 

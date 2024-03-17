@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Pools of coordinates, to be transformed using SSE instructions, if available }
 unit BGRACoordPool3D;
 
 {$mode objfpc}{$H+}
@@ -10,6 +12,7 @@ uses
 
 type
   PBGRACoordData3D = ^TBGRACoordData3D;
+  { 3D coordinate information (can be aligned for SSE) }
   TBGRACoordData3D = packed record
     {0} sceneCoord: TPoint3D_128;
     {16} viewCoord: TPoint3D_128;
@@ -21,6 +24,7 @@ type
   end; {80}
 
   PBGRANormalData3D = ^TBGRANormalData3D;
+  { 3D normal information (can be aligned for SSE) }
   TBGRANormalData3D = packed record
     {0} customNormal: TPoint3D_128;
     {16} viewNormal: TPoint3D_128;
@@ -28,8 +32,7 @@ type
     {36} filler1,filler2,filler3: LongWord;
   end; {48}
 
-  { TBGRAGenericPool }
-
+  { Array of 3D points for batch computation }
   TBGRAGenericPool = class
   private
     FFirstFree: integer;
@@ -52,8 +55,7 @@ type
     property UsedCapacity: integer read FUsedCapacity;
   end;
 
-  { TBGRACoordPool3D }
-
+  { Array of 3D coordinates for batch computation }
   TBGRACoordPool3D = class(TBGRAGenericPool)
   private
     function GetCoordData(AIndex: integer): PBGRACoordData3D;
@@ -67,8 +69,7 @@ type
     property CoordData[AIndex: integer]: PBGRACoordData3D read GetCoordData;
   end;
 
-  { TBGRANormalPool3D }
-
+  { Array of 3D normals for batch computation }
   TBGRANormalPool3D = class(TBGRAGenericPool)
   private
     function GetNormalData(AIndex: integer): PBGRANormalData3D;

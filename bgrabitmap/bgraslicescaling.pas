@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Computation of slice scaling of images (to extended bitmap prototypes) }
 unit BGRASliceScaling;
 
 {$mode objfpc}{$H+}
@@ -9,6 +11,7 @@ uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmap, BGRABitmapTypes, IniFiles;
 
 type
+  { Margins where the bitmap is not stretched }
   TMargins = record
     top, right, bottom, left: integer;
   end;
@@ -27,9 +30,7 @@ const
 function Margins(ATop, ARight, ABottom, ALeft: integer): TMargins;
 
 type
-
-  { TBGRASliceScaling }
-
+  { Class to configure and render slice scaling of a bitmap }
   TBGRASliceScaling = class
   private
     FSliceRectArray: TSliceRectArray;
@@ -113,8 +114,7 @@ type
   TSliceScalingDirection = (sdHorizontal, sdVertical);
   TBGRABitmapArray = array of TBGRABitmap;
 
-  { TBGRAMultiSliceScaling }
-
+  { Slice scaling of multiple bitmaps }
   TBGRAMultiSliceScaling = class
   private
     FSliceScalingArray: TSliceScalingArray;

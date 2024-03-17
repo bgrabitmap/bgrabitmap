@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{
- /**************************************************************************\
-                             bgraqtbitmap.pas
-                             -----------------
-                 This unit should NOT be added to the 'uses' clause.
-                 It contains patches for Qt.
-}
 
+{ Implementation of BGRABitmap for Qt }
 unit BGRAQtBitmap;
+{ This unit should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 
@@ -18,8 +13,7 @@ uses
   GraphType, BGRABitmapTypes;
 
 type
-  { TBGRAQtBitmap }
-
+  { Implementation of TBGRABitmap for Qt }
   TBGRAQtBitmap = class(TBGRALCLBitmap)
   private
     procedure SlowDrawTransparent(ABitmap: TBGRACustomBitmap;

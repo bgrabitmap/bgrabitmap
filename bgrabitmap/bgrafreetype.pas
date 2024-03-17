@@ -1,28 +1,19 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ @abstract(Font renderer of FreeType fonts using Lazarus renderer.)
+
+  This unit provides a nice and fast rendering of text. There are some drawbacks to consider though:
+  - it needs font files or streams (to be provided to the font collection
+  of EasyLazFreeType unit)
+  - it has limited support for complex font behaviors like ligature.
+
+  This unit depend on freetypelaz package provided by Lazarus.
+
+  **Font rendering units** : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType.
+}
 unit BGRAFreeType;
 
 {$mode objfpc}{$H+}
-
-{
-  Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
-
-  This units provide a font renderer with FreeType fonts, using the integrated FreeType font engine in Lazarus.
-  The simplest way to render effects is to use TBGRAFreeTypeFontRenderer class.
-  To do this, create an instance of this class and assign it to a TBGRABitmap.FontRenderer property. Now functions
-  to draw text like TBGRABitmap.TextOut will use the chosen renderer.
-
-  >> Note that you need to define the default FreeType font collection
-  >> using EasyLazFreeType unit.
-
-  To set the effects, keep a variable containing
-  the TBGRAFreeTypeFontRenderer class and modify ShadowVisible and other effects parameters. The FontHinted property
-  allows you to choose if the font is snapped to pixels to make it more readable.
-
-  TBGRAFreeTypeDrawer class is the class that provides basic FreeType drawing
-  by deriving the TFreeTypeDrawer type. You can use it directly, but it is not
-  recommended, because there are less text layout parameters. However, it is
-  necessary if you want to create TBGRATextEffect objects using FreeType fonts.
-}
 
 interface
 
@@ -43,9 +34,13 @@ uses
 type
   TBGRAFreeTypeDrawer = class;
 
-  //this is the class to assign to FontRenderer property of TBGRABitmap
-  { TBGRAFreeTypeFontRenderer }
+  {* @abstract(FreeType font renderer with effects.)
 
+     To use, assign to FontRenderer property of TBGRABitmap.
+
+     To set the effects, keep a variable containing the TBGRAFreeTypeFontRenderer class and
+     modify ShadowVisible and other effects parameters. The FontHinted property
+     allows you to choose if the font is snapped to pixels to make it more readable. }
   TBGRAFreeTypeFontRenderer = class(TBGRACustomFontRenderer)
   private
     FDrawer: TBGRAFreeTypeDrawer;
@@ -107,8 +102,11 @@ type
     property ShaderLightPositionF: TPointF read GetShaderLightPositionF write SetShaderLightPositionF;
   end;
 
-  { TBGRAFreeTypeDrawer }
+  {* @abstract(Provides basic FreeType drawing by deriving the TFreeTypeDrawer type.)
 
+     You can use it directly, but it is not recommended, because there are less
+     text layout parameters. However, it is necessary if you want to create
+     TBGRATextEffect objects using FreeType fonts. }
   TBGRAFreeTypeDrawer = class(TFreeTypeDrawer)
   private
     FMask: TBGRACustomBitmap;
@@ -141,8 +139,6 @@ type
     procedure DrawText(AText: string; AFont: TFreeTypeRenderableFont; x,y: single; AColor: TFPColor); overload; override;
     procedure DrawText(AText: string; AFont: TFreeTypeRenderableFont; x,y: single; AColor: TBGRAPixel); overload;
     procedure DrawText(AText: string; AFont: TFreeTypeRenderableFont; x,y: single; AColor: TBGRAPixel; AAlign: TFreeTypeAlignments); overload;
-    { If this code does not compile, you probably have an older version of Lazarus. To fix the problem,
-      go into "bgrabitmap.inc" and comment the compiler directives }
     procedure DrawTextWordBreak(AText: string; AFont: TFreeTypeRenderableFont; x, y, AMaxWidth: Single; AColor: TBGRAPixel; AAlign: TFreeTypeAlignments); overload;
     procedure DrawTextRect(AText: string; AFont: TFreeTypeRenderableFont; X1,Y1,X2,Y2: Single; AColor: TBGRAPixel; AAlign: TFreeTypeAlignments); overload;
     procedure DrawGlyph(AGlyph: integer; AFont: TFreeTypeRenderableFont; x,y: single; AColor: TFPColor); overload; override;
@@ -184,7 +180,7 @@ var
 
   function RecomposeRec(AMin,AMax: integer): boolean;
 
-    procedure TryExactMatch;
+    function TryExactMatch: boolean;
     var
       i, extra: Integer;
       newExtra: String;
@@ -222,7 +218,7 @@ var
   begin
     if AMax <= AMin+9 then
     begin
-      TryExactMatch;
+      result := TryExactMatch;
     end else
     begin
       i := (AMin+AMax) div 2;
@@ -234,7 +230,7 @@ var
         j := i;
         while (j < AMax) and UTF8Decomposition[j+1].de.StartsWith(lookFor, true) do inc(j);
         AMax := j;
-        TryExactMatch;
+        result := TryExactMatch;
       end else
       if CompareStr(lookFor, UTF8Decomposition[i].de) > 0 then
         result := RecomposeRec(i+1, AMax)

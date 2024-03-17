@@ -6,9 +6,10 @@ import re
 
 def gather_method_signatures(source_dir):
     print("Source directory:", source_dir)
-    regex = r"(?P<proc_or_fun>procedure|function)\s+(?P<class>\w+)\.(?P<method>\w+)(\((?P<parameters>[^)]*)\))?(:(?P<return_type>[^;]+))?;"
-    pattern = re.compile(regex)
+    regexMethod = r"(?P<proc_or_fun>procedure|function)\s+(?P<class>\w+)\.(?P<method>\w+)(\((?P<parameters>[^)]*)\))?(:(?P<return_type>[^;]+))?;"
+    patternMethod = re.compile(regexMethod)
     signatures = []
+    classes = set()
 
     for root, dirs, files in os.walk(source_dir):
         for file in files:
@@ -16,7 +17,7 @@ def gather_method_signatures(source_dir):
                 print("Source file:", file)
                 with open(os.path.join(root, file), 'r') as source_file:
                     content = source_file.read()
-                    matches = pattern.finditer(content)
+                    matches = patternMethod.finditer(content)
 
                     for match in matches:
                         proc_or_fun = match.group('proc_or_fun')
@@ -36,12 +37,16 @@ def gather_method_signatures(source_dir):
                         if proc_or_fun == "function":
                             method_signature += f': {return_type}'
                         signatures.append(f"{method_signature}; {{in {file}}}")
-    return signatures
+                        classes.add(class_name)
+    return signatures, classes
 
 app_directory = os.path.dirname(__file__)
 source_directory = os.path.join(app_directory, '../../bgrabitmap')
-signatures = gather_method_signatures(source_directory)
+signatures, classes = gather_method_signatures(source_directory)
 target_file = os.path.join(app_directory, 'all.pas')
 with open(target_file, "w") as file:
     for line in signatures:
         file.write(line + "\n")
+target_file = os.path.join(app_directory, 'all_classes.txt')
+with open(target_file, "w") as file:
+    file.write(", ".join(classes))

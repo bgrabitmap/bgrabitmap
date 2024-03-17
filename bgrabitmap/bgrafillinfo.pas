@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Generic class to hold a shape to be filled as well as the implementation
+  for basic shapes }
 unit BGRAFillInfo;
 
 {$mode objfpc}{$H+}
@@ -17,8 +20,7 @@ type
   PDensity = ^TDensity;
 
 type
-  { TFillShapeInfo }
-
+  { Abstract class to provide fill information for any shape }
   TFillShapeInfo = class(TBGRACustomFillInfo)
     protected
       FPointInsideInter : ArrayOfTIntersectionInfo;
@@ -60,8 +62,7 @@ type
 
   end;
 
-  { TFillEllipseInfo }
-
+  { Fill information for an ellipse }
   TFillEllipseInfo = class(TFillShapeInfo)
   private
     FX, FY, FRX, FRY: single;
@@ -82,8 +83,7 @@ type
     property RadiusY: single read FRY;
   end;
 
-  { TFillBorderEllipseInfo }
-
+  { Fill information for the border of an ellipse }
   TFillBorderEllipseInfo = class(TFillShapeInfo)
   private
     FInnerBorder, FOuterBorder: TFillEllipseInfo;
@@ -101,8 +101,7 @@ type
     property OuterBorder: TFillEllipseInfo read FOuterBorder;
   end;
 
-  { TFillRoundRectangleInfo }
-
+  { Fill information for a round rectangle }
   TFillRoundRectangleInfo = class(TFillShapeInfo)
   private
     FX1, FY1, FX2, FY2, FRX, FRY: single;
@@ -124,8 +123,7 @@ type
     property RadiusY: single read FRY;
   end;
 
-  { TFillRectangleInfo }
-
+  { Fill information for rectangle }
   TFillRectangleInfo = class(TFillShapeInfo)
   private
     FX1, FY1, FX2, FY2: single;
@@ -143,8 +141,7 @@ type
     property BottomRight: TPointF read GetBottomRight;
   end;
 
-  { TFillBorderRoundRectInfo }
-
+  { Fill information for the border of a round rectangle }
   TFillBorderRoundRectInfo = class(TFillShapeInfo)
   protected
     FInnerBorder, FOuterBorder: TFillRoundRectangleInfo;
@@ -161,6 +158,7 @@ type
   end;
 
   PCustomPointRecord = ^TCustomPointRecord;
+  { Base record to describe a point in a polygon to be filled }
   TCustomPointRecord = record
     originalIndex: integer;
     slope: single;
@@ -174,8 +172,7 @@ type
     true: (coord,coord2: TPointF);
   end;
 
-  { TCustomFillPolyInfo }
-
+  { Abstract class to provide fill information for a polygon }
   TCustomFillPolyInfo = class(TFillShapeInfo)
   private
     function GetNbPoints: integer;
@@ -198,6 +195,7 @@ type
     property NbPoints: integer read GetNbPoints;
   end;
 
+  { Horizontal strip of a polygon being filled }
   TPolySlice = record
     y1,y2: single;
     segments: array of record
@@ -207,8 +205,7 @@ type
     nbSegments: integer;
   end;
 
-  { TFillPolyInfo }
-
+  { Fill information for a polygon }
   TFillPolyInfo = class(TCustomFillPolyInfo)
   protected
     FSlices:   array of TPolySlice;
@@ -223,6 +220,7 @@ type
   end;
 
   POnePassRecord = ^TOnePassRecord;
+  { Linked list of coordinates for one-pass drawing }
   TOnePassRecord = record
                 id: integer;
                 custom: PCustomPointRecord;
@@ -231,8 +229,7 @@ type
                 nextDrawing: POnePassRecord;
             end;
 
-  { TOnePassFillPolyInfo }
-
+  { Fill information for a polygon assuming that queries are always in increasying Y. }
   TOnePassFillPolyInfo = class(TCustomFillPolyInfo)
   private
     procedure InsertionSortByY;
@@ -253,8 +250,7 @@ type
     function GetSliceIndex: integer; override;
   end;
 
-  { TSimpleFillPolyInfo }
-
+  { Fill information for a simple polygons }
   TSimpleFillPolyInfo = class(TCustomFillPolyInfo)
   protected
     procedure ComputeIntersection(cury: single; var inter: ArrayOfTIntersectionInfo;

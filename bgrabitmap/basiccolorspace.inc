@@ -8,30 +8,37 @@ type
   TChannels = set of TChannel;
 
 const
+  {** Offsets of the different channels in a pixel }
   TBGRAPixel_ChannelByteOffset : array[TChannel] of integer =
   (TBGRAPixel_RedByteOffset, TBGRAPixel_GreenByteOffset, TBGRAPixel_BlueByteOffset, TBGRAPixel_AlphaByteOffset);
 
 { Gamma conversion arrays. Should be used as readonly }
 var
-  // TBGRAPixel -> TExpandedPixel
+  {* Equivalence for channel from TBGRAPixel to TExpandedPixel }
   GammaExpansionTab:     packed array[0..255] of word;
+  {* Equivalence for channel from TBGRAPixel to TExpandedPixel (for value with offset 0.5) }
   GammaExpansionTabHalf: packed array[0..254] of word;
 
-  // TExpandedPixel -> TBGRAPixel
-  GammaCompressionTab : packed array[0..65535] of byte;          //rounded value
+  {* Equivalence for channel from TExpandedPixel to TBGRAPixel }
+  GammaCompressionTab : packed array[0..65535] of byte;  //rounded value
 
+{* Sets the gamma value used for the sRGB colorspace }
 procedure BGRASetGamma(AGamma: single = 1.7);
+{* Gets the gamma value used for the sRGB colorspace }
 function BGRAGetGamma: single;
 
 type
+  {* Pointer to a TExpandedPixel }
   PExpandedPixel = ^TExpandedPixel;
-  { TExpandedPixel }
-  {* Stores a gamma expanded RGB color. Values range from 0 to 65535 }
+  {* Stores a gamma expanded RGB color. Values range from 0 to 65535 and are linear. }
   TExpandedPixel = packed record
     red, green, blue, alpha: word;
+    class function New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;static;
+    class function New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;static;
   end;
+  {** Array of TExpandedPixel to be used as a buffer }
   TExpandedPixelBuffer = packed array of TExpandedPixel;
-
+  {** Allocate a buffer of TExpandedPixel }
   procedure AllocateExpandedPixelBuffer(var ABuffer: TExpandedPixelBuffer; ASize: integer);
 
   {** Converts a pixel from sRGB to gamma expanded RGB }
@@ -55,34 +62,44 @@ type
   {** Sets the lightness of a gamma-expanded pixel }
   function SetLightness(const c: TExpandedPixel; lightness: word): TExpandedPixel; overload;
   {** Sets the lightness of a gamma expanded pixel, provided you already know the current
-     value of lightness ''curLightness''. It is a bit faster than the previous function }
+     value of lightness _curLightness_. It is a bit faster than the previous function }
   function SetLightness(const c: TExpandedPixel; lightness: word; curLightness: word): TExpandedPixel; overload;
   {** Returns the importance of the color. It is similar to saturation
       in HSL colorspace, except it is gamma corrected. A value of zero indicates
       a black/gray/white, and a value of 65535 indicates a bright color }
   function ColorImportance(ec: TExpandedPixel): word;
-  {** Merge two gamma expanded pixels (so taking into account gamma correction) }
+  {** Merge two gamma expanded pixels (implicit gamma correction) }
   function MergeBGRA(ec1, ec2: TExpandedPixel): TExpandedPixel; overload;
+  {** Merge two gamma expanded pixels with the given weights }
   function MergeBGRA(ec1: TExpandedPixel; weight1: integer; ec2: TExpandedPixel; weight2: integer): TExpandedPixel; overload;
   {** Computes the difference (with gamma correction) between two pixels,
       taking into account all dimensions, including transparency. The
       result ranges from 0 to 65535 }
   function ExpandedDiff(ec1, ec2: TExpandedPixel): word;
 
+  {** Converts from TFPColor to TExpandedPixel (with gamma expansion by default) }
   function FPColorToExpanded(AColor: TFPColor; AGammaExpansion: boolean=true): TExpandedPixel;
+  {** Converts from TExpandedPixel to TFPColor (with gamma compression by default) }
   function ExpandedToFPColor(AExpanded: TExpandedPixel; AGammaCompression: boolean=true): TFPColor;
 
 type
-  {* General purpose color variable with single-precision floating point values }
+  {* General purpose color variable with single-precision floating point values.
+     It can be linear like TExpandedPixel or not, like TBGRAPixel. }
   TColorF = packed array[1..4] of single;
+  {** Array of TColorF }
   ArrayOfTColorF = array of TColorF;
 
   {** Creates a TColorF structure }
   function ColorF(red,green,blue,alpha: single): TColorF;
+  {** Creates a TColorF from a TBGRAPixel }
   function BGRAToColorF(c: TBGRAPixel; AGammaExpansion: boolean): TColorF; overload;
+  {** Creates a TColorF array from an array of TBGRAPixel }
   function BGRAToColorF(const a: array of TBGRAPixel; AGammaExpansion: boolean): ArrayOfTColorF; overload;
+  {** Converts a TColorF into a TBGRAPixel }
   function ColorFToBGRA(c: TColorF; AGammaCompression: boolean): TBGRAPixel;
+  {** Applies gamma compression to a TColorF value (yielding non linear values) }
   function GammaCompressionF(c: TColorF): TColorF;
+  {** Applies gamma expansion to a TColorF value (yielding linear values) }
   function GammaExpansionF(c: TColorF): TColorF;
   {** Subtract each component separately }
   operator - (const c1, c2: TColorF): TColorF; inline;
@@ -90,16 +107,15 @@ type
   operator + (const c1, c2: TColorF): TColorF; inline;
   {** Multiply each component separately }
   operator * (const c1, c2: TColorF): TColorF; inline;
-  {** Multiply each component by ''factor'' }
+  {** Multiply each component by _factor_ }
   operator * (const c1: TColorF; factor: single): TColorF; inline;
 
 type
-  {* Pixel color defined in HSL colorspace. Values range from 0 to 65535 }
-
-  { THSLAPixel }
-
+  {* Pixel color defined in linear HSL colorspace. Gamma correction is taken into account.
+     Values range from 0 to 65535. }
   THSLAPixel = packed record
-    {** Hue of the pixel. Extremum values 0 and 65535 are red }
+    {** Hue of the pixel. The 6 primary colors red/yellow/green/cyan/blue/violet are stretched equally.
+        Extremum values 0 and 65535 are red }
     hue: word;
     {** Saturation of the color. 0 is gray and 65535 is the brightest color (including white) }
     saturation: word;
@@ -107,6 +123,8 @@ type
     lightness: word;
     {** Opacity of the pixel. 0 is transparent and 65535 is opaque }
     alpha: word;
+    class function New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;static;
+    class function New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;static;
   end;
 
   {** Creates a pixel with given HSLA values, where A stands for alpha }
@@ -128,16 +146,24 @@ type
 
 type
   {* Pixel color defined in corrected HSL colorspace. G stands for corrected hue
-     and B stands for actual brightness. Values range from 0 to 65535 }
+     and B stands for actual brightness. Values range from 0 to 65535. }
   TGSBAPixel = packed record
-    {** Hue of the pixel. Extremum values 0 and 65535 are red }
+    {** Corrected hue of the pixel. Extremum values 0 and 65535 are red.
+        G is corrected in the sense that each segment does not have the same size.
+        green-cyan and violet-red ranges are shorter, while red-yellow and cyan-blue are wider. }
     hue: word;
-    {** Saturation of the color. 0 is gray and 65535 is the brightest color (excluding white) }
+    {** Saturation of the color. 0 is gray and 65535 is the brightest color (excluding white).
+        Given a certain lightness, it is not always possible to have the full saturation of the color. }
     saturation: word;
-    {** Actual perceived brightness. 0 is black, 32768 is normal, and 65535 is white }
+    {** Actual perceived brightness. 0 is black, 32768 is normal, and 65535 is white.
+        At 32768, depending on the hue, contrary to THSLAPixel, the color may or may not be mixed with black/white.
+        Blue colors have a lower brightness and thus the full saturation is achieved under 32768.
+        Conversely yellow colors have higher brightness and thus the full saturation is achieved over 32768. }
     lightness: word;
     {** Opacity of the pixel. 0 is transparent and 65535 is opaque }
     alpha: word;
+    class function New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;static;
+    class function New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;static;
   end;
 
   {** Converts a pixel from sRGB to correct HSL color space }
@@ -150,114 +176,198 @@ type
   function HtoG(hue: word): word;
   {** Converts a pixel from corrected HSL to sRGB }
   function GSBAToBGRA(c: TGSBAPixel): TBGRAPixel; overload;
+  {** Converts a pixel from corrected HSL to sRGB }
   function GSBAToBGRA(const c: THSLAPixel): TBGRAPixel; overload;
-  {** Converts a pixel from correct HSL to gamma expanded RGB }
+  {** Converts a pixel from corrected HSL to gamma expanded RGB }
   function GSBAToExpanded(c: TGSBAPixel): TExpandedPixel; overload;
+  {** Converts a pixel from corrected HSL to gamma expanded RGB }
   function GSBAToExpanded(const c: THSLAPixel): TExpandedPixel; overload;
-  {** Converts a pixel from correct HSL to usual HSL }
+  {** Converts a pixel from corrected HSL to HSL }
   function GSBAToHSLA(const c: TGSBAPixel): THSLAPixel; overload;
+  {** Converts a pixel from corrected HSL to HSL }
   function GSBAToHSLA(const c: THSLAPixel): THSLAPixel; overload;
+  {** Converts a pixel from HSL to corrected HSL }
   function HSLAToGSBA(const c: THSLAPixel): TGSBAPixel;
 
 type
-  { TBGRAPixelBasicHelper }
-
+  {* Helper for basic conversions of TBGRAPixel }
   TBGRAPixelBasicHelper = record helper for TBGRAPixel
+    {** Converts to TExpandedPixel (linear 16-bit per channel) }
     function ToExpanded: TExpandedPixel;
+    {** Converts from TExpandedPixel (linear 16-bit per channel) }
     procedure FromExpanded(const AValue: TExpandedPixel);
+    {** Converts to THSLAPixel (linear 16-bit per channel) }
     function ToHSLAPixel: THSLAPixel;
+    {** Converts from THSLAPixel (linear 16-bit per channel) }
     procedure FromHSLAPixel(const AValue: THSLAPixel);
+    {** Converts to TGSBAPixel (linear 16-bit per channel) }
     function ToGSBAPixel: TGSBAPixel;
+    {** Converts from TGSBAPixel (linear 16-bit per channel) }
     procedure FromGSBAPixel(const AValue: TGSBAPixel); overload;
+    {** Converts from TGSBAPixel (linear 16-bit per channel) assuming
+        the THSLAPixel record contains GSBA colorspace }
     procedure FromGSBAPixel(const AValue: THSLAPixel); overload;
+    {** Converts to TColorF, with or without gamma expansion }
     function ToColorF(AGammaExpansion: boolean): TColorF;
+    {** Converts from TColorF, with or without gamma compression }
     procedure FromColorF(const AValue: TColorF; AGammaCompression: boolean);
   end;
 
-  { TExpandedPixelBasicHelper }
-
+  {* Helper for basic conversions of TExpandedPixel }
   TExpandedPixelBasicHelper = record helper for TExpandedPixel
+    {** Converts to TFPColor (16-bit per channel, by default non linear) }
     function ToFPColor(AGammaCompression: boolean = true): TFPColor;
+    {** Converts from TFPColor (16-bit per channel, by default non linear) }
     procedure FromFPColor(const AValue: TFPColor; AGammaExpansion: boolean = true);
+    {** Converts to TColor (non linear 8-bit, without alpha) }
     function ToColor: TColor;
+    {** Converts from TColor (non linear 8-bit ,without alpha) }
     procedure FromColor(const AValue: TColor);
+    {** Converts to TBGRAPixel (non linear 8-bit) }
     function ToBGRAPixel: TBGRAPixel;
+    {** Converts from TBGRAPixel (non linear 8-bit) }
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    {** Converts to THSLAPixel }
     function ToHSLAPixel: THSLAPixel;
+    {** Converts from THSLAPixel }
     procedure FromHSLAPixel(const AValue: THSLAPixel);
+    {** Converts to TGSBAPixel }
     function ToGSBAPixel: TGSBAPixel;
+    {** Converts from TGSBAPixel }
     procedure FromGSBAPixel(const AValue: TGSBAPixel); overload;
+    {** Converts from TGSBAPixel assuming
+        the THSLAPixel record contains GSBA colorspace }
     procedure FromGSBAPixel(const AValue: THSLAPixel); overload;
   end;
 
+{** Implicit conversion of color from TExpandedPixel to TColor }
 operator := (const AValue: TExpandedPixel): TColor;
+{** Implicit conversion of color from TColor to TExpandedPixel }
 operator := (const AValue: TColor): TExpandedPixel;
+{** Implicit conversion of color from TExpandedPixel to TBGRAPixel }
 Operator := (const Source: TExpandedPixel): TBGRAPixel;
+{** Implicit conversion of color from TBGRAPixel to TExpandedPixel }
 Operator := (const Source: TBGRAPixel): TExpandedPixel;
 
 type
-  { TFPColorBasicHelper }
-
+  {* Helper for basic conversions of TFPColor }
   TFPColorBasicHelper = record helper for TFPColor
+    {** Converts to TColor (8-bit without alpha) }
     function ToColor: TColor;
+    {** Converts from TColor (8-bit without alpha) }
     procedure FromColor(const AValue: TColor);
+    {** Converts to TColor (8-bit) }
     function ToBGRAPixel: TBGRAPixel;
+    {** Converts from TColor (8-bit) }
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    {** Converts to TExpandedPixel (linear) }
     function ToExpanded(AGammaExpansion: boolean = true): TExpandedPixel;
+    {** Converts from TExpandedPixel (linear) }
     procedure FromExpanded(const AValue: TExpandedPixel; AGammaCompression: boolean = true);
+    {** Converts to THSLAPixel (linear) }
     function ToHSLAPixel(AGammaExpansion: boolean = true): THSLAPixel;
+    {** Converts from THSLAPixel (linear) }
     procedure FromHSLAPixel(const AValue: THSLAPixel; AGammaCompression: boolean = true);
+    {** Converts to TGSBAPixel (linear) }
     function ToGSBAPixel(AGammaExpansion: boolean = true): TGSBAPixel;
+    {** Converts from TGSBAPixel (linear) }
     procedure FromGSBAPixel(const AValue: TGSBAPixel; AGammaCompression: boolean = true); overload;
+    {** Converts from TGSBAPixel (linear) assuming
+        the THSLAPixel record contains GSBA colorspace }
     procedure FromGSBAPixel(const AValue: THSLAPixel; AGammaCompression: boolean = true); overload;
   end;
 
-  { THSLAPixelBasicHelper }
-
+  {* Helper for basic conversions of THSLAPixel }
   THSLAPixelBasicHelper = record helper for THSLAPixel
+    {** Converts to TColor (non linear 8-bit, without alpha) }
     function ToColor: TColor;
+    {** Converts from TColor (non linear 8-bit, without alpha) }
     procedure FromColor(const AValue: TColor);
+    {** Converts to TBGRAPixel (non linear 8-bit) }
     function ToBGRAPixel: TBGRAPixel;
+    {** Converts from TBGRAPixel (non linear 8-bit) }
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    {** Converts to TGSBAPixel (corrected hue and brightness) }
     function ToGSBAPixel: TGSBAPixel;
+    {** Converts from TGSBAPixel (corrected hue and brightness) }
     procedure FromGSBAPixel(AValue: TGSBAPixel);
+    {** Converts to TExpandedPixel }
     function ToExpanded: TExpandedPixel;
+    {** Converts from TExpandedPixel }
     procedure FromExpanded(AValue: TExpandedPixel);
+    {** Converts to TFPColor (non linear by default) }
     function ToFPColor(AGammaCompression: boolean=true): TFPColor;
+    {** Converts from TFPColor (non linear by default) }
     procedure FromFPColor(AValue: TFPColor; AGammaExpansion: boolean=true);
   end;
 
+{** Implicit conversion of color from THSLAPixel to TBGRAPixel }
 Operator := (const Source: THSLAPixel): TBGRAPixel;
+{** Implicit conversion of color from TBGRAPixel to THSLAPixel }
 Operator := (const Source: TBGRAPixel): THSLAPixel;
+{** Implicit conversion of color from THSLAPixel to TExpandedPixel }
 Operator := (const Source: THSLAPixel): TExpandedPixel;
+{** Implicit conversion of color from TExpandedPixel to THSLAPixel }
 Operator := (const Source: TExpandedPixel): THSLAPixel;
+{** Implicit conversion of color from THSLAPixel to TColor }
 operator := (const AValue: TColor): THSLAPixel;
+{** Implicit conversion of color from TColor to THSLAPixel }
 operator := (const AValue: THSLAPixel): TColor;
 
 type
-  { TGSBAPixelBasicHelper }
-
+  {* Helper for basic conversion of TGSBAPixel }
   TGSBAPixelBasicHelper = record helper for TGSBAPixel
+    {** Converts to TColor (non linear 8-bit channel, without alpha) }
     function ToColor: TColor;
+    {** Converts from TColor (non linear 8-bit channel, without alpha) }
     procedure FromColor(const AValue: TColor);
+    {** Converts to ToBGRAPixel (non linear 8-bit channel) }
     function ToBGRAPixel: TBGRAPixel;
+    {** Converts from ToBGRAPixel (non linear 8-bit channel) }
     procedure FromBGRAPixel(AValue: TBGRAPixel);
+    {** Converts to THSLAPixel (regular hue and standard lightness) }
     function ToHSLAPixel: THSLAPixel;
+    {** Converts from THSLAPixel (regular hue and standard lightness) }
     procedure FromHSLAPixel(AValue: THSLAPixel);
+    {** Converts to TExpandedPixel }
     function ToExpanded: TExpandedPixel;
+    {** Converts from TExpandedPixel }
     procedure FromExpanded(AValue: TExpandedPixel);
+    {** Converts to TFPColor (by default non linear) }
     function ToFPColor(AGammaCompression: boolean=true): TFPColor;
+    {** Converts from TFPColor (by default non linear) }
     procedure FromFPColor(AValue: TFPColor; AGammaExpansion: boolean=true);
   end;
 
+{** Implicit conversion of color from TGSBAPixel to TBGRAPixel }
 Operator := (const Source: TGSBAPixel): TBGRAPixel;
+{** Implicit conversion of color from TBGRAPixel to TGSBAPixel }
 Operator := (const Source: TBGRAPixel): TGSBAPixel;
+{** Implicit conversion of color from TGSBAPixel to TExpandedPixel }
 Operator := (const Source: TGSBAPixel): TExpandedPixel;
+{** Implicit conversion of color from TExpandedPixel to TGSBAPixel }
 Operator := (const Source: TExpandedPixel): TGSBAPixel;
+{** Implicit conversion of color from TColor to TGSBAPixel }
 operator := (const AValue: TColor): TGSBAPixel;
+{** Implicit conversion of color from TGSBAPixel to TColor }
 operator := (const AValue: TGSBAPixel): TColor;
-Operator := (const Source: TGSBAPixel): THSLAPixel; //no conversion, just copying for backward compatibility (use ToHSLAPixel instead for conversion)
-Operator := (const Source: THSLAPixel): TGSBAPixel; //no conversion, just copying for backward compatibility (use ToGSBAPixel instead for conversion)
+{** Assigns TGSBAPixel to THSLAPixel without conversion,
+    just copying for backward compatibility (use ToHSLAPixel instead for conversion) }
+Operator := (const Source: TGSBAPixel): THSLAPixel;
+{** Assigns THSLAPixel to TGSBAPixel,
+    just copying for backward compatibility (use ToHSLAPixel instead for conversion) }
+Operator := (const Source: THSLAPixel): TGSBAPixel;
+
+{ Convert from sRGB the sHSV (byte, lossless). Hue is defined by the sextant and position. }
+procedure RGBToByteStdHSV(ARed, AGreen, ABlue: byte; out ASextant, APosition, ASaturation, AValue: byte);
+{ Convert from sHSV the sRGB (byte, lossless). Hue is defined by the sextant and position. }
+procedure ByteStdHSVToRGB(ASextant, APosition, ASaturation, AValue: byte; out ARed, AGreen, ABlue: byte);
+{ Convert from sRGB the sHSL (byte, lossless). Hue is defined by the sextant and position. }
+procedure RGBToByteStdHSL(ARed, AGreen, ABlue: byte; out ASextant, APosition, ASaturation, ALightness: byte);
+{ Convert from sHSL the sRGB (byte, lossless). Hue is defined by the sextant and position. }
+procedure ByteStdHSLToRGB(ASextant, APosition, ASaturation, ALightness: byte; out ARed, AGreen, ABlue: byte);
+{ Compute the lightness in sHSL (byte) }
+function GetByteStdLightness(ARed, AGreen, ABlue: byte): byte;
 {$ENDIF}
 
 
@@ -283,6 +393,22 @@ end;
 procedure TBGRAPixel.SetClassLightness(AValue: word);
 begin
   self := SetLightness(self, AValue);
+end;
+
+class function TBGRAPixel.New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := AAlpha;
+end;
+
+class function TBGRAPixel.New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := 255;
 end;
 
 procedure TBGRAPixel.FromRGB(ARed, AGreen, ABlue: Byte; AAlpha: Byte);
@@ -368,6 +494,60 @@ end;
 class operator TBGRAPixel.:=(Source: TColor): TBGRAPixel;
 begin
   result.FromColor(Source);
+end;
+
+{ TGSBAPixel }
+
+class function TGSBAPixel.New(const AHue,ASaturation,ABrightness,AAlpha:word): TGSBAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ABrightness;
+  Result.alpha := AAlpha;
+end;
+
+class function TGSBAPixel.New(const AHue,ASaturation,ABrightness:word): TGSBAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ABrightness;
+  Result.alpha := 65535;
+end;
+
+{ THSLAPixel }
+
+class function THSLAPixel.New(const AHue,ASaturation,ALightness,AAlpha:word): THSLAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ALightness;
+  Result.alpha := AAlpha;
+end;
+
+class function THSLAPixel.New(const AHue,ASaturation,ALightness:word): THSLAPixel;overload;
+begin
+  Result.hue := AHue;
+  Result.saturation := ASaturation;
+  Result.lightness := ALightness;
+  Result.alpha := 65535;
+end;
+
+{ TExpandedPixel }
+
+class function TExpandedPixel.New(const ARed,AGreen,ABlue,AAlpha:word): TExpandedPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := AAlpha;
+end;
+
+class function TExpandedPixel.New(const ARed,AGreen,ABlue:word): TExpandedPixel;overload;
+begin
+  Result.red := ARed;
+  Result.green := AGreen;
+  Result.blue := ABlue;
+  Result.alpha := 65535;
 end;
 
 { The gamma correction is approximated here by a power function }
@@ -1544,6 +1724,182 @@ begin Result := BGRAToHSLA(ColorToBGRA(AValue)) end;
 
 operator := (const AValue: THSLAPixel): TColor;
 begin Result := BGRAToColor(HSLAToBGRA(AValue)) end;
+
+{ @abstract(Converts a color from RGB to Hue/Chroma/Value.)
+
+  - Hue is expressed as a Sextant from 0 to 5 and Position from 0 to 255.
+  - Chroma ranges from 0 to Value.
+  - Value ranges from 0 to 255.
+}
+procedure RGBToByteStdHCV(ARed, AGreen, ABlue: byte; out ASextant, APosition, AChroma, AValue: byte);
+var mini: Byte;
+begin
+  if (ARed = AGreen) and (AGreen = ABlue) then
+  begin
+    ASextant := 0;
+    APosition := 0;
+    AChroma := 0;
+    AValue := ARed;
+    exit;
+  end;
+  AValue := max(max(ARed, AGreen), ABlue);
+  mini := min(min(ARed, AGreen), ABlue);
+  AChroma := AValue - mini;
+  if ARed = AValue then
+  begin
+    if AGreen >= ABlue then
+    begin
+      ASextant := 0;
+      APosition := AGreen - mini;
+    end else
+    begin
+      ASextant := 5;
+      APosition := AValue - ABlue;
+    end;
+  end else
+  if AGreen = AValue then
+  begin
+    if ABlue >= ARed then
+    begin
+      ASextant := 2;
+      APosition := ABlue - mini;
+    end else
+    begin
+      ASextant := 1;
+      APosition := AValue - ARed;
+    end;
+  end else // ABlue = AValue
+  begin
+    if ARed >= AGreen then
+    begin
+      ASextant := 4;
+      APosition := ARed - mini;
+    end else
+    begin
+      ASextant := 3;
+      APosition := AValue - AGreen;
+    end;
+  end;
+  // normalize position
+  APosition := (APosition * 255 + (AChroma shr 1)) div AChroma;
+end;
+
+{ @abstract(Converts a color expressed as Hue/Chroma/Value into sRGB.)
+
+  - Hue is expressed as a Sextant from 0 to 5 and Position from 0 to 255.
+  - Chroma ranges from 0 to Value.
+  - Value ranges from 0 to 255.
+}
+procedure ByteStdHCVToRGB(ASextant, APosition, AChroma, AValue: byte; out ARed, AGreen, ABlue: byte);
+var
+  mini: Byte;
+begin
+  if AChroma = 0 then
+  begin
+    ARed := AValue;
+    AGreen := AValue;
+    ABlue := AValue;
+    exit;
+  end;
+  if AChroma > AValue then AChroma := AValue;
+  // denormalize position
+  APosition := (APosition * AChroma + 127) div 255;
+  mini := AValue - AChroma;
+  case ASextant of
+  0: begin
+    ARed := AValue;
+    AGreen := mini + APosition;
+    ABlue := mini;
+  end;
+  1: begin
+    ARed := AValue - APosition;
+    AGreen := AValue;
+    ABlue := mini;
+  end;
+  2: begin
+    ARed := mini;
+    AGreen := AValue;
+    ABlue := mini + APosition;
+  end;
+  3: begin
+    ARed := mini;
+    AGreen := AValue - APosition;
+    ABlue := AValue;
+  end;
+  4: begin
+    ARed := mini + APosition;
+    AGreen := mini;
+    ABlue := AValue;
+  end;
+  5: begin
+    ARed := AValue;
+    AGreen := mini;
+    ABlue := AValue - APosition;
+  end;
+  else
+    raise Exception.Create('Invalid sextant');
+  end;
+end;
+
+procedure RGBToByteStdHSL(ARed, AGreen, ABlue: byte; out ASextant, APosition,
+  ASaturation, ALightness: byte);
+var
+  value, chroma, maxChroma: byte;
+begin
+  RGBToByteStdHCV(ARed, AGreen, ABlue, ASextant, APosition, chroma, value);
+  ALightness := max(value - (chroma shr 1), 0);
+  // normalize chroma
+  if ALightness >= 128 then
+    maxChroma := (255 - ALightness) shl 1 + 1
+  else
+    maxChroma := ALightness shl 1;
+  if maxChroma = 0 then
+    ASaturation := 0
+  else
+    ASaturation := (chroma * 255 + (maxChroma shr 1)) div maxChroma;
+end;
+
+procedure ByteStdHSLToRGB(ASextant, APosition, ASaturation, ALightness: byte; out
+  ARed, AGreen, ABlue: byte);
+var value, chroma, maxChroma: byte;
+begin
+  // denormalize chroma
+  if ALightness >= 128 then
+    maxChroma := (255 - ALightness) shl 1 + 1
+  else
+    maxChroma := ALightness shl 1;
+  chroma := (ASaturation * maxChroma + 127) div 255;
+
+  value := min(ALightness + (chroma shr 1), 255);
+  ByteStdHCVToRGB(ASextant, APosition, chroma, value, ARed, AGreen, ABlue);
+end;
+
+procedure RGBToByteStdHSV(ARed, AGreen, ABlue: byte; out ASextant, APosition,
+  ASaturation, AValue: byte);
+var
+  chroma: byte;
+begin
+  RGBToByteStdHCV(ARed, AGreen, ABlue, ASextant, APosition, chroma, AValue);
+  // normalize chroma
+  if AValue = 0 then
+    ASaturation := 0
+  else
+    ASaturation := (chroma * 255 + (AValue shr 1)) div AValue;
+end;
+
+procedure ByteStdHSVToRGB(ASextant, APosition, ASaturation, AValue: byte; out
+  ARed, AGreen, ABlue: byte);
+var chroma: byte;
+begin
+  // denormalize chroma
+  chroma := (ASaturation * AValue + 127) div 255;
+  ByteStdHCVToRGB(ASextant, APosition, chroma, AValue, ARed, AGreen, ABlue);
+end;
+
+function GetByteStdLightness(ARed, AGreen, ABlue: byte): byte;
+begin
+  result := (max(max(ARed, AGreen), ABlue) + min(min(ARed, AGreen), ABlue) + 1) shr 1;
+end;
 
 { TGSBAPixelBasicHelper }
 

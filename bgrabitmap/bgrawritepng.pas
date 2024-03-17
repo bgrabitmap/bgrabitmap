@@ -16,16 +16,18 @@
            - added Resolution support
 }
 {*****************************************************************************}
+
+{ Implements the writer for the PNG image format }
 unit BGRAWritePNG;
 
 {$mode objfpc}{$H+}
 
 interface
 
-
 uses sysutils, BGRAClasses, FPImage, FPImgCmn, BGRAPNGComn, ZStream, BGRABitmapTypes;
 
 type
+  { Information about frame to write in PNG }
   TPNGFrameToWrite = record
     FrameControl: TFrameControlChunk;
     Image: TFPCustomImage;
@@ -37,8 +39,7 @@ type
 
   TColorFormatFunction = function (color:TFPColor) : TColorData of object;
 
-  { TBGRAWriterPNG }
-
+  {* Extends the TFPCustomImageWriter to write the PNG image format }
   TBGRAWriterPNG = class (TBGRACustomWriterPNG)
     private
       FCompressedText, FWordSized, FIndexed,
@@ -763,7 +764,7 @@ end;
 
 procedure TBGRAWriterPNG.WriteResolutionValues;
 begin
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
   if (TheImage is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(TheImage) do
   {$ELSE}

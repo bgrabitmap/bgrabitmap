@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of SSE acceleration }
 unit BGRASSE;
 
 {$mode objfpc}{$H+}
@@ -36,9 +38,7 @@ var UseSSE, UseSSE2, UseSSE3 : boolean;
 {$endif}
 
 type
-
-  { TPoint3D_128 }
-
+  { Point in 3D / 4D }
   TPoint3D_128 = packed record
                    x,y,z,t: single;
                    procedure Offset(const point3D_128: TPoint3D_128);
@@ -73,9 +73,7 @@ const
   Point3D_128_Zero : TPoint3D_128 = (x:0; y:0; z:0; t:0);
 
 type
-
-  { TMemoryBlockAlign128 }
-
+  { Class to allocate memory that is aligned to 128 bits boundaries }
   TMemoryBlockAlign128 = class
   private
     FContainer: Pointer;
@@ -87,6 +85,7 @@ type
   end;
 
   PBasicLightingContext = ^TBasicLightingContext;
+  { Base context necessary to compute lighting (can be aligned for SSE) }
   TBasicLightingContext = packed record
     {0} Position, {16} Normal: TPoint3D_128;
     {32} PositionInvZ, {48} NormalInvZ: TPoint3D_128;

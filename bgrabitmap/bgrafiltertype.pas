@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Generic classes for tasks. Those are computations that can be stopped externally via
+  a callback function, thus allowing cancellation. }
 unit BGRAFilterType;
 
 {$mode objfpc}{$H+}
@@ -14,8 +17,7 @@ const
 type
   TCheckShouldStopFunc = function(ACurrentY: integer) : boolean of object;
 
-  { TFilterTask }
-
+  { Task to apply a filter on an image }
   TFilterTask = class
   private
     FCheckShouldStop: TCheckShouldStopFunc;
@@ -45,8 +47,7 @@ type
     property Inplace: boolean read GetInplace write SetInplace;
   end;
 
-  { TBGRAFilterScanner }
-
+  { Abstract class for a scanner that applies a filter }
   TBGRAFilterScanner = class(TBGRACustomScanner)
   private
     FAllowDirectRead: boolean;
@@ -71,8 +72,7 @@ type
     property AllowDirectRead: boolean read FAllowDirectRead write FAllowDirectRead;
   end;
 
-  { TBGRAFilterScannerPixelwise }
-
+  { Abstract class for a scanner that applies a filter per pixel }
   TBGRAFilterScannerPixelwise = class(TBGRAFilterScanner)
   private
     FBuffer: TBGRAPixelBuffer;
@@ -91,8 +91,7 @@ type
     property GammaCorrection: boolean read FGammaCorrection write FGammaCorrection;
   end;
 
-  { TBGRAFilterScannerMultipixel }
-
+  { Abstract class for a scanner that applies a filter on a group of pixels }
   TBGRAFilterScannerMultipixel = class(TBGRAFilterScanner)
   private
     FSourceBounds: TRect;

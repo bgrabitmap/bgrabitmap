@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ UTF8 related functions }
 unit BGRAUTF8;
 
 {$mode objfpc}{$H+}
@@ -27,10 +29,13 @@ const
 
 {$IFDEF BGRABITMAP_USE_LCL}
 type
+  { File stream supporting UTF8 filenames }
   TFileStreamUTF8 = {$if FPC_FULLVERSION > 030200}TFileStream{$ELSE}LazUTF8Classes.TFileStreamUTF8{$ENDIF};
+  { String list supporting UTF8 filenames }
   TStringListUTF8 = {$if FPC_FULLVERSION > 030200}TStringList{$ELSE}LazUTF8Classes.TStringListUTF8{$ENDIF};
 {$ELSE}
 type
+  { File stream supporting UTF8 filenames }
   TFileStreamUTF8 = class(THandleStream)
   private
     FFileName: utf8string;
@@ -41,6 +46,7 @@ type
     property FileName: utf8string Read FFilename;
   end;
 
+  { String list supporting UTF8 filenames }
   TStringListUTF8 = class(TStringList)
   protected
     function DoCompareText(const s1,s2 : string) : PtrInt; override;
@@ -89,10 +95,12 @@ function UTF16ToUTF8(const S: UnicodeString): AnsiString;
 procedure UTF8ToUnicodeArray(const sUTF8: string; out u: TUnicodeArray; out ofs: TIntegerArray);
 
 type
+  { Unicode layout information along with offset for each UTF8 character }
   TBidiUTF8Info = packed record
     Offset: Integer;
     BidiInfo: TUnicodeBidiInfo;
   end;
+  { Array of unicode layout for UTF8 text }
   TBidiUTF8Array = packed array of TBidiUTF8Info;
   TUnicodeDisplayOrder = BGRAUnicode.TUnicodeDisplayOrder;
   TUnicodeBidiInfo = BGRAUnicode.TUnicodeBidiInfo;
@@ -115,8 +123,7 @@ function UTF8Ligature(const sUTF8: string; ARightToLeft: boolean; ALigatureLeft,
 
 type
 
-  { TGlyphUtf8 }
-
+  { Information about one glyph in a UTF8 text }
   TGlyphUtf8 = record
   private
     function GetEmpty: boolean;
@@ -127,8 +134,7 @@ type
     property Empty: boolean read GetEmpty;
   end;
 
-  { TGlyphCursorUtf8 }
-
+  { Cursor to go through a UTF8 text glyph by glyph }
   TGlyphCursorUtf8 = record
   private
     sUTF8: string;

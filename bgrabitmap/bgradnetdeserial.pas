@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ @abstract(Read .Net serialized classes)
+
+  Serialization is a process by which objects in memory are saved according
+  to their structure. The .Net classes are saved with BinaryFormatter of
+  namespace System.Runtime.Serialization.Formatters.Binary.
+
+  This unit is used by BGRAPaintNet to read Paint.NET images. }
 unit BGRADNetDeserial;
 
 {$mode objfpc}{$H+}
 
 interface
-
-{ This unit allow to read .Net serialized classes with BinaryFormatter of
-  namespace System.Runtime.Serialization.Formatters.Binary.
-
-  Serialization is a process by which objects in memory are saved according
-  to their structure.
-
-  This unit is used by BGRAPaintNet to read Paint.NET images. }
 
 uses
   BGRAClasses, SysUtils;
@@ -32,11 +32,13 @@ type
 
   TDotNetDeserialization = class;
 
+  { Array of name and values }
   ArrayOfNameValue = array of record
     Name: string;
     Value, valueType: string;
   end;
 
+  { Description of a .NET field }
   TFieldType = record
     category: TTypeCategory;
     primitiveType: TPrimitiveType;
@@ -44,6 +46,7 @@ type
     Name: string;
   end;
 
+  { Description of a .NET type }
   TSerializedType = record
     ClassName:   string;
     nbFields:    integer;
@@ -52,13 +55,13 @@ type
     refAssembly: LongWord;
   end;
 
+  { Reference to a .NET assembly }
   TAssemblyReference = record
     idAssembly: LongWord;
     Name: string;
   end;
 
-  { TCustomSerializedObject }
-
+  { Abstract class for a serialized .NET object }
   TCustomSerializedObject = class
   protected
     FContainer: TDotNetDeserialization;
@@ -83,8 +86,7 @@ type
     function GetFieldIndex(Name: string): integer;
   end;
 
-  { TSerializedClass }
-
+  { Information about a serialized .NET class }
   TSerializedClass = class(TCustomSerializedObject)
   protected
     function GetFieldAsString(Index: LongWord): string; override;
@@ -98,8 +100,7 @@ type
     fields:  ArrayOfNameValue;
   end;
 
-  { TSerializedArray }
-
+  { Information about a serialized .NET array }
   TSerializedArray = class(TCustomSerializedObject)
   private
     data:       pointer;
@@ -125,8 +126,7 @@ type
     property ItemSize: LongWord read FItemSize;
   end;
 
-  { TSerializedValue }
-
+  { Information about a serialized .NET value }
   TSerializedValue = class(TSerializedArray)
   protected
     function GetIsReferenceType: boolean;
@@ -138,7 +138,7 @@ type
     property IsReferenceType: boolean read GetIsReferenceType;
   end;
 
-  { TDotNetDeserialization }
+  { Deseralize .NET objets from a stream }
   TDotNetDeserialization = class
     objectTypes: array of TSerializedType;
     assemblies:  array of TAssemblyReference;

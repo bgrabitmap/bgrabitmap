@@ -1,3 +1,4 @@
+{ Dynamic loader for libwebp library that reads and writes the WebP format }
 unit libwebp;
 
 // Copyright 2010 Google Inc.
@@ -12,6 +13,7 @@ unit libwebp;
 
 {$ALIGN ON}
 {$MINENUMSIZE 4}
+{$mode objfpc}
 
 interface
 

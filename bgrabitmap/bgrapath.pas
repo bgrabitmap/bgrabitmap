@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-unit BGRAPath;
 
-{$mode objfpc}{$H+}
+{ @abstract(Implements path and path cursor)
 
-interface
-
-//todo: tangent interpolation
-
-{ There are different conventions for angles.
+  There are different conventions for angles.
 
   First is about the unit. It can be one of the following:
   - degrees (0..360)
@@ -34,8 +29,14 @@ interface
   in degrees. The convention used here is the usual degree convention:
     (degrees, top-most, clockwise) that can be shortened to (degree)
     because top-most and clockwise is the default for degrees.
+}
+unit BGRAPath;
 
-  }
+{$mode objfpc}{$H+}
+
+interface
+
+//todo: tangent interpolation
 
 uses
   BGRABitmapTypes, BGRATransform;
@@ -53,8 +54,7 @@ type
 
   TBGRAPath = class;
 
-  { TBGRAPathCursor }
-
+  { Cursor to determine position along a path }
   TBGRAPathCursor = class(TBGRACustomPathCursor)
   protected
     FPath: TBGRAPath;
@@ -119,8 +119,7 @@ type
     property AcceptedDeviation: single read FAcceptedDeviation;
   end;
 
-  { TBGRAPath }
-
+  { Path (in 2D) that allows to define custom shapes that can be drawn }
   TBGRAPath = class(TBGRACustomPath)
   protected
     FData: PByte;

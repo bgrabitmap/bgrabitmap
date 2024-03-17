@@ -3,8 +3,9 @@
 {$UNDEF INCLUDE_INTERFACE}
 
 type
-  { Working area to be provided to a brush }
+  {* Pointer to working area to be provided to a brush }
   PUniBrushContext = ^TUniBrushContext;
+  {* Working area to be provided to a brush }
   TUniBrushContext = record
     Dest: Pointer;                    //target pixels
     Ofs: TPoint;                      //offset within image (used with textured/gradient brush)
@@ -36,9 +37,9 @@ const
   //you can define your custom flags from 256 on
 
 type
-  { TUniversalBrush }
-
+  {* Pointer to a universal brush }
   PUniversalBrush = ^TUniversalBrush;
+  {* Unversal brush (can be initialized for any colorspace and mode) }
   TUniversalBrush = record
   private
     FColorspace: TColorspaceAny;
@@ -57,7 +58,9 @@ type
   end;
 
 type
+  {* Pointer to the default data structure for a solid brush }
   PDefaultSolidBrushIndirectFixedData = ^TDefaultSolidBrushIndirectFixedData;
+  {* Default data structure for a solid brush }
   TDefaultSolidBrushIndirectFixedData = packed record
     PixelSize: integer;
     Color: packed array[0..23] of byte;
@@ -69,6 +72,7 @@ procedure DefaultSolidBrushIndirectSetPixels(AFixedData: Pointer;
   AContextData: PUniBrushContext; {%H-}AAlpha: Word; ACount: integer);
 
 type
+  {* Data to be passed to the callback function of the path }
   TPathCallbackData = record
     BrushAddress: PUniversalBrush;
     Alpha: Word;
@@ -76,12 +80,18 @@ type
     PixelCenteredCoords: boolean;
   end;
 
-  { TCustomUniversalBitmap }
-
-  {$IF FPC_FULLVERSION<30301}
-  TResolutionUnit = (ruNone, ruPixelsPerInch, ruPixelsPerCentimeter);
+  {$IF FPC_FULLVERSION<30203}
+  {* Unit used to specify the resolution of a bitmap }
+  TResolutionUnit = (
+    {** No unit used, only aspect ratio specified }
+    ruNone,
+    {** Pixels per inch (DPI) }
+    ruPixelsPerInch,
+    {** Pixels per centimeters }
+    ruPixelsPerCentimeter);
   {$ENDIF}
 
+  {* Base class for the universal bitmap (of any colorspace) }
   TCustomUniversalBitmap = class(TFPCustomImage, IBGRAScanner)
   private
     procedure PathStrokeAliasedCallback(const APoints: array of TPointF;
@@ -116,7 +126,7 @@ type
         antialiased shapes }
     FAntialiasingDrawMode: TDrawMode;
 
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     //Resolution
     FResolutionUnit: TResolutionUnit;
     FResolutionX,
@@ -126,6 +136,8 @@ type
     function GetResolutionWidth: Single; virtual;
     function GetResolutionHeight: Single; virtual;
     {$ENDIF}
+
+    //ReadWriteConfig: TBGRAReadWriteConfig;
 
     procedure Init; virtual;
     procedure ReallocData; virtual;
@@ -183,13 +195,15 @@ type
                        ALineOrder: TRawImageLineOrder); overload;
 
     procedure Assign(Source: TPersistent); override;
+    procedure Assign(Source: TPersistent; ACopyProperties: Boolean); virtual; overload;
+
     function NewBitmap: TCustomUniversalBitmap; overload; virtual;
     function NewBitmap(AWidth, AHeight: integer): TCustomUniversalBitmap; overload; virtual;
     function NewBitmap(AWidth, AHeight: integer; AColor: Pointer): TCustomUniversalBitmap; overload; virtual;
 
     {** Adds a reference (this reference count is not the same as
         the reference count of an interface, it changes only by
-        explicit calls }
+        explicit calls) }
     function NewReference: TCustomUniversalBitmap; virtual;
     {** Free a reference. When the resulting reference count gets
         to zero, the image is freed. The initial reference count
@@ -204,7 +218,7 @@ type
       that if the bounds are within the image, the result is just that part
       of the image, but if the bounds are bigger than the image, the image
       is tiled. }
-    function GetPart(const ARect: TRect): TCustomUniversalBitmap; virtual;
+    function GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TCustomUniversalBitmap; virtual;
 
     procedure InvalidateBitmap; virtual;         //call if you modify with Scanline
     procedure LoadFromBitmapIfNeeded; virtual;   //call to ensure that data is up to date
@@ -466,11 +480,11 @@ type
     procedure RotateUDInplace(ARect: TRect); overload; virtual;
 
     { Return a new bitmap rotated in a clock wise direction. }
-    function RotateCW: TCustomUniversalBitmap; virtual;
+    function RotateCW(ACopyProperties: Boolean=False): TCustomUniversalBitmap; virtual;
     { Return a new bitmap rotated in a counter clock wise direction. }
-    function RotateCCW: TCustomUniversalBitmap; virtual;
+    function RotateCCW(ACopyProperties: Boolean=False): TCustomUniversalBitmap; virtual;
     { Return a new bitmap rotated 180° (upside down). }
-    function RotateUD: TCustomUniversalBitmap; virtual;
+    function RotateUD(ACopyProperties: Boolean=False): TCustomUniversalBitmap; virtual;
 
     {** Width of the image in pixels }
     property Width: integer Read GetWidth;
@@ -526,7 +540,7 @@ type
     {** Current reference white used for color conversion }
     property ReferenceWhite: PXYZReferenceWhite read FReferenceWhite write FReferenceWhite;
 
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     //Resolution
     property ResolutionUnit: TResolutionUnit read FResolutionUnit write SetResolutionUnit;
     property ResolutionX: Single read FResolutionX write FResolutionX;
@@ -707,20 +721,20 @@ type
     procedure PutImage(X, Y: integer; ASource: TCustomUniversalBitmap; AMode: TDrawMode; AOpacity: byte = 255); virtual;
 
   public
+    {$IFNDEF BGRABITMAP_CORE}
     //filters
-    function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload; virtual;
-    function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload; virtual;
-    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload; virtual;
-    function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap; overload; virtual;
-    function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap; overload; virtual;
-    function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap; overload; virtual;
-    function FilterCustomBlur(mask: TCustomUniversalBitmap): TCustomUniversalBitmap; overload; virtual;
-    function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap): TCustomUniversalBitmap; overload; virtual;
-
+    function FilterBlurRadial(radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurMotion(distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
+    function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
+    function FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
+    function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TCustomUniversalBitmap; overload; virtual;
+    {$ENDIF}
   end;
 
-  { TCustomUniversalDrawer }
-
+  { Abstract class for a drawer on an universal bitmap }
   TCustomUniversalDrawer = class
 
     {==== Load and save files ====}
@@ -834,6 +848,7 @@ type
     class procedure FillEllipseAntialias(ADest: TCustomUniversalBitmap;
                     const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush); overload; virtual; abstract;
 
+    {$IFNDEF BGRABITMAP_CORE}
     //filters
     class procedure FilterBlurRadial(ASource: TCustomUniversalBitmap; const ABounds: TRect;
                               radiusX, radiusY: single; blurType: TRadialBlurType;
@@ -844,6 +859,7 @@ type
     class procedure FilterCustomBlur(ASource: TCustomUniversalBitmap; const ABounds: TRect;
                               mask: TCustomUniversalBitmap;
                               ADest: TCustomUniversalBitmap); virtual; abstract;
+    {$ENDIF}
 
   end;
   TUniversalDrawerAny = class of TCustomUniversalDrawer;
@@ -1084,8 +1100,7 @@ begin
   Move(FDataByte^, result.FDataByte^, FRowSize*FHeight);
   result.InvalidateBitmap;
   result.Caption := Caption;
-  if ACopyProperties then
-    CopyPropertiesTo(result);
+  if ACopyProperties then CopyPropertiesTo(result);
 end;
 
 function TCustomUniversalBitmap.InternalNew: TCustomUniversalBitmap;
@@ -1756,58 +1771,64 @@ begin
   ASource.ScanOffset := oldOfs;
 end;
 
-function TCustomUniversalBitmap.FilterBlurRadial(radius: single;
-  blurType: TRadialBlurType): TCustomUniversalBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurRadial(radius: single;
+  blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
-  Result := FilterBlurRadial(rect(0,0,Width,Height), radius,radius, blurType);
-end;
+  Result := FilterBlurRadial(rect(0,0,Width,Height), radius,radius, blurType, ACopyProperties);
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect;
-  radius: single; blurType: TRadialBlurType): TCustomUniversalBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect;
+  radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
-  Result := FilterBlurRadial(ABounds, radius,radius, blurType);
-end;
+  Result := FilterBlurRadial(ABounds, radius,radius, blurType, ACopyProperties);
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurRadial(radiusX, radiusY: single;
-  blurType: TRadialBlurType): TCustomUniversalBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurRadial(radiusX, radiusY: single;
+  blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
-  Result := FilterBlurRadial(rect(0,0,Width,Height), radiusX,radiusY, blurType);
-end;
+  Result := FilterBlurRadial(rect(0,0,Width,Height), radiusX,radiusY, blurType, ACopyProperties);
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect; radiusX,
-  radiusY: single; blurType: TRadialBlurType): TCustomUniversalBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurRadial(const ABounds: TRect; radiusX,
+  radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
-  result := NewBitmap; result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
+  result := NewBitmap;
+  if ACopyProperties then CopyPropertiesTo(result);
+  result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
   UniDrawerClass.FilterBlurRadial(self, ABounds, radiusX,radiusY, blurType, result);
-end;
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurMotion(distance: single;
-  angle: single; oriented: boolean): TCustomUniversalBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurMotion(distance: single;
+  angle: single; oriented: boolean; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
-  result := FilterBlurMotion(rect(0,0,Width,Height), distance, angle, oriented);
-end;
+  result := FilterBlurMotion(rect(0,0,Width,Height), distance, angle, oriented, ACopyProperties);
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterBlurMotion(const ABounds: TRect;
-  distance: single; angle: single; oriented: boolean): TCustomUniversalBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterBlurMotion(const ABounds: TRect;
+  distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
-  result := NewBitmap; result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
+  result := NewBitmap;
+  if ACopyProperties then CopyPropertiesTo(result);
+  result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
   UniDrawerClass.FilterBlurMotion(self, ABounds, distance, angle, oriented, result);
-end;
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap): TCustomUniversalBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
-  result := FilterCustomBlur(rect(0,0,Width,Height), mask);
-end;
+  result := FilterCustomBlur(rect(0,0,Width,Height), mask, ACopyProperties);
+end;{$ENDIF}
 
-function TCustomUniversalBitmap.FilterCustomBlur(const ABounds: TRect;
-  mask: TCustomUniversalBitmap): TCustomUniversalBitmap;
+{$IFNDEF BGRABITMAP_CORE}function TCustomUniversalBitmap.FilterCustomBlur(const ABounds: TRect;
+  mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
-  result := NewBitmap; result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
+  result := NewBitmap;
+  if ACopyProperties then CopyPropertiesTo(result);
+  result.SetSize(Width,Height); fillbyte(result.DataByte^, result.Height*result.RowSize, 0);
   UniDrawerClass.FilterCustomBlur(self, ABounds, mask, result);
-end;
+end;{$ENDIF}
 
 procedure TCustomUniversalBitmap.DrawLineAntialias(x1, y1, x2, y2: single;
   const ABrush: TUniversalBrush; APenWidth: single);
@@ -2127,7 +2148,7 @@ begin
   FLineOrder:= AValue;
 end;
 
-{$IF FPC_FULLVERSION<30301}
+{$IF FPC_FULLVERSION<30203}
 procedure TCustomUniversalBitmap.SetResolutionUnit(AResolutionUnit: TResolutionUnit);
 begin
   if (AResolutionUnit<>FResolutionUnit) then
@@ -2454,26 +2475,44 @@ begin
 end;
 
 procedure TCustomUniversalBitmap.Assign(Source: TPersistent);
+begin
+  Assign(Source, False);
+end;
+
+procedure TCustomUniversalBitmap.Assign(Source: TPersistent; ACopyProperties: Boolean);
 var pdest: PByte;
   x,y: Int32or64;
   col: TFPColor;
 begin
   if Source is TCustomUniversalBitmap then
   begin
-    ResolutionUnit :=TCustomUniversalBitmap(Source).ResolutionUnit;
-    ResolutionX :=TCustomUniversalBitmap(Source).ResolutionX;
-    ResolutionY :=TCustomUniversalBitmap(Source).ResolutionY;
     SetSize(TCustomUniversalBitmap(Source).Width, TCustomUniversalBitmap(Source).Height);
+
+    if ACopyProperties then TCustomUniversalBitmap(Source).CopyPropertiesTo(Self);
+
     PutImage(0, 0, TCustomUniversalBitmap(Source), dmSet);
   end else
   if Source is TFPCustomImage then
   begin
-    {$IF FPC_FULLVERSION>=30301}
-    ResolutionUnit :=TFPCustomImage(Source).ResolutionUnit;
-    ResolutionX :=TFPCustomImage(Source).ResolutionX;
-    ResolutionY :=TFPCustomImage(Source).ResolutionY;
-    {$ENDIF}
     SetSize(TFPCustomImage(Source).Width, TFPCustomImage(Source).Height);
+
+    if ACopyProperties then
+    begin
+      {$IF FPC_FULLVERSION>=30203}
+      //Resolution
+      ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
+      ResolutionX:=TFPCustomImage(Source).ResolutionX;
+      ResolutionY:=TFPCustomImage(Source).ResolutionY;
+      {$ENDIF}
+      // Copy palette if needed.
+      UsePalette := TFPCustomImage(Source).UsePalette;
+      if UsePalette then
+      begin
+        Palette.Count:=0;
+        Palette.Merge(TFPCustomImage(Source).Palette);
+      end;
+    end;
+
     for y := 0 to TFPCustomImage(Source).Height-1 do
     begin
       pdest := GetPixelAddress(0,y);
@@ -2549,18 +2588,25 @@ begin
   result := InternalDuplicate(ACopyProperties);
 end;
 
-procedure TCustomUniversalBitmap.CopyPropertiesTo(
-  ABitmap: TCustomUniversalBitmap);
+procedure TCustomUniversalBitmap.CopyPropertiesTo(ABitmap: TCustomUniversalBitmap);
 begin
   ABitmap.FillMode := FillMode;
   ABitmap.ClipRect := ClipRect;
   ABitmap.ScanOffset := ScanOffset;
-  ABitmap.ResolutionUnit:= ResolutionUnit;
-  ABitmap.ResolutionX:= ResolutionX;
-  ABitmap.ResolutionY:= ResolutionY;
+  ABitmap.ResolutionUnit := ResolutionUnit;
+  ABitmap.ResolutionX := ResolutionX;
+  ABitmap.ResolutionY := ResolutionY;
+  { #todo 2 -oMaxM : In the future we will also copy the information about the original readed bitformat (Issue #231) }
+  // Copy palette if needed.
+  ABitmap.UsePalette := UsePalette;
+  if ABitmap.UsePalette then
+  begin
+    ABitmap.Palette.Count:=0;
+    ABitmap.Palette.Merge(Self.Palette);
+  end;
 end;
 
-function TCustomUniversalBitmap.GetPart(const ARect: TRect): TCustomUniversalBitmap;
+function TCustomUniversalBitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 var
   sx, sy: integer;
   xSrc0, ySrc, remainX, xSrc, yDest, copyCount, copyByte: integer;
@@ -2570,9 +2616,7 @@ begin
   sy := ARect.Height;
   if (sx = 0) or (sy = 0) then exit(nil);
   result := InternalNew;
-  result.ResolutionUnit:=Self.ResolutionUnit; { #note -oMaxM : Maybe done in InternalNew? }
-  result.ResolutionX:=Self.ResolutionX;
-  result.ResolutionY:=Self.ResolutionY;
+  if ACopyProperties then CopyPropertiesTo(result);
   result.SetSize(sx,sy);
   if (FWidth = 0) or (FHeight = 0) then
   begin
@@ -4015,7 +4059,7 @@ begin
   InvalidateBitmap;
 end;
 
-function TCustomUniversalBitmap.RotateCW: TCustomUniversalBitmap;
+function TCustomUniversalBitmap.RotateCW(ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 var
   psrc, pdest: PByte;
   yb: integer;
@@ -4023,9 +4067,13 @@ var
 begin
   LoadFromBitmapIfNeeded;
   result := InternalNew;
-  result.ResolutionUnit:=Self.ResolutionUnit; { #note -oMaxM : Maybe done in InternalNew? }
-  result.ResolutionX:=Self.ResolutionX;
-  result.ResolutionY:=Self.ResolutionY;
+  if ACopyProperties then
+  begin
+    CopyPropertiesTo(result);
+    //Swap Resolution X and Y
+    result.ResolutionX :=Self.ResolutionY;
+    result.ResolutionY :=Self.ResolutionX;
+  end;
   result.SetSize(Height, Width);
   if Result.LineOrder = riloTopToBottom then
     delta := Result.RowSize
@@ -4039,7 +4087,7 @@ begin
   end;
 end;
 
-function TCustomUniversalBitmap.RotateCCW: TCustomUniversalBitmap;
+function TCustomUniversalBitmap.RotateCCW(ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 var
   psrc, pdest: PByte;
   yb: integer;
@@ -4047,9 +4095,13 @@ var
 begin
   LoadFromBitmapIfNeeded;
   result := InternalNew;
-  result.ResolutionUnit:=Self.ResolutionUnit; { #note -oMaxM : Maybe done in InternalNew? }
-  result.ResolutionX:=Self.ResolutionX;
-  result.ResolutionY:=Self.ResolutionY;
+  if ACopyProperties then
+  begin
+    CopyPropertiesTo(result);
+    //Swap Resolution X and Y
+    result.ResolutionX :=Self.ResolutionY;
+    result.ResolutionY :=Self.ResolutionX;
+  end;
   result.SetSize(Height, Width);
   if Result.LineOrder = riloTopToBottom then
     delta := Result.RowSize
@@ -4063,16 +4115,14 @@ begin
   end;
 end;
 
-function TCustomUniversalBitmap.RotateUD: TCustomUniversalBitmap;
+function TCustomUniversalBitmap.RotateUD(ACopyProperties: Boolean=False): TCustomUniversalBitmap;
 var
   yb: Integer;
   psrc, pdest: PByte;
 begin
   LoadFromBitmapIfNeeded;
   result := InternalNew;
-  result.ResolutionUnit:=Self.ResolutionUnit; { #note -oMaxM : Maybe done in InternalNew? }
-  result.ResolutionX:=Self.ResolutionX;
-  result.ResolutionY:=Self.ResolutionY;
+  if ACopyProperties then CopyPropertiesTo(result);
   result.SetSize(Width, Height);
   for yb := 0 to Height-1 do
   begin

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Various blur tasks implemented with software (using regular CPU) }
 unit BGRAFilterBlur;
 
 {$mode objfpc}{$H+}
@@ -9,8 +11,7 @@ uses
   BGRAClasses, BGRABitmapTypes, BGRAFilterType;
 
 type
-  { TCustomBlurTask }
-
+  { Blur task for custom filter }
   TCustomBlurTask = class(TFilterTask)
   private
     FBounds: TRect;
@@ -23,8 +24,7 @@ type
     procedure DoExecute; override;
   end;
 
-  { TRadialBlurTask }
-
+  { Blur task for radial blur }
   TRadialBlurTask = class(TFilterTask)
   private
     FBounds: TRect;
@@ -39,8 +39,7 @@ type
     procedure DoExecute; override;
   end;
 
-  { TMotionBlurTask }
-
+  { Blur task for motion blur }
   TMotionBlurTask = class(TFilterTask)
   private
     FBounds: TRect;
@@ -58,6 +57,7 @@ procedure FilterBlurMotion(bmp: TCustomUniversalBitmap; ABounds: TRect; distance
   angle: single; oriented: boolean; ADestination: TCustomUniversalBitmap; ACheckShouldStop: TCheckShouldStopFunc);
 procedure FilterBlurRadial(bmp: TCustomUniversalBitmap; ABounds: TRect; radiusX,radiusY: single;
   blurType: TRadialBlurType; ADestination: TCustomUniversalBitmap; ACheckShouldStop: TCheckShouldStopFunc);
+function FilterBlurRadial(ABitmap:TCustomUniversalBitmap; ARadiusX,ARadiusY: single; ABlurType: TRadialBlurType): TCustomUniversalBitmap;
 
 implementation
 
@@ -65,8 +65,7 @@ uses Math, SysUtils, BGRAGrayscaleMask,
   BGRAGradientScanner;
 
 type
-  { TBoxBlurTask }
-
+  { Blur task for box blur }
   TBoxBlurTask = class(TFilterTask)
   private
     FBounds: TRect;
@@ -580,6 +579,13 @@ begin
   blurShape.EllipseAntialias(ceil(radiusX), ceil(radiusY), radiusX, radiusY, BGRAWhite, 1);
   FilterBlurCustom(bmp, ABounds, blurShape, ADestination, ACheckShouldStop);
   blurShape.Free;
+end;
+
+function FilterBlurRadial(ABitmap:TCustomUniversalBitmap; ARadiusX,ARadiusY: single; ABlurType: TRadialBlurType): TCustomUniversalBitmap;
+begin
+  result := ABitmap.NewBitmap(ABitmap.Width, ABitmap.Height);
+  FilterBlurRadial(ABitmap, BGRAClasses.Rect(0,0,ABitmap.Width,ABitmap.Height),
+    ARadiusX, ARadiusY, ABlurType, result, nil);
 end;
 
 procedure FilterBlurRadial(bmp: TCustomUniversalBitmap; ABounds: TRect; radiusX,radiusY: single;

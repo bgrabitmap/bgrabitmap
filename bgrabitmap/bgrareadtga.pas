@@ -13,6 +13,7 @@
 {$mode objfpc}
 {$h+}
 
+{ Targa reader implementation }
 unit BGRAReadTGA;
 
 interface
@@ -20,8 +21,7 @@ interface
 uses FPReadTGA, FPimage, BGRAClasses;
 
 type
-  { TBGRAReaderTarga }
-
+  { Reader for TGA image format }
   TBGRAReaderTarga = class (TFPReaderTarga)
   protected
     FBuffer: packed array of byte;

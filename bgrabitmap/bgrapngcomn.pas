@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Common types for PNG format. This extents PNGComn unit for animated PNG. }
 unit BGRAPNGComn;
 
 {$mode objfpc}{$H+}
@@ -8,27 +11,35 @@ uses
   PNGComn;
 
 type
+  { Exception when reading/writing PNG files }
   PNGImageException = PNGComn.PNGImageException;
+  { PNG signature }
   TPNGSignature = array[0..7] of byte;
+  { PNG chunk }
   TChunk = PNGComn.TChunk;
+  { PNG chunk code }
   TChunkCode = PNGComn.TChunkCode;
+  { PNG chunk header }
   TChunkHeader = PNGComn.TChunkHeader;
 
-  // static PNG chunks
+  { Static PNG chunks }
   TChunkTypes = PNGComn.TChunkTypes;
+  { PNG header chunk }
   THeaderChunk = packed record
     Width, height : LongWord;
     BitDepth, ColorType, Compression, Filter, Interlace : byte;
   end;
+  { Array of 8 longwords }
   EightLong = PNGComn.EightLong;
 
+  { PNG resolution chunk }
   TPNGPhysicalDimensions = packed record
     X_Pixels, Y_Pixels :DWord;
     Unit_Specifier :Byte;
   end;
   PPNGPhysicalDimensions=^TPNGPhysicalDimensions;
 
-  // animated PNG chunks
+  { Animated PNG chunks }
   TAnimatedChunkTypes = {extends TChunkTypes} (
   ctacTL = 128, // Animation Control: Specifies number of frames and repeat count
   ctfcTL,       // Frame Control: Position, delay and render mode of the next frame
@@ -36,12 +47,15 @@ type
   );
 
   PAnimationControlChunk = ^TAnimationControlChunk;
+
+  { PNG chunk to specify animation }
   TAnimationControlChunk = record
     FrameCount : longword;
     RepeatCount : longword;
   end;
 
   PFrameControlChunk = ^TFrameControlChunk;
+  { PNG chunk for frame in animation }
   TFrameControlChunk = packed record
     SequenceNumber: longword;
     Width, Height: longword;
@@ -51,12 +65,14 @@ type
   end;
 
   PFrameDataChunk = ^TFrameDataChunk;
+  { PNG chunk for frame data }
   TFrameDataChunk = record
     SequenceNumber: longword;
     // followed by frame data
   end;
 
 const
+  { Maximum length for a PNG chunk }
   MaxChunkLength = PNGComn.MaxChunkLength;
 
   // static PNG chunks
@@ -82,7 +98,7 @@ const
   ctsPLT = PNGComn.ctsPLT;  // Suggested Palette: Suggests a palette to use if the full range of colors is unavailable.
   ctUnknown = PNGComn.ctUnknown; // Unknown: Represents an unrecognized chunk.
 
-  // animated PNG chunks
+  { Animated PNG chunks codes }
   AnimatedChunkTypes : array[low(TAnimatedChunkTypes)..high(TAnimatedChunkTypes)] of TChunkCode = (
     'acTL',  'fcTL',  'fdAT'
   );

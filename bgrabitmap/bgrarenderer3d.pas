@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Software renderer for 3D scenes }
 unit BGRARenderer3D;
 
 {$mode objfpc}{$H+}
@@ -14,8 +16,7 @@ uses BGRABitmapTypes,
 type
   TInt65536ShaderFunction3D = function (Context: PBasicLightingContext; Color: TBGRAPixel): TColorInt65536 of object;
 
-  { TBGRAShader3D }
-
+  { Shader for 3D software rendering }
   TBGRAShader3D = class
   protected
     FAmbiantLightness: integer;
@@ -56,8 +57,7 @@ type
     property OnlyDirectionalLights: boolean read FOnlyDirectionalLights;
   end;
 
-  { TBGRARenderer3D }
-
+  { Software renderer for 3D scenes }
   TBGRARenderer3D = class(TCustomRenderer3D)
   protected
     FColorGradientTempBmp: TBGRACustomBitmap;

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Reader implementation for iGo BMP format }
 unit BGRAReadBmpMioMap;
 
 {$mode objfpc}{$H+}
@@ -13,6 +15,7 @@ const
   MioMapTransparentColor = $F81F;
 
 type
+  { Header format for iGo bitmap }
   TMioHeader = packed record
     magic: packed array[1..2] of char;
     format: word;
@@ -21,8 +24,7 @@ type
 
   TPixelArray = array of TBGRAPixel;
 
-  { TBGRAReaderBmpMioMap }
-
+  { Reader for iGO bitmap format (MioMap) }
   TBGRAReaderBmpMioMap = class(TFPCustomImageReader)
   private
     function ReadHeader(Stream: TStream; out header: TMioHeader): boolean;

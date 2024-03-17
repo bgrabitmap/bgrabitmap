@@ -1,29 +1,25 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{
- /**************************************************************************\
-                                bgrabitmap.pas
-                                --------------
-                 Free easy-to-use memory bitmap 32-bit,
-                 8-bit for each channel, transparency.
-                 Channels can be in the following orders:
-                 - B G R A (recommended for Windows, required for fpGUI)
-                 - R G B A (recommended for Gtk and MacOS)
 
-                 - Drawing primitives
-                 - Resample
-                 - Reference counter
-                 - Drawing on LCL canvas
-                 - Loading and saving images
+{ @abstract(Provides the 32-bit RGBA bitmap type adapted to your system.)
 
-                 Note : line order can change, so if you access
-                 directly to bitmap data, check LineOrder value
-                 or use Scanline to compute position.
+  Pixels are of TBGRAPixel type based on sRGB colorspace with transparency (TBGRAPixelColorspace).
 
+  To use, you generally need to add BGRABitmapTypes as well to the **uses** clause.
 
-       --> Include BGRABitmap and BGRABitmapTypes in the 'uses' clause.
+  Channels can be in the following orders:
+  - B G R A (recommended for Windows, required for fpGUI)
+  - R G B A (recommended for Gtk and MacOS)
+
+  **Bitmap units**: BGRABitmap, ExpandedBitmap, BGRAGrayscaleMask, LinearRGBABitmap, WordXYZABitmap, XYZABitmap.
 }
-
 unit BGRABitmap;
+
+{ Provides:
+  - Drawing primitives
+  - Resample
+  - Reference counter
+  - Drawing on LCL canvas
+  - Loading and saving images }
 
 {$mode objfpc}{$H+}
 {$i bgrabitmap.inc}
@@ -72,27 +68,31 @@ uses
 
 type
 {$IFDEF BGRABITMAP_USE_FPGUI}
+  {* Import version for fpGUI }
   TBGRABitmap = class(TBGRAfpGUIBitmap)
 {$ELSE}
     {$IFDEF BGRABITMAP_USE_LCL}
       {$IFDEF LCLwin32}
+        {* Import version for Windows }
         TBGRABitmap = class(TBGRAWinBitmap)
       {$ELSE}
         {$IFDEF LCLgtk}
+        {* Import version for Linux GTK }
         TBGRABitmap = class(TBGRAGtkBitmap)
         {$ELSE}
           {$IFDEF LCLgtk2}
-
-        { TBGRABitmap }
-
+        {* Import version for Linux GTK2 }
         TBGRABitmap = class(TBGRAGtkBitmap)
           {$ELSE}
             {$IF defined(LCLqt) or defined(LCLqt5)}
+        {* Import version for Qt }
         TBGRABitmap = class(TBGRAQtBitmap)
             {$ELSE}
               {$IFDEF DARWIN}
+        {* Import version for MacOS }
         TBGRABitmap = class(TBGRAMacBitmap)
               {$ELSE}
+        {* Import version for other systems }{ Cross-platform 32-bit RGBA image compatible with Lazarus Component Library }
         TBGRABitmap = class(TBGRALCLBitmap)
               {$ENDIF}
             {$ENDIF}
@@ -101,8 +101,10 @@ type
       {$ENDIF}
     {$ELSE}
       {$IFDEF BGRABITMAP_USE_MSEGUI}
+        {* Import version for MSEgui }
         TBGRABitmap = class(TBGRAMSEguiBitmap)
       {$ELSE}
+        {* Import version without a GUI }{ Standalone cross-platform 32-bit RGBA image }
         TBGRABitmap = class(TBGRANoGUIBitmap)
       {$ENDIF}
     {$ENDIF}
@@ -120,56 +122,58 @@ type
     function GetUnique: TBGRABitmap; override;
     function Duplicate(DuplicateProperties: Boolean = False): TBGRABitmap; overload; override;
     function Duplicate(DuplicateProperties, DuplicateXorMask: Boolean) : TBGRABitmap; overload; override;
-    function GetPart(const ARect: TRect): TBGRABitmap; override;
+    function GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TBGRABitmap; override;
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
                 AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGRABitmap; override;
     function Resample(newWidth, newHeight: integer;
-      mode: TResampleMode = rmFineResample): TBGRABitmap; override;
-    function RotateCW: TBGRABitmap; override;
-    function RotateCCW: TBGRABitmap; override;
-    function RotateUD: TBGRABitmap; override;
-    function FilterSmartZoom3(Option: TMedianOption): TBGRABitmap; override;
-    function FilterMedian(Option: TMedianOption): TBGRABitmap; override;
-    function FilterSmooth: TBGRABitmap; override;
-    function FilterSharpen(Amount: single = 1): TBGRABitmap; overload; override;
-    function FilterSharpen(ABounds: TRect; Amount: single = 1): TBGRABitmap; overload; override;
-    function FilterContour(AGammaCorrection: boolean = false): TBGRABitmap; override;
-    function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear): TBGRABitmap; override;
-    function FilterBlurRadial(radius: single; blurType: TRadialBlurType): TBGRABitmap; overload; override;
-    function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType): TBGRABitmap; overload; override;
-    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType): TBGRABitmap; overload; override;
-    function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType): TBGRABitmap; overload; override;
-    function FilterBlurMotion(distance: single; angle: single; oriented: boolean): TBGRABitmap; overload; override;
-    function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean): TBGRABitmap; overload; override;
-    function FilterCustomBlur(mask: TCustomUniversalBitmap): TBGRABitmap; overload; override;
-    function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap): TBGRABitmap; overload; override;
-    function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRABitmap; overload; override;
-    function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []): TBGRABitmap; overload; override;
-    function FilterEmbossHighlight(FillSelection: boolean): TBGRABitmap; overload; override;
-    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel): TBGRABitmap; overload; override;
-    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; var Offset: TPoint): TBGRABitmap; overload; override;
-    function FilterGrayscale: TBGRABitmap; overload; override;
-    function FilterGrayscale(ABounds: TRect): TBGRABitmap; overload; override;
-    function FilterNormalize(eachChannel: boolean = True): TBGRABitmap; overload; override;
-    function FilterNormalize(ABounds: TRect; eachChannel: boolean = True): TBGRABitmap; overload; override;
-    function FilterRotate(origin: TPointF; angle: single; correctBlur: boolean = false): TBGRABitmap; override;
-    function FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean = false): TBGRABitmap; override;
-    function FilterSphere: TBGRABitmap; override;
-    function FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRABitmap; overload; override;
-    function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3): TBGRABitmap; overload; override;
-    function FilterCylinder: TBGRABitmap; override;
-    function FilterPlane: TBGRABitmap; override;
+      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function RotateCW(ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function RotateCCW(ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function RotateUD(ACopyProperties: Boolean=False): TBGRABitmap; override;
+    {$IFNDEF BGRABITMAP_CORE}
+    function FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function FilterSmooth(ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function FilterSharpen(Amount: single = 1; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterSharpen(ABounds: TRect; Amount: single = 1; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterContour(AGammaCorrection: boolean = false; ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function FilterPixelate(pixelSize: integer; useResample: boolean; filter: TResampleFilter = rfLinear; ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function FilterBlurRadial(radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterBlurRadial(const ABounds: TRect; radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterBlurRadial(radiusX, radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterBlurMotion(distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterBlurMotion(const ABounds: TRect; distance: single; angle: single; oriented: boolean; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterCustomBlur(const ABounds: TRect; mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterEmboss(angle: single; AStrength: integer= 64; AOptions: TEmbossOptions = []; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterEmboss(angle: single; ABounds: TRect; AStrength: integer= 64; AOptions: TEmbossOptions = []; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterEmbossHighlight(FillSelection: boolean; BorderColor: TBGRAPixel; var Offset: TPoint; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterGrayscale(ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterGrayscale(ABounds: TRect; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterNormalize(eachChannel: boolean = True; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterNormalize(ABounds: TRect; eachChannel: boolean = True; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterRotate(origin: TPointF; angle: single; correctBlur: boolean = false; ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean = false; ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function FilterSphere(ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function FilterTwirl(ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterTwirl(ABounds: TRect; ACenter: TPoint; ARadius: Single; ATurn: Single=1; AExponent: Single=3; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function FilterCylinder(ACopyProperties: Boolean=False): TBGRABitmap; override;
+    function FilterPlane(ACopyProperties: Boolean=False): TBGRABitmap; override;
+    {$ENDIF}
   end;
 
-// draw a bitmap from pure data
+{* Draw a bitmap from pure data }
 procedure BGRABitmapDraw(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
   VerticalFlip: boolean; AWidth, AHeight: integer; Opaque: boolean);
   
-{ Replace the content of the variable Destination with the variable
-  Temp and frees previous object contained in Destination.
+{* Replace the content of the variable Destination with the variable
+  _Temp_ and frees previous object contained in _Destination_.
   
   This function is useful as a shortcut for :
- 
+  ```pascal
   var
     temp: TBGRABitmap;
   begin
@@ -178,23 +182,27 @@ procedure BGRABitmapDraw(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
     someBmp.Free;
     someBmp := temp;
   end;
+  ```
   
   which becomes :
-  
+  ```pascal
   begin
     ...
     BGRAReplace(someBmp, someBmp.Filter... );
   end;
+  ```
 }
 procedure BGRAReplace(var Destination: TBGRABitmap; Temp: TObject);
 
 implementation
 
-uses BGRAReadBMP, BGRAWriteBMP, BGRAReadBmpMioMap, BGRAReadGif,
-  BGRAReadIco, BGRAReadJpeg, BGRAWriteJpeg, BGRAReadLzp, BGRAReadPCX, BGRAWritePCX,
-  BGRAReadPng, BGRAWritePNG, BGRAReadPSD, BGRAReadTGA, BGRAReadXPM,
-  BGRAWriteLzp, BGRAReadWebP, BGRAWriteWebP, BGRAReadAVIF, BGRAWriteAVIF,
-  BGRAReadTiff, BGRAWriteTiff;
+uses BGRAReadBMP, BGRAWriteBMP, BGRAReadPng, BGRAWritePNG
+  {$IFNDEF BGRABITMAP_CORE},
+  BGRAReadBmpMioMap, BGRAReadGif, BGRAReadIco, BGRAReadPSD, BGRAReadTGA, BGRAReadXPM,
+  BGRAReadJpeg, BGRAWriteJpeg, BGRAReadLzp, BGRAWriteLzp, BGRAReadPCX, BGRAWritePCX,
+  BGRAReadWebP, BGRAWriteWebP, BGRAReadAVIF, BGRAWriteAVIF
+    {$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}, BGRAReadTiff, BGRAWriteTiff{$ENDIF}
+  {$ENDIF};
 
 var
   tempBmp: TBGRABitmap;
@@ -288,9 +296,9 @@ begin
   Result:=inherited Duplicate(DuplicateProperties, DuplicateXorMask) as TBGRABitmap;
 end;
 
-function TBGRABitmap.GetPart(const ARect: TRect): TBGRABitmap;
+function TBGRABitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited GetPart(ARect) as TBGRABitmap;
+  Result:=inherited GetPart(ARect, ACopyProperties) as TBGRABitmap;
 end;
 
 function TBGRABitmap.CreateBrushTexture(ABrushStyle: TBrushStyle;
@@ -301,199 +309,194 @@ begin
     ABackgroundColor, AWidth, AHeight, APenWidth) as TBGRABitmap;
 end;
 
-function TBGRABitmap.Resample(newWidth, newHeight: integer; mode: TResampleMode
-  ): TBGRABitmap;
+function TBGRABitmap.Resample(newWidth, newHeight: integer; mode: TResampleMode; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited Resample(newWidth, newHeight, mode) as TBGRABitmap;
+  Result:=inherited Resample(newWidth, newHeight, mode, ACopyProperties) as TBGRABitmap;
 end;
 
-function TBGRABitmap.RotateCW: TBGRABitmap;
+function TBGRABitmap.RotateCW(ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited RotateCW as TBGRABitmap;
+  Result:=inherited RotateCW(ACopyProperties) as TBGRABitmap;
 end;
 
-function TBGRABitmap.RotateCCW: TBGRABitmap;
+function TBGRABitmap.RotateCCW(ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited RotateCCW as TBGRABitmap;
+  Result:=inherited RotateCCW(ACopyProperties) as TBGRABitmap;
 end;
 
-function TBGRABitmap.RotateUD: TBGRABitmap;
+function TBGRABitmap.RotateUD(ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited RotateUD as TBGRABitmap;
+  Result:=inherited RotateUD(ACopyProperties) as TBGRABitmap;
 end;
 
-function TBGRABitmap.FilterSmartZoom3(Option: TMedianOption): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterSmartZoom3(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterSmartZoom3(Option) as TBGRABitmap;
-end;
+  Result:=inherited FilterSmartZoom3(Option, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterMedian(Option: TMedianOption): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterMedian(Option: TMedianOption; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterMedian(Option) as TBGRABitmap;
-end;
+  Result:=inherited FilterMedian(Option, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterSmooth: TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterSmooth(ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterSmooth as TBGRABitmap;
-end;
+  Result:=inherited FilterSmooth(ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterSharpen(Amount: single): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterSharpen(Amount: single; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterSharpen(Amount) as TBGRABitmap;
-end;
+  Result:=inherited FilterSharpen(Amount, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterSharpen(ABounds: TRect; Amount: single): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterSharpen(ABounds: TRect; Amount: single; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterSharpen(ABounds, Amount) as TBGRABitmap;
-end;
+  Result:=inherited FilterSharpen(ABounds, Amount, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterContour(AGammaCorrection: boolean = false): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterContour(AGammaCorrection: boolean = false; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterContour(AGammaCorrection) as TBGRABitmap;
-end;
+  Result:=inherited FilterContour(AGammaCorrection, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterPixelate(pixelSize: integer; useResample: boolean;
-  filter: TResampleFilter): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterPixelate(pixelSize: integer; useResample: boolean;
+  filter: TResampleFilter; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterPixelate(pixelSize, useResample, filter) as TBGRABitmap;
-end;
+  Result:=inherited FilterPixelate(pixelSize, useResample, filter, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterBlurRadial(radius: single; blurType: TRadialBlurType
-  ): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterBlurRadial(radius: single; blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterBlurRadial(radius, blurType) as TBGRABitmap;
-end;
+  Result:=inherited FilterBlurRadial(radius, blurType, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterBlurRadial(const ABounds: TRect; radius: single;
-  blurType: TRadialBlurType): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterBlurRadial(const ABounds: TRect; radius: single;
+  blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterBlurRadial(ABounds, radius, blurType) as TBGRABitmap;
-end;
+  Result:=inherited FilterBlurRadial(ABounds, radius, blurType, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterBlurRadial(radiusX, radiusY: single;
-  blurType: TRadialBlurType): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterBlurRadial(radiusX, radiusY: single;
+  blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterBlurRadial(radiusX, radiusY, blurType) as TBGRABitmap;
-end;
+  Result:=inherited FilterBlurRadial(radiusX, radiusY, blurType, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single;
-  blurType: TRadialBlurType): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterBlurRadial(const ABounds: TRect; radiusX, radiusY: single;
+  blurType: TRadialBlurType; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterBlurRadial(ABounds, radiusX, radiusY, blurType) as TBGRABitmap;
-end;
+  Result:=inherited FilterBlurRadial(ABounds, radiusX, radiusY, blurType, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterBlurMotion(distance: single; angle: single;
-  oriented: boolean): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterBlurMotion(distance: single; angle: single;
+  oriented: boolean; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterBlurMotion(distance, angle, oriented) as TBGRABitmap;
-end;
+  Result:=inherited FilterBlurMotion(distance, angle, oriented, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterBlurMotion(const ABounds: TRect; distance: single;
-  angle: single; oriented: boolean): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterBlurMotion(const ABounds: TRect; distance: single;
+  angle: single; oriented: boolean; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterBlurMotion(ABounds, distance, angle, oriented) as TBGRABitmap;
-end;
+  Result:=inherited FilterBlurMotion(ABounds, distance, angle, oriented, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterCustomBlur(mask: TCustomUniversalBitmap
-  ): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterCustomBlur(mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterCustomBlur(mask) as TBGRABitmap;
-end;
+  Result:=inherited FilterCustomBlur(mask, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterCustomBlur(const ABounds: TRect;
-  mask: TCustomUniversalBitmap): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterCustomBlur(const ABounds: TRect;
+  mask: TCustomUniversalBitmap; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterCustomBlur(ABounds, mask) as TBGRABitmap;
-end;
+  Result:=inherited FilterCustomBlur(ABounds, mask, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterEmboss(angle: single; AStrength: integer;
-  AOptions: TEmbossOptions): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterEmboss(angle: single; AStrength: integer;
+  AOptions: TEmbossOptions; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterEmboss(angle, AStrength, AOptions) as TBGRABitmap;
-end;
+  Result:=inherited FilterEmboss(angle, AStrength, AOptions, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterEmboss(angle: single; ABounds: TRect;
-  AStrength: integer; AOptions: TEmbossOptions): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterEmboss(angle: single; ABounds: TRect;
+  AStrength: integer; AOptions: TEmbossOptions; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterEmboss(angle, ABounds, AStrength, AOptions) as TBGRABitmap;
-end;
+  Result:=inherited FilterEmboss(angle, ABounds, AStrength, AOptions, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterEmbossHighlight(FillSelection: boolean): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterEmbossHighlight(FillSelection: boolean; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterEmbossHighlight(FillSelection) as TBGRABitmap;
-end;
+  Result:=inherited FilterEmbossHighlight(FillSelection, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterEmbossHighlight(FillSelection: boolean;
-  BorderColor: TBGRAPixel): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterEmbossHighlight(FillSelection: boolean;
+  BorderColor: TBGRAPixel; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterEmbossHighlight(FillSelection, BorderColor) as TBGRABitmap;
-end;
+  Result:=inherited FilterEmbossHighlight(FillSelection, BorderColor, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterEmbossHighlight(FillSelection: boolean;
-  BorderColor: TBGRAPixel; var Offset: TPoint): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterEmbossHighlight(FillSelection: boolean;
+  BorderColor: TBGRAPixel; var Offset: TPoint; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterEmbossHighlight(FillSelection, BorderColor, Offset) as TBGRABitmap;
-end;
+  Result:=inherited FilterEmbossHighlight(FillSelection, BorderColor, Offset, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterGrayscale: TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterGrayscale(ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterGrayscale as TBGRABitmap;
-end;
+  Result:=inherited FilterGrayscale(ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterGrayscale(ABounds: TRect): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterGrayscale(ABounds: TRect; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterGrayscale(ABounds) as TBGRABitmap;
-end;
+  Result:=inherited FilterGrayscale(ABounds, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterNormalize(eachChannel: boolean): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterNormalize(eachChannel: boolean; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterNormalize(eachChannel) as TBGRABitmap;
-end;
+  Result:=inherited FilterNormalize(eachChannel, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean
-  ): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterNormalize(ABounds: TRect; eachChannel: boolean; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterNormalize(ABounds, eachChannel) as TBGRABitmap;
-end;
+  Result:=inherited FilterNormalize(ABounds, eachChannel, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterRotate(origin: TPointF; angle: single;
-  correctBlur: boolean): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterRotate(origin: TPointF; angle: single;
+  correctBlur: boolean; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterRotate(origin, angle, correctBlur) as TBGRABitmap;
-end;
+  Result:=inherited FilterRotate(origin, angle, correctBlur, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean
-  ): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterAffine(AMatrix: TAffineMatrix; correctBlur: boolean; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterAffine(AMatrix, correctBlur) as TBGRABitmap;
-end;
+  Result:=inherited FilterAffine(AMatrix, correctBlur, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterSphere: TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterSphere(ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterSphere as TBGRABitmap;
-end;
+  Result:=inherited FilterSphere(ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterTwirl(ACenter: TPoint; ARadius: Single;
-  ATurn: Single; AExponent: Single): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterTwirl(ACenter: TPoint; ARadius: Single;
+  ATurn: Single; AExponent: Single; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterTwirl(ACenter, ARadius, ATurn, AExponent) as TBGRABitmap;
-end;
+  Result:=inherited FilterTwirl(ACenter, ARadius, ATurn, AExponent, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterTwirl(ABounds: TRect; ACenter: TPoint;
-  ARadius: Single; ATurn: Single; AExponent: Single): TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterTwirl(ABounds: TRect; ACenter: TPoint;
+  ARadius: Single; ATurn: Single; AExponent: Single; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterTwirl(ABounds, ACenter, ARadius, ATurn, AExponent) as TBGRABitmap;
-end;
+  Result:=inherited FilterTwirl(ABounds, ACenter, ARadius, ATurn, AExponent, ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterCylinder: TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterCylinder(ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterCylinder as TBGRABitmap;
-end;
+  Result:=inherited FilterCylinder(ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
-function TBGRABitmap.FilterPlane: TBGRABitmap;
+{$IFNDEF BGRABITMAP_CORE}function TBGRABitmap.FilterPlane(ACopyProperties: Boolean=False): TBGRABitmap;
 begin
-  Result:=inherited FilterPlane as TBGRABitmap;
-end;
+  Result:=inherited FilterPlane(ACopyProperties) as TBGRABitmap;
+end;{$ENDIF}
 
 initialization
 

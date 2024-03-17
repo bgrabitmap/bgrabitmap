@@ -1,11 +1,11 @@
-program test4nolcl;
+program test4nolcl_freetype;
 
 {$mode objfpc}{$H+}
 
 uses
-  {$IFDEF UNIX}{$IFDEF UseCThreads}
-  cthreads,
-  {$ENDIF}{$ENDIF}
+  {$IFDEF UNIX}
+  cthreads, cwstring,
+  {$ENDIF}
   Classes, SysUtils, CustApp,
   BGRAGraphics,
   BGRABitmap,
@@ -29,10 +29,6 @@ begin
   bmp.CustomPenStyle := BGRAPenStyle(2,1);
   bmp.FillEllipseLinearColorAntialias(bmp.Width/2,bmp.Height/2,bmp.Width/2-5,bmp.Height/2-5, BGRAPixelTransparent, BGRAWhite);
   bmp.EllipseAntialias(bmp.Width/2,bmp.Height/2,bmp.Width/2-5,bmp.Height/2-5,CSSRed,5);
-  if bmp.Height div 10 < 10 then
-    bmp.FontHeight := 10
-  else
-    bmp.FontHeight := bmp.Height div 10;
   bmp.Canvas.Pen.Color := clBlue;
   bmp.Canvas.MoveTo(0,0);
   bmp.Canvas.LineTo(bmp.Width,bmp.Height);
@@ -44,19 +40,19 @@ procedure TTestBGRANoLCL.DoRun;
 var
   bmp: TBGRABitmap;
 begin
-  TBGRABitmap.AddFreeTypeFontFolder(GetCurrentDir);
-
   bmp := TBGRABitmap.Create(800,600,BGRABlack);
   DrawEllipseHello(bmp);
-  bmp.SaveToFile('test.png');
+  bmp.SaveToFile(ExtractFilePath(ExeName)+'test.png');
   bmp.free;
 
+  // stop program loop
   Terminate;
 end;
 
 constructor TTestBGRANoLCL.Create(TheOwner: TComponent);
 begin
   inherited Create(TheOwner);
+  StopOnException:=True;
 end;
 
 destructor TTestBGRANoLCL.Destroy;
@@ -66,6 +62,8 @@ end;
 
 var
   Application: TTestBGRANoLCL;
+
+{$R *.res}
 
 begin
   Application:=TTestBGRANoLCL.Create(nil);

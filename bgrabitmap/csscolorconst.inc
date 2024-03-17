@@ -17,8 +17,8 @@ var
 
 const
   {* This color [#000001] looks just like black. It is needed for drawing black
-     shapes using the ''Canvas'' property of ''TBGRABitmap''. This is a standard
-     ''TCanvas'' and when drawing with pure black (''clBlack''), there is no way to know if
+     shapes using the _Canvas_ property of TBGRABitmap. This is a standard
+     TCanvas and when drawing with pure black (_clBlack_), there is no way to know if
      something has been drawn or if it is transparent }
   clBlackOpaque = TColor($010000);
 
@@ -80,12 +80,12 @@ var
   CSSDarkSlateGray, CSSBlack: TBGRAPixel;
 
 type
+  {* Definition of a single color in RGB colorspace }
   TBGRAColorDefinition = record
     Name: string;
     Color: TBGRAPixel;
   end;
 
-  { TBGRAColorList }
   {* Contains a fixed list of colors }
   TBGRAColorList = class
   protected
@@ -106,7 +106,7 @@ type
     {** Returns the index of a color with a given name }
     function IndexOf(Name: string): integer;
     {** Returns the index of a color. Colors are considered to match if
-        the difference is less than or equal to ''AMaxDiff'' }
+        the difference is less than or equal to _AMaxDiff_ }
     function IndexOfColor(const AColor: TBGRAPixel; AMaxDiff: Word = 0): integer;
 
     {** Gets the color associated with a color name }
@@ -121,36 +121,39 @@ type
 
 var
   {* List of VGA colors:
-   * [#000000] Black, [#808080] Gray, [#C0C0C0] Silver, [#FFFFFF] White,
-   * [#800000] Maroon, [#FF0000] Red,  [#800080] Purple, [#FF00FF] Fuchsia,
-   * [#008000] Green,  [#00FF00] Lime, [#808000] Olive,  [#FFFF00] Yellow,
-   * [#000080] Navy,   [#0000FF] Blue, [#008080] Teal,   [#00FFFF] Aqua.
-   * Shortcut constants are provided: [#000000] ''VGABlack'', [#808080] ''VGAGray''... }
+
+     [#000000] Black, [#808080] Gray, [#C0C0C0] Silver, [#FFFFFF] White,
+     [#800000] Maroon, [#FF0000] Red,  [#800080] Purple, [#FF00FF] Fuchsia,
+     [#008000] Green,  [#00FF00] Lime, [#808000] Olive,  [#FFFF00] Yellow,
+     [#000080] Navy,   [#0000FF] Blue, [#008080] Teal,   [#00FFFF] Aqua.
+
+     Shortcut constants are provided: [#000000] _VGABlack_, [#808080] _VGAGray_... }
   VGAColors: TBGRAColorList;
   {* List of [https://www.w3schools.com/cssref/css_colors.asp web colors].
-  Shortcut constants are provided: [#000000] ''CSSBlack'', [#FF0000] ''CSSRed''... }
+
+  Shortcut constants are provided: [#000000] _CSSBlack_, [#FF0000] _CSSRed_... }
   CSSColors: TBGRAColorList;
 
 {------------------- string conversion ------------------------}
 
-{* Converts a ''TBGRAPixel'' value into a string, using color names provided in ''AColorList'', and
-   considering that a color matches in the color list if its difference is within ''AMaxDiff'' }
+{* Converts a TBGRAPixel value into a string, using color names provided in _AColorList_, and
+   considering that a color matches in the color list if its difference is within _AMaxDiff_ }
 function BGRAToStr(c: TBGRAPixel; AColorList: TBGRAColorList = nil;
   AMaxDiff: Word= 0; AOptionalAlpha: boolean = false; AHashTagPrefix: boolean = false): string;
-{* Converts a fully defined string into a ''TBGRAPixel'' value. Color names from ''VGAColors'' and ''CSSColors''
+{* Converts a fully defined string into a TBGRAPixel value. Color names from _VGAColors_ and _CSSColors_
    are used if there is an exact match }
 function StrToBGRA(str: string): TBGRAPixel; overload;
-{* Converts a string into a ''TBGRAPixel'' value. If the value is not fully defined or that
-   there is an error, ''DefaultColor'' is returned.
-   Color names from ''VGAColors'' and ''CSSColors'' are used if there is an exact match. }
+{* Converts a string into a TBGRAPixel value. If the value is not fully defined or that
+   there is an error, _DefaultColor_ is returned.
+   Color names from _VGAColors_ and _CSSColors_ are used if there is an exact match. }
 function StrToBGRA(str: string; const DefaultColor: TBGRAPixel): TBGRAPixel; overload;
-{* Converts a string into a ''TBGRAPixel'' value. If the value is not fully defined, missing channels (expressed with '?')
+{* Converts a string into a TBGRAPixel value. If the value is not fully defined, missing channels (expressed with '?')
    are filled with fallbackValues. You can check if there was an error with the provided boolean.
-   Color names from ''VGAColors'' and ''CSSColors'' are used if there is an exact match. }
+   Color names from _VGAColors_ and _CSSColors_ are used if there is an exact match. }
 function PartialStrToBGRA(str: string; const fallbackValues: TBGRAPixel; out error: boolean): TBGRAPixel;
-{* Converts a string into a ''TBGRAPixel'' value into ''parsedValue''. ''parsedValue'' is not changed if
+{* Converts a string into a TBGRAPixel value into _parsedValue_. _parsedValue_ is not changed if
    some channels are missing (expressed with '?'). You can check if there was an error with the provided boolean.
-   Color names from ''VGAColors'' and ''CSSColors'' are used if there is an exact match. }
+   Color names from _VGAColors_ and _CSSColors_ are used if there is an exact match. }
 procedure TryStrToBGRA(str: string; var parsedValue: TBGRAPixel; out missingValues: boolean; out error: boolean);
 {$ENDIF}
 

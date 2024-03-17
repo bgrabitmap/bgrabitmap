@@ -20,6 +20,8 @@
 }
 {*****************************************************************************}
 {$mode objfpc}{$h+}
+
+{ PNG reader implementation }
 unit BGRAReadPng;
 
 interface
@@ -33,8 +35,7 @@ Type
   TBGRAConvertColorProc = function (const CD:TColorData) : TBGRAPixel of object;
   THandleScanLineProc = procedure (const y : integer; const ScanLine : PByteArray) of object;
 
-  { TPNGFrame }
-
+  { Frame in an animated PNG stream }
   TPNGFrame = class
     FrameControl: TFrameControlChunk;
     FrameData: TMemoryStream;
@@ -43,8 +44,7 @@ Type
   end;
   TPNGFrameList = specialize TFPGObjectList<TPNGFrame>;
 
-  { TBGRAReaderPNG }
-
+  { Reader for PNG image format }
   TBGRAReaderPNG = class (TBGRAImageReader)
     private
       FHeader : THeaderChunk;
@@ -545,7 +545,7 @@ end;
 
 procedure TBGRAReaderPNG.AssignResolutionValues;
 begin
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
   if (FTargetImage is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(FTargetImage) do
   {$ELSE}

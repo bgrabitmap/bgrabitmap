@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Colors stored as integers with maximum value 65536 but allowing overflow }
 unit BGRAColorInt;
 
 {$mode objfpc}{$H+}
@@ -15,6 +17,7 @@ uses
   BGRABitmapTypes;
 
 type
+  { RGBA color defined by integers from 0 to 65536 }
   TColorInt65536 = packed record
     r,g,b,a: integer;
   end;

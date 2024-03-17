@@ -40,11 +40,17 @@
              conditional compilation for 3.3.1 (now the class is derived from TFPReaderTiff)
 }
 {*****************************************************************************}
+
+{ Tiff reader implementation }
 unit BGRAReadTiff;
 
 {$mode objfpc}{$H+}
 
 {$inline on}
+
+{$i bgrabitmap.inc}
+
+{$IFNDEF BGRABITMAP_EXTENDED_COLORSPACE}{$STOP This unit need extended colorspaces}{$ENDIF}
 
 interface
 
@@ -65,8 +71,7 @@ type
     tcioNever
     );
 
-  { TBGRAReaderTiff }
-
+  { Reader for TIFF format }
   TBGRAReaderTiff = class(TFPCustomImageReader)
   private
     FCheckIFDOrder: TTiffCheckIFDOrder;
@@ -155,8 +160,7 @@ function DecompressDeflate(Compressed: PByte; CompressedCount: LongWord;
 function TifResolutionUnitToResolutionUnit(ATifResolutionUnit: DWord): TResolutionUnit;
 function ResolutionUnitToTifResolutionUnit(AResolutionUnit: TResolutionUnit): DWord;
 {$ELSE}
-  { TBGRAReaderTiff }
-
+  { Reader for TIFF format }
   TBGRAReaderTiff = class(TFPReaderTiff)
   public
      procedure LoadImageFromStream(IFD: TTiffIFD); override;
@@ -1987,7 +1991,7 @@ var
 
   procedure ReadResolutionValues;
   begin
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     if (CurFPImg is TCustomUniversalBitmap) then
     with TCustomUniversalBitmap(CurFPImg) do
     {$ELSE}
@@ -3238,7 +3242,7 @@ var
 
   procedure ReadResolutionValues;
   begin
-    {$IF FPC_FULLVERSION<30301}
+    {$IF FPC_FULLVERSION<30203}
     if (CurFPImg is TCustomUniversalBitmap) then
     with TCustomUniversalBitmap(CurFPImg) do
     {$ELSE}

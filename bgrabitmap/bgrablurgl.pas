@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Blur effect using OpenGL shaders }
 unit BGRABlurGL;
 
 {$mode objfpc}{$H+}
@@ -9,9 +11,7 @@ uses
   BGRAClasses, BGRAOpenGL3D, BGRABitmapTypes, BGRACanvasGL, BGRAOpenGLType;
 
 type
-
-  { TBGLBlurShader }
-
+  { Shader computing a blurred image }
   TBGLBlurShader = class(TBGLShader3D)
   private
     function GetDirection: TPointF;

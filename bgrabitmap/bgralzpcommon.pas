@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Type and structure definitions for LazPaint image format }
 unit BGRALzpCommon;
 
 {$mode objfpc}{$H+}
@@ -28,8 +30,7 @@ type
   TLzpCompression = (lzpZStream, //slower and not necessarily better
                      lzpRLE);    //custom RLE for lzp files
 
-  { TLazPaintImageHeader }
-
+  { Format of header for LazPaint files }
   TLazPaintImageHeader = packed record
     magic: packed array[0..7] of char;
     zero1, headerSize: LongWord;

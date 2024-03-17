@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 type
-  { TBGRAPart3D }
+  { @abstract(Part of a 3D object, that can be moved independently of other parts.)
+
+    A part may be directly contained by an object or be included in another part. }
 
   TBGRAPart3D = class(TInterfacedObject,IBGRAPart3D)
   private

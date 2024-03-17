@@ -1,7 +1,21 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ @abstract(Supplies a bitmap in linear RGB with floating-point values and transparency.)
+
+  Pixels are in TLinearRGBA format, based on linear RGB colorspace (TLinearRGBAColorspace).
+
+  This allows for even more precise computation than TExpandedBitmap but it is slower and
+  uses more memory (16 bytes per pixel).
+
+  **Bitmap units**: BGRABitmap, ExpandedBitmap, BGRAGrayscaleMask, LinearRGBABitmap, WordXYZABitmap, XYZABitmap.
+}
 unit LinearRGBABitmap;
 
 {$mode objfpc}{$H+}
+
+{$i bgrabitmap.inc}
+
+{$IFNDEF BGRABITMAP_EXTENDED_COLORSPACE}{$STOP This unit need extended colorspaces}{$ENDIF}
 
 interface
 
@@ -9,9 +23,8 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-
-  { TLinearRGBABitmap }
-
+  {* Bitmap with TLinearRGBA pixel format (linear RGB
+     with floating point values). }
   TLinearRGBABitmap = class(specialize TGenericUniversalBitmap<TLinearRGBA,TLinearRGBAColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;

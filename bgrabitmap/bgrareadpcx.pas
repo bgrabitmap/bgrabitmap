@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{ This unit provides some optimisations of TFPReaderPCX: decompression using a read buffer.
-  It also fixes the progress message and the InternalCheck. }
+
 {*****************************************************************************}
 {
+  circlar :
+  - decompression is done using a read buffer.
+  - fix for the progress message and the InternalCheck.
+
   2023-06  - Massimo Magnano
            - added Resolution support
 }
 {*****************************************************************************}
 
+{ Provides reader for PCX format }
 unit BGRAReadPCX;
 
 {$mode objfpc}{$H+}
@@ -17,9 +21,7 @@ interface
 uses FPImage, BGRAClasses, SysUtils, FPReadPCX;
 
 type
-
-  { TBGRAReaderPCX }
-
+  { Reader for PCX image format }
   TBGRAReaderPCX = class(TFPReaderPCX)
   protected
     FBuffer: packed array of byte;
@@ -81,7 +83,7 @@ end;
 
 procedure TBGRAReaderPCX.ReadResolutionValues(Img: TFPCustomImage);
 begin
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
   if (Img is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(Img) do
   begin

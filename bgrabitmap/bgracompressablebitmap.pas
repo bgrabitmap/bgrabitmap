@@ -1,38 +1,28 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Class to temporarily compress bitmaps in memory and serialize it. }
 unit BGRACompressableBitmap;
 
 {$mode objfpc}{$H+}
 
 interface
 
-{ This unit contains the TBGRACompressableBitmap class, which
-  can be used to temporarily compress bitmaps in memory.
-  To use it, create an instance with the bitmap you want
-  to compress. You can then free the original bitmap because
-  TBGRACompressableBitmap contains all information necessary
-  to build it again. To construct again your bitmap, call
-  the GetBitmap function.
-
-  When you have your bitmap in TBGRACompressableBitmap,
-  you can call Compress function as many times as necessary
-  until all data is compressed. It does only a part of the
-  work at each call, so you can put it in a loop or in
-  a timer. When it's done, Compress returns false to
-  notify that it did nothing, which means you can
-  stop calling Compress.
-
-  In this implementation, the memory usage grows during
-  the compression process and is lower only after it is
-  finished. So it is recommended to compress one bitmap
-  at a time. }
-
 uses
   BGRAClasses, SysUtils, BGRABitmapTypes, BGRABitmap, zstream;
 
 type
+   {* @abstract(Class to compress and store the compressed image.)
 
-   { TBGRACompressableBitmap }
+     To use it, create an instance with the bitmap you want
+     to compress. You can then free the original bitmap because
+     TBGRACompressableBitmap contains all information necessary
+     to build it again. To construct again your bitmap, call
+     the GetBitmap function.
 
+     In this implementation, the memory usage grows during
+     the compression process and is lower only after it is
+     finished. So it is recommended to compress one bitmap
+     at a time. }
    TBGRACompressableBitmap = class
    private
      FWidth,FHeight: integer;
@@ -49,12 +39,20 @@ type
      CompressionLevel: Tcompressionlevel;
      constructor Create; overload;
      constructor Create(Source: TBGRABitmap); overload;
+
+     {** Constructs the bitmap again, decompressing if necessary.
+         After this, the image is not compressed anymore so the
+         memoy usage grows again and the access becomes fast
+         because there is no need to decompress anymore. }
      function GetBitmap: TBGRABitmap;
 
-     //call Compress as many times as necessary
-     //when it returns false, it means that
-     //the image compression is finished
+     {** Does one step of compression. It does only a part of the
+         work at each call, so you can put it in a loop or in
+         a timer. When it's done, Compress returns false to
+         notify that it did nothing, which means you can
+         stop calling Compress. }
      function Compress: boolean;
+
      procedure WriteToStream(AStream: TStream);
      procedure ReadFromStream(AStream: TStream);
      
@@ -87,10 +85,6 @@ begin
   Assign(Source);
 end;
 
-{ Constructs the bitmap again, decompressing if necessary.
-  After this, the image is not compressed anymore so the
-  memoy usage grows again and the access becomes fast
-  because there is no need to decompress anymore. }
 function TBGRACompressableBitmap.GetBitmap: TBGRABitmap;
 var UsedPart: TBGRABitmap;
     UsedNbPixels: Integer;

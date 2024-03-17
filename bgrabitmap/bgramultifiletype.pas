@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Generic definition of a file containing multiple items }
 unit BGRAMultiFileType;
 
 {$mode objfpc}{$H+}
@@ -10,9 +12,7 @@ uses
   BGRAClasses, SysUtils, fgl;
 
 type
-
-  { TEntryFilename }
-
+  { Filename for an entry in a multifile container }
   TEntryFilename = record
   private
     FExtension: utf8string;
@@ -36,8 +36,7 @@ function EntryFilename(AFilename: string): TEntryFilename; overload;
 type
   TMultiFileContainer = class;
 
-  { TMultiFileEntry }
-
+  { Entry in a multifile container }
   TMultiFileEntry = class
   protected
     FContainer: TMultiFileContainer;
@@ -58,8 +57,7 @@ type
 
   TMultiFileEntryList = specialize TFPGList<TMultiFileEntry>;
 
-  { TMultiFileContainer }
-
+  {* Generic definition of a multifile container }
   TMultiFileContainer = class(TPersistent)
   private
     FEntries: TMultiFileEntryList;

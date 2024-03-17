@@ -1111,8 +1111,8 @@ end;
 
 procedure LinearHueInline(dest: PBGRAPixel; c: TBGRAPixel);
 var
-  destalpha: byte;
-  srcHSLA, destHSLA: TStdHSLA;
+  destalpha,
+  sextant, position, saturation, value, discard1, discard2: byte;
 begin
   destalpha   := dest^.alpha;
   if destalpha = 0 then
@@ -1120,12 +1120,10 @@ begin
     dest^ := c
   end else
   begin
-    srcHSLA := c.ToStdHSLA;
-    destHSLA := dest^.ToStdHSLA;
-
-    destHSLA.hue := srcHSLA.hue;
-    destHSLA.alpha:= srcHSLA.alpha;
-    dest^ := destHSLA;
+    RGBToByteStdHSV(c.red, c.green, c.blue, sextant, position, discard1, discard2);
+    RGBToByteStdHSV(dest^.red, dest^.green, dest^.blue, discard1, discard2, saturation, value);
+    ByteStdHSVToRGB(sextant, position, saturation, value, dest^.red, dest^.green, dest^.blue);
+    dest^.alpha := c.alpha;
 
     if destalpha <> 255 then
     begin
@@ -1138,8 +1136,8 @@ end;
 
 procedure LinearColorInline(dest: PBGRAPixel; c: TBGRAPixel);
 var
-  destalpha: byte;
-  srcHSLA, destHSLA: TStdHSLA;
+  destalpha,
+  sextant, position, saturation, lightness, discard1: byte;
 begin
   destalpha   := dest^.alpha;
   if destalpha = 0 then
@@ -1147,10 +1145,10 @@ begin
     dest^ := c
   end else
   begin
-    srcHSLA := c.ToStdHSLA;
-    destHSLA := dest^.ToStdHSLA;
-    srcHSLA.lightness := destHSLA.lightness;
-    dest^ := srcHSLA;
+    RGBToByteStdHSL(c.red, c.green, c.blue, sextant, position, saturation, discard1);
+    lightness := GetByteStdLightness(dest^.red, dest^.green, dest^.blue);
+    ByteStdHSLToRGB(sextant, position, saturation, lightness, dest^.red, dest^.green, dest^.blue);
+    dest^.alpha := c.alpha;
 
     if destalpha <> 255 then
     begin
@@ -1163,8 +1161,8 @@ end;
 
 procedure LinearLightnessInline(dest: PBGRAPixel; c: TBGRAPixel);
 var
-  destalpha: byte;
-  destHSLA: TStdHSLA;
+  destalpha,
+  sextant, position, saturation, lightness, discard1: byte;
 begin
   destalpha   := dest^.alpha;
   if destalpha = 0 then
@@ -1172,9 +1170,9 @@ begin
     dest^ := c
   end else
   begin
-    destHSLA := dest^.ToStdHSLA;
-    destHSLA.lightness := c.ToStdHSLA.lightness;
-    dest^ := destHSLA;
+    RGBToByteStdHSL(dest^.red, dest^.green, dest^.blue, sextant, position, saturation, discard1);
+    lightness := GetByteStdLightness(c.red, c.green, c.blue);
+    ByteStdHSLToRGB(sextant, position, saturation, lightness, dest^.red, dest^.green, dest^.blue);
     dest^.alpha := c.alpha;
 
     if destalpha <> 255 then
@@ -1188,8 +1186,9 @@ end;
 
 procedure LinearSaturationInline(dest: PBGRAPixel; c: TBGRAPixel);
 var
-  destalpha: byte;
-  destHSLA: TStdHSLA;
+  destalpha,
+  sextant, position, saturation, lightness,
+  discard1, discard2, discard3: byte;
 begin
   destalpha   := dest^.alpha;
   if destalpha = 0 then
@@ -1197,11 +1196,11 @@ begin
     dest^ := c
   end else
   begin
-    destHSLA := dest^.ToStdHSLA;
-    if destHSLA.saturation <> 0 then
+    RGBToByteStdHSL(dest^.red, dest^.green, dest^.blue, sextant, position, saturation, lightness);
+    if saturation <> 0 then
     begin
-      destHSLA.saturation:= c.ToStdHSLA.saturation;
-      dest^ := destHSLA;
+      RGBToByteStdHSL(c.red, c.green, c.blue, discard1, discard2, saturation, discard3);
+      ByteStdHSLToRGB(sextant, position, saturation, lightness, dest^.red, dest^.green, dest^.blue);
     end;
     dest^.alpha := c.alpha;
 

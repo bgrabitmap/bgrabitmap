@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Canvas that can be used with OpenGL (2D, 3D and lighting shader) }
 unit BGRACanvasGL;
 
 {$mode objfpc}{$H+}
@@ -14,12 +16,14 @@ type
   TBGLPath = class;
   TBGLCustomCanvas = class;
 
+  { Abstract shader for OpenGL }
   TBGLCustomShader = class
   protected
     procedure StartUse; virtual; abstract;
     procedure EndUse; virtual; abstract;
   end;
 
+  { Abstract array for OpenGL }
   TBGLCustomArray = class
   protected
     FBuffer: LongWord;
@@ -32,8 +36,7 @@ type
     property Handle: LongWord read FBuffer;
   end;
 
-  { TAttributeVariable }
-
+  { Attribute variable in shader (value defined per vertex) }
   TAttributeVariable = object
   protected
     FOwner: TObject;
@@ -53,6 +56,7 @@ type
     property Owner: TObject read FOwner;
   end;
 
+  { Abstract array of elements specifed by index for OpenGL }
   TBGLCustomElementArray = class
   protected
     function GetCount: integer; virtual; abstract;
@@ -62,8 +66,7 @@ type
     property Count: integer read GetCount;
   end;
 
-  { TBGLCustomLighting }
-
+  { Abstract class for lighting with OpenGL }
   TBGLCustomLighting = class
   private
     FCurrentShader: TBGLCustomShader;
@@ -106,8 +109,7 @@ type
     property BuiltInLightingEnabled: boolean read GetBuiltInLightingEnabled write SetBuiltInLightingEnabled;
   end;
 
-  { TBGLCustomCanvas }
-
+  { Abstract canvas for OpenGL }
   TBGLCustomCanvas = class
   private
     FActiveFrameBuffer: TBGLCustomFrameBuffer;
@@ -300,8 +302,7 @@ type
     property Lighting: TBGLCustomLighting read GetLighting;
   end;
 
-  { TBGLPath }
-
+  { Path with OpenGL rendering }
   TBGLPath = class(TBGRAPath)
   private
     procedure GLDrawProc(const APoints: array of TPointF; AClosed: boolean; AData: pointer);

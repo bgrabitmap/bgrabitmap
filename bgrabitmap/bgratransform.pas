@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Affine and bitmap transformations }
 unit BGRATransform;
 
 {$mode objfpc}
 
 interface
-
-{ This unit contains bitmap transformations as classes and the TAffineMatrix record and functions. }
 
 uses
   BGRAClasses, SysUtils, BGRABitmapTypes;
@@ -16,15 +16,12 @@ type
   { Contains an affine base and information on the resulting box }
   TAffineBox = BGRABitmapTypes.TAffineBox;
 
-  { TBGRAAffineScannerTransform allow to transform any scanner. To use it,
+  { Scanner that transforms any other scanner. To use it,
     create this object with a scanner as parameter, call transformation
     procedures, and finally, use the newly created object as a scanner.
 
     You can transform a gradient or a bitmap. See TBGRAAffineBitmapTransform
     for bitmap specific transformation. }
-
-  { TBGRAAffineScannerTransform }
-
   TBGRAAffineScannerTransform = class(TBGRACustomScanner)
   protected
     FScanner: IBGRAScanner;
@@ -58,12 +55,10 @@ type
     property ViewMatrix: TAffineMatrix read GetViewMatrix write SetViewMatrix;
   end;
 
-  { If you don't want the bitmap to repeats itself, or want to specify the
-    resample filter, or want to fit easily the bitmap on axes,
-    use TBGRAAffineBitmapTransform instead of TBGRAAffineScannerTransform }
+  { @abstract(Scanners that applies an affine transform to a bitmap.)
 
-  { TBGRAAffineBitmapTransform }
-
+    It is usedful if you don't want the bitmap to repeats itself, or want to specify the
+    resample filter, or want to fit easily the bitmap on axes. }
   TBGRAAffineBitmapTransform = class(TBGRAAffineScannerTransform)
   protected
     FBitmap: TBGRACustomBitmap;
@@ -83,8 +78,7 @@ type
     procedure Fit(Origin, HAxis, VAxis: TPointF); override;
   end;
 
-  { TBGRAQuadLinearScanner }
-
+  { Scanner for a texture mapped to a quadrilateral shape }
   TBGRAQuadLinearScanner = class(TBGRACustomScanner)
   private
     FPadding: boolean;
@@ -138,8 +132,7 @@ type
     property Padding: boolean read FPadding write FPadding;
   end;
 
-  { TBGRABitmapScanner }
-
+  { Simple scanner for a bitmap }
   TBGRABitmapScanner = class(TBGRACustomScanner)
   protected
     FSource: TBGRACustomBitmap;
@@ -155,7 +148,9 @@ type
     procedure ScanSkipPixels(ACount: integer); override;
   end;
 
-  { TBGRAExtendedBorderScanner }
+  { @abstract(Scanner that restricts the source to a rectangular area and pad the rest.)
+
+    The rest is padded using the color at the borders. }
 
   TBGRAExtendedBorderScanner = class(TBGRACustomScanner)
   protected
@@ -166,8 +161,7 @@ type
     function ScanAt(X,Y: Single): TBGRAPixel; override;
   end;
 
-  { TBGRAScannerOffset }
-
+  { Scanner that adds an offset }
   TBGRAScannerOffset = class(TBGRACustomScanner)
   protected
     FSource: IBGRAScanner;
@@ -245,12 +239,8 @@ function IsAffineMatrixOrthogonal(M: TAffineMatrix): boolean;
 function IsAffineMatrixScaledRotation(M: TAffineMatrix): boolean;
 
 type
-  { TBGRATriangleLinearMapping is a scanner that provides
-    an optimized transformation for linear texture mapping
+  { Scanner that provides an optimized transformation for linear texture mapping
     on triangles }
-
-  { TBGRATriangleLinearMapping }
-
   TBGRATriangleLinearMapping = class(TBGRACustomScanner)
   protected
     FScanner: IBGRAScanner;
@@ -270,8 +260,7 @@ type
 type
   TPerspectiveTransform = class;
 
-  { TBGRAPerspectiveScannerTransform }
-
+  { Scanner that performs a perspective transform (3D) }
   TBGRAPerspectiveScannerTransform = class(TBGRACustomScanner)
   private
     FTexture: IBGRAScanner;
@@ -282,6 +271,7 @@ type
   public
     constructor Create(texture: IBGRAScanner; texCoord1,texCoord2: TPointF; const quad: array of TPointF); overload;
     constructor Create(texture: IBGRAScanner; const texCoordsQuad: array of TPointF; const quad: array of TPointF); overload;
+    constructor Create(texture: IBGRAScanner; transform: TPerspectiveTransform; transformOwned: boolean);
     destructor Destroy; override;
     procedure ScanMoveTo(X, Y: Integer); override;
     function ScanAt(X, Y: Single): TBGRAPixel; override;
@@ -290,8 +280,7 @@ type
     property IncludeOppositePlane: boolean read GetIncludeOppositePlane write SetIncludeOppositePlane;
   end;
 
-  { TPerspectiveTransform }
-
+  { Computes a perspective transform (3D) of coordinates }
   TPerspectiveTransform = class
   private
     sx ,shy ,w0 ,shx ,sy ,w1 ,tx ,ty ,w2 : single;
@@ -324,14 +313,12 @@ type
   end;
 
 type
-  { TBGRATwirlScanner applies a twirl transformation.
+  { @abstract(Scanner that applies a twirl transformation.)
 
     Note : this scanner handles integer coordinates only, so
     any further transformation applied after this one may not
-    render correctly. }
-
-  { TBGRATwirlScanner }
-
+    render correctly.
+  }
   TBGRATwirlScanner = Class(TBGRACustomScanner)
   protected
     FScanner: IBGRAScanner;
@@ -346,8 +333,7 @@ type
     property Exponent: Single read FExponent;
   end;
 
-  { TBGRASphereDeformationScanner }
-
+  { Scanners that distorts as a shere shape }
   TBGRASphereDeformationScanner = Class(TBGRACustomScanner)
   protected
     FScanner: IBGRAScanner;
@@ -361,8 +347,7 @@ type
     property RadiusY: Single read FRadiusY;
   end;
 
-  { TBGRAVerticalCylinderDeformationScanner }
-
+  { Scanners that distorts as a cylinder shape }
   TBGRAVerticalCylinderDeformationScanner = Class(TBGRACustomScanner)
   protected
     FScanner: IBGRAScanner;
@@ -1656,6 +1641,17 @@ begin
     FMatrix := TPerspectiveTransform.Create(quad,texCoordsQuad);
     FMatrix.OutsideValue := EmptyPointF;
   end;
+  FTexture := texture;
+  FScanAtProc:= @FTexture.ScanAt;
+end;
+
+constructor TBGRAPerspectiveScannerTransform.Create(texture: IBGRAScanner;
+  transform: TPerspectiveTransform; transformOwned: boolean);
+begin
+  if transformOwned then
+    FMatrix := transform
+  else
+    FMatrix := transform.Duplicate;
   FTexture := texture;
   FScanAtProc:= @FTexture.ScanAt;
 end;

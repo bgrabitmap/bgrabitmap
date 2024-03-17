@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Provides reader for LazPaint image format }
 unit BGRAReadLzp;
 
 {$mode objfpc}{$H+}
@@ -9,9 +11,7 @@ uses
   BGRAClasses, SysUtils, FPimage, BGRALzpCommon, BGRABitmapTypes, BGRABitmap;
 
 type
-
-  { TBGRAReaderLazPaint }
-
+  { Reader for LZP image format (flattened) }
   TBGRAReaderLazPaint = class(TFPCustomImageReader)
   private
     FHeight: integer;

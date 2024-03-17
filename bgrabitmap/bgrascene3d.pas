@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Definition of a 3D scene }
 unit BGRAScene3D;
 
 {$mode objfpc}{$H+}
@@ -49,9 +51,7 @@ const
   pmZBuffer = BGRASceneTypes.pmZBuffer;
 
 type
-
-  { TCamera3D }
-
+  { Camera for a 3D scene }
   TCamera3D = class
   private
     procedure ComputeMatrix;
@@ -76,8 +76,7 @@ type
     property Matrix: TMatrix3D read GetMatrix write SetMatrix;
   end;
 
-  { TBGRAScene3D }
-
+  { 3D scene }
   TBGRAScene3D = class
   private
     FSurface: TBGRACustomBitmap; //destination of software renderer

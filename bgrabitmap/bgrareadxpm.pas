@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Reader for XPM format }
 unit BGRAReadXPM;
 
 {$mode objfpc}{$H+}
@@ -9,9 +11,7 @@ uses
   BGRAClasses, SysUtils, FPReadXPM, FPimage;
 
 type
-
-  { TBGRAReaderXPM }
-
+  { Reader for XPM image format }
   TBGRAReaderXPM = class(TFPReaderXPM)
     protected
       procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Sprites to be rendered with OpenGL }
 unit BGRASpriteGL;
 
 {$mode objfpc}{$H+}
@@ -10,8 +12,7 @@ uses
   BGRABitmapTypes;
 
 type
-  { TBGLCustomSprite }
-
+  { Abstract class for a sprite with OpenGL }
   TBGLCustomSprite = class
   protected
     FHandle: Pointer;
@@ -78,8 +79,7 @@ type
     property Handle  : Pointer read GetHandle;
   end;
 
-  { TBGLDefaultSprite }
-
+  { Default implementation for sprites with OpenGL }
   TBGLDefaultSprite = class(TBGLCustomSprite)
   protected
     FColor  : TBGRAPixel;
@@ -121,8 +121,7 @@ type
     procedure QueryDestroy; override;
   end;
 
-  { TBGLCustomSpriteEngine }
-
+  { Abstract class for a sprite engine }
   TBGLCustomSpriteEngine = class
   protected
     function GetSprite(AIndex: integer): TBGLCustomSprite; virtual; abstract;
@@ -139,8 +138,7 @@ type
     property Sprite[AIndex: integer]: TBGLCustomSprite read GetSprite;
   end;
 
-  { TBGLDefaultSpriteEngine }
-
+  { Default implementation for a sprite rendering engine with OpenGL }
   TBGLDefaultSpriteEngine = class(TBGLCustomSpriteEngine)
   protected
     FSpriteRemoved: TBGLCustomSprite;

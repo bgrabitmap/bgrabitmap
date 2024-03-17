@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Base implementation for drawing on a universal bitmap }
 unit UniversalDrawer;
 
 {$mode objfpc}{$H+}
@@ -9,9 +11,7 @@ uses
   BGRAClasses, SysUtils, FPImage, BGRABitmapTypes, BGRAGraphics, BGRAPen, BGRAArrow;
 
 type
-
-  { TUniversalDrawer }
-
+  {* Drawer implementation that is colorspace agnostic }
   TUniversalDrawer = class(TCustomUniversalDrawer)
 
     class function GetMaxColorChannelDepth(ADest: TCustomUniversalBitmap): byte;
@@ -87,9 +87,11 @@ type
     {** Draw a filled rectangle with a border }
     class procedure Rectangle(ADest: TCustomUniversalBitmap; x, y, x2, y2: integer; const ABorderBrush, AFillBrush: TUniversalBrush; AAlpha: Word = 65535); overload; override;
 
+    {$IFNDEF BGRABITMAP_CORE}
     class procedure RoundRect(ADest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer; DX, DY: integer; const ABorderBrush, AFillBrush: TUniversalBrush; AAlpha: Word = 65535); overload; override;
     class procedure RoundRect(ADest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer; DX, DY: integer; const ABorderBrush: TUniversalBrush; AAlpha: Word = 65535); overload; override;
     class procedure FillRoundRect(ADest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer; DX, DY: integer; const AFillBrush: TUniversalBrush; AAlpha: Word = 65535); override;
+    {$ENDIF}
 
     class procedure FillShape(ADest: TCustomUniversalBitmap; AShape: TBGRACustomFillInfo; AFillMode: TFillMode; ABrush: TUniversalBrush; AAlpha: Word = 65535); override;
     class procedure FillPoly(ADest: TCustomUniversalBitmap; const APoints: array of TPointF; AFillMode: TFillMode; ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true; AAlpha: Word = 65535); override;
@@ -130,6 +132,7 @@ type
     class procedure FillEllipseAntialias(ADest: TCustomUniversalBitmap;
                     const AOrigin, AXAxis, AYAxis: TPointF; const ABrush: TUniversalBrush); overload; override;
 
+    {$IFNDEF BGRABITMAP_CORE}
     //filters
     class procedure FilterBlurRadial(ASource: TCustomUniversalBitmap; const ABounds: TRect;
                               radiusX, radiusY: single; blurType: TRadialBlurType;
@@ -140,14 +143,15 @@ type
     class procedure FilterCustomBlur(ASource: TCustomUniversalBitmap; const ABounds: TRect;
                               mask: TCustomUniversalBitmap;
                               ADest: TCustomUniversalBitmap); override;
-
+    {$ENDIF}
   end;
 
 implementation
 
-uses BGRAPolygon, BGRAPolygonAliased, BGRAPath, BGRAFillInfo, BGRAUTF8,
-  BGRAReadBMP, BGRAReadJpeg, BGRAWritePNG, BGRAWriteTiff,
-  BGRAFilterBlur, Math, FPWritePNM;
+uses Math, BGRAPolygon, BGRAPath, BGRAFillInfo, BGRAUTF8, BGRAReadBMP, BGRAWritePNG, FPWritePNM
+  {$IFNDEF BGRABITMAP_CORE},
+  BGRAReadJpeg,BGRAPolygonAliased, BGRAFilterBlur
+  {$ENDIF};
 
 { TUniversalDrawer }
 
@@ -256,7 +260,7 @@ end;
 
 class procedure TUniversalDrawer.LoadFromStream(ADest: TCustomUniversalBitmap; AStream: TStream; AHandler: TFPCustomImageReader; AOptions: TBGRALoadingOptions);
 var OldBmpOption: TBMPTransparencyOption;
-  OldJpegPerf: TJPEGReadPerformance;
+  {$IFNDEF BGRABITMAP_CORE}OldJpegPerf: TJPEGReadPerformance;{$ENDIF}
 begin
   if (loBmpAutoOpaque in AOptions) and (AHandler is TBGRAReaderBMP) then
   begin
@@ -265,12 +269,19 @@ begin
     TFPCustomImage(ADest).LoadFromStream(AStream, AHandler);
     TBGRAReaderBMP(AHandler).TransparencyOption := OldBmpOption;
   end else
-  if (loJpegQuick in AOptions) and (AHandler is TBGRAReaderJpeg) then
+  if loJpegQuick in AOptions then
   begin
-    OldJpegPerf := TBGRAReaderJpeg(AHandler).Performance;
-    TBGRAReaderJpeg(AHandler).Performance := jpBestSpeed;
-    TFPCustomImage(ADest).LoadFromStream(AStream, AHandler);
-    TBGRAReaderJpeg(AHandler).Performance := OldJpegPerf;
+    {$IFDEF BGRABITMAP_CORE}
+    raise exception.Create('loJpegQuick not supported in core version. Create and configure the image reader.');
+    {$ELSE}
+    if AHandler is TBGRAReaderJpeg then
+    begin
+      OldJpegPerf := TBGRAReaderJpeg(AHandler).Performance;
+      TBGRAReaderJpeg(AHandler).Performance := jpBestSpeed;
+      TFPCustomImage(ADest).LoadFromStream(AStream, AHandler);
+      TBGRAReaderJpeg(AHandler).Performance := OldJpegPerf;
+    end;
+    {$ENDIF}
   end else
     TFPCustomImage(ADest).LoadFromStream(AStream, AHandler);
   if not (loKeepTransparentRGB in AOptions) then
@@ -947,23 +958,23 @@ begin
   ADest.FillRect(x+1, y+1, x2-1, y2-1, AFillBrush, AAlpha);
 end;
 
-class procedure TUniversalDrawer.RoundRect(ADest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer; DX, DY: integer;
+{$IFNDEF BGRABITMAP_CORE}class procedure TUniversalDrawer.RoundRect(ADest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer; DX, DY: integer;
   const ABorderBrush, AFillBrush: TUniversalBrush; AAlpha: Word);
 begin
   BGRAPolygonAliased.BGRARoundRectAliased(ADest, X1,Y1,X2,Y2,DX,DY,ABorderBrush,AFillBrush,AAlpha);
-end;
+end;{$ENDIF}
 
-class procedure TUniversalDrawer.RoundRect(ADest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer; DX, DY: integer;
+{$IFNDEF BGRABITMAP_CORE}class procedure TUniversalDrawer.RoundRect(ADest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer; DX, DY: integer;
   const ABorderBrush: TUniversalBrush; AAlpha: Word);
 begin
   BGRAPolygonAliased.BGRARoundRectAliased(ADest, X1,Y1,X2,Y2,DX,DY,ABorderBrush,ABorderBrush,AAlpha,false,true);
-end;
+end;{$ENDIF}
 
-class procedure TUniversalDrawer.FillRoundRect(ADest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer; DX,
+{$IFNDEF BGRABITMAP_CORE}class procedure TUniversalDrawer.FillRoundRect(ADest: TCustomUniversalBitmap; X1, Y1, X2, Y2: integer; DX,
   DY: integer; const AFillBrush: TUniversalBrush; AAlpha: Word);
 begin
   BGRAPolygonAliased.BGRARoundRectAliased(ADest, X1,Y1,X2,Y2,DX,DY,AFillBrush,AFillBrush,AAlpha);
-end;
+end;{$ENDIF}
 
 class procedure TUniversalDrawer.FillShape(ADest: TCustomUniversalBitmap;
   AShape: TBGRACustomFillInfo; AFillMode: TFillMode; ABrush: TUniversalBrush;
@@ -1145,30 +1156,30 @@ begin
   end;
 end;
 
-class procedure TUniversalDrawer.FilterBlurRadial(
+{$IFNDEF BGRABITMAP_CORE}class procedure TUniversalDrawer.FilterBlurRadial(
   ASource: TCustomUniversalBitmap; const ABounds: TRect; radiusX,
   radiusY: single; blurType: TRadialBlurType; ADest: TCustomUniversalBitmap);
 begin
   BGRAFilterBlur.FilterBlurRadial(ASource, ABounds,
                 radiusX,radiusY, blurType, ADest, nil);
-end;
+end;{$ENDIF}
 
-class procedure TUniversalDrawer.FilterBlurMotion(
+{$IFNDEF BGRABITMAP_CORE}class procedure TUniversalDrawer.FilterBlurMotion(
   ASource: TCustomUniversalBitmap; const ABounds: TRect;
   distance: single; angle: single; oriented: boolean;
   ADest: TCustomUniversalBitmap);
 begin
   BGRAFilterBlur.FilterBlurMotion(ASource, ABounds,
            distance, angle, oriented, ADest, nil);
-end;
+end;{$ENDIF}
 
-class procedure TUniversalDrawer.FilterCustomBlur(
+{$IFNDEF BGRABITMAP_CORE}class procedure TUniversalDrawer.FilterCustomBlur(
   ASource: TCustomUniversalBitmap; const ABounds: TRect;
   mask: TCustomUniversalBitmap; ADest: TCustomUniversalBitmap);
 begin
   BGRAFilterBlur.FilterBlurCustom(ASource, ABounds,
       mask, ADest, nil);
-end;
+end;{$ENDIF}
 
 initialization
 

@@ -25,7 +25,7 @@
         <ConfigFile>
           <WriteConfigFilePath Value="$(PkgOutDir)\fpclaz.cfg"/>
         </ConfigFile>
-        <CustomOptions Value="-dBGRABITMAP_DONT_USE_LAZFREETYPE"/>
+        <CustomOptions Value="-dBGRABITMAP_DONT_USE_LCL -dBGRABITMAP_DONT_USE_LAZFREETYPE"/>
       </Other>
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>

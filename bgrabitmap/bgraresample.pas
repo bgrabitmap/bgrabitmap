@@ -1,55 +1,56 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ This unit provides resampling functions, i.e. resizing of bitmaps with or
+  without interpolation filters. }
 unit BGRAResample;
 
 {$mode objfpc}{$H+}
 
 interface
 
-{ This unit provides resampling functions, i.e. resizing of bitmaps with or
-  without interpolation filters.
-
-  SimpleStretch does a boxed resample with limited antialiasing.
-
-  FineResample uses floating point coordinates to get an antialiased resample.
-  It can use minimal interpolation (4 pixels when upsizing) for simple interpolation
-  filters (linear and cosine-like) or wide kernel resample for complex interpolation.
-  In this cas, it calls WideKernelResample.
-
-  WideKernelResample can be called by custom filter kernel, derived
-  from TWideKernelFilter. It is slower of course than simple interpolation. }
-
 uses
   SysUtils, BGRABitmapTypes;
 
 {------------------------------- Simple stretch ------------------------------------}
 
-function SimpleStretch(bmp: TBGRACustomBitmap;
-  NewWidth, NewHeight: integer): TBGRACustomBitmap;
-procedure StretchPutImage(bmp: TBGRACustomBitmap;
-  NewWidth, NewHeight: integer; dest: TBGRACustomBitmap; OffsetX,OffsetY: Integer; ADrawMode: TDrawMode; AOpacity: byte; ANoTransition: boolean = false);
+{ Computes a resampled image with pixels are boxes, with antialising between boxes.
+  For example, a 2x2 image will be stretched as four boxes, one for each pixel }
+function SimpleStretch(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer): TBGRACustomBitmap;
+{ Puts a resampled image on the destination. Pixels are boxes, with antialising between boxes. }
+procedure StretchPutImage(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer;
+  dest: TBGRACustomBitmap; OffsetX,OffsetY: Integer; ADrawMode: TDrawMode;
+  AOpacity: byte; ANoTransition: boolean = false);
+
+{ Puts a resampled image on the destination, downsampling by the provided _factorX_ and _factorY_ }
 procedure DownSamplePutImage(source: TBGRACustomBitmap; factorX,factorY: integer; dest: TBGRACustomBitmap; OffsetX,OffsetY: Integer; ADrawMode: TDrawMode);
+{ Computes a resampled image, downsampling by the provided _factorX_ and _factorY_ }
 function DownSample(source: TBGRACustomBitmap; factorX,factorY: integer): TBGRACustomBitmap;
 
 {---------------------------- Interpolation filters --------------------------------}
 
+{ Computes fine interpolation between 0 and 1 for rfBox, rfLinear, rfHalfCosine and rfCosine filters.  }
 function FineInterpolation(t: single; ResampleFilter: TResampleFilter): single;
+{ Computes fine interpolation between 0 and 256 for rfBox, rfLinear, rfHalfCosine and rfCosine filters.  }
 function FineInterpolation256(t256: integer; ResampleFilter: TResampleFilter): integer;
 
 type
+  { @abstract(Abstract class to define a wide kernel.)
+
+    A wide kernel is an interpolation method that can use more than the adjacent pixels. }
   TWideKernelFilter = class
     function Interpolation(t: single): single; virtual; abstract;
     function ShouldCheckRange: boolean; virtual; abstract;
     function KernelWidth: single; virtual; abstract;
   end;
 
+  { Filter that provides smooth interpolation but less blurry than TCubicKernel }
   TMitchellKernel = class(TWideKernelFilter)
     function Interpolation(t: single): single; override;
     function ShouldCheckRange: boolean; override;
     function KernelWidth: single; override;
   end;
 
-  { TSplineKernel }
-
+  { Spline kernel provides customizable wide interpolation filter using Coeff property }
   TSplineKernel = class(TWideKernelFilter)
   public
     Coeff: single;
@@ -60,8 +61,7 @@ type
     function KernelWidth: single; override;
   end;
 
-  { TCubicKernel }
-
+  { Cubic interpolation is very smooth but can be a bit blurry }
   TCubicKernel = class(TWideKernelFilter)
     function pow3(x: single): single; inline;
     function Interpolation(t: single): single; override;
@@ -69,8 +69,7 @@ type
     function KernelWidth: single; override;
   end;
 
-  { TLanczosKernel }
-
+  { Lanczos kernel provides smooth but contrasted interpolation }
   TLanczosKernel = class(TWideKernelFilter)
   private
     FNumberOfLobes: integer;
@@ -85,13 +84,21 @@ type
     property NumberOfLobes : integer read FNumberOfLobes write SetNumberOfLobes;
   end;
 
+{ Create an instance of a predefined kernel matching spline style }
 function CreateInterpolator(style: TSplineStyle): TWideKernelFilter;
 
 {-------------------------------- Fine resample ------------------------------------}
 
+{ @abstract(Uses floating point coordinates to get an antialiased resample.)
+
+  It can use minimal interpolation (4 pixels when upsizing) for simple interpolation
+  filters (linear and cosine-like) or wide kernel resample for complex interpolation.
+  In this cas, it calls WideKernelResample. }
 function FineResample(bmp: TBGRACustomBitmap;
   NewWidth, NewHeight: integer; ResampleFilter: TResampleFilter): TBGRACustomBitmap;
 
+{ WideKernelResample can be called for custom filter kernel, derived
+  from TWideKernelFilter. It is slower of course than simple interpolation. }
 function WideKernelResample(bmp: TBGRACustomBitmap;
   NewWidth, NewHeight: integer; ResampleFilterSmaller, ResampleFilterLarger: TWideKernelFilter): TBGRACustomBitmap;
 

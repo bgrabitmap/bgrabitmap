@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ 3D rendering of TCustomRenderer3D scences in OpenGL }
 unit BGRAOpenGL3D;
 
 {$mode objfpc}{$H+}
@@ -19,8 +21,7 @@ type
 
   TBGLShader3D = class;
 
-  { TBGLLighting3D }
-
+  { Lighting for 3D scene }
   TBGLLighting3D = class
   private
     procedure SetUseBuiltIn(AValue: boolean);
@@ -39,8 +40,7 @@ type
     property UseOpenGLBuiltInLighting: boolean read FUseBuiltIn write SetUseBuiltIn;
   end;
 
-  { TBGLRenderer3D }
-
+  { Renderer of 3D scenes using OpenGL }
   TBGLRenderer3D = class(TCustomRenderer3D)
   protected
     FCanvas: TBGLCustomCanvas;
@@ -76,8 +76,7 @@ type
     property Canvas: TBGLCustomCanvas read FCanvas;
   end;
 
-  { TBGLScene3D }
-
+  { 3D scene rendered with OpenGL }
   TBGLScene3D = class(TBGRAScene3D)
   protected
     function LoadBitmapFromFileUTF8(AFilenameUTF8: string): TBGRACustomBitmap; override;
@@ -85,8 +84,7 @@ type
     procedure RenderGL(ACanvas: TBGLCustomCanvas; AMaxZ: single = 1000); virtual;
   end;
 
-  { TUniformVariable }
-
+  { Uniform variable in shader (constant for one primitve) }
   TUniformVariable = object
   private
     FProgram: TBGLShader3D;
@@ -94,8 +92,7 @@ type
     procedure Init(AProgram: TBGLShader3D; AVariable: LongWord);
   end;
 
-  { TUniformVariableSingle }
-
+  { Uniform variable containg a floating-point value }
   TUniformVariableSingle = object(TUniformVariable)
   private
     FValue: single;
@@ -105,8 +102,7 @@ type
     property Value: single read FValue write SetValue;
   end;
 
-  { TUniformVariablePointF }
-
+  { Uniform variable containg a 2D point }
   TUniformVariablePointF = object(TUniformVariable)
   private
     FValue: TPointF;
@@ -116,8 +112,7 @@ type
     property Value: TPointF read FValue write SetValue;
   end;
 
-  { TUniformVariablePoint3D }
-
+  { Uniform variable containg a 3D point }
   TUniformVariablePoint3D = object(TUniformVariable)
   private
     FValue: TPoint3D;
@@ -127,8 +122,7 @@ type
     property Value: TPoint3D read FValue write SetValue;
   end;
 
-  { TUniformVariableInteger }
-
+  { Uniform variable containg an integer }
   TUniformVariableInteger = object(TUniformVariable)
   private
     FValue: Integer;
@@ -138,8 +132,7 @@ type
     property Value: Integer read FValue write SetValue;
   end;
 
-  { TUniformVariablePoint }
-
+  { Uniform variable containg a 2D point with integer coordinates }
   TUniformVariablePoint = object(TUniformVariable)
   private
     FValue: TPoint;
@@ -149,8 +142,7 @@ type
     property Value: TPoint read FValue write SetValue;
   end;
 
-  { TUniformVariableMatrix4D }
-
+  { Uniform variable containg a 4D matrix }
   TUniformVariableMatrix4D = object(TUniformVariable)
   private
     FValue: TMatrix4D;
@@ -160,43 +152,38 @@ type
     property Value: TMatrix4D read FValue write SetValue;
   end;
 
-  { TAttributeVariableSingle }
-
+  { Attribute variable containg a floating-point value }
   TAttributeVariableSingle = object(TAttributeVariable)
   protected
     procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
-  { TAttributeVariablePointF }
+  { Attribute variable containg a 2D point }
 
   TAttributeVariablePointF = object(TAttributeVariable)
   protected
     procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
-  { TAttributeVariablePoint3D }
-
+  { Attribute variable containg a 3D point }
   TAttributeVariablePoint3D = object(TAttributeVariable)
   protected
     procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
-  { TAttributeVariableInteger }
-
+  { Attribute variable containg an integer }
   TAttributeVariableInteger = object(TAttributeVariable)
   protected
     procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
-  { TAttributeVariablePoint }
-
+  { Attribute variable containg a 2D point with integer coordinates }
   TAttributeVariablePoint = object(TAttributeVariable)
   protected
     procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
-  { TBGLShader3D }
-
+  { Shader for 3D polygons }
   TBGLShader3D = class(TBGLCustomShader)
   protected
     FUsed: boolean;
@@ -251,8 +238,7 @@ uses SysUtils, BGRAColorInt;
 
 type
 
-  { TShaderWithTexture }
-
+  { Shader that fills with a texture }
   TShaderWithTexture = class(TBGLShader3D)
   private
     function GetTexture: integer;

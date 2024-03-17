@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Filters that can be applied to a bitmap. The filters
+  take a source image as a parameter and gives a filtered image as
+  a result. }
 unit BGRAFilters;
 
 {$mode objfpc}{$H+}
 
 interface
-
-{ Here are some filters that can be applied to a bitmap. The filters
-  take a source image as a parameter and gives a filtered image as
-  a result. }
 
 uses
   BGRAClasses, BGRABitmapTypes, BGRAFilterType, BGRAFilterBlur;
@@ -17,8 +17,7 @@ type
 
 /////////////////////// PIXELWISE FILTERS ////////////////////////////////
 type
-  { TGrayscaleTask }
-  { Grayscale converts colored pixel into grayscale with same luminosity }
+  { Grayscale task converts colored pixel into grayscale with same luminosity }
   TGrayscaleTask = class(TFilterTask)
   private
     FBounds: TRect;

@@ -1,4 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ @abstract(Supplies a bitmap in linear RGB with word values (16-bit per channel) and transparency.)
+
+  Pixels are in TExpandedPixel format, based on linear RGB colorspace (TExpandedPixelColorspace).
+
+  This allows more accurate computation of colors, while still being rather fast. It uses a bit
+  more memory (8 bytes per pixel) compared to a TBGRABitmap (4 bytes per pixel).
+
+  **Bitmap units**: BGRABitmap, ExpandedBitmap, BGRAGrayscaleMask, LinearRGBABitmap, WordXYZABitmap, XYZABitmap.
+}
 unit ExpandedBitmap;
 
 {$mode objfpc}{$H+}
@@ -9,9 +19,8 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-
-  { TExpandedBitmap }
-
+  {* Bitmap with TExpandedPixel format, linear RGB
+     with word values (16-bit per channel). }
   TExpandedBitmap = class(specialize TGenericUniversalBitmap<TExpandedPixel,TExpandedPixelColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;
@@ -32,8 +41,6 @@ const
 operator = (const c1, c2: TExpandedPixel): boolean; inline;
 
 implementation
-
-uses XYZABitmap;
 
 operator = (const c1, c2: TExpandedPixel): boolean;
 begin

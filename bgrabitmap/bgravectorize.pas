@@ -1,43 +1,42 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ @abstract(This unit provides vectorizers for black'n'white images and text.)
+
+  The TBGRAVectorizedFontRenderer class can be provided as a renderer to TBGRABitmap.
+
+  **Font rendering units** : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
+}
 unit BGRAVectorize;
 
 {$mode objfpc}{$H+}
 
 interface
 
-{
-  Font rendering units : BGRAText, BGRATextFX, BGRAVectorize, BGRAFreeType
-
-  This unit provides vectorizers :
-  - VectorizeMonochrome function vectorizes a back'n'white image
-  - TBGRAVectorizedFont allows to vectorize and to load vectorized font and draw them
-
-  TBGRAVectorizedFontRenderer class works like other font renderers, i.e., it can
-  be assigned to the FontRenderer property. You can use it in two different modes :
-  - if you supply a directory, it will look for *.glyphs files in it to load fonts
-  - if you don't supply a directory, fonts will be vectorized from LCL
-
-  Note that unless you want to supply your own glyphs files, you don't need
-  to use explicitely this renderer, because TBGRATextEffectFontRenderer will
-  make use of it if necessary, according to effects parameters used.
-}
-
 uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATypewriter,
   BGRATransform, BGRACanvas2D, BGRAText;
 
-//vectorize a monochrome bitmap
+{ Vectorize a monochrome bitmap (actually checking the green channel) }
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean = true; ADiagonalFillPercent: single = 66; AIntermediateDiagonals: boolean = true): ArrayOfTPointF;
+{ Vectorize a rectangular area in a monochrome bitmap (actually checking the green channel) }
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; ARect: TRect; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean = true; ADiagonalFillPercent: single = 66; AIntermediateDiagonals: boolean = true): ArrayOfTPointF;
 
 type
   TBGRAVectorizedFont = class;
 
-  //this is the class to assign to FontRenderer property of TBGRABitmap
-  { TBGRAVectorizedFontRenderer }
+  { @abstract(Font renderer using vectorized fonts and with effects.)
 
+    TBGRAVectorizedFontRenderer class works like other font renderers, i.e., it can
+    be assigned to the FontRenderer property. You can use it in two different modes :
+    - if you supply a directory, it will look for *.glyphs files in it to load fonts
+    - if you don't supply a directory, fonts will be vectorized from the system
+
+    If provides effect like TBGRATextEffectFontRenderer (outline and shadow) but that difference
+    is that the font is always vectorized whereas TBGRATextEffectFontRenderer will use bitmap
+    rendering when possible.
+  }
   TBGRAVectorizedFontRenderer = class(TBGRACustomFontRenderer)
   protected
     FVectorizedFontArray: array of record
@@ -99,15 +98,13 @@ type
     destructor Destroy; override;
   end;
 
+  { Size of glyphs in text }
   TGlyphSizes = array of record
     Text, Glyph: String;
     Width,Height: single;
   end;
-  TGlyphSizesCallbackData = record
-    Sizes: TGlyphSizes;
-    Count: integer;
-  end;
 
+  { Header of a serialized vectorized font }
   TBGRAVectorizedFontHeader = record
     Name: string;
     Style: TFontStyles;
@@ -115,14 +112,14 @@ type
     Resolution: integer;
     PixelMetric: TFontPixelMetric;
   end;
+  { General information on glyph stream }
   TBGRAGlyphsInfo = record
     Name: string;
     Style: TFontStyles;
     NbGlyphs: integer;
   end;
 
-  { TBGRAVectorizedFont }
-
+  { Allows to vectorize and to load vectorized font and draw them }
   TBGRAVectorizedFont = class(TBGRACustomTypeWriter)
   private
     FName : string;
@@ -223,6 +220,12 @@ type
 implementation
 
 uses BGRAUTF8{$IFDEF LCL}, Forms{$ENDIF};
+
+type
+  TGlyphSizesCallbackData = record
+    Sizes: TGlyphSizes;
+    Count: integer;
+  end;
 
 function VectorizeMonochrome(ASource: TBGRACustomBitmap; ARect: TRect; AZoom: single; APixelCenteredCoordinates: boolean;
   AWhiteBackground: boolean; ADiagonalFillPercent: single; AIntermediateDiagonals: boolean): ArrayOfTPointF;
@@ -2034,7 +2037,7 @@ begin
     case lineAlignment of
     twaMiddle: lineShift := 0.5;
     twaBottomLeft,twaBottomRight: lineShift := 1;
-    twaTopRight,twaTopLeft : lineShift := 0;
+    else {twaTopRight,twaTopLeft} lineShift := 0;
     end;
     pos.Offset(step*lineShift);
     repeat
@@ -2079,10 +2082,10 @@ begin
   if X2 <= X1 then exit;
   if AAlign in[twaTopLeft,twaTop,twaTopRight] then Y := Y1 else
   if AAlign in[twaLeft,twaMiddle,twaRight] then Y := (Y1+Y2)/2 else
-  if AAlign in[twaBottomLeft,twaBottom,twaBottomRight] then Y := Y2;
+  {twaBottomLeft,twaBottom,twaBottomRight} Y := Y2;
   if AAlign in[twaLeft,twaTopLeft,twaBottomLeft] then X := X1 else
   if AAlign in[twaTop,twaMiddle,twaBottom] then X := (X1+X2)/2 else
-  if AAlign in[twaRight,twaTopRight,twaBottomRight] then X := X2;
+  {twaRight,twaTopRight,twaBottomRight} X := X2;
   oldOrientation:= Orientation;
   Orientation:= 0;
   DrawTextWordBreak(ADest,ATextUTF8,X,Y,X2-X1,AAlign);
@@ -2180,10 +2183,10 @@ begin
   end;
   if AAlign in[twaTopLeft,twaTop,twaTopRight] then Y := Y1 else
   if AAlign in[twaLeft,twaMiddle,twaRight] then Y := (Y1+Y2)/2 else
-  if AAlign in[twaBottomLeft,twaBottom,twaBottomRight] then Y := Y2;
+  {twaBottomLeft,twaBottom,twaBottomRight} Y := Y2;
   if AAlign in[twaLeft,twaTopLeft,twaBottomLeft] then X := X1 else
   if AAlign in[twaTop,twaMiddle,twaBottom] then X := (X1+X2)/2 else
-  if AAlign in[twaRight,twaTopRight,twaBottomRight] then X := X2;
+  {twaRight,twaTopRight,twaBottomRight} X := X2;
   oldOrientation:= Orientation;
   Orientation:= 0;
   result := GetTextWordBreakGlyphBoxes(ATextUTF8,X,Y,X2-X1,AAlign);
@@ -2307,6 +2310,8 @@ begin
     FFont := TFont.Create
   else
     FFont := nil;
+  if BGRABitmapFactory = nil then
+    raise Exception.Create('No bitmap factory available');
   FBuffer := BGRABitmapFactory.Create;
   FFullHeight := 20;
   FItalicSlope := 0;
@@ -2418,7 +2423,7 @@ function TBGRAVectorizedFont.ComputeKerning(AIdLeft, AIdRight: string): single;
 var
   together: String;
 begin
-  if Resolution = 0 then exit(0);
+  if (Resolution = 0) or not VectorizeLCL then exit(0);
   if IsRightToLeftUTF8(AIdLeft) then
   begin
     if IsRightToLeftUTF8(AIdRight) then

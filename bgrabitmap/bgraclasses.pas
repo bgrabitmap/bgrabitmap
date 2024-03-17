@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Basic Pascal types regardless of the framework (LCL, no LCL, MSEgui).
+  To be used instead of _Classes_ and _Types_ in unit clause. }
 unit BGRAClasses;
+
+{=== Types imported from Classes ===}
 
 {$mode objfpc}{$H+}
 {$modeswitch advancedrecords}
@@ -10,27 +15,51 @@ uses
   {$IFDEF BGRABITMAP_USE_MSEGUI}Types, Classes, mclasses, msegraphutils, mseguiglob{$ELSE}Types, Classes{$ENDIF};
 
 type
+  {* Signed integer value of at least 32 bits }
   Int32or64 = {$IFDEF CPU64}Int64{$ELSE}LongInt{$ENDIF};
+  {* Unsigned integer value of at least 32 bits }
   UInt32or64 = {$IFDEF CPU64}UInt64{$ELSE}LongWord{$ENDIF};
 
-  //types always imported from Classes
+type //types always imported from Classes
+
+  { FreePascal list of pointers }
   TFPList = Classes.TFPList;
+
+  { Delphi list of pointers }
   TList = Classes.TList;
+
+  { Standard event without parameters }
   TNotifyEvent = Classes.TNotifyEvent;
+
+  { Invalid operation exception }
   EInvalidOperation = Classes.EInvalidOperation;
+  { File creation exception }
   EFCreateError = Classes.EFCreateError;
+  { File open exception }
   EFOpenError = Classes.EFOpenError;
+  { Horizontal alignment }
   TAlignment = Classes.TAlignment;
+  { Stream seek origin }
   TSeekOrigin = Classes.TSeekOrigin;
+  { Stream base class }
   TStream = Classes.TStream;
+  { Base persistent class }
   TPersistent = Classes.TPersistent;
+  { Base string list }
   TStrings = Classes.TStrings;
+  { String list }
   TStringList = Classes.TStringList;
 
+type // types that can be bridged
+  { Base component class }
   TComponent = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TComponent;
+  { Resource stream }
   TResourceStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TResourceStream;
+  { Memory stream }
   TMemoryStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TMemoryStream;
+  { Stream attached to file handle }
   THandleStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.THandleStream;
+  { String stream }
   TStringStream = {$IFDEF BGRABITMAP_USE_MSEGUI}mclasses{$ELSE}Classes{$ENDIF}.TStringStream;
 
 type
@@ -41,7 +70,9 @@ type
   TClassesPoint = Classes.TPoint;
   TMSERect = msegraphutils.rectty;
   {$ELSE}
+  {* Represents a point with X and Y integer coordinates }
   TPoint = Types.TPoint;
+  {* Constains a size with integer with and height }
   TSize = Types.TSize;
   TRect = Types.TRect;
   {$ENDIF}
@@ -50,7 +81,9 @@ type
   PRect = ^TRect;
 
   {$IF FPC_FULLVERSION>=030001}
+  {* Contains a point with single-precision floating point coordinates }
   TPointF = Types.TPointF;
+  {* Represents a rectangle with single-precision floating point coordinates }
   TRectF = Types.TRectF;
   {$ELSE}
   TPointF = record x : single; y : single; end;

@@ -1,204 +1,319 @@
-{=== Geometry types ===}
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
+{=== Geometry types ===}{}
 
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
-const
-  {* Value indicating that there is nothing in the single-precision floating point value.
-     It is also used as a separator in lists }
-  EmptySingle = single(-3.402823e38);
-
 type
   TPoint = BGRAClasses.TPoint;
-  TSize = BGRAClasses.TSize;
-  
-  {* Pointer to a ''TPointF'' structure }
+
+  {** A constant representing an empty point (with minimum possible integer values for X and Y)
+  that can be used as a separator in a list of TPoint }
+  const EmptyPoint : TPoint = (X: -2147483648; Y: -2147483648);
+
+{** Checks if the given point is equivalent to EmptyPoint }
+function IsEmptyPoint(const APoint: TPoint): boolean;
+
+  {* Value indicating that there is nothing in the single-precision floating point value.
+     It is also used as a separator in lists }
+  const EmptySingle = single(-3.402823e38);
+
+type
+  {* Pointer to a TPointF structure }
   PPointF = ^BGRAClasses.TPointF;
-  {* Contains a point with single-precision floating point coordinates }
   TPointF = BGRAClasses.TPointF;
+
+  {** Value indicating that there is an empty TPointF structure.
+      It is also used as a separator in lists of points }
+  const EmptyPointF: TPointF = (x: -3.402823e38; y: -3.402823e38);
+
+  {----------------- Operators for TPointF --------------------}
+  {** Creates a new structure with values _x_ and _y_ }
+  function PointF(x, y: single): TPointF; overload;
+  {** Creates a new structure converting integer values to single-precision floating-point coordinates }
+  function PointF(pt: TPoint): TPointF; overload;
+  {** Checks if the structure is empty (equal to EmptyPointF) }
+  function isEmptyPointF(const pt: TPointF): boolean;
+  {** Checks if both _x_ and _y_ are equal }
+  operator = (const pt1, pt2: TPointF): boolean; inline;
+  {** Adds _x_ and _y_ components separately. It is like adding vectors }
+  operator + (const pt1, pt2: TPointF): TPointF; inline;
+  {** Subtract _x_ and _y_ components separately. It is like subtracting vectors }
+  operator - (const pt1, pt2: TPointF): TPointF; inline;
+  {** Returns a point with opposite values for _x_ and _y_ components }
+  operator - (const pt2: TPointF): TPointF; inline;
+  {$if FPC_FULLVERSION < 30203}
+  {** Scalar product (deprecated): multiplies _x_ and _y_ components and returns the sum }
+  operator * (const pt1, pt2: TPointF): single; inline;
+  {** Scalar product: multiplies _x_ and _y_ components and returns the sum }
+  operator ** (const pt1, pt2: TPointF): single; inline;
+  {$endif}
+  {** Multiplies both _x_ and _y_ by _factor_. It scales the vector represented by (_x_, _y_) }
+  operator * (const pt1: TPointF; factor: single): TPointF; inline;
+  {** Multiplies both _x_ and _y_ by _factor_. It scales the vector represented by (_x_, _y_) }
+  operator * (factor: single; const pt1: TPointF): TPointF; inline;
+  {** Returns the length of the vector (_dx_, _dy_) }
+  function VectLen(const dx,dy: single): single; overload; inline;
+  {** Returns the length of the vector represented by (_x_, _y_) }
+  function VectLen(const v: TPointF): single; overload;
+  {** Computes the determinant of the two vectors (equal to the determinant of the square matrix
+      with those vectors as columns) }
+  function VectDet(const v1,v2: TPointF): double; inline;
+
+type
+  { TPointFHelper }
+
+  {* Helper for TPointF structure providing additional functionality for point manipulation }
+  TPointFHelper = record helper for TPointF
+    {** Offsets the point by another point (TPointF) }
+    procedure Offset(const apt: TPointF); overload;
+    {** Offsets the point by another point (TPoint) }
+    procedure Offset(const apt: TPoint); overload;
+    {** Offsets the point by specified distances in the X (_dx_) and Y (_dy_) directions (integer values) }
+    procedure Offset(dx, dy: longint); overload;
+    {** Offsets the point by specified distances in the X (_dx_) and Y (_dy_) directions (single values) }
+    procedure Offset(dx, dy: single); overload;
+    {** Scales the point as a vector from the origin) by a specified factor }
+    procedure Scale(AScale: single);
+    {** Normalizes the point (modifies it to a unit length) }
+    procedure Normalize;
+
+    {** Rounds the coordinates of the point to the nearest integer towards positive infinity }
+    function Ceiling: TPoint;
+    {** Truncates the coordinates of the point, discarding fractional part }
+    function Truncate: TPoint;
+    {** Rounds the coordinates of the point to the nearest integer towards negative infinity }
+    function Floor: TPoint;
+    {** Rounds the coordinates of the point to the nearest integer }
+    function Round: TPoint;
+    {** Calculates the length (magnitude) of the point from the origin }
+    function Length: Single;
+    {** Determines if the point is empty (has special coordinates EmptyPointF) }
+    function IsEmpty: boolean;
+  end;
+
   {* Contains an array of points with single-precision floating point coordinates }
   ArrayOfTPointF = array of TPointF;
 
+  {** Creates an array of TPointF }
+  function PointsF(const pts: array of TPointF): ArrayOfTPointF;
+  {** Concatenates arrays of TPointF }
+  function ConcatPointsF(const APolylines: array of ArrayOfTPointF; AInsertEmptyPointInBetween: boolean = false): ArrayOfTPointF;
+  {** Compute the length of the polyline contained in the array.
+      _AClosed_ specifies if the last point is to be joined to the first one }
+  function PolylineLen(const pts: array of TPointF; AClosed: boolean = false): single;
+
+type
   {* An affine matrix contains three 2D vectors: the image of x, the image of y and the translation }
   TAffineMatrix = array[1..2,1..3] of single;
+
   TRectF = BGRAClasses.TRectF;
+
+  {** A constant representing an empty rectangle with all coordinates set to 0 }
+  const EmptyRectF : TRectF = (left:0; top:0; right:0; bottom: 0);
+
+  {** Creates a TRectF structure with specified left, top, right, and bottom coordinates }
+  function RectF(Left, Top, Right, Bottom: Single): TRectF;
+
+  {** Creates a TRectF structure from two TPointF points representing the top-left and bottom-right corners }
+  function RectF(const ATopLeft,ABottomRight: TPointF): TRectF;
+
+  {** Creates a TRectF structure from a TRect structure (integer coordinates converted to single precision) }
+  function RectF(const ARect: TRect): TRectF;
+
+  {** Creates a TRectF structure with a specified position (left, top) and size (width, height) }
+  function RectWithSizeF(left,top,width,height: Single): TRectF;
+
+  {** Checks if the given TRectF structure is empty (of zero size) }
+  function IsEmptyRectF(const ARect:TRectF): boolean;
+
+  {** A value for an empty rectangle with integer coordinates }
+  const EmptyRect : TRect = (left:0; top:0; right:0; bottom: 0);
+
+  {** Checks if a point is in a rectangle with integer coordinates.
+      This follows usual convention that _r.Right_ and _r.Bottom_ are not considered
+      to be included in the rectangle. }
+  function PtInRect(const pt: TPoint; r: TRect): boolean; overload;
+
+  {** Creates a rectangle with integer coordinates with the specified _width_ and _height_ }
+  function RectWithSize(left,top,width,height: integer): TRect;
 
 {$if FPC_FULLVERSION<030001}
   {$define BGRA_DEFINE_TRECTHELPER}
-  { TRectHelper }
-
+type
+  {* Helper for TRect structure providing additional functionality to manipulate rectangles }
   TRectHelper = record helper for TRect
   private
+    {** Gets the height of the rectangle }
     function GetHeight: integer;
+    {** Determines if the rectangle is empty (of zero size) }
     function GetIsEmpty: boolean;
+    {** Gets the width of the rectangle }
     function GetWidth: integer;
+    {** Sets the height of the rectangle }
     procedure SetHeight(AValue: integer);
+    {** Sets the width of the rectangle }
     procedure SetWidth(AValue: integer);
   public
+    {** Creates a rectangle with specified origin, width, and height }
     constructor Create(Origin: TPoint; AWidth, AHeight: Longint); overload;
+    {** Creates a rectangle with specified left, top, right, and bottom coordinates }
     constructor Create(ALeft, ATop, ARight, ABottom: Longint); overload;
+    {** Modifies the rectangle to be the intersection of itself and another rectangle }
     procedure Intersect(R: TRect);
+    {** Returns the intersection of two given rectangles }
     class function Intersect(R1: TRect; R2: TRect): TRect; static;
+    {** Checks if the rectangle intersects with another rectangle }
     function IntersectsWith(R: TRect): Boolean;
+    {** Returns the smallest rectangle that contains both of the given rectangles }
     class function Union(R1, R2: TRect): TRect; static;
+    {** Modifies the rectangle to be the union of itself and another rectangle }
     procedure Union(R: TRect);
+    {** Offsets the rectangle by the given distances in the X and Y directions }
     procedure Offset(DX, DY: Longint);
+    {** Expands or contracts the rectangle by the specified amounts in both directions }
     procedure Inflate(DX, DY: Longint);
+    {** Checks if the rectangle contains a specified point }
     function Contains(const APoint: TPoint): boolean; overload;
+    {** Checks if the rectangle completely contains another rectangle }
     function Contains(const ARect: TRect): boolean; overload;
+    {** Property to get or set the width of the rectangle }
     property Width: integer read GetWidth write SetWidth;
+    {** Property to get or set the height of the rectangle }
     property Height: integer read GetHeight write SetHeight;
+    {** Property to check if the rectangle is empty }
     property IsEmpty: boolean read GetIsEmpty;
   end;
 
+{ Check if two rectangles are equal (all coordinates are equal) }
 operator=(const ARect1,ARect2: TRect): boolean;
 {$endif}
 
-{$if (FPC_FULLVERSION<030001) or defined(BGRABITMAP_USE_MSEGUI)}
 type
-  {$define BGRA_DEFINE_TSIZEHELPER}
-  { TSizeHelper }
+  TSize = BGRAClasses.TSize;
 
+{$if (FPC_FULLVERSION<030001) or defined(BGRABITMAP_USE_MSEGUI)}
+  {$define BGRA_DEFINE_TSIZEHELPER}
+
+  {* Helper to access a size }
   TSizeHelper = record helper for TSize
   private
+    {** Gets the height of the size }
     function GetHeight: integer;
+    {** Gets the width of the size }
     function GetWidth: integer;
   public
+    {** Property to get the width }
     property Width: integer read GetWidth;
+    {** Property to get the height }
     property Height: integer read GetHeight;
   end;
 {$ENDIF}
 
-const
-  EmptyPoint : TPoint = (X: -2147483648; Y: -2147483648);
-
-function IsEmptyPoint(const APoint: TPoint): boolean;
-
 type
-
-  { TPointFHelper }
-
-  TPointFHelper = record helper for TPointF
-    procedure Offset(const apt : TPointF); overload;
-    procedure Offset(const apt : TPoint); overload;
-    procedure Offset(dx,dy : longint); overload;
-    procedure Offset(dx,dy : single); overload;
-    procedure Scale(AScale: single);
-    procedure Normalize;
-
-    function Ceiling: TPoint;
-    function Truncate: TPoint;
-    function Floor: TPoint;
-    function Round: TPoint;
-    function Length: Single;
-    function IsEmpty: boolean;
-  end;
-
-type
+  {* Pointer to a TRectF structure }
   PRectF = ^TRectF;
 
-  { TRectFHelper }
-
+  {* Helper for TRectF structure providing additional functionality for rectangle manipulation }
   TRectFHelper = record helper for TRectF
+    {** Returns the intersection of two given rectangles }
     class function Intersect(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
+    {** Returns the union of two given rectangles }
     class function Union(const R1: TRectF; const R2: TRectF): TRectF; overload; static;
+    {** Returns the union of two given rectangles, with an option to ignore empty rectangles }
     class function Union(const R1: TRectF; const R2: TRectF; ADiscardEmpty: boolean): TRectF; overload; static;
-    function Union(const r: TRectF):TRectF; overload;
-    function Union(const r: TRectF; ADiscardEmpty: boolean):TRectF; overload;
+    {** Returns the union of itself and another rectangle }
+    function Union(const r: TRectF): TRectF; overload;
+    {** Returns the union of itself and another rectangle, with an option to ignore empty rectangles }
+    function Union(const r: TRectF; ADiscardEmpty: boolean): TRectF; overload;
+    {** Expands the rectangle to include a specified point (empty points are ignored) }
     procedure Include(const APoint: TPointF);
+    {** Checks if the rectangle contains a specified point, with an option to include or exclude the bottom-right boundary }
     function Contains(const APoint: TPointF; AIncludeBottomRight: boolean = false): boolean;
+    {** Checks if the rectangle intersects with another rectangle }
     function IntersectsWith(const r: TRectF): boolean;
+    {** Determines if the rectangle is empty (of zero size) }
     function IsEmpty: boolean;
   end;
 
-const
-  {* A value for an empty rectangle }
-  EmptyRectF : TRectF = (left:0; top:0; right:0; bottom: 0);
-
-  function RectF(Left, Top, Right, Bottom: Single): TRectF;
-  function RectF(const ATopLeft,ABottomRight: TPointF): TRectF;
-  function RectF(const ARect: TRect): TRectF;
-  function RectWithSizeF(left,top,width,height: Single): TRectF;
-  function IsEmptyRectF(const ARect:TRectF): boolean;
-
 type
-  { TAffineBox }
+  {* @abstract(Object representing an affine box.)
 
+     Box is defined by three corner points (top-left, top-tight, bottom-left). }
   TAffineBox = object
   private
+    {** Retrieves the affine box as an array of points (polygon representation) }
     function GetAsPolygon: ArrayOfTPointF;
+    {** Gets the bottom-right corner of the affine box }
     function GetBottomRight: TPointF;
+    {** Calculates the center point of the affine box }
     function GetCenter: TPointF;
+    {** Calculates the height of the affine box }
     function GetHeight: single;
+    {** Determines if the affine box is empty (one of the point being empty, not just of zero size) }
     function GetIsEmpty: boolean;
+    {** Gets the bounding rectangle of the affine box as TRect }
     function GetRectBounds: TRect;
+    {** Gets the bounding rectangle of the affine box as TRectF }
     function GetRectBoundsF: TRectF;
+    {** Calculates the surface area of the affine box }
     function GetSurface: single;
+    {** Calculates the width of the affine box }
     function GetWidth: single;
   public
-    TopLeft, TopRight,
+    {** Top-left corner of the affine box }
+    TopLeft,
+    {** Top-right corner of the affine box }
+    TopRight,
+    {** Bottom-left corner of the affine box }
     BottomLeft: TPointF;
+
+    {** Creates an empty affine box }
     class function EmptyBox: TAffineBox; static;
+    {** Creates an affine box defined by three corner points }
     class function AffineBox(ATopLeft, ATopRight, ABottomLeft: TPointF): TAffineBox; overload; static;
+    {** Creates an affine box from a TRectF structure }
     class function AffineBox(ARectF: TRectF): TAffineBox; overload; static;
+    {** Offsets the affine box by specified X and Y amounts }
     procedure Offset(AOfsX, AOfsY: single); overload;
+    {** Offsets the affine box by a specified point }
     procedure Offset(AOfs: TPointF); overload;
-    procedure Inflate(AHoriz, AVert: single); //inflates along axes
+    {** Inflates the affine box along its axes by specified horizontal and vertical amounts }
+    procedure Inflate(AHoriz, AVert: single);
+    {** Checks if a point is contained within the affine box }
     function Contains(APoint: TPointF): boolean;
+
+    {** Bounding rectangle as TRect }
     property RectBounds: TRect read GetRectBounds;
+    {** Bounding rectangle as TRectF }
     property RectBoundsF: TRectF read GetRectBoundsF;
+    {** Bottom-right corner of the affine box }
     property BottomRight: TPointF read GetBottomRight;
+    {** Check if the affine box is empty (containing empty points, not just of zero size) }
     property IsEmpty: boolean read GetIsEmpty;
+    {** Affine box as an array of points (polygon) }
     property AsPolygon: ArrayOfTPointF read GetAsPolygon;
+    {** Width of the affine box along its axes }
     property Width: single read GetWidth;
+    {** Height of the affine box along its axes }
     property Height: single read GetHeight;
+    {** Surface area of the affine box }
     property Surface: single read GetSurface;
+    {** Center point of the affine box }
     property Center: TPointF read GetCenter;
   end;
 
-  const
-    {** Value indicating that there is an empty ''TPointF'' structure.
-        It is also used as a separator in lists of points }
-    EmptyPointF: TPointF = (x: -3.402823e38; y: -3.402823e38);
-
-  {----------------- Operators for TPointF --------------------}
-  {** Creates a new structure with values ''x'' and ''y'' }
-  function PointF(x, y: single): TPointF; overload;
-  function PointF(pt: TPoint): TPointF; overload;
-  {** Checks if the structure is empty (equal to ''EmptyPointF'') }
-  function isEmptyPointF(const pt: TPointF): boolean;
-  {** Checks if both ''x'' and ''y'' are equal }
-  operator = (const pt1, pt2: TPointF): boolean; inline;
-  {** Adds ''x'' and ''y'' components separately. It is like adding vectors }
-  operator + (const pt1, pt2: TPointF): TPointF; inline;
-  {** Subtract ''x'' and ''y'' components separately. It is like subtracting vectors }
-  operator - (const pt1, pt2: TPointF): TPointF; inline;
-  {** Returns a point with opposite values for ''x'' and ''y'' components }
-  operator - (const pt2: TPointF): TPointF; inline;
-  {$if FPC_FULLVERSION < 030301}
-  {** Scalar product: multiplies ''x'' and ''y'' components and returns the sum }
-  operator * (const pt1, pt2: TPointF): single; inline;
-  operator ** (const pt1, pt2: TPointF): single; inline;
-  {$endif}
-  {** Multiplies both ''x'' and ''y'' by ''factor''. It scales the vector represented by (''x'',''y'') }
-  operator * (const pt1: TPointF; factor: single): TPointF; inline;
-  {** Multiplies both ''x'' and ''y'' by ''factor''. It scales the vector represented by (''x'',''y'') }
-  operator * (factor: single; const pt1: TPointF): TPointF; inline;
-  {** Returns the length of the vector (''dx'',''dy'') }
-  function VectLen(const dx,dy: single): single; overload; inline;
-  {** Returns the length of the vector represented by (''x'',''y'') }
-  function VectLen(const v: TPointF): single; overload;
-  function VectDet(const v1,v2: TPointF): double; inline;
-
 type
-  TFaceCulling = (fcNone, fcKeepCW, fcKeepCCW);
-
-  {** Creates an array of ''TPointF'' }
-  function PointsF(const pts: array of TPointF): ArrayOfTPointF;
-  {** Concatenates arrays of ''TPointF'' }
-  function ConcatPointsF(const APolylines: array of ArrayOfTPointF; AInsertEmptyPointInBetween: boolean = false): ArrayOfTPointF;
-  {** Compute the length of the polyline contained in the array.
-      ''AClosed'' specifies if the last point is to be joined to the first one }
-  function PolylineLen(const pts: array of TPointF; AClosed: boolean = false): single;
+  {* Enumerates the modes of face culling in rendering. Face culling is a technique used to
+     determine which faces of a polygon are visible and should be rendered }
+  TFaceCulling = (
+    {** No face culling is applied. All faces of the polygon are rendered }
+    fcNone,
+    {** Keeps only the faces that are clockwise (CW) from the viewer's perspective.
+        Typically used to remove back faces when the convention is that CW is for front faces }
+    fcKeepCW,
+    {** Keeps only the faces that are counter-clockwise (CCW) from the viewer's perspective.
+        Typically used to remove back faces when the convention is that CCW is for front faces }
+    fcKeepCCW);
 
 type
   {* A pen style can be dashed, dotted, etc. It is defined as a list of floating point number.
@@ -245,7 +360,7 @@ type
     radius: TPointF;
     {** Rotation of the ellipse }
     xAngleRadCW: single;
-    {** Start and end angle, in radian and clockwise. See angle convention in ''BGRAPath'' }
+    {** Start and end angle, in radian and clockwise. See angle convention in BGRAPath }
     startAngleRadCW, endAngleRadCW: single;
     {** Specifies if the arc goes anticlockwise }
     anticlockwise: boolean
@@ -255,7 +370,7 @@ type
   function ArcDef(cx, cy, rx,ry, xAngleRadCW, startAngleRadCW, endAngleRadCW: single; anticlockwise: boolean) : TArcDef;
 
 type
-  {* Possible options for drawing an arc of an ellipse (used in ''BGRACanvas'') }
+  {* Possible options for drawing an arc of an ellipse (used in BGRACanvas) }
   TArcOption = (
     {** Close the path by joining the ending and starting point together }
     aoClosePath,
@@ -266,102 +381,193 @@ type
     {** Set of options for drawing an arc }
     TArcOptions = set of TArcOption;
 
-  TBGRAArrowStyle = (asNone, asNormal, asCut, asTriangle, asHollowTriangle, asFlipped, asFlippedCut, asTail, asTailRepeat);
+  {* Enumerates different styles of arrows that can be used in graphic rendering.
+     Each style represents a unique visual appearance for arrowheads or tails }
+  TBGRAArrowStyle = (
+    {** No arrow style. This option indicates that no arrowhead or tail is to be rendered }
+    asNone,
+    {** A normal arrow style, representing a standard arrowhead with an angle }
+    asNormal,
+    {** A cut arrow style, where the edge of the arrow are cut instead of using the pen end cap }
+    asCut,
+    {** A triangle arrow style, forming a simple triangular arrowhead }
+    asTriangle,
+    {** A hollow triangle arrow style, similar to _asTriangle_ but with an unfilled center }
+    asHollowTriangle,
+    {** A flipped arrow style, where the arrowhead points in the opposite direction to the normal style }
+    asFlipped,
+    {** A flipped cut arrow style, combining the aspects of _asFlipped_ and _asCut_ }
+    asFlippedCut,
+    {** A small tail, typically used to depict the starting point of an arrow }
+    asTail,
+    {** A tail repeat arrow style, depicting a series of repeated patterns typically used for the starting point of an arrow }
+    asTailRepeat);
 
-  { TBGRACustomArrow }
-
+  {* Generic class configuring and rendering an arrow }
   TBGRACustomArrow = class
   protected
+    {** Retrieves the X-offset for the end of the arrow }
     function GetEndOffsetX: single; virtual; abstract;
+    {** Retrieves the repeat count for the end symbol }
     function GetEndRepeatCount: integer; virtual; abstract;
+    {** Retrieves the size factor for the end of the arrow }
     function GetEndSizeFactor: TPointF; virtual; abstract;
+    {** Determines if the end of the arrow is defined }
     function GetIsEndDefined: boolean; virtual; abstract;
+
+    {** Determines if the start of the arrow is defined }
     function GetIsStartDefined: boolean; virtual; abstract;
+    {** Retrieves the X-offset for the start of the arrow }
     function GetStartOffsetX: single; virtual; abstract;
+    {** Retrieves the repeat count for the start symbol}
     function GetStartRepeatCount: integer; virtual; abstract;
+    {** Retrieves the size factor for the start of the arrow }
     function GetStartSizeFactor: TPointF; virtual; abstract;
+
+    {** Sets the X-offset for the end of the arrow }
     procedure SetEndOffsetX(AValue: single); virtual; abstract;
+    {** Sets the repeat count for the end symbol }
     procedure SetEndRepeatCount(AValue: integer); virtual; abstract;
+    {** Sets the size factor for the end of the arrow }
     procedure SetEndSizeFactor(AValue: TPointF); virtual; abstract;
+
+    {** Sets the X-offset for the start of the arrow }
     procedure SetStartOffsetX(AValue: single); virtual; abstract;
+    {** Sets the repeat count for the start symbol }
     procedure SetStartRepeatCount(AValue: integer); virtual; abstract;
+    {** Sets the size factor for the start of the arrow }
     procedure SetStartSizeFactor(AValue: TPointF); virtual; abstract;
+
+    {** Retrieves the line cap style for the classic arrow }
     function GetLineCap: TPenEndCap; virtual; abstract;
+    {** Sets the line cap style for the classic arrow }
     procedure SetLineCap(AValue: TPenEndCap); virtual; abstract;
   public
-    function ComputeStartAt(const APosition: TPointF; const ADirection: TPointF; const AWidth: single; const ACurrentPos: single): ArrayOfTPointF; virtual; abstract;
-    function ComputeEndAt(const APosition: TPointF; const ADirection: TPointF; const AWidth: single; const ACurrentPos: single): ArrayOfTPointF; virtual; abstract;
+    {** Computes the start of the arrow at a given position and direction }
+    function ComputeStartAt(const APosition, ADirection: TPointF; const AWidth, ACurrentPos: single): ArrayOfTPointF; virtual; abstract;
+    {** Computes the end of the arrow at a given position and direction }
+    function ComputeEndAt(const APosition, ADirection: TPointF; const AWidth, ACurrentPos: single): ArrayOfTPointF; virtual; abstract;
+
+    {** Sets the start of the arrow to no style }
     procedure StartAsNone; virtual; abstract;
+    {** Sets the start of the arrow to a classic style }
     procedure StartAsClassic(AFlipped: boolean = false; ACut: boolean = false; ARelativePenWidth: single = 1); virtual; abstract;
+    {** Sets the start of the arrow to a triangle style }
     procedure StartAsTriangle(ABackOffset: single = 0; ARounded: boolean = false; AHollow: boolean = false; AHollowPenWidth: single = 0.5); virtual; abstract;
+    {** Sets the start of the arrow to a tail style }
     procedure StartAsTail; virtual; abstract;
+
+    {** Sets the end of the arrow to no style }
     procedure EndAsNone; virtual; abstract;
+    {** Sets the end of the arrow to a classic style }
     procedure EndAsClassic(AFlipped: boolean = false; ACut: boolean = false; ARelativePenWidth: single = 1); virtual; abstract;
+    {** Sets the end of the arrow to a triangle style }
     procedure EndAsTriangle(ABackOffset: single = 0; ARounded: boolean = false; AHollow: boolean = false; AHollowPenWidth: single = 0.5); virtual; abstract;
+    {** Sets the end of the arrow to a tail style }
     procedure EndAsTail; virtual; abstract;
+
+    {** Check if the start of the arrow is defined }
     property IsStartDefined: boolean read GetIsStartDefined;
+    {** Check if the end of the arrow is defined }
     property IsEndDefined: boolean read GetIsEndDefined;
+
+    {** X-offset for the start of the arrow }
     property StartOffsetX: single read GetStartOffsetX write SetStartOffsetX;
+    {** X-offset for the end of the arrow }
     property EndOffsetX: single read GetEndOffsetX write SetEndOffsetX;
+    {** Line cap style }
     property LineCap: TPenEndCap read GetLineCap write SetLineCap;
+    {** Size factor for the start of the arrow }
     property StartSize: TPointF read GetStartSizeFactor write SetStartSizeFactor;
+    {** Size factor for the end of the arrow }
     property EndSize: TPointF read GetEndSizeFactor write SetEndSizeFactor;
+    {** Repeat count for the start symbol }
     property StartRepeatCount: integer read GetStartRepeatCount write SetStartRepeatCount;
+    {** Repeat count for the end symbol }
     property EndRepeatCount: integer read GetEndRepeatCount write SetEndRepeatCount;
   end;
 
-  { TBGRACustomPenStroker }
-
+  {* Generic class representing a pen stroker, used for drawing and styling lines with various attributes }
   TBGRACustomPenStroker = class
   protected
-      function GetArrow: TBGRACustomArrow; virtual; abstract;
-      function GetArrowOwned: boolean; virtual; abstract;
-      function GetCustomPenStyle: TBGRAPenStyle; virtual; abstract;
-      function GetJoinStyle: TPenJoinStyle; virtual; abstract;
-      function GetLineCap: TPenEndCap; virtual; abstract;
-      function GetMiterLimit: single; virtual; abstract;
-      function GetPenStyle: TPenStyle; virtual; abstract;
-      function GetStrokeMatrix: TAffineMatrix; virtual; abstract;
-      procedure SetArrow(AValue: TBGRACustomArrow); virtual; abstract;
-      procedure SetArrowOwned(AValue: boolean); virtual; abstract;
-      procedure SetCustomPenStyle(AValue: TBGRAPenStyle); virtual; abstract;
-      procedure SetJoinStyle(AValue: TPenJoinStyle); virtual; abstract;
-      procedure SetLineCap(AValue: TPenEndCap); virtual; abstract;
-      procedure SetMiterLimit(AValue: single); virtual; abstract;
-      procedure SetPenStyle(AValue: TPenStyle); virtual; abstract;
-      procedure SetStrokeMatrix(const AValue: TAffineMatrix); virtual; abstract;
+    {** Retrieves the arrow style used at both ends of strokes }
+    function GetArrow: TBGRACustomArrow; virtual; abstract;
+    {** Determines if the arrow is owned (managed) by the pen stroker }
+    function GetArrowOwned: boolean; virtual; abstract;
+    {** Gets the custom pen style }
+    function GetCustomPenStyle: TBGRAPenStyle; virtual; abstract;
+    {** Retrieves the style of line joins (e.g., bevel, miter) }
+    function GetJoinStyle: TPenJoinStyle; virtual; abstract;
+    {** Retrieves the line cap style (e.g., butt, round) }
+    function GetLineCap: TPenEndCap; virtual; abstract;
+    {** Gets the miter limit for line joins }
+    function GetMiterLimit: single; virtual; abstract;
+    {** Retrieves the standard pen style }
+    function GetPenStyle: TPenStyle; virtual; abstract;
+    {** Gets the stroke transformation matrix (applied only to stroke and not to path points) }
+    function GetStrokeMatrix: TAffineMatrix; virtual; abstract;
+    {** Sets the arrow style used at both ends of strokes }
+    procedure SetArrow(AValue: TBGRACustomArrow); virtual; abstract;
+    {** Sets whether the arrow is owned by the pen stroker }
+    procedure SetArrowOwned(AValue: boolean); virtual; abstract;
+    {** Sets the custom pen style }
+    procedure SetCustomPenStyle(AValue: TBGRAPenStyle); virtual; abstract;
+    {** Sets the style of line joins }
+    procedure SetJoinStyle(AValue: TPenJoinStyle); virtual; abstract;
+    {** Sets the line cap style }
+    procedure SetLineCap(AValue: TPenEndCap); virtual; abstract;
+    {** Sets the miter limit for line joins }
+    procedure SetMiterLimit(AValue: single); virtual; abstract;
+    {** Sets the standard pen style }
+    procedure SetPenStyle(AValue: TPenStyle); virtual; abstract;
+    {** Sets the stroke transformation matrix (applied only to stroke and not to path points) }
+    procedure SetStrokeMatrix(const AValue: TAffineMatrix); virtual; abstract;
+
   public
-      function ComputePolyline(const APoints: array of TPointF; AWidth: single; AClosedCap: boolean = true): ArrayOfTPointF; overload; virtual; abstract;
-      function ComputePolyline(const APoints: array of TPointF; AWidth: single; APenColor: TBGRAPixel; AClosedCap: boolean = true): ArrayOfTPointF; overload; virtual; abstract;
-      function ComputePolylineAutoCycle(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; virtual; abstract;
-      function ComputePolygon(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; virtual; abstract;
-      property Style: TPenStyle read GetPenStyle write SetPenStyle;
-      property CustomPenStyle: TBGRAPenStyle read GetCustomPenStyle write SetCustomPenStyle;
-      property Arrow: TBGRACustomArrow read GetArrow write SetArrow;
-      property ArrowOwned: boolean read GetArrowOwned write SetArrowOwned;
-      property StrokeMatrix: TAffineMatrix read GetStrokeMatrix write SetStrokeMatrix;
-      property LineCap: TPenEndCap read GetLineCap write SetLineCap;
-      property JoinStyle: TPenJoinStyle read GetJoinStyle write SetJoinStyle;
-      property MiterLimit: single read GetMiterLimit write SetMiterLimit;
+    {** Computes a polyline with the given points and width, optionally closing the cap }
+    function ComputePolyline(const APoints: array of TPointF; AWidth: single; AClosedCap: boolean = true): ArrayOfTPointF; overload; virtual; abstract;
+    {** Computes a polyline with the given points, width, and pen color, optionally closing the cap }
+    function ComputePolyline(const APoints: array of TPointF; AWidth: single; APenColor: TBGRAPixel; AClosedCap: boolean = true): ArrayOfTPointF; overload; virtual; abstract;
+    {** Computes a polyline with automatic cycling of points and given width }
+    function ComputePolylineAutoCycle(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; virtual; abstract;
+    {** Computes a polygon with the given points and width }
+    function ComputePolygon(const APoints: array of TPointF; AWidth: single): ArrayOfTPointF; virtual; abstract;
+
+    {** Standard pen style }
+    property Style: TPenStyle read GetPenStyle write SetPenStyle;
+    {** Custom pen style (with given dash and gap lengths) }
+    property CustomPenStyle: TBGRAPenStyle read GetCustomPenStyle write SetCustomPenStyle;
+    {** Arrow style at both ends of strokes }
+    property Arrow: TBGRACustomArrow read GetArrow write SetArrow;
+    {** Is the arrow is owned by the pen stroker }
+    property ArrowOwned: boolean read GetArrowOwned write SetArrowOwned;
+    {** Stroke transformation matrix (applied only to stroke and not to path points) }
+    property StrokeMatrix: TAffineMatrix read GetStrokeMatrix write SetStrokeMatrix;
+    {** Line cap style }
+    property LineCap: TPenEndCap read GetLineCap write SetLineCap;
+    {** Join style of lines }
+    property JoinStyle: TPenJoinStyle read GetJoinStyle write SetJoinStyle;
+    {** Miter limit for line joins }
+    property MiterLimit: single read GetMiterLimit write SetMiterLimit;
   end;
 
 type
-  {* Point in 3D with single-precision floating point coordinates }
-
+  {* Pointer to a TPoint3D structure }
   PPoint3D = ^TPoint3D;
 
-  { TPoint3D }
-
+  {* Point in 3D with single-precision floating point coordinates }
   TPoint3D = record
     x,y,z: single;
+    {** Offsets the point by the given 3D vector }
     procedure Offset(const point3D: TPoint3D);
+    {** Scale the point (as a vector from the origin) }
     procedure Scale(AScale: single);
   end;
 
   {----------------- Operators for TPoint3D ---------------}
-  {** Creates a new structure with values (''x'',''y'',''z'') }
+  {** Creates a new structure with values (_x_, _y_, _z_) }
   function Point3D(x,y,z: single): TPoint3D;
-  {** Checks if all components ''x'', ''y'' and ''z'' are equal }
+  {** Checks if all components _x_, _y_ and _z_ are equal }
   operator = (const v1,v2: TPoint3D): boolean; inline;
   {** Adds components separately. It is like adding vectors }
   operator + (const v1,v2: TPoint3D): TPoint3D; inline;
@@ -371,14 +577,15 @@ type
   operator - (const v: TPoint3D): TPoint3D; inline;
   {** Scalar product: multiplies components and returns the sum }
   operator * (const v1,v2: TPoint3D): single; inline;
-  {** Multiplies components by ''factor''. It scales the vector represented by (''x'',''y'',''z'') }
+  {** Multiplies components by _factor_. It scales the vector represented by (_x_, _y_, _z_) }
   operator * (const v1: TPoint3D; const factor: single): TPoint3D; inline;
-  {** Multiplies components by ''factor''. It scales the vector represented by (''x'',''y'',''z'') }
+  {** Multiplies components by _factor_. It scales the vector represented by (_x_, _y_, _z_) }
   operator * (const factor: single; const v1: TPoint3D): TPoint3D; inline;
-  {** Computes the vectorial product ''w''. It is perpendicular to both ''u'' and ''v'' }
+  {** Computes the vectorial product _w_. It is perpendicular to both _u_ and _v_ }
   procedure VectProduct3D(u,v: TPoint3D; out w: TPoint3D);
   {** Normalize the vector, i.e. scale it so that its length be 1 }
   procedure Normalize3D(var v: TPoint3D); inline;
+  {** Computes the length of the vector from the origin to the point }
   function VectLen3D(const v: TPoint3D): single;
 
 type
@@ -395,13 +602,15 @@ type
       the middle of the segment between the two origins }
   function IntersectLine(line1, line2: TLineDef): TPointF; overload;
   {** Computes the intersection of two lines. If they are parallel, returns
-      the middle of the segment between the two origins. The value ''parallel''
+      the middle of the segment between the two origins. The value _parallel_
       is set to indicate if the lines were parallel }
   function IntersectLine(line1, line2: TLineDef; out parallel: boolean): TPointF; overload;
-  {** Checks if the polygon formed by the given points is convex. ''IgnoreAlign''
+  {** Checks if the polygon formed by the given points is convex. _IgnoreAlign_
       specifies that if the points are aligned, it should still be considered as convex }
   function IsConvex(const pts: array of TPointF; IgnoreAlign: boolean = true): boolean;
+  {** Checks if the points follow a clockwise curve }
   function IsClockwise(const pts: array of TPointF): boolean;
+  {** Checks if the curve is clockwise on the whole but accepting some counter-clockwise points }
   function IsMostlyClockwise(const pts: array of TPointF): boolean;
   {** Checks if the quad formed by the 4 given points intersects itself }
   function DoesQuadIntersect(pt1,pt2,pt3,pt4: TPointF): boolean;
@@ -410,10 +619,15 @@ type
 
 type
   TBGRACustomPathCursor = class;
+  {* Callback function when rendering a stroke }
   TBGRAPathDrawProc = procedure(const APoints: array of TPointF; AClosed: boolean; AData: Pointer) of object;
+  {* Callback function when filling a shape }
   TBGRAPathFillProc = procedure(const APoints: array of TPointF; AData: pointer) of object;
 
-  {* A path is the ability to define a contour with ''moveTo'', ''lineTo''...
+  {* @abstract(Interface for path functions.)
+
+     A path is the ability to define a contour with _moveTo_, _lineTo_...
+
      Even if it is an interface, it must not implement reference counting. }
   IBGRAPath = interface
     {** Closes the current path with a line to the starting point }
@@ -438,41 +652,64 @@ type
     procedure copyTo(dest: IBGRAPath);
     {** Returns the content of the path as an array of points }
     function getPoints: ArrayOfTPointF; overload;
-    {** Returns the content of the path as an array of points with the transformation specified by ''AMatrix'' }
+    {** Returns the content of the path as an array of points with the transformation specified by _AMatrix_ }
     function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; overload;
     {** Calls a given draw procedure for each sub path with computed coordinates for rendering }
     procedure stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer); overload;
+    {** Calls a given draw procedure for each sub path with computed coordinates using given _AMatrix_ transformation }
     procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AData: pointer); overload;
     {** Calls a given fill procedure for each sub path with computed coordinates for rendering }
     procedure fill(AFillProc: TBGRAPathFillProc; AData: pointer); overload;
+    {** Calls a given fill procedure for each sub path with computed coordinates using given _AMatrix_ transformation }
     procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AData: pointer); overload;
-    {** Returns a cursor to go through the path. The cursor must be freed by calling ''Free''. }
+    {** Returns a cursor to go through the path. The cursor must be freed by calling _Free_. }
     function getCursor: TBGRACustomPathCursor;
   end;
 
-  { TBGRACustomPath }
-
+  {* Generic class representing a path, providing methods for creation and exploration }
   TBGRACustomPath = class(IBGRAPath)
+    {** Constructor to create a custom path. Must be overridden in subclasses }
     constructor Create; virtual; abstract;
+
+    {** Begins a new path }
     procedure beginPath; virtual; abstract;
+    {** Closes the current path }
     procedure closePath; virtual; abstract;
+    {** Moves the current point to a specified location, starting a new sub-path }
     procedure moveTo(constref pt: TPointF); virtual; abstract;
+    {** Adds a line from the current point to a specified point }
     procedure lineTo(constref pt: TPointF); virtual; abstract;
+    {** Adds a series of lines to the path based on an array of points }
     procedure polylineTo(const pts: array of TPointF); virtual; abstract;
-    procedure quadraticCurveTo(constref cp,pt: TPointF); virtual; abstract;
-    procedure bezierCurveTo(constref cp1,cp2,pt: TPointF); virtual; abstract;
+    {** Adds a quadratic Bézier curve to the path }
+    procedure quadraticCurveTo(constref cp, pt: TPointF); virtual; abstract;
+    {** Adds a cubic Bézier curve to the path }
+    procedure bezierCurveTo(constref cp1, cp2, pt: TPointF); virtual; abstract;
+    {** Adds an arc to the path based on an arc definition }
     procedure arc(constref arcDef: TArcDef); virtual; abstract;
+    {** Adds an open spline to the path based on a series of points and a spline style }
     procedure openedSpline(const pts: array of TPointF; style: TSplineStyle); virtual; abstract;
+    {** Adds a closed spline to the path based on a series of points and a spline style }
     procedure closedSpline(const pts: array of TPointF; style: TSplineStyle); virtual; abstract;
+    {** Copies the path to another path object }
     procedure copyTo(dest: IBGRAPath); virtual; abstract;
+
   protected
+    {** Retrieves the points of the path }
     function getPoints: ArrayOfTPointF; overload; virtual; abstract;
+    {** Retrieves the points of the path, transformed by a specified matrix }
     function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; overload; virtual; abstract;
+    {** Strokes the path with a specified drawing procedure }
     procedure stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer); overload; virtual; abstract;
+    {** Strokes the path with a specified drawing procedure and transformation matrix }
     procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AData: pointer); overload; virtual; abstract;
+    {** Fills the path with a specified filling procedure }
     procedure fill(AFillProc: TBGRAPathFillProc; AData: pointer); overload; virtual; abstract;
+    {** Fills the path with a specified filling procedure and transformation matrix }
     procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AData: pointer); overload; virtual; abstract;
+    {** Retrieves the length of the path }
     function getLength: single; virtual; abstract;
+    {** Retrieves a cursor for navigating the path }
     function getCursor: TBGRACustomPathCursor; virtual; abstract;
   protected
     function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
@@ -480,35 +717,46 @@ type
     function _Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
   end;
 
+  {* Type for specifying any derived class of TBGRACustomPath }
   TBGRAPathAny = class of TBGRACustomPath;
 
-  { TBGRACustomPathCursor }
   {* Class that contains a cursor to browse an existing path }
   TBGRACustomPathCursor = class
   protected
+    {** Retrieves the current position from the start }
     function GetArcPos: single; virtual; abstract;
+    {** Returns the current coordinate in the path }
     function GetCurrentCoord: TPointF; virtual; abstract;
+    {** Returns the tangent vector to the current position }
     function GetCurrentTangent: TPointF; virtual; abstract;
+    {** Retrieves if the cursor loops when there is a closed shape }
     function GetLoopClosedShapes: boolean; virtual; abstract;
+    {** Retrieves if the cursor loops at the end of the whole path }
     function GetLoopPath: boolean; virtual; abstract;
+    {** Retreive the full arc length of the path }
     function GetPathLength: single; virtual; abstract;
+    {** Compute the bounds of the path }
     function GetBounds: TRectF; virtual; abstract;
+    {** Starting coordinate of the path }
     function GetStartCoordinate: TPointF; virtual; abstract;
+    {** Sets the current position from the start }
     procedure SetArcPos(AValue: single); virtual; abstract;
+    {** Sets if the cursor loops when there is a closed shape }
     procedure SetLoopClosedShapes(AValue: boolean); virtual; abstract;
+    {** Sets if the cursor loops at the end of the whole path }
     procedure SetLoopPath(AValue: boolean); virtual; abstract;
   public
-    {** Go forward in the path, increasing the value of ''Position''. If ''ADistance'' is negative, then
-        it goes backward instead. ''ACanJump'' specifies if the cursor can jump from one shape to another
+    {** Go forward in the path, increasing the value of _Position_. If _ADistance_ is negative, then
+        it goes backward instead. _ACanJump_ specifies if the cursor can jump from one shape to another
         without a line or an arc. Otherwise, the cursor is stuck, and the return value is less than
-        the value ''ADistance'' provided.  If all the way has been travelled, the
-        return value is equal to ''ADistance'' }
+        the value _ADistance_ provided.  If all the way has been travelled, the
+        return value is equal to _ADistance_ }
     function MoveForward(ADistance: single; ACanJump: boolean = true): single; virtual; abstract;
-    {** Go backward, decreasing the value of ''Position''. If ''ADistance'' is negative, then it goes
-        forward instead. ''ACanJump'' specifies if the cursor can jump from one shape to another
+    {** Go backward, decreasing the value of _Position_. If _ADistance_ is negative, then it goes
+        forward instead. _ACanJump_ specifies if the cursor can jump from one shape to another
         without a line or an arc. Otherwise, the cursor is stuck, and the return value is less than
-        the value ''ADistance'' provided. If all the way has been travelled, the
-        return value is equal to ''ADistance'' }
+        the value _ADistance_ provided. If all the way has been travelled, the
+        return value is equal to _ADistance_ }
     function MoveBackward(ADistance: single; ACanJump: boolean = true): single; virtual; abstract;
     {** Returns the current coordinate in the path }
     property CurrentCoordinate: TPointF read GetCurrentCoord;
@@ -524,22 +772,14 @@ type
     {** Specifies if the cursor loops when there is a closed shape }
     property LoopClosedShapes: boolean read GetLoopClosedShapes write SetLoopClosedShapes;
     {** Specifies if the cursor loops at the end of the path. Note that if it needs to jump to go
-        to the beginning, it will be only possible if the parameter ''ACanJump'' is set to True
+        to the beginning, it will be only possible if the parameter _ACanJump_ is set to True
         when moving along the path }
     property LoopPath: boolean read GetLoopPath write SetLoopPath;
   end;
 
 var
+  {* Factory provided to create a TBGRAPath object }
   BGRAPathFactory: TBGRAPathAny;
-
-const
-  {* A value for an empty rectangle }
-  EmptyRect : TRect = (left:0; top:0; right:0; bottom: 0);
-{* Checks if a point is in a rectangle. This follows usual convention: ''r.Right'' and
-  ''r.Bottom'' are not considered to be included in the rectangle. }
-function PtInRect(const pt: TPoint; r: TRect): boolean; overload;
-{* Creates a rectangle with the specified ''width'' and ''height'' }
-function RectWithSize(left,top,width,height: integer): TRect;
 
 {$DEFINE INCLUDE_INTERFACE}
 {$I bezier.inc}
@@ -555,8 +795,8 @@ type
     rrDefault);
     {** A set of options for a round rectangle }
     TRoundRectangleOptions = set of TRoundRectangleOption;
-  {* Order of polygons when rendered using ''TBGRAMultiShapeFiller''
-     (in unit ''BGRAPolygon'') }
+  {* Order of polygons when rendered using TBGRAMultiShapeFiller
+     (in unit BGRAPolygon) }
   TPolygonOrder = (
     {** No order, colors are mixed together }
     poNone,
@@ -566,13 +806,16 @@ type
     poLastOnTop);
 
   PIntersectionInfo = ^TIntersectionInfo;
-  { TIntersectionInfo }
   {* Contains an intersection between an horizontal line and any shape. It
      is used when filling shapes }
   TIntersectionInfo = class
+    {** Horizontal position of the intersection }
     interX: single;
+    {** Winding count }
     winding: integer;
+    {** Number identifying the current segment where the intersection was found }
     numSegment: integer;
+    {** Sets the position and other information about the intersection }
     procedure SetValues(AInterX: Single; AWinding, ANumSegment: integer);
   end;
   {** An array of intersections between an horizontal line and any shape }
@@ -592,18 +835,19 @@ type
       function IsPointInside(x,y: single; windingMode: boolean): boolean; virtual; abstract;
 
       {** Create an array that will contain computed intersections.
-          To augment that array, use ''CreateIntersectionInfo'' for new items }
+          To augment that array, use CreateIntersectionInfo for new items }
       function CreateIntersectionArray: ArrayOfTIntersectionInfo; virtual; abstract;
       {** Create a structure to define one single intersection }
       function CreateIntersectionInfo: TIntersectionInfo; virtual; abstract;
       {** Free an array of intersections }
       procedure FreeIntersectionArray(var inter: ArrayOfTIntersectionInfo); virtual; abstract;
 
-      {** Fill an array ''inter'' with actual intersections with the shape at the y coordinate ''cury''.
-          ''nbInter'' receives the number of computed intersections. ''windingMode'' specifies if
+      {** Fill an array _inter_ with actual intersections with the shape at the y coordinate _cury_.
+          _nbInter_ receives the number of computed intersections. _windingMode_ specifies if
           the winding method must be used to determine what is inside of the shape }
       procedure ComputeAndSort(cury: single; var inter: ArrayOfTIntersectionInfo; out nbInter: integer; windingMode: boolean); virtual; abstract;
 
+      {** Returns the index of the current slice (horizontal stripe) }
       function GetSliceIndex: integer; virtual; abstract;
   end;
 
@@ -612,7 +856,7 @@ type
   TGradientType = (
     {** The color changes along a certain vector and does not change along its perpendicular direction }
     gtLinear,
-    {** The color changes like in ''gtLinear'' however it is symmetrical to a specified direction }
+    {** The color changes like in _gtLinear_ however it is symmetrical to a specified direction }
     gtReflected,
     {** The color changes along a diamond shape }
     gtDiamond,
@@ -620,38 +864,47 @@ type
     gtRadial,
     {** The color changes according to the angle relative to a given center }
     gtAngular);
-const
+
   {** List of string to represent gradient types }
-  GradientTypeStr : array[TGradientType] of string
+  const GradientTypeStr : array[TGradientType] of string
   = ('Linear','Reflected','Diamond','Radial','Angular');
+
   {** Returns the gradient type represented by the given string }
   function StrToGradientType(str: string): TGradientType;
 
 type
+  {* Function type to get the the color at a given integer position }
   TBGRAGradientGetColorAtFunc = function(position: integer): TBGRAPixel of object;
+  {* Function type to get the the color at a given single-precision floating type position }
   TBGRAGradientGetColorAtFloatFunc = function(position: single): TBGRAPixel of object;
+  {* Function type to get the the expanded color at a given integer position }
   TBGRAGradientGetExpandedColorAtFunc = function(position: integer): TExpandedPixel of object;
+  {* Function type to get the the expanded color at a given single-precision floating type position }
   TBGRAGradientGetExpandedColorAtFloatFunc = function(position: single): TExpandedPixel of object;
 
-  { TBGRACustomGradient }
   {* Defines a gradient of color, not specifying its shape but only the
      series of colors }
   TBGRACustomGradient = class
   public
-    {** Returns the color at a given ''position''. The reference range is
+    {** Returns the color at a given _position_. The reference range is
         from 0 to 65535, however values beyond are possible as well }
     function GetColorAt(position: integer): TBGRAPixel; virtual; abstract;
+    {** Returns the expanded color at a given _position_. The reference range is
+        from 0 to 65535, however values beyond are possible as well }
     function GetExpandedColorAt(position: integer): TExpandedPixel; virtual;
-    {** Returns the color at a given ''position''. The reference range is
+    {** Returns the color at a given _position_. The reference range is
         from 0 to 1, however values beyond are possible as well }
     function GetColorAtF(position: single): TBGRAPixel; virtual;
+    {** Returns the expanded color at a given _position_. The reference range is
+        from 0 to 1, however values beyond are possible as well }
     function GetExpandedColorAtF(position: single): TExpandedPixel; virtual;
     {** Returns the average color of the gradient }
     function GetAverageColor: TBGRAPixel; virtual; abstract;
+    {** Returns the average expanded color of the gradient }
     function GetAverageExpandedColor: TExpandedPixel; virtual;
+    {** Returns whether the gradient has only one color }
     function GetMonochrome: boolean; virtual; abstract;
-    {** This property is True if the gradient contains only one color,
-        and thus is not really a gradient }
+    {** If the gradient contains only one color and thus is not really a gradient }
     property Monochrome: boolean read GetMonochrome;
   end;
 
@@ -1403,7 +1656,7 @@ begin
   result.y := pt1.y+pt2.y;
 end;
 
-{$if FPC_FULLVERSION < 030301}
+{$if FPC_FULLVERSION < 30203}
 // keep alias for backward compatibility
 operator *(const pt1, pt2: TPointF): single;
 begin

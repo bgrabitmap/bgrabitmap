@@ -3,8 +3,7 @@
 {$UNDEF INCLUDE_INTERFACE}
 
 type
-  { TGenericUniversalBitmap }
-
+  { Abstract class for a bitmap in a specific colorspace }
   generic TGenericUniversalBitmap<TPixel,TColorspace> = class(TCustomUniversalBitmap)
   private
     type PPixel = ^TPixel;
@@ -20,7 +19,7 @@ type
   public
     //typed functions
 
-    {** Creates an image of dimensions ''AWidth'' and ''AHeight'' and fills it with ''Color'' }
+    {** Creates an image of dimensions _AWidth_ and _AHeight_ and fills it with _Color_ }
     constructor Create(AWidth, AHeight: integer; const AColor: TPixel); virtual;
     function NewBitmap(AWidth, AHeight: integer; const AColor: TPixel): TCustomUniversalBitmap; overload; virtual;
 
@@ -31,6 +30,8 @@ type
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
     class procedure IdleBrush(out ABrush: TUniversalBrush); virtual;
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
+
+    {** Creates a brush texture with a specified style, pattern color, background color, dimensions, and pen width }
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TPixel;
             AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TCustomUniversalBitmap; virtual;
 
@@ -40,28 +41,33 @@ type
     {** Returns the address of the left-most pixel of any line.
         The parameter y ranges from 0 to Height-1 }
     property ScanLine[y: integer]: PPixel Read GetScanLine;
+    {** Line order can change, so if you access
+        directly to bitmap data, check LineOrder value
+        or use Scanline to compute position. }
     property Data: PPixel read GetDataPtr;
 
     procedure Fill(const AColor: TPixel); overload; virtual;
     procedure Fill(const AColor: TPixel; AMode : TDrawMode; AAlpha : Word = 65535); overload; virtual;
     procedure ReplaceColor(const ABefore, AAfter: TPixel); overload; virtual;
     procedure ReplaceColor(ARect: TRect; const ABefore, AAfter: TPixel); overload; virtual;
-    procedure ReplaceTransparent(const AAfter: TBGRAPixel); overload; virtual;
+    procedure ReplaceTransparent(const AAfter: TPixel); overload; virtual;
     procedure ReplaceTransparent(ARect: TRect; const AAfter: TPixel); overload; virtual;
     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; const AColor: TPixel); overload; virtual;
     procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; const AColor: TPixel; ADrawMode: TDrawMode); overload; virtual;
     procedure FillRect(ALeft, ATop, ARight, ABottom: integer; const AColor: TPixel; ADrawMode: TDrawMode = dmSet; AAlpha: Word = 65535); overload; virtual;
     procedure FillRect(const ARect: TRect; const AColor: TPixel; ADrawMode: TDrawMode = dmSet; AAlpha: Word = 65535); overload; virtual;
     procedure DrawCheckers(ARect: TRect; const AColorEven,AColorOdd: TPixel; AGridWidth: integer = 8; AGridHeight: integer = 8; ADrawMode: TDrawMode = dmSet); virtual;
+    {** Draws a pixel with gamma correction at (_x_, _y_). Pixel is supplied
+        in sRGB colorspace }
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode); overload; virtual;
     procedure DrawPixel(x,y: Int32or64; const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word); overload; virtual;
     procedure DrawPixelF(x,y: single; const AColor: TPixel; ADrawMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
-    {** Replaces the content of the pixels at line ''y'' and
-        at columns ''x'' to ''x2'' included, using specified color }
+    {** Replaces the content of the pixels at line _y_ and
+        at columns _x_ to _x2_ included, using specified color }
     procedure SetHorizLine(x, y, x2: int32or64; const AColor: TPixel); virtual;
     procedure HorizLine(x, y, x2: int32or64; const AColor: TPixel; AMode : TDrawMode = dmDrawWithTransparency; AAlpha: Word = 65535); overload; virtual;
-    {** Replaces a vertical line at column ''x'' and at row ''y'' to ''y2'' }
+    {** Replaces a vertical line at column _x_ and at row _y_ to _y2_ }
     procedure SetVertLine(x, y, y2: int32or64; const AColor: TPixel); virtual;
     procedure VertLine(x, y, y2: int32or64; const AColor: TPixel; AMode : TDrawMode = dmDrawWithTransparency; AAlpha: Word = 65535); overload; virtual;
     procedure DrawLine(x1, y1, x2, y2: integer; const AColor: TPixel; ADrawLastPixel: boolean; AMode : TDrawMode = dmDrawWithTransparency; AAlpha: Word = 65535); overload; virtual;
@@ -98,14 +104,14 @@ type
     function GetPixelAddress(x, y: integer): PByte; override;
 
     {==== Drawing lines and paths (floating point coordinates) ====}
-    {* These functions use the current pen style/cap/join. The parameter ''APenWidth''
+    {* These functions use the current pen style/cap/join. The parameter _APenWidth_
        specifies the width of the line and the base unit for dashes.
-       See [[BGRABitmap tutorial 13|coordinate system]].
+       See [coordinate system](https://wiki.freepascal.org/BGRABitmap_tutorial_13).
      * The coordinates are pixel-centered by default, so that when filling a rectangle,
        if the supplied values are integers, the border will be half transparent.
        If you want the border to be completely filled, you can subtract/add
        0.5 to the coordinates to include the remaining thin border.
-       See [[BGRABitmap tutorial 13|coordinate system]]. }
+       See [coordinate system](https://wiki.freepascal.org/BGRABitmap_tutorial_13). }
 
     procedure DrawLineAntialias(x1, y1, x2, y2: single; const AColor: TPixel; APenWidth: single); overload; virtual;
     procedure DrawLineAntialias(x1, y1, x2, y2: single; const AColor: TPixel; APenWidth: single; AClosedCap: boolean); overload; virtual;
@@ -113,7 +119,7 @@ type
     {** Draws a polyline using current pen style/cap/join }
     procedure DrawPolyLineAntialias(const APoints: array of TPointF; const AColor: TPixel; APenWidth: single); overload; virtual;
     {** Draws a polyline using current pen style/cap/join.
-        ''Closed'' specifies if the end of the line is roundly closed. If it is not closed,
+        _Closed_ specifies if the end of the line is roundly closed. If it is not closed,
         a space is left so that the next line can fit }
     procedure DrawPolyLineAntialias(const APoints: array of TPointF; const AColor: TPixel; APenWidth: single; AClosedCap: boolean); overload; virtual;
     {** Draws a polyline using current pen style/cap/join.
@@ -127,12 +133,12 @@ type
 
     procedure RectangleAntialias(x, y, x2, y2: single; const AColor: TPixel; AWidth: single); overload; virtual;
 
-    {** Draws an ellipse without antialising. ''rx'' is the horizontal radius and
-        ''ry'' the vertical radius }
+    {** Draws an ellipse without antialising. _rx_ is the horizontal radius and
+        _ry_ the vertical radius }
     procedure Ellipse(x, y, rx, ry: single; const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
     procedure Ellipse(const AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel; AWidth: single; AMode: TDrawMode; AAlpha: Word = 65535); overload; virtual;
-    {** Draws an ellipse with antialising. ''rx'' is the horizontal radius and
-        ''ry'' the vertical radius }
+    {** Draws an ellipse with antialising. _rx_ is the horizontal radius and
+        _ry_ the vertical radius }
     procedure EllipseAntialias(x, y, rx, ry: single; const AColor: TPixel; AWidth: single); overload; virtual;
     procedure EllipseAntialias(const AOrigin, AXAxis, AYAxis: TPointF; const AColor: TPixel; AWidth: single); overload; virtual;
 
@@ -149,8 +155,8 @@ type
     procedure FillRectAntialias(const ARectF: TRectF; const AColor: TPixel; APixelCenteredCoordinates: boolean = true); overload; virtual;
 
     {** Fills a rounded rectangle with antialiasing. The corners have an
-        elliptical radius of ''rx'' and ''ry''. ''options'' specifies how to
-        draw the corners. See [[BGRABitmap Geometry types|geometry types]] }
+        elliptical radius of _rx_ and _ry_. _options_ specifies how to
+        draw the corners. }
     procedure FillRoundRectAntialias(x, y, x2, y2, rx, ry: single; const AColor: TPixel; AOptions: TRoundRectangleOptions = []; APixelCenteredCoordinates: boolean = true); overload; virtual;
 
   end;
@@ -527,7 +533,7 @@ begin
   InvalidateBitmap;
 end;
 
-procedure TGenericUniversalBitmap.ReplaceTransparent(const AAfter: TBGRAPixel);
+procedure TGenericUniversalBitmap.ReplaceTransparent(const AAfter: TPixel);
 var before: TPixel;
 begin
   AssignTransparentPixel(before);

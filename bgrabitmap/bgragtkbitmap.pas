@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{
- /**************************************************************************\
-                             bgragtkbitmap.pas
-                             -----------------
-                 This unit should NOT be added to the 'uses' clause.
-                 It contains patches for Gtk.
-}
 
+{ Implementation of BGRABitmap for Gtk }
 unit BGRAGtkBitmap;
+{ This unit should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 
@@ -18,8 +13,7 @@ uses
   GraphType;
 
 type
-  { TBGRAGtkBitmap }
-
+  { Implementation of TBGRABitmap for Gtk }
   TBGRAGtkBitmap = class(TBGRALCLBitmap)
   private
     FPixBuf: Pointer;

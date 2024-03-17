@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Computation of text effects based on a text mask }
 unit BGRACustomTextFX;
 
 {$mode objfpc}{$H+}
@@ -11,7 +13,10 @@ uses
 const DefaultOutlineWidth = 3;
 
 type
-  { TBGRACustomTextEffect }
+  { @abstract(Computes text effects based on a grayscale mask.)
+
+    This class computes at the pixel level the following effects: drop shadow, outline
+    and multi-color text (on color per letter) }
 
   TBGRACustomTextEffect = class
   private
@@ -41,9 +46,10 @@ type
   public
     constructor Create(AMask: TBGRACustomBitmap; AMaskOwner: boolean; AWidth,AHeight: integer; AOffset: TPoint);
     constructor Create(AMask: TGrayscaleMask; AMaskOwner: boolean; AWidth,AHeight: integer; AOffset: TPoint);
-    procedure ApplySphere;
-    procedure ApplyVerticalCylinder;
-    procedure ApplyHorizontalCylinder;
+
+    {$IFNDEF BGRABITMAP_CORE}procedure ApplySphere;{$ENDIF}
+    {$IFNDEF BGRABITMAP_CORE}procedure ApplyVerticalCylinder;{$ENDIF}
+    {$IFNDEF BGRABITMAP_CORE}procedure ApplyHorizontalCylinder;{$ENDIF}
     function Draw(ADest: TBGRACustomBitmap; X,Y: integer; AColor: TBGRAPixel): TRect; overload;
     function Draw(ADest: TBGRACustomBitmap; X,Y: integer; ATexture: IBGRAScanner): TRect; overload;
     function Draw(ADest: TBGRACustomBitmap; X, Y: integer; AColor: TBGRAPixel; AAlign: TAlignment): TRect; overload;
@@ -80,7 +86,7 @@ type
 
 implementation
 
-uses Math, BGRAGradientScanner;
+uses Math, BGRAGradientScanner, BGRAFilterBlur;
 
 procedure BGRACustomReplace(var Destination: TBGRACustomBitmap; Temp: TObject); overload;
 begin
@@ -308,9 +314,11 @@ begin
     WithMargin := TGrayscaleMask.Create(FTextMask.Width+iBlurRadius*2, FTextMask.Height+iBlurRadius*2,BGRABlack);
     WithMargin.PutImage(iBlurRadius, iBlurRadius, FTextMask, dmSet);
     if (iBlurRadius <> blurRadius) and (blurRadius < 3) then
-      GrayMap := WithMargin.FilterBlurRadial(round(blurRadius*10), rbPrecise)
+      GrayMap := BGRAFilterBlur.FilterBlurRadial(WithMargin,
+        round(blurRadius*10), round(blurRadius*10), rbPrecise) as TGrayscaleMask
     else
-      GrayMap := WithMargin.FilterBlurRadial(iBlurRadius, rbFast);
+      GrayMap := BGRAFilterBlur.FilterBlurRadial(WithMargin, iBlurRadius, iBlurRadius,
+        rbFast) as TGrayscaleMask;
     HeightMap := BGRABitmapFactory.Create;
     HeightMap.SetSize(GrayMap.Width, GrayMap.Height);
     GrayMap.Draw(HeightMap, 0, 0);
@@ -446,25 +454,25 @@ begin
   Init(AMask, AMaskOwner, AWidth, AHeight, AOffset);
 end;
 
-procedure TBGRACustomTextEffect.ApplySphere;
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRACustomTextEffect.ApplySphere;
 begin
   if FTextMask = nil then exit;
   FreeAndNil(FOutlineMask);
   FreeAndNil(FShadowMask);
   FShadowRadius := 0;
   BGRACustomReplace(FTextMask, FTextMask.FilterSphere);
-end;
+end;{$ENDIF}
 
-procedure TBGRACustomTextEffect.ApplyVerticalCylinder;
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRACustomTextEffect.ApplyVerticalCylinder;
 begin
   if FTextMask = nil then exit;
   FreeAndNil(FOutlineMask);
   FreeAndNil(FShadowMask);
   FShadowRadius := 0;
   BGRACustomReplace(FTextMask, FTextMask.FilterCylinder);
-end;
+end;{$ENDIF}
 
-procedure TBGRACustomTextEffect.ApplyHorizontalCylinder;
+{$IFNDEF BGRABITMAP_CORE}procedure TBGRACustomTextEffect.ApplyHorizontalCylinder;
 begin
   if FTextMask = nil then exit;
   FreeAndNil(FOutlineMask);
@@ -473,7 +481,7 @@ begin
   BGRACustomReplace(FTextMask,FTextMask.RotateCW);
   BGRACustomReplace(FTextMask,FTextMask.FilterCylinder);
   BGRACustomReplace(FTextMask,FTextMask.RotateCCW);
-end;
+end;{$ENDIF}
 
 function TBGRACustomTextEffect.Draw(ADest: TBGRACustomBitmap; X, Y: integer;
   AColor: TBGRAPixel): TRect;
@@ -570,7 +578,7 @@ begin
     FreeAndNil(FShadowMask);
     FShadowMask := TGrayscaleMask.Create(FTextMask.Width+Radius*2,FTextMask.Height+Radius*2, 0);
     FShadowMask.PutImage(Radius,Radius,FTextMask,dmSet);
-    BGRACustomReplace(FShadowMask, FShadowMask.FilterBlurRadial(Radius,ShadowQuality));
+    BGRACustomReplace(FShadowMask, BGRAFilterBlur.FilterBlurRadial(FShadowMask, Radius, Radius, ShadowQuality));
   end;
   Inc(X,FOffset.X-Radius);
   Inc(Y,FOffset.Y-Radius);

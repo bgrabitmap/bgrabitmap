@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Proposes a class to unzip files from stream to stream }
 unit UnzipperExt;
 
 {$mode objfpc}{$H+}
@@ -9,23 +11,31 @@ uses
   BGRAClasses, SysUtils, zipper;
 
 type
-
-  { TUnzipperStreamUtf8 }
-
+  {* Unzipping class with custom input stream that can extract a specific file }
   TUnzipperStreamUtf8 = class(TUnZipper)
     private
       FCustomOutputStream: TStream;
       FCustomInputStream: TStream;
+      { Sets the input stream }
       procedure SetInputStream(AValue: TStream);
     protected
+      { Callback method to open the ZIP input }
       Procedure CustomOpenInput(Sender: TObject; var AStream: TStream);
+      { Callback method to close the ZIP input }
       procedure CustomCloseInput(Sender: TObject; var AStream: TStream);
+      { Callback method to create the output for the content of the extracted item.
+        This function actually just supplies the chosen output stream. }
       procedure CustomCreateOutput(Sender : TObject; var AStream : TStream; {%H-}AItem : TFullZipFileEntry);
+      { Callback method to close the output for the content of the extracted item }
       procedure CustomCloseOutput(Sender : TObject; var AStream : TStream; {%H-}AItem : TFullZipFileEntry);
     public
-      function UnzipFileToStream(AFilename: string; AStream: TStream; ACaseSensitive: boolean= true): boolean;
-      function UnzipFileToString(AFilename:string): string;
+      {** Creates the unzipper class. You need to set the _InputStream_  ou _Filename_ property afer that. }
       constructor Create;
+      {** Unzips the specified item with the given filename into the given stream }
+      function UnzipFileToStream(AFilename: string; AStream: TStream; ACaseSensitive: boolean= true): boolean;
+      {** Unzips the specified item with the given filename and return it as a string }
+      function UnzipFileToString(AFilename:string): string;
+      {** Input stream to use when unzipping, otherwise will use the inherited _Filename_ property }
       property InputStream: TStream read FCustomInputStream write SetInputStream;
   end;
 

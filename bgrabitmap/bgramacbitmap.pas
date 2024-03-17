@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of BGRABitmap for Mac OS }
 unit BGRAMacBitmap;
+{ It should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 
@@ -10,9 +13,7 @@ uses
   BGRADefaultBitmap;
 
 type
-
-  { TBGRAMacBitmap }
-
+  {* Implementation of 32-bit RGBA bitmap for Mac OS }
   TBGRAMacBitmap = class(TBGRALCLBitmap)
     procedure DataDrawOpaque(ACanvas: TCanvas; Rect: TRect; AData: Pointer;
       ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer); override;

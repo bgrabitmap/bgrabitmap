@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Definition of units of measure (distances) used in CSS }
 unit BGRAUnits;
 
 {$mode objfpc}{$H+}
@@ -16,6 +18,7 @@ type
               cuCentimeter, cuMillimeter,
               cuInch, cuPica, cuPoint,
               cuFontEmHeight, cuFontXHeight, cuPercent);
+  { Floating-point value expressed in a CSS unit }
   TFloatWithCSSUnit = record
     value: single;
     CSSUnit: TCSSUnit;
@@ -34,8 +37,7 @@ const
          'em','ex','%');
 
 type
-  { TCSSUnitConverter }
-
+  { Converter for CSS units }
   TCSSUnitConverter = class
   protected
     FViewBoxHeight: TFloatWithCSSUnit;

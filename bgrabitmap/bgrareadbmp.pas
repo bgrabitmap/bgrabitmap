@@ -28,6 +28,7 @@
 {$mode objfpc}
 {$h+}
 
+{ BMP reader implementation }
 unit BGRAReadBMP;
 
 interface
@@ -38,6 +39,7 @@ type
   TBMPTransparencyOption = (toAuto, toTransparent, toOpaque);
   TBitMapInfoHeader = BMPcomn.TBitMapInfoHeader;
   TBitMapFileHeader = BMPcomn.TBitMapFileHeader;
+  { Header for OS/2 bitmap format }
   TOS2BitmapHeader = packed record
     bcSize: LongWord;
     bcWidth: Word;
@@ -45,6 +47,7 @@ type
     bcPlanes: Word;
     bcBitCount: Word;
   end;
+  { Minimum header for BMP format (non OS/2) }
   TMinimumBitmapHeader = packed record
     Size:longint;
     Width:longint;
@@ -57,9 +60,7 @@ type
   TWriteScanlineProc = procedure(Row : Integer; Img : TFPCustomImage) of object;
   TProgressProc = procedure(Percent: integer; var ShouldContinue: boolean) of object;
 
-
-  { TBGRAReaderBMP }
-
+  { Reader for BMP format }
   TBGRAReaderBMP = class (TBGRAImageReader)
     Private
       DeltaX, DeltaY : integer; // Used for the never-used delta option in RLE
@@ -934,7 +935,7 @@ end;
 
 procedure TBGRAReaderBMP.ReadResolutionValues(Img: TFPCustomImage);
 begin
-  {$IF FPC_FULLVERSION<30301}
+  {$IF FPC_FULLVERSION<30203}
   if (Img is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(Img) do
   {$ELSE}

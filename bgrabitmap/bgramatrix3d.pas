@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Matrix transformations in 3D }
 unit BGRAMatrix3D;
 
 {$mode objfpc}{$H+}
@@ -21,6 +23,7 @@ uses
 type
   TMatrix3D = packed array[1..3,1..4] of single;
   TMatrix4D = packed array[1..4,1..4] of single;
+  { Parameters to adjust a projection of 3D in 2D }
   TProjection3D = packed record
     Zoom, Center: TPointF;
   end;

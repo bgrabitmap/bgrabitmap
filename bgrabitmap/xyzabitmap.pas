@@ -1,7 +1,22 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ @abstract(Supplies a bitmap in XYZ colorspace with floating-point values (16-bit per channel)
+  and transparency.)
+
+  Pixels are in TXYZA format, based on
+  [CIE 1931 XYZ colorspace](https://en.wikipedia.org/wiki/CIE_1931_color_space) (TXYZAColorspace).
+
+  This format is generally used as an intermediary format.
+
+  **Bitmap units**: BGRABitmap, ExpandedBitmap, BGRAGrayscaleMask, LinearRGBABitmap, WordXYZABitmap, XYZABitmap.
+}
 unit XYZABitmap;
 
 {$mode objfpc}{$H+}
+
+{$i bgrabitmap.inc}
+
+{$IFNDEF BGRABITMAP_EXTENDED_COLORSPACE}{$STOP This unit need extended colorspaces}{$ENDIF}
 
 interface
 
@@ -9,9 +24,8 @@ uses
   BGRAClasses, SysUtils, BGRABitmapTypes, UniversalDrawer;
 
 type
-
-  { TXYZABitmap }
-
+  {* Bitmap with TXYZA pixel format, [CIE 1931 XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space)
+     with floating point values. }
   TXYZABitmap = class(specialize TGenericUniversalBitmap<TXYZA,TXYZAColorspace>)
   protected
     function InternalNew: TCustomUniversalBitmap; override;
@@ -24,6 +38,7 @@ type
                               AOffsetX: integer = 0; AOffsetY: integer = 0); override;
     class procedure EraseBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
     class procedure AlphaBrush(out ABrush: TUniversalBrush; AAlpha: Word); override;
+    {** Replaces imaginary colors by the _AAfter_ }
     procedure ReplaceImaginary(const AAfter: TXYZA);
   end;
 
@@ -31,6 +46,9 @@ const
   XYZATransparent : TXYZA = (X:0; Y:0; Z:0; alpha:0);
 
 operator = (const c1, c2: TXYZA): boolean; inline;
+{ Checks that the color is real, meaning that it can be experienced. To be real a color
+  need to have positive values and be a possible stimulation of the cones. The latter
+  are not independant so for example the green cones cannot be stimulated alone. }
 function IsRealColor(xyza: TXYZA): boolean;
 
 implementation

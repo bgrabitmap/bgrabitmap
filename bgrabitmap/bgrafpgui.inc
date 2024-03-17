@@ -4,8 +4,7 @@
 type
   TColor = TfpgColor;
 
-  { TRawImage }
-
+  { Raw image for fpGUI }
   TRawImage = class(TfpgImage)
     procedure BGRASetSizeAndTransparency(AWidth,AHeight: Integer; ATransparent: boolean);
     procedure Assign(AOther: TObject); virtual;

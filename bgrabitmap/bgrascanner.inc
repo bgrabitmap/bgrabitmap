@@ -11,14 +11,14 @@ type
    *
    * Note: it must not implement reference counting even if it is an interface
    *
-   * ''TBGRACustomBitmap'' implements this interface and the content is repeated
+   * TBGRACustomBitmap implements this interface and the content is repeated
      horizontally and vertically. There are also various classes
-     in ''BGRAGradientScanner'' unit that generate gradients on the fly and
-     in ''BGRATransform'' unit that provide geometrical transformations of images }
+     in BGRAGradientScanner unit that generate gradients on the fly and
+     in BGRATransform unit that provide geometrical transformations of images }
   IBGRAScanner = interface
-    {** Move to the position (''X'',''Y'') for the next call to ''ScanNextPixel'' }
+    {** Move to the position (_X_, _Y_) for the next call to _ScanNextPixel_ }
     procedure ScanMoveTo(X,Y: Integer);
-    {** Scan the pixel at the current location and increments ''X'' }
+    {** Scan the pixel at the current location and increments _X_ }
     function ScanNextPixel: TBGRAPixel;
     function ScanNextExpandedPixel: TExpandedPixel;
     {** Scan at any location using floating point coordinates }
@@ -27,15 +27,15 @@ type
     {** Scan at any location using integer coordinates }
     function ScanAtInteger(X,Y: integer): TBGRAPixel;
     function ScanAtIntegerExpanded(X,Y: integer): TExpandedPixel;
-    {** Copy a row of pixels from ''X'' to ''X''+''count''-1 to a specified destination
-        ''pdest''. ''mode'' indicates how to combine with existing data }
+    {** Copy a row of pixels from _X_ to _X_ + _count_ - 1 to a specified destination
+        _pdest_. _mode_ indicates how to combine with existing data }
     procedure ScanPutPixels(pdest: PBGRAPixel; count: integer; mode: TDrawMode);
     procedure ScanSkipPixels(ACount: integer);
-    {** Returns True if the function ''ScanPutPixels'' is available. Otherwise
-        you need to call ''ScanNextPixel'' and combine pixels for example
-        with ''SetPixel'' }
+    {** Returns True if the function _ScanPutPixels_ is available. Otherwise
+        you need to call _ScanNextPixel_ and combine pixels for example
+        with _SetPixel_ }
     function IsScanPutPixelsDefined: boolean;
-    {** Returns the corresponding OpenGL texture. The value is ''nil'' if no texture is associated. **}
+    {** Returns the corresponding OpenGL texture. The value is **nil** if no texture is associated. **}
     function GetTextureGL: IUnknown;
     function GetImageBoundsWithin(const ARect: TRect; Channel: TChannel = cAlpha; ANothingValue: Byte = 0): TRect; overload;
     function GetImageBoundsWithin(const ARect: TRect; Channels: TChannels; ANothingValue: Byte = 0): TRect; overload;
@@ -55,8 +55,7 @@ type
   {** A type of function of a scanner that returns the next pixel }
   TScanNextPixelFunction = function: TBGRAPixel of object;
 
-  { TBGRACustomScanner }
-  {* Base class for implementing ''IBGRAScanner'' interface }
+  {* Base class for implementing IBGRAScanner interface }
   TBGRACustomScanner = class(IBGRAScanner)
   private
     FCurX,FCurY: integer;
@@ -230,7 +229,7 @@ end;
 function TBGRACustomScanner.ScanAtIntegerMask(X,Y: integer): TByteMask;
 begin
   if GetScanCustomColorspace = TBGRAPixelColorspace then
-    result := ScanAtInteger(X,Y).green
+    result.gray := ScanAtInteger(X,Y).green
   else
     result := ScanAtMask(X,Y);
 end;
@@ -238,7 +237,7 @@ end;
 function TBGRACustomScanner.ScanAtMask(X,Y: Single): TByteMask;
 begin
   if GetScanCustomColorspace = TBGRAPixelColorspace then
-    result := ScanAt(X,Y).green
+    result.gray := ScanAt(X,Y).green
   else
     raise exception.Create('This scanner does not provide a mask.');
 end;

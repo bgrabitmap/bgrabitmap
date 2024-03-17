@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Equivalent of LCL Canvas but with transparency and gamma correction,
+  using drawing functions of BGRABitmap. }
 unit BGRACanvas;
 
 {$mode objfpc}{$H+}
@@ -11,9 +14,7 @@ uses
   {$IFDEF BGRABITMAP_USE_FPCANVAS}, FPCanvas{$ENDIF};
 
 type
-
-  { TBGRAColoredObject }
-
+  { Any colored object }
   TBGRAColoredObject = class
   private
     function GetColor: TColor;
@@ -27,8 +28,7 @@ type
     property Opacity: Byte read GetOpacity write SetOpacity;
   end;
 
-  { TBGRAPen }
-
+  { Pen property for TBGRACanvas }
   TBGRAPen = class(TBGRAColoredObject)
   private
     FPenMode: TPenMode;
@@ -60,8 +60,7 @@ type
     property Invisible: boolean read GetInvisible;
   end;
 
-  { TBGRABrush }
-
+  { Brush property for TBGRACanvas }
   TBGRABrush = class(TBGRAColoredObject)
   private
     function GetActualColor: TBGRAPixel;
@@ -90,8 +89,7 @@ type
     property Texture: IBGRAScanner read FTexture write SetTexture;
   end;
 
-  { TBGRAFont }
-
+  { Font property for TBGRACanvas }
   TBGRAFont = class(TBGRAColoredObject)
   private
     function GetAntialiasing: Boolean;
@@ -109,8 +107,7 @@ type
 
   end;
 
-  { TBGRACanvas }
-
+  { Improved canvas with gamma correction and transparency }
   TBGRACanvas = class
     procedure SetBrush(const AValue: TBGRABrush);
     procedure SetPen(const AValue: TBGRAPen);

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Provides a reader for WebP format using libwebp }
 unit BGRAReadWebP;
 
 {$mode objfpc}{$H+}
@@ -9,14 +11,14 @@ uses
   BGRAClasses, SysUtils, FPImage;
 
 type
+  { Header for WebP files }
   TWebPHeader = record
     RIFFCode: array[1..4] of char;
     FileSize: LongWord;
     WebPCode: array[1..4] of char;
   end;
 
-  { TBGRAReaderWebP }
-
+  { Reader for WebP image format }
   TBGRAReaderWebP = class(TFPCustomImageReader)
   protected
     function ReadHeader(Str: TStream): TWebPHeader;

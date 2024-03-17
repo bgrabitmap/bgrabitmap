@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Directory structure stored in memory (can be serialized) }
 unit BGRAMemDirectory;
 
 {$mode objfpc}{$H+}
@@ -21,8 +23,7 @@ type
 type
   TMemDirectoryPath = specialize TFPGList<TEntryFilename>;
 
-  { TMemDirectoryEntry }
-
+  { Entry in a directory structure in memory }
   TMemDirectoryEntry = class(TMultiFileEntry)
   private
     FStream: TStream;
@@ -58,6 +59,7 @@ type
     property MemDirectory: TMemDirectory read FMemDirectory;
   end;
 
+  { Directory structure in memory }
   TMemDirectory = class(TMultiFileContainer)
   private
     FParentDirectory: TMemDirectory;

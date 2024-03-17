@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Provide scanners that act as filters. This allows to use them directly as texture
+  rather than rendering first the whole filtered image }
 unit BGRAFilterScanner;
 
 {$mode objfpc}{$H+}
@@ -9,29 +12,28 @@ uses
   BGRAClasses, BGRABitmapTypes, BGRAFilterType;
 
 type
-  { TBGRAFilterScannerGrayscale }
-  { Grayscale converts colored pixel into grayscale with same luminosity }
+  { Scanner that converts colored pixel into grayscale with same luminosity }
   TBGRAFilterScannerGrayscale = class(TBGRAFilterScannerPixelwise)
     class procedure ComputeFilterAt(ASource: PBGRAPixel; ADest: PBGRAPixel;
       ACount: integer; AGammaCorrection: boolean); override;
   end;
 
-  { TBGRAFilterScannerNegative }
-
+  { Scanner that computes the negative of the colors }
   TBGRAFilterScannerNegative = class(TBGRAFilterScannerPixelwise)
     class procedure ComputeFilterAt(ASource: PBGRAPixel; ADest: PBGRAPixel;
       ACount: integer; AGammaCorrection: boolean); override;
   end;
 
-  { TBGRAFilterScannerSwapRedBlue }
-
+  { Scanner that swaps red and blue channels }
   TBGRAFilterScannerSwapRedBlue = class(TBGRAFilterScannerPixelwise)
     class procedure ComputeFilterAt(ASource: PBGRAPixel; ADest: PBGRAPixel;
       ACount: integer; {%H-}AGammaCorrection: boolean); override;
   end;
 
   { TBGRAFilterScannerNormalize }
-  { Normalize compute min-max of specified channel and apply an affine transformation
+  { @abstract(Scanner that normalizes the value of color channels.)
+
+    It computes min-max of specified channel and apply an affine transformation
     to make it use the full range of values }
   TBGRAFilterScannerNormalize = class(TBGRAFilterScannerPixelwise)
   private
@@ -50,8 +52,7 @@ type
             {%H-}ACount: integer; {%H-}AGammaCorrection: boolean); override;
   end;
 
-  { TBGRA3X3FilterScanner }
-
+  { Abstract scanner that applies a filter on a 3x3 window of pixels }
   TBGRA3X3FilterScanner = class(TBGRAFilterScannerMultipixel)
   protected
     FSourceBorderColor,FDestinationBorderColor: TBGRAPixel;
@@ -68,10 +69,11 @@ type
     property AutoSourceBorderColor: boolean read FAutoSourceBorderColor write FAutoSourceBorderColor;
   end;
 
-  { TBGRAContourScanner }
-  { Filter contour compute a grayscale image, then for each pixel
+  { @abstract(Scanner that computes the contour of the elements of an image.)
+
+    It computes a grayscale image, then for each pixel
     calculates the difference with surrounding pixels (in intensity and alpha)
-    and draw black pixels when there is a difference }
+    and draw black pixels when there is a difference. }
   TBGRAContourScanner = class(TBGRA3X3FilterScanner)
   protected
     FGammaCorrection: boolean;
@@ -85,8 +87,7 @@ type
     property Opacity: Byte read FOpacity write FOpacity;
   end;
 
-  { TBGRASharpenScanner }
-
+  { Scanner that computes a sharpened image by comparing neighbouring pixels }
   TBGRASharpenScanner = class(TBGRA3X3FilterScanner)
   protected
     FAmount: integer;
@@ -98,8 +99,7 @@ type
                        AAmount: integer = 256); overload;
   end;
 
-  { TBGRAEmbossHightlightScanner }
-
+  { Scanner that computes an embossed image and fills the shape with a highlight color. }
   TBGRAEmbossHightlightScanner = class(TBGRA3X3FilterScanner)
   protected
     FFillSelection: boolean;

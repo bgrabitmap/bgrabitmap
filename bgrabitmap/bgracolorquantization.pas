@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Color quantization i.e. the reduction to a palette using dithering or not,
+  provided by TBGRAColorQuantizer class. }
 unit BGRAColorQuantization;
 
 {$mode objfpc}{$H+}
@@ -14,8 +17,7 @@ type
   TBGRAApproxPalette = class;
   TBiggestLeafMethod = (blMix, blApparentInterval, blWeight);
 
-  { TDimensionMinMax }
-
+  { Range according to one dimension of a color }
   TDimensionMinMax = object
     Minimum: UInt32;
     Maximum: UInt32;
@@ -31,8 +33,7 @@ type
                      cdSaturation);
   TColorDimensions = set of TColorDimension;
 
-  { TBGRAColorQuantizer }
-
+  { Implementation of color quantization }
   TBGRAColorQuantizer = class(TBGRACustomColorQuantizer)
   private
     FColors: ArrayOfWeightedColor;
@@ -63,8 +64,7 @@ type
       ABitmap: TBGRACustomBitmap; AStream: TStream; AFormat: TBGRAImageFormat); override;
   end;
 
-  { TBGRAApproxPalette }
-
+  { Palette approximating color base on a color tree }
   TBGRAApproxPalette = class(TBGRACustomApproxPalette)
   private
     FTree: TBGRAColorTree;
@@ -87,8 +87,7 @@ type
     function GetAsArrayOfWeightedColor: ArrayOfWeightedColor; override;
   end;
 
-  { TBGRAApproxPaletteViaLargerPalette }
-
+  { Palette approximating via a large palette }
   TBGRAApproxPaletteViaLargerPalette = class(TBGRAApproxPalette)
   private
     FLarger: TBGRACustomApproxPalette;
@@ -114,8 +113,7 @@ type
 
   TColorBoxBounds = array[TColorDimension] of TDimensionMinMax;
 
-  { TBGRAColorBox }
-
+  { Box area in the colorspace allowing to split in two different areas }
   TBGRAColorBox = class
   private
     FBounds: TColorBoxBounds;
@@ -165,8 +163,7 @@ type
 
   TBGRALeafColorMode = (lcAverage, lcCenter, lcExtremum, lcMix);
 
-  { TBGRAColorTree }
-
+  { Binary tree of colors for color approximation }
   TBGRAColorTree = class
   private
     FLeaf: TBGRAColorBox;

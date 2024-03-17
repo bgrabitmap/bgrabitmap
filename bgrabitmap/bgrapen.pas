@@ -1,14 +1,16 @@
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ @abstract(Configuration and computation of pen style and width, as well as line caps and join styles.)
+
+  A line consists in two points.
+  A polyline consists in one or more lines, defined by two points or more.
+  A poly-polyline consists in a series of polylines, defined by polyline points
+  separated by empty points (see EmptyPointF and EmptyPoint)
+}
 unit BGRAPen;
 
 {$mode objfpc}{$H+}
-
 interface
-
-{ This unit handles pen style and width, as well as line caps and join styles.
-
-  A line consists in two points.
-  A polyline consists in one or more lines, defined by two points or more than two points
-  A poly-polyline consists in a series of polylines, defined by polyline points separated by empty points (see EmptyPointF) }
 
 uses
   SysUtils, BGRAGraphics, BGRABitmapTypes, BGRATransform;
@@ -20,8 +22,7 @@ type
   TPenJoinStyle = BGRAGraphics.TPenJoinStyle;
   TPenEndCap = BGRAGraphics.TPenEndCap;
 
-  { TBGRAPenStroker }
-
+  { Class to hold pen stroker configuration and compute path }
   TBGRAPenStroker = class(TBGRACustomPenStroker)
     protected
       { Pen style can be defined by PenStyle property of by CustomPenStyle property.

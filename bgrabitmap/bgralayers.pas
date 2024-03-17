@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Layered image, each layer being a TBGRABitmap or rendered from an original.
+  It can handle SVG format, gradients and blend modes. }
 unit BGRALayers;
 
 {$mode objfpc}{$H+}
@@ -14,8 +17,7 @@ type
   TBGRACustomLayeredBitmap = class;
   TBGRACustomLayeredBitmapClass = class of TBGRACustomLayeredBitmap;
 
-  { TBGRALayerOriginalEntry }
-
+  { Entry for one original in a list of originals }
   TBGRALayerOriginalEntry = record
      Guid: TGuid;
      Instance: TBGRALayerCustomOriginal;
@@ -36,8 +38,7 @@ type
   TBGRALayeredBitmapCheckStreamProc = function(AStream: TStream): boolean;
   TOriginalRenderStatus = (orsNone, orsDraft, orsPartialDraft, orsProof, orsPartialProof);
 
-  { TBGRACustomLayeredBitmap }
-
+  { Abstract class for storing a layered bitmap }
   TBGRACustomLayeredBitmap = class(TGraphic)
   private
     FFrozenRange: array of record
@@ -161,6 +162,7 @@ type
   TLayeredActionProgressEvent = procedure(ASender: TObject; AProgressPercent: integer) of object;
   TEmbeddedOriginalLoadErrorEvent = procedure (ASender: TObject; AError: string; var ARaise: boolean) of object;
 
+  { Information about one layer }
   TBGRALayerInfo = record
     UniqueId: integer;
     Name: string;
@@ -177,8 +179,7 @@ type
     OriginalInvalidatedBounds: TRectF;
   end;
 
-  { TBGRALayeredBitmap }
-
+  { Base implementation for a layered bitmap }
   TBGRALayeredBitmap = class(TBGRACustomLayeredBitmap)
   private
     FNbLayers: integer;

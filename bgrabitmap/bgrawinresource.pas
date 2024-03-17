@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of Windows resource file format (RES) }
 unit BGRAWinResource;
 
 {$mode objfpc}{$H+}
@@ -36,13 +38,13 @@ const
   ICON_OR_CURSOR_FILE_CURSOR_TYPE = 2;
 
 type
+  { Contain a name or integer identifier for a resource }
   TNameOrId = record
     Id: integer;
     Name: utf8string;
   end;
 
-  { TResourceInfo }
-
+  { Information about resource entry }
   TResourceInfo = object
     DataVersion: LongWord;
     MemoryFlags: Word;
@@ -54,8 +56,7 @@ type
 
   TWinResourceContainer = class;
 
-  { TCustomResourceEntry }
-
+  { Abstract resource entry }
   TCustomResourceEntry = class(TMultiFileEntry)
   private
     class function GetNextEntry(AContainer: TMultiFileContainer; AStream: TStream): TCustomResourceEntry; static;
@@ -87,8 +88,7 @@ type
     property LanguageId: integer read GetLanguageId write SetLanguageId;
   end;
 
-  { TUnformattedResourceEntry }
-
+  { Resource entry without formatting }
   TUnformattedResourceEntry = class(TCustomResourceEntry)
   protected
     FDataStream: TStream;
@@ -103,8 +103,7 @@ type
     function GetStream: TStream; override;
   end;
 
-  { TBitmapResourceEntry }
-
+  { BMP resource entry }
   TBitmapResourceEntry = class(TUnformattedResourceEntry)
   protected
     function GetFileSize: int64; override;
@@ -115,12 +114,12 @@ type
     procedure CopyFrom(ASource: TStream);
   end;
 
-  { TGroupIconHeader }
-
+  { Icon header (group of images) }
   TGroupIconHeader = object
     Reserved, ResourceType, ImageCount: Word;
     procedure SwapIfNecessary;
   end;
+  { Icon image entry in resource }
   TGroupIconDirEntry = packed record
     Width, Height, Colors, Reserved: byte;
     //stored in little endian
@@ -129,6 +128,7 @@ type
     1: (Planes, BitsPerPixel: Word);
     2: (HotSpotX, HotSpotY: Word);
   end;
+  { Icon image entry in stream }
   TIconFileDirEntry = packed record
     Width, Height, Colors, Reserved: byte;
     //stored in little endian
@@ -138,8 +138,7 @@ type
     2: (HotSpotX, HotSpotY: Word);
   end;
 
-  { TGroupIconOrCursorEntry }
-
+  { Entry for an icon or cursor (group of images) }
   TGroupIconOrCursorEntry = class(TCustomResourceEntry)
   private
     function GetNbIcons: integer;
@@ -161,8 +160,7 @@ type
     property NbIcons: integer read GetNbIcons;
   end;
 
-  { TGroupIconEntry }
-
+  { Entry for an icon (group of images) }
   TGroupIconEntry = class(TGroupIconOrCursorEntry)
   protected
     function GetExtension: utf8string; override;
@@ -172,8 +170,7 @@ type
     constructor Create(AContainer: TMultiFileContainer; AEntryNameOrId: TNameOrId; const AResourceInfo: TResourceInfo);
   end;
 
-  { TGroupCursorEntry }
-
+  { Entry for an cursor (group of images) }
   TGroupCursorEntry = class(TGroupIconOrCursorEntry)
   protected
     function GetExtension: utf8string; override;
@@ -183,8 +180,7 @@ type
     constructor Create(AContainer: TMultiFileContainer; AEntryNameOrId: TNameOrId; const AResourceInfo: TResourceInfo);
   end;
 
-  { TWinResourceContainer }
-
+  { Container for Windows resources }
   TWinResourceContainer = class(TMultiFileContainer)
   private
     function InternalFind(const AEntry: TNameOrId; const AType: TNameOrId; ALanguageId: integer = 0): TCustomResourceEntry;

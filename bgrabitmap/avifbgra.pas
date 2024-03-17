@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
-{ Encode/Decode avif images from/to BGRABitmap. }
-{ Author: Domingo Galmes <dgalmesp@gmail.com>  01-11-2021 }
 
+{ @abstract(Easy to use classes and functions to read/write images in AVIF format.)
+
+  It supports multi-image files.
+
+  Note that it requires libavif library. }
 unit avifbgra;
+
+{ Author: Domingo Galmes <dgalmesp@gmail.com>  01-11-2021 }
 
 {$mode ObjFPC}{$H+}
 
@@ -12,23 +17,84 @@ uses
   Classes, SysUtils, BGRABitmapTypes, libavif;
 
 type
+  {* Exception when using libavif library }
   EAvifException = class(Exception);
+  {* Pixel format to use when encoding the image }
   avifPixelFormat = libavif.avifPixelFormat;
+
+const
+  {** This format uses YUV color space with a 4:4:4 chroma subsampling.
+    In this format, each component (Y for luminance, U, and V for chrominance) has the same
+    sample rate, meaning there's no chroma subsampling. This results in high-quality images
+    because it retains all the color information. }
+  AVIF_PIXEL_FORMAT_YUV444 = libavif.AVIF_PIXEL_FORMAT_YUV444;
+  {** This format also uses the YUV color space but with 4:2:2 chroma subsampling.
+    Here, the horizontal resolution of the chroma channels is halved
+    compared to the luminance channel, reducing the image size while still maintaining good quality.
+    It strikes a balance between compression and image quality. }
+  AVIF_PIXEL_FORMAT_YUV422 = libavif.AVIF_PIXEL_FORMAT_YUV422;
+  {** Utilizing the YUV color space with 4:2:0 chroma subsampling, this format reduces both
+    the horizontal and vertical resolution of the chroma channels by half relative
+    to the luminance channel. This is a commonly used format for digital video compression,
+    offering significant file size reduction at the cost of some image quality,
+    especially in areas with high color detail. }
+  AVIF_PIXEL_FORMAT_YUV420 = libavif.AVIF_PIXEL_FORMAT_YUV420;
+  {** This is a monochrome format where only the Y (luminance) component is used, and there are
+    no U and V (chrominance) components. Essentially, it's a grayscale image, which can
+    significantly reduce the file size while being appropriate for images that
+    don't require color. }
+  AVIF_PIXEL_FORMAT_YUV400 = libavif.AVIF_PIXEL_FORMAT_YUV400;
+
+type
+  {* Codec choices for encoding and/or decoding AVIF }
   avifCodecChoice = libavif.avifCodecChoice;
 
 const
-  AVIF_BGRA_DEFAULT_TIMESCALE = 30;
-  AVIF_BGRA_DEFAULT_QUALITY = 30;
-  AVIF_BGRA_DEFAULT_QUALITY_ALPHA_DELTA = 25;
-  AVIF_BGRA_DEFAULT_QUALITY_ALPHA = AVIF_BGRA_DEFAULT_QUALITY + AVIF_BGRA_DEFAULT_QUALITY_ALPHA_DELTA;
+  { AOM stands for Alliance for Open Media, which is the consortium
+    that developed the AV1 codec. This choice indicates the use of AOM's reference implementation
+    for both encoding and decoding AVIF images. }
+  AVIF_CODEC_CHOICE_AOM = libavif.AVIF_CODEC_CHOICE_AOM;
+  { This decoding-only codec is focused on decoding AV1 content. Developed by the VideoLAN, VLC, and FFmpeg
+    communities, dav1d is known for its speed and efficiency in decoding AV1 streams. }
+  AVIF_CODEC_CHOICE_DAV1D = libavif.AVIF_CODEC_CHOICE_DAV1D;
+  { This decoding-only codec is developed by Google. It is designed for efficiency and is used in
+     various Google products for decoding AV1 content. }
+  AVIF_CODEC_CHOICE_LIBGAV1 = libavif.AVIF_CODEC_CHOICE_LIBGAV1;
+  { This encoding-only codec is designed to offer efficient encoding of video content. }
+  AVIF_CODEC_CHOICE_RAV1E = libavif.AVIF_CODEC_CHOICE_RAV1E;
+  { This encoding-only codec focuses on offering high performance and scalability. SVT stands for
+    Scalable Video Technology. }
+  AVIF_CODEC_CHOICE_SVT = libavif.AVIF_CODEC_CHOICE_SVT;
+  { Ongoing development in the next-generation video compression technology beyond AV1. }
+  AVIF_CODEC_CHOICE_AVM = libavif.AVIF_CODEC_CHOICE_AVM;
+
+const
+  { Default number of allocated threads for processing }
   AVIF_BGRA_DEFAULT_MAX_THREADS = 2;
+
+  { Default timescale of the media (in Hz), not relevant for images }
+  AVIF_BGRA_DEFAULT_TIMESCALE = 30;
+
+  { Default quality of color compression }
+  AVIF_BGRA_DEFAULT_QUALITY = 30;
+  { Default difference between color quality and alpha quality }
+  AVIF_BGRA_DEFAULT_QUALITY_ALPHA_DELTA = 25;
+  { Default quality of compression of the alpha channel }
+  AVIF_BGRA_DEFAULT_QUALITY_ALPHA = AVIF_BGRA_DEFAULT_QUALITY + AVIF_BGRA_DEFAULT_QUALITY_ALPHA_DELTA;
+  { Specify that no information will be lost in the compression process }
   AVIF_BGRA_LOSSLESS_QUALITY = 100;
 
+  { Let the encoder choose the adequate speed }
+  AVIF_BGRA_SPEED_DEFAULT = AVIF_SPEED_DEFAULT;
+
+  { Common format for image compression with half the resolution for chroma channels
+    (ignored when used with AVIF_BGRA_LOSSLESS_QUALITY) }
+  AVIF_BGRA_PIXEL_FORMAT_DEFAULT = AVIF_PIXEL_FORMAT_YUV420;
+  { Let the encoder choose the adequate codec }
+  AVIF_BGRA_CODEC_CHOICE_AUTO = AVIF_CODEC_CHOICE_AUTO;
+
 type
-  { To read one or more images }
-
-  { TAvifReader }
-
+  { Reader for AVIF images or animations (not derived from TFPCustomImageReader) }
   TAvifReader = class
   private
     function GetImageCount: uint32;
@@ -71,11 +137,7 @@ type
     property Timescale: uint64 read GetTimescale; // if all images have 1 timescale of duration is the same as FPS
   end;
 
-
-  { To encode one or more images in a sequence }
-
-  { TAvifWriter }
-
+  { Writer for AVIF images or animations (not derived from TFPCustomImageWriter) }
   TAvifWriter = class
   protected
     FEncoder: PAvifEncoder;
@@ -106,8 +168,8 @@ type
   public
     constructor Create(
       AQuality0to100: integer = AVIF_BGRA_DEFAULT_QUALITY;
-      ASpeed0to10: integer = AVIF_SPEED_DEFAULT;
-      APixelFormat: avifPixelFormat = AVIF_PIXEL_FORMAT_YUV420;
+      ASpeed0to10: integer = AVIF_BGRA_SPEED_DEFAULT;
+      APixelFormat: avifPixelFormat = AVIF_BGRA_PIXEL_FORMAT_DEFAULT;
       AIgnoreAlpha: boolean = False); virtual; overload;
     procedure Close;
     destructor Destroy; override;
@@ -132,55 +194,64 @@ type
     property Lossless: boolean read GetLossless write SetLossless;
   end;
 
+{ Load an AVIF image from the given stream }
 procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRACustomBitmap);
+{ Load an AVIF image from the given file }
 procedure AvifLoadFromFile(const AFilename: string; aBitmap: TBGRACustomBitmap);
+{ Load an AVIF image from the given file without using the reader class }
 procedure AvifLoadFromFileNative(const AFilename: string; aBitmap: TBGRACustomBitmap);
+{ Load an AVIF image from memory, without using the reader class }
 procedure AvifLoadFromMemory(AData: Pointer; ASize: cardinal; aBitmap: TBGRACustomBitmap);
 
-// Helper functions to save an image in AVIF format.
-// The return value is the number of bytes needed.
+{ Save an image into a stream using AVIF format. Return the number of bytes needed. }
 function AvifSaveToStream(aBitmap: TBGRACustomBitmap; AStream: TStream;
   aQuality0to100: integer = AVIF_BGRA_DEFAULT_QUALITY;
-  aSpeed0to10: integer = AVIF_SPEED_DEFAULT;
-  aPixelFormat:avifPixelFormat = AVIF_PIXEL_FORMAT_YUV420;
+  aSpeed0to10: integer = AVIF_BGRA_SPEED_DEFAULT;
+  aPixelFormat:avifPixelFormat = AVIF_BGRA_PIXEL_FORMAT_DEFAULT;
   aIgnoreAlpha:boolean = false): NativeUInt;
 
+{ Save an image into a file using AVIF format. Return the number of bytes needed. }
 function AvifSaveToFile(aBitmap: TBGRACustomBitmap; const AFilename: string;
   aQuality0to100: integer = AVIF_BGRA_DEFAULT_QUALITY;
-  aSpeed0to10: integer = AVIF_SPEED_DEFAULT;
-  aPixelFormat: avifPixelFormat = AVIF_PIXEL_FORMAT_YUV420;
+  aSpeed0to10: integer = AVIF_BGRA_SPEED_DEFAULT;
+  aPixelFormat: avifPixelFormat = AVIF_BGRA_PIXEL_FORMAT_DEFAULT;
   aIgnoreAlpha: boolean = false): NativeUInt;
 
+{ Save an image to memory using AVIF format. Return the number of bytes needed. }
 function AvifSaveToMemory(aBitmap: TBGRACustomBitmap; AData: Pointer; ASize: cardinal;
   aQuality0to100: integer = AVIF_BGRA_DEFAULT_QUALITY;
-  aSpeed0to10:integer = AVIF_SPEED_DEFAULT;
-  aPixelFormat:avifPixelFormat = AVIF_PIXEL_FORMAT_YUV420;
+  aSpeed0to10:integer = AVIF_BGRA_SPEED_DEFAULT;
+  aPixelFormat:avifPixelFormat = AVIF_BGRA_PIXEL_FORMAT_DEFAULT;
   aIgnoreAlpha:boolean = false): NativeUInt;
 
+{ Save an image into a stream using AVIF format. Return the number of bytes needed. }
 function AvifSaveToStream(ABitmap: TBGRACustomBitmap; AStream: TStream;
   AIgnoreAlpha: boolean = False;
   AQuality0to100: integer = AVIF_BGRA_DEFAULT_QUALITY;
   AQualityAlpha0to100: integer = AVIF_BGRA_DEFAULT_QUALITY_ALPHA;
-  APixelFormat: avifPixelFormat = AVIF_PIXEL_FORMAT_YUV420;
-  ACodec: avifCodecChoice = AVIF_CODEC_CHOICE_AUTO;
-  ASpeed0to10: integer = AVIF_SPEED_DEFAULT): nativeuint; overload;
+  APixelFormat: avifPixelFormat = AVIF_BGRA_PIXEL_FORMAT_DEFAULT;
+  ACodec: avifCodecChoice = AVIF_BGRA_CODEC_CHOICE_AUTO;
+  ASpeed0to10: integer = AVIF_BGRA_SPEED_DEFAULT): nativeuint; overload;
 
+{ Save an image into a file using AVIF format. Return the number of bytes needed. }
 function AvifSaveToFile(ABitmap: TBGRACustomBitmap; const AFilename: string;
   AIgnoreAlpha: boolean = False;
   AQuality0to100: integer = AVIF_BGRA_DEFAULT_QUALITY;
   AQualityAlpha0to100: integer = AVIF_BGRA_DEFAULT_QUALITY_ALPHA;
-  APixelFormat: avifPixelFormat = AVIF_PIXEL_FORMAT_YUV420;
-  ACodec: avifCodecChoice = AVIF_CODEC_CHOICE_AUTO;
-  ASpeed0to10: integer = AVIF_SPEED_DEFAULT): nativeuint; overload;
+  APixelFormat: avifPixelFormat = AVIF_BGRA_PIXEL_FORMAT_DEFAULT;
+  ACodec: avifCodecChoice = AVIF_BGRA_CODEC_CHOICE_AUTO;
+  ASpeed0to10: integer = AVIF_BGRA_SPEED_DEFAULT): nativeuint; overload;
 
+{ Save an image to memory using AVIF format. Return the number of bytes needed. }
 function AvifSaveToMemory(ABitmap: TBGRACustomBitmap; AData: Pointer; ASize: nativeuint;
   AIgnoreAlpha: boolean = False;
   AQuality0to100: integer = AVIF_BGRA_DEFAULT_QUALITY;
   AQualityAlpha0to100: integer = AVIF_BGRA_DEFAULT_QUALITY_ALPHA;
-  APixelFormat: avifPixelFormat = AVIF_PIXEL_FORMAT_YUV420;
-  ACodec: avifCodecChoice = AVIF_CODEC_CHOICE_AUTO;
-  ASpeed0to10: integer = AVIF_SPEED_DEFAULT): nativeuint; overload;
+  APixelFormat: avifPixelFormat = AVIF_BGRA_PIXEL_FORMAT_DEFAULT;
+  ACodec: avifCodecChoice = AVIF_BGRA_CODEC_CHOICE_AUTO;
+  ASpeed0to10: integer = AVIF_BGRA_SPEED_DEFAULT): nativeuint; overload;
 
+{ Checks that the signature of the memory block correspond to a valid AVIF header }
 function AvifValidateHeaderSignature(
   aBuffer: Pointer // at least 12 first bytes of file
   ): boolean;
@@ -681,24 +752,24 @@ end;
 
 procedure TEncoder.SetQuality(AQuality: integer);
 begin
-  raise exception.Create('Quality not available in this version of libavif');
+  raise EAvifException.Create('Quality not available in this version of libavif');
 end;
 
 function TEncoder.GetQuality: integer;
 begin
   result := 0;
-  raise exception.Create('Quality not available in this version of libavif');
+  raise EAvifException.Create('Quality not available in this version of libavif');
 end;
 
 procedure TEncoder.SetQualityAlpha(AQuality: integer);
 begin
-  raise exception.Create('Quality not available in this version of libavif');
+  raise EAvifException.Create('Quality not available in this version of libavif');
 end;
 
 function TEncoder.GetQualityAlpha: integer;
 begin
   result := 0;
-  raise exception.Create('Quality not available in this version of libavif');
+  raise EAvifException.Create('Quality not available in this version of libavif');
 end;
 
 function TEncoder.HasQuality: boolean;
@@ -1234,7 +1305,7 @@ class function TAvifReader.CreateDecoder: PavifDecoder;
 begin
   result := nil;
   if not LibAvifLoad then
-    raise Exception.Create('Cannot load libavif');
+    raise EAvifException.Create('Cannot load libavif');
   try
     result := avifDecoderCreate();
   finally
@@ -1359,7 +1430,7 @@ begin
   Timescale := AVIF_BGRA_DEFAULT_TIMESCALE;
   MaxThreads := AVIF_BGRA_DEFAULT_MAX_THREADS;
   Speed := ASpeed0to10;
-  Encoder := AVIF_CODEC_CHOICE_AUTO;
+  Encoder := AVIF_BGRA_CODEC_CHOICE_AUTO;
 
   // * tileRowsLog2
   // * tileColsLog2
@@ -1445,7 +1516,7 @@ class function TAvifWriter.CreateEncoder: PAvifEncoder;
 begin
   result := nil;
   if not LibAvifLoad then
-    raise Exception.Create('Cannot load libavif');
+    raise EAvifException.Create('Cannot load libavif');
   try
     result := avifEncoderCreate();
   finally

@@ -1,0 +1,39 @@
+@title(📚 BGRABitmap documentation)
+@shorttitle(📚 BGRABitmap)
+[🏠 Homepage](https://bgrabitmap.github.io/)
+
+@image(../bgrabitmap.jpg) 
+
+@section(1 SecFirst Introduction)
+
+[BGRABitmap](https://bgrabitmap.github.io/) is a package designed to modify and create images with transparency. Direct pixel access allows fast image processing. The library has been tested on Windows, Linux and Mac.
+
+@section(1 Install How to install)
+
+There are various ways to install.
+
+- [Download source code](https://github.com/bgrabitmap/bgrabitmap/releases) and [configure your project](https://wiki.freepascal.org/BGRABitmap_tutorial_1).
+- Use [Online Package Manager](http://wiki.lazarus.freepascal.org/Online_Package_Manager) in Lazarus.
+- Get a fresh installation of Lazarus and BGRABitmap with [FPCUpDeluxe](http://wiki.lazarus.freepascal.org/fpcupdeluxe).
+
+The source code can be browser on the [repository](https://github.com/bgrabitmap/bgrabitmap).
+
+@section(1 Start Quick start)
+
+Include BGRABitmap and BGRABitmapTypes in the **uses** clause. If you are using LCL types, add also BGRAGraphics unit.
+
+Create TBGRABitmap instances for each image. This class derives from TBGRACustomBitmap.
+
+The **CanvasBGRA** property of type TBGRACanvas provides a canvas with opacity and [antialiasing](https://wiki.freepascal.org/BGRABitmap_tutorial_13).
+
+The **Canvas2D** property of type TBGRACanvas2D provides a canvas with 2d transformation and [similar to HTML5](https://wiki.freepascal.org/BGRABitmap_tutorial_14).
+
+Here is a nice [introduction to BGRABitmap](https://msegui.net/tutoriels/bgrabitmap-lazarus/tutoriel.html) in French.
+
+@section(1 Resources More resources)
+
+You can read more about BGRABitmap in the [wiki](http://wiki.freepascal.org/BGRABitmap). And also you can follow [tutorials](http://wiki.freepascal.org/BGRABitmap_tutorial) to learn how to use BGRABitmap.
+
+There is also an [image transitions tutorial](https://gilles-vasseur.developpez.com/tutoriels/transitions/bgra1/) in French.
+
+Lazarus forum has a [category](https://forum.lazarus.freepascal.org/index.php/board,46.0.html) for BGRABitmap. To report bugs, please check [issues](https://github.com/bgrabitmap/bgrabitmap/issues) on GitHub.

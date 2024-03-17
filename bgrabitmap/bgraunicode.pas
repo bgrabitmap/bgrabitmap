@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of Unicode bidirectional algorithm }
 unit BGRAUnicode;
-{ Implementation of Unicode bidi algorithm }
 { Author: circular }
 
 {$mode objfpc}{$H+}
@@ -21,7 +22,14 @@ type
                       ubcMirroredNeutral);       //ubcOtherNeutrals with Mirrored property
   TUnicodeJoiningType = (ujtNonJoining{U}, ujtTransparent{T}, ujtRightJoining{R}, ujtLeftJoining{L},
                          ujtDualJoining{D}, ujtJoinCausing{C});
-  TFontBidiMode = (fbmAuto, fbmLeftToRight, fbmRightToLeft);
+  {* Bidi-mode preference (right-to-left or left-to-right) }
+  TFontBidiMode = (
+    {** Automatic bidi-mode, depending on first letter type }
+    fbmAuto,
+    {** Always left-to-right (but can embed another direction) }
+    fbmLeftToRight,
+    {** Always right-to-left (but can embed another direction) }
+    fbmRightToLeft);
 
 const
   ubcNeutral = [ubcSegmentSeparator, ubcParagraphSeparator, ubcWhiteSpace, ubcOtherNeutrals];
@@ -44,8 +52,7 @@ const
 type
   PUnicodeBidiInfo = ^TUnicodeBidiInfo;
 
-  { TUnicodeBidiInfo }
-
+  { Bidirectional layout information for one Unicode character }
   TUnicodeBidiInfo = packed record
   private
     function GetDiscardable: boolean;
@@ -146,7 +153,8 @@ const
   UNICODE_RIGHT_POINTING_ANGLE_BRACKET = $232A;
   UNICODE_RIGHT_ANGLE_BRACKET = $3009;
 
-type //bracket matching
+type
+  { Pair of matching brackets }
   TUnicodeBracketInfo = record
     IsBracket: boolean;
     OpeningBracket,ClosingBracket: LongWord;

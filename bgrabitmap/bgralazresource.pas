@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Handles Lazarus resources files and provide tools to create them }
 unit BGRALazResource;
 
 {$mode objfpc}{$H+}
@@ -9,8 +11,7 @@ uses
   BGRAClasses, SysUtils, BGRAMultiFileType;
 
 type
-  { TLazResourceEntry }
-
+  { Entry in a Lazarus resource }
   TLazResourceEntry = class(TMultiFileEntry)
   private
     procedure Serialize(ADestination: TStream);
@@ -29,8 +30,7 @@ type
     function GetStream: TStream; override;
   end;
 
-  { TFormDataEntry }
-
+  { Entry for form data in Lazarus resource }
   TFormDataEntry = class(TLazResourceEntry)
   protected
     FTextContent: TStream;
@@ -43,8 +43,7 @@ type
     function CopyTo(ADestination: TStream): int64; override;
   end;
 
-  { TLazResourceContainer }
-
+  { Lazarus resource container }
   TLazResourceContainer = class(TMultiFileContainer)
   protected
     function CreateEntry(AName: utf8string; AExtension: utf8string; AContent: TStream): TMultiFileEntry; override;

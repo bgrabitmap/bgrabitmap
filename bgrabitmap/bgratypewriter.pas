@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Cached vectorial font renderer with affine transform }
 unit BGRATypewriter;
 
 {$mode objfpc}{$H+}
@@ -9,13 +11,13 @@ uses
   BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform;
 
 type
+  { Array of boxes for each glyph in text }
   TGlyphBoxes = array of record
     Glyph: string;
     Box: TAffineBox;
   end;
 
-  { TBGRAGlyph }
-
+  { Abstract class for a glyph }
   TBGRAGlyph = class
   protected
     FIdentifier: string;
@@ -35,11 +37,6 @@ type
     class function LoadFromStream(AStream: TStream): TBGRAGlyph; static;
   end;
 
-  TKerningInfo = class
-    IdLeft, IdRight: string;
-    KerningOffset: single;
-  end;
-
   TGlyphPointCurveMode= TEasyBezierCurveMode;
 
 const
@@ -48,8 +45,7 @@ const
   cmAngle = TEasyBezierCurveMode.cmAngle;
 
 type
-  { TBGRAPolygonalGlyph }
-
+  { Polygonal or curved glyph }
   TBGRAPolygonalGlyph = class(TBGRAGlyph)
   private
     function GetClosed: boolean;
@@ -84,45 +80,28 @@ type
     property PointCount: integer read GetPointCount;
   end;
 
+  { Header of typewriter stream }
   TBGRACustomTypeWriterHeader = record
     HeaderName: String;
     NbGlyphs: integer;
   end;
 
+  { Information on how to display a glyph }
   TBGRAGlyphDisplayInfo = record
     Glyph: TBGRAGlyph;
     Matrix: TAffineMatrix;
     Mirrored, RTL: WordBool;
   end;
 
+  { Information on how to display text }
   TBGRATextDisplayInfo = array of TBGRAGlyphDisplayInfo;
+
   TBrowseGlyphCallbackFlag = (gcfMirrored, gcfMerged, gcfRightToLeft, gcfKerning);
   TBrowseGlyphCallbackFlags = set of TBrowseGlyphCallbackFlag;
   TBrowseGlyphCallback = procedure(ATextUTF8: string; AGlyph: TBGRAGlyph;
     AFlags: TBrowseGlyphCallbackFlags; AData: Pointer; out AContinue: boolean) of object;
 
-  TTextFitInfoCallbackData = record
-    WidthAccumulator, MaxWidth: single;
-    CharCount: integer;
-    ByteCount: integer;
-    PrevGlyphId: string;
-  end;
-
-  TDisplayInfoCallbackData = record
-    Align: TBGRATypeWriterAlignment;
-    Matrix: TAffineMatrix;
-    Info: TBGRATextDisplayInfo;
-    InfoIndex: integer;
-    PrevGlyphId: string;
-  end;
-
-  TTextSizeCallbackData = record
-    Size: TPointF;
-    PrevGlyphId: string;
-  end;
-
-  { TBGRACustomTypeWriter }
-
+  { Abstract class for font rendering using cached glyphs }
   TBGRACustomTypeWriter = class
   private
     FBidiMode: TFontBidiMode;
@@ -160,7 +139,9 @@ type
     procedure BrowseAllGlyphs(ACallback: TBrowseGlyphCallback; AData: pointer);
     function FindKerning(AIdLeft, AIdRight: string): TAVLTreeNode;
     function GetKerningOffset(AIdBefore, AIdAfter: string; ARightToLeft: boolean): single; virtual;
-    function ComputeKerning(AIdLeft, AIdRight: string): single; virtual;
+    function ComputeKerning({%H-}AIdLeft, {%H-}AIdRight: string): single; virtual;
+    procedure ReadKerning(AStream: TStream); virtual;
+    procedure WriteKerning(AStream: TStream); virtual;
   public
     OutlineMode: TBGRATypeWriterOutlineMode;
     DrawGlyphsSimultaneously : boolean;
@@ -169,18 +150,19 @@ type
     constructor Create;
     function GetTextSizeBeforeTransform(ATextUTF8 :string): TPointF;
     procedure TextFitInfoBeforeTransform(ATextUTF8: string; AMaxWidth: single; out ACharCount, AByteCount: integer; out AUsedWidth: single);
-    procedure SaveGlyphsToFile(AFilenameUTF8: string);
-    procedure SaveGlyphsToStream(AStream: TStream);
-    procedure LoadGlyphsFromFile(AFilenameUTF8: string);
-    procedure LoadGlyphsFromStream(AStream: TStream);
+    procedure SaveGlyphsToFile(AFilenameUTF8: string; AWithKerning: boolean = true);
+    procedure SaveGlyphsToStream(AStream: TStream; AWithKerning: boolean = true);
+    procedure LoadGlyphsFromFile(AFilenameUTF8: string; AWithKerning: boolean = true);
+    procedure LoadGlyphsFromStream(AStream: TStream; AWithKerning: boolean = true);
     procedure DrawGlyph(ADest: TBGRACanvas2D; AIdentifier: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft; AMirrored: boolean = false);
     procedure DrawText(ADest: TBGRACanvas2D; ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft); virtual;
     procedure CopyTextPathTo(ADest: IBGRAPath; ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft); virtual;
     function GetGlyphBox(AIdentifier: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft): TAffineBox;
     function GetTextBox(ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft): TAffineBox;
     function GetTextGlyphBoxes(ATextUTF8: string; X,Y: Single; AAlign: TBGRATypeWriterAlignment = twaTopLeft): TGlyphBoxes;
-    procedure NeedGlyphRange(AUnicodeFrom, AUnicodeTo: LongWord);
-    procedure NeedGlyphAnsiRange;
+    procedure NeedGlyphRange(AUnicodeFrom, AUnicodeTo: LongWord; AComputeKerning: boolean = false);
+    procedure NeedGlyphAnsiRange(AComputeKerning: boolean = false);
+    procedure NeedAsciiRange(AComputeKerning: boolean = false);
     destructor Destroy; override;
     property BidiMode: TFontBidiMode read FBidiMode write SetBidiMode;
   end;
@@ -192,6 +174,39 @@ implementation
 
 uses BGRAUTF8, BGRAUnicode, math;
 
+type
+  TDisplayInfoCallbackData = record
+    Align: TBGRATypeWriterAlignment;
+    Matrix: TAffineMatrix;
+    Info: TBGRATextDisplayInfo;
+    InfoIndex: integer;
+    PrevGlyphId: string;
+  end;
+
+  TTextSizeCallbackData = record
+    Size: TPointF;
+    PrevGlyphId: string;
+  end;
+
+  TTextFitInfoCallbackData = record
+    WidthAccumulator, MaxWidth: single;
+    CharCount: integer;
+    ByteCount: integer;
+    PrevGlyphId: string;
+  end;
+
+  { Kerning info between two glyphs }
+
+  { TKerningInfo }
+
+  TKerningInfo = class
+    IdLeft, IdRight: string;
+    KerningOffset: single;
+    procedure SaveToStream(AStream: TStream);
+    procedure LoadFromStream(AStream: TStream);
+    function IsDefault: boolean;
+  end;
+
 procedure LEWritePointF(Stream: TStream; AValue: TPointF);
 begin
   LEWriteSingle(Stream,AValue.x);
@@ -202,6 +217,42 @@ function LEReadPointF(Stream: TStream): TPointF;
 begin
   result.x := LEReadSingle(Stream);
   result.y := LEReadSingle(Stream);
+end;
+
+procedure LEWriteString(Stream: TStream; AValue: string);
+begin
+  LEWriteLongint(Stream, length(AValue));
+  Stream.WriteBuffer(AValue[1], length(AValue));
+end;
+
+function LEReadString(Stream: TStream): string;
+var
+  len: LongInt;
+begin
+  len := LEReadLongint(Stream);
+  setlength(result, len);
+  Stream.ReadBuffer(result[1], len);
+end;
+
+procedure LEWriteShortString(Stream: TStream; AValue: string);
+begin
+  if length(AValue) > 255 then raise Exception.Create('String too long');
+  LEWriteByte(Stream, length(AValue));
+  Stream.WriteBuffer(AValue[1], length(AValue));
+end;
+
+function LEReadShortString(Stream: TStream): string;
+var
+  len: byte;
+begin
+  result := '';
+  len := 0;
+  Stream.Read(len, 1);
+  if len > 0 then
+  begin
+    setlength(result, len);
+    Stream.Read(result[1], len);
+  end;
 end;
 
 function ComputeEasyBezier(APoints: array of TPointF; AClosed: boolean; AMinimumDotProduct: single = 0.707): ArrayOfTPointF;
@@ -256,6 +307,51 @@ begin
   glyph.Free;
   result := canvas2D.currentPath;
   canvas2D.free;
+end;
+
+{ TKerningInfo }
+
+procedure TKerningInfo.SaveToStream(AStream: TStream);
+var
+  combinedLen: Byte;
+begin
+  if (length(IdLeft) <= 14) and (length(IdRight) <= 14) then
+  begin
+    combinedLen := length(IdLeft) + (length(IdRight) shl 4);
+    LEWriteByte(AStream, combinedLen);
+    if length(IdLeft) > 0 then AStream.WriteBuffer(IdLeft[1], length(IdLeft));
+    if length(IdRight) > 0 then AStream.WriteBuffer(IdRight[1], length(IdRight));
+  end else
+  begin
+    LEWriteByte(AStream, 255);
+    LEWriteString(AStream, IdLeft);
+    LEWriteString(AStream, IdRight);
+  end;
+  LEWriteSingle(AStream, KerningOffset);
+end;
+
+procedure TKerningInfo.LoadFromStream(AStream: TStream);
+var
+  combinedLen: Byte;
+begin
+  combinedLen := LEReadByte(AStream);
+  if combinedLen < 255 then
+  begin
+    setLength(IdLeft, combinedLen and $f);
+    if length(IdLeft) > 0 then AStream.ReadBuffer(IdLeft[1], length(IdLeft));
+    setLength(IdRight, combinedLen shr 4);
+    if length(IdRight) > 0 then AStream.ReadBuffer(IdRight[1], length(IdRight));
+  end else
+  begin
+    IdLeft := LEReadString(AStream);
+    IdRight := LEReadString(AStream);
+  end;
+  KerningOffset := LEReadSingle(AStream);
+end;
+
+function TKerningInfo.IsDefault: boolean;
+begin
+  result := KerningOffset = 0;
 end;
 
 { TBGRAPolygonalGlyph }
@@ -440,18 +536,14 @@ end;
 procedure TBGRAGlyph.WriteHeader(AStream: TStream; AName: string;
   AContentSize: longint);
 begin
-  LEWriteByte(AStream, length(AName));
-  AStream.Write(AName[1],length(AName));
+  LEWriteShortString(AStream, AName);
   LEWriteLongint(AStream, AContentSize);
 end;
 
 class procedure TBGRAGlyph.ReadHeader(AStream: TStream; out AName: string; out
   AContentSize: longint);
-var NameLength: integer;
 begin
-  NameLength := LEReadByte(AStream);
-  setlength(AName,NameLength);
-  AStream.Read(AName[1],length(AName));
+  AName := LEReadShortString(AStream);
   AContentSize := LEReadLongint(AStream);
 end;
 
@@ -467,18 +559,14 @@ end;
 
 procedure TBGRAGlyph.WriteContent(AStream: TStream);
 begin
-  LEWriteLongint(AStream,length(FIdentifier));
-  AStream.Write(FIdentifier[1],length(FIdentifier));
-  LEWriteSingle(AStream,Width);
-  LEWriteSingle(AStream,Height);
+  LEWriteString(AStream, FIdentifier);
+  LEWriteSingle(AStream, Width);
+  LEWriteSingle(AStream, Height);
 end;
 
 procedure TBGRAGlyph.ReadContent(AStream: TStream);
-var lIdentifierLength: integer;
 begin
-  lIdentifierLength:= LEReadLongint(AStream);
-  setlength(FIdentifier, lIdentifierLength);
-  AStream.Read(FIdentifier[1],length(FIdentifier));
+  FIdentifier := LEReadString(AStream);
   Width := LEReadSingle(AStream);
   Height := LEReadSingle(AStream);
 end;
@@ -788,18 +876,46 @@ begin
   end;
 end;
 
-procedure TBGRACustomTypeWriter.NeedGlyphRange(AUnicodeFrom, AUnicodeTo: LongWord);
-var c: LongWord;
+procedure TBGRACustomTypeWriter.NeedGlyphRange(AUnicodeFrom, AUnicodeTo: LongWord;
+  AComputeKerning: boolean);
+var c, c2: LongWord;
+  glyphStr: string4;
 begin
   for c := AUnicodeFrom to AUnicodeTo do
-    GetGlyph(UnicodeCharToUTF8(c));
+  begin
+    glyphStr := UnicodeCharToUTF8(c);
+    GetGlyph(glyphStr);
+    if AComputeKerning then
+    begin
+      for c2 := AUnicodeFrom to AUnicodeTo do
+      begin
+        GetKerningOffset(glyphStr, UnicodeCharToUTF8(c2), false);
+      end;
+    end;
+  end;
 end;
 
-procedure TBGRACustomTypeWriter.NeedGlyphAnsiRange;
-var i: integer;
+procedure TBGRACustomTypeWriter.NeedGlyphAnsiRange(AComputeKerning: boolean);
+var i, j: integer;
+  glyphStr: RawByteString;
 begin
   for i := 0 to 255 do
-    GetGlyph(AnsiToUtf8(chr(i)));
+  begin
+    glyphStr := AnsiToUtf8(chr(i));
+    GetGlyph(glyphStr);
+    if AComputeKerning then
+    begin
+      for j := 0 to 255 do
+      begin
+        GetKerningOffset(glyphStr, AnsiToUtf8(chr(j)), false);
+      end;
+    end;
+  end;
+end;
+
+procedure TBGRACustomTypeWriter.NeedAsciiRange(AComputeKerning: boolean);
+begin
+  NeedGlyphRange($20, $7e, AComputeKerning);
 end;
 
 function TBGRACustomTypeWriter.GetDisplayInfo(ATextUTF8: string; X,
@@ -862,7 +978,7 @@ begin
   Glyph[AGlyph.Identifier] := AGlyph;
 end;
 
-procedure TBGRACustomTypeWriter.SaveGlyphsToStream(AStream: TStream);
+procedure TBGRACustomTypeWriter.SaveGlyphsToStream(AStream: TStream; AWithKerning: boolean);
 var
   Enumerator: TAVLTreeNodeEnumerator;
 begin
@@ -873,9 +989,11 @@ begin
   while Enumerator.MoveNext do
     TBGRAGlyph(Enumerator.Current.Data).SaveToStream(AStream);
   Enumerator.Free;
+
+  if AWithKerning then WriteKerning(AStream);
 end;
 
-procedure TBGRACustomTypeWriter.LoadGlyphsFromFile(AFilenameUTF8: string);
+procedure TBGRACustomTypeWriter.LoadGlyphsFromFile(AFilenameUTF8: string; AWithKerning: boolean);
 var Stream: TFileStreamUTF8;
 begin
   Stream := nil;
@@ -887,7 +1005,7 @@ begin
   end;
 end;
 
-procedure TBGRACustomTypeWriter.LoadGlyphsFromStream(AStream: TStream);
+procedure TBGRACustomTypeWriter.LoadGlyphsFromStream(AStream: TStream; AWithKerning: boolean);
 var Header: TBGRACustomTypeWriterHeader;
   i: integer;
   g: TBGRAGlyph;
@@ -906,9 +1024,10 @@ begin
     g := TBGRAGlyph.LoadFromStream(AStream);
     AddGlyph(g);
   end;
+  ReadKerning(AStream);
 end;
 
-procedure TBGRACustomTypeWriter.SaveGlyphsToFile(AFilenameUTF8: string);
+procedure TBGRACustomTypeWriter.SaveGlyphsToFile(AFilenameUTF8: string; AWithKerning: boolean);
 var Stream: TFileStreamUTF8;
 begin
   Stream := nil;
@@ -958,19 +1077,15 @@ begin
 end;
 
 procedure TBGRACustomTypeWriter.WriteCustomHeader(AStream: TStream);
-var lHeaderName: string;
 begin
-  lHeaderName:= HeaderName;
-  LEWriteByte(AStream,length(lHeaderName));
-  AStream.Write(lHeaderName[1],length(lHeaderName));
+  LEWriteShortString(AStream, HeaderName);
   LEWriteLongint(AStream,FGlyphs.Count);
 end;
 
 function TBGRACustomTypeWriter.ReadCustomTypeWriterHeader(AStream: TStream
   ): TBGRACustomTypeWriterHeader;
 begin
-  setlength(result.HeaderName, LEReadByte(AStream));
-  AStream.Read(result.HeaderName[1],length(result.HeaderName));
+  result.HeaderName := LEReadShortString(AStream);
   result.NbGlyphs:= LEReadLongint(AStream);
 end;
 
@@ -1275,6 +1390,63 @@ end;
 function TBGRACustomTypeWriter.ComputeKerning(AIdLeft, AIdRight: string): single;
 begin
   result := 0;
+end;
+
+procedure TBGRACustomTypeWriter.ReadKerning(AStream: TStream);
+var
+  prevPos: Int64;
+  kerningHeader: String;
+  nbKernings: LongInt;
+  kerning: TKerningInfo;
+  existingKerning: TAVLTreeNode;
+  i: Integer;
+begin
+  prevPos := AStream.Position;
+  kerningHeader := LEReadShortString(AStream);
+  if kerningHeader <> 'TKerning[]' then
+  begin
+    AStream.Position := prevPos;
+    exit;
+  end;
+
+  if FKerningInfos = nil then
+    FKerningInfos := TAVLTree.Create(@CompareKerningInfo);
+  nbKernings := LEReadLongint(AStream);
+  for i := 0 to nbKernings - 1 do
+  begin
+    kerning := TKerningInfo.Create;
+    kerning.LoadFromStream(AStream);
+    existingKerning := FindKerning(kerning.IdLeft, kerning.IdRight);
+    if Assigned(existingKerning) then
+    begin
+      TObject(existingKerning.Data).Free;
+      existingKerning.Data := kerning;
+    end else
+      FKerningInfos.Add(Pointer(kerning));
+  end;
+end;
+
+procedure TBGRACustomTypeWriter.WriteKerning(AStream: TStream);
+var
+  enumerator: TAVLTreeNodeEnumerator;
+  nbKernings: integer;
+begin
+  nbKernings:= 0;
+  enumerator := FKerningInfos.GetEnumerator;
+  while enumerator.MoveNext do
+    if not TKerningInfo(enumerator.Current.Data).IsDefault then inc(nbKernings);
+  enumerator.Free;
+
+  if nbKernings > 0 then
+  begin
+    LEWriteShortString(AStream, 'TKerning[]');
+    LEWriteLongint(AStream, nbKernings);
+    enumerator := FKerningInfos.GetEnumerator;
+    while enumerator.MoveNext do
+      with TKerningInfo(enumerator.Current.Data) do
+        if not IsDefault then SaveToStream(AStream);
+    enumerator.Free;
+  end;
 end;
 
 destructor TBGRACustomTypeWriter.Destroy;

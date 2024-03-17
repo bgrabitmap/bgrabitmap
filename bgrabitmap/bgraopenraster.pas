@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ OpenRaster layered image format }
 unit BGRAOpenRaster;
 
 {$mode objfpc}{$H+}
@@ -14,9 +16,7 @@ const
   OpenRasterSVGDefaultDPI = 90;
 
 type
-
-  { TBGRAOpenRasterDocument }
-
+  { Layered image using OpenRaster format }
   TBGRAOpenRasterDocument = class(TBGRALayeredBitmap)
   private
     FFiles: array of record
@@ -67,8 +67,7 @@ type
     property StackXML : TXMLDocument read FStackXML;
   end;
 
-  { TFPReaderOpenRaster }
-
+  { Reader for ORA image format (flattened) }
   TFPReaderOpenRaster = class(TFPCustomImageReader)
     private
       FWidth,FHeight,FNbLayers: integer;
@@ -81,8 +80,7 @@ type
       property NbLayers: integer read FNbLayers;
   end;
 
-  { TFPWriterOpenRaster }
-
+  { Writer for ORA image format (flattened) }
   TFPWriterOpenRaster = class(TFPCustomImageWriter)
     protected
       procedure InternalWrite (Str:TStream; Img:TFPCustomImage); override;
@@ -455,8 +453,8 @@ begin
   FStackXML := TXMLDocument.Create;
   imageNode := TDOMElement(StackXML.CreateElement('image'));
   StackXML.AppendChild(imageNode);
-  imageNode.SetAttribute('w',widestring(inttostr(Width)));
-  imageNode.SetAttribute('h',widestring(inttostr(Height)));
+  imageNode.SetAttribute('w',DOMString(inttostr(Width)));
+  imageNode.SetAttribute('h',DOMString(inttostr(Height)));
   if LinearBlend then
     imageNode.SetAttribute('gamma-correction','no')
   else
@@ -506,14 +504,14 @@ begin
       stackNode.AppendChild(layerNode);
       layerNode.SetAttribute('name', UTF8Decode(LayerName[i]));
       str(LayerOpacity[i]/255:0:3,strval);
-      layerNode.SetAttribute('opacity',widestring(strval));
-      layerNode.SetAttribute('src',widestring(layerFilename));
+      layerNode.SetAttribute('opacity',DOMString(strval));
+      layerNode.SetAttribute('src',DOMString(layerFilename));
       if LayerVisible[i] then
         layerNode.SetAttribute('visibility','visible')
       else
         layerNode.SetAttribute('visibility','hidden');
-      layerNode.SetAttribute('x',widestring(inttostr(ofs.x)));
-      layerNode.SetAttribute('y',widestring(inttostr(ofs.y)));
+      layerNode.SetAttribute('x',DOMString(inttostr(ofs.x)));
+      layerNode.SetAttribute('y',DOMString(inttostr(ofs.y)));
       strval := '';
       case BlendOperation[i] of
         boLighten: strval := 'svg:lighten';
@@ -549,13 +547,13 @@ begin
         boLinearSaturation: strval := 'krita:saturation_hsl';
         else strval := 'svg:src-over';
       end;
-      layerNode.SetAttribute('composite-op',widestring(strval));
+      layerNode.SetAttribute('composite-op',DOMString(strval));
       if BlendOperation[i] <> boTransparent then //in 'transparent' case, linear blending depends on general setting
       begin
         if BlendOperation[i] in[boAdditive,boDarkOverlay,boDifference,boSubtractInverse,
              boSubtract,boExclusion,boNegation] then
           strval := 'yes' else strval := 'no';
-        layerNode.SetAttribute('gamma-correction',widestring(strval));
+        layerNode.SetAttribute('gamma-correction',DOMString(strval));
       end;
     end;
   end;
@@ -682,7 +680,7 @@ begin
     begin
       svg.ContainerWidthAsPixel:= Width;
       svg.ContainerHeightAsPixel:= Height;
-      origViewBox := TSVGViewBox.Parse(g.DOMElement.GetAttribute('bgra:originalViewBox'));
+      origViewBox := TSVGViewBox.Parse(string(g.DOMElement.GetAttribute('bgra:originalViewBox')));
       m := svg.GetStretchPresentationMatrix(cuPixel) * g.matrix[cuPixel] *
         AffineMatrixTranslation(origViewBox.min.x, origViewBox.min.y);
       g.DOMElement.RemoveAttribute('bgra:originalViewBox');
@@ -807,7 +805,7 @@ procedure TBGRAOpenRasterDocument.CopySVGToMemoryStream(
         g.Content.BringElement(TObject(rootElems[i]), newSvg.Content);
       g.matrix[cuPixel] := presentMatrix;
       g.DOMElement.SetAttribute('xmlns:bgra', 'https://wiki.freepascal.org/LazPaint_SVG_format');
-      g.DOMElement.SetAttribute('bgra:originalViewBox', origViewBox.ToString);
+      g.DOMElement.SetAttribute('bgra:originalViewBox', DOMString(origViewBox.ToString));
       newSvg.WidthAsPixel:= newBounds.Width;
       newSvg.HeightAsPixel:= newBounds.Height;
       newViewBox.min := newBounds.TopLeft;

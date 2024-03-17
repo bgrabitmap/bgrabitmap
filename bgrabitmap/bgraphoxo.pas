@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Phoxo layered image format, with .oXo extension. }
 unit BGRAPhoxo;
 
 {$mode objfpc}{$H+}
@@ -19,16 +21,19 @@ const
   PhoxoBlock_EndOfFile = 255;
 
 type
+  { PhoXo file header }
   TPhoxoHeader = packed record
     magic: packed array[1..4] of char;
     version: LongWord;
   end;
 
+  { PhoXo block header }
   TPhoxoBlockHeader = packed record
     blockType : LongWord;
     blockSize : LongWord;
   end;
 
+  { PhoXo layer header }
   TPhoxoLayerHeader = packed record
     layerVisible: LongWord;
     layerLimited: LongWord;
@@ -37,8 +42,7 @@ type
     redMask,greenMask,blueMask: LongWord;
   end;
 
-  { TBGRAPhoxoDocument }
-
+  { Layered image in Phoxo format }
   TBGRAPhoxoDocument = class(TBGRALayeredBitmap)
   private
     FDPIX,FDPIY: integer;
@@ -60,8 +64,7 @@ type
     property DPIY: integer read FDPIY;
   end;
 
-  { TBGRAReaderOXO }
-
+  { Reader for Phoxo image (flattened) }
   TBGRAReaderOXO = class(TFPCustomImageReader)
   private
     FWidth,FHeight,FNbLayers: integer;
@@ -77,8 +80,7 @@ type
     property DPIY: integer read FDPIY;
   end;
 
-  { TBGRAWriterOXO }
-
+  { Writer for Phoxo image (flattened) }
   TBGRAWriterOXO = class(TFPCustomImageWriter)
     protected
       procedure InternalWrite (Str:TStream; Img:TFPCustomImage); override;
@@ -295,7 +297,7 @@ end;
 procedure TBGRAPhoxoDocument.InternalLoadFromStream(AStream: TStream);
 var blockHeader: TPhoxoBlockHeader;
     blockData: PByte;
-    wCaption: widestring;
+    wCaption: UnicodeString;
     i: Integer;
 begin
   if not CheckFormat(AStream,False) then
@@ -420,7 +422,7 @@ procedure TBGRAPhoxoDocument.InternalSaveToStream(AStream: TStream);
   end;
 
   procedure WriteLayer(index: integer);
-  var wCaption: widestring;
+  var wCaption: UnicodeString;
       pCaption: PWord;
 
       layerHeader: TPhoxoLayerHeader;

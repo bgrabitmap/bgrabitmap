@@ -2,54 +2,91 @@
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
 
+{$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}
 type
+  {* Definition of a point on the spectral locus in XYZ colorspace }
   TSpectralLocusPoint = record
-    W,X,Y,Z: Single;
+    {** Wavelength }
+    W: Single;
+    {** Coordinates in XYZ colorspace }
+    X,Y,Z: Single;
   end;
+  {* Definition of the illuminant lightness for a wavelength }
   TIlluminantSpectrumPoint = record
-    W,Y: Single;
+    {** Wavelength }
+    W: Single;
+    {** Y coordinate }
+    Y: Single;
   end;
-  // YCbCr colorspaces based on sRGB colorspace
-  // (with some minor variations in the definition of the primary colors)
+  {* YCbCr colorspaces based on sRGB colorspace
+     (with some minor variations in the definition of the primary colors) }
   TYCbCrStdColorspace = (ITUR601, ITUR601JPEG, ITUR709, ITUR709JPEG, SMPTE240M);
+  {* Parameters for a YCbCr colorspace }
   TYCbCrStdParameters = packed record
     LumaRed, LumaGreen, LumaBlue, MinY, ScaleY, MidC, ScaleC: single;
   end;
 
 {$I spectraldata.inc}
+{$ENDIF}
 
 type
+  {* Pointer to a reference white }
   PXYZReferenceWhite = ^TXYZReferenceWhite;
+  {* Definition of a reference white }
   TXYZReferenceWhite = packed record
+    {** Coordinates in XYZ colorspace (CIE 1931) }
     X, Y, Z: single;
+    {** Viewing angle }
     ObserverAngle: integer;
+    {** Name of illuminant }
     Illuminant: string;
+    {** Coordinates in LMS colorspace (cone responses) }
     L,M,S: single;
   end;
 
-  TCustomColorspace = class;
-  TColorspaceAny = class of TCustomColorspace;
-
+  {* Function signature to convert from one colorspace to another }
   TColorspaceConvertArrayProc = procedure(ASource: pointer; ADest: Pointer; ACount: integer;
                   ASourceStride:integer; ADestStride:integer; AReferenceWhite: PXYZReferenceWhite);
 
-  { TBridgedConversion }
-
+  {* Color conversion involving two steps }
   TBridgedConversion = record
     ConvertToBridge,FinalConvert: TColorspaceConvertArrayProc;
     procedure Convert(ASource: pointer; ADest: Pointer; ACount: integer;
               ASourceStride:integer; ADestStride:integer; AReferenceWhite: PXYZReferenceWhite); inline;
   end;
 
-  TColorTransparency = (ctFullyTransparent, ctSemiTransparent, ctFullyOpaque);
-  TColorspaceFlag = (cfFixedReferenceWhite,       // ex: sRGB, AdobeRGB fixed at D65
-                     cfMovableReferenceWhite,     // XYZ
-                     cfReferenceWhiteIndependent, // L*a*b*, LCh
-                     cfHasImaginaryColors);       // XYZ, L*a*b*, LCh
+  {* Color transparency }
+  TColorTransparency = (
+    {** Fully transparent }
+    ctFullyTransparent,
+    {** Semi-transparent (neither fully transparent nor opaque) }
+    ctSemiTransparent,
+    {** Fully opaque }
+    ctFullyOpaque);
+
+  {* Flag about a colorspace }
+  TColorspaceFlag = (
+    {** Reference white is fixed (relative to a certain illuminant).
+        Example: sRGB and AdobeRGB are fixed at D65 }
+    cfFixedReferenceWhite,
+    {** Reference white is not fixed, it can be changed. Example: XYZ }
+    cfMovableReferenceWhite,
+    {** Independent from reference white, it expresses subjective perception.
+        Example: L*a*b*, LCh }
+    cfReferenceWhiteIndependent,
+    {** Whether imaginary colors can be expressed (colors that cannot be
+        perceived in normal viewing conditions).
+        Example: XYZ, L*a*b*, LCh }
+    cfHasImaginaryColors);
+
+  {* Set of flags about a colorspace }
   TColorspaceFlags = set of TColorspaceFlag;
 
-  { TCustomColorspace }
+  TCustomColorspace = class;
+  {* Any colorspace class }
+  TColorspaceAny = class of TCustomColorspace;
 
+  {* Base class for a colorspace }
   TCustomColorspace = class
     class function GetChannelName(AIndex: integer): string; virtual; abstract;
     class function GetChannelCount: integer; virtual; abstract;
@@ -70,10 +107,15 @@ type
     class function GetFlags: TColorspaceFlags; virtual; abstract;
   end;
 
-  { ColorspaceCollection }
+  {* @abstract(The collection of all colorspaces and conversions between them.)
 
+     Colorspaces are derived from TCustomColorspace type. Conversions are of TColorspaceConvertArrayProc type.
+
+     There may not be a direct conversion between two colorspaces. In this case, the conversion
+     is bridged with an intermediate colorspace.
+}
   ColorspaceCollection = class
-  protected
+  private
     class var FColorspaces : array of TColorspaceAny;
     class var FColorspaceCount: integer;
     class var FColorspaceConversions: array of array of TColorspaceConvertArrayProc;
@@ -97,28 +139,52 @@ type {* How to handle overflow when converting from XYZ }
     xroPreserveHue);
 
 var
+  {** How to handle overflow when values are below the minimum values in RGB colorspace }
   XYZToRGBOverflowMin : TColorspaceOverflow = xroSaturateEachChannel;
+  {** How to handle overflow when values are above the maximum values in RGB colorspace }
   XYZToRGBOverflowMax : TColorspaceOverflow = xroSaturateEachChannel;
 
 {$DEFINE INCLUDE_INTERFACE}
 {$I generatedcolorspace.inc}
 
-procedure HandleLinearRGBAOverflow(var result: TLinearRGBA; LumaRed, LumaGreen, LumaBlue: single); inline;
-
+{ Converts a color from TBGRAPixel to TByteMask (grayscale) taking into account gamma correction }
 function BGRAToMask(const ABGRAPixel: TBGRAPixel): TByteMask;
+{ Converts a TExpandedPixel color to a TByteMask (grayscale) }
 function ExpandedPixelToByteMask(const AExpandedPixel: TExpandedPixel): TByteMask;
+{ Converts a TByteMask to a TBGRAPixel using the specified alpha value }
 function MaskToBGRA(const AMask: TByteMask; AAlpha: byte = 255): TBGRAPixel;
+{ Converts a TByteMask to a TExpandedPixel using the specified 8-bit alpha value }
 function ByteMaskToExpandedPixel(const AMask: TByteMask; AAlpha: byte = 255): TExpandedPixel;
+
+{$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}
+{ Converts a TStdRGBA color to a TBGRAPixel (clamped to 0..255) }
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
+{ Converts a TStdRGBA color to a TFPColor (clamped to 0..65535) }
 function StdRGBAToFPColor(const AStdRGBA: TStdRGBA): TFPColor;
+{ Converts a TBGRAPixel color to a TSTdRGBA }
 function BGRAPixelToStdRGBA(const ABGRAPixel: TBGRAPixel): TStdRGBA;
+{ Converts a TFPColor color to a TStdRGBA }
 function FPColorToStdRGBA(const AFPColor: TFPColor): TStdRGBA;
+
+{ Handle overflow by bringing values to the range 0 to 1. The luma parameters indicate
+  the brightness of each RGB channel (typically green is brighter) }
+procedure HandleLinearRGBAOverflow(var result: TLinearRGBA; LumaRed, LumaGreen, LumaBlue: single); inline;
+{ Converts a TLinearRGBA into a TExpandedPixel (clamped to 0..65535) }
 function LinearRGBAToExpandedPixel(const ALinearRGBA: TLinearRGBA): TExpandedPixel;
+{ Converts a TExpandedPixel to a TLinearRGBA }
 function ExpandedPixelToLinearRGBA(const AExpandedPixel: TExpandedPixel): TLinearRGBA;
+
+{ Converts a TExpandedPixel to a TStdRGBA (applying gamma compression) }
 function ExpandedPixelToStdRGBA(const AExpandedPixel: TExpandedPixel): TStdRGBA;
+{ Computes gamma compression of a 16-bit integer (linear value)
+  into a float value (non linear value) }
 function GammaCompressionWF(AValue: Word): single;
+{ Converts a TStdRGBA to a TExpandedPixel (applying gamma expansion) }
 function StdRGBAToExpandedPixel(const AStdRGBA: TStdRGBA): TExpandedPixel;
+{ Computes gamma expansion of a float (non linear value)
+  into a 16-bit integer (linear value) }
 function GammaExpansionFW(AValue: single): word;
+
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA): TXYZA; overload;
 function LinearRGBAToXYZA(const ALinearRGBA: TLinearRGBA; const AReferenceWhite: TXYZReferenceWhite): TXYZA; overload;
 function XYZAToLinearRGBA(const AXYZA: TXYZA): TLinearRGBA; overload;
@@ -155,28 +221,53 @@ function YCbCr601JPEGToStdRGBA(const AYCbCr: TYCbCr601JPEG; AAlpha: Single = 1):
 function StdRGBAToYCbCr709JPEG(const AStdRGBA: TStdRGBA): TYCbCr709JPEG;
 function YCbCr709JPEGToStdRGBA(const AYCbCr: TYCbCr709JPEG; AAlpha: Single = 1): TStdRGBA;
 
+{ Converts color from TLabA to TLChA }
 function LabAToLChA(const ALabA: TLabA): TLChA;
+{ Converts color from TLChA to TLabA }
 function LChAToLabA(const ALChA: TLChA): TLabA;
+
+{ Converts color from TAdobeRGBA to TXYZA using current reference white }
 function AdobeRGBAToXYZA(const ASource: TAdobeRGBA): TXYZA; overload;
+{ Converts color from TAdobeRGBA to TXYZA with specifed reference white }
 function AdobeRGBAToXYZA(const ASource: TAdobeRGBA; const AReferenceWhite: TXYZReferenceWhite): TXYZA; overload;
+{ Converts color from TXYZA to TAdobeRGBA using current reference white }
 function XYZAToAdobeRGBA(const AXYZA: TXYZA): TAdobeRGBA; overload;
+{ Converts color from TXYZA to TAdobeRGBA using specifed reference white }
 function XYZAToAdobeRGBA(const AXYZA: TXYZA; const AReferenceWhite: TXYZReferenceWhite): TAdobeRGBA; overload;
+
+{ Computes reflected color in XYZ for a given wavelength range }
 function SpectrumRangeReflectToXYZA(reflectance,wavelen1,wavelen2,alpha: single): TXYZA;
+{$ENDIF}
+
+{ Determines cone stimulations (_L_, _M_, _S_) from XYZ coordinates }
 procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
+{ Determines XYZ coordinates from cone stimulations (_L_, _M_, _S_) }
 procedure LMSToXYZ(const L,M,S: Single; out X,Y,Z: single);
+{ Perform chromatic adaptation from one reference white to another (floating point channels) }
 procedure ChromaticAdaptXYZ(var X,Y,Z: single; const AFrom, ATo: TXYZReferenceWhite); inline;
+{ Perform chromatic adaptation from one reference white to another (16-bit integer channels) }
 procedure ChromaticAdaptWordXYZ(var X,Y,Z: word; const AFrom, ATo: TXYZReferenceWhite); inline;
 
+{* Use the reference white, specified by viewing angle and illumant, when converting colors }
 procedure SetReferenceWhite(AObserverAngle: integer; AIlluminant: string); overload;
+{* Use the specified reference white parameters when converting colors }
 procedure SetReferenceWhite(AReferenceWhite: TXYZReferenceWhite); overload;
+{* Retrieves a copy of the current reference white used for color conversions }
 function GetReferenceWhite: TXYZReferenceWhite; overload;
+{* Gets a pointer to the current reference white used for color conversions }
 function GetReferenceWhiteIndirect: PXYZReferenceWhite; overload;
+{* Gets the reference white parameters by its viewing angle and illuminant }
 function GetReferenceWhite(AObserverAngle: integer; AIlluminant: string): TXYZReferenceWhite; overload;
+{* Gets a pointer to the reference white parameters by its viewing angle and illuminant }
 function GetReferenceWhiteIndirect(AObserverAngle: integer; AIlluminant: string): PXYZReferenceWhite; overload;
 
+{* Add a new referene white given the description }
 procedure AddReferenceWhite(const AReferenceWhite: TXYZReferenceWhite); overload;
+{* Add a new referene white color for the given viewing angle and illuminant }
 procedure AddReferenceWhite(AObserverAngle: integer; AIlluminant: string; AX, AY, AZ: single); overload;
+{* Returns the number of reference white that have been defined }
 function GetReferenceWhiteCount: integer;
+{* Gets the reference white by its index }
 function GetReferenceWhiteByIndex(AIndex: integer): TXYZReferenceWhite;
 
 var
@@ -544,6 +635,7 @@ begin
   result.alpha := AAlpha;
 end;
 
+{$IFDEF BGRABITMAP_EXTENDED_COLORSPACE}
 function StdRGBAToBGRAPixel(const AStdRGBA: TStdRGBA): TBGRAPixel;
 begin
   with AStdRGBA do
@@ -707,7 +799,7 @@ begin
       result.Y := red * 0.2225045 + green * 0.7168786 + blue * 0.0606169;
       result.Z := red * 0.0139322 + green * 0.0971045 + blue * 0.7141733;
     end;
-    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D50, AReferenceWhite);
   end else
   begin
     with ALinearRGBA do
@@ -716,7 +808,7 @@ begin
       result.Y := red * 0.2126729 + green * 0.7151522 + blue * 0.0721750;
       result.Z := red * 0.0193339 + green * 0.1191920 + blue * 0.9503041;
     end;
-    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D65, AReferenceWhite);
   end;
   Result.alpha := ALinearRGBA.alpha;
 end;
@@ -734,7 +826,7 @@ begin
   ad := AXYZA;
   if AReferenceWhite.Illuminant = 'D50' then
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D50);
     with ad do
     begin
       result.red := X * 3.1338561 + Y * (-1.6168667) + Z * (-0.4906146);
@@ -743,7 +835,7 @@ begin
     end;
   end else
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D65);
     with ad do
     begin
       result.red := X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314);
@@ -831,7 +923,7 @@ begin
       result.Y := ClampInt(round((red * 0.2225045 + green * 0.7168786 + blue * 0.0606169)*(50000/65535)),0,65535);
       result.Z := ClampInt(round((red * 0.0139322 + green * 0.0971045 + blue * 0.7141733)*(50000/65535)),0,65535);
     end;
-    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+    ChromaticAdaptWordXYZ(result.X,result.Y,result.Z, ReferenceWhite2D50, AReferenceWhite);
   end else
   begin
     with AExpandedPixel do
@@ -840,7 +932,7 @@ begin
       result.Y := ClampInt(round((red * 0.2126729 + green * 0.7151522 + blue * 0.0721750)*(50000/65535)),0,65535);
       result.Z := ClampInt(round((red * 0.0193339 + green * 0.1191920 + blue * 0.9503041)*(50000/65535)),0,65535);
     end;
-    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+    ChromaticAdaptWordXYZ(result.X,result.Y,result.Z, ReferenceWhite2D65, AReferenceWhite);
   end;
   Result.alpha := AExpandedPixel.alpha;
 end;
@@ -859,7 +951,7 @@ begin
   ad := AXYZA;
   if AReferenceWhite.Illuminant = 'D50' then
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    ChromaticAdaptWordXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D50);
     with ad do
     begin
       r := round((X * 3.1338561 + Y * (-1.6168667) + Z * (-0.4906146))*(65535/50000));
@@ -868,7 +960,7 @@ begin
     end;
   end else
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+      ChromaticAdaptWordXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D65);
     with ad do
     begin
       r := round((X * 3.2404542 + Y * (-1.5371385) + Z * (-0.4985314))*(65535/50000));
@@ -1320,13 +1412,13 @@ begin
     result.X := R*0.6097559 + G*0.2052401 + B*0.1492240;
     result.Y := R*0.3111242 + G*0.6256560 + B*0.0632197;
     result.Z := R*0.0194811 + G*0.0608902 + B*0.7448387;
-    result.ChromaticAdapt(ReferenceWhite2D50, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D50, AReferenceWhite);
   end else
   begin
     result.X := R*0.5767309 + G*0.1855540 + B*0.1881852;
     result.Y := R*0.2973769 + G*0.6273491 + B*0.0752741;
     result.Z := R*0.0270343 + G*0.0706872 + B*0.9911085;
-    result.ChromaticAdapt(ReferenceWhite2D65, AReferenceWhite);
+    ChromaticAdaptXYZ(result.X,result.Y,result.Z, ReferenceWhite2D65, AReferenceWhite);
   end;
   result.alpha := ASource.alpha/255;
 end;
@@ -1343,7 +1435,7 @@ begin
   ad := AXYZA;
   if AReferenceWhite.Illuminant = 'D50' then
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D50);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D50);
     with ad do
     begin
       R := Clamp(1.9624274*X - 0.6105343*Y - 0.3413404*Z,0,1);
@@ -1352,7 +1444,7 @@ begin
     end;
   end else
   begin
-    ad.ChromaticAdapt(AReferenceWhite, ReferenceWhite2D65);
+    ChromaticAdaptXYZ(ad.X,ad.Y,ad.Z, AReferenceWhite, ReferenceWhite2D65);
     with ad do
     begin
       R := Clamp(2.0413690*X - 0.5649464*Y - 0.3446944*Z,0,1);
@@ -1557,8 +1649,9 @@ begin
   result.X := result.X * fromRefWhite^.X/totalXYZ.X * reflectance;
   result.Y := result.Y * fromRefWhite^.Y/totalXYZ.Y * reflectance;
   result.Z := result.Z * fromRefWhite^.Z/totalXYZ.Z * reflectance;
-  result.ChromaticAdapt(fromRefWhite^, GetReferenceWhiteIndirect^);
+  ChromaticAdaptXYZ(result.X,result.Y,result.Z, fromRefWhite^, GetReferenceWhiteIndirect^);
 end;
+{$ENDIF}
 
 procedure XYZToLMS(const X,Y,Z: Single; out L,M,S: single);
 begin

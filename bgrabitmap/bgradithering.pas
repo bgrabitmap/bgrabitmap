@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implements the dithering algorithms }
 unit BGRADithering;
 
 {$mode objfpc}{$H+}
@@ -11,8 +13,7 @@ uses
 type
   TOutputPixelProc = procedure(X,Y: Int32or64; AColorIndex: Int32or64; AColor: TBGRAPixel) of object;
 
-  { TDitheringTask }
-
+  { Abstract dithering task }
   TDitheringTask = class(TFilterTask)
   protected
     FBounds: TRect;
@@ -40,22 +41,19 @@ type
     property DrawMode: TDrawMode read FDrawMode write SetDrawMode;
   end;
 
-  { TNearestColorTask }
-
+  { Task for trivial dithering consisting in finding the nearest color }
   TNearestColorTask = class(TDitheringTask)
   protected
     procedure DoExecute; override;
   end;
 
-  { TFloydSteinbergDitheringTask }
-
+  { Task for Floyd-Steinberg dithering }
   TFloydSteinbergDitheringTask = class(TDitheringTask)
   protected
     procedure DoExecute; override;
   end;
 
-  { TDitheringToIndexedImage }
-
+  { Handles dithering of an image }
   TDitheringToIndexedImage = class
   protected
     FBitOrder: TRawImageBitOrder;
@@ -120,6 +118,9 @@ function CreateDitheringTask(AAlgorithm: TDitheringAlgorithm; ASource: IBGRAScan
 
 function DitherImageTo16Bit(AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap): TBGRACustomBitmap;
 
+procedure DitheredFillRect(ABitmap: TBGRACustomBitmap; x, y, x2, y2: integer;
+  texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm);
+
 implementation
 
 uses BGRABlend;
@@ -180,6 +181,20 @@ begin
   result := dither.Execute;
   dither.Free;
   palette16bit.Free;
+end;
+
+procedure DitheredFillRect(ABitmap: TBGRACustomBitmap; x, y, x2, y2: integer;
+  texture: IBGRAScanner; mode: TDrawMode; AScanOffset: TPoint; ditheringAlgorithm: TDitheringAlgorithm);
+var dither: TDitheringTask;
+  bounds: TRect;
+begin
+  bounds := TRect.Intersect(rect(x,y,x2,y2), ABitmap.ClipRect);
+  if bounds.IsEmpty then exit;
+  dither := CreateDitheringTask(ditheringAlgorithm, texture, ABitmap, bounds);
+  dither.ScanOffset := AScanOffset;
+  dither.DrawMode := mode;
+  dither.Execute;
+  dither.Free;
 end;
 
 { TDitheringToIndexedImage }

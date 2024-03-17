@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Types for 3D scenes }
 unit BGRASceneTypes;
 
 {$mode objfpc}{$H+}
@@ -13,6 +15,7 @@ type
   TAntialiasingMode3D = (am3dNone, am3dMultishape, am3dResample);
   TPerspectiveMode3D = (pmLinearMapping, pmPerspectiveMapping, pmZBuffer);
 
+  { Options when rendering a 3D scene }
   TRenderingOptions = record
     LightingInterpolation: TLightingInterpolation3D;
     AntialiasingMode: TAntialiasingMode3D;
@@ -23,6 +26,7 @@ type
   end;
 
   PSceneLightingContext = ^TSceneLightingContext;
+  { Context when computing lighting }
   TSceneLightingContext = packed record
     basic: TBasicLightingContext;
     {128} diffuseColor, {144} specularColor: TColorInt65536;
@@ -38,14 +42,14 @@ type
     SaturationHighF: single;
   end;
 
+  { Bounds of a 3D box }
   TBox3D = record
     min,max: TPoint3D;
   end;
 
   IBGRAVertex3D = interface;
 
-  { IBGRALight3D }
-
+  { Interface of a light for a 3D scene }
   IBGRALight3D = interface ['{85C683B6-07AC-4B8D-9324-06BC22882433}']
     procedure ComputeDiffuseLightness(Context: PSceneLightingContext);
     procedure ComputeDiffuseColor(Context: PSceneLightingContext);
@@ -72,20 +76,21 @@ type
     function IsDirectional: boolean;
   end;
 
+  { Interface of point light for 3D scene }
   IBGRAPointLight3D = interface(IBGRALight3D) ['{C939900D-DDD6-49F0-B1E9-E29F94FDB4C8}']
     function GetVertex: IBGRAVertex3D;
     procedure SetVertex(const AValue: IBGRAVertex3D);
     property Vertex: IBGRAVertex3D read GetVertex write SetVertex;
   end;
 
+  { Interface of directional light for 3D scene }
   IBGRADirectionalLight3D = interface(IBGRALight3D) ['{8D575CEE-8DD2-46FB-9BCC-17DE3DAAF53D}']
     function GetDirection: TPoint3D;
     procedure SetDirection(const AValue: TPoint3D);
     property Direction: TPoint3D read GetDirection write SetDirection;
   end;
 
-  { IBGRAMaterial3D }
-
+  { Interface of material for the surface of a 3D object }
   IBGRAMaterial3D = interface
     function GetAmbiantAlpha: byte;
     function GetAutoAmbiantColor: boolean;
@@ -174,8 +179,7 @@ type
     property Name: string read GetName write SetName;
   end;
 
-  { IBGRANormal3D }
-
+  { Interface of a normal of a 3D surface }
   IBGRANormal3D = interface
     function GetCustomNormal: TPoint3D;
     function GetCustomNormal_128: TPoint3D_128;
@@ -191,8 +195,7 @@ type
     property CustomNormal_128: TPoint3D_128 read GetCustomNormal_128 write SetCustomNormal_128;
   end;
 
-  { IBGRAVertex3D }
-
+  { Interface for a vertex of a 3D object }
   IBGRAVertex3D = interface
     function GetColor: TBGRAPixel;
     function GetCustomFlags: LongWord;
@@ -249,8 +252,7 @@ type
   arrayOfIBGRAVertex3D = array of IBGRAVertex3D;
   TVertex3DCallback = procedure(AVertex: IBGRAVertex3D) of object;
 
-  { IBGRAPart3D }
-
+  { Interface of a part of a 3D object, that can be moved independently of other parts. }
   IBGRAPart3D = interface
     procedure Clear(ARecursive: boolean);
     function Add(x,y,z: single): IBGRAVertex3D; overload;
@@ -319,8 +321,7 @@ type
 
   IBGRAObject3D = interface;
 
-  { IBGRAFace3D }
-
+  { Interface for a face in a 3D object }
   IBGRAFace3D = interface
     procedure FlipFace;
     function AddVertex(AVertex: IBGRAVertex3D): integer;
@@ -388,8 +389,7 @@ type
 
   TFace3DCallback = procedure(AFace: IBGRAFace3D) of object;
 
-  { IBGRAObject3D }
-
+  { Interface of an object in a 3D scene }
   IBGRAObject3D = interface
     procedure Clear;
     function GetColor: TBGRAPixel;
@@ -443,8 +443,7 @@ type
 
   TBGRAMaterialTextureChangedEvent = procedure(ASender: TObject) of object;
 
-  { TBGRAMaterial3D }
-
+  { Material for the surface of a 3D object }
   TBGRAMaterial3D = class(TInterfacedObject, IBGRAMaterial3D)
   private
     FName: string;
@@ -540,6 +539,7 @@ type
 
   end;
 
+  { Information about a face to render }
   TFaceRenderingDescription = record
     NormalsMode: TLightingNormal3D;
 
@@ -555,8 +555,7 @@ type
     TexCoords: array of TPointF;
   end;
 
-  { TCustomRenderer3D }
-
+  { Abstract class for 3D rendering }
   TCustomRenderer3D = class
   private
     FProjection: TProjection3D;
@@ -583,8 +582,7 @@ type
     property HandlesFaceCulling: boolean read GetHandlesFaceCulling;
   end;
 
-  { TBGRALight3D }
-
+  { Light for a 3D scene }
   TBGRALight3D = class(TInterfacedObject,IBGRALight3D)
   protected
     FMinIntensity: single;

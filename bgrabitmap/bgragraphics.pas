@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Imports type from Graphics, if available, or defines equivalent types. }
 unit BGRAGraphics;
-{=== Types imported from Graphics ===}
+
 {$mode objfpc}{$H+}
 {$I bgrabitmap.inc}
 
 interface
+
+{=== Types imported from Graphics ===}
 
 {$IFDEF BGRABITMAP_USE_LCL}
 uses Graphics, GraphType, FPImage, FPCanvas;
@@ -66,6 +70,7 @@ const
 
 type
   TPen = Graphics.TPen;
+  {* Text layout (vertical position) }
   TTextLayout = Graphics.TTextLayout;
   TTextStyle = Graphics.TTextStyle;
 
@@ -74,8 +79,11 @@ type
   TBrushStyle = Graphics.TBrushStyle;
 
 const
+  {** Text aligned to the top }
   tlTop = Graphics.tlTop;
+  {** Text aligned vertically to the center }
   tlCenter = Graphics.tlCenter;
+  {** Text aligned to the bottom }
   tlBottom = Graphics.tlBottom;
 
   fsSurface = GraphType.fsSurface;
@@ -218,22 +226,27 @@ type
 {$ENDIF}
 
 type
-  {* Pointer to a ''TColor'' value }
-  PColor = ^TColor;
-  {* Contains a color stored as RGB. The red/green/blue values
+  {* Pointer to a TColor value.
+
+  TColor contains a color stored as RGB. The red/green/blue values
    range from 0 to 255. The formula to get the color value is:
-   * ''color'' = ''red'' + (''green'' '''shl''' 8) + (''blue'' '''shl''' 16)
-   *except with fpGUI where it is:
-   * ''color'' = (''red'' '''shl''' 16) + (''green'' '''shl''' 8) + ''blue'' }{import
-  TColor = Int32;
-  }
-  {** Converts a ''TFPColor'' into a ''TColor'' value }
+
+   _color_ = _red_ + (_green_ **shl** 8) + (_blue_ **shl** 16)
+
+   except with fpGUI where it is:
+
+   _color_ = (_red_ **shl** 16) + (_green_ **shl** 8) + _blue_ }
+  PColor = ^TColor;
+
+  {** Converts a TFPColor into a TColor value. Does not work on system color }
   function FPColorToTColor(const FPColor: TFPColor): TColor;
-  {** Converts a ''TColor'' into a ''TFPColor'' value }
+  {** Converts a TColor into a TFPColor value. Does not work on system color }
   function TColorToFPColor(const c: TColor): TFPColor;
 
+  {** Makes a TColor from the RGB values }
   function RGBToColor(R, G, B: Byte): TColor; inline;
-  procedure RedGreenBlue(rgb: TColor; out Red, Green, Blue: Byte); // does not work on system color
+  {** Extracts the RGB values of a TColor. Does not work on system color }
+  procedure RedGreenBlue(rgb: TColor; out Red, Green, Blue: Byte);
 
 type
   {* Direction of change in a gradient }
@@ -277,7 +290,7 @@ type
     ShowPrefix: boolean;
 
     {** If line of text is too long too fit between left and right boundaries
-        try to break into multiple lines between words. See also ''EndEllipsis'' }
+        try to break into multiple lines between words. See also _EndEllipsis_ }
     Wordbreak : boolean;
 
     {** Fills background with current brush }
@@ -331,8 +344,26 @@ type
   {$ENDIF}
   {$IFNDEF TFontQuality}
 type
-  {* Quality to use when font is rendered by the system }
-  TFontQuality = (fqDefault, fqDraft, fqProof, fqNonAntialiased, fqAntialiased, fqCleartype, fqCleartypeNatural);
+  {* Quality to use when font is rendered by the system. ClearType means
+     that red and blue channel are used to increase the apparent resolution of the text }
+  TFontQuality = (
+    {** Default quality, depends on the system:
+        - on Windows, it is ClearType without fine antialising
+        - on Linux, it is ClearType with fine antialiasing
+        - on MacOS, it is non antialiased }
+    fqDefault,
+    {** Low quality, generally without fine antialiasing }
+    fqDraft,
+    {** Good quality, with at least some antialiasing }
+    fqProof,
+    {** Aliased if available }
+    fqNonAntialiased,
+    {** With antialiasing }
+    fqAntialiased,
+    {** Cleartype provided by the system }
+    fqCleartype,
+    {** Cleartype provided by the system }
+    fqCleartypeNatural);
   {$ENDIF}
 
 {$IFDEF BGRABITMAP_USE_FPCANVAS}
@@ -342,40 +373,55 @@ type
 
 type
   {$IFNDEF TCanvas}
-  { TCanvas }
-  {* A surface on which to draw }
+  {* A surface on which to draw, generally provided by the operating system }
   TCanvas = class
   private
+    {** Assigns a font value }
     procedure SetFont(AValue: TFont);
   protected
+    {** Internal canvas, when bridging with non LCL canvas }
     FCanvas: TGUICanvas;
+    {** Font value }
     FFont: TFont;
   public
+    {** Create a bridge to a non LCL canvas }
     constructor Create(ACanvas: TGUICanvas);
-    {** Draw an image with top-left corner at (''x'',''y'') }
+    {** Draw an image with top-left corner at (_x_, _y_) }
     procedure Draw(x,y: integer; AImage: TGraphic);
-    {** Draw and stretch an image within the rectangle ''ARect'' }
+    {** Draw and stretch an image within the rectangle _ARect_ }
     procedure StretchDraw(ARect: TRect; AImage: TGraphic);
+    {** Non-LCL canvas (MSEgui, fpGUI) }
     property GUICanvas: TGUICanvas read FCanvas;
+    {** Access current font }
     property Font: TFont read FFont write SetFont;
   end;
   {$ENDIF}
 
-  { TGraphic }
   {* A class containing any element that can be drawn within rectangular bounds }
   TGraphic = class(TPersistent)
   protected
+    {** Draw the content onto a canvas }
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); virtual; abstract;
+    {** Check whether it is empty }
     function GetEmpty: Boolean; virtual; abstract;
+    {** Retrieves height }
     function GetHeight: Integer; virtual; abstract;
+    {** Retrieves width }
     function GetWidth: Integer; virtual; abstract;
+    {** Retrieves whether transparent }
     function GetTransparent: Boolean; virtual; abstract;
+    {** Sets whether to render as transparent }
     procedure SetTransparent(Value: Boolean); virtual; abstract;
+    {** Sets the height }
     procedure SetHeight(Value: Integer); virtual; abstract;
+    {** Sets the widith }
     procedure SetWidth(Value: Integer); virtual; abstract;
+    {** Get mimetype of current graphic class }
     function GetMimeType: string; virtual;
+    {** Notify a change }
     procedure Changed(Sender: TObject); virtual;
   public
+    {** Create an empty instance }
     constructor Create; virtual;
     {** Load the content from a given file }
     procedure LoadFromFile({%H-}const Filename: string); virtual;
@@ -401,8 +447,7 @@ type
   end;
 
   {$IFNDEF TBitmap}
-  { TBitmap }
-  {* Contains a bitmap }
+  {* Contains a bitmap, generally provided by the operating system }
   TBitmap = class(TGraphic)
   private
     FHeight: integer;
@@ -411,37 +456,61 @@ type
     FTransparent: boolean;
     FTransparentColor: TColor;
     FTransparentMode: TTransparentMode;
+    {** Retrieve canvas }
     function GetCanvas: TCanvas;
+    {** Retrieve whether a mask is applied }
     function GetMasked: boolean;
+    {** Retrieve raw image data }
     function GetRawImage: TRawImage;
+    {** Sets the color to be considered transparent }
     procedure SetTransparentColor(AValue: TColor);
+    {** Sets the transparency mode }
     procedure SetTransparentMode(AValue: TTransparentMode);
   protected
     FRawImage: TRawImage;
+    {** Draw the image on a canvas within the specified rectangle }
     procedure Draw(ACanvas: TCanvas; const Rect: TRect); override;
+    {** Retreives width }
     function GetHeight: Integer; override;
+    {** Retreives height }
     function GetWidth: Integer; override;
+    {** Sets width (content will be lost) }
     procedure SetHeight(Value: Integer); override;
+    {** Sets height (content will be lost) }
     procedure SetWidth(Value: Integer); override;
+    {** Checks whether empty }
     function GetEmpty: Boolean; override;
+    {** Checks whether transparency is used }
     function GetTransparent: Boolean; override;
+    {** Sets whether transparency is used }
     procedure SetTransparent({%H-}Value: Boolean); override;
+    {** Returns the mimetype of the bitmap }
     function GetMimeType: string; override;
   public
+    {** Create an empty bitmap (of zero size) }
     constructor Create; override;
+    {** Frees the bitmap }
     destructor Destroy; override;
+    {** Assigns an image }
     procedure Assign(Source: TPersistent); override;
+    {** Loads the image from a stream }
     procedure LoadFromStream({%H-}Stream: TStream); override;
+    {** Saves the image into a stream }
     procedure SaveToStream({%H-}Stream: TStream); override;
     {** Width of the bitmap in pixels }
     property Width: integer read GetWidth write SetWidth;
     {** Height of the bitmap in pixels }
     property Height: integer read GetHeight write SetHeight;
+    {** Access as raw image, giving access to its data }
     property RawImage: TRawImage read GetRawImage;
+    {** Access canvas for drawing }
     property Canvas: TCanvas read GetCanvas;
+    {** Is the bitmap drawn according to a mask }
     property Masked: boolean read GetMasked;
+    {** Color to be used as transparent }
     property TransparentColor: TColor read FTransparentColor
              write SetTransparentColor default clDefault;
+    {** Transparency mode }
     property TransparentMode: TTransparentMode read FTransparentMode
              write SetTransparentMode default tmAuto;
   end;

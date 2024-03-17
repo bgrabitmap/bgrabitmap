@@ -4,8 +4,8 @@
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
 type
-  {* Pointer for direct pixel access. Data is stored as a sequence of ''TBGRAPixel''.
-     See [[BGRABitmap tutorial 4]] }
+  {* Pointer for direct pixel access. Data is stored as a sequence of TBGRAPixel.
+     See [Tutorial 4](https://wiki.freepascal.org/BGRABitmap_tutorial_4) }
   PBGRAPixel = ^TBGRAPixel;
 
   {$IFNDEF BGRABITMAP_BGRAPIXEL}
@@ -24,44 +24,66 @@ type
     {$ENDIF}
   {$ENDIF}
 
-  {* Each pixel is a sequence of 4 bytes containing blue, green, red and alpha channel.
-     Values range from 0 to 255, color is in sRGB colorspace. The alpha value of 0
+  {* Each pixel is a sequence of 4 bytes containing _blue_, _green_, _red_ and _alpha_ channel.
+     Values range from 0 to 255, color is in sRGB colorspace. The _alpha_ value of 0
      is transparent and 255 is opaque. In the bitmap data, when the pixel is fully transparent,
 	 the RGB values are supposed to be set to zero. }
-
-  { TBGRAPixel }
-
   TBGRAPixel = packed record
   private
+    { Calls function to compute intensity }
     function GetClassIntensity: word;
+    { Calls function to compute lightness }
     function GetClassLightness: word;
+    { Calls function to set intensity }
     procedure SetClassIntensity(AValue: word);
+    { Calls function to set lightness }
     procedure SetClassLightness(AValue: word);
   public
     {$IFDEF BGRABITMAP_RGBAPIXEL}
+    {** Channels if ordered RGBA ordered }
     red, green, blue, alpha: byte;
     {$ELSE}
+    {** Channels if ordered BGRA ordered }
     blue, green, red, alpha: byte;
     {$ENDIF}
+    class function New(const ARed,AGreen,ABlue,AAlpha:byte): TBGRAPixel;overload;static;
+    class function New(const ARed,AGreen,ABlue:byte): TBGRAPixel;overload;static;
+    {** Sets the pixel with given RGB values }
     procedure FromRGB(ARed,AGreen,ABlue: Byte; AAlpha: Byte = 255);
+    {** Sets the pixel with given TColor }
     procedure FromColor(AColor: TColor; AAlpha: Byte = 255);
+    {** Sets the pixel according to a color name or CSS expression }
     procedure FromString(AStr: string);
+    {** Sets the pixel with given TFPColor  (16-bit per channel) }
     procedure FromFPColor(AColor: TFPColor);
+    {** Extras RGBA channels }
     procedure ToRGB(out ARed,AGreen,ABlue,AAlpha: Byte); overload;
+    {** Extras RGB channels }
     procedure ToRGB(out ARed,AGreen,ABlue: Byte); overload;
+    {** Converts to TColor }
     function ToColor: TColor;
+    {** Converts to a CSS string representation }
     function ToString: string;
+    {** Compute grayscale equivalent }
     function ToGrayscale(AGammaCorrection: boolean = true): TBGRAPixel;
+    {** Converts to TFPColor (16-bit per channel) }
     function ToFPColor: TFPColor;
+    {** Check whether all channels are equal (this is generally not necessary to
+        use this fonction unless the RGB value of a transparent color matter) }
     function EqualsExactly(constref AColor: TBGRAPixel): boolean;
+    {** Assign a TBGRAPixel to a TColor }
     class Operator := (Source: TBGRAPixel): TColor;
+    {** Assign a TColor to a TBGRAPixel }
     class Operator := (Source: TColor): TBGRAPixel;
+    {** Intensity of the color (how much channels are saturated) }
     property Intensity: word read GetClassIntensity write SetClassIntensity;
+    {** Lightness of the color (the resulting lightness of combined channels) }
     property Lightness: word read GetClassLightness write SetClassLightness;
   end;
-  TBGRAPixelBuffer = packed array of TBGRAPixel;
 
-procedure AllocateBGRAPixelBuffer(var ABuffer: TBGRAPixelBuffer; ASize: integer);
+  {** Checks if two pixels are equal. If they are both transparent,
+      RGB values are ignored }
+  operator = (const c1, c2: TBGRAPixel): boolean; inline;
 
 const
   {$IFDEF BGRABITMAP_RGBAPIXEL}
@@ -70,16 +92,25 @@ const
   TBGRAPixel_GreenByteOffset = 1;
   TBGRAPixel_BlueByteOffset = 2;
   {$ELSE}
+  {** Order of the channels (when BGRA) }
   TBGRAPixel_RGBAOrder = False;
+  {** Offset of the blue channel (when BGRA) }
   TBGRAPixel_BlueByteOffset = 0;
+  {** Offset of the green channel (when BGRA) }
   TBGRAPixel_GreenByteOffset = 1;
+  {** Offset of the blue channel (when BGRA) }
   TBGRAPixel_RedByteOffset = 2;
   {$ENDIF}
+  {** Offset of the alpha channel }
   TBGRAPixel_AlphaByteOffset = 3;
   {$IFDEF ENDIAN_LITTLE}
+  { Bit shift for the red channel }
   TBGRAPixel_RedShift = TBGRAPixel_RedByteOffset*8;
+  { Bit shift for the green channel }
   TBGRAPixel_GreenShift = TBGRAPixel_GreenByteOffset*8;
+  { Bit shift for the blue channel }
   TBGRAPixel_BlueShift = TBGRAPixel_BlueByteOffset*8;
+  { Bit shift for the alpha channel }
   TBGRAPixel_AlphaShift = TBGRAPixel_AlphaByteOffset*8;
   {$ELSE}
   TBGRAPixel_RedShift = 24 - TBGRAPixel_RedByteOffset*8;
@@ -88,84 +119,94 @@ const
   TBGRAPixel_AlphaShift = 24 - TBGRAPixel_AlphaByteOffset*8;
   {$ENDIF}
 
-  {** Creates a pixel with given RGBA values }
+  {* Creates a pixel with given RGBA values }
   function BGRA(red, green, blue, alpha: byte): TBGRAPixel; overload; inline;
-  {** Creates a opaque pixel with given RGB values }
+  {* Creates a opaque pixel with given RGB values }
   function BGRA(red, green, blue: byte): TBGRAPixel; overload; inline;
-  {** Checks if two pixels are equal. If they are both transparent,
-      RGB values are ignored }
-  operator = (const c1, c2: TBGRAPixel): boolean; inline;
-  {** Returns the intensity of a pixel. The intensity is the
+  {* Returns the intensity of a pixel. The intensity is the
      maximum value reached by any component }
   function GetIntensity(c: TBGRAPixel): word; inline;
-  {** Sets the intensity of a pixel }
+  {* Sets the intensity of a pixel }
   function SetIntensity(c: TBGRAPixel; intensity: word): TBGRAPixel;
-  {** Returns the lightness of a pixel. The lightness is the
+  {* Returns the lightness of a pixel. The lightness is the
      perceived brightness, 0 being black and 65535 being white }
   function GetLightness(c: TBGRAPixel): word; overload;
-  {** Sets the lightness of a pixel }
+  {* Sets the lightness of a pixel }
   function SetLightness(c: TBGRAPixel; lightness: word): TBGRAPixel; overload;
-  {** Sets the lightness quickly, by fading towards black if ''lightness'' is
-      less than 32768, and fading towards white if ''lightness'' is more
+  {* Sets the lightness quickly, by fading towards black if _lightness_ is
+      less than 32768, and fading towards white if _lightness_ is more
       than 32768 }
   function ApplyLightnessFast(color: TBGRAPixel; lightness: word): TBGRAPixel; inline;
-  {** Sets the intensity quickly, by fading towards black if ''lightness'' is
-      less than 32768, and multiplying all components if ''lightness'' is more
+  {* Sets the intensity quickly, by fading towards black if _lightness_ is
+      less than 32768, and multiplying all components if _lightness_ is more
       than 32768. In case of saturation, it fades towards white }
   function ApplyIntensityFast(color: TBGRAPixel; lightness: LongWord): TBGRAPixel;
-  {** Combines two lightnesses together. A value of 32768 is neutral. The
+  {* Combines two lightnesses together. A value of 32768 is neutral. The
       result may exceed 65535 }
   function CombineLightness(lightness1,lightness2: Int32or64): Int32or64;
-  {** Converts a color into grayscale }
+  {* Converts a color into grayscale }
   function BGRAToGrayscale(c: TBGRAPixel): TBGRAPixel;
+  {* Converts a color into grayscale assuming linear colorspace }
   function BGRAToGrayscaleLinear(c: TBGRAPixel): TBGRAPixel;
-  {** Create a gray color with the given ''lightness'' }
+  {* Create a gray color with the given _lightness_ }
   function GrayscaleToBGRA(lightness: word): TBGRAPixel;
-  {** Merge two colors without gamma correction }
+  {* Merge two colors without gamma correction }
   function MergeBGRA(c1, c2: TBGRAPixel): TBGRAPixel; overload;
-  {** Merge two colors without gamma correction. ''weight1'' and ''weight2''
+  {* Merge two colors without gamma correction. _weight1_ and _weight2_
       indicates the weight of the color barycentre }
   function MergeBGRA(c1: TBGRAPixel; weight1: integer; c2: TBGRAPixel; weight2: integer): TBGRAPixel; overload;
-  {** Merge two colors with gamma correction. ''weight1'' and ''weight2''
+  {* Merge two colors with gamma correction. _weight1_ and _weight2_
       indicates the weight of the color barycentre }
   function MergeBGRAWithGammaCorrection(c1: TBGRAPixel; weight1: byte; c2: TBGRAPixel; weight2: byte): TBGRAPixel;
-  {** Converts a ''TColor'' value into an opaque pixel }
+  {* Converts a TColor value into an opaque pixel }
   function ColorToBGRA(color: TColor): TBGRAPixel; overload;
-  {** Converts a ''TColor'' value into a pixel with given ''opacity'' }
+  {* Converts a TColor value into a pixel with given _opacity_ }
   function ColorToBGRA(color: TColor; opacity: byte): TBGRAPixel; overload;
-  {** Converts a pixel into a TColor value, discarding the alpha value }
+  {* Converts a pixel into a TColor value, discarding the alpha value }
   function BGRAToColor(c: TBGRAPixel): TColor;
+  {* Fonction to divide by 257 (not quite the same as **shr** 8)}
   function FastRoundDiv257(valueWord: LongWord): byte; inline;
-  {** Converts a ''TFPColor'' value into a pixel. Note that even if
-      ''TFPColor'' have 16-bit values, they are not considered as
+  {* Converts a TFPColor value into a pixel. Note that even if
+      TFPColor have 16-bit values, they are not considered as
       gamma expanded }
   function FPColorToBGRA(AValue: TFPColor): TBGRAPixel;
-  {** Converts a pixel into a ''TFPColor'' }
+  {* Converts a pixel into a TFPColor }
   function BGRAToFPColor(AValue: TBGRAPixel): TFPColor; inline;
+  {* Converts a 16-bit packed color into a TBGRAPixel }
   function Color16BitToBGRA(AColor: Word): TBGRAPixel;
+  {* Converts a TBGRAPixel into a 16-bit packed color }
   function BGRAToColor16Bit(const AColor: TBGRAPixel): Word;
-  {** Computes the difference (with gamma correction) between two pixels,
+  {* Computes the difference (with gamma correction) between two pixels,
       taking into account all dimensions, including transparency. The
       result ranges from 0 to 65535 }
   function BGRAWordDiff(c1, c2: TBGRAPixel): word;
-  {** Computes the difference (with gamma correction) between two pixels,
+  {* Computes the difference (with gamma correction) between two pixels,
       taking into account all dimensions, including transparency. The
       result ranges from 0 to 255 }
   function BGRADiff(c1, c2: TBGRAPixel): byte;
+  {* Fast computation of difference, without weighing the alpha channel and without gamma correction}
   function FastBGRALinearDiff(c1,c2: TBGRAPixel): byte;
+  {* Fast computation of difference, without weighing the alpha channel }
   function FastBGRAExpandedDiff(c1,c2: TBGRAPixel): word;
 
+  {* Get height [0..1] stored in a TBGRAPixel }
+  function MapHeight(Color: TBGRAPixel): Single;
+
+  {* Get TBGRAPixel to store height [0..1] }
+  function MapHeightToBGRA(Height: Single; Alpha: Byte): TBGRAPixel;
+
 type
-  {* Array of pixels }
+  {* Array of TBGRAPixel to be used as a buffer }
+  TBGRAPixelBuffer = packed array of TBGRAPixel;
+
+  {** Allocate a buffer of TBGRAPixel }
+  procedure AllocateBGRAPixelBuffer(var ABuffer: TBGRAPixelBuffer; ASize: integer);
+
+type
+  {** Array of pixels, not to be used as a buffer }
   ArrayOfTBGRAPixel = array of TBGRAPixel;
   {** Merge given colors without gamma correction }
   function MergeBGRA(const colors: array of TBGRAPixel): TBGRAPixel; overload;
-
-{ Get height [0..1] stored in a TBGRAPixel }
-function MapHeight(Color: TBGRAPixel): Single;
-
-{ Get TBGRAPixel to store height [0..1] }
-function MapHeightToBGRA(Height: Single; Alpha: Byte): TBGRAPixel;
 
 type
   {* Possible modes when drawing a pixel over another one }
@@ -193,13 +234,13 @@ const
   dmFastBlend = dmLinearBlend;
 
 type
-  {* Advanced blending modes. See [http://www.brighthub.com/multimedia/photography/articles/18301.aspx Paint.NET blend modes]
-    and [http://www.pegtop.net/delphi/articles/blendmodes/ Formulas]. Blending layers has two steps. The first one is
+  {* Advanced blending modes. See [Paint.NET blend modes](http://www.brighthub.com/multimedia/photography/articles/18301.aspx)
+    and [Formulas](http://www.pegtop.net/delphi/articles/blendmodes/). Blending layers has two steps. The first one is
     to apply the blend operations listed below, and the second is the actual merging of the colors }
   TBlendOperation = (
-    {** Simple blend, except that it forces a linear merge so it is equivalent to ''dmLinearBlend'' }
+    {** Simple blend, except that it forces a linear merge so it is equivalent to _dmLinearBlend_ }
     boLinearBlend,
-    {** Simple blend. It is equivalent to ''dmLinearBlend'' or ''dmDrawWithTransparency'' }
+    {** Simple blend. It is equivalent to _dmLinearBlend_ or _dmDrawWithTransparency_ }
     boTransparent,
     {** Lighting blend modes (tends to increase the luminosity) }
     boLighten, boScreen, boAdditive, boLinearAdd, boColorDodge, boDivide, boNiceGlow, boSoftLight, boHardLight,
@@ -209,11 +250,11 @@ type
     boDifference, boLinearDifference, boExclusion, boLinearExclusion, boSubtract, boLinearSubtract, boSubtractInverse, boLinearSubtractInverse,
     {** Negation blend modes }
     boNegation, boLinearNegation,
-    {** Xor blend mode. It is sightly different from ''dmXor'' because the alpha value is used like in other blends modes }
+    {** Xor blend mode. It is sightly different from _dmXor_ because the alpha value is used like in other blends modes }
     boXor,
-    {** SVG implementation of soft light **}
+    {** SVG implementation of soft light }
     boSvgSoftLight,
-    {** Apply mask **}
+    {** Apply mask }
     boMask,
     {** Standard HSL colorspace }
     boLinearMultiplySaturation, boLinearHue, boLinearColor, boLinearLightness, boLinearSaturation,

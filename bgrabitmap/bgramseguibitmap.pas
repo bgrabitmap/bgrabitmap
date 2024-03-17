@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Implementation of BGRABitmap for MSEgui }
 unit BGRAMSEguiBitmap;
+{ It should NOT be added to the **uses** clause. }
 
 {$mode objfpc}{$H+}
 
@@ -10,9 +13,7 @@ uses
   BGRAText, msebitmap;
 
 type
-
-  { TBGRAMSEguiBitmap }
-
+  { Implementation of TBGRABitmap for MSEgui }
   TBGRAMSEguiBitmap = class(TBGRADefaultBitmap)
   protected
     procedure CopyDataToBitmap(AData: Pointer; AWidth,AHeight: integer; ALineOrder: TRawImageLineOrder; ABitmap: TBitmap);
@@ -42,8 +43,7 @@ type
   end;
   
 type
-  { TBitmapTracker }
-
+  { Tracker of bitmap changes }
   TBitmapTracker = class(TMaskedBitmap)
   protected
     FUser: TBGRADefaultBitmap;

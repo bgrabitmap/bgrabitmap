@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Provides a reader for AVIF image format }
 unit BGRAReadAvif;
 
 {$mode objfpc}{$H+}
@@ -9,9 +11,9 @@ uses
   BGRAClasses, SysUtils, FPImage;
 
 type
+  { @abstract(Reader for AVIF still image format.)
 
-  { TBGRAReaderAvif }
-
+    To read animations, use TAvifReader of AvifBGRA unit }
   TBGRAReaderAvif = class(TFPCustomImageReader)
   protected
     procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;

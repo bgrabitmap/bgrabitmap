@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Types used by Phong shading }
 unit BGRAPhongTypes;
 
 {$mode objfpc}{$H+}
@@ -10,8 +12,7 @@ uses
 
 type
 
-{ TCustomPhongShading }
-
+  { Abstract class for Phong shading }
  TCustomPhongShading = class
    protected
      FLightPosition3D: TPoint3D;

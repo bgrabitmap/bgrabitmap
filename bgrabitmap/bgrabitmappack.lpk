@@ -24,8 +24,8 @@
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="11" Minor="5" Release="8"/>
-    <Files Count="152">
+    <Version Major="11" Minor="6"/>
+    <Files Count="153">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -636,6 +636,10 @@
         <Filename Value="bgrapngcomn.pas"/>
         <UnitName Value="BGRAPNGComn"/>
       </Item152>
+      <Item153>
+        <Filename Value="bgracustomtextfx.pas"/>
+        <UnitName Value="BGRACustomTextFX"/>
+      </Item153>
     </Files>
     <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="2">

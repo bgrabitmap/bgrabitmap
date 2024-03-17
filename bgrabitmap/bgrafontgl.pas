@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
+
+{ Font rendering in OpenGL with caching of textures for each glyph. Textures
+  are built using a TBGRACustomFontRenderer }
 unit BGRAFontGL;
 
 {$mode objfpc}{$H+}
@@ -10,8 +13,7 @@ uses
   Avl_Tree;
 
 type
-  { TRenderedGlyph }
-
+  { Glyph rendered as a texture }
   TRenderedGlyph = class
   private
     FIdentifier: UTF8String;
@@ -26,8 +28,7 @@ type
     property AdvancePx: integer read FAdvancePx;
   end;
 
-  { IBGLRenderedFont }
-
+  { Interface for font rendering with OpenGL }
   IBGLRenderedFont = interface(IBGLFont)
     function GetBackgroundColor: TBGRAPixel;
     function GetColor: TBGRAPixel;
@@ -59,8 +60,7 @@ type
     property BackgroundColor: TBGRAPixel read GetBackgroundColor write SetBackgroundColor;
   end;
 
-  { TBGLRenderedFont }
-
+  { Implementation of font rendering by using a bitmap cache }
   TBGLRenderedFont = class(TBGLCustomFont,IBGLRenderedFont)
   private
     FGlyphs: TAVLTree;

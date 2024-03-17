@@ -2,6 +2,7 @@ List of directories:
 - bglcontrols: controls providing OpenGL surface with BGRABitmap
 - bgrabitmap: contains BGRABitmap library
 - dev: tools used to make BGRABitmap
+- doc: scripts to generate html documentation (uses [pasdoc](https://github.com/circular17/pasdoc) and [graphviz](https://graphviz.org/))
 - libwebp: contains the Dll of LibWebP for Windows
 - test: contains a series of test programs and examples on how to use BGRABitmap library
 - winmake: contains batch files for make under Windows
