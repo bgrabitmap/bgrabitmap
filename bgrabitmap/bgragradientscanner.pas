@@ -110,6 +110,7 @@ type
     constructor Create(AHue1,AHue2: Word; Saturation,Lightness: Word; options: THueGradientOptions); overload;
     function GetAverageColor: TBGRAPixel; override;
     function GetAverageExpandedColor: TExpandedPixel; override;
+    function GetMonochrome: boolean; override;
   end;
 
   TGradientInterpolationFunction = function(t: single): single of object;
@@ -931,6 +932,13 @@ end;
 function TBGRAHueGradient.GetAverageExpandedColor: TExpandedPixel;
 begin
   Result:= MergeBGRA(MergeBGRA(ec1, ec2), InterpolateToExpanded(32768));
+end;
+
+function TBGRAHueGradient.GetMonochrome: boolean;
+begin
+  Result:= inherited GetMonochrome{ and
+    ((hsla1.lightness = 0) or (hsla1.lightness = 65535)
+    or (hsla1.saturation = 0))};
 end;
 
 { TBGRACustomMultiGradient }
