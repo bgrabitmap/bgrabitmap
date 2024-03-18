@@ -936,9 +936,9 @@ end;
 
 function TBGRAHueGradient.GetMonochrome: boolean;
 begin
-  Result:= inherited GetMonochrome{ and
+  Result:= inherited GetMonochrome and
     ((hsla1.lightness = 0) or (hsla1.lightness = 65535)
-    or (hsla1.saturation = 0))};
+    or (hsla1.saturation = 0));
 end;
 
 { TBGRACustomMultiGradient }
