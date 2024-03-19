@@ -167,6 +167,7 @@ type
   protected
     procedure UpdateFont;
     procedure UpdateMatrix;
+    procedure NeedBuffer;
     function GetGlyph(AIdentifier: string): TBGRAGlyph; override;
     procedure DefaultWordBreakHandler(var ABefore, AAfter: string);
     procedure Init(AVectorize: boolean);
@@ -1749,7 +1750,6 @@ begin
     FFont.Name := TBGRASystemFontRenderer.PatchSystemFontName(FName);
     FFont.Style := FStyle;
     FFont.Height := FixSystemFontFullHeight(FFont.Name, FontFullHeightSign * FResolution);
-    FFont.Quality := fqNonAntialiased;
     FFontEmHeightRatio := 1;
     FFontEmHeightRatioComputed := false;
     fillchar(FFontPixelMetric,sizeof(FFontPixelMetric),0);
@@ -1799,6 +1799,19 @@ end;
 procedure TBGRAVectorizedFont.UpdateMatrix;
 begin
   TypeWriterMatrix := FFontMatrix*AffineMatrixRotationDeg(-Orientation*0.1)*AffineMatrixScale(FFullHeight,FFullHeight)*AffineMatrixLinear(PointF(1,0),PointF(-FItalicSlope,1));
+end;
+
+procedure TBGRAVectorizedFont.NeedBuffer;
+begin
+  if not Assigned(FBuffer) then
+  begin
+    FBuffer := BGRABitmapFactory.Create;
+    FBuffer.FontRenderer := TBGRASystemFontRenderer.Create;
+  end;
+  FBuffer.FontName := FFont.Name;
+  FBuffer.FontStyle := FFont.Style;
+  FBuffer.FontHeight := FontEmHeightSign * FFont.Height;
+  FBuffer.FontQuality := fqSystem;
 end;
 
 constructor TBGRAVectorizedFont.Create;
@@ -2273,12 +2286,13 @@ begin
   if (result = nil) and (FResolution > 0) and (FFont <> nil) then
   begin
     g := TBGRAPolygonalGlyph.Create(AIdentifier);
-    size := BGRATextSize(FFont, fqSystem, AIdentifier, 1);
     dx := FResolution div 2;
     dy := FResolution div 2;
+    NeedBuffer;
+    size := FBuffer.TextSize(AIdentifier);
     FBuffer.SetSize(size.cx+2*dx,FResolution+2*dy);
     FBuffer.Fill(BGRAWhite);
-    BGRATextOut(FBuffer, FFont, fqSystem, dx,dy, AIdentifier, BGRABlack, nil, taLeftJustify);
+    FBuffer.TextOut(dx,dy, AIdentifier, BGRABlack);
     pts := VectorizeMonochrome(FBuffer,1/FResolution,False,true,50);
     g.SetPoints(pts);
     g.QuadraticCurves := FQuadraticCurves;
@@ -2312,7 +2326,7 @@ begin
     FFont := nil;
   if BGRABitmapFactory = nil then
     raise Exception.Create('No bitmap factory available');
-  FBuffer := BGRABitmapFactory.Create;
+  FBuffer := nil;
   FFullHeight := 20;
   FItalicSlope := 0;
   LigatureWithF := true;
@@ -2432,7 +2446,8 @@ begin
       together := UTF8OverrideDirection(AIdRight + AIdLeft, true);
   end else
     together := AIdLeft + AIdRight;
-  result := BGRATextSize(FFont, fqSystem, together, 1).cx/Resolution
+  NeedBuffer;
+  result := FBuffer.TextSize(together).cx/Resolution
             - Glyph[AIdLeft].Width - Glyph[AIdRight].Width;
 end;
 

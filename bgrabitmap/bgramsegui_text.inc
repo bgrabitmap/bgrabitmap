@@ -44,6 +44,14 @@ begin
   result := Size(ABitmap.Canvas.GetStringWidth(sUTF16), ABitmap.Canvas.Font.Height);
 end;
 
+function BitmapTextExtentStyle(ABitmap: TBitmap; AText: string; AMaxWidth: integer;
+  const AStyle: TTextStyle): TSize;
+var sUTF16: UnicodeString;
+begin
+  sUTF16 := UTF8ToUTF16(AText);
+  result := Size(ABitmap.Canvas.GetStringWidth(sUTF16), ABitmap.Canvas.Font.Height);
+end;
+
 function BitmapTextExtentAngle(ABitmap: TBitmap; AText: string; AOrientation: integer): TSize;
 begin
   result := BitmapTextExtent(ABitmap, AText);
