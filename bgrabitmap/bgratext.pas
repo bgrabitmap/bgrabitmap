@@ -48,6 +48,10 @@ uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAPen, BGRAGrayscaleMask
   {$IFDEF LCL},InterfaceBase, LCLVersion{$ENDIF};
 
+{$IF defined(LCLCOCOA) and (lcl_fullversion < 3030000)}
+  {$DEFINE TEXT_ANGLE_PATCH}
+{$ENDIF}
+
 const
   RenderTextOnBitmap = {$IFDEF RENDER_TEXT_ON_TBITMAP}true{$ELSE}false{$ENDIF};
 
@@ -68,7 +72,10 @@ type
                                     AHorizAlign: TAlignment; AVertAlign: TTextLayout; ARightToLeft: boolean);
     procedure InternalTextRect(ADest: TBGRACustomBitmap; ARect: TRect; x, y: integer; sUTF8: string; style: TTextStyle; c: TBGRAPixel; ATexture: IBGRAScanner);
     procedure InternalTextOut(ADest: TBGRACustomBitmap; x, y: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
-                              align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false); 
+                              align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
+    {$IFDEF TEXT_ANGLE_PATCH}procedure InternalTextOutAnglePatch(ADest: TBGRACustomBitmap; x, y: single; orientation: integer;
+                                s: string; c: TBGRAPixel; tex: IBGRAScanner; align: TAlignment;
+                                AShowPrefix: boolean = false; ARightToLeft: boolean = false);{$ENDIF}
     procedure InternalTextOutAngle(ADest: TBGRACustomBitmap; x, y: single; AOrientation: integer; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
                               align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false); virtual;
     procedure InternalTextOutEllipse(ADest: TBGRACustomBitmap; x, y, availableWidth: single; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
@@ -215,6 +222,10 @@ procedure BitmapTextOutAngle(ABitmap: TBitmap; ACoord: TPoint; AText: string; AO
 begin
   ABitmap.Canvas.Font.Orientation := AOrientation;
   BitmapTextOut(ABitmap, ACoord, AText);
+  {{$IFDEF DARWIN} // cancels orientation
+  ABitmap.Canvas.Font.Orientation := -AOrientation;
+  BitmapTextOut(ABitmap, ACoord, ' ');
+  {$ENDIF}}
 end;
 
 procedure BitmapTextRect(ABitmap: TBitmap; ARect: TRect; ACoord: TPoint; 
@@ -1153,7 +1164,7 @@ begin
     Canvas.Font := Font;
     Canvas.Font.Color := clWhite;
     Canvas.Font.Height := Font.Height*sizeFactor;
-    BitmapTextOutAngle({$IFDEF RENDER_TEXT_ON_TBITMAP}tempLCL{$ELSE}temp.Bitmap{$ENDIF}, 
+    BitmapTextOutAngle({$IFDEF RENDER_TEXT_ON_TBITMAP}tempLCL{$ELSE}temp.Bitmap{$ENDIF},
       Point(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY), sUTF8,
       orientationTenthDegCCW);
   end;
@@ -1637,6 +1648,46 @@ begin
     align, ASHowPrefix, ARightToLeft);
 end;
 
+{$IFDEF TEXT_ANGLE_PATCH}procedure TBGRASystemFontRenderer.InternalTextOutAnglePatch(ADest: TBGRACustomBitmap;
+  x, y: single; orientation: integer; s: string; c: TBGRAPixel;
+  tex: IBGRAScanner; align: TAlignment; AShowPrefix: boolean; ARightToLeft: boolean);
+const orientationToDeg = -0.1;
+var
+  temp: TBGRACustomBitmap;
+  coord: TPointF;
+  angleDeg: single;
+  OldOrientation: integer;
+  filter: TResampleFilter;
+begin
+  OldOrientation := FontOrientation;
+  FontOrientation:= 0;
+  UpdateFont;
+
+  temp := BGRABitmapFactory.Create;
+  with InternalTextSize(s, AShowPrefix) do
+    temp.SetSize(cx, cy);
+  temp.FillTransparent;
+  InternalTextOut(temp, 0, 0, s, c, tex, taLeftJustify, AShowPrefix, ARightToLeft);
+
+  orientation:= orientation mod 3600;
+  if orientation < 0 then inc(orientation, 3600);
+
+  angleDeg := orientation * orientationToDeg;
+  coord := PointF(x,y);
+  case align of
+  taRightJustify: coord.Offset( AffineMatrixRotationDeg(angleDeg)*PointF(-temp.Width,0) );
+  taCenter: coord.Offset( AffineMatrixRotationDeg(angleDeg)*PointF(-0.5*temp.Width,0) );
+  end;
+  case orientation of
+  0,900,1800,2700: filter := rfBox;
+  else filter := rfCosine;
+  end;
+  ADest.PutImageAngle(coord.x,coord.y, temp, angleDeg, filter);
+  temp.Free;
+
+  FontOrientation:= OldOrientation;
+end;{$ENDIF}
+
 procedure TBGRASystemFontRenderer.InternalTextOutAngle(ADest: TBGRACustomBitmap; x,
   y: single; AOrientation: integer; sUTF8: string; c: TBGRAPixel; texture: IBGRAScanner;
   align: TAlignment; AShowPrefix: boolean = false; ARightToLeft: boolean = false);
@@ -1647,6 +1698,13 @@ var mode : TBGRATextOutImproveReadabilityMode;
   i: Integer;
 begin
   if sUTF8='' then exit;
+  {$IFDEF TEXT_ANGLE_PATCH}
+  if AOrientation <> 0 then
+  begin
+    InternalTextOutAnglePatch(ADest, x, y, AOrientation, sUTF8, c, texture, align, AShowPrefix, ARightToLeft);
+    exit;
+  end;
+  {$ENDIF}
   {$IF defined(LINUX) or defined(DARWIN)}
   //help LCL detect the correct direction
   case GetFirstStrongBidiClassUTF8(sUTF8) of
@@ -1824,6 +1882,11 @@ end;
 
 function TBGRASystemFontRenderer.TextSizeAngle(sUTF8: string;
   orientationTenthDegCCW: integer): TSize;
+{$IFDEF TEXT_ANGLE_PATCH}
+begin
+  result := TextSize(sUTF8);
+end;
+{$ELSE}
 var oldOrientation: integer;
 begin
   oldOrientation:= FontOrientation;
@@ -1832,6 +1895,7 @@ begin
   result := InternalTextSize(sUTF8,False);
   FontOrientation:= oldOrientation;
 end;
+{$ENDIF}
 
 function TBGRASystemFontRenderer.TextSize(sUTF8: string;
   AMaxWidth: integer; ARightToLeft: boolean): TSize;
