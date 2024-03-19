@@ -2939,7 +2939,7 @@ procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy: single; AFil
 var
   m: TAffineMatrix;
 begin
-  if (image.Width = 0) or (image.Height = 0) then exit;
+  if not Assigned(image) or (image.Width = 0) or (image.Height = 0) then exit;
   m := matrix*AffineMatrixTranslation(dx, dy);
   if pixelCenteredCoordinates then
     m := AffineMatrixTranslation(0.5, 0.5)*m;
@@ -2950,7 +2950,7 @@ procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy, dw, dh: sing
 var
   m: TAffineMatrix;
 begin
-  if (image.Width = 0) or (image.Height = 0) then exit;
+  if not Assigned(image) or (image.Width = 0) or (image.Height = 0) then exit;
   m := matrix*AffineMatrixTranslation(dx, dy)*AffineMatrixScale(dw/image.Width,dh/image.Height);
   if pixelCenteredCoordinates then
     m := AffineMatrixTranslation(0.5, 0.5)*m;

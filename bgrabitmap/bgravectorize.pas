@@ -1168,7 +1168,7 @@ begin
     FVectorizedFontArray[high(FVectorizedFontArray)].FontStyle := FontStyle;
     FVectorizedFontArray[high(FVectorizedFontArray)].VectorizedFont := FVectorizedFont;
   end;
-  if FontEmHeight > 0 then
+  if FontEmHeightF > 0 then
     FVectorizedFont.EmHeight := FontEmHeightF
   else
     FVectorizedFont.FullHeight:= -FontEmHeightF;
@@ -1810,7 +1810,7 @@ begin
   end;
   FBuffer.FontName := FFont.Name;
   FBuffer.FontStyle := FFont.Style;
-  FBuffer.FontHeight := FontEmHeightSign * FFont.Height;
+  FBuffer.FontFullHeight := Resolution;
   FBuffer.FontQuality := fqSystem;
 end;
 
