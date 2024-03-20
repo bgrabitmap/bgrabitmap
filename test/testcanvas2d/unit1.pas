@@ -91,8 +91,8 @@ end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  img := TBGRABitmap.Create(ExtractFilePath(Application.ExeName)+'pteRaz.jpg');
-  abelias := TBGRABitmap.Create(ExtractFilePath(Application.ExeName)+'abelias.png');
+  img := TBGRABitmap.Create(ResourceFile('pteRaz.jpg'));
+  abelias := TBGRABitmap.Create(ResourceFile('abelias.png'));
   mx := -1000;
   my := -1000;
   lastTime := Now;
@@ -413,17 +413,17 @@ begin
   inc(test5pos, grainElapse);
 
   svg := TBGRASVG.Create;
-  svg.LoadFromFile(ExtractFilePath(Application.ExeName)+'Amsterdammertje-icoon.svg');
+  svg.LoadFromFile(ResourceFile('Amsterdammertje-icoon.svg'));
   svg.StretchDraw(ctx, taCenter,tlCenter, 0,0,ctx.Width/3,ctx.Height);
 
-  svg.LoadFromFile(ExtractFilePath(Application.ExeName)+'BespectacledMaleUser.svg');
+  svg.LoadFromFile(ResourceFile('BespectacledMaleUser.svg'));
   svg.StretchDraw(ctx, ctx.Width/3,0,ctx.Width*2/3,ctx.Height/2);
 
   ctx.save;
   ctx.beginPath;
   ctx.rect(ctx.Width/3,ctx.Height/2,ctx.Width*2/3,ctx.Height/2);
   ctx.clip;
-  svg.LoadFromFile(ExtractFilePath(Application.ExeName)+'Blue_gyroelongated_pentagonal_pyramid.svg');
+  svg.LoadFromFile(ResourceFile('Blue_gyroelongated_pentagonal_pyramid.svg'));
   svg.Draw(ctx, taCenter,tlCenter, ctx.Width*2/3,ctx.Height*3/4);
   ctx.restore;
 
