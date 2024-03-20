@@ -83,6 +83,8 @@ type
       procedure SetY2(AValue: TFloatWithCSSUnit);
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
+        override;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
@@ -110,6 +112,7 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
@@ -133,6 +136,8 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
+        override;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
@@ -155,6 +160,8 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
+        override;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
@@ -180,6 +187,8 @@ type
       function GetDOMElement: TDOMElement; override;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
+        override;
     public
       class function GetDOMTag: string; override;
       constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
@@ -206,6 +215,8 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
+        override;
     public
       constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink); overload;
       destructor Destroy; override;
@@ -322,7 +333,11 @@ type
                               AText: string; APosUnicode: integer; AInheritedRotation: single;
                               ADraw: boolean; AAllTextBounds: TRectF;
                               var APosition: TPointF; out ABounds: TRectF);
+      procedure ComputeTextPartsAndBounds(ACanvas2d: TBGRACanvas2D;
+                                          AUnit: TCSSUnit; out textParts: ArrayOfTextParts;
+                                          out allTextBounds: TRectF);
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
       procedure CleanText(var ATextParts: ArrayOfTextParts);
       function GetTRefContent(AElement: TSVGTRef): string;
       function GetAllText(AInheritedRotation: single): ArrayOfTextParts;
@@ -858,7 +873,7 @@ function CreateSVGElementFromNode(AElement: TDOMElement; AUnits: TCSSUnitConvert
 
 implementation
 
-uses BGRATransform, BGRAUTF8, base64, BGRAGradientScanner;
+uses BGRATransform, BGRAUTF8, base64, BGRAGradientScanner, math;
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
 var tag: string;
@@ -1878,10 +1893,9 @@ begin
   if dir = stdLtr then IncF(APosition.x, ts.width);
 end;
 
-procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+procedure TSVGText.ComputeTextPartsAndBounds(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit;
+  out textParts: ArrayOfTextParts; out allTextBounds: TRectF);
 var
-  allTextBounds: TRectF;
-  textParts: ArrayOfTextParts;
   anchor: TSVGTextAnchor;
 
   procedure DoAlignText(AStartPart,AEndPart: integer);
@@ -1911,6 +1925,7 @@ var
   i, absStartIndex: Integer;
   pos: TPointF;
 begin
+  allTextBounds := EmptyRectF;
   textParts := GetAllText(0);
   CleanText(textParts);
   if length(textParts)>0 then
@@ -1931,10 +1946,21 @@ begin
     end;
     if absStartIndex <> -1 then DoAlignText(absStartIndex,high(textParts));
 
-    allTextBounds := EmptyRectF;
+
     for i := 0 to high(textParts) do
       allTextBounds := allTextBounds.Union(textParts[i].Bounds);
+  end;
+end;
 
+procedure TSVGText.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  allTextBounds: TRectF;
+  textParts: ArrayOfTextParts;
+  pos: TPointF;
+begin
+  ComputeTextPartsAndBounds(ACanvas2d, AUnit, textParts, allTextBounds);
+  if length(textParts)>0 then
+  begin
     pos := PointF(0,0);
     InternalDrawOrCompute(ACanvas2d, AUnit, True, allTextBounds, pos, textParts);
   end;
@@ -2106,6 +2132,13 @@ begin
   if HasAttribute('font-size') then
     SetVerticalAttributeWithUnit('font-size', Units.ConvertHeight(GetVerticalAttributeWithUnit('font-size'), AUnit));
   ExitFontSize(prevFontSize);
+end;
+
+function TSVGText.GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
+var
+  textParts: ArrayOfTextParts;
+begin
+  ComputeTextPartsAndBounds(ACanvas2D, AUnit, textParts, result);
 end;
 
 { TSVGTSpan }
@@ -3450,6 +3483,14 @@ begin
   Result:= 'rect';
 end;
 
+function TSVGRectangle.GetBoundingBoxInUnit(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
+begin
+  result := RectWithSizeF(Units.ConvertWidth(x,AUnit).value,
+              Units.ConvertHeight(y,AUnit).value,
+              Units.ConvertWidth(width,AUnit).value,
+              Units.ConvertHeight(height,AUnit).value);
+end;
+
 procedure TSVGRectangle.ConvertToUnit(AUnit: TCSSUnit);
 begin
   inherited ConvertToUnit(AUnit);
@@ -3463,18 +3504,15 @@ end;
 
 procedure TSVGRectangle.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
-  vx,vy,vw,vh: Single;
+  b: TRectF;
 begin
   if not isStrokeNone or not isFillNone then
   begin
-    vx:= Units.ConvertWidth(x,AUnit).value;
-    vy:= Units.ConvertHeight(y,AUnit).value;
-    vw:= Units.ConvertWidth(width,AUnit).value;
-    vh:= Units.ConvertHeight(height,AUnit).value;
+    b := GetBoundingBoxInUnit(ACanvas2d, AUnit);
     ACanvas2d.beginPath;
-    ACanvas2d.roundRect(vx,vy, vw,vh,
+    ACanvas2d.roundRect(b.Left, b.Top, b.Width, b.Height,
        Units.ConvertWidth(rx,AUnit).value,Units.ConvertHeight(ry,AUnit).value);
-    InitializeGradient(ACanvas2d, PointF(vx,vy),vw,vh,AUnit);
+    InitializeGradient(ACanvas2d, b.TopLeft, b.Width, b.Height, AUnit);
     Paint(ACanvas2D,AUnit);
   end;
 end;
@@ -3644,6 +3682,17 @@ begin
   end;
 end;
 
+function TSVGPolypoints.GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D;
+  AUnit: TCSSUnit): TRectF;
+begin
+  Result:= boundingBoxF;
+  if AUnit <> cuCustom then
+  begin
+    result.TopLeft := Units.ConvertCoord(result.TopLeft, cuCustom, AUnit);
+    result.BottomRight := Units.ConvertCoord(result.BottomRight, cuCustom, AUnit);
+  end;
+end;
+
 { TSVGPath }
 
 function TSVGPath.GetPathLength: TFloatWithCSSUnit;
@@ -3757,6 +3806,17 @@ begin
     ACanvas2d.addPath(path);
 end;
 
+function TSVGPath.GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit
+  ): TRectF;
+begin
+  Result:= boundingBoxF;
+  if AUnit <> cuCustom then
+  begin
+    result.TopLeft := Units.ConvertCoord(result.TopLeft, cuCustom, AUnit);
+    result.BottomRight := Units.ConvertCoord(result.BottomRight, cuCustom, AUnit);
+  end;
+end;
+
 class function TSVGPath.GetDOMTag: string;
 begin
   Result:= 'path';
@@ -3833,6 +3893,18 @@ begin
   ACanvas2d.ellipse(vcx,vcy,vrx,vry);
 end;
 
+function TSVGEllipse.GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D;
+  AUnit: TCSSUnit): TRectF;
+var
+  vcx,vcy,vrx,vry: Single;
+begin
+  vcx:= Units.ConvertWidth(cx,AUnit).value;
+  vcy:= Units.ConvertHeight(cy,AUnit).value;
+  vrx:= Units.ConvertWidth(rx,AUnit).value;
+  vry:= Units.ConvertHeight(ry,AUnit).value;
+  result := RectF(vcx - vrx, vcy - vry, vcx + vrx, vcy + vry);
+end;
+
 class function TSVGEllipse.GetDOMTag: string;
 begin
   Result:= 'ellipse';
@@ -3905,6 +3977,17 @@ begin
   ACanvas2d.circle(vcx,vcy,vr);
 end;
 
+function TSVGCircle.GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D;
+  AUnit: TCSSUnit): TRectF;
+var
+  vcx,vcy,vr: Single;
+begin
+  vcx:= Units.ConvertWidth(cx,AUnit).value;
+  vcy:= Units.ConvertHeight(cy,AUnit).value;
+  vr:= Units.ConvertOrtho(r,AUnit).value;
+  result := RectF(vcx - vr, vcy - vr, vcx + vr, vcy + vr);
+end;
+
 class function TSVGCircle.GetDOMTag: string;
 begin
   Result:= 'circle';
@@ -3970,6 +4053,16 @@ begin
     ACanvas2d.lineTo(Units.ConvertWidth(x2,AUnit).value,Units.ConvertHeight(y2,AUnit).value);
     ACanvas2d.stroke;
   end;
+end;
+
+function TSVGLine.GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit
+  ): TRectF;
+var p1, p2: TPointF;
+begin
+  p1 := PointF(Units.ConvertWidth(x1,AUnit).value,Units.ConvertHeight(y1,AUnit).value);
+  p2 := PointF(Units.ConvertWidth(x2,AUnit).value,Units.ConvertHeight(y2,AUnit).value);
+  Result:= RectF(min(p1.x, p2.x), min(p1.y, p2.y),
+    max(p1.x, p2.x), max(p1.y, p2.y));
 end;
 
 class function TSVGLine.GetDOMTag: string;

@@ -375,6 +375,7 @@ type
     procedure Init(AElement: TDOMElement; AUnits: TCSSUnitConverter); overload;
     procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
     procedure InternalCopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
+    function GetBoundingBoxInUnit({%H-}ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit): TRectF; virtual;
     function GetStyleFromStyleSheet(const AName,ADefault: string): string; override;
     procedure ApplyFillStyle(ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); virtual;
     procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); virtual;
@@ -2255,6 +2256,11 @@ end;
 procedure TSVGElement.InternalCopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
 begin
  //nothing
+end;
+
+function TSVGElement.GetBoundingBoxInUnit({%H-}ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit): TRectF;
+begin
+ result := EmptyRectF;
 end;
 
 procedure TSVGElement.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
