@@ -40,6 +40,7 @@ type
      procedure InternalArc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil); overload; virtual; abstract;
      procedure InternalArcInRect(r: TRect; StartAngleRad,EndAngleRad: Single; ABorderColor : TBGRAPixel; w: single; AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil);
      procedure InternalFillArcInRect(r: TRect; StartAngleRad,EndAngleRad: Single; AFillColor: TBGRAPixel; AOptions: TArcOptions; ATexture: IBGRAScanner = nil);
+     procedure InternalTextOutOffset(x, y: single; const sUTF8: string; AColor: TBGRAPixel; ATexture: IBGRAScanner; AOffsets: array of TPointF); virtual; abstract;
 
   public
      {** Resample filter is used when resizing the bitmap. See [[BGRABitmap Miscellaneous types#Images and resampling|resampling types]] }
@@ -447,6 +448,9 @@ type
      procedure TextOut(x, y: single; const sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
      procedure TextOut(x, y: single; const sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
      procedure TextOut(x, y: single; const sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
+
+     procedure TextOutOffset(x, y: single; const sUTF8: string; AColor: TBGRAPixel; AOffset: array of TPointF); overload; virtual;
+     procedure TextOutOffset(x, y: single; const sUTF8: string; ATexture: IBGRAScanner; AOffset: array of TPointF); overload; virtual;
 
      { Overrides the font orientation with the parameter orientationTenthDegCCW }
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; c: TBGRAPixel); overload; virtual;
@@ -1262,6 +1266,18 @@ procedure TBGRACustomBitmap.TextOut(x, y: single; const sUTF8: string;
   texture: IBGRAScanner; ARightToLeft: boolean);
 begin
   TextOut(x, y, sUTF8, texture, taLeftJustify, ARightToLeft);
+end;
+
+procedure TBGRACustomBitmap.TextOutOffset(x, y: single; const sUTF8: string;
+  AColor: TBGRAPixel; AOffset: array of TPointF);
+begin
+  InternalTextOutOffset(x, y, sUTF8, AColor, nil, AOffset);
+end;
+
+procedure TBGRACustomBitmap.TextOutOffset(x, y: single; const sUTF8: string;
+  ATexture: IBGRAScanner; AOffset: array of TPointF);
+begin
+  InternalTextOutOffset(x, y, sUTF8, BGRAPixelTransparent, ATexture, AOffset);
 end;
 
 procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
