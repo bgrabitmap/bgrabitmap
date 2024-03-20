@@ -2063,11 +2063,13 @@ end;
 
 procedure TBGRACanvas2D.scale(x, y: single);
 begin
+  if (x = 1) and (y = 1) then exit;
   currentState.transform(AffineMatrixScale(x,y));
 end;
 
 procedure TBGRACanvas2D.scale(factor: single);
 begin
+  if factor = 1 then exit;
   currentState.transform( AffineMatrixScale(factor,factor) );
 end;
 

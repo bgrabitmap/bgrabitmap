@@ -2972,22 +2972,22 @@ end;
 
 function TSVGMask.GetX: TFloatWithCSSUnit;
 begin
-  result := HorizAttributeWithUnit['x'];
+  result := HorizAttributeWithUnit['x', FloatWithCSSUnit(0, cuPercent)];
 end;
 
 function TSVGMask.GetY: TFloatWithCSSUnit;
 begin
-  result := VerticalAttributeWithUnit['y'];
+  result := VerticalAttributeWithUnit['y', FloatWithCSSUnit(0, cuPercent)];
 end;
 
 function TSVGMask.GetWidth: TFloatWithCSSUnit;
 begin
-  result := HorizAttributeWithUnit['width'];
+  result := HorizAttributeWithUnitDef['width', FloatWithCSSUnit(100, cuPercent)];
 end;
 
 function TSVGMask.GetHeight: TFloatWithCSSUnit;
 begin
-  result := VerticalAttributeWithUnit['height'];
+  result := VerticalAttributeWithUnit['height', FloatWithCSSUnit(100, cuPercent)];
 end;
 
 function TSVGMask.GetMaskUnits: TSVGObjectUnits;
@@ -3054,10 +3054,22 @@ procedure TSVGMask.ApplyMaskTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var maskSurface: TBGRACustomBitmap;
   maskContext: TBGRACanvas2D;
   oldMatrix: TAffineMatrix;
+  vx,vy,vw,vh: single;
 begin
   maskSurface := BGRABitmapFactory.Create(ACanvas2d.Width, ACanvas2d.Height, BGRABlack);
   maskContext := TBGRACanvas2D.Create(maskSurface);
   maskContext.copyStateFrom(ACanvas2D);
+  If HasAttribute('x') or HasAttribute('y') or
+    HasAttribute('width') or HasAttribute('height') then
+  begin
+    vx:= Units.ConvertWidth(x,AUnit).value;
+    vy:= Units.ConvertHeight(y,AUnit).value;
+    vw:= Units.ConvertWidth(width,AUnit).value;
+    vh:= Units.ConvertHeight(height,AUnit).value;
+    maskContext.beginPath;
+    maskContext.rect(vx, vy, vw, vh);
+    maskContext.clip;
+  end;
   Content.Draw(maskContext, AUnit);
   oldMatrix := ACanvas2d.matrix;
   ACanvas2d.resetTransform;
