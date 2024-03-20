@@ -321,6 +321,7 @@ type
     function GetFillRule: string;
     function GetIsFillNone: boolean;
     function GetIsStrokeNone: boolean;
+    function GetMask: string;
     function GetMatrix(AUnit: TCSSUnit): TAffineMatrix;
     function GetMixBlendMode: TBlendOperation;
     function GetOpacity: single;
@@ -345,6 +346,7 @@ type
     procedure SetFillColor(AValue: TBGRAPixel);
     procedure SetFillOpacity(AValue: single);
     procedure SetFillRule(AValue: string);
+    procedure SetMask(AValue: string);
     procedure SetMatrix(AUnit: TCSSUnit; const AValue: TAffineMatrix);
     procedure SetMixBlendMode(AValue: TBlendOperation);
     procedure SetOpacity(AValue: single);
@@ -426,6 +428,7 @@ type
     property mixBlendMode: TBlendOperation read GetMixBlendMode write SetMixBlendMode;
     property opacity: single read GetOpacity write SetOpacity;
     property clipPath: string read GetClipPath write SetClipPath;
+    property mask: string read GetMask write SetMask;
     property Visible: boolean read GetVisible write SetVisible;
 
     property Attribute[AName: string]: string read GetAttribute write SetAttribute;
@@ -1764,6 +1767,11 @@ begin
   result := (trim(strokeStr)='') or (compareText(trim(strokeStr),'none')=0);
 end;
 
+function TSVGElement.GetMask: string;
+begin
+  result := GetAttributeOrStyle('mask', '', false);
+end;
+
 function TSVGElement.GetMatrix(AUnit: TCSSUnit): TAffineMatrix;
 begin
  result := TransformToMatrix(transform, AUnit);
@@ -2035,6 +2043,12 @@ procedure TSVGElement.SetFillRule(AValue: string);
 begin
   Attribute['fill-rule'] := AValue;
   RemoveStyle('fill-rule');
+end;
+
+procedure TSVGElement.SetMask(AValue: string);
+begin
+  Attribute['mask'] := AValue;
+  RemoveStyle('mask');
 end;
 
 procedure TSVGElement.SetMatrix(AUnit: TCSSUnit; const AValue: TAffineMatrix);
@@ -2349,7 +2363,7 @@ end;
 procedure TSVGElement.RenameIdentifiers(AFrom, ATo: TStringList);
 var
   idx: Integer;
-  strokeDone, fillDone, clipDone, HrefDone: boolean;
+  strokeDone, fillDone, clipDone, maskDone, HrefDone: boolean;
   before, after: String;
 begin
   if AFrom.Count <> ATo.Count then raise exception.Create('Identifier list size mismatch');
@@ -2358,6 +2372,7 @@ begin
   strokeDone := false;
   fillDone:= false;
   clipDone:= false;
+  maskDone:= false;
   HrefDone:= false;
   for idx := 0 to AFrom.Count-1 do
   begin
@@ -2369,6 +2384,8 @@ begin
     begin fill := after; fillDone := true; end;
     if not clipDone and (clipPath = before) then
     begin clipPath := after; clipDone := true; end;
+    if not maskDone and (mask = before) then
+    begin mask := after; maskDone := true; end;
     if not hrefDone and (Attribute['xlink:href'] = before) then
     begin Attribute['xlink:href'] := after; hrefDone := true; end;
   end;
@@ -2391,29 +2408,45 @@ end;
 
 procedure TSVGElement.Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var prevMatrix: TAffineMatrix;
-  clipUrl: string;
+  clipUrl, maskUrl: string;
   clipElem: TSVGClipPath;
-  clipFound: boolean;
+  maskElem: TSVGMask;
+  elementNotFound, stateChange: boolean;
 begin
   if not Visible then exit;
   prevMatrix := ACanvas2d.matrix;
   ACanvas2d.transform(matrix[AUnit]);
+  stateChange := false;
   clipUrl := clipPath;
   if clipUrl <> '' then
   begin
-    clipElem := TSVGClipPath(DataLink.FindElementByRef(clipUrl, true, TSVGClipPath, clipFound));
-    if clipElem <> nil then
+    clipElem := TSVGClipPath(DataLink.FindElementByRef(clipUrl, true, TSVGClipPath, elementNotFound));
+    if Assigned(clipElem) then
     begin
-      ACanvas2d.save;
-      ACanvas2d.beginPath;
-      clipElem.CopyPathTo(ACanvas2d, AUnit);
-      ACanvas2d.clip;
+      if not stateChange then
+      begin
+        ACanvas2d.save;
+        stateChange:= true;
+      end;
+      clipElem.ApplyClipTo(ACanvas2d, AUnit);
     end;
-  end
-  else
-    clipElem := nil;
+  end;
+  maskUrl := mask;
+  if maskUrl <> '' then
+  begin
+    maskElem := TSVGMask(DataLink.FindElementByRef(maskUrl, true, TSVGMask, elementNotFound));
+    if Assigned(maskElem) then
+    begin
+      if not stateChange then
+      begin
+        ACanvas2d.save;
+        stateChange:= true;
+      end;
+      maskElem.ApplyMaskTo(ACanvas2d, AUnit);
+    end;
+  end;
   InternalDraw(ACanvas2d,AUnit);
-  if clipElem <> nil then ACanvas2d.restore;
+  if stateChange then ACanvas2d.restore;
   ACanvas2d.matrix := prevMatrix;
 end;
 

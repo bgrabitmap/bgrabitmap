@@ -441,9 +441,9 @@ type
       procedure SetExternalResourcesRequired(AValue: boolean);
       procedure SetClipPathUnits(AValue: TSVGObjectUnits);
     protected
-      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
+      procedure ApplyClipTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
       class function GetDOMTag: string; override;
       property externalResourcesRequired: boolean
        read GetExternalResourcesRequired write SetExternalResourcesRequired;
@@ -577,7 +577,7 @@ type
   end;
   
   { SVG mask (alpha) }
-  TSVGMask = class(TSVGElement)
+  TSVGMask = class(TSVGElementWithContent)
     private
       function GetExternalResourcesRequired: boolean;
       function GetX: TFloatWithCSSUnit;
@@ -593,9 +593,8 @@ type
       procedure SetHeight(AValue: TFloatWithCSSUnit);
       procedure SetMaskUnits(AValue: TSVGObjectUnits);
       procedure SetMaskContentUnits(AValue: TSVGObjectUnits);
-    protected
-      procedure InternalDraw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit); override;
     public
+      procedure ApplyMaskTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
       property externalResourcesRequired: boolean
@@ -2384,14 +2383,16 @@ begin
     Attribute['clipPathUnits'] := 'objectBoundingBox';
 end;
 
-procedure TSVGClipPath.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
-begin
-  //todo
-end;
-
 procedure TSVGClipPath.InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 begin
   Content.CopyPathTo(ACanvas2d, AUnit);
+end;
+
+procedure TSVGClipPath.ApplyClipTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+begin
+  ACanvas2d.beginPath;
+  CopyPathTo(ACanvas2d, AUnit);
+  ACanvas2d.clip;
 end;
 
 class function TSVGClipPath.GetDOMTag: string;
@@ -3049,9 +3050,21 @@ begin
     Attribute['maskContentUnits'] := 'objectBoundingBox';
 end;
 
-procedure TSVGMask.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+procedure TSVGMask.ApplyMaskTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var maskSurface: TBGRACustomBitmap;
+  maskContext: TBGRACanvas2D;
+  oldMatrix: TAffineMatrix;
 begin
-  //todo
+  maskSurface := BGRABitmapFactory.Create(ACanvas2d.Width, ACanvas2d.Height, BGRABlack);
+  maskContext := TBGRACanvas2D.Create(maskSurface);
+  maskContext.copyStateFrom(ACanvas2D);
+  Content.Draw(maskContext, AUnit);
+  oldMatrix := ACanvas2d.matrix;
+  ACanvas2d.resetTransform;
+  ACanvas2d.mask(maskSurface, 0, 0);
+  ACanvas2d.matrix := oldMatrix;
+  maskContext.Free;
+  maskSurface.Free;
 end;
 
 class function TSVGMask.GetDOMTag: string;

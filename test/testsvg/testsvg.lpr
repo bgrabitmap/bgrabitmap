@@ -15,7 +15,6 @@ uses
 
 begin
   RequireDerivedFormResource:=True;
-  Application.Title:='testsvg';
   Application.Initialize;
   Application.CreateForm(TForm1, Form1);
   Application.Run;
