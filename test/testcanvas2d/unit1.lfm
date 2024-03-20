@@ -1,22 +1,23 @@
 object Form1: TForm1
   Left = 567
-  Height = 382
+  Height = 955
   Top = 83
-  Width = 640
+  Width = 1600
   Caption = 'Test Canvas2D'
-  ClientHeight = 382
-  ClientWidth = 640
+  ClientHeight = 955
+  ClientWidth = 1600
+  DesignTimePPI = 240
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnMouseLeave = FormMouseLeave
   OnMouseMove = FormMouseMove
   OnPaint = FormPaint
-  LCLVersion = '1.6.0.4'
+  LCLVersion = '3.2.0.0'
   object VirtualScreen: TBGRAVirtualScreen
     Left = 0
-    Height = 350
-    Top = 32
-    Width = 640
+    Height = 875
+    Top = 80
+    Width = 1600
     OnRedraw = VirtualScreenRedraw
     Align = alClient
     Alignment = taLeftJustify
@@ -28,19 +29,19 @@ object Form1: TForm1
   end
   object Panel1: TPanel
     Left = 0
-    Height = 32
+    Height = 80
     Top = 0
-    Width = 640
+    Width = 1600
     Align = alTop
-    ClientHeight = 32
-    ClientWidth = 640
+    ClientHeight = 80
+    ClientWidth = 1600
     TabOrder = 1
     object SpinEdit1: TSpinEdit
-      Left = 3
-      Height = 27
-      Top = 3
-      Width = 59
-      Font.Height = -12
+      Left = 8
+      Height = 49
+      Top = 14
+      Width = 148
+      Font.Height = -30
       MaxValue = 23
       MinValue = 1
       OnChange = SpinEdit1Change
@@ -49,47 +50,47 @@ object Form1: TForm1
       Value = 1
     end
     object CheckBox_PixelCentered: TCheckBox
-      Left = 70
-      Height = 22
-      Top = 4
-      Width = 173
+      Left = 175
+      Height = 45
+      Top = 16
+      Width = 392
       Caption = 'Pixel-centered coordinates'
-      Font.Height = -12
-      OnChange = CheckBox_PixelCenteredChange
+      Font.Height = -30
       ParentFont = False
       TabOrder = 1
+      OnChange = CheckBox_PixelCenteredChange
     end
     object Button_toDataURL: TButton
-      Left = 243
-      Height = 22
-      Top = 3
-      Width = 75
+      Left = 608
+      Height = 55
+      Top = 8
+      Width = 188
       Caption = 'toDataURL'
-      OnClick = Button_toDataURLClick
       TabOrder = 2
+      OnClick = Button_toDataURLClick
     end
     object CheckBox_Antialiasing: TCheckBox
-      Left = 331
-      Height = 22
-      Top = 4
-      Width = 89
+      Left = 828
+      Height = 45
+      Top = 16
+      Width = 190
       Caption = 'Antialiasing'
       Checked = True
-      OnChange = CheckBox_AntialiasingChange
       State = cbChecked
       TabOrder = 3
+      OnChange = CheckBox_AntialiasingChange
     end
   end
   object Timer1: TTimer
     OnTimer = Timer1Timer
-    left = 62
-    top = 92
+    Left = 155
+    Top = 230
   end
   object SaveDialog1: TSaveDialog
     Title = 'Save as HTML file...'
     DefaultExt = '.html'
     Filter = 'HTML file (*.html);*.html'
-    left = 151
-    top = 95
+    Left = 378
+    Top = 238
   end
 end
