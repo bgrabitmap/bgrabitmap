@@ -8,7 +8,9 @@ object FMain: TFMain
   ClientWidth = 650
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnHide = FormHide
   OnPaint = FormPaint
+  OnShow = FormShow
   LCLVersion = '1.6.0.4'
   object Panel1: TPanel
     Left = 0

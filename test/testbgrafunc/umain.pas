@@ -26,7 +26,9 @@ type
     procedure Button_PrevClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure FormHide(Sender: TObject);
     procedure FormPaint(Sender: TObject);
+    procedure FormShow(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   public
     NumTest: integer;
@@ -122,6 +124,11 @@ begin
   FreeAndNil(CurrentTest);
 end;
 
+procedure TFMain.FormHide(Sender: TObject);
+begin
+  Timer1.Enabled:= false;
+end;
+
 procedure TFMain.FormPaint(Sender: TObject);
 var
   strTime: string;
@@ -158,6 +165,11 @@ begin
     end;
 
   end;
+end;
+
+procedure TFMain.FormShow(Sender: TObject);
+begin
+  Timer1.Enabled:= true;
 end;
 
 procedure TFMain.Timer1Timer(Sender: TObject);
