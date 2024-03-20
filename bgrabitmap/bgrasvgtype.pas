@@ -1382,10 +1382,15 @@ begin
   while (FPos <= length(FText)) and (FText[FPos] in[#0..#32,',']) do inc(FPos);
   numberStart:= FPos;
   if (FPos <= length(FText)) and (FText[FPos] in['+','-']) then inc(FPos);
-  while (FPos <= length(FText)) and (FText[FPos] in['0'..'9','.']) do inc(FPos);
-  if (FPos <= length(FText)) and (FText[FPos] in['e','E']) then inc(FPos);
-  if (FPos <= length(FText)) and (FText[FPos] in['+','-']) then inc(FPos);
-  while (FPos <= length(FText)) and (FText[FPos] in['0'..'9','.']) do inc(FPos);
+  while (FPos <= length(FText)) and (FText[FPos] in['0'..'9']) do inc(FPos);
+  if (FPos <= length(FText)) and (FText[FPos] = '.') then inc(FPos);
+  while (FPos <= length(FText)) and (FText[FPos] in['0'..'9']) do inc(FPos);
+  if (FPos <= length(FText)) and (FText[FPos] in['e','E']) then
+  begin
+    inc(FPos);
+    if (FPos <= length(FText)) and (FText[FPos] in['+','-']) then inc(FPos);
+    while (FPos <= length(FText)) and (FText[FPos] in['0'..'9']) do inc(FPos);
+  end;
   if FPos = numberStart then
   begin
     FNumberError := true;
