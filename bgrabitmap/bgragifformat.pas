@@ -397,6 +397,11 @@ begin
   begin
     bytinbuf:= 0;
     AStream.ReadBuffer(bytinbuf, 1);
+    if bytinbuf = 1 then
+    begin
+      AStream.ReadBuffer(bytinbuf, 1); // skip extra
+      AStream.ReadBuffer(bytinbuf, 1); // check again for block terminator
+    end;
     if bytinbuf <> 0 then
       raise exception.Create('Invalid GIF format: expecting block terminator');
   end;
