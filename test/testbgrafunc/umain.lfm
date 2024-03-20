@@ -73,6 +73,7 @@ object FMain: TFMain
     end
   end
   object Timer1: TTimer
+    Enabled = False
     Interval = 30
     OnTimer = Timer1Timer
     left = 568
