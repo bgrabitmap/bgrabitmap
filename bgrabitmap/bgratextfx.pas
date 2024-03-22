@@ -735,7 +735,7 @@ var temp: TBGRACustomBitmap;
 	tempBmp: TBitmap;
     size: TSize;
     p: PByte;
-    n,v,maxAlpha: integer;
+    n,maxAlpha: integer;
     alpha: byte;
     sizeX,sizeY: integer;
     onePixel: integer;

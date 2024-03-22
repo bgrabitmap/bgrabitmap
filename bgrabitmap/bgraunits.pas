@@ -263,7 +263,9 @@ end;
 function TCSSUnitConverter.ConvertHeight(y: single; sourceUnit,
   destUnit: TCSSUnit; containerHeight: single): single;
 begin
-  if sourceUnit = cuCustom then
+  if sourceUnit = destUnit then
+    result := y
+  else if sourceUnit = cuCustom then
   with DefaultUnitHeight do
   begin
     result := y*ConvertHeight(value,CSSUnit, destUnit, containerHeight)

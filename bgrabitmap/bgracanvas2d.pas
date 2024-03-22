@@ -310,6 +310,7 @@ ctx.stroke();
 
     procedure save;
     procedure restore;
+    procedure copyStateFrom(AOtherCanvas2D: TBGRACanvas2D);
     procedure scale(x,y: single); overload;
     procedure scale(factor: single); overload;
     procedure rotate(angleRadCW: single);
@@ -413,6 +414,8 @@ ctx.stroke();
 
     procedure drawImage(image: TBGRACustomBitmap; dx,dy: single; AFilter: TResampleFilter = rfLinear); overload;
     procedure drawImage(image: TBGRACustomBitmap; dx,dy,dw,dh: single; AFilter: TResampleFilter = rfLinear); overload;
+    procedure mask(image: TBGRACustomBitmap; dx,dy: single; AFilter: TResampleFilter = rfLinear); overload;
+    procedure mask(image: TBGRACustomBitmap; dx,dy,dw,dh: single; AFilter: TResampleFilter = rfLinear); overload;
 
     function getLineStyle: TBGRAPenStyle;
     procedure lineStyle(const AValue: array of single); overload;
@@ -2052,13 +2055,21 @@ begin
   end;
 end;
 
+procedure TBGRACanvas2D.copyStateFrom(AOtherCanvas2D: TBGRACanvas2D);
+begin
+  StateStack.Add(currentState);
+  currentState := AOtherCanvas2D.currentState.Duplicate;
+end;
+
 procedure TBGRACanvas2D.scale(x, y: single);
 begin
+  if (x = 1) and (y = 1) then exit;
   currentState.transform(AffineMatrixScale(x,y));
 end;
 
 procedure TBGRACanvas2D.scale(factor: single);
 begin
+  if factor = 1 then exit;
   currentState.transform( AffineMatrixScale(factor,factor) );
 end;
 
@@ -2936,26 +2947,54 @@ begin
 end;
 
 procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy: single; AFilter: TResampleFilter);
-var
-  m: TAffineMatrix;
 begin
-  if (image.Width = 0) or (image.Height = 0) then exit;
-  m := matrix*AffineMatrixTranslation(dx, dy);
-  if pixelCenteredCoordinates then
-    m := AffineMatrixTranslation(0.5, 0.5)*m;
-  Surface.PutImageAffine(m, image, AFilter, GetDrawMode, currentState.globalAlpha, false);
+  if not Assigned(image) or (image.Width = 0) or (image.Height = 0) then exit;
+  drawImage(image, dx, dy, image.Width, image.Height, AFilter);
 end;
 
 procedure TBGRACanvas2D.drawImage(image: TBGRACustomBitmap; dx, dy, dw, dh: single; AFilter: TResampleFilter);
 var
   m: TAffineMatrix;
 begin
-  if (image.Width = 0) or (image.Height = 0) then exit;
+  if not Assigned(image) or (image.Width = 0) or (image.Height = 0) then exit;
   m := matrix*AffineMatrixTranslation(dx, dy)*AffineMatrixScale(dw/image.Width,dh/image.Height);
   if pixelCenteredCoordinates then
     m := AffineMatrixTranslation(0.5, 0.5)*m;
   Surface.PutImageAffine(m, image, AFilter, GetDrawMode, currentState.globalAlpha, false);
 end;
+
+procedure TBGRACanvas2D.mask(image: TBGRACustomBitmap; dx, dy: single;
+  AFilter: TResampleFilter);
+begin
+  if not Assigned(image) or (image.Width = 0) or (image.Height = 0) then exit;
+  mask(image, dx, dy, image.Width, image.Height, AFilter);
+end;
+
+procedure TBGRACanvas2D.mask(image: TBGRACustomBitmap; dx, dy, dw,
+  dh: single; AFilter: TResampleFilter);
+var
+  m: TAffineMatrix;
+  tempColored: TBGRACustomBitmap;
+  grayMask: TGrayscaleMask;
+begin
+  if not Assigned(image) or (image.Width = 0) or (image.Height = 0) then exit;
+  m := matrix*AffineMatrixTranslation(dx, dy)*AffineMatrixScale(dw/image.Width,dh/image.Height);
+  if pixelCenteredCoordinates then
+    m := AffineMatrixTranslation(0.5, 0.5)*m;
+  tempColored := BGRABitmapFactory.Create(Width, Height, BGRABlack);
+  tempColored.PutImageAffine(m, image, AFilter, GetDrawMode, currentState.globalAlpha, false);
+  tempColored.InplaceGrayscale(False);
+  grayMask := TGrayscaleMask.Create(tempColored, cGreen);
+  tempColored.Free;
+  if currentState.clipMaskReadOnly = nil then
+    currentState.SetClipMask(grayMask, true)
+  else
+  begin
+    currentState.clipMaskReadWrite.ApplyMask(grayMask);
+    grayMask.Free;
+  end;
+end;
+
 
 end.
 

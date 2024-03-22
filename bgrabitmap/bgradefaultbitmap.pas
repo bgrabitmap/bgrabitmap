@@ -159,6 +159,9 @@ type
     procedure InternalArc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; ABorderColor: TBGRAPixel; w: single;
       AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil); override;
     function InternalNew: TBGRADefaultBitmap; override;
+    procedure InternalTextOutOffset(x, y: single; const sUTF8: string;
+      AColor: TBGRAPixel; ATexture: IBGRAScanner; AOffsets: array of TPointF);
+      override;
 
   public
     {$IFNDEF BGRABITMAP_CORE}{** Provides a canvas with opacity and antialiasing }
@@ -2185,6 +2188,34 @@ begin
   if BGRAClass = TBGRAPtrBitmap then
     BGRAClass := TBGRADefaultBitmap;
   Result      := BGRAClass.Create(0, 0) as TBGRADefaultBitmap;
+end;
+
+procedure TBGRADefaultBitmap.InternalTextOutOffset(x, y: single;
+  const sUTF8: string; AColor: TBGRAPixel; ATexture: IBGRAScanner;
+  AOffsets: array of TPointF);
+var
+  cursor: TGlyphCursorUtf8;
+  glyph: TGlyphUtf8;
+  index, i: integer;
+  p: TPointF;
+begin
+  cursor := TGlyphCursorUtf8.New(sUTF8, FontBidiMode);
+  index := 0;
+  p := PointF(x, y);
+  while not cursor.EndOfString do
+  begin
+    glyph := cursor.GetNextGlyph;
+    if Assigned(ATexture) then
+      TextOut(p.x, p.y, glyph.GlyphUtf8, ATexture)
+    else
+      TextOut(p.x, p.y, glyph.GlyphUtf8, AColor);
+    for i := 1 to UTF8Length(glyph.GlyphUtf8) do
+    begin
+      if index <= high(AOffsets) then
+        p += AOffsets[i];
+      inc(index);
+    end;
+  end;
 end;
 
 class function TBGRADefaultBitmap.IsAffineRoughlyTranslation(AMatrix: TAffineMatrix; ASourceBounds: TRect): boolean;
