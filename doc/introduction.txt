@@ -1,8 +1,6 @@
-@title(📚 BGRABitmap documentation)
-@shorttitle(📚 BGRABitmap)
+@title(📚 Getting started)
+@shorttitle(Getting started)
 [🏠 Homepage](https://bgrabitmap.github.io/)
-
-@image(../bgrabitmap.jpg) 
 
 @section(1 SecFirst Introduction)
 

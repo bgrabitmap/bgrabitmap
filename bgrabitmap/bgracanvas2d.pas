@@ -114,7 +114,8 @@ var
   ctx: TBGRACanvas2D;
   gradient: IBGRACanvasGradient2D;
 begin
-  bmp := TBGRABitmap.Create(ClientWidth, ClientHeight, StrToBGRA('#E0E2E5'));
+  bmp := TBGRABitmap.Create(ClientWidth, ClientHeight,
+                            StrToBGRA('#E0E2E5'));
   ctx := bmp.Canvas2d;
 
   // Draw the outer rounded rectangle
