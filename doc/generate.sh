@@ -35,3 +35,6 @@ perl -i -pe 's|(<h1 class="allitems">[\w ]+</h1>)|$1\n<script type="text/javascr
 perl -i -pe 's|(<h1 class="allitems">All Units)</h1>|$1\n<p class="float-boton"><a class="boton" href="GVUses.svg">🔍 Dependency graph</a></p></h1>|' $DOCSPATH/AllUnits.html
 perl -i -pe 's|(<h1 class="allitems">Class Hierarchy)</h1>|$1\n<p class="float-boton"><a class="boton" href="GVClasses.svg">🔍 Hierarchy graph</a></p></h1>|' $DOCSPATH/ClassHierarchy.html
 perl -i -pe 's|(<h1 class="unit">Unit ([A-Za-z][A-Za-z0-9_]+))</h1>|$1\n<p class="float-boton"><a class="boton" href="https://github.com/bgrabitmap/bgrabitmap/blob/master/bgrabitmap/\L$2\E.pas">📄 Source code</a></p></h1>|' $DOCSPATH/*.html
+
+# prevent CSS caching using pseudo version number
+perl -i -pe 's|"pasdoc\.css"|"pasdoc.css?v=2"|' $DOCSPATH/*.html
