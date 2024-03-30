@@ -41,7 +41,7 @@ if (typeof mainNav === "undefined") {
 }
 
 window.onload = function() {		
-	window.scrollBy(0, -mainNav.offsetHeight-8);
+	window.scrollBy(0, -mainNav.offsetHeight - 6);
 
 	const title = document.getElementsByTagName("h1")[0];
 	const isUnit = title && title.innerText.startsWith("Unit ");
@@ -78,7 +78,6 @@ window.onload = function() {
 	
 	// DESPLAZAMIENTO SMOOTH SCROLL
     const easeInCubic = function(t) { return 0.5 - Math.cos(t * Math.PI)/2 }
-    const scrollElems = document.getElementsByClassName('section');
 
     const scrollToElem = (start, stamp, duration, scrollEndElemTop, startScrollOffset) => {
 
@@ -89,18 +88,22 @@ window.onload = function() {
         progress = Math.min(progress, 1);
 
         const newScrollOffset = startScrollOffset + (scrollEndElemTop * ease);
-        window.scroll(0, startScrollOffset + (scrollEndElemTop * ease));
 
         if (runtime < duration) {
+			window.scroll(0, startScrollOffset + (scrollEndElemTop * ease));
             requestAnimationFrame((timestamp) => {
                 const stamp = new Date().getTime();
                 scrollToElem(start, stamp, duration, scrollEndElemTop, startScrollOffset);
             })
-        }
+        } else {
+		    window.scroll(0, startScrollOffset + scrollEndElemTop);
+		}
     }
 
+    const scrollElems = document.getElementsByTagName("a");
     for (let i = 0; i < scrollElems.length; i++) {
         const elem = scrollElems[i];
+		if (!elem.getAttribute("href").startsWith("#")) continue;
 
         elem.addEventListener('click', function(e) {
             e.preventDefault();
@@ -118,7 +121,7 @@ window.onload = function() {
 
                 const startScrollOffset = window.pageYOffset;
 
-                const scrollEndElemTop = scrollEndElem.getBoundingClientRect().top - mainNav.offsetHeight;
+                const scrollEndElemTop = scrollEndElem.getBoundingClientRect().top - mainNav.offsetHeight - 6;
 
                 scrollToElem(start, stamp, duration, scrollEndElemTop, startScrollOffset);
             })
