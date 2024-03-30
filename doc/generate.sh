@@ -29,9 +29,9 @@ $DOT -Grankdir=LR -T svg $DOCSPATH/GVClasses.dot > $DOCSPATH/GVClasses.svg
 
 echo Formatting HTML...
 cp navigation.js $DOCSPATH
+perl -i -pe 's|Classes, Interfaces, Objects and Records|Structures|' $DOCSPATH/*.html
 perl -i -pe 's|(<h2 class="description">Description</h2>)|<script type="text/javascript" src="navigation.js"></script>\n$1|' $DOCSPATH/*.html
 perl -i -pe 's|(<h1 class="allitems">[\w ]+</h1>)|$1\n<script type="text/javascript" src="navigation.js"></script>|' $DOCSPATH/*.html
 perl -i -pe 's|(<h1 class="allitems">All Units)</h1>|$1\n<p class="float-boton"><a class="boton" href="GVUses.svg">🔍 Dependency graph</a></p></h1>|' $DOCSPATH/AllUnits.html
 perl -i -pe 's|(<h1 class="allitems">Class Hierarchy)</h1>|$1\n<p class="float-boton"><a class="boton" href="GVClasses.svg">🔍 Hierarchy graph</a></p></h1>|' $DOCSPATH/ClassHierarchy.html
 perl -i -pe 's|(<h1 class="unit">Unit ([A-Za-z][A-Za-z0-9_]+))</h1>|$1\n<p class="float-boton"><a class="boton" href="https://github.com/bgrabitmap/bgrabitmap/blob/master/bgrabitmap/\L$2\E.pas">📄 Source code</a></p></h1>|' $DOCSPATH/*.html
-perl -i -pe 's|Classes, Interfaces, Objects and Records|Structures|' $DOCSPATH/*.html
