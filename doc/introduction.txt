@@ -1,10 +1,8 @@
 @title(📚 Getting started)
 @shorttitle(Getting started)
-[🏠 Homepage](https://bgrabitmap.github.io/)
-
 @section(1 SecFirst Introduction)
 
-[BGRABitmap](https://bgrabitmap.github.io/) is a package designed to modify and create images with transparency. Direct pixel access allows fast image processing. The library has been tested on Windows, Linux and Mac.
+[🏠 BGRABitmap](https://bgrabitmap.github.io/) is a package designed to modify and create images with transparency. Direct pixel access allows fast image processing. The library has been tested on Windows, Linux and Mac.
 
 @section(1 Install How to install)
 

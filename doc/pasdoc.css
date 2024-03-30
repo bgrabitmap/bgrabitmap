@@ -47,13 +47,14 @@ p strong { color: black; }
 @keyframes slideAndFade {
   from {
     /* Start from below the visible area and transparent */
-    top: 20em;
+    top: 100vh;
     opacity: 0;
   }
   to {
     /* End at its normal position and fully opaque */
-    top: 0;
+    top: 50vh;
     opacity: 1;
+	transform: translateY(-50%);
   }
 }
 
@@ -69,7 +70,7 @@ p strong { color: black; }
 .navigation {
   width: 15em; /* must match .content margin-left */
   color: black;
-  background-color: #F8F8F8;
+  background-color: #DFE;
   position: fixed;
   left: 0;
   box-sizing: border-box; /* without this, you could not have padding here, it would overlap with .content, causing errors on narrow screens */
@@ -78,20 +79,7 @@ p strong { color: black; }
   border: 1px solid #eee;
   box-shadow: 5px 5px 5px rgb(0,0,0,0.15);
   animation: slideAndFade 1s ease-out forwards;
-}
-
-#tipue_search_input {
-  width: 8.5em;
-}
-
-#tipue_search_button {
-  background-color: #20bf6b;
-  cursor: pointer;
-  border-radius: 0 10px 10px 0;
-}
-
-#tipue_search_button:hover {
-  background-color: #40df8b;
+  margin: 0.25em;
 }
 
 .navigation ul {
@@ -111,12 +99,40 @@ p strong { color: black; }
   font-weight: normal;
 }
 
+#tipue_search_input {
+  width: 8.5em;
+}
+
+#tipue_search_button {
+  background-color: #20bf6b;
+  cursor: pointer;
+  border-radius: 0 10px 10px 0;
+}
+
+#tipue_search_button:hover {
+  background-color: #40df8b;
+}
+
 .content {
-  margin-left: 15em;
+  margin-left: 15.5em;
   padding: 2%;
 }
 .content h1 {
   margin-top: 0;
+}
+
+@media (max-width: 800px) { 
+  .container {
+    display: flex;
+	flex-direction: column;
+  }
+  .navigation {
+	position: static;
+	animation: none;
+  }
+  .content {
+	margin-left: 0;
+  }
 }
 
 .appinfo {

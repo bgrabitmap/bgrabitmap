@@ -20,6 +20,8 @@ if (typeof mainNav === "undefined") {
 				e.preventDefault();
 				if (leftNavigation.style.display == "none") {
 					leftNavigation.style.animation = "fadeIn 0.5s ease-out forwards";
+					leftNavigation.style.position = "fixed";
+					leftNavigation.style.margin = "0";
 					leftNavigation.style.left = menuToggle.offsetLeft + "px";
 					leftNavigation.style.top = (menuToggle.offsetTop + menuToggle.offsetHeight) + "px";
 					leftNavigation.style.display = "block";					
