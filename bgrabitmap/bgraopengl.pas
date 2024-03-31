@@ -48,7 +48,40 @@ type
 
   { @abstract(Frame buffer in OpenGL.)
 
-    A frame buffer is a texture that can be used as a drawing surface in OpenGL. }
+    A frame buffer is a texture that can be used as a drawing surface in OpenGL.
+
+**Example of drawing on a framebuffer and then drawing it on the OpenGL control:**
+
+```pascal
+uses ..., BGRABitmapTypes, BGRAOpenGL;
+
+procedure TForm1.OpenGLControlPaint(Sender: TObject);
+var
+  mousePos: TPoint;
+  buf: TBGLFrameBuffer;
+begin
+  // Draw Background
+  BGLViewPort(OpenGLControl.Width, OpenGLControl.Height, BGRAWhite);
+  // Create framebuffer
+  buf := TBGLFrameBuffer.Create(256,256);
+  // Use it
+  BGLCanvas.ActiveFrameBuffer := buf;
+
+  BGLCanvas.Fill(CSSYellow);
+  BGLCanvas.Line(0,0,128,128, BGRABlack);
+  mousePos := ScreenToClient(Mouse.CursorPos);
+  BGLCanvas.FillRect(mousePos.x - 50, mousePos.y - 50, mousePos.x + 50, mousePos.y + 50, CSSRed, False);
+
+  // Render framebuffer on the control
+  BGLCanvas.ActiveFrameBuffer := nil;
+  BGLCanvas.PutImage(0,0, buf.Texture);
+  // Free framebuffer
+  buf.Free;
+
+  // Update
+  OpenGLControl.SwapBuffers;
+end;
+```}
   TBGLFrameBuffer = class(TBGLCustomFrameBuffer)
   protected
     FHeight: integer;

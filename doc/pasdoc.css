@@ -212,8 +212,13 @@ ul.hierarchylevel { list-style-type:none; }
 
 tr.list { background: #f7f8fb; }
 tr.list2 { background: #fbfcff; }
-tr.listheader { background: #20bf6b; color: white; }
-tr.listheader th { border-radius: 10px 10px 0 0; }
+tr.listheader, .table_tag th { background: #20bf6b; color: white; }
+tr.listheader th, .table_tag th { border-radius: 10px 10px 0 0; }
+.table_tag th p { color: white; }
+
+.table_tag th p a:link { color: #def; }
+.table_tag th p a:visited { color: #cdf; }
+
 
 table.wide_list { border-spacing:2px; width:100%; }
 table.wide_list td { vertical-align:top; padding:4px; }
@@ -347,22 +352,13 @@ ul.compact_spacing p { margin-top: 0em; margin-bottom: 0em; }
 ol.compact_spacing p { margin-top: 0em; margin-bottom: 0em; }
 dl.compact_spacing p { margin-top: 0em; margin-bottom: 0em; }
 
-/* Style for table created by @table tags:
-   just some thin border.
-
-   This way we have some borders around the cells
-   (so cells are visibly separated), but the border
-   "blends with the background" so it doesn't look too ugly.
-   Hopefully it looks satisfactory in most cases and for most
-   people.
-
-   We add padding for cells, otherwise they look too close.
-   This is normal thing to do when border-collapse is set to
-   collapse (because this eliminates spacing between cells).
+/* Style for table created by @table tags
 */
-table.table_tag { border-collapse: collapse; }
-table.table_tag td { border: 1pt solid gray; padding: 0.3em; }
-table.table_tag th { border: 1pt solid gray; padding: 0.3em; }
+table.table_tag { border-collapse: none; }
+table.table_tag td { border: none; padding: 0.3em; }
+table.table_tag th { border: none; padding: 0.3em; }
+table.table_tag tr:nth-child(odd) { background: #f4f4f8; }
+table.table_tag tr:nth-child(even) { background: #fbfcff; }
 
 table.detail {
   border: 1pt solid #eee;

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg width="10cm" xmlns="http://www.w3.org/2000/svg" height="6cm">
+  <path d="M37.79527 37.79527 340.1575 37.79527 340.1575 188.9764 37.79527 188.9764 z" fill="green" fill-opacity="1"/>
+  <rect x="2cm" y="2cm" fill="yellow" width="6cm" height="2cm" fill-opacity="0.7529412"/>
+  <rect x="0px" y="0px" fill="blue" width="37.79528px" height="37.79528px" fill-opacity="0.2"/>
+  <rect x="3cm" y="3cm" rx="0.3cm" ry="0.3cm" fill="orange" width="4cm" height="1cm" fill-opacity="1"/>
+  <line x1="30pt" x2="250pt" y1="140pt" y2="30pt" stroke="black" stroke-opacity="0.8"/>
+  <line x1="0" x2="377.9528" y1="0" y2="226.7717" stroke="red" stroke-opacity="1"/>
+  <circle r="2.8cm" cx="5cm" cy="3cm" fill="none" stroke="red" stroke-width="2pt" stroke-opacity="1"/>
+</svg>

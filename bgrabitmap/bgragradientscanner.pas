@@ -321,7 +321,27 @@ type
     constructor Create(c: TBGRAPixel);
   end;
 
-  { Scanner of random color }
+  { @abstract(Scanner of random color.)
+
+**Example filling a form with random pixels:**
+
+@image(../doc/img/randomscanner.png)
+
+```pascal
+uses ..., BGRABitmap, BGRAGradientScanner;
+
+procedure TForm1.FormPaint(Sender: TObject);
+var bmp: TBGRABitmap;
+  scan: TBGRARandomScanner;
+begin
+  bmp := TBGRABitmap.Create(ClientWidth, ClientHeight);
+  scan := TBGRARandomScanner.Create(False, 255);
+  bmp.Fill(scan);
+  scan.Free;
+  bmp.Draw(Canvas,0,0);
+  bmp.Free;
+end;
+```}
   TBGRARandomScanner = class(TBGRACustomScanner)
   private
     FOpacity: byte;

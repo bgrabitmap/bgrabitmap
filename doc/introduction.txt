@@ -26,6 +26,15 @@ The **Canvas2D** property of type TBGRACanvas2D provides a canvas with 2d transf
 
 Here is a nice [introduction to BGRABitmap](https://msegui.net/tutoriels/bgrabitmap-lazarus/tutoriel.html) in French.
 
+@section(1 PixelFormats Pixel formats)
+
+- TBGRABitmap: sRGB, 8 bit per channel
+- TGrayscaleMask: linear 8 bit grayscale. It now has drawing functions, so you can prepare a mask in 8 bit per pixel, avoiding to consume memory
+- TExpandedBitmap: linear RGB, 16 bit per channel. It has more precision than TBGRABitmap and is linear, so that dmLinearBlend and dmDrawWithTransparency are equivalent.
+- TLinearRGBABitmap: linear RGB, 32 bit per channel (single precision float). It has even more precision. Not really recommended though as it uses a lot of memory.
+- TWordXYZABitmap: XYZ, 16 bit per channel. Can store any real and reflect color with great precision (see below for remarks about XYZ).
+- TXYZABitmap: XYZ, 32 bit per channel (single precision float). It has even more precision and also a wider range, so that it can store fluorescent colors and light sources that would otherwise saturate.
+
 @section(1 Resources More resources)
 
 You can read more about BGRABitmap in the [wiki](http://wiki.freepascal.org/BGRABitmap). And also you can follow [tutorials](http://wiki.freepascal.org/BGRABitmap_tutorial) to learn how to use BGRABitmap.

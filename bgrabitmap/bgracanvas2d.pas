@@ -97,9 +97,13 @@ type
     width,height: single;
   end;
 
-  { @abstract(Implementation of [Canvas2d](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D) similar to HTML.)
+  { @abstract(Implementation of a canvas similar to [HTML Canvas2d](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D).)
 
-    Comparison between TBGRACanvas2D and Javascript HTML canvas:
+TBGRACanvas2D is the surface to use when rendering with TBGRASVG, TBGRACustomTypeWriter and TBGRAVectorizedFont.
+
+**Comparison between TBGRACanvas2D and Javascript HTML canvas:**
+
+@image(../doc/img/blue_circular_bevel_js.png)
 
     @table(
     @rowHead( @cell(BGRABitmap) @cell(JavaScript) )
@@ -204,8 +208,6 @@ ctx.stroke();
 
 	)
   )
-
-  @image(../doc/blue_circular_bevel_js.png)
 }
   TBGRACanvas2D = class(IBGRAPath)
   private
