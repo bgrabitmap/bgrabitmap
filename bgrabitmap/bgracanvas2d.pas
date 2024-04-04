@@ -349,7 +349,14 @@ ctx.stroke();
     procedure scale(x,y: single); overload;
     { Apply uniform scaling to the canvas. }
     procedure scale(factor: single); overload;
-    { Rotates the canvas around the origin (0,0) by the given angle in radians, clockwise. }
+    { @abstract(Rotates the canvas around the origin (0,0) by the given angle in radians, clockwise.)
+
+**Example rotating around the center of a 200x200 canvas:**
+```pascal
+canvas2D.translate(100, 100);
+canvas2D.rotate(Pi);
+canvas2D.translate(-100, -100);
+```}
     procedure rotate(angleRadCW: single);
     { Translates the canvas origin to a new location. }
     procedure translate(x,y: single);
