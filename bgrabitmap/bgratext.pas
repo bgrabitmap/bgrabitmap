@@ -1424,7 +1424,7 @@ begin
   {$IFDEF TEXTOUT_KERNING_PATCH}
   if AOrientation mod 3600 = 0 then
     exit(InternalTextSizeStyle(sUTF8,
-           BGRADefaultTextOutStyle(False, True), MaxLongint));
+           BGRADefaultTextOutStyle(False, AShowPrefix), MaxLongint));
   {$ENDIF}
   if AShowPrefix then sUTF8 := RemovePrefix(sUTF8);
   result := BGRAText.BGRATextSizeAngle(FFont, AOrientation, FontQuality,
