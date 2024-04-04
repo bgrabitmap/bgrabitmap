@@ -58,6 +58,8 @@ type
 
     Height maps are grayscale images or a precise bitmaps filled with MapHeightToBGRA. They are used
     to determine orientation and position of the surface.
+
+    See [tutorial on Phong shading](https://wiki.freepascal.org/BGRABitmap_tutorial_9).
   }
   TPhongShading = class(TCustomPhongShading)
   public
@@ -107,7 +109,35 @@ type
     { Draw a vertical cylinder of the specified color }
     procedure DrawVerticalCylinder(dest: TBGRACustomBitmap; bounds: TRect; Altitude: Single; Color: TBGRAPixel);
 
-    { Draw a hemisphere of the specified color }
+    { @abstract(Draw a hemisphere of the specified color.)
+
+**Example drawing a red sphere on a form:**
+
+@image(../doc/img/tphongshading_drawsphere.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  phong: TPhongShading;
+begin
+  phong := TPhongShading.Create;
+  phong.LightPosition := Point(100, 100);
+  phong.LightPositionZ := 150;
+  phong.SpecularIndex := 20;
+  phong.AmbientFactor := 0.4;
+  phong.LightSourceIntensity := 250;
+  phong.LightSourceDistanceTerm := 200;
+
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight,ColorToBGRA(ColorToRGB(clBtnFace)));
+
+  phong.DrawSphere(image,rect(20,20,120,120),50,BGRA(255,0,0));
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```
+}
     procedure DrawSphere(dest: TBGRACustomBitmap; bounds: TRect; Altitude: Single; Color: TBGRAPixel);
 
     { Draw a rectangle of the specified color }
@@ -176,7 +206,34 @@ function CreateRoundRectanglePreciseMap(width,height,borderWidth,borderHeight: i
 function CreatePerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: Single = 1;
   VerticalPeriod: Single = 1; Exponent: Double = 1; ResampleFilter: TResampleFilter = rfCosine): TBGRABitmap;
 
-{ Creates a tilable random grayscale image }
+{ @abstract(Creates a tilable random grayscale image.)
+
+**Example filling a form with Perlin noise:**
+
+@image(../doc/img/createcyclicperlinnoisemap.png)
+
+```pascal
+uses
+  BGRABitmap, BGRABitmapTypes, BGRAGradients;
+
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image,tex: TBGRABitmap;
+
+begin
+    image := TBGRABitmap.Create(ClientWidth,ClientHeight);
+
+    tex := CreateCyclicPerlinNoiseMap(100,100);
+    image.FillRect(0,0,image.Width,image.Height, tex, dmSet);
+    tex.free;
+
+    image.Draw(Canvas,0,0,True);
+    image.free;
+end;
+```
+
+See also [tutorial on creating textures](https://wiki.freepascal.org/BGRABitmap_tutorial_8).
+}
 function CreateCyclicPerlinNoiseMap(AWidth, AHeight: integer; HorizontalPeriod: Single = 1;
   VerticalPeriod: Single = 1; Exponent: Double = 1; ResampleFilter: TResampleFilter = rfCosine): TBGRABitmap;
 

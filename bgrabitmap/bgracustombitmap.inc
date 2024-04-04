@@ -220,6 +220,26 @@ type
   public
      constructor Create(AFPImage: TFPCustomImage; ACopyProperties: Boolean=False); overload; virtual; abstract;
      constructor Create(ABitmap: TBitmap); overload; virtual; abstract;
+     { @abstract(Create an instance and load an image from a file.)
+
+**Example of loading and displaying an image on a form:**
+
+```pascal
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  image := TBGRABitmap.Create('image.png');
+end;
+
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+  image.free;
+end;
+
+procedure TForm1.FormPaint(Sender: TObject);
+begin
+  image.Draw(Canvas, 0, 0, True); // assume image is opaque
+end;
+```}
      constructor Create(ABitmap: TBitmap; AUseTransparent: boolean); overload; virtual; abstract;
      constructor Create(AFilename: string); overload; virtual; abstract;
      constructor Create(AFilename: string; AIsUtf8Filename: boolean); overload; virtual; abstract;
@@ -468,8 +488,74 @@ type
 
      //-------------------------- computing path ------------------------------------
 
-     {Spline}
+     { @abstract(Compute an closed spline passing by the given points.)
+
+**Example of drawing a spline on a form:**
+
+@image(../doc/img/computeclosedspline.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  pts: array of TPointF;
+  storedSpline: array of TPointF;
+  c: TBGRAPixel;
+begin
+    image := TBGRABitmap.Create(ClientWidth, ClientHeight, clBtnFace);
+    c := clWindowText;
+
+    //rectangular polyline
+    setlength(pts,4);
+    pts[0] := PointF(50,50);
+    pts[1] := PointF(150,50);
+    pts[2] := PointF(150,150);
+    pts[3] := PointF(50,150);
+    image.DrawPolylineAntialias(pts,BGRA(255,0,0,150),1);
+
+    //compute spline points and draw as a polyline
+    storedSpline := image.ComputeClosedSpline(pts,ssVertexToSide);
+    image.DrawPolylineAntialias(storedSpline,c,1);
+
+    image.Draw(Canvas,0,0,True);
+    image.free;
+end;
+```}
      function ComputeClosedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; virtual; abstract;
+
+     { @abstract(Compute an opened spline passing by the given points.)
+
+**Example of drawing a spline on a form:**
+
+@image(../doc/img/computeopenedspline.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  pts: array of TPointF;
+  storedSpline: array of TPointF;
+  c: TBGRAPixel;
+begin
+    image := TBGRABitmap.Create(ClientWidth, ClientHeight, clBtnFace);
+    c := clWindowText;
+
+    //rectangular polyline
+    setlength(pts,4);
+    pts[0] := PointF(50,50);
+    pts[1] := PointF(150,50);
+    pts[2] := PointF(150,150);
+    pts[3] := PointF(50,150);
+    image.DrawPolylineAntialias(pts,BGRA(255,0,0,150),1);
+
+    //compute spline points and draw as a polyline
+    storedSpline := image.ComputeOpenedSpline(pts,ssVertexToSide);
+    image.DrawPolylineAntialias(storedSpline,c,1);
+
+    image.Draw(Canvas,0,0,True);
+    image.free;
+end;
+```}
      function ComputeOpenedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; virtual; abstract;
      function ComputeBezierCurve(const curve: TCubicBezierCurve): ArrayOfTPointF; overload; virtual; abstract;
      function ComputeBezierCurve(const curve: TQuadraticBezierCurve): ArrayOfTPointF; overload; virtual; abstract;
