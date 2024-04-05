@@ -277,6 +277,7 @@ td.itemunit {white-space:nowrap; }
 td.itemdesc { width:100%; }
 
 .nodescription, .inheritdescription { color: #c70; }
+.inheritdescription { display: none; }
 dl.parameters dt {
   color:blue;
 }
