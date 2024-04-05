@@ -651,6 +651,28 @@ type
     procedure FillShapeAntialias(AShape: TBGRACustomFillInfo; ATexture: IBGRAScanner); overload; virtual;
     procedure EraseShapeAntialias(AShape: TBGRACustomFillInfo; AAlpha: Byte); overload; virtual;
     procedure FillPolyAntialias(const APoints: array of TPointF; const ABrush: TUniversalBrush; APixelCenteredCoordinates: boolean = true); overload; virtual;
+    {** @abstract(Fills a polygon with a texture and with antialiased borders.)
+
+    Texture will be repeated if smaller than output area.
+
+@image(../doc/img/fillpolyantialias_texture.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var image: TBGRABitmap;
+    tex: TBGRABitmap;
+begin
+  //black background
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, BGRABlack );
+
+  tex:= TBGRABitmap.Create('image.png'); //load a bitmap
+  image.FillPolyAntialias( [PointF(110,10), PointF(250,10), PointF(350,160), PointF(10,160)], tex);
+  tex.Free;
+
+  image.Draw(Canvas,0,0,True); //draw on the screen
+  image.free;
+end;
+```}
     procedure FillPolyAntialias(const APoints: array of TPointF; ATexture: IBGRAScanner; APixelCenteredCoordinates: boolean = true); overload; virtual;
     procedure ErasePolyAntialias(const APoints: array of TPointF; AAlpha: Byte; APixelCenteredCoordinates: boolean = true); overload; virtual;
     {** Fills an ellipse which axes are parallel to X and Y axes }

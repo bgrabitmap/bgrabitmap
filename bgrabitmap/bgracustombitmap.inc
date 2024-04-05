@@ -382,8 +382,53 @@ end;
 
      {$IFNDEF BGRABITMAP_CORE}
      procedure FillPolyLinearColor(const points: array of TPointF; AColors: array of TBGRAPixel);  overload; virtual; abstract;
+     { @abstract(Fills a polygon with a texture that is linearly mapped.)
+
+**Example filling a trapeze with a texture:**
+
+@image(../doc/img/fillpolylinearmapping.png)
+
+```pascal
+procedure TForm1.PaintImage;
+var image: TBGRABitmap;
+    tex: TBGRABitmap;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, BGRABlack );
+
+  tex:= TBGRABitmap.Create('image.png');
+  image.FillPolyLinearMapping( [PointF(110,10), PointF(250,10), PointF(350,160), PointF(10,160)], tex,
+             [PointF(0,0), PointF(tex.width-1,0), PointF(tex.Width-1,tex.Height-1), PointF(0,tex.Height-1)], true);
+  tex.Free;
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```}
      procedure FillPolyLinearMapping(const points: array of TPointF; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean); overload; virtual; abstract;
      procedure FillPolyLinearMappingLightness(const points: array of TPointF; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean); overload; virtual; abstract;
+     { @abstract(Fills a polygon with a texture that is mapped with perspective.)
+
+**Example filling a trapeze with a texture:**
+
+@image(../doc/img/fillpolyperspectivemapping.png)
+
+```pascal
+procedure TForm1.PaintImage;
+var image: TBGRABitmap;
+    tex: TBGRABitmap;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, BGRABlack );
+
+  tex:= TBGRABitmap.Create('image.png');
+  image.FillPolyPerspectiveMapping( [PointF(110,10), PointF(250,10), PointF(350,160), PointF(10,160)],
+                                    [75,             75,             50,              50],
+       tex, [PointF(0,0), PointF(tex.width-1,0), PointF(tex.Width-1,tex.Height-1), PointF(0,tex.Height-1)], true);
+  tex.Free;
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```}
      procedure FillPolyPerspectiveMapping(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean; zbuffer: psingle = nil); overload; virtual; abstract;
      procedure FillPolyPerspectiveMappingLightness(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean; zbuffer: psingle = nil); overload; virtual; abstract;
      {$ENDIF}
@@ -454,11 +499,62 @@ end;
      function TextSizeMultiline(const sUTF8: string; AMaxWidth: single = EmptySingle;
                  AParagraphSpacing: single = 0): TSize; virtual; abstract;{$ENDIF}
 
-     { Draw the UTF8 encoded string, (x,y) being the top-left corner by default. The color c or texture is used to fill the text.
-       The value of FontOrientation is taken into account, so that the text may be rotated. }
+     { Draw the UTF8 encoded string, (_x_, _y_) being the top-left corner. The color _c_ or texture is used to fill the text.
+       The value of FontOrientation is taken into account, so that the text may be rotated.
+
+**Example drawing text on a form:**
+
+@image(../doc/img/textout.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  c: TBGRAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, clBtnFace);
+  c := clBtnText; //retrieve default text color
+
+  image.FontHeight := 30;
+  image.FontAntialias := true;
+  image.FontStyle := [fsBold];
+  image.TextOut (5, 5, 'Hello world', c);
+  image.SetPixel (5, 5, c);
+
+  image.free;
+end;
+```}
+     procedure TextOut(x, y: single; const sUTF8: string; c: TBGRAPixel); overload; virtual;
+     { Draw the UTF8 encoded string, (_x_, _y_) is the top reference point with the chosen alignment.
+       If left-aligned, this will be the top-left corner.
+       If right-aligned, the top-right corner.
+       The color _c_ or texture is used to fill the text.
+       The value of FontOrientation is taken into account, so that the text may be rotated.
+
+**Example drawing text on a form:**
+
+@image(../doc/img/textout-align.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  c: TBGRAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, clBtnFace);
+  c := clBtnText; //retrieve default text color
+
+  image.FontHeight := 30;
+  image.FontAntialias := true;
+  image.FontStyle := [fsBold];
+  image.TextOut(ClientWidth-5,5, 'Hello world', c, taRightJustify);
+  image.SetPixel(ClientWidth-5,5, c);
+
+  image.free;
+end;
+```}
      procedure TextOut(x, y: single; const sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual;
      procedure TextOut(x, y: single; const sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual;
-     procedure TextOut(x, y: single; const sUTF8: string; c: TBGRAPixel); overload; virtual;
      procedure TextOut(x, y: single; const sUTF8: string; c: TBGRAPixel; ARightToLeft: boolean); overload; virtual;
      procedure TextOut(x, y: single; const sUTF8: string; c: TColor); overload; virtual;
      procedure TextOut(x, y: single; const sUTF8: string; c: TColor; ARightToLeft: boolean); overload; virtual;
@@ -474,15 +570,68 @@ end;
 
      { Overrides the font orientation with the parameter orientationTenthDegCCW }
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; c: TBGRAPixel); overload; virtual;
+     { Draw the UTF8 encoded string with specified orientation (positive values will make the text go upwards).
+       (_x_, _y_) is the top reference point with the chosen alignment.
+       If left-aligned, this will be the top-left corner.
+       If right-aligned, the top-right corner.
+       The color _c_ or texture is used to fill the text.
+
+**Example drawing text on a form:**
+
+@image(../doc/img/textoutangle.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  c: TBGRAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, clBtnFace);
+  c := clBtnText; //retrieve default text color
+
+  image.FontHeight := 30;
+  image.FontAntialias := true;
+  image.FontStyle := [fsBold];
+  image.TextOutAngle(30,5, -450, 'Hello world', c, taLeftJustify);
+  image.SetPixel(30,5,c);
+
+  image.free;
+end;
+```}
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; texture: IBGRAScanner); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
 
-     { Draw the UTF8 encoded string in the rectangle ARect. Text is wrapped if necessary.
-       The position depends on the specified horizontal alignment halign and vertical alignement valign.
-       The color c or texture is used to fill the text. No rotation is applied. }
+     { Draw the UTF8 encoded string in the rectangle _ARect_. Text is wrapped if necessary.
+       The position depends on the specified horizontal alignment _halign_ and
+       vertical alignement _valign_.
+       The color _c_ or _texture_ is used to fill the text. No rotation is applied.
+
+**Example drawing wrapped text on a form:**
+
+@image(../doc/img/textrect-align.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  c: TBGRAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, clBtnFace);
+  c := clBtnText; //retrieve default text color
+
+  image.FontHeight := 30;
+  image.FontAntialias := true;
+  image.FontStyle := [fsBold];
+  image.TextRect(rect(5,5, ClientWidth-5,ClientHeight-5),
+                 'This is a text that should be word wrapped',taCenter,tlCenter,c);
+  image.Rectangle(rect(5,5, ClientWidth-5,ClientHeight-5), c, dmSet);
+
+  image.free;
+end;
+```}
      procedure TextRect(ARect: TRect; const sUTF8: string; halign: TAlignment; valign: TTextLayout; c: TBGRAPixel); overload; virtual;
      procedure TextRect(ARect: TRect; const sUTF8: string; halign: TAlignment; valign: TTextLayout; texture: IBGRAScanner); overload; virtual;
 
