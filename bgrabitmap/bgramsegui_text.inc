@@ -23,7 +23,9 @@ end;
 procedure BitmapTextRect(ABitmap: TBitmap; ARect: TRect; ACoord: TPoint; 
   AText: string; const AStyle: TTextStyle);
 var sUTF16: UnicodeString;
-begin 
+begin
+  if AStyle.ShowPrefix then // prefix not handled
+    AText := RemovePrefix(AText);
   sUTF16 := UTF8ToUTF16(AText);
   case AStyle.Alignment of
   taRightJustify: ACoord.X := ARect.Right - ABitmap.Canvas.GetStringWidth(sUTF16);
@@ -48,6 +50,8 @@ function BitmapTextExtentStyle(ABitmap: TBitmap; AText: string; AMaxWidth: integ
   const AStyle: TTextStyle): TSize;
 var sUTF16: UnicodeString;
 begin
+  if AStyle.ShowPrefix then // prefix not handled
+    AText := RemovePrefix(AText);
   sUTF16 := UTF8ToUTF16(AText);
   result := Size(ABitmap.Canvas.GetStringWidth(sUTF16), ABitmap.Canvas.Font.Height);
 end;

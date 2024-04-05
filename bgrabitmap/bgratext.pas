@@ -220,7 +220,35 @@ var
                           metric: TFontPixelMetric;
                         end;
   FontPixelMetricCount: integer;
-  
+
+function RemovePrefix(sUTF8: string): string;
+var i,resLen: integer;
+begin
+  setlength(result, length(sUTF8));
+  resLen := 0;
+  i := 1;
+  while i <= length(sUTF8) do
+  begin
+    if sUTF8[i] = '&' then
+    begin // double ('&&') indicate single char '&'
+      if (i < length(sUTF8)) and (sUTF8[i+1] = '&') then
+      begin
+        inc(resLen);
+        result[resLen] := '&';
+        inc(i,2);
+      end else
+        // single indicate underline
+        inc(i);
+    end else
+    begin
+      inc(resLen);
+      result[resLen] := sUTF8[i];
+      inc(i);
+    end;
+  end;
+  setlength(result,resLen);
+end;
+
 {$IF defined(BGRABITMAP_USE_MSEGUI)}
 {$i bgramsegui_text.inc}
 {$ELSEIF defined(BGRABITMAP_USE_LCL)}
@@ -957,34 +985,6 @@ begin
     result.cx := ceil(Result.cx/CustomAntialiasingLevel);
     result.cy := ceil(Result.cy/CustomAntialiasingLevel);
   end;
-end;
-
-function RemovePrefix(sUTF8: string): string;
-var i,resLen: integer;
-begin
-  setlength(result, length(sUTF8));
-  resLen := 0;
-  i := 1;
-  while i <= length(sUTF8) do
-  begin
-    if sUTF8[i] = '&' then
-    begin // double ('&&') indicate single char '&'
-      if (i < length(sUTF8)) and (sUTF8[i+1] = '&') then
-      begin
-        inc(resLen);
-        result[resLen] := '&';
-        inc(i,2);
-      end else
-        // single indicate underline
-        inc(i);
-    end else
-    begin
-      inc(resLen);
-      result[resLen] := sUTF8[i];
-      inc(i);
-    end;
-  end;
-  setlength(result,resLen);
 end;
 
 procedure FilterOriginalText(Quality: TBGRAFontQuality; CustomAntialiasingLevel: Integer; var temp: TBGRACustomBitmap;
