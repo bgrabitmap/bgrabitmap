@@ -36,7 +36,7 @@ s|(<h2 class="description">Description</h2>)|<script type="text/javascript" src=
 s|(<h1 class="allitems">[\w ]+</h1>)|$1\n<script type="text/javascript" src="navigation.js"></script>|;
 s|(<h1 class="unit">Unit ([A-Za-z][A-Za-z0-9_]+))</h1>|$1\n<p class="float-boton"><a class="boton" href="https://github.com/bgrabitmap/bgrabitmap/blob/master/bgrabitmap/\L$2\E.pas">📄 Source code</a></p></h1>|;
 s|<li><a href="AllIdentifiers.html">Identifiers</a></li><li><a href="GVUses.svg">Unit dependency graph</a></li><li><a href="GVClasses.svg">Classes hierarchy graph</a></li>|<li><a href="AllIdentifiers.html">All Identifiers</a></li>|;
-s|"pasdoc\.css"|"pasdoc.css?v=3"|;
+s|"pasdoc\.css"|"pasdoc.css?v=4"|;
 s|href="\Q$filename\E.html#([^"]+)"|href="#$1"|g;
 ' $DOCSPATH/*.html
 
