@@ -180,7 +180,26 @@ type
     constructor Create(AContainer: TMultiFileContainer; AEntryNameOrId: TNameOrId; const AResourceInfo: TResourceInfo);
   end;
 
-  { Container for Windows resources }
+  { @abstract(Container for Windows resources.)
+
+**Example of modifying an existing RES file:**
+
+```pascal
+uses BGRAClasses, BGRABitmapTypes, BGRAWinResource;
+var
+  res: TMultiFileContainer;
+  filestream: TStream;
+begin
+  res := TWinResourceContainer.Create('container.res'); //load the content of an existing RES file
+  res.Delete('MAINICON','ico'); //delete current MAINICON entry
+  filestream := TFileStream.Create('someicon.ico',fmOpenRead);
+  res.Add('MAINICON','ico', filestream); //replace it with another icon
+  filestream := TFileStream.Create('somecursor.cur', fmOpenRead);
+  res.Add('SOMECURSOR','cur', filestream); //add a cursor entry called SOMECURSOR
+  res.SaveToFile('container.res');
+  res.Free;
+end.
+```}
   TWinResourceContainer = class(TMultiFileContainer)
   private
     function InternalFind(const AEntry: TNameOrId; const AType: TNameOrId; ALanguageId: integer = 0): TCustomResourceEntry;

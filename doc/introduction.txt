@@ -1,12 +1,8 @@
-@title(📚 BGRABitmap documentation)
-@shorttitle(📚 BGRABitmap)
-[🏠 Homepage](https://bgrabitmap.github.io/)
-
-@image(../bgrabitmap.jpg) 
-
+@title(📚 Getting started)
+@shorttitle(Getting started)
 @section(1 SecFirst Introduction)
 
-[BGRABitmap](https://bgrabitmap.github.io/) is a package designed to modify and create images with transparency. Direct pixel access allows fast image processing. The library has been tested on Windows, Linux and Mac.
+[🏠 BGRABitmap](https://bgrabitmap.github.io/) is a package designed to modify and create images with transparency. Direct pixel access allows fast image processing. The library has been tested on Windows, Linux and Mac.
 
 @section(1 Install How to install)
 
@@ -29,6 +25,15 @@ The **CanvasBGRA** property of type TBGRACanvas provides a canvas with opacity a
 The **Canvas2D** property of type TBGRACanvas2D provides a canvas with 2d transformation and [similar to HTML5](https://wiki.freepascal.org/BGRABitmap_tutorial_14).
 
 Here is a nice [introduction to BGRABitmap](https://msegui.net/tutoriels/bgrabitmap-lazarus/tutoriel.html) in French.
+
+@section(1 PixelFormats Pixel formats)
+
+- TBGRABitmap: sRGB, 8 bit per channel
+- TGrayscaleMask: linear 8 bit grayscale. It now has drawing functions, so you can prepare a mask in 8 bit per pixel, avoiding to consume memory
+- TExpandedBitmap: linear RGB, 16 bit per channel. It has more precision than TBGRABitmap and is linear, so that dmLinearBlend and dmDrawWithTransparency are equivalent.
+- TLinearRGBABitmap: linear RGB, 32 bit per channel (single precision float). It has even more precision. Not really recommended though as it uses a lot of memory.
+- TWordXYZABitmap: XYZ, 16 bit per channel. Can store any real and reflect color with great precision (see below for remarks about XYZ).
+- TXYZABitmap: XYZ, 32 bit per channel (single precision float). It has even more precision and also a wider range, so that it can store fluorescent colors and light sources that would otherwise saturate.
 
 @section(1 Resources More resources)
 

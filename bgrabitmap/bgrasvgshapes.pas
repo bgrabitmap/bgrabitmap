@@ -779,7 +779,50 @@ type
      property RulesetCount: integer read GetRulesetCount;
   end;                  
 
-  { Content for an SVG element }
+  { @abstract(Content for an SVG element.)
+
+  It can be used to browse or add elements.
+
+**Example creating an SVG file:**
+
+@image(../doc/img/content.svg)
+
+```pascal
+uses BGRABitmapTypes, BGRASVG, BGRAUnits;
+var svg: TBGRASVG;
+begin
+  //it is recommended to initialise the SVG with size and unit
+  //otherwise, the size is kind of undefined
+
+  svg := TBGRASVG.Create(10,6,cuCentimeter);
+  svg.Content.AppendPath('M1,1 L9,1 9,5 1,5 z', cuCentimeter).fillColor := CSSGreen;
+  svg.Content.AppendRect(2,2,6,2, cuCentimeter).fillColor:= BGRA(255,255,0,192);
+  with svg.Content.AppendRect(0,0,svg.Units.ConvertWidth(1,cuCentimeter,cuPixel),
+  svg.Units.ConvertHeight(1,cuCentimeter,cuPixel), cuPixel) do
+  begin
+    fillColor := CSSBlue;
+    fillOpacity:= 0.2;
+  end;
+  svg.Content.AppendRoundRect(3,3,4,1, 0.3,0.3, cuCentimeter).fillColor := CSSOrange;
+  with svg.Content.AppendLine(30,140,250,30, cuPoint) do
+  begin
+    strokeColor := BGRABlack;
+    strokeOpacity:= 0.8;
+  end;
+  svg.Content.AppendLine(svg.ViewBox.min,svg.ViewBox.min+svg.ViewBox.size).strokeColor := CSSRed;
+  with svg.Content.AppendCircle(5,3,2.8,cuCentimeter) do
+  begin
+    strokeColor := CSSRed;
+    strokeWidth := FloatWithCSSUnit(2,cuPoint);
+    fillNone;
+  end;
+
+  //SVG can be saved in a file that can be viewed in
+  //a web browser or in InkScape for example
+  svg.SaveToFile('content.svg');
+  svg.Free;
+end.
+```}
   TSVGContent = class
     protected
       FDataLink: TSVGDataLink;

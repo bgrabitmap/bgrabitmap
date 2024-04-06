@@ -111,8 +111,41 @@ type
   operator * (const c1: TColorF; factor: single): TColorF; inline;
 
 type
-  {* Pixel color defined in linear HSL colorspace. Gamma correction is taken into account.
-     Values range from 0 to 65535. }
+  {* @abstract(Pixel color defined in linear HSL colorspace with gamma correction.)
+
+     Values range from 0 to 65535. See TGSBAPixel for corrected hue and brightness.
+
+**Example drawing all the colors in HSL colorspace:**
+
+@image(../doc/img/hslapixel_gradient.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var x,y: integer;
+    p: PBGRAPixel;
+    image: TBGRABitmap;
+    hsla: THSLAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight);
+  hsla.lightness := 32768;
+  hsla.alpha := 65535;
+  for y := 0 to image.Height-1 do
+  begin
+    p := image.Scanline[y];
+    hsla.saturation := y*65536 div image.Height;
+    for x := 0 to image.Width-1 do
+    begin
+      hsla.hue := x*65536 div image.Width;
+      p^:= HSLAToBGRA(hsla);
+      inc(p);
+    end;
+  end;
+  image.InvalidateBitmap; // changed by direct access
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```}
   THSLAPixel = packed record
     {** Hue of the pixel. The 6 primary colors red/yellow/green/cyan/blue/violet are stretched equally.
         Extremum values 0 and 65535 are red }
@@ -145,8 +178,45 @@ type
   function GetHue(ec: TExpandedPixel): word;
 
 type
-  {* Pixel color defined in corrected HSL colorspace. G stands for corrected hue
-     and B stands for actual brightness. Values range from 0 to 65535. }
+  {* @abstract(Pixel color defined in corrected HSL colorspace.)
+
+     G stands for corrected hue and B stands for actual brightness.
+     Values range from 0 to 65535.
+
+     See THSLAPixel for this colorspace without hue and brightness correction.
+
+**Example of drawing a gradient in GSB colorspace:**
+
+@image(../doc/img/gsbapixel_gradient.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var x,y: integer;
+    p: PBGRAPixel;
+    image: TBGRABitmap;
+    gsba: TGSBAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight);
+  gsba.lightness := 32768;
+  gsba.alpha := 65535;
+  for y := 0 to image.Height-1 do
+  begin
+    p := image.Scanline[y];
+    gsba.saturation := y*65536 div image.Height;
+    for x := 0 to image.Width-1 do
+    begin
+      gsba.hue := x*65536 div image.Width;
+      p^:= GSBAToBGRA(gsba);
+      inc(p);
+    end;
+  end;
+  image.InvalidateBitmap; // changed by direct access
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```
+}
   TGSBAPixel = packed record
     {** Corrected hue of the pixel. Extremum values 0 and 65535 are red.
         G is corrected in the sense that each segment does not have the same size.

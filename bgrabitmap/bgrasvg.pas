@@ -133,7 +133,45 @@ type
     property OnRecompute: TSVGRecomputeEvent read FOnRecompute write SetOnRecompute;
   end;
 
-  { Reading, writing and rendering for an SVG document }
+  { @abstract(Reading, writing and rendering for an SVG document.)
+
+**Example of reading and displaying SVG images:**
+
+@image(../doc/img/svg_example.png)
+
+```pascal
+uses ..., BGRABitmapTypes, BGRASVG;
+
+procedure DrawSVGImages(ctx: TBGRACanvas2D);
+var svg: TBGRASVG;
+begin
+  svg := TBGRASVG.Create;
+  svg.LoadFromFile('Amsterdammertje-icoon.svg');
+  svg.StretchDraw(ctx, taCenter,tlCenter, 0,0,ctx.Width/3,ctx.Height);
+
+  svg.LoadFromFile('BespectacledMaleUser.svg');
+  svg.StretchDraw(ctx, ctx.Width/3,0,ctx.Width*2/3,ctx.Height/2);
+
+  ctx.save;
+  ctx.beginPath;
+  ctx.rect(ctx.Width/3,ctx.Height/2,ctx.Width*2/3,ctx.Height/2);
+  ctx.clip;
+  svg.LoadFromFile('Blue_gyroelongated_pentagonal_pyramid.svg');
+  svg.Draw(ctx, taCenter,tlCenter, ctx.Width*2/3,ctx.Height*3/4);
+  ctx.restore;
+
+  svg.Free;
+
+  ctx.beginPath;
+  ctx.lineWidth:= 1;
+  ctx.strokeStyle(BGRABlack);
+  ctx.moveTo(ctx.Width/3,0);
+  ctx.lineTo(ctx.Width/3,ctx.Height);
+  ctx.moveTo(ctx.Width/3,ctx.Height/2);
+  ctx.lineTo(ctx.Width,ctx.Height/2);
+  ctx.stroke;
+end;
+```}
   TBGRASVG = class(TSVGCustomElement)
   private
     function GetColor: TBGRAPixel;

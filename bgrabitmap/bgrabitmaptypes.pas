@@ -27,7 +27,7 @@ uses
 {=== Miscellaneous types ===}
 
   {* Current version expressed as an integer with each part multiplied by 100 }
-  const BGRABitmapVersion = 11060100;
+  const BGRABitmapVersion = 11060200;
 
   {* String representation of the version, numbers separated by dots }
   function BGRABitmapVersionStr: string;

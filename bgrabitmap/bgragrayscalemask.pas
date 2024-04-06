@@ -19,7 +19,39 @@ uses
   BGRAClasses, BGRAGraphics, SysUtils, BGRABitmapTypes, BGRAResample, {%H-}UniversalDrawer;
 
 type
-  { 8-bit grayscale image }
+  { @abstract(8-bit grayscale image.)
+
+**Example on applying a grayscale mask:**
+
+A red triangle is masked using an ellipse shape.
+@image(../doc/img/mask_poly.png)
+```pascal
+uses BGRABitmap, BGRABitmapTypes, BGRAGrayscaleMask;
+
+procedure TForm1.FormPaint(Sender: TObject);
+var tmp, layer: TBGRABitmap;
+    mask: TGrayscaleMask;
+    poly : ArrayOfTPointF;
+begin
+  layer := TBGRABitmap.Create(clientwidth, clientheight, BGRAPixelTransparent);
+  setLength(Poly,3);
+  poly[0] := PointF(10, 10);
+  Poly[1] := PointF(layer.width-10, 10);
+  Poly[2] := PointF(10, layer.height-10);
+  layer.DrawPolygonAntialias(poly, cssBlack, 3, cssRed);
+
+  mask := TGrayscaleMask.Create(clientwidth, clientheight, TByteMask.New(0));
+  mask.FillEllipseAntialias(mask.Width/2-0.5, mask.Height/2-0.5,
+                            mask.Width/2, mask.Height/2, TByteMask.New(255));
+  layer.ApplyMask(mask);
+  mask.Free;
+
+  tmp := TBGRABitmap.create (clientwidth, clientheight, cssWhite);
+  tmp.PutImage(0,0, layer, dmDrawWithTransparency);
+  tmp.Draw (canvas,0,0);
+  tmp.free;
+end;
+```}
   TGrayscaleMask = class(specialize TGenericUniversalBitmap<TByteMask,TByteMaskColorspace>)
   private
      function GetScanLine(Y: Integer): PByte; inline;

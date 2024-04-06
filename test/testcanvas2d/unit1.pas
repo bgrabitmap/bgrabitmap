@@ -426,7 +426,7 @@ begin
   svg.StretchDraw(ctx, taCenter,tlCenter, 0, 0, AWidth/3, AHeight);
 
   svg.LoadFromFile(ResourceFile('BespectacledMaleUser.svg'));
-  svg.StretchDraw(ctx, ctx.Width/3, 0, AWidth*2/3, AHeight/2);
+  svg.StretchDraw(ctx, AWidth/3, 0, AWidth*2/3, AHeight/2);
 
   ctx.save;
   ctx.beginPath;
