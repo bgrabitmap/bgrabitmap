@@ -249,6 +249,59 @@ begin
   setlength(result,resLen);
 end;
 
+procedure SplitByPrefix(sUTF8: string; AParts: TStrings);
+var i, j: integer;
+  temp: string;
+  tempLen, charLen: integer;
+  underline: boolean;
+
+  procedure FlushUnderline;
+  begin
+    if underline and (tempLen > 0) then
+    begin
+      AParts.Add(copy(temp, 1, tempLen));
+      underline := false;
+      tempLen := 0;
+    end;
+  end;
+
+begin
+  setlength(temp, length(sUTF8));
+  tempLen := 0;
+  underline := false;
+  i := 1;
+  while i <= length(sUTF8) do
+  begin
+    if sUTF8[i] = '&' then
+    begin // double ('&&') indicate single char '&'
+      if (i < length(sUTF8)) and (sUTF8[i+1] = '&') then
+      begin
+        FlushUnderline;
+        inc(tempLen);
+        temp[tempLen] := '&';
+        inc(i,2);
+      end else
+        // single indicate underline
+        AParts.Add(copy(temp, 1, tempLen));
+        underline := true;
+        tempLen := 0;
+        inc(i);
+    end else
+    begin
+      if GetBidiClassUTF8(@sUTF8[i]) <> ubcNonSpacingMark then
+        FlushUnderline;
+      charLen := UTF8CharacterLength(@sUTF8[i]);
+      for j := 1 to charLen do
+      begin
+        inc(tempLen);
+        temp[tempLen] := sUTF8[i];
+        inc(i);
+      end;
+    end;
+  end;
+  AParts.Add(copy(temp, 1, tempLen));
+end;
+
 {$IF defined(BGRABITMAP_USE_MSEGUI)}
 {$i bgramsegui_text.inc}
 {$ELSEIF defined(BGRABITMAP_USE_LCL)}
