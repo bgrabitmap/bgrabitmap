@@ -4004,6 +4004,8 @@ begin
 end;
 
 procedure TSVGLine.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  aaBefore: Boolean;
 begin
   if not isStrokeNone then
   begin
@@ -4011,7 +4013,10 @@ begin
     ACanvas2d.beginPath;
     ACanvas2d.moveTo(Units.ConvertWidth(x1,AUnit).value,Units.ConvertHeight(y1,AUnit).value);
     ACanvas2d.lineTo(Units.ConvertWidth(x2,AUnit).value,Units.ConvertHeight(y2,AUnit).value);
+    aaBefore := ACanvas2d.antialiasing;
+    ACanvas2d.antialiasing:= antialiasing;
     ACanvas2d.stroke;
+    ACanvas2D.antialiasing := aaBefore;
   end;
 end;
 
