@@ -158,6 +158,8 @@ type
 
   { Interface for a texture in OpenGL (stored in VRAM) }
   IBGLTexture = interface ['{BF2FF051-EBC6-4102-8268-37A9D0297B92}']
+    function GetAllocatedHeight: integer;
+    function GetAllocatedWidth: integer;
     function GetFlipX: IBGLTexture;
     function GetFlipY: IBGLTexture;
     function GetFrame(AIndex: integer): IBGLTexture;
@@ -230,6 +232,8 @@ type
     procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF); overload;
     procedure DrawQuad(const APoints3D: array of TPoint3D_128; const ANormals3D: array of TPoint3D_128; const ATexCoords: array of TPointF; const AColors: array of TColorF); overload;
 
+    property AllocatedWidth: integer read GetAllocatedWidth;
+    property AllocatedHeight: integer read GetAllocatedHeight;
     property Width: integer read GetWidth;
     property Height: integer read GetHeight;
     property FrameCount: integer read GetFrameCount;
@@ -286,6 +290,8 @@ type
   { Abstract class for a texture in OpenGL (stored in VRAM) }
   TBGLCustomTexture = class(TInterfacedObject, IBGLTexture)
   private
+    function GetAllocatedHeight: integer;
+    function GetAllocatedWidth: integer;
     function GetFlipX: IBGLTexture;
     function GetFlipY: IBGLTexture;
     function GetFrame(AIndex: integer): IBGLTexture;
@@ -320,6 +326,7 @@ type
     procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); virtual; abstract;
     class function SupportsBGRAOrder: boolean; virtual;
     procedure SetOpenGLTextureSize(ATexture: TBGLTextureHandle; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer); virtual; abstract;
+    function GetOpenGLAllocatedSize(ATexture: TBGLTextureHandle): TSize; virtual; abstract;
     procedure ComputeOpenGLFramesCoord(ATexture: TBGLTextureHandle; FramesX: Integer=1; FramesY: Integer=1); virtual; abstract;
     function GetOpenGLFrameCount(ATexture: TBGLTextureHandle): integer; virtual; abstract;
     function GetEmptyTexture: TBGLTextureHandle; virtual; abstract;
@@ -415,6 +422,8 @@ type
 
     property Width: integer read GetWidth;
     property Height: integer read GetHeight;
+    property AllocatedWidth: integer read GetAllocatedWidth;
+    property AllocatedHeight: integer read GetAllocatedHeight;
     property FrameCount: integer read GetFrameCount;
     property Frame[AIndex: integer]: IBGLTexture read GetFrame;
     property FrameWidth: integer read GetFrameWidth;
@@ -514,6 +523,16 @@ begin
 end;
 
 { TBGLCustomTexture }
+
+function TBGLCustomTexture.GetAllocatedHeight: integer;
+begin
+  result := GetOpenGLAllocatedSize(FOpenGLTexture).Width;
+end;
+
+function TBGLCustomTexture.GetAllocatedWidth: integer;
+begin
+  result := GetOpenGLAllocatedSize(FOpenGLTexture).Height;
+end;
 
 function TBGLCustomTexture.GetFlipX: IBGLTexture;
 begin

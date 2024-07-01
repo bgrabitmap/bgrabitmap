@@ -289,6 +289,7 @@ type
     procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); override;
     class function SupportsBGRAOrder: boolean; override;
     procedure SetOpenGLTextureSize(ATexture: TBGLTextureHandle; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer); override;
+    function GetOpenGLAllocatedSize(ATexture: TBGLTextureHandle): TSize; override;
     procedure ComputeOpenGLFramesCoord(ATexture: TBGLTextureHandle; FramesX: Integer=1; FramesY: Integer=1); override;
     function GetOpenGLFrameCount(ATexture: TBGLTextureHandle): integer; override;
     function GetEmptyTexture: TBGLTextureHandle; override;
@@ -1384,6 +1385,13 @@ begin
     AllocatedWidth := AAllocatedWidth;
     AllocatedHeight := AAllocatedHeight;
   end;
+end;
+
+function TBGLTexture.GetOpenGLAllocatedSize(ATexture: TBGLTextureHandle): TSize;
+begin
+  if ATexture = nil then exit(Size(0, 0));
+  with TOpenGLTexture(ATexture^) do
+    result := Size(AllocatedWidth, AllocatedHeight);
 end;
 
 procedure TBGLTexture.ComputeOpenGLFramesCoord(ATexture: TBGLTextureHandle;
