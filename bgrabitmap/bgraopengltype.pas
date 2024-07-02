@@ -260,7 +260,7 @@ type
     FTexture: IBGLTexture;
     procedure Init; override;
     function GetTexture: IBGLTexture; virtual;
-    function GetOpenGLMaxTexSize: integer; virtual; abstract;
+    class function GetOpenGLMaxTexSize: integer; virtual; abstract;
     procedure NotifySizeTooBigForOpenGL; virtual;
     procedure NotifyOpenGLContextNotCreatedYet; virtual;
     function GetTextureGL: IUnknown; override;
@@ -321,7 +321,8 @@ type
     FUseGradientColor: boolean;
     FBlendMode: TOpenGLBlendMode;
 
-    function GetOpenGLMaxTexSize: integer; virtual; abstract;
+    class function GetOpenGLMaxTexSize: integer; virtual; abstract;
+    class function GetNonPowerOfTwoSizeSupport: boolean; virtual;
     function CreateOpenGLTexture(ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer; RGBAOrder: boolean): TBGLTextureHandle; virtual; abstract;
     procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); virtual; abstract;
     class function SupportsBGRAOrder: boolean; virtual;
@@ -526,12 +527,12 @@ end;
 
 function TBGLCustomTexture.GetAllocatedHeight: integer;
 begin
-  result := GetOpenGLAllocatedSize(FOpenGLTexture).Width;
+  result := GetOpenGLAllocatedSize(FOpenGLTexture).Height;
 end;
 
 function TBGLCustomTexture.GetAllocatedWidth: integer;
 begin
-  result := GetOpenGLAllocatedSize(FOpenGLTexture).Height;
+  result := GetOpenGLAllocatedSize(FOpenGLTexture).Width;
 end;
 
 function TBGLCustomTexture.GetFlipX: IBGLTexture;
@@ -637,6 +638,11 @@ begin
     FResampleFilter:= AValue;
     UpdateGLResampleFilter(FOpenGLTexture, AValue);
   end;
+end;
+
+class function TBGLCustomTexture.GetNonPowerOfTwoSizeSupport: boolean;
+begin
+  result := false;
 end;
 
 class function TBGLCustomTexture.SupportsBGRAOrder: boolean;
@@ -832,8 +838,12 @@ constructor TBGLCustomTexture.Create(AFPImage: TFPCustomImage);
 var bmp: TBGLCustomBitmap;
 begin
   if (AFPImage is TBGRACustomBitmap) and
-    (AFPImage.Width = GetPowerOfTwo(AFPImage.Width)) and
-    (AFPImage.Height = GetPowerOfTwo(AFPImage.Height)) then
+    (
+      (Assigned(BGLTextureFactory) and BGLTextureFactory.GetNonPowerOfTwoSizeSupport) or
+
+      ((AFPImage.Width = GetPowerOfTwo(AFPImage.Width)) and
+      (AFPImage.Height = GetPowerOfTwo(AFPImage.Height)))
+    ) then
   begin
     with TBGRACustomBitmap(AFPImage) do
     begin
@@ -1720,8 +1730,15 @@ begin
   if AWidth < 0 then AWidth := 0;
   if AHeight < 0 then AHeight := 0;
   if (AWidth = Width) and (AHeight = Height) then exit;
-  AllocatedWidthNeeded := GetPowerOfTwo(AWidth);
-  AllocatedHeightNeeded := GetPowerOfTwo(AHeight);
+  if Assigned(BGLTextureFactory) and BGLTextureFactory.GetNonPowerOfTwoSizeSupport then
+  begin
+    AllocatedWidthNeeded := AWidth;
+    AllocatedHeightNeeded := AHeight;
+  end else
+  begin
+    AllocatedWidthNeeded := GetPowerOfTwo(AWidth);
+    AllocatedHeightNeeded := GetPowerOfTwo(AHeight);
+  end;
   MaxTexSize := GetOpenGLMaxTexSize;
   if (AllocatedWidthNeeded > MaxTexSize) or
      (AllocatedHeightNeeded > MaxTexSize) then
