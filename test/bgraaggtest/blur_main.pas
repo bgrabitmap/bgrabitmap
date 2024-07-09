@@ -71,7 +71,7 @@ begin
      end else
      begin
        result := ArcTan(dy/dx)*180/Pi;
-       if dx < 0 then result += 180;
+       if dx < 0 then result := result + 180;
      end;
 end;
 

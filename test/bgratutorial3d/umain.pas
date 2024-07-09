@@ -246,7 +246,7 @@ var h,cury: integer;
     if GetLightness(GammaExpansion(c)) > 32768 then
       c := BGRABlack else c := BGRAWhite;
     Bitmap.TextOut(0,cury,str,c);
-    cury += h;
+    cury := cury + h;
   end;
 
 begin
@@ -409,7 +409,7 @@ var h,cury: integer;
     if GetLightness(GammaExpansion(c)) > 32768 then
       c := BGRABlack else }c := BGRAWhite;
     glFont.TextOut(0,cury,str,c);
-    cury += h;
+    cury := cury + h;
   end;
 begin
   if scene <> nil then

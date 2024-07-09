@@ -36,7 +36,7 @@ constructor TTest11.Create(filter: string);
 begin
   inherited Create;
   Name := 'Antialiased lines and splines';
-  if filter <> '' then Name += ' with filter '+filter;
+  if filter <> '' then Name := Name + ' with filter '+filter;
   randomize;
   virtualScreen := nil;
   FFilter := filter;
