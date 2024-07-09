@@ -173,8 +173,8 @@ begin
     else
       glyphText := glyph.GlyphUtf8;
     ctx.fillText(glyphText, x,y + AWaveSize*Sin(AWavePosDeg*Pi/180));
-    x += ctx.measureText(glyphText).width;
-    AWavePosDeg += AWaveStepDeg;
+    x := x + ctx.measureText(glyphText).width;
+    AWavePosDeg := AWavePosDeg + AWaveStepDeg;
   end;
 end;
 ```}

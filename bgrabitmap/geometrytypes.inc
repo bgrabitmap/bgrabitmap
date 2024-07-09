@@ -2030,7 +2030,7 @@ var
 begin
   sum := 0;
   for i := 0 to high(pts) do
-    sum += (pts[(i+1) mod length(pts)].x-pts[i].x)*(pts[(i+1) mod length(pts)].y+pts[i].y);
+    sum := sum + (pts[(i+1) mod length(pts)].x-pts[i].x)*(pts[(i+1) mod length(pts)].y+pts[i].y);
   result := sum <= 0;
 end;
 
