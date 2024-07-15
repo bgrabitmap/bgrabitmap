@@ -491,7 +491,7 @@ begin
     begin
       result := (APosition - AMinPos) mod (delta+delta);
       if result < 0 then result :=result + delta+delta;
-      if result >= delta then result :=result + delta+delta-1 - result;
+      if result >= delta then result := delta+delta-1 - result;
       result := result + AMinPos;
     end;
   else
