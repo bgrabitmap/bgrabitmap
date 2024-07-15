@@ -151,7 +151,7 @@ end;
 procedure TTest32.OnTimer(Width, Height: Integer;
   ElapsedSec: Double);
 begin
-  position := position + ElapsedSec*speed*direction;
+  position := position + (ElapsedSec*speed*direction);
 end;
 
 end.
