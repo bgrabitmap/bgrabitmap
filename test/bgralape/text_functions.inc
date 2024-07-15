@@ -79,7 +79,7 @@ begin
     h := target.FontFullHeight;
     if textLayout = tlCenter then h *= 0.5;
     angle := round(PSingle(Params^[2])^)*Pi/1800 + Pi/2;
-    y := x + cos(angle)*h;
+    x := x + cos(angle)*h;
     y := y - sin(angle)*h;
   end;
   target.TextOutAngle(x,y,round(PSingle(Params^[2])^),PlpString(Params^[3])^,PBGRAPixel(Params^[4])^,textAlignment);
