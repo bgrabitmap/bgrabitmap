@@ -741,9 +741,9 @@ initialization
         begin
           with spectralLocusNormalizedSum[i] do
           begin
-            xyz.X := xyz.X + X*0.125;
-            xyz.Y := xyz.Y + Y*0.125;
-            xyz.Z := xyz.Z + Z*0.125;
+            xyz.X := xyz.X + (X*0.125);
+            xyz.Y := xyz.Y + (Y*0.125);
+            xyz.Z := xyz.Z + (Z*0.125);
           end;
           AddOptimalReflect(xyz);
         end;
@@ -753,9 +753,9 @@ initialization
         xyz := xyzMain;
         with spectralLocusNormalizedSum[i] do
         begin
-          xyz.X := xyz.X + l*X;
-          xyz.Y := xyz.Y + l*Y;
-          xyz.Z := xyz.Z + l*Z;
+          xyz.X := xyz.X + (l*X);
+          xyz.Y := xyz.Y + (l*Y);
+          xyz.Z := xyz.Z + (l*Z);
         end;
         for m := 1 to OptimalReflectBorderStep do
         begin
@@ -773,9 +773,9 @@ initialization
       begin
         with spectralLocusNormalizedSum[jMod] do
         begin
-          xyzMain.X := xyzMain.X + X*OptimalReflectBorderStep;
-          xyzMain.Y := xyzMain.Y + Y*OptimalReflectBorderStep;
-          xyzMain.Z := xyzMain.Z + Z*OptimalReflectBorderStep;
+          xyzMain.X := xyzMain.X + (X*OptimalReflectBorderStep);
+          xyzMain.Y := xyzMain.Y + (Y*OptimalReflectBorderStep);
+          xyzMain.Z := xyzMain.Z + (Z*OptimalReflectBorderStep);
         end;
       end;
       inc(jMod);
