@@ -178,7 +178,7 @@ var ctx: TBGRACanvas2D;
   zoom, w, h: single;
 begin
   newTime := Now;
-  timeGrainAcc := timeGrainAcc + (newTime - lastTime)/timeGrain;
+  timeGrainAcc := timeGrainAcc + ((newTime - lastTime)/timeGrain);
   lastTime := newTime;
   if timeGrainAcc < 1 then timeGrainAcc := 1;
   if timeGrainAcc > 50 then timeGrainAcc := 50;
