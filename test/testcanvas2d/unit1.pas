@@ -595,7 +595,7 @@ begin
      begin
        u := f(x);
        ctx.lineTo(x*sc, H/2-u*sc);
-       x := x + 1/sc;
+       x := x + (1/sc);
      end;
    ctx.stroke();
 end;
