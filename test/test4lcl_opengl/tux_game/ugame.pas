@@ -227,8 +227,8 @@ begin
     ofsX := tux.X;
     ofsY := tux.Y;
   end;
-  ofsX := ofsX - ctx.Width div 2;
-  ofsY := ofsY - ctx.Height div 2;
+  ofsX := ofsX - (ctx.Width div 2);
+  ofsY := ofsY - (ctx.Height div 2);
   if ofsX > 800-ctx.Width then ofsX := 800-ctx.Width;
   if ofsY > 600-ctx.Height then ofsY := 600-ctx.Height;
   if ofsX < 0 then ofsX := 0;
