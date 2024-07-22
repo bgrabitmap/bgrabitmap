@@ -228,12 +228,12 @@ begin
     indented:= false;
     inCode := false;
     if comStart <> 0 then
-      comStart := comStart + 2
+      inc(comStart, 2)
     else
     begin
       comStart := pos('{** ',s+' ');
       if comStart <> 0 then
-        comStart := comStart + 3;
+        inc(comStart, 3);
       indented := true;
     end;
     if comStart<>0 then

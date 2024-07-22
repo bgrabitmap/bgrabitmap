@@ -5,7 +5,7 @@ unit utest17;
 interface
 
 uses
-  Graphics, Classes, SysUtils, utest, BGRABitmap, BGRABitmapTypes;
+  Graphics, Classes, SysUtils, utest, BGRABitmap, BGRAClasses, BGRABitmapTypes;
 
 type
 
@@ -42,7 +42,7 @@ var
     ca,sa: single;
   begin
     image.textout(round(x),round(y),title,c);
-    y := y + (image.TextSize(title).cy+10);
+    IncF(y, image.TextSize(title).cy+10);
     for i := 1 to 2 do
     begin
       ca := cos(sin(angleofs)/2);
@@ -55,8 +55,8 @@ var
         image.penStyle := psSolid;
         image.DrawPolyLineAntialias([PointF(x+40,y),PointF(x,y),PointF(x+sa*6*penwidth,y+ca*6*penwidth)],ColorToBGRA(clHighlightText),1);
       end;
-      y := y + (penwidth*2+6*penwidth+5);
-      angleofs := angleofs + (Pi*0.6);
+      IncF(y, penwidth*2 + 6*penwidth + 5);
+      IncF(angleofs, Pi*0.6);
     end;
   end;
 

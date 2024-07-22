@@ -509,8 +509,8 @@ begin
     if glyphIndex <> 0 then
     begin
       if AFont.ClearType then
-        Width := width + AFont.Glyph[glyphIndex].Advance/3
-        else Width := width + AFont.Glyph[glyphIndex].Advance;
+        IncF(Width, AFont.Glyph[glyphIndex].Advance/3)
+        else IncF(Width, AFont.Glyph[glyphIndex].Advance);
     end;
   end;
   Height := AFont.LineFullHeight;

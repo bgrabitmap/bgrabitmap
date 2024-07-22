@@ -156,7 +156,7 @@ type
 
 Example drawing wavy text using TGlyphCursorUtf8 on a TBGRACanvas2D:
 ```pascal
-uses ..., BGRAUTF8, BGRACanvas2D;
+uses ..., BGRAUTF8, BGRAClasses, BGRACanvas2D;
 
 procedure WavyText(ctx: TBGRACanvas2D; AText: string; X,Y,
   AWavePosDeg, AWaveStepDeg, AWaveSize: single);
@@ -173,8 +173,8 @@ begin
     else
       glyphText := glyph.GlyphUtf8;
     ctx.fillText(glyphText, x,y + AWaveSize*Sin(AWavePosDeg*Pi/180));
-    x := x + ctx.measureText(glyphText).width;
-    AWavePosDeg := AWavePosDeg + AWaveStepDeg;
+    IncF(x, ctx.measureText(glyphText).width);
+    IncF(AWavePosDeg, AWaveStepDeg);
   end;
 end;
 ```}

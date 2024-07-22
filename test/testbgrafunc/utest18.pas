@@ -5,7 +5,7 @@ unit utest18;
 interface
 
 uses
-  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRABitmapTypes;
+  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRAClasses, BGRABitmapTypes;
 
 const
   nbPoints = 3;
@@ -83,7 +83,7 @@ procedure TTest18.OnTimer(Width, Height: Integer; ElapsedSec: Double);
 var i: integer;
     moveFactor: single;
 begin
-  angle := angle + (ElapsedSec*20);
+  IncF(angle, ElapsedSec*20);
   if pts = nil then
   begin
     setlength(pts,nbPoints);

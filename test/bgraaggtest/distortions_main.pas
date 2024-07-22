@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  ComCtrls, StdCtrls, BGRABitmap, BGRABitmapTypes, BGRAGradientScanner,
+  ComCtrls, StdCtrls, BGRABitmap, BGRAClasses, BGRABitmapTypes, BGRAGradientScanner,
   LMessages, EpikTimer;
 
 type
@@ -135,7 +135,7 @@ end;
 procedure TForm1.Timer1Timer(Sender: TObject);
 begin
   Timer1.Enabled := false;
-  Delta := Delta - (10*Pi/180);
+  DecF(Delta, 10*Pi/180);
   Repaint;
   Timer1.Enabled := true;
 end;

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, StdCtrls,
-  ExtCtrls, ComCtrls, BGRAVirtualScreen, BGRABitmap, BGRABitmapTypes,
+  ExtCtrls, ComCtrls, BGRAVirtualScreen, BGRABitmap, BGRAClasses, BGRABitmapTypes,
   BGRAGradientScanner;
 
 type
@@ -209,8 +209,8 @@ end;
 function THorseShoeScanner.ScanNextPixel: TBGRAPixel;
 begin
   result := FXYZ.ToBGRAPixel;
-  FXYZ.X := FXYZ.X + FXStep;
-  FXYZ.Z := FXYZ.Z - FXStep;
+  IncF(FXYZ.X, FXStep);
+  DecF(FXYZ.Z, FXStep);
 end;
 
 { TForm1 }
@@ -649,7 +649,7 @@ begin
     for x := 0 to Bitmap.Width-1 do
     begin
       colorspace.SetChannel(p, idxChX, valX);
-      valX := valX + valXStep;
+      IncF(valX, valXStep);
       if valX>maxChX then valX := maxChX;
       inc(p, valueSize);
     end;
@@ -710,9 +710,9 @@ initialization
   xyzMax.Z := 0;
   for i := 0 to high(SpectralLocus) do
   begin
-    xyzMax.X := xyzMax.X + SpectralLocus[i].X;
-    xyzMax.Y := xyzMax.Y + SpectralLocus[i].Y;
-    xyzMax.Z := xyzMax.Z + SpectralLocus[i].Z;
+    IncF(xyzMax.X, SpectralLocus[i].X);
+    IncF(xyzMax.Y, SpectralLocus[i].Y);
+    IncF(xyzMax.Z, SpectralLocus[i].Z);
   end;
   for i := 0 to high(SpectralLocus) do
     spectralLocusNormalizedSum[i] := TXYZA.New(SpectralLocus[i].X/xyzMax.X/OptimalReflectBorderStep,
@@ -741,9 +741,9 @@ initialization
         begin
           with spectralLocusNormalizedSum[i] do
           begin
-            xyz.X := xyz.X + (X*0.125);
-            xyz.Y := xyz.Y + (Y*0.125);
-            xyz.Z := xyz.Z + (Z*0.125);
+            IncF(xyz.X, X*0.125);
+            IncF(xyz.Y, Y*0.125);
+            IncF(xyz.Z, Z*0.125);
           end;
           AddOptimalReflect(xyz);
         end;
@@ -753,17 +753,17 @@ initialization
         xyz := xyzMain;
         with spectralLocusNormalizedSum[i] do
         begin
-          xyz.X := xyz.X + (l*X);
-          xyz.Y := xyz.Y + (l*Y);
-          xyz.Z := xyz.Z + (l*Z);
+          IncF(xyz.X, l*X);
+          IncF(xyz.Y, l*Y);
+          IncF(xyz.Z, l*Z);
         end;
         for m := 1 to OptimalReflectBorderStep do
         begin
           with spectralLocusNormalizedSum[jMod] do
           begin
-            xyz.X := xyz.X + X;
-            xyz.Y := xyz.Y + Y;
-            xyz.Z := xyz.Z + Z;
+            IncF(xyz.X, X);
+            IncF(xyz.Y, Y);
+            IncF(xyz.Z, Z);
           end;
           AddOptimalReflect(xyz);
         end;
@@ -773,9 +773,9 @@ initialization
       begin
         with spectralLocusNormalizedSum[jMod] do
         begin
-          xyzMain.X := xyzMain.X + (X*OptimalReflectBorderStep);
-          xyzMain.Y := xyzMain.Y + (Y*OptimalReflectBorderStep);
-          xyzMain.Z := xyzMain.Z + (Z*OptimalReflectBorderStep);
+          IncF(xyzMain.X, X*OptimalReflectBorderStep);
+          IncF(xyzMain.Y, Y*OptimalReflectBorderStep);
+          IncF(xyzMain.Z, Z*OptimalReflectBorderStep);
         end;
       end;
       inc(jMod);

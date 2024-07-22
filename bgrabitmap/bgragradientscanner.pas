@@ -484,15 +484,15 @@ begin
   grRepeat:
     begin
       result := (APosition - AMinPos) mod delta;
-      if result < 0 then result := result + delta;
-      result := result + AMinPos;
+      if result < 0 then inc(result, delta);
+      inc(result, AMinPos);
     end;
   grReflect:
     begin
       result := (APosition - AMinPos) mod (delta+delta);
-      if result < 0 then result :=result + delta+delta;
+      if result < 0 then inc(result, delta+delta);
       if result >= delta then result := delta+delta-1 - result;
-      result := result + AMinPos;
+      inc(result, AMinPos);
     end;
   else
     begin

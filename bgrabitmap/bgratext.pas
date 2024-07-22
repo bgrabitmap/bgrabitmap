@@ -1192,7 +1192,7 @@ begin
   xMarginF := textSize.cy/sizeFactor;
   iMargin := size(ceil(xMarginF) * sizeFactor, sizeFactor);
   sizeWithMargin := size(textSize.cx + iMargin.cx, textSize.cy + iMargin.cy);
-  if frac(xMarginF) > 0 then sizeWithMargin.cx := sizeWithMargin.cx + 1;
+  if frac(xMarginF) > 0 then inc(sizeWithMargin.cx);
   iLeft := floor(xF) - (iMargin.cx div sizeFactor);
   iTop := floor(yF) - (iMargin.cy div sizeFactor);
 

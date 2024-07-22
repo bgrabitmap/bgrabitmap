@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Spin,
-  ExtCtrls, StdCtrls, BGRAVirtualScreen, BGRABitmap, BGRABitmapTypes,
+  ExtCtrls, StdCtrls, BGRAVirtualScreen, BGRABitmap, BGRAClasses, BGRABitmapTypes,
   BGRACanvas2D;
 
 const
@@ -178,12 +178,12 @@ var ctx: TBGRACanvas2D;
   zoom, w, h: single;
 begin
   newTime := Now;
-  timeGrainAcc := timeGrainAcc + ((newTime - lastTime)/timeGrain);
+  IncF(timeGrainAcc, (newTime - lastTime)/timeGrain);
   lastTime := newTime;
   if timeGrainAcc < 1 then timeGrainAcc := 1;
   if timeGrainAcc > 50 then timeGrainAcc := 50;
   grainElapse := trunc(timeGrainAcc);
-  timeGrainAcc := timeGrainAcc - grainElapse;
+  DecF(timeGrainAcc, grainElapse);
 
   ctx := Bitmap.Canvas2D;
   ctx.antialiasing := CheckBox_Antialiasing.Checked;
@@ -595,7 +595,7 @@ begin
      begin
        u := f(x);
        ctx.lineTo(x*sc, H/2-u*sc);
-       x := x + (1/sc);
+       IncF(x, 1/sc);
      end;
    ctx.stroke();
 end;

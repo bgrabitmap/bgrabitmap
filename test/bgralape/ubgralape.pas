@@ -5,7 +5,7 @@ unit ubgralape;
 interface
 
 uses
-  Classes, SysUtils, BGRABitmap, BGRABitmapTypes, lptypes, lpcompiler;
+  Classes, SysUtils, BGRABitmap, BGRAClasses, BGRABitmapTypes, lptypes, lpcompiler;
 
 function RegisterBitmap(ABitmap: TBGRABitmap): integer;
 procedure UnregisterBitmap(AIndex: integer);
