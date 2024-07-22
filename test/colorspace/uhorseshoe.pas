@@ -209,8 +209,8 @@ end;
 function THorseShoeScanner.ScanNextPixel: TBGRAPixel;
 begin
   result := FXYZ.ToBGRAPixel;
-  FXYZ.X += FXStep;
-  FXYZ.Z -= FXStep;
+  FXYZ.X := FXYZ.X + FXStep;
+  FXYZ.Z := FXYZ.Z - FXStep;
 end;
 
 { TForm1 }
@@ -649,7 +649,7 @@ begin
     for x := 0 to Bitmap.Width-1 do
     begin
       colorspace.SetChannel(p, idxChX, valX);
-      valX += valXStep;
+      valX := valX + valXStep;
       if valX>maxChX then valX := maxChX;
       inc(p, valueSize);
     end;
@@ -710,9 +710,9 @@ initialization
   xyzMax.Z := 0;
   for i := 0 to high(SpectralLocus) do
   begin
-    xyzMax.X += SpectralLocus[i].X;
-    xyzMax.Y += SpectralLocus[i].Y;
-    xyzMax.Z += SpectralLocus[i].Z;
+    xyzMax.X := xyzMax.X + SpectralLocus[i].X;
+    xyzMax.Y := xyzMax.Y + SpectralLocus[i].Y;
+    xyzMax.Z := xyzMax.Z + SpectralLocus[i].Z;
   end;
   for i := 0 to high(SpectralLocus) do
     spectralLocusNormalizedSum[i] := TXYZA.New(SpectralLocus[i].X/xyzMax.X/OptimalReflectBorderStep,
@@ -741,9 +741,9 @@ initialization
         begin
           with spectralLocusNormalizedSum[i] do
           begin
-            xyz.X += X*0.125;
-            xyz.Y += Y*0.125;
-            xyz.Z += Z*0.125;
+            xyz.X := xyz.X + (X*0.125);
+            xyz.Y := xyz.Y + (Y*0.125);
+            xyz.Z := xyz.Z + (Z*0.125);
           end;
           AddOptimalReflect(xyz);
         end;
@@ -753,17 +753,17 @@ initialization
         xyz := xyzMain;
         with spectralLocusNormalizedSum[i] do
         begin
-          xyz.X += l*X;
-          xyz.Y += l*Y;
-          xyz.Z += l*Z;
+          xyz.X := xyz.X + (l*X);
+          xyz.Y := xyz.Y + (l*Y);
+          xyz.Z := xyz.Z + (l*Z);
         end;
         for m := 1 to OptimalReflectBorderStep do
         begin
           with spectralLocusNormalizedSum[jMod] do
           begin
-            xyz.X += X;
-            xyz.Y += Y;
-            xyz.Z += Z;
+            xyz.X := xyz.X + X;
+            xyz.Y := xyz.Y + Y;
+            xyz.Z := xyz.Z + Z;
           end;
           AddOptimalReflect(xyz);
         end;
@@ -773,9 +773,9 @@ initialization
       begin
         with spectralLocusNormalizedSum[jMod] do
         begin
-          xyzMain.X += X*OptimalReflectBorderStep;
-          xyzMain.Y += Y*OptimalReflectBorderStep;
-          xyzMain.Z += Z*OptimalReflectBorderStep;
+          xyzMain.X := xyzMain.X + (X*OptimalReflectBorderStep);
+          xyzMain.Y := xyzMain.Y + (Y*OptimalReflectBorderStep);
+          xyzMain.Z := xyzMain.Z + (Z*OptimalReflectBorderStep);
         end;
       end;
       inc(jMod);

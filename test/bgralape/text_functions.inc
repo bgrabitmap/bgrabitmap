@@ -11,10 +11,10 @@ procedure MySetFontStyle{$i lape.proc}
 var fs: TFontStyles;
 begin
   fs := [];
-  if PLongBool(Params^[0])^ then fs += [fsBold];
-  if PLongBool(Params^[1])^ then fs += [fsItalic];
-  if PLongBool(Params^[2])^ then fs += [fsStrikeOut];
-  if PLongBool(Params^[3])^ then fs += [fsUnderline];
+  if PLongBool(Params^[0])^ then fs := fs + [fsBold];
+  if PLongBool(Params^[1])^ then fs := fs + [fsItalic];
+  if PLongBool(Params^[2])^ then fs := fs + [fsStrikeOut];
+  if PLongBool(Params^[3])^ then fs := fs + [fsUnderline];
   target.FontStyle := fs;
 end;
 
@@ -57,8 +57,8 @@ procedure MyTextOut{$i lape.proc}
 var y: single;
 begin
   y := PSingle(Params^[1])^;
-  if textLayout = tlCenter then y -= target.FontFullHeight/2
-  else if textLayout = tlBottom then y -= target.FontFullHeight;
+  if textLayout = tlCenter then y := y - target.FontFullHeight/2
+  else if textLayout = tlBottom then y := y - target.FontFullHeight;
   target.TextOut(PSingle(Params^[0])^,y,PlpString(Params^[2])^,PBGRAPixel(Params^[3])^,textAlignment);
 end;
 
@@ -79,8 +79,8 @@ begin
     h := target.FontFullHeight;
     if textLayout = tlCenter then h *= 0.5;
     angle := round(PSingle(Params^[2])^)*Pi/1800 + Pi/2;
-    x += cos(angle)*h;
-    y -= sin(angle)*h;
+    x := x + (cos(angle)*h);
+    y := y - (sin(angle)*h);
   end;
   target.TextOutAngle(x,y,round(PSingle(Params^[2])^),PlpString(Params^[3])^,PBGRAPixel(Params^[4])^,textAlignment);
 end;

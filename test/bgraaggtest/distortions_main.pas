@@ -135,7 +135,7 @@ end;
 procedure TForm1.Timer1Timer(Sender: TObject);
 begin
   Timer1.Enabled := false;
-  Delta -= 10*Pi/180;
+  Delta := Delta - (10*Pi/180);
   Repaint;
   Timer1.Enabled := true;
 end;

@@ -83,7 +83,7 @@ procedure TTest18.OnTimer(Width, Height: Integer; ElapsedSec: Double);
 var i: integer;
     moveFactor: single;
 begin
-  angle += ElapsedSec*20;
+  angle := angle + (ElapsedSec*20);
   if pts = nil then
   begin
     setlength(pts,nbPoints);

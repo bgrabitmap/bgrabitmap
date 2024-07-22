@@ -65,13 +65,13 @@ begin
   begin
     if angle = 360 then
       GoBack := True;
-    angle += 1;
+    angle := angle + 1;
   end
   else
   begin
     if angle = 0 then
       GoBack := False;
-    angle -= 1;
+    angle := angle - 1;
   end;
   OpenGLControl.DoOnPaint;
 end;

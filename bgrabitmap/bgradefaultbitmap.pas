@@ -2212,7 +2212,7 @@ begin
     for i := 1 to UTF8Length(glyph.GlyphUtf8) do
     begin
       if index <= high(AOffsets) then
-        p += AOffsets[i];
+        p := p + AOffsets[i];
       inc(index);
     end;
   end;

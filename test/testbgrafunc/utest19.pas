@@ -41,18 +41,18 @@ begin
     Name := 'Perspective' else
     Name := 'Linear and perspective';
 
-  Name += ' texture mapping';
+  Name := Name + ' texture mapping';
 
   if gradientTexture then
   begin
-    name += ' with gradient';
+    Name := Name + ' with gradient';
     gradient := TBGRAGradientScanner.Create(BGRAWhite,BGRABlack,gtRadial,PointF(0.5,0.5),PointF(0.7,0.5),True,True);
     scene.SetCubeTexture(gradient,1,1);
   end else
   begin
     texture := CreateGreenTexture;
-    if TextureInterpolation then Name += ' with texture interpolation' else
-          Name += ' without texture interpolation';
+    if TextureInterpolation then Name := Name + ' with texture interpolation' else
+          Name := Name + ' without texture interpolation';
     texture.ScanInterpolationFilter := rfHalfCosine;
     scene.SetCubeTexture(texture);
   end;

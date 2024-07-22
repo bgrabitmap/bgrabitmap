@@ -77,7 +77,7 @@ begin
   if ground <> nil then
   begin
     dy := cos(alpha*Pi/180)*0.05;
-    cury += dy;
+    cury := cury + dy;
     ground.MainPart.Translate(0,dy,0,False);
     ViewPoint := Point3D(ViewPoint.x,-40+cury,ViewPoint.z);
     LookAt(Point3D(0,cury,0),Point3D(0,-1,0));

@@ -157,7 +157,7 @@ var i: integer;
 begin
   result := LineEnding;
   for i := 0 to scriptSystemFunctions.Count-1 do
-    result += scriptSystemFunctions[i]+LineEnding;
+    result := result + scriptSystemFunctions[i]+LineEnding;
   textAlignment:= taLeftJustify;
 end;
 

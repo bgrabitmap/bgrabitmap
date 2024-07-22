@@ -30,16 +30,16 @@ begin
   inherited Create;
   Name := 'Torus with ';
   case lightNormal of
-    lnFace: Name += 'flat';
-    lnVertex: Name += 'vertex';
-    lnFaceVertexMix: Name += 'half-vertex';
-    lnNone: Name += 'no lighting';
+    lnFace: Name := Name + 'flat';
+    lnVertex: Name := Name + 'vertex';
+    lnFaceVertexMix: Name := Name + 'half-vertex';
+    lnNone: Name := Name + 'no lighting';
   end;
   if lightNormal <> lnNone then
     case lightInterp of
-      liLowQuality: if lightNormal <> lnFace then Name += ' low-quality shading'
-                  else Name += ' shading';
-      liAlwaysHighQuality: Name += ' high-quality shading';
+      liLowQuality: if lightNormal <> lnFace then Name := Name + ' low-quality shading'
+                  else Name := Name + ' shading';
+      liAlwaysHighQuality: Name := Name + ' high-quality shading';
     end;
   backgroundTile := TBGRABitmap.Create(ResourceDir+'diamondback.png');
   virtualScreen := nil;

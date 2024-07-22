@@ -111,8 +111,8 @@ begin
   if SaveDialog1.Execute then
   begin
     html := '<html><body><img src="';
-    html += VirtualScreen.Bitmap.Canvas2D.toDataURL;
-    html += '"/></body></html>';
+    html := html + VirtualScreen.Bitmap.Canvas2D.toDataURL;
+    html := html + '"/></body></html>';
     assignfile(t,SaveDialog1.FileName);
     rewrite(t);
     write(t,html);
@@ -178,12 +178,12 @@ var ctx: TBGRACanvas2D;
   zoom, w, h: single;
 begin
   newTime := Now;
-  timeGrainAcc += (newTime - lastTime)/timeGrain;
+  timeGrainAcc := timeGrainAcc + ((newTime - lastTime)/timeGrain);
   lastTime := newTime;
   if timeGrainAcc < 1 then timeGrainAcc := 1;
   if timeGrainAcc > 50 then timeGrainAcc := 50;
   grainElapse := trunc(timeGrainAcc);
-  timeGrainAcc -= grainElapse;
+  timeGrainAcc := timeGrainAcc - grainElapse;
 
   ctx := Bitmap.Canvas2D;
   ctx.antialiasing := CheckBox_Antialiasing.Checked;
@@ -595,7 +595,7 @@ begin
      begin
        u := f(x);
        ctx.lineTo(x*sc, H/2-u*sc);
-       x += 1/sc;
+       x := x + (1/sc);
      end;
    ctx.stroke();
 end;

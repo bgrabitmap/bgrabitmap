@@ -79,13 +79,13 @@ begin
   begin
     if r = 200 then
       GoBack := True;
-    r += 1;
+    r := r + 1;
   end
   else
   begin
     if r = 50 then
       GoBack := False;
-    r -= 1;
+    r := r - 1;
   end;
   OpenGLControl.Invalidate;
 end;
