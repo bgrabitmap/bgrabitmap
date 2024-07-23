@@ -159,7 +159,7 @@ var
   begin
     if not tableOpened then
       begin
-        fileoutput += '<table style="border-collapse: collapse;">'+lineending;
+        fileoutput := fileoutput + '<table style="border-collapse: collapse;">'+lineending;
         oddRow := true;
         tableOpened:= true;
       end;
@@ -169,7 +169,7 @@ var
   begin
     if tableOpened then
     begin
-      fileoutput += '</table>'+LineEnding;
+      fileoutput := fileoutput + '</table>'+LineEnding;
       tableOpened:= false;
     end;
   end;
@@ -207,7 +207,7 @@ begin
       if comEnd <> 0 then
       begin
         closeTable;
-        fileOutput += trim(copy(s,comStart+1,comEnd+3 -(comStart+1)+1)) + LineEnding;
+        fileoutput := fileoutput + trim(copy(s,comStart+1,comEnd+3 -(comStart+1)+1)) + LineEnding;
         continue;
       end;
     end;
@@ -228,12 +228,12 @@ begin
     indented:= false;
     inCode := false;
     if comStart <> 0 then
-      comStart += 2
+      inc(comStart, 2)
     else
     begin
       comStart := pos('{** ',s+' ');
       if comStart <> 0 then
-        comStart += 3;
+        inc(comStart, 3);
       indented := true;
     end;
     if comStart<>0 then
@@ -245,7 +245,7 @@ begin
         if comEnd = 0 then
         begin
           prevBulletPoint := false;
-          description += trim(copy(s,comStart,length(s)-comStart+1));
+          description := description + trim(copy(s,comStart,length(s)-comStart+1));
           while not eof(t) do
           begin
             readln(t,s);
@@ -257,7 +257,7 @@ begin
               s := StringReplace(s, '<=', '&le;', [rfReplaceAll]);
               s := StringReplace(s, '>=', '&ge;', [rfReplaceAll]);
             end;
-            if s = '' then description += '<p>'
+            if s = '' then description := description + '<p>'
             else
             begin
               comEnd := pos('}',s);
@@ -266,20 +266,20 @@ begin
               begin
                 if s.StartsWith('- ') then
                 begin
-                  description += IfThen(prevBulletPoint,'',LineEnding)+'* '+s.Substring(2)+LineEnding;
+                  description := description + IfThen(prevBulletPoint,'',LineEnding)+'* '+s.Substring(2)+LineEnding;
                   bulletPoint := true;
                 end
                 else
-                  description += ' '+s;
+                  description := description + ' '+s;
               end;
               if comEnd > 0 then break
-              else if inCode then description += LineEnding;
+              else if inCode then description := description + LineEnding;
             end;
             prevBulletPoint:= bulletPoint;
           end;
         end
         else
-          description += trim(copy(s,comStart,comEnd-comStart));
+          description := description + trim(copy(s,comStart,comEnd-comStart));
 
         AdaptMarkdown(description);
 
@@ -305,17 +305,17 @@ begin
 
         if indented then
         begin
-          fileoutput += '<tr><td width="10%"></td><td colspan="2" style="background: '+bgcolor+';">'+element+'</td></tr>'+LineEnding;
-          fileoutput += '<tr><td width="10%"></td><td width="10%" style="background: '+bgcolor+';"></td>'+
+          fileoutput := fileoutput + '<tr><td width="10%"></td><td colspan="2" style="background: '+bgcolor+';">'+element+'</td></tr>'+LineEnding;
+          fileoutput := fileoutput + '<tr><td width="10%"></td><td width="10%" style="background: '+bgcolor+';"></td>'+
              '<td style="border: 1px solid #e0e0a0; background: #ffffe4;">'+description+'</td></tr>'+LineEnding;
         end else
         begin
-          fileoutput += '<tr style="background: '+bgcolor+';"><td colspan="3">'+element+'</td></tr>'+LineEnding;
-          fileoutput += '<tr style="background: '+bgcolor+';"><td width="10%"></td>'+
+          fileoutput := fileoutput + '<tr style="background: '+bgcolor+';"><td colspan="3">'+element+'</td></tr>'+LineEnding;
+          fileoutput := fileoutput + '<tr style="background: '+bgcolor+';"><td width="10%"></td>'+
              '<td style="border: 1px solid #e0e0a0; background: #ffffe4;" colspan="2">'+description+'</td></tr>'+LineEnding;
         end;
 
-        fileoutput += '<tr style="height: 8px;"><td colspan="3"></td></tr>'+LineEnding;
+        fileoutput := fileoutput + '<tr style="height: 8px;"><td colspan="3"></td></tr>'+LineEnding;
         oddRow := not oddRow;
       end;
   end;
@@ -346,14 +346,14 @@ begin
         rewrite(u);
         write(u, fileoutput);
         closefile(u);
-        result += outname + ' (updated)' + LineEnding;
+        result := result + outname + ' (updated)' + LineEnding;
       end else
       begin
-        result += outname + ' (unchanged)' + LineEnding;
+        result := result + outname + ' (unchanged)' + LineEnding;
       end;
     end else
     begin
-      result += outname + ' (created)' + LineEnding;
+      result := result + outname + ' (created)' + LineEnding;
       assignfile(u, UTF8ToSys(fullname));
       rewrite(u);
       write(u, fileoutput);
