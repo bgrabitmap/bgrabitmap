@@ -326,6 +326,7 @@ type
     function GetMixBlendMode: TBlendOperation;
     function GetOpacity: single;
     function GetPaintOrder: TSVGPaintOrder;
+    function GetShapeRendering: string;
     function GetStroke: string;
     function GetStrokeColor: TBGRAPixel;
     function GetStrokeLineCap: string;
@@ -380,6 +381,7 @@ type
     procedure ApplyStrokeStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit); virtual;
     procedure SetDatalink(AValue: TSVGDataLink); virtual;
     procedure SetFill(AValue: string); virtual;
+    procedure SetShapeRendering(AValue: string); virtual;
     procedure SetStroke(AValue: string); virtual;
     procedure Initialize; virtual;
     procedure Paint(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
@@ -398,6 +400,7 @@ type
     procedure strokeNone;
     procedure strokeDashArrayNone;
     procedure transformNone;
+    function antialiasing: boolean;
     function fillMode: TSVGFillMode;
     property DataLink: TSVGDataLink read FDataLink write SetDataLink;
     property DOMElement: TDOMElement read GetDOMElement;
@@ -408,6 +411,7 @@ type
     property matrix[AUnit: TCSSUnit]: TAffineMatrix read GetMatrix write SetMatrix;
     property isFillNone: boolean read GetIsFillNone;
     property isStrokeNone: boolean read GetIsStrokeNone;
+    property shapeRendering: string read GetShapeRendering write SetShapeRendering;
     property stroke: string read GetStroke write SetStroke;
     property strokeWidth: TFloatWithCSSUnit read GetStrokeWidth write SetStrokeWidth;
     property strokeColor: TBGRAPixel read GetStrokeColor write SetStrokeColor;
@@ -1875,6 +1879,11 @@ begin
   parser.Free;
 end;
 
+function TSVGElement.GetShapeRendering: string;
+begin
+  result := GetAttributeOrStyle('shape-rendering','auto', false);
+end;
+
 function TSVGElement.GetStroke: string;
 begin
   result := AttributeOrStyleDef['stroke','none'];
@@ -2119,6 +2128,12 @@ begin
   RemoveStyle('paint-order');
 end;
 
+procedure TSVGElement.SetShapeRendering(AValue: string);
+begin
+  Attribute['shape-rendering'] := AValue;
+  RemoveStyle('shape-rendering');
+end;
+
 procedure TSVGElement.SetStroke(AValue: string);
 begin
   Attribute['stroke'] := AValue;
@@ -2316,7 +2331,11 @@ procedure TSVGElement.Paint(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
       ACanvas2d.stroke;
     end;
   end;
+var
+  aaBefore: Boolean;
 begin
+  aaBefore := ACanvas2d.antialiasing;
+  ACanvas2d.antialiasing:= antialiasing;
   if paintOrder in [spoFillStrokeMarkers, spoFillMarkersStroke, spoMarkersFillStroke] then
   begin
     DoFill;
@@ -2326,6 +2345,7 @@ begin
     DoStroke;
     DoFill;
   end;
+  ACanvas2d.antialiasing:= aaBefore;
 end;
 
 constructor TSVGElement.Create(AElement: TDOMElement;
@@ -2483,6 +2503,15 @@ end;
 procedure TSVGElement.transformNone;
 begin
   FDomElem.RemoveAttribute('transform');
+end;
+
+function TSVGElement.antialiasing: boolean;
+begin
+  case shapeRendering of
+  'optimizeSpeed', 'crispEdges': result := false;
+  'geometricPrecision': result := true;
+  else {'auto'} result := true;
+  end;
 end;
 
 function TSVGElement.fillMode: TSVGFillMode;

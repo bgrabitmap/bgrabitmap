@@ -660,7 +660,7 @@ canvas2D.translate(-100, -100);
 
 implementation
 
-uses Math, BGRAFillInfo, BGRAPolygon, BGRABlend, FPWriteJPEG, FPWriteBMP, base64, BGRAFilterBlur;
+uses Math, BGRAFillInfo, BGRAPolygon, BGRABlend, BGRAWriteJPEG, BGRAWriteBMP, base64, BGRAFilterBlur;
 
 type
   TColorStop = record
@@ -2196,8 +2196,8 @@ end;
 function TBGRACanvas2D.toDataURL(mimeType: string): string;
 var
   stream: TMemoryStream;
-  jpegWriter: TFPWriterJPEG;
-  bmpWriter: TFPWriterBMP;
+  jpegWriter: TBGRAWriterJPEG;
+  bmpWriter: TBGRAWriterBMP;
   output: TStringStream;
   encode64: TBase64EncodingStream;
 begin
@@ -2205,13 +2205,13 @@ begin
   stream := TMemoryStream.Create;
   if mimeType='image/jpeg' then
   begin
-    jpegWriter := TFPWriterJPEG.Create;
+    jpegWriter := TBGRAWriterJPEG.Create;
     Surface.SaveToStream(stream,jpegWriter);
     jpegWriter.Free;
   end else
   if mimeType='image/bmp' then
   begin
-    bmpWriter := TFPWriterBMP.Create;
+    bmpWriter := TBGRAWriterBMP.Create;
     Surface.SaveToStream(stream,bmpWriter);
     bmpWriter.Free;
   end else

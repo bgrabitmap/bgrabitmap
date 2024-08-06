@@ -80,7 +80,7 @@ begin
       bmp := TBGRABitmap.Create(BGRAVirtualScreen1.Width,BGRAVirtualScreen1.Height);
       idxBmp:= ubgralape.RegisterBitmap(bmp);
       ubgralape.SetTargetBitmap(idxBmp);
-      RunCode(Compiler.Emitter.Code);
+      RunCode(Compiler.Emitter);
     finally
       ubgralape.UnregisterBitmap(idxBmp);
       idxBmp := -1;
@@ -109,6 +109,7 @@ begin
   SynEdit1.Lines.LoadFromFile('tests.pas');
   bmp := nil;
   idxBmp := -1;
+  WindowState:= wsMaximized;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);

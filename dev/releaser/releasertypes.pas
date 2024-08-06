@@ -67,13 +67,13 @@ begin
   result := IntToStr(AVersion.Major);
   if AAlwaysIncludeZero or (AVersion.Minor<>0) or (AVersion.Release<>0) or (AVersion.Build<>0) then
   begin
-    result += '.' + IntToStr(AVersion.Minor);
+    result := result + '.' + IntToStr(AVersion.Minor);
     if AAlwaysIncludeZero or (AVersion.Release<>0) or (AVersion.Build<>0) then
     begin
-      result += '.' + IntToStr(AVersion.Release);
+      result := result + '.' + IntToStr(AVersion.Release);
       if AAlwaysIncludeZero or (AVersion.Build<>0) then
       begin
-        result += '.' + IntToStr(AVersion.Build);
+        result := result + '.' + IntToStr(AVersion.Build);
       end;
     end;
   end;
@@ -122,7 +122,7 @@ begin
       begin
         read(t, c2);
         if (c2 in [#13,#10]) and (c2 <> c) then
-          result += c2;
+          result := result + c2;
       end;
       break;
     end;

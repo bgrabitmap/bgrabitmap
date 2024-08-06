@@ -147,7 +147,7 @@ begin
     if drawElapsed > 0.0001 then
     begin
       strTime := IntToStr(round(drawElapsed*1000))+ ' ms';
-      strTime += ', ' + IntToStr(round(1/drawElapsed)) + ' FPS';
+      strTime := strTime + ', ' + IntToStr(round(1/drawElapsed)) + ' FPS';
       ptText := Point(3,ClientHeight-25);
       with self.Canvas do
       begin

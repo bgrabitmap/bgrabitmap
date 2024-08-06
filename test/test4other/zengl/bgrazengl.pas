@@ -59,7 +59,7 @@ type
 
   TBGLBitmap = class(TBGLCustomBitmap)
   protected
-    function GetOpenGLMaxTexSize: integer; override;
+    class function GetOpenGLMaxTexSize: integer; override;
     procedure NotifySizeTooBigForOpenGL; override;
   public
     constructor Create(AFilename: string); override; overload; //UTF8 by default
@@ -191,7 +191,7 @@ type
 
     function GetFlags: LongWord; virtual;
 
-    function GetOpenGLMaxTexSize: integer; override;
+    class function GetOpenGLMaxTexSize: integer; override;
     function CreateOpenGLTexture(ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer; RGBAOrder: boolean): TBGLTextureHandle; override;
     procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); override;
     procedure SetOpenGLTextureSize(ATexture: TBGLTextureHandle; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer); override;
@@ -1240,7 +1240,7 @@ begin
   end;
 end;
 
-function TBGLTexture.GetOpenGLMaxTexSize: integer;
+class function TBGLTexture.GetOpenGLMaxTexSize: integer;
 begin
   result := oglMaxTexSize;
 end;
@@ -1422,7 +1422,7 @@ end;
 
 { TBGLBitmap }
 
-function TBGLBitmap.GetOpenGLMaxTexSize: integer;
+class function TBGLBitmap.GetOpenGLMaxTexSize: integer;
 begin
   result := oglMaxTexSize;
 end;
