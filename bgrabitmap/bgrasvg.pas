@@ -1255,11 +1255,11 @@ begin
   GetViewBoxIndirect(cuPixel,vb);
   with vb do
   begin
-    ACanvas2d.translate(-min.x,-min.y);
     if size.x <> 0 then
       ACanvas2d.scale(w/size.x,1);
     if size.y <> 0 then
       ACanvas2d.scale(1,h/size.y);
+    ACanvas2d.translate(-min.x,-min.y);
   end;
   Draw(ACanvas2d, 0,0, cuPixel);
   ACanvas2d.restore;
