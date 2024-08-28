@@ -46,6 +46,8 @@ type
 
 implementation
 
+uses BGRAOpenGL;
+
 { TBGLBlurShader }
 
 function TBGLBlurShader.GetAllocatedTextureSize: TPoint;
@@ -102,6 +104,7 @@ end;
 
 constructor TBGLBlurShader.Create(ACanvas: TBGLCustomCanvas; ABlurType: TRadialBlurType);
 var weightFunc: string;
+  overflowFunc: string;
 begin
   FBlurType:= ABlurType;
   case ABlurType of
@@ -113,6 +116,23 @@ begin
   rbFast: weightFunc := 'return max(0,radius+1-x);';
   else {rbBox,rbDisk}
     weightFunc := 'if (x <= radius) return 1; else return max(0,radius+1-x);';
+  end;
+
+  if GetOpenGLVersion >= 200 then
+  begin
+    overflowFunc :=
+'vec2 overflowTexCoord(vec2 coord)'#10 +
+'{'#10 +
+'return coord;'#10 +
+'}'#10
+  end else
+  begin
+    // fix repeat mode on older version
+    overflowFunc :=
+'vec2 overflowTexCoord(vec2 coord)'#10 +
+'{'#10 +
+'return fract(coord / textureSize) * textureSize;'#10 +
+'}'#10
   end;
 
   inherited Create(ACanvas,
@@ -133,10 +153,7 @@ begin
 weightFunc + #10 +
 '}'#10 +
 
-'vec2 overflowTexCoord(vec2 coord)'#10 +
-'{'#10 +
-'return fract(coord / textureSize) * textureSize;'#10 +
-'}'#10 +
+overflowFunc +
 
 'void main(void)'#10 +
 '{'#10 +
