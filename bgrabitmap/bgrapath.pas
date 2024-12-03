@@ -2236,6 +2236,7 @@ var p: integer;
   var numberStart: integer;
       errPos: integer;
       decimalFind: boolean;
+      str: String;
 
     procedure parseFloatInternal;
     begin
@@ -2261,7 +2262,8 @@ var p: integer;
       inc(p);
       parseFloatInternal;
     end;
-    val(copy(AValue,numberStart,p-numberStart),result,errPos);
+    str := copy(AValue,numberStart,p-numberStart);
+    val(str,result,errPos);
     if errPos <> 0 then numberError := true;
   end;
 
