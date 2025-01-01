@@ -13,7 +13,7 @@ function priv_lazbuild
 (
     declare -rA VAR=(
         [src]='test'
-        [use]='bgrabitmap'
+        [use]='.'
         [pkg]='use/components.txt'
     )
     if ! [[ -d "${VAR[src]}" ]]; then

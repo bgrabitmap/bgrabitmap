@@ -12,7 +12,7 @@ Options:
 Function Build-Project {
     New-Variable -Name VAR -Option Constant -Value @{
         Src = 'test'
-        Use = 'bgrabitmap'
+        Use = '.'
         Pkg = 'use\components.txt'
     }
     If (! (Test-Path -Path $Var.Src)) {
