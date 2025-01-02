@@ -1,3 +1,6 @@
 [submodule "use/bgracontrols"]
 	path = use/bgracontrols
 	url = git@github.com:bgrabitmap/bgracontrols.git
+[submodule "use/fpGUI"]
+	path = use/fpGUI
+	url = git@github.com:graemeg/fpGUI.git
