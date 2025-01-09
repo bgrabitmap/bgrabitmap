@@ -369,9 +369,9 @@ begin
   if (format = ifXPixMap) and (ASource.NbPixels > 32768) then //xpm is slow so avoid big images
     raise exception.Create('Image is too big to be saved as XPM');
   writer := CreateBGRAImageWriter(Format, ASource.HasTransparentPixels);
-  if GetMaxColorChannelDepth(ASource) > 8 then
+  if writer is TBGRAWriterPNG then
   begin
-    if writer is TBGRAWriterPNG then TBGRAWriterPNG(writer).WordSized := true;
+     if GetMaxColorChannelDepth(ASource) > 8 then TBGRAWriterPNG(writer).WordSized := true;
   end;
   if writer is TFPWriterPNM then
   begin
@@ -405,10 +405,12 @@ class procedure TUniversalDrawer.SaveToStreamAs(
   ASource: TCustomUniversalBitmap; AStream: TStream; AFormat: TBGRAImageFormat);
 var writer: TFPCustomImageWriter;
 begin
+  if (AFormat = ifXPixMap) and (ASource.NbPixels > 32768) then //xpm is slow so avoid big images
+    raise exception.Create('Image is too big to be saved as XPM');
   writer := CreateBGRAImageWriter(AFormat, ASource.HasTransparentPixels);
-  if GetMaxColorChannelDepth(ASource) > 8 then
+  if writer is TBGRAWriterPNG then
   begin
-    if writer is TBGRAWriterPNG then TBGRAWriterPNG(writer).WordSized := true;
+    if GetMaxColorChannelDepth(ASource) > 8 then TBGRAWriterPNG(writer).WordSized := true;
   end;
   try
     TFPCustomImage(ASource).SaveToStream(AStream, writer)
