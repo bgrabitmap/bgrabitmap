@@ -92,8 +92,7 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageReader[ifAvif] := TBGRAReaderAvif;
+  BGRARegisterImageReader(ifAvif, TBGRAReaderAvif, 'AVIF Still Image Format', True, 'avif');
 
 finalization
 

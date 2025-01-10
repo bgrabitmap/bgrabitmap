@@ -249,6 +249,6 @@ begin
 end;
 
 initialization
-  DefaultBGRAImageReader[ifPcx] := TBGRAReaderPCX;
+  BGRARegisterImageReader(ifPcx, TBGRAReaderPCX, 'PCX Format', True, 'pcx');
 
 end.

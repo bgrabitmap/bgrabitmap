@@ -791,10 +791,14 @@ end;
     class procedure SaveToFile(ASource: TCustomUniversalBitmap; const AFilename: string); overload; virtual; abstract;
     {** Save image to a file with the specified image writer. ''filename'' is an ANSI string }
     class procedure SaveToFile(ASource: TCustomUniversalBitmap; const AFilename: string; AHandler:TFPCustomImageWriter); overload; virtual; abstract;
+    {** Save image to a file in the specified image format }
+    class procedure SaveToFile(ASource: TCustomUniversalBitmap; const AFilename: string; AFormat: TBGRAImageFormat); overload; virtual; abstract;
     {** Save image to a file. The format is guessed from the file extension. ''filename'' is an ANSI string }
     class procedure SaveToFileUTF8(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string); overload; virtual; abstract;
     {** Save image to a file with the specified image writer. ''filename'' is an UTF8 string }
     class procedure SaveToFileUTF8(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string; AHandler:TFPCustomImageWriter); overload; virtual; abstract;
+    {** Save image to a file in the specified image format }
+    class procedure SaveToFileUTF8(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string; AFormat: TBGRAImageFormat); overload; virtual; abstract;
 
     {** Save image to a stream in the specified image format }
     class procedure SaveToStreamAs(ASource: TCustomUniversalBitmap; AStream: TStream; AFormat: TBGRAImageFormat); virtual; abstract;

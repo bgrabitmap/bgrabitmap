@@ -145,6 +145,8 @@ var
   DefaultBGRAImageReader: array[TBGRAImageFormat] of TFPCustomImageReaderClass;
   {** List of stream writers for images }
   DefaultBGRAImageWriter: array[TBGRAImageFormat] of TFPCustomImageWriterClass;
+  {** List of names for image types }
+  DefaultBGRAImageTypeNames: array[TBGRAImageFormat] of String;
 
   {** Detect the file format of a given file }
   function DetectFileFormat(AFilenameUTF8: string): TBGRAImageFormat;
@@ -161,6 +163,19 @@ var
   {** Create an image writer for the given format. _AHasTransparentPixels_
       specifies if alpha channel must be supported }
   function CreateBGRAImageWriter(AFormat: TBGRAImageFormat; AHasTransparentPixels: boolean): TFPCustomImageWriter;
+
+  {** Register an image Reader for the given format, if addFPCReader register also in fpc Handler }
+  procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat;
+                                    AReader: TFPCustomImageReaderClass;
+                                    const ATypeName: String;
+                                    addFPCReader: Boolean;
+                                    const AExtensions: String);
+  {** Register an image Writer for the given format, if addFPCWriter register also in fpc Handler }
+  procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat;
+                                    AWriter: TFPCustomImageWriterClass;
+                                    const ATypeName: String;
+                                    addFPCWriter: Boolean;
+                                    const AExtensions: String);
 
 type
   {* Possible options when loading an image }
@@ -1417,7 +1432,7 @@ begin
   if (ext = '.pdn') then result := ifPaintDotNet else
   if (ext = '.lzp') then result := ifLazPaint else
   if (ext = '.ora') then result := ifOpenRaster else
-  if (ext = '.psd') then result := ifPsd else
+  if (ext = '.psd') or (ext = '.pdd') then result := ifPsd else
   if (ext = '.tga') then result := ifTarga else
   if (ext = '.tif') or (ext = '.tiff') then result := ifTiff else
   if (ext = '.xwd') then result := ifXwd else
@@ -1453,6 +1468,7 @@ begin
     ifSvg: result := 'svg';
     ifPortableAnyMap: result := 'ppm';
     ifWebP: result := 'webp';
+    ifAvif: result := 'avif';
     else result := '?';
   end;
 end;
@@ -1505,6 +1521,28 @@ begin
     TFPWriterXPM(result).ColorCharSize := 2;
   end else
     result := DefaultBGRAImageWriter[AFormat].Create;
+end;
+
+procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat; AReader: TFPCustomImageReaderClass;
+  const ATypeName: String; addFPCReader: Boolean; const AExtensions: String);
+begin
+  DefaultBGRAImageReader[AFormat] := AReader;
+  DefaultBGRAImageTypeNames[AFormat] := ATypeName;
+
+  if addFPCReader and
+     (ImageHandlers.ImageReader[ATypeName] = nil) { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
+  then ImageHandlers.RegisterImageReader(ATypeName, AExtensions, AReader);
+end;
+
+procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat; AWriter: TFPCustomImageWriterClass;
+  const ATypeName: String; addFPCWriter: Boolean; const AExtensions: String);
+begin
+  DefaultBGRAImageWriter[AFormat] := AWriter;
+  DefaultBGRAImageTypeNames[AFormat] := ATypeName;
+
+  if addFPCWriter and
+     (ImageHandlers.ImageWriter[ATypeName] = nil) { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
+  then ImageHandlers.RegisterImageWriter(ATypeName, AExtensions, AWriter);
 end;
 
 function ResourceFile(AFilename: string): string;
@@ -1663,11 +1701,15 @@ initialization
 
   {$IFNDEF BGRABITMAP_CORE}
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
+  DefaultBGRAImageTypeNames[ifTarga] := 'TARGA Format';
   DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;
+  DefaultBGRAImageTypeNames[ifXPixMap] := 'XPM Format';
   DefaultBGRAImageWriter[ifPortableAnyMap] := TFPWriterPNM;
+  DefaultBGRAImageTypeNames[ifPortableAnyMap] := 'Netpbm Portable aNyMap';
   //writing XWD not implemented
 
   DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;
+  DefaultBGRAImageTypeNames[ifXwd] := 'XWD Format';
   DefaultBGRAImageReader[ifPortableAnyMap] := TFPReaderPNM;
   //the other readers are registered by their unit
   {$ENDIF}

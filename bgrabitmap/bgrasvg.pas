@@ -455,7 +455,9 @@ var AlreadyRegistered: boolean;
 procedure RegisterSvgFormat;
 begin
   if AlreadyRegistered then exit;
-  ImageHandlers.RegisterImageReader ('Scalable Vector Graphic', 'svg', TFPReaderSVG);
+
+  BGRARegisterImageReader(ifSvg, TFPReaderSVG, 'Scalable Vector Graphic', True, 'svg');
+
   AlreadyRegistered:= True;
 end;
 
@@ -1383,8 +1385,7 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageReader[ifSvg] := TFPReaderSVG;
+  BGRARegisterImageReader(ifSvg, TFPReaderSVG, 'Scalable Vector Graphic', True, 'svg');
 
 end.
 

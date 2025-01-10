@@ -385,8 +385,7 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageWriter[ifBmpMioMap] := TBGRAWriterBmpMioMap;
+  BGRARegisterImageWriter(ifBmpMioMap, TBGRAWriterBmpMioMap, 'iGO Bitmap Format', True, 'bmp');
 
 end.
 

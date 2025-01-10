@@ -72,9 +72,7 @@ end;
 {$ENDIF}
 
 initialization
-  if ImageHandlers.ImageWriter['PCX Format']=nil
-  then ImageHandlers.RegisterImageWriter('PCX Format', 'pcx', TBGRAWriterPCX);
-  DefaultBGRAImageWriter[ifPcx] := TBGRAWriterPCX;
+  BGRARegisterImageWriter(ifPcx, TBGRAWriterPCX, 'PCX Format', True, 'pcx');
 
 
 end.

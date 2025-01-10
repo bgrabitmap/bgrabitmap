@@ -904,7 +904,6 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageReader[ifPsd] := TBGRAReaderPSD;
+  BGRARegisterImageReader(ifPsd, TBGRAReaderPSD, 'Photoshop Format', True, 'psd;pdd');
 
 end.

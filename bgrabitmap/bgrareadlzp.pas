@@ -372,6 +372,6 @@ end;
 initialization
 
   if DefaultBGRAImageReader[ifLazPaint] = nil then
-    DefaultBGRAImageReader[ifLazPaint] := TBGRAReaderLazPaint;
+    BGRARegisterImageReader(ifLazPaint, TBGRAReaderLazPaint, 'LazPaint Image Format', True, 'lzp');
 
 end.

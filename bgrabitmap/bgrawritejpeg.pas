@@ -234,8 +234,6 @@ initialization
   end;
   {$ENDIF}
 
-  if ImageHandlers.ImageWriter['JPEG graphics']=nil
-  then ImageHandlers.RegisterImageWriter ('JPEG graphics', 'jpg;jpeg', TBGRAWriterJPEG);
-  DefaultBGRAImageWriter[ifJpeg] := TBGRAWriterJPEG;
+  BGRARegisterImageWriter(ifJpeg, TBGRAWriterJPEG, 'JPEG Graphics', True, 'jpg;jpeg');
 
 end.

@@ -1141,7 +1141,6 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageWriter[ifPng] := TBGRAWriterPNG;
+  BGRARegisterImageWriter(ifPng, TBGRAWriterPNG, 'Portable Network Graphics', True, 'png');
 
 end.
