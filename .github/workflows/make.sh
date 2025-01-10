@@ -42,35 +42,33 @@ function priv_lazbuild
         esac
     fi &>/dev/null
     wait
-    jq --raw-output --exit-status '.pkg[]' <<< "${MAPFILE[@]}" |
-        while read -r; do
-            (
-                declare -rA TMP=(
-                    [url]="https://packages.lazarus-ide.org/${REPLY}.zip"
-                    [dir]="${HOME}/.lazarus/onlinepackagemanager/packages/${REPLY}"
-                    [out]=$(mktemp)
-                )
-                if ! [[ -d "${TMP[dir]}" ]] &&
-                   ! (lazbuild --verbose-pkgsearch "${REPLY}") &&
-                   ! (lazbuild --add-package "${REPLY}"); then
-                        wget --quiet --output-document "${TMP[out]}" "${TMP[url]}"
-                        mkdir --parents "${TMP[dir]}"
-                        unzip -o "${TMP[out]}" -d "${TMP[dir]}"
-                        rm --verbose "${TMP[out]}"
-                        find "${TMP[dir]}" -type 'f' -name '*.lpk' -printf '\033[33m\tadd package link\t%p\033[0m\n' -exec \
-                            lazbuild --add-package-link {} + >&2
-                fi
-            ) &
-        done
+    while read -r; do
+        (
+            declare -rA TMP=(
+                [url]="https://packages.lazarus-ide.org/${REPLY}.zip"
+                [dir]="${HOME}/.lazarus/onlinepackagemanager/packages/${REPLY}"
+                [out]=$(mktemp)
+            )
+            if ! [[ -d "${TMP[dir]}" ]] &&
+               ! (lazbuild --verbose-pkgsearch "${REPLY}") &&
+               ! (lazbuild --add-package "${REPLY}"); then
+                    wget --quiet --output-document "${TMP[out]}" "${TMP[url]}"
+                    mkdir --parents "${TMP[dir]}"
+                    unzip -o "${TMP[out]}" -d "${TMP[dir]}"
+                    rm --verbose "${TMP[out]}"
+                    find "${TMP[dir]}" -type 'f' -name '*.lpk' -printf '\033[33m\tadd package link\t%p\033[0m\n' -exec \
+                        lazbuild --add-package-link {} + >&2
+            fi
+        ) &
+    done < <(jq --raw-output --exit-status '.pkg[]' <<< "${MAPFILE[@]}")
     wait
     if [[ -d "${VAR[lib]}" ]]; then
-        find "${VAR[lib]}" -type 'f' -name '*.lpk' |
-            while read -r; do
-                if ! [[ ${REPLY} =~ (cocoa|gdi|_template) ]]; then
-                    lazbuild --add-package-link "${REPLY}"
-                    printf '\033[33m\tadd package link\t%s\033[0m\n' "${REPLY}"
-                fi
-            done
+        while read -r; do
+            if ! [[ ${REPLY} =~ (cocoa|gdi|_template) ]]; then
+                lazbuild --add-package-link "${REPLY}"
+                printf '\033[33m\tadd package link\t%s\033[0m\n' "${REPLY}"
+            fi
+        done < <(find "${VAR[lib]}" -type 'f' -name '*.lpk')
     fi >&2
     declare -i exitCode=0
     if [[ -f "${VAR[tst]}" ]]; then
@@ -82,19 +80,18 @@ function priv_lazbuild
             ((exitCode+=1))
         fi
     fi
-    find "${VAR[app]}" -type 'f' -name '*.lpi' |
-        while read -r PROJECT; do
-            read -r OUTPUT < <(mktemp)
-            if (lazbuild --build-all --recursive --no-write-project "${PROJECT}" > "${OUTPUT}"); then
-                printf '\x1b[32m\t[%s]\t%s\x1b[0m\n' "${?}" "${PROJECT}"
-                grep --color='always' 'Linking' "${OUTPUT}"
-            else
-                printf '\x1b[31m\t[%s]\t%s\x1b[0m\n' "${?}" "${PROJECT}"
-                grep --color='always' --extended-regexp '(Error|Fatal):' "${OUTPUT}"
-                ((exitCode+=1))
-            fi >&2
-            rm "${OUTPUT}"
-        done
+    while read -r; do
+        mapfile -t < <(mktemp)
+        if (lazbuild --build-all --recursive --no-write-project "${REPLY:?}" > "${MAPFILE[0]:?}"); then
+            printf '\x1b[32m\t[%s]\t%s\x1b[0m\n' "${?}" "${REPLY:?}"
+            grep --color='always' 'Linking' "${MAPFILE[0]:?}"
+        else
+            printf '\x1b[31m\t[%s]\t%s\x1b[0m\n' "${?}" "${REPLY:?}"
+            grep --color='always' --extended-regexp '(Error|Fatal):' "${MAPFILE[0]:?}"
+            ((exitCode+=1))
+        fi >&2
+        rm "${MAPFILE[0]:?}"
+    done < <(find "${VAR[app]}" -type 'f' -name '*.lpi')
     exit "${exitCode}"
 )
 
