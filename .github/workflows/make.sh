@@ -105,7 +105,7 @@ function out_log
         [info]=32
         [audit]=33
     )
-    printf '%(%y-%m-%d_%T)T\x1b[%dm\t%s:\t%b\x1b[0m\n' -1 "${VAR[${1,,:?}]}" "${1^^}" "${2:?}" >&2
+    printf '%(%y-%m-%d_%T)T \x1b[%dm%b\x1b[0m\n' -1 "${VAR[${1,,:?}]}" "${2:?}" >&2
     case ${1:?} in
         error) return 1 ;;
     esac
