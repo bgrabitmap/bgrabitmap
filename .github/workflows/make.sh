@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ##############################################################################################################
 
-function priv_clippit
+function show_usage
 (
     cat <<EOF
 https://google.github.io/styleguide/shellguide.html
@@ -15,22 +15,21 @@ Options:
 EOF
 )
 
-function priv_lazbuild
+function build_project
 (
     mapfile -t <"${0//sh/json}"
-    declare -rA VAR=(
-        [app]=$(jq --raw-output --exit-status '.app' <<< "${MAPFILE[@]}")
-        [lib]=$(jq --raw-output --exit-status '.lib' <<< "${MAPFILE[@]}")
-        [tst]=$(jq --raw-output --exit-status '.tst' <<< "${MAPFILE[@]}")
-        [opt]=$(jq --raw-output --exit-status '.opt' <<< "${MAPFILE[@]}")
-    )
+    declare -A VAR
+    while read -r; do
+        VAR[${REPLY}]=$(jq --raw-output --exit-status ".${REPLY}" <<< "${MAPFILE[@]}")
+    done < <(jq --raw-output --exit-status 'keys.[]' <<< "${MAPFILE[@]}")
+    declare -rA VAR
     if ! [[ -d "${VAR[app]}" ]]; then
-        printf '\x1b[32m\t[%s] did not find!\x1b[0m\n' "${VAR[app]}"
-        exit 1
+        out_log error "Did not find ${VAR[app]}"
     fi >&2
     if [[ -f '.gitmodules' ]]; then
-        git submodule update --init --recursive --force --remote &
-    fi
+        git submodule update --init --recursive --force --remote
+        out_log audit 'updated git submodule'
+    fi &
     if ! (command -v lazbuild); then
         # shellcheck source=/dev/null
         source '/etc/os-release'
@@ -43,35 +42,39 @@ function priv_lazbuild
     fi &>/dev/null
     wait
     while read -r; do
-        (
+        lazbuild --add-package-link "${REPLY}"
+        out_log audit "added ${REPLY}"
+    done < <(
+        while read -r; do (
             declare -rA TMP=(
                 [url]="https://packages.lazarus-ide.org/${REPLY}.zip"
                 [dir]="${HOME}/.lazarus/onlinepackagemanager/packages/${REPLY}"
                 [out]=$(mktemp)
             )
-            if ! [[ -d "${TMP[dir]}" ]] &&
-               ! (lazbuild --verbose-pkgsearch "${REPLY}") &&
-               ! (lazbuild --add-package "${REPLY}"); then
-                    wget --quiet --output-document "${TMP[out]}" "${TMP[url]}"
-                    mkdir --parents "${TMP[dir]}"
-                    unzip -o "${TMP[out]}" -d "${TMP[dir]}"
-                    rm --verbose "${TMP[out]}"
-                    find "${TMP[dir]}" -type 'f' -name '*.lpk' -printf '\033[33m\tadd package link\t%p\033[0m\n' -exec \
-                        lazbuild --add-package-link {} + >&2
+            if ! [[ -d ${TMP[dir]} ]] &&
+               ! (lazbuild --verbose-pkgsearch "${REPLY}" >/dev/null) &&
+               ! (lazbuild --add-package "${REPLY}" >/dev/null); then
+                    (
+                        wget --quiet --output-document "${TMP[out]}" "${TMP[url]}"
+                        mkdir --parents "${TMP[dir]}"
+                        unzip -o "${TMP[out]}" -d "${TMP[dir]}"
+                        rm "${TMP[out]:?}"
+                    ) >/dev/null
+                    find "${TMP[dir]}" -type 'f' -name '*.lpk'
             fi
-        ) &
-    done < <(jq --raw-output --exit-status '.pkg[]' <<< "${MAPFILE[@]}")
-    wait
-    if [[ -d "${VAR[lib]}" ]]; then
+        ) & done < <(jq --raw-output --exit-status '.pkg[]' <<< "${MAPFILE[@]}")
+        wait
+    )
+    if [[ -d ${VAR[lib]} ]]; then
         while read -r; do
             if ! [[ ${REPLY} =~ (cocoa|gdi|_template) ]]; then
                 lazbuild --add-package-link "${REPLY}"
-                printf '\033[33m\tadd package link\t%s\033[0m\n' "${REPLY}"
+                out_log audit "added ${REPLY}"
             fi
         done < <(find "${VAR[lib]}" -type 'f' -name '*.lpk')
     fi >&2
     declare -i exitCode=0
-    if [[ -f "${VAR[tst]}" ]]; then
+    if [[ -f ${VAR[tst]} ]]; then
         read -r < <(
             lazbuild --build-all --recursive --no-write-project "${VAR[tst]}" |
                 awk '/Linking/{print $3}'
@@ -83,10 +86,10 @@ function priv_lazbuild
     while read -r; do
         mapfile -t < <(mktemp)
         if (lazbuild --build-all --recursive --no-write-project "${REPLY:?}" > "${MAPFILE[0]:?}"); then
-            printf '\x1b[32m\t[%s]\t%s\x1b[0m\n' "${?}" "${REPLY:?}"
+            out_log info "built ${REPLY:?}"
             grep --color='always' 'Linking' "${MAPFILE[0]:?}"
         else
-            printf '\x1b[31m\t[%s]\t%s\x1b[0m\n' "${?}" "${REPLY:?}"
+            out_log audit "built ${REPLY:?}"
             grep --color='always' --extended-regexp '(Error|Fatal):' "${MAPFILE[0]:?}"
             ((exitCode+=1))
         fi >&2
@@ -95,18 +98,31 @@ function priv_lazbuild
     exit "${exitCode}"
 )
 
-function priv_main
+function out_log
+(
+    declare -Ar VAR=(
+        [error]=31
+        [info]=32
+        [audit]=33
+    )
+    printf '%(%y-%m-%d_%T)T\x1b[%dm\t%s:\t%b\x1b[0m\n' -1 "${VAR[${1,,:?}]}" "${1^^}" "${2:?}" >&2
+    case ${1:?} in
+        error) return 1 ;;
+    esac
+)
+
+function switch_action
 (
     set -euo pipefail
     if ((${#})); then
         case ${1} in
-            build) priv_lazbuild ;;
-            *) priv_clippit ;;
+            build) build_project ;;
+            *) show_usage ;;
         esac
     else
-        priv_clippit
+        show_usage
     fi
 )
 
 ##############################################################################################################
-priv_main "${@}" >/dev/null
+switch_action "${@}" >/dev/null
