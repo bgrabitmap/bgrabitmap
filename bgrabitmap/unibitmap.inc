@@ -92,6 +92,9 @@ type
   {$ENDIF}
 
   {* Base class for the universal bitmap (of any colorspace) }
+
+  { TCustomUniversalBitmap }
+
   TCustomUniversalBitmap = class(TFPCustomImage, IBGRAScanner)
   private
     procedure PathStrokeAliasedCallback(const APoints: array of TPointF;
@@ -284,10 +287,14 @@ type
     procedure SaveToFile(const AFilename: string);overload; virtual;
     {** Save image to a file with the specified image writer. ''filename'' is an ANSI string }
     procedure SaveToFile(const AFilename: string; AHandler:TFPCustomImageWriter);overload; virtual;
+    {** Save image to a file in the specified image format }
+    procedure SaveToFile(const AFilename: string; AFormat: TBGRAImageFormat); overload; virtual;
     {** Save image to a file. The format is guessed from the file extension. ''filename'' is an ANSI string }
     procedure SaveToFileUTF8(const AFilenameUTF8: string);overload; virtual;
     {** Save image to a file with the specified image writer. ''filename'' is an UTF8 string }
     procedure SaveToFileUTF8(const AFilenameUTF8: string; AHandler:TFPCustomImageWriter);overload; virtual;
+    {** Save image to a file in the specified image format }
+    procedure SaveToFileUTF8(const AFilenameUTF8: string; AFormat: TBGRAImageFormat); overload; virtual;
 
     {** Save image to a stream with the specified image writer }{inherited
     procedure SaveToStream (Str:TStream; Handler:TFPCustomImageWriter);
@@ -2856,6 +2863,12 @@ begin
   UniDrawerClass.SaveToFile(self, AFilename, AHandler);
 end;
 
+procedure TCustomUniversalBitmap.SaveToFile(const AFilename: string; AFormat: TBGRAImageFormat);
+begin
+  if UniDrawerClass = nil then RaiseMissingUniDrawer;
+  UniDrawerClass.SaveToFile(self, AFilename, AFormat);
+end;
+
 procedure TCustomUniversalBitmap.SaveToFileUTF8(const AFilenameUTF8: string);
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
@@ -2867,6 +2880,12 @@ procedure TCustomUniversalBitmap.SaveToFileUTF8(const AFilenameUTF8: string;
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
   UniDrawerClass.SaveToFile(self, AFilenameUTF8, AHandler);
+end;
+
+procedure TCustomUniversalBitmap.SaveToFileUTF8(const AFilenameUTF8: string; AFormat: TBGRAImageFormat);
+begin
+  if UniDrawerClass = nil then RaiseMissingUniDrawer;
+  UniDrawerClass.SaveToFileUTF8(self, AFilenameUTF8, AFormat);
 end;
 
 procedure TCustomUniversalBitmap.SaveToStreamAs(AStream: TStream;

@@ -141,12 +141,15 @@ type
     );
 
 var
+  { #note 5 -oMaxM : it would be useful to make a single record that contains everything }
   {** List of stream readers for images }
   DefaultBGRAImageReader: array[TBGRAImageFormat] of TFPCustomImageReaderClass;
   {** List of stream writers for images }
   DefaultBGRAImageWriter: array[TBGRAImageFormat] of TFPCustomImageWriterClass;
   {** List of names for image types }
   DefaultBGRAImageTypeNames: array[TBGRAImageFormat] of String;
+  DefaultBGRAImageTypeExts: array[TBGRAImageFormat] of String;
+
 
   {** Detect the file format of a given file }
   function DetectFileFormat(AFilenameUTF8: string): TBGRAImageFormat;
@@ -1528,6 +1531,7 @@ procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat; AReader: TFPCustomI
 begin
   DefaultBGRAImageReader[AFormat] := AReader;
   DefaultBGRAImageTypeNames[AFormat] := ATypeName;
+  DefaultBGRAImageTypeExts[AFormat] := AExtensions;
 
   if addFPCReader and
      (ImageHandlers.ImageReader[ATypeName] = nil) { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
@@ -1539,6 +1543,7 @@ procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat; AWriter: TFPCustomI
 begin
   DefaultBGRAImageWriter[AFormat] := AWriter;
   DefaultBGRAImageTypeNames[AFormat] := ATypeName;
+  DefaultBGRAImageTypeExts[AFormat] := AExtensions;
 
   if addFPCWriter and
      (ImageHandlers.ImageWriter[ATypeName] = nil) { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
