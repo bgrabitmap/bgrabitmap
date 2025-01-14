@@ -17,15 +17,12 @@ EOF
 
 function build_project
 (
-    mapfile -t <"${0//sh/json}"
+    mapfile -t
     declare -A VAR
     while read -r; do
-        VAR[${REPLY}]=$(jq --raw-output --exit-status ".${REPLY}" <<< "${MAPFILE[@]}")
-    done < <(jq --raw-output --exit-status 'keys.[]' <<< "${MAPFILE[@]}")
+        VAR[${REPLY}]=$(jq --raw-output --exit-status ".${REPLY}" <<<"${MAPFILE[@]}")
+    done < <(jq --raw-output --exit-status 'keys.[]' <<<"${MAPFILE[@]}")
     declare -rA VAR
-    if ! [[ -d "${VAR[app]}" ]]; then
-        out_log error "Did not find ${VAR[app]}"
-    fi >&2
     if [[ -f '.gitmodules' ]]; then
         git submodule update --init --recursive --force --remote
         out_log audit 'updated git submodule'
@@ -52,48 +49,41 @@ function build_project
                 [out]=$(mktemp)
             )
             if ! [[ -d ${TMP[dir]} ]] &&
-               ! (lazbuild --verbose-pkgsearch "${REPLY}" >/dev/null) &&
-               ! (lazbuild --add-package "${REPLY}" >/dev/null); then
-                    (
-                        wget --quiet --output-document "${TMP[out]}" "${TMP[url]}"
-                        mkdir --parents "${TMP[dir]}"
-                        unzip -o "${TMP[out]}" -d "${TMP[dir]}"
-                        rm "${TMP[out]:?}"
-                    ) >/dev/null
-                    find "${TMP[dir]}" -type 'f' -name '*.lpk'
+                ! (lazbuild --verbose-pkgsearch "${REPLY}" >/dev/null) &&
+                ! (lazbuild --add-package "${REPLY}" >/dev/null); then
+                (
+                    wget --quiet --output-document "${TMP[out]}" "${TMP[url]}"
+                    mkdir --parents "${TMP[dir]}"
+                    unzip -o "${TMP[out]}" -d "${TMP[dir]}"
+                    rm "${TMP[out]:?}"
+                ) >/dev/null
+                find "${TMP[dir]}" -type 'f' -name '*.lpk'
             fi
-        ) & done < <(jq --raw-output --exit-status '.pkg[]' <<< "${MAPFILE[@]}")
+        ) & done < <(jq --raw-output --exit-status '.pkg[]' <<<"${MAPFILE[@]}")
         wait
     )
-    if [[ -d ${VAR[lib]} ]]; then
-        while read -r; do
-            if ! [[ ${REPLY} =~ (cocoa|gdi|_template) ]]; then
-                lazbuild --add-package-link "${REPLY}"
-                out_log audit "added ${REPLY}"
-            fi
-        done < <(find "${VAR[lib]}" -type 'f' -name '*.lpk')
-    fi >&2
+    while read -r; do
+        if ! [[ ${REPLY} =~ (cocoa|gdi|_template) ]]; then
+            lazbuild --add-package-link "${REPLY}"
+            out_log audit "added ${REPLY}"
+        fi >&2
+    done < <(find "${VAR[lib]}" -type 'f' -name '*.lpk')
     declare -i exitCode=0
     if [[ -f ${VAR[tst]} ]]; then
-        read -r < <(
-            lazbuild --build-all --recursive --no-write-project "${VAR[tst]}" |
-                awk '/Linking/{print $3}'
-        )
-        if ! ("${REPLY}" --all --format=plain --progress >&2); then
-            ((exitCode+=1))
-        fi
+        while read -r; do
+            if [[ ${REPLY} =~ Linking ]]; then
+                "${REPLY##* }" --all --format=plain --progress >&2 ||
+                    exitCode+=1
+            fi
+        done < <(lazbuild --build-all --recursive --no-write-project "${VAR[tst]}")
     fi
     while read -r; do
-        mapfile -t < <(mktemp)
-        if (lazbuild --build-all --recursive --no-write-project "${REPLY:?}" > "${MAPFILE[0]:?}"); then
+        if (lazbuild --build-all --recursive --no-write-project "${REPLY:?}"); then
             out_log info "built ${REPLY:?}"
-            grep --color='always' 'Linking' "${MAPFILE[0]:?}"
         else
+            exitCode+=1
             out_log audit "built ${REPLY:?}"
-            grep --color='always' --extended-regexp '(Error|Fatal):' "${MAPFILE[0]:?}"
-            ((exitCode+=1))
-        fi >&2
-        rm "${MAPFILE[0]:?}"
+        fi | grep --color='always' --extended-regexp '(Error:|Fatal:|Linking)' >&2
     done < <(find "${VAR[app]}" -type 'f' -name '*.lpi')
     exit "${exitCode}"
 )
@@ -116,7 +106,7 @@ function switch_action
     set -euo pipefail
     if ((${#})); then
         case ${1} in
-            build) build_project ;;
+            build) build_project <"${0//sh/json}" ;;
             *) show_usage ;;
         esac
     else

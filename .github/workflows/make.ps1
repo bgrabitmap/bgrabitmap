@@ -16,10 +16,6 @@ Options:
 }
 
 Filter Build-Project {
-    If (! (Test-Path -Path $_.app)) {
-        'Did not find ' + $_.app | Out-Log
-        Exit 1
-    }
     If (Test-Path -Path '.gitmodules') {
         & git submodule update --init --recursive --force --remote | Out-Host
         'updated git submodule' | Out-Log
@@ -38,8 +34,8 @@ Filter Build-Project {
                 $_ -notmatch '(cocoa|x11|_template)'
             } | ForEach-Object {
                 & lazbuild --add-package-link $_ | Out-Null
-                Return 'added {0}' -f $_
-            } | Out-Log
+                'added {0}' -f $_ | Out-Log
+            }
     }
     Exit $(
         If (Test-Path -Path $_.tst) {
@@ -95,12 +91,12 @@ Function Install-Program {
         If ((Split-Path -Path $_.OutFile -Leaf).Split('.')[-1] -eq 'msi') {
             & msiexec /passive /package $_.OutFile | Out-Null
         } Else {
-            & $_.OutFile.Replace('Temp', 'Temp\.') /SP- /VERYSILENT /SUPPRESSMSGBOXES /NORESTART  | Out-Null
+            & $_.OutFile.Replace('Temp', 'Temp\.') /SP- /VERYSILENT /SUPPRESSMSGBOXES /NORESTART | Out-Null
         }
         Remove-Item $_.OutFile
         $Env:PATH+=';{0}' -f $_.Path
-        Return 'installed {0}' -f (Get-Command $_.Cmd).Source
-    } | Out-Log
+        'installed {0}' -f (Get-Command $_.Cmd).Source | Out-Log
+    }
 }
 
 Function Install-OPM {
@@ -123,8 +119,8 @@ Function Install-OPM {
         Return (Get-ChildItem -Filter '*.lpk' -Recurse -File –Path $_.Path).FullName
     } | ForEach-Object {
         & lazbuild --add-package-link $_ | Out-Null
-        Return 'added {0}' -f $_
-    } | Out-Log
+        'added {0}' -f $_ | Out-Log
+    }
 }
 
 Filter Ping-Connect {
