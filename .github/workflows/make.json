@@ -1,9 +1,0 @@
-{
-    "app" : "test",
-    "lib" : ".",
-    "tst" : "tst",
-    "pkg" : [
-        "epiktimer",
-        "BGRAControls"
-    ]
-}
