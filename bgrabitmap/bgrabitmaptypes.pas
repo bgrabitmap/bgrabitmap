@@ -1550,6 +1550,8 @@ begin
   then ImageHandlers.RegisterImageWriter(ATypeName, AExtensions, AWriter);
 end;
 
+
+
 function ResourceFile(AFilename: string): string;
 {$IFDEF DARWIN}
 const
@@ -1707,16 +1709,22 @@ initialization
   {$IFNDEF BGRABITMAP_CORE}
   DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
   DefaultBGRAImageTypeNames[ifTarga] := 'TARGA Format';
+  DefaultBGRAImageTypeExts[ifTarga] := 'tga';
+
   DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;
   DefaultBGRAImageTypeNames[ifXPixMap] := 'XPM Format';
+  DefaultBGRAImageTypeExts[ifXPixMap] := 'xpm';
+
+  DefaultBGRAImageReader[ifPortableAnyMap] := TFPReaderPNM;
   DefaultBGRAImageWriter[ifPortableAnyMap] := TFPWriterPNM;
   DefaultBGRAImageTypeNames[ifPortableAnyMap] := 'Netpbm Portable aNyMap';
-  //writing XWD not implemented
+  DefaultBGRAImageTypeExts[ifPortableAnyMap] := 'pnm;pbm;pgm;ppm';
 
   DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;
   DefaultBGRAImageTypeNames[ifXwd] := 'XWD Format';
-  DefaultBGRAImageReader[ifPortableAnyMap] := TFPReaderPNM;
-  //the other readers are registered by their unit
+  DefaultBGRAImageTypeExts[ifXwd] := 'xwd';
+
+  //the other readers/writers are registered by their unit
   {$ENDIF}
 
   {$IFDEF BGRABITMAP_USE_LCL}
