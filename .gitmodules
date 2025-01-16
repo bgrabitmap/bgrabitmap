@@ -4,6 +4,3 @@
 [submodule "use/lape"]
     path = use/lape
     url = git@github.com:nielsAD/lape.git
-[submodule "use/New-ZenGL"]
-	path = use/New-ZenGL
-	url = git@github.com:Seenkao/New-ZenGL.git
