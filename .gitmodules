@@ -1,0 +1,6 @@
+[submodule "use/fpGUI"]
+    path = use/fpGUI
+    url = git@github.com:graemeg/fpGUI.git
+[submodule "use/lape"]
+    path = use/lape
+    url = git@github.com:nielsAD/lape.git
