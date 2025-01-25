@@ -52,7 +52,7 @@ begin
   end;
 
   //draw background opaque on bitmap canvas
-  backgroundImg.Draw(virtualScreen.Canvas,0,0,true);
+  backgroundImg.Draw(virtualScreen.Canvas,0,0,OpaqueDraw);
 
   //draw sprites transparent on bitmap canvas
   for i := 0 to high(pacLoc) do

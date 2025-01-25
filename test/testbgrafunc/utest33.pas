@@ -73,7 +73,7 @@ begin
   until false;
 
   //draw virtualscreen opaque on canvas
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest33.OnTimer(Width, Height: Integer;

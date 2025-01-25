@@ -171,7 +171,7 @@ begin
   barPrecalc.Free;
 
   //draw chart
-  image.Draw(Canvas,Left,Top,True);
+  image.Draw(Canvas,Left,Top,OpaqueDraw);
 
   image.free;
 end;

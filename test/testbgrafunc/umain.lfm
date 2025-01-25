@@ -1,24 +1,24 @@
 object FMain: TFMain
-  Left = 456
-  Height = 301
-  Top = 194
+  Left = 424
+  Height = 386
+  Top = 162
   Width = 650
   Caption = 'BGRABitmap functions test'
-  ClientHeight = 301
+  ClientHeight = 386
   ClientWidth = 650
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnHide = FormHide
   OnPaint = FormPaint
   OnShow = FormShow
-  LCLVersion = '1.6.0.4'
+  LCLVersion = '3.0.0.3'
   object Panel1: TPanel
     Left = 0
-    Height = 62
+    Height = 88
     Top = 0
     Width = 650
     Align = alTop
-    ClientHeight = 62
+    ClientHeight = 88
     ClientWidth = 650
     TabOrder = 0
     object Label_TestName: TLabel
@@ -37,46 +37,55 @@ object FMain: TFMain
     end
     object Button_First: TButton
       Left = 7
-      Height = 22
-      Top = 37
+      Height = 30
+      Top = 48
       Width = 75
       Caption = 'First'
-      OnClick = Button_FirstClick
       TabOrder = 0
+      OnClick = Button_FirstClick
     end
     object Button_Prev: TButton
       Left = 88
-      Height = 22
-      Top = 37
+      Height = 30
+      Top = 48
       Width = 75
       Caption = '<< Prev'
-      OnClick = Button_PrevClick
       TabOrder = 1
+      OnClick = Button_PrevClick
     end
     object Button_Next: TButton
       Left = 168
-      Height = 22
-      Top = 37
+      Height = 30
+      Top = 48
       Width = 75
       Caption = 'Next >>'
-      OnClick = Button_NextClick
       TabOrder = 2
+      OnClick = Button_NextClick
     end
     object Button_Last: TButton
       Left = 248
-      Height = 22
-      Top = 37
+      Height = 30
+      Top = 48
       Width = 75
       Caption = 'Last'
-      OnClick = Button_LastClick
       TabOrder = 3
+      OnClick = Button_LastClick
+    end
+    object CheckBox_TransparentDraw: TCheckBox
+      Left = 508
+      Height = 21
+      Top = 54
+      Width = 135
+      Anchors = [akTop, akRight]
+      Caption = 'Transparent draw'
+      TabOrder = 4
     end
   end
   object Timer1: TTimer
     Enabled = False
     Interval = 30
     OnTimer = Timer1Timer
-    left = 568
-    top = 96
+    Left = 568
+    Top = 96
   end
 end

@@ -44,6 +44,9 @@ uses
 		  {$IFDEF LCLgtk2}
 		BGRAGtkBitmap,
 		  {$ELSE}
+  		    {$IFDEF LCLgtk3}
+		  BGRAGtkBitmap,
+		    {$ELSE}
 			{$IF defined(LCLqt) or defined(LCLqt5)}
 		BGRAQtBitmap,
 			{$ELSE}
@@ -53,7 +56,8 @@ uses
 		BGRALCLBitmap,
               {$ENDIF}
 			{$ENDIF}
-		  {$ENDIF}
+                    {$ENDIF}
+                  {$ENDIF}
 		{$ENDIF}
 	  {$ENDIF}
 	{$ELSE}
@@ -80,10 +84,14 @@ type
         {* Import version for Linux GTK }
         TBGRABitmap = class(TBGRAGtkBitmap)
         {$ELSE}
-          {$IFDEF LCLgtk2}
+         {$IFDEF LCLgtk2}
         {* Import version for Linux GTK2 }
         TBGRABitmap = class(TBGRAGtkBitmap)
-          {$ELSE}
+         {$ELSE}
+          {$IFDEF LCLgtk3}
+          {* Import version for Linux GTK2 }
+          TBGRABitmap = class(TBGRAGtkBitmap)
+            {$ELSE}
             {$IF defined(LCLqt) or defined(LCLqt5)}
         {* Import version for Qt }
         TBGRABitmap = class(TBGRAQtBitmap)
@@ -97,6 +105,7 @@ type
               {$ENDIF}
             {$ENDIF}
           {$ENDIF}
+         {$ENDIF}
         {$ENDIF}
       {$ENDIF}
     {$ELSE}

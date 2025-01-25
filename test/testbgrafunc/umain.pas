@@ -17,6 +17,7 @@ type
     Button_Last: TButton;
     Button_Next: TButton;
     Button_Prev: TButton;
+    CheckBox_TransparentDraw: TCheckBox;
     Label_TestName: TLabel;
     Panel1: TPanel;
     Timer1: TTimer;
@@ -140,6 +141,7 @@ begin
     stopwatch.clear;
     stopwatch.Start;
 
+    CurrentTest.OpaqueDraw:= not CheckBox_TransparentDraw.Checked;
     CurrentTest.OnPaint(self.Canvas,0,Panel1.Height,ClientWidth,ClientHeight-Panel1.Height);
 
     drawElapsed := stopwatch.Elapsed;
@@ -177,7 +179,7 @@ var
   elapsed: Extended;
   r: TRect;
 begin
-  if CurrentTest <> nil then
+  if (CurrentTest <> nil) and Visible then
   begin
     Timer1.Enabled := false;
     elapsed := timeMeasure.Elapsed;

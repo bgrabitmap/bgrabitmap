@@ -32,11 +32,13 @@ begin
   if backgroundImg = nil then exit;
 
   //draw background opaque on canvas
-  backgroundImg.Draw(Canvas,Left,Top,True);
+  backgroundImg.Draw(Canvas,Left,Top,OpaqueDraw);
 
   //draw sprites transparent on canvas
   for i := 0 to high(pacLoc) do
-    pacImg[numPacImg].Draw(Canvas,Left+pacLoc[i].x,Top+pacLoc[i].y,false);
+    pacImg[numPacImg].Draw(Canvas, RectWithSize(Left+pacLoc[i].x,Top+pacLoc[i].y,
+      pacImg[numPacImg].Width * (80 + (i * 40 div NbPacman)) div 100,
+      pacImg[numPacImg].Height * (80 + (i * 40 div NbPacman)) div 100),false);
 end;
 
 end.
