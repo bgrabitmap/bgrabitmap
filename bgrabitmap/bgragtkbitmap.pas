@@ -316,8 +316,6 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
   begin
     {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
 
-    LPtoDP(ACanvas.Handle, ARect, 1);
-
     if ARect.Right < ARect.Left then
     begin
       temp := ARect.Left;
@@ -336,6 +334,7 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
       DrawStretchedSoftware
     else
     begin
+      LPtoDP(ACanvas.Handle, ARect, 1);
       tempPixbuf := gdk_pixbuf_new_from_data(pguchar(ADataFirstRow),
         GDK_COLORSPACE_RGB, True, 8, AWidth, AHeight, AWidth*Sizeof(TBGRAPixel), nil, nil);
       if tempPixbuf = nil then
@@ -516,8 +515,6 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
   begin
     {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
 
-    LPtoDP(ACanvas.Handle, ARect, 1);
-
     if ARect.Right < ARect.Left then
     begin
       temp := ARect.Left;
@@ -536,6 +533,7 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
       DrawStretchedSoftware
     else
     begin
+      LPtoDP(ACanvas.Handle, ARect, 1);
       gdk_draw_rgb_32_image(TGtkDeviceContext(ACanvas.Handle).Drawable,
         TGtkDeviceContext(ACanvas.Handle).GC, ARect.Left, ARect.Top,
         AWidth,AHeight, GDK_RGB_DITHER_NORMAL,
