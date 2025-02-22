@@ -166,7 +166,7 @@ initialization
   end;
 {$ENDIF}
 
-  BGRARegisterImageReader(ifJpeg, TBGRAReaderJpeg, 'JPEG Graphics', True, 'jpg;jpeg');
+  BGRARegisterImageReader(ifJpeg, TBGRAReaderJpeg, True, 'JPEG Graphics', 'jpg;jpeg');
 
 end.
 

@@ -107,7 +107,7 @@ begin
 end;
 
 initialization
-  BGRARegisterImageWriter(ifWebP, TBGRAWriterWebP, 'WebP Image Format', True, 'webp');
+  BGRARegisterImageWriter(ifWebP, TBGRAWriterWebP, True, 'WebP Image Format', 'webp');
 
 finalization
 

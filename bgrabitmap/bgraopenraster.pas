@@ -1125,8 +1125,8 @@ procedure RegisterOpenRasterFormat;
 begin
   if AlreadyRegistered then exit;
 
-  BGRARegisterImageReader(ifOpenRaster, TFPReaderOpenRaster, 'OpenRaster', True, 'ora');
-  BGRARegisterImageWriter(ifOpenRaster, TFPWriterOpenRaster, 'OpenRaster', True, 'ora');
+  BGRARegisterImageHandlers(ifOpenRaster, TFPReaderOpenRaster, TFPWriterOpenRaster,
+    True, 'OpenRaster', 'ora');
 
   RegisterLayeredBitmapReader('ora', TBGRAOpenRasterDocument);
   RegisterLayeredBitmapWriter('ora', TBGRAOpenRasterDocument);

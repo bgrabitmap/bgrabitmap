@@ -138,7 +138,7 @@ begin
 end;
 
 initialization
-  BGRARegisterImageReader(ifWebP, TBGRAReaderWebP, 'WebP Image Format', True, 'webp');
+  BGRARegisterImageReader(ifWebP, TBGRAReaderWebP, True, 'WebP Image Format', 'webp');
 
 finalization
 

@@ -72,7 +72,7 @@ end;
 {$ENDIF}
 
 initialization
-  BGRARegisterImageWriter(ifPcx, TBGRAWriterPCX, 'PCX Format', True, 'pcx');
+  BGRARegisterImageWriter(ifPcx, TBGRAWriterPCX, True, 'PCX Format', 'pcx');
 
 
 end.

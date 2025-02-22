@@ -92,7 +92,7 @@ begin
 end;
 
 initialization
-  BGRARegisterImageReader(ifAvif, TBGRAReaderAvif, 'AVIF Still Image Format', True, 'avif');
+  BGRARegisterImageReader(ifAvif, TBGRAReaderAvif, True, 'AVIF Still Image Format', 'avif');
 
 finalization
 

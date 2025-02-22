@@ -1904,8 +1904,8 @@ begin
 end;
 
 initialization
-  BGRARegisterImageReader(ifGif, TBGRAReaderGIF, 'Animated GIF', True, 'gif');
-  BGRARegisterImageWriter(ifGif, TBGRAWriterGIF, 'Animated GIF', True, 'gif');
+  BGRARegisterImageHandlers(ifGif, TBGRAReaderGIF, TBGRAWriterGIF,
+    True, 'Animated GIF', 'gif');
 
   {$IFDEF BGRABITMAP_USE_LCL}
   //Lazarus Picture

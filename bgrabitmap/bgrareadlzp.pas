@@ -370,6 +370,6 @@ begin
 end;
 
 initialization
-  BGRARegisterImageReader(ifLazPaint, TBGRAReaderLazPaint, 'LazPaint Image Format', True, 'lzp');
+  BGRARegisterImageReader(ifLazPaint, TBGRAReaderLazPaint, True, 'LazPaint Image Format', 'lzp');
 
 end.

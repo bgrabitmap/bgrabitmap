@@ -42,6 +42,6 @@ end;
 {$ENDIF}
 
 initialization
-  BGRARegisterImageWriter(ifBMP, TBGRAWriterBMP, 'BMP Format', True, 'bmp');
+  BGRARegisterImageWriter(ifBMP, TBGRAWriterBMP, True, 'BMP Format', 'bmp');
 
 end.

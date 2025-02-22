@@ -142,8 +142,8 @@ begin
 end;
 
 initialization
-  BGRARegisterImageReader(ifIco, TBGRAReaderIco, 'Icon Format', True, 'ico');
-  BGRARegisterImageReader(ifCur, TBGRAReaderCur, 'Cursor Format', True, 'cur');
+  BGRARegisterImageReader(ifIco, TBGRAReaderIco, True, 'Icon Format', 'ico');
+  BGRARegisterImageReader(ifCur, TBGRAReaderCur, True, 'Cursor Format', 'cur');
 
 end.
 

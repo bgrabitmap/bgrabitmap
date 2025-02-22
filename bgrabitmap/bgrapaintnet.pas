@@ -650,7 +650,7 @@ procedure RegisterPaintNetFormat;
 begin
   if AlreadyRegistered then exit;
 
-  BGRARegisterImageReader(ifPaintDotNet, TFPReaderPaintDotNet, 'Paint.NET image', True, 'pdn');
+  BGRARegisterImageReader(ifPaintDotNet, TFPReaderPaintDotNet, True, 'Paint.NET image', 'pdn');
 
   RegisterLayeredBitmapReader('pdn', TPaintDotNetFile);
 

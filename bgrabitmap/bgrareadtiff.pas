@@ -3675,7 +3675,7 @@ end;
 {$ENDIF}
 
 initialization
-  BGRARegisterImageReader(ifTiff, TBGRAReaderTiff, TiffHandlerName, True, 'tif;tiff');
+  BGRARegisterImageReader(ifTiff, TBGRAReaderTiff, True, TiffHandlerName, 'tif;tiff');
 
 end.
 

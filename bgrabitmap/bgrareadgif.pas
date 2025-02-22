@@ -381,6 +381,6 @@ end;
 
 
 initialization
-  BGRARegisterImageReader(ifGif, TBGRAReaderGif, 'GIF Graphics', True, 'gif');
+  BGRARegisterImageReader(ifGif, TBGRAReaderGif, True, 'GIF Graphics', 'gif');
 
 end.

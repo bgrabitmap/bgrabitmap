@@ -1130,6 +1130,6 @@ begin
 end;
 
 initialization
-  BGRARegisterImageReader(ifBmp, TBGRAReaderBMP, 'BMP Format', True, 'bmp');
+  BGRARegisterImageReader(ifBmp, TBGRAReaderBMP, True, 'BMP Format', 'bmp');
 
 end.

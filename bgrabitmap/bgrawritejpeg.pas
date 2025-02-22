@@ -234,6 +234,6 @@ initialization
   end;
   {$ENDIF}
 
-  BGRARegisterImageWriter(ifJpeg, TBGRAWriterJPEG, 'JPEG Graphics', True, 'jpg;jpeg');
+  BGRARegisterImageWriter(ifJpeg, TBGRAWriterJPEG, True, 'JPEG Graphics', 'jpg;jpeg');
 
 end.

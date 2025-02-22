@@ -84,7 +84,7 @@ begin
 end;
 
 initialization
-  BGRARegisterImageReader(ifXPixMap, TBGRAReaderXPM, 'XPM Format', True, 'xpm');
+  BGRARegisterImageReader(ifXPixMap, TBGRAReaderXPM, True, 'XPM Format', 'xpm');
 
 end.
 

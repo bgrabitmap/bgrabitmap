@@ -1051,6 +1051,6 @@ begin
 end;
 
 initialization
-  BGRARegisterImageWriter(ifTiff, TBGRAWriterTiff, TiffHandlerName, True, 'tif;tiff');
+  BGRARegisterImageWriter(ifTiff, TBGRAWriterTiff, True, TiffHandlerName, 'tif;tiff');
 
 end.

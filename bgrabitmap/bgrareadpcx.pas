@@ -249,6 +249,6 @@ begin
 end;
 
 initialization
-  BGRARegisterImageReader(ifPcx, TBGRAReaderPCX, 'PCX Format', True, 'pcx');
+  BGRARegisterImageReader(ifPcx, TBGRAReaderPCX, True, 'PCX Format', 'pcx');
 
 end.

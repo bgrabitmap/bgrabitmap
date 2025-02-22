@@ -1141,6 +1141,6 @@ begin
 end;
 
 initialization
-  BGRARegisterImageWriter(ifPng, TBGRAWriterPNG, 'Portable Network Graphics', True, 'png');
+  BGRARegisterImageWriter(ifPng, TBGRAWriterPNG, True, 'Portable Network Graphics', 'png');
 
 end.
