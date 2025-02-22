@@ -128,12 +128,12 @@ begin
   {$ELSE}
   P := Point(min(ARect.Left,ARect.Right), min(ARect.Top,ARect.Bottom));
   LPToDP(ACanvas.Handle, P, 1);
-  gdk_pixbuf_render_to_drawable_alpha(FPixBuf,
+  gdk_pixbuf_render_to_drawable(FPixBuf,
     TGtkDeviceContext(ACanvas.Handle).Drawable,
-    //TGtkDeviceContext(ACanvas.Handle).GC,
+    TGtkDeviceContext(ACanvas.Handle).GC,
     0,0, P.X,P.Y,
     Width,Height,
-    GDK_PIXBUF_ALPHA_FULL, 1,
+    //GDK_PIXBUF_ALPHA_FULL, 1,
     GDK_RGB_DITHER_NORMAL,0,0);
   {$ENDIF}
 
@@ -231,7 +231,7 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
       exit;
     end;
 
-    LPtoDP(ACanvas.Handle, ARect, 1);
+    LPtoDP(ACanvas.Handle, ARect, 2);
 
     if ARowStride < 0 then
     begin
@@ -334,18 +334,18 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
       DrawStretchedSoftware
     else
     begin
-      LPtoDP(ACanvas.Handle, ARect, 1);
+      LPtoDP(ACanvas.Handle, ARect, 2);
       tempPixbuf := gdk_pixbuf_new_from_data(pguchar(ADataFirstRow),
         GDK_COLORSPACE_RGB, True, 8, AWidth, AHeight, AWidth*Sizeof(TBGRAPixel), nil, nil);
       if tempPixbuf = nil then
         raise Exception.Create('Error initializing Pixbuf');
 
-      gdk_pixbuf_render_to_drawable_alpha(tempPixbuf,
+      gdk_pixbuf_render_to_drawable(tempPixbuf,
         TGtkDeviceContext(ACanvas.Handle).Drawable,
-        //TGtkDeviceContext(ACanvas.Handle).GC,
+        TGtkDeviceContext(ACanvas.Handle).GC,
         0,0, ARect.Left,ARect.Top,
         AWidth,AHeight,
-        GDK_PIXBUF_ALPHA_FULL, 1,
+        //GDK_PIXBUF_ALPHA_FULL, 1,
         GDK_RGB_DITHER_NORMAL,0,0);
 
       {$IFNDEF LCLgtk}
@@ -440,7 +440,7 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
     cr: Pcairo_t;
     surface: Pcairo_surface_t;
   begin
-    LPtoDP(ACanvas.Handle, ARect, 1);
+    LPtoDP(ACanvas.Handle, ARect, 2);
 
     if ARowStride < 0 then
     begin
@@ -533,7 +533,7 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
       DrawStretchedSoftware
     else
     begin
-      LPtoDP(ACanvas.Handle, ARect, 1);
+      LPtoDP(ACanvas.Handle, ARect, 2);
       gdk_draw_rgb_32_image(TGtkDeviceContext(ACanvas.Handle).Drawable,
         TGtkDeviceContext(ACanvas.Handle).GC, ARect.Left, ARect.Top,
         AWidth,AHeight, GDK_RGB_DITHER_NORMAL,
