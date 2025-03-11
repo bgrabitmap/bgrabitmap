@@ -36,7 +36,7 @@ jobs:
       shell: bash
       run: |
         set -xeuo pipefail
-        sudo bash -c 'apt-get update; apt-get install -y lazarus' >/dev/null
+        sudo bash -c 'apt-get update; apt-get install -y lazarus libgtk-3-dev' >/dev/null
         instantfpc -Fu/usr/lib/lazarus/*/components/lazutils .github/workflows/make.pas
         delp -r "${PWD}"
 
