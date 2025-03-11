@@ -15,8 +15,8 @@
       <Language Value=""/>
       <CharSet Value=""/>
     </VersionInfo>
-    <BuildModes Count="3" Active="gtk3">
-      <Item1 Name="default (gtk3)" Default="True"/>
+    <BuildModes Count="3">
+      <Item1 Name="default" Default="True"/>
       <Item2 Name="gtk2">
         <MacroValues Count="1">
           <Macro2 Name="LCLWidgetType" Value="gtk2"/>
