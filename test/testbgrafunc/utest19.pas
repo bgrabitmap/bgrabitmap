@@ -111,7 +111,7 @@ begin
     end;
   end;
 
-  virtualScreen.draw(Canvas,Left,Top);
+  virtualScreen.draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest19.OnTimer(Width, Height: Integer; ElapsedSec: Double);

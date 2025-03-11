@@ -705,7 +705,7 @@ end;
 
 function TBGLFullCanvasShader.Render(AWidth, AHeight: integer): IBGLTexture;
 begin
-  Render(AWidth, AHeight, BGRAWhite);
+  result := Render(AWidth, AHeight, BGRAWhite);
 end;
 
 

@@ -649,10 +649,11 @@ var AlreadyRegistered: boolean;
 procedure RegisterPaintNetFormat;
 begin
   if AlreadyRegistered then exit;
-  ImageHandlers.RegisterImageReader ('Paint.NET image', 'pdn', TFPReaderPaintDotNet);
+
+  BGRARegisterImageReader(ifPaintDotNet, TFPReaderPaintDotNet, True, 'Paint.NET image', 'pdn');
+
   RegisterLayeredBitmapReader('pdn', TPaintDotNetFile);
-  //TPicture.RegisterFileFormat('pdn', 'Paint.NET image', TPaintDotNetFile);
-  DefaultBGRAImageReader[ifPaintDotNet] := TFPReaderPaintDotNet;
+
   AlreadyRegistered := true;
 end;
 

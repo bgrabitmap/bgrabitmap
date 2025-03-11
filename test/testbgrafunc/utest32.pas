@@ -145,7 +145,7 @@ begin
   path1.Free;
 
   //draw virtualscreen opaque on canvas
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest32.OnTimer(Width, Height: Integer;

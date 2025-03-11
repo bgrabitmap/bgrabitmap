@@ -76,7 +76,7 @@ begin
 
   virtualScreen.PutImageAngle(virtualScreen.Width div 2,virtualScreen.Height div 2,texture,angle,texture.Width/2,texture.Height/2);
 
-  virtualScreen.draw(Canvas,Left,Top);
+  virtualScreen.draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest18.OnTimer(Width, Height: Integer; ElapsedSec: Double);

@@ -1,9 +1,154 @@
 object Form1: TForm1
   Left = 504
-  Height = 240
+  Height = 395
   Top = 204
-  Width = 320
+  Width = 450
   Caption = 'BGRABitmap with LCL'
-  OnPaint = FormPaint
-  LCLVersion = '1.4.0.4'
+  ClientHeight = 395
+  ClientWidth = 450
+  DesignTimePPI = 120
+  object Panel1: TPanel
+    Left = 0
+    Height = 95
+    Top = 0
+    Width = 450
+    Align = alTop
+    ClientHeight = 95
+    ClientWidth = 450
+    TabOrder = 0
+    object rbFull: TRadioButton
+      Left = 2
+      Height = 25
+      Top = 2
+      Width = 50
+      Caption = 'Full'
+      Checked = True
+      TabOrder = 1
+      TabStop = True
+      OnClick = rbFullClick
+    end
+    object rbCustom: TRadioButton
+      Left = 64
+      Height = 25
+      Top = 2
+      Width = 83
+      Caption = 'Custom'
+      TabOrder = 0
+      OnClick = rbFullClick
+    end
+    object edX: TSpinEdit
+      Left = 216
+      Height = 33
+      Top = 24
+      Width = 63
+      MaxValue = 1000
+      TabOrder = 2
+      Value = 100
+    end
+    object Label1: TLabel
+      Left = 146
+      Height = 23
+      Top = 25
+      Width = 66
+      Caption = 'Position:'
+    end
+    object edY: TSpinEdit
+      Left = 280
+      Height = 33
+      Top = 24
+      Width = 63
+      MaxValue = 1000
+      TabOrder = 3
+      Value = 100
+    end
+    object Label2: TLabel
+      Left = 179
+      Height = 23
+      Top = 57
+      Width = 33
+      Caption = 'Size:'
+    end
+    object edW: TSpinEdit
+      Left = 216
+      Height = 33
+      Top = 56
+      Width = 63
+      MaxValue = 1000
+      TabOrder = 4
+      Value = 100
+    end
+    object edH: TSpinEdit
+      Left = 280
+      Height = 33
+      Top = 56
+      Width = 63
+      MaxValue = 1000
+      TabOrder = 5
+      Value = 100
+    end
+    object Button1: TButton
+      Left = 352
+      Height = 31
+      Top = 56
+      Width = 96
+      Caption = 'UpdateDraw'
+      TabOrder = 6
+      OnClick = rbFullClick
+    end
+    object cbTransparent: TCheckBox
+      Left = 2
+      Height = 25
+      Top = 32
+      Width = 115
+      Caption = 'Transparent'
+      TabOrder = 7
+      OnChange = rbFullClick
+    end
+    object cbImageFile: TCheckBox
+      Left = 2
+      Height = 25
+      Top = 56
+      Width = 101
+      Caption = 'Image File'
+      TabOrder = 8
+      OnChange = rbFullClick
+    end
+    object Label3: TLabel
+      Left = 232
+      Height = 23
+      Top = 2
+      Width = 9
+      Caption = 'X'
+    end
+    object Label4: TLabel
+      Left = 296
+      Height = 23
+      Top = 2
+      Width = 9
+      Caption = 'Y'
+    end
+    object btFileSel: TButton
+      Left = 112
+      Height = 24
+      Top = 56
+      Width = 24
+      Caption = '...'
+      TabOrder = 9
+      OnClick = btImageFileClick
+    end
+  end
+  object PanelDraw: TPanel
+    Left = 0
+    Height = 300
+    Top = 95
+    Width = 450
+    Align = alClient
+    Caption = 'Panel Draw'
+    TabOrder = 1
+    OnPaint = DrawPaint
+  end
+  object openPict: TOpenPictureDialog
+    Left = 272
+    Top = 82
+  end
 end

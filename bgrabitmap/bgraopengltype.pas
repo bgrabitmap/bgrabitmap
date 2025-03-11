@@ -15,6 +15,7 @@ uses
 type
   TBGLTextureHandle = type Pointer;
   TOpenGLResampleFilter = (orfBox,orfLinear);
+  TOpenGLRepeatMode = (ormRepeat, ormMirroredRepeat, ormClamp);
   TOpenGLBlendMode = (obmNormal, obmAdd, obmMultiply);
   TWaitForGPUOption = (wfgQueueAllCommands, wfgFinishAllCommands);
   TFaceCulling = BGRABitmapTypes.TFaceCulling;
@@ -171,6 +172,8 @@ type
     function GetMask: IBGLTexture;
     function GetOpenGLBlendMode: TOpenGLBlendMode;
     function GetOpenGLTexture: TBGLTextureHandle;
+    function GetRepeatX: TOpenGLRepeatMode;
+    function GetRepeatY: TOpenGLRepeatMode;
     function GetResampleFilter: TOpenGLResampleFilter;
     function GetUseGradientColors: boolean;
     function GetWidth: integer;
@@ -178,6 +181,7 @@ type
     procedure SetFrameSize(x,y: integer);
     procedure SetImageCenter(const AValue: TPointF);
     procedure SetOpenGLBlendMode(AValue: TOpenGLBlendMode);
+    procedure SetRepetition(AValueX, AValueY: TOpenGLRepeatMode);
     procedure SetResampleFilter(AValue: TOpenGLResampleFilter);
     procedure SetGradientColors(ATopLeft, ATopRight, ABottomRight, ABottomLeft: TBGRAPixel);
     procedure SetUseGradientColors(AValue: boolean);
@@ -245,6 +249,8 @@ type
     property Mask: IBGLTexture read GetMask;
     property Handle: TBGLTextureHandle read GetOpenGLTexture;
     property ImageCenter: TPointF read GetImageCenter write SetImageCenter;
+    property RepeatX: TOpenGLRepeatMode read GetRepeatX;
+    property RepeatY: TOpenGLRepeatMode read GetRepeatY;
     property ResampleFilter: TOpenGLResampleFilter read GetResampleFilter write SetResampleFilter;
     property BlendMode: TOpenGLBlendMode read GetOpenGLBlendMode write SetOpenGLBlendMode;
     property GradientColors: boolean read GetUseGradientColors write SetUseGradientColors;
@@ -332,6 +338,8 @@ type
     function GetOpenGLFrameCount(ATexture: TBGLTextureHandle): integer; virtual; abstract;
     function GetEmptyTexture: TBGLTextureHandle; virtual; abstract;
     procedure FreeOpenGLTexture(ATexture: TBGLTextureHandle); virtual; abstract;
+    function GetRepeatX: TOpenGLRepeatMode; virtual; abstract;
+    function GetRepeatY: TOpenGLRepeatMode; virtual; abstract;
     procedure UpdateGLResampleFilter(ATexture: TBGLTextureHandle; AFilter: TOpenGLResampleFilter); virtual; abstract;
     function GetUseGradientColors: boolean; virtual;
     procedure SetUseGradientColors(AValue: boolean); virtual;
@@ -374,6 +382,7 @@ type
     function FilterBlurRadial({%H-}ARadius: single; {%H-}ABlurType: TRadialBlurType): IBGLTexture; virtual;
 
     procedure SetFrameSize(x,y: integer);
+    procedure SetRepetition(AValueX, AValueY: TOpenGLRepeatMode); virtual; abstract;
     procedure Update(ARGBAData: PLongWord; AllocatedWidth, AllocatedHeight, ActualWidth,ActualHeight: integer; RGBAOrder: boolean = true);
     procedure SetFrame(AIndex: integer);
     procedure SetGradientColors(ATopLeft, ATopRight, ABottomRight, ABottomLeft: TBGRAPixel);
@@ -433,6 +442,8 @@ type
     property FlipY: IBGLTexture read GetFlipY;
     property Mask: IBGLTexture read GetMask;
     property Handle: TBGLTextureHandle read GetOpenGLTexture;
+    property RepeatX: TOpenGLRepeatMode read GetRepeatX;
+    property RepeatY: TOpenGLRepeatMode read GetRepeatY;
     property ResampleFilter: TOpenGLResampleFilter read GetResampleFilter write SetResampleFilter;
     property BlendMode: TOpenGLBlendMode read GetOpenGLBlendMode write SetOpenGLBlendMode;
     property GradientColors: boolean read GetUseGradientColors write SetUseGradientColors;

@@ -80,7 +80,7 @@ begin
     image.JoinStyle := pjsRound;
     DrawLines(530,20,'Round join');
 
-    image.Draw(Canvas,Left,Top,True);
+    image.Draw(Canvas,Left,Top,OpaqueDraw);
     image.free;
 end;
 

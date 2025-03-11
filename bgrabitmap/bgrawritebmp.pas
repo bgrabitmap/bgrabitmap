@@ -42,8 +42,6 @@ end;
 {$ENDIF}
 
 initialization
-  if ImageHandlers.ImageWriter['BMP Format']=nil
-  then ImageHandlers.RegisterImageWriter ('BMP Format', 'bmp', TBGRAWriterBMP);
-  DefaultBGRAImageWriter[ifBMP] := TBGRAWriterBMP;
+  BGRARegisterImageWriter(ifBMP, TBGRAWriterBMP, True, 'BMP Format', 'bmp');
 
 end.

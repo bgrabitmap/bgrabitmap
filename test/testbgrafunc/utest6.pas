@@ -73,7 +73,7 @@ begin
   DrawImage(virtualScreen.Width div 4,virtualScreen.Height div 2, zoomFactor, rmSimpleStretch);
   image.ResampleFilter := rfHalfCosine;
   DrawImage(3*virtualScreen.Width div 4,virtualScreen.Height div 2, zoomFactor, rmFineResample);
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest6.OnTimer(Width, Height: Integer; ElapsedSec: Double);

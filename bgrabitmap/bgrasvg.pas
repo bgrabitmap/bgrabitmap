@@ -336,6 +336,8 @@ implementation
 uses XMLRead, XMLWrite, BGRAUTF8, math, xmltextreader, URIParser, BGRATransform;
 
 const SvgNamespace = 'http://www.w3.org/2000/svg';
+const FPCTypeName = 'Scalable Vector Graphic';
+const Extension = 'svg';
 
 { TFPReaderSVG }
 
@@ -455,7 +457,10 @@ var AlreadyRegistered: boolean;
 procedure RegisterSvgFormat;
 begin
   if AlreadyRegistered then exit;
-  ImageHandlers.RegisterImageReader ('Scalable Vector Graphic', 'svg', TFPReaderSVG);
+
+  // register FPC handler
+  BGRARegisterImageReader(ifSvg, TFPReaderSVG, True, FPCTypeName, Extension);
+
   AlreadyRegistered:= True;
 end;
 
@@ -1383,8 +1388,7 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageReader[ifSvg] := TFPReaderSVG;
+  BGRARegisterImageReader(ifSvg, TFPReaderSVG, False, FPCTypeName, Extension);
 
 end.
 

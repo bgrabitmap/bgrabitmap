@@ -9,6 +9,7 @@
 .DS_Store
 backup
 lib
+bin
 debug
 /bgrabitmap/lib4nogui
 /bgrabitmap/lib4fpgui

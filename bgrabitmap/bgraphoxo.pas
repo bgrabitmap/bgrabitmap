@@ -113,11 +113,12 @@ end;
 procedure RegisterPhoxoFormat;
 begin
   if AlreadyRegistered then exit;
-  ImageHandlers.RegisterImageReader ('PhoXo', 'oXo', TBGRAReaderOXO);
+
+  BGRARegisterImageHandlers(ifPhoxo, TBGRAReaderOXO, TBGRAWriterOXO, True, 'PhoXo', 'oXo');
+
   RegisterLayeredBitmapReader('oXo', TBGRAPhoxoDocument);
   RegisterLayeredBitmapWriter('oXo', TBGRAPhoxoDocument);
-  DefaultBGRAImageReader[ifPhoxo] := TBGRAReaderOXO;
-  DefaultBGRAImageWriter[ifPhoxo] := TBGRAWriterOXO;
+
   AlreadyRegistered:= True;
 end;
 

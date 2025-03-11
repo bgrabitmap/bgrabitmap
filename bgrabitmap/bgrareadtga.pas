@@ -186,7 +186,6 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageReader[ifTarga] := TBGRAReaderTarga;
+  BGRARegisterImageReader(ifTarga, TBGRAReaderTarga, True, 'TARGA Format', 'tga');
 
 end.

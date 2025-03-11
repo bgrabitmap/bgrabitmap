@@ -19,6 +19,7 @@ type
   IBGLTexture = BGRAOpenGLType.IBGLTexture;
   IBGLFont = BGRAOpenGLType.IBGLFont;
   IBGLRenderedFont = BGRAFontGL.IBGLRenderedFont;
+  TOpenGLRepeatMode = BGRAOpenGLType.TOpenGLRepeatMode;
   TOpenGLResampleFilter = BGRAOpenGLType.TOpenGLResampleFilter;
   TOpenGLBlendMode = BGRAOpenGLType.TOpenGLBlendMode;
   TBGLPath = BGRACanvasGL.TBGLPath;
@@ -106,6 +107,9 @@ end;
   end;
 
 const
+  ormRepeat = BGRAOpenGLType.ormRepeat;
+  ormMirroredRepeat = BGRAOpenGLType.ormMirroredRepeat;
+  ormClamp = BGRAOpenGLType.ormClamp;
   orfBox = BGRAOpenGLType.orfBox;
   orfLinear = BGRAOpenGLType.orfLinear;
   obmNormal = BGRAOpenGLType.obmNormal;
@@ -184,7 +188,7 @@ function BGLTexture(AFPImage: TFPCustomImage): IBGLTexture; overload;
 function BGLTexture(ABitmap: TBitmap): IBGLTexture; overload;
 function BGLTexture(AWidth, AHeight: integer; Color: TColor): IBGLTexture; overload;
 function BGLTexture(AWidth, AHeight: integer; Color: TBGRAPixel): IBGLTexture; overload;
-function BGLTexture(AFilenameUTF8: string): IBGLTexture; overload;
+function BGLTexture(AFilenameUTF8: string; ARepeatX: TOpenGLRepeatMode = ormRepeat; ARepeatY: TOpenGLRepeatMode = ormRepeat): IBGLTexture; overload;
 function BGLTexture(AFilenameUTF8: string; AWidth, AHeight: integer; AResampleFilter: TResampleFilter = rfBox): IBGLTexture; overload;
 function BGLTexture(AStream: TStream): IBGLTexture; overload;
 
@@ -333,6 +337,9 @@ type
     function GetOpenGLFrameCount(ATexture: TBGLTextureHandle): integer; override;
     function GetEmptyTexture: TBGLTextureHandle; override;
     procedure FreeOpenGLTexture(ATexture: TBGLTextureHandle); override;
+
+    function GetRepeatX: TOpenGLRepeatMode; override;
+    function GetRepeatY: TOpenGLRepeatMode; override;
     procedure UpdateGLResampleFilter(ATexture: TBGLTextureHandle; AFilter: TOpenGLResampleFilter); override;
 
     procedure InternalSetColor(const AColor: TBGRAPixel);
@@ -355,6 +362,7 @@ type
   public
     procedure ToggleFlipX; override;
     procedure ToggleFlipY; override;
+    procedure SetRepetition(AValueX, AValueY: TOpenGLRepeatMode); override;
     procedure Bind(ATextureNumber: integer); override;
     function FilterBlurMotion(ARadius: single; ABlurType: TRadialBlurType; ADirection: TPointF): IBGLTexture; override;
     function FilterBlurRadial(ARadius: single; ABlurType: TRadialBlurType): IBGLTexture; override;
@@ -366,6 +374,7 @@ type
     ID: GLuint;
     AllocatedWidth,AllocatedHeight,ActualWidth,ActualHeight: integer;
     FramesCoord: array of array[0..3] of TPointF;
+    RepeatX,RepeatY: TOpenGLRepeatMode;
   end;
 
   { Canvas for OpenGL }
@@ -628,9 +637,12 @@ begin
   result := TBGLTexture.Create(AWidth,AHeight,Color);
 end;
 
-function BGLTexture(AFilenameUTF8: string): IBGLTexture;
+function BGLTexture(AFilenameUTF8: string; ARepeatX: TOpenGLRepeatMode;
+  ARepeatY: TOpenGLRepeatMode): IBGLTexture;
 begin
   result := TBGLTexture.Create(AFilenameUTF8);
+  if (ARepeatX <> ormRepeat) or (ARepeatY <> ormRepeat) then
+    result.SetRepetition(ARepeatX, ARepeatY);
 end;
 
 function BGLTexture(AFilenameUTF8: string; AWidth, AHeight: integer; AResampleFilter: TResampleFilter): IBGLTexture;
@@ -1393,11 +1405,15 @@ begin
   p^.AllocatedHeight := AAllocatedHeight;
   p^.ActualWidth := AActualWidth;
   p^.ActualHeight := AActualHeight;
+  p^.RepeatX := ormRepeat;
+  p^.RepeatY := ormRepeat;
 
   glGenTextures( 1, @p^.ID );
   glBindTexture( GL_TEXTURE_2D, p^.ID );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, AAllocatedWidth, AAllocatedHeight, 0, providedFormat, GL_UNSIGNED_BYTE, ARGBAData );
   result := p;
 end;
@@ -1522,18 +1538,46 @@ begin
   Dispose(POpenGLTexture(ATexture));
 end;
 
+function TBGLTexture.GetRepeatX: TOpenGLRepeatMode;
+begin
+  result := TOpenGLTexture(FOpenGLTexture^).RepeatX;
+end;
+
+function TBGLTexture.GetRepeatY: TOpenGLRepeatMode;
+begin
+  result := TOpenGLTexture(FOpenGLTexture^).RepeatY;
+end;
+
+procedure TBGLTexture.SetRepetition(AValueX, AValueY: TOpenGLRepeatMode);
+  function RepeatModeToGL(AValue: TOpenGLRepeatMode): integer;
+  begin
+    case AValue of
+      ormMirroredRepeat: result := GL_MIRRORED_REPEAT;
+      ormClamp: result := GL_CLAMP_TO_EDGE;
+      else
+        result := GL_REPEAT;
+    end;
+  end;
+begin
+  TOpenGLTexture(FOpenGLTexture^).RepeatX := AValueX;
+  TOpenGLTexture(FOpenGLTexture^).RepeatY := AValueY;
+  glBindTexture( GL_TEXTURE_2D, TOpenGLTexture(FOpenGLTexture^).ID );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, RepeatModeToGL(AValueX) );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, RepeatModeToGL(AValueY) );
+end;
+
 procedure TBGLTexture.UpdateGLResampleFilter(ATexture: TBGLTextureHandle;
   AFilter: TOpenGLResampleFilter);
 begin
   glBindTexture( GL_TEXTURE_2D, TOpenGLTexture(ATexture^).ID );
   if AFilter = orfLinear then
   begin
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
   end else
   begin
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
   end;
 end;
 

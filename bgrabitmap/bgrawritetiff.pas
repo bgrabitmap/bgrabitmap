@@ -1051,8 +1051,6 @@ begin
 end;
 
 initialization
-  if ImageHandlers.ImageWriter[TiffHandlerName]=nil then
-    ImageHandlers.RegisterImageWriter (TiffHandlerName, 'tif;tiff', TBGRAWriterTiff);
-  DefaultBGRAImageWriter[ifTiff] := TBGRAWriterTiff;
+  BGRARegisterImageWriter(ifTiff, TBGRAWriterTiff, True, TiffHandlerName, 'tif;tiff');
 
 end.

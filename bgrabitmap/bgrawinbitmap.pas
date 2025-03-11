@@ -83,12 +83,11 @@ end;
 
 procedure TBGRAWinBitmap.RebuildBitmap;
 begin
-  if FBitmap = nil then
-  begin
-    FBitmap := TWinBitmapTracker.Create(nil);
-    FBitmap.Handle := DIB_SectionHandle;
-    TWinBitmapTracker(FBitmap).User := self;
-  end;
+  FreeBitmap;
+
+  FBitmap := TWinBitmapTracker.Create(nil);
+  FBitmap.Handle := DIB_SectionHandle;
+  TWinBitmapTracker(FBitmap).User := self;
 end;
 
 procedure TBGRAWinBitmap.FreeBitmap;

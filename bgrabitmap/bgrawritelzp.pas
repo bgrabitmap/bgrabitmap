@@ -431,7 +431,6 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageWriter[ifLazPaint] := TBGRAWriterLazPaint;
+  BGRARegisterImageWriter(ifLazPaint, TBGRAWriterLazPaint, True, 'LazPaint Image Format', 'lzp');
 
 end.

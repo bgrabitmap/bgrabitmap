@@ -27,7 +27,7 @@ uses
 {=== Miscellaneous types ===}
 
   {* Current version expressed as an integer with each part multiplied by 100 }
-  const BGRABitmapVersion = 11060300;
+  const BGRABitmapVersion = 11060400;
 
   {* String representation of the version, numbers separated by dots }
   function BGRABitmapVersionStr: string;
@@ -141,10 +141,16 @@ type
     );
 
 var
+  { #note 5 -oMaxM : it would be useful to make a single record that contains everything }
   {** List of stream readers for images }
   DefaultBGRAImageReader: array[TBGRAImageFormat] of TFPCustomImageReaderClass;
   {** List of stream writers for images }
   DefaultBGRAImageWriter: array[TBGRAImageFormat] of TFPCustomImageWriterClass;
+  {** List of names and extensions for image formats }
+  BGRAImageFormat: array[TBGRAImageFormat] of record
+    TypeName: string; // named use by FPC
+    Extensions: string;
+  end;
 
   {** Detect the file format of a given file }
   function DetectFileFormat(AFilenameUTF8: string): TBGRAImageFormat;
@@ -161,6 +167,26 @@ var
   {** Create an image writer for the given format. _AHasTransparentPixels_
       specifies if alpha channel must be supported }
   function CreateBGRAImageWriter(AFormat: TBGRAImageFormat; AHasTransparentPixels: boolean): TFPCustomImageWriter;
+
+  {** Register an image Reader for the given format, if AddFPCReader register also the FPC handler }
+  procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat;
+                                    AReader: TFPCustomImageReaderClass;
+                                    AddFPCReader: Boolean;
+                                    const ATypeName: String;
+                                    const AExtensions: String);
+
+  {** Register an image Writer for the given format, if AddFPCWriter register also the FPC handler }
+  procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat;
+                                    AWriter: TFPCustomImageWriterClass;
+                                    AddFPCWriter: Boolean;
+                                    const ATypeName: String;
+                                    const AExtensions: String);
+
+  {** Register image Reader and Writer for the given format.
+      If AddFPCWriter register also the FPC handler }
+  procedure BGRARegisterImageHandlers(AFormat: TBGRAImageFormat;
+    AReader: TFPCustomImageReaderClass; AWriter: TFPCustomImageWriterClass;
+    AddFPCHandlers: Boolean; const ATypeName: String; const AExtensions: String);
 
 type
   {* Possible options when loading an image }
@@ -1417,7 +1443,7 @@ begin
   if (ext = '.pdn') then result := ifPaintDotNet else
   if (ext = '.lzp') then result := ifLazPaint else
   if (ext = '.ora') then result := ifOpenRaster else
-  if (ext = '.psd') then result := ifPsd else
+  if (ext = '.psd') or (ext = '.pdd') then result := ifPsd else
   if (ext = '.tga') then result := ifTarga else
   if (ext = '.tif') or (ext = '.tiff') then result := ifTiff else
   if (ext = '.xwd') then result := ifXwd else
@@ -1453,6 +1479,7 @@ begin
     ifSvg: result := 'svg';
     ifPortableAnyMap: result := 'ppm';
     ifWebP: result := 'webp';
+    ifAvif: result := 'avif';
     else result := '?';
   end;
 end;
@@ -1505,6 +1532,64 @@ begin
     TFPWriterXPM(result).ColorCharSize := 2;
   end else
     result := DefaultBGRAImageWriter[AFormat].Create;
+end;
+
+procedure BGRARegisterImageFormat(AFormat: TBGRAImageFormat; const ATypeName: String; const AExtensions: String);
+begin
+  BGRAImageFormat[AFormat].TypeName := ATypeName;
+  BGRAImageFormat[AFormat].Extensions := AExtensions;
+end;
+
+procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat; AReader: TFPCustomImageReaderClass;
+  AddFPCReader: Boolean);
+var
+  typeName: String;
+begin
+  DefaultBGRAImageReader[AFormat] := AReader;
+  typeName := BGRAImageFormat[AFormat].TypeName;
+
+  { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
+  if AddFPCReader and (typeName <> '') and (ImageHandlers.ImageReader[typeName] = nil)
+    and (BGRAImageFormat[AFormat].Extensions <> '') then
+    ImageHandlers.RegisterImageReader(typeName, BGRAImageFormat[AFormat].Extensions, AReader);
+end;
+
+procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat; AReader: TFPCustomImageReaderClass;
+  AddFPCReader: Boolean; const ATypeName: String; const AExtensions: String);
+begin
+  BGRARegisterImageFormat(AFormat, ATypeName, AExtensions);
+  BGRARegisterImageReader(AFormat, AReader, AddFPCReader);
+end;
+
+// registering FPC writer works only if the
+procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat; AWriter: TFPCustomImageWriterClass;
+  AddFPCWriter: Boolean);
+var
+  typeName: String;
+begin
+  DefaultBGRAImageWriter[AFormat] := AWriter;
+  typeName := BGRAImageFormat[AFormat].TypeName;
+
+  { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
+  if addFPCWriter and (typeName <> '') and (ImageHandlers.ImageWriter[typeName] = nil)
+    and (BGRAImageFormat[AFormat].Extensions <> '') then
+    ImageHandlers.RegisterImageWriter(typeName, BGRAImageFormat[AFormat].Extensions, AWriter);
+end;
+
+procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat; AWriter: TFPCustomImageWriterClass;
+  AddFPCWriter: Boolean; const ATypeName: String; const AExtensions: String);
+begin
+  BGRARegisterImageFormat(AFormat, ATypeName, AExtensions);
+  BGRARegisterImageWriter(AFormat, AWriter, AddFPCWriter);
+end;
+
+procedure BGRARegisterImageHandlers(AFormat: TBGRAImageFormat;
+  AReader: TFPCustomImageReaderClass; AWriter: TFPCustomImageWriterClass;
+  AddFPCHandlers: Boolean; const ATypeName: String; const AExtensions: String);
+begin
+  BGRARegisterImageFormat(AFormat, ATypeName, AExtensions);
+  BGRARegisterImageReader(AFormat, AReader, AddFPCHandlers);
+  BGRARegisterImageWriter(AFormat, AWriter, AddFPCHandlers);
 end;
 
 function ResourceFile(AFilename: string): string;
@@ -1662,14 +1747,13 @@ initialization
   fqFineClearType := @GetFineClearTypeAuto;
 
   {$IFNDEF BGRABITMAP_CORE}
-  DefaultBGRAImageWriter[ifTarga] := TFPWriterTarga;
-  DefaultBGRAImageWriter[ifXPixMap] := TFPWriterXPM;
-  DefaultBGRAImageWriter[ifPortableAnyMap] := TFPWriterPNM;
-  //writing XWD not implemented
+  BGRARegisterImageWriter(ifTarga, TFPWriterTarga, false, 'TARGA Format', 'tga');
+  BGRARegisterImageWriter(ifXPixMap, TFPWriterXPM, false, 'XPM Format', 'xpm');
+  BGRARegisterImageHandlers(ifPortableAnyMap, TFPReaderPNM, TFPWriterPNM,
+    False, 'Netpbm Portable aNyMap', 'pnm;pbm;pgm;ppm');
+  BGRARegisterImageReader(ifXwd, TFPReaderXWD, false, 'XWD Format', 'xwd');
 
-  DefaultBGRAImageReader[ifXwd] := TFPReaderXWD;
-  DefaultBGRAImageReader[ifPortableAnyMap] := TFPReaderPNM;
-  //the other readers are registered by their unit
+  //the other readers/writers are registered by their unit
   {$ENDIF}
 
   {$IFDEF BGRABITMAP_USE_LCL}

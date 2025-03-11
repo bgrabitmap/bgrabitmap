@@ -12,9 +12,22 @@ uses
 
 type
   {* Drawer implementation that is colorspace agnostic }
+
+  { TUniversalDrawer }
+
   TUniversalDrawer = class(TCustomUniversalDrawer)
 
     class function GetMaxColorChannelDepth(ADest: TCustomUniversalBitmap): byte;
+
+    class function CreateBGRAImageReader(ASource: TCustomUniversalBitmap;
+                                         const AFilenameUTF8: string;
+                                         var AFormat: TBGRAImageFormat): TFPCustomImageReader;
+
+    class function CreateBGRAImageWriter(ASource: TCustomUniversalBitmap;
+                                         const AFilenameUTF8: string;
+                                         var AFormat: TBGRAImageFormat): TFPCustomImageWriter; overload;
+    class function CreateBGRAImageWriter(ASource: TCustomUniversalBitmap;
+                                         AFormat: TBGRAImageFormat): TFPCustomImageWriter; overload;
 
     {==== Load and save files ====}
 
@@ -48,10 +61,14 @@ type
     class procedure SaveToFile(ASource: TCustomUniversalBitmap; const AFilename: string); overload; override;
     {** Save image to a file with the specified image writer. ''filename'' is an ANSI string }
     class procedure SaveToFile(ASource: TCustomUniversalBitmap; const AFilename: string; AHandler:TFPCustomImageWriter); overload; override;
+    {** Save image to a file in the specified image format }
+    class procedure SaveToFile(ASource: TCustomUniversalBitmap; const AFilename: string; AFormat: TBGRAImageFormat); overload; override;
     {** Save image to a file. The format is guessed from the file extension. ''filename'' is an ANSI string }
     class procedure SaveToFileUTF8(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string); overload; override;
     {** Save image to a file with the specified image writer. ''filename'' is an UTF8 string }
     class procedure SaveToFileUTF8(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string; AHandler:TFPCustomImageWriter); overload; override;
+    {** Save image to a file in the specified image format }
+    class procedure SaveToFileUTF8(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string; AFormat: TBGRAImageFormat); overload; override;
 
     {** Save image to a stream in the specified image format }
     class procedure SaveToStreamAs(ASource: TCustomUniversalBitmap; AStream: TStream; AFormat: TBGRAImageFormat); override;
@@ -170,6 +187,47 @@ begin
     end;
 end;
 
+class function TUniversalDrawer.CreateBGRAImageReader(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string;
+  var AFormat: TBGRAImageFormat): TFPCustomImageReader;
+begin
+  AFormat := DetectFileFormat(ExtractFileExt(AFilenameUTF8));
+  Result := BGRABitmapTypes.CreateBGRAImageReader(AFormat);
+end;
+
+class function TUniversalDrawer.CreateBGRAImageWriter(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string;
+  var AFormat: TBGRAImageFormat): TFPCustomImageWriter;
+var
+   ext: String;
+
+begin
+  AFormat := SuggestImageFormat(AFilenameUTF8);
+  if (AFormat = ifXPixMap) and (ASource.NbPixels > 32768) then //xpm is slow so avoid big images
+    raise exception.Create('Image is too big to be saved as XPM');
+  Result := BGRABitmapTypes.CreateBGRAImageWriter(AFormat, ASource.HasTransparentPixels);
+  if Result is TBGRAWriterPNG then
+  begin
+     if GetMaxColorChannelDepth(ASource) > 8 then TBGRAWriterPNG(Result).WordSized := true;
+  end;
+  if Result is TFPWriterPNM then
+  begin
+    ext := LowerCase(ExtractFileExt(AFilenameUTF8));
+    if ext = '.pbm' then TFPWriterPNM(Result).ColorDepth:= pcdBlackWhite else
+    if ext = '.pgm' then TFPWriterPNM(Result).ColorDepth:= pcdGrayscale else
+    if ext = '.ppm' then TFPWriterPNM(Result).ColorDepth:= pcdRGB;
+  end;
+end;
+
+class function TUniversalDrawer.CreateBGRAImageWriter(ASource: TCustomUniversalBitmap; AFormat: TBGRAImageFormat): TFPCustomImageWriter;
+begin
+  if (AFormat = ifXPixMap) and (ASource.NbPixels > 32768) then //xpm is slow so avoid big images
+    raise exception.Create('Image is too big to be saved as XPM');
+  Result := BGRABitmapTypes.CreateBGRAImageWriter(AFormat, ASource.HasTransparentPixels);
+  if Result is TBGRAWriterPNG then
+  begin
+     if GetMaxColorChannelDepth(ASource) > 8 then TBGRAWriterPNG(Result).WordSized := true;
+  end;
+end;
+
 class procedure TUniversalDrawer.LoadFromFile(ADest: TCustomUniversalBitmap;
   const AFilename: string);
 begin
@@ -206,7 +264,7 @@ begin
   stream := TFileStreamUTF8.Create(AFilenameUTF8, fmOpenRead or fmShareDenyWrite);
   try
     format := DetectFileFormat(Stream, ExtractFileExt(AFilenameUTF8));
-    reader := CreateBGRAImageReader(format);
+    reader := BGRABitmapTypes.CreateBGRAImageReader(format);
     try
       ADest.LoadFromStream(stream, reader, AOptions);
     finally
@@ -244,7 +302,7 @@ var
   reader: TFPCustomImageReader;
 begin
   format := DetectFileFormat(AStream);
-  reader := CreateBGRAImageReader(format);
+  reader := BGRABitmapTypes.CreateBGRAImageReader(format);
   try
     ADest.LoadFromStream(AStream, reader, AOptions);
   finally
@@ -313,7 +371,7 @@ begin
     end else
     begin
       format := DetectFileFormat(stream, ext);
-      reader := CreateBGRAImageReader(format);
+      reader := BGRABitmapTypes.CreateBGRAImageReader(format);
     end;
     try
       ADest.LoadFromStream(stream, reader, AOptions);
@@ -358,28 +416,19 @@ begin
   SaveToFileUTF8(ASource, SysToUtf8(AFilename), AHandler);
 end;
 
+class procedure TUniversalDrawer.SaveToFile(ASource: TCustomUniversalBitmap; const AFilename: string;
+  AFormat: TBGRAImageFormat);
+begin
+  SaveToFileUTF8(ASource, SysToUtf8(AFilename), AFormat);
+end;
+
 class procedure TUniversalDrawer.SaveToFileUTF8(
   ASource: TCustomUniversalBitmap; const AFilenameUTF8: string);
 var
   writer: TFPCustomImageWriter;
   format: TBGRAImageFormat;
-  ext: String;
 begin
-  format := SuggestImageFormat(AFilenameUTF8);
-  if (format = ifXPixMap) and (ASource.NbPixels > 32768) then //xpm is slow so avoid big images
-    raise exception.Create('Image is too big to be saved as XPM');
-  writer := CreateBGRAImageWriter(Format, ASource.HasTransparentPixels);
-  if GetMaxColorChannelDepth(ASource) > 8 then
-  begin
-    if writer is TBGRAWriterPNG then TBGRAWriterPNG(writer).WordSized := true;
-  end;
-  if writer is TFPWriterPNM then
-  begin
-    ext := LowerCase(ExtractFileExt(AFilenameUTF8));
-    if ext = '.pbm' then TFPWriterPNM(writer).ColorDepth:= pcdBlackWhite else
-    if ext = '.pgm' then TFPWriterPNM(writer).ColorDepth:= pcdGrayscale else
-    if ext = '.ppm' then TFPWriterPNM(writer).ColorDepth:= pcdRGB;
-  end;
+  writer := CreateBGRAImageWriter(ASource, AFilenameUTF8, format);
   try
     SaveToFileUTF8(ASource, AFilenameUTF8, writer);
   finally
@@ -401,15 +450,24 @@ begin
    end;
 end;
 
-class procedure TUniversalDrawer.SaveToStreamAs(
-  ASource: TCustomUniversalBitmap; AStream: TStream; AFormat: TBGRAImageFormat);
-var writer: TFPCustomImageWriter;
+class procedure TUniversalDrawer.SaveToFileUTF8(ASource: TCustomUniversalBitmap; const AFilenameUTF8: string;
+  AFormat: TBGRAImageFormat);
+var
+  stream: TFileStreamUTF8;
 begin
-  writer := CreateBGRAImageWriter(AFormat, ASource.HasTransparentPixels);
-  if GetMaxColorChannelDepth(ASource) > 8 then
-  begin
-    if writer is TBGRAWriterPNG then TBGRAWriterPNG(writer).WordSized := true;
-  end;
+   stream := TFileStreamUTF8.Create(AFilenameUTF8, fmCreate);
+   try
+     SaveToStreamAs(ASource, stream, AFormat);
+   finally
+     stream.Free;
+   end;
+end;
+
+class procedure TUniversalDrawer.SaveToStreamAs(ASource: TCustomUniversalBitmap; AStream: TStream; AFormat: TBGRAImageFormat);
+var
+   writer: TFPCustomImageWriter;
+begin
+  writer := CreateBGRAImageWriter(ASource, AFormat);
   try
     TFPCustomImage(ASource).SaveToStream(AStream, writer)
   finally

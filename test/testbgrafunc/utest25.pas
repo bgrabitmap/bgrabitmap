@@ -70,12 +70,12 @@ begin
   virtualScreen.CanvasBGRA.AntialiasingMode := amOff;
   virtualScreen.CanvasBGRA.Font.Quality := fqSystem;
   DrawOnCanvas(virtualScreen.CanvasBGRA);
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 
   virtualScreen.CanvasBGRA.AntialiasingMode := amOn;
   virtualScreen.CanvasBGRA.Font.Quality := fqFineClearTypeRGB;
   DrawOnCanvas(virtualScreen.CanvasBGRA);
-  virtualscreen.Draw(Canvas,Left+Width div 2,Top,True);
+  virtualscreen.Draw(Canvas,Left+Width div 2,Top,OpaqueDraw);
 end;
 
 procedure TTest25.OnTimer(Width, Height: Integer; ElapsedSec: Double);
