@@ -46,6 +46,17 @@ type
     {$ENDIF}
 
     function InternalCheck(Str: TStream): boolean; override;
+
+  published
+    //property CompressInfo : jpeg_decompress_struct; rw
+    property Orientation; //: TExifOrientation; r
+    property ProgressiveEncoding; //: boolean;  r
+    property GrayScale;           //: boolean;  r
+    property Smoothing;           //: boolean;  rw
+    property Performance;         //: TJPEGReadPerformance; rw
+    property Scale;               //: TJPEGScale; rw
+    property MinWidth;            //: integer rw
+    property MinHeight;           //: integer rw
   end;
 
 implementation

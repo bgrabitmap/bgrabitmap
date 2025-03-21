@@ -98,6 +98,8 @@ type
     procedure Clear;
     procedure AddImage(Img: TFPCustomImage);
     procedure SaveToStream(Stream: TStream);
+
+  published
     property SaveCMYKAsRGB: boolean read FSaveCMYKAsRGB write FSaveCMYKAsRGB;
     property PremultiplyRGB: boolean read FPremultiplyRGB write FPremultiplyRGB;
   end;
