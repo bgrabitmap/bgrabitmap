@@ -30,6 +30,9 @@ type
     It implements most function to the exception from implementations specific to the
     widgetset.
   }
+
+  { TBGRADefaultBitmap }
+
   TBGRADefaultBitmap = class(TBGRACustomBitmap)
   private
     { Bounds checking which are shared by drawing functions. These functions check
@@ -615,6 +618,7 @@ type
     {$IFNDEF BGRABITMAP_CORE}function GetGrayscaleMaskFromAlpha: TGrayscaleMask;{$ENDIF}
     procedure ConvertToLinearRGB; override;
     procedure ConvertFromLinearRGB; override;
+    procedure ConvertToPaletteGrayscale; override;
 
     {Filters}
     {$IFNDEF BGRABITMAP_CORE}
@@ -4584,6 +4588,22 @@ begin
     p^.green := GammaCompressionTab[p^.green shl 8 + p^.green];
     p^.blue := GammaCompressionTab[p^.blue shl 8 + p^.blue];
     inc(p);
+  end;
+end;
+
+procedure TBGRADefaultBitmap.ConvertToPaletteGrayscale;
+var
+   newPal: TFPPalette;
+
+begin
+  try
+     newPal:= CreateGrayScalePalette;
+     UsePalette:= True;
+     Palette.Copy(newPal);
+     InplaceGrayscale(True);
+
+  finally
+     newPal.Free;
   end;
 end;
 

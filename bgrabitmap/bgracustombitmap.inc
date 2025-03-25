@@ -836,6 +836,7 @@ end;
      procedure InplaceNormalize(ABounds: TRect; AEachChannel: boolean = True); overload; virtual; abstract;
      procedure ConvertToLinearRGB; virtual; abstract;
      procedure ConvertFromLinearRGB; virtual; abstract;
+     procedure ConvertToPaletteGrayscale; virtual; abstract;
      procedure SwapRedBlue; overload; virtual; abstract;
      procedure SwapRedBlue(ARect: TRect); overload; virtual; abstract;
      procedure GrayscaleToAlpha; virtual; abstract;

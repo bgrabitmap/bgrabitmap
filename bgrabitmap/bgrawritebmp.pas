@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-linking-exception
 {*****************************************************************************}
 {
-  2023-06  - Massimo Magnano
-           - added Resolution support
+  2023-06  - Massimo Magnano added Resolution support
+  2025-03  - Massimo Magnano added GrayScale and Palette Conversion
 }
 {*****************************************************************************}
 { Imports the writer for the BMP image format }
@@ -41,6 +41,8 @@ type
 
 implementation
 
+uses BGRAFilters, BGRABitmap, BGRAColorQuantization;
+
 procedure TBGRAWriterBMP.SetGrayScale(AValue: boolean);
 begin
   if FGrayscale=AValue then Exit;
@@ -65,22 +67,40 @@ end;
 
 procedure TBGRAWriterBMP.InternalWrite(Stream: TStream; Img: TFPCustomImage);
 var
-   newPal: TFPPalette;
+   aImg: TBGRABitmap;
+   quant: TBGRAColorQuantizer;
 
 begin
-  if FGrayscale then
+  if (BitsPerPixel <= 8) then
   begin
     try
-       newPal:= CreateGrayScalePalette;
-       Img.UsePalette:= True;
-       Img.Palette.Copy(newPal);
-       newPal.Free;
-    except
-       newPal.Free;
-    end;
-  end;
+       quant:= nil;
+       aImg:= TBGRABitmap.Create(Img);
 
-  inherited InternalWrite(Stream, Img);
+       if FGrayscale
+       then aImg.ConvertToPaletteGrayscale
+       else begin
+              aImg.UsePalette:=True;
+              quant := TBGRAColorQuantizer.Create(aImg, acIgnore);
+
+              Case BitsPerPixel of
+              1: quant.ReductionColorCount:= 2;
+              4: quant.ReductionColorCount:= 16;
+              8: quant.ReductionColorCount:= 256;
+              end;
+
+              quant.ApplyDitheringInplace(daFloydSteinberg, aImg);
+              quant.ReducedPalette.AssignTo(aImg.Palette);
+            end;
+
+       inherited InternalWrite(Stream, aImg);
+
+    finally
+       if (quant <> nil) then quant.Free;
+       aImg.Free;
+    end;
+   end
+  else inherited InternalWrite(Stream, Img);
 end;
 
 constructor TBGRAWriterBMP.Create;
