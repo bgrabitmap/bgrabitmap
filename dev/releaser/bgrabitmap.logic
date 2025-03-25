@@ -6,5 +6,8 @@ package bgrabitmappack.lpk
 package bgrabitmappack4fpgui.lpk
 package bgrabitmappack4nogui.lpk
 package bgrabitmappack4android.lpk
+package bgrabitmappack4android_freetype.lpk
+package bgrabitmappack4nolcl.lpk
+package bgrabitmappack4nolcl_freetype.lpk
 const bgrabitmaptypes.pas BGRABitmapVersion
 
