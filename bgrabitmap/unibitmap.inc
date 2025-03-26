@@ -229,13 +229,16 @@ type
     {** Clear all channels of transparent pixels }
     procedure ClearTransparentPixels; virtual;
 
+    {** Initializes a brush that erases (reduces the alpha channel) }
     class procedure EraseBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AAlpha: Word); virtual;
+    {** Initializes a brush that sets the alpha channel }
     class procedure AlphaBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AAlpha: Word); virtual;
     procedure SolidBrushBGRA(out ABrush: TUniversalBrush; ARed,AGreen,ABlue,AAlpha: Byte; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     procedure SolidBrushBGRA(out ABrush: TUniversalBrush; AColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     procedure SolidBrushExpanded(out ABrush: TUniversalBrush; ARed,AGreen,ABlue,AAlpha: Word; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     procedure SolidBrushExpanded(out ABrush: TUniversalBrush; AColor: TExpandedPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
+    {** Initializes a brush that fills a texture from a scanner }
     class procedure ScannerBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner; {%H-}ADrawMode: TDrawMode = dmDrawWithTransparency;
                                  {%H-}AOffsetX: integer = 0; {%H-}AOffsetY: integer = 0); virtual;
     class procedure MaskBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner;
