@@ -22,7 +22,14 @@ uses FPReadTGA, FPimage, BGRAClasses;
 
 type
   { Reader for TGA image format }
+
+  { TBGRAReaderTarga }
+
   TBGRAReaderTarga = class (TFPReaderTarga)
+  private
+    function GetBitsPerPixel: byte;
+    function GetCompressed: boolean;
+    function GetGrayScale: Boolean;
   protected
     FBuffer: packed array of byte;
     FBufferPos, FBufferSize: integer;
@@ -32,11 +39,31 @@ type
     procedure InitReadBuffer(AStream: TStream; ASize: integer);
     procedure CloseReadBuffer;
     function GetNextBufferByte: byte;
+
+  published
+    property GrayScale: Boolean read GetGrayScale;
+    property BitsPerPixel: byte read GetBitsPerPixel; // [8, 16, 24, 32]
+    property Compressed: boolean read GetCompressed;
   end;
 
 Implementation
 
 uses BGRABitmapTypes, targacmn;
+
+function TBGRAReaderTarga.GetBitsPerPixel: byte;
+begin
+  Result:= BytesPerPixel; //MaxM: I think there is an error in var name 32byte for pixel it's not realistic
+end;
+
+function TBGRAReaderTarga.GetCompressed: boolean;
+begin
+  Result:= TFPReaderTarga(Self).Compressed;
+end;
+
+function TBGRAReaderTarga.GetGrayScale: Boolean;
+begin
+  Result:= (Header.ImgType = TARGA_GRAY_IMAGE);
+end;
 
 procedure TBGRAReaderTarga.ReadScanLine(Row: Integer; Stream: TStream);
 Var
@@ -84,7 +111,7 @@ begin
   end;
 end;
 
-Procedure TBGRAReaderTarga.WriteScanLine(Row : Integer; Img : TFPCustomImage);
+procedure TBGRAReaderTarga.WriteScanLine(Row: Integer; Img: TFPCustomImage);
 Var
   Col : Integer;
   Value   : UInt32or64;

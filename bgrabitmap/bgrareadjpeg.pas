@@ -49,7 +49,9 @@ type
 
   published
     //property CompressInfo : jpeg_decompress_struct; rw
-    property Orientation; //: TExifOrientation; r
+    {$IF FPC_FULLVERSION>=30301}
+    property Orientation;         //: TExifOrientation; r
+    {$ENDIF}
     property ProgressiveEncoding; //: boolean;  r
     property GrayScale;           //: boolean;  r
     property Smoothing;           //: boolean;  rw
