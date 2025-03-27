@@ -30,10 +30,12 @@ type
     function GetBitsPerPixel: byte;
     function GetCompressed: boolean;
     function GetGrayScale: Boolean;
+
   protected
     FBuffer: packed array of byte;
     FBufferPos, FBufferSize: integer;
     FBufferStream: TStream;
+
     procedure ReadScanLine({%H-}Row: Integer; Stream: TStream); override;
     procedure WriteScanLine(Row : Integer; Img : TFPCustomImage); override;
     procedure InitReadBuffer(AStream: TStream; ASize: integer);
@@ -50,6 +52,11 @@ Implementation
 
 uses BGRABitmapTypes, targacmn;
 
+type
+  //Workaround to access the inherited Compressed variable with the same name of property
+  TFPReaderTarga_Access = class(TFPReaderTarga)
+  end;
+
 function TBGRAReaderTarga.GetBitsPerPixel: byte;
 begin
   Result:= BytesPerPixel; //MaxM: I think there is an error in var name 32byte for pixel it's not realistic
@@ -57,7 +64,7 @@ end;
 
 function TBGRAReaderTarga.GetCompressed: boolean;
 begin
-  Result:= TFPReaderTarga(Self).Compressed;
+  Result:= TFPReaderTarga_Access(Self).Compressed;
 end;
 
 function TBGRAReaderTarga.GetGrayScale: Boolean;
