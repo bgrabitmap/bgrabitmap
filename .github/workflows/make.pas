@@ -41,7 +41,8 @@ type
         '--force', '--remote'], Result.Output) then
       begin
         for Line in SplitString(Result.Output, LineEnding) do
-          OutLog(info, Line);
+          if Line <> '' then
+            OutLog(info, Line);
       end;
   end;
 
@@ -202,10 +203,12 @@ type
     finally
       List.Free;
     end;
+    OutLog(audit,   '------------');
     if ExitCode <> 0 then
-      OutLog(error, LineEnding + 'Errors: ' + IntToStr(ExitCode))
+      OutLog(error, 'Errors: ' + IntToStr(ExitCode))
     else
-      OutLog(info, LineEnding + 'Errors: ' + IntToStr(ExitCode));
+      OutLog(info,  'No Errors 😊');
+    OutLog(audit,   '------------');  
   end;
 
 begin
