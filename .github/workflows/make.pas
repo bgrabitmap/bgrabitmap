@@ -27,18 +27,22 @@ type
   procedure OutLog(Knd: TLog; Msg: string);
   begin
     case Knd of
-        error: Writeln(stderr, #27'[31m', Msg, #27'[0m');
+        error: Writeln(stderr, #27'[91m', Msg, #27'[0m');
         info:  Writeln(stderr, #27'[32m', Msg, #27'[0m');
         audit: Writeln(stderr, #27'[33m', Msg, #27'[0m');
     end;
   end;
 
   function CheckModules: Output;
+  var Line: string;
   begin
     if FileExists('.gitmodules') then
       if RunCommand('git', ['submodule', 'update', '--init', '--recursive',
         '--force', '--remote'], Result.Output) then
-        OutLog(info, Result.Output);
+      begin
+        for Line in SplitString(Result.Output, LineEnding) do
+          OutLog(info, Line);
+      end;
   end;
 
   function AddPackage(Path: string): Output;
@@ -54,7 +58,7 @@ type
       ;
       if not Exec(Path) and RunCommand('lazbuild', ['--add-package-link', Path],
         Result.Output) then
-        OutLog(audit, 'added ' + Path);
+        OutLog(info, 'added ' + Path);
       Free;
     end;
   end;
@@ -82,18 +86,18 @@ type
         ExitCode += 1;
         with TRegExpr.Create do
         begin
-          Expression := '(Fatal|Error|/ld):';
+          Expression := '(Fatal|Error|/ld(\.[a-z]+)?):';
           for Line in SplitString(Result.Output, LineEnding) do
           begin
             if Exec(Line) then
-              OutLog(error, #10 + Line);
+              OutLog(error, Line);
           end;
           Free;
         end;
       end;
     except
       on E: Exception do
-        OutLog(error, E.ClassName + #13#10 + E.Message);
+        OutLog(error, E.ClassName + LineEnding + E.Message);
     end;
   end;
 
@@ -112,7 +116,7 @@ type
           end;
         except
           on E: Exception do
-            OutLog(error, E.ClassName + #13#10 + E.Message);
+            OutLog(error, E.ClassName + LineEnding + E.Message);
         end;
   end;
 
@@ -199,9 +203,9 @@ type
       List.Free;
     end;
     if ExitCode <> 0 then
-      OutLog(error, #10 + 'Errors: ' + IntToStr(ExitCode))
+      OutLog(error, LineEnding + 'Errors: ' + IntToStr(ExitCode))
     else
-      OutLog(info, #10 + 'Errors: ' + IntToStr(ExitCode));
+      OutLog(info, LineEnding + 'Errors: ' + IntToStr(ExitCode));
   end;
 
 begin
