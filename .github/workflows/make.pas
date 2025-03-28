@@ -80,14 +80,16 @@ type
       else
       begin
         ExitCode += 1;
-        for Line in SplitString(Result.Output, LineEnding) do
-          with TRegExpr.Create do
+        with TRegExpr.Create do
+        begin
+          Expression := '(Fatal|Error|/ld):';
+          for Line in SplitString(Result.Output, LineEnding) do
           begin
-            Expression := '(Fatal|Error):';
             if Exec(Line) then
               OutLog(error, #10 + Line);
-            Free;
           end;
+          Free;
+        end;
       end;
     except
       on E: Exception do
