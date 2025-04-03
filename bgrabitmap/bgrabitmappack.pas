@@ -31,7 +31,7 @@ uses
   XYZABitmap, BGRAWriteTiff, WordXYZABitmap, ExpandedBitmap, libwebp, 
   linuxlib, BGRAReadWebP, BGRAWriteWebP, BGRAClasses, avifbgra, libavif, 
   BGRAWriteAvif, BGRAReadAvif, darwinlib, BGRAWriteJpeg, BGRAWriteBMP, 
-  BGRAWritePCX, BGRAPapers, BGRAPNGComn, BGRACustomTextFX;
+  BGRAWritePCX, BGRAPapers, BGRAPNGComn, BGRACustomTextFX, BGRAPDF;
 
 implementation
 

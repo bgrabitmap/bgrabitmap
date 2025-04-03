@@ -1544,14 +1544,18 @@ procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat; AReader: TFPCustomI
   AddFPCReader: Boolean);
 var
   typeName: String;
+
 begin
   DefaultBGRAImageReader[AFormat] := AReader;
   typeName := BGRAImageFormat[AFormat].TypeName;
 
-  { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
-  if AddFPCReader and (typeName <> '') and (ImageHandlers.ImageReader[typeName] = nil)
-    and (BGRAImageFormat[AFormat].Extensions <> '') then
+  if AddFPCReader and (typeName <> '') and (BGRAImageFormat[AFormat].Extensions <> '') then
+  begin
+    if (ImageHandlers.ImageReader[typeName] <> nil)
+    then ImageHandlers.UnregisterImageHandlers(typeName, True, False);
+
     ImageHandlers.RegisterImageReader(typeName, BGRAImageFormat[AFormat].Extensions, AReader);
+  end;
 end;
 
 procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat; AReader: TFPCustomImageReaderClass;
@@ -1561,19 +1565,22 @@ begin
   BGRARegisterImageReader(AFormat, AReader, AddFPCReader);
 end;
 
-// registering FPC writer works only if the
 procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat; AWriter: TFPCustomImageWriterClass;
   AddFPCWriter: Boolean);
 var
   typeName: String;
+
 begin
   DefaultBGRAImageWriter[AFormat] := AWriter;
   typeName := BGRAImageFormat[AFormat].TypeName;
 
-  { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
-  if addFPCWriter and (typeName <> '') and (ImageHandlers.ImageWriter[typeName] = nil)
-    and (BGRAImageFormat[AFormat].Extensions <> '') then
+  if addFPCWriter and (typeName <> '') and (BGRAImageFormat[AFormat].Extensions <> '') then
+  begin
+    if (ImageHandlers.ImageWriter[typeName] <> nil)
+    then ImageHandlers.UnregisterImageHandlers(typeName, False, True);
+
     ImageHandlers.RegisterImageWriter(typeName, BGRAImageFormat[AFormat].Extensions, AWriter);
+  end;
 end;
 
 procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat; AWriter: TFPCustomImageWriterClass;
