@@ -119,7 +119,7 @@ begin
   if (curImg <> nil)
   then begin
          TBGRAPDFDictionary(ImageDict).AddName('ColorSpace', PDFColorSpace[curImg.FColorSpace]);
-         TBGRAPDFDictionary(ImageDict).AddInteger('BitsPerComponent', curImg.BitsPerComponent);
+         TBGRAPDFDictionary(ImageDict).AddInteger('BitsPerComponent', curImg.FBitsPerComponent);
        end
   else begin
          TBGRAPDFDictionary(ImageDict).AddName('ColorSpace','DeviceRGB');
