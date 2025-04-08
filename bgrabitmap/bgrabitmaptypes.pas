@@ -188,6 +188,11 @@ var
     AReader: TFPCustomImageReaderClass; AWriter: TFPCustomImageWriterClass;
     AddFPCHandlers: Boolean; const ATypeName: String; const AExtensions: String);
 
+  {** Get Registered Readers Extensions To Use in Masks List}
+  function BGRARegisteredImageReadersExtensions: String;
+  {** Get Registered Writers Extensions To Use in Masks List}
+  function BGRARegisteredImageWritersExtensions: String;
+
 type
   {* Possible options when loading an image }
   TBGRALoadingOption = (
@@ -1597,6 +1602,36 @@ begin
   BGRARegisterImageFormat(AFormat, ATypeName, AExtensions);
   BGRARegisterImageReader(AFormat, AReader, AddFPCHandlers);
   BGRARegisterImageWriter(AFormat, AWriter, AddFPCHandlers);
+end;
+
+function BGRARegisteredImageReadersExtensions: String;
+var
+   iFormat: TBGRAImageFormat;
+
+begin
+  Result:= '';
+  for iFormat:=Low(TBGRAImageFormat) to High(TBGRAImageFormat) do
+    if (DefaultBGRAImageReader[iFormat] <> nil)
+    then if (Result = '')
+         then Result:= '*.'+BGRAImageFormat[iFormat].Extensions
+         else Result:= Result+';'+BGRAImageFormat[iFormat].Extensions;
+
+  Result := StringReplace(Result, ';', ';*.', [rfReplaceAll]);
+end;
+
+function BGRARegisteredImageWritersExtensions: String;
+var
+   iFormat: TBGRAImageFormat;
+
+begin
+  Result:= '';
+  for iFormat:=Low(TBGRAImageFormat) to High(TBGRAImageFormat) do
+    if (DefaultBGRAImageWriter[iFormat] <> nil)
+    then if (Result = '')
+         then Result:= '*.'+BGRAImageFormat[iFormat].Extensions
+         else Result:= Result+';'+BGRAImageFormat[iFormat].Extensions;
+
+  Result := StringReplace(Result, ';', ';*.', [rfReplaceAll]);
 end;
 
 function ResourceFile(AFilename: string): string;
