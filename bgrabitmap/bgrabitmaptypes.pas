@@ -188,10 +188,13 @@ var
     AReader: TFPCustomImageReaderClass; AWriter: TFPCustomImageWriterClass;
     AddFPCHandlers: Boolean; const ATypeName: String; const AExtensions: String);
 
-  {** Get Registered Readers Extensions To Use in Masks List}
-  function BGRARegisteredImageReadersExtensions: String;
-  {** Get Registered Writers Extensions To Use in Masks List}
-  function BGRARegisteredImageWritersExtensions: String;
+  {** Get Registered Readers Extensions to use in Masks List}
+  function BGRARegisteredImageReaderExtension: String; overload;
+  function BGRARegisteredImageReaderExtension(AFormat: TBGRAImageFormat): String; overload;
+
+  {** Get Registered Writers Extensions to use in Masks List}
+  function BGRARegisteredImageWriterExtension: String;
+  function BGRARegisteredImageWriterExtension(AFormat: TBGRAImageFormat): String; overload;
 
 type
   {* Possible options when loading an image }
@@ -1604,34 +1607,50 @@ begin
   BGRARegisterImageWriter(AFormat, AWriter, AddFPCHandlers);
 end;
 
-function BGRARegisteredImageReadersExtensions: String;
+function BGRARegisteredImageReaderExtension: String;
 var
    iFormat: TBGRAImageFormat;
 
 begin
   Result:= '';
-  for iFormat:=Low(TBGRAImageFormat) to High(TBGRAImageFormat) do
+  for iFormat:=ifJpeg to High(TBGRAImageFormat) do
     if (DefaultBGRAImageReader[iFormat] <> nil)
     then if (Result = '')
-         then Result:= '*.'+BGRAImageFormat[iFormat].Extensions
+         then Result:= '*'+ExtensionSeparator+BGRAImageFormat[iFormat].Extensions
          else Result:= Result+';'+BGRAImageFormat[iFormat].Extensions;
 
-  Result := StringReplace(Result, ';', ';*.', [rfReplaceAll]);
+  Result:= StringReplace(Result, ';', ';*'+ExtensionSeparator, [rfReplaceAll]);
 end;
 
-function BGRARegisteredImageWritersExtensions: String;
+function BGRARegisteredImageReaderExtension(AFormat: TBGRAImageFormat): String;
+begin
+  Result:= '';
+  if (DefaultBGRAImageReader[AFormat] <> nil)
+  then Result:= StringReplace('*'+ExtensionSeparator+BGRAImageFormat[AFormat].Extensions,
+                              ';', ';*'+ExtensionSeparator, [rfReplaceAll]);
+end;
+
+function BGRARegisteredImageWriterExtension: String;
 var
    iFormat: TBGRAImageFormat;
 
 begin
   Result:= '';
-  for iFormat:=Low(TBGRAImageFormat) to High(TBGRAImageFormat) do
+  for iFormat:=ifJpeg to High(TBGRAImageFormat) do
     if (DefaultBGRAImageWriter[iFormat] <> nil)
     then if (Result = '')
-         then Result:= '*.'+BGRAImageFormat[iFormat].Extensions
+         then Result:= '*'+ExtensionSeparator+BGRAImageFormat[iFormat].Extensions
          else Result:= Result+';'+BGRAImageFormat[iFormat].Extensions;
 
-  Result := StringReplace(Result, ';', ';*.', [rfReplaceAll]);
+  Result:= StringReplace(Result, ';', ';*'+ExtensionSeparator, [rfReplaceAll]);
+end;
+
+function BGRARegisteredImageWriterExtension(AFormat: TBGRAImageFormat): String;
+begin
+  Result:= '';
+  if (DefaultBGRAImageWriter[AFormat] <> nil)
+  then Result:= StringReplace('*'+ExtensionSeparator+BGRAImageFormat[AFormat].Extensions,
+                              ';', ';*'+ExtensionSeparator, [rfReplaceAll]);
 end;
 
 function ResourceFile(AFilename: string): string;
