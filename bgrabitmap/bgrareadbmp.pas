@@ -39,6 +39,37 @@ type
   TBMPTransparencyOption = (toAuto, toTransparent, toOpaque);
   TBitMapInfoHeader = BMPcomn.TBitMapInfoHeader;
   TBitMapFileHeader = BMPcomn.TBitMapFileHeader;
+  TBitmapInfoHeaderV4 = packed record
+    {14+04 : Size of the bitmap info header : sould be 40=$28}
+          Size:longint;
+    {18+04 : Image width in pixels}
+          Width:longint;
+    {22+04 : Image height in pixels}
+          Height:longint;
+    {26+02 : Number of image planes : should be 1 always}
+          Planes:word;
+    {28+02 : Color resolution : Number of bits per pixel (1,4,8,16,24,32)}
+          BitCount:word;
+    {30+04 : Compression Type}
+          Compression:longint;
+    {34+04 : Size of image data (not headers nor palette): can be 0 if no compression}
+          SizeImage:longint;
+    {38+04 : Horizontal resolution in pixel/meter}
+          XPelsPerMeter:Longint;
+    {42+04 : Vertical resolution in pixel/meter}
+          YPelsPerMeter:Longint;
+    {46+04 : Number of colors used}
+          ClrUsed:longint;
+    {50+04 : Number of imprtant colors used : useful for displaying on VGA256}
+          ClrImportant:longint;
+
+          // additional fields for V4
+          RedMask, GreenMask, BlueMask, AlphaMask: longword;
+          CSType: longword;
+          RedXYZ, GreenXYZ, BlueXYZ: packed array[0..2] of longint;
+          GammaRed, GammaGreen, GammaBlue: longword;
+  end;
+
   { Header for OS/2 bitmap format }
   TOS2BitmapHeader = packed record
     bcSize: LongWord;
@@ -69,7 +100,7 @@ type
     protected
       ReadSize : Integer;       // Size (in bytes) of 1 scanline.
       BFH: TBitMapFileHeader;    // The file header
-      BFI: TBitMapInfoHeader;  // The header as read from the stream.
+      BFI: TBitMapInfoHeaderV4;  // The header as read from the stream.
       FPaletteEntrySize: integer;  // 4 for Windows, 3 for OS/2 1.x
       FPalette : PFPcolor;      // Buffer with Palette entries. (useless now)
       FBGRAPalette : PBGRAPixel;
@@ -134,6 +165,42 @@ implementation
 
 uses math;
 
+procedure SwapBMPInfoHeaderV4(var BFI : TBitMapInfoHeaderV4);
+var
+  i: Integer;
+begin
+  with BFI do
+  begin
+    Size:=swap(Size);
+    Width:=swap(Width);
+    Height:=swap(Height);
+    Planes:=swap(Planes);
+    BitCount:=swap(BitCount);
+    Compression:=swap(Compression);
+    SizeImage:=swap(SizeImage);
+    XPelsPerMeter:=swap(XPelsPerMeter);
+    YPelsPerMeter:=swap(YPelsPerMeter);
+    ClrUsed:=swap(ClrUsed);
+    ClrImportant:=swap(ClrImportant);
+
+    // additional fields for V4
+    RedMask := swap(RedMask);
+    GreenMask := swap(GreenMask);
+    BlueMask := swap(BlueMask);
+    AlphaMask := swap(AlphaMask);
+    CSType := swap(CSType);
+    for i := 0 to 2 do
+    begin
+      RedXYZ[i] := swap(RedXYZ[i]);
+      GreenXYZ[i] := swap(GreenXYZ[i]);
+      BlueXYZ[i] := swap(BlueXYZ[i]);
+    end;
+    GammaRed := swap(GammaRed);
+    GammaGreen := swap(GammaGreen);
+    GammaBlue := swap(GammaBlue);
+  end;
+end;
+
 function MakeBitmapFileHeader(AData: TStream): TBitMapFileHeader;
 var header: PBitMapInfoHeader;
   headerSize: integer;
@@ -195,7 +262,6 @@ begin
 end;
 
 Function RGBToFPColor(Const RGB : TColorRGB) : TFPColor;
-
 begin
   with Result,RGB do
     begin  {Use only the high byte to convert the color}
@@ -207,7 +273,6 @@ begin
 end;
 
 constructor TBGRAReaderBMP.Create;
-
 begin
   inherited create;
   FTransparencyOption := toTransparent;
@@ -215,7 +280,6 @@ begin
 end;
 
 destructor TBGRAReaderBMP.Destroy;
-
 begin
   FreeBufs;
   inherited destroy;
@@ -286,6 +350,7 @@ begin
   bmpFormat:= TBGRAReaderBMP.Create;
   bmpFormat.Subformat:= Subformat;
   bmpFormat.MinifyHeight := AMaxHeight*2;
+  bmpFormat.TransparencyOption:= TransparencyOption;
   result := BGRABitmapFactory.Create;
   prevStreamPos := AStream.Position;
   try
@@ -408,14 +473,22 @@ begin
   end
   else if ((BFI.Compression=BI_BITFIELDS) and (BFI.BitCount in [16,32])) then { arbitrary mask }
   begin
-    Stream.Read(RedMask,4);
-    Stream.Read(GreenMask,4);
-    Stream.Read(BlueMask,4);
-    {$IFDEF ENDIAN_BIG}
-    RedMask:=swap(RedMask);
-    GreenMask:=swap(GreenMask);
-    BlueMask:=swap(BlueMask);
-    {$ENDIF}
+    if BFI.Size >= sizeof(TBitMapInfoHeaderV4) then
+    begin
+      RedMask := BFI.RedMask;
+      GreenMask := BFI.GreenMask;
+      BlueMask := BFI.BlueMask;
+    end else
+    begin
+      Stream.Read(RedMask,4);
+      Stream.Read(GreenMask,4);
+      Stream.Read(BlueMask,4);
+      {$IFDEF ENDIAN_BIG}
+      RedMask:=swap(RedMask);
+      GreenMask:=swap(GreenMask);
+      BlueMask:=swap(BlueMask);
+      {$ENDIF}
+    end;
     RedShift:=ShiftCount(RedMask);
     GreenShift:=ShiftCount(GreenMask);
     BlueShift:=ShiftCount(BlueMask);
@@ -457,7 +530,7 @@ end;
 procedure TBGRAReaderBMP.InternalRead(Stream:TStream; Img:TFPCustomImage);
 
 Var
-  i, pallen : Integer;
+  i, pallen, totalHeaderByteCount, headerByteCount, deltaPos : Integer;
   BadCompression : boolean;
   WriteScanlineProc: TWriteScanlineProc;
   headerSize: LongWord;
@@ -474,8 +547,8 @@ begin
   if headerSize = sizeof(TOS2BitmapHeader) then
   begin
     fillchar({%H-}os2header,SizeOf(os2header),0);
-    Stream.Read(os2header.bcWidth,min(SizeOf(os2header),headerSize)-sizeof(LongWord));
-    BFI.Size := 16;
+    headerByteCount := Stream.Read(os2header.bcWidth,min(SizeOf(os2header),headerSize)-sizeof(LongWord));
+    BFI.Size := 16; // equivalent Windows format
     BFI.Width := LEtoN(os2header.bcWidth);
     BFI.Height := LEtoN(os2header.bcHeight);
     BFI.Planes := LEtoN(os2header.bcPlanes);
@@ -483,15 +556,17 @@ begin
     FPaletteEntrySize:= 3;
   end else
   begin
-    Stream.Read(BFI.Width,min(SizeOf(BFI),headerSize)-sizeof(LongWord));
+    headerByteCount := Stream.Read(BFI.Width,min(SizeOf(BFI),headerSize)-sizeof(LongWord));
     {$IFDEF ENDIAN_BIG}
-    SwapBMPInfoHeader(BFI);
+    SwapBMPInfoHeaderV4(BFI);
     {$ENDIF}
     BFI.Size := headerSize;
     FPaletteEntrySize:= 4;
   end;
   { This will move past any junk after the BFI header }
-  Stream.Position:=Stream.Position-SizeOf(BFI)+BFI.Size;
+  deltaPos := headerSize - sizeof(longword) { size field } - headerByteCount;
+  if deltaPos <> 0 then
+    Stream.Position:=Stream.Position + deltaPos;
   with BFI do
   begin
     BadCompression:=false;
@@ -957,7 +1032,7 @@ begin
    Hotspot := Point(0,0);
   end else
   begin
-    if stream.Read(BFH,SizeOf(BFH)) <> sizeof(BFH) then
+    if stream.Read(BFH,SizeOf(BFH)) < sizeof(BFH) then
     begin
       result := false;
       exit;
