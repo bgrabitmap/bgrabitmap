@@ -18,11 +18,14 @@
    - direct access to pixels with TBGRABitmap
    - vertical shrink option with MinifyHeight,WantedHeight,OutputHeight (useful for thumbnails)
   01/2017 by circular:
-   - support for OS/2 1.x format
+   - support for OS/2 v1.x format
    - support for headerless files
-
-  2023-06  - Massimo Magnano
-           - added Resolution support
+  06/2023 by Massimo Magnano
+  - added Resolution support
+  04/2025 by circular:
+  - handle bit field with Windows v4 format
+  - support for OS/2 v2.x format
+  - use TransparencyOption for GetBitmapDraft
 }
 {*****************************************************************************}
 {$mode objfpc}
@@ -70,7 +73,7 @@ type
           GammaRed, GammaGreen, GammaBlue: longword;
   end;
 
-  { Header for OS/2 bitmap format }
+  { Header for OS/2 v1 bitmap format }
   TOS2BitmapHeader = packed record
     bcSize: LongWord;
     bcWidth: Word;
@@ -78,7 +81,7 @@ type
     bcPlanes: Word;
     bcBitCount: Word;
   end;
-  { Minimum header for BMP format (non OS/2) }
+  { Minimum header for BMP format (non OS/2 v1) }
   TMinimumBitmapHeader = packed record
     Size:longint;
     Width:longint;
@@ -117,7 +120,7 @@ type
       FMaskData: PByte;
       FMaskDataSize: integer;
       // SetupRead will allocate the needed buffers, and read the colormap if needed.
-      procedure SetupRead(nPalette, nRowBits: Integer; Stream : TStream); virtual;
+      procedure SetupRead(nPalette, nRowBits: Integer; Stream : TStream; paletteByteCount: integer); virtual;
       function CountBits(Value : byte) : shortint;
       function ShiftCount(Mask : LongWord) : shortint;
       function ExpandColor(value : LongWord) : TFPColor;
@@ -470,12 +473,12 @@ begin
     result.alpha:= 255;
 end;
 
-procedure TBGRAReaderBMP.SetupRead(nPalette, nRowBits: Integer; Stream : TStream);
-
+procedure TBGRAReaderBMP.SetupRead(nPalette, nRowBits: Integer; Stream : TStream; paletteByteCount: integer);
 var
   ColInfo: ARRAY OF TColorRGBA;
   ColInfo3: packed array of TColorRGB;
   i,colorPresent: Integer;
+  paletteStartPos: int64;
 
 begin
   if ((BFI.Compression=BI_RGB) and (BFI.BitCount=16)) then { 5 bits per channel, fixed mask }
@@ -512,6 +515,7 @@ begin
   end
   else if nPalette>0 then
   begin
+    paletteStartPos := Stream.Position;
     GetMem(FPalette, nPalette*SizeOf(TFPColor));
     GetMem(FBGRAPalette, nPalette*SizeOf(TBGRAPixel));
     SetLength(ColInfo, nPalette);
@@ -519,6 +523,10 @@ begin
       colorPresent:= min(BFI.ClrUsed,nPalette)
     else
       colorPresent:= nPalette;
+    // fix entry size for OS/2 v2 format
+    if (FPaletteEntrySize = 4) and (paletteByteCount = colorPresent*3) then
+      FPaletteEntrySize := 3;
+
     if FPaletteEntrySize = 3 then
     begin
       setlength(ColInfo3, nPalette);
@@ -534,7 +542,9 @@ begin
     begin
       FPalette[i] := RGBToFPColor(ColInfo[i].RGB);
       FBGRAPalette[i]:= FPColorToBGRA(FPalette[i]);
-    end
+    end;
+    // go to image data (might not be well aligned after palette)
+    Stream.Position := paletteStartPos + paletteByteCount;
   end
   else if BFI.ClrUsed>0 then { Skip palette }
     {$PUSH}{$HINTS OFF}
@@ -547,7 +557,8 @@ end;
 procedure TBGRAReaderBMP.InternalRead(Stream:TStream; Img:TFPCustomImage);
 
 Var
-  i, pallen, totalHeaderByteCount, headerByteCount, deltaPos : Integer;
+  i, pallen, totalHeaderByteCount, headerByteCount, deltaPos,
+  paletteByteCount: Integer;
   BadCompression : boolean;
   WriteScanlineProc: TWriteScanlineProc;
   headerSize: LongWord;
@@ -561,7 +572,7 @@ begin
 
   headerSize := LEtoN(Stream.ReadDWord);
   fillchar({%H-}BFI,SizeOf(BFI),0);
-  if headerSize = sizeof(TOS2BitmapHeader) then
+  if headerSize = sizeof(TOS2BitmapHeader) then // OS/2 v1 format
   begin
     fillchar({%H-}os2header,SizeOf(os2header),0);
     headerByteCount := Stream.Read(os2header.bcWidth,min(SizeOf(os2header),headerSize)-sizeof(LongWord));
@@ -573,6 +584,7 @@ begin
     FPaletteEntrySize:= 3;
   end else
   begin
+    // other formats (Windows, OS/2 v2)
     headerByteCount := Stream.Read(BFI.Width,min(SizeOf(BFI),headerSize)-sizeof(LongWord));
     {$IFDEF ENDIAN_BIG}
     SwapBMPInfoHeaderV4(BFI);
@@ -584,6 +596,7 @@ begin
   deltaPos := headerSize - sizeof(longword) { size field } - headerByteCount;
   if deltaPos <> 0 then
     Stream.Position:=Stream.Position + deltaPos;
+  paletteByteCount := BFH.bfOffset - sizeof(BFH) - headerSize;
   with BFI do
   begin
     BadCompression:=false;
@@ -607,17 +620,17 @@ begin
     else Img.UsePalette:=false;
     Case BFI.BitCount of
       1 : { Monochrome }
-        SetupRead(2,Width,Stream);
+        SetupRead(2,Width,Stream,paletteByteCount);
       4 :
-        SetupRead(16,Width*4,Stream);
+        SetupRead(16,Width*4,Stream,paletteByteCount);
       8 :
-        SetupRead(256,Width*8,Stream);
+        SetupRead(256,Width*8,Stream,paletteByteCount);
       16 :
-        SetupRead(0,Width*8*2,Stream);
+        SetupRead(0,Width*8*2,Stream,paletteByteCount);
       24:
-        SetupRead(0,Width*8*3,Stream);
+        SetupRead(0,Width*8*3,Stream,paletteByteCount);
       32:
-        SetupRead(0,Width*8*4,Stream);
+        SetupRead(0,Width*8*4,Stream,paletteByteCount);
     else raise exception.Create('Invalid bit depth ('+inttostr(BFI.BitCount)+')');
     end;
   end;
