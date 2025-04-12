@@ -105,8 +105,8 @@ type
       FPalette : PFPcolor;      // Buffer with Palette entries. (useless now)
       FBGRAPalette : PBGRAPixel;
       LineBuf : PByte;          // Buffer for 1 scanline. Can be Byte, Word, TColorRGB or TColorRGBA
-      RedMask, GreenMask, BlueMask : LongWord; //Used if Compression=bi_bitfields
-      RedShift, GreenShift, BlueShift : shortint;
+      RedMask, GreenMask, BlueMask, AlphaMask : LongWord; //Used if Compression=bi_bitfields
+      RedShift, GreenShift, BlueShift, AlphaShift : shortint;
       FOutputHeight: integer;
       FOriginalHeight: Integer;
       FTransparencyOption: TBMPTransparencyOption;
@@ -421,8 +421,8 @@ begin
 end;
 
 function TBGRAReaderBMP.ExpandColor(value : LongWord) : TFPColor;
-var tmpr, tmpg, tmpb : LongWord;
-    col : TColorRGB;
+var tmpr, tmpg, tmpb, tmpa : LongWord;
+    col : TColorRGBA;
 begin
   {$IFDEF ENDIAN_BIG}
   value:=swap(value);
@@ -436,11 +436,18 @@ begin
   else col.G:=byte(tmpg shr GreenShift);
   if BlueShift < 0 then col.B:=byte(tmpb shl (-BlueShift))
   else col.B:=byte(tmpb shr BlueShift);
-  Result:=RGBToFPColor(col);
+  if AlphaMask <> 0 then
+  begin
+    tmpa := value and AlphaMask;
+    if AlphaShift < 0 then col.A:=byte(tmpa shl (-AlphaShift))
+    else col.A:=byte(tmpa shr AlphaShift);
+  end else
+    col.A := 255;
+  Result:=RGBAToFPColor(col);
 end;
 
 function TBGRAReaderBMP.ExpandColorBGRA(value: LongWord): TBGRAPixel;
-var tmpr, tmpg, tmpb : LongWord;
+var tmpr, tmpg, tmpb, tmpa : LongWord;
 begin
   {$IFDEF ENDIAN_BIG}
   value:=swap(value);
@@ -454,7 +461,13 @@ begin
   else result.green:=byte(tmpg shr GreenShift);
   if BlueShift < 0 then result.blue:=byte(tmpb shl (-BlueShift))
   else result.blue:=byte(tmpb shr BlueShift);
-  result.alpha:= 255;
+  if AlphaMask <> 0 then
+  begin
+    tmpa := value and AlphaMask;
+    if AlphaShift < 0 then result.alpha:=byte(tmpa shl (-AlphaShift))
+    else result.alpha:=byte(tmpa shr AlphaShift);
+  end else
+    result.alpha:= 255;
 end;
 
 procedure TBGRAReaderBMP.SetupRead(nPalette, nRowBits: Integer; Stream : TStream);
@@ -470,6 +483,7 @@ begin
     RedMask:=$7C00; RedShift:=7;
     GreenMask:=$03E0; GreenShift:=2;
     BlueMask:=$001F; BlueShift:=-3;
+    AlphaMask:= 0; AlphaShift:= 0;
   end
   else if ((BFI.Compression=BI_BITFIELDS) and (BFI.BitCount in [16,32])) then { arbitrary mask }
   begin
@@ -478,6 +492,7 @@ begin
       RedMask := BFI.RedMask;
       GreenMask := BFI.GreenMask;
       BlueMask := BFI.BlueMask;
+      AlphaMask := BFI.AlphaMask;
     end else
     begin
       Stream.Read(RedMask,4);
@@ -488,10 +503,12 @@ begin
       GreenMask:=swap(GreenMask);
       BlueMask:=swap(BlueMask);
       {$ENDIF}
+      AlphaMask := 0;
     end;
     RedShift:=ShiftCount(RedMask);
     GreenShift:=ShiftCount(GreenMask);
     BlueShift:=ShiftCount(BlueMask);
+    AlphaShift:=ShiftCount(AlphaMask);
   end
   else if nPalette>0 then
   begin
@@ -836,7 +853,11 @@ begin
    32 :
       for Column:=0 to img.Width-1 do
         if BFI.Compression=BI_BITFIELDS then
-          img.colors[Column,Row]:=ExpandColor(PLongWord(LineBuf)[Column])
+        begin
+          c := ExpandColor(PLongWord(LineBuf)[Column]);
+          img.colors[Column,Row]:= c;
+          if c.alpha <> 0 then FHasAlphaValues:= true;
+        end
         else
         begin
           if FTransparencyOption = toOpaque then
@@ -902,6 +923,7 @@ begin
       for Column:=0 to img.Width-1 do
       begin
         PDest^:=ExpandColorBGRA(PLongWord(LineBuf)[Column]);
+        if PDest^.alpha <> 0 then FHasAlphaValues:= true;
         inc(PDest);
       end;
      end else
