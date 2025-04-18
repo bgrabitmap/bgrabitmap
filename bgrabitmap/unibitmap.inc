@@ -80,17 +80,6 @@ type
     PixelCenteredCoords: boolean;
   end;
 
-  {$IF FPC_FULLVERSION<30203}
-  {* Unit used to specify the resolution of a bitmap }
-  TResolutionUnit = (
-    {** No unit used, only aspect ratio specified }
-    ruNone,
-    {** Pixels per inch (DPI) }
-    ruPixelsPerInch,
-    {** Pixels per centimeters }
-    ruPixelsPerCentimeter);
-  {$ENDIF}
-
   {* Base class for the universal bitmap (of any colorspace) }
 
   { TCustomUniversalBitmap }

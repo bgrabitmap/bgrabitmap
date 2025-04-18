@@ -209,6 +209,24 @@ type
   end;
 {$ENDIF}
 
+{$IF FPC_FULLVERSION<30203}
+  {* Unit used to specify the resolution of a bitmap }
+  TResolutionUnit = (
+    {** No unit used, only aspect ratio specified }
+    ruNone,
+    {** Pixels per inch (DPI) }
+    ruPixelsPerInch,
+    {** Pixels per centimeters }
+    ruPixelsPerCentimeter);
+{$ENDIF}
+
+   function ResolutionUnitConvert(ValueUnit, ResultUnit: TResolutionUnit;
+                                  Value: Single; Resolution: Single=96): Single; overload;
+   procedure ResolutionUnitConvert(ValueUnit, ResultUnit: TResolutionUnit;
+                                   var XValue, YValue: Single;
+                                   XResolution: Single=96; YResolution: Single=96); overload;
+
+
 type
   {* Pointer to a TRectF structure }
   PRectF = ^TRectF;
@@ -1545,6 +1563,52 @@ begin
   result.top := top;
   result.right := left+width;
   result.bottom := top+height;
+end;
+
+{********************** Size functions **************************}
+
+function ResolutionUnitConvert(ValueUnit, ResultUnit: TResolutionUnit;
+                               Value: Single; Resolution: Single): Single;
+begin
+  if (ValueUnit <> ResultUnit) then
+  begin
+    if (ValueUnit = ruNone)
+    then Result:= Value/Resolution
+    else Case ResultUnit of
+           ruNone: Result:= Value*Resolution;
+           ruPixelsPerInch : Result:= Value/2.54;      //from Cm to Inch
+           ruPixelsPerCentimeter: Result:= Value*2.54; //from Inch to Cm
+         end;
+  end
+  else Result:= Value;
+end;
+
+procedure ResolutionUnitConvert(ValueUnit, ResultUnit: TResolutionUnit;
+                                var XValue, YValue: Single;
+                                XResolution: Single; YResolution: Single);
+begin
+  if (ValueUnit <> ResultUnit) then
+  begin
+    if (ValueUnit = ruNone)
+    then begin
+           XValue:= XValue/XResolution;
+           XValue:= YValue/YResolution;
+         end
+    else Case ResultUnit of
+           ruNone: begin
+             XValue:= XValue*XResolution;
+             XValue:= YValue*YResolution;
+           end;
+           ruPixelsPerInch : begin      //from Cm to Inch
+             XValue:= XValue/2.54;
+             YValue:= YValue/2.54;
+           end;
+           ruPixelsPerCentimeter: begin //from Inch to Cm
+             XValue:= XValue*2.54;
+             YValue:= YValue*2.54;
+           end;
+         end;
+  end;
 end;
 
 { Make a pen style. Need an even number of values. See TBGRAPenStyle }
