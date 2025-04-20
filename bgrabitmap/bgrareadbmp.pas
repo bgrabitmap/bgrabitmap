@@ -481,6 +481,7 @@ var
   paletteStartPos: int64;
 
 begin
+  paletteStartPos := Stream.Position;
   if ((BFI.Compression=BI_RGB) and (BFI.BitCount=16)) then { 5 bits per channel, fixed mask }
   begin
     RedMask:=$7C00; RedShift:=7;
@@ -515,7 +516,6 @@ begin
   end
   else if nPalette>0 then
   begin
-    paletteStartPos := Stream.Position;
     GetMem(FPalette, nPalette*SizeOf(TFPColor));
     GetMem(FBGRAPalette, nPalette*SizeOf(TBGRAPixel));
     SetLength(ColInfo, nPalette);
@@ -543,8 +543,6 @@ begin
       FPalette[i] := RGBToFPColor(ColInfo[i].RGB);
       FBGRAPalette[i]:= FPColorToBGRA(FPalette[i]);
     end;
-    // go to image data (might not be well aligned after palette)
-    Stream.Position := paletteStartPos + paletteByteCount;
   end
   else if BFI.ClrUsed>0 then { Skip palette }
     {$PUSH}{$HINTS OFF}
@@ -552,6 +550,11 @@ begin
     {$POP}
   ReadSize:=((nRowBits + 31) div 32) shl 2;
   GetMem(LineBuf,ReadSize);
+  if paletteByteCount >= 0 then
+  begin
+    // go to image data (might not be well aligned after palette)
+    Stream.Position := paletteStartPos + paletteByteCount;
+  end;
 end;
 
 procedure TBGRAReaderBMP.InternalRead(Stream:TStream; Img:TFPCustomImage);
@@ -958,7 +961,7 @@ begin
         PSrc := LineBuf;
         for Column:=0 to img.Width-1 do
         begin
-          PDest^:= BGRA((PSrc+2)^,(PSrc+1)^,(PSrc+1)^);
+          PDest^:= BGRA((PSrc+2)^,(PSrc+1)^,PSrc^);
           inc(PDest);
           Inc(PSrc,4);
         end;
