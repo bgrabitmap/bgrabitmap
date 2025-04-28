@@ -220,12 +220,19 @@ type
     ruPixelsPerCentimeter);
 {$ENDIF}
 
-   function ResolutionUnitConvert(ValueUnit, ResultUnit: TResolutionUnit;
+   {** Convert Size from/to Cm, Inch, Pixels }
+   function ResolutionConvertSize(ValueUnit, ResultUnit: TResolutionUnit;
                                   Value: Single; Resolution: Single=96): Single; overload;
-   procedure ResolutionUnitConvert(ValueUnit, ResultUnit: TResolutionUnit;
+   procedure ResolutionConvertSize(ValueUnit, ResultUnit: TResolutionUnit;
                                    var XValue, YValue: Single;
                                    XResolution: Single=96; YResolution: Single=96); overload;
 
+   {** Convert Pixels from/to pixel/Cm, pixel/Inch }
+   function ResolutionConvertPixels(ValueUnit, ResultUnit: TResolutionUnit;
+                                    Value: Single; Resolution: Single=96): Single; overload;
+   procedure ResolutionConvertPixels(ValueUnit, ResultUnit: TResolutionUnit;
+                                     var XValue, YValue: Single;
+                                     XResolution: Single=96; YResolution: Single=96); overload;
 
 type
   {* Pointer to a TRectF structure }
@@ -1567,15 +1574,15 @@ end;
 
 {********************** Size functions **************************}
 
-function ResolutionUnitConvert(ValueUnit, ResultUnit: TResolutionUnit;
+function ResolutionConvertSize(ValueUnit, ResultUnit: TResolutionUnit;
                                Value: Single; Resolution: Single): Single;
 begin
   if (ValueUnit <> ResultUnit) then
   begin
     if (ValueUnit = ruNone)
-    then Result:= Value/Resolution
+    then Result:= Value/Resolution                     //from Pixels to ResultUnit
     else Case ResultUnit of
-           ruNone: Result:= Value*Resolution;
+           ruNone: Result:= Value*Resolution;          //from ValueUnit to Pixels
            ruPixelsPerInch : Result:= Value/2.54;      //from Cm to Inch
            ruPixelsPerCentimeter: Result:= Value*2.54; //from Inch to Cm
          end;
@@ -1583,7 +1590,7 @@ begin
   else Result:= Value;
 end;
 
-procedure ResolutionUnitConvert(ValueUnit, ResultUnit: TResolutionUnit;
+procedure ResolutionConvertSize(ValueUnit, ResultUnit: TResolutionUnit;
                                 var XValue, YValue: Single;
                                 XResolution: Single; YResolution: Single);
 begin
@@ -1591,11 +1598,11 @@ begin
   begin
     if (ValueUnit = ruNone)
     then begin
-           XValue:= XValue/XResolution;
+           XValue:= XValue/XResolution; //from Pixels to ResultUnit
            XValue:= YValue/YResolution;
          end
     else Case ResultUnit of
-           ruNone: begin
+           ruNone: begin                //from ValueUnit to Pixels
              XValue:= XValue*XResolution;
              XValue:= YValue*YResolution;
            end;
@@ -1606,6 +1613,50 @@ begin
            ruPixelsPerCentimeter: begin //from Inch to Cm
              XValue:= XValue*2.54;
              YValue:= YValue*2.54;
+           end;
+         end;
+  end;
+end;
+
+function ResolutionConvertPixels(ValueUnit, ResultUnit: TResolutionUnit;
+                                 Value: Single; Resolution: Single): Single;
+begin
+  if (ValueUnit <> ResultUnit) then
+  begin
+    if (ValueUnit = ruNone)
+    then Result:= Value/Resolution                     //from Pixels to ResultUnit
+    else Case ResultUnit of
+           ruNone: Result:= Value*Resolution;          //from ValueUnit to Pixels
+           ruPixelsPerInch : Result:= Value*2.54;      //from pixel/Cm to pixel/Inch
+           ruPixelsPerCentimeter: Result:= Value/2.54; //from pixel/Inch to pixel/Cm
+         end;
+  end
+  else Result:= Value;
+end;
+
+procedure ResolutionConvertPixels(ValueUnit, ResultUnit: TResolutionUnit;
+                                  var XValue, YValue: Single;
+                                  XResolution: Single; YResolution: Single);
+begin
+  if (ValueUnit <> ResultUnit) then
+  begin
+    if (ValueUnit = ruNone)
+    then begin
+           XValue:= XValue/XResolution; //from Pixels to ResultUnit
+           XValue:= YValue/YResolution;
+         end
+    else Case ResultUnit of
+           ruNone: begin                //from ValueUnit to Pixels
+             XValue:= XValue*XResolution;
+             XValue:= YValue*YResolution;
+           end;
+           ruPixelsPerInch : begin      //from pixel/Cm to pixel/Inch
+             XValue:= XValue*2.54;
+             YValue:= YValue*2.54;
+           end;
+           ruPixelsPerCentimeter: begin //from pixel/Inch to pixel/Cm
+             XValue:= XValue/2.54;
+             YValue:= YValue/2.54;
            end;
          end;
   end;

@@ -136,7 +136,7 @@ begin
   if (NewResolutionUnit = ruNone)
   then Result:= SimpleStretch(bmp, Trunc(NewWidth), Trunc(NewHeight))
   else begin
-         ResolutionUnitConvert(NewResolutionUnit, bmp.ResolutionUnit,
+         ResolutionConvertSize(NewResolutionUnit, bmp.ResolutionUnit,
                                NewWidth, newHeight, bmp.ResolutionX, bmp.ResolutionY);
          pixelWidth:= Round(NewWidth*bmp.ResolutionX);
          pixelHeight:= Round(NewHeight*bmp.ResolutionY);
@@ -1350,7 +1350,7 @@ begin
   if (NewResolutionUnit = ruNone)
   then Result:= FineResample(bmp, Trunc(NewWidth), Trunc(NewHeight), ResampleFilter)
   else begin
-         ResolutionUnitConvert(NewResolutionUnit, bmp.ResolutionUnit,
+         ResolutionConvertSize(NewResolutionUnit, bmp.ResolutionUnit,
                                NewWidth, newHeight, bmp.ResolutionX, bmp.ResolutionY);
          pixelWidth:= Round(NewWidth*bmp.ResolutionX);
          pixelHeight:= Round(NewHeight*bmp.ResolutionY);
