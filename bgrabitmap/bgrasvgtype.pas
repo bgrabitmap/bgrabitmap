@@ -2611,7 +2611,7 @@ end;
 procedure TSVGElement.SetVisible(AValue: boolean);
 begin
   if AValue <> Visible then
-    Style['display'] := 'inline';
+    Style['display'] := BoolToStr(AValue, 'inline', 'none');
   FDomElem.RemoveAttribute('display');
 end;
 
