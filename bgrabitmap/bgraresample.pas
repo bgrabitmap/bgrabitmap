@@ -20,7 +20,7 @@ uses
 { Computes a resampled image with pixels are boxes, with antialising between boxes.
   For example, a 2x2 image will be stretched as four boxes, one for each pixel }
 function SimpleStretch(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer): TBGRACustomBitmap; overload;
-function SimpleStretch(bmp: TBGRACustomBitmap; NewResolutionUnit: TResolutionUnit; NewWidth, NewHeight: Single): TBGRACustomBitmap; overload;
+function SimpleStretch(bmp: TBGRACustomBitmap; ASizeUnit: TResolutionUnit; NewWidth, NewHeight: Single): TBGRACustomBitmap; overload;
 
 { Puts a resampled image on the destination. Pixels are boxes, with antialising between boxes. }
 procedure StretchPutImage(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer;
@@ -103,7 +103,7 @@ function CreateInterpolator(style: TSplineStyle): TWideKernelFilter;
 function FineResample(bmp: TBGRACustomBitmap;
   NewWidth, NewHeight: integer; ResampleFilter: TResampleFilter): TBGRACustomBitmap; overload;
 
-function FineResample(bmp: TBGRACustomBitmap; NewResolutionUnit: TResolutionUnit;
+function FineResample(bmp: TBGRACustomBitmap; ASizeUnit: TResolutionUnit;
   NewWidth, NewHeight: Single; ResampleFilter: TResampleFilter): TBGRACustomBitmap; overload;
 
 { WideKernelResample can be called for custom filter kernel, derived
@@ -128,20 +128,17 @@ begin
 end;
 
 function SimpleStretch(bmp: TBGRACustomBitmap;
-  NewResolutionUnit: TResolutionUnit; NewWidth, NewHeight: Single): TBGRACustomBitmap;
+  ASizeUnit: TResolutionUnit; NewWidth, NewHeight: Single): TBGRACustomBitmap;
 var
-   pixelWidth, pixelHeight: Integer;
-
+  pixelWidth, pixelHeight: Integer;
+  fixedResolution: TImageResolutionInfo;
 begin
-  if (NewResolutionUnit = ruNone)
-  then Result:= SimpleStretch(bmp, Trunc(NewWidth), Trunc(NewHeight))
-  else begin
-         ResolutionConvertSize(NewResolutionUnit, bmp.ResolutionUnit,
-                               NewWidth, newHeight, bmp.ResolutionX, bmp.ResolutionY);
-         pixelWidth:= Round(NewWidth*bmp.ResolutionX);
-         pixelHeight:= Round(NewHeight*bmp.ResolutionY);
-         Result:= SimpleStretch(bmp, pixelWidth, pixelHeight);
-       end;
+  fixedResolution := bmp.FixedResolutionInfo;
+  ConvertSizeToResolutionUnit(ASizeUnit, NewWidth, NewHeight, fixedResolution);
+  pixelWidth:= HalfUp(NewWidth * fixedResolution.ResolutionX);
+  pixelHeight:= HalfUp(NewHeight * fixedResolution.ResolutionY);
+  Result:= SimpleStretch(bmp, pixelWidth, pixelHeight);
+  Result.ResolutionInfo := bmp.ResolutionInfo;
 end;
 
 procedure StretchPutImage(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer;
@@ -1341,21 +1338,18 @@ begin
   end;
 end;
 
-function FineResample(bmp: TBGRACustomBitmap; NewResolutionUnit: TResolutionUnit;
+function FineResample(bmp: TBGRACustomBitmap; ASizeUnit: TResolutionUnit;
   NewWidth, NewHeight: Single; ResampleFilter: TResampleFilter): TBGRACustomBitmap;
 var
-   pixelWidth, pixelHeight: Integer;
-
+  pixelWidth, pixelHeight: Integer;
+  fixedResolution: TImageResolutionInfo;
 begin
-  if (NewResolutionUnit = ruNone)
-  then Result:= FineResample(bmp, Trunc(NewWidth), Trunc(NewHeight), ResampleFilter)
-  else begin
-         ResolutionConvertSize(NewResolutionUnit, bmp.ResolutionUnit,
-                               NewWidth, newHeight, bmp.ResolutionX, bmp.ResolutionY);
-         pixelWidth:= Round(NewWidth*bmp.ResolutionX);
-         pixelHeight:= Round(NewHeight*bmp.ResolutionY);
-         Result:= FineResample(bmp, pixelWidth, pixelHeight, ResampleFilter);
-       end;
+  fixedResolution := bmp.FixedResolutionInfo;
+  ConvertSizeToResolutionUnit(ASizeUnit, NewWidth, NewHeight, fixedResolution);
+  pixelWidth:= HalfUp(NewWidth * fixedResolution.ResolutionX);
+  pixelHeight:= HalfUp(NewHeight * fixedResolution.ResolutionY);
+  Result:= FineResample(bmp, pixelWidth, pixelHeight, ResampleFilter);
+  Result.ResolutionInfo:= bmp.ResolutionInfo;
 end;
 
 

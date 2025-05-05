@@ -220,19 +220,28 @@ type
     ruPixelsPerCentimeter);
 {$ENDIF}
 
-   {** Convert Size from/to Cm, Inch, Pixels }
-   function ResolutionConvertSize(ValueUnit, ResultUnit: TResolutionUnit;
-                                  Value: Single; Resolution: Single=96): Single; overload;
-   procedure ResolutionConvertSize(ValueUnit, ResultUnit: TResolutionUnit;
-                                   var XValue, YValue: Single;
-                                   XResolution: Single=96; YResolution: Single=96); overload;
+   TImageResolutionInfo = record
+     ResolutionUnit: TResolutionUnit;
+     ResolutionX, ResolutionY: Single;
+   end;
 
-   {** Convert Pixels from/to pixel/Cm, pixel/Inch }
-   function ResolutionConvertPixels(ValueUnit, ResultUnit: TResolutionUnit;
-                                    Value: Single; Resolution: Single=96): Single; overload;
-   procedure ResolutionConvertPixels(ValueUnit, ResultUnit: TResolutionUnit;
-                                     var XValue, YValue: Single;
-                                     XResolution: Single=96; YResolution: Single=96); overload;
+   {** Convert size to resolution units. If _ASourceUnit_ is set to ruNone, _ASize_ is in pixels.
+       If resolution is ill-defined, it is assumed to be 96 DPI. For example, if resolution is
+       in pixels per centimeter, result will be in centimeters. }
+   function ConvertSizeToResolutionUnit(ASourceUnit: TResolutionUnit; ASize: Single;
+                                        AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                                        AResolution: Single = 96): Single; overload;
+   procedure ConvertSizeToResolutionUnit(ASourceUnit: TResolutionUnit; var SizeX,SizeY: Single;
+                                         const AResolution: TImageResolutionInfo); overload;
+
+   {** Convert size to resolution units. If _ATargetUnit_ is set to ruNone, result is in pixels.
+       If resolution is ill-defined, it is assumed to be 96 DPI. For example, if resolution is
+       in pixels per centimeter, _ASize_ will be interpreted as centimeters. }
+   function ConvertSizeFromResolutionUnit(ATargetUnit: TResolutionUnit; ASize: Single;
+                                        AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                                        AResolution: Single = 96): Single; overload;
+   procedure ConvertSizeFromResolutionUnit(ATargetUnit: TResolutionUnit; var SizeX,SizeY: Single;
+                                         const AResolution: TImageResolutionInfo); overload;
 
 type
   {* Pointer to a TRectF structure }
@@ -1574,92 +1583,64 @@ end;
 
 {********************** Size functions **************************}
 
-function ResolutionConvertSize(ValueUnit, ResultUnit: TResolutionUnit;
-                               Value: Single; Resolution: Single): Single;
+function ConvertSizeToResolutionUnit(ASourceUnit: TResolutionUnit; ASize: Single;
+                                     AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                                     AResolution: Single = 96): Single;
 begin
-  if (ValueUnit <> ResultUnit) then
-  begin
-    if (ValueUnit = ruNone)
-    then Result:= Value/Resolution                     //from Pixels to ResultUnit
-    else Case ResultUnit of
-           ruNone: Result:= Value*Resolution;          //from ValueUnit to Pixels
-           ruPixelsPerInch : Result:= Value/2.54;      //from Cm to Inch
-           ruPixelsPerCentimeter: Result:= Value*2.54; //from Inch to Cm
-         end;
-  end
-  else Result:= Value;
-end;
+  // already in expected unit
+  if ASourceUnit = AResolutionUnit then exit(ASize);
 
-procedure ResolutionConvertSize(ValueUnit, ResultUnit: TResolutionUnit;
-                                var XValue, YValue: Single;
-                                XResolution: Single; YResolution: Single);
-begin
-  if (ValueUnit <> ResultUnit) then
+  // checks if resolution is ill-defined
+  if (AResolution = 0) or (AResolutionUnit = ruNone) then
   begin
-    if (ValueUnit = ruNone)
-    then begin
-           XValue:= XValue/XResolution; //from Pixels to ResultUnit
-           XValue:= YValue/YResolution;
-         end
-    else Case ResultUnit of
-           ruNone: begin                //from ValueUnit to Pixels
-             XValue:= XValue*XResolution;
-             XValue:= YValue*YResolution;
-           end;
-           ruPixelsPerInch : begin      //from Cm to Inch
-             XValue:= XValue/2.54;
-             YValue:= YValue/2.54;
-           end;
-           ruPixelsPerCentimeter: begin //from Inch to Cm
-             XValue:= XValue*2.54;
-             YValue:= YValue*2.54;
-           end;
-         end;
+    // assume legacy 96 DPI
+    AResolution := 96;
+    AResolutionUnit := ruPixelsPerInch;
+  end;
+
+  case ASourceUnit of
+    ruPixelsPerCentimeter: Result:= ASize/2.54; // from Cm to Inch
+    ruPixelsPerInch: Result:= ASize*2.54;       // from Inch to Cm
+  else {ruNone}
+    Result:= ASize / AResolution                // from Pixels
   end;
 end;
 
-function ResolutionConvertPixels(ValueUnit, ResultUnit: TResolutionUnit;
-                                 Value: Single; Resolution: Single): Single;
+procedure ConvertSizeToResolutionUnit(ASourceUnit: TResolutionUnit; var SizeX, SizeY: Single;
+                                      const AResolution: TImageResolutionInfo);
 begin
-  if (ValueUnit <> ResultUnit) then
-  begin
-    if (ValueUnit = ruNone)
-    then Result:= Value/Resolution                     //from Pixels to ResultUnit
-    else Case ResultUnit of
-           ruNone: Result:= Value*Resolution;          //from ValueUnit to Pixels
-           ruPixelsPerInch : Result:= Value*2.54;      //from pixel/Cm to pixel/Inch
-           ruPixelsPerCentimeter: Result:= Value/2.54; //from pixel/Inch to pixel/Cm
-         end;
-  end
-  else Result:= Value;
+  SizeX := ConvertSizeToResolutionUnit(ASourceUnit, SizeX, AResolution.ResolutionUnit, AResolution.ResolutionX);
+  SizeY := ConvertSizeToResolutionUnit(ASourceUnit, SizeY, AResolution.ResolutionUnit, AResolution.ResolutionY);
 end;
 
-procedure ResolutionConvertPixels(ValueUnit, ResultUnit: TResolutionUnit;
-                                  var XValue, YValue: Single;
-                                  XResolution: Single; YResolution: Single);
+function ConvertSizeFromResolutionUnit(ATargetUnit: TResolutionUnit; ASize: Single;
+                                       AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                                       AResolution: Single = 96): Single;
 begin
-  if (ValueUnit <> ResultUnit) then
+  // already in expected unit
+  if ATargetUnit = AResolutionUnit then exit(ASize);
+
+  // checks if resolution is ill-defined
+  if (AResolution = 0) or (AResolutionUnit = ruNone) then
   begin
-    if (ValueUnit = ruNone)
-    then begin
-           XValue:= XValue/XResolution; //from Pixels to ResultUnit
-           XValue:= YValue/YResolution;
-         end
-    else Case ResultUnit of
-           ruNone: begin                //from ValueUnit to Pixels
-             XValue:= XValue*XResolution;
-             XValue:= YValue*YResolution;
-           end;
-           ruPixelsPerInch : begin      //from pixel/Cm to pixel/Inch
-             XValue:= XValue*2.54;
-             YValue:= YValue*2.54;
-           end;
-           ruPixelsPerCentimeter: begin //from pixel/Inch to pixel/Cm
-             XValue:= XValue/2.54;
-             YValue:= YValue/2.54;
-           end;
-         end;
+    // assume legacy 96 DPI
+    AResolution := 96;
+    AResolutionUnit := ruPixelsPerInch;
   end;
+
+  case ATargetUnit of
+    ruPixelsPerCentimeter: Result:= ASize*2.54; // from Inch to Cm
+    ruPixelsPerInch: Result:= ASize/2.54;       // from Cm to Inch
+  else {ruNone}
+    Result:= ASize * AResolution                // to Pixels
+  end;
+end;
+
+procedure ConvertSizeFromResolutionUnit(ATargetUnit: TResolutionUnit; var SizeX, SizeY: Single;
+                                        const AResolution: TImageResolutionInfo);
+begin
+  SizeX := ConvertSizeFromResolutionUnit(ATargetUnit, SizeX, AResolution.ResolutionUnit, AResolution.ResolutionX);
+  SizeY := ConvertSizeFromResolutionUnit(ATargetUnit, SizeY, AResolution.ResolutionUnit, AResolution.ResolutionY);
 end;
 
 { Make a pen style. Need an even number of values. See TBGRAPenStyle }
