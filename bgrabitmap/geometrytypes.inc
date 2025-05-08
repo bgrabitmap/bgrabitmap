@@ -243,6 +243,9 @@ type
    procedure ConvertSizeFromResolutionUnit(ATargetUnit: TResolutionUnit; var SizeX,SizeY: Single;
                                          const AResolution: TImageResolutionInfo); overload;
 
+   {** Convert Resolution from/to dot per inch, dot per cm }
+   function ConvertResolution(AResolution: Single; ASourceUnit, ATargetUnit: TResolutionUnit): Single;
+
 type
   {* Pointer to a TRectF structure }
   PRectF = ^TRectF;
@@ -1641,6 +1644,18 @@ procedure ConvertSizeFromResolutionUnit(ATargetUnit: TResolutionUnit; var SizeX,
 begin
   SizeX := ConvertSizeFromResolutionUnit(ATargetUnit, SizeX, AResolution.ResolutionUnit, AResolution.ResolutionX);
   SizeY := ConvertSizeFromResolutionUnit(ATargetUnit, SizeY, AResolution.ResolutionUnit, AResolution.ResolutionY);
+end;
+
+function ConvertResolution(AResolution: Single; ASourceUnit, ATargetUnit: TResolutionUnit): Single;
+begin
+  if ASourceUnit = ATargetUnit then exit(AResolution);
+  if (ASourceUnit = ruNone) then raise EInvalidOpException.Create('Source resolution unit must be defined');
+  case ATargetUnit of
+    ruPixelsPerInch: result := AResolution*2.54;
+    ruPixelsPerCentimeter: result := AResolution/2.54;
+  else {ruNone}
+    raise EInvalidOpException.Create('Target resolution unit must be defined');
+  end;
 end;
 
 { Make a pen style. Need an even number of values. See TBGRAPenStyle }
