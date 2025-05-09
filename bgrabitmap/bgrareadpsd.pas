@@ -377,6 +377,7 @@ procedure TBGRAReaderPSD.ReadResourceBlockData(Img: TFPCustomImage; blockID:Word
 var
   PsdResolution:TResolutionInfo;
   ResDWord: DWord;
+  VResolutionUnit:TResolutionUnit;
 
 begin
   {$IF FPC_FULLVERSION<30203}
@@ -393,15 +394,13 @@ begin
             //      with 16 bits before point and 16 after (cast as DWord and divide resolution by 2^16
             ResDWord :=BEToN(DWord(PsdResolution.hRes));
             ResolutionX :=ResDWord/65536;
-            ResDWord :=BEToN(DWord(PsdResolution.vRes));
-            ResolutionY :=ResDWord/65536;
 
-            if (ResolutionUnit<>ruNone) and
-               (PsdResolution.vResUnit<>PsdResolution.hResUnit)
-            then Case BEToN(Word(PsdResolution.vResUnit)) of
-                 PSD_RES_INCH: ResolutionY :=ResolutionY/2.54; //Vertical Resolution is in Inch convert to Cm
-                 PSD_RES_CM: ResolutionY :=ResolutionY*2.54; //Vertical Resolution is in Cm convert to Inch
-                 end;
+            //vertical resolution unit can be be different from horizontal resolution unit in PSD
+            VResolutionUnit :=PSDResolutionUnitToResolutionUnit(BEToN(Word(PsdResolution.vResUnit)));
+            //if not specified, assume it is the same as horizontal
+            if VResolutionUnit = ruNone then VResolutionUnit := ResolutionUnit;
+            ResDWord :=BEToN(DWord(PsdResolution.vRes));
+            ResolutionY :=ConvertResolution(ResDWord/65536, VResolutionUnit, ResolutionUnit);
           end;
         end;
   end;

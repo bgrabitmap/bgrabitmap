@@ -2184,17 +2184,10 @@ procedure TCustomUniversalBitmap.SetResolutionUnit(AResolutionUnit: TResolutionU
 begin
   if (AResolutionUnit<>FResolutionUnit) then
   begin
-    Case AResolutionUnit of
-    ruPixelsPerInch : if (FResolutionUnit=ruPixelsPerCentimeter) then //Old Resolution is in Cm
-             begin
-               FResolutionX :=FResolutionX*2.54;
-               FResolutionY :=FResolutionY*2.54;
-             end;
-    ruPixelsPerCentimeter: if (FResolutionUnit=ruPixelsPerInch) then //Old Resolution is in Inch
-                  begin
-                    FResolutionX :=FResolutionX/2.54;
-                    FResolutionY :=FResolutionY/2.54;
-                  end;
+    if (AResolutionUnit <> ruNone) and (FResolutionUnit <> ruNone) then
+    begin
+      FResolutionX := ConvertResolution(FResolutionX, FResolutionUnit, AResolutionUnit);
+      FResolutionY := ConvertResolution(FResolutionY, FResolutionUnit, AResolutionUnit);
     end;
     FResolutionUnit :=AResolutionUnit;
   end;
@@ -2251,13 +2244,8 @@ begin
     if (ResolutionX = 0) and (ResolutionY = 0) then
     begin
       // assume legacy 96 DPI
-      result.ResolutionX := 96;
-      result.ResolutionY := 96;
-      if Result.ResolutionUnit = ruPixelsPerCentimeter then
-      begin
-        result.ResolutionX := result.ResolutionX/2.54;
-        result.ResolutionY := result.ResolutionY/2.54;
-      end;
+      result.ResolutionX := ConvertResolution(96, ruPixelsPerInch, Result.ResolutionUnit);
+      result.ResolutionY := result.ResolutionX;
     end else
     begin
       // if one resolution is missing, assume it is the same as the other one
