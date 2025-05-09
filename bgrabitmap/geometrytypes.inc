@@ -225,6 +225,9 @@ type
      ResolutionX, ResolutionY: Single;
    end;
 
+   function ImageResolutionInfo(AResolutionUnit: TResolutionUnit;
+     AResolutionX, AResolutionY: Single): TImageResolutionInfo;
+
    {** Convert size to resolution units. If _ASourceUnit_ is set to ruNone, _ASize_ is in pixels.
        If resolution is ill-defined, it is assumed to be 96 DPI. For example, if resolution is
        in pixels per centimeter, result will be in centimeters. }
@@ -1585,6 +1588,14 @@ begin
 end;
 
 {********************** Size functions **************************}
+
+function ImageResolutionInfo(AResolutionUnit: TResolutionUnit; AResolutionX,
+  AResolutionY: Single): TImageResolutionInfo;
+begin
+  result.ResolutionUnit:= AResolutionUnit;
+  result.ResolutionX:= AResolutionX;
+  result.ResolutionY:= AResolutionY;
+end;
 
 function ConvertSizeToResolutionUnit(ASourceUnit: TResolutionUnit; ASize: Single;
                                      AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
