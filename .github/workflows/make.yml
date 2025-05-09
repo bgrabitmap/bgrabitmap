@@ -26,12 +26,12 @@ jobs:
                - ubuntu-latest
                - windows-latest
       steps:
-         - name: Checkout
+          - name: Checkout
             uses: actions/checkout@v4
             with:
                submodules: true
 
-         - name: Build on Linux
+          - name: Build on Linux
             if: runner.os == 'Linux'
             shell: bash
             run: |
@@ -40,7 +40,7 @@ jobs:
                instantfpc -Fu/usr/lib/lazarus/*/components/lazutils .github/workflows/make.pas
                delp -r "${PWD}"
 
-         - name: Cache Lazarus installer on Windows
+          - name: Cache Lazarus installer on Windows
             if: runner.os == 'Windows'
             id: cache-lazarus
             uses: actions/cache@v4
@@ -48,7 +48,7 @@ jobs:
                path: lazarus-installer
                key: ${{ runner.os }}-lazarus-installer-4.0
 
-         - name: Download Lazarus installer if not cached on Windows
+          - name: Download Lazarus installer if not cached on Windows
             if: runner.os == 'Windows' && steps.cache-lazarus.outputs.cache-hit != 'true'
             shell: powershell
             run: |
@@ -57,7 +57,7 @@ jobs:
                $OutFile = "lazarus-installer\lazarus-setup.exe"
                Invoke-WebRequest -Uri $Uri -OutFile $OutFile
 
-         - name: Build on Windows
+          - name: Build on Windows
             if: runner.os == 'Windows'
             shell: powershell
             run: |
