@@ -31,16 +31,22 @@ jobs:
             with:
                submodules: true
 
+          - name: Install Lazarus on Linux
+            if: runner.os == 'Linux'
+            shell: bash
+            run: |
+               set -xeuo pipefail
+               sudo bash -c 'apt-get update; apt-get install -y lazarus' >/dev/null # libxtst-dev
+
           - name: Build on Linux
             if: runner.os == 'Linux'
             shell: bash
             run: |
                set -xeuo pipefail
-               sudo bash -c 'apt-get update; apt-get install -y lazarus libxtst-dev' >/dev/null
                instantfpc -Fu/usr/lib/lazarus/*/components/lazutils .github/workflows/make.pas
                delp -r "${PWD}"
 
-          - name: Cache Lazarus installer on Windows
+          - name: Get Lazarus installer from cache on Windows
             if: runner.os == 'Windows'
             id: cache-lazarus
             uses: actions/cache@v4
@@ -57,11 +63,17 @@ jobs:
                $OutFile = "lazarus-installer\lazarus-setup.exe"
                Invoke-WebRequest -Uri $Uri -OutFile $OutFile
 
-          - name: Build on Windows
+          - name: Install Lazarus on Windows
             if: runner.os == 'Windows'
             shell: powershell
             run: |
                $Installer = "lazarus-installer\lazarus-setup.exe"
                & $Installer /SP- /VERYSILENT /SUPPRESSMSGBOXES /NORESTART | Out-Null
+
+          - name: Build on Windows
+            if: runner.os == 'Windows'
+            shell: powershell
+            run: |
                $Env:PATH += ';C:\Lazarus;C:\Lazarus\fpc\3.2.2\bin\x86_64-win64'
                instantfpc '-FuC:\Lazarus\components\lazutils' .github/workflows/make.pas
+               delp -r $PWD.Path
