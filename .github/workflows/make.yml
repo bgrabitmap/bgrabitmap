@@ -36,7 +36,7 @@ jobs:
             shell: bash
             run: |
                set -xeuo pipefail
-               sudo bash -c 'apt-get update; apt-get install -y lazarus' >/dev/null # libxtst-dev
+               sudo bash -c 'apt-get update; apt-get install -y lazarus libxtst-dev' >/dev/null
 
           - name: Build on Linux
             if: runner.os == 'Linux'
