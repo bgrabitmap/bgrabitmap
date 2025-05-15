@@ -109,11 +109,11 @@ type
     function GetInternalPixel(x, y: integer): integer; override;
 
     {Image functions}
-    function FineResample(NewWidth, NewHeight: integer): TBGRACustomBitmap; overload;
-    function FineResample(NewResolutionUnit: TResolutionUnit; NewWidth, NewHeight: Single): TBGRACustomBitmap; overload;
+    function FineResample(NewWidth, NewHeight: integer; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+    function FineResample(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
 
-    function SimpleStretch(NewWidth, NewHeight: integer): TBGRACustomBitmap; overload;
-    function SimpleStretch(NewResolutionUnit: TResolutionUnit; NewWidth, NewHeight: Single): TBGRACustomBitmap; overload;
+    function SimpleStretch(NewWidth, NewHeight: integer; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+    function SimpleStretch(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
 
     function CheckEmpty: boolean; override;
     function GetHasTransparentPixels: boolean; override;
@@ -606,8 +606,8 @@ type
 
     function Resample(newWidth, newHeight: integer;
       mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
-    function Resample(newResolutionUnit: TResolutionUnit; newWidth, newHeight: Single;
-      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=True): TBGRADefaultBitmap; overload; override;
+    function Resample(newWidth, newHeight: Single; ASizeUnit: TCSSUnit;
+      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
     procedure Negative; override;
     procedure NegativeRect(ABounds: TRect); override;
     procedure LinearNegative; override;
@@ -4391,46 +4391,50 @@ end;
 
 {----------------------------- Resample ---------------------------------------}
 
-function TBGRADefaultBitmap.FineResample(NewWidth, NewHeight: integer):
-TBGRACustomBitmap;
+function TBGRADefaultBitmap.FineResample(NewWidth, NewHeight: integer;
+                                         ACopyProperties: boolean): TBGRACustomBitmap;
 begin
-  Result := BGRAResample.FineResample(self, NewWidth, NewHeight, ResampleFilter);
+  Result := BGRAResample.FineResample(self, NewWidth, NewHeight, ResampleFilter, ACopyProperties);
 end;
 
-function TBGRADefaultBitmap.FineResample(NewResolutionUnit: TResolutionUnit;
-  NewWidth, NewHeight: Single): TBGRACustomBitmap;
+function TBGRADefaultBitmap.FineResample(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+                                         ACopyProperties: boolean): TBGRACustomBitmap;
 begin
-  Result := BGRAResample.FineResample(self, NewResolutionUnit, NewWidth, NewHeight, ResampleFilter);
+  Result := BGRAResample.FineResample(self, NewWidth, NewHeight, ASizeUnit, ResampleFilter, ACopyProperties);
 end;
 
-function TBGRADefaultBitmap.SimpleStretch(NewWidth, NewHeight: integer): TBGRACustomBitmap;
+function TBGRADefaultBitmap.SimpleStretch(NewWidth, NewHeight: integer;
+                                          ACopyProperties: boolean): TBGRACustomBitmap;
 begin
-  Result := BGRAResample.SimpleStretch(self, NewWidth, NewHeight);
+  Result := BGRAResample.SimpleStretch(self, NewWidth, NewHeight, ACopyProperties);
 end;
 
-function TBGRADefaultBitmap.SimpleStretch(NewResolutionUnit: TResolutionUnit; NewWidth, NewHeight: Single): TBGRACustomBitmap;
+function TBGRADefaultBitmap.SimpleStretch(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+                                          ACopyProperties: boolean): TBGRACustomBitmap;
 begin
-  Result := BGRAResample.SimpleStretch(self, NewResolutionUnit, NewWidth, NewHeight);
+  Result := BGRAResample.SimpleStretch(self, NewWidth, NewHeight, ASizeUnit, ACopyProperties);
 end;
 
 function TBGRADefaultBitmap.Resample(newWidth, newHeight: integer;
   mode: TResampleMode; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   case mode of
-    rmFineResample: Result  := FineResample(newWidth, newHeight) as TBGRADefaultBitmap;
-    rmSimpleStretch: Result := SimpleStretch(newWidth, newHeight) as TBGRADefaultBitmap;
+    rmFineResample: Result  := FineResample(newWidth, newHeight, ACopyProperties) as TBGRADefaultBitmap;
+    rmSimpleStretch: Result := SimpleStretch(newWidth, newHeight, ACopyProperties) as TBGRADefaultBitmap;
+  else
+    raise Exception.Create('Unhandled resample mode');
   end;
-  if ACopyProperties and (Result<>nil) then CopyPropertiesTo(Result);
 end;
 
-function TBGRADefaultBitmap.Resample(newResolutionUnit: TResolutionUnit; newWidth, newHeight: Single;
-  mode: TResampleMode; ACopyProperties: Boolean=True): TBGRADefaultBitmap;
+function TBGRADefaultBitmap.Resample(newWidth, newHeight: Single; ASizeUnit: TCSSUnit;
+  mode: TResampleMode; ACopyProperties: Boolean): TBGRADefaultBitmap;
 begin
   case mode of
-    rmFineResample: Result  := FineResample(newResolutionUnit, newWidth, newHeight) as TBGRADefaultBitmap;
-    rmSimpleStretch: Result := SimpleStretch(newResolutionUnit, newWidth, newHeight) as TBGRADefaultBitmap;
+    rmFineResample: Result  := FineResample(newWidth, newHeight, ASizeUnit, ACopyProperties) as TBGRADefaultBitmap;
+    rmSimpleStretch: Result := SimpleStretch(newWidth, newHeight, ASizeUnit, ACopyProperties) as TBGRADefaultBitmap;
+  else
+    raise Exception.Create('Unhandled resample mode');
   end;
-  if ACopyProperties and (Result<>nil) then CopyPropertiesTo(Result);
 end;
 
 {-------------------------------- Data functions ------------------------}

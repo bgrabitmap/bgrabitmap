@@ -140,6 +140,12 @@ type
     ifAvif
     );
 
+  {* Physical units as defined by CSS }
+  TCSSUnit = (cuCustom, cuPixel,
+              cuCentimeter, cuMillimeter,
+              cuInch, cuPica, cuPoint,
+              cuFontEmHeight, cuFontXHeight, cuPercent);
+
 var
   { #note 5 -oMaxM : it would be useful to make a single record that contains everything }
   {** List of stream readers for images }
