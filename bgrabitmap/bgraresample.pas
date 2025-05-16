@@ -21,6 +21,10 @@ uses
   For example, a 2x2 image will be stretched as four boxes, one for each pixel }
 function SimpleStretch(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer;
   ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+
+function SimpleStretch(bmp: TBGRACustomBitmap; ASizeUnit: TResolutionUnit; NewWidth, NewHeight: Single;
+  ACopyProperties: boolean = true): TBGRACustomBitmap; overload;
+
 function SimpleStretch(bmp: TBGRACustomBitmap; NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
   ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
 
@@ -105,6 +109,9 @@ function CreateInterpolator(style: TSplineStyle): TWideKernelFilter;
 function FineResample(bmp: TBGRACustomBitmap;
   NewWidth, NewHeight: integer; ResampleFilter: TResampleFilter; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
 
+function FineResample(bmp: TBGRACustomBitmap; ASizeUnit: TResolutionUnit;
+  NewWidth, NewHeight: Single; ResampleFilter: TResampleFilter; ACopyProperties: boolean = true): TBGRACustomBitmap; overload;
+
 function FineResample(bmp: TBGRACustomBitmap;
   NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
   ResampleFilter: TResampleFilter; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
@@ -141,6 +148,20 @@ begin
   StretchPutImage(bmp, newWidth,newHeight, result, 0,0, dmSet, 255);
   if ACopyProperties then bmp.CopyPropertiesTo(Result);
   AdaptResolution(bmp, result);
+end;
+
+function SimpleStretch(bmp: TBGRACustomBitmap; ASizeUnit: TResolutionUnit;
+  NewWidth, NewHeight: Single; ACopyProperties: boolean = true): TBGRACustomBitmap;
+var
+  pixelWidth, pixelHeight: Integer;
+  fixedResolution: TImageResolutionInfo;
+begin
+  fixedResolution := bmp.FixedResolutionInfo;
+  ConvertSizeToResolutionUnit(ASizeUnit, NewWidth, NewHeight, fixedResolution);
+  pixelWidth:= HalfUp(NewWidth * fixedResolution.ResolutionX);
+  pixelHeight:= HalfUp(NewHeight * fixedResolution.ResolutionY);
+  Result:= SimpleStretch(bmp, pixelWidth, pixelHeight, ACopyProperties);
+  Result.ResolutionInfo := bmp.ResolutionInfo;
 end;
 
 function SimpleStretch(bmp: TBGRACustomBitmap;
@@ -1363,6 +1384,20 @@ begin
   end;
   if ACopyProperties then bmp.CopyPropertiesTo(result);
   AdaptResolution(bmp, result);
+end;
+
+function FineResample(bmp: TBGRACustomBitmap; ASizeUnit: TResolutionUnit;
+  NewWidth, NewHeight: Single; ResampleFilter: TResampleFilter; ACopyProperties: boolean = true): TBGRACustomBitmap;
+var
+  pixelWidth, pixelHeight: Integer;
+  fixedResolution: TImageResolutionInfo;
+begin
+  fixedResolution := bmp.FixedResolutionInfo;
+  ConvertSizeToResolutionUnit(ASizeUnit, NewWidth, NewHeight, fixedResolution);
+  pixelWidth:= HalfUp(NewWidth * fixedResolution.ResolutionX);
+  pixelHeight:= HalfUp(NewHeight * fixedResolution.ResolutionY);
+  Result:= FineResample(bmp, pixelWidth, pixelHeight, ResampleFilter, ACopyProperties);
+  Result.ResolutionInfo:= bmp.ResolutionInfo;
 end;
 
 function FineResample(bmp: TBGRACustomBitmap;

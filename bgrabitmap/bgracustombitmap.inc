@@ -813,9 +813,11 @@ end;
      procedure BlendImageOver(x, y: integer; ASource: TBGRACustomBitmap; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
      procedure BlendImageOver(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
      function Resample(newWidth, newHeight: integer;
-       mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRACustomBitmap; virtual; abstract;
+       mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRACustomBitmap; overload; virtual; abstract;
+     function Resample(newResolutionUnit: TResolutionUnit; newWidth, newHeight: Single;
+       mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=True): TBGRACustomBitmap; overload; virtual; abstract;
      function Resample(newWidth, newHeight: Single; ASizeUnit: TCSSUnit;
-       mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRACustomBitmap; virtual; abstract;
+       mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRACustomBitmap; overload; virtual; abstract;
 
      //masks
      procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; ADrawMode: TDrawMode); overload; override;
