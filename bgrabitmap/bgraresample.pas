@@ -146,8 +146,8 @@ begin
   end;
   Result := bmp.NewBitmap(NewWidth, NewHeight);
   StretchPutImage(bmp, newWidth,newHeight, result, 0,0, dmSet, 255);
-  if ACopyProperties then bmp.CopyPropertiesTo(Result);
   AdaptResolution(bmp, result);
+  if ACopyProperties then bmp.CopyPropertiesTo(Result);
 end;
 
 function SimpleStretch(bmp: TBGRACustomBitmap; ASizeUnit: TResolutionUnit;
@@ -1292,8 +1292,8 @@ begin
       tempFilter1 := TCubicKernel.Create;
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter1,tempFilter1);
       tempFilter1.Free;
-      if ACopyProperties then bmp.CopyPropertiesTo(result);
       AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
     rfMitchell:
@@ -1301,8 +1301,8 @@ begin
       tempFilter1 := TMitchellKernel.Create;
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter1,tempFilter1);
       tempFilter1.Free;
-      if ACopyProperties then bmp.CopyPropertiesTo(result);
       AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
     rfSpline:
@@ -1310,8 +1310,8 @@ begin
       tempFilter1 := TSplineKernel.Create;
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter1,tempFilter1);
       tempFilter1.Free;
-      if ACopyProperties then bmp.CopyPropertiesTo(result);
       AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
     rfLanczos2,rfLanczos3,rfLanczos4:
@@ -1319,8 +1319,8 @@ begin
       tempFilter1 := TLanczosKernel.Create(ord(ResampleFilter)-ord(rfLanczos2)+2);
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter1,tempFilter1);
       tempFilter1.Free;
-      if ACopyProperties then bmp.CopyPropertiesTo(result);
       AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
     rfBestQuality:
@@ -1330,8 +1330,8 @@ begin
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter2,tempFilter1);
       tempFilter1.Free;
       tempFilter2.Free;
-      if ACopyProperties then bmp.CopyPropertiesTo(result);
       AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
   end;
@@ -1382,8 +1382,8 @@ begin
     else
       Result := bmp.Duplicate;
   end;
-  if ACopyProperties then bmp.CopyPropertiesTo(result);
   AdaptResolution(bmp, result);
+  if ACopyProperties then bmp.CopyPropertiesTo(result);
 end;
 
 function FineResample(bmp: TBGRACustomBitmap; ASizeUnit: TResolutionUnit;
