@@ -231,6 +231,10 @@ type
    {** Convert Resolution from/to dot per inch, dot per cm }
    function ConvertResolution(AResolution: Single; ASourceUnit, ATargetUnit: TResolutionUnit): Single;
 
+const {** Equivalence for the denominator unit of a resolution and the physical unit }
+ ResolutionDenominatorUnit: array[TResolutionUnit] of TCSSUnit =
+       (cuCustom, cuInch, cuCentimeter);
+
 type
   {* Pointer to a TRectF structure }
   PRectF = ^TRectF;

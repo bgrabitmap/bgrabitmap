@@ -132,6 +132,7 @@ type
     function GetFixedResolutionInfo: TImageResolutionInfo; virtual;
     procedure SetResolutionInfo(AResolutionInfo: TImageResolutionInfo); virtual;
     function GetResolutionInfo: TImageResolutionInfo; virtual;
+    function GetResolutionPhysicalUnit: TCSSUnit;
 
     //ReadWriteConfig: TBGRAReadWriteConfig;
 
@@ -552,6 +553,7 @@ type
     property ResolutionHeight: Single read GetResolutionHeight;
     {$ENDIF}
     property ResolutionInfo: TImageResolutionInfo read GetResolutionInfo write SetResolutionInfo;
+    property ResolutionPhysicalUnit: TCSSUnit read GetResolutionPhysicalUnit;
     property FixedResolutionInfo: TImageResolutionInfo read GetFixedResolutionInfo;
 
     {==== Pen style ====}
@@ -1239,6 +1241,11 @@ function TCustomUniversalBitmap.GetPenStroker: TBGRACustomPenStroker;
 begin
   result := GetInternalPen;
   if result.Arrow = nil then GetArrow;
+end;
+
+function TCustomUniversalBitmap.GetResolutionPhysicalUnit: TCSSUnit;
+begin
+  result := ResolutionDenominatorUnit[ResolutionUnit];
 end;
 
 procedure TCustomUniversalBitmap.PathStrokeAliasedCallback(

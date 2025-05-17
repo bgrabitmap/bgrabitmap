@@ -122,10 +122,6 @@ type
     constructor Create(ABitmap: TCustomUniversalBitmap);
   end;
 
-const
-  ResolutionDenominatorUnit: array[TResolutionUnit] of TCSSUnit =
-        (cuCustom, cuInch, cuCentimeter);
-
 {** Convert physical size to pixels according to image resolution.
     If _ASourceUnit_ is set to cuCustom, _ASize_ is supposed to be in the denominator
     of the resolution unit (for example cm for pixels/cm).
