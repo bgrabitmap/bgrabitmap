@@ -151,7 +151,7 @@ begin
     NewWidth := bmp.Width * NewWidth / 100;
     NewHeight := bmp.Height * NewHeight / 100;
   end else
-    PhysicalSizeToPixels(NewWidth, NewHeight, bmp.FixedResolutionInfo, ASizeUnit);
+    PhysicalSizeToPixels(NewWidth, NewHeight, bmp.ResolutionInfo, ASizeUnit);
   Result:= SimpleStretch(bmp, HalfUp(NewWidth), HalfUp(NewHeight), ACopyProperties);
 end;
 
@@ -1374,7 +1374,7 @@ begin
     NewWidth := bmp.Width * NewWidth / 100;
     NewHeight := bmp.Height * NewHeight / 100;
   end else
-    PhysicalSizeToPixels(NewWidth, NewHeight, bmp.FixedResolutionInfo, ASizeUnit);
+    PhysicalSizeToPixels(NewWidth, NewHeight, bmp.ResolutionInfo, ASizeUnit);
 
   Result:= FineResample(bmp, HalfUp(NewWidth), HalfUp(NewHeight), ResampleFilter, ACopyProperties);
 end;

@@ -129,7 +129,6 @@ type
     function GetResolutionHeight: Single; virtual;
     {$ENDIF}
 
-    function GetFixedResolutionInfo: TImageResolutionInfo; virtual;
     procedure SetResolutionInfo(AResolutionInfo: TImageResolutionInfo); virtual;
     function GetResolutionInfo: TImageResolutionInfo; virtual;
     function GetResolutionPhysicalUnit: TCSSUnit;
@@ -554,7 +553,6 @@ type
     {$ENDIF}
     property ResolutionInfo: TImageResolutionInfo read GetResolutionInfo write SetResolutionInfo;
     property ResolutionPhysicalUnit: TCSSUnit read GetResolutionPhysicalUnit;
-    property FixedResolutionInfo: TImageResolutionInfo read GetFixedResolutionInfo;
 
     {==== Pen style ====}
   protected
@@ -2222,51 +2220,6 @@ begin
        end;
 end;
 {$ENDIF}
-
-function TCustomUniversalBitmap.GetFixedResolutionInfo: TImageResolutionInfo;
-var
-  ratio: Single;
-begin
-  if ResolutionUnit = ruNone then
-  begin
-    result.ResolutionUnit := ruPixelsPerInch;
-    // if a ratio is specified
-    if (ResolutionX <> 0) and (ResolutionY <> 0) then
-    begin
-      // assume small resolution is legacy 96 DPI
-      ratio := 96 / min(ResolutionX, ResolutionY);
-      result.ResolutionX := ResolutionX * ratio;
-      result.ResolutionY := ResolutionY * ratio;
-    end else
-    begin
-      // assume legacy 96 DPI
-      result.ResolutionX := 96;
-      result.ResolutionY := 96;
-    end;
-  end else
-  begin
-    // keep specified resolution
-    result.ResolutionUnit := ResolutionUnit;
-    // if no value is given for resolution
-    if (ResolutionX = 0) and (ResolutionY = 0) then
-    begin
-      // assume legacy 96 DPI
-      result.ResolutionX := ConvertResolution(96, ruPixelsPerInch, Result.ResolutionUnit);
-      result.ResolutionY := result.ResolutionX;
-    end else
-    begin
-      // if one resolution is missing, assume it is the same as the other one
-      if ResolutionX = 0 then
-        result.ResolutionX := ResolutionY
-      else
-        result.ResolutionX := ResolutionX;
-      if ResolutionY = 0 then
-        result.ResolutionY := ResolutionX
-      else
-        result.ResolutionY := ResolutionY;
-    end;
-  end;
-end;
 
 procedure TCustomUniversalBitmap.SetResolutionInfo(AResolutionInfo: TImageResolutionInfo);
 begin
