@@ -8,11 +8,7 @@ unit BGRAUnits;
 interface
 
 uses
-  SysUtils, BGRABitmapTypes
-  {$IF FPC_FULLVERSION>30202}
-  , FpImage
-  {$ENDIF}
-  ;
+  SysUtils, BGRABitmapTypes;
 
 type
   TSVGNumber = single;//double
