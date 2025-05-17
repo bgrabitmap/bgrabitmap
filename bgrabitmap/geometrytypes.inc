@@ -231,6 +231,13 @@ type
    {** Convert Resolution from/to dot per inch, dot per cm }
    function ConvertResolution(AResolution: Single; ASourceUnit, ATargetUnit: TResolutionUnit): Single;
 
+   {** Guess resolution when not fully specified }
+   function FixImageResolutionInfo(const AResolution: TImageResolutionInfo): TImageResolutionInfo;
+
+const {** Equivalence for the denominator unit of a resolution and the physical unit }
+ ResolutionDenominatorUnit: array[TResolutionUnit] of TCSSUnit =
+       (cuCustom, cuInch, cuCentimeter);
+
 type
   {* Pointer to a TRectF structure }
   PRectF = ^TRectF;
@@ -1588,6 +1595,51 @@ begin
     ruPixelsPerCentimeter: result := AResolution/2.54;
   else {ruNone}
     raise EInvalidOpException.Create('Target resolution unit must be defined');
+  end;
+end;
+
+function FixImageResolutionInfo(const AResolution: TImageResolutionInfo): TImageResolutionInfo;
+var
+  ratio: Single;
+begin
+  if AResolution.ResolutionUnit = ruNone then
+  begin
+    result.ResolutionUnit := ruPixelsPerInch;
+    // if a ratio is specified
+    if (AResolution.ResolutionX <> 0) and (AResolution.ResolutionY <> 0) then
+    begin
+      // assume small resolution is legacy 96 DPI
+      ratio := 96 / min(AResolution.ResolutionX, AResolution.ResolutionY);
+      result.ResolutionX := AResolution.ResolutionX * ratio;
+      result.ResolutionY := AResolution.ResolutionY * ratio;
+    end else
+    begin
+      // assume legacy 96 DPI
+      result.ResolutionX := 96;
+      result.ResolutionY := 96;
+    end;
+  end else
+  begin
+    // keep specified resolution
+    result.ResolutionUnit := AResolution.ResolutionUnit;
+    // if no value is given for resolution
+    if (AResolution.ResolutionX = 0) and (AResolution.ResolutionY = 0) then
+    begin
+      // assume legacy 96 DPI
+      result.ResolutionX := ConvertResolution(96, ruPixelsPerInch, Result.ResolutionUnit);
+      result.ResolutionY := result.ResolutionX;
+    end else
+    begin
+      // if one resolution is missing, assume it is the same as the other one
+      if AResolution.ResolutionX = 0 then
+        result.ResolutionX := AResolution.ResolutionY
+      else
+        result.ResolutionX := AResolution.ResolutionX;
+      if AResolution.ResolutionY = 0 then
+        result.ResolutionY := AResolution.ResolutionX
+      else
+        result.ResolutionY := AResolution.ResolutionY;
+    end;
   end;
 end;
 

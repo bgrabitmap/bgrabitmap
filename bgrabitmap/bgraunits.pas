@@ -122,10 +122,6 @@ type
     constructor Create(ABitmap: TCustomUniversalBitmap);
   end;
 
-const
-  ResolutionDenominatorUnit: array[TResolutionUnit] of TCSSUnit =
-        (cuCustom, cuInch, cuCentimeter);
-
 {** Convert physical size to pixels according to image resolution.
     If _ASourceUnit_ is set to cuCustom, _ASize_ is supposed to be in the denominator
     of the resolution unit (for example cm for pixels/cm).
@@ -197,9 +193,12 @@ end;
 procedure PhysicalSizeToPixels(var SizeX, SizeY: Single;
                                const AResolution: TImageResolutionInfo;
                                ASourceUnit: TCSSUnit = cuCustom);
+var
+  res: TImageResolutionInfo;
 begin
-  SizeX := PhysicalSizeToPixels(SizeX, AResolution.ResolutionUnit, AResolution.ResolutionX, ASourceUnit);
-  SizeY := PhysicalSizeToPixels(SizeY, AResolution.ResolutionUnit, AResolution.ResolutionY, ASourceUnit);
+  res := FixImageResolutionInfo(AResolution);
+  SizeX := PhysicalSizeToPixels(SizeX, res.ResolutionUnit, res.ResolutionX, ASourceUnit);
+  SizeY := PhysicalSizeToPixels(SizeY, res.ResolutionUnit, res.ResolutionY, ASourceUnit);
 end;
 
 function PixelsToPhysicalSize(ASizeInPixels: Single;
@@ -231,9 +230,12 @@ end;
 procedure PixelsToPhysicalSize(var SizeX, SizeY: Single;
                                const AResolution: TImageResolutionInfo;
                                ATargetUnit: TCSSUnit = cuCustom);
+var
+  res: TImageResolutionInfo;
 begin
-  SizeX := PixelsToPhysicalSize(SizeX, AResolution.ResolutionUnit, AResolution.ResolutionX, ATargetUnit);
-  SizeY := PixelsToPhysicalSize(SizeY, AResolution.ResolutionUnit, AResolution.ResolutionY, ATargetUnit);
+  res := FixImageResolutionInfo(AResolution);
+  SizeX := PixelsToPhysicalSize(SizeX, res.ResolutionUnit, res.ResolutionX, ATargetUnit);
+  SizeY := PixelsToPhysicalSize(SizeY, res.ResolutionUnit, res.ResolutionY, ATargetUnit);
 end;
 
 { TCSSUnitConverter }
@@ -732,7 +734,7 @@ var
 begin
   inherited Create;
   FBitmap := ABitmap;
-  resolution := ABitmap.FixedResolutionInfo;
+  resolution := FixImageResolutionInfo(ABitmap.ResolutionInfo);
   FDpiX := ConvertResolution(resolution.ResolutionX, resolution.ResolutionUnit, ruPixelsPerInch);
   FDpiY := ConvertResolution(resolution.ResolutionY, resolution.ResolutionUnit, ruPixelsPerInch);
   ViewBoxWidth := FloatWithCSSUnit(ABitmap.Width, cuPixel);
