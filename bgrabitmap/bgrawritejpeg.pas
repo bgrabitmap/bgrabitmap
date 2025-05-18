@@ -31,6 +31,12 @@ type
     procedure WriteResolutionValues(Img: TFPCustomImage); virtual;
     procedure InternalWrite(Str: TStream; Img: TFPCustomImage); override;
     {$ENDIF}
+
+  published
+    //property CompressInfo : jpeg_compress_struct; rw
+    property CompressionQuality;  //: TFPJPEGCompressionQuality; rw
+    property ProgressiveEncoding; //: boolean; rw
+    property GrayScale;           //: boolean; rw
   end;
 
 implementation

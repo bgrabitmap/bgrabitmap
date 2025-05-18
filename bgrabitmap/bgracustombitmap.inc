@@ -814,6 +814,8 @@ end;
      procedure BlendImageOver(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
      function Resample(newWidth, newHeight: integer;
        mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRACustomBitmap; virtual; abstract;
+     function Resample(newWidth, newHeight: Single; ASizeUnit: TCSSUnit;
+       mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRACustomBitmap; virtual; abstract;
 
      //masks
      procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; ADrawMode: TDrawMode); overload; override;
@@ -836,6 +838,7 @@ end;
      procedure InplaceNormalize(ABounds: TRect; AEachChannel: boolean = True); overload; virtual; abstract;
      procedure ConvertToLinearRGB; virtual; abstract;
      procedure ConvertFromLinearRGB; virtual; abstract;
+     procedure ConvertToPaletteGrayscale; virtual; abstract;
      procedure SwapRedBlue; overload; virtual; abstract;
      procedure SwapRedBlue(ARect: TRect); overload; virtual; abstract;
      procedure GrayscaleToAlpha; virtual; abstract;

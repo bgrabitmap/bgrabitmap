@@ -30,6 +30,9 @@ type
     It implements most function to the exception from implementations specific to the
     widgetset.
   }
+
+  { TBGRADefaultBitmap }
+
   TBGRADefaultBitmap = class(TBGRACustomBitmap)
   private
     { Bounds checking which are shared by drawing functions. These functions check
@@ -106,8 +109,12 @@ type
     function GetInternalPixel(x, y: integer): integer; override;
 
     {Image functions}
-    function FineResample(NewWidth, NewHeight: integer): TBGRACustomBitmap;
-    function SimpleStretch(NewWidth, NewHeight: integer): TBGRACustomBitmap;
+    function FineResample(NewWidth, NewHeight: integer; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+    function FineResample(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+
+    function SimpleStretch(NewWidth, NewHeight: integer; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+    function SimpleStretch(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+
     function CheckEmpty: boolean; override;
     function GetHasTransparentPixels: boolean; override;
     function GetHasSemiTransparentPixels: boolean; override;
@@ -598,7 +605,9 @@ type
     function MakeBitmapCopy(BackgroundColor: TColor; AMasked: boolean = False): TBitmap; override;
 
     function Resample(newWidth, newHeight: integer;
-      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRADefaultBitmap; override;
+      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
+    function Resample(newWidth, newHeight: Single; ASizeUnit: TCSSUnit;
+      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRADefaultBitmap; overload; override;
     procedure Negative; override;
     procedure NegativeRect(ABounds: TRect); override;
     procedure LinearNegative; override;
@@ -615,6 +624,7 @@ type
     {$IFNDEF BGRABITMAP_CORE}function GetGrayscaleMaskFromAlpha: TGrayscaleMask;{$ENDIF}
     procedure ConvertToLinearRGB; override;
     procedure ConvertFromLinearRGB; override;
+    procedure ConvertToPaletteGrayscale; override;
 
     {Filters}
     {$IFNDEF BGRABITMAP_CORE}
@@ -4381,28 +4391,50 @@ end;
 
 {----------------------------- Resample ---------------------------------------}
 
-function TBGRADefaultBitmap.FineResample(NewWidth, NewHeight: integer):
-TBGRACustomBitmap;
+function TBGRADefaultBitmap.FineResample(NewWidth, NewHeight: integer;
+                                         ACopyProperties: boolean): TBGRACustomBitmap;
 begin
-  Result := BGRAResample.FineResample(self, NewWidth, NewHeight, ResampleFilter);
+  Result := BGRAResample.FineResample(self, NewWidth, NewHeight, ResampleFilter, ACopyProperties);
 end;
 
-function TBGRADefaultBitmap.SimpleStretch(NewWidth, NewHeight: integer):
-TBGRACustomBitmap;
+function TBGRADefaultBitmap.FineResample(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+                                         ACopyProperties: boolean): TBGRACustomBitmap;
 begin
-  Result := BGRAResample.SimpleStretch(self, NewWidth, NewHeight);
+  Result := BGRAResample.FineResample(self, NewWidth, NewHeight, ASizeUnit, ResampleFilter, ACopyProperties);
+end;
+
+function TBGRADefaultBitmap.SimpleStretch(NewWidth, NewHeight: integer;
+                                          ACopyProperties: boolean): TBGRACustomBitmap;
+begin
+  Result := BGRAResample.SimpleStretch(self, NewWidth, NewHeight, ACopyProperties);
+end;
+
+function TBGRADefaultBitmap.SimpleStretch(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+                                          ACopyProperties: boolean): TBGRACustomBitmap;
+begin
+  Result := BGRAResample.SimpleStretch(self, NewWidth, NewHeight, ASizeUnit, ACopyProperties);
 end;
 
 function TBGRADefaultBitmap.Resample(newWidth, newHeight: integer;
   mode: TResampleMode; ACopyProperties: Boolean=False): TBGRADefaultBitmap;
 begin
   case mode of
-    rmFineResample: Result  := FineResample(newWidth, newHeight) as TBGRADefaultBitmap;
-    rmSimpleStretch: Result := SimpleStretch(newWidth, newHeight) as TBGRADefaultBitmap;
-    else
-      Result := nil;
+    rmFineResample: Result  := FineResample(newWidth, newHeight, ACopyProperties) as TBGRADefaultBitmap;
+    rmSimpleStretch: Result := SimpleStretch(newWidth, newHeight, ACopyProperties) as TBGRADefaultBitmap;
+  else
+    raise Exception.Create('Unhandled resample mode');
   end;
-  if ACopyProperties and (Result<>nil) then CopyPropertiesTo(Result);
+end;
+
+function TBGRADefaultBitmap.Resample(newWidth, newHeight: Single; ASizeUnit: TCSSUnit;
+  mode: TResampleMode; ACopyProperties: Boolean): TBGRADefaultBitmap;
+begin
+  case mode of
+    rmFineResample: Result  := FineResample(newWidth, newHeight, ASizeUnit, ACopyProperties) as TBGRADefaultBitmap;
+    rmSimpleStretch: Result := SimpleStretch(newWidth, newHeight, ASizeUnit, ACopyProperties) as TBGRADefaultBitmap;
+  else
+    raise Exception.Create('Unhandled resample mode');
+  end;
 end;
 
 {-------------------------------- Data functions ------------------------}
@@ -4584,6 +4616,22 @@ begin
     p^.green := GammaCompressionTab[p^.green shl 8 + p^.green];
     p^.blue := GammaCompressionTab[p^.blue shl 8 + p^.blue];
     inc(p);
+  end;
+end;
+
+procedure TBGRADefaultBitmap.ConvertToPaletteGrayscale;
+var
+   newPal: TFPPalette;
+
+begin
+  try
+     newPal:= CreateGrayScalePalette;
+     UsePalette:= True;
+     Palette.Copy(newPal);
+     InplaceGrayscale(True);
+
+  finally
+     newPal.Free;
   end;
 end;
 

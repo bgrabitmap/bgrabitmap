@@ -9,13 +9,21 @@ unit BGRAResample;
 interface
 
 uses
-  SysUtils, BGRABitmapTypes;
+  SysUtils, BGRABitmapTypes, BGRAUnits
+  {$if FPC_FULLVERSION>30202}
+  , FpImage
+  {$endif}
+  ;
 
 {------------------------------- Simple stretch ------------------------------------}
 
 { Computes a resampled image with pixels are boxes, with antialising between boxes.
   For example, a 2x2 image will be stretched as four boxes, one for each pixel }
-function SimpleStretch(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer): TBGRACustomBitmap;
+function SimpleStretch(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer;
+  ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+function SimpleStretch(bmp: TBGRACustomBitmap; NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+  ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+
 { Puts a resampled image on the destination. Pixels are boxes, with antialising between boxes. }
 procedure StretchPutImage(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer;
   dest: TBGRACustomBitmap; OffsetX,OffsetY: Integer; ADrawMode: TDrawMode;
@@ -95,7 +103,11 @@ function CreateInterpolator(style: TSplineStyle): TWideKernelFilter;
   filters (linear and cosine-like) or wide kernel resample for complex interpolation.
   In this cas, it calls WideKernelResample. }
 function FineResample(bmp: TBGRACustomBitmap;
-  NewWidth, NewHeight: integer; ResampleFilter: TResampleFilter): TBGRACustomBitmap;
+  NewWidth, NewHeight: integer; ResampleFilter: TResampleFilter; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
+
+function FineResample(bmp: TBGRACustomBitmap;
+  NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+  ResampleFilter: TResampleFilter; ACopyProperties: boolean = false): TBGRACustomBitmap; overload;
 
 { WideKernelResample can be called for custom filter kernel, derived
   from TWideKernelFilter. It is slower of course than simple interpolation. }
@@ -106,8 +118,19 @@ implementation
 
 uses Math, BGRABlend, BGRAClasses;
 
+{ Adapt resolution from source to destination image according to the scaling between them }
+procedure AdaptResolution(ASource: TBGRACustomBitmap; ADest: TBGRACustomBitmap);
+var
+  res: TImageResolutionInfo;
+begin
+  res := ASource.ResolutionInfo;
+  res.ResolutionX:= res.ResolutionX * ADest.Width / ASource.Width;
+  res.ResolutionY:= res.ResolutionY * ADest.Height / ASource.Height;
+  ADest.ResolutionInfo:= res;
+end;
+
 function SimpleStretch(bmp: TBGRACustomBitmap;
-  newWidth, newHeight: integer): TBGRACustomBitmap;
+  newWidth, newHeight: integer; ACopyProperties: boolean): TBGRACustomBitmap;
 begin
   if (NewWidth = bmp.Width) and (NewHeight = bmp.Height) then
   begin
@@ -116,6 +139,20 @@ begin
   end;
   Result := bmp.NewBitmap(NewWidth, NewHeight);
   StretchPutImage(bmp, newWidth,newHeight, result, 0,0, dmSet, 255);
+  AdaptResolution(bmp, result);
+  if ACopyProperties then bmp.CopyPropertiesTo(Result);
+end;
+
+function SimpleStretch(bmp: TBGRACustomBitmap;
+  NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit; ACopyProperties: boolean): TBGRACustomBitmap;
+begin
+  if ASizeUnit = cuPercent then
+  begin
+    NewWidth := bmp.Width * NewWidth / 100;
+    NewHeight := bmp.Height * NewHeight / 100;
+  end else
+    PhysicalSizeToPixels(NewWidth, NewHeight, bmp.ResolutionInfo, ASizeUnit);
+  Result:= SimpleStretch(bmp, HalfUp(NewWidth), HalfUp(NewHeight), ACopyProperties);
 end;
 
 procedure StretchPutImage(bmp: TBGRACustomBitmap; NewWidth, NewHeight: integer;
@@ -1217,14 +1254,15 @@ begin
 end;
 
 function FineResample(bmp: TBGRACustomBitmap;
-  NewWidth, NewHeight: integer; ResampleFilter: TResampleFilter): TBGRACustomBitmap;
+  NewWidth, NewHeight: integer; ResampleFilter: TResampleFilter;
+  ACopyProperties: boolean): TBGRACustomBitmap;
 var
   temp, newtemp: TBGRACustomBitmap;
   tempFilter1,tempFilter2: TWideKernelFilter;
 begin
   if (NewWidth = bmp.Width) and (NewHeight = bmp.Height) then
   begin
-    Result := bmp.Duplicate;
+    Result := bmp.Duplicate(ACopyProperties);
     exit;
   end;
   case ResampleFilter of
@@ -1233,6 +1271,8 @@ begin
       tempFilter1 := TCubicKernel.Create;
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter1,tempFilter1);
       tempFilter1.Free;
+      AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
     rfMitchell:
@@ -1240,6 +1280,8 @@ begin
       tempFilter1 := TMitchellKernel.Create;
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter1,tempFilter1);
       tempFilter1.Free;
+      AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
     rfSpline:
@@ -1247,6 +1289,8 @@ begin
       tempFilter1 := TSplineKernel.Create;
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter1,tempFilter1);
       tempFilter1.Free;
+      AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
     rfLanczos2,rfLanczos3,rfLanczos4:
@@ -1254,6 +1298,8 @@ begin
       tempFilter1 := TLanczosKernel.Create(ord(ResampleFilter)-ord(rfLanczos2)+2);
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter1,tempFilter1);
       tempFilter1.Free;
+      AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
     rfBestQuality:
@@ -1263,6 +1309,8 @@ begin
       result := WideKernelResample(bmp,NewWidth,NewHeight,tempFilter2,tempFilter1);
       tempFilter1.Free;
       tempFilter2.Free;
+      AdaptResolution(bmp, result);
+      if ACopyProperties then bmp.CopyPropertiesTo(result);
       exit;
     end;
   end;
@@ -1313,7 +1361,24 @@ begin
     else
       Result := bmp.Duplicate;
   end;
+  AdaptResolution(bmp, result);
+  if ACopyProperties then bmp.CopyPropertiesTo(result);
 end;
+
+function FineResample(bmp: TBGRACustomBitmap;
+  NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+  ResampleFilter: TResampleFilter; ACopyProperties: boolean): TBGRACustomBitmap;
+begin
+  if ASizeUnit = cuPercent then
+  begin
+    NewWidth := bmp.Width * NewWidth / 100;
+    NewHeight := bmp.Height * NewHeight / 100;
+  end else
+    PhysicalSizeToPixels(NewWidth, NewHeight, bmp.ResolutionInfo, ASizeUnit);
+
+  Result:= FineResample(bmp, HalfUp(NewWidth), HalfUp(NewHeight), ResampleFilter, ACopyProperties);
+end;
+
 
 {------------------------ Wide kernel filtering adapted from Graphics32 ---------------------------}
 

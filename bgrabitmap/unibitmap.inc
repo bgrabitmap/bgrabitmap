@@ -80,17 +80,6 @@ type
     PixelCenteredCoords: boolean;
   end;
 
-  {$IF FPC_FULLVERSION<30203}
-  {* Unit used to specify the resolution of a bitmap }
-  TResolutionUnit = (
-    {** No unit used, only aspect ratio specified }
-    ruNone,
-    {** Pixels per inch (DPI) }
-    ruPixelsPerInch,
-    {** Pixels per centimeters }
-    ruPixelsPerCentimeter);
-  {$ENDIF}
-
   {* Base class for the universal bitmap (of any colorspace) }
 
   { TCustomUniversalBitmap }
@@ -139,6 +128,10 @@ type
     function GetResolutionWidth: Single; virtual;
     function GetResolutionHeight: Single; virtual;
     {$ENDIF}
+
+    procedure SetResolutionInfo(AResolutionInfo: TImageResolutionInfo); virtual;
+    function GetResolutionInfo: TImageResolutionInfo; virtual;
+    function GetResolutionPhysicalUnit: TCSSUnit;
 
     //ReadWriteConfig: TBGRAReadWriteConfig;
 
@@ -229,13 +222,16 @@ type
     {** Clear all channels of transparent pixels }
     procedure ClearTransparentPixels; virtual;
 
+    {** Initializes a brush that erases (reduces the alpha channel) }
     class procedure EraseBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AAlpha: Word); virtual;
+    {** Initializes a brush that sets the alpha channel }
     class procedure AlphaBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AAlpha: Word); virtual;
     procedure SolidBrushBGRA(out ABrush: TUniversalBrush; ARed,AGreen,ABlue,AAlpha: Byte; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     procedure SolidBrushBGRA(out ABrush: TUniversalBrush; AColor: TBGRAPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     procedure SolidBrushExpanded(out ABrush: TUniversalBrush; ARed,AGreen,ABlue,AAlpha: Word; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     procedure SolidBrushExpanded(out ABrush: TUniversalBrush; AColor: TExpandedPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); overload; virtual;
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
+    {** Initializes a brush that fills a texture from a scanner }
     class procedure ScannerBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner; {%H-}ADrawMode: TDrawMode = dmDrawWithTransparency;
                                  {%H-}AOffsetX: integer = 0; {%H-}AOffsetY: integer = 0); virtual;
     class procedure MaskBrush(out {%H-}ABrush: TUniversalBrush; {%H-}AScanner: IBGRAScanner;
@@ -555,6 +551,8 @@ type
     property ResolutionWidth: Single read GetResolutionWidth;
     property ResolutionHeight: Single read GetResolutionHeight;
     {$ENDIF}
+    property ResolutionInfo: TImageResolutionInfo read GetResolutionInfo write SetResolutionInfo;
+    property ResolutionPhysicalUnit: TCSSUnit read GetResolutionPhysicalUnit;
 
     {==== Pen style ====}
   protected
@@ -1241,6 +1239,11 @@ function TCustomUniversalBitmap.GetPenStroker: TBGRACustomPenStroker;
 begin
   result := GetInternalPen;
   if result.Arrow = nil then GetArrow;
+end;
+
+function TCustomUniversalBitmap.GetResolutionPhysicalUnit: TCSSUnit;
+begin
+  result := ResolutionDenominatorUnit[ResolutionUnit];
 end;
 
 procedure TCustomUniversalBitmap.PathStrokeAliasedCallback(
@@ -2186,17 +2189,10 @@ procedure TCustomUniversalBitmap.SetResolutionUnit(AResolutionUnit: TResolutionU
 begin
   if (AResolutionUnit<>FResolutionUnit) then
   begin
-    Case AResolutionUnit of
-    ruPixelsPerInch : if (FResolutionUnit=ruPixelsPerCentimeter) then //Old Resolution is in Cm
-             begin
-               FResolutionX :=FResolutionX*2.54;
-               FResolutionY :=FResolutionY*2.54;
-             end;
-    ruPixelsPerCentimeter: if (FResolutionUnit=ruPixelsPerInch) then //Old Resolution is in Inch
-                  begin
-                    FResolutionX :=FResolutionX/2.54;
-                    FResolutionY :=FResolutionY/2.54;
-                  end;
+    if (AResolutionUnit <> ruNone) and (FResolutionUnit <> ruNone) then
+    begin
+      FResolutionX := ConvertResolution(FResolutionX, FResolutionUnit, AResolutionUnit);
+      FResolutionY := ConvertResolution(FResolutionY, FResolutionUnit, AResolutionUnit);
     end;
     FResolutionUnit :=AResolutionUnit;
   end;
@@ -2224,6 +2220,20 @@ begin
        end;
 end;
 {$ENDIF}
+
+procedure TCustomUniversalBitmap.SetResolutionInfo(AResolutionInfo: TImageResolutionInfo);
+begin
+  ResolutionUnit:= AResolutionInfo.ResolutionUnit;
+  ResolutionX := AResolutionInfo.ResolutionX;
+  ResolutionY := AResolutionInfo.ResolutionY;
+end;
+
+function TCustomUniversalBitmap.GetResolutionInfo: TImageResolutionInfo;
+begin
+  result.ResolutionUnit:= ResolutionUnit;
+  result.ResolutionX:= ResolutionX;
+  result.ResolutionY:= ResolutionY;
+end;
 
 procedure TCustomUniversalBitmap.Init;
 begin

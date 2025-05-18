@@ -27,7 +27,7 @@ uses
 {=== Miscellaneous types ===}
 
   {* Current version expressed as an integer with each part multiplied by 100 }
-  const BGRABitmapVersion = 11060400;
+  const BGRABitmapVersion = 11060500;
 
   {* String representation of the version, numbers separated by dots }
   function BGRABitmapVersionStr: string;
@@ -140,6 +140,12 @@ type
     ifAvif
     );
 
+  {* Physical units as defined by CSS }
+  TCSSUnit = (cuCustom, cuPixel,
+              cuCentimeter, cuMillimeter,
+              cuInch, cuPica, cuPoint,
+              cuFontEmHeight, cuFontXHeight, cuPercent);
+
 var
   { #note 5 -oMaxM : it would be useful to make a single record that contains everything }
   {** List of stream readers for images }
@@ -187,6 +193,14 @@ var
   procedure BGRARegisterImageHandlers(AFormat: TBGRAImageFormat;
     AReader: TFPCustomImageReaderClass; AWriter: TFPCustomImageWriterClass;
     AddFPCHandlers: Boolean; const ATypeName: String; const AExtensions: String);
+
+  {** Get Registered Readers Extensions to use in Masks List}
+  function BGRARegisteredImageReaderExtension: String; overload;
+  function BGRARegisteredImageReaderExtension(AFormat: TBGRAImageFormat): String; overload;
+
+  {** Get Registered Writers Extensions to use in Masks List}
+  function BGRARegisteredImageWriterExtension: String;
+  function BGRARegisteredImageWriterExtension(AFormat: TBGRAImageFormat): String; overload;
 
 type
   {* Possible options when loading an image }
@@ -1544,14 +1558,18 @@ procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat; AReader: TFPCustomI
   AddFPCReader: Boolean);
 var
   typeName: String;
+
 begin
   DefaultBGRAImageReader[AFormat] := AReader;
   typeName := BGRAImageFormat[AFormat].TypeName;
 
-  { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
-  if AddFPCReader and (typeName <> '') and (ImageHandlers.ImageReader[typeName] = nil)
-    and (BGRAImageFormat[AFormat].Extensions <> '') then
+  if AddFPCReader and (typeName <> '') and (BGRAImageFormat[AFormat].Extensions <> '') then
+  begin
+    if (ImageHandlers.ImageReader[typeName] <> nil)
+    then ImageHandlers.UnregisterImageHandlers(typeName, True, False);
+
     ImageHandlers.RegisterImageReader(typeName, BGRAImageFormat[AFormat].Extensions, AReader);
+  end;
 end;
 
 procedure BGRARegisterImageReader(AFormat: TBGRAImageFormat; AReader: TFPCustomImageReaderClass;
@@ -1561,19 +1579,22 @@ begin
   BGRARegisterImageReader(AFormat, AReader, AddFPCReader);
 end;
 
-// registering FPC writer works only if the
 procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat; AWriter: TFPCustomImageWriterClass;
   AddFPCWriter: Boolean);
 var
   typeName: String;
+
 begin
   DefaultBGRAImageWriter[AFormat] := AWriter;
   typeName := BGRAImageFormat[AFormat].TypeName;
 
-  { #note -oMaxM : we can't replace the Handler, only add it (doesn't make much sense) }
-  if addFPCWriter and (typeName <> '') and (ImageHandlers.ImageWriter[typeName] = nil)
-    and (BGRAImageFormat[AFormat].Extensions <> '') then
+  if addFPCWriter and (typeName <> '') and (BGRAImageFormat[AFormat].Extensions <> '') then
+  begin
+    if (ImageHandlers.ImageWriter[typeName] <> nil)
+    then ImageHandlers.UnregisterImageHandlers(typeName, False, True);
+
     ImageHandlers.RegisterImageWriter(typeName, BGRAImageFormat[AFormat].Extensions, AWriter);
+  end;
 end;
 
 procedure BGRARegisterImageWriter(AFormat: TBGRAImageFormat; AWriter: TFPCustomImageWriterClass;
@@ -1590,6 +1611,52 @@ begin
   BGRARegisterImageFormat(AFormat, ATypeName, AExtensions);
   BGRARegisterImageReader(AFormat, AReader, AddFPCHandlers);
   BGRARegisterImageWriter(AFormat, AWriter, AddFPCHandlers);
+end;
+
+function BGRARegisteredImageReaderExtension: String;
+var
+   iFormat: TBGRAImageFormat;
+
+begin
+  Result:= '';
+  for iFormat:=ifJpeg to High(TBGRAImageFormat) do
+    if (DefaultBGRAImageReader[iFormat] <> nil)
+    then if (Result = '')
+         then Result:= '*'+ExtensionSeparator+BGRAImageFormat[iFormat].Extensions
+         else Result:= Result+';'+BGRAImageFormat[iFormat].Extensions;
+
+  Result:= StringReplace(Result, ';', ';*'+ExtensionSeparator, [rfReplaceAll]);
+end;
+
+function BGRARegisteredImageReaderExtension(AFormat: TBGRAImageFormat): String;
+begin
+  Result:= '';
+  if (DefaultBGRAImageReader[AFormat] <> nil)
+  then Result:= StringReplace('*'+ExtensionSeparator+BGRAImageFormat[AFormat].Extensions,
+                              ';', ';*'+ExtensionSeparator, [rfReplaceAll]);
+end;
+
+function BGRARegisteredImageWriterExtension: String;
+var
+   iFormat: TBGRAImageFormat;
+
+begin
+  Result:= '';
+  for iFormat:=ifJpeg to High(TBGRAImageFormat) do
+    if (DefaultBGRAImageWriter[iFormat] <> nil)
+    then if (Result = '')
+         then Result:= '*'+ExtensionSeparator+BGRAImageFormat[iFormat].Extensions
+         else Result:= Result+';'+BGRAImageFormat[iFormat].Extensions;
+
+  Result:= StringReplace(Result, ';', ';*'+ExtensionSeparator, [rfReplaceAll]);
+end;
+
+function BGRARegisteredImageWriterExtension(AFormat: TBGRAImageFormat): String;
+begin
+  Result:= '';
+  if (DefaultBGRAImageWriter[AFormat] <> nil)
+  then Result:= StringReplace('*'+ExtensionSeparator+BGRAImageFormat[AFormat].Extensions,
+                              ';', ';*'+ExtensionSeparator, [rfReplaceAll]);
 end;
 
 function ResourceFile(AFilename: string): string;

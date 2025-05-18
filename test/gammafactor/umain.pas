@@ -45,17 +45,18 @@ begin
   UpdateLabelGamma;
   TrackBar_Gamma.Position := round(BGRAGetGamma*20);
   FInitialised:= true;
+  BGRAVirtualScreen1.BitmapAutoScale:= false;
 end;
 
 procedure TForm1.BGRAVirtualScreen1Redraw(Sender: TObject; Bitmap: TBGRABitmap);
-const stripSize = 20;
 var c: TBGRAPixel;
   pattern: TBGRABitmap;
-  i: Integer;
+  i, stripSize: Integer;
 begin
   c := clWhite;
   c.Lightness := 32768;
   pattern := TBGRABitmap.Create(2,2);
+  stripSize := round(20 * PixelsPerInch * GetCanvasScaleFactor / 96);
   pattern.SetPixel(0,0,BGRABlack);
   pattern.SetPixel(1,0,BGRAWhite);
   pattern.SetPixel(0,1,BGRAWhite);

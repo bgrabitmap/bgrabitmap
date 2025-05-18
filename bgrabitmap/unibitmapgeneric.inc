@@ -27,8 +27,11 @@ type
     function Equals(const comp: TPixel): boolean; overload;
     function GetDifferenceBounds(ABitmap: TCustomUniversalBitmap): TRect;
 
+    {** Initializes a brush with a solid color provided indirectly by a reference }
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
+    {** Initializes a brush that has no effect }
     class procedure IdleBrush(out ABrush: TUniversalBrush); virtual;
+    {** Initializes a brush with a solid color }
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
 
     {** @abstract(Creates a brush texture with a specified style, pattern color, background color, dimensions, and pen width.)

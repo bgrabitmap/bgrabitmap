@@ -16,4 +16,4 @@ Useful binaries for Windows:
 - [WEBP Dlls](https://github.com/bgrabitmap/bgrabitmap/tree/master/libwebp)
 - [AVIF Dlls](https://github.com/bgrabitmap/bgrabitmap/files/12566323/libavif_windows_dlls_ver_1_0_1-1.zip)
 
-![BGRA Controls](https://raw.githubusercontent.com/bgrabitmap/bgrabitmap/master/bgrabitmap.jpg)
+![BGRA Controls](doc/img/bgrabitmap.jpg)

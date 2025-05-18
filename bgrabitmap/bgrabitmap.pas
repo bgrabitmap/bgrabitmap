@@ -30,7 +30,7 @@ interface
   to the platform }
 
 uses
-  BGRAClasses, BGRABitmapTypes, FPImage, SysUtils,
+  BGRAClasses, BGRABitmapTypes, FPImage, SysUtils, BGRAUnits,
 {$IFDEF BGRABITMAP_USE_FPGUI}
     BGRAfpGUIBitmap,
 {$ELSE}
@@ -78,6 +78,9 @@ type
     {$IFDEF BGRABITMAP_USE_LCL}
       {$IFDEF LCLwin32}
         {* Import version for Windows }
+
+        { TBGRABitmap }
+
         TBGRABitmap = class(TBGRAWinBitmap)
       {$ELSE}
         {$IFDEF LCLgtk}
@@ -135,7 +138,9 @@ type
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
                 AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGRABitmap; override;
     function Resample(newWidth, newHeight: integer;
-      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRABitmap; override;
+      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function Resample(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=True): TBGRABitmap; overload; override;
     function RotateCW(ACopyProperties: Boolean=False): TBGRABitmap; override;
     function RotateCCW(ACopyProperties: Boolean=False): TBGRABitmap; override;
     function RotateUD(ACopyProperties: Boolean=False): TBGRABitmap; override;
@@ -321,6 +326,12 @@ end;
 function TBGRABitmap.Resample(newWidth, newHeight: integer; mode: TResampleMode; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
   Result:=inherited Resample(newWidth, newHeight, mode, ACopyProperties) as TBGRABitmap;
+end;
+
+function TBGRABitmap.Resample(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+  mode: TResampleMode; ACopyProperties: Boolean): TBGRABitmap;
+begin
+  Result:=inherited Resample(NewWidth, NewHeight, ASizeUnit, mode, ACopyProperties) as TBGRABitmap;
 end;
 
 function TBGRABitmap.RotateCW(ACopyProperties: Boolean=False): TBGRABitmap;
