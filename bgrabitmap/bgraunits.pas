@@ -8,27 +8,12 @@ unit BGRAUnits;
 interface
 
 uses
-  SysUtils, BGRABitmapTypes;
+  SysUtils, BGRABitmapTypes, FPImage;
 
 type
   TSVGNumber = single;//double
   ArrayOfTSVGNumber = array of TSVGNumber;
 
-  TCSSUnit = BGRABitmapTypes.TCSSUnit;
-
-const
-  cuCustom = BGRABitmapTypes.cuCustom;
-  cuPixel = BGRABitmapTypes.cuPixel;
-  cuCentimeter = BGRABitmapTypes.cuCentimeter;
-  cuMillimeter = BGRABitmapTypes.cuMillimeter;
-  cuInch = BGRABitmapTypes.cuInch;
-  cuPica = BGRABitmapTypes.cuPica;
-  cuPoint = BGRABitmapTypes.cuPoint;
-  cuFontEmHeight = BGRABitmapTypes.cuFontEmHeight;
-  cuFontXHeight = BGRABitmapTypes.cuFontXHeight;
-  cuPercent = BGRABitmapTypes.cuPercent;
-
-type
   { Floating-point value expressed in a CSS unit }
   TFloatWithCSSUnit = record
     value: single;
