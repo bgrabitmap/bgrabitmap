@@ -218,8 +218,16 @@ type
     ruPixelsPerInch,
     {** Pixels per centimeters }
     ruPixelsPerCentimeter);
+{$ELSE}
+   TResolutionUnit = FPImage.TResolutionUnit;
+
+const
+  ruNone = FPImage.ruNone;
+  ruPixelsPerInch = FPImage.ruPixelsPerInch;
+  ruPixelsPerCentimeter = FPImage.ruPixelsPerCentimeter;
 {$ENDIF}
 
+type
    TImageResolutionInfo = record
      ResolutionUnit: TResolutionUnit;
      ResolutionX, ResolutionY: Single;
