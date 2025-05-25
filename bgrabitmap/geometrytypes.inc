@@ -41,7 +41,7 @@ type
   operator - (const pt1, pt2: TPointF): TPointF; inline;
   {** Returns a point with opposite values for _x_ and _y_ components }
   operator - (const pt2: TPointF): TPointF; inline;
-  {$if FPC_FULLVERSION < 30203}
+  {$if FPC_FULLVERSION <= 30203}
   {** Scalar product (deprecated): multiplies _x_ and _y_ components and returns the sum }
   operator * (const pt1, pt2: TPointF): single; inline;
   {** Scalar product: multiplies _x_ and _y_ components and returns the sum }
