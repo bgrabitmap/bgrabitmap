@@ -52,7 +52,7 @@ end;
 
 function TBGRAWriterBMP.SaveHeader(Stream:TStream; Img : TFPCustomImage):boolean;
 begin
-  {$IF FPC_FULLVERSION<30203}
+  {$IF FPC_FULLVERSION<=30203}
   if (Img is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(Img) do
   begin

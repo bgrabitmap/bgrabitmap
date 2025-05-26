@@ -18,7 +18,7 @@ type
   {* Extends the TFPWriterPCX to save resolution }
   TBGRAWriterPCX = class(TFPWriterPCX)
   protected
-    {$IF FPC_FULLVERSION<30203}
+    {$IF FPC_FULLVERSION<=30203}
     function SaveHeader(Stream: TStream; Img: TFPCustomImage): boolean; override;
     {$ENDIF}
 
@@ -32,7 +32,7 @@ type
 
 implementation
 
-{$IF FPC_FULLVERSION<30203}
+{$IF FPC_FULLVERSION<=30203}
 uses pcxcomn;
 
 function TBGRAWriterPCX.SaveHeader(Stream: TStream; Img: TFPCustomImage): boolean;

@@ -1048,7 +1048,7 @@ end;
 
 procedure TBGRAReaderBMP.ReadResolutionValues(Img: TFPCustomImage);
 begin
-  {$IF FPC_FULLVERSION<30203}
+  {$IF FPC_FULLVERSION<=30203}
   if (Img is TCustomUniversalBitmap) then
   with TCustomUniversalBitmap(Img) do
   {$ELSE}
