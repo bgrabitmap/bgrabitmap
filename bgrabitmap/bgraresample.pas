@@ -9,11 +9,7 @@ unit BGRAResample;
 interface
 
 uses
-  SysUtils, BGRABitmapTypes, BGRAUnits
-  {$if FPC_FULLVERSION>30202}
-  , FpImage
-  {$endif}
-  ;
+  SysUtils, BGRABitmapTypes, BGRAUnits;
 
 {------------------------------- Simple stretch ------------------------------------}
 
