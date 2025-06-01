@@ -49,7 +49,7 @@ type
   TBGRAReaderJpeg = class(TFPReaderJPEG)
     constructor Create; override;
   protected
-    {$IF FPC_FULLVERSION<=30203}
+    {$IF FPC_FULLVERSION<30203}
     CompressInfo: jpeg_decompress_struct;
     FError: jpeg_error_mgr;
 
@@ -102,7 +102,7 @@ begin
   Performance := jpBestQuality;
 end;
 
-{$IF FPC_FULLVERSION<=30203}
+{$IF FPC_FULLVERSION<30203}
 procedure TBGRAReaderJpeg.ReadResolutionValues(Img: TFPCustomImage);
 begin
   if (Img is TCustomUniversalBitmap) then
