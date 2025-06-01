@@ -15,7 +15,7 @@ interface
 uses
   Classes, SysUtils, FPImage, FPReadJPEG, FPWriteJPEG
 
-  {$IF FPC_FULLVERSION<=30203}, JPEGLib, JcAPIstd, JcAPImin, JDataDst, JcParam, JError{$ENDIF};
+  {$IF FPC_FULLVERSION<30203}, JPEGLib, JcAPIstd, JcAPImin, JDataDst, JcParam, JError{$ENDIF};
 
 type
   TFPJPEGCompressionQuality = 1..100;   // 100 = best quality, 25 = pretty awful
@@ -23,7 +23,7 @@ type
   {* Extends the TFPWriterJPEG to save resolution }
   TBGRAWriterJPEG = class(TFPWriterJPEG)
   protected
-    {$IF FPC_FULLVERSION<=30203}
+    {$IF FPC_FULLVERSION<30203}
     ACompressInfo: jpeg_compress_struct;
     FError: jpeg_error_mgr;
     FProgressMgr: TFPJPEGProgressManager;
@@ -43,7 +43,7 @@ implementation
 
 uses BGRABitmapTypes;
 
-{$IF FPC_FULLVERSION<=30203}
+{$IF FPC_FULLVERSION<30203}
 function ResolutionUnitTodensity_unit(AResolutionUnit: TResolutionUnit): UINT8;
 begin
   Case AResolutionUnit of
@@ -230,7 +230,7 @@ end;
 {$ENDIF}
 
 initialization
-  {$IF FPC_FULLVERSION<=30203}
+  {$IF FPC_FULLVERSION<30203}
   with jpeg_std_error do begin
     error_exit:=@JPEGError;
     emit_message:=@EmitMessage;

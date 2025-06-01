@@ -118,7 +118,7 @@ type
         antialiased shapes }
     FAntialiasingDrawMode: TDrawMode;
 
-    {$IF FPC_FULLVERSION<=30203}
+    {$IF FPC_FULLVERSION<30203}
     //Resolution
     FResolutionUnit: TResolutionUnit;
     FResolutionX,
@@ -543,7 +543,7 @@ type
     {** Current reference white used for color conversion }
     property ReferenceWhite: PXYZReferenceWhite read FReferenceWhite write FReferenceWhite;
 
-    {$IF FPC_FULLVERSION<=30203}
+    {$IF FPC_FULLVERSION<30203}
     //Resolution
     property ResolutionUnit: TResolutionUnit read FResolutionUnit write SetResolutionUnit;
     property ResolutionX: Single read FResolutionX write FResolutionX;
@@ -2184,7 +2184,7 @@ begin
   FLineOrder:= AValue;
 end;
 
-{$IF FPC_FULLVERSION<=30203}
+{$IF FPC_FULLVERSION<30203}
 procedure TCustomUniversalBitmap.SetResolutionUnit(AResolutionUnit: TResolutionUnit);
 begin
   if (AResolutionUnit<>FResolutionUnit) then
@@ -2541,7 +2541,7 @@ begin
 
     if ACopyProperties then
     begin
-      {$IF FPC_FULLVERSION>30203}
+      {$IF FPC_FULLVERSION>=30203}
       //Resolution
       ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
       ResolutionX:=TFPCustomImage(Source).ResolutionX;
