@@ -4,6 +4,7 @@
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
 type
+  TRectArray = BGRAClasses.TRectArray;
   TPoint = BGRAClasses.TPoint;
 
   {** A constant representing an empty point (with minimum possible integer values for X and Y)
@@ -107,6 +108,7 @@ type
   TAffineMatrix = array[1..2,1..3] of single;
 
   TRectF = BGRAClasses.TRectF;
+  TRectFArray = BGRAClasses.TRectFArray;
 
   {** A constant representing an empty rectangle with all coordinates set to 0 }
   const EmptyRectF : TRectF = (left:0; top:0; right:0; bottom: 0);
@@ -271,6 +273,17 @@ type
     {** Determines if the rectangle is empty (of zero size) }
     function IsEmpty: boolean;
   end;
+
+type
+  {* Rappresent a Physical Rectangle using Resolution Unit Coordinate }
+  TPhysicalRect = record
+    ResolutionUnit: TResolutionUnit;
+    case Integer of
+     0: (Left, Top, Right, Bottom: Single);
+     1: (TopLeft, BottomRight: TPointF);
+  end;
+  PPhysicalRect = ^TPhysicalRect;
+  TPhysicalRectArray = array of TPhysicalRect;
 
 type
   {* @abstract(Object representing an affine box.)

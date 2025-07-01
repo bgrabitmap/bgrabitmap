@@ -83,6 +83,8 @@ type
   {* Base class for the universal bitmap (of any colorspace) }
 
   { TCustomUniversalBitmap }
+  TCustomUniversalBitmap = class;
+  TCustomUniversalBitmapArray = array of TCustomUniversalBitmap;
 
   TCustomUniversalBitmap = class(TFPCustomImage, IBGRAScanner)
   private
@@ -214,7 +216,12 @@ type
       that if the bounds are within the image, the result is just that part
       of the image, but if the bounds are bigger than the image, the image
       is tiled. }
-    function GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TCustomUniversalBitmap; virtual;
+    function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TCustomUniversalBitmap; overload; virtual;
+    procedure GetPart(const ARects: TRectArray; var ABitmaps: TCustomUniversalBitmapArray;
+                      ACopyProperties: Boolean=False; ATile: Boolean=True); overload; virtual;
+    function GetPart(const ARect: TPhysicalRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TCustomUniversalBitmap; overload; virtual;
+    procedure GetPart(const ARects: TPhysicalRectArray; var ABitmaps: TCustomUniversalBitmapArray;
+                      ACopyProperties: Boolean=False; ATile: Boolean=True); overload; virtual;
 
     procedure InvalidateBitmap; virtual;         //call if you modify with Scanline
     procedure LoadFromBitmapIfNeeded; virtual;   //call to ensure that data is up to date
@@ -2649,7 +2656,8 @@ begin
   end;
 end;
 
-function TCustomUniversalBitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TCustomUniversalBitmap;
+function TCustomUniversalBitmap.GetPart(const ARect: TRect;
+                                        ACopyProperties: Boolean; ATile: Boolean): TCustomUniversalBitmap;
 var
   sx, sy: integer;
   xSrc0, ySrc, remainX, xSrc, yDest, copyCount, copyByte: integer;
@@ -2669,6 +2677,8 @@ begin
   LoadFromBitmapIfNeeded;
   xSrc0 := PositiveMod(ARect.Left, FWidth);
   ySrc := PositiveMod(ARect.Top, FHeight);
+
+  if ATile then
   for yDest := 0 to sy-1 do
   begin
     xSrc := xSrc0;
@@ -2696,8 +2706,92 @@ begin
     end;
     inc(ySrc);
     if ySrc = FHeight then ySrc := 0;
+  end
+  else
+  begin
+    result.FillTransparent;
+
+    if xSrc0+sx > FWidth
+    then copyByte:= (FWidth-xSrc0)*FPixelSize
+    else copyByte:=  sx*FPixelSize;
+
+    if (copyByte > 0) then
+    for yDest:=0 to sy-1 do
+    begin
+      pSrcLine := GetScanLineByte(ySrc);
+      pSrc := pSrcLine + xSrc0*FPixelSize;
+      pDest := result.GetScanLineByte(yDest);
+      move(pSrc^, pDest^, copyByte);
+      inc(ySrc);
+      if ySrc = FHeight then ySrc := 0;
+    end;
   end;
+
   result.InvalidateBitmap;
+end;
+
+procedure TCustomUniversalBitmap.GetPart(const ARects: TRectArray; var ABitmaps: TCustomUniversalBitmapArray;
+                                         ACopyProperties: Boolean; ATile: Boolean);
+var
+   i, last: Integer;
+   curBitmap: TCustomUniversalBitmap;
+
+begin
+  for i:=Low(ARects) to High(ARects) do
+  begin
+    curBitmap:= GetPart(ARects[i], ACopyProperties, ATile);
+    if (curBitmap <> nil) then
+    begin
+      last:= Length(ABitmaps);
+      SetLength(ABitmaps, last+1);
+      ABitmaps[last]:= curBitmap;
+    end;
+  end;
+end;
+
+function TCustomUniversalBitmap.GetPart(const ARect: TPhysicalRect;
+                                        ACopyProperties: Boolean; ATile: Boolean): TCustomUniversalBitmap;
+var
+  curResX,
+  curResY: Single;
+  curRect: TRect;
+
+begin
+  //Convert ARects Coordinate to Pixel
+  if ARect.ResolutionUnit = ruNone
+  then begin
+         curResX:= 1;
+         curResY:= 1;
+       end
+  else begin
+         curResX:= ConvertResolution(Self.ResolutionX, Self.ResolutionUnit, ARect.ResolutionUnit);
+         curResY:= ConvertResolution(Self.ResolutionY, Self.ResolutionUnit, ARect.ResolutionUnit);
+       end;
+  curRect.Top:= Trunc(ARect.Top*curResY);
+  curRect.Left:= Trunc(ARect.Left*curResX);
+  curRect.Bottom:= HalfUp(ARect.Bottom*curResY);
+  curRect.Right:= HalfUp(ARect.Right*curResX);
+
+  Result:= GetPart(curRect, ACopyProperties, ATile);
+end;
+
+procedure TCustomUniversalBitmap.GetPart(const ARects: TPhysicalRectArray; var ABitmaps: TCustomUniversalBitmapArray;
+                                         ACopyProperties: Boolean; ATile: Boolean);
+var
+   i, last: Integer;
+   curBitmap: TCustomUniversalBitmap;
+
+begin
+  for i:=Low(ARects) to High(ARects) do
+  begin
+    curBitmap:= GetPart(ARects[i], ACopyProperties, ATile);
+    if (curBitmap <> nil) then
+    begin
+      last:= Length(ABitmaps);
+      SetLength(ABitmaps, last+1);
+      ABitmaps[last]:= curBitmap;
+    end;
+  end;
 end;
 
 procedure TCustomUniversalBitmap.SetSize(AWidth, AHeight: integer);

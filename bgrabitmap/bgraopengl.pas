@@ -127,6 +127,9 @@ const
 
 type
   { RGBA bitmap that can be used with OpenGL by converting it into a texture }
+
+  { TBGLBitmap }
+
   TBGLBitmap = class(TBGLCustomBitmap)
   protected
     class function GetOpenGLMaxTexSize: integer; override;
@@ -143,7 +146,14 @@ type
     function GetUnique: TBGLBitmap; override;
     function Duplicate(DuplicateProperties: Boolean = False): TBGLBitmap; overload; override;
     function Duplicate(DuplicateProperties, DuplicateXorMask: Boolean) : TBGLBitmap; overload; override;
-    function GetPart(const ARect: TRect; CopyProperties: Boolean=False): TBGLBitmap; override;
+
+    function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGLBitmap; override;
+    procedure GetPart(const ARects: TRectArray; var ABitmaps: TCustomUniversalBitmapArray;
+                      ACopyProperties: Boolean=False; ATile: Boolean=True); overload; override;
+    function GetPart(const ARect: TPhysicalRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGLBitmap; overload; override;
+    procedure GetPart(const ARects: TPhysicalRectArray; var ABitmaps: TCustomUniversalBitmapArray;
+                      ACopyProperties: Boolean=False; ATile: Boolean=True); overload; override;
+
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
                 AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGLBitmap; override;
     function Resample(newWidth, newHeight: integer;
@@ -1923,9 +1933,29 @@ begin
   Result:=inherited Duplicate(DuplicateProperties, DuplicateXorMask) as TBGLBitmap;
 end;
 
-function TBGLBitmap.GetPart(const ARect: TRect; CopyProperties: Boolean=False): TBGLBitmap;
+function TBGLBitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGLBitmap;
 begin
-  Result:=inherited GetPart(ARect, CopyProperties) as TBGLBitmap;
+  Result:=inherited GetPart(ARect, ACopyProperties, ATile) as TBGLBitmap;
+end;
+
+procedure TBGLBitmap.GetPart(const ARects: TRectArray;
+  var ABitmaps: TCustomUniversalBitmapArray; ACopyProperties: Boolean;
+  ATile: Boolean);
+begin
+  inherited GetPart(ARects, ABitmaps, ACopyProperties, ATile);
+end;
+
+function TBGLBitmap.GetPart(const ARect: TPhysicalRect;
+  ACopyProperties: Boolean; ATile: Boolean): TBGLBitmap;
+begin
+  Result:=inherited GetPart(ARect, ACopyProperties, ATile) as TBGLBitmap;
+end;
+
+procedure TBGLBitmap.GetPart(const ARects: TPhysicalRectArray;
+  var ABitmaps: TCustomUniversalBitmapArray; ACopyProperties: Boolean;
+  ATile: Boolean);
+begin
+  inherited GetPart(ARects, ABitmaps, ACopyProperties, ATile);
 end;
 
 function TBGLBitmap.CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor,
