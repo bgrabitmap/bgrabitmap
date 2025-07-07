@@ -275,9 +275,26 @@ type
   end;
 
 type
-  {* Rappresent a Physical Rectangle using Resolution Unit Coordinate }
-  TPhysicalRect = record
-    ResolutionUnit: TResolutionUnit;
+  {* Physical unit of measurement }
+  TPhysicalUnit = (puPixel, puInch, puCentimeter);
+
+  {* Rappresent a Physical Rectangle using TPhysicalUnit Coordinates }
+  TPhysicalRect =
+  {$ifndef FPC_REQUIRES_PROPER_ALIGNMENT}
+    packed
+  {$endif FPC_REQUIRES_PROPER_ALIGNMENT}
+  record
+  private
+    function GetHeight: Single; inline;
+    function GetWidth: Single;  inline;
+    procedure SetHeight(AValue: Single);
+    procedure SetWidth (AValue: Single);
+
+  public
+    PhysicalUnit: TPhysicalUnit;
+
+    property  Width  : Single read GetWidth write SetWidth;
+    property  Height : Single read GetHeight write SetHeight;
     case Integer of
      0: (Left, Top, Right, Bottom: Single);
      1: (TopLeft, BottomRight: TPointF);
@@ -1340,6 +1357,28 @@ end;
 function TRectFHelper.IsEmpty: boolean;
 begin
   result:= IsEmptyRectF(self);
+end;
+
+{ TPhysicalRect }
+
+function TPhysicalRect.GetHeight: Single;
+begin
+  result:=bottom-top;
+end;
+
+function TPhysicalRect.GetWidth: Single;
+begin
+  result:=right-left;
+end;
+
+procedure TPhysicalRect.SetHeight(AValue: Single);
+begin
+  bottom:=top+avalue;
+end;
+
+procedure TPhysicalRect.SetWidth(AValue: Single);
+begin
+  right:=left+avalue;
 end;
 
 { TAffineBox }

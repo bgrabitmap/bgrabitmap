@@ -2758,15 +2758,20 @@ var
 
 begin
   //Convert ARects Coordinate to Pixel
-  if ARect.ResolutionUnit = ruNone
-  then begin
-         curResX:= 1;
-         curResY:= 1;
-       end
-  else begin
-         curResX:= ConvertResolution(Self.ResolutionX, Self.ResolutionUnit, ARect.ResolutionUnit);
-         curResY:= ConvertResolution(Self.ResolutionY, Self.ResolutionUnit, ARect.ResolutionUnit);
-       end;
+  Case ARect.PhysicalUnit of
+    puPixel: begin
+      curResX:= 1;
+      curResY:= 1;
+    end;
+    puInch: begin
+      curResX:= ConvertResolution(Self.ResolutionX, Self.ResolutionUnit, ruPixelsPerInch);
+      curResY:= ConvertResolution(Self.ResolutionY, Self.ResolutionUnit, ruPixelsPerInch);
+    end;
+    puCentimeter: begin
+      curResX:= ConvertResolution(Self.ResolutionX, Self.ResolutionUnit, ruPixelsPerCentimeter);
+      curResY:= ConvertResolution(Self.ResolutionY, Self.ResolutionUnit, ruPixelsPerCentimeter);
+    end;
+  end;
   curRect.Top:= Trunc(ARect.Top*curResY);
   curRect.Left:= Trunc(ARect.Left*curResX);
   curRect.Bottom:= HalfUp(ARect.Bottom*curResY);
