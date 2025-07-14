@@ -275,10 +275,7 @@ type
   end;
 
 type
-  {* Physical unit of measurement }
-  TPhysicalUnit = (puPixel, puInch, puCentimeter);
-
-  {* Rappresent a Physical Rectangle using TPhysicalUnit Coordinates }
+  {* Rappresent a Physical Rectangle using TCSSUnit Coordinates }
   TPhysicalRect =
   {$ifndef FPC_REQUIRES_PROPER_ALIGNMENT}
     packed
@@ -291,7 +288,7 @@ type
     procedure SetWidth (AValue: Single);
 
   public
-    PhysicalUnit: TPhysicalUnit;
+    PhysicalUnit: TCSSUnit;
 
     property  Width  : Single read GetWidth write SetWidth;
     property  Height : Single read GetHeight write SetHeight;

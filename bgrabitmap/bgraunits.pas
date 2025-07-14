@@ -8,7 +8,7 @@ unit BGRAUnits;
 interface
 
 uses
-  SysUtils, BGRABitmapTypes;
+  SysUtils, BGRAClasses, BGRABitmapTypes;
 
 type
   TSVGNumber = single;//double
@@ -133,6 +133,9 @@ function PhysicalSizeToPixels(APhysicalSize: Single;
 procedure PhysicalSizeToPixels(var SizeX,SizeY: Single;
                                const AResolution: TImageResolutionInfo;
                                ASourceUnit: TCSSUnit = cuCustom); overload;
+function PhysicalSizeToPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap): TRectF; overload;
+function PhysicalSizeToPixels(ABitmap: TCustomUniversalBitmap; const APhysicalRect: TPhysicalRect): TRect; overload;
+
 
 {** Convert pixels to physical size according to image resolution.
     If _ASourceUnit_ is set to cuCustom, _ASize_ is supposed to be in the denominator
@@ -199,6 +202,35 @@ begin
   res := FixImageResolutionInfo(AResolution);
   SizeX := PhysicalSizeToPixels(SizeX, res.ResolutionUnit, res.ResolutionX, ASourceUnit);
   SizeY := PhysicalSizeToPixels(SizeY, res.ResolutionUnit, res.ResolutionY, ASourceUnit);
+end;
+
+function PhysicalSizeToPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap): TRectF;
+var
+  res: TImageResolutionInfo;
+begin
+  if APhysicalRect.PhysicalUnit = cuPercent then
+    result := RectF(APhysicalRect.Left * ABitmap.Width / 100, APhysicalRect.Top * ABitmap.Height / 100,
+      APhysicalRect.Right * ABitmap.Width / 100, APhysicalRect.Bottom * ABitmap.Height / 100)
+  else
+  begin
+    res := FixImageResolutionInfo(ABitmap.ResolutionInfo);
+    result.Top := PhysicalSizeToPixels(APhysicalRect.Top, res.ResolutionUnit, res.ResolutionY, APhysicalRect.PhysicalUnit);
+    result.Left := PhysicalSizeToPixels(APhysicalRect.Left, res.ResolutionUnit, res.ResolutionX, APhysicalRect.PhysicalUnit);
+    result.Bottom := PhysicalSizeToPixels(APhysicalRect.Bottom, res.ResolutionUnit, res.ResolutionY, APhysicalRect.PhysicalUnit);
+    result.Right := PhysicalSizeToPixels(APhysicalRect.Right, res.ResolutionUnit, res.ResolutionX, APhysicalRect.PhysicalUnit);
+  end;
+end;
+
+function PhysicalSizeToPixels(ABitmap: TCustomUniversalBitmap; const APhysicalRect: TPhysicalRect): TRect;
+var
+   resRect: TRectF;
+
+begin
+  resRect:= PhysicalSizeToPixels(APhysicalRect, ABitmap);
+  Result.Top:= Trunc(resRect.Top);
+  Result.Left:= Trunc(resRect.Left);
+  Result.Bottom:= HalfUp(resRect.Bottom);
+  Result.Right:= HalfUp(resRect.Right);
 end;
 
 function PixelsToPhysicalSize(ASizeInPixels: Single;
