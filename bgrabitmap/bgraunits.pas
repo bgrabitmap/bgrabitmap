@@ -149,6 +149,21 @@ procedure PixelsToPhysicalSize(var SizeX,SizeY: Single;
                                const AResolution: TImageResolutionInfo;
                                ATargetUnit: TCSSUnit = cuCustom); overload;
 
+{** Converts physical size from one unit of measurement to another.
+    If _ASourceUnit_ is set to cuCustom,cuPixel then PixelsToPhysicalSize is called
+    If _ATargetUnit_ is set to cuCustom,cuPixel then PhysicalSizeToPixels is called
+    cuPercent will work only if the procedure with _ABitmap_ param is used. }
+function PhysicalSizeConvert(ASourceUnit: TCSSUnit; ASourceSize: Single;
+                             ATargetUnit: TCSSUnit;
+                             AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                             AResolution: Single = 96): Single; overload;
+procedure PhysicalSizeConvert(ASourceUnit: TCSSUnit; var SizeX, SizeY: Single;
+                              ATargetUnit: TCSSUnit;
+                              const AResolution: TImageResolutionInfo); overload;
+procedure PhysicalSizeConvert(var APhysicalRect: TPhysicalRect; ATargetUnit: TCSSUnit;
+                              ABitmap: TCustomUniversalBitmap); overload;
+
+
 implementation
 
 uses BGRATransform;
@@ -156,11 +171,22 @@ uses BGRATransform;
 var
   formats: TFormatSettings;
 
-const InchFactor: array[TCSSUnit] of integer =
+const
+  InchFactor: array[TCSSUnit] of integer =
       (9600, 9600,
        254, 2540,
        100, 600, 7200,
        0, 0, 0);
+
+  SizeConv: array[cuCentimeter..cuPoint, cuCentimeter..cuPoint] of Single = (
+                                        //cuCustom, cuPixel, cuPercent use PhysicalSize To Pixels
+   (1, 10, 1/2.54, 6/2.54, 72/2.54),    //cuCentimeter
+   (1/10, 1, 1/25.4, 6/25.4, 72/25.4),  //cuMillimeter
+   (2.54, 25.4, 1, 6, 72),              //cuInch
+   (2.54/6, 25.4/6, 1/6, 1, 12),        //cuPica
+   (2.54/72, 25.4/72, 1/72, 1/12, 1)    //cuPoint
+                                        //cuFontEmHeight, cuFontXHeight (raise Unhandled)
+  );
 
 function FloatWithCSSUnit(AValue: single; AUnit: TCSSUnit): TFloatWithCSSUnit;
 begin
@@ -208,6 +234,8 @@ function PhysicalSizeToPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCust
 var
   res: TImageResolutionInfo;
 begin
+  if ABitmap = nil then exit;
+
   if APhysicalRect.PhysicalUnit = cuPercent then
     result := RectF(APhysicalRect.Left * ABitmap.Width / 100, APhysicalRect.Top * ABitmap.Height / 100,
       APhysicalRect.Right * ABitmap.Width / 100, APhysicalRect.Bottom * ABitmap.Height / 100)
@@ -269,6 +297,91 @@ begin
   SizeX := PixelsToPhysicalSize(SizeX, res.ResolutionUnit, res.ResolutionX, ATargetUnit);
   SizeY := PixelsToPhysicalSize(SizeY, res.ResolutionUnit, res.ResolutionY, ATargetUnit);
 end;
+
+function PhysicalSizeConvert(ASourceUnit: TCSSUnit; ASourceSize: Single;
+                             ATargetUnit: TCSSUnit;
+                             AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                             AResolution: Single = 96): Single;
+
+begin
+  Result:= ASourceSize;
+  // already in expected unit
+  if ASourceUnit = ATargetUnit then exit;
+
+  if (ATargetUnit in [cuPixel, cuCustom]) then
+    Result:= PhysicalSizeToPixels(ASourceSize, AResolutionUnit, AResolution, ASourceUnit)
+  else
+  case ASourceUnit of
+  cuCustom, cuPixel: Result:= PixelsToPhysicalSize(ASourceSize, AResolutionUnit, AResolution, ATargetUnit);
+  cuCentimeter,
+  cuMillimeter,
+  cuInch,
+  cuPica,
+  cuPoint: Result:= ASourceSize * SizeConv[ASourceUnit, ATargetUnit];
+  else raise exception.Create('Unhandled conversion');
+  end;
+end;
+
+procedure PhysicalSizeConvert(ASourceUnit: TCSSUnit; var SizeX, SizeY: Single;
+                              ATargetUnit: TCSSUnit;
+                              const AResolution: TImageResolutionInfo);
+var
+  res: TImageResolutionInfo;
+begin
+  // already in expected unit
+  if ASourceUnit = ATargetUnit then exit;
+
+  res:= FixImageResolutionInfo(AResolution);
+  SizeX:= PhysicalSizeConvert(ASourceUnit, SizeX, ATargetUnit, res.ResolutionUnit, res.ResolutionX);
+  SizeY:= PhysicalSizeConvert(ASourceUnit, SizeY, ATargetUnit, res.ResolutionUnit, res.ResolutionY);
+end;
+
+procedure PhysicalSizeConvert(var APhysicalRect: TPhysicalRect; ATargetUnit: TCSSUnit;
+                              ABitmap: TCustomUniversalBitmap);
+var
+  res: TImageResolutionInfo;
+  tmpRect: TRectF;
+
+begin
+  // already in expected unit
+  if (APhysicalRect.PhysicalUnit = ATargetUnit) or (ABitmap = nil) then exit;
+
+  res:= FixImageResolutionInfo(ABitmap.ResolutionInfo);
+
+  with APhysicalRect do
+  begin
+    if APhysicalRect.PhysicalUnit = cuPercent then
+    begin
+      //Convert % to Pixel and then Pixel to TargetUnit
+      Top:= PixelsToPhysicalSize(Top * ABitmap.Height / 100, res.ResolutionUnit, res.ResolutionY, ATargetUnit);
+      Left:= PixelsToPhysicalSize(Left * ABitmap.Width / 100, res.ResolutionUnit, res.ResolutionX, ATargetUnit);
+      Bottom:= PixelsToPhysicalSize(Bottom * ABitmap.Height / 100, res.ResolutionUnit, res.ResolutionY, ATargetUnit);
+      Right:= PixelsToPhysicalSize(Right * ABitmap.Width / 100, res.ResolutionUnit, res.ResolutionX, ATargetUnit);
+    end
+    else
+    begin
+      if (ATargetUnit = cuPercent) then
+      begin
+        //Convert APhysicalRect to Pixel and then Pixel to %
+        tmpRect:= PhysicalSizeToPixels(APhysicalRect, ABitmap);
+        Top:= tmpRect.Top * 100 / ABitmap.Height;
+        Left:= tmpRect.Left * 100 / ABitmap.Width;
+        Bottom:= tmpRect.Bottom * 100 / ABitmap.Height;
+        Right:= tmpRect.Right * 100 / ABitmap.Width;
+      end
+      else
+      begin
+        Top:= PhysicalSizeConvert(PhysicalUnit, Top, ATargetUnit, res.ResolutionUnit, res.ResolutionY);
+        Left:= PhysicalSizeConvert(PhysicalUnit, Left, ATargetUnit, res.ResolutionUnit, res.ResolutionX);
+        Bottom:= PhysicalSizeConvert(PhysicalUnit, Bottom, ATargetUnit, res.ResolutionUnit, res.ResolutionY);
+        Right:= PhysicalSizeConvert(PhysicalUnit, Right, ATargetUnit, res.ResolutionUnit, res.ResolutionX);
+      end;
+    end;
+
+    PhysicalUnit:= ATargetUnit;
+  end;
+end;
+
 
 { TCSSUnitConverter }
 
