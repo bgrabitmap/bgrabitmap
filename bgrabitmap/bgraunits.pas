@@ -306,7 +306,7 @@ function PhysicalSizeConvert(ASourceUnit: TCSSUnit; ASourceSize: Single;
 begin
   Result:= ASourceSize;
   // already in expected unit
-  if ASourceUnit = ATargetUnit then exit;
+  if ASourceUnit = ATargetUnit then exit(ASourceSize);
 
   if (ATargetUnit in [cuPixel, cuCustom]) then
     Result:= PhysicalSizeToPixels(ASourceSize, AResolutionUnit, AResolution, ASourceUnit)
