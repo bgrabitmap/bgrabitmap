@@ -2537,10 +2537,8 @@ begin
   if Source is TCustomUniversalBitmap then
   begin
     SetSize(TCustomUniversalBitmap(Source).Width, TCustomUniversalBitmap(Source).Height);
-
-    if ACopyProperties then TCustomUniversalBitmap(Source).CopyPropertiesTo(Self);
-
     PutImage(0, 0, TCustomUniversalBitmap(Source), dmSet);
+    if ACopyProperties then TCustomUniversalBitmap(Source).CopyPropertiesTo(Self);
   end else
   if Source is TFPCustomImage then
   begin
