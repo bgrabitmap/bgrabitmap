@@ -148,11 +148,7 @@ type
     function Duplicate(DuplicateProperties, DuplicateXorMask: Boolean) : TBGLBitmap; overload; override;
 
     function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGLBitmap; override;
-    procedure GetPart(const ARects: TRectArray; var ABitmaps: TCustomUniversalBitmapArray;
-                      ACopyProperties: Boolean=False; ATile: Boolean=True); overload; override;
     function GetPart(const ARect: TPhysicalRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGLBitmap; overload; override;
-    procedure GetPart(const ARects: TPhysicalRectArray; var ABitmaps: TCustomUniversalBitmapArray;
-                      ACopyProperties: Boolean=False; ATile: Boolean=True); overload; override;
 
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
                 AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGLBitmap; override;
@@ -1938,24 +1934,10 @@ begin
   Result:=inherited GetPart(ARect, ACopyProperties, ATile) as TBGLBitmap;
 end;
 
-procedure TBGLBitmap.GetPart(const ARects: TRectArray;
-  var ABitmaps: TCustomUniversalBitmapArray; ACopyProperties: Boolean;
-  ATile: Boolean);
-begin
-  inherited GetPart(ARects, ABitmaps, ACopyProperties, ATile);
-end;
-
 function TBGLBitmap.GetPart(const ARect: TPhysicalRect;
   ACopyProperties: Boolean; ATile: Boolean): TBGLBitmap;
 begin
   Result:=inherited GetPart(ARect, ACopyProperties, ATile) as TBGLBitmap;
-end;
-
-procedure TBGLBitmap.GetPart(const ARects: TPhysicalRectArray;
-  var ABitmaps: TCustomUniversalBitmapArray; ACopyProperties: Boolean;
-  ATile: Boolean);
-begin
-  inherited GetPart(ARects, ABitmaps, ACopyProperties, ATile);
 end;
 
 function TBGLBitmap.CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor,

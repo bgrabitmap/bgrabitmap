@@ -121,11 +121,7 @@ end;
      function Duplicate(DuplicateProperties: Boolean = False): TGrayscaleMask; overload; override;
 
      function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TGrayscaleMask; overload; override;
-     procedure GetPart(const ARects: TRectArray; var ABitmaps: TCustomUniversalBitmapArray;
-                       ACopyProperties: Boolean=False; ATile: Boolean=True); overload; override;
      function GetPart(const ARect: TPhysicalRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TGrayscaleMask; overload; override;
-     procedure GetPart(const ARects: TPhysicalRectArray; var ABitmaps: TCustomUniversalBitmapArray;
-                       ACopyProperties: Boolean=False; ATile: Boolean=True); overload; override;
 
      function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TByteMask;
                  AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TGrayscaleMask; override;
@@ -1139,24 +1135,10 @@ begin
   Result:=inherited GetPart(ARect, ACopyProperties, ATile) as TGrayscaleMask;
 end;
 
-procedure TGrayscaleMask.GetPart(const ARects: TRectArray;
-  var ABitmaps: TCustomUniversalBitmapArray; ACopyProperties: Boolean;
-  ATile: Boolean);
-begin
-  inherited GetPart(ARects, ABitmaps, ACopyProperties, ATile);
-end;
-
 function TGrayscaleMask.GetPart(const ARect: TPhysicalRect;
   ACopyProperties: Boolean; ATile: Boolean): TGrayscaleMask;
 begin
   Result:=inherited GetPart(ARect, ACopyProperties, ATile) as TGrayscaleMask;
-end;
-
-procedure TGrayscaleMask.GetPart(const ARects: TPhysicalRectArray;
-  var ABitmaps: TCustomUniversalBitmapArray; ACopyProperties: Boolean;
-  ATile: Boolean);
-begin
-  inherited GetPart(ARects, ABitmaps, ACopyProperties, ATile);
 end;
 
 function TGrayscaleMask.CreateBrushTexture(ABrushStyle: TBrushStyle;

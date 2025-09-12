@@ -134,7 +134,8 @@ procedure PhysicalSizeToPixels(var SizeX,SizeY: Single;
                                const AResolution: TImageResolutionInfo;
                                ASourceUnit: TCSSUnit = cuCustom); overload;
 function PhysicalSizeToPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap): TRectF; overload;
-function PhysicalSizeToPixels(ABitmap: TCustomUniversalBitmap; const APhysicalRect: TPhysicalRect): TRect; overload;
+function PhysicalSizeToRoundedPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap;
+                                     PreservesMoreData: Boolean=False): TRect; overload;
 
 
 {** Convert pixels to physical size according to image resolution.
@@ -234,7 +235,7 @@ function PhysicalSizeToPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCust
 var
   res: TImageResolutionInfo;
 begin
-  if ABitmap = nil then exit;
+  if ABitmap = nil then exit(EmptyRectF);
 
   if APhysicalRect.PhysicalUnit = cuPercent then
     result := RectF(APhysicalRect.Left * ABitmap.Width / 100, APhysicalRect.Top * ABitmap.Height / 100,
@@ -249,14 +250,25 @@ begin
   end;
 end;
 
-function PhysicalSizeToPixels(ABitmap: TCustomUniversalBitmap; const APhysicalRect: TPhysicalRect): TRect;
+function PhysicalSizeToRoundedPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap;
+                                     PreservesMoreData: Boolean=False): TRect;
 var
    resRect: TRectF;
 
 begin
   resRect:= PhysicalSizeToPixels(APhysicalRect, ABitmap);
-  Result.Top:= Trunc(resRect.Top);
-  Result.Left:= Trunc(resRect.Left);
+
+  if PreservesMoreData
+  then begin
+         //MaxM: Use Trunc for Top/Left and HalfUp for Right/Bottom so we preserve as much data as possible
+         Result.Top:= Trunc(resRect.Top);
+         Result.Left:= Trunc(resRect.Left);
+       end
+  else begin
+         Result.Top:= HalfUp(resRect.Top);
+         Result.Left:= HalfUp(resRect.Left);
+       end;
+
   Result.Bottom:= HalfUp(resRect.Bottom);
   Result.Right:= HalfUp(resRect.Right);
 end;

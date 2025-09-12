@@ -2707,21 +2707,7 @@ begin
   else
   begin
     result.FillTransparent;
-
-    if xSrc0+sx > FWidth
-    then copyByte:= (FWidth-xSrc0)*FPixelSize
-    else copyByte:=  sx*FPixelSize;
-
-    if (copyByte > 0) then
-    for yDest:=0 to sy-1 do
-    begin
-      pSrcLine := GetScanLineByte(ySrc);
-      pSrc := pSrcLine + xSrc0*FPixelSize;
-      pDest := result.GetScanLineByte(yDest);
-      move(pSrc^, pDest^, copyByte);
-      inc(ySrc);
-      if ySrc = FHeight then ySrc := 0;
-    end;
+    result.PutImage(-ARect.Left, -ARect.Top, Self, dmSet);
   end;
 
   result.InvalidateBitmap;
@@ -2749,7 +2735,7 @@ end;
 function TCustomUniversalBitmap.GetPart(const ARect: TPhysicalRect;
                                         ACopyProperties: Boolean; ATile: Boolean): TCustomUniversalBitmap;
 begin
-  Result:= GetPart(PhysicalSizeToPixels(Self, ARect), ACopyProperties, ATile);
+  Result:= GetPart(PhysicalSizeToRoundedPixels(ARect, Self), ACopyProperties, ATile);
 end;
 
 procedure TCustomUniversalBitmap.GetPart(const ARects: TPhysicalRectArray; var ABitmaps: TCustomUniversalBitmapArray;
