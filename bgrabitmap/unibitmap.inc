@@ -2748,12 +2748,10 @@ begin
   for i:=Low(ARects) to High(ARects) do
   begin
     curBitmap:= GetPart(ARects[i], ACopyProperties, ATile);
-    if (curBitmap <> nil) then
-    begin
-      last:= Length(ABitmaps);
-      SetLength(ABitmaps, last+1);
-      ABitmaps[last]:= curBitmap;
-    end;
+
+    last:= Length(ABitmaps);
+    SetLength(ABitmaps, last+1);
+    ABitmaps[last]:= curBitmap;
   end;
 end;
 
