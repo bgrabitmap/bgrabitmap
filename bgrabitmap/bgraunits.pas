@@ -135,7 +135,7 @@ procedure PhysicalSizeToPixels(var SizeX,SizeY: Single;
                                ASourceUnit: TCSSUnit = cuCustom); overload;
 function PhysicalSizeToPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap): TRectF; overload;
 function PhysicalSizeToRoundedPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap;
-                                     PreservesMoreData: Boolean=False): TRect; overload;
+                                     PreserveMoreData: Boolean=False): TRect; overload;
 
 
 {** Convert pixels to physical size according to image resolution.
@@ -167,7 +167,7 @@ procedure PhysicalSizeConvert(var APhysicalRect: TPhysicalRect; ATargetUnit: TCS
 
 implementation
 
-uses BGRATransform;
+uses Math, BGRATransform;
 
 var
   formats: TFormatSettings;
@@ -251,26 +251,46 @@ begin
 end;
 
 function PhysicalSizeToRoundedPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap;
-                                     PreservesMoreData: Boolean=False): TRect;
+                                     PreserveMoreData: Boolean=False): TRect;
 var
    resRect: TRectF;
 
 begin
   resRect:= PhysicalSizeToPixels(APhysicalRect, ABitmap);
 
-  if PreservesMoreData
+  if PreserveMoreData
   then begin
-         //MaxM: Use Trunc for Top/Left and HalfUp for Right/Bottom so we preserve as much data as possible
-         Result.Top:= Trunc(resRect.Top);
-         Result.Left:= Trunc(resRect.Left);
+         // Preserve as much data as possible:
+         // use Floor for min coordinates, Ceil for max coordinates
+         if (resRect.Left <= resRect.Right)
+         then begin
+                Result.Left   := Floor(resRect.Left);
+                Result.Right  := Ceil(resRect.Right);
+              end
+         else begin
+                // flipped horizontally: invert rounding
+                Result.Left   := Ceil(resRect.Left);
+                Result.Right  := Floor(resRect.Right);
+              end;
+
+         if (resRect.Top <= resRect.Bottom)
+         then begin
+                Result.Top    := Floor(resRect.Top);
+                Result.Bottom := Ceil(resRect.Bottom);
+              end
+         else begin
+                // flipped vertically: invert rounding
+                Result.Top    := Ceil(resRect.Top);
+                Result.Bottom := Floor(resRect.Bottom);
+              end;
        end
   else begin
-         Result.Top:= HalfUp(resRect.Top);
-         Result.Left:= HalfUp(resRect.Left);
+         // Default: round half up (closest integer)
+         Result.Left   := HalfUp(resRect.Left);
+         Result.Top    := HalfUp(resRect.Top);
+         Result.Right  := HalfUp(resRect.Right);
+         Result.Bottom := HalfUp(resRect.Bottom);
        end;
-
-  Result.Bottom:= HalfUp(resRect.Bottom);
-  Result.Right:= HalfUp(resRect.Right);
 end;
 
 function PixelsToPhysicalSize(ASizeInPixels: Single;

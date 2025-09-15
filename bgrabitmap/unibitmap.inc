@@ -212,16 +212,16 @@ type
     function GetUnique: TCustomUniversalBitmap; virtual;
     function Duplicate(ACopyProperties: boolean=false): TCustomUniversalBitmap; virtual;
     procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); virtual;
-    {** Get a part of the image with repetition in both directions. It means
-      that if the bounds are within the image, the result is just that part
-      of the image, but if the bounds are bigger than the image, the image
-      is tiled. }
+    {** Get a part of the image. If the bounds are within the image, the result is just that part of the image,
+        but if the bounds are bigger than the image, the image is tiled in both directions if ATile is True
+        and filled with transparent pixels if ATile is False. }
     function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TCustomUniversalBitmap; overload; virtual;
     procedure GetPart(const ARects: TRectArray; var ABitmaps: TCustomUniversalBitmapArray;
                       ACopyProperties: Boolean=False; ATile: Boolean=True); overload; virtual;
-    function GetPart(const ARect: TPhysicalRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TCustomUniversalBitmap; overload; virtual;
+    function GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean=False;
+                     ACopyProperties: Boolean=False; ATile: Boolean=True): TCustomUniversalBitmap; overload; virtual;
     procedure GetPart(const ARects: TPhysicalRectArray; var ABitmaps: TCustomUniversalBitmapArray;
-                      ACopyProperties: Boolean=False; ATile: Boolean=True); overload; virtual;
+                      PreserveMoreData: Boolean=False; ACopyProperties: Boolean=False; ATile: Boolean=True); overload; virtual;
 
     procedure InvalidateBitmap; virtual;         //call if you modify with Scanline
     procedure LoadFromBitmapIfNeeded; virtual;   //call to ensure that data is up to date
@@ -2723,23 +2723,21 @@ begin
   for i:=Low(ARects) to High(ARects) do
   begin
     curBitmap:= GetPart(ARects[i], ACopyProperties, ATile);
-    if (curBitmap <> nil) then
-    begin
-      last:= Length(ABitmaps);
-      SetLength(ABitmaps, last+1);
-      ABitmaps[last]:= curBitmap;
-    end;
+
+    last:= Length(ABitmaps);
+    SetLength(ABitmaps, last+1);
+    ABitmaps[last]:= curBitmap;
   end;
 end;
 
-function TCustomUniversalBitmap.GetPart(const ARect: TPhysicalRect;
+function TCustomUniversalBitmap.GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean;
                                         ACopyProperties: Boolean; ATile: Boolean): TCustomUniversalBitmap;
 begin
-  Result:= GetPart(PhysicalSizeToRoundedPixels(ARect, Self), ACopyProperties, ATile);
+  Result:= GetPart(PhysicalSizeToRoundedPixels(ARect, Self, PreserveMoreData), ACopyProperties, ATile);
 end;
 
 procedure TCustomUniversalBitmap.GetPart(const ARects: TPhysicalRectArray; var ABitmaps: TCustomUniversalBitmapArray;
-                                         ACopyProperties: Boolean; ATile: Boolean);
+                                         PreserveMoreData: Boolean; ACopyProperties: Boolean; ATile: Boolean);
 var
    i, last: Integer;
    curBitmap: TCustomUniversalBitmap;
@@ -2747,7 +2745,7 @@ var
 begin
   for i:=Low(ARects) to High(ARects) do
   begin
-    curBitmap:= GetPart(ARects[i], ACopyProperties, ATile);
+    curBitmap:= GetPart(ARects[i], PreserveMoreData, ACopyProperties, ATile);
 
     last:= Length(ABitmaps);
     SetLength(ABitmaps, last+1);
