@@ -46,6 +46,11 @@ const
          'cm','mm',
          'in','pc','pt',
          'em','ex','%');
+  CSSUnitName: array[TCSSUnit] of string =
+        ('Custom', 'Pixel',
+         'Centimeter','Millimeter',
+         'Inch','Pica','Point',
+         'Font Em', 'Font Ex', 'Percent');
 
 type
   { Converter for CSS units }
@@ -173,21 +178,13 @@ var
   formats: TFormatSettings;
 
 const
-  InchFactor: array[TCSSUnit] of integer =
-      (9600, 9600,
-       254, 2540,
-       100, 600, 7200,
-       0, 0, 0);
-
-  SizeConv: array[cuCentimeter..cuPoint, cuCentimeter..cuPoint] of Single = (
-                                        //cuCustom, cuPixel, cuPercent use PhysicalSize To Pixels
-   (1, 10, 1/2.54, 6/2.54, 72/2.54),    //cuCentimeter
-   (1/10, 1, 1/25.4, 6/25.4, 72/25.4),  //cuMillimeter
-   (2.54, 25.4, 1, 6, 72),              //cuInch
-   (2.54/6, 25.4/6, 1/6, 1, 12),        //cuPica
-   (2.54/72, 25.4/72, 1/72, 1/12, 1)    //cuPoint
-                                        //cuFontEmHeight, cuFontXHeight (raise Unhandled)
-  );
+  //Constants for doing conversion calculations (AValue * InchFactor[Dest]/InchFactor[Source]
+  InchFactor: array[TCSSUnit] of Integer =
+      (9600, 9600,                      //cuCustom, cuPixel
+       254, 2540,                       //cuCentimeter, cuMillimeter
+       100, 600, 7200,                  //cuInch, cuPica, cuPoint
+       0, 0,                            //cuFontEmHeight, cuFontXHeight (raise Unhandled)
+       0);                              //cuPercent only with ABitmap Params
 
 function FloatWithCSSUnit(AValue: single; AUnit: TCSSUnit): TFloatWithCSSUnit;
 begin
@@ -316,7 +313,7 @@ begin
   if ATargetUnit = resolutionDenom then exit(ASizeInPixels / AResolution);
 
   if InchFactor[ATargetUnit] = 0 then raise exception.Create('Unhandled conversion');
-  Result:= ASizeInPixels / AResolution * (InchFactor[ATargetUnit] / InchFactor[resolutionDenom]);
+  Result:= (ASizeInPixels / AResolution) * (InchFactor[ATargetUnit] / InchFactor[resolutionDenom]);
 end;
 
 procedure PixelsToPhysicalSize(var SizeX, SizeY: Single;
@@ -349,7 +346,7 @@ begin
   cuMillimeter,
   cuInch,
   cuPica,
-  cuPoint: Result:= ASourceSize * SizeConv[ASourceUnit, ATargetUnit];
+  cuPoint: Result:= ASourceSize * (InchFactor[ATargetUnit] / InchFactor[ASourceUnit]);
   else raise exception.Create('Unhandled conversion');
   end;
 end;
