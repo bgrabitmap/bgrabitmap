@@ -1191,10 +1191,8 @@ begin
   begin
     DiscardBitmapChange;
     SetSize(TBGRACustomBitmap(Source).Width, TBGRACustomBitmap(Source).Height);
-
-    if ACopyProperties then TBGRACustomBitmap(Source).CopyPropertiesTo(Self);
-
     PutImage(0, 0, TBGRACustomBitmap(Source), dmSet);
+    if ACopyProperties then TBGRACustomBitmap(Source).CopyPropertiesTo(Self);
     if Source is TBGRADefaultBitmap then
     begin
       HotSpot := TBGRADefaultBitmap(Source).HotSpot;
