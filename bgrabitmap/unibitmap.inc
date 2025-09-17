@@ -2660,6 +2660,7 @@ var
   xSrc0, ySrc, remainX, xSrc, yDest, copyCount, copyByte: integer;
   pSrc, pDest, pSrcLine: PByte;
 begin
+  ARect.NormalizeRect;
   sx := ARect.Width;
   sy := ARect.Height;
   if (sx = 0) or (sy = 0) then exit(nil);
