@@ -143,6 +143,7 @@ type
       // required by TFPCustomImageReader
       procedure InternalRead  (Stream:TStream; Img:TFPCustomImage); override;
       function  InternalCheck (Stream:TStream) : boolean; override;
+      class function InternalSize (Stream: TStream): TPoint; override;
       procedure InitReadBuffer(AStream: TStream; ASize: integer);
       procedure CloseReadBuffer;
       function GetNextBufferByte: byte;
@@ -1249,6 +1250,34 @@ begin
       inc(percent);
     end;
     if (percent<>prevPercent) and Assigned(ProgressProc) then ProgressProc(percent, ShouldContinue);
+  end;
+end;
+
+class function TBGRAReaderBMP.InternalSize (Stream: TStream): TPoint;
+var
+  fileHdr: TBitmapFileHeader;
+  infoHdr: TBitmapInfoHeader;
+  n: Int64;
+  StartPos: Int64;
+begin
+  Result := Point(0, 0);
+
+  StartPos := Stream.Position;
+  try
+    fileHdr := Default(TBitmapFileHeader);
+    infoHdr := Default(TBitmapInfoHeader);
+    n := Stream.Read(fileHdr, SizeOf(fileHdr));
+    if n <> SizeOf(fileHdr) then exit;
+    if {$IFDEF ENDIAN_BIG}swap(fileHdr.bfType){$ELSE}fileHdr.bfType{$ENDIF} <> BMmagic then exit;
+    n := Stream.Read(infoHdr, SizeOf(infoHdr));
+    if n <> SizeOf(infoHdr) then exit;
+    {$IFDEF ENDIAN_BIG}
+    Result := Point(swap(infoHdr.Width), swap(infoHdr.Height));
+    {$ELSE}
+    Result := Point(infoHdr.Width, infoHdr.Height);
+    {$ENDIF}
+  finally
+    Stream.Position := StartPos;
   end;
 end;
 
