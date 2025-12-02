@@ -136,6 +136,9 @@ type
       procedure WriteMaskLine(Row : Integer; Img : TFPCustomImage); virtual;
 
       procedure ReadResolutionValues(Img: TFPCustomImage); virtual;
+      procedure ReadInfoHeader(Stream: TStream;
+        out AInfoHeader: TBitmapinfoHeaderV4;
+        out APaletteEntrySize, APaletteByteCount: integer);
 
       // required by TFPCustomImageReader
       procedure InternalRead  (Stream:TStream; Img:TFPCustomImage); override;
@@ -557,15 +560,48 @@ begin
   end;
 end;
 
-procedure TBGRAReaderBMP.InternalRead(Stream:TStream; Img:TFPCustomImage);
-
-Var
-  i, pallen, totalHeaderByteCount, headerByteCount, deltaPos,
-  paletteByteCount: Integer;
-  BadCompression : boolean;
-  WriteScanlineProc: TWriteScanlineProc;
+procedure TBGRAReaderBMP.ReadInfoHeader(Stream: TStream;
+  out AInfoHeader: TBitmapinfoHeaderV4;
+  out APaletteEntrySize, APaletteByteCount: integer);
+var
   headerSize: LongWord;
   os2header: TOS2BitmapHeader;
+  headerByteCount, deltaPos: integer;
+begin
+  headerSize := LEtoN(Stream.ReadDWord);
+  fillchar({%H-}AInfoHeader,SizeOf(AInfoHeader),0);
+  if headerSize = sizeof(TOS2BitmapHeader) then // OS/2 v1 format
+  begin
+    fillchar({%H-}os2header,SizeOf(os2header),0);
+    headerByteCount := Stream.Read(os2header.bcWidth,min(SizeOf(os2header),headerSize)-sizeof(LongWord));
+    AInfoHeader.Size := 16; // equivalent Windows format
+    AInfoHeader.Width := LEtoN(os2header.bcWidth);
+    AInfoHeader.Height := LEtoN(os2header.bcHeight);
+    AInfoHeader.Planes := LEtoN(os2header.bcPlanes);
+    AInfoHeader.BitCount := LEtoN(os2header.bcBitCount);
+    APaletteEntrySize:= 3;
+  end else
+  begin
+    // other formats (Windows, OS/2 v2)
+    headerByteCount := Stream.Read(AInfoHeader.Width,min(SizeOf(AInfoHeader),headerSize)-sizeof(LongWord));
+    {$IFDEF ENDIAN_BIG}
+    SwapBMPInfoHeaderV4(AInfoHeader);
+    {$ENDIF}
+    AInfoHeader.Size := headerSize;
+    APaletteEntrySize:= 4;
+  end;
+  { This will move past any junk after the info header }
+  deltaPos := headerSize - sizeof(longword) { size field } - headerByteCount;
+  if deltaPos <> 0 then
+    Stream.Position:=Stream.Position + deltaPos;
+  APaletteByteCount := BFH.bfOffset - sizeof(BFH) - headerSize;
+end;
+
+procedure TBGRAReaderBMP.InternalRead(Stream:TStream; Img:TFPCustomImage);
+Var
+  i, pallen, paletteByteCount: Integer;
+  BadCompression : boolean;
+  WriteScanlineProc: TWriteScanlineProc;
   shouldContinue: boolean;
 
 begin
@@ -573,33 +609,7 @@ begin
   Progress(psStarting,0,false,EmptyRect,'',shouldContinue);
   if not shouldContinue then exit;
 
-  headerSize := LEtoN(Stream.ReadDWord);
-  fillchar({%H-}BFI,SizeOf(BFI),0);
-  if headerSize = sizeof(TOS2BitmapHeader) then // OS/2 v1 format
-  begin
-    fillchar({%H-}os2header,SizeOf(os2header),0);
-    headerByteCount := Stream.Read(os2header.bcWidth,min(SizeOf(os2header),headerSize)-sizeof(LongWord));
-    BFI.Size := 16; // equivalent Windows format
-    BFI.Width := LEtoN(os2header.bcWidth);
-    BFI.Height := LEtoN(os2header.bcHeight);
-    BFI.Planes := LEtoN(os2header.bcPlanes);
-    BFI.BitCount := LEtoN(os2header.bcBitCount);
-    FPaletteEntrySize:= 3;
-  end else
-  begin
-    // other formats (Windows, OS/2 v2)
-    headerByteCount := Stream.Read(BFI.Width,min(SizeOf(BFI),headerSize)-sizeof(LongWord));
-    {$IFDEF ENDIAN_BIG}
-    SwapBMPInfoHeaderV4(BFI);
-    {$ENDIF}
-    BFI.Size := headerSize;
-    FPaletteEntrySize:= 4;
-  end;
-  { This will move past any junk after the BFI header }
-  deltaPos := headerSize - sizeof(longword) { size field } - headerByteCount;
-  if deltaPos <> 0 then
-    Stream.Position:=Stream.Position + deltaPos;
-  paletteByteCount := BFH.bfOffset - sizeof(BFH) - headerSize;
+  ReadInfoHeader(Stream, BFI, FPaletteEntrySize, paletteByteCount);
   with BFI do
   begin
     BadCompression:=false;
