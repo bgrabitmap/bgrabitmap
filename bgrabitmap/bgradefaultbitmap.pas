@@ -1215,7 +1215,7 @@ begin
 
     if ACopyProperties then
     begin
-      {$IF FPC_FULLVERSION>30203}
+      {$IF FPC_FULLVERSION>=30203}
       //Resolution
       ResolutionUnit:=TFPCustomImage(Source).ResolutionUnit;
       ResolutionX:=TFPCustomImage(Source).ResolutionX;
