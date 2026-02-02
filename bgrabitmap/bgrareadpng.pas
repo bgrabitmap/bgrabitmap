@@ -149,6 +149,7 @@ Type
 
       procedure InternalRead  ({%H-}Str:TStream; Img:TFPCustomImage); override;
       function  InternalCheck (Str:TStream) : boolean; override;
+      class function InternalSize(Str:TStream): TPoint; override;
 
       property Header : THeaderChunk read FHeader;
       property CurrentPass : byte read FCurrentPass;
@@ -1660,6 +1661,38 @@ begin
   end;
 end;
 
+class function TBGRAReaderPNG.InternalSize(Str:TStream): TPoint;
+var
+  SigCheck: array[0..7] of byte;
+  r: Integer;
+  Width, Height: Word;
+  StartPos: Int64;
+begin
+  Result.X := 0;
+  Result.Y := 0;
+
+  StartPos := Str.Position;
+  // Check Signature
+  Str.Read(SigCheck, SizeOf(SigCheck));
+  if not CheckSignature(SigCheck) then
+    exit;
+
+  if not(
+        (Str.Seek(10, soFromCurrent)=StartPos+18)
+    and (Str.Read(Width, 2)=2)
+    and (Str.Seek(2, soFromCurrent)=StartPos+22)
+    and (Str.Read(Height, 2)=2))
+  then
+    Exit;
+
+  {$IFDEF ENDIAN_LITTLE}
+  Width := Swap(Width);
+  Height := Swap(Height);
+  {$ENDIF}
+
+  Result.X := Width;
+  Result.Y := Height;
+end;
 initialization
   BGRARegisterImageReader(ifPng, TBGRAReaderPNG, True, 'Portable Network Graphics', 'png');
 
