@@ -2639,6 +2639,7 @@ end;
 procedure TCustomUniversalBitmap.CopyPropertiesTo(ABitmap: TCustomUniversalBitmap);
 begin
   ABitmap.FillMode := FillMode;
+  ABitmap.ClipRect := ClipRect;
   ABitmap.ScanOffset := ScanOffset;
   ABitmap.ResolutionUnit := ResolutionUnit;
   ABitmap.ResolutionX := ResolutionX;
