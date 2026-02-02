@@ -4,6 +4,7 @@
 {$IFDEF INCLUDE_INTERFACE}
 {$UNDEF INCLUDE_INTERFACE}
 type
+  TRectArray = BGRAClasses.TRectArray;
   TPoint = BGRAClasses.TPoint;
 
   {** A constant representing an empty point (with minimum possible integer values for X and Y)
@@ -107,6 +108,7 @@ type
   TAffineMatrix = array[1..2,1..3] of single;
 
   TRectF = BGRAClasses.TRectF;
+  TRectFArray = BGRAClasses.TRectFArray;
 
   {** A constant representing an empty rectangle with all coordinates set to 0 }
   const EmptyRectF : TRectF = (left:0; top:0; right:0; bottom: 0);
@@ -271,6 +273,31 @@ type
     {** Determines if the rectangle is empty (of zero size) }
     function IsEmpty: boolean;
   end;
+
+type
+  {* Rappresent a Physical Rectangle using TCSSUnit Coordinates }
+  TPhysicalRect =
+  {$ifndef FPC_REQUIRES_PROPER_ALIGNMENT}
+    packed
+  {$endif FPC_REQUIRES_PROPER_ALIGNMENT}
+  record
+  private
+    function GetHeight: Single; inline;
+    function GetWidth: Single;  inline;
+    procedure SetHeight(AValue: Single);
+    procedure SetWidth (AValue: Single);
+
+  public
+    PhysicalUnit: TCSSUnit;
+
+    property  Width  : Single read GetWidth write SetWidth;
+    property  Height : Single read GetHeight write SetHeight;
+    case Integer of
+     0: (Left, Top, Right, Bottom: Single);
+     1: (TopLeft, BottomRight: TPointF);
+  end;
+  PPhysicalRect = ^TPhysicalRect;
+  TPhysicalRectArray = array of TPhysicalRect;
 
 type
   {* @abstract(Object representing an affine box.)
@@ -1327,6 +1354,28 @@ end;
 function TRectFHelper.IsEmpty: boolean;
 begin
   result:= IsEmptyRectF(self);
+end;
+
+{ TPhysicalRect }
+
+function TPhysicalRect.GetHeight: Single;
+begin
+  result:=bottom-top;
+end;
+
+function TPhysicalRect.GetWidth: Single;
+begin
+  result:=right-left;
+end;
+
+procedure TPhysicalRect.SetHeight(AValue: Single);
+begin
+  bottom:=top+avalue;
+end;
+
+procedure TPhysicalRect.SetWidth(AValue: Single);
+begin
+  right:=left+avalue;
 end;
 
 { TAffineBox }
