@@ -261,7 +261,7 @@ var
   reader: TBGRAReaderLazPaint;
 begin
   reader:= TBGRAReaderLazPaint.Create;
-  reader.WantThumbnail := true;
+  reader.IncludeThumbnail := true;
   result := GetStreamThumbnail(AStream,reader,AWidth,AHeight,ABackColor,ACheckers,ADest);
   reader.Free;
 end;

@@ -161,11 +161,15 @@ var
   {** Detect the file format of a given file }
   function DetectFileFormat(AFilenameUTF8: string): TBGRAImageFormat;
   {** Detect the file format of a given stream. _ASuggestedExtensionUTF8_ can
-      be provided to guess the format }
+      be provided to guess the format. Stream position is unchanged. }
   function DetectFileFormat(AStream: TStream; ASuggestedExtensionUTF8: string = ''): TBGRAImageFormat;
   {** Returns the file format that is most likely to be stored in the
       given filename (according to its extension) }
   function SuggestImageFormat(AFilenameOrExtensionUTF8: string): TBGRAImageFormat;
+  {** Returns the image size of the given file }
+  function GetImageSizeInFile(AFilename: string): TPoint;
+  {** Returns the image size in the given stream (stream position is modified) }
+  function GetImageSizeInStream(AStream: TStream): TPoint;
   {** Returns a likely image extension for the format }
   function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
   {** Create an image reader for the given format }
@@ -1204,7 +1208,7 @@ begin
   end;
 end;
 
-function DetectFileFormat(AStream: TStream; ASuggestedExtensionUTF8: string
+function DetectFileFormat(AStream: TStream; ASuggestedExtensionUTF8: string = ''
   ): TBGRAImageFormat;
 var
   scores: array[TBGRAImageFormat] of integer;
@@ -1470,6 +1474,40 @@ begin
   if (ext = '.webp') then result := ifWebP else
   if (ext = '.avif') then result := ifAvif;
 
+end;
+
+function GetImageSizeInFile(AFilename: string): TPoint;
+var
+  stream: TFileStreamUTF8;
+  imageFormat: TBGRAImageFormat;
+  reader: TFPCustomImageReader;
+begin
+  stream := nil;
+  reader := nil;
+  try
+    imageFormat := DetectFileFormat(AFilename);
+    reader := CreateBGRAImageReader(imageFormat);
+    stream := TFileStreamUTF8.Create(AFilename, fmOpenRead);
+    result := reader.ImageSize(stream);
+  finally
+    reader.Free;
+    stream.Free;
+  end;
+end;
+
+function GetImageSizeInStream(AStream: TStream): TPoint;
+var
+  imageFormat: TBGRAImageFormat;
+  reader: TFPCustomImageReader;
+begin
+  reader := nil;
+  try
+    imageFormat := DetectFileFormat(AStream);
+    reader := CreateBGRAImageReader(imageFormat);
+    result := reader.ImageSize(AStream);
+  finally
+    reader.Free;
+  end;
 end;
 
 function SuggestImageExtension(AFormat: TBGRAImageFormat): string;

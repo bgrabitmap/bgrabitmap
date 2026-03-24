@@ -194,6 +194,8 @@ type
     property Lossless: boolean read GetLossless write SetLossless;
   end;
 
+{ Determines the size of the AVIF image without decoding the pixels }
+function AvifGetSizeFromStream(AStream: TStream): TPoint;
 { Load an AVIF image from the given stream }
 procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRACustomBitmap);
 { Load an AVIF image from the given file }
@@ -273,6 +275,7 @@ type
   TAvifImageBase = class
   public
     procedure Init(aImagePtr: Pointer); virtual; abstract;
+    function GetSize: TPoint; virtual; abstract;
     function GetTransformFlags: longword; virtual; abstract;
     function GetImirMode: uint8; virtual; abstract;
     procedure SetColorPrimaries(AColorPrimaries: avifColorPrimaries); virtual; abstract;
@@ -283,12 +286,15 @@ type
     procedure SetImirMode(AIM: uint8); virtual; abstract;
   end;
 
+  { TAvifImage }
+
   generic TAvifImage<T> = class(TAvifImageBase)
   protected
     FImage: T;
   public
     constructor Create(aImagePtr: Pointer = nil);
     procedure Init(aImagePtr: Pointer); override;
+    function GetSize: TPoint; override;
     function GetTransformFlags: longword; override;
     function GetImirMode: uint8; override;
     procedure SetColorPrimaries(AColorPrimaries: avifColorPrimaries); override;
@@ -807,6 +813,11 @@ begin
   FImage := T(aImagePtr);
 end;
 
+function TAvifImage.GetSize: TPoint;
+begin
+  result := Point(FImage^.width, FImage^.Height);
+end;
+
 function TAvifImage.GetTransformFlags: longword;
 begin
   Result := FImage^.transformFlags;
@@ -934,6 +945,15 @@ begin
   exit(AVIF_RESULT_OK);
 end;
 
+function AvifImageGetSize(aAvifImage:PAvifImage): TPoint;
+var
+  imageWrap: TAvifImageBase;
+begin
+  imageWrap:=TAvifImageFactory(aAvifImage);
+  result := imageWrap.GetSize;
+  imageWrap.Free;
+end;
+
 procedure AvifImageToBGRABitmap(aAvifImage:PAvifImage; aBitmap: TBGRACustomBitmap);
 var
   res: avifResult;
@@ -1000,6 +1020,41 @@ begin
    end
   else
     raise EAvifException.Create('Avif Error: ' + avifResultToString(res));
+end;
+
+function AvifDecodeImageSize(decoderWrap: TDecoderBase): TPoint;
+var
+  res: avifResult;
+  image: PAvifImage;
+begin
+  result := Point(0, 0);
+  res := avifDecoderParse(decoderWrap.GetDecoder);
+  if res <> AVIF_RESULT_OK then exit;
+  res := avifDecoderNextImage(decoderWrap.GetDecoder);
+  if res <> AVIF_RESULT_OK then exit;
+  image := decoderWrap.GetImage;
+  if image = nil then exit;
+  result := AvifImageGetSize(image);
+end;
+
+function AvifGetSizeFromStream(AStream: TStream): TPoint;
+var
+  decoder: PavifDecoder;
+  res: avifResult;
+  decoderWrap: TDecoderBase;
+begin
+  result := Point(0, 0);
+  decoderWrap:= nil;
+  decoder := TAvifReader.CreateDecoder;
+  try
+    decoderWrap:=TDecoderFactory(decoder);
+    res := avifDecoderSetIOStream(decoderWrap, aStream);
+    if res = AVIF_RESULT_OK then
+      result := AvifDecodeImageSize(decoderWrap);
+  finally
+    decoderWrap.Free;
+    TAvifReader.DestroyDecoder(decoder);
+  end;
 end;
 
 procedure AvifLoadFromStream(AStream: TStream; aBitmap: TBGRACustomBitmap);

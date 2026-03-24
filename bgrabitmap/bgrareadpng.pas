@@ -80,7 +80,7 @@ Type
       function GetOriginalHeight: integer;
       function GetOriginalWidth: integer;
       function GetVerticalShrinkFactor: integer;
-      function ReadChunk: boolean;
+      class function ReadChunk(AStream: TStream; var AChunk: TChunk): boolean;
       procedure InvalidChunkLength;
       function ColorGray1 (const CD:TColorData) : TFPColor;
       function ColorGray2 (const CD:TColorData) : TFPColor;
@@ -147,8 +147,10 @@ Type
       function DecideSetPixel : TSetPixelProc; virtual;
       property ConvertColor : TConvertColorProc read FConvertColor;
 
-      procedure InternalRead  ({%H-}Str:TStream; Img:TFPCustomImage); override;
+      procedure InternalRead  ({%H-}Str:TStream; {%H-}Img:TFPCustomImage); override;
       function  InternalCheck (Str:TStream) : boolean; override;
+      class function InternalSize(Str: TStream): TPoint; override;
+      class function TryReadHeader(Str: TStream; var AChunk: TChunk): boolean;
 
       property Header : THeaderChunk read FHeader;
       property CurrentPass : byte read FCurrentPass;
@@ -158,6 +160,7 @@ Type
       constructor Create; override;
       destructor Destroy; override;
       function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
+      class function ClassGetQuickInfo(AStream: TStream): TQuickImageInfo;
       function GetBitmapDraft(AStream: TStream; {%H-}AMaxWidth, AMaxHeight: integer;
         out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; override;
       procedure LoadFrame(AIndex: integer; AImage: TFPCustomImage);
@@ -218,45 +221,64 @@ begin
   FTargetImage := nil;
 end;
 
+class procedure FreeChunk(var AChunk: TChunk);
+begin
+  with AChunk do
+    if acapacity > 0 then
+    begin
+      freemem (data);
+      acapacity := 0;
+    end;
+end;
+
 destructor TBGRAReaderPNG.Destroy;
 begin
-  with chunk do
-    if acapacity > 0 then
-      freemem (data);
+  FreeChunk(chunk);
   FFrames.Free;
   FPalette.Free;
   inherited;
 end;
 
 function TBGRAReaderPNG.GetQuickInfo(AStream: TStream): TQuickImageInfo;
-const headerChunkSize = 13;
-var
-  {%H-}FileHeader : packed array[0..7] of byte;
-  {%H-}ChunkHeader : TChunkHeader;
-  {%H-}HeaderChunk : THeaderChunk;
 begin
-  {$PUSH}{$HINTS OFF}fillchar({%H-}result, sizeof({%H-}result), 0);{$POP}
-  if (AStream.Read({%H-}FileHeader, sizeof(FileHeader)) <> sizeof(FileHeader))
-    or not CheckSignature(FileHeader) then exit;
-  if AStream.Read({%H-}ChunkHeader, sizeof(ChunkHeader)) <> sizeof(ChunkHeader) then exit;
-  if ChunkHeader.CType <> GetChunkCode(ctIHDR) then exit;
-  if BEtoN(ChunkHeader.CLength) < headerChunkSize then exit;
-  if AStream.Read({%H-}HeaderChunk, headerChunkSize) <> headerChunkSize then exit;
-  result.width:= BEtoN(HeaderChunk.Width);
-  result.height:= BEtoN(HeaderChunk.height);
-  case HeaderChunk.ColorType and 3 of
-    0,3: {grayscale, palette}
-      if HeaderChunk.BitDepth > 8 then
-        result.colorDepth := 8
-      else
-        result.colorDepth := HeaderChunk.BitDepth;
+  result := ClassGetQuickInfo(AStream);
+end;
 
-    2: {color} result.colorDepth := HeaderChunk.BitDepth*3;
+class function TBGRAReaderPNG.ClassGetQuickInfo(AStream: TStream): TQuickImageInfo;
+var
+  sigCheck: TPNGSignature;
+  headerChunk: TChunk;
+  pHeader: PHeaderCunk;
+begin
+  {$PUSH}{$HINTS OFF}fillchar({%H-}result, sizeof(result), 0);{$POP}
+
+  // Check Signature
+  fillchar({%H-}sigCheck, sizeof(sigCheck), 0);
+  if (AStream.Read(sigCheck, SizeOf(sigCheck)) <> sizeof(sigCheck)) or
+    not CheckSignature(sigCheck) then
+    exit;
+
+  fillchar({%H-}headerChunk, sizeof(headerChunk), 0);
+  if TryReadHeader(AStream, headerChunk) then
+  begin
+    pHeader := PHeaderCunk(headerChunk.data);
+    result.width:= pHeader^.Width;
+    result.height:= pHeader^.height;
+    case pHeader^.ColorType and 3 of
+      0,3: {grayscale, palette}
+        if pHeader^.BitDepth > 8 then
+          result.colorDepth := 8
+        else
+          result.colorDepth := pHeader^.BitDepth;
+
+      2: {color} result.colorDepth := pHeader^.BitDepth*3;
+    end;
+    if (pHeader^.ColorType and 4) = 4 then
+      result.alphaDepth := pHeader^.BitDepth
+    else
+      result.alphaDepth := 0;
   end;
-  if (HeaderChunk.ColorType and 4) = 4 then
-    result.alphaDepth := HeaderChunk.BitDepth
-  else
-    result.alphaDepth := 0;
+  FreeChunk(headerChunk);
 end;
 
 function TBGRAReaderPNG.GetBitmapDraft(AStream: TStream; AMaxWidth,
@@ -282,16 +304,16 @@ begin
     DoLoadImage(AImage, FrameData, FrameControl.Width, FrameControl.Height);
 end;
 
-function TBGRAReaderPNG.ReadChunk: boolean;
+class function TBGRAReaderPNG.ReadChunk(AStream: TStream; var AChunk: TChunk): boolean;
 var {%H-}ChunkHeader : TChunkHeader;
     readCRC : LongWord;
     l : LongWord;
     readCount: integer;
 begin
-  readCount := TheStream.Read ({%H-}ChunkHeader,sizeof(ChunkHeader));
+  readCount := AStream.Read ({%H-}ChunkHeader,sizeof(ChunkHeader));
   if readCount <> sizeof(TChunkHeader) then
     raise PNGImageException.Create('Unexpected end of stream when reading next chunk');
-  with chunk do
+  with AChunk do
     begin
     // chunk header
     with ChunkHeader do
@@ -313,11 +335,11 @@ begin
       GetMem (data, alength);
       acapacity := alength;
       end;
-    l := TheStream.read (data^, alength);
+    l := AStream.read (data^, alength);
     if l <> alength then
       raise PNGImageException.Create ('Length exceeds stream length for ' + GetChunkCode(aType) + ' chunk');
     readCRC := 0;
-    TheStream.Read (readCRC, sizeof(ReadCRC));
+    AStream.Read (readCRC, sizeof(ReadCRC));
     l := CalculateChunkCRC(ReadType, data, alength);
     {$IFDEF ENDIAN_LITTLE}
     l := swap(l);
@@ -1612,7 +1634,7 @@ begin
     EndOfFile := false;
     while not EndOfFile do
       begin
-      if ReadChunk then
+      if ReadChunk(TheStream, Chunk) then
         HandleChunk;
       end;
 
@@ -1632,7 +1654,6 @@ end;
 
 function  TBGRAReaderPNG.InternalCheck (Str:TStream) : boolean;
 var {%H-}SigCheck : TPNGSignature;
-    r : integer;
 begin
   try
     // Check Signature
@@ -1640,24 +1661,44 @@ begin
       raise PNGImageException.Create('This is not PNG-data');
     if not CheckSignature(SigCheck) then
         raise PNGImageException.Create('This is not PNG-data');
-    // Check IHDR
-    ReadChunk;
-    if chunk.aType <> ctIHDR then
-      raise PNGImageException.Create('Header chunk expected but '+chunk.ReadType+' found');
+
+    if not TryReadHeader(Str, chunk) then
+      raise PNGImageException.Create('Header chunk expected but '+chunk.ReadType+' of size '+IntToStr(chunk.alength)+' found');
+
+    // Store header and check its values
     fillchar(FHeader, sizeof(FHeader), 0);
-    move (chunk.data^, FHeader, min(sizeof(Header), chunk.alength));
-    with header do
-      begin
-      {$IFDEF ENDIAN_LITTLE}
-      Width := swap(width);
-      height := swap (height);
-      {$ENDIF}
+    move (chunk.data^, FHeader, min(sizeof(FHeader), chunk.alength));
+    with FHeader do
       result := (width > 0) and (height > 0) and (compression = 0)
                 and (filter = 0) and (Interlace in [0,1]);
-      end;
   except
     result := false;
   end;
+end;
+
+class function TBGRAReaderPNG.InternalSize(Str: TStream): TPoint;
+begin
+  with ClassGetQuickInfo(Str) do
+    Result := Point(Width, Height);
+end;
+
+class function TBGRAReaderPNG.TryReadHeader(Str: TStream; var AChunk: TChunk): boolean;
+var
+  pHeader: PHeaderCunk;
+begin
+  ReadChunk(Str, AChunk);
+  if (AChunk.aType = ctIHDR) and
+     (AChunk.alength >= sizeof(LongWord)*2) then
+  begin
+    pHeader := PHeaderCunk(AChunk.data);
+    {$IFDEF ENDIAN_LITTLE}
+    pHeader^.Width := Swap(pHeader^.Width);
+    pHeader^.Height := Swap(pHeader^.Height);
+    {$ENDIF}
+    exit(true);
+  end
+  else
+    exit(false);
 end;
 
 initialization
