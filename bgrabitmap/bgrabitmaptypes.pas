@@ -681,7 +681,7 @@ type
     function GetQuickInfo(AStream: TStream): TQuickImageInfo; virtual; abstract;
     {** Return a draft of the bitmap, the ratio may change compared to the original width and height (useful to make thumbnails).
         Stream position is unchanged. }
-    function GetBitmapDraft(AStream: TStream; AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual;
+    function GetBitmapDraft(AStream: TStream; {%H-}AMaxWidth, {%H-}AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual;
   end;
 
   {* Generic definition for a PNG writer with alpha option }
@@ -723,7 +723,7 @@ function ResourceFile(AFilename: string): string;
 implementation
 
 uses Math, SysUtils,
-  BGRAUTF8, BGRAUnits, FPWriteBMP, FPReadPNM, FPWritePNM, FPWriteXPM
+  BGRAUTF8, BGRAUnits, FPWriteBMP, BGRAReadPNM, FPWritePNM, FPWriteXPM
   {$IFNDEF BGRABITMAP_CORE},
   FPReadXwd, FPReadXPM, FPReadPcx,
   FPWriteJPEG, FPWritePCX,
@@ -1878,8 +1878,7 @@ initialization
   {$IFNDEF BGRABITMAP_CORE}
   BGRARegisterImageWriter(ifTarga, TFPWriterTarga, false, 'TARGA Format', 'tga');
   BGRARegisterImageWriter(ifXPixMap, TFPWriterXPM, false, 'XPM Format', 'xpm');
-  BGRARegisterImageHandlers(ifPortableAnyMap, TFPReaderPNM, TFPWriterPNM,
-    False, 'Netpbm Portable aNyMap', 'pnm;pbm;pgm;ppm');
+  BGRARegisterImageWriter(ifPortableAnyMap, TFPWriterPNM, false, 'Netpbm Portable aNyMap', 'pnm;pbm;pgm;ppm');
   BGRARegisterImageReader(ifXwd, TFPReaderXWD, false, 'XWD Format', 'xwd');
 
   //the other readers/writers are registered by their unit

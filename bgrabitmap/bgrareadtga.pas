@@ -41,6 +41,7 @@ type
     procedure InitReadBuffer(AStream: TStream; ASize: integer);
     procedure CloseReadBuffer;
     function GetNextBufferByte: byte;
+    class function InternalSize(Str: TStream): TPoint; override;
 
   published
     property GrayScale: Boolean read GetGrayScale;
@@ -64,7 +65,9 @@ end;
 
 function TBGRAReaderTarga.GetCompressed: boolean;
 begin
+  {$PUSH}{$WARNINGS OFF}
   Result:= TFPReaderTarga_Access(Self).Compressed;
+  {$POP}
 end;
 
 function TBGRAReaderTarga.GetGrayScale: Boolean;
@@ -216,6 +219,23 @@ begin
       inc(FBufferPos);
     end else
       result := 0;
+  end;
+end;
+
+class function TBGRAReaderTarga.InternalSize(Str: TStream): TPoint;
+var h: TTargaHeader;
+begin
+  result := Point(0, 0);
+  if Str.Read({%H-}h, sizeof(h)) <> sizeof(h) then
+    exit;
+
+  With h do
+  begin
+    if not (ImgType in [1, 2, 3, 9, 10, 11]) and
+       not (PixelSize in [8, 16, 24, 32]) then
+       exit;
+
+    result := Point(ToWord(Width), ToWord(Height));
   end;
 end;
 

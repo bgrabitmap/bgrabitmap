@@ -16,6 +16,7 @@ type
     protected
       procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;
       function InternalCheck(Str: TStream): boolean; override;
+      class function InternalSize(Str: TStream): TPoint; override;
     public
       class procedure ConvertToXPM3(ASource: TStream; ADestination: TStream); static;
   end;
@@ -56,6 +57,53 @@ begin
     if not result then result := inherited InternalCheck(Str)
   except
     result := false;
+  end;
+end;
+
+class function TBGRAReaderXPM.InternalSize(Str: TStream): TPoint;
+var
+  lst: TStringList;
+  valuesLine: string;
+  startQuote, endQuote, w, h, i, errPos: Integer;
+begin
+  result := Point(0, 0);
+  valuesLine := '';
+  lst := TStringList.Create;
+  try
+    lst.LoadFromStream(Str);
+    if (lst[0] = '! XPM2') and (lst.Count > 1) then
+      valuesLine := lst[1]
+    else if (lst[0] = '/* XPM */') then
+    begin
+      for i := 1 to lst.Count-1 do
+      begin
+        startQuote := lst[i].IndexOf('"');
+        endQuote := lst[i].LastIndexOf('"');
+        if endQuote > startQuote then
+        begin
+          valuesLine := lst[i].Substring(startQuote + 1, endQuote-startQuote - 1);
+          break;
+        end;
+      end;
+    end;
+    if valuesLine <> '' then
+    begin
+      lst.Clear;
+      lst.Delimiter := ' ';
+      lst.DelimitedText := valuesLine;
+      if lst.Count >= 2 then
+      begin
+        val(lst[0], w, errPos);
+        if errPos = 0 then
+        begin
+          val(lst[1], h, errPos);
+          if errPos = 0 then
+            result := Point(w, h);
+        end;
+      end;
+    end;
+  finally
+    lst.Free;
   end;
 end;
 
