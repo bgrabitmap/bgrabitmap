@@ -460,7 +460,9 @@ var
   vsize: TPointF;
   c2d: TBGRACanvas2D;
   ratio: Single;
+  oldPos: Int64;
 begin
+  oldPos := AStream.Position;
   svg := TBGRASVG.Create(AStream);
   result := nil;
   try
@@ -479,6 +481,7 @@ begin
     end;
   finally
     svg.Free;
+    AStream.Position:= oldPos;
   end;
 end;
 

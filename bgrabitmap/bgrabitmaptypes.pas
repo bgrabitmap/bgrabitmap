@@ -679,8 +679,9 @@ type
   TBGRAImageReader = class(TFPCustomImageReader)
     {** Return bitmap information (size, bit depth) }
     function GetQuickInfo(AStream: TStream): TQuickImageInfo; virtual; abstract;
-    {** Return a draft of the bitmap, the ratio may change compared to the original width and height (useful to make thumbnails) }
-    function GetBitmapDraft(AStream: TStream; AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual; abstract;
+    {** Return a draft of the bitmap, the ratio may change compared to the original width and height (useful to make thumbnails).
+        Stream position is unchanged. }
+    function GetBitmapDraft(AStream: TStream; AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual;
   end;
 
   {* Generic definition for a PNG writer with alpha option }
@@ -1066,6 +1067,27 @@ end;
 function TBGRACustomFontRenderer.HandlesTextPath: boolean;
 begin
   result := false;
+end;
+
+{ TBGRAImageReader }
+
+function TBGRAImageReader.GetBitmapDraft(AStream: TStream; AMaxWidth,
+  AMaxHeight: integer; out AOriginalWidth, AOriginalHeight: integer): TBGRACustomBitmap;
+var
+  prevPos: Int64;
+begin
+  // default implementation simply reads the image
+  // but a specific implementation can read only the relevant data
+  // to make an image of size AMaxWidth by AMaxHeight
+  result := BGRABitmapFactory.Create;
+  prevPos := AStream.Position;
+  try
+    result.LoadFromStream(AStream, self, []);
+  finally
+    AStream.Position := prevPos;
+  end;
+  AOriginalWidth:= result.Width;
+  AOriginalHeight:= result.Height;
 end;
 
 

@@ -285,15 +285,18 @@ function TBGRAReaderPNG.GetBitmapDraft(AStream: TStream; AMaxWidth,
   AMaxHeight: integer; out AOriginalWidth, AOriginalHeight: integer): TBGRACustomBitmap;
 var
   png: TBGRAReaderPNG;
+  oldPos: Int64;
 begin
   png:= TBGRAReaderPNG.Create;
   result := BGRABitmapFactory.Create;
+  oldPos := AStream.Position;
   try
     png.MinifyHeight := AMaxHeight;
     result.LoadFromStream(AStream, png);
     AOriginalWidth:= png.OriginalWidth;
     AOriginalHeight:= png.OriginalHeight;
   finally
+    AStream.Position:= oldPos;
     png.Free;
   end;
 end;
