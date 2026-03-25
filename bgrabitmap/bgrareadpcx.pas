@@ -18,7 +18,7 @@ unit BGRAReadPCX;
 
 interface
 
-uses FPImage, BGRAClasses, SysUtils, FPReadPCX;
+uses FPImage, BGRAClasses, SysUtils, FPReadPCX, pcxcomn;
 
 type
   { Reader for PCX image format }
@@ -34,6 +34,8 @@ type
     function GetBitsPerPixel: byte;
     function GetGrayScale: Boolean;
     function InternalCheck(Stream: TStream): boolean; override;
+    class function TryReadHeader(Stream: TStream; out AHeader: TPCXHeader): boolean;
+    class function InternalSize(Str: TStream): TPoint; override;
     procedure ReadResolutionValues(Img: TFPCustomImage);
     procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
     procedure ReadScanLine({%H-}Row: integer; Stream: TStream); override;
@@ -118,7 +120,7 @@ begin
   emptyRect := rect(0,0,0,0);
   continue    := True;
   Progress(psStarting, 0, False, emptyRect, '', continue);
-  Stream.Read(Header, SizeOf(Header));
+  Stream.ReadBuffer(Header, SizeOf(Header));
   AnalyzeHeader(Img);
   ReadResolutionValues(Img);
   case BytesPerPixel of
@@ -259,14 +261,54 @@ end;
 
 function TBGRAReaderPCX.InternalCheck({%H-}Stream: TStream): boolean;
 var
-  {%H-}magic: packed array[0..3] of byte;
   oldPos: Int64;
+  h: TPCXHeader;
 begin
   oldPos:= stream.Position;
-  result := stream.Read({%H-}magic,SizeOf(magic)) = sizeof(magic);
+  result := TryReadHeader(stream, h);
   stream.Position:= oldPos;
-  if result then
-    result := (magic[0] in[$0a,$0c,$cd]) and (magic[1] in [0,2,3,4,5]) and (magic[2] in[0,1]) and (magic[3] in[1,2,4,8])
+end;
+
+class function TBGRAReaderPCX.TryReadHeader(Stream: TStream; out AHeader: TPCXHeader): boolean;
+
+  procedure LittleEndian(var {%H-}AWord: word);
+  begin
+    {$IFDEF ENDIAN_BIG}
+    AWord := swap(AWord);
+    {$ENDIF}
+  end;
+
+begin
+  result := true;
+  fillchar({%H-}AHeader, sizeof(AHeader), 0);
+  if Stream.Read(AHeader, sizeof(AHeader)) <> sizeof(AHeader) then result := false;
+  if not (AHeader.FileID in [$0a,$0c,$cd]) or
+    not (AHeader.Version in [0,2,3,4,5]) or
+    not (AHeader.Encoding in [0,1]) or
+    not (AHeader.BitsPerPixel in [1,2,4,8,24]) then
+    result := false;
+
+  with AHeader do
+  begin
+    LittleEndian(XMin);
+    LittleEndian(YMin);
+    LittleEndian(XMax);
+    LittleEndian(YMax);
+    LittleEndian(HRes);
+    LittleEndian(VRes);
+    LittleEndian(BytesPerLine);
+    LittleEndian(PaletteType);
+  end;
+end;
+
+class function TBGRAReaderPCX.InternalSize(Str: TStream): TPoint;
+var
+  h: TPCXHeader;
+begin
+  if TryReadHeader(Str, h) then
+    result := Point(h.XMax - h.XMin + 1, h.YMax - h.YMin + 1)
+  else
+    result := Point(0, 0);
 end;
 
 initialization

@@ -14,10 +14,14 @@ type
   { @abstract(Reader for AVIF still image format.)
 
     To read animations, use TAvifReader of AvifBGRA unit }
+
+  { TBGRAReaderAvif }
+
   TBGRAReaderAvif = class(TFPCustomImageReader)
   protected
     procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;
     function InternalCheck(Str: TStream): boolean; override;
+    class function InternalSize(Str: TStream): TPoint; override;
   end;
 
 implementation
@@ -89,6 +93,11 @@ begin
   finally
     Str.Position:= OldPos;
   end;
+end;
+
+class function TBGRAReaderAvif.InternalSize(Str: TStream): TPoint;
+begin
+  Result:= AvifGetSizeFromStream(Str);
 end;
 
 initialization

@@ -319,6 +319,9 @@ end;
     protected
       function InternalCheck(Stream: TStream): boolean; override;
       procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
+      class function InternalSize(Stream: TStream): TPoint; override;
+      class function InternalSizeEx(Stream: TStream; ARenderDPI: integer; AScale: single): TPoint;
+      class function GetRenderSize(ASVG: TBGRASVG; AScale: single): TPointF;
     public
       constructor Create; override;
       function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
@@ -356,7 +359,6 @@ end;
 procedure TFPReaderSVG.InternalRead(Stream: TStream; Img: TFPCustomImage);
 var
   svg: TBGRASVG;
-  vsize: TPointF;
   bgra: TBGRACustomBitmap;
   c2d: TBGRACanvas2D;
   y, x: Integer;
@@ -370,10 +372,8 @@ begin
       bgra := TBGRACustomBitmap(Img)
     else
       bgra := BGRABitmapFactory.Create;
-    if svg.preserveAspectRatio.Preserve then
-      vsize := svg.GetViewSize(cuPixel)
-      else vsize := PointF(svg.WidthAsPixel, svg.HeightAsPixel);
-    bgra.SetSize(ceil(vsize.x*scale),ceil(vsize.y*scale));
+    with GetRenderSize(svg, Scale).Ceiling do
+      bgra.SetSize(X, Y);
     bgra.FillTransparent;
     c2d := TBGRACanvas2D.Create(bgra);
     svg.StretchDraw(c2d, 0,0,bgra.Width,bgra.Height, true);
@@ -399,6 +399,35 @@ begin
   end;
 end;
 
+class function TFPReaderSVG.InternalSize(Stream: TStream): TPoint;
+begin
+  Result:= InternalSizeEx(Stream, 96, 1);
+end;
+
+class function TFPReaderSVG.InternalSizeEx(Stream: TStream; ARenderDPI: integer; AScale: single): TPoint;
+var
+  svg: TBGRASVG;
+begin
+  Result:= Point(0, 0);
+  svg := TBGRASVG.Create(Stream);
+  try
+    svg.DefaultDpi:= ARenderDPI;
+    result := GetRenderSize(svg, AScale).Ceiling;
+  finally
+    svg.Free;
+  end;
+end;
+
+class function TFPReaderSVG.GetRenderSize(ASVG: TBGRASVG; AScale: single): TPointF;
+var
+  vsize: TPointF;
+begin
+  if ASVG.preserveAspectRatio.Preserve then
+    vsize := ASVG.GetViewSize(cuPixel)
+  else vsize := PointF(ASVG.WidthAsPixel, ASVG.HeightAsPixel);
+  result := PointF(vsize.x*AScale, vsize.y*AScale);
+end;
+
 constructor TFPReaderSVG.Create;
 begin
   inherited Create;
@@ -413,10 +442,13 @@ var
 begin
   svg := TBGRASVG.Create(AStream);
   svg.DefaultDpi:= RenderDpi;
-  vsize := svg.GetViewSize(cuPixel);
+  vsize := GetRenderSize(svg, 1);
   svg.Free;
-  result.Width:= ceil(vsize.x);
-  result.Height:= ceil(vsize.y);
+  with vsize.Ceiling do
+  begin
+    result.Width:= X;
+    result.Height:= Y;
+  end;
   result.AlphaDepth:= 8;
   result.ColorDepth:= 24;
 end;
@@ -428,14 +460,14 @@ var
   vsize: TPointF;
   c2d: TBGRACanvas2D;
   ratio: Single;
+  oldPos: Int64;
 begin
+  oldPos := AStream.Position;
   svg := TBGRASVG.Create(AStream);
   result := nil;
   try
     svg.DefaultDpi:= RenderDpi;
-    if svg.preserveAspectRatio.Preserve then
-      vsize := svg.GetViewSize(cuPixel)
-      else vsize := PointF(svg.WidthAsPixel, svg.HeightAsPixel);
+    vsize := GetRenderSize(svg, Scale);
     AOriginalWidth:= ceil(vsize.x);
     AOriginalHeight:= ceil(vsize.y);
     if (vsize.x = 0) or (vsize.y = 0) then exit;
@@ -449,6 +481,7 @@ begin
     end;
   finally
     svg.Free;
+    AStream.Position:= oldPos;
   end;
 end;
 
@@ -769,7 +802,7 @@ var str: TMemoryStream;
 begin
   str := TMemoryStream.Create;
   SaveToStream(str);
-  setlength(result, str.Size);
+  setlength({%H-}result, str.Size);
   str.Position := 0;
   str.Read(result[1], length(result));
   str.Free;
