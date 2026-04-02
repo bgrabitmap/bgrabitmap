@@ -63,17 +63,17 @@ begin
   textanchor:= low(TFontVerticalAnchor);
 
   repeat
-    y += h;
+    inc(y, h);
     virtualScreen.HorizLine(0,y,virtualScreen.Width,BGRA(255,255,255),dmDrawWithTransparency);
     virtualScreen.FontVerticalAnchor := textanchor;
     virtualScreen.TextOut(virtualScreen.Width/2,y, FontVerticalAnchorToStr[textanchor], BGRABlack, taCenter, h/3);
-    y += h;
+    inc(y, h);
     if textanchor >= high(TFontVerticalAnchor) then break;
     textanchor:= succ(textanchor);
   until false;
 
   //draw virtualscreen opaque on canvas
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest33.OnTimer(Width, Height: Integer;

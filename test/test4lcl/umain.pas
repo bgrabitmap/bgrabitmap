@@ -5,16 +5,38 @@ unit umain;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs;
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
+  StdCtrls, Spin, ExtDlgs;
 
 type
 
   { TForm1 }
 
   TForm1 = class(TForm)
-    procedure FormPaint(Sender: TObject);
+    Button1: TButton;
+    btFileSel: TButton;
+    cbTransparent: TCheckBox;
+    cbImageFile: TCheckBox;
+    edW: TSpinEdit;
+    edH: TSpinEdit;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    Label4: TLabel;
+    openPict: TOpenPictureDialog;
+    Panel1: TPanel;
+    PanelDraw: TPanel;
+    rbFull: TRadioButton;
+    rbCustom: TRadioButton;
+    edX: TSpinEdit;
+    edY: TSpinEdit;
+    procedure btImageFileClick(Sender: TObject);
+    procedure DrawPaint(Sender: TObject);
+    procedure rbFullClick(Sender: TObject);
   private
     { private declarations }
+    Filename: String;
+
   public
     { public declarations }
   end;
@@ -52,14 +74,43 @@ end;
 
 { TForm1 }
 
-procedure TForm1.FormPaint(Sender: TObject);
+procedure TForm1.DrawPaint(Sender: TObject);
 var
   bmp: TBGRABitmap;
+  ARect: TRect;
+
 begin
-  bmp := TBGRABitmap.Create(ClientWidth,ClientHeight);
-  DrawEllipseHello(bmp);
-  bmp.Draw(Canvas,0,0);
-  bmp.Free;
+  try
+  if cbImageFile.Checked and FileExists(Filename)
+  then bmp:= TBGRABitmap.Create(Filename)
+  else begin
+         bmp:= TBGRABitmap.Create(PanelDraw.Width,PanelDraw.Height);
+         DrawEllipseHello(bmp);
+       end;
+
+  if rbFull.Checked
+  then ARect:=Rect(0, 0, PanelDraw.Width,PanelDraw.Height)
+  else ARect:=Rect(edX.Value, edY.Value, edX.Value+edW.Value, edY.Value+edH.Value);
+
+  bmp.Draw(PanelDraw.Canvas, ARect, not(cbTransparent.Checked));
+
+  finally
+    bmp.Free;
+  end;
+end;
+
+procedure TForm1.btImageFileClick(Sender: TObject);
+begin
+  if openPict.Execute then
+  begin
+    Filename:=openPict.FileName;
+    PanelDraw.Invalidate;
+  end;
+end;
+
+procedure TForm1.rbFullClick(Sender: TObject);
+begin
+  PanelDraw.Invalidate;
 end;
 
 

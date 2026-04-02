@@ -8,16 +8,27 @@ unit BGRAUnits;
 interface
 
 uses
-  SysUtils, BGRABitmapTypes;
+  SysUtils, BGRAClasses, BGRABitmapTypes;
 
 type
   TSVGNumber = single;//double
   ArrayOfTSVGNumber = array of TSVGNumber;
 
-  TCSSUnit = (cuCustom, cuPixel,
-              cuCentimeter, cuMillimeter,
-              cuInch, cuPica, cuPoint,
-              cuFontEmHeight, cuFontXHeight, cuPercent);
+  TCSSUnit = BGRABitmapTypes.TCSSUnit;
+
+const
+  cuCustom = BGRABitmapTypes.cuCustom;
+  cuPixel = BGRABitmapTypes.cuPixel;
+  cuCentimeter = BGRABitmapTypes.cuCentimeter;
+  cuMillimeter = BGRABitmapTypes.cuMillimeter;
+  cuInch = BGRABitmapTypes.cuInch;
+  cuPica = BGRABitmapTypes.cuPica;
+  cuPoint = BGRABitmapTypes.cuPoint;
+  cuFontEmHeight = BGRABitmapTypes.cuFontEmHeight;
+  cuFontXHeight = BGRABitmapTypes.cuFontXHeight;
+  cuPercent = BGRABitmapTypes.cuPercent;
+
+type
   { Floating-point value expressed in a CSS unit }
   TFloatWithCSSUnit = record
     value: single;
@@ -35,6 +46,11 @@ const
          'cm','mm',
          'in','pc','pt',
          'em','ex','%');
+  CSSUnitName: array[TCSSUnit] of string =
+        ('Custom', 'Pixel',
+         'Centimeter','Millimeter',
+         'Inch','Pica','Point',
+         'Font Em', 'Font Ex', 'Percent');
 
 type
   { Converter for CSS units }
@@ -54,6 +70,7 @@ type
     function GetFontXHeight: TFloatWithCSSUnit; virtual;
     procedure SetViewBoxHeight(AValue: TFloatWithCSSUnit);
     procedure SetViewBoxWidth(AValue: TFloatWithCSSUnit);
+    procedure SetFontEmHeight(AValue: TFloatWithCSSUnit); virtual;
     property FontEmHeight: TFloatWithCSSUnit read GetFontEmHeight;
     property FontXHeight: TFloatWithCSSUnit read GetFontXHeight;
     property DefaultUnitWidth: TFloatWithCSSUnit read GetDefaultUnitWidth;
@@ -92,28 +109,308 @@ type
     property ViewBoxHeight: TFloatWithCSSUnit read FViewBoxHeight write SetViewBoxHeight;
     property DpiX: single read GetDpiX;
     property DpiY: single read GetDpiY;
-    property CurrentFontEmHeight: TFloatWithCSSUnit read FCurrentFontEmHeight write FCurrentFontEmHeight;
+    property CurrentFontEmHeight: TFloatWithCSSUnit read GetFontEmHeight write SetFontEmHeight;
     property RootFontEmHeight: TFloatWithCSSUnit read GetRootFontEmHeight;
   end;
 
+  { Converter for physical units of an image. The resolution and viewbox is taken from the image. }
+  TBGRAImageUnitConverter = class(TCSSUnitConverter)
+  protected
+    FBitmap: TCustomUniversalBitmap;
+    FDpiX, FDpiY: single;
+    function GetDpiX: single; override;
+    function GetDpiY: single; override;
+    function GetFontEmHeight: TFloatWithCSSUnit; override;
+    function GetFontXHeight: TFloatWithCSSUnit; override;
+    procedure SetFontEmHeight(AValue: TFloatWithCSSUnit); override;
+  public
+    constructor Create(ABitmap: TCustomUniversalBitmap);
+  end;
+
+{** Convert physical size to pixels according to image resolution.
+    If _ASourceUnit_ is set to cuCustom, _ASize_ is supposed to be in the denominator
+    of the resolution unit (for example cm for pixels/cm).
+    If resolution is ill-defined, it is assumed to be 96 DPI. }
+function PhysicalSizeToPixels(APhysicalSize: Single;
+                              AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                              AResolution: Single = 96;
+                              ASourceUnit: TCSSUnit = cuCustom): Single; overload;
+procedure PhysicalSizeToPixels(var SizeX,SizeY: Single;
+                               const AResolution: TImageResolutionInfo;
+                               ASourceUnit: TCSSUnit = cuCustom); overload;
+function PhysicalSizeToPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap): TRectF; overload;
+function PhysicalSizeToRoundedPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap;
+                                     PreserveMoreData: Boolean=False): TRect; overload;
+
+
+{** Convert pixels to physical size according to image resolution.
+    If _ASourceUnit_ is set to cuCustom, _ASize_ is supposed to be in the denominator
+    of the resolution unit (for example cm for pixels/cm).
+    If resolution is ill-defined, it is assumed to be 96 DPI. }
+function PixelsToPhysicalSize(ASizeInPixels: Single;
+                              AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                              AResolution: Single = 96;
+                              ATargetUnit: TCSSUnit = cuCustom): Single; overload;
+procedure PixelsToPhysicalSize(var SizeX,SizeY: Single;
+                               const AResolution: TImageResolutionInfo;
+                               ATargetUnit: TCSSUnit = cuCustom); overload;
+
+{** Converts physical size from one unit of measurement to another.
+    If _ASourceUnit_ is set to cuCustom,cuPixel then PixelsToPhysicalSize is called
+    If _ATargetUnit_ is set to cuCustom,cuPixel then PhysicalSizeToPixels is called
+    cuPercent will work only if the procedure with _ABitmap_ param is used. }
+function PhysicalSizeConvert(ASourceUnit: TCSSUnit; ASourceSize: Single;
+                             ATargetUnit: TCSSUnit;
+                             AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                             AResolution: Single = 96): Single; overload;
+procedure PhysicalSizeConvert(ASourceUnit: TCSSUnit; var SizeX, SizeY: Single;
+                              ATargetUnit: TCSSUnit;
+                              const AResolution: TImageResolutionInfo); overload;
+procedure PhysicalSizeConvert(var APhysicalRect: TPhysicalRect; ATargetUnit: TCSSUnit;
+                              ABitmap: TCustomUniversalBitmap); overload;
+
+
 implementation
 
-uses BGRATransform;
+uses Math, BGRATransform;
 
 var
   formats: TFormatSettings;
 
-const InchFactor: array[TCSSUnit] of integer =
-      (9600, 9600,
-       254, 2540,
-       100, 600, 7200,
-       0, 0, 0);
+const
+  //Constants for doing conversion calculations (AValue * InchFactor[Dest]/InchFactor[Source]
+  InchFactor: array[TCSSUnit] of Integer =
+      (9600, 9600,                      //cuCustom, cuPixel
+       254, 2540,                       //cuCentimeter, cuMillimeter
+       100, 600, 7200,                  //cuInch, cuPica, cuPoint
+       0, 0,                            //cuFontEmHeight, cuFontXHeight (raise Unhandled)
+       0);                              //cuPercent only with ABitmap Params
 
 function FloatWithCSSUnit(AValue: single; AUnit: TCSSUnit): TFloatWithCSSUnit;
 begin
   result.value:= AValue;
   result.CSSUnit:= AUnit;
 end;
+
+function PhysicalSizeToPixels(APhysicalSize: Single;
+                              AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                              AResolution: Single = 96;
+                              ASourceUnit: TCSSUnit = cuCustom): Single;
+var resolutionDenom: TCSSUnit;
+begin
+  // already in pixels
+  if ASourceUnit = cuPixel then exit(APhysicalSize);
+
+  // checks if resolution is ill-defined
+  if (AResolution = 0) or (AResolutionUnit = ruNone) then
+  begin
+    // assume legacy 96 DPI
+    AResolution := 96;
+    AResolutionUnit := ruPixelsPerInch;
+  end;
+
+  resolutionDenom := ResolutionDenominatorUnit[AResolutionUnit];
+  // already in expected unit
+  if ASourceUnit = resolutionDenom then exit(APhysicalSize * AResolution);
+
+  if InchFactor[ASourceUnit] = 0 then raise exception.Create('Unhandled conversion');
+  Result:= APhysicalSize * (InchFactor[resolutionDenom] / InchFactor[ASourceUnit]) * AResolution;
+end;
+
+procedure PhysicalSizeToPixels(var SizeX, SizeY: Single;
+                               const AResolution: TImageResolutionInfo;
+                               ASourceUnit: TCSSUnit = cuCustom);
+var
+  res: TImageResolutionInfo;
+begin
+  res := FixImageResolutionInfo(AResolution);
+  SizeX := PhysicalSizeToPixels(SizeX, res.ResolutionUnit, res.ResolutionX, ASourceUnit);
+  SizeY := PhysicalSizeToPixels(SizeY, res.ResolutionUnit, res.ResolutionY, ASourceUnit);
+end;
+
+function PhysicalSizeToPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap): TRectF;
+var
+  res: TImageResolutionInfo;
+begin
+  if ABitmap = nil then exit(EmptyRectF);
+
+  if APhysicalRect.PhysicalUnit = cuPercent then
+    result := RectF(APhysicalRect.Left * ABitmap.Width / 100, APhysicalRect.Top * ABitmap.Height / 100,
+      APhysicalRect.Right * ABitmap.Width / 100, APhysicalRect.Bottom * ABitmap.Height / 100)
+  else
+  begin
+    res := FixImageResolutionInfo(ABitmap.ResolutionInfo);
+    result.Top := PhysicalSizeToPixels(APhysicalRect.Top, res.ResolutionUnit, res.ResolutionY, APhysicalRect.PhysicalUnit);
+    result.Left := PhysicalSizeToPixels(APhysicalRect.Left, res.ResolutionUnit, res.ResolutionX, APhysicalRect.PhysicalUnit);
+    result.Bottom := PhysicalSizeToPixels(APhysicalRect.Bottom, res.ResolutionUnit, res.ResolutionY, APhysicalRect.PhysicalUnit);
+    result.Right := PhysicalSizeToPixels(APhysicalRect.Right, res.ResolutionUnit, res.ResolutionX, APhysicalRect.PhysicalUnit);
+  end;
+end;
+
+function PhysicalSizeToRoundedPixels(const APhysicalRect: TPhysicalRect; ABitmap: TCustomUniversalBitmap;
+                                     PreserveMoreData: Boolean=False): TRect;
+var
+   resRect: TRectF;
+
+begin
+  resRect:= PhysicalSizeToPixels(APhysicalRect, ABitmap);
+
+  if PreserveMoreData
+  then begin
+         // Preserve as much data as possible:
+         // use Floor for min coordinates, Ceil for max coordinates
+         if (resRect.Left <= resRect.Right)
+         then begin
+                Result.Left   := Floor(resRect.Left);
+                Result.Right  := Ceil(resRect.Right);
+              end
+         else begin
+                // flipped horizontally: invert rounding
+                Result.Left   := Ceil(resRect.Left);
+                Result.Right  := Floor(resRect.Right);
+              end;
+
+         if (resRect.Top <= resRect.Bottom)
+         then begin
+                Result.Top    := Floor(resRect.Top);
+                Result.Bottom := Ceil(resRect.Bottom);
+              end
+         else begin
+                // flipped vertically: invert rounding
+                Result.Top    := Ceil(resRect.Top);
+                Result.Bottom := Floor(resRect.Bottom);
+              end;
+       end
+  else begin
+         // Default: round half up (closest integer)
+         Result.Left   := HalfUp(resRect.Left);
+         Result.Top    := HalfUp(resRect.Top);
+         Result.Right  := HalfUp(resRect.Right);
+         Result.Bottom := HalfUp(resRect.Bottom);
+       end;
+end;
+
+function PixelsToPhysicalSize(ASizeInPixels: Single;
+                              AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                              AResolution: Single = 96;
+                              ATargetUnit: TCSSUnit = cuCustom): Single;
+var
+  resolutionDenom: TCSSUnit;
+begin
+  // already in expected unit
+  if ATargetUnit = cuPixel then exit(ASizeInPixels);
+
+  // checks if resolution is ill-defined
+  if (AResolution = 0) or (AResolutionUnit = ruNone) then
+  begin
+    // assume legacy 96 DPI
+    AResolution := 96;
+    AResolutionUnit := ruPixelsPerInch;
+  end;
+
+  resolutionDenom := ResolutionDenominatorUnit[AResolutionUnit];
+  // already in expected unit
+  if ATargetUnit = resolutionDenom then exit(ASizeInPixels / AResolution);
+
+  if InchFactor[ATargetUnit] = 0 then raise exception.Create('Unhandled conversion');
+  Result:= (ASizeInPixels / AResolution) * (InchFactor[ATargetUnit] / InchFactor[resolutionDenom]);
+end;
+
+procedure PixelsToPhysicalSize(var SizeX, SizeY: Single;
+                               const AResolution: TImageResolutionInfo;
+                               ATargetUnit: TCSSUnit = cuCustom);
+var
+  res: TImageResolutionInfo;
+begin
+  res := FixImageResolutionInfo(AResolution);
+  SizeX := PixelsToPhysicalSize(SizeX, res.ResolutionUnit, res.ResolutionX, ATargetUnit);
+  SizeY := PixelsToPhysicalSize(SizeY, res.ResolutionUnit, res.ResolutionY, ATargetUnit);
+end;
+
+function PhysicalSizeConvert(ASourceUnit: TCSSUnit; ASourceSize: Single;
+                             ATargetUnit: TCSSUnit;
+                             AResolutionUnit: TResolutionUnit=ruPixelsPerInch;
+                             AResolution: Single = 96): Single;
+
+begin
+  Result:= ASourceSize;
+  // already in expected unit
+  if ASourceUnit = ATargetUnit then exit(ASourceSize);
+
+  if (ATargetUnit in [cuPixel, cuCustom]) then
+    Result:= PhysicalSizeToPixels(ASourceSize, AResolutionUnit, AResolution, ASourceUnit)
+  else
+  case ASourceUnit of
+  cuCustom, cuPixel: Result:= PixelsToPhysicalSize(ASourceSize, AResolutionUnit, AResolution, ATargetUnit);
+  cuCentimeter,
+  cuMillimeter,
+  cuInch,
+  cuPica,
+  cuPoint: Result:= ASourceSize * (InchFactor[ATargetUnit] / InchFactor[ASourceUnit]);
+  else raise exception.Create('Unhandled conversion');
+  end;
+end;
+
+procedure PhysicalSizeConvert(ASourceUnit: TCSSUnit; var SizeX, SizeY: Single;
+                              ATargetUnit: TCSSUnit;
+                              const AResolution: TImageResolutionInfo);
+var
+  res: TImageResolutionInfo;
+begin
+  // already in expected unit
+  if ASourceUnit = ATargetUnit then exit;
+
+  res:= FixImageResolutionInfo(AResolution);
+  SizeX:= PhysicalSizeConvert(ASourceUnit, SizeX, ATargetUnit, res.ResolutionUnit, res.ResolutionX);
+  SizeY:= PhysicalSizeConvert(ASourceUnit, SizeY, ATargetUnit, res.ResolutionUnit, res.ResolutionY);
+end;
+
+procedure PhysicalSizeConvert(var APhysicalRect: TPhysicalRect; ATargetUnit: TCSSUnit;
+                              ABitmap: TCustomUniversalBitmap);
+var
+  res: TImageResolutionInfo;
+  tmpRect: TRectF;
+
+begin
+  // already in expected unit
+  if (APhysicalRect.PhysicalUnit = ATargetUnit) or (ABitmap = nil) then exit;
+
+  res:= FixImageResolutionInfo(ABitmap.ResolutionInfo);
+
+  with APhysicalRect do
+  begin
+    if APhysicalRect.PhysicalUnit = cuPercent then
+    begin
+      //Convert % to Pixel and then Pixel to TargetUnit
+      Top:= PixelsToPhysicalSize(Top * ABitmap.Height / 100, res.ResolutionUnit, res.ResolutionY, ATargetUnit);
+      Left:= PixelsToPhysicalSize(Left * ABitmap.Width / 100, res.ResolutionUnit, res.ResolutionX, ATargetUnit);
+      Bottom:= PixelsToPhysicalSize(Bottom * ABitmap.Height / 100, res.ResolutionUnit, res.ResolutionY, ATargetUnit);
+      Right:= PixelsToPhysicalSize(Right * ABitmap.Width / 100, res.ResolutionUnit, res.ResolutionX, ATargetUnit);
+    end
+    else
+    begin
+      if (ATargetUnit = cuPercent) then
+      begin
+        //Convert APhysicalRect to Pixel and then Pixel to %
+        tmpRect:= PhysicalSizeToPixels(APhysicalRect, ABitmap);
+        Top:= tmpRect.Top * 100 / ABitmap.Height;
+        Left:= tmpRect.Left * 100 / ABitmap.Width;
+        Bottom:= tmpRect.Bottom * 100 / ABitmap.Height;
+        Right:= tmpRect.Right * 100 / ABitmap.Width;
+      end
+      else
+      begin
+        Top:= PhysicalSizeConvert(PhysicalUnit, Top, ATargetUnit, res.ResolutionUnit, res.ResolutionY);
+        Left:= PhysicalSizeConvert(PhysicalUnit, Left, ATargetUnit, res.ResolutionUnit, res.ResolutionX);
+        Bottom:= PhysicalSizeConvert(PhysicalUnit, Bottom, ATargetUnit, res.ResolutionUnit, res.ResolutionY);
+        Right:= PhysicalSizeConvert(PhysicalUnit, Right, ATargetUnit, res.ResolutionUnit, res.ResolutionX);
+      end;
+    end;
+
+    PhysicalUnit:= ATargetUnit;
+  end;
+end;
+
 
 { TCSSUnitConverter }
 
@@ -139,6 +436,11 @@ begin
     FViewBoxWidthInUnit[u] := ConvertWidth(FViewBoxWidth, u, 0).value;
 end;
 
+procedure TCSSUnitConverter.SetFontEmHeight(AValue: TFloatWithCSSUnit);
+begin
+  FCurrentFontEmHeight := AValue;
+end;
+
 function TCSSUnitConverter.GetRootFontEmHeight: TFloatWithCSSUnit;
 begin
   result := FloatWithCSSUnit(12, cuPoint);
@@ -151,7 +453,7 @@ end;
 
 function TCSSUnitConverter.GetFontXHeight: TFloatWithCSSUnit;
 begin
-  result := FCurrentFontEmHeight;
+  result := FontEmHeight;
   result.value := result.value * 0.5; //approximation
 end;
 
@@ -565,6 +867,52 @@ function TCSSUnitConverter.GetConversionMatrix(AFromUnit, AToUnit: TCSSUnit): TA
 begin
   result := GetConversionMatrix(AFromUnit, AToUnit,
     FViewBoxWidthInUnit[AToUnit], FViewBoxHeightInUnit[AToUnit]);
+end;
+
+{ TBGRAImageUnitConverter }
+
+function TBGRAImageUnitConverter.GetDpiX: single;
+begin
+  result := FDpiX;
+end;
+
+function TBGRAImageUnitConverter.GetDpiY: single;
+begin
+  result := FDpiY;
+end;
+
+function TBGRAImageUnitConverter.GetFontEmHeight: TFloatWithCSSUnit;
+begin
+  if FBitmap is TBGRACustomBitmap then
+    result := FloatWithCSSUnit(TBGRACustomBitmap(FBitmap).FontHeight, cuPixel)
+  else
+    result := inherited GetFontEmHeight;
+end;
+
+function TBGRAImageUnitConverter.GetFontXHeight: TFloatWithCSSUnit;
+begin
+  if FBitmap is TBGRACustomBitmap then
+    result := FloatWithCSSUnit(TBGRACustomBitmap(FBitmap).TextSize('x').Width, cuPixel)
+  else
+    result := inherited GetFontXHeight;
+end;
+
+procedure TBGRAImageUnitConverter.SetFontEmHeight(AValue: TFloatWithCSSUnit);
+begin
+  raise EInvalidOpException.Create('Font size cannot be changed from the unit converter');
+end;
+
+constructor TBGRAImageUnitConverter.Create(ABitmap: TCustomUniversalBitmap);
+var
+  resolution: TImageResolutionInfo;
+begin
+  inherited Create;
+  FBitmap := ABitmap;
+  resolution := FixImageResolutionInfo(ABitmap.ResolutionInfo);
+  FDpiX := ConvertResolution(resolution.ResolutionX, resolution.ResolutionUnit, ruPixelsPerInch);
+  FDpiY := ConvertResolution(resolution.ResolutionY, resolution.ResolutionUnit, ruPixelsPerInch);
+  ViewBoxWidth := FloatWithCSSUnit(ABitmap.Width, cuPixel);
+  ViewBoxHeight := FloatWithCSSUnit(ABitmap.Height, cuPixel);
 end;
 
 initialization

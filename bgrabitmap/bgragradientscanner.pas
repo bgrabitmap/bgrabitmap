@@ -321,7 +321,27 @@ type
     constructor Create(c: TBGRAPixel);
   end;
 
-  { Scanner of random color }
+  { @abstract(Scanner of random color.)
+
+**Example filling a form with random pixels:**
+
+@image(../doc/img/randomscanner.png)
+
+```pascal
+uses ..., BGRABitmap, BGRAGradientScanner;
+
+procedure TForm1.FormPaint(Sender: TObject);
+var bmp: TBGRABitmap;
+  scan: TBGRARandomScanner;
+begin
+  bmp := TBGRABitmap.Create(ClientWidth, ClientHeight);
+  scan := TBGRARandomScanner.Create(False, 255);
+  bmp.Fill(scan);
+  scan.Free;
+  bmp.Draw(Canvas,0,0);
+  bmp.Free;
+end;
+```}
   TBGRARandomScanner = class(TBGRACustomScanner)
   private
     FOpacity: byte;
@@ -464,15 +484,15 @@ begin
   grRepeat:
     begin
       result := (APosition - AMinPos) mod delta;
-      if result < 0 then result += delta;
-      result += AMinPos;
+      if result < 0 then inc(result, delta);
+      inc(result, AMinPos);
     end;
   grReflect:
     begin
       result := (APosition - AMinPos) mod (delta+delta);
-      if result < 0 then result += delta+delta;
+      if result < 0 then inc(result, delta+delta);
       if result >= delta then result := delta+delta-1 - result;
-      result += AMinPos;
+      inc(result, AMinPos);
     end;
   else
     begin

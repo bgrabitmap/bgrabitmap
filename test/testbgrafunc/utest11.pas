@@ -36,7 +36,7 @@ constructor TTest11.Create(filter: string);
 begin
   inherited Create;
   Name := 'Antialiased lines and splines';
-  if filter <> '' then Name += ' with filter '+filter;
+  if filter <> '' then Name := Name + ' with filter '+filter;
   randomize;
   virtualScreen := nil;
   FFilter := filter;
@@ -70,7 +70,7 @@ begin
     virtualScreen.Fill(clForm);
     virtualScreen.PutImage(0,0,filtered,dmDrawWithTransparency);
     filtered.Free;
-    virtualscreen.Draw(Canvas,Left,Top,True);
+    virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
   end else
   if ffilter = 'Contour' then
   begin
@@ -82,13 +82,13 @@ begin
     filteredMask := mask.FilterContour;
     filteredMask.Draw(virtualScreen, 0, 0, true);
     filteredMask.Free;
-    virtualscreen.Draw(Canvas,Left,Top,True);
+    virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
   end else
   begin
     virtualScreen.Fill(BGRAWhite);
     virtualScreen.DrawPolyLineAntialias(virtualScreen.ComputeOpenedSpline(pts,ssCrossing),BGRA(0,0,0,128),(width+height)/80,True);
     virtualScreen.DrawPolyLineAntialias(pts,BGRA(0,0,0,128),(width+height)/800,True);
-    virtualscreen.Draw(Canvas,Left,Top,True);
+    virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
   end;
 end;
 

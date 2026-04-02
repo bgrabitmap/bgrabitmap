@@ -429,22 +429,22 @@ var
   begin
     Result := 'procedure ' + AFullname;
     if AParams <> '' then
-      Result += '(' + AParams + ')';
-    Result += ';';
+      Result := Result + '(' + AParams + ')';
+   Result := Result + ';';
     if AOverload then
-      Result += ' overload;';
+      Result := Result + ' overload;';
   end;
 
   function GetFunction(AFullname, AParams, AResultType: string; AOverload: boolean; AStatic: boolean = False): string;
   begin
     Result := 'function ' + AFullname;
     if AParams <> '' then
-      Result += '(' + AParams + ')';
-    Result += ': ' + AResultType + ';';
+      Result := result + '(' + AParams + ')';
+    Result := Result + ': ' + AResultType + ';';
     if AOverload then
-      Result += 'overload;';
+      Result := Result + 'overload;';
     if AStatic then
-      Result += 'static;';
+      Result := Result + 'static;';
   end;
 
   function Split(str: string): TStringArray;
@@ -484,12 +484,12 @@ var
       s := '';
       for i := 0 to Length(vn) - 1 do
       begin
-        s += 'A' + ColorspaceInfo[c1].Name + '.' + vn[i];
+        s := s + 'A' + ColorspaceInfo[c1].Name + '.' + vn[i];
         if i <> Length(vn) - 1 then
-          s += ',';
+          s := s + ',';
       end;
       if ad <> '' then
-        s += ', AAlpha';
+        s := s + ', AAlpha';
       ls := 'Result := T' + ColorspaceInfo[c2].Name + '.New(' + s + ');';
       AddProcedureImp(h, ls);
     end;
@@ -540,8 +540,8 @@ var
       begin
         cs1 := bp[i - 1];
         cs2 := bp[i];
-        s += GetConversionFunction(cs1,cs2) + '(';
-        lf += ')';
+        s := s + GetConversionFunction(cs1,cs2) + '(';
+        lf := lf + ')';
       end;
 
       needRefPoint := NeedXYZReferenceWhite(c1,c2);
@@ -577,7 +577,7 @@ var
           fn := GetConversionFunction(cs1,cs2);
           bb := NeedXYZReferenceWhite(cs1, cs2);
           if bb then
-            ls += ',AReferenceWhite';
+            ls := ls + ',AReferenceWhite';
           ls := fn + '(' + ls + ')';
         end;
         ls := 'Result := ' + ls + ';';
@@ -896,7 +896,7 @@ var
       if ColorspaceInfo[Colorspace].NeedRefWhite then flagStr := 'cfMovableReferenceWhite' else
       if Colorspace >= csXYZA then flagStr := 'cfReferenceWhiteIndependent' else
         flagStr := 'cfFixedReferenceWhite';
-      if ColorspaceInfo[Colorspace].HasImaginary then flagStr += ',cfHasImaginaryColors';
+      if ColorspaceInfo[Colorspace].HasImaginary then flagStr := flagStr + ',cfHasImaginaryColors';
       AddProcedureImp('class function '+ColorTypeName+'Colorspace.GetFlags: TColorspaceFlags;',
                       'result := [' + flagStr + '];');
 
@@ -949,9 +949,9 @@ var
       s := '';
       for i := 0 to Length(vsfm) - 1 do
       begin
-        s += 'A'+vsfm[i];
+        s := s + 'A'+vsfm[i];
         if i <> Length(vsfm) - 1 then
-          s += ',';
+           s := s + ',';
       end;
       AddNew(s, ov);
 
@@ -960,9 +960,9 @@ var
         s := '';
         for i := 0 to Length(vsfm) - 2 do
         begin
-          s += 'A'+vsfm[i];
+          s := s + 'A'+vsfm[i];
           if i <> Length(vsfm) - 2 then
-            s += ',';
+             s := s + ',';
         end;
         AddNew(s, ov);
       end;

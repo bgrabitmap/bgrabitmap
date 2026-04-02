@@ -19,6 +19,7 @@ type
   IBGLTexture = BGRAOpenGLType.IBGLTexture;
   IBGLFont = BGRAOpenGLType.IBGLFont;
   IBGLRenderedFont = BGRAFontGL.IBGLRenderedFont;
+  TOpenGLRepeatMode = BGRAOpenGLType.TOpenGLRepeatMode;
   TOpenGLResampleFilter = BGRAOpenGLType.TOpenGLResampleFilter;
   TOpenGLBlendMode = BGRAOpenGLType.TOpenGLBlendMode;
   TBGLPath = BGRACanvasGL.TBGLPath;
@@ -48,7 +49,40 @@ type
 
   { @abstract(Frame buffer in OpenGL.)
 
-    A frame buffer is a texture that can be used as a drawing surface in OpenGL. }
+    A frame buffer is a texture that can be used as a drawing surface in OpenGL.
+
+**Example of drawing on a framebuffer and then drawing it on the OpenGL control:**
+
+```pascal
+uses ..., BGRABitmapTypes, BGRAOpenGL;
+
+procedure TForm1.OpenGLControlPaint(Sender: TObject);
+var
+  mousePos: TPoint;
+  buf: TBGLFrameBuffer;
+begin
+  // Draw Background
+  BGLViewPort(OpenGLControl.Width, OpenGLControl.Height, BGRAWhite);
+  // Create framebuffer
+  buf := TBGLFrameBuffer.Create(256,256);
+  // Use it
+  BGLCanvas.ActiveFrameBuffer := buf;
+
+  BGLCanvas.Fill(CSSYellow);
+  BGLCanvas.Line(0,0,128,128, BGRABlack);
+  mousePos := ScreenToClient(Mouse.CursorPos);
+  BGLCanvas.FillRect(mousePos.x - 50, mousePos.y - 50, mousePos.x + 50, mousePos.y + 50, CSSRed, False);
+
+  // Render framebuffer on the control
+  BGLCanvas.ActiveFrameBuffer := nil;
+  BGLCanvas.PutImage(0,0, buf.Texture);
+  // Free framebuffer
+  buf.Free;
+
+  // Update
+  OpenGLControl.SwapBuffers;
+end;
+```}
   TBGLFrameBuffer = class(TBGLCustomFrameBuffer)
   protected
     FHeight: integer;
@@ -73,6 +107,9 @@ type
   end;
 
 const
+  ormRepeat = BGRAOpenGLType.ormRepeat;
+  ormMirroredRepeat = BGRAOpenGLType.ormMirroredRepeat;
+  ormClamp = BGRAOpenGLType.ormClamp;
   orfBox = BGRAOpenGLType.orfBox;
   orfLinear = BGRAOpenGLType.orfLinear;
   obmNormal = BGRAOpenGLType.obmNormal;
@@ -90,9 +127,12 @@ const
 
 type
   { RGBA bitmap that can be used with OpenGL by converting it into a texture }
+
+  { TBGLBitmap }
+
   TBGLBitmap = class(TBGLCustomBitmap)
   protected
-    function GetOpenGLMaxTexSize: integer; override;
+    class function GetOpenGLMaxTexSize: integer; override;
   public
     function NewBitmap: TBGLBitmap; overload; override;
     function NewBitmap(AWidth, AHeight: integer): TBGLBitmap; overload; override;
@@ -106,7 +146,11 @@ type
     function GetUnique: TBGLBitmap; override;
     function Duplicate(DuplicateProperties: Boolean = False): TBGLBitmap; overload; override;
     function Duplicate(DuplicateProperties, DuplicateXorMask: Boolean) : TBGLBitmap; overload; override;
-    function GetPart(const ARect: TRect; CopyProperties: Boolean=False): TBGLBitmap; override;
+
+    function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGLBitmap; override;
+    function GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean=False;
+                     ACopyProperties: Boolean=False; ATile: Boolean=True): TBGLBitmap; overload; override;
+
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
                 AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGLBitmap; override;
     function Resample(newWidth, newHeight: integer;
@@ -151,7 +195,7 @@ function BGLTexture(AFPImage: TFPCustomImage): IBGLTexture; overload;
 function BGLTexture(ABitmap: TBitmap): IBGLTexture; overload;
 function BGLTexture(AWidth, AHeight: integer; Color: TColor): IBGLTexture; overload;
 function BGLTexture(AWidth, AHeight: integer; Color: TBGRAPixel): IBGLTexture; overload;
-function BGLTexture(AFilenameUTF8: string): IBGLTexture; overload;
+function BGLTexture(AFilenameUTF8: string; ARepeatX: TOpenGLRepeatMode = ormRepeat; ARepeatY: TOpenGLRepeatMode = ormRepeat): IBGLTexture; overload;
 function BGLTexture(AFilenameUTF8: string; AWidth, AHeight: integer; AResampleFilter: TResampleFilter = rfBox): IBGLTexture; overload;
 function BGLTexture(AStream: TStream): IBGLTexture; overload;
 
@@ -193,6 +237,8 @@ type
     destructor Destroy; override;
   end;
 
+function GetOpenGLVersion: integer; // major * 100 + minor
+
 implementation
 
 uses BGRABlurGL, BGRATransform{$IFDEF BGRABITMAP_USE_LCL}, BGRAText, BGRATextFX{$ENDIF};
@@ -212,6 +258,42 @@ begin
     opTriangles: result := GL_TRIANGLES;
   else
     raise exception.Create('Unknown primitive type');
+  end;
+end;
+
+var
+  OpenGLVersion: integer = -1; // major * 100 + minor
+
+function GetOpenGLVersion: integer;
+var
+  versionStr, minorStr: string;
+  indexPoint, indexPoint2, major, minor, err: integer;
+begin
+  if OpenGLVersion = -1 then
+  begin
+    versionStr := glGetString(GL_VERSION);
+    indexPoint := versionStr.IndexOf('.');
+    if indexPoint <> -1 then
+    begin
+      minorStr := versionStr.Substring(indexPoint + 1);
+      indexPoint2 := minorStr.IndexOf('.');
+      if indexPoint2 = -1 then indexPoint2 := length(minorStr);
+      val(minorStr.Substring(0, indexPoint2), minor, err);
+      if minor > 99 then minor := 99;
+      val(versionStr.Substring(0, indexPoint), major, err);
+    end else
+      val(versionStr, major, err);
+    OpenGLVersion := major * 100 + minor;
+  end;
+  exit(OpenGLVersion);
+end;
+
+procedure NeedOpenGL3_0;
+begin
+  if glGenFramebuffers = nil then
+  begin
+    if not Load_GL_version_3_0 then
+      raise exception.Create('Cannot load OpenGL 3.0');
   end;
 end;
 
@@ -251,15 +333,20 @@ type
   protected
     FFlipX,FFlipY: Boolean;
 
-    function GetOpenGLMaxTexSize: integer; override;
+    class function GetOpenGLMaxTexSize: integer; override;
+    class function GetNonPowerOfTwoSizeSupport: boolean; override;
     function CreateOpenGLTexture(ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer; RGBAOrder: boolean): TBGLTextureHandle; override;
     procedure UpdateOpenGLTexture(ATexture: TBGLTextureHandle; ARGBAData: PLongWord; AAllocatedWidth, AAllocatedHeight, AActualWidth,AActualHeight: integer; RGBAOrder: boolean); override;
     class function SupportsBGRAOrder: boolean; override;
     procedure SetOpenGLTextureSize(ATexture: TBGLTextureHandle; AAllocatedWidth, AAllocatedHeight, AActualWidth, AActualHeight: integer); override;
+    function GetOpenGLAllocatedSize(ATexture: TBGLTextureHandle): TSize; override;
     procedure ComputeOpenGLFramesCoord(ATexture: TBGLTextureHandle; FramesX: Integer=1; FramesY: Integer=1); override;
     function GetOpenGLFrameCount(ATexture: TBGLTextureHandle): integer; override;
     function GetEmptyTexture: TBGLTextureHandle; override;
     procedure FreeOpenGLTexture(ATexture: TBGLTextureHandle); override;
+
+    function GetRepeatX: TOpenGLRepeatMode; override;
+    function GetRepeatY: TOpenGLRepeatMode; override;
     procedure UpdateGLResampleFilter(ATexture: TBGLTextureHandle; AFilter: TOpenGLResampleFilter); override;
 
     procedure InternalSetColor(const AColor: TBGRAPixel);
@@ -282,6 +369,7 @@ type
   public
     procedure ToggleFlipX; override;
     procedure ToggleFlipY; override;
+    procedure SetRepetition(AValueX, AValueY: TOpenGLRepeatMode); override;
     procedure Bind(ATextureNumber: integer); override;
     function FilterBlurMotion(ARadius: single; ABlurType: TRadialBlurType; ADirection: TPointF): IBGLTexture; override;
     function FilterBlurRadial(ARadius: single; ABlurType: TRadialBlurType): IBGLTexture; override;
@@ -293,6 +381,7 @@ type
     ID: GLuint;
     AllocatedWidth,AllocatedHeight,ActualWidth,ActualHeight: integer;
     FramesCoord: array of array[0..3] of TPointF;
+    RepeatX,RepeatY: TOpenGLRepeatMode;
   end;
 
   { Canvas for OpenGL }
@@ -445,8 +534,7 @@ end;
 constructor TBGLFrameBuffer.Create(AWidth, AHeight: integer);
 var frameBufferStatus: GLenum;
 begin
-  if not Load_GL_version_3_0 then
-      raise exception.Create('Cannot load OpenGL 3.0');
+  NeedOpenGL3_0;
 
   FWidth := AWidth;
   FHeight := AHeight;
@@ -556,9 +644,12 @@ begin
   result := TBGLTexture.Create(AWidth,AHeight,Color);
 end;
 
-function BGLTexture(AFilenameUTF8: string): IBGLTexture;
+function BGLTexture(AFilenameUTF8: string; ARepeatX: TOpenGLRepeatMode;
+  ARepeatY: TOpenGLRepeatMode): IBGLTexture;
 begin
   result := TBGLTexture.Create(AFilenameUTF8);
+  if (ARepeatX <> ormRepeat) or (ARepeatY <> ormRepeat) then
+    result.SetRepetition(ARepeatX, ARepeatY);
 end;
 
 function BGLTexture(AFilenameUTF8: string; AWidth, AHeight: integer; AResampleFilter: TResampleFilter): IBGLTexture;
@@ -1298,10 +1389,15 @@ end;
 
 { TBGLTexture }
 
-function TBGLTexture.GetOpenGLMaxTexSize: integer;
+class function TBGLTexture.GetOpenGLMaxTexSize: integer;
 begin
   result := 0;
   glGetIntegerv( GL_MAX_TEXTURE_SIZE, @result );
+end;
+
+class function TBGLTexture.GetNonPowerOfTwoSizeSupport: boolean;
+begin
+  result := GetOpenGLVersion >= 200;
 end;
 
 function TBGLTexture.CreateOpenGLTexture(ARGBAData: PLongWord;
@@ -1316,11 +1412,15 @@ begin
   p^.AllocatedHeight := AAllocatedHeight;
   p^.ActualWidth := AActualWidth;
   p^.ActualHeight := AActualHeight;
+  p^.RepeatX := ormRepeat;
+  p^.RepeatY := ormRepeat;
 
   glGenTextures( 1, @p^.ID );
   glBindTexture( GL_TEXTURE_2D, p^.ID );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, AAllocatedWidth, AAllocatedHeight, 0, providedFormat, GL_UNSIGNED_BYTE, ARGBAData );
   result := p;
 end;
@@ -1351,6 +1451,13 @@ begin
     AllocatedWidth := AAllocatedWidth;
     AllocatedHeight := AAllocatedHeight;
   end;
+end;
+
+function TBGLTexture.GetOpenGLAllocatedSize(ATexture: TBGLTextureHandle): TSize;
+begin
+  if ATexture = nil then exit(Size(0, 0));
+  with TOpenGLTexture(ATexture^) do
+    result := Size(AllocatedWidth, AllocatedHeight);
 end;
 
 procedure TBGLTexture.ComputeOpenGLFramesCoord(ATexture: TBGLTextureHandle;
@@ -1438,18 +1545,46 @@ begin
   Dispose(POpenGLTexture(ATexture));
 end;
 
+function TBGLTexture.GetRepeatX: TOpenGLRepeatMode;
+begin
+  result := TOpenGLTexture(FOpenGLTexture^).RepeatX;
+end;
+
+function TBGLTexture.GetRepeatY: TOpenGLRepeatMode;
+begin
+  result := TOpenGLTexture(FOpenGLTexture^).RepeatY;
+end;
+
+procedure TBGLTexture.SetRepetition(AValueX, AValueY: TOpenGLRepeatMode);
+  function RepeatModeToGL(AValue: TOpenGLRepeatMode): integer;
+  begin
+    case AValue of
+      ormMirroredRepeat: result := GL_MIRRORED_REPEAT;
+      ormClamp: result := GL_CLAMP_TO_EDGE;
+      else
+        result := GL_REPEAT;
+    end;
+  end;
+begin
+  TOpenGLTexture(FOpenGLTexture^).RepeatX := AValueX;
+  TOpenGLTexture(FOpenGLTexture^).RepeatY := AValueY;
+  glBindTexture( GL_TEXTURE_2D, TOpenGLTexture(FOpenGLTexture^).ID );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, RepeatModeToGL(AValueX) );
+  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, RepeatModeToGL(AValueY) );
+end;
+
 procedure TBGLTexture.UpdateGLResampleFilter(ATexture: TBGLTextureHandle;
   AFilter: TOpenGLResampleFilter);
 begin
   glBindTexture( GL_TEXTURE_2D, TOpenGLTexture(ATexture^).ID );
   if AFilter = orfLinear then
   begin
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
   end else
   begin
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
   end;
 end;
 
@@ -1727,10 +1862,9 @@ end;
 
 { TBGLBitmap }
 
-function TBGLBitmap.GetOpenGLMaxTexSize: integer;
+class function TBGLBitmap.GetOpenGLMaxTexSize: integer;
 begin
-  result := 0;
-  glGetIntegerv( GL_MAX_TEXTURE_SIZE, @result );
+  result := TBGLTexture.GetOpenGLMaxTexSize;
 end;
 
 function TBGLBitmap.NewBitmap: TBGLBitmap;
@@ -1796,9 +1930,15 @@ begin
   Result:=inherited Duplicate(DuplicateProperties, DuplicateXorMask) as TBGLBitmap;
 end;
 
-function TBGLBitmap.GetPart(const ARect: TRect; CopyProperties: Boolean=False): TBGLBitmap;
+function TBGLBitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGLBitmap;
 begin
-  Result:=inherited GetPart(ARect, CopyProperties) as TBGLBitmap;
+  Result:=inherited GetPart(ARect, ACopyProperties, ATile) as TBGLBitmap;
+end;
+
+function TBGLBitmap.GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean;
+                            ACopyProperties: Boolean; ATile: Boolean): TBGLBitmap;
+begin
+  Result:=inherited GetPart(ARect, PreserveMoreData, ACopyProperties, ATile) as TBGLBitmap;
 end;
 
 function TBGLBitmap.CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor,

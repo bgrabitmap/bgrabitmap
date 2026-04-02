@@ -17,14 +17,16 @@ type
     FLossless: boolean;
     FQualityPercent: Single;
     procedure InternalWrite(Stream: TStream; Img: TFPCustomImage); override;
+
   public
     constructor Create; override;
+
+  published
     {** Defines the quality when saving the file, 100 being the maximum but not
         necessarily lossless }
     property QualityPercent: single read FQualityPercent write FQualityPercent;
     {** If Lossless is set to True, the _QualityPercent_ property is ignored }
     property Lossless: boolean read FLossless write FLossless;
-
   end;
 
 implementation
@@ -107,8 +109,7 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageWriter[ifWebP] := TBGRAWriterWebP;
+  BGRARegisterImageWriter(ifWebP, TBGRAWriterWebP, True, 'WebP Image Format', 'webp');
 
 finalization
 

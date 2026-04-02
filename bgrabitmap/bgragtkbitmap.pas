@@ -17,15 +17,17 @@ type
   TBGRAGtkBitmap = class(TBGRALCLBitmap)
   private
     FPixBuf: Pointer;
-    procedure DrawTransparent(ACanvas: TCanvas; Rect: TRect);
+    procedure DrawTransparent(ACanvas: TCanvas; ARect: TRect);
     procedure DrawOpaque(ACanvas: TCanvas; ARect: TRect);
   protected
     procedure ReallocData; override;
     procedure FreeData; override;
   public
-    procedure DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
+    procedure DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
       AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer);
       override;
+    procedure DataDrawTransparent(ACanvas: TCanvas; ARect: TRect; ADataFirstRow: Pointer;
+      ARowStride: integer; AWidth, AHeight: integer); overload;
     procedure DrawPart(ARect: TRect; ACanvas: TCanvas; x, y: integer; Opaque: boolean); override;
     procedure Draw(ACanvas: TCanvas; x, y: integer; Opaque: boolean = True); override;
     procedure Draw(ACanvas: TCanvas; Rect: TRect; Opaque: boolean = True); override;
@@ -38,8 +40,11 @@ type
 
 implementation
 
-uses BGRABitmapTypes, BGRADefaultBitmap, BGRAFilterScanner, LCLType,
+uses math, BGRABitmapTypes, BGRADefaultBitmap, BGRAFilterScanner, LCLType,
   LCLIntf, IntfGraphics,
+  {$IFDEF LCLgtk3}
+  LazGdk3, Gtk3Objects, LazGdkPixbuf2, LazGObject2, LazGLib2, Lazcairo1,
+  {$ENDIF}
   {$IFDEF LCLgtk2}
   gdk2, gtk2def, gdk2pixbuf, glib2,
   {$ENDIF}
@@ -50,7 +55,7 @@ uses BGRABitmapTypes, BGRADefaultBitmap, BGRAFilterScanner, LCLType,
 
 procedure TBGRAGtkBitmap.ReallocData;
 begin
-  {$IFDEF LCLgtk2}
+  {$IFNDEF LCLgtk}
   If FPixBuf <> nil then g_object_unref(FPixBuf);
   {$ELSE}
   If FPixBuf <> nil then gdk_pixbuf_unref(FPixBuf);
@@ -68,7 +73,7 @@ end;
 
 procedure TBGRAGtkBitmap.FreeData;
 begin
-  {$IFDEF LCLgtk2}
+  {$IFNDEF LCLgtk}
   If FPixBuf <> nil then g_object_unref(FPixBuf);
   {$ELSE}
   If FPixBuf <> nil then gdk_pixbuf_unref(FPixBuf);
@@ -77,36 +82,60 @@ begin
   inherited FreeData;
 end;
 
-procedure TBGRAGtkBitmap.DrawTransparent(ACanvas: TCanvas; Rect: TRect);
+procedure TBGRAGtkBitmap.DrawTransparent(ACanvas: TCanvas; ARect: TRect);
 var DrawWidth,DrawHeight: integer;
     stretched: TBGRAGtkBitmap;
     P: TPoint;
+    {$IFDEF LCLgtk3}
+    cr: Pcairo_t;
+    {$ENDIF}
 begin
-  DrawWidth := Rect.Right-Rect.Left;
-  DrawHeight := Rect.Bottom-Rect.Top;
-  if (Height = 0) or (Width = 0) or (DrawWidth <= 0) or (DrawHeight <= 0) then
+  DrawWidth := abs(ARect.Right-ARect.Left);
+  DrawHeight := abs(ARect.Bottom-ARect.Top);
+  if (Height = 0) or (Width = 0) or (DrawWidth = 0) or (DrawHeight = 0)
+     or (ACanvas.Handle = 0) then
     exit;
 
+  {$IFNDEF LCLgtk3}
   if (DrawWidth <> Width) or (DrawHeight <> Height) then
   begin
     stretched := Resample(DrawWidth,DrawHeight,rmSimpleStretch) as TBGRAGtkBitmap;
-    stretched.DrawTransparent(ACanvas,Rect);
-    stretched.Free;
+    try
+      stretched.DrawTransparent(ACanvas,ARect);
+    finally
+      stretched.Free;
+    end;
     exit;
   end;
+  {$ENDIF}
 
   LoadFromBitmapIfNeeded;
 
   {$PUSH}{$WARNINGS OFF}If not TBGRAPixel_RGBAOrder then SwapRedBlue;{$POP}
-  
-  P := Rect.TopLeft;
+
+  {$IFDEF LCLgtk3}
+  P := ARect.TopLeft;
+  LPToDP(ACanvas.Handle, P, 1);
+  cr := TGtk3DeviceContext(ACanvas.Handle).pcr;
+  cairo_save(cr);
+  cairo_translate(cr, P.X, P.Y);
+  cairo_scale(cr,
+    (ARect.Right - ARect.Left) / Width,
+    (ARect.Bottom - ARect.Top) / Height);
+  gdk_cairo_set_source_pixbuf(cr, FPixBuf, 0, 0);
+  cairo_paint(cr);
+  cairo_restore(cr);
+  {$ELSE}
+  P := Point(min(ARect.Left,ARect.Right), min(ARect.Top,ARect.Bottom));
   LPToDP(ACanvas.Handle, P, 1);
   gdk_pixbuf_render_to_drawable(FPixBuf,
     TGtkDeviceContext(ACanvas.Handle).Drawable,
     TGtkDeviceContext(ACanvas.Handle).GC,
     0,0, P.X,P.Y,
     Width,Height,
-    GDK_RGB_DITHER_NORMAL,0,0);   
+    //GDK_PIXBUF_ALPHA_FULL, 1,
+    GDK_RGB_DITHER_NORMAL,0,0);
+  {$ENDIF}
 
   {$PUSH}{$WARNINGS OFF}If not TBGRAPixel_RGBAOrder then SwapRedBlue;{$POP}
 end;
@@ -116,35 +145,229 @@ begin
   DataDrawOpaque(ACanvas,ARect,Data,LineOrder,Width,Height);
 end;
 
-procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; Rect: TRect;
+procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
   AData: Pointer; ALineOrder: TRawImageLineOrder; AWidth, AHeight: integer);
 var
-  TempGtk: TBGRAGtkBitmap;
-  temp: integer;
+  rowStride: Integer;
+  firstRow: Pointer;
 begin
-  if (AHeight = 0) or (AWidth = 0) or (Rect.Left = Rect.Right) or
-    (Rect.Top = Rect.Bottom) then
-    exit;
-
-  if Rect.Right < Rect.Left then
+  if ALineOrder = riloTopToBottom then
   begin
-    temp := Rect.Left;
-    Rect.Left := Rect.Right;
-    Rect.Right := temp;
+    rowStride := AWidth*sizeof(TBGRAPixel);
+    firstRow := AData;
+  end
+  else
+  begin
+    rowStride := -AWidth*sizeof(TBGRAPixel);
+    firstRow := PBGRAPixel(AData) + (AWidth*(AHeight-1));
   end;
 
-  if Rect.Bottom < Rect.Top then
-  begin
-    temp := Rect.Top;
-    Rect.Top := Rect.Bottom;
-    Rect.Bottom := temp;
-  end;
+  DataDrawTransparent(ACanvas, ARect, firstRow, rowStride, AWidth, AHeight);
+end;
 
-  TempGtk := TBGRAGtkBitmap.Create(AWidth, AHeight);
-  Move(AData^,TempGtk.Data^,TempGtk.NbPixels*sizeof(TBGRAPixel));
-  if ALineOrder <> TempGtk.LineOrder then TempGtk.VerticalFlip;
-  TempGtk.DrawTransparent(ACanvas,Rect);
-  TempGtk.Free;
+procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
+  ADataFirstRow: Pointer; ARowStride: integer; AWidth, AHeight: integer);
+
+  {$IFDEF LCLgtk3}
+  procedure DrawGtk3;
+
+    function IsDataOpaque: boolean;
+    var
+      curRow: PByte;
+      y, x: Integer;
+      p: PBGRAPixel;
+    begin
+      curRow := PByte(ADataFirstRow);
+      for y := AHeight-1 downto 0 do
+      begin
+        p := PBGRAPixel(curRow);
+        for x := AWidth-1 downto 0 do
+        begin
+          if p^.alpha <> 255 then exit(false);
+          inc(p);
+        end;
+        curRow += ARowStride;
+      end;
+      exit(true);
+    end;
+
+    function PremultiplyByAlpha: Pointer;
+    var
+      curRow: PByte;
+      y, x: Integer;
+      p, pDest: PBGRAPixel;
+      alpha256: Byte;
+    begin
+      getmem(result, AWidth*AHeight*sizeof(TBGRAPixel));
+      pDest := PBGRAPixel(result);
+
+      curRow := PByte(ADataFirstRow);
+      for y := AHeight-1 downto 0 do
+      begin
+        p := PBGRAPixel(curRow);
+        for x := AWidth-1 downto 0 do
+        begin
+          alpha256 := p^.alpha + byte(p^.alpha >= 128);
+          pDest^.red := (p^.red * alpha256 + 128) shr 8;
+          pDest^.green := (p^.green * alpha256 + 128) shr 8;
+          pDest^.blue := (p^.blue * alpha256 + 128) shr 8;
+          pDest^.alpha := p^.alpha;
+          inc(p);
+        end;
+        curRow += ARowStride;
+      end;
+    end;
+
+  var
+    temp: integer;
+    dataStart, premultipliedData: Pointer;
+    cr: Pcairo_t;
+    surface: Pcairo_surface_t;
+  begin
+    if IsDataOpaque then
+    begin
+      // avoid premultiplication by alpha if possible
+      DataDrawOpaque(ACanvas, ARect, ADataFirstRow, ARowStride, AWidth, AHeight);
+      exit;
+    end;
+
+    LPtoDP(ACanvas.Handle, ARect, 2);
+
+    if ARowStride < 0 then
+    begin
+      dataStart := PByte(ADataFirstRow) + ARowStride * (AHeight - 1);
+      temp := ARect.Top;
+      ARect.Top := ARect.Bottom;
+      ARect.Bottom := temp;
+    end else
+      dataStart := ADataFirstRow;
+
+    premultipliedData := PremultiplyByAlpha;
+
+    surface := cairo_image_surface_create_for_data(PByte(premultipliedData),
+      CAIRO_FORMAT_ARGB32, AWidth, AHeight, Abs(ARowStride));
+    if cairo_surface_status(surface) <> CAIRO_STATUS_SUCCESS then
+    begin
+      freemem(premultipliedData);
+      raise Exception.Create('Error creating Cairo surface from pixel data');
+    end;
+
+    cr := TGtk3DeviceContext(ACanvas.Handle).pcr;
+    cairo_save(cr);
+    cairo_translate(cr, ARect.Left, ARect.Top);
+    cairo_scale(cr,
+      (ARect.Right - ARect.Left) / AWidth,
+      (ARect.Bottom - ARect.Top) / AHeight);
+    cairo_set_source_surface(cr, surface, 0, 0);
+    cairo_paint(cr);
+    cairo_restore(cr);
+
+    cairo_surface_destroy(surface);
+    freemem(premultipliedData);
+    ACanvas.Changed;
+  end;
+  {$ELSE}
+  procedure DrawGtk2;
+
+    procedure DataSwapRedBlue;
+    var
+      y: Integer;
+      p: PByte;
+    begin
+      p := PByte(ADataFirstRow);
+      for y := 0 to AHeight-1 do
+      begin
+        TBGRAFilterScannerSwapRedBlue.ComputeFilterAt(PBGRAPixel(p),PBGRAPixel(p),AWidth,False);
+        inc(p, ARowStride);
+      end;
+    end;
+
+    procedure DrawStretchedSoftware;
+    var
+      dataStart: Pointer;
+      ptr: TBGRAPtrBitmap;
+      stretched: TBGRACustomBitmap;
+    begin
+      if ARowStride < 0 then
+        dataStart := PByte(ADataFirstRow) + ARowStride*(Height-1)
+      else
+        dataStart := ADataFirstRow;
+
+      if ARowStride <> abs(AWidth*sizeof(TBGRAPixel)) then
+        raise exception.Create('DataDrawTransparent not supported when using custom row stride and resample');
+
+      ptr := TBGRAPtrBitmap.Create(AWidth,AHeight,dataStart);
+      if ARowStride < 0 then
+        ptr.LineOrder := riloBottomToTop
+      else
+        ptr.LineOrder := riloTopToBottom;
+      stretched := ptr.Resample(ARect.Right-ARect.Left,ARect.Bottom-ARect.Top, rmSimpleStretch);
+      ptr.free;
+      try
+        DataDrawTransparent(ACanvas,ARect,stretched.Data,stretched.LineOrder,stretched.Width,stretched.Height);
+      finally
+        stretched.Free;
+      end;
+    end;
+
+  var
+    temp: integer;
+    tempPixbuf: PGdkPixbuf;
+  begin
+    {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
+
+    if ARect.Right < ARect.Left then
+    begin
+      temp := ARect.Left;
+      ARect.Left := ARect.Right;
+      ARect.Right := temp;
+    end;
+
+    if ARect.Bottom < ARect.Top then
+    begin
+      temp := ARect.Top;
+      ARect.Top := ARect.Bottom;
+      ARect.Bottom := temp;
+    end;
+
+    if (AWidth <> ARect.Right-ARect.Left) or (AHeight <> ARect.Bottom-ARect.Top) then
+      DrawStretchedSoftware
+    else
+    begin
+      LPtoDP(ACanvas.Handle, ARect, 2);
+      tempPixbuf := gdk_pixbuf_new_from_data(pguchar(ADataFirstRow),
+        GDK_COLORSPACE_RGB, True, 8, AWidth, AHeight, AWidth*Sizeof(TBGRAPixel), nil, nil);
+      if tempPixbuf = nil then
+        raise Exception.Create('Error initializing Pixbuf');
+
+      gdk_pixbuf_render_to_drawable(tempPixbuf,
+        TGtkDeviceContext(ACanvas.Handle).Drawable,
+        TGtkDeviceContext(ACanvas.Handle).GC,
+        0,0, ARect.Left,ARect.Top,
+        AWidth,AHeight,
+        //GDK_PIXBUF_ALPHA_FULL, 1,
+        GDK_RGB_DITHER_NORMAL,0,0);
+
+      {$IFNDEF LCLgtk}
+      If tempPixbuf <> nil then g_object_unref(tempPixbuf);
+      {$ELSE}
+      If tempPixbuf <> nil then gdk_pixbuf_unref(tempPixbuf);
+      {$ENDIF}
+      ACanvas.Changed;
+    end;
+    {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
+  end;
+  {$ENDIF}
+
+begin
+  if (AHeight = 0) or (AWidth = 0) or (ARect.Left = ARect.Right) or
+    (ARect.Top = ARect.Bottom) or (ACanvas.Handle = 0) then exit;
+
+  {$IFDEF LCLgtk3}
+  DrawGtk3;
+  {$ELSE}
+  DrawGtk2;
+  {$ENDIF}
 end;
 
 procedure TBGRAGtkBitmap.DrawPart(ARect: TRect; ACanvas: TCanvas; x,
@@ -209,82 +432,127 @@ end;
 procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
   ADataFirstRow: Pointer; ARowStride: integer; AWidth, AHeight: integer);
 
-  procedure DataSwapRedBlue;
+  {$IFDEF LCLgtk3}
+  procedure DrawGtk3;
   var
-    y: Integer;
-    p: PByte;
-  begin
-    p := PByte(ADataFirstRow);
-    for y := 0 to AHeight-1 do
-    begin
-      TBGRAFilterScannerSwapRedBlue.ComputeFilterAt(PBGRAPixel(p),PBGRAPixel(p),AWidth,False);
-      inc(p, ARowStride);
-    end;
-  end;
-
-  procedure DrawStretched;
-  var
+    temp: integer;
     dataStart: Pointer;
-    ptr: TBGRAPtrBitmap;
-    stretched: TBGRACustomBitmap;
+    cr: Pcairo_t;
+    surface: Pcairo_surface_t;
   begin
+    LPtoDP(ACanvas.Handle, ARect, 2);
+
     if ARowStride < 0 then
-      dataStart := PByte(ADataFirstRow) + ARowStride*(Height-1)
-    else
+    begin
+      dataStart := PByte(ADataFirstRow) + ARowStride * (AHeight - 1);
+      temp := ARect.Top;
+      ARect.Top := ARect.Bottom;
+      ARect.Bottom := temp;
+    end else
       dataStart := ADataFirstRow;
 
-    if ARowStride <> abs(AWidth*sizeof(TBGRAPixel)) then
-      raise exception.Create('DataDrawOpaque not supported when using custom row stride and resample');
+    surface := cairo_image_surface_create_for_data(PByte(dataStart),
+      CAIRO_FORMAT_RGB24, AWidth, AHeight, Abs(ARowStride));
+    if cairo_surface_status(surface) <> CAIRO_STATUS_SUCCESS then
+      raise Exception.Create('Error creating Cairo surface from pixel data');
 
-    ptr := TBGRAPtrBitmap.Create(AWidth,AHeight,dataStart);
-    if ARowStride < 0 then
-      ptr.LineOrder := riloBottomToTop
-    else
-      ptr.LineOrder := riloTopToBottom;
-    stretched := ptr.Resample(ARect.Right-ARect.Left,ARect.Bottom-ARect.Top);
-    ptr.free;
-    DataDrawOpaque(ACanvas,ARect,stretched.Data,stretched.LineOrder,stretched.Width,stretched.Height);
-    stretched.Free;
+    cr := TGtk3DeviceContext(ACanvas.Handle).pcr;
+    cairo_save(cr);
+    cairo_translate(cr, ARect.Left, ARect.Top);
+    cairo_scale(cr,
+      (ARect.Right - ARect.Left) / AWidth,
+      (ARect.Bottom - ARect.Top) / AHeight);
+    cairo_set_source_surface(cr, surface, 0, 0);
+    cairo_paint(cr);
+    cairo_restore(cr);
+
+    cairo_surface_destroy(surface);
+    ACanvas.Changed;
   end;
+  {$ELSE}
+  procedure DrawGtk2;
 
-var
-  temp: integer;
-  pos: TPoint;
-  dest: HDC;
+    procedure DataSwapRedBlue;
+    var
+      y: Integer;
+      p: PByte;
+    begin
+      p := PByte(ADataFirstRow);
+      for y := 0 to AHeight-1 do
+      begin
+        TBGRAFilterScannerSwapRedBlue.ComputeFilterAt(PBGRAPixel(p),PBGRAPixel(p),AWidth,False);
+        inc(p, ARowStride);
+      end;
+    end;
+
+    procedure DrawStretchedSoftware;
+    var
+      dataStart: Pointer;
+      ptr: TBGRAPtrBitmap;
+      stretched: TBGRACustomBitmap;
+    begin
+      if ARowStride < 0 then
+        dataStart := PByte(ADataFirstRow) + ARowStride*(Height-1)
+      else
+        dataStart := ADataFirstRow;
+
+      if ARowStride <> abs(AWidth*sizeof(TBGRAPixel)) then
+        raise exception.Create('DataDrawOpaque not supported when using custom row stride and resample');
+
+      ptr := TBGRAPtrBitmap.Create(AWidth,AHeight,dataStart);
+      if ARowStride < 0 then
+        ptr.LineOrder := riloBottomToTop
+      else
+        ptr.LineOrder := riloTopToBottom;
+      stretched := ptr.Resample(ARect.Right-ARect.Left,ARect.Bottom-ARect.Top, rmSimpleStretch);
+      ptr.free;
+      DataDrawOpaque(ACanvas,ARect,stretched.Data,stretched.LineOrder,stretched.Width,stretched.Height);
+      stretched.Free;
+    end;
+
+  var
+    temp: integer;
+  begin
+    {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
+
+    if ARect.Right < ARect.Left then
+    begin
+      temp := ARect.Left;
+      ARect.Left := ARect.Right;
+      ARect.Right := temp;
+    end;
+
+    if ARect.Bottom < ARect.Top then
+    begin
+      temp := ARect.Top;
+      ARect.Top := ARect.Bottom;
+      ARect.Bottom := temp;
+    end;
+
+    if (AWidth <> ARect.Right-ARect.Left) or (AHeight <> ARect.Bottom-ARect.Top) then
+      DrawStretchedSoftware
+    else
+    begin
+      LPtoDP(ACanvas.Handle, ARect, 2);
+      gdk_draw_rgb_32_image(TGtkDeviceContext(ACanvas.Handle).Drawable,
+        TGtkDeviceContext(ACanvas.Handle).GC, ARect.Left, ARect.Top,
+        AWidth,AHeight, GDK_RGB_DITHER_NORMAL,
+        ADataFirstRow, ARowStride);
+      ACanvas.Changed;
+    end;
+    {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
+  end;
+  {$ENDIF}
 
 begin
   if (AHeight = 0) or (AWidth = 0) or (ARect.Left = ARect.Right) or
-    (ARect.Top = ARect.Bottom) then exit;
+    (ARect.Top = ARect.Bottom) or (ACanvas.Handle = 0) then exit;
 
-  if ARect.Right < ARect.Left then
-  begin
-    temp := ARect.Left;
-    ARect.Left := ARect.Right;
-    ARect.Right := temp;
-  end;
-
-  if ARect.Bottom < ARect.Top then
-  begin
-    temp := ARect.Top;
-    ARect.Top := ARect.Bottom;
-    ARect.Bottom := temp;
-  end;
-
-  if (AWidth <> ARect.Right-ARect.Left) or (AHeight <> ARect.Bottom-ARect.Top) then
-    DrawStretched
-  else
-  begin
-    dest := ACanvas.Handle;
-    pos := ARect.TopLeft;
-    LPtoDP(dest, pos, 1);
-    {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
-    gdk_draw_rgb_32_image(TGtkDeviceContext(dest).Drawable,
-      TGtkDeviceContext(Dest).GC, pos.x,pos.y,
-      AWidth,AHeight, GDK_RGB_DITHER_NORMAL,
-      ADataFirstRow, ARowStride);
-    {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
-    ACanvas.Changed;
-  end;
+  {$IFDEF LCLgtk3}
+  DrawGtk3;
+  {$ELSE}
+  DrawGtk2;
+  {$ENDIF}
 end;
 
 procedure TBGRAGtkBitmap.GetImageFromCanvas(CanvasSource: TCanvas; x, y: integer);
@@ -320,9 +588,14 @@ begin
 
   P := Point(x,y);
   LPToDP(CanvasSource.Handle, P, 1);
+  {$IFDEF LCLgtk3}
+  gdk_pixbuf_get_from_window(TGtk3DeviceContext(
+    CanvasSource.Handle).Window, p.X, p.Y, Width, Height);
+  {$ELSE}
   gdk_pixbuf_get_from_drawable(FPixBuf,
     TGtkDeviceContext(CanvasSource.Handle).Drawable,
     nil, P.X,P.Y,0,0,Width,Height);
+  {$ENDIF}
   {$PUSH}{$WARNINGS OFF}If not TBGRAPixel_RGBAOrder then SwapRedBlue;{$POP}
   InvalidateBitmap;
 end;

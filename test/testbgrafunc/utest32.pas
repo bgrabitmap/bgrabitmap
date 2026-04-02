@@ -5,7 +5,7 @@ unit utest32;
 interface
 
 uses
-  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRABitmapTypes;
+  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRAClasses, BGRABitmapTypes;
 
 type
 
@@ -145,13 +145,13 @@ begin
   path1.Free;
 
   //draw virtualscreen opaque on canvas
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest32.OnTimer(Width, Height: Integer;
   ElapsedSec: Double);
 begin
-  position += ElapsedSec*speed*direction;
+  IncF(position, ElapsedSec*speed*direction);
 end;
 
 end.

@@ -62,7 +62,7 @@ begin
   virtualScreen.FillTriangleLinearColorAntialias(pts[0],pts[1],pts[2],BGRA(255,0,0),BGRA(255,255,0),BGRA(255,0,255));
   virtualScreen.FillEllipseLinearColorAntialias(pts[7].x,pts[7].y,pts[8].x/4,pts[8].y/4,BGRABlack,BGRAWhite);
 
-  virtualScreen.draw(Canvas,Left,Top);
+  virtualScreen.draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest26.OnTimer(Width, Height: Integer; ElapsedSec: Double);

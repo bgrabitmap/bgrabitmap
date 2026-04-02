@@ -13,25 +13,28 @@ uses
 type
   {* Extends the TFPCustomImageWriter to write LazPaint image format }
   TBGRAWriterLazPaint = class(TFPCustomImageWriter)
-  private
+  protected
+    { Flags for the compression options }
+    CompressionMode: LongWord;
+    {** Caption to store in the file }
+    FCaption: string;
+
     function GetCompression: TLzpCompression;
     function GetIncludeThumbnail: boolean;
     procedure SetCompression(AValue: TLzpCompression);
     procedure SetIncludeThumbnail(AValue: boolean);
     function WriteThumbnail(Str: TStream; Img: TFPCustomImage): boolean;
-  protected
-    { Flags for the compression options }
-    CompressionMode: LongWord;
     procedure InternalWrite(Str: TStream; Img: TFPCustomImage); override;
     function InternalWriteLayers({%H-}Str: TStream; {%H-}Img: TFPCustomImage): boolean; virtual;
     function GetNbLayers: integer; virtual;
   public
-    {** Caption to store in the file }
-    Caption: string;
     {** Create the writer }
     constructor Create; override;
     {** Static function to write LazPaint RLE image data into a stream }
     class procedure WriteRLEImage(Str: TStream; Img: TFPCustomImage; ACaption: string= ''); static;
+
+  published
+    property Caption: string read FCaption write FCaption;
     {** Property to specify the compression to use }
     property Compression: TLzpCompression read GetCompression write SetCompression;
     {** Specify to include a thumbnail or not }
@@ -103,30 +106,22 @@ end;
 
 function TBGRAWriterLazPaint.GetCompression: TLzpCompression;
 begin
-  if (CompressionMode and LAZPAINT_COMPRESSION_MASK) = LAZPAINT_COMPRESSION_MODE_ZSTREAM then
-    result := lzpZStream
-  else
-    result := lzpRLE;
+  result:= LzpGetCompression(CompressionMode);
 end;
 
 function TBGRAWriterLazPaint.GetIncludeThumbnail: boolean;
 begin
-  result := (CompressionMode and LAZPAINT_THUMBNAIL_PNG) <> 0;
+  result:= LzpGetIncludeThumbnail(CompressionMode);
 end;
 
 procedure TBGRAWriterLazPaint.SetCompression(AValue: TLzpCompression);
 begin
-  if AValue = lzpZStream then
-    CompressionMode := (CompressionMode and not LAZPAINT_COMPRESSION_MASK) or LAZPAINT_COMPRESSION_MODE_ZSTREAM
-  else
-    CompressionMode := (CompressionMode and not LAZPAINT_COMPRESSION_MASK) or LAZPAINT_COMPRESSION_MODE_RLE;
+  LzpSetCompression(CompressionMode, AValue);
 end;
 
 procedure TBGRAWriterLazPaint.SetIncludeThumbnail(AValue: boolean);
 begin
-  if AValue then
-    CompressionMode := CompressionMode or LAZPAINT_THUMBNAIL_PNG else
-    CompressionMode := CompressionMode and not LAZPAINT_THUMBNAIL_PNG;
+  LzpSetIncludeThumbnail(CompressionMode, AValue);
 end;
 
 procedure TBGRAWriterLazPaint.InternalWrite(Str: TStream; Img: TFPCustomImage);
@@ -160,11 +155,11 @@ begin
 
   header.previewOffset:= Str.Position - startPos;
   if Compression = lzpRLE then
-    WriteRLEImage(Str, Img, Caption)
+    WriteRLEImage(Str, Img, FCaption)
   else
   begin
     compBmp := TBGRACompressableBitmap.Create(Img as TBGRABitmap);
-    compBmp.Caption := Caption;
+    compBmp.Caption := FCaption;
     compBmp.WriteToStream(Str);
     compBmp.Free;
   end;
@@ -431,7 +426,6 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageWriter[ifLazPaint] := TBGRAWriterLazPaint;
+  BGRARegisterImageWriter(ifLazPaint, TBGRAWriterLazPaint, True, 'LazPaint Image Format', 'lzp');
 
 end.

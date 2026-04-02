@@ -14,21 +14,24 @@ type
   { Shader computing a blurred image }
   TBGLBlurShader = class(TBGLShader3D)
   private
+    function GetAllocatedTextureSize: TPoint;
     function GetDirection: TPointF;
     function GetImageIndex: integer;
     function GetRadius: Single;
     function GetTextureSize: TPoint;
+    procedure SetAllocatedTextureSize(AValue: TPoint);
     procedure SetDirection(AValue: TPointF);
     procedure SetImageIndex(AValue: integer);
     procedure SetRadius(AValue: Single);
     procedure SetTextureSize(AValue: TPoint);
   protected
-    FTextureSize: TUniformVariablePoint;
+    FTextureSize, FAllocatedTextureSize: TUniformVariablePoint;
     FImageIndex: TUniformVariableInteger;
     FDirection: TUniformVariablePointF;
     FRadius: TUniformVariableSingle;
     FBlurType: TRadialBlurType;
     procedure StartUse; override;
+    property AllocatedTextureSize: TPoint read GetAllocatedTextureSize write SetAllocatedTextureSize;
   public
     constructor Create(ACanvas: TBGLCustomCanvas; ABlurType: TRadialBlurType);
     function FilterBlurMotion(ATexture: IBGLTexture): IBGLTexture; overload;
@@ -43,7 +46,14 @@ type
 
 implementation
 
+uses BGRAOpenGL;
+
 { TBGLBlurShader }
+
+function TBGLBlurShader.GetAllocatedTextureSize: TPoint;
+begin
+  result := FAllocatedTextureSize.Value;
+end;
 
 function TBGLBlurShader.GetDirection: TPointF;
 begin
@@ -64,6 +74,11 @@ end;
 function TBGLBlurShader.GetTextureSize: TPoint;
 begin
   result := FTextureSize.Value;
+end;
+
+procedure TBGLBlurShader.SetAllocatedTextureSize(AValue: TPoint);
+begin
+  FAllocatedTextureSize.Value := AValue;
 end;
 
 procedure TBGLBlurShader.SetDirection(AValue: TPointF);
@@ -89,6 +104,7 @@ end;
 
 constructor TBGLBlurShader.Create(ACanvas: TBGLCustomCanvas; ABlurType: TRadialBlurType);
 var weightFunc: string;
+  overflowFunc: string;
 begin
   FBlurType:= ABlurType;
   case ABlurType of
@@ -102,6 +118,23 @@ begin
     weightFunc := 'if (x <= radius) return 1; else return max(0,radius+1-x);';
   end;
 
+  if GetOpenGLVersion >= 200 then
+  begin
+    overflowFunc :=
+'vec2 overflowTexCoord(vec2 coord)'#10 +
+'{'#10 +
+'return coord;'#10 +
+'}'#10
+  end else
+  begin
+    // fix repeat mode on older version
+    overflowFunc :=
+'vec2 overflowTexCoord(vec2 coord)'#10 +
+'{'#10 +
+'return fract(coord / textureSize) * textureSize;'#10 +
+'}'#10
+  end;
+
   inherited Create(ACanvas,
 'void main(void) {'#10 +
 '	gl_Position = gl_ProjectionMatrix * gl_Vertex;'#10 +
@@ -110,6 +143,7 @@ begin
 
 'uniform sampler2D image;'#10 +
 'uniform ivec2 textureSize;'#10 +
+'uniform ivec2 allocatedTextureSize;'#10 +
 'uniform vec2 direction;'#10 +
 'uniform float radius;'#10 +
 'out vec4 FragmentColor;'#10 +
@@ -118,6 +152,8 @@ begin
 '{'#10 +
 weightFunc + #10 +
 '}'#10 +
+
+overflowFunc +
 
 'void main(void)'#10 +
 '{'#10 +
@@ -129,8 +165,8 @@ weightFunc + #10 +
 
 '	for (int i=1; i<=range; i++) {'#10 +
 '		weight = computeWeight(i);'#10 +
-'		FragmentColor += texture2D( image, texCoord + i*direction/textureSize ) * weight;'#10 +
-'		FragmentColor += texture2D( image, texCoord - i*direction/textureSize ) * weight;'#10 +
+'		FragmentColor += texture2D( image, overflowTexCoord(texCoord*allocatedTextureSize + i*direction)/allocatedTextureSize ) * weight;'#10 +
+'		FragmentColor += texture2D( image, overflowTexCoord(texCoord*allocatedTextureSize - i*direction)/allocatedTextureSize ) * weight;'#10 +
 '		totalWeight += 2*weight;'#10 +
 '	}'#10 +
 
@@ -141,12 +177,14 @@ weightFunc + #10 +
 
   FImageIndex := UniformInteger['image'];
   FTextureSize := UniformPoint['textureSize'];
+  FAllocatedTextureSize := UniformPoint['allocatedTextureSize'];
   FDirection := UniformPointF['direction'];
   FRadius := UniformSingle['radius'];
 
   ImageIndex:= 0;
   Direction := PointF(1,0);
   TextureSize := Point(1,1);
+  AllocatedTextureSize := Point(1,1);
   Radius := 0;
 end;
 
@@ -164,8 +202,10 @@ begin
   previousBuf := Canvas.ActiveFrameBuffer;
   buf := Canvas.CreateFrameBuffer(ATexture.Width, ATexture.Height);
   Canvas.ActiveFrameBuffer := buf;
+  Canvas.Fill(BGRAPixelTransparent);
 
   TextureSize := Point(ATexture.Width,ATexture.Height);
+  AllocatedTextureSize := Point(ATexture.AllocatedWidth, ATexture.AllocatedHeight);
   previousShader := Canvas.Lighting.ActiveShader;
   Canvas.Lighting.ActiveShader := self;
 
@@ -191,6 +231,7 @@ begin
   inherited StartUse;
   FImageIndex.Update;
   FTextureSize.Update;
+  FAllocatedTextureSize.Update;
   FDirection.Update;
   FRadius.Update;
 end;

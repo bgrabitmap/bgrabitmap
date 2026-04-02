@@ -122,6 +122,16 @@ type
     property Value: TPoint3D read FValue write SetValue;
   end;
 
+  { Uniform variable containg a color }
+  TUniformVariableColor = object(TUniformVariable)
+  private
+    FValue: TColorF;
+    procedure SetValue(const AValue: TColorF);
+  public
+    procedure Update;
+    property Value: TColorF read FValue write SetValue;
+  end;
+
   { Uniform variable containg an integer }
   TUniformVariableInteger = object(TUniformVariable)
   private
@@ -171,6 +181,12 @@ type
     procedure Init(AProgram: TObject; AAttribute: LongWord);
   end;
 
+  { Attribute variable containg a color }
+  TAttributeVariableColor = object(TAttributeVariable)
+  protected
+    procedure Init(AProgram: TObject; AAttribute: LongWord);
+  end;
+
   { Attribute variable containg an integer }
   TAttributeVariableInteger = object(TAttributeVariable)
   protected
@@ -194,17 +210,19 @@ type
     FVertexShader,
     FFragmentShader,
     FProgram: LongWord;
+    function GetUniformVariableInteger(AName: string): TUniformVariableInteger;
+    function GetUniformVariablePoint(AName: string): TUniformVariablePoint;
     function GetUniformVariableSingle(AName: string): TUniformVariableSingle;
     function GetUniformVariablePointF(AName: string): TUniformVariablePointF;
     function GetUniformVariablePoint3D(AName: string): TUniformVariablePoint3D;
-    function GetUniformVariableInteger(AName: string): TUniformVariableInteger;
-    function GetUniformVariablePoint(AName: string): TUniformVariablePoint;
+    function GetUniformVariableColor(AName: string): TUniformVariableColor;
     function GetUniformVariableMatrix4D(AName: string): TUniformVariableMatrix4D;
     function GetAttributeVariableInteger(AName: string): TAttributeVariableInteger;
     function GetAttributeVariablePoint(AName: string): TAttributeVariablePoint;
     function GetAttributeVariableSingle(AName: string): TAttributeVariableSingle;
     function GetAttributeVariablePointF(AName: string): TAttributeVariablePointF;
     function GetAttributeVariablePoint3D(AName: string): TAttributeVariablePoint3D;
+    function GetAttributeVariableColor(AName: string): TAttributeVariableColor;
     procedure SetUniformSingle(AVariable: LongWord; const AValue; AElementCount: integer; AComponentCount: integer);
     procedure SetUniformInteger(AVariable: LongWord; const AValue; AElementCount: integer; AComponentCount: integer);
     procedure CheckUsage(AUsing: boolean);
@@ -219,6 +237,7 @@ type
     property UniformSingle[AName: string]: TUniformVariableSingle read GetUniformVariableSingle;
     property UniformPointF[AName: string]: TUniformVariablePointF read GetUniformVariablePointF;
     property UniformPoint3D[AName: string]: TUniformVariablePoint3D read GetUniformVariablePoint3D;
+    property UniformColor[AName: string]: TUniformVariableColor read GetUniformVariableColor;
     property UniformInteger[AName: string]: TUniformVariableInteger read GetUniformVariableInteger;
     property UniformPoint[AName: string]: TUniformVariablePoint read GetUniformVariablePoint;
     property UniformMatrix4D[AName: string]: TUniformVariableMatrix4D read GetUniformVariableMatrix4D;
@@ -228,6 +247,28 @@ type
     property AttributeInteger[AName: string]: TAttributeVariableInteger read GetAttributeVariableInteger;
     property AttributePoint[AName: string]: TAttributeVariablePoint read GetAttributeVariablePoint;
     property IsUsed: boolean read FUsed;
+  end;
+
+  TBGLFullCanvasShader = class(TBGLShader3D)
+  private
+    function GetCanvasSize: TPointF;
+    procedure SetCanvasSize(AValue: TPointF);
+  protected
+    FCanvasSize: TUniformVariablePointF;
+    procedure StartUse; override;
+    function GetFragmentShader(AInputCoord, AInputColor, ACanvasSize, AOutputColor: string): string; virtual; abstract;
+    property CanvasSize: TPointF read GetCanvasSize write SetCanvasSize;
+  public
+    constructor Create(ACanvas: TBGLCustomCanvas);
+    // draw into a new texture
+    function Render(AWidth, AHeight: integer): IBGLTexture; overload;
+    function Render(AWidth, AHeight: integer; AColor: TBGRAPixel): IBGLTexture; overload;
+    // draw on the whole canvas
+    procedure RenderOnCanvas; overload;
+    procedure RenderOnCanvas(AColor: TBGRAPixel); overload;
+    // draw only part of the shader
+    procedure RenderOnCanvas(const ARect: TRect); overload;
+    procedure RenderOnCanvas(const ARect: TRect; AColor: TBGRAPixel); overload;
   end;
 
 function ProjectionToOpenGL(AProj: TProjection3D; ANear, AFar: Single): TMatrix4D;
@@ -326,6 +367,13 @@ begin
   inherited Init(AProgram,AAttribute,3,True);
 end;
 
+{ TAttributeVariableColor }
+
+procedure TAttributeVariableColor.Init(AProgram: TObject; AAttribute: LongWord);
+begin
+  inherited Init(AProgram,AAttribute,4,True);
+end;
+
 { TAttributeVariablePointF }
 
 procedure TAttributeVariablePointF.Init(AProgram: TObject; AAttribute: LongWord);
@@ -396,6 +444,20 @@ begin
   FProgram.SetUniformSingle(FVariable, FValue, 1, 3);
 end;
 
+{ TUniformVariableColor }
+
+procedure TUniformVariableColor.SetValue(const AValue: TColorF);
+begin
+  if CompareMem(@FValue, @AValue, 4*sizeof(single)) then Exit;
+  FValue:= AValue;
+  if FProgram.IsUsed then Update;
+end;
+
+procedure TUniformVariableColor.Update;
+begin
+  FProgram.SetUniformSingle(FVariable, FValue, 1, 4);
+end;
+
 { TUniformVariablePointF }
 
 procedure TUniformVariablePointF.SetValue(const AValue: TPointF);
@@ -458,6 +520,14 @@ begin
   {$pop}
 end;
 
+function TBGLShader3D.GetUniformVariableColor(AName: string): TUniformVariableColor;
+begin
+  {$push}{$hints off}
+  fillchar(result,sizeof(result),0);
+  result.Init(self, FCanvas.Lighting.GetUniformVariable(FProgram, AName));
+  {$pop}
+end;
+
 function TBGLShader3D.GetUniformVariableInteger(AName: string): TUniformVariableInteger;
 begin
   {$push}{$hints off}
@@ -508,6 +578,14 @@ begin
 end;
 
 function TBGLShader3D.GetAttributeVariablePoint3D(AName: string): TAttributeVariablePoint3D;
+begin
+  {$push}{$hints off}
+  fillchar(result,sizeof(result),0);
+  result.Init(self, FCanvas.Lighting.GetAttribVariable(FProgram, AName));
+  {$pop}
+end;
+
+function TBGLShader3D.GetAttributeVariableColor(AName: string): TAttributeVariableColor;
 begin
   {$push}{$hints off}
   fillchar(result,sizeof(result),0);
@@ -586,6 +664,88 @@ begin
   CheckUsage(True);
   FLighting.UseProgram(0);
   FUsed:= False;
+end;
+
+{ TBGLFullCanvasShader }
+
+function TBGLFullCanvasShader.GetCanvasSize: TPointF;
+begin
+  result := FCanvasSize.Value;
+end;
+
+procedure TBGLFullCanvasShader.SetCanvasSize(AValue: TPointF);
+begin
+  FCanvasSize.Value := AValue;
+end;
+
+procedure TBGLFullCanvasShader.StartUse;
+begin
+  inherited StartUse;
+  FCanvasSize.Update;
+end;
+
+constructor TBGLFullCanvasShader.Create(ACanvas: TBGLCustomCanvas);
+begin
+  // vertex + fragment
+  inherited Create(ACanvas,
+  'uniform vec2 canvasSize;'#10 +
+  'void main(void) {'#10 +
+  '    gl_Position = gl_ProjectionMatrix * gl_Vertex;'#10 +
+  '    gl_FrontColor = gl_Color;'#10 +
+  '    fragCoord = gl_Vertex.xy / canvasSize;'#10 +
+  '}',
+
+  'uniform vec2 canvasSize;'#10 +
+  GetFragmentShader('fragCoord', 'gl_Color', 'canvasSize', 'gl_FragColor'),
+
+  'varying vec2 fragCoord;', '130');
+
+  FCanvasSize := UniformPointF['canvasSize'];
+end;
+
+function TBGLFullCanvasShader.Render(AWidth, AHeight: integer): IBGLTexture;
+begin
+  result := Render(AWidth, AHeight, BGRAWhite);
+end;
+
+
+function TBGLFullCanvasShader.Render(AWidth, AHeight: integer;
+  AColor: TBGRAPixel): IBGLTexture;
+var previousBuf,buf: TBGLCustomFrameBuffer;
+begin
+  previousBuf := Canvas.ActiveFrameBuffer;
+  buf := Canvas.CreateFrameBuffer(AWidth, AHeight);
+  Canvas.ActiveFrameBuffer := buf;
+  Canvas.Fill(BGRAPixelTransparent);
+  RenderOnCanvas(AColor);
+  Canvas.ActiveFrameBuffer := previousBuf;
+  result := buf.MakeTextureAndFree;
+end;
+
+procedure TBGLFullCanvasShader.RenderOnCanvas;
+begin
+  RenderOnCanvas(BGRAWhite);
+end;
+
+procedure TBGLFullCanvasShader.RenderOnCanvas(AColor: TBGRAPixel);
+begin
+  RenderOnCanvas(Rect(0, 0, Canvas.Width, Canvas.Height), AColor);
+end;
+
+procedure TBGLFullCanvasShader.RenderOnCanvas(const ARect: TRect);
+begin
+  RenderOnCanvas(ARect, BGRAWhite);
+end;
+
+procedure TBGLFullCanvasShader.RenderOnCanvas(const ARect: TRect; AColor: TBGRAPixel);
+var
+  previousShader: TBGLCustomShader;
+begin
+  previousShader := Canvas.Lighting.ActiveShader;
+  Canvas.Lighting.ActiveShader := self;
+  CanvasSize := PointF(Canvas.Width, Canvas.Height);
+  Canvas.FillRect(ARect, AColor);
+  Canvas.Lighting.ActiveShader := previousShader;
 end;
 
 { TBGLLighting3D }

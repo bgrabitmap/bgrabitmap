@@ -1661,8 +1661,7 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageReader[ifPng] := TBGRAReaderPNG;
+  BGRARegisterImageReader(ifPng, TBGRAReaderPNG, True, 'Portable Network Graphics', 'png');
 
 end.
 

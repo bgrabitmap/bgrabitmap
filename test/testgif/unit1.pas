@@ -224,11 +224,11 @@ begin
          inttostr(image.Width)+'x'+inttostr(image.height) + LineEnding +
          inttostr(image.Count)+' frames' + LineEnding;
     if image.LoopCount = 0 then
-      s += 'infinite loop' + LineEnding
+      s := s + 'infinite loop' + LineEnding
     else
-      s += inttostr(image.LoopCount)+' loops' + LineEnding;
+      s := s + inttostr(image.LoopCount)+' loops' + LineEnding;
     for i := 0 to image.Count-1 do
-      s += '#' + inttostr(i)+': '+inttostr(image.FrameDelayMs[i])+' ms, '+
+      s := s + '#' + inttostr(i)+': '+inttostr(image.FrameDelayMs[i])+' ms, '+
            inttostr(image.FrameImage[i].Width)+'x'+inttostr(image.FrameImage[i].Height) + LineEnding;
   end;
   Memo1.Text := s;

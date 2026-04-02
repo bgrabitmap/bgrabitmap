@@ -35,7 +35,7 @@
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="11" Minor="6" Release="1"/>
+    <Version Major="11" Minor="6" Release="6"/>
     <Files Count="106">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>

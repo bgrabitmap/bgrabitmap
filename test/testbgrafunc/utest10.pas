@@ -96,7 +96,7 @@ begin
   end;
   virtualScreen.InvalidateBitmap;
 
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest10.OnTimer(Width, Height: Integer; ElapsedSec: Double);

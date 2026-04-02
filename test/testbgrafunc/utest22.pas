@@ -79,7 +79,7 @@ begin
   virtualscreen.SetPixel(random(width),random(height),c);
 
   //draw virtualscreen opaque on canvas
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest22.OnTimer(Width, Height: Integer;

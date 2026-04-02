@@ -56,7 +56,7 @@ begin
     virtualscreen.PutImage(pacLoc[i].x,pacLoc[i].y,pacImg[numPacImg],dmDrawWithTransparency);
 
   //draw virtualscreen opaque on canvas
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 
   //erase sprites
   for i := 0 to high(pacLoc) do

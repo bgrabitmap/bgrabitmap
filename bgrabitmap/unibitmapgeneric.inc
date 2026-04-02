@@ -27,11 +27,51 @@ type
     function Equals(const comp: TPixel): boolean; overload;
     function GetDifferenceBounds(ABitmap: TCustomUniversalBitmap): TRect;
 
+    {** Initializes a brush with a solid color provided indirectly by a reference }
     procedure SolidBrushIndirect(out ABrush: TUniversalBrush; AColor: Pointer; ADrawMode: TDrawMode = dmDrawWithTransparency); override;
+    {** Initializes a brush that has no effect }
     class procedure IdleBrush(out ABrush: TUniversalBrush); virtual;
+    {** Initializes a brush with a solid color }
     class procedure SolidBrush(out ABrush: TUniversalBrush; const AColor: TPixel; ADrawMode: TDrawMode = dmDrawWithTransparency); virtual;
 
-    {** Creates a brush texture with a specified style, pattern color, background color, dimensions, and pen width }
+    {** @abstract(Creates a brush texture with a specified style, pattern color, background color, dimensions, and pen width.)
+
+**Example using a diagonal cross texture to fill shapes on a form:**
+
+@image(../doc/img/createbrushtexture.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image,tex: TBGRABitmap;
+  c: TBGRAPixel;
+  x,y,rx,ry: single;
+
+begin
+    image := TBGRABitmap.Create(ClientWidth,ClientHeight,ColorToBGRA(ColorToRGB(clBtnFace)));
+    c := ColorToBGRA(ColorToRGB(clWindowText));
+
+    //ellipse coordinates
+    x := 150;
+    y := 100;
+    rx := 100;
+    ry := 50;
+
+    //loads a "diagcross" brush with white pattern and orange background
+    tex := image.CreateBrushTexture(bsDiagCross,BGRAWhite,BGRA(255,192,0)) as TBGRABitmap;
+
+    image.FillEllipseAntialias(x,y,rx-0.5,ry-0.5,tex);
+    image.EllipseAntialias(x,y,rx,ry,c,1); //draw outline
+
+    image.RoundRectAntialias(x-rx-10,y-ry-10,x+rx+10,y+ry+10,20,20,c,11);
+    image.RoundRectAntialias(x-rx-10,y-ry-10,x+rx+10,y+ry+10,20,20,tex,9);
+
+    tex.Free;
+
+    image.Draw(Canvas,0,0,True);
+    image.free;
+end;
+```}
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TPixel;
             AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TCustomUniversalBitmap; virtual;
 
@@ -131,6 +171,26 @@ type
         to be the same as the first point }
     procedure DrawPolygonAntialias(const APoints: array of TPointF; const AColor: TPixel; APenWidth: single); overload; virtual;
 
+    { @abstract(Draw a rectangle using current pen with antialiasing.)
+
+**Example drawing a rectangle on a form:**
+
+@image(../doc/img/rectangleantialias.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var image: TBGRABitmap;
+    c: TBGRAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth, ClientHeight, clBtnFace);
+  c := clWindowText;
+
+  image.RectangleAntialias(80,80,300,200, c, 50);
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```}
     procedure RectangleAntialias(x, y, x2, y2: single; const AColor: TPixel; AWidth: single); overload; virtual;
 
     {** Draws an ellipse without antialising. _rx_ is the horizontal radius and

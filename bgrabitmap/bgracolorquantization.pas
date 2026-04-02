@@ -33,7 +33,24 @@ type
                      cdSaturation);
   TColorDimensions = set of TColorDimension;
 
-  { Implementation of color quantization }
+  { @abstract(Implementation of color quantization.)
+
+Example saving an image into 8-bit PNG file:
+```pascal
+uses BGRAColorQuantization, BGRABitmapTypes, BGRABitmap;
+var
+  quant : TBGRAColorQuantizer;
+  sourceBmp: TBGRABitmap;
+begin
+  sourceBmp := TBGRABitmap.Create('picture_in_32_bits.bmp');
+  quant := TBGRAColorQuantizer.Create(sourceBmp, acFullChannelInPalette);
+  // by default, reduces to 256 colors
+  quant.SaveBitmapToFile(daFloydSteinberg, sourceBmp, 'picture_in_8_bits.png');
+  quant.Free;
+  sourceBmp.Free;
+end;
+```
+  }
   TBGRAColorQuantizer = class(TBGRACustomColorQuantizer)
   private
     FColors: ArrayOfWeightedColor;

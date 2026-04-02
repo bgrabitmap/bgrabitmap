@@ -94,8 +94,7 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageWriter[ifAvif] := TBGRAWriterAvif;
+  BGRARegisterImageWriter(ifAvif, TBGRAWriterAvif, True, 'AVIF Still Image Format', 'avif');
 
 finalization
 

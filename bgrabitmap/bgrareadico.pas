@@ -142,9 +142,8 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageReader[ifIco] := TBGRAReaderIco;
-  DefaultBGRAImageReader[ifCur] := TBGRAReaderCur;
+  BGRARegisterImageReader(ifIco, TBGRAReaderIco, True, 'Icon Format', 'ico');
+  BGRARegisterImageReader(ifCur, TBGRAReaderCur, True, 'Cursor Format', 'cur');
 
 end.
 

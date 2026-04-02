@@ -16,6 +16,7 @@ unit BGRACanvas2D;
   clearPath clipping
   globalCompositeOperation
   image data functions
+  imageSmoothingEnabled
 }
 
 {$mode objfpc}{$H+}
@@ -97,9 +98,13 @@ type
     width,height: single;
   end;
 
-  { @abstract(Implementation of [Canvas2d](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D) similar to HTML.)
+  { @abstract(Implementation of a canvas similar to [HTML Canvas2d](https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D).)
 
-    Comparison between TBGRACanvas2D and Javascript HTML canvas:
+TBGRACanvas2D is the surface to use when rendering with TBGRASVG, TBGRACustomTypeWriter and TBGRAVectorizedFont.
+
+**Comparison between TBGRACanvas2D and Javascript HTML canvas:**
+
+@image(../doc/img/blue_circular_bevel_js.png)
 
     @table(
     @rowHead( @cell(BGRABitmap) @cell(JavaScript) )
@@ -114,7 +119,8 @@ var
   ctx: TBGRACanvas2D;
   gradient: IBGRACanvasGradient2D;
 begin
-  bmp := TBGRABitmap.Create(ClientWidth, ClientHeight, StrToBGRA('#E0E2E5'));
+  bmp := TBGRABitmap.Create(ClientWidth, ClientHeight,
+                            StrToBGRA('#E0E2E5'));
   ctx := bmp.Canvas2d;
 
   // Draw the outer rounded rectangle
@@ -203,8 +209,6 @@ ctx.stroke();
 
 	)
   )
-
-  @image(../doc/blue_circular_bevel_js.png)
 }
   TBGRACanvas2D = class(IBGRAPath)
   private
@@ -302,166 +306,353 @@ ctx.stroke();
     function getPoints(AMatrix: TAffineMatrix): ArrayOfTPointF; //IBGRAPath
     function getCursor: TBGRACustomPathCursor; //IBGRAPath
   public
-    antialiasing, linearBlend, gradientGammaCorrection: boolean;
+    { Whether to apply antialiasing when drawing }
+    antialiasing: boolean;
+    { @abstract(Whether to use linear blending when merging colors.)
+
+    In this case, gamma correction won't be applied. It is less
+    accurate but it reflects more how HTML Canvas works. }
+    linearBlend: boolean;
+
+    { @abstract(Whether to use gamma correction in gradient interpolation.)
+
+    It is less accurate but it reflects more how HTML Canvas works.}
+    gradientGammaCorrection: boolean;
+    { @abstract(Create an new instance with its own context.) }
     constructor Create(ASurface: TBGRACustomBitmap);
+    { Destroys the canvas context including the font renderer. }
     destructor Destroy; override;
 
+    { Converts the image to code that can be put in an image href }
     function toDataURL(mimeType: string = 'image/png'): string;
 
+    { @abstract(Saves the entire state of the canvas by pushing the current state onto a stack.)
+
+    The drawing state consists of:
+    - the current transformation matrix.
+    - the current clipping region.
+    - the font parameters.
+    - the various properties of stroke and fill style.
+    - the shadow parameters. }
     procedure save;
+
+    { @abstract(Restores the most recently saved canvas state by popping the top entry in the drawing state stack.)
+
+    If there is no saved state, this method does nothing. }
     procedure restore;
+
+    { Save the current state and copy the canvas state from
+      another canvas. }
     procedure copyStateFrom(AOtherCanvas2D: TBGRACanvas2D);
+
+    { Apply scaling to the canvas with independent _x_ and _y_ scales. }
     procedure scale(x,y: single); overload;
+    { Apply uniform scaling to the canvas. }
     procedure scale(factor: single); overload;
+    { @abstract(Rotates the canvas around the origin (0,0) by the given angle in radians, clockwise.)
+
+**Example rotating around the center of a 200x200 canvas:**
+```pascal
+canvas2D.translate(100, 100);
+canvas2D.rotate(Pi);
+canvas2D.translate(-100, -100);
+```}
     procedure rotate(angleRadCW: single);
+    { Translates the canvas origin to a new location. }
     procedure translate(x,y: single);
+    { Skews the drawing on the canvas along the X axis by the given angle in radians. }
     procedure skewx(angleRadCW: single);
+    { Skews the drawing on the canvas along the Y axis by the given angle in radians. }
     procedure skewy(angleRadCW: single);
+    { Applies a transformation matrix to the canvas. }
     procedure transform(m11,m21, m12,m22, m13,m23: single); overload;
+    { Applies a pre-built transformation matrix to the canvas. }
     procedure transform(AMatrix: TAffineMatrix); overload;
+    { Resets the current transform to the identity matrix, then applies the new transformation. }
     procedure setTransform(m11,m21, m12,m22, m13,m23: single);
+    { Resets the current transformation matrix to the identity matrix. }
     procedure resetTransform;
 
+    { Apply scaling to the stroke. Can specify _x_ and _y_ scales independently. }
     procedure strokeScale(x,y: single);
+    { Skews the stroke on the canvas along the X axis by the given angle in radians. }
     procedure strokeSkewx(angleRadCW: single);
+    { Skews the stroke on the canvas along the Y axis by the given angle in radians. }
     procedure strokeSkewy(angleRadCW: single);
+    { Resets the stroke transformation matrix to the identity matrix, removing any stroke transformations. }
     procedure strokeResetTransform;
 
+    { Sets the stroke to a solid color specified as TBGRAPixel }
     procedure strokeStyle(color: TBGRAPixel); overload;
+    { Sets the stroke to a solid color specified as TColor }
     procedure strokeStyle(color: TColor); overload;
+    { Sets the stroke to a solid color specified as CSS string }
     procedure strokeStyle(color: string); overload;
+    { @abstract(Sets the stroke to a texture defined by IBGRAScanner interface.)
+
+    The texture can be a TBGRABitmap object or any custom scanner. }
     procedure strokeStyle(texture: IBGRAScanner); overload;
+    { Sets the stroke to a texture using a texture provider. }
     procedure strokeStyle(provider: IBGRACanvasTextureProvider2D); overload;
+    { Sets the fill style to a solid color specified as TBGRAPixel }
     procedure fillStyle(color: TBGRAPixel); overload;
+    { Sets the fill style to a solid color specified as TColor }
     procedure fillStyle(color: TColor); overload;
+    { Sets the fill style to a solid color specified as CSS string }
     procedure fillStyle(color: string); overload;
+    { @abstract(Sets the fill style to a texture defined by IBGRAScanner interface.)
+
+    The texture can be a TBGRABitmap object or any custom scanner. }
     procedure fillStyle(texture: IBGRAScanner); overload;
+    { Sets the fill style to a texture using a texture provider. }
     procedure fillStyle(provider: IBGRACanvasTextureProvider2D); overload;
+
+    { Sets the color of the shadow specified as TBGRAPixel }
     procedure shadowColor(color: TBGRAPixel); overload;
+    { Sets the color of the shadow specified as TColor }
     procedure shadowColor(color: TColor); overload;
+    { Sets the color of the shadow specified as CSS string }
     procedure shadowColor(color: string); overload;
+    { Removes any shadow effect from future drawings. }
     procedure shadowNone;
+    { Retrieves the current color used for shadows. }
     function getShadowColor: TBGRAPixel;
 
+    { Creates a linear gradient between two points. }
     function createLinearGradient(x0,y0,x1,y1: single): IBGRACanvasGradient2D; overload;
+    { Creates a linear gradient between two points using TPointF. }
     function createLinearGradient(p0,p1: TPointF): IBGRACanvasGradient2D; overload;
+    { Creates a linear gradient with custom color stops. }
     function createLinearGradient(x0,y0,x1,y1: single; Colors: TBGRACustomGradient): IBGRACanvasGradient2D; overload;
+    { Creates a linear gradient with custom color stops using TPointF. }
     function createLinearGradient(p0,p1: TPointF; Colors: TBGRACustomGradient): IBGRACanvasGradient2D; overload;
 
+    { Creates a radial gradient between two circles. }
     function createRadialGradient(x0,y0,r0,x1,y1,r1: single; flipGradient: boolean=false): IBGRACanvasGradient2D; overload;
+    { Creates a radial gradient between two circles using TPointF. }
     function createRadialGradient(p0: TPointF; r0: single; p1: TPointF; r1: single; flipGradient: boolean=false): IBGRACanvasGradient2D; overload;
+    { Creates a radial gradient with custom color stops. }
     function createRadialGradient(x0,y0,r0,x1,y1,r1: single; Colors: TBGRACustomGradient; flipGradient: boolean=false): IBGRACanvasGradient2D; overload;
+    { Creates a radial gradient with custom color stops using TPointF. }
     function createRadialGradient(p0: TPointF; r0: single; p1: TPointF; r1: single; Colors: TBGRACustomGradient; flipGradient: boolean=false): IBGRACanvasGradient2D; overload;
 
+    { @abstract(Creates a pattern using an image.)
+
+    _repetition_ can be:
+    - repeat-x: repetition along X axis
+    - repeat-y: repetition along Y axis
+    - no-repeat: image is drawn only once }
     function createPattern(image: TBGRACustomBitmap; repetition: string): IBGRACanvasTextureProvider2D; overload;
+    { Creates a pattern using a scanner interface. }
     function createPattern(texture: IBGRAScanner): IBGRACanvasTextureProvider2D; overload;
 
+    { Directly fills a rectangle with the current fill style. }
     procedure fillRect(x,y,w,h: single);
+    { Directly strokes a rectangle with the current stroke style. }
     procedure strokeRect(x,y,w,h: single);
+    { Directly clears a rectangle, making it fully transparent. }
     procedure clearRect(x,y,w,h: single);
 
+    { Adds a path to the current drawing. }
     procedure addPath(APath: IBGRAPath); overload;
+    { Adds an SVG path to the current drawing. }
     procedure addPath(ASvgPath: string); overload;
+    { Replaces the current defined path. }
     procedure path(APath: IBGRAPath); overload;
+    { Replaces the current defined path defined as SVG path. }
     procedure path(ASvgPath: string); overload;
+    { Begins a new path or resets the current path. }
     procedure beginPath;
+    { Closes the current path. }
     procedure closePath;
+    { Converts the current polyline path to a spline. }
     procedure toSpline(closed: boolean; style: TSplineStyle= ssOutside);
+    { Moves the pen to a new location. }
     procedure moveTo(x,y: single); overload;
+    { Connects with a line to a specified point. }
     procedure lineTo(x,y: single); overload;
+    { Moves the pen to a new location using TPointF. }
     procedure moveTo(constref pt: TPointF); overload;
+    { Connects a line to a specified point using TPointF. }
     procedure lineTo(constref pt: TPointF); overload;
+    { Add multiple connected lines. }
     procedure polylineTo(const pts: array of TPointF);
+    { Adds a quadratic Bézier curve to a specified point. }
     procedure quadraticCurveTo(cpx,cpy,x,y: single); overload;
+    { Adds a quadratic Bézier curve to a specified point using TPointF. }
     procedure quadraticCurveTo(constref cp,pt: TPointF); overload;
+    { Adds a cubic Bézier curve to a specified point. }
     procedure bezierCurveTo(cp1x,cp1y,cp2x,cp2y,x,y: single); overload;
+    { Adds a cubic Bézier curve to a specified point using TPointF. }
     procedure bezierCurveTo(constref cp1,cp2,pt: TPointF); overload;
+    { Adds a rectangle specified by its top-left corner, width
+      and height }
     procedure rect(x,y,w,h: single);
+    { Adds a rounded rectangle. }
     procedure roundRect(x,y,w,h,radius: single); overload;
+    { Adds a rounded rectangle with different x and y radii. }
     procedure roundRect(x,y,w,h,rx,ry: single); overload;
+    { Adds an opened spline to the current path }
     procedure openedSpline(const pts: array of TPointF; style: TSplineStyle);
+    { Adds an closed spline to the current path }
     procedure closedSpline(const pts: array of TPointF; style: TSplineStyle);
+    { @abstract(Adds a spline to the current path.)
+
+    It will be closed if the last point is equal to the first one. }
     procedure spline(const pts: array of TPointF; style: TSplineStyle= ssOutside);
+    { Continues from current position with an opened spline. }
     procedure splineTo(const pts: array of TPointF; style: TSplineStyle= ssOutside);
+    { Adds an arc around the specified point. }
     procedure arc(x, y, radius, startAngleRadCW, endAngleRadCW: single; anticlockwise: boolean); overload;
+    { Adds an arc around the specified point in the clockwise direction. }
     procedure arc(x, y, radius, startAngleRadCW, endAngleRadCW: single); overload;
+    { Adds an elliptical arc around the specified point. }
     procedure arc(cx, cy, rx,ry, xAngleRadCW, startAngleRadCW, endAngleRadCW: single; anticlockwise: boolean); overload;
+    { Adds an elliptical arc around the specified point in the clockwise direction. }
     procedure arc(cx, cy, rx,ry, xAngleRadCW, startAngleRadCW, endAngleRadCW: single); overload;
+    { Adds an elliptical arc using TArcDef. }
     procedure arc(constref arcDef: TArcDef); overload;
+    { Adds an arc from current position. }
     procedure arcTo(x1, y1, x2, y2, radius: single); overload;
+    { Adds an arc from current position using TPointF. }
     procedure arcTo(p1,p2: TPointF; radius: single); overload;
+    { Adds an elliptic arc of the given angle from current position. }
     procedure arcTo(rx, ry, xAngleRadCW: single; largeArc,anticlockwise: boolean; x, y: single);
+    { Adds a full circle. }
     procedure circle(x,y,r: single);
+    { Adds a full ellipse. }
     procedure ellipse(x,y,rx,ry: single);
+    { Adds the path of a text. }
     procedure text(AText: string; x,y: single);
+    { Fills directly the specified text using current fill style. }
     procedure fillText(AText: string; x,y: single);
+    { Draws directly the outline of the specified text using current stroke style. }
     procedure strokeText(AText: string; x,y: single);
+    { Measures the size of the given text. }
     function measureText(AText: string): TCanvas2dTextSize;
 
+    { Fills the current path with the current fill style. }
     procedure fill; overload;
+    { Fills the current path using the specified function. }
     procedure fill(AFillProc: TBGRAPathFillProc; AData: pointer); overload;
+    { Fills the current path using the specified function and transformation matrix. }
     procedure fill(AFillProc: TBGRAPathFillProc; const AMatrix: TAffineMatrix; AData: pointer); overload; //may not render curve nicely
+    { Strokes the current path with the current stroke style. }
     procedure stroke; overload;
+    { Strokes the current path using the specified function. }
     procedure stroke(ADrawProc: TBGRAPathDrawProc; AData: pointer); overload;
+    { Strokes the current path using the specified function and transformation matrix. }
     procedure stroke(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AData: pointer); overload; //may not render curve nicely
+    { Fill and stroke at the same time, with filling being on top }
     procedure fillOverStroke;
+    { Fill and stroke at the same time, with stroke being on top }
     procedure strokeOverFill;
+    { Clears the area represented by the current path, making the canvas transparent }
     procedure clearPath;
+    { Clips the drawing region to the current path. }
     procedure clip;
+    { Reintroduce the current path in the drawing region. }
     procedure unclip;
+    { Checks if a given point is inside the current path. }
     function isPointInPath(x,y: single): boolean; overload;
+    { Checks if a given TPointF is inside the current path. }
     function isPointInPath(pt: TPointF): boolean; overload;
 
+    { Draws an image at the specified location. }
     procedure drawImage(image: TBGRACustomBitmap; dx,dy: single; AFilter: TResampleFilter = rfLinear); overload;
+    { Draws an image with scaling. }
     procedure drawImage(image: TBGRACustomBitmap; dx,dy,dw,dh: single; AFilter: TResampleFilter = rfLinear); overload;
+    { Applies the specified mask at the specified location
+      for future drawings. }
     procedure mask(image: TBGRACustomBitmap; dx,dy: single; AFilter: TResampleFilter = rfLinear); overload;
+    { Applies the specified mask with scaling
+      for future drawings. }
     procedure mask(image: TBGRACustomBitmap; dx,dy,dw,dh: single; AFilter: TResampleFilter = rfLinear); overload;
 
+    { Gets the current line style. }
     function getLineStyle: TBGRAPenStyle;
+    { Sets the style for lines. }
     procedure lineStyle(const AValue: array of single); overload;
+    { Sets the style for lines using a predefined style. }
     procedure lineStyle(AStyle: TPenStyle); overload;
 
+    { Converts a string of font names to a list. }
     class function StrToFontNameList(AText: string): ArrayOfString;
+    { Converts a list of font names to a string. }
     class function FontNameListToStr(AList: ArrayOfString): string;
-    class function CSSFontNameToLCL(AName: string): string;
+     { Converts CSS font name to LCL font name. }
+     class function CSSFontNameToLCL(AName: string): string;
 
+    { The underlying bitmap where the canvas draws. }
     property surface: TBGRACustomBitmap read FSurface;
+    { The width of the underlying bitmap. }
     property width: Integer read GetWidth;
+    { The height of the underlying bitmap. }
     property height: Integer read GetHeight;
+    { Determines if coordinates are centered on pixels (**false** by default). }
     property pixelCenteredCoordinates: boolean read GetPixelCenteredCoordinates write SetPixelCenteredCoordinates;
+    { The global alpha (transparency) applied to drawings. }
     property globalAlpha: single read GetGlobalAlpha write SetGlobalAlpha;
+    { The transformation matrix applied to the path. }
     property matrix: TAffineMatrix read GetMatrix write SetMatrix;
+    { The transformation matrix applied to pen. }
     property strokeMatrix: TAffineMatrix read GetStrokeMatrix write SetStrokeMatrix;
 
+    { The width of lines drawn on the canvas. }
     property lineWidth: single read GetLineWidth write SetLineWidth;
+    { The shape used at the end of lines (`butt`, `round`, `square`). }
     property lineCap: string read GetLineCap write SetLineCap;
+    { Line cap style using LCL enumeration. }
     property lineCapLCL: TPenEndCap read GetLineCapLCL write SetLineCapLCL;
+    { The type of corner created when two lines meet (`miter`, `round`, `bevel`). }
     property lineJoin: string read GetlineJoin write SetLineJoin;
+    { Line join style using LCL enumeration. }
     property lineJoinLCL: TPenJoinStyle read GetlineJoinLCL write SetLineJoinLCL;
+    { The maximum miter length when connecting lines. }
     property miterLimit: single read GetMiterLimit write SetMiterLimit;
 
+    { The horizontal offset of the shadow from the shape. }
     property shadowOffsetX: single read GetShadowOffsetX write SetShadowOffsetX;
+    { The vertical offset of the shadow from the shape. }
     property shadowOffsetY: single read GetShadowOffsetY write SetShadowOffsetY;
+    { The offset of the shadow as a TPointF. }
     property shadowOffset: TPointF read GetShadowOffset write SetShadowOffset;
+    { The blur level of the shadow. }
     property shadowBlur: single read GetShadowBlur write SetShadowBlur;
+    { If true, uses a faster but less accurate shadow algorithm. }
     property shadowFastest: boolean read GetShadowFastest write SetShadowFastest;
+    { @abstract(Indicates if any shadow is set.)
+
+    A shadow is visible if the shadow color is set and
+    the offset or the radius is set. }
     property hasShadow: boolean read GetHasShadow;
 
+    { The name of the font for text drawing. }
     property fontName: string read GetFontName write SetFontName;
+    { The size of the font's em square in pixels. }
     property fontEmHeight: single read GetFontEmHeight write SetFontEmHeight;
+    { The style of the font using LCL enumeration set. }
     property fontStyle: TFontStyles read GetFontStyle write SetFontStyle;
+    { Combined font properties in CSS-like string format. }
     property font: string read GetFontString write SetFontString;
+    { Horizontal alignment of text using LCL enumeration. }
     property textAlignLCL: TAlignment read GetTextAlignLCL write SetTextAlignLCL;
+    { Horizontal alignment of text (`left`, `right`, `center`, `start`, `end`). }
     property textAlign: string read GetTextAlign write SetTextAlign;
+    { Vertical alignment of text (`top`, `middle`, `alphabetic`, `bottom`). }
     property textBaseline: string read GetTextBaseline write SetTextBaseline;
+    { The direction of the text (left-to-right, right-to-left). }
     property direction: TFontBidiMode read GetTextDirection write SetTextDirection;
     
+    { The rule to use for filling shapes (non-zero winding, even-odd alternate). }
     property fillMode: TFillMode read GetFillMode write SetFillMode;
 
+    { The current path as an array of points. }
     property currentPath: ArrayOfTPointF read GetCurrentPathAsPoints;
+    { The renderer used for custom font drawing. }
     property fontRenderer: TBGRACustomFontRenderer read GetFontRenderer write SetFontRenderer;
 
-  protected
+  private
     function QueryInterface({$IFDEF FPC_HAS_CONSTREF}constref{$ELSE}const{$ENDIF} IID: TGUID; out Obj): HResult; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
     function _AddRef: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
     function _Release: Integer; {$IF (not defined(WINDOWS)) AND (FPC_FULLVERSION>=20501)}cdecl{$ELSE}stdcall{$IFEND};
@@ -469,7 +660,7 @@ ctx.stroke();
 
 implementation
 
-uses Math, BGRAFillInfo, BGRAPolygon, BGRABlend, FPWriteJPEG, FPWriteBMP, base64, BGRAFilterBlur;
+uses Math, BGRAFillInfo, BGRAPolygon, BGRABlend, BGRAWriteJPEG, BGRAWriteBMP, base64, BGRAFilterBlur;
 
 type
   TColorStop = record
@@ -2005,8 +2196,8 @@ end;
 function TBGRACanvas2D.toDataURL(mimeType: string): string;
 var
   stream: TMemoryStream;
-  jpegWriter: TFPWriterJPEG;
-  bmpWriter: TFPWriterBMP;
+  jpegWriter: TBGRAWriterJPEG;
+  bmpWriter: TBGRAWriterBMP;
   output: TStringStream;
   encode64: TBase64EncodingStream;
 begin
@@ -2014,13 +2205,13 @@ begin
   stream := TMemoryStream.Create;
   if mimeType='image/jpeg' then
   begin
-    jpegWriter := TFPWriterJPEG.Create;
+    jpegWriter := TBGRAWriterJPEG.Create;
     Surface.SaveToStream(stream,jpegWriter);
     jpegWriter.Free;
   end else
   if mimeType='image/bmp' then
   begin
-    bmpWriter := TFPWriterBMP.Create;
+    bmpWriter := TBGRAWriterBMP.Create;
     Surface.SaveToStream(stream,bmpWriter);
     bmpWriter.Free;
   end else

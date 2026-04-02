@@ -5,7 +5,7 @@ unit utest18;
 interface
 
 uses
-  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRABitmapTypes;
+  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRAClasses, BGRABitmapTypes;
 
 const
   nbPoints = 3;
@@ -76,14 +76,14 @@ begin
 
   virtualScreen.PutImageAngle(virtualScreen.Width div 2,virtualScreen.Height div 2,texture,angle,texture.Width/2,texture.Height/2);
 
-  virtualScreen.draw(Canvas,Left,Top);
+  virtualScreen.draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest18.OnTimer(Width, Height: Integer; ElapsedSec: Double);
 var i: integer;
     moveFactor: single;
 begin
-  angle += ElapsedSec*20;
+  IncF(angle, ElapsedSec*20);
   if pts = nil then
   begin
     setlength(pts,nbPoints);

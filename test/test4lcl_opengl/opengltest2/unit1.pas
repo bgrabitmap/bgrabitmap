@@ -12,7 +12,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  OpenGLContext, BGRABitmap, BGRABitmapTypes, BGRAOpenGL;
+  OpenGLContext, BGRABitmap, BGRAClasses, BGRABitmapTypes, BGRAOpenGL;
 
 type
 
@@ -65,13 +65,13 @@ begin
   begin
     if angle = 360 then
       GoBack := True;
-    angle += 1;
+    IncF(angle, 1);
   end
   else
   begin
     if angle = 0 then
       GoBack := False;
-    angle -= 1;
+    DecF(angle, 1);
   end;
   OpenGLControl.DoOnPaint;
 end;

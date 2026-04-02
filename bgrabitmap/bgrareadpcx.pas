@@ -22,11 +22,17 @@ uses FPImage, BGRAClasses, SysUtils, FPReadPCX;
 
 type
   { Reader for PCX image format }
+
+  { TBGRAReaderPCX }
+
   TBGRAReaderPCX = class(TFPReaderPCX)
   protected
     FBuffer: packed array of byte;
     FBufferPos, FBufferSize: integer;
     FBufferStream: TStream;
+
+    function GetBitsPerPixel: byte;
+    function GetGrayScale: Boolean;
     function InternalCheck(Stream: TStream): boolean; override;
     procedure ReadResolutionValues(Img: TFPCustomImage);
     procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
@@ -35,6 +41,11 @@ type
     procedure InitReadBuffer(AStream: TStream; ASize: integer);
     procedure CloseReadBuffer;
     function GetNextBufferByte: byte;
+
+  published
+    property GrayScale: Boolean read GetGrayScale;
+    property BitsPerPixel: byte read GetBitsPerPixel; // [1, 4, 8, 24]
+    property Compressed;  //: boolean r;
   end;
 
 implementation
@@ -236,6 +247,16 @@ begin
   end;
 end;
 
+function TBGRAReaderPCX.GetBitsPerPixel: byte;
+begin
+  Result:= Header.BitsPerPixel;
+end;
+
+function TBGRAReaderPCX.GetGrayScale: Boolean;
+begin
+  Result:= (Header.PaletteType = 2);
+end;
+
 function TBGRAReaderPCX.InternalCheck({%H-}Stream: TStream): boolean;
 var
   {%H-}magic: packed array[0..3] of byte;
@@ -249,6 +270,6 @@ begin
 end;
 
 initialization
-  DefaultBGRAImageReader[ifPcx] := TBGRAReaderPCX;
+  BGRARegisterImageReader(ifPcx, TBGRAReaderPCX, True, 'PCX Format', 'pcx');
 
 end.

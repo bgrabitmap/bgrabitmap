@@ -119,7 +119,26 @@ type
     property AcceptedDeviation: single read FAcceptedDeviation;
   end;
 
-  { Path (in 2D) that allows to define custom shapes that can be drawn }
+  { @abstract(Path (in 2D) that allows to define custom shapes that can be drawn.)
+
+**Example of drawing an arrow with a path:**
+```pascal
+procedure TForm1.BGRAVirtualScreen1Redraw(Sender: TObject; Bitmap: TBGRABitmap);
+var p: TBGRAPath;
+begin
+  p := TBGRAPath.Create;
+  p.scale(2);
+  p.moveTo(20, 20);
+  p.arcTo(60, 20, 60, 40, 20);
+  p.arcTo(60, 120, 80, 120, 20);
+  p.lineTo(120, 120);
+  Bitmap.ArrowEndAsClassic;
+  Bitmap.ArrowEndSize := PointF(5,5);
+  Bitmap.DrawPath(p, clBlack, 3);
+  Bitmap.ArrowEndAsNone;
+  p.Free;
+end;
+```}
   TBGRAPath = class(TBGRACustomPath)
   protected
     FData: PByte;
@@ -2217,6 +2236,7 @@ var p: integer;
   var numberStart: integer;
       errPos: integer;
       decimalFind: boolean;
+      str: String;
 
     procedure parseFloatInternal;
     begin
@@ -2242,7 +2262,8 @@ var p: integer;
       inc(p);
       parseFloatInternal;
     end;
-    val(copy(AValue,numberStart,p-numberStart),result,errPos);
+    str := copy(AValue,numberStart,p-numberStart);
+    val(str,result,errPos);
     if errPos <> 0 then numberError := true;
   end;
 

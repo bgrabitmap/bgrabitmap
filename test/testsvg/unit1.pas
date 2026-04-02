@@ -211,7 +211,7 @@ begin
   baseDir := ExtractFilePath(Application.ExeName);
   {$IFDEF DARWIN}
   if not DirectoryExists(baseDir+'svg') then
-    baseDir += '../../../';
+    baseDir := baseDir + '../../../';
   {$ENDIF}
   Directory := baseDir+'svg'+PathDelim;
   Mask:= '*.svg';

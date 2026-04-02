@@ -35,8 +35,8 @@
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="11" Minor="6" Release="1"/>
-    <Files Count="108">
+    <Version Major="11" Minor="6" Release="6"/>
+    <Files Count="109">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -469,6 +469,10 @@
         <Filename Value="generatedutf8.inc"/>
         <Type Value="Include"/>
       </Item108>
+      <Item109>
+        <Filename Value="bgrapdf.pas"/>
+        <UnitName Value="BGRAPDF"/>
+      </Item109>
     </Files>
     <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="2">

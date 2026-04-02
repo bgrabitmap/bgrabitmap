@@ -28,7 +28,7 @@ begin
   Antialiasing := True;
   for i := 1 to 10 do
     EraseLine(random(w),random(h),random(w),random(h),255);
-  
+
   r := RectWithSize(w div 4, h div 4, w div 2, h div 2);
   c1 := MergeBGRA([CSSYellow,CSSWhite]);
   c2 := MergeBGRA([CSSYellow,CSSRed]);
@@ -36,7 +36,7 @@ begin
   begin
     pt := Point(random(w),random(h));
     if PtInRect(pt,r) then
-      DrawPixel(pt.x,pt.y,c1) 
+      DrawPixel(pt.x,pt.y,c1)
 	else
 	  DrawPixel(pt.x,pt.y,c2);
   end;
@@ -81,7 +81,7 @@ begin
 	if v > 65535 then ec.red := 65535 else ec.red := v;
 	if v > 65535 then ec.green := v-65536 else ec.green := 0;
 	ec.blue := 0;
-	ec.alpha := 65535;	
+	ec.alpha := 65535;
 	c := GammaCompression(ec);
     for x := w-1 downto 0 do
 	begin
@@ -104,7 +104,7 @@ begin
     Antialiasing := Odd(i);
 	if Antialiasing then
 	begin
-      DrawMode := dmNormal;	
+      DrawMode := dmNormal;
       FillRoundRect(random(w),random(h),random(w),random(h),r,r,CSSOrange);
 	end
 	else
@@ -185,21 +185,23 @@ begin
   SetFontFullHeight(txth);
   txtw := TextWidth(text);
   if txtw > BitmapWidth then SetFontFullHeight(txth*BitmapWidth div txtw);
-  
+
   TextAlignment := taCenter;
   FontStyle := [];            TextOut(x,y,text,CSSBlack); inc(y, txth);
   FontStyle := [fsBold];      TextOut(x,y,text,CSSBlack); inc(y, txth);
   FontStyle := [fsItalic];    TextOut(x,y,text,CSSBlack); inc(y, txth);
   FontStyle := [fsStrikeOut]; TextOut(x,y,text,CSSBlack); inc(y, txth);
   FontStyle := [fsUnderline]; TextOut(x,y,text,CSSBlack); inc(y, txth);
-  
+
   for i := 1 to 100 do
   begin
     x := random(w);
-	y := random(h);
-	FillRect(x-5,y-5,x+5,y+5,GetPixel(x,y));
+    y := random(h);
+    c := GetPixel(x,y);
+    c.alpha := 64;
+    FillEllipse(x-10,y-10,21,21, c);
   end;
-  
+
   FontStyle := [];
   TextAlignment := taLeft;
   TestDone('TextOut+GetPixel');
@@ -213,7 +215,7 @@ begin
   y := h div 2;
   SetFontEmHeight(20);
   TextLayout := tlCenter;
-  
+
   SetClipRect(0,0,w,y);
   for i := 0 to 5 do
     TextOutAngle(x,y,i*3600 div 6, '  Text with angle',BGRA(192,192,192));
@@ -221,7 +223,7 @@ begin
   for i := 0 to 5 do
     TextOutAngle(x,y,i*3600 div 6, '  Text with angle',CSSBlack);
   NoClip;
-	
+
   TextLayout := tlTop;
 
   TextLayout := tlBottom;
@@ -229,12 +231,12 @@ begin
   TextOut(x, BitmapHeight, 'Text in all directions', CSSBlack);
   TextLayout := tlTop;
   TextAlignment := taLeft;
-  
+
   TestDone('TextOutAngle+Clipping');
 end;
 
 procedure TestTextRect;
-var r : TRect;  
+var r : TRect;
 begin
   FillBitmap(CSSWhite);
   r := rect(0,0,w,h);
@@ -251,7 +253,7 @@ begin
   TextLayout := tlTop;
   TextAlignment := taLeft;
   FillBitmapAlpha(224);
-  
+
   Antialiasing := False;
   DrawPolygon([Point(w div 2,0),Point(w-1,h-1),Point(0,h-1)],CSSRed);
   Antialiasing := True;
@@ -260,7 +262,7 @@ begin
   ErasePolygonOutline([Point(0,h div 2),Point(w-1,0),Point(w-1,h-1)],192);
   Antialiasing := True;
   ErasePolygonOutline([Point(w-1,h div 2),Point(0,0),Point(0,h-1)],192);
-  
+
   TestDone('TextRect+DrawPolygon[Antialias]+ErasePolygonOutline[Antialias]');
 end;
 
@@ -269,7 +271,7 @@ end;
 procedure TestBitmap;
 var mainBitmap, sprite, sprite2: TBGRABitmap;
   i: integer;
-  
+
   procedure PixelSwapRedBlue(x,y: Int32; var pix: TBGRAPixel);
   var oldRed: byte;
   begin
@@ -277,29 +279,29 @@ var mainBitmap, sprite, sprite2: TBGRABitmap;
     pix.red := pix.blue;
     pix.blue := oldRed;
   end;
-  
-begin  
+
+begin
   FillBitmap(CSSWhite);
   mainBitmap := SelectedBitmap;
 
   sprite := CreateBitmap(32,32);
   sprite.Select;
   for i := 1 to 100 do
-    SetPixel(random(BitmapWidth),random(BitmapHeight),CSSBlack);	
+    SetPixel(random(BitmapWidth),random(BitmapHeight),CSSBlack);
 
   mainBitmap.Select;
   for i := 1 to 50 do
-    PutImage(random(BitmapWidth),random(BitmapHeight), sprite, i*255 div 50);	
+    PutImage(random(BitmapWidth),random(BitmapHeight), sprite, i*255 div 50);
 
   sprite.Select;
   SetBitmapSize(16,16);
   FillTransparent;
   for i := 1 to 100 do
-    SetPixel(random(BitmapWidth),random(BitmapHeight),CSSBlack);	
+    SetPixel(random(BitmapWidth),random(BitmapHeight),CSSBlack);
 
   mainBitmap.Select;
   for i := 1 to 50 do
-    PutImage(random(BitmapWidth),random(BitmapHeight), sprite, i*255 div 50);	
+    PutImage(random(BitmapWidth),random(BitmapHeight), sprite, i*255 div 50);
   sprite.Free;
 
   sprite := CreateBitmap('testimage.png');
@@ -307,7 +309,7 @@ begin
   sprite2.Select;
   // ToDo: fix
   //ForEachPixel(@PixelSwapRedBlue);
-  
+
   mainBitmap.Select;
   for i := 1 to 50 do
   begin
@@ -316,56 +318,9 @@ begin
   end;
   sprite.Free;
   sprite2.Free;
-  
+
   TestDone('CreateBitmap+PutImage');
 end;
-
-procedure TestColors;
-var x: integer;
-  
-  procedure DoStuff(var x: integer; pixProc1,pixProc2: TForEachPixelProc);
-  var
-    mainBitmap, sprite,sprite2: TBGRABitmap;
-    tx,ty: integer;  
-  begin
-  mainBitmap := SelectedBitmap;  
-  sprite := CreateBitmap('testimage.png');
-  sprite.Select;
-  tx := BitmapWidth;
-  ty := BitmapHeight;  
-  sprite2 := sprite.Duplicate;
-  
-  sprite.Select;
-  ForEachPixel(@pixProc1);  
-  mainBitmap.Select;
-  PutImage(x,0,sprite);
-  sprite.Select;
-  ForEachPixel(@pixProc1);  
-  mainBitmap.Select;
-  PutImage(x,ty,sprite);
-  sprite.Select;
-  ForEachPixel(@pixProc1);  
-  mainBitmap.Select;
-  PutImage(x,2*ty,sprite);
-  inc(x, tx);
-
-  sprite2.Select;
-  ForEachPixel(@pixProc2);  
-  mainBitmap.Select;
-  PutImage(x,0,sprite2);
-  sprite2.Select;
-  ForEachPixel(@pixProc2);  
-  mainBitmap.Select;
-  PutImage(x,ty,sprite2);
-  sprite2.Select;
-  ForEachPixel(@pixProc2);  
-  mainBitmap.Select;
-  PutImage(x,2*ty,sprite2);
-  inc(x, tx);
-  
-  sprite.Free;
-  sprite2.Free;
-  end;
 
   procedure IntensityNotExpanded(x,y: Int32; var pix: TBGRAPixel);
   begin
@@ -386,7 +341,7 @@ var x: integer;
   begin //should be the same, but via explicit conversion between TBGRAPixel and TExpandedPixel
     pix := GammaCompression(SetLightness(GammaExpansion(pix), GetLightness(GammaExpansion(pix))*4 div 3));
   end;
-  
+
   procedure HSLANotExpanded(x,y: Int32; var pix: TBGRAPixel);
   var hsla: THSLAPixel;
   begin
@@ -402,7 +357,7 @@ var x: integer;
     hsla := ExpandedToHSLA(GammaExpansion(pix));
 	hsla.hue := hsla.hue+5000;
     pix := GammaCompression(HSLAToExpanded(hsla));
-  end;  
+  end;
 
   procedure GSBANotExpanded(x,y: Int32; var pix: TBGRAPixel);
   var GSBA: TGSBAPixel;
@@ -419,30 +374,81 @@ var x: integer;
     GSBA := ExpandedToGSBA(GammaExpansion(pix));
 	GSBA.hue := GSBA.hue+5000;
     pix := GammaCompression(GSBAToExpanded(GSBA));
-  end;  
+  end;
 
   procedure GrayscaleNotExpanded(x,y: Int32; var pix: TBGRAPixel);
+  var gray: TBGRAPixel;
   begin
-    pix := BGRAToGrayscale(pix);
+    gray := BGRAToGrayscale(pix);
+    pix := MergeBGRA(gray, 1, pix, 1);
   end;
 
   procedure GrayscaleExpanded(x,y: Int32; var pix: TBGRAPixel);
   //should be the same, but via explicit conversion between TBGRAPixel and TExpandedPixel
-  begin    
-    pix := GammaCompression(ExpandedToGrayscale(GammaExpansion(pix)));
-  end;  
-  
+  var gray: TBGRAPixel;
+  begin
+    gray := GammaCompression(ExpandedToGrayscale(GammaExpansion(pix)));
+    pix := MergeBGRA(gray, 1, pix, 1);
+  end;
+
+procedure TestColors;
+var x: integer;
+
+  procedure DoStuff(var x: integer; pixProc1,pixProc2: TForEachPixelProc);
+  var
+    mainBitmap, sprite,sprite2: TBGRABitmap;
+    tx,ty: integer;
+  begin
+  mainBitmap := SelectedBitmap;
+  sprite := CreateBitmap('testimage.png');
+  sprite.Select;
+  tx := BitmapWidth;
+  ty := BitmapHeight;
+  sprite2 := sprite.Duplicate;
+
+  sprite.Select;
+  ForEachPixel(@pixProc1);
+  mainBitmap.Select;
+  PutImage(x,0,sprite);
+  sprite.Select;
+  ForEachPixel(@pixProc1);
+  mainBitmap.Select;
+  PutImage(x,ty,sprite);
+  sprite.Select;
+  ForEachPixel(@pixProc1);
+  mainBitmap.Select;
+  PutImage(x,2*ty,sprite);
+  inc(x, tx);
+
+  sprite2.Select;
+  ForEachPixel(@pixProc2);
+  mainBitmap.Select;
+  PutImage(x,0,sprite2);
+  sprite2.Select;
+  ForEachPixel(@pixProc2);
+  mainBitmap.Select;
+  PutImage(x,ty,sprite2);
+  sprite2.Select;
+  ForEachPixel(@pixProc2);
+  mainBitmap.Select;
+  PutImage(x,2*ty,sprite2);
+  inc(x, tx);
+
+  sprite.Free;
+  sprite2.Free;
+  end;
+
 begin
   FillBitmap(CSSWhite);
   x := 0;
-  
+
   // ToDo: fix
-  {DoStuff(x, @IntensityNotExpanded, @IntensityExpanded);
+  DoStuff(x, @IntensityNotExpanded, @IntensityExpanded);
   DoStuff(x, @LightnessNotExpanded, @LightnessExpanded);
   DoStuff(x, @HSLANotExpanded, @HSLAExpanded);
   DoStuff(x, @GrayscaleNotExpanded, @GrayscaleExpanded);
-  DoStuff(x, @GSBANotExpanded, @GSBAExpanded);}
-        
+  DoStuff(x, @GSBANotExpanded, @GSBAExpanded);
+
   TestDone('Intensity,Lightness,HSLA,Grayscale,GSBA');
 end;
 
@@ -484,14 +490,14 @@ begin
     RoundRectF(RandomX,RandomY,RandomX,RandomY,r,r, c,3);
   for i := 1 to n do
     RoundRectF(RandomX,RandomY,RandomX,RandomY,r,r, c,3,c2);
-	
+
   for i := 1 to n do
     FillEllipseF(RandomX,RandomY,RandomX/2,RandomY/2, c2);
   for i := 1 to n do
     EllipseF(RandomX,RandomY,RandomX/2,RandomY/2, c,3);
   for i := 1 to n do
     EllipseF(RandomX,RandomY,RandomX/2,RandomY/2, c,3,c2);
-  
+
   TestDone('RectangleF/RoundRectF/EllipseF');
 end;
 
@@ -518,7 +524,7 @@ begin
     DrawPolyLineF([RandomPointF,RandomPointF,RandomPointF], c,3,c2);
   for i := 1 to n do
     DrawPolygonF([RandomPointF,RandomPointF,RandomPointF], c,3,c2);
-	
+
   TestDone('DrawLineF, PolyLineF, PolygonF');
 end;
 
@@ -527,10 +533,10 @@ end;
 begin
   w := BitmapWidth;
   h := BitmapHeight;
-  
+
   TestBitmap;
   TestColors;
-  
+
   TestRectF;
   TestLineF;
   Antialiasing := false;
@@ -541,16 +547,16 @@ begin
   TestLineF;
   DrawMode := dmNormal;
   Antialiasing := true;
-  
+
   TestPixelAndLine;
-  TestForEachPixel;  
+  TestForEachPixel;
   TestScanline;
   TestFillRect;
   TestRect;
-  TestEllipse;  
-  
+  TestEllipse;
+
   TestTextOut;
   TestTextOutAngle;
-  TestTextRect;  
+  TestTextRect;
   FillTransparent;
 end;

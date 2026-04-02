@@ -21,7 +21,39 @@ type
     procedures, and finally, use the newly created object as a scanner.
 
     You can transform a gradient or a bitmap. See TBGRAAffineBitmapTransform
-    for bitmap specific transformation. }
+    for bitmap specific transformation.
+
+**Example drawing an oblique radial gradient:**
+
+@image(../doc/img/tbgraaffinescannertransform.png)
+
+```pascal
+uses BGRAGradientScanner, BGRATransform;
+
+procedure TForm1.FormPaint(Sender: TObject);
+var image: TBGRABitmap;
+    grad: TBGRAGradientScanner;
+    affine: TBGRAAffineScannerTransform;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, BGRABlack );
+
+  grad := TBGRAGradientScanner.Create(BGRA(0,0,255),BGRAWhite,gtRadial,PointF(0,0),PointF(1,0),True,True);
+
+  affine := TBGRAAffineScannerTransform.Create(grad);
+  affine.Scale(150,80);
+  affine.RotateDeg(-30);
+  affine.Translate(ClientWidth/2, ClientHeight/2);
+
+  image.Fill(affine);
+
+  affine.free;
+  grad.free;
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```
+}
   TBGRAAffineScannerTransform = class(TBGRACustomScanner)
   protected
     FScanner: IBGRAScanner;
@@ -58,7 +90,40 @@ type
   { @abstract(Scanners that applies an affine transform to a bitmap.)
 
     It is usedful if you don't want the bitmap to repeats itself, or want to specify the
-    resample filter, or want to fit easily the bitmap on axes. }
+    resample filter, or want to fit easily the bitmap on axes.
+
+**Example filling with a rotated image:**
+
+@image(../doc/img/tbgraffinebitmaptransform.png)
+
+```pascal
+uses BGRABitmap, BGRABitmapTypes, BGRATransform;
+
+procedure TForm1.PaintImage;
+var image: TBGRABitmap;
+    tex: TBGRABitmap;
+    affine: TBGRAAffineBitmapTransform;
+
+begin
+  //black background
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, BGRABlack );
+
+  tex:= TBGRABitmap.Create('image.png'); //load a bitmap
+
+  //create a rotation of 45°
+  affine := TBGRAAffineBitmapTransform.Create(tex,True);
+  affine.RotateDeg(45);
+
+  //use this transformation as parameter instead of tex
+  image.FillPolyAntialias( [PointF(110,10), PointF(250,10), PointF(350,160), PointF(10,160)], affine);
+
+  affine.Free;
+  tex.Free;
+
+  image.Draw(Canvas,0,0,True); //draw on the screen
+  image.free;
+end;
+```}
   TBGRAAffineBitmapTransform = class(TBGRAAffineScannerTransform)
   protected
     FBitmap: TBGRACustomBitmap;
@@ -318,7 +383,37 @@ type
     Note : this scanner handles integer coordinates only, so
     any further transformation applied after this one may not
     render correctly.
-  }
+
+**Example drawing a radial gradient transformed with a twirl:**
+
+@image(../doc/img/tbgratwirlscanner.png)
+
+```pascal
+var image: TBGRABitmap;
+    grad: TBGRAGradientScanner;
+    affine: TBGRAAffineScannerTransform;
+    twirl: TBGRATwirlScanner;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, BGRABlack );
+
+  grad := TBGRAGradientScanner.Create(BGRA(0,0,255),BGRAWhite,gtRadial,PointF(0,0),PointF(1,0),True,True);
+
+  affine := TBGRAAffineScannerTransform.Create(grad);
+  affine.Scale(150,80);
+  affine.RotateDeg(-30);
+  affine.Translate(ClientWidth/2, ClientHeight/2);
+
+  twirl := TBGRATwirlScanner.Create(affine,Point(ClientWidth div 2, ClientHeight div 2),100);
+  image.Fill(twirl);
+  twirl.Free;
+
+  affine.free;
+  grad.free;
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```}
   TBGRATwirlScanner = Class(TBGRACustomScanner)
   protected
     FScanner: IBGRAScanner;

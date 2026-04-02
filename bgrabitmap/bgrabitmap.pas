@@ -30,7 +30,7 @@ interface
   to the platform }
 
 uses
-  BGRAClasses, BGRABitmapTypes, FPImage, SysUtils,
+  BGRAClasses, BGRABitmapTypes, FPImage, SysUtils, BGRAUnits,
 {$IFDEF BGRABITMAP_USE_FPGUI}
     BGRAfpGUIBitmap,
 {$ELSE}
@@ -44,6 +44,9 @@ uses
 		  {$IFDEF LCLgtk2}
 		BGRAGtkBitmap,
 		  {$ELSE}
+  		    {$IFDEF LCLgtk3}
+		  BGRAGtkBitmap,
+		    {$ELSE}
 			{$IF defined(LCLqt) or defined(LCLqt5)}
 		BGRAQtBitmap,
 			{$ELSE}
@@ -53,7 +56,8 @@ uses
 		BGRALCLBitmap,
               {$ENDIF}
 			{$ENDIF}
-		  {$ENDIF}
+                    {$ENDIF}
+                  {$ENDIF}
 		{$ENDIF}
 	  {$ENDIF}
 	{$ELSE}
@@ -74,16 +78,23 @@ type
     {$IFDEF BGRABITMAP_USE_LCL}
       {$IFDEF LCLwin32}
         {* Import version for Windows }
+
+        { TBGRABitmap }
+
         TBGRABitmap = class(TBGRAWinBitmap)
       {$ELSE}
         {$IFDEF LCLgtk}
         {* Import version for Linux GTK }
         TBGRABitmap = class(TBGRAGtkBitmap)
         {$ELSE}
-          {$IFDEF LCLgtk2}
+         {$IFDEF LCLgtk2}
         {* Import version for Linux GTK2 }
         TBGRABitmap = class(TBGRAGtkBitmap)
-          {$ELSE}
+         {$ELSE}
+          {$IFDEF LCLgtk3}
+          {* Import version for Linux GTK2 }
+          TBGRABitmap = class(TBGRAGtkBitmap)
+            {$ELSE}
             {$IF defined(LCLqt) or defined(LCLqt5)}
         {* Import version for Qt }
         TBGRABitmap = class(TBGRAQtBitmap)
@@ -97,6 +108,7 @@ type
               {$ENDIF}
             {$ENDIF}
           {$ENDIF}
+         {$ENDIF}
         {$ENDIF}
       {$ENDIF}
     {$ELSE}
@@ -122,11 +134,17 @@ type
     function GetUnique: TBGRABitmap; override;
     function Duplicate(DuplicateProperties: Boolean = False): TBGRABitmap; overload; override;
     function Duplicate(DuplicateProperties, DuplicateXorMask: Boolean) : TBGRABitmap; overload; override;
-    function GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TBGRABitmap; override;
+
+    function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGRABitmap; overload; override;
+    function GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean=False;
+                     ACopyProperties: Boolean=False; ATile: Boolean=True): TBGRABitmap; overload; override;
+
     function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
                 AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGRABitmap; override;
     function Resample(newWidth, newHeight: integer;
-      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRABitmap; override;
+      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRABitmap; overload; override;
+    function Resample(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+      mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=True): TBGRABitmap; overload; override;
     function RotateCW(ACopyProperties: Boolean=False): TBGRABitmap; override;
     function RotateCCW(ACopyProperties: Boolean=False): TBGRABitmap; override;
     function RotateUD(ACopyProperties: Boolean=False): TBGRABitmap; override;
@@ -290,15 +308,20 @@ begin
   Result:=inherited Duplicate(DuplicateProperties) as TBGRABitmap;
 end;
 
-function TBGRABitmap.Duplicate(DuplicateProperties, DuplicateXorMask: Boolean
-  ): TBGRABitmap;
+function TBGRABitmap.Duplicate(DuplicateProperties, DuplicateXorMask: Boolean): TBGRABitmap;
 begin
   Result:=inherited Duplicate(DuplicateProperties, DuplicateXorMask) as TBGRABitmap;
 end;
 
-function TBGRABitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TBGRABitmap;
+function TBGRABitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGRABitmap;
 begin
-  Result:=inherited GetPart(ARect, ACopyProperties) as TBGRABitmap;
+  Result:=inherited GetPart(ARect, ACopyProperties, ATile) as TBGRABitmap;
+end;
+
+function TBGRABitmap.GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean;
+                             ACopyProperties: Boolean; ATile: Boolean): TBGRABitmap;
+begin
+  Result:=inherited GetPart(ARect, PreserveMoreData, ACopyProperties, ATile) as TBGRABitmap;
 end;
 
 function TBGRABitmap.CreateBrushTexture(ABrushStyle: TBrushStyle;
@@ -312,6 +335,12 @@ end;
 function TBGRABitmap.Resample(newWidth, newHeight: integer; mode: TResampleMode; ACopyProperties: Boolean=False): TBGRABitmap;
 begin
   Result:=inherited Resample(newWidth, newHeight, mode, ACopyProperties) as TBGRABitmap;
+end;
+
+function TBGRABitmap.Resample(NewWidth, NewHeight: Single; ASizeUnit: TCSSUnit;
+  mode: TResampleMode; ACopyProperties: Boolean): TBGRABitmap;
+begin
+  Result:=inherited Resample(NewWidth, NewHeight, ASizeUnit, mode, ACopyProperties) as TBGRABitmap;
 end;
 
 function TBGRABitmap.RotateCW(ACopyProperties: Boolean=False): TBGRABitmap;

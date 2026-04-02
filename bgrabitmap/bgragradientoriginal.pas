@@ -14,22 +14,7 @@ uses
 type
   TBGRAColorInterpolation = BGRAGradientScanner.TBGRAColorInterpolation;
   TBGRAGradientRepetition = BGRAGradientScanner.TBGRAGradientRepetition;
-  TBGRALayerGradientOriginal = class;
-
-  { Difference in a gradient original }
-  TBGRAGradientOriginalDiff = class(TBGRAOriginalDiff)
-  protected
-    FStorageBefore, FStorageAfter: TBGRAMemOriginalStorage;
-  public
-    constructor Create(AOriginal: TBGRALayerGradientOriginal);
-    procedure ComputeDifference(AOriginal: TBGRALayerGradientOriginal);
-    destructor Destroy; override;
-    procedure Apply(AOriginal: TBGRALayerCustomOriginal); override;
-    procedure Unapply(AOriginal: TBGRALayerCustomOriginal); override;
-    function CanAppend(ADiff: TBGRAOriginalDiff): boolean; override;
-    procedure Append(ADiff: TBGRAOriginalDiff); override;
-    function IsIdentity: boolean; override;
-  end;
+  TBGRAGradientOriginalDiff = BGRALayerOriginal.TBGRAOriginalStorageDiff;
 
   { Original for rendering a gradient }
   TBGRALayerGradientOriginal = class(TBGRALayerCustomOriginal)
@@ -79,7 +64,6 @@ type
     procedure OnStartMove({%H-}ASender: TObject; {%H-}AIndex: integer; {%H-}AShift: TShiftState);
     procedure BeginUpdate;
     procedure EndUpdate;
-    procedure NotifyChangeWithoutDiff;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -131,62 +115,6 @@ type
 implementation
 
 uses BGRATransform, BGRABlend, math;
-
-{ TBGRAGradientOriginalDiff }
-
-constructor TBGRAGradientOriginalDiff.Create(AOriginal: TBGRALayerGradientOriginal);
-begin
-  FStorageBefore := TBGRAMemOriginalStorage.Create;
-  AOriginal.SaveToStorage(FStorageBefore);
-end;
-
-procedure TBGRAGradientOriginalDiff.ComputeDifference(
-  AOriginal: TBGRALayerGradientOriginal);
-begin
-  if Assigned(FStorageAfter) then FreeAndNil(FStorageAfter);
-  FStorageAfter := TBGRAMemOriginalStorage.Create;
-  AOriginal.SaveToStorage(FStorageAfter);
-end;
-
-destructor TBGRAGradientOriginalDiff.Destroy;
-begin
-  FStorageBefore.Free;
-  FStorageAfter.Free;
-  inherited Destroy;
-end;
-
-procedure TBGRAGradientOriginalDiff.Apply(AOriginal: TBGRALayerCustomOriginal);
-begin
-  if not Assigned(FStorageAfter) then raise exception.Create('Undefined state after diff');
-  AOriginal.LoadFromStorage(FStorageAfter);
-  (AOriginal as TBGRALayerGradientOriginal).NotifyChangeWithoutDiff;
-end;
-
-procedure TBGRAGradientOriginalDiff.Unapply(AOriginal: TBGRALayerCustomOriginal);
-begin
-  if not Assigned(FStorageBefore) then raise exception.Create('Undefined state before diff');
-  AOriginal.LoadFromStorage(FStorageBefore);
-  (AOriginal as TBGRALayerGradientOriginal).NotifyChangeWithoutDiff;
-end;
-
-function TBGRAGradientOriginalDiff.CanAppend(ADiff: TBGRAOriginalDiff): boolean;
-begin
-  result := ADiff is TBGRAGradientOriginalDiff;
-end;
-
-procedure TBGRAGradientOriginalDiff.Append(ADiff: TBGRAOriginalDiff);
-var
-  next: TBGRAGradientOriginalDiff;
-begin
-  next := ADiff as TBGRAGradientOriginalDiff;
-  FreeAndNil(FStorageAfter);
-  FStorageAfter := next.FStorageAfter.Duplicate as TBGRAMemOriginalStorage;
-end;
-
-function TBGRAGradientOriginalDiff.IsIdentity: boolean;
-begin
-  result := FStorageBefore.Equals(FStorageAfter);
-end;
 
 { TBGRALayerGradientOriginal }
 
@@ -557,11 +485,6 @@ begin
       FUpdateDiff := nil;
     end;
   end;
-end;
-
-procedure TBGRALayerGradientOriginal.NotifyChangeWithoutDiff;
-begin
-  NotifyChange;
 end;
 
 constructor TBGRALayerGradientOriginal.Create;

@@ -5,7 +5,7 @@ unit UGame;
 interface
 
 uses
-  Classes, sysutils, BGRAGraphics, BGRABitmap, BGRABitmapTypes,
+  Classes, sysutils, BGRAGraphics, BGRABitmap, BGRAClasses, BGRABitmapTypes,
   BGRAOpenGL, Controls;
 
 const
@@ -227,8 +227,8 @@ begin
     ofsX := tux.X;
     ofsY := tux.Y;
   end;
-  ofsX -= ctx.Width div 2;
-  ofsY -= ctx.Height div 2;
+  DecF(ofsX, ctx.Width div 2);
+  DecF(ofsY, ctx.Height div 2);
   if ofsX > 800-ctx.Width then ofsX := 800-ctx.Width;
   if ofsY > 600-ctx.Height then ofsY := 600-ctx.Height;
   if ofsX < 0 then ofsX := 0;
@@ -278,25 +278,25 @@ end;
 procedure TGameContext.AddGround(x, y, w: single);
 begin
   TGround.Create(texGround,x,y,1);
-  x += 32;
-  w -= 32;
+  IncF(x, 32);
+  DecF(w, 32);
   while w > 32 do
   begin
     TGround.Create(texGround,x,y,2);
-    x += 32;
-    w -= 32;
+    IncF(x, 32);
+    DecF(w, 32);
   end;
   TGround.Create(texGround,x,y,3);
 end;
 
 procedure TGameContext.Elapse(ctx: TBGLContext; ms: single);
 begin
-  infoTextAnimTime += ms;
-  elapsedMs += ms;
+  IncF(infoTextAnimTime, ms);
+  IncF(elapsedMs, ms);
   while elapsedMs > FrameDurationMs do
   begin
     ctx.Sprites.OnTimer;
-    elapsedMs -= FrameDurationMs;
+    DecF(elapsedMs, FrameDurationMs);
   end;
 end;
 
@@ -504,9 +504,9 @@ begin
     end else
     begin
       //on the ground and can move
-      if goRight then Speed.X += 0.1;
+      if goRight then IncF(Speed.X, 0.1);
       if Speed.X > 1.3 then Speed.X := 1.3;
-      if goLeft then Speed.X -= 0.1;
+      if goLeft then DecF(Speed.X, 0.1);
       if Speed.X < -1.3 then Speed.X := -1.3;
       if goUp then Speed.Y := -JumpStrength;
 
@@ -521,7 +521,7 @@ begin
       Frame := Frame+Speed.X*0.5;
   end;
 
-  Speed.Y += 0.1;
+  IncF(Speed.Y, 0.1);
   Location := Location+Speed;
   curY := Y;
   OnTheGround:= Context.FindGround(X,curY);

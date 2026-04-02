@@ -87,6 +87,16 @@ begin
   bmp.Rectangle(0, 0, bmp.Width, bmp.Height, BGRABlack);
 
   bmp.Rectangle(5, 5, bmp.Width - 5, bmp.Height - 5, BGRABlack);
+  
+  bmp.CanvasBGRA.TextStyle.ShowPrefix := true;
+  bmp.CanvasBGRA.TextStyle.Alignment := taLeftJustify;
+  bmp.CanvasBGRA.TextStyle.Layout := tlBottom;
+  bmp.CanvasBGRA.Font.Height := 40;
+  bmp.CanvasBGRA.Font.Color := CSSYellow;
+  bmp.CanvasBGRA.TextRect(rect(0, 0, bmp.Width, bmp.Height), 0,0, 
+    '&File &Edit'#10+
+    '&Open'#10 +
+    '&Quit');
 
   bmp.draw(acanvas, 0, 0, false);
   bmp.free;

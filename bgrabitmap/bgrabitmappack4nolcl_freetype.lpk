@@ -22,16 +22,13 @@
         </Optimizations>
       </CodeGeneration>
       <Other>
-        <ConfigFile>
-          <WriteConfigFilePath Value="$(PkgOutDir)\fpclaz.cfg"/>
-        </ConfigFile>
         <CustomOptions Value="-dBGRABITMAP_DONT_USE_LCL"/>
       </Other>
     </CompilerOptions>
     <Description Value="Drawing routines with alpha blending and antialiasing"/>
     <License Value="modified LGPL"/>
-    <Version Major="11" Minor="5" Release="5"/>
-    <Files Count="148">
+    <Version Major="11" Minor="6" Release="6"/>
+    <Files Count="149">
       <Item1>
         <Filename Value="bgraanimatedgif.pas"/>
         <UnitName Value="BGRAAnimatedGif"/>
@@ -626,6 +623,10 @@
         <Filename Value="bgrafreetype.pas"/>
         <UnitName Value="BGRAFreeType"/>
       </Item148>
+      <Item149>
+        <Filename Value="bgrapdf.pas"/>
+        <UnitName Value="BGRAPDF"/>
+      </Item149>
     </Files>
     <CompatibilityMode Value="True"/>
     <RequiredPkgs Count="2">

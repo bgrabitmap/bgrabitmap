@@ -219,10 +219,33 @@ type
     function GetDitheredBitmapIndexedData(ABitDepth: integer; AAlgorithm: TDitheringAlgorithm; ABitmap: TBGRACustomBitmap): Pointer; overload;
     function GetDitheredBitmapIndexedData(ABitDepth: integer; AByteOrder: TRawImageByteOrder; AAlgorithm: TDitheringAlgorithm;
       ABitmap: TBGRACustomBitmap; out AScanlineSize: PtrInt): Pointer; overload; virtual; abstract;
+    { Number colors provided in the source }
     property SourceColorCount: Integer read GetSourceColorCount;
+    { Value of a color in the source }
     property SourceColor[AIndex: integer]: TBGRAPixel read GetSourceColor;
+    { @abstract(Number of different colors in the reduced palette.)
+
+    By default, there are 256 colors.
+
+**Example to reduce an image to 16 colors:**
+```pascal
+uses BGRAColorQuantization, BGRABitmapTypes, BGRABitmap;
+var
+  quant : TBGRAColorQuantizer;
+  sourceBmp: TBGRABitmap;
+begin
+  sourceBmp := TBGRABitmap.Create('picture.jpg');
+  quant := TBGRAColorQuantizer.Create(sourceBmp, acIgnore);
+  quant.ReductionColorCount := 16;
+  quant.SaveBitmapToFile(daFloydSteinberg, sourceBmp, 'picture_in_4_bits.bmp');
+  quant.Free;
+  sourceBmp.Free;
+end;
+```}
     property ReductionColorCount: Integer read GetReductionColorCount write SetReductionColorCount;
+    { Palette with reduced number of colors after applying quantization }
     property ReducedPalette: TBGRACustomApproxPalette read GetPalette;
+    { Colors that is the most represented in the source }
     property DominantColor: TBGRAPixel read GetDominantColor;
   end;
 

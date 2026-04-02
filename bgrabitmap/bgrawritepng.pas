@@ -132,10 +132,12 @@ type
         AImage:TFPCustomImage;  // default image (may be as well in the animation)
         AAnimation: TPNGArrayOfFrameToWrite;
         ARepeatCount: integer = 0); // loop count (0 for infinite loop)
-      property GrayScale : boolean read FGrayscale write FGrayScale;
       property Indexed : boolean read FIndexed write FIndexed;
       property CustomPalette: TFPPalette read FCustomPalette write FCustomPalette;
       property CompressedText : boolean read FCompressedText write FCompressedText;
+
+    published
+      property GrayScale : boolean read FGrayscale write FGrayScale;
       property WordSized : boolean read FWordSized write FWordSized;
       property CompressionLevel : TCompressionLevel read FCompressionLevel write FCompressionLevel;
   end;
@@ -1141,7 +1143,6 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageWriter[ifPng] := TBGRAWriterPNG;
+  BGRARegisterImageWriter(ifPng, TBGRAWriterPNG, True, 'Portable Network Graphics', 'png');
 
 end.

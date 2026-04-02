@@ -12,25 +12,40 @@ uses
 
 type
   { Reader for LZP image format (flattened) }
+
+  { TBGRAReaderLazPaint }
+
   TBGRAReaderLazPaint = class(TFPCustomImageReader)
-  private
+  protected
     FHeight: integer;
     FNbLayers: integer;
     FWidth: integer;
     FCaption: string;
     FDimensionsAlreadyFetched: boolean;
-  protected
+    {%H-}header: TLazPaintImageHeader;
+    FWantThumbnail: boolean;
+
+    function GetCompression: TLzpCompression;
+    function GetIncludeThumbnail: boolean;
+    procedure SetIncludeThumbnail(AValue: boolean);
     procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;
     procedure InternalReadLayers({%H-}str: TStream;{%H-}Img: TFPCustomImage); virtual;
     procedure InternalReadCompressableBitmap(str: TStream; Img: TFPCustomImage); virtual;
     function InternalCheck(Str: TStream): boolean; override;
   public
-    WantThumbnail: boolean;
     class procedure LoadRLEImage(Str: TStream; Img: TFPCustomImage; out ACaption: string); static;
     property Width: integer read FWidth;
     property Height: integer read FHeight;
+    property WantThumbnail: boolean read FWantThumbnail write FWantThumbnail; deprecated 'Use IncludeThumbnail';
+
+  published
     property NbLayers: integer read FNbLayers;
     property Caption: string read FCaption;
+
+    {** Property to read the compression in use }
+    property Compression: TLzpCompression read GetCompression;
+    {** Specify if you want the thumbnail or not }
+    property IncludeThumbnail: boolean read GetIncludeThumbnail write SetIncludeThumbnail;
   end;
 
 implementation
@@ -39,9 +54,23 @@ uses BGRACompressableBitmap, BGRAReadPng;
 
 { TBGRAReaderLazPaint }
 
+function TBGRAReaderLazPaint.GetCompression: TLzpCompression;
+begin
+  result:= LzpGetCompression(header.CompressionMode);
+end;
+
+function TBGRAReaderLazPaint.GetIncludeThumbnail: boolean;
+begin
+  result:= LzpGetIncludeThumbnail(header.CompressionMode);
+end;
+
+procedure TBGRAReaderLazPaint.SetIncludeThumbnail(AValue: boolean);
+begin
+  FWantThumbnail:= AValue;
+end;
+
 procedure TBGRAReaderLazPaint.InternalRead(Str: TStream; Img: TFPCustomImage);
 var
-  {%H-}header: TLazPaintImageHeader;
   oldPos: int64;
   png: TBGRAReaderPNG;
 
@@ -64,7 +93,7 @@ begin
     FNbLayers:= header.nbLayers;
     FDimensionsAlreadyFetched:= true;
 
-    if WantThumbnail and ((header.compressionMode and LAZPAINT_THUMBNAIL_PNG) <> 0) then
+    if FWantThumbnail and LzpGetIncludeThumbnail(header.compressionMode) then
       begin
         str.Position:= oldPos+header.headerSize;
         png := TBGRAReaderPNG.create;
@@ -78,8 +107,7 @@ begin
         exit;
       end;
 
-    if ((header.compressionMode and LAZPAINT_COMPRESSION_MASK) <> LAZPAINT_COMPRESSION_MODE_ZSTREAM) and
-      ((header.compressionMode and LAZPAINT_COMPRESSION_MASK) <> LAZPAINT_COMPRESSION_MODE_RLE)  then raise exception.Create('Compression mode not supported');
+    if not(LzpCompressionIsValid(header.compressionMode)) then raise exception.Create('Compression mode not supported');
 
     str.Position:= oldPos+header.previewOffset;
     if (header.compressionMode and LAZPAINT_COMPRESSION_MASK) = LAZPAINT_COMPRESSION_MODE_RLE then
@@ -370,8 +398,6 @@ begin
 end;
 
 initialization
-
-  if DefaultBGRAImageReader[ifLazPaint] = nil then
-    DefaultBGRAImageReader[ifLazPaint] := TBGRAReaderLazPaint;
+  BGRARegisterImageReader(ifLazPaint, TBGRAReaderLazPaint, True, 'LazPaint Image Format', 'lzp');
 
 end.

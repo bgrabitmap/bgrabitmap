@@ -79,7 +79,7 @@ begin
   virtualScreen.FillMask(0,0,mask,masked);
   mask.free;
 
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest9.OnTimer(Width, Height: Integer; ElapsedSec: Double);

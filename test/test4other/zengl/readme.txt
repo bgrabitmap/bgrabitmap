@@ -1,4 +1,4 @@
-Copy the files in ZenGL folder in the "demos\Lazarus" subfolder.
+Copy the files from here to ZenGL folder in the "demos\Lazarus" subfolder.
 
 Open BGRABitmapPack4NoGUI_OpenGL package and then open one of the demos.
 

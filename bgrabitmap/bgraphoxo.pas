@@ -65,11 +65,15 @@ type
   end;
 
   { Reader for Phoxo image (flattened) }
+
+  { TBGRAReaderOXO }
+
   TBGRAReaderOXO = class(TFPCustomImageReader)
   private
     FWidth,FHeight,FNbLayers: integer;
     FDPIX,FDPIY: integer;
   protected
+    procedure ReadResolutionValues(Img: TFPCustomImage);
     function InternalCheck(Stream: TStream): boolean; override;
     procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
   public
@@ -113,11 +117,12 @@ end;
 procedure RegisterPhoxoFormat;
 begin
   if AlreadyRegistered then exit;
-  ImageHandlers.RegisterImageReader ('PhoXo', 'oXo', TBGRAReaderOXO);
+
+  BGRARegisterImageHandlers(ifPhoxo, TBGRAReaderOXO, TBGRAWriterOXO, True, 'PhoXo', 'oXo');
+
   RegisterLayeredBitmapReader('oXo', TBGRAPhoxoDocument);
   RegisterLayeredBitmapWriter('oXo', TBGRAPhoxoDocument);
-  DefaultBGRAImageReader[ifPhoxo] := TBGRAReaderOXO;
-  DefaultBGRAImageWriter[ifPhoxo] := TBGRAWriterOXO;
+
   AlreadyRegistered:= True;
 end;
 
@@ -142,6 +147,23 @@ begin
 end;
 
 { TBGRAReaderOXO }
+
+procedure TBGRAReaderOXO.ReadResolutionValues(Img: TFPCustomImage);
+begin
+  {$IF FPC_FULLVERSION<30203}
+  if (Img is TCustomUniversalBitmap) then
+  with TCustomUniversalBitmap(Img) do
+  begin
+    ResolutionUnit:=ruPixelsPerInch;
+    ResolutionX :=FDPIX;
+    ResolutionY :=FDPIY;
+  end;
+  {$ELSE}
+  Img.ResolutionUnit:=ruPixelsPerInch;
+  Img.ResolutionX :=FDPIX;
+  Img.ResolutionY :=FDPIY;
+  {$ENDIF}
+end;
 
 function TBGRAReaderOXO.InternalCheck(Stream: TStream): boolean;
 begin
@@ -177,6 +199,9 @@ begin
           for x := 0 to flat.Width-1 do
             Img.Colors[x,y] := BGRAToFPColor(flat.GetPixel(x,y));
       end;
+
+      ReadResolutionValues(img);
+
     finally
       flat.free;
     end;

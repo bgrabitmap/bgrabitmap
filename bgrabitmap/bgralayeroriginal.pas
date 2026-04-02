@@ -373,6 +373,22 @@ type
     procedure CopyTo(AMemDir: TMemDirectory);
   end;
 
+  { Difference in the storage of an original }
+  TBGRAOriginalStorageDiff = class(TBGRAOriginalDiff)
+  protected
+    FOriginalClass: rawbytestring;
+    FStorageBefore, FStorageAfter: TBGRAMemOriginalStorage;
+  public
+    constructor Create(AOriginal: TBGRALayerCustomOriginal);
+    procedure ComputeDifference(AOriginal: TBGRALayerCustomOriginal);
+    destructor Destroy; override;
+    procedure Apply(AOriginal: TBGRALayerCustomOriginal); override;
+    procedure Unapply(AOriginal: TBGRALayerCustomOriginal); override;
+    function CanAppend(ADiff: TBGRAOriginalDiff): boolean; override;
+    procedure Append(ADiff: TBGRAOriginalDiff); override;
+    function IsIdentity: boolean; override;
+  end;
+
 procedure RegisterLayerOriginal(AClass: TBGRALayerOriginalAny);
 function FindLayerOriginalClass(AStorageClassName: string): TBGRALayerOriginalAny;
 
@@ -1996,6 +2012,70 @@ begin
   finally
     storage.Free;
   end;
+end;
+
+{ TBGRAOriginalStorageDiff }
+
+constructor TBGRAOriginalStorageDiff.Create(AOriginal: TBGRALayerCustomOriginal);
+begin
+  FOriginalClass:= AOriginal.StorageClassName;
+  FStorageBefore := TBGRAMemOriginalStorage.Create;
+  AOriginal.SaveToStorage(FStorageBefore);
+end;
+
+procedure TBGRAOriginalStorageDiff.ComputeDifference(
+  AOriginal: TBGRALayerCustomOriginal);
+begin
+  if (AOriginal.StorageClassName <> FOriginalClass) then
+    raise exception.Create('Different original class');
+  if Assigned(FStorageAfter) then FreeAndNil(FStorageAfter);
+  FStorageAfter := TBGRAMemOriginalStorage.Create;
+  AOriginal.SaveToStorage(FStorageAfter);
+end;
+
+destructor TBGRAOriginalStorageDiff.Destroy;
+begin
+  FStorageBefore.Free;
+  FStorageAfter.Free;
+  inherited Destroy;
+end;
+
+procedure TBGRAOriginalStorageDiff.Apply(AOriginal: TBGRALayerCustomOriginal);
+begin
+  if (AOriginal.StorageClassName <> FOriginalClass) then
+    raise exception.Create('Different original class');
+  if not Assigned(FStorageAfter) then raise exception.Create('Undefined state after diff');
+  AOriginal.LoadFromStorage(FStorageAfter);
+  AOriginal.NotifyChange; // without diff
+end;
+
+procedure TBGRAOriginalStorageDiff.Unapply(AOriginal: TBGRALayerCustomOriginal);
+begin
+  if (AOriginal.StorageClassName <> FOriginalClass) then
+    raise exception.Create('Different original class');
+  if not Assigned(FStorageBefore) then raise exception.Create('Undefined state before diff');
+  AOriginal.LoadFromStorage(FStorageBefore);
+  AOriginal.NotifyChange; // without diff
+end;
+
+function TBGRAOriginalStorageDiff.CanAppend(ADiff: TBGRAOriginalDiff): boolean;
+begin
+  result := (ADiff is TBGRAOriginalStorageDiff) and
+  (TBGRAOriginalStorageDiff(ADiff).FOriginalClass = FOriginalClass);
+end;
+
+procedure TBGRAOriginalStorageDiff.Append(ADiff: TBGRAOriginalDiff);
+var
+  next: TBGRAOriginalStorageDiff;
+begin
+  next := ADiff as TBGRAOriginalStorageDiff;
+  FreeAndNil(FStorageAfter);
+  FStorageAfter := next.FStorageAfter.Duplicate as TBGRAMemOriginalStorage;
+end;
+
+function TBGRAOriginalStorageDiff.IsIdentity: boolean;
+begin
+  result := FStorageBefore.Equals(FStorageAfter);
 end;
 
 { TBGRALayerImageOriginal }

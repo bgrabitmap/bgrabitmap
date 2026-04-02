@@ -11,7 +11,7 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
-  ComCtrls, StdCtrls, OpenGLContext, BGRABitmap, BGRABitmapTypes, BGRAOpenGL;
+  ComCtrls, StdCtrls, OpenGLContext, BGRABitmap, BGRAClasses, BGRABitmapTypes, BGRAOpenGL;
 
 type
 
@@ -79,13 +79,13 @@ begin
   begin
     if r = 200 then
       GoBack := True;
-    r += 1;
+    IncF(r, 1);
   end
   else
   begin
     if r = 50 then
       GoBack := False;
-    r -= 1;
+    DecF(r, 1);
   end;
   OpenGLControl.Invalidate;
 end;

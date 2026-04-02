@@ -256,7 +256,6 @@ begin
 end;
 
 initialization
-
-  DefaultBGRAImageReader[ifBmpMioMap] := TBGRAReaderBmpMioMap;
+  BGRARegisterImageReader(ifBmpMioMap, TBGRAReaderBmpMioMap, True, 'iGO Bitmap Format', 'bmp');
 
 end.

@@ -9,6 +9,7 @@
 .DS_Store
 backup
 lib
+bin
 debug
 /bgrabitmap/lib4nogui
 /bgrabitmap/lib4fpgui
@@ -40,3 +41,5 @@ doc/web
 
 test/testcore/lib
 test/testcore/lib_createfont
+
+use/*/

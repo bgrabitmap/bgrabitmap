@@ -21,6 +21,13 @@ type
     {$IF FPC_FULLVERSION<30203}
     function SaveHeader(Stream: TStream; Img: TFPCustomImage): boolean; override;
     {$ENDIF}
+
+  published
+    // MaxM: TO-DO TFPWriterPCX alway write at 8 BitsPerPixel
+    //             It might be useful to write the other modes
+    //property GrayScale: Boolean
+    //property BitsPerPixel: byte // [1, 4, 8, 24]
+    property Compressed;  //: boolean rw;
   end;
 
 implementation
@@ -72,9 +79,7 @@ end;
 {$ENDIF}
 
 initialization
-  if ImageHandlers.ImageWriter['PCX Format']=nil
-  then ImageHandlers.RegisterImageWriter('PCX Format', 'pcx', TBGRAWriterPCX);
-  DefaultBGRAImageWriter[ifPcx] := TBGRAWriterPCX;
+  BGRARegisterImageWriter(ifPcx, TBGRAWriterPCX, True, 'PCX Format', 'pcx');
 
 
 end.

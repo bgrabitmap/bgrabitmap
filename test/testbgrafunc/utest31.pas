@@ -5,7 +5,7 @@ unit utest31;
 interface
 
 uses
-  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRABitmapTypes, BGRAGradients,
+  Classes, SysUtils, utest, Graphics, BGRABitmap, BGRAClasses, BGRABitmapTypes, BGRAGradients,
   BGRATextFX;
 
 const
@@ -150,7 +150,7 @@ begin
   textfx_multi.DrawMulticolored(virtualScreen, round(pts[2].x),round(pts[2].y), colorArray,taCenter);
 
   //draw virtualscreen opaque on canvas
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest31.OnTimer(Width, Height: Integer;
@@ -203,10 +203,10 @@ begin
   time := time+ElapsedSec;
   lightPos1 := pointF((sin(time*0.7+1)+1)/4+0.4,(cos(time*0.5+2)+1)/4+0.3);
 
-  colorTime += ElapsedSec;
+  IncF(colorTime, ElapsedSec);
   if colorTime > 0.3 then
   begin
-    colorTime -= 0.3;
+    DecF(colorTime, 0.3);
     c := colorArray[high(colorArray)];
     for i := 0 to high(colorArray) do
     begin

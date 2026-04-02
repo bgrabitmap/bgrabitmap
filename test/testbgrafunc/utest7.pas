@@ -113,7 +113,7 @@ begin
   DrawPacman(virtualScreen.Width div 4,virtualScreen.Height div 2, ln(time+1)*100);
   DrawPacman(3*virtualScreen.Width div 4,virtualScreen.Height div 2, -time*4);
 
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest7.OnTimer(Width, Height: Integer; ElapsedSec: Double);

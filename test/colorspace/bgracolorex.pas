@@ -446,7 +446,7 @@ begin
   begin
     Result := '#' + IntToHex(red, 2) + IntToHex(green, 2) + IntToHex(blue, 2);
     if alpha <> 255 then
-      Result += IntToHex(alpha, 2);
+      Result := Result + IntToHex(alpha, 2);
   end;
 end;
 

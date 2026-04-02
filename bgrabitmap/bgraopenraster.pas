@@ -1124,12 +1124,13 @@ var AlreadyRegistered: boolean;
 procedure RegisterOpenRasterFormat;
 begin
   if AlreadyRegistered then exit;
-  ImageHandlers.RegisterImageReader ('OpenRaster', 'ora', TFPReaderOpenRaster);
+
+  BGRARegisterImageHandlers(ifOpenRaster, TFPReaderOpenRaster, TFPWriterOpenRaster,
+    True, 'OpenRaster', 'ora');
+
   RegisterLayeredBitmapReader('ora', TBGRAOpenRasterDocument);
   RegisterLayeredBitmapWriter('ora', TBGRAOpenRasterDocument);
-  //TPicture.RegisterFileFormat('ora', 'OpenRaster', TBGRAOpenRasterDocument);
-  DefaultBGRAImageReader[ifOpenRaster] := TFPReaderOpenRaster;
-  DefaultBGRAImageWriter[ifOpenRaster] := TFPWriterOpenRaster;
+
   AlreadyRegistered:= True;
 end;
 

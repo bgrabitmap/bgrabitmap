@@ -82,12 +82,12 @@ begin
       phong.LightPosition.X+lightSize,phong.LightPosition.Y+lightSize, BGRA(255,255,240,255),BGRAPixelTransparent,
       gtRadial,PointF(phong.LightPosition.X,phong.LightPosition.Y),PointF(phong.LightPosition.X+lightSize,phong.LightPosition.Y),
       dmDrawWithTransparency);
-    virtualScreen.Draw(Canvas,Left,Top,True);
+    virtualScreen.Draw(Canvas,Left,Top,OpaqueDraw);
   end else
   begin
     virtualScreen.Fill(BGRABlack);
     virtualScreen.TextOut(Width div 2, height div 2-virtualScreen.FontHeight div 2,'Generating map...',BGRAWhite,taCenter);
-    virtualScreen.Draw(Canvas,Left,Top,True);
+    virtualScreen.Draw(Canvas,Left,Top,OpaqueDraw);
     ShouldGenerateMap := True;
   end;
 end;

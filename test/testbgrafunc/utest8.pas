@@ -83,7 +83,7 @@ begin
   twirled.Fill(virtualscreen);
   twirled.FillRect(floor(twirl.Center.X-twirl.Radius),floor(twirl.Center.Y-twirl.Radius),
     ceil(twirl.Center.X+twirl.Radius),ceil(twirl.Center.Y+twirl.Radius),twirl,dmSet);
-  twirled.Draw(Canvas,Left,Top,True);
+  twirled.Draw(Canvas,Left,Top,OpaqueDraw);
   twirl.Free;
 end;
 

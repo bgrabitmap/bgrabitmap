@@ -220,7 +220,88 @@ var
                           metric: TFontPixelMetric;
                         end;
   FontPixelMetricCount: integer;
-  
+
+function RemovePrefix(sUTF8: string): string;
+var i,resLen: integer;
+begin
+  setlength(result, length(sUTF8));
+  resLen := 0;
+  i := 1;
+  while i <= length(sUTF8) do
+  begin
+    if sUTF8[i] = '&' then
+    begin // double ('&&') indicate single char '&'
+      if (i < length(sUTF8)) and (sUTF8[i+1] = '&') then
+      begin
+        inc(resLen);
+        result[resLen] := '&';
+        inc(i,2);
+      end else
+        // single indicate underline
+        inc(i);
+    end else
+    begin
+      inc(resLen);
+      result[resLen] := sUTF8[i];
+      inc(i);
+    end;
+  end;
+  setlength(result,resLen);
+end;
+
+procedure SplitByPrefix(sUTF8: string; AParts: TStrings);
+var i, j: integer;
+  temp: string;
+  tempLen, charLen: integer;
+  underline: boolean;
+
+  procedure FlushUnderline;
+  begin
+    if underline and (tempLen > 0) then
+    begin
+      AParts.Add(copy(temp, 1, tempLen));
+      underline := false;
+      tempLen := 0;
+    end;
+  end;
+
+begin
+  setlength(temp, length(sUTF8));
+  tempLen := 0;
+  underline := false;
+  i := 1;
+  while i <= length(sUTF8) do
+  begin
+    if sUTF8[i] = '&' then
+    begin // double ('&&') indicate single char '&'
+      if (i < length(sUTF8)) and (sUTF8[i+1] = '&') then
+      begin
+        FlushUnderline;
+        inc(tempLen);
+        temp[tempLen] := '&';
+        inc(i,2);
+      end else
+        // single indicate underline
+        AParts.Add(copy(temp, 1, tempLen));
+        underline := true;
+        tempLen := 0;
+        inc(i);
+    end else
+    begin
+      if GetBidiClassUTF8(@sUTF8[i]) <> ubcNonSpacingMark then
+        FlushUnderline;
+      charLen := UTF8CharacterLength(@sUTF8[i]);
+      for j := 1 to charLen do
+      begin
+        inc(tempLen);
+        temp[tempLen] := sUTF8[i];
+        inc(i);
+      end;
+    end;
+  end;
+  AParts.Add(copy(temp, 1, tempLen));
+end;
+
 {$IF defined(BGRABITMAP_USE_MSEGUI)}
 {$i bgramsegui_text.inc}
 {$ELSEIF defined(BGRABITMAP_USE_LCL)}
@@ -959,34 +1040,6 @@ begin
   end;
 end;
 
-function RemovePrefix(sUTF8: string): string;
-var i,resLen: integer;
-begin
-  setlength(result, length(sUTF8));
-  resLen := 0;
-  i := 1;
-  while i <= length(sUTF8) do
-  begin
-    if sUTF8[i] = '&' then
-    begin // double ('&&') indicate single char '&'
-      if (i < length(sUTF8)) and (sUTF8[i+1] = '&') then
-      begin
-        inc(resLen);
-        result[resLen] := '&';
-        inc(i,2);
-      end else
-        // single indicate underline
-        inc(i);
-    end else
-    begin
-      inc(resLen);
-      result[resLen] := sUTF8[i];
-      inc(i);
-    end;
-  end;
-  setlength(result,resLen);
-end;
-
 procedure FilterOriginalText(Quality: TBGRAFontQuality; CustomAntialiasingLevel: Integer; var temp: TBGRACustomBitmap;
   out grayscaleMask: TGrayscaleMask);
 var
@@ -1139,7 +1192,7 @@ begin
   xMarginF := textSize.cy/sizeFactor;
   iMargin := size(ceil(xMarginF) * sizeFactor, sizeFactor);
   sizeWithMargin := size(textSize.cx + iMargin.cx, textSize.cy + iMargin.cy);
-  if frac(xMarginF) > 0 then sizeWithMargin.cx += 1;
+  if frac(xMarginF) > 0 then inc(sizeWithMargin.cx);
   iLeft := floor(xF) - (iMargin.cx div sizeFactor);
   iTop := floor(yF) - (iMargin.cy div sizeFactor);
 
@@ -1424,7 +1477,7 @@ begin
   {$IFDEF TEXTOUT_KERNING_PATCH}
   if AOrientation mod 3600 = 0 then
     exit(InternalTextSizeStyle(sUTF8,
-           BGRADefaultTextOutStyle(False, True), MaxLongint));
+           BGRADefaultTextOutStyle(False, AShowPrefix), MaxLongint));
   {$ENDIF}
   if AShowPrefix then sUTF8 := RemovePrefix(sUTF8);
   result := BGRAText.BGRATextSizeAngle(FFont, AOrientation, FontQuality,

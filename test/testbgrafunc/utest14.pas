@@ -63,7 +63,7 @@ begin
   virtualScreen.BlendImage(0,0,layer,boAdditive);
   layer.Free;
 
-  virtualscreen.Draw(Canvas,Left,Top,True);
+  virtualscreen.Draw(Canvas,Left,Top,OpaqueDraw);
 end;
 
 procedure TTest14.OnTimer(Width, Height: Integer; ElapsedSec: Double);

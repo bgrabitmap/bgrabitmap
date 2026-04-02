@@ -40,6 +40,7 @@ type
      procedure InternalArc(cx,cy,rx,ry: single; StartAngleRad,EndAngleRad: Single; ABorderColor: TBGRAPixel; w: single; AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil); overload; virtual; abstract;
      procedure InternalArcInRect(r: TRect; StartAngleRad,EndAngleRad: Single; ABorderColor : TBGRAPixel; w: single; AFillColor: TBGRAPixel; AOptions: TArcOptions; ADrawChord: boolean = false; ATexture: IBGRAScanner = nil);
      procedure InternalFillArcInRect(r: TRect; StartAngleRad,EndAngleRad: Single; AFillColor: TBGRAPixel; AOptions: TArcOptions; ATexture: IBGRAScanner = nil);
+     procedure InternalTextOutOffset(x, y: single; const sUTF8: string; AColor: TBGRAPixel; ATexture: IBGRAScanner; AOffsets: array of TPointF); virtual; abstract;
 
   public
      {** Resample filter is used when resizing the bitmap. See [[BGRABitmap Miscellaneous types#Images and resampling|resampling types]] }
@@ -219,6 +220,26 @@ type
   public
      constructor Create(AFPImage: TFPCustomImage; ACopyProperties: Boolean=False); overload; virtual; abstract;
      constructor Create(ABitmap: TBitmap); overload; virtual; abstract;
+     { @abstract(Create an instance and load an image from a file.)
+
+**Example of loading and displaying an image on a form:**
+
+```pascal
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  image := TBGRABitmap.Create('image.png');
+end;
+
+procedure TForm1.FormDestroy(Sender: TObject);
+begin
+  image.free;
+end;
+
+procedure TForm1.FormPaint(Sender: TObject);
+begin
+  image.Draw(Canvas, 0, 0, True); // assume image is opaque
+end;
+```}
      constructor Create(ABitmap: TBitmap; AUseTransparent: boolean); overload; virtual; abstract;
      constructor Create(AFilename: string); overload; virtual; abstract;
      constructor Create(AFilename: string; AIsUtf8Filename: boolean); overload; virtual; abstract;
@@ -248,7 +269,10 @@ type
      function Duplicate(DuplicateProperties: Boolean = False): TBGRACustomBitmap; overload; override;
      function Duplicate(DuplicateProperties, DuplicateXorMask: Boolean): TBGRACustomBitmap; overload; virtual;
      procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); override;
-     function GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TBGRACustomBitmap; override;
+
+     function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGRACustomBitmap; overload; override;
+     function GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean=False;
+                      ACopyProperties: Boolean=False; ATile: Boolean=True): TBGRACustomBitmap; overload; override;
 
      function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
                  AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGRACustomBitmap; override;
@@ -361,8 +385,53 @@ type
 
      {$IFNDEF BGRABITMAP_CORE}
      procedure FillPolyLinearColor(const points: array of TPointF; AColors: array of TBGRAPixel);  overload; virtual; abstract;
+     { @abstract(Fills a polygon with a texture that is linearly mapped.)
+
+**Example filling a trapeze with a texture:**
+
+@image(../doc/img/fillpolylinearmapping.png)
+
+```pascal
+procedure TForm1.PaintImage;
+var image: TBGRABitmap;
+    tex: TBGRABitmap;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, BGRABlack );
+
+  tex:= TBGRABitmap.Create('image.png');
+  image.FillPolyLinearMapping( [PointF(110,10), PointF(250,10), PointF(350,160), PointF(10,160)], tex,
+             [PointF(0,0), PointF(tex.width-1,0), PointF(tex.Width-1,tex.Height-1), PointF(0,tex.Height-1)], true);
+  tex.Free;
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```}
      procedure FillPolyLinearMapping(const points: array of TPointF; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean); overload; virtual; abstract;
      procedure FillPolyLinearMappingLightness(const points: array of TPointF; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean); overload; virtual; abstract;
+     { @abstract(Fills a polygon with a texture that is mapped with perspective.)
+
+**Example filling a trapeze with a texture:**
+
+@image(../doc/img/fillpolyperspectivemapping.png)
+
+```pascal
+procedure TForm1.PaintImage;
+var image: TBGRABitmap;
+    tex: TBGRABitmap;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, BGRABlack );
+
+  tex:= TBGRABitmap.Create('image.png');
+  image.FillPolyPerspectiveMapping( [PointF(110,10), PointF(250,10), PointF(350,160), PointF(10,160)],
+                                    [75,             75,             50,              50],
+       tex, [PointF(0,0), PointF(tex.width-1,0), PointF(tex.Width-1,tex.Height-1), PointF(0,tex.Height-1)], true);
+  tex.Free;
+
+  image.Draw(Canvas,0,0,True);
+  image.free;
+end;
+```}
      procedure FillPolyPerspectiveMapping(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; TextureInterpolation: Boolean; zbuffer: psingle = nil); overload; virtual; abstract;
      procedure FillPolyPerspectiveMappingLightness(const points: array of TPointF; const pointsZ: array of single; texture: IBGRAScanner; texCoords: array of TPointF; lightnesses: array of word; TextureInterpolation: Boolean; zbuffer: psingle = nil); overload; virtual; abstract;
      {$ENDIF}
@@ -433,11 +502,62 @@ type
      function TextSizeMultiline(const sUTF8: string; AMaxWidth: single = EmptySingle;
                  AParagraphSpacing: single = 0): TSize; virtual; abstract;{$ENDIF}
 
-     { Draw the UTF8 encoded string, (x,y) being the top-left corner by default. The color c or texture is used to fill the text.
-       The value of FontOrientation is taken into account, so that the text may be rotated. }
+     { Draw the UTF8 encoded string, (_x_, _y_) being the top-left corner. The color _c_ or texture is used to fill the text.
+       The value of FontOrientation is taken into account, so that the text may be rotated.
+
+**Example drawing text on a form:**
+
+@image(../doc/img/textout.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  c: TBGRAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, clBtnFace);
+  c := clBtnText; //retrieve default text color
+
+  image.FontHeight := 30;
+  image.FontAntialias := true;
+  image.FontStyle := [fsBold];
+  image.TextOut (5, 5, 'Hello world', c);
+  image.SetPixel (5, 5, c);
+
+  image.free;
+end;
+```}
+     procedure TextOut(x, y: single; const sUTF8: string; c: TBGRAPixel); overload; virtual;
+     { Draw the UTF8 encoded string, (_x_, _y_) is the top reference point with the chosen alignment.
+       If left-aligned, this will be the top-left corner.
+       If right-aligned, the top-right corner.
+       The color _c_ or texture is used to fill the text.
+       The value of FontOrientation is taken into account, so that the text may be rotated.
+
+**Example drawing text on a form:**
+
+@image(../doc/img/textout-align.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  c: TBGRAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, clBtnFace);
+  c := clBtnText; //retrieve default text color
+
+  image.FontHeight := 30;
+  image.FontAntialias := true;
+  image.FontStyle := [fsBold];
+  image.TextOut(ClientWidth-5,5, 'Hello world', c, taRightJustify);
+  image.SetPixel(ClientWidth-5,5, c);
+
+  image.free;
+end;
+```}
      procedure TextOut(x, y: single; const sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual;
      procedure TextOut(x, y: single; const sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual;
-     procedure TextOut(x, y: single; const sUTF8: string; c: TBGRAPixel); overload; virtual;
      procedure TextOut(x, y: single; const sUTF8: string; c: TBGRAPixel; ARightToLeft: boolean); overload; virtual;
      procedure TextOut(x, y: single; const sUTF8: string; c: TColor); overload; virtual;
      procedure TextOut(x, y: single; const sUTF8: string; c: TColor; ARightToLeft: boolean); overload; virtual;
@@ -448,24 +568,146 @@ type
      procedure TextOut(x, y: single; const sUTF8: string; AColor: TBGRAPixel; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
      procedure TextOut(x, y: single; const sUTF8: string; ATexture: IBGRAScanner; AAlign: TAlignment; ALetterSpacing: single); overload; virtual; abstract;
 
+     procedure TextOutOffset(x, y: single; const sUTF8: string; AColor: TBGRAPixel; AOffset: array of TPointF); overload; virtual;
+     procedure TextOutOffset(x, y: single; const sUTF8: string; ATexture: IBGRAScanner; AOffset: array of TPointF); overload; virtual;
+
      { Overrides the font orientation with the parameter orientationTenthDegCCW }
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; c: TBGRAPixel); overload; virtual;
+     { Draw the UTF8 encoded string with specified orientation (positive values will make the text go upwards).
+       (_x_, _y_) is the top reference point with the chosen alignment.
+       If left-aligned, this will be the top-left corner.
+       If right-aligned, the top-right corner.
+       The color _c_ or texture is used to fill the text.
+
+**Example drawing text on a form:**
+
+@image(../doc/img/textoutangle.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  c: TBGRAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, clBtnFace);
+  c := clBtnText; //retrieve default text color
+
+  image.FontHeight := 30;
+  image.FontAntialias := true;
+  image.FontStyle := [fsBold];
+  image.TextOutAngle(30,5, -450, 'Hello world', c, taLeftJustify);
+  image.SetPixel(30,5,c);
+
+  image.free;
+end;
+```}
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; c: TBGRAPixel; align: TAlignment); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; c: TBGRAPixel; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; texture: IBGRAScanner); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; texture: IBGRAScanner; align: TAlignment); overload; virtual;
      procedure TextOutAngle(x, y: single; orientationTenthDegCCW: integer; const sUTF8: string; texture: IBGRAScanner; align: TAlignment; ARightToLeft: boolean); overload; virtual; abstract;
 
-     { Draw the UTF8 encoded string in the rectangle ARect. Text is wrapped if necessary.
-       The position depends on the specified horizontal alignment halign and vertical alignement valign.
-       The color c or texture is used to fill the text. No rotation is applied. }
+     { Draw the UTF8 encoded string in the rectangle _ARect_. Text is wrapped if necessary.
+       The position depends on the specified horizontal alignment _halign_ and
+       vertical alignement _valign_.
+       The color _c_ or _texture_ is used to fill the text. No rotation is applied.
+
+**Example drawing wrapped text on a form:**
+
+@image(../doc/img/textrect-align.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  c: TBGRAPixel;
+begin
+  image := TBGRABitmap.Create(ClientWidth,ClientHeight, clBtnFace);
+  c := clBtnText; //retrieve default text color
+
+  image.FontHeight := 30;
+  image.FontAntialias := true;
+  image.FontStyle := [fsBold];
+  image.TextRect(rect(5,5, ClientWidth-5,ClientHeight-5),
+                 'This is a text that should be word wrapped',taCenter,tlCenter,c);
+  image.Rectangle(rect(5,5, ClientWidth-5,ClientHeight-5), c, dmSet);
+
+  image.free;
+end;
+```}
      procedure TextRect(ARect: TRect; const sUTF8: string; halign: TAlignment; valign: TTextLayout; c: TBGRAPixel); overload; virtual;
      procedure TextRect(ARect: TRect; const sUTF8: string; halign: TAlignment; valign: TTextLayout; texture: IBGRAScanner); overload; virtual;
 
      //-------------------------- computing path ------------------------------------
 
-     {Spline}
+     { @abstract(Compute an closed spline passing by the given points.)
+
+**Example of drawing a spline on a form:**
+
+@image(../doc/img/computeclosedspline.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  pts: array of TPointF;
+  storedSpline: array of TPointF;
+  c: TBGRAPixel;
+begin
+    image := TBGRABitmap.Create(ClientWidth, ClientHeight, clBtnFace);
+    c := clWindowText;
+
+    //rectangular polyline
+    setlength(pts,4);
+    pts[0] := PointF(50,50);
+    pts[1] := PointF(150,50);
+    pts[2] := PointF(150,150);
+    pts[3] := PointF(50,150);
+    image.DrawPolylineAntialias(pts,BGRA(255,0,0,150),1);
+
+    //compute spline points and draw as a polyline
+    storedSpline := image.ComputeClosedSpline(pts,ssVertexToSide);
+    image.DrawPolylineAntialias(storedSpline,c,1);
+
+    image.Draw(Canvas,0,0,True);
+    image.free;
+end;
+```}
      function ComputeClosedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; virtual; abstract;
+
+     { @abstract(Compute an opened spline passing by the given points.)
+
+**Example of drawing a spline on a form:**
+
+@image(../doc/img/computeopenedspline.png)
+
+```pascal
+procedure TForm1.FormPaint(Sender: TObject);
+var
+  image: TBGRABitmap;
+  pts: array of TPointF;
+  storedSpline: array of TPointF;
+  c: TBGRAPixel;
+begin
+    image := TBGRABitmap.Create(ClientWidth, ClientHeight, clBtnFace);
+    c := clWindowText;
+
+    //rectangular polyline
+    setlength(pts,4);
+    pts[0] := PointF(50,50);
+    pts[1] := PointF(150,50);
+    pts[2] := PointF(150,150);
+    pts[3] := PointF(50,150);
+    image.DrawPolylineAntialias(pts,BGRA(255,0,0,150),1);
+
+    //compute spline points and draw as a polyline
+    storedSpline := image.ComputeOpenedSpline(pts,ssVertexToSide);
+    image.DrawPolylineAntialias(storedSpline,c,1);
+
+    image.Draw(Canvas,0,0,True);
+    image.free;
+end;
+```}
      function ComputeOpenedSpline(const APoints: array of TPointF; AStyle: TSplineStyle): ArrayOfTPointF; virtual; abstract;
      function ComputeBezierCurve(const curve: TCubicBezierCurve): ArrayOfTPointF; overload; virtual; abstract;
      function ComputeBezierCurve(const curve: TQuadraticBezierCurve): ArrayOfTPointF; overload; virtual; abstract;
@@ -575,6 +817,8 @@ type
      procedure BlendImageOver(ADest: TRect; ASource: IBGRAScanner; AOffsetX, AOffsetY: integer; AOperation: TBlendOperation; AOpacity: byte = 255; ALinearBlend: boolean = false); overload; virtual; abstract;
      function Resample(newWidth, newHeight: integer;
        mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRACustomBitmap; virtual; abstract;
+     function Resample(newWidth, newHeight: Single; ASizeUnit: TCSSUnit;
+       mode: TResampleMode = rmFineResample; ACopyProperties: Boolean=False): TBGRACustomBitmap; virtual; abstract;
 
      //masks
      procedure FillMask(x,y: integer; AMask: TCustomUniversalBitmap; ATexture: IBGRAScanner; ADrawMode: TDrawMode); overload; override;
@@ -597,6 +841,7 @@ type
      procedure InplaceNormalize(ABounds: TRect; AEachChannel: boolean = True); overload; virtual; abstract;
      procedure ConvertToLinearRGB; virtual; abstract;
      procedure ConvertFromLinearRGB; virtual; abstract;
+     procedure ConvertToPaletteGrayscale; virtual; abstract;
      procedure SwapRedBlue; overload; virtual; abstract;
      procedure SwapRedBlue(ARect: TRect); overload; virtual; abstract;
      procedure GrayscaleToAlpha; virtual; abstract;
@@ -908,9 +1153,15 @@ begin
   end;
 end;
 
-function TBGRACustomBitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TBGRACustomBitmap;
+function TBGRACustomBitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGRACustomBitmap;
 begin
-  result := TBGRACustomBitmap(inherited GetPart(ARect, ACopyProperties));
+  result := TBGRACustomBitmap(inherited GetPart(ARect, ACopyProperties, ATile));
+end;
+
+function TBGRACustomBitmap.GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean;
+                                   ACopyProperties: Boolean; ATile: Boolean): TBGRACustomBitmap;
+begin
+  Result:= TBGRACustomBitmap(inherited GetPart(ARect, PreserveMoreData, ACopyProperties, ATile));
 end;
 
 function TBGRACustomBitmap.CreateBrushTexture(ABrushStyle: TBrushStyle;
@@ -1262,6 +1513,18 @@ procedure TBGRACustomBitmap.TextOut(x, y: single; const sUTF8: string;
   texture: IBGRAScanner; ARightToLeft: boolean);
 begin
   TextOut(x, y, sUTF8, texture, taLeftJustify, ARightToLeft);
+end;
+
+procedure TBGRACustomBitmap.TextOutOffset(x, y: single; const sUTF8: string;
+  AColor: TBGRAPixel; AOffset: array of TPointF);
+begin
+  InternalTextOutOffset(x, y, sUTF8, AColor, nil, AOffset);
+end;
+
+procedure TBGRACustomBitmap.TextOutOffset(x, y: single; const sUTF8: string;
+  ATexture: IBGRAScanner; AOffset: array of TPointF);
+begin
+  InternalTextOutOffset(x, y, sUTF8, BGRAPixelTransparent, ATexture, AOffset);
 end;
 
 procedure TBGRACustomBitmap.TextOutAngle(x, y: single;
