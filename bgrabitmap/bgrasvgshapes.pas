@@ -71,7 +71,7 @@ type
   end;       
 
   { SVG line object }
-  TSVGLine = class(TSVGElement)
+  TSVGLine = class(TSVGElementWithGradient)
     private
       function GetX1: TFloatWithCSSUnit;
       function GetX2: TFloatWithCSSUnit;
@@ -4089,13 +4089,18 @@ end;
 procedure TSVGLine.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
   aaBefore: Boolean;
+  p1, p2: TPointF;
 begin
   if not isStrokeNone then
   begin
+    p1 := PointF(Units.ConvertWidth(x1,AUnit).value, Units.ConvertHeight(y1,AUnit).value);
+    p2 := PointF(Units.ConvertWidth(x2,AUnit).value, Units.ConvertHeight(y2,AUnit).value);
+    InitializeGradient(ACanvas2D, PointF(min(p1.x, p2.x), min(p1.y, p2.y)),
+                                  abs(p2.x-p1.x), abs(p2.y-p1.y), AUnit);
     ApplyStrokeStyle(ACanvas2D,AUnit);
     ACanvas2d.beginPath;
-    ACanvas2d.moveTo(Units.ConvertWidth(x1,AUnit).value,Units.ConvertHeight(y1,AUnit).value);
-    ACanvas2d.lineTo(Units.ConvertWidth(x2,AUnit).value,Units.ConvertHeight(y2,AUnit).value);
+    ACanvas2d.moveTo(p1);
+    ACanvas2d.lineTo(p2);
     aaBefore := ACanvas2d.antialiasing;
     ACanvas2d.antialiasing:= antialiasing;
     ACanvas2d.stroke;
