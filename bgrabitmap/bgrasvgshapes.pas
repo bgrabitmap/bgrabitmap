@@ -83,11 +83,10 @@ type
       procedure SetY2(AValue: TFloatWithCSSUnit);
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
-      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
-        override;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
       property x1: TFloatWithCSSUnit read GetX1 write SetX1;
       property y1: TFloatWithCSSUnit read GetY1 write SetY1;
       property x2: TFloatWithCSSUnit read GetX2 write SetX2;
@@ -112,10 +111,10 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
-      function GetBoundingBoxInUnit(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
       property x: TFloatWithCSSUnit read GetX write SetX;
       property y: TFloatWithCSSUnit read GetY write SetY;
       property width: TFloatWithCSSUnit read GetWidth write SetWidth;
@@ -136,11 +135,10 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
-      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
-        override;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property r: TFloatWithCSSUnit read GetR write SetR;
@@ -160,11 +158,10 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
-      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
-        override;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
       property cx: TFloatWithCSSUnit read GetCX write SetCX;
       property cy: TFloatWithCSSUnit read GetCY write SetCY;
       property rx: TFloatWithCSSUnit read GetRX write SetRX;
@@ -187,13 +184,12 @@ type
       function GetDOMElement: TDOMElement; override;
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
-      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
-        override;
     public
       class function GetDOMTag: string; override;
       constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); override;
       destructor Destroy; override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
       property d: string read GetData write SetData;
       property path: TBGRAPath read GetPath;
       property pathLength: TFloatWithCSSUnit read GetPathLength write SetPathLength;
@@ -215,11 +211,10 @@ type
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
-      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF;
-        override;
     public
       constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink); overload;
       destructor Destroy; override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
       property points: string read GetPoints write SetPoints;
       property pointsF: ArrayOfTPointF read GetPointsF write SetPointsF;
       property closed: boolean read GetClosed;
@@ -337,13 +332,13 @@ type
                                           AUnit: TCSSUnit; out textParts: ArrayOfTextParts;
                                           out allTextBounds: TRectF);
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
-      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
       procedure CleanText(var ATextParts: ArrayOfTextParts);
       function GetTRefContent(AElement: TSVGTRef): string;
       function GetAllText(AInheritedRotation: single): ArrayOfTextParts;
     public
       class function GetDOMTag: string; override;
       procedure ConvertToUnit(AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
       property textLength: TFloatWithCSSUnit read GetTextLength write SetTextLength;
       property lengthAdjust: TSVGLengthAdjust read GetLengthAdjust write SetLengthAdjust;
       property SimpleText: string read GetSimpleText write SetSimpleText;
@@ -792,7 +787,33 @@ type
      procedure ReParse;
      property Ruleset[AIndex: integer]: TSVGRuleset read GetRuleset write SetRuleset;
      property RulesetCount: integer read GetRulesetCount;
-  end;                  
+  end;
+
+  { Use another shape defined in the SVG file }
+  TSVGUse = class(TSVGElement)
+    private
+      function GetX: TFloatWithCSSUnit;
+      function GetXlinkHref: string;
+      function GetY: TFloatWithCSSUnit;
+      function GetWidth: TFloatWithCSSUnit;
+      function GetHeight: TFloatWithCSSUnit;
+      procedure SetX(AValue: TFloatWithCSSUnit);
+      procedure SetXlinkHref(AValue: string);
+      procedure SetY(AValue: TFloatWithCSSUnit);
+      procedure SetWidth(AValue: TFloatWithCSSUnit);
+      procedure SetHeight(AValue: TFloatWithCSSUnit);
+    protected
+      procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
+    public
+      class function GetDOMTag: string; override;
+      procedure ConvertToUnit(AUnit: TCSSUnit); override;
+      function GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit): TRectF; override;
+      property x: TFloatWithCSSUnit read GetX write SetX;
+      property y: TFloatWithCSSUnit read GetY write SetY;
+      property width: TFloatWithCSSUnit read GetWidth write SetWidth;
+      property height: TFloatWithCSSUnit read GetHeight write SetHeight;
+      property XlinkHref: string read GetXlinkHref write SetXlinkHref;
+  end;
 
   { @abstract(Content for an SVG element.)
 
@@ -840,6 +861,7 @@ end.
 ```}
   TSVGContent = class
     protected
+      FContainer: TSVGElement;
       FDataLink: TSVGDataLink;
       FDomElem: TDOMElement;
       FDoc: TDOMDocument;
@@ -857,7 +879,7 @@ end.
       function GetUnits: TCSSUnitConverter;
       function TryCreateElementFromNode(ANode: TDOMNode): TObject; virtual;
     public
-      constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
+      constructor Create(AContainer: TSVGElement; AElement: TDOMElement; AUnits: TCSSUnitConverter;
         ADataLink: TSVGDataLink);
       destructor Destroy; override;
       procedure Clear;
@@ -908,6 +930,7 @@ end.
       property ElementDOMNode[AIndex: integer]: TDOMNode read GetElementDOMNode;
       property IsSVGElement[AIndex: integer]: boolean read GetIsSVGElement;
       property Units: TCSSUnitConverter read GetUnits;
+      property Container: TSVGElement read FContainer;
   end;
 
 function GetSVGFactory(ATagName: string): TSVGFactory;
@@ -976,6 +999,8 @@ begin
     result := TSVGLink else
   if tag='style' then 
     result := TSVGStyle else
+  if tag='use' then
+    result := TSVGUse else
     result := TSVGElement;
 end;
 
@@ -1060,7 +1085,7 @@ begin
   if OwnDatalink then
     FSubDataLink := TSVGDataLink.Create(ADataLink)
     else FSubDatalink := ADataLink;
-  FContent := TSVGContent.Create(FDomElem,AUnits,FSubDataLink);
+  FContent := TSVGContent.Create(self,FDomElem,AUnits,FSubDataLink);
 end;
 
 constructor TSVGElementWithContent.Create(AElement: TDOMElement;
@@ -1070,7 +1095,7 @@ begin
   if OwnDatalink then
     FSubDataLink := TSVGDataLink.Create(ADataLink)
     else FSubDatalink := ADataLink;
-  FContent := TSVGContent.Create(AElement,AUnits,FSubDataLink);
+  FContent := TSVGContent.Create(self,AElement,AUnits,FSubDataLink);
 end;
 
 procedure TSVGElementWithContent.IterateElements(
@@ -1413,14 +1438,14 @@ constructor TSVGTextElementWithContent.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(ADocument, AUnits, ADataLink);
-  FContent := TSVGContent.Create(FDomElem,AUnits,ADataLink);
+  FContent := TSVGContent.Create(self,FDomElem,AUnits,ADataLink);
 end;
 
 constructor TSVGTextElementWithContent.Create(AElement: TDOMElement;
   AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
   inherited Create(AElement, AUnits, ADataLink);
-  FContent := TSVGContent.Create(AElement,AUnits,ADataLink);
+  FContent := TSVGContent.Create(self,AElement,AUnits,ADataLink);
 end;
 
 destructor TSVGTextElementWithContent.Destroy;
@@ -3457,7 +3482,118 @@ end;
 procedure TSVGStyle.ReParse;
 begin
  Parse(string(FDomElem.TextContent));
-end;           
+end;
+
+{ TSVGUse }
+
+function TSVGUse.GetX: TFloatWithCSSUnit;
+begin
+  result:= HorizAttributeWithUnit['x'];
+end;
+
+function TSVGUse.GetXlinkHref: string;
+begin
+  result := Attribute['xlink:href'];
+end;
+
+function TSVGUse.GetY: TFloatWithCSSUnit;
+begin
+  result:= VerticalAttributeWithUnit['y'];
+end;
+
+function TSVGUse.GetWidth: TFloatWithCSSUnit;
+begin
+  result:= HorizAttributeWithUnit['width'];
+end;
+
+function TSVGUse.GetHeight: TFloatWithCSSUnit;
+begin
+  result:= VerticalAttributeWithUnit['height'];
+end;
+
+procedure TSVGUse.SetX(AValue: TFloatWithCSSUnit);
+begin
+  HorizAttributeWithUnit['x']:= AValue;
+end;
+
+procedure TSVGUse.SetXlinkHref(AValue: string);
+begin
+  Attribute['xlink:href'] := AValue;
+end;
+
+procedure TSVGUse.SetY(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['y'] := AValue;
+end;
+
+procedure TSVGUse.SetWidth(AValue: TFloatWithCSSUnit);
+begin
+ HorizAttributeWithUnit['width'] := AValue;
+end;
+
+procedure TSVGUse.SetHeight(AValue: TFloatWithCSSUnit);
+begin
+  VerticalAttributeWithUnit['height'] := AValue;
+end;
+
+procedure TSVGUse.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
+var
+  elem: TSVGElement;
+  prevContainer: TSVGCustomElement;
+  prevMatrix: TAffineMatrix;
+begin
+  if Assigned(FDataLink) then
+  begin
+    elem := FDataLink.FindElementByRef(XlinkHref, nil);
+    if Assigned(elem) and not Assigned(elem.Container) {avoid circular reference} then
+    begin
+      prevContainer := elem.Container;
+      elem.Container := self;
+      prevMatrix := ACanvas2D.matrix;
+      try
+        ACanvas2d.translate(Units.ConvertWidth(x, AUnit).value,
+          Units.ConvertHeight(y, AUnit).value);
+        elem.Draw(ACanvas2d, AUnit);
+      finally
+        ACanvas2d.matrix := prevMatrix;
+        elem.Container := prevContainer;
+      end;
+    end;
+  end;
+end;
+
+function TSVGUse.GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit
+  ): TRectF;
+var
+  elem: TSVGElement;
+begin
+  if Assigned(FDataLink) then
+  begin
+    elem := FDataLink.FindElementByRef(XlinkHref, nil);
+    if Assigned(elem) then
+    begin
+      result := elem.GetBoundingBoxInUnit(ACanvas2D, AUnit);
+      result.Offset(Units.ConvertWidth(x, AUnit).value,
+        Units.ConvertHeight(y, AUnit).value);
+      exit;
+    end;
+  end;
+  Result:= EmptyRectF;
+end;
+
+class function TSVGUse.GetDOMTag: string;
+begin
+  Result:= 'use';
+end;
+
+procedure TSVGUse.ConvertToUnit(AUnit: TCSSUnit);
+begin
+  inherited ConvertToUnit(AUnit);
+  if HasAttribute('x') then x := Units.ConvertWidth(x, AUnit);
+  if HasAttribute('y') then y := Units.ConvertHeight(y, AUnit);
+  if HasAttribute('width') then width := Units.ConvertWidth(width, AUnit);
+  if HasAttribute('height') then height := Units.ConvertHeight(height, AUnit);
+end;
 
 { TSVGRectangle }
 
@@ -4554,11 +4690,12 @@ begin
     AppendElement(AElement);
 end;
 
-constructor TSVGContent.Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
+constructor TSVGContent.Create(AContainer: TSVGElement; AElement: TDOMElement; AUnits: TCSSUnitConverter;
   ADataLink: TSVGDataLink);
 var cur: TDOMNode;
   elem: TObject;
 begin
+  FContainer := AContainer;
   FDoc := AElement.OwnerDocument;
   FDomElem := AElement;
   FDataLink := ADataLink;
@@ -4608,11 +4745,16 @@ var rec: boolean;
   i: Integer;
 begin
   for i := 0 to ElementCount-1 do
-    if IsSVGElement[i] then
+    if IsSVGElement[i] and not Assigned(Element[i].Container) then
     begin
       rec := ARecursive;
-      ACallback(Element[i], AData, rec);
-      if rec then Element[i].IterateElements(ACallback, AData, true);
+      Element[i].Container := Container;
+      try
+        ACallback(Element[i], AData, rec);
+        if rec then Element[i].IterateElements(ACallback, AData, true);
+      finally
+        Element[i].Container := nil;
+      end;
     end;
 end;
 
@@ -4642,8 +4784,15 @@ procedure TSVGContent.Draw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var i: integer;
 begin
   for i := 0 to ElementCount-1 do
-    if IsSVGElement[i] then
-      Element[i].Draw(ACanvas2d, AUnit);
+    if IsSVGElement[i] and not Assigned(Element[i].Container) then
+    begin
+      Element[i].Container := Container;
+      try
+        Element[i].Draw(ACanvas2d, AUnit);
+      finally
+        Element[i].Container := nil;
+      end;
+    end;
 end;
 
 procedure TSVGContent.CopyPathTo(ACanvas2d: TBGRACanvas2D; x, y: single;
@@ -4664,8 +4813,15 @@ procedure TSVGContent.CopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var i: integer;
 begin
   for i := 0 to ElementCount-1 do
-    if IsSVGElement[i] then
-      Element[i].CopyPathTo(ACanvas2d, AUnit);
+    if IsSVGElement[i] and not Assigned(Element[i].Container) then
+    begin
+      Element[i].Container := Container;
+      try
+        Element[i].CopyPathTo(ACanvas2d, AUnit);
+      finally
+        Element[i].Container := nil;
+      end;
+    end;
 end;
 
 function TSVGContent.AppendElement(ASVGType: TSVGFactory): TSVGElement;

@@ -978,7 +978,7 @@ begin
     FUnits := TSVGUnits.Create(FDomElem,@FDefaultDpi);
     Units.OnRecompute:= @UnitsRecompute;
     FDataLink := TSVGDataLink.Create(nil);
-    FContent := TSVGContent.Create(FDomElem,FUnits,FDataLink);
+    FContent := TSVGContent.Create(nil,FDomElem,FUnits,FDataLink);
     FXml.AppendChild(FDomElem);
   end;
 end;
@@ -1149,7 +1149,7 @@ begin
   FUnits := TSVGUnits.Create(FDomElem,@FDefaultDpi);
   Units.OnRecompute:= @UnitsRecompute;
   FDataLink := TSVGDataLink.Create(nil);
-  FContent := TSVGContent.Create(FDomElem,FUnits,FDataLink);
+  FContent := TSVGContent.Create(nil,FDomElem,FUnits,FDataLink);
 end;
 
 procedure TBGRASVG.LoadFromResource(AFilename: string);

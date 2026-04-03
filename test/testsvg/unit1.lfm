@@ -1,22 +1,25 @@
 object Form1: TForm1
   Left = 487
-  Height = 930
+  Height = 1200
   Top = 32
-  Width = 1265
+  Width = 1600
   Caption = 'SVG Test'
-  ClientHeight = 930
-  ClientWidth = 1265
+  ClientHeight = 1200
+  ClientWidth = 1600
+  DesignTimePPI = 192
   Menu = MainMenu1
+  Position = poDesktopCenter
+  LCLVersion = '4.6.0.0'
+  WindowState = wsMaximized
   OnClose = FormClose
   OnCreate = FormCreate
+  OnResize = FormResize
   OnShow = FormShow
-  Position = poDesktopCenter
-  LCLVersion = '2.2.0.1'
   object PageControl1: TPageControl
     Left = 0
-    Height = 891
+    Height = 1158
     Top = 0
-    Width = 1265
+    Width = 1600
     ActivePage = TabSheet1
     Align = alClient
     ParentFont = False
@@ -24,120 +27,118 @@ object Form1: TForm1
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Main'
-      ClientHeight = 861
-      ClientWidth = 1259
+      ClientHeight = 1098
+      ClientWidth = 1584
       ParentFont = False
       object Panel1: TPanel
         Left = 0
-        Height = 532
+        Height = 500
         Top = 0
-        Width = 1259
+        Width = 1584
         Align = alTop
         BevelInner = bvLowered
         BevelOuter = bvLowered
         BorderStyle = bsSingle
-        ClientHeight = 530
-        ClientWidth = 1257
+        ClientHeight = 496
+        ClientWidth = 1580
         Color = clSilver
+        ParentBackground = False
         ParentColor = False
         ParentFont = False
         TabOrder = 0
         object Image1: TImage
           Left = 2
-          Height = 526
+          Height = 492
           Hint = '(svg rendering)'
           Top = 2
-          Width = 632
+          Width = 780
           Align = alLeft
           Center = True
-          OnMouseUp = Image1MouseUp
           ParentShowHint = False
           Proportional = True
           ShowHint = True
           Stretch = True
+          OnMouseUp = Image1MouseUp
         end
         object Image2: TImage
-          Left = 639
-          Height = 526
+          Left = 792
+          Height = 492
           Top = 2
-          Width = 616
+          Width = 786
           Align = alClient
           Center = True
-          OnMouseUp = Image1MouseUp
           ParentShowHint = False
           Proportional = True
           ShowHint = True
           Stretch = True
+          OnMouseUp = Image1MouseUp
         end
-        object Splitter4: TSplitter
-          Left = 634
-          Height = 526
+        object ImageSplitter: TSplitter
+          Left = 782
+          Height = 492
           Top = 2
-          Width = 5
+          Width = 10
         end
       end
       object Panel3: TPanel
         Left = 0
-        Height = 324
-        Top = 537
-        Width = 1259
+        Height = 588
+        Top = 510
+        Width = 1584
         Align = alClient
-        ClientHeight = 324
-        ClientWidth = 1259
+        ClientHeight = 588
+        ClientWidth = 1584
         ParentFont = False
         TabOrder = 1
         object FileListBox1: TFileListBox
           Left = 1
-          Height = 322
+          Height = 586
           Top = 1
-          Width = 634
+          Width = 780
           Align = alLeft
           Directory = 'C:\Users\Fenix\Desktop\TEST SVG 4'
           Font.CharSet = ANSI_CHARSET
-          Font.Height = -20
-          Font.Name = 'Times New Roman'
           Font.Pitch = fpVariable
           Font.Quality = fqDraft
           ItemHeight = 0
-          OnChange = FileListBox1Change
           ParentFont = False
           TabOrder = 0
+          OnChange = FileListBox1Change
         end
         object Memo1: TMemo
-          Left = 640
-          Height = 322
+          Left = 791
+          Height = 586
           Hint = '(Double click for on/off "change mode")'
           Top = 1
-          Width = 618
+          Width = 792
           Align = alClient
           Font.CharSet = ANSI_CHARSET
           Font.Color = clMaroon
-          Font.Height = -20
-          Font.Name = 'Times New Roman'
+          Font.Name = 'Cascadia Code'
           Font.Pitch = fpVariable
           Font.Quality = fqDraft
-          OnDblClick = Memo1DblClick
-          OnMouseDown = Memo1MouseDown
           ParentFont = False
           ParentShowHint = False
           ReadOnly = True
           ScrollBars = ssVertical
           ShowHint = True
           TabOrder = 1
+          OnDblClick = Memo1DblClick
+          OnMouseDown = Memo1MouseDown
         end
         object Splitter3: TSplitter
-          Left = 635
-          Height = 322
+          Left = 781
+          Height = 586
           Top = 1
-          Width = 5
+          Width = 10
         end
       end
       object Splitter2: TSplitter
         Cursor = crVSplit
         Left = 0
-        Height = 5
-        Top = 532
-        Width = 1259
+        Height = 10
+        Top = 500
+        Width = 1584
         Align = alTop
         Beveled = True
         ResizeAnchor = akTop
@@ -146,25 +147,26 @@ object Form1: TForm1
   end
   object Panel2: TPanel
     Left = 0
-    Height = 39
-    Top = 891
-    Width = 1265
+    Height = 42
+    Top = 1158
+    Width = 1600
     Align = alBottom
+    AutoSize = True
     BevelInner = bvLowered
     BevelOuter = bvLowered
-    ClientHeight = 39
-    ClientWidth = 1265
+    ClientHeight = 42
+    ClientWidth = 1600
     TabOrder = 1
     object PanProf: TPanel
       Left = 2
-      Height = 35
+      Height = 38
       Top = 2
-      Width = 1110
+      Width = 1282
       Align = alClient
+      BevelOuter = bvNone
       Caption = '0.0s'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clBlack
-      Font.Height = -20
       Font.Name = 'Segoe UI'
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
@@ -173,20 +175,20 @@ object Form1: TForm1
       TabOrder = 0
     end
     object CheckBox_ReplaceStrokeAndFill: TCheckBox
-      Left = 1112
-      Height = 35
+      Left = 1284
+      Height = 38
       Top = 2
-      Width = 151
+      Width = 314
       Align = alRight
       Caption = 'Replace stroke and fill'
-      OnChange = CheckBox_ReplaceStrokeAndFillChange
       TabOrder = 1
+      OnChange = CheckBox_ReplaceStrokeAndFillChange
     end
   end
   object PopupMenu1: TPopupMenu
     OnPopup = PopupMenu1Popup
-    Left = 88
-    Top = 56
+    Left = 176
+    Top = 112
     object MenuItem1: TMenuItem
       Tag = 100
       Caption = 'Execute Mod Test'
@@ -225,20 +227,20 @@ object Form1: TForm1
     end
   end
   object PopupMenu2: TPopupMenu
-    Left = 184
-    Top = 56
+    Left = 368
+    Top = 112
     object MenuItem2: TMenuItem
       Caption = 'Save To...'
       OnClick = MenuItem2Click
     end
   end
   object SaveDialog1: TSaveDialog
-    Left = 280
-    Top = 56
+    Left = 560
+    Top = 112
   end
   object MainMenu1: TMainMenu
-    Left = 88
-    Top = 144
+    Left = 176
+    Top = 288
     object MenuItem7: TMenuItem
       Caption = 'File'
       object MenuItem8: TMenuItem
