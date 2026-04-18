@@ -43,7 +43,7 @@ end;
 
 function RunShell(const Command: String): string; cdecl;
 begin
-  OutLog(etDebug, #9'Run:'#9 + Command);
+  OutLog(etDebug, #9'Run:'#9 + Command + #10);
   if not RunCommand(
   {$IFDEF MSWINDOWS}
   'pwsh', [
