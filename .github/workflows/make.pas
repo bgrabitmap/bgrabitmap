@@ -89,7 +89,7 @@ begin
   then OutLog(etError, SelectString(Result, '(Fatal|Error|/ld(\.[a-z]+)?):'))
   else begin
     Result := SelectString(Result, 'Linking').Split(' ')[2].Replace(LineEnding, EmptyStr);
-    OutLog(etInfo, #10#9'to:'#9 + Result);
+    OutLog(etInfo, #9'to:'#9 + Result + #10);
     Text := ReadFileToString(Path.Replace('.lpi', '.lpr'));
     if Text.Contains('program') and Text.Contains('consoletestrunner') then
       RunShell('%s --all --format=plain'.Format([Result]))
@@ -149,9 +149,7 @@ begin
   DT := Time;
   OutLog(etDebug, #10'#----------------------------------[GET OUT DEPENDENS]----------------------------------#'#10);
   for Item in OutDep do
-    for Result in FindAllFiles(ExtractPackage(
-      GetPackage('https://packages.lazarus-ide.org/', Item)
-    ), '*.lpk') do
+    for Result in FindAllFiles(ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Item)), '*.lpk') do
       AddPackage(Result, true);
   OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
   for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'use', '*.lpk') do
@@ -160,7 +158,7 @@ begin
     AddPackage(Result, false);
   for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'bglcontrols', '*.lpk') do
     AddPackage(Result, false);
-  OutLog(etDebug, #10'#----------------------------------[BUILD     PROECTS]----------------------------------#'#10);
+  OutLog(etDebug, #10'#----------------------------------[BUILD    PROjECTS]----------------------------------#'#10);
   for Result in FindAllFiles(GetCurrentDir, '*.lpi') do
     if not Result.Contains(DirectorySeparator + 'use' + DirectorySeparator) and not Result.Contains('zengl') then
       BuildProject(Result);
