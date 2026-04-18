@@ -43,7 +43,7 @@ end;
 
 function RunShell(const Command: String): string; cdecl;
 begin
-  OutLog(etDebug, '-- RunShell:'#9 + Command);
+  OutLog(etDebug, #9'Run:'#9 + Command);
   if not RunCommand(
   {$IFDEF MSWINDOWS}
   'pwsh', [
@@ -155,10 +155,14 @@ begin
       AddPackage(Result, true);
   OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
   for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'use', '*.lpk') do
+    AddPackage(Result, true);
+  for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'bglcontrols', '*.lpk') do
+    AddPackage(Result, false);
+  for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'bgrabitmap', '*.lpk') do
     AddPackage(Result, false);
   OutLog(etDebug, #10'#----------------------------------[BUILD     PROECTS]----------------------------------#'#10);
   for Result in FindAllFiles(GetCurrentDir, '*.lpi') do
-    if not Result.Contains(DirectorySeparator + 'use' + DirectorySeparator) then
+    if not Result.Contains(DirectorySeparator + 'use' + DirectorySeparator) and not Result.Contains('zengl') then
       BuildProject(Result);
   OutLog(etDebug, #10'#----------------------------------[      RESULT      ]----------------------------------#'#10);
   OutLog(etDebug, 'Duration:'#9 + FormatDateTime('hh:nn:ss', Time - DT));
