@@ -156,9 +156,9 @@ begin
   OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
   for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'use', '*.lpk') do
     AddPackage(Result, true);
-  for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'bglcontrols', '*.lpk') do
-    AddPackage(Result, false);
   for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'bgrabitmap', '*.lpk') do
+    AddPackage(Result, false);
+  for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'bglcontrols', '*.lpk') do
     AddPackage(Result, false);
   OutLog(etDebug, #10'#----------------------------------[BUILD     PROECTS]----------------------------------#'#10);
   for Result in FindAllFiles(GetCurrentDir, '*.lpi') do
