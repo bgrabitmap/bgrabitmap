@@ -26,7 +26,11 @@ begin
     etDebug: Result := #27'[33m%s'#27'[0m';
   end;
   if (Knd = etError) and (ExitCode < 125) then ExitCode += 1;
-  Writeln(stderr, UTF8ToConsole(Result.Format([Msg])));
+  for Line in Msg.Split(LineEnding) do
+    if not Line.Contains('/usr/lib/lazarus/') and
+       not Line.Contains('/onlinepackagemanager/') and 
+       not Line.Contains('/units/') then
+         Writeln(stderr, UTF8ToConsole(Result.Format([Msg])));
 end;
 
 function SelectString(const Input, Reg: string): string; cdecl;
@@ -62,7 +66,7 @@ begin
     OutLog(etError, Result);
 end;
 
-function AddPackage(const Path: string; const Link: boolean): string;
+function AddPackage(const Path: string; const Link: boolean): string; cdecl;
 var Line: string;
 begin
   if Link then Line := '--add-package-link'
@@ -152,13 +156,14 @@ var
 begin
   DT := Time;
   OutLog(etDebug, #10'#----------------------------------[GET OUT DEPENDENS]----------------------------------#'#10);
-  for Item in OutDep do
+  for Item in OutDep do begin
     List := FindAllFiles(ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Item)), '*.lpk');
     try
       for Result in List do AddPackage(Result, true);
     finally
       List.Free;
     end;
+  end;
   OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
   List := FindAllFiles(GetCurrentDir + PathDelim + 'use', '*.lpk');
   try
