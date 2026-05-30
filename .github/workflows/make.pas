@@ -19,6 +19,7 @@ uses
   Process;
 
 function OutLog(const Knd: TEventType; const Msg: string): string; cdecl;
+var Line: string;
 begin
   case Knd of
     etError: Result := #27'[31m%s'#27'[0m';
