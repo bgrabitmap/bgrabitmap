@@ -25,7 +25,7 @@ begin
     etInfo:  Result := #27'[32m%s'#27'[0m';
     etDebug: Result := #27'[33m%s'#27'[0m';
   end;
-  if Knd = etError then ExitCode += 1;
+  if Knd = etError and ExitCode < 125 then ExitCode += 1;
   Writeln(stderr, UTF8ToConsole(Result.Format([Msg])));
 end;
 
@@ -34,10 +34,13 @@ var Line: string;
 begin
   Result := EmptyStr;
   with TRegExpr.Create do begin
-    Expression := Reg;
-    for Line in Input.Split(LineEnding) do
-      if Exec(Line) then Result += Line + LineEnding;
-    Free;
+    try
+      Expression := Reg;
+      for Line in Input.Split(LineEnding) do
+        if Exec(Line) then Result += Line + LineEnding;
+    finally
+      Free;
+    end;
   end;
 end;
 
@@ -90,7 +93,7 @@ begin
   else begin
     Result := SelectString(Result, 'Linking').Split(' ')[2].Replace(LineEnding, EmptyStr);
     OutLog(etInfo, #9'to:'#9 + Result + #10);
-    Text := ReadFileToString(Path.Replace('.lpi', '.lpr'));
+    Text := ReadFileToString(ChangeFileExt(Path, '.lpr'));
     if Text.Contains('program') and Text.Contains('consoletestrunner') then
       RunShell('%s --all --format=plain'.Format([Result]))
     else if Text.Contains('library') and Text.Contains('exports') then
@@ -145,23 +148,45 @@ function BuildAll(const OutDep: array of string): string;
 var
   Item: string;
   DT: TDateTime;
+  List: TStringList;
 begin
   DT := Time;
   OutLog(etDebug, #10'#----------------------------------[GET OUT DEPENDENS]----------------------------------#'#10);
   for Item in OutDep do
-    for Result in FindAllFiles(ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Item)), '*.lpk') do
-      AddPackage(Result, true);
+    List := FindAllFiles(ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Item)), '*.lpk');
+    try
+      for Result in List do AddPackage(Result, true);
+    finally
+      List.Free;
+    end;
   OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
-  for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'use', '*.lpk') do
-    AddPackage(Result, true);
-  for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'bgrabitmap', '*.lpk') do
-    AddPackage(Result, false);
-  for Result in FindAllFiles(GetCurrentDir + DirectorySeparator + 'bglcontrols', '*.lpk') do
-    AddPackage(Result, false);
-  OutLog(etDebug, #10'#----------------------------------[BUILD    PROjECTS]----------------------------------#'#10);
-  for Result in FindAllFiles(GetCurrentDir, '*.lpi') do
-    if not Result.Contains(DirectorySeparator + 'use' + DirectorySeparator) and not Result.Contains('zengl') then
-      BuildProject(Result);
+  List := FindAllFiles(GetCurrentDir + PathDelim + 'use', '*.lpk');
+  try
+    for Result in List do AddPackage(Result, true);
+  finally
+    List.Free;
+  end;
+  List := FindAllFiles(GetCurrentDir + PathDelim + 'bgrabitmap', '*.lpk');
+  try
+    for Result in List do AddPackage(Result, false);
+  finally
+    List.Free;
+  end;
+  List := FindAllFiles(GetCurrentDir + PathDelim + 'bglcontrols', '*.lpk');
+  try
+    for Result in List do AddPackage(Result, false);
+  finally
+    List.Free;
+  end;
+  OutLog(etDebug, #10'#----------------------------------[BUILD    PROJECTS]----------------------------------#'#10);
+  List := FindAllFiles(GetCurrentDir, '*.lpi');
+  try
+    for Result in List do
+      if not Result.Contains(DirectorySeparator + 'use' + PathDelim) and not Result.Contains('zengl') then
+        BuildProject(Result);
+  finally
+    List.Free;
+  end;
   OutLog(etDebug, #10'#----------------------------------[      RESULT      ]----------------------------------#'#10);
   OutLog(etDebug, 'Duration:'#9 + FormatDateTime('hh:nn:ss', Time - DT));
   case ExitCode of
