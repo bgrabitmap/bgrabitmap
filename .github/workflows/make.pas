@@ -31,7 +31,7 @@ begin
     if not Line.Contains('/usr/lib/lazarus/') and
        not Line.Contains('/onlinepackagemanager/') and 
        not Line.Contains('/units/') then
-         Writeln(stderr, UTF8ToConsole(Result.Format([Msg])));
+         Writeln(stderr, UTF8ToConsole(Line.Format([Msg])));
 end;
 
 function SelectString(const Input, Reg: string): string; cdecl;
