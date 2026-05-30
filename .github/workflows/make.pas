@@ -29,7 +29,6 @@ begin
   if (Knd = etError) and (ExitCode < 125) then ExitCode += 1;
   for Line in Msg.Split(LineEnding) do
     if not Line.Contains('/usr/lib/lazarus/') and
-       not Line.Contains('/onlinepackagemanager/') and 
        not Line.Contains('/units/') then
          Writeln(stderr, UTF8ToConsole(Line.Format([Msg])));
 end;
