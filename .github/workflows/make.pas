@@ -25,7 +25,7 @@ begin
     etInfo:  Result := #27'[32m%s'#27'[0m';
     etDebug: Result := #27'[33m%s'#27'[0m';
   end;
-  if Knd = etError and ExitCode < 125 then ExitCode += 1;
+  if (Knd = etError) and (ExitCode < 125) then ExitCode += 1;
   Writeln(stderr, UTF8ToConsole(Result.Format([Msg])));
 end;
 
