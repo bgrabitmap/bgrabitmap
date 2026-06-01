@@ -151,46 +151,29 @@ end;
 function BuildAll(const OutDep: array of string): string;
 var
   Item: string;
-  DT: TDateTime;
-  List: TStringList;
+  DT: TDateTime = Time;
+  List: TStringList =  TStringList.Create;
 begin
-  DT := Time;
-  OutLog(etDebug, #10'#----------------------------------[GET OUT DEPENDENS]----------------------------------#'#10);
-  for Item in OutDep do begin
-    List := FindAllFiles(ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Item)), '*.lpk');
-    try
-      for Result in List do AddPackage(Result, true);
-    finally
-      List.Free;
-    end;
-  end;
-  OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
-  List := FindAllFiles(GetCurrentDir + PathDelim + 'use', '*.lpk');
   try
+    OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
+    for Item in OutDep do begin
+      FindAllFiles(List, ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Item)), '*.lpk');
     for Result in List do AddPackage(Result, true);
-  finally
-    List.Free;
-  end;
-  List := FindAllFiles(GetCurrentDir + PathDelim + 'bgrabitmap', '*.lpk');
-  try
+    OutLog(etDebug, #10'#----------------------------------[GET OUT DEPENDENS]----------------------------------#'#10);
+    FindAllFiles(List, GetCurrentDir + PathDelim + 'use', '*.lpk');
+    for Result in List do AddPackage(Result, true);
+    List.Clear;
+    FindAllFiles(List, GetCurrentDir + PathDelim + 'bgrabitmap', '*.lpk');
+    FindAllFiles(List, GetCurrentDir + PathDelim + 'bglcontrols', '*.lpk');
     for Result in List do AddPackage(Result, false);
-  finally
-    List.Free;
-  end;
-  List := FindAllFiles(GetCurrentDir + PathDelim + 'bglcontrols', '*.lpk');
-  try
-    for Result in List do AddPackage(Result, false);
-  finally
-    List.Free;
-  end;
-  OutLog(etDebug, #10'#----------------------------------[BUILD    PROJECTS]----------------------------------#'#10);
-  List := FindAllFiles(GetCurrentDir, '*.lpi');
-  try
+    List.Clear;
+    OutLog(etDebug, #10'#----------------------------------[BUILD    PROJECTS]----------------------------------#'#10);
+    FindAllFiles(List, GetCurrentDir, '*.lpi');
     for Result in List do
-      if not Result.Contains(DirectorySeparator + 'use' + PathDelim) and not Result.Contains('zengl') then
+      if not Result.Contains(PathDelim + 'use' + PathDelim) and not Result.Contains('zengl') then
         BuildProject(Result);
   finally
-    List.Free;
+    FreeAndNil(List);
   end;
   OutLog(etDebug, #10'#----------------------------------[      RESULT      ]----------------------------------#'#10);
   OutLog(etDebug, 'Duration:'#9 + FormatDateTime('hh:nn:ss', Time - DT));
