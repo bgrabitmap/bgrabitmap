@@ -26,11 +26,13 @@ begin
     etInfo:  Result := #27'[32m%s'#27'[0m';
     etDebug: Result := #27'[33m%s'#27'[0m';
   end;
-  if (Knd = etError) and (ExitCode < 125) then ExitCode += 1;
+  if (Knd = etError) and
+     (ExitCode < 125) then
+       ExitCode += 1;
   for Line in Msg.Split(LineEnding) do
     if not Line.Contains('/usr/lib/lazarus/') and
        not Line.Contains('/units/') then
-         Writeln(stderr, UTF8ToConsole(Line.Format([Msg])));
+         Writeln(stderr, UTF8ToConsole(Result.Format([Line])));
 end;
 
 function SelectString(const Input, Reg: string): string; cdecl;
@@ -98,8 +100,9 @@ begin
     Result := SelectString(Result, 'Linking').Split(' ')[2].Replace(LineEnding, EmptyStr);
     OutLog(etInfo, #9'to:'#9 + Result + #10);
     Text := ReadFileToString(ChangeFileExt(Path, '.lpr'));
-    if Text.Contains('program') and Text.Contains('consoletestrunner') then
-      RunShell('%s --all --format=plain'.Format([Result]))
+    if Text.Contains('program') and
+       Text.Contains('consoletestrunner') then
+         RunShell('%s --all --format=plain'.Format([Result]))
     else if Text.Contains('library') and Text.Contains('exports') then
       AddLibrary(Result);
   end;
@@ -111,18 +114,19 @@ begin
     + '/.lazarus/onlinepackagemanager/packages/'.Replace('/', DirectorySeparator)
     + ZipFile.Split('_')[1];
   OutLog(etDebug, 'ExtPackage from:'#9 + ZipFile + #10#9'to:'#9 + Result);
-  if not DirectoryExists(Result) and ForceDirectories(Result) then
-  with TUnZipper.Create do begin
-    try
-      FileName := ZipFile;
-      OutputPath := Result;
-      Examine;
-      UnZipAllFiles;
-      DeleteFile(ZipFile);
-    finally
-      Free;
-    end;
-  end;
+  if not DirectoryExists(Result) and
+     ForceDirectories(Result) then
+       with TUnZipper.Create do begin
+         try
+           FileName := ZipFile;
+           OutputPath := Result;
+           Examine;
+           UnZipAllFiles;
+           DeleteFile(ZipFile);
+         finally
+           Free;
+         end;
+       end;
 end;
 
 function GetPackage(const Uri, Package: string): string; cdecl;
@@ -156,22 +160,25 @@ begin
   DT := Time;
   List :=  TStringList.Create;
   try
-    OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
+    OutLog(etDebug, #10'#----------------------------------[GET EXTERNAL DEPENDENCIES]--------------------------#'#10);
     for Result in OutDep do
       FindAllFiles(List, ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Result)), '*.lpk');
     FindAllFiles(List, GetCurrentDir + PathDelim + 'use', '*.lpk');
-    for Result in List do AddPackage(Result, true);
+    for Result in List do
+      AddPackage(Result, true);
     List.Clear;
-    OutLog(etDebug, #10'#----------------------------------[GET OUT DEPENDENS]----------------------------------#'#10);
+    OutLog(etDebug, #10'#----------------------------------[GET INTERNAL DEPENDENCIES]--------------------------#'#10);
     FindAllFiles(List, GetCurrentDir + PathDelim + 'bgrabitmap', '*.lpk');
     FindAllFiles(List, GetCurrentDir + PathDelim + 'bglcontrols', '*.lpk');
-    for Result in List do AddPackage(Result, false);
+    for Result in List do
+      AddPackage(Result, false);
     List.Clear;
-    OutLog(etDebug, #10'#----------------------------------[BUILD    PROJECTS]----------------------------------#'#10);
+    OutLog(etDebug, #10'#----------------------------------[BUILD            PROJECTS]--------------------------#'#10);
     FindAllFiles(List, GetCurrentDir, '*.lpi');
     for Result in List do
-      if not Result.Contains(PathDelim + 'use' + PathDelim) and not Result.Contains('zengl') then
-        BuildProject(Result);
+      if not Result.Contains(PathDelim + 'use' + PathDelim) and
+         not Result.Contains('zengl') then
+           BuildProject(Result);
   finally
     FreeAndNil(List);
   end;
