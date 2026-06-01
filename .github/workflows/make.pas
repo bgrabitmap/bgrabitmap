@@ -150,7 +150,6 @@ end;
 
 function BuildAll(const OutDep: array of string): string;
 var
-  Item: string;
   DT: TDateTime;
   List: TStringList;
 begin
@@ -158,16 +157,20 @@ begin
   List :=  TStringList.Create;
   try
     OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
-    for Item in OutDep do begin
+    for Result in OutDep do begin
       FindAllFiles(List, ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Item)), '*.lpk');
-    for Result in List do AddPackage(Result, true);
+    for Result in List do
+      AddPackage(Result, true);
+    List.Clear;
     OutLog(etDebug, #10'#----------------------------------[GET OUT DEPENDENS]----------------------------------#'#10);
     FindAllFiles(List, GetCurrentDir + PathDelim + 'use', '*.lpk');
-    for Result in List do AddPackage(Result, true);
+    for Result in List do
+      AddPackage(Result, true);
     List.Clear;
     FindAllFiles(List, GetCurrentDir + PathDelim + 'bgrabitmap', '*.lpk');
     FindAllFiles(List, GetCurrentDir + PathDelim + 'bglcontrols', '*.lpk');
-    for Result in List do AddPackage(Result, false);
+    for Result in List do
+      AddPackage(Result, false);
     List.Clear;
     OutLog(etDebug, #10'#----------------------------------[BUILD    PROJECTS]----------------------------------#'#10);
     FindAllFiles(List, GetCurrentDir, '*.lpi');
