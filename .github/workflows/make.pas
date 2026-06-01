@@ -158,19 +158,14 @@ begin
   try
     OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
     for Result in OutDep do begin
-      FindAllFiles(List, ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Item)), '*.lpk');
-    for Result in List do
-      AddPackage(Result, true);
+      FindAllFiles(List, ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Result)), '*.lpk');
+    FindAllFiles(List, GetCurrentDir + PathDelim + 'use', '*.lpk');
+    for Result in List do AddPackage(Result, true);
     List.Clear;
     OutLog(etDebug, #10'#----------------------------------[GET OUT DEPENDENS]----------------------------------#'#10);
-    FindAllFiles(List, GetCurrentDir + PathDelim + 'use', '*.lpk');
-    for Result in List do
-      AddPackage(Result, true);
-    List.Clear;
     FindAllFiles(List, GetCurrentDir + PathDelim + 'bgrabitmap', '*.lpk');
     FindAllFiles(List, GetCurrentDir + PathDelim + 'bglcontrols', '*.lpk');
-    for Result in List do
-      AddPackage(Result, false);
+    for Result in List do AddPackage(Result, false);
     List.Clear;
     OutLog(etDebug, #10'#----------------------------------[BUILD    PROJECTS]----------------------------------#'#10);
     FindAllFiles(List, GetCurrentDir, '*.lpi');
