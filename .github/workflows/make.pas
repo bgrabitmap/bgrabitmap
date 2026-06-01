@@ -151,9 +151,11 @@ end;
 function BuildAll(const OutDep: array of string): string;
 var
   Item: string;
-  DT: TDateTime = Time;
-  List: TStringList =  TStringList.Create;
+  DT: TDateTime;
+  List: TStringList;
 begin
+  DT := Time;
+  List :=  TStringList.Create;
   try
     OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
     for Item in OutDep do begin
