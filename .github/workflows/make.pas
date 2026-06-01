@@ -157,7 +157,7 @@ begin
   List :=  TStringList.Create;
   try
     OutLog(etDebug, #10'#----------------------------------[GET IN  DEPENDENS]----------------------------------#'#10);
-    for Result in OutDep do begin
+    for Result in OutDep do
       FindAllFiles(List, ExtractPackage(GetPackage('https://packages.lazarus-ide.org/', Result)), '*.lpk');
     FindAllFiles(List, GetCurrentDir + PathDelim + 'use', '*.lpk');
     for Result in List do AddPackage(Result, true);
