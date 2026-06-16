@@ -161,11 +161,15 @@ var
   {** Detect the file format of a given file }
   function DetectFileFormat(AFilenameUTF8: string): TBGRAImageFormat;
   {** Detect the file format of a given stream. _ASuggestedExtensionUTF8_ can
-      be provided to guess the format }
+      be provided to guess the format. Stream position is unchanged. }
   function DetectFileFormat(AStream: TStream; ASuggestedExtensionUTF8: string = ''): TBGRAImageFormat;
   {** Returns the file format that is most likely to be stored in the
       given filename (according to its extension) }
   function SuggestImageFormat(AFilenameOrExtensionUTF8: string): TBGRAImageFormat;
+  {** Returns the image size of the given file }
+  function GetImageSizeInFile(AFilename: string): TPoint;
+  {** Returns the image size in the given stream (stream position is modified) }
+  function GetImageSizeInStream(AStream: TStream): TPoint;
   {** Returns a likely image extension for the format }
   function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
   {** Create an image reader for the given format }
@@ -675,8 +679,9 @@ type
   TBGRAImageReader = class(TFPCustomImageReader)
     {** Return bitmap information (size, bit depth) }
     function GetQuickInfo(AStream: TStream): TQuickImageInfo; virtual; abstract;
-    {** Return a draft of the bitmap, the ratio may change compared to the original width and height (useful to make thumbnails) }
-    function GetBitmapDraft(AStream: TStream; AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual; abstract;
+    {** Return a draft of the bitmap, the ratio may change compared to the original width and height (useful to make thumbnails).
+        Stream position is unchanged. }
+    function GetBitmapDraft(AStream: TStream; {%H-}AMaxWidth, {%H-}AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; virtual;
   end;
 
   {* Generic definition for a PNG writer with alpha option }
@@ -718,7 +723,7 @@ function ResourceFile(AFilename: string): string;
 implementation
 
 uses Math, SysUtils,
-  BGRAUTF8, BGRAUnits, FPWriteBMP, FPReadPNM, FPWritePNM, FPWriteXPM
+  BGRAUTF8, BGRAUnits, FPWriteBMP, BGRAReadPNM, FPWritePNM, FPWriteXPM
   {$IFNDEF BGRABITMAP_CORE},
   FPReadXwd, FPReadXPM, FPReadPcx,
   FPWriteJPEG, FPWritePCX,
@@ -1064,6 +1069,27 @@ begin
   result := false;
 end;
 
+{ TBGRAImageReader }
+
+function TBGRAImageReader.GetBitmapDraft(AStream: TStream; AMaxWidth,
+  AMaxHeight: integer; out AOriginalWidth, AOriginalHeight: integer): TBGRACustomBitmap;
+var
+  prevPos: Int64;
+begin
+  // default implementation simply reads the image
+  // but a specific implementation can read only the relevant data
+  // to make an image of size AMaxWidth by AMaxHeight
+  result := BGRABitmapFactory.Create;
+  prevPos := AStream.Position;
+  try
+    result.LoadFromStream(AStream, self, []);
+  finally
+    AStream.Position := prevPos;
+  end;
+  AOriginalWidth:= result.Width;
+  AOriginalHeight:= result.Height;
+end;
+
 
 function CheckPutImageBounds(x, y, tx, ty: integer; out minxb, minyb, maxxb,
   maxyb, ignoreleft: integer; const cliprect: TRect): boolean;
@@ -1204,7 +1230,7 @@ begin
   end;
 end;
 
-function DetectFileFormat(AStream: TStream; ASuggestedExtensionUTF8: string
+function DetectFileFormat(AStream: TStream; ASuggestedExtensionUTF8: string = ''
   ): TBGRAImageFormat;
 var
   scores: array[TBGRAImageFormat] of integer;
@@ -1470,6 +1496,40 @@ begin
   if (ext = '.webp') then result := ifWebP else
   if (ext = '.avif') then result := ifAvif;
 
+end;
+
+function GetImageSizeInFile(AFilename: string): TPoint;
+var
+  stream: TFileStreamUTF8;
+  imageFormat: TBGRAImageFormat;
+  reader: TFPCustomImageReader;
+begin
+  stream := nil;
+  reader := nil;
+  try
+    imageFormat := DetectFileFormat(AFilename);
+    reader := CreateBGRAImageReader(imageFormat);
+    stream := TFileStreamUTF8.Create(AFilename, fmOpenRead);
+    result := reader.ImageSize(stream);
+  finally
+    reader.Free;
+    stream.Free;
+  end;
+end;
+
+function GetImageSizeInStream(AStream: TStream): TPoint;
+var
+  imageFormat: TBGRAImageFormat;
+  reader: TFPCustomImageReader;
+begin
+  reader := nil;
+  try
+    imageFormat := DetectFileFormat(AStream);
+    reader := CreateBGRAImageReader(imageFormat);
+    result := reader.ImageSize(AStream);
+  finally
+    reader.Free;
+  end;
 end;
 
 function SuggestImageExtension(AFormat: TBGRAImageFormat): string;
@@ -1818,8 +1878,7 @@ initialization
   {$IFNDEF BGRABITMAP_CORE}
   BGRARegisterImageWriter(ifTarga, TFPWriterTarga, false, 'TARGA Format', 'tga');
   BGRARegisterImageWriter(ifXPixMap, TFPWriterXPM, false, 'XPM Format', 'xpm');
-  BGRARegisterImageHandlers(ifPortableAnyMap, TFPReaderPNM, TFPWriterPNM,
-    False, 'Netpbm Portable aNyMap', 'pnm;pbm;pgm;ppm');
+  BGRARegisterImageWriter(ifPortableAnyMap, TFPWriterPNM, false, 'Netpbm Portable aNyMap', 'pnm;pbm;pgm;ppm');
   BGRARegisterImageReader(ifXwd, TFPReaderXWD, false, 'XWD Format', 'xwd');
 
   //the other readers/writers are registered by their unit

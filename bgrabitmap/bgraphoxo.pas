@@ -60,6 +60,7 @@ type
     procedure SaveToFile(const filenameUTF8: string); override;
     class function CheckFormat(Stream: TStream; ARestorePosition: boolean): boolean; static;
     class function ReadBlock(Stream: TStream; out AHeader: TPhoxoBlockHeader; out ABlockData: PByte): boolean; static;
+    class function ImageSize(AStream: TStream): TPoint; static;
     property DPIX: integer read FDPIX;
     property DPIY: integer read FDPIY;
   end;
@@ -76,6 +77,7 @@ type
     procedure ReadResolutionValues(Img: TFPCustomImage);
     function InternalCheck(Stream: TStream): boolean; override;
     procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
+    class function InternalSize(Str: TStream): TPoint; override;
   public
     property Width: integer read FWidth;
     property Height: integer read FHeight;
@@ -208,6 +210,11 @@ begin
   finally
     layeredImage.Free;
   end;
+end;
+
+class function TBGRAReaderOXO.InternalSize(Str: TStream): TPoint;
+begin
+  Result:= TBGRAPhoxoDocument.ImageSize(Str);
 end;
 
 { TBGRAPhoxoDocument }
@@ -360,7 +367,7 @@ begin
           begin
             if (blockHeader.blockSize >= 2) and (NbLayers > 0) then
             begin
-              setlength(wCaption, blockHeader.blockSize div 2);
+              setlength({%H-}wCaption, blockHeader.blockSize div 2);
               for i := 1 to length(wCaption) do
                 Word(wCaption[i]) := LEtoN((PWord(blockData)+i-1)^);
               if wCaption[1] = #1 then Delete(wCaption,1,1);
@@ -623,6 +630,28 @@ begin
     exit;
   end;
   result := true;
+end;
+
+class function TBGRAPhoxoDocument.ImageSize(AStream: TStream): TPoint;
+var blockHeader: TPhoxoBlockHeader;
+    blockData: PByte;
+begin
+  result := Point(0, 0);
+  if not CheckFormat(AStream,False) then exit;
+  blockData := nil;
+  repeat
+    if not ReadBlock(AStream, blockHeader, blockData) then
+      exit;
+    if blockHeader.blockType = PhoxoBlock_CanvasSize then
+    begin
+      if blockHeader.blockSize < 8 then exit;
+      result.X := LEtoN(PLongWord(blockData)^);
+      result.Y := LEtoN((PLongWord(blockData)+1)^);
+      FreeMem(blockData);
+      exit;
+    end;
+    FreeMem(blockData);
+  until blockHeader.blockType = PhoxoBlock_EndOfFile;
 end;
 
 end.

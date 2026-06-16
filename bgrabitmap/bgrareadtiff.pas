@@ -72,6 +72,9 @@ type
     );
 
   { Reader for TIFF format }
+
+  { TBGRAReaderTiff }
+
   TBGRAReaderTiff = class(TFPCustomImageReader)
   private
     FCheckIFDOrder: TTiffCheckIFDOrder;
@@ -120,6 +123,8 @@ type
     procedure InternalRead(Str: TStream; AnImage: TFPCustomImage); override;
     function InternalCheck(Str: TStream): boolean; override;
     procedure DoCreateImage(ImgFileDir: TTiffIFD); virtual;
+    class function InternalSize(Str: TStream): TPoint; override;
+    function ReadBiggestSize(Str: TStream): TPoint;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -2530,6 +2535,33 @@ procedure TBGRAReaderTiff.DoCreateImage(ImgFileDir: TTiffIFD);
 begin
   if Assigned(OnCreateImage) then
     OnCreateImage(Self,ImgFileDir);
+end;
+
+class function TBGRAReaderTiff.InternalSize(Str: TStream): TPoint;
+var
+  subReader: TBGRAReaderTiff;
+begin
+  subReader := TBGRAReaderTiff.Create;
+  try
+    result := subReader.ReadBiggestSize(Str);
+  finally
+    subReader.Free;
+  end;
+end;
+
+function TBGRAReaderTiff.ReadBiggestSize(Str: TStream): TPoint;
+var
+  BestIFD: TTiffIFD;
+begin
+  try
+    Clear;
+    LoadHeaderFromStream(Str);
+    LoadIFDsFromStream;
+    BestIFD := GetBiggestImage;
+    result := Point(BestIFD.ImageWidth , BestIFD.ImageHeight);
+  except
+    result := Point(0, 0);
+  end;
 end;
 
 constructor TBGRAReaderTiff.Create;

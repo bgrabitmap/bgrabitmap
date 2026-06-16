@@ -239,11 +239,10 @@ begin
   case format of
   ifBmp:
     begin
-      reader := TBGRAReaderBMP.Create;
       bmp := BGRABitmapFactory.Create;
       try
         AContent.Position := 0;
-        imageInfo := reader.GetQuickInfo(AContent);
+        imageInfo := TBGRAReaderBMP.GetQuickInfoEx(AContent, bsfWithFileHeader);
         if (imageInfo.width <= 0) or (imageInfo.height <= 0) or
            (imageInfo.width > 256) or (imageInfo.height > 256) then
           raise exception.Create('Invalid image size');
@@ -284,7 +283,7 @@ begin
 
         //build mask
         tempStream.Position := tempStream.Size;
-        setlength(maskLine, maskStride);
+        setlength({%H-}maskLine, maskStride);
         for y := bmp.Height-1 downto 0 do
         begin
           maskBit := $80;
@@ -309,7 +308,6 @@ begin
         result := TBGRAIconCursorEntry.Create(AContainer, 'dib', imageInfo, tempStream);
       finally
         bmp.Free;
-        reader.Free;
       end;
     end;
   ifPng:
@@ -324,10 +322,7 @@ begin
     begin
       //assume headerless BMP
       AContent.Position := 0;
-      reader := TBGRAReaderBMP.Create;
-      imageInfo := reader.GetQuickInfo(AContent);
-      imageInfo.Height:= imageInfo.Height div 2; //mask size is included
-      reader.Free;
+      imageInfo := TBGRAReaderBMP.GetQuickInfoEx(AContent, bsfHeaderlessWithMask);
       if (imageInfo.width <= 0) or (imageInfo.height <= 0) or
          (imageInfo.width > 256) or (imageInfo.height > 256) then
         raise exception.Create('Invalid image size');
@@ -584,7 +579,7 @@ begin
       bmpXOR := BGRABitmapFactory.Create(ABitmap);
       try
         bitAndMaskRowSize := ((bmpXOR.Width+31) div 32)*4;
-        setlength(bitAndMask, bitAndMaskRowSize*bmpXOR.Height);
+        setlength({%H-}bitAndMask, bitAndMaskRowSize*bmpXOR.Height);
         for y := bmpXOR.Height-1 downto 0 do
         begin
           if assigned(ABitmap.XorMask) then
@@ -727,7 +722,7 @@ begin
     if header.ResourceType <> ExpectedMagic then
       raise exception.Create('Invalid resource type');
     Clear;
-    setlength(dir, header.ImageCount);
+    setlength({%H-}dir, header.ImageCount);
     AStream.ReadBuffer(dir[0], sizeof(TIconFileDirEntry)*length(dir));
     for i := 0 to high(dir) do
     begin
@@ -764,7 +759,7 @@ begin
   header.ResourceType:= ExpectedMagic;
   header.SwapIfNecessary;
   accSize := sizeof(header) + sizeof(TIconFileDirEntry)*Count;
-  setlength(dir, Count);
+  setlength({%H-}dir, Count);
   for i := 0 to Count-1 do
   begin
     if Width[i] >= 256

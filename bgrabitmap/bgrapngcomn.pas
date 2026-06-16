@@ -29,6 +29,7 @@ type
     Width, height : LongWord;
     BitDepth, ColorType, Compression, Filter, Interlace : byte;
   end;
+  PHeaderCunk = ^THeaderChunk;
   { Array of 8 longwords }
   EightLong = PNGComn.EightLong;
 

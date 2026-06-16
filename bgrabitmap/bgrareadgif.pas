@@ -26,6 +26,12 @@ type
   protected
     procedure ReadPaletteAtOnce(Stream: TStream; Size: integer);
     procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
+    class function InternalSize(Str: TStream): TPoint; override;
+    class function ReadHeader(Str: TStream; out AHeader: TGIFHeader;
+      out AColorTableSize: integer): boolean;
+    class function ReadDescriptor(Str: TStream; out ADescriptor: TGifImageDescriptor;
+      out AColorTableSize: integer): boolean;
+    class function IgnoreExtensionBlock(Str: TStream): byte;
     function ReadScanLine(Stream: TStream): boolean; override;
     function WriteScanLineBGRA(Img: TFPCustomImage): Boolean; virtual;
   end;
@@ -76,48 +82,24 @@ begin
     FPalette := TFPPalette.Create(0);
 
     Stream.Position:=0;
-    // header
-    Stream.Read(FHeader,SizeOf(FHeader));
+    if not ReadHeader(Stream, FHeader, ColorTableSize) then
+      raise Exception.Create('Unknown/Unsupported GIF image type');
     Progress(psRunning, 0, False, Rect(0,0,0,0), '', ContProgress);
     if not ContProgress then exit;
 
-    // Endian Fix Mantis 8541. Gif is always little endian
-    {$IFDEF ENDIAN_BIG}
-      with FHeader do
-        begin
-          ScreenWidth := LEtoN(ScreenWidth);
-          ScreenHeight := LEtoN(ScreenHeight);
-        end;
-    {$ENDIF}
     // global palette
-    if (FHeader.Packedbit and $80) <> 0 then
-    begin
-      ColorTableSize := FHeader.Packedbit and 7 + 1;
-      ReadPaletteAtOnce(stream, 1 shl ColorTableSize);
-    end;
+    if ColorTableSize > 0 then
+      ReadPaletteAtOnce(stream, ColorTableSize);
 
     // skip extensions
     Repeat
       Introducer:=SkipBlock(Stream);
     until (Introducer = $2C) or (Introducer = $3B);
 
-    // descriptor
-    Stream.Read(FDescriptor, SizeOf(FDescriptor));
-    {$IFDEF ENDIAN_BIG}
-      with FDescriptor do
-        begin
-          Left := LEtoN(Left);
-          Top := LEtoN(Top);
-          Width := LEtoN(Width);
-          Height := LEtoN(Height);
-        end;
-    {$ENDIF}
+    if not ReadDescriptor(Stream, FDescriptor, ColorTableSize) then exit;
     // local palette
-    if (FDescriptor.Packedbit and $80) <> 0 then
-    begin
-      ColorTableSize := FDescriptor.Packedbit and 7 + 1;
-      ReadPaletteAtOnce(stream, 1 shl ColorTableSize);
-    end;
+    if ColorTableSize > 0 then
+      ReadPaletteAtOnce(stream, ColorTableSize);
 
     // parse header
     if not AnalyzeHeader then exit;
@@ -143,7 +125,115 @@ begin
   Progress(FPimage.psEnding, 100, false, Rect(0,0,FWidth,FHeight), '', ContProgress);
 end;
 
-function TBGRAReaderGif.ReadScanLine(Stream: TStream): Boolean;
+class function TBGRAReaderGif.ReadHeader(Str: TStream; out AHeader: TGIFHeader;
+  out AColorTableSize: integer): boolean;
+begin
+  fillchar({%H-}AHeader, sizeof(AHeader), 0);
+  result :=
+    (Str.Read(AHeader, SizeOf(AHeader)) = SizeOf(AHeader))
+    and (AHeader.Signature = 'GIF')
+    and ((AHeader.Version = '87a') or (AHeader.Version = '89a'));
+
+  {$IFDEF ENDIAN_BIG}
+  with AHeader do
+  begin
+    ScreenWidth := LEtoN(ScreenWidth);
+    ScreenHeight := LEtoN(ScreenHeight);
+  end;
+  {$ENDIF}
+
+  if (AHeader.Packedbit and $80) <> 0 then
+    AColorTableSize := 1 shl (AHeader.Packedbit and 7 + 1)
+  else
+    AColorTableSize := 0;
+end;
+
+class function TBGRAReaderGif.ReadDescriptor(Str: TStream; out
+  ADescriptor: TGifImageDescriptor; out AColorTableSize: integer): boolean;
+begin
+  fillchar({%H-}ADescriptor, sizeof(ADescriptor), 0);
+  // descriptor
+  result := Str.Read(ADescriptor, SizeOf(ADescriptor)) = SizeOf(ADescriptor);
+  {$IFDEF ENDIAN_BIG}
+  with ADescriptor do
+  begin
+    Left := LEtoN(Left);
+    Top := LEtoN(Top);
+    Width := LEtoN(Width);
+    Height := LEtoN(Height);
+  end;
+  {$ENDIF}
+  // local palette
+  if (ADescriptor.Packedbit and $80) <> 0 then
+    AColorTableSize := 1 shl (ADescriptor.Packedbit and 7 + 1)
+  else
+    AColorTableSize := 0;
+end;
+
+class function TBGRAReaderGif.IgnoreExtensionBlock(Str: TStream): byte;
+var
+  Introducer,
+  Labels,
+  SkipByte : byte;
+begin
+  Introducer := 0;
+  Str.read(Introducer,1);
+  if Introducer = $21 then
+  begin
+     Labels := 0;
+     Str.read(Labels,1);
+     Case Labels of
+       $FE, $FF :     // Comment Extension block or Application Extension block
+            while true do
+            begin
+              SkipByte := 0;
+              Str.Read(SkipByte, 1);
+              if SkipByte = 0 then Break;
+              Str.Seek(SkipByte, soFromCurrent);
+            end;
+       $F9 :         // Graphics Control Extension block
+            begin
+              Str.Seek(SizeOf(TGifGraphicsControlExtension), soFromCurrent);
+            end;
+       $01 :        // Plain Text Extension block
+            begin
+              SkipByte := 0;
+              Str.Read(SkipByte, 1);
+              Str.Seek(SkipByte, soFromCurrent);
+              while true do
+              begin
+                SkipByte := 0;
+                Str.Read(SkipByte, 1);
+                if SkipByte = 0 then Break;
+                Str.Seek(SkipByte, soFromCurrent);
+              end;
+            end;
+      end;
+  end;
+  Result:=Introducer;
+end;
+
+
+class function TBGRAReaderGif.InternalSize(Str: TStream): TPoint;
+var h: TGIFHeader;
+  colorTableSize: integer;
+  d: TGifImageDescriptor;
+  Introducer: Byte;
+begin
+  result := Point(0, 0);
+  if not ReadHeader(Str, h, colorTableSize) then exit;
+  // skip palette
+  if colorTableSize > 0 then
+     Str.Seek(sizeof(TGifRGB)*colorTableSize, soCurrent);
+  // skip extensions
+  Repeat
+    Introducer:= IgnoreExtensionBlock(Str);
+  until (Introducer = $2C) or (Introducer = $3B);
+  if not ReadDescriptor(Str, d, colorTableSize) then exit;
+  result := Point(d.Width, d.Height);
+end;
+
+function TBGRAReaderGif.ReadScanLine(Stream: TStream): boolean;
 var
   OldPos,
   UnpackedSize,

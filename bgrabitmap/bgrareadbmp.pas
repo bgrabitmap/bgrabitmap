@@ -136,13 +136,18 @@ type
       procedure WriteMaskLine(Row : Integer; Img : TFPCustomImage); virtual;
 
       procedure ReadResolutionValues(Img: TFPCustomImage); virtual;
-      procedure ReadInfoHeader(Stream: TStream;
+      class procedure ReadInfoHeader(Stream: TStream;
+        AImageOffset: longint;
         out AInfoHeader: TBitmapinfoHeaderV4;
         out APaletteEntrySize, APaletteByteCount: integer);
 
       // required by TFPCustomImageReader
       procedure InternalRead  (Stream:TStream; Img:TFPCustomImage); override;
+      class function InternalSize(Str: TStream): TPoint; override;
+      class function InternalSizeEx(Str: TStream; ASubFormat: TBitmapSubFormat): TPoint;
       function  InternalCheck (Stream:TStream) : boolean; override;
+      class function StaticCheck(Stream: TStream; ASubFormat: TBitmapSubFormat;
+        out AFileHeader: TBitMapFileHeader; out AHotspot: TPoint): boolean;
       procedure InitReadBuffer(AStream: TStream; ASize: integer);
       procedure CloseReadBuffer;
       function GetNextBufferByte: byte;
@@ -162,6 +167,7 @@ type
       property OutputHeight: integer read FOutputHeight;
       property TransparencyOption: TBMPTransparencyOption read FTransparencyOption write FTransparencyOption;
       function GetQuickInfo(AStream: TStream): TQuickImageInfo; override;
+      class function GetQuickInfoEx(AStream: TStream; ASubFormat: TBitmapSubFormat): TQuickImageInfo;
       function GetBitmapDraft(AStream: TStream; {%H-}AMaxWidth, AMaxHeight: integer; out AOriginalWidth,AOriginalHeight: integer): TBGRACustomBitmap; override;
   end;
 
@@ -292,57 +298,47 @@ begin
 end;
 
 function TBGRAReaderBMP.GetQuickInfo(AStream: TStream): TQuickImageInfo;
-var headerSize: LongWord;
-  os2header: TOS2BitmapHeader;
-  minHeader: TMinimumBitmapHeader;
-  totalDepth: integer;
-  headerPos: int64;
+var
+  oldPos: Int64;
+begin
+  oldPos := AStream.Position;
+  result := GetQuickInfoEx(AStream, bsfWithFileHeader);
+  if (result.Width = 0) and (result.Height = 0) then
+  begin
+    AStream.Position:= oldPos;
+    result := GetQuickInfoEx(AStream, bsfHeaderless);
+  end;
+end;
+
+class function TBGRAReaderBMP.GetQuickInfoEx(AStream: TStream;
+  ASubFormat: TBitmapSubFormat): TQuickImageInfo;
+var
+  fileHeader: TBitMapFileHeader;
+  tempHotSpot: TPoint;
+  infoHeader: TBitmapinfoHeaderV4;
+  paletteEntrySize, paletteByteCount: integer;
+  totalDepth: Word;
 begin
   {$PUSH}{$HINTS OFF}fillchar({%H-}result, sizeof({%H-}result), 0);{$POP}
-  headerPos := AStream.Position;
-  if AStream.Read({%H-}headerSize, sizeof(headerSize)) <> sizeof(headerSize) then exit;
-  headerSize := LEtoN(headerSize);
 
-  //check presence of file header
-  if (headerSize and $ffff) = BMmagic then
-  begin
-    inc(headerPos, sizeof(TBitMapFileHeader));
-    AStream.Position := headerPos;
-    if AStream.Read(headerSize, sizeof(headerSize)) <> sizeof(headerSize) then exit;
-    headerSize := LEtoN(headerSize);
-  end;
+  if not StaticCheck(AStream, ASubFormat, fileHeader, tempHotSpot) then
+    exit;
 
-  AStream.Position := headerPos;
+  ReadInfoHeader(AStream, fileHeader.bfOffset, infoHeader, paletteEntrySize, paletteByteCount);
 
-  if headerSize = sizeof(TOS2BitmapHeader) then //OS2 1.x
-  begin
-    if AStream.Read({%H-}os2header, sizeof(os2header)) <> sizeof(os2header) then exit;
-    result.width := LEtoN(os2header.bcWidth);
-    result.height := LEtoN(os2header.bcHeight);
-    result.colorDepth := LEtoN(os2header.bcBitCount);
-    result.alphaDepth := 0;
-  end
+  result.width := infoHeader.Width;
+  if ASubFormat = bsfHeaderlessWithMask then
+    result.height := infoHeader.Height div 2
   else
-  if headerSize >= sizeof(minHeader) then
+    result.height := infoHeader.Height;
+  totalDepth := infoHeader.BitCount;
+  if totalDepth > 24 then
   begin
-    if AStream.Read({%H-}minHeader, sizeof(minHeader)) <> sizeof(minHeader) then exit;
-    result.width := LEtoN(minHeader.Width);
-    result.height := LEtoN(minHeader.Height);
-    totalDepth := LEtoN(minHeader.BitCount);
-    if totalDepth > 24 then
-    begin
-      result.colorDepth:= 24;
-      result.alphaDepth:= 8;
-    end else
-    begin
-      result.colorDepth := totalDepth;
-      result.alphaDepth:= 0;
-    end;
+    result.colorDepth:= 24;
+    result.alphaDepth:= 8;
   end else
   begin
-    result.width := 0;
-    result.height:= 0;
-    result.colorDepth:= 0;
+    result.colorDepth := totalDepth;
     result.alphaDepth:= 0;
   end;
 end;
@@ -521,7 +517,7 @@ begin
   begin
     GetMem(FPalette, nPalette*SizeOf(TFPColor));
     GetMem(FBGRAPalette, nPalette*SizeOf(TBGRAPixel));
-    SetLength(ColInfo, nPalette);
+    SetLength({%H-}ColInfo, nPalette);
     if BFI.ClrUsed>0 then
       colorPresent:= min(BFI.ClrUsed,nPalette)
     else
@@ -532,7 +528,7 @@ begin
 
     if FPaletteEntrySize = 3 then
     begin
-      setlength(ColInfo3, nPalette);
+      setlength({%H-}ColInfo3, nPalette);
       Stream.Read(ColInfo3[0],colorPresent*SizeOf(TColorRGB));
       for i := 0 to colorPresent-1 do
         ColInfo[i].RGB := ColInfo3[i];
@@ -560,7 +556,8 @@ begin
   end;
 end;
 
-procedure TBGRAReaderBMP.ReadInfoHeader(Stream: TStream;
+class procedure TBGRAReaderBMP.ReadInfoHeader(Stream: TStream;
+  AImageOffset: longint;
   out AInfoHeader: TBitmapinfoHeaderV4;
   out APaletteEntrySize, APaletteByteCount: integer);
 var
@@ -594,7 +591,7 @@ begin
   deltaPos := headerSize - sizeof(longword) { size field } - headerByteCount;
   if deltaPos <> 0 then
     Stream.Position:=Stream.Position + deltaPos;
-  APaletteByteCount := BFH.bfOffset - sizeof(BFH) - headerSize;
+  APaletteByteCount := AImageOffset - sizeof(TBitMapFileHeader) - headerSize;
 end;
 
 procedure TBGRAReaderBMP.InternalRead(Stream:TStream; Img:TFPCustomImage);
@@ -609,7 +606,7 @@ begin
   Progress(psStarting,0,false,EmptyRect,'',shouldContinue);
   if not shouldContinue then exit;
 
-  ReadInfoHeader(Stream, BFI, FPaletteEntrySize, paletteByteCount);
+  ReadInfoHeader(Stream, BFH.bfOffset, BFI, FPaletteEntrySize, paletteByteCount);
   with BFI do
   begin
     BadCompression:=false;
@@ -694,6 +691,17 @@ begin
   finally
     FreeBufs;
   end;
+end;
+
+class function TBGRAReaderBMP.InternalSize(Str: TStream): TPoint;
+begin
+  result := InternalSizeEx(Str, bsfWithFileHeader);
+end;
+
+class function TBGRAReaderBMP.InternalSizeEx(Str: TStream; ASubFormat: TBitmapSubFormat): TPoint;
+begin
+  with GetQuickInfoEx(Str, ASubFormat) do
+    result := Point(Width, Height);
 end;
 
 procedure TBGRAReaderBMP.ExpandRLE8ScanLine(Row : Integer; Stream : TStream);
@@ -1073,24 +1081,29 @@ begin
 
 function  TBGRAReaderBMP.InternalCheck (Stream:TStream) : boolean;
 begin
-  fillchar(BFH, sizeof(BFH), 0);
-  if Subformat in [bsfHeaderless,bsfHeaderlessWithMask] then
+  exit(StaticCheck(Stream, SubFormat, BFH, Hotspot));
+end;
+
+class function  TBGRAReaderBMP.StaticCheck (Stream:TStream; ASubFormat: TBitmapSubFormat;
+                                            out AFileHeader: TBitMapFileHeader; out AHotspot: TPoint) : boolean;
+begin
+  fillchar({%H-}AFileHeader, sizeof(AFileHeader), 0);
+  if ASubFormat in [bsfHeaderless,bsfHeaderlessWithMask] then
   begin
    result := true;
-   Hotspot := Point(0,0);
+   AHotspot := Point(0,0);
   end else
   begin
-    if stream.Read(BFH,SizeOf(BFH)) < sizeof(BFH) then
+    if stream.Read(AFileHeader,SizeOf(AFileHeader)) < sizeof(AFileHeader) then
     begin
       result := false;
       exit;
     end;
-    Hotspot := Point(LEtoN(PWord(@BFH.bfReserved)^),LEtoN((PWord(@BFH.bfReserved)+1)^));
+    AHotspot := Point(LEtoN(PWord(@AFileHeader.bfReserved)^),LEtoN((PWord(@AFileHeader.bfReserved)+1)^));
     {$IFDEF ENDIAN_BIG}
-    SwapBMPFileHeader(BFH);
+    SwapBMPFileHeader(fileHeader);
     {$ENDIF}
-    With BFH do
-      Result:=(bfType=BMmagic); // Just check magic number
+    Result:= AFileHeader.bfType=BMmagic; // Just check magic number
   end;
 end;
 

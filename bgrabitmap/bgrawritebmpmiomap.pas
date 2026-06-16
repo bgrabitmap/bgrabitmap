@@ -336,13 +336,13 @@ var
   alphas: packed array of byte;
   i: Int32or64;
 begin
-  setlength(Colors, FHeader.nbColors);
+  setlength({%H-}Colors, FHeader.nbColors);
   for i := 0 to FHeader.nbColors-1 do
     colors[i] := NtoLE(FPalette[i].ColorValue);
   Str.WriteBuffer(colors[0], length(Colors)*sizeof(word));
   if FPaletteAlpha then
   begin
-    setlength(alphas, FHeader.nbColors);
+    setlength({%H-}alphas, FHeader.nbColors);
     for i := 0 to FHeader.nbColors-1 do
       alphas[i] := FPalette[i].AlphaValue;
     Str.WriteBuffer(alphas[0], length(alphas)*sizeof(byte));
