@@ -1577,12 +1577,14 @@ end;
 
 procedure TBGRAReaderPNG.HandleChunk;
 begin
+{$if FPC_FULLVERSION<30301}
   if IsAnimatedChunkType(chunk.AType) then
   case TAnimatedChunkTypes(chunk.AType) of
     ctacTL: HandleAnimationControl;
     ctfcTL: HandleFrameControl;
     ctfdAT: HandleFrameData;
   end else
+{$endif}
   case chunk.AType of
     ctIHDR : raise PNGImageException.Create ('Second IHDR chunk found');
     ctPLTE : HandlePalette;
@@ -1592,6 +1594,11 @@ begin
     ctsRGB : HandleStdRGB;
     ctgAMA : HandleGamma;
     ctpHYs : HandlePhysicalDimensions;
+{$if FPC_FULLVERSION>=30301}
+    ctacTL: HandleAnimationControl;
+    ctfcTL: HandleFrameControl;
+    ctfdAT: HandleFrameData;
+{$endif}
     else HandleUnknown;
   end;
 end;
