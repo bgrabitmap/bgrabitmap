@@ -1497,7 +1497,7 @@ begin
     if (Right <= Left) or (Bottom <= Top) then
       Exit;
 
-  if ADirection = gdVertical then
+  if ADirection = TGradientDirection.gdVertical then
     Count := ARect.Bottom - ARect.Top
   else
     Count := ARect.Right - ARect.Left;
