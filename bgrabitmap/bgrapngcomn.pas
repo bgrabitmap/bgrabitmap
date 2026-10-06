@@ -40,12 +40,14 @@ type
   end;
   PPNGPhysicalDimensions=^TPNGPhysicalDimensions;
 
+{$if FPC_FULLVERSION<30301}
   { Animated PNG chunks }
   TAnimatedChunkTypes = {extends TChunkTypes} (
   ctacTL = 128, // Animation Control: Specifies number of frames and repeat count
   ctfcTL,       // Frame Control: Position, delay and render mode of the next frame
   ctfdAT        // Frame Data: Contains image data for one frame
   );
+{$endif}
 
   PAnimationControlChunk = ^TAnimationControlChunk;
 
@@ -97,12 +99,19 @@ const
   ctiCCP = PNGComn.ctiCCP;  // ICC Profile: Contains an ICC color profile.
   ctiTXt = PNGComn.ctiTXt;  // International Textual Data: Allows embedding text data with character encoding information.
   ctsPLT = PNGComn.ctsPLT;  // Suggested Palette: Suggests a palette to use if the full range of colors is unavailable.
+{$if FPC_FULLVERSION>=30301}
+  ctacTL = PNGComn.ctacTL;  // Animation Control: Specifies number of frames and repeat count
+  ctfcTL = PNGComn.ctfcTL;  // Frame Control: Position, delay and render mode of the next frame
+  ctfdAT = PNGComn.ctfdAT;  // Frame Data: Contains image data for one frame
+{$endif}
   ctUnknown = PNGComn.ctUnknown; // Unknown: Represents an unrecognized chunk.
 
+{$if FPC_FULLVERSION<30301}
   { Animated PNG chunks codes }
   AnimatedChunkTypes : array[low(TAnimatedChunkTypes)..high(TAnimatedChunkTypes)] of TChunkCode = (
     'acTL',  'fcTL',  'fdAT'
   );
+{$endif}
 
   APNG_DISPOSE_OP_NONE = 0;
   APNG_DISPOSE_OP_BACKGROUND = 1;
@@ -136,8 +145,10 @@ function GetChunkCode(AChunkType: TChunkTypes): TChunkCode;
 begin
   if AChunkType <= high(PNGComn.ChunkTypes) then
     result := PNGComn.ChunkTypes[AChunkType]
+{$if FPC_FULLVERSION<30301}
   else if IsAnimatedChunkType(AChunkType) then
     result := AnimatedChunkTypes[TAnimatedChunkTypes(AChunkType)]
+{$endif}
   else
     raise PNGImageException.Create('Unknown chunk type');
 end;
@@ -145,18 +156,26 @@ end;
 function GetChunkType(AChunkCode: TChunkCode): TChunkTypes;
 var
   t: TChunkTypes;
+{$if FPC_FULLVERSION<30301}
   at: TAnimatedChunkTypes;
+{$endif}
 begin
   for t := low(ChunkTypes) to high(ChunkTypes) do
     if ChunkTypes[t] = AChunkCode then exit(t);
+{$if FPC_FULLVERSION<30301}
   for at := low(AnimatedChunkTypes) to high(AnimatedChunkTypes) do
     if AnimatedChunkTypes[at] = AChunkCode then exit(TChunkTypes(at));
+{$endif}
   result := ctUnknown;
 end;
 
 function IsAnimatedChunkType(AChunkType: TChunkTypes): boolean;
 begin
+{$if FPC_FULLVERSION<30301}
   result := TAnimatedChunkTypes(AChunkType) in [low(AnimatedChunkTypes)..high(AnimatedChunkTypes)];
+{$else}
+  result := AChunkType in [ctacTL,ctfcTL,ctfdAT];
+{$endif}
 end;
 
 function CalculateChunkCRC(AChunkCode: TChunkCode; AData: Pointer; ALength: integer): LongWord;
