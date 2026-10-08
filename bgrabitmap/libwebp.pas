@@ -31,6 +31,8 @@ var
     'libwebp64.dll'
   {$elseif defined(Darwin)}
     'libwebp.6.dylib'
+  {$elseif defined(BSD)}
+    'libwebp.so'
   {$elseif defined(Unix)}
     'libwebp.so.6'
   {$else}
@@ -577,9 +579,22 @@ begin
     begin
       {$ifdef linux}thelib := FindLinuxLibrary(LibWebPFilename);{$else}
       {$ifdef darwin}thelib := FindDarwinLibrary(LibWebPFilename);{$else}
+      {$ifdef BSD}thelib := LibWebPFilename;{$else}
       thelib := ExtractFilePath(ParamStr(0)) + DirectorySeparator + LibWebPFilename;
-      {$endif}{$endif}
-      LibWebPHandle := DynLibs.SafeLoadLibrary(thelib); // obtain the handle we want
+      {$endif}{$endif}{$endif}
+      if thelib <> '' then
+        LibWebPHandle := DynLibs.SafeLoadLibrary(thelib); // obtain the handle we want
+      {$IFDEF BSD}
+      // Use the system loader's search path and the port's unversioned alias.
+      // Retain application-local libraries, including the former .so.6 name.
+      if LibWebPHandle = DynLibs.NilHandle then
+      begin
+        thelib := ExtractFilePath(ParamStr(0)) + LibWebPFilename;
+        LibWebPHandle := DynLibs.SafeLoadLibrary(thelib);
+        if (LibWebPHandle = DynLibs.NilHandle) and (LibWebPFilename = 'libwebp.so') then
+          LibWebPHandle := DynLibs.SafeLoadLibrary(ExtractFilePath(ParamStr(0)) + 'libwebp.so.6');
+      end;
+      {$ENDIF}
       {$IFDEF WINDOWS}
       // second try on Windows without 32/64 suffix
       if LibWebPHandle = DynLibs.NilHandle then
