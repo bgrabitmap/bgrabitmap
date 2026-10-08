@@ -1131,11 +1131,19 @@ begin
 end;
 
 function TCustomUniversalBitmap.InternalDuplicate(ACopyProperties: boolean): TCustomUniversalBitmap;
+var
+  y: integer;
 begin
   LoadFromBitmapIfNeeded;
   result := InternalNew;
   result.SetSize(FWidth,FHeight);
-  Move(FDataByte^, result.FDataByte^, FRowSize*FHeight);
+  if LineOrder = result.LineOrder then
+    Move(FDataByte^, result.FDataByte^, FRowSize*FHeight)
+  else
+    // InternalNew may return an owning bitmap with the class's default order.
+    // Copy logical rows so an externally supplied buffer is not flipped.
+    for y := 0 to FHeight - 1 do
+      Move(GetScanLineByte(y)^, result.GetScanLineByte(y)^, FRowSize);
   result.InvalidateBitmap;
   result.Caption := Caption;
   if ACopyProperties then CopyPropertiesTo(result);
