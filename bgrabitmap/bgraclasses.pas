@@ -79,6 +79,7 @@ type
   PPoint = ^TPoint;
   PSize = ^TSize;
   PRect = ^TRect;
+  TRectArray = array of TRect;
 
   {$IF FPC_FULLVERSION>=030001}
   {* Contains a point with single-precision floating point coordinates }
@@ -106,6 +107,7 @@ type
      1: (TopLeft, BottomRight: TPointF);
   end;
   {$ENDIF}
+  TRectFArray = array of TRectF;
 
 const
   //types always imported from Classes

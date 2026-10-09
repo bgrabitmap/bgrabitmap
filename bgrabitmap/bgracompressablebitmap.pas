@@ -55,6 +55,7 @@ type
 
      procedure WriteToStream(AStream: TStream);
      procedure ReadFromStream(AStream: TStream);
+     class function ImageSize(AStream: TStream): TPoint;
      
      function UsedMemory: Int64;
      procedure Assign(Source: TBGRABitmap);
@@ -216,6 +217,20 @@ begin
 
   if FCompressedDataArray = nil then
     FUncompressedData := TMemoryStream.Create;
+end;
+
+class function TBGRACompressableBitmap.ImageSize(AStream: TStream): TPoint;
+var
+  prevPos: Int64;
+begin
+  prevPos := AStream.Position;
+  try
+    result.X := LEReadLongint(AStream);
+    result.Y := LEReadLongint(AStream);
+  except
+    result := Point(0, 0);
+  end;
+  AStream.Position:= prevPos;
 end;
 
 procedure TBGRACompressableBitmap.Decompress;

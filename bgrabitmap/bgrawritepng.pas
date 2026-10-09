@@ -24,7 +24,7 @@ unit BGRAWritePNG;
 
 interface
 
-uses sysutils, BGRAClasses, FPImage, FPImgCmn, BGRAPNGComn, ZStream, BGRABitmapTypes;
+uses sysutils, BGRAClasses, FPImage, FPImgCmn, BGRAPNGComn, ZStream, BGRABitmapTypes{$if FPC_FULLVERSION>=30301}, PNGComn{$endif};
 
 type
   { Information about frame to write in PNG }
@@ -116,7 +116,7 @@ type
       function ColorDataColorAB(color:TFPColor) : TColorData;
       function ColorDataGrayAW(color:TFPColor) : TColorData;
       function ColorDataColorAW(color:TFPColor) : TColorData;
-      property ChunkDataBuffer : pByteArray read FChunk.data;
+      property ChunkDataBuffer : {$if FPC_FULLVERSION>=30301}PPNGByteArray{$else}pByteArray{$endif} read FChunk.data;
       property UsetRNS : boolean read FUsetRNS;
       property SingleTransparentColor : TFPColor read FTransparentColor;
       property SingleTransparentColorOk : boolean read FTransparentColorOk;
@@ -956,7 +956,7 @@ var sequenceNumber: DWord;
 begin
   FSourceImage := AImage;
   InitWriteImageData;
-  if AImageDataChunkCode = AnimatedChunkTypes[ctfdAT] then
+  if AImageDataChunkCode = {$if FPC_FULLVERSION<30301}AnimatedChunkTypes{$else}PNGComn.ChunkTypes{$endif}[ctfdAT] then
   begin
     sequenceNumber := NtoBE(FAnimationChunkCount);
     inc(FAnimationChunkCount);
@@ -975,7 +975,7 @@ end;
 
 procedure TBGRAWriterPNG.WritefdAT(AIndex: integer);
 begin
-  WriteImageData(FAnimation[AIndex].Image, AnimatedChunkTypes[ctfdAT]);
+  WriteImageData(FAnimation[AIndex].Image, {$if FPC_FULLVERSION<30301}AnimatedChunkTypes{$else}PNGComn.ChunkTypes{$endif}[ctfdAT]);
 end;
 
 procedure TBGRAWriterPNG.WritetRNS;
@@ -1063,7 +1063,7 @@ begin
     animControl.RepeatCount := NtoBE(longword(FRepeatCount))
   else
     animControl.RepeatCount := 0;
-  SetChunkType(AnimatedChunkTypes[ctacTL]);
+  SetChunkType({$if FPC_FULLVERSION<30301}AnimatedChunkTypes{$else}PNGComn.ChunkTypes{$endif}[ctacTL]);
   SetChunkLength(sizeof(TAnimationControlChunk));
   move (animControl, ChunkDataBuffer^, sizeof(TAnimationControlChunk));
   WriteChunk;
@@ -1082,7 +1082,7 @@ begin
   frameControl.OffsetY:= NtoBE(frameControl.OffsetY);
   frameControl.DelayNum:= NtoBE(frameControl.DelayNum);
   frameControl.DelayDenom:= NtoBE(frameControl.DelayDenom);
-  SetChunkType(AnimatedChunkTypes[ctfcTL]);
+  SetChunkType({$if FPC_FULLVERSION<30301}AnimatedChunkTypes{$else}PNGComn.ChunkTypes{$endif}[ctfcTL]);
   SetChunkLength(sizeof(TFrameControlChunk));
   move (frameControl, ChunkDataBuffer^, sizeof(TFrameControlChunk));
   WriteChunk;

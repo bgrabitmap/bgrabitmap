@@ -194,14 +194,15 @@ type
       end;
     FOutputHeight: integer;
     function ReadPalette(Stream: TStream): boolean;
-    procedure AnalyzeHeader;
-
+    procedure ReadHeaderAndAllocate(Stream: TStream);
+    class function TryReadHeader(Stream: TStream; out AHeader: TPSDHeader): boolean;
     procedure ReadResourceBlockData(Img: TFPCustomImage; blockID:Word;
-                                    blockName:ShortString; Size:LongWord; Data:Pointer);{$IF FPC_FULLVERSION<30203}virtual;{$ELSE}override;{$ENDIF}
+                                    {%H-}blockName:ShortString; Size:LongWord; Data:Pointer);{$IF FPC_FULLVERSION<30203}virtual;{$ELSE}override;{$ENDIF}
     procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
     function ReadScanLine(Stream: TStream; AInputSize: PtrInt; AChannel: integer): boolean; overload;
     procedure WriteScanLine(Img: TFPCustomImage; Row: integer); overload;
     function  InternalCheck(Stream: TStream) : boolean; override;
+    class function InternalSize(Str: TStream): TPoint; override;
   public
     MinifyHeight,WantedHeight: integer;
     constructor Create; override;
@@ -347,27 +348,39 @@ begin
   Result:=True;
 end;
 
-procedure TBGRAReaderPSD.AnalyzeHeader;
+procedure TBGRAReaderPSD.ReadHeaderAndAllocate(Stream: TStream);
 var channel: integer;
 begin
+  if not TryReadHeader(Stream, FHeader) then
+    Raise Exception.Create('Unknown/Unsupported PSD image type');
   With FHeader do
   begin
-    Depth:=BEtoN(Depth);
-    if (Signature <> '8BPS') then
-      Raise Exception.Create('Unknown/Unsupported PSD image type');
-    Channels:=BEtoN(Channels);
     if Channels > 4 then
       FBytesPerPixel:=Depth*4
     else
       FBytesPerPixel:=Depth*Channels;
-    Mode:=BEtoN(Mode);
-    FWidth:=BEtoN(Columns);
-    FHeight:=BEtoN(Rows);
+    FWidth:=Columns;
+    FHeight:=Rows;
     FChannelCount:=Channels;
     FLineSize:=(PtrInt(FWidth)*Depth+7) div 8;
     setlength(FScanLines, FChannelCount);
     for channel := 0 to FChannelCount-1 do
       GetMem(FScanLines[channel],FLineSize);
+  end;
+end;
+
+class function TBGRAReaderPSD.TryReadHeader(Stream: TStream; out AHeader: TPSDHeader
+  ): boolean;
+begin
+  result := Stream.Read({%H-}AHeader, sizeof(AHeader)) = sizeof(AHeader);
+  With AHeader do
+  begin
+    Depth:=BEtoN(Depth);
+    if (Signature <> '8BPS') then result := false;
+    Channels:=BEtoN(Channels);
+    Mode:=BEtoN(Mode);
+    Columns:=BEtoN(Columns);
+    Rows:=BEtoN(Rows);
   end;
 end;
 
@@ -383,7 +396,7 @@ begin
   {$IF FPC_FULLVERSION<30203}
   case blockID of
   PSD_RESN_INFO:begin
-          if (Img is TCustomUniversalBitmap) then
+          if (Img is TCustomUniversalBitmap) and (Size >= sizeof(TResolutionInfo)) then
           with TCustomUniversalBitmap(Img) do
           begin
             PsdResolution :=TResolutionInfo(Data^);
@@ -434,7 +447,7 @@ var
 
   begin
     //MaxM: Do NOT Remove the Casts after BEToN
-    Stream.Read(TotalBlockSize, 4);
+    Stream.ReadBuffer({%H-}TotalBlockSize, 4);
     TotalBlockSize :=BEtoN(DWord(TotalBlockSize));
     GetMem(blockData, TotalBlockSize);
     try
@@ -486,12 +499,9 @@ begin
     ContProgress:=true;
     Progress(FPimage.psStarting, 0, False, Rect(0,0,0,0), '', ContProgress);
     if not ContProgress then exit;
-    // read header
-    Stream.Read(FHeader, SizeOf(FHeader));
+    ReadHeaderAndAllocate(Stream);
     Progress(FPimage.psRunning, 0, False, Rect(0,0,0,0), '', ContProgress);
     if not ContProgress then exit;
-    AnalyzeHeader;
-
     //  color palette
     ReadPalette(Stream);
 
@@ -511,7 +521,7 @@ begin
     ReadResourceBlocks;
 
     //  mask
-    Stream.Read(BufSize, SizeOf(BufSize));
+    Stream.ReadBuffer({%H-}BufSize, SizeOf(BufSize));
     BufSize:=BEtoN(BufSize);
     Stream.Seek(BufSize, soCurrent);
     //  compression type
@@ -895,6 +905,16 @@ begin
   except
     Result:=False;
   end;
+end;
+
+class function TBGRAReaderPSD.InternalSize(Str: TStream): TPoint;
+var
+  h: TPSDHeader;
+begin
+  if not TryReadHeader(Str, h) then
+    result := Point(0, 0)
+  else
+    result := Point(h.Columns, h.Rows);
 end;
 
 constructor TBGRAReaderPSD.Create;

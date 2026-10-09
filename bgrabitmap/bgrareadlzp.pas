@@ -32,6 +32,7 @@ type
     procedure InternalReadLayers({%H-}str: TStream;{%H-}Img: TFPCustomImage); virtual;
     procedure InternalReadCompressableBitmap(str: TStream; Img: TFPCustomImage); virtual;
     function InternalCheck(Str: TStream): boolean; override;
+    class function InternalSize(Str: TStream): TPoint; override;
   public
     class procedure LoadRLEImage(Str: TStream; Img: TFPCustomImage; out ACaption: string); static;
     property Width: integer read FWidth;
@@ -178,6 +179,29 @@ begin
   result := (copy(magicAsText,1,8) = 'LazPaint') or
     (((magic[0] <> 0) or (magic[1] <> 0)) and (magic[2] = 0) and (magic[3] = 0) and
      ((magic[4] <> 0) or (magic[5] <> 0)) and (magic[6] = 0) and (magic[7] = 0));
+end;
+
+class function TBGRAReaderLazPaint.InternalSize(Str: TStream): TPoint;
+var h: TLazPaintImageHeader;
+begin
+  result := Point(0, 0);
+
+  fillchar({%H-}h, sizeof(h), 0);
+  str.ReadBuffer(h.magic,sizeof(h.magic));
+  if h.magic = LAZPAINT_MAGIC_HEADER then
+  begin
+    str.Read(h.zero1, sizeof(h)-sizeof(h.magic));
+    LazPaintImageHeader_SwapEndianIfNeeded(h);
+    // check format
+    if (h.zero1 <> 0) or (h.zero2 <> 0) or
+       (h.headerSize < $30) then exit;
+
+    result := Point(h.width, h.height);
+  end else
+  begin
+    str.Seek(-sizeof(h.magic), soFromCurrent);
+    result := TBGRACompressableBitmap.ImageSize(Str);
+  end;
 end;
 
 class procedure TBGRAReaderLazPaint.LoadRLEImage(Str: TStream; Img: TFPCustomImage; out ACaption: string);

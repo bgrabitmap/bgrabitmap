@@ -59,6 +59,7 @@ type
     procedure LoadFlatImageFromStream(AStream: TStream;
               out ANbLayers: integer;
               out ABitmap: TBGRABitmap);
+    procedure FetchImageInfo(AStream: TStream; out ASize: TPoint; out ANbLayers: integer);
     procedure LoadFromStream(AStream: TStream); override;
     procedure LoadFromFile(const filenameUTF8: string); override;
     procedure SaveToStream(AStream: TStream); override;
@@ -68,12 +69,16 @@ type
   end;
 
   { Reader for ORA image format (flattened) }
+
+  { TFPReaderOpenRaster }
+
   TFPReaderOpenRaster = class(TFPCustomImageReader)
     private
       FWidth,FHeight,FNbLayers: integer;
     protected
       function InternalCheck(Stream: TStream): boolean; override;
       procedure InternalRead(Stream: TStream; Img: TFPCustomImage); override;
+      class function InternalSize(Str: TStream): TPoint; override;
     public
       property Width: integer read FWidth;
       property Height: integer read FHeight;
@@ -91,7 +96,7 @@ procedure RegisterOpenRasterFormat;
 implementation
 
 uses XMLRead, XMLWrite, BGRABitmapTypes, zstream, BGRAUTF8,
-  UnzipperExt, BGRASVGOriginal, BGRATransform, BGRASVGType, math;
+  UnzipperExt, BGRASVGOriginal, BGRATransform, BGRASVGType;
 
 const
   MergedImageFilename = 'mergedimage.png';
@@ -207,6 +212,21 @@ begin
       raise Exception.Create('Error while loading OpenRaster file. ' + ex.Message);
     end;
   end;
+end;
+
+class function TFPReaderOpenRaster.InternalSize(Str: TStream): TPoint;
+var
+  doc: TBGRAOpenRasterDocument;
+  sizeFound: TPoint;
+  nbLayersFound: integer;
+begin
+  doc := TBGRAOpenRasterDocument.Create;
+  try
+    doc.FetchImageInfo(Str, sizeFound, nbLayersFound);
+  finally
+    doc.Free;
+  end;
+  Result:= sizeFound;
 end;
 
 { TBGRAOpenRasterDocument }
@@ -1023,6 +1043,44 @@ begin
       if Assigned(stackNode) then
       begin
         ANbLayers:= 0;
+        for i := stackNode.ChildNodes.Length-1 downto 0 do
+        begin
+          if stackNode.ChildNodes[i].NodeName = 'layer' then
+            inc(ANbLayers);
+        end;
+      end;
+    end;
+
+  finally
+    fileList.Free;
+    ClearFiles;
+  end;
+end;
+
+procedure TBGRAOpenRasterDocument.FetchImageInfo(AStream: TStream; out
+  ASize: TPoint; out ANbLayers: integer);
+var fileList: TStringList;
+  stackStream: TMemoryStream;
+  imageNode, stackNode: TDOMNode;
+  i: integer;
+begin
+  fileList := TStringList.Create;
+  fileList.Add(LayerStackFilename);
+  ASize := Point(0, 0);
+  ANbLayers := 0;
+  try
+    UnzipFromStream(AStream, fileList);
+    stackStream := GetMemoryStream(LayerStackFilename);
+    ReadXMLFile(FStackXML, StackStream);
+    imageNode := StackXML.FindNode('image');
+    if Assigned(imagenode) then
+    begin
+      val(imageNode.Attributes.GetNamedItem('w').NodeValue, ASize.X);
+      val(imageNode.Attributes.GetNamedItem('h').NodeValue, ASize.Y);
+
+      stackNode := imageNode.FindNode('stack');
+      if Assigned(stackNode) then
+      begin
         for i := stackNode.ChildNodes.Length-1 downto 0 do
         begin
           if stackNode.ChildNodes[i].NodeName = 'layer' then

@@ -52,6 +52,9 @@ begin
   tmp.free;
 end;
 ```}
+
+  { TGrayscaleMask }
+
   TGrayscaleMask = class(specialize TGenericUniversalBitmap<TByteMask,TByteMaskColorspace>)
   private
      function GetScanLine(Y: Integer): PByte; inline;
@@ -116,7 +119,11 @@ end;
      function NewReference: TGrayscaleMask; override;
      function GetUnique: TGrayscaleMask; override;
      function Duplicate(DuplicateProperties: Boolean = False): TGrayscaleMask; overload; override;
-     function GetPart(const ARect: TRect; CopyProperties: Boolean=False): TGrayscaleMask; override;
+
+     function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TGrayscaleMask; overload; override;
+     function GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean=False;
+                      ACopyProperties: Boolean=False; ATile: Boolean=True): TGrayscaleMask; overload; override;
+
      function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TByteMask;
                  AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TGrayscaleMask; override;
      function RotateCW(ACopyProperties: Boolean=False): TGrayscaleMask; override;
@@ -1124,9 +1131,15 @@ begin
   Result:=inherited Duplicate(DuplicateProperties) as TGrayscaleMask;
 end;
 
-function TGrayscaleMask.GetPart(const ARect: TRect; CopyProperties: Boolean=False): TGrayscaleMask;
+function TGrayscaleMask.GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TGrayscaleMask;
 begin
-  Result:=inherited GetPart(ARect, CopyProperties) as TGrayscaleMask;
+  Result:=inherited GetPart(ARect, ACopyProperties, ATile) as TGrayscaleMask;
+end;
+
+function TGrayscaleMask.GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean;
+                                ACopyProperties: Boolean; ATile: Boolean): TGrayscaleMask;
+begin
+  Result:=inherited GetPart(ARect, PreserveMoreData, ACopyProperties, ATile) as TGrayscaleMask;
 end;
 
 function TGrayscaleMask.CreateBrushTexture(ABrushStyle: TBrushStyle;

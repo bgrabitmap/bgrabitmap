@@ -1455,7 +1455,7 @@ var
                   GStart + (i * GDiff) div Count,
                   BStart + (i * BDiff) div Count);
 
-        if ADirection = gdHorizontal then
+        if ADirection = TGradientDirection.gdHorizontal then
           FBitmap.SetVertLine(ARect.Left+I,ARect.Top,ARect.Bottom-1,c)
         else
           FBitmap.SetHorizLine(ARect.Left,ARect.Top+I,ARect.Right-1,c);
@@ -1485,7 +1485,7 @@ var
       ec.alpha := $ffff;
       c := GammaCompression(ec);
 
-      if ADirection = gdHorizontal then
+      if ADirection = TGradientDirection.gdHorizontal then
         FBitmap.SetVertLine(ARect.Left+I,ARect.Top,ARect.Bottom-1,c)
       else
         FBitmap.SetHorizLine(ARect.Left,ARect.Top+I,ARect.Right-1,c);
@@ -1497,7 +1497,7 @@ begin
     if (Right <= Left) or (Bottom <= Top) then
       Exit;
 
-  if ADirection = gdVertical then
+  if ADirection = TGradientDirection.gdVertical then
     Count := ARect.Bottom - ARect.Top
   else
     Count := ARect.Right - ARect.Left;

@@ -269,7 +269,10 @@ end;
      function Duplicate(DuplicateProperties: Boolean = False): TBGRACustomBitmap; overload; override;
      function Duplicate(DuplicateProperties, DuplicateXorMask: Boolean): TBGRACustomBitmap; overload; virtual;
      procedure CopyPropertiesTo(ABitmap: TCustomUniversalBitmap); override;
-     function GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TBGRACustomBitmap; override;
+
+     function GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGRACustomBitmap; overload; override;
+     function GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean=False;
+                      ACopyProperties: Boolean=False; ATile: Boolean=True): TBGRACustomBitmap; overload; override;
 
      function CreateBrushTexture(ABrushStyle: TBrushStyle; APatternColor, ABackgroundColor: TBGRAPixel;
                  AWidth: integer = 8; AHeight: integer = 8; APenWidth: single = 1): TBGRACustomBitmap; override;
@@ -1150,9 +1153,15 @@ begin
   end;
 end;
 
-function TBGRACustomBitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False): TBGRACustomBitmap;
+function TBGRACustomBitmap.GetPart(const ARect: TRect; ACopyProperties: Boolean=False; ATile: Boolean=True): TBGRACustomBitmap;
 begin
-  result := TBGRACustomBitmap(inherited GetPart(ARect, ACopyProperties));
+  result := TBGRACustomBitmap(inherited GetPart(ARect, ACopyProperties, ATile));
+end;
+
+function TBGRACustomBitmap.GetPart(const ARect: TPhysicalRect; PreserveMoreData: Boolean;
+                                   ACopyProperties: Boolean; ATile: Boolean): TBGRACustomBitmap;
+begin
+  Result:= TBGRACustomBitmap(inherited GetPart(ARect, PreserveMoreData, ACopyProperties, ATile));
 end;
 
 function TBGRACustomBitmap.CreateBrushTexture(ABrushStyle: TBrushStyle;

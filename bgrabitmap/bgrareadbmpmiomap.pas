@@ -27,9 +27,11 @@ type
   { Reader for iGO bitmap format (MioMap) }
   TBGRAReaderBmpMioMap = class(TFPCustomImageReader)
   private
-    function ReadHeader(Stream: TStream; out header: TMioHeader): boolean;
+    class function ReadHeader(Stream: TStream; out header: TMioHeader): boolean;
     function ReadPalette(Stream: TStream; nbColors: integer; alphaChannel: boolean): TPixelArray;
     procedure UncompressChunks(Stream: TStream; nbChunks: integer; palette: TPixelArray; img: TFPCustomImage);
+  protected
+    class function InternalSize(Str: TStream): TPoint; override;
   public
     procedure InternalRead  (Stream:TStream; Img:TFPCustomImage); override;
     function  InternalCheck (Stream:TStream) : boolean; override;
@@ -75,7 +77,7 @@ end;
 
 { TBGRAReaderBmpMioMap }
 
-function TBGRAReaderBmpMioMap.ReadHeader(Stream: TStream; out header: TMioHeader
+class function TBGRAReaderBmpMioMap.ReadHeader(Stream: TStream; out header: TMioHeader
   ): boolean;
 begin
   result := false;
@@ -98,8 +100,8 @@ var mioPalette: packed array of word;
   colorValue: word;
   alphaPalette: packed array of byte;
 begin
-  setlength(mioPalette, nbColors);
-  setlength(result,nbColors);
+  setlength({%H-}mioPalette, nbColors);
+  {$PUSH}{$WARNINGS OFF}setlength({%H-}result,nbColors);{$POP}
   nbColorsRead:= Stream.Read({%H-}mioPalette[0], nbColors*2) div 2;
   for i := 0 to nbColorsRead-1 do
   begin
@@ -110,7 +112,7 @@ begin
     result[i] := BGRAPixelTransparent;
   if alphaChannel then
   begin
-    setlength(alphaPalette,nbColors);
+    setlength({%H-}alphaPalette,nbColors);
     Stream.Read(alphaPalette[0],nbColors);
     for i := 0 to nbColors-1 do
       if mioPalette[i] <> MioMapTransparentColor then
@@ -168,7 +170,7 @@ begin
   if (img.Width = 0) or (img.Height = 0) or (palLen = 0) then exit;
 
   maxChunkSize := 1;
-  setlength(chunkSizes, nbChunks);
+  setlength({%H-}chunkSizes, nbChunks);
   for i := 0 to nbChunks-1 do
   begin
     if stream.read({%H-}b,1)=0 then b := 0;
@@ -186,7 +188,7 @@ begin
       maxChunkSize := chunkSizes[i];
   end;
 
-  setlength(chunkData, maxChunkSize);
+  setlength({%H-}chunkData, maxChunkSize);
   x := 0;
   y := 0;
   w := img.Width;
@@ -231,6 +233,16 @@ begin
       end;
     end;
   end;
+end;
+
+class function TBGRAReaderBmpMioMap.InternalSize(Str: TStream): TPoint;
+var
+  h: TMioHeader;
+begin
+  if ReadHeader(Str, h) then
+    result := Point(h.width, h.Height)
+  else
+    result := Point(0, 0);
 end;
 
 procedure TBGRAReaderBmpMioMap.InternalRead(Stream: TStream; Img: TFPCustomImage);

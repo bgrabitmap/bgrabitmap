@@ -2440,7 +2440,7 @@ end;
 
 class function TSVGClipPath.GetDOMTag: string;
 begin
-  Result:= 'clippath';
+  Result:= 'clipPath';
 end;
 
 { TSVGColorProfile }

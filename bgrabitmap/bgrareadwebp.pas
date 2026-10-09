@@ -24,6 +24,7 @@ type
     function ReadHeader(Str: TStream): TWebPHeader;
     procedure InternalRead(Str: TStream; Img: TFPCustomImage); override;
     function InternalCheck(Str: TStream): boolean; override;
+    class function InternalSize(Str: TStream): TPoint; override;
   end;
 
 implementation
@@ -47,7 +48,7 @@ end;
 
 function TBGRAReaderWebP.ReadHeader(Str: TStream): TWebPHeader;
 begin
-  fillchar({%H-}result, sizeof({%H-}result), 0);
+  {$PUSH}{$HINTS OFF}fillchar({%H-}result, sizeof(result), 0);{$POP}
   Str.Read(result, sizeof(result));
   result.FileSize:= LEtoN(result.FileSize);
 end;
@@ -57,7 +58,7 @@ const
   CopySize = 65536;
 var
   header: TWebPHeader;
-  oldPos: Int64;
+  oldPos, physicalSize: Int64;
   mem, p: PByte;
   totalSize, remain: LongWord;
   toRead, w, h, x, y: integer;
@@ -73,6 +74,9 @@ begin
     raise exception.Create('Invalid header');
   Str.Position:= OldPos;
   totalSize := header.FileSize+8;
+  physicalSize := Str.Size - Str.Position;
+  if physicalSize < totalSize then
+    totalSize := physicalSize;
   getmem(mem, totalSize);
   loadInto := nil;
   try
@@ -135,6 +139,19 @@ begin
   finally
     Str.Position:= OldPos;
   end;
+end;
+
+class function TBGRAReaderWebP.InternalSize(Str: TStream): TPoint;
+var
+  buffer: array[0..1023] of byte;
+  bytesRead: LongInt;
+  w, h: integer;
+begin
+  result := Point(0, 0);
+  NeedLibWebP;
+  bytesRead:= Str.Read({%H-}buffer, sizeof(buffer));
+  if WebPGetInfo(@buffer, bytesRead, @w, @h) <> 0 then
+    result := Point(w, h);
 end;
 
 initialization
