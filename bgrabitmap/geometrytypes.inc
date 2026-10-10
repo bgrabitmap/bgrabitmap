@@ -1888,7 +1888,7 @@ begin
   result.y := pt1.y+pt2.y;
 end;
 
-{$if FPC_FULLVERSION < 30203}
+{$if FPC_FULLVERSION <= 30203}
 // keep alias for backward compatibility
 operator *(const pt1, pt2: TPointF): single;
 begin
