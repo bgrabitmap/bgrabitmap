@@ -40,7 +40,7 @@ type
 
 implementation
 
-uses math, BGRABitmapTypes, BGRADefaultBitmap, BGRAFilterScanner, LCLType,
+uses math, Types, BGRABitmapTypes, BGRADefaultBitmap, BGRAFilterScanner, LCLType,
   LCLIntf, IntfGraphics,
   {$IFDEF LCLgtk3}
   LazGdk3, Gtk3Objects, LazGdkPixbuf2, LazGObject2, LazGLib2, Lazcairo1,
@@ -86,6 +86,9 @@ procedure TBGRAGtkBitmap.DrawTransparent(ACanvas: TCanvas; ARect: TRect);
 var DrawWidth,DrawHeight: integer;
     stretched: TBGRAGtkBitmap;
     P: TPoint;
+    {$IFNDEF LCLgtk3}
+    DCOffset: TPoint;
+    {$ENDIF}
     {$IFDEF LCLgtk3}
     cr: Pcairo_t;
     {$ENDIF}
@@ -128,6 +131,9 @@ begin
   {$ELSE}
   P := Point(min(ARect.Left,ARect.Right), min(ARect.Top,ARect.Bottom));
   LPToDP(ACanvas.Handle, P, 1);
+  DCOffset := TGtkDeviceContext(ACanvas.Handle).Offset;
+  Inc(P.X, DCOffset.X);
+  Inc(P.Y, DCOffset.Y);
   gdk_pixbuf_render_to_drawable(FPixBuf,
     TGtkDeviceContext(ACanvas.Handle).Drawable,
     TGtkDeviceContext(ACanvas.Handle).GC,
@@ -312,6 +318,7 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
 
   var
     temp: integer;
+    DCOffset: TPoint;
     tempPixbuf: PGdkPixbuf;
   begin
     {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
@@ -335,6 +342,9 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
     else
     begin
       LPtoDP(ACanvas.Handle, ARect, 2);
+      // GTK2 keeps the drawable offset separate from the canvas transform.
+      DCOffset := TGtkDeviceContext(ACanvas.Handle).Offset;
+      Types.OffsetRect(ARect, DCOffset.X, DCOffset.Y);
       tempPixbuf := gdk_pixbuf_new_from_data(pguchar(ADataFirstRow),
         GDK_COLORSPACE_RGB, True, 8, AWidth, AHeight, AWidth*Sizeof(TBGRAPixel), nil, nil);
       if tempPixbuf = nil then
@@ -512,6 +522,7 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
 
   var
     temp: integer;
+    DCOffset: TPoint;
   begin
     {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
 
@@ -534,6 +545,9 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
     else
     begin
       LPtoDP(ACanvas.Handle, ARect, 2);
+      // GTK2 keeps the drawable offset separate from the canvas transform.
+      DCOffset := TGtkDeviceContext(ACanvas.Handle).Offset;
+      Types.OffsetRect(ARect, DCOffset.X, DCOffset.Y);
       gdk_draw_rgb_32_image(TGtkDeviceContext(ACanvas.Handle).Drawable,
         TGtkDeviceContext(ACanvas.Handle).GC, ARect.Left, ARect.Top,
         AWidth,AHeight, GDK_RGB_DITHER_NORMAL,
