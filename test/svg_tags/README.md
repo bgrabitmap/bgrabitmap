@@ -12,3 +12,6 @@ and reloading of tags and point data.
 
 ActualDOMTag reads the tag of the existing DOM node. GetDOMTag remains the class
 tag used to create nodes and can be empty for shared or generic element classes.
+The explicit constructor takes (ADocument, AClosed, AUnits, ADataLink).
+The overload without AClosed creates an open polyline (closed = false),
+including construction through TSVGFactory.

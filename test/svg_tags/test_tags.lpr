@@ -35,7 +35,7 @@ begin
   try
     for Closed:=False to True do
     begin
-      Shape:=TSVGPolypoints.Create(Doc,nil,Closed,nil);
+      Shape:=TSVGPolypoints.Create(Doc,Closed,nil,nil);
       try
         Check(Shape.closed=Closed,'constructor closure');
         if Closed then Check(Shape.ActualDOMTag='polygon','created polygon tag')
@@ -44,6 +44,16 @@ begin
         Check(Length(Shape.pointsF)=3,'created shape retains points');
       finally Shape.Free; end;
     end;
+    Shape:=TSVGPolypoints.Create(Doc,nil,nil);
+    try
+      Check(not Shape.closed,'default constructor is open');
+      Check(Shape.ActualDOMTag='polyline','default constructor tag');
+    finally Shape.Free; end;
+    Shape:=TSVGPolypoints(TSVGFactory(TSVGPolypoints).Create(Doc,nil,nil));
+    try
+      Check(not Shape.closed,'factory constructor is open');
+      Check(Shape.ActualDOMTag='polyline','factory constructor tag');
+    finally Shape.Free; end;
   finally Doc.Free; end;
 end;
 procedure CheckAppendAndRoundTrip;
