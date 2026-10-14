@@ -626,13 +626,13 @@ begin
   result := FProjectionDefined;
 end;
 
-{$PUSH}{$OPTIMIZATION OFF} // avoids internal error 2012090607
+{$OPTIMIZATION OFF} // avoids internal error 2012090607
 procedure TCustomRenderer3D.SetProjection(const AValue: TProjection3D);
 begin
   FProjection := AValue;
   FProjectionDefined := true;
 end;
-{$POP}
+{$OPTIMIZATION DEFAULT}
 
 { TBGRAMaterial3D }
 

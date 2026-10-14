@@ -3051,6 +3051,7 @@ begin
   arc(Html5ArcTo(p0,p1,p2,radius));
 end;
 
+{$OPTIMIZATION OFF} // avoids FPC internal error 2009112601 on Linux
 procedure TBGRAPath.arc(constref arcDef: TArcDef);
 var transformedArc: TArcElement;
 begin
@@ -3067,11 +3068,10 @@ begin
     transformedArc.radius := arcDef.radius*FScale;
     transformedArc.xAngleRadCW := arcDef.xAngleRadCW+FAngleRadCW;
     PArcElement(AllocateElement(peArc))^ := transformedArc;
-	{$PUSH}{$OPTIMIZATION OFF}
     SetLastCoord(ArcEndPoint(arcDef));
-	{$POP}
   end;
 end;
+{$OPTIMIZATION DEFAULT}
 
 procedure TBGRAPath.arc(cx, cy, rx, ry: single; xAngleRadCW, startAngleRadCW,
   endAngleRadCW: single);
