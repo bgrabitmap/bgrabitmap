@@ -7,10 +7,7 @@ uses
   StrUtils,
   FileUtil,
   Zipper,
-  fphttpclient,
   RegExpr,
-  openssl,
-  opensslsockets,
   Process;
 
 const
@@ -123,8 +120,7 @@ type
 
   function InstallOPM(Each: string): string;
   var
-    OutFile, Uri: string;
-    Zip: TStream;
+    OutFile, Uri, Curl, DownloadOutput: string;
   begin
     Result :=
       {$IFDEF MSWINDOWS}
@@ -133,37 +129,37 @@ type
       GetEnvironmentVariable('HOME') + '/.lazarus/onlinepackagemanager/packages/'
       {$ENDIF}
       + Each;
-    OutFile := GetTempFileName;
     Uri := 'https://packages.lazarus-ide.org/' + Each + '.zip';
     if not DirectoryExists(Result) then
     begin
-      Zip := TFileStream.Create(OutFile, fmCreate or fmOpenWrite);
-      with TFPHttpClient.Create(nil) do
-      begin
-        try
-          AddHeader('User-Agent', 'Mozilla/5.0 (compatible; fpweb)');
-          AllowRedirect := True;
-          Get(Uri, Zip);
-          OutLog(audit, 'Download from ' + Uri + ' to ' + OutFile);
-        finally
-          Free;
+      {$IFDEF MSWINDOWS}
+      // Use Windows curl (Schannel), without FPC's OpenSSL DLL dependency.
+      Curl := GetEnvironmentVariable('SystemRoot') + '\System32\curl.exe';
+      {$ELSE}
+      Curl := 'curl';
+      {$ENDIF}
+      OutFile := GetTempFileName;
+      try
+        if not RunCommand(Curl, ['--fail', '--location', '--silent', '--show-error',
+          '--output', OutFile, Uri], DownloadOutput, [poStderrToOutput]) then
+          raise Exception.Create('Download failed: ' + Uri + LineEnding + DownloadOutput);
+        OutLog(audit, 'Download from ' + Uri + ' to ' + OutFile);
+        CreateDir(Result);
+        with TUnZipper.Create do
+        begin
+          try
+            FileName := OutFile;
+            OutputPath := Result;
+            Examine;
+            UnZipAllFiles;
+            OutLog(audit, 'Unzip from ' + OutFile + ' to ' + Result);
+          finally
+            Free;
+          end;
         end;
+      finally
+        DeleteFile(OutFile);
       end;
-      Zip.Free;
-      CreateDir(Result);
-      with TUnZipper.Create do
-      begin
-        try
-          FileName := OutFile;
-          OutputPath := Result;
-          Examine;
-          UnZipAllFiles;
-          OutLog(audit, 'Unzip from ' + OutFile + ' to ' + Result);
-        finally
-          Free;
-        end;
-      end;
-      DeleteFile(OutFile);
     end;
   end;
 
@@ -173,7 +169,6 @@ type
     List: TStringList;
   begin
     CheckModules;
-    InitSSLInterface;
     for Item in Dependencies do
     begin
       List := FindAllFiles(InstallOPM(Item), '*.lpk', True);

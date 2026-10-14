@@ -36,7 +36,7 @@ jobs:
             shell: bash
             run: |
                set -xeuo pipefail
-               sudo bash -c 'apt-get update; apt-get install -y lazarus libxtst-dev' >/dev/null
+               sudo bash -c 'apt-get update; apt-get install -y lazarus libxtst-dev curl' >/dev/null
 
           - name: Build on Linux
             if: runner.os == 'Linux'
@@ -76,4 +76,6 @@ jobs:
             run: |
                $Env:PATH += ';C:\Lazarus;C:\Lazarus\fpc\3.2.2\bin\x86_64-win64'
                instantfpc '-FuC:\Lazarus\components\lazutils' .github/workflows/make.pas
+               if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE" }
                delp -r $PWD.Path
+               if ($LASTEXITCODE -ne 0) { throw "Cleanup failed with exit code $LASTEXITCODE" }
