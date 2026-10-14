@@ -299,12 +299,15 @@ type
     {** Save image to a file in the specified image format }
     procedure SaveToFileUTF8(const AFilenameUTF8: string; AFormat: TBGRAImageFormat); overload; virtual;
 
-    {** Save image to a stream with the specified image writer }{inherited
-    procedure SaveToStream (Str:TStream; Handler:TFPCustomImageWriter);
-   }{** Save image to a stream in the specified image format }
-    procedure SaveToStreamAs(AStream: TStream; AFormat: TBGRAImageFormat); virtual;
+    {** Save image to a stream. False preserves existing data and starts at the current position. }
+    procedure SaveToStream(Str: TStream; Handler: TFPCustomImageWriter); overload;
+    procedure SaveToStream(Str: TStream; Handler: TFPCustomImageWriter; ATruncate: boolean); overload;
+    {** Save image to a stream in the specified image format. The original overload truncates. }
+    procedure SaveToStreamAs(AStream: TStream; AFormat: TBGRAImageFormat); overload; virtual;
+    procedure SaveToStreamAs(AStream: TStream; AFormat: TBGRAImageFormat; ATruncate: boolean); overload;
     {** Save image to a stream in PNG format }
-    procedure SaveToStreamAsPng(AStream: TStream); virtual;
+    procedure SaveToStreamAsPng(AStream: TStream); overload; virtual;
+    procedure SaveToStreamAsPng(AStream: TStream; ATruncate: boolean); overload;
 
     {==== Clipping ====}
 
@@ -2959,6 +2962,58 @@ procedure TCustomUniversalBitmap.SaveToFileUTF8(const AFilenameUTF8: string; AFo
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
   UniDrawerClass.SaveToFileUTF8(self, AFilenameUTF8, AFormat);
+end;
+
+procedure TCustomUniversalBitmap.SaveToStream(Str: TStream; Handler: TFPCustomImageWriter);
+begin
+  inherited SaveToStream(Str, Handler);
+end;
+
+procedure TCustomUniversalBitmap.SaveToStream(Str: TStream;
+  Handler: TFPCustomImageWriter; ATruncate: boolean);
+var View: TBGRAImageWriteStream;
+begin
+  if ATruncate then inherited SaveToStream(Str, Handler)
+  else
+  begin
+    View := TBGRAImageWriteStream.Create(Str);
+    try
+      inherited SaveToStream(View, Handler);
+    finally
+      View.Free;
+    end;
+  end;
+end;
+
+procedure TCustomUniversalBitmap.SaveToStreamAs(AStream: TStream;
+  AFormat: TBGRAImageFormat; ATruncate: boolean);
+var View: TBGRAImageWriteStream;
+begin
+  if ATruncate then SaveToStreamAs(AStream, AFormat)
+  else
+  begin
+    View := TBGRAImageWriteStream.Create(AStream);
+    try
+      SaveToStreamAs(View, AFormat);
+    finally
+      View.Free;
+    end;
+  end;
+end;
+
+procedure TCustomUniversalBitmap.SaveToStreamAsPng(AStream: TStream; ATruncate: boolean);
+var View: TBGRAImageWriteStream;
+begin
+  if ATruncate then SaveToStreamAsPng(AStream)
+  else
+  begin
+    View := TBGRAImageWriteStream.Create(AStream);
+    try
+      SaveToStreamAsPng(View);
+    finally
+      View.Free;
+    end;
+  end;
 end;
 
 procedure TCustomUniversalBitmap.SaveToStreamAs(AStream: TStream;
