@@ -67,8 +67,7 @@ type
   begin
     OutLog(audit, 'build from ' + Path);
     try
-      Result.Success := RunCommand('lazbuild', ['--build-all', '--recursive',
-        '--no-write-project', Path], Result.Output);
+      Result.Success := RunCommand('lazbuild', ['--no-write-project', Path], Result.Output);
       if Result.Success then
         for Line in SplitString(Result.Output, LineEnding) do
         begin
