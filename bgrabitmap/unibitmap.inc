@@ -300,7 +300,8 @@ type
     procedure SaveToFileUTF8(const AFilenameUTF8: string; AFormat: TBGRAImageFormat); overload; virtual;
 
     {** Save image to a stream. False preserves existing data and starts at the current position. }
-    procedure SaveToStream(Str: TStream; Handler: TFPCustomImageWriter; ATruncate: boolean = True);
+    procedure SaveToStream(Str: TStream; Handler: TFPCustomImageWriter); overload;
+    procedure SaveToStream(Str: TStream; Handler: TFPCustomImageWriter; ATruncate: boolean); overload;
     {** Save image to a stream in the specified image format. The original overload truncates. }
     procedure SaveToStreamAs(AStream: TStream; AFormat: TBGRAImageFormat); overload; virtual;
     procedure SaveToStreamAs(AStream: TStream; AFormat: TBGRAImageFormat; ATruncate: boolean); overload;
@@ -2961,6 +2962,11 @@ procedure TCustomUniversalBitmap.SaveToFileUTF8(const AFilenameUTF8: string; AFo
 begin
   if UniDrawerClass = nil then RaiseMissingUniDrawer;
   UniDrawerClass.SaveToFileUTF8(self, AFilenameUTF8, AFormat);
+end;
+
+procedure TCustomUniversalBitmap.SaveToStream(Str: TStream; Handler: TFPCustomImageWriter);
+begin
+  inherited SaveToStream(Str, Handler);
 end;
 
 procedure TCustomUniversalBitmap.SaveToStream(Str: TStream;
