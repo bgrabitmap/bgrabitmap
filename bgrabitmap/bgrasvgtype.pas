@@ -314,6 +314,7 @@ type
   private
     FImportStyleState: TFindStyleState;
     FImportedStyles: ArrayOfTStyleAttribute;
+    function GetActualDOMTag: string;
     function GetClipPath: string;
     function GetFill: string;
     function GetFillColor: TBGRAPixel;
@@ -388,6 +389,7 @@ type
   public
     constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
     constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; virtual;
+    // Class tag used when creating a node; shared/generic classes may return empty.
     class function GetDOMTag: string; virtual;
     destructor Destroy; override;
     procedure ListIdentifiers(AResult: TStringList); virtual;
@@ -404,6 +406,8 @@ type
     function fillMode: TSVGFillMode;
     property DataLink: TSVGDataLink read FDataLink write SetDataLink;
     property DOMElement: TDOMElement read GetDOMElement;
+    // Actual node tag, including polygon/polyline and unknown SVG elements.
+    property ActualDOMTag: string read GetActualDOMTag;
     property Units: TCSSUnitConverter read FUnits;
     property ID: string read GetID write SetID;
     property classAttr: string read GetClassAttr write SetClassAttr;
@@ -2362,6 +2366,11 @@ begin
   FDataLink:= ADataLink;
   Initialize;
   Init(ADocument, GetDOMTag, AUnits);
+end;
+
+function TSVGElement.GetActualDOMTag: string;
+begin
+  Result := string(FDomElem.TagName);
 end;
 
 class function TSVGElement.GetDOMTag: string;

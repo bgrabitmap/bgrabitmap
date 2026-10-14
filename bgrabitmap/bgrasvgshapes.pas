@@ -3626,11 +3626,10 @@ end;
 constructor TSVGPolypoints.Create(ADocument: TDOMDocument;
   AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
   if AClosed then
-    Init(ADocument, 'polygon', AUnits)
+    inherited Create(ADocument.CreateElement('polygon'), AUnits, ADataLink)
   else
-    Init(ADocument, 'polyline', AUnits);
+    inherited Create(ADocument.CreateElement('polyline'), AUnits, ADataLink);
 end;
 
 destructor TSVGPolypoints.Destroy;
