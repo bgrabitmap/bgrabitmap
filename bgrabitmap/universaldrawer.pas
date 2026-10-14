@@ -466,24 +466,10 @@ end;
 class procedure TUniversalDrawer.SaveToStreamAs(ASource: TCustomUniversalBitmap; AStream: TStream; AFormat: TBGRAImageFormat);
 var
    writer: TFPCustomImageWriter;
-   temporaryStream: TMemoryStream;
 begin
   writer := CreateBGRAImageWriter(ASource, AFormat);
   try
-    if AStream.Position = 0 then
-      TFPCustomImage(ASource).SaveToStream(AStream, writer)
-    else
-    begin
-      // Image writers may rewind the stream or use absolute image offsets.
-      // Give them a separate stream so the caller's prefix remains intact.
-      temporaryStream := TMemoryStream.Create;
-      try
-        TFPCustomImage(ASource).SaveToStream(temporaryStream, writer);
-        temporaryStream.SaveToStream(AStream);
-      finally
-        temporaryStream.Free;
-      end;
-    end;
+    TFPCustomImage(ASource).SaveToStream(AStream, writer)
   finally
     writer.Free;
   end;
