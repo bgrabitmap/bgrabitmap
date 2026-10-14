@@ -121,6 +121,8 @@ begin
   LPToDP(ACanvas.Handle, P, 1);
   cr := TGtk3DeviceContext(ACanvas.Handle).pcr;
   cairo_save(cr);
+  // GTK may supply SOURCE; transparent pixels must preserve the background.
+  cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
   cairo_translate(cr, P.X, P.Y);
   cairo_scale(cr,
     (ARect.Right - ARect.Left) / Width,
@@ -202,7 +204,7 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
       curRow: PByte;
       y, x: Integer;
       p, pDest: PBGRAPixel;
-      alpha256: Byte;
+      alpha256: Word;
     begin
       getmem(result, AWidth*AHeight*sizeof(TBGRAPixel));
       pDest := PBGRAPixel(result);
@@ -219,14 +221,14 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
           pDest^.blue := (p^.blue * alpha256 + 128) shr 8;
           pDest^.alpha := p^.alpha;
           inc(p);
+          inc(pDest);
         end;
         curRow += ARowStride;
       end;
     end;
 
   var
-    temp: integer;
-    dataStart, premultipliedData: Pointer;
+    premultipliedData: Pointer;
     cr: Pcairo_t;
     surface: Pcairo_surface_t;
   begin
@@ -239,19 +241,11 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
 
     LPtoDP(ACanvas.Handle, ARect, 2);
 
-    if ARowStride < 0 then
-    begin
-      dataStart := PByte(ADataFirstRow) + ARowStride * (AHeight - 1);
-      temp := ARect.Top;
-      ARect.Top := ARect.Bottom;
-      ARect.Bottom := temp;
-    end else
-      dataStart := ADataFirstRow;
-
+    // Premultiplication packs rows in logical order, including negative strides.
     premultipliedData := PremultiplyByAlpha;
 
     surface := cairo_image_surface_create_for_data(PByte(premultipliedData),
-      CAIRO_FORMAT_ARGB32, AWidth, AHeight, Abs(ARowStride));
+      CAIRO_FORMAT_ARGB32, AWidth, AHeight, AWidth*SizeOf(TBGRAPixel));
     if cairo_surface_status(surface) <> CAIRO_STATUS_SUCCESS then
     begin
       freemem(premultipliedData);
@@ -260,6 +254,7 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
 
     cr := TGtk3DeviceContext(ACanvas.Handle).pcr;
     cairo_save(cr);
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     cairo_translate(cr, ARect.Left, ARect.Top);
     cairo_scale(cr,
       (ARect.Right - ARect.Left) / AWidth,
@@ -468,6 +463,7 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
 
     cr := TGtk3DeviceContext(ACanvas.Handle).pcr;
     cairo_save(cr);
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     cairo_translate(cr, ARect.Left, ARect.Top);
     cairo_scale(cr,
       (ARect.Right - ARect.Left) / AWidth,
