@@ -1577,7 +1577,7 @@ end;
 
 procedure TBGRAReaderPNG.HandleChunk;
 begin
-{$if FPC_FULLVERSION<30301}
+{$if declared(TAnimatedChunkTypes)}
   if IsAnimatedChunkType(chunk.AType) then
   case TAnimatedChunkTypes(chunk.AType) of
     ctacTL: HandleAnimationControl;
@@ -1594,7 +1594,7 @@ begin
     ctsRGB : HandleStdRGB;
     ctgAMA : HandleGamma;
     ctpHYs : HandlePhysicalDimensions;
-{$if FPC_FULLVERSION>=30301}
+{$if not declared(TAnimatedChunkTypes)}
     ctacTL: HandleAnimationControl;
     ctfcTL: HandleFrameControl;
     ctfdAT: HandleFrameData;
