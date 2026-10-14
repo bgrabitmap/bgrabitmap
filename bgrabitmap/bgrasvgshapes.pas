@@ -207,7 +207,9 @@ type
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
     public
-      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink); overload;
+      constructor Create(ADocument: TDOMDocument; AClosed: boolean; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload;
+      // Without AClosed, create an open polyline.
+      constructor Create(ADocument: TDOMDocument; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink); overload; override;
       destructor Destroy; override;
       property points: string read GetPoints write SetPoints;
       property pointsF: ArrayOfTPointF read GetPointsF write SetPointsF;
@@ -3624,13 +3626,18 @@ begin
 end;
 
 constructor TSVGPolypoints.Create(ADocument: TDOMDocument;
-  AUnits: TCSSUnitConverter; AClosed: boolean; ADataLink: TSVGDataLink);
+  AClosed: boolean; AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
 begin
-  inherited Create(ADocument, AUnits, ADataLink);
   if AClosed then
-    Init(ADocument, 'polygon', AUnits)
+    inherited Create(ADocument.CreateElement('polygon'), AUnits, ADataLink)
   else
-    Init(ADocument, 'polyline', AUnits);
+    inherited Create(ADocument.CreateElement('polyline'), AUnits, ADataLink);
+end;
+
+constructor TSVGPolypoints.Create(ADocument: TDOMDocument;
+  AUnits: TCSSUnitConverter; ADataLink: TSVGDataLink);
+begin
+  Create(ADocument, False, AUnits, ADataLink);
 end;
 
 destructor TSVGPolypoints.Destroy;
@@ -4783,7 +4790,7 @@ var
   pts: ArrayOfTPointF;
   i: integer;
 begin
-  result := TSVGPolypoints.Create(FDoc,FUnits,true,FDataLink);
+  result := TSVGPolypoints.Create(FDoc,true,FUnits,FDataLink);
   setlength(pts, length(points) div 2);
   for i := 0 to high(pts) do
     pts[i] := Units.ConvertCoord(PointF(points[i shl 1],points[(i shl 1)+1]),AUnit,cuCustom);
@@ -4797,7 +4804,7 @@ var
   pts: ArrayOfTPointF;
   i: integer;
 begin
-  result := TSVGPolypoints.Create(FDoc,FUnits,true,FDataLink);
+  result := TSVGPolypoints.Create(FDoc,true,FUnits,FDataLink);
   setlength(pts, length(points));
   for i := 0 to high(pts) do
     pts[i] := Units.ConvertCoord(points[i],AUnit,cuCustom);
