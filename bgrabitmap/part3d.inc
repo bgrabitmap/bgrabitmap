@@ -494,7 +494,7 @@ begin
   FMatrix := AValue;
 end;
 
-{$PUSH}{$OPTIMIZATION OFF} //avoids Internal error 2012090607
+{$OPTIMIZATION OFF} //avoids Internal error 2012090607
 procedure TBGRAPart3D.ComputeWithMatrix(const AMatrix: TMatrix3D; const AProjection: TProjection3D);
 var
   i: Integer;
@@ -506,7 +506,7 @@ begin
   for i := 0 to FPartCount-1 do
     FParts[i].ComputeWithMatrix(Composed,AProjection);
 end;
-{$POP}
+{$OPTIMIZATION DEFAULT}
 
 function TBGRAPart3D.ComputeCoordinate(var ASceneCoord: TPoint3D_128; const AProjection: TProjection3D): TPointF;
 var part: IBGRAPart3D;

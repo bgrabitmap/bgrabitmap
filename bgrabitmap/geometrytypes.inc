@@ -2037,13 +2037,13 @@ begin
 end;
 
 {----------- Line and polygon functions -----------}
-{$PUSH}{$OPTIMIZATION OFF}
+{$OPTIMIZATION OFF}
 function IntersectLine(line1, line2: TLineDef): TPointF;
 var parallel: boolean;
 begin
   result := IntersectLine(line1,line2,parallel);
 end;
-{$POP}
+{$OPTIMIZATION DEFAULT}
 
 function IntersectLine(line1, line2: TLineDef; out parallel: boolean): TPointF;
   procedure SetParallel;

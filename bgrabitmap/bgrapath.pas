@@ -3067,9 +3067,9 @@ begin
     transformedArc.radius := arcDef.radius*FScale;
     transformedArc.xAngleRadCW := arcDef.xAngleRadCW+FAngleRadCW;
     PArcElement(AllocateElement(peArc))^ := transformedArc;
-	{$PUSH}{$OPTIMIZATION OFF}
+	{$OPTIMIZATION OFF}
     SetLastCoord(ArcEndPoint(arcDef));
-	{$POP}
+	{$OPTIMIZATION DEFAULT}
   end;
 end;
 

@@ -898,7 +898,7 @@ begin
   result := FCanvas.Height;
 end;
 
-{$PUSH}{$OPTIMIZATION OFF}   //avoid internal error 2012090607
+{$OPTIMIZATION OFF}   //avoid internal error 2012090607
 procedure TBGLRenderer3D.SetProjection(const AValue: TProjection3D);
 begin
   inherited SetProjection(AValue);
@@ -906,7 +906,7 @@ begin
     OrthoProjectionToOpenGL(0,0,FCanvas.Width,FCanvas.Height);
   FCanvas.ProjectionMatrix := FProjectionMatrix;
 end;
-{$POP}
+{$OPTIMIZATION DEFAULT}
 
 function TBGLRenderer3D.GetHandlesNearClipping: boolean;
 begin
