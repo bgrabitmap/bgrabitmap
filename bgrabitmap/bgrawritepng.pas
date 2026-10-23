@@ -24,7 +24,7 @@ unit BGRAWritePNG;
 
 interface
 
-uses sysutils, BGRAClasses, FPImage, FPImgCmn, BGRAPNGComn, ZStream, BGRABitmapTypes, PNGComn;
+uses sysutils, BGRAClasses, FPImage, FPImgCmn, PNGComn, BGRAPNGComn, ZStream, BGRABitmapTypes;
 
 type
   { Information about frame to write in PNG }
