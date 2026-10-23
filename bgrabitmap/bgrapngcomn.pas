@@ -10,6 +10,11 @@ interface
 uses
   PNGComn;
 
+{ FPC development revisions share a version number but not necessarily APNG support. }
+{$if declared(ctacTL)}
+  {$define BGRA_PNGCOMN_HAS_APNG}
+{$endif}
+
 type
   { Exception when reading/writing PNG files }
   PNGImageException = PNGComn.PNGImageException;
@@ -40,7 +45,7 @@ type
   end;
   PPNGPhysicalDimensions=^TPNGPhysicalDimensions;
 
-{$if FPC_FULLVERSION<30301}
+{$ifndef BGRA_PNGCOMN_HAS_APNG}
   { Animated PNG chunks }
   TAnimatedChunkTypes = {extends TChunkTypes} (
   ctacTL = 128, // Animation Control: Specifies number of frames and repeat count
@@ -99,14 +104,14 @@ const
   ctiCCP = PNGComn.ctiCCP;  // ICC Profile: Contains an ICC color profile.
   ctiTXt = PNGComn.ctiTXt;  // International Textual Data: Allows embedding text data with character encoding information.
   ctsPLT = PNGComn.ctsPLT;  // Suggested Palette: Suggests a palette to use if the full range of colors is unavailable.
-{$if FPC_FULLVERSION>=30301}
+{$ifdef BGRA_PNGCOMN_HAS_APNG}
   ctacTL = PNGComn.ctacTL;  // Animation Control: Specifies number of frames and repeat count
   ctfcTL = PNGComn.ctfcTL;  // Frame Control: Position, delay and render mode of the next frame
   ctfdAT = PNGComn.ctfdAT;  // Frame Data: Contains image data for one frame
 {$endif}
   ctUnknown = PNGComn.ctUnknown; // Unknown: Represents an unrecognized chunk.
 
-{$if FPC_FULLVERSION<30301}
+{$ifndef BGRA_PNGCOMN_HAS_APNG}
   { Animated PNG chunks codes }
   AnimatedChunkTypes : array[low(TAnimatedChunkTypes)..high(TAnimatedChunkTypes)] of TChunkCode = (
     'acTL',  'fcTL',  'fdAT'
@@ -145,7 +150,7 @@ function GetChunkCode(AChunkType: TChunkTypes): TChunkCode;
 begin
   if AChunkType <= high(PNGComn.ChunkTypes) then
     result := PNGComn.ChunkTypes[AChunkType]
-{$if FPC_FULLVERSION<30301}
+{$ifndef BGRA_PNGCOMN_HAS_APNG}
   else if IsAnimatedChunkType(AChunkType) then
     result := AnimatedChunkTypes[TAnimatedChunkTypes(AChunkType)]
 {$endif}
@@ -156,13 +161,13 @@ end;
 function GetChunkType(AChunkCode: TChunkCode): TChunkTypes;
 var
   t: TChunkTypes;
-{$if FPC_FULLVERSION<30301}
+{$ifndef BGRA_PNGCOMN_HAS_APNG}
   at: TAnimatedChunkTypes;
 {$endif}
 begin
   for t := low(ChunkTypes) to high(ChunkTypes) do
     if ChunkTypes[t] = AChunkCode then exit(t);
-{$if FPC_FULLVERSION<30301}
+{$ifndef BGRA_PNGCOMN_HAS_APNG}
   for at := low(AnimatedChunkTypes) to high(AnimatedChunkTypes) do
     if AnimatedChunkTypes[at] = AChunkCode then exit(TChunkTypes(at));
 {$endif}
@@ -171,7 +176,7 @@ end;
 
 function IsAnimatedChunkType(AChunkType: TChunkTypes): boolean;
 begin
-{$if FPC_FULLVERSION<30301}
+{$ifndef BGRA_PNGCOMN_HAS_APNG}
   result := TAnimatedChunkTypes(AChunkType) in [low(AnimatedChunkTypes)..high(AnimatedChunkTypes)];
 {$else}
   result := AChunkType in [ctacTL,ctfcTL,ctfdAT];

@@ -964,12 +964,12 @@ begin
   str.Free;
 end;
 
-{$PUSH}{$OPTIMIZATION OFF} //avoids Internal error 2012090607
+{$OPTIMIZATION OFF} //avoids Internal error 2012090607
 procedure TBGRASVG.SetViewBox(AValue: TSVGViewBox);
 begin
   Units.ViewBox := AValue;
 end;
-{$POP}
+{$OPTIMIZATION DEFAULT}
 
 procedure TBGRASVG.SetWidth(AValue: TFloatWithCSSUnit);
 begin

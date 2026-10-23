@@ -40,7 +40,7 @@ type
 
 implementation
 
-uses math, BGRABitmapTypes, BGRADefaultBitmap, BGRAFilterScanner, LCLType,
+uses math, Types, BGRABitmapTypes, BGRADefaultBitmap, BGRAFilterScanner, LCLType,
   LCLIntf, IntfGraphics,
   {$IFDEF LCLgtk3}
   LazGdk3, Gtk3Objects, LazGdkPixbuf2, LazGObject2, LazGLib2, Lazcairo1,
@@ -86,6 +86,9 @@ procedure TBGRAGtkBitmap.DrawTransparent(ACanvas: TCanvas; ARect: TRect);
 var DrawWidth,DrawHeight: integer;
     stretched: TBGRAGtkBitmap;
     P: TPoint;
+    {$IFNDEF LCLgtk3}
+    DCOffset: TPoint;
+    {$ENDIF}
     {$IFDEF LCLgtk3}
     cr: Pcairo_t;
     {$ENDIF}
@@ -118,6 +121,8 @@ begin
   LPToDP(ACanvas.Handle, P, 1);
   cr := TGtk3DeviceContext(ACanvas.Handle).pcr;
   cairo_save(cr);
+  // GTK may supply SOURCE; transparent pixels must preserve the background.
+  cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
   cairo_translate(cr, P.X, P.Y);
   cairo_scale(cr,
     (ARect.Right - ARect.Left) / Width,
@@ -128,6 +133,9 @@ begin
   {$ELSE}
   P := Point(min(ARect.Left,ARect.Right), min(ARect.Top,ARect.Bottom));
   LPToDP(ACanvas.Handle, P, 1);
+  DCOffset := TGtkDeviceContext(ACanvas.Handle).Offset;
+  Inc(P.X, DCOffset.X);
+  Inc(P.Y, DCOffset.Y);
   gdk_pixbuf_render_to_drawable(FPixBuf,
     TGtkDeviceContext(ACanvas.Handle).Drawable,
     TGtkDeviceContext(ACanvas.Handle).GC,
@@ -196,7 +204,7 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
       curRow: PByte;
       y, x: Integer;
       p, pDest: PBGRAPixel;
-      alpha256: Byte;
+      alpha256: Word;
     begin
       getmem(result, AWidth*AHeight*sizeof(TBGRAPixel));
       pDest := PBGRAPixel(result);
@@ -213,14 +221,14 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
           pDest^.blue := (p^.blue * alpha256 + 128) shr 8;
           pDest^.alpha := p^.alpha;
           inc(p);
+          inc(pDest);
         end;
         curRow += ARowStride;
       end;
     end;
 
   var
-    temp: integer;
-    dataStart, premultipliedData: Pointer;
+    premultipliedData: Pointer;
     cr: Pcairo_t;
     surface: Pcairo_surface_t;
   begin
@@ -233,19 +241,11 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
 
     LPtoDP(ACanvas.Handle, ARect, 2);
 
-    if ARowStride < 0 then
-    begin
-      dataStart := PByte(ADataFirstRow) + ARowStride * (AHeight - 1);
-      temp := ARect.Top;
-      ARect.Top := ARect.Bottom;
-      ARect.Bottom := temp;
-    end else
-      dataStart := ADataFirstRow;
-
+    // Premultiplication packs rows in logical order, including negative strides.
     premultipliedData := PremultiplyByAlpha;
 
     surface := cairo_image_surface_create_for_data(PByte(premultipliedData),
-      CAIRO_FORMAT_ARGB32, AWidth, AHeight, Abs(ARowStride));
+      CAIRO_FORMAT_ARGB32, AWidth, AHeight, AWidth*SizeOf(TBGRAPixel));
     if cairo_surface_status(surface) <> CAIRO_STATUS_SUCCESS then
     begin
       freemem(premultipliedData);
@@ -254,6 +254,7 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
 
     cr := TGtk3DeviceContext(ACanvas.Handle).pcr;
     cairo_save(cr);
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     cairo_translate(cr, ARect.Left, ARect.Top);
     cairo_scale(cr,
       (ARect.Right - ARect.Left) / AWidth,
@@ -312,6 +313,7 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
 
   var
     temp: integer;
+    DCOffset: TPoint;
     tempPixbuf: PGdkPixbuf;
   begin
     {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
@@ -335,6 +337,9 @@ procedure TBGRAGtkBitmap.DataDrawTransparent(ACanvas: TCanvas; ARect: TRect;
     else
     begin
       LPtoDP(ACanvas.Handle, ARect, 2);
+      // GTK2 keeps the drawable offset separate from the canvas transform.
+      DCOffset := TGtkDeviceContext(ACanvas.Handle).Offset;
+      Types.OffsetRect(ARect, DCOffset.X, DCOffset.Y);
       tempPixbuf := gdk_pixbuf_new_from_data(pguchar(ADataFirstRow),
         GDK_COLORSPACE_RGB, True, 8, AWidth, AHeight, AWidth*Sizeof(TBGRAPixel), nil, nil);
       if tempPixbuf = nil then
@@ -458,6 +463,7 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
 
     cr := TGtk3DeviceContext(ACanvas.Handle).pcr;
     cairo_save(cr);
+    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
     cairo_translate(cr, ARect.Left, ARect.Top);
     cairo_scale(cr,
       (ARect.Right - ARect.Left) / AWidth,
@@ -512,6 +518,7 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
 
   var
     temp: integer;
+    DCOffset: TPoint;
   begin
     {$PUSH}{$WARNINGS OFF}if not TBGRAPixel_RGBAOrder then DataSwapRedBlue;{$POP}
 
@@ -534,6 +541,9 @@ procedure TBGRAGtkBitmap.DataDrawOpaque(ACanvas: TCanvas; ARect: TRect;
     else
     begin
       LPtoDP(ACanvas.Handle, ARect, 2);
+      // GTK2 keeps the drawable offset separate from the canvas transform.
+      DCOffset := TGtkDeviceContext(ACanvas.Handle).Offset;
+      Types.OffsetRect(ARect, DCOffset.X, DCOffset.Y);
       gdk_draw_rgb_32_image(TGtkDeviceContext(ACanvas.Handle).Drawable,
         TGtkDeviceContext(ACanvas.Handle).GC, ARect.Left, ARect.Top,
         AWidth,AHeight, GDK_RGB_DITHER_NORMAL,

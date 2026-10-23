@@ -27,7 +27,7 @@ uses
 {=== Miscellaneous types ===}
 
   {* Current version expressed as an integer with each part multiplied by 100 }
-  const BGRABitmapVersion = 11060800;
+  const BGRABitmapVersion = 11060900;
 
   {* String representation of the version, numbers separated by dots }
   function BGRABitmapVersionStr: string;
@@ -749,6 +749,68 @@ end;
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I geometrytypes.inc}
+
+type
+  { Non-owning view used by image writers that rewind and truncate their stream.
+    The image starts at zero in this view, while existing trailing data is kept. }
+  TBGRAImageWriteStream = class(TStream)
+  private
+    FStream: TStream;
+    FOffset: Int64;
+  protected
+    function GetSize: Int64; override;
+    procedure SetSize(const AValue: Int64); override;
+  public
+    constructor Create(AStream: TStream);
+    function Read(var Buffer; Count: LongInt): LongInt; override;
+    function Write(const Buffer; Count: LongInt): LongInt; override;
+    function Seek(const Offset: Int64; Origin: TSeekOrigin): Int64; override;
+  end;
+
+constructor TBGRAImageWriteStream.Create(AStream: TStream);
+begin
+  inherited Create;
+  FStream := AStream;
+  FOffset := AStream.Position;
+end;
+
+function TBGRAImageWriteStream.GetSize: Int64;
+begin
+  Result := FStream.Size - FOffset;
+  if Result < 0 then Result := 0;
+end;
+
+procedure TBGRAImageWriteStream.SetSize(const AValue: Int64);
+begin
+  if AValue < 0 then raise EInvalidOperation.Create('Invalid image stream size');
+  // Ignore the initial truncation and never shrink existing trailing data.
+  if AValue > GetSize then FStream.Size := FOffset + AValue;
+end;
+
+function TBGRAImageWriteStream.Read(var Buffer; Count: LongInt): LongInt;
+begin
+  Result := FStream.Read(Buffer, Count);
+end;
+
+function TBGRAImageWriteStream.Write(const Buffer; Count: LongInt): LongInt;
+begin
+  Result := FStream.Write(Buffer, Count);
+end;
+
+function TBGRAImageWriteStream.Seek(const Offset: Int64; Origin: TSeekOrigin): Int64;
+var NewPosition: Int64;
+begin
+  case Ord(Origin) of
+    0: NewPosition := Offset;
+    1: NewPosition := FStream.Position - FOffset + Offset;
+    2: NewPosition := GetSize + Offset;
+  else
+    raise EInvalidOperation.Create('Invalid image stream seek origin');
+  end;
+  if NewPosition < 0 then raise EInvalidOperation.Create('Invalid image stream position');
+  FStream.Position := FOffset + NewPosition;
+  Result := FStream.Position - FOffset;
+end;
 
 {$DEFINE INCLUDE_IMPLEMENTATION}
 {$I unibitmap.inc}

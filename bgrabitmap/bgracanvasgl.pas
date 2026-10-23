@@ -1748,21 +1748,21 @@ begin
   ATexture.DrawAngle(x,y,angleDeg,AColor);
 end;
 
+{$OPTIMIZATION OFF}
 procedure TBGLCustomCanvas.PutImageAffine(const Origin, HAxis, VAxis: TPointF;
   ATexture: IBGLTexture; AAlpha: byte);
 begin
-  {$PUSH}{$OPTIMIZATION OFF}
   ATexture.DrawAffine(Origin, HAxis, VAxis, AAlpha);
-  {$POP}
 end;
+{$OPTIMIZATION DEFAULT}
 
+{$OPTIMIZATION OFF}
 procedure TBGLCustomCanvas.PutImageAffine(const Origin, HAxis, VAxis: TPointF;
   ATexture: IBGLTexture; AColor: TBGRAPixel);
 begin
-  {$PUSH}{$OPTIMIZATION OFF}
   ATexture.DrawAffine(Origin, HAxis, VAxis, AColor);
-  {$POP}
 end;
+{$OPTIMIZATION DEFAULT}
 
 procedure TBGLCustomCanvas.PutImageAffine(x, y: single; ATexture: IBGLTexture;
   const AMatrix: TAffineMatrix; AAlpha: byte);

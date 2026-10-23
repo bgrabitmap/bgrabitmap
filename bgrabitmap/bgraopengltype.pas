@@ -1105,21 +1105,21 @@ begin
   StretchDrawAngle(x,y,w,h, angleDeg, imageCenter, False, AColor);
 end;
 
+{$OPTIMIZATION OFF}
 procedure TBGLCustomTexture.DrawAffine(const Origin, HAxis, VAxis: TPointF;
   AAlpha: byte);
 begin
-  {$PUSH}{$OPTIMIZATION OFF}
   DoDrawAffine(Origin,HAxis,VAxis, BGRA(255,255,255,AAlpha));
-  {$POP}
 end;
+{$OPTIMIZATION DEFAULT}
 
+{$OPTIMIZATION OFF}
 procedure TBGLCustomTexture.DrawAffine(const Origin, HAxis, VAxis: TPointF;
   AColor: TBGRAPixel);
 begin
-  {$PUSH}{$OPTIMIZATION OFF}
   DoDrawAffine(Origin,HAxis,VAxis, AColor);
-  {$POP}
 end;
+{$OPTIMIZATION DEFAULT}
 
 procedure TBGLCustomTexture.DrawAffine(x, y: single;
   const AMatrix: TAffineMatrix; AAlpha: byte);
