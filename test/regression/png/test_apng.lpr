@@ -40,6 +40,9 @@ begin
       Frames[i].FrameControl.DelayDenom := 10;
     end;
     Writer.AnimationWrite(Stream, First, Frames, 3);
+    // PNG requires an IHDR payload of exactly 13 bytes, without record padding.
+    if (Stream.Size < 33) or (PByte(Stream.Memory)[11] <> 13) then
+      raise Exception.Create('Invalid IHDR length');
     Stream.Position := 0;
     Reader.ImageRead(Stream, Decoded);
     if (Reader.FrameCount <> 2) or (Reader.LoopCount <> 3) then
