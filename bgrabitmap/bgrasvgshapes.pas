@@ -794,6 +794,8 @@ type
   { Use another shape defined in the SVG file }
   TSVGUse = class(TSVGElement)
     private
+      FGettingBounds: boolean;
+      function IsReferenceAncestor(AElement: TSVGElement): boolean;
       function GetX: TFloatWithCSSUnit;
       function GetXlinkHref: string;
       function GetY: TFloatWithCSSUnit;
@@ -882,7 +884,9 @@ end.
       function TryCreateElementFromNode(ANode: TDOMNode): TObject; virtual;
     public
       constructor Create(AContainer: TSVGElement; AElement: TDOMElement; AUnits: TCSSUnitConverter;
-        ADataLink: TSVGDataLink);
+        ADataLink: TSVGDataLink); overload;
+      constructor Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
+        ADataLink: TSVGDataLink); overload;
       destructor Destroy; override;
       procedure Clear;
       procedure ConvertToUnit(AUnit: TCSSUnit);
@@ -3495,7 +3499,10 @@ end;
 
 function TSVGUse.GetXlinkHref: string;
 begin
-  result := Attribute['xlink:href'];
+  if HasAttribute('href') then
+    result := Attribute['href']
+  else
+    result := Attribute['xlink:href'];
 end;
 
 function TSVGUse.GetY: TFloatWithCSSUnit;
@@ -3538,6 +3545,19 @@ begin
   VerticalAttributeWithUnit['height'] := AValue;
 end;
 
+function TSVGUse.IsReferenceAncestor(AElement: TSVGElement): boolean;
+var
+  current: TSVGCustomElement;
+begin
+  current := self;
+  while Assigned(current) do
+  begin
+    if current = AElement then exit(true);
+    current := current.Container;
+  end;
+  result := false;
+end;
+
 procedure TSVGUse.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
   elem: TSVGElement;
@@ -3547,7 +3567,8 @@ begin
   if Assigned(FDataLink) then
   begin
     elem := FDataLink.FindElementByRef(XlinkHref, nil);
-    if Assigned(elem) and not Assigned(elem.Container) {avoid circular reference} then
+    if Assigned(elem) and not Assigned(elem.Container) and
+      not IsReferenceAncestor(elem) then
     begin
       prevContainer := elem.Container;
       elem.Container := self;
@@ -3569,18 +3590,20 @@ function TSVGUse.GetBoundingBoxInUnit(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit
 var
   elem: TSVGElement;
 begin
-  if Assigned(FDataLink) then
-  begin
+  Result := EmptyRectF;
+  if FGettingBounds or not Assigned(FDataLink) then exit;
+  FGettingBounds := true;
+  try
     elem := FDataLink.FindElementByRef(XlinkHref, nil);
     if Assigned(elem) then
     begin
       result := elem.GetBoundingBoxInUnit(ACanvas2D, AUnit);
       result.Offset(Units.ConvertWidth(x, AUnit).value,
         Units.ConvertHeight(y, AUnit).value);
-      exit;
     end;
+  finally
+    FGettingBounds := false;
   end;
-  Result:= EmptyRectF;
 end;
 
 class function TSVGUse.GetDOMTag: string;
@@ -4695,6 +4718,12 @@ begin
   end
   else
     AppendElement(AElement);
+end;
+
+constructor TSVGContent.Create(AElement: TDOMElement; AUnits: TCSSUnitConverter;
+  ADataLink: TSVGDataLink);
+begin
+  Create(nil, AElement, AUnits, ADataLink);
 end;
 
 constructor TSVGContent.Create(AContainer: TSVGElement; AElement: TDOMElement; AUnits: TCSSUnitConverter;
