@@ -1,0 +1,7 @@
+lib/
+bin/
+*.o
+*.ppu
+*.rsj
+*.compiled
+*.lps

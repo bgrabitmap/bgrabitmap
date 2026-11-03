@@ -160,6 +160,7 @@ type
      FParent: TSVGDataLink;
      FChildren: TList;
      FLinkListeners: TSVGLinkListeners;
+     FInFindElementById: boolean;
      function GetElement(AIndex: integer): TSVGElement;
      function GetStyle(AIndex: integer): TSVGElement;
      function IsValidIndex(const AIndex: integer; list: TSVGElementList): boolean;
@@ -195,9 +196,10 @@ type
   protected
     FDomElem: TDOMElement;
     FUnits: TCSSUnitConverter;
+    FContainer: TSVGCustomElement;
     function GetDOMElement: TDOMElement; virtual;
 
-    function GetAttributeFromElement(ANode: TDOMElement; AName: string; ACanInherit: boolean): string;
+    function GetAttributeFromElement(ANode: TDOMElement; AName: string; ACanInherit: boolean; AElement: TSVGCustomElement = nil): string;
     function GetAttribute(AName: string; ADefault: string; ACanInherit: boolean): string; overload;
     function GetAttribute(AName: string; ADefault: string): string; overload;
     function GetAttribute(AName: string): string; overload;
@@ -286,6 +288,8 @@ type
 
     procedure SetInlineStyle(AName: string; AValue: string); overload;
     procedure SetInlineStyle(AName: string; AValue: TFloatWithCSSUnit); overload;
+
+    function GetParentElement(ANode: TDOMElement): TDOMElement;
   public
     procedure RemoveStyle(const AName: string);
     function HasAttribute(AName: string): boolean;
@@ -307,6 +311,7 @@ type
 
     property Style[AName: string]: string read GetStyle write SetInlineStyle;
     property StyleDef[AName,ADefault: string]: string read GetStyle;
+    property Container: TSVGCustomElement read FContainer write FContainer;
   end;
 
   { SVG element on any type }
@@ -398,6 +403,7 @@ type
     procedure Recompute; virtual;
     procedure Draw({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
     procedure CopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
+    function GetBoundingBoxInUnit({%H-}ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit): TRectF; virtual;
     procedure fillNone;
     procedure strokeNone;
     procedure strokeDashArrayNone;
@@ -528,6 +534,14 @@ end;
 
 { TSVGCustomElement }
 
+function TSVGCustomElement.GetParentElement(ANode: TDOMElement): TDOMElement;
+begin
+  if ANode.ParentNode is TDOMElement then
+    result := TDOMElement(ANode.ParentNode)
+  else
+    result := nil;
+end;
+
 function TSVGCustomElement.GetNamespaceCount: integer;
 var
   i: Integer;
@@ -578,6 +592,7 @@ end;
 function TSVGCustomElement.GetAttributeOrStyle(AName, ADefault: string;
   ACanInherit: boolean): string;
 var
+  curElem: TSVGCustomElement;
   curNode: TDOMElement;
   styleDecl: DOMString;
 begin
@@ -598,12 +613,20 @@ begin
       begin
         if ACanInherit then
         begin
+          curElem := self;
           curNode := FDomElem;
           while true do
           begin
-            if curNode.ParentNode is TDOMElement then
-              curNode := TDOMElement(curNode.ParentNode)
-            else break;
+            if Assigned(curElem) and Assigned(curElem.Container) then
+            begin
+              curElem := curElem.Container;
+              curNode := curElem.FDomElem;
+            end else
+            begin
+              curElem := nil;
+              curNode := GetParentElement(curNode);
+            end;
+            if not Assigned(curNode) then break;
 
             styleDecl := curNode.GetAttribute('style');
             result := GetPropertyFromStyleDeclarationBlock(string(styleDecl), AName, '');
@@ -797,6 +820,7 @@ end;
 
 function TSVGCustomElement.GetStyle(const AName, ADefault: string): string;
 var
+  curElem: TSVGCustomElement;
   curNode: TDOMElement;
   styleDecl: DOMString;
 begin
@@ -806,12 +830,20 @@ begin
   result := GetStyleFromStyleSheet(AName,'');
   if result <> '' then exit;
 
+  curElem := self;
   curNode := FDomElem;
   while true do
   begin
-    if curNode.ParentNode is TDOMElement then
-      curNode := TDOMElement(curNode.ParentNode)
-    else break;
+    if Assigned(curElem) and Assigned(curElem.Container) then
+    begin
+      curElem := curElem.Container;
+      curNode := curElem.FDomElem;
+    end else
+    begin
+      curElem := nil;
+      curNode := GetParentElement(curNode);
+    end;
+    if not Assigned(curNode) then break;
 
     styleDecl := curNode.GetAttribute('style');
     result := GetPropertyFromStyleDeclarationBlock(string(styleDecl), AName, '');
@@ -827,7 +859,7 @@ begin
 end;
 
 function TSVGCustomElement.GetAttributeFromElement(ANode: TDOMElement;
-  AName: string; ACanInherit: boolean): string;
+  AName: string; ACanInherit: boolean; AElement: TSVGCustomElement = nil): string;
 begin
   repeat
     if ((AName = 'xlink:href') or (AName = 'xlink:title')) and
@@ -836,9 +868,18 @@ begin
       else result := string(Trim(ANode.GetAttribute(DOMString(AName))));
 
     if result = 'inherit' then result := '';
-    if (result = '') and ACanInherit and
-      (ANode.ParentNode is TDOMElement) then
-      ANode := ANode.ParentNode as TDOMElement
+    if (result = '') and ACanInherit then
+    begin
+      if Assigned(AElement) and Assigned(AElement.Container) then
+      begin
+        AElement := AElement.Container;
+        ANode := AElement.FDomElem;
+      end else
+      begin
+        AElement := nil;
+        ANode := GetParentElement(ANode);
+      end;
+    end
     else
       ANode := nil;
   until ANode = nil;
@@ -847,7 +888,7 @@ end;
 function TSVGCustomElement.GetAttribute(AName: string; ADefault: string;
   ACanInherit: boolean): string;
 begin
-  result := GetAttributeFromElement(FDomElem, AName, ACanInherit);
+  result := GetAttributeFromElement(FDomElem, AName, ACanInherit, self);
   if result = '' then result := ADefault else
   if (result = 'currentColor') and (AName <> 'color') then
     result := GetAttribute('color', ADefault, ACanInherit);
@@ -1687,19 +1728,36 @@ end;
 
 function TSVGDataLink.FindElementById(AID: string; AClass: TSVGFactory): TSVGElement;
 var
-  index: Integer;
+  index, i: Integer;
+  subDataLink: TSVGDataLink;
 begin
  index := FElements.IndexOf(AId);
  if index = -1 then
  begin
+   FInFindElementById := true;
    if Assigned(Parent) then
-     result := Parent.FindElementById(AID, AClass)
-     else result := nil
+   begin
+     result := Parent.FindElementById(AID, AClass);
+   end
+   else
+   begin
+     result := nil;
+     for i := 0 to FChildren.Count-1 do
+     begin
+       subDataLink := TSVGDataLink(FChildren[i]);
+       if not subDataLink.FInFindElementById then
+       begin
+         result := subDataLink.FindElementById(AID, AClass);
+         if Assigned(result) then break;
+       end;
+     end;
+   end;
+   FInFindElementById := false;
  end
  else
  begin
    result := FElements.Data[index];
-   if not (result is AClass) then result := nil;
+   if (AClass <> nil) and not (result is AClass) then result := nil;
  end;
 end;
 
@@ -2279,6 +2337,11 @@ end;
 procedure TSVGElement.InternalCopyPathTo({%H-}ACanvas2d: TBGRACanvas2D; {%H-}AUnit: TCSSUnit);
 begin
  //nothing
+end;
+
+function TSVGElement.GetBoundingBoxInUnit({%H-}ACanvas2D: TBGRACanvas2D; {%H-}AUnit: TCSSUnit): TRectF;
+begin
+ result := EmptyRectF;
 end;
 
 procedure TSVGElement.ApplyFillStyle(ACanvas2D: TBGRACanvas2D; AUnit: TCSSUnit);
