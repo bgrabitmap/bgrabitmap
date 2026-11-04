@@ -3,7 +3,19 @@ program TestPathGlyph;
 
 uses
   {$IFDEF UNIX}cthreads, cwstring,{$ENDIF}
-  SysUtils, Classes, BGRABitmapTypes, BGRABitmap, BGRATransform, BGRAPath, BGRATypewriter;
+  SysUtils, Classes, BGRABitmapTypes, BGRABitmap, BGRAGraphics, BGRATransform, BGRAPath,
+  BGRACanvas2D, BGRATypewriter;
+
+type
+  TTestWriter = class(TBGRACustomTypeWriter)
+  public
+    procedure AddTestGlyph(AGlyph: TBGRAGlyph);
+  end;
+
+procedure TTestWriter.AddTestGlyph(AGlyph: TBGRAGlyph);
+begin
+  AddGlyph(AGlyph);
+end;
 
 var
   failures: integer = 0;
@@ -150,9 +162,48 @@ begin
   g.Free;
 end;
 
+// the contours of some fonts overlap: the glyphs must be filled with the winding
+// rule, even if the canvas uses the alternate rule (which is its default)
+procedure TestFillRule;
+var
+  w: TTestWriter;
+  g: TBGRAPathGlyph;
+  o: TBGRAPath;
+  bmp: TBGRABitmap;
+  ctx: TBGRACanvas2D;
+begin
+  writeln('fill rule of glyphs with overlapping contours');
+  o := TBGRAPath.Create;
+  // a "T" made of two overlapping rectangles, drawn in the same direction
+  o.polygon([PointF(0,0), PointF(40,0), PointF(40,10), PointF(0,10)]);
+  o.polygon([PointF(15,5), PointF(25,5), PointF(25,40), PointF(15,40)]);
+  g := TBGRAPathGlyph.Create('T');
+  g.SetOutline(o);
+  g.Width := 40; g.Height := 40;
+  w := TTestWriter.Create;
+  w.AddTestGlyph(g);
+  bmp := TBGRABitmap.Create(60, 60, BGRAPixelTransparent);
+  ctx := TBGRACanvas2D.Create(bmp);
+  ctx.fillStyle(BGRABlack);
+  Check(ctx.fillMode = fmAlternate, 'the canvas uses the alternate rule by default');
+
+  w.DrawText(ctx, 'T', 5, 5);
+  Check(bmp.GetPixel(5+20, 5+7).alpha = 255, 'DrawText: the overlap of the two parts is filled');
+  Check(bmp.GetPixel(5+5, 5+5).alpha = 255, 'DrawText: the bar is filled');
+  Check(ctx.fillMode = fmAlternate, 'DrawText: the fill mode of the canvas is restored');
+
+  bmp.FillTransparent;
+  w.DrawGlyph(ctx, 'T', 5, 5);
+  Check(bmp.GetPixel(5+20, 5+7).alpha = 255, 'DrawGlyph: the overlap of the two parts is filled');
+  Check(ctx.fillMode = fmAlternate, 'DrawGlyph: the fill mode of the canvas is restored');
+
+  ctx.Free; bmp.Free; w.Free;
+end;
+
 begin
   TestGlyph;
   TestOverlap;
+  TestFillRule;
   writeln;
   if failures = 0 then writeln('ALL TESTS PASSED')
   else begin writeln(failures, ' FAILURE(S)'); halt(1); end;
