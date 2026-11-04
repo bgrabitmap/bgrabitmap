@@ -47,15 +47,13 @@ implementation
 uses
   glib2, gtk2def, pango, cairo, pangocairo, BGRAClasses;
 
-procedure pango_cairo_layout_path_(cr: Pcairo_t; layout: PPangoLayout);
-  cdecl; external 'libpangocairo-1.0.so.0' name 'pango_cairo_layout_path';
-
-const
-  PangoLibName = {$IFDEF WINDOWS}'libpango-1.0-0.dll'{$ELSE}'libpango-1.0.so.0'{$ENDIF};
-
 // not declared in the Pango bindings of all FPC versions
+// (pangocairolib and pangolib are the names of the libraries used by the bindings)
+procedure pango_cairo_layout_path_(cr: Pcairo_t; layout: PPangoLayout);
+  cdecl; external pangocairolib name 'pango_cairo_layout_path';
+
 function pango_find_base_dir_(text: PChar; length: longint): TPangoDirection;
-  cdecl; external PangoLibName name 'pango_find_base_dir';
+  cdecl; external pangolib name 'pango_find_base_dir';
 
 var
   WorkFont: TFont;
