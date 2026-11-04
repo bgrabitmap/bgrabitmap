@@ -23,13 +23,13 @@ uses
   The text is rotated around this point by AOrientationTenthDeg (counter-clockwise).
   Returns false if this kind of text is not handled, in which case the bitmap
   is left unchanged and the caller must use the generic way. }
-function BGRAGtk2DrawText(AFont: TFont; AFontHeightFactor: integer;
+function BGRAPangoDrawText(AFont: TFont; AFontHeightFactor: integer;
   const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap;
   AOrientationTenthDeg: integer = 0): boolean;
 
 { Computes the size of a single-line text with the same font settings as
-  BGRAGtk2DrawText. Returns false if this kind of text is not handled. }
-function BGRAGtk2TextSize(AFont: TFont; AFontHeightFactor: integer;
+  BGRAPangoDrawText. Returns false if this kind of text is not handled. }
+function BGRAPangoTextSize(AFont: TFont; AFontHeightFactor: integer;
   const AText: string; out ASize: TSize): boolean;
 {$ENDIF}
 
@@ -119,7 +119,7 @@ begin
   LastValid := true;
 end;
 
-function BGRAGtk2DrawText(AFont: TFont; AFontHeightFactor: integer;
+function BGRAPangoDrawText(AFont: TFont; AFontHeightFactor: integer;
   const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap;
   AOrientationTenthDeg: integer = 0): boolean;
 var
@@ -165,7 +165,7 @@ begin
   end;
 end;
 
-function BGRAGtk2TextSize(AFont: TFont; AFontHeightFactor: integer;
+function BGRAPangoTextSize(AFont: TFont; AFontHeightFactor: integer;
   const AText: string; out ASize: TSize): boolean;
 var
   layout: PPangoLayout;
