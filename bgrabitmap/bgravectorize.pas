@@ -2261,12 +2261,30 @@ end;
 function TBGRAVectorizedFont.GetGlyph(AIdentifier: string): TBGRAGlyph;
 var size: TSize;
   g: TBGRAPolygonalGlyph;
+  pg: TBGRAPathGlyph;
   pts: array of TPointF;
-  dx,dy: Integer;
+  dx,dy,i: Integer;
+  outlineCmds: TBytes;
+  outlinePts: ArrayOfTPointF;
+  outlineSize: TPointF;
 begin
   Result:=inherited GetGlyph(AIdentifier);
   if (result = nil) and (FResolution > 0) and FVectorizeLCL then
   begin
+    // use the exact outline provided by the system if possible
+    NeedBuffer;
+    if FBuffer.FontRenderer is TBGRASystemFontRenderer then
+      if TBGRASystemFontRenderer(FBuffer.FontRenderer).GetTextOutline(AIdentifier, outlineCmds, outlinePts, outlineSize) then
+      begin
+        pg := TBGRAPathGlyph.Create(AIdentifier);
+        for i := 0 to high(outlinePts) do
+          outlinePts[i] := PointF(outlinePts[i].x/FResolution, outlinePts[i].y/FResolution);
+        pg.SetOutline(outlineCmds, outlinePts);
+        pg.Width := outlineSize.x/FResolution;
+        pg.Height := 1;
+        SetGlyph(AIdentifier,pg);
+        exit(pg);
+      end;
     g := TBGRAPolygonalGlyph.Create(AIdentifier);
     dx := FResolution div 2;
     dy := FResolution div 2;

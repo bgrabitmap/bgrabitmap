@@ -16,7 +16,7 @@ interface
 
 {$IFDEF LCLgtk2}
 uses
-  Types, Graphics, BGRABitmapTypes;
+  SysUtils, Types, Graphics, BGRABitmapTypes;
 
 { Draws white text on the given black opaque bitmap, with the font height
   multiplied by AFontHeightFactor, the top-left of the text being at ACoord.
@@ -31,13 +31,23 @@ function BGRAPangoDrawText(AFont: TFont; AFontHeightFactor: integer;
   BGRAPangoDrawText. Returns false if this kind of text is not handled. }
 function BGRAPangoTextSize(AFont: TFont; AFontHeightFactor: integer;
   const AText: string; out ASize: TSize): boolean;
+
+{ Gets the exact outline of a single-line text, without hinting, with its
+  top-left corner at (0,0) and in pixels. The commands are 0 = move to,
+  1 = line to, 2 = cubic curve to (3 points), 3 = close path. ASize is the size
+  of the text. Returns false if this kind of text is not handled. }
+function BGRAPangoTextPath(AFont: TFont; const AText: string;
+  out ACommands: TBytes; out APoints: ArrayOfTPointF; out ASize: TPointF): boolean;
 {$ENDIF}
 
 implementation
 
 {$IFDEF LCLgtk2}
 uses
-  SysUtils, glib2, gtk2def, pango, cairo, pangocairo, BGRAClasses;
+  glib2, gtk2def, pango, cairo, pangocairo, BGRAClasses;
+
+procedure pango_cairo_layout_path_(cr: Pcairo_t; layout: PPangoLayout);
+  cdecl; external 'libpangocairo-1.0.so.0' name 'pango_cairo_layout_path';
 
 const
   PangoLibName = {$IFDEF WINDOWS}'libpango-1.0-0.dll'{$ELSE}'libpango-1.0.so.0'{$ENDIF};
@@ -51,6 +61,9 @@ var
   WorkFontLock: TRTLCriticalSection;
   MeasureSurface: Pcairo_surface_t;
   MeasureCr: Pcairo_t;
+  // unbounded surface, otherwise the glyphs outside of it are not in the path
+  OutlineSurface: Pcairo_surface_t;
+  OutlineCr: Pcairo_t;
   SharedLayout: PPangoLayout;
   // settings of the text prepared in the shared layout, to avoid preparing it
   // again when the text is drawn just after being measured
@@ -193,10 +206,104 @@ begin
   end;
 end;
 
+function BGRAPangoTextPath(AFont: TFont; const AText: string;
+  out ACommands: TBytes; out APoints: ArrayOfTPointF; out ASize: TPointF): boolean;
+var
+  layout: PPangoLayout;
+  options: Pcairo_font_options_t;
+  path: Pcairo_path_t;
+  d: Pcairo_path_data_t;
+  i, nbCmd, nbPts: integer;
+  logical: TPangoRectangle;
+begin
+  result := false;
+  ACommands := nil;
+  APoints := nil;
+  ASize := PointF(0, 0);
+  if (AText = '') or (pos(#10, AText) <> 0) or (pos(#13, AText) <> 0) then exit;
+
+  EnterCriticalSection(WorkFontLock);
+  try
+    if OutlineCr = nil then
+    begin
+      OutlineSurface := cairo_recording_surface_create(CAIRO_CONTENT_COLOR_ALPHA, nil);
+      OutlineCr := cairo_create(OutlineSurface);
+    end;
+    layout := CreatePrivateLayout(OutlineCr, AFont, 1, AText);
+    if layout = nil then exit;
+    // the exact outline is wanted, not the one adjusted to the pixel grid
+    options := cairo_font_options_create;
+    cairo_font_options_set_hint_style(options, CAIRO_HINT_STYLE_NONE);
+    cairo_font_options_set_hint_metrics(options, CAIRO_HINT_METRICS_OFF);
+    pango_cairo_context_set_font_options(pango_layout_get_context(layout), options);
+    cairo_font_options_destroy(options);
+    pango_cairo_update_layout(OutlineCr, layout);
+    LastValid := false; // the layout is not prepared as usual anymore
+
+    pango_layout_get_extents(layout, nil, @logical);
+    ASize := PointF(logical.width / PANGO_SCALE, logical.height / PANGO_SCALE);
+
+    cairo_new_path(OutlineCr);
+    cairo_move_to(OutlineCr, 0, 0);
+    pango_cairo_layout_path_(OutlineCr, layout);
+    path := cairo_copy_path(OutlineCr);
+    cairo_new_path(OutlineCr);
+    try
+      if path^.status <> CAIRO_STATUS_SUCCESS then exit;
+      nbCmd := 0; nbPts := 0;
+      i := 0;
+      while i < path^.num_data do
+      begin
+        d := path^.data + i;
+        inc(nbCmd);
+        case d^.header._type of
+          CAIRO_PATH_MOVE_TO, CAIRO_PATH_LINE_TO: inc(nbPts);
+          CAIRO_PATH_CURVE_TO: inc(nbPts, 3);
+        end;
+        inc(i, d^.header.length);
+      end;
+      setlength(ACommands, nbCmd);
+      setlength(APoints, nbPts);
+      nbCmd := 0; nbPts := 0;
+      i := 0;
+      while i < path^.num_data do
+      begin
+        d := path^.data + i;
+        case d^.header._type of
+          CAIRO_PATH_MOVE_TO, CAIRO_PATH_LINE_TO:
+            begin
+              ACommands[nbCmd] := ord(d^.header._type); // 0 = move, 1 = line
+              APoints[nbPts] := PointF((d+1)^.point.x, (d+1)^.point.y);
+              inc(nbPts);
+            end;
+          CAIRO_PATH_CURVE_TO:
+            begin
+              ACommands[nbCmd] := 2;
+              APoints[nbPts] := PointF((d+1)^.point.x, (d+1)^.point.y);
+              APoints[nbPts+1] := PointF((d+2)^.point.x, (d+2)^.point.y);
+              APoints[nbPts+2] := PointF((d+3)^.point.x, (d+3)^.point.y);
+              inc(nbPts, 3);
+            end;
+          CAIRO_PATH_CLOSE_PATH: ACommands[nbCmd] := 3;
+        end;
+        inc(nbCmd);
+        inc(i, d^.header.length);
+      end;
+      result := true;
+    finally
+      cairo_path_destroy(path);
+    end;
+  finally
+    LeaveCriticalSection(WorkFontLock);
+  end;
+end;
+
 initialization
   InitCriticalSection(WorkFontLock);
 
 finalization
+  if OutlineCr <> nil then cairo_destroy(OutlineCr);
+  if OutlineSurface <> nil then cairo_surface_destroy(OutlineSurface);
   if SharedLayout <> nil then g_object_unref(SharedLayout);
   if MeasureCr <> nil then cairo_destroy(MeasureCr);
   if MeasureSurface <> nil then cairo_surface_destroy(MeasureSurface);
