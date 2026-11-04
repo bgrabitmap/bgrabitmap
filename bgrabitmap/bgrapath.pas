@@ -188,6 +188,7 @@ end;
     procedure InternalDraw(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AAcceptedDeviation: single; AData: pointer);
     procedure BitmapDrawSubPathProc(const APoints: array of TPointF; AClosed: boolean; AData: pointer);
     function CorrectAcceptedDeviation(AAcceptedDeviation: single; const AMatrix: TAffineMatrix): single;
+    procedure InternalCopyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix; ATransform: boolean);
   public
     constructor Create; overload; override;
     constructor Create(ASvgString: string); overload;
@@ -235,12 +236,19 @@ end;
     procedure arc(cx, cy, rx,ry: single; xAngleRadCW, startAngleRadCW, endAngleRadCW: single); overload;
     procedure arc(cx, cy, rx,ry, xAngleRadCW, startAngleRadCW, endAngleRadCW: single; anticlockwise: boolean); overload;
     procedure arcTo(rx,ry, xAngleRadCW: single; largeArc, anticlockwise: boolean; x,y:single); overload;
-    procedure copyTo(dest: IBGRAPath); override;
+    procedure copyTo(dest: IBGRAPath); override; overload;
+    { Copies the path to the destination after applying a transformation to
+      its coordinates. Lines and curves are transformed exactly, arcs and
+      splines are converted to lines. }
+    procedure copyTo(dest: IBGRAPath; const AMatrix: TAffineMatrix); overload;
     { Copies the path to the destination like copyTo, but each sub-path is
       traversed in the opposite direction. The order of the sub-paths is kept
       and closed sub-paths remain closed. Lines, curves and arcs are reversed
       exactly, splines are converted to lines. }
-    procedure copyToReversed(dest: IBGRAPath);
+    procedure copyToReversed(dest: IBGRAPath); overload;
+    { Same as above, after applying a transformation to the coordinates. Arcs
+      are converted to lines. }
+    procedure copyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix); overload;
     { Writes the path to a stream in a portable format (little endian,
       independent of the pointer size). The current transformation is not
       saved: coordinates are written as they are stored in the path. }
@@ -3145,7 +3153,49 @@ begin
   until not GoToNextElement(pos);
 end;
 
+procedure TBGRAPath.copyTo(dest: IBGRAPath; const AMatrix: TAffineMatrix);
+var
+  pos: IntPtr;
+  elemType: TBGRAPathElementType;
+  elem: Pointer;
+  pts: ArrayOfTPointF;
+  i: integer;
+begin
+  pos := 0;
+  repeat
+    GetElementAt(pos, elemType, elem);
+    if elem = nil then break;
+    case elemType of
+      peMoveTo: dest.moveTo(AMatrix*PPointF(elem)^);
+      peLineTo: dest.lineTo(AMatrix*PPointF(elem)^);
+      peCloseSubPath: dest.closePath;
+      peQuadraticBezierTo:
+        with PQuadraticBezierToElement(elem)^ do
+          dest.quadraticCurveTo(AMatrix*ControlPoint, AMatrix*Destination);
+      peCubicBezierTo:
+        with PCubicBezierToElement(elem)^ do
+          dest.bezierCurveTo(AMatrix*ControlPoint1, AMatrix*ControlPoint2, AMatrix*Destination);
+      peArc, peOpenedSpline, peClosedSpline:
+        begin
+          pts := GetPolygonalApprox(pos, DefaultDeviation, true);
+          for i := 0 to high(pts) do dest.lineTo(AMatrix*pts[i]);
+        end;
+    end;
+  until not GoToNextElement(pos);
+end;
+
 procedure TBGRAPath.copyToReversed(dest: IBGRAPath);
+begin
+  InternalCopyToReversed(dest, AffineMatrixIdentity, false);
+end;
+
+procedure TBGRAPath.copyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix);
+begin
+  InternalCopyToReversed(dest, AMatrix, true);
+end;
+
+procedure TBGRAPath.InternalCopyToReversed(dest: IBGRAPath;
+  const AMatrix: TAffineMatrix; ATransform: boolean);
 type
   TReverseSegment = record
     ElemType: TBGRAPathElementType;
@@ -3161,6 +3211,11 @@ var
   elem: Pointer;
   pts: ArrayOfTPointF;
   i: integer;
+
+  function T(const APt: TPointF): TPointF;
+  begin
+    if ATransform then result := AMatrix*APt else result := APt;
+  end;
 
   procedure AddSegment(AType: TBGRAPathElementType; const AEnd: TPointF);
   begin
@@ -3187,13 +3242,13 @@ var
     begin
       // for a closed sub-path, the closing line goes from the last point
       // back to the start, which is the original closing line reversed
-      dest.moveTo(segs[segCount-1].EndPt);
+      dest.moveTo(T(segs[segCount-1].EndPt));
       for k := segCount-1 downto 0 do
         with segs[k] do
           case ElemType of
-          peLineTo: dest.lineTo(StartPt);
-          peQuadraticBezierTo: dest.quadraticCurveTo(Ctrl1, StartPt);
-          peCubicBezierTo: dest.bezierCurveTo(Ctrl2, Ctrl1, StartPt);
+          peLineTo: dest.lineTo(T(StartPt));
+          peQuadraticBezierTo: dest.quadraticCurveTo(T(Ctrl1), T(StartPt));
+          peCubicBezierTo: dest.bezierCurveTo(T(Ctrl2), T(Ctrl1), T(StartPt));
           peArc:
             begin
               rev := ArcDef;
@@ -3244,9 +3299,15 @@ begin
           segs[segCount-1].Ctrl2 := PCubicBezierToElement(elem)^.ControlPoint2;
         end;
       peArc:
+        if not ATransform then
         begin
           AddSegment(peArc, ArcEndPoint(PArcElement(elem)^));
           segs[segCount-1].ArcDef := PArcElement(elem)^;
+        end else
+        begin
+          pts := GetPolygonalApprox(pos, DefaultDeviation, true);
+          for i := 0 to high(pts) do
+            if pts[i] <> cur then AddSegment(peLineTo, pts[i]);
         end;
       peOpenedSpline, peClosedSpline:
         begin
