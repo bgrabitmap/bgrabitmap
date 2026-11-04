@@ -883,6 +883,9 @@ function BGRAOriginalTextSizeExAngle(Font: TFont; AOrientation: integer;
 var
   tempBmp: TBitmap;
   discard: boolean;
+  {$IFDEF LCLgtk2}
+  sizeFactor: integer;
+  {$ENDIF}
 begin
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   extraVerticalMarginDueToRotation := 0;
@@ -890,6 +893,17 @@ begin
     result := Size(0,0)
   else
   begin
+    {$IFDEF LCLgtk2}
+    // measure directly with Pango, without LCL bitmap
+    if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
+      sizeFactor := CustomAntialiasingLevel
+    else
+    begin
+      sizeFactor := 1;
+      actualAntialiasingLevel:= 1;
+    end;
+    if BGRAGtk2TextSize(Font, sizeFactor, sUTF8, result) then exit;
+    {$ENDIF}
     discard := false;
     tempBmp := AcquireMeasureBitmap;
     try

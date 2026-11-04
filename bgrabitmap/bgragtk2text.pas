@@ -26,6 +26,11 @@ uses
 function BGRAGtk2DrawText(AFont: TFont; AFontHeightFactor: integer;
   const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap;
   AOrientationTenthDeg: integer = 0): boolean;
+
+{ Computes the size of a single-line text with the same font settings as
+  BGRAGtk2DrawText. Returns false if this kind of text is not handled. }
+function BGRAGtk2TextSize(AFont: TFont; AFontHeightFactor: integer;
+  const AText: string; out ASize: TSize): boolean;
 {$ENDIF}
 
 implementation
@@ -44,17 +49,83 @@ function pango_find_base_dir_(text: PChar; length: longint): TPangoDirection;
 var
   WorkFont: TFont;
   WorkFontLock: TRTLCriticalSection;
+  MeasureSurface: Pcairo_surface_t;
+  MeasureCr: Pcairo_t;
+  SharedLayout: PPangoLayout;
+  // settings of the text prepared in the shared layout, to avoid preparing it
+  // again when the text is drawn just after being measured
+  LastName: string;
+  LastHeight: integer;
+  LastStyle: TFontStyles;
+  LastQuality: TFontQuality;
+  LastText: string;
+  LastValid: boolean;
+
+{ Prepares a private layout, copying the settings of the layout of the LCL font.
+  A private layout is used, because the context of the LCL layout is shared
+  with other fonts and must not be modified. The same layout is reused for
+  each call, because creating it is expensive. It must not be freed by the
+  caller. The lock must be held. }
+function CreatePrivateLayout(cr: Pcairo_t; AFont: TFont;
+  AFontHeightFactor: integer; const AText: string): PPangoLayout;
+var
+  gdiFont: PGdiObject;
+  lcllayout: PPangoLayout;
+  options: Pcairo_font_options_t;
+  resolution: double;
+begin
+  result := nil;
+  if LastValid and (SharedLayout <> nil) and (AText = LastText) and
+     (AFont.Name = LastName) and (AFont.Height * AFontHeightFactor = LastHeight) and
+     (AFont.Style = LastStyle) and (AFont.Quality = LastQuality) then
+  begin
+    result := SharedLayout;
+    exit;
+  end;
+  LastValid := false;
+  if WorkFont = nil then WorkFont := TFont.Create;
+  WorkFont.Assign(AFont);
+  WorkFont.Orientation := 0;
+  WorkFont.Height := AFont.Height * AFontHeightFactor;
+  gdiFont := PGdiObject(WorkFont.Handle);
+  if gdiFont = nil then exit;
+  lcllayout := gdiFont^.GDIFontObject;
+  if lcllayout = nil then exit;
+
+  if SharedLayout = nil then SharedLayout := pango_cairo_create_layout(cr);
+  result := SharedLayout;
+  // same context settings as the LCL layout
+  resolution := pango_cairo_context_get_resolution(pango_layout_get_context(lcllayout));
+  if resolution > 0 then
+    pango_cairo_context_set_resolution(pango_layout_get_context(result), resolution);
+  options := pango_cairo_context_get_font_options(pango_layout_get_context(lcllayout));
+  if options <> nil then
+    pango_cairo_context_set_font_options(pango_layout_get_context(result), options);
+  // same font settings as the LCL layout
+  pango_layout_set_font_description(result, pango_layout_get_font_description(lcllayout));
+  pango_layout_set_attributes(result, pango_layout_get_attributes(lcllayout));
+  pango_layout_set_single_paragraph_mode(result, true);
+  pango_layout_set_width(result, -1);
+  pango_layout_set_alignment(result, PANGO_ALIGN_LEFT);
+  pango_layout_set_text(result, PChar(AText), Length(AText));
+  pango_context_set_base_dir(pango_layout_get_context(result),
+    pango_find_base_dir_(PChar(AText), Length(AText)));
+  pango_cairo_update_layout(cr, result);
+  LastName := AFont.Name;
+  LastHeight := AFont.Height * AFontHeightFactor;
+  LastStyle := AFont.Style;
+  LastQuality := AFont.Quality;
+  LastText := AText;
+  LastValid := true;
+end;
 
 function BGRAGtk2DrawText(AFont: TFont; AFontHeightFactor: integer;
   const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap;
   AOrientationTenthDeg: integer = 0): boolean;
 var
-  gdiFont: PGdiObject;
-  lcllayout, layout: PPangoLayout;
+  layout: PPangoLayout;
   surface: Pcairo_surface_t;
   cr: Pcairo_t;
-  options: Pcairo_font_options_t;
-  resolution: double;
 begin
   result := false;
   if (ADest = nil) or (ADest.Width = 0) or (ADest.Height = 0) or (ADest.Data = nil) or
@@ -64,54 +135,22 @@ begin
 
   EnterCriticalSection(WorkFontLock);
   try
-    if WorkFont = nil then WorkFont := TFont.Create;
-    WorkFont.Assign(AFont);
-    WorkFont.Orientation := 0;
-    WorkFont.Height := AFont.Height * AFontHeightFactor;
-    gdiFont := PGdiObject(WorkFont.Handle);
-    if gdiFont = nil then exit;
-    lcllayout := gdiFont^.GDIFontObject;
-    if lcllayout = nil then exit;
-
     surface := cairo_image_surface_create_for_data(PByte(ADest.Data),
       CAIRO_FORMAT_ARGB32, ADest.Width, ADest.Height, ADest.Width * sizeof(TBGRAPixel));
     try
       cr := cairo_create(surface);
       try
-        // A private layout is used, because the context of the LCL layout is
-        // shared with other fonts and must not be modified.
-        layout := pango_cairo_create_layout(cr);
-        try
-          // same context settings as the LCL layout
-          resolution := pango_cairo_context_get_resolution(pango_layout_get_context(lcllayout));
-          if resolution > 0 then
-            pango_cairo_context_set_resolution(pango_layout_get_context(layout), resolution);
-          options := pango_cairo_context_get_font_options(pango_layout_get_context(lcllayout));
-          if options <> nil then
-            pango_cairo_context_set_font_options(pango_layout_get_context(layout), options);
-          // same font settings as the LCL layout
-          pango_layout_set_font_description(layout, pango_layout_get_font_description(lcllayout));
-          pango_layout_set_attributes(layout, pango_layout_get_attributes(lcllayout));
-          pango_layout_set_single_paragraph_mode(layout, true);
-          pango_layout_set_width(layout, -1);
-          pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
-          pango_layout_set_text(layout, PChar(AText), Length(AText));
-          pango_context_set_base_dir(pango_layout_get_context(layout),
-            pango_find_base_dir_(PChar(AText), Length(AText)));
-
-          cairo_set_source_rgb(cr, 1, 1, 1);
-          pango_cairo_update_layout(cr, layout);
-          if AOrientationTenthDeg <> 0 then
-          begin
-            cairo_translate(cr, ACoord.X, ACoord.Y);
-            cairo_rotate(cr, -AOrientationTenthDeg*Pi/1800);
-            cairo_move_to(cr, 0, 0);
-          end else
-            cairo_move_to(cr, ACoord.X, ACoord.Y);
-          pango_cairo_show_layout(cr, layout);
-        finally
-          g_object_unref(layout);
-        end;
+        layout := CreatePrivateLayout(cr, AFont, AFontHeightFactor, AText);
+        if layout = nil then exit;
+        cairo_set_source_rgb(cr, 1, 1, 1);
+        if AOrientationTenthDeg <> 0 then
+        begin
+          cairo_translate(cr, ACoord.X, ACoord.Y);
+          cairo_rotate(cr, -AOrientationTenthDeg*Pi/1800);
+          cairo_move_to(cr, 0, 0);
+        end else
+          cairo_move_to(cr, ACoord.X, ACoord.Y);
+        pango_cairo_show_layout(cr, layout);
       finally
         cairo_destroy(cr);
       end;
@@ -126,10 +165,41 @@ begin
   end;
 end;
 
+function BGRAGtk2TextSize(AFont: TFont; AFontHeightFactor: integer;
+  const AText: string; out ASize: TSize): boolean;
+var
+  layout: PPangoLayout;
+  w, h: longint;
+begin
+  result := false;
+  ASize := Size(0, 0);
+  if (pos(#10, AText) <> 0) or (pos(#13, AText) <> 0) then exit;
+  if AText = '' then exit(true);
+
+  EnterCriticalSection(WorkFontLock);
+  try
+    if MeasureCr = nil then
+    begin
+      MeasureSurface := cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
+      MeasureCr := cairo_create(MeasureSurface);
+    end;
+    layout := CreatePrivateLayout(MeasureCr, AFont, AFontHeightFactor, AText);
+    if layout = nil then exit;
+    pango_layout_get_pixel_size(layout, @w, @h);
+    ASize := Size(w, h);
+    result := true;
+  finally
+    LeaveCriticalSection(WorkFontLock);
+  end;
+end;
+
 initialization
   InitCriticalSection(WorkFontLock);
 
 finalization
+  if SharedLayout <> nil then g_object_unref(SharedLayout);
+  if MeasureCr <> nil then cairo_destroy(MeasureCr);
+  if MeasureSurface <> nil then cairo_surface_destroy(MeasureSurface);
   FreeAndNil(WorkFont);
   DoneCriticalSection(WorkFontLock);
 {$ENDIF}
