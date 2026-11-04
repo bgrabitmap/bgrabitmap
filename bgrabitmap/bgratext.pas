@@ -200,7 +200,7 @@ procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
 
 implementation
 
-uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
+uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi{$IFDEF LCLgtk2}, BGRAGtk2Text{$ENDIF}
      {$IFDEF LCL}, Forms, LCLIntf, LCLType{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
 
 const MaxPixelMetricCount = 100;
@@ -883,6 +883,9 @@ function BGRAOriginalTextSizeExAngle(Font: TFont; AOrientation: integer;
 var
   tempBmp: TBitmap;
   discard: boolean;
+  {$IFDEF LCLgtk2}
+  sizeFactor: integer;
+  {$ENDIF}
 begin
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   extraVerticalMarginDueToRotation := 0;
@@ -890,6 +893,17 @@ begin
     result := Size(0,0)
   else
   begin
+    {$IFDEF LCLgtk2}
+    // measure directly with Pango, without LCL bitmap
+    if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
+      sizeFactor := CustomAntialiasingLevel
+    else
+    begin
+      sizeFactor := 1;
+      actualAntialiasingLevel:= 1;
+    end;
+    if BGRAGtk2TextSize(Font, sizeFactor, sUTF8, result) then exit;
+    {$ENDIF}
     discard := false;
     tempBmp := AcquireMeasureBitmap;
     try
@@ -1224,6 +1238,16 @@ begin
   iLeft := floor(xF) - (iMargin.cx div sizeFactor);
   iTop := floor(yF) - (iMargin.cy div sizeFactor);
 
+  {$IFDEF LCLgtk2}
+  // render directly in memory with Pango, without LCL bitmap
+  temp := BGRABitmapFactory.Create(sizeWithMargin.cx, sizeWithMargin.cy, BGRABlack);
+  if not BGRAGtk2DrawText(Font, sizeFactor, sUTF8,
+       Point(HalfUp((xf - floor(xf)) * sizeFactor) + iMargin.cx,
+             HalfUp((yf - floor(yf)) * sizeFactor) + iMargin.cy), temp) then
+    FreeAndNil(temp);
+  if temp = nil then
+  begin
+  {$ENDIF}
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
   tempLCL.Width := sizeWithMargin.cx;
@@ -1246,6 +1270,9 @@ begin
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
+  {$ENDIF}
+  {$IFDEF LCLgtk2}
+  end;
   {$ENDIF}
 
   FilterOriginalText(Quality, CustomAntialiasingLevel, temp, grayscale);
@@ -1352,6 +1379,16 @@ begin
   if deltaX <> 0 then inc(rotBounds.Right, sizeFactor);
   if deltaY <> 0 then inc(rotBounds.Bottom, sizeFactor);
 
+  {$IFDEF LCLgtk2}
+  // render directly in memory with Pango, without LCL bitmap
+  temp := BGRABitmapFactory.Create(rotBounds.Right-rotBounds.Left,rotBounds.Bottom-rotBounds.Top, BGRABlack);
+  if not BGRAGtk2DrawText(Font, sizeFactor, sUTF8,
+       Point(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY), temp,
+       orientationTenthDegCCW) then
+    FreeAndNil(temp);
+  if temp = nil then
+  begin
+  {$ENDIF}
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
   tempLCL.Width := rotBounds.Right-rotBounds.Left;
@@ -1372,6 +1409,9 @@ begin
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
+  {$ENDIF}
+  {$IFDEF LCLgtk2}
+  end;
   {$ENDIF}
 
   FilterOriginalText(Quality,CustomAntialiasingLevel,temp,grayscale);
@@ -1429,6 +1469,24 @@ begin
   else
     sizeFactor := 1;
 
+  {$IFDEF LCLgtk2}
+  // The LCL draws single-line text aligned on the top-left like a simple
+  // text output (right-to-left reading is ignored, and a prefix only matters
+  // if there is an ampersand), so it can be rendered directly with Pango.
+  temp := nil;
+  if style.SingleLine and (style.Alignment = taLeftJustify) and (style.Layout = tlTop) and
+     not style.Wordbreak and not style.Opaque and not style.Clipping and
+     not style.EndEllipsis and not style.ExpandTabs and not style.SystemFont and
+     not (style.ShowPrefix and (pos('&', sUTF8) <> 0)) then
+  begin
+    temp := BGRABitmapFactory.Create(tx*sizeFactor, ty*sizeFactor, BGRABlack);
+    if not BGRAGtk2DrawText(Font, sizeFactor, sUTF8,
+         Point(HalfUp((xf - lim.Left)*sizeFactor), HalfUp((yf - lim.Top)*sizeFactor)), temp) then
+      FreeAndNil(temp);
+  end;
+  if temp = nil then
+  begin
+  {$ENDIF}
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
   tempLCL.Width := tx*sizeFactor;
@@ -1451,6 +1509,9 @@ begin
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
+  {$ENDIF}
+  {$IFDEF LCLgtk2}
+  end;
   {$ENDIF}
 
   FilterOriginalText(Quality,CustomAntialiasingLevel,temp,grayscale);
