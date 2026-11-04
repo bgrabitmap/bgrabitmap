@@ -835,6 +835,38 @@ begin
   BGRABlend.BGRAFillClearTypeRGBMask(dest,x,y,mask,color,texture,KeepRGBOrder);
 end;
 
+var
+  MeasureBitmap: TBitmap;
+  MeasureBitmapLock: TRTLCriticalSection;
+
+{ A single bitmap is reused to measure text, because creating a bitmap and
+  its canvas for each measure is expensive. The caller must call
+  ReleaseMeasureBitmap when done, and DiscardMeasureBitmap on exception. }
+function AcquireMeasureBitmap: TBitmap;
+begin
+  EnterCriticalSection(MeasureBitmapLock);
+  try
+    if MeasureBitmap = nil then
+    begin
+      MeasureBitmap := TBitmap.Create;
+      {$IFDEF BGRABITMAP_USE_MSEGUI}
+      MeasureBitmap.Width := 1;
+      MeasureBitmap.Height := 1;
+      {$ENDIF}
+    end;
+    result := MeasureBitmap;
+  except
+    LeaveCriticalSection(MeasureBitmapLock);
+    raise;
+  end;
+end;
+
+procedure ReleaseMeasureBitmap(ADiscard: boolean);
+begin
+  if ADiscard then FreeAndNil(MeasureBitmap);
+  LeaveCriticalSection(MeasureBitmapLock);
+end;
+
 function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality;
   sUTF8: string; CustomAntialiasingLevel: Integer; 
   out actualAntialiasingLevel: integer; 
@@ -850,6 +882,7 @@ function BGRAOriginalTextSizeExAngle(Font: TFont; AOrientation: integer;
   out extraVerticalMarginDueToRotation: integer): TSize;
 var
   tempBmp: TBitmap;
+  discard: boolean;
 begin
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   extraVerticalMarginDueToRotation := 0;
@@ -857,13 +890,9 @@ begin
     result := Size(0,0)
   else
   begin
-    tempBmp := nil;
+    discard := false;
+    tempBmp := AcquireMeasureBitmap;
     try
-      tempBmp := TBitmap.Create;
-      {$IFDEF BGRABITMAP_USE_MSEGUI}
-      tempBmp.Width := 1;
-      tempBmp.Height := 1;
-      {$ENDIF}
       tempBmp.Canvas.Font := Font;
       if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
       begin
@@ -885,9 +914,10 @@ begin
       begin
         result := Size(0,0);
         SystemFontDisabledValue := True;
+        discard := true;
       end;
     end;
-    tempBmp.Free;
+    ReleaseMeasureBitmap(discard);
   end;
 end;
 
@@ -906,18 +936,15 @@ function BGRAOriginalTextSizeStyle(Font: TFont; Quality: TBGRAFontQuality;
   AMaxWidth: integer): TSize;
 var
   tempBmp: TBitmap;
+  discard: boolean;
 begin
   if not SystemFontAvailable then
     result := Size(0,0)
   else
   begin
-    tempBmp := nil;
+    discard := false;
+    tempBmp := AcquireMeasureBitmap;
     try
-      tempBmp := TBitmap.Create;
-      {$IFDEF BGRABITMAP_USE_MSEGUI}
-      tempBmp.Width := 1;
-      tempBmp.Height := 1;
-      {$ENDIF}
       tempBmp.Canvas.Font := Font;
       if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
       begin
@@ -932,9 +959,10 @@ begin
       begin
         result := Size(0,0);
         SystemFontDisabledValue := True;
+        discard := true;
       end;
     end;
-    tempBmp.Free;
+    ReleaseMeasureBitmap(discard);
   end;
 end;
 
@@ -2176,6 +2204,12 @@ end;
 initialization
 
   fqFineClearType := @GetFineClearTypeAuto;
+  InitCriticalSection(MeasureBitmapLock);
+
+finalization
+
+  FreeAndNil(MeasureBitmap);
+  DoneCriticalSection(MeasureBitmapLock);
 
 end.
 

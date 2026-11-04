@@ -92,38 +92,70 @@ type
   TCopyPixelProc = procedure (psrc: PByte; pdest: PBGRAPixel; count: Int32or64; sourcePixelSize: PtrInt; defaultOpacity: byte);
 
 procedure ApplyMask1bit(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; {%H-}sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
-var currentBit: byte;
+var currentBit, mask: byte;
 begin
-  currentBit := 1;
-  while count > 0 do
+  while count >= 8 do
   begin
-    if psrc^ and currentBit <> 0 then pdest^.alpha := 0;
-    inc(pdest);
-    if currentBit = 128 then
+    mask := psrc^;
+    if mask = 0 then
+      inc(pdest, 8) // nothing to hide
+    else
     begin
       currentBit := 1;
-      inc(psrc);
-    end else
+      repeat
+        if mask and currentBit <> 0 then pdest^.alpha := 0;
+        inc(pdest);
+        currentBit := currentBit shl 1;
+      until currentBit = 0;
+    end;
+    inc(psrc);
+    dec(count, 8);
+  end;
+  if count > 0 then
+  begin
+    mask := psrc^;
+    currentBit := 1;
+    while count > 0 do
+    begin
+      if mask and currentBit <> 0 then pdest^.alpha := 0;
+      inc(pdest);
       currentBit := currentBit shl 1;
-    dec(count);
+      dec(count);
+    end;
   end;
 end;
 
 procedure ApplyMask1bitRev(psrc: PByte; pdest: PBGRAPixel; count: Int32or64; {%H-}sourcePixelSize: PtrInt; {%H-}defaultOpacity: byte);
-var currentBit: byte;
+var currentBit, mask: byte;
 begin
-  currentBit := 128;
-  while count > 0 do
+  while count >= 8 do
   begin
-    if psrc^ and currentBit <> 0 then pdest^.alpha := 0;
-    inc(pdest);
-    if currentBit = 1 then
+    mask := psrc^;
+    if mask = 0 then
+      inc(pdest, 8) // nothing to hide
+    else
     begin
       currentBit := 128;
-      inc(psrc);
-    end else
+      repeat
+        if mask and currentBit <> 0 then pdest^.alpha := 0;
+        inc(pdest);
+        currentBit := currentBit shr 1;
+      until currentBit = 0;
+    end;
+    inc(psrc);
+    dec(count, 8);
+  end;
+  if count > 0 then
+  begin
+    mask := psrc^;
+    currentBit := 128;
+    while count > 0 do
+    begin
+      if mask and currentBit <> 0 then pdest^.alpha := 0;
+      inc(pdest);
       currentBit := currentBit shr 1;
-    dec(count);
+      dec(count);
+    end;
   end;
 end;
 
