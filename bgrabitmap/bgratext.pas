@@ -46,6 +46,10 @@ interface
 {$IFDEF BGRABITMAP_USE_MSEGUI}
   {$DEFINE RENDER_TEXT_ON_TBITMAP}
 {$ENDIF}
+{$IF defined(LCLgtk2) or defined(LCLgtk3)}
+  // text is rendered directly with Pango, see BGRAGtk2Text and BGRAGtk3Text
+  {$DEFINE BGRA_PANGO_TEXT}
+{$ENDIF}
 
 uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAPen, BGRAGrayscaleMask
@@ -200,7 +204,7 @@ procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
 
 implementation
 
-uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi{$IFDEF LCLgtk2}, BGRAGtk2Text{$ENDIF}
+uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi{$IFDEF LCLgtk2}, BGRAGtk2Text{$ENDIF}{$IFDEF LCLgtk3}, BGRAGtk3Text{$ENDIF}
      {$IFDEF LCL}, Forms, LCLIntf, LCLType{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
 
 const MaxPixelMetricCount = 100;
@@ -883,7 +887,7 @@ function BGRAOriginalTextSizeExAngle(Font: TFont; AOrientation: integer;
 var
   tempBmp: TBitmap;
   discard: boolean;
-  {$IFDEF LCLgtk2}
+  {$IFDEF BGRA_PANGO_TEXT}
   sizeFactor: integer;
   {$ENDIF}
 begin
@@ -893,7 +897,7 @@ begin
     result := Size(0,0)
   else
   begin
-    {$IFDEF LCLgtk2}
+    {$IFDEF BGRA_PANGO_TEXT}
     // measure directly with Pango, without LCL bitmap
     if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
       sizeFactor := CustomAntialiasingLevel
@@ -902,7 +906,7 @@ begin
       sizeFactor := 1;
       actualAntialiasingLevel:= 1;
     end;
-    if BGRAGtk2TextSize(Font, sizeFactor, sUTF8, result) then exit;
+    if BGRAPangoTextSize(Font, sizeFactor, sUTF8, result) then exit;
     {$ENDIF}
     discard := false;
     tempBmp := AcquireMeasureBitmap;
@@ -1238,10 +1242,10 @@ begin
   iLeft := floor(xF) - (iMargin.cx div sizeFactor);
   iTop := floor(yF) - (iMargin.cy div sizeFactor);
 
-  {$IFDEF LCLgtk2}
+  {$IFDEF BGRA_PANGO_TEXT}
   // render directly in memory with Pango, without LCL bitmap
   temp := BGRABitmapFactory.Create(sizeWithMargin.cx, sizeWithMargin.cy, BGRABlack);
-  if not BGRAGtk2DrawText(Font, sizeFactor, sUTF8,
+  if not BGRAPangoDrawText(Font, sizeFactor, sUTF8,
        Point(HalfUp((xf - floor(xf)) * sizeFactor) + iMargin.cx,
              HalfUp((yf - floor(yf)) * sizeFactor) + iMargin.cy), temp) then
     FreeAndNil(temp);
@@ -1271,7 +1275,7 @@ begin
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
   {$ENDIF}
-  {$IFDEF LCLgtk2}
+  {$IFDEF BGRA_PANGO_TEXT}
   end;
   {$ENDIF}
 
@@ -1379,10 +1383,10 @@ begin
   if deltaX <> 0 then inc(rotBounds.Right, sizeFactor);
   if deltaY <> 0 then inc(rotBounds.Bottom, sizeFactor);
 
-  {$IFDEF LCLgtk2}
+  {$IFDEF BGRA_PANGO_TEXT}
   // render directly in memory with Pango, without LCL bitmap
   temp := BGRABitmapFactory.Create(rotBounds.Right-rotBounds.Left,rotBounds.Bottom-rotBounds.Top, BGRABlack);
-  if not BGRAGtk2DrawText(Font, sizeFactor, sUTF8,
+  if not BGRAPangoDrawText(Font, sizeFactor, sUTF8,
        Point(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY), temp,
        orientationTenthDegCCW) then
     FreeAndNil(temp);
@@ -1410,7 +1414,7 @@ begin
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
   {$ENDIF}
-  {$IFDEF LCLgtk2}
+  {$IFDEF BGRA_PANGO_TEXT}
   end;
   {$ENDIF}
 
@@ -1469,7 +1473,7 @@ begin
   else
     sizeFactor := 1;
 
-  {$IFDEF LCLgtk2}
+  {$IFDEF BGRA_PANGO_TEXT}
   // The LCL draws single-line text aligned on the top-left like a simple
   // text output (right-to-left reading is ignored, and a prefix only matters
   // if there is an ampersand), so it can be rendered directly with Pango.
@@ -1480,7 +1484,7 @@ begin
      not (style.ShowPrefix and (pos('&', sUTF8) <> 0)) then
   begin
     temp := BGRABitmapFactory.Create(tx*sizeFactor, ty*sizeFactor, BGRABlack);
-    if not BGRAGtk2DrawText(Font, sizeFactor, sUTF8,
+    if not BGRAPangoDrawText(Font, sizeFactor, sUTF8,
          Point(HalfUp((xf - lim.Left)*sizeFactor), HalfUp((yf - lim.Top)*sizeFactor)), temp) then
       FreeAndNil(temp);
   end;
@@ -1510,7 +1514,7 @@ begin
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
   {$ENDIF}
-  {$IFDEF LCLgtk2}
+  {$IFDEF BGRA_PANGO_TEXT}
   end;
   {$ENDIF}
 
