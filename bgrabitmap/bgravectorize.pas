@@ -2433,6 +2433,9 @@ end;
 function TBGRAVectorizedFont.ComputeKerning(AIdLeft, AIdRight: string): single;
 var
   together: String;
+  outlineCmds: TBytes;
+  outlinePts: ArrayOfTPointF;
+  outlineSize: TPointF;
 begin
   if (Resolution = 0) or not VectorizeLCL then exit(0);
   if IsRightToLeftUTF8(AIdLeft) then
@@ -2444,8 +2447,14 @@ begin
   end else
     together := AIdLeft + AIdRight;
   NeedBuffer;
-  result := FBuffer.TextSize(together).cx/Resolution
-            - Glyph[AIdLeft].Width - Glyph[AIdRight].Width;
+  // measure with the same renderer as the glyphs if they have exact outlines
+  if (FBuffer.FontRenderer is TBGRASystemFontRenderer) and
+     TBGRASystemFontRenderer(FBuffer.FontRenderer).GetTextOutline(together, outlineCmds, outlinePts, outlineSize) then
+    result := outlineSize.x/Resolution
+              - Glyph[AIdLeft].Width - Glyph[AIdRight].Width
+  else
+    result := FBuffer.TextSize(together).cx/Resolution
+              - Glyph[AIdLeft].Width - Glyph[AIdRight].Width;
 end;
 
 end.
