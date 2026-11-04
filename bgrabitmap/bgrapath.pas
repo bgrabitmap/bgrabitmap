@@ -358,7 +358,7 @@ type
 
 const
   PathElementSize : array[TBGRAPathElementType] of PtrInt =
-  (0, Sizeof(TMoveToElement), Sizeof(TClosePathElement), sizeof(TPointF),
+  (0, Sizeof(TMoveToElement), sizeof(TPointF), Sizeof(TClosePathElement),
    sizeof(TQuadraticBezierToElement), sizeof(TCubicBezierToElement),
    sizeof(TArcElement), sizeof(TSplineElement)+sizeof(integer),
    sizeof(TSplineElement)+sizeof(integer));
