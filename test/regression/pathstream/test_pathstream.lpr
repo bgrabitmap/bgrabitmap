@@ -2,7 +2,7 @@ program TestPathStream;
 {$mode objfpc}{$H+}
 uses
   {$IFDEF UNIX}cthreads, cwstring,{$ENDIF}
-  SysUtils, Classes, BGRABitmapTypes, BGRABitmap, BGRAPath;
+  SysUtils, Classes, BGRABitmapTypes, BGRABitmap, BGRATransform, BGRAPath;
 
 var
   failures: integer = 0;
@@ -132,6 +132,71 @@ begin
   p.Free; r.Free;
 end;
 
+procedure TestMatrix;
+var
+  p, t, tr, ref: TBGRAPath;
+  m: TAffineMatrix;
+  bt, btr, bref: TBGRABitmap;
+begin
+  writeln('copyTo / copyToReversed with a matrix');
+  // translation, scale and mirror (orientation change)
+  m := AffineMatrixTranslation(60, 4)*AffineMatrixScale(-1, 1);
+  p := TBGRAPath.Create; t := TBGRAPath.Create; tr := TBGRAPath.Create;
+  BuildShape(p);
+  p.copyTo(t, m);
+  p.copyToReversed(tr, m);
+  bt := Render(t); btr := Render(tr);
+  Check(Coverage(bt) > 500, 'transformed shape is rendered');
+  Check(abs(Coverage(bt) - Coverage(btr)) < Coverage(bt)*0.01, 'reversed with matrix covers the same area ('+IntToStr(Coverage(bt))+' / '+IntToStr(Coverage(btr))+')');
+  // a mirrored copy has the opposite orientation, the reversed one the same
+  Check(FirstSubPathArea(t.ToPoints)*FirstSubPathArea(p.ToPoints) < 0, 'copyTo with a mirror inverts the orientation');
+  Check(FirstSubPathArea(tr.ToPoints)*FirstSubPathArea(p.ToPoints) > 0, 'copyToReversed with a mirror restores the orientation');
+  // same result as drawing the original path with the matrix
+  ref := TBGRAPath.Create;
+  bref := TBGRABitmap.Create(64, 64, BGRAPixelTransparent);
+  p.fill(bref, m, BGRABlack);
+  Check(abs(Coverage(bt) - Coverage(bref)) < Coverage(bref)*0.01, 'same area as filling the path with the matrix ('+IntToStr(Coverage(bt))+' / '+IntToStr(Coverage(bref))+')');
+  bref.Free; ref.Free;
+  bt.Free; btr.Free;
+  t.Free; tr.Free;
+
+  // the identity gives the same path as the version without matrix
+  t := TBGRAPath.Create;
+  p.copyTo(t, AffineMatrixIdentity);
+  Check(t.SvgString = p.SvgString, 'copyTo with the identity gives the same path');
+  t.Free;
+
+  // arcs are converted to lines when a matrix is used
+  p.Free; p := TBGRAPath.Create; t := TBGRAPath.Create; tr := TBGRAPath.Create;
+  p.moveTo(5, 5);
+  p.arc(20, 20, 15, -Pi/2, 0);
+  p.lineTo(35, 50);
+  p.copyTo(t, AffineMatrixTranslation(3, 3));
+  p.copyToReversed(tr, AffineMatrixTranslation(3, 3));
+  Check(t.ComputeLength > 50, 'arc is kept with copyTo and a matrix');
+  Check(abs(t.ComputeLength - tr.ComputeLength) < t.ComputeLength*0.01, 'arc is kept with copyToReversed and a matrix');
+  p.Free; t.Free; tr.Free;
+
+  // the accepted deviation is the one of the destination: a small arc that is
+  // zoomed by the matrix must not look angular
+  p := TBGRAPath.Create;
+  p.moveTo(0, -1);
+  p.arc(0, 0, 1, -Pi/2, 0);   // quarter of a circle of radius 1
+  m := AffineMatrixScale(100, 100);
+  t := TBGRAPath.Create; tr := TBGRAPath.Create;
+  p.copyTo(t, m);
+  p.copyToReversed(tr, m);
+  Check(abs(t.ComputeLength - 100*Pi/2) < 0.2, 'zoomed arc is smooth with copyTo ('+FloatToStr(t.ComputeLength)+' / '+FloatToStr(100*Pi/2)+')');
+  Check(abs(tr.ComputeLength - 100*Pi/2) < 0.2, 'zoomed arc is smooth with copyToReversed ('+FloatToStr(tr.ComputeLength)+')');
+  // the deviation can be chosen (very small values are limited by the
+  // resolution of ComputeArc, which uses 65536 angles per turn)
+  ref := TBGRAPath.Create;
+  p.copyTo(ref, m, 5);
+  Check(abs(ref.ComputeLength - 100*Pi/2) > 1, 'a large accepted deviation gives a coarser arc ('+FloatToStr(ref.ComputeLength)+')');
+  ref.Free;
+  p.Free; t.Free; tr.Free;
+end;
+
 procedure TestStream;
 var
   p, q: TBGRAPath;
@@ -214,6 +279,7 @@ end;
 
 begin
   TestReverse;
+  TestMatrix;
   TestStream;
   writeln;
   if failures = 0 then writeln('ALL TESTS PASSED')

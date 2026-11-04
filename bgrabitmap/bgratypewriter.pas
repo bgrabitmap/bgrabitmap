@@ -8,7 +8,7 @@ unit BGRATypewriter;
 interface
 
 uses
-  BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform;
+  BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform, BGRAPath;
 
 type
   { Array of boxes for each glyph in text }
@@ -80,6 +80,28 @@ type
     property PointCount: integer read GetPointCount;
   end;
 
+  { Glyph defined by an exact outline stored in a path. The coordinates are
+    in the same unit as the other glyphs (the full height of the font is 1). }
+  TBGRAPathGlyph = class(TBGRAGlyph)
+  protected
+    FOutline: TBGRAPath;
+    FReversedOutline: TBGRAPath; // computed when needed
+    function ContentSize: integer; override;
+    function HeaderName: string; override;
+    procedure WriteContent(AStream: TStream); override;
+    procedure ReadContent(AStream: TStream); override;
+    function SerializeOutline: TMemoryStream;
+  public
+    constructor Create(AIdentifier: string); override;
+    constructor Create(AStream: TStream); override;
+    destructor Destroy; override;
+    { Gives the outline to the glyph, which takes ownership of it }
+    procedure SetOutline(AOutline: TBGRAPath);
+    procedure Path(ADest: IBGRAPath; AMatrix: TAffineMatrix; AReverse: boolean = false); override;
+    property Outline: TBGRAPath read FOutline;
+  end;
+
+type
   { Header of typewriter stream }
   TBGRACustomTypeWriterHeader = record
     HeaderName: String;
@@ -531,6 +553,115 @@ begin
     FEasyBezier.CopyToPath(ADest, @PointTransformMatrix, @AMatrix, AReverse);
 end;
 
+{ TBGRAPathGlyph }
+
+function TBGRAPathGlyph.SerializeOutline: TMemoryStream;
+begin
+  result := TMemoryStream.Create;
+  try
+    FOutline.SaveToStream(result);
+  except
+    result.Free;
+    raise;
+  end;
+end;
+
+function TBGRAPathGlyph.ContentSize: integer;
+var
+  data: TMemoryStream;
+begin
+  data := SerializeOutline;
+  try
+    result := (inherited ContentSize) + 4 + integer(data.Size);
+  finally
+    data.Free;
+  end;
+end;
+
+function TBGRAPathGlyph.HeaderName: string;
+begin
+  result := 'TBGRAPathGlyph';
+end;
+
+procedure TBGRAPathGlyph.WriteContent(AStream: TStream);
+var
+  data: TMemoryStream;
+begin
+  inherited WriteContent(AStream);
+  data := SerializeOutline;
+  try
+    LEWriteLongint(AStream, data.Size);
+    if data.Size > 0 then AStream.WriteBuffer(data.Memory^, data.Size);
+  finally
+    data.Free;
+  end;
+end;
+
+procedure TBGRAPathGlyph.ReadContent(AStream: TStream);
+var
+  size: longint;
+  data: TMemoryStream;
+begin
+  inherited ReadContent(AStream);
+  size := LEReadLongint(AStream);
+  if (size < 0) or (size > AStream.Size - AStream.Position) then
+    raise exception.Create('Invalid glyph outline size');
+  data := TMemoryStream.Create;
+  try
+    data.SetSize(size);
+    if size > 0 then AStream.ReadBuffer(data.Memory^, size);
+    data.Position := 0;
+    FreeAndNil(FReversedOutline);
+    if FOutline = nil then FOutline := TBGRAPath.Create;
+    FOutline.LoadFromStream(data);
+  finally
+    data.Free;
+  end;
+end;
+
+constructor TBGRAPathGlyph.Create(AIdentifier: string);
+begin
+  inherited Create(AIdentifier);
+  FOutline := TBGRAPath.Create;
+end;
+
+constructor TBGRAPathGlyph.Create(AStream: TStream);
+begin
+  inherited Create(AStream);
+end;
+
+destructor TBGRAPathGlyph.Destroy;
+begin
+  FReversedOutline.Free;
+  FOutline.Free;
+  inherited Destroy;
+end;
+
+procedure TBGRAPathGlyph.SetOutline(AOutline: TBGRAPath);
+begin
+  if AOutline = FOutline then exit;
+  FreeAndNil(FReversedOutline);
+  FOutline.Free;
+  FOutline := AOutline;
+end;
+
+procedure TBGRAPathGlyph.Path(ADest: IBGRAPath; AMatrix: TAffineMatrix;
+  AReverse: boolean);
+begin
+  if FOutline = nil then exit;
+  if AReverse then
+  begin
+    // the direction of the outline is restored when the glyph is mirrored
+    if FReversedOutline = nil then
+    begin
+      FReversedOutline := TBGRAPath.Create;
+      FOutline.copyToReversed(FReversedOutline);
+    end;
+    FReversedOutline.copyTo(ADest, AMatrix);
+  end else
+    FOutline.copyTo(ADest, AMatrix);
+end;
+
 { TBGRAGlyph }
 
 procedure TBGRAGlyph.WriteHeader(AStream: TStream; AName: string;
@@ -604,6 +735,8 @@ begin
     result := TBGRAPolygonalGlyph.Create(AStream)
   else if lName = 'TBGRAEasyBezierGlyph' then
     result := TBGRAPolygonalGlyph.Create(AStream, true)
+  else if lName = 'TBGRAPathGlyph' then
+    result := TBGRAPathGlyph.Create(AStream)
   else if lName = 'TBGRAGlyph' then
     result := TBGRAGlyph.Create(AStream)
   else

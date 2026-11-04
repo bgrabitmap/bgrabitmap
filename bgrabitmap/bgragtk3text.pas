@@ -17,7 +17,7 @@ interface
 
 {$IFDEF LCLgtk3}
 uses
-  Types, Graphics, BGRABitmapTypes;
+  SysUtils, Types, Graphics, BGRABitmapTypes;
 
 { Draws white text on the given black opaque bitmap, with the font height
   multiplied by AFontHeightFactor, the top-left of the text being at ACoord.
@@ -32,17 +32,50 @@ function BGRAPangoDrawText(AFont: TFont; AFontHeightFactor: integer;
   BGRAPangoDrawText. Returns false if this kind of text is not handled. }
 function BGRAPangoTextSize(AFont: TFont; AFontHeightFactor: integer;
   const AText: string; out ASize: TSize): boolean;
+
+{ Adds the exact outline of a single-line text to ADest, without hinting,
+  with its top-left corner at (0,0) and in pixels. The outline is made of
+  lines and cubic curves. ASize is the size of the text. Returns false if this
+  kind of text is not handled, in which case ADest may have been partially
+  filled. }
+function BGRAPangoTextPath(AFont: TFont; const AText: string;
+  ADest: IBGRAPath; out ASize: TPointF): boolean;
 {$ENDIF}
 
 implementation
 
 {$IFDEF LCLgtk3}
 uses
-  SysUtils, LazPango1, LazPangoCairo1, LazCairo1, Gtk3Objects, BGRAClasses;
+  LazGObject2, LazPango1, LazPangoCairo1, LazCairo1, Gtk3Objects, BGRAClasses;
+
+type
+  // the cairo path is opaque in the bindings
+  PCairoPathData = ^TCairoPathData;
+  TCairoPathData = record
+    case integer of
+      0: (kind, count: longint);
+      1: (x, y: double);
+  end;
+  PCairoPath = ^TCairoPath;
+  TCairoPath = record
+    status: longint;
+    data: PCairoPathData;
+    num_data: longint;
+  end;
+
+function cairo_recording_surface_create_(content: longint; extents: pointer): Pcairo_surface_t;
+  cdecl; external LIB_CAIRO name 'cairo_recording_surface_create';
+function cairo_copy_path_(cr: Pcairo_t): PCairoPath;
+  cdecl; external LIB_CAIRO name 'cairo_copy_path';
+procedure cairo_path_destroy_(path: PCairoPath);
+  cdecl; external LIB_CAIRO name 'cairo_path_destroy';
 
 var
   WorkFont: TFont;
   WorkFontLock: TRTLCriticalSection;
+  // unbounded surface, otherwise the glyphs outside of it are not in the path
+  OutlineSurface: Pcairo_surface_t;
+  OutlineCr: Pcairo_t;
 
 { Gives the layout of the LCL font, with the text set. The same layout is
   used by the LCL to draw text, and it sets the text each time. The lock
@@ -133,10 +166,92 @@ begin
   end;
 end;
 
+function BGRAPangoTextPath(AFont: TFont; const AText: string;
+  ADest: IBGRAPath; out ASize: TPointF): boolean;
+var
+  lclLayout, layout: PPangoLayout;
+  options: Pcairo_font_options_t;
+  path: PCairoPath;
+  d: PCairoPathData;
+  i: integer;
+  logical: TPangoRectangle;
+begin
+  result := false;
+  ASize := PointF(0, 0);
+  if (AText = '') or (pos(#10, AText) <> 0) or (pos(#13, AText) <> 0) then exit;
+
+  EnterCriticalSection(WorkFontLock);
+  try
+    if WorkFont = nil then WorkFont := TFont.Create;
+    WorkFont.Assign(AFont);
+    WorkFont.Orientation := 0;
+    if WorkFont.Handle = 0 then exit;
+    lclLayout := TGtk3Font(WorkFont.Handle).Layout;
+    if lclLayout = nil then exit;
+
+    if OutlineCr = nil then
+    begin
+      OutlineSurface := cairo_recording_surface_create_($3000, nil); // color and alpha
+      OutlineCr := cairo_create(OutlineSurface);
+    end;
+    // a private layout is used, to choose the options of the outline
+    layout := pango_cairo_create_layout(OutlineCr);
+    try
+      layout^.set_font_description(lclLayout^.get_font_description);
+      layout^.set_attributes(lclLayout^.get_attributes);
+      layout^.set_single_paragraph_mode(true);
+      layout^.set_width(-1);
+      layout^.set_text(PChar(AText), Length(AText));
+      // the exact outline is wanted, not the one adjusted to the pixel grid
+      options := cairo_font_options_create;
+      cairo_font_options_set_hint_style(options, CAIRO_HINT_STYLE_NONE);
+      cairo_font_options_set_hint_metrics(options, CAIRO_HINT_METRICS_OFF);
+      pango_cairo_context_set_font_options(layout^.get_context, options);
+      cairo_font_options_destroy(options);
+      pango_cairo_update_layout(OutlineCr, layout);
+
+      layout^.get_extents(nil, @logical);
+      ASize := PointF(logical.width / PANGO_SCALE, logical.height / PANGO_SCALE);
+
+      cairo_new_path(OutlineCr);
+      cairo_move_to(OutlineCr, 0, 0);
+      pango_cairo_layout_path(OutlineCr, layout);
+      path := cairo_copy_path_(OutlineCr);
+      cairo_new_path(OutlineCr);
+      try
+        if path^.status <> 0 then exit;
+        i := 0;
+        while i < path^.num_data do
+        begin
+          d := path^.data + i;
+          case d^.kind of
+            0: ADest.moveTo(PointF((d+1)^.x, (d+1)^.y));
+            1: ADest.lineTo(PointF((d+1)^.x, (d+1)^.y));
+            2: ADest.bezierCurveTo(PointF((d+1)^.x, (d+1)^.y),
+                                   PointF((d+2)^.x, (d+2)^.y),
+                                   PointF((d+3)^.x, (d+3)^.y));
+            3: ADest.closePath;
+          end;
+          inc(i, d^.count);
+        end;
+        result := true;
+      finally
+        cairo_path_destroy_(path);
+      end;
+    finally
+      g_object_unref(PGObject(layout));
+    end;
+  finally
+    LeaveCriticalSection(WorkFontLock);
+  end;
+end;
+
 initialization
   InitCriticalSection(WorkFontLock);
 
 finalization
+  if OutlineCr <> nil then cairo_destroy(OutlineCr);
+  if OutlineSurface <> nil then cairo_surface_destroy(OutlineSurface);
   FreeAndNil(WorkFont);
   DoneCriticalSection(WorkFontLock);
 {$ENDIF}
