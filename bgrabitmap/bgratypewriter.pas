@@ -8,7 +8,7 @@ unit BGRATypewriter;
 interface
 
 uses
-  BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform;
+  BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform, BGRAPath;
 
 type
   { Array of boxes for each glyph in text }
@@ -80,32 +80,26 @@ type
     property PointCount: integer read GetPointCount;
   end;
 
-  { Glyph defined by an exact outline made of lines and cubic Bézier curves.
-    The coordinates are in the same unit as the other glyphs (the full height
-    of the font is 1). }
+  { Glyph defined by an exact outline stored in a path. The coordinates are
+    in the same unit as the other glyphs (the full height of the font is 1). }
   TBGRAPathGlyph = class(TBGRAGlyph)
   protected
-    FCommands: array of byte;   // see GlyphPathCommand* constants
-    FPoints: array of TPointF;  // 1 point for move and line, 3 points for curve
+    FOutline: TBGRAPath;
+    FReversedOutline: TBGRAPath; // computed when needed
     function ContentSize: integer; override;
     function HeaderName: string; override;
     procedure WriteContent(AStream: TStream); override;
     procedure ReadContent(AStream: TStream); override;
+    function SerializeOutline: TMemoryStream;
   public
     constructor Create(AIdentifier: string); override;
     constructor Create(AStream: TStream); override;
-    { Set the outline. Commands are 0 = move to (1 point), 1 = line to (1 point),
-      2 = cubic curve to (3 points: two control points and end point),
-      3 = close path (no point) }
-    procedure SetOutline(const ACommands: array of byte; const APoints: array of TPointF);
+    destructor Destroy; override;
+    { Gives the outline to the glyph, which takes ownership of it }
+    procedure SetOutline(AOutline: TBGRAPath);
     procedure Path(ADest: IBGRAPath; AMatrix: TAffineMatrix; AReverse: boolean = false); override;
+    property Outline: TBGRAPath read FOutline;
   end;
-
-const
-  GlyphPathCommandMove = 0;
-  GlyphPathCommandLine = 1;
-  GlyphPathCommandCurve = 2;
-  GlyphPathCommandClose = 3;
 
 type
   { Header of typewriter stream }
@@ -561,9 +555,27 @@ end;
 
 { TBGRAPathGlyph }
 
-function TBGRAPathGlyph.ContentSize: integer;
+function TBGRAPathGlyph.SerializeOutline: TMemoryStream;
 begin
-  result := (inherited ContentSize) + 4 + length(FCommands) + 4 + sizeof(single)*2*length(FPoints);
+  result := TMemoryStream.Create;
+  try
+    FOutline.SaveToStream(result);
+  except
+    result.Free;
+    raise;
+  end;
+end;
+
+function TBGRAPathGlyph.ContentSize: integer;
+var
+  data: TMemoryStream;
+begin
+  data := SerializeOutline;
+  try
+    result := (inherited ContentSize) + 4 + integer(data.Size);
+  finally
+    data.Free;
+  end;
 end;
 
 function TBGRAPathGlyph.HeaderName: string;
@@ -572,30 +584,45 @@ begin
 end;
 
 procedure TBGRAPathGlyph.WriteContent(AStream: TStream);
-var i: integer;
+var
+  data: TMemoryStream;
 begin
   inherited WriteContent(AStream);
-  LEWriteLongint(AStream, length(FCommands));
-  for i := 0 to high(FCommands) do AStream.WriteByte(FCommands[i]);
-  LEWriteLongint(AStream, length(FPoints));
-  for i := 0 to high(FPoints) do LEWritePointF(AStream, FPoints[i]);
+  data := SerializeOutline;
+  try
+    LEWriteLongint(AStream, data.Size);
+    if data.Size > 0 then AStream.WriteBuffer(data.Memory^, data.Size);
+  finally
+    data.Free;
+  end;
 end;
 
 procedure TBGRAPathGlyph.ReadContent(AStream: TStream);
-var i: integer;
+var
+  size: longint;
+  data: TMemoryStream;
 begin
   inherited ReadContent(AStream);
-  setlength(FCommands, LEReadLongint(AStream));
-  for i := 0 to high(FCommands) do FCommands[i] := AStream.ReadByte;
-  setlength(FPoints, LEReadLongint(AStream));
-  for i := 0 to high(FPoints) do FPoints[i] := LEReadPointF(AStream);
+  size := LEReadLongint(AStream);
+  if (size < 0) or (size > AStream.Size - AStream.Position) then
+    raise exception.Create('Invalid glyph outline size');
+  data := TMemoryStream.Create;
+  try
+    data.SetSize(size);
+    if size > 0 then AStream.ReadBuffer(data.Memory^, size);
+    data.Position := 0;
+    FreeAndNil(FReversedOutline);
+    if FOutline = nil then FOutline := TBGRAPath.Create;
+    FOutline.LoadFromStream(data);
+  finally
+    data.Free;
+  end;
 end;
 
 constructor TBGRAPathGlyph.Create(AIdentifier: string);
 begin
   inherited Create(AIdentifier);
-  FCommands := nil;
-  FPoints := nil;
+  FOutline := TBGRAPath.Create;
 end;
 
 constructor TBGRAPathGlyph.Create(AStream: TStream);
@@ -603,104 +630,36 @@ begin
   inherited Create(AStream);
 end;
 
-procedure TBGRAPathGlyph.SetOutline(const ACommands: array of byte;
-  const APoints: array of TPointF);
-var i: integer;
+destructor TBGRAPathGlyph.Destroy;
 begin
-  setlength(FCommands, length(ACommands));
-  for i := 0 to high(ACommands) do FCommands[i] := ACommands[i];
-  setlength(FPoints, length(APoints));
-  for i := 0 to high(APoints) do FPoints[i] := APoints[i];
+  FReversedOutline.Free;
+  FOutline.Free;
+  inherited Destroy;
+end;
+
+procedure TBGRAPathGlyph.SetOutline(AOutline: TBGRAPath);
+begin
+  if AOutline = FOutline then exit;
+  FreeAndNil(FReversedOutline);
+  FOutline.Free;
+  FOutline := AOutline;
 end;
 
 procedure TBGRAPathGlyph.Path(ADest: IBGRAPath; AMatrix: TAffineMatrix;
   AReverse: boolean);
-var
-  c, p, subStart, subPoint: integer;
-
-  // Output the sub path made of commands subStart..subEnd-1 and points
-  // starting at subPoint, going backwards
-  procedure OutputReversedSubPath(AFirstCmd, AEndCmd, AFirstPoint: integer);
-  var
-    n, k, cmd, ptIndex: integer;
-    ends: array of TPointF;          // end point of each segment, ends[0] is the start
-    ctrl: array of array[0..1] of TPointF;
-    isCurve: array of boolean;
-    closed: boolean;
-  begin
-    n := 0;
-    setlength(ends, AEndCmd-AFirstCmd+1);
-    setlength(ctrl, AEndCmd-AFirstCmd+1);
-    setlength(isCurve, AEndCmd-AFirstCmd+1);
-    closed := false;
-    ptIndex := AFirstPoint;
-    for cmd := AFirstCmd to AEndCmd-1 do
-      case FCommands[cmd] of
-        GlyphPathCommandMove:
-          begin ends[0] := FPoints[ptIndex]; inc(ptIndex); end;
-        GlyphPathCommandLine:
-          begin inc(n); ends[n] := FPoints[ptIndex]; isCurve[n] := false; inc(ptIndex); end;
-        GlyphPathCommandCurve:
-          begin
-            inc(n);
-            ctrl[n][0] := FPoints[ptIndex]; ctrl[n][1] := FPoints[ptIndex+1];
-            ends[n] := FPoints[ptIndex+2]; isCurve[n] := true;
-            inc(ptIndex, 3);
-          end;
-        GlyphPathCommandClose: closed := true;
-      end;
-    if closed then
-    begin
-      ADest.moveTo(AMatrix*ends[0]);
-      if (ends[n].x <> ends[0].x) or (ends[n].y <> ends[0].y) then ADest.lineTo(AMatrix*ends[n]);
-    end else
-      ADest.moveTo(AMatrix*ends[n]);
-    for k := n downto 1 do
-      if isCurve[k] then
-        ADest.bezierCurveTo(AMatrix*ctrl[k][1], AMatrix*ctrl[k][0], AMatrix*ends[k-1])
-      else
-        ADest.lineTo(AMatrix*ends[k-1]);
-    if closed then ADest.closePath;
-  end;
-
 begin
-  p := 0;
-  if not AReverse then
+  if FOutline = nil then exit;
+  if AReverse then
   begin
-    for c := 0 to high(FCommands) do
-      case FCommands[c] of
-        GlyphPathCommandMove: begin ADest.moveTo(AMatrix*FPoints[p]); inc(p); end;
-        GlyphPathCommandLine: begin ADest.lineTo(AMatrix*FPoints[p]); inc(p); end;
-        GlyphPathCommandCurve:
-          begin
-            ADest.bezierCurveTo(AMatrix*FPoints[p], AMatrix*FPoints[p+1], AMatrix*FPoints[p+2]);
-            inc(p, 3);
-          end;
-        GlyphPathCommandClose: ADest.closePath;
-      end;
-  end else
-  begin
-    subStart := 0; subPoint := 0;
-    c := 0;
-    while c <= length(FCommands) do
+    // the direction of the outline is restored when the glyph is mirrored
+    if FReversedOutline = nil then
     begin
-      // a sub path ends before the next move or at the end
-      if (c = length(FCommands)) or ((FCommands[c] = GlyphPathCommandMove) and (c > subStart)) then
-      begin
-        if c > subStart then OutputReversedSubPath(subStart, c, subPoint);
-        // advance point index over the sub path
-        while subStart < c do
-        begin
-          case FCommands[subStart] of
-            GlyphPathCommandMove, GlyphPathCommandLine: inc(subPoint);
-            GlyphPathCommandCurve: inc(subPoint, 3);
-          end;
-          inc(subStart);
-        end;
-      end;
-      inc(c);
+      FReversedOutline := TBGRAPath.Create;
+      FOutline.copyToReversed(FReversedOutline);
     end;
-  end;
+    FReversedOutline.copyTo(ADest, AMatrix);
+  end else
+    FOutline.copyTo(ADest, AMatrix);
 end;
 
 { TBGRAGlyph }

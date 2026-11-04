@@ -219,7 +219,7 @@ type
 
 implementation
 
-uses BGRAUTF8{$IFDEF LCL}, Forms{$ENDIF};
+uses BGRAUTF8, BGRAPath{$IFDEF LCL}, Forms{$ENDIF};
 
 type
   TGlyphSizesCallbackData = record
@@ -2263,9 +2263,8 @@ var size: TSize;
   g: TBGRAPolygonalGlyph;
   pg: TBGRAPathGlyph;
   pts: array of TPointF;
-  dx,dy,i: Integer;
-  outlineCmds: TBytes;
-  outlinePts: ArrayOfTPointF;
+  dx,dy: Integer;
+  outline: TBGRAPath;
   outlineSize: TPointF;
 begin
   Result:=inherited GetGlyph(AIdentifier);
@@ -2274,17 +2273,20 @@ begin
     // use the exact outline provided by the system if possible
     NeedBuffer;
     if FBuffer.FontRenderer is TBGRASystemFontRenderer then
-      if TBGRASystemFontRenderer(FBuffer.FontRenderer).GetTextOutline(AIdentifier, outlineCmds, outlinePts, outlineSize) then
+    begin
+      outline := TBGRAPath.Create;
+      outline.scale(1/FResolution); // the glyph unit is the height of the font
+      if TBGRASystemFontRenderer(FBuffer.FontRenderer).GetTextOutline(AIdentifier, outline, outlineSize) then
       begin
         pg := TBGRAPathGlyph.Create(AIdentifier);
-        for i := 0 to high(outlinePts) do
-          outlinePts[i] := PointF(outlinePts[i].x/FResolution, outlinePts[i].y/FResolution);
-        pg.SetOutline(outlineCmds, outlinePts);
+        pg.SetOutline(outline);
         pg.Width := outlineSize.x/FResolution;
         pg.Height := 1;
         SetGlyph(AIdentifier,pg);
         exit(pg);
-      end;
+      end else
+        outline.Free;
+    end;
     g := TBGRAPolygonalGlyph.Create(AIdentifier);
     dx := FResolution div 2;
     dy := FResolution div 2;
@@ -2433,9 +2435,9 @@ end;
 function TBGRAVectorizedFont.ComputeKerning(AIdLeft, AIdRight: string): single;
 var
   together: String;
-  outlineCmds: TBytes;
-  outlinePts: ArrayOfTPointF;
+  outline: TBGRAPath;
   outlineSize: TPointF;
+  hasOutline: boolean;
 begin
   if (Resolution = 0) or not VectorizeLCL then exit(0);
   if IsRightToLeftUTF8(AIdLeft) then
@@ -2448,8 +2450,17 @@ begin
     together := AIdLeft + AIdRight;
   NeedBuffer;
   // measure with the same renderer as the glyphs if they have exact outlines
-  if (FBuffer.FontRenderer is TBGRASystemFontRenderer) and
-     TBGRASystemFontRenderer(FBuffer.FontRenderer).GetTextOutline(together, outlineCmds, outlinePts, outlineSize) then
+  hasOutline := false;
+  if FBuffer.FontRenderer is TBGRASystemFontRenderer then
+  begin
+    outline := TBGRAPath.Create;
+    try
+      hasOutline := TBGRASystemFontRenderer(FBuffer.FontRenderer).GetTextOutline(together, outline, outlineSize);
+    finally
+      outline.Free;
+    end;
+  end;
+  if hasOutline then
     result := outlineSize.x/Resolution
               - Glyph[AIdLeft].Width - Glyph[AIdRight].Width
   else

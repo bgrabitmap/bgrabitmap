@@ -32,12 +32,13 @@ function BGRAPangoDrawText(AFont: TFont; AFontHeightFactor: integer;
 function BGRAPangoTextSize(AFont: TFont; AFontHeightFactor: integer;
   const AText: string; out ASize: TSize): boolean;
 
-{ Gets the exact outline of a single-line text, without hinting, with its
-  top-left corner at (0,0) and in pixels. The commands are 0 = move to,
-  1 = line to, 2 = cubic curve to (3 points), 3 = close path. ASize is the size
-  of the text. Returns false if this kind of text is not handled. }
+{ Adds the exact outline of a single-line text to ADest, without hinting,
+  with its top-left corner at (0,0) and in pixels. The outline is made of
+  lines and cubic curves. ASize is the size of the text. Returns false if this
+  kind of text is not handled, in which case ADest may have been partially
+  filled. }
 function BGRAPangoTextPath(AFont: TFont; const AText: string;
-  out ACommands: TBytes; out APoints: ArrayOfTPointF; out ASize: TPointF): boolean;
+  ADest: IBGRAPath; out ASize: TPointF): boolean;
 {$ENDIF}
 
 implementation
@@ -207,18 +208,16 @@ begin
 end;
 
 function BGRAPangoTextPath(AFont: TFont; const AText: string;
-  out ACommands: TBytes; out APoints: ArrayOfTPointF; out ASize: TPointF): boolean;
+  ADest: IBGRAPath; out ASize: TPointF): boolean;
 var
   layout: PPangoLayout;
   options: Pcairo_font_options_t;
   path: Pcairo_path_t;
   d: Pcairo_path_data_t;
-  i, nbCmd, nbPts: integer;
+  i: integer;
   logical: TPangoRectangle;
 begin
   result := false;
-  ACommands := nil;
-  APoints := nil;
   ASize := PointF(0, 0);
   if (AText = '') or (pos(#10, AText) <> 0) or (pos(#13, AText) <> 0) then exit;
 
@@ -250,43 +249,19 @@ begin
     cairo_new_path(OutlineCr);
     try
       if path^.status <> CAIRO_STATUS_SUCCESS then exit;
-      nbCmd := 0; nbPts := 0;
-      i := 0;
-      while i < path^.num_data do
-      begin
-        d := path^.data + i;
-        inc(nbCmd);
-        case d^.header._type of
-          CAIRO_PATH_MOVE_TO, CAIRO_PATH_LINE_TO: inc(nbPts);
-          CAIRO_PATH_CURVE_TO: inc(nbPts, 3);
-        end;
-        inc(i, d^.header.length);
-      end;
-      setlength(ACommands, nbCmd);
-      setlength(APoints, nbPts);
-      nbCmd := 0; nbPts := 0;
       i := 0;
       while i < path^.num_data do
       begin
         d := path^.data + i;
         case d^.header._type of
-          CAIRO_PATH_MOVE_TO, CAIRO_PATH_LINE_TO:
-            begin
-              ACommands[nbCmd] := ord(d^.header._type); // 0 = move, 1 = line
-              APoints[nbPts] := PointF((d+1)^.point.x, (d+1)^.point.y);
-              inc(nbPts);
-            end;
+          CAIRO_PATH_MOVE_TO: ADest.moveTo(PointF((d+1)^.point.x, (d+1)^.point.y));
+          CAIRO_PATH_LINE_TO: ADest.lineTo(PointF((d+1)^.point.x, (d+1)^.point.y));
           CAIRO_PATH_CURVE_TO:
-            begin
-              ACommands[nbCmd] := 2;
-              APoints[nbPts] := PointF((d+1)^.point.x, (d+1)^.point.y);
-              APoints[nbPts+1] := PointF((d+2)^.point.x, (d+2)^.point.y);
-              APoints[nbPts+2] := PointF((d+3)^.point.x, (d+3)^.point.y);
-              inc(nbPts, 3);
-            end;
-          CAIRO_PATH_CLOSE_PATH: ACommands[nbCmd] := 3;
+            ADest.bezierCurveTo(PointF((d+1)^.point.x, (d+1)^.point.y),
+                                PointF((d+2)^.point.x, (d+2)^.point.y),
+                                PointF((d+3)^.point.x, (d+3)^.point.y));
+          CAIRO_PATH_CLOSE_PATH: ADest.closePath;
         end;
-        inc(nbCmd);
         inc(i, d^.header.length);
       end;
       result := true;

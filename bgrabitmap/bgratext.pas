@@ -116,12 +116,12 @@ type
     function TextSizeAngle(sUTF8: string; orientationTenthDegCCW: integer): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; overload; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
-    { Gets the exact outline of a single-line text if the system can provide it,
-      with the top-left corner at (0,0) and in pixels, without hinting. The commands
-      are 0 = move to, 1 = line to, 2 = cubic curve to (3 points), 3 = close path.
-      Returns false if the system cannot provide it. }
-    function GetTextOutline(sUTF8: string; out ACommands: TBytes;
-      out APoints: ArrayOfTPointF; out ASize: TPointF): boolean;
+    { Adds to ADest the exact outline of a single-line text if the system can
+      provide it, with the top-left corner at (0,0) and in pixels, without
+      hinting. ASize is the size of the text. Returns false if the system cannot
+      provide it, in which case ADest may have been partially filled. }
+    function GetTextOutline(sUTF8: string; ADest: IBGRAPath;
+      out ASize: TPointF): boolean;
     constructor Create;
     destructor Destroy; override;
     property OnWordBreak: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
@@ -2266,15 +2266,13 @@ begin
   FFont := TFont.Create;
 end;
 
-function TBGRASystemFontRenderer.GetTextOutline(sUTF8: string; out ACommands: TBytes;
-  out APoints: ArrayOfTPointF; out ASize: TPointF): boolean;
+function TBGRASystemFontRenderer.GetTextOutline(sUTF8: string; ADest: IBGRAPath;
+  out ASize: TPointF): boolean;
 begin
   {$IFDEF BGRA_PANGO_TEXT}
   UpdateFont;
-  result := BGRAPangoTextPath(FFont, sUTF8, ACommands, APoints, ASize);
+  result := BGRAPangoTextPath(FFont, sUTF8, ADest, ASize);
   {$ELSE}
-  ACommands := nil;
-  APoints := nil;
   ASize := PointF(0, 0);
   result := false;
   {$ENDIF}
