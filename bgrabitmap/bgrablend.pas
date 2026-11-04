@@ -1152,6 +1152,8 @@ var
   begin
     if texture <> nil then
       color := texture.ScanNextPixel;
+    // nothing is drawn if the mask is empty, which is the case of most pixels
+    if (ClearTypePixel[0] or ClearTypePixel[1] or ClearTypePixel[2]) = 0 then exit;
     if RGBOrder then
       ClearTypeDrawPixel(pdest, ClearTypePixel[0],ClearTypePixel[1],ClearTypePixel[2], color)
     else
@@ -1335,7 +1337,9 @@ begin
       for n := countx-1 downto 0 do
       begin
         if texture <> nil then color := texture.ScanNextPixel;
-        ClearTypeDrawPixel(pdest, psrc^.red, psrc^.green, psrc^.blue, color);
+        // nothing is drawn if the mask is empty, which is the case of most pixels
+        if (psrc^.red or psrc^.green or psrc^.blue) <> 0 then
+          ClearTypeDrawPixel(pdest, psrc^.red, psrc^.green, psrc^.blue, color);
         inc(pdest);
         inc(psrc);
       end;
@@ -1344,7 +1348,8 @@ begin
       for n := countx-1 downto 0 do
       begin
         if texture <> nil then color := texture.ScanNextPixel;
-        ClearTypeDrawPixel(pdest, psrc^.blue, psrc^.green, psrc^.red, color);
+        if (psrc^.red or psrc^.green or psrc^.blue) <> 0 then
+          ClearTypeDrawPixel(pdest, psrc^.blue, psrc^.green, psrc^.red, color);
         inc(pdest);
         inc(psrc);
       end;
