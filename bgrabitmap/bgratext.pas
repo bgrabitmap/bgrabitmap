@@ -1365,6 +1365,16 @@ begin
   if deltaX <> 0 then inc(rotBounds.Right, sizeFactor);
   if deltaY <> 0 then inc(rotBounds.Bottom, sizeFactor);
 
+  {$IFDEF LCLgtk2}
+  // render directly in memory with Pango, without LCL bitmap
+  temp := BGRABitmapFactory.Create(rotBounds.Right-rotBounds.Left,rotBounds.Bottom-rotBounds.Top, BGRABlack);
+  if not BGRAGtk2DrawText(Font, sizeFactor, sUTF8,
+       Point(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY), temp,
+       orientationTenthDegCCW) then
+    FreeAndNil(temp);
+  if temp = nil then
+  begin
+  {$ENDIF}
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
   tempLCL.Width := rotBounds.Right-rotBounds.Left;
@@ -1385,6 +1395,9 @@ begin
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
+  {$ENDIF}
+  {$IFDEF LCLgtk2}
+  end;
   {$ENDIF}
 
   FilterOriginalText(Quality,CustomAntialiasingLevel,temp,grayscale);

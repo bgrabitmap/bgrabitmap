@@ -20,10 +20,12 @@ uses
 
 { Draws white text on the given black opaque bitmap, with the font height
   multiplied by AFontHeightFactor, the top-left of the text being at ACoord.
+  The text is rotated around this point by AOrientationTenthDeg (counter-clockwise).
   Returns false if this kind of text is not handled, in which case the bitmap
   is left unchanged and the caller must use the generic way. }
 function BGRAGtk2DrawText(AFont: TFont; AFontHeightFactor: integer;
-  const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap): boolean;
+  const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap;
+  AOrientationTenthDeg: integer = 0): boolean;
 {$ENDIF}
 
 implementation
@@ -44,7 +46,8 @@ var
   WorkFontLock: TRTLCriticalSection;
 
 function BGRAGtk2DrawText(AFont: TFont; AFontHeightFactor: integer;
-  const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap): boolean;
+  const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap;
+  AOrientationTenthDeg: integer = 0): boolean;
 var
   gdiFont: PGdiObject;
   lcllayout, layout: PPangoLayout;
@@ -98,7 +101,13 @@ begin
 
           cairo_set_source_rgb(cr, 1, 1, 1);
           pango_cairo_update_layout(cr, layout);
-          cairo_move_to(cr, ACoord.X, ACoord.Y);
+          if AOrientationTenthDeg <> 0 then
+          begin
+            cairo_translate(cr, ACoord.X, ACoord.Y);
+            cairo_rotate(cr, -AOrientationTenthDeg*Pi/1800);
+            cairo_move_to(cr, 0, 0);
+          end else
+            cairo_move_to(cr, ACoord.X, ACoord.Y);
           pango_cairo_show_layout(cr, layout);
         finally
           g_object_unref(layout);
