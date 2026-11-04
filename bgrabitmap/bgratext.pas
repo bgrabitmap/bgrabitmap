@@ -1455,6 +1455,24 @@ begin
   else
     sizeFactor := 1;
 
+  {$IFDEF LCLgtk2}
+  // The LCL draws single-line text aligned on the top-left like a simple
+  // text output (right-to-left reading is ignored, and a prefix only matters
+  // if there is an ampersand), so it can be rendered directly with Pango.
+  temp := nil;
+  if style.SingleLine and (style.Alignment = taLeftJustify) and (style.Layout = tlTop) and
+     not style.Wordbreak and not style.Opaque and not style.Clipping and
+     not style.EndEllipsis and not style.ExpandTabs and not style.SystemFont and
+     not (style.ShowPrefix and (pos('&', sUTF8) <> 0)) then
+  begin
+    temp := BGRABitmapFactory.Create(tx*sizeFactor, ty*sizeFactor, BGRABlack);
+    if not BGRAGtk2DrawText(Font, sizeFactor, sUTF8,
+         Point(HalfUp((xf - lim.Left)*sizeFactor), HalfUp((yf - lim.Top)*sizeFactor)), temp) then
+      FreeAndNil(temp);
+  end;
+  if temp = nil then
+  begin
+  {$ENDIF}
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
   tempLCL.Width := tx*sizeFactor;
@@ -1477,6 +1495,9 @@ begin
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
+  {$ENDIF}
+  {$IFDEF LCLgtk2}
+  end;
   {$ENDIF}
 
   FilterOriginalText(Quality,CustomAntialiasingLevel,temp,grayscale);
