@@ -200,7 +200,7 @@ procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
 
 implementation
 
-uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
+uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi{$IFDEF LCLgtk2}, BGRAGtk2Text{$ENDIF}
      {$IFDEF LCL}, Forms, LCLIntf, LCLType{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
 
 const MaxPixelMetricCount = 100;
@@ -1224,6 +1224,16 @@ begin
   iLeft := floor(xF) - (iMargin.cx div sizeFactor);
   iTop := floor(yF) - (iMargin.cy div sizeFactor);
 
+  {$IFDEF LCLgtk2}
+  // render directly in memory with Pango, without LCL bitmap
+  temp := BGRABitmapFactory.Create(sizeWithMargin.cx, sizeWithMargin.cy, BGRABlack);
+  if not BGRAGtk2DrawText(Font, sizeFactor, sUTF8,
+       Point(HalfUp((xf - floor(xf)) * sizeFactor) + iMargin.cx,
+             HalfUp((yf - floor(yf)) * sizeFactor) + iMargin.cy), temp) then
+    FreeAndNil(temp);
+  if temp = nil then
+  begin
+  {$ENDIF}
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
   tempLCL.Width := sizeWithMargin.cx;
@@ -1246,6 +1256,9 @@ begin
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
+  {$ENDIF}
+  {$IFDEF LCLgtk2}
+  end;
   {$ENDIF}
 
   FilterOriginalText(Quality, CustomAntialiasingLevel, temp, grayscale);
