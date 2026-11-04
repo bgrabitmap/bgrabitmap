@@ -188,7 +188,7 @@ end;
     procedure InternalDraw(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AAcceptedDeviation: single; AData: pointer);
     procedure BitmapDrawSubPathProc(const APoints: array of TPointF; AClosed: boolean; AData: pointer);
     function CorrectAcceptedDeviation(AAcceptedDeviation: single; const AMatrix: TAffineMatrix): single;
-    procedure InternalCopyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix; ATransform: boolean);
+    procedure InternalCopyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix; ATransform: boolean; AAcceptedDeviation: single);
   public
     constructor Create; overload; override;
     constructor Create(ASvgString: string); overload;
@@ -239,16 +239,19 @@ end;
     procedure copyTo(dest: IBGRAPath); override; overload;
     { Copies the path to the destination after applying a transformation to
       its coordinates. Lines and curves are transformed exactly, arcs and
-      splines are converted to lines. }
-    procedure copyTo(dest: IBGRAPath; const AMatrix: TAffineMatrix); overload;
+      splines are converted to lines. The accepted deviation of these lines is
+      given in the coordinates of the destination, so it is not affected by the
+      zoom of the matrix. }
+    procedure copyTo(dest: IBGRAPath; const AMatrix: TAffineMatrix; AAcceptedDeviation: single = DefaultDeviation); overload;
     { Copies the path to the destination like copyTo, but each sub-path is
       traversed in the opposite direction. The order of the sub-paths is kept
       and closed sub-paths remain closed. Lines, curves and arcs are reversed
       exactly, splines are converted to lines. }
     procedure copyToReversed(dest: IBGRAPath); overload;
     { Same as above, after applying a transformation to the coordinates. Arcs
-      are converted to lines. }
-    procedure copyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix); overload;
+      and splines are converted to lines, with an accepted deviation given in
+      the coordinates of the destination. }
+    procedure copyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix; AAcceptedDeviation: single = DefaultDeviation); overload;
     { Writes the path to a stream in a portable format (little endian,
       independent of the pointer size). The current transformation is not
       saved: coordinates are written as they are stored in the path. }
@@ -3153,7 +3156,8 @@ begin
   until not GoToNextElement(pos);
 end;
 
-procedure TBGRAPath.copyTo(dest: IBGRAPath; const AMatrix: TAffineMatrix);
+procedure TBGRAPath.copyTo(dest: IBGRAPath; const AMatrix: TAffineMatrix;
+  AAcceptedDeviation: single);
 var
   pos: IntPtr;
   elemType: TBGRAPathElementType;
@@ -3161,6 +3165,7 @@ var
   pts: ArrayOfTPointF;
   i: integer;
 begin
+  AAcceptedDeviation := CorrectAcceptedDeviation(AAcceptedDeviation, AMatrix);
   pos := 0;
   repeat
     GetElementAt(pos, elemType, elem);
@@ -3177,7 +3182,7 @@ begin
           dest.bezierCurveTo(AMatrix*ControlPoint1, AMatrix*ControlPoint2, AMatrix*Destination);
       peArc, peOpenedSpline, peClosedSpline:
         begin
-          pts := GetPolygonalApprox(pos, DefaultDeviation, true);
+          pts := GetPolygonalApprox(pos, AAcceptedDeviation, true);
           for i := 0 to high(pts) do dest.lineTo(AMatrix*pts[i]);
         end;
     end;
@@ -3186,16 +3191,17 @@ end;
 
 procedure TBGRAPath.copyToReversed(dest: IBGRAPath);
 begin
-  InternalCopyToReversed(dest, AffineMatrixIdentity, false);
+  InternalCopyToReversed(dest, AffineMatrixIdentity, false, DefaultDeviation);
 end;
 
-procedure TBGRAPath.copyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix);
+procedure TBGRAPath.copyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix;
+  AAcceptedDeviation: single);
 begin
-  InternalCopyToReversed(dest, AMatrix, true);
+  InternalCopyToReversed(dest, AMatrix, true, AAcceptedDeviation);
 end;
 
 procedure TBGRAPath.InternalCopyToReversed(dest: IBGRAPath;
-  const AMatrix: TAffineMatrix; ATransform: boolean);
+  const AMatrix: TAffineMatrix; ATransform: boolean; AAcceptedDeviation: single);
 type
   TReverseSegment = record
     ElemType: TBGRAPathElementType;
@@ -3267,6 +3273,8 @@ var
   end;
 
 begin
+  if ATransform then
+    AAcceptedDeviation := CorrectAcceptedDeviation(AAcceptedDeviation, AMatrix);
   segCount := 0;
   cur := EmptyPointF;
   subStart := EmptyPointF;
@@ -3305,13 +3313,13 @@ begin
           segs[segCount-1].ArcDef := PArcElement(elem)^;
         end else
         begin
-          pts := GetPolygonalApprox(pos, DefaultDeviation, true);
+          pts := GetPolygonalApprox(pos, AAcceptedDeviation, true);
           for i := 0 to high(pts) do
             if pts[i] <> cur then AddSegment(peLineTo, pts[i]);
         end;
       peOpenedSpline, peClosedSpline:
         begin
-          pts := GetPolygonalApprox(pos, DefaultDeviation, true);
+          pts := GetPolygonalApprox(pos, AAcceptedDeviation, true);
           for i := 0 to high(pts) do
             if pts[i] <> cur then AddSegment(peLineTo, pts[i]);
           if (elemType = peClosedSpline) and (length(pts) > 0) and (cur <> pts[0]) then

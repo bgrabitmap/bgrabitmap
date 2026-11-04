@@ -176,6 +176,25 @@ begin
   Check(t.ComputeLength > 50, 'arc is kept with copyTo and a matrix');
   Check(abs(t.ComputeLength - tr.ComputeLength) < t.ComputeLength*0.01, 'arc is kept with copyToReversed and a matrix');
   p.Free; t.Free; tr.Free;
+
+  // the accepted deviation is the one of the destination: a small arc that is
+  // zoomed by the matrix must not look angular
+  p := TBGRAPath.Create;
+  p.moveTo(0, -1);
+  p.arc(0, 0, 1, -Pi/2, 0);   // quarter of a circle of radius 1
+  m := AffineMatrixScale(100, 100);
+  t := TBGRAPath.Create; tr := TBGRAPath.Create;
+  p.copyTo(t, m);
+  p.copyToReversed(tr, m);
+  Check(abs(t.ComputeLength - 100*Pi/2) < 0.2, 'zoomed arc is smooth with copyTo ('+FloatToStr(t.ComputeLength)+' / '+FloatToStr(100*Pi/2)+')');
+  Check(abs(tr.ComputeLength - 100*Pi/2) < 0.2, 'zoomed arc is smooth with copyToReversed ('+FloatToStr(tr.ComputeLength)+')');
+  // the deviation can be chosen (very small values are limited by the
+  // resolution of ComputeArc, which uses 65536 angles per turn)
+  ref := TBGRAPath.Create;
+  p.copyTo(ref, m, 5);
+  Check(abs(ref.ComputeLength - 100*Pi/2) > 1, 'a large accepted deviation gives a coarser arc ('+FloatToStr(ref.ComputeLength)+')');
+  ref.Free;
+  p.Free; t.Free; tr.Free;
 end;
 
 procedure TestStream;
