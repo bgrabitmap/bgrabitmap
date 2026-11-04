@@ -819,7 +819,7 @@ function ComputeArc65536(AOrigin, AXAxis, AYAxis: TPointF; start65536,
   end65536: word; quality: single): ArrayOfTPointF;
 begin
   //go back temporarily to radians
-  result := ComputeArcRad(AOrigin,AXAxis,AYAxis, start65536*Pi/326768, end65536*Pi/326768, quality);
+  result := ComputeArcRad(AOrigin,AXAxis,AYAxis, start65536*Pi/32768, end65536*Pi/32768, quality);
 end;
 
 function ComputeArcRad(x, y, rx, ry: single; startRadCCW, endRadCCW: single;
