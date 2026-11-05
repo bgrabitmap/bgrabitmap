@@ -1,0 +1,18 @@
+# Source relative to test/regression | compilation/execution mode
+# core: plain FPC with BGRABITMAP_CORE; nogui: LCL without a display
+# cocoa: native macOS only (explicitly skipped on Linux/Windows)
+arc65536/test_arc65536.lpr|core
+lineorder/test_lineorder.lpr|core
+pathglyph/test_pathglyph.lpr|core
+pathloop/test_pathloop.lpr|core
+pathstream/test_pathstream.lpr|core
+png/test_apng.lpr|core
+pointoperators/test_pointoperators.lpr|core
+streamsave/test_streamsave.lpr|core
+svguse/test_svguse.lpr|core
+webploader/test_webploader.lpr|webp
+coretext/check_mask_clip.lpr|nogui
+coretext/check_coretext.lpr|cocoa
+coretext/check_layout.lpr|cocoa
+svgrect/test_svgrect.lpr|core
+win32outline/test_win32outline.lpr|win32

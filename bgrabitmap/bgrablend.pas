@@ -137,6 +137,8 @@ procedure BGRAFillClearTypeMaskPtr(dest: TBGRACustomBitmap; x,y: integer; xThird
 
 implementation
 
+uses Math;
+
 type
   PBGRASolidBrushFixedData = ^TBGRASolidBrushFixedData;
   TBGRASolidBrushFixedData = record
@@ -1183,9 +1185,7 @@ var
   a: byte;
   pmask: PByte;
   dx:integer;
-  miny,maxy,minx,minxThird,maxx,alphaMinX,alphaMaxX,alphaLineLen: integer;
-  leftOnSide, rightOnSide: boolean;
-  countBetween: integer;
+  miny,maxy,minx,minxThird,maxx,alphaMinX,alphaMaxX: integer;
   v1,v2,v3: byte;
 
   procedure StartRow; inline;
@@ -1201,97 +1201,47 @@ var
   end;
 
 begin
-  alphaLineLen := maskWidth+2;
-
+  if (maskWidth <= 0) or (maskHeight <= 0) then exit;
   dec(xThird); //for first subpixel
-
   if xThird >= 0 then dx := xThird div 3
    else dx := -((-xThird+2) div 3);
   inc(x, dx);
   dec(xThird, dx*3);
 
-  if y >= dest.ClipRect.Top then miny := 0
-    else miny := dest.ClipRect.Top-y;
-  if y+maskHeight-1 < dest.ClipRect.Bottom then
-    maxy := maskHeight-1 else
-      maxy := dest.ClipRect.Bottom-1-y;
+  miny := Max(0,dest.ClipRect.Top-y);
+  maxy := Min(maskHeight-1,dest.ClipRect.Bottom-1-y);
+  minx := Max(x,dest.ClipRect.Left);
+  // The three-tap filter extends two samples past the end of the mask.
+  maxx := Min(x+(xThird+maskWidth+1) div 3,dest.ClipRect.Right-1);
+  if (minx > maxx) or (miny > maxy) then exit;
+  alphaMinX := Max(0,(minx-x)*3-xThird);
+  alphaMaxX := Min(maskWidth+1,(maxx-x)*3+2-xThird);
+  minxThird := (xThird+alphaMinX) mod 3;
 
-  if x >= dest.ClipRect.Left then
+  for yMask := miny to maxy do
   begin
-    minx := x;
-    minxThird := xThird;
-    alphaMinX := 0;
-    leftOnSide := false;
-  end else
-  begin
-    minx := dest.ClipRect.Left;
-    minxThird := 0;
-    alphaMinX := (dest.ClipRect.Left-x)*3 - xThird;
-    leftOnSide := true;
-  end;
-
-  if x*3+xThird+maskWidth-1 < dest.ClipRect.Right*3 then
-  begin
-    maxx := (x*3+xThird+maskWidth-1) div 3;
-    alphaMaxX := alphaLineLen-1;
-    rightOnSide := false;
-  end else
-  begin
-    maxx := dest.ClipRect.Right-1;
-    alphaMaxX := maxx*3+2 - (x*3+xThird);
-    rightOnSide := true;
-  end;
-
-  countBetween := alphaMaxX-alphaMinX-1;
-
-  if (alphaMinX <= alphaMaxX) then
-  begin
-    for yMask := miny to maxy do
+    StartRow;
+    pmask := maskData+yMask*maskRowSize;
+    // Reconstruct the same rolling filter as an unclipped row. Repeating
+    // the nearest sample here changes the color of the first clipped pixel.
+    v1 := 0; v2 := 0; v3 := 0;
+    if (alphaMinX >= 2) and (alphaMinX-2 < maskWidth) then
+      v1 := (pmask+(alphaMinX-2)*maskPixelSize)^ div 3;
+    if (alphaMinX >= 1) and (alphaMinX-1 < maskWidth) then
     begin
-      StartRow;
-
-      if leftOnSide then
-      begin
-        pmask := maskData + (yMask*maskRowSize)+ (alphaMinX-1)*maskPixelSize;
-        a := pmask^ div 3;
-        v1 := a+a;
-        v2 := a;
-        v3 := 0;
-        inc(pmask, maskPixelSize);
-      end else
-      begin
-        pmask := maskData + (yMask*maskRowSize);
-        v1 := 0;
-        v2 := 0;
-        v3 := 0;
-      end;
-
-      for n := countBetween-1 downto 0 do
-      begin
-        a := pmask^ div 3;
-        inc(v1, a);
-        inc(v2, a);
-        inc(v3, a);
-        inc(pmask, maskPixelSize);
-
-        NextAlpha(v1);
-        v1 := v2;
-        v2 := v3;
-        v3 := 0;
-      end;
-
-      if rightOnSide then
-      begin
-        a := pmask^ div 3;
-        inc(v1, a);
-        inc(v2, a+a);
-      end;
-
-      NextAlpha(v1);
-      NextAlpha(v2);
-
-      EndRow;
+      a := (pmask+(alphaMinX-1)*maskPixelSize)^ div 3;
+      inc(v1,a); v2 := a;
     end;
+    inc(pmask,alphaMinX*maskPixelSize);
+    for n := alphaMinX to alphaMaxX do
+    begin
+      if n < maskWidth then a := pmask^ div 3 else a := 0;
+      inc(pmask,maskPixelSize);
+      inc(v1,a); inc(v2,a); v3 := a;
+      NextAlpha(v1);
+      v1 := v2; v2 := v3;
+    end;
+    EndRow;
   end;
 end;
 
