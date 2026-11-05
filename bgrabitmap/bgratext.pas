@@ -58,6 +58,10 @@ interface
   // exact outlines of simple characters, see BGRAWin32Text
   {$DEFINE BGRA_WIN32_OUTLINE}
 {$ENDIF}
+{$IFDEF LCLqt5}
+  // exact outlines with QPainterPath, see BGRAQt5Text
+  {$DEFINE BGRA_QT5_OUTLINE}
+{$ENDIF}
 
 uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAPen, BGRAGrayscaleMask
@@ -223,6 +227,7 @@ uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
      {$IFDEF LCLgtk2}, BGRAGtk2Text{$ENDIF}
      {$IFDEF LCLgtk3}, BGRAGtk3Text{$ENDIF}
      {$IFDEF LCLwin32}, BGRAWin32Text{$ENDIF}
+     {$IFDEF LCLqt5}, BGRAQt5Text{$ENDIF}
      {$IFDEF LCL}, Forms, LCLIntf, LCLType{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
 
 const MaxPixelMetricCount = 100;
@@ -2327,7 +2332,7 @@ end;
 
 function TBGRASystemFontRenderer.GetTextOutline(sUTF8: string; ADest: IBGRAPath;
   out ASize: TPointF): boolean;
-{$IFDEF BGRA_WIN32_OUTLINE}
+{$IF defined(BGRA_WIN32_OUTLINE) or defined(BGRA_QT5_OUTLINE)}
 var
   measuredSize: TSize;
 {$ENDIF}
@@ -2336,10 +2341,14 @@ begin
   UpdateFont;
   result := BGRAPangoTextPath(FFont, sUTF8, ADest, ASize);
   {$ELSE}
-  {$IFDEF BGRA_WIN32_OUTLINE}
+  {$IF defined(BGRA_WIN32_OUTLINE) or defined(BGRA_QT5_OUTLINE)}
   ASize := PointF(0, 0);
   UpdateFont;
+  {$IFDEF BGRA_WIN32_OUTLINE}
   result := BGRAWin32TextPath(FFont, sUTF8, ADest);
+  {$ELSE}
+  result := BGRAQt5TextPath(FFont, sUTF8, ADest);
+  {$ENDIF}
   if result then
   begin
     // the size of the text is the one given by the renderer, as for the
