@@ -81,7 +81,9 @@ type
   end;
 
   { Glyph defined by an exact outline stored in a path. The coordinates are
-    in the same unit as the other glyphs (the full height of the font is 1). }
+    in the same unit as the other glyphs (the full height of the font is 1).
+    The contours of some fonts overlap, so the outline must be filled with the
+    winding rule (DrawText and DrawGlyph of the typewriter do it). }
   TBGRAPathGlyph = class(TBGRAGlyph)
   protected
     FOutline: TBGRAPath;
@@ -194,7 +196,7 @@ function ComputeEasyBezier(APoints: array of TPointF; ACurveMode: array of TGlyp
 
 implementation
 
-uses BGRAUTF8, BGRAUnicode, math;
+uses BGRAUTF8, BGRAUnicode, BGRAGraphics, math;
 
 type
   TDisplayInfoCallbackData = record
@@ -921,9 +923,20 @@ end;
 
 procedure TBGRACustomTypeWriter.DrawGlyph(ADest: TBGRACanvas2D;
   AIdentifier: string; X, Y: Single; AAlign: TBGRATypeWriterAlignment; AMirrored: boolean);
+var
+  oldFillMode: TFillMode;
+  changeFillMode: boolean;
 begin
-  GlyphPath(ADest, AIdentifier, X,Y, AAlign, AMirrored);
-  DrawLastPath(ADest);
+  // the exact outlines of the fonts can overlap, which needs the winding rule
+  oldFillMode := ADest.fillMode;
+  changeFillMode := (oldFillMode <> fmWinding) and (GetGlyph(AIdentifier) is TBGRAPathGlyph);
+  if changeFillMode then ADest.fillMode := fmWinding;
+  try
+    GlyphPath(ADest, AIdentifier, X,Y, AAlign, AMirrored);
+    DrawLastPath(ADest);
+  finally
+    if changeFillMode then ADest.fillMode := oldFillMode;
+  end;
 end;
 
 procedure TBGRACustomTypeWriter.DrawText(ADest: TBGRACanvas2D; ATextUTF8: string;
@@ -931,24 +944,41 @@ procedure TBGRACustomTypeWriter.DrawText(ADest: TBGRACanvas2D; ATextUTF8: string
 var
   di: TBGRATextDisplayInfo;
   i: Integer;
+  oldFillMode: TFillMode;
+  changeFillMode: boolean;
 begin
   di := GetDisplayInfo(ATextUTF8,x,y,AAlign);
 
-  if (OutlineMode <> twoPath) and not DrawGlyphsSimultaneously then
-  begin
-    //draw each glyph
+  // the exact outlines of the fonts can overlap, which needs the winding rule
+  oldFillMode := ADest.fillMode;
+  changeFillMode := false;
+  if oldFillMode <> fmWinding then
     for i := 0 to high(di) do
+      if di[i].Glyph is TBGRAPathGlyph then
+      begin
+        changeFillMode := true;
+        break;
+      end;
+  if changeFillMode then ADest.fillMode := fmWinding;
+  try
+    if (OutlineMode <> twoPath) and not DrawGlyphsSimultaneously then
+    begin
+      //draw each glyph
+      for i := 0 to high(di) do
+      begin
+        ADest.beginPath;
+        di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
+        DrawLastPath(ADest);
+      end;
+    end else
     begin
       ADest.beginPath;
-      di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
+      for i := 0 to high(di) do
+        di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
       DrawLastPath(ADest);
     end;
-  end else
-  begin
-    ADest.beginPath;
-    for i := 0 to high(di) do
-      di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
-    DrawLastPath(ADest);
+  finally
+    if changeFillMode then ADest.fillMode := oldFillMode;
   end;
 end;
 

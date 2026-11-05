@@ -50,6 +50,10 @@ interface
   // text is rendered directly with Pango, see BGRAGtk2Text and BGRAGtk3Text
   {$DEFINE BGRA_PANGO_TEXT}
 {$ENDIF}
+{$IFDEF LCLwin32}
+  // exact outlines of simple characters, see BGRAWin32Text
+  {$DEFINE BGRA_WIN32_OUTLINE}
+{$ENDIF}
 
 uses
   BGRAClasses, SysUtils, BGRAGraphics, BGRABitmapTypes, BGRAPen, BGRAGrayscaleMask
@@ -210,7 +214,7 @@ procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
 
 implementation
 
-uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi{$IFDEF LCLgtk2}, BGRAGtk2Text{$ENDIF}{$IFDEF LCLgtk3}, BGRAGtk3Text{$ENDIF}
+uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi{$IFDEF LCLgtk2}, BGRAGtk2Text{$ENDIF}{$IFDEF LCLgtk3}, BGRAGtk3Text{$ENDIF}{$IFDEF LCLwin32}, BGRAWin32Text{$ENDIF}
      {$IFDEF LCL}, Forms, LCLIntf, LCLType{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
 
 const MaxPixelMetricCount = 100;
@@ -2268,13 +2272,30 @@ end;
 
 function TBGRASystemFontRenderer.GetTextOutline(sUTF8: string; ADest: IBGRAPath;
   out ASize: TPointF): boolean;
+{$IFDEF BGRA_WIN32_OUTLINE}
+var
+  measuredSize: TSize;
+{$ENDIF}
 begin
   {$IFDEF BGRA_PANGO_TEXT}
   UpdateFont;
   result := BGRAPangoTextPath(FFont, sUTF8, ADest, ASize);
   {$ELSE}
+  {$IFDEF BGRA_WIN32_OUTLINE}
+  ASize := PointF(0, 0);
+  UpdateFont;
+  result := BGRAWin32TextPath(FFont, sUTF8, ADest);
+  if result then
+  begin
+    // the size of the text is the one given by the renderer, as for the
+    // other text functions, so that the metrics do not change
+    measuredSize := TextSize(sUTF8);
+    ASize := PointF(measuredSize.cx, measuredSize.cy);
+  end;
+  {$ELSE}
   ASize := PointF(0, 0);
   result := false;
+  {$ENDIF}
   {$ENDIF}
 end;
 
