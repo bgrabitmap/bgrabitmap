@@ -1,5 +1,7 @@
 program CheckCoreText;
-{$mode objfpc}{$H+}{$codepage utf8}{$modeswitch objectivec1}
+{$mode objfpc}{$H+}{$codepage utf8}
+{$IFDEF LCLCOCOA}
+{$modeswitch objectivec1}
 uses Interfaces,Forms,MacOSAll,CocoaAll,CocoaGDIObjects,Types,SysUtils,Classes,Math,BGRABitmap,BGRABitmapTypes,BGRACocoaText,BGRAGraphics;
 const Text:UTF8String='Été déjà — office fi ffi gypqj';
 var pool:NSAutoreleasePool;em,bgIndex,colorIndex,i,maxDiff,diff,e,qi,x,y,c:Integer;
@@ -99,3 +101,9 @@ begin
  finally pool.release end;
  except on E:Exception do begin WriteLn(StdErr,E.ClassName+': '+E.Message);Halt(1) end end;
 end.
+
+{$ELSE}
+begin
+  WriteLn('SKIP: check_coretext requires the Cocoa LCL widgetset.');
+end.
+{$ENDIF}

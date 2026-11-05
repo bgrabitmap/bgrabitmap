@@ -32,3 +32,7 @@ Ordinary multiline layout is still performed by the existing BGRA routines;
 its individual undecorated horizontal lines can use CoreText.
 These tests do not establish identical rendering on other operating systems,
 macOS versions, fonts or device scales.
+
+The two Cocoa-only harnesses compile to an explicit SKIP program on other
+widgetsets. The Objective-C mode switch and Apple framework imports are guarded
+by LCLCOCOA. The mask clipping test remains enabled on all widgetsets.

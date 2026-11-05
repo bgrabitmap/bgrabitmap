@@ -1,5 +1,7 @@
 program CheckLayout;
-{$mode objfpc}{$H+}{$codepage utf8}{$modeswitch objectivec1}
+{$mode objfpc}{$H+}{$codepage utf8}
+{$IFDEF LCLCOCOA}
+{$modeswitch objectivec1}
 uses Interfaces,Forms,CocoaAll,Types,SysUtils,Classes,BGRABitmap,BGRABitmapTypes,BGRAGraphics,BGRAUTF8,LazUTF8;
 const Names:array[0..2] of string=('default','Arial','Times New Roman');
  Fits:array[0..2] of UTF8String=('AV office fi ffi','déjà Á','a😀b');
@@ -68,3 +70,9 @@ begin
  WriteLn(n,' checks passed');
  except on E:Exception do begin WriteLn(StdErr,E.ClassName,': ',E.Message,' context ',f,'/',st,'/',em,'/',qi,' raw=',raw,' i=',i,' fit=',fit,' part=',part);for k:=1 to Length(part) do Write(StdErr,IntToHex(Ord(part[k]),2));WriteLn(StdErr);Halt(1) end end;
 end.
+
+{$ELSE}
+begin
+  WriteLn('SKIP: check_layout requires the Cocoa LCL widgetset.');
+end.
+{$ENDIF}
