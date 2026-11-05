@@ -1374,6 +1374,34 @@ var
     end;
   end;
 
+  //Devanagari conjunct: consonant + virama + consonant (up to four consonants)
+  procedure TryMergeDevanagariConjunct;
+  var
+    count, last: integer;
+    cluster: string;
+  begin
+    if merged or curRTLScript or ADisplayOrder and curRTL then exit;
+    cluster := copy(ATextUTF8, charInfo[cur-1].charStart,
+      charInfo[cur-1].charEnd-charInfo[cur-1].charStart);
+    if not UTF8StartsWithDevanagariConsonant(cluster) then exit;
+    count := 1;
+    last := cur-1;
+    while (count < DEVANAGARI_MAX_CONJUNCT_CONSONANTS) and (last+1 < length(charInfo)) and
+      UTF8EndsWithDevanagariVirama(copy(ATextUTF8, charInfo[last].charStart,
+        charInfo[last].charEnd-charInfo[last].charStart)) and
+      UTF8StartsWithDevanagariConsonant(copy(ATextUTF8, charInfo[last+1].charStart,
+        charInfo[last+1].charEnd-charInfo[last+1].charStart)) do
+    begin
+      inc(last);
+      inc(count);
+    end;
+    if last > cur-1 then
+    begin
+      cur := last+1;
+      merged := true;
+    end;
+  end;
+
 var
   nextchar,glyphId: string;
   g: TBGRAGlyph;
@@ -1411,6 +1439,7 @@ begin
     TryMerge([UTF8_ARABIC_ALEPH_HAMZA_ABOVE,UTF8_ARABIC_LAM]);
     TryMerge([UTF8_ARABIC_ALEPH_HAMZA_BELOW,UTF8_ARABIC_LAM]);
     TryMerge([UTF8_ARABIC_ALEPH_MADDA_ABOVE,UTF8_ARABIC_LAM]);
+    TryMergeDevanagariConjunct;
     //text extract correspond to the unordered actual sequence of characters
     setlength(nextchar, max(charInfo[curStart].charEnd, charInfo[cur-1].charEnd)
                        -min(charInfo[curStart].charStart, charInfo[cur-1].charStart));
