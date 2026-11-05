@@ -188,7 +188,8 @@ type
     List := FindAllFiles(Target, '*.lpi', True);
     try
       for Each in List do
-        if not ContainsStr(Each, 'zengl') then
+        if not AnsiStartsText(IncludeTrailingPathDelimiter(ExpandFileName(Target + '/regression')),
+          ExpandFileName(Each)) and not ContainsStr(Each, 'zengl') then
           if ContainsStr(ReadFileToString(ReplaceStr(Each, '.lpi', '.lpr')),
             'consoletestrunner') then
             RunTest(Each)

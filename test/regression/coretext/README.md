@@ -2,7 +2,8 @@
 
 Native offscreen tests for the CoreText route in BGRAText. They require the
 Cocoa LCL widgetset and the Apple frameworks; they do not automate GUI input.
-Create an output directory, build each `.lpi` with `lazbuild --ws=cocoa`, then
+These tests are registered in `../tests.txt`; see `../README.md` for the CI runner.
+For a manual run, create an output directory, build each `.lpi` with `lazbuild --ws=cocoa`, then
 run the executable with the absolute output directory as its first argument.
 
 - `check_coretext`: compares public `TBGRABitmap.TextOut` against an independent
