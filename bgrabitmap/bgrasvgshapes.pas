@@ -108,6 +108,7 @@ type
       procedure SetHeight(AValue: TFloatWithCSSUnit);
       procedure SetRX(AValue: TFloatWithCSSUnit);
       procedure SetRY(AValue: TFloatWithCSSUnit);
+      procedure GetRadiiInUnit(AUnit: TCSSUnit; out ARX, ARY: single);
     protected
       procedure InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
       procedure InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit); override;
@@ -3706,16 +3707,27 @@ begin
   if HasAttribute('height') then height := Units.ConvertHeight(height, AUnit);
 end;
 
+procedure TSVGRectangle.GetRadiiInUnit(AUnit: TCSSUnit; out ARX, ARY: single);
+begin
+  ARX := Units.ConvertWidth(rx,AUnit).value;
+  ARY := Units.ConvertHeight(ry,AUnit).value;
+  // An omitted radius uses the other radius, but an explicit zero does not.
+  // Resolve percentages on their own axis before copying the length.
+  if not HasAttribute('rx') then ARX := ARY;
+  if not HasAttribute('ry') then ARY := ARX;
+end;
+
 procedure TSVGRectangle.InternalDraw(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
   b: TRectF;
+  vrx,vry: single;
 begin
   if not isStrokeNone or not isFillNone then
   begin
     b := GetBoundingBoxInUnit(ACanvas2d, AUnit);
     ACanvas2d.beginPath;
-    ACanvas2d.roundRect(b.Left, b.Top, b.Width, b.Height,
-       Units.ConvertWidth(rx,AUnit).value,Units.ConvertHeight(ry,AUnit).value);
+    GetRadiiInUnit(AUnit, vrx,vry);
+    ACanvas2d.roundRect(b.Left, b.Top, b.Width, b.Height, vrx,vry);
     InitializeGradient(ACanvas2d, b.TopLeft, b.Width, b.Height, AUnit);
     Paint(ACanvas2D,AUnit);
   end;
@@ -3723,14 +3735,14 @@ end;
 
 procedure TSVGRectangle.InternalCopyPathTo(ACanvas2d: TBGRACanvas2D; AUnit: TCSSUnit);
 var
-  vx,vy,vw,vh: Single;
+  vx,vy,vw,vh,vrx,vry: Single;
 begin
   vx:= Units.ConvertWidth(x,AUnit).value;
   vy:= Units.ConvertHeight(y,AUnit).value;
   vw:= Units.ConvertWidth(width,AUnit).value;
   vh:= Units.ConvertHeight(height,AUnit).value;
-  ACanvas2d.roundRect(vx,vy, vw,vh,
-     Units.ConvertWidth(rx,AUnit).value,Units.ConvertHeight(ry,AUnit).value);
+  GetRadiiInUnit(AUnit, vrx,vry);
+  ACanvas2d.roundRect(vx,vy, vw,vh, vrx,vry);
 end;
 
 { TSVGPolypoints }
