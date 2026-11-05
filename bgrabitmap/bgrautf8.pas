@@ -20,6 +20,7 @@ const
   UTF8_ARABIC_ALEPH_HAMZA_ABOVE = 'أ';
   UTF8_ARABIC_ALEPH_MADDA_ABOVE = 'آ';
   UTF8_ARABIC_LAM = 'ل';
+  UTF8_DEVANAGARI_VIRAMA = #$E0#$A5#$8D;     //U+094D, joins consonants into a conjunct
   UTF8_NO_BREAK_SPACE = ' ';
   UTF8_ZERO_WIDTH_NON_JOINER = '‌';
   UTF8_ZERO_WIDTH_JOINER = '‍';
@@ -135,6 +136,13 @@ function UTF8OverrideDirection(const sUTF8: string; ARightToLeft: boolean): stri
   so that it will be displayed on the correct side of the text. }
 function UTF8EmbedDirection(const sUTF8: string; ARightToLeft: boolean): string;
 function UTF8Ligature(const sUTF8: string; ARightToLeft: boolean; ALigatureLeft, ALigatureRight: boolean): string;
+{ Returns true if the string starts with a Devanagari consonant }
+function UTF8StartsWithDevanagariConsonant(const sUTF8: string): boolean;
+{ Returns true if the string ends with a Devanagari virama (halant) }
+function UTF8EndsWithDevanagariVirama(const sUTF8: string): boolean;
+const
+  //maximum number of consonants forming a Devanagari conjunct
+  DEVANAGARI_MAX_CONJUNCT_CONSONANTS = 4;
 
 type
 
@@ -1379,6 +1387,22 @@ begin
     result := UnicodeCharToUTF8(UNICODE_LEFT_TO_RIGHT_EMBEDDING) + sUTF8 + UnicodeCharToUTF8(UNICODE_POP_DIRECTIONAL_FORMATTING);
 end;
 
+function UTF8StartsWithDevanagariConsonant(const sUTF8: string): boolean;
+begin
+  //U+0915..U+0939 (E0 A4 95..B9) and U+0958..U+095F (E0 A5 98..9F)
+  result := (length(sUTF8) >= 3) and (sUTF8[1] = #$E0) and
+    (((sUTF8[2] = #$A4) and (sUTF8[3] >= #$95) and (sUTF8[3] <= #$B9)) or
+     ((sUTF8[2] = #$A5) and (sUTF8[3] >= #$98) and (sUTF8[3] <= #$9F)));
+end;
+
+function UTF8EndsWithDevanagariVirama(const sUTF8: string): boolean;
+var
+  n: integer;
+begin
+  n := length(sUTF8);
+  result := (n >= 3) and (sUTF8[n-2] = #$E0) and (sUTF8[n-1] = #$A5) and (sUTF8[n] = #$8D);
+end;
+
 function UTF8Ligature(const sUTF8: string; ARightToLeft: boolean;
   ALigatureLeft, ALigatureRight: boolean): string;
 begin
@@ -1468,6 +1492,7 @@ var
   rtlScript, ligatureLeft, ligatureRight: Boolean;
   u: LongWord;
   bracketInfo: TUnicodeBracketInfo;
+  consonantCount: integer;
 begin
   if EndOfString then
   begin
@@ -1514,6 +1539,22 @@ begin
         inc(result.ByteSize, length(currentChar));
         result.Merged := true;
         ligatureRight := currentBidiInfo.HasLigatureRight;
+        NextMultichar;
+      end;
+    end;
+    //Devanagari conjunct: consonant + virama + consonant (up to four consonants)
+    if not rtlScript and UTF8StartsWithDevanagariConsonant(result.GlyphUtf8) then
+    begin
+      consonantCount := 1;
+      while (consonantCount < DEVANAGARI_MAX_CONJUNCT_CONSONANTS) and
+        UTF8EndsWithDevanagariVirama(result.GlyphUtf8) and not EndOfString do
+      begin
+        PeekMultichar;
+        if not UTF8StartsWithDevanagariConsonant(currentChar) then break;
+        result.GlyphUtf8 := result.GlyphUtf8 + currentChar;
+        inc(result.ByteSize, length(currentChar));
+        result.Merged := true;
+        inc(consonantCount);
         NextMultichar;
       end;
     end;
