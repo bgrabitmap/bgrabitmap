@@ -21,6 +21,8 @@ its compilation mode:
   beside the executable, retaining the normal automatic-loading test. macOS
   needs an installed libwebp runtime in its standard library search path.
 - `nogui`: build the adjacent `.lpi` using LCL NoGUI, then run it headlessly.
+- `win32`: build the adjacent `.lpi` using Win32 and run on Windows only.
+  The runner reports it as skipped on other systems.
 - `cocoa`: build the adjacent `.lpi` using Cocoa, then run it on macOS only.
   The runner explicitly reports these tests as skipped on Linux/Windows.
 

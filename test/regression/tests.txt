@@ -14,3 +14,5 @@ webploader/test_webploader.lpr|webp
 coretext/check_mask_clip.lpr|nogui
 coretext/check_coretext.lpr|cocoa
 coretext/check_layout.lpr|cocoa
+svgrect/test_svgrect.lpr|core
+win32outline/test_win32outline.lpr|win32

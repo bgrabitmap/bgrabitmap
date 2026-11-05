@@ -107,7 +107,7 @@ var
   args: TStringList;
   success: boolean;
 begin
-  if (AMode <> 'core') and (AMode <> 'nogui') and (AMode <> 'cocoa') and (AMode <> 'webp') then
+  if (AMode <> 'core') and (AMode <> 'nogui') and (AMode <> 'cocoa') and (AMode <> 'webp') and (AMode <> 'win32') then
     raise Exception.Create('Unknown regression mode: '+AMode);
   source := ExpandFileName(Root+PathDelim+'test'+PathDelim+'regression'+PathDelim+NativePath(ASource));
   if not FileExists(source) then
@@ -119,6 +119,14 @@ begin
     Inc(Skipped);
     exit;
   end;
+  {$IFNDEF WINDOWS}
+  if AMode = 'win32' then
+  begin
+    WriteLn('SKIP: ',ASource,' requires Windows with the Win32 widgetset');
+    Inc(Skipped);
+    exit;
+  end;
+  {$ENDIF}
   name := ChangeFileExt(ExtractFileName(source),'');
   outputDir := BuildDir+PathDelim+AMode+PathDelim+name;
   if not ForceDirectories(outputDir) then
