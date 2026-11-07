@@ -766,43 +766,59 @@ begin
   path.Free;
 end;
 
+function ComputeArcPoints(x, y, rx, ry: single; startRad, endRad, sweepRad: double; nb: integer): ArrayOfTPointF;
+var i: integer;
+    c, s, c0, s0, dc, ds, nc: double;
+begin
+  setlength(result,nb);
+  //rotation by a constant step is much faster than calling sin and cos
+  //for each point, and keeps a precision far better than a single float
+  c := cos(startRad); s := sin(startRad);
+  dc := cos(sweepRad/(nb-1)); ds := sin(sweepRad/(nb-1));
+  for i := 0 to nb-1 do
+  begin
+    result[i] := PointF(x+rx*c, y-ry*s);
+    nc := c*dc - s*ds;
+    s := s*dc + c*ds;
+    c := nc;
+  end;
+  //end points are computed directly, so that connected shapes get identical values
+  result[0] := PointF(x+cos(startRad)*rx, y-sin(startRad)*ry);
+  result[nb-1] := PointF(x+cos(endRad)*rx, y-sin(endRad)*ry);
+end;
+
+function ArcPointCount(rx, ry: single; arclen: integer; quality: single): integer;
+begin
+  if quality < 0 then quality := 0;
+  result := round(((rx+ry)*2*quality+8)*arclen/65536) and not 3;
+  if arclen <= 16384 then
+  begin
+    if result < 2 then result := 2;
+  end else
+  if arclen <= 32768 then
+  begin
+    if result < 3 then result := 3;
+  end else
+  if arclen <= 32768+16384 then
+  begin
+    if result < 4 then result := 4;
+  end else
+    if result < 5 then result := 5;
+  //more points than angle steps would not improve the precision
+  if result > arclen+1 then result := arclen+1;
+end;
+
 function ComputeArc65536(x, y, rx, ry: single; start65536,end65536: word; quality: single): ArrayOfTPointF;
-var i,nb: integer;
+var nb: integer;
     arclen: integer;
-    pos: word;
 begin
   if end65536 > start65536 then
     arclen := end65536-start65536 else
     arclen := 65536-(start65536-end65536);
 
-  if quality < 0 then quality := 0;
-
-  nb := round(((rx+ry)*2*quality+8)*arclen/65536) and not 3;
-  if arclen <= 16384 then
-  begin
-    if nb < 2 then nb := 2;
-  end else
-  if arclen <= 32768 then
-  begin
-    if nb < 3 then nb := 3;
-  end else
-  if arclen <= 32768+16384 then
-  begin
-    if nb < 4 then nb := 4;
-  end else
-    if nb < 5 then nb := 5;
-
-  if nb > arclen+1 then nb := arclen+1;
-
-  setlength(result,nb);
-  for i := 0 to nb-1 do
-  begin
-    {$PUSH}{$R-}
-    pos := start65536+int64(i)*arclen div (int64(nb)-1);
-    {$POP}
-    result[i] := PointF(x+rx*(Cos65536(pos)-32768)/32768,
-                        y-ry*(Sin65536(pos)-32768)/32768);
-  end;
+  nb := ArcPointCount(rx,ry,arclen,quality);
+  //points are computed in floating point (the integer sine table is not precise enough)
+  result := ComputeArcPoints(x,y,rx,ry, start65536*Pi/32768, end65536*Pi/32768, arclen*Pi/32768, nb);
 end;
 
 function ComputeEllipse(x, y, rx, ry: single; quality: single): ArrayOfTPointF;
@@ -826,15 +842,28 @@ function ComputeArcRad(x, y, rx, ry: single; startRadCCW, endRadCCW: single;
   quality: single): ArrayOfTPointF;
 var
   start65536, end65536: Int64;
+  arclen: integer;
+  sweep: double;
 begin
-  start65536 := round(startRadCCW*32768/Pi);
-  end65536 := round(endRadCCW*32768/Pi);
+  start65536 := round(startRadCCW*32768/Pi) and $ffff;
+  end65536 := round(endRadCCW*32768/Pi) and $ffff;
   //if arc is very small but non zero, it is not a circle
   if (start65536 = end65536) and (startRadCCW <> endRadCCW) then
-    setlength(result,2) else
-    result := ComputeArc65536(x,y,rx,ry,start65536 and $ffff,end65536 and $ffff,quality);
-  result[0] := PointF(x+cos(startRadCCW)*rx,y-sin(startRadCCW)*ry);
-  result[high(result)] := PointF(x+cos(endRadCCW)*rx,y-sin(endRadCCW)*ry);
+  begin
+    setlength(result,2);
+    result[0] := PointF(x+cos(startRadCCW)*rx,y-sin(startRadCCW)*ry);
+    result[1] := PointF(x+cos(endRadCCW)*rx,y-sin(endRadCCW)*ry);
+    exit;
+  end;
+  if end65536 > start65536 then
+    arclen := end65536-start65536 else
+    arclen := 65536-(start65536-end65536);
+  //exact sweep in radians, in ]0,2*Pi] (full circle if angles are equal)
+  sweep := endRadCCW-startRadCCW;
+  sweep := sweep - 2*Pi*Floor(sweep/(2*Pi));
+  if arclen = 65536 then sweep := 2*Pi
+  else if sweep <= 0 then sweep := sweep + 2*Pi;
+  result := ComputeArcPoints(x,y,rx,ry,startRadCCW,endRadCCW,sweep,ArcPointCount(rx,ry,arclen,quality));
 end;
 
 function ComputeArcRad(AOrigin, AXAxis, AYAxis: TPointF; startRadCCW,endRadCCW: single; quality: single): ArrayOfTPointF;
