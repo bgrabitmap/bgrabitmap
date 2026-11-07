@@ -17,3 +17,4 @@ coretext/check_layout.lpr|cocoa
 svgrect/test_svgrect.lpr|core
 devanagari/test_devanagari.lpr|core
 win32outline/test_win32outline.lpr|win32
+arcprecision/test_arcprecision.lpr|core
