@@ -768,13 +768,19 @@ end;
 
 function ComputeArcPoints(x, y, rx, ry: single; startRad, sweepRad: double; nb: integer): ArrayOfTPointF;
 var i: integer;
-    a: double;
+    c, s, c0, s0, dc, ds, nc: double;
 begin
   setlength(result,nb);
+  //rotation by a constant step is much faster than calling sin and cos
+  //for each point, and keeps a precision far better than a single float
+  c := cos(startRad); s := sin(startRad);
+  dc := cos(sweepRad/(nb-1)); ds := sin(sweepRad/(nb-1));
   for i := 0 to nb-1 do
   begin
-    a := startRad + sweepRad*i/(nb-1);
-    result[i] := PointF(x+rx*cos(a), y-ry*sin(a));
+    result[i] := PointF(x+rx*c, y-ry*s);
+    nc := c*dc - s*ds;
+    s := s*dc + c*ds;
+    c := nc;
   end;
 end;
 
