@@ -766,7 +766,7 @@ begin
   path.Free;
 end;
 
-function ComputeArcPoints(x, y, rx, ry: single; startRad, sweepRad: double; nb: integer): ArrayOfTPointF;
+function ComputeArcPoints(x, y, rx, ry: single; startRad, endRad, sweepRad: double; nb: integer): ArrayOfTPointF;
 var i: integer;
     c, s, c0, s0, dc, ds, nc: double;
 begin
@@ -782,6 +782,9 @@ begin
     s := s*dc + c*ds;
     c := nc;
   end;
+  //end points are computed directly, so that connected shapes get identical values
+  result[0] := PointF(x+cos(startRad)*rx, y-sin(startRad)*ry);
+  result[nb-1] := PointF(x+cos(endRad)*rx, y-sin(endRad)*ry);
 end;
 
 function ArcPointCount(rx, ry: single; arclen: integer; quality: single): integer;
@@ -815,7 +818,7 @@ begin
 
   nb := ArcPointCount(rx,ry,arclen,quality);
   //points are computed in floating point (the integer sine table is not precise enough)
-  result := ComputeArcPoints(x,y,rx,ry, start65536*Pi/32768, arclen*Pi/32768, nb);
+  result := ComputeArcPoints(x,y,rx,ry, start65536*Pi/32768, end65536*Pi/32768, arclen*Pi/32768, nb);
 end;
 
 function ComputeEllipse(x, y, rx, ry: single; quality: single): ArrayOfTPointF;
@@ -860,7 +863,7 @@ begin
   sweep := sweep - 2*Pi*Floor(sweep/(2*Pi));
   if arclen = 65536 then sweep := 2*Pi
   else if sweep <= 0 then sweep := sweep + 2*Pi;
-  result := ComputeArcPoints(x,y,rx,ry,startRadCCW,sweep,ArcPointCount(rx,ry,arclen,quality));
+  result := ComputeArcPoints(x,y,rx,ry,startRadCCW,endRadCCW,sweep,ArcPointCount(rx,ry,arclen,quality));
 end;
 
 function ComputeArcRad(AOrigin, AXAxis, AYAxis: TPointF; startRadCCW,endRadCCW: single; quality: single): ArrayOfTPointF;

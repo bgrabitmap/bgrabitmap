@@ -48,6 +48,16 @@ begin
     Fail('wrong first point');
 end;
 
+procedure ExpectedEnd(const APt: TPointF; AAngle: single);
+var x, y, rx, ry, ex, ey: single;
+begin
+  x := 10; y := 20; rx := 100; ry := 50;
+  ex := x + cos(AAngle)*rx;
+  ey := y - sin(AAngle)*ry;
+  if (APt.x <> ex) or (APt.y <> ey) then
+    Fail('end point is not computed exactly');
+end;
+
 var
   path, path2: TBGRAPath;
   pts: ArrayOfTPointF;
@@ -75,6 +85,11 @@ begin
     Fail('copyTo length ' + FloatToStr(path2.ComputeLength(0.001)));
   path2.Free;
   path.Free;
+
+  // end points use the same computation as any connected shape
+  pts := ComputeArcRad(10, 20, 100, 50, 0.3, 2.1, 1000);
+  ExpectedEnd(pts[0], 0.3);
+  ExpectedEnd(pts[high(pts)], 2.1);
 
   WriteLn('PASS: ComputeArc points are not quantized');
 end.
