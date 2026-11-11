@@ -11,7 +11,7 @@ unit libwebp;
 // -----------------------------------------------------------------------------
 // This is the dynamic loader version of libwebp.pas by fredvs
 
-{$ALIGN ON}
+{$PACKRECORDS C}
 {$MINENUMSIZE 4}
 {$mode objfpc}
 
@@ -146,28 +146,19 @@ type
 //-----------------------------------------------------------------------------
 // Coding parameters
 
+  // Encoder structures follow libwebp 1.6.0 src/webp/encode.h (ABI 0x0210).
   PWebPConfig = ^TWebPConfig;
   TWebPConfig = record
-    quality: Single;            // between 0 (smallest file) and 100 (biggest)
-    target_size: Integer;       // if non-zero, set the desired target size in bytes.
-                                // Takes precedence over the 'compression' parameter.
-    target_PSNR: Single;        // if non-zero, specifies the minimal distortion to
-                                // try to achieve. Takes precedence over target_size.
-    method: Integer;            // quality/speed trade-off (0=fast, 6=slower-better)
-    segments: Integer;          // maximum number of segments to use, in [1..4]
-    sns_strength: Integer;      // Spatial Noise Shaping. 0=off, 100=maximum.
-    filter_strength: Integer;   // range: [0 = off .. 100 = strongest]
-    filter_sharpness: Integer;  // range: [0 = off .. 7 = least sharp]
-    filter_type: Integer;       // filtering type: 0 = simple, 1 = strong
-                                // (only used if filter_strength > 0 or autofilter > 0)
-    autofilter: Integer;        // Auto adjust filter's strength [0 = off, 1 = on]
-    pass: Integer;              // number of entropy-analysis passes (in [1..10]).
-
-    show_compressed: Integer;   // if true, export the compressed picture back.
-                                // In-loop filtering is not applied.
-    preprocessing: Integer;     // preprocessing filter (0=none, 1=segment-smooth)
-    partitions: Integer;        // log2(number of token partitions) in [0..3]
-                                // Default is set to 0 for easier progressive decoding.
+    lossless: Integer;
+    quality: Single;
+    method, image_hint, target_size: Integer;
+    target_PSNR: Single;
+    segments, sns_strength, filter_strength, filter_sharpness: Integer;
+    filter_type, autofilter, alpha_compression, alpha_filtering: Integer;
+    alpha_quality, pass, show_compressed, preprocessing: Integer;
+    partitions, partition_limit, emulate_jpeg_size, thread_level: Integer;
+    low_memory, near_lossless, exact, use_delta_palette, use_sharp_yuv: Integer;
+    qmin, qmax: Integer;
   end;
 
 // Enumerate some predefined settings for WebPConfig, depending on the type
@@ -182,53 +173,57 @@ type
   );
 
   PWebPPicture = ^TWebPPicture;
-  //TWebPPicture = record end; // main structure for I/O
-
-  // non-essential structure for storing auxilliary statistics
   PWebPAuxStats = ^TWebPAuxStats;
   TWebPAuxStats = record
-    PSNR: array[0..3] of Single;                   // peak-signal-to-noise ratio for Y/U/V/All
-    coded_size: Integer;                           // final size
-    block_count: array[0..2] of Integer;           // number of intra4/intra16/skipped macroblocks
-    header_bytes: array[0..1] of Integer;          // approximative number of bytes spent for header
-                                                   // and mode-partition #0
-    residual_bytes: array[0..2, 0..3] of Integer;  // approximative number of bytes spent for
-                                                   // DC/AC/uv coefficients for each (0..3) segments.
-    segment_size: array[0..3] of Integer;          // number of macroblocks in each segments
-    segment_quant: array[0..3] of Integer;         // quantizer values for each segments
-    segment_level: array[0..3] of Integer;         // filtering strength for each segments [0..63]
+    coded_size: Integer;
+    PSNR: array[0..4] of Single;
+    block_count: array[0..2] of Integer;
+    header_bytes: array[0..1] of Integer;
+    residual_bytes: array[0..2, 0..3] of Integer;
+    segment_size, segment_quant, segment_level: array[0..3] of Integer;
+    alpha_data_size, layer_data_size: Integer;
+    lossless_features: LongWord;
+    histogram_bits, transform_bits, cache_bits, palette_size: Integer;
+    lossless_size, lossless_hdr_size, lossless_data_size: Integer;
+    cross_color_transform_bits: Integer;
+    pad: array[0..0] of LongWord;
   end;
 
-  // Signature for output function. Should return 1 if writing was successful.
-  // data/data_size is the segment of data to write, and 'picture' is for
-  // reference (and so one can make use of picture->custom_ptr).
-  TWebPWriterFunction = function(const data: PByte; data_size: LongWord;
+  TWebPWriterFunction = function(const data: PByte; data_size: SizeUInt;
+    const picture: PWebPPicture): Integer; cdecl;
+  TWebPProgressHook = function(percent: Integer;
     const picture: PWebPPicture): Integer; cdecl;
 
   TWebPPicture = record
-    // input
-    colorspace: Integer;            // colorspace: should be 0 for now (=Y'CbCr).
-    width, height: Integer;         // dimensions.
-    y, u, v: PByte;                 // pointers to luma/chroma planes.
-    y_stride, uv_stride: Integer;   // luma/chroma strides.
-    a: PByte;                       // pointer to the alpha plane (unused for now).
-
-    // output
-    writer: TWebPWriterFunction ;   // can be NULL
-    custom_ptr: Pointer;            // can be used by the writer.
-
-    // map for extra information
-    extra_info_type: Integer;    // 1: intra type, 2: segment, 3: quant
-                                 // 4: intra-16 prediction mode,
-                                 // 5: chroma prediction mode,
-                                 // 6: bit cost, 7: distortion
-    extra_info: PByte;           // if not NULL, points to an array of size
-                                 // ((width + 15) / 16) * ((height + 15) / 16) that
-                                 // will be filled with a macroblock map, depending
-                                 // on extra_info_type.
-
-    // where to store statistics, if not NULL:
+    use_argb, colorspace, width, height: Integer;
+    y, u, v: PByte;
+    y_stride, uv_stride: Integer;
+    a: PByte;
+    a_stride: Integer;
+    pad1: array[0..1] of LongWord;
+    argb: PLongWord;
+    argb_stride: Integer;
+    pad2: array[0..2] of LongWord;
+    writer: TWebPWriterFunction;
+    custom_ptr: Pointer;
+    extra_info_type: Integer;
+    extra_info: PByte;
     stats: PWebPAuxStats;
+    error_code: Integer;
+    progress_hook: TWebPProgressHook;
+    user_data: Pointer;
+    pad3: array[0..2] of LongWord;
+    pad4, pad5: PByte;
+    pad6: array[0..7] of LongWord;
+    memory_, memory_argb_: Pointer;
+    pad7: array[0..1] of Pointer;
+  end;
+
+  PWebPMemoryWriter = ^TWebPMemoryWriter;
+  TWebPMemoryWriter = record
+    mem: PByte;
+    size, max_size: SizeUInt;
+    pad: array[0..0] of LongWord;
   end;
 
 
@@ -413,16 +408,16 @@ WebPGetEncoderVersion: function(): Integer; cdecl;
 // larger output).
 
 WebPEncodeRGB: function(const rgb: PByte; width, height, stride: Integer;
-  quality_factor: single; var output: PByte): LongWord; cdecl;
+  quality_factor: single; var output: PByte): SizeUInt; cdecl;
 
 WebPEncodeBGR: function(const bgr: PByte; width, height, stride: Integer;
-  quality_factor: Single; var output: PByte): LongWord; cdecl;
+  quality_factor: Single; var output: PByte): SizeUInt; cdecl;
 
 WebPEncodeRGBA: function(const rgba: PByte; width, height, stride: Integer;
-  quality_factor: Single; var output: PByte): LongWord; cdecl;
+  quality_factor: Single; var output: PByte): SizeUInt; cdecl;
 
 WebPEncodeBGRA: function(const bgra: PByte; width, height, stride: Integer;
-  quality_factor: Single; var output: PByte): LongWord; cdecl;
+  quality_factor: Single; var output: PByte): SizeUInt; cdecl;
 
 // These functions are the equivalent of the above, but compressing in a
 // lossless manner. Files are usually larger than lossy format, but will
@@ -433,16 +428,16 @@ WebPEncodeBGRA: function(const bgra: PByte; width, height, stride: Integer;
 // use WebPEncode() and set WebPConfig::exact to 1.
 
 WebPEncodeLosslessRGB: function(const rgb: PByte; width, height, stride: Integer;
-  var output: PByte): LongWord; cdecl;
+  var output: PByte): SizeUInt; cdecl;
 
 WebPEncodeLosslessBGR: function(const bgr: PByte; width, height, stride: Integer;
-  var output: PByte): LongWord; cdecl;
+  var output: PByte): SizeUInt; cdecl;
 
 WebPEncodeLosslessRGBA: function(const rgba: PByte; width, height, stride: Integer;
-  var output: PByte): LongWord; cdecl;
+  var output: PByte): SizeUInt; cdecl;
 
 WebPEncodeLosslessBGRA: function(const bgra: PByte; width, height, stride: Integer;
-  var output: PByte): LongWord; cdecl;
+  var output: PByte): SizeUInt; cdecl;
 
 // Should always be called, to initialize a fresh WebPConfig structure before
 // modification. Returns 0 in case of version mismatch. WebPConfigInit() must
@@ -457,6 +452,11 @@ function WebPConfigPreset(const config: PWebPConfig; preset: TWebPPreset;
   quality: Single): Integer;
 
 var
+WebPConfigLosslessPreset: function(config: PWebPConfig; level: Integer): Integer; cdecl;
+WebPMemoryWriterInit: procedure(writer: PWebPMemoryWriter); cdecl;
+WebPMemoryWriterClear: procedure(writer: PWebPMemoryWriter); cdecl;
+WebPMemoryWrite: TWebPWriterFunction;
+
 // Returns 1 if all parameters are in valid range and the configuration is OK.
 WebPValidateConfig: function(const config: PWebPConfig): Integer; cdecl;
 
@@ -535,7 +535,7 @@ uses sysutils{$ifdef linux}, linuxlib{$endif}{$ifdef darwin}, darwinlib{$endif};
 
 // Internal, version-checked, entry point
 const
-  WEBP_ENCODER_ABI_VERSION = $0001;
+  WEBP_ENCODER_ABI_VERSION = $0210;
 
 function WebPConfigInit(const config: PWebPConfig): Integer;
 begin
@@ -649,6 +649,11 @@ Pointer(WebPPictureImportRGBA):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar(
 Pointer(WebPPictureImportBGR):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureImportBGR'));
 Pointer(WebPPictureImportBGRA):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureImportBGRA'));
 Pointer(WebPEncode):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPEncode'));
+Pointer(WebPValidateConfig):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPValidateConfig'));
+Pointer(WebPConfigLosslessPreset):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPConfigLosslessPreset'));
+Pointer(WebPMemoryWriterInit):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPMemoryWriterInit'));
+Pointer(WebPMemoryWriterClear):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPMemoryWriterClear'));
+Pointer(WebPMemoryWrite):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPMemoryWrite'));
 Pointer(WebPConfigInitInternal):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPConfigInitInternal'));
 Pointer(WebPPictureInitInternal):=DynLibs.GetProcedureAddress(LibWebPHandle,PChar('WebPPictureInitInternal'));
 
