@@ -138,6 +138,18 @@ begin
             CheckPixels(image,stream,writer.Lossless,false);
             Check(image.Equals(before), 'Source image modified');
             Check(Ord(image.LineOrder) = sourceOrder, 'Source line order modified');
+            if effort = 0 then
+            begin
+              Check(writer.Config.method = 0, 'Minimum effort did not select method 0');
+              if writer.Lossless then
+                Check(writer.Config.quality = 0, 'Minimum lossless effort ignored');
+            end;
+            if effort = 9 then
+            begin
+              Check(writer.Config.method = 6, 'Maximum effort did not select method 6');
+              if writer.Lossless then
+                Check(writer.Config.quality = 100, 'Maximum lossless effort ignored');
+            end;
             if effort = 6 then
             begin
               Check(writer.Config.method = 4, 'Default method is not 4');
