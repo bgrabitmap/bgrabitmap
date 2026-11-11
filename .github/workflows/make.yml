@@ -36,7 +36,7 @@ jobs:
             shell: bash
             run: |
                set -xeuo pipefail
-               sudo bash -c 'apt-get update; apt-get install -y lazarus libxtst-dev curl libwebp-dev' >/dev/null
+               sudo bash -c 'apt-get update; apt-get install -y lazarus libxtst-dev libgtk2.0-dev curl libwebp-dev' >/dev/null
 
           - name: Build examples on Linux
             if: runner.os == 'Linux'
