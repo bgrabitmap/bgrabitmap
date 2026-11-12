@@ -83,7 +83,8 @@ type
         ExitCode += 1;
         with TRegExpr.Create do
         begin
-          Expression := '(Fatal|Error|/ld(\.[a-z]+)?):';
+          // Also show the linker output (ld may be prefixed, e.g. x86_64-linux-gnu-ld.bfd)
+          Expression := '(Fatal|Error:|(^|[/-])ld(\.[a-z]+)?:|undefined reference|cannot find|collect2|Linking)';
           for Line in SplitString(Result.Output, LineEnding) do
           begin
             if Exec(Line) then
