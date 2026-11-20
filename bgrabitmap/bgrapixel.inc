@@ -143,7 +143,7 @@ const
   function ApplyIntensityFast(color: TBGRAPixel; lightness: LongWord): TBGRAPixel;
   {* Combines two lightnesses together. A value of 32768 is neutral. The
       result may exceed 65535 }
-  function CombineLightness(lightness1,lightness2: Int32or64): Int32or64;
+  function CombineLightness(lightness1,lightness2: Int32or64): Int32or64; inline;
   {* Converts a color into grayscale }
   function BGRAToGrayscale(c: TBGRAPixel): TBGRAPixel;
   {* Converts a color into grayscale assuming linear colorspace }
@@ -421,6 +421,12 @@ begin
   end;
 end;
 
+// The implementation must precede ApplyIntensityFast so its calls can be inlined.
+function CombineLightness(lightness1,lightness2: Int32or64): Int32or64;
+begin
+  result := BGRALightness.CombineLightness3D(lightness1,lightness2);
+end;
+
 function ApplyIntensityFast(color: TBGRAPixel; lightness: LongWord): TBGRAPixel;
 var
     maxValue,invMaxValue,r,g,b: LongWord;
@@ -465,24 +471,6 @@ begin
     end;
   end;
 end;
-
-function CombineLightness(lightness1,lightness2: Int32or64): Int32or64;
-{$ifdef CPUI386} {$asmmode intel} assembler;
-  asm
-    imul edx
-    shl edx, 17
-    shr eax, 15
-    or edx, eax
-    mov result, edx
-  end;
-{$ELSE}
-begin
-  if (lightness1 < 0) xor (lightness2 < 0) then
-    result := -(int64(-lightness1)*lightness2 shr 15)
-  else
-    result := int64(lightness1)*lightness2 shr 15;
-end;
-{$ENDIF}
 
 // Conversion to grayscale by taking into account
 // different color weights

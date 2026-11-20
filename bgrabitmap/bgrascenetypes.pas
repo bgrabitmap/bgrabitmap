@@ -619,6 +619,8 @@ type
 
 implementation
 
+uses BGRALightness;
+
 { TCustomRenderer3D }
 
 function TCustomRenderer3D.GetProjectionDefined: boolean;
@@ -1092,15 +1094,15 @@ begin
   if FAutoDiffuseColor then
   begin
     if ALightLightness <> 32768 then
-      inc(Context^.lightness, CombineLightness(DiffuseLightnessTerm32768,ALightLightness) )
+      inc(Context^.lightness, CombineLightness3D(DiffuseLightnessTerm32768,ALightLightness) )
     else
       inc(Context^.lightness, DiffuseLightnessTerm32768 );
   end else
   begin
     if FDiffuseLightness <> 32768 then
-      inc(Context^.lightness, CombineLightness(DiffuseLightnessTerm32768,CombineLightness(FDiffuseLightness,ALightLightness)) )
+      inc(Context^.lightness, CombineLightness3D(DiffuseLightnessTerm32768,CombineLightness3D(FDiffuseLightness,ALightLightness)) )
     else
-      inc(Context^.lightness, CombineLightness(DiffuseLightnessTerm32768,ALightLightness) );
+      inc(Context^.lightness, CombineLightness3D(DiffuseLightnessTerm32768,ALightLightness) );
   end;
 end;
 

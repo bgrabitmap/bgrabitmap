@@ -723,7 +723,7 @@ function ResourceFile(AFilename: string): string;
 implementation
 
 uses Math, SysUtils,
-  BGRAUTF8, BGRAUnits, FPWriteBMP, BGRAReadPNM, FPWritePNM, FPWriteXPM
+  BGRAUTF8, BGRAUnits, BGRALightness, FPWriteBMP, BGRAReadPNM, FPWritePNM, FPWriteXPM
   {$IFNDEF BGRABITMAP_CORE},
   FPReadXwd, FPReadXPM, FPReadPcx,
   FPWriteJPEG, FPWritePCX,
