@@ -47,12 +47,13 @@ type
     SaveDialog1: TSaveDialog;
     Splitter2: TSplitter;
     Splitter3: TSplitter;
-    Splitter4: TSplitter;
+    ImageSplitter: TSplitter;
     TabSheet1: TTabSheet;
     procedure CheckBox_ReplaceStrokeAndFillChange(Sender: TObject);
     procedure FileListBox1Change(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
+    procedure FormResize(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure Image1MouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -116,6 +117,7 @@ begin
   prof.BeginMeasure;
   svg.ContainerWidthAsPixel := 480;
   svg.ContainerHeightAsPixel := 360;
+  svg.CropToViewBox;
   bmp.FontRenderer := TBGRAVectorizedFontRenderer.Create;
   bmp.SetSize(Round(svg.WidthAsPixel*kzoom),Round(svg.HeightAsPixel*kzoom));
   bmp.Fill(BGRAWhite);
@@ -218,6 +220,11 @@ begin
  end;
 
  PanProf.DoubleBuffered:= True;
+end;
+
+procedure TForm1.FormResize(Sender: TObject);
+begin
+  Image1.Width := (Panel1.Width - ImageSplitter.Width) div 2;
 end;
 
 procedure TForm1.FormShow(Sender: TObject);

@@ -1,0 +1,6 @@
+/lib/
+/*.o
+/*.ppu
+/*.compiled
+/*.lps
+/*.res

@@ -8,7 +8,7 @@ unit BGRATypewriter;
 interface
 
 uses
-  BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform;
+  BGRAClasses, SysUtils, Avl_Tree, BGRABitmapTypes, BGRACanvas2D, BGRATransform, BGRAPath;
 
 type
   { Array of boxes for each glyph in text }
@@ -80,6 +80,30 @@ type
     property PointCount: integer read GetPointCount;
   end;
 
+  { Glyph defined by an exact outline stored in a path. The coordinates are
+    in the same unit as the other glyphs (the full height of the font is 1).
+    The contours of some fonts overlap, so the outline must be filled with the
+    winding rule (DrawText and DrawGlyph of the typewriter do it). }
+  TBGRAPathGlyph = class(TBGRAGlyph)
+  protected
+    FOutline: TBGRAPath;
+    FReversedOutline: TBGRAPath; // computed when needed
+    function ContentSize: integer; override;
+    function HeaderName: string; override;
+    procedure WriteContent(AStream: TStream); override;
+    procedure ReadContent(AStream: TStream); override;
+    function SerializeOutline: TMemoryStream;
+  public
+    constructor Create(AIdentifier: string); override;
+    constructor Create(AStream: TStream); override;
+    destructor Destroy; override;
+    { Gives the outline to the glyph, which takes ownership of it }
+    procedure SetOutline(AOutline: TBGRAPath);
+    procedure Path(ADest: IBGRAPath; AMatrix: TAffineMatrix; AReverse: boolean = false); override;
+    property Outline: TBGRAPath read FOutline;
+  end;
+
+type
   { Header of typewriter stream }
   TBGRACustomTypeWriterHeader = record
     HeaderName: String;
@@ -172,7 +196,7 @@ function ComputeEasyBezier(APoints: array of TPointF; ACurveMode: array of TGlyp
 
 implementation
 
-uses BGRAUTF8, BGRAUnicode, math;
+uses BGRAUTF8, BGRAUnicode, BGRAGraphics, math;
 
 type
   TDisplayInfoCallbackData = record
@@ -531,6 +555,115 @@ begin
     FEasyBezier.CopyToPath(ADest, @PointTransformMatrix, @AMatrix, AReverse);
 end;
 
+{ TBGRAPathGlyph }
+
+function TBGRAPathGlyph.SerializeOutline: TMemoryStream;
+begin
+  result := TMemoryStream.Create;
+  try
+    FOutline.SaveToStream(result);
+  except
+    result.Free;
+    raise;
+  end;
+end;
+
+function TBGRAPathGlyph.ContentSize: integer;
+var
+  data: TMemoryStream;
+begin
+  data := SerializeOutline;
+  try
+    result := (inherited ContentSize) + 4 + integer(data.Size);
+  finally
+    data.Free;
+  end;
+end;
+
+function TBGRAPathGlyph.HeaderName: string;
+begin
+  result := 'TBGRAPathGlyph';
+end;
+
+procedure TBGRAPathGlyph.WriteContent(AStream: TStream);
+var
+  data: TMemoryStream;
+begin
+  inherited WriteContent(AStream);
+  data := SerializeOutline;
+  try
+    LEWriteLongint(AStream, data.Size);
+    if data.Size > 0 then AStream.WriteBuffer(data.Memory^, data.Size);
+  finally
+    data.Free;
+  end;
+end;
+
+procedure TBGRAPathGlyph.ReadContent(AStream: TStream);
+var
+  size: longint;
+  data: TMemoryStream;
+begin
+  inherited ReadContent(AStream);
+  size := LEReadLongint(AStream);
+  if (size < 0) or (size > AStream.Size - AStream.Position) then
+    raise exception.Create('Invalid glyph outline size');
+  data := TMemoryStream.Create;
+  try
+    data.SetSize(size);
+    if size > 0 then AStream.ReadBuffer(data.Memory^, size);
+    data.Position := 0;
+    FreeAndNil(FReversedOutline);
+    if FOutline = nil then FOutline := TBGRAPath.Create;
+    FOutline.LoadFromStream(data);
+  finally
+    data.Free;
+  end;
+end;
+
+constructor TBGRAPathGlyph.Create(AIdentifier: string);
+begin
+  inherited Create(AIdentifier);
+  FOutline := TBGRAPath.Create;
+end;
+
+constructor TBGRAPathGlyph.Create(AStream: TStream);
+begin
+  inherited Create(AStream);
+end;
+
+destructor TBGRAPathGlyph.Destroy;
+begin
+  FReversedOutline.Free;
+  FOutline.Free;
+  inherited Destroy;
+end;
+
+procedure TBGRAPathGlyph.SetOutline(AOutline: TBGRAPath);
+begin
+  if AOutline = FOutline then exit;
+  FreeAndNil(FReversedOutline);
+  FOutline.Free;
+  FOutline := AOutline;
+end;
+
+procedure TBGRAPathGlyph.Path(ADest: IBGRAPath; AMatrix: TAffineMatrix;
+  AReverse: boolean);
+begin
+  if FOutline = nil then exit;
+  if AReverse then
+  begin
+    // the direction of the outline is restored when the glyph is mirrored
+    if FReversedOutline = nil then
+    begin
+      FReversedOutline := TBGRAPath.Create;
+      FOutline.copyToReversed(FReversedOutline);
+    end;
+    FReversedOutline.copyTo(ADest, AMatrix);
+  end else
+    FOutline.copyTo(ADest, AMatrix);
+end;
+
 { TBGRAGlyph }
 
 procedure TBGRAGlyph.WriteHeader(AStream: TStream; AName: string;
@@ -604,6 +737,8 @@ begin
     result := TBGRAPolygonalGlyph.Create(AStream)
   else if lName = 'TBGRAEasyBezierGlyph' then
     result := TBGRAPolygonalGlyph.Create(AStream, true)
+  else if lName = 'TBGRAPathGlyph' then
+    result := TBGRAPathGlyph.Create(AStream)
   else if lName = 'TBGRAGlyph' then
     result := TBGRAGlyph.Create(AStream)
   else
@@ -788,9 +923,20 @@ end;
 
 procedure TBGRACustomTypeWriter.DrawGlyph(ADest: TBGRACanvas2D;
   AIdentifier: string; X, Y: Single; AAlign: TBGRATypeWriterAlignment; AMirrored: boolean);
+var
+  oldFillMode: TFillMode;
+  changeFillMode: boolean;
 begin
-  GlyphPath(ADest, AIdentifier, X,Y, AAlign, AMirrored);
-  DrawLastPath(ADest);
+  // the exact outlines of the fonts can overlap, which needs the winding rule
+  oldFillMode := ADest.fillMode;
+  changeFillMode := (oldFillMode <> fmWinding) and (GetGlyph(AIdentifier) is TBGRAPathGlyph);
+  if changeFillMode then ADest.fillMode := fmWinding;
+  try
+    GlyphPath(ADest, AIdentifier, X,Y, AAlign, AMirrored);
+    DrawLastPath(ADest);
+  finally
+    if changeFillMode then ADest.fillMode := oldFillMode;
+  end;
 end;
 
 procedure TBGRACustomTypeWriter.DrawText(ADest: TBGRACanvas2D; ATextUTF8: string;
@@ -798,24 +944,41 @@ procedure TBGRACustomTypeWriter.DrawText(ADest: TBGRACanvas2D; ATextUTF8: string
 var
   di: TBGRATextDisplayInfo;
   i: Integer;
+  oldFillMode: TFillMode;
+  changeFillMode: boolean;
 begin
   di := GetDisplayInfo(ATextUTF8,x,y,AAlign);
 
-  if (OutlineMode <> twoPath) and not DrawGlyphsSimultaneously then
-  begin
-    //draw each glyph
+  // the exact outlines of the fonts can overlap, which needs the winding rule
+  oldFillMode := ADest.fillMode;
+  changeFillMode := false;
+  if oldFillMode <> fmWinding then
     for i := 0 to high(di) do
+      if di[i].Glyph is TBGRAPathGlyph then
+      begin
+        changeFillMode := true;
+        break;
+      end;
+  if changeFillMode then ADest.fillMode := fmWinding;
+  try
+    if (OutlineMode <> twoPath) and not DrawGlyphsSimultaneously then
+    begin
+      //draw each glyph
+      for i := 0 to high(di) do
+      begin
+        ADest.beginPath;
+        di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
+        DrawLastPath(ADest);
+      end;
+    end else
     begin
       ADest.beginPath;
-      di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
+      for i := 0 to high(di) do
+        di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
       DrawLastPath(ADest);
     end;
-  end else
-  begin
-    ADest.beginPath;
-    for i := 0 to high(di) do
-      di[i].Glyph.Path(ADest, di[i].Matrix, di[i].Mirrored);
-    DrawLastPath(ADest);
+  finally
+    if changeFillMode then ADest.fillMode := oldFillMode;
   end;
 end;
 
@@ -1211,6 +1374,34 @@ var
     end;
   end;
 
+  //Devanagari conjunct: consonant + virama + consonant (up to four consonants)
+  procedure TryMergeDevanagariConjunct;
+  var
+    count, last: integer;
+    cluster: string;
+  begin
+    if merged or curRTLScript or ADisplayOrder and curRTL then exit;
+    cluster := copy(ATextUTF8, charInfo[cur-1].charStart,
+      charInfo[cur-1].charEnd-charInfo[cur-1].charStart);
+    if not UTF8StartsWithDevanagariConsonant(cluster) then exit;
+    count := 1;
+    last := cur-1;
+    while (count < DEVANAGARI_MAX_CONJUNCT_CONSONANTS) and (last+1 < length(charInfo)) and
+      UTF8EndsWithDevanagariVirama(copy(ATextUTF8, charInfo[last].charStart,
+        charInfo[last].charEnd-charInfo[last].charStart)) and
+      UTF8StartsWithDevanagariConsonant(copy(ATextUTF8, charInfo[last+1].charStart,
+        charInfo[last+1].charEnd-charInfo[last+1].charStart)) do
+    begin
+      inc(last);
+      inc(count);
+    end;
+    if last > cur-1 then
+    begin
+      cur := last+1;
+      merged := true;
+    end;
+  end;
+
 var
   nextchar,glyphId: string;
   g: TBGRAGlyph;
@@ -1248,6 +1439,7 @@ begin
     TryMerge([UTF8_ARABIC_ALEPH_HAMZA_ABOVE,UTF8_ARABIC_LAM]);
     TryMerge([UTF8_ARABIC_ALEPH_HAMZA_BELOW,UTF8_ARABIC_LAM]);
     TryMerge([UTF8_ARABIC_ALEPH_MADDA_ABOVE,UTF8_ARABIC_LAM]);
+    TryMergeDevanagariConjunct;
     //text extract correspond to the unordered actual sequence of characters
     setlength(nextchar, max(charInfo[curStart].charEnd, charInfo[cur-1].charEnd)
                        -min(charInfo[curStart].charStart, charInfo[cur-1].charStart));

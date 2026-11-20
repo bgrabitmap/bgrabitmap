@@ -1,0 +1,287 @@
+// SPDX-License-Identifier: LGPL-3.0-linking-exception
+{ Text rendering for GTK2 without going through a LCL TBitmap.
+
+  The LCL GTK2 widgetset represents a font as a PangoLayout. The same layout
+  is used here to render the text with Pango/Cairo directly into the memory
+  of a BGRA bitmap, which avoids creating a TBitmap, the round trips with
+  the X server and the conversion of the result.
+
+  This unit should NOT be added to the **uses** clause of applications. }
+unit BGRAGtk2Text;
+
+{$mode objfpc}{$H+}
+{$i bgrabitmap.inc}
+
+interface
+
+{$IFDEF LCLgtk2}
+uses
+  SysUtils, Types, Graphics, BGRABitmapTypes;
+
+{ Draws white text on the given black opaque bitmap, with the font height
+  multiplied by AFontHeightFactor, the top-left of the text being at ACoord.
+  The text is rotated around this point by AOrientationTenthDeg (counter-clockwise).
+  Returns false if this kind of text is not handled, in which case the bitmap
+  is left unchanged and the caller must use the generic way. }
+function BGRAPangoDrawText(AFont: TFont; AFontHeightFactor: integer;
+  const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap;
+  AOrientationTenthDeg: integer = 0): boolean;
+
+{ Computes the size of a single-line text with the same font settings as
+  BGRAPangoDrawText. Returns false if this kind of text is not handled. }
+function BGRAPangoTextSize(AFont: TFont; AFontHeightFactor: integer;
+  const AText: string; out ASize: TSize): boolean;
+
+{ Adds the exact outline of a single-line text to ADest, without hinting,
+  with its top-left corner at (0,0) and in pixels. The outline is made of
+  lines and cubic curves. ASize is the size of the text. Returns false if this
+  kind of text is not handled, in which case ADest may have been partially
+  filled. }
+function BGRAPangoTextPath(AFont: TFont; const AText: string;
+  ADest: IBGRAPath; out ASize: TPointF): boolean;
+{$ENDIF}
+
+implementation
+
+{$IFDEF LCLgtk2}
+uses
+  glib2, gtk2def, pango, cairo, pangocairo, BGRAClasses;
+
+// not declared in the Pango bindings of all FPC versions
+// (pangocairolib and pangolib are the names of the libraries used by the bindings)
+procedure pango_cairo_layout_path_(cr: Pcairo_t; layout: PPangoLayout);
+  cdecl; external pangocairolib name 'pango_cairo_layout_path';
+
+function pango_find_base_dir_(text: PChar; length: longint): TPangoDirection;
+  cdecl; external pangolib name 'pango_find_base_dir';
+
+var
+  WorkFont: TFont;
+  WorkFontLock: TRTLCriticalSection;
+  MeasureSurface: Pcairo_surface_t;
+  MeasureCr: Pcairo_t;
+  // unbounded surface, otherwise the glyphs outside of it are not in the path
+  OutlineSurface: Pcairo_surface_t;
+  OutlineCr: Pcairo_t;
+  SharedLayout: PPangoLayout;
+  // settings of the text prepared in the shared layout, to avoid preparing it
+  // again when the text is drawn just after being measured
+  LastName: string;
+  LastHeight: integer;
+  LastStyle: TFontStyles;
+  LastQuality: TFontQuality;
+  LastText: string;
+  LastValid: boolean;
+
+{ Prepares a private layout, copying the settings of the layout of the LCL font.
+  A private layout is used, because the context of the LCL layout is shared
+  with other fonts and must not be modified. The same layout is reused for
+  each call, because creating it is expensive. It must not be freed by the
+  caller. The lock must be held. }
+function CreatePrivateLayout(cr: Pcairo_t; AFont: TFont;
+  AFontHeightFactor: integer; const AText: string): PPangoLayout;
+var
+  gdiFont: PGdiObject;
+  lcllayout: PPangoLayout;
+  options: Pcairo_font_options_t;
+  resolution: double;
+begin
+  result := nil;
+  if LastValid and (SharedLayout <> nil) and (AText = LastText) and
+     (AFont.Name = LastName) and (AFont.Height * AFontHeightFactor = LastHeight) and
+     (AFont.Style = LastStyle) and (AFont.Quality = LastQuality) then
+  begin
+    result := SharedLayout;
+    exit;
+  end;
+  LastValid := false;
+  if WorkFont = nil then WorkFont := TFont.Create;
+  WorkFont.Assign(AFont);
+  WorkFont.Orientation := 0;
+  WorkFont.Height := AFont.Height * AFontHeightFactor;
+  gdiFont := PGdiObject(WorkFont.Handle);
+  if gdiFont = nil then exit;
+  lcllayout := gdiFont^.GDIFontObject;
+  if lcllayout = nil then exit;
+
+  if SharedLayout = nil then SharedLayout := pango_cairo_create_layout(cr);
+  result := SharedLayout;
+  // same context settings as the LCL layout
+  resolution := pango_cairo_context_get_resolution(pango_layout_get_context(lcllayout));
+  if resolution > 0 then
+    pango_cairo_context_set_resolution(pango_layout_get_context(result), resolution);
+  options := pango_cairo_context_get_font_options(pango_layout_get_context(lcllayout));
+  if options <> nil then
+    pango_cairo_context_set_font_options(pango_layout_get_context(result), options);
+  // same font settings as the LCL layout
+  pango_layout_set_font_description(result, pango_layout_get_font_description(lcllayout));
+  pango_layout_set_attributes(result, pango_layout_get_attributes(lcllayout));
+  pango_layout_set_single_paragraph_mode(result, true);
+  pango_layout_set_width(result, -1);
+  pango_layout_set_alignment(result, PANGO_ALIGN_LEFT);
+  pango_layout_set_text(result, PChar(AText), Length(AText));
+  pango_context_set_base_dir(pango_layout_get_context(result),
+    pango_find_base_dir_(PChar(AText), Length(AText)));
+  pango_cairo_update_layout(cr, result);
+  LastName := AFont.Name;
+  LastHeight := AFont.Height * AFontHeightFactor;
+  LastStyle := AFont.Style;
+  LastQuality := AFont.Quality;
+  LastText := AText;
+  LastValid := true;
+end;
+
+function BGRAPangoDrawText(AFont: TFont; AFontHeightFactor: integer;
+  const AText: string; ACoord: TPoint; ADest: TBGRACustomBitmap;
+  AOrientationTenthDeg: integer = 0): boolean;
+var
+  layout: PPangoLayout;
+  surface: Pcairo_surface_t;
+  cr: Pcairo_t;
+begin
+  result := false;
+  if (ADest = nil) or (ADest.Width = 0) or (ADest.Height = 0) or (ADest.Data = nil) or
+     (ADest.LineOrder <> riloTopToBottom) or (AText = '') then exit;
+  // multiple lines are handled by the LCL
+  if (pos(#10, AText) <> 0) or (pos(#13, AText) <> 0) then exit;
+
+  EnterCriticalSection(WorkFontLock);
+  try
+    surface := cairo_image_surface_create_for_data(PByte(ADest.Data),
+      CAIRO_FORMAT_ARGB32, ADest.Width, ADest.Height, ADest.Width * sizeof(TBGRAPixel));
+    try
+      cr := cairo_create(surface);
+      try
+        layout := CreatePrivateLayout(cr, AFont, AFontHeightFactor, AText);
+        if layout = nil then exit;
+        cairo_set_source_rgb(cr, 1, 1, 1);
+        if AOrientationTenthDeg <> 0 then
+        begin
+          cairo_translate(cr, ACoord.X, ACoord.Y);
+          cairo_rotate(cr, -AOrientationTenthDeg*Pi/1800);
+          cairo_move_to(cr, 0, 0);
+        end else
+          cairo_move_to(cr, ACoord.X, ACoord.Y);
+        pango_cairo_show_layout(cr, layout);
+      finally
+        cairo_destroy(cr);
+      end;
+      cairo_surface_flush(surface);
+    finally
+      cairo_surface_destroy(surface);
+    end;
+    ADest.InvalidateBitmap;
+    result := true;
+  finally
+    LeaveCriticalSection(WorkFontLock);
+  end;
+end;
+
+function BGRAPangoTextSize(AFont: TFont; AFontHeightFactor: integer;
+  const AText: string; out ASize: TSize): boolean;
+var
+  layout: PPangoLayout;
+  w, h: longint;
+begin
+  result := false;
+  ASize := Size(0, 0);
+  if (pos(#10, AText) <> 0) or (pos(#13, AText) <> 0) then exit;
+  if AText = '' then exit(true);
+
+  EnterCriticalSection(WorkFontLock);
+  try
+    if MeasureCr = nil then
+    begin
+      MeasureSurface := cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
+      MeasureCr := cairo_create(MeasureSurface);
+    end;
+    layout := CreatePrivateLayout(MeasureCr, AFont, AFontHeightFactor, AText);
+    if layout = nil then exit;
+    pango_layout_get_pixel_size(layout, @w, @h);
+    ASize := Size(w, h);
+    result := true;
+  finally
+    LeaveCriticalSection(WorkFontLock);
+  end;
+end;
+
+function BGRAPangoTextPath(AFont: TFont; const AText: string;
+  ADest: IBGRAPath; out ASize: TPointF): boolean;
+var
+  layout: PPangoLayout;
+  options: Pcairo_font_options_t;
+  path: Pcairo_path_t;
+  d: Pcairo_path_data_t;
+  i: integer;
+  logical: TPangoRectangle;
+begin
+  result := false;
+  ASize := PointF(0, 0);
+  if (AText = '') or (pos(#10, AText) <> 0) or (pos(#13, AText) <> 0) then exit;
+
+  EnterCriticalSection(WorkFontLock);
+  try
+    if OutlineCr = nil then
+    begin
+      OutlineSurface := cairo_recording_surface_create(CAIRO_CONTENT_COLOR_ALPHA, nil);
+      OutlineCr := cairo_create(OutlineSurface);
+    end;
+    layout := CreatePrivateLayout(OutlineCr, AFont, 1, AText);
+    if layout = nil then exit;
+    // the exact outline is wanted, not the one adjusted to the pixel grid
+    options := cairo_font_options_create;
+    cairo_font_options_set_hint_style(options, CAIRO_HINT_STYLE_NONE);
+    cairo_font_options_set_hint_metrics(options, CAIRO_HINT_METRICS_OFF);
+    pango_cairo_context_set_font_options(pango_layout_get_context(layout), options);
+    cairo_font_options_destroy(options);
+    pango_cairo_update_layout(OutlineCr, layout);
+    LastValid := false; // the layout is not prepared as usual anymore
+
+    pango_layout_get_extents(layout, nil, @logical);
+    ASize := PointF(logical.width / PANGO_SCALE, logical.height / PANGO_SCALE);
+
+    cairo_new_path(OutlineCr);
+    cairo_move_to(OutlineCr, 0, 0);
+    pango_cairo_layout_path_(OutlineCr, layout);
+    path := cairo_copy_path(OutlineCr);
+    cairo_new_path(OutlineCr);
+    try
+      if path^.status <> CAIRO_STATUS_SUCCESS then exit;
+      i := 0;
+      while i < path^.num_data do
+      begin
+        d := path^.data + i;
+        case d^.header._type of
+          CAIRO_PATH_MOVE_TO: ADest.moveTo(PointF((d+1)^.point.x, (d+1)^.point.y));
+          CAIRO_PATH_LINE_TO: ADest.lineTo(PointF((d+1)^.point.x, (d+1)^.point.y));
+          CAIRO_PATH_CURVE_TO:
+            ADest.bezierCurveTo(PointF((d+1)^.point.x, (d+1)^.point.y),
+                                PointF((d+2)^.point.x, (d+2)^.point.y),
+                                PointF((d+3)^.point.x, (d+3)^.point.y));
+          CAIRO_PATH_CLOSE_PATH: ADest.closePath;
+        end;
+        inc(i, d^.header.length);
+      end;
+      result := true;
+    finally
+      cairo_path_destroy(path);
+    end;
+  finally
+    LeaveCriticalSection(WorkFontLock);
+  end;
+end;
+
+initialization
+  InitCriticalSection(WorkFontLock);
+
+finalization
+  if OutlineCr <> nil then cairo_destroy(OutlineCr);
+  if OutlineSurface <> nil then cairo_surface_destroy(OutlineSurface);
+  if SharedLayout <> nil then g_object_unref(SharedLayout);
+  if MeasureCr <> nil then cairo_destroy(MeasureCr);
+  if MeasureSurface <> nil then cairo_surface_destroy(MeasureSurface);
+  FreeAndNil(WorkFont);
+  DoneCriticalSection(WorkFontLock);
+{$ENDIF}
+
+end.

@@ -27,7 +27,7 @@ uses
 {=== Miscellaneous types ===}
 
   {* Current version expressed as an integer with each part multiplied by 100 }
-  const BGRABitmapVersion = 11060900;
+  const BGRABitmapVersion = 11070000;
 
   {* String representation of the version, numbers separated by dots }
   function BGRABitmapVersionStr: string;
@@ -723,7 +723,7 @@ function ResourceFile(AFilename: string): string;
 implementation
 
 uses Math, SysUtils,
-  BGRAUTF8, BGRAUnits, FPWriteBMP, BGRAReadPNM, FPWritePNM, FPWriteXPM
+  BGRAUTF8, BGRAUnits, BGRALightness, FPWriteBMP, BGRAReadPNM, FPWritePNM, FPWriteXPM
   {$IFNDEF BGRABITMAP_CORE},
   FPReadXwd, FPReadXPM, FPReadPcx,
   FPWriteJPEG, FPWritePCX,

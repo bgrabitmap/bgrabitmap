@@ -1,0 +1,35 @@
+#include <stddef.h>
+#include <stdio.h>
+#include <webp/encode.h>
+int main(void) {
+  printf("WebPConfig.sizeof=%zu\n", sizeof(WebPConfig));
+  printf("WebPConfig.quality=%zu\n", offsetof(WebPConfig,quality));
+  printf("WebPConfig.method=%zu\n", offsetof(WebPConfig,method));
+  printf("WebPConfig.exact=%zu\n", offsetof(WebPConfig,exact));
+  printf("WebPConfig.qmax=%zu\n", offsetof(WebPConfig,qmax));
+  printf("WebPPicture.sizeof=%zu\n", sizeof(WebPPicture));
+  printf("WebPPicture.use_argb=%zu\n", offsetof(WebPPicture,use_argb));
+  printf("WebPPicture.y=%zu\n", offsetof(WebPPicture,y));
+  printf("WebPPicture.a=%zu\n", offsetof(WebPPicture,a));
+  printf("WebPPicture.argb=%zu\n", offsetof(WebPPicture,argb));
+  printf("WebPPicture.writer=%zu\n", offsetof(WebPPicture,writer));
+  printf("WebPPicture.custom_ptr=%zu\n", offsetof(WebPPicture,custom_ptr));
+  printf("WebPPicture.extra_info=%zu\n", offsetof(WebPPicture,extra_info));
+  printf("WebPPicture.stats=%zu\n", offsetof(WebPPicture,stats));
+  printf("WebPPicture.error_code=%zu\n", offsetof(WebPPicture,error_code));
+  printf("WebPPicture.progress_hook=%zu\n", offsetof(WebPPicture,progress_hook));
+  printf("WebPPicture.user_data=%zu\n", offsetof(WebPPicture,user_data));
+  printf("WebPPicture.pad4=%zu\n", offsetof(WebPPicture,pad4));
+  printf("WebPPicture.memory_=%zu\n", offsetof(WebPPicture,memory_));
+  printf("WebPPicture.memory_argb_=%zu\n", offsetof(WebPPicture,memory_argb_));
+  printf("WebPPicture.pad7=%zu\n", offsetof(WebPPicture,pad7));
+  printf("WebPAuxStats.sizeof=%zu\n", sizeof(WebPAuxStats));
+  printf("WebPAuxStats.PSNR=%zu\n", offsetof(WebPAuxStats,PSNR));
+  printf("WebPAuxStats.lossless_features=%zu\n", offsetof(WebPAuxStats,lossless_features));
+  printf("WebPAuxStats.pad=%zu\n", offsetof(WebPAuxStats,pad));
+  printf("WebPMemoryWriter.sizeof=%zu\n", sizeof(WebPMemoryWriter));
+  printf("WebPMemoryWriter.size=%zu\n", offsetof(WebPMemoryWriter,size));
+  printf("WebPMemoryWriter.max_size=%zu\n", offsetof(WebPMemoryWriter,max_size));
+  printf("WebPMemoryWriter.pad=%zu\n", offsetof(WebPMemoryWriter,pad));
+  return 0;
+}

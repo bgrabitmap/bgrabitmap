@@ -83,7 +83,8 @@ type
         ExitCode += 1;
         with TRegExpr.Create do
         begin
-          Expression := '(Fatal|Error|/ld(\.[a-z]+)?):';
+          // Also show the linker output (ld may be prefixed, e.g. x86_64-linux-gnu-ld.bfd)
+          Expression := '(Fatal|Error:|(^|[/-])ld(\.[a-z]+)?:|undefined reference|cannot find|collect2|Linking)';
           for Line in SplitString(Result.Output, LineEnding) do
           begin
             if Exec(Line) then
@@ -188,7 +189,8 @@ type
     List := FindAllFiles(Target, '*.lpi', True);
     try
       for Each in List do
-        if not ContainsStr(Each, 'zengl') then
+        if not AnsiStartsText(IncludeTrailingPathDelimiter(ExpandFileName(Target + '/regression')),
+          ExpandFileName(Each)) and not ContainsStr(Each, 'zengl') then
           if ContainsStr(ReadFileToString(ReplaceStr(Each, '.lpi', '.lpr')),
             'consoletestrunner') then
             RunTest(Each)

@@ -39,7 +39,7 @@ interface
 //todo: tangent interpolation
 
 uses
-  BGRABitmapTypes, BGRATransform;
+  BGRAClasses, BGRABitmapTypes, BGRATransform;
 
 const
   DefaultDeviation = 0.1;
@@ -188,6 +188,7 @@ end;
     procedure InternalDraw(ADrawProc: TBGRAPathDrawProc; const AMatrix: TAffineMatrix; AAcceptedDeviation: single; AData: pointer);
     procedure BitmapDrawSubPathProc(const APoints: array of TPointF; AClosed: boolean; AData: pointer);
     function CorrectAcceptedDeviation(AAcceptedDeviation: single; const AMatrix: TAffineMatrix): single;
+    procedure InternalCopyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix; ATransform: boolean; AAcceptedDeviation: single);
   public
     constructor Create; overload; override;
     constructor Create(ASvgString: string); overload;
@@ -235,7 +236,30 @@ end;
     procedure arc(cx, cy, rx,ry: single; xAngleRadCW, startAngleRadCW, endAngleRadCW: single); overload;
     procedure arc(cx, cy, rx,ry, xAngleRadCW, startAngleRadCW, endAngleRadCW: single; anticlockwise: boolean); overload;
     procedure arcTo(rx,ry, xAngleRadCW: single; largeArc, anticlockwise: boolean; x,y:single); overload;
-    procedure copyTo(dest: IBGRAPath); override;
+    procedure copyTo(dest: IBGRAPath); override; overload;
+    { Copies the path to the destination after applying a transformation to
+      its coordinates. Lines and curves are transformed exactly, arcs and
+      splines are converted to lines. The accepted deviation of these lines is
+      given in the coordinates of the destination, so it is not affected by the
+      zoom of the matrix. }
+    procedure copyTo(dest: IBGRAPath; const AMatrix: TAffineMatrix; AAcceptedDeviation: single = DefaultDeviation); overload;
+    { Copies the path to the destination like copyTo, but each sub-path is
+      traversed in the opposite direction. The order of the sub-paths is kept
+      and closed sub-paths remain closed. Lines, curves and arcs are reversed
+      exactly, splines are converted to lines. }
+    procedure copyToReversed(dest: IBGRAPath); overload;
+    { Same as above, after applying a transformation to the coordinates. Arcs
+      and splines are converted to lines, with an accepted deviation given in
+      the coordinates of the destination. }
+    procedure copyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix; AAcceptedDeviation: single = DefaultDeviation); overload;
+    { Writes the path to a stream in a portable format (little endian,
+      independent of the pointer size). The current transformation is not
+      saved: coordinates are written as they are stored in the path. }
+    procedure SaveToStream(AStream: TStream);
+    { Replaces the content of the path by the one read from a stream written
+      by SaveToStream. The current transformation is reset. An exception is
+      raised if the data is invalid. }
+    procedure LoadFromStream(AStream: TStream);
     procedure addPath(const AValue: string); overload;
     procedure addPath(source: IBGRAPath); overload;
     procedure openedSpline(const pts: array of TPointF; style: TSplineStyle); override;
@@ -304,7 +328,7 @@ function IsLargeArc(const arc: TArcDef): boolean;
 
 implementation
 
-uses Math, BGRAClasses, BGRAResample, SysUtils;
+uses Math, BGRAResample, SysUtils;
 
 type
   TStrokeData = record
@@ -345,7 +369,7 @@ type
 
 const
   PathElementSize : array[TBGRAPathElementType] of PtrInt =
-  (0, Sizeof(TMoveToElement), Sizeof(TClosePathElement), sizeof(TPointF),
+  (0, Sizeof(TMoveToElement), sizeof(TPointF), Sizeof(TClosePathElement),
    sizeof(TQuadraticBezierToElement), sizeof(TCubicBezierToElement),
    sizeof(TArcElement), sizeof(TSplineElement)+sizeof(integer),
    sizeof(TSplineElement)+sizeof(integer));
@@ -742,43 +766,59 @@ begin
   path.Free;
 end;
 
+function ComputeArcPoints(x, y, rx, ry: single; startRad, endRad, sweepRad: double; nb: integer): ArrayOfTPointF;
+var i: integer;
+    c, s, c0, s0, dc, ds, nc: double;
+begin
+  setlength(result,nb);
+  //rotation by a constant step is much faster than calling sin and cos
+  //for each point, and keeps a precision far better than a single float
+  c := cos(startRad); s := sin(startRad);
+  dc := cos(sweepRad/(nb-1)); ds := sin(sweepRad/(nb-1));
+  for i := 0 to nb-1 do
+  begin
+    result[i] := PointF(x+rx*c, y-ry*s);
+    nc := c*dc - s*ds;
+    s := s*dc + c*ds;
+    c := nc;
+  end;
+  //end points are computed directly, so that connected shapes get identical values
+  result[0] := PointF(x+cos(startRad)*rx, y-sin(startRad)*ry);
+  result[nb-1] := PointF(x+cos(endRad)*rx, y-sin(endRad)*ry);
+end;
+
+function ArcPointCount(rx, ry: single; arclen: integer; quality: single): integer;
+begin
+  if quality < 0 then quality := 0;
+  result := round(((rx+ry)*2*quality+8)*arclen/65536) and not 3;
+  if arclen <= 16384 then
+  begin
+    if result < 2 then result := 2;
+  end else
+  if arclen <= 32768 then
+  begin
+    if result < 3 then result := 3;
+  end else
+  if arclen <= 32768+16384 then
+  begin
+    if result < 4 then result := 4;
+  end else
+    if result < 5 then result := 5;
+  //more points than angle steps would not improve the precision
+  if result > arclen+1 then result := arclen+1;
+end;
+
 function ComputeArc65536(x, y, rx, ry: single; start65536,end65536: word; quality: single): ArrayOfTPointF;
-var i,nb: integer;
+var nb: integer;
     arclen: integer;
-    pos: word;
 begin
   if end65536 > start65536 then
     arclen := end65536-start65536 else
     arclen := 65536-(start65536-end65536);
 
-  if quality < 0 then quality := 0;
-
-  nb := round(((rx+ry)*2*quality+8)*arclen/65536) and not 3;
-  if arclen <= 16384 then
-  begin
-    if nb < 2 then nb := 2;
-  end else
-  if arclen <= 32768 then
-  begin
-    if nb < 3 then nb := 3;
-  end else
-  if arclen <= 32768+16384 then
-  begin
-    if nb < 4 then nb := 4;
-  end else
-    if nb < 5 then nb := 5;
-
-  if nb > arclen+1 then nb := arclen+1;
-
-  setlength(result,nb);
-  for i := 0 to nb-1 do
-  begin
-    {$PUSH}{$R-}
-    pos := start65536+int64(i)*arclen div (int64(nb)-1);
-    {$POP}
-    result[i] := PointF(x+rx*(Cos65536(pos)-32768)/32768,
-                        y-ry*(Sin65536(pos)-32768)/32768);
-  end;
+  nb := ArcPointCount(rx,ry,arclen,quality);
+  //points are computed in floating point (the integer sine table is not precise enough)
+  result := ComputeArcPoints(x,y,rx,ry, start65536*Pi/32768, end65536*Pi/32768, arclen*Pi/32768, nb);
 end;
 
 function ComputeEllipse(x, y, rx, ry: single; quality: single): ArrayOfTPointF;
@@ -795,22 +835,35 @@ function ComputeArc65536(AOrigin, AXAxis, AYAxis: TPointF; start65536,
   end65536: word; quality: single): ArrayOfTPointF;
 begin
   //go back temporarily to radians
-  result := ComputeArcRad(AOrigin,AXAxis,AYAxis, start65536*Pi/326768, end65536*Pi/326768, quality);
+  result := ComputeArcRad(AOrigin,AXAxis,AYAxis, start65536*Pi/32768, end65536*Pi/32768, quality);
 end;
 
 function ComputeArcRad(x, y, rx, ry: single; startRadCCW, endRadCCW: single;
   quality: single): ArrayOfTPointF;
 var
   start65536, end65536: Int64;
+  arclen: integer;
+  sweep: double;
 begin
-  start65536 := round(startRadCCW*32768/Pi);
-  end65536 := round(endRadCCW*32768/Pi);
+  start65536 := round(startRadCCW*32768/Pi) and $ffff;
+  end65536 := round(endRadCCW*32768/Pi) and $ffff;
   //if arc is very small but non zero, it is not a circle
   if (start65536 = end65536) and (startRadCCW <> endRadCCW) then
-    setlength(result,2) else
-    result := ComputeArc65536(x,y,rx,ry,start65536 and $ffff,end65536 and $ffff,quality);
-  result[0] := PointF(x+cos(startRadCCW)*rx,y-sin(startRadCCW)*ry);
-  result[high(result)] := PointF(x+cos(endRadCCW)*rx,y-sin(endRadCCW)*ry);
+  begin
+    setlength(result,2);
+    result[0] := PointF(x+cos(startRadCCW)*rx,y-sin(startRadCCW)*ry);
+    result[1] := PointF(x+cos(endRadCCW)*rx,y-sin(endRadCCW)*ry);
+    exit;
+  end;
+  if end65536 > start65536 then
+    arclen := end65536-start65536 else
+    arclen := 65536-(start65536-end65536);
+  //exact sweep in radians, in ]0,2*Pi] (full circle if angles are equal)
+  sweep := endRadCCW-startRadCCW;
+  sweep := sweep - 2*Pi*Floor(sweep/(2*Pi));
+  if arclen = 65536 then sweep := 2*Pi
+  else if sweep <= 0 then sweep := sweep + 2*Pi;
+  result := ComputeArcPoints(x,y,rx,ry,startRadCCW,endRadCCW,sweep,ArcPointCount(rx,ry,arclen,quality));
 end;
 
 function ComputeArcRad(AOrigin, AXAxis, AYAxis: TPointF; startRadCCW,endRadCCW: single; quality: single): ArrayOfTPointF;
@@ -3130,6 +3183,361 @@ begin
         end;
     end;
   until not GoToNextElement(pos);
+end;
+
+procedure TBGRAPath.copyTo(dest: IBGRAPath; const AMatrix: TAffineMatrix;
+  AAcceptedDeviation: single);
+var
+  pos: IntPtr;
+  elemType: TBGRAPathElementType;
+  elem: Pointer;
+  pts: ArrayOfTPointF;
+  i: integer;
+begin
+  AAcceptedDeviation := CorrectAcceptedDeviation(AAcceptedDeviation, AMatrix);
+  pos := 0;
+  repeat
+    GetElementAt(pos, elemType, elem);
+    if elem = nil then break;
+    case elemType of
+      peMoveTo: dest.moveTo(AMatrix*PPointF(elem)^);
+      peLineTo: dest.lineTo(AMatrix*PPointF(elem)^);
+      peCloseSubPath: dest.closePath;
+      peQuadraticBezierTo:
+        with PQuadraticBezierToElement(elem)^ do
+          dest.quadraticCurveTo(AMatrix*ControlPoint, AMatrix*Destination);
+      peCubicBezierTo:
+        with PCubicBezierToElement(elem)^ do
+          dest.bezierCurveTo(AMatrix*ControlPoint1, AMatrix*ControlPoint2, AMatrix*Destination);
+      peArc, peOpenedSpline, peClosedSpline:
+        begin
+          pts := GetPolygonalApprox(pos, AAcceptedDeviation, true);
+          for i := 0 to high(pts) do dest.lineTo(AMatrix*pts[i]);
+        end;
+    end;
+  until not GoToNextElement(pos);
+end;
+
+procedure TBGRAPath.copyToReversed(dest: IBGRAPath);
+begin
+  InternalCopyToReversed(dest, AffineMatrixIdentity, false, DefaultDeviation);
+end;
+
+procedure TBGRAPath.copyToReversed(dest: IBGRAPath; const AMatrix: TAffineMatrix;
+  AAcceptedDeviation: single);
+begin
+  InternalCopyToReversed(dest, AMatrix, true, AAcceptedDeviation);
+end;
+
+procedure TBGRAPath.InternalCopyToReversed(dest: IBGRAPath;
+  const AMatrix: TAffineMatrix; ATransform: boolean; AAcceptedDeviation: single);
+type
+  TReverseSegment = record
+    ElemType: TBGRAPathElementType;
+    StartPt, EndPt, Ctrl1, Ctrl2: TPointF;
+    ArcDef: TArcDef;
+  end;
+var
+  segs: array of TReverseSegment;
+  segCount: integer;
+  subStart, cur: TPointF;
+  pos: IntPtr;
+  elemType: TBGRAPathElementType;
+  elem: Pointer;
+  pts: ArrayOfTPointF;
+  i: integer;
+
+  function T(const APt: TPointF): TPointF;
+  begin
+    if ATransform then result := AMatrix*APt else result := APt;
+  end;
+
+  procedure AddSegment(AType: TBGRAPathElementType; const AEnd: TPointF);
+  begin
+    if segCount >= length(segs) then setlength(segs, length(segs)*2+8);
+    with segs[segCount] do
+    begin
+      ElemType := AType;
+      StartPt := cur;
+      EndPt := AEnd;
+      Ctrl1 := EmptyPointF;
+      Ctrl2 := EmptyPointF;
+    end;
+    inc(segCount);
+    cur := AEnd;
+  end;
+
+  procedure FlushSubPath(AClosed: boolean);
+  var
+    k: integer;
+    rev: TArcDef;
+    tmp: single;
+  begin
+    if segCount > 0 then
+    begin
+      // for a closed sub-path, the closing line goes from the last point
+      // back to the start, which is the original closing line reversed
+      dest.moveTo(T(segs[segCount-1].EndPt));
+      for k := segCount-1 downto 0 do
+        with segs[k] do
+          case ElemType of
+          peLineTo: dest.lineTo(T(StartPt));
+          peQuadraticBezierTo: dest.quadraticCurveTo(T(Ctrl1), T(StartPt));
+          peCubicBezierTo: dest.bezierCurveTo(T(Ctrl2), T(Ctrl1), T(StartPt));
+          peArc:
+            begin
+              rev := ArcDef;
+              tmp := rev.startAngleRadCW;
+              rev.startAngleRadCW := rev.endAngleRadCW;
+              rev.endAngleRadCW := tmp;
+              rev.anticlockwise := not rev.anticlockwise;
+              dest.arc(rev);
+              // an arc is implicitly connected to the previous point by a line
+              if ArcStartPoint(ArcDef) <> StartPt then dest.lineTo(StartPt);
+            end;
+          end;
+      if AClosed then dest.closePath;
+    end;
+    segCount := 0;
+  end;
+
+begin
+  if ATransform then
+    AAcceptedDeviation := CorrectAcceptedDeviation(AAcceptedDeviation, AMatrix);
+  segCount := 0;
+  cur := EmptyPointF;
+  subStart := EmptyPointF;
+  pos := 0;
+  repeat
+    GetElementAt(pos, elemType, elem);
+    if elem = nil then break;
+    case elemType of
+      peMoveTo:
+        begin
+          FlushSubPath(false);
+          subStart := PPointF(elem)^;
+          cur := subStart;
+        end;
+      peCloseSubPath:
+        begin
+          FlushSubPath(true);
+          cur := subStart;
+        end;
+      peLineTo: AddSegment(peLineTo, PPointF(elem)^);
+      peQuadraticBezierTo:
+        begin
+          AddSegment(peQuadraticBezierTo, PQuadraticBezierToElement(elem)^.Destination);
+          segs[segCount-1].Ctrl1 := PQuadraticBezierToElement(elem)^.ControlPoint;
+        end;
+      peCubicBezierTo:
+        begin
+          AddSegment(peCubicBezierTo, PCubicBezierToElement(elem)^.Destination);
+          segs[segCount-1].Ctrl1 := PCubicBezierToElement(elem)^.ControlPoint1;
+          segs[segCount-1].Ctrl2 := PCubicBezierToElement(elem)^.ControlPoint2;
+        end;
+      peArc:
+        if not ATransform then
+        begin
+          AddSegment(peArc, ArcEndPoint(PArcElement(elem)^));
+          segs[segCount-1].ArcDef := PArcElement(elem)^;
+        end else
+        begin
+          pts := GetPolygonalApprox(pos, AAcceptedDeviation, true);
+          for i := 0 to high(pts) do
+            if pts[i] <> cur then AddSegment(peLineTo, pts[i]);
+        end;
+      peOpenedSpline, peClosedSpline:
+        begin
+          pts := GetPolygonalApprox(pos, AAcceptedDeviation, true);
+          for i := 0 to high(pts) do
+            if pts[i] <> cur then AddSegment(peLineTo, pts[i]);
+          if (elemType = peClosedSpline) and (length(pts) > 0) and (cur <> pts[0]) then
+            AddSegment(peLineTo, pts[0]);
+        end;
+    end;
+  until not GoToNextElement(pos);
+  FlushSubPath(false);
+end;
+
+procedure PathWriteByte(AStream: TStream; AValue: byte);
+begin
+  AStream.WriteBuffer(AValue, 1);
+end;
+
+procedure PathWriteInt32(AStream: TStream; AValue: LongInt);
+begin
+  AValue := NtoLE(AValue);
+  AStream.WriteBuffer(AValue, 4);
+end;
+
+procedure PathWriteSingle(AStream: TStream; AValue: single);
+var v: LongWord;
+begin
+  Move(AValue, v, 4);
+  v := NtoLE(v);
+  AStream.WriteBuffer(v, 4);
+end;
+
+procedure PathWritePoint(AStream: TStream; const AValue: TPointF);
+begin
+  PathWriteSingle(AStream, AValue.x);
+  PathWriteSingle(AStream, AValue.y);
+end;
+
+function PathReadByte(AStream: TStream): byte;
+begin
+  AStream.ReadBuffer(result, 1);
+end;
+
+function PathReadInt32(AStream: TStream): LongInt;
+begin
+  AStream.ReadBuffer(result, 4);
+  result := LEtoN(result);
+end;
+
+function PathReadSingle(AStream: TStream): single;
+var v: LongWord;
+begin
+  AStream.ReadBuffer(v, 4);
+  v := LEtoN(v);
+  Move(v, result, 4);
+end;
+
+function PathReadPoint(AStream: TStream): TPointF;
+begin
+  result.x := PathReadSingle(AStream);
+  result.y := PathReadSingle(AStream);
+end;
+
+{ Format: a sequence of elements, each made of one byte for the type
+  (see TBGRAPathElementType) followed by its data, and ended by a zero byte.
+  All numbers are little endian: single (4 bytes) for coordinates, 32-bit
+  integer for counts. Point = x, y.
+  - MoveTo, LineTo: point
+  - CloseSubPath: no data
+  - QuadraticBezierTo: control point, destination
+  - CubicBezierTo: control point 1, control point 2, destination
+  - Arc: center, radius (x, y), xAngle, startAngle, endAngle, anticlockwise (byte)
+  - OpenedSpline, ClosedSpline: style (byte), count (int32), points
+  New element types can be added at the end of TBGRAPathElementType. }
+procedure TBGRAPath.SaveToStream(AStream: TStream);
+var
+  pos: IntPtr;
+  elemType: TBGRAPathElementType;
+  elem: Pointer;
+  p: PPointF;
+  i: integer;
+begin
+  pos := 0;
+  repeat
+    GetElementAt(pos, elemType, elem);
+    if elem = nil then break;
+    PathWriteByte(AStream, ord(elemType));
+    case elemType of
+      peMoveTo, peLineTo: PathWritePoint(AStream, PPointF(elem)^);
+      peQuadraticBezierTo:
+        with PQuadraticBezierToElement(elem)^ do
+        begin
+          PathWritePoint(AStream, ControlPoint);
+          PathWritePoint(AStream, Destination);
+        end;
+      peCubicBezierTo:
+        with PCubicBezierToElement(elem)^ do
+        begin
+          PathWritePoint(AStream, ControlPoint1);
+          PathWritePoint(AStream, ControlPoint2);
+          PathWritePoint(AStream, Destination);
+        end;
+      peArc:
+        with PArcElement(elem)^ do
+        begin
+          PathWritePoint(AStream, center);
+          PathWritePoint(AStream, radius);
+          PathWriteSingle(AStream, xAngleRadCW);
+          PathWriteSingle(AStream, startAngleRadCW);
+          PathWriteSingle(AStream, endAngleRadCW);
+          PathWriteByte(AStream, ord(anticlockwise));
+        end;
+      peOpenedSpline, peClosedSpline:
+        with PSplineElement(elem)^ do
+        begin
+          PathWriteByte(AStream, ord(SplineStyle));
+          PathWriteInt32(AStream, NbControlPoints);
+          p := PPointF(PSplineElement(elem)+1);
+          for i := 0 to NbControlPoints-1 do
+          begin
+            PathWritePoint(AStream, p^);
+            inc(p);
+          end;
+        end;
+    end;
+  until not GoToNextElement(pos);
+  PathWriteByte(AStream, ord(peNone));
+end;
+
+procedure TBGRAPath.LoadFromStream(AStream: TStream);
+const MaxSplinePoints = 1 shl 22;
+var
+  t: byte;
+  elemType: TBGRAPathElementType;
+  p1, p2, p3: TPointF;
+  arcDef: TArcDef;
+  styleByte: byte;
+  n, i: integer;
+  pts: ArrayOfTPointF;
+begin
+  beginPath;
+  resetTransform;
+  repeat
+    t := PathReadByte(AStream);
+    if t = ord(peNone) then break;
+    if t > ord(high(TBGRAPathElementType)) then
+      raise exception.Create('Unknown path element type');
+    elemType := TBGRAPathElementType(t);
+    case elemType of
+      peMoveTo: moveTo(PathReadPoint(AStream));
+      peLineTo: lineTo(PathReadPoint(AStream));
+      peCloseSubPath: closePath;
+      peQuadraticBezierTo:
+        begin
+          p1 := PathReadPoint(AStream);
+          p2 := PathReadPoint(AStream);
+          quadraticCurveTo(p1, p2);
+        end;
+      peCubicBezierTo:
+        begin
+          p1 := PathReadPoint(AStream);
+          p2 := PathReadPoint(AStream);
+          p3 := PathReadPoint(AStream);
+          bezierCurveTo(p1, p2, p3);
+        end;
+      peArc:
+        begin
+          arcDef.center := PathReadPoint(AStream);
+          arcDef.radius := PathReadPoint(AStream);
+          arcDef.xAngleRadCW := PathReadSingle(AStream);
+          arcDef.startAngleRadCW := PathReadSingle(AStream);
+          arcDef.endAngleRadCW := PathReadSingle(AStream);
+          arcDef.anticlockwise := PathReadByte(AStream) <> 0;
+          arc(arcDef);
+        end;
+      peOpenedSpline, peClosedSpline:
+        begin
+          styleByte := PathReadByte(AStream);
+          if styleByte > ord(high(TSplineStyle)) then
+            raise exception.Create('Unknown spline style');
+          n := PathReadInt32(AStream);
+          if (n < 0) or (n > MaxSplinePoints) then
+            raise exception.Create('Invalid number of spline points');
+          setlength(pts, n);
+          for i := 0 to n-1 do pts[i] := PathReadPoint(AStream);
+          if elemType = peOpenedSpline then
+            openedSpline(pts, TSplineStyle(styleByte))
+          else
+            closedSpline(pts, TSplineStyle(styleByte));
+        end;
+    end;
+  until false;
 end;
 
 initialization

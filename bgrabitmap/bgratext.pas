@@ -8,7 +8,11 @@
   Text functions use a temporary bitmap where the operating system text drawing
   is used. Then it is scaled down (if antialiasing is activated) and colored.
 
-  These routines are rather slow, so you may use other font renderers
+  Cocoa renders undecorated horizontal lines directly with CoreText, using
+  native vertical antialiasing and horizontal-only 3x sampling for fine
+  RGB/BGR. Other layouts retain the system bitmap fallback.
+
+  The bitmap fallback can be slow, so you may use other font renderers
   like TBGRATextEffectFontRenderer in BGRATextFX if you want to use LCL fonts,
   or, if you have TrueType fonts files, you may use TBGRAFreeTypeFontRenderer
   in BGRAFreeType.
@@ -45,6 +49,18 @@ interface
 {$ENDIF}
 {$IFDEF BGRABITMAP_USE_MSEGUI}
   {$DEFINE RENDER_TEXT_ON_TBITMAP}
+{$ENDIF}
+{$IF defined(LCLgtk2) or defined(LCLgtk3)}
+  // text is rendered directly with Pango, see BGRAGtk2Text and BGRAGtk3Text
+  {$DEFINE BGRA_PANGO_TEXT}
+{$ENDIF}
+{$IFDEF LCLwin32}
+  // exact outlines of simple characters, see BGRAWin32Text
+  {$DEFINE BGRA_WIN32_OUTLINE}
+{$ENDIF}
+{$IFDEF LCLqt5}
+  // exact outlines with QPainterPath, see BGRAQt5Text
+  {$DEFINE BGRA_QT5_OUTLINE}
 {$ENDIF}
 
 uses
@@ -112,6 +128,12 @@ type
     function TextSizeAngle(sUTF8: string; orientationTenthDegCCW: integer): TSize; override;
     function TextSize(sUTF8: string; AMaxWidth: integer; {%H-}ARightToLeft: boolean): TSize; overload; override;
     function TextFitInfo(sUTF8: string; AMaxWidth: integer): integer; override;
+    { Adds to ADest the exact outline of a single-line text if the system can
+      provide it, with the top-left corner at (0,0) and in pixels, without
+      hinting. ASize is the size of the text. Returns false if the system cannot
+      provide it, in which case ADest may have been partially filled. }
+    function GetTextOutline(sUTF8: string; ADest: IBGRAPath;
+      out ASize: TPointF): boolean;
     constructor Create;
     destructor Destroy; override;
     property OnWordBreak: TWordBreakHandler read FWordBreakHandler write FWordBreakHandler;
@@ -201,6 +223,11 @@ procedure BitmapFillRect(ABitmap: TBitmap; ARect: TRect; AColor: TColor);
 implementation
 
 uses Math, BGRATransform, BGRABlend, BGRAUTF8, BGRAUnicode, BGRATextBidi
+     {$IFDEF LCLCOCOA}, BGRACocoaText{$ENDIF}
+     {$IFDEF LCLgtk2}, BGRAGtk2Text{$ENDIF}
+     {$IFDEF LCLgtk3}, BGRAGtk3Text{$ENDIF}
+     {$IFDEF LCLwin32}, BGRAWin32Text{$ENDIF}
+     {$IFDEF LCLqt5}, BGRAQt5Text{$ENDIF}
      {$IFDEF LCL}, Forms, LCLIntf, LCLType{$IF lcl_fullversion >= 1070000}, lclplatformdef{$ENDIF}{$ENDIF};
 
 const MaxPixelMetricCount = 100;
@@ -835,6 +862,38 @@ begin
   BGRABlend.BGRAFillClearTypeRGBMask(dest,x,y,mask,color,texture,KeepRGBOrder);
 end;
 
+var
+  MeasureBitmap: TBitmap;
+  MeasureBitmapLock: TRTLCriticalSection;
+
+{ A single bitmap is reused to measure text, because creating a bitmap and
+  its canvas for each measure is expensive. The caller must call
+  ReleaseMeasureBitmap when done, and DiscardMeasureBitmap on exception. }
+function AcquireMeasureBitmap: TBitmap;
+begin
+  EnterCriticalSection(MeasureBitmapLock);
+  try
+    if MeasureBitmap = nil then
+    begin
+      MeasureBitmap := TBitmap.Create;
+      {$IFDEF BGRABITMAP_USE_MSEGUI}
+      MeasureBitmap.Width := 1;
+      MeasureBitmap.Height := 1;
+      {$ENDIF}
+    end;
+    result := MeasureBitmap;
+  except
+    LeaveCriticalSection(MeasureBitmapLock);
+    raise;
+  end;
+end;
+
+procedure ReleaseMeasureBitmap(ADiscard: boolean);
+begin
+  if ADiscard then FreeAndNil(MeasureBitmap);
+  LeaveCriticalSection(MeasureBitmapLock);
+end;
+
 function BGRAOriginalTextSizeEx(Font: TFont; Quality: TBGRAFontQuality;
   sUTF8: string; CustomAntialiasingLevel: Integer; 
   out actualAntialiasingLevel: integer; 
@@ -850,6 +909,10 @@ function BGRAOriginalTextSizeExAngle(Font: TFont; AOrientation: integer;
   out extraVerticalMarginDueToRotation: integer): TSize;
 var
   tempBmp: TBitmap;
+  discard: boolean;
+  {$IFDEF BGRA_PANGO_TEXT}
+  sizeFactor: integer;
+  {$ENDIF}
 begin
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   extraVerticalMarginDueToRotation := 0;
@@ -857,13 +920,20 @@ begin
     result := Size(0,0)
   else
   begin
-    tempBmp := nil;
+    {$IFDEF BGRA_PANGO_TEXT}
+    // measure directly with Pango, without LCL bitmap
+    if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
+      sizeFactor := CustomAntialiasingLevel
+    else
+    begin
+      sizeFactor := 1;
+      actualAntialiasingLevel:= 1;
+    end;
+    if BGRAPangoTextSize(Font, sizeFactor, sUTF8, result) then exit;
+    {$ENDIF}
+    discard := false;
+    tempBmp := AcquireMeasureBitmap;
     try
-      tempBmp := TBitmap.Create;
-      {$IFDEF BGRABITMAP_USE_MSEGUI}
-      tempBmp.Width := 1;
-      tempBmp.Height := 1;
-      {$ENDIF}
       tempBmp.Canvas.Font := Font;
       if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
       begin
@@ -885,9 +955,10 @@ begin
       begin
         result := Size(0,0);
         SystemFontDisabledValue := True;
+        discard := true;
       end;
     end;
-    tempBmp.Free;
+    ReleaseMeasureBitmap(discard);
   end;
 end;
 
@@ -906,18 +977,15 @@ function BGRAOriginalTextSizeStyle(Font: TFont; Quality: TBGRAFontQuality;
   AMaxWidth: integer): TSize;
 var
   tempBmp: TBitmap;
+  discard: boolean;
 begin
   if not SystemFontAvailable then
     result := Size(0,0)
   else
   begin
-    tempBmp := nil;
+    discard := false;
+    tempBmp := AcquireMeasureBitmap;
     try
-      tempBmp := TBitmap.Create;
-      {$IFDEF BGRABITMAP_USE_MSEGUI}
-      tempBmp.Width := 1;
-      tempBmp.Height := 1;
-      {$ENDIF}
       tempBmp.Canvas.Font := Font;
       if Quality in[fqFineClearTypeBGR,fqFineClearTypeRGB,fqFineAntialiasing] then
       begin
@@ -932,9 +1000,10 @@ begin
       begin
         result := Size(0,0);
         SystemFontDisabledValue := True;
+        discard := true;
       end;
     end;
-    tempBmp.Free;
+    ReleaseMeasureBitmap(discard);
   end;
 end;
 
@@ -951,6 +1020,10 @@ var
   actualAntialiasingLevel{$IFDEF LCL}{$IF lcl_fullversion < 1070000}, len1{$ENDIF}{$ENDIF}: Integer;
   tempBmp: TBitmap;
 begin
+  {$IFDEF LCLCOCOA}
+  if SystemFontAvailable and BGRACocoaTextSupported(Font, AOrientation, sUTF8) then
+    exit(BGRACocoaTextFitInfo(Font, sUTF8, AMaxWidth));
+  {$ENDIF}
   if (AMaxWidth = 0) or (length(sUTF8)=0) then exit(0);
   actualAntialiasingLevel:= CustomAntialiasingLevel;
   if not SystemFontAvailable then
@@ -992,6 +1065,12 @@ function BGRATextSizeStyle(Font: TFont; Quality: TBGRAFontQuality;
   sUTF8: string; AStyle: TTextStyle;
   CustomAntialiasingLevel: integer; AMaxWidth: integer): TSize;
 begin
+  {$IFDEF LCLCOCOA}
+  if SystemFontAvailable and AStyle.SingleLine and not AStyle.ShowPrefix and
+     not AStyle.Wordbreak and not AStyle.EndEllipsis and
+     BGRACocoaTextSupported(Font, 0, sUTF8) then
+    exit(BGRACocoaTextSize(Font, sUTF8));
+  {$ENDIF}
   {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if Quality = fqFineAntialiasing then Quality:= fqSystem;
   {$ENDIF}
@@ -1027,7 +1106,7 @@ begin
   result := BGRATextSizeAngle(Font, Font.Orientation, Quality, sUTF8, CustomAntialiasingLevel);
 end;
 
-function BGRATextSizeAngle(Font: TFont; AOrientation: integer; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
+function BGRATextSizeAngleFallback(Font: TFont; AOrientation: integer; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
 begin
   {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if Quality = fqFineAntialiasing then Quality:= fqSystem;
@@ -1038,6 +1117,15 @@ begin
     result.cx := ceil(Result.cx/CustomAntialiasingLevel);
     result.cy := ceil(Result.cy/CustomAntialiasingLevel);
   end;
+end;
+
+function BGRATextSizeAngle(Font: TFont; AOrientation: integer; Quality: TBGRAFontQuality; sUTF8: string; CustomAntialiasingLevel: Integer): TSize;
+begin
+  {$IFDEF LCLCOCOA}
+  if SystemFontAvailable and BGRACocoaTextSupported(Font, AOrientation, sUTF8) then
+    exit(BGRACocoaTextSize(Font, sUTF8));
+  {$ENDIF}
+  result := BGRATextSizeAngleFallback(Font,AOrientation,Quality,sUTF8,CustomAntialiasingLevel);
 end;
 
 procedure FilterOriginalText(Quality: TBGRAFontQuality; CustomAntialiasingLevel: Integer; var temp: TBGRACustomBitmap;
@@ -1160,6 +1248,14 @@ begin
     exit;
   end;
 
+  {$IFDEF LCLCOCOA}
+  if BGRACocoaTextSupported(Font, 0, sUTF8) then
+  begin
+    BGRACocoaTextOut(bmp,Font,Quality,xf,yf,sUTF8,c,tex,align);
+    exit;
+  end;
+  {$ENDIF}
+
   {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if (Quality in [fqFineAntialiasing, fqFineClearTypeRGB, fqFineClearTypeBGR]) and
      (BGRATextSize(Font, fqSystem, 'Hg', 1).cy >= 13) then
@@ -1196,6 +1292,16 @@ begin
   iLeft := floor(xF) - (iMargin.cx div sizeFactor);
   iTop := floor(yF) - (iMargin.cy div sizeFactor);
 
+  {$IFDEF BGRA_PANGO_TEXT}
+  // render directly in memory with Pango, without LCL bitmap
+  temp := BGRABitmapFactory.Create(sizeWithMargin.cx, sizeWithMargin.cy, BGRABlack);
+  if not BGRAPangoDrawText(Font, sizeFactor, sUTF8,
+       Point(HalfUp((xf - floor(xf)) * sizeFactor) + iMargin.cx,
+             HalfUp((yf - floor(yf)) * sizeFactor) + iMargin.cy), temp) then
+    FreeAndNil(temp);
+  if temp = nil then
+  begin
+  {$ENDIF}
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
   tempLCL.Width := sizeWithMargin.cx;
@@ -1218,6 +1324,9 @@ begin
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
+  {$ENDIF}
+  {$IFDEF BGRA_PANGO_TEXT}
+  end;
   {$ENDIF}
 
   FilterOriginalText(Quality, CustomAntialiasingLevel, temp, grayscale);
@@ -1324,6 +1433,16 @@ begin
   if deltaX <> 0 then inc(rotBounds.Right, sizeFactor);
   if deltaY <> 0 then inc(rotBounds.Bottom, sizeFactor);
 
+  {$IFDEF BGRA_PANGO_TEXT}
+  // render directly in memory with Pango, without LCL bitmap
+  temp := BGRABitmapFactory.Create(rotBounds.Right-rotBounds.Left,rotBounds.Bottom-rotBounds.Top, BGRABlack);
+  if not BGRAPangoDrawText(Font, sizeFactor, sUTF8,
+       Point(-rotBounds.Left+deltaX, -rotBounds.Top+deltaY), temp,
+       orientationTenthDegCCW) then
+    FreeAndNil(temp);
+  if temp = nil then
+  begin
+  {$ENDIF}
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
   tempLCL.Width := rotBounds.Right-rotBounds.Left;
@@ -1344,6 +1463,9 @@ begin
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
+  {$ENDIF}
+  {$IFDEF BGRA_PANGO_TEXT}
+  end;
   {$ENDIF}
 
   FilterOriginalText(Quality,CustomAntialiasingLevel,temp,grayscale);
@@ -1385,6 +1507,19 @@ begin
   if (tx <= 0) or (ty <= 0) then
     exit;
 
+  {$IFDEF LCLCOCOA}
+  if style.SingleLine and not style.ShowPrefix and not style.Wordbreak and
+     not style.EndEllipsis and (style.Alignment = taLeftJustify) and
+     (style.Layout = tlTop) and BGRACocoaTextSupported(Font, 0, sUTF8) then
+  begin
+    if style.RightToLeft then sUTF8 := UTF8EmbedDirection(sUTF8,true);
+    bmp.ClipRect := lim;
+    try BGRACocoaTextOut(bmp,Font,Quality,xf,yf,sUTF8,c,tex,taLeftJustify);
+    finally bmp.ClipRect := cr end;
+    exit;
+  end;
+  {$ENDIF}
+
   {$IFDEF SYSTEM_RENDERER_IS_FINE}
   if (Quality in [fqFineAntialiasing, fqFineClearTypeRGB, fqFineClearTypeBGR]) and
      (BGRATextSize(Font, fqSystem, 'Hg', 1).cy >= 13) then
@@ -1401,6 +1536,24 @@ begin
   else
     sizeFactor := 1;
 
+  {$IFDEF BGRA_PANGO_TEXT}
+  // The LCL draws single-line text aligned on the top-left like a simple
+  // text output (right-to-left reading is ignored, and a prefix only matters
+  // if there is an ampersand), so it can be rendered directly with Pango.
+  temp := nil;
+  if style.SingleLine and (style.Alignment = taLeftJustify) and (style.Layout = tlTop) and
+     not style.Wordbreak and not style.Opaque and not style.Clipping and
+     not style.EndEllipsis and not style.ExpandTabs and not style.SystemFont and
+     not (style.ShowPrefix and (pos('&', sUTF8) <> 0)) then
+  begin
+    temp := BGRABitmapFactory.Create(tx*sizeFactor, ty*sizeFactor, BGRABlack);
+    if not BGRAPangoDrawText(Font, sizeFactor, sUTF8,
+         Point(HalfUp((xf - lim.Left)*sizeFactor), HalfUp((yf - lim.Top)*sizeFactor)), temp) then
+      FreeAndNil(temp);
+  end;
+  if temp = nil then
+  begin
+  {$ENDIF}
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   tempLCL := TBitmap.Create;
   tempLCL.Width := tx*sizeFactor;
@@ -1423,6 +1576,9 @@ begin
   {$IFDEF RENDER_TEXT_ON_TBITMAP}
   temp := BGRABitmapFactory.create(tempLCL,False);
   tempLCL.Free;
+  {$ENDIF}
+  {$IFDEF BGRA_PANGO_TEXT}
+  end;
   {$ENDIF}
 
   FilterOriginalText(Quality,CustomAntialiasingLevel,temp,grayscale);
@@ -1480,6 +1636,12 @@ begin
            BGRADefaultTextOutStyle(False, AShowPrefix), MaxLongint));
   {$ENDIF}
   if AShowPrefix then sUTF8 := RemovePrefix(sUTF8);
+  {$IFDEF LCLCOCOA}
+  // Prefix decorations keep the original bitmap path and its measurements.
+  if AShowPrefix then
+    result := BGRATextSizeAngleFallback(FFont,AOrientation,FontQuality,sUTF8,FontAntialiasingLevel)
+  else
+  {$ENDIF}
   result := BGRAText.BGRATextSizeAngle(FFont, AOrientation, FontQuality,
                                        sUTF8, FontAntialiasingLevel);
   if (result.cy >= 24) 
@@ -1921,7 +2083,8 @@ begin
     if AOrientation mod 3600 = 0 then
     begin
       {$IFNDEF TEXTOUT_KERNING_PATCH}
-      if not AShowPrefix and not ARightToLeft then
+      if not AShowPrefix and (not ARightToLeft
+        {$IFDEF LCLCOCOA}or BGRACocoaTextSupported(FFont,AOrientation,sUTF8){$ENDIF}) then
         BGRAText.BGRATextOut(ADest,FFont,FontQuality,x,y,sUTF8,c,texture,align,
           0) else
       {$ENDIF}
@@ -2167,6 +2330,39 @@ begin
   FFont := TFont.Create;
 end;
 
+function TBGRASystemFontRenderer.GetTextOutline(sUTF8: string; ADest: IBGRAPath;
+  out ASize: TPointF): boolean;
+{$IF defined(BGRA_WIN32_OUTLINE) or defined(BGRA_QT5_OUTLINE)}
+var
+  measuredSize: TSize;
+{$ENDIF}
+begin
+  {$IFDEF BGRA_PANGO_TEXT}
+  UpdateFont;
+  result := BGRAPangoTextPath(FFont, sUTF8, ADest, ASize);
+  {$ELSE}
+  {$IF defined(BGRA_WIN32_OUTLINE) or defined(BGRA_QT5_OUTLINE)}
+  ASize := PointF(0, 0);
+  UpdateFont;
+  {$IFDEF BGRA_WIN32_OUTLINE}
+  result := BGRAWin32TextPath(FFont, sUTF8, ADest);
+  {$ELSE}
+  result := BGRAQt5TextPath(FFont, sUTF8, ADest);
+  {$ENDIF}
+  if result then
+  begin
+    // the size of the text is the one given by the renderer, as for the
+    // other text functions, so that the metrics do not change
+    measuredSize := TextSize(sUTF8);
+    ASize := PointF(measuredSize.cx, measuredSize.cy);
+  end;
+  {$ELSE}
+  ASize := PointF(0, 0);
+  result := false;
+  {$ENDIF}
+  {$ENDIF}
+end;
+
 destructor TBGRASystemFontRenderer.Destroy;
 begin
   FFont.Free;
@@ -2176,6 +2372,12 @@ end;
 initialization
 
   fqFineClearType := @GetFineClearTypeAuto;
+  InitCriticalSection(MeasureBitmapLock);
+
+finalization
+
+  FreeAndNil(MeasureBitmap);
+  DoneCriticalSection(MeasureBitmapLock);
 
 end.
 

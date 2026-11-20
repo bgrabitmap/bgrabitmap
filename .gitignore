@@ -43,3 +43,6 @@ test/testcore/lib
 test/testcore/lib_createfont
 
 use/*/
+
+# Local/CI regression compiler output and results
+/.regression-build/
