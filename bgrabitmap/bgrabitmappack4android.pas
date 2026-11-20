@@ -14,7 +14,7 @@ uses
   BGRAGradients, BGRAGradientScanner, BGRALayers, BGRAMatrix3D, 
   BGRAOpenRaster, BGRAPaintNet, BGRAPath, BGRAPen, BGRAPhongTypes, 
   BGRAPolygon, BGRAPolygonAliased, BGRAResample, BGRAScene3D, 
-  BGRASliceScaling, BGRASSE, BGRAStreamLayers, BGRATransform, 
+  BGRASliceScaling, BGRALightness, BGRASSE, BGRAStreamLayers, BGRATransform,
   BGRAGrayscaleMask, BGRAReadBMP, BGRAReadGif, BGRAReadPCX, BGRAReadPng, 
   BGRAReadPSD, BGRAThumbnail, BGRAReadTGA, BGRAReadJpeg, BGRAReadLzp, 
   UnzipperExt, BGRALzpCommon, BGRAWriteLzp, BGRAReadXPM, BGRAUnits, 
