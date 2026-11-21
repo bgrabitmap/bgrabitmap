@@ -845,9 +845,9 @@ var
   arclen: integer;
   sweep: double;
 begin
-  start65536 := round(startRadCCW*32768/Pi) and $ffff;
-  end65536 := round(endRadCCW*32768/Pi) and $ffff;
-  //if arc is very small but non zero, it is not a circle
+  start65536 := round(startRadCCW*32768/Pi);
+  end65536 := round(endRadCCW*32768/Pi);
+  //Test unwrapped angles: complete turns must not be mistaken for tiny arcs.
   if (start65536 = end65536) and (startRadCCW <> endRadCCW) then
   begin
     setlength(result,2);
@@ -855,6 +855,8 @@ begin
     result[1] := PointF(x+cos(endRadCCW)*rx,y-sin(endRadCCW)*ry);
     exit;
   end;
+  start65536 := start65536 and $ffff;
+  end65536 := end65536 and $ffff;
   if end65536 > start65536 then
     arclen := end65536-start65536 else
     arclen := 65536-(start65536-end65536);
